@@ -1,129 +1,321 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757897Ab3BFWm3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 17:42:29 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:27462 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754330Ab3BFWm1 convert rfc822-to-8bit (ORCPT
+	id S1758115Ab3BFWme (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 17:42:34 -0500
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:12930 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754839Ab3BFWma (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 17:42:27 -0500
-MIME-Version: 1.0
-Message-ID: <abbc2f75-2982-470c-a3ca-675933d112c3@default>
-Date: Wed, 6 Feb 2013 14:42:11 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: sjenning@linux.vnet.ibm.com, Konrad Wilk <konrad.wilk@oracle.com>,
-        minchan@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        devel@linuxdriverproject.org, ngupta@vflare.org
-Subject: RE: [PATCH] staging/zcache: Fix/improve zcache writeback code, tie to
- a config option
-References: <1360175261-13287-1-git-send-email-dan.magenheimer@oracle.com>
- <20130206190924.GB32275@kroah.com>
- <761b5c6e-df13-49ff-b322-97a737def114@default>
- <20130206214316.GA21148@kroah.com>
-In-Reply-To: <20130206214316.GA21148@kroah.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6665.5003 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Wed, 6 Feb 2013 17:42:30 -0500
+Message-ID: <1360189938.23410.276.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 2/2] ACPI / scan: Simplify container driver
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <liuj97@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 06 Feb 2013 15:32:18 -0700
+In-Reply-To: <5090866.2BHgpRnuEZ@vostro.rjw.lan>
+References: <1873429.MS5RQDxTye@vostro.rjw.lan>
+	 <4311642.nDd2RCVeDc@vostro.rjw.lan> <3164478.OcagzIMET0@vostro.rjw.lan>
+	 <5090866.2BHgpRnuEZ@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> Subject: Re: [PATCH] staging/zcache: Fix/improve zcache writeback code, tie to a config option
+On Mon, 2013-02-04 at 00:47 +0100, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > 
-> On Wed, Feb 06, 2013 at 12:51:25PM -0800, Dan Magenheimer wrote:
-> > > From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> > > Subject: Re: [PATCH] staging/zcache: Fix/improve zcache writeback code, tie to a config option
-> > >
-> > > On Wed, Feb 06, 2013 at 10:27:41AM -0800, Dan Magenheimer wrote:
-> > > > It was observed by Andrea Arcangeli in 2011 that zcache can get "full"
-> > > > and there must be some way for compressed swap pages to be (uncompressed
-> > > > and then) sent through to the backing swap disk.  A prototype of this
-> > > > functionality, called "unuse", was added in 2012 as part of a major update
-> > > > to zcache (aka "zcache2"), but was left unfinished due to the unfortunate
-> > > > temporary fork of zcache.
-> > > >
-> > > > This earlier version of the code had an unresolved memory leak
-> > > > and was anyway dependent on not-yet-upstream frontswap and mm changes.
-> > > > The code was meanwhile adapted by Seth Jennings for similar
-> > > > functionality in zswap (which he calls "flush").  Seth also made some
-> > > > clever simplifications which are herein ported back to zcache.  As a
-> > > > result of those simplifications, the frontswap changes are no longer
-> > > > necessary, but a slightly different (and simpler) set of mm changes are
-> > > > still required [1].  The memory leak is also fixed.
-> > > >
-> > > > Due to feedback from akpm in a zswap thread, this functionality in zcache
-> > > > has now been renamed from "unuse" to "writeback".
-> > > >
-> > > > Although this zcache writeback code now works, there are open questions
-> > > > as how best to handle the policy that drives it.  As a result, this
-> > > > patch also ties writeback to a new config option.  And, since the
-> > > > code still depends on not-yet-upstreamed mm patches, to avoid build
-> > > > problems, the config option added by this patch temporarily depends
-> > > > on "BROKEN"; this config dependency can be removed in trees that
-> > > > contain the necessary mm patches.
-> > >
-> > > I'll wait for those options to be in Linus's tree before accepting a
-> > > patch like this, sorry.
-> > >
-> > > greg k-h
-> >
-> > Hi Greg --
-> >
-> > Hmmmm... that creates the classic chicken-and-egg problem...  It's hard
-> > to get a patch into the kernel (especially mm) without a demonstrated
-> > "user" for the patch, but the "user" can't be added without the patch it
-> > is dependent on because the "user" code won't work and/or would break
-> > the build without it.
-> >
-> > In the past (e.g. with cleancache and frontswap), you've resolved that
-> > by taking the "user" (e.g. zcache) code into staging, properly ifdef'd
-> > to avoid build issues, which clearly demonstrated the use for the
-> > matching mm changes, which were eventually merged into Linus's tree,
-> > at which point the ifdefs were removed.
+> The only useful thing that the ACPI container driver does is to
+> install system notify handlers for all container and module device
+> objects it finds in the namespace.  The driver structure,
+> acpi_container_driver, and the data structures created by its
+> .add() callback are in fact not used by the driver, so remove
+> them entirely.
 > 
-> Yes, but these mm changes are in no one's trees, and I have no idea if
-> they ever will be merged.
+> It also makes a little sense to build that driver as a module,
+> so make it non-modular and add its initialization to the
+> namespace scanning code.
+> 
+> In addition to that, make the namespace walk callback used for
+> installing the notify handlers more straightforward.
 
-OK, I can try pushing on the "egg" side for awhile :-(
+I think the container driver needs to be registered as an ACPI scan
+driver so that sysfs eject will continue to work for container devices,
+such as ACPI0004:XX/eject.  Since the container driver does not support
+ACPI eject notification (and we have been discussing how system device
+hot-plug should work), this sysfs eject is the only way to eject a
+container device at this point.  I will send an update patchset that
+applies on top of this patch.
 
-> This patch looks to me that it is adding new functionality, and not
-> working to get it moved out of staging.
-
-Not true... it is fixing broken functionality that was left latent
-for too long due to last summer's unpleasant disagreements.  And this
-functionality was a key reason why "zcache2" was created... because mm
-developers (e.g. Andrea) insisted that it must be present before compression
-functionality would be added into mm.  As evidence to support this,
-note that Seth's first zswap patchset includes similar functionality
-even though Seth argued vociferously last summer that the functionality
-wasn't needed before "old" zcache should be promoted.
-
-> So, how about I try being mean again.  I will accept no more patches for
-> the zcache/zram/zsmalloc code, unless is it an obvious bugfix, or it is
-> to move it out of the drivers/staging/ tree.  You all have had many
-> years to get your act together, and it's getting really frustrating from
-> my end.
-
-I do very much understand your frustration and you have every right
-to be mean.
-
-But, since this really is technically patching up existing critical
-functionality that was known to be broken, I would be very grateful
-if you would reconsider applying this patch.  I agree there will be no
-(more) non-bugfix staging/zcache patches from me. I've proposed a topic [1]
-for LSF/MM in April to discuss all this... I totally agree it's time to
-promote in-kernel compression out of staging and into mm proper.
-But without this patch fixing required functionality, it will be
-harder to promote.
-
-In other words.... pretty pleeeeze? I swear this is the last time.  :-]
+With the update in my patchset:
+Reviewed-by: Toshi Kani <toshi.kani@hp.com>
 
 Thanks,
-Dan "puts on cute irresistible doe-eyed child face"
+-Toshi
 
-[1] http://marc.info/?l=linux-mm&m=135923138220901&w=2
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+>  drivers/acpi/Kconfig     |    2 
+>  drivers/acpi/container.c |  158 ++++++-----------------------------------------
+>  drivers/acpi/internal.h  |    5 +
+>  drivers/acpi/scan.c      |    1 
+>  4 files changed, 30 insertions(+), 136 deletions(-)
+> 
+> Index: test/drivers/acpi/container.c
+> ===================================================================
+> --- test.orig/drivers/acpi/container.c
+> +++ test/drivers/acpi/container.c
+> @@ -38,41 +38,15 @@
+>  
+>  #define PREFIX "ACPI: "
+>  
+> -#define ACPI_CONTAINER_DEVICE_NAME	"ACPI container device"
+> -#define ACPI_CONTAINER_CLASS		"container"
+> -
+> -#define INSTALL_NOTIFY_HANDLER		1
+> -#define UNINSTALL_NOTIFY_HANDLER	2
+> -
+>  #define _COMPONENT			ACPI_CONTAINER_COMPONENT
+>  ACPI_MODULE_NAME("container");
+>  
+> -MODULE_AUTHOR("Anil S Keshavamurthy");
+> -MODULE_DESCRIPTION("ACPI container driver");
+> -MODULE_LICENSE("GPL");
+> -
+> -static int acpi_container_add(struct acpi_device *device);
+> -static int acpi_container_remove(struct acpi_device *device);
+> -
+>  static const struct acpi_device_id container_device_ids[] = {
+>  	{"ACPI0004", 0},
+>  	{"PNP0A05", 0},
+>  	{"PNP0A06", 0},
+>  	{"", 0},
+>  };
+> -MODULE_DEVICE_TABLE(acpi, container_device_ids);
+> -
+> -static struct acpi_driver acpi_container_driver = {
+> -	.name = "container",
+> -	.class = ACPI_CONTAINER_CLASS,
+> -	.ids = container_device_ids,
+> -	.ops = {
+> -		.add = acpi_container_add,
+> -		.remove = acpi_container_remove,
+> -		},
+> -};
+> -
+> -/*******************************************************************/
+>  
+>  static int is_device_present(acpi_handle handle)
+>  {
+> @@ -92,49 +66,6 @@ static int is_device_present(acpi_handle
+>  	return ((sta & ACPI_STA_DEVICE_PRESENT) == ACPI_STA_DEVICE_PRESENT);
+>  }
+>  
+> -static bool is_container_device(const char *hid)
+> -{
+> -	const struct acpi_device_id *container_id;
+> -
+> -	for (container_id = container_device_ids;
+> -	     container_id->id[0]; container_id++) {
+> -		if (!strcmp((char *)container_id->id, hid))
+> -			return true;
+> -	}
+> -
+> -	return false;
+> -}
+> -
+> -/*******************************************************************/
+> -static int acpi_container_add(struct acpi_device *device)
+> -{
+> -	struct acpi_container *container;
+> -
+> -	container = kzalloc(sizeof(struct acpi_container), GFP_KERNEL);
+> -	if (!container)
+> -		return -ENOMEM;
+> -
+> -	container->handle = device->handle;
+> -	strcpy(acpi_device_name(device), ACPI_CONTAINER_DEVICE_NAME);
+> -	strcpy(acpi_device_class(device), ACPI_CONTAINER_CLASS);
+> -	device->driver_data = container;
+> -
+> -	ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Device <%s> bid <%s>\n",
+> -			  acpi_device_name(device), acpi_device_bid(device)));
+> -
+> -	return 0;
+> -}
+> -
+> -static int acpi_container_remove(struct acpi_device *device)
+> -{
+> -	acpi_status status = AE_OK;
+> -	struct acpi_container *pc = NULL;
+> -
+> -	pc = acpi_driver_data(device);
+> -	kfree(pc);
+> -	return status;
+> -}
+> -
+>  static void container_notify_cb(acpi_handle handle, u32 type, void *context)
+>  {
+>  	struct acpi_device *device = NULL;
+> @@ -199,84 +130,41 @@ static void container_notify_cb(acpi_han
+>  	return;
+>  }
+>  
+> -static acpi_status
+> -container_walk_namespace_cb(acpi_handle handle,
+> -			    u32 lvl, void *context, void **rv)
+> +static bool is_container(acpi_handle handle)
+>  {
+> -	char *hid = NULL;
+>  	struct acpi_device_info *info;
+> -	acpi_status status;
+> -	int *action = context;
+> +	bool ret = false;
+>  
+> -	status = acpi_get_object_info(handle, &info);
+> -	if (ACPI_FAILURE(status)) {
+> -		return AE_OK;
+> -	}
+> -
+> -	if (info->valid & ACPI_VALID_HID)
+> -		hid = info->hardware_id.string;
+> -
+> -	if (hid == NULL) {
+> -		goto end;
+> -	}
+> +	if (ACPI_FAILURE(acpi_get_object_info(handle, &info)))
+> +		return false;
+>  
+> -	if (!is_container_device(hid))
+> -		goto end;
+> +	if (info->valid & ACPI_VALID_HID) {
+> +		const struct acpi_device_id *id;
+>  
+> -	switch (*action) {
+> -	case INSTALL_NOTIFY_HANDLER:
+> -		acpi_install_notify_handler(handle,
+> -					    ACPI_SYSTEM_NOTIFY,
+> -					    container_notify_cb, NULL);
+> -		break;
+> -	case UNINSTALL_NOTIFY_HANDLER:
+> -		acpi_remove_notify_handler(handle,
+> -					   ACPI_SYSTEM_NOTIFY,
+> -					   container_notify_cb);
+> -		break;
+> -	default:
+> -		break;
+> +		for (id = container_device_ids; id->id[0]; id++) {
+> +			ret = !strcmp((char *)id->id, info->hardware_id.string);
+> +			if (ret)
+> +				break;
+> +		}
+>  	}
+> -
+> -      end:
+>  	kfree(info);
+> -
+> -	return AE_OK;
+> +	return ret;
+>  }
+>  
+> -static int __init acpi_container_init(void)
+> +static acpi_status acpi_container_register_notify_handler(acpi_handle handle,
+> +							  u32 lvl, void *ctxt,
+> +							  void **retv)
+>  {
+> -	int result = 0;
+> -	int action = INSTALL_NOTIFY_HANDLER;
+> -
+> -	result = acpi_bus_register_driver(&acpi_container_driver);
+> -	if (result < 0) {
+> -		return (result);
+> -	}
+> -
+> -	/* register notify handler to every container device */
+> -	acpi_walk_namespace(ACPI_TYPE_DEVICE,
+> -			    ACPI_ROOT_OBJECT,
+> -			    ACPI_UINT32_MAX,
+> -			    container_walk_namespace_cb, NULL, &action, NULL);
+> +	if (is_container(handle))
+> +		acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
+> +					    container_notify_cb, NULL);
+>  
+> -	return (0);
+> +	return AE_OK;
+>  }
+>  
+> -static void __exit acpi_container_exit(void)
+> +void __init acpi_container_init(void)
+>  {
+> -	int action = UNINSTALL_NOTIFY_HANDLER;
+> -
+> -
+> -	acpi_walk_namespace(ACPI_TYPE_DEVICE,
+> -			    ACPI_ROOT_OBJECT,
+> -			    ACPI_UINT32_MAX,
+> -			    container_walk_namespace_cb, NULL, &action, NULL);
+> -
+> -	acpi_bus_unregister_driver(&acpi_container_driver);
+> -
+> -	return;
+> +	acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT, ACPI_UINT32_MAX,
+> +			    acpi_container_register_notify_handler, NULL,
+> +			    NULL, NULL);
+>  }
+> -
+> -module_init(acpi_container_init);
+> -module_exit(acpi_container_exit);
+> Index: test/drivers/acpi/Kconfig
+> ===================================================================
+> --- test.orig/drivers/acpi/Kconfig
+> +++ test/drivers/acpi/Kconfig
+> @@ -334,7 +334,7 @@ config X86_PM_TIMER
+>  	  systems require this timer. 
+>  
+>  config ACPI_CONTAINER
+> -	tristate "Container and Module Devices (EXPERIMENTAL)"
+> +	bool "Container and Module Devices (EXPERIMENTAL)"
+>  	depends on EXPERIMENTAL
+>  	default (ACPI_HOTPLUG_MEMORY || ACPI_HOTPLUG_CPU || ACPI_HOTPLUG_IO)
+>  	help
+> Index: test/drivers/acpi/internal.h
+> ===================================================================
+> --- test.orig/drivers/acpi/internal.h
+> +++ test/drivers/acpi/internal.h
+> @@ -40,6 +40,11 @@ void acpi_memory_hotplug_init(void);
+>  #else
+>  static inline void acpi_memory_hotplug_init(void) {}
+>  #endif
+> +#ifdef ACPI_CONTAINER
+> +void acpi_container_init(void);
+> +#else
+> +static inline void acpi_container_init(void) {}
+> +#endif
+>  
+>  #ifdef CONFIG_DEBUG_FS
+>  extern struct dentry *acpi_debugfs_dir;
+> Index: test/drivers/acpi/scan.c
+> ===================================================================
+> --- test.orig/drivers/acpi/scan.c
+> +++ test/drivers/acpi/scan.c
+> @@ -1763,6 +1763,7 @@ int __init acpi_scan_init(void)
+>  	acpi_platform_init();
+>  	acpi_csrt_init();
+>  	acpi_memory_hotplug_init();
+> +	acpi_container_init();
+>  
+>  	/*
+>  	 * Enumerate devices in the ACPI namespace.
+> 
+
+
