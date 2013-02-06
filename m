@@ -1,87 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757095Ab3BFEny (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 23:43:54 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:44060 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755163Ab3BFEnw (ORCPT
+	id S1757130Ab3BFEp5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 23:45:57 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58827 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755163Ab3BFEp4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 23:43:52 -0500
-Date: Wed, 6 Feb 2013 15:43:40 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Christoffer Dall <c.dall@virtualopensystems.com>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Alexander Graf <agraf@suse.de>
-Subject: linux-next: manual merge of the kvm tree with the arm tree
-Message-Id: <20130206154340.18fc2dc41e4278ea1edbbba6@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Tue, 5 Feb 2013 23:45:56 -0500
+Message-ID: <1360125941.32217.26.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [ 105/128] efi: Make efi_enabled a function to query EFI
+ facilities
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Matt Fleming <matt.fleming@intel.com>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, akpm@linux-foundation.org,
+        David Airlie <airlied@linux.ie>,
+        Corentin Chary <corentincj@iksaif.net>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Dave Jiang <dave.jiang@intel.com>, Olof Johansson <olof@lixom.net>,
+        Peter Jones <pjones@redhat.com>,
+        Colin Ian King <colin.king@canonical.com>,
+        Steve Langasek <steve.langasek@canonical.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Date: Wed, 06 Feb 2013 04:45:41 +0000
+In-Reply-To: <20130204182009.GA3219@kroah.com>
+References: <20130203144653.313760856@decadent.org.uk>
+	 <1359904557.1822.2.camel@deadeye.wl.decadent.org.uk>
+	 <1359996265.7515.180.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <20130204182009.GA3219@kroah.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-eEV89KNJHafxb3D6PIJL"
+X-Mailer: Evolution 3.4.4-1 
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__6_Feb_2013_15_43_40_+1100_COZuW8vyyrQw4aCG"
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__6_Feb_2013_15_43_40_+1100_COZuW8vyyrQw4aCG
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
+
+--=-eEV89KNJHafxb3D6PIJL
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-Hi all,
+On Mon, 2013-02-04 at 10:20 -0800, Greg KH wrote:
+> On Mon, Feb 04, 2013 at 04:44:25PM +0000, Matt Fleming wrote:
+> > On Sun, 2013-02-03 at 16:15 +0100, Ben Hutchings wrote:
+> > > As you can see this needed quite a lot of work to backport, and I
+> > > haven't been able to test it yet.  So I would particularly appreciate
+> > > careful review of this.
+> >=20
+> > Everything looks fine to me but I haven't actually booted with these
+> > changes.
+>=20
+> I didn't backport this to the 3.4 kernel, as I didn't think it really
+> was necessary, but now that Ben did all of the hard work, I'll see if
+> his version applies there, as it would be good to solve this issue for
+> that kernel release.  Thanks for verifying that this work at least looks
+> sane.
 
-Today's linux-next merge of the kvm tree got a conflict in
-include/uapi/linux/kvm.h between commit aa024c2f35a0 ("KVM: ARM: Power
-State Coordination Interface implementation") from the arm tree and
-commits fa6b7fe9928d ("KVM: s390: Add support for channel I/O
-instructions") and 1c810636556c ("KVM: PPC: BookE: Implement EPR exit")
-from the kvm tree.
+No, my backporting work for 3.2 is not applicable and not needed on 3.4.
+I think you just need to adjust context in arch/x86/kernel/setup.c and
+init/main.c.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Ben.
 
 --=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Ben Hutchings
+Everything should be made as simple as possible, but not simpler.
+                                                           - Albert Einstei=
+n
 
-diff --cc include/uapi/linux/kvm.h
-index 7f2360a,9a2db57..0000000
---- a/include/uapi/linux/kvm.h
-+++ b/include/uapi/linux/kvm.h
-@@@ -636,7 -660,8 +661,9 @@@ struct kvm_ppc_smmu_info=20
-  #define KVM_CAP_IRQFD_RESAMPLE 82
-  #define KVM_CAP_PPC_BOOKE_WATCHDOG 83
-  #define KVM_CAP_PPC_HTAB_FD 84
-+ #define KVM_CAP_S390_CSS_SUPPORT 85
-+ #define KVM_CAP_PPC_EPR 86
- +#define KVM_CAP_ARM_PSCI 87
- =20
-  #ifdef KVM_CAP_IRQ_ROUTING
- =20
-
---Signature=_Wed__6_Feb_2013_15_43_40_+1100_COZuW8vyyrQw4aCG
-Content-Type: application/pgp-signature
+--=-eEV89KNJHafxb3D6PIJL
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJREd98AAoJEECxmPOUX5FEZhsP/25RF4ykAZt4xyhRXPUDfxGF
-9MOfWl70WuXYLcqbu7c9eBFOFDVMRcYvht11IEUku1MZ+XN5kTdFd1OUNaYkwWEa
-h0DawutISpdOHDQ5rnhwsoT0NocZlEiX2IE418iZwd8ABAIy58PnR3UfzYESuEt2
-vzQUYcyvRBWhlJwRlHaNXRC0VJvGKUwuymw/OhHb8IClwMjckkdZ5ejbP1fSWNpC
-0ZGQ6uzK74tnIUS1VH+B89SOUy26DMlG4q/g56dsN8w+Xyn5pDgeGXHK40wouX+7
-8v52TE8V2r+xUzgntfL1BrcQtnlTFnnXXUsO3YHIwdBo10qdElWg/MUyKrYnAbu2
-v16MKDMsInd//nQK1VaEMLpsTYxekunlo7c7NyHzefuLenyxR3UcrH+WP+MZq+fJ
-QO6B0RV4cjjdLCK3yy+TPW9Ap8oIptVtGHU3AvvRXB02N0laagQWbqb+HV/Tqpf0
-w/HzAdORHF4+x+KONrZLmwcjsQu07PG9O2dZJip5ixfxuDLo3R4MUvanKFAwak4P
-iaV/iFEZ/5FE+HgH2yNAtnetfWCAYT8VoZmybR5NOjJd5qGWDd0JcLzvZiONm3Tu
-bA6//F2aMBoLMWeMiabdi5piYgryfKpB7q6BKrnFPJIkhx954UmFa4alOyjc/Wea
-qANKNUEm92wgpRB42eUk
-=7Ad/
+iQIVAwUAURHf9ee/yOyVhhEJAQotrg//RKZfLQAPeojHMTkkU6789d/1XQWAvgtD
+8v3P7OYaw10rHjopbwaV7ikPXUDNbJI7Pyfoui0ox5Xdk0/8ghjTBngC+RowI8Q0
+wzHSYNeYGPOrr9Ai30rL6EiiGBmSAv1e/JWhpXNHH68k/BtsalxHk1tUTKQsqjun
+1Bfa+34X602jsMU0yDyLQIs1y5mCsKPAbs0bk8m6i+4oibZJC2z/EGSon2ApvTqQ
+SPPbbm78g93DfLYUn/AYF9f4JgwqAprmxq6uUB7Ww+NSbAaiJryV/vL30n1+sadO
+YaBCmT+PXgYAiuiJ14mPxynv+6FG+hBUK6OcR2P/orowJwr383alaO9gpEE6Bu4w
+Tr5XCfi2t6R2qMPd5xsITY9k3WKOYmHftG85xz6dKJzzqbqaLO+YCN2agC7UKv3y
+kDppj2/+oVFvN8mhZTIbeN4hosNUVEN9rv46+yk16M74E/FZw+f7QuqoZI+RGGum
+lZm4jkBotIrsjY6zmJqijyVg7OMqcq8xiZg3P2Nmgq3xKgFhdLtWtujUlCyR8h9r
+1Ol3tXIwn1LWxzgy6lmtSH7kti6ON9LYClRn4OgMSb4rDAlXqGjdXYkpeBYVP0j8
+qQzBbVxJG74D9x6M0AtTcx/85DTRQB7tN0zEK09ssZJxjDYemYHp3bgtAEl/1JHL
+bgjWo1e6sdM=
+=HXrQ
 -----END PGP SIGNATURE-----
 
---Signature=_Wed__6_Feb_2013_15_43_40_+1100_COZuW8vyyrQw4aCG--
+--=-eEV89KNJHafxb3D6PIJL--
