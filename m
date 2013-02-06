@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757905Ab3BFSSB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 13:18:01 -0500
-Received: from mga03.intel.com ([143.182.124.21]:64531 "EHLO mga03.intel.com"
+	id S1757586Ab3BFSS7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 13:18:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56423 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757880Ab3BFSRz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 13:17:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,617,1355126400"; 
-   d="scan'208";a="199405950"
-Date: Wed, 6 Feb 2013 19:17:52 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Emil Goode <emilgoode@gmail.com>
-Cc: ptyser@xes-inc.com, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] mfd: lpc_ich: Fix arguments to kmalloc
-Message-ID: <20130206181752.GD3418@sortiz-mobl>
-References: <1360173659-22409-1-git-send-email-emilgoode@gmail.com>
+	id S1752107Ab3BFSS6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 13:18:58 -0500
+Date: Wed, 6 Feb 2013 13:18:46 -0500
+From: Kyle McMartin <kmcmarti@redhat.com>
+To: Stephan Mueller <stephan.mueller@atsec.com>
+Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        rusty@rustcorp.com.au, jstancek@redhat.com,
+        herbert@gondor.hengli.com.au
+Subject: Re: [RFC PATCH] fips: check whether a module registering an alg or
+ template is signed
+Message-ID: <20130206181845.GL3751@redacted.bos.redhat.com>
+References: <20130122184357.GD6538@redacted.bos.redhat.com>
+ <8615.1358940375@warthog.procyon.org.uk>
+ <50FFFF48.6020608@atsec.com>
+ <20130124190610.GI6538@redacted.bos.redhat.com>
+ <5102781D.9000408@atsec.com>
+ <20130205225830.GH3751@redacted.bos.redhat.com>
+ <51120E26.7030400@atsec.com>
+ <20130206161557.GJ3751@redacted.bos.redhat.com>
+ <511296C9.8010102@atsec.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1360173659-22409-1-git-send-email-emilgoode@gmail.com>
+In-Reply-To: <511296C9.8010102@atsec.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HI Emil,
+On Wed, Feb 06, 2013 at 06:45:45PM +0100, Stephan Mueller wrote:
+> Unfortunately there has already something terrible happened: an
+> additional piece of code loaded into the FIPS 140-2 module could not be
+> loaded because a self test failed. This is a terrible accident in FIPS
+> 140-2 speak. :-)
+> 
+> That means, the FIPS 140-2 module, aka kernel crypto API must become
+> unavailable. As one self test failed, the entire module must become
+> unavailable.
+> 
+> I am sorry, but there is no way around it. Just to quote the relevant
+> part from the FIPS 140-2 specification, section 4.9:
+> 
+> If a cryptographic module fails a self-test, the module shall enter an
+> error state and output an error indicator
+> via the status output interface. The cryptographic module shall not
+> perform any cryptographic operations
+> while in an error state. All data output via the data output interface
+> shall be inhibited when an error state
+> exists.
+> 
 
-On Wed, Feb 06, 2013 at 07:00:59PM +0100, Emil Goode wrote:
-> This patch changes the order of the arguments to kmalloc,
-> the allocation flag should be the second argument.
-> 
-> Sparse warnings:
-> 
-> drivers/mfd/lpc_ich.c:881:24: warning:
-> 	incorrect type in argument 1 (different base types)
-> 	drivers/mfd/lpc_ich.c:881:24:
-> 	expected unsigned long [unsigned] [usertype] size
-> 	drivers/mfd/lpc_ich.c:881:24:    got restricted gfp_t
-> 
-> drivers/mfd/lpc_ich.c:881:36: warning:
-> 	incorrect type in argument 2 (different base types)
-> 	drivers/mfd/lpc_ich.c:881:36:
-> 	expected restricted gfp_t [usertype] flags
-> 	drivers/mfd/lpc_ich.c:881:36:    got unsigned long
-> 
-> Signed-off-by: Emil Goode <emilgoode@gmail.com>
-> ---
->  drivers/mfd/lpc_ich.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-This patch does not apply to my for-next branch.
+OK. If Herbert and Rusty are ok with this, I'll send an additional patch
+moving the panic which should satisfy this requirement.
 
-Cheers,
-Samuel.
+> 
+> ==> the signature test we are discussing here is one of these self
+> tests, in particular a conditional self test defined in section 4.9.2 of
+> the FIPS 140-2 standard.
+> 
+> > necessary, I just didn't think it was. If Herbert doesn't object to this
+> > patch, I'd move the panic from kernel/module.c to here.
+> 
+> I am perfectly happy with the move of the code.
+> 
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+regards, Kyle
