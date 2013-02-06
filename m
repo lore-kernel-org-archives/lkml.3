@@ -1,36 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758739Ab3BFVhQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 16:37:16 -0500
-Received: from mail-vb0-f41.google.com ([209.85.212.41]:61779 "EHLO
-	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758539Ab3BFVhL (ORCPT
+	id S1758721Ab3BFVnV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 16:43:21 -0500
+Received: from mail-da0-f45.google.com ([209.85.210.45]:60534 "EHLO
+	mail-da0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757205Ab3BFVnT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 16:37:11 -0500
+	Wed, 6 Feb 2013 16:43:19 -0500
+Date: Wed, 6 Feb 2013 13:43:16 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: sjenning@linux.vnet.ibm.com, Konrad Wilk <konrad.wilk@oracle.com>,
+        minchan@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        devel@linuxdriverproject.org, ngupta@vflare.org
+Subject: Re: [PATCH] staging/zcache: Fix/improve zcache writeback code, tie
+ to a config option
+Message-ID: <20130206214316.GA21148@kroah.com>
+References: <1360175261-13287-1-git-send-email-dan.magenheimer@oracle.com>
+ <20130206190924.GB32275@kroah.com>
+ <761b5c6e-df13-49ff-b322-97a737def114@default>
 MIME-Version: 1.0
-In-Reply-To: <20130206112811.GD8696@gmail.com>
-References: <1360069915-31619-1-git-send-email-alex.shi@intel.com>
- <20130205145854.GA30949@gmail.com> <51119ED0.3030207@intel.com> <20130206112811.GD8696@gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 7 Feb 2013 08:36:50 +1100
-X-Google-Sender-Auth: tDJFopnVakkDlmkYe6AXW97Q9XY
-Message-ID: <CA+55aFwFCXGE9zTOOqGzC5wBDk+KjBZvqDpiiFYcVSsbv0ThPQ@mail.gmail.com>
-Subject: Re: [PATCH] rwsem: steal writing sem for better performance
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Alex Shi <alex.shi@intel.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <761b5c6e-df13-49ff-b322-97a737def114@default>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 6, 2013 at 10:28 PM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> Linus, Andrew, what is your thinking about the patch and about
-> the timing of the patch?
+On Wed, Feb 06, 2013 at 12:51:25PM -0800, Dan Magenheimer wrote:
+> > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > Subject: Re: [PATCH] staging/zcache: Fix/improve zcache writeback code, tie to a config option
+> > 
+> > On Wed, Feb 06, 2013 at 10:27:41AM -0800, Dan Magenheimer wrote:
+> > > It was observed by Andrea Arcangeli in 2011 that zcache can get "full"
+> > > and there must be some way for compressed swap pages to be (uncompressed
+> > > and then) sent through to the backing swap disk.  A prototype of this
+> > > functionality, called "unuse", was added in 2012 as part of a major update
+> > > to zcache (aka "zcache2"), but was left unfinished due to the unfortunate
+> > > temporary fork of zcache.
+> > >
+> > > This earlier version of the code had an unresolved memory leak
+> > > and was anyway dependent on not-yet-upstream frontswap and mm changes.
+> > > The code was meanwhile adapted by Seth Jennings for similar
+> > > functionality in zswap (which he calls "flush").  Seth also made some
+> > > clever simplifications which are herein ported back to zcache.  As a
+> > > result of those simplifications, the frontswap changes are no longer
+> > > necessary, but a slightly different (and simpler) set of mm changes are
+> > > still required [1].  The memory leak is also fixed.
+> > >
+> > > Due to feedback from akpm in a zswap thread, this functionality in zcache
+> > > has now been renamed from "unuse" to "writeback".
+> > >
+> > > Although this zcache writeback code now works, there are open questions
+> > > as how best to handle the policy that drives it.  As a result, this
+> > > patch also ties writeback to a new config option.  And, since the
+> > > code still depends on not-yet-upstreamed mm patches, to avoid build
+> > > problems, the config option added by this patch temporarily depends
+> > > on "BROKEN"; this config dependency can be removed in trees that
+> > > contain the necessary mm patches.
+> > 
+> > I'll wait for those options to be in Linus's tree before accepting a
+> > patch like this, sorry.
+> > 
+> > greg k-h
+> 
+> Hi Greg --
+> 
+> Hmmmm... that creates the classic chicken-and-egg problem...  It's hard
+> to get a patch into the kernel (especially mm) without a demonstrated
+> "user" for the patch, but the "user" can't be added without the patch it
+> is dependent on because the "user" code won't work and/or would break
+> the build without it.
+> 
+> In the past (e.g. with cleancache and frontswap), you've resolved that
+> by taking the "user" (e.g. zcache) code into staging, properly ifdef'd
+> to avoid build issues, which clearly demonstrated the use for the
+> matching mm changes, which were eventually merged into Linus's tree,
+> at which point the ifdefs were removed.
 
-Not for 3.8. Queue it for 3.9, with possibly a stable tag with a big
-comment "apply after much testing".
+Yes, but these mm changes are in no one's trees, and I have no idea if
+they ever will be merged.
 
-              Linus
+So, how about I try being mean again.  I will accept no more patches for
+the zcache/zram/zsmalloc code, unless is it an obvious bugfix, or it is
+to move it out of the drivers/staging/ tree.  You all have had many
+years to get your act together, and it's getting really frustrating from
+my end.
+
+This patch looks to me that it is adding new functionality, and not
+working to get it moved out of staging.
+
+thanks,
+
+greg k-h
