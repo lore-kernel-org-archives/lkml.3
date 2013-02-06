@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757634Ab3BFQTn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 11:19:43 -0500
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:57879 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757498Ab3BFQTl (ORCPT
+	id S1757651Ab3BFQUY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 11:20:24 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:63011 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756682Ab3BFQUW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 11:19:41 -0500
+	Wed, 6 Feb 2013 11:20:22 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16 with generic iowrite(read)8/16(be)
+Date: Wed, 6 Feb 2013 16:20:10 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-4-generic; KDE/4.3.2; x86_64; ; )
+Cc: Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
+        Michal Simek <monstr@monstr.eu>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        dahinds@users.sourceforge.net
+References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com> <7613336.0C5oRATusX@wuerfel> <CACxGe6tjyx3GTgNgMRtvwhrFsTGizkeTqY_N6=2gdQjvMSD8Ug@mail.gmail.com>
+In-Reply-To: <CACxGe6tjyx3GTgNgMRtvwhrFsTGizkeTqY_N6=2gdQjvMSD8Ug@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <51128097.9000801@gmail.com>
-References: <1360088646-19104-1-git-send-email-dirk.brandewie@gmail.com>
-	<1360088646-19104-6-git-send-email-dirk.brandewie@gmail.com>
-	<CAOh2x=kJPFyhkG3y_q=a5ciG1HRAn-JkoVYy9OZ9POA+-isbCQ@mail.gmail.com>
-	<5111BB2E.2090505@gmail.com>
-	<CAKohpokoG16S8uft0nSFSoejipS8X=zhhg6goJs4mBSt3tAwxw@mail.gmail.com>
-	<51128097.9000801@gmail.com>
-Date: Wed, 6 Feb 2013 21:49:40 +0530
-Message-ID: <CAKohpo=9G+ebAxfOxkhQneEz2Vc_rfnR=he65WiZ4ERfmy-erg@mail.gmail.com>
-Subject: Re: [PATCH 5/7] cpufreq: balance out cpufreq_cpu_{get,put} for
- scaling drivers using setpolicy
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Dirk Brandewie <dirk.brandewie@gmail.com>
-Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302061620.10324.arnd@arndb.de>
+X-Provags-ID: V02:K0:JayDtJ00/3TFMOrzRweSqzFAu0dV6YPxs5uy9JqR8Km
+ 92UxY4ZPYpIpeOLqzcTniw5HLGawab+ONRKkab9/m+kBUcWsww
+ vAhe0uMtpb0awFoA9bao3jb6uvGho+qJVONgbQrX0tWS9NhHu5
+ fNXSNSkr0zBrw/Eb8Ydx49W7Iq+i2HmczWKFX/NgEjID3gVEhE
+ N9E3yrE5hfVrz6o4hLWvJmEOlmIA37GuWOF4A/D4PQ5MsS3rYG
+ lzb9ggWWKoNLMmpsxDBivjwQ9cslRYG18XX3rvo+Sgn0k3lWZh
+ 21pnLQw5pIgeD1inhfo97z/k2pZzRx0aUkWJmJuGPppE1BMeMg
+ T3wnza1octnYc3KmwuFY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6 February 2013 21:41, Dirk Brandewie <dirk.brandewie@gmail.com> wrote:
-> our files are clearly out of sync :-)  The code in cpufreq_add_dev() is
+On Wednesday 06 February 2013, Grant Likely wrote:
+> The driver already handles this. It has three sets of accessors;
+> 8-bit, 16-bit LE and 16-bit BE and when doing 16-bit it figures out
+> on its own which set to use at runtime. There is nothing controversial
+> here. The only problem is that the driver is currently using in_/out_
+> IO accessors instead of ioread/iowrite variants.
 
-I was at latest bleeding-edge then, but i still have below code in my HEAD.
+Ah right. It certainly helps to look at the source code.
 
-> #ifdef CONFIG_SMP
->         /* check whether a different CPU already registered this
->          * CPU because it is in the same boat. */
->         policy = cpufreq_cpu_get(cpu);
->         if (unlikely(policy)) {
->                 cpufreq_cpu_put(policy);
->                 return 0;
->         }
->
-> The reference added by this cpufreq_cpu_get() is finally dropped in
-> __cpufreq_remove_dev() with the call to __cpufreq_governor()
-
-__cpufreq_governor() is not calling cpufreq_cpu_put() at all and is dropping
-reference for the governor only, not for policy.
-
->         if (driver->target)
->                 __cpufreq_governor(data, CPUFREQ_GOV_STOP);
->
-> Without this change I hang at:
->                 pr_debug("waiting for dropping of refcount\n");
->                 wait_for_completion(cmp);
-
-Below should have fixed it for you i believe.
-
-	pr_debug("%s: removing link, cpu: %d\n", __func__, cpu);
-	cpufreq_cpu_put(data);
-	unlock_policy_rwsem_write(cpu);
-
---
-viresh
+	Arnd
