@@ -1,57 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932188Ab3BFWS1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 17:18:27 -0500
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:54294 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758351Ab3BFWSY (ORCPT
+	id S1161013Ab3BFWTK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 17:19:10 -0500
+Received: from science.horizon.com ([71.41.210.146]:18114 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758344Ab3BFWTH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 17:18:24 -0500
-MIME-Version: 1.0
-In-Reply-To: <14690.1359541976@warthog.procyon.org.uk>
-References: <20130117180352.27885.79893.stgit@warthog.procyon.org.uk>
-	<20130117180407.27885.54342.stgit@warthog.procyon.org.uk>
-	<CALLzPKayx83x6KRs9NSjthR1H4VR1PzEcYhnGJU6gnrWMs7_fg@mail.gmail.com>
-	<14690.1359541976@warthog.procyon.org.uk>
-Date: Thu, 7 Feb 2013 00:18:23 +0200
-Message-ID: <CALLzPKbcWxt+tLdoy0Q9xQ-TMtn5XosESHnHOiQzGfW0F61bSQ@mail.gmail.com>
-Subject: Re: [PATCH 3/3] KEYS: Add a 'trusted' flag and a 'trusted only' flag
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: David Howells <dhowells@redhat.com>
-Cc: zohar@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
-        linux-crypto@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Wed, 6 Feb 2013 17:19:07 -0500
+Date: 6 Feb 2013 17:19:05 -0500
+Message-ID: <20130206221905.15297.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux@horizon.com, peter@hurleysoftware.com
+Subject: Re: [PATCH 3/4] pps: Use lookup list to reduce ldisc coupling
+Cc: giometti@enneenne.com, gregkh@linuxfoundation.org, jslaby@suse.cz,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+In-Reply-To: <1360181366.5226.19.camel@thor.lan>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 30, 2013 at 12:32 PM, David Howells <dhowells@redhat.com> wrote:
-> Kasatkin, Dmitry <dmitry.kasatkin@intel.com> wrote:
->
->> What about the case when running from integrity protected initramfs?
->> Either embedded into the signed kernel, or verified by the boot loader.
->> In such case it is possible to assume that all keys which are added by
->> user space are implicitly trusted.
->> Later on, before continuing booting normal rootfs, set the key
->> subsystem state (trust-lock),
->> so that trusted keyrings accept only explicitly trusted keys...
->>
->> Does it make sense?
->
-> I'm not sure it does.  Initramfs is (re-)fabricated on the machine on which it
-> runs any time you update one of a set of rpms (such as the kernel rpm) because
-> it has machine-specific data and drivers in it.
->
+> I did this first and it's a mess -- the patch basically ends up looking
+> like a rewrite. But feel free to use these patches as a base for a
+> version you do like and submit those instead for review. I just wanted
+> to show the way.
 
-Based on my latest post on signed initramfs it might make sense.
-But it seems to be that it would be behavior anyway, because "first"
-key added is implicitly should be assumed trusted.
+I wouldn't think so, but I'll give it a try and see myself.  Thanks!
 
-- Dmitry
+> (Well, actually that was the second version. When I reviewed the
+> uart_handle_dcd_change() and saw the separate timestamp, I thought that
+> maybe the latency was going to be a problem. So the first version used
+> the same approach but with an rcu 'lockless' list instead -- then I went
+> back and audited the IRQ path and realized there were 5 bus locks and an
+> i/o port read already. So total overkill.)
 
-> David
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Er... but you went and captured the timestamp *before* doing the list
+lookup.  It was only moved one jsr later.
+
+Really, what I'd *like* to do is to unconditionally capture a *raw*
+timestamp (rdtsc or equivalent) very early in the interrupt handling,
+for use by random seeding, pps, network timestamps, and so on.  But the
+conversion to a "struct timespec" would be deferred until when and if
+it was actually needed.
+
+This is complicated because the conversion has to happen "soon" after
+the capture, soon enough that the low-level clock that was read has not
+wrapped and become ambiguous.
+
+But that's a lot more complicated.
+
+>> A more ambitious cleanup would use the existing pps_device list
+>> (maintained to allocate minor device numbers) and add an "owner" field
+>> that can be looked up on, without creating a new data structure and
+>> allocation.
+
+> Didn't see where that was (unless you mean the IDR allocation).
+
+Exactly the IDR.  You can just do idr_for_each() until you find
+the right one.
+
+> Probably best to keep it separate in the event that relative lifetimes
+> change at some point in the future.
+
+I don't see how that could plausibly happen.  Currently, a device
+is registered in the IDR immediately after allocation, and is freed
+immediately before deallocation.  There is no time that it's permitted to
+call any kernel PPS API function with a pps_device * that *not* in
+the IDR.
+
+Information with a longer life is segregated in the struct
+pps_source_info.  (Which is where I was thinging of adding the
+parent_dev field.)
+
+> Please let us know if you plan to respin the patches, so these patches
+> don't get pushed.
+
+I do, in the next few hours.  Can you give mt until 0600 UTC,
+or should I try for faster?
