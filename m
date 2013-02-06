@@ -1,153 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751265Ab3BFFFX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 00:05:23 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:44253 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716Ab3BFFFW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 00:05:22 -0500
-X-AuditID: 9c930197-b7ca4ae000006ba8-dd-5111e48f1886
-Date: Wed, 6 Feb 2013 14:05:27 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v5 3/3] ARM: mm: use static_vm for managing static mapped
- areas
-Message-ID: <20130206050527.GA8249@lge.com>
-References: <1360024314-1895-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1360024314-1895-4-git-send-email-iamjoonsoo.kim@lge.com>
- <alpine.LFD.2.02.1302042308220.6300@xanadu.home>
- <51114134.4070503@gmail.com>
- <alpine.LFD.2.02.1302051304530.6300@xanadu.home>
- <511159B3.8020000@gmail.com>
- <20130206020707.GB4325@lge.com>
+	id S1751235Ab3BFFIV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 00:08:21 -0500
+Received: from mga01.intel.com ([192.55.52.88]:48262 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750716Ab3BFFIS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 00:08:18 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,613,1355126400"; 
+   d="scan'208";a="287176752"
+Message-ID: <5111E568.9020408@intel.com>
+Date: Wed, 06 Feb 2013 13:08:56 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130206020707.GB4325@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: Ingo Molnar <mingo@kernel.org>
+CC: torvalds@linux-foundation.org, mingo@redhat.com, peterz@infradead.org,
+        tglx@linutronix.de, akpm@linux-foundation.org, arjan@linux.intel.com,
+        bp@alien8.de, pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, "Zhang, Rui" <rui.zhang@intel.com>
+Subject: Re: [patch v4 0/18] sched: simplified fork, release load avg and
+ power awareness scheduling
+References: <1358996820-23036-1-git-send-email-alex.shi@intel.com> <510F1064.1060302@intel.com> <20130204110959.GE24173@gmail.com> <51106DE0.1060103@intel.com>
+In-Reply-To: <51106DE0.1060103@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 06, 2013 at 11:07:07AM +0900, Joonsoo Kim wrote:
-> Hello, Rob.
-> 
-> On Tue, Feb 05, 2013 at 01:12:51PM -0600, Rob Herring wrote:
-> > On 02/05/2013 12:13 PM, Nicolas Pitre wrote:
-> > > On Tue, 5 Feb 2013, Rob Herring wrote:
-> > > 
-> > >> On 02/04/2013 10:44 PM, Nicolas Pitre wrote:
-> > >>> On Tue, 5 Feb 2013, Joonsoo Kim wrote:
-> > >>>
-> > >>>> A static mapped area is ARM-specific, so it is better not to use
-> > >>>> generic vmalloc data structure, that is, vmlist and vmlist_lock
-> > >>>> for managing static mapped area. And it causes some needless overhead and
-> > >>>> reducing this overhead is better idea.
-> > >>>>
-> > >>>> Now, we have newly introduced static_vm infrastructure.
-> > >>>> With it, we don't need to iterate all mapped areas. Instead, we just
-> > >>>> iterate static mapped areas. It helps to reduce an overhead of finding
-> > >>>> matched area. And architecture dependency on vmalloc layer is removed,
-> > >>>> so it will help to maintainability for vmalloc layer.
-> > >>>>
-> > >>>> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> > >>
-> > >> [snip]
-> > >>
-> > >>>> @@ -859,17 +864,12 @@ static void __init pci_reserve_io(void)
-> > >>>>  {
-> > >>>>  	struct vm_struct *vm;
-> > >>>>  	unsigned long addr;
-> > >>>> +	struct static_vm *svm;
-> > >>>>  
-> > >>>> -	/* we're still single threaded hence no lock needed here */
-> > >>>> -	for (vm = vmlist; vm; vm = vm->next) {
-> > >>>> -		if (!(vm->flags & VM_ARM_STATIC_MAPPING))
-> > >>>> -			continue;
-> > >>>> -		addr = (unsigned long)vm->addr;
-> > >>>> -		addr &= ~(SZ_2M - 1);
-> > >>>> -		if (addr == PCI_IO_VIRT_BASE)
-> > >>>> -			return;
-> > >>>> +	svm = find_static_vm_vaddr((void *)PCI_IO_VIRT_BASE);
-> > >>>> +	if (svm)
-> > >>>> +		return;
-> > >>>>
-> > >>>> -	}
-> > >>>>  
-> > >>>>  	vm_reserve_area_early(PCI_IO_VIRT_BASE, SZ_2M, pci_reserve_io);
-> > >>>>  }
-> > >>>
-> > >>> The replacement code is not equivalent.  I can't recall why the original 
-> > >>> is as it is, but it doesn't look right to me.  The 2MB round down 
-> > >>> certainly looks suspicious.
-> > >>
-> > >> The PCI mapping is at a fixed, aligned 2MB mapping. If we find any
-> > >> virtual address within that region already mapped, it is an error.
-> > > Ah, OK.  This wasn't clear looking at the code.
-> > >> We probably should have had a WARN here.
-> > > 
-> > > Indeed.
-> > > 
-> 
-> Okay.
-> I should fix it to find any mapping within PCI reserved region.
+BTW,
 
-Ah...
-Above comment is my mistake.
+Since numa balance scheduling is also a kind of cpu locality policy, it
+is natural compatible with power aware scheduling.
 
-If there is a region already mapped within PCI reserved region and
-it is not found by find_static_vm_vaddr(), vm_area_add_early() hit BUG_ON().
-So, to leave find_static_vm_vaddr() is safe.
+The v2/v3 of this patch had developed on tip/master, testing show above
+2 scheduling policy work together well.
 
-> But, I think that it is not an error.
-> Now, I see your original commit 'c2794437091a4fda72c4a4f3567dd728dcc0c3c9'
-> and find below message.
-> 
-> "Platforms which need early i/o mapping (e.g. for vga console) can call
-> pci_map_io_early in their .map_io function."
-> 
-> Therfore, for some platform, it is possible that there is a mapping within
-> PCI reserved range.
-> 
-> So, I will not add WARN here.
-> 
-> I will fix and re-send v6 with your ACK.
-> 
-> Thanks for review.
-> 
-> > >>>
-> > >>> The replacement code should be better.  However I'd like you to get an 
-> > >>> ACK from Rob Herring as well for this patch.
-> > >>
-> > >> It doesn't appear to me the above case is handled. The virt addr is
-> > >> checked whether it is within an existing mapping, but not whether the
-> > >> new mapping would overlap an existing mapping. It would be good to check
-> > >> for this generically rather than specifically for the PCI i/o mapping.
-> > > 
-> > > Agreed.  However that is checked already in vm_area_add_early().  
-> > > Therefore the overlap test here is redundant.
-> > 
-> > Ah, right. In that case:
-> > 
-> > Acked-by: Rob Herring <rob.herring@calxeda.com>
-> > 
-> > Rob
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-- 
+Thanks Alex
