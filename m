@@ -1,73 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932234Ab3BFWEA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 17:04:00 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19917 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758621Ab3BFWCy (ORCPT
+	id S1758752Ab3BFWES (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 17:04:18 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37251 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932169Ab3BFWD6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 17:02:54 -0500
-X-Authority-Analysis: v=2.0 cv=NqdTgrhJ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=WUBPFn6RTqAA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=8HUMlEAxuX4A:10 a=VwQbUJbxAAAA:8 a=BCjzYmGc6RpdTAJWJgwA:9 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-Id: <20130206220250.964412643@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Wed, 06 Feb 2013 17:02:12 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>
-Subject: [PATCH RT 2/6] mmci: Remove bogus local_irq_save()
-References: <20130206220210.823160521@goodmis.org>
-Content-Disposition: inline; filename=0002-mmci-Remove-bogus-local_irq_save.patch
+	Wed, 6 Feb 2013 17:03:58 -0500
+Date: Wed, 6 Feb 2013 14:03:33 -0800
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-51f27d1440cede5a413d279a20b38767b6f85097@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@kernel.org,
+        jolsa@redhat.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, tglx@linutronix.de,
+        namhyung@kernel.org, jolsa@redhat.com
+In-Reply-To: <1360130237-9963-1-git-send-email-namhyung@kernel.org>
+References: <1360130237-9963-1-git-send-email-namhyung@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf sort: Drop ip_[lr]
+  arguments from _sort__sym_cmp()
+Git-Commit-ID: 51f27d1440cede5a413d279a20b38767b6f85097
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 06 Feb 2013 14:03:40 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+Commit-ID:  51f27d1440cede5a413d279a20b38767b6f85097
+Gitweb:     http://git.kernel.org/tip/51f27d1440cede5a413d279a20b38767b6f85097
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Wed, 6 Feb 2013 14:57:15 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 6 Feb 2013 18:09:25 -0300
 
-On !RT interrupt runs with interrupts disabled. On RT it's in a
-thread, so no need to disable interrupts at all.
+perf sort: Drop ip_[lr] arguments from _sort__sym_cmp()
 
-Cc: stable-rt@vger.kernel.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Current _sort__sym_cmp() function is used for comparing symbols between
+two hist entries on symbol, symbol_from and symbol_to sort keys.  Those
+functions pass addresses of symbols but it's meaningless since it gets
+over-written inside of the _sort__sym_cmp function to a start address of
+the symbol.  So just get rid of them.
+
+This might cause a difference than prior output for branch stacks since
+it seems not using start address of the symbol but branch address.
+However AFAICS it'd be same as it gets overwritten anyway.
+
+Also remove redundant part of code in sort__sym_cmp().
+
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1360130237-9963-1-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- drivers/mmc/host/mmci.c |    5 -----
- 1 file changed, 5 deletions(-)
+ tools/perf/util/sort.c | 23 ++++++-----------------
+ 1 file changed, 6 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-index 0726e59..5d7bf83 100644
---- a/drivers/mmc/host/mmci.c
-+++ b/drivers/mmc/host/mmci.c
-@@ -859,15 +859,12 @@ static irqreturn_t mmci_pio_irq(int irq, void *dev_id)
- 	struct sg_mapping_iter *sg_miter = &host->sg_miter;
- 	struct variant_data *variant = host->variant;
- 	void __iomem *base = host->base;
--	unsigned long flags;
- 	u32 status;
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index 8333661..03cabe5 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -160,9 +160,10 @@ struct sort_entry sort_dso = {
  
- 	status = readl(base + MMCISTATUS);
+ /* --sort symbol */
  
- 	dev_dbg(mmc_dev(host->mmc), "irq1 (pio) %08x\n", status);
+-static int64_t _sort__sym_cmp(struct symbol *sym_l, struct symbol *sym_r,
+-			      u64 ip_l, u64 ip_r)
++static int64_t _sort__sym_cmp(struct symbol *sym_l, struct symbol *sym_r)
+ {
++	u64 ip_l, ip_r;
++
+ 	if (!sym_l || !sym_r)
+ 		return cmp_null(sym_l, sym_r);
  
--	local_irq_save(flags);
+@@ -178,21 +179,10 @@ static int64_t _sort__sym_cmp(struct symbol *sym_l, struct symbol *sym_r,
+ static int64_t
+ sort__sym_cmp(struct hist_entry *left, struct hist_entry *right)
+ {
+-	u64 ip_l, ip_r;
 -
- 	do {
- 		unsigned int remain, len;
- 		char *buffer;
-@@ -907,8 +904,6 @@ static irqreturn_t mmci_pio_irq(int irq, void *dev_id)
+ 	if (!left->ms.sym && !right->ms.sym)
+ 		return right->level - left->level;
  
- 	sg_miter_stop(sg_miter);
- 
--	local_irq_restore(flags);
+-	if (!left->ms.sym || !right->ms.sym)
+-		return cmp_null(left->ms.sym, right->ms.sym);
 -
- 	/*
- 	 * If we have less than the fifo 'half-full' threshold to transfer,
- 	 * trigger a PIO interrupt as soon as any data is available.
--- 
-1.7.10.4
-
-
+-	if (left->ms.sym == right->ms.sym)
+-		return 0;
+-
+-	ip_l = left->ms.sym->start;
+-	ip_r = right->ms.sym->start;
+-
+-	return _sort__sym_cmp(left->ms.sym, right->ms.sym, ip_l, ip_r);
++	return _sort__sym_cmp(left->ms.sym, right->ms.sym);
+ }
+ 
+ static int _hist_entry__sym_snprintf(struct map *map, struct symbol *sym,
+@@ -383,8 +373,7 @@ sort__sym_from_cmp(struct hist_entry *left, struct hist_entry *right)
+ 	if (!from_l->sym && !from_r->sym)
+ 		return right->level - left->level;
+ 
+-	return _sort__sym_cmp(from_l->sym, from_r->sym, from_l->addr,
+-			     from_r->addr);
++	return _sort__sym_cmp(from_l->sym, from_r->sym);
+ }
+ 
+ static int64_t
+@@ -396,7 +385,7 @@ sort__sym_to_cmp(struct hist_entry *left, struct hist_entry *right)
+ 	if (!to_l->sym && !to_r->sym)
+ 		return right->level - left->level;
+ 
+-	return _sort__sym_cmp(to_l->sym, to_r->sym, to_l->addr, to_r->addr);
++	return _sort__sym_cmp(to_l->sym, to_r->sym);
+ }
+ 
+ static int hist_entry__sym_from_snprintf(struct hist_entry *self, char *bf,
