@@ -1,122 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757226Ab3BFE7Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 23:59:16 -0500
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:60785 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756026Ab3BFE7N convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757206Ab3BFE7N (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 5 Feb 2013 23:59:13 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:47170 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755404Ab3BFE7M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 23:59:12 -0500
+X-AuditID: 9c93016f-b7b1fae000006419-ca-5111e31e540d
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 00/11] perf tool: Add PERF_SAMPLE_READ sample read support
+References: <1359981185-16819-1-git-send-email-jolsa@redhat.com>
+Date: Wed, 06 Feb 2013 13:59:10 +0900
+In-Reply-To: <1359981185-16819-1-git-send-email-jolsa@redhat.com> (Jiri Olsa's
+	message of "Mon, 4 Feb 2013 13:32:54 +0100")
+Message-ID: <87obfyrqap.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1360125680.26950.55.camel@kjgkr>
-References: <1360074293-8252-1-git-send-email-linkinjeon@gmail.com>
-	<1360125680.26950.55.camel@kjgkr>
-Date: Wed, 6 Feb 2013 13:59:12 +0900
-Message-ID: <CAKYAXd_45Y5H30wGVHZGNn8f=xNpiXBEq2UxfdRWznHrxw7drQ@mail.gmail.com>
-Subject: Re: [PATCH] f2fs: fix to name f2fs GC task as per partition instead
- of per device
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: jaegeuk.kim@samsung.com
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/2/6, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
-> Hi,
+On Mon,  4 Feb 2013 13:32:54 +0100, Jiri Olsa wrote:
+> hi,
+> adding support to read sample values through the PERF_SAMPLE_READ
+> sample type. It's now possible to specify 'S' modifier for an event
+> and get its sample value by PERF_SAMPLE_READ.
 >
-> How about this?
+> For group the 'S' modifier will enable sampling only for the leader
+> and read all the group member by PERF_SAMPLE_READ smple type with
+> PERF_FORMAT_GROUP read format.
 >
-> 2013-02-05 (화), 23:24 +0900, Namjae Jeon:
->> From: Namjae Jeon <namjae.jeon@samsung.com>
->>
->> After the commit 2184ad190a79ae2b40b5f5db1fbde5c22db6d310, it allowed
->> for naming GC threads based on the device.
->> i.e., if we have F2FS formatted partition in different devices - we will
->> have their GC thread names after the device. But, when we have a case
->> like
->> 2 or more partitions on the same device having F2FS filesystem.
->> In that case we are not able to differentiate between the GC threads.
->> So, to differentiate at all possible levels we can use the major/minor of
->> the device to have unique identification in the name.
->>
->> Before patch:
->> root  9726  0.0  0.0  0  0 ?  S  14:32   0:00 [f2fs_gc-8:48]
->> root  9736  0.0  0.0  0  0 ?  S  14:32   0:00 [f2fs_gc-8:16]
->> root  9892  0.0  0.0  0  0 ?  S  14:33   0:00 [f2fs_gc-8:32]
->> root  9907  0.0  0.0  0  0 ?  S  14:34   0:00 [f2fs_gc-8:32]
->>
->> After Patch:
->> root  16756  0.0  0.0  0  0 ?  S  14:57   0:00 [f2fs_gc-8:18]
->> root  16765  0.0  0.0  0  0 ?  S  14:57   0:00 [f2fs_gc-8:19]
->> root  16806  0.0  0.0  0  0 ?  S  14:58   0:00 [f2fs_gc-8:34]
->> root  16817  0.0  0.0  0  0 ?  S  14:58   0:00 [f2fs_gc-8:52]
->>
+> This was first introduced in here:
+> https://lkml.org/lkml/2012/10/20/75
 >
-> root  16756  0.0  0.0  0  0 ?  S  14:57   0:00 [f2fs_gc-sdb1]
-> root  16765  0.0  0.0  0  0 ?  S  14:57   0:00 [f2fs_gc-sdb2]
+> Example:
 >
-> IMO, it would be better to describe like this.
-> We can simply use bdevname(bdev, name), so if no objection, I'll rebase
-> this patch with this.
-> Please, give me your opinion.
-> Thanks,
-Hi Jaegeuk.
+>   $ perf record -e '{cycles,cache-misses}:S' ls
+>   ...
+>   $ perf report --group --show-total-period --stdio
+>   ...
+>   # Samples: 36  of event 'anon group { cycles, cache-misses }'
+>   # Event count (approx.): 12585593
+>   #
+>   #         Overhead                    Period  Command      Shared Object                      Symbol
+>   # ................  ........................  .......  .................  ..........................
+>   #
+>       19.92%   1.20%       2505936          31       ls  [kernel.kallsyms]  [k] mark_held_locks
+>       13.74%   0.47%       1729327          12       ls  [kernel.kallsyms]  [k] sched_clock_local
+>       13.64%  23.72%       1716147         612       ls  ld-2.14.90.so      [.] check_match.10805
+>       13.12%  23.22%       1650778         599       ls  libc-2.14.90.so    [.] _nl_intern_locale_data
+>       11.24%  29.19%       1414554         753       ls  [kernel.kallsyms]  [k] sched_clock_cpu
+>        8.50%   0.35%       1070150           9       ls  [kernel.kallsyms]  [k] check_chain_key
+>   ...
+>
+>
+> The patchset is based on following fix:
+> http://lkml.org/lkml/2013/2/4/122
+>
+> and is available also at:
+> git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/linux.git
+> perf/group6
 
-Although it is good opinion to have user friendly names in the task
-list, but we cannot have such names.
+For the whole series:
 
-Because, even though bdevname() will provide the correct string. But
-there is a limitation from the task struct command length.
-The Task struct allows for the name to be maximum of ‘16’ characters in length.
-char comm[TASK_COMM_LEN];
+  Acked-by: Namhyung Kim <namhyung@kernel.org>
 
-/* Task command name length */
-#define TASK_COMM_LEN 16
-So, the task name would be truncated to ‘16’ characters.
-
-In case like for MMC partitions where partition name can be like:
-mmcblk0p18, the name would become f2fs_gc-mmcblk0p18 -> this will be
-truncate to “f2fs_gc-mmcblk0p”
-
-Let me know your opinion.
-Thanks.
->
->
->> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
->> Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
->> ---
->>  fs/f2fs/gc.c |    3 ++-
->>  1 file changed, 2 insertions(+), 1 deletion(-)
->>
->> diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
->> index 742135a..b0c1f8c 100644
->> --- a/fs/f2fs/gc.c
->> +++ b/fs/f2fs/gc.c
->> @@ -91,6 +91,7 @@ static int gc_thread_func(void *data)
->>  int start_gc_thread(struct f2fs_sb_info *sbi)
->>  {
->>  	struct f2fs_gc_kthread *gc_th;
->> +	dev_t dev = sbi->sb->s_bdev->bd_dev;
->>
->>  	if (!test_opt(sbi, BG_GC))
->>  		return 0;
->> @@ -101,7 +102,7 @@ int start_gc_thread(struct f2fs_sb_info *sbi)
->>  	sbi->gc_thread = gc_th;
->>  	init_waitqueue_head(&sbi->gc_thread->gc_wait_queue_head);
->>  	sbi->gc_thread->f2fs_gc_task = kthread_run(gc_thread_func, sbi,
->> -				"f2fs_gc-%s", dev_name(sbi->sb->s_bdi->dev));
->> +				"f2fs_gc-%u:%u", MAJOR(dev), MINOR(dev));
->>  	if (IS_ERR(gc_th->f2fs_gc_task)) {
->>  		kfree(gc_th);
->>  		sbi->gc_thread = NULL;
->
-> --
-> Jaegeuk Kim
-> Samsung
->
+Thanks,
+Namhyung
