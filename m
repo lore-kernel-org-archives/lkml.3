@@ -1,90 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757114Ab3BFKIx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 05:08:53 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:55075 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754908Ab3BFKIu (ORCPT
+	id S1757150Ab3BFKK6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 05:10:58 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:15894 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754908Ab3BFKKz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 05:08:50 -0500
+	Wed, 6 Feb 2013 05:10:55 -0500
+X-IronPort-AV: E=Sophos;i="4.84,614,1355068800"; 
+   d="scan'208";a="6696524"
+Message-ID: <5112240C.1010105@cn.fujitsu.com>
+Date: Wed, 06 Feb 2013 17:36:12 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
 MIME-Version: 1.0
-In-Reply-To: <CAKohpokFCAqdoeBoMJ3Jzh05x8wUg4kfo+XirxUjw=2_4_0wJA@mail.gmail.com>
-References: <cover.1359976493.git.viresh.kumar@linaro.org>
-	<CAKohpomK1jZMy=mQJFysbdeXZAuzWJ3gcStA+imYHouGfmcgLw@mail.gmail.com>
-	<CAKohpokFCAqdoeBoMJ3Jzh05x8wUg4kfo+XirxUjw=2_4_0wJA@mail.gmail.com>
-Date: Wed, 6 Feb 2013 15:38:49 +0530
-Message-ID: <CAP245DUMnSMSoXo2JoMu1CgNROQ2YT7kd7e9svWoZ_EG2QLi+Q@mail.gmail.com>
-Subject: Re: [PATCH 0/4] CPUFreq: Implement per policy instances of governors
-From: Amit Kucheria <amit.kucheria@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: rjw@sisk.pl, Borislav Petkov <bp@alien8.de>,
-        Steve Bannister <Steve.Bannister@arm.com>,
-        Lists linaro-dev <linaro-dev@lists.linaro.org>,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Julian Anastasov <ja@ssi.bg>
+CC: Andrew Morton <akpm@linux-foundation.org>, horms@verge.net.au,
+        Linux MM <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kamezawa.hiroyu@jp.fujitsu.com, minchan@kernel.org, mgorman@suse.de
+Subject: Re: [PATCH 6/7] net: change type of netns_ipvs->sysctl_sync_qlen_max
+References: <alpine.LFD.2.00.1302061115590.1664@ja.ssi.bg>
+In-Reply-To: <alpine.LFD.2.00.1302061115590.1664@ja.ssi.bg>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/06 17:36:28,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/06 17:36:52
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 6, 2013 at 3:28 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 5 February 2013 21:51, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->> commit 15b5548c9ccfb8088270f7574710d9d67edfe33b
->> Author: Viresh Kumar <viresh.kumar@linaro.org>
->> Date:   Tue Feb 5 21:29:05 2013 +0530
->>
->>     cpufreq: Make governors directory sysfs location based on
->> have_multiple_policies
->>
->>     Until now directory for governors tunables was getting created in
->>     cpu/cpufreq/<gov-name>. With the introduction of following patch:
->>     "cpufreq: governor: Implement per policy instances of governors"
->>
->>     this directory would be created in
->> cpu/cpu<num>/cpufreq/<gov-name>. This might
->>     break userspace of existing platforms. Lets do this change only
->> for platforms
->>     which need support for multiple policies and thus above mentioned patch.
->>
->>     From now on, such platforms would be require to do following from
->> their init()
->>     routines:
->>
->>         policy->have_multiple_policies = true;
->>
->>     Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
->> ---
->>  drivers/cpufreq/cpufreq_governor.c |  2 +-
->>  include/linux/cpufreq.h            | 14 ++++++++++++++
->>  2 files changed, 15 insertions(+), 1 deletion(-)
->
-> Hi Rafael,
->
-> Because this patch was quite big (317 insertions(+), 238 deletions(-)), i was
-> planning a detailed self review to capture any mistakes and luckily i found
-> one for above patch :)
->
-> diff --git a/drivers/cpufreq/cpufreq_governor.c
-> b/drivers/cpufreq/cpufreq_governor.c
-> index 41ee86f..fe037c0 100644
-> --- a/drivers/cpufreq/cpufreq_governor.c
-> +++ b/drivers/cpufreq/cpufreq_governor.c
-> @@ -342,7 +342,8 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
->                 mutex_lock(&dbs_data->mutex);
->                 mutex_destroy(&cpu_cdbs->timer_mutex);
->
-> -               sysfs_remove_group(&policy->kobj, dbs_data->cdata->attr_group);
-> +               sysfs_remove_group(get_governor_parent_kobj(policy),
-> +                               dbs_data->cdata->attr_group);
->                 if (dbs_data->cdata->governor == GOV_CONSERVATIVE)
->                         cpufreq_unregister_notifier(cs_ops->notifier_block,
->                                         CPUFREQ_TRANSITION_NOTIFIER);
->
-> I have pushed the complete patchset here:
->
-> http://git.linaro.org/gitweb?p=people/vireshk/linux.git;a=shortlog;h=refs/heads/cpufreq-updates
->
+于 2013年02月06日 17:29, Julian Anastasov 写道:
+> 
+> 	Hello,
+> 
+> 	Sorry that I'm writing a private email but I
+> deleted your original message by mistake. Your change
+> of the sysctl_sync_qlen_max from int to long is may be
+> not enough.
+> 
+> 	net/netfilter/ipvs/ip_vs_ctl.c contains
+> proc var "sync_qlen_max" that should be changed to
+> sizeof(unsigned long) and updated with proc_doulongvec_minmax.
+> 
 
-Viresh, perhaps you should ask Stephen Rothwell to pull in your tree
-to get some more testing before Rafael pulls it in for 3.10?
+Thanks for pointing this. I will update this in patch v2.
+
+Thanks
+Zhang Yanfei
+
+
