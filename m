@@ -1,255 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932264Ab3BFWOI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 17:14:08 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:49478 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932261Ab3BFWMQ (ORCPT
+	id S932279Ab3BFWOd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 17:14:33 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37453 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932082Ab3BFWO3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 17:12:16 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-To: mingo@kernel.org, peterz@infradead.org
-Cc: jamie.iles@oracle.com, penberg@kernel.org, acme@ghostprotocols.net,
-        paulus@samba.org, linux-kernel@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH 09/11] liblockdep: support using LD_PRELOAD
-Date: Wed,  6 Feb 2013 17:11:32 -0500
-Message-Id: <1360188694-25077-10-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1360188694-25077-1-git-send-email-sasha.levin@oracle.com>
-References: <1360188694-25077-1-git-send-email-sasha.levin@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Wed, 6 Feb 2013 17:14:29 -0500
+Date: Wed, 6 Feb 2013 14:13:59 -0800
+From: tip-bot for Jiri Olsa <jolsa@redhat.com>
+Message-ID: <tip-5a30a99fb4bb4c9374ea122a2a7c9cd9d26ecdd6@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+In-Reply-To: <1359971803-2343-3-git-send-email-jolsa@redhat.com>
+References: <1359971803-2343-3-git-send-email-jolsa@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tests:
+  Adding automated parsing tests for group :GH modifiers
+Git-Commit-ID: 5a30a99fb4bb4c9374ea122a2a7c9cd9d26ecdd6
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 06 Feb 2013 14:14:06 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows lockdep to be used without being compiled in the original program.
+Commit-ID:  5a30a99fb4bb4c9374ea122a2a7c9cd9d26ecdd6
+Gitweb:     http://git.kernel.org/tip/5a30a99fb4bb4c9374ea122a2a7c9cd9d26ecdd6
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Mon, 4 Feb 2013 10:56:43 +0100
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 6 Feb 2013 18:09:28 -0300
 
-Usage is quite simple:
+perf tests: Adding automated parsing tests for group :GH modifiers
 
-	LD_PRELOAD=/path/to/liblockdep.so /path/to/my/program
+The ':GH' group modifier handling was just recently fixed, adding some
+autommated tests to keep it that way. Adding tests for following events:
 
-And magically, you'll have lockdep in your program!
+  "{cycles,cache-misses:G}:H"
+  "{cycles,cache-misses:H}:G"
+  "{cycles:G,cache-misses:H}:u"
+  "{cycles:G,cache-misses:H}:uG"
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Plus fixing test__group2 test.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1359971803-2343-3-git-send-email-jolsa@redhat.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/lockdep/Makefile  |   4 +-
- tools/lib/lockdep/preload.c | 184 ++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 186 insertions(+), 2 deletions(-)
- create mode 100644 tools/lib/lockdep/preload.c
+ tools/perf/tests/parse-events.c | 178 +++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 177 insertions(+), 1 deletion(-)
 
-diff --git a/tools/lib/lockdep/Makefile b/tools/lib/lockdep/Makefile
-index e82ffe9..245f8ba 100644
---- a/tools/lib/lockdep/Makefile
-+++ b/tools/lib/lockdep/Makefile
-@@ -143,7 +143,7 @@ do_app_build =						\
+diff --git a/tools/perf/tests/parse-events.c b/tools/perf/tests/parse-events.c
+index 80a8daf..c5636f3 100644
+--- a/tools/perf/tests/parse-events.c
++++ b/tools/perf/tests/parse-events.c
+@@ -577,7 +577,7 @@ static int test__group2(struct perf_evlist *evlist)
+ 	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
+ 	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
+ 	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
+-	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
++	TEST_ASSERT_VAL("wrong exclude guest", evsel->attr.exclude_guest);
+ 	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
+ 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
+ 	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
+@@ -811,6 +811,166 @@ static int test__group5(struct perf_evlist *evlist __maybe_unused)
+ 	return 0;
+ }
  
- do_compile_shared_library =			\
- 	($(print_shared_lib_compile)		\
--	$(CC) --shared $^ -o $@)
-+	$(CC) --shared -ldl $^ -o $@)
++static int test__group_gh1(struct perf_evlist *evlist)
++{
++	struct perf_evsel *evsel, *leader;
++
++	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
++	TEST_ASSERT_VAL("wrong number of groups", 1 == evlist->nr_groups);
++
++	/* cycles + :H group modifier */
++	evsel = leader = perf_evlist__first(evlist);
++	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
++	TEST_ASSERT_VAL("wrong config",
++			PERF_COUNT_HW_CPU_CYCLES == evsel->attr.config);
++	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
++	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
++	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
++	TEST_ASSERT_VAL("wrong exclude guest", evsel->attr.exclude_guest);
++	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
++	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
++	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
++	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
++	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
++	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
++
++	/* cache-misses:G + :H group modifier */
++	evsel = perf_evsel__next(evsel);
++	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
++	TEST_ASSERT_VAL("wrong config",
++			PERF_COUNT_HW_CACHE_MISSES == evsel->attr.config);
++	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
++	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
++	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
++	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
++	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
++	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
++	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
++	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
++
++	return 0;
++}
++
++static int test__group_gh2(struct perf_evlist *evlist)
++{
++	struct perf_evsel *evsel, *leader;
++
++	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
++	TEST_ASSERT_VAL("wrong number of groups", 1 == evlist->nr_groups);
++
++	/* cycles + :G group modifier */
++	evsel = leader = perf_evlist__first(evlist);
++	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
++	TEST_ASSERT_VAL("wrong config",
++			PERF_COUNT_HW_CPU_CYCLES == evsel->attr.config);
++	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
++	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
++	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
++	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
++	TEST_ASSERT_VAL("wrong exclude host", evsel->attr.exclude_host);
++	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
++	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
++	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
++	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
++	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
++
++	/* cache-misses:H + :G group modifier */
++	evsel = perf_evsel__next(evsel);
++	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
++	TEST_ASSERT_VAL("wrong config",
++			PERF_COUNT_HW_CACHE_MISSES == evsel->attr.config);
++	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
++	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
++	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
++	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
++	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
++	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
++	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
++	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
++
++	return 0;
++}
++
++static int test__group_gh3(struct perf_evlist *evlist)
++{
++	struct perf_evsel *evsel, *leader;
++
++	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
++	TEST_ASSERT_VAL("wrong number of groups", 1 == evlist->nr_groups);
++
++	/* cycles:G + :u group modifier */
++	evsel = leader = perf_evlist__first(evlist);
++	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
++	TEST_ASSERT_VAL("wrong config",
++			PERF_COUNT_HW_CPU_CYCLES == evsel->attr.config);
++	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
++	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
++	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
++	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
++	TEST_ASSERT_VAL("wrong exclude host", evsel->attr.exclude_host);
++	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
++	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
++	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
++	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
++	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
++
++	/* cache-misses:H + :u group modifier */
++	evsel = perf_evsel__next(evsel);
++	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
++	TEST_ASSERT_VAL("wrong config",
++			PERF_COUNT_HW_CACHE_MISSES == evsel->attr.config);
++	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
++	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
++	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
++	TEST_ASSERT_VAL("wrong exclude guest", evsel->attr.exclude_guest);
++	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
++	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
++	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
++	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
++
++	return 0;
++}
++
++static int test__group_gh4(struct perf_evlist *evlist)
++{
++	struct perf_evsel *evsel, *leader;
++
++	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
++	TEST_ASSERT_VAL("wrong number of groups", 1 == evlist->nr_groups);
++
++	/* cycles:G + :uG group modifier */
++	evsel = leader = perf_evlist__first(evlist);
++	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
++	TEST_ASSERT_VAL("wrong config",
++			PERF_COUNT_HW_CPU_CYCLES == evsel->attr.config);
++	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
++	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
++	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
++	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
++	TEST_ASSERT_VAL("wrong exclude host", evsel->attr.exclude_host);
++	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
++	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
++	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
++	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
++	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
++
++	/* cache-misses:H + :uG group modifier */
++	evsel = perf_evsel__next(evsel);
++	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
++	TEST_ASSERT_VAL("wrong config",
++			PERF_COUNT_HW_CACHE_MISSES == evsel->attr.config);
++	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
++	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
++	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
++	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
++	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
++	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
++	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
++	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
++
++	return 0;
++}
++
+ static int count_tracepoints(void)
+ {
+ 	char events_path[PATH_MAX];
+@@ -1011,6 +1171,22 @@ static struct evlist_test test__events[] = {
+ 		.name  = "*:*",
+ 		.check = test__all_tracepoints,
+ 	},
++	[34] = {
++		.name  = "{cycles,cache-misses:G}:H",
++		.check = test__group_gh1,
++	},
++	[35] = {
++		.name  = "{cycles,cache-misses:H}:G",
++		.check = test__group_gh2,
++	},
++	[36] = {
++		.name  = "{cycles:G,cache-misses:H}:u",
++		.check = test__group_gh3,
++	},
++	[37] = {
++		.name  = "{cycles:G,cache-misses:H}:uG",
++		.check = test__group_gh4,
++	},
+ };
  
- do_build_static_lib =				\
- 	($(print_static_lib_build)		\
-@@ -161,7 +161,7 @@ $(obj)/%.o: $(src)/%.c
- %.o: $(src)/%.c
- 	$(Q)$(call do_compile)
- 
--PEVENT_LIB_OBJS = common.o lockdep.o
-+PEVENT_LIB_OBJS = common.o lockdep.o preload.o rbtree.o
- 
- ALL_OBJS = $(PEVENT_LIB_OBJS)
- 
-diff --git a/tools/lib/lockdep/preload.c b/tools/lib/lockdep/preload.c
-new file mode 100644
-index 0000000..0f71c23
---- /dev/null
-+++ b/tools/lib/lockdep/preload.c
-@@ -0,0 +1,184 @@
-+#define _GNU_SOURCE
-+#include <pthread.h>
-+#include <stdio.h>
-+#include <dlfcn.h>
-+#include <stdlib.h>
-+#include "include/liblockdep/mutex.h"
-+#include "../../../include/linux/rbtree.h"
-+
-+struct lock_lookup {
-+	void *orig;
-+	struct lockdep_map dep_map;
-+	struct rb_node node;
-+};
-+
-+struct rb_root locks = RB_ROOT;
-+
-+int (*ll_pthread_mutex_init)(pthread_mutex_t *mutex,
-+			const pthread_mutexattr_t *attr);
-+int (*ll_pthread_mutex_lock)(pthread_mutex_t *mutex);
-+int (*ll_pthread_mutex_trylock)(pthread_mutex_t *mutex);
-+int (*ll_pthread_mutex_unlock)(pthread_mutex_t *mutex);
-+int (*ll_pthread_mutex_destroy)(pthread_mutex_t *mutex);
-+
-+int (*ll_pthread_rwlock_init)(pthread_rwlock_t *rwlock,
-+			const pthread_rwlockattr_t *attr);
-+int (*ll_pthread_rwlock_destroy)(pthread_rwlock_t *rwlock);
-+int (*ll_pthread_rwlock_rdlock)(pthread_rwlock_t *rwlock);
-+int (*ll_pthread_rwlock_tryrdlock)(pthread_rwlock_t *rwlock);
-+int (*ll_pthread_rwlock_trywrlock)(pthread_rwlock_t *rwlock);
-+int (*ll_pthread_rwlock_wrlock)(pthread_rwlock_t *rwlock);
-+int (*ll_pthread_rwlock_unlock)(pthread_rwlock_t *rwlock);
-+
-+static void init_preload();
-+
-+static struct lock_lookup *__get_lock(void *lock)
-+{
-+	struct rb_node **node = &locks.rb_node, *parent = NULL;
-+	struct lock_lookup *l;
-+
-+	while (*node) {
-+		l = rb_entry(*node, struct lock_lookup, node);
-+
-+		parent = *node;
-+		if (lock < l->orig)
-+			node = &l->node.rb_left;
-+		else if (lock > l->orig)
-+			node = &l->node.rb_right;
-+		else
-+			return l;
-+	}
-+
-+	l = malloc(sizeof(*l));
-+	if (l == NULL)
-+		return NULL;
-+
-+	*l = (struct lock_lookup) {
-+		.orig = lock,
-+		.dep_map = STATIC_LOCKDEP_MAP_INIT("lock", &l->dep_map),
-+	};
-+
-+	rb_link_node(&l->node, parent, node);
-+	rb_insert_color(&l->node, &locks);
-+
-+	return l;
-+}
-+
-+int pthread_mutex_init(pthread_mutex_t *mutex,
-+			const pthread_mutexattr_t *attr)
-+{
-+	if (ll_pthread_mutex_init == NULL)
-+		init_preload();
-+
-+	__get_lock(mutex);
-+	return ll_pthread_mutex_init(mutex, attr);
-+}
-+
-+int pthread_mutex_lock(pthread_mutex_t *mutex)
-+{
-+	void *ip = _THIS_IP_;
-+
-+	lock_acquire(&__get_lock(mutex)->dep_map, 0, 0, 0, 2, NULL, (unsigned long)ip);
-+	return ll_pthread_mutex_lock(mutex);
-+}
-+
-+int pthread_mutex_trylock(pthread_mutex_t *mutex)
-+{
-+	void *ip = _THIS_IP_;
-+
-+	lock_acquire(&__get_lock(mutex)->dep_map, 0, 1, 0, 2, NULL, (unsigned long)ip);
-+	return ll_pthread_mutex_trylock(mutex);
-+}
-+
-+int pthread_mutex_unlock(pthread_mutex_t *mutex)
-+{
-+	void *ip = _THIS_IP_;
-+
-+	lock_release(&__get_lock(mutex)->dep_map, 0, (unsigned long)ip);
-+	return ll_pthread_mutex_unlock(mutex);
-+}
-+
-+int pthread_mutex_destroy(pthread_mutex_t *mutex)
-+{
-+	struct lock_lookup *l = __get_lock(mutex);
-+
-+	rb_erase(&l->node, &locks);
-+	free(l);
-+	return ll_pthread_mutex_destroy(mutex);
-+}
-+
-+int pthread_rwlock_init(pthread_rwlock_t *rwlock,
-+			const pthread_rwlockattr_t *attr)
-+{
-+	if (ll_pthread_rwlock_init == NULL)
-+		init_preload();
-+
-+	__get_lock(rwlock);
-+	return ll_pthread_rwlock_init(rwlock, attr);
-+}
-+
-+int pthread_rwlock_destroy(pthread_rwlock_t *rwlock)
-+{
-+	struct lock_lookup *l = __get_lock(rwlock);
-+
-+	rb_erase(&l->node, &locks);
-+	free(l);
-+	return ll_pthread_rwlock_destroy(rwlock);
-+}
-+
-+int pthread_rwlock_rdlock(pthread_rwlock_t *rwlock)
-+{
-+	void *ip = _THIS_IP_;
-+
-+	lock_acquire(&__get_lock(rwlock)->dep_map, 0, 0, 2, 2, NULL, (unsigned long)ip);
-+	return ll_pthread_rwlock_rdlock(rwlock);
-+}
-+
-+int pthread_rwlock_tryrdlock(pthread_rwlock_t *rwlock)
-+{
-+	void *ip = _THIS_IP_;
-+
-+	lock_acquire(&__get_lock(rwlock)->dep_map, 0, 1, 2, 2, NULL, (unsigned long)ip);
-+	return ll_pthread_rwlock_tryrdlock(rwlock);
-+}
-+
-+int pthread_rwlock_trywrlock(pthread_rwlock_t *rwlock)
-+{
-+	void *ip = _THIS_IP_;
-+
-+	lock_acquire(&__get_lock(rwlock)->dep_map, 0, 1, 0, 2, NULL, (unsigned long)ip);
-+	return ll_pthread_rwlock_trywrlock(rwlock);
-+}
-+
-+int pthread_rwlock_wrlock(pthread_rwlock_t *rwlock)
-+{
-+	void *ip = _THIS_IP_;
-+
-+	lock_acquire(&__get_lock(rwlock)->dep_map, 0, 0, 0, 2, NULL, (unsigned long)ip);
-+	return ll_pthread_rwlock_wrlock(rwlock);
-+}
-+
-+int pthread_rwlock_unlock(pthread_rwlock_t *rwlock)
-+{
-+	void *ip = _THIS_IP_;
-+
-+	lock_release(&__get_lock(rwlock)->dep_map, 0, (unsigned long)ip);
-+	return ll_pthread_rwlock_unlock(rwlock);
-+}
-+
-+__attribute__((constructor)) static void init_preload(void)
-+{
-+	ll_pthread_mutex_init = dlsym(RTLD_NEXT, "pthread_mutex_init");
-+	ll_pthread_mutex_lock = dlsym(RTLD_NEXT, "pthread_mutex_lock");
-+	ll_pthread_mutex_trylock = dlsym(RTLD_NEXT, "pthread_mutex_trylock");
-+	ll_pthread_mutex_unlock = dlsym(RTLD_NEXT, "pthread_mutex_unlock");
-+	ll_pthread_mutex_destroy = dlsym(RTLD_NEXT, "pthread_mutex_destroy");
-+
-+	ll_pthread_rwlock_init = dlsym(RTLD_NEXT, "pthread_rwlock_init");
-+	ll_pthread_rwlock_destroy = dlsym(RTLD_NEXT, "pthread_rwlock_destroy");
-+	ll_pthread_rwlock_rdlock = dlsym(RTLD_NEXT, "pthread_rwlock_rdlock");
-+	ll_pthread_rwlock_tryrdlock = dlsym(RTLD_NEXT, "pthread_rwlock_tryrdlock");
-+	ll_pthread_rwlock_wrlock = dlsym(RTLD_NEXT, "pthread_rwlock_wrlock");
-+	ll_pthread_rwlock_trywrlock = dlsym(RTLD_NEXT, "pthread_rwlock_trywrlock");
-+	ll_pthread_rwlock_unlock = dlsym(RTLD_NEXT, "pthread_rwlock_unlock");
-+}
--- 
-1.8.1.2
-
+ static struct evlist_test test__events_pmu[] = {
