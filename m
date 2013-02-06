@@ -1,113 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757821Ab3BFTFX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 14:05:23 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:54426 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755877Ab3BFTFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 14:05:21 -0500
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: linux-security-module@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>
-Subject: [PATCH 2/2] ima: rename hash calculation functions
-Date: Wed,  6 Feb 2013 14:04:14 -0500
-Message-Id: <1360177454-5233-2-git-send-email-zohar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.rc3
-In-Reply-To: <1360177454-5233-1-git-send-email-zohar@linux.vnet.ibm.com>
-References: <1360177454-5233-1-git-send-email-zohar@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13020619-9360-0000-0000-0000103C5ABE
+	id S1757913Ab3BFTJa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 14:09:30 -0500
+Received: from mail-da0-f44.google.com ([209.85.210.44]:54356 "EHLO
+	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754619Ab3BFTJ1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 14:09:27 -0500
+Date: Wed, 6 Feb 2013 11:09:24 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, ngupta@vflare.org, konrad.wilk@oracle.com,
+        sjenning@linux.vnet.ibm.com, minchan@kernel.org
+Subject: Re: [PATCH] staging/zcache: Fix/improve zcache writeback code, tie
+ to a config option
+Message-ID: <20130206190924.GB32275@kroah.com>
+References: <1360175261-13287-1-git-send-email-dan.magenheimer@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1360175261-13287-1-git-send-email-dan.magenheimer@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+On Wed, Feb 06, 2013 at 10:27:41AM -0800, Dan Magenheimer wrote:
+> It was observed by Andrea Arcangeli in 2011 that zcache can get "full"
+> and there must be some way for compressed swap pages to be (uncompressed
+> and then) sent through to the backing swap disk.  A prototype of this
+> functionality, called "unuse", was added in 2012 as part of a major update
+> to zcache (aka "zcache2"), but was left unfinished due to the unfortunate
+> temporary fork of zcache.
+> 
+> This earlier version of the code had an unresolved memory leak
+> and was anyway dependent on not-yet-upstream frontswap and mm changes.
+> The code was meanwhile adapted by Seth Jennings for similar
+> functionality in zswap (which he calls "flush").  Seth also made some
+> clever simplifications which are herein ported back to zcache.  As a
+> result of those simplifications, the frontswap changes are no longer
+> necessary, but a slightly different (and simpler) set of mm changes are
+> still required [1].  The memory leak is also fixed.
+> 
+> Due to feedback from akpm in a zswap thread, this functionality in zcache
+> has now been renamed from "unuse" to "writeback".
+> 
+> Although this zcache writeback code now works, there are open questions
+> as how best to handle the policy that drives it.  As a result, this
+> patch also ties writeback to a new config option.  And, since the
+> code still depends on not-yet-upstreamed mm patches, to avoid build
+> problems, the config option added by this patch temporarily depends
+> on "BROKEN"; this config dependency can be removed in trees that
+> contain the necessary mm patches.
 
-Rename hash calculation functions to reflect meaning
-and change argument order in conventional way.
+I'll wait for those options to be in Linus's tree before accepting a
+patch like this, sorry.
 
-Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
----
- security/integrity/ima/ima.h        | 4 ++--
- security/integrity/ima/ima_api.c    | 6 +++---
- security/integrity/ima/ima_crypto.c | 8 ++++----
- 3 files changed, 9 insertions(+), 9 deletions(-)
-
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index 5a94f9c..6e69697 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -84,8 +84,8 @@ void ima_fs_cleanup(void);
- int ima_inode_alloc(struct inode *inode);
- int ima_add_template_entry(struct ima_template_entry *entry, int violation,
- 			   const char *op, struct inode *inode);
--int ima_calc_hash(struct file *file, char *digest);
--int ima_calc_template_hash(int template_len, void *template, char *digest);
-+int ima_calc_file_hash(struct file *file, char *digest);
-+int ima_calc_buffer_hash(const void *data, int len, char *digest);
- int ima_calc_boot_aggregate(char *digest);
- void ima_add_violation(struct inode *inode, const unsigned char *filename,
- 		       const char *op, const char *cause);
-diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
-index 9382a4c..d9030b2 100644
---- a/security/integrity/ima/ima_api.c
-+++ b/security/integrity/ima/ima_api.c
-@@ -50,8 +50,8 @@ int ima_store_template(struct ima_template_entry *entry,
- 	entry->template_len = sizeof(entry->template);
- 
- 	if (!violation) {
--		result = ima_calc_template_hash(entry->template_len,
--						&entry->template,
-+		result = ima_calc_buffer_hash(&entry->template,
-+						entry->template_len,
- 						entry->digest);
- 		if (result < 0) {
- 			integrity_audit_msg(AUDIT_INTEGRITY_PCR, inode,
-@@ -148,7 +148,7 @@ int ima_collect_measurement(struct integrity_iint_cache *iint,
- 		u64 i_version = file->f_dentry->d_inode->i_version;
- 
- 		iint->ima_xattr.type = IMA_XATTR_DIGEST;
--		result = ima_calc_hash(file, iint->ima_xattr.digest);
-+		result = ima_calc_file_hash(file, iint->ima_xattr.digest);
- 		if (!result) {
- 			iint->version = i_version;
- 			iint->flags |= IMA_COLLECTED;
-diff --git a/security/integrity/ima/ima_crypto.c b/security/integrity/ima/ima_crypto.c
-index 920f49c..b691e0f 100644
---- a/security/integrity/ima/ima_crypto.c
-+++ b/security/integrity/ima/ima_crypto.c
-@@ -40,7 +40,7 @@ int ima_init_crypto(void)
- /*
-  * Calculate the MD5/SHA1 file digest
-  */
--int ima_calc_hash(struct file *file, char *digest)
-+int ima_calc_file_hash(struct file *file, char *digest)
- {
- 	loff_t i_size, offset = 0;
- 	char *rbuf;
-@@ -93,9 +93,9 @@ out:
- }
- 
- /*
-- * Calculate the hash of a given template
-+ * Calculate the hash of a given buffer
-  */
--int ima_calc_template_hash(int template_len, void *template, char *digest)
-+int ima_calc_buffer_hash(const void *data, int len, char *digest)
- {
- 	struct {
- 		struct shash_desc shash;
-@@ -105,7 +105,7 @@ int ima_calc_template_hash(int template_len, void *template, char *digest)
- 	desc.shash.tfm = ima_shash_tfm;
- 	desc.shash.flags = 0;
- 
--	return crypto_shash_digest(&desc.shash, template, template_len, digest);
-+	return crypto_shash_digest(&desc.shash, data, len, digest);
- }
- 
- static void __init ima_pcrread(int idx, u8 *pcr)
--- 
-1.8.1.rc3
-
+greg k-h
