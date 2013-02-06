@@ -1,343 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758774Ab3BFWJz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 17:09:55 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37363 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758590Ab3BFWJv (ORCPT
+	id S1030185Ab3BFWLR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 17:11:17 -0500
+Received: from contumacia.investici.org ([178.255.144.35]:30695 "EHLO
+	contumacia.investici.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757205Ab3BFWLQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 17:09:51 -0500
-Date: Wed, 6 Feb 2013 14:09:22 -0800
-From: tip-bot for Stephane Eranian <eranian@google.com>
-Message-ID: <tip-d7e7a451c13e784f497c054f1bd083d77be87498@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        namhyung.kim@lge.com, jolsa@redhat.com, ak@linux.intel.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
-        namhyung.kim@lge.com, jolsa@redhat.com, ak@linux.intel.com,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1360161962-9675-3-git-send-email-eranian@google.com>
-References: <1360161962-9675-3-git-send-email-eranian@google.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf stat:
-  Add per processor socket count aggregation
-Git-Commit-ID: d7e7a451c13e784f497c054f1bd083d77be87498
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 6 Feb 2013 17:11:16 -0500
+X-DKIM: Sendmail DKIM Filter v2.8.2 contumacia.investici.org 037B1E8A8C
+Date: Wed, 6 Feb 2013 23:10:22 +0100
+From: Antonio Quartulli <ordex@autistici.org>
+To: Emil Goode <emilgoode@gmail.com>
+Cc: lindner_marek@yahoo.de, siwu@hrz.tu-chemnitz.de, davem@davemloft.net,
+        b.a.t.m.a.n@lists.open-mesh.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] batman-adv: Remove unused variable
+Message-ID: <20130206221022.GF6008@ritirata.org>
+References: <1360168661-16871-1-git-send-email-emilgoode@gmail.com>
+ <20130206172234.GB6008@ritirata.org>
+ <1360173353.22154.4.camel@debian>
+ <20130206195557.GC6008@ritirata.org>
+ <1360187945.25903.5.camel@debian>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="QNDPHrPUIc00TOLW"
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 06 Feb 2013 14:09:28 -0800 (PST)
+In-Reply-To: <1360187945.25903.5.camel@debian>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d7e7a451c13e784f497c054f1bd083d77be87498
-Gitweb:     http://git.kernel.org/tip/d7e7a451c13e784f497c054f1bd083d77be87498
-Author:     Stephane Eranian <eranian@google.com>
-AuthorDate: Wed, 6 Feb 2013 15:46:02 +0100
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 6 Feb 2013 18:09:27 -0300
 
-perf stat: Add per processor socket count aggregation
+--QNDPHrPUIc00TOLW
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This patch adds per-processor socket count aggregation for system-wide
-mode measurements. This is a useful mode to detect imbalance between
-sockets.
+Hi Emil,=20
 
-To enable this mode, use --aggr-socket in addition
-to -a. (system-wide).
+On Wed, Feb 06, 2013 at 10:59:05 +0100, Emil Goode wrote:
+> Hi Antonio,
+>=20
+> If it is easier I can keep an eye on when the commit lands in the
+> net-next tree and then resend a modified version of the patch.
+> Or do you want me to resend it now?
+>=20
 
-The output includes the socket number and the number of online
-processors on that socket. This is useful to gauge the amount of
-aggregation.
+Well, that commit should be merged in net-next after the next merge window.
 
- # ./perf stat -I 1000 -a --aggr-socket -e cycles sleep 2
- #           time socket cpus             counts events
-      1.000097680 S0        4          5,788,785 cycles
-      2.000379943 S0        4         27,361,546 cycles
-      2.001167808 S0        4            818,275 cycles
+You can resend it now, but be sure to CC Stephen Rothwell
+<sfr@canb.auug.org.au> (the linux-next maintainer) and to clearly state tha=
+t the
+patch is for linux-next.
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1360161962-9675-3-git-send-email-eranian@google.com
-[ committer note: Added missing man page entry based on above comments ]
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Documentation/perf-stat.txt |   9 ++-
- tools/perf/builtin-stat.c              | 126 ++++++++++++++++++++++++++++++---
- 2 files changed, 123 insertions(+), 12 deletions(-)
+Thanks.
+Cheers,
 
-diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
-index 5289da3..faf4f4f 100644
---- a/tools/perf/Documentation/perf-stat.txt
-+++ b/tools/perf/Documentation/perf-stat.txt
-@@ -116,9 +116,16 @@ perf stat --repeat 10 --null --sync --pre 'make -s O=defconfig-build/clean' -- m
- 
- -I msecs::
- --interval-print msecs::
--	print count deltas every N milliseconds (minimum: 100ms)
-+	Print count deltas every N milliseconds (minimum: 100ms)
- 	example: perf stat -I 1000 -e cycles -a sleep 5
- 
-+--aggr-socket::
-+Aggregate counts per processor socket for system-wide mode measurements.  This
-+is a useful mode to detect imbalance between sockets.  To enable this mode,
-+use --aggr-socket in addition to -a. (system-wide).  The output includes the
-+socket number and the number of online processors on that socket. This is
-+useful to gauge the amount of aggregation.
-+
- EXAMPLES
- --------
- 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 0368a10..9984876 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -68,6 +68,7 @@
- static void print_stat(int argc, const char **argv);
- static void print_counter_aggr(struct perf_evsel *counter, char *prefix);
- static void print_counter(struct perf_evsel *counter, char *prefix);
-+static void print_aggr_socket(char *prefix);
- 
- static struct perf_evlist	*evsel_list;
- 
-@@ -79,6 +80,7 @@ static int			run_count			=  1;
- static bool			no_inherit			= false;
- static bool			scale				=  true;
- static bool			no_aggr				= false;
-+static bool			aggr_socket			= false;
- static pid_t			child_pid			= -1;
- static bool			null_run			=  false;
- static int			detailed_run			=  0;
-@@ -93,6 +95,7 @@ static const char		*post_cmd			= NULL;
- static bool			sync_run			= false;
- static unsigned int		interval			= 0;
- static struct timespec		ref_time;
-+static struct cpu_map		*sock_map;
- 
- static volatile int done = 0;
- 
-@@ -312,7 +315,9 @@ static void print_interval(void)
- 	sprintf(prefix, "%6lu.%09lu%s", rs.tv_sec, rs.tv_nsec, csv_sep);
- 
- 	if (num_print_interval == 0 && !csv_output) {
--		if (no_aggr)
-+		if (aggr_socket)
-+			fprintf(output, "#           time socket cpus             counts events\n");
-+		else if (no_aggr)
- 			fprintf(output, "#           time CPU                 counts events\n");
- 		else
- 			fprintf(output, "#           time             counts events\n");
-@@ -321,7 +326,9 @@ static void print_interval(void)
- 	if (++num_print_interval == 25)
- 		num_print_interval = 0;
- 
--	if (no_aggr) {
-+	if (aggr_socket)
-+		print_aggr_socket(prefix);
-+	else if (no_aggr) {
- 		list_for_each_entry(counter, &evsel_list->entries, node)
- 			print_counter(counter, prefix);
- 	} else {
-@@ -349,6 +356,12 @@ static int __run_perf_stat(int argc __maybe_unused, const char **argv)
- 		ts.tv_nsec = 0;
- 	}
- 
-+	if (aggr_socket
-+	    && cpu_map__build_socket_map(evsel_list->cpus, &sock_map)) {
-+		perror("cannot build socket map");
-+		return -1;
-+	}
-+
- 	if (forks && (pipe(child_ready_pipe) < 0 || pipe(go_pipe) < 0)) {
- 		perror("failed to create pipes");
- 		return -1;
-@@ -529,13 +542,21 @@ static void print_noise(struct perf_evsel *evsel, double avg)
- 	print_noise_pct(stddev_stats(&ps->res_stats[0]), avg);
- }
- 
--static void nsec_printout(int cpu, struct perf_evsel *evsel, double avg)
-+static void nsec_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
- {
- 	double msecs = avg / 1e6;
- 	char cpustr[16] = { '\0', };
- 	const char *fmt = csv_output ? "%s%.6f%s%s" : "%s%18.6f%s%-25s";
- 
--	if (no_aggr)
-+	if (aggr_socket)
-+		sprintf(cpustr, "S%*d%s%*d%s",
-+			csv_output ? 0 : -5,
-+			cpu,
-+			csv_sep,
-+			csv_output ? 0 : 4,
-+			nr,
-+			csv_sep);
-+	else if (no_aggr)
- 		sprintf(cpustr, "CPU%*d%s",
- 			csv_output ? 0 : -4,
- 			perf_evsel__cpus(evsel)->map[cpu], csv_sep);
-@@ -734,7 +755,7 @@ static void print_ll_cache_misses(int cpu,
- 	fprintf(output, " of all LL-cache hits   ");
- }
- 
--static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
-+static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
- {
- 	double total, ratio = 0.0;
- 	char cpustr[16] = { '\0', };
-@@ -747,7 +768,15 @@ static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
- 	else
- 		fmt = "%s%18.0f%s%-25s";
- 
--	if (no_aggr)
-+	if (aggr_socket)
-+		sprintf(cpustr, "S%*d%s%*d%s",
-+			csv_output ? 0 : -5,
-+			cpu,
-+			csv_sep,
-+			csv_output ? 0 : 4,
-+			nr,
-+			csv_sep);
-+	else if (no_aggr)
- 		sprintf(cpustr, "CPU%*d%s",
- 			csv_output ? 0 : -4,
- 			perf_evsel__cpus(evsel)->map[cpu], csv_sep);
-@@ -853,6 +882,70 @@ static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
- 	}
- }
- 
-+static void print_aggr_socket(char *prefix)
-+{
-+	struct perf_evsel *counter;
-+	u64 ena, run, val;
-+	int cpu, s, s2, sock, nr;
-+
-+	if (!sock_map)
-+		return;
-+
-+	for (s = 0; s < sock_map->nr; s++) {
-+		sock = cpu_map__socket(sock_map, s);
-+		list_for_each_entry(counter, &evsel_list->entries, node) {
-+			val = ena = run = 0;
-+			nr = 0;
-+			for (cpu = 0; cpu < perf_evsel__nr_cpus(counter); cpu++) {
-+				s2 = cpu_map__get_socket(evsel_list->cpus, cpu);
-+				if (s2 != sock)
-+					continue;
-+				val += counter->counts->cpu[cpu].val;
-+				ena += counter->counts->cpu[cpu].ena;
-+				run += counter->counts->cpu[cpu].run;
-+				nr++;
-+			}
-+			if (prefix)
-+				fprintf(output, "%s", prefix);
-+
-+			if (run == 0 || ena == 0) {
-+				fprintf(output, "S%*d%s%*d%s%*s%s%*s",
-+					csv_output ? 0 : -5,
-+					s,
-+					csv_sep,
-+					csv_output ? 0 : 4,
-+					nr,
-+					csv_sep,
-+					csv_output ? 0 : 18,
-+					counter->supported ? CNTR_NOT_COUNTED : CNTR_NOT_SUPPORTED,
-+					csv_sep,
-+					csv_output ? 0 : -24,
-+					perf_evsel__name(counter));
-+				if (counter->cgrp)
-+					fprintf(output, "%s%s",
-+						csv_sep, counter->cgrp->name);
-+
-+				fputc('\n', output);
-+				continue;
-+			}
-+
-+			if (nsec_counter(counter))
-+				nsec_printout(sock, nr, counter, val);
-+			else
-+				abs_printout(sock, nr, counter, val);
-+
-+			if (!csv_output) {
-+				print_noise(counter, 1.0);
-+
-+				if (run != ena)
-+					fprintf(output, "  (%.2f%%)",
-+						100.0 * run / ena);
-+			}
-+			fputc('\n', output);
-+		}
-+	}
-+}
-+
- /*
-  * Print out the results of a single counter:
-  * aggregated counts in system-wide mode
-@@ -882,9 +975,9 @@ static void print_counter_aggr(struct perf_evsel *counter, char *prefix)
- 	}
- 
- 	if (nsec_counter(counter))
--		nsec_printout(-1, counter, avg);
-+		nsec_printout(-1, 0, counter, avg);
- 	else
--		abs_printout(-1, counter, avg);
-+		abs_printout(-1, 0, counter, avg);
- 
- 	print_noise(counter, avg);
- 
-@@ -940,9 +1033,9 @@ static void print_counter(struct perf_evsel *counter, char *prefix)
- 		}
- 
- 		if (nsec_counter(counter))
--			nsec_printout(cpu, counter, val);
-+			nsec_printout(cpu, 0, counter, val);
- 		else
--			abs_printout(cpu, counter, val);
-+			abs_printout(cpu, 0, counter, val);
- 
- 		if (!csv_output) {
- 			print_noise(counter, 1.0);
-@@ -980,7 +1073,9 @@ static void print_stat(int argc, const char **argv)
- 		fprintf(output, ":\n\n");
- 	}
- 
--	if (no_aggr) {
-+	if (aggr_socket)
-+		print_aggr_socket(NULL);
-+	else if (no_aggr) {
- 		list_for_each_entry(counter, &evsel_list->entries, node)
- 			print_counter(counter, NULL);
- 	} else {
-@@ -1228,6 +1323,7 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
- 			"command to run after to the measured command"),
- 	OPT_UINTEGER('I', "interval-print", &interval,
- 		    "print counts at regular interval in ms (>= 100)"),
-+	OPT_BOOLEAN(0, "aggr-socket", &aggr_socket, "aggregate counts per processor socket"),
- 	OPT_END()
- 	};
- 	const char * const stat_usage[] = {
-@@ -1314,6 +1410,14 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
- 		usage_with_options(stat_usage, options);
- 	}
- 
-+	if (aggr_socket) {
-+		if (!perf_target__has_cpu(&target)) {
-+			fprintf(stderr, "--aggr-socket only available in system-wide mode (-a)\n");
-+			usage_with_options(stat_usage, options);
-+		}
-+		no_aggr = true;
-+	}
-+
- 	if (add_default_attributes())
- 		goto out;
- 
+
+p.s. try to do not top-post please :-)
+
+> Best regards, Emil
+>=20
+> On Wed, 2013-02-06 at 20:55 +0100, Antonio Quartulli wrote:
+> > Hi Emil,
+> >=20
+> > On Wed, Feb 06, 2013 at 06:55:53 +0100, Emil Goode wrote:
+> > > Hi Antonio,
+> > >=20
+> > > The commit ed242d01 is in the linux-next tree and my patch depends on
+> > > that commit.
+> > >=20
+> >=20
+> > Yes, you are right. I was not aware of this commit, because the author
+> > did not CC us (neither netdev) even if he changed the code we maintain.
+> >=20
+> > As far as I can see that commit is in linux-next only.
+> > Therefore it must be applied there.
+> >=20
+> > However, I'd like you to change the commit message and write the full h=
+ash of
+> > the commit you are referring to and its subject ("LIKE THIS"). This wou=
+ld make
+> > it easier to find it.
+> >=20
+> >=20
+> > Regards,
+> >=20
+> > > Best regards, Emil
+> > >=20
+> > > On Wed, 2013-02-06 at 18:22 +0100, Antonio Quartulli wrote:
+> > > > Hi Emil,
+> > > >=20
+> > > > On Wed, Feb 06, 2013 at 05:37:41 +0100, Emil Goode wrote:
+> > > > > The commit ed242d01 removed a node parameter from iterators.
+> > > > > This patch removes a hlist_node struct that is no longer used.
+> > > > >=20
+> > > > > Sparse gives a warning:
+> > > > >=20
+> > > > > net/batman-adv/originator.c:411:21: warning:
+> > > > > 	unused variable =E2=80=98node_tmp=E2=80=99 [-Wunused-variable]
+> > > > >=20
+> > > > > Signed-off-by: Emil Goode <emilgoode@gmail.com>
+> > > >=20
+> > > > On which tree did you base your patch?
+> > > > I cannot find the commit you are referring to (ed242d01) and the pa=
+tch does not
+> > > > apply (neither on net nor net-next).
+> > > >=20
+> > > > Other than that the variable is used a couple of lines below (in th=
+e code we
+> > > > have)...
+> > > >=20
+> > > > Regards,
+> > > >=20
+> > >=20
+> > >=20
+> >=20
+>=20
+>=20
+
+--=20
+Antonio Quartulli
+
+=2E.each of us alone is worth nothing..
+Ernesto "Che" Guevara
+
+--QNDPHrPUIc00TOLW
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBCAAGBQJREtTOAAoJEADl0hg6qKeOyaQP/jCQKa02ncoLM0iB/GbxpB8k
+jK9e8IQkHYDQyix2uV8Pd0xrfx9gSstWImOS8arXPJ3cqa/aKraNTVISnyg0ZHRM
+7+qBs+bDa2b9gUsS1RztYDefovYxK2lsU4djo1cW+MgDR3JR0x8e0/U1ZLRpDZhh
+2Hm/ZfKPunYGUtbGkKlvBrzuglKTJyxPAs316w3RHTB34KXAN3jP+zYMPqtv4dIu
+nNvpBEKPNYsIGYg3BsnVA6JmFQCPMymBUYkkD7LpXG9c2e/1ESd9Eh8UGbyx/fox
+odOVWxO8EWO71Flsha0bMyqL98K8M071XfyCmDyCC4L8uc+EyZ4O9VYii7GEUZ7J
+3V/dnyU0TI132zgOGY/WX9T8T8iVaV1uRUfriaqd+pVq2lFDPg8SBhJQmBNt1KeB
+ZVWsyl4yeJ43XED3fvTVIbHKZk7B7YXul3Ht0+DwEpsNECfuLd+BiXOT1nPwXuqw
+5sFi14nO+0I8m9oPstfoQO5TVCLIAE+IifyxUTSgUJXbdRsKJ8DrlSDXguoozafB
+o+NOHCrqO39PnagfjSglWoxJbTGwdQOpw4jNUvuBBcRl0PeP1N3jBgaBIsvQBHME
+ci1SUgJGdw2TibztP0+CpkImEHqlrMUz2cOSxbYRe/ObdZQmAdgvBUzPQ1Djysjc
+Pjyt7DMlji9BsmSNrVgm
+=wQjA
+-----END PGP SIGNATURE-----
+
+--QNDPHrPUIc00TOLW--
