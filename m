@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758302Ab3BFTy0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 14:54:26 -0500
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:39678 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758254Ab3BFTvT (ORCPT
+	id S1758244Ab3BFTvS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 14:51:18 -0500
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:61244 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030215Ab3BFTvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 14:51:19 -0500
+	Wed, 6 Feb 2013 14:51:00 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
-Subject: [PATCH 71/77] cgroup: convert to idr_alloc()
-Date: Wed,  6 Feb 2013 11:40:43 -0800
-Message-Id: <1360179649-22465-72-git-send-email-tj@kernel.org>
+        Ohad Ben-Cohen <ohad@wizery.com>
+Subject: [PATCH 59/77] rpmsg: convert to idr_alloc()
+Date: Wed,  6 Feb 2013 11:40:31 -0800
+Message-Id: <1360179649-22465-60-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1360179649-22465-1-git-send-email-tj@kernel.org>
 References: <1360179649-22465-1-git-send-email-tj@kernel.org>
@@ -26,69 +26,73 @@ Convert to the much saner new idr interface.
 Only compile tested.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Li Zefan <lizefan@huawei.com>
-Cc: containers@lists.linux-foundation.org
-Cc: cgroups@vger.kernel.org
+Cc: Ohad Ben-Cohen <ohad@wizery.com>
 ---
- kernel/cgroup.c | 27 ++++++++-------------------
- 1 file changed, 8 insertions(+), 19 deletions(-)
+ drivers/rpmsg/virtio_rpmsg_bus.c | 30 ++++++++++++------------------
+ 1 file changed, 12 insertions(+), 18 deletions(-)
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 525c508..29f9e11 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -5284,7 +5284,7 @@ EXPORT_SYMBOL_GPL(free_css_id);
- static struct css_id *get_new_cssid(struct cgroup_subsys *ss, int depth)
+diff --git a/drivers/rpmsg/virtio_rpmsg_bus.c b/drivers/rpmsg/virtio_rpmsg_bus.c
+index aaa6840..a59684b 100644
+--- a/drivers/rpmsg/virtio_rpmsg_bus.c
++++ b/drivers/rpmsg/virtio_rpmsg_bus.c
+@@ -213,13 +213,10 @@ static struct rpmsg_endpoint *__rpmsg_create_ept(struct virtproc_info *vrp,
+ 		struct rpmsg_channel *rpdev, rpmsg_rx_cb_t cb,
+ 		void *priv, u32 addr)
  {
- 	struct css_id *newid;
--	int myid, error, size;
-+	int ret, size;
+-	int err, tmpaddr, request;
++	int id_min, id_max, id;
+ 	struct rpmsg_endpoint *ept;
+ 	struct device *dev = rpdev ? &rpdev->dev : &vrp->vdev->dev;
  
- 	BUG_ON(!ss->use_id);
+-	if (!idr_pre_get(&vrp->endpoints, GFP_KERNEL))
+-		return NULL;
+-
+ 	ept = kzalloc(sizeof(*ept), GFP_KERNEL);
+ 	if (!ept) {
+ 		dev_err(dev, "failed to kzalloc a new ept\n");
+@@ -234,31 +231,28 @@ static struct rpmsg_endpoint *__rpmsg_create_ept(struct virtproc_info *vrp,
+ 	ept->priv = priv;
  
-@@ -5292,35 +5292,24 @@ static struct css_id *get_new_cssid(struct cgroup_subsys *ss, int depth)
- 	newid = kzalloc(size, GFP_KERNEL);
- 	if (!newid)
- 		return ERR_PTR(-ENOMEM);
--	/* get id */
--	if (unlikely(!idr_pre_get(&ss->idr, GFP_KERNEL))) {
--		error = -ENOMEM;
--		goto err_out;
+ 	/* do we need to allocate a local address ? */
+-	request = addr == RPMSG_ADDR_ANY ? RPMSG_RESERVED_ADDRESSES : addr;
++	if (addr == RPMSG_ADDR_ANY) {
++		id_min = RPMSG_RESERVED_ADDRESSES;
++		id_max = 0;
++	} else {
++		id_min = addr;
++		id_max = addr + 1;
++	}
+ 
+ 	mutex_lock(&vrp->endpoints_lock);
+ 
+ 	/* bind the endpoint to an rpmsg address (and allocate one if needed) */
+-	err = idr_get_new_above(&vrp->endpoints, ept, request, &tmpaddr);
+-	if (err) {
+-		dev_err(dev, "idr_get_new_above failed: %d\n", err);
++	id = idr_alloc(&vrp->endpoints, ept, id_min, id_max, GFP_KERNEL);
++	if (id < 0) {
++		dev_err(dev, "idr_alloc failed: %d\n", id);
+ 		goto free_ept;
+ 	}
+-
+-	/* make sure the user's address request is fulfilled, if relevant */
+-	if (addr != RPMSG_ADDR_ANY && tmpaddr != addr) {
+-		dev_err(dev, "address 0x%x already in use\n", addr);
+-		goto rem_idr;
 -	}
-+
-+	idr_preload(GFP_KERNEL);
- 	spin_lock(&ss->id_lock);
- 	/* Don't use 0. allocates an ID of 1-65535 */
--	error = idr_get_new_above(&ss->idr, newid, 1, &myid);
-+	ret = idr_alloc(&ss->idr, newid, 1, CSS_ID_MAX + 1, GFP_NOWAIT);
- 	spin_unlock(&ss->id_lock);
-+	idr_preload_end();
+-
+-	ept->addr = tmpaddr;
++	ept->addr = id;
  
- 	/* Returns error when there are no free spaces for new ID.*/
--	if (error) {
--		error = -ENOSPC;
-+	if (ret < 0)
- 		goto err_out;
--	}
--	if (myid > CSS_ID_MAX)
--		goto remove_idr;
+ 	mutex_unlock(&vrp->endpoints_lock);
  
--	newid->id = myid;
-+	newid->id = ret;
- 	newid->depth = depth;
- 	return newid;
--remove_idr:
--	error = -ENOSPC;
--	spin_lock(&ss->id_lock);
--	idr_remove(&ss->idr, myid);
--	spin_unlock(&ss->id_lock);
- err_out:
- 	kfree(newid);
--	return ERR_PTR(error);
-+	return ERR_PTR(ret);
+ 	return ept;
  
- }
- 
+-rem_idr:
+-	idr_remove(&vrp->endpoints, request);
+ free_ept:
+ 	mutex_unlock(&vrp->endpoints_lock);
+ 	kref_put(&ept->refcount, __ept_release);
 -- 
 1.8.1
 
