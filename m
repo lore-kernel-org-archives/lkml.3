@@ -1,234 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758831Ab3BFVpO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 16:45:14 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:33207
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758791Ab3BFVog (ORCPT
+	id S932118Ab3BFVp1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 16:45:27 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:57324 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758716Ab3BFVpX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 16:44:36 -0500
+	Wed, 6 Feb 2013 16:45:23 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Feng Tang <feng.tang@intel.com>,
-        Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>,
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Andi Kleen <andi@firstfloor.org>, Andrew Jones <drjones@redhat.com>,
+        Borislav Petkov <bp@suse.de>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Feng Tang <feng.tang@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Joe Perches <joe@perches.com>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@gmail.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 01/17] perf hists browser: Add option for runtime switching perf data file
-Date: Wed,  6 Feb 2013 18:44:03 -0300
-Message-Id: <1360187059-12661-2-git-send-email-acme@infradead.org>
+Subject: [GIT PULL 00/17] perf/core improvements and fixes
+Date: Wed,  6 Feb 2013 18:44:02 -0300
+Message-Id: <1360187059-12661-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
-In-Reply-To: <1360187059-12661-1-git-send-email-acme@infradead.org>
-References: <1360187059-12661-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Feng Tang <feng.tang@intel.com>
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 
-Based on perf report/top/scripts browser integration idea from acme.
+Hi Ingo,
 
-This will enable user to runtime switch the data file, when this option
-is selected, it will popup all the legal data files in current working
-directory, and the filename selected by user is saved in the global
-variable "input_name", and a new key 'K_SWITCH_INPUT_DATA' will be
-passed back to the built-in command which will perform the switch.
+	Please consider pulling,
 
-This initial version only enables it for 'perf report'.
+- Arnaldo
 
-v2: rebase to latest 'perf/core' branch (6e1d4dd) of acme's perf tree
+The following changes since commit 0fbdad078a70ed72248c3d30fe32e45e83be00d1:
 
-Signed-off-by: Feng Tang <feng.tang@intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1359873501-24541-1-git-send-email-feng.tang@intel.com
+  perf/x86: Allow for architecture specific RDPMC indexes (2013-02-06 19:45:24 +0100)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
+
+for you to fetch changes up to 88fd2b6a76264e9e14463f532caae09d82a53207:
+
+  perf python: Link with sysfs.o (2013-02-06 18:09:28 -0300)
+
+----------------------------------------------------------------
+perf/core improvements and fixes
+
+. Check for flex and bison before continuing building, from Borislav Petkov.
+
+. Make event_copy local to mmaps, fixing buffer wrap around problems, from
+  David Ahern.
+
+. Add option for runtime switching perf data file in perf report, just press
+  's' and a menu with the valid files found in the current directory will be
+  presented, from Feng Tang.
+
+. Add support to display whole group data for raw columns, from Jiri Olsa.
+
+. Fix SIGALRM and pipe read race for the rwtop perl script. from Jiri Olsa.
+
+. Fix perf_evsel::exclude_GH handling and add a test to catch regressions, from
+  Jiri Olsa.
+
+. Error checking fixes, from Namhyung Kim.
+
+. Fix calloc argument ordering, from Paul Gortmaker.
+
+. Fix set event list leader, from Stephane Eranian.
+
+. Add per processor socket count aggregation in perf stat, from Stephane Eranian.
+
+. Fix perf python binding breakage.
+
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/ui/browsers/hists.c | 112 ++++++++++++++++++++++++++++++++++++++++-
- tools/perf/ui/keysyms.h        |   1 +
- 2 files changed, 112 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 20ccd57..aa22704 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -1241,6 +1241,96 @@ static inline bool is_report_browser(void *timer)
- 	return timer == NULL;
- }
- 
-+/*
-+ * Only runtime switching of perf data file will make "input_name" point
-+ * to a malloced buffer. So add "is_input_name_malloced" flag to decide
-+ * whether we need to call free() for current "input_name" during the switch.
-+ */
-+static bool is_input_name_malloced = false;
-+
-+static int switch_data_file(void)
-+{
-+	char *pwd, *options[32], *abs_path[32], *tmp;
-+	DIR *pwd_dir;
-+	int nr_options = 0, choice = -1, ret = -1;
-+	struct dirent *dent;
-+
-+	pwd = getenv("PWD");
-+	if (!pwd)
-+		return ret;
-+
-+	pwd_dir = opendir(pwd);
-+	if (!pwd_dir)
-+		return ret;
-+
-+	memset(options, 0, sizeof(options));
-+	memset(options, 0, sizeof(abs_path));
-+
-+	while ((dent = readdir(pwd_dir))) {
-+		char path[PATH_MAX];
-+		u64 magic;
-+		char *name = dent->d_name;
-+		FILE *file;
-+
-+		if (!(dent->d_type == DT_REG))
-+			continue;
-+
-+		snprintf(path, sizeof(path), "%s/%s", pwd, name);
-+
-+		file = fopen(path, "r");
-+		if (!file)
-+			continue;
-+
-+		if (fread(&magic, 1, 8, file) < 8)
-+			goto close_file_and_continue;
-+
-+		if (is_perf_magic(magic)) {
-+			options[nr_options] = strdup(name);
-+			if (!options[nr_options])
-+				goto close_file_and_continue;
-+
-+			abs_path[nr_options] = strdup(path);
-+			if (!abs_path[nr_options]) {
-+				free(options[nr_options]);
-+				ui__warning("Can't search all data files due to memory shortage.\n");
-+				fclose(file);
-+				break;
-+			}
-+
-+			nr_options++;
-+		}
-+
-+close_file_and_continue:
-+		fclose(file);
-+		if (nr_options >= 32) {
-+			ui__warning("Too many perf data files in PWD!\n"
-+				    "Only the first 32 files will be listed.\n");
-+			break;
-+		}
-+	}
-+	closedir(pwd_dir);
-+
-+	if (nr_options) {
-+		choice = ui__popup_menu(nr_options, options);
-+		if (choice < nr_options && choice >= 0) {
-+			tmp = strdup(abs_path[choice]);
-+			if (tmp) {
-+				if (is_input_name_malloced)
-+					free((void *)input_name);
-+				input_name = tmp;
-+				is_input_name_malloced = true;
-+				ret = 0;
-+			} else
-+				ui__warning("Data switch failed due to memory shortage!\n");
-+		}
-+	}
-+
-+	free_popup_options(options, nr_options);
-+	free_popup_options(abs_path, nr_options);
-+	return ret;
-+}
-+
-+
- static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 				    const char *helpline, const char *ev_name,
- 				    bool left_exits,
-@@ -1275,7 +1365,8 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 		int choice = 0,
- 		    annotate = -2, zoom_dso = -2, zoom_thread = -2,
- 		    annotate_f = -2, annotate_t = -2, browse_map = -2;
--		int scripts_comm = -2, scripts_symbol = -2, scripts_all = -2;
-+		int scripts_comm = -2, scripts_symbol = -2,
-+		    scripts_all = -2, switch_data = -2;
- 
- 		nr_options = 0;
- 
-@@ -1332,6 +1423,10 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 			if (is_report_browser(hbt))
- 				goto do_scripts;
- 			continue;
-+		case 's':
-+			if (is_report_browser(hbt))
-+				goto do_data_switch;
-+			continue;
- 		case K_F1:
- 		case 'h':
- 		case '?':
-@@ -1351,6 +1446,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 					"d             Zoom into current DSO\n"
- 					"t             Zoom into current Thread\n"
- 					"r             Run available scripts('perf report' only)\n"
-+					"s             Switch to another data file in PWD ('perf report' only)\n"
- 					"P             Print histograms to perf.hist.N\n"
- 					"V             Verbose (DSO names in callchains, etc)\n"
- 					"/             Filter symbol by name");
-@@ -1458,6 +1554,9 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 		if (asprintf(&options[nr_options], "Run scripts for all samples") > 0)
- 			scripts_all = nr_options++;
- 
-+		if (is_report_browser(hbt) && asprintf(&options[nr_options],
-+				"Switch to another data file in PWD") > 0)
-+			switch_data = nr_options++;
- add_exit_option:
- 		options[nr_options++] = (char *)"Exit";
- retry_popup_menu:
-@@ -1568,6 +1667,16 @@ do_scripts:
- 
- 			script_browse(script_opt);
- 		}
-+		/* Switch to another data file */
-+		else if (choice == switch_data) {
-+do_data_switch:
-+			if (!switch_data_file()) {
-+				key = K_SWITCH_INPUT_DATA;
-+				break;
-+			} else
-+				ui__warning("Won't switch the data files due to\n"
-+					"no valid data file get selected!\n");
-+		}
- 	}
- out_free_stack:
- 	pstack__delete(fstack);
-@@ -1694,6 +1803,7 @@ browse_hists:
- 						"Do you really want to exit?"))
- 					continue;
- 				/* Fall thru */
-+			case K_SWITCH_INPUT_DATA:
- 			case 'q':
- 			case CTRL('c'):
- 				goto out;
-diff --git a/tools/perf/ui/keysyms.h b/tools/perf/ui/keysyms.h
-index 809eca5..65092d5 100644
---- a/tools/perf/ui/keysyms.h
-+++ b/tools/perf/ui/keysyms.h
-@@ -23,5 +23,6 @@
- #define K_TIMER	 -1
- #define K_ERROR	 -2
- #define K_RESIZE -3
-+#define K_SWITCH_INPUT_DATA -4
- 
- #endif /* _PERF_KEYSYMS_H_ */
--- 
-1.8.1.1.361.gec3ae6e
+----------------------------------------------------------------
+Arnaldo Carvalho de Melo (2):
+      perf evlist: Pass the event_group info via perf_attr_details
+      perf python: Link with sysfs.o
 
+Borislav Petkov (1):
+      perf tools: Check for flex and bison before continuing building
+
+David Ahern (1):
+      perf evlist: Make event_copy local to mmaps
+
+Feng Tang (2):
+      perf hists browser: Add option for runtime switching perf data file
+      perf report: Enable the runtime switching of perf data file
+
+Jiri Olsa (4):
+      perf hists browser: Add support to display whole group data for raw columns
+      perf perl scripts: Fix SIGALRM and pipe read race for rwtop
+      perf tools: Fix perf_evsel::exclude_GH handling
+      perf tests: Adding automated parsing tests for group :GH modifiers
+
+Namhyung Kim (3):
+      perf sort: Drop ip_[lr] arguments from _sort__sym_cmp()
+      perf sort: Make setup_sorting returns an error code
+      perf sort: Check return value of strdup()
+
+Paul Gortmaker (1):
+      perf tools: Fix calloc argument ordering
+
+Stephane Eranian (3):
+      perf evlist: Fix set event list leader
+      perf tools: Add cpu_map processor socket level functions
+      perf stat: Add per processor socket count aggregation
+
+ tools/perf/Documentation/perf-stat.txt |   9 +-
+ tools/perf/Makefile                    |  13 ++-
+ tools/perf/builtin-annotate.c          |   3 +-
+ tools/perf/builtin-diff.c              |   4 +-
+ tools/perf/builtin-evlist.c            |   4 +-
+ tools/perf/builtin-report.c            |  41 +++++---
+ tools/perf/builtin-stat.c              | 126 +++++++++++++++++++++--
+ tools/perf/builtin-top.c               |   3 +-
+ tools/perf/perf.h                      |  26 -----
+ tools/perf/scripts/perl/rwtop.pl       |   6 +-
+ tools/perf/tests/hists_link.c          |   3 +-
+ tools/perf/tests/parse-events.c        | 178 ++++++++++++++++++++++++++++++++-
+ tools/perf/ui/browsers/hists.c         | 112 ++++++++++++++++++++-
+ tools/perf/ui/hist.c                   |  53 +++++-----
+ tools/perf/ui/keysyms.h                |   1 +
+ tools/perf/util/callchain.c            |   2 +-
+ tools/perf/util/cpumap.c               |  54 ++++++++++
+ tools/perf/util/cpumap.h               |   9 ++
+ tools/perf/util/evlist.c               |   7 +-
+ tools/perf/util/evlist.h               |  29 +++++-
+ tools/perf/util/evsel.c                |   2 +-
+ tools/perf/util/evsel.h                |   1 +
+ tools/perf/util/header.c               |   4 +-
+ tools/perf/util/parse-events.c         |   8 --
+ tools/perf/util/python-ext-sources     |   1 +
+ tools/perf/util/sort.c                 |  38 ++++---
+ tools/perf/util/sort.h                 |   2 +-
+ 27 files changed, 611 insertions(+), 128 deletions(-)
