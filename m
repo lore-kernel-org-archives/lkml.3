@@ -1,95 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752190Ab3BFMcq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 07:32:46 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:6361 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750951Ab3BFMcm (ORCPT
+	id S1752300Ab3BFMgH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 07:36:07 -0500
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:36569 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750951Ab3BFMgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 07:32:42 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Wed, 06 Feb 2013 04:30:09 -0800
-Date: Wed, 6 Feb 2013 14:32:22 +0200
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Prashant Gaikwad <pgaikwad@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>, Joseph Lo <josephl@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v5 01/10] clk: tegra: Refactor PLL programming code
-Message-ID: <20130206123222.GI3073@tbergstrom-lnx.Nvidia.com>
-References: <1359713962-16822-1-git-send-email-pdeschrijver@nvidia.com>
- <1359713962-16822-2-git-send-email-pdeschrijver@nvidia.com>
- <510F4FF7.3050502@nvidia.com>
- <20130204143233.GV2364@tbergstrom-lnx.Nvidia.com>
- <51109BB3.8000706@nvidia.com>
- <20130205132355.GD3073@tbergstrom-lnx.Nvidia.com>
+	Wed, 6 Feb 2013 07:36:04 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20130205132355.GD3073@tbergstrom-lnx.Nvidia.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Wed, 6 Feb 2013 20:36:01 +0800
+Message-ID: <CAJd=RBD=yMa1-iAm_i71U+KKRNYmXDTb6yZzW5aVAGHQ+zD8Sw@mail.gmail.com>
+Subject: [PATCH 1/3] stop_machine: check work->done while handling enqueued works
+From: Hillf Danton <dhillf@gmail.com>
+To: Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 05, 2013 at 02:23:55PM +0100, Peter De Schrijver wrote:
-> On Tue, Feb 05, 2013 at 06:42:11AM +0100, Prashant Gaikwad wrote:
-> > On Monday 04 February 2013 08:02 PM, Peter De Schrijver wrote:
-> > > On Mon, Feb 04, 2013 at 07:06:47AM +0100, Prashant Gaikwad wrote:
-> > >> On Friday 01 February 2013 03:48 PM, Peter De Schrijver wrote:
-> > > ...
-> > >
-> > >>> -static int clk_pll_wait_for_lock(struct tegra_clk_pll *pll,
-> > >>> -                                void __iomem *lock_addr, u32 lock_bit_idx)
-> > >>> +static int clk_pll_wait_for_lock(struct tegra_clk_pll *pll)
-> > >>>    {
-> > >>>           int i;
-> > >>> -       u32 val;
-> > >>> +       u32 val, lock_bit;
-> > >>> +       void __iomem *lock_addr;
-> > >>>
-> > >>>           if (!(pll->flags & TEGRA_PLL_USE_LOCK)) {
-> > >>>                   udelay(pll->params->lock_delay);
-> > >>>                   return 0;
-> > >>>           }
-> > >>>
-> > >>> +       lock_addr = pll->clk_base + pll->params->base_reg;
-> > >> This will not work for PLLE. Lock bit for PLLE is in misc register.
-> > >>
-> > >>> +       lock_bit = BIT(pll->params->lock_bit_idx);
-> > >>> +
-> > >>>           for (i = 0; i < pll->params->lock_delay; i++) {
-> > >>>                   val = readl_relaxed(lock_addr);
-> > >>> -               if (val & BIT(lock_bit_idx)) {
-> > >>> +               if (val & lock_bit) {
-> > >> Need to change the lock bit idx parameter for Tegra20 and Tegra30 PLLs
-> > >> else this patch will break those.
-> > >>
-> > > Looking at commit 37c26a906527b8a6a252614ca83d21ad318c4e84 and commit
-> > > b08e8c0ecc42afa3a2e1019851af741980dd5a6b, these fields seem correctly
-> > > initialized for both Tegra20 and Tegra30? Or am I missing something?
-> > 
-> > Ohh, I missed to read
-> > 
-> > lock_bit = BIT(pll->params->lock_bit_idx);
-> > 
-> > 
-> > Am I missing something about PLLE lock_addr also?
-> > 
-> 
-> Ah no indeed... my bad. So we need a lock_addr field.
-> 
+To advoid invalid reference, updating work result is moved to
+cpu_stop_signal_done().
 
-Or a flag. Flag seems less invasive for now.
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
+---
 
-Cheers,
+--- a/kernel/stop_machine.c	Wed Feb  6 19:50:56 2013
++++ b/kernel/stop_machine.c	Wed Feb  6 19:54:34 2013
+@@ -51,9 +51,11 @@ static void cpu_stop_init_done(struct cp
+ }
 
-Peter.
+ /* signal completion unless @done is NULL */
+-static void cpu_stop_signal_done(struct cpu_stop_done *done, bool executed)
++static void cpu_stop_signal_done(struct cpu_stop_done *done, bool
+executed, int ret)
+ {
+ 	if (done) {
++		if (ret)
++			done->ret = ret;
+ 		if (executed)
+ 			done->executed = true;
+ 		if (atomic_dec_and_test(&done->nr_todo))
+@@ -73,7 +75,7 @@ static void cpu_stop_queue_work(struct c
+ 		list_add_tail(&work->list, &stopper->works);
+ 		wake_up_process(stopper->thread);
+ 	} else
+-		cpu_stop_signal_done(work->done, false);
++		cpu_stop_signal_done(work->done, false, 0);
+
+ 	spin_unlock_irqrestore(&stopper->lock, flags);
+ }
+@@ -279,8 +281,6 @@ repeat:
+ 		preempt_disable();
+
+ 		ret = fn(arg);
+-		if (ret)
+-			done->ret = ret;
+
+ 		/* restore preemption and check it's still balanced */
+ 		preempt_enable();
+@@ -289,7 +289,7 @@ repeat:
+ 			  kallsyms_lookup((unsigned long)fn, NULL, NULL, NULL,
+ 					  ksym_buf), arg);
+
+-		cpu_stop_signal_done(done, true);
++		cpu_stop_signal_done(done, true, ret);
+ 	} else
+ 		schedule();
+
+@@ -343,7 +343,7 @@ static int __cpuinit cpu_stop_cpu_callba
+ 		/* drain remaining works */
+ 		spin_lock_irq(&stopper->lock);
+ 		list_for_each_entry(work, &stopper->works, list)
+-			cpu_stop_signal_done(work->done, false);
++			cpu_stop_signal_done(work->done, false, 0);
+ 		stopper->enabled = false;
+ 		spin_unlock_irq(&stopper->lock);
+ 		/* release the stopper */
+--
