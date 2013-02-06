@@ -1,114 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758058Ab3BFWev (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 17:34:51 -0500
-Received: from mail-da0-f50.google.com ([209.85.210.50]:53507 "EHLO
-	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756368Ab3BFWeu (ORCPT
+	id S1758088Ab3BFWgM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 17:36:12 -0500
+Received: from mail1.bemta12.messagelabs.com ([216.82.250.242]:47830 "EHLO
+	mail1.bemta12.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756893Ab3BFWgJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 17:34:50 -0500
-Date: Wed, 6 Feb 2013 14:34:45 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH wq/for-3.9] workqueue: replace WORK_CPU_NONE/LAST with
- WORK_CPU_END
-Message-ID: <20130206223445.GE2875@htj.dyndns.org>
-References: <1359657696-2767-1-git-send-email-laijs@cn.fujitsu.com>
- <1359657696-2767-2-git-send-email-laijs@cn.fujitsu.com>
+	Wed, 6 Feb 2013 17:36:09 -0500
+X-Greylist: delayed 415 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Feb 2013 17:36:09 EST
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-5.tower-127.messagelabs.com!1360189747!6386478!6
+X-Originating-IP: [216.166.12.98]
+X-StarScan-Received: 
+X-StarScan-Version: 6.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hsweeten@visionengravers.com>
+Organization: Vision Engraving Systems
+To: <linux-kernel@vger.kernel.org>
+Subject: [PATCH 05/11] drivers/mmc: use module_pcmcia_driver() in pcmcia drivers
+Date: Wed, 6 Feb 2013 15:29:07 -0700
+User-Agent: KMail/1.13.5 (Linux/3.7.0; KDE/4.4.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1359657696-2767-2-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-ID: <201302061529.07456.hsweeten@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
+Use the new module_pcmcia_driver() macro to remove the boilerplate
+module init/exit code in the pcmcia drivers.
 
-Now that workqueue has moved away from gcwqs, workqueue no longer has
-the need to have a CPU identifier indicating "no cpu associated" - we
-now use WORK_OFFQ_POOL_NONE instead - and most uses of WORK_CPU_NONE
-are gone.
-
-The only left usage is as the end marker for for_each_*wq*()
-iterators, where the name WORK_CPU_NONE is confusing w/o actual
-WORK_CPU_NONE usages.  Similarly, WORK_CPU_LAST which equals
-WORK_CPU_NONE no longer makes sense.
-
-Replace both WORK_CPU_NONE and LAST with WORK_CPU_END.  This patch
-doesn't introduce any functional difference.
-
-tj: s/WORK_CPU_LAST/WORK_CPU_END/ and rewrote description.
-
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 ---
-Hello, Lai.
+ drivers/mmc/host/sdricoh_cs.c | 20 +-------------------
+ 1 file changed, 1 insertion(+), 19 deletions(-)
 
-I massaged the patch and am committing this to wq/for-3.9.  I think
-I'm gonna go through the series, massage other patches too and apply
-them, mostly because I wanna make progress on custom pool
-implementation and it seems like iterating this series the normal way
-would take quite some time.
+diff --git a/drivers/mmc/host/sdricoh_cs.c b/drivers/mmc/host/sdricoh_cs.c
+index 7009f17..50adbd1 100644
+--- a/drivers/mmc/host/sdricoh_cs.c
++++ b/drivers/mmc/host/sdricoh_cs.c
+@@ -543,25 +543,7 @@ static struct pcmcia_driver sdricoh_driver = {
+ 	.suspend = sdricoh_pcmcia_suspend,
+ 	.resume = sdricoh_pcmcia_resume,
+ };
+-
+-/*****************************************************************************\
+- *                                                                           *
+- * Driver init/exit                                                          *
+- *                                                                           *
+-\*****************************************************************************/
+-
+-static int __init sdricoh_drv_init(void)
+-{
+-	return pcmcia_register_driver(&sdricoh_driver);
+-}
+-
+-static void __exit sdricoh_drv_exit(void)
+-{
+-	pcmcia_unregister_driver(&sdricoh_driver);
+-}
+-
+-module_init(sdricoh_drv_init);
+-module_exit(sdricoh_drv_exit);
++module_pcmcia_driver(sdricoh_driver);
+ 
+ module_param(switchlocked, uint, 0444);
+ 
+-- 
+1.8.1.1.293.gfe73786
 
-Thanks!
-
- include/linux/workqueue.h |    3 +--
- kernel/workqueue.c        |   10 +++++-----
- 2 files changed, 6 insertions(+), 7 deletions(-)
-
---- a/include/linux/workqueue.h
-+++ b/include/linux/workqueue.h
-@@ -57,8 +57,7 @@ enum {
- 
- 	/* special cpu IDs */
- 	WORK_CPU_UNBOUND	= NR_CPUS,
--	WORK_CPU_NONE		= NR_CPUS + 1,
--	WORK_CPU_LAST		= WORK_CPU_NONE,
-+	WORK_CPU_END		= NR_CPUS + 1,
- 
- 	/*
- 	 * Reserve 7 bits off of cwq pointer w/ debugobjects turned
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -258,7 +258,7 @@ static inline int __next_wq_cpu(int cpu,
- 		if (sw & 2)
- 			return WORK_CPU_UNBOUND;
- 	}
--	return WORK_CPU_NONE;
-+	return WORK_CPU_END;
- }
- 
- static inline int __next_cwq_cpu(int cpu, const struct cpumask *mask,
-@@ -282,17 +282,17 @@ static inline int __next_cwq_cpu(int cpu
-  */
- #define for_each_wq_cpu(cpu)						\
- 	for ((cpu) = __next_wq_cpu(-1, cpu_possible_mask, 3);		\
--	     (cpu) < WORK_CPU_NONE;					\
-+	     (cpu) < WORK_CPU_END;					\
- 	     (cpu) = __next_wq_cpu((cpu), cpu_possible_mask, 3))
- 
- #define for_each_online_wq_cpu(cpu)					\
- 	for ((cpu) = __next_wq_cpu(-1, cpu_online_mask, 3);		\
--	     (cpu) < WORK_CPU_NONE;					\
-+	     (cpu) < WORK_CPU_END;					\
- 	     (cpu) = __next_wq_cpu((cpu), cpu_online_mask, 3))
- 
- #define for_each_cwq_cpu(cpu, wq)					\
- 	for ((cpu) = __next_cwq_cpu(-1, cpu_possible_mask, (wq));	\
--	     (cpu) < WORK_CPU_NONE;					\
-+	     (cpu) < WORK_CPU_END;					\
- 	     (cpu) = __next_cwq_cpu((cpu), cpu_possible_mask, (wq)))
- 
- #ifdef CONFIG_DEBUG_OBJECTS_WORK
-@@ -3796,7 +3796,7 @@ static int __init init_workqueues(void)
- 
- 	/* make sure we have enough bits for OFFQ pool ID */
- 	BUILD_BUG_ON((1LU << (BITS_PER_LONG - WORK_OFFQ_POOL_SHIFT)) <
--		     WORK_CPU_LAST * NR_STD_WORKER_POOLS);
-+		     WORK_CPU_END * NR_STD_WORKER_POOLS);
- 
- 	cpu_notifier(workqueue_cpu_up_callback, CPU_PRI_WORKQUEUE_UP);
- 	hotcpu_notifier(workqueue_cpu_down_callback, CPU_PRI_WORKQUEUE_DOWN);
