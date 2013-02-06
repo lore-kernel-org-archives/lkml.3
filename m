@@ -1,158 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757116Ab3BFJwJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 04:52:09 -0500
-Received: from tower.nita.spb.ru ([195.131.77.126]:45463 "EHLO
-	tower.nita.spb.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752012Ab3BFJwF (ORCPT
+	id S1752000Ab3BFJxI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 04:53:08 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:3960 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750772Ab3BFJxE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 04:52:05 -0500
-X-Greylist: delayed 1990 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Feb 2013 04:52:05 EST
-Date: Wed, 6 Feb 2013 09:18:52 +0000
-From: =?Windows-1251?B?yujw6OvrIMrg7/Dg7e7i?= <kkk@nita.ru>
-X-Mailer: The Bat! (v2.01)         CD5BF9353B3B7091
-Reply-To: kkk <kkk@nita.ru>
-Organization: NITA, LLC
-X-Priority: 3 (Normal)
-Message-ID: <1129845953.20130206091852@nita.ru>
-To: Kirill Kapranov <kapranoff@inbox.ru>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Re: [PATCH] NET/PHY: Eliminate the algorithm of forced ethernet speed reduction
-In-Reply-To: <1360071789.123469221@f136.mail.ru>
-References: <1360071789.123469221@f136.mail.ru>
+	Wed, 6 Feb 2013 04:53:04 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 06 Feb 2013 01:50:00 -0800
+Message-ID: <511227F6.3050601@nvidia.com>
+Date: Wed, 6 Feb 2013 15:22:54 +0530
+From: Prashant Gaikwad <pgaikwad@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=Windows-1251
-Content-Transfer-Encoding: 8bit
+To: Hiroshi Doyu <hdoyu@nvidia.com>
+CC: "mturquette@linaro.org" <mturquette@linaro.org>,
+        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "t.figa@samsung.com" <t.figa@samsung.com>
+Subject: Re: [PATCH V2] clk: Add composite clock type
+References: <5110C3E5.2010503@nvidia.com><20130205.122252.570646990867457667.hdoyu@nvidia.com><5111C604.8070104@nvidia.com> <20130206.081048.71241785637713947.hdoyu@nvidia.com>
+In-Reply-To: <20130206.081048.71241785637713947.hdoyu@nvidia.com>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday 06 February 2013 11:40 AM, Hiroshi Doyu wrote:
+> Prashant Gaikwad <pgaikwad@nvidia.com> wrote @ Wed, 6 Feb 2013 03:55:00 +0100:
+>
+>>>> No, clk_ops depends on the clocks you are using. There could be a clock
+>>>> with mux and gate while another one with mux and div.
+>>> You are right. What about the following? We don't have to have similar
+>>> copy of clk_composite_ops for each instances.
+>> Clock framework takes decision depending on the ops availability and it
+>> does not know if the clock is mux or gate.
+>>
+>> For example,
+>>
+>>                   if (clk->ops->enable) {
+>>                           ret = clk->ops->enable(clk->hw);
+>>                           if (ret) {
+>>                                   __clk_disable(clk->parent);
+>>                                   return ret;
+>>                           }
+>>                   }
+>>
+>> in above case if clk_composite does not have gate clock then as per your
+>> suggestion if it returns error value then it will fail and it is wrong.
+> Ok, now I understand. Thank you for explanation.
+>
+> We always need to allocate clk_composite_ops for each clk_composite,
+> right? If so what about having "struct clk_ops ops" in "struct
+> clk_composite"?
+>
+> diff --git a/drivers/clk/clk-composite.c b/drivers/clk/clk-composite.c
+> index f30fb4b..5240e24 100644
+> --- a/drivers/clk/clk-composite.c
+> +++ b/drivers/clk/clk-composite.c
+> @@ -129,20 +129,13 @@ struct clk *clk_register_composite(struct device *dev, const char *name,
+>                  pr_err("%s: could not allocate composite clk\n", __func__);
+>                  return ERR_PTR(-ENOMEM);
+>          }
+> +       clk_composite_ops = &composite->ops;
+>   
+>          init.name = name;
+>          init.flags = flags | CLK_IS_BASIC;
+>          init.parent_names = parent_names;
+>          init.num_parents = num_parents;
+>   
+> -       /* allocate the clock ops */
+> -       clk_composite_ops = kzalloc(sizeof(*clk_composite_ops), GFP_KERNEL);
+> -       if (!clk_composite_ops) {
+> -               pr_err("%s: could not allocate clk ops\n", __func__);
+> -               kfree(composite);
+> -               return ERR_PTR(-ENOMEM);
+> -       }
+> -
+>          if (mux_hw && mux_ops) {
+>                  if (!mux_ops->get_parent || !mux_ops->set_parent) {
+>                          clk = ERR_PTR(-EINVAL);
+> @@ -202,7 +195,6 @@ struct clk *clk_register_composite(struct device *dev, const char *name,
+>          return clk;
+>   
+>   err:
+> -       kfree(clk_composite_ops);
+>          kfree(composite);
+>          return clk;
+>   }
+> diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+> index f0ac818..bb5d36a 100644
+> --- a/include/linux/clk-provider.h
+> +++ b/include/linux/clk-provider.h
+> @@ -346,6 +346,8 @@ struct clk_composite {
+>          const struct clk_ops    *mux_ops;
+>          const struct clk_ops    *div_ops;
+>          const struct clk_ops    *gate_ops;
+> +
+> +       const struct clk_ops    ops;
+>   };
+>   
+>   struct clk *clk_register_composite(struct device *dev, const char *name,
 
-> Kirill Kapranov <kapranoff@inbox.ru> :
->> NET/PHY: Eliminate the forced speed reduction algorithm.
->> In case of the fixed speed set up for NIC 
->> (e.g. ethtool -s eth0 autoneg off speed 100 duplex full)
->> with ethernet cable plugged off, mentioned algorithm
->> slows down NIC speed, so the further "hooking up" gives
->> no result. AFAIK, this behaviour is not RFCs' recommended.
->> Tested at 2.6.38.7, applicable up to for 3.0.4. 
+This will work, but there is no harm in allocating dynamically. What is 
+preferred?
 
-> (your mail user agent completely messed the patch. Please fix it.)
-
-> I makes sense but which RFC (?) does state that said algorithm
-> should not apply to the autonegotiated case as well ?
-
-Hello, Francoi.
-
-I am sorry for the messed letter, which I sent to You.
-Please let me know, if I have to re-send my letter to mail-lists.
-
-Now, about the criticism.
-
-AFAIK, no one RFC describe the mentioned algorithm. I have looked up RFC-802.3, and found,
- that the mentioned algorithm is neither quoted nor described.
-Thus, this algorithm is a witty invention of the developer(s), IMHO. I never observed a behaviour like this.
-
-In the case of the autonegotiation is off and a cable plugged out, the forced slow down of the speed makes a further
- connection inoperative: a switch tries to connect with 100/full (e.g.), a NIC stays at 10/half.
-So, this algorithm is destructive for the fixed speed/duplex mode.
-
-In the auto- mode, this algorithm is inessential. The autonegotiation procedure works fine regardless an speed/duplex
- settings at the moment of connector plugging.
-Because the auto mode does not need this algorithm, I dare to eliminate it at all.
-
---------------------------------
-
-NET/PHY: Eliminate the forced speed reduction algorithm.
-In case of the fixed speed set up for NIC 
-(e.g. ethtool -s eth0 autoneg off speed 100 duplex full)
-with ethernet cable plugged off, mentioned algorithm
-slows down NIC speed, so the further "hooking up" gives
-no result. AFAIK, this behaviour is not RFCs' recommended.
-Tested at 2.6.38.7, applicable up to for 3.0.4. 
-Signed-off-by: Kirill Kapranov < kkk@nita.ru >,< kapranoff@inbox.ru >
---- linux/drivers/net/phy/phy.c.orig 2011-05-22 02:13:59.000000000 +0400
-+++ linux/drivers/net/phy/phy.c 2012-04-28 12:49:37.000000000 +0400
-@@ -457,34 +457,6 @@ void phy_stop_machine(struct phy_device
-}
-
-/**
-- * phy_force_reduction - reduce PHY speed/duplex settings by one step
-- * @phydev: target phy_device struct
-- *
-- * Description: Reduces the speed/duplex settings by one notch,
-- * in this order--
-- * 1000/FULL, 1000/HALF, 100/FULL, 100/HALF, 10/FULL, 10/HALF.
-- * The function bottoms out at 10/HALF.
-- */
--static void phy_force_reduction(struct phy_device *phydev)
--{
-- int idx;
--
-- idx = phy_find_setting(phydev->speed, phydev->duplex);
-- 
-- idx++;
--
-- idx = phy_find_valid(idx, phydev->supported);
--
-- phydev->speed = settings[idx].speed;
-- phydev->duplex = settings[idx].duplex;
--
-- pr_info("Trying %d/%s\n", phydev->speed,
-- DUPLEX_FULL == phydev->duplex ?
-- "FULL" : "HALF");
--}
--
--
--/**
-* phy_error - enter HALTED state for this PHY device
-* @phydev: target phy_device struct
-*
-@@ -814,30 +786,12 @@ void phy_state_machine(struct work_struc
-phydev->adjust_link(phydev->attached_dev);
-
-} else if (0 == phydev->link_timeout--) {
-- int idx;
-
-needs_aneg = 1;
-/* If we have the magic_aneg bit,
-* we try again */
-if (phydev->drv->flags & PHY_HAS_MAGICANEG)
-break;
--
-- /* The timer expired, and we still
-- * don't have a setting, so we try
-- * forcing it until we find one that
-- * works, starting from the fastest speed,
-- * and working our way down */
-- idx = phy_find_valid(0, phydev->supported);
--
-- phydev->speed = settings[idx].speed;
-- phydev->duplex = settings[idx].duplex;
--
-- phydev->autoneg = AUTONEG_DISABLE;
--
-- pr_info("Trying %d/%s\n", phydev->speed,
-- DUPLEX_FULL ==
-- phydev->duplex ?
-- "FULL" : "HALF");
-}
-break;
-case PHY_NOLINK:
-@@ -863,7 +817,6 @@ void phy_state_machine(struct work_struc
-netif_carrier_on(phydev->attached_dev);
-} else {
-if (0 == phydev->link_timeout--) {
-- phy_force_reduction(phydev);
-needs_aneg = 1;
-}
-}
-
-----------------------------------
-
-
---
-Best regards
-Kirill Kapranov
-
+>
+>>> diff --git a/drivers/clk/clk-composite.c b/drivers/clk/clk-composite.c
+>>> index f30fb4b..8f88805 100644
+>>> --- a/drivers/clk/clk-composite.c
+>>> +++ b/drivers/clk/clk-composite.c
+>>> @@ -27,6 +27,9 @@ static u8 clk_composite_get_parent(struct clk_hw *hw)
+>>>           const struct clk_ops *mux_ops = composite->mux_ops;
+>>>           struct clk_hw *mux_hw = composite->mux_hw;
+>>>    
+>>> +       if (!mux_hw->clk)
+>>> +	       return -EINVAL;
+>>> +
+>>>           mux_hw->clk = hw->clk;
+>> It is wrong.
+> Will the above "mux_hw->clk = hw->clk" be removed from the original?
 
