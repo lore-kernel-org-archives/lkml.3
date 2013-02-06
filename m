@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757272Ab3BFPQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 10:16:29 -0500
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:40398 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757153Ab3BFPQV (ORCPT
+	id S1757323Ab3BFPQg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 10:16:36 -0500
+Received: from mail-vb0-f42.google.com ([209.85.212.42]:44153 "EHLO
+	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757239Ab3BFPQ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 10:16:21 -0500
+	Wed, 6 Feb 2013 10:16:28 -0500
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Tejun Heo <tj@kernel.org>,
         "James E.J. Bottomley" <JBottomley@parallels.com>,
         linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH v2 03/14] sg_io: use different default filters for each device class
-Date: Wed,  6 Feb 2013 16:15:50 +0100
-Message-Id: <1360163761-8541-4-git-send-email-pbonzini@redhat.com>
+Subject: [PATCH v2 04/14] sg_io: resolve conflicts between commands assigned to multiple classes (CVE-2012-4542)
+Date: Wed,  6 Feb 2013 16:15:51 +0100
+Message-Id: <1360163761-8541-5-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1360163761-8541-1-git-send-email-pbonzini@redhat.com>
 References: <1360163761-8541-1-git-send-email-pbonzini@redhat.com>
@@ -22,115 +22,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Store the filters in a 256-entry array, and pick an appropriate filter
-for SCSI devices.  Apart from SCSI disks, SG_IO is supported for CCISS,
-ide-floppy and virtio-blk devices; TYPE_DISK (which is zero, i.e. the
-default) is more appropriate for these devices than TYPE_ROM.
+Some SCSI commands can be sent to disks via SG_IO even by unprivileged
+users.  Unfortunately, some opcodes overlap across SCSI device classes
+and have different meanings for different classes.  Four of them can
+be used for read-only file descriptors on MMC, but should be limited to
+descriptors opened for read-write on SBC:
 
-This patch already introduces some semantic change, albeit very limited;
-in addition to the above change for CCISS/ide-floppy/virtio-blk, a few
-commands are now forbidden for devices of type other than TYPE_ROM,
-where they are reserved or vendor-specific.
+The current bitmap of allowed commands is designed for MMC devices
+(roughly, "play/burn CDs without requiring root").
+
+- READ SUBCHANNEL <-> UNMAP (destructive, but no control on written
+  data)
+
+- GET PERFORMANCE <-> ERASE (not really a problem, no one supports
+  ERASE anyway)
+
+- READ DISC INFORMATION <-> XPWRITE (not commonly implemented but
+  most dangerous)
+
+- PLAY AUDIO TI <-> SANITIZE (a very new command)
+
+To fix this, the series splits the bitmap entries for these four
+commands into two entries, one read-only for MMC and one read-write
+for the other device classes.
 
 Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
 Cc: linux-scsi@vger.kernel.org
 Cc: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- block/scsi_ioctl.c       |   14 +++++---------
- drivers/scsi/scsi_scan.c |    2 ++
- include/linux/blkdev.h   |    2 +-
- include/scsi/scsi.h      |    1 +
- 4 files changed, 9 insertions(+), 10 deletions(-)
+ block/scsi_ioctl.c |   12 ++++++++----
+ 1 files changed, 8 insertions(+), 4 deletions(-)
 
 diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
-index 9e15784..c4c42dd 100644
+index c4c42dd..7ea3428 100644
 --- a/block/scsi_ioctl.c
 +++ b/block/scsi_ioctl.c
-@@ -34,8 +34,8 @@
- #include <scsi/scsi_cmnd.h>
+@@ -182,29 +182,33 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
+ 	sgio_bitmap_set(0x2E, D|      W|R|O|      B|K        , write); /* WRITE AND VERIFY(10) */
+ 	sgio_bitmap_set(0x35, D|      W|R|O|      B|K        , write); /* SYNCHRONIZE CACHE(10) */
+ 	sgio_bitmap_set(0x3F, D|      W|  O                  , write); /* WRITE LONG(10) */
++	sgio_bitmap_set(0x42, D                              , write); /* UNMAP */
++	sgio_bitmap_set(0x48, D|                  B          , write); /* SANITIZE */
++	sgio_bitmap_set(0x51, D                              , write); /* XPWRITE(10) */
+ 	sgio_bitmap_set(0x8A, D|T|    W|  O|      B          , write); /* WRITE(16) */
+ 	sgio_bitmap_set(0xAA, D|      W|R|O|              C  , write); /* WRITE(12) */
++	sgio_bitmap_set(0xAC,             O                  , write); /* ERASE(12) */
+ 	sgio_bitmap_set(0xAE, D|      W|  O                  , write); /* WRITE AND VERIFY(12) */
+ 	sgio_bitmap_set(0xEA, D|      W|  O                  , write); /* WRITE_LONG_2 ?? */
  
- struct blk_cmd_filter {
--	unsigned long read_ok[BLK_SCSI_CMD_PER_LONG];
--	unsigned long write_ok[BLK_SCSI_CMD_PER_LONG];
-+	u32 read_ok[BLK_SCSI_MAX_CMDS];
-+	u32 write_ok[BLK_SCSI_MAX_CMDS];
- };
+ 	/* (mostly) MMC */
  
- static struct blk_cmd_filter blk_default_cmd_filter;
-@@ -116,7 +116,7 @@ static int sg_emulated_host(struct request_queue *q, int __user *p)
- static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
- {
- #define sgio_bitmap_set(cmd, mask, rw) \
--	if ((mask) != 0) __set_bit((cmd), filter->rw##_ok)
-+	filter->rw##_ok[(cmd)] |= (mask);
- 
- #define D (1u << TYPE_DISK)           /* Direct Access Block Device (SBC-3) */
- #define T (1u << TYPE_TAPE)           /* Sequential Access Device (SSC-3) */
-@@ -257,16 +257,12 @@ int blk_verify_command(struct request_queue *q,
- 	if (capable(CAP_SYS_RAWIO))
- 		return 0;
- 
--	/* if there's no filter set, assume we're filtering everything out */
--	if (!filter)
--		return -EPERM;
--
- 	/* Anybody who can open the device can do a read-safe command */
--	if (test_bit(cmd[0], filter->read_ok))
-+	if (filter->read_ok[cmd[0]] & (1 << q->sgio_type))
- 		return 0;
- 
- 	/* Write-safe commands require a writable open */
--	if (test_bit(cmd[0], filter->write_ok) && has_write_perm)
-+	if (has_write_perm && filter->write_ok[cmd[0]] & (1 << q->sgio_type))
- 		return 0;
- 
- 	return -EPERM;
-diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
-index 3e58b22..86940f3 100644
---- a/drivers/scsi/scsi_scan.c
-+++ b/drivers/scsi/scsi_scan.c
-@@ -782,6 +782,8 @@ static int scsi_add_lun(struct scsi_device *sdev, unsigned char *inq_result,
- 		sdev->removable = (inq_result[1] & 0x80) >> 7;
- 	}
- 
-+	sdev->request_queue->sgio_type = sdev->type;
-+
- 	switch (sdev->type) {
- 	case TYPE_RBC:
- 	case TYPE_TAPE:
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 0782336..b376d37 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -256,7 +256,6 @@ struct blk_queue_tag {
- };
- 
- #define BLK_SCSI_MAX_CMDS	(256)
--#define BLK_SCSI_CMD_PER_LONG	(BLK_SCSI_MAX_CMDS / (sizeof(long) * 8))
- 
- struct queue_limits {
- 	unsigned long		bounce_pfn;
-@@ -403,6 +402,7 @@ struct request_queue {
- 	 */
- 	unsigned int		sg_timeout;
- 	unsigned int		sg_reserved_size;
-+	unsigned char		sgio_type;
- 	int			node;
- #ifdef CONFIG_BLK_DEV_IO_TRACE
- 	struct blk_trace	*blk_trace;
-diff --git a/include/scsi/scsi.h b/include/scsi/scsi.h
-index b67553f..06cc93e 100644
---- a/include/scsi/scsi.h
-+++ b/include/scsi/scsi.h
-@@ -327,6 +327,7 @@ static inline int scsi_status_is_good(int status)
- #define TYPE_OCRW           0x0f
- #define TYPE_ADC            0x10
- #define TYPE_OSD            0x11
-+#define TYPE_MAX            0x1f
- #define TYPE_NO_LUN         0x7f
- 
- /* SCSI protocols; these are taken from SPC-3 section 7.5 */
+ 	sgio_bitmap_set(0x23,           R                    , read);  /* READ FORMAT CAPACITIES */
+-	sgio_bitmap_set(0x42, D|        R                    , read);  /* READ SUB-CHANNEL / UNMAP !! */
++	sgio_bitmap_set(0x42,           R                    , read);  /* READ SUB-CHANNEL */
+ 	sgio_bitmap_set(0x43,           R                    , read);  /* READ TOC/PMA/ATIP */
+ 	sgio_bitmap_set(0x44,   T|      R|            V      , read);  /* READ HEADER */
+ 	sgio_bitmap_set(0x45,           R                    , read);  /* PLAY AUDIO(10) */
+ 	sgio_bitmap_set(0x46,           R                    , read);  /* GET CONFIGURATION */
+ 	sgio_bitmap_set(0x47,           R                    , read);  /* PLAY AUDIO MSF */
+-	sgio_bitmap_set(0x48, D|        R|        B          , read);  /* PLAY AUDIO TI / SANITIZE !! */
++	sgio_bitmap_set(0x48,           R                    , read);  /* PLAY AUDIO TI */
+ 	sgio_bitmap_set(0x4A,           R                    , read);  /* GET EVENT STATUS NOTIFICATION */
+ 	sgio_bitmap_set(0x4B,           R                    , read);  /* PAUSE/RESUME */
+ 	sgio_bitmap_set(0x4E,           R                    , read);  /* STOP PLAY/SCAN */
+-	sgio_bitmap_set(0x51, D|        R                    , read);  /* READ DISC INFORMATION / XPWRITE(10) !! */
++	sgio_bitmap_set(0x51,           R                    , read);  /* READ DISC INFORMATION */
+ 	sgio_bitmap_set(0x52,           R                    , read);  /* READ TRACK INFORMATION */
+ 	sgio_bitmap_set(0x5C,           R                    , read);  /* READ BUFFER CAPACITY */
+ 	sgio_bitmap_set(0xA4,           R                    , read);  /* REPORT KEY */
+-	sgio_bitmap_set(0xAC,           R|O                  , read);  /* GET PERFORMANCE / ERASE !! */
++	sgio_bitmap_set(0xAC,           R                    , read);  /* GET PERFORMANCE */
+ 	sgio_bitmap_set(0xAD,           R                    , read);  /* READ DVD STRUCTURE */
+ 	sgio_bitmap_set(0xB9,           R                    , read);  /* READ CD MSF */
+ 	sgio_bitmap_set(0xBA,           R                    , read);  /* SCAN */
 -- 
 1.7.1
 
