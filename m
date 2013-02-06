@@ -1,333 +1,744 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753020Ab3BFLVw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 06:21:52 -0500
-Received: from nm3-vm1.access.bullet.mail.sp2.yahoo.com ([98.139.44.109]:25887
-	"EHLO nm3-vm1.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751025Ab3BFLVv (ORCPT
+	id S1753617Ab3BFLWf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 06:22:35 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:43369 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752146Ab3BFLWb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 06:21:51 -0500
-X-Greylist: delayed 378 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Feb 2013 06:21:51 EST
-X-Yahoo-Newman-Property: ymail-5
-X-Yahoo-Newman-Id: 41062.23868.bm@omp1029.access.mail.sp2.yahoo.com
-X-YMail-OSG: SfruF08VM1ny_Q5DKQb4Wl5bVeuSEVZdYWNe2JhmfVMq4Cb
- 0QGJSTlUx7BExe4CxTpQFHzAUzJLnCLksTRIXgCjARtr2CK78OSPhjHJT9f8
- tRdQRK6Xo79mV7UxobgufRg15gcM5wzNxhZX9I4wAf2etY6s47tYoB6Bmqws
- Vi5YmFs_sserH7ejSrH1OvA2qroQbtXiPyUoHfzHJ54KIzWKe2t3vFbE0HWR
- EdkWQ5gzUyrKDnjbhExodMqgt1rKL5xBy5luDf99lzI.jMeKbMo5YFG2NlEy
- MP7OVJHvCQy8UrOgqWv5fFc96soV8f3KJUVy5VRbbo03_UJ65dwP_7joQin.
- HE29IUR7YLJbaMoka2SDEkzKbHUpxQAM1Ih73k3kfy5cKwKd_VTo5eq2v4Q9
- k7blKWMxgmU9_Uq2XhL0QaN5hyHIHSTPQ4Hi_At0gRtYQ8JrUK1RAkl3mJQO
- QARi9uN0ipM5XieVKwxMRMM3ujdpaOWe.p_0.z2CpLwO5XgTsf4WDQ3ITFwr
- CK0qoXkttY1yUbldsOcjShibj6pVn
-X-Rocket-MIMEInfo: 001.001,CiABMAEBAQE-
-X-RocketYMMF: webcartoon43
-X-Mailer: YahooMailClassic/15.1.2 YahooMailWebService/0.8.132.503
-Message-ID: <1360149329.40249.YahooMailClassic@web5715.biz.mail.ne1.yahoo.com>
-Date: Wed, 6 Feb 2013 03:15:29 -0800 (PST)
-From: "Mrs. Mary  Kamal" <maryakramkamal@hotmail.com>
-Reply-To: maryakramkamal@gmail.com
-Subject: Please Refer to Attach Letter and Reply Urgently
-To: undisclosed recipients:;
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="1178294230-2037137443-1360149329=:40249"
+	Wed, 6 Feb 2013 06:22:31 -0500
+X-AuditID: cbfee61a-b7f7d6d000000f4e-83-51123cf5ddcf
+From: Jonghwa Lee <jonghwa3.lee@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: a.zummo@towertech.it, Andrew Morton <akpm@linux-foundation.org>,
+        rtc-linux@googlegroups.com, Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myugnjoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: [PATCH v3] rtc: max77686: Add driver for max77686 rtc.
+Date: Wed, 06 Feb 2013 20:22:20 +0900
+Message-id: <1360149740-19526-1-git-send-email-jonghwa3.lee@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJLMWRmVeSWpSXmKPExsVy+t8zLd2vNkKBBuuX6lhc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6M9e2aBZcnM1Ys+bCMqYHxb3kXIyeHhICJxIPH/1ggbDGJC/fW
+	s3UxcnEICSxjlLh66CYzTNHdD63MEInpjBLr555mgXCWMknM+f6HEaSKTUBH4v++m+wgtoiA
+	gsTm3mesIEXMAg8ZJeY9n8QKkhAWsJf4dP0rWAOLgKrE80ebgRo4OHgFPCSOf9cGMSWAeudM
+	soFYvIdN4s+qIIhqAYlvkw+xQJTISmw6AHWbpMTBFTdYJjAKLmBkWMUomlqQXFCclJ5rqFec
+	mFtcmpeul5yfu4kRElBSOxhXNlgcYhTgYFTi4b2hJxgoxJpYVlyZe4hRgoNZSYQ3VkEoUIg3
+	JbGyKrUoP76oNCe1+BBjMtDyicxSosn5wGDPK4k3NDYwNjS0NDQztTQ1IE1YSZyX8dSTACGB
+	9MSS1OzU1ILUIpgtTBycUg2MxRry/M/fmCvPzwu91TNbtOGkx23bXK2lsyN2LBNf/6xGWiPn
+	wK8n0zzZt/m+FFj1y0tga/ZfxWmlM4MtkqzP/jY4tdlEhjXl+XO5Jw/V1HLvbDz+bVnf39DS
+	G7dO+Uzc7Ch+bF3GsUbfRp2JkwNF7s+Y6Tfz/KamS2uDH4QKsmRsu7MwPWyRihJLcUaioRZz
+	UXEiAD1y1x9sAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkkeLIzCtJLcpLzFFi42I5/e+xoO5XG6FAg88PZCwu75rD5sDo8XmT
+	XABjVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7Q
+	VCWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1jxvp2zYLLkxkrlnxYxtTA
+	+Le8i5GTQ0LAROLuh1ZmCFtM4sK99WxdjFwcQgLTGSXWzz3NAuEsZZKY8/0PI0gVm4COxP99
+	N9lBbBEBBYnNvc9YQYqYBR4ySsx7PokVJCEsYC/x6fpXsAYWAVWJ5482AzVwcPAKeEgc/64N
+	YkoA9c6ZZDOBkXsBI8MqRtHUguSC4qT0XEO94sTc4tK8dL3k/NxNjOCAfSa1g3Flg8UhRgEO
+	RiUe3ht6goFCrIllxZW5hxglOJiVRHhjFYQChXhTEiurUovy44tKc1KLDzEmA+2eyCwlmpwP
+	jKa8knhDYxMzI0sjM2MTc2Nj0oSVxHkZTz0JEBJITyxJzU5NLUgtgtnCxMEp1cBo6SHcvnOv
+	pWXrreYZyx5Omh4WNolZ5Sjri40Sz2/HrA2R0SvRXbLDdlZlr9j2e5+XZWhPm951bK+E9Lnf
+	0dOn69/hvZFjdu2ccMTOyMX/7Lif/NhVkh/SfcNd/to3od13bBTWhfGt3JKR9OkHm5xV8szz
+	sR9tp334x3OYV2e1j8HNms/Fn2f4K7EUZyQaajEXFScCAFAbqPScAgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---1178294230-2037137443-1360149329=:40249
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+This patch adds rtc driver for Maxim 77686 multifunction chip.
+Max77686 has rtc module in it. and it can be used for timekeeping
+clock and system alarm. It provide various operational mode those are
+BCD/binary, 24/12hour, am/pm. Driver sets binary/24/ for default.
+Maxim 8997 also supports SMPL(Sudden Momentary Power Loss), WTSR
+(Watchdog Timeout and Software Reset).
 
-=0A 
---1178294230-2037137443-1360149329=:40249
-Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document; name="Mrs."
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="Mrs. Mary Kamal.docx"
+Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+Signed-off-by: Myugnjoo Ham <myungjoo.ham@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+v3
+ - Change writing delay 16ms to 14ms
+ - Use devm_kzalloc & code clean with Devendra's comments.
+v2
+ - http://lkml.org/lkml/2012/12/20/57
 
-UEsDBBQABgAIAAAAIQDd/JU3ZgEAACAFAAATAAgCW0NvbnRlbnRfVHlwZXNd
-LnhtbCCiBAIooAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC0VMtuwjAQvFfqP0S+Vomh
-h6qqCBz6OLZIpR9g7A1Y9Uv28vr7bgJEVQtBKuUSKVnvzOzsxIPR2ppsCTFp
-70rWL3osAye90m5Wso/JS37PsoTCKWG8g5JtILHR8PpqMNkESBl1u1SyOWJ4
-4DzJOViRCh/AUaXy0Qqk1zjjQchPMQN+2+vdcekdgsMcaww2HDxBJRYGs+c1
-fd4qiWASyx63B2uukokQjJYCSSlfOvWDJd8xFNTZnElzHdINyWD8IENdOU6w
-63sja6JWkI1FxFdhSQZf+ai48nJhaYaiG+aATl9VWkLbX6OF6CWkRJ5bU7QV
-K7Tb6z+qI+HGQPp/FVvcLnrSOY4+JE57OZsf6s0rUDlZESCihnZ1x0cHRLLs
-EsPvkLvGb1KAlHfgzbN/tgcNzEnKin6JiZgaOJvvV/Ja6JMiVjB9v5j738C7
-hLT5kz7+wYz9dVF3H0gdb+634RcAAAD//wMAUEsDBBQABgAIAAAAIQAekRq3
-8wAAAE4CAAALAAgCX3JlbHMvLnJlbHMgogQCKKAAAgAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAjJLbSgNBDIbvBd9hyH032woi0tneSKF3IusDhJnsAXcOzKTavr2jILpQ
-217m9OfLT9abg5vUO6c8Bq9hWdWg2JtgR99reG23iwdQWchbmoJnDUfOsGlu
-b9YvPJGUoTyMMaui4rOGQSQ+ImYzsKNchci+VLqQHEkJU4+RzBv1jKu6vsf0
-VwOamabaWQ1pZ+9AtcdYNl/WDl03Gn4KZu/Yy4kVyAdhb9kuYipsScZyjWop
-9SwabDDPJZ2RYqwKNuBpotX1RP9fi46FLAmhCYnP83x1nANaXg902aJ5x687
-HyFZLBZ9e/tDg7MvaD4BAAD//wMAUEsDBBQABgAIAAAAIQBf1OCkUgEAADEF
-AAAcAAgBd29yZC9fcmVscy9kb2N1bWVudC54bWwucmVscyCiBAEooAABAAAA
-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
-AAALAAsAwQIAAPguAAAAAA==
+ drivers/rtc/Kconfig        |   30 +++
+ drivers/rtc/Makefile       |    1 +
+ drivers/rtc/rtc-max77686.c |  610 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 641 insertions(+)
+ create mode 100644 drivers/rtc/rtc-max77686.c
 
---1178294230-2037137443-1360149329=:40249--
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index 923a9da..fc382af 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -233,6 +233,36 @@ config RTC_DRV_MAX8998
+ 	  This driver can also be built as a module. If so, the module
+ 	  will be called rtc-max8998.
+ 
++config RTC_DRV_MAX77686
++	tristate "Maxim MAX77686"
++	depends on MFD_MAX77686
++	help
++	  If you say yes here you will get support for the
++	  RTC of Maxim MAX77686 PMIC.
++
++	  This driver can also be built as a module. If so, the module
++	  will be called rtc-max77686.
++
++config MAX77686_RTC_WTSR
++	bool "MAX77686_RTC_WTSR"
++	depends on RTC_DRV_MAX77686
++	help
++	  MAX77686 rtc can supports WTSR(Watchdog Timeout and Software Reset).
++	  WTSR event would keep the PMIC on regardless of PWRHOLD signal.
++	  When PWRHOLD signal is falling, it turns on WTSR timer rather executes
++	  reset imidiately. After timer expiring, it determine to reset the PMIC
++	  depends on PWRHOLD state.
++
++config MAX77686_RTC_SMPL
++	bool "MAX77686_RTC_SMPL"
++	depends on RTC_DRV_MAX77686
++	help
++	  MAX77686 rtc can supports SMPL(Sudden Momentary Power Loss).
++	  SMPL function can be used to intiate a power up sequence after momentarily
++	  loosing contact to the battery pack. If battery goes under UVLO(Under
++	  Lock Out) it starts SMPL timer. After timer exipiring, it checks battery
++	  whether its state recovers from UVLO or not to make power supplies keep on.
++
+ config RTC_DRV_RS5C372
+ 	tristate "Ricoh R2025S/D, RS5C372A/B, RV5C386, RV5C387A"
+ 	help
+diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+index 4418ef3..97e7967 100644
+--- a/drivers/rtc/Makefile
++++ b/drivers/rtc/Makefile
+@@ -70,6 +70,7 @@ obj-$(CONFIG_RTC_DRV_MAX8907)	+= rtc-max8907.o
+ obj-$(CONFIG_RTC_DRV_MAX8925)	+= rtc-max8925.o
+ obj-$(CONFIG_RTC_DRV_MAX8998)	+= rtc-max8998.o
+ obj-$(CONFIG_RTC_DRV_MAX6902)	+= rtc-max6902.o
++obj-$(CONFIG_RTC_DRV_MAX77686)	+= rtc-max77686.o
+ obj-$(CONFIG_RTC_DRV_MC13XXX)	+= rtc-mc13xxx.o
+ obj-$(CONFIG_RTC_DRV_MSM6242)	+= rtc-msm6242.o
+ obj-$(CONFIG_RTC_DRV_MPC5121)	+= rtc-mpc5121.o
+diff --git a/drivers/rtc/rtc-max77686.c b/drivers/rtc/rtc-max77686.c
+new file mode 100644
+index 0000000..eea0e44
+--- /dev/null
++++ b/drivers/rtc/rtc-max77686.c
+@@ -0,0 +1,610 @@
++/*
++ * RTC driver for Maxim MAX77686
++ *
++ * Copyright (C) 2013 Samsung Electronics Co.Ltd
++ *
++ *  based on rtc-max8997.c
++ *
++ *  This program is free software; you can redistribute  it and/or modify it
++ *  under  the terms of  the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the  License, or (at your
++ *  option) any later version.
++ *
++ */
++
++#include <linux/slab.h>
++#include <linux/rtc.h>
++#include <linux/delay.h>
++#include <linux/mutex.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/mfd/max77686-private.h>
++#include <linux/irqdomain.h>
++#include <linux/regmap.h>
++
++/* RTC Control Register */
++#define BCD_EN_SHIFT			0
++#define BCD_EN_MASK			(1 << BCD_EN_SHIFT)
++#define MODEL24_SHIFT			1
++#define MODEL24_MASK			(1 << MODEL24_SHIFT)
++/* RTC Update Register1 */
++#define RTC_UDR_SHIFT			0
++#define RTC_UDR_MASK			(1 << RTC_UDR_SHIFT)
++#define RTC_RBUDR_SHIFT			4
++#define RTC_RBUDR_MASK			(1 << RTC_RBUDR_SHIFT)
++/* WTSR and SMPL Register */
++#define WTSRT_SHIFT			0
++#define SMPLT_SHIFT			2
++#define WTSR_EN_SHIFT			6
++#define SMPL_EN_SHIFT			7
++#define WTSRT_MASK			(3 << WTSRT_SHIFT)
++#define SMPLT_MASK			(3 << SMPLT_SHIFT)
++#define WTSR_EN_MASK			(1 << WTSR_EN_SHIFT)
++#define SMPL_EN_MASK			(1 << SMPL_EN_SHIFT)
++/* RTC Hour register */
++#define HOUR_PM_SHIFT			6
++#define HOUR_PM_MASK			(1 << HOUR_PM_SHIFT)
++/* RTC Alarm Enable */
++#define ALARM_ENABLE_SHIFT		7
++#define ALARM_ENABLE_MASK		(1 << ALARM_ENABLE_SHIFT)
++
++#define MAX77686_RTC_UPDATE_DELAY	14
++
++enum {
++	RTC_SEC = 0,
++	RTC_MIN,
++	RTC_HOUR,
++	RTC_WEEKDAY,
++	RTC_MONTH,
++	RTC_YEAR,
++	RTC_DATE,
++	RTC_NR_TIME
++};
++
++struct max77686_rtc_info {
++	struct device		*dev;
++	struct max77686_dev	*max77686;
++	struct i2c_client	*rtc;
++	struct rtc_device	*rtc_dev;
++	struct mutex		lock;
++
++	struct regmap		*regmap;
++
++	int virq;
++	int rtc_24hr_mode;
++};
++
++enum MAX77686_RTC_OP {
++	MAX77686_RTC_WRITE,
++	MAX77686_RTC_READ,
++};
++
++static void max77686_rtc_data_to_tm(u8 *data, struct rtc_time *tm,
++				   int rtc_24hr_mode)
++{
++	tm->tm_sec = data[RTC_SEC] & 0x7f;
++	tm->tm_min = data[RTC_MIN] & 0x7f;
++	if (rtc_24hr_mode)
++		tm->tm_hour = data[RTC_HOUR] & 0x1f;
++	else {
++		tm->tm_hour = data[RTC_HOUR] & 0x0f;
++		if (data[RTC_HOUR] & HOUR_PM_MASK)
++			tm->tm_hour += 12;
++	}
++
++	tm->tm_wday = fls(data[RTC_WEEKDAY] & 0x7f) - 1;
++	tm->tm_mday = data[RTC_DATE] & 0x1f;
++	tm->tm_mon = (data[RTC_MONTH] & 0x0f) - 1;
++	tm->tm_year = (data[RTC_YEAR] & 0x7f) + 100;
++	tm->tm_yday = 0;
++	tm->tm_isdst = 0;
++}
++
++static int max77686_rtc_tm_to_data(struct rtc_time *tm, u8 *data)
++{
++	data[RTC_SEC] = tm->tm_sec;
++	data[RTC_MIN] = tm->tm_min;
++	data[RTC_HOUR] = tm->tm_hour;
++	data[RTC_WEEKDAY] = 1 << tm->tm_wday;
++	data[RTC_DATE] = tm->tm_mday;
++	data[RTC_MONTH] = tm->tm_mon + 1;
++	data[RTC_YEAR] = tm->tm_year > 100 ? (tm->tm_year - 100) : 0 ;
++
++	if (tm->tm_year < 100) {
++		pr_warn("%s: MAX77686 RTC cannot handle the year %d."
++			"Assume it's 2000.\n", __func__,
++			1900 + tm->tm_year);
++		return -EINVAL;
++	}
++	return 0;
++}
++
++static int max77686_rtc_update(struct max77686_rtc_info *info,
++	enum MAX77686_RTC_OP op)
++{
++	int ret;
++	unsigned int data = 0;
++
++	switch (op) {
++	case MAX77686_RTC_WRITE:
++		data = 1 << RTC_UDR_SHIFT;
++		break;
++	case MAX77686_RTC_READ:
++		data = 1 << RTC_RBUDR_SHIFT;
++		break;
++	}
++
++	ret = regmap_update_bits(info->max77686->rtc_regmap,
++				 MAX77686_RTC_UPDATE0, data, data);
++	if (ret < 0)
++		dev_err(info->dev, "%s: fail to write update reg(ret=%d, data=0x%x)\n",
++				__func__, ret, data);
++	else {
++		/* Minimum 14ms delay required before RTC update. */
++		msleep(MAX77686_RTC_UPDATE_DELAY);
++	}
++
++	return ret;
++}
++
++static int max77686_rtc_read_time(struct device *dev, struct rtc_time *tm)
++{
++	struct max77686_rtc_info *info = dev_get_drvdata(dev);
++	u8 data[RTC_NR_TIME];
++	int ret;
++
++	mutex_lock(&info->lock);
++
++	ret = max77686_rtc_update(info, MAX77686_RTC_READ);
++	if (ret < 0)
++		goto out;
++
++	ret = regmap_bulk_read(info->max77686->rtc_regmap,
++				MAX77686_RTC_SEC, data, RTC_NR_TIME);
++	if (ret < 0) {
++		dev_err(info->dev, "%s: fail to read time reg(%d)\n",
++			__func__, ret);
++		goto out;
++	}
++
++	max77686_rtc_data_to_tm(data, tm, info->rtc_24hr_mode);
++
++	ret = rtc_valid_tm(tm);
++
++out:
++	mutex_unlock(&info->lock);
++	return ret;
++}
++
++static int max77686_rtc_set_time(struct device *dev, struct rtc_time *tm)
++{
++	struct max77686_rtc_info *info = dev_get_drvdata(dev);
++	u8 data[RTC_NR_TIME];
++	int ret;
++
++	ret = max77686_rtc_tm_to_data(tm, data);
++	if (ret < 0)
++		return ret;
++
++	mutex_lock(&info->lock);
++
++	ret = regmap_bulk_write(info->max77686->rtc_regmap,
++				 MAX77686_RTC_SEC, data, RTC_NR_TIME);
++	if (ret < 0) {
++		dev_err(info->dev, "%s: fail to write time reg(%d)\n", __func__,
++				ret);
++		goto out;
++	}
++
++	ret = max77686_rtc_update(info, MAX77686_RTC_WRITE);
++
++out:
++	mutex_unlock(&info->lock);
++	return ret;
++}
++
++static int max77686_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
++{
++	struct max77686_rtc_info *info = dev_get_drvdata(dev);
++	u8 data[RTC_NR_TIME];
++	unsigned int val;
++	int i, ret;
++
++	mutex_lock(&info->lock);
++
++	ret = max77686_rtc_update(info, MAX77686_RTC_READ);
++	if (ret < 0)
++		goto out;
++
++	ret = regmap_bulk_read(info->max77686->rtc_regmap,
++				 MAX77686_ALARM1_SEC, data, RTC_NR_TIME);
++	if (ret < 0) {
++		dev_err(info->dev, "%s:%d fail to read alarm reg(%d)\n",
++				__func__, __LINE__, ret);
++		goto out;
++	}
++
++	max77686_rtc_data_to_tm(data, &alrm->time, info->rtc_24hr_mode);
++
++	alrm->enabled = 0;
++	for (i = 0; i < RTC_NR_TIME; i++) {
++		if (data[i] & ALARM_ENABLE_MASK) {
++			alrm->enabled = 1;
++			break;
++		}
++	}
++
++	alrm->pending = 0;
++	ret = regmap_read(info->max77686->regmap, MAX77686_REG_STATUS1, &val);
++	if (ret < 0) {
++		dev_err(info->dev, "%s:%d fail to read status1 reg(%d)\n",
++				__func__, __LINE__, ret);
++		goto out;
++	}
++
++	if (val & (1 << 4)) /* RTCA1 */
++		alrm->pending = 1;
++
++out:
++	mutex_unlock(&info->lock);
++	return 0;
++}
++
++static int max77686_rtc_stop_alarm(struct max77686_rtc_info *info)
++{
++	u8 data[RTC_NR_TIME];
++	int ret, i;
++	struct rtc_time tm;
++
++	if (!mutex_is_locked(&info->lock))
++		dev_warn(info->dev, "%s: should have mutex locked\n", __func__);
++
++	ret = max77686_rtc_update(info, MAX77686_RTC_READ);
++	if (ret < 0)
++		goto out;
++
++	ret = regmap_bulk_read(info->max77686->rtc_regmap,
++				 MAX77686_ALARM1_SEC, data, RTC_NR_TIME);
++	if (ret < 0) {
++		dev_err(info->dev, "%s: fail to read alarm reg(%d)\n",
++				__func__, ret);
++		goto out;
++	}
++
++	max77686_rtc_data_to_tm(data, &tm, info->rtc_24hr_mode);
++
++	for (i = 0; i < RTC_NR_TIME; i++)
++		data[i] &= ~ALARM_ENABLE_MASK;
++
++	ret = regmap_bulk_write(info->max77686->rtc_regmap,
++				 MAX77686_ALARM1_SEC, data, RTC_NR_TIME);
++	if (ret < 0) {
++		dev_err(info->dev, "%s: fail to write alarm reg(%d)\n",
++				__func__, ret);
++		goto out;
++	}
++
++	ret = max77686_rtc_update(info, MAX77686_RTC_WRITE);
++out:
++	return ret;
++}
++
++static int max77686_rtc_start_alarm(struct max77686_rtc_info *info)
++{
++	u8 data[RTC_NR_TIME];
++	int ret;
++	struct rtc_time tm;
++
++	if (!mutex_is_locked(&info->lock))
++		dev_warn(info->dev, "%s: should have mutex locked\n", __func__);
++
++	ret = max77686_rtc_update(info, MAX77686_RTC_READ);
++	if (ret < 0)
++		goto out;
++
++	ret = regmap_bulk_read(info->max77686->rtc_regmap,
++				 MAX77686_ALARM1_SEC, data, RTC_NR_TIME);
++	if (ret < 0) {
++		dev_err(info->dev, "%s: fail to read alarm reg(%d)\n",
++				__func__, ret);
++		goto out;
++	}
++
++	max77686_rtc_data_to_tm(data, &tm, info->rtc_24hr_mode);
++
++	data[RTC_SEC] |= (1 << ALARM_ENABLE_SHIFT);
++	data[RTC_MIN] |= (1 << ALARM_ENABLE_SHIFT);
++	data[RTC_HOUR] |= (1 << ALARM_ENABLE_SHIFT);
++	data[RTC_WEEKDAY] &= ~ALARM_ENABLE_MASK;
++	if (data[RTC_MONTH] & 0xf)
++		data[RTC_MONTH] |= (1 << ALARM_ENABLE_SHIFT);
++	if (data[RTC_YEAR] & 0x7f)
++		data[RTC_YEAR] |= (1 << ALARM_ENABLE_SHIFT);
++	if (data[RTC_DATE] & 0x1f)
++		data[RTC_DATE] |= (1 << ALARM_ENABLE_SHIFT);
++
++	ret = regmap_bulk_write(info->max77686->rtc_regmap,
++				 MAX77686_ALARM1_SEC, data, RTC_NR_TIME);
++	if (ret < 0) {
++		dev_err(info->dev, "%s: fail to write alarm reg(%d)\n",
++				__func__, ret);
++		goto out;
++	}
++
++	ret = max77686_rtc_update(info, MAX77686_RTC_WRITE);
++out:
++	return ret;
++}
++
++static int max77686_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
++{
++	struct max77686_rtc_info *info = dev_get_drvdata(dev);
++	u8 data[RTC_NR_TIME];
++	int ret;
++
++	ret = max77686_rtc_tm_to_data(&alrm->time, data);
++	if (ret < 0)
++		return ret;
++
++	mutex_lock(&info->lock);
++
++	ret = max77686_rtc_stop_alarm(info);
++	if (ret < 0)
++		goto out;
++
++	ret = regmap_bulk_write(info->max77686->rtc_regmap,
++				 MAX77686_ALARM1_SEC, data, RTC_NR_TIME);
++
++	if (ret < 0) {
++		dev_err(info->dev, "%s: fail to write alarm reg(%d)\n",
++				__func__, ret);
++		goto out;
++	}
++
++	ret = max77686_rtc_update(info, MAX77686_RTC_WRITE);
++	if (ret < 0)
++		goto out;
++
++	if (alrm->enabled)
++		ret = max77686_rtc_start_alarm(info);
++out:
++	mutex_unlock(&info->lock);
++	return ret;
++}
++
++static int max77686_rtc_alarm_irq_enable(struct device *dev,
++					unsigned int enabled)
++{
++	struct max77686_rtc_info *info = dev_get_drvdata(dev);
++	int ret;
++
++	mutex_lock(&info->lock);
++	if (enabled)
++		ret = max77686_rtc_start_alarm(info);
++	else
++		ret = max77686_rtc_stop_alarm(info);
++	mutex_unlock(&info->lock);
++
++	return ret;
++}
++
++static irqreturn_t max77686_rtc_alarm_irq(int irq, void *data)
++{
++	struct max77686_rtc_info *info = data;
++
++	dev_info(info->dev, "%s:irq(%d)\n", __func__, irq);
++
++	rtc_update_irq(info->rtc_dev, 1, RTC_IRQF | RTC_AF);
++
++	return IRQ_HANDLED;
++}
++
++static const struct rtc_class_ops max77686_rtc_ops = {
++	.read_time = max77686_rtc_read_time,
++	.set_time = max77686_rtc_set_time,
++	.read_alarm = max77686_rtc_read_alarm,
++	.set_alarm = max77686_rtc_set_alarm,
++	.alarm_irq_enable = max77686_rtc_alarm_irq_enable,
++};
++
++#ifdef CONFIG_MAX77686_RTC_WTSR
++static void max77686_rtc_enable_wtsr(struct max77686_rtc_info *info,
++					bool enable)
++{
++	int ret;
++	unsigned int val, mask;
++
++	if (enable)
++		val = (1 << WTSR_EN_SHIFT) | (3 << WTSRT_SHIFT);
++	else
++		val = 0;
++
++	mask = WTSR_EN_MASK | WTSRT_MASK;
++
++	dev_info(info->dev, "%s: %s WTSR\n", __func__,
++			enable ? "enable" : "disable");
++
++	ret = regmap_update_bits(info->max77686->rtc_regmap,
++				 MAX77686_WTSR_SMPL_CNTL, mask, val);
++	if (ret < 0) {
++		dev_err(info->dev, "%s: fail to update WTSR reg(%d)\n",
++				__func__, ret);
++		return;
++	}
++
++	max77686_rtc_update(info, MAX77686_RTC_WRITE);
++}
++#else
++static void max77686_rtc_enable_wtsr(struct max77686_rtc_info *info,
++					bool enable) {}
++#endif /* CONFIG_MAX77686_RTC_WTSR */
++#ifdef CONFIG_MAX77686_RTC_SMPL
++static void max77686_rtc_enable_smpl(struct max77686_rtc_info *info,
++					bool enable)
++{
++	int ret;
++	unsigned int val, mask;
++
++	if (enable)
++		val = (1 << SMPL_EN_SHIFT) | (0 << SMPLT_SHIFT);
++	else
++		val = 0;
++
++	mask = SMPL_EN_MASK | SMPLT_MASK;
++
++	dev_info(info->dev, "%s: %s SMPL\n", __func__,
++			enable ? "enable" : "disable");
++
++	ret = regmap_update_bits(info->max77686->rtc_regmap,
++				 MAX77686_WTSR_SMPL_CNTL, mask, val);
++	if (ret < 0) {
++		dev_err(info->dev, "%s: fail to update SMPL reg(%d)\n",
++				__func__, ret);
++		return;
++	}
++
++	max77686_rtc_update(info, MAX77686_RTC_WRITE);
++
++	val = 0;
++	regmap_read(info->max77686->rtc_regmap, MAX77686_WTSR_SMPL_CNTL, &val);
++	pr_info("%s: WTSR_SMPL(0x%02x)\n", __func__, val);
++}
++#else
++static void max77686_rtc_enable_smpl(struct max77686_rtc_info *info,
++					bool enable) {}
++#endif /* CONFIG_MAX77686_RTC_SMPL */
++
++static int max77686_rtc_init_reg(struct max77686_rtc_info *info)
++{
++	u8 data[2];
++	int ret;
++
++	/* Set RTC control register : Binary mode, 24hour mdoe */
++	data[0] = (1 << BCD_EN_SHIFT) | (1 << MODEL24_SHIFT);
++	data[1] = (0 << BCD_EN_SHIFT) | (1 << MODEL24_SHIFT);
++
++	info->rtc_24hr_mode = 1;
++
++	ret = regmap_bulk_write(info->max77686->rtc_regmap,
++				MAX77686_RTC_CONTROLM, data, 2);
++	if (ret < 0) {
++		dev_err(info->dev, "%s: fail to write controlm reg(%d)\n",
++				__func__, ret);
++		return ret;
++	}
++
++	ret = max77686_rtc_update(info, MAX77686_RTC_WRITE);
++	return ret;
++}
++
++static struct regmap_config max77686_rtc_regmap_config = {
++	.reg_bits = 8,
++	.val_bits = 8,
++};
++
++static int max77686_rtc_probe(struct platform_device *pdev)
++{
++	struct max77686_dev *max77686 = dev_get_drvdata(pdev->dev.parent);
++	struct max77686_rtc_info *info;
++	int ret, virq;
++
++	pr_info("%s\n", __func__);
++
++	info = devm_kzalloc(&pdev->dev, sizeof(struct max77686_rtc_info),
++				GFP_KERNEL);
++	if (!info)
++		return -ENOMEM;
++
++	mutex_init(&info->lock);
++	info->dev = &pdev->dev;
++	info->max77686 = max77686;
++	info->rtc = max77686->rtc;
++	info->max77686->rtc_regmap = regmap_init_i2c(info->max77686->rtc,
++					 &max77686_rtc_regmap_config);
++	if (IS_ERR(info->max77686->rtc_regmap)) {
++		ret = PTR_ERR(info->max77686->rtc_regmap);
++		dev_err(info->max77686->dev, "Failed to allocate register map: %d\n",
++				ret);
++		return ret;
++	}
++	platform_set_drvdata(pdev, info);
++
++	ret = max77686_rtc_init_reg(info);
++
++	if (ret < 0) {
++		dev_err(&pdev->dev, "Failed to initialize RTC reg:%d\n", ret);
++		return ret;
++	}
++
++	max77686_rtc_enable_wtsr(info, true);
++	max77686_rtc_enable_smpl(info, true);
++
++	device_init_wakeup(&pdev->dev, 1);
++
++	info->rtc_dev = rtc_device_register("max77686-rtc", &pdev->dev,
++			&max77686_rtc_ops, THIS_MODULE);
++
++	if (IS_ERR(info->rtc_dev)) {
++		pr_info("%s: fail\n", __func__);
++
++		ret = PTR_ERR(info->rtc_dev);
++		dev_err(&pdev->dev, "Failed to register RTC device: %d\n", ret);
++		return ret;
++	}
++	virq = irq_create_mapping(max77686->irq_domain, MAX77686_RTCIRQ_RTCA1);
++	if (!virq)
++		return ret;
++	info->virq = virq;
++
++	ret = request_threaded_irq(virq, NULL, max77686_rtc_alarm_irq, 0,
++			"rtc-alarm0", info);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "Failed to request alarm IRQ: %d: %d\n",
++			info->virq, ret);
++		return ret;
++	}
++
++	return ret;
++}
++
++static int max77686_rtc_remove(struct platform_device *pdev)
++{
++	struct max77686_rtc_info *info = platform_get_drvdata(pdev);
++
++	if (info) {
++		free_irq(info->virq, info);
++		rtc_device_unregister(info->rtc_dev);
++	}
++
++	return 0;
++}
++
++static void max77686_rtc_shutdown(struct platform_device *pdev)
++{
++	struct max77686_rtc_info *info = platform_get_drvdata(pdev);
++
++	max77686_rtc_enable_wtsr(info, false);
++	max77686_rtc_enable_smpl(info, false);
++}
++
++static const struct platform_device_id rtc_id[] = {
++	{ "max77686-rtc", 0 },
++	{},
++};
++
++static struct platform_driver max77686_rtc_driver = {
++	.driver		= {
++		.name	= "max77686-rtc",
++		.owner	= THIS_MODULE,
++	},
++	.probe		= max77686_rtc_probe,
++	.remove		= max77686_rtc_remove,
++	.shutdown	= max77686_rtc_shutdown,
++	.id_table	= rtc_id,
++};
++
++module_platform_driver(max77686_rtc_driver);
++
++MODULE_DESCRIPTION("Maxim MAX77686 RTC driver");
++MODULE_AUTHOR("<woong.byun@samsung.com>");
++MODULE_LICENSE("GPL");
+-- 
+1.7.9.5
+
