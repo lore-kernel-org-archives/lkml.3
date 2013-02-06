@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757133Ab3BFC0w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 21:26:52 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:55427 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757109Ab3BFC0v (ORCPT
+	id S1757064Ab3BFCcD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 21:32:03 -0500
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:42136 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754330Ab3BFCcB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 21:26:51 -0500
-Date: Tue, 5 Feb 2013 18:28:54 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>
-Subject: Re: [PATCH v2] zsmalloc: Add Kconfig for enabling PTE method
-Message-ID: <20130206022854.GA1681@kroah.com>
-References: <1360117028-5625-1-git-send-email-minchan@kernel.org>
+	Tue, 5 Feb 2013 21:32:01 -0500
+Message-ID: <5111C09D.7020007@gmail.com>
+Date: Tue, 05 Feb 2013 18:31:57 -0800
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360117028-5625-1-git-send-email-minchan@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: Dirk Brandewie <dirk.brandewie@gmail.com>, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org, Dirk Brandewie <dirk.j.brandewie@intel.com>
+Subject: Re: [PATCH 2/7] cpufreq: Retrieve current frequency from scaling
+ drivers with internal governors
+References: <1360088646-19104-1-git-send-email-dirk.brandewie@gmail.com> <1360088646-19104-3-git-send-email-dirk.brandewie@gmail.com> <CAOh2x=nYOf32jKqwwikgBS2oRHwmhZdVug=pLzQZWp-N2S9CGw@mail.gmail.com> <5111BCDA.1060507@gmail.com> <CAOh2x=k8EwdrMzE2qQ+vat47WcmVHzJhZjntPnqNwMqAqibXVQ@mail.gmail.com>
+In-Reply-To: <CAOh2x=k8EwdrMzE2qQ+vat47WcmVHzJhZjntPnqNwMqAqibXVQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 06, 2013 at 11:17:08AM +0900, Minchan Kim wrote:
-> diff --git a/drivers/staging/zsmalloc/Kconfig b/drivers/staging/zsmalloc/Kconfig
-> index 9084565..232b3b6 100644
-> --- a/drivers/staging/zsmalloc/Kconfig
-> +++ b/drivers/staging/zsmalloc/Kconfig
-> @@ -8,3 +8,15 @@ config ZSMALLOC
->  	  non-standard allocator interface where a handle, not a pointer, is
->  	  returned by an alloc().  This handle must be mapped in order to
->  	  access the allocated space.
-> +
-> +config PGTABLE_MAPPING
-> +        bool "Use page table mapping to access allocations that span two pages"
+On 02/05/2013 06:25 PM, Viresh Kumar wrote:
+> On Wed, Feb 6, 2013 at 7:45 AM, Dirk Brandewie <dirk.brandewie@gmail.com> wrote:
+>> How about this?
+>>
+>> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+>> index 2817c3c..9c0eac4 100644
+>> --- a/drivers/cpufreq/cpufreq.c
+>> +++ b/drivers/cpufreq/cpufreq.c
+>> @@ -1182,7 +1182,12 @@ unsigned int cpufreq_quick_get(unsigned int cpu)
+>>
+>>          unsigned int ret_freq = 0;
+>>
+>>          if (policy) {
+>> -               ret_freq = policy->cur;
+>>
+>> +               if (cpufreq_driver && cpufreq_driver->setpolicy &&
+>> +                       cpufreq_driver->get) {
+>> +                       ret_freq = cpufreq_driver->get(cpu);
+>> +               } else {
+>> +                       ret_freq = policy->cur;
+>> +               }
+>>                  cpufreq_cpu_put(policy);
 
-No tabs?
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 2817c3c..7516b7d 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1178,9 +1178,14 @@ static void cpufreq_out_of_sync(unsigned int cpu, 
+unsigned int old_freq,
+   */
+  unsigned int cpufreq_quick_get(unsigned int cpu)
+  {
+-	struct cpufreq_policy *policy = cpufreq_cpu_get(cpu);
++	struct cpufreq_policy *policy;
+  	unsigned int ret_freq = 0;
 
-Please also put "ZSmalloc somewhere in the text here, otherwise it
-really doesn't make much sense when seeing it in a menu.
++	if (cpufreq_driver && cpufreq_driver->setpolicy &&
++			cpufreq_driver->get)
++			return cpufreq_driver->get(cpu);
++
++	policy = cpufreq_cpu_get(cpu);
+  	if (policy) {
+  		ret_freq = policy->cur;
+  		cpufreq_cpu_put(policy);
 
-> +        depends on ZSMALLOC
-> +        default n
 
-That's the default, so it can be dropped.
-
-> +        help
-> +	  By default, zsmalloc uses a copy-based object mapping method to access
-> +	  allocations that span two pages. However, if a particular architecture
-> +	  performs VM mapping faster than copying, then you should select this.
-> +	  This causes zsmalloc to use page table mapping rather than copying
-> +	  for object mapping. You can check speed with zsmalloc benchmark[1].
-> +	  [1] https://github.com/spartacus06/zsmalloc
-
-Care to specify exactly _what_ architectures this should be set for or
-not?  That will help the distros out a lot in determining if this should
-be enabled or not.
-
-> diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
-> index 06f73a9..2c1805c 100644
-> --- a/drivers/staging/zsmalloc/zsmalloc-main.c
-> +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-> @@ -207,6 +207,7 @@ struct zs_pool {
->  	struct size_class size_class[ZS_SIZE_CLASSES];
->  
->  	gfp_t flags;	/* allocation flags used when growing pool */
-> +
->  };
->  
->  /*
-
-Why add this extra line?
-
-thanks,
-
-greg k-h
