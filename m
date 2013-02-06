@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754696Ab3BFOq2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 09:46:28 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:61182 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755136Ab3BFOqW (ORCPT
+	id S1756051Ab3BFOqp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 09:46:45 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:45151 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754169Ab3BFOqT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 09:46:22 -0500
+	Wed, 6 Feb 2013 09:46:19 -0500
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
         jolsa@redhat.com, namhyung.kim@lge.com
-Subject: [PATCH 2/2] perf stat: add per processor socket count aggregation
-Date: Wed,  6 Feb 2013 15:46:02 +0100
-Message-Id: <1360161962-9675-3-git-send-email-eranian@google.com>
+Subject: [PATCH 1/2] perf tools: add cpu_map processor socket level functions
+Date: Wed,  6 Feb 2013 15:46:01 +0100
+Message-Id: <1360161962-9675-2-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1360161962-9675-1-git-send-email-eranian@google.com>
 References: <1360161962-9675-1-git-send-email-eranian@google.com>
@@ -21,270 +21,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds per-processor socket count aggregation
-for system-wide mode measurements. This is a useful
-mode to detect imbalance between sockets.
+This patch adds:
+- cpu_map__get_socket: get socked id from cpu
+- cpu_map__build_socket_map: build socket map
+- cpu_map__socket: gets acutal socket from logical socket
 
-To enable this mode, use --aggr-socket in addition
-to -a. (system-wide).
-
-The output includes the socket number and the number
-of online processors on that socket. This is useful
-to gauge the amount of aggregation.
-
- # ./perf stat -I 1000 -a --aggr-socket -e cycles sleep 2
- #           time socket cpus             counts events
-      1.000097680 S0        4          5,788,785 cycles
-      2.000379943 S0        4         27,361,546 cycles
-      2.001167808 S0        4            818,275 cycles
+Those functions are used by uncore and processor socket-level
+aggregation modes.
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/builtin-stat.c |  126 +++++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 115 insertions(+), 11 deletions(-)
+ tools/perf/util/cpumap.c |   54 ++++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/cpumap.h |    9 ++++++++
+ 2 files changed, 63 insertions(+)
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 0368a10..9984876 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -68,6 +68,7 @@
- static void print_stat(int argc, const char **argv);
- static void print_counter_aggr(struct perf_evsel *counter, char *prefix);
- static void print_counter(struct perf_evsel *counter, char *prefix);
-+static void print_aggr_socket(char *prefix);
- 
- static struct perf_evlist	*evsel_list;
- 
-@@ -79,6 +80,7 @@ static int			run_count			=  1;
- static bool			no_inherit			= false;
- static bool			scale				=  true;
- static bool			no_aggr				= false;
-+static bool			aggr_socket			= false;
- static pid_t			child_pid			= -1;
- static bool			null_run			=  false;
- static int			detailed_run			=  0;
-@@ -93,6 +95,7 @@ static const char		*post_cmd			= NULL;
- static bool			sync_run			= false;
- static unsigned int		interval			= 0;
- static struct timespec		ref_time;
-+static struct cpu_map		*sock_map;
- 
- static volatile int done = 0;
- 
-@@ -312,7 +315,9 @@ static void print_interval(void)
- 	sprintf(prefix, "%6lu.%09lu%s", rs.tv_sec, rs.tv_nsec, csv_sep);
- 
- 	if (num_print_interval == 0 && !csv_output) {
--		if (no_aggr)
-+		if (aggr_socket)
-+			fprintf(output, "#           time socket cpus             counts events\n");
-+		else if (no_aggr)
- 			fprintf(output, "#           time CPU                 counts events\n");
- 		else
- 			fprintf(output, "#           time             counts events\n");
-@@ -321,7 +326,9 @@ static void print_interval(void)
- 	if (++num_print_interval == 25)
- 		num_print_interval = 0;
- 
--	if (no_aggr) {
-+	if (aggr_socket)
-+		print_aggr_socket(prefix);
-+	else if (no_aggr) {
- 		list_for_each_entry(counter, &evsel_list->entries, node)
- 			print_counter(counter, prefix);
- 	} else {
-@@ -349,6 +356,12 @@ static int __run_perf_stat(int argc __maybe_unused, const char **argv)
- 		ts.tv_nsec = 0;
- 	}
- 
-+	if (aggr_socket
-+	    && cpu_map__build_socket_map(evsel_list->cpus, &sock_map)) {
-+		perror("cannot build socket map");
-+		return -1;
-+	}
+diff --git a/tools/perf/util/cpumap.c b/tools/perf/util/cpumap.c
+index 2b32ffa..f817046 100644
+--- a/tools/perf/util/cpumap.c
++++ b/tools/perf/util/cpumap.c
+@@ -1,4 +1,5 @@
+ #include "util.h"
++#include "sysfs.h"
+ #include "../perf.h"
+ #include "cpumap.h"
+ #include <assert.h>
+@@ -201,3 +202,56 @@ void cpu_map__delete(struct cpu_map *map)
+ {
+ 	free(map);
+ }
 +
- 	if (forks && (pipe(child_ready_pipe) < 0 || pipe(go_pipe) < 0)) {
- 		perror("failed to create pipes");
- 		return -1;
-@@ -529,13 +542,21 @@ static void print_noise(struct perf_evsel *evsel, double avg)
- 	print_noise_pct(stddev_stats(&ps->res_stats[0]), avg);
- }
- 
--static void nsec_printout(int cpu, struct perf_evsel *evsel, double avg)
-+static void nsec_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
- {
- 	double msecs = avg / 1e6;
- 	char cpustr[16] = { '\0', };
- 	const char *fmt = csv_output ? "%s%.6f%s%s" : "%s%18.6f%s%-25s";
- 
--	if (no_aggr)
-+	if (aggr_socket)
-+		sprintf(cpustr, "S%*d%s%*d%s",
-+			csv_output ? 0 : -5,
-+			cpu,
-+			csv_sep,
-+			csv_output ? 0 : 4,
-+			nr,
-+			csv_sep);
-+	else if (no_aggr)
- 		sprintf(cpustr, "CPU%*d%s",
- 			csv_output ? 0 : -4,
- 			perf_evsel__cpus(evsel)->map[cpu], csv_sep);
-@@ -734,7 +755,7 @@ static void print_ll_cache_misses(int cpu,
- 	fprintf(output, " of all LL-cache hits   ");
- }
- 
--static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
-+static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
- {
- 	double total, ratio = 0.0;
- 	char cpustr[16] = { '\0', };
-@@ -747,7 +768,15 @@ static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
- 	else
- 		fmt = "%s%18.0f%s%-25s";
- 
--	if (no_aggr)
-+	if (aggr_socket)
-+		sprintf(cpustr, "S%*d%s%*d%s",
-+			csv_output ? 0 : -5,
-+			cpu,
-+			csv_sep,
-+			csv_output ? 0 : 4,
-+			nr,
-+			csv_sep);
-+	else if (no_aggr)
- 		sprintf(cpustr, "CPU%*d%s",
- 			csv_output ? 0 : -4,
- 			perf_evsel__cpus(evsel)->map[cpu], csv_sep);
-@@ -853,6 +882,70 @@ static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
- 	}
- }
- 
-+static void print_aggr_socket(char *prefix)
++int cpu_map__get_socket(struct cpu_map *map, int idx)
 +{
-+	struct perf_evsel *counter;
-+	u64 ena, run, val;
-+	int cpu, s, s2, sock, nr;
++	FILE *fp;
++	const char *mnt;
++	char path[PATH_MAX];
++	int cpu, ret;
 +
-+	if (!sock_map)
-+		return;
++	if (idx > map->nr)
++		return -1;
 +
-+	for (s = 0; s < sock_map->nr; s++) {
-+		sock = cpu_map__socket(sock_map, s);
-+		list_for_each_entry(counter, &evsel_list->entries, node) {
-+			val = ena = run = 0;
-+			nr = 0;
-+			for (cpu = 0; cpu < perf_evsel__nr_cpus(counter); cpu++) {
-+				s2 = cpu_map__get_socket(evsel_list->cpus, cpu);
-+				if (s2 != sock)
-+					continue;
-+				val += counter->counts->cpu[cpu].val;
-+				ena += counter->counts->cpu[cpu].ena;
-+				run += counter->counts->cpu[cpu].run;
-+				nr++;
-+			}
-+			if (prefix)
-+				fprintf(output, "%s", prefix);
++	cpu = map->map[idx];
 +
-+			if (run == 0 || ena == 0) {
-+				fprintf(output, "S%*d%s%*d%s%*s%s%*s",
-+					csv_output ? 0 : -5,
-+					s,
-+					csv_sep,
-+					csv_output ? 0 : 4,
-+					nr,
-+					csv_sep,
-+					csv_output ? 0 : 18,
-+					counter->supported ? CNTR_NOT_COUNTED : CNTR_NOT_SUPPORTED,
-+					csv_sep,
-+					csv_output ? 0 : -24,
-+					perf_evsel__name(counter));
-+				if (counter->cgrp)
-+					fprintf(output, "%s%s",
-+						csv_sep, counter->cgrp->name);
++	mnt = sysfs_find_mountpoint();
++	if (!mnt)
++		return -1;
 +
-+				fputc('\n', output);
-+				continue;
-+			}
++	sprintf(path,
++		"%s/devices/system/cpu/cpu%d/topology/physical_package_id",
++		mnt, cpu);
 +
-+			if (nsec_counter(counter))
-+				nsec_printout(sock, nr, counter, val);
-+			else
-+				abs_printout(sock, nr, counter, val);
-+
-+			if (!csv_output) {
-+				print_noise(counter, 1.0);
-+
-+				if (run != ena)
-+					fprintf(output, "  (%.2f%%)",
-+						100.0 * run / ena);
-+			}
-+			fputc('\n', output);
-+		}
-+	}
++	fp = fopen(path, "r");
++	if (!fp)
++		return -1;
++	ret = fscanf(fp, "%d", &cpu);
++	fclose(fp);
++	return ret == 1 ? cpu : -1;
 +}
 +
- /*
-  * Print out the results of a single counter:
-  * aggregated counts in system-wide mode
-@@ -882,9 +975,9 @@ static void print_counter_aggr(struct perf_evsel *counter, char *prefix)
- 	}
- 
- 	if (nsec_counter(counter))
--		nsec_printout(-1, counter, avg);
-+		nsec_printout(-1, 0, counter, avg);
- 	else
--		abs_printout(-1, counter, avg);
-+		abs_printout(-1, 0, counter, avg);
- 
- 	print_noise(counter, avg);
- 
-@@ -940,9 +1033,9 @@ static void print_counter(struct perf_evsel *counter, char *prefix)
- 		}
- 
- 		if (nsec_counter(counter))
--			nsec_printout(cpu, counter, val);
-+			nsec_printout(cpu, 0, counter, val);
- 		else
--			abs_printout(cpu, counter, val);
-+			abs_printout(cpu, 0, counter, val);
- 
- 		if (!csv_output) {
- 			print_noise(counter, 1.0);
-@@ -980,7 +1073,9 @@ static void print_stat(int argc, const char **argv)
- 		fprintf(output, ":\n\n");
- 	}
- 
--	if (no_aggr) {
-+	if (aggr_socket)
-+		print_aggr_socket(NULL);
-+	else if (no_aggr) {
- 		list_for_each_entry(counter, &evsel_list->entries, node)
- 			print_counter(counter, NULL);
- 	} else {
-@@ -1228,6 +1323,7 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
- 			"command to run after to the measured command"),
- 	OPT_UINTEGER('I', "interval-print", &interval,
- 		    "print counts at regular interval in ms (>= 100)"),
-+	OPT_BOOLEAN(0, "aggr-socket", &aggr_socket, "aggregate counts per processor socket"),
- 	OPT_END()
- 	};
- 	const char * const stat_usage[] = {
-@@ -1314,6 +1410,14 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
- 		usage_with_options(stat_usage, options);
- 	}
- 
-+	if (aggr_socket) {
-+		if (!perf_target__has_cpu(&target)) {
-+			fprintf(stderr, "--aggr-socket only available in system-wide mode (-a)\n");
-+			usage_with_options(stat_usage, options);
-+		}
-+		no_aggr = true;
-+	}
++int cpu_map__build_socket_map(struct cpu_map *cpus, struct cpu_map **sockp)
++{
++	struct cpu_map *sock;
++	int nr = cpus->nr;
++	int cpu, s1, s2;
 +
- 	if (add_default_attributes())
- 		goto out;
++	sock = calloc(1, sizeof(*sock) + nr * sizeof(int));
++	if (!sock)
++		return -1;
++
++	for (cpu = 0; cpu < nr; cpu++) {
++		s1 = cpu_map__get_socket(cpus, cpu);
++		for (s2 = 0; s2 < sock->nr; s2++) {
++			if (s1 == sock->map[s2])
++				break;
++		}
++		if (s2 == sock->nr) {
++			sock->map[sock->nr] = s1;
++			sock->nr++;
++		}
++	}
++	*sockp = sock;
++	return 0;
++}
+diff --git a/tools/perf/util/cpumap.h b/tools/perf/util/cpumap.h
+index 2f68a3b..161b007 100644
+--- a/tools/perf/util/cpumap.h
++++ b/tools/perf/util/cpumap.h
+@@ -14,6 +14,15 @@ struct cpu_map *cpu_map__dummy_new(void);
+ void cpu_map__delete(struct cpu_map *map);
+ struct cpu_map *cpu_map__read(FILE *file);
+ size_t cpu_map__fprintf(struct cpu_map *map, FILE *fp);
++int cpu_map__get_socket(struct cpu_map *map, int idx);
++int cpu_map__build_socket_map(struct cpu_map *cpus, struct cpu_map **sockp);
++
++static inline int cpu_map__socket(struct cpu_map *sock, int s)
++{
++	if (!sock || s > sock->nr || s < 0)
++		return 0;
++	return sock->map[s];
++}
  
+ static inline int cpu_map__nr(const struct cpu_map *map)
+ {
 -- 
 1.7.9.5
 
