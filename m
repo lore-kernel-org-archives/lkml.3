@@ -1,65 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932067Ab3BFSry (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 13:47:54 -0500
-Received: from mail-da0-f43.google.com ([209.85.210.43]:65147 "EHLO
-	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757638Ab3BFSrx (ORCPT
+	id S1757761Ab3BFSvw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 13:51:52 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:59801 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754094Ab3BFSvt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 13:47:53 -0500
-Date: Wed, 6 Feb 2013 10:47:49 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] stop_machine: dequeue work before signal completion
-Message-ID: <20130206184749.GB2875@htj.dyndns.org>
-References: <CAJd=RBBsMaXS5hA1OCX8Sp2y90Crktp6p4a7MSRZ3p6xq6RCmg@mail.gmail.com>
+	Wed, 6 Feb 2013 13:51:49 -0500
+Message-ID: <5112A642.1020800@wwwdotorg.org>
+Date: Wed, 06 Feb 2013 11:51:46 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJd=RBBsMaXS5hA1OCX8Sp2y90Crktp6p4a7MSRZ3p6xq6RCmg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Hiroshi Doyu <hdoyu@nvidia.com>, linux@arm.linux.org.uk
+CC: linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] memory: tegra_ahb_enable_smmu() depends on TEGRA_IOMMU_SMMU
+References: <1360175666-8377-1-git-send-email-hdoyu@nvidia.com>
+In-Reply-To: <1360175666-8377-1-git-send-email-hdoyu@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 06, 2013 at 08:38:43PM +0800, Hillf Danton wrote:
-> As handled by the kernel thread, work is dequeued first for further actions.
-
-Ditto as the previous patch.
-
-> Signed-off-by: Hillf Danton <dhillf@gmail.com>
-> ---
+On 02/06/2013 11:34 AM, Hiroshi Doyu wrote:
+> New SoC, Tegra114 also uses SMMU. Change tegra_ahb_enable_smmu()'s
+> dependency from ARCH_TEGRA_3x_SOC to TEGRA_IOMMU_SMMU. No need to edit
+> whenever a new Tegra SoC comes.
 > 
-> --- a/kernel/stop_machine.c	Wed Feb  6 19:57:12 2013
-> +++ b/kernel/stop_machine.c	Wed Feb  6 20:02:12 2013
-> @@ -334,23 +334,24 @@ static int __cpuinit cpu_stop_cpu_callba
->  #ifdef CONFIG_HOTPLUG_CPU
->  	case CPU_UP_CANCELED:
->  	case CPU_POST_DEAD:
-> -	{
-> -		struct cpu_stop_work *work;
-> -
->  		sched_set_stop_task(cpu, NULL);
->  		/* kill the stopper */
->  		kthread_stop(stopper->thread);
->  		/* drain remaining works */
->  		spin_lock_irq(&stopper->lock);
-> -		list_for_each_entry(work, &stopper->works, list)
-> +		while (!list_empty(&stopper->works)) {
-> +			struct cpu_stop_work *work;
-> +			work = list_first_entry(&stopper->works,
-> +					struct cpu_stop_work, list);
-> +			list_del_init(&work->list);
->  			cpu_stop_signal_done(work->done, false, 0);
-> +		}
->  		stopper->enabled = false;
->  		spin_unlock_irq(&stopper->lock);
+> The following combination caused build error, which this patch fixes.
+> 
+> CONFIG_ARCH_TEGRA_2x_SOC=y
+> \# CONFIG_ARCH_TEGRA_3x_SOC is not set
+> CONFIG_ARCH_TEGRA_114_SOC=y
+> 
+> drivers/iommu/tegra-smmu.c:485: undefined reference to 'tegra_ahb_enable_smmu'
 
-Why does this matter?  It's inside spinlock.  What's being made better
-by this change?
+Tested-by: Stephen Warren <swarren@nvidia.com>
 
--- 
-tejun
+Russell, I assume Hiroshi should upload this to your patch tracker? It's
+needed for 3.9.
+
+Hiroshi, for reference, see:
+http://www.arm.linux.org.uk/developer/patches/
