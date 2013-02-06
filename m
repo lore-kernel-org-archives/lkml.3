@@ -1,53 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756934Ab3BFECA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 23:02:00 -0500
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:22571
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755183Ab3BFEB5 (ORCPT
+	id S1756897Ab3BFEId (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 23:08:33 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:51659 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753533Ab3BFEI3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 23:01:57 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VS-1(zz98dIzz1ee6h1de0h1202h1e76h1d1ah1d2ahzz17326ah8275dhz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Wed, 6 Feb 2013 12:02:14 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <arm@kernel.org>, Liam Girdwood <lrg@ti.com>,
-        <alsa-devel@alsa-project.org>
-Subject: Re: [PATCH] ASoC: fsl: fix allyesconfig build for imx-pcm
-Message-ID: <20130206040212.GA18613@S2101-09.ap.freescale.net>
-References: <1358788568-11137-1-git-send-email-arnd@arndb.de>
- <20130122063331.GA1766@opensource.wolfsonmicro.com>
- <201302051621.12320.arnd@arndb.de>
- <201302051642.25361.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <201302051642.25361.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
+	Tue, 5 Feb 2013 23:08:29 -0500
+Date: Wed, 6 Feb 2013 15:08:18 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jingoo Han <jg1.han@samsung.com>,
+        Padmavathi Venna <padma.v@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lgirdwood@gmail.com>
+Subject: linux-next: manual merge of the spi tree with the sound-asoc tree
+Message-Id: <20130206150818.26d50907120110d160e0e236@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__6_Feb_2013_15_08_18_+1100_qz6XEgoTyekzeU/N"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 05, 2013 at 04:42:25PM +0000, Arnd Bergmann wrote:
-> Patch 25b8d314 "ASoC: fsl: fix multiple definition of init_module changed
-> the Makefile for imx-pcm.ko to build two modules that both contain the
-> imx-pcm.c file, which nicely solves the problem of building both versions
-> of the driver as modules, but it causes two new problems:
-> 
-It's my fault, Arnd.  The patch 25b8d314 is a crap.  Instead of making
-the Kconfig even complexer, I chose to revert the patch and do a little
-surgery on the code to make it match the Kconfig rational.  The fix[1]
-should be on the way to mainline now.
+--Signature=_Wed__6_Feb_2013_15_08_18_+1100_qz6XEgoTyekzeU/N
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'm sorry for messing thing up during -rc time.
+Hi Grant,
 
-Shawn
+Today's linux-next merge of the spi tree got a conflict in
+drivers/spi/spi-s3c64xx.c between commit b5be04d35dbb ("spi: s3c64xx:
+Modify SPI driver to use generic DMA DT support") from the sound-asoc tree =
+and
+commit 75bf33611041 ("spi/s3c64xx: fix checkpatch warnings and error")
+from the spi tree.
 
-[1] http://thread.gmane.org/gmane.linux.alsa.devel/105018
+I fixed it up (the former removed a function modified by the latter) and
+can carry the fix as necessary (no action is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__6_Feb_2013_15_08_18_+1100_qz6XEgoTyekzeU/N
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJREdcyAAoJEECxmPOUX5FEfmkQAJSDsGfF1+0v7erlk80DOxHV
+BfsMJPXool1ns5868vFZkQEwHU5qL2Ni5PMzpYvuUQqASJoqT+wyHeFKFiiiArGs
+tp44VZkXmfGbZet17TnY0Ie6mLKQ3zhjNWMZGvWKlOoldTInoE/eGTmjer2GE1+o
+fx31c13xBrVdVoa2xFnA0xSSKPo/5NAT0NeDyj2M5rNY6z7YC83xkPauo7TYr36a
+NMY7DNzxcjW2hhzpiFz3vQshvOX/LSJdPZneN7hBS9zAahKanIE8Xam/cBVUWs0M
+tFzcV0a3GPwRRm6m14q789S3dUw+h1vBNOus/EMgFvczkk03Si/RXrHHBxyGqUnE
+zX6jy6N/SXdNmtaKRS2ajElhQCMEwAP19zAme3vFILRo4JC8bxSDQMnY7p/F9N11
+EOw6Z5CqbjDLCIHEwQLFm6XSapExsEeB28gfee+Pm/1/qs38leJ5HO6KjkkJ2J8a
+HXpkwVMIwLBQ0/0x8pPCAPCmNPDDP/8S+9LMJb+Q8SQscEnpjv6EbaqIyBjZZxWX
+MmjMiWzNzaq6iPXZbqsllU2hvX3xFgRpUzwfQ/cdBKiDquxaCX8PNHZikNL6b7x5
+TgDoEbqXVhDDFaXI3GjyopigvY14JLsQ9IyNAFb4/GwpqBGgiBn7RvnUC+reSfzj
+Jo3oN589hIM0tMzYtEBc
+=/96E
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__6_Feb_2013_15_08_18_+1100_qz6XEgoTyekzeU/N--
