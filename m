@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758490Ab3BFTyA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 14:54:00 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:52706 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758286Ab3BFTvV (ORCPT
+	id S1758302Ab3BFTy0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 14:54:26 -0500
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:39678 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758254Ab3BFTvT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 14:51:21 -0500
+	Wed, 6 Feb 2013 14:51:19 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH 72/77] events: convert to idr_alloc()
-Date: Wed,  6 Feb 2013 11:40:44 -0800
-Message-Id: <1360179649-22465-73-git-send-email-tj@kernel.org>
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
+Subject: [PATCH 71/77] cgroup: convert to idr_alloc()
+Date: Wed,  6 Feb 2013 11:40:43 -0800
+Message-Id: <1360179649-22465-72-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1360179649-22465-1-git-send-email-tj@kernel.org>
 References: <1360179649-22465-1-git-send-email-tj@kernel.org>
@@ -28,35 +26,69 @@ Convert to the much saner new idr interface.
 Only compile tested.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Acked-by: Li Zefan <lizefan@huawei.com>
+Cc: containers@lists.linux-foundation.org
+Cc: cgroups@vger.kernel.org
 ---
- kernel/events/core.c | 10 +++-------
- 1 file changed, 3 insertions(+), 7 deletions(-)
+ kernel/cgroup.c | 27 ++++++++-------------------
+ 1 file changed, 8 insertions(+), 19 deletions(-)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 7b6646a..43ba037 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -5965,13 +5965,9 @@ int perf_pmu_register(struct pmu *pmu, char *name, int type)
- 	pmu->name = name;
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 525c508..29f9e11 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -5284,7 +5284,7 @@ EXPORT_SYMBOL_GPL(free_css_id);
+ static struct css_id *get_new_cssid(struct cgroup_subsys *ss, int depth)
+ {
+ 	struct css_id *newid;
+-	int myid, error, size;
++	int ret, size;
  
- 	if (type < 0) {
--		int err = idr_pre_get(&pmu_idr, GFP_KERNEL);
--		if (!err)
--			goto free_pdc;
--
--		err = idr_get_new_above(&pmu_idr, pmu, PERF_TYPE_MAX, &type);
--		if (err) {
--			ret = err;
-+		type = idr_alloc(&pmu_idr, pmu, PERF_TYPE_MAX, 0, GFP_KERNEL);
-+		if (type < 0) {
-+			ret = type;
- 			goto free_pdc;
- 		}
- 	}
+ 	BUG_ON(!ss->use_id);
+ 
+@@ -5292,35 +5292,24 @@ static struct css_id *get_new_cssid(struct cgroup_subsys *ss, int depth)
+ 	newid = kzalloc(size, GFP_KERNEL);
+ 	if (!newid)
+ 		return ERR_PTR(-ENOMEM);
+-	/* get id */
+-	if (unlikely(!idr_pre_get(&ss->idr, GFP_KERNEL))) {
+-		error = -ENOMEM;
+-		goto err_out;
+-	}
++
++	idr_preload(GFP_KERNEL);
+ 	spin_lock(&ss->id_lock);
+ 	/* Don't use 0. allocates an ID of 1-65535 */
+-	error = idr_get_new_above(&ss->idr, newid, 1, &myid);
++	ret = idr_alloc(&ss->idr, newid, 1, CSS_ID_MAX + 1, GFP_NOWAIT);
+ 	spin_unlock(&ss->id_lock);
++	idr_preload_end();
+ 
+ 	/* Returns error when there are no free spaces for new ID.*/
+-	if (error) {
+-		error = -ENOSPC;
++	if (ret < 0)
+ 		goto err_out;
+-	}
+-	if (myid > CSS_ID_MAX)
+-		goto remove_idr;
+ 
+-	newid->id = myid;
++	newid->id = ret;
+ 	newid->depth = depth;
+ 	return newid;
+-remove_idr:
+-	error = -ENOSPC;
+-	spin_lock(&ss->id_lock);
+-	idr_remove(&ss->idr, myid);
+-	spin_unlock(&ss->id_lock);
+ err_out:
+ 	kfree(newid);
+-	return ERR_PTR(error);
++	return ERR_PTR(ret);
+ 
+ }
+ 
 -- 
 1.8.1
 
