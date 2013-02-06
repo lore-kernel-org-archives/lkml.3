@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932078Ab3BFQY2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 11:24:28 -0500
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:58671 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757717Ab3BFQYR (ORCPT
+	id S1757793Ab3BFQYX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 11:24:23 -0500
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:41242 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757722Ab3BFQYR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 6 Feb 2013 11:24:17 -0500
 From: Heiko Carstens <heiko.carstens@de.ibm.com>
@@ -16,40 +16,39 @@ To: arnd@arndb.de, axboe@kernel.dk, cbou@mail.ru, davem@davemloft.net,
 Cc: linux-kernel@vger.kernel.org, sebott@linux.vnet.ibm.com,
         gerald.schaefer@de.ibm.com, schwidefsky@de.ibm.com,
         Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [PATCH 07/15] drivers/hid: add missing GENERIC_HARDIRQ dependency
-Date: Wed,  6 Feb 2013 17:23:55 +0100
-Message-Id: <1360167843-3587-8-git-send-email-heiko.carstens@de.ibm.com>
+Subject: [PATCH 10/15] drivers/net,AT91RM9200: add missing GENERIC_HARDIRQS dependency
+Date: Wed,  6 Feb 2013 17:23:58 +0100
+Message-Id: <1360167843-3587-11-git-send-email-heiko.carstens@de.ibm.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1360167843-3587-1-git-send-email-heiko.carstens@de.ibm.com>
 References: <1360167843-3587-1-git-send-email-heiko.carstens@de.ibm.com>
-x-cbid: 13020616-2966-0000-0000-000006A89980
+x-cbid: 13020616-1948-0000-0000-0000043B57B3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HID Sensors framework support (CONFIG_HID_SENSOR_HUB) unconditionally
-selects MFD_CORE which however depends on GENERIC_HARDIRQS.
-So add this dependency to HID_SENSOR_HUB as well.
+The AT91RM9200 driver call devm_request_irq() and therefore should
+depend on GENERIC_HARDIRQS to prevent link/compile errors on plaforms
+without GENERIC_HARDIRQS.
 
-Cc: Jiri Kosina <jkosina@suse.cz>
+Cc: "David S. Miller" <davem@davemloft.net>
 Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
 ---
- drivers/hid/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/cadence/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index 61d2453..9613c81 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -725,7 +725,7 @@ config HID_ZYDACRON
+diff --git a/drivers/net/ethernet/cadence/Kconfig b/drivers/net/ethernet/cadence/Kconfig
+index ceb0de0..1194446 100644
+--- a/drivers/net/ethernet/cadence/Kconfig
++++ b/drivers/net/ethernet/cadence/Kconfig
+@@ -22,6 +22,7 @@ if NET_CADENCE
  
- config HID_SENSOR_HUB
- 	tristate "HID Sensors framework support"
--	depends on USB_HID
-+	depends on USB_HID && GENERIC_HARDIRQS
- 	select MFD_CORE
- 	default n
- 	-- help---
+ config ARM_AT91_ETHER
+ 	tristate "AT91RM9200 Ethernet support"
++	depends on GENERIC_HARDIRQS
+ 	select NET_CORE
+ 	select MACB
+ 	---help---
 -- 
 1.7.10.4
 
