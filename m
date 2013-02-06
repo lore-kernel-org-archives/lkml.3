@@ -1,109 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756949Ab3BFKog (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 05:44:36 -0500
-Received: from vsp-authed02.binero.net ([195.74.38.226]:28866 "HELO
-	vsp-authed-03-02.binero.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751947Ab3BFKof (ORCPT
+	id S1757227Ab3BFKou (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 05:44:50 -0500
+Received: from mail.physik.uni-muenchen.de ([192.54.42.129]:53372 "EHLO
+	mail.physik.uni-muenchen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752098Ab3BFKoq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 05:44:35 -0500
-Message-ID: <5112340B.7030505@gaisler.com>
-Date: Wed, 06 Feb 2013 11:44:27 +0100
-From: Andreas Larsson <andreas@gaisler.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Joakim Tjernlund <Joakim.Tjernlund@transmode.se>, software@gaisler.com,
-        linux-kernel@vger.kernel.org, Peter Korsgaard <jacmet@sunsite.dk>,
-        spi-devel-general@lists.sourceforge.net,
-        Mingkai Hu <Mingkai.hu@freescale.com>,
-        Anton Vorontsov <avorontsov@ru.mvista.com>
-Subject: Re: [PATCH RESEND] spi: spi-fsl-spi: Make spi-fsl-spi usable in cpu
- mode outside of FSL SOC environments and add a grlib variant normally running
- on sparc
-References: <1359548124-13692-1-git-send-email-andreas@gaisler.com> <20130205175630.C6F7F3E167A@localhost>
-In-Reply-To: <20130205175630.C6F7F3E167A@localhost>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 6 Feb 2013 05:44:46 -0500
+X-Greylist: delayed 420 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Feb 2013 05:44:46 EST
+Authentication-Results: dmz-sv-mailout.physik.uni-muenchen.de (amavisd-new);
+	dkim=pass (1024-bit key) reason="pass (just generated, assumed good)"
+	header.d=physik.uni-muenchen.de
+From: Hans Grob <H.Grob@physik.uni-muenchen.de>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Hans Grob <H.Grob@physik.uni-muenchen.de>
+Subject: [PATCH] drivers/char/mem.c: fix small coding style issues
+Date: Wed,  6 Feb 2013 11:37:20 +0100
+Message-Id: <1360147040-5940-1-git-send-email-H.Grob@physik.uni-muenchen.de>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-02-05 18:56, Grant Likely wrote:
-> On Wed, 30 Jan 2013 13:15:24 +0100, Andreas Larsson <andreas@gaisler.com> wrote:
->> This patch relies upon parts of the "of, of_gpio, of_spi: Fix and
->> improve of_parse_phandle_with_args, of_gpio_named_count and
->> of_spi_register_master" patchset - https://lkml.org/lkml/2012/12/27/54
->> (v2 at https://lkml.org/lkml/2013/1/29/308).
+This patch fixes four foo * bar errors, and one trailing whitespace
+complaint from checkpatch.pl
 
-For TYPE_GRLIB, the gpio chipselect parts relies on this series. It 
-would be great to get some feedback on that patch series as well.
+Signed-off-by: Hans Grob <H.Grob@physik.uni-muenchen.de>
+---
+ drivers/char/mem.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
->> Maybe the different out/in_be32 vs iowrite/read32be in spi-fsl-lib.h is
->> over the top, but I'm not sure if there might be subtle differences
->> between those on powerpc and I don't have any fsl hardware to try things
->> out on.
->
-> Changing to ioread/write globally should be fine. I would change it and get
-> someone with an fsl board to try it out. That will reduce the diffstat a
-> bit.
-
-Will do.
-
-> As is, this is quite an invasive patch, so I'm not going to be
-> comfortable merging it without at least one 3rd party tester. (Breaking
-> things up into discrete patches will make me less nervous and possible
-> to merge parts while still revising others.
-
-I'll be happy to do that. Was trying to adhere to the guide line to not 
-introduce something separately from its usage, but in this case it is 
-probably better to split things up a bit.
-
->> +#ifdef CONFIG_FSL_SOC
->>   	else if (prop && !strcmp(prop, "qe"))
->>   		pdata->flags = SPI_CPM_MODE | SPI_QE;
->>   	else if (of_device_is_compatible(np, "fsl,cpm2-spi"))
->>   		pdata->flags = SPI_CPM_MODE | SPI_CPM2;
->>   	else if (of_device_is_compatible(np, "fsl,cpm1-spi"))
->>   		pdata->flags = SPI_CPM_MODE | SPI_CPM1;
->> +#endif
->
-> The ifdefs are ugly and these lines won't affect sparc. Just leave them
-> in.
-
-Will do.
-
->> +/* TYPE_GRLIB SPI Controller capability register definitions */
->> +#define SPCAP_SSEN(x)           (((x) >> 16) & 0x1)
->> +#define SPCAP_SSSZ(x)           (((x) >> 24) & 0xff)
->> +#define SPCAP_MAXWLEN(x)	(((x) >> 20) & 0xf)
->
-> Nit: inconsistent whitespace (tabs vs. spaces)
-
-Will fix.
-
->> +	ret = of_property_read_u32(dev->of_node, "bus-number", &bus_num);
->> +	if (!ret)
->> +		master->bus_num = bus_num;
->
-> Drop these lines. Never set the bus number explicitly when using DT. If
-> you really want to assign a particular bus number, then use an alias.
-
-Sure, I'll check that out.
-
-> That's all the comments I've got for now, but there are an awful lot of
-> #defines that are added to the driver which is kind of ugly. I'm not
-> going to nack over that, but it would be good to clean it up and do some
-> better abstraction.
-
-I agree that it is ugly. If I move the cpm-related things from 
-spi-fsl-spi.c to a separate file that only gets linked on FSL_SOC and 
-have dummy functions in an h-file I think that it can be made much less 
-ugly.
-
-Thanks for the feedback!
-
-Cheers,
-Andreas
+diff --git a/drivers/char/mem.c b/drivers/char/mem.c
+index 34e7cb1..3b9f289 100644
+--- a/drivers/char/mem.c
++++ b/drivers/char/mem.c
+@@ -400,7 +400,7 @@ static ssize_t read_kmem(struct file *file, char __user *buf,
+ {
+ 	unsigned long p = *ppos;
+ 	ssize_t low_count, read, sz;
+-	char * kbuf; /* k-addr because vread() takes vmlist_lock rwlock */
++	char *kbuf; /* k-addr because vread() takes vmlist_lock rwlock */
+ 	int err = 0;
+ 
+ 	read = 0;
+@@ -528,7 +528,7 @@ static ssize_t write_kmem(struct file *file, const char __user *buf,
+ 	unsigned long p = *ppos;
+ 	ssize_t wrote = 0;
+ 	ssize_t virtr = 0;
+-	char * kbuf; /* k-addr because vwrite() takes vmlist_lock rwlock */
++	char *kbuf; /* k-addr because vwrite() takes vmlist_lock rwlock */
+ 	int err = 0;
+ 
+ 	if (p < (unsigned long) high_memory) {
+@@ -596,7 +596,7 @@ static ssize_t write_port(struct file *file, const char __user *buf,
+ 			  size_t count, loff_t *ppos)
+ {
+ 	unsigned long i = *ppos;
+-	const char __user * tmp = buf;
++	const char __user *tmp = buf;
+ 
+ 	if (!access_ok(VERIFY_READ, buf, count))
+ 		return -EFAULT;
+@@ -760,7 +760,7 @@ static loff_t memory_lseek(struct file *file, loff_t offset, int orig)
+ 	return ret;
+ }
+ 
+-static int open_port(struct inode * inode, struct file * filp)
++static int open_port(struct inode *inode, struct file *filp)
+ {
+ 	return capable(CAP_SYS_RAWIO) ? 0 : -EPERM;
+ }
+@@ -934,7 +934,7 @@ static int __init chr_dev_init(void)
+ 			continue;
+ 
+ 		/*
+-		 * Create /dev/port? 
++		 * Create /dev/port?
+ 		 */
+ 		if ((minor == DEVPORT_MINOR) && !arch_has_dev_port())
+ 			continue;
+-- 
+1.8.1.2
 
