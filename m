@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758584Ab3BFV66 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 16:58:58 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:54230 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755489Ab3BFV6z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 16:58:55 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yinghai Lu <yinghai@kernel.org>, Myron Stowe <myron.stowe@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 00/22] PCI: Iterate pci host bridge instead of pci root bus
-Date: Wed, 06 Feb 2013 23:05:14 +0100
-Message-ID: <3459136.QID0qrXQHt@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAE9FiQXTRaP08ZeHWTJHt50DZO800BMigmo=q65-RLzZWkTvoQ@mail.gmail.com>
-References: <CAE9FiQXHG01NjnYNDbC-KEpbcvY-q4pBe97CxTOGS7W4vZQBYQ@mail.gmail.com> <52330506.F9m0tMYuG1@vostro.rjw.lan> <CAE9FiQXTRaP08ZeHWTJHt50DZO800BMigmo=q65-RLzZWkTvoQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S932122Ab3BFV7e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 16:59:34 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27734 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758654Ab3BFV7S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 16:59:18 -0500
+X-Authority-Analysis: v=2.0 cv=f8jK9ZOM c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=LKt9OErjx4UA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=P8K375EbGMkA:10 a=VwQbUJbxAAAA:8 a=nc7blvwjXnEObXNMcagA:9 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=B6LqCWvdSYn4yFqk:21 a=sc8kzRf2ub-WDvxi:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-Id: <20130206215915.682758618@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Wed, 06 Feb 2013 16:58:23 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>
+Subject: [PATCH RT 5/6] mm: swap: Initialize local locks early
+References: <20130206215818.969089606@goodmis.org>
+Content-Disposition: inline; filename=0005-mm-swap-Initialize-local-locks-early.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, February 06, 2013 01:53:50 PM Yinghai Lu wrote:
-> On Wed, Feb 6, 2013 at 1:43 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Wednesday, February 06, 2013 01:28:27 PM Yinghai Lu wrote:
-> >> so you still did not answer you want 1 or 2 yet:
-> >>
-> >> for sgi_hotplug,
-> >>
-> >> 1. still keep the module support, and register acpi_pci_driver later.
-> >> 2. built-in support only, and need to register acpi_pci_driver early.
-> >
-> > Please work with the assumption that acpi_pci_driver is not going to be there
-> > any more.
-> >
-> 
-> I think I could change ioapic and iommu hotplug to weak add/remove because they
-> should be built-in by nature.
-> 
-> but how about others like sgi_hotplug etc?
+From: Thomas Gleixner <tglx@linutronix.de>
 
-I'd really prefer to wait for the patchset removing acpi_pci_driver (from
-Myron) before proceeding with more changes in that area.
+Cc: stable-rt@vger.kernel.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ mm/swap.c |   12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
-Myron, do you have a prototype based on the current linux-next?
-
-Rafael
-
-
+diff --git a/mm/swap.c b/mm/swap.c
+index 2051da9..62dc70c 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -767,6 +767,15 @@ unsigned pagevec_lookup_tag(struct pagevec *pvec, struct address_space *mapping,
+ }
+ EXPORT_SYMBOL(pagevec_lookup_tag);
+ 
++/* Early setup for the local locks */
++static int __init swap_init_locks(void)
++{
++	local_irq_lock_init(rotate_lock);
++	local_irq_lock_init(swap_lock);
++	return 1;
++}
++early_initcall(swap_init_locks);
++
+ /*
+  * Perform any setup for the swap system
+  */
+@@ -774,9 +783,6 @@ void __init swap_setup(void)
+ {
+ 	unsigned long megs = totalram_pages >> (20 - PAGE_SHIFT);
+ 
+-	local_irq_lock_init(rotate_lock);
+-	local_irq_lock_init(swap_lock);
+-
+ #ifdef CONFIG_SWAP
+ 	bdi_init(swapper_space.backing_dev_info);
+ #endif
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.10.4
+
+
