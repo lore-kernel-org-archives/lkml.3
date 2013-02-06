@@ -1,67 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758400Ab3BFXC5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 18:02:57 -0500
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:52731 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758221Ab3BFXCz (ORCPT
+	id S1758465Ab3BFXC7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 18:02:59 -0500
+Received: from mail-ia0-f172.google.com ([209.85.210.172]:53979 "EHLO
+	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758246Ab3BFXC4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 18:02:55 -0500
+	Wed, 6 Feb 2013 18:02:56 -0500
+Date: Wed, 6 Feb 2013 15:02:50 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH wq/for-3.9] workqueue: make work_busy() test
+ WORK_STRUCT_PENDING first
+Message-ID: <20130206230250.GF2875@htj.dyndns.org>
+References: <1359657696-2767-1-git-send-email-laijs@cn.fujitsu.com>
+ <1359657696-2767-3-git-send-email-laijs@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <3459136.QID0qrXQHt@vostro.rjw.lan>
-References: <CAE9FiQXHG01NjnYNDbC-KEpbcvY-q4pBe97CxTOGS7W4vZQBYQ@mail.gmail.com>
- <52330506.F9m0tMYuG1@vostro.rjw.lan> <CAE9FiQXTRaP08ZeHWTJHt50DZO800BMigmo=q65-RLzZWkTvoQ@mail.gmail.com>
- <3459136.QID0qrXQHt@vostro.rjw.lan>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 6 Feb 2013 16:02:33 -0700
-Message-ID: <CAErSpo4vd+GhTVpoLb=sFTqBZMG=xva1QUUhyJrO4o0ytPXmqg@mail.gmail.com>
-Subject: Re: [PATCH v3 00/22] PCI: Iterate pci host bridge instead of pci root bus
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Yinghai Lu <yinghai@kernel.org>, Myron Stowe <myron.stowe@gmail.com>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1359657696-2767-3-git-send-email-laijs@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 6, 2013 at 3:05 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Wednesday, February 06, 2013 01:53:50 PM Yinghai Lu wrote:
->> On Wed, Feb 6, 2013 at 1:43 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> > On Wednesday, February 06, 2013 01:28:27 PM Yinghai Lu wrote:
->> >> so you still did not answer you want 1 or 2 yet:
->> >>
->> >> for sgi_hotplug,
->> >>
->> >> 1. still keep the module support, and register acpi_pci_driver later.
->> >> 2. built-in support only, and need to register acpi_pci_driver early.
->> >
->> > Please work with the assumption that acpi_pci_driver is not going to be there
->> > any more.
->> >
->>
->> I think I could change ioapic and iommu hotplug to weak add/remove because they
->> should be built-in by nature.
->>
->> but how about others like sgi_hotplug etc?
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-I think that could be handled with pcibios_root_bridge_prepare() or
-something similar -- something that happens in the "add host bridge"
-path.  I'm not saying we necessarily have all the right hooks in place
-yet.  It's just that I'd rather figure out what the right hooks *are*
-and add them if necessary, than just convert pci_root_buses to
-for_each_pci_host_bridge().
+Currently, work_busy() first tests whether the work has a pool
+associated with it and if not, considers it idle.  This works fine
+even for delayed_work.work queued on timer, as __queue_delayed_work()
+sets cwq on delayed_work.work - a queued delayed_work always has its
+cwq and thus pool associated with it.
 
-> I'd really prefer to wait for the patchset removing acpi_pci_driver (from
-> Myron) before proceeding with more changes in that area.
->
-> Myron, do you have a prototype based on the current linux-next?
+However, we're about to update delayed_work queueing and this won't
+hold.  Update work_busy() such that it tests WORK_STRUCT_PENDING
+before the associated pool.  This doesn't make any noticeable behavior
+difference now.
 
-I think it's really the acpiphp/pciehp issue that's holding up the
-removal of acpi_pci_driver.  I'm not sure if anybody's working on
-that.
+With work_pending() test moved, the function read a lot better with
+"if (!pool)" test flipped to positive.  Flip it.
+
+While at it, lose the comment about now non-existent reentrant
+workqueues.
+
+tj: Reorganized the function and rewrote the description.
+
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+Hey, Lai.
+
+Did I get the reason right?  Can you *please* try to explain "why" a
+patch is needed / beneficial for future postings like I did above?  I
+get that writing in English could be a bit stressful (it's not my
+mother tongue either and I struggled with it a lot and still do to
+certain extent) but the language doesn't have to be perfect.  You just
+need to communicate main points of your rationale somehow.
+
+Thanks.
+
+ kernel/workqueue.c |   16 ++++++----------
+ 1 file changed, 6 insertions(+), 10 deletions(-)
+
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -3443,8 +3443,6 @@ EXPORT_SYMBOL_GPL(workqueue_congested);
+  * Test whether @work is currently pending or running.  There is no
+  * synchronization around this function and the test result is
+  * unreliable and only useful as advisory hints or for debugging.
+- * Especially for reentrant wqs, the pending state might hide the
+- * running state.
+  *
+  * RETURNS:
+  * OR'd bitmask of WORK_BUSY_* bits.
+@@ -3455,17 +3453,15 @@ unsigned int work_busy(struct work_struc
+ 	unsigned long flags;
+ 	unsigned int ret = 0;
+ 
+-	if (!pool)
+-		return 0;
+-
+-	spin_lock_irqsave(&pool->lock, flags);
+-
+ 	if (work_pending(work))
+ 		ret |= WORK_BUSY_PENDING;
+-	if (find_worker_executing_work(pool, work))
+-		ret |= WORK_BUSY_RUNNING;
+ 
+-	spin_unlock_irqrestore(&pool->lock, flags);
++	if (pool) {
++		spin_lock_irqsave(&pool->lock, flags);
++		if (find_worker_executing_work(pool, work))
++			ret |= WORK_BUSY_RUNNING;
++		spin_unlock_irqrestore(&pool->lock, flags);
++	}
+ 
+ 	return ret;
+ }
