@@ -1,214 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757204Ab3BFKL3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 05:11:29 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:32004 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1757182Ab3BFKLZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 05:11:25 -0500
-X-IronPort-AV: E=Sophos;i="4.84,614,1355068800"; 
-   d="scan'208";a="6696532"
-Message-ID: <51122C1D.5020002@cn.fujitsu.com>
-Date: Wed, 06 Feb 2013 18:10:37 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1757168Ab3BFKOw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 05:14:52 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:50147 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751981Ab3BFKOu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 05:14:50 -0500
 MIME-Version: 1.0
-To: Glauber Costa <glommer@parallels.com>
-CC: Wen Congyang <wency@cn.fujitsu.com>, akpm@linux-foundation.org,
-        rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
-        minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, wujianguo@huawei.com, hpa@zytor.com,
-        linfeng@cn.fujitsu.com, laijs@cn.fujitsu.com, mgorman@suse.de,
-        yinghai@kernel.org, x86@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-acpi@vger.kernel.org, linux-s390@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-ia64@vger.kernel.org,
-        cmetcalf@tilera.com, sparclinux@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Miao Xie <miaox@cn.fujitsu.com>
-Subject: Re: [PATCH v5 01/14] memory-hotplug: try to offline the memory twice
- to avoid dependence
-References: <1356350964-13437-1-git-send-email-tangchen@cn.fujitsu.com> <1356350964-13437-2-git-send-email-tangchen@cn.fujitsu.com> <50D96543.6010903@parallels.com> <50DFD7F7.5090408@cn.fujitsu.com> <50ED8834.1090804@parallels.com> <5111C8EB.6090805@cn.fujitsu.com> <51121FB7.1070205@cn.fujitsu.com>
-In-Reply-To: <51121FB7.1070205@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/06 18:10:02,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/06 18:10:03,
-	Serialize complete at 2013/02/06 18:10:03
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+In-Reply-To: <1360105635.2707.7.camel@pasglop>
+References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com>
+ <1781360.cmQWHCW5SC@wuerfel> <CAHTX3dJpuTRa4Ff29k95quPMVDO2mBiayPoocnw5R15=5ovOHQ@mail.gmail.com>
+ <201302041724.47331.arnd@arndb.de> <1360031367.14701.47.camel@pasglop>
+ <CAHTX3dL4dScmzgGyqbvPH-7UQvFrjQhHu2zh0iZyzWB=spZS+Q@mail.gmail.com>
+ <1360066756.4529.6.camel@pasglop> <CAHTX3dLJy314mv39hprkmZ5XdzYiYGz1ngTERp7w6aAYud+Riw@mail.gmail.com>
+ <51111133.7000105@synopsys.com> <1360098004.4529.13.camel@pasglop>
+ <511178AC.7080304@synopsys.com> <1360105635.2707.7.camel@pasglop>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 6 Feb 2013 10:14:30 +0000
+X-Google-Sender-Auth: WBTp5K9hMwPPRpzDUbVFib2GpXU
+Message-ID: <CACxGe6u=zhGXm0AO_h354g8OOkAQgdczdw_gCCRxL+=r8hM+-g@mail.gmail.com>
+Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16
+ with generic iowrite(read)8/16(be)
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
+        Michal Simek <monstr@monstr.eu>, Arnd Bergmann <arnd@arndb.de>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        dahinds@users.sourceforge.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/2013 05:17 PM, Tang Chen wrote:
-> Hi all,
+On Tue, Feb 5, 2013 at 11:07 PM, Benjamin Herrenschmidt
+<benh@kernel.crashing.org> wrote:
+> On Wed, 2013-02-06 at 01:25 +0400, Alexey Brodkin wrote:
+>> Sounds good but how should one tell which approach is correct? For
+>> example here - is the one implemented by Xilinx is golden reference or
+>> not?
 >
-> On 02/06/2013 11:07 AM, Tang Chen wrote:
->> Hi Glauber, all,
->>
->> An old thing I want to discuss with you. :)
->>
->> On 01/09/2013 11:09 PM, Glauber Costa wrote:
->>>>>> memory can't be offlined when CONFIG_MEMCG is selected.
->>>>>> For example: there is a memory device on node 1. The address range
->>>>>> is [1G, 1.5G). You will find 4 new directories memory8, memory9,
->>>>>> memory10,
->>>>>> and memory11 under the directory /sys/devices/system/memory/.
->>>>>>
->>>>>> If CONFIG_MEMCG is selected, we will allocate memory to store page
->>>>>> cgroup
->>>>>> when we online pages. When we online memory8, the memory stored
->>>>>> page cgroup
->>>>>> is not provided by this memory device. But when we online memory9,
->>>>>> the memory
->>>>>> stored page cgroup may be provided by memory8. So we can't offline
->>>>>> memory8
->>>>>> now. We should offline the memory in the reversed order.
->>>>>>
->>>>>> When the memory device is hotremoved, we will auto offline memory
->>>>>> provided
->>>>>> by this memory device. But we don't know which memory is onlined
->>>>>> first, so
->>>>>> offlining memory may fail. In such case, iterate twice to offline
->>>>>> the memory.
->>>>>> 1st iterate: offline every non primary memory block.
->>>>>> 2nd iterate: offline primary (i.e. first added) memory block.
->>>>>>
->>>>>> This idea is suggested by KOSAKI Motohiro.
->>>>>>
->>>>>> Signed-off-by: Wen Congyang<wency@cn.fujitsu.com>
->>>>>
->>>>> Maybe there is something here that I am missing - I admit that I came
->>>>> late to this one, but this really sounds like a very ugly hack, that
->>>>> really has no place in here.
->>>>>
->>>>> Retrying, of course, may make sense, if we have reasonable belief that
->>>>> we may now succeed. If this is the case, you need to document - in the
->>>>> code - while is that.
->>>>>
->>>>> The memcg argument, however, doesn't really cut it. Why can't we make
->>>>> all page_cgroup allocations local to the node they are describing? If
->>>>> memcg is the culprit here, we should fix it, and not retry. If
->>>>> there is
->>>>> still any benefit in retrying, then we retry being very specific
->>>>> about why.
->>>>
->>>> We try to make all page_cgroup allocations local to the node they are
->>>> describing
->>>> now. If the memory is the first memory onlined in this node, we will
->>>> allocate
->>>> it from the other node.
->>>>
->>>> For example, node1 has 4 memory blocks: 8-11, and we online it from 8
->>>> to 11
->>>> 1. memory block 8, page_cgroup allocations are in the other nodes
->>>> 2. memory block 9, page_cgroup allocations are in memory block 8
->>>>
->>>> So we should offline memory block 9 first. But we don't know in which
->>>> order
->>>> the user online the memory block.
->>>>
->>>> I think we can modify memcg like this:
->>>> allocate the memory from the memory block they are describing
->>>>
->>>> I am not sure it is OK to do so.
->>>
->>> I don't see a reason why not.
->>>
->>> You would have to tweak a bit the lookup function for page_cgroup, but
->>> assuming you will always have the pfns and limits, it should be easy
->>> to do.
->>>
->>> I think the only tricky part is that today we have a single
->>> node_page_cgroup, and we would of course have to have one per memory
->>> block. My assumption is that the number of memory blocks is limited and
->>> likely not very big. So even a static array would do.
->>>
->>
->> About the idea "allocate the memory from the memory block they are
->> describing",
->>
->> online_pages()
->> |-->memory_notify(MEM_GOING_ONLINE, &arg) ----------- memory of this
->> section is not in buddy yet.
->> |-->page_cgroup_callback()
->> |-->online_page_cgroup()
->> |-->init_section_page_cgroup()
->> |-->alloc_page_cgroup() --------- allocate page_cgroup from buddy system.
->>
->> When onlining pages, we allocate page_cgroup from buddy. And the being
->> onlined pages are not in
->> buddy yet. I think we can reserve some memory in the section for
->> page_cgroup, and return all the
->> rest to the buddy.
->>
->> But when the system is booting,
->>
->> start_kernel()
->> |-->setup_arch()
->> |-->mm_init()
->> | |-->mem_init()
->> | |-->numa_free_all_bootmem() -------------- all the pages are in buddy
->> system.
->> |-->page_cgroup_init()
->> |-->init_section_page_cgroup()
->> |-->alloc_page_cgroup() ------------------ I don't know how to reserve
->> memory in each section.
->>
->> So any idea about how to deal with it when the system is booting please?
->>
+> So I'm reading that PDF you pointed to. So far what I can see is:
 >
-> How about this way.
+>  - In 8-bit mode you only do 8-bit accesses, so endianness should be
+> totally irrelevant (at least the pdf says so)
 >
-> 1) Add a new flag PAGE_CGROUP_INFO, like SECTION_INFO and MIX_SECTION_INFO.
-> 2) In sparse_init(), reserve some beginning pages of each section as
-> bootmem.
+>  - In 16-bit mode, that's where things become interesting... the doc
+> says:
+>
+>   PLB Data Bus          | System ACE Data Bus
+>   ----------------------+--------------------
+>   PLB_DBus[8 : 15]      | SysACE_MPD[15 : 8]
+>   PLB_DBus[0 : 7]       | SysACE_MPD[7 : 0]
+>
+> Now, I'm not 100% of the bit numbering used by Xilinx here but it smells
+> like PLB used ppc numbering and SystemACE use the classic numbering, in
+> which case the above would mean that the MSB of the PLB is connected to
+> the LSB of the SystemACE and vice-versa.
+>
+> If that is the case then this is the *correct* wiring and means that the
+> data port (if any) doesn't need any byteswapping. It also means that the
+> registers need byteswap on BE, as expected for a LE device. IE. Just
+> always use ioread32 (or _rep variants for the data port if there's such
+> a thing on it).
+>
+> So that looks good... unless I misunderstood the Xilinx spec, this looks
+> like the right way to do and the only one we should support.
 
-Hi all,
+Huh? That makes no sense. This device out in the wild with both big
+and little endian bus attachments. You can argue all day that one of
+them is wrong, but it doesn't matter. It exists, is used, and must be
+supported. In fact, the driver already knows about this and figures
+out at runtime how the device is wired up to the bus. This is not the
+problem.
 
-After digging into bootmem code, I met another problem.
+BTW, that document describes only one of the systemace bus
+attachments. There is a different on used on Microblaze little-endian,
+and some boards have the SystemACE directly wired to the SoC external
+bus (no adapter IP).
 
-memblock allocates memory from high address to low address, using 
-memblock.current_limit
-to remember where the upper limit is. What I am doing will produce a lot 
-of fragments,
-and the memory will be non-contiguous. So we need to modify memblock again.
+The only problem that I see is that the ARM and Microblaze
+ioread16be/iowrite16be helpers are missing barriers which smells like
+a bug and should be fixed.
 
-I don't think it's a good idea. How do you think ?
+Michal, have you tested Alexey's patch? If it works for you then I'm
+comfortable with acking it. It looks correct to me.
 
-Thanks. :)
+g.
 
-> 3) In register_page_bootmem_info_section(), set these pages as
-> page->lru.next = PAGE_CGROUP_INFO;
->
-> Then these pages will not go to buddy system.
->
-> But I do worry about the fragment problem because part of each section will
-> be used in the very beginning.
->
-> Thanks. :)
->
->>
->> And one more question, a memory section is 128MB in Linux. If we reserve
->> part of the them for page_cgroup,
->> then anyone who wants to allocate a contiguous memory larger than 128MB,
->> it will fail, right ?
->> Is it OK ?
->>
->> Thanks. :)
->>
->>
->>
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at http://vger.kernel.org/majordomo-info.html
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at http://vger.kernel.org/majordomo-info.html
->
+--
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
