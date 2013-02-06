@@ -1,79 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758737Ab3BFVoa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 16:44:30 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:33162
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758694Ab3BFVo1 (ORCPT
+	id S1758765Ab3BFVs3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 16:48:29 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:57278 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758743Ab3BFVoa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 16:44:27 -0500
+	Wed, 6 Feb 2013 16:44:30 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@suse.de>,
+Cc: linux-kernel@vger.kernel.org,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Ingo Molnar <mingo@redhat.com>, Joe Perches <joe@perches.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 04/17] perf tools: Check for flex and bison before continuing building
-Date: Wed,  6 Feb 2013 18:44:06 -0300
-Message-Id: <1360187059-12661-5-git-send-email-acme@infradead.org>
+Subject: [PATCH 15/17] perf tools: Fix calloc argument ordering
+Date: Wed,  6 Feb 2013 18:44:17 -0300
+Message-Id: <1360187059-12661-16-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
 In-Reply-To: <1360187059-12661-1-git-send-email-acme@infradead.org>
 References: <1360187059-12661-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-Check whether both executables are present on the system before
-continuing with the build instead of failing halfway, if either are
-missing.
+A sweep of the kernel for regex "kcalloc(sizeof" turned up 2 reversed
+args, fixed in commit d3d09e18203dba16a9dbdb2b4cc673d90748cdd1 ("EDAC:
+Fix kcalloc argument order") and also fixed in the networking commit
+a1b1add07fa794974573d93483d68e373edfe7bd ("gro: Fix kcalloc argument
+order").
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Link: http://lkml.kernel.org/r/1359979554-9160-1-git-send-email-bp@alien8.de
+I know that was the regex used, because on seeing the 1st of these
+changes, I wondered "how many other instances of this are there" and I
+happened to just use "calloc(sizeof" as a regex and it in turn found
+these additional reversed args instances in the perf code.
+
+In the kcalloc cases, the changes are cosmetic, since the numbers are
+simply multiplied.  I had no desire to go data mining in userspace to
+see if the same thing held true there, however.
+
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Joe Perches <joe@perches.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1359594349-25912-1-git-send-email-paul.gortmaker@windriver.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile | 13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+ tools/perf/util/callchain.c | 2 +-
+ tools/perf/util/header.c    | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 4b1044c..a158309 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -149,6 +149,8 @@ RM = rm -f
- MKDIR = mkdir
- FIND = find
- INSTALL = install
-+FLEX = flex
-+BISON= bison
+diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
+index d3b3f5d..42b6a63 100644
+--- a/tools/perf/util/callchain.c
++++ b/tools/perf/util/callchain.c
+@@ -444,7 +444,7 @@ int callchain_cursor_append(struct callchain_cursor *cursor,
+ 	struct callchain_cursor_node *node = *cursor->last;
  
- # sparse is architecture-neutral, which means that we need to tell it
- # explicitly what architecture to check for. Fix this up for yours..
-@@ -158,6 +160,14 @@ ifneq ($(MAKECMDGOALS),clean)
- ifneq ($(MAKECMDGOALS),tags)
- -include config/feature-tests.mak
+ 	if (!node) {
+-		node = calloc(sizeof(*node), 1);
++		node = calloc(1, sizeof(*node));
+ 		if (!node)
+ 			return -ENOMEM;
  
-+ifeq ($(call get-executable,$(FLEX)),)
-+	dummy := $(error Error: $(FLEX) is missing on this system, please install it)
-+endif
-+
-+ifeq ($(call get-executable,$(BISON)),)
-+	dummy := $(error Error: $(BISON) is missing on this system, please install it)
-+endif
-+
- ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -fstack-protector-all,-fstack-protector-all),y)
- 	CFLAGS := $(CFLAGS) -fstack-protector-all
- endif
-@@ -282,9 +292,6 @@ endif
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 8022b52..f4bfd79 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -2253,7 +2253,7 @@ static int perf_header__adds_write(struct perf_header *header,
+ 	if (!nr_sections)
+ 		return 0;
  
- export PERL_PATH
+-	feat_sec = p = calloc(sizeof(*feat_sec), nr_sections);
++	feat_sec = p = calloc(nr_sections, sizeof(*feat_sec));
+ 	if (feat_sec == NULL)
+ 		return -ENOMEM;
  
--FLEX = flex
--BISON= bison
--
- $(OUTPUT)util/parse-events-flex.c: util/parse-events.l $(OUTPUT)util/parse-events-bison.c
- 	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/parse-events-flex.h $(PARSER_DEBUG_FLEX) -t util/parse-events.l > $(OUTPUT)util/parse-events-flex.c
+@@ -2425,7 +2425,7 @@ int perf_header__process_sections(struct perf_header *header, int fd,
+ 	if (!nr_sections)
+ 		return 0;
+ 
+-	feat_sec = sec = calloc(sizeof(*feat_sec), nr_sections);
++	feat_sec = sec = calloc(nr_sections, sizeof(*feat_sec));
+ 	if (!feat_sec)
+ 		return -1;
  
 -- 
 1.8.1.1.361.gec3ae6e
