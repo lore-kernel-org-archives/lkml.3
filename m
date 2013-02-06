@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757357Ab3BFPQm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 10:16:42 -0500
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:57464 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757239Ab3BFPQi (ORCPT
+	id S1757343Ab3BFPSS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 10:18:18 -0500
+Received: from mail-vb0-f47.google.com ([209.85.212.47]:54853 "EHLO
+	mail-vb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756977Ab3BFPQe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 10:16:38 -0500
+	Wed, 6 Feb 2013 10:16:34 -0500
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Tejun Heo <tj@kernel.org>,
         "James E.J. Bottomley" <JBottomley@parallels.com>,
         linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH v2 10/14] sg_io: whitelist a few obsolete commands
-Date: Wed,  6 Feb 2013 16:15:57 +0100
-Message-Id: <1360163761-8541-11-git-send-email-pbonzini@redhat.com>
+Subject: [PATCH v2 08/14] sg_io: whitelist a few more commands for tapes
+Date: Wed,  6 Feb 2013 16:15:55 +0100
+Message-Id: <1360163761-8541-9-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1360163761-8541-1-git-send-email-pbonzini@redhat.com>
 References: <1360163761-8541-1-git-send-email-pbonzini@redhat.com>
@@ -22,57 +22,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These are added to their own section of the table, together with SEEK(10)
-which has always been permitted.
+Tapes have no problematic overlap, but quite a few commands
+are missing that are useful when operating tapes with /dev/sg.
+This patch adds them.
+
+START STOP UNIT, FORMAT UNIT and SEEK(10) have similar meanings
+but different names for tapes, so move them to the tape section
+of the whitelist.
 
 Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
 Cc: linux-scsi@vger.kernel.org
 Cc: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- block/scsi_ioctl.c |   22 +++++++++++++++++++++-
- 1 files changed, 21 insertions(+), 1 deletions(-)
+ block/scsi_ioctl.c |   30 +++++++++++++++++++++++++-----
+ 1 files changed, 25 insertions(+), 5 deletions(-)
 
 diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
-index e100ee3..4942314 100644
+index 8cda426..a9c2caf 100644
 --- a/block/scsi_ioctl.c
 +++ b/block/scsi_ioctl.c
-@@ -144,7 +144,6 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
+@@ -142,9 +142,9 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
+ 	sgio_bitmap_set(0x03, D|T|L|P|W|R|O|M|A|E|B|K|V|F|C|S, read);  /* REQUEST SENSE */
+ 	sgio_bitmap_set(0x12, D|T|L|P|W|R|O|M|A|E|B|K|V|F|C|S, read);  /* INQUIRY */
  	sgio_bitmap_set(0x1A, D|T|L|P|W|R|O|M|A|E|B|K|V|F|C|S, read);  /* MODE SENSE(6) */
- 	sgio_bitmap_set(0x1B, D|      W|R|O|  A|  B|K|  F    , read);  /* START STOP UNIT */
+-	sgio_bitmap_set(0x1B, D|T|    W|R|O|  A|  B|K|V|F    , read);  /* START STOP UNIT */
++	sgio_bitmap_set(0x1B, D|      W|R|O|  A|  B|K|  F    , read);  /* START STOP UNIT */
  	sgio_bitmap_set(0x1C, D|T|B|O|W|R|O|M|A|E|  K|V|F|C|S, read);  /* RECEIVE DIAGNOSTIC RESULTS */
--	sgio_bitmap_set(0x2B, D|      W|R|O|        K        , read);  /* SEEK(10) */
+-	sgio_bitmap_set(0x2B, D|T|    W|R|O|        K        , read);  /* SEEK(10) */
++	sgio_bitmap_set(0x2B, D|      W|R|O|        K        , read);  /* SEEK(10) */
  	sgio_bitmap_set(0x3C, D|T|B|O|W|R|O|M|A|E|  K|V|F|C|S, read);  /* READ BUFFER */
  	sgio_bitmap_set(0x4D, D|T|L|P|W|R|O|M|A|E|B|K|V|F|C|S, read);  /* LOG SENSE */
  	sgio_bitmap_set(0x5A, D|T|L|P|W|R|O|M|A|E|B|K|V|F|C|S, read);  /* MODE SENSE(10) */
-@@ -286,6 +285,27 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
- 	sgio_bitmap_set(0x91,   T                            , write); /* SPACE(16) */
- 	sgio_bitmap_set(0x93,   T                            , write); /* ERASE(16) */
+@@ -176,8 +176,8 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
  
-+	/* various obsolete */
+ 	/* write */
+ 
+-	sgio_bitmap_set(0x04, D|T|L|    R|O                  , write); /* FORMAT UNIT */
+-	sgio_bitmap_set(0x0A, D|T|L|  W|  O                  , write); /* WRITE(6) */
++	sgio_bitmap_set(0x04, D|        R|O                  , write); /* FORMAT UNIT */
++	sgio_bitmap_set(0x0A, D|T|    W|  O                  , write); /* WRITE(6) */
+ 	sgio_bitmap_set(0x2A, D|      W|R|O|      B|K        , write); /* WRITE(10) */
+ 	sgio_bitmap_set(0x2E, D|      W|R|O|      B|K        , write); /* WRITE AND VERIFY(10) */
+ 	sgio_bitmap_set(0x35, D|      W|R|O|      B|K        , write); /* SYNCHRONIZE CACHE(10) */
+@@ -215,7 +215,7 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
+ 	sgio_bitmap_set(0x23,           R                    , read);  /* READ FORMAT CAPACITIES */
+ 	sgio_bitmap_set(0x42,           R                    , read);  /* READ SUB-CHANNEL */
+ 	sgio_bitmap_set(0x43,           R                    , read);  /* READ TOC/PMA/ATIP */
+-	sgio_bitmap_set(0x44,   T|      R|            V      , read);  /* READ HEADER */
++	sgio_bitmap_set(0x44,           R                    , read);  /* READ HEADER */
+ 	sgio_bitmap_set(0x45,           R                    , read);  /* PLAY AUDIO(10) */
+ 	sgio_bitmap_set(0x46,           R                    , read);  /* GET CONFIGURATION */
+ 	sgio_bitmap_set(0x47,           R                    , read);  /* PLAY AUDIO MSF */
+@@ -251,7 +251,27 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
+ 
+ 	/* (mostly) tape */
+ 
++	sgio_bitmap_set(0x01,   T                            , read);  /* REWIND */
++	sgio_bitmap_set(0x05,   T                            , read);  /* READ BLOCK LIMITS */
++	sgio_bitmap_set(0x0F,   T                            , read);  /* READ REVERSE(6) */
++	sgio_bitmap_set(0x13,   T                            , read);  /* VERIFY(6) */
++	sgio_bitmap_set(0x1B,   T|                    V      , read);  /* LOAD UNLOAD */
++	sgio_bitmap_set(0x2B,   T                            , read);  /* LOCATE(10) */
++	sgio_bitmap_set(0x34,   T                            , read);  /* READ POSITION */
++	sgio_bitmap_set(0x44,   T|                    V      , read);  /* REPORT DENSITY SUPPORT */
++	sgio_bitmap_set(0x81,   T                            , read);  /* READ REVERSE(16) */
++	sgio_bitmap_set(0x92,   T                            , read);  /* LOCATE(16) */
 +
-+	sgio_bitmap_set(0x0B, D|      W|R|O                  , read);  /* SEEK(6) */
-+	sgio_bitmap_set(0x2B, D|      W|R|O|        K        , read);  /* SEEK(10) */
-+	sgio_bitmap_set(0x30, D|      W|R|O                  , read);  /* SEARCH DATA HIGH(10) */
-+	sgio_bitmap_set(0x31, D|      W|R|O                  , read);  /* SEARCH DATA EQUAL(10) */
-+	sgio_bitmap_set(0x32, D|      W|R|O                  , read);  /* SEARCH DATA LOW(10) */
-+	sgio_bitmap_set(0x39, D|T|L|P|W|R|O|        K        , read);  /* COMPARE */
-+	sgio_bitmap_set(0x52, D                              , read);  /* XDREAD(10) */
-+	sgio_bitmap_set(0xB0,         W|R|O                  , read);  /* SEARCH DATA HIGH(12) */
-+	sgio_bitmap_set(0xB1,         W|R|O                  , read);  /* SEARCH DATA EQUAL(12) */
-+	sgio_bitmap_set(0xB2,         W|R|O                  , read);  /* SEARCH DATA LOW(12) */
-+	sgio_bitmap_set(0xB4, D|T|    W|R|O                  , read);  /* READ ELEMENT STATUS ATTACHED */
-+	sgio_bitmap_set(0xB8,   T|    W|R|O|M                , read);  /* READ ELEMENT STATUS */
-+
-+	sgio_bitmap_set(0x01, D|      W|R|O|M                , write); /* REZERO UNIT */
-+	sgio_bitmap_set(0x18, D|T|L|P|W|R|O|        K        , write); /* COPY */
-+	sgio_bitmap_set(0x3A, D|T|L|P|W|R|O|        K        , write); /* COPY AND VERIFY */
-+	sgio_bitmap_set(0x50, D                              , write); /* XDWRITE(10) */
-+	sgio_bitmap_set(0x80, D                              , write); /* XDWRITE EXTENDED(16) */
-+
++	sgio_bitmap_set(0x04,   T                            , write); /* FORMAT MEDIUM */
++	sgio_bitmap_set(0x0B,   T                            , write); /* SET CAPACITY */
++	sgio_bitmap_set(0x10,   T                            , write); /* WRITE FILEMARKS(6) */
++	sgio_bitmap_set(0x11,   T                            , write); /* SPACE(6) */
++	sgio_bitmap_set(0x14,   T|L                          , write); /* RECOVER BUFFERED DATA */
+ 	sgio_bitmap_set(0x19,   T                            , write); /* ERASE(6) */
++	sgio_bitmap_set(0x80,   T                            , write); /* WRITE FILEMARKS(16) */
++	sgio_bitmap_set(0x82,   T                            , write); /* ALLOW OVERWRITE */
++	sgio_bitmap_set(0x91,   T                            , write); /* SPACE(16) */
++	sgio_bitmap_set(0x93,   T                            , write); /* ERASE(16) */
+ 
  	/* communication devices (obsolete) */
  
- 	sgio_bitmap_set(0x08,                             C  , write); /* GET MESSAGE(6) */
 -- 
 1.7.1
 
