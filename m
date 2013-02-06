@@ -1,138 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757035Ab3BFCHF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 21:07:05 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:46169 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755820Ab3BFCHB (ORCPT
+	id S1757016Ab3BFCIv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 21:08:51 -0500
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:64616 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754731Ab3BFCIt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 21:07:01 -0500
-X-AuditID: 9c930179-b7c24ae00000119c-62-5111bac3361d
-Date: Wed, 6 Feb 2013 11:07:07 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v5 3/3] ARM: mm: use static_vm for managing static mapped
- areas
-Message-ID: <20130206020707.GB4325@lge.com>
-References: <1360024314-1895-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1360024314-1895-4-git-send-email-iamjoonsoo.kim@lge.com>
- <alpine.LFD.2.02.1302042308220.6300@xanadu.home>
- <51114134.4070503@gmail.com>
- <alpine.LFD.2.02.1302051304530.6300@xanadu.home>
- <511159B3.8020000@gmail.com>
+	Tue, 5 Feb 2013 21:08:49 -0500
+Message-ID: <5111BB2E.2090505@gmail.com>
+Date: Tue, 05 Feb 2013 18:08:46 -0800
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <511159B3.8020000@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: dirk.brandewie@gmail.com, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org, Dirk Brandewie <dirk.j.brandewie@intel.com>
+Subject: Re: [PATCH 5/7] cpufreq: balance out cpufreq_cpu_{get,put} for scaling
+ drivers using setpolicy
+References: <1360088646-19104-1-git-send-email-dirk.brandewie@gmail.com> <1360088646-19104-6-git-send-email-dirk.brandewie@gmail.com> <CAOh2x=kJPFyhkG3y_q=a5ciG1HRAn-JkoVYy9OZ9POA+-isbCQ@mail.gmail.com>
+In-Reply-To: <CAOh2x=kJPFyhkG3y_q=a5ciG1HRAn-JkoVYy9OZ9POA+-isbCQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Rob.
+On 02/05/2013 05:58 PM, Viresh Kumar wrote:
+> On Tue, Feb 5, 2013 at 11:54 PM,  <dirk.brandewie@gmail.com> wrote:
+>> From: Dirk Brandewie <dirk.brandewie@gmail.com>
+>>
+>> There is an additional reference added to the driver in
+>> cpufreq_add_dev()  that is removed in__cpufreq_governor() if the
+>> driver implements target().  Remove the last reference when the
+>> driver implements setpolicy()
+>>
+>> Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+>> ---
+>>   drivers/cpufreq/cpufreq.c |    3 +++
+>>   1 files changed, 3 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+>> index 622e282..d17477b 100644
+>> --- a/drivers/cpufreq/cpufreq.c
+>> +++ b/drivers/cpufreq/cpufreq.c
+>> @@ -1049,6 +1049,9 @@ static int __cpufreq_remove_dev(struct device *dev, struct subsys_interface *sif
+>>          if (cpufreq_driver->target)
+>>                  __cpufreq_governor(data, CPUFREQ_GOV_STOP);
+>>
+>> +       if (cpufreq_driver->setpolicy)
+>> +               cpufreq_cpu_put(data);
+>
+> I don't understand this patch at all.. I grepped both cpufreq_cpu_get() & put()
+> in bleeding-edge and found everything to be correct.
+>
+> Can you please point me to the exact line numbers ?
+>
 
-On Tue, Feb 05, 2013 at 01:12:51PM -0600, Rob Herring wrote:
-> On 02/05/2013 12:13 PM, Nicolas Pitre wrote:
-> > On Tue, 5 Feb 2013, Rob Herring wrote:
-> > 
-> >> On 02/04/2013 10:44 PM, Nicolas Pitre wrote:
-> >>> On Tue, 5 Feb 2013, Joonsoo Kim wrote:
-> >>>
-> >>>> A static mapped area is ARM-specific, so it is better not to use
-> >>>> generic vmalloc data structure, that is, vmlist and vmlist_lock
-> >>>> for managing static mapped area. And it causes some needless overhead and
-> >>>> reducing this overhead is better idea.
-> >>>>
-> >>>> Now, we have newly introduced static_vm infrastructure.
-> >>>> With it, we don't need to iterate all mapped areas. Instead, we just
-> >>>> iterate static mapped areas. It helps to reduce an overhead of finding
-> >>>> matched area. And architecture dependency on vmalloc layer is removed,
-> >>>> so it will help to maintainability for vmalloc layer.
-> >>>>
-> >>>> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> >>
-> >> [snip]
-> >>
-> >>>> @@ -859,17 +864,12 @@ static void __init pci_reserve_io(void)
-> >>>>  {
-> >>>>  	struct vm_struct *vm;
-> >>>>  	unsigned long addr;
-> >>>> +	struct static_vm *svm;
-> >>>>  
-> >>>> -	/* we're still single threaded hence no lock needed here */
-> >>>> -	for (vm = vmlist; vm; vm = vm->next) {
-> >>>> -		if (!(vm->flags & VM_ARM_STATIC_MAPPING))
-> >>>> -			continue;
-> >>>> -		addr = (unsigned long)vm->addr;
-> >>>> -		addr &= ~(SZ_2M - 1);
-> >>>> -		if (addr == PCI_IO_VIRT_BASE)
-> >>>> -			return;
-> >>>> +	svm = find_static_vm_vaddr((void *)PCI_IO_VIRT_BASE);
-> >>>> +	if (svm)
-> >>>> +		return;
-> >>>>
-> >>>> -	}
-> >>>>  
-> >>>>  	vm_reserve_area_early(PCI_IO_VIRT_BASE, SZ_2M, pci_reserve_io);
-> >>>>  }
-> >>>
-> >>> The replacement code is not equivalent.  I can't recall why the original 
-> >>> is as it is, but it doesn't look right to me.  The 2MB round down 
-> >>> certainly looks suspicious.
-> >>
-> >> The PCI mapping is at a fixed, aligned 2MB mapping. If we find any
-> >> virtual address within that region already mapped, it is an error.
-> > Ah, OK.  This wasn't clear looking at the code.
-> >> We probably should have had a WARN here.
-> > 
-> > Indeed.
-> > 
+Line 878 in cpufreq_add_dev()
 
-Okay.
-I should fix it to find any mapping within PCI reserved region.
-But, I think that it is not an error.
-Now, I see your original commit 'c2794437091a4fda72c4a4f3567dd728dcc0c3c9'
-and find below message.
-
-"Platforms which need early i/o mapping (e.g. for vga console) can call
-pci_map_io_early in their .map_io function."
-
-Therfore, for some platform, it is possible that there is a mapping within
-PCI reserved range.
-
-So, I will not add WARN here.
-
-I will fix and re-send v6 with your ACK.
-
-Thanks for review.
-
-> >>>
-> >>> The replacement code should be better.  However I'd like you to get an 
-> >>> ACK from Rob Herring as well for this patch.
-> >>
-> >> It doesn't appear to me the above case is handled. The virt addr is
-> >> checked whether it is within an existing mapping, but not whether the
-> >> new mapping would overlap an existing mapping. It would be good to check
-> >> for this generically rather than specifically for the PCI i/o mapping.
-> > 
-> > Agreed.  However that is checked already in vm_area_add_early().  
-> > Therefore the overlap test here is redundant.
-> 
-> Ah, right. In that case:
-> 
-> Acked-by: Rob Herring <rob.herring@calxeda.com>
-> 
-> Rob
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+--Dirk
