@@ -1,70 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751157Ab3BFFUt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 00:20:49 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:20686 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750716Ab3BFFUs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 00:20:48 -0500
-X-IronPort-AV: E=Sophos;i="4.84,613,1355068800"; 
-   d="scan'208";a="6694956"
-Message-ID: <5111E7D0.5030409@cn.fujitsu.com>
-Date: Wed, 06 Feb 2013 13:19:12 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>, mgorman@suse.de,
-        minchan@kernel.org, kamezawa.hiroyu@jp.fujitsu.com
-CC: Linux MM <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 5/7] vmscan: change type of vm_total_pages to unsigned long
-References: <5111E612.4010907@cn.fujitsu.com>
-In-Reply-To: <5111E612.4010907@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/06 13:19:28,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/06 13:19:29,
-	Serialize complete at 2013/02/06 13:19:29
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+	id S1751417Ab3BFFVU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 00:21:20 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:65092 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750824Ab3BFFVT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 00:21:19 -0500
+X-AuditID: 9c930197-b7ca4ae000006ba8-b9-5111e8496745
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        js1304@gmail.com, Linus Walleij <linus.walleij@linaro.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH RESEND] ARM: sched: correct update_sched_clock()
+Date: Wed,  6 Feb 2013 14:21:16 +0900
+Message-Id: <1360128076-8555-1-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This variable is calculated from nr_free_pagecache_pages so
-change its type to unsigned long.
+If we want load epoch_cyc and epoch_ns atomically,
+we should update epoch_cyc_copy first of all.
+This notify reader that updating is in progress.
 
-Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
----
- include/linux/swap.h |    2 +-
- mm/vmscan.c          |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+If we update epoch_cyc first like as current implementation,
+there is subtle error case.
+Look at the below example.
 
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index c238323..fa1f686 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -266,7 +266,7 @@ extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
- extern unsigned long shrink_all_memory(unsigned long nr_pages);
- extern int vm_swappiness;
- extern int remove_mapping(struct address_space *mapping, struct page *page);
--extern long vm_total_pages;
-+extern unsigned long vm_total_pages;
+<Initial Condition>
+cyc = 9
+ns = 900
+cyc_copy = 9
+
+== CASE 1 ==
+<CPU A = reader>           <CPU B = updater>
+                           write cyc = 10
+read cyc = 10
+read ns = 900
+                           write ns = 1000
+                           write cyc_copy = 10
+read cyc_copy = 10
+
+output = (10, 900)
+
+== CASE 2 ==
+<CPU A = reader>           <CPU B = updater>
+read cyc = 9
+                           write cyc = 10
+                           write ns = 1000
+read ns = 1000
+read cyc_copy = 9
+                           write cyc_copy = 10
+output = (9, 1000)
+
+If atomic read is ensured, output should be (9, 900) or (10, 1000).
+But, output in example case are not.
+
+So, change updating sequence in order to correct this problem.
+
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+
+diff --git a/arch/arm/kernel/sched_clock.c b/arch/arm/kernel/sched_clock.c
+index fc6692e..bd6f56b 100644
+--- a/arch/arm/kernel/sched_clock.c
++++ b/arch/arm/kernel/sched_clock.c
+@@ -93,11 +93,11 @@ static void notrace update_sched_clock(void)
+ 	 * detectable in cyc_to_fixed_sched_clock().
+ 	 */
+ 	raw_local_irq_save(flags);
+-	cd.epoch_cyc = cyc;
++	cd.epoch_cyc_copy = cyc;
+ 	smp_wmb();
+ 	cd.epoch_ns = ns;
+ 	smp_wmb();
+-	cd.epoch_cyc_copy = cyc;
++	cd.epoch_cyc = cyc;
+ 	raw_local_irq_restore(flags);
+ }
  
- #ifdef CONFIG_NUMA
- extern int zone_reclaim_mode;
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 196709f..5344a5b 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -128,7 +128,7 @@ struct scan_control {
-  * From 0 .. 100.  Higher means more swappy.
-  */
- int vm_swappiness = 60;
--long vm_total_pages;	/* The total number of pages which the VM controls */
-+unsigned long vm_total_pages;	/* The total number of pages which the VM controls */
- 
- static LIST_HEAD(shrinker_list);
- static DECLARE_RWSEM(shrinker_rwsem);
 -- 
-1.7.1
+1.7.9.5
+
