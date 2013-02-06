@@ -1,60 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758238Ab3BFXad (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 18:30:33 -0500
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:37437 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757988Ab3BFXa1 (ORCPT
+	id S1758226Ab3BFXbl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 18:31:41 -0500
+Received: from mail-ia0-f177.google.com ([209.85.210.177]:49114 "EHLO
+	mail-ia0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755962Ab3BFXbk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 18:30:27 -0500
-From: Emil Goode <emilgoode@gmail.com>
-To: akpm@linux-foundation.org, lindner_marek@yahoo.de, siwu@hrz.tu-chemnitz.de,
-        ordex@autistici.org, davem@davemloft.net
-Cc: sasha.levin@oracle.com, b.a.t.m.a.n@lists.open-mesh.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
-Subject: [PATCH v2] batman-adv: Remove unused variable
-Date: Thu,  7 Feb 2013 00:32:37 +0100
-Message-Id: <1360193557-27554-1-git-send-email-emilgoode@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 6 Feb 2013 18:31:40 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAErSpo4vd+GhTVpoLb=sFTqBZMG=xva1QUUhyJrO4o0ytPXmqg@mail.gmail.com>
+References: <CAE9FiQXHG01NjnYNDbC-KEpbcvY-q4pBe97CxTOGS7W4vZQBYQ@mail.gmail.com>
+	<52330506.F9m0tMYuG1@vostro.rjw.lan>
+	<CAE9FiQXTRaP08ZeHWTJHt50DZO800BMigmo=q65-RLzZWkTvoQ@mail.gmail.com>
+	<3459136.QID0qrXQHt@vostro.rjw.lan>
+	<CAErSpo4vd+GhTVpoLb=sFTqBZMG=xva1QUUhyJrO4o0ytPXmqg@mail.gmail.com>
+Date: Wed, 6 Feb 2013 15:31:39 -0800
+X-Google-Sender-Auth: aqyKiCsKOYuI09cpiie0G8tYBtk
+Message-ID: <CAE9FiQViHem1OBWEb-6_J1kzK-zUgiA4DZVH3_vagCNK_pkn6g@mail.gmail.com>
+Subject: Re: [PATCH v3 00/22] PCI: Iterate pci host bridge instead of pci root bus
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Myron Stowe <myron.stowe@gmail.com>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The below commit removed one node parameter from iterators.
-ed242d01bbe22ea0877472db49b2752d866c921c
-(hlist: drop the node parameter from iterators)
+On Wed, Feb 6, 2013 at 3:02 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Wed, Feb 6, 2013 at 3:05 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> On Wednesday, February 06, 2013 01:53:50 PM Yinghai Lu wrote:
+>>> On Wed, Feb 6, 2013 at 1:43 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>>> > On Wednesday, February 06, 2013 01:28:27 PM Yinghai Lu wrote:
+>>> >> so you still did not answer you want 1 or 2 yet:
+>>> >>
+>>> >> for sgi_hotplug,
+>>> >>
+>>> >> 1. still keep the module support, and register acpi_pci_driver later.
+>>> >> 2. built-in support only, and need to register acpi_pci_driver early.
+>>> >
+>>> > Please work with the assumption that acpi_pci_driver is not going to be there
+>>> > any more.
+>>> >
+>>>
+>>> I think I could change ioapic and iommu hotplug to weak add/remove because they
+>>> should be built-in by nature.
+>>>
+>>> but how about others like sgi_hotplug etc?
+>
+> I think that could be handled with pcibios_root_bridge_prepare() or
+> something similar -- something that happens in the "add host bridge"
+> path.  I'm not saying we necessarily have all the right hooks in place
+> yet.  It's just that I'd rather figure out what the right hooks *are*
+> and add them if necessary, than just convert pci_root_buses to
+> for_each_pci_host_bridge().
 
-This patch removes a hlist_node struct that is no longer used.
+so we will have all built-in for apci_pci_driver and call add/remove directly?
 
-Sparse gives a warning:
+BTW, looks like sgi_hotplug may need some time to convert ...
+Also not sure who can test it.
 
-net/batman-adv/originator.c:411:21: warning:
-	unused variable ‘node_tmp’ [-Wunused-variable]
+>
+>> I'd really prefer to wait for the patchset removing acpi_pci_driver (from
+>> Myron) before proceeding with more changes in that area.
+>>
+>> Myron, do you have a prototype based on the current linux-next?
+>
+> I think it's really the acpiphp/pciehp issue that's holding up the
+> removal of acpi_pci_driver.  I'm not sure if anybody's working on
+> that.
 
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
----
-This patch applies to the linux-next tree.
-v2: Added complete hash and message of dependant commit.
+Myron's last Dec's version would split all acpi_pci_driver's
+add/remove into acpi_pci_root_add/remove.
 
- net/batman-adv/originator.c |    1 -
- 1 file changed, 1 deletion(-)
+other way is use host-bridge nodifier, looks like that is not favorable.
 
-diff --git a/net/batman-adv/originator.c b/net/batman-adv/originator.c
-index 43d0f89..96fb80b 100644
---- a/net/batman-adv/originator.c
-+++ b/net/batman-adv/originator.c
-@@ -408,7 +408,6 @@ int batadv_orig_seq_print_text(struct seq_file *seq, void *offset)
- 	struct net_device *net_dev = (struct net_device *)seq->private;
- 	struct batadv_priv *bat_priv = netdev_priv(net_dev);
- 	struct batadv_hashtable *hash = bat_priv->orig_hash;
--	struct hlist_node *node_tmp;
- 	struct hlist_head *head;
- 	struct batadv_hard_iface *primary_if;
- 	struct batadv_orig_node *orig_node;
--- 
-1.7.10.4
+BTW, looks like I could put add/remove calling directly in
+acpi_pci_root_add/remove
+for ioapic and iommu.
 
+Thanks
+
+Yinghai
