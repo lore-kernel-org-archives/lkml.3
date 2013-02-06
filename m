@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751238Ab3BFMH1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 07:07:27 -0500
-Received: from mga11.intel.com ([192.55.52.93]:63458 "EHLO mga11.intel.com"
+	id S1754099Ab3BFMH5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 07:07:57 -0500
+Received: from mga11.intel.com ([192.55.52.93]:58289 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752296Ab3BFMHU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753001Ab3BFMHU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 6 Feb 2013 07:07:20 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,615,1355126400"; 
-   d="scan'208";a="287310859"
+   d="scan'208";a="287310874"
 From: Tomas Winkler <tomas.winkler@intel.com>
 To: gregkh@linuxfoundation.org
 Cc: arnd@arndb.de, alan@linux.intel.com, linux-kernel@vger.kernel.org,
         Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next 4/6] mei: move interrupt handlers to be me hw specific
-Date: Wed,  6 Feb 2013 14:06:42 +0200
-Message-Id: <1360152404-5769-5-git-send-email-tomas.winkler@intel.com>
+Subject: [char-misc-next 5/6] mei: rename to mei_host_buffer_is_empty to hbuf_is_ready
+Date: Wed,  6 Feb 2013 14:06:43 +0200
+Message-Id: <1360152404-5769-6-git-send-email-tomas.winkler@intel.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1360152404-5769-1-git-send-email-tomas.winkler@intel.com>
 References: <1360152404-5769-1-git-send-email-tomas.winkler@intel.com>
@@ -23,455 +23,202 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-interrupt handler are  platform specifics so we move
-them to hw-mei.c. For sake of that we need to export
-write, read, and complete handlers from the interrupt.c
+we rename the mei_host_buffer_is_empty to keep naming
+convention of hbuf and also make the query more generic
+to be correct also for other under laying hardware
 
 Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 ---
- drivers/misc/mei/hw-me.c     |  164 +++++++++++++++++++++++++++++++++++------
- drivers/misc/mei/hw-me.h     |    3 +
- drivers/misc/mei/interrupt.c |  126 ++------------------------------
- drivers/misc/mei/mei_dev.h   |    9 ++-
- drivers/misc/mei/pci-me.c    |   12 ++--
- 5 files changed, 164 insertions(+), 150 deletions(-)
+ drivers/misc/mei/amthif.c  |    8 ++++----
+ drivers/misc/mei/client.c  |   13 ++++++-------
+ drivers/misc/mei/hw-me.c   |    2 +-
+ drivers/misc/mei/main.c    |    4 ++--
+ drivers/misc/mei/mei_dev.h |   14 ++++++++++----
+ drivers/misc/mei/wd.c      |    9 ++++-----
+ 6 files changed, 27 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/misc/mei/hw-me.c b/drivers/misc/mei/hw-me.c
-index 6300943..3bebf8d 100644
---- a/drivers/misc/mei/hw-me.c
-+++ b/drivers/misc/mei/hw-me.c
-@@ -15,11 +15,16 @@
-  */
+diff --git a/drivers/misc/mei/amthif.c b/drivers/misc/mei/amthif.c
+index a7c4838..c86d7e3 100644
+--- a/drivers/misc/mei/amthif.c
++++ b/drivers/misc/mei/amthif.c
+@@ -297,9 +297,9 @@ static int mei_amthif_send_cmd(struct mei_device *dev, struct mei_cl_cb *cb)
+ 	if (ret < 0)
+ 		return ret;
  
- #include <linux/pci.h>
--#include <linux/mei.h>
-+
-+#include <linux/kthread.h>
-+#include <linux/interrupt.h>
+-	if (ret && dev->mei_host_buffer_is_empty) {
++	if (ret && dev->hbuf_is_ready) {
+ 		ret = 0;
+-		dev->mei_host_buffer_is_empty = false;
++		dev->hbuf_is_ready = false;
+ 		if (cb->request_buffer.size > mei_hbuf_max_len(dev)) {
+ 			mei_hdr.length = mei_hbuf_max_len(dev);
+ 			mei_hdr.msg_complete = 0;
+@@ -330,7 +330,7 @@ static int mei_amthif_send_cmd(struct mei_device *dev, struct mei_cl_cb *cb)
+ 			list_add_tail(&cb->list, &dev->write_list.list);
+ 		}
+ 	} else {
+-		if (!(dev->mei_host_buffer_is_empty))
++		if (!dev->hbuf_is_ready)
+ 			dev_dbg(&dev->pdev->dev, "host buffer is not empty");
  
- #include "mei_dev.h"
- #include "hw-me.h"
- 
-+#include "hbm.h"
-+
-+
- /**
-  * mei_reg_read - Reads 32bit data from the mei device
-  *
-@@ -218,29 +223,6 @@ static bool mei_me_hw_is_ready(struct mei_device *dev)
- }
- 
- /**
-- * mei_interrupt_quick_handler - The ISR of the MEI device
-- *
-- * @irq: The irq number
-- * @dev_id: pointer to the device structure
-- *
-- * returns irqreturn_t
-- */
--irqreturn_t mei_interrupt_quick_handler(int irq, void *dev_id)
--{
--	struct mei_device *dev = (struct mei_device *) dev_id;
--	struct mei_me_hw *hw = to_me_hw(dev);
--	u32 csr_reg = mei_hcsr_read(hw);
--
--	if ((csr_reg & H_IS) != H_IS)
--		return IRQ_NONE;
--
--	/* clear H_IS bit in H_CSR */
--	mei_reg_write(hw, H_CSR, csr_reg);
--
--	return IRQ_WAKE_THREAD;
--}
--
--/**
-  * mei_hbuf_filled_slots - gets number of device filled buffer slots
-  *
-  * @dev: the device structure
-@@ -403,6 +385,139 @@ static int mei_me_read_slots(struct mei_device *dev, unsigned char *buffer,
+ 		dev_dbg(&dev->pdev->dev, "No flow control credentials, so add iamthif cb to write list.\n");
+@@ -583,7 +583,7 @@ int mei_amthif_irq_read(struct mei_device *dev, s32 *slots)
+ 	dev->iamthif_msg_buf_index = 0;
+ 	dev->iamthif_msg_buf_size = 0;
+ 	dev->iamthif_stall_timer = MEI_IAMTHIF_STALL_TIMER;
+-	dev->mei_host_buffer_is_empty = mei_hbuf_is_ready(dev);
++	dev->hbuf_is_ready = mei_hbuf_is_ready(dev);
  	return 0;
  }
  
-+/**
-+ * mei_me_irq_quick_handler - The ISR of the MEI device
-+ *
-+ * @irq: The irq number
-+ * @dev_id: pointer to the device structure
-+ *
-+ * returns irqreturn_t
-+ */
-+
-+irqreturn_t mei_me_irq_quick_handler(int irq, void *dev_id)
-+{
-+	struct mei_device *dev = (struct mei_device *) dev_id;
-+	struct mei_me_hw *hw = to_me_hw(dev);
-+	u32 csr_reg = mei_hcsr_read(hw);
-+
-+	if ((csr_reg & H_IS) != H_IS)
-+		return IRQ_NONE;
-+
-+	/* clear H_IS bit in H_CSR */
-+	mei_reg_write(hw, H_CSR, csr_reg);
-+
-+	return IRQ_WAKE_THREAD;
-+}
-+
-+/**
-+ * mei_me_irq_thread_handler - function called after ISR to handle the interrupt
-+ * processing.
-+ *
-+ * @irq: The irq number
-+ * @dev_id: pointer to the device structure
-+ *
-+ * returns irqreturn_t
-+ *
-+ */
-+irqreturn_t mei_me_irq_thread_handler(int irq, void *dev_id)
-+{
-+	struct mei_device *dev = (struct mei_device *) dev_id;
-+	struct mei_cl_cb complete_list;
-+	struct mei_cl_cb *cb_pos = NULL, *cb_next = NULL;
-+	struct mei_cl *cl;
-+	s32 slots;
-+	int rets;
-+	bool  bus_message_received;
-+
-+
-+	dev_dbg(&dev->pdev->dev, "function called after ISR to handle the interrupt processing.\n");
-+	/* initialize our complete list */
-+	mutex_lock(&dev->device_lock);
-+	mei_io_list_init(&complete_list);
-+
-+	/* Ack the interrupt here
-+	 * In case of MSI we don't go through the quick handler */
-+	if (pci_dev_msi_enabled(dev->pdev))
-+		mei_clear_interrupts(dev);
-+
-+	/* check if ME wants a reset */
-+	if (!mei_hw_is_ready(dev) &&
-+	    dev->dev_state != MEI_DEV_RESETING &&
-+	    dev->dev_state != MEI_DEV_INITIALIZING) {
-+		dev_dbg(&dev->pdev->dev, "FW not ready.\n");
-+		mei_reset(dev, 1);
-+		mutex_unlock(&dev->device_lock);
-+		return IRQ_HANDLED;
-+	}
-+
-+	/*  check if we need to start the dev */
-+	if (!mei_host_is_ready(dev)) {
-+		if (mei_hw_is_ready(dev)) {
-+			dev_dbg(&dev->pdev->dev, "we need to start the dev.\n");
-+
-+			mei_host_set_ready(dev);
-+
-+			dev_dbg(&dev->pdev->dev, "link is established start sending messages.\n");
-+			/* link is established * start sending messages.  */
-+
-+			dev->dev_state = MEI_DEV_INIT_CLIENTS;
-+
-+			mei_hbm_start_req(dev);
-+			mutex_unlock(&dev->device_lock);
-+			return IRQ_HANDLED;
-+		} else {
-+			dev_dbg(&dev->pdev->dev, "FW not ready.\n");
-+			mutex_unlock(&dev->device_lock);
-+			return IRQ_HANDLED;
-+		}
-+	}
-+	/* check slots available for reading */
-+	slots = mei_count_full_read_slots(dev);
-+	while (slots > 0) {
-+		/* we have urgent data to send so break the read */
-+		if (dev->wr_ext_msg.hdr.length)
-+			break;
-+		dev_dbg(&dev->pdev->dev, "slots =%08x\n", slots);
-+		dev_dbg(&dev->pdev->dev, "call mei_irq_read_handler.\n");
-+		rets = mei_irq_read_handler(dev, &complete_list, &slots);
-+		if (rets)
-+			goto end;
-+	}
-+	rets = mei_irq_write_handler(dev, &complete_list);
-+end:
-+	dev_dbg(&dev->pdev->dev, "end of bottom half function.\n");
-+	dev->mei_host_buffer_is_empty = mei_hbuf_is_ready(dev);
-+
-+	bus_message_received = false;
-+	if (dev->recvd_msg && waitqueue_active(&dev->wait_recvd_msg)) {
-+		dev_dbg(&dev->pdev->dev, "received waiting bus message\n");
-+		bus_message_received = true;
-+	}
-+	mutex_unlock(&dev->device_lock);
-+	if (bus_message_received) {
-+		dev_dbg(&dev->pdev->dev, "wake up dev->wait_recvd_msg\n");
-+		wake_up_interruptible(&dev->wait_recvd_msg);
-+		bus_message_received = false;
-+	}
-+	if (list_empty(&complete_list.list))
-+		return IRQ_HANDLED;
-+
-+
-+	list_for_each_entry_safe(cb_pos, cb_next, &complete_list.list, list) {
-+		cl = cb_pos->cl;
-+		list_del(&cb_pos->list);
-+		if (cl) {
-+			if (cl != &dev->iamthif_cl) {
-+				dev_dbg(&dev->pdev->dev, "completing call back.\n");
-+				mei_irq_complete_handler(cl, cb_pos);
-+				cb_pos = NULL;
-+			} else if (cl == &dev->iamthif_cl) {
-+				mei_amthif_complete(dev, cb_pos);
-+			}
-+		}
-+	}
-+	return IRQ_HANDLED;
-+}
- static const struct mei_hw_ops mei_me_hw_ops = {
+diff --git a/drivers/misc/mei/client.c b/drivers/misc/mei/client.c
+index a921001..e46663e 100644
+--- a/drivers/misc/mei/client.c
++++ b/drivers/misc/mei/client.c
+@@ -393,8 +393,8 @@ int mei_cl_disconnect(struct mei_cl *cl)
+ 		return -ENOMEM;
  
- 	.host_set_ready = mei_me_host_set_ready,
-@@ -458,3 +573,4 @@ struct mei_device *mei_me_dev_init(struct pci_dev *pdev)
- 	dev->pdev = pdev;
- 	return dev;
- }
-+
-diff --git a/drivers/misc/mei/hw-me.h b/drivers/misc/mei/hw-me.h
-index 9a3aaab..8518d3e 100644
---- a/drivers/misc/mei/hw-me.h
-+++ b/drivers/misc/mei/hw-me.h
-@@ -42,4 +42,7 @@ static inline unsigned char mei_data2slots(size_t length)
- 	return DIV_ROUND_UP(sizeof(struct mei_msg_hdr) + length, 4);
- }
+ 	cb->fop_type = MEI_FOP_CLOSE;
+-	if (dev->mei_host_buffer_is_empty) {
+-		dev->mei_host_buffer_is_empty = false;
++	if (dev->hbuf_is_ready) {
++		dev->hbuf_is_ready = false;
+ 		if (mei_hbm_cl_disconnect_req(dev, cl)) {
+ 			rets = -ENODEV;
+ 			dev_err(&dev->pdev->dev, "failed to disconnect.\n");
+@@ -496,9 +496,8 @@ int mei_cl_connect(struct mei_cl *cl, struct file *file)
  
-+irqreturn_t mei_me_irq_quick_handler(int irq, void *dev_id);
-+irqreturn_t mei_me_irq_thread_handler(int irq, void *dev_id);
-+
- #endif /* _MEI_INTERFACE_H_ */
-diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
-index 431aa91..3535b26 100644
---- a/drivers/misc/mei/interrupt.c
-+++ b/drivers/misc/mei/interrupt.c
-@@ -30,12 +30,12 @@
+ 	cb->fop_type = MEI_FOP_IOCTL;
  
+-	if (dev->mei_host_buffer_is_empty &&
+-	    !mei_cl_is_other_connecting(cl)) {
+-		dev->mei_host_buffer_is_empty = false;
++	if (dev->hbuf_is_ready && !mei_cl_is_other_connecting(cl)) {
++		dev->hbuf_is_ready = false;
  
- /**
-- * _mei_cmpl - processes completed operation.
-+ * mei_complete_handler - processes completed operation.
-  *
-  * @cl: private data of the file object.
-  * @cb_pos: callback block.
-  */
--static void _mei_cmpl(struct mei_cl *cl, struct mei_cl_cb *cb_pos)
-+void mei_irq_complete_handler(struct mei_cl *cl, struct mei_cl_cb *cb_pos)
- {
- 	if (cb_pos->fop_type == MEI_FOP_WRITE) {
- 		mei_io_cb_free(cb_pos);
-@@ -313,15 +313,14 @@ static int mei_irq_thread_write_complete(struct mei_device *dev, s32 *slots,
-  * mei_irq_thread_read_handler - bottom half read routine after ISR to
-  * handle the read processing.
-  *
-- * @cmpl_list: An instance of our list structure
-  * @dev: the device structure
-+ * @cmpl_list: An instance of our list structure
-  * @slots: slots to read.
-  *
-  * returns 0 on success, <0 on failure.
-  */
--static int mei_irq_thread_read_handler(struct mei_cl_cb *cmpl_list,
--		struct mei_device *dev,
--		s32 *slots)
-+int mei_irq_read_handler(struct mei_device *dev,
-+		struct mei_cl_cb *cmpl_list, s32 *slots)
- {
- 	struct mei_msg_hdr *mei_hdr;
- 	struct mei_cl *cl_pos = NULL;
-@@ -412,15 +411,15 @@ end:
+ 		if (mei_hbm_cl_connect_req(dev, cl)) {
+ 			rets = -ENODEV;
+@@ -661,8 +660,8 @@ int mei_cl_read_start(struct mei_cl *cl)
  
- 
- /**
-- * mei_irq_thread_write_handler - bottom half write routine after
-- * ISR to handle the write processing.
-+ * mei_irq_write_handler -  dispatch write requests
-+ *  after irq received
-  *
-  * @dev: the device structure
-  * @cmpl_list: An instance of our list structure
-  *
-  * returns 0 on success, <0 on failure.
-  */
--static int mei_irq_thread_write_handler(struct mei_device *dev,
-+int mei_irq_write_handler(struct mei_device *dev,
- 				struct mei_cl_cb *cmpl_list)
- {
- 
-@@ -666,112 +665,3 @@ out:
- 	mutex_unlock(&dev->device_lock);
- }
- 
--/**
-- *  mei_interrupt_thread_handler - function called after ISR to handle the interrupt
-- * processing.
-- *
-- * @irq: The irq number
-- * @dev_id: pointer to the device structure
-- *
-- * returns irqreturn_t
-- *
-- */
--irqreturn_t mei_interrupt_thread_handler(int irq, void *dev_id)
--{
--	struct mei_device *dev = (struct mei_device *) dev_id;
--	struct mei_cl_cb complete_list;
--	struct mei_cl_cb *cb_pos = NULL, *cb_next = NULL;
--	struct mei_cl *cl;
--	s32 slots;
--	int rets;
--	bool  bus_message_received;
--
--
--	dev_dbg(&dev->pdev->dev, "function called after ISR to handle the interrupt processing.\n");
--	/* initialize our complete list */
--	mutex_lock(&dev->device_lock);
--	mei_io_list_init(&complete_list);
--
--	/* Ack the interrupt here
--	 * In case of MSI we don't go through the quick handler */
--	if (pci_dev_msi_enabled(dev->pdev))
--		mei_clear_interrupts(dev);
--
--	/* check if ME wants a reset */
--	if (!mei_hw_is_ready(dev) &&
--	    dev->dev_state != MEI_DEV_RESETING &&
--	    dev->dev_state != MEI_DEV_INITIALIZING) {
--		dev_dbg(&dev->pdev->dev, "FW not ready.\n");
--		mei_reset(dev, 1);
--		mutex_unlock(&dev->device_lock);
--		return IRQ_HANDLED;
--	}
--
--	/*  check if we need to start the dev */
--	if (!mei_host_is_ready(dev)) {
--		if (mei_hw_is_ready(dev)) {
--			dev_dbg(&dev->pdev->dev, "we need to start the dev.\n");
--
--			mei_host_set_ready(dev);
--
--			dev_dbg(&dev->pdev->dev, "link is established start sending messages.\n");
--			/* link is established * start sending messages.  */
--
--			dev->dev_state = MEI_DEV_INIT_CLIENTS;
--
--			mei_hbm_start_req(dev);
--			mutex_unlock(&dev->device_lock);
--			return IRQ_HANDLED;
--		} else {
--			dev_dbg(&dev->pdev->dev, "FW not ready.\n");
--			mutex_unlock(&dev->device_lock);
--			return IRQ_HANDLED;
--		}
--	}
--	/* check slots available for reading */
--	slots = mei_count_full_read_slots(dev);
--	while (slots > 0) {
--		/* we have urgent data to send so break the read */
--		if (dev->wr_ext_msg.hdr.length)
--			break;
--		dev_dbg(&dev->pdev->dev, "slots =%08x\n", slots);
--		dev_dbg(&dev->pdev->dev, "call mei_irq_thread_read_handler.\n");
--		rets = mei_irq_thread_read_handler(&complete_list, dev, &slots);
--		if (rets)
--			goto end;
--	}
--	rets = mei_irq_thread_write_handler(dev, &complete_list);
--end:
--	dev_dbg(&dev->pdev->dev, "end of bottom half function.\n");
+ 	cb->fop_type = MEI_FOP_READ;
+ 	cl->read_cb = cb;
+-	if (dev->mei_host_buffer_is_empty) {
+-		dev->mei_host_buffer_is_empty = false;
++	if (dev->hbuf_is_ready) {
++		dev->hbuf_is_ready = false;
+ 		if (mei_hbm_cl_flow_control_req(dev, cl)) {
+ 			rets = -ENODEV;
+ 			goto err;
+diff --git a/drivers/misc/mei/hw-me.c b/drivers/misc/mei/hw-me.c
+index 3bebf8d..45ea718 100644
+--- a/drivers/misc/mei/hw-me.c
++++ b/drivers/misc/mei/hw-me.c
+@@ -486,7 +486,7 @@ irqreturn_t mei_me_irq_thread_handler(int irq, void *dev_id)
+ 	rets = mei_irq_write_handler(dev, &complete_list);
+ end:
+ 	dev_dbg(&dev->pdev->dev, "end of bottom half function.\n");
 -	dev->mei_host_buffer_is_empty = mei_hbuf_is_ready(dev);
--
--	bus_message_received = false;
--	if (dev->recvd_msg && waitqueue_active(&dev->wait_recvd_msg)) {
--		dev_dbg(&dev->pdev->dev, "received waiting bus message\n");
--		bus_message_received = true;
--	}
--	mutex_unlock(&dev->device_lock);
--	if (bus_message_received) {
--		dev_dbg(&dev->pdev->dev, "wake up dev->wait_recvd_msg\n");
--		wake_up_interruptible(&dev->wait_recvd_msg);
--		bus_message_received = false;
--	}
--	if (list_empty(&complete_list.list))
--		return IRQ_HANDLED;
--
--
--	list_for_each_entry_safe(cb_pos, cb_next, &complete_list.list, list) {
--		cl = cb_pos->cl;
--		list_del(&cb_pos->list);
--		if (cl) {
--			if (cl != &dev->iamthif_cl) {
--				dev_dbg(&dev->pdev->dev, "completing call back.\n");
--				_mei_cmpl(cl, cb_pos);
--				cb_pos = NULL;
--			} else if (cl == &dev->iamthif_cl) {
--				mei_amthif_complete(dev, cb_pos);
--			}
--		}
--	}
--	return IRQ_HANDLED;
--}
++	dev->hbuf_is_ready = mei_hbuf_is_ready(dev);
+ 
+ 	bus_message_received = false;
+ 	if (dev->recvd_msg && waitqueue_active(&dev->wait_recvd_msg)) {
+diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
+index 843ae2f..903f809 100644
+--- a/drivers/misc/mei/main.c
++++ b/drivers/misc/mei/main.c
+@@ -454,14 +454,14 @@ static ssize_t mei_write(struct file *file, const char __user *ubuf,
+ 	if (rets < 0)
+ 		goto err;
+ 
+-	if (rets == 0 || dev->mei_host_buffer_is_empty == false) {
++	if (rets == 0 || !dev->hbuf_is_ready) {
+ 		write_cb->buf_idx = 0;
+ 		mei_hdr.msg_complete = 0;
+ 		cl->writing_state = MEI_WRITING;
+ 		goto out;
+ 	}
+ 
+-	dev->mei_host_buffer_is_empty = false;
++	dev->hbuf_is_ready = false;
+ 	if (length >  mei_hbuf_max_len(dev)) {
+ 		mei_hdr.length = mei_hbuf_max_len(dev);
+ 		mei_hdr.msg_complete = 0;
 diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
-index c974292..7d07cef 100644
+index 7d07cef..cb80166 100644
 --- a/drivers/misc/mei/mei_dev.h
 +++ b/drivers/misc/mei/mei_dev.h
-@@ -379,9 +379,14 @@ int mei_hw_init(struct mei_device *dev);
- /*
-  *  MEI interrupt functions prototype
+@@ -265,9 +265,13 @@ struct mei_hw_ops {
+ 
+ /**
+  * struct mei_device -  MEI private device struct
++
+  * @mem_addr - mem mapped base register address
+- * @hbuf_depth - depth of host(write) buffer
+- * @wr_ext_msg - buffer for hbm control responses (set in read cycle)
++
++ * @hbuf_depth - depth of hardware host/write buffer is slots
++ * @hbuf_is_ready - query if the host host/write buffer is ready
++ * @wr_msg - the buffer for hbm control messages
++ * @wr_ext_msg - the buffer for hbm control responses (set in read cycle)
   */
--irqreturn_t mei_interrupt_quick_handler(int irq, void *dev_id);
--irqreturn_t mei_interrupt_thread_handler(int irq, void *dev_id);
-+
- void mei_timer(struct work_struct *work);
-+int mei_irq_read_handler(struct mei_device *dev,
-+		struct mei_cl_cb *cmpl_list, s32 *slots);
-+
-+int mei_irq_write_handler(struct mei_device *dev, struct mei_cl_cb *cmpl_list);
-+
-+void mei_irq_complete_handler(struct mei_cl *cl, struct mei_cl_cb *cb_pos);
+ struct mei_device {
+ 	struct pci_dev *pdev;	/* pointer to pci device struct */
+@@ -294,7 +298,6 @@ struct mei_device {
+ 	struct delayed_work timer_work;	/* MEI timer delayed work (timeouts) */
+ 	bool recvd_msg;
  
- /*
-  * AMTHIF - AMT Host Interface Functions
-diff --git a/drivers/misc/mei/pci-me.c b/drivers/misc/mei/pci-me.c
-index 27ac717..b40ec06 100644
---- a/drivers/misc/mei/pci-me.c
-+++ b/drivers/misc/mei/pci-me.c
-@@ -170,12 +170,12 @@ static int mei_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	if (pci_dev_msi_enabled(pdev))
- 		err = request_threaded_irq(pdev->irq,
- 			NULL,
--			mei_interrupt_thread_handler,
-+			mei_me_irq_thread_handler,
- 			IRQF_ONESHOT, KBUILD_MODNAME, dev);
- 	else
- 		err = request_threaded_irq(pdev->irq,
--			mei_interrupt_quick_handler,
--			mei_interrupt_thread_handler,
-+			mei_me_irq_quick_handler,
-+			mei_me_irq_thread_handler,
- 			IRQF_SHARED, KBUILD_MODNAME, dev);
+-	u8  hbuf_depth;
+ 	/*
+ 	 * waiting queue for receive message from FW
+ 	 */
+@@ -311,6 +314,10 @@ struct mei_device {
+ 	unsigned char rd_msg_buf[MEI_RD_MSG_BUF_SIZE];	/* control messages */
+ 	u32 rd_msg_hdr;
  
- 	if (err) {
-@@ -348,12 +348,12 @@ static int mei_pci_resume(struct device *device)
- 	if (pci_dev_msi_enabled(pdev))
- 		err = request_threaded_irq(pdev->irq,
- 			NULL,
--			mei_interrupt_thread_handler,
-+			mei_me_irq_thread_handler,
- 			IRQF_ONESHOT, KBUILD_MODNAME, dev);
- 	else
- 		err = request_threaded_irq(pdev->irq,
--			mei_interrupt_quick_handler,
--			mei_interrupt_thread_handler,
-+			mei_me_irq_quick_handler,
-+			mei_me_irq_thread_handler,
- 			IRQF_SHARED, KBUILD_MODNAME, dev);
++	/* write buffer */
++	u8 hbuf_depth;
++	bool hbuf_is_ready;
++
+ 	/* used for control messages */
+ 	struct {
+ 		struct mei_msg_hdr hdr;
+@@ -330,7 +337,6 @@ struct mei_device {
+ 	u8 me_clients_num;
+ 	u8 me_client_presentation_num;
+ 	u8 me_client_index;
+-	bool mei_host_buffer_is_empty;
  
- 	if (err) {
+ 	struct mei_cl wd_cl;
+ 	enum mei_wd_states wd_state;
+diff --git a/drivers/misc/mei/wd.c b/drivers/misc/mei/wd.c
+index 77b3820..2413247 100644
+--- a/drivers/misc/mei/wd.c
++++ b/drivers/misc/mei/wd.c
+@@ -157,9 +157,9 @@ int mei_wd_stop(struct mei_device *dev)
+ 	if (ret < 0)
+ 		goto out;
+ 
+-	if (ret && dev->mei_host_buffer_is_empty) {
++	if (ret && dev->hbuf_is_ready) {
+ 		ret = 0;
+-		dev->mei_host_buffer_is_empty = false;
++		dev->hbuf_is_ready = false;
+ 
+ 		if (!mei_wd_send(dev)) {
+ 			ret = mei_cl_flow_ctrl_reduce(&dev->wd_cl);
+@@ -282,10 +282,9 @@ static int mei_wd_ops_ping(struct watchdog_device *wd_dev)
+ 	dev->wd_state = MEI_WD_RUNNING;
+ 
+ 	/* Check if we can send the ping to HW*/
+-	if (dev->mei_host_buffer_is_empty &&
+-	    mei_cl_flow_ctrl_creds(&dev->wd_cl) > 0) {
++	if (dev->hbuf_is_ready && mei_cl_flow_ctrl_creds(&dev->wd_cl) > 0) {
+ 
+-		dev->mei_host_buffer_is_empty = false;
++		dev->hbuf_is_ready = false;
+ 		dev_dbg(&dev->pdev->dev, "wd: sending ping\n");
+ 
+ 		if (mei_wd_send(dev)) {
 -- 
 1.7.4.4
 
