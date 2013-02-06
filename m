@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758540Ab3BFUAb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 15:00:31 -0500
-Received: from mail-ia0-f181.google.com ([209.85.210.181]:51307 "EHLO
-	mail-ia0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758215Ab3BFTuh (ORCPT
+	id S1758269Ab3BFUAw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 15:00:52 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:64207 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758147Ab3BFUAs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 14:50:37 -0500
+	Wed, 6 Feb 2013 15:00:48 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Jack Morgenstein <jackm@dev.mellanox.co.il>,
-        Or Gerlitz <ogerlitz@mellanox.com>,
-        Roland Dreier <roland@purestorage.com>, linux-rdma@vger.kernel.org
-Subject: [PATCH 44/77] IB/mlx4: convert to idr_alloc()
-Date: Wed,  6 Feb 2013 11:40:16 -0800
-Message-Id: <1360179649-22465-45-git-send-email-tj@kernel.org>
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
+Subject: [PATCH 34/77] drm/sis: convert to idr_alloc()
+Date: Wed,  6 Feb 2013 11:40:06 -0800
+Message-Id: <1360179649-22465-35-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1360179649-22465-1-git-send-email-tj@kernel.org>
 References: <1360179649-22465-1-git-send-email-tj@kernel.org>
@@ -28,67 +26,37 @@ Convert to the much saner new idr interface.
 Only compile tested.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Jack Morgenstein <jackm@dev.mellanox.co.il>
-Cc: Or Gerlitz <ogerlitz@mellanox.com>
-Cc: Roland Dreier <roland@purestorage.com>
-Cc: linux-rdma@vger.kernel.org
+Cc: David Airlie <airlied@linux.ie>
+Cc: dri-devel@lists.freedesktop.org
 ---
- drivers/infiniband/hw/mlx4/cm.c | 32 +++++++++++++++-----------------
- 1 file changed, 15 insertions(+), 17 deletions(-)
+ drivers/gpu/drm/sis/sis_mm.c | 13 +++----------
+ 1 file changed, 3 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/infiniband/hw/mlx4/cm.c b/drivers/infiniband/hw/mlx4/cm.c
-index dbc99d4..80e59ed 100644
---- a/drivers/infiniband/hw/mlx4/cm.c
-+++ b/drivers/infiniband/hw/mlx4/cm.c
-@@ -203,7 +203,7 @@ static void sl_id_map_add(struct ib_device *ibdev, struct id_map_entry *new)
- static struct id_map_entry *
- id_map_alloc(struct ib_device *ibdev, int slave_id, u32 sl_cm_id)
- {
--	int ret, id;
-+	int ret;
- 	static int next_id;
- 	struct id_map_entry *ent;
- 	struct mlx4_ib_sriov *sriov = &to_mdev(ibdev)->sriov;
-@@ -220,25 +220,23 @@ id_map_alloc(struct ib_device *ibdev, int slave_id, u32 sl_cm_id)
- 	ent->dev = to_mdev(ibdev);
- 	INIT_DELAYED_WORK(&ent->timeout, id_map_ent_timeout);
+diff --git a/drivers/gpu/drm/sis/sis_mm.c b/drivers/gpu/drm/sis/sis_mm.c
+index 2b2f78c..9a43d98 100644
+--- a/drivers/gpu/drm/sis/sis_mm.c
++++ b/drivers/gpu/drm/sis/sis_mm.c
+@@ -128,17 +128,10 @@ static int sis_drm_alloc(struct drm_device *dev, struct drm_file *file,
+ 	if (retval)
+ 		goto fail_alloc;
  
--	do {
--		spin_lock(&to_mdev(ibdev)->sriov.id_map_lock);
--		ret = idr_get_new_above(&sriov->pv_id_table, ent,
--					next_id, &id);
--		if (!ret) {
--			next_id = ((unsigned) id + 1) & MAX_IDR_MASK;
--			ent->pv_cm_id = (u32)id;
--			sl_id_map_add(ibdev, ent);
--		}
-+	idr_preload(GFP_KERNEL);
-+	spin_lock(&to_mdev(ibdev)->sriov.id_map_lock);
+-again:
+-	if (idr_pre_get(&dev_priv->object_idr, GFP_KERNEL) == 0) {
+-		retval = -ENOMEM;
+-		goto fail_idr;
+-	}
+-
+-	retval = idr_get_new_above(&dev_priv->object_idr, item, 1, &user_key);
+-	if (retval == -EAGAIN)
+-		goto again;
+-	if (retval)
++	retval = idr_alloc(&dev_priv->object_idr, item, 1, 0, GFP_KERNEL);
++	if (retval < 0)
+ 		goto fail_idr;
++	user_key = retval;
  
--		spin_unlock(&sriov->id_map_lock);
--	} while (ret == -EAGAIN && idr_pre_get(&sriov->pv_id_table, GFP_KERNEL));
--	/*the function idr_get_new_above can return -ENOSPC, so don't insert in that case.*/
--	if (!ret) {
--		spin_lock(&sriov->id_map_lock);
-+	ret = idr_alloc(&sriov->pv_id_table, ent, next_id, 0, GFP_NOWAIT);
-+	if (ret >= 0) {
-+		next_id = ((unsigned)ret + 1) & MAX_IDR_MASK;
-+		ent->pv_cm_id = (u32)ret;
-+		sl_id_map_add(ibdev, ent);
- 		list_add_tail(&ent->list, &sriov->cm_list);
--		spin_unlock(&sriov->id_map_lock);
--		return ent;
- 	}
-+
-+	spin_unlock(&sriov->id_map_lock);
-+	idr_preload_end();
-+
-+	if (ret >= 0)
-+		return ent;
-+
- 	/*error flow*/
- 	kfree(ent);
- 	mlx4_ib_warn(ibdev, "No more space in the idr (err:0x%x)\n", ret);
+ 	list_add(&item->owner_list, &file_priv->obj_list);
+ 	mutex_unlock(&dev->struct_mutex);
 -- 
 1.8.1
 
