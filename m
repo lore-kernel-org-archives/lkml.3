@@ -1,55 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756954Ab3BFBuh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 20:50:37 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:38483 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756885Ab3BFBud (ORCPT
+	id S1756948Ab3BFBxK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 20:53:10 -0500
+Received: from mail-da0-f48.google.com ([209.85.210.48]:49161 "EHLO
+	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755986Ab3BFBxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 20:50:33 -0500
+	Tue, 5 Feb 2013 20:53:08 -0500
+Date: Tue, 5 Feb 2013 17:55:11 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: balbi@ti.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, arm@kernel.org,
+        Shawn Guo <shawn.guo@linaro.org>, linux-usb@vger.kernel.org,
+        Sascha Hauer <kernel@pengutronix.de>
+Subject: Re: [PATCH 12/15] USB: gadget/freescale: disable non-multiplatform
+ drivers
+Message-ID: <20130206015511.GC1073@kroah.com>
+References: <1358788568-11137-1-git-send-email-arnd@arndb.de>
+ <20130205170027.GB1081@kroah.com>
+ <20130205213710.GA3739@arwen.pp.htv.fi>
+ <201302052254.00426.arnd@arndb.de>
 MIME-Version: 1.0
-In-Reply-To: <1360088646-19104-5-git-send-email-dirk.brandewie@gmail.com>
-References: <1360088646-19104-1-git-send-email-dirk.brandewie@gmail.com>
-	<1360088646-19104-5-git-send-email-dirk.brandewie@gmail.com>
-Date: Wed, 6 Feb 2013 07:20:32 +0530
-X-Google-Sender-Auth: lKfHKmzfVvYCQK3QGAg4itCr8LM
-Message-ID: <CAOh2x==4Zi=-bLh3SBxjp0xpc6P3WV3wcctLnV3kQUhjuGhPqw@mail.gmail.com>
-Subject: Re: [PATCH 4/7] cpufreq: Do not track governor name for scaling
- drivers with internal governors.
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: dirk.brandewie@gmail.com
-Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201302052254.00426.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 5, 2013 at 11:54 PM,  <dirk.brandewie@gmail.com> wrote:
-> From: Dirk Brandewie <dirk.brandewie@gmail.com>
->
-> Scaling drivers that implement internal governors do not have governor
-> structures assocaited with them.  Only track the name of the governor
-> associated with the CPU if the driver does not implement
-> cpufreq_driver.setpolicy()
->
-> Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
-> ---
->  drivers/cpufreq/cpufreq.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index d8daa4b..622e282 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -1050,7 +1050,9 @@ static int __cpufreq_remove_dev(struct device *dev, struct subsys_interface *sif
->                 __cpufreq_governor(data, CPUFREQ_GOV_STOP);
->
->  #ifdef CONFIG_HOTPLUG_CPU
-> -       strncpy(per_cpu(cpufreq_cpu_governor, cpu), data->governor->name,
-> +       if (!cpufreq_driver->setpolicy)
-> +               strncpy(per_cpu(cpufreq_cpu_governor, cpu),
-> +                       data->governor->name,
->                         CPUFREQ_NAME_LEN);
+On Tue, Feb 05, 2013 at 10:54:00PM +0000, Arnd Bergmann wrote:
+> On Tuesday 05 February 2013, Felipe Balbi wrote:
+> > [linus/master] Merge branch 'fix-max-write' of git://git.kernel.org/pub/scm/linux/kernel/git/teigland/linux-dlm
+> > 
+> > It's building find for me:
+> > 
+> > $ crossmake drivers/usb/gadget/fsl_udc_core.o \
+> >         drivers/usb/gadget/fsl_mxc_udc.o > /dev/null
+> > 
+> > (crossmake is an alias to make ARCH=arm)
+> > 
+> > Arnd, are you maybe missing a merge of v3.8-rc6 ?
+> >
+> > I can see that imx_udc.c is broken still, but there are no maintainers
+> > for that driver. I'm adding Sascha to Cc list, maybe he knows someone
+> > who can help, but if this driver isn't fixed in 2 merge windows, I will
+> > schedule for removal from tree and someone else will have to
+> > re-introduce it later without all the bogus includes.
+> 
+> Ah, I see what happened now: I submitted a patch that lumped together
+> two patches, disabling both fsl_mxc_udc and imx_udc. You already had
+> a fix for the first one, so I dropped my patch, but now I see the
+> build error for the second one that my patch was avoiding.
+> 
+> The last patch to imx_udc that seems to have seen more than just
+> build testing was probably "USB: gadget: imx_udc: don't queue more
+> data when zlp is to be sent", while fsl_mxc_udc looks actively
+> maintained. It's not completely clear to me whether these
+> are actually two drivers for the same hardware, of whether
+> imx_udc is the i.mx1 variant and fsl_mxc_udc is the i.mx2 variant.
+> 
+> What I can say is that no platform in the kernel currently defines
+> an "imx_udc" platform_device, so it is certainly unused, and has
+> been since at least e08300043e in 2010.
+> 
+> I would suggest that we mark the imx_udc driver as 'depends on
+> BROKEN' right away, since no in-tree user needs it, and any
+> out of tree user is already broken in 3.8. I also wouldn't
+> mind removing the driver unless the imx maintainers have
+> a plan for it.
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Sure, someone just send me a patch for that and I'll be glad to mark it
+BROKEN.
+
+thanks,
+
+greg k-h
