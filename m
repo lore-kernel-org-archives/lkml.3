@@ -1,35 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757708Ab3BFSku (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 13:40:50 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:42259 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755389Ab3BFSkt (ORCPT
+	id S1757782Ab3BFSqp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 13:46:45 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:34037 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755877Ab3BFSqo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 13:40:49 -0500
-Date: Wed, 06 Feb 2013 13:40:47 -0500 (EST)
-Message-Id: <20130206.134047.1761684630007970885.davem@davemloft.net>
-To: gregkh@linuxfoundation.org
-Cc: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20130206175205.GC1292@kroah.com>
-References: <20130206183040.ea07a2cd64200b6d37868036@canb.auug.org.au>
-	<20130206184243.c858634f5d8c3ce4ffac71f3@canb.auug.org.au>
-	<20130206175205.GC1292@kroah.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 6 Feb 2013 13:46:44 -0500
+Date: Wed, 6 Feb 2013 10:46:38 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] stop_machine: check work->done while handling
+ enqueued works
+Message-ID: <20130206184638.GA2875@htj.dyndns.org>
+References: <CAJd=RBD=yMa1-iAm_i71U+KKRNYmXDTb6yZzW5aVAGHQ+zD8Sw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJd=RBD=yMa1-iAm_i71U+KKRNYmXDTb6yZzW5aVAGHQ+zD8Sw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Wed, 6 Feb 2013 09:52:05 -0800
+On Wed, Feb 06, 2013 at 08:36:01PM +0800, Hillf Danton wrote:
+> To advoid invalid reference, updating work result is moved to
+> cpu_stop_signal_done().
 
-> Sorry for missing this one, the fix looks correct to me, I'll queue it
-> up in my tree, or it can go through David's.
+Can you please elaborate "why" in addition to "what"?  Do we actually
+have a bug here, is it meant to be an independent cleanup, or is it
+something which is necessary for later patches in the series?  What
+are we achieving here?
 
-It should go via your tree, my tree didn't add this regression.
+>  /* signal completion unless @done is NULL */
+> -static void cpu_stop_signal_done(struct cpu_stop_done *done, bool executed)
+> +static void cpu_stop_signal_done(struct cpu_stop_done *done, bool
+> executed, int ret)
+
+Patch is corrupt.
+
+> @@ -279,8 +281,6 @@ repeat:
+>  		preempt_disable();
+> 
+>  		ret = fn(arg);
+> -		if (ret)
+> -			done->ret = ret;
+
+If this is meant as a pure cleanup, I'm not sure it's an improvement.
+You own your cpu_stop_done until you call cpu_stop_signal_done() on
+it, so I don't think there's anything wrong with the current code.
+The new code is different, not necessarily better.
+
+Thanks.
+
+-- 
+tejun
