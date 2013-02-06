@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757533Ab3BFP5G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 10:57:06 -0500
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:38034 "EHLO
+	id S1757576Ab3BFP5a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 10:57:30 -0500
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:42219 "EHLO
 	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757330Ab3BFP5B (ORCPT
+	with ESMTP id S1757517Ab3BFP5F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 10:57:01 -0500
+	Wed, 6 Feb 2013 10:57:05 -0500
 From: Peter Hurley <peter@hurleysoftware.com>
 To: George Spelvin <linux@horizon.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Rodolfo Giometti <giometti@enneenne.com>
 Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
         linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 2/4] pps: Don't crash the machine when exiting will do
-Date: Wed,  6 Feb 2013 10:55:14 -0500
-Message-Id: <1360166116-30797-3-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH 4/4] tty: Remove ancient hardpps()
+Date: Wed,  6 Feb 2013 10:55:16 -0500
+Message-Id: <1360166116-30797-5-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1360166116-30797-1-git-send-email-peter@hurleysoftware.com>
 References: <20130204010303.24971.qmail@science.horizon.com>
@@ -27,36 +27,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PPS is not really the must-have subsystem that warrants crashing
-the machine if the ldisc interface is broken.
+hardpps() functionality is provided through the N_PPS line
+discipline now. The new function signature was added in commit
+025b40ab (2011-01-12). There was no previous macro or
+function hardpps(), at least since before the initial commit of
+v2.6.12 in 2005. It's unlikely this code has been compiled since.
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/pps/clients/pps-ldisc.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/tty/amiserial.c          | 5 -----
+ drivers/tty/serial/serial_core.c | 5 -----
+ 2 files changed, 10 deletions(-)
 
-diff --git a/drivers/pps/clients/pps-ldisc.c b/drivers/pps/clients/pps-ldisc.c
-index 27d7ca1..0b91d91 100644
---- a/drivers/pps/clients/pps-ldisc.c
-+++ b/drivers/pps/clients/pps-ldisc.c
-@@ -25,6 +25,7 @@
- #include <linux/serial_core.h>
- #include <linux/tty.h>
- #include <linux/pps_kernel.h>
-+#include <linux/bug.h>
+diff --git a/drivers/tty/amiserial.c b/drivers/tty/amiserial.c
+index 4c7d701..fc70034 100644
+--- a/drivers/tty/amiserial.c
++++ b/drivers/tty/amiserial.c
+@@ -393,11 +393,6 @@ static void check_modem_status(struct serial_state *info)
+ 			icount->dsr++;
+ 		if (dstatus & SER_DCD) {
+ 			icount->dcd++;
+-#ifdef CONFIG_HARD_PPS
+-			if ((port->flags & ASYNC_HARDPPS_CD) &&
+-			    !(status & SER_DCD))
+-				hardpps();
+-#endif
+ 		}
+ 		if (dstatus & SER_CTS)
+ 			icount->cts++;
+diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+index 457f1a6..b96b1f7 100644
+--- a/drivers/tty/serial/serial_core.c
++++ b/drivers/tty/serial/serial_core.c
+@@ -2730,11 +2730,6 @@ void uart_handle_dcd_change(struct uart_port *uport, unsigned int status)
  
- #define PPS_TTY_MAGIC		0x0001
+ 	uport->icount.dcd++;
  
-@@ -35,7 +36,8 @@ static void pps_tty_dcd_change(struct tty_struct *tty, unsigned int status)
- 
- 	pps_get_ts(&ts);
- 
--	BUG_ON(pps == NULL);
-+	if (WARN_ON_ONCE(pps == NULL))
-+		return;
- 
- 	/* Now do the PPS event report */
- 	pps_event(pps, &ts, status ? PPS_CAPTUREASSERT :
+-#ifdef CONFIG_HARD_PPS
+-	if ((uport->flags & UPF_HARDPPS_CD) && status)
+-		hardpps();
+-#endif
+-
+ 	if (tty) {
+ 		ld = tty_ldisc_ref(tty);
+ 		if (ld && ld->ops->dcd_change)
 -- 
 1.8.1.2
 
