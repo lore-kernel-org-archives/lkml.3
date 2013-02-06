@@ -1,136 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757583Ab3BFQKu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 11:10:50 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:10707 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754987Ab3BFQKs (ORCPT
+	id S1757606Ab3BFQLL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 11:11:11 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:42465 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757254Ab3BFQLH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 11:10:48 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 06 Feb 2013 08:10:46 -0800
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: <linux-tegra@vger.kernel.org>
-CC: Hiroshi Doyu <hdoyu@nvidia.com>, Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/1] ARM: tegra: Fix build error w/ ARCH_TEGRA_114_SOC w/o ARCH_TEGRA_3x_SOC
-Date: Wed, 6 Feb 2013 18:10:30 +0200
-Message-ID: <1360167030-14159-1-git-send-email-hdoyu@nvidia.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 6 Feb 2013 11:11:07 -0500
+Message-ID: <51128097.9000801@gmail.com>
+Date: Wed, 06 Feb 2013 08:11:03 -0800
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: Dirk Brandewie <dirk.brandewie@gmail.com>, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org, Dirk Brandewie <dirk.j.brandewie@intel.com>
+Subject: Re: [PATCH 5/7] cpufreq: balance out cpufreq_cpu_{get,put} for scaling
+ drivers using setpolicy
+References: <1360088646-19104-1-git-send-email-dirk.brandewie@gmail.com> <1360088646-19104-6-git-send-email-dirk.brandewie@gmail.com> <CAOh2x=kJPFyhkG3y_q=a5ciG1HRAn-JkoVYy9OZ9POA+-isbCQ@mail.gmail.com> <5111BB2E.2090505@gmail.com> <CAKohpokoG16S8uft0nSFSoejipS8X=zhhg6goJs4mBSt3tAwxw@mail.gmail.com>
+In-Reply-To: <CAKohpokoG16S8uft0nSFSoejipS8X=zhhg6goJs4mBSt3tAwxw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the build error when ARCH_TEGRA_114_SOC is enabled
-and ARCH_TEGRA_3x_SOC is disabled.
+On 02/05/2013 06:45 PM, Viresh Kumar wrote:
+> On 6 February 2013 07:38, Dirk Brandewie <dirk.brandewie@gmail.com> wrote:
+>> On 02/05/2013 05:58 PM, Viresh Kumar wrote:
+>>>
+>>> On Tue, Feb 5, 2013 at 11:54 PM,  <dirk.brandewie@gmail.com> wrote:
+>>>>
+>>>> From: Dirk Brandewie <dirk.brandewie@gmail.com>
+>>>>
+>>>> There is an additional reference added to the driver in
+>>>> cpufreq_add_dev()  that is removed in__cpufreq_governor() if the
+>>>>
+>>>> driver implements target().  Remove the last reference when the
+>>>> driver implements setpolicy()
+>>>>
+>>>> Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+>>>>
+>>>> ---
+>>>>    drivers/cpufreq/cpufreq.c |    3 +++
+>>>>    1 files changed, 3 insertions(+), 0 deletions(-)
+>>>>
+>>>> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+>>>> index 622e282..d17477b 100644
+>>>> --- a/drivers/cpufreq/cpufreq.c
+>>>> +++ b/drivers/cpufreq/cpufreq.c
+>>>> @@ -1049,6 +1049,9 @@ static int __cpufreq_remove_dev(struct device *dev,
+>>>> struct subsys_interface *sif
+>>>>
+>>>>           if (cpufreq_driver->target)
+>>>>                   __cpufreq_governor(data, CPUFREQ_GOV_STOP);
+>>>>
+>>>> +       if (cpufreq_driver->setpolicy)
+>>>> +               cpufreq_cpu_put(data);
+>>>
+>>>
+>>> I don't understand this patch at all.. I grepped both cpufreq_cpu_get() &
+>>> put()
+>>> in bleeding-edge and found everything to be correct.
+>>>
+>>> Can you please point me to the exact line numbers ?
+>>>
+>>
+>> Line 878 in cpufreq_add_dev()
+>
+> Following is line 878:
+>
+> 	for_each_online_cpu(sibling) {
+> 		struct cpufreq_policy *cp = per_cpu(cpufreq_cpu_data, sibling);
+> 		if (cp && cpumask_test_cpu(cpu, cp->related_cpus))
+> 			return cpufreq_add_policy_cpu(cpu, sibling, dev);
+> 	}
+>
+> How is this related to your patch?
+>
+our files are clearly out of sync :-)  The code in cpufreq_add_dev() is
+#ifdef CONFIG_SMP
+	/* check whether a different CPU already registered this
+	 * CPU because it is in the same boat. */
+	policy = cpufreq_cpu_get(cpu);
+	if (unlikely(policy)) {
+		cpufreq_cpu_put(policy);
+		return 0;
+	}
 
-This provides Tegra114 with its own tegra114_init_early() instead of
-making use of tegra30_init_early() so that T114 build doesn't depend
-on T3x anymore.
+The reference added by this cpufreq_cpu_get() is finally dropped in 
+__cpufreq_remove_dev() with the call to __cpufreq_governor()
 
-Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
----
- arch/arm/mach-tegra/board-dt-tegra114.c |    2 +-
- arch/arm/mach-tegra/board.h             |    2 ++
- arch/arm/mach-tegra/common.c            |   25 +++++++++++++++++--------
- 3 files changed, 20 insertions(+), 9 deletions(-)
+	if (driver->target)
+		__cpufreq_governor(data, CPUFREQ_GOV_STOP);
 
-diff --git a/arch/arm/mach-tegra/board-dt-tegra114.c b/arch/arm/mach-tegra/board-dt-tegra114.c
-index 72598e2..085d636 100644
---- a/arch/arm/mach-tegra/board-dt-tegra114.c
-+++ b/arch/arm/mach-tegra/board-dt-tegra114.c
-@@ -36,7 +36,7 @@ static const char * const tegra114_dt_board_compat[] = {
- DT_MACHINE_START(TEGRA114_DT, "NVIDIA Tegra114 (Flattened Device Tree)")
- 	.smp		= smp_ops(tegra_smp_ops),
- 	.map_io		= tegra_map_common_io,
--	.init_early	= tegra30_init_early,
-+	.init_early	= tegra114_init_early,
- 	.init_irq	= tegra_dt_init_irq,
- 	.init_time	= clocksource_of_init,
- 	.init_machine	= tegra114_dt_init,
-diff --git a/arch/arm/mach-tegra/board.h b/arch/arm/mach-tegra/board.h
-index da8f5a3..86851c8 100644
---- a/arch/arm/mach-tegra/board.h
-+++ b/arch/arm/mach-tegra/board.h
-@@ -1,6 +1,7 @@
- /*
-  * arch/arm/mach-tegra/board.h
-  *
-+ * Copyright (c) 2013 NVIDIA Corporation. All rights reserved.
-  * Copyright (C) 2010 Google, Inc.
-  *
-  * Author:
-@@ -27,6 +28,7 @@ void tegra_assert_system_reset(char mode, const char *cmd);
- 
- void __init tegra20_init_early(void);
- void __init tegra30_init_early(void);
-+void __init tegra114_init_early(void);
- void __init tegra_map_common_io(void);
- void __init tegra_init_irq(void);
- void __init tegra_dt_init_irq(void);
-diff --git a/arch/arm/mach-tegra/common.c b/arch/arm/mach-tegra/common.c
-index 46c0718..5449a3f 100644
---- a/arch/arm/mach-tegra/common.c
-+++ b/arch/arm/mach-tegra/common.c
-@@ -1,6 +1,7 @@
- /*
-  * arch/arm/mach-tegra/common.c
-  *
-+ * Copyright (c) 2013 NVIDIA Corporation. All rights reserved.
-  * Copyright (C) 2010 Google, Inc.
-  *
-  * Author:
-@@ -93,8 +94,7 @@ static void __init tegra_init_cache(void)
- 
- }
- 
--#ifdef CONFIG_ARCH_TEGRA_2x_SOC
--void __init tegra20_init_early(void)
-+static void __init tegra_init_early(void)
- {
- 	tegra_cpu_reset_handler_init();
- 	tegra_apb_io_init();
-@@ -102,22 +102,31 @@ void __init tegra20_init_early(void)
- 	tegra_init_cache();
- 	tegra_pmc_init();
- 	tegra_powergate_init();
-+}
-+
-+#ifdef CONFIG_ARCH_TEGRA_2x_SOC
-+void __init tegra20_init_early(void)
-+{
-+	tegra_init_early();
- 	tegra20_hotplug_init();
- }
- #endif
-+
- #ifdef CONFIG_ARCH_TEGRA_3x_SOC
- void __init tegra30_init_early(void)
- {
--	tegra_cpu_reset_handler_init();
--	tegra_apb_io_init();
--	tegra_init_fuse();
--	tegra_init_cache();
--	tegra_pmc_init();
--	tegra_powergate_init();
-+	tegra_init_early();
- 	tegra30_hotplug_init();
- }
- #endif
- 
-+#ifdef CONFIG_ARCH_TEGRA_114_SOC
-+void __init tegra114_init_early(void)
-+{
-+	tegra_init_early();
-+}
-+#endif
-+
- void __init tegra_init_late(void)
- {
- 	tegra_powergate_debugfs_init();
--- 
-1.7.9.5
+Without this change I hang at:
+		pr_debug("waiting for dropping of refcount\n");
+		wait_for_completion(cmp);
 
+--Dirk
