@@ -1,128 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758367Ab3BFV2a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 16:28:30 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:60994 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758103Ab3BFV22 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 16:28:28 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAErSpo5-6xs+Uz=Yzws23RmrFK=+AQZ2=UT+n0k=462EgazbUA@mail.gmail.com>
-References: <CAE9FiQXHG01NjnYNDbC-KEpbcvY-q4pBe97CxTOGS7W4vZQBYQ@mail.gmail.com>
-	<1359314629-18651-1-git-send-email-yinghai@kernel.org>
-	<CAErSpo6r_LNEtYB3j5ELb8NdHu0a6_YOVj8S32CmByGFUpSsbg@mail.gmail.com>
-	<CAE9FiQXg1YcPPJLCgPbKOKXHk-LRQv4bbBGH9jyuATQa2ANLkg@mail.gmail.com>
-	<CAE9FiQX2DbTO0qCzGO4iMTkU_mPM2oZL+R5UoZ5dj=as6MUAsw@mail.gmail.com>
-	<CAErSpo7-dULYwWQ=f5CBCxOULKJE9=n6Ha4jkVKd8enspuYjTA@mail.gmail.com>
-	<CAE9FiQWvmK7N2z19B9ZiMyc_T6cJdpWoWr3mExpuwUA4ogBc3w@mail.gmail.com>
-	<CAErSpo4x-GzGxJOWgwP_DEqNhefDo0V1zTT5GBR30+Q57=E-hg@mail.gmail.com>
-	<CAE9FiQVYvmRr5oGLfLCPFPV_G_r-fqG9GZaK_wxNW8aO_oyuRA@mail.gmail.com>
-	<CAErSpo5-6xs+Uz=Yzws23RmrFK=+AQZ2=UT+n0k=462EgazbUA@mail.gmail.com>
-Date: Wed, 6 Feb 2013 13:28:27 -0800
-X-Google-Sender-Auth: IchMe9caGWHduklJh0BlAGystDA
-Message-ID: <CAE9FiQX=uEPjHDi-_VaW88ueH4u9C22gmDiGQewsQ=VN5T4=Gg@mail.gmail.com>
-Subject: Re: [PATCH v3 00/22] PCI: Iterate pci host bridge instead of pci root bus
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Tony Luck <tony.luck@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
+	id S1758497Ab3BFVaF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 16:30:05 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59558 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758351Ab3BFVaD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 16:30:03 -0500
+Date: Wed, 6 Feb 2013 22:29:49 +0100
+From: Jan Kara <jack@suse.cz>
+To: Hugh Dickins <hughd@google.com>
+Cc: Jan Kara <jack@suse.cz>, David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, jslaby@suse.cz,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH v2] printk: Avoid softlockups in console_unlock()
+Message-ID: <20130206212949.GA16931@quack.suse.cz>
+References: <1360016230-26696-1-git-send-email-jack@suse.cz>
+ <20130205123838.146a5371.akpm@linux-foundation.org>
+ <20130206142346.GF6330@quack.suse.cz>
+ <alpine.DEB.2.02.1302060958150.26828@chino.kir.corp.google.com>
+ <20130206185205.GA11254@quack.suse.cz>
+ <alpine.LNX.2.00.1302061149580.1080@eggly.anvils>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1302061149580.1080@eggly.anvils>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 6, 2013 at 12:50 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Wed, Feb 6, 2013 at 11:59 AM, Yinghai Lu <yinghai@kernel.org> wrote:
->> On Wed, Feb 6, 2013 at 9:54 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->>> I think you're missing the point.
->>>
->>> Search the tree for uses of "for_each_pci_dev()."  Almost every
->>> occurrence is a bug because that code doesn't work correctly for
->>> hot-added devices.  That code gets run for devices that are present at
->>> boot, but not for devices hot-added later.
->>>
->>> You're proposing to add "for_each_pci_host_bridge()."  That will have
->>> the exact same problem as for_each_pci_dev() already does.  Code that
->>> uses it will work for host bridges present at boot, but not for
->>> bridges hot-added later.
->>>
->>> Why would we want to add an interface when every use of that interface
->>> will be a design bug?  I think we should fix the existing users of
->>> pci_root_buses by changing their designs so they will work correctly
->>> with host bridge hotplug.
->>
->> I'm a little confused about what you want.
->>
->> In boot stage using for_each_pci_host_bridge or pci_root_buses is fine.
->
-> No, it's not.  Boot-time should work exactly the same way as hot-add
-> time, unless there's a reason it can't.  There might be corner cases
-> where we can't do that yet, e.g., the pcibios_resource_survey stuff,
-> but in general I don't think there's anything that *forces* us to
-> iterate through host bridges at boot-time.
->
->> For those cases that it should support host-bridge by nature.
->> there are two solutions:
->> 1. use for_each_pci_host_bridge, and it is hotplug-safe.
->
-> I'm trying to tell you that for_each_pci_host_bridge() is NOT
-> hotplug-safe.  Your series makes it safer than it was, in the sense
-> that it probably fixes stray pointer references when a host bridge
-> hotplug happens while somebody's traversing pci_root_buses.  But the
-> whole point of for_each_pci_host_bridge() is to run some code for
-> every bridge we know about *right now*.  If a host bridge is added
-> right after the for_each_pci_host_bridge() loop exits, that code
-> doesn't get run.  In most cases, that's a bug.  The only exception I
-> know about is the /sys/.../rescan interface.
->
->> and make sgi_hotplug to use acpi_pci_driver interface.
->> and acpi_pci_root_add() will call .add in the acpi_pci_driver.
->>
->> 2. make them all to be built-in, and  those acpi_pci_driver should be registered
->> much early before acpi_pci_root_add is called.
->> then we don't need to call for_each_host_bridge for it.
->>
->> So difference between them:
->> 1. still keep the module support, and register acpi_pci_driver later.
->> 2. built-in support only, and need to register acpi_pci_driver early.
->
-> acpi_pci_driver is going away, so I don't want to add any more uses of
-> it.  Obviously it's only relevant to x86 and ia64 anyway.
+On Wed 06-02-13 12:19:19, Hugh Dickins wrote:
+> On Wed, 6 Feb 2013, Jan Kara wrote:
+> > On Wed 06-02-13 09:58:48, David Rientjes wrote:
+> > > On Wed, 6 Feb 2013, Jan Kara wrote:
+> > > 
+> > > >   Yes, I noticed that thread just yesterday and also though that using
+> > > > similar trick might be viable. I'll experiment if we could use the same
+> > > > method for handling lockup problems I hit. Steven seems to have already
+> > > > tweaked PRINTK_PENDING stuff to be usable more easily...
+> > > > 
+> > > 
+> > > Are these new build failures in linux-next coming from this patch?
+> > > 
+> > > kernel/printk.c: In function 'console_unlock':
+> > > kernel/printk.c:2156:18: error: 'printk_work' undeclared (first use in this function)
+> > > kernel/printk.c:2156:18: note: each undeclared identifier is reported only once for each function it appears in
+> > > kernel/printk.c: At top level:
+> > > kernel/printk.c:2167:13: warning: 'printk_worker' defined but not used [-Wunused-function]
+> >   Yes, I already sent a patch to fix these (attached if you need it).
+> > Thanks for notice.
+> 
+> Is the console_unlock patch actually intended to be a console load test?
+> Could we just revert it until it's baked?
+  Yeah, agreed. I'll probably go sligthly different route anyway.
 
-when?
+> This little hunk from __console_unlock():
+> 
+>  	console_may_schedule = 0;
+> +	cur_cpu = smp_processor_id();
+> 
+> I have CONFIG_PREEMPT=y CONFIG_DEBUG_PREEMPT=y,
+> so that fills the console with messages:
+  Thanks for report, I'll take this in consideration when working on the next
+version of the patch. Somehow console_unlock() was never called from the
+context you show below in my testing.
 
-I have ioapic and iommu hotplug patch set that need to use them.
+> BUG: using smp_processor_id() in preemptible [00000000] code: systemd/1
+> caller is __console_unlock+0x3c/0x39c
+> Pid: 1, comm: systemd Tainted: G        W    3.8.0-rc6-mm1 #1
+> Call Trace:
+>  [<ffffffff81223ee2>] debug_smp_processor_id+0xbe/0xd8
+>  [<ffffffff810615d8>] __console_unlock+0x3c/0x39c
+>  [<ffffffff810a6a38>] ? trace_hardirqs_on+0xd/0xf
+>  [<ffffffff8154a997>] ? _raw_spin_unlock_irqrestore+0x46/0x64
+>  [<ffffffff81061941>] console_unlock+0x9/0x1b
+>  [<ffffffff812955ab>] con_shutdown+0x29/0x2d
+>  [<ffffffff81295582>] ? visual_init+0x10d/0x10d
+>  [<ffffffff812857ed>] release_tty+0x4d/0x91
+>  [<ffffffff8128644f>] tty_release+0x421/0x460
+>  [<ffffffff81120c57>] __fput+0x104/0x1e9
+>  [<ffffffff81120d45>] ____fput+0x9/0xb
+>  [<ffffffff8107a6c3>] task_work_run+0x79/0xa6
+>  [<ffffffff8102f4a6>] do_notify_resume+0x55/0x66
+>  [<ffffffff8121e29e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+>  [<ffffffff8154b898>] int_signal+0x12/0x17
 
->
-> What I'd like is a change where for_each_pci_host_bridge() is used
-> only inside the PCI core and defined somewhere like drivers/pci/pci.h
-> so it's not even available outside.
->
-> The other uses should be changed so they use
-> pcibios_root_bridge_prepare() or something similar.  That way, it will
-> be obvious that the code supports hot-added bridges, and when it gets
-> copied to other places, we'll be copying a working design instead of a
-> broken one.
->
-> I don't want to have to audit these places and figure out "this is
-> safe because this arch doesn't support host bridge hotplug" or "this
-> is safe because this CPU doesn't support XYZ."  That's not a
-> maintainable solution.  The safety should be apparent from the code
-> itself, without requiring extra platform-specific knowledge.
-
-so you still did not answer you want 1 or 2 yet:
-
-for sgi_hotplug,
-
-1. still keep the module support, and register acpi_pci_driver later.
-2. built-in support only, and need to register acpi_pci_driver early.
-
-Thanks
-
-Yinghai
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
