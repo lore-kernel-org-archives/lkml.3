@@ -1,94 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964784Ab3BFVyP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 16:54:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54183 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758443Ab3BFVyL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 16:54:11 -0500
-Date: Wed, 6 Feb 2013 13:54:09 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: jiang.liu@huawei.com, wujianguo@huawei.com, hpa@zytor.com,
-        wency@cn.fujitsu.com, laijs@cn.fujitsu.com, linfeng@cn.fujitsu.com,
-        yinghai@kernel.org, isimatu.yasuaki@jp.fujitsu.com, rob@landley.net,
-        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
-        rientjes@google.com, guz.fnst@cn.fujitsu.com, rusty@rustcorp.com.au,
-        lliubbo@gmail.com, jaegeuk.hanse@gmail.com, tony.luck@intel.com,
-        glommer@parallels.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 3/3] acpi, memory-hotplug: Support getting hotplug info
- from SRAT.
-Message-Id: <20130206135409.3d8b37f7.akpm@linux-foundation.org>
-In-Reply-To: <5111BE09.2030509@cn.fujitsu.com>
-References: <1359106929-3034-1-git-send-email-tangchen@cn.fujitsu.com>
-	<1359106929-3034-4-git-send-email-tangchen@cn.fujitsu.com>
-	<20130204152651.2bca8dba.akpm@linux-foundation.org>
-	<5111BE09.2030509@cn.fujitsu.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1758466Ab3BFV4p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 16:56:45 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37128 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758046Ab3BFV4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 16:56:44 -0500
+Message-ID: <5112D13C.7030406@zytor.com>
+Date: Wed, 06 Feb 2013 13:55:08 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        David Woodhouse <dwmw2@infradead.org>, Michal Marek <mmarek@suse.cz>,
+        tglx@linutronix.de, "H. Peter Anvin" <hpa@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: kvmtool tree (Was: Re: [patch] config: fix make kvmconfig)
+References: <1356564746.7010.56.camel@shinybook.infradead.org> <50DB9FA5.6070704@infradead.org> <alpine.DEB.2.02.1302041002430.6063@chino.kir.corp.google.com> <20130204184436.GA13256@gmail.com> <alpine.DEB.2.02.1302041053330.6063@chino.kir.corp.google.com> <20130204191408.GA32081@kroah.com> <20130204191334.GB14837@gmail.com> <CAOJsxLFy7K0cY-8SH4dXs=agYqCN8wW0eC2tQxFxfV8cf7uWqg@mail.gmail.com> <alpine.DEB.2.02.1302061209450.18172@chino.kir.corp.google.com> <20130207080236.ae38366537cf3f13b9668606@canb.auug.org.au> <20130206214646.GA28135@gmail.com>
+In-Reply-To: <20130206214646.GA28135@gmail.com>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 06 Feb 2013 10:20:57 +0800
-Tang Chen <tangchen@cn.fujitsu.com> wrote:
-
-> >>
-> >> +	if (!strncmp(p, "acpi", max(4, strlen(p))))
-> >> +		movablemem_map.acpi = true;
-> >
-> > Generates a warning:
-> >
-> > mm/page_alloc.c: In function 'cmdline_parse_movablemem_map':
-> > mm/page_alloc.c:5312: warning: comparison of distinct pointer types lacks a cast
-> >
-> > due to max(int, size_t).
-> >
-> > This is easily fixed, but the code looks rather pointless.  If the
-> > incoming string is supposed to be exactly "acpi" then use strcmp().  If
-> > the incoming string must start with "acpi" then use strncmp(p, "acpi", 4).
-> >
-> > IOW, the max is unneeded?
+On 02/06/2013 01:46 PM, Ingo Molnar wrote:
+>>
+>> Linus has said that he will not take the kvmtool tree in its 
+>> current form, but would prefer that it be a separate project, 
+>> so I should really drop it from linux-next (and ask the tip 
+>> guys to remove it from their auto-latest branch).
+>>
+>> I have actually been meaning to get back to this, so, today I 
+>> will drop the kvmtool tree and, Ingo, if you could (at your 
+>> convenience i.e. when you are next rebasing it) remove it from 
+>> tip/auto-latest, thanks.
 > 
-> Hi Andrew,
+> Pekka still intends to send it in the next merge window AFAIK, 
+> and I use it for testing rather frequently so I'm not going to 
+> remove it from my tree for the time being.
 > 
-> I think I made another mistake here. I meant to use min(4, strlen(p)) in 
-> case p is
-> something like 'aaa' whose length is less then 4. But I mistook it with 
-> max().
+> Note that I never actually had any maintenance problems due to 
+> it: it's orthogonal, and as long as you don't use it explicitly 
+> (such as its 'make kvmconfig' feature - which is rather handy) 
+> it never actually broke anything.
 > 
-> But after I dig into strcmp() in the kernel, I think it is OK to use 
-> strcmp().
-> min() or max() is not needed.
 
-OK, I did that.
+So why don't we let Linus either accept and reject it for the 3.9 merge,
+but it rejected, we drop it from linux-next until such time as Linus'
+objections have been addressed?
 
-But the code still looks a bit more complex than we need.  Could we do
+	-hpa
 
-static int __init cmdline_parse_movablemem_map(char *p)
-{
-	char *oldp;
-	u64 start_at, mem_size;
-
-	if (!p)
-		goto err;
-
-	/*
-	 * If user decide to use info from BIOS, all the other user specified
-	 * ranges will be ingored.
-	 */
-	if (!strcmp(p, "acpi")) {
-		movablemem_map.acpi = true;
-		if (movablemem_map.nr_map) {
-			memset(movablemem_map.map, 0,
-				sizeof(struct movablemem_entry)
-				* movablemem_map.nr_map);
-			movablemem_map.nr_map = 0;
-		}
-		return 0;
-	}
 
