@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030232Ab3BFVqA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 16:46:00 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:33205
+	id S932142Ab3BFVpz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 16:45:55 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:33206
 	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758766Ab3BFVod (ORCPT
+	by vger.kernel.org with ESMTP id S1758781Ab3BFVoe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 16:44:33 -0500
+	Wed, 6 Feb 2013 16:44:34 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
+        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>,
+        Peter Zijlstra <peterz@infradead.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 14/17] perf tests: Adding automated parsing tests for group :GH modifiers
-Date: Wed,  6 Feb 2013 18:44:16 -0300
-Message-Id: <1360187059-12661-15-git-send-email-acme@infradead.org>
+Subject: [PATCH 10/17] perf stat: Add per processor socket count aggregation
+Date: Wed,  6 Feb 2013 18:44:12 -0300
+Message-Id: <1360187059-12661-11-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
 In-Reply-To: <1360187059-12661-1-git-send-email-acme@infradead.org>
 References: <1360187059-12661-1-git-send-email-acme@infradead.org>
@@ -28,234 +27,303 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Stephane Eranian <eranian@google.com>
 
-The ':GH' group modifier handling was just recently fixed, adding some
-autommated tests to keep it that way. Adding tests for following events:
+This patch adds per-processor socket count aggregation for system-wide
+mode measurements. This is a useful mode to detect imbalance between
+sockets.
 
-  "{cycles,cache-misses:G}:H"
-  "{cycles,cache-misses:H}:G"
-  "{cycles:G,cache-misses:H}:u"
-  "{cycles:G,cache-misses:H}:uG"
+To enable this mode, use --aggr-socket in addition
+to -a. (system-wide).
 
-Plus fixing test__group2 test.
+The output includes the socket number and the number of online
+processors on that socket. This is useful to gauge the amount of
+aggregation.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+ # ./perf stat -I 1000 -a --aggr-socket -e cycles sleep 2
+ #           time socket cpus             counts events
+      1.000097680 S0        4          5,788,785 cycles
+      2.000379943 S0        4         27,361,546 cycles
+      2.001167808 S0        4            818,275 cycles
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Cc: Andi Kleen <ak@linux.intel.com>
 Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1359971803-2343-3-git-send-email-jolsa@redhat.com
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1360161962-9675-3-git-send-email-eranian@google.com
+[ committer note: Added missing man page entry based on above comments ]
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/tests/parse-events.c | 178 +++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 177 insertions(+), 1 deletion(-)
+ tools/perf/Documentation/perf-stat.txt |   9 ++-
+ tools/perf/builtin-stat.c              | 126 ++++++++++++++++++++++++++++++---
+ 2 files changed, 123 insertions(+), 12 deletions(-)
 
-diff --git a/tools/perf/tests/parse-events.c b/tools/perf/tests/parse-events.c
-index 80a8daf..c5636f3 100644
---- a/tools/perf/tests/parse-events.c
-+++ b/tools/perf/tests/parse-events.c
-@@ -577,7 +577,7 @@ static int test__group2(struct perf_evlist *evlist)
- 	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
- 	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
- 	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
--	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude guest", evsel->attr.exclude_guest);
- 	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
- 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
- 	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
-@@ -811,6 +811,166 @@ static int test__group5(struct perf_evlist *evlist __maybe_unused)
- 	return 0;
+diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
+index 5289da3..faf4f4f 100644
+--- a/tools/perf/Documentation/perf-stat.txt
++++ b/tools/perf/Documentation/perf-stat.txt
+@@ -116,9 +116,16 @@ perf stat --repeat 10 --null --sync --pre 'make -s O=defconfig-build/clean' -- m
+ 
+ -I msecs::
+ --interval-print msecs::
+-	print count deltas every N milliseconds (minimum: 100ms)
++	Print count deltas every N milliseconds (minimum: 100ms)
+ 	example: perf stat -I 1000 -e cycles -a sleep 5
+ 
++--aggr-socket::
++Aggregate counts per processor socket for system-wide mode measurements.  This
++is a useful mode to detect imbalance between sockets.  To enable this mode,
++use --aggr-socket in addition to -a. (system-wide).  The output includes the
++socket number and the number of online processors on that socket. This is
++useful to gauge the amount of aggregation.
++
+ EXAMPLES
+ --------
+ 
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 0368a10..9984876 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -68,6 +68,7 @@
+ static void print_stat(int argc, const char **argv);
+ static void print_counter_aggr(struct perf_evsel *counter, char *prefix);
+ static void print_counter(struct perf_evsel *counter, char *prefix);
++static void print_aggr_socket(char *prefix);
+ 
+ static struct perf_evlist	*evsel_list;
+ 
+@@ -79,6 +80,7 @@ static int			run_count			=  1;
+ static bool			no_inherit			= false;
+ static bool			scale				=  true;
+ static bool			no_aggr				= false;
++static bool			aggr_socket			= false;
+ static pid_t			child_pid			= -1;
+ static bool			null_run			=  false;
+ static int			detailed_run			=  0;
+@@ -93,6 +95,7 @@ static const char		*post_cmd			= NULL;
+ static bool			sync_run			= false;
+ static unsigned int		interval			= 0;
+ static struct timespec		ref_time;
++static struct cpu_map		*sock_map;
+ 
+ static volatile int done = 0;
+ 
+@@ -312,7 +315,9 @@ static void print_interval(void)
+ 	sprintf(prefix, "%6lu.%09lu%s", rs.tv_sec, rs.tv_nsec, csv_sep);
+ 
+ 	if (num_print_interval == 0 && !csv_output) {
+-		if (no_aggr)
++		if (aggr_socket)
++			fprintf(output, "#           time socket cpus             counts events\n");
++		else if (no_aggr)
+ 			fprintf(output, "#           time CPU                 counts events\n");
+ 		else
+ 			fprintf(output, "#           time             counts events\n");
+@@ -321,7 +326,9 @@ static void print_interval(void)
+ 	if (++num_print_interval == 25)
+ 		num_print_interval = 0;
+ 
+-	if (no_aggr) {
++	if (aggr_socket)
++		print_aggr_socket(prefix);
++	else if (no_aggr) {
+ 		list_for_each_entry(counter, &evsel_list->entries, node)
+ 			print_counter(counter, prefix);
+ 	} else {
+@@ -349,6 +356,12 @@ static int __run_perf_stat(int argc __maybe_unused, const char **argv)
+ 		ts.tv_nsec = 0;
+ 	}
+ 
++	if (aggr_socket
++	    && cpu_map__build_socket_map(evsel_list->cpus, &sock_map)) {
++		perror("cannot build socket map");
++		return -1;
++	}
++
+ 	if (forks && (pipe(child_ready_pipe) < 0 || pipe(go_pipe) < 0)) {
+ 		perror("failed to create pipes");
+ 		return -1;
+@@ -529,13 +542,21 @@ static void print_noise(struct perf_evsel *evsel, double avg)
+ 	print_noise_pct(stddev_stats(&ps->res_stats[0]), avg);
  }
  
-+static int test__group_gh1(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel, *leader;
-+
-+	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong number of groups", 1 == evlist->nr_groups);
-+
-+	/* cycles + :H group modifier */
-+	evsel = leader = perf_evlist__first(evlist);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",
-+			PERF_COUNT_HW_CPU_CYCLES == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong exclude guest", evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
-+	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
-+	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
-+
-+	/* cache-misses:G + :H group modifier */
-+	evsel = perf_evsel__next(evsel);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",
-+			PERF_COUNT_HW_CACHE_MISSES == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
-+
-+	return 0;
-+}
-+
-+static int test__group_gh2(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel, *leader;
-+
-+	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong number of groups", 1 == evlist->nr_groups);
-+
-+	/* cycles + :G group modifier */
-+	evsel = leader = perf_evlist__first(evlist);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",
-+			PERF_COUNT_HW_CPU_CYCLES == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", evsel->attr.exclude_host);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
-+	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
-+	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
-+
-+	/* cache-misses:H + :G group modifier */
-+	evsel = perf_evsel__next(evsel);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",
-+			PERF_COUNT_HW_CACHE_MISSES == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
-+
-+	return 0;
-+}
-+
-+static int test__group_gh3(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel, *leader;
-+
-+	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong number of groups", 1 == evlist->nr_groups);
-+
-+	/* cycles:G + :u group modifier */
-+	evsel = leader = perf_evlist__first(evlist);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",
-+			PERF_COUNT_HW_CPU_CYCLES == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", evsel->attr.exclude_host);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
-+	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
-+	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
-+
-+	/* cache-misses:H + :u group modifier */
-+	evsel = perf_evsel__next(evsel);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",
-+			PERF_COUNT_HW_CACHE_MISSES == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong exclude guest", evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
-+
-+	return 0;
-+}
-+
-+static int test__group_gh4(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel, *leader;
-+
-+	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong number of groups", 1 == evlist->nr_groups);
-+
-+	/* cycles:G + :uG group modifier */
-+	evsel = leader = perf_evlist__first(evlist);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",
-+			PERF_COUNT_HW_CPU_CYCLES == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", evsel->attr.exclude_host);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
-+	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
-+	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
-+
-+	/* cache-misses:H + :uG group modifier */
-+	evsel = perf_evsel__next(evsel);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",
-+			PERF_COUNT_HW_CACHE_MISSES == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
-+
-+	return 0;
-+}
-+
- static int count_tracepoints(void)
+-static void nsec_printout(int cpu, struct perf_evsel *evsel, double avg)
++static void nsec_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
  {
- 	char events_path[PATH_MAX];
-@@ -1011,6 +1171,22 @@ static struct evlist_test test__events[] = {
- 		.name  = "*:*",
- 		.check = test__all_tracepoints,
- 	},
-+	[34] = {
-+		.name  = "{cycles,cache-misses:G}:H",
-+		.check = test__group_gh1,
-+	},
-+	[35] = {
-+		.name  = "{cycles,cache-misses:H}:G",
-+		.check = test__group_gh2,
-+	},
-+	[36] = {
-+		.name  = "{cycles:G,cache-misses:H}:u",
-+		.check = test__group_gh3,
-+	},
-+	[37] = {
-+		.name  = "{cycles:G,cache-misses:H}:uG",
-+		.check = test__group_gh4,
-+	},
- };
+ 	double msecs = avg / 1e6;
+ 	char cpustr[16] = { '\0', };
+ 	const char *fmt = csv_output ? "%s%.6f%s%s" : "%s%18.6f%s%-25s";
  
- static struct evlist_test test__events_pmu[] = {
+-	if (no_aggr)
++	if (aggr_socket)
++		sprintf(cpustr, "S%*d%s%*d%s",
++			csv_output ? 0 : -5,
++			cpu,
++			csv_sep,
++			csv_output ? 0 : 4,
++			nr,
++			csv_sep);
++	else if (no_aggr)
+ 		sprintf(cpustr, "CPU%*d%s",
+ 			csv_output ? 0 : -4,
+ 			perf_evsel__cpus(evsel)->map[cpu], csv_sep);
+@@ -734,7 +755,7 @@ static void print_ll_cache_misses(int cpu,
+ 	fprintf(output, " of all LL-cache hits   ");
+ }
+ 
+-static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
++static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
+ {
+ 	double total, ratio = 0.0;
+ 	char cpustr[16] = { '\0', };
+@@ -747,7 +768,15 @@ static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
+ 	else
+ 		fmt = "%s%18.0f%s%-25s";
+ 
+-	if (no_aggr)
++	if (aggr_socket)
++		sprintf(cpustr, "S%*d%s%*d%s",
++			csv_output ? 0 : -5,
++			cpu,
++			csv_sep,
++			csv_output ? 0 : 4,
++			nr,
++			csv_sep);
++	else if (no_aggr)
+ 		sprintf(cpustr, "CPU%*d%s",
+ 			csv_output ? 0 : -4,
+ 			perf_evsel__cpus(evsel)->map[cpu], csv_sep);
+@@ -853,6 +882,70 @@ static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
+ 	}
+ }
+ 
++static void print_aggr_socket(char *prefix)
++{
++	struct perf_evsel *counter;
++	u64 ena, run, val;
++	int cpu, s, s2, sock, nr;
++
++	if (!sock_map)
++		return;
++
++	for (s = 0; s < sock_map->nr; s++) {
++		sock = cpu_map__socket(sock_map, s);
++		list_for_each_entry(counter, &evsel_list->entries, node) {
++			val = ena = run = 0;
++			nr = 0;
++			for (cpu = 0; cpu < perf_evsel__nr_cpus(counter); cpu++) {
++				s2 = cpu_map__get_socket(evsel_list->cpus, cpu);
++				if (s2 != sock)
++					continue;
++				val += counter->counts->cpu[cpu].val;
++				ena += counter->counts->cpu[cpu].ena;
++				run += counter->counts->cpu[cpu].run;
++				nr++;
++			}
++			if (prefix)
++				fprintf(output, "%s", prefix);
++
++			if (run == 0 || ena == 0) {
++				fprintf(output, "S%*d%s%*d%s%*s%s%*s",
++					csv_output ? 0 : -5,
++					s,
++					csv_sep,
++					csv_output ? 0 : 4,
++					nr,
++					csv_sep,
++					csv_output ? 0 : 18,
++					counter->supported ? CNTR_NOT_COUNTED : CNTR_NOT_SUPPORTED,
++					csv_sep,
++					csv_output ? 0 : -24,
++					perf_evsel__name(counter));
++				if (counter->cgrp)
++					fprintf(output, "%s%s",
++						csv_sep, counter->cgrp->name);
++
++				fputc('\n', output);
++				continue;
++			}
++
++			if (nsec_counter(counter))
++				nsec_printout(sock, nr, counter, val);
++			else
++				abs_printout(sock, nr, counter, val);
++
++			if (!csv_output) {
++				print_noise(counter, 1.0);
++
++				if (run != ena)
++					fprintf(output, "  (%.2f%%)",
++						100.0 * run / ena);
++			}
++			fputc('\n', output);
++		}
++	}
++}
++
+ /*
+  * Print out the results of a single counter:
+  * aggregated counts in system-wide mode
+@@ -882,9 +975,9 @@ static void print_counter_aggr(struct perf_evsel *counter, char *prefix)
+ 	}
+ 
+ 	if (nsec_counter(counter))
+-		nsec_printout(-1, counter, avg);
++		nsec_printout(-1, 0, counter, avg);
+ 	else
+-		abs_printout(-1, counter, avg);
++		abs_printout(-1, 0, counter, avg);
+ 
+ 	print_noise(counter, avg);
+ 
+@@ -940,9 +1033,9 @@ static void print_counter(struct perf_evsel *counter, char *prefix)
+ 		}
+ 
+ 		if (nsec_counter(counter))
+-			nsec_printout(cpu, counter, val);
++			nsec_printout(cpu, 0, counter, val);
+ 		else
+-			abs_printout(cpu, counter, val);
++			abs_printout(cpu, 0, counter, val);
+ 
+ 		if (!csv_output) {
+ 			print_noise(counter, 1.0);
+@@ -980,7 +1073,9 @@ static void print_stat(int argc, const char **argv)
+ 		fprintf(output, ":\n\n");
+ 	}
+ 
+-	if (no_aggr) {
++	if (aggr_socket)
++		print_aggr_socket(NULL);
++	else if (no_aggr) {
+ 		list_for_each_entry(counter, &evsel_list->entries, node)
+ 			print_counter(counter, NULL);
+ 	} else {
+@@ -1228,6 +1323,7 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			"command to run after to the measured command"),
+ 	OPT_UINTEGER('I', "interval-print", &interval,
+ 		    "print counts at regular interval in ms (>= 100)"),
++	OPT_BOOLEAN(0, "aggr-socket", &aggr_socket, "aggregate counts per processor socket"),
+ 	OPT_END()
+ 	};
+ 	const char * const stat_usage[] = {
+@@ -1314,6 +1410,14 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		usage_with_options(stat_usage, options);
+ 	}
+ 
++	if (aggr_socket) {
++		if (!perf_target__has_cpu(&target)) {
++			fprintf(stderr, "--aggr-socket only available in system-wide mode (-a)\n");
++			usage_with_options(stat_usage, options);
++		}
++		no_aggr = true;
++	}
++
+ 	if (add_default_attributes())
+ 		goto out;
+ 
 -- 
 1.8.1.1.361.gec3ae6e
 
