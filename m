@@ -1,112 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754241Ab3BFOB0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 09:01:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40923 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751010Ab3BFOBW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 09:01:22 -0500
-Date: Wed, 6 Feb 2013 15:01:19 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: azurIt <azurit@pobox.sk>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups mailinglist <cgroups@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH for 3.2.34] memcg: do not trigger OOM from
- add_to_page_cache_locked
-Message-ID: <20130206140119.GD10254@dhcp22.suse.cz>
-References: <20121224142526.020165D3@pobox.sk>
- <20121228162209.GA1455@dhcp22.suse.cz>
- <20121230020947.AA002F34@pobox.sk>
- <20121230110815.GA12940@dhcp22.suse.cz>
- <20130125160723.FAE73567@pobox.sk>
- <20130125163130.GF4721@dhcp22.suse.cz>
- <20130205134937.GA22804@dhcp22.suse.cz>
- <20130205154947.CD6411E2@pobox.sk>
- <20130205160934.GB22804@dhcp22.suse.cz>
- <20130206021721.1AE9E3C7@pobox.sk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130206021721.1AE9E3C7@pobox.sk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754644Ab3BFOB6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 09:01:58 -0500
+Received: from zproxy210.enst-bretagne.fr ([192.108.117.8]:48848 "EHLO
+	zproxy210.enst-bretagne.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751010Ab3BFOB4 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 09:01:56 -0500
+X-Greylist: delayed 485 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Feb 2013 09:01:56 EST
+Subject: Re: [RFC PATCH] xfrm: fix handling of XFRM policies mark and mask.
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=iso-8859-1
+From: Emmanuel Thierry <emmanuel.thierry@telecom-bretagne.eu>
+In-Reply-To: <51125744.3030905@gmail.com>
+Date: Wed, 6 Feb 2013 14:53:48 +0100
+Cc: Steffen Klassert <steffen.klassert@secunet.com>,
+        Romain KUNTZ <r.kuntz@ipflavors.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        herbert@gondor.hengli.com.au,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jamal Hadi Salim <hadi@cyberus.ca>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <D4563759-CEC5-4F33-BF0A-9FA10716F8DF@telecom-bretagne.eu>
+References: <9E57ADA1-5770-47A8-8EBF-7FC262EEF1C7@ipflavors.com> <20130205081232.GF23291@secunet.com> <51125744.3030905@gmail.com>
+To: jamal <j.hadi123@gmail.com>
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 06-02-13 02:17:21, azurIt wrote:
-> >5-memcg-fix-1.patch is not complete. It doesn't contain the folloup I
-> >mentioned in a follow up email. Here is the full patch:
+
+Hello,
+
+Le 6 févr. 2013 à 14:14, jamal a écrit :
+
 > 
+> On 13-02-05 03:12 AM, Steffen Klassert wrote:
+>>> For example, executing the below commands in that order succeed:
+>>>  ip -6 xfrm policy flush
+>>>  ip -6 xfrm policy add src fd00::1/128 dst fd00::2/128 dir out mark 1 mask 0xffffffff
+>>>  ip -6 xfrm policy add src fd00::1/128 dst fd00::2/128 dir out
+>> The policy with mark 1 is the first we find. The policy passes the
+>> mark check and if the flow matches the selectors, we use this policy.
+>> 
+>>> But it fails in the reverse order:
+>>>  ip -6 xfrm policy flush
+>>>  ip -6 xfrm policy add src fd00::1/128 dst fd00::2/128 dir out
+>>>  ip -6 xfrm policy add src fd00::1/128 dst fd00::2/128 dir out mark 1 mask 0xffffffff
+>>>  RTNETLINK answers: File exists
+>> With this scenario, we would find the policy with mark and mask 0 first.
+>> This policy passes the mark check too. So we would use this policy if the
+>> flow matches the selectors, but the flow asked for a policy with mark 1.
 > 
-> Here is the log where OOM, again, killed MySQL server [search for "(mysqld)"]:
-> http://www.watchdog.sk/lkml/oom_mysqld6
+> I think the intent Romain is expressing is reasonable and should resolved at
+> insertion time(xfrm_policy_insert()).
+> i.e even though the policy (such as mark=1) is inserted afterwards, at
+> insertion time if it proves it is more specific and not duplicate, it should be
+> inserted ahead of the mark=0.
+> The runtime check will work then.
 
-[...]
-WARNING: at mm/memcontrol.c:2409 T.1149+0x2d9/0x610()
-Hardware name: S5000VSA
-gfp_mask:4304 nr_pages:1 oom:0 ret:2
-Pid: 3545, comm: apache2 Tainted: G        W    3.2.37-grsec #1
-Call Trace:
- [<ffffffff8105502a>] warn_slowpath_common+0x7a/0xb0
- [<ffffffff81055116>] warn_slowpath_fmt+0x46/0x50
- [<ffffffff81108163>] ? mem_cgroup_margin+0x73/0xa0
- [<ffffffff8110b6f9>] T.1149+0x2d9/0x610
- [<ffffffff812af298>] ? blk_finish_plug+0x18/0x50
- [<ffffffff8110c6b4>] mem_cgroup_cache_charge+0xc4/0xf0
- [<ffffffff810ca6bf>] add_to_page_cache_locked+0x4f/0x140
- [<ffffffff810ca7d2>] add_to_page_cache_lru+0x22/0x50
- [<ffffffff810cad32>] filemap_fault+0x252/0x4f0
- [<ffffffff810eab18>] __do_fault+0x78/0x5a0
- [<ffffffff810edcb4>] handle_pte_fault+0x84/0x940
- [<ffffffff810e2460>] ? vma_prio_tree_insert+0x30/0x50
- [<ffffffff810f2508>] ? vma_link+0x88/0xe0
- [<ffffffff810ee6a8>] handle_mm_fault+0x138/0x260
- [<ffffffff8102709d>] do_page_fault+0x13d/0x460
- [<ffffffff810f46fc>] ? do_mmap_pgoff+0x3dc/0x430
- [<ffffffff815b61ff>] page_fault+0x1f/0x30
----[ end trace 8817670349022007 ]---
-apache2 invoked oom-killer: gfp_mask=0x0, order=0, oom_adj=0, oom_score_adj=0
-apache2 cpuset=uid mems_allowed=0
-Pid: 3545, comm: apache2 Tainted: G        W    3.2.37-grsec #1
-Call Trace:
- [<ffffffff810ccd2e>] dump_header+0x7e/0x1e0
- [<ffffffff810ccc2f>] ? find_lock_task_mm+0x2f/0x70
- [<ffffffff810cd1f5>] oom_kill_process+0x85/0x2a0
- [<ffffffff810cd8a5>] out_of_memory+0xe5/0x200
- [<ffffffff810cda7d>] pagefault_out_of_memory+0xbd/0x110
- [<ffffffff81026e76>] mm_fault_error+0xb6/0x1a0
- [<ffffffff8102734e>] do_page_fault+0x3ee/0x460
- [<ffffffff810f46fc>] ? do_mmap_pgoff+0x3dc/0x430
- [<ffffffff815b61ff>] page_fault+0x1f/0x30
+Actually, we didn't think about this problem since we work with priorities, putting the default policy (without a mark) at a minor priority than the marked one.
+Your remark makes clearer the ideas behind the design of XFRM, but this leads to an interesting concern. If on policy insertion, the policy were inserted depending on the accuracy of the mark (the more the mask is specific, the more the mark must be put at the beginning of the list), how would we decide which is the more specific between these ones ?
 
-The first trace comes from the debugging WARN and it clearly points to
-a file fault path. __do_fault pre-charges a page in case we need to
-do CoW (copy-on-write) for the returned page. This one falls back to
-memcg OOM and never returns ENOMEM as I have mentioned earlier. 
-However, the fs fault handler (filemap_fault here) can fallback to
-page_cache_read if the readahead (do_sync_mmap_readahead) fails
-to get page to the page cache. And we can see this happening in
-the first trace. page_cache_read then calls add_to_page_cache_lru
-and eventually gets to add_to_page_cache_locked which calls
-mem_cgroup_cache_charge_no_oom so we will get ENOMEM if oom should
-happen. This ENOMEM gets to the fault handler and kaboom.
+ip -6 xfrm policy add src fd00::1/128 dst fd00::2/128 dir out mark 0x00000001 mask 0x00000005
 
-So the fix is really much more complex than I thought. Although
-add_to_page_cache_locked sounded like a good place it turned out to be
-not in fact.
+ip -6 xfrm policy add src fd00::1/128 dst fd00::2/128 dir out mark 0x00000001 mask 0x00000003
 
-We need something more clever appaerently. One way would be not misusing
-__GFP_NORETRY for GFP_MEMCG_NO_OOM and give it a real flag. We have 32
-bits for those flags in gfp_t so there should be some room there. 
-Or we could do this per task flag, same we do for NO_IO in the current
--mm tree.
-The later one seems easier wrt. gfp_mask passing horror - e.g.
-__generic_file_aio_write doesn't pass flags and it can be called from
-unlocked contexts as well.
+Best regards
+Emmanuel Thierry
 
-I have to think about it some more.
--- 
-Michal Hocko
-SUSE Labs
