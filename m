@@ -1,45 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755089Ab3BFOFM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 09:05:12 -0500
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:38937 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754059Ab3BFOFK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 09:05:10 -0500
+	id S1754318Ab3BFOKF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 09:10:05 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41257 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752296Ab3BFOKB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 09:10:01 -0500
+Date: Wed, 6 Feb 2013 15:09:59 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: linux-kernel@vger.kernel.org
+Cc: Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
+        Axel Lin <axel.lin@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] da9030_battery: include notifier.h
+Message-ID: <20130206140959.GE10254@dhcp22.suse.cz>
+References: <1360142098-13124-1-git-send-email-mhocko@suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <CACvQF52ej3mzwRhoGO0jmZq7GLOC_KJcxF+R2O1sqQaonYWqnw@mail.gmail.com>
-References: <1359657696-2767-1-git-send-email-laijs@cn.fujitsu.com>
-	<1359657696-2767-3-git-send-email-laijs@cn.fujitsu.com>
-	<20130204195458.GA27963@mtj.dyndns.org>
-	<5110F5DE.6030407@gmail.com>
-	<20130205185349.GF4276@mtj.dyndns.org>
-	<CACvQF52ej3mzwRhoGO0jmZq7GLOC_KJcxF+R2O1sqQaonYWqnw@mail.gmail.com>
-Date: Wed, 6 Feb 2013 06:05:09 -0800
-X-Google-Sender-Auth: CbPMRSejGLRxQ2cAYwXjI35O45c
-Message-ID: <CAOS58YOAtZTdxwof9Ar6fZ6tMJQoagOqY2nX_bCUoSLZb3cSXw@mail.gmail.com>
-Subject: Re: [PATCH 02/13] workqueue: fix work_busy()
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <eag0628@gmail.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1360142098-13124-1-git-send-email-mhocko@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Lai.
+Ohh, I have just noticed that this could be introduced by "mm: break
+circular include from linux/mmzone.h" in mm tree.
+Adding Andrew to CC.
 
-On Wed, Feb 6, 2013 at 3:42 AM, Lai Jiangshan <eag0628@gmail.com> wrote:
->> Given the advisory nature of the function, why do we care?  Is it
->> needed for later patches?
->
-> Ah, yes.
-
-Please elaborate.  Also, things like that - why the patch needs to
-exist or what the benefits are - really should be in the patch
-description.
-
-Thanks.
+On Wed 06-02-13 10:14:58, Michal Hocko wrote:
+> randconfig complains about:
+> drivers/power/da9030_battery.c:113: error: field ‘nb’ has incomplete type
+> 
+> because there is no direct include for notifier.h which defines
+> struct notifier_block.
+> 
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> ---
+>  drivers/power/da9030_battery.c |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/power/da9030_battery.c b/drivers/power/da9030_battery.c
+> index 94762e6..e8c5a39 100644
+> --- a/drivers/power/da9030_battery.c
+> +++ b/drivers/power/da9030_battery.c
+> @@ -22,6 +22,7 @@
+>  
+>  #include <linux/debugfs.h>
+>  #include <linux/seq_file.h>
+> +#include <linux/notifier.h>
+>  
+>  #define DA9030_FAULT_LOG		0x0a
+>  #define DA9030_FAULT_LOG_OVER_TEMP	(1 << 7)
+> -- 
+> 1.7.10.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 -- 
-tejun
+Michal Hocko
+SUSE Labs
