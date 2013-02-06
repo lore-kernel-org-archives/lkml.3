@@ -1,63 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757092Ab3BFSPM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 13:15:12 -0500
-Received: from mail-da0-f43.google.com ([209.85.210.43]:60868 "EHLO
-	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752089Ab3BFSPK (ORCPT
+	id S1757334Ab3BFSRn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 13:17:43 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:51833 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752089Ab3BFSRk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 13:15:10 -0500
-Date: Wed, 6 Feb 2013 10:15:07 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: liguang <lig.fnst@cn.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch] mm: break circular include from linux/mmzone.h fix fix fix
- fix
-In-Reply-To: <1360037707-13935-1-git-send-email-lig.fnst@cn.fujitsu.com>
-Message-ID: <alpine.DEB.2.02.1302061013160.26828@chino.kir.corp.google.com>
-References: <1360037707-13935-1-git-send-email-lig.fnst@cn.fujitsu.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="531381512-853465630-1360174509=:26828"
+	Wed, 6 Feb 2013 13:17:40 -0500
+Message-ID: <1360174657.4045.33.camel@hornet>
+Subject: Re: [RFC] perf: need to expose sched_clock to correlate user
+ samples with kernel samples
+From: Pawel Moll <pawel.moll@arm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Stephane Eranian <eranian@google.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Pekka Enberg <penberg@gmail.com>,
+        Robert Richter <robert.richter@amd.com>, tglx <tglx@linutronix.de>
+Date: Wed, 06 Feb 2013 18:17:37 +0000
+In-Reply-To: <1360113595.2621.30.camel@gandalf.local.home>
+References: <CABPqkBQALeD=iO9x-N0nw+shhqa1kmUaj=sCvx+MvoAPGQ-y9A@mail.gmail.com>
+	 <1350408232.2336.42.camel@laptop> <1359728280.8360.15.camel@hornet>
+	 <CABPqkBSVeU_JP2KpVZLepKDJX=-g6A45Y5MoNphd6+DaU2PQzQ@mail.gmail.com>
+	 <51118797.9080800@linaro.org> <1360113595.2621.30.camel@gandalf.local.home>
+X-Mailer: Evolution 3.6.2-0ubuntu0.1
+Mime-Version: 1.0
+X-OriginalArrivalTime: 06 Feb 2013 18:17:37.0334 (UTC) FILETIME=[3E12AD60:01CE0496]
+X-MC-Unique: 113020618173708001
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Wed, 2013-02-06 at 01:19 +0000, Steven Rostedt wrote:
+> If people are worried about adding a bunch of new perf syscalls, maybe
+> add a sys_perf_control() system call that works like an ioctl but
+> without a file descriptor. Something for things that don't require an
+> event attached to it, like to retrieve a time stamp counter that perf
+> uses, but done in a way that it could be used for other things perf
+> related that does not require an event.
 
---531381512-853465630-1360174509=:26828
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Something along these lines? (completely untested and of course missing
+all the #defines __NR_perf_control xxx)
 
-kernel/jump_label.c: In function ‘jump_label_module_notify’:
-kernel/jump_label.c:393:2: error: implicit declaration of function ‘notifier_from_errno’ [-Werror=implicit-function-declaration]
-kernel/jump_label.c: At top level:
-kernel/jump_label.c:396:8: error: variable ‘jump_label_module_nb’ has initializer but incomplete type
-kernel/jump_label.c:397:2: error: unknown field ‘notifier_call’ specified in initializer
-kernel/jump_label.c:397:2: warning: excess elements in struct initializer [enabled by default]
-kernel/jump_label.c:397:2: warning: (near initialization for ‘jump_label_module_nb’) [enabled by default]
-kernel/jump_label.c:398:2: error: unknown field ‘priority’ specified in initializer
-kernel/jump_label.c:398:2: warning: excess elements in struct initializer [enabled by default]
-kernel/jump_label.c:398:2: warning: (near initialization for ‘jump_label_module_nb’) [enabled by default]
-
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- kernel/jump_label.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/kernel/jump_label.c b/kernel/jump_label.c
-index 60f48fa..012219d 100644
---- a/kernel/jump_label.c
-+++ b/kernel/jump_label.c
-@@ -13,6 +13,7 @@
- #include <linux/sort.h>
- #include <linux/err.h>
- #include <linux/static_key.h>
-+#include <linux/notifier.h>
+8<-----------------
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 4f63c05..be7409b 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -322,6 +322,11 @@ enum perf_event_ioc_flags {
+ };
  
- #ifdef HAVE_JUMP_LABEL
+ /*
++ * Command codes for ioctl-like sys_perf_control interface:
++ */
++#define PERF_CONTROL_GET_TIME		_IOR('$', 0, __u64)
++
++/*
+  * Structure of the page that can be mapped via mmap
+  */
+ struct perf_event_mmap_page {
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 301079d..750404d 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -6678,6 +6678,29 @@ err_fd:
+ }
  
---531381512-853465630-1360174509=:26828--
+ /**
++ * sys_perf_control - ioctl-like interface to control system-wide
++ *		      perf behaviour
++ *
++ * @cmd:	one of the PERF_CONTROL_* commands
++ * @arg:	command-specific argument
++ */
++SYSCALL_DEFINE2(perf_control, unsigned int, cmd, unsigned long, arg)
++{
++	switch (cmd) {
++	case PERF_CONTROL_GET_TIME:
++	{
++		u64 time = perf_clock();
++		if (copy_to_user((void __user *)arg, &time, sizeof(time)))
++			return -EFAULT;
++		return 0;
++	}
++
++	default:
++		return -ENOTTY;
++	}
++}
++
++/**
+  * perf_event_create_kernel_counter
+  *
+  * @attr: attributes of the counter to create
+8<-----------------
+
+Cheers!
+
+Pawel
+
+
