@@ -1,214 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751989Ab3BFJ1p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 04:27:45 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:34801 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751341Ab3BFJ1m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 04:27:42 -0500
+	id S1752080Ab3BFJbH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 04:31:07 -0500
+Received: from smtp1.goneo.de ([212.90.139.80]:40669 "EHLO smtp1.goneo.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751497Ab3BFJbB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 04:31:01 -0500
+X-Spam-Flag: NO
+X-Spam-Score: -2.73
+From: Lars Poeschel <poeschel@lemonage.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH RFC 1/1] gpio: mcp23s08: convert driver to DT
+Date: Wed, 6 Feb 2013 10:31:04 +0100
+User-Agent: KMail/1.13.7 (Linux/3.2.0-4-amd64; KDE/4.8.4; x86_64; ; )
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Lars Poeschel <larsi@wh2.tu-dresden.de>, rob.herring@calxeda.com,
+        rob@landley.net, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        spi-devel-general@lists.sourceforge.net, w.sang@pengutronix.de,
+        ben-linux@fluff.org, linux-i2c@vger.kernel.org
+References: <1359647903-15801-1-git-send-email-larsi@wh2.tu-dresden.de> <CACRpkda_HjzWNMD1H_a_fsWtbRWuTDsutS8kndb9jY31qf7Yyg@mail.gmail.com> <20130205142909.4F5B83E1265@localhost>
+In-Reply-To: <20130205142909.4F5B83E1265@localhost>
 MIME-Version: 1.0
-X-Originating-IP: [188.156.93.37]
-In-Reply-To: <1360113112.17267.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
-References: <1360113112.17267.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
-Date: Wed, 6 Feb 2013 10:27:40 +0100
-Message-ID: <CAJfpegvJD75ahBViUqAwVTBLuF5yrxOcVvzYHmcsTgwxX+7Oqg@mail.gmail.com>
-Subject: Re: [PATCH] fuse: make fuse daemon frozen along with kernel threads
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Li Fei <fei.li@intel.com>
-Cc: pavel@ucw.cz, rjw@sisk.pl, len.brown@intel.com, mingo@redhat.com,
-        peterz@infradead.org, fuse-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        chuansheng.liu@intel.com, biao.wang@intel.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302061031.04264.poeschel@lemonage.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 6, 2013 at 2:11 AM, Li Fei <fei.li@intel.com> wrote:
->
-> There is well known issue that freezing will fail in case that fuse
-> daemon is frozen firstly with some requests not handled, as the fuse
-> usage task is waiting for the response from fuse daemon and can't be
-> frozen.
->
-> To solve the issue above, make fuse daemon frozen after all all user
-> space processes frozen and during the kernel threads frozen phase.
-> PF_FREEZE_DAEMON flag is added to indicate that the current thread is
-> the fuse daemon,
+On Tuesday 05 February 2013 at 15:29:09, Grant Likely wrote:
+> On Thu, 31 Jan 2013 21:51:36 +0100, Linus Walleij 
+<linus.walleij@linaro.org> wrote:
+> > On Thu, Jan 31, 2013 at 4:58 PM, Lars Poeschel <larsi@wh2.tu-dresden.de> 
+wrote:
+> > > --- /dev/null
+> > > +++ b/Documentation/devicetree/bindings/gpio/gpio-mcp23s08.txt
+> > > @@ -0,0 +1,27 @@
+> > > +Microchip MCP2308/MCP23S08/MCP23017/MCP23S17 driver for
+> > > +8-/16-bit I/O expander with serial interface (I2C/SPI)
+> > > +
+> > > +Required properties:
+> > > +- compatible : Should be "mcp,mcp23s08-gpio", "mcp,mcp23s17-gpio",
+> > > +                       "mcp,mcp23008-gpio" or "mcp,mcp23017-gpio"
+> > > +- base : The first gpio number that should be assigned by this chip.
+> > 
+> > No. We do not tie the global GPIO numbers into the device tree.
+> > 
+> > In the DT GPIOs are referenced by ampersand <&gpio0 1 2>
+> > notation referring to the instance, so as you realize DT itself
+> > has no need for that number.
+> > 
+> > Further it is not OS-neutral.
+> > 
+> > You have to find another way to handle this in the driver code.
+> > In worst case: use AUXDATA.
+> 
+> Hi Lars,
+> 
+> The trick is to declare the io expander to be a "gpio-controller" and
+> use the #gpio-cells property to declare how many cells (32-bit numbers)
+> are need to specify a single gpio line. Most gpio controllers use
+> "gpio-cells=<2>"; The first cell is the *controller local* gpio
+> number, and the second cell is used for flags. That way your gpio
+> controller can be referenced by other nodes in the tree with a "gpios"
+> property.
+> 
+> You can find lots of examples of this in the tree.
 
-Okay and how do you know which thread, process or processes belong to
-the "fuse daemon"?
+Linus, Grant, thanks for the explanations. I think I have catched where it 
+should go.
+The thing that confused me was, that the platform_data for the chip has a 
+mandatory "base" member, that sets the linux global gpio number at which the 
+chip should appear. A value of -1 for automatic assigning gpio number is not 
+allowed, the chip will not probe.
+I have to change the driver to allow at least this -1 as an additional value.
+As Linus pointed out, it is not desirable to set the global gpio base number 
+from device tree, right ? If I have 3 instances of this chips then, how can 
+userspace sw distinguish then to which one it is talking ?
 
-The only entity which may have a chance of defining the correct answer
-to the above question is the fuse daemon itself.
+This is an example for a DT entry (for i2c version) of the chip as I am 
+targetting it now:
 
-What I mean is that automatically setting PF_FREEZE_DAEMON by the
-kernel is the wrong approach. On the other hand an ioctl to set this
-flag on a defined task or task group (*) would actually make some
-sense.  Add some, possibly optional, inheritence behavior (i.e. a
-cloned process would inherit the PF_FREEZE_DAMON flag) and it might
-actually take care of most of the cases.
+gpiom1: gpio@20 {
+	reg = <0x20>;
+	compatible = "mcp,mcp23017-gpio";
+	gpio-controller;
+	#gpio-cells = <2>;
+};
 
-But I think it definitely needs more thought and testing.  Your patch
-looks like it won't work on most of the unprivileged fuse filesystems
-which use the fusermount(1) helper to perform the actual mounting.
+I am working on this but I have some strange issues with the driver 
+probing/not probing and kernel debug output. I hope I will solve this today. 
+I will send a new patch then.
 
-Thanks,
-Miklos
-
-(*) setting this flag for other than the current process should, I
-think, be a privileged operation, otherwise it might allow misuse.
-
->  set on connection, and clear on disconnection.
-> It works as all fuse requests are handled during user space processes
-> frozen, there will no further fuse request, and it's safe to continue
-> to freeze fuse daemon together with kernel freezable tasks.
->
-> Signed-off-by: Wang Biao <biao.wang@intel.com>
-> Signed-off-by: Liu Chuansheng <chuansheng.liu@intel.com>
-> Signed-off-by: Li Fei <fei.li@intel.com>
-> ---
->  fs/fuse/inode.c         |    9 +++++++++
->  include/linux/freezer.h |    4 ++++
->  include/linux/sched.h   |    2 ++
->  kernel/freezer.c        |   33 ++++++++++++++++++++++++++++++++-
->  kernel/power/process.c  |    2 +-
->  5 files changed, 48 insertions(+), 2 deletions(-)
->
-> diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
-> index 73ca6b7..fe476e8 100644
-> --- a/fs/fuse/inode.c
-> +++ b/fs/fuse/inode.c
-> @@ -20,6 +20,7 @@
->  #include <linux/random.h>
->  #include <linux/sched.h>
->  #include <linux/exportfs.h>
-> +#include <linux/freezer.h>
->
->  MODULE_AUTHOR("Miklos Szeredi <miklos@szeredi.hu>");
->  MODULE_DESCRIPTION("Filesystem in Userspace");
-> @@ -367,6 +368,10 @@ void fuse_conn_kill(struct fuse_conn *fc)
->         wake_up_all(&fc->waitq);
->         wake_up_all(&fc->blocked_waitq);
->         wake_up_all(&fc->reserved_req_waitq);
-> +
-> +       /* Clear daemon flag after disconnection */
-> +       clear_freeze_daemon_flag();
-> +
->  }
->  EXPORT_SYMBOL_GPL(fuse_conn_kill);
->
-> @@ -1054,6 +1059,10 @@ static int fuse_fill_super(struct super_block *sb, void *data, int silent)
->                 goto err_unlock;
->
->         list_add_tail(&fc->entry, &fuse_conn_list);
-> +
-> +       /* Set daemon flag just before connection */
-> +       set_freeze_daemon_flag();
-> +
->         sb->s_root = root_dentry;
->         fc->connected = 1;
->         file->private_data = fuse_conn_get(fc);
-> diff --git a/include/linux/freezer.h b/include/linux/freezer.h
-> index e4238ce..9f0d0cf 100644
-> --- a/include/linux/freezer.h
-> +++ b/include/linux/freezer.h
-> @@ -51,6 +51,8 @@ static inline bool try_to_freeze(void)
->
->  extern bool freeze_task(struct task_struct *p);
->  extern bool set_freezable(void);
-> +extern bool set_freeze_daemon_flag(void);
-> +extern bool clear_freeze_daemon_flag(void);
->
->  #ifdef CONFIG_CGROUP_FREEZER
->  extern bool cgroup_freezing(struct task_struct *task);
-> @@ -217,6 +219,8 @@ static inline void freezer_do_not_count(void) {}
->  static inline void freezer_count(void) {}
->  static inline int freezer_should_skip(struct task_struct *p) { return 0; }
->  static inline void set_freezable(void) {}
-> +static inline void set_freeze_daemon_flag(void) {}
-> +static inline void clear_freeze_daemon_flag(void) {}
->
->  #define freezable_schedule()  schedule()
->
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index d211247..6cdc969 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1826,6 +1826,8 @@ extern void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut,
->  #define PF_MEMPOLICY   0x10000000      /* Non-default NUMA mempolicy */
->  #define PF_MUTEX_TESTER        0x20000000      /* Thread belongs to the rt mutex tester */
->  #define PF_FREEZER_SKIP        0x40000000      /* Freezer should not count it as freezable */
-> +/* Daemon threads to be frozen along with kernel threads */
-> +#define PF_FREEZER_DAEMON 0x80000000
->
->  /*
->   * Only the _current_ task can read/write to tsk->flags, but other
-> diff --git a/kernel/freezer.c b/kernel/freezer.c
-> index c38893b..eff9440 100644
-> --- a/kernel/freezer.c
-> +++ b/kernel/freezer.c
-> @@ -39,7 +39,8 @@ bool freezing_slow_path(struct task_struct *p)
->         if (pm_nosig_freezing || cgroup_freezing(p))
->                 return true;
->
-> -       if (pm_freezing && !(p->flags & PF_KTHREAD))
-> +       if (pm_freezing && !(p->flags & PF_KTHREAD) &&
-> +                               !(p->flags & PF_FREEZE_DAEMON))
->                 return true;
->
->         return false;
-> @@ -162,3 +163,33 @@ bool set_freezable(void)
->         return try_to_freeze();
->  }
->  EXPORT_SYMBOL(set_freezable);
-> +
-> +/**
-> + * set_freeze_daemon_flag - make %current as daemon
-> + *
-> + * Make %current being frozen by freezer along with kernel threads
-> + */
-> +bool set_freeze_daemon_flag(void)
-> +{
-> +       spin_lock_irq(&freezer_lock);
-> +       current->flags |= PF_FREEZE_DAEMON;
-> +       spin_unlock_irq(&freezer_lock);
-> +
-> +       return try_to_freeze();
-> +}
-> +EXPORT_SYMBOL(set_freeze_daemon_flag);
-> +
-> +/**
-> + * clear_freeze_daemon_flag - make %current as usual user space process
-> + *
-> + * Make %current being frozen by freezer along with user space processes
-> + */
-> +bool clear_freeze_daemon_flag(void)
-> +{
-> +       spin_lock_irq(&freezer_lock);
-> +       current->flags &= ~PF_FREEZE_DAEMON;
-> +       spin_unlock_irq(&freezer_lock);
-> +
-> +       return try_to_freeze();
-> +}
-> +EXPORT_SYMBOL(clear_freeze_daemon_flag);
-> diff --git a/kernel/power/process.c b/kernel/power/process.c
-> index d5a258b..a4489ae 100644
-> --- a/kernel/power/process.c
-> +++ b/kernel/power/process.c
-> @@ -199,7 +199,7 @@ void thaw_kernel_threads(void)
->
->         read_lock(&tasklist_lock);
->         do_each_thread(g, p) {
-> -               if (p->flags & (PF_KTHREAD | PF_WQ_WORKER))
-> +               if (p->flags & (PF_KTHREAD | PF_WQ_WORKER | PF_FREEZE_DAEMON))
->                         __thaw_task(p);
->         } while_each_thread(g, p);
->         read_unlock(&tasklist_lock);
-> --
-> 1.7.4.1
->
->
->
->
+Lars
