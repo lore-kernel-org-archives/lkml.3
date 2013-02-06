@@ -1,81 +1,306 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932088Ab3BFUZW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 15:25:22 -0500
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:61693 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757690Ab3BFUZU (ORCPT
+	id S964775Ab3BFU0D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 15:26:03 -0500
+Received: from meriadoc.sigma-star.at ([178.63.61.2]:40863 "EHLO
+	meriadoc.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757045Ab3BFU0A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 15:25:20 -0500
-Date: Thu, 7 Feb 2013 00:25:13 +0400
-From: Artem Savkov <artem.savkov@gmail.com>
-To: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+	Wed, 6 Feb 2013 15:26:00 -0500
+Date: Wed, 6 Feb 2013 21:25:53 +0100
+From: Richard Weinberger <richard@sigma-star.at>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: David Gstir <david@sigma-star.at>, kvm@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [BUG] cpufreq: sleeping function called from invalid context at
- kernel/workqueue.c:2811
-Message-ID: <20130206202513.GA5626@thinkpad.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Subject: Re: DMAR faults from unrelated device when vfio is used
+Message-ID: <20130206212553.667e6d8b@spider.haslach.nod.at>
+In-Reply-To: <1360176440.11144.676.camel@bling.home>
+References: <1359972630.2498.21.camel@riven-lux.site>
+	<1359992968.11144.414.camel@bling.home>
+	<1360071110.6200.19.camel@riven-lux.site>
+	<1360078648.11144.558.camel@bling.home>
+	<1360096613.11144.612.camel@bling.home>
+	<20130206190908.79073124@spider.haslach.nod.at>
+	<1360176440.11144.676.camel@bling.home>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.14; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/mixed; boundary="MP_/hFJw6wLWY8LMNi8EzBB7G5f"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I get the following BUG on suspend using systemd-sleep(this doesn't
-happen with pm-suspend). This seems to be introduced by some of the
-Viresh's patches.
+--MP_/hFJw6wLWY8LMNi8EzBB7G5f
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
 
-[   94.908046] Disabling non-boot CPUs ...
-[   94.908416] BUG: sleeping function called from invalid context at kernel/workqueue.c:2811
-[   94.908419] in_atomic(): 1, irqs_disabled(): 1, pid: 4038, name: systemd-sleep
-[   94.908421] 7 locks held by systemd-sleep/4038:
-[   94.908439]  #0:  (&buffer->mutex){......}, at: [<c11908e9>] sysfs_write_file+0x29/0x100
-[   94.908448]  #1:  (s_active#179){......}, at: [<c119094d>] sysfs_write_file+0x8d/0x100
-[   94.908459]  #2:  (pm_mutex){......}, at: [<c107f990>] pm_suspend+0x40/0x1e0
-[   94.908469]  #3:  (cpu_add_remove_lock){......}, at: [<c103ab04>] cpu_maps_update_begin+0x14/0x20
-[   94.908476]  #4:  (cpu_hotplug.lock){......}, at: [<c103a9e2>] cpu_hotplug_begin+0x22/0x50
-[   94.908487]  #5:  (&per_cpu(cpu_policy_rwsem, cpu)){......}, at: [<c14bfbfd>] lock_policy_rwsem_write+0x3d/0x70
-[   94.908495]  #6:  (cpufreq_driver_lock){......}, at: [<c14bfe06>] __cpufreq_remove_dev.isra.10+0x26/0x270
-[   94.908500] Pid: 4038, comm: systemd-sleep Not tainted 3.8.0-rc6-next-20130205+ #200
-[   94.908501] Call Trace:
-[   94.908511]  [<c1067ce0>] __might_sleep+0xe0/0x100
-[   94.908518]  [<c1050f3f>] flush_work+0x5f/0x230
-[   94.908523]  [<c1050ee0>] ? insert_work+0x50/0x50
-[   94.908528]  [<c1046277>] ? del_timer+0x47/0x70
-[   94.908533]  [<c1046277>] ? del_timer+0x47/0x70
-[   94.908538]  [<c1052b08>] ? try_to_grab_pending+0xa8/0x120
-[   94.908543]  [<c1053b49>] __cancel_work_timer+0x59/0x80
-[   94.908548]  [<c1053b82>] cancel_delayed_work_sync+0x12/0x20
-[   94.908555]  [<c14c32ed>] cpufreq_governor_dbs+0x2cd/0x490
-[   94.908561]  [<c14c26c6>] od_cpufreq_governor_dbs+0x16/0x20
-[   94.908565]  [<c14bfd21>] __cpufreq_governor+0x41/0x100
-[   94.908570]  [<c14bfe06>] ? __cpufreq_remove_dev.isra.10+0x26/0x270
-[   94.908575]  [<c14bfe36>] __cpufreq_remove_dev.isra.10+0x56/0x270
-[   94.908580]  [<c14bfbfd>] ? lock_policy_rwsem_write+0x3d/0x70
-[   94.908589]  [<c1686c20>] cpufreq_cpu_callback+0x50/0x65
-[   94.908596]  [<c16966c7>] notifier_call_chain+0x47/0x90
-[   94.908606]  [<c1060fee>] __raw_notifier_call_chain+0x1e/0x30
-[   94.908610]  [<c103a974>] __cpu_notify+0x24/0x50
-[   94.908615]  [<c167bf7d>] _cpu_down+0x6d/0x250
-[   94.908621]  [<c103ac7c>] disable_nonboot_cpus+0x6c/0xf0
-[   94.908625]  [<c107f815>] suspend_devices_and_enter+0x175/0x2b0
-[   94.908629]  [<c107fb27>] pm_suspend+0x1d7/0x1e0
-[   94.908633]  [<c107ebed>] state_store+0x5d/0xb0
-[   94.908638]  [<c107eb90>] ? pm_trace_dev_match_show+0x20/0x20
-[   94.908644]  [<c12c074b>] kobj_attr_store+0x1b/0x30
-[   94.908650]  [<c1190963>] sysfs_write_file+0xa3/0x100
-[   94.908655]  [<c11908c0>] ? sysfs_open_file+0x1f0/0x1f0
-[   94.908662]  [<c112dc28>] vfs_write+0x88/0x140
-[   94.908667]  [<c11908c0>] ? sysfs_open_file+0x1f0/0x1f0
-[   94.908672]  [<c112def7>] sys_write+0x47/0x90
-[   94.908679]  [<c169a0fa>] sysenter_do_call+0x12/0x2d
-[   94.911067] smpboot: CPU 1 is now offline
-[   94.915585] smpboot: CPU 2 is now offline
-[   94.917500] smpboot: CPU 3 is now offline
+Hi,
 
+Am Wed, 06 Feb 2013 11:47:20 -0700
+schrieb Alex Williamson <alex.williamson@redhat.com>: 
+> Does the card work with pci-assign or are both broken?
 
--- 
-Kind regards,
-Artem
+It works with pci-assign. :-\
+
+ 
+> Possible there's a bug in how we're managing the vector table and pba
+> here.  Can you get to the monitor and run 'into mtree' and provide the
+> results?  Thanks,
+
+Please see attachment.
+
+Thanks,
+//richard
+--MP_/hFJw6wLWY8LMNi8EzBB7G5f
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename=mtree_vfio.txt
+
+(qemu) info mtree
+info mtree
+memory
+0000000000000000-7ffffffffffffffe (prio 0, RW): system
+  0000000000000000-00000000dfffffff (prio 0, RW): alias ram-below-4g @pc.ram 0000000000000000-00000000dfffffff
+  00000000000a0000-00000000000bffff (prio 1, RW): alias smram-region @pci 00000000000a0000-00000000000bffff
+  00000000000c0000-00000000000c3fff (prio 1, R-): alias pam-rom @pc.ram 00000000000c0000-00000000000c3fff
+  00000000000c4000-00000000000c7fff (prio 1, R-): alias pam-rom @pc.ram 00000000000c4000-00000000000c7fff
+  00000000000c8000-00000000000cbfff (prio 1, R-): alias pam-rom @pc.ram 00000000000c8000-00000000000cbfff
+  00000000000cb000-00000000000cdfff (prio 1000, RW): alias kvmvapic-rom @pc.ram 00000000000cb000-00000000000cdfff
+  00000000000cc000-00000000000cffff (prio 1, R-): alias pam-rom @pc.ram 00000000000cc000-00000000000cffff
+  00000000000d0000-00000000000d3fff (prio 1, RW): alias pam-ram @pc.ram 00000000000d0000-00000000000d3fff
+  00000000000d4000-00000000000d7fff (prio 1, RW): alias pam-ram @pc.ram 00000000000d4000-00000000000d7fff
+  00000000000d8000-00000000000dbfff (prio 1, RW): alias pam-ram @pc.ram 00000000000d8000-00000000000dbfff
+  00000000000dc000-00000000000dffff (prio 1, RW): alias pam-ram @pc.ram 00000000000dc000-00000000000dffff
+  00000000000e0000-00000000000e3fff (prio 1, RW): alias pam-ram @pc.ram 00000000000e0000-00000000000e3fff
+  00000000000e4000-00000000000e7fff (prio 1, RW): alias pam-ram @pc.ram 00000000000e4000-00000000000e7fff
+  00000000000e8000-00000000000ebfff (prio 1, RW): alias pam-ram @pc.ram 00000000000e8000-00000000000ebfff
+  00000000000ec000-00000000000effff (prio 1, RW): alias pam-ram @pc.ram 00000000000ec000-00000000000effff
+  00000000000f0000-00000000000fffff (prio 1, R-): alias pam-rom @pc.ram 00000000000f0000-00000000000fffff
+  00000000e0000000-00000000ffffffff (prio 0, RW): alias pci-hole @pci 00000000e0000000-00000000ffffffff
+  00000000fec00000-00000000fec00fff (prio 0, RW): kvm-ioapic
+  00000000fed00000-00000000fed003ff (prio 0, RW): hpet
+  00000000fee00000-00000000feefffff (prio 0, RW): kvm-apic-msi
+  0000000100000000-000000019fffffff (prio 0, RW): alias ram-above-4g @pc.ram 00000000e0000000-000000017fffffff
+  00000001a0000000-400000019fffffff (prio 0, RW): alias pci-hole64 @pci 00000001a0000000-400000019fffffff
+I/O
+0000000000000000-000000000000ffff (prio 0, RW): io
+  0000000000000020-0000000000000021 (prio 0, RW): kvm-pic
+  0000000000000040-0000000000000043 (prio 0, RW): kvm-pit
+  0000000000000060-0000000000000060 (prio 0, RW): i8042-data
+  0000000000000061-0000000000000061 (prio 0, RW): elcr
+  0000000000000064-0000000000000064 (prio 0, RW): i8042-cmd
+  0000000000000070-0000000000000071 (prio 0, RW): rtc
+  000000000000007e-000000000000007f (prio 0, RW): kvmvapic
+  0000000000000092-0000000000000092 (prio 0, RW): port92
+  00000000000000a0-00000000000000a1 (prio 0, RW): kvm-pic
+  0000000000000170-0000000000000177 (prio 0, RW): alias ide @ide 0000000000000170-0000000000000177
+  00000000000001ce-00000000000001d0 (prio 0, RW): alias vbe @vbe 00000000000001ce-00000000000001d0
+  00000000000001f0-00000000000001f7 (prio 0, RW): alias ide @ide 00000000000001f0-00000000000001f7
+  0000000000000376-0000000000000376 (prio 0, RW): alias ide @ide 0000000000000376-0000000000000376
+  0000000000000378-000000000000037f (prio 0, RW): alias parallel @parallel 0000000000000378-000000000000037f
+  00000000000003b4-00000000000003b5 (prio 0, RW): alias vga @vga 00000000000003b4-00000000000003b5
+  00000000000003ba-00000000000003ba (prio 0, RW): alias vga @vga 00000000000003ba-00000000000003ba
+  00000000000003c0-00000000000003cf (prio 0, RW): alias vga @vga 00000000000003c0-00000000000003cf
+  00000000000003d4-00000000000003d5 (prio 0, RW): alias vga @vga 00000000000003d4-00000000000003d5
+  00000000000003da-00000000000003da (prio 0, RW): alias vga @vga 00000000000003da-00000000000003da
+  00000000000003f1-00000000000003f5 (prio 0, RW): alias fdc @fdc 00000000000003f1-00000000000003f5
+  00000000000003f6-00000000000003f6 (prio 0, RW): alias ide @ide 00000000000003f6-00000000000003f6
+  00000000000003f7-00000000000003f7 (prio 0, RW): alias fdc @fdc 00000000000003f7-00000000000003f7
+  00000000000003f8-00000000000003ff (prio 0, RW): serial
+  00000000000004d0-00000000000004d0 (prio 0, RW): kvm-elcr
+  00000000000004d1-00000000000004d1 (prio 0, RW): kvm-elcr
+  0000000000000510-0000000000000511 (prio 0, RW): fwcfg
+  0000000000000cf8-0000000000000cfb (prio 0, RW): pci-conf-idx
+  0000000000000cfc-0000000000000cff (prio 0, RW): pci-conf-data
+  0000000000005658-0000000000005658 (prio 0, RW): vmport
+  000000000000c000-000000000000c01f (prio 1, RW): uhci
+  000000000000c020-000000000000c03f (prio 1, RW): virtio-pci
+  000000000000c040-000000000000c04f (prio 1, RW): piix-bmdma-container
+    000000000000c040-000000000000c043 (prio 0, RW): piix-bmdma
+    000000000000c044-000000000000c047 (prio 0, RW): bmdma
+    000000000000c048-000000000000c04b (prio 0, RW): piix-bmdma
+    000000000000c04c-000000000000c04f (prio 0, RW): bmdma
+aliases
+pc.ram
+0000000000000000-000000017fffffff (prio 0, RW): pc.ram
+pci
+0000000000000000-7ffffffffffffffe (prio 0, RW): pci
+  00000000000a0000-00000000000affff (prio 2, RW): alias vga.chain4 @vga.vram 0000000000000000-000000000000ffff
+  00000000000a0000-00000000000bffff (prio 1, RW): vga-lowmem
+  00000000000c0000-00000000000dffff (prio 1, RW): pc.rom
+  00000000000e0000-00000000000fffff (prio 1, R-): alias isa-bios @pc.bios 0000000000000000-000000000001ffff
+  00000000e0000000-00000000efffffff (prio 1, RW): vga.vram
+  00000000febf0000-00000000febf3fff (prio 1, RW): VFIO 0000:00:1b.0 BAR 0
+    00000000febf0000-00000000febf3fff (prio 0, RW): VFIO 0000:00:1b.0 BAR 0 mmap
+  00000000febf4000-00000000febf5fff (prio 1, RW): VFIO 0000:03:00.0 BAR 0
+    00000000febf4000-00000000febf4fff (prio 0, RW): VFIO 0000:03:00.0 BAR 0 mmap
+    00000000febf5000-00000000febf507f (prio 0, RW): msix-table
+    00000000febf5080-00000000febf5087 (prio 0, RW): msix-pba
+    00000000febf6000-00000000febf5fff (prio 0, RW): VFIO 0000:03:00.0 BAR 0 mmap msix-hi
+  00000000febf6000-00000000febf6fff (prio 1, RW): vga.mmio
+    00000000febf6400-00000000febf641f (prio 0, RW): vga ioports remapped
+    00000000febf6500-00000000febf6515 (prio 0, RW): bochs dispi interface
+  00000000febf7000-00000000febf7fff (prio 1, RW): virtio-net-pci-msix
+    00000000febf7000-00000000febf702f (prio 0, RW): msix-table
+    00000000febf7800-00000000febf7807 (prio 0, RW): msix-pba
+  00000000febf8000-00000000febf83ff (prio 1, RW): VFIO 0000:00:1a.0 BAR 0
+    00000000febf8000-00000000febf7fff (prio 0, RW): VFIO 0000:00:1a.0 BAR 0 mmap
+  00000000febf9000-00000000febf93ff (prio 1, RW): VFIO 0000:00:1d.0 BAR 0
+    00000000febf9000-00000000febf8fff (prio 0, RW): VFIO 0000:00:1d.0 BAR 0 mmap
+  00000000fffe0000-00000000ffffffff (prio 0, R-): pc.bios
+ide
+0000000000000000-7ffffffffffffffe (prio 0, RW): ide
+vbe
+0000000000000000-7ffffffffffffffe (prio 0, RW): vbe
+ide
+0000000000000000-7ffffffffffffffe (prio 0, RW): ide
+ide
+0000000000000000-7ffffffffffffffe (prio 0, RW): ide
+parallel
+0000000000000000-7ffffffffffffffe (prio 0, RW): parallel
+vga
+0000000000000000-7ffffffffffffffe (prio 0, RW): vga
+vga
+0000000000000000-7ffffffffffffffe (prio 0, RW): vga
+vga
+0000000000000000-7ffffffffffffffe (prio 0, RW): vga
+vga
+0000000000000000-7ffffffffffffffe (prio 0, RW): vga
+vga
+0000000000000000-7ffffffffffffffe (prio 0, RW): vga
+fdc
+0000000000000000-7ffffffffffffffe (prio 0, RW): fdc
+ide
+0000000000000000-7ffffffffffffffe (prio 0, RW): ide
+fdc
+0000000000000000-7ffffffffffffffe (prio 0, RW): fdc
+vga.vram
+00000000e0000000-00000000efffffff (prio 1, RW): vga.vram
+pc.bios
+00000000fffe0000-00000000ffffffff (prio 0, R-): pc.bios
+--MP_/hFJw6wLWY8LMNi8EzBB7G5f
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename=mtee_pciassign.txt
+
+(qemu) info mtree
+info mtree
+memory
+0000000000000000-7ffffffffffffffe (prio 0, RW): system
+  0000000000000000-00000000dfffffff (prio 0, RW): alias ram-below-4g @pc.ram 0000000000000000-00000000dfffffff
+  00000000000a0000-00000000000bffff (prio 1, RW): alias smram-region @pci 00000000000a0000-00000000000bffff
+  00000000000c0000-00000000000c3fff (prio 1, R-): alias pam-rom @pc.ram 00000000000c0000-00000000000c3fff
+  00000000000c4000-00000000000c7fff (prio 1, R-): alias pam-rom @pc.ram 00000000000c4000-00000000000c7fff
+  00000000000c8000-00000000000cbfff (prio 1, R-): alias pam-rom @pc.ram 00000000000c8000-00000000000cbfff
+  00000000000cb000-00000000000cdfff (prio 1000, RW): alias kvmvapic-rom @pc.ram 00000000000cb000-00000000000cdfff
+  00000000000cc000-00000000000cffff (prio 1, R-): alias pam-rom @pc.ram 00000000000cc000-00000000000cffff
+  00000000000d0000-00000000000d3fff (prio 1, RW): alias pam-ram @pc.ram 00000000000d0000-00000000000d3fff
+  00000000000d4000-00000000000d7fff (prio 1, RW): alias pam-ram @pc.ram 00000000000d4000-00000000000d7fff
+  00000000000d8000-00000000000dbfff (prio 1, RW): alias pam-ram @pc.ram 00000000000d8000-00000000000dbfff
+  00000000000dc000-00000000000dffff (prio 1, RW): alias pam-ram @pc.ram 00000000000dc000-00000000000dffff
+  00000000000e0000-00000000000e3fff (prio 1, RW): alias pam-ram @pc.ram 00000000000e0000-00000000000e3fff
+  00000000000e4000-00000000000e7fff (prio 1, RW): alias pam-ram @pc.ram 00000000000e4000-00000000000e7fff
+  00000000000e8000-00000000000ebfff (prio 1, RW): alias pam-ram @pc.ram 00000000000e8000-00000000000ebfff
+  00000000000ec000-00000000000effff (prio 1, RW): alias pam-ram @pc.ram 00000000000ec000-00000000000effff
+  00000000000f0000-00000000000fffff (prio 1, R-): alias pam-rom @pc.ram 00000000000f0000-00000000000fffff
+  00000000e0000000-00000000ffffffff (prio 0, RW): alias pci-hole @pci 00000000e0000000-00000000ffffffff
+  00000000fec00000-00000000fec00fff (prio 0, RW): kvm-ioapic
+  00000000fed00000-00000000fed003ff (prio 0, RW): hpet
+  00000000fee00000-00000000feefffff (prio 0, RW): kvm-apic-msi
+  0000000100000000-000000019fffffff (prio 0, RW): alias ram-above-4g @pc.ram 00000000e0000000-000000017fffffff
+  00000001a0000000-400000019fffffff (prio 0, RW): alias pci-hole64 @pci 00000001a0000000-400000019fffffff
+I/O
+0000000000000000-000000000000ffff (prio 0, RW): io
+  0000000000000020-0000000000000021 (prio 0, RW): kvm-pic
+  0000000000000040-0000000000000043 (prio 0, RW): kvm-pit
+  0000000000000060-0000000000000060 (prio 0, RW): i8042-data
+  0000000000000061-0000000000000061 (prio 0, RW): elcr
+  0000000000000064-0000000000000064 (prio 0, RW): i8042-cmd
+  0000000000000070-0000000000000071 (prio 0, RW): rtc
+  000000000000007e-000000000000007f (prio 0, RW): kvmvapic
+  0000000000000092-0000000000000092 (prio 0, RW): port92
+  00000000000000a0-00000000000000a1 (prio 0, RW): kvm-pic
+  0000000000000170-0000000000000177 (prio 0, RW): alias ide @ide 0000000000000170-0000000000000177
+  00000000000001ce-00000000000001d0 (prio 0, RW): alias vbe @vbe 00000000000001ce-00000000000001d0
+  00000000000001f0-00000000000001f7 (prio 0, RW): alias ide @ide 00000000000001f0-00000000000001f7
+  0000000000000376-0000000000000376 (prio 0, RW): alias ide @ide 0000000000000376-0000000000000376
+  0000000000000378-000000000000037f (prio 0, RW): alias parallel @parallel 0000000000000378-000000000000037f
+  00000000000003b4-00000000000003b5 (prio 0, RW): alias vga @vga 00000000000003b4-00000000000003b5
+  00000000000003ba-00000000000003ba (prio 0, RW): alias vga @vga 00000000000003ba-00000000000003ba
+  00000000000003c0-00000000000003cf (prio 0, RW): alias vga @vga 00000000000003c0-00000000000003cf
+  00000000000003d4-00000000000003d5 (prio 0, RW): alias vga @vga 00000000000003d4-00000000000003d5
+  00000000000003da-00000000000003da (prio 0, RW): alias vga @vga 00000000000003da-00000000000003da
+  00000000000003f1-00000000000003f5 (prio 0, RW): alias fdc @fdc 00000000000003f1-00000000000003f5
+  00000000000003f6-00000000000003f6 (prio 0, RW): alias ide @ide 00000000000003f6-00000000000003f6
+  00000000000003f7-00000000000003f7 (prio 0, RW): alias fdc @fdc 00000000000003f7-00000000000003f7
+  00000000000003f8-00000000000003ff (prio 0, RW): serial
+  00000000000004d0-00000000000004d0 (prio 0, RW): kvm-elcr
+  00000000000004d1-00000000000004d1 (prio 0, RW): kvm-elcr
+  0000000000000510-0000000000000511 (prio 0, RW): fwcfg
+  0000000000000cf8-0000000000000cfb (prio 0, RW): pci-conf-idx
+  0000000000000cfc-0000000000000cff (prio 0, RW): pci-conf-data
+  0000000000005658-0000000000005658 (prio 0, RW): vmport
+  000000000000c000-000000000000c01f (prio 1, RW): uhci
+  000000000000c020-000000000000c03f (prio 1, RW): virtio-pci
+  000000000000c040-000000000000c04f (prio 1, RW): piix-bmdma-container
+    000000000000c040-000000000000c043 (prio 0, RW): piix-bmdma
+    000000000000c044-000000000000c047 (prio 0, RW): bmdma
+    000000000000c048-000000000000c04b (prio 0, RW): piix-bmdma
+    000000000000c04c-000000000000c04f (prio 0, RW): bmdma
+aliases
+pc.ram
+0000000000000000-000000017fffffff (prio 0, RW): pc.ram
+pci
+0000000000000000-7ffffffffffffffe (prio 0, RW): pci
+  00000000000a0000-00000000000affff (prio 2, RW): alias vga.chain4 @vga.vram 0000000000000000-000000000000ffff
+  00000000000a0000-00000000000bffff (prio 1, RW): vga-lowmem
+  00000000000c0000-00000000000dffff (prio 1, RW): pc.rom
+  00000000000e0000-00000000000fffff (prio 1, R-): alias isa-bios @pc.bios 0000000000000000-000000000001ffff
+  00000000e0000000-00000000efffffff (prio 1, RW): vga.vram
+  00000000febf0000-00000000febf3fff (prio 1, RW): VFIO 0000:00:1b.0 BAR 0
+    00000000febf0000-00000000febf3fff (prio 0, RW): VFIO 0000:00:1b.0 BAR 0 mmap
+  00000000febf4000-00000000febf5fff (prio 1, RW): assigned-dev-container
+    00000000febf4000-00000000febf5fff (prio 0, RW): kvm-pci-assign.bar0
+    00000000febf5000-00000000febf5fff (prio 1, RW): assigned-dev-msix
+  00000000febf6000-00000000febf6fff (prio 1, RW): vga.mmio
+    00000000febf6400-00000000febf641f (prio 0, RW): vga ioports remapped
+    00000000febf6500-00000000febf6515 (prio 0, RW): bochs dispi interface
+  00000000febf7000-00000000febf7fff (prio 1, RW): virtio-net-pci-msix
+    00000000febf7000-00000000febf702f (prio 0, RW): msix-table
+    00000000febf7800-00000000febf7807 (prio 0, RW): msix-pba
+  00000000febf8000-00000000febf83ff (prio 1, RW): VFIO 0000:00:1a.0 BAR 0
+    00000000febf8000-00000000febf7fff (prio 0, RW): VFIO 0000:00:1a.0 BAR 0 mmap
+  00000000febf9000-00000000febf93ff (prio 1, RW): VFIO 0000:00:1d.0 BAR 0
+    00000000febf9000-00000000febf8fff (prio 0, RW): VFIO 0000:00:1d.0 BAR 0 mmap
+  00000000fffe0000-00000000ffffffff (prio 0, R-): pc.bios
+ide
+0000000000000000-7ffffffffffffffe (prio 0, RW): ide
+vbe
+0000000000000000-7ffffffffffffffe (prio 0, RW): vbe
+ide
+0000000000000000-7ffffffffffffffe (prio 0, RW): ide
+ide
+0000000000000000-7ffffffffffffffe (prio 0, RW): ide
+parallel
+0000000000000000-7ffffffffffffffe (prio 0, RW): parallel
+vga
+0000000000000000-7ffffffffffffffe (prio 0, RW): vga
+vga
+0000000000000000-7ffffffffffffffe (prio 0, RW): vga
+vga
+0000000000000000-7ffffffffffffffe (prio 0, RW): vga
+vga
+0000000000000000-7ffffffffffffffe (prio 0, RW): vga
+vga
+0000000000000000-7ffffffffffffffe (prio 0, RW): vga
+fdc
+0000000000000000-7ffffffffffffffe (prio 0, RW): fdc
+ide
+0000000000000000-7ffffffffffffffe (prio 0, RW): ide
+fdc
+0000000000000000-7ffffffffffffffe (prio 0, RW): fdc
+vga.vram
+00000000e0000000-00000000efffffff (prio 1, RW): vga.vram
+pc.bios
+00000000fffe0000-00000000ffffffff (prio 0, R-): pc.bios
+--MP_/hFJw6wLWY8LMNi8EzBB7G5f--
