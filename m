@@ -1,123 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757091Ab3BFCU1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 21:20:27 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:45989 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756778Ab3BFCUY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 21:20:24 -0500
-Date: Wed, 6 Feb 2013 13:20:11 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        Julia Lawall <Julia.Lawall@lip6.fr>
-Subject: linux-next: manual merge of the crypto tree with the net-next tree
-Message-Id: <20130206132011.9084f982f783cd9d298f187d@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__6_Feb_2013_13_20_11_+1100_hG_/3vx8/=7B5y+1"
+	id S1757067Ab3BFCVo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 21:21:44 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:64967 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754731Ab3BFCVn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 21:21:43 -0500
+X-IronPort-AV: E=Sophos;i="4.84,612,1355068800"; 
+   d="scan'208";a="6693636"
+Message-ID: <5111BE09.2030509@cn.fujitsu.com>
+Date: Wed, 06 Feb 2013 10:20:57 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: jiang.liu@huawei.com, wujianguo@huawei.com, hpa@zytor.com,
+        wency@cn.fujitsu.com, laijs@cn.fujitsu.com, linfeng@cn.fujitsu.com,
+        yinghai@kernel.org, isimatu.yasuaki@jp.fujitsu.com, rob@landley.net,
+        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
+        rientjes@google.com, guz.fnst@cn.fujitsu.com, rusty@rustcorp.com.au,
+        lliubbo@gmail.com, jaegeuk.hanse@gmail.com, tony.luck@intel.com,
+        glommer@parallels.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 3/3] acpi, memory-hotplug: Support getting hotplug info
+ from SRAT.
+References: <1359106929-3034-1-git-send-email-tangchen@cn.fujitsu.com> <1359106929-3034-4-git-send-email-tangchen@cn.fujitsu.com> <20130204152651.2bca8dba.akpm@linux-foundation.org>
+In-Reply-To: <20130204152651.2bca8dba.akpm@linux-foundation.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/06 10:20:22,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/06 10:20:24,
+	Serialize complete at 2013/02/06 10:20:24
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__6_Feb_2013_13_20_11_+1100_hG_/3vx8/=7B5y+1
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 02/05/2013 07:26 AM, Andrew Morton wrote:
+> On Fri, 25 Jan 2013 17:42:09 +0800
+> Tang Chen<tangchen@cn.fujitsu.com>  wrote:
+>
+>> We now provide an option for users who don't want to specify physical
+>> memory address in kernel commandline.
+>>
+>>          /*
+>>           * For movablemem_map=acpi:
+>>           *
+>>           * SRAT:                |_____| |_____| |_________| |_________| ......
+>>           * node id:                0       1         1           2
+>>           * hotpluggable:           n       y         y           n
+>>           * movablemem_map:              |_____| |_________|
+>>           *
+>>           * Using movablemem_map, we can prevent memblock from allocating memory
+>>           * on ZONE_MOVABLE at boot time.
+>>           */
+>>
+>> So user just specify movablemem_map=acpi, and the kernel will use hotpluggable
+>> info in SRAT to determine which memory ranges should be set as ZONE_MOVABLE.
+>>
+>> ...
+>>
+>> +	if (!strncmp(p, "acpi", max(4, strlen(p))))
+>> +		movablemem_map.acpi = true;
+>
+> Generates a warning:
+>
+> mm/page_alloc.c: In function 'cmdline_parse_movablemem_map':
+> mm/page_alloc.c:5312: warning: comparison of distinct pointer types lacks a cast
+>
+> due to max(int, size_t).
+>
+> This is easily fixed, but the code looks rather pointless.  If the
+> incoming string is supposed to be exactly "acpi" then use strcmp().  If
+> the incoming string must start with "acpi" then use strncmp(p, "acpi", 4).
+>
+> IOW, the max is unneeded?
 
-Hi Herbert,
+Hi Andrew,
 
-Today's linux-next merge of the crypto tree got a conflict in
-crypto/ctr.c between commit 69d3150cfc20 ("crypto: ctr - make rfc3686
-asynchronous block cipher") from the net-next tree and commit
-3e8afe35c36f ("crypto: use ERR_CAST") from the crypto tree.
+I think I made another mistake here. I meant to use min(4, strlen(p)) in 
+case p is
+something like 'aaa' whose length is less then 4. But I mistook it with 
+max().
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+But after I dig into strcmp() in the kernel, I think it is OK to use 
+strcmp().
+min() or max() is not needed.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Thanks. :)
 
-diff --cc crypto/ctr.c
-index 1f2997c,095dcb6..0000000
---- a/crypto/ctr.c
-+++ b/crypto/ctr.c
-@@@ -335,40 -324,18 +335,38 @@@ static void crypto_rfc3686_exit_tfm(str
- =20
-  static struct crypto_instance *crypto_rfc3686_alloc(struct rtattr **tb)
-  {
- +	struct crypto_attr_type *algt;
-  	struct crypto_instance *inst;
-  	struct crypto_alg *alg;
- +	struct crypto_skcipher_spawn *spawn;
- +	const char *cipher_name;
-  	int err;
- =20
- -	err =3D crypto_check_attr_type(tb, CRYPTO_ALG_TYPE_BLKCIPHER);
- +	algt =3D crypto_get_attr_type(tb);
-- 	err =3D PTR_ERR(algt);
- +	if (IS_ERR(algt))
-- 		return ERR_PTR(err);
-++		return ERR_CAST(algt);
- +
- +	if ((algt->type ^ CRYPTO_ALG_TYPE_BLKCIPHER) & algt->mask)
- +		return ERR_PTR(-EINVAL);
- +
- +	cipher_name =3D crypto_attr_alg_name(tb[1]);
-- 	err =3D PTR_ERR(cipher_name);
- +	if (IS_ERR(cipher_name))
-- 		return ERR_PTR(err);
-++		return ERR_CAST(cipher_name);
- +
- +	inst =3D kzalloc(sizeof(*inst) + sizeof(*spawn), GFP_KERNEL);
- +	if (!inst)
- +		return ERR_PTR(-ENOMEM);
- +
- +	spawn =3D crypto_instance_ctx(inst);
- +
- +	crypto_set_skcipher_spawn(spawn, inst);
- +	err =3D crypto_grab_skcipher(spawn, cipher_name, 0,
- +				   crypto_requires_sync(algt->type,
- +							algt->mask));
-  	if (err)
- -		return ERR_PTR(err);
- +		goto err_free_inst;
- =20
- -	alg =3D crypto_attr_alg(tb[1], CRYPTO_ALG_TYPE_BLKCIPHER,
- -				  CRYPTO_ALG_TYPE_MASK);
- -	if (IS_ERR(alg))
- -		return ERR_CAST(alg);
- +	alg =3D crypto_skcipher_spawn_alg(spawn);
- =20
-  	/* We only support 16-byte blocks. */
-  	err =3D -EINVAL;
-
---Signature=_Wed__6_Feb_2013_13_20_11_+1100_hG_/3vx8/=7B5y+1
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJREb3bAAoJEECxmPOUX5FExwAP/1+AsMQON4aljhGUNCwC/HEZ
-gg90Bl9WRM6x7rMlVEdUZvFUHFDv/9cEyufR/ZaawdXaH6bg1gbuIHbkc+vigHev
-g5J8rjJSCSMX6N4CtTlPZQI4Uo6rlis4xw5vBnmlz7d+VOFb5sPENykRCy52//wc
-sfAZ9FWv9bcyPOJO5kk0WhRC7gnlJLjuPzMIrhibqwd01wtwjRNFxx2e9pk9paUp
-2r9nB27c66lU9X8FH5Q/8uUGJ4I8MdGHus/Uf/SeT8JOdfEi2tePmeV+UCYIM7MK
-EveqGAzl6HGri0D2BJrU4TiqB7ATUPnHNfc+bcFsYzrO4N/SLwat3+koowVYVk01
-1og8V1FzLZYYV3cOkQNiA3VMUnsT3Z8JPAn9mKwWm1kY8Jz4exeLOwoeUrz3K+v5
-qzoCDE/qZStYeJpeh1aHp8M3AH4iaoJWbmubsrnIGYtEIOi+0dOduoJsFcY1Dhjz
-Mw7P8bYwermzkqg98BjwCDnMC1Kx47rRJtSMKUguReWVuTfRzA0kaY5PxMu5DuvQ
-+GebmDrlXD5911Qgsu3Jb9OmGkfkzNI+CUInwCpNKyHtN5UJ/EhorcVkqGQuRSIJ
-a+4ZijOZegdk0w2iT+d7clPjKs3u0cFvNRp2m0nSvtFJiBCgSEv95SeVUiLluKBl
-Y+A5MWLK0xWQELGVBVr4
-=WK/T
------END PGP SIGNATURE-----
-
---Signature=_Wed__6_Feb_2013_13_20_11_+1100_hG_/3vx8/=7B5y+1--
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
