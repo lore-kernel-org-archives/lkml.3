@@ -1,93 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757619Ab3BFQtc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 11:49:32 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:39834 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757329Ab3BFQtb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 11:49:31 -0500
-Message-ID: <51128914.4010204@linux.vnet.ibm.com>
-Date: Wed, 06 Feb 2013 10:47:16 -0600
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1755050Ab3BFQzd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 11:55:33 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:44312 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753123Ab3BFQza convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 11:55:30 -0500
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>
-Subject: Re: [PATCH v2] zsmalloc: Add Kconfig for enabling PTE method
-References: <1360117028-5625-1-git-send-email-minchan@kernel.org>
-In-Reply-To: <1360117028-5625-1-git-send-email-minchan@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13020616-7182-0000-0000-0000050701A7
+In-Reply-To: <CADDKRnACHgBOmw0qLE4zVzhq=Yw-1AYJ-JW0muxRCR3jZ=VoUQ@mail.gmail.com>
+References: <CADDKRnBqxSwC7HUP_aN1QELrv2+7jnncXj7EP0Pqv8E8FFTpPw@mail.gmail.com>
+	<20130105093718.GA938@electric-eye.fr.zoreil.com>
+	<CADDKRnBCrDz2X=5qpGE+r92ZFX5cA+jnSGt3wS8TR0RE8hi1HA@mail.gmail.com>
+	<20130105165735.GB4906@electric-eye.fr.zoreil.com>
+	<CADDKRnCkDS5rMSSi12ti5PV_RSP6s3S15YOJz8b98ehcsyKaOA@mail.gmail.com>
+	<CADDKRnACHgBOmw0qLE4zVzhq=Yw-1AYJ-JW0muxRCR3jZ=VoUQ@mail.gmail.com>
+Date: Wed, 6 Feb 2013 17:55:28 +0100
+Message-ID: <CADDKRnAHJAZBittLCFxjgWa1AWKxD7a4hn4v=xvax=ergkKjxA@mail.gmail.com>
+Subject: Re: [3.8-rc] regression: NETDEV WATCHDOG: eth0 (r8169): transmit
+ queue 0 timed out
+From: =?UTF-8?Q?J=C3=B6rg_Otte?= <jrg.otte@gmail.com>
+To: Francois Romieu <romieu@fr.zoreil.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/05/2013 08:17 PM, Minchan Kim wrote:
-> Zsmalloc has two methods 1) copy-based and 2) pte-based to access
-> allocations that span two pages. You can see history why we supported
-> two approach from [1].
-> 
-> In summary, copy-based method is 3 times fater in x86 while pte-based
-> is 6 times faster in ARM.
-> 
-> But it was bad choice that adding hard coding to select architecture
-> which want to use pte based method. This patch removed it and adds
-> new Kconfig to select the approach.
-> 
-> This patch is based on next-20130205.
-> 
-> [1] https://lkml.org/lkml/2012/7/11/58
-> 
-> * Changelog from v1
->   * Fix CONFIG_PGTABLE_MAPPING in zsmalloc-main.c - Greg
-> 
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
-> Cc: Nitin Gupta <ngupta@vflare.org>
-> Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
-> Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  drivers/staging/zsmalloc/Kconfig         | 12 ++++++++++++
->  drivers/staging/zsmalloc/zsmalloc-main.c | 20 +++++---------------
->  2 files changed, 17 insertions(+), 15 deletions(-)
-> 
-> diff --git a/drivers/staging/zsmalloc/Kconfig b/drivers/staging/zsmalloc/Kconfig
-> index 9084565..232b3b6 100644
-> --- a/drivers/staging/zsmalloc/Kconfig
-> +++ b/drivers/staging/zsmalloc/Kconfig
-> @@ -8,3 +8,15 @@ config ZSMALLOC
->  	  non-standard allocator interface where a handle, not a pointer, is
->  	  returned by an alloc().  This handle must be mapped in order to
->  	  access the allocated space.
-> +
-> +config PGTABLE_MAPPING
-> +        bool "Use page table mapping to access allocations that span two pages"
-> +        depends on ZSMALLOC
-> +        default n
-> +        help
-> +	  By default, zsmalloc uses a copy-based object mapping method to access
-> +	  allocations that span two pages. However, if a particular architecture
-> +	  performs VM mapping faster than copying, then you should select this.
-> +	  This causes zsmalloc to use page table mapping rather than copying
-> +	  for object mapping. You can check speed with zsmalloc benchmark[1].
-> +	  [1] https://github.com/spartacus06/zsmalloc
+2013/2/3 Jörg Otte <jrg.otte@gmail.com>:
+> 2013/1/6 Jörg Otte <jrg.otte@gmail.com>:
+>> 2013/1/5 Francois Romieu <romieu@fr.zoreil.com>:
+>>> Can you check if things improve with v3.8-rc2 after removing :
+>>>
+>>> 2. d64ec841517a25f6d468bde9f67e5b4cffdc67c7
+>>>    r8169: enable internal ASPM and clock request settings
+>>
+>> this fixes a second issue for me:
+>> In 3.7.1 at startup the link came up after 15 sec.:
+>> grep r8169 dmesg.3.7.1
+>> [    1.956842] r8169 Gigabit Ethernet driver 2.3LK-NAPI loaded
+>> [    1.957059] r8169 0000:02:00.0: irq 42 for MSI/MSI-X
+>> [    1.957161] r8169 0000:02:00.0 eth0: RTL8168evl/8111evl at..
+>> [    1.957163] r8169 0000:02:00.0 eth0: jumbo features [frames..
+>> [   13.575452] r8169 0000:02:00.0 eth0: link down
+>> [   13.575475] r8169 0000:02:00.0 eth0: link down
+>> [   15.181317] r8169 0000:02:00.0 eth0: link up
+>>
+>> In 3.8rc the time increased to 24 seconds:
+>> grep r8169 dmesg.3.8.0
+>> [    1.852546] r8169 Gigabit Ethernet driver 2.3LK-NAPI loaded
+>> [    1.852765] r8169 0000:02:00.0: irq 42 for MSI/MSI-X
+>> [    1.852872] r8169 0000:02:00.0 eth0: RTL8168evl/8111evl at...
+>> [    1.852874] r8169 0000:02:00.0 eth0: jumbo features [frames...
+>> [   14.150212] r8169 0000:02:00.0 eth0: link down
+>> [   14.150229] r8169 0000:02:00.0 eth0: link down
+>> [   24.140263] r8169 0000:02:00.0 eth0: link up
+>>
+>> But with this revert I get the old performance:
+>> dmesg | grep r8169
+>> [    1.816613] r8169 Gigabit Ethernet driver 2.3LK-NAPI loaded
+>> [    1.816832] r8169 0000:02:00.0: irq 42 for MSI/MSI-X
+>> [    1.816947] r8169 0000:02:00.0 eth0: RTL8168evl/8111evl at...
+>> [    1.816948] r8169 0000:02:00.0 eth0: jumbo features [frames...
+>> [   13.986401] r8169 0000:02:00.0 eth0: link down
+>> [   13.986422] r8169 0000:02:00.0 eth0: link down
+>> [   15.623631] r8169 0000:02:00.0 eth0: link up
+>>
+>>
+>>> 3. e0c075577965d1c01b30038d38bf637b027a1df3
+>>>    r8169: enable ALDPS for power saving
+>>
+>> That's it! This fixes the problem for me!
+>>
+>> Thanks, Jörg
+>
+>
+> We are closely before v3.8 and I didn't see a solution
+> so far.
+> What is the plan regarding this issue(s)?
+>
+> Thanks, Jörg
 
-Hmm, I'm not sure we want to include this link in the Kconfig.  While  I
-don't have any plans to take that repo down, I could see it getting
-stale at some point for yet-to-be-determined reasons.
+No response, so I Cc to Linus:
 
-Of course, without this tool (or something like it) it is hard to know
-which option is better for your particular platform.
+To Summarize: Two net-regressions where introduced in v3.8 (driver r8169):
 
-Would having this in a Documentation/ file, once one exists, be better?
+1) NETDEV WATCHDOG: eth0 (r8169): transmit queue 0 timed out
+was introduced by commit
+e0c075577965d1c01b30038d38bf637b027a1df3
+("r8169: enable ALDPS for power saving")
 
-Seth
+2) Boot-time increased from 15sec (V3.7) to 24sec (V3.8)
+by commit:
+d64ec841517a25f6d468bde9f67e5b4cffdc67c7
+("r8169: enable internal ASPM and clock request settings")
 
+Reverting the commits resolve the problems entirely.
+
+As long as the issues are not fixed the commits should be reverted.
+
+Thanks, Jörg
