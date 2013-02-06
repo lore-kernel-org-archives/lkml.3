@@ -1,149 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030185Ab3BFWLR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 17:11:17 -0500
-Received: from contumacia.investici.org ([178.255.144.35]:30695 "EHLO
-	contumacia.investici.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757205Ab3BFWLQ (ORCPT
+	id S1030240Ab3BFWLX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 17:11:23 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37397 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030198Ab3BFWLT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 17:11:16 -0500
-X-DKIM: Sendmail DKIM Filter v2.8.2 contumacia.investici.org 037B1E8A8C
-Date: Wed, 6 Feb 2013 23:10:22 +0100
-From: Antonio Quartulli <ordex@autistici.org>
-To: Emil Goode <emilgoode@gmail.com>
-Cc: lindner_marek@yahoo.de, siwu@hrz.tu-chemnitz.de, davem@davemloft.net,
-        b.a.t.m.a.n@lists.open-mesh.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] batman-adv: Remove unused variable
-Message-ID: <20130206221022.GF6008@ritirata.org>
-References: <1360168661-16871-1-git-send-email-emilgoode@gmail.com>
- <20130206172234.GB6008@ritirata.org>
- <1360173353.22154.4.camel@debian>
- <20130206195557.GC6008@ritirata.org>
- <1360187945.25903.5.camel@debian>
+	Wed, 6 Feb 2013 17:11:19 -0500
+Date: Wed, 6 Feb 2013 14:10:31 -0800
+From: tip-bot for Jiri Olsa <jolsa@redhat.com>
+Message-ID: <tip-0c5268bf2218144469dde3228f14898fadbbcdcd@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+In-Reply-To: <1359981185-16819-2-git-send-email-jolsa@redhat.com>
+References: <1359981185-16819-2-git-send-email-jolsa@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf hists browser:
+  Add support to display whole group data for raw columns
+Git-Commit-ID: 0c5268bf2218144469dde3228f14898fadbbcdcd
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="QNDPHrPUIc00TOLW"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1360187945.25903.5.camel@debian>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 06 Feb 2013 14:10:38 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  0c5268bf2218144469dde3228f14898fadbbcdcd
+Gitweb:     http://git.kernel.org/tip/0c5268bf2218144469dde3228f14898fadbbcdcd
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Mon, 4 Feb 2013 13:32:55 +0100
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 6 Feb 2013 18:09:27 -0300
 
---QNDPHrPUIc00TOLW
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+perf hists browser: Add support to display whole group data for raw columns
 
-Hi Emil,=20
+Currently we don't display group members' values for raw columns like
+'Samples' and 'Period' when in group report mode.
 
-On Wed, Feb 06, 2013 at 10:59:05 +0100, Emil Goode wrote:
-> Hi Antonio,
->=20
-> If it is easier I can keep an eye on when the commit lands in the
-> net-next tree and then resend a modified version of the patch.
-> Or do you want me to resend it now?
->=20
+Uniting '__hpp__percent_fmt' and '__hpp__raw_fmt' function under new
+function __hpp__fmt. It's basically '__hpp__percent_fmt' code with new
+'fmt_percent' bool parameter added saying whether raw number or
+percentage should be printed.
 
-Well, that commit should be merged in net-next after the next merge window.
+This way raw columns print out all the group members when
+in group report mode, like:
 
-You can resend it now, but be sure to CC Stephen Rothwell
-<sfr@canb.auug.org.au> (the linux-next maintainer) and to clearly state tha=
-t the
-patch is for linux-next.
+  $ perf record -e '{cycles,cache-misses}' ls
+  ...
+  $ perf report --group --show-total-period --stdio
+  ...
+  #         Overhead                    Period  Command      Shared Object                             Symbol
+  # ................  ........................  .......  .................  .................................
+  #
+      23.63%  11.24%       3331335         317       ls  [kernel.kallsyms]  [k] __lock_acquire
+      12.72%   0.00%       1793100           0       ls  [kernel.kallsyms]  [k] native_sched_clock
+       9.72%   0.00%       1369920           0       ls  libc-2.14.90.so    [.] _nl_find_locale
+       0.03%   0.07%          4476           2       ls  [kernel.kallsyms]  [k] intel_pmu_enable_all
+       0.00%  11.73%             0         331       ls  ld-2.14.90.so      [.] _dl_cache_libcmp
+       0.00%  11.06%             0         312       ls  [kernel.kallsyms]  [k] vma_interval_tree_insert
 
-Thanks.
-Cheers,
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1359981185-16819-2-git-send-email-jolsa@redhat.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/ui/hist.c | 53 ++++++++++++++++++++++++++--------------------------
+ 1 file changed, 26 insertions(+), 27 deletions(-)
 
-
-p.s. try to do not top-post please :-)
-
-> Best regards, Emil
->=20
-> On Wed, 2013-02-06 at 20:55 +0100, Antonio Quartulli wrote:
-> > Hi Emil,
-> >=20
-> > On Wed, Feb 06, 2013 at 06:55:53 +0100, Emil Goode wrote:
-> > > Hi Antonio,
-> > >=20
-> > > The commit ed242d01 is in the linux-next tree and my patch depends on
-> > > that commit.
-> > >=20
-> >=20
-> > Yes, you are right. I was not aware of this commit, because the author
-> > did not CC us (neither netdev) even if he changed the code we maintain.
-> >=20
-> > As far as I can see that commit is in linux-next only.
-> > Therefore it must be applied there.
-> >=20
-> > However, I'd like you to change the commit message and write the full h=
-ash of
-> > the commit you are referring to and its subject ("LIKE THIS"). This wou=
-ld make
-> > it easier to find it.
-> >=20
-> >=20
-> > Regards,
-> >=20
-> > > Best regards, Emil
-> > >=20
-> > > On Wed, 2013-02-06 at 18:22 +0100, Antonio Quartulli wrote:
-> > > > Hi Emil,
-> > > >=20
-> > > > On Wed, Feb 06, 2013 at 05:37:41 +0100, Emil Goode wrote:
-> > > > > The commit ed242d01 removed a node parameter from iterators.
-> > > > > This patch removes a hlist_node struct that is no longer used.
-> > > > >=20
-> > > > > Sparse gives a warning:
-> > > > >=20
-> > > > > net/batman-adv/originator.c:411:21: warning:
-> > > > > 	unused variable =E2=80=98node_tmp=E2=80=99 [-Wunused-variable]
-> > > > >=20
-> > > > > Signed-off-by: Emil Goode <emilgoode@gmail.com>
-> > > >=20
-> > > > On which tree did you base your patch?
-> > > > I cannot find the commit you are referring to (ed242d01) and the pa=
-tch does not
-> > > > apply (neither on net nor net-next).
-> > > >=20
-> > > > Other than that the variable is used a couple of lines below (in th=
-e code we
-> > > > have)...
-> > > >=20
-> > > > Regards,
-> > > >=20
-> > >=20
-> > >=20
-> >=20
->=20
->=20
-
---=20
-Antonio Quartulli
-
-=2E.each of us alone is worth nothing..
-Ernesto "Che" Guevara
-
---QNDPHrPUIc00TOLW
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBCAAGBQJREtTOAAoJEADl0hg6qKeOyaQP/jCQKa02ncoLM0iB/GbxpB8k
-jK9e8IQkHYDQyix2uV8Pd0xrfx9gSstWImOS8arXPJ3cqa/aKraNTVISnyg0ZHRM
-7+qBs+bDa2b9gUsS1RztYDefovYxK2lsU4djo1cW+MgDR3JR0x8e0/U1ZLRpDZhh
-2Hm/ZfKPunYGUtbGkKlvBrzuglKTJyxPAs316w3RHTB34KXAN3jP+zYMPqtv4dIu
-nNvpBEKPNYsIGYg3BsnVA6JmFQCPMymBUYkkD7LpXG9c2e/1ESd9Eh8UGbyx/fox
-odOVWxO8EWO71Flsha0bMyqL98K8M071XfyCmDyCC4L8uc+EyZ4O9VYii7GEUZ7J
-3V/dnyU0TI132zgOGY/WX9T8T8iVaV1uRUfriaqd+pVq2lFDPg8SBhJQmBNt1KeB
-ZVWsyl4yeJ43XED3fvTVIbHKZk7B7YXul3Ht0+DwEpsNECfuLd+BiXOT1nPwXuqw
-5sFi14nO+0I8m9oPstfoQO5TVCLIAE+IifyxUTSgUJXbdRsKJ8DrlSDXguoozafB
-o+NOHCrqO39PnagfjSglWoxJbTGwdQOpw4jNUvuBBcRl0PeP1N3jBgaBIsvQBHME
-ci1SUgJGdw2TibztP0+CpkImEHqlrMUz2cOSxbYRe/ObdZQmAdgvBUzPQ1Djysjc
-Pjyt7DMlji9BsmSNrVgm
-=wQjA
------END PGP SIGNATURE-----
-
---QNDPHrPUIc00TOLW--
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index a47ce98..d671e63 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -9,18 +9,24 @@
+ 
+ typedef int (*hpp_snprint_fn)(char *buf, size_t size, const char *fmt, ...);
+ 
+-static int __hpp__percent_fmt(struct perf_hpp *hpp, struct hist_entry *he,
+-			      u64 (*get_field)(struct hist_entry *),
+-			      const char *fmt, hpp_snprint_fn print_fn)
++static int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
++		      u64 (*get_field)(struct hist_entry *),
++		      const char *fmt, hpp_snprint_fn print_fn,
++		      bool fmt_percent)
+ {
+ 	int ret;
+-	double percent = 0.0;
+ 	struct hists *hists = he->hists;
+ 
+-	if (hists->stats.total_period)
+-		percent = 100.0 * get_field(he) / hists->stats.total_period;
++	if (fmt_percent) {
++		double percent = 0.0;
++
++		if (hists->stats.total_period)
++			percent = 100.0 * get_field(he) /
++				  hists->stats.total_period;
+ 
+-	ret = print_fn(hpp->buf, hpp->size, fmt, percent);
++		ret = print_fn(hpp->buf, hpp->size, fmt, percent);
++	} else
++		ret = print_fn(hpp->buf, hpp->size, fmt, get_field(he));
+ 
+ 	if (symbol_conf.event_group) {
+ 		int prev_idx, idx_delta;
+@@ -49,11 +55,15 @@ static int __hpp__percent_fmt(struct perf_hpp *hpp, struct hist_entry *he,
+ 				 * have no sample
+ 				 */
+ 				ret += print_fn(hpp->buf + ret, hpp->size - ret,
+-						fmt, 0.0);
++						fmt, 0);
+ 			}
+ 
+-			ret += print_fn(hpp->buf + ret, hpp->size - ret,
+-					fmt, 100.0 * period / total);
++			if (fmt_percent)
++				ret += print_fn(hpp->buf + ret, hpp->size - ret,
++						fmt, 100.0 * period / total);
++			else
++				ret += print_fn(hpp->buf + ret, hpp->size - ret,
++						fmt, period);
+ 
+ 			prev_idx = perf_evsel__group_idx(evsel);
+ 		}
+@@ -65,23 +75,12 @@ static int __hpp__percent_fmt(struct perf_hpp *hpp, struct hist_entry *he,
+ 			 * zero-fill group members at last which have no sample
+ 			 */
+ 			ret += print_fn(hpp->buf + ret, hpp->size - ret,
+-					fmt, 0.0);
++					fmt, 0);
+ 		}
+ 	}
+ 	return ret;
+ }
+ 
+-static int __hpp__raw_fmt(struct perf_hpp *hpp, struct hist_entry *he,
+-			  u64 (*get_field)(struct hist_entry *),
+-			  const char *fmt, hpp_snprint_fn print_fn)
+-{
+-	int ret;
+-
+-	ret = print_fn(hpp->buf, hpp->size, fmt, get_field(he));
+-	return ret;
+-}
+-
+-
+ #define __HPP_HEADER_FN(_type, _str, _min_width, _unit_width) 		\
+ static int hpp__header_##_type(struct perf_hpp *hpp)			\
+ {									\
+@@ -116,16 +115,16 @@ static u64 he_get_##_field(struct hist_entry *he)				\
+ 										\
+ static int hpp__color_##_type(struct perf_hpp *hpp, struct hist_entry *he) 	\
+ {										\
+-	return __hpp__percent_fmt(hpp, he, he_get_##_field, " %6.2f%%",		\
+-				  (hpp_snprint_fn)percent_color_snprintf); 	\
++	return __hpp__fmt(hpp, he, he_get_##_field, " %6.2f%%",			\
++			  (hpp_snprint_fn)percent_color_snprintf, true);	\
+ }
+ 
+ #define __HPP_ENTRY_PERCENT_FN(_type, _field)					\
+ static int hpp__entry_##_type(struct perf_hpp *hpp, struct hist_entry *he) 	\
+ {										\
+ 	const char *fmt = symbol_conf.field_sep ? " %.2f" : " %6.2f%%";		\
+-	return __hpp__percent_fmt(hpp, he, he_get_##_field, fmt,		\
+-				  scnprintf);					\
++	return __hpp__fmt(hpp, he, he_get_##_field, fmt,			\
++			  scnprintf, true);					\
+ }
+ 
+ #define __HPP_ENTRY_RAW_FN(_type, _field)					\
+@@ -137,7 +136,7 @@ static u64 he_get_raw_##_field(struct hist_entry *he)				\
+ static int hpp__entry_##_type(struct perf_hpp *hpp, struct hist_entry *he) 	\
+ {										\
+ 	const char *fmt = symbol_conf.field_sep ? " %"PRIu64 : " %11"PRIu64;	\
+-	return __hpp__raw_fmt(hpp, he, he_get_raw_##_field, fmt, scnprintf);	\
++	return __hpp__fmt(hpp, he, he_get_raw_##_field, fmt, scnprintf, false);	\
+ }
+ 
+ #define HPP_PERCENT_FNS(_type, _str, _field, _min_width, _unit_width)	\
