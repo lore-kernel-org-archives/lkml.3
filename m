@@ -1,67 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756288Ab3BFIbR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 03:31:17 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:27446 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751754Ab3BFIbO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 03:31:14 -0500
-X-IronPort-AV: E=Sophos;i="4.84,614,1355068800"; 
-   d="scan'208";a="6696050"
-Message-ID: <511214A3.6060201@cn.fujitsu.com>
-Date: Wed, 06 Feb 2013 16:30:27 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1756242Ab3BFIdq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 03:33:46 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:26698 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751881Ab3BFIdp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 03:33:45 -0500
+From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+CC: "richard.genoud@gmail.com" <richard.genoud@gmail.com>,
+        "Lin, JM" <JM.Lin@atmel.com>,
+        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>
+Subject: RE: [v4 PATCH 00/12] atmel spi controller with dmaengine and device
+ tree support
+Thread-Topic: [v4 PATCH 00/12] atmel spi controller with dmaengine and
+ device tree support
+Thread-Index: AQHN8ip3XU+oqYrulUus6q2TYGhEYphq67AAgAG39pA=
+Date: Wed, 6 Feb 2013 08:33:13 +0000
+Message-ID: <B256D81BAE5131468A838E5D7A2436413A086E2E@penmbx02>
+References: <1358148877-18679-1-git-send-email-wenyou.yang@atmel.com>
+ <20130205141410.712493E1265@localhost>
+In-Reply-To: <20130205141410.712493E1265@localhost>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-cr-puzzleid: {BE74539E-DC1B-4EF7-915A-7199303A962D}
+x-cr-hashedpuzzle: I17J J2ep KK5+ PJpe VQMb WG06 ad1Y d8ev j3Zr l+Fk nMxY
+ pSgi p2U9 zDCd zdqd
+ 1G9t;5;ZwByAGEAbgB0AC4AbABpAGsAZQBsAHkAQABzAGUAYwByAGUAdABsAGEAYgAuAGMAYQA7AGwAaQBuAHUAeAAtAGEAcgBtAC0AawBlAHIAbgBlAGwAQABsAGkAcwB0AHMALgBpAG4AZgByAGEAZABlAGEAZAAuAG8AcgBnADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AHAAbABhAGcAbgBpAG8AagBAAGoAYwByAG8AcwBvAGYAdAAuAGMAbwBtADsAcgBpAGMAaABhAHIAZAAuAGcAZQBuAG8AdQBkAEAAZwBtAGEAaQBsAC4AYwBvAG0A;Sosha1_v1;7;{BE74539E-DC1B-4EF7-915A-7199303A962D};dwBlAG4AeQBvAHUALgB5AGEAbgBnAEAAYQB0AG0AZQBsAC4AYwBvAG0A;Wed,
+ 06 Feb 2013 08:32:58
+ GMT;UgBFADoAIABbAHYANAAgAFAAQQBUAEMASAAgADAAMAAvADEAMgBdACAAYQB0AG0AZQBsACAAcwBwAGkAIABjAG8AbgB0AHIAbwBsAGwAZQByACAAdwBpAHQAaAAgAGQAbQBhAGUAbgBnAGkAbgBlACAAYQBuAGQAIABkAGUAdgBpAGMAZQAgAHQAcgBlAGUAIABzAHUAcABwAG8AcgB0AA==
+x-originating-ip: [10.168.5.13]
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Shuah Khan <shuah.khan@hp.com>, Andrew Morton <akpm@linux-foundation.org>,
-        tglx@linutronix.de, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, yinghai@kernel.org,
-        wency@cn.fujitsu.com, linux-kernel@vger.kernel.org, x86@kernel.org,
-        shuahkhan@gmail.com
-Subject: Re: [PATCH linux-next] x86/mm: Fix compile warning in remove_pagetable()
-References: <1360119136.8356.4.camel@lorien2> <alpine.DEB.2.02.1302060017410.6630@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1302060017410.6630@chino.kir.corp.google.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/06 16:29:52,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/06 16:29:53,
-	Serialize complete at 2013/02/06 16:29:53
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r168Xjp2020389
 
-On 02/06/2013 04:27 PM, David Rientjes wrote:
-> On Tue, 5 Feb 2013, Shuah Khan wrote:
->
->> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
->> index 67bad4b..ed78400 100644
->> --- a/arch/x86/mm/init_64.c
->> +++ b/arch/x86/mm/init_64.c
->> @@ -987,7 +987,7 @@ remove_pud_table(pud_t *pud_start, unsigned long addr, unsigned long end,
->>   static void __meminit
->>   remove_pagetable(unsigned long start, unsigned long end, bool direct)
->>   {
->> -	unsigned long next;
->> +	unsigned long next = pgd_addr_end(start, end);
->>   	pgd_t *pgd;
->>   	pud_t *pud;
->>   	bool pgd_changed = false;
->
-> This isn't enough, there's a potential for an infinite loop if
-> !pgd_present() is ever true in the iteration since "next" remains
-> constant.  Theoretical, maybe.
->
-> I think it's better to just set next before checking for !pgd_present() in
-> the iteration so it's clear what's happening.
+Hello, Grant
 
-Yes, Andrew's patch just fixed it like this. :)
+Thanks a lot for your feedback.
 
-Thanks. :)
+> -----Original Message-----
+> From: Grant Likely [mailto:glikely@secretlab.ca] On Behalf Of Grant Likely
+> Sent: 2013ƒÍ2‘¬5»’ 22:14
+> To: Yang, Wenyou; linux-arm-kernel@lists.infradead.org
+> Cc: richard.genoud@gmail.com; Lin, JM; Ferre, Nicolas;
+> linux-kernel@vger.kernel.org; Yang, Wenyou; plagnioj@jcrosoft.com
+> Subject: Re: [v4 PATCH 00/12] atmel spi controller with dmaengine and device
+> tree support
+> 
+> On Mon, 14 Jan 2013 15:34:25 +0800, Wenyou Yang
+> <wenyou.yang@atmel.com> wrote:
+> > Hi All,
+> >
+> > This set of patches is to add dmaengine and device tree support for atmel spi.
+> > The work is based on Nicolas and Richard's work.
+> > It is tested on at91sam9x5ek, at91sam9m10g45ek, at91sam9263ek and
+> at91sam9g20ek.
+> >
+> > It is based on v3.8-rc3.
+> 
+> Hi Wenyou,
+> 
+> The patches look fine on a quick look, but I cannot apply them without a
+> Signed-off-by line from you since you are the person posting the
+> patches. Please read section 12 of Documentation/SubmittingPatches
+> (about line #288) and then reply confirming what your signed-off-by line
+> should be.
 
-> Or, even better, change
-> this into the standard do-while loop that everything else uses.
->
+Yes, I should add the below lines:
+[wenyou.yang@atmel.com: Submit the patch]
+Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
 
+> 
+> >
+> > Changelog:
+> > v4:
+> > 	1./ Take Joe Perches's advance, rewrite atmel_spi_is_v2(struct atmel_spi
+> *as)
+> > 	     and atmel_spi_use_dma(struct atmel_spi *as),
+> > 	     and remove atmel_spi_use_pdc(struct atmel_spi *as).
+> >
+> > 	2./ Rebase on v3.8-rc3.
+> >
+> > V3:
+> > 	1./ Rebase on v3.8-rc2.
+> >
+> > 	2./ Remove some Jean-Christophe's patches which has been
+> > 	    applied on v3.8-rc2.
+> >
+> > 	3./ Remove spi property "cs-gpios" from the SoC dtsi files
+> > 	    to the board dts files to avoid some useless pin conflicts.
+> >
+> > v2:
+> >    	1./ Remove the patch :PATCH]mtd: m25p80: change the
+> m25p80_read to reading page to page
+> > 	    which purpose to fix the BUG: when run "flashcp /bin/busybox
+> /dev/mtdX" in
+> > 	    the at91sam9g25ek with DMA mode, it arises a OOPS.
+> > 	    Now fix it in this patch:
+> > 	    [PATHC] spi/atmel_spi: add dmaengine support changing to fix the
+> [BUG].
+> >
+> > 	2./ Remove two patches:
+> >    	    which purpose to read dts property to select SPI IP version and
+> DMA mode
+> > 	    Now they will be gat from device tree different compatile.
+> >
+> > 	3./ Fix DMA: when enable both spi0 AND spi1, the spi0 doesn't work BUG.
+> >
+> > 	4./ Rebase v3.7-rc8.
+> >
+> > Best Regards,
+> > Wenyou Yang.
+> >
+> > Nicolas Ferre (5):
+> >   spi/atmel_spi: add physical base address
+> >   spi/atmel_spi: call unmapping on transfers buffers
+> >   spi/atmel_spi: status information passed through controller data
+> >   spi/atmel_spi: add flag to controller data for lock operations
+> >   spi/atmel_spi: add dmaengine support
+> >
+> > Richard Genoud (6):
+> >   spi/atmel_spi: fix spi-atmel driver to adapt to slave_config changes
+> >   spi/atmel_spi: correct 16 bits transfers using PIO
+> >   spi/atmel_spi: correct 16 bits transfer with DMA
+> >   ARM: at91: add clocks for spi dt entries
+> >   ARM: dts: add spi nodes for atmel SoC
+> >   ARM: dts: add spi nodes for the atmel boards
+> >
+> > Wenyou Yang (1):
+> >   spi/atmel_spi: update the dt support
+> >
+> >  arch/arm/boot/dts/at91sam9260.dtsi          |   18 +
+> >  arch/arm/boot/dts/at91sam9263.dtsi          |   18 +
+> >  arch/arm/boot/dts/at91sam9263ek.dts         |   14 +
+> >  arch/arm/boot/dts/at91sam9g20ek_common.dtsi |   14 +
+> >  arch/arm/boot/dts/at91sam9g45.dtsi          |   18 +
+> >  arch/arm/boot/dts/at91sam9m10g45ek.dts      |   14 +
+> >  arch/arm/boot/dts/at91sam9n12.dtsi          |   18 +
+> >  arch/arm/boot/dts/at91sam9n12ek.dts         |   14 +
+> >  arch/arm/boot/dts/at91sam9x5.dtsi           |   18 +
+> >  arch/arm/boot/dts/at91sam9x5ek.dtsi         |   14 +
+> >  arch/arm/mach-at91/at91sam9260.c            |    2 +
+> >  arch/arm/mach-at91/at91sam9g45.c            |    2 +
+> >  arch/arm/mach-at91/at91sam9n12.c            |    2 +
+> >  arch/arm/mach-at91/at91sam9x5.c             |    2 +
+> >  drivers/spi/spi-atmel.c                     |  809
+> ++++++++++++++++++++++++---
+> >  15 files changed, 908 insertions(+), 69 deletions(-)
+> >
+> > --
+> > 1.7.9.5
+> >
+> >
+> > _______________________________________________
+> > linux-arm-kernel mailing list
+> > linux-arm-kernel@lists.infradead.org
+> > http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
+> --
+> Grant Likely, B.Sc, P.Eng.
+> Secret Lab Technologies, Ltd.
+
+Best Regards,
+Wenyou Yang
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
