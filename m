@@ -1,40 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758139Ab3BFUKr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 15:10:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18684 "EHLO mx1.redhat.com"
+	id S1758601Ab3BFULF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 15:11:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49099 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755489Ab3BFUKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 15:10:42 -0500
-Message-ID: <5112B8A2.8050800@redhat.com>
-Date: Wed, 06 Feb 2013 15:10:10 -0500
+	id S1758032Ab3BFUJG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 15:09:06 -0500
+Date: Wed, 6 Feb 2013 15:04:03 -0500
 From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Michel Lespinasse <walken@google.com>
-CC: linux-kernel@vger.kernel.org, aquini@redhat.com, eric.dumazet@gmail.com,
-        lwoodman@redhat.com, knoel@redhat.com, chegu_vinod@hp.com,
+To: linux-kernel@vger.kernel.org
+Cc: aquini@redhat.com, eric.dumazet@gmail.com, lwoodman@redhat.com,
+        knoel@redhat.com, chegu_vinod@hp.com,
         raghavendra.kt@linux.vnet.ibm.com, mingo@redhat.com
-Subject: Re: [PATCH -v4 4/5] x86,smp: keep spinlock delay values per hashed
- spinlock address
-References: <20130125140553.060b8ced@annuminas.surriel.com> <20130125141842.58010c25@annuminas.surriel.com> <CANN689EAykWXS4QTVDKaCb4in_2b_Bqyoh-xg=EbX7ivOPry4w@mail.gmail.com>
-In-Reply-To: <CANN689EAykWXS4QTVDKaCb4in_2b_Bqyoh-xg=EbX7ivOPry4w@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Subject: [PATCH -v5 1/5] x86,smp: move waiting on contended ticket lock out
+ of line
+Message-ID: <20130206150403.006e5294@cuia.bos.redhat.com>
+In-Reply-To: <20130206150311.19cd1e52@cuia.bos.redhat.com>
+References: <20130206150311.19cd1e52@cuia.bos.redhat.com>
+Organization: Red Hat, Inc
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27/2013 08:04 AM, Michel Lespinasse wrote:
-> On Fri, Jan 25, 2013 at 11:18 AM, Rik van Riel <riel@redhat.com> wrote:
->> +       u32 delay = (ent->hash == hash) ? ent->delay : MIN_SPINLOCK_DELAY;
->
-> I still don't like the reseting of delay to MIN_SPINLOCK_DELAY when
-> there is a hash collision.
+Moving the wait loop for congested loops to its own function allows
+us to add things to that wait loop, without growing the size of the
+kernel text appreciably.
 
-I've been spending some time looking at this, because I am
-not a fan either.
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Reviewed-by: Steven Rostedt <rostedt@goodmiss.org>
+Reviewed-by: Michel Lespinasse <walken@google.com>
+Reviewed-by: Rafael Aquini <aquini@redhat.com>
+---
+v2: clean up the code a little, after Michel's suggestion 
 
-However, it seems to work and I failed to come up with
-anything better. Therefore, I have left it as is in the
--v5 patch series.
+ arch/x86/include/asm/spinlock.h |   11 +++++------
+ arch/x86/kernel/smp.c           |   14 ++++++++++++++
+ 2 files changed, 19 insertions(+), 6 deletions(-)
+
+diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
+index 33692ea..dc492f6 100644
+--- a/arch/x86/include/asm/spinlock.h
++++ b/arch/x86/include/asm/spinlock.h
+@@ -34,6 +34,8 @@
+ # define UNLOCK_LOCK_PREFIX
+ #endif
+ 
++extern void ticket_spin_lock_wait(arch_spinlock_t *, struct __raw_tickets);
++
+ /*
+  * Ticket locks are conceptually two parts, one indicating the current head of
+  * the queue, and the other indicating the current tail. The lock is acquired
+@@ -53,12 +55,9 @@ static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
+ 
+ 	inc = xadd(&lock->tickets, inc);
+ 
+-	for (;;) {
+-		if (inc.head == inc.tail)
+-			break;
+-		cpu_relax();
+-		inc.head = ACCESS_ONCE(lock->tickets.head);
+-	}
++	if (inc.head != inc.tail)
++		ticket_spin_lock_wait(lock, inc);
++
+ 	barrier();		/* make sure nothing creeps before the lock is taken */
+ }
+ 
+diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
+index 48d2b7d..20da354 100644
+--- a/arch/x86/kernel/smp.c
++++ b/arch/x86/kernel/smp.c
+@@ -113,6 +113,20 @@ static atomic_t stopping_cpu = ATOMIC_INIT(-1);
+ static bool smp_no_nmi_ipi = false;
+ 
+ /*
++ * Wait on a congested ticket spinlock.
++ */
++void ticket_spin_lock_wait(arch_spinlock_t *lock, struct __raw_tickets inc)
++{
++	for (;;) {
++		cpu_relax();
++		inc.head = ACCESS_ONCE(lock->tickets.head);
++
++		if (inc.head == inc.tail)
++			break;
++	}
++}
++
++/*
+  * this function sends a 'reschedule' IPI to another CPU.
+  * it goes straight through and wastes no time serializing
+  * anything. Worst case is that we lose a reschedule ...
+
