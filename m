@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610Ab3BFNRF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 08:17:05 -0500
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:61605 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754132Ab3BFNRA (ORCPT
+	id S1754031Ab3BFNVb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 08:21:31 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16690 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751551Ab3BFNVa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 08:17:00 -0500
-Date: Wed, 6 Feb 2013 14:16:55 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        Stoney Wang <song-bo.wang@hp.com>, stable@kernel.org
-Subject: Re: [PATCH] x86, apic: Check fadt x2apic phys in x2apic_phys_probe()
-Message-ID: <20130206131655.GH8696@gmail.com>
-References: <20130204110304.GD24173@gmail.com>
- <1360009767-3633-1-git-send-email-yinghai@kernel.org>
- <20130205122432.GE21455@gmail.com>
- <CAE9FiQXn1P0RGD-O3jeFNgAdsfv4EQyH8g7r0x3KBFfh20fF=Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQXn1P0RGD-O3jeFNgAdsfv4EQyH8g7r0x3KBFfh20fF=Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 6 Feb 2013 08:21:30 -0500
+X-Authority-Analysis: v=2.0 cv=C91rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=_Bp3_fu7e2UA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=wIfm1DkAj9kA:10 a=uYVGJH5IAAAA:8 a=TP7dVeSyjimTlQAVxQcA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1360156888.2621.42.camel@gandalf.local.home>
+Subject: Re: Question on lockdep and MAX_LOCK_DEPTH
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ben Greear <greearb@candelatech.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Date: Wed, 06 Feb 2013 08:21:28 -0500
+In-Reply-To: <5111F6F6.7010402@candelatech.com>
+References: <5111AD8D.1080005@candelatech.com>
+	   <20130206015430.GA9161@home.goodmis.org>
+	  <5111BF51.5010607@candelatech.com>
+	  <1360119124.2621.37.camel@gandalf.local.home>
+	  <5111CE60.4080403@candelatech.com>
+	 <1360125419.2621.39.camel@gandalf.local.home>
+	 <5111F6F6.7010402@candelatech.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Yinghai Lu <yinghai@kernel.org> wrote:
-
-> On Tue, Feb 5, 2013 at 4:24 AM, Ingo Molnar <mingo@kernel.org> wrote:
+On Tue, 2013-02-05 at 22:23 -0800, Ben Greear wrote:
+> On 02/05/2013 08:36 PM, Steven Rostedt wrote:
+> > On Tue, 2013-02-05 at 19:30 -0800, Ben Greear wrote:
 > >
-> > * Yinghai Lu <yinghai@kernel.org> wrote:
-> >
-> >> From: Stoney Wang <song-bo.wang@hp.com>
+> >> It's huge, so here's a link:
 > >>
-> >> When HP ProLiant DL980 G7 Server boot without x2apic_phys, there will be
-> >> intermittent lost interrupts and could result in a hang or data loss.
+> >> http://www.candelatech.com/~greearb/debug.tgz
+> >>
 > >
-> > What does 'boot without x2apic_phys' mean?
+> > The trace shows that __netif_receive_skb() is grabbing an
+> > rcu_read_lock() but never releasing it. But I don't see any possible way
+> > that can be true in the code.
 > >
-> > Does it mean x2apic_phys=0 boot command line? Or, because
-> > x2apic_phys is off by default, does it simply mean that if it's
-> > booted with a default kernel, without any workaround specified
-> > on the boot command line?
+> > Can you apply the following patch and run the trace again. I'd like to
+> > see if the code is going in the path I expect it is.
 > 
-> means that user does not append "x2apic_phys" in boot command line.
+> I'll look at this in detail tomorrow.  I have a few patches in dev.c code, maybe
+> I merged something badly....
 
-The user does not append a whole lot of other 
-behavior-modification command line options either! There's no 
-apic=0 line either. Nor smp=0.
+I wish you told me that in the beginning. That you modified the core
+code. In that case I would have asked to see your modifications before
+anything else.
 
-Adding this essentially irrelevant piece of information to the 
-*FIRST*, most important sentence of the changelog is thus not 
-just confusing but utterly misleading. Communications 101.
+I'm 99% sure that the bug is in your modifications.
 
-Instead it should say something like:
+-- Steve
 
-   When a HP ProLiant DL980 G7 Server boots a regular kernel,
-   there will be intermittent lost interrupts which could
-   result in a hang or (in extreme cases) data loss.
 
-   The reason is that this system only supports x2apic physical 
-   mode, while the kernel boots with a logical-cluster default 
-   setting.
-
-   This bug can be worked around by specifying the x2apic_phys=1
-   boot option, but we want to handle this sytem without
-   requiring manual workarounds.
-
-Right? Writing a clean changelog is like writing clean code - 
-you have to learn it if you want to contribute to the kernel 
-smoothly. Think of it as an engineering task: the other required 
-half of modifying kernel code.
-
-Thanks,
-
-	Ingo
