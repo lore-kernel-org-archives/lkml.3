@@ -1,92 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758539Ab3BFV6I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 16:58:08 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:49892 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755489Ab3BFV6F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 16:58:05 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: [PATCH 12/15] sound: add missing HAS_IOPORT and GENERIC_HARDIRQS dependencies
-Date: Wed, 6 Feb 2013 21:56:55 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-4-generic; KDE/4.3.2; x86_64; ; )
-Cc: Takashi Iwai <tiwai@suse.de>, axboe@kernel.dk, cbou@mail.ru,
-        davem@davemloft.net, dtor@mail.ru, dwmw2@infradead.org,
-        grant.likely@secretlab.ca, gregkh@linuxfoundation.org, jkosina@suse.cz,
-        jslaby@suse.cz, khali@linux-fr.org, mchehab@redhat.com, perex@perex.cz,
-        sameo@linux.intel.com, w.sang@pengutronix.de,
-        linux-kernel@vger.kernel.org, sebott@linux.vnet.ibm.com,
-        gerald.schaefer@de.ibm.com, schwidefsky@de.ibm.com
-References: <1360167843-3587-1-git-send-email-heiko.carstens@de.ibm.com> <s5hmwvh73rp.wl%tiwai@suse.de> <20130206181242.GA3281@osiris>
-In-Reply-To: <20130206181242.GA3281@osiris>
+	id S1758584Ab3BFV66 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 16:58:58 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:54230 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755489Ab3BFV6z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 16:58:55 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai@kernel.org>, Myron Stowe <myron.stowe@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 00/22] PCI: Iterate pci host bridge instead of pci root bus
+Date: Wed, 06 Feb 2013 23:05:14 +0100
+Message-ID: <3459136.QID0qrXQHt@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAE9FiQXTRaP08ZeHWTJHt50DZO800BMigmo=q65-RLzZWkTvoQ@mail.gmail.com>
+References: <CAE9FiQXHG01NjnYNDbC-KEpbcvY-q4pBe97CxTOGS7W4vZQBYQ@mail.gmail.com> <52330506.F9m0tMYuG1@vostro.rjw.lan> <CAE9FiQXTRaP08ZeHWTJHt50DZO800BMigmo=q65-RLzZWkTvoQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302062156.55910.arnd@arndb.de>
-X-Provags-ID: V02:K0:XaWIevJgCK3iIuntC06M6ac3dxpI+JGSt20FtD0GAjL
- QJgNlbjx1W6W2IIzgHzOijXyYbOYcxGbLOZRvPb7hiRagTg92z
- VsJ0npJkXwdfhHSbqd+StfhKf4OD9H7TLVEUBdYYSY+7lMVoTJ
- uciF41IVGWvezspzW/As0RNIo1GnIDCHY4qaDqntB/kzrAcUXA
- yP/ZswbROwIu5Y8dOIw+KqbxW9ZK+yjOphN+YhtGpwOjBGXsUQ
- MxAnTJadwXriGp7uF3YGN3n4ueD75VH/stKkRzZ3qeHIdarwfL
- P8HwStHnnwibrxDpCm1rF10f0VdmDuqR2BNpfvfNEAjSthvHSW
- y5n3d1Eega91IpoKDjtw=
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 06 February 2013, Heiko Carstens wrote:
-> On Wed, Feb 06, 2013 at 06:26:02PM +0100, Takashi Iwai wrote:
-> > At Thu, 07 Feb 2013 02:13:19 +0100,
-> > Arnd Bergmann wrote:
-> > > No, it is intentional that the CONFIG_HAS_IOPORT symbol refers to
-> > > the fact that you can use the ioport_map function, in order to
-> > > disallow building drivers that depend on this function when it
-> > > is unavailable. I actually want to change this, but in the opposite
-> > > way of what you are proposing:
-> > > 
-> > > I think CONFIG_HAS_IOPORT should refer to the fact that the
-> > > inb/outb family of functions are usuable and be unset when
-> > > they are not provided, and I would introduce a new
-> > > CONFIG_HAS_IOPORT_MAP symbol for those (few) platforms that
-> > > have a working inb/outb but no ioport_map.
-> > 
-> > Yet another Kconfig, but sounds reasonable :)
+On Wednesday, February 06, 2013 01:53:50 PM Yinghai Lu wrote:
+> On Wed, Feb 6, 2013 at 1:43 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Wednesday, February 06, 2013 01:28:27 PM Yinghai Lu wrote:
+> >> so you still did not answer you want 1 or 2 yet:
+> >>
+> >> for sgi_hotplug,
+> >>
+> >> 1. still keep the module support, and register acpi_pci_driver later.
+> >> 2. built-in support only, and need to register acpi_pci_driver early.
+> >
+> > Please work with the assumption that acpi_pci_driver is not going to be there
+> > any more.
+> >
 > 
-> Right... I just wanted to make s390 compile with the Kconfig methods we use
-> since nearly a decade and not change the world ;)
-
-Your patch looks fine here, I was just mentioning that this is going to
-change. After my patch, things will be different for s390 as well, because
-it presumably won't provide the inb/outb accessors any more then
-and not set the (new) CONFIG_HAS_IOPORT.
-
-> > > 
-> > > Why not just make CONFIG_GENERIC_HARDIRQS mandatory for all
-> > > platforms. It is use almost everywhere now.
-> > 
-> > I wonder it, too...
+> I think I could change ioapic and iommu hotplug to weak add/remove because they
+> should be built-in by nature.
 > 
-> I haven't looked into it, but I doubt if that is possible without large
-> effort, if at all. s390 doesn't have any irq chips, nor something like
-> edge or level triggered irqs.
-> Instead we have floating interrupts. Does that fit into the concept of
-> GENERIC_HARDIRQS at all?
-> If so, we can give it a try, sure. But that won't happen any time soon.
-> 
-> Or are you simply proposing we should have both, our own irq handling plus
-> GENERIC_HARDIRQS with dummy functions?
+> but how about others like sgi_hotplug etc?
 
-I think you should use GENERIC_HARDIRQ just for PCI, and rename the s390
-interrupt handling to something that does not conflict. I understand
-that the concepts are quite different, but with PCI support, you actually
-do get all the weird interrupt hardware.
-More importantly, some features provided by GENERIC_HARDIRQ are replacing
-the traditional interfaces now, e.g. devm_request_irq() is actually
-recommended over request_irq() for normal drivers these days, as it
-simplifies the error handling.
+I'd really prefer to wait for the patchset removing acpi_pci_driver (from
+Myron) before proceeding with more changes in that area.
 
-	Arnd
+Myron, do you have a prototype based on the current linux-next?
+
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
