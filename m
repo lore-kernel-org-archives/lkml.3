@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758530Ab3BFT7R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 14:59:17 -0500
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:42729 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758258Ab3BFTuq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758257Ab3BFTuq (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 6 Feb 2013 14:50:46 -0500
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:60344 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758238Ab3BFTul (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 14:50:41 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: [PATCH 49/77] mfd: convert to idr_alloc()
-Date: Wed,  6 Feb 2013 11:40:21 -0800
-Message-Id: <1360179649-22465-50-git-send-email-tj@kernel.org>
+        Alasdair Kergon <agk@redhat.com>, dm-devel@redhat.com
+Subject: [PATCH 47/77] dm: convert to idr_alloc()
+Date: Wed,  6 Feb 2013 11:40:19 -0800
+Message-Id: <1360179649-22465-48-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1360179649-22465-1-git-send-email-tj@kernel.org>
 References: <1360179649-22465-1-git-send-email-tj@kernel.org>
@@ -26,37 +26,94 @@ Convert to the much saner new idr interface.
 Only compile tested.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Alasdair Kergon <agk@redhat.com>
+Cc: dm-devel@redhat.com
 ---
- drivers/mfd/rtsx_pcr.c | 13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+ drivers/md/dm.c | 54 +++++++++++++++---------------------------------------
+ 1 file changed, 15 insertions(+), 39 deletions(-)
 
-diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
-index 9016932..81d8b14 100644
---- a/drivers/mfd/rtsx_pcr.c
-+++ b/drivers/mfd/rtsx_pcr.c
-@@ -1056,15 +1056,14 @@ static int rtsx_pci_probe(struct pci_dev *pcidev,
- 	}
- 	handle->pcr = pcr;
+diff --git a/drivers/md/dm.c b/drivers/md/dm.c
+index c644eb6..ac74b81 100644
+--- a/drivers/md/dm.c
++++ b/drivers/md/dm.c
+@@ -1801,62 +1801,38 @@ static void free_minor(int minor)
+  */
+ static int specific_minor(int minor)
+ {
+-	int r, m;
++	int r;
  
--	if (!idr_pre_get(&rtsx_pci_idr, GFP_KERNEL)) {
--		ret = -ENOMEM;
--		goto free_handle;
--	}
+ 	if (minor >= (1 << MINORBITS))
+ 		return -EINVAL;
+ 
+-	r = idr_pre_get(&_minor_idr, GFP_KERNEL);
+-	if (!r)
+-		return -ENOMEM;
 -
 +	idr_preload(GFP_KERNEL);
- 	spin_lock(&rtsx_pci_lock);
--	ret = idr_get_new(&rtsx_pci_idr, pcr, &pcr->id);
-+	ret = idr_alloc(&rtsx_pci_idr, pcr, 0, 0, GFP_NOWAIT);
-+	if (ret >= 0)
-+		pcr->id = ret;
- 	spin_unlock(&rtsx_pci_lock);
--	if (ret)
-+	idr_preload_end();
-+	if (ret < 0)
- 		goto free_handle;
+ 	spin_lock(&_minor_lock);
  
- 	pcr->pci = pcidev;
+-	if (idr_find(&_minor_idr, minor)) {
+-		r = -EBUSY;
+-		goto out;
+-	}
+-
+-	r = idr_get_new_above(&_minor_idr, MINOR_ALLOCED, minor, &m);
+-	if (r)
+-		goto out;
++	r = idr_alloc(&_minor_idr, MINOR_ALLOCED, minor, minor + 1, GFP_NOWAIT);
+ 
+-	if (m != minor) {
+-		idr_remove(&_minor_idr, m);
+-		r = -EBUSY;
+-		goto out;
+-	}
+-
+-out:
+ 	spin_unlock(&_minor_lock);
+-	return r;
++	idr_preload_end();
++	if (r < 0)
++		return r == -ENOSPC ? -EBUSY : r;
++	return 0;
+ }
+ 
+ static int next_free_minor(int *minor)
+ {
+-	int r, m;
+-
+-	r = idr_pre_get(&_minor_idr, GFP_KERNEL);
+-	if (!r)
+-		return -ENOMEM;
++	int r;
+ 
++	idr_preload(GFP_KERNEL);
+ 	spin_lock(&_minor_lock);
+ 
+-	r = idr_get_new(&_minor_idr, MINOR_ALLOCED, &m);
+-	if (r)
+-		goto out;
+-
+-	if (m >= (1 << MINORBITS)) {
+-		idr_remove(&_minor_idr, m);
+-		r = -ENOSPC;
+-		goto out;
+-	}
+-
+-	*minor = m;
++	r = idr_alloc(&_minor_idr, MINOR_ALLOCED, 0, 1 << MINORBITS, GFP_NOWAIT);
+ 
+-out:
+ 	spin_unlock(&_minor_lock);
+-	return r;
++	idr_preload_end();
++	if (r < 0)
++		return r;
++	*minor = r;
++	return 0;
+ }
+ 
+ static const struct block_device_operations dm_blk_dops;
 -- 
 1.8.1
 
