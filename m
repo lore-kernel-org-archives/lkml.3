@@ -1,82 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755313Ab3BFO2g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 09:28:36 -0500
-Received: from mail-ia0-f179.google.com ([209.85.210.179]:48924 "EHLO
-	mail-ia0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751294Ab3BFO2d (ORCPT
+	id S1755261Ab3BFOaT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 09:30:19 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:48211 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753825Ab3BFOaQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 09:28:33 -0500
+	Wed, 6 Feb 2013 09:30:16 -0500
+Message-ID: <511268F0.5070808@mojatatu.com>
+Date: Wed, 06 Feb 2013 09:30:08 -0500
+From: Jamal Hadi Salim <jhs@mojatatu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <51125B56.9050407@imgtec.com>
-References: <CACxGe6sCBCGfLDAGVRgP3cnmE+oyXBDdPeVXVCqrsvCh13yPiw@mail.gmail.com>
- <51125B56.9050407@imgtec.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 6 Feb 2013 14:28:13 +0000
-X-Google-Sender-Auth: MMn07nF56oD41j89CPjBBj03nV8
-Message-ID: <CACxGe6vuZ2H-G7xamS6SAiX_aCbjpO+vKavqCK77ek8tTdOmdA@mail.gmail.com>
-Subject: Re: Heads up on a device tree change
-To: James Hogan <james.hogan@imgtec.com>
-Cc: linux-next <linux-next@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Emmanuel Thierry <emmanuel.thierry@telecom-bretagne.eu>
+CC: Steffen Klassert <steffen.klassert@secunet.com>,
+        Romain KUNTZ <r.kuntz@ipflavors.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        herbert@gondor.hengli.com.au,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jamal Hadi Salim <hadi@cyberus.ca>
+Subject: Re: [RFC PATCH] xfrm: fix handling of XFRM policies mark and mask.
+References: <9E57ADA1-5770-47A8-8EBF-7FC262EEF1C7@ipflavors.com> <20130205081232.GF23291@secunet.com> <51125744.3030905@gmail.com> <D4563759-CEC5-4F33-BF0A-9FA10716F8DF@telecom-bretagne.eu>
+In-Reply-To: <D4563759-CEC5-4F33-BF0A-9FA10716F8DF@telecom-bretagne.eu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 6, 2013 at 1:32 PM, James Hogan <james.hogan@imgtec.com> wrote:
-> On 06/02/13 13:11, Grant Likely wrote:
->> Hi Stephen,
->>
->> I've just pushed out a change which cleans up platform device
->> registration to use the same path whether or not the device tree is
->> used. It should be safe, but there is a risk of breakage on powerpc
->> platforms.
->>
->> The patch has two effects of note:
->> - DT generated platform devices move from /sys/devices to under
->> /sys/devices/platform. Userspace *should* be okay with this, but if
->> there are any problems then I can post a workaround patch that keeps
->> DT generiated platform_devices in the current location.
->> - Resources on platform_devices get registered so they appear in
->> /proc/iomem and /proc/ioports and so that device drivers get the added
->> protection of request_region. This will cause breakage on device trees
->> nodes with partially overlapping memory regions. (ie. 0x100..0x1ff and
->> 0x180..0x27f). I also have a workaround for this, but I doubt that it
->> will be necessary.
+On 13-02-06 08:53 AM, Emmanuel Thierry wrote:
+> Actually, we didn't think about this problem since we work with priorities, putting the default policy (without a mark) at a minor priority than the marked one.
+
+I think priorities are the way to go in cases of ambiguity.
+
+> Your remark makes clearer the ideas behind the design of XFRM, but this leads to an interesting concern. If on policy insertion, the policy were inserted depending on the accuracy of the mark (the more the mask is specific, the more the mark must be put at the beginning of the list), how would we decide which is the more specific between these ones ?
 >
-> Hi Grant,
+> ip -6 xfrm policy add src fd00::1/128 dst fd00::2/128 dir out mark 0x00000001 mask 0x00000005
 >
-> If I understand you correctly, the non-overlapping memory regions thing
-> could be a problem for me. We have a Meta based SoC that has various SoC
-> registers grouped together for doing GPIOs and Pin control things. I'm
-> still in the process of converting it to device tree, but the way I've
-> been handling it is to provide overlapping registers to both the gpio
-> and pinctl DT nodes. Each GPIO bank's registers are also interleaved
-> with the others, so I've been providing overlapping register ranges
-> (offset by 4 for each bank) to the DT node for each gpio bank too, so
-> each bank can function independently and the driver doesn't have to
-> worry about multiple banks. Does that sound like a reasonable use case?
->
-> I guess I could cheat with the length, or specify each register in it's
-> own memory resource, but it seems like overkill.
+> ip -6 xfrm policy add src fd00::1/128 dst fd00::2/128 dir out mark 0x00000001 mask 0x00000003
 
-Note that overlapping regions are fine /provided/ that they are the
-same size or one fits nicely inside another. It's partial overlap that
-is a problem
+They look different to me, no? i.e i dont see a conflict - one has 
+mark=5 and the other
+has mark=3.
 
-I've been thinking about your exact problem though and I think the
-best way to handle it is for the gpio driver to understand multiple
-banks. Most memory mapped GPIO controllers should be drivable by the
-generic gpio driver anyway, so it is a matter of crafting the binding
-so a single node can describe multiple banks. I still need to review
-the patch that adds a DT binding for the generic gpio driver.
+cheers,
+jamal
 
-g.
-
---
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
