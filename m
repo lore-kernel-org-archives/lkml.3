@@ -1,294 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754136Ab3BFQ6J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 11:58:09 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:33652 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751630Ab3BFQ6G (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Wed, 6 Feb 2013 11:58:06 -0500
-Message-Id: <511299A902000078000BC944@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.1 
-Date: Wed, 06 Feb 2013 16:58:01 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
-Cc: "xen-devel" <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] xen-pciback: notify hypervisor about devices intended
- to be assigned to guests
-Mime-Version: 1.0
-Content-Type: multipart/mixed; boundary="=__Part29196789.2__="
+	id S1754919Ab3BFQ6d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 11:58:33 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:49809 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750716Ab3BFQ6a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 11:58:30 -0500
+Message-ID: <51128B7D.4050703@ti.com>
+Date: Wed, 6 Feb 2013 18:57:33 +0200
+From: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: NeilBrown <neilb@suse.de>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <linux-input@vger.kernel.org>,
+        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Bill Pemberton <wfp5p@virginia.edu>
+Subject: Re: [RFC PATCH] Input: gpio_keys: Fix suspend/resume press event
+ lost
+References: <1358774114-8281-1-git-send-email-ivan.khoronzhuk@ti.com> <20130121235718.GB16638@core.coreip.homeip.net> <20130122162434.5bcf3e14@notabene.brown> <5106A39A.5010402@ti.com> <20130129055122.2dcb9dd9@notabene.brown> <510A70D7.8060109@ti.com> <20130205094033.7ab830fb@notabene.brown>
+In-Reply-To: <20130205094033.7ab830fb@notabene.brown>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.128]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME message. If you are reading this text, you may want to 
-consider changing to a mail reader or gateway that understands how to 
-properly handle MIME multipart messages.
+On 02/05/2013 12:40 AM, NeilBrown wrote:
+> On Thu, 31 Jan 2013 15:25:43 +0200 "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
+> wrote:
+>
+>> On 01/28/2013 08:51 PM, NeilBrown wrote:
+>>> On Mon, 28 Jan 2013 18:13:14 +0200 "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
+>>> wrote:
+>>>
+>>>> On 01/22/2013 07:24 AM, NeilBrown wrote:
+>>>>> On Mon, 21 Jan 2013 15:57:18 -0800 Dmitry Torokhov
+>>>>> <dmitry.torokhov@gmail.com> wrote:
+>>>>>
+>>>>>> Hi Ivan,
+>>>>>>
+>>>>>> On Mon, Jan 21, 2013 at 03:15:14PM +0200, Ivan Khoronzhuk wrote:
+>>>>>>> Rebased on linux_omap/master.
+>>>>>>>
+>>>>>>> During suspend/resume the key press can be lost if time of resume
+>>>>>>> sequence is significant.
+>>>>>>>
+>>>>>>> If press event cannot be remembered then the driver can read the
+>>>>>>> current button state only in time of interrupt handling. But in some
+>>>>>>> cases when time between IRQ and IRQ handler is significant we can
+>>>>>>> read incorrect state. As a particular case, when device is in suspend
+>>>>>>> we press wakupable key and up it back in a jiffy, the interrupt
+>>>>>>> handler read the state of up but the interrupt source is press indeed.
+>>>>>>> As a result, in a OS like android, we resume then suspend right away
+>>>>>>> because the key state is not changed.
+>>>>>>>
+>>>>>>> This patch add to gpio_keys framework opportunity to recover lost of
+>>>>>>> press key event at resuming. The variable "key_pressed" from
+>>>>>>> gpio_button_data structure is not used for gpio keys, it is only used
+>>>>>>> for gpio irq keys, so it is logically used to remember press lost
+>>>>>>> while resuming.
+>>>>>> The same could happen if you delay processing of interrupt long enough
+>>>>>> during normal operation. If key is released by the time you get around
+>>>>>> to reading it you will not see a key press.
+>>>>>>
+>>>>>> To me this sounds like you need to speed up your resume process so that
+>>>>>> you can start serving interrupts quicker.
+>>>>>>
+>>>>> Agreed.  When I was looking at this I found that any genuine button press
+>>>>> would have at least 70msec between press and release, while the device could
+>>>>> wake up to the point of being able to handle interrupts in about 14msec.
+>>>>> That is enough of a gap to make it pointless to try to 'fix' the code.
+>>>>>
+>>>>> With enough verbose debugging enabled that 14msec can easily grow to
+>>>>> hundreds, but then if  you have debugging enabled to can discipline yourself
+>>>>> to hold the button for longer.
+>>>>>
+>>>>> Ivan: What sort of delay are you seeing between the button press and the
+>>>>> interrupt routine running?  And can you measure how long the button is
+>>>>> typically down for?
+>>>>>
+>>>>> NeilBrown
+>>>> In my case I have the delay between the button press and the ISR
+>>>> about 145ms. If the button down for 120ms the IRQ press event is
+>>>> lost and if 160ms event is captured. I cannot speed up resume
+>>>> process enough to guarantee correct work, so I wrote this fix.
+>>>>
+>>> 145ms does sound like a long time.
+>>> You should be able to get precise timings by putting a printk in various
+>>> parts of the code and ensuring the kernel logs are getting precise timestamps.
+>>>
+>>> Then you could see if the delay is between resume starting and the ISR
+>>> running, or between the ISR and the gpio_work_func getting scheduled.
+>>>
+>>> I assume that you don't have ->debounce_interval set....
+>>>
+>>> If the ISR is running soon enough, it might be possible to read the GPIO from
+>>> the ISR - I think that would be a cleaner solution.
+>>>
+>>> If not, then you will need something that interpolates an extra key press.
+>>> In that case I would suggest my original patch - it seems simpler than yours
+>>> and doesn't make a special case out of suspend.  As Dmitry said, any delay
+>>> could cause a problem.
+>>> My patch simply ensures that there is at least one button event for each
+>>> interrupt by generating an extra event for the inverse of the current button
+>>> position.  If that state had already been noticed, the input subsystem will
+>>> filter the extra event out so it won't be visible elsewhere.
+>>>
+>>> For reference, my original patch is below.
+>>>
+>>> NeilBrown
+>>>
+>>> [PATCH] Input: gpio_keys - ensure we don't miss key-presses during resume.
+>>>
+>>> If the latency of resume means we don't poll the key status until
+>>> after it has been released, we can lose the keypress which woke the
+>>> device.
+>>>
+>>> So on each interrupt, record that a press is pending, and in that
+>>> case, report both the up and down event, ordered such that the second
+>>> event is that one that reflects the current state.
+>>>
+>>> One event will normally be swallowed by the input layer if there was
+>>> no change, but the result will be that every interrupt will produce at
+>>> least one event.
+>>>
+>>> Signed-off-by: NeilBrown <neilb@suse.de>
+>>>
+>>> diff --git a/drivers/input/keyboard/gpio_keys.c
+>>> b/drivers/input/keyboard/gpio_keys.c index 62bfce4..961e5e1 100644
+>>> --- a/drivers/input/keyboard/gpio_keys.c
+>>> +++ b/drivers/input/keyboard/gpio_keys.c
+>>> @@ -40,6 +40,7 @@ struct gpio_button_data {
+>>>    	spinlock_t lock;
+>>>    	bool disabled;
+>>>    	bool key_pressed;
+>>> +	bool pending;
+>>>    };
+>>>    
+>>>    struct gpio_keys_drvdata {
+>>> @@ -335,6 +336,14 @@ static void gpio_keys_gpio_report_event(struct gpio_button_data *bdata) if (state)
+>>>    			input_event(input, type, button->code, button->value); } else {
+>>> +		if (type == EV_KEY && bdata->pending) {
+>>> +			/* Before reporting the observed state, report the
+>>> +			 * alternate to be sure that a change is seen.
+>>> +			 */
+>>> +			bdata->pending = 0;
+>>> +			input_event(input, type, button->code, !state);
+>>> +			input_sync(input);
+>>> +		}
+>>>    		input_event(input, type, button->code, !!state);
+>>>    	}Yes it si
+>>>    	input_sync(input);
+>>> @@ -361,6 +370,7 @@ static irqreturn_t gpio_keys_gpio_isr(int irq, void *dev_id)
+>>>    	BUG_ON(irq != bdata->irq);
+>>>    
+>>> +	bdata->pending = true;
+>>>    	if (bdata->timer_debounce)
+>>>    		mod_timer(&bdata->timer,
+>>>    			jiffies + msecs_to_jiffies(bdata->timer_debounce));
+>> The delay is between resume starting and the ISR running,
+>> It is measured with oscilloscope between signal on button pin and
+>> before irq enabling. And I doubly checked it by printk() right in
+>> the ISR. So I cannot read the button state right in the ISR.
+> Wow.  That is a big delay then.
+>
+>> Your patch is simpler but it doesn't take into account one situation.
+>> It is unlikely but what if the event is lost at 16:00 and reproduced
+>> at 17:30, in some cases it is better to lose the event than recover it
+>> out of time.
+> Is that at all a realistic scenario?  Interrupts disabled for 90 minutes!  If
+> that happened you would have more to worry about than one stray button press
+> (which is still a valid button press, but is a bit late).
+>
+> I think you are over-complicating things.  Just keep it simple:  Generate at
+> least one button event on every interrupt.
+>
+> NeilBrown
+You are right I over-complicated a little. But this is slightly not
+I mean. The interrupts are enabled always, we don't suspend, we just
+lost interrupt completely for some reason (for instance, up event).
+And then we press key later on, as an example in 1 hour. In that
+case we reproduce the lost (up) event in 1 hour that is not needed any
+more.
 
---=__Part29196789.2__=
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: inline
+Any way the problem is more in resume latency than in gpio-keys.
+When latency is normal the situation is very rarely and is not so
+major.
 
-For MSI-X capable devices the hypervisor wants to write protect the
-MSI-X table and PBA, yet it can't assume that resources have been
-assigned to their final values at device enumeration time. Thus have
-pciback do that notification, as having the device controlled by it is
-a prerequisite to assigning the device to guests anyway.
+In my case it is enough to use your patch.
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Thanks for your comments and the interesting approach.
 
----
- arch/x86/include/asm/xen/hypercall.h |    4 +-
- drivers/xen/fallback.c               |    3 +
- drivers/xen/xen-pciback/pci_stub.c   |   59 ++++++++++++++++++++++++++----=
------
- include/xen/interface/physdev.h      |    6 +++
- 4 files changed, 54 insertions(+), 18 deletions(-)
+-- 
+Regards,
+Ivan Khoronzhuk
 
---- 3.8-rc6/arch/x86/include/asm/xen/hypercall.h
-+++ 3.8-rc6-xen-pciback-MSI-X-prepare/arch/x86/include/asm/xen/hypercall.h
-@@ -382,14 +382,14 @@ HYPERVISOR_console_io(int cmd, int count
- 	return _hypercall3(int, console_io, cmd, count, str);
- }
-=20
--extern int __must_check HYPERVISOR_physdev_op_compat(int, void *);
-+extern int __must_check xen_physdev_op_compat(int, void *);
-=20
- static inline int
- HYPERVISOR_physdev_op(int cmd, void *arg)
- {
- 	int rc =3D _hypercall2(int, physdev_op, cmd, arg);
- 	if (unlikely(rc =3D=3D -ENOSYS))
--		rc =3D HYPERVISOR_physdev_op_compat(cmd, arg);
-+		rc =3D xen_physdev_op_compat(cmd, arg);
- 	return rc;
- }
-=20
---- 3.8-rc6/drivers/xen/fallback.c
-+++ 3.8-rc6-xen-pciback-MSI-X-prepare/drivers/xen/fallback.c
-@@ -44,7 +44,7 @@ int xen_event_channel_op_compat(int cmd,
- }
- EXPORT_SYMBOL_GPL(xen_event_channel_op_compat);
-=20
--int HYPERVISOR_physdev_op_compat(int cmd, void *arg)
-+int xen_physdev_op_compat(int cmd, void *arg)
- {
- 	struct physdev_op op;
- 	int rc;
-@@ -78,3 +78,4 @@ int HYPERVISOR_physdev_op_compat(int cmd
-=20
- 	return rc;
- }
-+EXPORT_SYMBOL_GPL(xen_physdev_op_compat);
---- 3.8-rc6/drivers/xen/xen-pciback/pci_stub.c
-+++ 3.8-rc6-xen-pciback-MSI-X-prepare/drivers/xen/xen-pciback/pci_stub.c
-@@ -17,6 +17,7 @@
- #include <xen/events.h>
- #include <asm/xen/pci.h>
- #include <asm/xen/hypervisor.h>
-+#include <xen/interface/physdev.h>
- #include "pciback.h"
- #include "conf_space.h"
- #include "conf_space_quirks.h"
-@@ -85,37 +86,52 @@ static struct pcistub_device *pcistub_de
- static void pcistub_device_release(struct kref *kref)
- {
- 	struct pcistub_device *psdev;
-+	struct pci_dev *dev;
- 	struct xen_pcibk_dev_data *dev_data;
-=20
- 	psdev =3D container_of(kref, struct pcistub_device, kref);
--	dev_data =3D pci_get_drvdata(psdev->dev);
-+	dev =3D psdev->dev;
-+	dev_data =3D pci_get_drvdata(dev);
-=20
--	dev_dbg(&psdev->dev->dev, "pcistub_device_release\n");
-+	dev_dbg(&dev->dev, "pcistub_device_release\n");
-=20
--	xen_unregister_device_domain_owner(psdev->dev);
-+	xen_unregister_device_domain_owner(dev);
-=20
- 	/* Call the reset function which does not take lock as this
- 	 * is called from "unbind" which takes a device_lock mutex.
- 	 */
--	__pci_reset_function_locked(psdev->dev);
--	if (pci_load_and_free_saved_state(psdev->dev,
--					  &dev_data->pci_saved_state)) {
--		dev_dbg(&psdev->dev->dev, "Could not reload PCI state\n");
--	} else
--		pci_restore_state(psdev->dev);
-+	__pci_reset_function_locked(dev);
-+	if (pci_load_and_free_saved_state(dev, &dev_data->pci_saved_state))=
-
-+		dev_dbg(&dev->dev, "Could not reload PCI state\n");
-+	else
-+		pci_restore_state(dev);
-+
-+	if (pci_find_capability(dev, PCI_CAP_ID_MSIX)) {
-+		struct physdev_pci_device ppdev =3D {
-+			.seg =3D pci_domain_nr(dev->bus),
-+			.bus =3D dev->bus->number,
-+			.devfn =3D dev->devfn
-+		};
-+		int err =3D HYPERVISOR_physdev_op(PHYSDEVOP_release_msix,
-+						&ppdev);
-+
-+		if (err)
-+			dev_warn(&dev->dev, "MSI-X release failed (%d)\n",
-+				 err);
-+	}
-=20
- 	/* Disable the device */
--	xen_pcibk_reset_device(psdev->dev);
-+	xen_pcibk_reset_device(dev);
-=20
- 	kfree(dev_data);
--	pci_set_drvdata(psdev->dev, NULL);
-+	pci_set_drvdata(dev, NULL);
-=20
- 	/* Clean-up the device */
--	xen_pcibk_config_free_dyn_fields(psdev->dev);
--	xen_pcibk_config_free_dev(psdev->dev);
-+	xen_pcibk_config_free_dyn_fields(dev);
-+	xen_pcibk_config_free_dev(dev);
-=20
--	psdev->dev->dev_flags &=3D ~PCI_DEV_FLAGS_ASSIGNED;
--	pci_dev_put(psdev->dev);
-+	dev->dev_flags &=3D ~PCI_DEV_FLAGS_ASSIGNED;
-+	pci_dev_put(dev);
-=20
- 	kfree(psdev);
- }
-@@ -355,6 +371,19 @@ static int pcistub_init_device(struct pc
- 	if (err)
- 		goto config_release;
-=20
-+	if (pci_find_capability(dev, PCI_CAP_ID_MSIX)) {
-+		struct physdev_pci_device ppdev =3D {
-+			.seg =3D pci_domain_nr(dev->bus),
-+			.bus =3D dev->bus->number,
-+			.devfn =3D dev->devfn
-+		};
-+
-+		err =3D HYPERVISOR_physdev_op(PHYSDEVOP_prepare_msix, =
-&ppdev);
-+		if (err)
-+			dev_err(&dev->dev, "MSI-X preparation failed =
-(%d)\n",
-+				err);
-+	}
-+
- 	/* We need the device active to save the state. */
- 	dev_dbg(&dev->dev, "save state of device\n");
- 	pci_save_state(dev);
---- 3.8-rc6/include/xen/interface/physdev.h
-+++ 3.8-rc6-xen-pciback-MSI-X-prepare/include/xen/interface/physdev.h
-@@ -251,6 +251,12 @@ struct physdev_pci_device_add {
-=20
- #define PHYSDEVOP_pci_device_remove     26
- #define PHYSDEVOP_restore_msi_ext       27
-+/*
-+ * Dom0 should use these two to announce MMIO resources assigned to
-+ * MSI-X capable devices won't (prepare) or may (release) change.
-+ */
-+#define PHYSDEVOP_prepare_msix          30
-+#define PHYSDEVOP_release_msix          31
- struct physdev_pci_device {
-     /* IN */
-     uint16_t seg;
-
-
-
---=__Part29196789.2__=
-Content-Type: text/plain; name="linux-3.8-rc6-xen-pciback-MSI-X-prepare.patch"
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: attachment; filename="linux-3.8-rc6-xen-pciback-MSI-X-prepare.patch"
-
-xen-pciback: notify hypervisor about devices intended to be assigned to =
-guests=0A=0AFor MSI-X capable devices the hypervisor wants to write =
-protect the=0AMSI-X table and PBA, yet it can't assume that resources have =
-been=0Aassigned to their final values at device enumeration time. Thus =
-have=0Apciback do that notification, as having the device controlled by it =
-is=0Aa prerequisite to assigning the device to guests anyway.=0A=0ASigned-o=
-ff-by: Jan Beulich <jbeulich@suse.com>=0A=0A---=0A arch/x86/include/asm/xen=
-/hypercall.h |    4 +-=0A drivers/xen/fallback.c               |    3 +=0A =
-drivers/xen/xen-pciback/pci_stub.c   |   59 ++++++++++++++++++++++++++-----=
-----=0A include/xen/interface/physdev.h      |    6 +++=0A 4 files =
-changed, 54 insertions(+), 18 deletions(-)=0A=0A--- 3.8-rc6/arch/x86/includ=
-e/asm/xen/hypercall.h=0A+++ 3.8-rc6-xen-pciback-MSI-X-prepare/arch/x86/incl=
-ude/asm/xen/hypercall.h=0A@@ -382,14 +382,14 @@ HYPERVISOR_console_io(int =
-cmd, int count=0A 	return _hypercall3(int, console_io, cmd, count, =
-str);=0A }=0A =0A-extern int __must_check HYPERVISOR_physdev_op_compat(int,=
- void *);=0A+extern int __must_check xen_physdev_op_compat(int, void =
-*);=0A =0A static inline int=0A HYPERVISOR_physdev_op(int cmd, void =
-*arg)=0A {=0A 	int rc =3D _hypercall2(int, physdev_op, cmd, arg);=0A 	if =
-(unlikely(rc =3D=3D -ENOSYS))=0A-		rc =3D HYPERVISOR_physdev_o=
-p_compat(cmd, arg);=0A+		rc =3D xen_physdev_op_compat(cmd, arg);=0A =
-	return rc;=0A }=0A =0A--- 3.8-rc6/drivers/xen/fallback.c=0A+++ =
-3.8-rc6-xen-pciback-MSI-X-prepare/drivers/xen/fallback.c=0A@@ -44,7 +44,7 =
-@@ int xen_event_channel_op_compat(int cmd,=0A }=0A EXPORT_SYMBOL_GPL(xen_e=
-vent_channel_op_compat);=0A =0A-int HYPERVISOR_physdev_op_compat(int cmd, =
-void *arg)=0A+int xen_physdev_op_compat(int cmd, void *arg)=0A {=0A 	=
-struct physdev_op op;=0A 	int rc;=0A@@ -78,3 +78,4 @@ int HYPERVISOR_=
-physdev_op_compat(int cmd=0A =0A 	return rc;=0A }=0A+EXPORT_SYMBOL_GP=
-L(xen_physdev_op_compat);=0A--- 3.8-rc6/drivers/xen/xen-pciback/pci_stub.c=
-=0A+++ 3.8-rc6-xen-pciback-MSI-X-prepare/drivers/xen/xen-pciback/pci_stub.c=
-=0A@@ -17,6 +17,7 @@=0A #include <xen/events.h>=0A #include <asm/xen/pci.h>=
-=0A #include <asm/xen/hypervisor.h>=0A+#include <xen/interface/physdev.h>=
-=0A #include "pciback.h"=0A #include "conf_space.h"=0A #include "conf_space=
-_quirks.h"=0A@@ -85,37 +86,52 @@ static struct pcistub_device *pcistub_de=
-=0A static void pcistub_device_release(struct kref *kref)=0A {=0A 	=
-struct pcistub_device *psdev;=0A+	struct pci_dev *dev;=0A 	=
-struct xen_pcibk_dev_data *dev_data;=0A =0A 	psdev =3D container_of(kref=
-, struct pcistub_device, kref);=0A-	dev_data =3D pci_get_drvdata(psdev-=
->dev);=0A+	dev =3D psdev->dev;=0A+	dev_data =3D pci_get_drvdata(dev);=
-=0A =0A-	dev_dbg(&psdev->dev->dev, "pcistub_device_release\n");=0A+	=
-dev_dbg(&dev->dev, "pcistub_device_release\n");=0A =0A-	xen_unregister_devi=
-ce_domain_owner(psdev->dev);=0A+	xen_unregister_device_domain_owner(=
-dev);=0A =0A 	/* Call the reset function which does not take lock as =
-this=0A 	 * is called from "unbind" which takes a device_lock =
-mutex.=0A 	 */=0A-	__pci_reset_function_locked(psdev->dev);=0A-	if =
-(pci_load_and_free_saved_state(psdev->dev,=0A-					=
-  &dev_data->pci_saved_state)) {=0A-		dev_dbg(&psdev->dev->dev, =
-"Could not reload PCI state\n");=0A-	} else=0A-		pci_restore=
-_state(psdev->dev);=0A+	__pci_reset_function_locked(dev);=0A+	if =
-(pci_load_and_free_saved_state(dev, &dev_data->pci_saved_state))=0A+		=
-dev_dbg(&dev->dev, "Could not reload PCI state\n");=0A+	else=0A+		=
-pci_restore_state(dev);=0A+=0A+	if (pci_find_capability(dev, PCI_CAP_ID_MSI=
-X)) {=0A+		struct physdev_pci_device ppdev =3D {=0A+		=
-	.seg =3D pci_domain_nr(dev->bus),=0A+			.bus =3D =
-dev->bus->number,=0A+			.devfn =3D dev->devfn=0A+		=
-};=0A+		int err =3D HYPERVISOR_physdev_op(PHYSDEVOP_release_msix,=
-=0A+						&ppdev);=0A+=0A+		=
-if (err)=0A+			dev_warn(&dev->dev, "MSI-X release failed =
-(%d)\n",=0A+				 err);=0A+	}=0A =0A 	/* =
-Disable the device */=0A-	xen_pcibk_reset_device(psdev->dev);=0A+	=
-xen_pcibk_reset_device(dev);=0A =0A 	kfree(dev_data);=0A-	pci_set_drv=
-data(psdev->dev, NULL);=0A+	pci_set_drvdata(dev, NULL);=0A =0A 	/* =
-Clean-up the device */=0A-	xen_pcibk_config_free_dyn_fields(psdev->dev=
-);=0A-	xen_pcibk_config_free_dev(psdev->dev);=0A+	xen_pcibk_config_fr=
-ee_dyn_fields(dev);=0A+	xen_pcibk_config_free_dev(dev);=0A =0A-	psdev->dev-=
->dev_flags &=3D ~PCI_DEV_FLAGS_ASSIGNED;=0A-	pci_dev_put(psdev->dev);=0A=
-+	dev->dev_flags &=3D ~PCI_DEV_FLAGS_ASSIGNED;=0A+	pci_dev_put=
-(dev);=0A =0A 	kfree(psdev);=0A }=0A@@ -355,6 +371,19 @@ static int =
-pcistub_init_device(struct pc=0A 	if (err)=0A 		goto =
-config_release;=0A =0A+	if (pci_find_capability(dev, PCI_CAP_ID_MSIX)) =
-{=0A+		struct physdev_pci_device ppdev =3D {=0A+			=
-.seg =3D pci_domain_nr(dev->bus),=0A+			.bus =3D dev->bus->=
-number,=0A+			.devfn =3D dev->devfn=0A+		=
-};=0A+=0A+		err =3D HYPERVISOR_physdev_op(PHYSDEVOP_prepare_msi=
-x, &ppdev);=0A+		if (err)=0A+			dev_err(&dev->dev, =
-"MSI-X preparation failed (%d)\n",=0A+				err);=0A+	=
-}=0A+=0A 	/* We need the device active to save the state. */=0A 	=
-dev_dbg(&dev->dev, "save state of device\n");=0A 	pci_save_state(dev)=
-;=0A--- 3.8-rc6/include/xen/interface/physdev.h=0A+++ 3.8-rc6-xen-pciback-M=
-SI-X-prepare/include/xen/interface/physdev.h=0A@@ -251,6 +251,12 @@ struct =
-physdev_pci_device_add {=0A =0A #define PHYSDEVOP_pci_device_remove     =
-26=0A #define PHYSDEVOP_restore_msi_ext       27=0A+/*=0A+ * Dom0 should =
-use these two to announce MMIO resources assigned to=0A+ * MSI-X capable =
-devices won't (prepare) or may (release) change.=0A+ */=0A+#define =
-PHYSDEVOP_prepare_msix          30=0A+#define PHYSDEVOP_release_msix       =
-   31=0A struct physdev_pci_device {=0A     /* IN */=0A     uint16_t =
-seg;=0A
---=__Part29196789.2__=--
