@@ -1,87 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758697Ab3BFVIy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 16:08:54 -0500
-Received: from webmail.solarflare.com ([12.187.104.25]:6416 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755294Ab3BFVIx (ORCPT
+	id S1758705Ab3BFVM2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 16:12:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53765 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758462Ab3BFVM1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 16:08:53 -0500
-Message-ID: <1360184912.2659.27.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: ethtool occationally fails to communicate with with ucc_geth
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
-CC: Li Yang <leoli@freescale.com>, <netdev@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
-Date: Wed, 6 Feb 2013 21:08:32 +0000
-In-Reply-To: <20130206200504.GJ30788@csclub.uwaterloo.ca>
-References: <20130206200504.GJ30788@csclub.uwaterloo.ca>
-Organization: Solarflare
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+	Wed, 6 Feb 2013 16:12:27 -0500
+Date: Wed, 6 Feb 2013 13:12:25 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jonghwa Lee <jonghwa3.lee@samsung.com>
+Cc: linux-kernel@vger.kernel.org, a.zummo@towertech.it,
+        rtc-linux@googlegroups.com
+Subject: Re: [PATCH] rtc: core: Prevent repeated calling of
+ alarm_irq_enable().
+Message-Id: <20130206131225.83a118fe.akpm@linux-foundation.org>
+In-Reply-To: <1360149765-19565-1-git-send-email-jonghwa3.lee@samsung.com>
+References: <1360149765-19565-1-git-send-email-jonghwa3.lee@samsung.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19616.005
-X-TM-AS-Result: No--11.276600-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-02-06 at 15:05 -0500, Lennart Sorensen wrote:
-> We are occationally seeing ethtool fail to communicate with ucc_geth.
-> I think I have tracked down why it happens, but I don't see a good way
-> to fix it.
-> 
-> When the phy state changes, adjust_link() checks if the state has changed
-> and if the link is up.  If it is it does:
-> 
->                 if (new_state) {
->                         /*
->                          * To change the MAC configuration we need to disable
->                          * the controller. To do so, we have to either grab
->                          * ugeth->lock, which is a bad idea since 'graceful
->                          * stop' commands might take quite a while, or we can
->                          * quiesce driver's activity.
->                          */
->                         ugeth_quiesce(ugeth);
->                         ugeth_disable(ugeth, COMM_DIR_RX_AND_TX);
-> 
->                         out_be32(&ug_regs->maccfg2, tempval);
->                         out_be32(&uf_regs->upsmr, upsmr);
-> 
->                         ugeth_enable(ugeth, COMM_DIR_RX_AND_TX);
->                         ugeth_activate(ugeth);
->                 }
-> 
-> The problem I believe is that ugeth_quiesce() does netif_device_detach
-> which clears __LINK_STATE_PRESENT, and hence makes dev_ethtool fail
-> due to:
-> 
->         if (!dev || !netif_device_present(dev))
->                 return -ENODEV;
-> 
-> So if ethtool happens to be run between ugeth_quiesce() and
-> ugeth_activate(), it fails as if the device simply doesn't exist, which
-> is of course not true, it's just temporarily disabled.
-[...]
-> Any suggestions?
+On Wed, 06 Feb 2013 20:22:45 +0900
+Jonghwa Lee <jonghwa3.lee@samsung.com> wrote:
 
-This seems to be a workaround for a bug in phylib: phy_state_machine()
-calls netif_carrier_on() before adjust_link(), so the TX scheduler can
-start immediately even though the MAC has not been configured.
+> This patch removes repeated execution of disabling alarm in
+> rtc_alarm_irq_enable() of rtc core interface. It made useless
+> call even all alarm had been disabled from rtc_timer_remove().
+> We'd better to skip disabling alarm when timer queue is empty.
+> 
 
-A better workaround would be to use netif_carrier_{off,on}() in
-ugeth_{quiesce,activate}() respectively instead of
-netif_device_{detach,attach}().  But I think phylib really ought to be
-fixed.
+I fear that patch does more than that.
 
-Ben.
+> --- a/drivers/rtc/interface.c
+> +++ b/drivers/rtc/interface.c
+> @@ -428,7 +428,7 @@ int rtc_alarm_irq_enable(struct rtc_device *rtc, unsigned int enabled)
+>  			rtc_timer_remove(rtc, &rtc->aie_timer);
+>  	}
+>  
+> -	if (err)
+> +	if (err || !rtc->timerqueue.next)
+>  		/* nothing */;
+>  	else if (!rtc->ops)
+>  		err = -ENODEV;
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+This will prevent the irq from being *enabled*, as well as disabled.
 
+To match your description, we'd need to also check that enabled==0?
