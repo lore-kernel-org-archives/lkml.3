@@ -1,58 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757160Ab3BFLNm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 06:13:42 -0500
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:35935 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751891Ab3BFLNj (ORCPT
+	id S1757244Ab3BFLQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 06:16:56 -0500
+Received: from mail-da0-f43.google.com ([209.85.210.43]:47236 "EHLO
+	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752810Ab3BFLQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 06:13:39 -0500
-Date: Wed, 6 Feb 2013 12:13:33 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Mike Travis <travis@sgi.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Russ Anderson <rja@sgi.com>,
-        Alexander Gordeev <agordeev@redhat.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Steffen Persvold <sp@numascale.com>
-Subject: Re: [PATCH 4/7] x86, UV: UV3 Update x2apic Support
-Message-ID: <20130206111333.GA8696@gmail.com>
-References: <20130205222648.204965172@gulag1.americas.sgi.com>
- <20130205222648.802078160@gulag1.americas.sgi.com>
+	Wed, 6 Feb 2013 06:16:51 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130205222648.802078160@gulag1.americas.sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1360138756-1991-1-git-send-email-michael@ellerman.id.au>
+References: <1360138756-1991-1-git-send-email-michael@ellerman.id.au>
+Date: Wed, 6 Feb 2013 13:16:50 +0200
+X-Google-Sender-Auth: TCXvk77kUmwhwn6sEJUgjZ6UNzg
+Message-ID: <CAOJsxLE1oq85g+SJYYM3K9UwA8DJpy-+-6V7JB=ueEdqE_dAFg@mail.gmail.com>
+Subject: Re: [PATCH 1/6] kvm tools: Return error status in lkvm list
+From: Pekka Enberg <penberg@kernel.org>
+To: Michael Ellerman <michael@ellerman.id.au>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sasha Levin <sasha.levin@oracle.com>, Asias He <asias@redhat.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>, Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Mike Travis <travis@sgi.com> wrote:
-
-> 	This patch add support for the SGI UV3 hub to the
-> 	common x2apic functions.
-> 
-> Signed-off-by: Mike Travis <travis@sgi.com>
-> Acked-by: Russ Anderson <rja@sgi.com>
-> Reviewed-by: Dimitri Sivanich <sivanich@sgi.com>
-> Cc: Alexander Gordeev <agordeev@redhat.com>
-> Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Cc: Steffen Persvold <sp@numascale.com>
-> ---
->  arch/x86/kernel/apic/x2apic_uv_x.c |  206 ++++++++++++++++++++++++++++++-------
->  1 file changed, 171 insertions(+), 35 deletions(-)
-
-Given the size of the patch it would be nice to give a bit more 
-verbose description about the nature of the changes - what 
-evolved in the new HW and how does that impact the existing 
-code?
-
-Thanks,
-
-	Ingo
+Applied all patches, thanks a lot Michael!
