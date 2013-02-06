@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755802Ab3BFPt4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 10:49:56 -0500
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:41530 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753843Ab3BFPtz (ORCPT
+	id S1756597Ab3BFPuj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 10:50:39 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:46356 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754896Ab3BFPuh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 10:49:55 -0500
-From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Vivek Goyal <vgoyal@redhat.com>, Hugh Dickins <hughd@google.com>,
-        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>
-Subject: [PATCH] mm: don't overwrite mm->def_flags in do_mlockall()
-Date: Wed,  6 Feb 2013 16:49:34 +0100
-Message-Id: <1360165774-55458-1-git-send-email-gerald.schaefer@de.ibm.com>
-X-Mailer: git-send-email 1.7.12.4
-x-cbid: 13020615-8372-0000-0000-00000518DB6E
+	Wed, 6 Feb 2013 10:50:37 -0500
+Message-ID: <51127BCA.7070900@mojatatu.com>
+Date: Wed, 06 Feb 2013 10:50:34 -0500
+From: Jamal Hadi Salim <jhs@mojatatu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Emmanuel Thierry <emmanuel.thierry@telecom-bretagne.eu>
+CC: Steffen Klassert <steffen.klassert@secunet.com>,
+        Romain KUNTZ <r.kuntz@ipflavors.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        herbert@gondor.hengli.com.au,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jamal Hadi Salim <hadi@cyberus.ca>
+Subject: Re: [RFC PATCH] xfrm: fix handling of XFRM policies mark and mask.
+References: <9E57ADA1-5770-47A8-8EBF-7FC262EEF1C7@ipflavors.com> <20130205081232.GF23291@secunet.com> <51125744.3030905@gmail.com> <D4563759-CEC5-4F33-BF0A-9FA10716F8DF@telecom-bretagne.eu> <511268F0.5070808@mojatatu.com> <5D4F2414-B869-46AA-B684-01F9EA88AD03@telecom-bretagne.eu>
+In-Reply-To: <5D4F2414-B869-46AA-B684-01F9EA88AD03@telecom-bretagne.eu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With commit 8e72033 "thp: make MADV_HUGEPAGE check for mm->def_flags"
-the VM_NOHUGEPAGE flag may be set on s390 in mm->def_flags for certain
-processes, to prevent future thp mappings. This would be overwritten
-by do_mlockall(), which sets it back to 0 with an optional VM_LOCKED
-flag set.
+On 13-02-06 09:39 AM, Emmanuel Thierry wrote:
+>
 
-To fix this, instead of overwriting mm->def_flags in do_mlockall(),
-only the VM_LOCKED flag should be set or cleared.
+> I think you misread the example !
 
-Reported-by: Vivek Goyal <vgoyal@redhat.com>
-Signed-off-by: Gerald Schaefer <gerald.schaefer@de.ibm.com>
----
- mm/mlock.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+I did ;->
 
-diff --git a/mm/mlock.c b/mm/mlock.c
-index f0b9ce5..c9bd528 100644
---- a/mm/mlock.c
-+++ b/mm/mlock.c
-@@ -517,11 +517,11 @@ SYSCALL_DEFINE2(munlock, unsigned long, start, size_t, len)
- static int do_mlockall(int flags)
- {
- 	struct vm_area_struct * vma, * prev = NULL;
--	unsigned int def_flags = 0;
- 
- 	if (flags & MCL_FUTURE)
--		def_flags = VM_LOCKED;
--	current->mm->def_flags = def_flags;
-+		current->mm->def_flags |= VM_LOCKED;
-+	else
-+		current->mm->def_flags &= ~VM_LOCKED;
- 	if (flags == MCL_FUTURE)
- 		goto out;
- 
--- 
-1.7.12.4
+> Marks are both 1, masks are different.
+>
+> This case is more complex than a policy
+> with no mark (so mark=0 and mask=0) versus
+> a policy with an exact mark (so mark=1 and mask=0xffffffff),
+> and i wanted to know if the algorithm would take these kind of cases into account.
+>
 
+Aha. I think this is pushing the envelope a little - are there good use 
+cases for this?
+certainly you could insert with most exact mask first. No such check is 
+made at the moment.
+
+cheers,
+jamal
