@@ -1,86 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751417Ab3BFFVU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 00:21:20 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:65092 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750824Ab3BFFVT (ORCPT
+	id S1751442Ab3BFFWG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 00:22:06 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:43580 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750986Ab3BFFWB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 00:21:19 -0500
-X-AuditID: 9c930197-b7ca4ae000006ba8-b9-5111e8496745
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        js1304@gmail.com, Linus Walleij <linus.walleij@linaro.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH RESEND] ARM: sched: correct update_sched_clock()
-Date: Wed,  6 Feb 2013 14:21:16 +0900
-Message-Id: <1360128076-8555-1-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 6 Feb 2013 00:22:01 -0500
+Date: Wed, 6 Feb 2013 16:21:51 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: linux-next: manual merge of the driver-core tree with the spi tree
+Message-Id: <20130206162151.73f40e71f5103e33c19c4c49@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__6_Feb_2013_16_21_51_+1100_hbzL/UC5UNOtpNzK"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we want load epoch_cyc and epoch_ns atomically,
-we should update epoch_cyc_copy first of all.
-This notify reader that updating is in progress.
+--Signature=_Wed__6_Feb_2013_16_21_51_+1100_hbzL/UC5UNOtpNzK
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-If we update epoch_cyc first like as current implementation,
-there is subtle error case.
-Look at the below example.
+Hi Greg,
 
-<Initial Condition>
-cyc = 9
-ns = 900
-cyc_copy = 9
+Today's linux-next merge of the driver-core tree got a conflict in drivers/=
+spi/spi-s3c64xx.c between commit 4eb770067f3a ("spi/s3c64xx: Use devm_clk_g=
+et() and devm_request_irq()") from the  tree and commit b0ee5605234a ("spi:=
+ Convert to devm_ioremap_resource()") from the driver-core tree.
 
-== CASE 1 ==
-<CPU A = reader>           <CPU B = updater>
-                           write cyc = 10
-read cyc = 10
-read ns = 900
-                           write ns = 1000
-                           write cyc_copy = 10
-read cyc_copy = 10
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-output = (10, 900)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-== CASE 2 ==
-<CPU A = reader>           <CPU B = updater>
-read cyc = 9
-                           write cyc = 10
-                           write ns = 1000
-read ns = 1000
-read cyc_copy = 9
-                           write cyc_copy = 10
-output = (9, 1000)
+diff --cc drivers/spi/spi-s3c64xx.c
+index 7cfbe9d,3d4a7c4..0000000
+--- a/drivers/spi/spi-s3c64xx.c
++++ b/drivers/spi/spi-s3c64xx.c
+@@@ -1241,11 -1276,10 +1241,10 @@@ static int s3c64xx_spi_probe(struct pla
+  	/* the spi->mode bits understood by this driver: */
+  	master->mode_bits =3D SPI_CPOL | SPI_CPHA | SPI_CS_HIGH;
+ =20
+- 	sdd->regs =3D devm_request_and_ioremap(&pdev->dev, mem_res);
+- 	if (sdd->regs =3D=3D NULL) {
+- 		dev_err(&pdev->dev, "Unable to remap IO\n");
+- 		ret =3D -ENXIO;
++ 	sdd->regs =3D devm_ioremap_resource(&pdev->dev, mem_res);
++ 	if (IS_ERR(sdd->regs)) {
++ 		ret =3D PTR_ERR(sdd->regs);
+ -		goto err1;
+ +		goto err0;
+  	}
+ =20
+  	if (!sci->cfg_gpio && pdev->dev.of_node) {
 
-If atomic read is ensured, output should be (9, 900) or (10, 1000).
-But, output in example case are not.
+--Signature=_Wed__6_Feb_2013_16_21_51_+1100_hbzL/UC5UNOtpNzK
+Content-Type: application/pgp-signature
 
-So, change updating sequence in order to correct this problem.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+iQIcBAEBCAAGBQJREehvAAoJEECxmPOUX5FEj/AP/AwawM/47FpaCWqW6F6DWsXz
+fBoRvyV9BXUy1OXagZCxvHSjyqXogFvW46k55ZuRc/awB+01mUpxTOZaGK1tpDCh
+nkwphXSSw+x/1TY9bXb7B0MRSiF6gOYjcbIN1DnKnzIxe92G0ZJE4upJj/qr1UDH
+gZNTgNvLMr8bSGaIC33UEY9XU3mrrl/42DgUDWVQt6WpMqCTDWiD5m5w4/z+OObU
+6rityi30mOauLKhih4RCZJp1Ko2HNla8Zc4OWklOQjEL+7dKKLIVwUDtubd8AJrO
+ohm1FyAFaU2V/OWt7k1olHPsBnbD5Tbk5kqhDOzZUVg79q7jQ6pr/G2ukk6Bmx13
+PQSdJJUhPmX7e7eNJTv0hcIwOjyOAFtZUWue+cLGoyvV8+fewuAWzlVs+xVA6czJ
+AL4mYNEec3LxzN8vyXeQHdV3W0QdGlZjKMRHvUmFWA+KTsRebk6bGVCXg7QnOnJZ
+FNPh0fkG1kcj5ubtOobwemCy35AuUhAOUk6xf3VUvrWQfL7NmDcpVnRf+U03d81J
+MBSaEBy9XExrfiE5sjlzn/P4br5zvRok43b1mfDbHW5IBrKjEYTmklklxsZQsMh/
+ysm3w30+kvmZupAZvIDTeK3CuxbsiL1f/fOMG8uD1FZofQKS4VRel3vr+o0DkN0x
+hBSCSGDv8FWAZr+CVRa7
+=7lH8
+-----END PGP SIGNATURE-----
 
-diff --git a/arch/arm/kernel/sched_clock.c b/arch/arm/kernel/sched_clock.c
-index fc6692e..bd6f56b 100644
---- a/arch/arm/kernel/sched_clock.c
-+++ b/arch/arm/kernel/sched_clock.c
-@@ -93,11 +93,11 @@ static void notrace update_sched_clock(void)
- 	 * detectable in cyc_to_fixed_sched_clock().
- 	 */
- 	raw_local_irq_save(flags);
--	cd.epoch_cyc = cyc;
-+	cd.epoch_cyc_copy = cyc;
- 	smp_wmb();
- 	cd.epoch_ns = ns;
- 	smp_wmb();
--	cd.epoch_cyc_copy = cyc;
-+	cd.epoch_cyc = cyc;
- 	raw_local_irq_restore(flags);
- }
- 
--- 
-1.7.9.5
-
+--Signature=_Wed__6_Feb_2013_16_21_51_+1100_hbzL/UC5UNOtpNzK--
