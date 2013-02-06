@@ -1,92 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751439Ab3BFFZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 00:25:28 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:49358 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750898Ab3BFFZ0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 00:25:26 -0500
-Date: Wed, 6 Feb 2013 16:25:23 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Hiroshi Doyu <hdoyu@nvidia.com>, Joerg Roedel <joro@8bytes.org>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: linux-next: manual merge of the driver-core tree with the iommu
- tree
-Message-Id: <20130206162523.c338c51f0d5fc31b20245184@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__6_Feb_2013_16_25_23_+1100_NFNsrPGA=yOxlu3."
+	id S1751821Ab3BFF0B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 00:26:01 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:19225 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751409Ab3BFFZ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 00:25:56 -0500
+X-IronPort-AV: E=Sophos;i="4.84,613,1355068800"; 
+   d="scan'208";a="6694993"
+Message-ID: <5111E7A5.4050803@cn.fujitsu.com>
+Date: Wed, 06 Feb 2013 13:18:29 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>, mgorman@suse.de,
+        minchan@kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        bfields@fieldses.org
+CC: Linux MM <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 4/7] fs/nfsd: change type of max_delegations, nfsd_drc_max_mem
+ and nfsd_drc_mem_used
+References: <5111E612.4010907@cn.fujitsu.com>
+In-Reply-To: <5111E612.4010907@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/06 13:18:45,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/06 13:18:48,
+	Serialize complete at 2013/02/06 13:18:48
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__6_Feb_2013_16_25_23_+1100_NFNsrPGA=yOxlu3.
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The three variables are calculated from nr_free_buffer_pages so
+change their types to unsigned long in case of overflow.
 
-Hi Greg,
+Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+---
+ fs/nfsd/nfs4state.c |    6 +++---
+ fs/nfsd/nfsd.h      |    6 +++---
+ fs/nfsd/nfssvc.c    |    6 +++---
+ 3 files changed, 9 insertions(+), 9 deletions(-)
 
-Today's linux-next merge of the driver-core tree got a conflict in
-drivers/iommu/tegra-smmu.c between commit a6870e928d1b ("iommu/tegra:
-smmu: Support variable MMIO ranges/blocks") from the iommu tree and
-commit bc5e6dea81b0 ("iommu: Convert to devm_ioremap_resource()") from
-the driver-core tree.
-
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/iommu/tegra-smmu.c
-index 7747283,f08dbcd..0000000
---- a/drivers/iommu/tegra-smmu.c
-+++ b/drivers/iommu/tegra-smmu.c
-@@@ -1185,13 -1177,10 +1186,13 @@@ static int tegra_smmu_probe(struct plat
-  		res =3D platform_get_resource(pdev, IORESOURCE_MEM, i);
-  		if (!res)
-  			return -ENODEV;
-- 		smmu->regs[i] =3D devm_request_and_ioremap(&pdev->dev, res);
-- 		if (!smmu->regs[i])
-- 			return -EBUSY;
-+ 		smmu->regs[i] =3D devm_ioremap_resource(&pdev->dev, res);
-+ 		if (IS_ERR(smmu->regs[i]))
-+ 			return PTR_ERR(smmu->regs[i]);
- +		smmu->rege[i] =3D smmu->regs[i] + resource_size(res) - 1;
-  	}
- +	/* Same as "mc" 1st regiter block start address */
- +	smmu->regbase =3D (void __iomem *)((u32)smmu->regs[0] & ~PAGE_MASK);
- =20
-  	err =3D of_get_dma_window(dev->of_node, NULL, 0, NULL, &base, &size);
-  	if (err)
-
---Signature=_Wed__6_Feb_2013_16_25_23_+1100_NFNsrPGA=yOxlu3.
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJREelDAAoJEECxmPOUX5FEx3AP/jLH/ff3IWH2WSSO3gZPw7bS
-xzILoitnOWd7jw6Bm5waA5diKP0pwEBWKLYQ9ZfJwPzSjMf4FVbg+jreI70El5Ah
-myJgA5mvUnjORQo/U/9w3IYZtORFACwfkjOMqfo3dM1cgXnQxCnL7lj9venGwuUg
-n/+QSRv05R3BnRxOU8KGCJ+iNHU1tnXcgQLDE1jh8Ea4aJWzieV0Fsil3TIEzVZp
-Ie25yurqLGh8g6GC/Ra75KVgibvqLvzs9llXiArIKseB4pmLbAmbSULphkdSwDjM
-XzUvLf/pz2Lc5sq5fzU6BMio4HnYaOMoXL6i5FPjH7G5Xx1PJY3EZjOYbC/69GO9
-MwhDUgkMdkbVz6v90iaY+q529x+kZuVwKHWyF5VWeq8jxi5IvezD4DBpBIXB7zAC
-ZD/G+sNesDdF5epfuvkiyOZyf/YObujJZvuBeSIFLbbnpgT+/EP63WrpdTC+FHQE
-rqmJFPdJyJ2UUfpaNSgdRhIY/3rHPa5UAQIocGaIKPWS0Ffo/ARbWGmw/8BKNp6V
-ckDpc/TenMMAw8SqT/6D5QMc2IYKSxMgD3vOd+Em/D8F4M5+dKT7plzoghWj+j9Y
-62m8W/FOcDeLw6CNIV2uTI16uxDpUw33USqqmLMy5lryTQqNI5InL9bKcGCAhGlR
-OoLxke2s1gCPpagOgqd/
-=A99c
------END PGP SIGNATURE-----
-
---Signature=_Wed__6_Feb_2013_16_25_23_+1100_NFNsrPGA=yOxlu3.--
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index ac8ed96..499e957 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -151,7 +151,7 @@ get_nfs4_file(struct nfs4_file *fi)
+ }
+ 
+ static int num_delegations;
+-unsigned int max_delegations;
++unsigned long max_delegations;
+ 
+ /*
+  * Open owner state (share locks)
+@@ -700,8 +700,8 @@ static int nfsd4_get_drc_mem(int slotsize, u32 num)
+ 	num = min_t(u32, num, NFSD_MAX_SLOTS_PER_SESSION);
+ 
+ 	spin_lock(&nfsd_drc_lock);
+-	avail = min_t(int, NFSD_MAX_MEM_PER_SESSION,
+-			nfsd_drc_max_mem - nfsd_drc_mem_used);
++	avail = min((unsigned long)NFSD_MAX_MEM_PER_SESSION,
++		    nfsd_drc_max_mem - nfsd_drc_mem_used);
+ 	num = min_t(int, num, avail / slotsize);
+ 	nfsd_drc_mem_used += num * slotsize;
+ 	spin_unlock(&nfsd_drc_lock);
+diff --git a/fs/nfsd/nfsd.h b/fs/nfsd/nfsd.h
+index de23db2..07a473f 100644
+--- a/fs/nfsd/nfsd.h
++++ b/fs/nfsd/nfsd.h
+@@ -56,8 +56,8 @@ extern struct svc_version	nfsd_version2, nfsd_version3,
+ extern u32			nfsd_supported_minorversion;
+ extern struct mutex		nfsd_mutex;
+ extern spinlock_t		nfsd_drc_lock;
+-extern unsigned int		nfsd_drc_max_mem;
+-extern unsigned int		nfsd_drc_mem_used;
++extern unsigned long		nfsd_drc_max_mem;
++extern unsigned long		nfsd_drc_mem_used;
+ 
+ extern const struct seq_operations nfs_exports_op;
+ 
+@@ -106,7 +106,7 @@ static inline int nfsd_v4client(struct svc_rqst *rq)
+  * NFSv4 State
+  */
+ #ifdef CONFIG_NFSD_V4
+-extern unsigned int max_delegations;
++extern unsigned long max_delegations;
+ void nfs4_state_init(void);
+ int nfsd4_init_slabs(void);
+ void nfsd4_free_slabs(void);
+diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
+index cee62ab..be7af50 100644
+--- a/fs/nfsd/nfssvc.c
++++ b/fs/nfsd/nfssvc.c
+@@ -59,8 +59,8 @@ DEFINE_MUTEX(nfsd_mutex);
+  * nfsd_drc_pages_used tracks the current version 4.1 DRC memory usage.
+  */
+ spinlock_t	nfsd_drc_lock;
+-unsigned int	nfsd_drc_max_mem;
+-unsigned int	nfsd_drc_mem_used;
++unsigned long	nfsd_drc_max_mem;
++unsigned long	nfsd_drc_mem_used;
+ 
+ #if defined(CONFIG_NFSD_V2_ACL) || defined(CONFIG_NFSD_V3_ACL)
+ static struct svc_stat	nfsd_acl_svcstats;
+@@ -342,7 +342,7 @@ static void set_max_drc(void)
+ 					>> NFSD_DRC_SIZE_SHIFT) * PAGE_SIZE;
+ 	nfsd_drc_mem_used = 0;
+ 	spin_lock_init(&nfsd_drc_lock);
+-	dprintk("%s nfsd_drc_max_mem %u \n", __func__, nfsd_drc_max_mem);
++	dprintk("%s nfsd_drc_max_mem %lu \n", __func__, nfsd_drc_max_mem);
+ }
+ 
+ static int nfsd_get_default_max_blksize(void)
+-- 
+1.7.1
