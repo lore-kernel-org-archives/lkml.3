@@ -1,55 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757176Ab3BFC53 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 21:57:29 -0500
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:12772 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756782Ab3BFC51 (ORCPT
+	id S1756826Ab3BFC60 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 21:58:26 -0500
+Received: from mail-ia0-f173.google.com ([209.85.210.173]:34897 "EHLO
+	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756313Ab3BFC6Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 21:57:27 -0500
-Message-ID: <1360119442.8356.8.camel@lorien2>
-Subject: [PATCH linux-next] x86/kvm: Fix compile warning in
- kvm_register_steal_time()
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, avi@redhat.com,
-        gleb@redhat.com, mtosatti@redhat.com, mst@redhat.com
-Cc: LKML <linux-kernel@vger.kernel.org>, x86@kernel.org, shuahkhan@gmail.com
-Date: Tue, 05 Feb 2013 19:57:22 -0700
-Organization: ISS-Linux
+	Tue, 5 Feb 2013 21:58:25 -0500
+Message-ID: <1360119498.8965.5.camel@phoenix>
+Subject: [PATCH 3/3] regulator: s5m8767: Prevent possible NULL pointer
+ dereference
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Sangbeom Kim <sbkim73@samsung.com>, LiamGirdwood <lgirdwood@gmail.com>,
+        linux-kernel@vger.kernel.org
+Date: Wed, 06 Feb 2013 10:58:18 +0800
+In-Reply-To: <1360119305.8965.1.camel@phoenix>
+References: <1360119305.8965.1.camel@phoenix>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the following compile warning in kvm_register_steal_time():
-  CC      arch/x86/kernel/kvm.o
-arch/x86/kernel/kvm.c: In function ‘kvm_register_steal_time’:
-arch/x86/kernel/kvm.c:302:3: warning: format ‘%lx’ expects argument of type ‘long unsigned int’, but argument 3 has type ‘phys_addr_t’ [-Wformat]
+s5m8767_pmic_dt_parse_pdata dereferenes pdata, thus check pdata earlier to
+avoid NULL pointer dereference.
 
-Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
 ---
- arch/x86/kernel/kvm.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/regulator/s5m8767.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-index fe75a28..b686a90 100644
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -298,8 +298,8 @@ static void kvm_register_steal_time(void)
- 	memset(st, 0, sizeof(*st));
+diff --git a/drivers/regulator/s5m8767.c b/drivers/regulator/s5m8767.c
+index 4cb65e3..0349358 100644
+--- a/drivers/regulator/s5m8767.c
++++ b/drivers/regulator/s5m8767.c
+@@ -659,17 +659,17 @@ static int s5m8767_pmic_probe(struct platform_device *pdev)
+ 	struct s5m8767_info *s5m8767;
+ 	int i, ret, size, buck_init;
  
- 	wrmsrl(MSR_KVM_STEAL_TIME, (slow_virt_to_phys(st) | KVM_MSR_ENABLED));
--	printk(KERN_INFO "kvm-stealtime: cpu %d, msr %lx\n",
--		cpu, slow_virt_to_phys(st));
-+	pr_info("kvm-stealtime: cpu %d, msr %llx\n",
-+		cpu, (unsigned long long) slow_virt_to_phys(st));
- }
++	if (!pdata) {
++		dev_err(&pdev->dev, "Platform data not supplied\n");
++		return -ENODEV;
++	}
++
+ 	if (iodev->dev->of_node) {
+ 		ret = s5m8767_pmic_dt_parse_pdata(pdev, pdata);
+ 		if (ret)
+ 			return ret;
+ 	}
  
- static DEFINE_PER_CPU(unsigned long, kvm_apic_eoi) = KVM_PV_EOI_DISABLED;
+-	if (!pdata) {
+-		dev_err(&pdev->dev, "Platform data not supplied\n");
+-		return -ENODEV;
+-	}
+-
+ 	if (pdata->buck2_gpiodvs) {
+ 		if (pdata->buck3_gpiodvs || pdata->buck4_gpiodvs) {
+ 			dev_err(&pdev->dev, "S5M8767 GPIO DVS NOT VALID\n");
 -- 
 1.7.9.5
 
