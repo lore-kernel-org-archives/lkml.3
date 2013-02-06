@@ -1,37 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758560Ab3BFT5Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 14:57:25 -0500
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:58604 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758479Ab3BFT5U (ORCPT
+	id S1030229Ab3BFTvD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 14:51:03 -0500
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:35386 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758271Ab3BFTus (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 14:57:20 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130206195131.GD29163@infradead.org>
-References: <1360161962-9675-1-git-send-email-eranian@google.com>
-	<1360161962-9675-3-git-send-email-eranian@google.com>
-	<20130206195131.GD29163@infradead.org>
-Date: Wed, 6 Feb 2013 20:57:19 +0100
-Message-ID: <CABPqkBSz0qGm3ZkzSv=gTRmE2ZDjE9quWzJ63686xic4XgWqLA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] perf stat: add per processor socket count aggregation
-From: Stephane Eranian <eranian@google.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 6 Feb 2013 14:50:48 -0500
+From: Tejun Heo <tj@kernel.org>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org
+Subject: [PATCH 52/77] mmc: convert to idr_alloc()
+Date: Wed,  6 Feb 2013 11:40:24 -0800
+Message-Id: <1360179649-22465-53-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.1
+In-Reply-To: <1360179649-22465-1-git-send-email-tj@kernel.org>
+References: <1360179649-22465-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 6, 2013 at 8:51 PM, Arnaldo Carvalho de Melo
-<acme@redhat.com> wrote:
-> Em Wed, Feb 06, 2013 at 03:46:02PM +0100, Stephane Eranian escreveu:
->>  tools/perf/builtin-stat.c |  126 +++++++++++++++++++++++++++++++++++++++++----
->
-> Added the missing 'perf stat' man page entry based on the changeset
-> comments,
->
-Arg, yes, forgot that. Thanks for fixing it.
+Convert to the much saner new idr interface.
+
+Only compile tested.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Chris Ball <cjb@laptop.org>
+Cc: linux-mmc@vger.kernel.org
+---
+ drivers/mmc/core/host.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/mmc/core/host.c b/drivers/mmc/core/host.c
+index ee2e16b..1117de7 100644
+--- a/drivers/mmc/core/host.c
++++ b/drivers/mmc/core/host.c
+@@ -306,19 +306,20 @@ struct mmc_host *mmc_alloc_host(int extra, struct device *dev)
+ 	int err;
+ 	struct mmc_host *host;
+ 
+-	if (!idr_pre_get(&mmc_host_idr, GFP_KERNEL))
+-		return NULL;
+-
+ 	host = kzalloc(sizeof(struct mmc_host) + extra, GFP_KERNEL);
+ 	if (!host)
+ 		return NULL;
+ 
+ 	/* scanning will be enabled when we're ready */
+ 	host->rescan_disable = 1;
++	idr_preload(GFP_KERNEL);
+ 	spin_lock(&mmc_host_lock);
+-	err = idr_get_new(&mmc_host_idr, host, &host->index);
++	err = idr_alloc(&mmc_host_idr, host, 0, 0, GFP_NOWAIT);
++	if (err >= 0)
++		host->index = err;
+ 	spin_unlock(&mmc_host_lock);
+-	if (err)
++	idr_preload_end();
++	if (err < 0)
+ 		goto free;
+ 
+ 	dev_set_name(&host->class_dev, "mmc%d", host->index);
+-- 
+1.8.1
+
