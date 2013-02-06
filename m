@@ -1,66 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757121Ab3BFKl0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 05:41:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33204 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751947Ab3BFKlX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 05:41:23 -0500
-Date: Wed, 6 Feb 2013 10:41:17 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Michel Lespinasse <walken@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Lin Feng <linfeng@cn.fujitsu.com>, bcrl@kvack.org,
-        viro@zeniv.linux.org.uk, khlebnikov@openvz.org,
-        kamezawa.hiroyu@jp.fujitsu.com, minchan@kernel.org, riel@redhat.com,
-        rientjes@google.com, isimatu.yasuaki@jp.fujitsu.com,
-        wency@cn.fujitsu.com, laijs@cn.fujitsu.com, jiang.liu@huawei.com,
-        linux-mm@kvack.org, linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] mm: hotplug: implement non-movable version of
- get_user_pages() called get_user_pages_non_movable()
-Message-ID: <20130206104117.GO21389@suse.de>
-References: <1359972248-8722-1-git-send-email-linfeng@cn.fujitsu.com>
- <1359972248-8722-2-git-send-email-linfeng@cn.fujitsu.com>
- <20130204160624.5c20a8a0.akpm@linux-foundation.org>
- <20130205115722.GF21389@suse.de>
- <CANN689GVFYTqs0wxX3bKZtyBcWf6=gLvS8hFG-65htsnPDknSA@mail.gmail.com>
+	id S1756949Ab3BFKog (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 05:44:36 -0500
+Received: from vsp-authed02.binero.net ([195.74.38.226]:28866 "HELO
+	vsp-authed-03-02.binero.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751947Ab3BFKof (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 05:44:35 -0500
+Message-ID: <5112340B.7030505@gaisler.com>
+Date: Wed, 06 Feb 2013 11:44:27 +0100
+From: Andreas Larsson <andreas@gaisler.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <CANN689GVFYTqs0wxX3bKZtyBcWf6=gLvS8hFG-65htsnPDknSA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Joakim Tjernlund <Joakim.Tjernlund@transmode.se>, software@gaisler.com,
+        linux-kernel@vger.kernel.org, Peter Korsgaard <jacmet@sunsite.dk>,
+        spi-devel-general@lists.sourceforge.net,
+        Mingkai Hu <Mingkai.hu@freescale.com>,
+        Anton Vorontsov <avorontsov@ru.mvista.com>
+Subject: Re: [PATCH RESEND] spi: spi-fsl-spi: Make spi-fsl-spi usable in cpu
+ mode outside of FSL SOC environments and add a grlib variant normally running
+ on sparc
+References: <1359548124-13692-1-git-send-email-andreas@gaisler.com> <20130205175630.C6F7F3E167A@localhost>
+In-Reply-To: <20130205175630.C6F7F3E167A@localhost>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 05, 2013 at 06:26:51PM -0800, Michel Lespinasse wrote:
-> Just nitpicking, but:
-> 
-> On Tue, Feb 5, 2013 at 3:57 AM, Mel Gorman <mgorman@suse.de> wrote:
-> > +static inline bool zone_is_idx(struct zone *zone, enum zone_type idx)
-> > +{
-> > +       /* This mess avoids a potentially expensive pointer subtraction. */
-> > +       int zone_off = (char *)zone - (char *)zone->zone_pgdat->node_zones;
-> > +       return zone_off == idx * sizeof(*zone);
-> > +}
-> 
-> Maybe:
-> return zone == zone->zone_pgdat->node_zones + idx;
-> ?
-> 
+On 2013-02-05 18:56, Grant Likely wrote:
+> On Wed, 30 Jan 2013 13:15:24 +0100, Andreas Larsson <andreas@gaisler.com> wrote:
+>> This patch relies upon parts of the "of, of_gpio, of_spi: Fix and
+>> improve of_parse_phandle_with_args, of_gpio_named_count and
+>> of_spi_register_master" patchset - https://lkml.org/lkml/2012/12/27/54
+>> (v2 at https://lkml.org/lkml/2013/1/29/308).
 
-Not a nit at all. Yours is more readable but it generates more code. A
-single line function that uses the helper generates 0x3f bytes of code
-(mostly function entry/exit) with your version and 0x39 bytes with mine. The
-difference in efficiency is marginal as your version uses lea to multiply
-by a constant but it's still slightly heavier.
+For TYPE_GRLIB, the gpio chipselect parts relies on this series. It 
+would be great to get some feedback on that patch series as well.
 
-The old code is fractionally better, your version is more readable so it's
-up to Andrew really. Right now I think he's gone with his own version with
-zone_idx() in the name of readability whatever sparse has to say about
-the matter.
+>> Maybe the different out/in_be32 vs iowrite/read32be in spi-fsl-lib.h is
+>> over the top, but I'm not sure if there might be subtle differences
+>> between those on powerpc and I don't have any fsl hardware to try things
+>> out on.
+>
+> Changing to ioread/write globally should be fine. I would change it and get
+> someone with an fsl board to try it out. That will reduce the diffstat a
+> bit.
 
--- 
-Mel Gorman
-SUSE Labs
+Will do.
+
+> As is, this is quite an invasive patch, so I'm not going to be
+> comfortable merging it without at least one 3rd party tester. (Breaking
+> things up into discrete patches will make me less nervous and possible
+> to merge parts while still revising others.
+
+I'll be happy to do that. Was trying to adhere to the guide line to not 
+introduce something separately from its usage, but in this case it is 
+probably better to split things up a bit.
+
+>> +#ifdef CONFIG_FSL_SOC
+>>   	else if (prop && !strcmp(prop, "qe"))
+>>   		pdata->flags = SPI_CPM_MODE | SPI_QE;
+>>   	else if (of_device_is_compatible(np, "fsl,cpm2-spi"))
+>>   		pdata->flags = SPI_CPM_MODE | SPI_CPM2;
+>>   	else if (of_device_is_compatible(np, "fsl,cpm1-spi"))
+>>   		pdata->flags = SPI_CPM_MODE | SPI_CPM1;
+>> +#endif
+>
+> The ifdefs are ugly and these lines won't affect sparc. Just leave them
+> in.
+
+Will do.
+
+>> +/* TYPE_GRLIB SPI Controller capability register definitions */
+>> +#define SPCAP_SSEN(x)           (((x) >> 16) & 0x1)
+>> +#define SPCAP_SSSZ(x)           (((x) >> 24) & 0xff)
+>> +#define SPCAP_MAXWLEN(x)	(((x) >> 20) & 0xf)
+>
+> Nit: inconsistent whitespace (tabs vs. spaces)
+
+Will fix.
+
+>> +	ret = of_property_read_u32(dev->of_node, "bus-number", &bus_num);
+>> +	if (!ret)
+>> +		master->bus_num = bus_num;
+>
+> Drop these lines. Never set the bus number explicitly when using DT. If
+> you really want to assign a particular bus number, then use an alias.
+
+Sure, I'll check that out.
+
+> That's all the comments I've got for now, but there are an awful lot of
+> #defines that are added to the driver which is kind of ugly. I'm not
+> going to nack over that, but it would be good to clean it up and do some
+> better abstraction.
+
+I agree that it is ugly. If I move the cpm-related things from 
+spi-fsl-spi.c to a separate file that only gets linked on FSL_SOC and 
+have dummy functions in an h-file I think that it can be made much less 
+ugly.
+
+Thanks for the feedback!
+
+Cheers,
+Andreas
+
