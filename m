@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758023Ab3BFTno (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 14:43:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35052 "EHLO mx1.redhat.com"
+	id S1758036Ab3BFToQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 14:44:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48139 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755031Ab3BFTnm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 14:43:42 -0500
-Date: Wed, 6 Feb 2013 20:42:18 +0100
+	id S1755031Ab3BFToP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 14:44:15 -0500
+Date: Wed, 6 Feb 2013 20:42:58 +0100
 From: Oleg Nesterov <oleg@redhat.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
@@ -16,75 +16,49 @@ Cc: Anton Arapov <anton@redhat.com>, Frank Eigler <fche@redhat.com>,
         Jiri Olsa <jolsa@redhat.com>, Josh Stone <jistone@redhat.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/1] (Was uprobes/perf: pre-filtering)
-Message-ID: <20130206194218.GA11998@redhat.com>
-References: <20130204190225.GA10840@redhat.com> <20130206181044.GA3752@redhat.com>
+Subject: [PATCH 1/1] perf/tools: Fix "perf record -C... workload" behaviour
+Message-ID: <20130206194258.GB11998@redhat.com>
+References: <20130204190225.GA10840@redhat.com> <20130206181044.GA3752@redhat.com> <20130206194218.GA11998@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130206181044.GA3752@redhat.com>
+In-Reply-To: <20130206194218.GA11998@redhat.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06, Oleg Nesterov wrote:
->
-> Btw, during the testing I noticed a minor problem (or problems) in tools/perf/,
-> I'll try to investigate...
+Test-case:
 
-To avoid the confusion, this has nothing to do with perf/uprobe/prefiltering
-changes.
+	# perf record -e probe_libc:syscall -C0 true
+	true: Terminated
 
+The child process is killed by perf_record__sig_exit(). This is because
+perf_evlist__prepare_workload() doesn't initialize threads->map[] and
+then perf_event__synthesize_mmap_events() (silently!) fails. This patch
+seems to fix the problem, but perhaps we should also move
+'pr_err("Couldn't run the workload!\n")' down to 'out_delete_session:',
+so that the problems like this would be more understandable.
 
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ tools/perf/util/evlist.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Well. I am very new to this code, and I didn't even use perf before,
-it is quite possible I missed something/everything.
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 7052934..8b3f6ef 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -783,7 +783,7 @@ int perf_evlist__prepare_workload(struct perf_evlist *evlist,
+ 		exit(-1);
+ 	}
+ 
+-	if (perf_target__none(&opts->target))
++	if (!perf_target__has_task(&opts->target))
+ 		evlist->threads->map[0] = evlist->workload.pid;
+ 
+ 	close(child_ready_pipe[1]);
+-- 
+1.5.5.1
 
-But I simply can't understand the logic behind perf_evlist__create_maps/etc.
-
-OK, builtin-record.c:record sets .target->uses_mmap == T, this is correct,
-we are going to use perf_mmap().
-
-But why do we need it? It is for perf_evlist__create_maps() to ensure we
-do not use cpu_map__dummy_new().
-
-But. Even if we use perf_mmap(), "event->cpu == -1 && !event->attr.inherit"
-is fine. And indeed, "perf record -e whatever -p1" creates a single counter
-with "cpu = -1" and this works. Because, damn, perf_evlist__config_attrs()
-notices "evlist->cpus->map[0] < 0" and sets "opts->no_inherit = true".
-
-But at the same time, this does not allow to do, say,
-"perf record -e whatever -C0 -p1". -C0 is simply ignored because when
-perf_evlist__create_maps() is called perf_target__has_task() == T due to "-p1".
-
-Not to mention, there is no way to trace init and the children it will
-fork...
-
-And otoh. "perf record -e whatever -i true" creates a counter for each
-cpu due to ->uses_mmap. This is suboptimal, but of course the hack like
-
-	--- a/tools/perf/builtin-record.c
-	+++ b/tools/perf/builtin-record.c
-	@@ -1081,6 +1078,8 @@ int cmd_record(int argc, const char **argv, const char *prefix __maybe_unused)
-		if (!argc && perf_target__none(&rec->opts.target))
-			usage_with_options(record_usage, record_options);
-	 
-	+	rec->opts.target.uses_mmap = !rec->opts.no_inherit;
-	+
-		if (rec->force && rec->append_file) {
-			ui__error("Can't overwrite and append at the same time."
-				  " You need to choose between -f and -A");
-
-should not be even discussed.
-
-And why opts->target.system_wide is only set by OPT_BOOLEAN("all-cpus") ?
-I meant, why I can't do "perf record -e whatever -C0" to create a "global"
-counter on CPU_0? This doesn't work because __cmd_record() sees !.system_wide
-and assumes we need perf_event__synthesize_thread_map() which silently fail.
-
-So I am sending a single patch to fix the problem which complicated my
-testing. It is trivial but I am not sure it correct, please review.
-
-Oleg.
 
