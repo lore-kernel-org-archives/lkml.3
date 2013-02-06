@@ -1,107 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756885Ab3BFDbc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 22:31:32 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:58494 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754562Ab3BFDba (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 22:31:30 -0500
-Date: Wed, 6 Feb 2013 14:31:20 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Anton Vorontsov <avorontsov@ru.mvista.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jonas Aaberg <jonas.aberg@stericsson.com>,
-        Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
-Subject: linux-next: manual merge of the battery tree with the mfd tree
-Message-Id: <20130206143120.73c66ac3eadced968f9dd2d5@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__6_Feb_2013_14_31_20_+1100_GqgnwCrUi5DaqXOx"
+	id S1755800Ab3BFDyR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 22:54:17 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:49820 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753785Ab3BFDyN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 22:54:13 -0500
+From: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
+To: "Nori, Sekhar" <nsekhar@ti.com>
+CC: "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "khilman@deeprootsystems.com" <khilman@deeprootsystems.com>,
+        "ben-linux@fluff.org" <ben-linux@fluff.org>,
+        "w.sang@pengutronix.de" <w.sang@pengutronix.de>
+Subject: RE: [PATCH] i2c: davinci: update to devm_* API
+Thread-Topic: [PATCH] i2c: davinci: update to devm_* API
+Thread-Index: AQHOA3ocdlUEkHb3aECfut0NQ7MivZhqyfmAgAFnr8A=
+Date: Wed, 6 Feb 2013 03:53:27 +0000
+Message-ID: <A4887BF146CD57468F700B415D2F47015831BD@DBDE01.ent.ti.com>
+References: <1360052699-1985-1-git-send-email-manishv.b@ti.com>
+ <5110F14D.8090005@ti.com>
+In-Reply-To: <5110F14D.8090005@ti.com>
+Accept-Language: en-IN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r163sToZ019713
 
---Signature=_Wed__6_Feb_2013_14_31_20_+1100_GqgnwCrUi5DaqXOx
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Sekhar
 
-Hi Anton,
+On Tue, Feb 05, 2013 at 17:17:25, Nori, Sekhar wrote:
+> 
+> 
+> On 2/5/2013 1:54 PM, Vishwanathrao Badarkhe, Manish wrote:
+> > Update the code to use devm_* API so that driver core will manage 
+> > resources.
+> > 
+> > Signed-off-by: Vishwanathrao Badarkhe, Manish <manishv.b@ti.com>
+> 
+> You can use devm_clk_get() as well. We should also move to runtime 
+  PM but that can be a different patch.
 
-Today's linux-next merge of the battery tree got a conflict in
-include/linux/mfd/abx500/ab8500.h between commit 1d843a6c8c20 ("mfd:
-ab8500-core: Allow the possibility to dump all AB8500 registers") from
-the mfd tree and commit 0ed5107fa860 ("ab8500-charger: Do not touch
-VBUSOVV bits") from the battery tree.
+Sure, I will apply devm operation for clk_get also in next version.
+Ok, will move to runtime PM in a different patch.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Thanks, 
+Manish Badarkhe
+> > ---
+> > :100644 100644 6a0a553... f3dfffb... M	drivers/i2c/busses/i2c-davinci.c
+> >  drivers/i2c/busses/i2c-davinci.c |   41 +++++++++++--------------------------
+> >  1 files changed, 12 insertions(+), 29 deletions(-)
+> > 
+> > diff --git a/drivers/i2c/busses/i2c-davinci.c 
+> > b/drivers/i2c/busses/i2c-davinci.c
+> > index 6a0a553..f3dfffb 100644
+> > --- a/drivers/i2c/busses/i2c-davinci.c
+> > +++ b/drivers/i2c/busses/i2c-davinci.c
+> > @@ -643,7 +643,7 @@ static int davinci_i2c_probe(struct 
+> > platform_device *pdev)  {
+> >  	struct davinci_i2c_dev *dev;
+> >  	struct i2c_adapter *adap;
+> > -	struct resource *mem, *irq, *ioarea;
+> > +	struct resource *mem, *irq;
+> >  	int r;
+> >  
+> >  	/* NOTE: driver uses the static register mapping */ @@ -659,17 
+> > +659,11 @@ static int davinci_i2c_probe(struct platform_device *pdev)
+> >  		return -ENODEV;
+> >  	}
+> >  
+> > -	ioarea = request_mem_region(mem->start, resource_size(mem),
+> > -				    pdev->name);
+> > -	if (!ioarea) {
+> > -		dev_err(&pdev->dev, "I2C region already claimed\n");
+> > -		return -EBUSY;
+> > -	}
+> > -
+> > -	dev = kzalloc(sizeof(struct davinci_i2c_dev), GFP_KERNEL);
+> > +	dev = devm_kzalloc(&pdev->dev, sizeof(struct davinci_i2c_dev),
+> > +			GFP_KERNEL);
+> >  	if (!dev) {
+> > -		r = -ENOMEM;
+> > -		goto err_release_region;
+> > +		dev_err(&pdev->dev, "Memory allocation failed\n");
+> > +		return -ENOMEM;
+> >  	}
+> >  
+> >  	init_completion(&dev->cmd_complete);
+> > @@ -706,15 +700,17 @@ static int davinci_i2c_probe(struct platform_device *pdev)
+> >  	}
+> >  	clk_prepare_enable(dev->clk);
+> >  
+> > -	dev->base = ioremap(mem->start, resource_size(mem));
+> > +	dev->base = devm_request_and_ioremap(&pdev->dev, mem);
+> >  	if (!dev->base) {
+> >  		r = -EBUSY;
+> > -		goto err_mem_ioremap;
+> > +		dev_err(&pdev->dev, "I2C region already claimed\n");
+> > +		goto err_unuse_clocks;
+> >  	}
+> >  
+> >  	i2c_davinci_init(dev);
+> >  
+> > -	r = request_irq(dev->irq, i2c_davinci_isr, 0, pdev->name, dev);
+> > +	r = devm_request_irq(&pdev->dev, dev->irq, i2c_davinci_isr, 0,
+> > +			pdev->name, dev);
+> >  	if (r) {
+> >  		dev_err(&pdev->dev, "failure requesting irq %i\n", dev->irq);
+> >  		goto err_unuse_clocks;
+> > @@ -723,7 +719,7 @@ static int davinci_i2c_probe(struct platform_device *pdev)
+> >  	r = i2c_davinci_cpufreq_register(dev);
+> >  	if (r) {
+> >  		dev_err(&pdev->dev, "failed to register cpufreq\n");
+> > -		goto err_free_irq;
+> > +		goto err_unuse_clocks;
+> >  	}
+> >  
+> >  	adap = &dev->adapter;
+> > @@ -740,26 +736,19 @@ static int davinci_i2c_probe(struct platform_device *pdev)
+> >  	r = i2c_add_numbered_adapter(adap);
+> >  	if (r) {
+> >  		dev_err(&pdev->dev, "failure adding adapter\n");
+> > -		goto err_free_irq;
+> > +		goto err_unuse_clocks;
+> >  	}
+> >  	of_i2c_register_devices(adap);
+> >  
+> >  	return 0;
+> >  
+> > -err_free_irq:
+> > -	free_irq(dev->irq, dev);
+> >  err_unuse_clocks:
+> > -	iounmap(dev->base);
+> > -err_mem_ioremap:
+> >  	clk_disable_unprepare(dev->clk);
+> >  	clk_put(dev->clk);
+> >  	dev->clk = NULL;
+> >  err_free_mem:
+> >  	platform_set_drvdata(pdev, NULL);
+> >  	put_device(&pdev->dev);
+> > -	kfree(dev);
+> > -err_release_region:
+> > -	release_mem_region(mem->start, resource_size(mem));
+> >  
+> >  	return r;
+> >  }
+> > @@ -767,7 +756,6 @@ err_release_region:
+> >  static int davinci_i2c_remove(struct platform_device *pdev)  {
+> >  	struct davinci_i2c_dev *dev = platform_get_drvdata(pdev);
+> > -	struct resource *mem;
+> >  
+> >  	i2c_davinci_cpufreq_deregister(dev);
+> >  
+> > @@ -780,12 +768,7 @@ static int davinci_i2c_remove(struct platform_device *pdev)
+> >  	dev->clk = NULL;
+> >  
+> >  	davinci_i2c_write_reg(dev, DAVINCI_I2C_MDR_REG, 0);
+> > -	free_irq(dev->irq, dev);
+> > -	iounmap(dev->base);
+> > -	kfree(dev);
+> >  
+> > -	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> > -	release_mem_region(mem->start, resource_size(mem));
+> >  	return 0;
+> >  }
+> >  
+> > 
+> 
 
-diff --cc include/linux/mfd/abx500/ab8500.h
-index fa7173d,b9a6a84..0000000
---- a/include/linux/mfd/abx500/ab8500.h
-+++ b/include/linux/mfd/abx500/ab8500.h
-@@@ -345,12 -346,23 +350,32 @@@ static inline int is_ab8500_2p0(struct=20
-  	return (is_ab8500(ab) && (ab->chip_id =3D=3D AB8500_CUT2P0));
-  }
- =20
-+ static inline int is_ab8505_1p0_or_earlier(struct ab8500 *ab)
-+ {
-+ 	return (is_ab8505(ab) && (ab->chip_id <=3D AB8500_CUT1P0));
-+ }
-+=20
-+ static inline int is_ab8505_2p0(struct ab8500 *ab)
-+ {
-+ 	return (is_ab8505(ab) && (ab->chip_id =3D=3D AB8500_CUT2P0));
-+ }
-+=20
-+ static inline int is_ab9540_1p0_or_earlier(struct ab8500 *ab)
-+ {
-+ 	return (is_ab9540(ab) && (ab->chip_id <=3D AB8500_CUT1P0));
-+ }
-+=20
-+ static inline int is_ab9540_2p0(struct ab8500 *ab)
-+ {
-+ 	return (is_ab9540(ab) && (ab->chip_id =3D=3D AB8500_CUT2P0));
-+ }
-++
- +#ifdef CONFIG_AB8500_DEBUG
- +void ab8500_dump_all_banks(struct device *dev);
- +void ab8500_debug_register_interrupt(int line);
- +#else
- +static inline void ab8500_dump_all_banks(struct device *dev) {}
- +static inline void ab8500_debug_register_interrupt(int line) {}
- +#endif
- +
-  #endif /* MFD_AB8500_H */
 
---Signature=_Wed__6_Feb_2013_14_31_20_+1100_GqgnwCrUi5DaqXOx
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJREc6IAAoJEECxmPOUX5FE0wQP/iUBeEhj1tLRPNA5Q7Wi31XG
-E+YJHI5REQJaWnmX/LrMOXB1utbtwkG3HdKB+3tl3hf2kqvLjq6sDVormw4n2UUW
-Q465Fatdh87SsUHGGLoo0fdSCxnLR/9FgV1gEWZi/Asp5845GxtrLkOUg3eXoGZO
-lWLKNoKldgzAk0PxQjVPxK5Gy4fYBKB2wX0XSDxknoaUYl5yQwt4Jqm54JEWmycC
-qBv16zJqNmIlQJagIPs8c+ETV2zPrwAsvE9mX764ywcBeuFMqqc3+sUCfBOqwRF2
-ry1mU2GuddDn2lIalXS2qceq4hdLb7z5UixmQi757lR8kNtNGcHMetRrNfColfwn
-qNRXzdJjqFY2LdmsA8FHqzz2uYoHVlnrSUwJm+//68Vqv10UVsI9CzKYhGk3xuRP
-vsHkyr1ruWgC2vbu2gupYhRwPX4QPb42vdl0df8ri7wOzJp4bKOrjMoGByPh45l4
-lf8D1QKtN/Z7EMf5Ur9HTx3inyVks/rbjcJ64QUXpRr4WfWJApeFI+Bex9LJ1Jke
-uh4uGbW2bS8CFULLtubK+d5K0ygyEY0yWtqA71/8MZYcS5CVkDbWkfBIdePU2el2
-LxA0Ij0V2RX9AhAyj5YmG0fqDIanXRYNnXtKeuVmaGXqvojM8zR647Q6sd5jWfgS
-poCd48+9XdtpwJwTzhEZ
-=Xtdn
------END PGP SIGNATURE-----
-
---Signature=_Wed__6_Feb_2013_14_31_20_+1100_GqgnwCrUi5DaqXOx--
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
