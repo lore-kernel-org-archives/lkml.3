@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758765Ab3BFVs3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 16:48:29 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:57278 "EHLO
+	id S1758638Ab3BFVst (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 16:48:49 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:57270 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758743Ab3BFVoa (ORCPT
+	with ESMTP id S1758724Ab3BFVo3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 16:44:30 -0500
+	Wed, 6 Feb 2013 16:44:29 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Ingo Molnar <mingo@redhat.com>, Joe Perches <joe@perches.com>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 15/17] perf tools: Fix calloc argument ordering
-Date: Wed,  6 Feb 2013 18:44:17 -0300
-Message-Id: <1360187059-12661-16-git-send-email-acme@infradead.org>
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 17/17] perf python: Link with sysfs.o
+Date: Wed,  6 Feb 2013 18:44:19 -0300
+Message-Id: <1360187059-12661-18-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
 In-Reply-To: <1360187059-12661-1-git-send-email-acme@infradead.org>
 References: <1360187059-12661-1-git-send-email-acme@infradead.org>
@@ -28,70 +29,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-A sweep of the kernel for regex "kcalloc(sizeof" turned up 2 reversed
-args, fixed in commit d3d09e18203dba16a9dbdb2b4cc673d90748cdd1 ("EDAC:
-Fix kcalloc argument order") and also fixed in the networking commit
-a1b1add07fa794974573d93483d68e373edfe7bd ("gro: Fix kcalloc argument
-order").
+So that we fix this regression:
 
-I know that was the regex used, because on seeing the 1st of these
-changes, I wondered "how many other instances of this are there" and I
-happened to just use "calloc(sizeof" as a regex and it in turn found
-these additional reversed args instances in the perf code.
+[root@sandy linux]# perf test -v 15
+15: Try 'use perf' in python, checking link problems       :
+--- start ---
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+ImportError: /home/acme/git/build/perf/python/perf.so: undefined symbol: sysfs_find_mountpoint
+---- end ----
+Try 'use perf' in python, checking link problems: FAILED!
+[root@sandy linux]#
 
-In the kcalloc cases, the changes are cosmetic, since the numbers are
-simply multiplied.  I had no desire to go data mining in userspace to
-see if the same thing held true there, however.
-
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Joe Perches <joe@perches.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1359594349-25912-1-git-send-email-paul.gortmaker@windriver.com
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-8pf64bsdywg1gl9m55ul77hg@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/callchain.c | 2 +-
- tools/perf/util/header.c    | 4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ tools/perf/util/python-ext-sources | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index d3b3f5d..42b6a63 100644
---- a/tools/perf/util/callchain.c
-+++ b/tools/perf/util/callchain.c
-@@ -444,7 +444,7 @@ int callchain_cursor_append(struct callchain_cursor *cursor,
- 	struct callchain_cursor_node *node = *cursor->last;
- 
- 	if (!node) {
--		node = calloc(sizeof(*node), 1);
-+		node = calloc(1, sizeof(*node));
- 		if (!node)
- 			return -ENOMEM;
- 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 8022b52..f4bfd79 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -2253,7 +2253,7 @@ static int perf_header__adds_write(struct perf_header *header,
- 	if (!nr_sections)
- 		return 0;
- 
--	feat_sec = p = calloc(sizeof(*feat_sec), nr_sections);
-+	feat_sec = p = calloc(nr_sections, sizeof(*feat_sec));
- 	if (feat_sec == NULL)
- 		return -ENOMEM;
- 
-@@ -2425,7 +2425,7 @@ int perf_header__process_sections(struct perf_header *header, int fd,
- 	if (!nr_sections)
- 		return 0;
- 
--	feat_sec = sec = calloc(sizeof(*feat_sec), nr_sections);
-+	feat_sec = sec = calloc(nr_sections, sizeof(*feat_sec));
- 	if (!feat_sec)
- 		return -1;
- 
+diff --git a/tools/perf/util/python-ext-sources b/tools/perf/util/python-ext-sources
+index c40c2d3..64536a9 100644
+--- a/tools/perf/util/python-ext-sources
++++ b/tools/perf/util/python-ext-sources
+@@ -18,4 +18,5 @@ util/cgroup.c
+ util/debugfs.c
+ util/rblist.c
+ util/strlist.c
++util/sysfs.c
+ ../../lib/rbtree.c
 -- 
 1.8.1.1.361.gec3ae6e
 
