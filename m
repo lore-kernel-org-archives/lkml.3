@@ -1,195 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756133Ab3BFBy6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 20:54:58 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14232 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753950Ab3BFBy5 (ORCPT
+	id S1756896Ab3BFB6y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 20:58:54 -0500
+Received: from mail-ia0-f179.google.com ([209.85.210.179]:56444 "EHLO
+	mail-ia0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754619Ab3BFB6w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 20:54:57 -0500
-X-Authority-Analysis: v=2.0 cv=f8jK9ZOM c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=wom5GMh1gUkA:10 a=_Bp3_fu7e2UA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=wIfm1DkAj9kA:10 a=uYVGJH5IAAAA:8 a=VwQbUJbxAAAA:8 a=W0vUJOdyAAAA:8 a=pX40m-wT-vWIu6yO510A:9 a=CjuIK1q_8ugA:10 a=x8gzFH9gYPwA:10 a=SSO-Y9H-le0A:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Date: Tue, 5 Feb 2013 20:54:30 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ben Greear <greearb@candelatech.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: Question on lockdep and MAX_LOCK_DEPTH
-Message-ID: <20130206015430.GA9161@home.goodmis.org>
-References: <5111AD8D.1080005@candelatech.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5111AD8D.1080005@candelatech.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 5 Feb 2013 20:58:52 -0500
+From: Joe Millenbach <jmillenbach@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Alan Cox <alan@linux.intel.com>, Jiri Slaby <jirislaby@gmail.com>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Joe Millenbach <jmillenbach@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>, Jamey Sharp <jamey@minilop.net>
+Subject: [PATCH] input: drop unnecessary dependencies on TTY
+Date: Tue,  5 Feb 2013 17:58:34 -0800
+Message-Id: <1360115914-4334-1-git-send-email-jmillenbach@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 05, 2013 at 05:10:37PM -0800, Ben Greear wrote:
-> I'm debugging something that could be my own bug in my wanlink module (but then
-> again, haven't seen this on 3.5 kernels, and my module is
-> basically un-changed since then).
-> 
-> I'm using lockdep, and keep seeing "BUG: MAX_LOCK_DEPTH too low".
-> I tried changing the depth to 96 from 48, but it still hits.
-> 
-> I also added debug_show_all_locks(); when this error
-> case hits.  I was assuming that if lockdep depth is large,
-> there would be lots of locks held..but that does not
-> seem to be the case??
-> 
-> 
-> 
-> ===============================
-> [ INFO: suspicious RCU usage. ]
-> 3.7.6+ #4 Tainted: G         C O
-> -------------------------------
-> /home/greearb/git/linux-3.7.dev.y/kernel/rcutree.c:360 Illegal idle entry in RCU read-side critical section.!
-> 
-> other info that might help us debug this:
-> 
-> 
-> RCU used illegally from idle CPU!
-> rcu_scheduler_active = 1, debug_locks = 1
-> RCU used illegally from extended quiescent state!
-> 1 lock held by swapper/1/0:
->  #0:  (rcu_read_lock){.+.+..}, at: [<ffffffff81489632>] rcu_read_lock+0x0/0x6f
-> 
-> stack backtrace:
-> Pid: 0, comm: swapper/1 Tainted: G         C O 3.7.6+ #4
+Backing out changes made in earlier TTY removal patch.  Switched
+to only one dependency in SERPORT on TTY instead of many incorrect
+dependencies.
 
-current is the swapper task.
+Signed-off-by: Joe Millenbach <jmillenbach@gmail.com>
+Reported-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+---
+ drivers/input/joystick/Kconfig    |    4 ----
+ drivers/input/keyboard/Kconfig    |   10 +---------
+ drivers/input/mouse/Kconfig       |    3 ---
+ drivers/input/serio/Kconfig       |    2 +-
+ drivers/input/touchscreen/Kconfig |   22 ----------------------
+ 5 files changed, 2 insertions(+), 39 deletions(-)
 
-> Call Trace:
->  <IRQ>  [<ffffffff810cecbd>] lockdep_rcu_suspicious+0xfc/0x105
->  [<ffffffff810fe146>] rcu_eqs_enter_common+0xef/0x178
->  [<ffffffff810fe24e>] rcu_irq_exit+0x7f/0xb0
->  [<ffffffff8108edf5>] irq_exit+0xc0/0xcc
->  [<ffffffff8100b635>] do_IRQ+0x97/0xae
->  [<ffffffff815543b2>] common_interrupt+0x72/0x72
->  <EOI>  [<ffffffff81011082>] ? mwait_idle+0x77/0x9f
->  [<ffffffff81011079>] ? mwait_idle+0x6e/0x9f
->  [<ffffffff81011379>] cpu_idle+0x68/0xbc
->  [<ffffffff8154ce84>] start_secondary+0x1fc/0x203
-> 
-> Showing all locks held in the system:
-> 1 lock held by bash/2481:
->  #0:  (&tty->atomic_read_lock){+.+...}, at: [<ffffffff813400a3>] n_tty_read+0x28d/0x785
-> 1 lock held by mingetty/2853:
->  #0:  (&tty->atomic_read_lock){+.+...}, at: [<ffffffff813400a3>] n_tty_read+0x28d/0x785
-> 1 lock held by mingetty/2857:
->  #0:  (&tty->atomic_read_lock){+.+...}, at: [<ffffffff813400a3>] n_tty_read+0x28d/0x785
-> 1 lock held by mingetty/2862:
->  #0:  (&tty->atomic_read_lock){+.+...}, at: [<ffffffff813400a3>] n_tty_read+0x28d/0x785
-> 1 lock held by mingetty/2865:
->  #0:  (&tty->atomic_read_lock){+.+...}, at: [<ffffffff813400a3>] n_tty_read+0x28d/0x785
-> 1 lock held by mingetty/2867:
->  #0:  (&tty->atomic_read_lock){+.+...}, at: [<ffffffff813400a3>] n_tty_read+0x28d/0x785
-> 1 lock held by mingetty/2869:
->  #0:  (&tty->atomic_read_lock){+.+...}, at: [<ffffffff813400a3>] n_tty_read+0x28d/0x785
-> 1 lock held by bash/3017:
->  #0:  (&tty->atomic_read_lock){+.+...}, at: [<ffffffff813400a3>] n_tty_read+0x28d/0x785
+diff --git a/drivers/input/joystick/Kconfig b/drivers/input/joystick/Kconfig
+index 055bcab..56eb471 100644
+--- a/drivers/input/joystick/Kconfig
++++ b/drivers/input/joystick/Kconfig
+@@ -132,8 +132,6 @@ config JOYSTICK_TMDC
+ 
+ source "drivers/input/joystick/iforce/Kconfig"
+ 
+-if TTY
+-
+ config JOYSTICK_WARRIOR
+ 	tristate "Logitech WingMan Warrior joystick"
+ 	select SERIO
+@@ -207,8 +205,6 @@ config JOYSTICK_ZHENHUA
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called zhenhua.
+ 
+-endif # TTY
+-
+ config JOYSTICK_DB9
+ 	tristate "Multisystem, Sega Genesis, Saturn joysticks and gamepads"
+ 	depends on PARPORT
+diff --git a/drivers/input/keyboard/Kconfig b/drivers/input/keyboard/Kconfig
+index 008f96a..5a240c6 100644
+--- a/drivers/input/keyboard/Kconfig
++++ b/drivers/input/keyboard/Kconfig
+@@ -69,7 +69,6 @@ config KEYBOARD_ATARI
+ config KEYBOARD_ATKBD
+ 	tristate "AT keyboard" if EXPERT || !X86
+ 	default y
+-	depends on TTY
+ 	select SERIO
+ 	select SERIO_LIBPS2
+ 	select SERIO_I8042 if X86
+@@ -154,7 +153,6 @@ config KEYBOARD_BFIN
+ 
+ config KEYBOARD_LKKBD
+ 	tristate "DECstation/VAXstation LK201/LK401 keyboard"
+-	depends on TTY
+ 	select SERIO
+ 	help
+ 	  Say Y here if you want to use a LK201 or LK401 style serial
+@@ -270,7 +268,7 @@ config KEYBOARD_HIL_OLD
+ 
+ config KEYBOARD_HIL
+ 	tristate "HP HIL keyboard/pointer support"
+-	depends on (GSC || HP300) && TTY
++	depends on GSC || HP300
+ 	default y
+ 	select HP_SDC
+ 	select HIL_MLC
+@@ -402,7 +400,6 @@ config KEYBOARD_IMX
+ 
+ config KEYBOARD_NEWTON
+ 	tristate "Newton keyboard"
+-	depends on TTY
+ 	select SERIO
+ 	help
+ 	  Say Y here if you have a Newton keyboard on a serial port.
+@@ -482,8 +479,6 @@ config KEYBOARD_SAMSUNG
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called samsung-keypad.
+ 
+-if TTY
+-
+ config KEYBOARD_STOWAWAY
+ 	tristate "Stowaway keyboard"
+ 	select SERIO
+@@ -506,8 +501,6 @@ config KEYBOARD_SUNKBD
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called sunkbd.
+ 
+-endif # TTY
+-
+ config KEYBOARD_SH_KEYSC
+ 	tristate "SuperH KEYSC keypad support"
+ 	depends on SUPERH || ARCH_SHMOBILE
+@@ -604,7 +597,6 @@ config KEYBOARD_TWL4030
+ 
+ config KEYBOARD_XTKBD
+ 	tristate "XT keyboard"
+-	depends on TTY
+ 	select SERIO
+ 	help
+ 	  Say Y here if you want to use the old IBM PC/XT keyboard (or
+diff --git a/drivers/input/mouse/Kconfig b/drivers/input/mouse/Kconfig
+index fc160f7..cd6268c 100644
+--- a/drivers/input/mouse/Kconfig
++++ b/drivers/input/mouse/Kconfig
+@@ -14,7 +14,6 @@ if INPUT_MOUSE
+ 
+ config MOUSE_PS2
+ 	tristate "PS/2 mouse"
+-	depends on TTY
+ 	default y
+ 	select SERIO
+ 	select SERIO_LIBPS2
+@@ -139,7 +138,6 @@ config MOUSE_PS2_OLPC
+ 
+ config MOUSE_SERIAL
+ 	tristate "Serial mouse"
+-	depends on TTY
+ 	select SERIO
+ 	help
+ 	  Say Y here if you have a serial (RS-232, COM port) mouse connected
+@@ -264,7 +262,6 @@ config MOUSE_RISCPC
+ 
+ config MOUSE_VSXXXAA
+ 	tristate "DEC VSXXX-AA/GA mouse and VSXXX-AB tablet"
+-	depends on TTY
+ 	select SERIO
+ 	help
+ 	  Say Y (or M) if you want to use a DEC VSXXX-AA (hockey
+diff --git a/drivers/input/serio/Kconfig b/drivers/input/serio/Kconfig
+index 81ee755..fe4e495 100644
+--- a/drivers/input/serio/Kconfig
++++ b/drivers/input/serio/Kconfig
+@@ -4,7 +4,6 @@
+ config SERIO
+ 	tristate "Serial I/O support" if EXPERT || !X86
+ 	default y
+-	depends on TTY
+ 	help
+ 	  Say Yes here if you have any input device that uses serial I/O to
+ 	  communicate with the system. This includes the
+@@ -37,6 +36,7 @@ config SERIO_I8042
+ config SERIO_SERPORT
+ 	tristate "Serial port line discipline"
+ 	default y
++	depends on TTY
+ 	help
+ 	  Say Y here if you plan to use an input device (mouse, joystick,
+ 	  tablet, 6dof) that communicates over the RS232 serial (COM) port.
+diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
+index 3d6f548..515cfe7 100644
+--- a/drivers/input/touchscreen/Kconfig
++++ b/drivers/input/touchscreen/Kconfig
+@@ -192,8 +192,6 @@ config TOUCHSCREEN_DA9052
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called da9052_tsi.
+ 
+-if TTY
+-
+ config TOUCHSCREEN_DYNAPRO
+ 	tristate "Dynapro serial touchscreen"
+ 	select SERIO
+@@ -218,8 +216,6 @@ config TOUCHSCREEN_HAMPSHIRE
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called hampshire.
+ 
+-endif # TTY
+-
+ config TOUCHSCREEN_EETI
+ 	tristate "EETI touchscreen panel support"
+ 	depends on I2C
+@@ -241,7 +237,6 @@ config TOUCHSCREEN_EGALAX
+ 
+ config TOUCHSCREEN_FUJITSU
+ 	tristate "Fujitsu serial touchscreen"
+-	depends on TTY
+ 	select SERIO
+ 	help
+ 	  Say Y here if you have the Fujitsu touchscreen (such as one
+@@ -280,8 +275,6 @@ config TOUCHSCREEN_S3C2410
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called s3c2410_ts.
+ 
+-if TTY
+-
+ config TOUCHSCREEN_GUNZE
+ 	tristate "Gunze AHL-51S touchscreen"
+ 	select SERIO
+@@ -318,8 +311,6 @@ config TOUCHSCREEN_WACOM_W8001
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called wacom_w8001.
+ 
+-endif # TTY
+-
+ config TOUCHSCREEN_WACOM_I2C
+ 	tristate "Wacom Tablet support (I2C)"
+ 	depends on I2C
+@@ -378,8 +369,6 @@ config TOUCHSCREEN_MMS114
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called mms114.
+ 
+-if TTY
+-
+ config TOUCHSCREEN_MTOUCH
+ 	tristate "MicroTouch serial touchscreens"
+ 	select SERIO
+@@ -404,8 +393,6 @@ config TOUCHSCREEN_INEXIO
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called inexio.
+ 
+-endif # TTY
+-
+ config TOUCHSCREEN_INTEL_MID
+ 	tristate "Intel MID platform resistive touchscreen"
+ 	depends on INTEL_SCU_IPC
+@@ -463,7 +450,6 @@ config TOUCHSCREEN_HTCPEN
+ 
+ config TOUCHSCREEN_PENMOUNT
+ 	tristate "Penmount serial touchscreen"
+-	depends on TTY
+ 	select SERIO
+ 	help
+ 	  Say Y here if you have a Penmount serial touchscreen connected to
+@@ -507,8 +493,6 @@ config TOUCHSCREEN_TNETV107X
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called tnetv107x-ts.
+ 
+-if TTY
+-
+ config TOUCHSCREEN_TOUCHRIGHT
+ 	tristate "Touchright serial touchscreen"
+ 	select SERIO
+@@ -533,8 +517,6 @@ config TOUCHSCREEN_TOUCHWIN
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called touchwin.
+ 
+-endif # TTY
+-
+ config TOUCHSCREEN_TI_AM335X_TSC
+ 	tristate "TI Touchscreen Interface"
+ 	depends on MFD_TI_AM335X_TSCADC
+@@ -808,8 +790,6 @@ config TOUCHSCREEN_USB_EASYTOUCH
+ 	  Say Y here if you have an EasyTouch USB Touch controller.
+ 	  If unsure, say N.
+ 
+-if TTY
+-
+ config TOUCHSCREEN_TOUCHIT213
+ 	tristate "Sahara TouchIT-213 touchscreen"
+ 	select SERIO
+@@ -833,8 +813,6 @@ config TOUCHSCREEN_TSC_SERIO
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called tsc40.
+ 
+-endif # TTY
+-
+ config TOUCHSCREEN_TSC2005
+         tristate "TSC2005 based touchscreens"
+         depends on SPI_MASTER && GENERIC_HARDIRQS
+-- 
+1.7.9.5
 
-I'm not sure the swapper task is part of the 'do_each_thread()' loop.
-
-Perhaps what you want to do is add a:
-
-	lockdep_print_held_locks(current);
-
-> 
-> =============================================
-> 
-> BUG: MAX_LOCK_DEPTH too low, depth: 96  max: 96!
-> turning off the locking correctness validator.
-> Pid: 0, comm: swapper/1 Tainted: G         C O 3.7.6+ #4
-> Call Trace:
->  <IRQ>  [<ffffffff810d1e31>] __lock_acquire+0xe80/0xf06
->  [<ffffffff810cfbbe>] ? check_irq_usage+0xad/0xbe
->  [<ffffffff810d1f1b>] lock_acquire+0x64/0x81
->  [<ffffffff810acbf3>] ? cpu_cgroup_can_attach+0x66/0x66
->  [<ffffffff810acc26>] rcu_read_lock+0x33/0x6f
->  [<ffffffff810acbf3>] ? cpu_cgroup_can_attach+0x66/0x66
->  [<ffffffff810ad1a8>] ttwu_stat+0x60/0x11c
->  [<ffffffff810b1cbb>] try_to_wake_up+0x1e6/0x20b
->  [<ffffffff810b1ced>] default_wake_function+0xd/0xf
->  [<ffffffff810ab4c1>] __wake_up_common+0x49/0x7f
->  [<ffffffff810ac4e5>] __wake_up+0x34/0x48
->  [<ffffffffa05fce11>] handleRcvWlp+0xf4d/0xfd5 [wanlink]
->  [<ffffffff810d133a>] ? __lock_acquire+0x389/0xf06
-
-I'm curious. Does your code grab a read lock? If you grab the same read
-lock multiple times it adds to the list each time. Thus if you have
-anything like:
-
-	for (i = 0; i < 100; i++ ) {
-		read_lock(&lock);
-	}
-
-	for (i = 0; i < 100; i++) {
-		read_unlock(&lock);
-	}
-
-That will fill up the held locks quite a bit.
-
-The above code I showed is ridiculous and I doubt you have it, but if
-you have something that does lots of recursive reads for some reason,
-that could be an issue.
-
--- Steve
-
-
->  [<ffffffffa05fd325>] wp_handle_rcv_pkt+0x1f5/0x243 [wanlink]
->  [<ffffffffa05fd51c>] handle_rcv+0x1a9/0x1dd [wanlink]
->  [<ffffffff8148a5f1>] deliver_skb+0x58/0x60
->  [<ffffffff8148ab00>] __netif_receive_skb+0x507/0x63c
->  [<ffffffff810100b6>] ? read_tsc+0x9/0x1b
->  [<ffffffff8148c939>] netif_receive_skb+0x56/0x8b
->  [<ffffffff8148cf64>] ? __napi_gro_receive+0xf3/0x102
->  [<ffffffff8148ca51>] napi_skb_finish+0x24/0x57
->  [<ffffffff8148d199>] napi_gro_receive+0x91/0x96
->  [<ffffffffa0231d31>] e1000_receive_skb+0x50/0x5b [e1000e]
->  [<ffffffffa023500c>] e1000_clean_rx_irq+0x29f/0x341 [e1000e]
->  [<ffffffffa02355c6>] e1000e_poll+0x7d/0x239 [e1000e]
->  [<ffffffff8148d31f>] net_rx_action+0xb2/0x1e2
->  [<ffffffff8108eeea>] ? __do_softirq+0x6d/0x17b
->  [<ffffffff8108ef28>] __do_softirq+0xab/0x17b
->  [<ffffffff810a6ed6>] ? hrtimer_interrupt+0x127/0x1e2
->  [<ffffffff8155a7fc>] call_softirq+0x1c/0x30
->  [<ffffffff8100bd46>] do_softirq+0x46/0x9e
->  [<ffffffff8108ed83>] irq_exit+0x4e/0xcc
->  [<ffffffff81027f73>] smp_apic_timer_interrupt+0x85/0x93
->  [<ffffffff8155a0b2>] apic_timer_interrupt+0x72/0x80
->  <EOI>  [<ffffffff81554477>] ? retint_restore_args+0x13/0x13
->  [<ffffffff81011082>] ? mwait_idle+0x77/0x9f
->  [<ffffffff81011079>] ? mwait_idle+0x6e/0x9f
->  [<ffffffff81011379>] cpu_idle+0x68/0xbc
->  [<ffffffff8154ce84>] start_secondary+0x1fc/0x203
-> BUG: sleeping function called from invalid context at /home/greearb/git/linux-3.7.dev.y/kernel/mutex.c:269
-> in_atomic(): 0, irqs_disabled(): 0, pid: 1375, name: rs:main Q:Reg
-> INFO: lockdep is turned off.
-> Pid: 1375, comm: rs:main Q:Reg Tainted: G         C O 3.7.6+ #4
-> Call Trace:
->  [<ffffffff810adc9d>] __might_sleep+0x1a2/0x1ab
->  [<ffffffff81551969>] mutex_lock_nested+0x20/0x3b
->  [<ffffffff8133e243>] process_output+0x24/0x52
->  [<ffffffff8133fba3>] n_tty_write+0x273/0x356
->  [<ffffffff810b1ce0>] ? try_to_wake_up+0x20b/0x20b
->  [<ffffffff8133db38>] tty_write+0x19b/0x23a
->  [<ffffffff8133f930>] ? n_tty_ioctl+0xc6/0xc6
->  [<ffffffff8133dc61>] redirected_tty_write+0x8a/0x95
->  [<ffffffff81158d6c>] vfs_write+0xa9/0x105
->  [<ffffffff81158ead>] sys_write+0x54/0x89
->  [<ffffffff81559569>] system_call_fastpath+0x16/0x1b
-> 
-> -- 
-> Ben Greear <greearb@candelatech.com>
-> Candela Technologies Inc  http://www.candelatech.com
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
