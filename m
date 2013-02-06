@@ -1,93 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932229Ab3BFWDZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 17:03:25 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37239 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932176Ab3BFWDU (ORCPT
+	id S932184Ab3BFWC6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 17:02:58 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5792 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758246Ab3BFWCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 17:03:20 -0500
-Date: Wed, 6 Feb 2013 14:02:24 -0800
-From: tip-bot for Borislav Petkov <bp@suse.de>
-Message-ID: <tip-2209001fd895e8932ae2c85bfca233758234499a@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, tglx@linutronix.de, bp@suse.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, tglx@linutronix.de, bp@suse.de
-In-Reply-To: <1359979554-9160-1-git-send-email-bp@alien8.de>
-References: <1359979554-9160-1-git-send-email-bp@alien8.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Check for flex and bison before continuing building
-Git-Commit-ID: 2209001fd895e8932ae2c85bfca233758234499a
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 06 Feb 2013 14:02:30 -0800 (PST)
+	Wed, 6 Feb 2013 17:02:52 -0500
+X-Authority-Analysis: v=2.0 cv=C91rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=iX436ahayn8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=Kq2jaWyG-zMA:10 a=VwQbUJbxAAAA:8 a=5GsgiXXBMyPZXWBjK_kA:9 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-Id: <20130206220250.826323567@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Wed, 06 Feb 2013 17:02:11 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>
+Subject: [PATCH RT 1/6] drivers-tty-pl011-irq-disable-madness.patch
+References: <20130206220210.823160521@goodmis.org>
+Content-Disposition: inline; filename=0001-drivers-tty-pl011-irq-disable-madness.patch.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2209001fd895e8932ae2c85bfca233758234499a
-Gitweb:     http://git.kernel.org/tip/2209001fd895e8932ae2c85bfca233758234499a
-Author:     Borislav Petkov <bp@suse.de>
-AuthorDate: Mon, 4 Feb 2013 13:05:54 +0100
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 6 Feb 2013 18:09:25 -0300
+From: Thomas Gleixner <tglx@linutronix.de>
 
-perf tools: Check for flex and bison before continuing building
-
-Check whether both executables are present on the system before
-continuing with the build instead of failing halfway, if either are
-missing.
-
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Link: http://lkml.kernel.org/r/1359979554-9160-1-git-send-email-bp@alien8.de
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: stable-rt@vger.kernel.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- tools/perf/Makefile | 13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+ drivers/tty/serial/amba-pl011.c |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 4b1044c..a158309 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -149,6 +149,8 @@ RM = rm -f
- MKDIR = mkdir
- FIND = find
- INSTALL = install
-+FLEX = flex
-+BISON= bison
+diff --git a/drivers/tty/serial/amba-pl011.c b/drivers/tty/serial/amba-pl011.c
+index fe9f111..1fbaf66 100644
+--- a/drivers/tty/serial/amba-pl011.c
++++ b/drivers/tty/serial/amba-pl011.c
+@@ -1761,13 +1761,19 @@ pl011_console_write(struct console *co, const char *s, unsigned int count)
  
- # sparse is architecture-neutral, which means that we need to tell it
- # explicitly what architecture to check for. Fix this up for yours..
-@@ -158,6 +160,14 @@ ifneq ($(MAKECMDGOALS),clean)
- ifneq ($(MAKECMDGOALS),tags)
- -include config/feature-tests.mak
+ 	clk_enable(uap->clk);
  
-+ifeq ($(call get-executable,$(FLEX)),)
-+	dummy := $(error Error: $(FLEX) is missing on this system, please install it)
-+endif
-+
-+ifeq ($(call get-executable,$(BISON)),)
-+	dummy := $(error Error: $(BISON) is missing on this system, please install it)
-+endif
-+
- ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -fstack-protector-all,-fstack-protector-all),y)
- 	CFLAGS := $(CFLAGS) -fstack-protector-all
- endif
-@@ -282,9 +292,6 @@ endif
+-	local_irq_save(flags);
++	/*
++	 * local_irq_save(flags);
++	 *
++	 * This local_irq_save() is nonsense. If we come in via sysrq
++	 * handling then interrupts are already disabled. Aside of
++	 * that the port.sysrq check is racy on SMP regardless.
++	*/
+ 	if (uap->port.sysrq)
+ 		locked = 0;
+ 	else if (oops_in_progress)
+-		locked = spin_trylock(&uap->port.lock);
++		locked = spin_trylock_irqsave(&uap->port.lock, flags);
+ 	else
+-		spin_lock(&uap->port.lock);
++		spin_lock_irqsave(&uap->port.lock, flags);
  
- export PERL_PATH
+ 	/*
+ 	 *	First save the CR then disable the interrupts
+@@ -1789,8 +1795,7 @@ pl011_console_write(struct console *co, const char *s, unsigned int count)
+ 	writew(old_cr, uap->port.membase + UART011_CR);
  
--FLEX = flex
--BISON= bison
--
- $(OUTPUT)util/parse-events-flex.c: util/parse-events.l $(OUTPUT)util/parse-events-bison.c
- 	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/parse-events-flex.h $(PARSER_DEBUG_FLEX) -t util/parse-events.l > $(OUTPUT)util/parse-events-flex.c
+ 	if (locked)
+-		spin_unlock(&uap->port.lock);
+-	local_irq_restore(flags);
++		spin_unlock_irqrestore(&uap->port.lock, flags);
  
+ 	clk_disable(uap->clk);
+ }
+-- 
+1.7.10.4
+
+
