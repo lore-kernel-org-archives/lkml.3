@@ -1,126 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758225Ab3BFUdO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 15:33:14 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:36454 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757971Ab3BFUdL (ORCPT
+	id S1758326Ab3BFUjG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 15:39:06 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:52572 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757887Ab3BFUjC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 15:33:11 -0500
-Date: Wed, 6 Feb 2013 12:32:49 -0800
-From: tip-bot for Jacob Shin <jacob.shin@amd.com>
-Message-ID: <tip-0fbdad078a70ed72248c3d30fe32e45e83be00d1@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org, eranian@google.com,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        acme@ghostprotocols.net, jolsa@redhat.com, jacob.shin@amd.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
-        paulus@samba.org, linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        acme@ghostprotocols.net, jacob.shin@amd.com, tglx@linutronix.de,
-        jolsa@redhat.com
-In-Reply-To: <1360171589-6381-6-git-send-email-jacob.shin@amd.com>
-References: <1360171589-6381-6-git-send-email-jacob.shin@amd.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86:
-  Allow for architecture specific RDPMC indexes
-Git-Commit-ID: 0fbdad078a70ed72248c3d30fe32e45e83be00d1
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 6 Feb 2013 15:39:02 -0500
+Date: Wed, 6 Feb 2013 21:38:54 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Terje =?utf-8?Q?Bergstr=C3=B6m?= <tbergstrom@nvidia.com>
+Cc: Arto Merilainen <amerilainen@nvidia.com>,
+        "airlied@linux.ie" <airlied@linux.ie>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv5,RESEND 2/8] gpu: host1x: Add syncpoint wait and
+ interrupts
+Message-ID: <20130206203854.GA1012@avionic-0098.mockup.avionic-design.de>
+References: <1358250244-9678-1-git-send-email-tbergstrom@nvidia.com>
+ <1358250244-9678-3-git-send-email-tbergstrom@nvidia.com>
+ <20130204103032.GB27443@avionic-0098.mockup.avionic-design.de>
+ <51108A94.3060501@nvidia.com>
+ <20130205084255.GB20437@avionic-0098.mockup.avionic-design.de>
+ <5112BD26.5060800@nvidia.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="huq684BweRXVnRxX"
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 06 Feb 2013 12:32:54 -0800 (PST)
+In-Reply-To: <5112BD26.5060800@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:aJLf3t4xi4QQ9ZHALFw2MqnazLWcoA82WcbC+QfV7pu
+ gEFXcFzy/2urs6mOuCEs5Rqy9/3SjegrLO+iQX+U6POJ19k4zB
+ f66+j72sTY2e9Ly1ie4V6Zpnr44T+z36gMcDAwFGShQUNdUSYF
+ g2jAf4Dk29dpomRIGywMymY1zw0QujdJGpNWJIaeScgoXceJbZ
+ 2LQtiMAsoQLAEoQEn60WnuMg1GR8mzvMxJc5JqLD+ucrAyHWCu
+ gZdrI3xPOnGSRTb9gkVcXemQGrCjap4/i5N+zq/n7S/T1YJyvd
+ se3FoSzzu6E35FVOnSBCRehjoJXmVVuhUBId+qTTCvX/168DQr
+ 6rPQCy7c7G7oQeAiXCofPIt/WtEb2cyFxStqxAhTpjuDXPyK7J
+ TRINtyh4YLZa07WHgPQeoIuScx170krdXE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0fbdad078a70ed72248c3d30fe32e45e83be00d1
-Gitweb:     http://git.kernel.org/tip/0fbdad078a70ed72248c3d30fe32e45e83be00d1
-Author:     Jacob Shin <jacob.shin@amd.com>
-AuthorDate: Wed, 6 Feb 2013 11:26:28 -0600
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 6 Feb 2013 19:45:24 +0100
 
-perf/x86: Allow for architecture specific RDPMC indexes
+--huq684BweRXVnRxX
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Similar to config_base and event_base, allow architecture
-specific RDPMC ECX values.
+On Wed, Feb 06, 2013 at 12:29:26PM -0800, Terje Bergstr=C3=B6m wrote:
+> On 05.02.2013 00:42, Thierry Reding wrote:
+[...]
+> > Or if that doesn't work it would still be preferable to allocate memory
+> > in host1x_syncpt_wait() directly instead of going through the wrapper.
+>=20
+> This was done purely, because I'm hiding the struct size from the
+> caller. If the caller needs to allocate, I need to expose the struct in
+> a header, not just a forward declaration.
 
-Signed-off-by: Jacob Shin <jacob.shin@amd.com>
-Acked-by: Stephane Eranian <eranian@google.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1360171589-6381-6-git-send-email-jacob.shin@amd.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/cpu/perf_event.c     | 2 +-
- arch/x86/kernel/cpu/perf_event.h     | 6 ++++++
- arch/x86/kernel/cpu/perf_event_amd.c | 6 ++++++
- 3 files changed, 13 insertions(+), 1 deletion(-)
+I don't think we need to hide the struct from the caller. This is all
+host1x internal. Even if a host1x client uses the struct it makes little
+sense to hide it. They are all part of the same code base so there's not
+much to be gained by hiding the structure definition.
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index c0df5ed2..bf0f01a 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -829,7 +829,7 @@ static inline void x86_assign_hw_event(struct perf_event *event,
- 	} else {
- 		hwc->config_base = x86_pmu_config_addr(hwc->idx);
- 		hwc->event_base  = x86_pmu_event_addr(hwc->idx);
--		hwc->event_base_rdpmc = hwc->idx;
-+		hwc->event_base_rdpmc = x86_pmu_rdpmc_index(hwc->idx);
- 	}
- }
- 
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index a7f06a9..7f5c75c 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -326,6 +326,7 @@ struct x86_pmu {
- 	unsigned	eventsel;
- 	unsigned	perfctr;
- 	int		(*addr_offset)(int index, bool eventsel);
-+	int		(*rdpmc_index)(int index);
- 	u64		(*event_map)(int);
- 	int		max_events;
- 	int		num_counters;
-@@ -459,6 +460,11 @@ static inline unsigned int x86_pmu_event_addr(int index)
- 				  x86_pmu.addr_offset(index, false) : index);
- }
- 
-+static inline int x86_pmu_rdpmc_index(int index)
-+{
-+	return x86_pmu.rdpmc_index ? x86_pmu.rdpmc_index(index) : index;
-+}
-+
- int x86_setup_perfctr(struct perf_event *event);
- 
- int x86_pmu_hw_config(struct perf_event *event);
-diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
-index b60f31c..05462f0 100644
---- a/arch/x86/kernel/cpu/perf_event_amd.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd.c
-@@ -173,6 +173,11 @@ static inline int amd_pmu_addr_offset(int index, bool eventsel)
- 	return offset;
- }
- 
-+static inline int amd_pmu_rdpmc_index(int index)
-+{
-+	return index;
-+}
-+
- static int amd_pmu_hw_config(struct perf_event *event)
- {
- 	int ret;
-@@ -620,6 +625,7 @@ static __initconst const struct x86_pmu amd_pmu = {
- 	.eventsel		= MSR_K7_EVNTSEL0,
- 	.perfctr		= MSR_K7_PERFCTR0,
- 	.addr_offset            = amd_pmu_addr_offset,
-+	.rdpmc_index		= amd_pmu_rdpmc_index,
- 	.event_map		= amd_pmu_event_map,
- 	.max_events		= ARRAY_SIZE(amd_perfmon_event_map),
- 	.num_counters		= AMD64_NUM_COUNTERS,
+> >>>> +void host1x_intr_stop(struct host1x_intr *intr)
+> >>>> +{
+> >>>> +     unsigned int id;
+> >>>> +     struct host1x *host1x =3D intr_to_host1x(intr);
+> >>>> +     struct host1x_intr_syncpt *syncpt;
+> >>>> +     u32 nb_pts =3D host1x_syncpt_nb_pts(intr_to_host1x(intr));
+> >>>> +
+> >>>> +     mutex_lock(&intr->mutex);
+> >>>> +
+> >>>> +     host1x->intr_op.disable_all_syncpt_intrs(intr);
+> >>>
+> >>> I haven't commented on this everywhere, but I think this could benefit
+> >>> from a wrapper that forwards this to the intr_op. The same goes for t=
+he
+> >>> sync_op.
+> >>
+> >> You mean something like "host1x_disable_all_syncpt_intrs"?
+> >=20
+> > Yes. I think that'd be useful for each of the op functions. Perhaps you
+> > could even pass in a struct host1x * to make calls more uniform.
+>=20
+> Ok, I'll add the wrapper, and I'll check if passing struct host1x *
+> would make sense. In effect that'd render struct host1x_intr mostly
+> unused, so how about if we just merge the contents of host1x_intr to host=
+1x?
+
+We can probably do that. It might make some sense to keep it in order to
+scope the related fields but struct host1x isn't very large yet, so I
+think omitting host1x_intr should be fine.
+
+Thierry
+
+--huq684BweRXVnRxX
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJREr9eAAoJEN0jrNd/PrOhgwYQAJnrakyABYmZHnCmfPf3gQRy
+D+qFtofkAwbvSmHGT1ULEn7A7u91dqfZaWPgrXoFbpSaevf2JUvhN8sgnzsppjxa
+ajutLt9SbFZmdjJexDf2RHHMwJeF+89hP8GOMxBcd7UQ+pdoAKfhjOihCvcDQL90
+DiY0rMXl/sUSnCJ7ERk1oUPXb4Sn9I/QxZMSTQB3gxcp4lC3pDNXx5gDkThuXkpZ
+gI1RnCtLmiEgTIAkxlvu6oe3dKpztVYl2urqC45ORRcXPGx3bxbo49v5XuqgeGNU
+hr9/JorQJt2biRUFzmyFrpJ782Ral3YIHiwugtvVjrz1yWBUk55Rg4pqt/3DrL3Z
+D0IuIluJrTDq+hhxr3TxV1635O9DnKBklSxXtGehq3EqhJfjWKBk65ndaHE33Ob8
+SD0n+m3Y2JgASV8MNsa2ErfuBm9H95Ed/3VyglO3qK3eGr9dSI/irRbOXjWfsVsH
+Lac7LTO9NYnnbGmeBmenPKVL6iibsCRO5DmFIPrCHNqweouvLghGLKVX7t0Lzvx+
+Q2rgvq09f6LtNAZ1ifEmmWXjbyxeDPEeOh8Vh4KsEzAW6zakcJ1qBQ0QkPA43jU/
+kxjCXiQkooIR0rB9U2TkfLcfHF7HoJoadrsBbLlGonaGc9oRqPI8wKDQ4zJ6VZLx
+wSAx/RbqJ9utFbiBun1q
+=OMAw
+-----END PGP SIGNATURE-----
+
+--huq684BweRXVnRxX--
