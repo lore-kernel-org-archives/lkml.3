@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757029Ab3BFCSg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 21:18:36 -0500
-Received: from mail-we0-f171.google.com ([74.125.82.171]:50107 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752680Ab3BFCSe (ORCPT
+	id S1757055Ab3BFCTo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 21:19:44 -0500
+Received: from mail.candelatech.com ([208.74.158.172]:47075 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754731Ab3BFCTm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 21:18:34 -0500
+	Tue, 5 Feb 2013 21:19:42 -0500
+Message-ID: <5111BD28.50407@candelatech.com>
+Date: Tue, 05 Feb 2013 18:17:12 -0800
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <1360088646-19104-7-git-send-email-dirk.brandewie@gmail.com>
-References: <1360088646-19104-1-git-send-email-dirk.brandewie@gmail.com>
-	<1360088646-19104-7-git-send-email-dirk.brandewie@gmail.com>
-Date: Wed, 6 Feb 2013 07:48:32 +0530
-X-Google-Sender-Auth: meYGmqCRFrcKEJcjf5tt52oKJu0
-Message-ID: <CAOh2x=nzZAgU4MXKVGSbLTT53yfZkMxsLSxA_nihMiBMkBABgQ@mail.gmail.com>
-Subject: Re: [PATCH 6/7] cpufreq_stats: do not remove sysfs files if frequency
- table is not present
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: dirk.brandewie@gmail.com
-Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: Question on lockdep and MAX_LOCK_DEPTH
+References: <5111AD8D.1080005@candelatech.com> <20130206015430.GA9161@home.goodmis.org>
+In-Reply-To: <20130206015430.GA9161@home.goodmis.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 5, 2013 at 11:54 PM,  <dirk.brandewie@gmail.com> wrote:
-> From: Dirk Brandewie <dirk.brandewie@gmail.com>
->
-> The sysfs files for cpufreq_stats are created in cpufreq_stats_create_table()
-> called from cpufreq_stat_notifier_policy() when a policy is added to
-> the cpu. cpufreq_stats_create_table() will not be called if the
-> scaling driver does not export a frequency table to cpufreq.  Use the
-> same fence on tear down.
->
-> Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
-> ---
->  drivers/cpufreq/cpufreq_stats.c |    5 +++++
->  1 files changed, 5 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
-> index 572124c..fb001e2 100644
-> --- a/drivers/cpufreq/cpufreq_stats.c
-> +++ b/drivers/cpufreq/cpufreq_stats.c
-> @@ -185,6 +185,11 @@ static void cpufreq_stats_free_table(unsigned int cpu)
->  static void cpufreq_stats_free_sysfs(unsigned int cpu)
->  {
->         struct cpufreq_policy *policy = cpufreq_cpu_get(cpu);
-> +       struct cpufreq_frequency_table *table;
-> +
-> +       table = cpufreq_frequency_get_table(cpu);
-> +       if (!table)
-> +               return;
+On 02/05/2013 05:54 PM, Steven Rostedt wrote:
 
-Because we aren't using table later on, i would write it as:
+> I'm not sure the swapper task is part of the 'do_each_thread()' loop.
+>
+> Perhaps what you want to do is add a:
+>
+> 	lockdep_print_held_locks(current);
 
-> +       if (!cpufreq_frequency_get_table(cpu))
-> +               return;
+I'll add that and test...
+
+> I'm curious. Does your code grab a read lock? If you grab the same read
+> lock multiple times it adds to the list each time. Thus if you have
+> anything like:
+>
+> 	for (i = 0; i < 100; i++ ) {
+> 		read_lock(&lock);
+> 	}
+>
+> 	for (i = 0; i < 100; i++) {
+> 		read_unlock(&lock);
+> 	}
+>
+> That will fill up the held locks quite a bit.
+>
+> The above code I showed is ridiculous and I doubt you have it, but if
+> you have something that does lots of recursive reads for some reason,
+> that could be an issue.
+
+I have only one read/write lock in my module, and it looks like
+I always lock it as a writer (will fix that soon for performance
+reasons, but it should be valid locking I think).
+
+I have no rcu locks at all in my module currently.
+
+I've seen similar lockups on another machine that does not use
+this module, but it uses a hacked up pktgen.  I haven't found
+a test case that reproduces this on a clean upstream build,
+but I am still fairly suspicious that it isn't my code.
+Famous last words I'm sure :)
+
+Thanks,
+Ben
+
+-- 
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
+
