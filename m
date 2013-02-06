@@ -1,133 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756924Ab3BFOsG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 09:48:06 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:59447 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756223Ab3BFOrD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 09:47:03 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID r16EkrRv011385
-From: Hayes Wang <hayeswang@realtek.com>
-To: <romieu@fr.zoreil.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH 2/5] r8169: Update PHY settings of RTL8111G
-Date: Wed, 6 Feb 2013 22:46:24 +0800
-Message-ID: <1360161987-3268-2-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1360161987-3268-1-git-send-email-hayeswang@realtek.com>
-References: <1360161987-3268-1-git-send-email-hayeswang@realtek.com>
+	id S1755215Ab3BFOwK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 09:52:10 -0500
+Received: from shutemov.name ([204.155.152.216]:37802 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751294Ab3BFOwG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 09:52:06 -0500
+Date: Wed, 6 Feb 2013 16:53:55 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        Aaron Durbin <adurbin@google.com>, Greg Thelen <gthelen@google.com>
+Subject: Re: [PATCH 1/4] eventfd: introduce eventfd_signal_hangup()
+Message-ID: <20130206145355.GA27191@shutemov.name>
+References: <510CB733.2080904@huawei.com>
+ <510CB744.7000300@huawei.com>
+ <20130202155858.GA13022@shutemov.name>
+ <20130204101521.GA18322@shutemov.name>
+ <51107F42.1090401@huawei.com>
+ <20130205082820.GA22220@shutemov.name>
+ <5111B664.5050606@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5111B664.5050606@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- Replace the current settings with rtl_writephy and rtl_readphy.
-  For the hardware, the settings are same with previous ones. This
-  make the setting method like the previous chips.
-- Add new PHY settings.
+On Wed, Feb 06, 2013 at 09:48:20AM +0800, Li Zefan wrote:
+> On 2013/2/5 16:28, Kirill A. Shutemov wrote:
+> > On Tue, Feb 05, 2013 at 11:40:50AM +0800, Li Zefan wrote:
+> >> On 2013/2/4 18:15, Kirill A. Shutemov wrote:
+> >>> On Sat, Feb 02, 2013 at 05:58:58PM +0200, Kirill A. Shutemov wrote:
+> >>>> On Sat, Feb 02, 2013 at 02:50:44PM +0800, Li Zefan wrote:
+> >>>>> When an eventfd is closed, a wakeup with POLLHUP will be issued,
+> >>>>> but cgroup wants to issue wakeup explicitly, so when a cgroup is
+> >>>>> removed userspace can be notified.
+> >>>>>
+> >>>>> Signed-off-by: Li Zefan <lizefan@huawei.com>
+> >>>
+> >>> Hm.. Looks like it will break eventfd semantics:
+> >>>
+> >>> 1. One eventfd can be used for deliver more then one notification from
+> >>> one or more cgroups. POLLHUP on removing one of cgroups is not valid.
+> >>>
+> >>> 2. It's valid to have eventfd opened only by one userspace application. We
+> >>> should not close it, just because cgroup is removed.
+> >>>
+> >>> I think problem with multiple threads waiting an event on eventfd should
+> >>> be handled in userspace.
+> >>>
+> >>
+> >> I didn't realize this.. and if a cgroup is removed, the woken thread may not
+> >> be the thread that is waiting on this cgroup.
+> > 
+> > Why? The only threads who read() or poll() the eventfd will be wake up,
+> > won't they? Do you have a code sample to demonstrate the issue?
+> > 
+> 
+> All the threads will be woken up, but one of them will consume the event counter,
+> and then all other threads will keep waiting.
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/ethernet/realtek/r8169.c | 72 +++++++++++++++++++++++++-----------
- 1 file changed, 51 insertions(+), 21 deletions(-)
+The woken up thread can identify that cgroup had disappeared and notify
+other threads (probably with the same eventfd).
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index e811ab5..d1bee4c 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -1029,14 +1029,6 @@ static u16 r8168_phy_ocp_read(struct rtl8169_private *tp, u32 reg)
- 		(RTL_R32(GPHY_OCP) & 0xffff) : ~0;
- }
- 
--static void rtl_w1w0_phy_ocp(struct rtl8169_private *tp, int reg, int p, int m)
--{
--	int val;
--
--	val = r8168_phy_ocp_read(tp, reg);
--	r8168_phy_ocp_write(tp, reg, (val | p) & ~m);
--}
--
- static void r8168_mac_ocp_write(struct rtl8169_private *tp, u32 reg, u32 data)
- {
- 	void __iomem *ioaddr = tp->mmio_addr;
-@@ -3410,23 +3402,61 @@ static void rtl8168g_1_hw_phy_config(struct rtl8169_private *tp)
- {
- 	rtl_apply_firmware(tp);
- 
--	if (r8168_phy_ocp_read(tp, 0xa460) & 0x0100)
--		rtl_w1w0_phy_ocp(tp, 0xbcc4, 0x0000, 0x8000);
--	else
--		rtl_w1w0_phy_ocp(tp, 0xbcc4, 0x8000, 0x0000);
-+	rtl_writephy(tp, 0x1f, 0x0a46);
-+	if (rtl_readphy(tp, 0x10) & 0x0100) {
-+		rtl_writephy(tp, 0x1f, 0x0bcc);
-+		rtl_w1w0_phy(tp, 0x12, 0x0000, 0x8000);
-+	} else {
-+		rtl_writephy(tp, 0x1f, 0x0bcc);
-+		rtl_w1w0_phy(tp, 0x12, 0x8000, 0x0000);
-+	}
- 
--	if (r8168_phy_ocp_read(tp, 0xa466) & 0x0100)
--		rtl_w1w0_phy_ocp(tp, 0xc41a, 0x0002, 0x0000);
--	else
--		rtl_w1w0_phy_ocp(tp, 0xbcc4, 0x0000, 0x0002);
-+	rtl_writephy(tp, 0x1f, 0x0a46);
-+	if (rtl_readphy(tp, 0x13) & 0x0100) {
-+		rtl_writephy(tp, 0x1f, 0x0c41);
-+		rtl_w1w0_phy(tp, 0x15, 0x0002, 0x0000);
-+	} else {
-+		rtl_writephy(tp, 0x1f, 0x0c41);
-+		rtl_w1w0_phy(tp, 0x15, 0x0000, 0x0002);
-+	}
- 
--	rtl_w1w0_phy_ocp(tp, 0xa442, 0x000c, 0x0000);
--	rtl_w1w0_phy_ocp(tp, 0xa4b2, 0x0004, 0x0000);
-+	/* Enable PHY auto speed down */
-+	rtl_writephy(tp, 0x1f, 0x0a44);
-+	rtl_w1w0_phy(tp, 0x11, 0x000c, 0x0000);
-+
-+	rtl_writephy(tp, 0x1f, 0x0bcc);
-+	rtl_w1w0_phy(tp, 0x14, 0x0100, 0x0000);
-+	rtl_writephy(tp, 0x1f, 0x0a44);
-+	rtl_w1w0_phy(tp, 0x11, 0x00c0, 0x0000);
-+	rtl_writephy(tp, 0x1f, 0x0a43);
-+	rtl_writephy(tp, 0x13, 0x8084);
-+	rtl_w1w0_phy(tp, 0x14, 0x0000, 0x6000);
-+	rtl_w1w0_phy(tp, 0x10, 0x1003, 0x0000);
-+
-+	/* EEE auto-fallback function */
-+	rtl_writephy(tp, 0x1f, 0x0a4b);
-+	rtl_w1w0_phy(tp, 0x11, 0x0004, 0x0000);
-+
-+	/* Enable UC LPF tune function */
-+	rtl_writephy(tp, 0x1f, 0x0a43);
-+	rtl_writephy(tp, 0x13, 0x8012);
-+	rtl_w1w0_phy(tp, 0x14, 0x8000, 0x0000);
-+
-+	rtl_writephy(tp, 0x1f, 0x0c42);
-+	rtl_w1w0_phy(tp, 0x11, 0x4000, 0x2000);
- 
--	r8168_phy_ocp_write(tp, 0xa436, 0x8012);
--	rtl_w1w0_phy_ocp(tp, 0xa438, 0x8000, 0x0000);
-+	/* Improve SWR Efficiency */
-+	rtl_writephy(tp, 0x1f, 0x0bcd);
-+	rtl_writephy(tp, 0x14, 0x5065);
-+	rtl_writephy(tp, 0x14, 0xd065);
-+	rtl_writephy(tp, 0x1f, 0x0bc8);
-+	rtl_writephy(tp, 0x11, 0x5655);
-+	rtl_writephy(tp, 0x1f, 0x0bcd);
-+	rtl_writephy(tp, 0x14, 0x1065);
-+	rtl_writephy(tp, 0x14, 0x9065);
-+	rtl_writephy(tp, 0x14, 0x1065);
- 
--	rtl_w1w0_phy_ocp(tp, 0xc422, 0x4000, 0x2000);
-+	rtl_writephy(tp, 0x1f, 0x0000);
- }
- 
- static void rtl8102e_hw_phy_config(struct rtl8169_private *tp)
+For me it looks like userspace mess rather then kernel issue.
+
+> >> How crappy.. I don't know how
+> >> userspace is going to deal with all these.
+> >>
+> >> And another bug spotted. We can pass fd of memory.usage_in_bytes of cgroup A
+> >> to cgroup.event_control of cgroup B, and then we won't get memory usage
+> >> notification from A but B! What's worse, if A and B are in different mount
+> >> hierarchy, boom!
+> > 
+> > I think we can ignore which cgroup event_control is belong to, and just
+> > use cgroup of cfile as base. It also means you can use one event_control fd
+> > for registering events to different cgroups. It can be handy.
+> > 
+> 
+> The most reasonal usage is, cgroup.event_control exists in the root cgroup only,
+> and it's used to register events to all cgroups. But I don't think we can
+> change the current interface that each cgroup has a cgroup.event_control, so
+> we'll restrict event registration as my patch does.
+
+Looks good to me.
+
 -- 
-1.8.1
-
+ Kirill A. Shutemov
