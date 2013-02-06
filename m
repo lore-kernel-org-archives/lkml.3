@@ -1,66 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757595Ab3BFQlm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 11:41:42 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33770 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756532Ab3BFQlj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 11:41:39 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CALLzPKZRiWR1gBt4x9PM0pzAB6KVaE0ViEjLJLdVYk+==SSjHQ@mail.gmail.com>
-References: <cover.1360067333.git.dmitry.kasatkin@intel.com> <cc87f1242960fad1a9fb44bcec331915e14c832b.1360067333.git.dmitry.kasatkin@intel.com> <20130205203616.GA8228@fenchurch.internal.datastacks.com> <CALLzPKaTExm=eJ_f4x4NUROk83wDHQy0osexd4QqvHODd9ZPwA@mail.gmail.com> <5111E44C.2040308@zytor.com> <CALLzPKZRiWR1gBt4x9PM0pzAB6KVaE0ViEjLJLdVYk+==SSjHQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [RFC 2/2] initramfs with digital signature protection
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 06 Feb 2013 08:41:23 -0800
-To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-CC: Peter Jones <pjones@redhat.com>, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <22d54b6d-6342-4826-bb93-c9fc46f2041a@email.android.com>
+	id S1757358Ab3BFQqq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 11:46:46 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11717 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756532Ab3BFQqp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 11:46:45 -0500
+X-Authority-Analysis: v=2.0 cv=bJmU0YCZ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=_Bp3_fu7e2UA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=wIfm1DkAj9kA:10 a=jQ6o5W8w3HXbc1GdhO8A:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1360169204.2621.47.camel@gandalf.local.home>
+Subject: Re: Question on lockdep and MAX_LOCK_DEPTH
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Ben Greear <greearb@candelatech.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Date: Wed, 06 Feb 2013 11:46:44 -0500
+In-Reply-To: <20130206163917.GA15403@gmail.com>
+References: <5111AD8D.1080005@candelatech.com>
+	 <20130206015430.GA9161@home.goodmis.org> <5111BF51.5010607@candelatech.com>
+	 <1360119124.2621.37.camel@gandalf.local.home>
+	 <5111CE60.4080403@candelatech.com>
+	 <1360125419.2621.39.camel@gandalf.local.home>
+	 <5111F6F6.7010402@candelatech.com>
+	 <1360156888.2621.42.camel@gandalf.local.home>
+	 <51127D15.7080503@candelatech.com>
+	 <1360166840.2621.45.camel@gandalf.local.home>
+	 <20130206163917.GA15403@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cleanup is not a umount, it is actually a tree walk unlinking the contents.
+On Wed, 2013-02-06 at 17:39 +0100, Ingo Molnar wrote:
+> * Steven Rostedt <rostedt@goodmis.org> wrote:
 
-"Kasatkin, Dmitry" <dmitry.kasatkin@intel.com> wrote:
+> Wondering whether we could improve lockdep to detect 'excessive' 
+> lock nesting and treat it as a bug - the 'ran out of lockdep 
+> entries' assert might be too detached and it might even trigger 
+> in innocent, low lesting count contexts.
 
->On Wed, Feb 6, 2013 at 7:04 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 02/05/2013 02:09 PM, Kasatkin, Dmitry wrote:
->>>
->>>
->>> It should not be like that. Actually when pre-init exits, cleanup
->code
->>> umount tmpfs, which in turn cleanups the RAM.
->>>
->>
->> It doesn't quite... the rootfs is permanent.  This is also only one
->usage
->> mode: there are quite a few Linux systems running directly out of
->initramfs.
->>
->
->rootfs is not permanent when it is ramfs. It is cleaned up on switch
->root.
->It is easy to find out that it is empty by mounting : mount -t ramfs
->rootfs /mnt/
->
->In the case of running from normal storage, of course, there is
->ridicules remove the content.
->
->- Dmitry
->
->
->>         -hpa
->>
->>
->> --
->> H. Peter Anvin, Intel Open Source Technology Center
->> I work for Intel.  I don't speak on their behalf.
->>
+Probably adding a call to lockdep_printk_held_locks(current) when it
+triggers, would be a good idea.
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+-- Steve
+
+
