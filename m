@@ -1,96 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161015Ab3BFWO5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 17:14:57 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:37567 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932239Ab3BFWMP (ORCPT
+	id S932239Ab3BFWPd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 17:15:33 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37498 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932113Ab3BFWPa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 17:12:15 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-To: mingo@kernel.org, peterz@infradead.org
-Cc: jamie.iles@oracle.com, penberg@kernel.org, acme@ghostprotocols.net,
-        paulus@samba.org, linux-kernel@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH 11/11] liblockdep: preload helper
-Date: Wed,  6 Feb 2013 17:11:34 -0500
-Message-Id: <1360188694-25077-12-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1360188694-25077-1-git-send-email-sasha.levin@oracle.com>
-References: <1360188694-25077-1-git-send-email-sasha.levin@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Wed, 6 Feb 2013 17:15:30 -0500
+Date: Wed, 6 Feb 2013 14:15:09 -0800
+From: tip-bot for Paul Gortmaker <paul.gortmaker@windriver.com>
+Message-ID: <tip-91b988048bea24eae386da3141d247ccea795a81@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org, joe@perches.com,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        paul.gortmaker@windriver.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, joe@perches.com,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        paul.gortmaker@windriver.com
+In-Reply-To: <1359594349-25912-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1359594349-25912-1-git-send-email-paul.gortmaker@windriver.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools: Fix calloc argument ordering
+Git-Commit-ID: 91b988048bea24eae386da3141d247ccea795a81
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 06 Feb 2013 14:15:15 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a simple wrapper to make using liblockdep on existing applications
-much easier.
+Commit-ID:  91b988048bea24eae386da3141d247ccea795a81
+Gitweb:     http://git.kernel.org/tip/91b988048bea24eae386da3141d247ccea795a81
+Author:     Paul Gortmaker <paul.gortmaker@windriver.com>
+AuthorDate: Wed, 30 Jan 2013 20:05:49 -0500
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 6 Feb 2013 18:09:28 -0300
 
-After running 'make && make install', it becomes quite simple to test things
-with liblockdep. For example, to try it on perf:
+perf tools: Fix calloc argument ordering
 
-	liblockdep perf
+A sweep of the kernel for regex "kcalloc(sizeof" turned up 2 reversed
+args, fixed in commit d3d09e18203dba16a9dbdb2b4cc673d90748cdd1 ("EDAC:
+Fix kcalloc argument order") and also fixed in the networking commit
+a1b1add07fa794974573d93483d68e373edfe7bd ("gro: Fix kcalloc argument
+order").
 
-No other integration required.
+I know that was the regex used, because on seeing the 1st of these
+changes, I wondered "how many other instances of this are there" and I
+happened to just use "calloc(sizeof" as a regex and it in turn found
+these additional reversed args instances in the perf code.
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+In the kcalloc cases, the changes are cosmetic, since the numbers are
+simply multiplied.  I had no desire to go data mining in userspace to
+see if the same thing held true there, however.
+
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Joe Perches <joe@perches.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1359594349-25912-1-git-send-email-paul.gortmaker@windriver.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/lockdep/Makefile | 12 ++++++++----
- tools/lib/lockdep/lockdep  |  3 +++
- 2 files changed, 11 insertions(+), 4 deletions(-)
- create mode 100755 tools/lib/lockdep/lockdep
+ tools/perf/util/callchain.c | 2 +-
+ tools/perf/util/header.c    | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/tools/lib/lockdep/Makefile b/tools/lib/lockdep/Makefile
-index 245f8ba..b22122f 100644
---- a/tools/lib/lockdep/Makefile
-+++ b/tools/lib/lockdep/Makefile
-@@ -34,7 +34,9 @@ DESTDIR ?=
- DESTDIR_SQ = '$(subst ','\'',$(DESTDIR))'
+diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
+index d3b3f5d..42b6a63 100644
+--- a/tools/perf/util/callchain.c
++++ b/tools/perf/util/callchain.c
+@@ -444,7 +444,7 @@ int callchain_cursor_append(struct callchain_cursor *cursor,
+ 	struct callchain_cursor_node *node = *cursor->last;
  
- prefix ?= /usr/local
--bindir_relative = lib
-+libdir_relative = lib
-+libdir = $(prefix)/$(libdir_relative)
-+bindir_relative = bin
- bindir = $(prefix)/$(bindir_relative)
+ 	if (!node) {
+-		node = calloc(sizeof(*node), 1);
++		node = calloc(1, sizeof(*node));
+ 		if (!node)
+ 			return -ENOMEM;
  
- export DESTDIR DESTDIR_SQ INSTALL
-@@ -90,13 +92,14 @@ objtree		:= $(CURDIR)
- src		:= $(srctree)
- obj		:= $(objtree)
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 8022b52..f4bfd79 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -2253,7 +2253,7 @@ static int perf_header__adds_write(struct perf_header *header,
+ 	if (!nr_sections)
+ 		return 0;
  
--export prefix bindir src obj
-+export prefix libdir bindir src obj
+-	feat_sec = p = calloc(sizeof(*feat_sec), nr_sections);
++	feat_sec = p = calloc(nr_sections, sizeof(*feat_sec));
+ 	if (feat_sec == NULL)
+ 		return -ENOMEM;
  
- # Shell quotes
-+libdir_SQ = $(subst ','\'',$(libdir))
- bindir_SQ = $(subst ','\'',$(bindir))
--bindir_relative_SQ = $(subst ','\'',$(bindir_relative))
+@@ -2425,7 +2425,7 @@ int perf_header__process_sections(struct perf_header *header, int fd,
+ 	if (!nr_sections)
+ 		return 0;
  
- LIB_FILE = liblockdep.a liblockdep.so
-+BIN_FILE = lockdep
+-	feat_sec = sec = calloc(sizeof(*feat_sec), nr_sections);
++	feat_sec = sec = calloc(nr_sections, sizeof(*feat_sec));
+ 	if (!feat_sec)
+ 		return -1;
  
- CONFIG_INCLUDES =
- CONFIG_LIBS	=
-@@ -229,7 +232,8 @@ define do_install
- endef
- 
- install_lib: all_cmd
--	$(Q)$(call do_install,$(LIB_FILE),$(bindir_SQ))
-+	$(Q)$(call do_install,$(LIB_FILE),$(libdir_SQ))
-+	$(Q)$(call do_install,$(BIN_FILE),$(bindir_SQ))
- 
- install: install_lib
- 
-diff --git a/tools/lib/lockdep/lockdep b/tools/lib/lockdep/lockdep
-new file mode 100755
-index 0000000..616bf9a
---- /dev/null
-+++ b/tools/lib/lockdep/lockdep
-@@ -0,0 +1,3 @@
-+#! /bin/bash
-+
-+LD_PRELOAD=liblockdep.so "$@"
--- 
-1.8.1.2
-
