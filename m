@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757761Ab3BFSvw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 13:51:52 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:59801 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754094Ab3BFSvt (ORCPT
+	id S1757920Ab3BFSwT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 13:52:19 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:63824 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757862Ab3BFSwS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 13:51:49 -0500
-Message-ID: <5112A642.1020800@wwwdotorg.org>
-Date: Wed, 06 Feb 2013 11:51:46 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Wed, 6 Feb 2013 13:52:18 -0500
+Date: Wed, 6 Feb 2013 10:52:13 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] stop_machine: wake up stopper thread lazily
+Message-ID: <20130206185213.GC2875@htj.dyndns.org>
+References: <CAJd=RBBp1-Q_xDzyUsLLJkh1BWb_X13JAOGxpOjt5Q48_7Q=Ng@mail.gmail.com>
 MIME-Version: 1.0
-To: Hiroshi Doyu <hdoyu@nvidia.com>, linux@arm.linux.org.uk
-CC: linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] memory: tegra_ahb_enable_smmu() depends on TEGRA_IOMMU_SMMU
-References: <1360175666-8377-1-git-send-email-hdoyu@nvidia.com>
-In-Reply-To: <1360175666-8377-1-git-send-email-hdoyu@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJd=RBBp1-Q_xDzyUsLLJkh1BWb_X13JAOGxpOjt5Q48_7Q=Ng@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/2013 11:34 AM, Hiroshi Doyu wrote:
-> New SoC, Tegra114 also uses SMMU. Change tegra_ahb_enable_smmu()'s
-> dependency from ARCH_TEGRA_3x_SOC to TEGRA_IOMMU_SMMU. No need to edit
-> whenever a new Tegra SoC comes.
+On Wed, Feb 06, 2013 at 08:40:32PM +0800, Hillf Danton wrote:
+> Ring no bell if the stopper thread is busy in handling enqueued works.
 > 
-> The following combination caused build error, which this patch fixes.
+> Signed-off-by: Hillf Danton <dhillf@gmail.com>
+> ---
 > 
-> CONFIG_ARCH_TEGRA_2x_SOC=y
-> \# CONFIG_ARCH_TEGRA_3x_SOC is not set
-> CONFIG_ARCH_TEGRA_114_SOC=y
+> --- a/kernel/stop_machine.c	Wed Feb  6 20:05:44 2013
+> +++ b/kernel/stop_machine.c	Wed Feb  6 20:06:56 2013
+> @@ -72,8 +72,10 @@ static void cpu_stop_queue_work(struct c
+>  	spin_lock_irqsave(&stopper->lock, flags);
 > 
-> drivers/iommu/tegra-smmu.c:485: undefined reference to 'tegra_ahb_enable_smmu'
+>  	if (stopper->enabled) {
+> +		int wakeup = list_empty(&stopper->works);
+>  		list_add_tail(&work->list, &stopper->works);
+> -		wake_up_process(stopper->thread);
+> +		if (wakeup)
+> +			wake_up_process(stopper->thread);
 
-Tested-by: Stephen Warren <swarren@nvidia.com>
+Why does this matter?  It shouldn't matter for correctness.  Is it
+meant to be an optimization?  Is it something worth optimizing?  We
+hardly ever have contention on cpu stoppers after all and we
+shouldn't.
 
-Russell, I assume Hiroshi should upload this to your patch tracker? It's
-needed for 3.9.
-
-Hiroshi, for reference, see:
-http://www.arm.linux.org.uk/developer/patches/
+-- 
+tejun
