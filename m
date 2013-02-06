@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757737Ab3BFQcY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 11:32:24 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36730 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755596Ab3BFQcW (ORCPT
+	id S1756647Ab3BFQfm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 11:35:42 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:49150 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754767Ab3BFQfj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 11:32:22 -0500
-Date: Wed, 6 Feb 2013 16:30:41 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        linux-tegra@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-pci@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Andrew Murray <andrew.murray@arm.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 06/14] ARM: pci: Keep pci_common_init() around after
-	init
-Message-ID: <20130206163041.GG17833@n2100.arm.linux.org.uk>
-References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de> <1357764194-12677-7-git-send-email-thierry.reding@avionic-design.de> <20130205204147.GA29726@avionic-0098.mockup.avionic-design.de>
+	Wed, 6 Feb 2013 11:35:39 -0500
+From: Emil Goode <emilgoode@gmail.com>
+To: lindner_marek@yahoo.de, siwu@hrz.tu-chemnitz.de, ordex@autistici.org,
+        davem@davemloft.net
+Cc: b.a.t.m.a.n@lists.open-mesh.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Emil Goode <emilgoode@gmail.com>
+Subject: [PATCH] batman-adv: Remove unused variable
+Date: Wed,  6 Feb 2013 17:37:41 +0100
+Message-Id: <1360168661-16871-1-git-send-email-emilgoode@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130205204147.GA29726@avionic-0098.mockup.avionic-design.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 05, 2013 at 09:41:48PM +0100, Thierry Reding wrote:
-> On Wed, Jan 09, 2013 at 09:43:06PM +0100, Thierry Reding wrote:
-> > When using deferred driver probing, PCI host controller drivers may
-> > actually require this function after the init stage.
-> > 
-> > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-> > ---
-> >  arch/arm/kernel/bios32.c | 6 +++---
-> >  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> Russell,
-> 
-> Can this patch and patch 7 (ARM: pci: Allow passing per-controller
-> private data) of this series be applied for 3.9? Thomas uses them in his
-> Marvell PCIe series as well and it would allow to reduce the complexity
-> of the dependencies.
+The commit ed242d01 removed a node parameter from iterators.
+This patch removes a hlist_node struct that is no longer used.
 
-It'll need to go into the patch system in that case...
+Sparse gives a warning:
+
+net/batman-adv/originator.c:411:21: warning:
+	unused variable ‘node_tmp’ [-Wunused-variable]
+
+Signed-off-by: Emil Goode <emilgoode@gmail.com>
+---
+ net/batman-adv/originator.c |    1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/net/batman-adv/originator.c b/net/batman-adv/originator.c
+index 43d0f89..96fb80b 100644
+--- a/net/batman-adv/originator.c
++++ b/net/batman-adv/originator.c
+@@ -408,7 +408,6 @@ int batadv_orig_seq_print_text(struct seq_file *seq, void *offset)
+ 	struct net_device *net_dev = (struct net_device *)seq->private;
+ 	struct batadv_priv *bat_priv = netdev_priv(net_dev);
+ 	struct batadv_hashtable *hash = bat_priv->orig_hash;
+-	struct hlist_node *node_tmp;
+ 	struct hlist_head *head;
+ 	struct batadv_hard_iface *primary_if;
+ 	struct batadv_orig_node *orig_node;
+-- 
+1.7.10.4
+
