@@ -1,96 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758358Ab3BFTvl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 14:51:41 -0500
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:39112 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758315Ab3BFTv1 (ORCPT
+	id S1758452Ab3BFTw7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 14:52:59 -0500
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:53576 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758316Ab3BFTv2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 14:51:27 -0500
-From: Tejun Heo <tj@kernel.org>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        Sridhar Samudrala <sri@us.ibm.com>, linux-sctp@vger.kernel.org
-Subject: [PATCH 76/77] sctp: convert to idr_alloc()
-Date: Wed,  6 Feb 2013 11:40:48 -0800
-Message-Id: <1360179649-22465-77-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1360179649-22465-1-git-send-email-tj@kernel.org>
-References: <1360179649-22465-1-git-send-email-tj@kernel.org>
+	Wed, 6 Feb 2013 14:51:28 -0500
+MIME-Version: 1.0
+In-Reply-To: <511295A8.5070106@monstr.eu>
+References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com>
+	<CACxGe6tjyx3GTgNgMRtvwhrFsTGizkeTqY_N6=2gdQjvMSD8Ug@mail.gmail.com>
+	<CAHTX3d+XZ6VJDVYKHhg33Z+O8Koo99Yq--W8qitcSe543dWUuA@mail.gmail.com>
+	<11273481.VQZWGoSGBC@wuerfel>
+	<511295A8.5070106@monstr.eu>
+Date: Wed, 6 Feb 2013 20:51:26 +0100
+X-Google-Sender-Auth: 9FdvMVv1gzZ_ilJOFiL8poVUkkU
+Message-ID: <CAMuHMdUia08Upt6p8cVrC7Uazo3KGbSCZEg-mLaNYALdty88bA@mail.gmail.com>
+Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16
+ with generic iowrite(read)8/16(be)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: monstr@monstr.eu
+Cc: Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@secretlab.ca>,
+        Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, dahinds@users.sourceforge.net
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert to the much saner new idr interface.
+On Wed, Feb 6, 2013 at 6:40 PM, Michal Simek <monstr@monstr.eu> wrote:
+> One question regarding to asm-generic/io.h about iowrite16be implementation
+>
+> #define iowrite16be(v, addr)   iowrite16(be16_to_cpu(v), (addr))
+> #define iowrite16(v, addr)      writew((v), (addr))
+> #define writew(b,addr) __raw_writew(__cpu_to_le16(b),addr)
+>
+> static inline void __raw_writew(u16 b, volatile void __iomem *addr)
+> {
+>         *(volatile u16 __force *) addr = b;
+> }
+>
+> How is this suppose to work on Big Endian?
+> be16_to_cpu(v) is (v)
+> and
+> __cpu_to_le16(b) is swab16(v)
 
-Only compile tested.
+Yes.
 
-v2: Don't preload if @gfp doesn't contain __GFP_WAIT as the function
-    may be being called from non-process ocntext.  Also, add a comment
-    explaining @idr_low never becomes zero.
+> On little
+> be16_to_cpu(v) is swab16(v)
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Cc: Vlad Yasevich <vyasevich@gmail.com>
-Cc: Sridhar Samudrala <sri@us.ibm.com>
-Cc: linux-sctp@vger.kernel.org
----
- net/sctp/associola.c | 31 +++++++++++++++----------------
- 1 file changed, 15 insertions(+), 16 deletions(-)
+Yes.
 
-diff --git a/net/sctp/associola.c b/net/sctp/associola.c
-index b45ed1f..0c9a791 100644
---- a/net/sctp/associola.c
-+++ b/net/sctp/associola.c
-@@ -1592,32 +1592,31 @@ int sctp_assoc_lookup_laddr(struct sctp_association *asoc,
- /* Set an association id for a given association */
- int sctp_assoc_set_id(struct sctp_association *asoc, gfp_t gfp)
- {
--	int assoc_id;
--	int error = 0;
-+	bool preload = gfp & __GFP_WAIT;
-+	int ret;
- 
- 	/* If the id is already assigned, keep it. */
- 	if (asoc->assoc_id)
--		return error;
--retry:
--	if (unlikely(!idr_pre_get(&sctp_assocs_id, gfp)))
--		return -ENOMEM;
-+		return 0;
- 
-+	if (preload)
-+		idr_preload(gfp);
- 	spin_lock_bh(&sctp_assocs_id_lock);
--	error = idr_get_new_above(&sctp_assocs_id, (void *)asoc,
--				    idr_low, &assoc_id);
--	if (!error) {
--		idr_low = assoc_id + 1;
-+	/* 0 is not a valid id, idr_low is always >= 1 */
-+	ret = idr_alloc(&sctp_assocs_id, asoc, idr_low, 0, GFP_NOWAIT);
-+	if (ret >= 0) {
-+		idr_low = ret + 1;
- 		if (idr_low == INT_MAX)
- 			idr_low = 1;
- 	}
- 	spin_unlock_bh(&sctp_assocs_id_lock);
--	if (error == -EAGAIN)
--		goto retry;
--	else if (error)
--		return error;
-+	if (preload)
-+		idr_preload_end();
-+	if (ret < 0)
-+		return ret;
- 
--	asoc->assoc_id = (sctp_assoc_t) assoc_id;
--	return error;
-+	asoc->assoc_id = (sctp_assoc_t)ret;
-+	return 0;
- }
- 
- /* Free the ASCONF queue */
--- 
-1.8.1
+> and
+> __cpu_to_le16(swab(b)) is swab16(v)
 
+???
+
+Don't you mean "__cpu_to_le16(b) is (b)"?
+
+> What I would expect is
+> #define iowrite16be(v, addr)   __raw_writew(__cpu_to_be16(v), addr)
+
+Indeed, it should be "__cpu_to_be16(v)" instead of "be16_to_cpu(v)".
+
+Same for iowrite32be().
+
+> on Big endian:
+> __cpu_to_be16(v) is (v)
+> on Little endian:
+> __cpu_to_be16(v) is swab(v)
+>
+> What am I missing here?
+
+But as both conversions are identical (just swapping 2 bytes), It Just Works.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
