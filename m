@@ -1,47 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753772Ab3BFMr4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 07:47:56 -0500
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:47547
-	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
+	id S1753568Ab3BFMtG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 07:49:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32457 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750951Ab3BFMrw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 07:47:52 -0500
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, ohering@suse.com,
-        jbottomley@parallels.com, hch@infradead.org,
-        linux-scsi@vger.kernel.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>, stable@vger.kernel.org
-Subject: [PATCH RESEND 1/1] Drivers: scsi: storvsc: Initialize the sglist
-Date: Wed,  6 Feb 2013 05:15:28 -0800
-Message-Id: <1360156528-11240-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1751286Ab3BFMtB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 07:49:01 -0500
+Date: Wed, 6 Feb 2013 13:48:40 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH 2/2] perf scripts: Fix rwtop record script
+Message-ID: <20130206124840.GA11700@krava.redhat.com>
+References: <1360080351-3246-1-git-send-email-jolsa@redhat.com>
+ <1360080351-3246-3-git-send-email-jolsa@redhat.com>
+ <51113018.80503@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51113018.80503@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Properly initialize scatterlist before using it.
+On Tue, Feb 05, 2013 at 09:15:20AM -0700, David Ahern wrote:
+> On 2/5/13 9:05 AM, Jiri Olsa wrote:
+> >Adding -D option into the rwtop record command line, to get
+> >immediate response when there's event in the buffer.
+> 
+> Seems like this will dramatically increase CPU usage of perf-record
+> as well as increase the overhead of each event with a process
+> wakeup. How about a poll option on perf-record to have it wake up at
+> a given rate instead?
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Cc: stable@vger.kernel.org
----
- drivers/scsi/storvsc_drv.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+right, I'll check
 
-diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
-index 270b3cf..5ada1d0 100644
---- a/drivers/scsi/storvsc_drv.c
-+++ b/drivers/scsi/storvsc_drv.c
-@@ -467,6 +467,7 @@ static struct scatterlist *create_bounce_buffer(struct scatterlist *sgl,
- 	if (!bounce_sgl)
- 		return NULL;
- 
-+	sg_init_table(bounce_sgl, num_pages);
- 	for (i = 0; i < num_pages; i++) {
- 		page_buf = alloc_page(GFP_ATOMIC);
- 		if (!page_buf)
--- 
-1.7.4.1
-
+thanks,
+jirka
