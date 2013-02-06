@@ -1,175 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757076Ab3BFIg4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 03:36:56 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:38731 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756998Ab3BFIgv (ORCPT
+	id S1757161Ab3BFIhW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 03:37:22 -0500
+Received: from mail.free-electrons.com ([94.23.35.102]:50254 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756909Ab3BFIgr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 03:36:51 -0500
-From: "NickCheng" <nick.cheng@areca.com.tw>
-To: <linux-scsi@vger.kernel.org>
-Cc: <linux-kernel@vger.kernel.org>, <jejb@kernel.org>,
-        =?big5?B?tsCyTbap?= <ching2048@areca.com.tw>
-Subject: [PATCH 3/5]  arcmsr: Support MSI and MSI-X
-Date: Wed, 6 Feb 2013 16:36:20 +0800
-Message-ID: <36B5BA6F44054F4BB50AD4A0405CDD3B@arecaaebe11fae>
-MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_0006_01CE0488.1C3769A0"
-X-Mailer: Microsoft Office Outlook 11
-Thread-Index: Ac2hXXYG8W24nt0/Q/6mWt8IlNnnHQ==
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
+	Wed, 6 Feb 2013 03:36:47 -0500
+Date: Wed, 6 Feb 2013 09:36:42 +0100
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: linux-tegra@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Andrew Murray <andrew.murray@arm.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Arnd Bergmann <arnd@arndb.de>, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH 06/14] ARM: pci: Keep pci_common_init() around after
+ init
+Message-ID: <20130206093642.32c91724@skate>
+In-Reply-To: <1357764194-12677-7-git-send-email-thierry.reding@avionic-design.de>
+References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de>
+	<1357764194-12677-7-git-send-email-thierry.reding@avionic-design.de>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+Dear Thierry Reding,
 
-------=_NextPart_000_0006_01CE0488.1C3769A0
-Content-Type: text/plain;
-	charset="big5"
-Content-Transfer-Encoding: 7bit
+On Wed,  9 Jan 2013 21:43:06 +0100, Thierry Reding wrote:
+> When using deferred driver probing, PCI host controller drivers may
+> actually require this function after the init stage.
+> 
+> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
 
-From: Nick Cheng <nick.cheng@areca.com.tw>
-
-Support MSI or MSI-X for whole series of RAID controllers. Meanwhile correct the register access as iowrite32/ioread32 
-Signed-off-by: Nick Cheng <nick.cheng@areca.com.tw>
----
-
-------=_NextPart_000_0006_01CE0488.1C3769A0
-Content-Type: application/octet-stream;
-	name="patch3"
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: attachment;
-	filename="patch3"
-
-diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c =
-b/drivers/scsi/arcmsr/arcmsr_hba.c=0A=
---- a/drivers/scsi/arcmsr/arcmsr_hba.c	2013-02-06 16:28:14.038731412 =
-+0800=0A=
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2013-02-06 16:28:24.508982584 =
-+0800=0A=
-@@ -805,8 +805,9 @@ static int arcmsr_probe(struct pci_dev *=0A=
- {=0A=
- 	struct Scsi_Host *host;=0A=
- 	struct AdapterControlBlock *acb;=0A=
--	uint8_t bus,dev_fun;=0A=
--	int error;=0A=
-+	uint8_t bus, dev_fun;=0A=
-+	struct msix_entry entries[ARCMST_NUM_MSIX_VECTORS];=0A=
-+	int error, i, j;=0A=
- 	error =3D pci_enable_device(pdev);=0A=
- 	if (error)=0A=
- 		return -ENODEV;=0A=
-@@ -863,10 +864,46 @@ static int arcmsr_probe(struct pci_dev *=0A=
- 	error =3D scsi_add_host(host, &pdev->dev);=0A=
- 	if (error)=0A=
- 		goto RAID_controller_stop;=0A=
--	error =3D request_irq(pdev->irq, arcmsr_do_interrupt,=0A=
--		IRQF_SHARED, "arcmsr", acb);=0A=
--	if (error)=0A=
--		goto scsi_host_remove;=0A=
-+	if (pci_find_capability(pdev, PCI_CAP_ID_MSIX)) {=0A=
-+		if (!pci_enable_msix(pdev, entries, ARCMST_NUM_MSIX_VECTORS)) {=0A=
-+			for (i =3D 0; i < ARCMST_NUM_MSIX_VECTORS; i++) {=0A=
-+				entries[i].entry =3D i;=0A=
-+				if (request_irq(entries[i].vector,=0A=
-+					arcmsr_do_interrupt, 0, "arcmsr",=0A=
-+					acb)) {=0A=
-+					for (j =3D 0 ; j < i ; j++)=0A=
-+						free_irq(entries[i].vector,=0A=
-+						acb);=0A=
-+					goto scsi_host_remove;=0A=
-+				}=0A=
-+				acb->entries[i] =3D entries[i];=0A=
-+			}=0A=
-+			acb->acb_flags |=3D ACB_F_MSIX_ENABLED;=0A=
-+		} else {=0A=
-+			if (request_irq(pdev->irq, arcmsr_do_interrupt,=0A=
-+				IRQF_SHARED, "arcmsr", acb)) {=0A=
-+				printk("arcmsr%d: request_irq =3D %d failed!\n",=0A=
-+					acb->host->host_no, pdev->irq);=0A=
-+				goto scsi_host_remove;=0A=
-+			}=0A=
-+		}=0A=
-+	} else if (pci_find_capability(pdev, PCI_CAP_ID_MSI)) {=0A=
-+		if (!pci_enable_msi(pdev))=0A=
-+			acb->acb_flags |=3D ACB_F_MSI_ENABLED;=0A=
-+		if (request_irq(pdev->irq, arcmsr_do_interrupt,=0A=
-+			IRQF_SHARED, "arcmsr", acb)) {=0A=
-+			pr_warn("arcmsr%d: request_irq =3D%d failed!\n",=0A=
-+				acb->host->host_no, pdev->irq);=0A=
-+			goto scsi_host_remove;=0A=
-+		}=0A=
-+	} else {=0A=
-+		if (request_irq(pdev->irq, arcmsr_do_interrupt,=0A=
-+			IRQF_SHARED, "arcmsr", acb)) {=0A=
-+			pr_warn("arcmsr%d: request_irq =3D %d failed!\n",=0A=
-+				acb->host->host_no, pdev->irq);=0A=
-+			goto scsi_host_remove;=0A=
-+		}=0A=
-+	}=0A=
- 	host->irq =3D pdev->irq;=0A=
-     	scsi_scan_host(host);=0A=
- 	INIT_WORK(&acb->arcmsr_do_message_isr_bh,=0A=
-@@ -886,6 +923,11 @@ static int arcmsr_probe(struct pci_dev *=0A=
- 	return 0;=0A=
- out_free_sysfs:=0A=
- scsi_host_remove:=0A=
-+	if (acb->acb_flags & ACB_F_MSI_ENABLED) {=0A=
-+		pci_disable_msi(pdev);=0A=
-+	} else if (acb->acb_flags & ACB_F_MSIX_ENABLED) {=0A=
-+		pci_disable_msix(pdev);=0A=
-+	}=0A=
- 	scsi_remove_host(host);=0A=
- RAID_controller_stop:=0A=
- 	arcmsr_stop_adapter_bgrb(acb);=0A=
-@@ -1098,11 +1140,11 @@ arcmsr_report_ccb_state(struct AdapterCo=0A=
- 		default:=0A=
- 			pr_notice("arcmsr%d: scsi id =3D %d lun =3D %d"=0A=
- 				"isr get command error done, but got unknown"=0A=
--				"DeviceStatus =3D 0x%x\n"=0A=
--				, acb->host->host_no=0A=
--				, id=0A=
--				, lun=0A=
--				, ccb->arcmsr_cdb.DeviceStatus);=0A=
-+			"DeviceStatus =3D 0x%x\n"=0A=
-+			, acb->host->host_no=0A=
-+			, id=0A=
-+			, lun=0A=
-+			, ccb->arcmsr_cdb.DeviceStatus);=0A=
- 			acb->devstate[id][lun] =3D ARECA_RAID_GONE;=0A=
- 			ccb->pcmd->result =3D DID_NO_CONNECT << 16;=0A=
- 			arcmsr_ccb_complete(ccb);=0A=
-@@ -1124,7 +1166,7 @@ struct CommandControlBlock *pCCB, bool e=0A=
- 				lun =3D abortcmd->device->lun;=0A=
- 				abortcmd->result |=3D DID_ABORT << 16;=0A=
- 				arcmsr_ccb_complete(pCCB);=0A=
--				pr_notice("arcmsr%d: pCCB =3D'0x%p' isr"=0A=
-+				pr_notice("arcmsr%d: pCCB =3D '0x%p' isr"=0A=
- 				"got aborted command\n",=0A=
- 				acb->host->host_no, pCCB);=0A=
- 			}=0A=
-@@ -1134,12 +1176,12 @@ struct CommandControlBlock *pCCB, bool e=0A=
- 			"done acb =3D '0x%p'"=0A=
- 			"ccb =3D '0x%p' ccbacb =3D '0x%p' startdone =3D 0x%x"=0A=
- 			"ccboutstandingcount =3D %d\n"=0A=
--			, acb->host->host_no=0A=
--			, acb=0A=
--			, pCCB=0A=
--			, pCCB->acb=0A=
--			, pCCB->startdone=0A=
--			, atomic_read(&acb->ccboutstandingcount));=0A=
-+				, acb->host->host_no=0A=
-+				, acb=0A=
-+				, pCCB=0A=
-+				, pCCB->acb=0A=
-+				, pCCB->startdone=0A=
-+				, atomic_read(&acb->ccboutstandingcount));=0A=
- 		  return;=0A=
- 	}=0A=
- 	arcmsr_report_ccb_state(acb, pCCB, error);=0A=
-
-------=_NextPart_000_0006_01CE0488.1C3769A0--
-
+Tested-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+-- 
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
