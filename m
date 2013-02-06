@@ -1,148 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751219Ab3BFFMj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 00:12:39 -0500
-Received: from mail-ia0-f170.google.com ([209.85.210.170]:57984 "EHLO
-	mail-ia0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716Ab3BFFMi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 00:12:38 -0500
-From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
-To: rusty@rustcorp.com.au, dhowells@redhat.com
-Cc: linux-kernel@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>,
-        Josh Boyer <jwboyer@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH] X.509: Support parse long form of length octets in Authority Key Identifier
-Date: Wed,  6 Feb 2013 13:08:41 +0800
-Message-Id: <1360127321-8053-1-git-send-email-jlee@suse.com>
-X-Mailer: git-send-email 1.6.0.2
+	id S1751352Ab3BFFNZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 00:13:25 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:6547 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751276Ab3BFFNY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 00:13:24 -0500
+X-IronPort-AV: E=Sophos;i="4.84,613,1355068800"; 
+   d="scan'208";a="6694824"
+Message-ID: <5111E612.4010907@cn.fujitsu.com>
+Date: Wed, 06 Feb 2013 13:11:46 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>, mgorman@suse.de,
+        minchan@kernel.org, kamezawa.hiroyu@jp.fujitsu.com
+CC: Linux MM <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/7] mm: fix types for some functions and variables in case
+ of overflow
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/06 13:12:02,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/06 13:12:03,
+	Serialize complete at 2013/02/06 13:12:03
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Per X.509 spec in 4.2.1.1 section, the structure of Authority Key
-Identifier Exception is:
+Currently, the amount of RAM that functions nr_free_*_pages return
+is held in unsigned int. But in machines with big memory (exceeding
+16TB), the amount may be incorrect because of overflow, so fix this
+problem.
 
-   AuthorityKeyIdentifier ::= SEQUENCE {
-      keyIdentifier             [0] KeyIdentifier           OPTIONAL,
-      authorityCertIssuer       [1] GeneralNames            OPTIONAL,
-      authorityCertSerialNumber [2] CertificateSerialNumber OPTIONAL  }
+Also, fix the types of variables that is related to nr_free_*_pages.
+For these variables are placed in several subsystems, I may be incorrectly
+fix them, if there is any problem with the fix, please correct me.
 
-   KeyIdentifier ::= OCTET STRING
+Zhang Yanfei (7):
+  mm: fix return type for functions nr_free_*_pages
+  ia64: use %ld to print pages calculated in nr_free_buffer_pages
+  fs/buffer.c: change type of max_buffer_heads to unsigned long
+  fs/nfsd: change type of max_delegations, nfsd_drc_max_mem and
+    nfsd_drc_mem_used
+  vmscan: change type of vm_total_pages to unsigned long
+  net: change type of netns_ipvs->sysctl_sync_qlen_max
+  net: change type of virtio_chan->p9_max_pages
 
-When a certificate also provides
-authorityCertIssuer and authorityCertSerialNumber then the length of
-AuthorityKeyIdentifier SEQUENCE is likely to long form format.
-e.g.
-   The example certificate demos/tunala/A-server.pem in openssl source:
-
-X509v3 Authority Key Identifier:
-    keyid:49:FB:45:72:12:C4:CC:E1:45:A1:D3:08:9E:95:C4:2C:6D:55:3F:17
-    DirName:/C=NZ/L=Wellington/O=Really Irresponsible Authorisation Authority (RIAA)/OU=Cert-stamping/CN=Jackov al-Trades/emailAddress=none@fake.domain
-    serial:00
-
-Current parsing rule of OID_authorityKeyIdentifier only take care the
-short form format, it causes load certificate to modsign_keyring fail:
-
-[   12.061147] X.509: Extension: 47
-[   12.075121] MODSIGN: Problem loading in-kernel X.509 certificate (-74)
-
-So, this patch add the parsing rule for support long form format against
-Authority Key Identifier.
-
-Cc: David Howells <dhowells@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Josh Boyer <jwboyer@redhat.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: "David S. Miller" <davem@davemloft.net>
-Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
----
- crypto/asymmetric_keys/x509_cert_parser.c |   56 ++++++++++++++++++++++++----
- 1 files changed, 48 insertions(+), 8 deletions(-)
-
-diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
-index 7fabc4c..7f6a152 100644
---- a/crypto/asymmetric_keys/x509_cert_parser.c
-+++ b/crypto/asymmetric_keys/x509_cert_parser.c
-@@ -373,6 +373,9 @@ int rsa_extract_mpi(void *context, size_t hdrlen,
- 	return 0;
- }
- 
-+/* The keyIdentifier in AuthorityKeyIdentifier SEQUENCE is tag(CONT,PRIM,0) */
-+#define SEQ_TAG_KEYID (ASN1_CONT << 6)
-+
- /*
-  * Process certificate extensions that are used to qualify the certificate.
-  */
-@@ -407,21 +410,58 @@ int x509_process_extension(void *context, size_t hdrlen,
- 	}
- 
- 	if (ctx->last_oid == OID_authorityKeyIdentifier) {
-+		size_t key_len;
-+
- 		/* Get hold of the CA key fingerprint */
- 		if (vlen < 5)
- 			return -EBADMSG;
--		if (v[0] != (ASN1_SEQ | (ASN1_CONS << 5)) ||
--		    v[1] != vlen - 2 ||
--		    v[2] != (ASN1_CONT << 6) ||
--		    v[3] != vlen - 4)
-+
-+		/* Authority Key Identifier must be a Constructed SEQUENCE */
-+		if (v[0] != (ASN1_SEQ | (ASN1_CONS << 5)))
- 			return -EBADMSG;
--		v += 4;
--		vlen -= 4;
- 
--		f = kmalloc(vlen * 2 + 1, GFP_KERNEL);
-+		/* Authority Key Identifier is not indefinite length */
-+		if (unlikely(vlen == ASN1_INDEFINITE_LENGTH))
-+			return -EBADMSG;
-+
-+		/* Short Form length */
-+		if (vlen <= 127) {
-+
-+			if (v[1] != vlen - 2 ||
-+			    v[2] != SEQ_TAG_KEYID ||
-+			    v[3] != vlen - 4)
-+				return -EBADMSG;
-+
-+			v += 4;
-+			key_len = v[3];
-+		} else {
-+			/* Long Form length */
-+			size_t seq_len = 0;
-+			int sub = v[1] - 0x80;
-+
-+			if (sub > 2)
-+				return -EBADMSG;
-+
-+			/* calculate the length from subsequent octet */
-+			for (i = 0; i < sub; i++) {
-+				seq_len <<= 8;
-+				seq_len |= v[2 + i];
-+			}
-+
-+			/* check vlen should not less then length of keyid */
-+			if (seq_len != vlen - 2 - sub ||
-+			    v[2 + sub] != SEQ_TAG_KEYID ||
-+			    v[3 + sub] > vlen - 4 - sub)
-+				return -EBADMSG;
-+
-+			v += (4 + sub);
-+			key_len = v[3 + sub];
-+		}
-+
-+		f = kmalloc(key_len * 2 + 1, GFP_KERNEL);
- 		if (!f)
- 			return -ENOMEM;
--		for (i = 0; i < vlen; i++)
-+		for (i = 0; i < key_len; i++)
- 			sprintf(f + i * 2, "%02x", v[i]);
- 		pr_debug("authority   %s\n", f);
- 		ctx->cert->authority = f;
--- 
-1.6.4.2
+ arch/ia64/mm/contig.c    |    2 +-
+ arch/ia64/mm/discontig.c |    2 +-
+ fs/buffer.c              |    4 ++--
+ fs/nfsd/nfs4state.c      |    6 +++---
+ fs/nfsd/nfsd.h           |    6 +++---
+ fs/nfsd/nfssvc.c         |    6 +++---
+ include/linux/swap.h     |    6 +++---
+ include/net/ip_vs.h      |    2 +-
+ mm/page_alloc.c          |    8 ++++----
+ mm/vmscan.c              |    2 +-
+ net/9p/trans_virtio.c    |    2 +-
+ 11 files changed, 23 insertions(+), 23 deletions(-)
 
