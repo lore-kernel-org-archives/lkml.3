@@ -1,70 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755141Ab3BFRH4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 12:07:56 -0500
-Received: from mail-ia0-f178.google.com ([209.85.210.178]:54939 "EHLO
-	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752024Ab3BFRHy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 12:07:54 -0500
+	id S1755457Ab3BFRJE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 12:09:04 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33990 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752024Ab3BFRJB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 12:09:01 -0500
+Message-ID: <51128DFF.1090904@zytor.com>
+Date: Wed, 06 Feb 2013 09:08:15 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <9348609.HjKCmL9u9S@wuerfel>
-References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de>
-	<1357764194-12677-7-git-send-email-thierry.reding@avionic-design.de>
-	<CACRpkdYV5w6BksUjXvXs=88BovUyXgRt-vXSD0twjRpzbZcvFQ@mail.gmail.com>
-	<9348609.HjKCmL9u9S@wuerfel>
-Date: Wed, 6 Feb 2013 18:07:53 +0100
-Message-ID: <CACRpkdYGgdMTi0ZeMeCk5UmrndD451Pyz8L_XE=y9SPXfGGdew@mail.gmail.com>
-Subject: Re: [PATCH 06/14] ARM: pci: Keep pci_common_init() around after init
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: devicetree-discuss@lists.ozlabs.org,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-tegra@vger.kernel.org,
-        Andrew Murray <andrew.murray@arm.com>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Ian Kent <raven@themaw.net>
+CC: Helge Deller <deller@gmx.de>, linux-parisc@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        John David Anglin <dave.anglin@bell.net>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Rolf Eike Beer <eike-kernel@sf-tec.de>, autofs@vger.kernel.org
+Subject: Re: [PATCH] unbreak automounter support on 64-bit kernel with 32-bit
+ userspace (v2)
+References: <20130204193952.GA5785@p100.box> <1360130286.4186.0.camel@perseus.themaw.net>
+In-Reply-To: <1360130286.4186.0.camel@perseus.themaw.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 7, 2013 at 1:54 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Wednesday 06 February 2013 17:38:20 Linus Walleij wrote:
->> On Wed, Jan 9, 2013 at 9:43 PM, Thierry Reding
->> <thierry.reding@avionic-design.de> wrote:
+On 02/05/2013 09:58 PM, Ian Kent wrote:
 >>
->> > When using deferred driver probing, PCI host controller drivers may
->> > actually require this function after the init stage.
->> >
->> > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+>> diff --git a/include/uapi/linux/auto_fs.h b/include/uapi/linux/auto_fs.h
+>> index 77cdba9..bb991df 100644
+>> --- a/include/uapi/linux/auto_fs.h
+>> +++ b/include/uapi/linux/auto_fs.h
+>> @@ -28,25 +28,16 @@
+>>   #define AUTOFS_MIN_PROTO_VERSION	AUTOFS_PROTO_VERSION
 >>
->> There seem to be a proliferation of these patches now.
+>>   /*
+>> - * Architectures where both 32- and 64-bit binaries can be executed
+>> - * on 64-bit kernels need this.  This keeps the structure format
+>> - * uniform, and makes sure the wait_queue_token isn't too big to be
+>> - * passed back down to the kernel.
+>> - *
+>> - * This assumes that on these architectures:
+>> - * mode     32 bit    64 bit
+>> - * -------------------------
+>> - * int      32 bit    32 bit
+>> - * long     32 bit    64 bit
+>> - *
+>> - * If so, 32-bit user-space code should be backwards compatible.
+>> + * The wait_queue_token (autofs_wqt_t) is part of a structure which is passed
+>> + * back to the kernel via ioctl from userspace. On architectures where 32- and
+>> + * 64-bit userspace binaries can be executed it's important that the size of
+>> + * autofs_wqt_t stays constant between 32- and 64-bit Linux kernels so that we
+>> + * do not break the binary ABI interface by changing the structure size.
+>>    */
+>> -
+>> -#if defined(__sparc__) || defined(__mips__) || defined(__x86_64__) \
+>> - || defined(__powerpc__) || defined(__s390__)
+>> -typedef unsigned int autofs_wqt_t;
+>> -#else
+>> +#if defined(__ia64__) || defined(__alpha__) /* pure 64bit architectures */
+>>   typedef unsigned long autofs_wqt_t;
+>> +#else
+>> +typedef unsigned int autofs_wqt_t;
+>>   #endif
 >>
->> Isn't this just papering over the real problem? The discarding
->> of __init sections need to happen *after* all deferred probes
->> are complete, lest we have to remove *all* __init sections from
->> *all* drivers in the kernel, don't we?
+>>   /* Packet types */
 >
-> No, I think it's not quite that bad. I think the rule is still
-> just that .probe() functions and anything called from them must
-> not be __init. They used to be __devinit, which would cause
-> problems with deferred probing on !HOTPLUG systems but that's
-> gone in 3.9.
+> Acked-by: Ian Kent <raven@themaw.net>
 >
-> Thierry's patch is just necessary because pci_common_init used
-> to be called only from actual __init functions, and not it
-> gets called from a .probe() function for the first time.
 
-Aha OK, then it feels much better now.
+Acked-by: H. Peter Anvin <hpa@zytor.com>
 
-However it leaves the question of how much __init, __initdata
-and __initconst we have littering around. Oh, well, we'll see
-I guess.
+	-hpa
 
-Thanks,
-Linus Walleij
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
