@@ -1,82 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758703Ab3BFVgt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 16:36:49 -0500
-Received: from gate.crashing.org ([63.228.1.57]:52926 "EHLO gate.crashing.org"
+	id S1758726Ab3BFVhH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 16:37:07 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:54113 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758539Ab3BFVgr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 16:36:47 -0500
-Message-ID: <1360186550.2650.4.camel@pasglop>
-Subject: Re: [PATCH] drivers/block/xsysace - replace
- in(out)_8/in(out)_be16/in(out)_le16 with generic iowrite(read)8/16(be)
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
-        Michal Simek <monstr@monstr.eu>, Arnd Bergmann <arnd@arndb.de>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        dahinds@users.sourceforge.net
-Date: Thu, 07 Feb 2013 08:35:50 +1100
-In-Reply-To: <CACxGe6u=zhGXm0AO_h354g8OOkAQgdczdw_gCCRxL+=r8hM+-g@mail.gmail.com>
-References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com>
-	 <1781360.cmQWHCW5SC@wuerfel>
-	 <CAHTX3dJpuTRa4Ff29k95quPMVDO2mBiayPoocnw5R15=5ovOHQ@mail.gmail.com>
-	 <201302041724.47331.arnd@arndb.de> <1360031367.14701.47.camel@pasglop>
-	 <CAHTX3dL4dScmzgGyqbvPH-7UQvFrjQhHu2zh0iZyzWB=spZS+Q@mail.gmail.com>
-	 <1360066756.4529.6.camel@pasglop>
-	 <CAHTX3dLJy314mv39hprkmZ5XdzYiYGz1ngTERp7w6aAYud+Riw@mail.gmail.com>
-	 <51111133.7000105@synopsys.com> <1360098004.4529.13.camel@pasglop>
-	 <511178AC.7080304@synopsys.com> <1360105635.2707.7.camel@pasglop>
-	 <CACxGe6u=zhGXm0AO_h354g8OOkAQgdczdw_gCCRxL+=r8hM+-g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1758539Ab3BFVhD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 16:37:03 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 00/22] PCI: Iterate pci host bridge instead of pci root bus
+Date: Wed, 06 Feb 2013 22:43:22 +0100
+Message-ID: <52330506.F9m0tMYuG1@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAE9FiQX=uEPjHDi-_VaW88ueH4u9C22gmDiGQewsQ=VN5T4=Gg@mail.gmail.com>
+References: <CAE9FiQXHG01NjnYNDbC-KEpbcvY-q4pBe97CxTOGS7W4vZQBYQ@mail.gmail.com> <CAErSpo5-6xs+Uz=Yzws23RmrFK=+AQZ2=UT+n0k=462EgazbUA@mail.gmail.com> <CAE9FiQX=uEPjHDi-_VaW88ueH4u9C22gmDiGQewsQ=VN5T4=Gg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-02-06 at 10:14 +0000, Grant Likely wrote:
+On Wednesday, February 06, 2013 01:28:27 PM Yinghai Lu wrote:
+> On Wed, Feb 6, 2013 at 12:50 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> > On Wed, Feb 6, 2013 at 11:59 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> >> On Wed, Feb 6, 2013 at 9:54 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> >>> I think you're missing the point.
+> >>>
+> >>> Search the tree for uses of "for_each_pci_dev()."  Almost every
+> >>> occurrence is a bug because that code doesn't work correctly for
+> >>> hot-added devices.  That code gets run for devices that are present at
+> >>> boot, but not for devices hot-added later.
+> >>>
+> >>> You're proposing to add "for_each_pci_host_bridge()."  That will have
+> >>> the exact same problem as for_each_pci_dev() already does.  Code that
+> >>> uses it will work for host bridges present at boot, but not for
+> >>> bridges hot-added later.
+> >>>
+> >>> Why would we want to add an interface when every use of that interface
+> >>> will be a design bug?  I think we should fix the existing users of
+> >>> pci_root_buses by changing their designs so they will work correctly
+> >>> with host bridge hotplug.
+> >>
+> >> I'm a little confused about what you want.
+> >>
+> >> In boot stage using for_each_pci_host_bridge or pci_root_buses is fine.
+> >
+> > No, it's not.  Boot-time should work exactly the same way as hot-add
+> > time, unless there's a reason it can't.  There might be corner cases
+> > where we can't do that yet, e.g., the pcibios_resource_survey stuff,
+> > but in general I don't think there's anything that *forces* us to
+> > iterate through host bridges at boot-time.
+> >
+> >> For those cases that it should support host-bridge by nature.
+> >> there are two solutions:
+> >> 1. use for_each_pci_host_bridge, and it is hotplug-safe.
+> >
+> > I'm trying to tell you that for_each_pci_host_bridge() is NOT
+> > hotplug-safe.  Your series makes it safer than it was, in the sense
+> > that it probably fixes stray pointer references when a host bridge
+> > hotplug happens while somebody's traversing pci_root_buses.  But the
+> > whole point of for_each_pci_host_bridge() is to run some code for
+> > every bridge we know about *right now*.  If a host bridge is added
+> > right after the for_each_pci_host_bridge() loop exits, that code
+> > doesn't get run.  In most cases, that's a bug.  The only exception I
+> > know about is the /sys/.../rescan interface.
+> >
+> >> and make sgi_hotplug to use acpi_pci_driver interface.
+> >> and acpi_pci_root_add() will call .add in the acpi_pci_driver.
+> >>
+> >> 2. make them all to be built-in, and  those acpi_pci_driver should be registered
+> >> much early before acpi_pci_root_add is called.
+> >> then we don't need to call for_each_host_bridge for it.
+> >>
+> >> So difference between them:
+> >> 1. still keep the module support, and register acpi_pci_driver later.
+> >> 2. built-in support only, and need to register acpi_pci_driver early.
+> >
+> > acpi_pci_driver is going away, so I don't want to add any more uses of
+> > it.  Obviously it's only relevant to x86 and ia64 anyway.
 > 
-> Huh? That makes no sense. This device out in the wild with both big
-> and little endian bus attachments. You can argue all day that one of
-> them is wrong, but it doesn't matter. It exists, is used, and must be
-> supported.
-
-No. That's where you are VERY wrong. We don't have to support crap and
-arguably shouldn't if that can give an incentive to vendors to fix their
-stuff. If you don't believe me, ask Linus :-)
-
->  In fact, the driver already knows about this and figures
-> out at runtime how the device is wired up to the bus. This is not the
-> problem.
-
-Except that this is very gross, especially when you observe that in the
-busted "big endian" case, it has to byteswap the bloody data port.
-
-So you end up having to do that gross hack with separate accessors for
-registers vs. data and not able to use the _rep variants, which also
-means that on platforms like ppc, you end up with a memory barrier on
-every access (or more), which is going to slow things down enormously.
-
-> BTW, that document describes only one of the systemace bus
-> attachments. There is a different on used on Microblaze little-endian,
-> and some boards have the SystemACE directly wired to the SoC external
-> bus (no adapter IP).
+> when?
 > 
-> The only problem that I see is that the ARM and Microblaze
-> ioread16be/iowrite16be helpers are missing barriers which smells like
-> a bug and should be fixed.
+> I have ioapic and iommu hotplug patch set that need to use them.
+
+I suppose it would be a bit simpler if you tried to fix things up before
+adding more stuff on top of them, which only makes it more difficult
+to clean them up when this additional stuff is applied.
+
+A patchset to remove acpi_pci_driver has been posted already and it is going
+to be submitted again after 3.9-rc1.  So this is the time frame.
+
+> > What I'd like is a change where for_each_pci_host_bridge() is used
+> > only inside the PCI core and defined somewhere like drivers/pci/pci.h
+> > so it's not even available outside.
+> >
+> > The other uses should be changed so they use
+> > pcibios_root_bridge_prepare() or something similar.  That way, it will
+> > be obvious that the code supports hot-added bridges, and when it gets
+> > copied to other places, we'll be copying a working design instead of a
+> > broken one.
+> >
+> > I don't want to have to audit these places and figure out "this is
+> > safe because this arch doesn't support host bridge hotplug" or "this
+> > is safe because this CPU doesn't support XYZ."  That's not a
+> > maintainable solution.  The safety should be apparent from the code
+> > itself, without requiring extra platform-specific knowledge.
 > 
-> Michal, have you tested Alexey's patch? If it works for you then I'm
-> comfortable with acking it. It looks correct to me.
+> so you still did not answer you want 1 or 2 yet:
+> 
+> for sgi_hotplug,
+> 
+> 1. still keep the module support, and register acpi_pci_driver later.
+> 2. built-in support only, and need to register acpi_pci_driver early.
 
-No, the real problem is that the "big endian" wiring is totally busted
-and the HW guys who came with it must be taught a lesson. Not supporting
-that crap might be one way to do it.
+Please work with the assumption that acpi_pci_driver is not going to be there
+any more.
 
-Ben.
+Thanks,
+Rafael
 
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
