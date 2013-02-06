@@ -1,38 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755369Ab3BFPqZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 10:46:25 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:41205 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753765Ab3BFPqX (ORCPT
+	id S1755802Ab3BFPt4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 10:49:56 -0500
+Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:41530 "EHLO
+	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753843Ab3BFPtz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 10:46:23 -0500
-Date: Wed, 6 Feb 2013 10:46:22 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Yuan-Hsin Chen <yuanlmm@gmail.com>
-cc: gregkh@linuxfoundation.org, <sarah.a.sharp@linux.intel.com>,
-        <balbi@ti.com>, <Julia.Lawall@lip6.fr>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Yuan-Hsin Chen <yhchen@faraday-tech.com>
-Subject: Re: [PATCH] usb host: Faraday FUSBH200 HCD driver.
-In-Reply-To: <1360149841-2392-1-git-send-email-yuanlmm@gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1302061045240.1893-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 6 Feb 2013 10:49:55 -0500
+From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Vivek Goyal <vgoyal@redhat.com>, Hugh Dickins <hughd@google.com>,
+        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>
+Subject: [PATCH] mm: don't overwrite mm->def_flags in do_mlockall()
+Date: Wed,  6 Feb 2013 16:49:34 +0100
+Message-Id: <1360165774-55458-1-git-send-email-gerald.schaefer@de.ibm.com>
+X-Mailer: git-send-email 1.7.12.4
+x-cbid: 13020615-8372-0000-0000-00000518DB6E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Feb 2013, Yuan-Hsin Chen wrote:
+With commit 8e72033 "thp: make MADV_HUGEPAGE check for mm->def_flags"
+the VM_NOHUGEPAGE flag may be set on s390 in mm->def_flags for certain
+processes, to prevent future thp mappings. This would be overwritten
+by do_mlockall(), which sets it back to 0 with an optional VM_LOCKED
+flag set.
 
-> From: Yuan-Hsin Chen <yhchen@faraday-tech.com>
-> 
-> USB2.0 HCD driver for Faraday FUSBH200
+To fix this, instead of overwriting mm->def_flags in do_mlockall(),
+only the VM_LOCKED flag should be set or cleared.
 
-In what way is this driver different from the existing ehci-hcd driver?  
-It looks like almost all of the code is identical.  We don't need to 
-have two copies of the same code in the kernel.
+Reported-by: Vivek Goyal <vgoyal@redhat.com>
+Signed-off-by: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+---
+ mm/mlock.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Alan Stern
+diff --git a/mm/mlock.c b/mm/mlock.c
+index f0b9ce5..c9bd528 100644
+--- a/mm/mlock.c
++++ b/mm/mlock.c
+@@ -517,11 +517,11 @@ SYSCALL_DEFINE2(munlock, unsigned long, start, size_t, len)
+ static int do_mlockall(int flags)
+ {
+ 	struct vm_area_struct * vma, * prev = NULL;
+-	unsigned int def_flags = 0;
+ 
+ 	if (flags & MCL_FUTURE)
+-		def_flags = VM_LOCKED;
+-	current->mm->def_flags = def_flags;
++		current->mm->def_flags |= VM_LOCKED;
++	else
++		current->mm->def_flags &= ~VM_LOCKED;
+ 	if (flags == MCL_FUTURE)
+ 		goto out;
+ 
+-- 
+1.7.12.4
 
