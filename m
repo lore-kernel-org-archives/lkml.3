@@ -1,67 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757805Ab3BFR63 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 12:58:29 -0500
-Received: from mail.candelatech.com ([208.74.158.172]:53925 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754686Ab3BFR62 (ORCPT
+	id S932100Ab3BFR6x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 12:58:53 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:43451 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932067Ab3BFR6u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 12:58:28 -0500
-Message-ID: <511299BA.905@candelatech.com>
-Date: Wed, 06 Feb 2013 09:58:18 -0800
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Wed, 6 Feb 2013 12:58:50 -0500
+Date: Wed, 6 Feb 2013 09:58:48 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Jan Kara <jack@suse.cz>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, jslaby@suse.cz,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH v2] printk: Avoid softlockups in console_unlock()
+In-Reply-To: <20130206142346.GF6330@quack.suse.cz>
+Message-ID: <alpine.DEB.2.02.1302060958150.26828@chino.kir.corp.google.com>
+References: <1360016230-26696-1-git-send-email-jack@suse.cz> <20130205123838.146a5371.akpm@linux-foundation.org> <20130206142346.GF6330@quack.suse.cz>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Cong Ding <dinggnu@gmail.com>
-CC: Johannes Berg <johannes@sipsolutions.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: mac80211/cfg.c: fix error using of sizeof()
-References: <1360167826-29265-1-git-send-email-dinggnu@gmail.com>
-In-Reply-To: <1360167826-29265-1-git-send-email-dinggnu@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/2013 08:23 AM, Cong Ding wrote:
-> Using 'sizeof' on array given as function argument returns size of a pointer
-> rather than the size of array.
->
-> Signed-off-by: Cong Ding <dinggnu@gmail.com>
-> ---
->   net/mac80211/cfg.c |    3 ++-
->   1 file changed, 2 insertions(+), 1 deletion(-)
->
-> diff --git a/net/mac80211/cfg.c b/net/mac80211/cfg.c
-> index 661b878..af561d5 100644
-> --- a/net/mac80211/cfg.c
-> +++ b/net/mac80211/cfg.c
-> @@ -2058,7 +2058,8 @@ static int ieee80211_set_mcast_rate(struct wiphy *wiphy, struct net_device *dev,
->   {
->   	struct ieee80211_sub_if_data *sdata = IEEE80211_DEV_TO_SUB_IF(dev);
->
-> -	memcpy(sdata->vif.bss_conf.mcast_rate, rate, sizeof(rate));
-> +	memcpy(sdata->vif.bss_conf.mcast_rate, rate,
-> +			sizeof(int) * IEEE80211_NUM_BANDS);
+On Wed, 6 Feb 2013, Jan Kara wrote:
 
-Should it perhaps be:  sizeof(*rate) * IEEE80211_NUM_BANDS
-just in case the type ever changes?
+>   Yes, I noticed that thread just yesterday and also though that using
+> similar trick might be viable. I'll experiment if we could use the same
+> method for handling lockup problems I hit. Steven seems to have already
+> tweaked PRINTK_PENDING stuff to be usable more easily...
+> 
 
-Thanks,
-Ben
+Are these new build failures in linux-next coming from this patch?
 
->
->   	return 0;
->   }
->
-
-
--- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
-
+kernel/printk.c: In function 'console_unlock':
+kernel/printk.c:2156:18: error: 'printk_work' undeclared (first use in this function)
+kernel/printk.c:2156:18: note: each undeclared identifier is reported only once for each function it appears in
+kernel/printk.c: At top level:
+kernel/printk.c:2167:13: warning: 'printk_worker' defined but not used [-Wunused-function]
