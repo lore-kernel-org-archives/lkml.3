@@ -1,184 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758370Ab3BFWjI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 17:39:08 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:36814 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758221Ab3BFWiv (ORCPT
+	id S1757897Ab3BFWm3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 17:42:29 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:27462 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754330Ab3BFWm1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 17:38:51 -0500
+	Wed, 6 Feb 2013 17:42:27 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130206104000.98E803E1510@localhost>
-References: <1360105784-12282-1-git-send-email-ks.giri@samsung.com>
-	<1360105784-12282-4-git-send-email-ks.giri@samsung.com>
-	<20130206104000.98E803E1510@localhost>
-Date: Wed, 6 Feb 2013 14:38:50 -0800
-Message-ID: <CAKrE-KfS_Q0KJJwB--VTMtaDumfGSdM_2Zg_pYeUb4cSgmrehA@mail.gmail.com>
-Subject: Re: [PATCH 3/4] spi: s3c64xx: add gpio quirk for controller
-From: Girish KS <girishks2000@gmail.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Message-ID: <abbc2f75-2982-470c-a3ca-675933d112c3@default>
+Date: Wed, 6 Feb 2013 14:42:11 -0800 (PST)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: sjenning@linux.vnet.ibm.com, Konrad Wilk <konrad.wilk@oracle.com>,
+        minchan@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        devel@linuxdriverproject.org, ngupta@vflare.org
+Subject: RE: [PATCH] staging/zcache: Fix/improve zcache writeback code, tie to
+ a config option
+References: <1360175261-13287-1-git-send-email-dan.magenheimer@oracle.com>
+ <20130206190924.GB32275@kroah.com>
+ <761b5c6e-df13-49ff-b322-97a737def114@default>
+ <20130206214316.GA21148@kroah.com>
+In-Reply-To: <20130206214316.GA21148@kroah.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
+ 12.0.6665.5003 (x86)]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 6, 2013 at 2:40 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Tue,  5 Feb 2013 15:09:43 -0800, Girish K S <girishks2000@gmail.com> wrote:
->> This patch adds support for spi controllers with
->> dedicated clk/miso/mosi/cs pins. It skips the gpio
->> parsing and initialization for controllers that
->> have dedicated pins.
->>
->> Signed-off-by: Girish K S <ks.giri@samsung.com>
->
-> Instead of making this a quirk, you should use the presence/absense of a
-> cs-gpios property to determin whether or not a gpio is used to
-> manipulate the CS signal.
-I can do this for CS signal. Other signals are also dedicated pins.
-can i check the "gpios" property for them?
->
-> Also, are you certain that you want to make this change? Most SPI
-> controllers are actually unfriendly in that they insist on deasserting the
-> CS line if the FIFO runs empty. Does this driver correctly keep the CS
-> signal asserted when there are multiple transfers in a message?
-The CS signal is asserted when the slave select bit is cleared, this
-is done in the enable_cs function.
-The CS signal is deasserted when the slave select bit is set, this is
-done in the disable_cs function.
-enable_cs is called at the begining of the message transfer and
-disable is called at the end of the transfer.
->
-> g.
->
->> ---
->>  drivers/spi/spi-s3c64xx.c |   39 +++++++++++++++++++++++++++++++--------
->>  1 file changed, 31 insertions(+), 8 deletions(-)
->>
->> diff --git a/drivers/spi/spi-s3c64xx.c b/drivers/spi/spi-s3c64xx.c
->> index 90770bd..f06bbee 100644
->> --- a/drivers/spi/spi-s3c64xx.c
->> +++ b/drivers/spi/spi-s3c64xx.c
->> @@ -36,6 +36,7 @@
->>
->>  #define MAX_SPI_PORTS                3
->>  #define S3C64XX_SPI_QUIRK_POLL               (1 << 0)
->> +#define S3C64XX_SPI_QUIRK_GPIO               (1 << 1)
->>
->>  /* Registers and bit-fields */
->>
->> @@ -404,14 +405,16 @@ static inline void enable_cs(struct s3c64xx_spi_driver_data *sdd,
->>               if (sdd->tgl_spi != spi) { /* if last mssg on diff device */
->>                       /* Deselect the last toggled device */
->>                       cs = sdd->tgl_spi->controller_data;
->> -                     gpio_set_value(cs->line,
->> -                             spi->mode & SPI_CS_HIGH ? 0 : 1);
->> +                     if (!(sdd->port_conf->quirks & S3C64XX_SPI_QUIRK_GPIO))
->> +                             gpio_set_value(cs->line,
->> +                                     spi->mode & SPI_CS_HIGH ? 0 : 1);
->>               }
->>               sdd->tgl_spi = NULL;
->>       }
->>
->>       cs = spi->controller_data;
->> -     gpio_set_value(cs->line, spi->mode & SPI_CS_HIGH ? 1 : 0);
->> +     if (!(sdd->port_conf->quirks & S3C64XX_SPI_QUIRK_GPIO))
->> +             gpio_set_value(cs->line, spi->mode & SPI_CS_HIGH ? 1 : 0);
->>
->>       /* Start the signals */
->>       writel(0, sdd->regs + S3C64XX_SPI_SLAVE_SEL);
->> @@ -503,7 +506,8 @@ static inline void disable_cs(struct s3c64xx_spi_driver_data *sdd,
->>       if (sdd->tgl_spi == spi)
->>               sdd->tgl_spi = NULL;
->>
->> -     gpio_set_value(cs->line, spi->mode & SPI_CS_HIGH ? 0 : 1);
->> +     if (!(sdd->port_conf->quirks & S3C64XX_SPI_QUIRK_GPIO))
->> +             gpio_set_value(cs->line, spi->mode & SPI_CS_HIGH ? 0 : 1);
->>
->>       /* Quiese the signals */
->>       writel(S3C64XX_SPI_SLAVE_SIG_INACT,
->> @@ -842,7 +846,10 @@ static struct s3c64xx_spi_csinfo *s3c64xx_get_slave_ctrldata(
->>               return ERR_PTR(-ENOMEM);
->>       }
->>
->> -     cs->line = of_get_named_gpio(data_np, "cs-gpio", 0);
->> +     /* In case of dedicated cs pin skip the gpio initialization */
->> +     if (!(sdd->port_conf->quirks & S3C64XX_SPI_QUIRK_GPIO))
->> +             cs->line = of_get_named_gpio(data_np, "cs-gpio", 0);
->> +
->>       if (!gpio_is_valid(cs->line)) {
->>               dev_err(&spi->dev, "chip select gpio is not specified or "
->>                                       "invalid\n");
->> @@ -883,7 +890,7 @@ static int s3c64xx_spi_setup(struct spi_device *spi)
->>               return -ENODEV;
->>       }
->>
->> -     if (!spi_get_ctldata(spi)) {
->> +     if (!(sdd->port_conf->quirks & S3C64XX_SPI_QUIRK_GPIO)) {
->>               err = gpio_request_one(cs->line, GPIOF_OUT_INIT_HIGH,
->>                                      dev_name(&spi->dev));
->>               if (err) {
->> @@ -892,9 +899,11 @@ static int s3c64xx_spi_setup(struct spi_device *spi)
->>                               cs->line, err);
->>                       goto err_gpio_req;
->>               }
->> -             spi_set_ctldata(spi, cs);
->>       }
->>
->> +     if (!spi_get_ctldata(spi))
->> +             spi_set_ctldata(spi, cs);
->> +
->>       sci = sdd->cntrlr_info;
->>
->>       spin_lock_irqsave(&sdd->lock, flags);
->> @@ -979,8 +988,11 @@ err_gpio_req:
->>  static void s3c64xx_spi_cleanup(struct spi_device *spi)
->>  {
->>       struct s3c64xx_spi_csinfo *cs = spi_get_ctldata(spi);
->> +     struct s3c64xx_spi_driver_data *sdd;
->> +
->> +     sdd = spi_master_get_devdata(spi->master);
->>
->> -     if (cs) {
->> +     if (!(sdd->port_conf->quirks & S3C64XX_SPI_QUIRK_GPIO) && cs) {
->>               gpio_free(cs->line);
->>               if (spi->dev.of_node)
->>                       kfree(cs);
->> @@ -1107,6 +1119,13 @@ static int s3c64xx_spi_parse_dt_gpio(struct s3c64xx_spi_driver_data *sdd)
->>       struct device *dev = &sdd->pdev->dev;
->>       int idx, gpio, ret;
->>
->> +     /*
->> +      * If cs is not controlled by gpio, and
->> +      * the SoC uses internal dedicated pins
->> +      */
->> +     if (sdd->port_conf->quirks & S3C64XX_SPI_QUIRK_GPIO)
->> +             return 0;
->> +
->>       /* find gpios for mosi, miso and clock lines */
->>       for (idx = 0; idx < 3; idx++) {
->>               gpio = of_get_gpio(dev->of_node, idx);
->> @@ -1133,6 +1152,10 @@ free_gpio:
->>  static void s3c64xx_spi_dt_gpio_free(struct s3c64xx_spi_driver_data *sdd)
->>  {
->>       unsigned int idx;
->> +
->> +     if (sdd->port_conf->quirks & S3C64XX_SPI_QUIRK_GPIO)
->> +             return;
->> +
->>       for (idx = 0; idx < 3; idx++)
->>               gpio_free(sdd->gpios[idx]);
->>  }
->> --
->> 1.7.10.4
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
-> --
-> Grant Likely, B.Sc, P.Eng.
-> Secret Lab Technologies, Ltd.
+> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> Subject: Re: [PATCH] staging/zcache: Fix/improve zcache writeback code, tie to a config option
+> 
+> On Wed, Feb 06, 2013 at 12:51:25PM -0800, Dan Magenheimer wrote:
+> > > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > > Subject: Re: [PATCH] staging/zcache: Fix/improve zcache writeback code, tie to a config option
+> > >
+> > > On Wed, Feb 06, 2013 at 10:27:41AM -0800, Dan Magenheimer wrote:
+> > > > It was observed by Andrea Arcangeli in 2011 that zcache can get "full"
+> > > > and there must be some way for compressed swap pages to be (uncompressed
+> > > > and then) sent through to the backing swap disk.  A prototype of this
+> > > > functionality, called "unuse", was added in 2012 as part of a major update
+> > > > to zcache (aka "zcache2"), but was left unfinished due to the unfortunate
+> > > > temporary fork of zcache.
+> > > >
+> > > > This earlier version of the code had an unresolved memory leak
+> > > > and was anyway dependent on not-yet-upstream frontswap and mm changes.
+> > > > The code was meanwhile adapted by Seth Jennings for similar
+> > > > functionality in zswap (which he calls "flush").  Seth also made some
+> > > > clever simplifications which are herein ported back to zcache.  As a
+> > > > result of those simplifications, the frontswap changes are no longer
+> > > > necessary, but a slightly different (and simpler) set of mm changes are
+> > > > still required [1].  The memory leak is also fixed.
+> > > >
+> > > > Due to feedback from akpm in a zswap thread, this functionality in zcache
+> > > > has now been renamed from "unuse" to "writeback".
+> > > >
+> > > > Although this zcache writeback code now works, there are open questions
+> > > > as how best to handle the policy that drives it.  As a result, this
+> > > > patch also ties writeback to a new config option.  And, since the
+> > > > code still depends on not-yet-upstreamed mm patches, to avoid build
+> > > > problems, the config option added by this patch temporarily depends
+> > > > on "BROKEN"; this config dependency can be removed in trees that
+> > > > contain the necessary mm patches.
+> > >
+> > > I'll wait for those options to be in Linus's tree before accepting a
+> > > patch like this, sorry.
+> > >
+> > > greg k-h
+> >
+> > Hi Greg --
+> >
+> > Hmmmm... that creates the classic chicken-and-egg problem...  It's hard
+> > to get a patch into the kernel (especially mm) without a demonstrated
+> > "user" for the patch, but the "user" can't be added without the patch it
+> > is dependent on because the "user" code won't work and/or would break
+> > the build without it.
+> >
+> > In the past (e.g. with cleancache and frontswap), you've resolved that
+> > by taking the "user" (e.g. zcache) code into staging, properly ifdef'd
+> > to avoid build issues, which clearly demonstrated the use for the
+> > matching mm changes, which were eventually merged into Linus's tree,
+> > at which point the ifdefs were removed.
+> 
+> Yes, but these mm changes are in no one's trees, and I have no idea if
+> they ever will be merged.
+
+OK, I can try pushing on the "egg" side for awhile :-(
+
+> This patch looks to me that it is adding new functionality, and not
+> working to get it moved out of staging.
+
+Not true... it is fixing broken functionality that was left latent
+for too long due to last summer's unpleasant disagreements.  And this
+functionality was a key reason why "zcache2" was created... because mm
+developers (e.g. Andrea) insisted that it must be present before compression
+functionality would be added into mm.  As evidence to support this,
+note that Seth's first zswap patchset includes similar functionality
+even though Seth argued vociferously last summer that the functionality
+wasn't needed before "old" zcache should be promoted.
+
+> So, how about I try being mean again.  I will accept no more patches for
+> the zcache/zram/zsmalloc code, unless is it an obvious bugfix, or it is
+> to move it out of the drivers/staging/ tree.  You all have had many
+> years to get your act together, and it's getting really frustrating from
+> my end.
+
+I do very much understand your frustration and you have every right
+to be mean.
+
+But, since this really is technically patching up existing critical
+functionality that was known to be broken, I would be very grateful
+if you would reconsider applying this patch.  I agree there will be no
+(more) non-bugfix staging/zcache patches from me. I've proposed a topic [1]
+for LSF/MM in April to discuss all this... I totally agree it's time to
+promote in-kernel compression out of staging and into mm proper.
+But without this patch fixing required functionality, it will be
+harder to promote.
+
+In other words.... pretty pleeeeze? I swear this is the last time.  :-]
+
+Thanks,
+Dan "puts on cute irresistible doe-eyed child face"
+
+[1] http://marc.info/?l=linux-mm&m=135923138220901&w=2
