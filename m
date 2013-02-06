@@ -1,26 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754855Ab3BFNvs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 08:51:48 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60566 "EHLO
+	id S1753929Ab3BFNxM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 08:53:12 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60583 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751335Ab3BFNvq (ORCPT
+	with ESMTP id S1750951Ab3BFNxK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 08:51:46 -0500
-Date: Wed, 6 Feb 2013 05:51:17 -0800
-From: tip-bot for Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Message-ID: <tip-f2b4367a69c60c644a1df36f63a65e0e677d3b0f@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        acme@ghostprotocols.net, sfr@canb.auug.org.au,
-        sukadev@linux.vnet.ibm.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@ghostprotocols.net, tglx@linutronix.de,
-        sukadev@linux.vnet.ibm.com, sfr@canb.auug.org.au
-In-Reply-To: <20130205231938.GA24125@us.ibm.com>
-References: <20130205231938.GA24125@us.ibm.com>
+	Wed, 6 Feb 2013 08:53:10 -0500
+Date: Wed, 6 Feb 2013 05:52:27 -0800
+From: tip-bot for Alex Shi <alex.shi@intel.com>
+Message-ID: <tip-3a15e0e0cdda5b401d0a36dd7e83406cd1ce0724@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, anton@samba.org, hpa@zytor.com,
+        mingo@kernel.org, arjan@linux.intel.com, a.p.zijlstra@chello.nl,
+        torvalds@linux-foundation.org, alex.shi@intel.com,
+        yuanhan.liu@linux.intel.com, dhowells@redhat.com,
+        akpm@linux-foundation.org, tglx@linutronix.de, walken@google.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, anton@samba.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        a.p.zijlstra@chello.nl, arjan@linux.intel.com, alex.shi@intel.com,
+        yuanhan.liu@linux.intel.com, dhowells@redhat.com,
+        akpm@linux-foundation.org, tglx@linutronix.de, walken@google.com
+In-Reply-To: <1360069915-31619-1-git-send-email-alex.shi@intel.com>
+References: <1360069915-31619-1-git-send-email-alex.shi@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/powerpc: Fix build error
-Git-Commit-ID: f2b4367a69c60c644a1df36f63a65e0e677d3b0f
+Subject: [tip:core/urgent] rwsem:
+  Implement writer lock-stealing for better scalability
+Git-Commit-ID: 3a15e0e0cdda5b401d0a36dd7e83406cd1ce0724
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,45 +34,175 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 06 Feb 2013 05:51:23 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 06 Feb 2013 05:52:33 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f2b4367a69c60c644a1df36f63a65e0e677d3b0f
-Gitweb:     http://git.kernel.org/tip/f2b4367a69c60c644a1df36f63a65e0e677d3b0f
-Author:     Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-AuthorDate: Tue, 5 Feb 2013 15:04:49 -0800
+Commit-ID:  3a15e0e0cdda5b401d0a36dd7e83406cd1ce0724
+Gitweb:     http://git.kernel.org/tip/3a15e0e0cdda5b401d0a36dd7e83406cd1ce0724
+Author:     Alex Shi <alex.shi@intel.com>
+AuthorDate: Tue, 5 Feb 2013 21:11:55 +0800
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 6 Feb 2013 12:07:21 +0100
+CommitDate: Wed, 6 Feb 2013 12:41:43 +0100
 
-perf/powerpc: Fix build error
+rwsem: Implement writer lock-stealing for better scalability
 
-Fix compile errors like those below:
+Commit 5a505085f043 ("mm/rmap: Convert the struct anon_vma::mutex
+to an rwsem") changed struct anon_vma::mutex to an rwsem, which
+caused aim7 fork_test performance to drop by 50%.
 
-  CC      arch/powerpc/perf/power7-pmu.o
-   /home/git/linux/arch/powerpc/perf/power7-pmu.c:397:2: error: initialization from incompatible pointer type [-Werror]
+Yuanhan Liu did the following excellent analysis:
 
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Acked-by: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linuxppc-dev@ozlabs.org
-Link: http://lkml.kernel.org/r/20130205231938.GA24125@us.ibm.com
+    https://lkml.org/lkml/2013/1/29/84
+
+and found that the regression is caused by strict, serialized,
+FIFO sequential write-ownership of rwsems. Ingo suggested
+implementing opportunistic lock-stealing for the front writer
+task in the waitqueue.
+
+Yuanhan Liu implemented lock-stealing for spinlock-rwsems,
+which indeed recovered much of the regression - confirming
+the analysis that the main factor in the regression was the
+FIFO writer-fairness of rwsems.
+
+In this patch we allow lock-stealing to happen when the first
+waiter is also writer. With that change in place the
+aim7 fork_test performance is fully recovered on my
+Intel NHM EP, NHM EX, SNB EP 2S and 4S test-machines.
+
+Reported-by: lkp@linux.intel.com
+Reported-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Anton Blanchard <anton@samba.org>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: paul.gortmaker@windriver.com
+Link: https://lkml.org/lkml/2013/1/29/84
+Link: http://lkml.kernel.org/r/1360069915-31619-1-git-send-email-alex.shi@intel.com
+[ Small stylistic fixes, updated changelog. ]
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/powerpc/include/asm/perf_event_server.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ lib/rwsem.c | 75 +++++++++++++++++++++++++++++++++++++------------------------
+ 1 file changed, 46 insertions(+), 29 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/perf_event_server.h b/arch/powerpc/include/asm/perf_event_server.h
-index b29fcc6..136bba6 100644
---- a/arch/powerpc/include/asm/perf_event_server.h
-+++ b/arch/powerpc/include/asm/perf_event_server.h
-@@ -124,7 +124,7 @@ extern ssize_t power_events_sysfs_show(struct device *dev,
-  * POWER CPU specification.
+diff --git a/lib/rwsem.c b/lib/rwsem.c
+index 8337e1b..ad5e0df 100644
+--- a/lib/rwsem.c
++++ b/lib/rwsem.c
+@@ -2,6 +2,8 @@
+  *
+  * Written by David Howells (dhowells@redhat.com).
+  * Derived from arch/i386/kernel/semaphore.c
++ *
++ * Writer lock-stealing by Alex Shi <alex.shi@intel.com>
   */
- #define	EVENT_VAR(_id, _suffix)		event_attr_##_id##_suffix
--#define	EVENT_PTR(_id, _suffix)		&EVENT_VAR(_id, _suffix)
-+#define	EVENT_PTR(_id, _suffix)		&EVENT_VAR(_id, _suffix).attr.attr
+ #include <linux/rwsem.h>
+ #include <linux/sched.h>
+@@ -60,7 +62,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wake_type)
+ 	struct rwsem_waiter *waiter;
+ 	struct task_struct *tsk;
+ 	struct list_head *next;
+-	signed long oldcount, woken, loop, adjustment;
++	signed long woken, loop, adjustment;
  
- #define	EVENT_ATTR(_name, _id, _suffix)					\
- 	PMU_EVENT_ATTR(_name, EVENT_VAR(_id, _suffix), PME_PM_##_id,	\
+ 	waiter = list_entry(sem->wait_list.next, struct rwsem_waiter, list);
+ 	if (!(waiter->flags & RWSEM_WAITING_FOR_WRITE))
+@@ -72,30 +74,8 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wake_type)
+ 		 */
+ 		goto out;
+ 
+-	/* There's a writer at the front of the queue - try to grant it the
+-	 * write lock.  However, we only wake this writer if we can transition
+-	 * the active part of the count from 0 -> 1
+-	 */
+-	adjustment = RWSEM_ACTIVE_WRITE_BIAS;
+-	if (waiter->list.next == &sem->wait_list)
+-		adjustment -= RWSEM_WAITING_BIAS;
+-
+- try_again_write:
+-	oldcount = rwsem_atomic_update(adjustment, sem) - adjustment;
+-	if (oldcount & RWSEM_ACTIVE_MASK)
+-		/* Someone grabbed the sem already */
+-		goto undo_write;
+-
+-	/* We must be careful not to touch 'waiter' after we set ->task = NULL.
+-	 * It is an allocated on the waiter's stack and may become invalid at
+-	 * any time after that point (due to a wakeup from another source).
+-	 */
+-	list_del(&waiter->list);
+-	tsk = waiter->task;
+-	smp_mb();
+-	waiter->task = NULL;
+-	wake_up_process(tsk);
+-	put_task_struct(tsk);
++	/* Wake up the writing waiter and let the task grab the sem: */
++	wake_up_process(waiter->task);
+ 	goto out;
+ 
+  readers_only:
+@@ -157,12 +137,40 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wake_type)
+ 
+  out:
+ 	return sem;
++}
++
++/* Try to get write sem, caller holds sem->wait_lock: */
++static int try_get_writer_sem(struct rw_semaphore *sem,
++					struct rwsem_waiter *waiter)
++{
++	struct rwsem_waiter *fwaiter;
++	long oldcount, adjustment;
+ 
+-	/* undo the change to the active count, but check for a transition
+-	 * 1->0 */
+- undo_write:
++	/* only steal when first waiter is writing */
++	fwaiter = list_entry(sem->wait_list.next, struct rwsem_waiter, list);
++	if (!(fwaiter->flags & RWSEM_WAITING_FOR_WRITE))
++		return 0;
++
++	adjustment = RWSEM_ACTIVE_WRITE_BIAS;
++	/* Only one waiter in the queue: */
++	if (fwaiter == waiter && waiter->list.next == &sem->wait_list)
++		adjustment -= RWSEM_WAITING_BIAS;
++
++try_again_write:
++	oldcount = rwsem_atomic_update(adjustment, sem) - adjustment;
++	if (!(oldcount & RWSEM_ACTIVE_MASK)) {
++		/* No active lock: */
++		struct task_struct *tsk = waiter->task;
++
++		list_del(&waiter->list);
++		smp_mb();
++		put_task_struct(tsk);
++		tsk->state = TASK_RUNNING;
++		return 1;
++	}
++	/* some one grabbed the sem already */
+ 	if (rwsem_atomic_update(-adjustment, sem) & RWSEM_ACTIVE_MASK)
+-		goto out;
++		return 0;
+ 	goto try_again_write;
+ }
+ 
+@@ -210,6 +218,15 @@ rwsem_down_failed_common(struct rw_semaphore *sem,
+ 	for (;;) {
+ 		if (!waiter.task)
+ 			break;
++
++		raw_spin_lock_irq(&sem->wait_lock);
++		/* Try to get the writer sem, may steal from the head writer: */
++		if (flags == RWSEM_WAITING_FOR_WRITE)
++			if (try_get_writer_sem(sem, &waiter)) {
++				raw_spin_unlock_irq(&sem->wait_lock);
++				return sem;
++			}
++		raw_spin_unlock_irq(&sem->wait_lock);
+ 		schedule();
+ 		set_task_state(tsk, TASK_UNINTERRUPTIBLE);
+ 	}
