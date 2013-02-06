@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757820Ab3BFSRr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 13:17:47 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:52766 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752089Ab3BFSRo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 13:17:44 -0500
-Message-ID: <1360174662.4045.34.camel@hornet>
-Subject: Re: [RFC] perf: need to expose sched_clock to correlate user
- samples with kernel samples
-From: Pawel Moll <pawel.moll@arm.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Anton Blanchard <anton@samba.org>, Will Deacon <Will.Deacon@arm.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Pekka Enberg <penberg@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Robert Richter <robert.richter@amd.com>, tglx <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>
-Date: Wed, 06 Feb 2013 18:17:42 +0000
-In-Reply-To: <CABPqkBSVeU_JP2KpVZLepKDJX=-g6A45Y5MoNphd6+DaU2PQzQ@mail.gmail.com>
-References: <CABPqkBQALeD=iO9x-N0nw+shhqa1kmUaj=sCvx+MvoAPGQ-y9A@mail.gmail.com>
-	 <1350408232.2336.42.camel@laptop>	<1359728280.8360.15.camel@hornet>
-	 <CABPqkBSVeU_JP2KpVZLepKDJX=-g6A45Y5MoNphd6+DaU2PQzQ@mail.gmail.com>
-X-Mailer: Evolution 3.6.2-0ubuntu0.1
-Mime-Version: 1.0
-X-OriginalArrivalTime: 06 Feb 2013 18:17:42.0803 (UTC) FILETIME=[41552E30:01CE0496]
-X-MC-Unique: 113020618174300201
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1757905Ab3BFSSB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 13:18:01 -0500
+Received: from mga03.intel.com ([143.182.124.21]:64531 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757880Ab3BFSRz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 13:17:55 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,617,1355126400"; 
+   d="scan'208";a="199405950"
+Date: Wed, 6 Feb 2013 19:17:52 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Emil Goode <emilgoode@gmail.com>
+Cc: ptyser@xes-inc.com, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] mfd: lpc_ich: Fix arguments to kmalloc
+Message-ID: <20130206181752.GD3418@sortiz-mobl>
+References: <1360173659-22409-1-git-send-email-emilgoode@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1360173659-22409-1-git-send-email-emilgoode@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-02-05 at 22:13 +0000, Stephane Eranian wrote:
-> The app requesting the timestamp may not necessarily have an active
-> perf session. And by that I mean, it may not be self-monitoring. But it
-> could be monitored by an external tool such as perf, without necessary
-> knowing it.
+HI Emil,
 
-Fair enough - I guess eg. JIT engine could generate a timestamped
-information about generated symbols which could be then merged with a
-stream recorded by the perf tool by yet another tool.
+On Wed, Feb 06, 2013 at 07:00:59PM +0100, Emil Goode wrote:
+> This patch changes the order of the arguments to kmalloc,
+> the allocation flag should be the second argument.
+> 
+> Sparse warnings:
+> 
+> drivers/mfd/lpc_ich.c:881:24: warning:
+> 	incorrect type in argument 1 (different base types)
+> 	drivers/mfd/lpc_ich.c:881:24:
+> 	expected unsigned long [unsigned] [usertype] size
+> 	drivers/mfd/lpc_ich.c:881:24:    got restricted gfp_t
+> 
+> drivers/mfd/lpc_ich.c:881:36: warning:
+> 	incorrect type in argument 2 (different base types)
+> 	drivers/mfd/lpc_ich.c:881:36:
+> 	expected restricted gfp_t [usertype] flags
+> 	drivers/mfd/lpc_ich.c:881:36:    got unsigned long
+> 
+> Signed-off-by: Emil Goode <emilgoode@gmail.com>
+> ---
+>  drivers/mfd/lpc_ich.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+This patch does not apply to my for-next branch.
 
-> The timestamp is global or at least per-cpu. It is not tied to a particular
-> active event.
+Cheers,
+Samuel.
 
-I know that the implementation does it now, but is it actually specified
-as such? I could imagine a situation where perf_clock() returns time
-elapsed since the "current" sys_perf_event_open()... (not that I'd like
-it ;-)
-
-Paweł
-
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
