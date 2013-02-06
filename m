@@ -1,24 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756830Ab3BFERX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 23:17:23 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58639 "EHLO
+	id S1756917Ab3BFEVM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 23:21:12 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58667 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755183Ab3BFERU (ORCPT
+	by vger.kernel.org with ESMTP id S1754856Ab3BFEVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 23:17:20 -0500
-Message-ID: <1360124227.32217.20.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 000/128] 3.2.38-stable review
+	Tue, 5 Feb 2013 23:21:08 -0500
+Message-ID: <1360124462.32217.21.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [ 014/128] mwifiex: wakeup and stop multiple tx queues in
+ net_device
 From: Ben Hutchings <ben@decadent.org.uk>
-To: Satoru Takeuchi <satoru.takeuchi@gmail.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Date: Wed, 06 Feb 2013 04:17:07 +0000
-In-Reply-To: <87622887nw.wl%satoru.takeuchi@gmail.com>
+To: Bing Zhao <bzhao@marvell.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Avinash Patil <patila@marvell.com>, Kiran Divekar <dkiran@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Date: Wed, 06 Feb 2013 04:21:02 +0000
+In-Reply-To: <477F20668A386D41ADCC57781B1F70430D1432F6DE@SC-VEXCH1.marvell.com>
 References: <20130203144644.035172954@decadent.org.uk>
-	 <87622887nw.wl%satoru.takeuchi@gmail.com>
+	 <20130203144645.292616915@decadent.org.uk>
+	 <477F20668A386D41ADCC57781B1F70430D1432F5B8@SC-VEXCH1.marvell.com>
+	 <1360021291.4538.19.camel@deadeye.wl.decadent.org.uk>
+	 <477F20668A386D41ADCC57781B1F70430D1432F6DE@SC-VEXCH1.marvell.com>
 Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-c3eje9aXPmay2JXQZRrw"
+	protocol="application/pgp-signature"; boundary="=-YUjnYGShTTgQAvjDw+h9"
 X-Mailer: Evolution 3.4.4-1 
 Mime-Version: 1.0
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
@@ -29,37 +36,67 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-c3eje9aXPmay2JXQZRrw
+--=-YUjnYGShTTgQAvjDw+h9
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, 2013-02-04 at 23:39 +0900, Satoru Takeuchi wrote:
-> At Sun, 03 Feb 2013 15:46:44 +0100,
-> Ben Hutchings wrote:
+On Mon, 2013-02-04 at 16:36 -0800, Bing Zhao wrote:
+> Hi Ben,
+>=20
+> > On Mon, 2013-02-04 at 11:43 -0800, Bing Zhao wrote:
+> > > Hi Ben,
+> > >
+> > > > 3.2-stable review patch.  If anyone has any objections, please let =
+me know.
+> > > >
+> > > > ------------------
+> > > >
+> > > > From: Avinash Patil <patila@marvell.com>
+> > > >
+> > > > commit bbea3bc432dc5c08d09ca5c80afdd82515470688 upstream.
+> > >
+> > > This patch is not for stable kernel.
+> > [...]
 > >=20
-> > This is the start of the stable review cycle for the 3.2.38 release.
-> > There are 128 patches in this series, which will be posted as responses
-> > to this one.  If anyone has any issues with these being applied, please
-> > let me know.
+> > Right, I've managed to pick up 3 changes to mwifiex that it looks like =
+I
+> > shouldn't have included.  Firstly:
 > >=20
-> > Responses should be made by Tue Feb  5 21:00:00 UTC 2013.
-> > Anything received after that time might be too late.
+> > 9c969d8ccb1e mwifiex: check wait_event_interruptible return value
+> >=20
+> > This had "3.6+" to the left of <stable@vger.kernel.org>, whereas I
+> > expect version qualifiers to be on the right.  So my import script just
+> > put this in the queue without asking me to interpret the version
+> > qualifier.  (I don't automate *that* because people use too wide a
+> > variety of syntaxes.)
 >=20
-> This kernel can be built and boot without any problem.
-> Building a kernel with this kernel also works fine.
+> Sorry. From now on I will put version qualifiers on the right side of <st=
+able@vger...>
 >=20
->  - Build Machine: debian wheezy x86_64
->    CPU: Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz x 4
->    memory: 8GB
+> >=20
+> > When trying to apply that, I found that it seemed to depend on these
+> > two:
+> >=20
+> > bbea3bc432dc mwifiex: wakeup and stop multiple tx queues in net_device
 >=20
->  - Test machine: debian wheezy x86_64(KVM guest on the Build Machine)
->    vCPU: x2
->    memory: 2GB
+> I'd rather classify this patch as an enhancement because the code change =
+is relatively large.
+> To play it safe, let's drop this patch from -stable.
 >=20
-> I reviewed the following patches and it looks good to me.
-[...]
+> > b7097eb75fa1 mwifiex: handle association failure case correctly
+>=20
+> This is a bug fix indeed.
+>=20
+> >=20
+> > which also looked like they were important fixes.  Presumably I should
+> > drop all of those?
+>=20
+> Please drop bbea3bc432dc only.
+>=20
+> I can resend a backport of "b7097eb75fa1 mwifiex: handle association fail=
+ure case correctly" for 3.2-stable.
 
-Thanks.
+Thanks, I've made these two changes.
 
 Ben.
 
@@ -69,26 +106,26 @@ Everything should be made as simple as possible, but not simpler.
                                                            - Albert Einstei=
 n
 
---=-c3eje9aXPmay2JXQZRrw
+--=-YUjnYGShTTgQAvjDw+h9
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIVAwUAURHZQ+e/yOyVhhEJAQowmhAAv0MB80wzY4hsVtz8BINeTLcltPbSTkpX
-zudIr6ti2w3ATEWuXiKypRNhV7rnNFpml5DAjAF7BCNGm4QCa5QbxI84ipip33vJ
-jhWRoWpQBc0eUNhQVdWPm3X5HZ0m+xR0k/a/+QY7zzkgasBJe9nYpuepdP8edU40
-i2TzuBTFilP2Yaf1bowPbw3pfBkN3P4tGa0BLsWQonVnnKOpUGGwyutHXBAnqb2Q
-D8e22B8pbv0/vMudXi6WfPnKNhMLw/n10m1ox2bKamyYhun+VZQWC1kTBFODiTJv
-XRzJ+CL2mniFVr1Wz9hOa42Uej4BAh+5/MkTimtgpWdGjm4+WuGXg1q4IxAPMEJI
-wYonTOckNGTDjYoNPN0mznTu/NqifVeD8M9aO9RFPCq5GkYxe/p6wL3CDWbQJ8z/
-EK22z4Rt8LFiO6PnvZD61hwveg/kof+zkMDHWtj3jHq6q1Rb22WQpOw3ChJcDIKM
-snMwmNWK0z4ju7xBhfeo919yc8OG0lwSD0//hbc96KuPL/sIrGPEl3goRfAZQcjP
-eR0wVecXTnuLwHV4NIZDUWLbsYyB4636bdFYS08SI8ND55OcoBDnI92rjtqeN/kI
-+t7OCuEb1nOfKnp9K5ZpjUMpyS+BlDRT2/1huRf6q4A79BGpDUU4ZYYjI5zmskwH
-8oFYKfLuNoI=
-=tsO7
+iQIVAwUAURHaLue/yOyVhhEJAQrXjg/7By7wq8ra/VDfEh4DcUobmsTktn5wu5rC
+7/tk+/2o42Atgeb8VSQRbeeGYI04Geo7MlSDvkgyIWE6wuTrt6R2pg3Cv1I8PAdz
+3UHpIJUqhHrp6EG1EgMRB7Yo+UdedNoUOdLwSN82RDtEB/6GWGJVXqwL8mBI0/f/
+hPoFitTjYpc/tOprEzdyaUEYb9KXzl/B/pIOKGBwTRL6il3HMoHoeUS5t22ffEXK
+A8U9dUpGhTcLe8DOiy5NRx8atFQaIQk7Uc7vvlxvkK6nakGUIshOIGPhA/KKEvGQ
+V5J1YIdJ/6Alv8xK2tUa/4v7qnSXaA0APvjETBC5o+xYU1+ovU8dWnHxQbWsyTmi
+evOwZ4KSkRoEK2I/yhJlTeUr/UuEGFpYxdvCIkWsX1t5sSCOP9wl8PBAoGKnClwm
+8MTvbeoV1xIlNZNSQAj7iWk5694LeL9sLmfE7i9sTZTcHJqTRewo8QxJQtcGo5jZ
+ykx10Fp4wSXAm0rYYl3HFkL8ASl3y2TD9vbO749zNWZjI/OWy0A4DxctDlHKJcRO
+Uu0KyUcuYSNynazydYhiLQQUD8fQursfu2qzJy5pkir3uPynS+v4pXnWrrTGpWWq
+msZMFeIRgnne/i2jsWiv6QoUnHyf/yfs5JhI60TdWeuRjv6rvuJCc39WBqnJx7x/
+NIh/3fMm3vE=
+=IjWH
 -----END PGP SIGNATURE-----
 
---=-c3eje9aXPmay2JXQZRrw--
+--=-YUjnYGShTTgQAvjDw+h9--
