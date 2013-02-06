@@ -1,39 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607Ab3BFNGb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 08:06:31 -0500
-Received: from vaxjo.synopsys.com ([198.182.60.75]:43819 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751341Ab3BFNGa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 08:06:30 -0500
-Message-ID: <51125545.7050006@synopsys.com>
-Date: Wed, 6 Feb 2013 18:36:13 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1754747Ab3BFNLP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 08:11:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38661 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751707Ab3BFNLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 08:11:13 -0500
+Date: Wed, 6 Feb 2013 14:11:04 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Henrik Rydberg <rydberg@euromail.se>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/9] Support of Nexio 42" and new default class for
+ hid-multitouch
+In-Reply-To: <CAN+gG=F5KHmq2F_op6RbvXiSp=T0oD_cTgPuBHptXVHyHZwpjA@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1302061410230.16860@pobox.suse.cz>
+References: <1359649351-11092-1-git-send-email-benjamin.tissoires@gmail.com> <20130203130731.GA2677@polaris.bitmath.org> <CAN+gG=GRS+fx4c3Kdba-89+ba8soimMm_rv7HDuaZLZWseQGuQ@mail.gmail.com> <20130204115443.GA4405@polaris.bitmath.org>
+ <alpine.LNX.2.00.1302051212550.2260@pobox.suse.cz> <CAN+gG=F5KHmq2F_op6RbvXiSp=T0oD_cTgPuBHptXVHyHZwpjA@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.cross-arch,gmane.linux.kernel
-To: James Hogan <james.hogan@imgtec.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH v3 19/44] metag: Device tree
-References: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com> <1357831872-29451-20-git-send-email-james.hogan@imgtec.com>
-In-Reply-To: <1357831872-29451-20-git-send-email-james.hogan@imgtec.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.43]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 10 January 2013 09:00 PM, James Hogan wrote:
-> Add device tree files to arch/metag.
+On Wed, 6 Feb 2013, Benjamin Tissoires wrote:
+
+> > Also, Benjamin, perhaps it'd make sense to put a link somewhere into
+> > in-tree documentation, with pointer to your testing suite?
 > 
-> Signed-off-by: James Hogan <james.hogan@imgtec.com>
+> Good idea. However, I prefer removing the dependencies between hid
+> drivers and usbhid before including such reference to avoid testers
+> getting kernel oops while trying to access the usb layer from the uhid
+> device... So, yesterday and this morning, I rebased/updated Henrik's
+> patches on this topic. They should be ready soon.
 
-Acknowledging the fact that I reused much of code/ideas from this patch for ARC
-Device tree and multi-platform-image implementation:
+Makes sense, thanks.
 
-Reviewed-by: Vineet Gupta <vgupta@synopsys.com>
+> Do you mind if I send the usbhid dependency and the pen+multitouch 
+> series this week, or we are too close to the 3.9 opening window?
 
-Thx,
--Vineet
+Please just send the patches, and let's see whether they will make it for 
+3.8 or I'll queue (some of) them for 3.9.
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs
