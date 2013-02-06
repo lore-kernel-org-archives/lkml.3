@@ -1,38 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756863Ab3BFBRc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 20:17:32 -0500
-Received: from gmmr4.centrum.cz ([46.255.227.253]:43281 "EHLO gmmr4.centrum.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756133Ab3BFBRa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 20:17:30 -0500
-To: =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>
-Subject: =?utf-8?q?Re=3A_=5BPATCH_for_3=2E2=2E34=5D_memcg=3A_do_not_trigger_OOM_from_add=5Fto=5Fpage=5Fcache=5Flocked?=
-Date: Wed, 06 Feb 2013 02:17:21 +0100
-From: "azurIt" <azurit@pobox.sk>
-Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        =?utf-8?q?cgroups_mailinglist?= <cgroups@vger.kernel.org>,
-        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
-        =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>
-References: <20121218152223.6912832C@pobox.sk>, <20121218152004.GA25208@dhcp22.suse.cz>, <20121224142526.020165D3@pobox.sk>, <20121228162209.GA1455@dhcp22.suse.cz>, <20121230020947.AA002F34@pobox.sk>, <20121230110815.GA12940@dhcp22.suse.cz>, <20130125160723.FAE73567@pobox.sk>, <20130125163130.GF4721@dhcp22.suse.cz>, <20130205134937.GA22804@dhcp22.suse.cz>, <20130205154947.CD6411E2@pobox.sk> <20130205160934.GB22804@dhcp22.suse.cz>
-In-Reply-To: <20130205160934.GB22804@dhcp22.suse.cz>
-X-Mailer: Centrum Email 5.3
-X-Priority: 3
-X-Original-From: azurit@pobox.sk
-MIME-Version: 1.0
-Message-Id: <20130206021721.1AE9E3C7@pobox.sk>
-X-Maser: oho
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1756831Ab3BFBT7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 20:19:59 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3875 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756133Ab3BFBT6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 20:19:58 -0500
+X-Authority-Analysis: v=2.0 cv=C91rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=MbCFXo7hY28A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=2HxqKFuZ9XIA:10 a=3Na1lyL4eMvHLq9UQ1cA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1360113595.2621.30.camel@gandalf.local.home>
+Subject: Re: [RFC] perf: need to expose sched_clock to correlate user
+ samples with kernel samples
+From: Steven Rostedt <rostedt@goodmis.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Stephane Eranian <eranian@google.com>, Pawel Moll <pawel.moll@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Pekka Enberg <penberg@gmail.com>,
+        Robert Richter <robert.richter@amd.com>, tglx <tglx@linutronix.de>
+Date: Tue, 05 Feb 2013 20:19:55 -0500
+In-Reply-To: <51118797.9080800@linaro.org>
+References: <CABPqkBQALeD=iO9x-N0nw+shhqa1kmUaj=sCvx+MvoAPGQ-y9A@mail.gmail.com>
+	 <1350408232.2336.42.camel@laptop> <1359728280.8360.15.camel@hornet>
+	 <CABPqkBSVeU_JP2KpVZLepKDJX=-g6A45Y5MoNphd6+DaU2PQzQ@mail.gmail.com>
+	 <51118797.9080800@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->5-memcg-fix-1.patch is not complete. It doesn't contain the folloup I
->mentioned in a follow up email. Here is the full patch:
+On Tue, 2013-02-05 at 14:28 -0800, John Stultz wrote:
+> I prefer the ioctl method, since its less likely to be re-purposed/misused.
+> 
+> Though I'd be most comfortable with finding some way for perf-timestamps 
+> to be CLOCK_MONOTONIC based (or maybe CLOCK_MONOTONIC_RAW if it would be 
+> easier), and just avoid all together adding another time domain that 
+> doesn't really have clear definition (other then "what perf uses").
+
+Perhaps add a new perf system call? Does everything need to go through
+the one great mighty perf_ioctl aka sys_perf_event_open()? I mean, if
+there's something that can be agnostic to an event, but still very much
+related to perf, perhaps another perf syscall should be created.
+
+If people are worried about adding a bunch of new perf syscalls, maybe
+add a sys_perf_control() system call that works like an ioctl but
+without a file descriptor. Something for things that don't require an
+event attached to it, like to retrieve a time stamp counter that perf
+uses, but done in a way that it could be used for other things perf
+related that does not require an event.
+
+-- Steve
 
 
-Here is the log where OOM, again, killed MySQL server [search for "(mysqld)"]:
-http://www.watchdog.sk/lkml/oom_mysqld6
-
-azur
