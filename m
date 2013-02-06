@@ -1,46 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751941Ab3BFF5Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 00:57:16 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:41504 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751555Ab3BFF5O convert rfc822-to-8bit (ORCPT
+	id S1752004Ab3BFF5d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 00:57:33 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:51050 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751630Ab3BFF5b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 00:57:14 -0500
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-CC: "paul@pwsan.com" <paul@pwsan.com>, "Hiremath, Vaibhav" <hvaibhav@ti.com>,
-        "srinath@mistralsolutions.com" <srinath@mistralsolutions.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 2/3] omap: craneboard: support the TPS65910 PMU
-Thread-Topic: [PATCH 2/3] omap: craneboard: support the TPS65910 PMU
-Thread-Index: Ac3N/JnMrsD5R4jYTvKReZdpbaG7ZgyaWjGAAPHuDgA=
-Date: Wed, 6 Feb 2013 05:57:07 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F69E20E53@DQHE02.ent.ti.com>
-References: <A874F61F95741C4A9BA573A70FE3998F6418F140@DQHE02.ent.ti.com>
- <20130201182216.GI22517@atomide.com>
-In-Reply-To: <20130201182216.GI22517@atomide.com>
-Accept-Language: ko-KR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.87.177.62]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 6 Feb 2013 00:57:31 -0500
+X-AuditID: 9c930197-b7ca4ae000006ba8-f6-5111f0c7fba1
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH RESEND 1/3] perf sort: Drop ip_[lr] arguments from _sort__sym_cmp()
+Date: Wed,  6 Feb 2013 14:57:15 +0900
+Message-Id: <1360130237-9963-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Thanks applying 1 and 2 into omap-for-v3.9/board. Did not
-> see patch 3 of this anywhere?
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Thank you.
+Current _sort__sym_cmp() function is used for comparing symbols
+between two hist entries on symbol, symbol_from and symbol_to sort
+keys.  Those functions pass addresses of symbols but it's meaningless
+since it gets over-written inside of the _sort__sym_cmp function to a
+start address of the symbol.  So just get rid of them.
 
-The third patch is for the TPS65910 PMU on the Craneboard.
-It was already applied.
-https://lkml.org/lkml/2012/11/30/192
+This might cause a difference than prior output for branch stacks
+since it seems not using start address of the symbol but branch
+address.  However AFAICS it'd be same as it gets overwritten anyway.
 
-Regards,
-Milo
+Also remove redundant part of code in sort__sym_cmp().
+
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Stephane Eranian <eranian@google.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/util/sort.c | 23 ++++++-----------------
+ 1 file changed, 6 insertions(+), 17 deletions(-)
+
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index 83336610faa9..03cabe5678d0 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -160,9 +160,10 @@ struct sort_entry sort_dso = {
+ 
+ /* --sort symbol */
+ 
+-static int64_t _sort__sym_cmp(struct symbol *sym_l, struct symbol *sym_r,
+-			      u64 ip_l, u64 ip_r)
++static int64_t _sort__sym_cmp(struct symbol *sym_l, struct symbol *sym_r)
+ {
++	u64 ip_l, ip_r;
++
+ 	if (!sym_l || !sym_r)
+ 		return cmp_null(sym_l, sym_r);
+ 
+@@ -178,21 +179,10 @@ static int64_t _sort__sym_cmp(struct symbol *sym_l, struct symbol *sym_r,
+ static int64_t
+ sort__sym_cmp(struct hist_entry *left, struct hist_entry *right)
+ {
+-	u64 ip_l, ip_r;
+-
+ 	if (!left->ms.sym && !right->ms.sym)
+ 		return right->level - left->level;
+ 
+-	if (!left->ms.sym || !right->ms.sym)
+-		return cmp_null(left->ms.sym, right->ms.sym);
+-
+-	if (left->ms.sym == right->ms.sym)
+-		return 0;
+-
+-	ip_l = left->ms.sym->start;
+-	ip_r = right->ms.sym->start;
+-
+-	return _sort__sym_cmp(left->ms.sym, right->ms.sym, ip_l, ip_r);
++	return _sort__sym_cmp(left->ms.sym, right->ms.sym);
+ }
+ 
+ static int _hist_entry__sym_snprintf(struct map *map, struct symbol *sym,
+@@ -383,8 +373,7 @@ sort__sym_from_cmp(struct hist_entry *left, struct hist_entry *right)
+ 	if (!from_l->sym && !from_r->sym)
+ 		return right->level - left->level;
+ 
+-	return _sort__sym_cmp(from_l->sym, from_r->sym, from_l->addr,
+-			     from_r->addr);
++	return _sort__sym_cmp(from_l->sym, from_r->sym);
+ }
+ 
+ static int64_t
+@@ -396,7 +385,7 @@ sort__sym_to_cmp(struct hist_entry *left, struct hist_entry *right)
+ 	if (!to_l->sym && !to_r->sym)
+ 		return right->level - left->level;
+ 
+-	return _sort__sym_cmp(to_l->sym, to_r->sym, to_l->addr, to_r->addr);
++	return _sort__sym_cmp(to_l->sym, to_r->sym);
+ }
+ 
+ static int hist_entry__sym_from_snprintf(struct hist_entry *self, char *bf,
+-- 
+1.7.11.7
+
