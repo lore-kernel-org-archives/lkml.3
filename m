@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757701Ab3BFRxv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 12:53:51 -0500
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:39575 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752296Ab3BFRxt (ORCPT
+	id S1757664Ab3BFRzD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 12:55:03 -0500
+Received: from mail.candelatech.com ([208.74.158.172]:56252 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754686Ab3BFRzA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 12:53:49 -0500
-Message-ID: <1360173353.22154.4.camel@debian>
-Subject: Re: [PATCH] batman-adv: Remove unused variable
-From: Emil Goode <emilgoode@gmail.com>
-To: Antonio Quartulli <ordex@autistici.org>
-Cc: lindner_marek@yahoo.de, siwu@hrz.tu-chemnitz.de, davem@davemloft.net,
-        b.a.t.m.a.n@lists.open-mesh.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Date: Wed, 06 Feb 2013 18:55:53 +0100
-In-Reply-To: <20130206172234.GB6008@ritirata.org>
-References: <1360168661-16871-1-git-send-email-emilgoode@gmail.com>
-	 <20130206172234.GB6008@ritirata.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Wed, 6 Feb 2013 12:55:00 -0500
+Message-ID: <511298E8.7090801@candelatech.com>
+Date: Wed, 06 Feb 2013 09:54:48 -0800
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Johannes Berg <johannes@sipsolutions.net>
+CC: Cong Ding <dinggnu@gmail.com>, "John W. Linville" <linville@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: mac80211/cfg.c: fix error using of sizeof()
+References: <1360167826-29265-1-git-send-email-dinggnu@gmail.com>  (sfid-20130206_172354_765098_665D60D0) <1360168022.7910.22.camel@jlt4.sipsolutions.net>
+In-Reply-To: <1360168022.7910.22.camel@jlt4.sipsolutions.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Antonio,
+On 02/06/2013 08:27 AM, Johannes Berg wrote:
+> On Wed, 2013-02-06 at 17:23 +0100, Cong Ding wrote:
+>> Using 'sizeof' on array given as function argument returns size of a pointer
+>> rather than the size of array.
+>
+> Oops, yeah, Stephen Hemminger pointed this out a month or so ago and I
+> forgot to change it, thanks.
 
-The commit ed242d01 is in the linux-next tree and my patch depends on
-that commit.
+This needs to be back-ported for 3.7 stable?  Perhaps the code below
+corresponds (from copy_mesh_setup)?
 
-Best regards, Emil
 
-On Wed, 2013-02-06 at 18:22 +0100, Antonio Quartulli wrote:
-> Hi Emil,
-> 
-> On Wed, Feb 06, 2013 at 05:37:41 +0100, Emil Goode wrote:
-> > The commit ed242d01 removed a node parameter from iterators.
-> > This patch removes a hlist_node struct that is no longer used.
-> > 
-> > Sparse gives a warning:
-> > 
-> > net/batman-adv/originator.c:411:21: warning:
-> > 	unused variable ‘node_tmp’ [-Wunused-variable]
-> > 
-> > Signed-off-by: Emil Goode <emilgoode@gmail.com>
-> 
-> On which tree did you base your patch?
-> I cannot find the commit you are referring to (ed242d01) and the patch does not
-> apply (neither on net nor net-next).
-> 
-> Other than that the variable is used a couple of lines below (in the code we
-> have)...
-> 
-> Regards,
-> 
+	/* mcast rate setting in Mesh Node */
+	memcpy(sdata->vif.bss_conf.mcast_rate, setup->mcast_rate,
+						sizeof(setup->mcast_rate));
 
+Thanks,
+Ben
+
+-- 
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
 
