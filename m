@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752242Ab3BFRAk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 12:00:40 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:65427 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716Ab3BFRAg (ORCPT
+	id S1753600Ab3BFRBq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 12:01:46 -0500
+Received: from atlantis.wh2.tu-dresden.de ([141.30.228.39]:34876 "EHLO
+	atlantis.wh2.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750716Ab3BFRBp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 12:00:36 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: devicetree-discuss@lists.ozlabs.org
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-tegra@vger.kernel.org,
-        Andrew Murray <andrew.murray@arm.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 06/14] ARM: pci: Keep pci_common_init() around after init
-Date: Thu, 07 Feb 2013 01:54:22 +0100
-Message-ID: <9348609.HjKCmL9u9S@wuerfel>
-User-Agent: KMail/4.10 rc3 (Linux/3.8.0-3-generic; KDE/4.9.98; x86_64; ; )
-In-Reply-To: <CACRpkdYV5w6BksUjXvXs=88BovUyXgRt-vXSD0twjRpzbZcvFQ@mail.gmail.com>
-References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de> <1357764194-12677-7-git-send-email-thierry.reding@avionic-design.de> <CACRpkdYV5w6BksUjXvXs=88BovUyXgRt-vXSD0twjRpzbZcvFQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:uhoa/l6fAq4/YBeNS6dsqJMe56J2fFvMQEHwH1sayGR
- ceWZlSry4m9EnnktbRj8gRuTJy1TfSVCBxC9JGdEeXvld/vZUI
- 3yfV42cZZsZnlOPg0KBpkusBfqK5JEgzxrQmo6llZxMibXcH4Y
- To0JB7vKM5M8JyjYFh36A0sZVR1WXukCFgVlorTQdlj7nugzSI
- dby7HCiUA3IsI+n5vWCVSezbPtrd1T8LukZmNNuHam7+eFXwqe
- zMMXvDZhX6SMMRGfCAF0ZzKHvCG7pL95pvx4kO0vsVoaTTc1B+
- 8LMmYD8Z2NKqO4cwigsY0Kdzp1MVGJYbYv1/esYEgBh4aEOWyw
- h4Fud+4jjZb7ZLnWjO9c=
+	Wed, 6 Feb 2013 12:01:45 -0500
+From: Lars Poeschel <larsi@wh2.tu-dresden.de>
+To: poeschel@lemonage.de, grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        rob@landley.net, linus.walleij@linaro.org,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net
+Cc: w.sang@pengutronix.de, ben-linux@fluff.org, linux-i2c@vger.kernel.org
+Subject: [PATCH 0/2] Convert mcp23s08 to DT usage
+Date: Wed,  6 Feb 2013 18:01:56 +0100
+Message-Id: <1360170118-11937-1-git-send-email-larsi@wh2.tu-dresden.de>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 06 February 2013 17:38:20 Linus Walleij wrote:
-> On Wed, Jan 9, 2013 at 9:43 PM, Thierry Reding
-> <thierry.reding@avionic-design.de> wrote:
-> 
-> > When using deferred driver probing, PCI host controller drivers may
-> > actually require this function after the init stage.
-> >
-> > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-> 
-> There seem to be a proliferation of these patches now.
-> 
-> Isn't this just papering over the real problem? The discarding
-> of __init sections need to happen *after* all deferred probes
-> are complete, lest we have to remove *all* __init sections from
-> *all* drivers in the kernel, don't we?
+From: Lars Poeschel <poeschel@lemonage.de>
 
-No, I think it's not quite that bad. I think the rule is still
-just that .probe() functions and anything called from them must
-not be __init. They used to be __devinit, which would cause
-problems with deferred probing on !HOTPLUG systems but that's
-gone in 3.9.
+I wanted to use mcp23s08 driver with a device that boots using device tree.
+I modified the driver to allow the DT usage and tested with a mcp23017
+which is a i2c device. I could not test the spi path, because I have no
+such device.
 
-Thierry's patch is just necessary because pci_common_init used
-to be called only from actual __init functions, and not it
-gets called from a .probe() function for the first time.
+Regards,
+Lars
 
-	Arnd
+Lars Poeschel (2):
+  gpio: mcp23s08: Allow -1 as a legal value for global gpio base
+  gpio: mcp23s08: convert driver to DT
+
+ .../devicetree/bindings/gpio/gpio-mcp23s08.txt     |   36 ++++++++
+ drivers/gpio/gpio-mcp23s08.c                       |   95 ++++++++++++++++++--
+ include/linux/spi/mcp23s08.h                       |    1 +
+ 3 files changed, 126 insertions(+), 6 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/gpio/gpio-mcp23s08.txt
+
+-- 
+1.7.10.4
+
