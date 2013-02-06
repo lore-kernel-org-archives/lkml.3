@@ -1,128 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964840Ab3BFUHR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 15:07:17 -0500
-Received: from mail-ia0-f173.google.com ([209.85.210.173]:53715 "EHLO
-	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964780Ab3BFTt4 (ORCPT
+	id S964796Ab3BFUHZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 15:07:25 -0500
+Received: from mail-vb0-f48.google.com ([209.85.212.48]:47845 "EHLO
+	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964780Ab3BFUHS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 14:49:56 -0500
-From: Tejun Heo <tj@kernel.org>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 22/77] block: convert to idr_alloc()
-Date: Wed,  6 Feb 2013 11:39:54 -0800
-Message-Id: <1360179649-22465-23-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1360179649-22465-1-git-send-email-tj@kernel.org>
-References: <1360179649-22465-1-git-send-email-tj@kernel.org>
+	Wed, 6 Feb 2013 15:07:18 -0500
+Message-ID: <5112B7F2.9060005@gmail.com>
+Date: Wed, 06 Feb 2013 15:07:14 -0500
+From: Vlad Yasevich <vyasevich@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Sridhar Samudrala <sri@us.ibm.com>, linux-sctp@vger.kernel.org
+Subject: Re: [PATCH 76/77] sctp: convert to idr_alloc()
+References: <1360179649-22465-1-git-send-email-tj@kernel.org> <1360179649-22465-77-git-send-email-tj@kernel.org>
+In-Reply-To: <1360179649-22465-77-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert to the much saner new idr interface.  Both bsg and genhd
-protect idr w/ mutex making preloading unnecessary.
+On 02/06/2013 02:40 PM, Tejun Heo wrote:
+> Convert to the much saner new idr interface.
+>
+> Only compile tested.
+>
+> v2: Don't preload if @gfp doesn't contain __GFP_WAIT as the function
+>      may be being called from non-process ocntext.  Also, add a comment
+>      explaining @idr_low never becomes zero.
+>
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Acked-by: Neil Horman <nhorman@tuxdriver.com>
+> Cc: Vlad Yasevich <vyasevich@gmail.com>
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Jens Axboe <axboe@kernel.dk>
----
- block/bsg.c   | 26 +++++++++-----------------
- block/genhd.c | 21 ++++++---------------
- 2 files changed, 15 insertions(+), 32 deletions(-)
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
 
-diff --git a/block/bsg.c b/block/bsg.c
-index ff64ae3..3ca92eb 100644
---- a/block/bsg.c
-+++ b/block/bsg.c
-@@ -997,7 +997,7 @@ int bsg_register_queue(struct request_queue *q, struct device *parent,
- {
- 	struct bsg_class_device *bcd;
- 	dev_t dev;
--	int ret, minor;
-+	int ret;
- 	struct device *class_dev = NULL;
- 	const char *devname;
- 
-@@ -1017,23 +1017,16 @@ int bsg_register_queue(struct request_queue *q, struct device *parent,
- 
- 	mutex_lock(&bsg_mutex);
- 
--	ret = idr_pre_get(&bsg_minor_idr, GFP_KERNEL);
--	if (!ret) {
--		ret = -ENOMEM;
--		goto unlock;
--	}
--
--	ret = idr_get_new(&bsg_minor_idr, bcd, &minor);
--	if (ret < 0)
-+	ret = idr_alloc(&bsg_minor_idr, bcd, 0, BSG_MAX_DEVS, GFP_KERNEL);
-+	if (ret < 0) {
-+		if (ret == -ENOSPC) {
-+			printk(KERN_ERR "bsg: too many bsg devices\n");
-+			ret = -EINVAL;
-+		}
- 		goto unlock;
--
--	if (minor >= BSG_MAX_DEVS) {
--		printk(KERN_ERR "bsg: too many bsg devices\n");
--		ret = -EINVAL;
--		goto remove_idr;
- 	}
- 
--	bcd->minor = minor;
-+	bcd->minor = ret;
- 	bcd->queue = q;
- 	bcd->parent = get_device(parent);
- 	bcd->release = release;
-@@ -1059,8 +1052,7 @@ unregister_class_dev:
- 	device_unregister(class_dev);
- put_dev:
- 	put_device(parent);
--remove_idr:
--	idr_remove(&bsg_minor_idr, minor);
-+	idr_remove(&bsg_minor_idr, bcd->minor);
- unlock:
- 	mutex_unlock(&bsg_mutex);
- 	return ret;
-diff --git a/block/genhd.c b/block/genhd.c
-index b1f34d0..bd509e3 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -411,7 +411,7 @@ static int blk_mangle_minor(int minor)
- int blk_alloc_devt(struct hd_struct *part, dev_t *devt)
- {
- 	struct gendisk *disk = part_to_disk(part);
--	int idx, rc;
-+	int idx;
- 
- 	/* in consecutive minor range? */
- 	if (part->partno < disk->minors) {
-@@ -420,20 +420,11 @@ int blk_alloc_devt(struct hd_struct *part, dev_t *devt)
- 	}
- 
- 	/* allocate ext devt */
--	do {
--		if (!idr_pre_get(&ext_devt_idr, GFP_KERNEL))
--			return -ENOMEM;
--		mutex_lock(&ext_devt_mutex);
--		rc = idr_get_new(&ext_devt_idr, part, &idx);
--		if (!rc && idx >= NR_EXT_DEVT) {
--			idr_remove(&ext_devt_idr, idx);
--			rc = -EBUSY;
--		}
--		mutex_unlock(&ext_devt_mutex);
--	} while (rc == -EAGAIN);
--
--	if (rc)
--		return rc;
-+	mutex_lock(&ext_devt_mutex);
-+	idx = idr_alloc(&ext_devt_idr, part, 0, NR_EXT_DEVT, GFP_KERNEL);
-+	mutex_unlock(&ext_devt_mutex);
-+	if (idx < 0)
-+		return idx == -ENOSPC ? -EBUSY : idx;
- 
- 	*devt = MKDEV(BLOCK_EXT_MAJOR, blk_mangle_minor(idx));
- 	return 0;
--- 
-1.8.1
+-vlad
+
+> Cc: Sridhar Samudrala <sri@us.ibm.com>
+> Cc: linux-sctp@vger.kernel.org
+> ---
+>   net/sctp/associola.c | 31 +++++++++++++++----------------
+>   1 file changed, 15 insertions(+), 16 deletions(-)
+>
+> diff --git a/net/sctp/associola.c b/net/sctp/associola.c
+> index b45ed1f..0c9a791 100644
+> --- a/net/sctp/associola.c
+> +++ b/net/sctp/associola.c
+> @@ -1592,32 +1592,31 @@ int sctp_assoc_lookup_laddr(struct sctp_association *asoc,
+>   /* Set an association id for a given association */
+>   int sctp_assoc_set_id(struct sctp_association *asoc, gfp_t gfp)
+>   {
+> -	int assoc_id;
+> -	int error = 0;
+> +	bool preload = gfp & __GFP_WAIT;
+> +	int ret;
+>
+>   	/* If the id is already assigned, keep it. */
+>   	if (asoc->assoc_id)
+> -		return error;
+> -retry:
+> -	if (unlikely(!idr_pre_get(&sctp_assocs_id, gfp)))
+> -		return -ENOMEM;
+> +		return 0;
+>
+> +	if (preload)
+> +		idr_preload(gfp);
+>   	spin_lock_bh(&sctp_assocs_id_lock);
+> -	error = idr_get_new_above(&sctp_assocs_id, (void *)asoc,
+> -				    idr_low, &assoc_id);
+> -	if (!error) {
+> -		idr_low = assoc_id + 1;
+> +	/* 0 is not a valid id, idr_low is always >= 1 */
+> +	ret = idr_alloc(&sctp_assocs_id, asoc, idr_low, 0, GFP_NOWAIT);
+> +	if (ret >= 0) {
+> +		idr_low = ret + 1;
+>   		if (idr_low == INT_MAX)
+>   			idr_low = 1;
+>   	}
+>   	spin_unlock_bh(&sctp_assocs_id_lock);
+> -	if (error == -EAGAIN)
+> -		goto retry;
+> -	else if (error)
+> -		return error;
+> +	if (preload)
+> +		idr_preload_end();
+> +	if (ret < 0)
+> +		return ret;
+>
+> -	asoc->assoc_id = (sctp_assoc_t) assoc_id;
+> -	return error;
+> +	asoc->assoc_id = (sctp_assoc_t)ret;
+> +	return 0;
+>   }
+>
+>   /* Free the ASCONF queue */
+>
 
