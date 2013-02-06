@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758283Ab3BFTvU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 14:51:20 -0500
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:33513 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030222Ab3BFTvB (ORCPT
+	id S1758490Ab3BFTyA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 14:54:00 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:52706 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758286Ab3BFTvV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 14:51:01 -0500
+	Wed, 6 Feb 2013 14:51:21 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Krishna C Gudipati <kgudipat@brocade.com>, linux-scsi@vger.kernel.org
-Subject: [PATCH 60/77] scsi/bfa: convert to idr_alloc()
-Date: Wed,  6 Feb 2013 11:40:32 -0800
-Message-Id: <1360179649-22465-61-git-send-email-tj@kernel.org>
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: [PATCH 72/77] events: convert to idr_alloc()
+Date: Wed,  6 Feb 2013 11:40:44 -0800
+Message-Id: <1360179649-22465-73-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1360179649-22465-1-git-send-email-tj@kernel.org>
 References: <1360179649-22465-1-git-send-email-tj@kernel.org>
@@ -26,41 +28,35 @@ Convert to the much saner new idr interface.
 Only compile tested.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Krishna C Gudipati <kgudipat@brocade.com>
-Cc: linux-scsi@vger.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 ---
- drivers/scsi/bfa/bfad_im.c | 15 ++++-----------
- 1 file changed, 4 insertions(+), 11 deletions(-)
+ kernel/events/core.c | 10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/scsi/bfa/bfad_im.c b/drivers/scsi/bfa/bfad_im.c
-index 8f92732..5864f98 100644
---- a/drivers/scsi/bfa/bfad_im.c
-+++ b/drivers/scsi/bfa/bfad_im.c
-@@ -523,20 +523,13 @@ bfad_im_scsi_host_alloc(struct bfad_s *bfad, struct bfad_im_port_s *im_port,
- 	int error = 1;
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 7b6646a..43ba037 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -5965,13 +5965,9 @@ int perf_pmu_register(struct pmu *pmu, char *name, int type)
+ 	pmu->name = name;
  
- 	mutex_lock(&bfad_mutex);
--	if (!idr_pre_get(&bfad_im_port_index, GFP_KERNEL)) {
-+	error = idr_alloc(&bfad_im_port_index, im_port, 0, 0, GFP_KERNEL);
-+	if (error < 0) {
- 		mutex_unlock(&bfad_mutex);
--		printk(KERN_WARNING "idr_pre_get failure\n");
-+		printk(KERN_WARNING "idr_alloc failure\n");
- 		goto out;
+ 	if (type < 0) {
+-		int err = idr_pre_get(&pmu_idr, GFP_KERNEL);
+-		if (!err)
+-			goto free_pdc;
+-
+-		err = idr_get_new_above(&pmu_idr, pmu, PERF_TYPE_MAX, &type);
+-		if (err) {
+-			ret = err;
++		type = idr_alloc(&pmu_idr, pmu, PERF_TYPE_MAX, 0, GFP_KERNEL);
++		if (type < 0) {
++			ret = type;
+ 			goto free_pdc;
+ 		}
  	}
--
--	error = idr_get_new(&bfad_im_port_index, im_port,
--					 &im_port->idr_id);
--	if (error) {
--		mutex_unlock(&bfad_mutex);
--		printk(KERN_WARNING "idr_get_new failure\n");
--		goto out;
--	}
--
-+	im_port->idr_id = error;
- 	mutex_unlock(&bfad_mutex);
- 
- 	im_port->shost = bfad_scsi_host_alloc(im_port, bfad);
 -- 
 1.8.1
 
