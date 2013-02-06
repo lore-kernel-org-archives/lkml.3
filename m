@@ -1,90 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757630Ab3BFQQP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 11:16:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60657 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753837Ab3BFQQK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 11:16:10 -0500
-Date: Wed, 6 Feb 2013 11:15:57 -0500
-From: Kyle McMartin <kmcmarti@redhat.com>
-To: Stephan Mueller <stephan.mueller@atsec.com>
-Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        rusty@rustcorp.com.au, jstancek@redhat.com,
-        herbert@gondor.hengli.com.au
-Subject: Re: [RFC PATCH] fips: check whether a module registering an alg or
- template is signed
-Message-ID: <20130206161557.GJ3751@redacted.bos.redhat.com>
-References: <20130122184357.GD6538@redacted.bos.redhat.com>
- <8615.1358940375@warthog.procyon.org.uk>
- <50FFFF48.6020608@atsec.com>
- <20130124190610.GI6538@redacted.bos.redhat.com>
- <5102781D.9000408@atsec.com>
- <20130205225830.GH3751@redacted.bos.redhat.com>
- <51120E26.7030400@atsec.com>
+	id S1757198Ab3BFQS1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 11:18:27 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:56135 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753990Ab3BFQS0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 11:18:26 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16 with generic iowrite(read)8/16(be)
+Date: Wed, 6 Feb 2013 16:18:07 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-4-generic; KDE/4.3.2; x86_64; ; )
+Cc: Michal Simek <monstr@monstr.eu>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
+        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        alan@lxorguk.ukuu.org.uk, dahinds@users.sourceforge.net
+References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com> <201302052303.01795.arnd@arndb.de> <CAMuHMdWTtEyP_505x4S+uT1J-uFWb9VOMHNOCPcF-z1uSF6xDQ@mail.gmail.com>
+In-Reply-To: <CAMuHMdWTtEyP_505x4S+uT1J-uFWb9VOMHNOCPcF-z1uSF6xDQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51120E26.7030400@atsec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302061618.07378.arnd@arndb.de>
+X-Provags-ID: V02:K0:X87B3X91aEhs3wiAqO8VotHMaYz+Y1oGyDR1HtNSZnt
+ H1yxmx6ydNLnRnCgZbHjvTjaUscqo6yragp52tVg59zlARC0We
+ hugkNbwaZKPQ+LgitmrTzsnhr8qh15cM1gEi6CMjpHaYgBH/ci
+ VJmgC3Sm/33ZNwt7XrjMraCunfUV0JlgjEjaZ8Nt8uGB2tODVQ
+ emxvtBsXwo6XCaP1wbvJHO5AivhIIiuSFsV6+1U8TMFCk3KR0q
+ E0hEGPwdtIG7ZkyAlJULQDWHNFlek4A1Qv5vGXroTHizGulKjW
+ vkI0M8TIki3Z2F26TkFZvtEEkSP1OCA3w/Oqm662JM0siAZonE
+ Q30w1H4J6mM5629m9TVA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 06, 2013 at 09:02:46AM +0100, Stephan Mueller wrote:
-> On 05.02.2013 23:58:30, +0100, Kyle McMartin <kyle@redhat.com> wrote:
+On Wednesday 06 February 2013, Geert Uytterhoeven wrote:
+> On Wed, Feb 6, 2013 at 12:03 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > On Tuesday 05 February 2013, Michal Simek wrote:
+> >> I want to be sure about this. I have parsed this again with closer look and
+> >> seems to me that ioread32 is equal to readl and iowrite32 to writel.
+> >> Arnd: Am I right?
+> >
+> > Correct. On all the architectures you care about (most importantly, not
+> > x86), readl and ioread32 are defined to have the same semantics. There
+> > are a few exceptions where ioread32 provides a wrapper for PCI
+> > PIO accesses that are not memory mapped, making ioread32 slightly
+> > slower than readl, but for all practical purposes you don't have
+> > to worry about it ;-)
 > 
-> Hi Kyle,
->
+> PCI PIO? Do you mean "PCI I/O space"?
 
-Thanks for the review, Stephan.
- 
-> Just reading this paragraph, there is one missing puzzle piece: the
-> *entire* kernel crypto API must shut down, even if only one kernel
-> module with one cipher (or block chaining mode, ...) has a broken signature.
-> 
-> The overall requirement is: if one self test fails, the entire FIPS
-> 140-2 crypto module must become unavailable. (please note and do not get
-> confused by the overload of the term "module" -- we have the KOs the
-> kernel loads, and we have something called a FIPS 140-2 module which is
-> the entire crypto "library" subject to a FIPS 140-2 validation)
-> 
-> This signature check is one self test required at runtime.
-> 
-> I added comments inline into the patch.
-> 
-> > 
-> > crypto_sig_check should return 1 (and allow the registration) if any
-> > of the following are true:
-> > +	if (!crypto_sig_check(alg->cra_module))
-> > +		return -EINVAL;
-> 
-> Instead of an EINVAL, the kernel either must panic(), or a global flag
-> is introduced which is evaluated by every kernel crypto API call. If
-> that flag is, say, false, none of the kernel crypto API calls must succeed.
+Yes.
 
-Returning -EINVAL means the module does not successfully load, and
-nothing is registered. I don't see why you would need to taint or panic,
-if nothing untoward actually occured? I don't object to it, if it's
-necessary, I just didn't think it was. If Herbert doesn't object to this
-patch, I'd move the panic from kernel/module.c to here.
+> That's different, and accessed through inb() and friends, right?
 
-> > +
-> >  	return crypto_set_driver_name(alg);
-> >  }
-> >  
-> > @@ -435,6 +438,11 @@ int crypto_register_template(struct crypto_template *tmpl)
-> 
-> 
-> I am wondering whether the modification of these two functions are
-> sufficient. As I wrote in a previous email, there are a number of
-> register functions the kernel crypto API exports and which are used.
-> 
+Sort of. The native methods are readl() etc for MMIO and inb() etc. for PIO,
+as you say. However, the ioread32() family does the superset of the two,
+either using a wrapper function with a mangled port number / pointer
+argument (e.g. on x86), or it gets defined to do the same as readl on
+platforms where the PCI I/O space is memory mapped. The requirement
+here is that whatever the result of ioport_map() is must be turned
+back into a PIO access when passed into ioread32(). On memory mapped
+platforms, there is typically just an offset that gets added to the
+port number to turn that into an __iomem pointer.
 
-Between these two, I believe all codepaths that could bring in a
-mode, cipher, or other cryptographic algorithm are covered.
-
-> >  			goto out;
-> >  	}
-
-regards, Kyle
+	Arnd
