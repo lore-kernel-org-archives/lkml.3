@@ -1,94 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755710Ab3BFRCh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 12:02:37 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:42186 "EHLO
+	id S1756674Ab3BFRCr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 12:02:47 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:35667 "EHLO
 	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754804Ab3BFRCf (ORCPT
+	with ESMTP id S1755815Ab3BFRCk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 12:02:35 -0500
+	Wed, 6 Feb 2013 12:02:40 -0500
 From: dirk.brandewie@gmail.com
 To: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org
 Cc: Dirk Brandewie <dirk.brandewie@gmail.com>
-Subject: [PATCH 0/5] Add P state driver for Intel Core Processors
-Date: Wed,  6 Feb 2013 09:02:07 -0800
-Message-Id: <1360170133-5066-1-git-send-email-dirk.brandewie@gmail.com>
+Subject: [PATCH 2/5] cpufreq: Only call cpufreq_out_of_sync() with drivers that implement cpufreq_driver.target()
+Date: Wed,  6 Feb 2013 09:02:10 -0800
+Message-Id: <1360170133-5066-4-git-send-email-dirk.brandewie@gmail.com>
 X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1360170133-5066-1-git-send-email-dirk.brandewie@gmail.com>
+References: <1360170133-5066-1-git-send-email-dirk.brandewie@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dirk Brandewie <dirk.brandewie@gmail.com>
 
-This driver implements a scaling driver with an internal governor for
-Intel Core processors.  The driver follows the same model as the
-Transmeta scaling driver (longrun.c) and implements the setpolicy()
-instead of target().  Scaling drivers that implement setpolicy() are
-assmuned to implement internal governors by the cpufreq core. All the
-logic for selecting the current P state is contained within the driver
-no external governor is used by the cpufreq core.
+Scaling drivers that implement cpufreq_driver.setpolicy() have
+internal governors that do not signal changes via
+cpufreq_notify_transition() so the frequncy in the policy will almost
+certainly be different than the current frequncy.  Only call
+cpufreq_out_of_sync() when the underlying driver implements
+cpufreq_driver.target()
 
-At the moment only Intel SandyBridge processors are supported. As
-testing on SandyBridge+ processors is completed support will be added
-to the driver.
+Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+---
+ drivers/cpufreq/cpufreq.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-New sysfs files for controlling P state selection have been added to
-/sys/devices/system/cpu/intel_pstate/
-      max_perf_pct: limits the maximum P state that will be requested by
-      the driver stated as a percentage of the avail performance.
-    
-      min_perf_pct: limits the minimum P state that will be  requested by
-      the driver stated as a percentage of the avail performance.
-    
-      no_turbo: limits the driver to selecting P states below the turbo
-      frequency range.
-
-The units for these for these files are purposely abstract and stated
-in terms of available performance and not frequency.  In idea that
-frequency can be set to a single frequency is a fiction for Intel Core
-processors. Even if the scaling driver selects a single P state the
-actual frequency the processor will run at is selected by the
-processor
-
-Changes since last version:
-Dropped unneeded patches.
-
-Rebased on bleeding edge 1071b3b
-
-Patch 1:
-    updated per Viresh's comments, added his ack.
-
-Patch 2:
-    updated description to be more informative and move the check as
-    to whether the scaling driver implements target() to only effect
-    whether cpufreq_out_of_sync() is called
-
-Patch 3:
-    Added Viresh's Ack
-
-Patch 4:
-    Upadted to not use unneeded local variable
-
-
-Dirk Brandewie (5):
-  cpufreq: Retrieve current frequency from scaling drivers with
-    internal governors
-  cpufreq: Only call cpufreq_out_of_sync() with drivers that implement
-    cpufreq_driver.target()
-  cpufreq: Do not track governor name for scaling drivers with internal
-    governors.
-  cpufreq_stats: do not remove sysfs files if frequency table is not
-    present
-  cpufreq/x86: Add P-state driver for sandy bridge.
-
- drivers/cpufreq/Kconfig.x86     |   18 +
- drivers/cpufreq/Makefile        |    1 +
- drivers/cpufreq/cpufreq.c       |   13 +-
- drivers/cpufreq/cpufreq_stats.c |    4 +
- drivers/cpufreq/intel_pstate.c  |  829 +++++++++++++++++++++++++++++++++++++++
- 5 files changed, 862 insertions(+), 3 deletions(-)
- create mode 100644 drivers/cpufreq/intel_pstate.c
-
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index bb45f93..0ba0344 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1798,7 +1798,7 @@ int cpufreq_update_policy(unsigned int cpu)
+ 			pr_debug("Driver did not initialize current freq");
+ 			data->cur = policy.cur;
+ 		} else {
+-			if (data->cur != policy.cur)
++			if (data->cur != policy.cur && driver->target)
+ 				cpufreq_out_of_sync(cpu, data->cur,
+ 								policy.cur);
+ 		}
 -- 
 1.7.7.6
 
