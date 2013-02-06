@@ -1,64 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756823Ab3BFBk6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 20:40:58 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:63344 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754836Ab3BFBk4 (ORCPT
+	id S1756914Ab3BFBlL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 20:41:11 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:64473 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755189Ab3BFBlI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 20:40:56 -0500
-Date: Tue, 5 Feb 2013 17:42:59 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] zsmalloc: Add Kconfig for enabling PTE method
-Message-ID: <20130206014259.GC816@kroah.com>
-References: <1359937421-19921-1-git-send-email-minchan@kernel.org>
- <20130204185146.GA31284@kroah.com>
- <20130205000854.GC2610@blaptop>
- <20130205192520.GA8441@kroah.com>
- <20130206011721.GE11197@blaptop>
+	Tue, 5 Feb 2013 20:41:08 -0500
+X-AuditID: 9c93016f-b7b1fae000006419-68-5111b4afb6f6
+Date: Wed, 6 Feb 2013 10:41:11 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH v5 3/3] ARM: mm: use static_vm for managing static mapped
+ areas
+Message-ID: <20130206014110.GA4325@lge.com>
+References: <1360024314-1895-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1360024314-1895-4-git-send-email-iamjoonsoo.kim@lge.com>
+ <alpine.LFD.2.02.1302042308220.6300@xanadu.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130206011721.GE11197@blaptop>
+In-Reply-To: <alpine.LFD.2.02.1302042308220.6300@xanadu.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 06, 2013 at 10:17:21AM +0900, Minchan Kim wrote:
-> > > > Did you test this?  I don't see the new config value you added actually
-> > > > do anything in this code.  Also, if I select it incorrectly on ARM, or
-> > > 
-> > > *slaps self*
+Hello, Nicolas.
+
+On Mon, Feb 04, 2013 at 11:44:16PM -0500, Nicolas Pitre wrote:
+> On Tue, 5 Feb 2013, Joonsoo Kim wrote:
+> 
+> > A static mapped area is ARM-specific, so it is better not to use
+> > generic vmalloc data structure, that is, vmlist and vmlist_lock
+> > for managing static mapped area. And it causes some needless overhead and
+> > reducing this overhead is better idea.
 > > 
-> > Ok, so I'll drop this patch now.  As for what to do instead, I have no
-> > idea, sorry, but the others should.
+> > Now, we have newly introduced static_vm infrastructure.
+> > With it, we don't need to iterate all mapped areas. Instead, we just
+> > iterate static mapped areas. It helps to reduce an overhead of finding
+> > matched area. And architecture dependency on vmalloc layer is removed,
+> > so it will help to maintainability for vmalloc layer.
+> > 
+> > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 > 
-> Okay. Then, let's discuss further.
-> The history we introuced copy-based method is due to portability casused by
-> set_pte and __flush_tlb_one usage in young zsmalloc age. They are gone now
-> so there isn't issue any more. But we found copy-based method is 3 times faster
-> than pte-based in VM so I expect you guys don't want to give up it for just
-> portability. Of course,
-> I can't give up pte-based model as you know well, it's 6 times faster than
-> copy-based model in ARM.
+> Some comments below.
 > 
-> Hard-coding for some arch like now isn't good and Kconfig for selecting choice
-> was rejected by Greg as you can see above.
+> > diff --git a/arch/arm/mm/ioremap.c b/arch/arm/mm/ioremap.c
+> > index 904c15e..c7fef4b 100644
+> > --- a/arch/arm/mm/ioremap.c
+> > +++ b/arch/arm/mm/ioremap.c
+> > @@ -261,13 +261,14 @@ void __iomem * __arm_ioremap_pfn_caller(unsigned long pfn,
+> >  	const struct mem_type *type;
+> >  	int err;
+> >  	unsigned long addr;
+> > - 	struct vm_struct * area;
+> > +	struct vm_struct *area;
+> > +	phys_addr_t paddr = __pfn_to_phys(pfn);
+> >  
+> >  #ifndef CONFIG_ARM_LPAE
+> >  	/*
+> >  	 * High mappings must be supersection aligned
+> >  	 */
+> > -	if (pfn >= 0x100000 && (__pfn_to_phys(pfn) & ~SUPERSECTION_MASK))
+> > +	if (pfn >= 0x100000 && (paddr & ~SUPERSECTION_MASK))
+> >  		return NULL;
+> >  #endif
+> >  
+> > @@ -283,24 +284,16 @@ void __iomem * __arm_ioremap_pfn_caller(unsigned long pfn,
+> >  	/*
+> >  	 * Try to reuse one of the static mapping whenever possible.
+> >  	 */
+> > -	read_lock(&vmlist_lock);
+> > -	for (area = vmlist; area; area = area->next) {
+> > -		if (!size || (sizeof(phys_addr_t) == 4 && pfn >= 0x100000))
+> > -			break;
+> > -		if (!(area->flags & VM_ARM_STATIC_MAPPING))
+> > -			continue;
+> > -		if ((area->flags & VM_ARM_MTYPE_MASK) != VM_ARM_MTYPE(mtype))
+> > -			continue;
+> > -		if (__phys_to_pfn(area->phys_addr) > pfn ||
+> > -		    __pfn_to_phys(pfn) + size-1 > area->phys_addr + area->size-1)
+> > -			continue;
+> > -		/* we can drop the lock here as we know *area is static */
+> > -		read_unlock(&vmlist_lock);
+> > -		addr = (unsigned long)area->addr;
+> > -		addr += __pfn_to_phys(pfn) - area->phys_addr;
+> > -		return (void __iomem *) (offset + addr);
+> > +	if (size && !((sizeof(phys_addr_t) == 4 && pfn >= 0x100000))) {
+>                      ^                                             ^
+> You have a needless extra set of parents here.
+ 
+Okay.
 
-I rejected your patch because it did not do anything, why would I accept
-it?
+> [...]
+> 
+> > diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+> > index ce328c7..b2c0356 100644
+> > --- a/arch/arm/mm/mmu.c
+> > +++ b/arch/arm/mm/mmu.c
+> > @@ -757,21 +757,24 @@ void __init iotable_init(struct map_desc *io_desc, int nr)
+> >  {
+> >  	struct map_desc *md;
+> >  	struct vm_struct *vm;
+> > +	struct static_vm *svm;
+> >  
+> >  	if (!nr)
+> >  		return;
+> >  
+> > -	vm = early_alloc_aligned(sizeof(*vm) * nr, __alignof__(*vm));
+> > +	svm = early_alloc_aligned(sizeof(*svm) * nr, __alignof__(*svm));
+> >  
+> >  	for (md = io_desc; nr; md++, nr--) {
+> >  		create_mapping(md);
+> > +
+> > +		vm = &svm->vm;
+> >  		vm->addr = (void *)(md->virtual & PAGE_MASK);
+> >  		vm->size = PAGE_ALIGN(md->length + (md->virtual & ~PAGE_MASK));
+> >  		vm->phys_addr = __pfn_to_phys(md->pfn);
+> >  		vm->flags = VM_IOREMAP | VM_ARM_STATIC_MAPPING;
+> >  		vm->flags |= VM_ARM_MTYPE(md->type);
+> >  		vm->caller = iotable_init;
+> > -		vm_area_add_early(vm++);
+> > +		add_static_vm_early(svm++);
+> >  	}
+> >  }
+> >  
+> > @@ -779,13 +782,16 @@ void __init vm_reserve_area_early(unsigned long addr, unsigned long size,
+> >  				  void *caller)
+> >  {
+> >  	struct vm_struct *vm;
+> > +	struct static_vm *svm;
+> > +
+> > +	svm = early_alloc_aligned(sizeof(*svm), __alignof__(*svm));
+> >  
+> > -	vm = early_alloc_aligned(sizeof(*vm), __alignof__(*vm));
+> > +	vm = &svm->vm;
+> >  	vm->addr = (void *)addr;
+> >  	vm->size = size;
+> >  	vm->flags = VM_IOREMAP | VM_ARM_EMPTY_MAPPING;
+> >  	vm->caller = caller;
+> > -	vm_area_add_early(vm);
+> > +	add_static_vm_early(svm);
+> >  }
+> >  
+> >  #ifndef CONFIG_ARM_LPAE
+> > @@ -810,14 +816,13 @@ static void __init pmd_empty_section_gap(unsigned long addr)
+> >  
+> >  static void __init fill_pmd_gaps(void)
+> >  {
+> > +	struct static_vm *svm;
+> >  	struct vm_struct *vm;
+> >  	unsigned long addr, next = 0;
+> >  	pmd_t *pmd;
+> >  
+> > -	/* we're still single threaded hence no lock needed here */
+> > -	for (vm = vmlist; vm; vm = vm->next) {
+> > -		if (!(vm->flags & (VM_ARM_STATIC_MAPPING | VM_ARM_EMPTY_MAPPING)))
+> > -			continue;
+> > +	list_for_each_entry(svm, &static_vmlist, list) {
+> > +		vm = &svm->vm;
+> >  		addr = (unsigned long)vm->addr;
+> >  		if (addr < next)
+> >  			continue;
+> > @@ -859,17 +864,12 @@ static void __init pci_reserve_io(void)
+> >  {
+> >  	struct vm_struct *vm;
+> >  	unsigned long addr;
+> > +	struct static_vm *svm;
+> >  
+> > -	/* we're still single threaded hence no lock needed here */
+> > -	for (vm = vmlist; vm; vm = vm->next) {
+> > -		if (!(vm->flags & VM_ARM_STATIC_MAPPING))
+> > -			continue;
+> > -		addr = (unsigned long)vm->addr;
+> > -		addr &= ~(SZ_2M - 1);
+> > -		if (addr == PCI_IO_VIRT_BASE)
+> > -			return;
+> > +	svm = find_static_vm_vaddr((void *)PCI_IO_VIRT_BASE);
+> > +	if (svm)
+> > +		return;
+> > 
+> > -	}
+> >  
+> >  	vm_reserve_area_early(PCI_IO_VIRT_BASE, SZ_2M, pci_reserve_io);
+> >  }
+> 
+> The replacement code is not equivalent.  I can't recall why the original 
+> is as it is, but it doesn't look right to me.  The 2MB round down 
+> certainly looks suspicious.
+> 
+> The replacement code should be better.  However I'd like you to get an 
+> ACK from Rob Herring as well for this patch.
+> 
+> Once that is sorted out, you can add
+> 
+> Reviewed-by: Nicolas Pitre <nico@linaro.org>
 
-What would you have done in my situation?
+Okay. I will fix this and re-send it with your "Reviewed-by".
 
-It's not an issue of "portability" or "speed" or anything other than
-"the patch you sent was obviously not correct."
+Thanks.
 
-greg k-h
+> 
+> Nicolas
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
