@@ -1,78 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758776Ab3BFV7Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 16:59:24 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20808 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758615Ab3BFV7Q (ORCPT
+	id S1758788Ab3BFWAl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 17:00:41 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37189 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758087Ab3BFWAg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 16:59:16 -0500
-X-Authority-Analysis: v=2.0 cv=f8jK9ZOM c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=iX436ahayn8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=Kq2jaWyG-zMA:10 a=VwQbUJbxAAAA:8 a=5GsgiXXBMyPZXWBjK_kA:9 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-Id: <20130206215915.058901172@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Wed, 06 Feb 2013 16:58:19 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>
-Subject: [PATCH RT 1/6] drivers-tty-pl011-irq-disable-madness.patch
-References: <20130206215818.969089606@goodmis.org>
-Content-Disposition: inline; filename=0001-drivers-tty-pl011-irq-disable-madness.patch.patch
+	Wed, 6 Feb 2013 17:00:36 -0500
+Date: Wed, 6 Feb 2013 14:00:03 -0800
+From: tip-bot for Feng Tang <feng.tang@intel.com>
+Message-ID: <tip-ad0de0971b7f7097bd9be1ab4ad2a64db500adbf@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, andi@firstfloor.org, peterz@infradead.org,
+        namhyung@kernel.org, tglx@linutronix.de, feng.tang@intel.com,
+        mingo@elte.hu
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, andi@firstfloor.org, peterz@infradead.org,
+        namhyung@kernel.org, tglx@linutronix.de, feng.tang@intel.com,
+        mingo@elte.hu
+In-Reply-To: <1359873501-24541-2-git-send-email-feng.tang@intel.com>
+References: <1359873501-24541-2-git-send-email-feng.tang@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf report:
+  Enable the runtime switching of perf data file
+Git-Commit-ID: ad0de0971b7f7097bd9be1ab4ad2a64db500adbf
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 06 Feb 2013 14:00:08 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+Commit-ID:  ad0de0971b7f7097bd9be1ab4ad2a64db500adbf
+Gitweb:     http://git.kernel.org/tip/ad0de0971b7f7097bd9be1ab4ad2a64db500adbf
+Author:     Feng Tang <feng.tang@intel.com>
+AuthorDate: Sun, 3 Feb 2013 14:38:21 +0800
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 6 Feb 2013 18:09:25 -0300
 
-Cc: stable-rt@vger.kernel.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+perf report: Enable the runtime switching of perf data file
+
+This is for tui browser only. This patch will check the returned key of
+tui hists browser, if it's K_SWITH_INPUT_DATA, then recreate a session
+for the new selected data file.
+
+V2: Move the setup_brower() before the "repeat" jump point.
+
+Signed-off-by: Feng Tang <feng.tang@intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1359873501-24541-2-git-send-email-feng.tang@intel.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- drivers/tty/serial/amba-pl011.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ tools/perf/builtin-report.c | 38 +++++++++++++++++++++++++++-----------
+ 1 file changed, 27 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/tty/serial/amba-pl011.c b/drivers/tty/serial/amba-pl011.c
-index b69356c..7b29c92 100644
---- a/drivers/tty/serial/amba-pl011.c
-+++ b/drivers/tty/serial/amba-pl011.c
-@@ -1788,13 +1788,19 @@ pl011_console_write(struct console *co, const char *s, unsigned int count)
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 0d22187..91555d4 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -468,9 +468,17 @@ static int __cmd_report(struct perf_report *rep)
  
- 	clk_enable(uap->clk);
+ 	if (use_browser > 0) {
+ 		if (use_browser == 1) {
+-			perf_evlist__tui_browse_hists(session->evlist, help,
+-						      NULL,
+-						      &session->header.env);
++			ret = perf_evlist__tui_browse_hists(session->evlist,
++							help,
++							NULL,
++							&session->header.env);
++			/*
++			 * Usually "ret" is the last pressed key, and we only
++			 * care if the key notifies us to switch data file.
++			 */
++			if (ret != K_SWITCH_INPUT_DATA)
++				ret = 0;
++
+ 		} else if (use_browser == 2) {
+ 			perf_evlist__gtk_browse_hists(session->evlist, help,
+ 						      NULL);
+@@ -708,6 +716,16 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		else
+ 			input_name = "perf.data";
+ 	}
++
++	if (strcmp(input_name, "-") != 0)
++		setup_browser(true);
++	else {
++		use_browser = 0;
++		perf_hpp__column_enable(PERF_HPP__OVERHEAD);
++		perf_hpp__init();
++	}
++
++repeat:
+ 	session = perf_session__new(input_name, O_RDONLY,
+ 				    report.force, false, &report.tool);
+ 	if (session == NULL)
+@@ -733,14 +751,6 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
  
--	local_irq_save(flags);
-+	/*
-+	 * local_irq_save(flags);
-+	 *
-+	 * This local_irq_save() is nonsense. If we come in via sysrq
-+	 * handling then interrupts are already disabled. Aside of
-+	 * that the port.sysrq check is racy on SMP regardless.
-+	*/
- 	if (uap->port.sysrq)
- 		locked = 0;
- 	else if (oops_in_progress)
--		locked = spin_trylock(&uap->port.lock);
-+		locked = spin_trylock_irqsave(&uap->port.lock, flags);
- 	else
--		spin_lock(&uap->port.lock);
-+		spin_lock_irqsave(&uap->port.lock, flags);
+ 	}
+ 
+-	if (strcmp(input_name, "-") != 0)
+-		setup_browser(true);
+-	else {
+-		use_browser = 0;
+-		perf_hpp__column_enable(PERF_HPP__OVERHEAD);
+-		perf_hpp__init();
+-	}
+-
+ 	setup_sorting(report_usage, options);
  
  	/*
- 	 *	First save the CR then disable the interrupts
-@@ -1816,8 +1822,7 @@ pl011_console_write(struct console *co, const char *s, unsigned int count)
- 	writew(old_cr, uap->port.membase + UART011_CR);
+@@ -809,6 +819,12 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	}
  
- 	if (locked)
--		spin_unlock(&uap->port.lock);
--	local_irq_restore(flags);
-+		spin_unlock_irqrestore(&uap->port.lock, flags);
- 
- 	clk_disable(uap->clk);
- }
--- 
-1.7.10.4
-
-
+ 	ret = __cmd_report(&report);
++	if (ret == K_SWITCH_INPUT_DATA) {
++		perf_session__delete(session);
++		goto repeat;
++	} else
++		ret = 0;
++
+ error:
+ 	perf_session__delete(session);
+ 	return ret;
