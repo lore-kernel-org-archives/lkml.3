@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751555Ab3BFF6m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 00:58:42 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:51496 "EHLO bear.ext.ti.com"
+	id S1755777Ab3BFF67 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 00:58:59 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:41563 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751936Ab3BFF6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 00:58:38 -0500
+	id S1752179Ab3BFF6m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 00:58:42 -0500
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <gregkh@linuxfoundation.org>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
         <eballetbo@gmail.com>, <javier@dowhile0.org>, <b-cousson@ti.com>,
@@ -13,60 +13,59 @@ To: <gregkh@linuxfoundation.org>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
         <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-usb@vger.kernel.org>
 CC: <kishon@ti.com>
-Subject: [PATCH 0/5] ARM: OMAP: arm part of usb patches
-Date: Wed, 6 Feb 2013 11:28:08 +0530
-Message-ID: <1360130294-5976-1-git-send-email-kishon@ti.com>
+Subject: [PATCH 1/5] ARM: OMAP4: remove control module address space from PHY and OTG
+Date: Wed, 6 Feb 2013 11:28:09 +0530
+Message-ID: <1360130294-5976-2-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1360130294-5976-1-git-send-email-kishon@ti.com>
+References: <1360130294-5976-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Now that we have a separate driver for the control module,
+stop populating the control module device data in other modules
+(PHY and OTG) device info.
 
-Here is the patch series that includes the arch/arm part to get MUSB
-working in OMAP platforms. As discussed in the other mail thread with
-Tony, this patch series should go into usb-next.
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+Acked-by: Tony Lindgren <tony@atomide.com>
+---
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c |   13 -------------
+ 1 file changed, 13 deletions(-)
 
-This patch series also contains a patch by Felipe to fix compilation
-warning in usb-next when CONFIG_OMAP_CONTROL_USB is not set.
-
-Boot tested panda board.
-
-Felipe Balbi (1):
-  usb: omap_control_usb: fix compile warning
-
-Kishon Vijay Abraham I (4):
-  ARM: OMAP4: remove control module address space from PHY and OTG
-  ARM: OMAP: devices: create device for usb part of control module
-  ARM: OMAP2: MUSB: Specify omap4 has mailbox
-  ARM: OMAP: USB: Add phy binding information
-
- arch/arm/mach-omap2/board-2430sdp.c          |    2 ++
- arch/arm/mach-omap2/board-3430sdp.c          |    2 ++
- arch/arm/mach-omap2/board-4430sdp.c          |    2 ++
- arch/arm/mach-omap2/board-cm-t35.c           |    2 ++
- arch/arm/mach-omap2/board-devkit8000.c       |    2 ++
- arch/arm/mach-omap2/board-igep0020.c         |    2 ++
- arch/arm/mach-omap2/board-ldp.c              |    2 ++
- arch/arm/mach-omap2/board-omap3beagle.c      |    2 ++
- arch/arm/mach-omap2/board-omap3evm.c         |    2 ++
- arch/arm/mach-omap2/board-omap3logic.c       |    2 ++
- arch/arm/mach-omap2/board-omap3pandora.c     |    2 ++
- arch/arm/mach-omap2/board-omap3stalker.c     |    2 ++
- arch/arm/mach-omap2/board-omap3touchbook.c   |    2 ++
- arch/arm/mach-omap2/board-omap4panda.c       |    2 ++
- arch/arm/mach-omap2/board-overo.c            |    2 ++
- arch/arm/mach-omap2/board-rm680.c            |    2 ++
- arch/arm/mach-omap2/board-zoom-peripherals.c |    2 ++
- arch/arm/mach-omap2/devices.c                |   45 ++++++++++++++++++++++++++
- arch/arm/mach-omap2/omap_hwmod_44xx_data.c   |   13 --------
- arch/arm/mach-omap2/usb-musb.c               |    3 ++
- include/linux/usb/musb.h                     |    2 ++
- include/linux/usb/omap_control_usb.h         |    2 +-
- 22 files changed, 85 insertions(+), 14 deletions(-)
-
+diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+index 793f54a..624a7e8 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+@@ -2702,13 +2702,6 @@ static struct resource omap44xx_usb_phy_and_pll_addrs[] = {
+ 		.end		= 0x4a0ae000,
+ 		.flags		= IORESOURCE_MEM,
+ 	},
+-	{
+-		/* XXX: Remove this once control module driver is in place */
+-		.name		= "ctrl_dev",
+-		.start		= 0x4a002300,
+-		.end		= 0x4a002303,
+-		.flags		= IORESOURCE_MEM,
+-	},
+ 	{ }
+ };
+ 
+@@ -6156,12 +6149,6 @@ static struct omap_hwmod_addr_space omap44xx_usb_otg_hs_addrs[] = {
+ 		.pa_end		= 0x4a0ab7ff,
+ 		.flags		= ADDR_TYPE_RT
+ 	},
+-	{
+-		/* XXX: Remove this once control module driver is in place */
+-		.pa_start	= 0x4a00233c,
+-		.pa_end		= 0x4a00233f,
+-		.flags		= ADDR_TYPE_RT
+-	},
+ 	{ }
+ };
+ 
 -- 
 1.7.10.4
 
