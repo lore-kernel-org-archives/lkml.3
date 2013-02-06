@@ -1,85 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758892Ab3BFWNP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 17:13:15 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37438 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758691Ab3BFWNK (ORCPT
+	id S1758732Ab3BFWM2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 17:12:28 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:37521 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932188Ab3BFWMK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 17:13:10 -0500
-Date: Wed, 6 Feb 2013 14:12:50 -0800
-From: tip-bot for Jiri Olsa <jolsa@redhat.com>
-Message-ID: <tip-89bb67ff935d461544fed87174bb13dcc4bac673@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-In-Reply-To: <1359971803-2343-2-git-send-email-jolsa@redhat.com>
-References: <1359971803-2343-2-git-send-email-jolsa@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Fix perf_evsel::exclude_GH handling
-Git-Commit-ID: 89bb67ff935d461544fed87174bb13dcc4bac673
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 06 Feb 2013 14:12:55 -0800 (PST)
+	Wed, 6 Feb 2013 17:12:10 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+To: mingo@kernel.org, peterz@infradead.org
+Cc: jamie.iles@oracle.com, penberg@kernel.org, acme@ghostprotocols.net,
+        paulus@samba.org, linux-kernel@vger.kernel.org,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: [PATCH 03/11] perf: stop using liblockdep_init and liblockdep_set_thread
+Date: Wed,  6 Feb 2013 17:11:26 -0500
+Message-Id: <1360188694-25077-4-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1360188694-25077-1-git-send-email-sasha.levin@oracle.com>
+References: <1360188694-25077-1-git-send-email-sasha.levin@oracle.com>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  89bb67ff935d461544fed87174bb13dcc4bac673
-Gitweb:     http://git.kernel.org/tip/89bb67ff935d461544fed87174bb13dcc4bac673
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Mon, 4 Feb 2013 10:56:42 +0100
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 6 Feb 2013 18:09:27 -0300
+These functions are no longer needed by liblockdep, drop them.
 
-perf tools: Fix perf_evsel::exclude_GH handling
-
-Let the perf_evsel::exclude_GH only prevent the reset of exclude_host
-and exclude_guest attributes in case they were already set.
-
-We cannot reset their values to 0, because they might have other
-defaults set by event_attr_init.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1359971803-2343-2-git-send-email-jolsa@redhat.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 ---
- tools/perf/util/parse-events.c | 8 --------
- 1 file changed, 8 deletions(-)
+ tools/perf/builtin-sched.c          | 2 --
+ tools/perf/builtin-top.c            | 4 ----
+ tools/perf/config/feature-tests.mak | 1 -
+ tools/perf/perf.c                   | 3 ---
+ tools/perf/util/liblockdep.h        | 2 --
+ 5 files changed, 12 deletions(-)
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 4e0f5c2..c84f48c 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -699,14 +699,6 @@ static int get_event_modifier(struct event_modifier *mod, char *str,
- 	int exclude = eu | ek | eh;
- 	int exclude_GH = evsel ? evsel->exclude_GH : 0;
+diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
+index 53d9225..e1f0c44 100644
+--- a/tools/perf/builtin-sched.c
++++ b/tools/perf/builtin-sched.c
+@@ -468,8 +468,6 @@ static void *thread_func(void *ctx)
+ 	char comm2[22];
+ 	int fd;
  
--	/*
--	 * We are here for group and 'GH' was not set as event
--	 * modifier and whatever event/group modifier override
--	 * default 'GH' setup.
--	 */
--	if (evsel && !exclude_GH)
--		eH = eG = 0;
+-	liblockdep_set_thread();
 -
- 	memset(mod, 0, sizeof(*mod));
+ 	free(parms);
  
- 	while (*str) {
+ 	sprintf(comm2, ":%s", this_task->comm);
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index c9b99ef..c9ff395 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -588,8 +588,6 @@ static void *display_thread_tui(void *arg)
+ 		.refresh	= top->delay_secs,
+ 	};
+ 
+-	liblockdep_set_thread();
+-
+ 	perf_top__sort_new_samples(top);
+ 
+ 	/*
+@@ -615,8 +613,6 @@ static void *display_thread(void *arg)
+ 	struct perf_top *top = arg;
+ 	int delay_msecs, c;
+ 
+-	liblockdep_set_thread();
+-
+ 	tcgetattr(0, &save);
+ 	tc = save;
+ 	tc.c_lflag &= ~(ICANON | ECHO);
+diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
+index 1f5a37e..20f8f7b 100644
+--- a/tools/perf/config/feature-tests.mak
++++ b/tools/perf/config/feature-tests.mak
+@@ -223,7 +223,6 @@ define SOURCE_LIBLOCKDEP
+ 
+ int main(void)
+ {
+-	liblockdep_init();
+ 	return 0;
+ }
+ endef
+diff --git a/tools/perf/perf.c b/tools/perf/perf.c
+index ddbd315..0f661fb 100644
+--- a/tools/perf/perf.c
++++ b/tools/perf/perf.c
+@@ -446,9 +446,6 @@ int main(int argc, const char **argv)
+ {
+ 	const char *cmd;
+ 
+-	liblockdep_init();
+-	liblockdep_set_thread();
+-
+ 	page_size = sysconf(_SC_PAGE_SIZE);
+ 
+ 	cmd = perf_extract_argv0_path(argv[0]);
+diff --git a/tools/perf/util/liblockdep.h b/tools/perf/util/liblockdep.h
+index 628a2f5..798263f 100644
+--- a/tools/perf/util/liblockdep.h
++++ b/tools/perf/util/liblockdep.h
+@@ -5,7 +5,5 @@
+ #else
+ 
+ #define LIBLOCKDEP_PTHREAD_MUTEX_INITIALIZER(mtx) PTHREAD_MUTEX_INITIALIZER
+-#define liblockdep_init()
+-#define liblockdep_set_thread()
+ 
+ #endif
+-- 
+1.8.1.2
+
