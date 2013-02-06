@@ -1,117 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758104Ab3BFUTU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 15:19:20 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:41282 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755294Ab3BFUTR (ORCPT
+	id S932088Ab3BFUZW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 15:25:22 -0500
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:61693 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757690Ab3BFUZU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 15:19:17 -0500
-Date: Wed, 6 Feb 2013 12:19:19 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Jan Kara <jack@suse.cz>
-cc: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, jslaby@suse.cz,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH v2] printk: Avoid softlockups in console_unlock()
-In-Reply-To: <20130206185205.GA11254@quack.suse.cz>
-Message-ID: <alpine.LNX.2.00.1302061149580.1080@eggly.anvils>
-References: <1360016230-26696-1-git-send-email-jack@suse.cz> <20130205123838.146a5371.akpm@linux-foundation.org> <20130206142346.GF6330@quack.suse.cz> <alpine.DEB.2.02.1302060958150.26828@chino.kir.corp.google.com> <20130206185205.GA11254@quack.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Wed, 6 Feb 2013 15:25:20 -0500
+Date: Thu, 7 Feb 2013 00:25:13 +0400
+From: Artem Savkov <artem.savkov@gmail.com>
+To: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [BUG] cpufreq: sleeping function called from invalid context at
+ kernel/workqueue.c:2811
+Message-ID: <20130206202513.GA5626@thinkpad.lan>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Feb 2013, Jan Kara wrote:
-> On Wed 06-02-13 09:58:48, David Rientjes wrote:
-> > On Wed, 6 Feb 2013, Jan Kara wrote:
-> > 
-> > >   Yes, I noticed that thread just yesterday and also though that using
-> > > similar trick might be viable. I'll experiment if we could use the same
-> > > method for handling lockup problems I hit. Steven seems to have already
-> > > tweaked PRINTK_PENDING stuff to be usable more easily...
-> > > 
-> > 
-> > Are these new build failures in linux-next coming from this patch?
-> > 
-> > kernel/printk.c: In function 'console_unlock':
-> > kernel/printk.c:2156:18: error: 'printk_work' undeclared (first use in this function)
-> > kernel/printk.c:2156:18: note: each undeclared identifier is reported only once for each function it appears in
-> > kernel/printk.c: At top level:
-> > kernel/printk.c:2167:13: warning: 'printk_worker' defined but not used [-Wunused-function]
->   Yes, I already sent a patch to fix these (attached if you need it).
-> Thanks for notice.
+I get the following BUG on suspend using systemd-sleep(this doesn't
+happen with pm-suspend). This seems to be introduced by some of the
+Viresh's patches.
 
-Is the console_unlock patch actually intended to be a console load test?
-Could we just revert it until it's baked?
+[   94.908046] Disabling non-boot CPUs ...
+[   94.908416] BUG: sleeping function called from invalid context at kernel/workqueue.c:2811
+[   94.908419] in_atomic(): 1, irqs_disabled(): 1, pid: 4038, name: systemd-sleep
+[   94.908421] 7 locks held by systemd-sleep/4038:
+[   94.908439]  #0:  (&buffer->mutex){......}, at: [<c11908e9>] sysfs_write_file+0x29/0x100
+[   94.908448]  #1:  (s_active#179){......}, at: [<c119094d>] sysfs_write_file+0x8d/0x100
+[   94.908459]  #2:  (pm_mutex){......}, at: [<c107f990>] pm_suspend+0x40/0x1e0
+[   94.908469]  #3:  (cpu_add_remove_lock){......}, at: [<c103ab04>] cpu_maps_update_begin+0x14/0x20
+[   94.908476]  #4:  (cpu_hotplug.lock){......}, at: [<c103a9e2>] cpu_hotplug_begin+0x22/0x50
+[   94.908487]  #5:  (&per_cpu(cpu_policy_rwsem, cpu)){......}, at: [<c14bfbfd>] lock_policy_rwsem_write+0x3d/0x70
+[   94.908495]  #6:  (cpufreq_driver_lock){......}, at: [<c14bfe06>] __cpufreq_remove_dev.isra.10+0x26/0x270
+[   94.908500] Pid: 4038, comm: systemd-sleep Not tainted 3.8.0-rc6-next-20130205+ #200
+[   94.908501] Call Trace:
+[   94.908511]  [<c1067ce0>] __might_sleep+0xe0/0x100
+[   94.908518]  [<c1050f3f>] flush_work+0x5f/0x230
+[   94.908523]  [<c1050ee0>] ? insert_work+0x50/0x50
+[   94.908528]  [<c1046277>] ? del_timer+0x47/0x70
+[   94.908533]  [<c1046277>] ? del_timer+0x47/0x70
+[   94.908538]  [<c1052b08>] ? try_to_grab_pending+0xa8/0x120
+[   94.908543]  [<c1053b49>] __cancel_work_timer+0x59/0x80
+[   94.908548]  [<c1053b82>] cancel_delayed_work_sync+0x12/0x20
+[   94.908555]  [<c14c32ed>] cpufreq_governor_dbs+0x2cd/0x490
+[   94.908561]  [<c14c26c6>] od_cpufreq_governor_dbs+0x16/0x20
+[   94.908565]  [<c14bfd21>] __cpufreq_governor+0x41/0x100
+[   94.908570]  [<c14bfe06>] ? __cpufreq_remove_dev.isra.10+0x26/0x270
+[   94.908575]  [<c14bfe36>] __cpufreq_remove_dev.isra.10+0x56/0x270
+[   94.908580]  [<c14bfbfd>] ? lock_policy_rwsem_write+0x3d/0x70
+[   94.908589]  [<c1686c20>] cpufreq_cpu_callback+0x50/0x65
+[   94.908596]  [<c16966c7>] notifier_call_chain+0x47/0x90
+[   94.908606]  [<c1060fee>] __raw_notifier_call_chain+0x1e/0x30
+[   94.908610]  [<c103a974>] __cpu_notify+0x24/0x50
+[   94.908615]  [<c167bf7d>] _cpu_down+0x6d/0x250
+[   94.908621]  [<c103ac7c>] disable_nonboot_cpus+0x6c/0xf0
+[   94.908625]  [<c107f815>] suspend_devices_and_enter+0x175/0x2b0
+[   94.908629]  [<c107fb27>] pm_suspend+0x1d7/0x1e0
+[   94.908633]  [<c107ebed>] state_store+0x5d/0xb0
+[   94.908638]  [<c107eb90>] ? pm_trace_dev_match_show+0x20/0x20
+[   94.908644]  [<c12c074b>] kobj_attr_store+0x1b/0x30
+[   94.908650]  [<c1190963>] sysfs_write_file+0xa3/0x100
+[   94.908655]  [<c11908c0>] ? sysfs_open_file+0x1f0/0x1f0
+[   94.908662]  [<c112dc28>] vfs_write+0x88/0x140
+[   94.908667]  [<c11908c0>] ? sysfs_open_file+0x1f0/0x1f0
+[   94.908672]  [<c112def7>] sys_write+0x47/0x90
+[   94.908679]  [<c169a0fa>] sysenter_do_call+0x12/0x2d
+[   94.911067] smpboot: CPU 1 is now offline
+[   94.915585] smpboot: CPU 2 is now offline
+[   94.917500] smpboot: CPU 3 is now offline
 
-This little hunk from __console_unlock():
 
- 	console_may_schedule = 0;
-+	cur_cpu = smp_processor_id();
-
-I have CONFIG_PREEMPT=y CONFIG_DEBUG_PREEMPT=y,
-so that fills the console with messages:
-
-BUG: using smp_processor_id() in preemptible [00000000] code: systemd/1
-caller is __console_unlock+0x3c/0x39c
-Pid: 1, comm: systemd Tainted: G        W    3.8.0-rc6-mm1 #1
-Call Trace:
- [<ffffffff81223ee2>] debug_smp_processor_id+0xbe/0xd8
- [<ffffffff810615d8>] __console_unlock+0x3c/0x39c
- [<ffffffff810a6a38>] ? trace_hardirqs_on+0xd/0xf
- [<ffffffff8154a997>] ? _raw_spin_unlock_irqrestore+0x46/0x64
- [<ffffffff81061941>] console_unlock+0x9/0x1b
- [<ffffffff812955ab>] con_shutdown+0x29/0x2d
- [<ffffffff81295582>] ? visual_init+0x10d/0x10d
- [<ffffffff812857ed>] release_tty+0x4d/0x91
- [<ffffffff8128644f>] tty_release+0x421/0x460
- [<ffffffff81120c57>] __fput+0x104/0x1e9
- [<ffffffff81120d45>] ____fput+0x9/0xb
- [<ffffffff8107a6c3>] task_work_run+0x79/0xa6
- [<ffffffff8102f4a6>] do_notify_resume+0x55/0x66
- [<ffffffff8121e29e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- [<ffffffff8154b898>] int_signal+0x12/0x17
-
-As a quick and obviously wrong hack, I replace the call to
-smp_processor_id() by call to raw_smp_processor_id() and then:
-
-+	/*
-+	 * We give us some headroom because we check the time only after
-+	 * printing the whole message
-+	 */
-+	end_time = sched_clock_cpu(cur_cpu) +
-+				max_interrupt_disabled_duration() / 2;
-
-Oh, sched_clock_cpu() is also giving me such BUGs,
-but also (phew, it's a WARN_ON_ONCE):
- 
-00000] WARNING: at kernel/sched/clock.c:219 sched_clock_cpu+0x2e/0xcf()
-00000] Hardware name: 4174AY9
-00000] Modules linked in:
-00000] Pid: 0, comm: swapper/0 Not tainted 3.8.0-rc6-mm1 #2
-00000] Call Trace:
-00000]  [<ffffffff8106018b>] warn_slowpath_common+0x7e/0x99
-00000]  [<ffffffff810601bb>] warn_slowpath_null+0x15/0x17
-00000]  [<ffffffff8108a683>] sched_clock_cpu+0x2e/0xcf
-00000]  [<ffffffff810615e4>] __console_unlock+0x48/0x39e
-00000]  [<ffffffff8153e648>] ? printk+0x48/0x4a
-00000]  [<ffffffff81061943>] console_unlock+0x9/0x1b
-00000]  [<ffffffff818f7ebc>] con_init+0x252/0x27d
-00000]  [<ffffffff818f75b4>] console_init+0x16/0x27
-00000]  [<ffffffff818d4c34>] start_kernel+0x243/0x322
-00000]  [<ffffffff818d476b>] ? repair_env_string+0x5a/0x5a
-00000]  [<ffffffff818d4485>] x86_64_start_reservations+0x2a/0x2c
-00000]  [<ffffffff818d454f>] x86_64_start_kernel+0xc8/0xcc
-
-Please fix or revert; though whether yesterday's mmotm then becomes usable,
-I'm not so sure (iwlwifi broken? characters dropped from i915 screen? oops
-in find_pid_ns? I'd better move on to something else).
-
-Hugh
+-- 
+Kind regards,
+Artem
