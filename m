@@ -1,50 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757158Ab3BFQiX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 11:38:23 -0500
-Received: from mail-ia0-f177.google.com ([209.85.210.177]:51102 "EHLO
-	mail-ia0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755733Ab3BFQiV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 11:38:21 -0500
+	id S1757365Ab3BFQim (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 11:38:42 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:42775 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755670Ab3BFQik (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 11:38:40 -0500
+Date: Wed, 6 Feb 2013 18:38:00 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Yuan-Hsin Chen <yuanlmm@gmail.com>
+CC: <gregkh@linuxfoundation.org>, <stern@rowland.harvard.edu>,
+        <sarah.a.sharp@linux.intel.com>, <balbi@ti.com>,
+        <Julia.Lawall@lip6.fr>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Yuan-Hsin Chen <yhchen@faraday-tech.com>
+Subject: Re: [PATCH] usb host: Faraday FUSBH200 HCD driver.
+Message-ID: <20130206163759.GB9952@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1360149841-2392-1-git-send-email-yuanlmm@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1357764194-12677-7-git-send-email-thierry.reding@avionic-design.de>
-References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de>
-	<1357764194-12677-7-git-send-email-thierry.reding@avionic-design.de>
-Date: Wed, 6 Feb 2013 17:38:20 +0100
-Message-ID: <CACRpkdYV5w6BksUjXvXs=88BovUyXgRt-vXSD0twjRpzbZcvFQ@mail.gmail.com>
-Subject: Re: [PATCH 06/14] ARM: pci: Keep pci_common_init() around after init
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Thierry Reding <thierry.reding@avionic-design.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-tegra@vger.kernel.org,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-pci@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Andrew Murray <andrew.murray@arm.com>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="MW5yreqqjyrRcusr"
+Content-Disposition: inline
+In-Reply-To: <1360149841-2392-1-git-send-email-yuanlmm@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 9, 2013 at 9:43 PM, Thierry Reding
-<thierry.reding@avionic-design.de> wrote:
+--MW5yreqqjyrRcusr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> When using deferred driver probing, PCI host controller drivers may
-> actually require this function after the init stage.
->
-> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+On Wed, Feb 06, 2013 at 07:24:01PM +0800, Yuan-Hsin Chen wrote:
+> From: Yuan-Hsin Chen <yhchen@faraday-tech.com>
+>=20
+> USB2.0 HCD driver for Faraday FUSBH200
+>=20
+> Signed-off-by: Yuan-Hsin Chen <yhchen@faraday-tech.com>
 
-There seem to be a proliferation of these patches now.
+just use ehci-platform.c and avoid the duplication
 
-Isn't this just papering over the real problem? The discarding
-of __init sections need to happen *after* all deferred probes
-are complete, lest we have to remove *all* __init sections from
-*all* drivers in the kernel, don't we?
+--=20
+balbi
 
-Yours,
-Linus Walleij
+--MW5yreqqjyrRcusr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJREobnAAoJEIaOsuA1yqREj6YP/2zleSLqC7PBb76pTCudZr1B
+0GzlQMoibws69v6iaHPvLoW2pLjmA6pU+F8NUIPGdg89UmcTQAoe/BjcDORtQ9yM
+52DXchnsID6gTSoIE+3TTnhouM1SaQ/ICfh3boqWO+C0AfjC0y24IaDVo2taNreS
+iv8ZULiobCVrSZ1KHPXO4CkgTYyfV4HWUgrWOuXnLySg3wWwkqtrqlp38mCOlPxi
+vOD9oYUsQ8ujyWoGlp4lcMqHvcJStUTeOsJ3e97jpDBn0SvSbqVgXdZCRRf6sdnD
+i4WrjX6QdeWyOk3tUVBIPtqphLgcm+Aql77btHBWz49g11cyzKy1Vq9YsdtbwbCy
+KrEMng7Un3vZKjF6ySNnwsE5nnm/9J1A/64osmtJH655mFI9hX68EOuAbTW+e9Mr
+NdanprNAtwh50f9ABmPhdaUci63J+zx7Zwy1hQBtOHSgZbw1gqrGq0SgkfyrlEHr
+965cUlDxc7ybsaBGzcMMq+8LM2YJ9u0T+a0oUmqJpFnmDndXRBirZt9ZITDwnZMw
+evCswTWOkNHR3ivcDwEOteOT+n03Q0V5K/vDsgyM0EF3jLhgiIe8m0LLSGt6wAEO
+e18vex/8Sbc+6o2+vWr3weTCNLjsObetqr4Ytao5tkKFLD1eng7Zz8zd8u8PFK4e
+gdMXV+umB6EauouMyrbu
+=tXjc
+-----END PGP SIGNATURE-----
+
+--MW5yreqqjyrRcusr--
