@@ -1,167 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758357Ab3BFWvI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 17:51:08 -0500
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:32821 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758246Ab3BFWvC (ORCPT
+	id S1758140Ab3BFWzH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 17:55:07 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36992 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755489Ab3BFWzE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 17:51:02 -0500
-From: Ruslan Bilovol <ruslan.bilovol@ti.com>
-To: tony@atomide.com, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v3 2/2] ARM: OMAP2+: Export SoC information to userspace
-Date: Thu,  7 Feb 2013 00:50:49 +0200
-Message-Id: <1360191049-24017-3-git-send-email-ruslan.bilovol@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1360191049-24017-1-git-send-email-ruslan.bilovol@ti.com>
-References: <1360191049-24017-1-git-send-email-ruslan.bilovol@ti.com>
+	Wed, 6 Feb 2013 17:55:04 -0500
+Date: Wed, 6 Feb 2013 22:51:50 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: =?iso-8859-1?Q?Andr=E9?= Hentschel <nerv@dawncrow.de>
+Cc: linux-arch@vger.kernel.org, will.deacon@arm.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] arm: Preserve TPIDRURW on context switch
+Message-ID: <20130206225150.GL17833@n2100.arm.linux.org.uk>
+References: <5112DC7E.4020108@dawncrow.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5112DC7E.4020108@dawncrow.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In some situations it is useful for userspace to
-know some SoC-specific information. For example,
-this may be used for deciding what kernel module to
-use or how to better configure some settings etc.
-This patch exports OMAP SoC information to userspace
-using existing in Linux kernel SoC infrastructure.
+On Wed, Feb 06, 2013 at 11:43:10PM +0100, André Hentschel wrote:
+> There are more and more applications coming to WinRT, Wine could support them,
+> but mostly they expect to have the thread environment block (TEB) in TPIDRURW.
+> This register must be preserved per thread instead of being cleared.
 
-This information can be read under
-/sys/devices/socX directory
+I'd prefer this was done a little more sensitively to those CPUs where
+loads/stores are expensive, namely:
 
-Signed-off-by: Ruslan Bilovol <ruslan.bilovol@ti.com>
----
- arch/arm/mach-omap2/common.h |    8 ++++++
- arch/arm/mach-omap2/id.c     |   65 ++++++++++++++++++++++++++++++++++++++++++
- arch/arm/mach-omap2/io.c     |    1 +
- arch/arm/plat-omap/Kconfig   |    1 +
- 4 files changed, 75 insertions(+)
+> +
+> +	@ preserve TPIDRURW register state
+> +	get_tls2	r3, r4, r5
+> +	str	r3, [r1, #TI_TP2_VALUE]
+> +	ldr	r3, [r2, #TI_TP2_VALUE]
+> +	set_tls2	r3, r4, r5
 
-diff --git a/arch/arm/mach-omap2/common.h b/arch/arm/mach-omap2/common.h
-index 0c3a991..a024084 100644
---- a/arch/arm/mach-omap2/common.h
-+++ b/arch/arm/mach-omap2/common.h
-@@ -111,6 +111,14 @@ void ti81xx_init_late(void);
- void omap4430_init_late(void);
- int omap2_common_pm_late_init(void);
- 
-+#ifdef CONFIG_SOC_BUS
-+void omap_soc_device_init(void);
-+#else
-+static inline void omap_soc_device_init(void)
-+{
-+}
-+#endif
-+
- #if defined(CONFIG_SOC_OMAP2420) || defined(CONFIG_SOC_OMAP2430)
- void omap2xxx_restart(char mode, const char *cmd);
- #else
-diff --git a/arch/arm/mach-omap2/id.c b/arch/arm/mach-omap2/id.c
-index 3737700..098e94e 100644
---- a/arch/arm/mach-omap2/id.c
-+++ b/arch/arm/mach-omap2/id.c
-@@ -18,6 +18,11 @@
- #include <linux/kernel.h>
- #include <linux/init.h>
- #include <linux/io.h>
-+#include <linux/slab.h>
-+
-+#ifdef CONFIG_SOC_BUS
-+#include <linux/sys_soc.h>
-+#endif
- 
- #include <asm/cputype.h>
- 
-@@ -583,3 +588,63 @@ void __init omap2_set_globals_tap(u32 class, void __iomem *tap)
- 	else
- 		tap_prod_id = 0x0208;
- }
-+
-+#ifdef CONFIG_SOC_BUS
-+
-+static const char const *omap_types[] = {
-+	[OMAP2_DEVICE_TYPE_TEST]	= "TST",
-+	[OMAP2_DEVICE_TYPE_EMU]		= "EMU",
-+	[OMAP2_DEVICE_TYPE_SEC]		= "HS",
-+	[OMAP2_DEVICE_TYPE_GP]		= "GP",
-+	[OMAP2_DEVICE_TYPE_BAD]		= "BAD",
-+};
-+
-+static const char * __init omap_get_family(void)
-+{
-+	if (cpu_is_omap24xx())
-+		return kasprintf(GFP_KERNEL, "OMAP2");
-+	else if (cpu_is_omap34xx())
-+		return kasprintf(GFP_KERNEL, "OMAP3");
-+	else if (cpu_is_omap44xx())
-+		return kasprintf(GFP_KERNEL, "OMAP4");
-+	else if (soc_is_omap54xx())
-+		return kasprintf(GFP_KERNEL, "OMAP5");
-+	else
-+		return kasprintf(GFP_KERNEL, "Unknown");
-+}
-+
-+static ssize_t omap_get_type(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	return sprintf(buf, "%s\n", omap_types[omap_type()]);
-+}
-+
-+static struct device_attribute omap_soc_attr =
-+	__ATTR(type,  S_IRUGO, omap_get_type,  NULL);
-+
-+void __init omap_soc_device_init(void)
-+{
-+	struct device *parent;
-+	struct soc_device *soc_dev;
-+	struct soc_device_attribute *soc_dev_attr;
-+
-+	soc_dev_attr = kzalloc(sizeof(*soc_dev_attr), GFP_KERNEL);
-+	if (!soc_dev_attr)
-+		return;
-+
-+	soc_dev_attr->machine  = soc_name;
-+	soc_dev_attr->family   = omap_get_family();
-+	soc_dev_attr->revision = soc_rev;
-+
-+	soc_dev = soc_device_register(soc_dev_attr);
-+	if (IS_ERR_OR_NULL(soc_dev)) {
-+		kfree(soc_dev_attr);
-+		return;
-+	}
-+
-+	parent = soc_device_to_device(soc_dev);
-+	if (!IS_ERR_OR_NULL(parent))
-+		device_create_file(parent, &omap_soc_attr);
-+}
-+#endif /* CONFIG_SOC_BUS */
-diff --git a/arch/arm/mach-omap2/io.c b/arch/arm/mach-omap2/io.c
-index 2c3fdd6..08003c1 100644
---- a/arch/arm/mach-omap2/io.c
-+++ b/arch/arm/mach-omap2/io.c
-@@ -602,6 +602,7 @@ void __init omap4430_init_late(void)
- 	omap2_common_pm_late_init();
- 	omap4_pm_init();
- 	omap2_clk_enable_autoidle_all();
-+	omap_soc_device_init();
- }
- #endif
- 
-diff --git a/arch/arm/plat-omap/Kconfig b/arch/arm/plat-omap/Kconfig
-index 1fbac36..24b5687 100644
---- a/arch/arm/plat-omap/Kconfig
-+++ b/arch/arm/plat-omap/Kconfig
-@@ -30,6 +30,7 @@ config ARCH_OMAP2PLUS
- 	select PROC_DEVICETREE if PROC_FS
- 	select SPARSE_IRQ
- 	select USE_OF
-+	select SOC_BUS
- 	help
- 	  "Systems based on OMAP2, OMAP3, OMAP4 or OMAP5"
- 
--- 
-1.7.9.5
-
+those two loads/stores get omitted from the thread switching if the CPU
+doesn't support it.  Do you think that's something you could do?
