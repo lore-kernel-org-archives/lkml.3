@@ -1,113 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758380Ab3BFUJX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 15:09:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56326 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758210Ab3BFUJO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 15:09:14 -0500
-Date: Wed, 6 Feb 2013 15:07:48 -0500
-From: Rik van Riel <riel@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: aquini@redhat.com, eric.dumazet@gmail.com, lwoodman@redhat.com,
-        knoel@redhat.com, chegu_vinod@hp.com,
-        raghavendra.kt@linux.vnet.ibm.com, mingo@redhat.com
-Subject: [PATCH -v5 5/5] x86,smp: limit spinlock delay on virtual machines
-Message-ID: <20130206150748.486d7bf8@cuia.bos.redhat.com>
-In-Reply-To: <20130206150311.19cd1e52@cuia.bos.redhat.com>
-References: <20130206150311.19cd1e52@cuia.bos.redhat.com>
-Organization: Red Hat, Inc
+	id S1758478Ab3BFUJk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 15:09:40 -0500
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:51312 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758144Ab3BFUJg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 15:09:36 -0500
+Message-ID: <1360181366.5226.19.camel@thor.lan>
+Subject: Re: [PATCH 3/4] pps: Use lookup list to reduce ldisc coupling
+From: Peter Hurley <peter@hurleysoftware.com>
+To: George Spelvin <linux@horizon.com>
+Cc: giometti@enneenne.com, gregkh@linuxfoundation.org, jslaby@suse.cz,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Date: Wed, 06 Feb 2013 15:09:26 -0500
+In-Reply-To: <20130206193415.10769.qmail@science.horizon.com>
+References: <20130206193415.10769.qmail@science.horizon.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3-0pjh1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 125194 peter@hurleysoftware.com
+X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Modern Intel and AMD CPUs will trap to the host when the guest
-is spinning on a spinlock, allowing the host to schedule in
-something else.
+On Wed, 2013-02-06 at 14:34 -0500, George Spelvin wrote:
+> > Now that N_TTY uses tty->disc_data for its private data,
+> > 'subclass' ldiscs cannot use ->disc_data for their own private data.
+> > 
+> > Use a lookup list to associate the tty with the pps source.
+> 
+> Thanks for the cleanup.  I fully agree my patch was not a good one;
+> I just wanted someone more experienced to make the call on rearchitecting.
+> 
+> In particular, I was nervous about getting flamed by Linus for something that
+> was too ambitious.
 
-This effectively means the host is taking care of spinlock
-backoff for virtual machines. It also means that doing the
-spinlock backoff in the guest anyway can lead to totally
-unpredictable results, extremely large backoffs, and
-performance regressions.
+No problem and I completely understand. That's why I jumped in -- it
+looked like some help was needed, both now and maybe even in iterations
+before this.
 
-To prevent those problems, we limit the spinlock backoff
-delay, when running in a virtual machine, to a small value.
+> One thing I'd prefer to do would be to change:
+> 
+> +static struct pps_device *lookup_pps_by_tty(struct tty_struct *tty,
+> +					    struct pps_data **p)
+> +{
+> +	unsigned long flags;
+> +
+> +	spin_lock_irqsave(&pps_lock, flags);
+> +	list_for_each_entry((*p), &pps_list, link) {
+> +		if ((*p)->tty == tty) {
+> +			spin_unlock_irqrestore(&pps_lock, flags);
+> +			return (*p)->pps;
+> +		}
+> +	}
+> +	spin_unlock_irqrestore(&pps_lock, flags);
+> +	return NULL;
+> +}
+> 
+> to:
+> 
+> static struct pps_data *lookup_pps_by_tty(struct tty_struct *tty)
+> {
+> 	unsigned long flags;
+> 
+> 	spin_lock_irqsave(&pps_lock, flags);
+> 	list_for_each_entry(p, &pps_list, link) {
+> 		if (p->tty == tty)
+> 			break;
+> 	}
+> 	spin_unlock_irqrestore(&pps_lock, flags);
+> 	return p;
+> }
+> 
+> And do the data->pps dereferencing in the caller.
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
----
- arch/x86/include/asm/processor.h |    2 ++
- arch/x86/kernel/cpu/hypervisor.c |    2 ++
- arch/x86/kernel/smp.c            |   21 +++++++++++++++++++--
- 3 files changed, 23 insertions(+), 2 deletions(-)
+I did this first and it's a mess -- the patch basically ends up looking
+like a rewrite. But feel free to use these patches as a base for a
+version you do like and submit those instead for review. I just wanted
+to show the way.
 
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 888184b..4118fd8 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -997,6 +997,8 @@ extern bool cpu_has_amd_erratum(const int *);
- extern unsigned long arch_align_stack(unsigned long sp);
- extern void free_init_pages(char *what, unsigned long begin, unsigned long end);
- 
-+extern void init_guest_spinlock_delay(void);
-+
- void default_idle(void);
- bool set_pm_idle_to_default(void);
- 
-diff --git a/arch/x86/kernel/cpu/hypervisor.c b/arch/x86/kernel/cpu/hypervisor.c
-index a8f8fa9..4a53724 100644
---- a/arch/x86/kernel/cpu/hypervisor.c
-+++ b/arch/x86/kernel/cpu/hypervisor.c
-@@ -76,6 +76,8 @@ void __init init_hypervisor_platform(void)
- 
- 	init_hypervisor(&boot_cpu_data);
- 
-+	init_guest_spinlock_delay();
-+
- 	if (x86_hyper->init_platform)
- 		x86_hyper->init_platform();
- }
-diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
-index 64e33ef..fbc5ff3 100644
---- a/arch/x86/kernel/smp.c
-+++ b/arch/x86/kernel/smp.c
-@@ -116,8 +116,25 @@ static bool smp_no_nmi_ipi = false;
- #define DELAY_SHIFT			8
- #define DELAY_FIXED_1			(1<<DELAY_SHIFT)
- #define MIN_SPINLOCK_DELAY		(1 * DELAY_FIXED_1)
--#define MAX_SPINLOCK_DELAY		(16000 * DELAY_FIXED_1)
-+#define MAX_SPINLOCK_DELAY_NATIVE	(16000 * DELAY_FIXED_1)
-+#define MAX_SPINLOCK_DELAY_GUEST	(16 * DELAY_FIXED_1)
- #define DELAY_HASH_SHIFT		6
-+
-+/*
-+ * Modern Intel and AMD CPUs tell the hypervisor when a guest is
-+ * spinning excessively on a spinlock. The hypervisor will then
-+ * schedule something else, effectively taking care of the backoff
-+ * for us. Doing our own backoff on top of the hypervisor's pause
-+ * loop exit handling can lead to excessively long delays, and
-+ * performance degradations. Limit the spinlock delay in virtual
-+ * machines to a smaller value. Called from init_hypervisor_platform 
-+ */
-+static int __read_mostly max_spinlock_delay = MAX_SPINLOCK_DELAY_NATIVE;
-+void __init init_guest_spinlock_delay(void)
-+{
-+	max_spinlock_delay = MAX_SPINLOCK_DELAY_GUEST;
-+}
-+
- struct delay_entry {
- 	u32 hash;
- 	u32 delay;
-@@ -171,7 +188,7 @@ void ticket_spin_lock_wait(arch_spinlock_t *lock, struct __raw_tickets inc)
- 		}
- 
- 		/* Aggressively increase delay, to minimize lock accesses. */
--		if (delay < MAX_SPINLOCK_DELAY)
-+		if (delay < max_spinlock_delay)
- 			delay += DELAY_FIXED_1 / 7;
- 
- 		loops = (delay * waiters_ahead) >> DELAY_SHIFT;
+(Well, actually that was the second version. When I reviewed the
+uart_handle_dcd_change() and saw the separate timestamp, I thought that
+maybe the latency was going to be a problem. So the first version used
+the same approach but with an rcu 'lockless' list instead -- then I went
+back and audited the IRQ path and realized there were 5 bus locks and an
+i/o port read already. So total overkill.)
+
+Also, I figured maybe it would be best if it was something maintainable
+with basic kernel knowledge.
+
+> A more ambitious cleanup would use the existing pps_device list
+> (maintained to allocate minor device numbers) and add an "owner" field
+> that can be looked up on, without creating a new data structure and
+> allocation.
+
+Didn't see where that was (unless you mean the IDR allocation). Probably
+best to keep it separate in the event that relative lifetimes change at
+some point in the future.
+
+> (It could either be a generic "void *", or a "struct device *" and
+> compare it to tty->dev.)
+> 
+> After all, despite the implementation effort to scale, the total number
+> of pps devices in a system is usually at most 1 (I have a computer where
+> I run 2, and I doubt there are many others on the planet who do that.)
+
+I thought that was probably the case which is why a lookup list is an
+acceptable solution.
+
+Please let us know if you plan to respin the patches, so these patches
+don't get pushed.
+
+Regards,
+Peter Hurley
 
