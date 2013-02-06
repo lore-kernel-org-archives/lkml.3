@@ -1,88 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755874Ab3BFDau (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 22:30:50 -0500
-Received: from mail.candelatech.com ([208.74.158.172]:55946 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754562Ab3BFDat (ORCPT
+	id S1756885Ab3BFDbc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 22:31:32 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:58494 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754562Ab3BFDba (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 22:30:49 -0500
-Message-ID: <5111CE60.4080403@candelatech.com>
-Date: Tue, 05 Feb 2013 19:30:40 -0800
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: Question on lockdep and MAX_LOCK_DEPTH
-References: <5111AD8D.1080005@candelatech.com>  <20130206015430.GA9161@home.goodmis.org> <5111BF51.5010607@candelatech.com> <1360119124.2621.37.camel@gandalf.local.home>
-In-Reply-To: <1360119124.2621.37.camel@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 5 Feb 2013 22:31:30 -0500
+Date: Wed, 6 Feb 2013 14:31:20 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Anton Vorontsov <avorontsov@ru.mvista.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jonas Aaberg <jonas.aberg@stericsson.com>,
+        Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
+Subject: linux-next: manual merge of the battery tree with the mfd tree
+Message-Id: <20130206143120.73c66ac3eadced968f9dd2d5@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__6_Feb_2013_14_31_20_+1100_GqgnwCrUi5DaqXOx"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/05/2013 06:52 PM, Steven Rostedt wrote:
-> On Tue, 2013-02-05 at 18:26 -0800, Ben Greear wrote:
->> Well, here it is..something is calling rcu_read_lock lots and lots,
->
-> Or a bug in the way lockdep handles rcu mappings.
->
->> it seems.  Any way to get a better idea of where those calls are
->> made?
->
-> Yeah, with ftrace.
->
->> 96 locks held by swapper/0/0:
->>    #0:  (rcu_read_lock){.+.+..}, at: [<ffffffff81476836>] rcu_read_lock+0x0/0x6f
->>    #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff81476836>] rcu_read_lock+0x0/0x6f
-> [...]
->>    #92:  (rcu_read_lock){.+.+..}, at: [<ffffffff81476836>] rcu_read_lock+0x0/0x6f
->>    #93:  (&(&wl->cfg_spin_lock)->rlock){..-...}, at: [<ffffffffa07bc4d0>] handle_rcv+0x15d/0x1dd [wanlink]
->>    #94:  (&wl_threads[q].my_wq){..-...}, at: [<ffffffff810abe4d>] __wake_up+0x1d/0x48
->>    #95:  (&p->pi_lock){-.-.-.}, at: [<ffffffff810b09c1>] try_to_wake_up+0x29/0x20b
->
-> If you haven't already configured ftrace into your kernel, can you
-> please do so. Specifically:
->
-> CONFIG_FUNCTION_TRACER=y
-> CONFIG_FUNCTION_GRAPH_TRACER=y
-> CONFIG_DYNAMIC_FTRACE=y
->
-> Then, before triggering this, run the following as root:
->
->   # mount -t debugfs nodev /sys/kernel/debug
->   # cd /sys/kernel/debug/tracing
->   # echo net_rx_action > set_graph_function
->   # echo function_graph > current_tracer
->
-> In the kernel, where you added the above dump, before any of the printks
-> happen, add this too:
->
-> 	trace_printk("BUG\n");
-> 	tracing_off();
->
-> This will stop the trace at the point of the error. The trace_printk()
-> is a nice way to see the trace too.
->
-> Then after you trigger the bug, do the following:
->
->    cat /sys/kernel/debug/tracing/trace
->
-> and reply with that.
+--Signature=_Wed__6_Feb_2013_14_31_20_+1100_GqgnwCrUi5DaqXOx
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It's huge, so here's a link:
+Hi Anton,
 
-http://www.candelatech.com/~greearb/debug.tgz
+Today's linux-next merge of the battery tree got a conflict in
+include/linux/mfd/abx500/ab8500.h between commit 1d843a6c8c20 ("mfd:
+ab8500-core: Allow the possibility to dump all AB8500 registers") from
+the mfd tree and commit 0ed5107fa860 ("ab8500-charger: Do not touch
+VBUSOVV bits") from the battery tree.
 
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Thanks,
-Ben
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
--- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
+diff --cc include/linux/mfd/abx500/ab8500.h
+index fa7173d,b9a6a84..0000000
+--- a/include/linux/mfd/abx500/ab8500.h
++++ b/include/linux/mfd/abx500/ab8500.h
+@@@ -345,12 -346,23 +350,32 @@@ static inline int is_ab8500_2p0(struct=20
+  	return (is_ab8500(ab) && (ab->chip_id =3D=3D AB8500_CUT2P0));
+  }
+ =20
++ static inline int is_ab8505_1p0_or_earlier(struct ab8500 *ab)
++ {
++ 	return (is_ab8505(ab) && (ab->chip_id <=3D AB8500_CUT1P0));
++ }
++=20
++ static inline int is_ab8505_2p0(struct ab8500 *ab)
++ {
++ 	return (is_ab8505(ab) && (ab->chip_id =3D=3D AB8500_CUT2P0));
++ }
++=20
++ static inline int is_ab9540_1p0_or_earlier(struct ab8500 *ab)
++ {
++ 	return (is_ab9540(ab) && (ab->chip_id <=3D AB8500_CUT1P0));
++ }
++=20
++ static inline int is_ab9540_2p0(struct ab8500 *ab)
++ {
++ 	return (is_ab9540(ab) && (ab->chip_id =3D=3D AB8500_CUT2P0));
++ }
+++
+ +#ifdef CONFIG_AB8500_DEBUG
+ +void ab8500_dump_all_banks(struct device *dev);
+ +void ab8500_debug_register_interrupt(int line);
+ +#else
+ +static inline void ab8500_dump_all_banks(struct device *dev) {}
+ +static inline void ab8500_debug_register_interrupt(int line) {}
+ +#endif
+ +
+  #endif /* MFD_AB8500_H */
 
+--Signature=_Wed__6_Feb_2013_14_31_20_+1100_GqgnwCrUi5DaqXOx
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJREc6IAAoJEECxmPOUX5FE0wQP/iUBeEhj1tLRPNA5Q7Wi31XG
+E+YJHI5REQJaWnmX/LrMOXB1utbtwkG3HdKB+3tl3hf2kqvLjq6sDVormw4n2UUW
+Q465Fatdh87SsUHGGLoo0fdSCxnLR/9FgV1gEWZi/Asp5845GxtrLkOUg3eXoGZO
+lWLKNoKldgzAk0PxQjVPxK5Gy4fYBKB2wX0XSDxknoaUYl5yQwt4Jqm54JEWmycC
+qBv16zJqNmIlQJagIPs8c+ETV2zPrwAsvE9mX764ywcBeuFMqqc3+sUCfBOqwRF2
+ry1mU2GuddDn2lIalXS2qceq4hdLb7z5UixmQi757lR8kNtNGcHMetRrNfColfwn
+qNRXzdJjqFY2LdmsA8FHqzz2uYoHVlnrSUwJm+//68Vqv10UVsI9CzKYhGk3xuRP
+vsHkyr1ruWgC2vbu2gupYhRwPX4QPb42vdl0df8ri7wOzJp4bKOrjMoGByPh45l4
+lf8D1QKtN/Z7EMf5Ur9HTx3inyVks/rbjcJ64QUXpRr4WfWJApeFI+Bex9LJ1Jke
+uh4uGbW2bS8CFULLtubK+d5K0ygyEY0yWtqA71/8MZYcS5CVkDbWkfBIdePU2el2
+LxA0Ij0V2RX9AhAyj5YmG0fqDIanXRYNnXtKeuVmaGXqvojM8zR647Q6sd5jWfgS
+poCd48+9XdtpwJwTzhEZ
+=Xtdn
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__6_Feb_2013_14_31_20_+1100_GqgnwCrUi5DaqXOx--
