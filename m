@@ -1,92 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756998Ab3BFIyN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 03:54:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8990 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755403Ab3BFIyL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 03:54:11 -0500
-Date: Wed, 6 Feb 2013 06:53:40 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Tony Luck <tony.luck@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 00/22] PCI: Iterate pci host bridge instead of pci
- root bus
-Message-ID: <20130206065340.416a708b@redhat.com>
-In-Reply-To: <CAE9FiQWvmK7N2z19B9ZiMyc_T6cJdpWoWr3mExpuwUA4ogBc3w@mail.gmail.com>
-References: <CAE9FiQXHG01NjnYNDbC-KEpbcvY-q4pBe97CxTOGS7W4vZQBYQ@mail.gmail.com>
-	<1359314629-18651-1-git-send-email-yinghai@kernel.org>
-	<CAErSpo6r_LNEtYB3j5ELb8NdHu0a6_YOVj8S32CmByGFUpSsbg@mail.gmail.com>
-	<CAE9FiQXg1YcPPJLCgPbKOKXHk-LRQv4bbBGH9jyuATQa2ANLkg@mail.gmail.com>
-	<CAE9FiQX2DbTO0qCzGO4iMTkU_mPM2oZL+R5UoZ5dj=as6MUAsw@mail.gmail.com>
-	<CAErSpo7-dULYwWQ=f5CBCxOULKJE9=n6Ha4jkVKd8enspuYjTA@mail.gmail.com>
-	<CAE9FiQWvmK7N2z19B9ZiMyc_T6cJdpWoWr3mExpuwUA4ogBc3w@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757080Ab3BFI46 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 03:56:58 -0500
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:60613 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752080Ab3BFI44 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 03:56:56 -0500
+Date: Wed, 6 Feb 2013 12:56:53 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: akpm@linux-foundation.org, keescook@chromium.org,
+        serge.hallyn@canonical.com, ebiederm@xmission.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel: arg2 is unsigned long which is never < 0
+Message-ID: <20130206085653.GQ1712@moon>
+References: <511217F3.6050800@asianux.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <511217F3.6050800@asianux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, 5 Feb 2013 16:47:10 -0800
-Yinghai Lu <yinghai@kernel.org> escreveu:
+On Wed, Feb 06, 2013 at 04:44:35PM +0800, Chen Gang wrote:
+> 
+>   arg2 will never < 0, for its type is 'unsigned long'
+> 
+>   so delete the waste code.
+> 
+> 
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> ---
+>  kernel/sys.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/sys.c b/kernel/sys.c
+> index 24d1ef5..568b9ca 100644
+> --- a/kernel/sys.c
+> +++ b/kernel/sys.c
+> @@ -2027,7 +2027,7 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
+>  			error = get_dumpable(me->mm);
+>  			break;
+>  		case PR_SET_DUMPABLE:
+> -			if (arg2 < 0 || arg2 > 1) {
+> +			if (arg2 > 1) {
+>  				error = -EINVAL;
+>  				break;
+>  			}
 
-> On Tue, Feb 5, 2013 at 4:19 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> >
-> > Maybe.  I'd rather not introduce for_each_pci_host_bridge() at all, if
-> > we can avoid it.  Every place it's used is a place we have to audit to
-> > make sure it's safe.  I think your audit above is correct and
-> > complete, but it relies on way too much architecture knowledge.  It's
-> > better if we can deduce correctness without knowing which arches
-> > support hotplug and which CPUs support EDAC.
-> >
-> > As soon as for_each_pci_host_bridge() is in the tree, those uses can
-> > be copied to even more places.  It's a macro, so it's usable by any
-> > module, even out-of-tree ones that we'll never see and can't fix.  So
-> > we won't really have a good way to deprecate and remove it.
-> 
-> Now we only have two references in modules.
-> 
-> drivers/edac/i7core_edac.c:     for_each_pci_host_bridge(host_bridge) {
-> drivers/pci/hotplug/sgi_hotplug.c:      for_each_pci_host_bridge(host_bridge) {
-> 
-> for the sgi_hotplug.c, it should be same problem that have for acpiphp
-> and pciehp.
-> need to make it support pci host bridge hotplug anyway.
-> 
-> for edac, we need to check Mauro about their plan.
+I guess
 
-The i7core_pci_lastbus() code at i7core_edac is there to make it work
-with some Nehalem/Nehalem-EP machines that hide the memory controller's
-PCI ID by using an artificially low last bus. There's no plan to
-support Nehalem-EX, as the information I got is that there's no way
-to access the memory controller registers on it without interfering with
-BIOS.
+	if (arg2 != SUID_DUMPABLE_DISABLED &&
+	    arg2 != SUID_DUMPABLE_ENABLED) {
+		error = -EINVAL;
+		break;
+	}
 
-It should be noticed, however, that I got a report of a Sandy Bridge
-server that is also hiding the memory controller's PCI address.
-So, maybe we'll need to add later some logic at sb_edac to unhide the
-memory controller, just like the one in i7core_edac.
-
-> 
-> After those two are addressed, we can drop that EXPORT_SYMBOL_GPL for
-> pci_get_next_host_bridge.
-> 
-> We do have pci_get_domain_bus_and_slot() as export symbol.
-> So we export pci_get_next_host_bridge should be ok now.
-> and it would be better than export root buses list.
-> 
-> Thanks
-> 
-> Yinghai
-
-
--- 
-
-Cheers,
-Mauro
+would be better. Still, current patch looks good to me.
