@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757198Ab3BFQS1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 11:18:27 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:56135 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753990Ab3BFQS0 (ORCPT
+	id S1757634Ab3BFQTn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 11:19:43 -0500
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:57879 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757498Ab3BFQTl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 11:18:26 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16 with generic iowrite(read)8/16(be)
-Date: Wed, 6 Feb 2013 16:18:07 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-4-generic; KDE/4.3.2; x86_64; ; )
-Cc: Michal Simek <monstr@monstr.eu>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
-        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        alan@lxorguk.ukuu.org.uk, dahinds@users.sourceforge.net
-References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com> <201302052303.01795.arnd@arndb.de> <CAMuHMdWTtEyP_505x4S+uT1J-uFWb9VOMHNOCPcF-z1uSF6xDQ@mail.gmail.com>
-In-Reply-To: <CAMuHMdWTtEyP_505x4S+uT1J-uFWb9VOMHNOCPcF-z1uSF6xDQ@mail.gmail.com>
+	Wed, 6 Feb 2013 11:19:41 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302061618.07378.arnd@arndb.de>
-X-Provags-ID: V02:K0:X87B3X91aEhs3wiAqO8VotHMaYz+Y1oGyDR1HtNSZnt
- H1yxmx6ydNLnRnCgZbHjvTjaUscqo6yragp52tVg59zlARC0We
- hugkNbwaZKPQ+LgitmrTzsnhr8qh15cM1gEi6CMjpHaYgBH/ci
- VJmgC3Sm/33ZNwt7XrjMraCunfUV0JlgjEjaZ8Nt8uGB2tODVQ
- emxvtBsXwo6XCaP1wbvJHO5AivhIIiuSFsV6+1U8TMFCk3KR0q
- E0hEGPwdtIG7ZkyAlJULQDWHNFlek4A1Qv5vGXroTHizGulKjW
- vkI0M8TIki3Z2F26TkFZvtEEkSP1OCA3w/Oqm662JM0siAZonE
- Q30w1H4J6mM5629m9TVA=
+In-Reply-To: <51128097.9000801@gmail.com>
+References: <1360088646-19104-1-git-send-email-dirk.brandewie@gmail.com>
+	<1360088646-19104-6-git-send-email-dirk.brandewie@gmail.com>
+	<CAOh2x=kJPFyhkG3y_q=a5ciG1HRAn-JkoVYy9OZ9POA+-isbCQ@mail.gmail.com>
+	<5111BB2E.2090505@gmail.com>
+	<CAKohpokoG16S8uft0nSFSoejipS8X=zhhg6goJs4mBSt3tAwxw@mail.gmail.com>
+	<51128097.9000801@gmail.com>
+Date: Wed, 6 Feb 2013 21:49:40 +0530
+Message-ID: <CAKohpo=9G+ebAxfOxkhQneEz2Vc_rfnR=he65WiZ4ERfmy-erg@mail.gmail.com>
+Subject: Re: [PATCH 5/7] cpufreq: balance out cpufreq_cpu_{get,put} for
+ scaling drivers using setpolicy
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Dirk Brandewie <dirk.brandewie@gmail.com>
+Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 06 February 2013, Geert Uytterhoeven wrote:
-> On Wed, Feb 6, 2013 at 12:03 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > On Tuesday 05 February 2013, Michal Simek wrote:
-> >> I want to be sure about this. I have parsed this again with closer look and
-> >> seems to me that ioread32 is equal to readl and iowrite32 to writel.
-> >> Arnd: Am I right?
-> >
-> > Correct. On all the architectures you care about (most importantly, not
-> > x86), readl and ioread32 are defined to have the same semantics. There
-> > are a few exceptions where ioread32 provides a wrapper for PCI
-> > PIO accesses that are not memory mapped, making ioread32 slightly
-> > slower than readl, but for all practical purposes you don't have
-> > to worry about it ;-)
-> 
-> PCI PIO? Do you mean "PCI I/O space"?
+On 6 February 2013 21:41, Dirk Brandewie <dirk.brandewie@gmail.com> wrote:
+> our files are clearly out of sync :-)  The code in cpufreq_add_dev() is
 
-Yes.
+I was at latest bleeding-edge then, but i still have below code in my HEAD.
 
-> That's different, and accessed through inb() and friends, right?
+> #ifdef CONFIG_SMP
+>         /* check whether a different CPU already registered this
+>          * CPU because it is in the same boat. */
+>         policy = cpufreq_cpu_get(cpu);
+>         if (unlikely(policy)) {
+>                 cpufreq_cpu_put(policy);
+>                 return 0;
+>         }
+>
+> The reference added by this cpufreq_cpu_get() is finally dropped in
+> __cpufreq_remove_dev() with the call to __cpufreq_governor()
 
-Sort of. The native methods are readl() etc for MMIO and inb() etc. for PIO,
-as you say. However, the ioread32() family does the superset of the two,
-either using a wrapper function with a mangled port number / pointer
-argument (e.g. on x86), or it gets defined to do the same as readl on
-platforms where the PCI I/O space is memory mapped. The requirement
-here is that whatever the result of ioport_map() is must be turned
-back into a PIO access when passed into ioread32(). On memory mapped
-platforms, there is typically just an offset that gets added to the
-port number to turn that into an __iomem pointer.
+__cpufreq_governor() is not calling cpufreq_cpu_put() at all and is dropping
+reference for the governor only, not for policy.
 
-	Arnd
+>         if (driver->target)
+>                 __cpufreq_governor(data, CPUFREQ_GOV_STOP);
+>
+> Without this change I hang at:
+>                 pr_debug("waiting for dropping of refcount\n");
+>                 wait_for_completion(cmp);
+
+Below should have fixed it for you i believe.
+
+	pr_debug("%s: removing link, cpu: %d\n", __func__, cpu);
+	cpufreq_cpu_put(data);
+	unlock_policy_rwsem_write(cpu);
+
+--
+viresh
