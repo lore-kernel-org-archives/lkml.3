@@ -1,71 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758362Ab3BFUKX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 15:10:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39587 "EHLO mx1.redhat.com"
+	id S1758139Ab3BFUKr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 15:10:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18684 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758232Ab3BFUJP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 15:09:15 -0500
-Date: Wed, 6 Feb 2013 15:08:33 -0500
+	id S1755489Ab3BFUKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 15:10:42 -0500
+Message-ID: <5112B8A2.8050800@redhat.com>
+Date: Wed, 06 Feb 2013 15:10:10 -0500
 From: Rik van Riel <riel@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: aquini@redhat.com, eric.dumazet@gmail.com, lwoodman@redhat.com,
-        knoel@redhat.com, chegu_vinod@hp.com,
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Michel Lespinasse <walken@google.com>
+CC: linux-kernel@vger.kernel.org, aquini@redhat.com, eric.dumazet@gmail.com,
+        lwoodman@redhat.com, knoel@redhat.com, chegu_vinod@hp.com,
         raghavendra.kt@linux.vnet.ibm.com, mingo@redhat.com
-Subject: [PATCH -v5 6/5] x86,smp: add debugging code to track spinlock delay
- value
-Message-ID: <20130206150833.34d08bd3@cuia.bos.redhat.com>
-In-Reply-To: <20130206150311.19cd1e52@cuia.bos.redhat.com>
-References: <20130206150311.19cd1e52@cuia.bos.redhat.com>
-Organization: Red Hat, Inc
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Subject: Re: [PATCH -v4 4/5] x86,smp: keep spinlock delay values per hashed
+ spinlock address
+References: <20130125140553.060b8ced@annuminas.surriel.com> <20130125141842.58010c25@annuminas.surriel.com> <CANN689EAykWXS4QTVDKaCb4in_2b_Bqyoh-xg=EbX7ivOPry4w@mail.gmail.com>
+In-Reply-To: <CANN689EAykWXS4QTVDKaCb4in_2b_Bqyoh-xg=EbX7ivOPry4w@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: x86,smp: add debugging code to track spinlock delay value
+On 01/27/2013 08:04 AM, Michel Lespinasse wrote:
+> On Fri, Jan 25, 2013 at 11:18 AM, Rik van Riel <riel@redhat.com> wrote:
+>> +       u32 delay = (ent->hash == hash) ? ent->delay : MIN_SPINLOCK_DELAY;
+>
+> I still don't like the reseting of delay to MIN_SPINLOCK_DELAY when
+> there is a hash collision.
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+I've been spending some time looking at this, because I am
+not a fan either.
 
-This code prints out the maximum spinlock delay value and the
-backtrace that pushed it that far.
-
-On systems with serial consoles, the act of printing can cause
-the spinlock delay value to explode. It can still be useful as
-a debugging tool, but is probably too verbose to merge upstream
-in this form.
-
-Not-signed-off-by: Rik van Riel <riel@redhat.com>
-Not-signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
----
- arch/x86/kernel/smp.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
-index fbc5ff3..660f0ec 100644
---- a/arch/x86/kernel/smp.c
-+++ b/arch/x86/kernel/smp.c
-@@ -146,6 +146,8 @@ static DEFINE_PER_CPU(struct delay_entry [1 << DELAY_HASH_SHIFT], spinlock_delay
- 	},
- };
- 
-+static DEFINE_PER_CPU(u32, maxdelay);
-+
- /*
-  * Wait on a congested ticket spinlock. Many spinlocks are embedded in
-  * data structures; having many CPUs pounce on the cache line with the
-@@ -209,6 +211,12 @@ void ticket_spin_lock_wait(arch_spinlock_t *lock, struct __raw_tickets inc)
- 	}
- 	ent->hash = hash;
- 	ent->delay = delay;
-+
-+	if (__this_cpu_read(maxdelay) * 4 < delay * 3) {
-+		pr_err("cpu %d lock %p delay %d\n", smp_processor_id(), lock, delay>>DELAY_SHIFT);
-+		__this_cpu_write(maxdelay, delay);
-+		WARN_ON(1);
-+	}
- }
- 
- /*
+However, it seems to work and I failed to come up with
+anything better. Therefore, I have left it as is in the
+-v5 patch series.
