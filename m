@@ -1,53 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756943Ab3BFJuK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 04:50:10 -0500
-Received: from ams-iport-4.cisco.com ([144.254.224.147]:26731 "EHLO
-	ams-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756567Ab3BFJuA (ORCPT
+	id S1757116Ab3BFJwJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 04:52:09 -0500
+Received: from tower.nita.spb.ru ([195.131.77.126]:45463 "EHLO
+	tower.nita.spb.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752012Ab3BFJwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 04:50:00 -0500
-X-IronPort-AV: E=Sophos;i="4.84,614,1355097600"; 
-   d="scan'208";a="11633022"
-From: Hans Verkuil <hansverk@cisco.com>
-Organization: Cisco Systems Norway
-To: Federico Vaga <federico.vaga@gmail.com>
-Subject: Re: [PATCH v6 1/2] sta2x11_vip: convert to videobuf2, control framework, file handler
-Date: Wed, 6 Feb 2013 10:49:10 +0100
-User-Agent: KMail/1.13.7 (Linux/3.7-1.slh.1-aptosid-amd64; KDE/4.8.4; x86_64; ; )
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <201302041157.45340.hverkuil@xs4all.nl> <1360089277-27898-1-git-send-email-federico.vaga@gmail.com>
-In-Reply-To: <1360089277-27898-1-git-send-email-federico.vaga@gmail.com>
+	Wed, 6 Feb 2013 04:52:05 -0500
+X-Greylist: delayed 1990 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Feb 2013 04:52:05 EST
+Date: Wed, 6 Feb 2013 09:18:52 +0000
+From: =?Windows-1251?B?yujw6OvrIMrg7/Dg7e7i?= <kkk@nita.ru>
+X-Mailer: The Bat! (v2.01)         CD5BF9353B3B7091
+Reply-To: kkk <kkk@nita.ru>
+Organization: NITA, LLC
+X-Priority: 3 (Normal)
+Message-ID: <1129845953.20130206091852@nita.ru>
+To: Kirill Kapranov <kapranoff@inbox.ru>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Re: [PATCH] NET/PHY: Eliminate the algorithm of forced ethernet speed reduction
+In-Reply-To: <1360071789.123469221@f136.mail.ru>
+References: <1360071789.123469221@f136.mail.ru>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302061049.10879.hansverk@cisco.com>
+Content-Type: text/plain; charset=Windows-1251
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Federico,
 
-OK, I'm going to give this my Acked-by, but I really wish you would have split
-this up into smaller changes. It's hard to review since you have made so many
-changes in this one patch. Even though I'm giving my ack, Mauro might decide
-against it, so if you have time to spread out the changes in multiple patches,
-then please do so.
+> Kirill Kapranov <kapranoff@inbox.ru> :
+>> NET/PHY: Eliminate the forced speed reduction algorithm.
+>> In case of the fixed speed set up for NIC 
+>> (e.g. ethtool -s eth0 autoneg off speed 100 duplex full)
+>> with ethernet cable plugged off, mentioned algorithm
+>> slows down NIC speed, so the further "hooking up" gives
+>> no result. AFAIK, this behaviour is not RFCs' recommended.
+>> Tested at 2.6.38.7, applicable up to for 3.0.4. 
 
-So, given the fact that this changes just a single driver not commonly used in
-existing deployments, assuming that you have tested the changes (you did that,
-right? Just checking...), that these are really useful improvements, and that
-I reviewed the code (as well as I could) and didn't see any problems, I'm
-giving my ack anyway:
+> (your mail user agent completely messed the patch. Please fix it.)
 
-Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
+> I makes sense but which RFC (?) does state that said algorithm
+> should not apply to the autonegotiated case as well ?
 
-Regards,
+Hello, Francoi.
 
-	Hans
+I am sorry for the messed letter, which I sent to You.
+Please let me know, if I have to re-send my letter to mail-lists.
+
+Now, about the criticism.
+
+AFAIK, no one RFC describe the mentioned algorithm. I have looked up RFC-802.3, and found,
+ that the mentioned algorithm is neither quoted nor described.
+Thus, this algorithm is a witty invention of the developer(s), IMHO. I never observed a behaviour like this.
+
+In the case of the autonegotiation is off and a cable plugged out, the forced slow down of the speed makes a further
+ connection inoperative: a switch tries to connect with 100/full (e.g.), a NIC stays at 10/half.
+So, this algorithm is destructive for the fixed speed/duplex mode.
+
+In the auto- mode, this algorithm is inessential. The autonegotiation procedure works fine regardless an speed/duplex
+ settings at the moment of connector plugging.
+Because the auto mode does not need this algorithm, I dare to eliminate it at all.
+
+--------------------------------
+
+NET/PHY: Eliminate the forced speed reduction algorithm.
+In case of the fixed speed set up for NIC 
+(e.g. ethtool -s eth0 autoneg off speed 100 duplex full)
+with ethernet cable plugged off, mentioned algorithm
+slows down NIC speed, so the further "hooking up" gives
+no result. AFAIK, this behaviour is not RFCs' recommended.
+Tested at 2.6.38.7, applicable up to for 3.0.4. 
+Signed-off-by: Kirill Kapranov < kkk@nita.ru >,< kapranoff@inbox.ru >
+--- linux/drivers/net/phy/phy.c.orig 2011-05-22 02:13:59.000000000 +0400
++++ linux/drivers/net/phy/phy.c 2012-04-28 12:49:37.000000000 +0400
+@@ -457,34 +457,6 @@ void phy_stop_machine(struct phy_device
+}
+
+/**
+- * phy_force_reduction - reduce PHY speed/duplex settings by one step
+- * @phydev: target phy_device struct
+- *
+- * Description: Reduces the speed/duplex settings by one notch,
+- * in this order--
+- * 1000/FULL, 1000/HALF, 100/FULL, 100/HALF, 10/FULL, 10/HALF.
+- * The function bottoms out at 10/HALF.
+- */
+-static void phy_force_reduction(struct phy_device *phydev)
+-{
+- int idx;
+-
+- idx = phy_find_setting(phydev->speed, phydev->duplex);
+- 
+- idx++;
+-
+- idx = phy_find_valid(idx, phydev->supported);
+-
+- phydev->speed = settings[idx].speed;
+- phydev->duplex = settings[idx].duplex;
+-
+- pr_info("Trying %d/%s\n", phydev->speed,
+- DUPLEX_FULL == phydev->duplex ?
+- "FULL" : "HALF");
+-}
+-
+-
+-/**
+* phy_error - enter HALTED state for this PHY device
+* @phydev: target phy_device struct
+*
+@@ -814,30 +786,12 @@ void phy_state_machine(struct work_struc
+phydev->adjust_link(phydev->attached_dev);
+
+} else if (0 == phydev->link_timeout--) {
+- int idx;
+
+needs_aneg = 1;
+/* If we have the magic_aneg bit,
+* we try again */
+if (phydev->drv->flags & PHY_HAS_MAGICANEG)
+break;
+-
+- /* The timer expired, and we still
+- * don't have a setting, so we try
+- * forcing it until we find one that
+- * works, starting from the fastest speed,
+- * and working our way down */
+- idx = phy_find_valid(0, phydev->supported);
+-
+- phydev->speed = settings[idx].speed;
+- phydev->duplex = settings[idx].duplex;
+-
+- phydev->autoneg = AUTONEG_DISABLE;
+-
+- pr_info("Trying %d/%s\n", phydev->speed,
+- DUPLEX_FULL ==
+- phydev->duplex ?
+- "FULL" : "HALF");
+}
+break;
+case PHY_NOLINK:
+@@ -863,7 +817,6 @@ void phy_state_machine(struct work_struc
+netif_carrier_on(phydev->attached_dev);
+} else {
+if (0 == phydev->link_timeout--) {
+- phy_force_reduction(phydev);
+needs_aneg = 1;
+}
+}
+
+----------------------------------
+
+
+--
+Best regards
+Kirill Kapranov
+
+
