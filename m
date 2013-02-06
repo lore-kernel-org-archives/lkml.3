@@ -1,94 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756616Ab3BFHYx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 02:24:53 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52246 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756363Ab3BFHYu convert rfc822-to-8bit (ORCPT
+	id S1756081Ab3BFHau (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 02:30:50 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:53107 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751395Ab3BFHas (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 02:24:50 -0500
-From: "Hatayama, Daisuke" <d.hatayama@jp.fujitsu.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "cpw@sgi.com" <cpw@sgi.com>,
-        "kumagai-atsushi@mxc.nes.nec.co.jp" 
-	<kumagai-atsushi@mxc.nes.nec.co.jp>,
-        "lisa.mitchell@hp.com" <lisa.mitchell@hp.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] kdump, oldmem: support mmap on /dev/oldmem
-Thread-Topic: [PATCH] kdump, oldmem: support mmap on /dev/oldmem
-Thread-Index: Ac4ClGsOL11EzwL1RDqu1EeC+4dtFgA02u0AADTExpA=
-Date: Wed, 6 Feb 2013 07:24:46 +0000
-Message-ID: <33710E6CAA200E4583255F4FB666C4E20AC61B3C@G01JPEXMBYT03>
-References: <33710E6CAA200E4583255F4FB666C4E20AC36B01@G01JPEXMBYT03>
- <20130205151256.GB12853@redhat.com>
-In-Reply-To: <20130205151256.GB12853@redhat.com>
-Accept-Language: ja-JP, en-US
-Content-Language: ja-JP
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.124.101.76]
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 6 Feb 2013 02:30:48 -0500
+Date: Wed, 6 Feb 2013 18:30:40 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the final tree
+Message-Id: <20130206183040.ea07a2cd64200b6d37868036@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__6_Feb_2013_18_30_40_+1100_O0U2ALC5WZCNNn0p"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH] kdump, oldmem: support mmap on /dev/oldmem
-Date: Tue, 5 Feb 2013 10:12:56 -0500
+--Signature=_Wed__6_Feb_2013_18_30_40_+1100_O0U2ALC5WZCNNn0p
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Mon, Feb 04, 2013 at 04:59:35AM +0000, Hatayama, Daisuke wrote:
+Hi all,
 
-> [..]
->> For design decision, I didn't support mmap() on /proc/vmcore because
->> it abstracts old memory as ELF format, so there's range consequtive on
->> /proc/vmcore but not consequtive on the actual old memory. For
->> example, consider ELF headers on the 2nd kernel and the note objects,
->> memory chunks corresponding to PT_LOAD entries on the first kernel.
->> They are not consequtive on the old memory. So reampping them so
->> /proc/vmcore appears consequtive using existing remap_pfn_range() needs
->> some complicated work.
-> 
-> Can't we call remap_pfn_range() multiple times. Once for each sequential
-> range of memory. /proc/vmcore already has list of contiguous memory areas.
-> So we can parse user passed file offset and size and map into respective
-> physical chunks and call rempa_pfn_range() on all these chunks.
-> 
-> I think supporting mmap() both on /dev/oldmem as well as /proc/vmcore will
-> be nice.
-> 
-> Agreed that supporting mmap() on /proc/vmcore is more work as compared to
-> /dev/oldmem but should be doable.
-> 
+After merging the final tree, today's linux-next build (sparc defconfig)
+failed like this:
 
-The complication to support mmap() on /proc/vmcore lies in kdump
-side. Objects exported from /proc/vmcore needs to be page-size aligned
-on /proc/vmcore. This comes from the restriction of mmap() that
-requires user-space address and physical address to be page-size
-aligned.
+arch/sparc/kernel/kgdb_32.c: In function 'sleeping_thread_to_gdb_regs':
+arch/sparc/kernel/kgdb_32.c:46:9: error: implicit declaration of function '=
+task_thread_info' [-Werror=3Dimplicit-function-declaration]
+arch/sparc/kernel/kgdb_32.c:46:26: error: initialization makes pointer from=
+ integer without a cast [-Werror]
 
-As I said in the description, objects implicitly referened by
-/proc/vmcore are
+I can only imagine that the implicit include of linux/sched.h got removed
+in one of our include file changes. :-(
 
-  - ELF headers,
-  - NOTE objects (NT_PRSTATUS entries x cpus, VMCOREINFO), and
-  - memory chunks x (the number of PT_LOAD entries).
+I have added this patch for today:
 
-Note objects are scattered on old memory. They are exported as a
-single NOTE entry from program headers, so they need to be gathered at
-the same location in the 2nd kernel starting from the page-size
-aligned address.
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 6 Feb 2013 18:26:51 +1100
+Subject: [PATCH] sparc: explicitly include sched.h to get task_thread_info =
+declaration
 
-VMCOREINFO is about 1.5KB on 2.6.32 kernel. One NT_PRSTATUS is 355
-bytes. Recent limit of NR_CPUS is 5120 on x86_64. So less than about 2
-MB is enough even on the worst case.
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ arch/sparc/kernel/kgdb_32.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-Note that the format of /proc/vmcore need to change since offset of
-each object need to be page-size aligned.
+diff --git a/arch/sparc/kernel/kgdb_32.c b/arch/sparc/kernel/kgdb_32.c
+index 2e424a5..dcf2108 100644
+--- a/arch/sparc/kernel/kgdb_32.c
++++ b/arch/sparc/kernel/kgdb_32.c
+@@ -5,6 +5,7 @@
+=20
+ #include <linux/kgdb.h>
+ #include <linux/kdebug.h>
++#include <linux/sched.h>
+=20
+ #include <asm/kdebug.h>
+ #include <asm/ptrace.h>
+--=20
+1.8.1
 
-Thanks.
-HATAYAMA, Daisuke
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Wed__6_Feb_2013_18_30_40_+1100_O0U2ALC5WZCNNn0p
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJREgagAAoJEECxmPOUX5FE+pkQAIIzJTAL4SKsFPqIV7BGy3aP
+WK11j886CumZOOx6SpL3s2bZLTXCg2qbeBRBBjT5cNivv6aQ+dGgLvRiDdn7zcT2
+0zcItNygurTisYZqooUGTnv3VEt1ivrtvDAjQZmacAsEwa//BZi5XHEGzHJ070/t
+h7FoLdwfd6qcafd/8SGQ5MyaLSLdqKahdKsyNCLT+FhFeqpwW/t4NauKoTiq+f1L
+V4b4v8TGiRhHSCJdkrVIpzMu6Z0obFhxTLMJilDzM+qKLF4b3wqiHlswWljYmTOZ
+PRU/r9oFY0+q7xmRxB/4GlXO8JXKsk0/gHdWWuagztqw98lJWAVW4o533JeSBLTP
+lJ8sf+EL97FYA4PJcpiFs/bOgqzpS5tc5WDMn8BeIGDXRUnIvKiC0bi2ocA4DEB0
+KcS9JGhAMf7+dmWzq63fnncJAYMWIZ13wncszmarHAF/TBaDwRzu4m3jp4L8LlUV
+b2JmZjf+HVwnucczT9p4ahMPhjD7ruR0XAPZshuesB6czS40OtZVgnzFRfs+beHu
+cu/bYs1MTf8396EdN56JAi9UQh4LMO767dDaP05B51tij3WrK/BZS0ytgS9S2GG4
+w4bjqYO0UXTWbCm3w9d9s3TxBYMSLhrl8wdIgQRgz8j+I6NVaCQKjMPFHswfDK5B
+fGTeEsuPMjDXBXzAJYU5
+=6WJK
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__6_Feb_2013_18_30_40_+1100_O0U2ALC5WZCNNn0p--
