@@ -1,76 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757250Ab3BFPxx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 10:53:53 -0500
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:34006 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756394Ab3BFPxv (ORCPT
+	id S1757240Ab3BFPzg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 10:55:36 -0500
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:39207 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755031Ab3BFPzf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 10:53:51 -0500
-Message-ID: <1360166020.3298.42.camel@thor.lan>
-Subject: Re: 3.8-rc regression with pps-ldisc due to 70ece7a731
-From: Peter Hurley <peter@hurleysoftware.com>
-To: George Spelvin <linux@horizon.com>
-Cc: jslaby@suse.cz, linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 06 Feb 2013 10:53:40 -0500
-In-Reply-To: <20130204010303.24971.qmail@science.horizon.com>
-References: <20130204010303.24971.qmail@science.horizon.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-0pjh1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 125194 peter@hurleysoftware.com
-X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+	Wed, 6 Feb 2013 10:55:35 -0500
+Date: Wed, 6 Feb 2013 10:49:13 -0500
+From: Konrad Rzeszutek Wilk <konrad@darnok.org>
+To: Mukesh Rathor <mukesh.rathor@oracle.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        "stefano.stabellini@eu.citrix.com" <stefano.stabellini@eu.citrix.com>
+Subject: Re: [PATCH] PVH linux: Use ballooning to allocate grant table pages
+Message-ID: <20130206154910.GA31828@konrad-lan.dumpdata.com>
+References: <20130131183015.13bc2bff@mantra.us.oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130131183015.13bc2bff@mantra.us.oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi George,
+On Thu, Jan 31, 2013 at 06:30:15PM -0800, Mukesh Rathor wrote:
+> This patch fixes a fixme in Linux to use alloc_xenballooned_pages() to
+> allocate pfns for grant table pages instead of kmalloc. This also
+> simplifies add to physmap on the xen side a bit.
 
-On Sun, 2013-02-03 at 20:03 -0500, George Spelvin wrote:
-> "TTY: n_tty, add ldisc data to n_tty"
+Pulled this.
 > 
-> The PPS line discipline has incestuous relations with the n_tty line
-> discipline, using some hooks to call internal routines.
+> Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
 > 
-> However, I started noticing violent kernel explosions when testing 3.8-rc,
-> and after a bit of digging, I think it's due to the fact that the PPS code
-> assumes that the ->ldisc pointer is available to hold a pointer to a "pps"
-> structure, but this commit started using it in the core n_tty discipline.
+> ---
+>  drivers/xen/grant-table.c |   37 ++++++++++++++++++++++++++-----------
+>  1 files changed, 26 insertions(+), 11 deletions(-)
 > 
-> If you look at pps_tty_open in drivers/pps/clients/pps-ldisc.c, you can
-> see it does:
+> diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+> index 9c0019d..d731f39 100644
+> --- a/drivers/xen/grant-table.c
+> +++ b/drivers/xen/grant-table.c
+> @@ -47,6 +47,7 @@
+>  #include <xen/grant_table.h>
+>  #include <xen/interface/memory.h>
+>  #include <xen/hvc-console.h>
+> +#include <xen/balloon.h>
+>  #include <asm/xen/hypercall.h>
+>  #include <asm/xen/interface.h>
+>  
+> @@ -1138,27 +1139,41 @@ static void gnttab_request_version(void)
+>  		grant_table_version);
+>  }
+>  
+> +static int xlated_setup_gnttab_pages(int numpages, void **addr)
+> +{
+> +	int i, rc;
+> +	unsigned long pfns[numpages];
+> +	struct page *pages[numpages];
+> +
+> +	rc = alloc_xenballooned_pages(numpages, pages, 0);
+> +	if (rc != 0) {
+> +		pr_warn("%s Could not balloon alloc %d pfns rc:%d\n", __func__,
+> +			numpages, rc);
+> +		return -ENOMEM;
+> +	}
+> +	for (i = 0; i < numpages; i++)
+> +		pfns[i] = page_to_pfn(pages[i]);
+> +
+> +	rc = arch_gnttab_map_shared(pfns, numpages, numpages, addr);
+> +	return rc;
+> +}
+> +
+>  int gnttab_resume(void)
+>  {
+> -	unsigned int max_nr_gframes;
+> -	char *kmsg = "Failed to kmalloc pages for pv in hvm grant frames\n";
+> +	unsigned int rc, max_nr_gframes;
+>  
+>  	gnttab_request_version();
+>  	max_nr_gframes = gnttab_max_grant_frames();
+>  	if (max_nr_gframes < nr_grant_frames)
+>  		return -ENOSYS;
+>  
+> -	/* PVH note: xen will free existing kmalloc'd mfn in
+> -	 * XENMEM_add_to_physmap. TBD/FIXME: use xen ballooning instead of
+> -	 * kmalloc(). */
+>  	if (xen_pv_domain() && xen_feature(XENFEAT_auto_translated_physmap) &&
+>  	    !gnttab_shared.addr) {
+> -		gnttab_shared.addr =
+> -			kmalloc(max_nr_gframes * PAGE_SIZE, GFP_KERNEL);
+> -		if (!gnttab_shared.addr) {
+> -			pr_warn("%s", kmsg);
+> -			return -ENOMEM;
+> -		}
+> +
+> +		rc = xlated_setup_gnttab_pages(max_nr_gframes,
+> +					       &gnttab_shared.addr);
+> +		if (rc != 0)
+> +			return rc;
+>  	}
+>  	if (xen_pv_domain())
+>  		return gnttab_map(0, nr_grant_frames - 1);
+> -- 
+> 1.7.2.3
 > 
-> 	pps = pps_register_source(&info, PPS_CAPTUREBOTH | \
-> 				PPS_OFFSETASSERT | PPS_OFFSETCLEAR);
-> 	if (pps == NULL) {
-> 		pr_err("cannot register PPS source \"%s\"\n", info.path);
-> 		return -ENOMEM;
-> 	}
-> 	tty->disc_data = pps;
-> 
->         /* Should open N_TTY ldisc too */
->         ret = alias_n_tty_open(tty);
-> 
-> Where "alias_n_tty_open" is filled in by n_tty_inherit_ops() to be
-> n_tty_open().  However, in this commit, n_tty_open() now allocates
-> its own structure and overwrites the disc_data pointer, leading to an
-> earth-shattering kaboom as NULL pointers are dereferenced in interrupt
-> handlers.
-
-Yuck. Little wonder it broke.
-
-> My first thought is to reserve a pointer in n_tty_data for the
-> pps structure and update the pps code to chase pointers one more
-> level.  But I wanted to solicit opinions.
-
-Tight coupling is what caused this to break in the first place -- I
-don't think tighter coupling is the right answer.
-
-Alternate coming...
-
-Regards,
-Peter Hurley
-
-
