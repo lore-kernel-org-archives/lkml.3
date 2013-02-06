@@ -1,57 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757979Ab3BFTU3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 14:20:29 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:39773 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755323Ab3BFTU0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 14:20:26 -0500
-Message-ID: <5112ACF5.3020906@kernel.org>
-Date: Wed, 06 Feb 2013 19:20:21 +0000
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130109 Thunderbird/17.0.2
+	id S1757983Ab3BFTZv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 14:25:51 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55639 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757845Ab3BFTZr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 14:25:47 -0500
+Date: Wed, 6 Feb 2013 20:25:34 +0100
+From: Jan Kara <jack@suse.cz>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 0/6 RFC] Mapping range lock
+Message-ID: <20130206192534.GB11254@quack.suse.cz>
+References: <1359668994-13433-1-git-send-email-jack@suse.cz>
+ <20130131160757.06d7f1c2.akpm@linux-foundation.org>
+ <20130204123831.GE7523@quack.suse.cz>
+ <20130205232512.GR2667@dastard>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Julia Lawall <Julia.Lawall@lip6.fr>,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Jonathan Cameron <jic23@cam.ac.uk>, linux-iio@vger.kernel.org
-Subject: Re: [PATCH 1/3] spi: Add helper functions for setting up transfers
-References: <1357752671-30222-1-git-send-email-lars@metafoo.de> <20130127033358.GA20672@sirena.org.uk> <20130205140755.33FCD3E1265@localhost>
-In-Reply-To: <20130205140755.33FCD3E1265@localhost>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130205232512.GR2667@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/05/2013 02:07 PM, Grant Likely wrote:
-> On Sun, 27 Jan 2013 03:33:59 +0000, Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
->> On Wed, Jan 09, 2013 at 06:31:09PM +0100, Lars-Peter Clausen wrote:
->>
->>> The second function spi_sync_transfer() takes a SPI device and an array of
->>> spi_transfers. It will allocate a new spi_message (on the stack) and add all
->>> transfers in the array to the message. Finally it will call spi_sync() on the
->>> message.
->>
->> Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+On Wed 06-02-13 10:25:12, Dave Chinner wrote:
+> On Mon, Feb 04, 2013 at 01:38:31PM +0100, Jan Kara wrote:
+> > On Thu 31-01-13 16:07:57, Andrew Morton wrote:
+> > > > c) i_mutex doesn't allow any paralellism of operations using it and some
+> > > >    filesystems workaround this for specific cases (e.g. DIO reads). Using
+> > > >    range locking allows for concurrent operations (e.g. writes, DIO) on
+> > > >    different parts of the file. Of course, range locking itself isn't
+> > > >    enough to make the parallelism possible. Filesystems still have to
+> > > >    somehow deal with the concurrency when manipulating inode allocation
+> > > >    data. But the range locking at least provides a common VFS mechanism for
+> > > >    serialization VFS itself needs and it's upto each filesystem to
+> > > >    serialize more if it needs to.
+> > > 
+> > > That would be useful to end-users, but I'm having trouble predicting
+> > > *how* useful.
+> >   As Zheng said, there are people interested in this for DIO. Currently
+> > filesystems each invent their own tweaks to avoid the serialization at
+> > least for the easiest cases.
 > 
-> Looks good to me also. Go ahead and merge this series through the iio
-> tree since it is the first user.
+> The thing is, this won't replace the locking those filesystems use
+> to parallelise DIO - it just adds another layer of locking they'll
+> need to use. The locks filesystems like XFS use to serialise IO
+> against hole punch also serialise against many more internal
+> functions and so if these range locks don't have the same capability
+> we're going to have to retain those locks even after the range locks
+> are introduced. It basically means we're going to have two layers
+> of range locks - one for IO sanity and atomicity, and then this
+> layer just for hole punch vs mmap.
+> 
+> As i've said before, what we really need in XFS is IO range locks
+> because we need to be able to serialise operations against IO in
+> progress, not page cache operations in progress.
+  Hum, I'm not sure I follow you here. So mapping tree lock + PageLocked +
+PageWriteback serialize all IO for part of the file underlying the page.
+I.e. at most one of truncate (punch hole), DIO, writeback, buffered write,
+buffered read, page fault can run on that part of file. So how come it
+doesn't provide enough serialization for XFS?
 
-Lars, when you are back on your feet, could you respin this series against
-the latest iio tree please.  2 drivers have moved which messes up patches
-2 and 3. Now I could fix it up, but it's your patch series and I'm lazy ;)
+Ah, is it the problem that if two threads do overlapping buffered writes
+to a file then we can end up with data mixed from the two writes (if we
+didn't have something like i_mutex)?
 
+> IOWs, locking at
+> the mapping tree level does not provide the right exclusion
+> semantics we need to get rid of the existing filesystem locking that
+> allows concurrent IO to be managed.  Hence the XFS IO path locking
+> suddenly because 4 locks deep:
+> 
+> 	i_mutex
+> 	  XFS_IOLOCK_{SHARED,EXCL}
+> 	    mapping range lock
+> 	      XFS_ILOCK_{SHARED,EXCL}
+> 
+> That's because the buffered IO path uses per-page lock ranges and to
+> provide atomicity of read vs write, read vs truncate, etc we still
+> need to use the XFS_IOLOCK_EXCL to provide this functionality.
+>
+> Hence I really think we need to be driving this lock outwards to
+> where the i_mutex currently sits, turning it into an *IO range
+> lock*, and not an inner-level mapping range lock. i.e flattening the
+> locking to:
+> 
+> 	io_range_lock(off, len)
+> 	  fs internal inode metadata modification lock
+  If I get you right, your IO range lock would be +- what current mapping
+tree lock is for DIO and truncate but for buffered IO you'd want to release
+it after the read / write is finished? That is possible to do if we keep the
+per-page granularity but that's what you seem to have problems with.
 
-> 
-> g.
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+> Yes, I know this causes problems with mmap and locking orders, but
+> perhaps we should be trying to get that fixed first because it
+> simplifies the whole locking schema we need for filesystems to
+> behave sanely. i.e. shouldn't we be aiming to simplify things
+> as we rework locking rather than make the more complex?
+  Yes. I was looking at how we could free filesystems from mmap_sem locking
+issues but as Al Viro put it, the use of mmap_sem is a mess which isn't
+easy to untangle. I want to have a look at it but I fear it's going to be a
+long run...
+
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
