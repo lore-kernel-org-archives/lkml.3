@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757480Ab3BFSdK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 13:33:10 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:42157 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753765Ab3BFSdJ (ORCPT
+	id S1757568Ab3BFSez (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 13:34:55 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:5176 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755382Ab3BFSew (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 13:33:09 -0500
-Date: Wed, 06 Feb 2013 13:33:04 -0500 (EST)
-Message-Id: <20130206.133304.809962323533002767.davem@davemloft.net>
-To: dinggnu@gmail.com
-Cc: johannes@sipsolutions.net, linville@tuxdriver.com,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: mac80211/cfg.c: fix error using of sizeof()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1360167826-29265-1-git-send-email-dinggnu@gmail.com>
-References: <1360167826-29265-1-git-send-email-dinggnu@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 6 Feb 2013 13:34:52 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 06 Feb 2013 10:31:39 -0800
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: <linux@arm.linux.org.uk>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
+        Hiroshi Doyu <hdoyu@nvidia.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/1] memory: tegra_ahb_enable_smmu() depends on TEGRA_IOMMU_SMMU
+Date: Wed, 6 Feb 2013 20:34:26 +0200
+Message-ID: <1360175666-8377-1-git-send-email-hdoyu@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cong Ding <dinggnu@gmail.com>
-Date: Wed,  6 Feb 2013 17:23:45 +0100
+New SoC, Tegra114 also uses SMMU. Change tegra_ahb_enable_smmu()'s
+dependency from ARCH_TEGRA_3x_SOC to TEGRA_IOMMU_SMMU. No need to edit
+whenever a new Tegra SoC comes.
 
-> Using 'sizeof' on array given as function argument returns size of a pointer
-> rather than the size of array.
-> 
-> Signed-off-by: Cong Ding <dinggnu@gmail.com>
-> ---
->  net/mac80211/cfg.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/net/mac80211/cfg.c b/net/mac80211/cfg.c
-> index 661b878..af561d5 100644
-> --- a/net/mac80211/cfg.c
-> +++ b/net/mac80211/cfg.c
-> @@ -2058,7 +2058,8 @@ static int ieee80211_set_mcast_rate(struct wiphy *wiphy, struct net_device *dev,
->  {
->  	struct ieee80211_sub_if_data *sdata = IEEE80211_DEV_TO_SUB_IF(dev);
->  
-> -	memcpy(sdata->vif.bss_conf.mcast_rate, rate, sizeof(rate));
-> +	memcpy(sdata->vif.bss_conf.mcast_rate, rate,
-> +			sizeof(int) * IEEE80211_NUM_BANDS);
->  
+The following combination caused build error, which this patch fixes.
 
-This is not indented properly.  The "sizeof(int..." should start at the
-first column after the openning parenthesis of the memcpy() call.
+CONFIG_ARCH_TEGRA_2x_SOC=y
+\# CONFIG_ARCH_TEGRA_3x_SOC is not set
+CONFIG_ARCH_TEGRA_114_SOC=y
+
+drivers/iommu/tegra-smmu.c:485: undefined reference to 'tegra_ahb_enable_smmu'
+
+Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+---
+ drivers/amba/tegra-ahb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/amba/tegra-ahb.c b/drivers/amba/tegra-ahb.c
+index ab92785..093c435 100644
+--- a/drivers/amba/tegra-ahb.c
++++ b/drivers/amba/tegra-ahb.c
+@@ -130,7 +130,7 @@ static inline void gizmo_writel(struct tegra_ahb *ahb, u32 value, u32 offset)
+ 	writel(value, ahb->regs + offset);
+ }
+ 
+-#ifdef CONFIG_ARCH_TEGRA_3x_SOC
++#ifdef CONFIG_TEGRA_IOMMU_SMMU
+ static int tegra_ahb_match_by_smmu(struct device *dev, void *data)
+ {
+ 	struct tegra_ahb *ahb = dev_get_drvdata(dev);
+-- 
+1.7.9.5
+
