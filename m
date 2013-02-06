@@ -1,49 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751328Ab3BEX4d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 18:56:33 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:57375 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751053Ab3BEX4b (ORCPT
+	id S1754830Ab3BFAD6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 19:03:58 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:48438 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753302Ab3BFADy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 18:56:31 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19x8V+6s8WDIMv4+/loSSWH
-Date: Tue, 5 Feb 2013 15:56:26 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Ruslan Bilovol <ruslan.bilovol@ti.com>
-Cc: linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] ARM: OMAP2+: SoC name and revision unification
-Message-ID: <20130205235626.GS25185@atomide.com>
-References: <1359660284-5225-1-git-send-email-ruslan.bilovol@ti.com>
- <1359660284-5225-2-git-send-email-ruslan.bilovol@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1359660284-5225-2-git-send-email-ruslan.bilovol@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 5 Feb 2013 19:03:54 -0500
+Date: Wed, 6 Feb 2013 11:03:46 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vineet Gupta <vgupta@synopsys.com>
+Subject: linux-next: manual merge of the metag tree with the arc tree
+Message-Id: <20130206110346.edff1db373e5badee7df04c4@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__6_Feb_2013_11_03_46_+1100_jhUXbvvQJVA2HfxB"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Ruslan Bilovol <ruslan.bilovol@ti.com> [130131 11:28]:
-> This is a long story where for each new generation of
-> OMAP we used different approaches for creating
-> strings for SoCs names and revisions that this patch
-> fixes. It makes future exporting of this information
-> to SoC infrastructure easier.
+--Signature=_Wed__6_Feb_2013_11_03_46_+1100_jhUXbvvQJVA2HfxB
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Maybe use name soc_name and soc_rev instead and make
-cpu_name and cpu_rev local to the functions?
-That would reduce some churn here.
+Hi James,
 
-Also this does not apply to my omap-for-v3.9/soc
-branch. Care to update this (and possibly the second one)
-against that?
+Today's linux-next merge of the metag tree got a conflict in
+tools/perf/perf.h between commit 12bf48ef6194 ("perf, ARC: Enable
+building perf tools for ARC") from the arc tree and commit 6c4a2bebec36
+("perf: Enable building perf tools for Meta") from the metag tree.
 
-Regards,
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Tony
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc tools/perf/perf.h
+index 8a68ad3,768507e..0000000
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@@ -98,12 -98,12 +98,18 @@@ void get_term_dimensions(struct winsiz
+  #define CPUINFO_PROC	"cpu model"
+  #endif
+ =20
+ +#ifdef __arc__
+ +#define rmb()		asm volatile("" ::: "memory")
+ +#define cpu_relax()	rmb()
+ +#define CPUINFO_PROC	"Processor"
+ +#endif
+ +
++ #ifdef __metag__
++ #define rmb()		asm volatile("" ::: "memory")
++ #define cpu_relax()	asm volatile("" ::: "memory")
++ #define CPUINFO_PROC	"CPU"
++ #endif
++=20
+  #include <time.h>
+  #include <unistd.h>
+  #include <sys/types.h>
+
+--Signature=_Wed__6_Feb_2013_11_03_46_+1100_jhUXbvvQJVA2HfxB
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJREZ3iAAoJEECxmPOUX5FE19MQAKIJAhE3qql0vAYyqRkWAf19
+E0ZLR7knKQOfvbcqR71X2wjDx669VaJkdS7BEtlcPmtMH7ex4ePfPTrT73xoR2Od
+wVcG4LrCm3hI64JWJmeP061KRuhSXstVK4y555Tu56h0E+setJZ/TDW++ZTWnKC0
+osQlMgODlki0GA/5/UER3cYrSC9pE9f2jOQcMAWxyiNtzJz04uQ/wBVkX98yHsQ9
+WPo2RVVg/FmcVK96ZLqR5LJvyjdubip3jBNN7lrvG3k4PQgRla/kyHfouGsMx89b
+unP/BEogpwKfZSMXSGJ2aeJGhmPhqfUMsR8nOmWmRej4guAFFyj1wCSXMG6iMRIs
+CwG4+yzZidlA4HEShbIw6L6QS6mxQC/xummgBUE13wIulXq0z0jkguSHoUJ2vJ8G
+O2/2K/JG5ukmRkrpqimbCaQuI+Qoqryw9x3Xf4alVrtDlw0sdRp02w5nDiO6ah1R
+s16Is2p6Mhj6QM63O6WLZLaj29jvpJH8sKvDGEGVO9vqYir/DU6wSRb9LJRy84Oq
+beVnhwipiP0Lvk2q2ob5g3EBNUzg16QXdQCFHXW1EuvKdgxSxwzY6oZJ+tbcWjJ6
+2iNGQ7tinh3H1HMEmACCIG4sqsFzCvkxhwtg+SUWJdFTyBaMmMl96AgS3I5+5ClI
+beCi9IUp/RaiKPMIKjL7
+=EJm+
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__6_Feb_2013_11_03_46_+1100_jhUXbvvQJVA2HfxB--
