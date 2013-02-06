@@ -1,78 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756377Ab3BFBfx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 20:35:53 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:65265 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754070Ab3BFBfw convert rfc822-to-8bit (ORCPT
+	id S1756730Ab3BFBiQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 20:38:16 -0500
+Received: from nasmtp01.atmel.com ([192.199.1.245]:26357 "EHLO
+	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754755Ab3BFBiP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 20:35:52 -0500
-X-IronPort-AV: E=Sophos;i="4.84,612,1355068800"; 
-   d="scan'208";a="6693392"
-Message-ID: <5111B318.9020204@cn.fujitsu.com>
-Date: Wed, 06 Feb 2013 09:34:16 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
+	Tue, 5 Feb 2013 20:38:15 -0500
+From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
+        "richard.genoud@gmail.com" <richard.genoud@gmail.com>,
+        "Lin, JM" <JM.Lin@atmel.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
+Subject: RE: [v4 PATCH 12/12] ARM: dts: add spi nodes for the atmel boards
+Thread-Topic: [v4 PATCH 12/12] ARM: dts: add spi nodes for the atmel boards
+Thread-Index: AQHN8irD1CwgvSpvHUWfH15IC76BbZhrSY4AgADiliA=
+Date: Wed, 6 Feb 2013 01:34:43 +0000
+Message-ID: <B256D81BAE5131468A838E5D7A2436413A086C11@penmbx02>
+References: <1358148877-18679-1-git-send-email-wenyou.yang@atmel.com>
+ <1358148877-18679-13-git-send-email-wenyou.yang@atmel.com>
+ <20130205195008.GA30595@game.jcrosoft.org>
+In-Reply-To: <20130205195008.GA30595@game.jcrosoft.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.168.5.13]
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Johannes Weiner <hannes@cmpxchg.org>,
-        Zhang Yanfei <zhangyanfei.yes@gmail.com>,
-        Linux MM <linux-mm@kvack.org>, mgorman@suse.de, minchan@kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, m.szyprowski@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] mm: rename confusing function names
-References: <51113CE3.5090000@gmail.com> <20130205192640.GC6481@cmpxchg.org> <20130205141332.04fcceac.akpm@linux-foundation.org> <5111AC7D.9070505@cn.fujitsu.com> <20130205172057.3be4dbd4.akpm@linux-foundation.org>
-In-Reply-To: <20130205172057.3be4dbd4.akpm@linux-foundation.org>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/06 09:34:32,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/06 09:34:32
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r161cJk9019154
 
-äº 2013å¹´02æœˆ06æ—¥ 09:20, Andrew Morton å†™é“:
-> On Wed, 06 Feb 2013 09:06:05 +0800
-> Zhang Yanfei <zhangyanfei@cn.fujitsu.com> wrote:
-> 
->> So could I rename the functions to the names like
->> nr_available_buffer_high_pages
->> And accurately document them with code comments just as you suggested.
-> 
-> gee.  "available" implies "available for you to allocate".  It has the
-> same problem as "free".
-> 
-> And "buffer" shouldn't be there - that's a reflection of the fact
-> that buffer_head payloads are not allocated from highmem.  An archaic
-> irrelevant thing.
-> 
-> Seriously, first let's write down the descriptions of what these
-> functions *do*.  Then choose nice names which abbreviate that.
-> 
 
-OK, I will try to do this.
 
+> -----Original Message-----
+> From: Jean-Christophe PLAGNIOL-VILLARD [mailto:plagnioj@jcrosoft.com]
+> Sent: 2013Äê2ÔÂ6ÈÕ 3:50
+> To: Yang, Wenyou
+> Cc: linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org; Ferre,
+> Nicolas; richard.genoud@gmail.com; Lin, JM; linux@arm.linux.org.uk
+> Subject: Re: [v4 PATCH 12/12] ARM: dts: add spi nodes for the atmel boards
 > 
+> On 15:34 Mon 14 Jan     , Wenyou Yang wrote:
+> > From: Richard Genoud <richard.genoud@gmail.com>
+> >
+> > Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+> > [wenyou.yang@atmel.com: added spi nodes for the sam9263ek, sam9g20ek,
+> sam9m10g45ek and sam9n12ek boards]
+> > Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+> > Cc: linux@arm.linux.org.uk
+> > ---
+> >  arch/arm/boot/dts/at91sam9263ek.dts         |   14
+> ++++++++++++++
+> >  arch/arm/boot/dts/at91sam9g20ek_common.dtsi |   14
+> ++++++++++++++
+> >  arch/arm/boot/dts/at91sam9m10g45ek.dts      |   14
+> ++++++++++++++
+> >  arch/arm/boot/dts/at91sam9n12ek.dts         |   14
+> ++++++++++++++
+> >  arch/arm/boot/dts/at91sam9x5ek.dtsi         |   14 ++++++++++++++
+> >  5 files changed, 70 insertions(+)
+> >
+> > diff --git a/arch/arm/boot/dts/at91sam9263ek.dts
+> b/arch/arm/boot/dts/at91sam9263ek.dts
+> > index 1eb0872..63ba57b 100644
+> > --- a/arch/arm/boot/dts/at91sam9263ek.dts
+> > +++ b/arch/arm/boot/dts/at91sam9263ek.dts
+> > @@ -79,6 +79,20 @@
+> >  					};
+> >  				};
+> >  			};
+> > +
+> > +			spi0: spi@fffa4000 {
+> > +				status = "okay";
+> > +				cs-gpios = <&pioA 5 0
+> > +					    &pioA 3 0
+> > +					    &pioA 4 0
+> > +					    &pioB 11 0
+> NACK
 > 
-> hm,
-> 
-> static unsigned int nr_free_zone_pages(int offset)
-> {
-> 	...
-> 	unsigned int sum = 0;
-> 	...
-> 	return sum;
-> }
-> 
-> How long will it be until these things start exploding from
-> sums-of-zones which exceed 16TB?  
-> 
+> we no use that much as cs-gpios on this hw
 
-You mean overflow? Hmm.. it might happens. Change the sum to
-unsigned long is ok?
+Thanks for your feedback.
 
-Thanks
-Zhang Yanfei
+Listing the all choices for cs-gpios, one cs-gpio is selected by reg value.
+Maybe listing one cs-gpio is OK. 
+I will try it.
 
+I am going to dig the feasibility of removing cs-gpios.
+
+> > +					   >;
+> > +				mtd_dataflash@0 {
+> > +					compatible = "atmel,at45", "atmel,dataflash";
+> > +					spi-max-frequency = <50000000>;
+> > +					reg = <0>;
+> > +				};
+> > +			};
+> >  		};
+> >
+> >  		nand0: nand@40000000 {
+> > diff --git a/arch/arm/boot/dts/at91sam9g20ek_common.dtsi
+> b/arch/arm/boot/dts/at91sam9g20ek_common.dtsi
+> > index da15e83..49ad49e 100644
+> > --- a/arch/arm/boot/dts/at91sam9g20ek_common.dtsi
+> > +++ b/arch/arm/boot/dts/at91sam9g20ek_common.dtsi
+> > @@ -96,6 +96,20 @@
+> >  				status = "okay";
+> >  				pinctrl-0 = <&pinctrl_ssc0_tx>;
+> >  			};
+> > +
+> > +			spi0: spi@fffc8000 {
+> > +				status = "okay";
+> > +				cs-gpios = <&pioA 3 0
+> > +					    &pioC 11 0
+> > +					    &pioC 16 0
+> > +					    &pioC 17 0
+> ditto and so on
+> 
+> you must only provife the gpio use by the hw
+> > +					   >;
+> > +				mtd_dataflash@0 {
+> > +					compatible = "atmel,at45", "atmel,dataflash";
+> > +					spi-max-frequency = <50000000>;
+> > +					reg = <1>;
+> > +				};
+> > +			};
+> >  		};
+> >
+> >  		nand0: nand@40000000 {
+> > diff --git a/arch/arm/boot/dts/at91sam9m10g45ek.dts
+> b/arch/arm/boot/dts/at91sam9m10g45ek.dts
+> > index 20c3191..275f22d 100644
+> > --- a/arch/arm/boot/dts/at91sam9m10g45ek.dts
+> > +++ b/arch/arm/boot/dts/at91sam9m10g45ek.dts
+> > @@ -102,6 +102,20 @@
+> >  					};
+> >  				};
+> >  			};
+> > +
+> > +			spi0: spi@fffa4000{
+> > +				status = "okay";
+> > +				cs-gpios = <&pioB 3 0
+> > +					    &pioB 18 0
+> > +					    &pioB 19 0
+> > +					    &pioD 27 0
+> > +					   >;
+> > +				mtd_dataflash@0 {
+> > +					compatible = "atmel,at45", "atmel,dataflash";
+> > +					spi-max-frequency = <13000000>;
+> > +					reg = <0>;
+> > +				};
+> > +			};
+> >  		};
+> >
+> >  		nand0: nand@40000000 {
+> > diff --git a/arch/arm/boot/dts/at91sam9n12ek.dts
+> b/arch/arm/boot/dts/at91sam9n12ek.dts
+> > index 0376bf4..4eeca7b 100644
+> > --- a/arch/arm/boot/dts/at91sam9n12ek.dts
+> > +++ b/arch/arm/boot/dts/at91sam9n12ek.dts
+> > @@ -67,6 +67,20 @@
+> >  					};
+> >  				};
+> >  			};
+> > +
+> > +			spi0: spi@f0000000 {
+> > +				status = "okay";
+> > +				cs-gpios = <&pioA 14 0
+> > +					    &pioA 7 0
+> > +					    &pioA 1 0
+> > +					    &pioB 3 0
+> > +					   >;
+> > +				m25p80@0 {
+> > +					compatible = "atmel,at25df321a";
+> > +					spi-max-frequency = <50000000>;
+> > +					reg = <0>;
+> > +				};
+> > +			};
+> >  		};
+> >
+> >  		nand0: nand@40000000 {
+> > diff --git a/arch/arm/boot/dts/at91sam9x5ek.dtsi
+> b/arch/arm/boot/dts/at91sam9x5ek.dtsi
+> > index 8a7cf1d..ca0a056 100644
+> > --- a/arch/arm/boot/dts/at91sam9x5ek.dtsi
+> > +++ b/arch/arm/boot/dts/at91sam9x5ek.dtsi
+> > @@ -84,6 +84,20 @@
+> >  					};
+> >  				};
+> >  			};
+> > +
+> > +			spi0: spi@f0000000 {
+> > +				status = "okay";
+> > +				cs-gpios = <&pioA 14 0
+> > +					    &pioA 7 0
+> > +					    &pioA 1 0
+> > +					    &pioB 3 0
+> > +					   >;
+> > +				m25p80@0 {
+> > +					compatible = "atmel,at25df321a";
+> > +					spi-max-frequency = <50000000>;
+> > +					reg = <0>;
+> > +				};
+> > +			};
+> >  		};
+> >
+> >  		usb0: ohci@00600000 {
+> > --
+> > 1.7.9.5
+> >
+
+Best Regards,
+Wenyou Yang
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
