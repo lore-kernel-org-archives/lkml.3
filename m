@@ -1,51 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754690Ab3BFNbx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 08:31:53 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39608 "EHLO mx2.suse.de"
+	id S1754638Ab3BFNdT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 08:33:19 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:18340 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750878Ab3BFNbu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 08:31:50 -0500
-Date: Wed, 6 Feb 2013 14:31:42 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/9] Support of Nexio 42" and new default class for
- hid-multitouch
-In-Reply-To: <CAN+gG=GReDsW_xKm9uLwfAkA6SPzUi9anaojESqSTx+nPKOdqQ@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1302061431231.16860@pobox.suse.cz>
-References: <1359649351-11092-1-git-send-email-benjamin.tissoires@gmail.com> <20130203130731.GA2677@polaris.bitmath.org> <CAN+gG=GRS+fx4c3Kdba-89+ba8soimMm_rv7HDuaZLZWseQGuQ@mail.gmail.com> <20130204115443.GA4405@polaris.bitmath.org>
- <alpine.LNX.2.00.1302051212550.2260@pobox.suse.cz> <CAN+gG=F5KHmq2F_op6RbvXiSp=T0oD_cTgPuBHptXVHyHZwpjA@mail.gmail.com> <alpine.LNX.2.00.1302061410230.16860@pobox.suse.cz> <CAN+gG=GReDsW_xKm9uLwfAkA6SPzUi9anaojESqSTx+nPKOdqQ@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751335Ab3BFNdS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 08:33:18 -0500
+Message-ID: <51125B56.9050407@imgtec.com>
+Date: Wed, 6 Feb 2013 13:32:06 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: linux-next <linux-next@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Heads up on a device tree change
+References: <CACxGe6sCBCGfLDAGVRgP3cnmE+oyXBDdPeVXVCqrsvCh13yPiw@mail.gmail.com>
+In-Reply-To: <CACxGe6sCBCGfLDAGVRgP3cnmE+oyXBDdPeVXVCqrsvCh13yPiw@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2013_02_06_13_33_14
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Feb 2013, Benjamin Tissoires wrote:
-
-> >> Do you mind if I send the usbhid dependency and the pen+multitouch
-> >> series this week, or we are too close to the 3.9 opening window?
-> >
-> > Please just send the patches, and let's see whether they will make it for
-> > 3.8 or I'll queue (some of) them for 3.9.
-> >
+On 06/02/13 13:11, Grant Likely wrote:
+> Hi Stephen,
 > 
-> Well, I didn't wanted to push them into 3.8 (the rc6 is already there,
-> and I doubt Linus would be happy to see a lot of patches now). I was
-> asking if it was not too late to schedule them for 3.9, or if you'd
-> rather wait for 3.10 :)
+> I've just pushed out a change which cleans up platform device
+> registration to use the same path whether or not the device tree is
+> used. It should be safe, but there is a risk of breakage on powerpc
+> platforms.
+> 
+> The patch has two effects of note:
+> - DT generated platform devices move from /sys/devices to under
+> /sys/devices/platform. Userspace *should* be okay with this, but if
+> there are any problems then I can post a workaround patch that keeps
+> DT generiated platform_devices in the current location.
+> - Resources on platform_devices get registered so they appear in
+> /proc/iomem and /proc/ioports and so that device drivers get the added
+> protection of request_region. This will cause breakage on device trees
+> nodes with partially overlapping memory regions. (ie. 0x100..0x1ff and
+> 0x180..0x27f). I also have a workaround for this, but I doubt that it
+> will be necessary.
 
-Yeah, sorry, my sentence was off-by-one, but I guess you got me :)
+Hi Grant,
 
-> Anyway, I'm doing my best to push them soon.
+If I understand you correctly, the non-overlapping memory regions thing
+could be a problem for me. We have a Meta based SoC that has various SoC
+registers grouped together for doing GPIOs and Pin control things. I'm
+still in the process of converting it to device tree, but the way I've
+been handling it is to provide overlapping registers to both the gpio
+and pinctl DT nodes. Each GPIO bank's registers are also interleaved
+with the others, so I've been providing overlapping register ranges
+(offset by 4 for each bank) to the DT node for each gpio bank too, so
+each bank can function independently and the driver doesn't have to
+worry about multiple banks. Does that sound like a reasonable use case?
 
-Thanks.
+I guess I could cheat with the length, or specify each register in it's
+own memory resource, but it seems like overkill.
 
--- 
-Jiri Kosina
-SUSE Labs
+Cheers
+James
+
