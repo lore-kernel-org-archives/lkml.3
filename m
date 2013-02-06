@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041Ab3BFJNk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 04:13:40 -0500
+	id S1751952Ab3BFJNf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 04:13:35 -0500
 Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:50982 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751291Ab3BFJNa (ORCPT
+	with ESMTP id S1750833Ab3BFJN3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 04:13:30 -0500
-X-AuditID: 9c93016f-b7b1fae000006419-d0-51121eb41c02
+	Wed, 6 Feb 2013 04:13:29 -0500
+X-AuditID: 9c93016f-b7b1fae000006419-c8-51121eb4fd29
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 To: Russell King <linux@arm.linux.org.uk>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Catalin Marinas <catalin.marinas@arm.com>,
         Rob Herring <rob.herring@calxeda.com>,
         Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v6 2/3] ARM: ioremap: introduce an infrastructure for static mapped area
-Date: Wed,  6 Feb 2013 18:13:29 +0900
-Message-Id: <1360142010-10598-3-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [PATCH v6 1/3] ARM: vmregion: remove vmregion code entirely
+Date: Wed,  6 Feb 2013 18:13:28 +0900
+Message-Id: <1360142010-10598-2-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1360142010-10598-1-git-send-email-iamjoonsoo.kim@lge.com>
 References: <1360142010-10598-1-git-send-email-iamjoonsoo.kim@lge.com>
@@ -27,143 +27,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In current implementation, we used ARM-specific flag, that is,
-VM_ARM_STATIC_MAPPING, for distinguishing ARM specific static mapped area.
-The purpose of static mapped area is to re-use static mapped area when
-entire physical address range of the ioremap request can be covered
-by this area.
+Now, there is no user for vmregion.
+So remove it.
 
-This implementation causes needless overhead for some cases.
-For example, assume that there is only one static mapped area and
-vmlist has 300 areas. Every time we call ioremap, we check 300 areas for
-deciding whether it is matched or not. Moreover, even if there is
-no static mapped area and vmlist has 300 areas, every time we call
-ioremap, we check 300 areas in now.
-
-If we construct a extra list for static mapped area, we can eliminate
-above mentioned overhead.
-With a extra list, if there is one static mapped area,
-we just check only one area and proceed next operation quickly.
-
-In fact, it is not a critical problem, because ioremap is not frequently
-used. But reducing overhead is better idea.
-
-Another reason for doing this work is for removing architecture dependency
-on vmalloc layer. I think that vmlist and vmlist_lock is internal data
-structure for vmalloc layer. Some codes for debugging and stat inevitably
-use vmlist and vmlist_lock. But it is preferable that they are used
-as least as possible in outside of vmalloc.c
-
-Now, I introduce an ARM-specific infrastructure for static mapped area. In
-the following patch, we will use this and resolve above mentioned problem.
-
-Reviewed-by: Nicolas Pitre <nico@linaro.org>
+Acked-by: Nicolas Pitre <nico@linaro.org>
 Tested-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-diff --git a/arch/arm/mm/ioremap.c b/arch/arm/mm/ioremap.c
-index 88fd86c..904c15e 100644
---- a/arch/arm/mm/ioremap.c
-+++ b/arch/arm/mm/ioremap.c
-@@ -39,6 +39,70 @@
- #include <asm/mach/pci.h>
- #include "mm.h"
+diff --git a/arch/arm/mm/Makefile b/arch/arm/mm/Makefile
+index 8a9c4cb..4e333fa 100644
+--- a/arch/arm/mm/Makefile
++++ b/arch/arm/mm/Makefile
+@@ -6,7 +6,7 @@ obj-y				:= dma-mapping.o extable.o fault.o init.o \
+ 				   iomap.o
  
-+
-+LIST_HEAD(static_vmlist);
-+
-+static struct static_vm *find_static_vm_paddr(phys_addr_t paddr,
-+			size_t size, unsigned int mtype)
-+{
-+	struct static_vm *svm;
-+	struct vm_struct *vm;
-+
-+	list_for_each_entry(svm, &static_vmlist, list) {
-+		vm = &svm->vm;
-+		if (!(vm->flags & VM_ARM_STATIC_MAPPING))
-+			continue;
-+		if ((vm->flags & VM_ARM_MTYPE_MASK) != VM_ARM_MTYPE(mtype))
-+			continue;
-+
-+		if (vm->phys_addr > paddr ||
-+			paddr + size - 1 > vm->phys_addr + vm->size - 1)
-+			continue;
-+
-+		return svm;
-+	}
-+
-+	return NULL;
-+}
-+
-+struct static_vm *find_static_vm_vaddr(void *vaddr)
-+{
-+	struct static_vm *svm;
-+	struct vm_struct *vm;
-+
-+	list_for_each_entry(svm, &static_vmlist, list) {
-+		vm = &svm->vm;
-+
-+		/* static_vmlist is ascending order */
-+		if (vm->addr > vaddr)
-+			break;
-+
-+		if (vm->addr <= vaddr && vm->addr + vm->size > vaddr)
-+			return svm;
-+	}
-+
-+	return NULL;
-+}
-+
-+void __init add_static_vm_early(struct static_vm *svm)
-+{
-+	struct static_vm *curr_svm;
-+	struct vm_struct *vm;
-+	void *vaddr;
-+
-+	vm = &svm->vm;
-+	vm_area_add_early(vm);
-+	vaddr = vm->addr;
-+
-+	list_for_each_entry(curr_svm, &static_vmlist, list) {
-+		vm = &curr_svm->vm;
-+
-+		if (vm->addr > vaddr)
-+			break;
-+	}
-+	list_add_tail(&svm->list, &curr_svm->list);
-+}
-+
- int ioremap_page(unsigned long virt, unsigned long phys,
- 		 const struct mem_type *mtype)
- {
-diff --git a/arch/arm/mm/mm.h b/arch/arm/mm/mm.h
-index a8ee92d..d5a4e9a 100644
---- a/arch/arm/mm/mm.h
-+++ b/arch/arm/mm/mm.h
-@@ -1,4 +1,6 @@
- #ifdef CONFIG_MMU
-+#include <linux/list.h>
-+#include <linux/vmalloc.h>
+ obj-$(CONFIG_MMU)		+= fault-armv.o flush.o idmap.o ioremap.o \
+-				   mmap.o pgd.o mmu.o vmregion.o
++				   mmap.o pgd.o mmu.o
  
- /* the upper-most page table pointer */
- extern pmd_t *top_pmd;
-@@ -65,6 +67,16 @@ extern void __flush_dcache_page(struct address_space *mapping, struct page *page
- /* consistent regions used by dma_alloc_attrs() */
- #define VM_ARM_DMA_CONSISTENT	0x20000000
- 
-+
-+struct static_vm {
-+	struct vm_struct vm;
-+	struct list_head list;
-+};
-+
-+extern struct list_head static_vmlist;
-+extern struct static_vm *find_static_vm_vaddr(void *vaddr);
-+extern __init void add_static_vm_early(struct static_vm *svm);
-+
- #endif
- 
- #ifdef CONFIG_ZONE_DMA
+ ifneq ($(CONFIG_MMU),y)
+ obj-y				+= nommu.o
+diff --git a/arch/arm/mm/vmregion.c b/arch/arm/mm/vmregion.c
+deleted file mode 100644
+index a631016..0000000
+diff --git a/arch/arm/mm/vmregion.h b/arch/arm/mm/vmregion.h
+deleted file mode 100644
+index 0f5a5f2..0000000
 -- 
 1.7.9.5
 
