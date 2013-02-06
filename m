@@ -1,147 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757536Ab3BFK5K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 05:57:10 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:54645 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757294Ab3BFKzU (ORCPT
+	id S1757545Ab3BFK5P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 05:57:15 -0500
+Received: from mail-qe0-f45.google.com ([209.85.128.45]:45239 "EHLO
+	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757131Ab3BFK5B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 05:55:20 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: broonie@opensource.wolfsonmicro.com, linus.walleij@linaro.org,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 42/49] regulator: ab8500: Update vdmic, vamic[1|2] parameters for AB8540
-Date: Wed,  6 Feb 2013 10:54:04 +0000
-Message-Id: <1360148051-7560-43-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1360148051-7560-1-git-send-email-lee.jones@linaro.org>
-References: <1360148051-7560-1-git-send-email-lee.jones@linaro.org>
+	Wed, 6 Feb 2013 05:57:01 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130206002704.GA11047@tassilo.jf.intel.com>
+References: <1360028954-16946-1-git-send-email-andi@firstfloor.org>
+	<1360028954-16946-5-git-send-email-andi@firstfloor.org>
+	<CABPqkBTyBJwaz+ON20nCM0jyQASoHXRDejtyNLJ1AoBSWS_tPA@mail.gmail.com>
+	<20130206002704.GA11047@tassilo.jf.intel.com>
+Date: Wed, 6 Feb 2013 11:57:00 +0100
+Message-ID: <CABPqkBSpYVyA0ZtLc12TWOS1AU1=4Kwo_Zx1FndB5XONonoavQ@mail.gmail.com>
+Subject: Re: [PATCH 4/5] perf, x86: Support full width counting
+From: Stephane Eranian <eranian@google.com>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add voltage setting for vdmic; add LP mode setting for vamic1,2.
+On Wed, Feb 6, 2013 at 1:27 AM, Andi Kleen <ak@linux.intel.com> wrote:
+> Here's an updated patch. I'm not reposting the full series.
+> Also cut down on cc to spare the innocents.
+>
+> ---
+>
+>  perf, x86: Support full width counting v2
+>
+> Recent Intel CPUs like Haswell and IvyBridge have a new alternative MSR
+> range for perfctrs that allows writing the full counter width. Enable this
+> range if the hardware reports it using a new capability bit.
+>
+> This lowers the overhead of perf stat slightly because it has to do less
+> interrupts to accumulate the counter value. On Haswell it also avoids some
+> problems with TSX aborting when the end of the counter range is reached.
+>
+> v2: Print the feature at boot
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/regulator/ab8500.c |   45 +++++++++++++++++++++++++++++++++++++++-----
- 1 file changed, 40 insertions(+), 5 deletions(-)
+Tested okay for me.
+Reviewed-by: Stephane Eranian <eranian@google.com>
 
-diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
-index 653c298..490d5ec 100644
---- a/drivers/regulator/ab8500.c
-+++ b/drivers/regulator/ab8500.c
-@@ -214,9 +214,18 @@ static const int ldo_vaudio_voltages[] = {
- 	2600000,	/* Duplicated in Vaudio and IsoUicc Control register. */
- };
- 
-+static const int ldo_vdmic_voltages[] = {
-+	1800000,
-+	1900000,
-+	2000000,
-+	2850000,
-+};
-+
- static DEFINE_MUTEX(shared_mode_mutex);
- static struct ab8500_shared_mode ldo_anamic1_shared;
- static struct ab8500_shared_mode ldo_anamic2_shared;
-+static struct ab8500_shared_mode ab8540_ldo_anamic1_shared;
-+static struct ab8500_shared_mode ab8540_ldo_anamic2_shared;
- 
- static int ab8500_regulator_enable(struct regulator_dev *rdev)
- {
-@@ -1131,7 +1140,7 @@ static struct ab8500_regulator_info
- 			.n_voltages	= 1,
- 			.volt_table	= fixed_2050000_voltage,
- 		},
--		.shared_mode = &ldo_anamic1_shared,
-+		.shared_mode		= &ldo_anamic1_shared,
- 		.update_bank		= 0x03,
- 		.update_reg		= 0x83,
- 		.update_mask		= 0x08,
-@@ -1613,44 +1622,62 @@ static struct ab8500_regulator_info
- 	[AB8540_LDO_ANAMIC1] = {
- 		.desc = {
- 			.name		= "LDO-ANAMIC1",
--			.ops		= &ab8500_regulator_ops,
-+			.ops		= &ab8500_regulator_anamic_mode_ops,
- 			.type		= REGULATOR_VOLTAGE,
- 			.id		= AB8540_LDO_ANAMIC1,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= 1,
- 		},
-+		.shared_mode		= &ab8540_ldo_anamic1_shared,
- 		.update_bank		= 0x03,
- 		.update_reg		= 0x83,
- 		.update_mask		= 0x08,
- 		.update_val		= 0x08,
-+		.mode_bank		= 0x03,
-+		.mode_reg		= 0x83,
-+		.mode_mask		= 0x20,
-+		.mode_val_idle		= 0x20,
-+		.mode_val_normal	= 0x00,
- 	},
- 	[AB8540_LDO_ANAMIC2] = {
- 		.desc = {
- 			.name		= "LDO-ANAMIC2",
--			.ops		= &ab8500_regulator_ops,
-+			.ops		= &ab8500_regulator_anamic_mode_ops,
- 			.type		= REGULATOR_VOLTAGE,
- 			.id		= AB8540_LDO_ANAMIC2,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= 1,
- 		},
-+		.shared_mode		= &ab8540_ldo_anamic2_shared,
- 		.update_bank		= 0x03,
- 		.update_reg		= 0x83,
- 		.update_mask		= 0x10,
- 		.update_val		= 0x10,
-+		.mode_bank		= 0x03,
-+		.mode_reg		= 0x83,
-+		.mode_mask		= 0x20,
-+		.mode_val_idle		= 0x20,
-+		.mode_val_normal	= 0x00,
- 	},
- 	[AB8540_LDO_DMIC] = {
- 		.desc = {
- 			.name		= "LDO-DMIC",
--			.ops		= &ab8500_regulator_ops,
-+			.ops		= &ab8500_regulator_volt_mode_ops,
- 			.type		= REGULATOR_VOLTAGE,
- 			.id		= AB8540_LDO_DMIC,
- 			.owner		= THIS_MODULE,
--			.n_voltages	= 1,
-+			.n_voltages	= ARRAY_SIZE(ldo_vdmic_voltages),
- 		},
-+		.load_lp_uA		= 1000,
- 		.update_bank		= 0x03,
- 		.update_reg		= 0x83,
- 		.update_mask		= 0x04,
- 		.update_val		= 0x04,
-+		.voltage_bank		= 0x03,
-+		.voltage_reg		= 0x83,
-+		.voltage_mask		= 0xc0,
-+		.voltages		= ldo_vdmic_voltages,
-+		.voltages_len		= ARRAY_SIZE(ldo_vdmic_voltages),
- 	},
- 
- 	/*
-@@ -1704,6 +1731,14 @@ static struct ab8500_shared_mode ldo_anamic2_shared = {
- 	.shared_regulator = &ab8505_regulator_info[AB8505_LDO_ANAMIC1],
- };
- 
-+static struct ab8500_shared_mode ab8540_ldo_anamic1_shared = {
-+	.shared_regulator = &ab8540_regulator_info[AB8540_LDO_ANAMIC2],
-+};
-+
-+static struct ab8500_shared_mode ab8540_ldo_anamic2_shared = {
-+	.shared_regulator = &ab8540_regulator_info[AB8540_LDO_ANAMIC1],
-+};
-+
- struct ab8500_reg_init {
- 	u8 bank;
- 	u8 addr;
--- 
-1.7.9.5
-
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+>
+> diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
+> index 433a59f..af41a77 100644
+> --- a/arch/x86/include/uapi/asm/msr-index.h
+> +++ b/arch/x86/include/uapi/asm/msr-index.h
+> @@ -163,6 +163,9 @@
+>  #define MSR_KNC_EVNTSEL0               0x00000028
+>  #define MSR_KNC_EVNTSEL1               0x00000029
+>
+> +/* Alternative perfctr range with full access. */
+> +#define MSR_IA32_PMC0                  0x000004c1
+> +
+>  /* AMD64 MSRs. Not complete. See the architecture manual for a more
+>     complete list. */
+>
+> diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+> index 1567b0d..ce2a863 100644
+> --- a/arch/x86/kernel/cpu/perf_event.h
+> +++ b/arch/x86/kernel/cpu/perf_event.h
+> @@ -278,6 +278,7 @@ union perf_capabilities {
+>                 u64     pebs_arch_reg:1;
+>                 u64     pebs_format:4;
+>                 u64     smm_freeze:1;
+> +               u64     fw_write:1;
+>         };
+>         u64     capabilities;
+>  };
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+> index aa48048..06dcc0c 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+> @@ -2228,5 +2228,12 @@ __init int intel_pmu_init(void)
+>                 }
+>         }
+>
+> +       /* Support full width counters using alternative MSR range */
+> +       if (x86_pmu.intel_cap.fw_write) {
+> +               x86_pmu.max_period = x86_pmu.cntval_mask;
+> +               x86_pmu.perfctr = MSR_IA32_PMC0;
+> +               pr_cont("full-width counters, ");
+> +       }
+> +
+>         return 0;
+>  }
+>
+> --
+> ak@linux.intel.com -- Speaking for myself only
