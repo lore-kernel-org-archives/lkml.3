@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754625Ab3BFCnO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 21:43:14 -0500
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:59681 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753347Ab3BFCnM (ORCPT
+	id S1755241Ab3BFCp2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 21:45:28 -0500
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:44139 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753781Ab3BFCpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 21:43:12 -0500
+	Tue, 5 Feb 2013 21:45:25 -0500
 MIME-Version: 1.0
-In-Reply-To: <5111BAA8.5050101@gmail.com>
+In-Reply-To: <5111BB2E.2090505@gmail.com>
 References: <1360088646-19104-1-git-send-email-dirk.brandewie@gmail.com>
-	<1360088646-19104-4-git-send-email-dirk.brandewie@gmail.com>
-	<CAOh2x=nXQrgwm2Jw88GjQe-fjpJrK+cjTWd-vK377UEBeXGu3w@mail.gmail.com>
-	<5111BAA8.5050101@gmail.com>
-Date: Wed, 6 Feb 2013 08:13:11 +0530
-Message-ID: <CAKohpo=TWxDgzwNy9+rJHBD7iHQ7DNCGy1j3ZyvCTZ6Xqwa1hg@mail.gmail.com>
-Subject: Re: [PATCH 3/7] cpufreq: Only query drivers that implement cpufreq_driver.target()
+	<1360088646-19104-6-git-send-email-dirk.brandewie@gmail.com>
+	<CAOh2x=kJPFyhkG3y_q=a5ciG1HRAn-JkoVYy9OZ9POA+-isbCQ@mail.gmail.com>
+	<5111BB2E.2090505@gmail.com>
+Date: Wed, 6 Feb 2013 08:15:25 +0530
+Message-ID: <CAKohpokoG16S8uft0nSFSoejipS8X=zhhg6goJs4mBSt3tAwxw@mail.gmail.com>
+Subject: Re: [PATCH 5/7] cpufreq: balance out cpufreq_cpu_{get,put} for
+ scaling drivers using setpolicy
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: Dirk Brandewie <dirk.brandewie@gmail.com>
 Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
@@ -25,60 +26,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6 February 2013 07:36, Dirk Brandewie <dirk.brandewie@gmail.com> wrote:
-> On 02/05/2013 05:47 PM, Viresh Kumar wrote:
+On 6 February 2013 07:38, Dirk Brandewie <dirk.brandewie@gmail.com> wrote:
+> On 02/05/2013 05:58 PM, Viresh Kumar wrote:
 >>
 >> On Tue, Feb 5, 2013 at 11:54 PM,  <dirk.brandewie@gmail.com> wrote:
 >>>
 >>> From: Dirk Brandewie <dirk.brandewie@gmail.com>
 >>>
->>> Scaling drivers that implement cpufreq_driver.setpolicy() have
->>> internal governors and may/will change the current operating frequency
->>> very frequently this will cause cpufreq_out_of_sync() to be called
->>> every time. Only call cpufreq_driver.get() for drivers that implement
->>> cpufreq_driver.target()
+>>> There is an additional reference added to the driver in
+>>> cpufreq_add_dev()  that is removed in__cpufreq_governor() if the
+>>>
+>>> driver implements target().  Remove the last reference when the
+>>> driver implements setpolicy()
 >>>
 >>> Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+>>>
 >>> ---
->>>   drivers/cpufreq/cpufreq.c |    2 +-
->>>   1 files changed, 1 insertions(+), 1 deletions(-)
+>>>   drivers/cpufreq/cpufreq.c |    3 +++
+>>>   1 files changed, 3 insertions(+), 0 deletions(-)
 >>>
 >>> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
->>> index 96bc302..d8daa4b 100644
+>>> index 622e282..d17477b 100644
 >>> --- a/drivers/cpufreq/cpufreq.c
 >>> +++ b/drivers/cpufreq/cpufreq.c
->>> @@ -1787,7 +1787,7 @@ int cpufreq_update_policy(unsigned int cpu)
+>>> @@ -1049,6 +1049,9 @@ static int __cpufreq_remove_dev(struct device *dev,
+>>> struct subsys_interface *sif
 >>>
->>>          /* BIOS might change freq behind our back
->>>            -> ask driver for current freq and notify governors about a
->>> change */
->>> -       if (cpufreq_driver->get) {
->>> +       if (cpufreq_driver->get && cpufreq_driver->target) {
->>>                  policy.cur = cpufreq_driver->get(cpu);
->>>                  if (!data->cur) {
->>>                          pr_debug("Driver did not initialize current
->>> freq");
+>>>          if (cpufreq_driver->target)
+>>>                  __cpufreq_governor(data, CPUFREQ_GOV_STOP);
+>>>
+>>> +       if (cpufreq_driver->setpolicy)
+>>> +               cpufreq_cpu_put(data);
 >>
 >>
->> I am really not liking copy-pasting my older comments here :(
+>> I don't understand this patch at all.. I grepped both cpufreq_cpu_get() &
+>> put()
+>> in bleeding-edge and found everything to be correct.
 >>
->> "This would mean policy->cur has a garbage value. I don't really know
->> how would other routine behave on this. Would it make sense to make
->> policy->cur zero atleast?
->> "
+>> Can you please point me to the exact line numbers ?
 >>
-> The driver implements get() and will return a valid value but the other
-> components that track the current frequency will not have been notified
-> about any change so there is nothing to be out of sync with.  There is no
-> reason to call cpufreq_out_of_sync() where the driver being used implements
-> an internal
-> governor.
+>
+> Line 878 in cpufreq_add_dev()
 
-Not sure if we are discussing the same issue. What i am saying is, with your
-patch we aren't calling following line:
+Following is line 878:
 
->>>                  policy.cur = cpufreq_driver->get(cpu);
+	for_each_online_cpu(sibling) {
+		struct cpufreq_policy *cp = per_cpu(cpufreq_cpu_data, sibling);
+		if (cp && cpumask_test_cpu(cpu, cp->related_cpus))
+			return cpufreq_add_policy_cpu(cpu, sibling, dev);
+	}
 
-and policy was a local variable. Hence policy->cur is having a garbage value.
-policy->cur is used at multiple places in cpufreq.c . Please check everywhere
-if this garbage value doesn't break set_policy() type systems.
+How is this related to your patch?
