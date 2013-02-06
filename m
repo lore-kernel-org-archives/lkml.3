@@ -1,122 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756425Ab3BFAmj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 19:42:39 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:47945 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754976Ab3BFAmi (ORCPT
+	id S1756381Ab3BFArQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 19:47:16 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:56623 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754976Ab3BFArL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 19:42:38 -0500
-X-AuditID: 9c930179-b7c24ae00000119c-55-5111a6fb5677
-Date: Wed, 6 Feb 2013 09:42:34 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Lin Feng <linfeng@cn.fujitsu.com>, akpm@linux-foundation.org,
-        bcrl@kvack.org, viro@zeniv.linux.org.uk, khlebnikov@openvz.org,
-        walken@google.com, kamezawa.hiroyu@jp.fujitsu.com, riel@redhat.com,
-        rientjes@google.com, isimatu.yasuaki@jp.fujitsu.com,
-        wency@cn.fujitsu.com, laijs@cn.fujitsu.com, jiang.liu@huawei.com,
-        zab@redhat.com, jmoyer@redhat.com, linux-mm@kvack.org,
-        linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 1/2] mm: hotplug: implement non-movable version of
- get_user_pages() called get_user_pages_non_movable()
-Message-ID: <20130206004234.GD11197@blaptop>
-References: <1360056113-14294-1-git-send-email-linfeng@cn.fujitsu.com>
- <1360056113-14294-2-git-send-email-linfeng@cn.fujitsu.com>
- <20130205120137.GG21389@suse.de>
+	Tue, 5 Feb 2013 19:47:11 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130205120137.GG21389@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <CAErSpo7-dULYwWQ=f5CBCxOULKJE9=n6Ha4jkVKd8enspuYjTA@mail.gmail.com>
+References: <CAE9FiQXHG01NjnYNDbC-KEpbcvY-q4pBe97CxTOGS7W4vZQBYQ@mail.gmail.com>
+	<1359314629-18651-1-git-send-email-yinghai@kernel.org>
+	<CAErSpo6r_LNEtYB3j5ELb8NdHu0a6_YOVj8S32CmByGFUpSsbg@mail.gmail.com>
+	<CAE9FiQXg1YcPPJLCgPbKOKXHk-LRQv4bbBGH9jyuATQa2ANLkg@mail.gmail.com>
+	<CAE9FiQX2DbTO0qCzGO4iMTkU_mPM2oZL+R5UoZ5dj=as6MUAsw@mail.gmail.com>
+	<CAErSpo7-dULYwWQ=f5CBCxOULKJE9=n6Ha4jkVKd8enspuYjTA@mail.gmail.com>
+Date: Tue, 5 Feb 2013 16:47:10 -0800
+X-Google-Sender-Auth: THxPTaHOd_dLiaKcZZZ2bOgWxfg
+Message-ID: <CAE9FiQWvmK7N2z19B9ZiMyc_T6cJdpWoWr3mExpuwUA4ogBc3w@mail.gmail.com>
+Subject: Re: [PATCH v3 00/22] PCI: Iterate pci host bridge instead of pci root bus
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Tony Luck <tony.luck@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 05, 2013 at 12:01:37PM +0000, Mel Gorman wrote:
-> On Tue, Feb 05, 2013 at 05:21:52PM +0800, Lin Feng wrote:
-> > get_user_pages() always tries to allocate pages from movable zone, which is not
-> >  reliable to memory hotremove framework in some case.
-> > 
-> > This patch introduces a new library function called get_user_pages_non_movable()
-> >  to pin pages only from zone non-movable in memory.
-> > It's a wrapper of get_user_pages() but it makes sure that all pages come from
-> > non-movable zone via additional page migration.
-> > 
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Mel Gorman <mgorman@suse.de>
-> > Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> > Cc: Jeff Moyer <jmoyer@redhat.com>
-> > Cc: Minchan Kim <minchan@kernel.org>
-> > Cc: Zach Brown <zab@redhat.com>
-> > Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
-> > Reviewed-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-> > Signed-off-by: Lin Feng <linfeng@cn.fujitsu.com>
-> 
-> I already had started the review of V1 before this was sent
-> unfortunately. However, I think the feedback I gave for V1 is still
-> valid so I'll wait for comments on that review before digging further.
+On Tue, Feb 5, 2013 at 4:19 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>
+> Maybe.  I'd rather not introduce for_each_pci_host_bridge() at all, if
+> we can avoid it.  Every place it's used is a place we have to audit to
+> make sure it's safe.  I think your audit above is correct and
+> complete, but it relies on way too much architecture knowledge.  It's
+> better if we can deduce correctness without knowing which arches
+> support hotplug and which CPUs support EDAC.
+>
+> As soon as for_each_pci_host_bridge() is in the tree, those uses can
+> be copied to even more places.  It's a macro, so it's usable by any
+> module, even out-of-tree ones that we'll never see and can't fix.  So
+> we won't really have a good way to deprecate and remove it.
 
-Mel, Andrew
+Now we only have two references in modules.
 
-Sorry for making noise if you already confirmed the direction but I have a concern
-about that. Because IMHO, we can't expect most of user for MEMORY_HOTPLUG will release
-pinned pages immediately. In addtion, MEMORY_HOTPLUG could be used for embedded system
-for reducing power by PASR and some drivers in embedded could use GUP anytime and anywhere.
-They can't know in advance they will use pinned pages long time or release in short time
-because it depends on some event like user's response which is very not predetermined.
-So for solving it, we can add some WARN_ON in CMA/MEMORY_HOTPLUG part just in case of
-failing migration by page count and then, investigate they are really using GUP and
-it's REALLY a culprit. If so, yell to them "Please use GUP_NM instead"?
-Yes. it could be done but it would be rather trobulesome job. Even it couldn't be triggered
-during QE phase so that trouble doesn't end until all guys uses GUP_NM.
-Let's consider another case. Some driver pin the page in very short time
-so he decide to use GUP instead of GUP_NM but someday, someuser start to use the driver
-very often so although pinning time is very short, it could be forever pinning effect
-if the use calls it very often. In the end, we should change it with GUP_NM, again.
-IMHO, In future, we ends up changing most of GUP user with GUP_NM if CMA and MEMORY_HOTPLUG
-is available all over the world.
+drivers/edac/i7core_edac.c:     for_each_pci_host_bridge(host_bridge) {
+drivers/pci/hotplug/sgi_hotplug.c:      for_each_pci_host_bridge(host_bridge) {
 
-So, what's wrong if we replace get_user_pages with get_user_pages_non_movable
-in MEMORY_HOTPLUG/CMA without exposing get_user_pages_non_movable?
+for the sgi_hotplug.c, it should be same problem that have for acpiphp
+and pciehp.
+need to make it support pci host bridge hotplug anyway.
 
-I mean this
+for edac, we need to check Mauro about their plan.
 
-#ifdef CONFIG_MIGRATE_ISOLATE
-int get_user_pages()
-{
-        return __get_user_pages_non_movable();
-}
-#else
-int get_user_pages()
-{
-        return old_get_user_pages();
-}
-#endif
+After those two are addressed, we can drop that EXPORT_SYMBOL_GPL for
+pci_get_next_host_bridge.
 
-IMHO, get_user_pages isn't performance sensitive function. If user was sensitive
-about it, he should have tried get_user_pages_fast.
-THP degradation by increasing MIGRATE_UNMOVABLE?
-Lin said most of GUP pages release the page in short so is it really problem?
-Even in embedded, we don't use THP yet but CMA and GUP call would be not too often
-but failing of CMA would be critical.
+We do have pci_get_domain_bus_and_slot() as export symbol.
+So we export pci_get_next_host_bridge should be ok now.
+and it would be better than export root buses list.
 
-I'd like to hear opinions.
+Thanks
 
-> 
-> -- 
-> Mel Gorman
-> SUSE Labs
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
+Yinghai
