@@ -1,90 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756767Ab3BFAro (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 19:47:44 -0500
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:58636 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756089Ab3BFArl (ORCPT
+	id S1756813Ab3BFAr4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 19:47:56 -0500
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:56117 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756089Ab3BFAru (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 19:47:41 -0500
+	Tue, 5 Feb 2013 19:47:50 -0500
 MIME-Version: 1.0
-X-Originating-IP: [116.14.217.125]
-In-Reply-To: <s5hd2weacbe.wl%tiwai@suse.de>
-References: <CAMVG2suCiLak3CbeKZtEgjeJqw3=1fD3k9FMsm=tYE7h3cuVjQ@mail.gmail.com>
-	<s5hsj5aag7z.wl%tiwai@suse.de>
-	<CAMVG2stEPHuk-cNwZHjtnOP=PeXwF7SMxMSp=HVaOy9SzW2Dgw@mail.gmail.com>
-	<s5hobfyafeg.wl%tiwai@suse.de>
-	<s5hd2weacbe.wl%tiwai@suse.de>
-Date: Wed, 6 Feb 2013 08:47:41 +0800
-Message-ID: <CAMVG2ssBaD=W3mAecKjCH8+G-HiVpHqQ5iSoyA4n9_3Mgz=VWQ@mail.gmail.com>
-Subject: Re: 3.8-rc1 patch_cirrus 4.0 regression...
-From: Daniel J Blueman <daniel@quora.org>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, alsa-devel@alsa-project.org
+In-Reply-To: <5111A6D9.7090700@wwwdotorg.org>
+References: <1360107777-17490-1-git-send-email-seanpaul@chromium.org>
+	<1360107777-17490-2-git-send-email-seanpaul@chromium.org>
+	<5111A23F.50300@wwwdotorg.org>
+	<CAOw6vb+W3phFDJXp3gCx7y0N7mF4o2DpEfTGuNT1pGdKqiCGTg@mail.gmail.com>
+	<5111A6D9.7090700@wwwdotorg.org>
+Date: Wed, 6 Feb 2013 09:47:49 +0900
+X-Google-Sender-Auth: U8TFvuJis_KsVOepCl7PX5UzYm0
+Message-ID: <CAH9JG2UzCQiMdcx1BeBCAPwT8YnDO2pDD9aA-L1XKasOgNr3wg@mail.gmail.com>
+Subject: Re: [PATCH v3 1/3] drm/exynos: Get HDMI version from device tree
+From: Kyungmin Park <kmpark@infradead.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Sean Paul <seanpaul@chromium.org>,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>,
+        "kgene.kim" <kgene.kim@samsung.com>,
+        devicetree-discuss@lists.ozlabs.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org, Tomasz Figa <tomasz.figa@gmail.com>,
+        InKi Dae <inki.dae@samsung.com>, linux-samsung-soc@vger.kernel.org,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Olof Johansson <olofj@chromium.org>,
+        linux-arm-kernel@lists.infradead.org,
+        RAHUL SHARMA <rahul.sharma@samsung.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6 February 2013 01:40, Takashi Iwai <tiwai@suse.de> wrote:
-> At Tue, 05 Feb 2013 17:34:15 +0100,
-> Takashi Iwai wrote:
+On Wed, Feb 6, 2013 at 9:42 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 02/05/2013 05:37 PM, Sean Paul wrote:
+>> On Tue, Feb 5, 2013 at 4:22 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>>> n 02/05/2013 04:42 PM, Sean Paul wrote:
+>>>> Use the compatible string in the device tree to determine which
+>>>> registers/functions to use in the HDMI driver. Also changes the
+>>>> references from v13 to 4210 and v14 to 4212 to reflect the IP
+>>>> block version instead of the HDMI version.
+>>>
+>>>> diff --git a/Documentation/devicetree/bindings/drm/exynos/hdmi.txt b/Documentation/devicetree/bindings/drm/exynos/hdmi.txt
+>>>
+>>> Binding looks sane to me.
+>>>
+>>>> diff --git a/drivers/gpu/drm/exynos/exynos_hdmi.c b/drivers/gpu/drm/exynos/exynos_hdmi.c
+>>>
+>>>>  #ifdef CONFIG_OF
+>>>>  static struct of_device_id hdmi_match_types[] = {
+>>>>       {
+>>>> -             .compatible = "samsung,exynos5-hdmi",
+>>>> -             .data   = (void *)HDMI_TYPE14,
+>>>> +             .compatible = "samsung,exynos4-hdmi",
+>>>>       }, {
+>>>>               /* end node */
+>>>>       }
+>>>
+>>> Why not fill in all the "base" compatible values there (I think you need
+>>> this anyway so that DTs don't all have to be compatible with
+>>> samsung,exynos4-hdmi), with .data containing the HDMI_VER_EXYNOS*
+>>> values, then ...
+>>>
 >>
->> At Wed, 6 Feb 2013 00:29:54 +0800,
->> Daniel J Blueman wrote:
->> >
->> > On 6 February 2013 00:16, Takashi Iwai <tiwai@suse.de> wrote:
->> > > At Wed, 6 Feb 2013 00:10:30 +0800,
->> > > Daniel J Blueman wrote:
->> > >>
->> > >> Hi Takashi,
->> > >>
->> > >> The v3.8-rc kernels have regressed from v3.7 with the quad-speaker
->> > >> arrangement on my Macbook Pro 10,1 - only the higher-frequency
->> > >> speakers work despite the front and rear channels being exposed in the
->> > >> mixer.
->> > >
->> > > Interesting.  So you have a machine with 4.0 built-in speaker instead
->> > > of 2.1?  Then we need to add a device-specific flag for it.  Currently
->> > > the driver assumes 2.1 system blindly because majority of machines
->> > > have that.
->> > >
->> > > FWIW, the codec parser code has been totally rewritten for 3.9, so any
->> > > patch to 3.8 won't be applied to 3.9 (and vice versa)...
->> > >
->> > > Could you give alsa-info.sh output on 3.8 kernel?  Then I'll try to
->> > > cook it for 3.9 (and maybe backport to 3.8).
->> >
->> > Here's the output from the current alsa-info.sh on 3.8-rc6 with the
->> > two cited patches reverted [1]; let me know if you'd like 3.8-rc6
->> > pure.
->>
->> Thanks.
->>
->> > The sound is pretty impressive for a laptop when the low-frequecy
->> > speakers are enabled.
->>
->> Which program are you using for testing the surrounds?
->> I'm interested in it because the commit you reverted is basically
->> providing only an additional information for the channel map, and it
->> doesn't change anything else.  It implies that some applications are
->> really referring to the chmap info.
+>> At the moment, all DTs have to be compatible with exynos4-hdmi since
+>> it provides the base for the current driver. The driver uses 4210 and
+>> 4212 to differentiate between different register addresses and
+>> features, but most things are just exynos4-hdmi compatible.
+I would like to distinguish between 4210 and 4x12. since it has
+different features. e.g., HDMI v1.3 and v1.4.
+and I also want to use 4412 instead of 4212. there's no board to use
+4212 at mainline until this time.
+
+Thank you,
+Kyungmin Park
 >
-> Or, it might be that the mixer value is simply not set correct.
+> The DT nodes should include only the compatible values that the HW is
+> actually compatible with. If the HW isn't compatible with exynos4-hdmi,
+> that value shouldn't be in the compatible property, but instead whatever
+> the "base" value that the HW really is compatible with. The driver can
+> support multiple "base" compatible values from this table.
 >
-> To be sure, could you try again 3.8-rc6 without reversing patches,
-> adjust "Speaker" and "Bass Speaker" volumes properly, and retest?
-> If it still doesn't work, please take alsa-info.sh snapshot at this
-> state for comparing with the previous result.
-
-My apologies! We do now have "Bass Speaker" which affects both bass
-speakers. It was always being restored to level 0 and works when set
-up.
-
-There is a "Subwoofer" slider in addition to "Balance" and "Fade" in
-the GNOME mixer UI which is greyed out; presumably this is intended as
-the same mixer control?
-
-Dan
--- 
-Daniel J Blueman
+>>>> @@ -2218,17 +2217,18 @@ static int hdmi_probe(struct platform_device *pdev)
+>>>
+>>>> +
+>>>> +     if (of_device_is_compatible(dev->of_node, "samsung,exynos4210-hdmi"))
+>>>> +             hdata->version |= HDMI_VER_EXYNOS4210;
+>>>> +     if (of_device_is_compatible(dev->of_node, "samsung,exynos4212-hdmi"))
+>>>> +             hdata->version |= HDMI_VER_EXYNOS4212;
+>>>> +     if (of_device_is_compatible(dev->of_node, "samsung,exynos5250-hdmi"))
+>>>> +             hdata->version |= HDMI_VER_EXYNOS5250;
+>>>
+>>> Instead of that, do roughly:
+>>>
+>>>     match = of_match_device(hdmi_match_types, &pdev->dev);
+>>>     if (match)
+>>>         hdata->version |= (int)match->data;
+>>>
+>>> That way, it's all table-based. Any future additions to
+>>> hdmi_match_types[] won't require another if statement to be added to
+>>> probe().
+>>
+>> I don't think it's that easy. of_match_device returns the first match
+>> from the device table, so I'd still need to iterate through the
+>> matches. I could still break this out into a table, but I don't think
+>> of_match_device is the right way to probe it.
+>
+> You shouldn't have to iterate over multiple matches. of_match_device()
+> is supposed to return the match for the first entry in the compatible
+> property, then if there was no match, move on to looking at the next
+> entry in the compatible property, etc. In practice, I think it's still
+> not implemented quite correctly for this, but you can make it work by
+> putting the newest compatible value first in the match table.
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
