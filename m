@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756647Ab3BFQfm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 11:35:42 -0500
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:49150 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754767Ab3BFQfj (ORCPT
+	id S1757158Ab3BFQiX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 11:38:23 -0500
+Received: from mail-ia0-f177.google.com ([209.85.210.177]:51102 "EHLO
+	mail-ia0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755733Ab3BFQiV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 11:35:39 -0500
-From: Emil Goode <emilgoode@gmail.com>
-To: lindner_marek@yahoo.de, siwu@hrz.tu-chemnitz.de, ordex@autistici.org,
-        davem@davemloft.net
-Cc: b.a.t.m.a.n@lists.open-mesh.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Emil Goode <emilgoode@gmail.com>
-Subject: [PATCH] batman-adv: Remove unused variable
-Date: Wed,  6 Feb 2013 17:37:41 +0100
-Message-Id: <1360168661-16871-1-git-send-email-emilgoode@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 6 Feb 2013 11:38:21 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1357764194-12677-7-git-send-email-thierry.reding@avionic-design.de>
+References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de>
+	<1357764194-12677-7-git-send-email-thierry.reding@avionic-design.de>
+Date: Wed, 6 Feb 2013 17:38:20 +0100
+Message-ID: <CACRpkdYV5w6BksUjXvXs=88BovUyXgRt-vXSD0twjRpzbZcvFQ@mail.gmail.com>
+Subject: Re: [PATCH 06/14] ARM: pci: Keep pci_common_init() around after init
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Thierry Reding <thierry.reding@avionic-design.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-tegra@vger.kernel.org,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-pci@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Andrew Murray <andrew.murray@arm.com>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The commit ed242d01 removed a node parameter from iterators.
-This patch removes a hlist_node struct that is no longer used.
+On Wed, Jan 9, 2013 at 9:43 PM, Thierry Reding
+<thierry.reding@avionic-design.de> wrote:
 
-Sparse gives a warning:
+> When using deferred driver probing, PCI host controller drivers may
+> actually require this function after the init stage.
+>
+> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
 
-net/batman-adv/originator.c:411:21: warning:
-	unused variable ‘node_tmp’ [-Wunused-variable]
+There seem to be a proliferation of these patches now.
 
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
----
- net/batman-adv/originator.c |    1 -
- 1 file changed, 1 deletion(-)
+Isn't this just papering over the real problem? The discarding
+of __init sections need to happen *after* all deferred probes
+are complete, lest we have to remove *all* __init sections from
+*all* drivers in the kernel, don't we?
 
-diff --git a/net/batman-adv/originator.c b/net/batman-adv/originator.c
-index 43d0f89..96fb80b 100644
---- a/net/batman-adv/originator.c
-+++ b/net/batman-adv/originator.c
-@@ -408,7 +408,6 @@ int batadv_orig_seq_print_text(struct seq_file *seq, void *offset)
- 	struct net_device *net_dev = (struct net_device *)seq->private;
- 	struct batadv_priv *bat_priv = netdev_priv(net_dev);
- 	struct batadv_hashtable *hash = bat_priv->orig_hash;
--	struct hlist_node *node_tmp;
- 	struct hlist_head *head;
- 	struct batadv_hard_iface *primary_if;
- 	struct batadv_orig_node *orig_node;
--- 
-1.7.10.4
-
+Yours,
+Linus Walleij
