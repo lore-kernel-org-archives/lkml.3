@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754307Ab3BFNAl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 08:00:41 -0500
-Received: from mail-ia0-f175.google.com ([209.85.210.175]:53305 "EHLO
-	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751075Ab3BFNAj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 08:00:39 -0500
+	id S1754477Ab3BFNCL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 08:02:11 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:20362 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751075Ab3BFNCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 08:02:06 -0500
+Message-ID: <51125431.2090300@imgtec.com>
+Date: Wed, 6 Feb 2013 13:01:37 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <51124FF2.2070605@samsung.com>
-References: <1360149775-19606-1-git-send-email-jonghwa3.lee@samsung.com>
-	<D958900912E20642BCBC71664EFECE3E6E1B6C6A52@BGMAIL02.nvidia.com>
-	<51124FF2.2070605@samsung.com>
-Date: Wed, 6 Feb 2013 21:00:38 +0800
-Message-ID: <CAN1soZwtchSj_idRCu=6Q5uxY8LfZ+HTOQU2Y72Cspbd49xeuw@mail.gmail.com>
-Subject: Re: [PATCH] rtc: Modify leap year test for more simpler way
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: jonghwa3.lee@samsung.com
-Cc: Venu Byravarasu <vbyravarasu@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Vineet Gupta <vgupta@synopsys.com>
+Subject: Re: linux-next: manual merge of the metag tree with the arc tree
+References: <20130206110346.edff1db373e5badee7df04c4@canb.auug.org.au>
+In-Reply-To: <20130206110346.edff1db373e5badee7df04c4@canb.auug.org.au>
+X-Enigmail-Version: 1.4.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="------------enig6B81146F0C8EC5CA914ACBA3"
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2013_02_06_13_01_51
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 6, 2013 at 8:43 PM,  <jonghwa3.lee@samsung.com> wrote:
-> On 2013년 02월 06일 20:42, Venu Byravarasu wrote:
->> By definition, leap year is one, which is a divisible by 4 & 400, excluding multiples of 100s.
->> Hence I feel this patch is not correct.
->
-> No, I think you might misunderstood the it's meaning. The former code checks
-> whether if it is multiple of 4 or not. Formal mathematical way to verify multiple of 4
-> is just checks the last two digits are multiple of 4. This '(!year % 4) && (year % 100)'
-> part does it. But with only that checking, it may miss the case of multiple of 400 which
-> is also multiple of 4. Then my modification checks in hexadecimal, whether if number
-> has any of 1st and 2nd bit with value 1. Because any number which has all bits above
-> the 3rd can be divided with 4(2^2).
-> (e.g. 44(0b101100) = 2^5+2^3+2^2 = 2^2(2^3 + 2 + 1))
-> So It does same things with less instructions.
+--------------enig6B81146F0C8EC5CA914ACBA3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-I still can't understand your logic.
+On 06/02/13 00:03, Stephen Rothwell wrote:
+> Hi James,
+>=20
+> Today's linux-next merge of the metag tree got a conflict in
+> tools/perf/perf.h between commit 12bf48ef6194 ("perf, ARC: Enable
+> building perf tools for ARC") from the arc tree and commit 6c4a2bebec36=
 
-Please check whether 200 year is leap year.
+> ("perf: Enable building perf tools for Meta") from the metag tree.
+>=20
+> I fixed it up (see below) and can carry the fix as necessary (no action=
 
-200(decimal) = 2b11001000
+> is required).
+>=20
 
-!(200 & 0x3) = 1 (Your condition said that 200 year is a leap year.)
+Thanks, looks good to me
 
-According to this logic in below.
- if year mod 4 = 0 and year mod 100 <> 0 or year mod 400 = 0, then
-it's a leap year.
+Cheers
+James
 
-This tells us that 200 year isn't a leap year because 200 mod 100 ==
-0. So who is wrong?
 
-Regards
-Haojian
+--------------enig6B81146F0C8EC5CA914ACBA3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRElQ9AAoJEKHZs+irPybfYUsP+wXQPHJeNIw9riM2ZEYUs2gL
+GK1eWMUTMVbJrhtMTfgeYiuw1gM6HjAP6Vby2bSRCtrusqLsR4VoQV2YFhCDVYLl
+u+G1vEjM17ukiOpF3kPqKCIysGuf58p85tNbvrKkZT0NoaGZeZDr0T7Wi8a7Q8Da
+zV7RqW45jthrTxayky7vyB3M/aG//DRP1NiJsp0v+1dxckCnNT6Wk/HHhwS34mDu
+37NKGisCPeE/An39BjlLuRcC+nPnc/5a+Z8dJOBo4qWmJQkwS/hXqNhJCQbPYl/q
+BWfY+BSjEffRN0/BVfdVUDRzbpRAX5Irq3tl/cIvUydsxL4ig55iUC7hF6lrNRUy
+eX32wpMZInXxIVJgqsdkB0q1NwBEX2Bti35QneoGP0U/LMrk3I7ONlbRDUAjPGDn
+bwujW+Af6+d2hNbsNh2k6xM4/DFTBUwCqIz13Kd6TW3fbRtLSrLdzjvMIG8s4YTl
+4xrxyLMbmHDrAv2UoD1QZK2OgJzRfo5AlsDkQp/44UXttif6IBtCaEyvxdyc3aoG
+9LuLHuLrGw+ZrVC9ffyvqFK2ueJMcA5r6A4lbeJnSjGU3G00aqmtlTdvJOIsx+UZ
+hcMoEzD+rs1IWiU8jfj75ASRs76F/gNzSnUBgkIn1VOfUzzUxBILN4aLeKiYTqVC
+pr0UMhdLSIWF2ROr3c5i
+=fWCw
+-----END PGP SIGNATURE-----
+
+--------------enig6B81146F0C8EC5CA914ACBA3--
+
