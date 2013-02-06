@@ -1,91 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758452Ab3BFTw7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 14:52:59 -0500
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:53576 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758316Ab3BFTv2 (ORCPT
+	id S1758372Ab3BFTxU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 14:53:20 -0500
+Received: from mail-da0-f48.google.com ([209.85.210.48]:57835 "EHLO
+	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758292Ab3BFTvW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 14:51:28 -0500
-MIME-Version: 1.0
-In-Reply-To: <511295A8.5070106@monstr.eu>
-References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com>
-	<CACxGe6tjyx3GTgNgMRtvwhrFsTGizkeTqY_N6=2gdQjvMSD8Ug@mail.gmail.com>
-	<CAHTX3d+XZ6VJDVYKHhg33Z+O8Koo99Yq--W8qitcSe543dWUuA@mail.gmail.com>
-	<11273481.VQZWGoSGBC@wuerfel>
-	<511295A8.5070106@monstr.eu>
-Date: Wed, 6 Feb 2013 20:51:26 +0100
-X-Google-Sender-Auth: 9FdvMVv1gzZ_ilJOFiL8poVUkkU
-Message-ID: <CAMuHMdUia08Upt6p8cVrC7Uazo3KGbSCZEg-mLaNYALdty88bA@mail.gmail.com>
-Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16
- with generic iowrite(read)8/16(be)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: monstr@monstr.eu
-Cc: Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@secretlab.ca>,
-        Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, dahinds@users.sourceforge.net
-Content-Type: text/plain; charset=UTF-8
+	Wed, 6 Feb 2013 14:51:22 -0500
+From: Tejun Heo <tj@kernel.org>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 73/77] posix-timers: convert to idr_alloc()
+Date: Wed,  6 Feb 2013 11:40:45 -0800
+Message-Id: <1360179649-22465-74-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.1
+In-Reply-To: <1360179649-22465-1-git-send-email-tj@kernel.org>
+References: <1360179649-22465-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 6, 2013 at 6:40 PM, Michal Simek <monstr@monstr.eu> wrote:
-> One question regarding to asm-generic/io.h about iowrite16be implementation
->
-> #define iowrite16be(v, addr)   iowrite16(be16_to_cpu(v), (addr))
-> #define iowrite16(v, addr)      writew((v), (addr))
-> #define writew(b,addr) __raw_writew(__cpu_to_le16(b),addr)
->
-> static inline void __raw_writew(u16 b, volatile void __iomem *addr)
-> {
->         *(volatile u16 __force *) addr = b;
-> }
->
-> How is this suppose to work on Big Endian?
-> be16_to_cpu(v) is (v)
-> and
-> __cpu_to_le16(b) is swab16(v)
+Convert to the much saner new idr interface.
 
-Yes.
+Only compile tested.
 
-> On little
-> be16_to_cpu(v) is swab16(v)
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/posix-timers.c | 18 ++++++++----------
+ 1 file changed, 8 insertions(+), 10 deletions(-)
 
-Yes.
+diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
+index 69185ae..e897f66 100644
+--- a/kernel/posix-timers.c
++++ b/kernel/posix-timers.c
+@@ -552,24 +552,22 @@ SYSCALL_DEFINE3(timer_create, const clockid_t, which_clock,
+ 		return -EAGAIN;
+ 
+ 	spin_lock_init(&new_timer->it_lock);
+- retry:
+-	if (unlikely(!idr_pre_get(&posix_timers_id, GFP_KERNEL))) {
+-		error = -EAGAIN;
+-		goto out;
+-	}
++
++	idr_preload(GFP_KERNEL);
+ 	spin_lock_irq(&idr_lock);
+-	error = idr_get_new(&posix_timers_id, new_timer, &new_timer_id);
++	error = idr_alloc(&posix_timers_id, new_timer, 0, 0, GFP_NOWAIT);
+ 	spin_unlock_irq(&idr_lock);
+-	if (error) {
+-		if (error == -EAGAIN)
+-			goto retry;
++	idr_preload_end();
++	if (error < 0) {
+ 		/*
+ 		 * Weird looking, but we return EAGAIN if the IDR is
+ 		 * full (proper POSIX return value for this)
+ 		 */
+-		error = -EAGAIN;
++		if (error == -ENOSPC)
++			error = -EAGAIN;
+ 		goto out;
+ 	}
++	new_timer_id = error;
+ 
+ 	it_id_set = IT_ID_SET;
+ 	new_timer->it_id = (timer_t) new_timer_id;
+-- 
+1.8.1
 
-> and
-> __cpu_to_le16(swab(b)) is swab16(v)
-
-???
-
-Don't you mean "__cpu_to_le16(b) is (b)"?
-
-> What I would expect is
-> #define iowrite16be(v, addr)   __raw_writew(__cpu_to_be16(v), addr)
-
-Indeed, it should be "__cpu_to_be16(v)" instead of "be16_to_cpu(v)".
-
-Same for iowrite32be().
-
-> on Big endian:
-> __cpu_to_be16(v) is (v)
-> on Little endian:
-> __cpu_to_be16(v) is swab(v)
->
-> What am I missing here?
-
-But as both conversions are identical (just swapping 2 bytes), It Just Works.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
