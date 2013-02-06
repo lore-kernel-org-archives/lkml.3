@@ -1,100 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753844Ab3BFLTO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 06:19:14 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:44345 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753171Ab3BFLTK (ORCPT
+	id S1752879Ab3BFLVV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 06:21:21 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:50609 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751025Ab3BFLVT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 06:19:10 -0500
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] HID: multitouch: do not use pointers towards hid-core
-Date: Wed,  6 Feb 2013 12:10:47 +0100
-Message-Id: <1360149047-23061-1-git-send-email-benjamin.tissoires@gmail.com>
-X-Mailer: git-send-email 1.8.1
+	Wed, 6 Feb 2013 06:21:19 -0500
+From: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
+To: <linux-i2c@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-kernel@vger.kernel.org>
+CC: <nsekhar@ti.com>, <khilman@deeprootsystems.com>, <ben-linux@fluff.org>,
+        <w.sang@pengutronix.de>, <manishv.b@ti.com>
+Subject: [PATCH V2] i2c: davinci: update to devm_* API
+Date: Wed, 6 Feb 2013 16:52:16 +0530
+Message-ID: <1360149736-32523-1-git-send-email-manishv.b@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The previous implementation registered a pointer towards hid-core
-to the value of contact count. This is not safe and may be difficult
-to debug if hid-core ever changes its implementation.
-The use of regular indexes is a better choice.
+Update the code to use devm_* API so that driver
+core will manage resources.
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Signed-off-by: Vishwanathrao Badarkhe, Manish <manishv.b@ti.com>
 ---
- drivers/hid/hid-multitouch.c | 19 +++++++++++++------
- 1 file changed, 13 insertions(+), 6 deletions(-)
+Changes since V1:
+  - Rebase on top of v3.8-rc6 of linus tree.
+  - Apply devm operation on clk_get.
+ 
+:100644 100644 6a0a553... da4e218... M	drivers/i2c/busses/i2c-davinci.c
+ drivers/i2c/busses/i2c-davinci.c |   45 +++++++++++---------------------------
+ 1 files changed, 13 insertions(+), 32 deletions(-)
 
-diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index 28af54f..e22fbd3 100644
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -84,7 +84,8 @@ struct mt_device {
- 	struct mt_class mtclass;	/* our mt device class */
- 	struct mt_fields *fields;	/* temporary placeholder for storing the
- 					   multitouch fields */
--	__s32 *contactcount;		/* contact count value in the report */
-+	int cc_index;	/* contact count field index in the report */
-+	int cc_value_index;	/* contact count value index in the field */
- 	unsigned last_field_index;	/* last field index of the report */
- 	unsigned last_slot_field;	/* the last field of a slot */
- 	unsigned mt_report_id;	/* the report ID of the multitouch device */
-@@ -269,7 +270,7 @@ static ssize_t mt_set_quirks(struct device *dev,
+diff --git a/drivers/i2c/busses/i2c-davinci.c b/drivers/i2c/busses/i2c-davinci.c
+index 6a0a553..da4e218 100644
+--- a/drivers/i2c/busses/i2c-davinci.c
++++ b/drivers/i2c/busses/i2c-davinci.c
+@@ -643,7 +643,7 @@ static int davinci_i2c_probe(struct platform_device *pdev)
+ {
+ 	struct davinci_i2c_dev *dev;
+ 	struct i2c_adapter *adap;
+-	struct resource *mem, *irq, *ioarea;
++	struct resource *mem, *irq;
+ 	int r;
  
- 	td->mtclass.quirks = val;
- 
--	if (!td->contactcount)
-+	if (td->cc_index < 0)
- 		td->mtclass.quirks &= ~MT_QUIRK_CONTACT_CNT_ACCURATE;
- 
- 	return count;
-@@ -483,7 +484,8 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 			td->last_field_index = field->index;
- 			return 1;
- 		case HID_DG_CONTACTCOUNT:
--			td->contactcount = field->value + usage->usage_index;
-+			td->cc_index = field->index;
-+			td->cc_value_index = usage->usage_index;
- 			td->last_field_index = field->index;
- 			return 1;
- 		case HID_DG_CONTACTMAX:
-@@ -701,8 +703,12 @@ static void mt_report(struct hid_device *hid, struct hid_report *report)
- 	 * Includes multi-packet support where subsequent
- 	 * packets are sent with zero contactcount.
- 	 */
--	if (td->contactcount && *td->contactcount)
--		td->num_expected = *td->contactcount;
-+	if (td->cc_index >= 0) {
-+		struct hid_field *field = report->field[td->cc_index];
-+		int value = field->value[td->cc_value_index];
-+		if (value)
-+			td->num_expected = value;
-+	}
- 
- 	for (r = 0; r < report->maxfield; r++) {
- 		field = report->field[r];
-@@ -786,7 +792,7 @@ static void mt_post_parse(struct mt_device *td)
- 		td->last_slot_field = f->usages[field_count_per_touch - 1];
+ 	/* NOTE: driver uses the static register mapping */
+@@ -659,17 +659,11 @@ static int davinci_i2c_probe(struct platform_device *pdev)
+ 		return -ENODEV;
  	}
  
--	if (!td->contactcount)
-+	if (td->cc_index < 0)
- 		cls->quirks &= ~MT_QUIRK_CONTACT_CNT_ACCURATE;
+-	ioarea = request_mem_region(mem->start, resource_size(mem),
+-				    pdev->name);
+-	if (!ioarea) {
+-		dev_err(&pdev->dev, "I2C region already claimed\n");
+-		return -EBUSY;
+-	}
+-
+-	dev = kzalloc(sizeof(struct davinci_i2c_dev), GFP_KERNEL);
++	dev = devm_kzalloc(&pdev->dev, sizeof(struct davinci_i2c_dev),
++			GFP_KERNEL);
+ 	if (!dev) {
+-		r = -ENOMEM;
+-		goto err_release_region;
++		dev_err(&pdev->dev, "Memory allocation failed\n");
++		return -ENOMEM;
+ 	}
+ 
+ 	init_completion(&dev->cmd_complete);
+@@ -699,22 +693,24 @@ static int davinci_i2c_probe(struct platform_device *pdev)
+ 		dev->pdata = &davinci_i2c_platform_data_default;
+ 	}
+ 
+-	dev->clk = clk_get(&pdev->dev, NULL);
++	dev->clk = devm_clk_get(&pdev->dev, NULL);
+ 	if (IS_ERR(dev->clk)) {
+ 		r = -ENODEV;
+ 		goto err_free_mem;
+ 	}
+ 	clk_prepare_enable(dev->clk);
+ 
+-	dev->base = ioremap(mem->start, resource_size(mem));
++	dev->base = devm_request_and_ioremap(&pdev->dev, mem);
+ 	if (!dev->base) {
+ 		r = -EBUSY;
+-		goto err_mem_ioremap;
++		dev_err(&pdev->dev, "I2C region already claimed\n");
++		goto err_unuse_clocks;
+ 	}
+ 
+ 	i2c_davinci_init(dev);
+ 
+-	r = request_irq(dev->irq, i2c_davinci_isr, 0, pdev->name, dev);
++	r = devm_request_irq(&pdev->dev, dev->irq, i2c_davinci_isr, 0,
++			pdev->name, dev);
+ 	if (r) {
+ 		dev_err(&pdev->dev, "failure requesting irq %i\n", dev->irq);
+ 		goto err_unuse_clocks;
+@@ -723,7 +719,7 @@ static int davinci_i2c_probe(struct platform_device *pdev)
+ 	r = i2c_davinci_cpufreq_register(dev);
+ 	if (r) {
+ 		dev_err(&pdev->dev, "failed to register cpufreq\n");
+-		goto err_free_irq;
++		goto err_unuse_clocks;
+ 	}
+ 
+ 	adap = &dev->adapter;
+@@ -740,26 +736,18 @@ static int davinci_i2c_probe(struct platform_device *pdev)
+ 	r = i2c_add_numbered_adapter(adap);
+ 	if (r) {
+ 		dev_err(&pdev->dev, "failure adding adapter\n");
+-		goto err_free_irq;
++		goto err_unuse_clocks;
+ 	}
+ 	of_i2c_register_devices(adap);
+ 
+ 	return 0;
+ 
+-err_free_irq:
+-	free_irq(dev->irq, dev);
+ err_unuse_clocks:
+-	iounmap(dev->base);
+-err_mem_ioremap:
+ 	clk_disable_unprepare(dev->clk);
+-	clk_put(dev->clk);
+ 	dev->clk = NULL;
+ err_free_mem:
+ 	platform_set_drvdata(pdev, NULL);
+ 	put_device(&pdev->dev);
+-	kfree(dev);
+-err_release_region:
+-	release_mem_region(mem->start, resource_size(mem));
+ 
+ 	return r;
+ }
+@@ -767,7 +755,6 @@ err_release_region:
+ static int davinci_i2c_remove(struct platform_device *pdev)
+ {
+ 	struct davinci_i2c_dev *dev = platform_get_drvdata(pdev);
+-	struct resource *mem;
+ 
+ 	i2c_davinci_cpufreq_deregister(dev);
+ 
+@@ -776,16 +763,10 @@ static int davinci_i2c_remove(struct platform_device *pdev)
+ 	put_device(&pdev->dev);
+ 
+ 	clk_disable_unprepare(dev->clk);
+-	clk_put(dev->clk);
+ 	dev->clk = NULL;
+ 
+ 	davinci_i2c_write_reg(dev, DAVINCI_I2C_MDR_REG, 0);
+-	free_irq(dev->irq, dev);
+-	iounmap(dev->base);
+-	kfree(dev);
+ 
+-	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	release_mem_region(mem->start, resource_size(mem));
+ 	return 0;
  }
  
-@@ -845,6 +851,7 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
- 	td->mtclass = *mtclass;
- 	td->inputmode = -1;
- 	td->maxcontact_report_id = -1;
-+	td->cc_index = -1;
- 	hid_set_drvdata(hdev, td);
- 
- 	td->fields = kzalloc(sizeof(struct mt_fields), GFP_KERNEL);
 -- 
-1.8.1
+1.7.4.1
 
