@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758461Ab3BFTzl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 14:55:41 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:41838 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030253Ab3BFTvL (ORCPT
+	id S1030250Ab3BFTvJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 14:51:09 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:59672 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030179Ab3BFTuy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 14:51:11 -0500
+	Wed, 6 Feb 2013 14:50:54 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 67/77] dlm: convert to idr_alloc()
-Date: Wed,  6 Feb 2013 11:40:39 -0800
-Message-Id: <1360179649-22465-68-git-send-email-tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: [PATCH 56/77] power: convert to idr_alloc()
+Date: Wed,  6 Feb 2013 11:40:28 -0800
+Message-Id: <1360179649-22465-57-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1360179649-22465-1-git-send-email-tj@kernel.org>
 References: <1360179649-22465-1-git-send-email-tj@kernel.org>
@@ -20,101 +21,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert to the much saner new idr interface.  Error return values from
-recover_idr_add() mix -1 and -errno.  The conversion doesn't change
-that but it looks iffy.
+Convert to the much saner new idr interface.
 
 Only compile tested.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: Anton Vorontsov <cbou@mail.ru>
+Cc: David Woodhouse <dwmw2@infradead.org>
 ---
- fs/dlm/lock.c    | 18 ++++++------------
- fs/dlm/recover.c | 27 +++++++++++++--------------
- 2 files changed, 19 insertions(+), 26 deletions(-)
+ drivers/power/bq2415x_charger.c | 11 +++--------
+ drivers/power/bq27x00_battery.c |  9 +++------
+ drivers/power/ds2782_battery.c  |  9 ++-------
+ 3 files changed, 8 insertions(+), 21 deletions(-)
 
-diff --git a/fs/dlm/lock.c b/fs/dlm/lock.c
-index f750165..1b11466 100644
---- a/fs/dlm/lock.c
-+++ b/fs/dlm/lock.c
-@@ -1183,7 +1183,7 @@ static void detach_lkb(struct dlm_lkb *lkb)
- static int create_lkb(struct dlm_ls *ls, struct dlm_lkb **lkb_ret)
- {
- 	struct dlm_lkb *lkb;
--	int rv, id;
-+	int rv;
- 
- 	lkb = dlm_allocate_lkb(ls);
- 	if (!lkb)
-@@ -1199,19 +1199,13 @@ static int create_lkb(struct dlm_ls *ls, struct dlm_lkb **lkb_ret)
- 	mutex_init(&lkb->lkb_cb_mutex);
- 	INIT_WORK(&lkb->lkb_cb_work, dlm_callback_work);
- 
-- retry:
--	rv = idr_pre_get(&ls->ls_lkbidr, GFP_NOFS);
--	if (!rv)
--		return -ENOMEM;
--
-+	idr_preload(GFP_NOFS);
- 	spin_lock(&ls->ls_lkbidr_spin);
--	rv = idr_get_new_above(&ls->ls_lkbidr, lkb, 1, &id);
--	if (!rv)
--		lkb->lkb_id = id;
-+	rv = idr_alloc(&ls->ls_lkbidr, lkb, 1, 0, GFP_NOWAIT);
-+	if (rv >= 0)
-+		lkb->lkb_id = rv;
- 	spin_unlock(&ls->ls_lkbidr_spin);
--
--	if (rv == -EAGAIN)
--		goto retry;
-+	idr_preload_end();
- 
- 	if (rv < 0) {
- 		log_error(ls, "create_lkb idr error %d", rv);
-diff --git a/fs/dlm/recover.c b/fs/dlm/recover.c
-index 236d108..a6bc63f 100644
---- a/fs/dlm/recover.c
-+++ b/fs/dlm/recover.c
-@@ -305,27 +305,26 @@ static int recover_idr_empty(struct dlm_ls *ls)
- static int recover_idr_add(struct dlm_rsb *r)
- {
- 	struct dlm_ls *ls = r->res_ls;
--	int rv, id;
--
--	rv = idr_pre_get(&ls->ls_recover_idr, GFP_NOFS);
--	if (!rv)
--		return -ENOMEM;
-+	int rv;
- 
-+	idr_preload(GFP_NOFS);
- 	spin_lock(&ls->ls_recover_idr_lock);
- 	if (r->res_id) {
--		spin_unlock(&ls->ls_recover_idr_lock);
--		return -1;
--	}
--	rv = idr_get_new_above(&ls->ls_recover_idr, r, 1, &id);
--	if (rv) {
--		spin_unlock(&ls->ls_recover_idr_lock);
--		return rv;
-+		rv = -1;
-+		goto out_unlock;
+diff --git a/drivers/power/bq2415x_charger.c b/drivers/power/bq2415x_charger.c
+index ca70365..3f00568 100644
+--- a/drivers/power/bq2415x_charger.c
++++ b/drivers/power/bq2415x_charger.c
+@@ -1504,16 +1504,11 @@ static int bq2415x_probe(struct i2c_client *client,
  	}
--	r->res_id = id;
-+	rv = idr_alloc(&ls->ls_recover_idr, r, 1, 0, GFP_NOWAIT);
-+	if (rv < 0)
-+		goto out_unlock;
-+
-+	r->res_id = rv;
- 	ls->ls_recover_list_count++;
- 	dlm_hold_rsb(r);
-+	rv = 0;
-+out_unlock:
- 	spin_unlock(&ls->ls_recover_idr_lock);
--	return 0;
-+	idr_preload_end();
-+	return rv;
- }
  
- static void recover_idr_del(struct dlm_rsb *r)
+ 	/* Get new ID for the new device */
+-	ret = idr_pre_get(&bq2415x_id, GFP_KERNEL);
+-	if (ret == 0)
+-		return -ENOMEM;
+-
+ 	mutex_lock(&bq2415x_id_mutex);
+-	ret = idr_get_new(&bq2415x_id, client, &num);
++	num = idr_alloc(&bq2415x_id, client, 0, 0, GFP_KERNEL);
+ 	mutex_unlock(&bq2415x_id_mutex);
+-
+-	if (ret < 0)
+-		return ret;
++	if (num < 0)
++		return num;
+ 
+ 	name = kasprintf(GFP_KERNEL, "%s-%d", id->name, num);
+ 	if (!name) {
+diff --git a/drivers/power/bq27x00_battery.c b/drivers/power/bq27x00_battery.c
+index 8ccf5d7..26037ca 100644
+--- a/drivers/power/bq27x00_battery.c
++++ b/drivers/power/bq27x00_battery.c
+@@ -791,14 +791,11 @@ static int bq27x00_battery_probe(struct i2c_client *client,
+ 	int retval = 0;
+ 
+ 	/* Get new ID for the new battery device */
+-	retval = idr_pre_get(&battery_id, GFP_KERNEL);
+-	if (retval == 0)
+-		return -ENOMEM;
+ 	mutex_lock(&battery_mutex);
+-	retval = idr_get_new(&battery_id, client, &num);
++	num = idr_alloc(&battery_id, client, 0, 0, GFP_KERNEL);
+ 	mutex_unlock(&battery_mutex);
+-	if (retval < 0)
+-		return retval;
++	if (num < 0)
++		return num;
+ 
+ 	name = kasprintf(GFP_KERNEL, "%s-%d", id->name, num);
+ 	if (!name) {
+diff --git a/drivers/power/ds2782_battery.c b/drivers/power/ds2782_battery.c
+index e7301b3..c09e772 100644
+--- a/drivers/power/ds2782_battery.c
++++ b/drivers/power/ds2782_battery.c
+@@ -395,17 +395,12 @@ static int ds278x_battery_probe(struct i2c_client *client,
+ 	}
+ 
+ 	/* Get an ID for this battery */
+-	ret = idr_pre_get(&battery_id, GFP_KERNEL);
+-	if (ret == 0) {
+-		ret = -ENOMEM;
+-		goto fail_id;
+-	}
+-
+ 	mutex_lock(&battery_lock);
+-	ret = idr_get_new(&battery_id, client, &num);
++	ret = idr_alloc(&battery_id, client, 0, 0, GFP_KERNEL);
+ 	mutex_unlock(&battery_lock);
+ 	if (ret < 0)
+ 		goto fail_id;
++	num = ret;
+ 
+ 	info = kzalloc(sizeof(*info), GFP_KERNEL);
+ 	if (!info) {
 -- 
 1.8.1
 
