@@ -1,131 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757320Ab3BFPYv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 10:24:51 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:52190 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757184Ab3BFPYu (ORCPT
+	id S1757337Ab3BFPal (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 10:30:41 -0500
+Received: from mail-ia0-f179.google.com ([209.85.210.179]:40289 "EHLO
+	mail-ia0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757289Ab3BFPak (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 10:24:50 -0500
-Date: Wed, 6 Feb 2013 09:24:34 -0600
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>, akpm@linux-foundation.org,
-        keescook@chromium.org, ebiederm@xmission.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, marcel@holtmann.org
-Subject: Re: [PATCH] kernel: arg2 is unsigned long which is never < 0
-Message-ID: <20130206152434.GB15220@sergelap>
-References: <511217F3.6050800@asianux.com>
- <20130206085653.GQ1712@moon>
- <51123236.3060001@asianux.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <51123236.3060001@asianux.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 6 Feb 2013 10:30:40 -0500
+Message-ID: <1360164629.3398.2.camel@phoenix>
+Subject: [PATCH] mfd: max8997: Return proper error if pdata is NULL
+From: Axel Lin <axel.lin@ingics.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>, linux-kernel@vger.kernel.org
+Date: Wed, 06 Feb 2013 23:30:29 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Chen Gang (gang.chen@asianux.com):
-> 于 2013年02月06日 16:56, Cyrill Gorcunov 写道:
-> > On Wed, Feb 06, 2013 at 04:44:35PM +0800, Chen Gang wrote:
-> >> > 
-> >> > diff --git a/kernel/sys.c b/kernel/sys.c
-> >> > index 24d1ef5..568b9ca 100644
-> >> > --- a/kernel/sys.c
-> >> > +++ b/kernel/sys.c
-> >> > @@ -2027,7 +2027,7 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
-> >> >  			error = get_dumpable(me->mm);
-> >> >  			break;
-> >> >  		case PR_SET_DUMPABLE:
-> >> > -			if (arg2 < 0 || arg2 > 1) {
-> >> > +			if (arg2 > 1) {
-> >> >  				error = -EINVAL;
-> >> >  				break;
-> >> >  			}
-> > I guess
-> > 
-> > 	if (arg2 != SUID_DUMPABLE_DISABLED &&
-> > 	    arg2 != SUID_DUMPABLE_ENABLED) {
-> > 		error = -EINVAL;
-> > 		break;
-> > 	}
-> > 
-> > would be better. Still, current patch looks good to me.
-> 
-> thank you for your suggestion, firstly.
-> 
-> and after read more, it seems a little more complex:
-> for me, I think it would be better:
-> 
->  	if (arg2 != SUID_DUMP_DISABLE && arg2 != SUID_DUMP_USER) {
->  		error = -EINVAL;
->  		break;
->  	}
-> 
-> 
-> the reason is below:
-> 
-> it has 2 branches:
-> 
->   branch 1:
-> 
->     #define SUID_DUMP_DISABLE      0       /* No setuid dumping */
->     #define SUID_DUMP_USER         1       /* Dump as user of process */
->     #define SUID_DUMP_ROOT         2       /* Dump as root */
-> 
->     in patch d6e711448137ca3301512cec41a2c2ce852b3d0a
->       Signed-of-by Alan Cox in 2005.
->       define these constant for using.
->       change 2 choices to 3 choices (add a new choice).
-> 
->     in patch abf75a5033d4da7b8a7e92321d74021d1fcfb502
->       Signed-of-by Marcel Holtmann in 2006.
->       find and fix a security issue for it.
-> 
-> 
->   branch 2:
-> 
->     #define SUID_DUMPABLE_DISABLED  0
->     #define SUID_DUMPABLE_ENABLED   1
->     #define SUID_DUMPABLE_SAFE      2
-> 
->     in patch 54b501992dd2a839e94e76aa392c392b55080ce8
->       Signed-of-by Kees Cook in Jul 30 2012
->       define the constants for using
->       print warning when detect unsafe core_pattern settings
-> 
->     in patch 0f4cfb2e4e7a7e4e97a3e90e2ba1062f07fb2cb1
->       Signed-of-by Oleg Nesterov in Oct 4 2012
->       use SUID_DUMPABLE_ENABLED rather than hardcoded 1
-> 
-> analysing:
->   branch 1 and branch 2 have the same values with different macro names.
->   branch 1 is much older than branch 2.
->   for features:
->     branch 1 is for functional feature and bug fix,
->     branch 2 is for printing warning and beautifying code.
-> 
->   it seems:
->     branch 2 did not notice the branch 1, before it performs.
->     if it noticed, it is meanless to define the new macros.
-> 
-> result:
->   still use the macros of branch 1
->   and use branch 1 macros instead of branch 2 macros (need an additional patch).
-> 
->   :-)
-> 
->   Regards.
+Return proper error instead of 0 if pdata is NULL.
 
-This really seems like splitting hairs to me.
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/mfd/max8997.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+diff --git a/drivers/mfd/max8997.c b/drivers/mfd/max8997.c
+index 1471405..823f34b 100644
+--- a/drivers/mfd/max8997.c
++++ b/drivers/mfd/max8997.c
+@@ -209,8 +209,10 @@ static int max8997_i2c_probe(struct i2c_client *i2c,
+ 		}
+ 	}
+ 
+-	if (!pdata)
++	if (!pdata) {
++		ret = -EINVAL;
+ 		goto err;
++	}
+ 
+ 	max8997->pdata = pdata;
+ 	max8997->ono = pdata->ono;
+-- 
+1.7.9.5
 
-on the original patch.
 
-thanks,
--serge
+
