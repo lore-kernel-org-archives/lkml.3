@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758040Ab3BFTus (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 14:50:48 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:33095 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758242Ab3BFTun (ORCPT
+	id S1758572Ab3BFT6w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 14:58:52 -0500
+Received: from mail-ia0-f170.google.com ([209.85.210.170]:50098 "EHLO
+	mail-ia0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756893Ab3BFTuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 14:50:43 -0500
+	Wed, 6 Feb 2013 14:50:51 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Roland Dreier <roland@purestorage.com>, linux-rdma@vger.kernel.org
-Subject: [PATCH 45/77] IB/ocrdma: convert to idr_alloc()
-Date: Wed,  6 Feb 2013 11:40:17 -0800
-Message-Id: <1360179649-22465-46-git-send-email-tj@kernel.org>
+        Jason Wang <jasowang@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>
+Subject: [PATCH 54/77] macvtap: convert to idr_alloc()
+Date: Wed,  6 Feb 2013 11:40:26 -0800
+Message-Id: <1360179649-22465-55-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1360179649-22465-1-git-send-email-tj@kernel.org>
 References: <1360179649-22465-1-git-send-email-tj@kernel.org>
@@ -26,44 +27,50 @@ Convert to the much saner new idr interface.
 Only compile tested.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Roland Dreier <roland@purestorage.com>
-Cc: linux-rdma@vger.kernel.org
+Cc: Jason Wang <jasowang@redhat.com>
+Cc: Michael S. Tsirkin <mst@redhat.com>
 ---
- drivers/infiniband/hw/ocrdma/ocrdma_main.c | 14 +-------------
- 1 file changed, 1 insertion(+), 13 deletions(-)
+ drivers/net/macvtap.c | 21 +++++----------------
+ 1 file changed, 5 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/infiniband/hw/ocrdma/ocrdma_main.c b/drivers/infiniband/hw/ocrdma/ocrdma_main.c
-index c4e0131..48928c8 100644
---- a/drivers/infiniband/hw/ocrdma/ocrdma_main.c
-+++ b/drivers/infiniband/hw/ocrdma/ocrdma_main.c
-@@ -51,18 +51,6 @@ static DEFINE_IDR(ocrdma_dev_id);
- 
- static union ib_gid ocrdma_zero_sgid;
- 
--static int ocrdma_get_instance(void)
--{
--	int instance = 0;
--
--	/* Assign an unused number */
--	if (!idr_pre_get(&ocrdma_dev_id, GFP_KERNEL))
--		return -1;
--	if (idr_get_new(&ocrdma_dev_id, NULL, &instance))
--		return -1;
--	return instance;
--}
--
- void ocrdma_get_guid(struct ocrdma_dev *dev, u8 *guid)
+diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+index b181dfb..1814cfe 100644
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -279,28 +279,17 @@ static int macvtap_receive(struct sk_buff *skb)
+ static int macvtap_get_minor(struct macvlan_dev *vlan)
  {
- 	u8 mac_addr[6];
-@@ -416,7 +404,7 @@ static struct ocrdma_dev *ocrdma_add(struct be_dev_info *dev_info)
- 		goto idr_err;
+ 	int retval = -ENOMEM;
+-	int id;
  
- 	memcpy(&dev->nic_info, dev_info, sizeof(*dev_info));
--	dev->id = ocrdma_get_instance();
-+	dev->id = idr_alloc(&ocrdma_dev_id, NULL, 0, 0, GFP_KERNEL);
- 	if (dev->id < 0)
- 		goto idr_err;
+ 	mutex_lock(&minor_lock);
+-	if (idr_pre_get(&minor_idr, GFP_KERNEL) == 0)
+-		goto exit;
+-
+-	retval = idr_get_new_above(&minor_idr, vlan, 1, &id);
+-	if (retval < 0) {
+-		if (retval == -EAGAIN)
+-			retval = -ENOMEM;
+-		goto exit;
+-	}
+-	if (id < MACVTAP_NUM_DEVS) {
+-		vlan->minor = id;
+-	} else {
++	retval = idr_alloc(&minor_idr, vlan, 1, MACVTAP_NUM_DEVS, GFP_KERNEL);
++	if (retval >= 0) {
++		vlan->minor = retval;
++	} else if (retval == -ENOSPC) {
+ 		printk(KERN_ERR "too many macvtap devices\n");
+ 		retval = -EINVAL;
+-		idr_remove(&minor_idr, id);
+ 	}
+-exit:
+ 	mutex_unlock(&minor_lock);
+-	return retval;
++	return retval < 0 ? retval : 0;
+ }
  
+ static void macvtap_free_minor(struct macvlan_dev *vlan)
 -- 
 1.8.1
 
