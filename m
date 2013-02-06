@@ -1,58 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757148Ab3BFPvZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 10:51:25 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:41212 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753765Ab3BFPvU (ORCPT
+	id S1757250Ab3BFPxx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 10:53:53 -0500
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:34006 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756394Ab3BFPxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 10:51:20 -0500
-Date: Wed, 6 Feb 2013 10:51:19 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Aaron Lu <aaron.lu@intel.com>
-cc: Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        <linux-pm@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-ide@vger.kernel.org>,
-        Aaron Lu <aaron.lwe@gmail.com>, Shane Huang <shane.huang@amd.com>
-Subject: Re: [PATCH v9 4/4] sd: change to auto suspend mode
-In-Reply-To: <5111BBA1.4010200@intel.com>
-Message-ID: <Pine.LNX.4.44L0.1302061048180.1893-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 6 Feb 2013 10:53:51 -0500
+Message-ID: <1360166020.3298.42.camel@thor.lan>
+Subject: Re: 3.8-rc regression with pps-ldisc due to 70ece7a731
+From: Peter Hurley <peter@hurleysoftware.com>
+To: George Spelvin <linux@horizon.com>
+Cc: jslaby@suse.cz, linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 06 Feb 2013 10:53:40 -0500
+In-Reply-To: <20130204010303.24971.qmail@science.horizon.com>
+References: <20130204010303.24971.qmail@science.horizon.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3-0pjh1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 125194 peter@hurleysoftware.com
+X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Feb 2013, Aaron Lu wrote:
+Hi George,
 
-> > The "if (err == -EAGAIN)" test and the call to pm_schedule_suspend seem
-> > to have been dropped since v8 of this series.  It looks like they ought
-> > to be moved into sdev_runtime_suspend.
+On Sun, 2013-02-03 at 20:03 -0500, George Spelvin wrote:
+> "TTY: n_tty, add ldisc data to n_tty"
 > 
-> I thought they were no longer needed...
+> The PPS line discipline has incestuous relations with the n_tty line
+> discipline, using some hooks to call internal routines.
+> 
+> However, I started noticing violent kernel explosions when testing 3.8-rc,
+> and after a bit of digging, I think it's due to the fact that the PPS code
+> assumes that the ->ldisc pointer is available to hold a pointer to a "pps"
+> structure, but this commit started using it in the core n_tty discipline.
+> 
+> If you look at pps_tty_open in drivers/pps/clients/pps-ldisc.c, you can
+> see it does:
+> 
+> 	pps = pps_register_source(&info, PPS_CAPTUREBOTH | \
+> 				PPS_OFFSETASSERT | PPS_OFFSETCLEAR);
+> 	if (pps == NULL) {
+> 		pr_err("cannot register PPS source \"%s\"\n", info.path);
+> 		return -ENOMEM;
+> 	}
+> 	tty->disc_data = pps;
+> 
+>         /* Should open N_TTY ldisc too */
+>         ret = alias_n_tty_open(tty);
+> 
+> Where "alias_n_tty_open" is filled in by n_tty_inherit_ops() to be
+> n_tty_open().  However, in this commit, n_tty_open() now allocates
+> its own structure and overwrites the disc_data pointer, leading to an
+> earth-shattering kaboom as NULL pointers are dereferenced in interrupt
+> handlers.
 
-You did not mention this in the patch description.
+Yuck. Little wonder it broke.
 
-> For sd, we have request based rutime PM and the PM core will always try
-> to autosuspend the device with the timer; and for sr, the poll will
-> trigger suspend constantly.
+> My first thought is to reserve a pointer in n_tty_data for the
+> pps structure and update the pps code to chase pointers one more
+> level.  But I wanted to solicit opinions.
 
-What if the poll has been disabled?
+Tight coupling is what caused this to break in the first place -- I
+don't think tighter coupling is the right answer.
 
-> And for both, we don't return -EAGAIN anyway.
-> So I suppose that code is not necessary?
+Alternate coming...
 
-You could replace it with WARN_ON(err == -EAGAIN).  That way if some 
-SCSI driver does return -EAGAIN in the future, people will know 
-something is wrong.
+Regards,
+Peter Hurley
 
-> BTW, I'll be on vocation till 02/17, and I don't have access to the
-> internet in my hometown, but please feel free to drop any comments and
-> I'll check them when I get back.
-
-I'm going on vacation next week too.  Enjoy your trip.
-
-Alan Stern
 
