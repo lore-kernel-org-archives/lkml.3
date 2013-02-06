@@ -1,75 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756660Ab3BFPPV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 10:15:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28671 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754686Ab3BFPPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 10:15:20 -0500
-Date: Wed, 6 Feb 2013 16:15:51 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, John Stultz <john.stultz@linaro.org>,
-        Tommi Rantala <tt.rantala@gmail.com>
-Subject: [PATCH] posix-cpu-timers: fix nanosleep task_struct leak
-Message-ID: <20130206151550.GA1758@redhat.com>
-References: <CA+ydwtqUUAR9zf3dp+N1JRW+if88EZ73i+5BQtuggVPDFVdCBg@mail.gmail.com>
- <alpine.LFD.2.02.1302011450160.11905@ionos>
- <20130204193223.GA11910@redhat.com>
- <20130205103455.GB18313@redhat.com>
- <alpine.LFD.2.02.1302051155000.11905@ionos>
- <20130206112327.GA1824@redhat.com>
- <CA+ydwtrdNL_7AvZpmJ__06YUCVhSr7YPO8D=wzXhZiWp1-DVqg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+ydwtrdNL_7AvZpmJ__06YUCVhSr7YPO8D=wzXhZiWp1-DVqg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756916Ab3BFPQP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 10:16:15 -0500
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:33809 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754955Ab3BFPQN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 10:16:13 -0500
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Tejun Heo <tj@kernel.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Subject: [PATCH v2 00/14] Corrections and customization of the SG_IO command whitelist (CVE-2012-4542)
+Date: Wed,  6 Feb 2013 16:15:47 +0100
+Message-Id: <1360163761-8541-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In do_cpu_nanosleep() we do posix_cpu_timer_create(), but forgot
-corresponding posix_cpu_timer_del(), what lead to task_struct leak.
+This series regards the whitelist that is used for the SG_IO ioctl.  This
+whitelist has three problems:
 
-Reported-and-tested-by: Tommi Rantala <tt.rantala@gmail.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
----
- kernel/posix-cpu-timers.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+* the bitmap of allowed commands is designed for MMC devices (roughly,
+  "play/burn CDs without requiring root") but some opcodes overlap across SCSI
+  device classes and have different meanings for different classes.
 
-diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-index a278cad..a01caac 100644
---- a/kernel/posix-cpu-timers.c
-+++ b/kernel/posix-cpu-timers.c
-@@ -1403,6 +1403,7 @@ static int do_cpu_nanosleep(const clockid_t which_clock, int flags,
- 				/*
- 				 * Our timer fired and was reset.
- 				 */
-+				posix_cpu_timer_del(&timer);
- 				spin_unlock_irq(&timer.it_lock);
- 				return 0;
- 			}
-@@ -1420,9 +1421,17 @@ static int do_cpu_nanosleep(const clockid_t which_clock, int flags,
- 		 * We were interrupted by a signal.
- 		 */
- 		sample_to_timespec(which_clock, timer.it.cpu.expires, rqtp);
--		posix_cpu_timer_set(&timer, 0, &zero_it, it);
-+		error = posix_cpu_timer_set(&timer, 0, &zero_it, it);
-+		if (!error)
-+			posix_cpu_timer_del(&timer);
- 		spin_unlock_irq(&timer.it_lock);
- 
-+		while (error == TIMER_RETRY) {
-+			spin_lock_irq(&timer.it_lock);
-+			error = posix_cpu_timer_del(&timer);
-+			spin_unlock_irq(&timer.it_lock);
-+		}
-+
- 		if ((it->it_value.tv_sec | it->it_value.tv_nsec) == 0) {
- 			/*
- 			 * It actually did fire already.
--- 
-1.7.11.7
+* also because the bitmap of allowed commands is designed for MMC devices
+  only, some commands are missing even though they are generally useful and
+  not insecure.  At least not more insecure than anything else you can
+  do if you have access to /dev/sdX or /dev/stX nodes.
+
+* the whitelist can be disabled per-process but not per-disk.  In addition,
+  the required capability (CAP_SYS_RAWIO) gives access to a range of other 
+  resources, enough to make it insecure.
+
+The series corrects these problems.  Patches 1-4 solve the first problem,
+which also has an assigned CVE, by using different bitmaps for the various
+device classes.  Patches 5-11 solve the second by adding more commands
+to the bitmaps.  Patches 12 and 13 solve the third, and were already
+posted but ignored by the maintainers despite multiple pings.
+
+Note: checkpatch hates the formatting of the command table.  I know about this,
+and ensured that there are no errors in the rest of the code.  The current
+formatting is IMHO quite handy, and roughly based on the files available
+from the SCSI standard body.
+
+Ok for the next merge window?
+
+Paolo
+
+v1->v2: remove 2 MMC commands and 6 SBC commands (see patches 6 and 9
+        for details).  Added patch 14 and added a few more scanner
+        commands based on SANE (scanners are not whitelisted by default,
+        also were not in v1, but this makes it possible to opt into the
+        whitelist out of paranoia).  Removed C++ comments.  Removed the
+        large #if 0'd list of commands that the kernel does not pass
+        though.  Marked blk_set_cmd_filter_defaults as __init.
+
+
+Paolo Bonzini (14):
+  sg_io: pass request_queue to blk_verify_command
+  sg_io: reorganize list of allowed commands
+  sg_io: use different default filters for each device class
+  sg_io: resolve conflicts between commands assigned to multiple
+    classes (CVE-2012-4542)
+  sg_io: whitelist a few more commands for rare & obsolete device types
+  sg_io: whitelist another command for multimedia devices
+  sg_io: whitelist a few more commands for media changers
+  sg_io: whitelist a few more commands for tapes
+  sg_io: whitelist a few more commands for disks
+  sg_io: whitelist a few obsolete commands
+  sg_io: mark blk_set_cmd_filter_defaults as __init
+  sg_io: remove remnants of sysfs SG_IO filters
+  sg_io: introduce unpriv_sgio queue flag
+  sg_io: use unpriv_sgio to disable whitelisting for scanners
+
+ Documentation/block/queue-sysfs.txt |    8 +
+ block/blk-sysfs.c                   |   33 +++
+ block/bsg.c                         |    2 +-
+ block/scsi_ioctl.c                  |  369 ++++++++++++++++++++++++++---------
+ drivers/scsi/scsi_scan.c            |   14 ++-
+ drivers/scsi/sg.c                   |    6 +-
+ include/linux/blkdev.h              |    8 +-
+ include/linux/genhd.h               |    9 -
+ include/scsi/scsi.h                 |    3 +
+ 9 files changed, 344 insertions(+), 108 deletions(-)
 
