@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757871Ab3BFQ17 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 11:27:59 -0500
-Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:46168 "EHLO
+	id S932104Ab3BFQ2H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 11:28:07 -0500
+Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:46160 "EHLO
 	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757702Ab3BFQYP (ORCPT
+	with ESMTP id S1757701Ab3BFQYP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 6 Feb 2013 11:24:15 -0500
 From: Heiko Carstens <heiko.carstens@de.ibm.com>
@@ -16,98 +16,90 @@ To: arnd@arndb.de, axboe@kernel.dk, cbou@mail.ru, davem@davemloft.net,
 Cc: linux-kernel@vger.kernel.org, sebott@linux.vnet.ibm.com,
         gerald.schaefer@de.ibm.com, schwidefsky@de.ibm.com,
         Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [PATCH 01/15] drivers/input: add couple of missing GENERIC_HARDIRQS dependencies
-Date: Wed,  6 Feb 2013 17:23:49 +0100
-Message-Id: <1360167843-3587-2-git-send-email-heiko.carstens@de.ibm.com>
+Subject: [PATCH 02/15] drivers/i2c: remove !S390 dependency, add missing GENERIC_HARDIRQS dependencies
+Date: Wed,  6 Feb 2013 17:23:50 +0100
+Message-Id: <1360167843-3587-3-git-send-email-heiko.carstens@de.ibm.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1360167843-3587-1-git-send-email-heiko.carstens@de.ibm.com>
 References: <1360167843-3587-1-git-send-email-heiko.carstens@de.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-x-cbid: 13020616-6892-0000-0000-000004445FC6
+x-cbid: 13020616-6892-0000-0000-000004445FCB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When removing the !S390 dependency from drivers/input/Kconfig a couple
-of drivers don't compile because they have a dependency on GENERIC_HARDIRQS.
-So add the missing dependencies.
-Fixes e.g. this one:
+Remove !S390 dependency from i2c Kconfig, since s390 now supports PCI, HAS_IOMEM
+and HAS_DMA, however we need to add a couple of GENERIC_HARDIRQS dependecies to
+fix compile and link errors like these:
 
-drivers/input/keyboard/lm8323.c: In function ‘lm8323_suspend’:
-drivers/input/keyboard/lm8323.c:801:2: error: implicit declaration of function ‘irq_set_irq_wake’
-	[-Werror=implicit-function-declaration]
+ERROR: "devm_request_threaded_irq" [drivers/i2c/i2c-smbus.ko] undefined!
+ERROR: "devm_request_threaded_irq" [drivers/i2c/busses/i2c-ocores.ko] undefined!
 
-Cc: Dmitry Torokhov <dtor@mail.ru>
+Cc: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
 ---
- drivers/input/Kconfig             |    2 +-
- drivers/input/keyboard/Kconfig    |    4 ++--
- drivers/input/serio/Kconfig       |    1 +
- drivers/input/touchscreen/Kconfig |    2 +-
- 4 files changed, 5 insertions(+), 4 deletions(-)
+ drivers/i2c/Kconfig        |    2 +-
+ drivers/i2c/busses/Kconfig |    6 ++++--
+ 2 files changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/input/Kconfig b/drivers/input/Kconfig
-index 55f7e57..38b523a 100644
---- a/drivers/input/Kconfig
-+++ b/drivers/input/Kconfig
-@@ -3,7 +3,7 @@
- #
+diff --git a/drivers/i2c/Kconfig b/drivers/i2c/Kconfig
+index 46cde09..e380c6e 100644
+--- a/drivers/i2c/Kconfig
++++ b/drivers/i2c/Kconfig
+@@ -4,7 +4,6 @@
  
- menu "Input device support"
--	depends on !S390 && !UML
-+	depends on !UML
+ menuconfig I2C
+ 	tristate "I2C support"
+-	depends on !S390
+ 	select RT_MUTEXES
+ 	---help---
+ 	  I2C (pronounce: I-squared-C) is a slow serial bus protocol used in
+@@ -76,6 +75,7 @@ config I2C_HELPER_AUTO
  
- config INPUT
- 	tristate "Generic input layer (needed for keyboard, mouse, ...)" if EXPERT
-diff --git a/drivers/input/keyboard/Kconfig b/drivers/input/keyboard/Kconfig
-index 502ed23..6a65da2 100644
---- a/drivers/input/keyboard/Kconfig
-+++ b/drivers/input/keyboard/Kconfig
-@@ -226,7 +226,7 @@ config KEYBOARD_TCA6416
- 
- config KEYBOARD_TCA8418
- 	tristate "TCA8418 Keypad Support"
--	depends on I2C
-+	depends on I2C && GENERIC_HARDIRQS
- 	select INPUT_MATRIXKMAP
- 	help
- 	  This driver implements basic keypad functionality
-@@ -305,7 +305,7 @@ config KEYBOARD_HP7XX
- 
- config KEYBOARD_LM8323
- 	tristate "LM8323 keypad chip"
--	depends on I2C
-+	depends on I2C && GENERIC_HARDIRQS
- 	depends on LEDS_CLASS
- 	help
- 	  If you say yes here you get support for the National Semiconductor
-diff --git a/drivers/input/serio/Kconfig b/drivers/input/serio/Kconfig
-index 81ee755..d2138bf 100644
---- a/drivers/input/serio/Kconfig
-+++ b/drivers/input/serio/Kconfig
-@@ -237,6 +237,7 @@ config SERIO_PS2MULT
- 
- config SERIO_ARC_PS2
- 	tristate "ARC PS/2 support"
+ config I2C_SMBUS
+ 	tristate "SMBus-specific protocols" if !I2C_HELPER_AUTO
 +	depends on GENERIC_HARDIRQS
  	help
- 	  Say Y here if you have an ARC FPGA platform with a PS/2
- 	  controller in it.
-diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
-index 3d6f548..59877b7 100644
---- a/drivers/input/touchscreen/Kconfig
-+++ b/drivers/input/touchscreen/Kconfig
-@@ -368,7 +368,7 @@ config TOUCHSCREEN_MCS5000
+ 	  Say Y here if you want support for SMBus extensions to the I2C
+ 	  specification. At the moment, the only supported extension is
+diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+index 8bb810e..fd30505 100644
+--- a/drivers/i2c/busses/Kconfig
++++ b/drivers/i2c/busses/Kconfig
+@@ -112,7 +112,7 @@ config I2C_I801
  
- config TOUCHSCREEN_MMS114
- 	tristate "MELFAS MMS114 touchscreen"
--	depends on I2C
-+	depends on I2C && GENERIC_HARDIRQS
+ config I2C_ISCH
+ 	tristate "Intel SCH SMBus 1.0"
+-	depends on PCI
++	depends on PCI && GENERIC_HARDIRQS
+ 	select LPC_SCH
  	help
- 	  Say Y here if you have the MELFAS MMS114 touchscreen controller
- 	  chip in your system.
+ 	  Say Y here if you want to use SMBus controller on the Intel SCH
+@@ -519,6 +519,7 @@ config I2C_NUC900
+ 
+ config I2C_OCORES
+ 	tristate "OpenCores I2C Controller"
++	depends on GENERIC_HARDIRQS
+ 	help
+ 	  If you say yes to this option, support will be included for the
+ 	  OpenCores I2C controller. For details see
+@@ -753,7 +754,7 @@ config I2C_DIOLAN_U2C
+ 
+ config I2C_PARPORT
+ 	tristate "Parallel port adapter"
+-	depends on PARPORT
++	depends on PARPORT && GENERIC_HARDIRQS
+ 	select I2C_ALGOBIT
+ 	select I2C_SMBUS
+ 	help
+@@ -778,6 +779,7 @@ config I2C_PARPORT
+ 
+ config I2C_PARPORT_LIGHT
+ 	tristate "Parallel port adapter (light)"
++	depends on GENERIC_HARDIRQS
+ 	select I2C_ALGOBIT
+ 	select I2C_SMBUS
+ 	help
 -- 
 1.7.10.4
 
