@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932110Ab3BFQYh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 11:24:37 -0500
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:33409 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932082Ab3BFQYd (ORCPT
+	id S1757811Ab3BFQZk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 11:25:40 -0500
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:36195 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757597Ab3BFQYb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 11:24:33 -0500
+	Wed, 6 Feb 2013 11:24:31 -0500
 From: Heiko Carstens <heiko.carstens@de.ibm.com>
 To: arnd@arndb.de, axboe@kernel.dk, cbou@mail.ru, davem@davemloft.net,
         dtor@mail.ru, dwmw2@infradead.org, grant.likely@secretlab.ca,
@@ -16,54 +16,40 @@ To: arnd@arndb.de, axboe@kernel.dk, cbou@mail.ru, davem@davemloft.net,
 Cc: linux-kernel@vger.kernel.org, sebott@linux.vnet.ibm.com,
         gerald.schaefer@de.ibm.com, schwidefsky@de.ibm.com,
         Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [PATCH 08/15] drivers/misc/cb710: add missing GENERIC_HARDIRQS dependency
-Date: Wed,  6 Feb 2013 17:23:56 +0100
-Message-Id: <1360167843-3587-9-git-send-email-heiko.carstens@de.ibm.com>
+Subject: [PATCH 14/15] drivers/power,goldfisch battery: add missing GENERIC_HARDIRQS dependency
+Date: Wed,  6 Feb 2013 17:24:02 +0100
+Message-Id: <1360167843-3587-15-git-send-email-heiko.carstens@de.ibm.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1360167843-3587-1-git-send-email-heiko.carstens@de.ibm.com>
 References: <1360167843-3587-1-git-send-email-heiko.carstens@de.ibm.com>
-x-cbid: 13020616-0342-0000-0000-00000422224E
+x-cbid: 13020616-4966-0000-0000-000004D4555E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CB710_CORE (drivers/misc/cb710/core.c) calls devm_request_irq() and
-therefore needs a GENERIC_HARDIRQS dependency to prevent a link
-error on s390.
+Fix this link error on s390:
 
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+ERROR: "devm_request_threaded_irq" [drivers/power/goldfish_battery.ko] undefined!
+
+Cc: Anton Vorontsov <cbou@mail.ru>
+Cc: David Woodhouse <dwmw2@infradead.org>
 Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
 ---
- drivers/misc/cb710/Kconfig |    2 +-
- drivers/mmc/host/Kconfig   |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/power/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/misc/cb710/Kconfig b/drivers/misc/cb710/Kconfig
-index 22429b8..5acb9c5 100644
---- a/drivers/misc/cb710/Kconfig
-+++ b/drivers/misc/cb710/Kconfig
-@@ -1,6 +1,6 @@
- config CB710_CORE
- 	tristate "ENE CB710/720 Flash memory card reader support"
--	depends on PCI
-+	depends on PCI && GENERIC_HARDIRQS
- 	help
- 	  This option enables support for PCI ENE CB710/720 Flash memory card
- 	  reader found in some laptops (ie. some versions of HP Compaq nx9500).
-diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
-index aebe265..d88219e 100644
---- a/drivers/mmc/host/Kconfig
-+++ b/drivers/mmc/host/Kconfig
-@@ -475,7 +475,7 @@ config MMC_SDHI
+diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
+index 1e47197..9e00c38 100644
+--- a/drivers/power/Kconfig
++++ b/drivers/power/Kconfig
+@@ -348,6 +348,7 @@ config AB8500_BM
  
- config MMC_CB710
- 	tristate "ENE CB710 MMC/SD Interface support"
--	depends on PCI
-+	depends on PCI && GENERIC_HARDIRQS
- 	select CB710_CORE
+ config BATTERY_GOLDFISH
+ 	tristate "Goldfish battery driver"
++	depends on GENERIC_HARDIRQS
  	help
- 	  This option enables support for MMC/SD part of ENE CB710/720 Flash
+ 	  Say Y to enable support for the battery and AC power in the
+ 	  Goldfish emulator.
 -- 
 1.7.10.4
 
