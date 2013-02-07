@@ -1,54 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758266Ab3BGL4N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 06:56:13 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:45642 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758124Ab3BGL4L (ORCPT
+	id S1758259Ab3BGL6M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 06:58:12 -0500
+Received: from mail-ph.de-nserver.de ([85.158.179.214]:45092 "EHLO
+	mail-ph.de-nserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758005Ab3BGL6L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 06:56:11 -0500
-Date: Thu, 7 Feb 2013 11:55:47 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Girish K S <girishks2000@gmail.com>
-Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/4] spi: s3c64xx: add gpio quirk for controller
-Message-ID: <20130207115546.GA3801@sirena.org.uk>
-References: <1360105784-12282-1-git-send-email-ks.giri@samsung.com>
- <1360105784-12282-4-git-send-email-ks.giri@samsung.com>
+	Thu, 7 Feb 2013 06:58:11 -0500
+Message-ID: <511396C9.2080106@profihost.ag>
+Date: Thu, 07 Feb 2013 12:58:01 +0100
+From: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360105784-12282-4-git-send-email-ks.giri@samsung.com>
-X-Cookie: Check your local listings.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+To: Patrick McHardy <kaber@trash.net>
+CC: Linux Netdev List <netdev@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Alexandre DERUMIER <aderumier@odiso.com>
+Subject: Re: Problem with GVRP on eth while having a bridge
+References: <51138866.8000802@profihost.ag> <20130207112227.GE13989@macbook.localnet>
+In-Reply-To: <20130207112227.GE13989@macbook.localnet>
+X-Enigmail-Version: 1.4.6
+Content-Type: multipart/mixed;
+ boundary="------------030608040308060707030707"
+X-User-Auth: Auth by hostmaster@profihost.com through 85.158.179.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 05, 2013 at 03:09:43PM -0800, Girish K S wrote:
-> This patch adds support for spi controllers with
-> dedicated clk/miso/mosi/cs pins. It skips the gpio
-> parsing and initialization for controllers that
-> have dedicated pins.
+This is a multi-part message in MIME format.
+--------------030608040308060707030707
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
->  		if (sdd->tgl_spi != spi) { /* if last mssg on diff device */
->  			/* Deselect the last toggled device */
->  			cs = sdd->tgl_spi->controller_data;
-> -			gpio_set_value(cs->line,
-> -				spi->mode & SPI_CS_HIGH ? 0 : 1);
-> +			if (!(sdd->port_conf->quirks & S3C64XX_SPI_QUIRK_GPIO))
-> +				gpio_set_value(cs->line,
-> +					spi->mode & SPI_CS_HIGH ? 0 : 1);
->  		}
+Hi Patrick,
 
-This isn't going to work with system designs which ignore the /CS line
-the controller has and just use a GPIO instead.  This is very common,
-for example when connecting multiple devices to the same SPI bus.
+thanks for your fast response.
 
-It seems like there's really two changes here.  One change is making the
-provision of pinmux information optional, the other is allowing the user
-to use the controller /CS management rather than using GPIO.
+> So please describe the entire GVRP message exchange that's going
+> on.
+I've attached two small pcap files.
+
+has_bridge.pcap: is where eth1 has a bridge and the dynamic vlan
+disappears after a few seconds.
+
+no_bridge.pcap: no bridge is assigned to eth1 - the dynamic vlan stays
+as long as i remove it
+
+> Also you probably want to add the VLAN device on top of the bridge
+> device, otherwise it will get passed to the bridge after untagging,
+> which might not work, depending on the MAC addresses used.
+
+That's working fine in vanilla kernel 3.7.6 but it does not with RHEL 6.
+Also i looks more complicated as i need another bridge on top of the
+vlan to assign the needed tap devices. I looked at ovirt for the network
+setup:
+http://www.ovirt.org/Vdsm_Network
+
+and they also add the vlan directly on top of the nic and then the
+bridge on top of the VLANs.
+
+Greets,
+Stefan
+
+Am 07.02.2013 12:22, schrieb Patrick McHardy:
+> On Thu, Feb 07, 2013 at 11:56:38AM +0100, Stefan Priebe - Profihost AG wrote:
+>> Hello list,
+>>
+>> this was tested using vanilla 3.7.6 kernel.
+>>
+>> When i add a vlan to an ethernet device supporting gvrp everything is
+>> fine until this ethernet device also had a bridge.
+>>
+>> This works fine as long as eth1 is not attached to a bridge.
+>>
+>> # ip link add link eth1 name eth1.99 type vlan id 99 gvrp on
+>> # ip link set eth1.99 up
+>>
+>> The dynamic VLAN stays up at the switch - no problems.
+>>
+>> If eth1 has a bridge the dynamic vlan is created at the switch so the
+>> initial packet was send but it disappears after a few seconds.
+>>
+>> Wireshark shows that the kernel has stopped sending GVRP packets. After
+>> adding a bridge to eth1.
+> 
+> Well, there's no reason why it should continue sending packets after
+> the switch has been updated unless it receives a message indicating
+> that the switch is about to remove it from it's tables again. So
+> please describe the entire GVRP message exchange that's going on.
+> 
+> Also you probably want to add the VLAN device on top of the bridge
+> device, otherwise it will get passed to the bridge after untagging,
+> which might not work, depending on the MAC addresses used.
+> 
+
+--------------030608040308060707030707
+Content-Type: application/vnd.tcpdump.pcap;
+ name="no_bridge.pcap"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="no_bridge.pcap"
+
+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
+--------------030608040308060707030707
+Content-Type: application/vnd.tcpdump.pcap;
+ name="has_bridge.pcap"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="has_bridge.pcap"
+
+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
+--------------030608040308060707030707--
