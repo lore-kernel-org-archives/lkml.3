@@ -1,46 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758480Ab3BGOvA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 09:51:00 -0500
-Received: from mail-ye0-f172.google.com ([209.85.213.172]:45906 "EHLO
-	mail-ye0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758377Ab3BGOu7 (ORCPT
+	id S1758371Ab3BGOwT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 09:52:19 -0500
+Received: from mail-ia0-f170.google.com ([209.85.210.170]:53947 "EHLO
+	mail-ia0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754000Ab3BGOwS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 09:50:59 -0500
-Date: Mon, 4 Feb 2013 22:12:47 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        Borislav Petkov <bp@alien8.de>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 7/7] perf annotate: Make it to be able to skip
- unannotatable symbols
-Message-ID: <20130205011247.GG19155@ghostprotocols.net>
-References: <1360227734-375-1-git-send-email-namhyung@kernel.org>
- <1360227734-375-8-git-send-email-namhyung@kernel.org>
+	Thu, 7 Feb 2013 09:52:18 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360227734-375-8-git-send-email-namhyung@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CACxGe6uaVsng79Kni=0O_YK330vuqMuPO6=y9Bj=UZpZ0ozaDg@mail.gmail.com>
+References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com>
+ <1781360.cmQWHCW5SC@wuerfel> <CAHTX3dJpuTRa4Ff29k95quPMVDO2mBiayPoocnw5R15=5ovOHQ@mail.gmail.com>
+ <201302041724.47331.arnd@arndb.de> <1360031367.14701.47.camel@pasglop>
+ <CAHTX3dL4dScmzgGyqbvPH-7UQvFrjQhHu2zh0iZyzWB=spZS+Q@mail.gmail.com>
+ <1360066756.4529.6.camel@pasglop> <CAHTX3dLJy314mv39hprkmZ5XdzYiYGz1ngTERp7w6aAYud+Riw@mail.gmail.com>
+ <51111133.7000105@synopsys.com> <1360098004.4529.13.camel@pasglop>
+ <511178AC.7080304@synopsys.com> <1360105635.2707.7.camel@pasglop>
+ <CACxGe6u=zhGXm0AO_h354g8OOkAQgdczdw_gCCRxL+=r8hM+-g@mail.gmail.com>
+ <1360186550.2650.4.camel@pasglop> <CACxGe6uaVsng79Kni=0O_YK330vuqMuPO6=y9Bj=UZpZ0ozaDg@mail.gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 7 Feb 2013 14:51:49 +0000
+X-Google-Sender-Auth: cEm_qVVYtQywP44ZHhVjjC78qoM
+Message-ID: <CACxGe6v3ZUEQhi764ivQqE9i2wGzJGcoC0sTVohb_6MQ9sE+hQ@mail.gmail.com>
+Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16
+ with generic iowrite(read)8/16(be)
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
+        Michal Simek <monstr@monstr.eu>, Arnd Bergmann <arnd@arndb.de>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        dahinds@users.sourceforge.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Feb 07, 2013 at 06:02:14PM +0900, Namhyung Kim escreveu:
-> From: Namhyung Kim <namhyung.kim@lge.com>
-> 
-> Add --skip-missing option for skipping symbols that cannot be used for
-> annotation.  It's the case of kernel symbols that user doesn't have a
-> vmlinux image file.
-> 
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  tools/perf/builtin-annotate.c | 17 +++++++++++++++--
+On Thu, Feb 7, 2013 at 2:39 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> On Wed, Feb 6, 2013 at 9:35 PM, Benjamin Herrenschmidt
+> <benh@kernel.crashing.org> wrote:
+>>>  In fact, the driver already knows about this and figures
+>>> out at runtime how the device is wired up to the bus. This is not the
+>>> problem.
+>>
+>> Except that this is very gross, especially when you observe that in the
+>> busted "big endian" case, it has to byteswap the bloody data port.
+>>
+>> So you end up having to do that gross hack with separate accessors for
+>> registers vs. data and not able to use the _rep variants, which also
+>> means that on platforms like ppc, you end up with a memory barrier on
+>> every access (or more), which is going to slow things down enormously.
+>
+> I don't see why the _rep variants aren't usable here. The only reason
+> I didn't use them when I wrote the driver in the first place was I was
+> a n00b kernel hacker and I didn't know they were there.
 
-You forgot to add the entry in the man page...
+The 8-bit variant is different though because the hardware requires
+pingponging between odd and even byte addresses to flush the fifo.
+Reading a data port even address (0x40) gives the least significant
+byte. Reading from an odd address (0x41) give the MSB and pops the
+data off the FIFO. So, yes, the _rep variant can't be used in 8-bit
+mode. It should still be fine in 16-bit.
 
-- Arnaldo
+page 45: http://www.xilinx.com/support/documentation/data_sheets/ds080.pdf
