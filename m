@@ -1,109 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758583Ab3BGNVG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 08:21:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43320 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758290Ab3BGNVE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 08:21:04 -0500
-Message-ID: <5113AA35.3010209@redhat.com>
-Date: Thu, 07 Feb 2013 14:20:53 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1758664Ab3BGNV1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 08:21:27 -0500
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:17173 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758233Ab3BGNV0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 08:21:26 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/ivdnrjacTuO18FPKY8ohSMurBOgYoRDg=
+Date: Thu, 7 Feb 2013 08:21:18 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Andrew Lunn <andrew@lunn.ch>, Simon Guinot <simon.guinot@sequanux.org>
+Subject: Re: [PATCH] devicetree: Move NS2 LEDs binding into LEDs directory
+Message-ID: <20130207132118.GE14746@titan.lakedaemon.net>
+References: <1360239776-14889-1-git-send-email-grant.likely@secretlab.ca>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: linux-kernel@vger.kernel.org, Wanlong Gao <gaowanlong@cn.fujitsu.com>,
-        asias@redhat.com, Rusty Russell <rusty@rustcorp.com.au>,
-        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org
-Subject: Re: [RFC PATCH 0/8] virtio: new API for addition of buffers, scatterlist
- changes
-References: <1360239752-2470-1-git-send-email-pbonzini@redhat.com> <20130207130912.GA20875@redhat.com> <5113A8B0.5080104@redhat.com> <20130207132349.GA21707@redhat.com>
-In-Reply-To: <20130207132349.GA21707@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1360239776-14889-1-git-send-email-grant.likely@secretlab.ca>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 07/02/2013 14:23, Michael S. Tsirkin ha scritto:
-> On Thu, Feb 07, 2013 at 02:14:24PM +0100, Paolo Bonzini wrote:
->> Il 07/02/2013 14:09, Michael S. Tsirkin ha scritto:
->>>> One major difference between virtqueue_add_buf and virtqueue_add_sg
->>>> is that the latter uses scatterlist iterators, which follow chained
->>>> scatterlist structs and stop at ending markers.  In order to avoid code
->>>> duplication, and use the new API from virtqueue_add_buf (patch 8), we need
->>>> to change all existing callers of virtqueue_add_buf to provide well-formed
->>>> scatterlists.  This is what patches 2-7 do.  For virtio-blk it is easiest
->>>> to just switch to the new API, just like for virtio-scsi.  For virtio-net
->>>> the ending marker must be reset after calling virtqueue_add_buf, in
->>>> preparation for the next usage of the scatterlist.  Other drivers are
->>>> safe already.
->>>
->>> What are the changes as compared to the previous version?
->>> How about some comments made on the previous version?
->>> See e.g.
->>> https://patchwork.kernel.org/patch/1891541/
->>
->> Two changes: 1) added virtqueue_add_sg_single; 2) reimplemented
->> virtqueue_add_buf in terms of the new API, which requires virtio-blk and
->> virtio-net changes.
->>
->> The virtio-blk and virtio-net changes are based on some ideas in the
->> patch Rusty posted, but virtio-net is a bit simpler and virtio-blk was
->> redone from scratch.
->>
->>> Generally we have code for direct and indirect which is already
->>> painful. We do not want 4 more variants of this code.
->>
->> Yes, indeed, the other main difference is that I'm now reimplementing
->> virtqueue_add_buf using the new functions.  So:
->>
->> - we previously had 2 variants (direct/indirect)
->>
->> - v1 had 4 variants (direct/indirect x add_buf/add_sg)
->>
->> - v2 has 4 variants (direct/indirect x add_sg/add_sg_single)
+On Thu, Feb 07, 2013 at 12:22:56PM +0000, Grant Likely wrote:
+> leds-ns2.txt is a binding for LEDs, not GPIOs. Move the documentation in
+> with the rest of the LEDs bindings.
 > 
-> single is never indirect so should have a single variant.
+> Cc: Andrew Lunn <andrew@lunn.ch>
+> Cc: Simon Guinot <simon.guinot@sequanux.org>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+> ---
+>  .../devicetree/bindings/gpio/leds-ns2.txt          |   26 --------------------
+>  .../devicetree/bindings/leds/leds-ns2.txt          |   26 ++++++++++++++++++++
+>  2 files changed, 26 insertions(+), 26 deletions(-)
+>  delete mode 100644 Documentation/devicetree/bindings/gpio/leds-ns2.txt
+>  create mode 100644 Documentation/devicetree/bindings/leds/leds-ns2.txt
 
-Single means *this piece* (for example a request header) is single.  It
-could still end up in an indirect buffer because QEMU does not support
-mixed direct/indirect buffers.
+Acked-by: Jason Cooper <jason@lakedaemon.net>
 
-Paolo
+or, if you want, I can queue it up.  Just let me know.
 
->>>> This is an RFC for two reasons.  First, because I haven't done enough
->>>> testing yet (especially with all the variations on receiving that
->>>> virtio-net has).  Second, because I still have two struct vring_desc *
->>>> fields in virtqueue API, which is a layering violation.  I'm not really
->>>> sure how important that is and how to fix that---except by making the
->>>> fields void*.
->>>
->>> Hide the whole structure as part of vring struct, the problem will go
->>> away.
->>
->> Yes, that's the other possibility.  Will do for the next submission.
->>
->> Paolo
->>
->>>> Paolo
->>>> Paolo Bonzini (8):
->>>>   virtio: add functions for piecewise addition of buffers
->>>>   virtio-blk: reorganize virtblk_add_req
->>>>   virtio-blk: use virtqueue_start_buf on bio path
->>>>   virtio-blk: use virtqueue_start_buf on req path
->>>>   scatterlist: introduce sg_unmark_end
->>>>   virtio-net: unmark scatterlist ending after virtqueue_add_buf
->>>>   virtio-scsi: use virtqueue_start_buf
->>>>   virtio: reimplement virtqueue_add_buf using new functions
->>>>
->>>>  block/blk-integrity.c        |    2 +-
->>>>  block/blk-merge.c            |    2 +-
->>>>  drivers/block/virtio_blk.c   |  165 +++++++++--------
->>>>  drivers/net/virtio_net.c     |   21 ++-
->>>>  drivers/scsi/virtio_scsi.c   |  103 +++++------
->>>>  drivers/virtio/virtio_ring.c |  417 +++++++++++++++++++++++++++---------------
->>>>  include/linux/scatterlist.h  |   16 ++
->>>>  include/linux/virtio.h       |   25 +++
->>>>  8 files changed, 460 insertions(+), 291 deletions(-)
+thx,
 
+Jason.
