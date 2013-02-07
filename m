@@ -1,38 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758782Ab3BGPj7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 10:39:59 -0500
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:61557 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757884Ab3BGPj6 (ORCPT
+	id S1758549Ab3BGPlr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 10:41:47 -0500
+Received: from a194-210.smtp-out.amazonses.com ([199.255.194.210]:43935 "EHLO
+	a194-210.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755653Ab3BGPlp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 10:39:58 -0500
+	Thu, 7 Feb 2013 10:41:45 -0500
+Date: Thu, 7 Feb 2013 15:41:44 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Ingo Molnar <mingo@kernel.org>
+cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [ANNOUNCE] 3.8-rc6-nohz4
+In-Reply-To: <20130207111025.GD8945@gmail.com>
+Message-ID: <0000013cb551d26c-19d33303-91e1-4bb6-a741-ae01bf80cc5c-000000@email.amazonses.com>
+References: <1360175338-6735-1-git-send-email-fweisbec@gmail.com> <1360205415.2621.60.camel@gandalf.local.home> <20130207111025.GD8945@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1360251388-16075-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1360251388-16075-1-git-send-email-andriy.shevchenko@linux.intel.com>
-Date: Thu, 7 Feb 2013 21:09:57 +0530
-Message-ID: <CAKohpo=w+LaUf0LMLBJBmEUjShCUzxKrqm5WzcrZmxAyg1vM4g@mail.gmail.com>
-Subject: Re: [PATCH] dw_dmac: add support for Lynxpoint DMA controllers
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.194.210
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7 February 2013 21:06, Andy Shevchenko
-<andriy.shevchenko@linux.intel.com> wrote:
-> From: Mika Westerberg <mika.westerberg@linux.intel.com>
->
-> Intel Lynxpoint PCH Low Power Subsystem has DMA controller to support general
-> purpose serial buses like SPI, I2C, and HSUART. This controller is enumerated
-> from ACPI namespace with ACPI ID INTL9C60.
->
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+On Thu, 7 Feb 2013, Ingo Molnar wrote:
 
-Looks like Mika is Author and you have your signed-off :)
+> Agreed?
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Yes and please also change the texts in Kconfig to accurately describe
+what happens to the timer tick.
