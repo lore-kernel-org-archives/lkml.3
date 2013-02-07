@@ -1,81 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758844Ab3BGQAR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 11:00:17 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:58627 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754325Ab3BGQAO (ORCPT
+	id S1758822Ab3BGQCV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 11:02:21 -0500
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:36455 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755697Ab3BGQCS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 11:00:14 -0500
+	Thu, 7 Feb 2013 11:02:18 -0500
+Message-ID: <5113D005.8080809@suse.cz>
+Date: Thu, 07 Feb 2013 17:02:13 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:18.0) Gecko/20121129 Thunderbird/18.0
 MIME-Version: 1.0
-In-Reply-To: <20130207144156.GB3222@fieldses.org>
-References: <1358441584-8783-1-git-send-email-piastry@etersoft.ru>
-	<1358441584-8783-3-git-send-email-piastry@etersoft.ru>
-	<20130130221602.GC15584@fieldses.org>
-	<CAKywueRh++TBazK8_kRN7AUb=EFhGv=Sv2CV0BESkfLFy+g5wA@mail.gmail.com>
-	<20130205143514.GA9886@fieldses.org>
-	<CAKywueS6oGNu9r_bypu32A89pOoiGb47kjXqw2ZcZQhZK+JV3g@mail.gmail.com>
-	<20130207141832.GA3222@fieldses.org>
-	<CAKywueTmU_L5cwwJSoUY6753eHf_38VtHadZGt9tcLS59sqmOA@mail.gmail.com>
-	<20130207144156.GB3222@fieldses.org>
-Date: Thu, 7 Feb 2013 20:00:13 +0400
-X-Google-Sender-Auth: R41CIdnR1aSWeKhOMPMfoiLid0E
-Message-ID: <CAKywueShbPd9b+WmJwnfwPR_vzk_atBVRBZNTf-HpS7N2CK+AA@mail.gmail.com>
-Subject: Re: [PATCH v2 3/8] vfs: Add O_DENYREAD/WRITE flags support for open syscall
-From: Pavel Shilovsky <piastry@etersoft.ru>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
-        wine-devel@winehq.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Peter Hurley <peter@hurleysoftware.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>, Sasha Levin <levinsasha928@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ilya Zykov <ilya@ilyx.ru>, Dave Jones <davej@redhat.com>
+Subject: Re: [PATCH v3 05/23] tty: Remove unnecessary re-test of ldisc ref
+ count
+References: <1355509370-5883-1-git-send-email-peter@hurleysoftware.com>  <1360095638-6624-1-git-send-email-peter@hurleysoftware.com>  <1360095638-6624-6-git-send-email-peter@hurleysoftware.com>  <5113C566.2060403@suse.cz> <1360252777.4102.42.camel@thor.lan>
+In-Reply-To: <1360252777.4102.42.camel@thor.lan>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/2/7 J. Bruce Fields <bfields@fieldses.org>:
-> On Thu, Feb 07, 2013 at 06:32:38PM +0400, Pavel Shilovsky wrote:
->> 2013/2/7 J. Bruce Fields <bfields@fieldses.org>:
->> > On Thu, Feb 07, 2013 at 01:53:46PM +0400, Pavel Shilovsky wrote:
->> >> Nothing prevents it. If somebody grabbed a share mode lock on a file
->> >> before we call deny_lock_file, we simply close this file and return
->> >> -ETXTBSY.
->> >
->> > But leave the newly-created file there--ugh.
->> >
->> >> We can't grab it before atomic_open because we don't have an
->> >> inode there.
->> >
->> > If you can get the lock while still holding the directory i_mutex can't
->> > you prevent anyone else from looking up the new file until you've gotten
->> > the lock?
->> >
->>
->> Hm..., seems you are right, I missed this part:
->> mutex_lock
->> lookup_open -> atomic_open -> deny_lock_file
->> mutex_unlock
->>
->> that means that nobody can open and of course set flock on the newly
->> created file (because flock is done through file descriptor). So, it
->> should be fine to call flock after f_ops->atomic_open in atomic_open
->> function. Thanks.
->
-> Whether that works may also depend on how the new dentry is set up?  If
-> it's hashed before you call flock then I suppose it's already visible to
-> others.
+On 02/07/2013 04:59 PM, Peter Hurley wrote:
+> On Thu, 2013-02-07 at 16:16 +0100, Jiri Slaby wrote:
+>> On 02/05/2013 09:20 PM, Peter Hurley wrote:
+>>> +	char cur_n[TASK_COMM_LEN], tty_n[64];
+>>> +	long timeout = 3 * HZ;
+>>> +
+>>> +	if (tty->ldisc) {	/* Not yet closed */
+>>> +		tty_unlock(tty);
+>>> +
+>>> +		while (tty_ldisc_wait_idle(tty, timeout) == -EBUSY) {
+>>> +			timeout = MAX_SCHEDULE_TIMEOUT;
+>>> +			printk_ratelimited(KERN_WARNING
+>>> +				"%s: waiting (%s) for %s took too long, but we keep waiting...\n",
+>>> +				__func__, get_task_comm(cur_n, current),
+>>> +				tty_name(tty, tty_n));
+>>>  		}
+>>> -		break;
+>>> +		/* must reacquire both locks and preserve lock order */
+>>> +		mutex_unlock(&tty->ldisc_mutex);
+>>> +		tty_lock(tty);
+>>> +		mutex_lock(&tty->ldisc_mutex);
+>>>  	}
+>>>  	return !!(tty->ldisc);
+>                    ^^^^^^^^^^^^
+>                still want me to fix this though?
 
-It seems it should be hashed in f_ops->atomic_open() (at least cifs
-and nfs do it this way). In do_last when we do an ordinary open, we
-don't hit parent i_mutex if lookup is succeeded through lookup_fast.
-lookup_fast can catch newly created dentry and set it's share mode
-before atomic_open codepath hits deny_lock_file.
-
-Also, I noted that: atomic open does f_ops->atomic_open and then it
-processes may_open check; if may_open fails, the file is closed and
-open returns with a error code (but file is created anyway) . I think
-there is no difference between this case and the situation with
-deny_lock_file there.
+It's not worth it. It's up to you.
 
 -- 
-Best regards,
-Pavel Shilovsky.
+js
+suse labs
