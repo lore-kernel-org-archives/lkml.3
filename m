@@ -1,178 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751869Ab3BGGV4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 01:21:56 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:38777 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750821Ab3BGGVx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 01:21:53 -0500
-Message-ID: <511347E8.2030604@ti.com>
-Date: Thu, 7 Feb 2013 11:51:28 +0530
-From: Rajendra Nayak <rnayak@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S1751830Ab3BGGXm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 01:23:42 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:8504 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750821Ab3BGGXl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 01:23:41 -0500
+X-IronPort-AV: E=Sophos;i="4.84,620,1355068800"; 
+   d="scan'208";a="6699566"
+Message-ID: <5113483C.8070509@cn.fujitsu.com>
+Date: Thu, 07 Feb 2013 14:22:52 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: <b-cousson@ti.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
-        <rob.herring@calxeda.com>, <rob@landley.net>, <balbi@ti.com>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 3/8] ARM: dts: omap: Add usb_otg and glue data
-References: <1360162604-14320-1-git-send-email-kishon@ti.com> <1360162604-14320-4-git-send-email-kishon@ti.com>
-In-Reply-To: <1360162604-14320-4-git-send-email-kishon@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: jiang.liu@huawei.com, wujianguo@huawei.com, hpa@zytor.com,
+        wency@cn.fujitsu.com, laijs@cn.fujitsu.com, linfeng@cn.fujitsu.com,
+        yinghai@kernel.org, isimatu.yasuaki@jp.fujitsu.com, rob@landley.net,
+        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
+        rientjes@google.com, guz.fnst@cn.fujitsu.com, rusty@rustcorp.com.au,
+        lliubbo@gmail.com, jaegeuk.hanse@gmail.com, tony.luck@intel.com,
+        glommer@parallels.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 3/3] acpi, memory-hotplug: Support getting hotplug info
+ from SRAT.
+References: <1359106929-3034-1-git-send-email-tangchen@cn.fujitsu.com> <1359106929-3034-4-git-send-email-tangchen@cn.fujitsu.com> <20130204152651.2bca8dba.akpm@linux-foundation.org> <5111BE09.2030509@cn.fujitsu.com> <20130206135409.3d8b37f7.akpm@linux-foundation.org>
+In-Reply-To: <20130206135409.3d8b37f7.akpm@linux-foundation.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/07 14:22:16,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/07 14:22:18,
+	Serialize complete at 2013/02/07 14:22:18
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[]...
+On 02/07/2013 05:54 AM, Andrew Morton wrote:
+> On Wed, 06 Feb 2013 10:20:57 +0800
+> Tang Chen<tangchen@cn.fujitsu.com>  wrote:
+>
+>>>>
+>>>> +	if (!strncmp(p, "acpi", max(4, strlen(p))))
+>>>> +		movablemem_map.acpi = true;
+>>>
+>>> Generates a warning:
+>>>
+>>> mm/page_alloc.c: In function 'cmdline_parse_movablemem_map':
+>>> mm/page_alloc.c:5312: warning: comparison of distinct pointer types lacks a cast
+>>>
+>>> due to max(int, size_t).
+>>>
+>>> This is easily fixed, but the code looks rather pointless.  If the
+>>> incoming string is supposed to be exactly "acpi" then use strcmp().  If
+>>> the incoming string must start with "acpi" then use strncmp(p, "acpi", 4).
+>>>
+>>> IOW, the max is unneeded?
+>>
+>> Hi Andrew,
+>>
+>> I think I made another mistake here. I meant to use min(4, strlen(p)) in
+>> case p is
+>> something like 'aaa' whose length is less then 4. But I mistook it with
+>> max().
+>>
+>> But after I dig into strcmp() in the kernel, I think it is OK to use
+>> strcmp().
+>> min() or max() is not needed.
+>
+> OK, I did that.
+>
+> But the code still looks a bit more complex than we need.  Could we do
+>
+> static int __init cmdline_parse_movablemem_map(char *p)
+> {
+> 	char *oldp;
+> 	u64 start_at, mem_size;
+>
+> 	if (!p)
+> 		goto err;
+>
+> 	/*
+> 	 * If user decide to use info from BIOS, all the other user specified
+> 	 * ranges will be ingored.
+> 	 */
+> 	if (!strcmp(p, "acpi")) {
+> 		movablemem_map.acpi = true;
+> 		if (movablemem_map.nr_map) {
+> 			memset(movablemem_map.map, 0,
+> 				sizeof(struct movablemem_entry)
+> 				* movablemem_map.nr_map);
+> 			movablemem_map.nr_map = 0;
+> 		}
+> 		return 0;
+> 	}
+>
+>
+No, I don't think so.
 
->
-> diff --git a/Documentation/devicetree/bindings/usb/omap-usb.txt b/Documentation/devicetree/bindings/usb/omap-usb.txt
-> index 29a043e..4688265 100644
-> --- a/Documentation/devicetree/bindings/usb/omap-usb.txt
-> +++ b/Documentation/devicetree/bindings/usb/omap-usb.txt
-> @@ -15,6 +15,7 @@ OMAP MUSB GLUE
->      represents PERIPHERAL.
->    - power : Should be "50". This signifies the controller can supply upto
->      100mA when operating in host mode.
-> + - usb-phy : the phandle for the PHY device
->
->   SOC specific device node entry
->   usb_otg_hs: usb_otg_hs@4a0ab000 {
-> diff --git a/arch/arm/boot/dts/omap3-beagle-xm.dts b/arch/arm/boot/dts/omap3-beagle-xm.dts
-> index 3705a81..cb07583 100644
-> --- a/arch/arm/boot/dts/omap3-beagle-xm.dts
-> +++ b/arch/arm/boot/dts/omap3-beagle-xm.dts
-> @@ -107,3 +107,9 @@
->   	 */
->   	ti,pulldowns = <0x03a1c4>;
->   };
-> +
-> +&usb_otg_hs {
-> +	interface_type = <0>;
-> +	mode = <3>;
-> +	power = <50>;
-> +};
-> diff --git a/arch/arm/boot/dts/omap3-evm.dts b/arch/arm/boot/dts/omap3-evm.dts
-> index e8ba1c2..afb9ba9 100644
-> --- a/arch/arm/boot/dts/omap3-evm.dts
-> +++ b/arch/arm/boot/dts/omap3-evm.dts
-> @@ -59,3 +59,9 @@
->   &twl_gpio {
->   	ti,use-leds;
->   };
-> +
-> +&usb_otg_hs {
-> +	interface_type = <0>;
-> +	mode = <3>;
-> +	power = <50>;
-> +};
-> diff --git a/arch/arm/boot/dts/omap3-overo.dtsi b/arch/arm/boot/dts/omap3-overo.dtsi
-> index 89808ce..4b3d157 100644
-> --- a/arch/arm/boot/dts/omap3-overo.dtsi
-> +++ b/arch/arm/boot/dts/omap3-overo.dtsi
-> @@ -55,3 +55,9 @@
->   &twl_gpio {
->   	ti,use-leds;
->   };
-> +
-> +&usb_otg_hs {
-> +	interface_type = <0>;
-> +	mode = <3>;
-> +	power = <50>;
-> +};
-> diff --git a/arch/arm/boot/dts/omap3.dtsi b/arch/arm/boot/dts/omap3.dtsi
-> index 1acc261..b6472f7 100644
-> --- a/arch/arm/boot/dts/omap3.dtsi
-> +++ b/arch/arm/boot/dts/omap3.dtsi
-> @@ -397,5 +397,17 @@
->   			ti,timer-alwon;
->   			ti,timer-secure;
->   		};
-> +
-> +		usb_otg_hs: usb_otg_hs@480ab000 {
-> +			compatible = "ti,omap3-musb";
-> +			reg = <0x480ab000 0x1000>;
-> +			interrupts = <0 92 0x4>, <0 93 0x4>;
-> +			interrupt-names = "mc", "dma";
-> +			ti,hwmods = "usb_otg_hs";
-> +			usb-phy = <&usb2_phy>;
-> +			multipoint = <1>;
-> +			num_eps = <16>;
-> +			ram_bits = <12>;
+If user specified like this:
 
-Where are these bindings documented? The general convention is to use
-a '-' for property names and not '_'
+1) movablemem_map=aaa@bbb ---------- will be added into array
+2) movablemem_map=acpi    ---------- will empty the array
+3) movablemem_map=ccc@ddd ---------- will be added into array again (wrong!)
 
-> +		};
->   	};
->   };
-> diff --git a/arch/arm/boot/dts/omap4-panda.dts b/arch/arm/boot/dts/omap4-panda.dts
-> index 4122efe..612c9bb 100644
-> --- a/arch/arm/boot/dts/omap4-panda.dts
-> +++ b/arch/arm/boot/dts/omap4-panda.dts
-> @@ -206,3 +206,9 @@
->   &twl_usb_comparator {
->   	usb-supply = <&vusb>;
->   };
-> +
-> +&usb_otg_hs {
-> +	interface_type = <1>;
-> +	mode = <3>;
-> +	power = <50>;
-> +};
-> diff --git a/arch/arm/boot/dts/omap4-sdp.dts b/arch/arm/boot/dts/omap4-sdp.dts
-> index 43e5258..582d7ee 100644
-> --- a/arch/arm/boot/dts/omap4-sdp.dts
-> +++ b/arch/arm/boot/dts/omap4-sdp.dts
-> @@ -428,3 +428,9 @@
->   &twl_usb_comparator {
->   	usb-supply = <&vusb>;
->   };
-> +
-> +&usb_otg_hs {
-> +	interface_type = <1>;
-> +	mode = <3>;
-> +	power = <50>;
-> +};
-> diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
-> index c829d7e..5171739 100644
-> --- a/arch/arm/boot/dts/omap4.dtsi
-> +++ b/arch/arm/boot/dts/omap4.dtsi
-> @@ -542,5 +542,18 @@
->   			reg-names = "control_dev_conf", "otghs_control";
->   			ti,type = <1>;
->   		};
-> +
-> +		usb_otg_hs: usb_otg_hs@4a0ab000 {
-> +			compatible = "ti,omap4-musb";
-> +			reg = <0x4a0ab000 0x7ff>;
-> +			interrupts = <0 92 0x4>, <0 93 0x4>;
-> +			interrupt-names = "mc", "dma";
-> +			ti,hwmods = "usb_otg_hs";
-> +			usb-phy = <&usb2_phy>;
-> +			multipoint = <1>;
-> +			num_eps = <16>;
-> +			ram_bits = <12>;
-> +			ti,has-mailbox;
-> +		};
->   	};
->   };
-> diff --git a/arch/arm/boot/dts/twl4030.dtsi b/arch/arm/boot/dts/twl4030.dtsi
-> index ed0bc95..398d2c3 100644
-> --- a/arch/arm/boot/dts/twl4030.dtsi
-> +++ b/arch/arm/boot/dts/twl4030.dtsi
-> @@ -67,7 +67,7 @@
->   		#interrupt-cells = <1>;
->   	};
->
-> -	twl4030-usb {
-> +	usb2_phy: twl4030-usb {
->   		compatible = "ti,twl4030-usb";
->   		interrupts = <10>, <4>;
->   		usb1v5-supply = <&vusb1v5>;
->
+So, we need to code like this:
+
++	if (!strncmp(p, "acpi", max(4, strlen(p))))
++		movablemem_map.acpi = true;
+
+In this way, 3) movablemem_map=ccc@ddd will not go into this if segment.
+
++
++	/*
++	 * If user decide to use info from BIOS, all the other user specified
++	 * ranges will be ingored.
++	 */
++	if (movablemem_map.acpi) {
++		if (movablemem_map.nr_map) {
++			memset(movablemem_map.map, 0,
++				sizeof(struct movablemem_entry)
++				* movablemem_map.nr_map);
++			movablemem_map.nr_map = 0;
++		}
++		return 0;
++	}
+
+But it will go into this if segment, and will not add the range into array.
+
+Thanks. :)
+
+
+
 
