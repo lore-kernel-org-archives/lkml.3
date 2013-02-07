@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758598Ab3BGQ17 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 11:27:59 -0500
-Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:41594 "EHLO
-	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754648Ab3BGQ16 (ORCPT
+	id S1758656Ab3BGQaI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 11:30:08 -0500
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:36993 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754325Ab3BGQaG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 11:27:58 -0500
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH] pinctrl/abx500: adjust offset for get_mode()
-Date: Thu, 7 Feb 2013 17:27:37 +0100
-Message-ID: <1360254457-17024-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.11.3
+	Thu, 7 Feb 2013 11:30:06 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20130207113340.GW25591@8bytes.org>
+References: <5fc782f401fc7bb0cd829b2316d7f29eb2595036.1360206266.git.luto@amacapital.net>
+ <20130207113340.GW25591@8bytes.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 7 Feb 2013 08:29:42 -0800
+Message-ID: <CALCETrUzX9efPafJ0W2vxU-KgQ_FOxQ4YqGDKbw5z6d1P0ZYEQ@mail.gmail.com>
+Subject: Re: [PATCH] intel_iommu: Disable vfio and kvm interrupt assignment
+ when unsafe
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        x86@kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Don Zickus <dzickus@redhat.com>, Prarit Bhargava <prarit@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+On Thu, Feb 7, 2013 at 3:33 AM, Joerg Roedel <joro@8bytes.org> wrote:
+> On Wed, Feb 06, 2013 at 07:08:24PM -0800, Andy Lutomirski wrote:
+>> -     if (x2apic_present)
+>> -             WARN(1, KERN_WARNING
+>> -                     "Failed to enable irq remapping.  You are vulnerable to irq-injection attacks.\n");
+>> -
+>> +     irq_remapping_is_secure = 0;
+>>       return -1;
+>>  }
+>
+> Why do you remove this warning? It seems unrelated to the rest of the
+> patch.
 
-The set_mode() and get_mode() functions in the abx500 were
-not mirrored, leading to the wrong GPIO control bits being
-read out.
+The idea is that setting irq_remapping_is_secure = 0 makes you (much
+less) vulnerable to irq-injection attacks: you're vulnerable to
+malicious hardware but not to attack via vfio or kvm, because those
+paths are disabled.
 
-Cc: Lee Jones <lee.jones@linaro.org>
-Reported-by: Patrice Chotard <patrice.chotard@st.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/pinctrl/pinctrl-abx500.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+I'd have no problem leaving the warning in and letting whoever manages
+to trigger it and get annoyed fix it.  FWIW, it's actually likely to
+be interesting if the warning hits.
 
-diff --git a/drivers/pinctrl/pinctrl-abx500.c b/drivers/pinctrl/pinctrl-abx500.c
-index 17508b5..0b3aa1c 100644
---- a/drivers/pinctrl/pinctrl-abx500.c
-+++ b/drivers/pinctrl/pinctrl-abx500.c
-@@ -401,6 +401,8 @@ static u8 abx500_get_mode(struct pinctrl_dev *pctldev, struct gpio_chip *chip,
- 	bool alt_bit2;
- 	struct abx500_pinctrl *pct = pinctrl_dev_get_drvdata(pctldev);
- 	struct alternate_functions af = pct->soc->alternate_functions[gpio];
-+	/* on ABx5xx, there is no GPIO0, so adjust the offset */
-+	unsigned offset = gpio - 1;
- 
- 	/*
- 	 * if gpiosel_bit is set to unused,
-@@ -410,7 +412,7 @@ static u8 abx500_get_mode(struct pinctrl_dev *pctldev, struct gpio_chip *chip,
- 		return ABX500_DEFAULT;
- 
- 	/* read GpioSelx register */
--	abx500_gpio_get_bit(chip, AB8500_GPIO_SEL1_REG + (gpio / 8),
-+	abx500_gpio_get_bit(chip, AB8500_GPIO_SEL1_REG + (offset / 8),
- 			af.gpiosel_bit, &bit_mode);
- 	mode = bit_mode;
- 
--- 
-1.7.11.3
-
+--Andy
