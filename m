@@ -1,52 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758852Ab3BGPzy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 10:55:54 -0500
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:61884 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757549Ab3BGPzv (ORCPT
+	id S1758833Ab3BGP6l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 10:58:41 -0500
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:38985 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758674Ab3BGP6j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 10:55:51 -0500
-Message-ID: <5113CE82.5070609@suse.cz>
-Date: Thu, 07 Feb 2013 16:55:46 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:18.0) Gecko/20121129 Thunderbird/18.0
-MIME-Version: 1.0
-To: Peter Hurley <peter@hurleysoftware.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Thu, 7 Feb 2013 10:58:39 -0500
+Message-ID: <1360252707.4102.41.camel@thor.lan>
+Subject: Re: [PATCH v3 02/23] n_tty: Factor packet mode status change for
+ reuse
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Alan Cox <alan@linux.intel.com>, Sasha Levin <levinsasha928@gmail.com>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
         Ilya Zykov <ilya@ilyx.ru>, Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH v3 01/23] tty: Add diagnostic for halted line discipline
-References: <1355509370-5883-1-git-send-email-peter@hurleysoftware.com>  <1360095638-6624-1-git-send-email-peter@hurleysoftware.com>  <1360095638-6624-2-git-send-email-peter@hurleysoftware.com>  <5113BF3B.3060307@suse.cz> <1360252434.4102.37.camel@thor.lan>
-In-Reply-To: <1360252434.4102.37.camel@thor.lan>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=UTF-8
+Date: Thu, 07 Feb 2013 10:58:27 -0500
+In-Reply-To: <5113BF7C.5060201@suse.cz>
+References: <1355509370-5883-1-git-send-email-peter@hurleysoftware.com>
+	 <1360095638-6624-1-git-send-email-peter@hurleysoftware.com>
+	 <1360095638-6624-3-git-send-email-peter@hurleysoftware.com>
+	 <5113BF7C.5060201@suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3-0pjh1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 125194 peter@hurleysoftware.com
+X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2013 04:53 PM, Peter Hurley wrote:
->>> +static int tty_ldisc_halt(struct tty_struct *tty)
->>> +{
->>> +	int scheduled;
->>> +	clear_bit(TTY_LDISC, &tty->flags);
->>> +	scheduled = cancel_work_sync(&tty->port->buf.work);
->>> +	set_bit(TTY_LDISC_HALTED, &tty->flags);
->>> +	return scheduled;
->>> +}
->>
->> Why did you move with that function? It makes the patch unnecessarily
->> bigger (and harder for a review).
+On Thu, 2013-02-07 at 15:51 +0100, Jiri Slaby wrote:
+> On 02/05/2013 09:20 PM, Peter Hurley wrote:
+> > Factor the packet mode status change from n_tty_flush_buffer
+> > for use by follow-on patch.
+> > 
+> > Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+> > ---
+> >  drivers/tty/n_tty.c | 24 ++++++++++++++----------
+> >  1 file changed, 14 insertions(+), 10 deletions(-)
+> > 
+> > diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+> > index bf6958b..7194a33 100644
+> > --- a/drivers/tty/n_tty.c
+> > +++ b/drivers/tty/n_tty.c
+> > @@ -237,6 +237,18 @@ static void reset_buffer_flags(struct tty_struct *tty)
+> >  	n_tty_set_room(tty);
+> >  }
+> >  
+> > +static void packet_mode_flush(struct tty_struct *tty)
 > 
-> 07/23 starts using tty_wait_for_idle() in tty_ldisc_halt().
-> 
-> Should I split this?
+> I prefer naming functions according the name space they live in. In this
+> case n_tty_flush_packet_mode would be much better. Other than that this
+> one looks good.
 
-Yes please.
+Ok, I'll do that.
 
--- 
-js
-suse labs
+(FWIW, the reason I used that naming was the 'n_tty style' appears to be
+un-prefixed file-scope functions and prefixed global-scope functions.)
+
+
