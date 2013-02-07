@@ -1,52 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758889Ab3BGQcy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 11:32:54 -0500
-Received: from mail-da0-f49.google.com ([209.85.210.49]:40427 "EHLO
-	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754325Ab3BGQcw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 11:32:52 -0500
-Date: Thu, 7 Feb 2013 08:32:47 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Jean Delvare <khali@linux-fr.org>, linux-i2c@vger.kernel.org
-Subject: Re: [PATCH 37/77] i2c: convert to idr_alloc()
-Message-ID: <20130207163247.GL2875@htj.dyndns.org>
-References: <1360179649-22465-1-git-send-email-tj@kernel.org>
- <1360179649-22465-38-git-send-email-tj@kernel.org>
- <20130207152831.GA14797@sirena.org.uk>
+	id S932146Ab3BGQdC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 11:33:02 -0500
+Received: from isrv.corpit.ru ([86.62.121.231]:39477 "EHLO isrv.corpit.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754325Ab3BGQdA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 11:33:00 -0500
+Message-ID: <5113D739.5070402@msgid.tls.msk.ru>
+Date: Thu, 07 Feb 2013 20:32:57 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/17.0 Icedove/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130207152831.GA14797@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linux-kernel <linux-kernel@vger.kernel.org>
+CC: Serge Hallyn <serge.hallyn@ubuntu.com>
+Subject: Transparent Huge Pages
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hello.
 
-On Thu, Feb 07, 2013 at 03:28:31PM +0000, Mark Brown wrote:
-> On Wed, Feb 06, 2013 at 11:40:09AM -0800, Tejun Heo wrote:
-> > Convert to the much saner new idr interface.
-> > 
-> > Only compile tested.
-> 
-> This broke I2C for me in -next today, I saw a spinlock bad magic error
-> calling pm_runtime_enable().  
+I'm trying to understand how to use transparent huge pages
+(currently in x86).  Before I used "explicit" huge pages
+alot (mostly about hugetlbfs), but it looked like THP should
+be easier so I gave it a try.
 
-Hmmm... weird, can't see where the difference in behavior would come
-from.  The only material difference would be if id < 0 && id != -1 in
-i2c_add_numbered_adapter(), which now would trigger WARN_ON_ONCE()
-inside idr_alloc() instead of silently returning -EINVAL.
+This tiny program:
 
-Can you please elaborate the failure?  I can't see how the idr
-conversion would lead to spinlock bad magic error.  Does reverting
-this patch make the problem go away?
+----- cut -----
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/mman.h>
+#include <errno.h>
+#include <string.h>
 
-Thanks.
+int main(int argc, char **argv) {
+   void *ptr;
+   size_t len = argv[1] ? atoi(argv[1]) : 1024*1024*1024;
+   /* no error checking! */
+   posix_memalign(&ptr, 2048*1024, len);
+   madvise(ptr, len, MADV_HUGEPAGE);
+   memset(ptr, 0, len);
+   usleep(500); /* let khugepagesd do its work */
+   system("grep ^AnonHugePages: /proc/meminfo");
+   return 0;
+}
+----- cut -----
 
---
-tejun
+which just tries to allocate some amount of RAM (1Gb by default)
+aligned to 2Mb, uses madvise(HUGEPAGE) on it, and checks
+/proc/meminfo for AnonHugePages.
+
+The problem is: I've never seen any value for AnonHugePages
+larger than about 16Mb.  Usually it is around 10Mb or 8Mb,
+no matter how large the requested memory size is, including
+the default 1Gb.
+
+The question, obviously, is: why so small?
+
+My system (which is a few years old now) has 6Gb of RAM,
+it uses AMD Athlon II X2 260 CPU, and is running 3.2
+kernel.
+
+Original question comes from grounds of of QEMU, which is
+supposed to use THP for guest memory, but it also does not
+use more than these ~10Mb, when allocating 1Gb to the guest.
+
+Thanks!
+
+/mjt
