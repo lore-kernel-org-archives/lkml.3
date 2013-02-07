@@ -1,73 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945945Ab3BGW4y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 17:56:54 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:53086 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945894Ab3BGW4x (ORCPT
+	id S1945958Ab3BGW5d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 17:57:33 -0500
+Received: from mga11.intel.com ([192.55.52.93]:4599 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1945894Ab3BGW5c convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 17:56:53 -0500
-Message-ID: <1360277809.28557.60.camel@edumazet-glaptop>
-Subject: Re: [RFC PATCH 1/6] kernel: implement queue spinlock API
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Eric Dumazet <edumazet@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        linux-kernel@vger.kernel.org, john.stultz@linaro.org
-Date: Thu, 07 Feb 2013 14:56:49 -0800
-In-Reply-To: <20130207223434.GG2545@linux.vnet.ibm.com>
-References: <1358896415-28569-1-git-send-email-walken@google.com>
-	 <1358896415-28569-2-git-send-email-walken@google.com>
-	 <20130207223434.GG2545@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 7 Feb 2013 17:57:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,625,1355126400"; 
+   d="scan'208";a="288041265"
+From: "Winkler, Tomas" <tomas.winkler@intel.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [char-misc-next 05/11] mei: bus: Call bus routines from the
+ core code
+Thread-Topic: [char-misc-next 05/11] mei: bus: Call bus routines from the
+ core code
+Thread-Index: AQHOBYPF6T1CsSPK8UmdeZ0W5LF5OJhvAHCQ
+Date: Thu, 7 Feb 2013 22:57:28 +0000
+Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B01EC3BB6@HASMSX106.ger.corp.intel.com>
+References: <1360270997-7639-1-git-send-email-tomas.winkler@intel.com>
+ <1360270997-7639-6-git-send-email-tomas.winkler@intel.com>
+ <201302072237.31048.arnd@arndb.de>
+In-Reply-To: <201302072237.31048.arnd@arndb.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.184.70.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-02-07 at 14:34 -0800, Paul E. McKenney wrote:
-> On Tue, Jan 22, 2013 at 03:13:30PM -0800, Michel Lespinasse wrote:
-> > Introduce queue spinlocks, to be used in situations where it is desired
-> > to have good throughput even under the occasional high-contention situation.
-> > 
-> > This initial implementation is based on the classic MCS spinlock,
-> > because I think this represents the nicest API we can hope for in a
-> > fast queue spinlock algorithm. The MCS spinlock has known limitations
-> > in that it performs very well under high contention, but is not as
-> > good as the ticket spinlock under low contention. I will address these
-> > limitations in a later patch, which will propose an alternative,
-> > higher performance implementation using (mostly) the same API.
-> > 
-> > Sample use case acquiring mystruct->lock:
-> > 
-> >   struct q_spinlock_node node;
-> > 
-> >   q_spin_lock(&mystruct->lock, &node);
-> >   ...
-> >   q_spin_unlock(&mystruct->lock, &node);
+
+
+> -----Original Message-----
+> From: Arnd Bergmann [mailto:arnd@arndb.de]
+> Sent: Friday, February 08, 2013 00:38
+> To: Winkler, Tomas
+> Cc: gregkh@linuxfoundation.org; sameo@linux.intel.com; linux-
+> kernel@vger.kernel.org
+> Subject: Re: [char-misc-next 05/11] mei: bus: Call bus routines from the core
+> code
 > 
-> It is possible to keep the normal API for MCS locks by having the lock
-> holder remember the parameter in the lock word itself.  While spinning,
-> the node is on the stack, is not needed once the lock is acquired.
-> The pointer to the next node in the queue -is- needed, but this can be
-> stored in the lock word.
+> On Thursday 07 February 2013, Tomas Winkler wrote:
+> > @@ -197,6 +197,9 @@ static int mei_probe(struct pci_dev *pdev, const
+> struct pci_device_id *ent)
+> >         mei_pdev = pdev;
+> >         pci_set_drvdata(pdev, dev);
+> >
+> > +       err = mei_bus_init(mei_pdev);
+> > +       if (err)
+> > +               goto deregister_mei;
+> >
+> >         schedule_delayed_work(&dev->timer_work, HZ);
+> >
 > 
-> I believe that John Stultz worked on something like this some years back,
-> so added him to CC.
-> 
+> This is fairly unusual, and will break if you ever have multiple mei devices in
+> one system, because you end up registering the bus type for each device. I
+> think it would be more logical to register/unregister the bus_type from the
+> module_init/exit functions of the module that contains the bus_type object.
 
-Hmm...
+MEI is a singleton and it is enforced also in software in the probe 
 
-This could easily break if the spin_lock() is embedded in a function,
-and the unlock done in another one.
+Second why to register anything if the MEI device is not present on the system. 
 
-(storage for the node would disappear at function epilogue )
-
-
+Thanks
+Tomas
 
