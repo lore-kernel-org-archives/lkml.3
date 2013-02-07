@@ -1,89 +1,449 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755593Ab3BGJRI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 04:17:08 -0500
-Received: from relay.parallels.com ([195.214.232.42]:58461 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754600Ab3BGJRD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 04:17:03 -0500
-Message-ID: <511370D5.4030100@parallels.com>
-Date: Thu, 7 Feb 2013 13:16:05 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1756646Ab3BGJ0s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 04:26:48 -0500
+Received: from [212.90.139.80] ([212.90.139.80]:25434 "EHLO smtp1.goneo.de"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755575Ab3BGJ0n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 04:26:43 -0500
+X-Spam-Flag: NO
+X-Spam-Score: -2.749
+From: Lars Poeschel <poeschel@lemonage.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v2,RESEND] video console: add a driver for lcd2s character display
+Date: Thu, 7 Feb 2013 10:26:18 +0100
+User-Agent: KMail/1.13.7 (Linux/3.2.0-4-amd64; KDE/4.8.4; x86_64; ; )
+Cc: FlorianSchandinat@gmx.de, mathieu.poirier@linaro.org,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <201212170934.15312.poeschel@lemonage.de>
+In-Reply-To: <201212170934.15312.poeschel@lemonage.de>
 MIME-Version: 1.0
-To: Tommi Rantala <tt.rantala@gmail.com>
-CC: Stephen Smalley <sds@tycho.nsa.gov>,
-        James Morris <james.l.morris@oracle.com>,
-        Eric Paris <eparis@parisplace.org>,
-        <linux-security-module@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: selinux_msg_queue_msgrcv() oops
-References: <CA+ydwtqgnMGuuHHWwj7jZh14WNdCFW_KA_APH-XZYX+RA-Ls1Q@mail.gmail.com> <5112662D.1010406@tycho.nsa.gov> <CA+ydwtpBNinVYa3zxoGVWjQLemxTyqTCm=o8mPut-F-DZx1xVg@mail.gmail.com> <511284B2.2070402@tycho.nsa.gov> <CA+ydwtp6fjMKsG4Oo5Ep2WXaykH+5D7MVWSHzUtnUFhr_HkJNw@mail.gmail.com>
-In-Reply-To: <CA+ydwtp6fjMKsG4Oo5Ep2WXaykH+5D7MVWSHzUtnUFhr_HkJNw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.29.37]
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302071026.18145.poeschel@lemonage.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-06.02.2013 23:51, Tommi Rantala пишет:
-> 2013/2/6 Stephen Smalley <sds@tycho.nsa.gov>:
->> On 02/06/2013 10:21 AM, Tommi Rantala wrote:
->>>
->>> 2013/2/6 Stephen Smalley <sds@tycho.nsa.gov>:
->>>>
->>>> On 02/06/2013 07:56 AM, Tommi Rantala wrote:
->>>>>
->>>>>
->>>>> Hello,
->>>>>
->>>>> I'm hitting an oops in selinux_msg_queue_msgrcv() when fuzzing with
->>>>> Trinity as the root user (in a qemu VM):
->>>>
->>>>
->>>>
->>>> NULL msg->security at that point is a bug in the ipc subsystem; SELinux
->>>> is
->>>> just the messenger.  Normally msg->security is set for every allocated
->>>> msg
->>>> by load_msg() -> security_msg_msg_alloc() ->
->>>> selinux_msg_msg_alloc_security(), and freed/cleared upon free_msg() ->
->>>> security_msg_msg_free() -> selinux_msg_msg_free_security().  Looking
->>>> around,
->>>> I see copy_msg() introduced for checkpoint-restore initializes
->>>> dst->security
->>>> to NULL but never sets it properly?
->>>
->>>
->>> I am indeed building with CONFIG_CHECKPOINT_RESTORE=y, so your
->>> analysis seems to be correct.
->>
->>
->> (cc originator of the bug)
->>
->> If I am reading this correctly, then when the copy msg was created, a msg
->> security struct was already allocated
->> (prepare_copy->load_msg->security_msg_msg_alloc).  So having copy_msg()
->> clear dst->security is also a memory leak in addition to leading to this
->> oops.  Attached is a possible, un-tested fix.
->
-> I can still reproduce the exact same oops with the patch applied. I
-> also wanted to be sure that copy_msg() is called, so I added a warning
-> there, but that never gets triggered. So I suppose the problem is not
-> actually related to CONFIG_CHECKPOINT_RESTORE.
->
+As it seems there are no further comments, could this please be included ?
 
-Hello.
-Unfortunately, you are not the first one, who experience problems with Trinity running in KVM.
+Thanks,
+Lars
 
-copy_msg() won't be called unless you'll specify the MSG_COPY flag in msgrcv() flags parameter.
+On Monday 17 December 2012 at 09:34:15, Lars Poeschel wrote:
+> From: Lars Poeschel <poeschel@lemonage.de>
+> 
+> This driver allows to use a lcd2s 20x4 character display as
+> a linux console output device.
+> 
+> Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
+> 
+> ---
+> drivers/video/console/Kconfig    |   10 ++
+>  drivers/video/console/Makefile   |    1 +
+>  drivers/video/console/lcd2scon.c |  360
+> ++++++++++++++++++++++++++++++++++++++ 3 files changed, 371 insertions(+)
+>  create mode 100644 drivers/video/console/lcd2scon.c
+> 
+> diff --git a/drivers/video/console/Kconfig b/drivers/video/console/Kconfig
+> index e2c96d0..44fc3bf 100644
+> --- a/drivers/video/console/Kconfig
+> +++ b/drivers/video/console/Kconfig
+> @@ -129,6 +129,16 @@ config STI_CONSOLE
+>            machines.  Say Y here to build support for it into your kernel.
+>            The alternative is to use your primary serial port as a
+> console.
+> 
+> +config LCD2S_CONSOLE
+> +        tristate "lcd2s 20x4 character display over I2C console"
+> +        depends on I2C
+> +        default n
+> +        help
+> +          This is a driver that lets you use the lcd2s 20x4 character
+> display +          from modtronix engineering as a console output device.
+> The display +          is a simple single color character display. You
+> have to connect it +          to an I2C bus.
+> +
+>  config FONTS
+>  	bool "Select compiled-in fonts"
+>  	depends on FRAMEBUFFER_CONSOLE || STI_CONSOLE
+> diff --git a/drivers/video/console/Makefile
+> b/drivers/video/console/Makefile index a862e91..74d5993 100644
+> --- a/drivers/video/console/Makefile
+> +++ b/drivers/video/console/Makefile
+> @@ -23,6 +23,7 @@ font-objs += $(font-objs-y)
+>  obj-$(CONFIG_DUMMY_CONSOLE)       += dummycon.o
+>  obj-$(CONFIG_SGI_NEWPORT_CONSOLE) += newport_con.o font.o
+>  obj-$(CONFIG_STI_CONSOLE)         += sticon.o sticore.o font.o
+> +obj-$(CONFIG_LCD2S_CONSOLE)       += lcd2scon.o
+>  obj-$(CONFIG_VGA_CONSOLE)         += vgacon.o
+>  obj-$(CONFIG_MDA_CONSOLE)         += mdacon.o
+>  obj-$(CONFIG_FRAMEBUFFER_CONSOLE) += fbcon.o bitblit.o font.o
+> softcursor.o diff --git a/drivers/video/console/lcd2scon.c
+> b/drivers/video/console/lcd2scon.c new file mode 100644
+> index 0000000..c139811
+> --- /dev/null
+> +++ b/drivers/video/console/lcd2scon.c
+> @@ -0,0 +1,360 @@
+> +/*
+> + *  console driver for LCD2S 4x20 character displays connected through
+> i2c. + *
+> + *  This is a driver allowing you to use a LCD2S 4x20 from modtronix
+> + *  engineering as console output device.
+> + *
+> + *  (C) 2012 by Lemonage Software GmbH
+> + *  Author: Lars Poeschel <poeschel@lemonage.de>
+> + *  All rights reserved.
+> + *
+> + *  This program is free software; you can redistribute  it and/or modify
+> it + *  under  the terms of  the GNU General  Public License as published
+> by the + *  Free Software Foundation;  either version 2 of the  License,
+> or (at your + *  option) any later version.
+> + *
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/slab.h>
+> +#include <linux/kd.h>
+> +#include <linux/tty.h>
+> +#include <linux/console_struct.h>
+> +#include <linux/console.h>
+> +#include <linux/vt_kern.h>
+> +#include <linux/i2c.h>
+> +
+> +#define LCD2S_CMD_CUR_BLINK_OFF		0x10
+> +#define LCD2S_CMD_CUR_UL_OFF		0x11
+> +#define LCD2S_CMD_DISPLAY_OFF		0x12
+> +#define LCD2S_CMD_CUR_BLINK_ON		0x18
+> +#define LCD2S_CMD_CUR_UL_ON		0x19
+> +#define LCD2S_CMD_DISPLAY_ON		0x1a
+> +#define LCD2S_CMD_BACKLIGHT_OFF		0x20
+> +#define LCD2S_CMD_BACKLIGHT_ON		0x28
+> +#define LCD2S_CMD_WRITE			0x80
+> +#define LCD2S_CMD_SHIFT_UP		0x87
+> +#define LCD2S_CMD_SHIFT_DOWN		0x88
+> +#define LCD2S_CMD_CUR_ADDR		0x89
+> +#define LCD2S_CMD_CUR_POS		0x8a
+> +#define LCD2S_CMD_CUR_RESET		0x8b
+> +#define LCD2S_CMD_CLEAR			0x8c
+> +
+> +#define LCD2S_FIRST			8
+> +#define LCD2S_LAST			9
+> +
+> +#define LCD2S_ROWS			4
+> +#define LCD2S_COLS			20
+> +
+> +struct lcd2s_data {
+> +	struct i2c_client *i2c;
+> +	int row;
+> +	int col;
+> +	unsigned int cur_blink:1;
+> +	unsigned int cur_ul:1;
+> +};
+> +
+> +static struct lcd2s_data lcd2s;
+> +
+> +static void lcd2s_set_cursor(int row, int col)
+> +{
+> +	u8 buf[] = { LCD2S_CMD_CUR_POS, row + 1, col + 1};
+> +
+> +	if (row == lcd2s.row && col == lcd2s.col)
+> +		return;
+> +
+> +	i2c_master_send(lcd2s.i2c, buf, sizeof(buf));
+> +	lcd2s.row = row;
+> +	lcd2s.col = col;
+> +}
+> +
+> +static void lcd2s_reset_cursor(void)
+> +{
+> +	i2c_smbus_write_byte(lcd2s.i2c, LCD2S_CMD_CUR_RESET);
+> +	lcd2s.row = 0;
+> +	lcd2s.col = 0;
+> +}
+> +
+> +static void lcd2s_increase_cursor(struct vc_data *con, int inc)
+> +{
+> +	lcd2s.col += inc;
+> +	if ((lcd2s.col / con->vc_cols) >= 1) {
+> +		lcd2s.row += (lcd2s.col / con->vc_cols);
+> +		lcd2s.col %= con->vc_cols;
+> +	}
+> +}
+> +
+> +static void lcd2s_cursor_ul_on(void)
+> +{
+> +	if (!lcd2s.cur_ul) {
+> +		i2c_smbus_write_byte(lcd2s.i2c, LCD2S_CMD_CUR_UL_ON);
+> +		lcd2s.cur_ul = 1;
+> +	}
+> +}
+> +
+> +static void lcd2s_cursor_ul_off(void)
+> +{
+> +	if (lcd2s.cur_ul) {
+> +		i2c_smbus_write_byte(lcd2s.i2c, LCD2S_CMD_CUR_UL_OFF);
+> +		lcd2s.cur_ul = 0;
+> +	}
+> +}
+> +
+> +static void lcd2s_cursor_blink_on(void)
+> +{
+> +	if (!lcd2s.cur_blink) {
+> +		i2c_smbus_write_byte(lcd2s.i2c, LCD2S_CMD_CUR_BLINK_ON);
+> +		lcd2s.cur_blink = 1;
+> +	}
+> +}
+> +
+> +static void lcd2s_cursor_blink_off(void)
+> +{
+> +	if (lcd2s.cur_blink) {
+> +		i2c_smbus_write_byte(lcd2s.i2c, LCD2S_CMD_CUR_BLINK_OFF);
+> +		lcd2s.cur_blink = 0;
+> +	}
+> +}
+> +
+> +static const char *lcd2s_startup(void)
+> +{
+> +	return "lcd2s console";
+> +}
+> +
+> +
+> +/*
+> + * init is set if console is currently allocated during init
+> + */
+> +static void lcd2s_init(struct vc_data *con, int init)
+> +{
+> +	lcd2s.cur_blink = 0;
+> +	lcd2s.cur_ul = 0;
+> +
+> +	/* turn display on */
+> +	i2c_smbus_write_byte(lcd2s.i2c, LCD2S_CMD_DISPLAY_ON);
+> +	i2c_smbus_write_byte(lcd2s.i2c, LCD2S_CMD_BACKLIGHT_ON);
+> +	i2c_smbus_write_byte(lcd2s.i2c, LCD2S_CMD_CLEAR);
+> +	lcd2s_cursor_ul_on();
+> +	lcd2s_reset_cursor();
+> +
+> +	con->vc_can_do_color = 0;
+> +	con->vc_hi_font_mask = 0;
+> +
+> +	if (init) {
+> +		con->vc_rows = LCD2S_ROWS;
+> +		con->vc_cols = LCD2S_COLS;
+> +	} else
+> +		vc_resize(con, LCD2S_COLS, LCD2S_ROWS);
+> +}
+> +
+> +static void lcd2s_deinit(struct vc_data *con)
+> +{
+> +	i2c_smbus_write_byte(lcd2s.i2c, LCD2S_CMD_DISPLAY_OFF);
+> +	i2c_smbus_write_byte(lcd2s.i2c, LCD2S_CMD_BACKLIGHT_OFF);
+> +	lcd2s_cursor_blink_off();
+> +	lcd2s_cursor_ul_off();
+> +}
+> +
+> +static void lcd2s_clear(struct vc_data *con, int s_row, int s_col,
+> +			int height, int width)
+> +{
+> +	u8 buf[width];
+> +	int i;
+> +
+> +	if (width <= 0 || height <= 0)
+> +		return;
+> +
+> +	/* if the whole display is to clear, we have a single command */
+> +	if (s_col == 0 && s_row == 0 &&
+> +		height >= con->vc_rows - 1 && width >= con->vc_cols - 1) {
+> +		i2c_smbus_write_byte(lcd2s.i2c, LCD2S_CMD_CLEAR);
+> +		return;
+> +	}
+> +
+> +	for (i = 0; i <= width; i++)
+> +		buf[i] = ' ';
+> +
+> +	for (i = s_col; i <= height; i++) {
+> +		lcd2s_set_cursor(s_row, i);
+> +		i2c_master_send(lcd2s.i2c, buf, width);
+> +	}
+> +}
+> +
+> +static void lcd2s_putc(struct vc_data *con, int data, int row, int col)
+> +{
+> +	u8 buf[] = {LCD2S_CMD_WRITE, data};
+> +
+> +	lcd2s_set_cursor(row, col);
+> +
+> +	i2c_master_send(lcd2s.i2c, buf, sizeof(buf));
+> +	lcd2s_increase_cursor(con, 1);
+> +}
+> +
+> +static void lcd2s_putcs(struct vc_data *con, const unsigned short *buf,
+> +			int len, int row, int col)
+> +{
+> +	u8 *i2c_buf;
+> +	int i;
+> +
+> +	i2c_buf = kzalloc(len + 1, GFP_KERNEL);
+> +	if (!i2c_buf)
+> +		return;
+> +
+> +	lcd2s_set_cursor(row, col);
+> +
+> +	i2c_buf[0] = LCD2S_CMD_WRITE;
+> +	for (i = 0; i < len ; i++)
+> +		i2c_buf[i + 1] = buf[i];
+> +
+> +	i2c_master_send(lcd2s.i2c, i2c_buf, len + 1);
+> +	kfree(i2c_buf);
+> +	lcd2s_increase_cursor(con, len);
+> +}
+> +
+> +static void lcd2s_cursor(struct vc_data *con, int mode)
+> +{
+> +	switch (mode) {
+> +	case CM_ERASE:
+> +		lcd2s_cursor_blink_off();
+> +		lcd2s_cursor_ul_off();
+> +		break;
+> +	case CM_MOVE:
+> +	case CM_DRAW:
+> +		lcd2s_set_cursor(con->vc_y, con->vc_x);
+> +
+> +		switch (con->vc_cursor_type & CUR_HWMASK) {
+> +		case CUR_UNDERLINE:
+> +			lcd2s_cursor_ul_on();
+> +			lcd2s_cursor_blink_off();
+> +			break;
+> +		case CUR_NONE:
+> +			lcd2s_cursor_blink_off();
+> +			lcd2s_cursor_ul_off();
+> +			break;
+> +		default:
+> +			lcd2s_cursor_blink_on();
+> +			lcd2s_cursor_ul_off();
+> +			break;
+> +		}
+> +		break;
+> +	}
+> +}
+> +
+> +static int lcd2s_scroll(struct vc_data *con, int top, int bot,
+> +			int dir, int lines)
+> +{
+> +	/* we can only scroll the whole display */
+> +	if (top == 0 && bot == con->vc_rows) {
+> +		while (lines--) {
+> +			switch (dir) {
+> +			case SM_UP:
+> +				i2c_smbus_write_byte(lcd2s.i2c,
+> +					LCD2S_CMD_SHIFT_UP);
+> +				break;
+> +			case SM_DOWN:
+> +				i2c_smbus_write_byte(lcd2s.i2c,
+> +					LCD2S_CMD_SHIFT_DOWN);
+> +				break;
+> +			}
+> +		}
+> +		return 0;
+> +	}
+> +	return 1;
+> +}
+> +
+> +static void lcd2s_bmove(struct vc_data *conp, int s_row, int s_col,
+> +			int d_row, int d_col, int height, int width)
+> +{
+> +}
+> +
+> +static int lcd2s_switch(struct vc_data *con)
+> +{
+> +	return 1;
+> +}
+> +
+> +static int lcd2s_blank(struct vc_data *con, int blank, int mode_switch)
+> +{
+> +	switch (blank) {
+> +	case 0:		/* unblank */
+> +		i2c_smbus_write_byte(lcd2s.i2c, LCD2S_CMD_DISPLAY_ON);
+> +		i2c_smbus_write_byte(lcd2s.i2c, LCD2S_CMD_BACKLIGHT_ON);
+> +		break;
+> +	case 1:		/* normal blanking */
+> +		i2c_smbus_write_byte(lcd2s.i2c, LCD2S_CMD_DISPLAY_OFF);
+> +		i2c_smbus_write_byte(lcd2s.i2c, LCD2S_CMD_BACKLIGHT_OFF);
+> +		break;
+> +	}
+> +	return 0;
+> +}
+> +
+> +static int lcd2s_set_palette(struct vc_data *con, unsigned char *table)
+> +{
+> +	return -EINVAL;
+> +}
+> +
+> +static int lcd2s_scrolldelta(struct vc_data *con, int lines)
+> +{
+> +	return 0;
+> +}
+> +
+> +static struct consw lcd2s_con = {
+> +	.owner			= THIS_MODULE,
+> +	.con_startup		= lcd2s_startup,
+> +	.con_init		= lcd2s_init,
+> +	.con_deinit		= lcd2s_deinit,
+> +	.con_clear		= lcd2s_clear,
+> +	.con_putc		= lcd2s_putc,
+> +	.con_putcs		= lcd2s_putcs,
+> +	.con_cursor		= lcd2s_cursor,
+> +	.con_scroll		= lcd2s_scroll,
+> +	.con_bmove		= lcd2s_bmove,
+> +	.con_switch		= lcd2s_switch,
+> +	.con_blank		= lcd2s_blank,
+> +	.con_set_palette	= lcd2s_set_palette,
+> +	.con_scrolldelta	= lcd2s_scrolldelta,
+> +};
+> +
+> +static int __devinit lcd2s_i2c_probe(struct i2c_client *i2c,
+> +				const struct i2c_device_id *id)
+> +{
+> +	if (!i2c_check_functionality(i2c->adapter,
+> +			I2C_FUNC_SMBUS_WRITE_BYTE_DATA |
+> +			I2C_FUNC_SMBUS_WRITE_BLOCK_DATA))
+> +		return -EIO;
+> +
+> +	lcd2s.i2c = i2c;
+> +
+> +	take_over_console(&lcd2s_con, LCD2S_FIRST, LCD2S_LAST, 1);
+> +
+> +	return 0;
+> +}
+> +
+> +static __devexit int lcd2s_i2c_remove(struct i2c_client *i2c)
+> +{
+> +	/* unregister from console subsystem */
+> +	unregister_con_driver(&lcd2s_con);
+> +	return 0;
+> +}
+> +
+> +static const struct i2c_device_id lcd2s_i2c_id[] = {
+> +	{ "lcd2s", 0 },
+> +	{ }
+> +};
+> +MODULE_DEVICE_TABLE(i2c, lcd2s_i2c_id);
+> +
+> +static struct i2c_driver lcd2s_i2c_driver = {
+> +	.driver = {
+> +		.name = "lcd2s",
+> +		.owner = THIS_MODULE,
+> +	},
+> +	.probe = lcd2s_i2c_probe,
+> +	.remove = __devexit_p(lcd2s_i2c_remove),
+> +	.id_table = lcd2s_i2c_id,
+> +};
+> +
+> +module_i2c_driver(lcd2s_i2c_driver)
+> +
+> +MODULE_DESCRIPTION("LCD2S character display console driver");
+> +MODULE_AUTHOR("Lars Poeschel");
+> +MODULE_LICENSE("GPL");
 
-Could you make a small investigation around the problem?
-For example, does this problem appear, is you disable CONFIG_CHECKPOINT_RESTORE config option?
-
-
--- 
-Best regards,
-Stanislav Kinsbursky
