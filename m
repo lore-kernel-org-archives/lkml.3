@@ -1,61 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758811Ab3BGOcn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 09:32:43 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:33129 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758635Ab3BGOcj (ORCPT
+	id S1758834Ab3BGOcr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 09:32:47 -0500
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:58974 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758635Ab3BGOcn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 09:32:39 -0500
+	Thu, 7 Feb 2013 09:32:43 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130207141832.GA3222@fieldses.org>
-References: <1358441584-8783-1-git-send-email-piastry@etersoft.ru>
-	<1358441584-8783-3-git-send-email-piastry@etersoft.ru>
-	<20130130221602.GC15584@fieldses.org>
-	<CAKywueRh++TBazK8_kRN7AUb=EFhGv=Sv2CV0BESkfLFy+g5wA@mail.gmail.com>
-	<20130205143514.GA9886@fieldses.org>
-	<CAKywueS6oGNu9r_bypu32A89pOoiGb47kjXqw2ZcZQhZK+JV3g@mail.gmail.com>
-	<20130207141832.GA3222@fieldses.org>
-Date: Thu, 7 Feb 2013 18:32:38 +0400
-X-Google-Sender-Auth: 65NF6IlFLvz2qlk3NZOWP2V7Hag
-Message-ID: <CAKywueTmU_L5cwwJSoUY6753eHf_38VtHadZGt9tcLS59sqmOA@mail.gmail.com>
-Subject: Re: [PATCH v2 3/8] vfs: Add O_DENYREAD/WRITE flags support for open syscall
-From: Pavel Shilovsky <piastry@etersoft.ru>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
-        wine-devel@winehq.org
+In-Reply-To: <1360226494.178606955@f137.mail.ru>
+References: <1359990040-5339-1-git-send-email-shc_work@mail.ru>
+	<20130207072931.GT22003@b29396-Latitude-E6410>
+	<1360226494.178606955@f137.mail.ru>
+Date: Thu, 7 Feb 2013 22:32:42 +0800
+Message-ID: <CAP1dx+x=5zQ7dZ7sS5bEQAH=U7rj-oA97xQsHfOWuLgdY4heCQ@mail.gmail.com>
+Subject: Re: Re[2]: [PATCH] mfd: syscon: Added support for using platform
+ driver resources
+From: Dong Aisheng <dong.aisheng@linaro.org>
+To: Alexander Shiyan <shc_work@mail.ru>
+Cc: Dong Aisheng <b29396@freescale.com>, linux-kernel@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/2/7 J. Bruce Fields <bfields@fieldses.org>:
-> On Thu, Feb 07, 2013 at 01:53:46PM +0400, Pavel Shilovsky wrote:
->> Nothing prevents it. If somebody grabbed a share mode lock on a file
->> before we call deny_lock_file, we simply close this file and return
->> -ETXTBSY.
+Hi Alexander,
+
+On 7 February 2013 16:41, Alexander Shiyan <shc_work@mail.ru> wrote:
+> Hello.
+> ...
+>> Thanks for the patch adding non-dt support. :-)
+>>
+>> On Mon, Feb 04, 2013 at 07:00:40PM +0400, Alexander Shiyan wrote:
+>> > This patch adds support usage platform driver resources, i.e.
+>> > possibility works without oftree support. Additionally patch
+>> > removes CONFIG_OF dependency and adds helper for accessing
+>> > regmap by searching device by its name.
+> ...
+>> > +static int syscon_match_name(struct device *dev, void *data)
+>> > +{
+>> > +   return !strcmp(dev_name(dev), (const char *)data);
+>> > +}
+>> > +
+>> > +struct regmap *syscon_regmap_lookup_by_name(const char *name)
+>> > +{
+>> > +   struct syscon *syscon;
+>> > +   struct device *dev;
+>> > +
+>> > +   dev = driver_find_device(&syscon_driver.driver, NULL, (void *)name,
+>> > +                            syscon_match_name);
+>> > +   if (!dev)
+>> > +           return ERR_PTR(-EPROBE_DEFER);
+>> > +
+>> > +   syscon = dev_get_drvdata(dev);
+>> > +
+>> > +   return syscon->regmap;
+>> > +}
+>> > +
+>>
+>> How about syscon_dev_to_regmap(struct device *dev) as the exist dt version
+>> syscon_node_to_regmap since it's not affected by the name change of devices?
 >
-> But leave the newly-created file there--ugh.
->
->> We can't grab it before atomic_open because we don't have an
->> inode there.
->
-> If you can get the lock while still holding the directory i_mutex can't
-> you prevent anyone else from looking up the new file until you've gotten
-> the lock?
+> I am not completely understand what you mean. In my version which doing
+> search regmap by name, we can call this function with desired device name,
+> then use regmap:
+> struct regmap *r = syscon_regmap_lookup_by_name("syscon.1");
 >
 
-Hm..., seems you are right, I missed this part:
-mutex_lock
-lookup_open -> atomic_open -> deny_lock_file
-mutex_unlock
+My concern is that this API may be used by other client drivers, if we hardcode
+the device name in those drivers, once the device name is changed,
+all those drivers need change too.
+For dt case, we use device node to find regmap, so does not care about the name.
 
-that means that nobody can open and of course set flock on the newly
-created file (because flock is done through file descriptor). So, it
-should be fine to call flock after f_ops->atomic_open in atomic_open
-function. Thanks.
+> You suggest use "struct device" as parameter?
 
--- 
-Best regards,
-Pavel Shilovsky.
+A device pointer.
+
+> I do not know what we should
+> use as parameter to the function in this case, since we can get "struct device"
+> only when register this device,
+
+If we have a platform_device, then we have its device pointer, right?
+
+> i.e. in board support code, not from anywhere,
+> for example from another driver.
+> Fixme please.
+>
+
+My understanding is that in board support code, we can have the
+platform device instance
+of that syscon compatible device, then we can use it as the platform
+data parameter for those devices driver who wants to use it.
+Then in client driver, it can call:
+syscon_dev_to_regmap(syscon_compatible_dev)
+to find the regmap.
+Just like dt working way, the device node usually uses a phandle pointing to
+the syscon compatible node which it wants to use.
+
+> ...
+>> > +   if (IS_ENABLED(CONFIG_OF) && np) {
+>> > +           syscon->base = of_iomap(np, 0);
+>> > +           if (!syscon->base)
+>> > +                   return -EADDRNOTAVAIL;
+>> > +
+>> > +           res = &res_of;
+>> > +           ret = of_address_to_resource(np, 0, res);
+>> > +           if (ret)
+>> > +                   return ret;
+>> > +   } else {
+>> > +           res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> > +           if (!res)
+>> > +                   return -ENXIO;
+>> > +
+>> > +           if (!request_mem_region(res->start, resource_size(res),
+>> > +                                   dev_name(&pdev->dev)))
+>> > +                   return -EBUSY;
+>> > +
+>> > +           syscon->base = ioremap(res->start, resource_size(res));
+>> > +           if (!syscon->base)
+>> > +                   return -EADDRNOTAVAIL;
+>>
+>> devm_request_and_ioremap?
+>
+> We call of_iomap for DT-version,  for removal procedure - iounmap.
+> Will iounmap work properly with devm_-version, I'm not sure.
+
+You're right, i'm afraid not.
+If that, i wonder the ioremap resource may be freed twice for driver removal.
+So, i'm okay with your current way.
+But one issue is that then we need take care of the resource free by ourselves
+for probe failed cases. e.g. ioremap and request_mem_region.
+You may need add them.
+
+> May be better to completely remove ".remove" (and module_exit) feature for driver?
+> It is loaded at startup always once compiled, and should always be in the system.
+>
+
+It supports to be a module, so it may be better to keep ".remove".
+
+Regards
+Dong Aisheng
