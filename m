@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759298Ab3BGUF3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 15:05:29 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:16659 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757426Ab3BGUF1 convert rfc822-to-8bit (ORCPT
+	id S1759345Ab3BGUFj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 15:05:39 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:53578 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758711Ab3BGUFh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 15:05:27 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 07 Feb 2013 12:05:10 -0800
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-CC: "robherring2@gmail.com" <robherring2@gmail.com>,
-        "arm@kernel.org" <arm@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "johnstul@us.ibm.com" <johnstul@us.ibm.com>
-Date: Thu, 7 Feb 2013 21:05:04 +0100
-Subject: Re: [PATCH 4/4] clocksource: tegra20: use the device_node pointer
- passed to init
-Thread-Topic: [PATCH 4/4] clocksource: tegra20: use the device_node pointer
- passed to init
-Thread-Index: Ac4FbmzDM36UzoljRQOZHtHRHvv9Gg==
-Message-ID: <20130207.220504.79003148683176035.hdoyu@nvidia.com>
-References: <1360264144-20714-1-git-send-email-robherring2@gmail.com><1360264144-20714-5-git-send-email-robherring2@gmail.com><511402FC.50807@wwwdotorg.org>
-In-Reply-To: <511402FC.50807@wwwdotorg.org>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-nvconfidentiality: public
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+	Thu, 7 Feb 2013 15:05:37 -0500
+Date: Thu, 07 Feb 2013 15:05:35 -0500 (EST)
+Message-Id: <20130207.150535.343442812598571927.davem@davemloft.net>
+To: bhutchings@solarflare.com
+Cc: freddy@asix.com.tw, netdev@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH, resubmit] ax88179_178a: ASIX AX88179_178A USB 3.0/2.0
+ to gigabit ethernet adapter driver
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1360267375.3605.32.camel@bwh-desktop.uk.solarflarecom.com>
+References: <1360244360-2700-1-git-send-email-freddy@asix.com.tw>
+	<1360267375.3605.32.camel@bwh-desktop.uk.solarflarecom.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Warren <swarren@wwwdotorg.org> wrote @ Thu, 7 Feb 2013 20:39:40 +0100:
+From: Ben Hutchings <bhutchings@solarflare.com>
+Date: Thu, 7 Feb 2013 20:02:55 +0000
 
-> On 02/07/2013 12:09 PM, Rob Herring wrote:
-> > From: Rob Herring <rob.herring@calxeda.com>
-> > 
-> > We've already matched the node, so use the node pointer passed in. The rtc
-> > init was intermingled with the timer init, so split this out to a separate
-> > init function.
+> On Thu, 2013-02-07 at 21:39 +0800, Freddy Xin wrote:
+>> From: Freddy Xin <freddy@asix.com.tw>
+>> 
+>> This is a resubmission.
+>> Added "const" to ethtool_ops structure and fixed the coding style of AX88179_BULKIN_SIZE array.
+>> Fixed the issue that the default MTU is not 1500.
+>> Added ax88179_change_mtu function and enabled the hardware jumbo frame function to support an
+>> MTU higher than 1500.
+>> Fixed indentation and empty line coding style errors.
+>> The _nopm version usb functions were added to access register in suspend and resume functions.
+>> Serveral variables allocted dynamically were removed and replaced by stack variables.
+>> ax88179_get_eeprom were modified from asix_get_eeprom in asix_common.
+>> 
+>> This patch adds a driver for ASIX's AX88179 family of USB 3.0/2.0
+>> to gigabit ethernet adapters. It's based on the AX88xxx driver but
+>> the usb commands used to access registers for AX88179 are completely different.
+>> This driver had been verified on x86 system with AX88179/AX88178A and
+>> Sitcomm LN-032 USB dongles.
+>> 
+>> Signed-off-by: Freddy Xin <freddy@asix.com.tw>
+> [...]
+>> --- /dev/null
+>> +++ b/drivers/net/usb/ax88179_178a.c
+> [...]
+>> +struct ax88179_data {
+>> +       u16 rxctl;
+>> +};
 > 
-> The series,
-> Reviewed-by: Stephen Warren <swarren@nvidia.com>
-> 
-> Patches 1,4:
-> Tested-by: Stephen Warren <swarren@nvidia.com>
-> 
-> One thing I wonder re: patch 4 - I know someone (I think Hiroshi, now
-> CC'd) planned to refactor drivers/clocksource/tegra20_timer.c to enhance
-> it for Tegra114. I'd like to check with him that the refactoring in this
-> patch won't impede that at all.
+> Should also be declared __packed, as on some architectures it may be
+> padded to 4 bytes.
 
-Actually this covers RTC part. I'll rework mine for the rest on the
-top of this.
+Packed is evil and should be avoid everywhere that it is possible to
+do so.  It's going to use byte loads on this u16 on RISC cpus simply
+because __packed makes it so that the compiler cannot assume data
+alignment any longer.
