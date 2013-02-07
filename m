@@ -1,73 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759018Ab3BGRDw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 12:03:52 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28222 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755656Ab3BGRDu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 12:03:50 -0500
-X-Authority-Analysis: v=2.0 cv=f8jK9ZOM c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=M5gr15I6uLgA:10 a=22uzNxQ2lQntyp8xS7IA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1360256627.2621.77.camel@gandalf.local.home>
-Subject: Re: [ANNOUNCE] 3.8-rc6-nohz4
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Thu, 07 Feb 2013 12:03:47 -0500
-In-Reply-To: <CAFTL4hy-hz=okOC7mWTwP=eh_OrL48c5hoLuXyBRFMAgquLCtw@mail.gmail.com>
-References: <1360175338-6735-1-git-send-email-fweisbec@gmail.com>
-	 <1360205415.2621.60.camel@gandalf.local.home>
-	 <20130207111025.GD8945@gmail.com>
-	 <CAFTL4hySiyn8Ci6XKFSRsMr7FabgpwSbOuNDP_GsefFDsbT2Cg@mail.gmail.com>
-	 <1360255280.2621.70.camel@gandalf.local.home>
-	 <CAFTL4hy-hz=okOC7mWTwP=eh_OrL48c5hoLuXyBRFMAgquLCtw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1759087Ab3BGRFq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 12:05:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30618 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758867Ab3BGRFp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 12:05:45 -0500
+Date: Thu, 7 Feb 2013 12:05:43 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 2/2] initramfs with digital signature protection
+Message-ID: <20130207170542.GF6462@redhat.com>
+References: <cover.1360067333.git.dmitry.kasatkin@intel.com>
+ <cc87f1242960fad1a9fb44bcec331915e14c832b.1360067333.git.dmitry.kasatkin@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cc87f1242960fad1a9fb44bcec331915e14c832b.1360067333.git.dmitry.kasatkin@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-02-07 at 17:45 +0100, Frederic Weisbecker wrote:
+On Tue, Feb 05, 2013 at 02:34:50PM +0200, Dmitry Kasatkin wrote:
 
-> >
-> > config NO_HZ_TASK
-> >         bool "Stop tick on specified CPUs when single task is running"
-> >         default n
-> >         depends on NO_HZ
-> 
-> Ok I launched another debate about that single task thing. I wish we
-> don't make it a fundamental component but rather an implementation
-> detail that can be dynamically dealt with in the future.
+[..]
+> +static int __init load_initramfs(void)
+> +{
+> +	static char *argv[] = { "pre-init", NULL, };
+> +	extern char *envp_init[];
+> +	int err;
+> +
+> +	/*
+> +	 * In case that a resume from disk is carried out by linuxrc or one of
+> +	 * its children, we need to tell the freezer not to wait for us.
+> +	 */
+> +	current->flags |= PF_FREEZER_SKIP;
+> +
+> +	err = call_usermodehelper_fns("/pre-init", argv, envp_init,
+> +				      UMH_WAIT_PROC, init_init, init_cleanup,
+> +				      NULL);
+> +
+> +	current->flags &= ~PF_FREEZER_SKIP;
+> +
+> +	pr_info("initramfs_sig /pre-init completed: %d\n", err);
+> +
 
-It's not just an implementation detail, as it is very visible to the
-user. If they want to take advantage of a task NO_HZ they have to go
-through a bit of loops to make sure only a single task is running on a
-CPU. We should be broadcasting this requirement to educate the users on
-exactly how they can take advantage of this feature.
+Dmitry, 
 
+How do we make sure that this is the first call to user mode helpers. I
+see that we first unpacked unsigned initramfs. Then after a while we 
+unpacked signed initramfs on /root and did a chroot. But now there is
+a window before chroot, where kernel might call into /sbin/hotplug or
+/sbin/modprobe from unsigned initramfs?
 
->  Anyway let's
-> talk about that on my previous answer.
+Specifically, I put some printk and I am seeing calls to /sbin/hotplug
+before we even unpacked signed initramfs.
 
-I already did ;-)
-
--- Steve
-
-
+Thanks
+Vivek
