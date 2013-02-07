@@ -1,59 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945935Ab3BGWpF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 17:45:05 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:49319 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422729Ab3BGWpD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 17:45:03 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Rob Herring <robherring2@gmail.com>
-Subject: Re: [PATCH 0/4] Improve CLKSRC_OF matching
-Date: Thu, 7 Feb 2013 22:44:51 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-4-generic; KDE/4.3.2; x86_64; ; )
-Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Rob Herring <rob.herring@calxeda.com>
-References: <1360264144-20714-1-git-send-email-robherring2@gmail.com>
-In-Reply-To: <1360264144-20714-1-git-send-email-robherring2@gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302072244.51588.arnd@arndb.de>
-X-Provags-ID: V02:K0:JW0rne7rf6F7/bATG3/ivD4ayJVhsCySUkUfuJaXaOm
- IgHMIcFNunBSB/LqLuuVUNfOL6c6F2J+5MemIMiqVAfmsyufw7
- CIaBWSZDEIvEvUChbCuddhhcp+1E48w2EvlRS49kUuPARCJxwc
- 8KO7A+asGO4c0I3WYQQP+0/IFoak1R78dkAJToN9zh4lR+WS4o
- veaIdFkT4zX3gIX2EBxJci+P4fFar5moBuBztMbaz4CVF5Dk+/
- WRIL0Pe7vxn02mjvIuPdzxDTvpWc6HxKHUH8Jjw99d4mnqXVAB
- ip+0x7FbeYthkzDQIuuMdufFKoCti+mJSk41mdBvlmLHtxpEKx
- ykWCgH1ACMo/FbFGIZsY=
+	id S1945920Ab3BGWxH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 17:53:07 -0500
+Received: from mout.gmx.net ([212.227.15.19]:64692 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1422669Ab3BGWxF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 17:53:05 -0500
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX19XxKgGulNX5CQO2T0KAJLFo3cPiG1fkZ0Wh7Z/XF
+	CQQl33dP72Gspb
+From: Peter Huewe <peterhuewe@gmx.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Yunhong Jiang <yunhong.jiang@intel.com>,
+        Sheng Yang <sheng@linux.intel.com>,
+        "Mike A. Chan" <mikechan@google.com>,
+        Xiaohui Xin <xiaohui.xin@intel.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Peter Huewe <peterhuewe@gmx.de>
+Subject: [PATCH] staging/goldfish: Use %zx for printing size_t variables
+Date: Thu,  7 Feb 2013 23:57:07 +0100
+Message-Id: <1360277827-25467-1-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.7.8.6
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 07 February 2013, Rob Herring wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
-> 
-> In the recently added support for OF based clocksource init, a device node
-> will be matched twice. We can fix this by passing the device node to the
-> init functions and removing the match functions within the init functions.
-> 
-> This is based on arm-soc for-next branch and commit "of: fix incorrect
-> return value of of_find_matching_node_and_match()" in my DT for-next
-> branch.
-> 
+When building the driver, gcc emits the following warnings:
+.../drivers/staging/goldfish/goldfish_nand.c:
+In function 'goldfish_nand_read_oob':
+goldfish_nand.c:159:2:
+warning: format '%x' expects argument of type 'unsigned int', but
+argument 3 has type 'size_t' [-Wformat]
+goldfish_nand.c:159:2:
+warning: format '%x' expects argument of type 'unsigned int', but
+argument 4 has type 'size_t' [-Wformat]
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+In function 'goldfish_nand_write_oob':
+goldfish_nand.c:191:2:
+warning: format '%x' expects argument of type 'unsigned int', but
+argument 3 has type 'size_t' [-Wformat]
+goldfish_nand.c:191:2:
+warning: format '%x' expects argument of type 'unsigned int', but
+argument 4 has type 'size_t' [-Wformat]
 
-Conceptually this is definitely the way to go, but I noticed that
-you create build warnings for the bisection points after the
-first patch. I would suggest actually merging the first three
-patches into one and also changing the prototype for the tegra
-function in that patch to avoid this.
+In function 'goldfish_nand_read':
+goldfish_nand.c:215:2:
+warning: format '%x' expects argument of type 'unsigned int', but
+argument 3 has type 'size_t' [-Wformat]
 
-	Arnd
+In function 'goldfish_nand_write':
+goldfish_nand.c:239:2:
+warning: format '%x' expects argument of type 'unsigned int', but
+argument 3 has type 'size_t' [-Wformat]
+
+-> As defined in the printk-formats use %zx for size_t variables
+
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+ drivers/staging/goldfish/goldfish_nand.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/staging/goldfish/goldfish_nand.c b/drivers/staging/goldfish/goldfish_nand.c
+index 1891d89..ab1f019 100644
+--- a/drivers/staging/goldfish/goldfish_nand.c
++++ b/drivers/staging/goldfish/goldfish_nand.c
+@@ -156,7 +156,7 @@ static int goldfish_nand_read_oob(struct mtd_info *mtd, loff_t ofs,
+ 	return 0;
+ 
+ invalid_arg:
+-	pr_err("goldfish_nand_read_oob: invalid read, start %llx, len %x, ooblen %x, dev_size %llx, write_size %x\n",
++	pr_err("goldfish_nand_read_oob: invalid read, start %llx, len %zx, ooblen %zx, dev_size %llx, write_size %x\n",
+ 		ofs, ops->len, ops->ooblen, mtd->size, mtd->writesize);
+ 	return -EINVAL;
+ }
+@@ -188,7 +188,7 @@ static int goldfish_nand_write_oob(struct mtd_info *mtd, loff_t ofs,
+ 	return 0;
+ 
+ invalid_arg:
+-	pr_err("goldfish_nand_write_oob: invalid write, start %llx, len %x, ooblen %x, dev_size %llx, write_size %x\n",
++	pr_err("goldfish_nand_write_oob: invalid write, start %llx, len %zx, ooblen %zx, dev_size %llx, write_size %x\n",
+ 		ofs, ops->len, ops->ooblen, mtd->size, mtd->writesize);
+ 	return -EINVAL;
+ }
+@@ -212,7 +212,7 @@ static int goldfish_nand_read(struct mtd_info *mtd, loff_t from, size_t len,
+ 	return 0;
+ 
+ invalid_arg:
+-	pr_err("goldfish_nand_read: invalid read, start %llx, len %x, dev_size %llx, write_size %x\n",
++	pr_err("goldfish_nand_read: invalid read, start %llx, len %zx, dev_size %llx, write_size %x\n",
+ 		from, len, mtd->size, mtd->writesize);
+ 	return -EINVAL;
+ }
+@@ -236,7 +236,7 @@ static int goldfish_nand_write(struct mtd_info *mtd, loff_t to, size_t len,
+ 	return 0;
+ 
+ invalid_arg:
+-	pr_err("goldfish_nand_write: invalid write, start %llx, len %x, dev_size %llx, write_size %x\n",
++	pr_err("goldfish_nand_write: invalid write, start %llx, len %zx, dev_size %llx, write_size %x\n",
+ 		to, len, mtd->size, mtd->writesize);
+ 	return -EINVAL;
+ }
+-- 
+1.7.8.6
+
