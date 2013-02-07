@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759087Ab3BGRFq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 12:05:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:30618 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758867Ab3BGRFp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 12:05:45 -0500
-Date: Thu, 7 Feb 2013 12:05:43 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 2/2] initramfs with digital signature protection
-Message-ID: <20130207170542.GF6462@redhat.com>
-References: <cover.1360067333.git.dmitry.kasatkin@intel.com>
- <cc87f1242960fad1a9fb44bcec331915e14c832b.1360067333.git.dmitry.kasatkin@intel.com>
+	id S1759066Ab3BGRFo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 12:05:44 -0500
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:53720 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758867Ab3BGRFm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 12:05:42 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cc87f1242960fad1a9fb44bcec331915e14c832b.1360067333.git.dmitry.kasatkin@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKohpo=w+LaUf0LMLBJBmEUjShCUzxKrqm5WzcrZmxAyg1vM4g@mail.gmail.com>
+References: <1360251388-16075-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<CAKohpo=w+LaUf0LMLBJBmEUjShCUzxKrqm5WzcrZmxAyg1vM4g@mail.gmail.com>
+Date: Thu, 7 Feb 2013 19:05:40 +0200
+Message-ID: <CAHp75VctZrUh5Vrxtt5XuiHf5_KFXPGkRva1713W=EMmCJUuPQ@mail.gmail.com>
+Subject: Re: [PATCH] dw_dmac: add support for Lynxpoint DMA controllers
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 05, 2013 at 02:34:50PM +0200, Dmitry Kasatkin wrote:
+On Thu, Feb 7, 2013 at 5:39 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On 7 February 2013 21:06, Andy Shevchenko
+> <andriy.shevchenko@linux.intel.com> wrote:
+>> From: Mika Westerberg <mika.westerberg@linux.intel.com>
+>>
+>> Intel Lynxpoint PCH Low Power Subsystem has DMA controller to support general
+>> purpose serial buses like SPI, I2C, and HSUART. This controller is enumerated
+>> from ACPI namespace with ACPI ID INTL9C60.
+>>
+>> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+>
+> Looks like Mika is Author and you have your signed-off :)
 
-[..]
-> +static int __init load_initramfs(void)
-> +{
-> +	static char *argv[] = { "pre-init", NULL, };
-> +	extern char *envp_init[];
-> +	int err;
-> +
-> +	/*
-> +	 * In case that a resume from disk is carried out by linuxrc or one of
-> +	 * its children, we need to tell the freezer not to wait for us.
-> +	 */
-> +	current->flags |= PF_FREEZER_SKIP;
-> +
-> +	err = call_usermodehelper_fns("/pre-init", argv, envp_init,
-> +				      UMH_WAIT_PROC, init_init, init_cleanup,
-> +				      NULL);
-> +
-> +	current->flags &= ~PF_FREEZER_SKIP;
-> +
-> +	pr_info("initramfs_sig /pre-init completed: %d\n", err);
-> +
+In this literally small and clear patch it doesn't matter who is who.
+However for sake of equity I could add Mika's signed-off-by as well.
 
-Dmitry, 
+It should be:
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-How do we make sure that this is the first call to user mode helpers. I
-see that we first unpacked unsigned initramfs. Then after a while we 
-unpacked signed initramfs on /root and did a chroot. But now there is
-a window before chroot, where kernel might call into /sbin/hotplug or
-/sbin/modprobe from unsigned initramfs?
 
-Specifically, I put some printk and I am seeing calls to /sbin/hotplug
-before we even unpacked signed initramfs.
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-Thanks
-Vivek
+
+
+-- 
+With Best Regards,
+Andy Shevchenko
