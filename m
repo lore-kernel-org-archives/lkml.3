@@ -1,26 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932206Ab3BGRgV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 12:36:21 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:51587 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932128Ab3BGRgQ (ORCPT
+	id S1030210Ab3BGRge (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 12:36:34 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:62821 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759188Ab3BGRgc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 12:36:16 -0500
+	Thu, 7 Feb 2013 12:36:32 -0500
 From: manjunath.goudar@linaro.org
 To: linux-usb@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, patches@linaro.org,
         stern@rowland.harvard.edu, arnd@linaro.org, gregkh@linuxfoundation.org,
         Manjunath Goudar <manjunath.goudar@linaro.org>,
-        Greg KH <greg@kroah.com>, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 05/10] USB: EHCI: make ehci-atmel a separate driver
-Date: Thu,  7 Feb 2013 23:04:02 +0530
-Message-Id: <5113e60e.c84e420a.08c3.ffffbeda@mx.google.com>
+        Greg KH <greg@kroah.com>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>, linux-kernel@vger.kernel.org
+Subject: [PATCH 07/10] USB: EHCI: make ehci-mv a separate driver
+Date: Thu,  7 Feb 2013 23:04:04 +0530
+Message-Id: <5113e61e.c84e420a.08c3.ffffbefa@mx.google.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1360258447-27247-1-git-send-email-yes>
 References: <yes>
@@ -31,66 +27,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Manjunath Goudar <manjunath.goudar@linaro.org>
 
-Separate the Atmel host controller driver from ehci-hcd host code
+Separate the mv(marvell) host controller driver from ehci-hcd host code
 into its own driver module.
 
 Signed-off-by: Manjunath Goudar <manjunath.goudar@linaro.org>
-Cc: Alan Stern <stern@rowland.harvard.edu>
 Cc: Greg KH <greg@kroah.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Andrew Victor <linux@maxim.org.za>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
 Cc: linux-usb@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/usb/host/Kconfig      |    7 ++++
- drivers/usb/host/Makefile     |    1 +
- drivers/usb/host/ehci-atmel.c |   78 ++++++++++++++++++++++-------------------
- drivers/usb/host/ehci-hcd.c   |    6 +---
- 4 files changed, 51 insertions(+), 41 deletions(-)
+ drivers/usb/host/Kconfig    |    2 +-
+ drivers/usb/host/Makefile   |    1 +
+ drivers/usb/host/ehci-hcd.c |    6 +---
+ drivers/usb/host/ehci-mv.c  |   81 ++++++++++++++++++++-----------------------
+ 4 files changed, 40 insertions(+), 50 deletions(-)
 
 diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index 3689b7b..5a13f9d 100644
+index f2e0ed3..e7c3ce0 100644
 --- a/drivers/usb/host/Kconfig
 +++ b/drivers/usb/host/Kconfig
-@@ -176,6 +176,13 @@ config USB_EHCI_HCD_ORION
-         ---help---
-           Enables support for the on-chip EHCI controller on
-           Morvell Orion chips.
-+config USB_EHCI_HCD_AT91
-+        tristate  "Support for Atmel on-chip EHCI USB controller"
-+        depends on USB_EHCI_HCD && ARCH_AT91
-+        default y
-+        ---help---
-+          Enables support for the on-chip EHCI controller on
-+          Atmel chips.
+@@ -227,7 +227,7 @@ config USB_EHCI_S5P
+ 	 Enable support for the S5P SOC's on-chip EHCI controller.
  
- config USB_EHCI_MSM
- 	bool "Support for MSM on-chip EHCI USB controller"
+ config USB_EHCI_MV
+-	bool "EHCI support for Marvell on-chip controller"
++	tristate "EHCI support for Marvell on-chip controller"
+ 	depends on USB_EHCI_HCD && (ARCH_PXA || ARCH_MMP)
+ 	select USB_EHCI_ROOT_HUB_TT
+ 	---help---
 diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
-index 23b07dd..96b4839 100644
+index 5c4f5e1..677f1d3 100644
 --- a/drivers/usb/host/Makefile
 +++ b/drivers/usb/host/Makefile
-@@ -31,6 +31,7 @@ obj-$(CONFIG_USB_EHCI_HCD_OMAP) += ehci-omap.o
- obj-$(CONFIG_USB_EHCI_HCD_SPEAR)+= ehci-spear.o
- obj-$(CONFIG_USB_EHCI_HCD_ORION)+= ehci-orion.o
+@@ -33,6 +33,7 @@ obj-$(CONFIG_USB_EHCI_HCD_ORION)+= ehci-orion.o
  obj-$(CONFIG_USB_OXU210HP_HCD)	+= oxu210hp-hcd.o
-+obj-$(CONFIG_USB_EHCI_HCD_AT91) += ehci-atmel.o
+ obj-$(CONFIG_USB_EHCI_HCD_AT91) += ehci-atmel.o
+ obj-$(CONFIG_USB_EHCI_S5P)      += ehci-s5p.o
++obj-$(CONFIG_USB_EHCI_MV)       += ehci-mv.o
  obj-$(CONFIG_USB_ISP116X_HCD)	+= isp116x-hcd.o
  obj-$(CONFIG_USB_ISP1362_HCD)	+= isp1362-hcd.o
  obj-$(CONFIG_USB_OHCI_HCD)	+= ohci-hcd.o
-diff --git a/drivers/usb/host/ehci-atmel.c b/drivers/usb/host/ehci-atmel.c
-index 27639487..2f06711 100644
---- a/drivers/usb/host/ehci-atmel.c
-+++ b/drivers/usb/host/ehci-atmel.c
-@@ -15,6 +15,19 @@
- #include <linux/platform_device.h>
- #include <linux/of.h>
- #include <linux/of_platform.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
+diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
+index 36557e3..e636719 100644
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -1307,11 +1307,6 @@ MODULE_LICENSE ("GPL");
+ #define PLATFORM_DRIVER		ehci_grlib_driver
+ #endif
+ 
+-#ifdef CONFIG_USB_EHCI_MV
+-#include "ehci-mv.c"
+-#define        PLATFORM_DRIVER         ehci_mv_driver
+-#endif
+-
+ #ifdef CONFIG_MIPS_SEAD3
+ #include "ehci-sead3.c"
+ #define	PLATFORM_DRIVER		ehci_hcd_sead3_driver
+@@ -1326,6 +1321,7 @@ MODULE_LICENSE ("GPL");
+ 	!IS_ENABLED(CONFIG_PLAT_SPEAR) && \
+ 	!IS_ENABLED(CONFIG_ARCH_AT91) && \
+ 	!IS_ENABLED(CONFIG_USB_EHCI_S5P) && \
++	!IS_ENABLED(CONFIG_USB_EHCI_MV) && \
+ 	!defined(PS3_SYSTEM_BUS_DRIVER) && \
+ 	!defined(OF_PLATFORM_DRIVER) && \
+ 	!defined(XILINX_OF_PLATFORM_DRIVER)
+diff --git a/drivers/usb/host/ehci-mv.c b/drivers/usb/host/ehci-mv.c
+index 6c56297..67de419 100644
+--- a/drivers/usb/host/ehci-mv.c
++++ b/drivers/usb/host/ehci-mv.c
+@@ -17,7 +17,18 @@
+ #include <linux/usb/otg.h>
+ #include <linux/platform_data/mv_usb.h>
+ 
 +#include <linux/usb.h>
 +#include <linux/usb/hcd.h>
 +#include <linux/io.h>
@@ -98,116 +108,106 @@ index 27639487..2f06711 100644
 +
 +#include "ehci.h"
 +
-+#define DRIVER_DESC "EHCI atmel driver"
++#define DRIVER_DESC "EHCI mv driver"
 +
-+static const char hcd_name[] = "ehci-atmel";
-+static struct hc_driver __read_mostly ehci_atmel_hc_driver;
+ #define CAPLENGTH_MASK         (0xff)
++static const char hcd_name[] = "ehci-mv";
++static struct hc_driver __read_mostly mv_ehci_hc_driver;
  
- /* interface and function clocks */
- static struct clk *iclk, *fclk;
-@@ -60,41 +73,6 @@ static int ehci_atmel_setup(struct usb_hcd *hcd)
- 	return ehci_setup(hcd);
+ struct ehci_hcd_mv {
+ 	struct usb_hcd *hcd;
+@@ -95,48 +106,6 @@ static int mv_ehci_reset(struct usb_hcd *hcd)
+ 	return retval;
  }
  
--static const struct hc_driver ehci_atmel_hc_driver = {
--	.description		= hcd_name,
--	.product_desc		= "Atmel EHCI UHP HS",
--	.hcd_priv_size		= sizeof(struct ehci_hcd),
+-static const struct hc_driver mv_ehci_hc_driver = {
+-	.description = hcd_name,
+-	.product_desc = "Marvell EHCI",
+-	.hcd_priv_size = sizeof(struct ehci_hcd),
 -
--	/* generic hardware linkage */
--	.irq			= ehci_irq,
--	.flags			= HCD_MEMORY | HCD_USB2,
+-	/*
+-	 * generic hardware linkage
+-	 */
+-	.irq = ehci_irq,
+-	.flags = HCD_MEMORY | HCD_USB2,
 -
--	/* basic lifecycle operations */
--	.reset			= ehci_atmel_setup,
--	.start			= ehci_run,
--	.stop			= ehci_stop,
--	.shutdown		= ehci_shutdown,
+-	/*
+-	 * basic lifecycle operations
+-	 */
+-	.reset = mv_ehci_reset,
+-	.start = ehci_run,
+-	.stop = ehci_stop,
+-	.shutdown = ehci_shutdown,
 -
--	/* managing i/o requests and associated device resources */
--	.urb_enqueue		= ehci_urb_enqueue,
--	.urb_dequeue		= ehci_urb_dequeue,
--	.endpoint_disable	= ehci_endpoint_disable,
--	.endpoint_reset		= ehci_endpoint_reset,
+-	/*
+-	 * managing i/o requests and associated device resources
+-	 */
+-	.urb_enqueue = ehci_urb_enqueue,
+-	.urb_dequeue = ehci_urb_dequeue,
+-	.endpoint_disable = ehci_endpoint_disable,
+-	.endpoint_reset = ehci_endpoint_reset,
+-	.clear_tt_buffer_complete = ehci_clear_tt_buffer_complete,
 -
--	/* scheduling support */
--	.get_frame_number	= ehci_get_frame,
+-	/*
+-	 * scheduling support
+-	 */
+-	.get_frame_number = ehci_get_frame,
 -
--	/* root hub support */
--	.hub_status_data	= ehci_hub_status_data,
--	.hub_control		= ehci_hub_control,
--	.bus_suspend		= ehci_bus_suspend,
--	.bus_resume		= ehci_bus_resume,
--	.relinquish_port	= ehci_relinquish_port,
--	.port_handed_over	= ehci_port_handed_over,
--
--	.clear_tt_buffer_complete	= ehci_clear_tt_buffer_complete,
+-	/*
+-	 * root hub support
+-	 */
+-	.hub_status_data = ehci_hub_status_data,
+-	.hub_control = ehci_hub_control,
+-	.bus_suspend = ehci_bus_suspend,
+-	.bus_resume = ehci_bus_resume,
 -};
 -
- static u64 at91_ehci_dma_mask = DMA_BIT_MASK(32);
+ static int mv_ehci_probe(struct platform_device *pdev)
+ {
+ 	struct mv_usb_platform_data *pdata = pdev->dev.platform_data;
+@@ -302,7 +271,6 @@ static int mv_ehci_remove(struct platform_device *pdev)
+ {
+ 	struct ehci_hcd_mv *ehci_mv = platform_get_drvdata(pdev);
+ 	struct usb_hcd *hcd = ehci_mv->hcd;
+-	int clk_i;
  
- static int ehci_atmel_drv_probe(struct platform_device *pdev)
-@@ -210,7 +188,35 @@ static struct platform_driver ehci_atmel_driver = {
- 	.remove		= ehci_atmel_drv_remove,
- 	.shutdown	= usb_hcd_platform_shutdown,
- 	.driver		= {
--		.name	= "atmel-ehci",
-+		.name	= hcd_name,
- 		.of_match_table	= of_match_ptr(atmel_ehci_dt_ids),
- 	},
+ 	if (hcd->rh_registered)
+ 		usb_remove_hcd(hcd);
+@@ -351,8 +319,33 @@ static struct platform_driver ehci_mv_driver = {
+ 	.remove = mv_ehci_remove,
+ 	.shutdown = mv_ehci_shutdown,
+ 	.driver = {
+-		   .name = "mv-ehci",
++		   .name = hcd_name,
+ 		   .bus = &platform_bus_type,
+ 		   },
+ 	.id_table = ehci_id_table,
  };
-+
-+static const struct ehci_driver_overrides atmel_overrides __initdata = {
-+	.reset = ehci_atmel_setup,
++static const struct ehci_driver_overrides mv_overrides __initdata = {
++	.reset = mv_ehci_reset,
 +};
 +
-+static int __init ehci_atmel_init(void)
++static int __init ehci_mv_init(void)
 +{
 +	if (usb_disabled())
 +		return -ENODEV;
 +
 +	pr_info("%s: " DRIVER_DESC "\n", hcd_name);
-+	ehci_init_driver(&ehci_atmel_hc_driver, &atmel_overrides);
-+	return platform_driver_register(&ehci_atmel_driver);
++	ehci_init_driver(&mv_ehci_hc_driver, &mv_overrides);
++	return platform_driver_register(&ehci_mv_driver);
 +}
-+module_init(ehci_atmel_init);
++module_init(ehci_mv_init);
 +
-+static void __exit ehci_atmel_cleanup(void)
++static void __exit ehci_mv_cleanup(void)
 +{
-+	platform_driver_unregister(&ehci_atmel_driver);
++	platform_driver_unregister(&ehci_mv_driver);
 +}
-+module_exit(ehci_atmel_cleanup);
++module_exit(ehci_mv_cleanup);
 +
 +MODULE_DESCRIPTION(DRIVER_DESC);
-+
-+MODULE_ALIAS("platform:ehci-atmel");
-+MODULE_AUTHOR("Nicolas Ferre");
++MODULE_ALIAS("platform:ehci-mv");
++MODULE_AUTHOR("Marvell");
 +MODULE_LICENSE("GPL");
-+
-diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
-index 5a19a57..628ed139 100644
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -1272,11 +1272,6 @@ MODULE_LICENSE ("GPL");
- #define	PLATFORM_DRIVER		ehci_hcd_w90x900_driver
- #endif
- 
--#ifdef CONFIG_ARCH_AT91
--#include "ehci-atmel.c"
--#define	PLATFORM_DRIVER		ehci_atmel_driver
--#endif
--
- #ifdef CONFIG_USB_OCTEON_EHCI
- #include "ehci-octeon.c"
- #define PLATFORM_DRIVER		ehci_octeon_driver
-@@ -1334,6 +1329,7 @@ MODULE_LICENSE ("GPL");
- 	!defined(PLATFORM_DRIVER) && \
- 	!IS_ENABLED(CONFIG_USB_EHCI_HCD_OMAP) && \
- 	!IS_ENABLED(CONFIG_PLAT_SPEAR) && \
-+	!IS_ENABLED(CONFIG_ARCH_AT91) && \
- 	!defined(PS3_SYSTEM_BUS_DRIVER) && \
- 	!defined(OF_PLATFORM_DRIVER) && \
- 	!defined(XILINX_OF_PLATFORM_DRIVER)
 -- 
 1.7.9.5
 
