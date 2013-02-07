@@ -1,143 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422678Ab3BGTnU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 14:43:20 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:55368 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422639Ab3BGTnT (ORCPT
+	id S1422702Ab3BGTtw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 14:49:52 -0500
+Received: from mail-la0-f42.google.com ([209.85.215.42]:44588 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422653Ab3BGTtv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 14:43:19 -0500
-Date: Thu, 7 Feb 2013 11:43:14 -0800
-From: Tejun Heo <tj@kernel.org>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        James Morris <jmorris@namei.org>
-Subject: [PATCH v2 70/77] ipc: convert to idr_alloc()
-Message-ID: <20130207194314.GR2875@htj.dyndns.org>
-References: <1360179649-22465-1-git-send-email-tj@kernel.org>
- <1360179649-22465-71-git-send-email-tj@kernel.org>
+	Thu, 7 Feb 2013 14:49:51 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360179649-22465-71-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CACRpkdb7gFAr=-WbeMv98t6wcM+T2yJ+BqhLxiSY=Oq=9fnLYQ@mail.gmail.com>
+References: <1360261079-24361-1-git-send-email-tobetter@gmail.com>
+	<CACRpkdb7gFAr=-WbeMv98t6wcM+T2yJ+BqhLxiSY=Oq=9fnLYQ@mail.gmail.com>
+Date: Fri, 8 Feb 2013 04:49:48 +0900
+Message-ID: <CADoNuNeEeuOEJswpSnGuVoRYb_te3KJDKsVhStJzEbfsfzLBtA@mail.gmail.com>
+Subject: Re: [PATCH] mmc: dw_mmc: No bus setup if default pinctrl is used
+From: Dongjin Kim <tobetter@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Thomas Abraham <thomas.ab@samsung.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert to the much saner new idr interface.
+Hi Linus,
 
-The new interface doesn't directly translate to the way idr_pre_get()
-was used around ipc_addid() as preloading disables preemption.  From
-my cursory reading, it seems like we should be able to do all
-allocation from ipc_addid(), so I moved it there.  Can you please
-check whether this would be okay?  If this is wrong and ipc_addid()
-should be allowed to be called from non-sleepable context, I'd suggest
-allocating id itself in the outer functions and later install the
-pointer using idr_replace().
+Thank you for reviewing.
 
-Only compile tested.
+Initially I also considered to use IS_ENABLED(CONFIG_PINCTRL) and
+ignore for-block according to its status. But it would make a certain
+board failed if gpios is used for pin configuration rather than
+default-pinctrl even if CONFIG_PINCTRL is enabled. Also considered to
+add a function on pinctrl.c to return if default-pinctrl is used, and
+drop down the for-block according to its status. It could replace the
+long and complicaed line, IS_ERR(host->dev->pins->default_state), to
+simple one as well. :)
 
-v2: The v1 conversion of ipcget_public() was incorrect.  As
-    idr_pre_get() returns 0 for -ENOMEM failure, @err should have been
-    initialized to 1 not 0.  As the function doesn't do preloading
-    itself anymore, there's no point in the error handling path.
-    Simply remove the -ENOMEM path.
+The best is obviously to enable CONFIG_PINCTRL and remove the
+for-block, it makes the code more simple. I like to have a comment
+from Thomas if have to support both cases, gpios and default-pinctrl.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Sedat Dilek <sedat.dilek@gmail.com>
-Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: James Morris <jmorris@namei.org>
----
- ipc/util.c |   30 +++++++++---------------------
- 1 file changed, 9 insertions(+), 21 deletions(-)
+Best regards,
+Dongjin.
 
---- a/ipc/util.c
-+++ b/ipc/util.c
-@@ -252,7 +252,7 @@ int ipc_addid(struct ipc_ids* ids, struc
- {
- 	kuid_t euid;
- 	kgid_t egid;
--	int id, err;
-+	int id;
- 	int next_id = ids->next_id;
- 
- 	if (size > IPCMNI)
-@@ -261,17 +261,21 @@ int ipc_addid(struct ipc_ids* ids, struc
- 	if (ids->in_use >= size)
- 		return -ENOSPC;
- 
-+	idr_preload(GFP_KERNEL);
-+
- 	spin_lock_init(&new->lock);
- 	new->deleted = 0;
- 	rcu_read_lock();
- 	spin_lock(&new->lock);
- 
--	err = idr_get_new_above(&ids->ipcs_idr, new,
--				(next_id < 0) ? 0 : ipcid_to_idx(next_id), &id);
--	if (err) {
-+	id = idr_alloc(&ids->ipcs_idr, new,
-+		       (next_id < 0) ? 0 : ipcid_to_idx(next_id), 0,
-+		       GFP_NOWAIT);
-+	idr_preload_end();
-+	if (id < 0) {
- 		spin_unlock(&new->lock);
- 		rcu_read_unlock();
--		return err;
-+		return id;
- 	}
- 
- 	ids->in_use++;
-@@ -307,19 +311,10 @@ static int ipcget_new(struct ipc_namespa
- 		struct ipc_ops *ops, struct ipc_params *params)
- {
- 	int err;
--retry:
--	err = idr_pre_get(&ids->ipcs_idr, GFP_KERNEL);
--
--	if (!err)
--		return -ENOMEM;
- 
- 	down_write(&ids->rw_mutex);
- 	err = ops->getnew(ns, params);
- 	up_write(&ids->rw_mutex);
--
--	if (err == -EAGAIN)
--		goto retry;
--
- 	return err;
- }
- 
-@@ -376,8 +371,6 @@ static int ipcget_public(struct ipc_name
- 	struct kern_ipc_perm *ipcp;
- 	int flg = params->flg;
- 	int err;
--retry:
--	err = idr_pre_get(&ids->ipcs_idr, GFP_KERNEL);
- 
- 	/*
- 	 * Take the lock as a writer since we are potentially going to add
-@@ -389,8 +382,6 @@ retry:
- 		/* key not used */
- 		if (!(flg & IPC_CREAT))
- 			err = -ENOENT;
--		else if (!err)
--			err = -ENOMEM;
- 		else
- 			err = ops->getnew(ns, params);
- 	} else {
-@@ -413,9 +404,6 @@ retry:
- 	}
- 	up_write(&ids->rw_mutex);
- 
--	if (err == -EAGAIN)
--		goto retry;
--
- 	return err;
- }
- 
+On Fri, Feb 8, 2013 at 4:03 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Thu, Feb 7, 2013 at 7:17 PM, Dongjin Kim <tobetter@gmail.com> wrote:
+>
+>> Legacy gpio based bus setup is failed when the bus pins are listed with the
+>> property 'pinctrl-0' and 'pinctrl-names', instead of 'gpios'. The default
+>> pinctrls are handled by device core before probe, no need to configure the
+>> pins again in a device driver.
+>
+> Aha.
+>
+>>  {
+>>         int idx, gpio, ret;
+>> +       int nr_pins = NUM_PINS(bus_width);
+>>
+>>         if (!slot_np)
+>>                 return -EINVAL;
+>>
+>> +#if defined(CONFIG_PINCTRL)
+>> +       /* Default pinctrl is used */
+>> +       if (!IS_ERR(host->dev->pins->default_state))
+>> +               nr_pins = 0;
+>> +#endif
+>
+> Use:
+>
+> if (IS_ENABLED(CONFIG_PINCTRL))
+>    nr_pins = 0;
+>
+> Without ifdefs. Grep kernel for examples.
+> Read <linux/kconfig.h> for explanations.
+>
+> Put a comment above this to explain exactly why
+> you do this.
+>
+>> +
+>>         /* cmd + clock + bus-width pins */
+>> -       for (idx = 0; idx < NUM_PINS(bus_width); idx++) {
+>> +       for (idx = 0; idx < nr_pins; idx++) {
+>>                 gpio = of_get_gpio(slot_np, idx);
+>>                 if (!gpio_is_valid(gpio)) {
+>>                         dev_err(host->dev, "invalid gpio: %d\n", gpio);
+>
+> This looks kludgy, is it so that the driver falls back to GPIO
+> if it cannot use pinctrl? Can't it just depend on CONFIG_PINCTRL
+> in Kconfig or do you absolutely have to support both cases?
+>
+> I was under the impression that the Exynos requires pinctrl.
+>
+> Yours,
+> Linus Walleij
