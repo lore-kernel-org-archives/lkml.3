@@ -1,56 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758800Ab3BGQTT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 11:19:19 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58373 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754325Ab3BGQTR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 11:19:17 -0500
-Message-ID: <5113D3FF.6060009@canonical.com>
-Date: Thu, 07 Feb 2013 17:19:11 +0100
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1758883Ab3BGQTw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 11:19:52 -0500
+Received: from fieldses.org ([174.143.236.118]:42636 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755656Ab3BGQTt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 11:19:49 -0500
+Date: Thu, 7 Feb 2013 11:19:48 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Pavel Shilovsky <piastry@etersoft.ru>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
+        wine-devel@winehq.org
+Subject: Re: [PATCH v2 3/8] vfs: Add O_DENYREAD/WRITE flags support for open
+ syscall
+Message-ID: <20130207161948.GG3222@fieldses.org>
+References: <1358441584-8783-1-git-send-email-piastry@etersoft.ru>
+ <1358441584-8783-3-git-send-email-piastry@etersoft.ru>
+ <20130130221602.GC15584@fieldses.org>
+ <CAKywueRh++TBazK8_kRN7AUb=EFhGv=Sv2CV0BESkfLFy+g5wA@mail.gmail.com>
+ <20130205143514.GA9886@fieldses.org>
+ <CAKywueS6oGNu9r_bypu32A89pOoiGb47kjXqw2ZcZQhZK+JV3g@mail.gmail.com>
+ <20130207141832.GA3222@fieldses.org>
+ <CAKywueTmU_L5cwwJSoUY6753eHf_38VtHadZGt9tcLS59sqmOA@mail.gmail.com>
+ <20130207144156.GB3222@fieldses.org>
+ <CAKywueShbPd9b+WmJwnfwPR_vzk_atBVRBZNTf-HpS7N2CK+AA@mail.gmail.com>
 MIME-Version: 1.0
-To: Ben Skeggs <skeggsb@gmail.com>
-CC: Marcin Slusarz <marcin.slusarz@gmail.com>,
-        Peter Hurley <peter@hurleysoftware.com>, nouveau@lists.freedesktop.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org, Daniel J Blueman <daniel@quora.org>,
-        Ben Skeggs <bskeggs@redhat.com>, Arend van Spriel <arend@broadcom.com>
-Subject: Re: [PATCH] drm/nouveau: add lockdep annotations
-References: <CAMVG2svkJruzveuozb8RFK_j1BxqDOwBco=Aida9S680_toNiQ@mail.gmail.com> <20130204213041.GA3433@joi.lan> <51102F40.2090008@canonical.com> <20130205205255.GA10051@localhost.bne.redhat.com>
-In-Reply-To: <20130205205255.GA10051@localhost.bne.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKywueShbPd9b+WmJwnfwPR_vzk_atBVRBZNTf-HpS7N2CK+AA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+On Thu, Feb 07, 2013 at 08:00:13PM +0400, Pavel Shilovsky wrote:
+> 2013/2/7 J. Bruce Fields <bfields@fieldses.org>:
+> > On Thu, Feb 07, 2013 at 06:32:38PM +0400, Pavel Shilovsky wrote:
+> >> 2013/2/7 J. Bruce Fields <bfields@fieldses.org>:
+> >> > On Thu, Feb 07, 2013 at 01:53:46PM +0400, Pavel Shilovsky wrote:
+> >> >> Nothing prevents it. If somebody grabbed a share mode lock on a file
+> >> >> before we call deny_lock_file, we simply close this file and return
+> >> >> -ETXTBSY.
+> >> >
+> >> > But leave the newly-created file there--ugh.
+> >> >
+> >> >> We can't grab it before atomic_open because we don't have an
+> >> >> inode there.
+> >> >
+> >> > If you can get the lock while still holding the directory i_mutex can't
+> >> > you prevent anyone else from looking up the new file until you've gotten
+> >> > the lock?
+> >> >
+> >>
+> >> Hm..., seems you are right, I missed this part:
+> >> mutex_lock
+> >> lookup_open -> atomic_open -> deny_lock_file
+> >> mutex_unlock
+> >>
+> >> that means that nobody can open and of course set flock on the newly
+> >> created file (because flock is done through file descriptor). So, it
+> >> should be fine to call flock after f_ops->atomic_open in atomic_open
+> >> function. Thanks.
+> >
+> > Whether that works may also depend on how the new dentry is set up?  If
+> > it's hashed before you call flock then I suppose it's already visible to
+> > others.
+> 
+> It seems it should be hashed in f_ops->atomic_open() (at least cifs
+> and nfs do it this way). In do_last when we do an ordinary open, we
+> don't hit parent i_mutex if lookup is succeeded through lookup_fast.
+> lookup_fast can catch newly created dentry and set it's share mode
+> before atomic_open codepath hits deny_lock_file.
+> 
+> Also, I noted that: atomic open does f_ops->atomic_open and then it
+> processes may_open check; if may_open fails, the file is closed and
+> open returns with a error code (but file is created anyway).
 
-Op 05-02-13 21:52, Ben Skeggs schreef:
-> On Mon, Feb 04, 2013 at 10:59:28PM +0100, Maarten Lankhorst wrote:
->> Op 04-02-13 22:30, Marcin Slusarz schreef:
->>> 1) Lockdep thinks all nouveau subdevs belong to the same class and can be
->>> locked in arbitrary order, which is not true (at least in general case).
->>> Tell it to distinguish subdevs by (o)class type.
->> Apart from this specific case, is there any other reason why we require being able to nest 2 subdev locks?
-> I think I tend to prefer Marcin's fix for this actually.  The subdev's
-> are completely separate classes of objects and as interaction between
-> them increases (PM will be very much like this), we may very well
-> require holding multiple subdev mutexes at once.
->
-> Ben.
-Depends, I think for this specific example I think my cleanup is better.
+That would be a bug, I think.  E.g. "man 3posix open":
 
-For the generic case you could use nested mutexes, which will give you a
-different lockdep class when you need it. It's probably better to have those
-cases where you do need to nest locking annotated:
+	No  files  shall  be created or modified if the function returns
+	-1.
 
-mutex_lock_nested(&mutex, SINGLE_DEPTH_NESTING);
+Looking at the code...  See the references to FILE_CREATED in
+atomic_open--looks like that's trying to prevent may_open from failing
+in this case.
 
-See also Documentation/lockdep-design.txt
+> I think
+> there is no difference between this case and the situation with
+> deny_lock_file there.
 
-~Maarten
+Looks to me like it would be a bug in either case.
 
+--b.
