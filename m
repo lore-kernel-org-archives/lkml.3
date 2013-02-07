@@ -1,66 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758323Ab3BGMiF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 07:38:05 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:39922 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757936Ab3BGMiC (ORCPT
+	id S932099Ab3BGMiz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 07:38:55 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:54556 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751261Ab3BGMix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 07:38:02 -0500
+	Thu, 7 Feb 2013 07:38:53 -0500
+From: Philip Avinash <avinashphilip@ti.com>
+To: <khilman@ti.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
+        <dwmw2@infradead.org>, <artem.bityutskiy@linux.intel.com>
+CC: <afzal@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mtd@lists.infradead.org>, <nsekhar@ti.com>,
+        <gururaja.hebbar@ti.com>, <hvaibhav@ti.com>,
+        Philip Avinash <avinashphilip@ti.com>
+Subject: [PATCH v2 2/4] arm: gpmc: Low power transition support
+Date: Thu, 7 Feb 2013 18:06:56 +0530
+Message-ID: <1360240618-11094-3-git-send-email-avinashphilip@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1360240618-11094-1-git-send-email-avinashphilip@ti.com>
+References: <1360240618-11094-1-git-send-email-avinashphilip@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <5113948A.5070209@samsung.com>
-References: <1359373843-15956-1-git-send-email-prabhakar.lad@ti.com> <5113948A.5070209@samsung.com>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Thu, 7 Feb 2013 18:07:40 +0530
-Message-ID: <CA+V-a8uwV2mZvdqcVuGePre1zoF2D-JuVCS5f_yTacM6EVs2vw@mail.gmail.com>
-Subject: Re: [PATCH v2] media: add support for decoder as one of media entity types
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        LDOC <linux-doc@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>, Rob Landley <rob@landley.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sylwester,
+With GPMC converted to platform driver recently, adds low power
+transition support in driver itself.
 
-On Thu, Feb 7, 2013 at 5:18 PM, Sylwester Nawrocki
-<s.nawrocki@samsung.com> wrote:
-> Hi Prabhakar,
->
-> On 01/28/2013 12:50 PM, Prabhakar Lad wrote:
->> diff --git a/include/uapi/linux/media.h b/include/uapi/linux/media.h
->> index 0ef8833..dac06d7 100644
->> --- a/include/uapi/linux/media.h
->> +++ b/include/uapi/linux/media.h
->> @@ -56,6 +56,8 @@ struct media_device_info {
->>  #define MEDIA_ENT_T_V4L2_SUBDEV_SENSOR       (MEDIA_ENT_T_V4L2_SUBDEV + 1)
->>  #define MEDIA_ENT_T_V4L2_SUBDEV_FLASH        (MEDIA_ENT_T_V4L2_SUBDEV + 2)
->>  #define MEDIA_ENT_T_V4L2_SUBDEV_LENS (MEDIA_ENT_T_V4L2_SUBDEV + 3)
->> +/* DECODER: Converts analogue video to digital */
->
-> The patch looks good to me, I would just change this comment to
-> something like:
->
-> /* A converter of analogue video to its digital representation. */
->
-> But that's really a nitpicking.
->
-OK will fix it and post a v3.
+Signed-off-by: Philip Avinash <avinashphilip@ti.com>
+---
+Changes since v1:
+	Module disable & enable added using pm_runtime support.
 
-Regards,
---Prabhakar
+ arch/arm/mach-omap2/gpmc.c |   20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
->> +#define MEDIA_ENT_T_V4L2_SUBDEV_DECODER      (MEDIA_ENT_T_V4L2_SUBDEV + 4)
->>
->>  #define MEDIA_ENT_FL_DEFAULT         (1 << 0)
->
-> Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
->
-> --
->
-> Thanks,
-> Sylwester
+diff --git a/arch/arm/mach-omap2/gpmc.c b/arch/arm/mach-omap2/gpmc.c
+index b1cd6c1..cc57988 100644
+--- a/arch/arm/mach-omap2/gpmc.c
++++ b/arch/arm/mach-omap2/gpmc.c
+@@ -1361,9 +1361,29 @@ static __devexit int gpmc_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_PM
++static int gpmc_suspend(struct platform_device *pdev, pm_message_t state)
++{
++	omap3_gpmc_save_context();
++	pm_runtime_put_sync(&pdev->dev);
++	return 0;
++}
++
++static int gpmc_resume(struct platform_device *pdev)
++{
++	pm_runtime_get_sync(&pdev->dev);
++	omap3_gpmc_restore_context();
++	return 0;
++}
++#endif
++
+ static struct platform_driver gpmc_driver = {
+ 	.probe		= gpmc_probe,
+ 	.remove		= __devexit_p(gpmc_remove),
++#ifdef CONFIG_PM
++	.suspend	= gpmc_suspend,
++	.resume		= gpmc_resume,
++#endif
+ 	.driver		= {
+ 		.name	= DEVICE_NAME,
+ 		.owner	= THIS_MODULE,
+-- 
+1.7.9.5
+
