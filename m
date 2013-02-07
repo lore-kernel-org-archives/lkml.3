@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757661Ab3BGDUp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 22:20:45 -0500
-Received: from mail-da0-f44.google.com ([209.85.210.44]:61572 "EHLO
-	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757419Ab3BGDUm (ORCPT
+	id S1757324Ab3BGDVh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 22:21:37 -0500
+Received: from mail-da0-f48.google.com ([209.85.210.48]:63496 "EHLO
+	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751869Ab3BGDVg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 22:20:42 -0500
-Message-ID: <1360207237.28557.48.camel@edumazet-glaptop>
-Subject: Re: [PATCH 2/2] qlcnic: set gso_type
+	Wed, 6 Feb 2013 22:21:36 -0500
+Message-ID: <1360207292.28557.49.camel@edumazet-glaptop>
+Subject: Re: [PATCH 1/2] ixgbe: fix gso type
 From: Eric Dumazet <eric.dumazet@gmail.com>
 To: "Michael S. Tsirkin" <mst@redhat.com>
 Cc: netdev@vger.kernel.org, Eilon Greenstein <eilong@broadcom.com>,
@@ -28,10 +28,10 @@ Cc: netdev@vger.kernel.org, Eilon Greenstein <eilong@broadcom.com>,
         "David S. Miller" <davem@davemloft.net>,
         Jacob Keller <jacob.e.keller@intel.com>, linux-kernel@vger.kernel.org,
         e1000-devel@lists.sourceforge.net, bhutchings@solarflare.com
-Date: Wed, 06 Feb 2013 19:20:37 -0800
-In-Reply-To: <f262d9330d22447ed8fd487ad7b28d668efbf333.1360191528.git.mst@redhat.com>
+Date: Wed, 06 Feb 2013 19:21:32 -0800
+In-Reply-To: <76c44c70077f42302d7b079b29fd414205747af5.1360191528.git.mst@redhat.com>
 References: <cover.1360191528.git.mst@redhat.com>
-	 <f262d9330d22447ed8fd487ad7b28d668efbf333.1360191528.git.mst@redhat.com>
+	 <76c44c70077f42302d7b079b29fd414205747af5.1360191528.git.mst@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
@@ -41,37 +41,33 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Thu, 2013-02-07 at 01:02 +0200, Michael S. Tsirkin wrote:
-> qlcnic set gso_size but not gso type. This leads to crashes
-> in macvtap.
+> ixgbe set gso_size but not gso_type. This leads to
+> crashes in macvtap.
 > 
 > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 > ---
-> This one I only compiled - don't have qlogic hardware.
 > 
->  drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c | 7 ++++++-
->  1 file changed, 6 insertions(+), 1 deletion(-)
+> I tested that this fixes the crash for me.  I am told on ixgbe LRO only
+> triggers with TCP so checking protocol should be enough?
 > 
-> diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c
-> index bb4311e..370049c 100644
-> --- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c
-> +++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c
-> @@ -1043,8 +1043,13 @@ qlcnic_process_lro(struct qlcnic_adapter *adapter,
->  	th->seq = htonl(seq_number);
->  	length = skb->len;
+>  drivers/net/ethernet/intel/ixgbe/ixgbe_main.c | 8 ++++++--
+>  1 file changed, 6 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+> index 396e280..9d01673 100644
+> --- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+> +++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+> @@ -1399,6 +1399,10 @@ static void ixgbe_set_rsc_gso_size(struct ixgbe_ring *ring,
+>  	/* set gso_size to avoid messing up TCP MSS */
+>  	skb_shinfo(skb)->gso_size = DIV_ROUND_UP((skb->len - hdr_len),
+>  						 IXGBE_CB(skb)->append_cnt);
+> +	if (skb->protocol == ETH_P_IPV6)
+
+Same problem here (skb->protocol == htons(ETH_P_IPV6))
+
+> +		skb_shinfo(skb)->gso_type = SKB_GSO_TCPV6;
+> +	else
+> +		skb_shinfo(skb)->gso_type = SKB_GSO_TCPV4;
+>  }
 >  
-> -	if (adapter->flags & QLCNIC_FW_LRO_MSS_CAP)
-> +	if (adapter->flags & QLCNIC_FW_LRO_MSS_CAP) {
->  		skb_shinfo(skb)->gso_size = qlcnic_get_lro_sts_mss(sts_data1);
-> +		if (skb->protocol == ETH_P_IPV6)
-
-Are you sure its not skb->protocol == htons(ETH_P_IPV6) ?
-
-> +			skb_shinfo(skb)->gso_type = SKB_GSO_TCPV6;
-> +		else
-> +			skb_shinfo(skb)->gso_type = SKB_GSO_TCPV4;
-> +	}
->  
->  	if (vid != 0xffff)
->  		__vlan_hwaccel_put_tag(skb, vid);
-
 
