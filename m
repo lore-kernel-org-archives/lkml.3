@@ -1,79 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758804Ab3BGQVP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 11:21:15 -0500
-Received: from webmail.solarflare.com ([12.187.104.25]:57650 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754325Ab3BGQVN (ORCPT
+	id S1758666Ab3BGQWZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 11:22:25 -0500
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:45629 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754325Ab3BGQWX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 11:21:13 -0500
-Message-ID: <1360254046.3605.8.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [PATCH 0/2] fix kernel crash with macvtap on top of LRO
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: "Michael S. Tsirkin" <mst@redhat.com>, <netdev@vger.kernel.org>,
-        Eilon Greenstein <eilong@broadcom.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        Tushar Dave <tushar.n.dave@intel.com>,
-        Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>,
-        Sony Chacko <sony.chacko@qlogic.com>, <linux-driver@qlogic.com>,
-        John Fastabend <john.r.fastabend@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jacob Keller <jacob.e.keller@intel.com>,
-        <linux-kernel@vger.kernel.org>, <e1000-devel@lists.sourceforge.net>
-Date: Thu, 7 Feb 2013 16:20:46 +0000
-In-Reply-To: <1360207111.28557.47.camel@edumazet-glaptop>
-References: <cover.1360191528.git.mst@redhat.com>
-	 <1360193660.32217.39.camel@deadeye.wl.decadent.org.uk>
-	 <1360207111.28557.47.camel@edumazet-glaptop>
-Organization: Solarflare
+	Thu, 7 Feb 2013 11:22:23 -0500
+Message-ID: <1360254134.4102.47.camel@thor.lan>
+Subject: Re: [PATCH v3 07/23] tty: Strengthen no-subsequent-use guarantee of
+ tty_ldisc_halt()
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>, Sasha Levin <levinsasha928@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ilya Zykov <ilya@ilyx.ru>, Dave Jones <davej@redhat.com>
+Date: Thu, 07 Feb 2013 11:22:14 -0500
+In-Reply-To: <5113CA5A.8070307@suse.cz>
+References: <1355509370-5883-1-git-send-email-peter@hurleysoftware.com>
+	 <1360095638-6624-1-git-send-email-peter@hurleysoftware.com>
+	 <1360095638-6624-8-git-send-email-peter@hurleysoftware.com>
+	 <5113CA5A.8070307@suse.cz>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+X-Mailer: Evolution 3.6.3-0pjh1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19620.001
-X-TM-AS-Result: No--21.372100-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+X-Authenticated-User: 125194 peter@hurleysoftware.com
+X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-02-06 at 19:18 -0800, Eric Dumazet wrote:
-> On Wed, 2013-02-06 at 23:34 +0000, Ben Hutchings wrote:
+On Thu, 2013-02-07 at 16:38 +0100, Jiri Slaby wrote:
+> On 02/05/2013 09:20 PM, Peter Hurley wrote:
+> > @@ -688,9 +702,9 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
+> >  	 *	parallel to the change and re-referencing the tty.
+> >  	 */
+> >  
+> > -	work = tty_ldisc_halt(tty);
+> > +	retval = tty_ldisc_halt(tty, &work, 5 * HZ);
+> >  	if (o_tty)
+> > -		o_work = tty_ldisc_halt(o_tty);
+> > +		tty_ldisc_halt(o_tty, &o_work, 0);
 > 
-> > If we want to allow forwarding from LRO then net/ipv4/inet_lro.c also
-> > needs to set gso_type.
+> Zero in there will cause the other end's work not to be cancelled and
+> TTY_LDISC_HALTED unset if there are two or more readers on the slave,
+> right? So there should be something like:
+> if (timeout)
+>   retval = tty_ldisc_wait_idle(tty, timeout);
+>   ...
 > 
-> Then, what is dev_disable_lro() purpose ?
+> in tty_ldisc_halt.
 
-The purpose was to disable LRO when forwarding because they weren't
-compatible.
+True.
 
-If the consensus now is that the modifications made by LRO+TSO are
-acceptable in a bridge/router, then we should get rid of
-dev_disable_lro() and set both gso_size & gso_type on all LRO receive
-paths.
+Fixed in 08/23, where both ldiscs are halted simultaneously, forced to
+wait for identical timeouts, and returns an error if either tty timed
+out. From 08/23
 
-If the consensus is still that we must preserve packets exactly (aside
-from the usual modifications by IP routers) then LRO should be disabled
-on all devices for which forwarding is enabled.  (Also, we really ought
-to keep a count of the number of forwarders and use that in
-netdev_fix_features(), rather than doing a one-time disable.)
+in tty_ldisc_halt():
 
-Ben.
+        retval = tty_ldisc_wait_idle(tty, timeout);
++       if (!retval && o_tty)
++               retval = tty_ldisc_wait_idle(o_tty, timeout);
+        if (retval)
+                return retval;
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+in tty_set_ldisc():
+
+-       retval = tty_ldisc_halt(tty, &work, 5 * HZ);
+-       if (o_tty)
+-               tty_ldisc_halt(o_tty, &o_work, 0);
++       retval = tty_ldisc_halt(tty, o_tty, &work, &o_work, 5 * HZ);
+
+
+If you'd prefer, I could put the 5 sec. wait in 7/23 as well, test the
+error and so forth.
 
