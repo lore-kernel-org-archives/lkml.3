@@ -1,143 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030254Ab3BGA2W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 19:28:22 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:49112 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030214Ab3BGA2M (ORCPT
+	id S1758689Ab3BGA3m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 19:29:42 -0500
+Received: from mail-la0-f48.google.com ([209.85.215.48]:33858 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758092Ab3BGA3l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 19:28:12 -0500
-Date: Wed, 6 Feb 2013 16:28:06 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH wq/for-3.9 workqueue]: add delayed_work->wq to simplify
- reentrancy handling
-Message-ID: <20130207002806.GG2875@htj.dyndns.org>
-References: <1359657696-2767-1-git-send-email-laijs@cn.fujitsu.com>
- <1359657696-2767-4-git-send-email-laijs@cn.fujitsu.com>
+	Wed, 6 Feb 2013 19:29:41 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1359657696-2767-4-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1359714465-6297-2-git-send-email-zhong@linux.vnet.ibm.com>
+References: <1359714465-6297-1-git-send-email-zhong@linux.vnet.ibm.com>
+	<1359714465-6297-2-git-send-email-zhong@linux.vnet.ibm.com>
+Date: Thu, 7 Feb 2013 01:29:39 +0100
+Message-ID: <CAFTL4hx7njUVVqp9FmtQQWaWG1i5dxscqQD8F_S838z2tUKVGQ@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/5] powerpc: Syscall hooks for context tracking subsystem
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Li Zhong <zhong@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        paulmck@linux.vnet.ibm.com, benh@kernel.crashing.org, paulus@samba.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
+2013/2/1 Li Zhong <zhong@linux.vnet.ibm.com>:
+> This is the syscall slow path hooks for context tracking subsystem,
+> corresponding to
+> [PATCH] x86: Syscall hooks for userspace RCU extended QS
+>   commit bf5a3c13b939813d28ce26c01425054c740d6731
+>
+> TIF_MEMDIE is moved to the second 16-bits (with value 17), as it seems there
+> is no asm code using it. TIF_NOHZ is added to _TIF_SYCALL_T_OR_A, so it is
+> better for it to be in the same 16 bits with others in the group, so in the
+> asm code, andi. with this group could work.
+>
+> Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+> ---
+>  arch/powerpc/include/asm/thread_info.h |    7 +++++--
+>  arch/powerpc/kernel/ptrace.c           |    5 +++++
+>  2 files changed, 10 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/powerpc/include/asm/thread_info.h b/arch/powerpc/include/asm/thread_info.h
+> index 406b7b9..414a261 100644
+> --- a/arch/powerpc/include/asm/thread_info.h
+> +++ b/arch/powerpc/include/asm/thread_info.h
+> @@ -97,7 +97,7 @@ static inline struct thread_info *current_thread_info(void)
+>  #define TIF_PERFMON_CTXSW      6       /* perfmon needs ctxsw calls */
+>  #define TIF_SYSCALL_AUDIT      7       /* syscall auditing active */
+>  #define TIF_SINGLESTEP         8       /* singlestepping active */
+> -#define TIF_MEMDIE             9       /* is terminating due to OOM killer */
+> +#define TIF_NOHZ               9       /* in adaptive nohz mode */
+>  #define TIF_SECCOMP            10      /* secure computing */
+>  #define TIF_RESTOREALL         11      /* Restore all regs (implies NOERROR) */
+>  #define TIF_NOERROR            12      /* Force successful syscall return */
+> @@ -106,6 +106,7 @@ static inline struct thread_info *current_thread_info(void)
+>  #define TIF_SYSCALL_TRACEPOINT 15      /* syscall tracepoint instrumentation */
+>  #define TIF_EMULATE_STACK_STORE        16      /* Is an instruction emulation
+>                                                 for stack store? */
+> +#define TIF_MEMDIE             17      /* is terminating due to OOM killer */
+>
+>  /* as above, but as bit values */
+>  #define _TIF_SYSCALL_TRACE     (1<<TIF_SYSCALL_TRACE)
+> @@ -124,8 +125,10 @@ static inline struct thread_info *current_thread_info(void)
+>  #define _TIF_UPROBE            (1<<TIF_UPROBE)
+>  #define _TIF_SYSCALL_TRACEPOINT        (1<<TIF_SYSCALL_TRACEPOINT)
+>  #define _TIF_EMULATE_STACK_STORE       (1<<TIF_EMULATE_STACK_STORE)
+> +#define _TIF_NOHZ              (1<<TIF_NOHZ)
+>  #define _TIF_SYSCALL_T_OR_A    (_TIF_SYSCALL_TRACE | _TIF_SYSCALL_AUDIT | \
+> -                                _TIF_SECCOMP | _TIF_SYSCALL_TRACEPOINT)
+> +                                _TIF_SECCOMP | _TIF_SYSCALL_TRACEPOINT | \
+> +                                _TIF_NOHZ)
+>
+>  #define _TIF_USER_WORK_MASK    (_TIF_SIGPENDING | _TIF_NEED_RESCHED | \
+>                                  _TIF_NOTIFY_RESUME | _TIF_UPROBE)
+> diff --git a/arch/powerpc/kernel/ptrace.c b/arch/powerpc/kernel/ptrace.c
+> index c497000..62238dd 100644
+> --- a/arch/powerpc/kernel/ptrace.c
+> +++ b/arch/powerpc/kernel/ptrace.c
+> @@ -32,6 +32,7 @@
+>  #include <trace/syscall.h>
+>  #include <linux/hw_breakpoint.h>
+>  #include <linux/perf_event.h>
+> +#include <linux/context_tracking.h>
+>
+>  #include <asm/uaccess.h>
+>  #include <asm/page.h>
+> @@ -1745,6 +1746,8 @@ long do_syscall_trace_enter(struct pt_regs *regs)
+>  {
+>         long ret = 0;
+>
+> +       user_exit();
+> +
+>         secure_computing_strict(regs->gpr[0]);
+>
+>         if (test_thread_flag(TIF_SYSCALL_TRACE) &&
+> @@ -1789,4 +1792,6 @@ void do_syscall_trace_leave(struct pt_regs *regs)
+>         step = test_thread_flag(TIF_SINGLESTEP);
+>         if (step || test_thread_flag(TIF_SYSCALL_TRACE))
+>                 tracehook_report_syscall_exit(regs, step);
+> +
+> +       user_enter();
 
-To avoid executing the same work item from multiple CPUs concurrently,
-a work_struct records the last pool it was on in its ->data so that,
-on the next queueing, the pool can be queried to determine whether the
-work item is still executing or not.
+In x86-64, schedule_user() and do_notify_resume() can be called before
+syscall_trace_leave(). As a result we may be entering
+syscall_trace_leave() in user mode (from a context tracking POV). To
+fix this I added a call to user_exit() on the very beginning of that
+function.
 
-A delayed_work goes through timer before actually being queued on the
-target workqueue and the timer needs to know the target workqueue and
-CPU.  This is currently achieved by modifying delayed_work->work.data
-such that it points to the cwq which points to the target workqueue
-and the last CPU the work item was on.  __queue_delayed_work()
-extracts the last CPU from delayed_work->work.data and then combines
-it with the target workqueue to create new work.data.
+You can find the details in 2c5594df344cd1ff0cc9bf007dea3235582b3acf
+("rcu: Fix unrecovered RCU user mode in syscall_trace_leave()").
 
-The only thing this rather ugly hack achieves is encoding the target
-workqueue into delayed_work->work.data without using a separate field,
-which could be a trade off one can make; unfortunately, this entangles
-work->data management between regular workqueue and delayed_work code
-by setting cwq pointer before the work item is actually queued and
-becomes a hindrance for further improvements of work->data handling.
+Could this problem happen in ppc as well?
 
-This can be easily made sane by adding a target workqueue field to
-delayed_work.  While delayed_work is used widely in the kernel and
-this does make it a bit larger (<5%), I think this is the right
-trade-off especially given the prospect of much saner handling of
-work->data which currently involves quite tricky memory barrier
-dancing, and don't expect to see any measureable effect.
-
-Add delayed_work->wq and drop the delayed_work->work.data overloading.
-
-tj: Rewrote the description.
-
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- include/linux/workqueue.h |    3 +++
- kernel/workqueue.c        |   32 +++-----------------------------
- 2 files changed, 6 insertions(+), 29 deletions(-)
-
---- a/include/linux/workqueue.h
-+++ b/include/linux/workqueue.h
-@@ -109,6 +109,9 @@ struct work_struct {
- struct delayed_work {
- 	struct work_struct work;
- 	struct timer_list timer;
-+
-+	/* target workqueue and CPU ->timer uses to queue ->work */
-+	struct workqueue_struct *wq;
- 	int cpu;
- };
- 
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1339,10 +1339,9 @@ EXPORT_SYMBOL_GPL(queue_work);
- void delayed_work_timer_fn(unsigned long __data)
- {
- 	struct delayed_work *dwork = (struct delayed_work *)__data;
--	struct cpu_workqueue_struct *cwq = get_work_cwq(&dwork->work);
- 
- 	/* should have been called from irqsafe timer with irq already off */
--	__queue_work(dwork->cpu, cwq->wq, &dwork->work);
-+	__queue_work(dwork->cpu, dwork->wq, &dwork->work);
- }
- EXPORT_SYMBOL_GPL(delayed_work_timer_fn);
- 
-@@ -1351,7 +1350,6 @@ static void __queue_delayed_work(int cpu
- {
- 	struct timer_list *timer = &dwork->timer;
- 	struct work_struct *work = &dwork->work;
--	unsigned int lcpu;
- 
- 	WARN_ON_ONCE(timer->function != delayed_work_timer_fn ||
- 		     timer->data != (unsigned long)dwork);
-@@ -1371,30 +1369,7 @@ static void __queue_delayed_work(int cpu
- 
- 	timer_stats_timer_set_start_info(&dwork->timer);
- 
--	/*
--	 * This stores cwq for the moment, for the timer_fn.  Note that the
--	 * work's pool is preserved to allow reentrance detection for
--	 * delayed works.
--	 */
--	if (!(wq->flags & WQ_UNBOUND)) {
--		struct worker_pool *pool = get_work_pool(work);
--
--		/*
--		 * If we cannot get the last pool from @work directly,
--		 * select the last CPU such that it avoids unnecessarily
--		 * triggering non-reentrancy check in __queue_work().
--		 */
--		lcpu = cpu;
--		if (pool)
--			lcpu = pool->cpu;
--		if (lcpu == WORK_CPU_UNBOUND)
--			lcpu = raw_smp_processor_id();
--	} else {
--		lcpu = WORK_CPU_UNBOUND;
--	}
--
--	set_work_cwq(work, get_cwq(lcpu, wq), 0);
--
-+	dwork->wq = wq;
- 	dwork->cpu = cpu;
- 	timer->expires = jiffies + delay;
- 
-@@ -2944,8 +2919,7 @@ bool flush_delayed_work(struct delayed_w
- {
- 	local_irq_disable();
- 	if (del_timer_sync(&dwork->timer))
--		__queue_work(dwork->cpu,
--			     get_work_cwq(&dwork->work)->wq, &dwork->work);
-+		__queue_work(dwork->cpu, dwork->wq, &dwork->work);
- 	local_irq_enable();
- 	return flush_work(&dwork->work);
- }
+Thanks.
