@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758841Ab3BGPzK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 10:55:10 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53655 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758166Ab3BGPzH (ORCPT
+	id S1758852Ab3BGPzy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 10:55:54 -0500
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:61884 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757549Ab3BGPzv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 10:55:07 -0500
-Date: Thu, 7 Feb 2013 15:55:04 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/49] ARM: ux500: Update displays in vaux1 consumer list
-Message-ID: <20130207155504.GX4720@opensource.wolfsonmicro.com>
-References: <1360148051-7560-1-git-send-email-lee.jones@linaro.org>
- <1360148051-7560-10-git-send-email-lee.jones@linaro.org>
- <CACRpkda=HMwnip8EziZewMPmRb19gc9E1_vJHtAUJ+UjFJ6byQ@mail.gmail.com>
+	Thu, 7 Feb 2013 10:55:51 -0500
+Message-ID: <5113CE82.5070609@suse.cz>
+Date: Thu, 07 Feb 2013 16:55:46 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:18.0) Gecko/20121129 Thunderbird/18.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3h0UNLyY10zL13pE"
-Content-Disposition: inline
-In-Reply-To: <CACRpkda=HMwnip8EziZewMPmRb19gc9E1_vJHtAUJ+UjFJ6byQ@mail.gmail.com>
-X-Cookie: Your domestic life may be harmonious.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Hurley <peter@hurleysoftware.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>, Sasha Levin <levinsasha928@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ilya Zykov <ilya@ilyx.ru>, Dave Jones <davej@redhat.com>
+Subject: Re: [PATCH v3 01/23] tty: Add diagnostic for halted line discipline
+References: <1355509370-5883-1-git-send-email-peter@hurleysoftware.com>  <1360095638-6624-1-git-send-email-peter@hurleysoftware.com>  <1360095638-6624-2-git-send-email-peter@hurleysoftware.com>  <5113BF3B.3060307@suse.cz> <1360252434.4102.37.camel@thor.lan>
+In-Reply-To: <1360252434.4102.37.camel@thor.lan>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/07/2013 04:53 PM, Peter Hurley wrote:
+>>> +static int tty_ldisc_halt(struct tty_struct *tty)
+>>> +{
+>>> +	int scheduled;
+>>> +	clear_bit(TTY_LDISC, &tty->flags);
+>>> +	scheduled = cancel_work_sync(&tty->port->buf.work);
+>>> +	set_bit(TTY_LDISC_HALTED, &tty->flags);
+>>> +	return scheduled;
+>>> +}
+>>
+>> Why did you move with that function? It makes the patch unnecessarily
+>> bigger (and harder for a review).
+> 
+> 07/23 starts using tty_wait_for_idle() in tty_ldisc_halt().
+> 
+> Should I split this?
 
---3h0UNLyY10zL13pE
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Yes please.
 
-On Thu, Feb 07, 2013 at 04:34:18PM +0100, Linus Walleij wrote:
-> On Wed, Feb 6, 2013 at 11:53 AM, Lee Jones <lee.jones@linaro.org> wrote:
-
-> > Add 3 more specific consumers pertaining to the displays found
-> > on the u8500 and ST User Interface Boards (UIBs).
-
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-
-> This look correct,
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-
-> Do you want me to merge the ux500 portions into the ux500
-> maintenance tree?
-
-Lee indicated that splitting them up from the regulator changes causes
-bisection issues.
-
---3h0UNLyY10zL13pE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRE85OAAoJELSic+t+oim90wcP/iTgzxb9QF2L05l4ibmjm2fs
-922bzj8EsalFGsGrUvM8kRQXv8nyIVnHxvuZcefYGn1xDEDGp1j/AnWClE+meWuQ
-sy4EuQVXCHV6yZlCYXenNpzGQYH8nyqJv7n7BZ7iHu5uXxklDPzBG8R8qnEaxagC
-SoDs8zFkN3nYzhAJRLafXHjYCRgiG0Or6cEjauR9rQQcxufyCJ2g13LJMHqXDfun
-RVGGwsuRvbBdKAT8hTUtZGqBT/sVQwoiq4myulaqqMceW7Zxro6kXxoEqEeKZeYO
-ahDj6vhyoStqVYRx/NnvucggPKbXDOfUj7pFjKiWmPkMfYv4N0/s8m47HOe6eB/K
-QMytPQWhklt2fmEm94ltal9yXzk918dYew0ZMucYI6b7zZsB1DF9X8KOcgxV4wup
-ptKhPnRl/wm+S0DVuhVD0+TykibTmSLQm35XYVoDK61hH2A4q9QmjIGWUIIyyTFI
-Hr2EUkEOI5IFIkVM1x/K1c9yMr0I7biSPMm3vOYkpvUIYkaEOQk/5Dsyb7oF6VBc
-zVYzzpA0TDOzZy6dbA5lSDES9bbslcdJhgxyhGQM6xoyVN/TaDvKk1p19ZXp7mm7
-YpSCAX38Zbqli23LiGRtGuJ7DKxezHMZtrdl2qrWxzaDQl1Kxlf607Ja76NDE0al
-KrUoDsAGDZXSK/TQGv0W
-=NeO0
------END PGP SIGNATURE-----
-
---3h0UNLyY10zL13pE--
+-- 
+js
+suse labs
