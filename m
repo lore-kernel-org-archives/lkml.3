@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759375Ab3BGVQY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 16:16:24 -0500
-Received: from gate.crashing.org ([63.228.1.57]:58361 "EHLO gate.crashing.org"
+	id S1759454Ab3BGVS6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 16:18:58 -0500
+Received: from gate.crashing.org ([63.228.1.57]:52991 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758877Ab3BGVQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 16:16:23 -0500
-Message-ID: <1360271743.2650.38.camel@pasglop>
+	id S1759412Ab3BGVS5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 16:18:57 -0500
+Message-ID: <1360271904.2650.40.camel@pasglop>
 Subject: Re: [PATCH] drivers/block/xsysace - replace
  in(out)_8/in(out)_be16/in(out)_le16 with generic iowrite(read)8/16(be)
 From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
-        Michal Simek <monstr@monstr.eu>, Arnd Bergmann <arnd@arndb.de>,
+To: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>, Michal Simek <monstr@monstr.eu>,
+        Arnd Bergmann <arnd@arndb.de>,
         Vineet Gupta <Vineet.Gupta1@synopsys.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Alan Cox <alan@lxorguk.ukuu.org.uk>,
         Geert Uytterhoeven <geert@linux-m68k.org>,
         dahinds@users.sourceforge.net
-Date: Fri, 08 Feb 2013 08:15:43 +1100
-In-Reply-To: <CACxGe6srNmX+qL+5BBFOzTHtQLRcw+4Aqjexy0Y=Vbh3XqPWPA@mail.gmail.com>
+Date: Fri, 08 Feb 2013 08:18:24 +1100
+In-Reply-To: <5113DCC1.7040902@synopsys.com>
 References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com>
 	 <1781360.cmQWHCW5SC@wuerfel>
 	 <CAHTX3dJpuTRa4Ff29k95quPMVDO2mBiayPoocnw5R15=5ovOHQ@mail.gmail.com>
@@ -37,6 +37,7 @@ References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com>
 	 <CACxGe6uHx4KdZRgAyL-wQ2GurojAH0eTa6YRCoSuCg89BAvBTA@mail.gmail.com>
 	 <5113C818.9050307@synopsys.com>
 	 <CACxGe6srNmX+qL+5BBFOzTHtQLRcw+4Aqjexy0Y=Vbh3XqPWPA@mail.gmail.com>
+	 <5113DCC1.7040902@synopsys.com>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.6.2-0ubuntu0.1 
 Mime-Version: 1.0
@@ -45,39 +46,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-02-07 at 16:44 +0000, Grant Likely wrote:
+On Thu, 2013-02-07 at 20:56 +0400, Alexey Brodkin wrote:
+> > So, if I'm correct that means that for the data port (specifically
+> > copying between RAM and the data port) using ioread16/iowrite16 on the
+> > data port results in the correct behaviour. It also means that LE
+> > support in the current driver is broken.
 > 
-> I've just spent some quality time with a piece of paper, and I think
-> I've figured it out...
+> That matches my earlier note when I wrote that for correct work on LE 
+> (note I'm on ARC, not PPC/MB) I needed to use "io{read|write}16" in 
+> "ace_data{in|out}_le16".
+> 
+> With original "io{read|write}16be" instead data was corrupted.
 
-http://linuxplumbers.ubicast.tv/videos/big-and-little-endian-inside-out/
+For the "backward wiring case" your data port will always be the opposite
+endian as your host. For the "correct wiring" case, the data port will always
+be the same endian as your host.
 
-Watch the last part on IO busses....
+So the correct wiring case (the one using ioread16/iowrite16 for registers),
+the data port should just use ioread16_rep.
 
-This all has to do which which byte of the bus is the lowest byte
-*address* regardless of significance. That's how the wiring should be
-consistent between CPU and device, in order for a data port to work
-properly.
+For the other case, you need some ifdef'ery or raw variants with home made
+barriers, or a bounce buffer.
 
-The data port then requires no swapping (which also means it works
-nicely with dumb DMA engines etc...)
-
-Whether the registers need swapping or not depends on which half is the
-MSB, which is somewhat a semantically higher level than the bus
-transport, and depends on whether the device exposes them as BE or LE
-registers. But data ports are just "windows" to a byte stream and
-shouldn't be affected by endianess (again, unless you get a moron doing
-the HW which seems to be still too common).
-
-There is only one right way to connect devices to CPUs basically, which
-is called byte address invariance, and preserves the order of bytes in
-term of byte addresses.
-
-(Note that for busses that also carry addresses such as PCI, this can
-get tricky as you might need to have the lanes routed in a different
-order for address vs. data cycles).
-
-Cheers,
 Ben.
 
 
