@@ -1,128 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758276Ab3BGMCW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 07:02:22 -0500
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:57249 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757970Ab3BGMCU (ORCPT
+	id S1756686Ab3BGMJi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 07:09:38 -0500
+Received: from alvesta.synopsys.com ([198.182.60.77]:55625 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751261Ab3BGMJg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 07:02:20 -0500
-Message-ID: <51139725.1090007@linux.vnet.ibm.com>
-Date: Thu, 07 Feb 2013 17:29:33 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+	Thu, 7 Feb 2013 07:09:36 -0500
+Message-ID: <51139974.2040601@synopsys.com>
+Date: Thu, 7 Feb 2013 16:09:24 +0400
+From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: Rik van Riel <riel@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "aquini@redhat.com" <aquini@redhat.com>,
-        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
-        "lwoodman@redhat.com" <lwoodman@redhat.com>,
-        "knoel@redhat.com" <knoel@redhat.com>,
-        "chegu_vinod@hp.com" <chegu_vinod@hp.com>,
-        "mingo@redhat.com" <mingo@redhat.com>
-Subject: Re: [PATCH -v5 5/5] x86,smp: limit spinlock delay on virtual machines
-References: <20130206150311.19cd1e52@cuia.bos.redhat.com> <20130206150748.486d7bf8@cuia.bos.redhat.com> <alpine.DEB.2.02.1302071122440.4275@kaball.uk.xensource.com>
-In-Reply-To: <alpine.DEB.2.02.1302071122440.4275@kaball.uk.xensource.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Grant Likely <grant.likely@secretlab.ca>, Michal Simek <monstr@monstr.eu>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        <dahinds@users.sourceforge.net>
+Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16
+ with generic iowrite(read)8/16(be)
+References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com>  <1781360.cmQWHCW5SC@wuerfel>  <CAHTX3dJpuTRa4Ff29k95quPMVDO2mBiayPoocnw5R15=5ovOHQ@mail.gmail.com>  <201302041724.47331.arnd@arndb.de> <1360031367.14701.47.camel@pasglop>  <CAHTX3dL4dScmzgGyqbvPH-7UQvFrjQhHu2zh0iZyzWB=spZS+Q@mail.gmail.com>  <1360066756.4529.6.camel@pasglop>  <CAHTX3dLJy314mv39hprkmZ5XdzYiYGz1ngTERp7w6aAYud+Riw@mail.gmail.com>  <51111133.7000105@synopsys.com> <1360098004.4529.13.camel@pasglop>  <511178AC.7080304@synopsys.com> <1360105635.2707.7.camel@pasglop>  <CACxGe6u=zhGXm0AO_h354g8OOkAQgdczdw_gCCRxL+=r8hM+-g@mail.gmail.com> <1360186550.2650.4.camel@pasglop>
+In-Reply-To: <1360186550.2650.4.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13020711-6102-0000-0000-000002F8723B
+X-Originating-IP: [10.121.8.160]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2013 04:55 PM, Stefano Stabellini wrote:
-> On Wed, 6 Feb 2013, Rik van Riel wrote:
->> Modern Intel and AMD CPUs will trap to the host when the guest
->> is spinning on a spinlock, allowing the host to schedule in
->> something else.
+On 02/07/2013 01:35 AM, Benjamin Herrenschmidt wrote:
+> On Wed, 2013-02-06 at 10:14 +0000, Grant Likely wrote:
 >>
->> This effectively means the host is taking care of spinlock
->> backoff for virtual machines. It also means that doing the
->> spinlock backoff in the guest anyway can lead to totally
->> unpredictable results, extremely large backoffs, and
->> performance regressions.
->>
->> To prevent those problems, we limit the spinlock backoff
->> delay, when running in a virtual machine, to a small value.
->>
->> Signed-off-by: Rik van Riel <riel@redhat.com>
->> ---
->>   arch/x86/include/asm/processor.h |    2 ++
->>   arch/x86/kernel/cpu/hypervisor.c |    2 ++
->>   arch/x86/kernel/smp.c            |   21 +++++++++++++++++++--
->>   3 files changed, 23 insertions(+), 2 deletions(-)
->>
->> diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
->> index 888184b..4118fd8 100644
->> --- a/arch/x86/include/asm/processor.h
->> +++ b/arch/x86/include/asm/processor.h
->> @@ -997,6 +997,8 @@ extern bool cpu_has_amd_erratum(const int *);
->>   extern unsigned long arch_align_stack(unsigned long sp);
->>   extern void free_init_pages(char *what, unsigned long begin, unsigned long end);
->>
->> +extern void init_guest_spinlock_delay(void);
->> +
->>   void default_idle(void);
->>   bool set_pm_idle_to_default(void);
->>
->> diff --git a/arch/x86/kernel/cpu/hypervisor.c b/arch/x86/kernel/cpu/hypervisor.c
->> index a8f8fa9..4a53724 100644
->> --- a/arch/x86/kernel/cpu/hypervisor.c
->> +++ b/arch/x86/kernel/cpu/hypervisor.c
->> @@ -76,6 +76,8 @@ void __init init_hypervisor_platform(void)
->>
->>   	init_hypervisor(&boot_cpu_data);
->>
->> +	init_guest_spinlock_delay();
->> +
->>   	if (x86_hyper->init_platform)
->>   		x86_hyper->init_platform();
->>   }
->> diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
->> index 64e33ef..fbc5ff3 100644
->> --- a/arch/x86/kernel/smp.c
->> +++ b/arch/x86/kernel/smp.c
->> @@ -116,8 +116,25 @@ static bool smp_no_nmi_ipi = false;
->>   #define DELAY_SHIFT			8
->>   #define DELAY_FIXED_1			(1<<DELAY_SHIFT)
->>   #define MIN_SPINLOCK_DELAY		(1 * DELAY_FIXED_1)
->> -#define MAX_SPINLOCK_DELAY		(16000 * DELAY_FIXED_1)
->> +#define MAX_SPINLOCK_DELAY_NATIVE	(16000 * DELAY_FIXED_1)
->> +#define MAX_SPINLOCK_DELAY_GUEST	(16 * DELAY_FIXED_1)
->>   #define DELAY_HASH_SHIFT		6
->> +
->> +/*
->> + * Modern Intel and AMD CPUs tell the hypervisor when a guest is
->> + * spinning excessively on a spinlock. The hypervisor will then
->> + * schedule something else, effectively taking care of the backoff
->> + * for us. Doing our own backoff on top of the hypervisor's pause
->> + * loop exit handling can lead to excessively long delays, and
->> + * performance degradations. Limit the spinlock delay in virtual
->> + * machines to a smaller value. Called from init_hypervisor_platform
->> + */
->> +static int __read_mostly max_spinlock_delay = MAX_SPINLOCK_DELAY_NATIVE;
->> +void __init init_guest_spinlock_delay(void)
->> +{
->> +	max_spinlock_delay = MAX_SPINLOCK_DELAY_GUEST;
->> +}
->> +
+>> Huh? That makes no sense. This device out in the wild with both big
+>> and little endian bus attachments. You can argue all day that one of
+>> them is wrong, but it doesn't matter. It exists, is used, and must be
+>> supported.
 >
-> Same comment as last time:
+> No. That's where you are VERY wrong. We don't have to support crap and
+> arguably shouldn't if that can give an incentive to vendors to fix their
+> stuff. If you don't believe me, ask Linus :-)
 >
-> """
-> Before reducing max_spinlock_delay, shouldn't we check that PAUSE-loop
-> exiting is available? What if we are running on an older x86 machine
-> that doesn't support it?
-> """
+>>   In fact, the driver already knows about this and figures
+>> out at runtime how the device is wired up to the bus. This is not the
+>> problem.
+>
+> Except that this is very gross, especially when you observe that in the
+> busted "big endian" case, it has to byteswap the bloody data port.
+>
+> So you end up having to do that gross hack with separate accessors for
+> registers vs. data and not able to use the _rep variants, which also
+> means that on platforms like ppc, you end up with a memory barrier on
+> every access (or more), which is going to slow things down enormously.
 
-I believe irrespective of whether the machine is PLE/ non PLE since we
-are  limiting the number of loops to just 16, (against 16000 for
-baremetal) it does not affect the guest much instead it may help some
-overcommit cases a little. ( I have not tested on non - PLE guest yet).
-Because  otherwise, It is still difficult to tune 'loop' parameter
-because of LHP etc.
+BTW I've just realized that in case if there's no bridge between CPU and 
+CF-controller or if this bridge is "transparent" (does no swapping
+neither bytes nor bits) our data accessors here should be changed.
 
+Isn't it strange in "ace_datain_le16" use "ioread16be" or the one it was 
+here initially "in_be16"?
+With BE ones I'd say similar changes should be done.
 
+So finally I see them implemented this way:
+===============
+/* BE part */
+static void ace_datain_be16(struct ace_device *ace)
+{
+	int i = ACE_FIFO_SIZE / 2;
+	u16 *dst = ace->data_ptr;
+	while (i--)
+		*dst++ = ioread16be(ace->baseaddr + 0x40);
+	ace->data_ptr = dst;
+}
+
+static void ace_dataout_be16(struct ace_device *ace)
+{
+	int i = ACE_FIFO_SIZE / 2;
+	u16 *src = ace->data_ptr;
+	while (i--)
+		iowrite16be(*src++, ace->baseaddr + 0x40);
+	ace->data_ptr = src;
+}
+
+/* LE part*/
+static void ace_datain_le16(struct ace_device *ace)
+{
+	int i = ACE_FIFO_SIZE / 2;
+	u16 *dst = ace->data_ptr;
+	while (i--)
+		*dst++ = ioread16(ace->baseaddr + 0x40);
+	ace->data_ptr = dst;
+}
+
+static void ace_dataout_le16(struct ace_device *ace)
+{
+	int i = ACE_FIFO_SIZE / 2;
+	u16 *src = ace->data_ptr;
+	while (i--)
+		iowrite16(*src++, ace->baseaddr + 0x40);
+	ace->data_ptr = src;
+}
+===============
+
+Correct me if I'm wrong here.
+
+And at least these accessors for LE got xsysace perfectly working on our 
+FPGA platform (little-endian ARC700 on Xilinx ml-509 with our own 
+BVCI-to-MPU bridge that does no swapping).
+
+I have to confess that I didn't properly tested initial patch on real HW 
+- it was only sort of cosmetic clean-up.
+
+-Alexey
+
+>> BTW, that document describes only one of the systemace bus
+>> attachments. There is a different on used on Microblaze little-endian,
+>> and some boards have the SystemACE directly wired to the SoC external
+>> bus (no adapter IP).
+>>
+>> The only problem that I see is that the ARM and Microblaze
+>> ioread16be/iowrite16be helpers are missing barriers which smells like
+>> a bug and should be fixed.
+>>
+>> Michal, have you tested Alexey's patch? If it works for you then I'm
+>> comfortable with acking it. It looks correct to me.
+>
+> No, the real problem is that the "big endian" wiring is totally busted
+> and the HW guys who came with it must be taught a lesson. Not supporting
+> that crap might be one way to do it.
+>
+> Ben.
+>
+>
