@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758333Ab3BGMWx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 07:22:53 -0500
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:54790 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758292Ab3BGMWs (ORCPT
+	id S1758373Ab3BGMW4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 07:22:56 -0500
+Received: from mail-vb0-f50.google.com ([209.85.212.50]:39525 "EHLO
+	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758321Ab3BGMWx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 07:22:48 -0500
+	Thu, 7 Feb 2013 07:22:53 -0500
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>, asias@redhat.com,
         Rusty Russell <rusty@rustcorp.com.au>, mst@redhat.com,
         kvm@vger.kernel.org, virtualization@lists.linux-foundation.org
-Subject: [RFC PATCH 2/8] virtio-blk: reorganize virtblk_add_req
-Date: Thu,  7 Feb 2013 13:22:26 +0100
-Message-Id: <1360239752-2470-3-git-send-email-pbonzini@redhat.com>
+Subject: [RFC PATCH 4/8] virtio-blk: use virtqueue_start_buf on req path
+Date: Thu,  7 Feb 2013 13:22:28 +0100
+Message-Id: <1360239752-2470-5-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1360239752-2470-1-git-send-email-pbonzini@redhat.com>
 References: <1360239752-2470-1-git-send-email-pbonzini@redhat.com>
@@ -22,112 +22,153 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Right now, both virtblk_add_req and virtblk_add_req_wait call
-virtqueue_add_buf.  To prepare for the next patches, abstract the call
-to virtqueue_add_buf into a new function __virtblk_add_req, and include
-the waiting logic directly in virtblk_add_req.
+This is similar to the previous patch, but a bit more radical
+because the bio and req paths now share the buffer construction
+code.  Because the req path doesn't use vbr->sg, however, we
+need to add a couple of arguments to __virtblk_add_req.
+
+We also need to teach __virtblk_add_req how to build SCSI command
+requests.
 
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- drivers/block/virtio_blk.c |   55 ++++++++++++++++----------------------------
- 1 files changed, 20 insertions(+), 35 deletions(-)
+ drivers/block/virtio_blk.c |   73 +++++++++++++++++++++++---------------------
+ 1 files changed, 38 insertions(+), 35 deletions(-)
 
 diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-index 8ad21a2..fd8a689 100644
+index 538cc40..5896b4d 100644
 --- a/drivers/block/virtio_blk.c
 +++ b/drivers/block/virtio_blk.c
-@@ -100,50 +100,39 @@ static inline struct virtblk_req *virtblk_alloc_req(struct virtio_blk *vblk,
- 	return vbr;
+@@ -102,19 +102,27 @@ static inline struct virtblk_req *virtblk_alloc_req(struct virtio_blk *vblk,
  }
  
--static void virtblk_add_buf_wait(struct virtio_blk *vblk,
--				 struct virtblk_req *vbr,
--				 unsigned long out,
--				 unsigned long in)
-+static inline int __virtblk_add_req(struct virtqueue *vq,
+ static int __virtblk_add_req(struct virtqueue *vq,
+-			     struct virtblk_req *vbr)
 +			     struct virtblk_req *vbr,
-+			     unsigned long out,
-+			     unsigned long in)
++			     struct scatterlist *io_sg,
++			     unsigned io_sg_count)
  {
-+	return virtqueue_add_buf(vq, vbr->sg, out, in, vbr, GFP_ATOMIC);
-+}
-+
-+static void virtblk_add_req(struct virtblk_req *vbr,
-+			    unsigned int out, unsigned int in)
-+{
-+	struct virtio_blk *vblk = vbr->vblk;
- 	DEFINE_WAIT(wait);
-+	int ret;
+ 	struct virtqueue_buf buf;
+ 	struct scatterlist sg;
+ 	enum dma_data_direction dir;
+ 	int ret;
  
--	for (;;) {
-+	spin_lock_irq(vblk->disk->queue->queue_lock);
-+	while (unlikely((ret = __virtblk_add_req(vblk->vq, vbr,
-+						 out, in)) < 0)) {
++	int type = vbr->out_hdr.type & ~VIRTIO_BLK_T_OUT;
+ 	unsigned int count = 2;
+ 	unsigned int count_sg = 2;
+ 
+-	if (vbr->sg_count) {
++	if (type == VIRTIO_BLK_T_SCSI_CMD) {
++		BUG_ON(use_bio);
++		count_sg += 3;
++		count += 3;
++	}
++	if (io_sg_count) {
+ 		count_sg++;
+-		count += vbr->sg_count;
++		count += io_sg_count;
+ 	}
+ 
+ 	ret = virtqueue_start_buf(vq, &buf, vbr, count, count_sg, GFP_ATOMIC);
+@@ -125,14 +133,32 @@ static int __virtblk_add_req(struct virtqueue *vq,
+ 	sg_init_one(&sg, &vbr->out_hdr, sizeof(vbr->out_hdr));
+ 	virtqueue_add_sg_single(&buf, &sg, dir);
+ 
+-	if (vbr->sg_count) {
++	/*
++	 * If this is a packet command we need a couple of additional headers.
++	 * Behind the normal outhdr we put a segment with the scsi command
++	 * block, and before the normal inhdr we put the sense data and the
++	 * inhdr with additional status information before the normal inhdr.
++	 */
++	if (type == VIRTIO_BLK_T_SCSI_CMD) {
++		sg_init_one(&sg, vbr->req->cmd, vbr->req->cmd_len);
++		virtqueue_add_sg_single(&buf, &sg, dir);
++	}
++
++	if (io_sg_count) {
+ 		if ((vbr->out_hdr.type & VIRTIO_BLK_T_OUT) == 0)
+ 			dir = DMA_FROM_DEVICE;
+ 
+-		virtqueue_add_sg(&buf, vbr->sg, vbr->sg_count, dir);
++		virtqueue_add_sg(&buf, io_sg, io_sg_count, dir);
+ 	}
+ 
+ 	dir = DMA_FROM_DEVICE;
++	if (type == VIRTIO_BLK_T_SCSI_CMD) {
++		sg_init_one(&sg, vbr->req->sense, SCSI_SENSE_BUFFERSIZE);
++		virtqueue_add_sg_single(&buf, &sg, dir);
++		sg_init_one(&sg, &vbr->in_hdr, sizeof(vbr->in_hdr));
++		virtqueue_add_sg_single(&buf, &sg, dir);
++	}
++
+ 	sg_init_one(&sg, &vbr->status, sizeof(vbr->status));
+ 	virtqueue_add_sg_single(&buf, &sg, dir);
+ 
+@@ -147,7 +173,8 @@ static void virtblk_add_req(struct virtblk_req *vbr)
+ 	int ret;
+ 
+ 	spin_lock_irq(vblk->disk->queue->queue_lock);
+-	while (unlikely((ret = __virtblk_add_req(vblk->vq, vbr)) < 0)) {
++	while (unlikely((ret = __virtblk_add_req(vblk->vq, vbr, vbr->sg,
++						 vbr->sg_count)) < 0)) {
  		prepare_to_wait_exclusive(&vblk->queue_wait, &wait,
  					  TASK_UNINTERRUPTIBLE);
  
-+		spin_unlock_irq(vblk->disk->queue->queue_lock);
-+		io_schedule();
- 		spin_lock_irq(vblk->disk->queue->queue_lock);
--		if (virtqueue_add_buf(vblk->vq, vbr->sg, out, in, vbr,
--				      GFP_ATOMIC) < 0) {
--			spin_unlock_irq(vblk->disk->queue->queue_lock);
--			io_schedule();
--		} else {
--			virtqueue_kick(vblk->vq);
--			spin_unlock_irq(vblk->disk->queue->queue_lock);
--			break;
--		}
+@@ -300,7 +327,7 @@ static void virtblk_done(struct virtqueue *vq)
+ static bool do_req(struct request_queue *q, struct virtio_blk *vblk,
+ 		   struct request *req)
+ {
+-	unsigned long num, out = 0, in = 0;
++	unsigned int num;
+ 	struct virtblk_req *vbr;
  
-+		finish_wait(&vblk->queue_wait, &wait);
+ 	vbr = virtblk_alloc_req(vblk, GFP_ATOMIC);
+@@ -337,40 +364,16 @@ static bool do_req(struct request_queue *q, struct virtio_blk *vblk,
+ 		}
  	}
  
--	finish_wait(&vblk->queue_wait, &wait);
--}
+-	sg_set_buf(&vblk->sg[out++], &vbr->out_hdr, sizeof(vbr->out_hdr));
 -
--static inline void virtblk_add_req(struct virtblk_req *vbr,
--				   unsigned int out, unsigned int in)
--{
--	struct virtio_blk *vblk = vbr->vblk;
+-	/*
+-	 * If this is a packet command we need a couple of additional headers.
+-	 * Behind the normal outhdr we put a segment with the scsi command
+-	 * block, and before the normal inhdr we put the sense data and the
+-	 * inhdr with additional status information before the normal inhdr.
+-	 */
+-	if (vbr->req->cmd_type == REQ_TYPE_BLOCK_PC)
+-		sg_set_buf(&vblk->sg[out++], vbr->req->cmd, vbr->req->cmd_len);
 -
--	spin_lock_irq(vblk->disk->queue->queue_lock);
--	if (unlikely(virtqueue_add_buf(vblk->vq, vbr->sg, out, in, vbr,
--					GFP_ATOMIC) < 0)) {
--		spin_unlock_irq(vblk->disk->queue->queue_lock);
--		virtblk_add_buf_wait(vblk, vbr, out, in);
--		return;
+-	num = blk_rq_map_sg(q, vbr->req, vblk->sg + out);
+-
+-	if (vbr->req->cmd_type == REQ_TYPE_BLOCK_PC) {
+-		sg_set_buf(&vblk->sg[num + out + in++], vbr->req->sense, SCSI_SENSE_BUFFERSIZE);
+-		sg_set_buf(&vblk->sg[num + out + in++], &vbr->in_hdr,
+-			   sizeof(vbr->in_hdr));
 -	}
- 	virtqueue_kick(vblk->vq);
- 	spin_unlock_irq(vblk->disk->queue->queue_lock);
- }
- 
--static int virtblk_bio_send_flush(struct virtblk_req *vbr)
-+static void virtblk_bio_send_flush(struct virtblk_req *vbr)
- {
- 	unsigned int out = 0, in = 0;
- 
-@@ -155,11 +144,9 @@ static int virtblk_bio_send_flush(struct virtblk_req *vbr)
- 	sg_set_buf(&vbr->sg[out + in++], &vbr->status, sizeof(vbr->status));
- 
- 	virtblk_add_req(vbr, out, in);
 -
--	return 0;
- }
+-	sg_set_buf(&vblk->sg[num + out + in++], &vbr->status,
+-		   sizeof(vbr->status));
++	num = blk_rq_map_sg(q, vbr->req, vblk->sg);
  
--static int virtblk_bio_send_data(struct virtblk_req *vbr)
-+static void virtblk_bio_send_data(struct virtblk_req *vbr)
- {
- 	struct virtio_blk *vblk = vbr->vblk;
- 	unsigned int num, out = 0, in = 0;
-@@ -188,8 +175,6 @@ static int virtblk_bio_send_data(struct virtblk_req *vbr)
+ 	if (num) {
+-		if (rq_data_dir(vbr->req) == WRITE) {
++		if (rq_data_dir(vbr->req) == WRITE)
+ 			vbr->out_hdr.type |= VIRTIO_BLK_T_OUT;
+-			out += num;
+-		} else {
++		else
+ 			vbr->out_hdr.type |= VIRTIO_BLK_T_IN;
+-			in += num;
+-		}
  	}
  
- 	virtblk_add_req(vbr, out, in);
--
--	return 0;
- }
- 
- static void virtblk_bio_send_data_work(struct work_struct *work)
+-	if (virtqueue_add_buf(vblk->vq, vblk->sg, out, in, vbr,
+-			      GFP_ATOMIC) < 0) {
++	if (__virtblk_add_req(vblk->vq, vbr, vblk->sg, num) < 0) {
+ 		mempool_free(vbr, vblk->pool);
+ 		return false;
+ 	}
 -- 
 1.7.1
 
