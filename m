@@ -1,32 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752206Ab3BGHHp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 02:07:45 -0500
-Received: from mail-we0-f179.google.com ([74.125.82.179]:55914 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750925Ab3BGHHn (ORCPT
+	id S1752341Ab3BGHOE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 02:14:04 -0500
+Received: from latitanza.investici.org ([82.94.249.234]:39499 "EHLO
+	latitanza.investici.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751629Ab3BGHOA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 02:07:43 -0500
+	Thu, 7 Feb 2013 02:14:00 -0500
+X-DKIM: Sendmail DKIM Filter v2.8.2 latitanza.investici.org 3326A98063
+Date: Thu, 7 Feb 2013 08:13:05 +0100
+From: Antonio Quartulli <ordex@autistici.org>
+To: Emil Goode <emilgoode@gmail.com>
+Cc: akpm@linux-foundation.org, lindner_marek@yahoo.de, siwu@hrz.tu-chemnitz.de,
+        davem@davemloft.net, sasha.levin@oracle.com,
+        b.a.t.m.a.n@lists.open-mesh.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH v2] batman-adv: Remove unused variable
+Message-ID: <20130207071305.GG6008@ritirata.org>
+References: <1360193557-27554-1-git-send-email-emilgoode@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1360188694-25077-1-git-send-email-sasha.levin@oracle.com>
-References: <1360188694-25077-1-git-send-email-sasha.levin@oracle.com>
-Date: Thu, 7 Feb 2013 09:07:41 +0200
-X-Google-Sender-Auth: vGbiGP8npAKAVdCjP7NZ2myMl5o
-Message-ID: <CAOJsxLGpbXv1x6AA60th_HD=0vKdhuMGFuU=hWo86A2PxWiV+w@mail.gmail.com>
-Subject: Re: [PATCH 00/11] lockdep: LD_PRELOAD support
-From: Pekka Enberg <penberg@kernel.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: mingo@kernel.org, peterz@infradead.org, jamie.iles@oracle.com,
-        acme@ghostprotocols.net, paulus@samba.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="QWpDgw58+k1mSFBj"
+Content-Disposition: inline
+In-Reply-To: <1360193557-27554-1-git-send-email-emilgoode@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 7, 2013 at 12:11 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
-> This patch series adds in LD_PRELOAD support for liblockdep.
 
-FWIW,
+--QWpDgw58+k1mSFBj
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Pekka Enberg <penberg@kernel.org>
+On Thu, Feb 07, 2013 at 12:32:37AM +0100, Emil Goode wrote:
+> The below commit removed one node parameter from iterators.
+> ed242d01bbe22ea0877472db49b2752d866c921c
+> (hlist: drop the node parameter from iterators)
+>=20
+> This patch removes a hlist_node struct that is no longer used.
+>=20
+> Sparse gives a warning:
+>=20
+> net/batman-adv/originator.c:411:21: warning:
+> 	unused variable =E2=80=98node_tmp=E2=80=99 [-Wunused-variable]
+>=20
+> Signed-off-by: Emil Goode <emilgoode@gmail.com>
+
+Acked-by: Antonio Quartulli <ordex@autistici.org>
+
+Thanks Emil
+
+Cheers,
+
+--=20
+Antonio Quartulli
+
+=2E.each of us alone is worth nothing..
+Ernesto "Che" Guevara
+
+--QWpDgw58+k1mSFBj
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRE1QBAAoJEADl0hg6qKeOIbQP/0619SbVBdH3FJ7s6Z7LFgI/
+wo3N/zUqxX4oIzR4lSfKRmFks7JoEnXneAK/tEr5YRzGFdeC9y9/ua7VQ3PCL7t8
+ivsB+qJ/be2ZyOn9QLY72e1sR5zn48HZLNdqGNGgoDY+C8H1qCZBNt3DY2sbpRpS
+Ojxp1jhl/PsFvqY2WXq6Vwvv0l85+ZY11fHACKAFrsDnKfJSuFxniQ09ir/Y/kHA
+L9CDGVHOTnkVFQitAs5y0fnIH3wwU8CSMF1DHGuNK0h/WBwuAQoXceO10bqKijcH
+guFY2kfJp0wyFsJmVIw/5CbdMBiYKgSlu7YynI9XbF/vahZUrcblW7qd9zzVABge
+t3SrtU3/oPWsSgMcpsZqHQbiPCg2z1zt7On46ExEpIqh3K7EcmvCyhLXNbQXR5H/
+DBV5/aY8yHEyq+njhenht4wteRHaFOF7n60MEuf2tr8d5A7dQUGVi+/gS4p1Ul91
+Rda4dV+2bcuMVNLPYuuxeY8HLm+ahvbPSdMsvxK+yyZ1z0fpiK+fPljB0gUBoDHp
+MWc2AFQ9WXQmjkhzW1m63C1ZwQ/z4Af8FOfM0k8JAhLc0fKAz7QgMp0RekisZ9NG
+AK2ZAxflxoI+wbZOI7uRvs/rzQqARhxf4AfzY4fNYeQDHsOWwgljazCTXEMblXX4
+UgowgwUjnmI8dHLfQv7D
+=SB6i
+-----END PGP SIGNATURE-----
+
+--QWpDgw58+k1mSFBj--
