@@ -1,104 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757362Ab3BGBAk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 20:00:40 -0500
-Received: from mail-qe0-f43.google.com ([209.85.128.43]:46894 "EHLO
-	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754274Ab3BGBAi (ORCPT
+	id S1757403Ab3BGBBd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 20:01:33 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:40322 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754274Ab3BGBBc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 20:00:38 -0500
+	Wed, 6 Feb 2013 20:01:32 -0500
+Message-ID: <5112FCD8.5070104@oracle.com>
+Date: Wed, 06 Feb 2013 20:01:12 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130113 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130206165522.ed6f10fc.akpm@linux-foundation.org>
-References: <1359597622-31532-1-git-send-email-sasha.levin@oracle.com>
-	<20130206165522.ed6f10fc.akpm@linux-foundation.org>
-Date: Wed, 6 Feb 2013 17:00:37 -0800
-X-Google-Sender-Auth: wixYDxY247odVTy89xnmTF2aN_0
-Message-ID: <CAOS58YOX+ZRSoWnGhQJz_StMfheJyJe=ZbKUEVr21AOkpKKBLw@mail.gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: peter.senna@gmail.com, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>
 Subject: Re: [PATCH v2] hlist: drop the node parameter from iterators
-From: Tejun Heo <tj@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>, Li Zefan <lizefan@huawei.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>, peter.senna@gmail.com,
-        linux-kernel@vger.kernel.org
+References: <1359597622-31532-1-git-send-email-sasha.levin@oracle.com> <20130206165522.ed6f10fc.akpm@linux-foundation.org>
+In-Reply-To: <20130206165522.ed6f10fc.akpm@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc'ing Li)
-
-On Wed, Feb 6, 2013 at 4:55 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+On 02/06/2013 07:55 PM, Andrew Morton wrote:
+> On Wed, 30 Jan 2013 21:00:22 -0500
+> Sasha Levin <sasha.levin@oracle.com> wrote:
+> 
+>> I'm not sure why, but the hlist for each entry iterators were conceived
+>> differently from the list ones. While the list ones are nice and elegant:
+>>
+>>         list_for_each_entry(pos, head, member)
+>>
+>> The hlist ones were greedy and wanted an extra parameter:
+>>
+>>         hlist_for_each_entry(tpos, pos, head, member)
+>>
+>> Why did they need an extra pos parameter? I'm not quite sure. Not only
+>> they don't really need it, it also prevents the iterator from looking
+>> exactly like the list iterator, which is unfortunate.
+>>
+>> Besides the semantic patch, there was some manual work required:
+>>
+>>  - Fix up the actual hlist iterators in linux/list.h
+>>  - Fix up the declaration of other iterators based on the hlist ones.
+>>  - A very small amount of places were using the 'node' parameter, this
+>>  was modified to use 'obj->member' instead.
+>>  - Coccinelle didn't handle the hlist_for_each_entry_safe iterator
+>>  properly, so those had to be fixed up manually.
+>>
+>> ...
+>>
+>> --- a/kernel/cgroup.c
+>> +++ b/kernel/cgroup.c
+>>
+>> ...
+>>
+>> @@ -4525,7 +4524,7 @@ int __init_or_module cgroup_load_subsys(struct cgroup_subsys *ss)
+>>  	 * this is all done under the css_set_lock.
+>>  	 */
+>>  	write_lock(&css_set_lock);
+>> -	hash_for_each_safe(css_set_table, i, node, tmp, cg, hlist) {
+>> +	hash_for_each_safe(css_set_table, i, tmp, cg, hlist) {
+>>  		/* skip entries that we already rehashed */
+>>  		if (cg->subsys[ss->subsys_id])
+>>  			continue;
+> 
 > Problems in cgroup_load_subsys().
->
+> 
 > In linux-next, that function is now using the `node' storage which your
 > patch removes:
->
+> 
 > @@ -4503,23 +4525,17 @@ int __init_or_module cgroup_load_subsys(struct cgroup_subsys *ss)
->          * this is all done under the css_set_lock.
->          */
->         write_lock(&css_set_lock);
-> -       for (i = 0; i < CSS_SET_TABLE_SIZE; i++) {
-> -               struct css_set *cg;
-> -               struct hlist_node *node, *tmp;
-> -               struct hlist_head *bucket = &css_set_table[i], *new_bucket;
+>  	 * this is all done under the css_set_lock.
+>  	 */
+>  	write_lock(&css_set_lock);
+> -	for (i = 0; i < CSS_SET_TABLE_SIZE; i++) {
+> -		struct css_set *cg;
+> -		struct hlist_node *node, *tmp;
+> -		struct hlist_head *bucket = &css_set_table[i], *new_bucket;
 > -
-> -               hlist_for_each_entry_safe(cg, node, tmp, bucket, hlist) {
-> -                       /* skip entries that we already rehashed */
-> -                       if (cg->subsys[ss->subsys_id])
-> -                               continue;
-> -                       /* remove existing entry */
-> -                       hlist_del(&cg->hlist);
-> -                       /* set new value */
-> -                       cg->subsys[ss->subsys_id] = css;
-> -                       /* recompute hash and restore entry */
-> -                       new_bucket = css_set_hash(cg->subsys);
-> -                       hlist_add_head(&cg->hlist, new_bucket);
-> -               }
-> +       hash_for_each_safe(css_set_table, i, node, tmp, cg, hlist) {
-> +               /* skip entries that we already rehashed */
-> +               if (cg->subsys[ss->subsys_id])
-> +                       continue;
-> +               /* remove existing entry */
-> +               hash_del(&cg->hlist);
-> +               /* set new value */
-> +               cg->subsys[ss->subsys_id] = css;
-> +               /* recompute hash and restore entry */
-> +               key = css_set_hash(cg->subsys);
-> +               hash_add(css_set_table, node, key);     <<<<---- here
->         }
->         write_unlock(&css_set_lock);
->
->
->
+> -		hlist_for_each_entry_safe(cg, node, tmp, bucket, hlist) {
+> -			/* skip entries that we already rehashed */
+> -			if (cg->subsys[ss->subsys_id])
+> -				continue;
+> -			/* remove existing entry */
+> -			hlist_del(&cg->hlist);
+> -			/* set new value */
+> -			cg->subsys[ss->subsys_id] = css;
+> -			/* recompute hash and restore entry */
+> -			new_bucket = css_set_hash(cg->subsys);
+> -			hlist_add_head(&cg->hlist, new_bucket);
+> -		}
+> +	hash_for_each_safe(css_set_table, i, node, tmp, cg, hlist) {
+> +		/* skip entries that we already rehashed */
+> +		if (cg->subsys[ss->subsys_id])
+> +			continue;
+> +		/* remove existing entry */
+> +		hash_del(&cg->hlist);
+> +		/* set new value */
+> +		cg->subsys[ss->subsys_id] = css;
+> +		/* recompute hash and restore entry */
+> +		key = css_set_hash(cg->subsys);
+> +		hash_add(css_set_table, node, key);     <<<<---- here
+>  	}
+>  	write_unlock(&css_set_lock);
+>  
+> 
+> 
 > This didn't show up (apart from a "used unintialized" warning) because
 > your patch forgot to remove the definition of `node'.
->
+
+Yikes, sorry :(
+
+Coccinelle can't properly handle the case of removing just one
+variable out of a declaration of two in the same line, and it has
+slipped through my manual pass afterwards.
+
+fwiw, I've solved all similar cases in the same way: "node" became
+"obj->member".
+
+
+Thanks,
+Sasha
+
 > I did this.  Tejun, could you please opine?
->
->
+> 
+> 
 > @@ -4456,7 +4455,7 @@ int __init_or_module cgroup_load_subsys(
 >  {
->         struct cgroup_subsys_state *css;
->         int i, ret;
-> -       struct hlist_node *node, *tmp;
-> +       struct hlist_node *tmp;
->         struct css_set *cg;
->         unsigned long key;
->
+>  	struct cgroup_subsys_state *css;
+>  	int i, ret;
+> -	struct hlist_node *node, *tmp;
+> +	struct hlist_node *tmp;
+>  	struct css_set *cg;
+>  	unsigned long key;
+>  
 > @@ -4534,7 +4533,7 @@ int __init_or_module cgroup_load_subsys(
->                 cg->subsys[ss->subsys_id] = css;
->                 /* recompute hash and restore entry */
->                 key = css_set_hash(cg->subsys);
-> -               hash_add(css_set_table, node, key);
-> +               hash_add(css_set_table, &cg->hlist, key);
->         }
->         write_unlock(&css_set_lock);
+>  		cg->subsys[ss->subsys_id] = css;
+>  		/* recompute hash and restore entry */
+>  		key = css_set_hash(cg->subsys);
+> -		hash_add(css_set_table, node, key);
+> +		hash_add(css_set_table, &cg->hlist, key);
+>  	}
+>  	write_unlock(&css_set_lock);
+>  
+> 
 
-Yeah, looks correct & better to me.  Li?
-
-Maybe we want to audit all the cases where the @node variable isn't
-removed together?
-
-Thanks.
-
--- 
-tejun
