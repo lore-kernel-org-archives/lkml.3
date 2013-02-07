@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758371Ab3BGOwT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 09:52:19 -0500
-Received: from mail-ia0-f170.google.com ([209.85.210.170]:53947 "EHLO
-	mail-ia0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754000Ab3BGOwS (ORCPT
+	id S1758462Ab3BGO5e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 09:57:34 -0500
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:40576 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754000Ab3BGO5c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 09:52:18 -0500
+	Thu, 7 Feb 2013 09:57:32 -0500
+Message-ID: <5113C0D8.60107@suse.cz>
+Date: Thu, 07 Feb 2013 15:57:28 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:18.0) Gecko/20121129 Thunderbird/18.0
 MIME-Version: 1.0
-In-Reply-To: <CACxGe6uaVsng79Kni=0O_YK330vuqMuPO6=y9Bj=UZpZ0ozaDg@mail.gmail.com>
-References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com>
- <1781360.cmQWHCW5SC@wuerfel> <CAHTX3dJpuTRa4Ff29k95quPMVDO2mBiayPoocnw5R15=5ovOHQ@mail.gmail.com>
- <201302041724.47331.arnd@arndb.de> <1360031367.14701.47.camel@pasglop>
- <CAHTX3dL4dScmzgGyqbvPH-7UQvFrjQhHu2zh0iZyzWB=spZS+Q@mail.gmail.com>
- <1360066756.4529.6.camel@pasglop> <CAHTX3dLJy314mv39hprkmZ5XdzYiYGz1ngTERp7w6aAYud+Riw@mail.gmail.com>
- <51111133.7000105@synopsys.com> <1360098004.4529.13.camel@pasglop>
- <511178AC.7080304@synopsys.com> <1360105635.2707.7.camel@pasglop>
- <CACxGe6u=zhGXm0AO_h354g8OOkAQgdczdw_gCCRxL+=r8hM+-g@mail.gmail.com>
- <1360186550.2650.4.camel@pasglop> <CACxGe6uaVsng79Kni=0O_YK330vuqMuPO6=y9Bj=UZpZ0ozaDg@mail.gmail.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 7 Feb 2013 14:51:49 +0000
-X-Google-Sender-Auth: cEm_qVVYtQywP44ZHhVjjC78qoM
-Message-ID: <CACxGe6v3ZUEQhi764ivQqE9i2wGzJGcoC0sTVohb_6MQ9sE+hQ@mail.gmail.com>
-Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16
- with generic iowrite(read)8/16(be)
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
-        Michal Simek <monstr@monstr.eu>, Arnd Bergmann <arnd@arndb.de>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        dahinds@users.sourceforge.net
-Content-Type: text/plain; charset=ISO-8859-1
+To: Peter Hurley <peter@hurleysoftware.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>, Sasha Levin <levinsasha928@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ilya Zykov <ilya@ilyx.ru>, Dave Jones <davej@redhat.com>
+Subject: Re: [PATCH v3 03/23] n_tty: Don't flush buffer when closing ldisc
+References: <1355509370-5883-1-git-send-email-peter@hurleysoftware.com> <1360095638-6624-1-git-send-email-peter@hurleysoftware.com> <1360095638-6624-4-git-send-email-peter@hurleysoftware.com>
+In-Reply-To: <1360095638-6624-4-git-send-email-peter@hurleysoftware.com>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 7, 2013 at 2:39 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Wed, Feb 6, 2013 at 9:35 PM, Benjamin Herrenschmidt
-> <benh@kernel.crashing.org> wrote:
->>>  In fact, the driver already knows about this and figures
->>> out at runtime how the device is wired up to the bus. This is not the
->>> problem.
->>
->> Except that this is very gross, especially when you observe that in the
->> busted "big endian" case, it has to byteswap the bloody data port.
->>
->> So you end up having to do that gross hack with separate accessors for
->> registers vs. data and not able to use the _rep variants, which also
->> means that on platforms like ppc, you end up with a memory barrier on
->> every access (or more), which is going to slow things down enormously.
->
-> I don't see why the _rep variants aren't usable here. The only reason
-> I didn't use them when I wrote the driver in the first place was I was
-> a n00b kernel hacker and I didn't know they were there.
+On 02/05/2013 09:20 PM, Peter Hurley wrote:
+> A buffer flush is both undesirable and unnecessary when the ldisc
+> is closing. A buffer flush performs the following:
+>  1. resets ldisc data fields to their initial state
+>  2. resets tty->receive_room to indicate more data can be sent
+>  3. schedules buffer work to receive more data
+>  4. signals a buffer flush has happened to linked pty in packet mode
+> 
+> Since the ldisc has been halted and the tty may soon be destructed,
+> buffer work must not be scheduled as that work might access
+> an invalid tty and ldisc state. Also, the ldisc read buffer is about
+> to be freed, so that's pointless.
+> 
+> Resetting the ldisc data fields is pointless as well since that
+> structure is about to be freed.
+> 
+> Resetting tty->receive_room is unnecessary, as it will be properly
+> reset if a new ldisc is reopened. Besides, resetting the original
+> receive_room value would be wrong since the read buffer will be
+> gone.
+> 
+> Since the packet mode flush is observable from userspace, this
+> behavior has been preserved.
 
-The 8-bit variant is different though because the hardware requires
-pingponging between odd and even byte addresses to flush the fifo.
-Reading a data port even address (0x40) gives the least significant
-byte. Reading from an odd address (0x41) give the MSB and pops the
-data off the FIFO. So, yes, the _rep variant can't be used in 8-bit
-mode. It should still be fine in 16-bit.
+This one looks good to me.
 
-page 45: http://www.xilinx.com/support/documentation/data_sheets/ds080.pdf
+-- 
+js
+suse labs
