@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932084Ab3BGPhK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 10:37:10 -0500
-Received: from mga09.intel.com ([134.134.136.24]:45078 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752383Ab3BGPhH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 10:37:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,622,1355126400"; 
-   d="scan'208";a="259128286"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH] dw_dmac: add support for Lynxpoint DMA controllers
-Date: Thu,  7 Feb 2013 17:36:28 +0200
-Message-Id: <1360251388-16075-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1758785Ab3BGPiL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 10:38:11 -0500
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:50755 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758710Ab3BGPiH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 10:38:07 -0500
+Message-ID: <5113CA5A.8070307@suse.cz>
+Date: Thu, 07 Feb 2013 16:38:02 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:18.0) Gecko/20121129 Thunderbird/18.0
+MIME-Version: 1.0
+To: Peter Hurley <peter@hurleysoftware.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>, Sasha Levin <levinsasha928@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ilya Zykov <ilya@ilyx.ru>, Dave Jones <davej@redhat.com>
+Subject: Re: [PATCH v3 07/23] tty: Strengthen no-subsequent-use guarantee
+ of tty_ldisc_halt()
+References: <1355509370-5883-1-git-send-email-peter@hurleysoftware.com> <1360095638-6624-1-git-send-email-peter@hurleysoftware.com> <1360095638-6624-8-git-send-email-peter@hurleysoftware.com>
+In-Reply-To: <1360095638-6624-8-git-send-email-peter@hurleysoftware.com>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
+On 02/05/2013 09:20 PM, Peter Hurley wrote:
+> @@ -688,9 +702,9 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
+>  	 *	parallel to the change and re-referencing the tty.
+>  	 */
+>  
+> -	work = tty_ldisc_halt(tty);
+> +	retval = tty_ldisc_halt(tty, &work, 5 * HZ);
+>  	if (o_tty)
+> -		o_work = tty_ldisc_halt(o_tty);
+> +		tty_ldisc_halt(o_tty, &o_work, 0);
 
-Intel Lynxpoint PCH Low Power Subsystem has DMA controller to support general
-purpose serial buses like SPI, I2C, and HSUART. This controller is enumerated
-from ACPI namespace with ACPI ID INTL9C60.
+Zero in there will cause the other end's work not to be cancelled and
+TTY_LDISC_HALTED unset if there are two or more readers on the slave,
+right? So there should be something like:
+if (timeout)
+  retval = tty_ldisc_wait_idle(tty, timeout);
+  ...
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
- drivers/dma/dw_dmac.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+in tty_ldisc_halt.
 
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index d6abea8..5feee76 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -1977,6 +1977,11 @@ static const struct of_device_id dw_dma_id_table[] = {
- MODULE_DEVICE_TABLE(of, dw_dma_id_table);
- #endif
- 
-+static const struct platform_device_id dw_dma_ids[] = {
-+	{ "INTL9C60", 0 },
-+	{ }
-+};
-+
- static struct platform_driver dw_driver = {
- 	.probe		= dw_probe,
- 	.remove		= dw_remove,
-@@ -1986,6 +1991,7 @@ static struct platform_driver dw_driver = {
- 		.pm	= &dw_dev_pm_ops,
- 		.of_match_table = of_match_ptr(dw_dma_id_table),
- 	},
-+	.id_table	= dw_dma_ids,
- };
- 
- static int __init dw_init(void)
 -- 
-1.7.10.4
-
+js
+suse labs
