@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757728Ab3BGBRM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 20:17:12 -0500
-Received: from violet.fr.zoreil.com ([92.243.8.30]:50435 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757655Ab3BGBRJ (ORCPT
+	id S1757584Ab3BGBRD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 20:17:03 -0500
+Received: from ozlabs.org ([203.10.76.45]:35728 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757194Ab3BGBRA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 20:17:09 -0500
-Date: Thu, 7 Feb 2013 01:46:35 +0100
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: =?utf-8?B?SsO2cmc=?= Otte <jrg.otte@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [3.8-rc] regression: NETDEV WATCHDOG: eth0 (r8169): transmit queue 0 timed out
-Message-ID: <20130207004635.GA4025@electric-eye.fr.zoreil.com>
-References: <CADDKRnBqxSwC7HUP_aN1QELrv2+7jnncXj7EP0Pqv8E8FFTpPw@mail.gmail.com> <20130105093718.GA938@electric-eye.fr.zoreil.com> <CADDKRnBCrDz2X=5qpGE+r92ZFX5cA+jnSGt3wS8TR0RE8hi1HA@mail.gmail.com> <20130105165735.GB4906@electric-eye.fr.zoreil.com> <CADDKRnCkDS5rMSSi12ti5PV_RSP6s3S15YOJz8b98ehcsyKaOA@mail.gmail.com> <CADDKRnACHgBOmw0qLE4zVzhq=Yw-1AYJ-JW0muxRCR3jZ=VoUQ@mail.gmail.com> <CADDKRnAHJAZBittLCFxjgWa1AWKxD7a4hn4v=xvax=ergkKjxA@mail.gmail.com>
-Mime-Version: 1.0
+	Wed, 6 Feb 2013 20:17:00 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: <torvalds@linux-foundation.org>
+Cc: Sjur =?utf-8?Q?Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
+Subject: [PULL] virtio fix
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+CC: "LKML" <linux-kernel@vger.kernel.org>,
+        <virtualization@lists.linux-foundation.org>
+Date: Thu, 07 Feb 2013 11:43:53 +1030
+Message-ID: <87zjzhhqni.fsf@rustcorp.com.au>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CADDKRnAHJAZBittLCFxjgWa1AWKxD7a4hn4v=xvax=ergkKjxA@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jörg Otte <jrg.otte@gmail.com> :
-[...]
-> To Summarize: Two net-regressions where introduced in v3.8 (driver r8169):
-> 
-> 1) NETDEV WATCHDOG: eth0 (r8169): transmit queue 0 timed out
-> was introduced by commit
-> e0c075577965d1c01b30038d38bf637b027a1df3
-> ("r8169: enable ALDPS for power saving")
+The following changes since commit 9a9284153d965a57edc7162a8e57c14c97f3a935:
 
-Hayes Wang <hayeswang@realtek.com> authored it. You should ask him
-why commit e0c075577965d1c01b30038d38bf637b027a1df3 sometimes chokes
-with the 8168evl. 
+  Merge branch 'drm-fixes' of git://people.freedesktop.org/~airlied/linux (2013-01-20 20:55:49 -0800)
 
-And you can ask him if there is a chance that the non-8168evl that are
-handled by the patch (mis-)behave the same too.
+are available in the git repository at:
 
--- 
-Ueimor
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux.git tags/fixes-for-linus
+
+for you to fetch changes up to aded024a12b32fc1ed9a80639681daae2d07ec25:
+
+  virtio_console: Don't access uninitialized data. (2013-02-07 11:37:37 +1030)
+
+----------------------------------------------------------------
+Obviously I forgot to push this before linux.conf.au...
+
+Thanks,
+Rusty.
+
+----------------------------------------------------------------
+Sjur Brændeland (1):
+      virtio_console: Don't access uninitialized data.
+
+ drivers/char/virtio_console.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
