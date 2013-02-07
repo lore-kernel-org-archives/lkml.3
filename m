@@ -1,62 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759133Ab3BGRG1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 12:06:27 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4106 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755761Ab3BGRGX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 12:06:23 -0500
-X-Authority-Analysis: v=2.0 cv=f8jK9ZOM c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=M5gr15I6uLgA:10 a=hfjD0w8Jl98efvhz1oQA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1360256781.2621.80.camel@gandalf.local.home>
-Subject: Re: [ANNOUNCE] 3.8-rc6-nohz4
-From: Steven Rostedt <rostedt@goodmis.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Thu, 07 Feb 2013 12:06:21 -0500
-In-Reply-To: <20130207163004.GS2632@linux.vnet.ibm.com>
-References: <1360175338-6735-1-git-send-email-fweisbec@gmail.com>
-	 <1360205415.2621.60.camel@gandalf.local.home>
-	 <20130207111025.GD8945@gmail.com>
-	 <1360253520.2621.66.camel@gandalf.local.home>
-	 <20130207163004.GS2632@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1759028Ab3BGRIg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 12:08:36 -0500
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:7393
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756622Ab3BGRIf convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 12:08:35 -0500
+X-Forefront-Antispam-Report: CIP:198.70.193.117;KIP:(null);UIP:(null);IPV:NLI;H:avcashub1.qlogic.com;RD:avcashub3.qlogic.com;EFVD:NLI
+X-SpamScore: -6
+X-BigFish: VPS-6(zzbb2dI98dI9371I103dK1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2ei2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1155h)
+From: Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>, netdev <netdev@vger.kernel.org>
+CC: Eilon Greenstein <eilong@broadcom.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        Tushar Dave <tushar.n.dave@intel.com>,
+        Sony Chacko <sony.chacko@qlogic.com>,
+        Dept-Eng Linux Driver <Linux-Driver@qlogic.com>,
+        John Fastabend <john.r.fastabend@intel.com>,
+        David Miller <davem@davemloft.net>,
+        Jacob Keller <jacob.e.keller@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "bhutchings@solarflare.com" <bhutchings@solarflare.com>,
+        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>
+Subject: Re: [PATCHv2-net-3.8 2/3] qlcnic: set gso_type
+Thread-Topic: [PATCHv2-net-3.8 2/3] qlcnic: set gso_type
+Thread-Index: AQHOBTRjC8fXFqUiIEmCY/5n4luF0phuoRUA
+Date: Thu, 7 Feb 2013 17:08:29 +0000
+Message-ID: <BECD8E8A1B550B48A1BF97C13991F60E2AB64B@avmb2.qlogic.org>
+In-Reply-To: <50a60e1293901965901edb46ae49e52da1d469d5.1360236441.git.mst@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Microsoft-MacOutlook/14.2.5.121010
+x-originating-ip: [10.1.4.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <D8C730CC2BC9DA4E9BA5BDBA2DAE5D76@qlogic.com>
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: qlogic.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-02-07 at 08:30 -0800, Paul E. McKenney wrote:
+On 2/7/13 5:13 AM, "Michael S. Tsirkin" <mst@redhat.com> wrote:
 
-> I suspect that removal of jiffies from the kernel will take a few stages,
-> with RCU being one of the laggards for awhile.  Making RCU's state
-> machine depend wholly on process-based execution will take some care
-> and experimentation, especially for extreme and corner-case workloads.
-> For example, having RCU OOM the system just because a specific CPU was
-> unable to run some RCU kthread for an extended time is something to
-> be avoided.  ;-)
+>qlcnic set gso_size but not gso type. This leads to crashes
+>in macvtap.
+>
+>Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+>---
+> drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c | 7 ++++++-
+> 1 file changed, 6 insertions(+), 1 deletion(-)
+>
+>diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c
+>b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c
+>index 6f82812..09aa310 100644
+>--- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c
+>+++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c
+>@@ -986,8 +986,13 @@ qlcnic_process_lro(struct qlcnic_adapter *adapter,
+> 	th->seq = htonl(seq_number);
+> 	length = skb->len;
+> 
+>-	if (adapter->flags & QLCNIC_FW_LRO_MSS_CAP)
+>+	if (adapter->flags & QLCNIC_FW_LRO_MSS_CAP) {
+> 		skb_shinfo(skb)->gso_size = qlcnic_get_lro_sts_mss(sts_data1);
+>+		if (skb->protocol == htons(ETH_P_IPV6))
+>+			skb_shinfo(skb)->gso_type = SKB_GSO_TCPV6;
+>+		else
+>+			skb_shinfo(skb)->gso_type = SKB_GSO_TCPV4;
+>+	}
+> 
+> 	if (vid != 0xffff)
+> 		__vlan_hwaccel_put_tag(skb, vid);
+>-- 
+>MST
 
-Tickless doesn't mean no timeouts or periodic timers. I think we will
-always have some sort of dynamic tick when needed. It will just be more
-event driven then something that goes off constantly.
+Thanks!
 
--- Steve
+Acked-by: Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>
 
 
