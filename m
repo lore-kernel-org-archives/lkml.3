@@ -1,47 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759467Ab3BGXNR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 18:13:17 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:52437 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752095Ab3BGXNQ (ORCPT
+	id S1759489Ab3BGXNh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 18:13:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41325 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752095Ab3BGXNf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 18:13:16 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Michal Simek <monstr@monstr.eu>
-Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16 with generic iowrite(read)8/16(be)
-Date: Thu, 7 Feb 2013 23:12:45 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-4-generic; KDE/4.3.2; x86_64; ; )
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, dahinds@users.sourceforge.net
-References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com> <201302070833.15443.arnd@arndb.de> <CAHTX3dLuAhpy-Yk10scRKrfRrbh+ZZs-hgFLAFn0Vj562V0Cew@mail.gmail.com>
-In-Reply-To: <CAHTX3dLuAhpy-Yk10scRKrfRrbh+ZZs-hgFLAFn0Vj562V0Cew@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Thu, 7 Feb 2013 18:13:35 -0500
+Date: Thu, 7 Feb 2013 15:13:33 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jeremy Kerr <jk@ozlabs.org>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
+        Matt Fleming <matt.fleming@intel.com>,
+        Lingzhu Xiang <lxiang@redhat.com>, Dave Young <dyoung@redhat.com>
+Subject: Re: [PATCH 1/3 v3] selftests: Add tests for efivarfs
+Message-Id: <20130207151333.f01d415c.akpm@linux-foundation.org>
+In-Reply-To: <1360162088.143076.913706486688.1.gpush@pecola>
+References: <1360162088.142733.191120808822.0.gpush@pecola>
+	<1360162088.143076.913706486688.1.gpush@pecola>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201302072312.45988.arnd@arndb.de>
-X-Provags-ID: V02:K0:pi8Y7YDOJ5bJMGVORi3k3MD8otrO21cDDx46SbPpJsm
- SU8R82HHXErfTZiow1jlWRs1nT9LthRAubBVhltNicuKyW+v8P
- vfK+J+/YyrYCyK1HnCPQtE7Em0z/txjYxpg2YHdAlPr4EyjI8O
- +GZnETqw0ntYlsBpwGa8ARCbEa42xUPkFrTApRvjXdnIGEuPg8
- jj+pkz72Vl07iXLhh+aYgXcZsvueQlw91ZXHEu/AXgExaI0ivr
- k8UHExE5svRY23SRKtReZEeNRQ8x77hE5knISR0fXklkqY2UJs
- ioqBDbj0Sttui7oWQroBTW0LVk09w6W1M0+pgFi1gNZUn+DTlf
- SKXebyLmZ4MNMD4c7JWk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 07 February 2013, Michal Simek wrote:
-> Subject: "asm-generic: io: Fix ioread16/32be and iowrite16/32be"
+On Wed, 06 Feb 2013 22:48:08 +0800
+Jeremy Kerr <jk@ozlabs.org> wrote:
 
-Ok, thanks. If you don't mind, I think this can just go with the other patches
-for xsysace that come out of this discussion.
+> This change adds a few initial efivarfs tests to the
+> tools/testing/selftests directory.
+> 
+> The open-unlink test is based on code from
+> Lingzhu Xiang <lxiang@redhat.com>.
+> 
+> ...
+>
+> --- a/tools/testing/selftests/Makefile
+> +++ b/tools/testing/selftests/Makefile
+> @@ -1,4 +1,4 @@
+> -TARGETS = breakpoints kcmp mqueue vm cpu-hotplug memory-hotplug
+> +TARGETS = breakpoints kcmp mqueue vm cpu-hotplug memory-hotplug efivarfs
 
-	Arnd
+bah.  This sort of Makefile construct is a wonderful source of patch
+rejects and fixups.  I'll covert this to
+
+--- a/tools/testing/selftests/Makefile~a
++++ a/tools/testing/selftests/Makefile
+@@ -1,4 +1,11 @@
+-TARGETS = breakpoints epoll kcmp mqueue vm cpu-hotplug memory-hotplug efivarfs
++TARGETS = breakpoints
++TARGETS += epoll
++TARGETS += kcmp
++TARGETS += mqueue
++TARGETS += vm
++TARGETS += cpu-hotplug
++TARGETS += memory-hotplug
++TARGETS += efivarfs
+ 
+ all:
+ 	for TARGET in $(TARGETS); do \
+
+> new file mode 100644
+> index 0000000..1a943ee
+> --- /dev/null
+> +++ b/tools/testing/selftests/efivarfs/Makefile
+> @@ -0,0 +1,12 @@
+> +CC = $(CROSS_COMPILE)gcc
+> +CFLAGS = -Wall
+> +
+> +test_objs = open-unlink
+> +
+> +all: $(test_objs)
+> +
+> +run_tests: all
+> +	@./efivarfs.sh || echo "efivarfs selftests: [FAIL]"
+
+Problem.  When I apply the patch, ./efivarfs.sh doesn't have execute
+permissions.  I don't think there's a way of (reliably?) transporting
+this with patch and diff.
+
+So we should explicitly invoke sh or /bin/sh or $SHELL or whatever
+here.  This problem is common to several Makefiles in tools/testing/selftests/
+
+I'll do this for now:
+
+--- a/tools/testing/selftests/efivarfs/Makefile~selftests-add-tests-for-efivarfs-fix
++++ a/tools/testing/selftests/efivarfs/Makefile
+@@ -6,7 +6,7 @@ test_objs = open-unlink
+ all: $(test_objs)
+ 
+ run_tests: all
+-	@./efivarfs.sh || echo "efivarfs selftests: [FAIL]"
++	@/bin/sh ./efivarfs.sh || echo "efivarfs selftests: [FAIL]"
+ 
+ clean:
+ 	rm -f $(test_objs)
+
+but I'm not sure I did it right :(
+
+
+The general ruleset for selftests is: do as much as you can if you're not
+root and don't take too long and don't break the build on any
+architecture and don't cause the top-level "make run_tests" to fail if
+your feature is unconfigured.
+
+Does this code pass all that?
