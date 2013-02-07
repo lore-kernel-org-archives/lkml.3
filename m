@@ -1,90 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759080Ab3BGTZA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 14:25:00 -0500
-Received: from mga09.intel.com ([134.134.136.24]:61556 "EHLO mga09.intel.com"
+	id S1759005Ab3BGT0e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 14:26:34 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:50833 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758806Ab3BGTXq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 14:23:46 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,623,1355126400"; 
-   d="scan'208";a="282303427"
-From: Andi Kleen <andi@firstfloor.org>
-To: mingo@kernel.org
-Cc: linux-kernel@vger.kernel.org, eranian@google.com,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 4/5] perf, x86: Support full width counting v2
-Date: Thu,  7 Feb 2013 11:23:38 -0800
-Message-Id: <1360265019-23865-5-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1360265019-23865-1-git-send-email-andi@firstfloor.org>
-References: <1360265019-23865-1-git-send-email-andi@firstfloor.org>
+	id S1758806Ab3BGT0d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 14:26:33 -0500
+Message-ID: <5113FFCA.6040108@zytor.com>
+Date: Thu, 07 Feb 2013 11:26:02 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Kees Cook <keescook@chromium.org>
+CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
+        Brad Spengler <spender@grsecurity.net>
+Subject: Re: [PATCH] x86: do not leak kernel page mapping locations
+References: <20130207174413.GA12485@www.outflux.net>
+In-Reply-To: <20130207174413.GA12485@www.outflux.net>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On 02/07/2013 09:44 AM, Kees Cook wrote:
+> Without this patch, it is trivial to determine kernel page mappings by
+> examining the error code reported to dmesg[1]. Instead, declare the entire
+> kernel memory space as a violation of a present page.
+> 
+> Additionally, since show_unhandled_signals is enabled by default, switch
+> branch hinting to the more realistic expectation, and unobfuscate the
+> setting of the PF_PROT bit to improve readability.
+> 
+> [1] http://vulnfactory.org/blog/2013/02/06/a-linux-memory-trick/
+> 
+> Reported-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
+> Suggested-by: Brad Spengler <spender@grsecurity.net>
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Kees Cook <keescook@chromium.org>
 
-Recent Intel CPUs like Haswell and IvyBridge have a new alternative MSR
-range for perfctrs that allows writing the full counter width. Enable this
-range if the hardware reports it using a new capability bit.
+There is, of course, tons of information in dmesg which can be used for
+nefarious purposes, and it is hard to avoid that without neutering dmesg
+to uselessness.
 
-This lowers the overhead of perf stat slightly because it has to do less
-interrupts to accumulate the counter value. On Haswell it also avoids some
-problems with TSX aborting when the end of the counter range is reached.
+So the question is to some degree how much this adds in isolation from
+locking down dmesg (and if dmesg_restrict isn't enough, what more do we
+need...)?
 
-v2: Print the feature at boot
-Reviewed-by: Stephane Eranian <eranian@google.com>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- arch/x86/include/uapi/asm/msr-index.h  |    3 +++
- arch/x86/kernel/cpu/perf_event.h       |    1 +
- arch/x86/kernel/cpu/perf_event_intel.c |    7 +++++++
- 3 files changed, 11 insertions(+), 0 deletions(-)
+That being said, the patch doesn't seem to do any harm so I acked it and
+Ingo is going to apply it.
 
-diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
-index 433a59f..af41a77 100644
---- a/arch/x86/include/uapi/asm/msr-index.h
-+++ b/arch/x86/include/uapi/asm/msr-index.h
-@@ -163,6 +163,9 @@
- #define MSR_KNC_EVNTSEL0               0x00000028
- #define MSR_KNC_EVNTSEL1               0x00000029
- 
-+/* Alternative perfctr range with full access. */
-+#define MSR_IA32_PMC0			0x000004c1
-+
- /* AMD64 MSRs. Not complete. See the architecture manual for a more
-    complete list. */
- 
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index ded4667..adaa0b0 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -278,6 +278,7 @@ union perf_capabilities {
- 		u64	pebs_arch_reg:1;
- 		u64	pebs_format:4;
- 		u64	smm_freeze:1;
-+		u64	fw_write:1;
- 	};
- 	u64	capabilities;
- };
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index aa48048..06dcc0c 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -2228,5 +2228,12 @@ __init int intel_pmu_init(void)
- 		}
- 	}
- 
-+	/* Support full width counters using alternative MSR range */
-+	if (x86_pmu.intel_cap.fw_write) {
-+		x86_pmu.max_period = x86_pmu.cntval_mask;
-+		x86_pmu.perfctr = MSR_IA32_PMC0;
-+		pr_cont("full-width counters, ");
-+	}
-+
- 	return 0;
- }
--- 
-1.7.7.6
+	-hpa
+
+
 
