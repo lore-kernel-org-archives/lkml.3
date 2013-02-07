@@ -1,96 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758229Ab3BGMVs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 07:21:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3860 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757345Ab3BGMVm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 07:21:42 -0500
-Date: Thu, 7 Feb 2013 13:22:13 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, John Stultz <john.stultz@linaro.org>,
-        Tommi Rantala <tt.rantala@gmail.com>
-Subject: Re: [PATCH] posix-cpu-timers: fix nanosleep task_struct leak
-Message-ID: <20130207122212.GA2668@redhat.com>
-References: <CA+ydwtqUUAR9zf3dp+N1JRW+if88EZ73i+5BQtuggVPDFVdCBg@mail.gmail.com>
- <alpine.LFD.2.02.1302011450160.11905@ionos>
- <20130204193223.GA11910@redhat.com>
- <20130205103455.GB18313@redhat.com>
- <alpine.LFD.2.02.1302051155000.11905@ionos>
- <20130206112327.GA1824@redhat.com>
- <CA+ydwtrdNL_7AvZpmJ__06YUCVhSr7YPO8D=wzXhZiWp1-DVqg@mail.gmail.com>
- <20130206151550.GA1758@redhat.com>
- <20130206161011.GA11161@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130206161011.GA11161@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758293Ab3BGMWs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 07:22:48 -0500
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:51705 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753276Ab3BGMWn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 07:22:43 -0500
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>, asias@redhat.com,
+        Rusty Russell <rusty@rustcorp.com.au>, mst@redhat.com,
+        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org
+Subject: [RFC PATCH 0/8] virtio: new API for addition of buffers, scatterlist changes
+Date: Thu,  7 Feb 2013 13:22:24 +0100
+Message-Id: <1360239752-2470-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 06, 2013 at 05:10:11PM +0100, Oleg Nesterov wrote:
-> First of all, thank you so much. I knew it was a good idea to cc you ;)
+The virtqueue_add_buf function has two limitations:
 
-:-)
+1) it requires the caller to provide all the buffers in a single call;
 
-> On 02/06, Stanislaw Gruszka wrote:
-> >
-> > In do_cpu_nanosleep() we do posix_cpu_timer_create(), but forgot
-> > corresponding posix_cpu_timer_del(), what lead to task_struct leak.
-> 
-> Plus, it seems we can leave the timer on ->cpu_timers list...
-> 
-> > @@ -1403,6 +1403,7 @@ static int do_cpu_nanosleep(const clockid_t which_clock, int flags,
-> >  				/*
-> >  				 * Our timer fired and was reset.
-> >  				 */
-> > +				posix_cpu_timer_del(&timer);
-> >  				spin_unlock_irq(&timer.it_lock);
-> >  				return 0;
-> >  			}
-> > @@ -1420,9 +1421,17 @@ static int do_cpu_nanosleep(const clockid_t which_clock, int flags,
-> >  		 * We were interrupted by a signal.
-> >  		 */
-> >  		sample_to_timespec(which_clock, timer.it.cpu.expires, rqtp);
-> > -		posix_cpu_timer_set(&timer, 0, &zero_it, it);
-> > +		error = posix_cpu_timer_set(&timer, 0, &zero_it, it);
-> > +		if (!error)
-> > +			posix_cpu_timer_del(&timer);
-> >  		spin_unlock_irq(&timer.it_lock);
-> >
-> > +		while (error == TIMER_RETRY) {
-> > +			spin_lock_irq(&timer.it_lock);
-> > +			error = posix_cpu_timer_del(&timer);
-> 
-> It is not clear to me why other posix_cpu_timer_del's above can't fail..
-> May be you can add a comment.
+2) it does not support chained scatterlists: the buffers must be
+provided as an array of struct scatterlist.
 
-Sure, I'll add more comments.
+Because of these limitations, virtio-scsi has to copy each request into
+a scatterlist internal to the driver.  It cannot just use the one that
+was prepared by the upper SCSI layers.
 
-Once posix_cpu_timer_set(..., &zero_it, it) succeed with 0 return value,
-it's not possible to fire timer, so posix_cpu_timer_del() will not fail.
-Similar assumption is with first posix_cpu_timer_del() call I added
-in the patch.
+This series adds a different set of APIs for adding a buffer to a
+virtqueue.  The new API lets you pass the buffers piecewise, wrapping
+multiple calls to virtqueue_add_sg between virtqueue_start_buf and
+virtqueue_end_buf.  Letting drivers call virtqueue_add_sg multiple times
+if they already have a scatterlist provided by someone else simplifies the
+code and, for virtio-scsi, it saves the copying and the related locking.
 
-> And I am not sure that TIMER_RETRY is the only error we should worry.
-> And perhaps we need even more posix_cpu_timer_del's?
->
-> For example. Suppose that posix_cpu_timer_create() succeeds and does
-> get_task_struct(p). But than p dies, and the first posix_cpu_timer_set()
-> fails with -ESRCH. No?
+One major difference between virtqueue_add_buf and virtqueue_add_sg
+is that the latter uses scatterlist iterators, which follow chained
+scatterlist structs and stop at ending markers.  In order to avoid code
+duplication, and use the new API from virtqueue_add_buf (patch 8), we need
+to change all existing callers of virtqueue_add_buf to provide well-formed
+scatterlists.  This is what patches 2-7 do.  For virtio-blk it is easiest
+to just switch to the new API, just like for virtio-scsi.  For virtio-net
+the ending marker must be reset after calling virtqueue_add_buf, in
+preparation for the next usage of the scatterlist.  Other drivers are
+safe already.
 
-On second -ESRCH case posix_cpu_timer_set() internally call
-put_task_struct(). It does not remove from cpu_timers list, but
-that is done at exit(). First -ESRCH case, i.e. calling
-posix_cpu_timer_set() with timer->it.cpu.task == NULL, is not possible
-in our case.
+This is an RFC for two reasons.  First, because I haven't done enough
+testing yet (especially with all the variations on receiving that
+virtio-net has).  Second, because I still have two struct vring_desc *
+fields in virtqueue API, which is a layering violation.  I'm not really
+sure how important that is and how to fix that---except by making the
+fields void*.
 
-BTW: I don't think we handle correctly case when traced process -
-- timer->it.cpu.task will die. Tracing process - timer->it_process will
-probably not be woken up.
+Paolo
 
-Stanislaw
+Paolo Bonzini (8):
+  virtio: add functions for piecewise addition of buffers
+  virtio-blk: reorganize virtblk_add_req
+  virtio-blk: use virtqueue_start_buf on bio path
+  virtio-blk: use virtqueue_start_buf on req path
+  scatterlist: introduce sg_unmark_end
+  virtio-net: unmark scatterlist ending after virtqueue_add_buf
+  virtio-scsi: use virtqueue_start_buf
+  virtio: reimplement virtqueue_add_buf using new functions
+
+ block/blk-integrity.c        |    2 +-
+ block/blk-merge.c            |    2 +-
+ drivers/block/virtio_blk.c   |  165 +++++++++--------
+ drivers/net/virtio_net.c     |   21 ++-
+ drivers/scsi/virtio_scsi.c   |  103 +++++------
+ drivers/virtio/virtio_ring.c |  417 +++++++++++++++++++++++++++---------------
+ include/linux/scatterlist.h  |   16 ++
+ include/linux/virtio.h       |   25 +++
+ 8 files changed, 460 insertions(+), 291 deletions(-)
+
