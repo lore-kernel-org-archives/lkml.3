@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758551Ab3BGNI7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 08:08:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51374 "EHLO mx1.redhat.com"
+	id S1758600Ab3BGNJF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 08:09:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49060 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758369Ab3BGNIw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 08:08:52 -0500
-Date: Thu, 7 Feb 2013 15:12:56 +0200
+	id S1758369Ab3BGNJA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 08:09:00 -0500
+Date: Thu, 7 Feb 2013 15:13:05 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: netdev@vger.kernel.org
 Cc: Eilon Greenstein <eilong@broadcom.com>,
@@ -27,46 +27,59 @@ Cc: Eilon Greenstein <eilong@broadcom.com>,
         Jacob Keller <jacob.e.keller@intel.com>, linux-kernel@vger.kernel.org,
         e1000-devel@lists.sourceforge.net, bhutchings@solarflare.com,
         eric.dumazet@gmail.com
-Subject: [PATCHv2-net-3.8 0/3] fix kernel crash with macvtap on top of LRO
-Message-ID: <cover.1360236441.git.mst@redhat.com>
+Subject: [PATCHv2-net-3.8 1/3] ixgbe: fix gso type
+Message-ID: <e1e4fe6d356c2766cd6a962a3ef6439bfd94a985.1360236441.git.mst@redhat.com>
+References: <cover.1360236441.git.mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <cover.1360236441.git.mst@redhat.com>
 X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At the moment, macvtap crashes are observed if macvtap is attached
-to an interface with LRO enabled.
-The crash in question is BUG() in macvtap_skb_to_vnet_hdr.
-This happens because several drivers set gso_size but not gso_type
-in incoming skbs.
-This didn't use to be the case: with intel cards on 3.2 and older
-kernels, with qlogic - on 3.4 and older kernels, so it's a regression if
-not a recent one.
-The following patches fix this for qlogic, broadcom and intel drivers.
+ixgbe set gso_size but not gso_type. This leads to
+crashes in macvtap.
 
-I tested that the patch fixes the crash for ixgbe but
-don't have qlogic/broadcom hardware to test.
-I also only tested TCPv4.
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-Please review, and consider for 3.8.
-
-Changes from v1:
-	- added missing htons as suggested by Eric
-	- backported the relevant bits from
-	  cbf1de72324a8105ddcc3d9ce9acbc613faea17e for bnx2x
-
-Michael S. Tsirkin (3):
-  ixgbe: fix gso type
-  qlcnic: set gso_type
-  bnx2x: set gso_type
-
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c | 12 +++++-------
- drivers/net/ethernet/intel/ixgbe/ixgbe_main.c   |  8 ++++++--
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c  |  7 ++++++-
- 3 files changed, 17 insertions(+), 10 deletions(-)
-
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+index 20a5af6..e1b2d22 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+@@ -1401,6 +1401,10 @@ static void ixgbe_set_rsc_gso_size(struct ixgbe_ring *ring,
+ 	/* set gso_size to avoid messing up TCP MSS */
+ 	skb_shinfo(skb)->gso_size = DIV_ROUND_UP((skb->len - hdr_len),
+ 						 IXGBE_CB(skb)->append_cnt);
++	if (skb->protocol == __constant_htons(ETH_P_IPV6))
++		skb_shinfo(skb)->gso_type = SKB_GSO_TCPV6;
++	else
++		skb_shinfo(skb)->gso_type = SKB_GSO_TCPV4;
+ }
+ 
+ static void ixgbe_update_rsc_stats(struct ixgbe_ring *rx_ring,
+@@ -1435,6 +1439,8 @@ static void ixgbe_process_skb_fields(struct ixgbe_ring *rx_ring,
+ {
+ 	struct net_device *dev = rx_ring->netdev;
+ 
++	skb->protocol = eth_type_trans(skb, dev);
++
+ 	ixgbe_update_rsc_stats(rx_ring, skb);
+ 
+ 	ixgbe_rx_hash(rx_ring, rx_desc, skb);
+@@ -1450,8 +1456,6 @@ static void ixgbe_process_skb_fields(struct ixgbe_ring *rx_ring,
+ 	}
+ 
+ 	skb_record_rx_queue(skb, rx_ring->queue_index);
+-
+-	skb->protocol = eth_type_trans(skb, dev);
+ }
+ 
+ static void ixgbe_rx_skb(struct ixgbe_q_vector *q_vector,
 -- 
 MST
+
