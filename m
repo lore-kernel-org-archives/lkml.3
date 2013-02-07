@@ -1,119 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758234Ab3BGLWj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 06:22:39 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:56066 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758124Ab3BGLWg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 06:22:36 -0500
-Message-ID: <51138E4C.2080005@gmail.com>
-Date: Thu, 07 Feb 2013 19:21:48 +0800
-From: Lai Jiangshan <eag0628@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1758190Ab3BGLZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 06:25:58 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:53542 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751261Ab3BGLZ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 06:25:57 -0500
+X-IronPort-AV: E=Sophos;i="4.84,621,1355097600"; 
+   d="scan'208";a="6622245"
+Date: Thu, 7 Feb 2013 11:25:51 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Rik van Riel <riel@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "aquini@redhat.com" <aquini@redhat.com>,
+        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
+        "lwoodman@redhat.com" <lwoodman@redhat.com>,
+        "knoel@redhat.com" <knoel@redhat.com>,
+        "chegu_vinod@hp.com" <chegu_vinod@hp.com>,
+        "raghavendra.kt@linux.vnet.ibm.com" 
+	<raghavendra.kt@linux.vnet.ibm.com>,
+        "mingo@redhat.com" <mingo@redhat.com>
+Subject: Re: [PATCH -v5 5/5] x86,smp: limit spinlock delay on virtual
+ machines
+In-Reply-To: <20130206150748.486d7bf8@cuia.bos.redhat.com>
+Message-ID: <alpine.DEB.2.02.1302071122440.4275@kaball.uk.xensource.com>
+References: <20130206150311.19cd1e52@cuia.bos.redhat.com> <20130206150748.486d7bf8@cuia.bos.redhat.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: mingo@elte.hu, linux-kernel@vger.kernel.org, josh@joshtriplett.org,
-        rostedt@goodmis.org, rbraun@sceen.net, zhong@linux.vnet.ibm.com,
-        markus@trippelsdorf.de, sasha.levin@oracle.com,
-        cody@linux.vnet.ibm.com, dave@linux.vnet.ibm.com, fweisbec@gmail.com,
-        akpm@linux-foundation.org, tglx@linutronix.de
-Subject: Re: [GIT PULL rcu/next] RCU commits for 3.9
-References: <20130204171817.GA18332@linux.vnet.ibm.com>
-In-Reply-To: <20130204171817.GA18332@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Paul
+On Wed, 6 Feb 2013, Rik van Riel wrote:
+> Modern Intel and AMD CPUs will trap to the host when the guest
+> is spinning on a spinlock, allowing the host to schedule in
+> something else.
+> 
+> This effectively means the host is taking care of spinlock
+> backoff for virtual machines. It also means that doing the
+> spinlock backoff in the guest anyway can lead to totally
+> unpredictable results, extremely large backoffs, and
+> performance regressions.
+> 
+> To prevent those problems, we limit the spinlock backoff
+> delay, when running in a virtual machine, to a small value.
+> 
+> Signed-off-by: Rik van Riel <riel@redhat.com>
+> ---
+>  arch/x86/include/asm/processor.h |    2 ++
+>  arch/x86/kernel/cpu/hypervisor.c |    2 ++
+>  arch/x86/kernel/smp.c            |   21 +++++++++++++++++++--
+>  3 files changed, 23 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+> index 888184b..4118fd8 100644
+> --- a/arch/x86/include/asm/processor.h
+> +++ b/arch/x86/include/asm/processor.h
+> @@ -997,6 +997,8 @@ extern bool cpu_has_amd_erratum(const int *);
+>  extern unsigned long arch_align_stack(unsigned long sp);
+>  extern void free_init_pages(char *what, unsigned long begin, unsigned long end);
+>  
+> +extern void init_guest_spinlock_delay(void);
+> +
+>  void default_idle(void);
+>  bool set_pm_idle_to_default(void);
+>  
+> diff --git a/arch/x86/kernel/cpu/hypervisor.c b/arch/x86/kernel/cpu/hypervisor.c
+> index a8f8fa9..4a53724 100644
+> --- a/arch/x86/kernel/cpu/hypervisor.c
+> +++ b/arch/x86/kernel/cpu/hypervisor.c
+> @@ -76,6 +76,8 @@ void __init init_hypervisor_platform(void)
+>  
+>  	init_hypervisor(&boot_cpu_data);
+>  
+> +	init_guest_spinlock_delay();
+> +
+>  	if (x86_hyper->init_platform)
+>  		x86_hyper->init_platform();
+>  }
+> diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
+> index 64e33ef..fbc5ff3 100644
+> --- a/arch/x86/kernel/smp.c
+> +++ b/arch/x86/kernel/smp.c
+> @@ -116,8 +116,25 @@ static bool smp_no_nmi_ipi = false;
+>  #define DELAY_SHIFT			8
+>  #define DELAY_FIXED_1			(1<<DELAY_SHIFT)
+>  #define MIN_SPINLOCK_DELAY		(1 * DELAY_FIXED_1)
+> -#define MAX_SPINLOCK_DELAY		(16000 * DELAY_FIXED_1)
+> +#define MAX_SPINLOCK_DELAY_NATIVE	(16000 * DELAY_FIXED_1)
+> +#define MAX_SPINLOCK_DELAY_GUEST	(16 * DELAY_FIXED_1)
+>  #define DELAY_HASH_SHIFT		6
+> +
+> +/*
+> + * Modern Intel and AMD CPUs tell the hypervisor when a guest is
+> + * spinning excessively on a spinlock. The hypervisor will then
+> + * schedule something else, effectively taking care of the backoff
+> + * for us. Doing our own backoff on top of the hypervisor's pause
+> + * loop exit handling can lead to excessively long delays, and
+> + * performance degradations. Limit the spinlock delay in virtual
+> + * machines to a smaller value. Called from init_hypervisor_platform 
+> + */
+> +static int __read_mostly max_spinlock_delay = MAX_SPINLOCK_DELAY_NATIVE;
+> +void __init init_guest_spinlock_delay(void)
+> +{
+> +	max_spinlock_delay = MAX_SPINLOCK_DELAY_GUEST;
+> +}
+> +
 
-These (https://lkml.org/lkml/2012/11/29/123) are still not merged.
+Same comment as last time:
 
-Thanks,
-lai
-
-On 05/02/13 01:18, Paul E. McKenney wrote:
-> Hello, Ingo,
->
-> The major features of this series are:
->
-> 1.	Changes to rcutorture and to RCU documentation.  Posted to LKML at
-> 	https://lkml.org/lkml/2013/1/26/188.
->
-> 2.	Enhancements to uniprocessor handling in tiny RCU. Posted to LKML
-> 	at https://lkml.org/lkml/2013/1/27/2.
->
-> 3.	Tag RCU callbacks with grace-period number to simplify callback
-> 	advancement.  Posted to LKML at https://lkml.org/lkml/2013/1/26/203.
->
-> 4.	Miscellaneous fixes.  Posted to LKML at
-> 	https://lkml.org/lkml/2013/1/26/204.
->
-> All of these commits have been subject to -next testing.
->
-> These changes are available in the git repository at:
->    git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/next
->
-> --------------------->
->
-> Cody P Schafer (1):
->        rcu: Correct 'optimized' to 'optimize' in header comment
->
-> Dave Hansen (1):
->        rcu: Consolidate debugging Kconfig options
->
-> Frederic Weisbecker (1):
->        context_tracking: Add comments on interface and internals
->
-> Josh Triplett (1):
->        rcu: Make rcu_is_cpu_rrupt_from_idle helper functions static
->
-> Li Zhong (2):
->        rcu: Use new nesting value for rcu_dyntick trace in rcu_eqs_enter_common
->        rcu: Remove unused code originally used for context tracking
->
-> Paul E. McKenney (11):
->        tracing: Export trace_clock_local()
->        rcu: Reduce rcutorture tracing
->        rcu: Fix blimit type for trace_rcu_batch_start()
->        rcu: Silence compiler array out-of-bounds false positive
->        rcu: Tag callback lists with corresponding grace-period number
->        rcu: Trace callback acceleration
->        rcu: Remove obsolete Kconfig option from comment
->        rcu: Provide RCU CPU stall warnings for tiny RCU
->        rcu: Allow TREE_PREEMPT_RCU on UP systems
->        rcu: Make rcutorture's shuffler task shuffle recently added tasks
->        Merge branches 'doctorture.2013.01.29a', 'fixes.2013.01.26a', 'tagcb.2013.01.24a' and 'tiny.2013.01.29b' into HEAD
->
-> Richard Braun (1):
->        Documentation: Memory barrier semantics of atomic_xchg()
->
-> Sasha Levin (1):
->        rcutorture: Don't compare ptr with 0
->
->   Documentation/atomic_ops.txt      |    2 +
->   Documentation/memory-barriers.txt |    1 +
->   include/linux/rcupdate.h          |   15 ++-
->   include/trace/events/rcu.h        |   31 +++--
->   init/Kconfig                      |   12 ++-
->   kernel/context_tracking.c         |   75 +++++++++--
->   kernel/rcu.h                      |    7 +
->   kernel/rcupdate.c                 |   60 ++++++++-
->   kernel/rcutiny.c                  |    8 +-
->   kernel/rcutiny_plugin.h           |   56 ++++++++
->   kernel/rcutorture.c               |   57 +++++++--
->   kernel/rcutree.c                  |  260 ++++++++++++++++++++++++++-----------
->   kernel/rcutree.h                  |   11 +--
->   kernel/trace/trace_clock.c        |    1 +
->   lib/Kconfig.debug                 |  117 +++++++++--------
->   15 files changed, 528 insertions(+), 185 deletions(-)
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
-
+"""
+Before reducing max_spinlock_delay, shouldn't we check that PAUSE-loop
+exiting is available? What if we are running on an older x86 machine
+that doesn't support it?
+"""
