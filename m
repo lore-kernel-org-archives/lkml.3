@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757441Ab3BGBGA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 20:06:00 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:55027 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757117Ab3BGBF6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 20:05:58 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Valdis.Kletnieks@vt.edu
-Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: next-20130206 cpufreq - WARN in sysfs_add_one
-Date: Thu, 07 Feb 2013 02:12:17 +0100
-Message-ID: <1729273.hgXged98n0@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <30908.1360198558@turing-police.cc.vt.edu>
-References: <9180.1360172675@turing-police.cc.vt.edu> <17233164.aBDzy1OViI@vostro.rjw.lan> <30908.1360198558@turing-police.cc.vt.edu>
+	id S1757415Ab3BGBH0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 20:07:26 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:33926 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755964Ab3BGBHZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 20:07:25 -0500
+Message-ID: <5112FE21.4020404@ahsoftware.de>
+Date: Thu, 07 Feb 2013 02:06:41 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: linux-kernel@vger.kernel.org
+Subject: Re: MODSIGN without RTC?
+References: <5112EA69.6010100@ahsoftware.de>
+In-Reply-To: <5112EA69.6010100@ahsoftware.de>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, February 06, 2013 07:55:58 PM Valdis.Kletnieks@vt.edu wrote:
-> On Wed, 06 Feb 2013 22:24:39 +0100, "Rafael J. Wysocki" said:
-> > On Wednesday, February 06, 2013 12:44:35 PM Valdis Kletnieks wrote:
-> > > Seen in dmesg.  next-20130128 was OK. Haven't done a bisect, but can
-> > > do so if the offender isn't obvious...
-> >
-> > I suppose this is 73bf0fc "cpufreq: Don't remove sysfs link for policy->cpu".
-> >
-> > Can you test the linux-pm.git/pm-cpufreq branch alone, please, and see
-> > if that's this one (top-most commit)?
-> 
-> Color me mystified.  I can't find that commit by either number or
-> the description:
-> 
-> [/usr/src/linux-next] git log | egrep -i 'cpufreq.*remove.*link'
-> [/usr/src/linux-next] git log | grep -i 73bf0fc
-> [/usr/src/linux-next]
-> 
-> Was that a very recent commit that may have gotten pushed too late
-> for the next-20130206 merge?
+Am 07.02.2013 00:42, schrieb Alexander Holler:
+> Hello,
+>
+> I wanted to try out MODSIGN with kernel 3.7.6 and I've just got hit by:
+>
+> [    1.346445] X.509: Cert 6a23533cec71c4c52a1618fb4d830e06aa90474e is
+> not yet valid
+>
+> The reason is likely that the (ARM) device in question doesn't have a
+> RTC (oh, that topic again ;) ) and gets it's time on boot through NTP.
+>
+> The used certificate was generated automatically. Having a look at it,
+> the following is shown:
+>
+>         Validity
+>              Not Before: Feb  6 02:56:46 2013 GMT
+>              Not After : Jan 13 02:56:46 2113 GMT
+>
+> Without having thought about possible security problems, my first idea
+> would be to let the validity start at 1970. As I never did such I never
+> had thought about possible implications when doing such (e.g. I don't
+> know if someone checks the start date for plausabilitiy)
+>
+> Another solution would be to retry loading of the certificate if the
+> time gets set (and e.g. differs more than a year).
+>
+> Has someone already thought about how to solve that problem? Or did
+> everyone use sane systems which have a (working) RTC?
 
-Well, sorry, next-20130206 didn't include that commit.
+Another option would be to make a configure option to just ignore the 
+date. I'm not sure if I would like to use MODSIGN when I have to fear 
+that the machine wouldn't start when the RTC fails or got set to a wrong 
+date.
 
-Can you please test the linux-pm.git/pm-cpufreq branch, then?
+Regards,
 
-Rafael
+Alexander
 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
