@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932146Ab3BGQdC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 11:33:02 -0500
-Received: from isrv.corpit.ru ([86.62.121.231]:39477 "EHLO isrv.corpit.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754325Ab3BGQdA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 11:33:00 -0500
-Message-ID: <5113D739.5070402@msgid.tls.msk.ru>
-Date: Thu, 07 Feb 2013 20:32:57 +0400
-From: Michael Tokarev <mjt@tls.msk.ru>
-Organization: Telecom Service, JSC
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/17.0 Icedove/17.0
+	id S1030178Ab3BGQhp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 11:37:45 -0500
+Received: from mail-da0-f48.google.com ([209.85.210.48]:44370 "EHLO
+	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758321Ab3BGQhn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 11:37:43 -0500
+Date: Thu, 7 Feb 2013 08:37:39 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] stop_machine: check work->done while handling
+ enqueued works
+Message-ID: <20130207163739.GN2875@htj.dyndns.org>
+References: <CAJd=RBD=yMa1-iAm_i71U+KKRNYmXDTb6yZzW5aVAGHQ+zD8Sw@mail.gmail.com>
+ <20130206184638.GA2875@htj.dyndns.org>
+ <CAJd=RBB+A_=nzQA+dfbt_PoxSGh1B2U+GZLQ1f8Gr6hZ5gJ1hQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Linux-kernel <linux-kernel@vger.kernel.org>
-CC: Serge Hallyn <serge.hallyn@ubuntu.com>
-Subject: Transparent Huge Pages
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJd=RBB+A_=nzQA+dfbt_PoxSGh1B2U+GZLQ1f8Gr6hZ5gJ1hQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Hello, Hillf.
 
-I'm trying to understand how to use transparent huge pages
-(currently in x86).  Before I used "explicit" huge pages
-alot (mostly about hugetlbfs), but it looked like THP should
-be easier so I gave it a try.
+On Thu, Feb 07, 2013 at 08:13:44PM +0800, Hillf Danton wrote:
+> > If this is meant as a pure cleanup, I'm not sure it's an improvement.
+> > You own your cpu_stop_done until you call cpu_stop_signal_done() on
+> > it, so I don't think there's anything wrong with the current code.
+> > The new code is different, not necessarily better.
+> 
+> The comment just above cpu_stop_signal_done()
+> says it is not certain that the input done is valid, so
+> I did this work.
+> Plus works enqueued through stop_one_cpu_nowait()
+> do carry no done.
 
-This tiny program:
+So, are you saying that we can hit NULL deref in cpu_stopper_thread()
+and this is a bug fix?  If so, can you please redo the description?  I
+really can't tell what the patch is trying to do from the original
+description.
 
------ cut -----
-#include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/mman.h>
-#include <errno.h>
-#include <string.h>
+Thanks.
 
-int main(int argc, char **argv) {
-   void *ptr;
-   size_t len = argv[1] ? atoi(argv[1]) : 1024*1024*1024;
-   /* no error checking! */
-   posix_memalign(&ptr, 2048*1024, len);
-   madvise(ptr, len, MADV_HUGEPAGE);
-   memset(ptr, 0, len);
-   usleep(500); /* let khugepagesd do its work */
-   system("grep ^AnonHugePages: /proc/meminfo");
-   return 0;
-}
------ cut -----
-
-which just tries to allocate some amount of RAM (1Gb by default)
-aligned to 2Mb, uses madvise(HUGEPAGE) on it, and checks
-/proc/meminfo for AnonHugePages.
-
-The problem is: I've never seen any value for AnonHugePages
-larger than about 16Mb.  Usually it is around 10Mb or 8Mb,
-no matter how large the requested memory size is, including
-the default 1Gb.
-
-The question, obviously, is: why so small?
-
-My system (which is a few years old now) has 6Gb of RAM,
-it uses AMD Athlon II X2 260 CPU, and is running 3.2
-kernel.
-
-Original question comes from grounds of of QEMU, which is
-supposed to use THP for guest memory, but it also does not
-use more than these ~10Mb, when allocating 1Gb to the guest.
-
-Thanks!
-
-/mjt
+-- 
+tejun
