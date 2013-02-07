@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759469Ab3BGVGJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 16:06:09 -0500
-Received: from mga14.intel.com ([143.182.124.37]:15699 "EHLO mga14.intel.com"
+	id S1759459Ab3BGVGH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 16:06:07 -0500
+Received: from mga14.intel.com ([143.182.124.37]:49853 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759361Ab3BGVDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1759364Ab3BGVDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 7 Feb 2013 16:03:52 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,623,1355126400"; 
-   d="scan'208";a="253970110"
+   d="scan'208";a="253970142"
 From: Tomas Winkler <tomas.winkler@intel.com>
 To: gregkh@linuxfoundation.org, sameo@linux.intel.com
 Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
         Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next 05/11] mei: bus: Call bus routines from the core code
-Date: Thu,  7 Feb 2013 23:03:11 +0200
-Message-Id: <1360270997-7639-6-git-send-email-tomas.winkler@intel.com>
+Subject: [char-misc-next 06/11] mei: bus: Synchronous API for the data transmission
+Date: Thu,  7 Feb 2013 23:03:12 +0200
+Message-Id: <1360270997-7639-7-git-send-email-tomas.winkler@intel.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1360270997-7639-1-git-send-email-tomas.winkler@intel.com>
 References: <1360270997-7639-1-git-send-email-tomas.winkler@intel.com>
@@ -25,107 +25,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Samuel Ortiz <sameo@linux.intel.com>
 
-Register the MEI bus type against the kernel core bus APIs and
-call the bus Rx handler from interrupt.c
+Define a truly synchronous API for the bus Tx path by putting all pending
+request to the write list and wait for the interrupt tx handler to wake
+us up.
+The __mei_send() out path is also slightly reworked to make it look more
+like main.c:mei_write().
 
 Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 ---
- drivers/misc/mei/bus.c       |   22 ++++++++++++++++++++++
- drivers/misc/mei/interrupt.c |    2 ++
- drivers/misc/mei/mei_dev.h   |    4 ++++
- drivers/misc/mei/pci-me.c    |    6 ++++++
- 4 files changed, 34 insertions(+), 0 deletions(-)
+ drivers/misc/mei/bus.c |   38 ++++++++++++++++++++++++++++----------
+ drivers/misc/mei/bus.h |    2 ++
+ 2 files changed, 30 insertions(+), 10 deletions(-)
 
 diff --git a/drivers/misc/mei/bus.c b/drivers/misc/mei/bus.c
-index 97afec6..e2e15d1 100644
+index e2e15d1..3f10d51 100644
 --- a/drivers/misc/mei/bus.c
 +++ b/drivers/misc/mei/bus.c
-@@ -429,3 +429,25 @@ int mei_bus_register_event_cb(struct mei_bus_client *client,
- 	return 0;
+@@ -210,7 +210,7 @@ void mei_del_driver(struct mei_bus_driver *driver)
  }
- EXPORT_SYMBOL(mei_bus_register_event_cb);
-+
-+void mei_bus_rx_event(struct mei_cl *cl)
-+{
-+	struct mei_bus_client *client = cl->client;
-+
-+	if (!client || !client->event_cb)
-+		return;
-+
-+	set_bit(MEI_BUS_EVENT_RX, &client->events);
-+
-+	schedule_work(&client->event_work);
-+}
-+
-+int mei_bus_init(struct pci_dev *pdev)
-+{
-+	return bus_register(&mei_bus_type);
-+}
-+
-+void mei_bus_exit(void)
-+{
-+	bus_unregister(&mei_bus_type);
-+}
-diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
-index 3535b26..d0dea50 100644
---- a/drivers/misc/mei/interrupt.c
-+++ b/drivers/misc/mei/interrupt.c
-@@ -49,6 +49,8 @@ void mei_irq_complete_handler(struct mei_cl *cl, struct mei_cl_cb *cb_pos)
- 		cl->reading_state = MEI_READ_COMPLETE;
- 		if (waitqueue_active(&cl->rx_wait))
- 			wake_up_interruptible(&cl->rx_wait);
-+		else
-+			mei_bus_rx_event(cl);
+ EXPORT_SYMBOL(mei_del_driver);
  
+-int mei_send(struct mei_cl *cl, u8 *buf, size_t length)
++static int __mei_send(struct mei_cl *cl, u8 *buf, size_t length, bool blocking)
+ {
+ 	struct mei_device *dev;
+ 	struct mei_msg_hdr mei_hdr;
+@@ -261,11 +261,8 @@ int mei_send(struct mei_cl *cl, u8 *buf, size_t length)
+ 		cb->buf_idx = 0;
+ 		mei_hdr.msg_complete = 0;
+ 		cl->writing_state = MEI_WRITING;
+-		list_add_tail(&cb->list, &dev->write_list.list);
+-
+-		mutex_unlock(&dev->device_lock);
+ 
+-		return length;
++		goto out;
  	}
- }
-diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
-index d9adad6..cb1bac0 100644
---- a/drivers/misc/mei/mei_dev.h
-+++ b/drivers/misc/mei/mei_dev.h
-@@ -420,6 +420,10 @@ static inline unsigned long mei_secs_to_jiffies(unsigned long sec)
- 	return msecs_to_jiffies(sec * MSEC_PER_SEC);
- }
  
-+void mei_bus_rx_event(struct mei_cl *cl);
-+int mei_bus_init(struct pci_dev *pdev);
-+void mei_bus_exit(void);
+ 	dev->hbuf_is_ready = false;
+@@ -291,19 +288,30 @@ int mei_send(struct mei_cl *cl, u8 *buf, size_t length)
+ 	cl->writing_state = MEI_WRITING;
+ 	cb->buf_idx = mei_hdr.length;
+ 
+-	if (!mei_hdr.msg_complete) {
+-		list_add_tail(&cb->list, &dev->write_list.list);
+-	} else {
++out:
++	if (mei_hdr.msg_complete) {
+ 		if (mei_cl_flow_ctrl_reduce(cl)) {
+-			err = -EIO;
++			err = -ENODEV;
+ 			goto out_err;
+ 		}
+-
+ 		list_add_tail(&cb->list, &dev->write_waiting_list.list);
++	} else {
++		list_add_tail(&cb->list, &dev->write_list.list);
+ 	}
+ 
+ 	mutex_unlock(&dev->device_lock);
+ 
++	if (blocking && cl->writing_state != MEI_WRITE_COMPLETE) {
++		if (wait_event_interruptible(cl->tx_wait,
++			cl->writing_state == MEI_WRITE_COMPLETE)) {
++				if (signal_pending(current))
++					err = -EINTR;
++			err = -ERESTARTSYS;
++			mutex_lock(&dev->device_lock);
++			goto out_err;
++		}
++	}
 +
+ 	return mei_hdr.length;
  
- /*
-  * mei init function prototypes
-diff --git a/drivers/misc/mei/pci-me.c b/drivers/misc/mei/pci-me.c
-index b40ec06..f736531 100644
---- a/drivers/misc/mei/pci-me.c
-+++ b/drivers/misc/mei/pci-me.c
-@@ -197,6 +197,9 @@ static int mei_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	mei_pdev = pdev;
- 	pci_set_drvdata(pdev, dev);
- 
-+	err = mei_bus_init(mei_pdev);
-+	if (err)
-+		goto deregister_mei;
- 
- 	schedule_delayed_work(&dev->timer_work, HZ);
- 
-@@ -206,6 +209,8 @@ static int mei_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
- 
- 	return 0;
- 
-+deregister_mei:
-+	mei_deregister();
- release_irq:
- 	mei_disable_interrupts(dev);
- 	flush_scheduled_work();
-@@ -300,6 +305,7 @@ static void mei_remove(struct pci_dev *pdev)
- 	pci_release_regions(pdev);
- 	pci_disable_device(pdev);
- 
-+	mei_bus_exit();
- 	mei_deregister();
- 
+ out_err:
+@@ -370,6 +378,16 @@ out:
+ 	return r_length;
  }
+ 
++inline int mei_async_send(struct mei_cl *cl, u8 *buf, size_t length)
++{
++	return __mei_send(cl, buf, length, 0);
++}
++
++inline int mei_send(struct mei_cl *cl, u8 *buf, size_t length)
++{
++	return __mei_send(cl, buf, length, 1);
++}
++
+ int mei_bus_send(struct mei_bus_client *client, u8 *buf, size_t length)
+ {
+ 	struct mei_cl *cl = client->cl;
+diff --git a/drivers/misc/mei/bus.h b/drivers/misc/mei/bus.h
+index 81789f6..d7bf3b5 100644
+--- a/drivers/misc/mei/bus.h
++++ b/drivers/misc/mei/bus.h
+@@ -24,7 +24,9 @@ struct mei_bus_client *mei_add_device(struct mei_device *mei_dev,
+ 					uuid_le uuid, char *name);
+ void mei_remove_device(struct mei_bus_client *client);
+ 
++int mei_async_send(struct mei_cl *cl, u8 *buf, size_t length);
+ int mei_send(struct mei_cl *cl, u8 *buf, size_t length);
+ int mei_recv(struct mei_cl *cl, u8 *buf, size_t length);
+ 
++
+ #endif /* _MEI_BUS_H_ */
 -- 
 1.7.4.4
 
