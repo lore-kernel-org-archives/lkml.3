@@ -1,86 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161149Ab3BGS4O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 13:56:14 -0500
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:60196 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161081Ab3BGS4N (ORCPT
+	id S1161130Ab3BGS6J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 13:58:09 -0500
+Received: from mail-da0-f48.google.com ([209.85.210.48]:45963 "EHLO
+	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758751Ab3BGS6I convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 13:56:13 -0500
-Date: Thu, 7 Feb 2013 19:56:08 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Clark Williams <williams@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] scheduler include file reorganization
-Message-ID: <20130207185608.GA25223@gmail.com>
-References: <20130207094650.76302f47@riff.lan>
+	Thu, 7 Feb 2013 13:58:08 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130207094650.76302f47@riff.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+To: Peter De Schrijver <pdeschrijver@nvidia.com>, <pdeschrijver@nvidia.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1360254261-23000-1-git-send-email-pdeschrijver@nvidia.com>
+Cc: Stephen Warren <swarren@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>, <linux-kernel@vger.kernel.org>
+References: <1360254261-23000-1-git-send-email-pdeschrijver@nvidia.com>
+Message-ID: <20130207185742.11471.19037@quantum>
+User-Agent: alot/0.3.3+
+Subject: Re: [PATCH] clk: tegra: Implement locking for super clock
+Date: Thu, 07 Feb 2013 10:57:42 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Clark Williams <williams@redhat.com> wrote:
-
+Quoting Peter De Schrijver (2013-02-07 08:24:14)
+> Although tegra_clk_register_super_mux() has a lock parameter, the lock is not
+> actually used by the code. Fixed with this patch.
 > 
-> Ingo,
+> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+> ---
+>  drivers/clk/tegra/clk-super.c |   18 +++++++++++++++---
+>  1 files changed, 15 insertions(+), 3 deletions(-)
 > 
-> Is this more in line with what you wanted? 
-> 
-> I moved the sysctl bits out into include/linux/sched/sysctl.h, then
-> updated any source dependent on sysctl bits, then added my SCHED_RR
-> tuning knob, then finally created include/linux/sched/rt.h to hold
-> most of the rt scheduler specific bits. 
-> 
-> Clark Williams (3):
->   sched: move sched.h sysctl bits into separate header
->   sched/rt: add a tuning knob to allow changing SCHED_RR timeslice
->   sched/rt: move rt specific bits into new header file
-> 
->  block/blk-exec.c                  |   1 +
->  drivers/spi/spi.c                 |   2 +-
->  drivers/staging/csr/bh.c          |   2 +-
->  drivers/staging/csr/unifi_sme.c   |   2 +-
->  drivers/tty/sysrq.c               |   1 +
->  fs/select.c                       |   1 +
->  include/linux/sched.h             | 144 +-------------------------------------
->  include/linux/sched/rt.h          |  58 +++++++++++++++
->  include/linux/sched/sysctl.h      | 110 +++++++++++++++++++++++++++++
->  init/init_task.c                  |   2 +
->  kernel/futex.c                    |   1 +
->  kernel/hrtimer.c                  |   2 +
->  kernel/irq/manage.c               |   1 +
->  kernel/rtmutex-debug.c            |   1 +
->  kernel/rtmutex-tester.c           |   1 +
->  kernel/rtmutex.c                  |   1 +
->  kernel/sched/core.c               |  19 +++++
->  kernel/sched/cpupri.c             |   2 +
->  kernel/sched/rt.c                 |   6 +-
->  kernel/sched/sched.h              |   2 +
->  kernel/sysctl.c                   |   8 +++
->  kernel/timer.c                    |   1 +
->  kernel/trace/trace.c              |   1 +
->  kernel/trace/trace_sched_wakeup.c |   2 +-
->  kernel/watchdog.c                 |   1 +
->  mm/mmap.c                         |   1 +
->  mm/mremap.c                       |   1 +
->  mm/page-writeback.c               |   1 +
->  mm/page_alloc.c                   |   1 +
->  29 files changed, 227 insertions(+), 149 deletions(-)
->  create mode 100644 include/linux/sched/rt.h
->  create mode 100644 include/linux/sched/sysctl.h
+> diff --git a/drivers/clk/tegra/clk-super.c b/drivers/clk/tegra/clk-super.c
+> index 7ad48a8..2fd924d 100644
+> --- a/drivers/clk/tegra/clk-super.c
+> +++ b/drivers/clk/tegra/clk-super.c
+> @@ -73,7 +73,12 @@ static int clk_super_set_parent(struct clk_hw *hw, u8 index)
+>  {
+>         struct tegra_clk_super_mux *mux = to_clk_super_mux(hw);
+>         u32 val, state;
+> +       int err = 0;
+>         u8 parent_index, shift;
+> +       unsigned long flags = 0;
 
-Yeah, that looks pretty good.
+I don't think initializing flags to zero is necessary but it is not a
+big deal.  Is gcc throwing a warning?  Otherwise:
 
-I'll give it some testing.
+Acked-by: Mike Turquette <mturquette@linaro.org>
 
-Thanks,
-
-	Ingo
+Regards,
+Mike
