@@ -1,126 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759006Ab3BGQzy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 11:55:54 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:43157 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754325Ab3BGQzx (ORCPT
+	id S1759059Ab3BGQ4Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 11:56:16 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:36915 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756622Ab3BGQ4O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 11:55:53 -0500
-Date: Thu, 7 Feb 2013 08:55:47 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Jean Delvare <khali@linux-fr.org>, linux-i2c@vger.kernel.org
-Subject: [PATCH v2] i2c: convert to idr_alloc()
-Message-ID: <20130207165547.GO2875@htj.dyndns.org>
-References: <1360179649-22465-1-git-send-email-tj@kernel.org>
- <1360179649-22465-38-git-send-email-tj@kernel.org>
- <20130207152831.GA14797@sirena.org.uk>
- <20130207163247.GL2875@htj.dyndns.org>
- <20130207163958.GY4720@opensource.wolfsonmicro.com>
+	Thu, 7 Feb 2013 11:56:14 -0500
+Message-ID: <5113DCAC.6080003@wwwdotorg.org>
+Date: Thu, 07 Feb 2013 09:56:12 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130207163958.GY4720@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: kishon <kishon@ti.com>
+CC: Venu Byravarasu <vbyravarasu@nvidia.com>, balbi@ti.com,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH v3] usb: phy: moving all PHY API definitions to usb/phy
+ directory
+References: <1360236751-23183-1-git-send-email-vbyravarasu@nvidia.com> <5113AE42.8090401@ti.com>
+In-Reply-To: <5113AE42.8090401@ti.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert to the much saner new idr interface.
+On 02/07/2013 06:38 AM, kishon wrote:
+> On Thursday 07 February 2013 05:02 PM, Venu Byravarasu wrote:
+>> As drivers/usb/otg/otg.c contains most of the PHY related APIs which
+>> are not OTG specific, moving them to more logical place under
+>> drivers/usb/phy.
 
-Only compile tested.
+>> diff --git a/drivers/usb/phy/Makefile b/drivers/usb/phy/Makefile
+>> index b13faa1..886be13 100644
+>> --- a/drivers/usb/phy/Makefile
+>> +++ b/drivers/usb/phy/Makefile
+>> @@ -4,6 +4,7 @@
+>>
+>>   ccflags-$(CONFIG_USB_DEBUG) := -DDEBUG
+>>
+>> +obj-$(CONFIG_USB_COMMON)            += phy.o
+> 
+> I think we should have a separate config for PHYs. There might be
+> controllers which dont need separate PHY. But we can have that as a
+> separate patch later since we might want to change the Kconfig of other
+> UDC drivers.
 
-v2: The original conversion accidentally dropped a call to
-    i2c_register_adapter() in i2c_add_numbered_adapter() leaving @adap
-    uninitialized and unregistered.  Reported by Mark Brown.  Fix it.
+>> +/*
+>> + * phy.c -- USB PHY utility code
+>> + *
+>> + * Copyright (C) 2004 Texas Instruments
+> 
+> You can update this to 2013.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Jean Delvare <khali@linux-fr.org>
-Cc: linux-i2c@vger.kernel.org
----
-Heh, this is embarrassing.  I got too focused on the id allocation
-itself and missed moving i2c_register_adapter() call.
+I'm not sure if anyone other that TI can do that?
 
-I think this should fix the problem you're seeing.  Can you please
-test this?
+>> +EXPORT_SYMBOL_GPL(usb_bind_phy);
+>> +
+>> +
+>
+> Unnecessary spaces here.
 
-Thank you.
+Thanks for the review. It was very difficult to find you review comments
+since you quoted the entire patch rather than just the few pieces you
+were commenting on...
 
- drivers/i2c/i2c-core.c |   43 ++++++++++---------------------------------
- 1 file changed, 10 insertions(+), 33 deletions(-)
+> You might want to do this patch after applying *[PATCH] usb: otg: use
+> try_module_get in all usb_get_phy functions and add missing module_put*
+> by Marc.
 
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -935,25 +935,16 @@ out_list:
-  */
- int i2c_add_adapter(struct i2c_adapter *adapter)
- {
--	int	id, res = 0;
--
--retry:
--	if (idr_pre_get(&i2c_adapter_idr, GFP_KERNEL) == 0)
--		return -ENOMEM;
-+	int res;
- 
- 	mutex_lock(&core_lock);
--	/* "above" here means "above or equal to", sigh */
--	res = idr_get_new_above(&i2c_adapter_idr, adapter,
--				__i2c_first_dynamic_bus_num, &id);
-+	res = idr_alloc(&i2c_adapter_idr, adapter,
-+			__i2c_first_dynamic_bus_num, 0, GFP_KERNEL);
- 	mutex_unlock(&core_lock);
--
--	if (res < 0) {
--		if (res == -EAGAIN)
--			goto retry;
-+	if (res < 0)
- 		return res;
--	}
- 
--	adapter->nr = id;
-+	adapter->nr = res;
- 	return i2c_register_adapter(adapter);
- }
- EXPORT_SYMBOL(i2c_add_adapter);
-@@ -984,33 +975,19 @@ EXPORT_SYMBOL(i2c_add_adapter);
- int i2c_add_numbered_adapter(struct i2c_adapter *adap)
- {
- 	int	id;
--	int	status;
- 
- 	if (adap->nr == -1) /* -1 means dynamically assign bus id */
- 		return i2c_add_adapter(adap);
- 	if (adap->nr & ~MAX_IDR_MASK)
- 		return -EINVAL;
- 
--retry:
--	if (idr_pre_get(&i2c_adapter_idr, GFP_KERNEL) == 0)
--		return -ENOMEM;
--
- 	mutex_lock(&core_lock);
--	/* "above" here means "above or equal to", sigh;
--	 * we need the "equal to" result to force the result
--	 */
--	status = idr_get_new_above(&i2c_adapter_idr, adap, adap->nr, &id);
--	if (status == 0 && id != adap->nr) {
--		status = -EBUSY;
--		idr_remove(&i2c_adapter_idr, id);
--	}
-+	id = idr_alloc(&i2c_adapter_idr, adap, adap->nr, adap->nr + 1,
-+		       GFP_KERNEL);
- 	mutex_unlock(&core_lock);
--	if (status == -EAGAIN)
--		goto retry;
--
--	if (status == 0)
--		status = i2c_register_adapter(adap);
--	return status;
-+	if (id < 0)
-+		return id == -ENOSPC ? -EBUSY : id;
-+	return i2c_register_adapter(adap);
- }
- EXPORT_SYMBOL_GPL(i2c_add_numbered_adapter);
- 
+Venu, please make sure you include the changes in that patch in your
+Tegra USB/PHY driver rework too, before you post it upstream.
