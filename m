@@ -1,73 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751963Ab3BGGmb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 01:42:31 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:63550 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750973Ab3BGGma (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 01:42:30 -0500
+	id S1752090Ab3BGGp1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 01:45:27 -0500
+Received: from asix.com.tw ([113.196.140.82]:52507 "EHLO asix.com.tw"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751323Ab3BGGpZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 01:45:25 -0500
+Message-ID: <51134D7B.5070709@asix.com.tw>
+Date: Thu, 07 Feb 2013 14:45:15 +0800
+From: Freddy <freddy@asix.com.tw>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <5112FE21.4020404@ahsoftware.de>
-References: <5112EA69.6010100@ahsoftware.de>
-	<5112FE21.4020404@ahsoftware.de>
-Date: Thu, 7 Feb 2013 07:42:29 +0100
-X-Google-Sender-Auth: Bb8xywyCa2Su-yWq9hzdHeN_E_E
-Message-ID: <CAMuHMdXu0-9=wHevviG=4s5fC=wxkT9XbXhP6ztOyGkkeb6+8Q@mail.gmail.com>
-Subject: Re: MODSIGN without RTC?
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: freddy@asix.com.tw
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH, resubmit] ax88179_178a: ASIX AX88179_178A USB 3.0/2.0
+ to gigabit ethernet adapter driver
+References: <1360211794-4737-1-git-send-email-freddy@asix.com.tw> <20130206214525.5c5775fe@nehalam.linuxnetplumber.net>
+In-Reply-To: <20130206214525.5c5775fe@nehalam.linuxnetplumber.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 7, 2013 at 2:06 AM, Alexander Holler <holler@ahsoftware.de> wrote:
-> Am 07.02.2013 00:42, schrieb Alexander Holler:
->> I wanted to try out MODSIGN with kernel 3.7.6 and I've just got hit by:
->>
->> [    1.346445] X.509: Cert 6a23533cec71c4c52a1618fb4d830e06aa90474e is
->> not yet valid
->>
->> The reason is likely that the (ARM) device in question doesn't have a
->> RTC (oh, that topic again ;) ) and gets it's time on boot through NTP.
->>
->> The used certificate was generated automatically. Having a look at it,
->> the following is shown:
->>
->>         Validity
->>              Not Before: Feb  6 02:56:46 2013 GMT
->>              Not After : Jan 13 02:56:46 2113 GMT
->>
->> Without having thought about possible security problems, my first idea
->> would be to let the validity start at 1970. As I never did such I never
->> had thought about possible implications when doing such (e.g. I don't
->> know if someone checks the start date for plausabilitiy)
->>
->> Another solution would be to retry loading of the certificate if the
->> time gets set (and e.g. differs more than a year).
->>
->> Has someone already thought about how to solve that problem? Or did
->> everyone use sane systems which have a (working) RTC?
+On 02/07/2013 01:45 PM, Stephen Hemminger wrote:
+> On Thu,  7 Feb 2013 12:36:34 +0800
+> Freddy Xin <freddy@asix.com.tw> wrote:
 >
+>> +struct {unsigned char ctrl, timer_l, timer_h, size, ifg; }
+>> +AX88179_BULKIN_SIZE[] =	{
+>> +	{7, 0x4f, 0,	0x12, 0xff},
+>> +	{7, 0xf0, 1,	0x15, 0xff},
+>> +	{7, 0xae, 7,	0x18, 0xff},
+>> +	{7, 0xcc, 0x4c, 0x18, 8},
+>> +};
+>   Better to make it static, const, and add a couple
+>   of line breaks.
 >
-> Another option would be to make a configure option to just ignore the date.
+>   static const struct {
+>        unsigned char ctrl, timer_l, timer_h, size, ifg;
+>   } AX88179_BULKIN_SIZE[] =	{
+> 	{7, 0x4f, 0,	0x12, 0xff},
+> 	{7, 0xf0, 1,	0x15, 0xff},
+> 	{7, 0xae, 7,	0x18, 0xff},
+> 	{7, 0xcc, 0x4c, 0x18, 8},
+> };
+Thank you, Stephen. I will fix these errors.
+>
 
-Or an option to auto-advance the clock to the "Not Before" date if needed...
-
-> I'm not sure if I would like to use MODSIGN when I have to fear that the
-> machine wouldn't start when the RTC fails or got set to a wrong date.
-
-Hmm, nice failure mode...
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
