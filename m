@@ -1,85 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751037Ab3BGFMS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 00:12:18 -0500
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:6116
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750763Ab3BGFMQ (ORCPT
+	id S1751249Ab3BGFOz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 00:14:55 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:33807 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750763Ab3BGFOx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 00:12:16 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1155h)
-From: Vakul Garg <vakul@freescale.com>
-To: <linux-crypto@vger.kernel.org>
-CC: Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Kim Phillips <kim.phillips@freescale.com>,
-        Shengzhou Liu <Shengzhou.Liu@freescale.com>,
-        Alex Porosanu <alexandru.porosanu@freescale.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCHv1] crypto: caam - set RDB bit in security configuration register
-Date: Thu, 7 Feb 2013 10:39:21 +0530
-Message-ID: <1360213761-7048-1-git-send-email-vakul@freescale.com>
-X-Mailer: git-send-email 1.7.7.6
+	Thu, 7 Feb 2013 00:14:53 -0500
+Date: Wed, 06 Feb 2013 23:14:47 -0600
+From: Rob Landley <rob@landley.net>
+Subject: Re: [tip:x86/mm2] x86: Add Crash kernel low reservation
+To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, ebiederm@xmission.com, tglx@linutronix.de,
+        hpa@linux.intel.com, rob@landley.net
+Cc: linux-tip-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hpa@zytor.com, mingo@kernel.org, yinghai@kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com, ebiederm@xmission.com
+In-Reply-To: <tip-2cde8ae169982ad1d1023ac628bb54053d0e9d4d@git.kernel.org>
+	(from yinghai@kernel.org on Tue Jan 29 19:51:25 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1360214087.12062.21@driftwood>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change is required for post SEC-5.0 devices which have RNG4.
-Setting RDB in security configuration register allows CAAM to use the
-"Random Data Buffer" to be filled by a single request. The Random Data
-Buffer is large enough for ten packets to get their IVs from a single
-request. If the Random Data Buffer is not enabled, then each IV causes a
-separate request, and RNG4 hardware cannot keep up resulting in lower
-IPSEC throughput if random IVs are used.
+Yeah yeah, I'm behind on email...
 
-Signed-off-by: Vakul Garg <vakul@freescale.com>
----
- drivers/crypto/caam/ctrl.c |    3 +++
- drivers/crypto/caam/regs.h |    4 +++-
- 2 files changed, 6 insertions(+), 1 deletions(-)
+On 01/29/2013 07:51:25 PM, tip-bot for Yinghai Lu wrote:
+> Commit-ID:  2cde8ae169982ad1d1023ac628bb54053d0e9d4d
+> Gitweb:      
+> http://git.kernel.org/tip/2cde8ae169982ad1d1023ac628bb54053d0e9d4d
+> Author:     Yinghai Lu <yinghai@kernel.org>
+> AuthorDate: Thu, 24 Jan 2013 12:20:11 -0800
+> Committer:  H. Peter Anvin <hpa@linux.intel.com>
+> CommitDate: Tue, 29 Jan 2013 15:31:59 -0800
+> 
+> x86: Add Crash kernel low reservation
+> 
+> During kdump kernel's booting stage, it need to find low ram for
+> swiotlb buffer when system does not support intel iommu/dmar  
+> remapping.
+> 
+> kexed-tools is appending memmap=exactmap and range from /proc/iomem
+> with "Crash kernel", and that range is above 4G for 64bit after boot
+> protocol 2.12.
+> 
+> We need to add another range in /proc/iomem like "Crash kernel low",
+> so kexec-tools could find that info and append to kdump kernel
+> command line.
+> 
+> User could specify the size with crashkernel_low=XX[KMG].
+> 
+> -v2: fix warning that is found by Fengguang's test robot.
+> -v3: move out get_mem_size change to another patch, to solve compiling
+>      warning that is found by Borislav Petkov <bp@alien8.de>
+> -v4: user must specify crashkernel_low if system does not support
+>      intel or amd iommu.
 
-diff --git a/drivers/crypto/caam/ctrl.c b/drivers/crypto/caam/ctrl.c
-index bf20dd8..79278d5 100644
---- a/drivers/crypto/caam/ctrl.c
-+++ b/drivers/crypto/caam/ctrl.c
-@@ -304,6 +304,9 @@ static int caam_probe(struct platform_device *pdev)
- 			caam_remove(pdev);
- 			return ret;
- 		}
-+
-+		/* Enable RDB bit so that RNG works faster */
-+		setbits32(&topregs->ctrl.scfgr, SCFGR_RDBENABLE);
- 	}
- 
- 	/* NOTE: RTIC detection ought to go here, around Si time */
-diff --git a/drivers/crypto/caam/regs.h b/drivers/crypto/caam/regs.h
-index 3223fc6..cd6feda 100644
---- a/drivers/crypto/caam/regs.h
-+++ b/drivers/crypto/caam/regs.h
-@@ -252,7 +252,8 @@ struct caam_ctrl {
- 	/* Read/Writable					        */
- 	u32 rsvd1;
- 	u32 mcr;		/* MCFG      Master Config Register  */
--	u32 rsvd2[2];
-+	u32 rsvd2;
-+	u32 scfgr;		/* SCFGR, Security Config Register */
- 
- 	/* Bus Access Configuration Section			010-11f */
- 	/* Read/Writable                                                */
-@@ -299,6 +300,7 @@ struct caam_ctrl {
- #define MCFGR_WDFAIL		0x20000000 /* DECO watchdog force-fail */
- #define MCFGR_DMA_RESET		0x10000000
- #define MCFGR_LONG_PTR		0x00010000 /* Use >32-bit desc addressing */
-+#define SCFGR_RDBENABLE		0x00000400
- 
- /* AXI read cache control */
- #define MCFGR_ARCACHE_SHIFT	12
--- 
-1.7.7.6
+I missed: why can we not autodetect the lack of support and DTRT?
 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Link:  
+> http://lkml.kernel.org/r/1359058816-7615-31-git-send-email-yinghai@kernel.org
+> Cc: Eric Biederman <ebiederm@xmission.com>
+> Cc: Rob Landley <rob@landley.net>
+> Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+> ---
+>  Documentation/kernel-parameters.txt |  3 +++
+>  arch/x86/kernel/setup.c             | 42  
+> +++++++++++++++++++++++++++++++++++--
+>  include/linux/kexec.h               |  3 +++
+>  kernel/kexec.c                      | 34  
+> +++++++++++++++++++++++++-----
+>  4 files changed, 75 insertions(+), 7 deletions(-)
+> 
+> diff --git a/Documentation/kernel-parameters.txt  
+> b/Documentation/kernel-parameters.txt
+> index 363e348..da0e077 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -594,6 +594,9 @@ bytes respectively. Such letter suffixes can also  
+> be entirely omitted.
+>  			is selected automatically. Check
+>  			Documentation/kdump/kdump.txt for further  
+> details.
+> 
+> +	crashkernel_low=size[KMG]
+> +			[KNL, x86] parts under 4G.
+> +
+>  	crashkernel=range1:size1[,range2:size2,...][@offset]
+>  			[KNL] Same as above, but depends on the memory
+>  			in the running system. The syntax of range is
 
+I don't understand this documentation.
+
+The "parts under 4G." assumes you understand the context of this  
+posting which isn't going into the docs. Above you say:
+
+> Try to reserve some under 4G if the normal "Crash kernel" is above 4G.
+
+Which is much clearer. Adding this in the middle also makes the "Same  
+as above" slightly confusing (you have two different aboves...)
+
+The first version (crashkernel=onesize) strongly implies the  
+reservation is physically contiguous. The comma separated version  
+implies that there are discontiguous reservations, manually specified.
+
+So is crashkernel_low=size a separate reservation from  
+crashkernel=size, or a modifier on the existing contiguous allocation?  
+Do you still need a crashkernel= entry if you've got a crashkernel_low=  
+entry? If you can (or are required to) specify both, is one a  
+constraint on part of the other or it an addition (so it reserves  
+crashkernel+crashkernel_low)? I seems unlikely "parts under 4G" means  
+it's trying to make one contiguous reservation straddle the high/low  
+boundary to put parts in each while still being contiguous...
+
+I have no idea from what you've added to kernel-parameters.txt.
+
+Looking at the code, I _think_ this adds an additional independent  
+reservation. I.E. crashkernel=size says "allocate memory from  
+anywhere", crashkernel_low=size says "allocate memory from low memory",  
+and doing both allocates two chunks like the comma separated version.
+
+Oh well. It's not hugely important that I understand a subsystem I  
+don't use, but having to look at the code to figure out what the  
+documentation is saying makes me uncomfortable.
+
+Rob
