@@ -1,93 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422712Ab3BGWPG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 17:15:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40927 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422655Ab3BGWPE (ORCPT
+	id S1422727Ab3BGWVO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 17:21:14 -0500
+Received: from infernal.debian.net ([176.28.9.132]:48232 "EHLO
+	infernal.debian.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755869Ab3BGWVN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 17:15:04 -0500
-Date: Thu, 7 Feb 2013 14:15:02 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: Odd ENOMEM being returned in 3.8-rcX
-Message-Id: <20130207141502.04625ea0.akpm@linux-foundation.org>
-In-Reply-To: <20130207215742.GB31684@hansolo.jdub.homelinux.org>
-References: <20130207215742.GB31684@hansolo.jdub.homelinux.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 7 Feb 2013 17:21:13 -0500
+X-Greylist: delayed 1685 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Feb 2013 17:21:13 EST
+Date: Thu, 7 Feb 2013 22:53:01 +0100
+From: Andreas Bombe <aeb@debian.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Dave Airlie <airlied@redhat.com>, Dave Jones <davej@redhat.com>,
+        dri-devel@lists.freedesktop.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: radeon causing sleeping function called from invalid context
+Message-ID: <20130207215301.GA11773@amos.fritz.box>
+References: <20130113012717.GA2673@redhat.com>
+ <20130113113820.GA2503@swordfish>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130113113820.GA2503@swordfish>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Feb 2013 16:57:42 -0500
-Josh Boyer <jwboyer@redhat.com> wrote:
-
-> Hi All,
+On Sun, Jan 13, 2013 at 02:38:20PM +0300, Sergey Senozhatsky wrote:
+> On (01/12/13 20:27), Dave Jones wrote:
+> > BUG: sleeping function called from invalid context at mm/slub.c:925
+> > in_atomic(): 1, irqs_disabled(): 0, pid: 566, name: Xorg
+> > INFO: lockdep is turned off.
+> > Pid: 566, comm: Xorg Not tainted 3.8.0-rc3+ #49
+> > Call Trace:
+> >  [<ffffffff81087ad1>] __might_sleep+0x141/0x200
+> >  [<ffffffff8119eddb>] kmem_cache_alloc_trace+0x4b/0x2a0
+> >  [<ffffffffa0083fb3>] ttm_bo_move_accel_cleanup+0x1d3/0x330 [ttm]
+> >  [<ffffffffa00c5418>] radeon_move_blit.isra.4+0xf8/0x160 [radeon]
+> >  [<ffffffffa00c5db0>] radeon_bo_move+0xb0/0x1f0 [radeon]
+> >  [<ffffffffa00820ed>] ttm_bo_handle_move_mem+0x27d/0x5d0 [ttm]
+> >  [<ffffffff8108dd51>] ? get_parent_ip+0x11/0x50
+> >  [<ffffffffa0083307>] ttm_bo_move_buffer+0x127/0x140 [ttm]
+> >  [<ffffffffa008717d>] ? ttm_eu_list_ref_sub+0x3d/0x60 [ttm]
+> >  [<ffffffffa00833c2>] ttm_bo_validate+0xa2/0x120 [ttm]
+> >  [<ffffffffa00c6f45>] radeon_bo_list_validate+0x75/0x90 [radeon]
+> >  [<ffffffffa00dca22>] radeon_cs_ioctl+0x582/0x950 [radeon]
+> >  [<ffffffffa002e573>] drm_ioctl+0x4d3/0x580 [drm]
+> >  [<ffffffffa00dc4a0>] ? radeon_cs_finish_pages+0xf0/0xf0 [radeon]
+> >  [<ffffffff811c49f9>] do_vfs_ioctl+0x99/0x5a0
+> >  [<ffffffff812cd3d7>] ? file_has_perm+0x97/0xb0
+> >  [<ffffffff81103715>] ? rcu_eqs_exit+0x65/0xb0
+> >  [<ffffffff811c4f91>] sys_ioctl+0x91/0xb0
+> >  [<ffffffff81695ad4>] tracesys+0xdd/0xe2
+> > 
 > 
-> We've hit a weird error in Fedora using the 3.8-rcX kernels.  It seems
-> the mock tool is getting back ENOMEM when doing very simple things that
-> normally just work.  The 3.7 kernels on the same userspace work just
-> fine.  It seems just running 'mock init -v' is enough to cause the
-> failure.
+> I see lots of these [mostly from page fault], the following one (quick and dirty) works for me.
 
-I assume you're not seeing the "page allocation failure" message and
-backtrace.  This means that either
-
-a) it's a __GFP_NOWARN callsite.  This is rare.  Or
-
-b) it's actually a different error but someone went and overwrote a
-   callee's return value with -ENOMEM.  We do this a lot and it sucks.
-
-> Because this is the rawhide kernel, we have some debug options enabled.
-> This happens to trigger this error:
-> 
-> [   89.143660] BUG: sleeping function called from invalid context at kernel/nsproxy.c:217
-> [   89.143729] in_atomic(): 0, irqs_disabled(): 1, pid: 1329, name: mock
-> [   89.143776] no locks held by mock/1329.
-> [   89.143778] irq event stamp: 324562
-> [   89.143781] hardirqs last  enabled at (324561): [<ffffffff81163a8d>] get_page_from_freelist+0x51d/0x990
-> [   89.143791] hardirqs last disabled at (324562): [<ffffffff816daa9d>] _raw_spin_lock_irq+0x1d/0x60
-> [   89.143798] softirqs last  enabled at (323936): [<ffffffff81070438>] __do_softirq+0x168/0x3d0
-> [   89.143804] softirqs last disabled at (323931): [<ffffffff816e587c>] call_softirq+0x1c/0x30
-> [   89.143811] Pid: 1329, comm: mock Not tainted 3.8.0-0.rc6.git1.1.fc19.x86_64 #1
-> [   89.143814] Call Trace:
-> [   89.143823]  [<ffffffff8109f8d9>] __might_sleep+0x179/0x230
-> [   89.143828]  [<ffffffff81097887>] switch_task_namespaces+0x27/0x60
-> [   89.143833]  [<ffffffff810978d0>] exit_task_namespaces+0x10/0x20
-> [   89.143839]  [<ffffffff81064692>] copy_process.part.22+0xe32/0x1640
-> [   89.143844]  [<ffffffff81064f95>] do_fork+0xa5/0x450
-> [   89.143849]  [<ffffffff816db718>] ? retint_swapgs+0x13/0x1b
-> [   89.143854]  [<ffffffff810653c6>] sys_clone+0x16/0x20
-> [   89.143859]  [<ffffffff816e48b9>] stub_clone+0x69/0x90
-> [   89.143864]  [<ffffffff816e44d9>] ? system_call_fastpath+0x16/0x1b
-> 
-> At first glance it seems copy_io is failing (possibly because
-> get_task_io_context fails), and then the above fallout is printed.  The
-> warning seems fairly valid, but I don't think that is the root of the
-> problem.
-
-yes, get_task_io_context() might be the place.  Tried adding a few
-error-path printks in there to see what's happening?
-
-I can't see anything around there which leaves interrupts disabled
-though.  It's quite likely that there's some code with is forgetting to
-reenable interrupts on a rarely-tested error path, and that ENOMEM is
-tickling the bug.
-
-> We've seen this as far back as Linux v3.8-rc2-116-g5f243b9 so far.  I
-> can still hit it with 3.8-rc6 as well.
-> 
-> I'm still trying to see if the ENOMEM hits without the debug options set,
-> and exactly which commit caused it.  I just wanted to see if anyone else
-> had seen odd python issues or other things failing with ENOMEM when they
-> shouldn't while I'm off debugging.
-> 
-> Thoughts/tips would be appreciated.
-
-
+Is that patch or any other fix being picked up? It's over three weeks
+now and I'm still seeing those BUGs with the latest 3.8-rc.
