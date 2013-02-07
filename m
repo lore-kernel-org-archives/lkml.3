@@ -1,74 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758941Ab3BGQGH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 11:06:07 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:25097 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756622Ab3BGQDc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 11:03:32 -0500
-Message-ID: <5113D04B.2060101@atmel.com>
-Date: Thu, 7 Feb 2013 17:03:23 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S932180Ab3BGQDY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 11:03:24 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:49454 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932137Ab3BGQDT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 11:03:19 -0500
+From: Roger Quadros <rogerq@ti.com>
+To: <tony@atomide.com>
+CC: <b-cousson@ti.com>, <balbi@ti.com>, <gregkh@linuxfoundation.org>,
+        <stern@rowland.harvard.edu>, <linux@arm.linux.org.uk>, <kishon@ti.com>,
+        <mark.rutland@arm.com>, <rogerq@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [PATCH v2 04/14] mfd: omap-usb-tll: Add device tree support
+Date: Thu, 7 Feb 2013 18:02:44 +0200
+Message-ID: <1360252974-7912-5-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1360252974-7912-1-git-send-email-rogerq@ti.com>
+References: <1360252974-7912-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        "Linux Kernel list" <linux-kernel@vger.kernel.org>,
-        Joachim Eastwood <manabian@gmail.com>, "Wu, Josh" <Josh.wu@atmel.com>
-Subject: [GIT PULL] at91: Device Tree related material for 3.9
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd, Olof,
+Enable this driver to probe in device tree boot.
 
-Here is a pull request for AT91 Device Tree material. It is pretty small and
-mostly related to at91rm9200 work done by Joachim.
+CC: Samuel Ortiz <sameo@linux.intel.com>
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+---
+ .../devicetree/bindings/mfd/omap-usb-tll.txt       |   17 +++++++++++++++++
+ drivers/mfd/omap-usb-tll.c                         |    9 +++++++++
+ 2 files changed, 26 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/omap-usb-tll.txt
 
-This one can go on top of the GIT PULL request that I sent two days ago:
-"[GIT PULL] at91: fixes for 3.9-rc1". But actually it is not related...
-
-
-The following changes since commit 88b62b915b0b7e25870eb0604ed9a92ba4bfc9f7:
-
-  Linux 3.8-rc6 (2013-02-01 12:08:14 +1100)
-
-are available in the git repository at:
-
-  git://github.com/at91linux/linux-at91.git tags/at91-dt
-
-for you to fetch changes up to ce3b2630fd4737a3f9aa9119d40647a9ac7baa38:
-
-  ARM: at91: add EMAC bindings to RM9200 DT (2013-02-07 16:40:09 +0100)
-
-----------------------------------------------------------------
-Update to DT files for AT91:
-- adding the watchdog to Animeo IP board
-- some more DT support for at91rm9200 peripherals
-
-----------------------------------------------------------------
-Jean-Christophe PLAGNIOL-VILLARD (1):
-      ARM: at91: Animeo IP: enable watchdog support
-
-Joachim Eastwood (3):
-      ARM: at91: add MMC bindings to RM9200 DT
-      ARM: at91: add SSC bindings to RM9200 DT
-      ARM: at91: add EMAC bindings to RM9200 DT
-
- arch/arm/boot/dts/animeo_ip.dts    |   4 +
- arch/arm/boot/dts/at91rm9200.dtsi  | 158 +++++++++++++++++++++++++++++++++++
- arch/arm/boot/dts/at91rm9200ek.dts |   5 ++
- arch/arm/mach-at91/at91rm9200.c    |   2 +
- 4 files changed, 169 insertions(+)
-
-
-Thanks best regards,
+diff --git a/Documentation/devicetree/bindings/mfd/omap-usb-tll.txt b/Documentation/devicetree/bindings/mfd/omap-usb-tll.txt
+new file mode 100644
+index 0000000..62fe697
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/omap-usb-tll.txt
+@@ -0,0 +1,17 @@
++OMAP HS USB Host TLL (Transceiver-Less Interface)
++
++Required properties:
++
++- compatible : should be "ti,usbhs-tll"
++- reg : should contain one register range i.e. start and length
++- interrupts : should contain the TLL module's interrupt
++- ti,hwmod : must contain "usb_tll_hs"
++
++Example:
++
++	usbhstll: usbhstll@4a062000 {
++		compatible = "ti,usbhs-tll";
++		reg = <0x4a062000 0x1000>;
++		interrupts = <78>;
++		ti,hwmods = "usb_tll_hs";
++	  };
+diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
+index f7d2568..f7afb22 100644
+--- a/drivers/mfd/omap-usb-tll.c
++++ b/drivers/mfd/omap-usb-tll.c
+@@ -28,6 +28,7 @@
+ #include <linux/err.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/platform_data/usb-omap.h>
++#include <linux/of.h>
+ 
+ #define USBTLL_DRIVER_NAME	"usbhs_tll"
+ 
+@@ -311,10 +312,18 @@ static int usbtll_omap_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static const struct of_device_id usbtll_omap_dt_ids[] = {
++	{ .compatible = "ti,usbhs-tll" },
++	{ }
++};
++
++MODULE_DEVICE_TABLE(of, usbtll_omap_dt_ids);
++
+ static struct platform_driver usbtll_omap_driver = {
+ 	.driver = {
+ 		.name		= (char *)usbtll_driver_name,
+ 		.owner		= THIS_MODULE,
++		.of_match_table = of_match_ptr(usbtll_omap_dt_ids),
+ 	},
+ 	.probe		= usbtll_omap_probe,
+ 	.remove		= usbtll_omap_remove,
 -- 
-Nicolas Ferre
+1.7.4.1
+
