@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161118Ab3BGSsW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 13:48:22 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58171 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1161002Ab3BGSsV (ORCPT
+	id S1422636Ab3BGSs5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 13:48:57 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:50973 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757286Ab3BGSs4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 13:48:21 -0500
-Date: Thu, 7 Feb 2013 18:47:55 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linus.walleij@linaro.org,
-        Bengt Jonsson <bengt.g.jonsson@stericsson.com>
-Subject: Re: [PATCH 03/49] regulator: ab8500: Fix for regulator_set_mode
- functionality
-Message-ID: <20130207184755.GB8879@opensource.wolfsonmicro.com>
-References: <1360148051-7560-1-git-send-email-lee.jones@linaro.org>
- <1360148051-7560-4-git-send-email-lee.jones@linaro.org>
+	Thu, 7 Feb 2013 13:48:56 -0500
+Message-ID: <5113F714.6000201@wwwdotorg.org>
+Date: Thu, 07 Feb 2013 11:48:52 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="K8nIJk4ghYZn606h"
-Content-Disposition: inline
-In-Reply-To: <1360148051-7560-4-git-send-email-lee.jones@linaro.org>
-X-Cookie: Stay away from flying saucers today.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: manjunath.goudar@linaro.org
+CC: linux-usb@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        patches@linaro.org, stern@rowland.harvard.edu, arnd@linaro.org,
+        gregkh@linuxfoundation.org, Greg KH <greg@kroah.com>,
+        David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Brian Swetland <swetland@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 09/10] USB: EHCI: make ehci-msm a separate driver
+References: <yes> <1360258447-27247-1-git-send-email-yes> <5113e62e.c84e420a.08c3.ffffbf14@mx.google.com>
+In-Reply-To: <5113e62e.c84e420a.08c3.ffffbf14@mx.google.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/07/2013 10:34 AM, manjunath.goudar@linaro.org wrote:
+> Separate the Qualcomm On-Chip host controller driver from ehci-hcd host code
+> into its own driver module.
 
---K8nIJk4ghYZn606h
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
 
-On Wed, Feb 06, 2013 at 10:53:25AM +0000, Lee Jones wrote:
-> From: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
->=20
-> Signed-off-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> @@ -209,7 +210,7 @@ config USB_EHCI_TEGRA
+>         boolean "NVIDIA Tegra HCD support"
+>         depends on USB_EHCI_HCD && ARCH_TEGRA
+>         select USB_EHCI_ROOT_HUB_TT
+> -       help
+> +      --- help---
+>           This driver enables support for the internal USB Host Controllers
+>           found in NVIDIA Tegra SoCs. The controllers are EHCI compliant.
 
-I applied this and the previous patch squashed together - this fixes
-code added in the previous commit!
-
---K8nIJk4ghYZn606h
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRE/bSAAoJELSic+t+oim9nFQP/A/dRS0Pj2ygyraNTfG2a3lS
-Kqwndp/UxNSKHC4N3V/G21koJqFXP2rR1OAN878jGT9MenfZyp3jx2Lt3pMI3rJn
-K35NzgiZc22ZL0cl4TGlsJoYDwGmPNNQwpXNVyaMCLTa/lTdUwkYfrR2H5PxH7a4
-UHjlmVj/WI+zIbUbJjhGCNWfFuxFwPwexU01k74AlItDarYROUQ8lYeHpSfO7sOT
-cwqvYDVAR58EqxwLmtHlNVP+sG+LXR+l77P9xQ0f5uAPeue5wpI+yAiDht9TbJ1C
-56wLhh9BksXP7ufszH8+W66k6lSp6NfH7k/yDJzOutU27UFyiv8nKIBfQEvuNP0c
-DscQ2QbiQYxlHo2qBaO7NUn7ifDj/nY3NVU6YnlSrFtNHC3J8x712HGoYcaVCELt
-Rq903O/PO8Ro3Rs/xsOXA23fMoS5IEZCz76e4puoL5Fww3NLKGw2T4bHXaSorS6H
-BUZogVhhNB86Qc7kQvQBIGe1HIY1Vd+352VLEro/7xwWT7Wcw1FsjOV+6izs1h23
-ZpAlyENvI52MfgJXISCXAS5T7pSoDSmzITKUdA1QXNN/8zImyGZtFyrzYkNrO0+J
-zRthOK8/SQ+3IDSALxSesKnsmRBpMClW2GLYhLm0qlm84Au3XOl5zDY4cB57pgwH
-LaVPlLdJACrhx96MaEV6
-=GYMy
------END PGP SIGNATURE-----
-
---K8nIJk4ghYZn606h--
+That seems like an unrelated change. The indentation and space after
+first "---" looks wrong too. It looks pretty random which of "help" and
+"---help---" is used in this file; if you're going to fix that, I think
+fix them all, but in a separate patch.
