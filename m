@@ -1,461 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759048Ab3BGRLm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 12:11:42 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:31560 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758830Ab3BGRLk (ORCPT
+	id S1759070Ab3BGRQh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 12:16:37 -0500
+Received: from mail-ia0-f178.google.com ([209.85.210.178]:41973 "EHLO
+	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755695Ab3BGRQg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 12:11:40 -0500
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <abelloni@adeneo-embedded.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH] ARM: at91: remove NEOCORE 926 board
-Date: Thu, 7 Feb 2013 18:11:32 +0100
-Message-ID: <1360257092-13351-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.0
+	Thu, 7 Feb 2013 12:16:36 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <5113DCC1.7040902@synopsys.com>
+References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com>
+ <1781360.cmQWHCW5SC@wuerfel> <CAHTX3dJpuTRa4Ff29k95quPMVDO2mBiayPoocnw5R15=5ovOHQ@mail.gmail.com>
+ <201302041724.47331.arnd@arndb.de> <1360031367.14701.47.camel@pasglop>
+ <CAHTX3dL4dScmzgGyqbvPH-7UQvFrjQhHu2zh0iZyzWB=spZS+Q@mail.gmail.com>
+ <1360066756.4529.6.camel@pasglop> <CAHTX3dLJy314mv39hprkmZ5XdzYiYGz1ngTERp7w6aAYud+Riw@mail.gmail.com>
+ <51111133.7000105@synopsys.com> <1360098004.4529.13.camel@pasglop>
+ <511178AC.7080304@synopsys.com> <1360105635.2707.7.camel@pasglop>
+ <CACxGe6u=zhGXm0AO_h354g8OOkAQgdczdw_gCCRxL+=r8hM+-g@mail.gmail.com>
+ <1360186550.2650.4.camel@pasglop> <CACxGe6uaVsng79Kni=0O_YK330vuqMuPO6=y9Bj=UZpZ0ozaDg@mail.gmail.com>
+ <CACxGe6v3ZUEQhi764ivQqE9i2wGzJGcoC0sTVohb_6MQ9sE+hQ@mail.gmail.com>
+ <5113C459.8000602@synopsys.com> <CACxGe6uHx4KdZRgAyL-wQ2GurojAH0eTa6YRCoSuCg89BAvBTA@mail.gmail.com>
+ <5113C818.9050307@synopsys.com> <CACxGe6srNmX+qL+5BBFOzTHtQLRcw+4Aqjexy0Y=Vbh3XqPWPA@mail.gmail.com>
+ <5113DCC1.7040902@synopsys.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 7 Feb 2013 17:16:15 +0000
+X-Google-Sender-Auth: z4CmuyRzsAmHO4VdZW72WRiFcPQ
+Message-ID: <CACxGe6tMW_YpTfFn_gKu1YS9VzkOHfzJ1Ai6jVE7UiQQeZD-eg@mail.gmail.com>
+Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16
+ with generic iowrite(read)8/16(be)
+To: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Michal Simek <monstr@monstr.eu>, Arnd Bergmann <arnd@arndb.de>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        dahinds@users.sourceforge.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The board is not available anymore and it seems its use
-is very limited.
+On Thu, Feb 7, 2013 at 4:56 PM, Alexey Brodkin
+<Alexey.Brodkin@synopsys.com> wrote:
+> On 02/07/2013 08:44 PM, Grant Likely wrote:
+>> So, if I'm correct that means that for the data port (specifically
+>> copying between RAM and the data port) using ioread16/iowrite16 on the
+>> data port results in the correct behaviour. It also means that LE
+>> support in the current driver is broken.
+>
+> That matches my earlier note when I wrote that for correct work on LE (note
+> I'm on ARC, not PPC/MB) I needed to use "io{read|write}16" in
+> "ace_data{in|out}_le16".
+>
+> With original "io{read|write}16be" instead data was corrupted.
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Alexandre Belloni <abelloni@adeneo-embedded.com>
----
- arch/arm/mach-at91/Kconfig            |   6 -
- arch/arm/mach-at91/Makefile           |   1 -
- arch/arm/mach-at91/board-neocore926.c | 387 ----------------------------------
- 3 files changed, 394 deletions(-)
- delete mode 100644 arch/arm/mach-at91/board-neocore926.c
+In which case your bug-fix patch should drop the
+ace_datain_le16/ace_dataout_le16 variants entirely and use the be16
+ones for both (renaming appropriately).
 
-diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
-index 958358c..6071f4c 100644
---- a/arch/arm/mach-at91/Kconfig
-+++ b/arch/arm/mach-at91/Kconfig
-@@ -352,12 +352,6 @@ config MACH_USB_A9263
- 	  Select this if you are using a Calao Systems USB-A9263.
- 	  <http://www.calao-systems.com>
- 
--config MACH_NEOCORE926
--	bool "Adeneo NEOCORE926"
--	select HAVE_AT91_DATAFLASH_CARD
--	help
--	  Select this if you are using the Adeneo Neocore 926 board.
--
- endif
- 
- # ----------------------------------------------------------
-diff --git a/arch/arm/mach-at91/Makefile b/arch/arm/mach-at91/Makefile
-index b38a1dc..39218ca 100644
---- a/arch/arm/mach-at91/Makefile
-+++ b/arch/arm/mach-at91/Makefile
-@@ -66,7 +66,6 @@ obj-$(CONFIG_MACH_AT91SAM9G10EK) += board-sam9261ek.o
- # AT91SAM9263 board-specific support
- obj-$(CONFIG_MACH_AT91SAM9263EK) += board-sam9263ek.o
- obj-$(CONFIG_MACH_USB_A9263)	+= board-usb-a926x.o
--obj-$(CONFIG_MACH_NEOCORE926)	+= board-neocore926.o
- 
- # AT91SAM9RL board-specific support
- obj-$(CONFIG_MACH_AT91SAM9RLEK)	+= board-sam9rlek.o
-diff --git a/arch/arm/mach-at91/board-neocore926.c b/arch/arm/mach-at91/board-neocore926.c
-deleted file mode 100644
-index bc7a1c4..0000000
---- a/arch/arm/mach-at91/board-neocore926.c
-+++ /dev/null
-@@ -1,387 +0,0 @@
--/*
-- * linux/arch/arm/mach-at91/board-neocore926.c
-- *
-- *  Copyright (C) 2005 SAN People
-- *  Copyright (C) 2007 Atmel Corporation
-- *  Copyright (C) 2008 ADENEO.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License as published by
-- * the Free Software Foundation; either version 2 of the License, or
-- * (at your option) any later version.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-- */
--
--#include <linux/types.h>
--#include <linux/gpio.h>
--#include <linux/init.h>
--#include <linux/mm.h>
--#include <linux/module.h>
--#include <linux/platform_device.h>
--#include <linux/spi/spi.h>
--#include <linux/spi/ads7846.h>
--#include <linux/fb.h>
--#include <linux/gpio_keys.h>
--#include <linux/input.h>
--
--#include <video/atmel_lcdc.h>
--
--#include <asm/setup.h>
--#include <asm/mach-types.h>
--#include <asm/irq.h>
--#include <asm/sizes.h>
--
--#include <asm/mach/arch.h>
--#include <asm/mach/map.h>
--#include <asm/mach/irq.h>
--
--#include <mach/hardware.h>
--#include <mach/at91sam9_smc.h>
--
--#include "at91_aic.h"
--#include "board.h"
--#include "sam9_smc.h"
--#include "generic.h"
--
--
--static void __init neocore926_init_early(void)
--{
--	/* Initialize processor: 20 MHz crystal */
--	at91_initialize(20000000);
--}
--
--/*
-- * USB Host port
-- */
--static struct at91_usbh_data __initdata neocore926_usbh_data = {
--	.ports		= 2,
--	.vbus_pin	= { AT91_PIN_PA24, AT91_PIN_PA21 },
--	.overcurrent_pin= {-EINVAL, -EINVAL},
--};
--
--/*
-- * USB Device port
-- */
--static struct at91_udc_data __initdata neocore926_udc_data = {
--	.vbus_pin	= AT91_PIN_PA25,
--	.pullup_pin	= -EINVAL,		/* pull-up driven by UDC */
--};
--
--
--/*
-- * ADS7846 Touchscreen
-- */
--#if defined(CONFIG_TOUCHSCREEN_ADS7846) || defined(CONFIG_TOUCHSCREEN_ADS7846_MODULE)
--static int ads7843_pendown_state(void)
--{
--	return !at91_get_gpio_value(AT91_PIN_PA15);	/* Touchscreen PENIRQ */
--}
--
--static struct ads7846_platform_data ads_info = {
--	.model			= 7843,
--	.x_min			= 150,
--	.x_max			= 3830,
--	.y_min			= 190,
--	.y_max			= 3830,
--	.vref_delay_usecs	= 100,
--	.x_plate_ohms		= 450,
--	.y_plate_ohms		= 250,
--	.pressure_max		= 15000,
--	.debounce_max		= 1,
--	.debounce_rep		= 0,
--	.debounce_tol		= (~0),
--	.get_pendown_state	= ads7843_pendown_state,
--};
--
--static void __init neocore926_add_device_ts(void)
--{
--	at91_set_B_periph(AT91_PIN_PA15, 1);	/* External IRQ1, with pullup */
--	at91_set_gpio_input(AT91_PIN_PC13, 1);	/* Touchscreen BUSY signal */
--}
--#else
--static void __init neocore926_add_device_ts(void) {}
--#endif
--
--/*
-- * SPI devices.
-- */
--static struct spi_board_info neocore926_spi_devices[] = {
--#if defined(CONFIG_MTD_AT91_DATAFLASH_CARD)
--	{	/* DataFlash card */
--		.modalias	= "mtd_dataflash",
--		.chip_select	= 0,
--		.max_speed_hz	= 15 * 1000 * 1000,
--		.bus_num	= 0,
--	},
--#endif
--#if defined(CONFIG_TOUCHSCREEN_ADS7846) || defined(CONFIG_TOUCHSCREEN_ADS7846_MODULE)
--	{
--		.modalias	= "ads7846",
--		.chip_select	= 1,
--		.max_speed_hz	= 125000 * 16,
--		.bus_num	= 0,
--		.platform_data	= &ads_info,
--		.irq		= NR_IRQS_LEGACY + AT91SAM9263_ID_IRQ1,
--	},
--#endif
--};
--
--
--/*
-- * MCI (SD/MMC)
-- */
--static struct mci_platform_data __initdata neocore926_mci0_data = {
--	.slot[0] = {
--		.bus_width	= 4,
--		.detect_pin	= AT91_PIN_PE18,
--		.wp_pin		= AT91_PIN_PE19,
--	},
--};
--
--
--/*
-- * MACB Ethernet device
-- */
--static struct macb_platform_data __initdata neocore926_macb_data = {
--	.phy_irq_pin	= AT91_PIN_PE31,
--	.is_rmii	= 1,
--};
--
--
--/*
-- * NAND flash
-- */
--static struct mtd_partition __initdata neocore926_nand_partition[] = {
--	{
--		.name	= "Linux Kernel",	/* "Partition 1", */
--		.offset	= 0,
--		.size	= SZ_8M,
--	},
--	{
--		.name	= "Filesystem",		/* "Partition 2", */
--		.offset	= MTDPART_OFS_NXTBLK,
--		.size	= SZ_32M,
--	},
--	{
--		.name	= "Free",		/* "Partition 3", */
--		.offset	= MTDPART_OFS_NXTBLK,
--		.size	= MTDPART_SIZ_FULL,
--	},
--};
--
--static struct atmel_nand_data __initdata neocore926_nand_data = {
--	.ale			= 21,
--	.cle			= 22,
--	.rdy_pin		= AT91_PIN_PB19,
--	.rdy_pin_active_low	= 1,
--	.enable_pin		= AT91_PIN_PD15,
--	.ecc_mode		= NAND_ECC_SOFT,
--	.parts			= neocore926_nand_partition,
--	.num_parts		= ARRAY_SIZE(neocore926_nand_partition),
--	.det_pin		= -EINVAL,
--};
--
--static struct sam9_smc_config __initdata neocore926_nand_smc_config = {
--	.ncs_read_setup		= 0,
--	.nrd_setup		= 1,
--	.ncs_write_setup	= 0,
--	.nwe_setup		= 1,
--
--	.ncs_read_pulse		= 4,
--	.nrd_pulse		= 4,
--	.ncs_write_pulse	= 4,
--	.nwe_pulse		= 4,
--
--	.read_cycle		= 6,
--	.write_cycle		= 6,
--
--	.mode			= AT91_SMC_READMODE | AT91_SMC_WRITEMODE | AT91_SMC_EXNWMODE_DISABLE | AT91_SMC_DBW_8,
--	.tdf_cycles		= 2,
--};
--
--static void __init neocore926_add_device_nand(void)
--{
--	/* configure chip-select 3 (NAND) */
--	sam9_smc_configure(0, 3, &neocore926_nand_smc_config);
--
--	at91_add_device_nand(&neocore926_nand_data);
--}
--
--
--/*
-- * LCD Controller
-- */
--#if defined(CONFIG_FB_ATMEL) || defined(CONFIG_FB_ATMEL_MODULE)
--static struct fb_videomode at91_tft_vga_modes[] = {
--	{
--		.name		= "TX09D50VM1CCA @ 60",
--		.refresh	= 60,
--		.xres		= 240,		.yres		= 320,
--		.pixclock	= KHZ2PICOS(5000),
--
--		.left_margin	= 1,		.right_margin	= 33,
--		.upper_margin	= 1,		.lower_margin	= 0,
--		.hsync_len	= 5,		.vsync_len	= 1,
--
--		.sync		= FB_SYNC_HOR_HIGH_ACT | FB_SYNC_VERT_HIGH_ACT,
--		.vmode		= FB_VMODE_NONINTERLACED,
--	},
--};
--
--static struct fb_monspecs at91fb_default_monspecs = {
--	.manufacturer	= "HIT",
--	.monitor	= "TX09D70VM1CCA",
--
--	.modedb		= at91_tft_vga_modes,
--	.modedb_len	= ARRAY_SIZE(at91_tft_vga_modes),
--	.hfmin		= 15000,
--	.hfmax		= 64000,
--	.vfmin		= 50,
--	.vfmax		= 150,
--};
--
--#define AT91SAM9263_DEFAULT_LCDCON2 (ATMEL_LCDC_MEMOR_LITTLE \
--					| ATMEL_LCDC_DISTYPE_TFT \
--					| ATMEL_LCDC_CLKMOD_ALWAYSACTIVE)
--
--static void at91_lcdc_power_control(int on)
--{
--	at91_set_gpio_value(AT91_PIN_PA30, on);
--}
--
--/* Driver datas */
--static struct atmel_lcdfb_info __initdata neocore926_lcdc_data = {
--	.lcdcon_is_backlight		= true,
--	.default_bpp			= 16,
--	.default_dmacon			= ATMEL_LCDC_DMAEN,
--	.default_lcdcon2		= AT91SAM9263_DEFAULT_LCDCON2,
--	.default_monspecs		= &at91fb_default_monspecs,
--	.atmel_lcdfb_power_control	= at91_lcdc_power_control,
--	.guard_time			= 1,
--	.lcd_wiring_mode		= ATMEL_LCDC_WIRING_RGB555,
--};
--
--#else
--static struct atmel_lcdfb_info __initdata neocore926_lcdc_data;
--#endif
--
--
--/*
-- * GPIO Buttons
-- */
--#if defined(CONFIG_KEYBOARD_GPIO) || defined(CONFIG_KEYBOARD_GPIO_MODULE)
--static struct gpio_keys_button neocore926_buttons[] = {
--	{	/* BP1, "leftclic" */
--		.code		= BTN_LEFT,
--		.gpio		= AT91_PIN_PC5,
--		.active_low	= 1,
--		.desc		= "left_click",
--		.wakeup		= 1,
--	},
--	{	/* BP2, "rightclic" */
--		.code		= BTN_RIGHT,
--		.gpio		= AT91_PIN_PC4,
--		.active_low	= 1,
--		.desc		= "right_click",
--		.wakeup		= 1,
--	},
--};
--
--static struct gpio_keys_platform_data neocore926_button_data = {
--	.buttons	= neocore926_buttons,
--	.nbuttons	= ARRAY_SIZE(neocore926_buttons),
--};
--
--static struct platform_device neocore926_button_device = {
--	.name		= "gpio-keys",
--	.id		= -1,
--	.num_resources	= 0,
--	.dev		= {
--		.platform_data	= &neocore926_button_data,
--	}
--};
--
--static void __init neocore926_add_device_buttons(void)
--{
--	at91_set_GPIO_periph(AT91_PIN_PC5, 0);	/* left button */
--	at91_set_deglitch(AT91_PIN_PC5, 1);
--	at91_set_GPIO_periph(AT91_PIN_PC4, 0);	/* right button */
--	at91_set_deglitch(AT91_PIN_PC4, 1);
--
--	platform_device_register(&neocore926_button_device);
--}
--#else
--static void __init neocore926_add_device_buttons(void) {}
--#endif
--
--
--/*
-- * AC97
-- */
--static struct ac97c_platform_data neocore926_ac97_data = {
--	.reset_pin	= AT91_PIN_PA13,
--};
--
--
--static void __init neocore926_board_init(void)
--{
--	/* Serial */
--	/* DBGU on ttyS0. (Rx & Tx only) */
--	at91_register_uart(0, 0, 0);
--
--	/* USART0 on ttyS1. (Rx, Tx, RTS, CTS) */
--	at91_register_uart(AT91SAM9263_ID_US0, 1, ATMEL_UART_CTS | ATMEL_UART_RTS);
--	at91_add_device_serial();
--
--	/* USB Host */
--	at91_add_device_usbh(&neocore926_usbh_data);
--
--	/* USB Device */
--	at91_add_device_udc(&neocore926_udc_data);
--
--	/* SPI */
--	at91_set_gpio_output(AT91_PIN_PE20, 1);		/* select spi0 clock */
--	at91_add_device_spi(neocore926_spi_devices, ARRAY_SIZE(neocore926_spi_devices));
--
--	/* Touchscreen */
--	neocore926_add_device_ts();
--
--	/* MMC */
--	at91_add_device_mci(0, &neocore926_mci0_data);
--
--	/* Ethernet */
--	at91_add_device_eth(&neocore926_macb_data);
--
--	/* NAND */
--	neocore926_add_device_nand();
--
--	/* I2C */
--	at91_add_device_i2c(NULL, 0);
--
--	/* LCD Controller */
--	at91_add_device_lcdc(&neocore926_lcdc_data);
--
--	/* Push Buttons */
--	neocore926_add_device_buttons();
--
--	/* AC97 */
--	at91_add_device_ac97(&neocore926_ac97_data);
--}
--
--MACHINE_START(NEOCORE926, "ADENEO NEOCORE 926")
--	/* Maintainer: ADENEO */
--	.timer		= &at91sam926x_timer,
--	.map_io		= at91_map_io,
--	.handle_irq	= at91_aic_handle_irq,
--	.init_early	= neocore926_init_early,
--	.init_irq	= at91_init_irq_default,
--	.init_machine	= neocore926_board_init,
--MACHINE_END
--- 
-1.8.0
+g.
 
+--
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
