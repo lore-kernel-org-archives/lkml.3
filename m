@@ -1,88 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759520Ab3BGX0M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 18:26:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41420 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759394Ab3BGX0L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 18:26:11 -0500
-Date: Thu, 7 Feb 2013 15:26:09 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>, mgorman@suse.de, minchan@kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, Linux MM <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RESEND] mm: accurately document nr_free_*_pages
- functions with code comments
-Message-Id: <20130207152609.0dd07498.akpm@linux-foundation.org>
-In-Reply-To: <51130A07.2000805@cn.fujitsu.com>
-References: <5112138C.7040902@cn.fujitsu.com>
-	<5112FB96.1040606@infradead.org>
-	<51130A07.2000805@cn.fujitsu.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1759552Ab3BGX05 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 18:26:57 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:60045 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759394Ab3BGX0y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 18:26:54 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: valdis.kletnieks@vt.edu, artem.savkov@gmail.com, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com
+Subject: Re: [PATCH 0/4] CPUFreq Fixes for 3.9
+Date: Fri, 08 Feb 2013 00:33:14 +0100
+Message-ID: <2896238.eRV3G7kyl2@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <cover.1360232293.git.viresh.kumar@linaro.org>
+References: <cover.1360232293.git.viresh.kumar@linaro.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 07 Feb 2013 09:57:27 +0800
-Zhang Yanfei <zhangyanfei@cn.fujitsu.com> wrote:
+On Thursday, February 07, 2013 03:57:42 PM Viresh Kumar wrote:
+> Hi Rafael,
+> 
+> This is another unplanned patchset for all the platforms that i broke. :)
+> 
+> Okay, there are two important fixes (1 & 4) and two general cleanups (2 & 3). I
+> hope most of the issues would be resolved by these and we would be able to push
+> clean cpufreq core into 3.9.
+> 
+> I have pushed them in my for-rafael branch at:
+> 
+> http://git.linaro.org/gitweb?p=people/vireshk/linux.git;a=shortlog;h=refs/heads/for-rafael
+> 
+> @Artem & Valdis: Please test them and reply with your Tested-by's (in case they
+> work :) ).
+> 
+> Viresh Kumar (4):
+>   cpufreq: governors: Fix WARN_ON() for multi-policy platforms
+>   cpufreq: Remove unused HOTPLUG_CPU code
+>   cpufreq: Create a macro for unlock_policy_rwsem{read,write}
+>   cpufreq: Fix locking issues
+> 
+>  drivers/cpufreq/cpufreq.c          | 126 ++++++++++++++++++-------------------
+>  drivers/cpufreq/cpufreq_governor.c |  32 ++++++----
+>  2 files changed, 79 insertions(+), 79 deletions(-)
 
-> Functions nr_free_zone_pages, nr_free_buffer_pages and nr_free_pagecache_pages
-> are horribly badly named, so accurately document them with code comments
-> in case of the misuse of them.
+I should have done that before, sorry about it.
 
-Looks OK.  I fiddled with it a bit:
+Can you please rework this series on top of linux-pm.git/pm-cpufreq and
+try to avoid introducing new issues this time?
 
---- a/mm/page_alloc.c~mm-accurately-document-nr_free__pages-functions-with-code-comments-fix
-+++ a/mm/page_alloc.c
-@@ -2813,12 +2813,12 @@ void free_pages_exact(void *virt, size_t
- EXPORT_SYMBOL(free_pages_exact);
- 
- /**
-- * nr_free_zone_pages - get pages that is beyond high watermark
-+ * nr_free_zone_pages - count number of pages beyond high watermark
-  * @offset: The zone index of the highest zone
-  *
-- * The function counts pages which are beyond high watermark within
-- * all zones at or below a given zone index. For each zone, the
-- * amount of pages is calculated as:
-+ * nr_free_zone_pages() counts the number of counts pages which are beyond the
-+ * high watermark within all zones at or below a given zone index.  For each
-+ * zone, the number of pages is calculated as:
-  *     present_pages - high_pages
-  */
- static unsigned long nr_free_zone_pages(int offset)
-@@ -2842,10 +2842,10 @@ static unsigned long nr_free_zone_pages(
- }
- 
- /**
-- * nr_free_buffer_pages - get pages that is beyond high watermark
-+ * nr_free_buffer_pages - count number of pages beyond high watermark
-  *
-- * The function counts pages which are beyond high watermark within
-- * ZONE_DMA and ZONE_NORMAL.
-+ * nr_free_buffer_pages() counts the number of pages which are beyond the high
-+ * watermark within ZONE_DMA and ZONE_NORMAL.
-  */
- unsigned long nr_free_buffer_pages(void)
- {
-@@ -2854,10 +2854,10 @@ unsigned long nr_free_buffer_pages(void)
- EXPORT_SYMBOL_GPL(nr_free_buffer_pages);
- 
- /**
-- * nr_free_pagecache_pages - get pages that is beyond high watermark
-+ * nr_free_pagecache_pages - count number of pages beyond high watermark
-  *
-- * The function counts pages which are beyond high watermark within
-- * all zones.
-+ * nr_free_pagecache_pages() counts the number of pages which are beyond the
-+ * high watermark within all zones.
-  */
- unsigned long nr_free_pagecache_pages(void)
- {
-_
+If this works, we'll rebase all of the other new material on top of it,
+if possible.
 
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
