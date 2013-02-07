@@ -1,71 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945991Ab3BGXlw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 18:41:52 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:60093 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422745Ab3BGXlu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 18:41:50 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: valdis.kletnieks@vt.edu, artem.savkov@gmail.com, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com
-Subject: Re: [PATCH 0/4] CPUFreq Fixes for 3.9
-Date: Fri, 08 Feb 2013 00:48:09 +0100
-Message-ID: <3125038.r8JMNIQEXz@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <2896238.eRV3G7kyl2@vostro.rjw.lan>
-References: <cover.1360232293.git.viresh.kumar@linaro.org> <2896238.eRV3G7kyl2@vostro.rjw.lan>
+	id S1752061Ab3BGXqH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 18:46:07 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:59535 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750825Ab3BGXqE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 18:46:04 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Rob Herring <robherring2@gmail.com>
+Subject: Re: [PATCH 0/4] Improve CLKSRC_OF matching
+Date: Thu, 7 Feb 2013 23:45:52 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-4-generic; KDE/4.3.2; x86_64; ; )
+Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stephen Warren <swarren@wwwdotorg.org>
+References: <1360264144-20714-1-git-send-email-robherring2@gmail.com> <201302072244.51588.arnd@arndb.de> <51143A87.4040205@gmail.com>
+In-Reply-To: <51143A87.4040205@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302072345.52195.arnd@arndb.de>
+X-Provags-ID: V02:K0:ey4NGPEo8SaEpkDoMWUN2sxf+GccA7uhBgoQdk27XEd
+ o4bEpA/J4WW1fNZfxrgyMWwm35LAbbz3FW/J0+DWXSMcgSOwBw
+ tPZOfIdqTsvpw/okuPojWZ7sldV3JwNyV0afO6ziJeT71RtJXa
+ HlmS74YjAfzQp6A4+wGh0Plg15Ykmd5iuqPkR7ooeNYA8JZu9F
+ U4mcm0niGMnE4ctJ5mZc+FP36zXC7eoeft+FVpsShTUDtBaK7S
+ Seu2ceZoCPlQCgsKpyNyl11kZoZVDlBLbNM4v7y7BwdACG25Wk
+ vMg+FlaeV5giR/c3JnLbM8XhXdqjL4uy9Dr4xeYOwVTgsIa2FM
+ ppQUNwF+C6z5u/hGaHVA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, February 08, 2013 12:33:14 AM Rafael J. Wysocki wrote:
-> On Thursday, February 07, 2013 03:57:42 PM Viresh Kumar wrote:
-> > Hi Rafael,
-> > 
-> > This is another unplanned patchset for all the platforms that i broke. :)
-> > 
-> > Okay, there are two important fixes (1 & 4) and two general cleanups (2 & 3). I
-> > hope most of the issues would be resolved by these and we would be able to push
-> > clean cpufreq core into 3.9.
-> > 
-> > I have pushed them in my for-rafael branch at:
-> > 
-> > http://git.linaro.org/gitweb?p=people/vireshk/linux.git;a=shortlog;h=refs/heads/for-rafael
-> > 
-> > @Artem & Valdis: Please test them and reply with your Tested-by's (in case they
-> > work :) ).
-> > 
-> > Viresh Kumar (4):
-> >   cpufreq: governors: Fix WARN_ON() for multi-policy platforms
-> >   cpufreq: Remove unused HOTPLUG_CPU code
-> >   cpufreq: Create a macro for unlock_policy_rwsem{read,write}
-> >   cpufreq: Fix locking issues
-> > 
-> >  drivers/cpufreq/cpufreq.c          | 126 ++++++++++++++++++-------------------
-> >  drivers/cpufreq/cpufreq_governor.c |  32 ++++++----
-> >  2 files changed, 79 insertions(+), 79 deletions(-)
-> 
-> I should have done that before, sorry about it.
-> 
-> Can you please rework this series on top of linux-pm.git/pm-cpufreq and
-> try to avoid introducing new issues this time?
-> 
-> If this works, we'll rebase all of the other new material on top of it,
-> if possible.
+On Thursday 07 February 2013, Rob Herring wrote:
+> How so? I don't see a warning as there is no type checking on the init
+> function since of_device_id.data is just a void *. It would be good to
+> have type checking here if you know a way, but I don't.
 
-I've dropped the pm-cpufreq-next branch from linux-next now, BTW.
+Ah, that's right. So it silently builds find even though the
+prototypes don't match, and given the C calling conventions
+it even ends up working correctly, it just feels wrong.
 
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+	Arnd
