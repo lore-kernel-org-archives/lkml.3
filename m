@@ -1,47 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758815Ab3BGObq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 09:31:46 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:35271 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758635Ab3BGObp (ORCPT
+	id S1758811Ab3BGOcn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 09:32:43 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:33129 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758635Ab3BGOcj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 09:31:45 -0500
-Message-ID: <5113BABA.6010306@oracle.com>
-Date: Thu, 07 Feb 2013 09:31:22 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130113 Thunderbird/17.0.2
+	Thu, 7 Feb 2013 09:32:39 -0500
 MIME-Version: 1.0
-To: Jamie Iles <jamie.iles@oracle.com>
-CC: mingo@kernel.org, peterz@infradead.org, penberg@kernel.org,
-        acme@ghostprotocols.net, paulus@samba.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/11] liblockdep: support using LD_PRELOAD
-References: <1360188694-25077-1-git-send-email-sasha.levin@oracle.com> <1360188694-25077-10-git-send-email-sasha.levin@oracle.com> <20130207102843.GG17781@cedar>
-In-Reply-To: <20130207102843.GG17781@cedar>
+In-Reply-To: <20130207141832.GA3222@fieldses.org>
+References: <1358441584-8783-1-git-send-email-piastry@etersoft.ru>
+	<1358441584-8783-3-git-send-email-piastry@etersoft.ru>
+	<20130130221602.GC15584@fieldses.org>
+	<CAKywueRh++TBazK8_kRN7AUb=EFhGv=Sv2CV0BESkfLFy+g5wA@mail.gmail.com>
+	<20130205143514.GA9886@fieldses.org>
+	<CAKywueS6oGNu9r_bypu32A89pOoiGb47kjXqw2ZcZQhZK+JV3g@mail.gmail.com>
+	<20130207141832.GA3222@fieldses.org>
+Date: Thu, 7 Feb 2013 18:32:38 +0400
+X-Google-Sender-Auth: 65NF6IlFLvz2qlk3NZOWP2V7Hag
+Message-ID: <CAKywueTmU_L5cwwJSoUY6753eHf_38VtHadZGt9tcLS59sqmOA@mail.gmail.com>
+Subject: Re: [PATCH v2 3/8] vfs: Add O_DENYREAD/WRITE flags support for open syscall
+From: Pavel Shilovsky <piastry@etersoft.ru>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
+        wine-devel@winehq.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2013 05:28 AM, Jamie Iles wrote:
->> +int pthread_rwlock_init(pthread_rwlock_t *rwlock,
->> > +			const pthread_rwlockattr_t *attr)
->> > +{
->> > +	if (ll_pthread_rwlock_init == NULL)
->> > +		init_preload();
-> Why is this one special, doesn't init_preload being a constructor make 
-> this redundant?
+2013/2/7 J. Bruce Fields <bfields@fieldses.org>:
+> On Thu, Feb 07, 2013 at 01:53:46PM +0400, Pavel Shilovsky wrote:
+>> Nothing prevents it. If somebody grabbed a share mode lock on a file
+>> before we call deny_lock_file, we simply close this file and return
+>> -ETXTBSY.
+>
+> But leave the newly-created file there--ugh.
+>
+>> We can't grab it before atomic_open because we don't have an
+>> inode there.
+>
+> If you can get the lock while still holding the directory i_mutex can't
+> you prevent anyone else from looking up the new file until you've gotten
+> the lock?
+>
 
-I was testing it on different things, and stumbled on an interesting case:
-when pthread_mutex was taken from the constructor of a different module.
+Hm..., seems you are right, I missed this part:
+mutex_lock
+lookup_open -> atomic_open -> deny_lock_file
+mutex_unlock
 
-In that case, the other constructor would try to init the mutex and take
-a lock, but we would segfault because we haven't resolved the pthread
-symbols yet ourselves (since our constructor was yet to be called).
+that means that nobody can open and of course set flock on the newly
+created file (because flock is done through file descriptor). So, it
+should be fine to call flock after f_ops->atomic_open in atomic_open
+function. Thanks.
 
-
-Thanks,
-Sasha
+-- 
+Best regards,
+Pavel Shilovsky.
