@@ -1,89 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759371Ab3BGUSe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 15:18:34 -0500
-Received: from mms1.broadcom.com ([216.31.210.17]:2649 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759334Ab3BGUSc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 15:18:32 -0500
-X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
-Message-ID: <51140C0F.5070209@broadcom.com>
-Date: Thu, 7 Feb 2013 21:18:23 +0100
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-Version: 1.0
-To: "Tim Gardner" <tim.gardner@canonical.com>
-cc: linux-kernel@vger.kernel.org, "Brett Rudley" <brudley@broadcom.com>,
+	id S1422656Ab3BGUTs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 15:19:48 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:58953 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932155Ab3BGUTr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 15:19:47 -0500
+Message-ID: <1360268386.27863.2.camel@joe-AO722>
+Subject: Re: [PATCH wireless-next] brcmsmac: avoid 512 byte stack variable
+From: Joe Perches <joe@perches.com>
+To: Tim Gardner <tim.gardner@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Brett Rudley <brudley@broadcom.com>,
+        Arend van Spriel <arend@broadcom.com>,
         "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
-        "Hante Meuleman" <meuleman@broadcom.com>,
+        Hante Meuleman <meuleman@broadcom.com>,
         "John W. Linville" <linville@tuxdriver.com>,
-        "Pieter-Paul Giesberts" <pieterpg@broadcom.com>,
-        "Seth Forshee" <seth.forshee@canonical.com>,
-        "Hauke Mehrtens" <hauke@hauke-m.de>, linux-wireless@vger.kernel.org,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Pieter-Paul Giesberts <pieterpg@broadcom.com>,
+        Hauke Mehrtens <hauke@hauke-m.de>, linux-wireless@vger.kernel.org,
         brcm80211-dev-list@broadcom.com, netdev@vger.kernel.org
-Subject: Re: [PATCH wireless-next] brcmsmac: fix u16 overflow warning
-References: <1360265735-42450-1-git-send-email-tim.gardner@canonical.com>
-In-Reply-To: <1360265735-42450-1-git-send-email-tim.gardner@canonical.com>
-X-Enigmail-Version: 1.4.6
-X-WSS-ID: 7D0AD41E1YS1946450-01-01
-Content-Type: text/plain;
- charset=iso-8859-1
+Date: Thu, 07 Feb 2013 12:19:46 -0800
+In-Reply-To: <1360268032-52414-1-git-send-email-tim.gardner@canonical.com>
+References: <1360268032-52414-1-git-send-email-tim.gardner@canonical.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2013 08:35 PM, Tim Gardner wrote:
-> DOT11_MIN_BEACON_PERIOD and DOT11_MAX_BEACON_PERIOD are
-> superfluous. The only invalid beacon period is 0. Comparing
-> a 16 bit quantity to 0xffff also causes a compile warning:
-> 
-> drivers/net/wireless/brcm80211/brcmsmac/main.c:5560 brcms_c_set_beacon_period()
->  warn: impossible condition '(period > 65535) => (0-65535 > 65535)'
-> 
-> Observed from smatch analysis.
-> 
-> Cc: Brett Rudley <brudley@broadcom.com>
-> Cc: "Franky (Zhenhui) Lin" <frankyl@broadcom.com>
-> Cc: Hante Meuleman <meuleman@broadcom.com>
-> Cc: "John W. Linville" <linville@tuxdriver.com>
-> Cc: Pieter-Paul Giesberts <pieterpg@broadcom.com>
-> Cc: Seth Forshee <seth.forshee@canonical.com>
-> Cc: Hauke Mehrtens <hauke@hauke-m.de>
-> Cc: linux-wireless@vger.kernel.org
-> Cc: brcm80211-dev-list@broadcom.com
-> Cc: netdev@vger.kernel.org
+On Thu, 2013-02-07 at 13:13 -0700, Tim Gardner wrote:
+> Dynamically allocate the probe response template which
+> avoids potential stack corruption. Observed with smatch:
 
-Acked-by: Arend van Spriel <arend@broadcom.com>
-> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
-> ---
->  drivers/net/wireless/brcm80211/brcmsmac/main.c |    5 +----
->  1 file changed, 1 insertion(+), 4 deletions(-)
-> 
+trivial:
+
 > diff --git a/drivers/net/wireless/brcm80211/brcmsmac/main.c b/drivers/net/wireless/brcm80211/brcmsmac/main.c
-> index c26992a..080b54d 100644
-> --- a/drivers/net/wireless/brcm80211/brcmsmac/main.c
-> +++ b/drivers/net/wireless/brcm80211/brcmsmac/main.c
-> @@ -101,8 +101,6 @@
->  #define DOT11_RTS_LEN			16
->  #define DOT11_CTS_LEN			10
->  #define DOT11_BA_BITMAP_LEN		128
-> -#define DOT11_MIN_BEACON_PERIOD		1
-> -#define DOT11_MAX_BEACON_PERIOD		0xFFFF
->  #define DOT11_MAXNUMFRAGS		16
->  #define DOT11_MAX_FRAG_LEN		2346
->  
-> @@ -5555,8 +5553,7 @@ int brcms_c_set_rateset(struct brcms_c_info *wlc, struct brcm_rateset *rs)
->  
->  int brcms_c_set_beacon_period(struct brcms_c_info *wlc, u16 period)
->  {
-> -	if (period < DOT11_MIN_BEACON_PERIOD ||
-> -	    period > DOT11_MAX_BEACON_PERIOD)
-> +	if (period == 0)
->  		return -EINVAL;
->  
->  	wlc->default_bss->beacon_period = period;
-> 
+[]
+> @@ -7408,9 +7408,16 @@ brcms_c_bss_update_probe_resp(struct brcms_c_info *wlc,
+[]
+> +	prb_resp = kmalloc(BCN_TMPL_LEN, GFP_ATOMIC);
+> +	if (!prb_resp) {
+> +		wiphy_err(wlc->wiphy, "wl: %s: failed to alloc %u bytes\n",
+> +			__func__, BCN_TMPL_LEN);
+
+Please remove the error message.
+alloc's don't need specific OOM messages.
+
+The mm subsystem already provides a standardized
+message with a dump_stack().
 
 
