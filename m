@@ -1,69 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758334Ab3BGOl7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 09:41:59 -0500
-Received: from fieldses.org ([174.143.236.118]:54693 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754000Ab3BGOl5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 09:41:57 -0500
-Date: Thu, 7 Feb 2013 09:41:56 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Pavel Shilovsky <piastry@etersoft.ru>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
-        wine-devel@winehq.org
-Subject: Re: [PATCH v2 3/8] vfs: Add O_DENYREAD/WRITE flags support for open
- syscall
-Message-ID: <20130207144156.GB3222@fieldses.org>
-References: <1358441584-8783-1-git-send-email-piastry@etersoft.ru>
- <1358441584-8783-3-git-send-email-piastry@etersoft.ru>
- <20130130221602.GC15584@fieldses.org>
- <CAKywueRh++TBazK8_kRN7AUb=EFhGv=Sv2CV0BESkfLFy+g5wA@mail.gmail.com>
- <20130205143514.GA9886@fieldses.org>
- <CAKywueS6oGNu9r_bypu32A89pOoiGb47kjXqw2ZcZQhZK+JV3g@mail.gmail.com>
- <20130207141832.GA3222@fieldses.org>
- <CAKywueTmU_L5cwwJSoUY6753eHf_38VtHadZGt9tcLS59sqmOA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKywueTmU_L5cwwJSoUY6753eHf_38VtHadZGt9tcLS59sqmOA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758464Ab3BGOmX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 09:42:23 -0500
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:14772 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757088Ab3BGOmU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 09:42:20 -0500
+Message-ID: <1360247527.14416.8.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 2/2] ACPI / scan: Simplify container driver
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <liuj97@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 07 Feb 2013 07:32:07 -0700
+In-Reply-To: <2629080.ji4YWC94Sj@vostro.rjw.lan>
+References: <1873429.MS5RQDxTye@vostro.rjw.lan>
+	 <6374398.88OyYZxaMu@vostro.rjw.lan>
+	 <1360198302.23410.283.camel@misato.fc.hp.com>
+	 <2629080.ji4YWC94Sj@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 07, 2013 at 06:32:38PM +0400, Pavel Shilovsky wrote:
-> 2013/2/7 J. Bruce Fields <bfields@fieldses.org>:
-> > On Thu, Feb 07, 2013 at 01:53:46PM +0400, Pavel Shilovsky wrote:
-> >> Nothing prevents it. If somebody grabbed a share mode lock on a file
-> >> before we call deny_lock_file, we simply close this file and return
-> >> -ETXTBSY.
-> >
-> > But leave the newly-created file there--ugh.
-> >
-> >> We can't grab it before atomic_open because we don't have an
-> >> inode there.
-> >
-> > If you can get the lock while still holding the directory i_mutex can't
-> > you prevent anyone else from looking up the new file until you've gotten
-> > the lock?
-> >
+On Thu, 2013-02-07 at 02:32 +0100, Rafael J. Wysocki wrote:
+> On Wednesday, February 06, 2013 05:51:42 PM Toshi Kani wrote:
+> > On Thu, 2013-02-07 at 01:55 +0100, Rafael J. Wysocki wrote:
+> > > On Wednesday, February 06, 2013 03:32:18 PM Toshi Kani wrote:
+> > > > On Mon, 2013-02-04 at 00:47 +0100, Rafael J. Wysocki wrote:
+> > > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > > > 
+> > > > > The only useful thing that the ACPI container driver does is to
+> > > > > install system notify handlers for all container and module device
+> > > > > objects it finds in the namespace.  The driver structure,
+> > > > > acpi_container_driver, and the data structures created by its
+> > > > > .add() callback are in fact not used by the driver, so remove
+> > > > > them entirely.
+> > > > > 
+> > > > > It also makes a little sense to build that driver as a module,
+> > > > > so make it non-modular and add its initialization to the
+> > > > > namespace scanning code.
+> > > > > 
+> > > > > In addition to that, make the namespace walk callback used for
+> > > > > installing the notify handlers more straightforward.
+> > > > 
+> > > > I think the container driver needs to be registered as an ACPI scan
+> > > > driver so that sysfs eject will continue to work for container devices,
+> > > > such as ACPI0004:XX/eject.  Since the container driver does not support
+> > > > ACPI eject notification (and we have been discussing how system device
+> > > > hot-plug should work), this sysfs eject is the only way to eject a
+> > > > container device at this point.  I will send an update patchset that
+> > > > applies on top of this patch.
+> > > > 
+> > > > With the update in my patchset:
+> > > > Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+> > > 
+> > > Thanks, but I'd like to (1) apply your patch from
+> > > https://patchwork.kernel.org/patch/2108851/ first and then (2) fold your [2/2]
+> > > into my [2/2], if you don't mind, and apply that next.
+> > 
+> > That's fine by me.
+> > 
+> > > Moreover, I'm wondering if the #ifndef FORCE_EJECT thing in acpi_eject_store()
+> > > actually makes sense after the recent changes to acpi_bus_trim(), because that
+> > > can't fail now, so the eject will always be carried out.  So perhaps we can
+> > > simply remove the acpi_device->driver check from there entirely in the first
+> > > place?
+> > >
+> > > If we really want to be able to prevent ejects from happening in some cases,
+> > > we need to implement something along the lines discussed with Greg.
+> > 
+> > acpi_bus_trim() cannot fail, but sysfs eject can fail.  So, I think it
+> > makes sense to do some validation before calling acpi_bus_trim().  If we
+> > are to implement the no_eject flag thing, that check needs to be made
+> > before calling acpi_bus_trim().
 > 
-> Hm..., seems you are right, I missed this part:
-> mutex_lock
-> lookup_open -> atomic_open -> deny_lock_file
-> mutex_unlock
-> 
-> that means that nobody can open and of course set flock on the newly
-> created file (because flock is done through file descriptor). So, it
-> should be fine to call flock after f_ops->atomic_open in atomic_open
-> function. Thanks.
+> Sure, but now the logic seems to be "if FORCE_EJECT is not set, don't eject
+> devices that have no ACPI drivers", so I'm wondering what the purpose of this
+> is.  It definitely isn't too obvious. :-)
 
-Whether that works may also depend on how the new dentry is set up?  If
-it's hashed before you call flock then I suppose it's already visible to
-others.
+The check sounds odd for container, but is necessary for CPU and memory
+for now.  CPU and memory go online without their ACPI drivers at boot.
+So, without this check (i.e. FORCE_EJECT is set), it simply ejects them
+without attempting to offline when the ACPI drivers are not bound.  Of
+course, we have the issue of a failure in offline be ignored, so this
+offlining part needs to be moved out from acpi_bus_trim() in one way or
+the other.
 
-Not knowing that code as well as I should, I might test by introducing
-an artificial delay there and trying to reproduce the race.
+Thanks,
+-Toshi
 
---b.
