@@ -1,75 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759059Ab3BGQ4Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 11:56:16 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:36915 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756622Ab3BGQ4O (ORCPT
+	id S1759076Ab3BGQ4m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 11:56:42 -0500
+Received: from us02smtp2.synopsys.com ([198.182.60.77]:63176 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758959Ab3BGQ4l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 11:56:14 -0500
-Message-ID: <5113DCAC.6080003@wwwdotorg.org>
-Date: Thu, 07 Feb 2013 09:56:12 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Thu, 7 Feb 2013 11:56:41 -0500
+Message-ID: <5113DCC1.7040902@synopsys.com>
+Date: Thu, 7 Feb 2013 20:56:33 +0400
+From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: kishon <kishon@ti.com>
-CC: Venu Byravarasu <vbyravarasu@nvidia.com>, balbi@ti.com,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH v3] usb: phy: moving all PHY API definitions to usb/phy
- directory
-References: <1360236751-23183-1-git-send-email-vbyravarasu@nvidia.com> <5113AE42.8090401@ti.com>
-In-Reply-To: <5113AE42.8090401@ti.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Michal Simek <monstr@monstr.eu>, Arnd Bergmann <arnd@arndb.de>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "Geert Uytterhoeven" <geert@linux-m68k.org>,
+        <dahinds@users.sourceforge.net>
+Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16
+ with generic iowrite(read)8/16(be)
+References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com> <1781360.cmQWHCW5SC@wuerfel> <CAHTX3dJpuTRa4Ff29k95quPMVDO2mBiayPoocnw5R15=5ovOHQ@mail.gmail.com> <201302041724.47331.arnd@arndb.de> <1360031367.14701.47.camel@pasglop> <CAHTX3dL4dScmzgGyqbvPH-7UQvFrjQhHu2zh0iZyzWB=spZS+Q@mail.gmail.com> <1360066756.4529.6.camel@pasglop> <CAHTX3dLJy314mv39hprkmZ5XdzYiYGz1ngTERp7w6aAYud+Riw@mail.gmail.com> <51111133.7000105@synopsys.com> <1360098004.4529.13.camel@pasglop> <511178AC.7080304@synopsys.com> <1360105635.2707.7.camel@pasglop> <CACxGe6u=zhGXm0AO_h354g8OOkAQgdczdw_gCCRxL+=r8hM+-g@mail.gmail.com> <1360186550.2650.4.camel@pasglop> <CACxGe6uaVsng79Kni=0O_YK330vuqMuPO6=y9Bj=UZpZ0ozaDg@mail.gmail.com> <CACxGe6v3ZUEQhi764ivQqE9i2wGzJGcoC0sTVohb_6MQ9sE+hQ@mail.gmail.com> <5113C459.8000602@synopsys.com> <CACxGe6uHx4KdZRgAyL-wQ2GurojAH0eTa6YRCoSuCg89BAvBTA@mail.gmail.com> <5113C818.9050307@synopsys.com> <CACxGe6srNmX+qL+5BBFOzTHtQLRcw+4Aqjexy0Y=Vbh3XqPWPA@mail.gmail.com>
+In-Reply-To: <CACxGe6srNmX+qL+5BBFOzTHtQLRcw+4Aqjexy0Y=Vbh3XqPWPA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.121.8.160]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2013 06:38 AM, kishon wrote:
-> On Thursday 07 February 2013 05:02 PM, Venu Byravarasu wrote:
->> As drivers/usb/otg/otg.c contains most of the PHY related APIs which
->> are not OTG specific, moving them to more logical place under
->> drivers/usb/phy.
-
->> diff --git a/drivers/usb/phy/Makefile b/drivers/usb/phy/Makefile
->> index b13faa1..886be13 100644
->> --- a/drivers/usb/phy/Makefile
->> +++ b/drivers/usb/phy/Makefile
->> @@ -4,6 +4,7 @@
->>
->>   ccflags-$(CONFIG_USB_DEBUG) := -DDEBUG
->>
->> +obj-$(CONFIG_USB_COMMON)            += phy.o
-> 
-> I think we should have a separate config for PHYs. There might be
-> controllers which dont need separate PHY. But we can have that as a
-> separate patch later since we might want to change the Kconfig of other
-> UDC drivers.
-
->> +/*
->> + * phy.c -- USB PHY utility code
->> + *
->> + * Copyright (C) 2004 Texas Instruments
-> 
-> You can update this to 2013.
-
-I'm not sure if anyone other that TI can do that?
-
->> +EXPORT_SYMBOL_GPL(usb_bind_phy);
->> +
->> +
+On 02/07/2013 08:44 PM, Grant Likely wrote:
 >
-> Unnecessary spaces here.
+> Then that data needs to be stored into memory. This is where things
+> are different with native 16 bit stores:
+>    On a BE memory system. MSB in byte address 0 and LSB in byte address 1.
+>    On a LE memory system. MSB in byte address 1 and LSB in byte address 0.
+>
+> The block subsystem deals with byte oriented buffers; so given the way
+> data is arranged in the data port we want to always make sure the LSB
+> goes into address 0. The cause of problems isn't the BE vs LE bus
+> attachment. It is the different memory system orientation. Using
+> ioread16/iowrite16 has the right behaviour, but it's kind of a
+> backwards way to go about it.... It isn't that we want a be16_to_cpu()
+> or le16_to_cpu() on the data port read, but rather a cpu_to_le16() on
+> the store to memory regardless of the endianess of the platform.
+>
+> So, if I'm correct that means that for the data port (specifically
+> copying between RAM and the data port) using ioread16/iowrite16 on the
+> data port results in the correct behaviour. It also means that LE
+> support in the current driver is broken.
 
-Thanks for the review. It was very difficult to find you review comments
-since you quoted the entire patch rather than just the few pieces you
-were commenting on...
+That matches my earlier note when I wrote that for correct work on LE 
+(note I'm on ARC, not PPC/MB) I needed to use "io{read|write}16" in 
+"ace_data{in|out}_le16".
 
-> You might want to do this patch after applying *[PATCH] usb: otg: use
-> try_module_get in all usb_get_phy functions and add missing module_put*
-> by Marc.
+With original "io{read|write}16be" instead data was corrupted.
 
-Venu, please make sure you include the changes in that patch in your
-Tegra USB/PHY driver rework too, before you post it upstream.
+-Alexey
