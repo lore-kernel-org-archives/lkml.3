@@ -1,109 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759489Ab3BGXNh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 18:13:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41325 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752095Ab3BGXNf (ORCPT
+	id S1759502Ab3BGXOM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 18:14:12 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:40807 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759409Ab3BGXOK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 18:13:35 -0500
-Date: Thu, 7 Feb 2013 15:13:33 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jeremy Kerr <jk@ozlabs.org>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
-        Matt Fleming <matt.fleming@intel.com>,
-        Lingzhu Xiang <lxiang@redhat.com>, Dave Young <dyoung@redhat.com>
-Subject: Re: [PATCH 1/3 v3] selftests: Add tests for efivarfs
-Message-Id: <20130207151333.f01d415c.akpm@linux-foundation.org>
-In-Reply-To: <1360162088.143076.913706486688.1.gpush@pecola>
-References: <1360162088.142733.191120808822.0.gpush@pecola>
-	<1360162088.143076.913706486688.1.gpush@pecola>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 7 Feb 2013 18:14:10 -0500
+Message-ID: <5114353D.1060202@linaro.org>
+Date: Thu, 07 Feb 2013 15:14:05 -0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com
+CC: Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, David Howells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Eric Dumazet <edumazet@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 1/6] kernel: implement queue spinlock API
+References: <1358896415-28569-1-git-send-email-walken@google.com> <1358896415-28569-2-git-send-email-walken@google.com> <20130207223434.GG2545@linux.vnet.ibm.com>
+In-Reply-To: <20130207223434.GG2545@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 06 Feb 2013 22:48:08 +0800
-Jeremy Kerr <jk@ozlabs.org> wrote:
-
-> This change adds a few initial efivarfs tests to the
-> tools/testing/selftests directory.
-> 
-> The open-unlink test is based on code from
-> Lingzhu Xiang <lxiang@redhat.com>.
-> 
-> ...
+On 02/07/2013 02:34 PM, Paul E. McKenney wrote:
+> On Tue, Jan 22, 2013 at 03:13:30PM -0800, Michel Lespinasse wrote:
+>> Introduce queue spinlocks, to be used in situations where it is desired
+>> to have good throughput even under the occasional high-contention situation.
+>>
+>> This initial implementation is based on the classic MCS spinlock,
+>> because I think this represents the nicest API we can hope for in a
+>> fast queue spinlock algorithm. The MCS spinlock has known limitations
+>> in that it performs very well under high contention, but is not as
+>> good as the ticket spinlock under low contention. I will address these
+>> limitations in a later patch, which will propose an alternative,
+>> higher performance implementation using (mostly) the same API.
+>>
+>> Sample use case acquiring mystruct->lock:
+>>
+>>    struct q_spinlock_node node;
+>>
+>>    q_spin_lock(&mystruct->lock, &node);
+>>    ...
+>>    q_spin_unlock(&mystruct->lock, &node);
+> It is possible to keep the normal API for MCS locks by having the lock
+> holder remember the parameter in the lock word itself.  While spinning,
+> the node is on the stack, is not needed once the lock is acquired.
+> The pointer to the next node in the queue -is- needed, but this can be
+> stored in the lock word.
 >
-> --- a/tools/testing/selftests/Makefile
-> +++ b/tools/testing/selftests/Makefile
-> @@ -1,4 +1,4 @@
-> -TARGETS = breakpoints kcmp mqueue vm cpu-hotplug memory-hotplug
-> +TARGETS = breakpoints kcmp mqueue vm cpu-hotplug memory-hotplug efivarfs
+> I believe that John Stultz worked on something like this some years back,
+> so added him to CC.
+Oh yea, its been quite awhile.
 
-bah.  This sort of Makefile construct is a wonderful source of patch
-rejects and fixups.  I'll covert this to
+Here are some of the discussion threads google remembers for me:
 
---- a/tools/testing/selftests/Makefile~a
-+++ a/tools/testing/selftests/Makefile
-@@ -1,4 +1,11 @@
--TARGETS = breakpoints epoll kcmp mqueue vm cpu-hotplug memory-hotplug efivarfs
-+TARGETS = breakpoints
-+TARGETS += epoll
-+TARGETS += kcmp
-+TARGETS += mqueue
-+TARGETS += vm
-+TARGETS += cpu-hotplug
-+TARGETS += memory-hotplug
-+TARGETS += efivarfs
- 
- all:
- 	for TARGET in $(TARGETS); do \
+http://marc.info/?l=lse-tech&m=101227079817027&w=2
 
-> new file mode 100644
-> index 0000000..1a943ee
-> --- /dev/null
-> +++ b/tools/testing/selftests/efivarfs/Makefile
-> @@ -0,0 +1,12 @@
-> +CC = $(CROSS_COMPILE)gcc
-> +CFLAGS = -Wall
-> +
-> +test_objs = open-unlink
-> +
-> +all: $(test_objs)
-> +
-> +run_tests: all
-> +	@./efivarfs.sh || echo "efivarfs selftests: [FAIL]"
-
-Problem.  When I apply the patch, ./efivarfs.sh doesn't have execute
-permissions.  I don't think there's a way of (reliably?) transporting
-this with patch and diff.
-
-So we should explicitly invoke sh or /bin/sh or $SHELL or whatever
-here.  This problem is common to several Makefiles in tools/testing/selftests/
-
-I'll do this for now:
-
---- a/tools/testing/selftests/efivarfs/Makefile~selftests-add-tests-for-efivarfs-fix
-+++ a/tools/testing/selftests/efivarfs/Makefile
-@@ -6,7 +6,7 @@ test_objs = open-unlink
- all: $(test_objs)
- 
- run_tests: all
--	@./efivarfs.sh || echo "efivarfs selftests: [FAIL]"
-+	@/bin/sh ./efivarfs.sh || echo "efivarfs selftests: [FAIL]"
- 
- clean:
- 	rm -f $(test_objs)
-
-but I'm not sure I did it right :(
+http://marc.info/?l=lse-tech&m=101380783015065&w=2  (missing the patch)
+     http://marc.info/?l=lse-tech&m=101380783615084&w=2 (patch for above)
 
 
-The general ruleset for selftests is: do as much as you can if you're not
-root and don't take too long and don't break the build on any
-architecture and don't cause the top-level "make run_tests" to fail if
-your feature is unconfigured.
+thanks
+-john
 
-Does this code pass all that?
+
