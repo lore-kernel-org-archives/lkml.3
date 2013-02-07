@@ -1,289 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752147Ab3BGGlm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 01:41:42 -0500
-Received: from chrocht.moloch.sk ([62.176.169.44]:44711 "EHLO mail.moloch.sk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751724Ab3BGGll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 01:41:41 -0500
-From: Martin Sustrik <sustrik@250bpm.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sha Zhengju <handai.szj@taobao.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Martin Sustrik <sustrik@250bpm.com>
-Subject: [PATCH 1/1] eventfd: implementation of EFD_MASK flag
-Date: Thu,  7 Feb 2013 07:41:32 +0100
-Message-Id: <1360219292-19754-1-git-send-email-sustrik@250bpm.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1751963Ab3BGGmb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 01:42:31 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:63550 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750973Ab3BGGma (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 01:42:30 -0500
+MIME-Version: 1.0
+In-Reply-To: <5112FE21.4020404@ahsoftware.de>
+References: <5112EA69.6010100@ahsoftware.de>
+	<5112FE21.4020404@ahsoftware.de>
+Date: Thu, 7 Feb 2013 07:42:29 +0100
+X-Google-Sender-Auth: Bb8xywyCa2Su-yWq9hzdHeN_E_E
+Message-ID: <CAMuHMdXu0-9=wHevviG=4s5fC=wxkT9XbXhP6ztOyGkkeb6+8Q@mail.gmail.com>
+Subject: Re: MODSIGN without RTC?
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When implementing network protocols in user space, one has to implement
-fake user-space file descriptors to represent the sockets for the protocol.
+On Thu, Feb 7, 2013 at 2:06 AM, Alexander Holler <holler@ahsoftware.de> wrote:
+> Am 07.02.2013 00:42, schrieb Alexander Holler:
+>> I wanted to try out MODSIGN with kernel 3.7.6 and I've just got hit by:
+>>
+>> [    1.346445] X.509: Cert 6a23533cec71c4c52a1618fb4d830e06aa90474e is
+>> not yet valid
+>>
+>> The reason is likely that the (ARM) device in question doesn't have a
+>> RTC (oh, that topic again ;) ) and gets it's time on boot through NTP.
+>>
+>> The used certificate was generated automatically. Having a look at it,
+>> the following is shown:
+>>
+>>         Validity
+>>              Not Before: Feb  6 02:56:46 2013 GMT
+>>              Not After : Jan 13 02:56:46 2113 GMT
+>>
+>> Without having thought about possible security problems, my first idea
+>> would be to let the validity start at 1970. As I never did such I never
+>> had thought about possible implications when doing such (e.g. I don't
+>> know if someone checks the start date for plausabilitiy)
+>>
+>> Another solution would be to retry loading of the certificate if the
+>> time gets set (and e.g. differs more than a year).
+>>
+>> Has someone already thought about how to solve that problem? Or did
+>> everyone use sane systems which have a (working) RTC?
+>
+>
+> Another option would be to make a configure option to just ignore the date.
 
-While all the BSD socket API functionality for such descriptors may be faked as
-well (myproto_send(), myproto_recv() etc.) this approach doesn't work for
-polling  (select, poll, epoll). For polling, real system-level file descriptor
-is needed.
+Or an option to auto-advance the clock to the "Not Before" date if needed...
 
-In theory, eventfd may be used for this purpose, except that it is well suited
-only for signaling POLLIN. With some hacking it can be also used to signal
-POLLOUT and POLLERR, however:
+> I'm not sure if I would like to use MODSIGN when I have to fear that the
+> machine wouldn't start when the RTC fails or got set to a wrong date.
 
-I.  There's no way to signal POLLPRI, POLLHUP etc.
-II. There's no way to signal arbitraty combination of POLL* flags. Most notably,
-    !POLLIN & !POLLOUT, which is a perfectly valid combination for a network
-    protocol (rx buffer is empty and tx buffer is full), cannot be signaled
-    using current implementation of eventfd.
+Hmm, nice failure mode...
 
-This patch implements new EFD_MASK flag which attempts to solve this problem.
+Gr{oetje,eeting}s,
 
-Additionally, when implementing network protocols in user space, there's a
-need to associate user-space state with the each "socket". If eventfd object is
-used as a reference to the socket, it should be possible to associate an opaque
-pointer to user-space data with it.
+                        Geert
 
-The semantics of EFD_MASK are as follows:
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-eventfd(2):
-
-If eventfd is created with EFD_MASK flag set, it is initialised in such a way
-as to signal no events on the file descriptor when it is polled on. 'initval'
-argument is ignored.
-
-write(2):
-
-User is allowed to write only buffers containing the following structure:
-
-struct efd_mask {
-  short events;
-  void *ptr;
-};
-
-The value of 'events' should be any combination of event flags as defined by
-poll(2) function (POLLIN, POLLOUT, POLLERR, POLLHUP etc.) Specified events will
-be signaled when polling (select, poll, epoll) on the eventfd is done later on.
-'ptr' is an opaque pointer that is not interpreted by eventfd object.
-
-read(2):
-
-User is allowed to read an efd_mask structure from the eventfd marked by
-EFD_MASK. Returned value shall be the last one written to the eventfd.
-
-select(2), poll(2) and similar:
-
-When polling on the eventfd marked by EFD_MASK flag, all the events specified
-in last written 'events' field shall be signaled.
-
-Signed-off-by: Martin Sustrik <sustrik@250bpm.com>
----
- fs/eventfd.c            |  105 ++++++++++++++++++++++++++++++++++++-----------
- include/linux/eventfd.h |    3 +-
- 2 files changed, 83 insertions(+), 25 deletions(-)
-
-diff --git a/fs/eventfd.c b/fs/eventfd.c
-index 35470d9..9fec49f 100644
---- a/fs/eventfd.c
-+++ b/fs/eventfd.c
-@@ -2,6 +2,7 @@
-  *  fs/eventfd.c
-  *
-  *  Copyright (C) 2007  Davide Libenzi <davidel@xmailserver.org>
-+ *  Copyright (C) 2013  Martin Sustrik <sustrik@250bpm.com>
-  *
-  */
- 
-@@ -22,18 +23,26 @@
- #include <linux/proc_fs.h>
- #include <linux/seq_file.h>
- 
-+struct eventfd_mask {
-+	short events;
-+	void *ptr;
-+};
-+
- struct eventfd_ctx {
- 	struct kref kref;
- 	wait_queue_head_t wqh;
--	/*
--	 * Every time that a write(2) is performed on an eventfd, the
--	 * value of the __u64 being written is added to "count" and a
--	 * wakeup is performed on "wqh". A read(2) will return the "count"
--	 * value to userspace, and will reset "count" to zero. The kernel
--	 * side eventfd_signal() also, adds to the "count" counter and
--	 * issue a wakeup.
--	 */
--	__u64 count;
-+	union {
-+		/*
-+		 * Every time that a write(2) is performed on an eventfd, the
-+		 * value of the __u64 being written is added to "count" and a
-+		 * wakeup is performed on "wqh". A read(2) will return the
-+		 * "count" value to userspace, and will reset "count" to zero.
-+		 * The kernel side eventfd_signal() also, adds to the "count"
-+		 * counter and issue a wakeup.
-+		 */
-+		__u64 count;
-+		struct eventfd_mask mask;
-+	};
- 	unsigned int flags;
- };
- 
-@@ -55,6 +64,9 @@ __u64 eventfd_signal(struct eventfd_ctx *ctx, __u64 n)
- {
- 	unsigned long flags;
- 
-+	/* This function should never be used with eventfd in the mask mode. */
-+	BUG_ON(ctx->flags & EFD_MASK);
-+
- 	spin_lock_irqsave(&ctx->wqh.lock, flags);
- 	if (ULLONG_MAX - ctx->count < n)
- 		n = ULLONG_MAX - ctx->count;
-@@ -123,12 +135,16 @@ static unsigned int eventfd_poll(struct file *file, poll_table *wait)
- 	poll_wait(file, &ctx->wqh, wait);
- 
- 	spin_lock_irqsave(&ctx->wqh.lock, flags);
--	if (ctx->count > 0)
--		events |= POLLIN;
--	if (ctx->count == ULLONG_MAX)
--		events |= POLLERR;
--	if (ULLONG_MAX - 1 > ctx->count)
--		events |= POLLOUT;
-+	if (ctx->flags & EFD_MASK) {
-+		events = ctx->mask.events;
-+	} else {
-+		if (ctx->count > 0)
-+			events |= POLLIN;
-+		if (ctx->count == ULLONG_MAX)
-+			events |= POLLERR;
-+		if (ULLONG_MAX - 1 > ctx->count)
-+			events |= POLLOUT;
-+	}
- 	spin_unlock_irqrestore(&ctx->wqh.lock, flags);
- 
- 	return events;
-@@ -158,6 +174,9 @@ int eventfd_ctx_remove_wait_queue(struct eventfd_ctx *ctx, wait_queue_t *wait,
- {
- 	unsigned long flags;
- 
-+	/* This function should never be used with eventfd in the mask mode. */
-+	BUG_ON(ctx->flags & EFD_MASK);
-+
- 	spin_lock_irqsave(&ctx->wqh.lock, flags);
- 	eventfd_ctx_do_read(ctx, cnt);
- 	__remove_wait_queue(&ctx->wqh, wait);
-@@ -188,6 +207,9 @@ ssize_t eventfd_ctx_read(struct eventfd_ctx *ctx, int no_wait, __u64 *cnt)
- 	ssize_t res;
- 	DECLARE_WAITQUEUE(wait, current);
- 
-+	/* This function should never be used with eventfd in the mask mode. */
-+	BUG_ON(ctx->flags & EFD_MASK);
-+
- 	spin_lock_irq(&ctx->wqh.lock);
- 	*cnt = 0;
- 	res = -EAGAIN;
-@@ -230,13 +252,23 @@ static ssize_t eventfd_read(struct file *file, char __user *buf, size_t count,
- 	ssize_t res;
- 	__u64 cnt;
- 
--	if (count < sizeof(cnt))
--		return -EINVAL;
--	res = eventfd_ctx_read(ctx, file->f_flags & O_NONBLOCK, &cnt);
--	if (res < 0)
-+	if (ctx->flags & EFD_MASK) {
-+		spin_lock_irq(&ctx->wqh.lock);
-+		if (count < sizeof(ctx->mask))
-+			return -EINVAL;
-+		res = copy_to_user(buf, &ctx->mask, sizeof(ctx->mask)) ?
-+			-EFAULT : sizeof(ctx->mask);
-+		spin_unlock_irq(&ctx->wqh.lock);
- 		return res;
--
--	return put_user(cnt, (__u64 __user *) buf) ? -EFAULT : sizeof(cnt);
-+	} else {
-+		if (count < sizeof(cnt))
-+			return -EINVAL;
-+		res = eventfd_ctx_read(ctx, file->f_flags & O_NONBLOCK, &cnt);
-+		if (res < 0)
-+			return res;
-+		return put_user(cnt, (__u64 __user *) buf) ?
-+			-EFAULT : sizeof(cnt);
-+	}
- }
- 
- static ssize_t eventfd_write(struct file *file, const char __user *buf, size_t count,
-@@ -247,6 +279,21 @@ static ssize_t eventfd_write(struct file *file, const char __user *buf, size_t c
- 	__u64 ucnt;
- 	DECLARE_WAITQUEUE(wait, current);
- 
-+	if (ctx->flags & EFD_MASK) {
-+		if (count < sizeof(ctx->mask))
-+			return -EINVAL;
-+		spin_lock_irq(&ctx->wqh.lock);
-+		if (copy_from_user(&ctx->mask, buf, sizeof(ctx->mask))) {
-+			spin_unlock_irq(&ctx->wqh.lock);
-+			return -EFAULT;
-+		}
-+		if (waitqueue_active(&ctx->wqh))
-+			wake_up_locked_poll(&ctx->wqh,
-+				(unsigned long)ctx->mask.events);
-+		spin_unlock_irq(&ctx->wqh.lock);
-+		return sizeof(ctx->mask);
-+	}
-+
- 	if (count < sizeof(ucnt))
- 		return -EINVAL;
- 	if (copy_from_user(&ucnt, buf, sizeof(ucnt)))
-@@ -293,8 +340,13 @@ static int eventfd_show_fdinfo(struct seq_file *m, struct file *f)
- 	int ret;
- 
- 	spin_lock_irq(&ctx->wqh.lock);
--	ret = seq_printf(m, "eventfd-count: %16llx\n",
--			 (unsigned long long)ctx->count);
-+	if (ctx->flags & EFD_MASK) {
-+		ret = seq_printf(m, "eventfd-mask: %x\n",
-+				 (unsigned)ctx->mask.events);
-+	} else {
-+		ret = seq_printf(m, "eventfd-count: %16llx\n",
-+				 (unsigned long long)ctx->count);
-+	}
- 	spin_unlock_irq(&ctx->wqh.lock);
- 
- 	return ret;
-@@ -412,7 +464,12 @@ struct file *eventfd_file_create(unsigned int count, int flags)
- 
- 	kref_init(&ctx->kref);
- 	init_waitqueue_head(&ctx->wqh);
--	ctx->count = count;
-+	if (flags & EFD_MASK) {
-+		ctx->mask.events = 0;
-+		ctx->mask.ptr = NULL;
-+	} else {
-+		ctx->count = count;
-+	}
- 	ctx->flags = flags;
- 
- 	file = anon_inode_getfile("[eventfd]", &eventfd_fops, ctx,
-diff --git a/include/linux/eventfd.h b/include/linux/eventfd.h
-index 3c3ef19..b806d2b 100644
---- a/include/linux/eventfd.h
-+++ b/include/linux/eventfd.h
-@@ -20,11 +20,12 @@
-  * shared O_* flags.
-  */
- #define EFD_SEMAPHORE (1 << 0)
-+#define EFD_MASK (1 << 1)
- #define EFD_CLOEXEC O_CLOEXEC
- #define EFD_NONBLOCK O_NONBLOCK
- 
- #define EFD_SHARED_FCNTL_FLAGS (O_CLOEXEC | O_NONBLOCK)
--#define EFD_FLAGS_SET (EFD_SHARED_FCNTL_FLAGS | EFD_SEMAPHORE)
-+#define EFD_FLAGS_SET (EFD_SHARED_FCNTL_FLAGS | EFD_SEMAPHORE | EFD_MASK)
- 
- #ifdef CONFIG_EVENTFD
- 
--- 
-1.7.4.1
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
