@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945954Ab3BGXgo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 18:36:44 -0500
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:47126 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759500Ab3BGXgn (ORCPT
+	id S1422781Ab3BGXkz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 18:40:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41441 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422745Ab3BGXky (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 18:36:43 -0500
-Message-ID: <51143A87.4040205@gmail.com>
-Date: Thu, 07 Feb 2013 17:36:39 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: arm@kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [PATCH 0/4] Improve CLKSRC_OF matching
-References: <1360264144-20714-1-git-send-email-robherring2@gmail.com> <201302072244.51588.arnd@arndb.de>
-In-Reply-To: <201302072244.51588.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-15
+	Thu, 7 Feb 2013 18:40:54 -0500
+Date: Thu, 7 Feb 2013 15:40:42 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Lukas Czerner <lczerner@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH v2 10/18] mm: teach truncate_inode_pages_range() to
+ handle non page aligned ranges
+Message-Id: <20130207154042.92430aed.akpm@linux-foundation.org>
+In-Reply-To: <1360055531-26309-11-git-send-email-lczerner@redhat.com>
+References: <1360055531-26309-1-git-send-email-lczerner@redhat.com>
+	<1360055531-26309-11-git-send-email-lczerner@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2013 04:44 PM, Arnd Bergmann wrote:
-> On Thursday 07 February 2013, Rob Herring wrote:
->> From: Rob Herring <rob.herring@calxeda.com>
->>
->> In the recently added support for OF based clocksource init, a device node
->> will be matched twice. We can fix this by passing the device node to the
->> init functions and removing the match functions within the init functions.
->>
->> This is based on arm-soc for-next branch and commit "of: fix incorrect
->> return value of of_find_matching_node_and_match()" in my DT for-next
->> branch.
->>
-> 
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
-> 
-> Conceptually this is definitely the way to go, but I noticed that
-> you create build warnings for the bisection points after the
-> first patch. I would suggest actually merging the first three
-> patches into one and also changing the prototype for the tegra
-> function in that patch to avoid this.
-> 
+On Tue,  5 Feb 2013 10:12:03 +0100
+Lukas Czerner <lczerner@redhat.com> wrote:
 
-How so? I don't see a warning as there is no type checking on the init
-function since of_device_id.data is just a void *. It would be good to
-have type checking here if you know a way, but I don't. I agree it is a
-bit abusive and can change it as you suggest.
+> This commit changes truncate_inode_pages_range() so it can handle non
+> page aligned regions of the truncate. Currently we can hit BUG_ON when
+> the end of the range is not page aligned, but we can handle unaligned
+> start of the range.
+> 
+> Being able to handle non page aligned regions of the page can help file
+> system punch_hole implementations and save some work, because once we're
+> holding the page we might as well deal with it right away.
+> 
+> In previous commits we've changed ->invalidatepage() prototype to accept
+> 'length' argument to be able to specify range to invalidate. No we can
+> use that new ability in truncate_inode_pages_range().
+> 
+> ...
+>
+> +	/*
+> +	 * 'start' and 'end' always covers the range of pages to be fully
+> +	 * truncated. Partial pages are covered with 'partial_start' at the
+> +	 * start of the range and 'partial_end' at the end of the range.
+> +	 * Note that 'end' is exclusive while 'lend' is inclusive.
+> +	 */
 
-Rob
+That helped ;)  So the bytes to be truncated are
+
+(start*PAGE_SIZE + partial_start) -> (end*PAGE_SIZE + partial_end) - 1
+
+yes?
+
+
