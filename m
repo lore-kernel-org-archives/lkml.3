@@ -1,114 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757758Ab3BGKcK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 05:32:10 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:34249 "EHLO arroyo.ext.ti.com"
+	id S1757966Ab3BGKcW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 05:32:22 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:36626 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755776Ab3BGKcG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 05:32:06 -0500
-From: Mrugesh Katepallewar <mrugesh.mk@ti.com>
-To: <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>
-CC: <dwmw2@infradead.org>, <artem.bityutskiy@linux.intel.com>,
-        <m-karicheri2@ti.com>, <mturquette@linaro.org>, <nsekhar@ti.com>
-Subject: [PATCH] mtd: davinci_nand: Use managed resources
-Date: Thu, 7 Feb 2013 16:03:15 +0530
-Message-ID: <1360233195-8575-1-git-send-email-mrugesh.mk@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755803Ab3BGKcR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 05:32:17 -0500
+Message-ID: <511382AD.7030804@imgtec.com>
+Date: Thu, 7 Feb 2013 10:32:13 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: linux-next <linux-next@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Heads up on a device tree change
+References: <CACxGe6sCBCGfLDAGVRgP3cnmE+oyXBDdPeVXVCqrsvCh13yPiw@mail.gmail.com> <51125B56.9050407@imgtec.com> <CACxGe6vuZ2H-G7xamS6SAiX_aCbjpO+vKavqCK77ek8tTdOmdA@mail.gmail.com>
+In-Reply-To: <CACxGe6vuZ2H-G7xamS6SAiX_aCbjpO+vKavqCK77ek8tTdOmdA@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2013_02_07_10_32_14
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-davinci_nand driver currently uses normal kzalloc, ioremap and get_clk
-routines. This patch replaces these routines with devm_kzalloc,
-devm_request_and_ioremap and devm_clk_get resp.
+On 06/02/13 14:28, Grant Likely wrote:
+> On Wed, Feb 6, 2013 at 1:32 PM, James Hogan <james.hogan@imgtec.com> wrote:
+>> On 06/02/13 13:11, Grant Likely wrote:
+>>> - Resources on platform_devices get registered so they appear in
+>>> /proc/iomem and /proc/ioports and so that device drivers get the added
+>>> protection of request_region. This will cause breakage on device trees
+>>> nodes with partially overlapping memory regions. (ie. 0x100..0x1ff and
+>>> 0x180..0x27f). I also have a workaround for this, but I doubt that it
+>>> will be necessary.
+>>
+>> Hi Grant,
+>>
+>> If I understand you correctly, the non-overlapping memory regions thing
+>> could be a problem for me. We have a Meta based SoC that has various SoC
+>> registers grouped together for doing GPIOs and Pin control things. I'm
+>> still in the process of converting it to device tree, but the way I've
+>> been handling it is to provide overlapping registers to both the gpio
+>> and pinctl DT nodes. Each GPIO bank's registers are also interleaved
+>> with the others, so I've been providing overlapping register ranges
+>> (offset by 4 for each bank) to the DT node for each gpio bank too, so
+>> each bank can function independently and the driver doesn't have to
+>> worry about multiple banks. Does that sound like a reasonable use case?
+>>
+>> I guess I could cheat with the length, or specify each register in it's
+>> own memory resource, but it seems like overkill.
+> 
+> Note that overlapping regions are fine /provided/ that they are the
+> same size or one fits nicely inside another. It's partial overlap that
+> is a problem
 
-Signed-off-by: Mrugesh Katepallewar <mrugesh.mk@ti.com>
----
-Apply on top of v3.8-rc6 of linus tree.
+It still feels a bit artificial to impose that limitation on something
+that is supposed to be implementation independent. Having said that it
+doesn't particularly bother me having to work around it.
 
-:100644 100644 3502606... e7d5bd6... M	drivers/mtd/nand/davinci_nand.c
- drivers/mtd/nand/davinci_nand.c |   24 +++++-------------------
- 1 file changed, 5 insertions(+), 19 deletions(-)
+> 
+> I've been thinking about your exact problem though and I think the
+> best way to handle it is for the gpio driver to understand multiple
+> banks.
 
-diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
-index 3502606..e7d5bd6 100644
---- a/drivers/mtd/nand/davinci_nand.c
-+++ b/drivers/mtd/nand/davinci_nand.c
-@@ -606,7 +606,7 @@ static int __init nand_davinci_probe(struct platform_device *pdev)
- 	if (pdev->id < 0 || pdev->id > 3)
- 		return -ENODEV;
- 
--	info = kzalloc(sizeof(*info), GFP_KERNEL);
-+	info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
- 	if (!info) {
- 		dev_err(&pdev->dev, "unable to allocate memory\n");
- 		ret = -ENOMEM;
-@@ -623,11 +623,11 @@ static int __init nand_davinci_probe(struct platform_device *pdev)
- 		goto err_nomem;
- 	}
- 
--	vaddr = ioremap(res1->start, resource_size(res1));
--	base = ioremap(res2->start, resource_size(res2));
-+	vaddr = devm_request_and_ioremap(&pdev->dev, res1);
-+	base = devm_request_and_ioremap(&pdev->dev, res2);
- 	if (!vaddr || !base) {
- 		dev_err(&pdev->dev, "ioremap failed\n");
--		ret = -EINVAL;
-+		ret = -EADDRNOTAVAIL;
- 		goto err_ioremap;
- 	}
- 
-@@ -717,7 +717,7 @@ static int __init nand_davinci_probe(struct platform_device *pdev)
- 	}
- 	info->chip.ecc.mode = ecc_mode;
- 
--	info->clk = clk_get(&pdev->dev, "aemif");
-+	info->clk = devm_clk_get(&pdev->dev, "aemif");
- 	if (IS_ERR(info->clk)) {
- 		ret = PTR_ERR(info->clk);
- 		dev_dbg(&pdev->dev, "unable to get AEMIF clock, err %d\n", ret);
-@@ -845,8 +845,6 @@ err_timing:
- 	clk_disable_unprepare(info->clk);
- 
- err_clk_enable:
--	clk_put(info->clk);
--
- 	spin_lock_irq(&davinci_nand_lock);
- 	if (ecc_mode == NAND_ECC_HW_SYNDROME)
- 		ecc4_busy = false;
-@@ -855,13 +853,7 @@ err_clk_enable:
- err_ecc:
- err_clk:
- err_ioremap:
--	if (base)
--		iounmap(base);
--	if (vaddr)
--		iounmap(vaddr);
--
- err_nomem:
--	kfree(info);
- 	return ret;
- }
- 
-@@ -874,15 +866,9 @@ static int __exit nand_davinci_remove(struct platform_device *pdev)
- 		ecc4_busy = false;
- 	spin_unlock_irq(&davinci_nand_lock);
- 
--	iounmap(info->base);
--	iounmap(info->vaddr);
--
- 	nand_release(&info->mtd);
- 
- 	clk_disable_unprepare(info->clk);
--	clk_put(info->clk);
--
--	kfree(info);
- 
- 	return 0;
- }
--- 
-1.7.9.5
+Something like this works quite nicely for me and keeps the driver code
+nice and simple (iterates over children a bit like I2C, no need for
+gpio-cells=3). I'd welcome comments:
+
+		gpios: gpios@02005800 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			compatible = "img,tz1090-gpio";
+			reg = <0x02005800 0x90>;
+
+			gpios0: bank@0 {
+				#gpio-cells = <2>;
+				#interrupt-cells = <2>;
+				reg = <0>;
+				interrupts = <13 4 /* level */>;
+				gpio-controller;
+				gpio-ranges = <&pinctrl 0 30>;
+				interrupt-controller;
+			};
+			gpios1: bank@1 {
+				#gpio-cells = <2>;
+				#interrupt-cells = <2>;
+				reg = <1>;
+				interrupts = <14 4 /* level */>;
+				gpio-controller;
+				gpio-ranges = <&pinctrl 30 30>;
+				interrupt-controller;
+			};
+			gpios2: bank@2 {
+				#gpio-cells = <2>;
+				#interrupt-cells = <2>;
+				reg = <2>;
+				interrupts = <15 4 /* level */>;
+				gpio-controller;
+				gpio-ranges = <&pinctrl 60 30>;
+				interrupt-controller;
+			};
+		};
+
+Cheers
+James
 
