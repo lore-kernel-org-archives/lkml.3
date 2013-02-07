@@ -1,111 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030272Ab3BGURR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 15:17:17 -0500
-Received: from mail-qe0-f44.google.com ([209.85.128.44]:64729 "EHLO
-	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759234Ab3BGURQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 15:17:16 -0500
+	id S1759371Ab3BGUSe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 15:18:34 -0500
+Received: from mms1.broadcom.com ([216.31.210.17]:2649 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759334Ab3BGUSc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 15:18:32 -0500
+X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
+Message-ID: <51140C0F.5070209@broadcom.com>
+Date: Thu, 7 Feb 2013 21:18:23 +0100
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUWf+pNodRBHY0ZKF_XwRnCEEQa1s0an0fanizaFQ6c1Kw@mail.gmail.com>
-References: <CA+icZUUu2-tg+980e0yOMhGq_igkj=FZahy96fh0dcwXdM3+tg@mail.gmail.com>
-	<CA+icZUWf+pNodRBHY0ZKF_XwRnCEEQa1s0an0fanizaFQ6c1Kw@mail.gmail.com>
-Date: Thu, 7 Feb 2013 21:17:14 +0100
-Message-ID: <CA+icZUU7+hWhiaOdyFNoghJZVqnOvbPABy=m0KLuiQcsKih--g@mail.gmail.com>
-Subject: Re: linux-next: Tree for Feb 6 [WARNING: at kernel/sched/clock.c:219 sched_clock_cpu+0xf9/0x110()]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+To: "Tim Gardner" <tim.gardner@canonical.com>
+cc: linux-kernel@vger.kernel.org, "Brett Rudley" <brudley@broadcom.com>,
+        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
+        "Hante Meuleman" <meuleman@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "Pieter-Paul Giesberts" <pieterpg@broadcom.com>,
+        "Seth Forshee" <seth.forshee@canonical.com>,
+        "Hauke Mehrtens" <hauke@hauke-m.de>, linux-wireless@vger.kernel.org,
+        brcm80211-dev-list@broadcom.com, netdev@vger.kernel.org
+Subject: Re: [PATCH wireless-next] brcmsmac: fix u16 overflow warning
+References: <1360265735-42450-1-git-send-email-tim.gardner@canonical.com>
+In-Reply-To: <1360265735-42450-1-git-send-email-tim.gardner@canonical.com>
+X-Enigmail-Version: 1.4.6
+X-WSS-ID: 7D0AD41E1YS1946450-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 6, 2013 at 9:49 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Wed, Feb 6, 2013 at 9:23 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> On Wed, Feb 6, 2013 at 8:43 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->>> Hi all,
->>>
->>> Changes since 20130204:
->>>
->>> The metag tree gained a conflict against the arc tree.
->>>
->>> I added a couple of merge fix patches to the mips tree for breakage in
->>> other architectures.
->>>
->>> The powerpc tree still had a build failure.
->>>
->>> The crypto tree gained a conflict against the net-next tree.
->>>
->>> The sound-asoc tree lost its build failure.
->>>
->>> The block tree gained a build failure for which I applied a merge fix
->>> patch.
->>>
->>> The battery tree gained a conflict against the mfd tree.
->>>
->>> The spi tree gained a conflict against the sound-asoc tree.
->>>
->>> The kvm tree gained a conflict against the arm tree.
->>>
->>> The driver-core tree gained conflicts against the spi and iommu trees.
->>>
->>> The tty tree gained a build failure on sparc32 for which I applied a
->>> patch.
->>>
->>> The akpm tree gained a conflict against the nfsd tree and a build failure
->>> for which I reverted a commit.
->>>
->>> ----------------------------------------------------------------------------
->>>
->>
->> [ CC x86 folks ]
->>
->> With today's Linux-Next I get this warning:
->>
->> [    0.000000] Console: colour dummy device 80x25
->> [    0.000000] ------------[ cut here ]------------
->> [    0.000000] WARNING: at kernel/sched/clock.c:219 sched_clock_cpu+0xf9/0x110()
->> [    0.000000] Hardware name: 530U3BI/530U4BI/530U4BH
->> [    0.000000] Modules linked in:
->> [    0.000000] Pid: 0, comm: swapper/0 Not tainted
->> 3.8.0-rc6-next20130206-1-iniza-small #1
->> [    0.000000] Call Trace:
->> [    0.000000]  [<ffffffff8105a5cf>] warn_slowpath_common+0x7f/0xc0
->> [    0.000000]  [<ffffffff8105a62a>] warn_slowpath_null+0x1a/0x20
->> [    0.000000]  [<ffffffff81093319>] sched_clock_cpu+0xf9/0x110
->> [    0.000000]  [<ffffffff8105c611>] __console_unlock.part.9+0x31/0x440
->> [    0.000000]  [<ffffffff816b327b>] ? printk+0x61/0x63
->> [    0.000000]  [<ffffffff8105ca4d>] console_unlock+0x2d/0x40
->> [    0.000000]  [<ffffffff81d3ecce>] con_init+0x218/0x22b
->> [    0.000000]  [<ffffffff81d3e259>] console_init+0x16/0x27
->> [    0.000000]  [<ffffffff81d06d7a>] start_kernel+0x28b/0x3fc
->> [    0.000000]  [<ffffffff81d068ef>] ? repair_env_string+0x5a/0x5a
->> [    0.000000]  [<ffffffff81d06120>] ? early_idt_handlers+0x120/0x120
->> [    0.000000]  [<ffffffff81d065ec>] x86_64_start_reservations+0x2a/0x2c
->> [    0.000000]  [<ffffffff81d066e1>] x86_64_start_kernel+0xf3/0x102
->> [    0.000000] ---[ end trace 79eb6cf41ffc867b ]---
->> [    0.000000] console [tty0] enabled
->>
->> Not sure, if this related to the known console/fbcon locking issue.
->> I will try later to merge [1] and check again.
->>
->> - Sedat -
->>
->> [1] http://cgit.freedesktop.org/~airlied/linux/log/?h=fbcon-locking-fixes
->
-> Unrelated to known console/fbcon locking issue (see new dmesg).
->
-> - Sedat -
+On 02/07/2013 08:35 PM, Tim Gardner wrote:
+> DOT11_MIN_BEACON_PERIOD and DOT11_MAX_BEACON_PERIOD are
+> superfluous. The only invalid beacon period is 0. Comparing
+> a 16 bit quantity to 0xffff also causes a compile warning:
+> 
+> drivers/net/wireless/brcm80211/brcmsmac/main.c:5560 brcms_c_set_beacon_period()
+>  warn: impossible condition '(period > 65535) => (0-65535 > 65535)'
+> 
+> Observed from smatch analysis.
+> 
+> Cc: Brett Rudley <brudley@broadcom.com>
+> Cc: "Franky (Zhenhui) Lin" <frankyl@broadcom.com>
+> Cc: Hante Meuleman <meuleman@broadcom.com>
+> Cc: "John W. Linville" <linville@tuxdriver.com>
+> Cc: Pieter-Paul Giesberts <pieterpg@broadcom.com>
+> Cc: Seth Forshee <seth.forshee@canonical.com>
+> Cc: Hauke Mehrtens <hauke@hauke-m.de>
+> Cc: linux-wireless@vger.kernel.org
+> Cc: brcm80211-dev-list@broadcom.com
+> Cc: netdev@vger.kernel.org
 
-That issue disappeared with next-20130207, but with
-CONFIG_VIRT_CPU_ACCOUNTING=y.
-( Did not test CONFIG_TICK_CPU_ACCOUNTING=y. )
+Acked-by: Arend van Spriel <arend@broadcom.com>
+> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+> ---
+>  drivers/net/wireless/brcm80211/brcmsmac/main.c |    5 +----
+>  1 file changed, 1 insertion(+), 4 deletions(-)
+> 
+> diff --git a/drivers/net/wireless/brcm80211/brcmsmac/main.c b/drivers/net/wireless/brcm80211/brcmsmac/main.c
+> index c26992a..080b54d 100644
+> --- a/drivers/net/wireless/brcm80211/brcmsmac/main.c
+> +++ b/drivers/net/wireless/brcm80211/brcmsmac/main.c
+> @@ -101,8 +101,6 @@
+>  #define DOT11_RTS_LEN			16
+>  #define DOT11_CTS_LEN			10
+>  #define DOT11_BA_BITMAP_LEN		128
+> -#define DOT11_MIN_BEACON_PERIOD		1
+> -#define DOT11_MAX_BEACON_PERIOD		0xFFFF
+>  #define DOT11_MAXNUMFRAGS		16
+>  #define DOT11_MAX_FRAG_LEN		2346
+>  
+> @@ -5555,8 +5553,7 @@ int brcms_c_set_rateset(struct brcms_c_info *wlc, struct brcm_rateset *rs)
+>  
+>  int brcms_c_set_beacon_period(struct brcms_c_info *wlc, u16 period)
+>  {
+> -	if (period < DOT11_MIN_BEACON_PERIOD ||
+> -	    period > DOT11_MAX_BEACON_PERIOD)
+> +	if (period == 0)
+>  		return -EINVAL;
+>  
+>  	wlc->default_bss->beacon_period = period;
+> 
 
-/boot/config-3.8.0-rc6-next20130206-1-iniza-small:CONFIG_TICK_CPU_ACCOUNTING=y
-/boot/config-3.8.0-rc6-next20130207-1-iniza-small:CONFIG_VIRT_CPU_ACCOUNTING=y
 
-- Sedat -
