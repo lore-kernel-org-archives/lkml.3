@@ -1,51 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751860Ab3BGG1x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 01:27:53 -0500
-Received: from mail-la0-f41.google.com ([209.85.215.41]:46632 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750928Ab3BGG1u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 01:27:50 -0500
-Date: Thu, 7 Feb 2013 10:27:44 +0400
-From: Artem Savkov <artem.savkov@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [BUG] cpufreq: sleeping function called from invalid context at
- kernel/workqueue.c:2811
-Message-ID: <20130207062743.GA4388@thinkpad.lan>
-References: <20130206202513.GA5626@thinkpad.lan>
- <1543919.ZBNJa64WB5@vostro.rjw.lan>
- <1873989.qC1mdEKIl9@vostro.rjw.lan>
+	id S1751803Ab3BGGcX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 01:32:23 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:43775 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750759Ab3BGGcV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 01:32:21 -0500
+Message-ID: <51134A5F.1090707@ti.com>
+Date: Thu, 7 Feb 2013 12:01:59 +0530
+From: kishon <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1873989.qC1mdEKIl9@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rajendra Nayak <rnayak@ti.com>
+CC: <b-cousson@ti.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
+        <rob.herring@calxeda.com>, <rob@landley.net>, <balbi@ti.com>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 3/8] ARM: dts: omap: Add usb_otg and glue data
+References: <1360162604-14320-1-git-send-email-kishon@ti.com> <1360162604-14320-4-git-send-email-kishon@ti.com> <511347E8.2030604@ti.com>
+In-Reply-To: <511347E8.2030604@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 07, 2013 at 01:41:57AM +0100, Rafael J. Wysocki wrote:
-> On Wednesday, February 06, 2013 10:11:25 PM Rafael J. Wysocki wrote:
-> > On Thursday, February 07, 2013 12:25:13 AM Artem Savkov wrote:
-> > > I get the following BUG on suspend using systemd-sleep(this doesn't
-> > > happen with pm-suspend). This seems to be introduced by some of the
-> > > Viresh's patches.
-> > 
-> > Which branch from which day?
+Hi,
 
-The log is from linux-next-20130205, still reproducible on -20130206
+On Thursday 07 February 2013 11:51 AM, Rajendra Nayak wrote:
+> []...
+>
+>>
+>> diff --git a/Documentation/devicetree/bindings/usb/omap-usb.txt
+>> b/Documentation/devicetree/bindings/usb/omap-usb.txt
+>> index 29a043e..4688265 100644
+>> --- a/Documentation/devicetree/bindings/usb/omap-usb.txt
+>> +++ b/Documentation/devicetree/bindings/usb/omap-usb.txt
+>> @@ -15,6 +15,7 @@ OMAP MUSB GLUE
+>>      represents PERIPHERAL.
+>>    - power : Should be "50". This signifies the controller can supply
+>> upto
+>>      100mA when operating in host mode.
+>> + - usb-phy : the phandle for the PHY device
+>>
+>>   SOC specific device node entry
+>>   usb_otg_hs: usb_otg_hs@4a0ab000 {
+>> diff --git a/arch/arm/boot/dts/omap3-beagle-xm.dts
+>> b/arch/arm/boot/dts/omap3-beagle-xm.dts
+>> index 3705a81..cb07583 100644
+>> --- a/arch/arm/boot/dts/omap3-beagle-xm.dts
+>> +++ b/arch/arm/boot/dts/omap3-beagle-xm.dts
+>> @@ -107,3 +107,9 @@
+>>        */
+>>       ti,pulldowns = <0x03a1c4>;
+>>   };
+>> +
+>> +&usb_otg_hs {
+>> +    interface_type = <0>;
+>> +    mode = <3>;
+>> +    power = <50>;
+>> +};
+>> diff --git a/arch/arm/boot/dts/omap3-evm.dts
+>> b/arch/arm/boot/dts/omap3-evm.dts
+>> index e8ba1c2..afb9ba9 100644
+>> --- a/arch/arm/boot/dts/omap3-evm.dts
+>> +++ b/arch/arm/boot/dts/omap3-evm.dts
+>> @@ -59,3 +59,9 @@
+>>   &twl_gpio {
+>>       ti,use-leds;
+>>   };
+>> +
+>> +&usb_otg_hs {
+>> +    interface_type = <0>;
+>> +    mode = <3>;
+>> +    power = <50>;
+>> +};
+>> diff --git a/arch/arm/boot/dts/omap3-overo.dtsi
+>> b/arch/arm/boot/dts/omap3-overo.dtsi
+>> index 89808ce..4b3d157 100644
+>> --- a/arch/arm/boot/dts/omap3-overo.dtsi
+>> +++ b/arch/arm/boot/dts/omap3-overo.dtsi
+>> @@ -55,3 +55,9 @@
+>>   &twl_gpio {
+>>       ti,use-leds;
+>>   };
+>> +
+>> +&usb_otg_hs {
+>> +    interface_type = <0>;
+>> +    mode = <3>;
+>> +    power = <50>;
+>> +};
+>> diff --git a/arch/arm/boot/dts/omap3.dtsi b/arch/arm/boot/dts/omap3.dtsi
+>> index 1acc261..b6472f7 100644
+>> --- a/arch/arm/boot/dts/omap3.dtsi
+>> +++ b/arch/arm/boot/dts/omap3.dtsi
+>> @@ -397,5 +397,17 @@
+>>               ti,timer-alwon;
+>>               ti,timer-secure;
+>>           };
+>> +
+>> +        usb_otg_hs: usb_otg_hs@480ab000 {
+>> +            compatible = "ti,omap3-musb";
+>> +            reg = <0x480ab000 0x1000>;
+>> +            interrupts = <0 92 0x4>, <0 93 0x4>;
+>> +            interrupt-names = "mc", "dma";
+>> +            ti,hwmods = "usb_otg_hs";
+>> +            usb-phy = <&usb2_phy>;
+>> +            multipoint = <1>;
+>> +            num_eps = <16>;
+>> +            ram_bits = <12>;
+>
+> Where are these bindings documented? The general convention is to use
+> a '-' for property names and not '_'
 
-> OK, I've reproduced it and the appended patch fixes it for me.  Can you please
-> try it and report back?
+It's documented in Documentation/devicetree/bindings/usb/omap-usb.txt
+Actually the documentation and the drivers got merged with this binding 
+long back.
 
-I've tried the patch and the bug is still reproducible. I might be wrong
-but it seems that the bug happens on first __cpufreq_remove_dev
-call(CPU1) on __cpufreq_governor(data, CPUFREQ_GOV_STOP) call (line
-~1050) but changes in your patch are all below that call.
-
--- 
-Kind regards,
-Artem
+Thanks
+Kishon
