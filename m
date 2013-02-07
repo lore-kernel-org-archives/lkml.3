@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758599Ab3BGANt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 19:13:49 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:37078 "EHLO
+	id S1758628Ab3BGARM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 19:17:12 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:35735 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757945Ab3BGANr (ORCPT
+	with ESMTP id S1757465Ab3BGARL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 19:13:47 -0500
-Message-ID: <5112F1B9.6010700@wwwdotorg.org>
-Date: Wed, 06 Feb 2013 17:13:45 -0700
+	Wed, 6 Feb 2013 19:17:11 -0500
+Message-ID: <5112F284.3040002@wwwdotorg.org>
+Date: Wed, 06 Feb 2013 17:17:08 -0700
 From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
 To: Linus Walleij <linus.walleij@stericsson.com>
 CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Stephen Warren <swarren@nvidia.com>,
-        Anmar Oueja <anmar.oueja@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 09/14] pinctrl/abx500: use direct IRQ defines
-References: <1360093715-6348-1-git-send-email-linus.walleij@stericsson.com> <1360093715-6348-10-git-send-email-linus.walleij@stericsson.com>
-In-Reply-To: <1360093715-6348-10-git-send-email-linus.walleij@stericsson.com>
+        Anmar Oueja <anmar.oueja@linaro.org>, Lee Jones <lee.jones@linaro.org>,
+        arm@kernel.org, Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 13/14] ARM: ux500: enable AB8500 GPIO for HREF
+References: <1360093715-6348-1-git-send-email-linus.walleij@stericsson.com> <1360093715-6348-14-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1360093715-6348-14-git-send-email-linus.walleij@stericsson.com>
 X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -28,23 +28,23 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 02/05/2013 12:48 PM, Linus Walleij wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
+> From: Lee Jones <lee.jones@linaro.org>
 > 
-> Make it harder to do mistakes by introducing the actual
-> defined ABx500 IRQ number into the IRQ cluster definitions.
-> Deduct cluster offset from the GPIO offset to make each
-> cluster coherent.
+> The AB8500 GPIO driver has been un-BROKEN and rewritten as a pinctrl
+> driver. Now that it's back in use, let's ensure that it's available
+> when booting HREF with Device Tree enabled.
 
-Shouldn't this patch be squashed into the previous patch to avoid churn?
+> diff --git a/arch/arm/boot/dts/hrefprev60.dts b/arch/arm/boot/dts/hrefprev60.dts
 
->  static struct abx500_pinctrl_soc_data ab9540_soc = {
+>  	soc-u9500 {
+> +		prcmu@80157000 {
+> +			ab8500@5 {
+> +				ab8500-gpio {
+> +					compatible = "stericsson,ab8500-gpio";
 
-> @@ -273,8 +273,7 @@ static int abx500_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
-
-> -			hwirq = gpio + cluster->to_irq;
-> -
-> +			hwirq = gpio - cluster->start + cluster->to_irq;
->  			return irq_create_mapping(pct->parent->domain, hwirq);
-
-In particular, this change implies that the previous patch was simply
-incorrect, although I haven't really thought about it in detail.
+The MFDs I've looked at (which admittedly might not be that many) all
+have the top-level chip described in device tree, but not all the
+component sub-devices, since they're all a static part of the top-level
+chip. Instead, the top-level MFD instantiates all the sub-devices
+itself. I'm curious why this MFD device works differently - do many work
+like this?
