@@ -1,175 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759351Ab3BGVCt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 16:02:49 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:47705 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759305Ab3BGVCr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 16:02:47 -0500
-Message-ID: <1360270958.6066.166.camel@shinybook.infradead.org>
-Subject: Re: [PATCH] intel_iommu: Disable vfio and kvm interrupt assignment
- when unsafe
-From: David Woodhouse <dwmw2@infradead.org>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Andy Lutomirski <luto@amacapital.net>, Gleb Natapov <gleb@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Don Zickus <dzickus@redhat.com>, Prarit Bhargava <prarit@redhat.com>
-Date: Thu, 07 Feb 2013 21:02:38 +0000
-In-Reply-To: <20130207172701.GX25591@8bytes.org>
-References: <5fc782f401fc7bb0cd829b2316d7f29eb2595036.1360206266.git.luto@amacapital.net>
-	 <20130207113340.GW25591@8bytes.org>
-	 <CALCETrUzX9efPafJ0W2vxU-KgQ_FOxQ4YqGDKbw5z6d1P0ZYEQ@mail.gmail.com>
-	 <20130207172701.GX25591@8bytes.org>
-Content-Type: multipart/signed; micalg="sha1"; protocol="application/x-pkcs7-signature";
-	boundary="=-7ppvYpMJLSYElpL2J0nn"
-X-Mailer: Evolution 3.6.3 (3.6.3-2.fc18) 
-Mime-Version: 1.0
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1759415Ab3BGVD4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 16:03:56 -0500
+Received: from mga14.intel.com ([143.182.124.37]:15699 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759353Ab3BGVDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 16:03:52 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,623,1355126400"; 
+   d="scan'208";a="253970083"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org, sameo@linux.intel.com
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc-next 04/11] mei: bus: Add bus related structures to mei_cl
+Date: Thu,  7 Feb 2013 23:03:10 +0200
+Message-Id: <1360270997-7639-5-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1360270997-7639-1-git-send-email-tomas.winkler@intel.com>
+References: <1360270997-7639-1-git-send-email-tomas.winkler@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Samuel Ortiz <sameo@linux.intel.com>
 
---=-7ppvYpMJLSYElpL2J0nn
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+We keep track of all MEI bus clients through a specific linked list.
+We also have a mei_bus_client instance in the mei_cl structure.
 
-On Thu, 2013-02-07 at 18:27 +0100, Joerg Roedel wrote:
->=20
-> Second, I think that it should be a pr_warn instead of a full WARN. When
-> IRQ remapping could not be enabled it's most likely because of the BIOS
-> or the hardware. So a message in the kernel log will do and the
-> backtrace provides no additional value.
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+---
+ drivers/misc/mei/bus.c     |   47 +++++++++++++++++++++++++++++++------------
+ drivers/misc/mei/client.c  |    1 +
+ drivers/misc/mei/init.c    |    1 +
+ drivers/misc/mei/mei_dev.h |    8 +++++++
+ 4 files changed, 44 insertions(+), 13 deletions(-)
 
-Backtraces add visibility and have proven to be extremely useful in the
-past for getting people to actually *fix* broken BIOSes.
-
-When kerneloops.org was running, it also gave very good statistics which
-helped to apply pressure.
-
---=20
-dwmw2
-
-
---=-7ppvYpMJLSYElpL2J0nn
-Content-Type: application/x-pkcs7-signature; name="smime.p7s"
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Transfer-Encoding: base64
-
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIUbjCCBjQw
-ggQcoAMCAQICAR4wDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
-Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxKTAn
-BgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3MTAyNDIxMDE1NVoX
-DTE3MTAyNDIxMDE1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSsw
-KQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFy
-dENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTCCASIwDQYJKoZIhvcN
-AQEBBQADggEPADCCAQoCggEBAMcJg8zOLdgasSmkLhOrlr6KMoOMpohBllVHrdRvEg/q6r8jR+EK
-75xCGhR8ToREoqe7zM9/UnC6TS2y9UKTpT1v7RSMzR0t6ndl0TWBuUr/UXBhPk+Kmy7bI4yW4urC
-+y7P3/1/X7U8ocb8VpH/Clt+4iq7nirMcNh6qJR+xjOhV+VHzQMALuGYn5KZmc1NbJQYclsGkDxD
-z2UbFqE2+6vIZoL+jb9x4Pa5gNf1TwSDkOkikZB1xtB4ZqtXThaABSONdfmv/Z1pua3FYxnCFmdr
-/+N2JLKutIxMYqQOJebr/f/h5t95m4JgrM3Y/w7YX9d7YAL9jvN4SydHsU6n65cCAwEAAaOCAa0w
-ggGpMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBRTcu2SnODaywFc
-fH6WNU7y1LhRgjAfBgNVHSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRa
-MFgwJwYIKwYBBQUHMAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYh
-aHR0cDovL3d3dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6
-Ly93d3cuc3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5j
-b20vc2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
-dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
-c3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBAAqDCH14qywG
-XLhjjF6uHLkjd02hcdh9hrw+VUsv+q1eeQWB21jWj3kJ96AUlPCoEGZ/ynJNScWy6QMVQjbbMXlt
-UfO4n4bGGdKo3awPWp61tjAFgraLJgDk+DsSvUD6EowjMTNx25GQgyYJ5RPIzKKR9tQW8gGK+2+R
-HxkUCTbYFnL6kl8Ch507rUdPPipJ9CgJFws3kDS3gOS5WFMxcjO5DwKfKSETEPrHh7p5shuuNktv
-sv6hxHTLhiMKX893gxdT3XLS9OKmCv87vkINQcNEcIIoFWbP9HORz9v3vQwR4e3ksLc2JZOAFK+s
-sS5XMEoznzpihEP0PLc4dCBYjbvSD7kxgDwZ+Aj8Q9PkbvE9sIPP7ON0fz095HdThKjiVJe6vofq
-+n6b1NBc8XdrQvBmunwxD5nvtTW4vtN6VY7mUCmxsCieuoBJ9OlqmsVWQvifIYf40dJPZkk9YgGT
-zWLpXDSfLSplbY2LL9C9U0ptvjcDjefLTvqSFc7tw1sEhF0n/qpA2r0GpvkLRDmcSwVyPvmjFBGq
-Up/pNy8ZuPGQmHwFi2/14+xeSUDG2bwnsYJQG2EdJCB6luQ57GEnTA/yKZSTKI8dDQa8Sd3zfXb1
-9mOgSF0bBdXbuKhEpuP9wirslFe6fQ1t5j5R0xi72MZ8ikMu1RQZKCyDbMwazlHiMIIHFzCCBf+g
-AwIBAgIDBCZ6MA0GCSqGSIb3DQEBBQUAMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRD
-b20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYG
-A1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0EwHhcN
-MTIwNTAxMTI1ODI3WhcNMTMwNTAzMTEzNzIwWjBdMRkwFwYDVQQNExA4Y1VOSzUzMTc0ODRYRjk3
-MRwwGgYDVQQDDBNkd213MkBpbmZyYWRlYWQub3JnMSIwIAYJKoZIhvcNAQkBFhNkd213MkBpbmZy
-YWRlYWQub3JnMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyYe7wo6MrtrB4uIGGbrY
-4IifY/Xsq22pSv605yganL0+uyUdd8rCjrYlH6Q/ra5TVJCQFTgzaepkuqPQc79DC/Cxmzm6Qo+s
-wLZy868oFsccsVokL2bPAWIPaRXfNPJKkYR1FTWQfZpWJVQmT+sPf1XFUullVBAK+d9RztopyacI
-xWoZ/W/Cmv7mseQbttYTtGKJa0btX73nsQRWl6SgErWXo59zg9friCLTy1GXMXJYB8H+PtnuwX0w
-MrAvWDdX1ABgIlA17W3FraCn0eW15ZM46eyu0/amGzJZNtemCWF73P7BAijzeV1jNmiJFXdZ0DT0
-w+hmtMO9PxdDUyt78QIDAQABo4IDrjCCA6owCQYDVR0TBAIwADALBgNVHQ8EBAMCBLAwHQYDVR0l
-BBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMEMB0GA1UdDgQWBBTkfe5UOr3PcirsjApibyyUEfsyRzAf
-BgNVHSMEGDAWgBRTcu2SnODaywFcfH6WNU7y1LhRgjAeBgNVHREEFzAVgRNkd213MkBpbmZyYWRl
-YWQub3JnMIICIQYDVR0gBIICGDCCAhQwggIQBgsrBgEEAYG1NwECAjCCAf8wLgYIKwYBBQUHAgEW
-Imh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
-d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwgfcGCCsGAQUFBwICMIHqMCcWIFN0YXJ0
-Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5UaGlzIGNlcnRpZmljYXRlIHdhcyBp
-c3N1ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAxIFZhbGlkYXRpb24gcmVxdWlyZW1lbnRzIG9m
-IHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlhbmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRlZCBw
-dXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhlIHJlbHlpbmcgcGFydHkgb2JsaWdhdGlvbnMuMIGc
-BggrBgEFBQcCAjCBjzAnFiBTdGFydENvbSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgECGmRM
-aWFiaWxpdHkgYW5kIHdhcnJhbnRpZXMgYXJlIGxpbWl0ZWQhIFNlZSBzZWN0aW9uICJMZWdhbCBh
-bmQgTGltaXRhdGlvbnMiIG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3kuMDYGA1UdHwQvMC0wK6Ap
-oCeGJWh0dHA6Ly9jcmwuc3RhcnRzc2wuY29tL2NydHUxLWNybC5jcmwwgY4GCCsGAQUFBwEBBIGB
-MH8wOQYIKwYBBQUHMAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9zdWIvY2xhc3MxL2NsaWVu
-dC9jYTBCBggrBgEFBQcwAoY2aHR0cDovL2FpYS5zdGFydHNzbC5jb20vY2VydHMvc3ViLmNsYXNz
-MS5jbGllbnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3RhcnRzc2wuY29tLzANBgkq
-hkiG9w0BAQUFAAOCAQEAqDU1FKifNtCFJbLnvOi1BLRfk7mut55PMtPSZLJ4/AnG7AjmJnbBI4U5
-DELwvVq3mIpwUpGqZUkqkZMEfBPIbfq517UZB3h4iANtqif+ULfTLhg5XgcK5eF8/T6EtX2c3epq
-ylARdleCbj/0FwiUDvPlTsA6PIN4SCekjRLgjKERrL3heFz+Hteq1rtMAvMkNuyL0/0ijyyg2y45
-NASAl2Afl9SLes/fnoh9nBwzfNQfb6qDYUFpnglfpGrq/0b1NtaOUb2z1SR+H1tKlb8bVJJIdvpu
-mEi27kSRIhzk3h30uTfKkKetgy++ouyldxZ7KZ0PuoLQrBy465EoQLosETCCBxcwggX/oAMCAQIC
-AwQmejANBgkqhkiG9w0BAQUFADCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0
-ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMT
-L1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBMB4XDTEyMDUw
-MTEyNTgyN1oXDTEzMDUwMzExMzcyMFowXTEZMBcGA1UEDRMQOGNVTks1MzE3NDg0WEY5NzEcMBoG
-A1UEAwwTZHdtdzJAaW5mcmFkZWFkLm9yZzEiMCAGCSqGSIb3DQEJARYTZHdtdzJAaW5mcmFkZWFk
-Lm9yZzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMmHu8KOjK7aweLiBhm62OCIn2P1
-7KttqUr+tOcoGpy9PrslHXfKwo62JR+kP62uU1SQkBU4M2nqZLqj0HO/QwvwsZs5ukKPrMC2cvOv
-KBbHHLFaJC9mzwFiD2kV3zTySpGEdRU1kH2aViVUJk/rD39VxVLpZVQQCvnfUc7aKcmnCMVqGf1v
-wpr+5rHkG7bWE7RiiWtG7V+957EEVpekoBK1l6Ofc4PX64gi08tRlzFyWAfB/j7Z7sF9MDKwL1g3
-V9QAYCJQNe1txa2gp9HlteWTOOnsrtP2phsyWTbXpglhe9z+wQIo83ldYzZoiRV3WdA09MPoZrTD
-vT8XQ1Mre/ECAwEAAaOCA64wggOqMAkGA1UdEwQCMAAwCwYDVR0PBAQDAgSwMB0GA1UdJQQWMBQG
-CCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQU5H3uVDq9z3Iq7IwKYm8slBH7MkcwHwYDVR0j
-BBgwFoAUU3Ltkpzg2ssBXHx+ljVO8tS4UYIwHgYDVR0RBBcwFYETZHdtdzJAaW5mcmFkZWFkLm9y
-ZzCCAiEGA1UdIASCAhgwggIUMIICEAYLKwYBBAGBtTcBAgIwggH/MC4GCCsGAQUFBwIBFiJodHRw
-Oi8vd3d3LnN0YXJ0c3NsLmNvbS9wb2xpY3kucGRmMDQGCCsGAQUFBwIBFihodHRwOi8vd3d3LnN0
-YXJ0c3NsLmNvbS9pbnRlcm1lZGlhdGUucGRmMIH3BggrBgEFBQcCAjCB6jAnFiBTdGFydENvbSBD
-ZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgEBGoG+VGhpcyBjZXJ0aWZpY2F0ZSB3YXMgaXNzdWVk
-IGFjY29yZGluZyB0byB0aGUgQ2xhc3MgMSBWYWxpZGF0aW9uIHJlcXVpcmVtZW50cyBvZiB0aGUg
-U3RhcnRDb20gQ0EgcG9saWN5LCByZWxpYW5jZSBvbmx5IGZvciB0aGUgaW50ZW5kZWQgcHVycG9z
-ZSBpbiBjb21wbGlhbmNlIG9mIHRoZSByZWx5aW5nIHBhcnR5IG9ibGlnYXRpb25zLjCBnAYIKwYB
-BQUHAgIwgY8wJxYgU3RhcnRDb20gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkwAwIBAhpkTGlhYmls
-aXR5IGFuZCB3YXJyYW50aWVzIGFyZSBsaW1pdGVkISBTZWUgc2VjdGlvbiAiTGVnYWwgYW5kIExp
-bWl0YXRpb25zIiBvZiB0aGUgU3RhcnRDb20gQ0EgcG9saWN5LjA2BgNVHR8ELzAtMCugKaAnhiVo
-dHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9jcnR1MS1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkG
-CCsGAQUFBzABhi1odHRwOi8vb2NzcC5zdGFydHNzbC5jb20vc3ViL2NsYXNzMS9jbGllbnQvY2Ew
-QgYIKwYBBQUHMAKGNmh0dHA6Ly9haWEuc3RhcnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczEuY2xp
-ZW50LmNhLmNydDAjBgNVHRIEHDAahhhodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcN
-AQEFBQADggEBAKg1NRSonzbQhSWy57zotQS0X5O5rreeTzLT0mSyePwJxuwI5iZ2wSOFOQxC8L1a
-t5iKcFKRqmVJKpGTBHwTyG36ude1GQd4eIgDbaon/lC30y4YOV4HCuXhfP0+hLV9nN3qaspQEXZX
-gm4/9BcIlA7z5U7AOjyDeEgnpI0S4IyhEay94Xhc/h7Xqta7TALzJDbsi9P9Io8soNsuOTQEgJdg
-H5fUi3rP356IfZwcM3zUH2+qg2FBaZ4JX6Rq6v9G9TbWjlG9s9Ukfh9bSpW/G1SSSHb6bphItu5E
-kSIc5N4d9Lk3ypCnrYMvvqLspXcWeymdD7qC0KwcuOuRKEC6LBExggNvMIIDawIBATCBlDCBjDEL
-MAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdp
-dGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFy
-eSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMEJnowCQYFKw4DAhoFAKCCAa8wGAYJKoZIhvcNAQkD
-MQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTMwMjA3MjEwMjM4WjAjBgkqhkiG9w0BCQQx
-FgQUWFuHPUWE75DvhFGssZSDhS6b/CEwgaUGCSsGAQQBgjcQBDGBlzCBlDCBjDELMAkGA1UEBhMC
-SUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRp
-ZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1l
-ZGlhdGUgQ2xpZW50IENBAgMEJnowgacGCyqGSIb3DQEJEAILMYGXoIGUMIGMMQswCQYDVQQGEwJJ
-TDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlm
-aWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVk
-aWF0ZSBDbGllbnQgQ0ECAwQmejANBgkqhkiG9w0BAQEFAASCAQA94m8Z488n5j51Gd1pZzetT+8f
-bXLQTggIj1jnPhrKA9tNlROxKoTB+BKW1TT8He45F6uqgHHjxWjy27QIEKMIkOX/wgtU968zfcAa
-sk5Z+JpjOsN+SMuP95R5ux+Lgpj3J+euWeNN0lFAm6EdD79nZY6iQaqhAMo4LQI2suyk8eGMTp2f
-fUtGy5H1LKWXxzG64y0QCpQkyeKTIT31cXFVewHvmJ2luO5qtr6MiQm1X5lVrbCj+Xl1COZnlaOH
-nyPCu5cnuvEyRKODeLI21w8z3O6udCmVm0WIYYglDI0NT+HNrxuyhk9idh2LNMR8DSwnf59nFymM
-j3ocJYuLyGafAAAAAAAA
-
-
---=-7ppvYpMJLSYElpL2J0nn--
+diff --git a/drivers/misc/mei/bus.c b/drivers/misc/mei/bus.c
+index 9689b95..97afec6 100644
+--- a/drivers/misc/mei/bus.c
++++ b/drivers/misc/mei/bus.c
+@@ -119,16 +119,37 @@ static struct device_type mei_client_type = {
+ 	.release	= mei_client_dev_release,
+ };
+ 
++static struct mei_cl *mei_bus_find_mei_cl_by_uuid(struct mei_device *mei_dev,
++						uuid_le uuid)
++{
++	struct mei_cl *cl, *next;
++
++	list_for_each_entry_safe(cl, next,
++				 &mei_dev->bus_client_list, bus_client_link) {
++		if (!uuid_le_cmp(uuid, cl->bus_client_uuid))
++			return cl;
++	}
++
++	return NULL;
++}
++
+ struct mei_bus_client *mei_add_device(struct mei_device *mei_dev,
+ 				      uuid_le uuid, char *name)
+ {
+ 	struct mei_bus_client *client;
++	struct mei_cl *cl;
+ 	int status;
+ 
++	cl = mei_bus_find_mei_cl_by_uuid(mei_dev, uuid);
++	if (cl == NULL)
++		return NULL;
++
+ 	client = kzalloc(sizeof(struct mei_bus_client), GFP_KERNEL);
+ 	if (!client)
+ 		return NULL;
+ 
++	client->cl = cl;
++
+ 	client->mei_dev = mei_dev;
+ 	client->uuid = uuid;
+ 	strlcpy(client->name, name, sizeof(client->name));
+@@ -140,19 +161,17 @@ struct mei_bus_client *mei_add_device(struct mei_device *mei_dev,
+ 	dev_set_name(&client->dev, "%s", client->name);
+ 
+ 	status = device_register(&client->dev);
+-	if (status)
+-		goto out_err;
++	if (status) {
++		kfree(client);
++		dev_err(client->dev.parent, "Failed to register MEI client\n");
++		return NULL;
++	}
++
++	cl->client = client;
+ 
+ 	dev_dbg(&client->dev, "client %s registered\n", client->name);
+ 
+ 	return client;
+-
+-out_err:
+-	dev_err(client->dev.parent, "Failed to register MEI client\n");
+-
+-	kfree(client);
+-
+-	return NULL;
+ }
+ EXPORT_SYMBOL(mei_add_device);
+ 
+@@ -353,9 +372,10 @@ out:
+ 
+ int mei_bus_send(struct mei_bus_client *client, u8 *buf, size_t length)
+ {
+-	struct mei_cl *cl = NULL;
++	struct mei_cl *cl = client->cl;
+ 
+-	/* TODO: hook between mei_bus_client and mei_cl */
++	if (cl == NULL)
++		return -ENODEV;
+ 
+ 	if (client->ops && client->ops->send)
+ 		return client->ops->send(client, buf, length);
+@@ -366,9 +386,10 @@ EXPORT_SYMBOL(mei_bus_send);
+ 
+ int mei_bus_recv(struct mei_bus_client *client, u8 *buf, size_t length)
+ {
+-	struct mei_cl *cl = NULL;
++	struct mei_cl *cl =  client->cl;
+ 
+-	/* TODO: hook between mei_bus_client and mei_cl */
++	if (cl == NULL)
++		return -ENODEV;
+ 
+ 	if (client->ops && client->ops->recv)
+ 		return client->ops->recv(client, buf, length);
+diff --git a/drivers/misc/mei/client.c b/drivers/misc/mei/client.c
+index 1569afe..5724499 100644
+--- a/drivers/misc/mei/client.c
++++ b/drivers/misc/mei/client.c
+@@ -216,6 +216,7 @@ void mei_cl_init(struct mei_cl *cl, struct mei_device *dev)
+ 	init_waitqueue_head(&cl->rx_wait);
+ 	init_waitqueue_head(&cl->tx_wait);
+ 	INIT_LIST_HEAD(&cl->link);
++	INIT_LIST_HEAD(&cl->bus_client_link);
+ 	cl->reading_state = MEI_IDLE;
+ 	cl->writing_state = MEI_IDLE;
+ 	cl->dev = dev;
+diff --git a/drivers/misc/mei/init.c b/drivers/misc/mei/init.c
+index 6ec5301..b812d56 100644
+--- a/drivers/misc/mei/init.c
++++ b/drivers/misc/mei/init.c
+@@ -46,6 +46,7 @@ void mei_device_init(struct mei_device *dev)
+ {
+ 	/* setup our list array */
+ 	INIT_LIST_HEAD(&dev->file_list);
++	INIT_LIST_HEAD(&dev->bus_client_list);
+ 	mutex_init(&dev->device_lock);
+ 	init_waitqueue_head(&dev->wait_recvd_msg);
+ 	init_waitqueue_head(&dev->wait_stop_wd);
+diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
+index 948f791..d9adad6 100644
+--- a/drivers/misc/mei/mei_dev.h
++++ b/drivers/misc/mei/mei_dev.h
+@@ -210,6 +210,11 @@ struct mei_cl {
+ 	enum mei_file_transaction_states writing_state;
+ 	int sm_state;
+ 	struct mei_cl_cb *read_cb;
++
++	/* MEI bus data */
++	struct mei_bus_client *client;
++	struct list_head bus_client_link;
++	uuid_le bus_client_uuid;
+ };
+ 
+ /** struct mei_hw_ops
+@@ -403,6 +408,9 @@ struct mei_device {
+ 
+ 	struct work_struct init_work;
+ 
++	/* List of bus clients */
++	struct list_head bus_client_list;
++
+ 	const struct mei_hw_ops *ops;
+ 	char hw[0] __aligned(sizeof(void *));
+ };
+-- 
+1.7.4.4
 
