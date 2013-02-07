@@ -1,63 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932185Ab3BGRgM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 12:36:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55055 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932128Ab3BGRgJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 12:36:09 -0500
-Date: Thu, 7 Feb 2013 18:34:47 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrey Vagin <avagin@openvz.org>
-Cc: linux-kernel@vger.kernel.org, criu@openvz.org,
-        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: Re: [PATCH 3/3] signalfd: add ability to read siginfo-s without
-	dequeuing signals (v2)
-Message-ID: <20130207173447.GA5888@redhat.com>
-References: <1358849741-9611-4-git-send-email-avagin@openvz.org> <1359486181-29088-1-git-send-email-avagin@openvz.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1359486181-29088-1-git-send-email-avagin@openvz.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S932206Ab3BGRgV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 12:36:21 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:51587 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932128Ab3BGRgQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 12:36:16 -0500
+From: manjunath.goudar@linaro.org
+To: linux-usb@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        stern@rowland.harvard.edu, arnd@linaro.org, gregkh@linuxfoundation.org,
+        Manjunath Goudar <manjunath.goudar@linaro.org>,
+        Greg KH <greg@kroah.com>, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 05/10] USB: EHCI: make ehci-atmel a separate driver
+Date: Thu,  7 Feb 2013 23:04:02 +0530
+Message-Id: <5113e60e.c84e420a.08c3.ffffbeda@mx.google.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1360258447-27247-1-git-send-email-yes>
+References: <yes>
+ <1360258447-27247-1-git-send-email-yes>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrey, sorry for delay.
+From: Manjunath Goudar <manjunath.goudar@linaro.org>
 
-As for API, I leave this to you and Michael. Not that I like these
-new flags, but I agree that pread() hack was not pretty too.
+Separate the Atmel host controller driver from ehci-hcd host code
+into its own driver module.
 
-On 01/29, Andrey Vagin wrote:
-> +static ssize_t signalfd_peek(struct signalfd_ctx *ctx,
-> +				siginfo_t *info, loff_t *ppos, int queue_mask)
-> +{
-> +	loff_t seq = *ppos / sizeof(struct signalfd_siginfo);
-> +	int signr = 0;
-> +
-> +	if (queue_mask & SIGQUEUE_PRIVATE)
-> +		signr = peek_signal(&current->pending,
-> +					&ctx->sigmask, info, &seq);
-> +	else if (queue_mask & SIGQUEUE_SHARED)
-> +		signr = peek_signal(&current->signal->shared_pending,
-> +					 &ctx->sigmask, info, &seq);
-> +	(*ppos) += sizeof(struct signalfd_siginfo);
+Signed-off-by: Manjunath Goudar <manjunath.goudar@linaro.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg KH <greg@kroah.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Andrew Victor <linux@maxim.org.za>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Cc: linux-usb@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/usb/host/Kconfig      |    7 ++++
+ drivers/usb/host/Makefile     |    1 +
+ drivers/usb/host/ehci-atmel.c |   78 ++++++++++++++++++++++-------------------
+ drivers/usb/host/ehci-hcd.c   |    6 +---
+ 4 files changed, 51 insertions(+), 41 deletions(-)
 
-Now that this can work even with normal read(), we will actually change
-f_pos. Then perhaps signalfd_fops->llseek() should work too. But this
-is minor...
-
-Hmm. but since it works with read(), we shouldn't increment *ppos unless
-signalfd_copyinfo() succeeds?
-
-Btw, why do you pass seq by reference? Looks unneeded.
-
-Oleg.
+diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+index 3689b7b..5a13f9d 100644
+--- a/drivers/usb/host/Kconfig
++++ b/drivers/usb/host/Kconfig
+@@ -176,6 +176,13 @@ config USB_EHCI_HCD_ORION
+         ---help---
+           Enables support for the on-chip EHCI controller on
+           Morvell Orion chips.
++config USB_EHCI_HCD_AT91
++        tristate  "Support for Atmel on-chip EHCI USB controller"
++        depends on USB_EHCI_HCD && ARCH_AT91
++        default y
++        ---help---
++          Enables support for the on-chip EHCI controller on
++          Atmel chips.
+ 
+ config USB_EHCI_MSM
+ 	bool "Support for MSM on-chip EHCI USB controller"
+diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
+index 23b07dd..96b4839 100644
+--- a/drivers/usb/host/Makefile
++++ b/drivers/usb/host/Makefile
+@@ -31,6 +31,7 @@ obj-$(CONFIG_USB_EHCI_HCD_OMAP) += ehci-omap.o
+ obj-$(CONFIG_USB_EHCI_HCD_SPEAR)+= ehci-spear.o
+ obj-$(CONFIG_USB_EHCI_HCD_ORION)+= ehci-orion.o
+ obj-$(CONFIG_USB_OXU210HP_HCD)	+= oxu210hp-hcd.o
++obj-$(CONFIG_USB_EHCI_HCD_AT91) += ehci-atmel.o
+ obj-$(CONFIG_USB_ISP116X_HCD)	+= isp116x-hcd.o
+ obj-$(CONFIG_USB_ISP1362_HCD)	+= isp1362-hcd.o
+ obj-$(CONFIG_USB_OHCI_HCD)	+= ohci-hcd.o
+diff --git a/drivers/usb/host/ehci-atmel.c b/drivers/usb/host/ehci-atmel.c
+index 27639487..2f06711 100644
+--- a/drivers/usb/host/ehci-atmel.c
++++ b/drivers/usb/host/ehci-atmel.c
+@@ -15,6 +15,19 @@
+ #include <linux/platform_device.h>
+ #include <linux/of.h>
+ #include <linux/of_platform.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/usb.h>
++#include <linux/usb/hcd.h>
++#include <linux/io.h>
++#include <linux/dma-mapping.h>
++
++#include "ehci.h"
++
++#define DRIVER_DESC "EHCI atmel driver"
++
++static const char hcd_name[] = "ehci-atmel";
++static struct hc_driver __read_mostly ehci_atmel_hc_driver;
+ 
+ /* interface and function clocks */
+ static struct clk *iclk, *fclk;
+@@ -60,41 +73,6 @@ static int ehci_atmel_setup(struct usb_hcd *hcd)
+ 	return ehci_setup(hcd);
+ }
+ 
+-static const struct hc_driver ehci_atmel_hc_driver = {
+-	.description		= hcd_name,
+-	.product_desc		= "Atmel EHCI UHP HS",
+-	.hcd_priv_size		= sizeof(struct ehci_hcd),
+-
+-	/* generic hardware linkage */
+-	.irq			= ehci_irq,
+-	.flags			= HCD_MEMORY | HCD_USB2,
+-
+-	/* basic lifecycle operations */
+-	.reset			= ehci_atmel_setup,
+-	.start			= ehci_run,
+-	.stop			= ehci_stop,
+-	.shutdown		= ehci_shutdown,
+-
+-	/* managing i/o requests and associated device resources */
+-	.urb_enqueue		= ehci_urb_enqueue,
+-	.urb_dequeue		= ehci_urb_dequeue,
+-	.endpoint_disable	= ehci_endpoint_disable,
+-	.endpoint_reset		= ehci_endpoint_reset,
+-
+-	/* scheduling support */
+-	.get_frame_number	= ehci_get_frame,
+-
+-	/* root hub support */
+-	.hub_status_data	= ehci_hub_status_data,
+-	.hub_control		= ehci_hub_control,
+-	.bus_suspend		= ehci_bus_suspend,
+-	.bus_resume		= ehci_bus_resume,
+-	.relinquish_port	= ehci_relinquish_port,
+-	.port_handed_over	= ehci_port_handed_over,
+-
+-	.clear_tt_buffer_complete	= ehci_clear_tt_buffer_complete,
+-};
+-
+ static u64 at91_ehci_dma_mask = DMA_BIT_MASK(32);
+ 
+ static int ehci_atmel_drv_probe(struct platform_device *pdev)
+@@ -210,7 +188,35 @@ static struct platform_driver ehci_atmel_driver = {
+ 	.remove		= ehci_atmel_drv_remove,
+ 	.shutdown	= usb_hcd_platform_shutdown,
+ 	.driver		= {
+-		.name	= "atmel-ehci",
++		.name	= hcd_name,
+ 		.of_match_table	= of_match_ptr(atmel_ehci_dt_ids),
+ 	},
+ };
++
++static const struct ehci_driver_overrides atmel_overrides __initdata = {
++	.reset = ehci_atmel_setup,
++};
++
++static int __init ehci_atmel_init(void)
++{
++	if (usb_disabled())
++		return -ENODEV;
++
++	pr_info("%s: " DRIVER_DESC "\n", hcd_name);
++	ehci_init_driver(&ehci_atmel_hc_driver, &atmel_overrides);
++	return platform_driver_register(&ehci_atmel_driver);
++}
++module_init(ehci_atmel_init);
++
++static void __exit ehci_atmel_cleanup(void)
++{
++	platform_driver_unregister(&ehci_atmel_driver);
++}
++module_exit(ehci_atmel_cleanup);
++
++MODULE_DESCRIPTION(DRIVER_DESC);
++
++MODULE_ALIAS("platform:ehci-atmel");
++MODULE_AUTHOR("Nicolas Ferre");
++MODULE_LICENSE("GPL");
++
+diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
+index 5a19a57..628ed139 100644
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -1272,11 +1272,6 @@ MODULE_LICENSE ("GPL");
+ #define	PLATFORM_DRIVER		ehci_hcd_w90x900_driver
+ #endif
+ 
+-#ifdef CONFIG_ARCH_AT91
+-#include "ehci-atmel.c"
+-#define	PLATFORM_DRIVER		ehci_atmel_driver
+-#endif
+-
+ #ifdef CONFIG_USB_OCTEON_EHCI
+ #include "ehci-octeon.c"
+ #define PLATFORM_DRIVER		ehci_octeon_driver
+@@ -1334,6 +1329,7 @@ MODULE_LICENSE ("GPL");
+ 	!defined(PLATFORM_DRIVER) && \
+ 	!IS_ENABLED(CONFIG_USB_EHCI_HCD_OMAP) && \
+ 	!IS_ENABLED(CONFIG_PLAT_SPEAR) && \
++	!IS_ENABLED(CONFIG_ARCH_AT91) && \
+ 	!defined(PS3_SYSTEM_BUS_DRIVER) && \
+ 	!defined(OF_PLATFORM_DRIVER) && \
+ 	!defined(XILINX_OF_PLATFORM_DRIVER)
+-- 
+1.7.9.5
 
