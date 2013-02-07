@@ -1,42 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161043Ab3BGTOF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 14:14:05 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:40265 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759032Ab3BGTOC (ORCPT
+	id S932187Ab3BGTNx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 14:13:53 -0500
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:57890 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759016Ab3BGTNv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 14:14:02 -0500
-Message-ID: <5113FCF8.1060402@wwwdotorg.org>
-Date: Thu, 07 Feb 2013 12:14:00 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Thu, 7 Feb 2013 14:13:51 -0500
+Date: Thu, 7 Feb 2013 20:13:45 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Clark Williams <williams@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] scheduler include file reorganization
+Message-ID: <20130207191345.GA28960@gmail.com>
+References: <20130207094650.76302f47@riff.lan>
+ <20130207185608.GA25223@gmail.com>
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>
-CC: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>, Joseph Lo <josephl@nvidia.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] clk: tegra: Add missing spinlock for hclk and pclk
-References: <1360255064-28833-1-git-send-email-pdeschrijver@nvidia.com> <20130207174906.11471.47056@quantum>
-In-Reply-To: <20130207174906.11471.47056@quantum>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130207185608.GA25223@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2013 10:49 AM, Mike Turquette wrote:
-> Quoting Peter De Schrijver (2013-02-07 08:37:35)
->> The hclk and pclk clocks are controlled by the same register. Hence a lock is
->> required to avoid corruption.
->>
->> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
-> 
-> I assume this is going through the tegra tree with the other ccf
-> patches, so:
-> 
-> Acked-by: Mike Turquette <mturquette@linaro.org>
 
-I've applied this to Tegra's for-3.9/soc-ccf-fixes branch.
+* Ingo Molnar <mingo@kernel.org> wrote:
+
+> Yeah, that looks pretty good.
+> 
+> I'll give it some testing.
+
+Found one build error so far, applied the fix below.
+
+Thanks,
+
+	Ingo
+
+---
+ kernel/mutex.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+Index: linux/kernel/mutex.c
+===================================================================
+--- linux.orig/kernel/mutex.c
++++ linux/kernel/mutex.c
+@@ -19,6 +19,7 @@
+  */
+ #include <linux/mutex.h>
+ #include <linux/sched.h>
++#include <linux/sched/rt.h>
+ #include <linux/export.h>
+ #include <linux/spinlock.h>
+ #include <linux/interrupt.h>
+
