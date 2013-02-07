@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030210Ab3BGRge (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 12:36:34 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:62821 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759188Ab3BGRgc (ORCPT
+	id S932217Ab3BGRgm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 12:36:42 -0500
+Received: from mail-da0-f52.google.com ([209.85.210.52]:41985 "EHLO
+	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030213Ab3BGRgk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 12:36:32 -0500
+	Thu, 7 Feb 2013 12:36:40 -0500
 From: manjunath.goudar@linaro.org
 To: linux-usb@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, patches@linaro.org,
         stern@rowland.harvard.edu, arnd@linaro.org, gregkh@linuxfoundation.org,
         Manjunath Goudar <manjunath.goudar@linaro.org>,
-        Greg KH <greg@kroah.com>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>, linux-kernel@vger.kernel.org
-Subject: [PATCH 07/10] USB: EHCI: make ehci-mv a separate driver
-Date: Thu,  7 Feb 2013 23:04:04 +0530
-Message-Id: <5113e61e.c84e420a.08c3.ffffbefa@mx.google.com>
+        Greg KH <greg@kroah.com>, Tony Prisk <linux@prisktech.co.nz>,
+        Alexey Charkov <alchark@gmail.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 08/10] USB: EHCI: make ehci-vt8500 a separate driver
+Date: Thu,  7 Feb 2013 23:04:05 +0530
+Message-Id: <5113e626.c84e420a.08c3.ffffbf07@mx.google.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1360258447-27247-1-git-send-email-yes>
 References: <yes>
@@ -27,187 +27,172 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Manjunath Goudar <manjunath.goudar@linaro.org>
 
-Separate the mv(marvell) host controller driver from ehci-hcd host code
+Separate the vt8500 host controller driver from ehci-hcd host code
 into its own driver module.
 
 Signed-off-by: Manjunath Goudar <manjunath.goudar@linaro.org>
 Cc: Greg KH <greg@kroah.com>
 Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Tony Prisk <linux@prisktech.co.nz>
+Cc: Alexey Charkov <alchark@gmail.com>
 Cc: linux-usb@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/usb/host/Kconfig    |    2 +-
- drivers/usb/host/Makefile   |    1 +
- drivers/usb/host/ehci-hcd.c |    6 +---
- drivers/usb/host/ehci-mv.c  |   81 ++++++++++++++++++++-----------------------
- 4 files changed, 40 insertions(+), 50 deletions(-)
+ drivers/usb/host/Kconfig       |    8 +++++
+ drivers/usb/host/Makefile      |    1 +
+ drivers/usb/host/ehci-hcd.c    |    5 ---
+ drivers/usb/host/ehci-vt8500.c |   73 ++++++++++++++++++----------------------
+ 4 files changed, 42 insertions(+), 45 deletions(-)
 
 diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index f2e0ed3..e7c3ce0 100644
+index e7c3ce0..d20d22c 100644
 --- a/drivers/usb/host/Kconfig
 +++ b/drivers/usb/host/Kconfig
-@@ -227,7 +227,7 @@ config USB_EHCI_S5P
- 	 Enable support for the S5P SOC's on-chip EHCI controller.
+@@ -162,6 +162,14 @@ config USB_EHCI_HCD_OMAP
+ 	  Enables support for the on-chip EHCI controller on
+ 	  OMAP3 and later chips.
  
- config USB_EHCI_MV
--	bool "EHCI support for Marvell on-chip controller"
-+	tristate "EHCI support for Marvell on-chip controller"
- 	depends on USB_EHCI_HCD && (ARCH_PXA || ARCH_MMP)
- 	select USB_EHCI_ROOT_HUB_TT
- 	---help---
++config USB_EHCI_HCD_VT8500
++        tristate "Support for VT8500 on-chip EHCI USB controller"
++        depends on USB_EHCI_HCD && ARCH_VT8500
++        default y
++        ---help---
++          Enables support for the on-chip EHCI controller on
++          VT8500 chips.
++
+ config USB_EHCI_HCD_SPEAR
+         tristate "Support for ST spear on-chip EHCI USB controller"
+         depends on USB_EHCI_HCD && PLAT_SPEAR
 diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
-index 5c4f5e1..677f1d3 100644
+index 677f1d3..cf71e5d 100644
 --- a/drivers/usb/host/Makefile
 +++ b/drivers/usb/host/Makefile
-@@ -33,6 +33,7 @@ obj-$(CONFIG_USB_EHCI_HCD_ORION)+= ehci-orion.o
- obj-$(CONFIG_USB_OXU210HP_HCD)	+= oxu210hp-hcd.o
+@@ -34,6 +34,7 @@ obj-$(CONFIG_USB_OXU210HP_HCD)	+= oxu210hp-hcd.o
  obj-$(CONFIG_USB_EHCI_HCD_AT91) += ehci-atmel.o
  obj-$(CONFIG_USB_EHCI_S5P)      += ehci-s5p.o
-+obj-$(CONFIG_USB_EHCI_MV)       += ehci-mv.o
+ obj-$(CONFIG_USB_EHCI_MV)       += ehci-mv.o
++obj-$(CONFIG_USB_EHCI_HCD_VT8500)+= ehci-vt8500.o
  obj-$(CONFIG_USB_ISP116X_HCD)	+= isp116x-hcd.o
  obj-$(CONFIG_USB_ISP1362_HCD)	+= isp1362-hcd.o
  obj-$(CONFIG_USB_OHCI_HCD)	+= ohci-hcd.o
 diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
-index 36557e3..e636719 100644
+index e636719..952f85e 100644
 --- a/drivers/usb/host/ehci-hcd.c
 +++ b/drivers/usb/host/ehci-hcd.c
-@@ -1307,11 +1307,6 @@ MODULE_LICENSE ("GPL");
- #define PLATFORM_DRIVER		ehci_grlib_driver
+@@ -1277,11 +1277,6 @@ MODULE_LICENSE ("GPL");
+ #define PLATFORM_DRIVER		ehci_octeon_driver
  #endif
  
--#ifdef CONFIG_USB_EHCI_MV
--#include "ehci-mv.c"
--#define        PLATFORM_DRIVER         ehci_mv_driver
+-#ifdef CONFIG_ARCH_VT8500
+-#include "ehci-vt8500.c"
+-#define	PLATFORM_DRIVER		vt8500_ehci_driver
 -#endif
 -
- #ifdef CONFIG_MIPS_SEAD3
- #include "ehci-sead3.c"
- #define	PLATFORM_DRIVER		ehci_hcd_sead3_driver
-@@ -1326,6 +1321,7 @@ MODULE_LICENSE ("GPL");
- 	!IS_ENABLED(CONFIG_PLAT_SPEAR) && \
- 	!IS_ENABLED(CONFIG_ARCH_AT91) && \
- 	!IS_ENABLED(CONFIG_USB_EHCI_S5P) && \
-+	!IS_ENABLED(CONFIG_USB_EHCI_MV) && \
- 	!defined(PS3_SYSTEM_BUS_DRIVER) && \
- 	!defined(OF_PLATFORM_DRIVER) && \
- 	!defined(XILINX_OF_PLATFORM_DRIVER)
-diff --git a/drivers/usb/host/ehci-mv.c b/drivers/usb/host/ehci-mv.c
-index 6c56297..67de419 100644
---- a/drivers/usb/host/ehci-mv.c
-+++ b/drivers/usb/host/ehci-mv.c
-@@ -17,7 +17,18 @@
- #include <linux/usb/otg.h>
- #include <linux/platform_data/mv_usb.h>
+ #ifdef CONFIG_USB_EHCI_MSM
+ #include "ehci-msm.c"
+ #define PLATFORM_DRIVER		ehci_msm_driver
+diff --git a/drivers/usb/host/ehci-vt8500.c b/drivers/usb/host/ehci-vt8500.c
+index 11695d5..ff4e3ae 100644
+--- a/drivers/usb/host/ehci-vt8500.c
++++ b/drivers/usb/host/ehci-vt8500.c
+@@ -16,52 +16,25 @@
+  *
+  */
  
++#include <linux/kernel.h>
++#include <linux/module.h>
 +#include <linux/usb.h>
 +#include <linux/usb/hcd.h>
 +#include <linux/io.h>
 +#include <linux/dma-mapping.h>
-+
+ #include <linux/of.h>
+ #include <linux/platform_device.h>
+ 
+-static const struct hc_driver vt8500_ehci_hc_driver = {
+-	.description		= hcd_name,
+-	.product_desc		= "VT8500 EHCI",
+-	.hcd_priv_size		= sizeof(struct ehci_hcd),
 +#include "ehci.h"
-+
-+#define DRIVER_DESC "EHCI mv driver"
-+
- #define CAPLENGTH_MASK         (0xff)
-+static const char hcd_name[] = "ehci-mv";
-+static struct hc_driver __read_mostly mv_ehci_hc_driver;
  
- struct ehci_hcd_mv {
- 	struct usb_hcd *hcd;
-@@ -95,48 +106,6 @@ static int mv_ehci_reset(struct usb_hcd *hcd)
- 	return retval;
- }
- 
--static const struct hc_driver mv_ehci_hc_driver = {
--	.description = hcd_name,
--	.product_desc = "Marvell EHCI",
--	.hcd_priv_size = sizeof(struct ehci_hcd),
--
 -	/*
 -	 * generic hardware linkage
 -	 */
--	.irq = ehci_irq,
--	.flags = HCD_MEMORY | HCD_USB2,
+-	.irq			= ehci_irq,
+-	.flags			= HCD_MEMORY | HCD_USB2,
 -
 -	/*
 -	 * basic lifecycle operations
 -	 */
--	.reset = mv_ehci_reset,
--	.start = ehci_run,
--	.stop = ehci_stop,
--	.shutdown = ehci_shutdown,
--
+-	.reset			= ehci_setup,
+-	.start			= ehci_run,
+-	.stop			= ehci_stop,
+-	.shutdown		= ehci_shutdown,
++#define DRIVER_DESC "vt8500 On-Chip EHCI Host driver"
+ 
 -	/*
 -	 * managing i/o requests and associated device resources
 -	 */
--	.urb_enqueue = ehci_urb_enqueue,
--	.urb_dequeue = ehci_urb_dequeue,
--	.endpoint_disable = ehci_endpoint_disable,
--	.endpoint_reset = ehci_endpoint_reset,
--	.clear_tt_buffer_complete = ehci_clear_tt_buffer_complete,
--
+-	.urb_enqueue		= ehci_urb_enqueue,
+-	.urb_dequeue		= ehci_urb_dequeue,
+-	.endpoint_disable	= ehci_endpoint_disable,
+-	.endpoint_reset		= ehci_endpoint_reset,
++static const char hcd_name[] = "ehci-vt8500";
+ 
 -	/*
 -	 * scheduling support
 -	 */
--	.get_frame_number = ehci_get_frame,
--
+-	.get_frame_number	= ehci_get_frame,
++static struct hc_driver __read_mostly vt8500_ehci_hc_driver;
+ 
 -	/*
 -	 * root hub support
 -	 */
--	.hub_status_data = ehci_hub_status_data,
--	.hub_control = ehci_hub_control,
--	.bus_suspend = ehci_bus_suspend,
--	.bus_resume = ehci_bus_resume,
--};
+-	.hub_status_data	= ehci_hub_status_data,
+-	.hub_control		= ehci_hub_control,
+-	.bus_suspend		= ehci_bus_suspend,
+-	.bus_resume		= ehci_bus_resume,
+-	.relinquish_port	= ehci_relinquish_port,
+-	.port_handed_over	= ehci_port_handed_over,
 -
- static int mv_ehci_probe(struct platform_device *pdev)
- {
- 	struct mv_usb_platform_data *pdata = pdev->dev.platform_data;
-@@ -302,7 +271,6 @@ static int mv_ehci_remove(struct platform_device *pdev)
- {
- 	struct ehci_hcd_mv *ehci_mv = platform_get_drvdata(pdev);
- 	struct usb_hcd *hcd = ehci_mv->hcd;
--	int clk_i;
- 
- 	if (hcd->rh_registered)
- 		usb_remove_hcd(hcd);
-@@ -351,8 +319,33 @@ static struct platform_driver ehci_mv_driver = {
- 	.remove = mv_ehci_remove,
- 	.shutdown = mv_ehci_shutdown,
- 	.driver = {
--		   .name = "mv-ehci",
-+		   .name = hcd_name,
- 		   .bus = &platform_bus_type,
- 		   },
- 	.id_table = ehci_id_table,
+-	.clear_tt_buffer_complete	= ehci_clear_tt_buffer_complete,
++static const struct ehci_driver_overrides ehci_vt8500_overrides __initdata = {
++	.reset = ehci_setup,
  };
-+static const struct ehci_driver_overrides mv_overrides __initdata = {
-+	.reset = mv_ehci_reset,
-+};
-+
-+static int __init ehci_mv_init(void)
+ 
+ static u64 vt8500_ehci_dma_mask = DMA_BIT_MASK(32);
+@@ -140,11 +113,31 @@ static struct platform_driver vt8500_ehci_driver = {
+ 	.remove		= vt8500_ehci_drv_remove,
+ 	.shutdown	= usb_hcd_platform_shutdown,
+ 	.driver = {
+-		.name	= "vt8500-ehci",
++		.name	= hcd_name,
+ 		.owner	= THIS_MODULE,
+ 		.of_match_table = of_match_ptr(vt8500_ehci_ids),
+ 	}
+ };
+ 
++static int __init ehci_vt8500_init(void)
 +{
 +	if (usb_disabled())
 +		return -ENODEV;
 +
 +	pr_info("%s: " DRIVER_DESC "\n", hcd_name);
-+	ehci_init_driver(&mv_ehci_hc_driver, &mv_overrides);
-+	return platform_driver_register(&ehci_mv_driver);
++	ehci_init_driver(&vt8500_ehci_hc_driver, &ehci_vt8500_overrides);
++	return platform_driver_register(&vt8500_ehci_driver);
 +}
-+module_init(ehci_mv_init);
++module_init(ehci_vt8500_init);
 +
-+static void __exit ehci_mv_cleanup(void)
++static void __exit ehci_vt8500_cleanup(void)
 +{
-+	platform_driver_unregister(&ehci_mv_driver);
++	platform_driver_unregister(&vt8500_ehci_driver);
 +}
-+module_exit(ehci_mv_cleanup);
++module_exit(ehci_vt8500_cleanup);
 +
 +MODULE_DESCRIPTION(DRIVER_DESC);
-+MODULE_ALIAS("platform:ehci-mv");
-+MODULE_AUTHOR("Marvell");
++MODULE_AUTHOR("Alexey Charkov");
 +MODULE_LICENSE("GPL");
+ MODULE_ALIAS("platform:vt8500-ehci");
+ MODULE_DEVICE_TABLE(of, vt8500_ehci_ids);
 -- 
 1.7.9.5
 
