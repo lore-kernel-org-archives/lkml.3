@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754627Ab3BFQ6w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 11:58:52 -0500
-Received: from mail.candelatech.com ([208.74.158.172]:59215 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716Ab3BFQ6u (ORCPT
+	id S1752242Ab3BFRAk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 12:00:40 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:65427 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750716Ab3BFRAg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 11:58:50 -0500
-Message-ID: <51128BC3.40304@candelatech.com>
-Date: Wed, 06 Feb 2013 08:58:43 -0800
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Wed, 6 Feb 2013 12:00:36 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: devicetree-discuss@lists.ozlabs.org
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-tegra@vger.kernel.org,
+        Andrew Murray <andrew.murray@arm.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 06/14] ARM: pci: Keep pci_common_init() around after init
+Date: Thu, 07 Feb 2013 01:54:22 +0100
+Message-ID: <9348609.HjKCmL9u9S@wuerfel>
+User-Agent: KMail/4.10 rc3 (Linux/3.8.0-3-generic; KDE/4.9.98; x86_64; ; )
+In-Reply-To: <CACRpkdYV5w6BksUjXvXs=88BovUyXgRt-vXSD0twjRpzbZcvFQ@mail.gmail.com>
+References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de> <1357764194-12677-7-git-send-email-thierry.reding@avionic-design.de> <CACRpkdYV5w6BksUjXvXs=88BovUyXgRt-vXSD0twjRpzbZcvFQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: Question on lockdep and MAX_LOCK_DEPTH
-References: <5111AD8D.1080005@candelatech.com>     <20130206015430.GA9161@home.goodmis.org>    <5111BF51.5010607@candelatech.com>    <1360119124.2621.37.camel@gandalf.local.home>    <5111CE60.4080403@candelatech.com>   <1360125419.2621.39.camel@gandalf.local.home>   <5111F6F6.7010402@candelatech.com>  <1360156888.2621.42.camel@gandalf.local.home>  <51127D15.7080503@candelatech.com> <1360166840.2621.45.camel@gandalf.local.home>
-In-Reply-To: <1360166840.2621.45.camel@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:uhoa/l6fAq4/YBeNS6dsqJMe56J2fFvMQEHwH1sayGR
+ ceWZlSry4m9EnnktbRj8gRuTJy1TfSVCBxC9JGdEeXvld/vZUI
+ 3yfV42cZZsZnlOPg0KBpkusBfqK5JEgzxrQmo6llZxMibXcH4Y
+ To0JB7vKM5M8JyjYFh36A0sZVR1WXukCFgVlorTQdlj7nugzSI
+ dby7HCiUA3IsI+n5vWCVSezbPtrd1T8LukZmNNuHam7+eFXwqe
+ zMMXvDZhX6SMMRGfCAF0ZzKHvCG7pL95pvx4kO0vsVoaTTc1B+
+ 8LMmYD8Z2NKqO4cwigsY0Kdzp1MVGJYbYv1/esYEgBh4aEOWyw
+ h4Fud+4jjZb7ZLnWjO9c=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/2013 08:07 AM, Steven Rostedt wrote:
-> On Wed, 2013-02-06 at 07:56 -0800, Ben Greear wrote:
->
->>> I'm 99% sure that the bug is in your modifications.
->>
->> I'm sorry, I tried to make that clear.
->
-> You said it was an out of tree module, I didn't realize it had changes
-> to the core Linux as well.
->
->
->> My tree is here, minus a few debugging patches related to this bug:
->>
->> http://dmz2.candelatech.com/git/gitweb.cgi?p=linux-3.7.dev.y/.git;a=summary
->
-> Here's your bug:
->
-> 3319         list_for_each_entry_rcu(ptype, &ptype_all, list) {
-> 3320                 if (!ptype->dev || ptype->dev == skb->dev) {
-> 3321                         if (pt_prev) {
-> 3322                                 ret = deliver_skb(skb, pt_prev, orig_dev);
-> 3323                                 if (ret == NET_RX_CONSUMED) {
-> 3324                                         kfree_skb(skb); /* we made a copy in deliver_skb */
-> 3325                                         goto out;
-> 3326                                 }
-> 3327                         }
->
-> One of many. All those "goto out;"s skip the rcu_read_unlock().
+On Wednesday 06 February 2013 17:38:20 Linus Walleij wrote:
+> On Wed, Jan 9, 2013 at 9:43 PM, Thierry Reding
+> <thierry.reding@avionic-design.de> wrote:
+> 
+> > When using deferred driver probing, PCI host controller drivers may
+> > actually require this function after the init stage.
+> >
+> > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+> 
+> There seem to be a proliferation of these patches now.
+> 
+> Isn't this just papering over the real problem? The discarding
+> of __init sections need to happen *after* all deferred probes
+> are complete, lest we have to remove *all* __init sections from
+> *all* drivers in the kernel, don't we?
 
-Thank you so much!
+No, I think it's not quite that bad. I think the rule is still
+just that .probe() functions and anything called from them must
+not be __init. They used to be __devinit, which would cause
+problems with deferred probing on !HOTPLUG systems but that's
+gone in 3.9.
 
-I'll fix this and continue testing...
+Thierry's patch is just necessary because pci_common_init used
+to be called only from actual __init functions, and not it
+gets called from a .probe() function for the first time.
 
-I can also post a patch to print the held locks when
-the max-lock-depth overflows unless someone else prefers
-to...
-
-Thanks,
-Ben
-
-
--- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
-
+	Arnd
