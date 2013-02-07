@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758443Ab3BGM72 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 07:59:28 -0500
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:60343 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758381Ab3BGM7V (ORCPT
+	id S1758307Ab3BGNCm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 08:02:42 -0500
+Received: from stinky.trash.net ([213.144.137.162]:58110 "EHLO
+	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751411Ab3BGNCk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 07:59:21 -0500
-Date: Thu, 7 Feb 2013 13:59:04 +0100
-From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Vivek Goyal <vgoyal@redhat.com>, Hugh Dickins <hughd@google.com>,
-        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Michel Lespinasse <walken@google.com>
-Subject: Re: [PATCH] mm: don't overwrite mm->def_flags in do_mlockall()
-Message-ID: <20130207135904.0ca7a3d5@thinkpad>
-In-Reply-To: <20130206125103.61748ed0.akpm@linux-foundation.org>
-References: <1360165774-55458-1-git-send-email-gerald.schaefer@de.ibm.com>
-	<20130206125103.61748ed0.akpm@linux-foundation.org>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-x-cbid: 13020712-3548-0000-0000-0000047D764C
+	Thu, 7 Feb 2013 08:02:40 -0500
+Date: Thu, 7 Feb 2013 14:02:30 +0100
+From: Patrick McHardy <kaber@trash.net>
+To: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
+Cc: Linux Netdev List <netdev@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Alexandre DERUMIER <aderumier@odiso.com>
+Subject: Re: Problem with GVRP on eth while having a bridge
+Message-ID: <20130207130227.GF13989@macbook.localnet>
+References: <51138866.8000802@profihost.ag>
+ <20130207112227.GE13989@macbook.localnet>
+ <511396C9.2080106@profihost.ag>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <511396C9.2080106@profihost.ag>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Feb 2013 12:51:03 -0800
-Andrew Morton <akpm@linux-foundation.org> wrote:
-
-> On Wed,  6 Feb 2013 16:49:34 +0100
-> Gerald Schaefer <gerald.schaefer@de.ibm.com> wrote:
+On Thu, Feb 07, 2013 at 12:58:01PM +0100, Stefan Priebe - Profihost AG wrote:
+> Hi Patrick,
 > 
-> > With commit 8e72033 "thp: make MADV_HUGEPAGE check for
-> > mm->def_flags" the VM_NOHUGEPAGE flag may be set on s390 in
-> > mm->def_flags for certain processes, to prevent future thp
-> > mappings. This would be overwritten by do_mlockall(), which sets it
-> > back to 0 with an optional VM_LOCKED flag set.
-> > 
-> > To fix this, instead of overwriting mm->def_flags in do_mlockall(),
-> > only the VM_LOCKED flag should be set or cleared.
+> thanks for your fast response.
 > 
-> What are the user-visible effects here?  Looking at the 274023da1e8
-> changelog, I'm guessing that it might be pretty nasty - kvm breakage?
+> > So please describe the entire GVRP message exchange that's going
+> > on.
+> I've attached two small pcap files.
+> 
+> has_bridge.pcap: is where eth1 has a bridge and the dynamic vlan
+> disappears after a few seconds.
+> 
+> no_bridge.pcap: no bridge is assigned to eth1 - the dynamic vlan stays
+> as long as i remove it
+> 
+> > Also you probably want to add the VLAN device on top of the bridge
+> > device, otherwise it will get passed to the bridge after untagging,
+> > which might not work, depending on the MAC addresses used.
+> 
+> That's working fine in vanilla kernel 3.7.6 but it does not with RHEL 6.
+> Also i looks more complicated as i need another bridge on top of the
+> vlan to assign the needed tap devices. I looked at ovirt for the network
+> setup:
+> http://www.ovirt.org/Vdsm_Network
+> 
+> and they also add the vlan directly on top of the nic and then the
+> bridge on top of the VLANs.
 
-Yes, though at the moment there should be no mlockall()/munlockall()
-involved with kvm/qemu. So currently no user-visible effects, Vivek
-found this while reading the do_mlockall() code, but it might be a
-good idea to add this to stable.
-Could you add a "Cc: stable@vger.kernel.org # v3.7+"?
+What seems to be happening is that the switch is constantly requesting
+GVRP updates. Once eth0 is added to the bridge, the bridge has preference
+over local protocol (LLC) delivery. Since the packet has a link local
+destination and your bridge doesn't seem to have STP enabled, the
+bridge decides to forward the packet. Since its a multicast destination,
+the packet is finally passed up to LLC, but the receiving device is
+the bridge, not eth0. When the packet reaches the GARP input handler,
+no garp_port is associated to the device and the packet is dropped.
+This result is that the GARP protocol doesn't notice that the switch
+expects an update and the switch finally removes the VLAN.
 
-Thanks,
-Gerald
-
+So the solution is: put the VLAN on the bridge device.
