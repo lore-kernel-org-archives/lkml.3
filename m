@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759221Ab3BGRly (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 12:41:54 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:59855 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759011Ab3BGRlx (ORCPT
+	id S1759229Ab3BGRnQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 12:43:16 -0500
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:44016 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759161Ab3BGRnP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 12:41:53 -0500
-Date: Thu, 7 Feb 2013 09:37:56 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [ANNOUNCE] 3.8-rc6-nohz4
-Message-ID: <20130207173756.GW2632@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1360175338-6735-1-git-send-email-fweisbec@gmail.com>
- <1360205415.2621.60.camel@gandalf.local.home>
- <20130207111025.GD8945@gmail.com>
- <1360253520.2621.66.camel@gandalf.local.home>
- <20130207163004.GS2632@linux.vnet.ibm.com>
- <1360256781.2621.80.camel@gandalf.local.home>
+	Thu, 7 Feb 2013 12:43:15 -0500
+Date: Thu, 7 Feb 2013 12:36:30 -0500
+From: tmhikaru@gmail.com
+To: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: Linux 3.2.38
+Message-ID: <20130207173630.GA8355@roll>
+References: <1360160863.32217.30.camel@deadeye.wl.decadent.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FL5UXtIhxfXey3p5"
 Content-Disposition: inline
-In-Reply-To: <1360256781.2621.80.camel@gandalf.local.home>
+In-Reply-To: <1360160863.32217.30.camel@deadeye.wl.decadent.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13020717-7408-0000-0000-00000C9B6A5F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 07, 2013 at 12:06:21PM -0500, Steven Rostedt wrote:
-> On Thu, 2013-02-07 at 08:30 -0800, Paul E. McKenney wrote:
-> 
-> > I suspect that removal of jiffies from the kernel will take a few stages,
-> > with RCU being one of the laggards for awhile.  Making RCU's state
-> > machine depend wholly on process-based execution will take some care
-> > and experimentation, especially for extreme and corner-case workloads.
-> > For example, having RCU OOM the system just because a specific CPU was
-> > unable to run some RCU kthread for an extended time is something to
-> > be avoided.  ;-)
-> 
-> Tickless doesn't mean no timeouts or periodic timers. I think we will
-> always have some sort of dynamic tick when needed. It will just be more
-> event driven then something that goes off constantly.
 
-As long as we don't end up replacing a single tick with multiple hrtimers
-(or whatever), ending up with more overhead and disruption than we
-started with.  ;-)
+--FL5UXtIhxfXey3p5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-							Thanx, Paul
+	Hmm. I'm not sure what's going on here but ever since I upgraded to
+this kernel my CPU use has always been at 100% - various apps (top, pidstat,
+conky) give different reasons for this, conky&pidstat claims things like
+X/the most active X application are cpu hogging, while top seems to think
+the majority of cpu use is being done by 'sys' - the interesting thing
+though is that my loadaverage is staying very close to zero.
 
+	I know that this is far from a useful bug report, but to be honest I
+don't even know where to begin checking, so I'll start a git bisect of
+3.2.37 vs 3.2.38 tonight and see what happens.
+
+Tim McGrath
+
+--FL5UXtIhxfXey3p5
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQEVAwUBURPmHpEncCrqzVruAQIrAggApiHZV7pqh1NOxlBJk+8J8Fh6LZhcFUwV
+KUqWS55GeI95CkzeqStPX2m4pq8P3Rs8HUQYXpm4+PEnb6hzv2ZDfky8rh/wdkG0
+dMLaXINVIF3fRgIlfgK8hQfHs8MFUYQ9/QfEtGJA0d84Vg4BCEYQnorIYbc4c8gq
+s4xLjdZqsolSZaL7oLjtrDDDjB79R2XbzLxK/Yxn5ufi0M/APJa8GSf6zODRBZE3
+AkNG6Eaqc1Q0wicJUAP1lzwZoJebjjXC46upxTMraUVjZx+yxFitotINLUCN/vE+
+XJy22oxgxNQJrHKntAqAztS4LrYsJAmigXviXTAdSNpHKsLfi3Dkjw==
+=061z
+-----END PGP SIGNATURE-----
+
+--FL5UXtIhxfXey3p5--
