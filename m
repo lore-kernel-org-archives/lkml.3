@@ -1,103 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757611Ab3BGERD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 23:17:03 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:30409 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751846Ab3BGEQ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 23:16:59 -0500
-X-IronPort-AV: E=Sophos;i="4.84,619,1355068800"; 
-   d="scan'208";a="6698449"
-Message-ID: <51132A56.60906@cn.fujitsu.com>
-Date: Thu, 07 Feb 2013 12:15:18 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
+	id S1757946Ab3BGER3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 23:17:29 -0500
+Received: from ozlabs.org ([203.10.76.45]:57069 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756701Ab3BGERX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 23:17:23 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Arjan van de Veen <arjan@infradead.org>, Paul Turner <pjt@google.com>,
+        Richard Weinberger <rw@linutronix.de>,
+        Magnus Damm <magnus.damm@gmail.com>
+Subject: Re: [patch 00/40] CPU hotplug rework - episode I
+In-Reply-To: <alpine.LFD.2.02.1302011128490.11905@ionos>
+References: <20130131120348.372374706@linutronix.de> <20130131122342.31b28664.akpm@linux-foundation.org> <alpine.LFD.2.02.1301312233480.11905@ionos> <CA+55aFx=cv+HxKGx+oQk4iLnnTGO7P0u3+DnvuOWbYzM-wvEeQ@mail.gmail.com> <alpine.LFD.2.02.1301312302290.11905@ionos> <CA+55aFypNfzA1HZMmAiyFo48MhUTr+gt+1uvM7SHFzXh60-KQQ@mail.gmail.com> <alpine.LFD.2.02.1302011128490.11905@ionos>
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Thu, 07 Feb 2013 14:31:04 +1030
+Message-ID: <87obfwixhb.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: davem@davemloft.net, Julian Anastasov <ja@ssi.bg>,
-        Simon Horman <horms@verge.net.au>, Linux MM <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] net: fix functions and variables related to netns_ipvs->sysctl_sync_qlen_max
-References: <51131B88.6040809@cn.fujitsu.com>
-In-Reply-To: <51131B88.6040809@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/07 12:15:34,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/07 12:15:36,
-	Serialize complete at 2013/02/07 12:15:36
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the type of netns_ipvs->sysctl_sync_qlen_max has been changed to
-unsigned long, type of its related proc var sync_qlen_max should be changed
-to unsigned long, too. Also the return type of function sysctl_sync_qlen_max().
+Thomas Gleixner <tglx@linutronix.de> writes:
+> On Fri, 1 Feb 2013, Linus Torvalds wrote:
+>> So for me it's the "expose these states" that I get worried about.. A
+>> random driver should not necessarily even be able to *see* this, and
+>> decide to be clever and take advantage of the ordering.
+>> 
+>> So I'd hope there would be some visibility restrictions. We currently
+>> have drivers already being confused by DOWN_PREPARE vs DOWN_FAILED etc
+>> etc random state transitions, and giving them even more flexibility to
+>> pick random states sounds like a really bad idea. I'd like to make
+>> sure that drivers and filesystems etc do not even *see* the states
+>> that are meant for the scheduler or workqueues, for example).
 
-Besides, the type of ipvs_master_sync_state->sync_queue_len should also be
-changed to unsigned long.
+Yeah, I assume Episode II is where we collapse each into sane states
+as Thomas clarified.  That can be reviewed: I'd hate to try to do it
+in one go.
 
-Changelog from V1:
-- change type of ipvs_master_sync_state->sync_queue_len to unsigned long
-  as Simon addressed.
-
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: David Miller <davem@davemloft.net>
-Cc: Julian Anastasov <ja@ssi.bg>
-Cc: Simon Horman <horms@verge.net.au>
-Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
----
- include/net/ip_vs.h            |    6 +++---
- net/netfilter/ipvs/ip_vs_ctl.c |    4 ++--
- 2 files changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/include/net/ip_vs.h b/include/net/ip_vs.h
-index 68c69d5..1d56f92 100644
---- a/include/net/ip_vs.h
-+++ b/include/net/ip_vs.h
-@@ -874,7 +874,7 @@ struct ip_vs_app {
- struct ipvs_master_sync_state {
- 	struct list_head	sync_queue;
- 	struct ip_vs_sync_buff	*sync_buff;
--	int			sync_queue_len;
-+	unsigned long		sync_queue_len;
- 	unsigned int		sync_queue_delay;
- 	struct task_struct	*master_thread;
- 	struct delayed_work	master_wakeup_work;
-@@ -1052,7 +1052,7 @@ static inline int sysctl_sync_ports(struct netns_ipvs *ipvs)
- 	return ACCESS_ONCE(ipvs->sysctl_sync_ports);
- }
- 
--static inline int sysctl_sync_qlen_max(struct netns_ipvs *ipvs)
-+static inline unsigned long sysctl_sync_qlen_max(struct netns_ipvs *ipvs)
- {
- 	return ipvs->sysctl_sync_qlen_max;
- }
-@@ -1099,7 +1099,7 @@ static inline int sysctl_sync_ports(struct netns_ipvs *ipvs)
- 	return 1;
- }
- 
--static inline int sysctl_sync_qlen_max(struct netns_ipvs *ipvs)
-+static inline unsigned long sysctl_sync_qlen_max(struct netns_ipvs *ipvs)
- {
- 	return IPVS_SYNC_QLEN_MAX;
- }
-diff --git a/net/netfilter/ipvs/ip_vs_ctl.c b/net/netfilter/ipvs/ip_vs_ctl.c
-index ec664cb..d79a530 100644
---- a/net/netfilter/ipvs/ip_vs_ctl.c
-+++ b/net/netfilter/ipvs/ip_vs_ctl.c
-@@ -1747,9 +1747,9 @@ static struct ctl_table vs_vars[] = {
- 	},
- 	{
- 		.procname	= "sync_qlen_max",
--		.maxlen		= sizeof(int),
-+		.maxlen		= sizeof(unsigned long),
- 		.mode		= 0644,
--		.proc_handler	= proc_dointvec,
-+		.proc_handler	= proc_doulongvec_minmax,
- 	},
- 	{
- 		.procname	= "sync_sock_size",
--- 
-1.7.1
+Cheers,
+Rusty.
