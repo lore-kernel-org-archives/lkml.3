@@ -1,60 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759176Ab3BGRZJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 12:25:09 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:43227 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759157Ab3BGRZF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 12:25:05 -0500
-Date: Thu, 7 Feb 2013 17:25:01 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "nico@linaro.org" <nico@linaro.org>, Will Deacon <Will.Deacon@arm.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        "john.stultz@linaro.org" <john.stultz@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: Re: [PATCHv3 4/4] arm: Add generic timer broadcast support
-Message-ID: <20130207172501.GC28072@e106331-lin.cambridge.arm.com>
-References: <1358183124-28461-1-git-send-email-mark.rutland@arm.com>
- <1358183124-28461-5-git-send-email-mark.rutland@arm.com>
- <5112C25F.6000508@wwwdotorg.org>
- <20130207100403.GD16987@e106331-lin.cambridge.arm.com>
- <5113DB2F.9090606@wwwdotorg.org>
+	id S1759157Ab3BGR1I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 12:27:08 -0500
+Received: from 8bytes.org ([85.214.48.195]:39654 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759012Ab3BGR1G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 12:27:06 -0500
+Date: Thu, 7 Feb 2013 18:27:01 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        x86@kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Don Zickus <dzickus@redhat.com>, Prarit Bhargava <prarit@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH] intel_iommu: Disable vfio and kvm interrupt assignment
+ when unsafe
+Message-ID: <20130207172701.GX25591@8bytes.org>
+References: <5fc782f401fc7bb0cd829b2316d7f29eb2595036.1360206266.git.luto@amacapital.net>
+ <20130207113340.GW25591@8bytes.org>
+ <CALCETrUzX9efPafJ0W2vxU-KgQ_FOxQ4YqGDKbw5z6d1P0ZYEQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <5113DB2F.9090606@wwwdotorg.org>
-Thread-Topic: [PATCHv3 4/4] arm: Add generic timer broadcast support
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 07 Feb 2013 17:25:02.0454 (UTC) FILETIME=[1007F160:01CE0558]
-X-MC-Unique: 113020717250304801
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <CALCETrUzX9efPafJ0W2vxU-KgQ_FOxQ4YqGDKbw5z6d1P0ZYEQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Thu Feb  7 18:27:03 2013
+X-DSPAM-Confidence: 0.9991
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 5113e3e722971694662064
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[...]
-
-> > The intent of 12ad100046: "clockevents: Add generic timer broadcast function"
-> > was to setup the broadcast function both for non-functional/dummy timers and
-> > those that stop in low-power states (CLOCK_EVT_FEAT_C3STOP). I missed the
-> > CLOCK_EVT_FEAT_C3STOP case.
-> > 
-> > I believe the patch below will fix this for Tegra and any other platforms where
-> > broadcast is required in low power states.
-> > 
-> > Stephen, could you test this for Tegra?
+On Thu, Feb 07, 2013 at 08:29:42AM -0800, Andy Lutomirski wrote:
+> On Thu, Feb 7, 2013 at 3:33 AM, Joerg Roedel <joro@8bytes.org> wrote:
+> > On Wed, Feb 06, 2013 at 07:08:24PM -0800, Andy Lutomirski wrote:
+> >> -     if (x2apic_present)
+> >> -             WARN(1, KERN_WARNING
+> >> -                     "Failed to enable irq remapping.  You are vulnerable to irq-injection attacks.\n");
+> >> -
+> >> +     irq_remapping_is_secure = 0;
+> >>       return -1;
+> >>  }
+> >
+> > Why do you remove this warning? It seems unrelated to the rest of the
+> > patch.
 > 
-> Tested-by: Stephen Warren <swarren@nvidia.com>
+> The idea is that setting irq_remapping_is_secure = 0 makes you (much
+> less) vulnerable to irq-injection attacks: you're vulnerable to
+> malicious hardware but not to attack via vfio or kvm, because those
+> paths are disabled.
+> 
+> I'd have no problem leaving the warning in and letting whoever manages
+> to trigger it and get annoyed fix it.  FWIW, it's actually likely to
+> be interesting if the warning hits.
 
-Thanks. Sorry for the bother.
+Hmm, looking into the intel_irq_remapping.c version in the tip tree
+makes me wonder even more.
 
-Mark.
+First, I wonder why the warning only hits when an x2apic is present. The
+function is not x2apic-specific and the vulnerability also exists in
+xapic mode. So that dependency can be removed.
+
+Second, I think that it should be a pr_warn instead of a full WARN. When
+IRQ remapping could not be enabled it's most likely because of the BIOS
+or the hardware. So a message in the kernel log will do and the
+backtrace provides no additional value.
+
+Same is true for the warning in the function iommu_set_irq_remapping():
+
+       if (sts & DMA_GSTS_CFIS)
+                WARN(1, KERN_WARNING
+                        "Compatibility-format IRQs enabled despite intr remapping;\n"
+                        "you are vulnerable to IRQ injection.\n");
+
+>From what I can see this condition depends only on the hardware too. So
+a simple pr_warn() provides the same amount of information.
+
+
+Regards,
+
+	Joerg
+
+
 
