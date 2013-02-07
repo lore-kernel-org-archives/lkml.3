@@ -1,151 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757403Ab3BGBBd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 20:01:33 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:40322 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754274Ab3BGBBc (ORCPT
+	id S1757524Ab3BGBB7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 20:01:59 -0500
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:32114 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755302Ab3BGBBz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 20:01:32 -0500
-Message-ID: <5112FCD8.5070104@oracle.com>
-Date: Wed, 06 Feb 2013 20:01:12 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130113 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: peter.senna@gmail.com, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH v2] hlist: drop the node parameter from iterators
-References: <1359597622-31532-1-git-send-email-sasha.levin@oracle.com> <20130206165522.ed6f10fc.akpm@linux-foundation.org>
-In-Reply-To: <20130206165522.ed6f10fc.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 6 Feb 2013 20:01:55 -0500
+Message-ID: <1360198302.23410.283.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 2/2] ACPI / scan: Simplify container driver
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <liuj97@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 06 Feb 2013 17:51:42 -0700
+In-Reply-To: <6374398.88OyYZxaMu@vostro.rjw.lan>
+References: <1873429.MS5RQDxTye@vostro.rjw.lan>
+	 <5090866.2BHgpRnuEZ@vostro.rjw.lan>
+	 <1360189938.23410.276.camel@misato.fc.hp.com>
+	 <6374398.88OyYZxaMu@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/2013 07:55 PM, Andrew Morton wrote:
-> On Wed, 30 Jan 2013 21:00:22 -0500
-> Sasha Levin <sasha.levin@oracle.com> wrote:
+On Thu, 2013-02-07 at 01:55 +0100, Rafael J. Wysocki wrote:
+> On Wednesday, February 06, 2013 03:32:18 PM Toshi Kani wrote:
+> > On Mon, 2013-02-04 at 00:47 +0100, Rafael J. Wysocki wrote:
+> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > 
+> > > The only useful thing that the ACPI container driver does is to
+> > > install system notify handlers for all container and module device
+> > > objects it finds in the namespace.  The driver structure,
+> > > acpi_container_driver, and the data structures created by its
+> > > .add() callback are in fact not used by the driver, so remove
+> > > them entirely.
+> > > 
+> > > It also makes a little sense to build that driver as a module,
+> > > so make it non-modular and add its initialization to the
+> > > namespace scanning code.
+> > > 
+> > > In addition to that, make the namespace walk callback used for
+> > > installing the notify handlers more straightforward.
+> > 
+> > I think the container driver needs to be registered as an ACPI scan
+> > driver so that sysfs eject will continue to work for container devices,
+> > such as ACPI0004:XX/eject.  Since the container driver does not support
+> > ACPI eject notification (and we have been discussing how system device
+> > hot-plug should work), this sysfs eject is the only way to eject a
+> > container device at this point.  I will send an update patchset that
+> > applies on top of this patch.
+> > 
+> > With the update in my patchset:
+> > Reviewed-by: Toshi Kani <toshi.kani@hp.com>
 > 
->> I'm not sure why, but the hlist for each entry iterators were conceived
->> differently from the list ones. While the list ones are nice and elegant:
->>
->>         list_for_each_entry(pos, head, member)
->>
->> The hlist ones were greedy and wanted an extra parameter:
->>
->>         hlist_for_each_entry(tpos, pos, head, member)
->>
->> Why did they need an extra pos parameter? I'm not quite sure. Not only
->> they don't really need it, it also prevents the iterator from looking
->> exactly like the list iterator, which is unfortunate.
->>
->> Besides the semantic patch, there was some manual work required:
->>
->>  - Fix up the actual hlist iterators in linux/list.h
->>  - Fix up the declaration of other iterators based on the hlist ones.
->>  - A very small amount of places were using the 'node' parameter, this
->>  was modified to use 'obj->member' instead.
->>  - Coccinelle didn't handle the hlist_for_each_entry_safe iterator
->>  properly, so those had to be fixed up manually.
->>
->> ...
->>
->> --- a/kernel/cgroup.c
->> +++ b/kernel/cgroup.c
->>
->> ...
->>
->> @@ -4525,7 +4524,7 @@ int __init_or_module cgroup_load_subsys(struct cgroup_subsys *ss)
->>  	 * this is all done under the css_set_lock.
->>  	 */
->>  	write_lock(&css_set_lock);
->> -	hash_for_each_safe(css_set_table, i, node, tmp, cg, hlist) {
->> +	hash_for_each_safe(css_set_table, i, tmp, cg, hlist) {
->>  		/* skip entries that we already rehashed */
->>  		if (cg->subsys[ss->subsys_id])
->>  			continue;
-> 
-> Problems in cgroup_load_subsys().
-> 
-> In linux-next, that function is now using the `node' storage which your
-> patch removes:
-> 
-> @@ -4503,23 +4525,17 @@ int __init_or_module cgroup_load_subsys(struct cgroup_subsys *ss)
->  	 * this is all done under the css_set_lock.
->  	 */
->  	write_lock(&css_set_lock);
-> -	for (i = 0; i < CSS_SET_TABLE_SIZE; i++) {
-> -		struct css_set *cg;
-> -		struct hlist_node *node, *tmp;
-> -		struct hlist_head *bucket = &css_set_table[i], *new_bucket;
-> -
-> -		hlist_for_each_entry_safe(cg, node, tmp, bucket, hlist) {
-> -			/* skip entries that we already rehashed */
-> -			if (cg->subsys[ss->subsys_id])
-> -				continue;
-> -			/* remove existing entry */
-> -			hlist_del(&cg->hlist);
-> -			/* set new value */
-> -			cg->subsys[ss->subsys_id] = css;
-> -			/* recompute hash and restore entry */
-> -			new_bucket = css_set_hash(cg->subsys);
-> -			hlist_add_head(&cg->hlist, new_bucket);
-> -		}
-> +	hash_for_each_safe(css_set_table, i, node, tmp, cg, hlist) {
-> +		/* skip entries that we already rehashed */
-> +		if (cg->subsys[ss->subsys_id])
-> +			continue;
-> +		/* remove existing entry */
-> +		hash_del(&cg->hlist);
-> +		/* set new value */
-> +		cg->subsys[ss->subsys_id] = css;
-> +		/* recompute hash and restore entry */
-> +		key = css_set_hash(cg->subsys);
-> +		hash_add(css_set_table, node, key);     <<<<---- here
->  	}
->  	write_unlock(&css_set_lock);
->  
-> 
-> 
-> This didn't show up (apart from a "used unintialized" warning) because
-> your patch forgot to remove the definition of `node'.
+> Thanks, but I'd like to (1) apply your patch from
+> https://patchwork.kernel.org/patch/2108851/ first and then (2) fold your [2/2]
+> into my [2/2], if you don't mind, and apply that next.
 
-Yikes, sorry :(
+That's fine by me.
 
-Coccinelle can't properly handle the case of removing just one
-variable out of a declaration of two in the same line, and it has
-slipped through my manual pass afterwards.
+> Moreover, I'm wondering if the #ifndef FORCE_EJECT thing in acpi_eject_store()
+> actually makes sense after the recent changes to acpi_bus_trim(), because that
+> can't fail now, so the eject will always be carried out.  So perhaps we can
+> simply remove the acpi_device->driver check from there entirely in the first
+> place?
+>
+> If we really want to be able to prevent ejects from happening in some cases,
+> we need to implement something along the lines discussed with Greg.
 
-fwiw, I've solved all similar cases in the same way: "node" became
-"obj->member".
-
+acpi_bus_trim() cannot fail, but sysfs eject can fail.  So, I think it
+makes sense to do some validation before calling acpi_bus_trim().  If we
+are to implement the no_eject flag thing, that check needs to be made
+before calling acpi_bus_trim().
 
 Thanks,
-Sasha
+-Toshi
 
-> I did this.  Tejun, could you please opine?
-> 
-> 
-> @@ -4456,7 +4455,7 @@ int __init_or_module cgroup_load_subsys(
->  {
->  	struct cgroup_subsys_state *css;
->  	int i, ret;
-> -	struct hlist_node *node, *tmp;
-> +	struct hlist_node *tmp;
->  	struct css_set *cg;
->  	unsigned long key;
->  
-> @@ -4534,7 +4533,7 @@ int __init_or_module cgroup_load_subsys(
->  		cg->subsys[ss->subsys_id] = css;
->  		/* recompute hash and restore entry */
->  		key = css_set_hash(cg->subsys);
-> -		hash_add(css_set_table, node, key);
-> +		hash_add(css_set_table, &cg->hlist, key);
->  	}
->  	write_unlock(&css_set_lock);
->  
-> 
+
+
 
