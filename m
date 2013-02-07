@@ -1,106 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754617Ab3BGH4z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 02:56:55 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:49931 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752569Ab3BGH4t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 02:56:49 -0500
-From: "Manjunathappa, Prakash" <prakash.pm@ti.com>
-To: <linux-mmc@vger.kernel.org>
-CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
-        <linux@arm.linux.org.uk>, <nsekhar@ti.com>, <hs@denx.de>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <cjb@laptop.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        "Manjunathappa, Prakash" <prakash.pm@ti.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 3/3] ARM: davinci: da850: add mmc DT entries
-Date: Thu, 7 Feb 2013 13:27:05 +0530
-Message-ID: <1360223825-23929-4-git-send-email-prakash.pm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1360223825-23929-1-git-send-email-prakash.pm@ti.com>
-References: <1360223825-23929-1-git-send-email-prakash.pm@ti.com>
+	id S1753946Ab3BGH5c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 02:57:32 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:18317 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752208Ab3BGH51 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 02:57:27 -0500
+X-IronPort-AV: E=Sophos;i="4.84,621,1355068800"; 
+   d="scan'208";a="6699939"
+Message-ID: <51135E33.4060508@cn.fujitsu.com>
+Date: Thu, 07 Feb 2013 15:56:35 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Glauber Costa <glommer@parallels.com>
+CC: Wen Congyang <wency@cn.fujitsu.com>, akpm@linux-foundation.org,
+        rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
+        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
+        minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, wujianguo@huawei.com, hpa@zytor.com,
+        linfeng@cn.fujitsu.com, laijs@cn.fujitsu.com, mgorman@suse.de,
+        yinghai@kernel.org, x86@kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-acpi@vger.kernel.org, linux-s390@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-ia64@vger.kernel.org,
+        cmetcalf@tilera.com, sparclinux@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Miao Xie <miaox@cn.fujitsu.com>
+Subject: Re: [PATCH v5 01/14] memory-hotplug: try to offline the memory twice
+ to avoid dependence
+References: <1356350964-13437-1-git-send-email-tangchen@cn.fujitsu.com> <1356350964-13437-2-git-send-email-tangchen@cn.fujitsu.com> <50D96543.6010903@parallels.com> <50DFD7F7.5090408@cn.fujitsu.com> <50ED8834.1090804@parallels.com> <5111C8EB.6090805@cn.fujitsu.com> <51121FB7.1070205@cn.fujitsu.com> <51122C1D.5020002@cn.fujitsu.com> <5112679A.7080600@parallels.com>
+In-Reply-To: <5112679A.7080600@parallels.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/07 15:55:59,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/07 15:56:01,
+	Serialize complete at 2013/02/07 15:56:01
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add DT entry for MMC. Also add entry for pinmux information.
-Tested on da850-evm without card detect and EDMA support as
-DT support for GPIO and EDMA are yet come.
+On 02/06/2013 10:24 PM, Glauber Costa wrote:
+>>>> And one more question, a memory section is 128MB in Linux. If we reserve
+>>>> part of the them for page_cgroup,
+>>>> then anyone who wants to allocate a contiguous memory larger than 128MB,
+>>>> it will fail, right ?
+>>>> Is it OK ?
+> No, it is not.
+>
+> Another take on this: Can't we free all the page_cgroup structure before
+> we actually start removing the sections ? If we do this, we would be
+> basically left with no problem at all, since when your code starts
+> running we would no longer have any page_cgroup allocated.
+>
+> All you have to guarantee is that it happens after the memory block is
+> already isolated and allocations no longer can reach it.
+>
+> What do you think ?
 
-Signed-off-by: Manjunathappa, Prakash <prakash.pm@ti.com>
-Cc: linux-mmc@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
-Cc: davinci-linux-open-source@linux.davincidsp.com
-Cc: devicetree-discuss@lists.ozlabs.org
-Cc: cjb@laptop.org
-Cc: Sekhar Nori <nsekhar@ti.com>
----
-Since v1:
-Removed bitfields for specifying the device capabilty and accomodate
-controller revision in compatible field.
+Hi Glauber,
 
- arch/arm/boot/dts/da850-evm.dts |    9 +++++++++
- arch/arm/boot/dts/da850.dtsi    |   15 +++++++++++++++
- 2 files changed, 24 insertions(+), 0 deletions(-)
+I don't think so. We can offline some of the sections and leave the 
+reset online.
 
-diff --git a/arch/arm/boot/dts/da850-evm.dts b/arch/arm/boot/dts/da850-evm.dts
-index fa04152..78a6fb7 100644
---- a/arch/arm/boot/dts/da850-evm.dts
-+++ b/arch/arm/boot/dts/da850-evm.dts
-@@ -30,6 +30,15 @@
- 		rtc0: rtc@1c23000 {
- 			status = "okay";
- 		};
-+		mmc0: mmc@1c40000 {
-+			max-frequency = <50000000>;
-+			mmc-cap-sd-highspeed;
-+			mmc-cap-mmc-highspeed;
-+			bus-width = <4>;
-+			status = "okay";
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&mmc0_pins>;
-+		};
- 	};
- 	nand_cs3@62000000 {
- 		status = "okay";
-diff --git a/arch/arm/boot/dts/da850.dtsi b/arch/arm/boot/dts/da850.dtsi
-index 099c81e..3ef9c22 100644
---- a/arch/arm/boot/dts/da850.dtsi
-+++ b/arch/arm/boot/dts/da850.dtsi
-@@ -56,6 +56,15 @@
- 					0x30 0x01100000  0x0ff00000
- 				>;
- 			};
-+			mmc0_pins: pinmux_mmc_pins {
-+				pinctrl-single,bits = <
-+					/* MMCSD0_DAT[3] MMCSD0_DAT[2]
-+					 * MMCSD0_DAT[1] MMCSD0_DAT[0]
-+					 * MMCSD0_CMD    MMCSD0_CLK
-+					 */
-+					0x28 0x00222222  0x00ffffff
-+				>;
-+			};
- 		};
- 		serial0: serial@1c42000 {
- 			compatible = "ns16550a";
-@@ -88,6 +97,12 @@
- 				      19>;
- 			status = "disabled";
- 		};
-+		mmc0: mmc@1c40000 {
-+			compatible = "ti,davinci-mmc-da830";
-+			reg = <0x40000 0x1000>;
-+			interrupts = <16>;
-+			status = "disabled";
-+		};
- 	};
- 	nand_cs3@62000000 {
- 		compatible = "ti,davinci-nand";
--- 
-1.7.4.1
+For example, we store page_cgroups of memory9~11 in memory8. So when we 
+offline memory8,
+we free memory8's page_cgroup storing on other section, but we cannot 
+free the page_cgroups
+being stored in memory8 if memory9~11 are left online.
 
+So we still need to offline memory9~11, and then offline memory8, right ?
+I think it makes no difference.
+
+Thanks. :)
