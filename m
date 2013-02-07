@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757597Ab3BGBCJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 20:02:09 -0500
-Received: from correo.unefa.edu.ve ([150.186.0.20]:17185 "EHLO
-	correo.unefa.edu.ve" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757544Ab3BGBCE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 20:02:04 -0500
-X-Greylist: delayed 670 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Feb 2013 20:02:04 EST
-Date: Wed, 06 Feb 2013 17:27:39 -0430 (VET)
-From: "Dr.alvinabbott" <lquintero1@unefa.edu.ve>
-Reply-To: "dr.alvinabbott@ymail.com" <dr.alvinabbott@ymail.com>
-Subject: Fra dr. Alvin Abbott (Business Proposal vennlige svar)
-Message-ID: <9dcd5cbb-52cb-4dd9-bed4-08eaa11bbafb@mail2.unefa.edu.ve>
+	id S1757441Ab3BGBGA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 20:06:00 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:55027 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757117Ab3BGBF6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 20:05:58 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Valdis.Kletnieks@vt.edu
+Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: next-20130206 cpufreq - WARN in sysfs_add_one
+Date: Thu, 07 Feb 2013 02:12:17 +0100
+Message-ID: <1729273.hgXged98n0@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <30908.1360198558@turing-police.cc.vt.edu>
+References: <9180.1360172675@turing-police.cc.vt.edu> <17233164.aBDzy1OViI@vostro.rjw.lan> <30908.1360198558@turing-police.cc.vt.edu>
 MIME-Version: 1.0
-X-Originating-IP: [46.23.64.83]
-X-Mailer: Zimbra 7.1.0_GA_3140 (zclient/7.1.0_GA_3140)
-To: undisclosed-recipients:;
+Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1712FSg026168
 
-Fra: Dr. Alvin Abbott
-Privat Mobil: (+44) 7012961440
+On Wednesday, February 06, 2013 07:55:58 PM Valdis.Kletnieks@vt.edu wrote:
+> On Wed, 06 Feb 2013 22:24:39 +0100, "Rafael J. Wysocki" said:
+> > On Wednesday, February 06, 2013 12:44:35 PM Valdis Kletnieks wrote:
+> > > Seen in dmesg.  next-20130128 was OK. Haven't done a bisect, but can
+> > > do so if the offender isn't obvious...
+> >
+> > I suppose this is 73bf0fc "cpufreq: Don't remove sysfs link for policy->cpu".
+> >
+> > Can you test the linux-pm.git/pm-cpufreq branch alone, please, and see
+> > if that's this one (top-most commit)?
+> 
+> Color me mystified.  I can't find that commit by either number or
+> the description:
+> 
+> [/usr/src/linux-next] git log | egrep -i 'cpufreq.*remove.*link'
+> [/usr/src/linux-next] git log | grep -i 73bf0fc
+> [/usr/src/linux-next]
+> 
+> Was that a very recent commit that may have gotten pushed too late
+> for the next-20130206 merge?
 
-Hei venn,
- 
-Jeg er Dr. Alvin Abbott manager Regnskap / revisjon av Credit Suisse Bank, One Cabot Square,, England London EC14 4QJ. Jeg kontaktet deg med hensyn til en bedrift forslag som vil vÃ¦re av en enorm fordel to bÃ¥de av oss og de mindre privilegerte de vil ogsÃ¥ dra nytte av. Ã… vÃ¦re leder regnskap / revisjon avdeling Greater London Regional kontoret jeg oppdaget en sum av Â£ 16,500,000.00 GBP (seksten millioner Five Hundred Thousand Great British pund) i en konto TilhÃ¸righet til en av vÃ¥re utenlandske kunder Late Mr. Moises Saba Masri. Han var en jÃ¸disk virksomhet mogul fra Mexico som dÃ¸de pÃ¥ et helikopter krasj. Mr. Saba var 47 Ã¥r gammel Bothan Da hans kone, hans eneste sÃ¸nn Avraham (Albert) og hans datter svigersÃ¸nn dÃ¸de i en helikopterstyrt.
+Well, sorry, next-20130206 didn't include that commit.
 
-Valget av kontakter du vekket fra den geografiske natur hvor du bor sÃ¦rlig pÃ¥ grunn av sensitiviteten av transaksjonen og konfidensialitet her. NÃ¥ vÃ¥r bank har ventet pÃ¥ noen av de pÃ¥rÃ¸rende til Ã¥ komme opp for kravet av arven fond men dessverre alt arbeid metoden har blir annullert. Jeg personlig har vÃ¦rt mislykket i finne slektninger Verken eller noen neste for hver to Mr. Saba. PÃ¥ denne hilsen, jeg sÃ¸ker ditt samtykke til Ã¥ presentere deg som den neste av slekt / Betalingsmottakers vilje til avdÃ¸de, slik at utbyttet av denne kontoen verdsatt til Â£ 16,5 millioner britiske pund sterling kan bli utbetalt til deg.
+Can you please test the linux-pm.git/pm-cpufreq branch, then?
 
-Dette vil bli utbetalt eller delt i disse prosenter 60% til meg og 40% til deg. Jeg vil gi deg all nÃ¸dvendig juridisk informasjon er som kan brukes til Ã¥ sikkerhetskopiere dette kravet vi er i ferd Ã¥ forlate. Alt jeg trenger er Ã¥ laste opp ditt navn til dokumenter og legalisere pÃ¥ den britiske High Court for Ã¥ bevise at du legitim betalingsmottakeren. Alt jeg trenger nÃ¥ er din Ã¦rlige samarbeid, taushetsplikt og tillit to at vi ser denne transaksjonen gjennom. Jeg kan garantere deg 100% suksess og at denne virksomheten transaksjonen vil bli utfÃ¸rt under virkeomrÃ¥de av loven og vil beskytte ogsÃ¥ deg mot eventuelle brudd pÃ¥ kontrakten.
-
-Vennligst gi meg fÃ¸lgende som vi har 7 virkedager for Ã¥ kjÃ¸re den gjennom:
-
-1. Ditt fulle navn:
-2. Telefonnummer:
-3. Kontakt Adresse:
-4. Alder:
-5. KjÃ¸nn:
-6. Yrke:
-
-Etter Ã¥ ha gÃ¥tt gjennom en metodisk sÃ¸k, jeg for bestemte meg for Ã¥ kontakte deg hÃ¥per at du vil finne dette interessant Proposal. VÃ¦r pÃ¥ bekreftelsessiden av denne meldingen og viser din interesse, vil jeg gi deg mer informasjon er som vi fortsette med banken som bare Tidligere sa jeg.
-
-Ditt samtykke til denne e-post og forretning forslaget vil bli hÃ¸yt verdsatt.
-
-Ring meg pÃ¥ mottak av denne e-posten for flere diskusjoner.
-
-Med vennlig hilsen,
-Dr. Alvin Abbott.
+Rafael
 
 
-
-********AVISO LEGAL**********
-Este mensaje es privado y confidencial,  estÃ¡ dirigido exclusivamente al uso del correo institucional. Si usted ha recibido este mensaje por error, debe abstenerse de distribuirlo, copiarlo o usarlo en cualquier sentido. 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
