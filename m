@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758885Ab3BGQa7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 11:30:59 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:7354 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754325Ab3BGQa5 (ORCPT
+	id S1758889Ab3BGQcy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 11:32:54 -0500
+Received: from mail-da0-f49.google.com ([209.85.210.49]:40427 "EHLO
+	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754325Ab3BGQcw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 11:30:57 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 07 Feb 2013 08:27:45 -0800
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: <pdeschrijver@nvidia.com>
-CC: Stephen Warren <swarren@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] clk: tegra: local arrays should be static
-Date: Thu, 7 Feb 2013 18:30:36 +0200
-Message-ID: <1360254640-25831-1-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-X-NVConfidentiality: public
+	Thu, 7 Feb 2013 11:32:52 -0500
+Date: Thu, 7 Feb 2013 08:32:47 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Jean Delvare <khali@linux-fr.org>, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH 37/77] i2c: convert to idr_alloc()
+Message-ID: <20130207163247.GL2875@htj.dyndns.org>
+References: <1360179649-22465-1-git-send-email-tj@kernel.org>
+ <1360179649-22465-38-git-send-email-tj@kernel.org>
+ <20130207152831.GA14797@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130207152831.GA14797@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cclk_g_parents, cclk_lp_parents and sclk_parents are only accessed from within
-clk-tegra30.c. Declare them static to avoid namespace polution.
+Hello,
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
----
- drivers/clk/tegra/clk-tegra30.c |   20 ++++++++++----------
- 1 files changed, 10 insertions(+), 10 deletions(-)
+On Thu, Feb 07, 2013 at 03:28:31PM +0000, Mark Brown wrote:
+> On Wed, Feb 06, 2013 at 11:40:09AM -0800, Tejun Heo wrote:
+> > Convert to the much saner new idr interface.
+> > 
+> > Only compile tested.
+> 
+> This broke I2C for me in -next today, I saw a spinlock bad magic error
+> calling pm_runtime_enable().  
 
-diff --git a/drivers/clk/tegra/clk-tegra30.c b/drivers/clk/tegra/clk-tegra30.c
-index a163812..d169ef0 100644
---- a/drivers/clk/tegra/clk-tegra30.c
-+++ b/drivers/clk/tegra/clk-tegra30.c
-@@ -1249,16 +1249,16 @@ static void __init tegra30_pmc_clk_init(void)
- 
- }
- 
--const char *cclk_g_parents[] = { "clk_m", "pll_c", "clk_32k", "pll_m",
--				 "pll_p_cclkg", "pll_p_out4_cclkg",
--				 "pll_p_out3_cclkg", "unused", "pll_x" };
--const char *cclk_lp_parents[] = { "clk_m", "pll_c", "clk_32k", "pll_m",
--				  "pll_p_cclklp", "pll_p_out4_cclklp",
--				  "pll_p_out3_cclklp", "unused", "pll_x",
--				  "pll_x_out0" };
--const char *sclk_parents[] = { "clk_m", "pll_c_out1", "pll_p_out4",
--			       "pll_p_out3", "pll_p_out2", "unused",
--			       "clk_32k", "pll_m_out1" };
-+static const char *cclk_g_parents[] = { "clk_m", "pll_c", "clk_32k", "pll_m",
-+					"pll_p_cclkg", "pll_p_out4_cclkg",
-+					"pll_p_out3_cclkg", "unused", "pll_x" };
-+static const char *cclk_lp_parents[] = { "clk_m", "pll_c", "clk_32k", "pll_m",
-+					 "pll_p_cclklp", "pll_p_out4_cclklp",
-+					 "pll_p_out3_cclklp", "unused", "pll_x",
-+					 "pll_x_out0" };
-+static const char *sclk_parents[] = { "clk_m", "pll_c_out1", "pll_p_out4",
-+				      "pll_p_out3", "pll_p_out2", "unused",
-+				      "clk_32k", "pll_m_out1" };
- 
- static void __init tegra30_super_clk_init(void)
- {
--- 
-1.7.7.rc0.72.g4b5ea.dirty
+Hmmm... weird, can't see where the difference in behavior would come
+from.  The only material difference would be if id < 0 && id != -1 in
+i2c_add_numbered_adapter(), which now would trigger WARN_ON_ONCE()
+inside idr_alloc() instead of silently returning -EINVAL.
 
+Can you please elaborate the failure?  I can't see how the idr
+conversion would lead to spinlock bad magic error.  Does reverting
+this patch make the problem go away?
+
+Thanks.
+
+--
+tejun
