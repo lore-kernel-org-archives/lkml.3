@@ -1,179 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758342Ab3BGPIr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 10:08:47 -0500
-Received: from etezian.org ([198.101.225.253]:36704 "EHLO mail.etezian.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754702Ab3BGPIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 10:08:43 -0500
-X-Greylist: delayed 580 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Feb 2013 10:08:43 EST
-Date: Thu, 7 Feb 2013 15:59:52 +0100
-From: Andi Shyti <andi@etezian.org>
-To: Ruslan Bilovol <ruslan.bilovol@ti.com>
-Cc: tomi.valkeinen@ti.com, FlorianSchandinat@gmx.de,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH 1/1] OMAP4: DSS: Add panel for Blaze Tablet boards
-Message-ID: <20130207145952.GA7860@jack.whiskey>
-References: <1360248051-16541-1-git-send-email-ruslan.bilovol@ti.com>
- <1360248051-16541-2-git-send-email-ruslan.bilovol@ti.com>
+	id S1758515Ab3BGPMA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 10:12:00 -0500
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:37695 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757088Ab3BGPL4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 10:11:56 -0500
+Message-ID: <5113C438.1000709@suse.cz>
+Date: Thu, 07 Feb 2013 16:11:52 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:18.0) Gecko/20121129 Thunderbird/18.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360248051-16541-2-git-send-email-ruslan.bilovol@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Hurley <peter@hurleysoftware.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>, Sasha Levin <levinsasha928@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ilya Zykov <ilya@ilyx.ru>, Dave Jones <davej@redhat.com>
+Subject: Re: [PATCH v3 04/23] tty: Refactor wait for ldisc refs out of tty_ldisc_hangup()
+References: <1355509370-5883-1-git-send-email-peter@hurleysoftware.com> <1360095638-6624-1-git-send-email-peter@hurleysoftware.com> <1360095638-6624-5-git-send-email-peter@hurleysoftware.com>
+In-Reply-To: <1360095638-6624-5-git-send-email-peter@hurleysoftware.com>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-> TC358765 is DSI-to-LVDS transmitter from Toshiba, used in
-> OMAP44XX Blaze Tablet and Blaze Tablet2 boards.
-
-I had a really fast look and I have few comments
-
-> +static int tc358765_read_register(struct omap_dss_device *dssdev,
-> +					u16 reg, u32 *val)
+On 02/05/2013 09:20 PM, Peter Hurley wrote:
+> Refactor tty_ldisc_hangup() to extract standalone function,
+> tty_ldisc_hangup_wait_idle(), to wait for ldisc references
+> to be released.
+> 
+> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+> ---
+>  drivers/tty/tty_ldisc.c | 54 ++++++++++++++++++++++++++++++++-----------------
+>  1 file changed, 36 insertions(+), 18 deletions(-)
+> 
+> diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
+> index 904bf75..70d2b86 100644
+> --- a/drivers/tty/tty_ldisc.c
+> +++ b/drivers/tty/tty_ldisc.c
+> @@ -551,6 +551,41 @@ static int tty_ldisc_halt(struct tty_struct *tty)
+>  }
+>  
+>  /**
+> + *	tty_ldisc_hangup_wait_idle - wait for the ldisc to become idle
+> + *	@tty: tty to wait for
+> + *
+> + *	Wait for the line discipline to become idle. The discipline must
+> + *	have been halted for this to guarantee it remains idle.
+> + *
+> + *	Caller must hold legacy and ->ldisc_mutex.
+> + */
+> +static bool tty_ldisc_hangup_wait_idle(struct tty_struct *tty)
 > +{
-> +	int ret = 0;
-> +	pm_runtime_get_sync(&dssdev->dev);
-> +	/* I2C is preferred way of reading, but fall back to DSI
-> +	 * if I2C didn't got initialized
-> +	*/
-> +	if (tc358765_i2c)
-> +		ret = tc358765_i2c_read(reg, val);
-> +	else
-> +		ret = tc358765_dsi_read(dssdev, reg, val);
-> +	pm_runtime_put_sync(&dssdev->dev);
+> +	while (tty->ldisc) {	/* Not yet closed */
+> +		if (atomic_read(&tty->ldisc->users) != 1) {
+> +			char cur_n[TASK_COMM_LEN], tty_n[64];
+> +			long timeout = 3 * HZ;
+> +			tty_unlock(tty);
 > +
-> +	return ret;
-> +}
-> +
-> +static int tc358765_write_register(struct omap_dss_device *dssdev, u16 reg,
-> +		u32 value)
-> +{
-> +	struct tc358765_data *d2d = dev_get_drvdata(&dssdev->dev);
-> +	u8 buf[6];
-> +	int r;
-> +
-> +	buf[0] = (reg >> 0) & 0xff;
-> +	buf[1] = (reg >> 8) & 0xff;
-> +	buf[2] = (value >> 0) & 0xff;
-> +	buf[3] = (value >> 8) & 0xff;
-> +	buf[4] = (value >> 16) & 0xff;
-> +	buf[5] = (value >> 24) & 0xff;
-> +
-> +	r = dsi_vc_generic_write_nosync(dssdev, d2d->channel1, buf, 6);
-> +	if (r)
-> +		dev_err(&dssdev->dev, "reg write reg(%x) val(%x) failed: %d\n",
-> +			       reg, value, r);
-> +	return r;
-> +}
-> +
-> +/****************************
-> +********* DEBUG *************
-> +****************************/
-> +#ifdef CONFIG_TC358765_DEBUG
-> +static int tc358765_write_register_i2c(u16 reg, u32 val)
-> +{
-> +	int ret = -ENODEV;
-> +	unsigned char buf[6];
-> +	struct i2c_msg msg;
-> +
-> +	if (!tc358765_i2c) {
-> +		dev_err(tc358765_debug.dev, "%s: I2C not initilized\n",
-> +							__func__);
-> +		return ret;
-> +	}
-> +
-> +	buf[0] = (reg >> 8) & 0xff;
-> +	buf[1] = (reg >> 0) & 0xff;
-> +	buf[2] = (val >> 0) & 0xff;
-> +	buf[3] = (val >> 8) & 0xff;
-> +	buf[4] = (val >> 16) & 0xff;
-> +	buf[5] = (val >> 24) & 0xff;
-> +	msg.addr = tc358765_i2c->client->addr;
-> +	msg.len = sizeof(buf);
-> +	msg.flags = 0;
-> +	msg.buf = buf;
-> +
-> +	mutex_lock(&tc358765_i2c->xfer_lock);
-> +	ret = i2c_transfer(tc358765_i2c->client->adapter, &msg, 1);
-> +	mutex_unlock(&tc358765_i2c->xfer_lock);
-> +
-> +	if (ret != 1)
-> +		return ret;
-> +	return 0;
-> +}
-
-What about using smbus?
-
-> +
-> +	if (copy_from_user(&buf, ubuf, size))
-> +		return -EFAULT;
-> +
-> +	buf[size-1] = '\0';
-> +	if (sscanf(buf, "%s %x", name, &value) != 2) {
-> +		dev_err(dev, "%s: unable to parse input\n", __func__);
-> +		return -1;
-> +	}
-> +
-> +	if (!tc358765_i2c) {
-> +		dev_warn(dev,
-> +			"failed to write register: I2C not initialized\n");
-> +		return -ENODEV;
-> +	}
-> +
-> +	reg_count = sizeof(tc358765_regs) / sizeof(tc358765_regs[0]);
-> +	for (i = 0; i < reg_count; i++) {
-> +		if (!strcmp(name, tc358765_regs[i].name)) {
-> +			if (!(tc358765_regs[i].perm & A_WO)) {
-> +				dev_err(dev, "%s is write-protected\n", name);
-> +				return -EACCES;
+> +			while (tty_ldisc_wait_idle(tty, timeout) == -EBUSY) {
+> +				timeout = MAX_SCHEDULE_TIMEOUT;
+> +				printk_ratelimited(KERN_WARNING
+> +					"%s: waiting (%s) for %s took too long, but we keep waiting...\n",
+> +					__func__, get_task_comm(cur_n, current),
+> +					tty_name(tty, tty_n));
 > +			}
-> +
-> +			error = tc358765_write_register_i2c(
-> +				tc358765_regs[i].reg, value);
-> +			if (error) {
-> +				dev_err(dev, "%s: failed to write %s\n",
-> +					__func__, name);
-> +				return -1;
+> +			/* must reacquire both locks and preserve lock order */
+> +			mutex_unlock(&tty->ldisc_mutex);
+> +			tty_lock(tty);
+> +			mutex_lock(&tty->ldisc_mutex);
+> +			continue;
+> +		}
+> +		break;
 
-Could avoid returning -1 instead of returning a correct errno?
+That continue and break at the end of the loop look weird.
 
-> +	gpio_set_value(dssdev->reset_gpio, 1);
-> +	udelay(200);
-> +	/* reset the panel */
-> +	gpio_set_value(dssdev->reset_gpio, 0);
-> +	/* assert reset */
-> +	udelay(200);
-> +	gpio_set_value(dssdev->reset_gpio, 1);
-> +	/* wait after releasing reset */
-> +	msleep(200);
+What about:
+while (tty->ldisc) {
+  if (atomic_read(&tty->ldisc->users) == 1)
+     break;
+  THE_REST_OF_THE_BODY_WITHOUT_CONTINUE
+}
 
-I invite you to have a look at
+Or even:
+while (tty->ldisc && atomic_read(&tty->ldisc->users) != 1) {
+  THE_REST_OF_THE_BODY_WITHOUT_CONTINUE
+}
 
-Documentation/timers/timers-howto.txt
+For me, this does not look so hard to understand as it is w/ cont+brk now.
 
-> +	/* reset LVDS-PHY */
-> +	tc358765_write_register(dssdev, LVPHY0, (1 << 22));
-> +	mdelay(2);
+And now, when we have a separate function, the declarations would look
+nicer to be at the beginning of the function.
 
-You should give me a really good reason for using mdelay.
+> +	}
+> +	return !!(tty->ldisc);
 
-> +	if (r) {
-> +		dev_err(&dssdev->dev, "failed to configure DSI pins\n");
-> +		goto err_disp_enable;
-> +	};
-        ^^^
+Just a nit, the parenthesis are not needed.
 
-???
-
-> +static int tc358765_i2c_probe(struct i2c_client *client,
-> +				   const struct i2c_device_id *id)
-> +{
-> +	tc358765_i2c = kzalloc(sizeof(*tc358765_i2c), GFP_KERNEL);
-
-what about devm_kzalloc?
-
+-- 
+js
+suse labs
