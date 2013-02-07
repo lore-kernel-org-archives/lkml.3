@@ -1,65 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752243Ab3BGHfn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 02:35:43 -0500
-Received: from mail-qe0-f52.google.com ([209.85.128.52]:58188 "EHLO
-	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750900Ab3BGHfl (ORCPT
+	id S1752394Ab3BGHi4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 02:38:56 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:53673 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751629Ab3BGHiz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 02:35:41 -0500
+	Thu, 7 Feb 2013 02:38:55 -0500
 MIME-Version: 1.0
-In-Reply-To: <87fw18svky.fsf@sejong.aot.lge.com>
-References: <1360161962-9675-1-git-send-email-eranian@google.com>
-	<87fw18svky.fsf@sejong.aot.lge.com>
-Date: Thu, 7 Feb 2013 08:35:31 +0100
-Message-ID: <CABPqkBTv0aZ1_MiFkQPAc=CyxBaHY7MMELfWL0Ni2syzLXOSrQ@mail.gmail.com>
-Subject: Re: [PATCH 0/2] perf stat: add per processor socket count aggregation
-From: Stephane Eranian <eranian@google.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
+In-Reply-To: <CAHTX3dL1THVgfhJkMs9w4wxD3tSgvm=V5i057074pRGxQ1vTOQ@mail.gmail.com>
+References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com>
+	<CACxGe6tjyx3GTgNgMRtvwhrFsTGizkeTqY_N6=2gdQjvMSD8Ug@mail.gmail.com>
+	<CAHTX3d+XZ6VJDVYKHhg33Z+O8Koo99Yq--W8qitcSe543dWUuA@mail.gmail.com>
+	<11273481.VQZWGoSGBC@wuerfel>
+	<511295A8.5070106@monstr.eu>
+	<CAMuHMdUia08Upt6p8cVrC7Uazo3KGbSCZEg-mLaNYALdty88bA@mail.gmail.com>
+	<CAHTX3dL1THVgfhJkMs9w4wxD3tSgvm=V5i057074pRGxQ1vTOQ@mail.gmail.com>
+Date: Thu, 7 Feb 2013 08:38:53 +0100
+X-Google-Sender-Auth: qneYs2XxVMMbZt-16g_TUeWu4hs
+Message-ID: <CAMuHMdUtoSr=CuLQgZ0An8f-hriKun-EdkJPfEuUsKVEVNt7SA@mail.gmail.com>
+Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16
+ with generic iowrite(read)8/16(be)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Michal Simek <monstr@monstr.eu>
+Cc: Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@secretlab.ca>,
+        Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, dahinds@users.sourceforge.net
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 7, 2013 at 3:31 AM, Namhyung Kim <namhyung@kernel.org> wrote:
-> Hi Stephane,
->
-> On Wed,  6 Feb 2013 15:46:00 +0100, Stephane Eranian wrote:
->> This patch adds per-processor socket count aggregation
->> for system-wide mode measurements. This is a useful
->> mode to detect imbalance between sockets for uniform
->> workloads.
+On Thu, Feb 7, 2013 at 8:23 AM, Michal Simek <monstr@monstr.eu> wrote:
+>>> #define iowrite16be(v, addr)   iowrite16(be16_to_cpu(v), (addr))
+>>> #define iowrite16(v, addr)      writew((v), (addr))
+>>> #define writew(b,addr) __raw_writew(__cpu_to_le16(b),addr)
+>>>
+>>> static inline void __raw_writew(u16 b, volatile void __iomem *addr)
+>>> {
+>>>         *(volatile u16 __force *) addr = b;
+>>> }
+>>>
+>>> How is this suppose to work on Big Endian?
+>>> be16_to_cpu(v) is (v)
+>>> and
+>>> __cpu_to_le16(b) is swab16(v)
 >>
->> To enable this mode, use --aggr-socket in addition
->> to -a. (system-wide). This mode can be combined with
->> interval printing.
->>
->> The output includes the socket number and the number
->> of online processors on that socket. This is useful
->> to gauge the amount of aggregation.
->>
->>  # ./perf stat -I 1000 -a --aggr-socket -e cycles sleep 2
->>  #           time socket cpus             counts events
->>       1.000097680 S0        4          5,788,785 cycles
->>       2.000379943 S0        4         27,361,546 cycles
->>       2.001167808 S0        4            818,275 cycles
+>> Yes.
 >
-> Can it be genericized to support arbitrary cpu topology like per-core,
-> per-numa-node or something?
->
-Yes, we could. I think that could be useful too. I will look into
-this. But please don't
-ask for stupid scripting to do this. We need to keep things simple. I
-think perf has
-gotten to be a very complex tool, hard to read code, more difficult to maintain.
+> But on native BE system ( I expect that v is in big endian)
+> iowrite16be(v, addr) should be just *(volatile u16 __force *) addr =
+> v; not *(volatile u16 __force *) addr = swab16(v);
 
-As for the particular feature, I know how to make it work on x86, but
-it is not clear to me how portable is the sysfs topology tree? For instance,
-on PPC, would that work? Worst case, we can make the topology routines
-arch specific and use weak functions to cover any architecture which does
-not have topology info.
+>>> What I would expect is
+>>> #define iowrite16be(v, addr)   __raw_writew(__cpu_to_be16(v), addr)
+>>
+>> Indeed, it should be "__cpu_to_be16(v)" instead of "be16_to_cpu(v)".
+>
+> What do you mean by that?
+
+Bummer, I missed that current iowrite16be() uses (the little endian)
+iowrite16(),
+not _raw_writew(), and thought the only difference between the original
+and your version was the endianness conversion macro.
+
+Yes,
+
+    #define iowrite16be(v, addr)   __raw_writew(__cpu_to_be16(v), addr)
+
+should be correct.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
