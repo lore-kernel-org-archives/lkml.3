@@ -1,63 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759245Ab3BGRpI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 12:45:08 -0500
-Received: from mail-la0-f53.google.com ([209.85.215.53]:62861 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755851Ab3BGRpH (ORCPT
+	id S1759218Ab3BGRrA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 12:47:00 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:62150 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759194Ab3BGRq7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 12:45:07 -0500
+	Thu, 7 Feb 2013 12:46:59 -0500
 MIME-Version: 1.0
-In-Reply-To: <1360256627.2621.77.camel@gandalf.local.home>
-References: <1360175338-6735-1-git-send-email-fweisbec@gmail.com>
-	<1360205415.2621.60.camel@gandalf.local.home>
-	<20130207111025.GD8945@gmail.com>
-	<CAFTL4hySiyn8Ci6XKFSRsMr7FabgpwSbOuNDP_GsefFDsbT2Cg@mail.gmail.com>
-	<1360255280.2621.70.camel@gandalf.local.home>
-	<CAFTL4hy-hz=okOC7mWTwP=eh_OrL48c5hoLuXyBRFMAgquLCtw@mail.gmail.com>
-	<1360256627.2621.77.camel@gandalf.local.home>
-Date: Thu, 7 Feb 2013 18:45:04 +0100
-Message-ID: <CAFTL4hyALkyoG640cyPfBG8ym_MeYWfje4oG4966pmXJhickZA@mail.gmail.com>
-Subject: Re: [ANNOUNCE] 3.8-rc6-nohz4
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <1585017.derjdP1mHL@amdc1227>
+References: <1360105784-12282-1-git-send-email-ks.giri@samsung.com>
+	<20130206102628.5E7413E1510@localhost>
+	<CAKrE-KdX+Nxk0X4xdz6Dx3WVtOpV+ms+gPB-Dq-MwZwetyZ5Nw@mail.gmail.com>
+	<1585017.derjdP1mHL@amdc1227>
+Date: Thu, 7 Feb 2013 09:46:58 -0800
+Message-ID: <CAKrE-KfyGCi_+FozSpGTy0A0VJP=Jq-1SHmvKJU02iJKWHcvLQ@mail.gmail.com>
+Subject: Re: [PATCH 1/4] spi: s3c64xx: modified error interrupt handling and init
+From: Girish KS <girishks2000@gmail.com>
+To: Tomasz Figa <t.figa@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/2/7 Steven Rostedt <rostedt@goodmis.org>:
-> On Thu, 2013-02-07 at 17:45 +0100, Frederic Weisbecker wrote:
+On Thu, Feb 7, 2013 at 3:09 AM, Tomasz Figa <t.figa@samsung.com> wrote:
+> Hi Girish,
 >
+> On Wednesday 06 of February 2013 12:12:29 Girish KS wrote:
+>> On Wed, Feb 6, 2013 at 2:26 AM, Grant Likely <grant.likely@secretlab.ca>
+> wrote:
+>> > On Tue,  5 Feb 2013 15:09:41 -0800, Girish K S
+> <girishks2000@gmail.com> wrote:
+>> >> The status of the interrupt is available in the status register,
+>> >> so reading the clear pending register and writing back the same
+>> >> value will not actually clear the pending interrupts. This patch
+>> >> modifies the interrupt handler to read the status register and
+>> >> clear the corresponding pending bit in the clear pending register.
+>> >>
+>> >> Modified the hwInit function to clear all the pending interrupts.
+>> >>
+>> >> Signed-off-by: Girish K S <ks.giri@samsung.com>
+>> >> ---
+>> >>
+>> >>  drivers/spi/spi-s3c64xx.c |   41
+>> >>  +++++++++++++++++++++++++---------------- 1 file changed, 25
+>> >>  insertions(+), 16 deletions(-)
+>> >>
+>> >> diff --git a/drivers/spi/spi-s3c64xx.c b/drivers/spi/spi-s3c64xx.c
+>> >> index ad93231..b770f88 100644
+>> >> --- a/drivers/spi/spi-s3c64xx.c
+>> >> +++ b/drivers/spi/spi-s3c64xx.c
+>> >> @@ -997,25 +997,30 @@ static irqreturn_t s3c64xx_spi_irq(int irq,
+>> >> void *data)>>
+>> >>  {
+>> >>
+>> >>       struct s3c64xx_spi_driver_data *sdd = data;
+>> >>       struct spi_master *spi = sdd->master;
+>> >>
+>> >> -     unsigned int val;
+>> >> +     unsigned int val, clr = 0;
+>> >>
+>> >> -     val = readl(sdd->regs + S3C64XX_SPI_PENDING_CLR);
+>> >> +     val = readl(sdd->regs + S3C64XX_SPI_STATUS);
+>> >>
+>> >> -     val &= S3C64XX_SPI_PND_RX_OVERRUN_CLR |
+>> >> -             S3C64XX_SPI_PND_RX_UNDERRUN_CLR |
+>> >> -             S3C64XX_SPI_PND_TX_OVERRUN_CLR |
+>> >> -             S3C64XX_SPI_PND_TX_UNDERRUN_CLR;
+>> >> -
+>> >> -     writel(val, sdd->regs + S3C64XX_SPI_PENDING_CLR);
+>> >> -
+>> >> -     if (val & S3C64XX_SPI_PND_RX_OVERRUN_CLR)
+>> >> +     if (val & S3C64XX_SPI_ST_RX_OVERRUN_ERR) {
+>> >> +             clr = S3C64XX_SPI_PND_RX_OVERRUN_CLR;
+>> >>
+>> >>               dev_err(&spi->dev, "RX overrun\n");
+>> >>
+>> >> -     if (val & S3C64XX_SPI_PND_RX_UNDERRUN_CLR)
+>> >> +     }
+>> >> +     if (val & S3C64XX_SPI_ST_RX_UNDERRUN_ERR) {
+>> >> +             clr |= S3C64XX_SPI_PND_RX_UNDERRUN_CLR;
+>> >>
+>> >>               dev_err(&spi->dev, "RX underrun\n");
+>> >>
+>> >> -     if (val & S3C64XX_SPI_PND_TX_OVERRUN_CLR)
+>> >> +     }
+>> >> +     if (val & S3C64XX_SPI_ST_TX_OVERRUN_ERR) {
+>> >> +             clr |= S3C64XX_SPI_PND_TX_OVERRUN_CLR;
+>> >>
+>> >>               dev_err(&spi->dev, "TX overrun\n");
+>> >>
+>> >> -     if (val & S3C64XX_SPI_PND_TX_UNDERRUN_CLR)
+>> >> +     }
+>> >> +     if (val & S3C64XX_SPI_ST_TX_UNDERRUN_ERR) {
+>> >> +             clr |= S3C64XX_SPI_PND_TX_UNDERRUN_CLR;
+>> >>
+>> >>               dev_err(&spi->dev, "TX underrun\n");
+>> >>
+>> >> +     }
+>> >> +
+>> >> +     /* Clear the pending irq by setting and then clearing it */
+>> >> +     writel(clr, sdd->regs + S3C64XX_SPI_PENDING_CLR);
+>> >> +     writel(clr & ~clr, sdd->regs + S3C64XX_SPI_PENDING_CLR);
 >> >
->> > config NO_HZ_TASK
->> >         bool "Stop tick on specified CPUs when single task is running"
->> >         default n
->> >         depends on NO_HZ
->>
->> Ok I launched another debate about that single task thing. I wish we
->> don't make it a fundamental component but rather an implementation
->> detail that can be dynamically dealt with in the future.
+>> > Wait, what?  clr & ~clr == 0   Always.  What are you actually trying
+>> > to do here?
+>> The user manual says, wirting 1 to the pending clear register clears
+>> the interrupt (its not auto clear to 0). so i need to explicitly reset
+>> those bits thats what the 2nd write does
 >
-> It's not just an implementation detail, as it is very visible to the
-> user. If they want to take advantage of a task NO_HZ they have to go
-> through a bit of loops to make sure only a single task is running on a
-> CPU. We should be broadcasting this requirement to educate the users on
-> exactly how they can take advantage of this feature.
+> I have looked through user's manuals of different Samsung SoCs. All of
+> them said that writing 1 to a bit clears the corresponding interrupt, but
+> none of them contain any note that it must be manually cleared to 0.
+What i meant was the clear pending bit will not clear automatically.
+When I set the
+clear pending bit, it remains set. This is a problem for the next
+interrupt cycle.
+> In addition the expression
+>
+> clr & ~clr
+>
+> makes no sense, because it is equal to 0.
+It makes sense, because we are not disturbing the interrupt pending
+bit at position 0, which is a trailing clr bit.
+>
+> If you really need to clear those bits manually (and I don't think so),
+> you should replace this expression with 0.
+since we are not enabling (was not enabled in previous implementation)
+trailing byte interrupt, and not handling the same in handler
+we cannot write 0.
 
-If you guys really insist I can make it CONFIG_NO_HZ_SINGLETASK. I
-don't mind that much. Then when we support hrtick we can rename it to
-NO_HZ_FULL or whatever.
+>
+> Best regards,
+> --
+> Tomasz Figa
+> Samsung Poland R&D Center
+> SW Solution Development, Linux Platform
+>
