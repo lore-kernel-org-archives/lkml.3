@@ -1,35 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758762Ab3BGPhE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 10:37:04 -0500
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:32888 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755656Ab3BGPhC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 10:37:02 -0500
-MIME-Version: 1.0
-In-Reply-To: <1360148051-7560-20-git-send-email-lee.jones@linaro.org>
-References: <1360148051-7560-1-git-send-email-lee.jones@linaro.org>
-	<1360148051-7560-20-git-send-email-lee.jones@linaro.org>
-Date: Thu, 7 Feb 2013 16:36:55 +0100
-Message-ID: <CACRpkdZTZdsawPrfcxiQ+ZjAPqx4XSDBagZVmteOqfD6zfng0w@mail.gmail.com>
-Subject: Re: [PATCH 19/49] ARM: ux500: Add supply for the Cypress TrueTouch Touchscreen
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932084Ab3BGPhK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 10:37:10 -0500
+Received: from mga09.intel.com ([134.134.136.24]:45078 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752383Ab3BGPhH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 10:37:07 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,622,1355126400"; 
+   d="scan'208";a="259128286"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH] dw_dmac: add support for Lynxpoint DMA controllers
+Date: Thu,  7 Feb 2013 17:36:28 +0200
+Message-Id: <1360251388-16075-1-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 6, 2013 at 11:53 AM, Lee Jones <lee.jones@linaro.org> wrote:
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-> This patch lists the Cypress TrueTouch Touchscreen as a consumer
-> of the AB8500 VAUX1 regulator.
->
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Intel Lynxpoint PCH Low Power Subsystem has DMA controller to support general
+purpose serial buses like SPI, I2C, and HSUART. This controller is enumerated
+from ACPI namespace with ACPI ID INTL9C60.
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+---
+ drivers/dma/dw_dmac.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-Yours,
-Linus Walleij
+diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+index d6abea8..5feee76 100644
+--- a/drivers/dma/dw_dmac.c
++++ b/drivers/dma/dw_dmac.c
+@@ -1977,6 +1977,11 @@ static const struct of_device_id dw_dma_id_table[] = {
+ MODULE_DEVICE_TABLE(of, dw_dma_id_table);
+ #endif
+ 
++static const struct platform_device_id dw_dma_ids[] = {
++	{ "INTL9C60", 0 },
++	{ }
++};
++
+ static struct platform_driver dw_driver = {
+ 	.probe		= dw_probe,
+ 	.remove		= dw_remove,
+@@ -1986,6 +1991,7 @@ static struct platform_driver dw_driver = {
+ 		.pm	= &dw_dev_pm_ops,
+ 		.of_match_table = of_match_ptr(dw_dma_id_table),
+ 	},
++	.id_table	= dw_dma_ids,
+ };
+ 
+ static int __init dw_init(void)
+-- 
+1.7.10.4
+
