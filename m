@@ -1,100 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751283Ab3BGGKG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 01:10:06 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:57156 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750759Ab3BGGKC (ORCPT
+	id S1751595Ab3BGGNo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 01:13:44 -0500
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:46291 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750823Ab3BGGNl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 01:10:02 -0500
-Message-ID: <5113450C.1080109@huawei.com>
-Date: Thu, 7 Feb 2013 14:09:16 +0800
-From: Xishi Qiu <qiuxishi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Thu, 7 Feb 2013 01:13:41 -0500
+Message-ID: <51134596.4080106@linux.vnet.ibm.com>
+Date: Thu, 07 Feb 2013 11:41:34 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-To: Xishi Qiu <qiuxishi@huawei.com>
-CC: Matt Fleming <matt.fleming@intel.com>, "Luck, Tony" <tony.luck@intel.com>,
-        <fenghua.yu@intel.com>, Liujiang <jiang.liu@huawei.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        <linux-ia64@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-efi@vger.kernel.org>, <linux-mm@kvack.org>,
-        Hanjun Guo <guohanjun@huawei.com>, WuJianguo <wujianguo@huawei.com>
-Subject: [PATCH V3] ia64/mm: fix a bad_page bug when crash kernel booting
-References: <51074786.5030007@huawei.com> <1359995565.7515.178.camel@mfleming-mobl1.ger.corp.intel.com> <51131248.3080203@huawei.com>
-In-Reply-To: <51131248.3080203@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
+        paulmck@linux.vnet.ibm.com, mingo@kernel.org,
+        linux-arch@vger.kernel.org, linux@arm.linux.org.uk,
+        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        fweisbec@gmail.com, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, rostedt@goodmis.org,
+        xiaoguangrong@linux.vnet.ibm.com, rjw@sisk.pl, sbw@mit.edu,
+        wangyun@linux.vnet.ibm.com, netdev@vger.kernel.org,
+        namhyung@kernel.org, akpm@linux-foundation.org, walken@google.com,
+        linuxppc-dev@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v5 00/45] CPU hotplug: stop_machine()-free CPU hotplug
+References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com> <510FBC01.2030405@linux.vnet.ibm.com> <87haloiwv0.fsf@rustcorp.com.au>
+In-Reply-To: <87haloiwv0.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.196]
-X-CFilter-Loop: Reflected
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13020706-8878-0000-0000-000005CF9FC7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Sorry, this bug will be happen when use Sparse-Memory(section is valid, but last
-
-> several pages are invalid). If use Flat-Memory, crash kernel will boot successfully.
-> I think the following patch would be better.
+On 02/07/2013 09:44 AM, Rusty Russell wrote:
+> "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com> writes:
+>> On 01/22/2013 01:03 PM, Srivatsa S. Bhat wrote:
+>>                  Avg. latency of 1 CPU offline (ms) [stop-cpu/stop-m/c latency]
+>>
+>> # online CPUs    Mainline (with stop-m/c)       This patchset (no stop-m/c)
+>>
+>>       8                 17.04                          7.73
+>>
+>>      16                 18.05                          6.44
+>>
+>>      32                 17.31                          7.39
+>>
+>>      64                 32.40                          9.28
+>>
+>>     128                 98.23                          7.35
 > 
-> Hi Andrew, will you just ignore the earlier patch and consider the following one? :>
+> Nice!
+
+Thank you :-)
+
+>  I wonder how the ARM guys feel with their quad-cpu systems...
 > 
-> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
-> ---
->  arch/ia64/mm/init.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/ia64/mm/init.c b/arch/ia64/mm/init.c
-> index 082e383..23f2ee3 100644
-> --- a/arch/ia64/mm/init.c
-> +++ b/arch/ia64/mm/init.c
-> @@ -213,6 +213,8 @@ free_initrd_mem (unsigned long start, unsigned long end)
->  	for (; start < end; start += PAGE_SIZE) {
->  		if (!virt_addr_valid(start))
->  			continue;
-> +		if ((start >> PAGE_SHIFT) >= max_low_pfn)
 
-I confused the vaddr and paddr, really sorry for it.
+That would be definitely interesting to know :-)
 
-In efi_init() memory aligns in IA64_GRANULE_SIZE(16M). If set "crashkernel=1024M-:600M"
-and use sparse memory model, when crash kernel booting it changes [128M-728M] to [128M-720M].
-But initrd memory is in [709M-727M], and virt_addr_valid() *can not* check the invalid pages
-when freeing initrd memory. There are some pages missed at the end of the seciton.
-
-ChangeLog V3:
-	fixed vaddr mistake
-ChangeLog V2:
-	add invalid pages check when freeing initrd memory
-
-Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
----
- arch/ia64/mm/init.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/arch/ia64/mm/init.c b/arch/ia64/mm/init.c
-index 082e383..8a269f8 100644
---- a/arch/ia64/mm/init.c
-+++ b/arch/ia64/mm/init.c
-@@ -173,6 +173,7 @@ void __init
- free_initrd_mem (unsigned long start, unsigned long end)
- {
- 	struct page *page;
-+	unsigned long pfn;
- 	/*
- 	 * EFI uses 4KB pages while the kernel can use 4KB or bigger.
- 	 * Thus EFI and the kernel may have different page sizes. It is
-@@ -213,6 +214,9 @@ free_initrd_mem (unsigned long start, unsigned long end)
- 	for (; start < end; start += PAGE_SIZE) {
- 		if (!virt_addr_valid(start))
- 			continue;
-+		pfn = __pa(start) >> PAGE_SHIFT;
-+		if (pfn >= max_low_pfn)
-+			continue;
- 		page = virt_to_page(start);
- 		ClearPageReserved(page);
- 		init_page_count(page);
--- 
-1.7.6.1
-
-
-
-
+Regards,
+Srivatsa S. Bhat
 
