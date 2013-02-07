@@ -1,121 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758577Ab3BGN1V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 08:27:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64356 "EHLO mx1.redhat.com"
+	id S1758587Ab3BGN2Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 08:28:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34778 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751261Ab3BGN1R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 08:27:17 -0500
-Date: Thu, 7 Feb 2013 15:31:33 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Wanlong Gao <gaowanlong@cn.fujitsu.com>,
-        asias@redhat.com, Rusty Russell <rusty@rustcorp.com.au>,
-        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org
-Subject: Re: [RFC PATCH 0/8] virtio: new API for addition of buffers,
- scatterlist changes
-Message-ID: <20130207133133.GC21707@redhat.com>
-References: <1360239752-2470-1-git-send-email-pbonzini@redhat.com>
- <20130207130912.GA20875@redhat.com>
- <5113A8B0.5080104@redhat.com>
- <20130207132349.GA21707@redhat.com>
- <5113AA35.3010209@redhat.com>
+	id S1751261Ab3BGN2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 08:28:21 -0500
+Message-ID: <5113ABEC.6050906@redhat.com>
+Date: Thu, 07 Feb 2013 08:28:12 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5113AA35.3010209@redhat.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "aquini@redhat.com" <aquini@redhat.com>,
+        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
+        "lwoodman@redhat.com" <lwoodman@redhat.com>,
+        "knoel@redhat.com" <knoel@redhat.com>,
+        "chegu_vinod@hp.com" <chegu_vinod@hp.com>,
+        "raghavendra.kt@linux.vnet.ibm.com" 
+	<raghavendra.kt@linux.vnet.ibm.com>,
+        "mingo@redhat.com" <mingo@redhat.com>
+Subject: Re: [PATCH -v5 5/5] x86,smp: limit spinlock delay on virtual machines
+References: <20130206150311.19cd1e52@cuia.bos.redhat.com> <20130206150748.486d7bf8@cuia.bos.redhat.com> <alpine.DEB.2.02.1302071122440.4275@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1302071122440.4275@kaball.uk.xensource.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 07, 2013 at 02:20:53PM +0100, Paolo Bonzini wrote:
-> Il 07/02/2013 14:23, Michael S. Tsirkin ha scritto:
-> > On Thu, Feb 07, 2013 at 02:14:24PM +0100, Paolo Bonzini wrote:
-> >> Il 07/02/2013 14:09, Michael S. Tsirkin ha scritto:
-> >>>> One major difference between virtqueue_add_buf and virtqueue_add_sg
-> >>>> is that the latter uses scatterlist iterators, which follow chained
-> >>>> scatterlist structs and stop at ending markers.  In order to avoid code
-> >>>> duplication, and use the new API from virtqueue_add_buf (patch 8), we need
-> >>>> to change all existing callers of virtqueue_add_buf to provide well-formed
-> >>>> scatterlists.  This is what patches 2-7 do.  For virtio-blk it is easiest
-> >>>> to just switch to the new API, just like for virtio-scsi.  For virtio-net
-> >>>> the ending marker must be reset after calling virtqueue_add_buf, in
-> >>>> preparation for the next usage of the scatterlist.  Other drivers are
-> >>>> safe already.
-> >>>
-> >>> What are the changes as compared to the previous version?
-> >>> How about some comments made on the previous version?
-> >>> See e.g.
-> >>> https://patchwork.kernel.org/patch/1891541/
-> >>
-> >> Two changes: 1) added virtqueue_add_sg_single; 2) reimplemented
-> >> virtqueue_add_buf in terms of the new API, which requires virtio-blk and
-> >> virtio-net changes.
-> >>
-> >> The virtio-blk and virtio-net changes are based on some ideas in the
-> >> patch Rusty posted, but virtio-net is a bit simpler and virtio-blk was
-> >> redone from scratch.
-> >>
-> >>> Generally we have code for direct and indirect which is already
-> >>> painful. We do not want 4 more variants of this code.
-> >>
-> >> Yes, indeed, the other main difference is that I'm now reimplementing
-> >> virtqueue_add_buf using the new functions.  So:
-> >>
-> >> - we previously had 2 variants (direct/indirect)
-> >>
-> >> - v1 had 4 variants (direct/indirect x add_buf/add_sg)
-> >>
-> >> - v2 has 4 variants (direct/indirect x add_sg/add_sg_single)
-> > 
-> > single is never indirect so should have a single variant.
-> 
-> Single means *this piece* (for example a request header) is single.  It
-> could still end up in an indirect buffer because QEMU does not support
-> mixed direct/indirect buffers.
-> 
-> Paolo
+On 02/07/2013 06:25 AM, Stefano Stabellini wrote:
+> On Wed, 6 Feb 2013, Rik van Riel wrote:
+>> Modern Intel and AMD CPUs will trap to the host when the guest
+>> is spinning on a spinlock, allowing the host to schedule in
+>> something else.
+>>
+>> This effectively means the host is taking care of spinlock
+>> backoff for virtual machines. It also means that doing the
+>> spinlock backoff in the guest anyway can lead to totally
+>> unpredictable results, extremely large backoffs, and
+>> performance regressions.
+>>
+>> To prevent those problems, we limit the spinlock backoff
+>> delay, when running in a virtual machine, to a small value.
+>>
+>> Signed-off-by: Rik van Riel <riel@redhat.com>
+>> ---
+>>   arch/x86/include/asm/processor.h |    2 ++
+>>   arch/x86/kernel/cpu/hypervisor.c |    2 ++
+>>   arch/x86/kernel/smp.c            |   21 +++++++++++++++++++--
+>>   3 files changed, 23 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+>> index 888184b..4118fd8 100644
+>> --- a/arch/x86/include/asm/processor.h
+>> +++ b/arch/x86/include/asm/processor.h
+>> @@ -997,6 +997,8 @@ extern bool cpu_has_amd_erratum(const int *);
+>>   extern unsigned long arch_align_stack(unsigned long sp);
+>>   extern void free_init_pages(char *what, unsigned long begin, unsigned long end);
+>>
+>> +extern void init_guest_spinlock_delay(void);
+>> +
+>>   void default_idle(void);
+>>   bool set_pm_idle_to_default(void);
+>>
+>> diff --git a/arch/x86/kernel/cpu/hypervisor.c b/arch/x86/kernel/cpu/hypervisor.c
+>> index a8f8fa9..4a53724 100644
+>> --- a/arch/x86/kernel/cpu/hypervisor.c
+>> +++ b/arch/x86/kernel/cpu/hypervisor.c
+>> @@ -76,6 +76,8 @@ void __init init_hypervisor_platform(void)
+>>
+>>   	init_hypervisor(&boot_cpu_data);
+>>
+>> +	init_guest_spinlock_delay();
+>> +
+>>   	if (x86_hyper->init_platform)
+>>   		x86_hyper->init_platform();
+>>   }
+>> diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
+>> index 64e33ef..fbc5ff3 100644
+>> --- a/arch/x86/kernel/smp.c
+>> +++ b/arch/x86/kernel/smp.c
+>> @@ -116,8 +116,25 @@ static bool smp_no_nmi_ipi = false;
+>>   #define DELAY_SHIFT			8
+>>   #define DELAY_FIXED_1			(1<<DELAY_SHIFT)
+>>   #define MIN_SPINLOCK_DELAY		(1 * DELAY_FIXED_1)
+>> -#define MAX_SPINLOCK_DELAY		(16000 * DELAY_FIXED_1)
+>> +#define MAX_SPINLOCK_DELAY_NATIVE	(16000 * DELAY_FIXED_1)
+>> +#define MAX_SPINLOCK_DELAY_GUEST	(16 * DELAY_FIXED_1)
+>>   #define DELAY_HASH_SHIFT		6
+>> +
+>> +/*
+>> + * Modern Intel and AMD CPUs tell the hypervisor when a guest is
+>> + * spinning excessively on a spinlock. The hypervisor will then
+>> + * schedule something else, effectively taking care of the backoff
+>> + * for us. Doing our own backoff on top of the hypervisor's pause
+>> + * loop exit handling can lead to excessively long delays, and
+>> + * performance degradations. Limit the spinlock delay in virtual
+>> + * machines to a smaller value. Called from init_hypervisor_platform
+>> + */
+>> +static int __read_mostly max_spinlock_delay = MAX_SPINLOCK_DELAY_NATIVE;
+>> +void __init init_guest_spinlock_delay(void)
+>> +{
+>> +	max_spinlock_delay = MAX_SPINLOCK_DELAY_GUEST;
+>> +}
+>> +
+>
+> Same comment as last time:
+>
+> """
+> Before reducing max_spinlock_delay, shouldn't we check that PAUSE-loop
+> exiting is available? What if we are running on an older x86 machine
+> that doesn't support it?
+> """
 
-Yes but why is the optimization worth it?
-It makes sense if all we want to do is add a single buffer
-in one go, this would give us virtqueue_add_buf_single.
+I don't think this will be much of an issue.  If we are
+in a CPU overcommit scenario, the spinlock overhead will
+be dominated by host scheduling latencies, not by the
+normal spinlock hold time or cache line bouncing.
 
-But if we are building up an s/g list anyway,
-speeding up one of the entries a tiny bit
-seems very unlikely to be measureable.
-No?
+If we are not in an overcommit scenario, limiting the
+spinlock delay will result in a guest only seeing a
+small performance boost from these patches, instead of
+a larger one.
 
-> >>>> This is an RFC for two reasons.  First, because I haven't done enough
-> >>>> testing yet (especially with all the variations on receiving that
-> >>>> virtio-net has).  Second, because I still have two struct vring_desc *
-> >>>> fields in virtqueue API, which is a layering violation.  I'm not really
-> >>>> sure how important that is and how to fix that---except by making the
-> >>>> fields void*.
-> >>>
-> >>> Hide the whole structure as part of vring struct, the problem will go
-> >>> away.
-> >>
-> >> Yes, that's the other possibility.  Will do for the next submission.
-> >>
-> >> Paolo
-> >>
-> >>>> Paolo
-> >>>> Paolo Bonzini (8):
-> >>>>   virtio: add functions for piecewise addition of buffers
-> >>>>   virtio-blk: reorganize virtblk_add_req
-> >>>>   virtio-blk: use virtqueue_start_buf on bio path
-> >>>>   virtio-blk: use virtqueue_start_buf on req path
-> >>>>   scatterlist: introduce sg_unmark_end
-> >>>>   virtio-net: unmark scatterlist ending after virtqueue_add_buf
-> >>>>   virtio-scsi: use virtqueue_start_buf
-> >>>>   virtio: reimplement virtqueue_add_buf using new functions
-> >>>>
-> >>>>  block/blk-integrity.c        |    2 +-
-> >>>>  block/blk-merge.c            |    2 +-
-> >>>>  drivers/block/virtio_blk.c   |  165 +++++++++--------
-> >>>>  drivers/net/virtio_net.c     |   21 ++-
-> >>>>  drivers/scsi/virtio_scsi.c   |  103 +++++------
-> >>>>  drivers/virtio/virtio_ring.c |  417 +++++++++++++++++++++++++++---------------
-> >>>>  include/linux/scatterlist.h  |   16 ++
-> >>>>  include/linux/virtio.h       |   25 +++
-> >>>>  8 files changed, 460 insertions(+), 291 deletions(-)
+-- 
+All rights reversed
