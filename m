@@ -1,33 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759248Ab3BGRt5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 12:49:57 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:62669 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759110Ab3BGRt4 convert rfc822-to-8bit (ORCPT
+	id S1759256Ab3BGRu1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 12:50:27 -0500
+Received: from mail-we0-f182.google.com ([74.125.82.182]:53109 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759200Ab3BGRu0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 12:49:56 -0500
-Content-Type: text/plain; charset="utf-8"
+	Thu, 7 Feb 2013 12:50:26 -0500
+Date: Thu, 7 Feb 2013 17:50:18 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 09/49] ARM: ux500: Update displays in vaux1 consumer list
+Message-ID: <20130207175018.GC7519@gmail.com>
+References: <1360148051-7560-1-git-send-email-lee.jones@linaro.org>
+ <1360148051-7560-10-git-send-email-lee.jones@linaro.org>
+ <CACRpkda=HMwnip8EziZewMPmRb19gc9E1_vJHtAUJ+UjFJ6byQ@mail.gmail.com>
+ <20130207155504.GX4720@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Peter De Schrijver <pdeschrijver@nvidia.com>, <pdeschrijver@nvidia.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1360254640-25831-1-git-send-email-pdeschrijver@nvidia.com>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>, <linux-kernel@vger.kernel.org>
-References: <1360254640-25831-1-git-send-email-pdeschrijver@nvidia.com>
-Message-ID: <20130207174949.11471.27667@quantum>
-User-Agent: alot/0.3.3+
-Subject: Re: [PATCH] clk: tegra: local arrays should be static
-Date: Thu, 07 Feb 2013 09:49:49 -0800
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130207155504.GX4720@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Peter De Schrijver (2013-02-07 08:30:36)
-> cclk_g_parents, cclk_lp_parents and sclk_parents are only accessed from within
-> clk-tegra30.c. Declare them static to avoid namespace polution.
-> 
-> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+On Thu, 07 Feb 2013, Mark Brown wrote:
 
-Acked-by: Mike Turquette <mturquette@linaro.org>
+> On Thu, Feb 07, 2013 at 04:34:18PM +0100, Linus Walleij wrote:
+> > On Wed, Feb 6, 2013 at 11:53 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> 
+> > > Add 3 more specific consumers pertaining to the displays found
+> > > on the u8500 and ST User Interface Boards (UIBs).
+> 
+> > > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> 
+> > This look correct,
+> > Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> 
+> > Do you want me to merge the ux500 portions into the ux500
+> > maintenance tree?
+> 
+> Lee indicated that splitting them up from the regulator changes causes
+> bisection issues.
+
+Right.
+
+Ideally just Acks would be really good Linus.
+
+Would you be happy with that?
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
