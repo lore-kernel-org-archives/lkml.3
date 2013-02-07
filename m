@@ -1,25 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758971Ab3BGQpx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 11:45:53 -0500
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:59039 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758830Ab3BGQpw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 11:45:52 -0500
-MIME-Version: 1.0
-In-Reply-To: <1360255280.2621.70.camel@gandalf.local.home>
-References: <1360175338-6735-1-git-send-email-fweisbec@gmail.com>
-	<1360205415.2621.60.camel@gandalf.local.home>
-	<20130207111025.GD8945@gmail.com>
-	<CAFTL4hySiyn8Ci6XKFSRsMr7FabgpwSbOuNDP_GsefFDsbT2Cg@mail.gmail.com>
-	<1360255280.2621.70.camel@gandalf.local.home>
-Date: Thu, 7 Feb 2013 17:45:50 +0100
-Message-ID: <CAFTL4hy-hz=okOC7mWTwP=eh_OrL48c5hoLuXyBRFMAgquLCtw@mail.gmail.com>
-Subject: Re: [ANNOUNCE] 3.8-rc6-nohz4
-From: Frederic Weisbecker <fweisbec@gmail.com>
+	id S1758969Ab3BGQsW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 11:48:22 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:40920 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758830Ab3BGQsU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 11:48:20 -0500
+Date: Thu, 7 Feb 2013 08:30:04 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
         Alessio Igor Bogani <abogani@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
@@ -28,53 +19,82 @@ Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Hakan Akkan <hakanakkan@gmail.com>,
         Li Zhong <zhong@linux.vnet.ibm.com>,
         Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: [ANNOUNCE] 3.8-rc6-nohz4
+Message-ID: <20130207163004.GS2632@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1360175338-6735-1-git-send-email-fweisbec@gmail.com>
+ <1360205415.2621.60.camel@gandalf.local.home>
+ <20130207111025.GD8945@gmail.com>
+ <1360253520.2621.66.camel@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1360253520.2621.66.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13020716-5806-0000-0000-00001F4FB4D8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/2/7 Steven Rostedt <rostedt@goodmis.org>:
-> On Thu, 2013-02-07 at 17:25 +0100, Frederic Weisbecker wrote:
->
->> At least for now we seem to agree on CONFIG_NO_HZ_IDLE and keep
->> CONFIG_NO_HZ for compatibility. Are you ok with that? If so I'll send
->> a patch.
->
-> I believe that Ingo was suggesting to have CONFIG_NO_HZ give options to
-> what type of config NO_HZ you want. Something like:
->
-> config NO_HZ
->         bool "Enable tickless support"
->
-> config NO_HZ_IDLE
->         bool "Stop tick when CPU is idle"
->         default y
->         depends on NO_HZ
+On Thu, Feb 07, 2013 at 11:12:00AM -0500, Steven Rostedt wrote:
+> On Thu, 2013-02-07 at 12:10 +0100, Ingo Molnar wrote:
+> > * Steven Rostedt <rostedt@goodmis.org> wrote:
+> > 
+> > > I'll reply to this as I come up with comments.
+> > > 
+> > > First thing is, don't call it NO_HZ_FULL. A better name would 
+> > > be NO_HZ_CPU. I would like to reserve NO_HZ_FULL when we 
+> > > totally remove jiffies :-)
+> > 
+> > I don't think we want yet another config option named in a 
+> > weird way.
+> > 
+> > What we want instead is to just split NO_HZ up into its 
+> > conceptual parts:
+> > 
+> >    CONFIG_NO_HZ_IDLE
+> >    CONFIG_NO_HZ_USER_SPACE
+> >    CONFIG_NO_HZ_KERNEL_SPACE
+> > 
+> > Where the current status quo is NO_HZ_IDLE=y, and Frederic is 
+> > about to introduce NO_HZ_USER_SPACE=y. When jiffies get removed 
+> > we get NO_HZ_KERNEL_SPACE=y.
+> 
+> Saying NO_HZ_USER_SPACE is a bit of a misnomer. As we don't just stop
+> the tick for user space, but it may remained stopped when entering the
+> kernel. The rule is that when there's just a single task on a CPU, the
+> tick can stop (no scheduling work needed). But if the task triggers
+> something that may require a tick (like printk) then the tick will start
+> again. But just going into the kernel does not designate a tick restart.
+> 
+> Maybe a better name would be NO_HZ_SINGLE_TASK ?
+> 
+> > 
+> > The 'CONFIG_NO_HZ' meta-option, which we should leave for easy 
+> > configurability and for compatibility, should get us the 
+> > currently recommended default, which for the time being might 
+> > be:
+> > 
+> >    CONFIG_NO_HZ_IDLE=y
+> >    # CONFIG_NO_HZ_USER_SPACE is disabled
+> > 
+> > Btw., you could add CONFIG_NO_HZ_KERNEL_SPACE right away, just 
+> > keep it false all the time. That would document our future plans 
+> > pretty well.
+> 
+> Maybe the removal of jiffies would be NO_HZ_COMPLETE?
 
-Sounds good!
+I suspect that removal of jiffies from the kernel will take a few stages,
+with RCU being one of the laggards for awhile.  Making RCU's state
+machine depend wholly on process-based execution will take some care
+and experimentation, especially for extreme and corner-case workloads.
+For example, having RCU OOM the system just because a specific CPU was
+unable to run some RCU kthread for an extended time is something to
+be avoided.  ;-)
 
->
-> config NO_HZ_TASK
->         bool "Stop tick on specified CPUs when single task is running"
->         default n
->         depends on NO_HZ
+							Thanx, Paul
 
-Ok I launched another debate about that single task thing. I wish we
-don't make it a fundamental component but rather an implementation
-detail that can be dynamically dealt with in the future. Anyway let's
-talk about that on my previous answer.
-
->
-> That is, if you select NO_HZ, by default NO_HZ_IDLE is also selected.
-> But in the kernel the NO_HZ_IDLE is used.
-
-Yeah, nice idea!
-
->
-> -- Steve
->
->
