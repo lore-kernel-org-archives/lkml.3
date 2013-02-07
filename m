@@ -1,229 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758518Ab3BGMX1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 07:23:27 -0500
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:54495 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758409Ab3BGMXB (ORCPT
+	id S1758548Ab3BGMXs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 07:23:48 -0500
+Received: from mail-we0-f172.google.com ([74.125.82.172]:40971 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758384Ab3BGMW7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 07:23:01 -0500
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>, asias@redhat.com,
-        Rusty Russell <rusty@rustcorp.com.au>, mst@redhat.com,
-        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org
-Subject: [RFC PATCH 7/8] virtio-scsi: use virtqueue_start_buf
-Date: Thu,  7 Feb 2013 13:22:31 +0100
-Message-Id: <1360239752-2470-8-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1360239752-2470-1-git-send-email-pbonzini@redhat.com>
-References: <1360239752-2470-1-git-send-email-pbonzini@redhat.com>
+	Thu, 7 Feb 2013 07:22:59 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+To: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Cc: Grant Likely <grant.likely@secretlab.ca>, Andrew Lunn <andrew@lunn.ch>,
+        Simon Guinot <simon.guinot@sequanux.org>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH] devicetree: Move NS2 LEDs binding into LEDs directory
+Date: Thu,  7 Feb 2013 12:22:56 +0000
+Message-Id: <1360239776-14889-1-git-send-email-grant.likely@secretlab.ca>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using the new virtio_scsi_add_sg function lets us simplify the queueing
-path.  In particular, all data protected by the tgt_lock is just gone
-(multiqueue will find a new use for the lock).
+leds-ns2.txt is a binding for LEDs, not GPIOs. Move the documentation in
+with the rest of the LEDs bindings.
 
-The speedup is relatively small (2-4%) but it is worthwhile because of
-the code simplification it enables.  And it will be particularly useful
-when adding multiqueue supoprt, because it keeps the tgt_lock critical
-sections very slim while avoiding a proliferation of locks.
-
-Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Simon Guinot <simon.guinot@sequanux.org>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 ---
- drivers/scsi/virtio_scsi.c |  103 +++++++++++++++++++-------------------------
- 1 files changed, 45 insertions(+), 58 deletions(-)
+ .../devicetree/bindings/gpio/leds-ns2.txt          |   26 --------------------
+ .../devicetree/bindings/leds/leds-ns2.txt          |   26 ++++++++++++++++++++
+ 2 files changed, 26 insertions(+), 26 deletions(-)
+ delete mode 100644 Documentation/devicetree/bindings/gpio/leds-ns2.txt
+ create mode 100644 Documentation/devicetree/bindings/leds/leds-ns2.txt
 
-diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-index 3449a1f..3b61173 100644
---- a/drivers/scsi/virtio_scsi.c
-+++ b/drivers/scsi/virtio_scsi.c
-@@ -59,11 +59,8 @@ struct virtio_scsi_vq {
- 
- /* Per-target queue state */
- struct virtio_scsi_target_state {
--	/* Protects sg.  Lock hierarchy is tgt_lock -> vq_lock.  */
-+	/* Never held at the same time as vq_lock.  */
- 	spinlock_t tgt_lock;
+diff --git a/Documentation/devicetree/bindings/gpio/leds-ns2.txt b/Documentation/devicetree/bindings/gpio/leds-ns2.txt
+deleted file mode 100644
+index aef3aca..0000000
+--- a/Documentation/devicetree/bindings/gpio/leds-ns2.txt
++++ /dev/null
+@@ -1,26 +0,0 @@
+-Binding for dual-GPIO LED found on Network Space v2 (and parents).
 -
--	/* For sglist construction when adding commands to the virtqueue.  */
--	struct scatterlist sg[];
- };
- 
- /* Driver instance state */
-@@ -351,89 +348,83 @@ static void virtscsi_event_done(struct virtqueue *vq)
- 	spin_unlock_irqrestore(&vscsi->event_vq.vq_lock, flags);
- };
- 
--static void virtscsi_map_sgl(struct scatterlist *sg, unsigned int *p_idx,
--			     struct scsi_data_buffer *sdb)
--{
--	struct sg_table *table = &sdb->table;
--	struct scatterlist *sg_elem;
--	unsigned int idx = *p_idx;
--	int i;
+-Required properties:
+-- compatible: "lacie,ns2-leds".
 -
--	for_each_sg(table->sgl, sg_elem, table->nents, i)
--		sg[idx++] = *sg_elem;
+-Each LED is represented as a sub-node of the ns2-leds device.
 -
--	*p_idx = idx;
--}
+-Required sub-node properties:
+-- cmd-gpio: Command LED GPIO. See OF device-tree GPIO specification.
+-- slow-gpio: Slow LED GPIO. See OF device-tree GPIO specification.
 -
- /**
-- * virtscsi_map_cmd - map a scsi_cmd to a virtqueue scatterlist
-+ * virtscsi_add_cmd - add a virtio_scsi_cmd to a virtqueue
-  * @vscsi	: virtio_scsi state
-  * @cmd		: command structure
-- * @out_num	: number of read-only elements
-- * @in_num	: number of write-only elements
-  * @req_size	: size of the request buffer
-  * @resp_size	: size of the response buffer
-- *
-- * Called with tgt_lock held.
-+ * @gfp	: flags to use for memory allocations
-  */
--static void virtscsi_map_cmd(struct virtio_scsi_target_state *tgt,
--			     struct virtio_scsi_cmd *cmd,
--			     unsigned *out_num, unsigned *in_num,
--			     size_t req_size, size_t resp_size)
-+static int virtscsi_add_cmd(struct virtqueue *vq,
-+			    struct virtio_scsi_cmd *cmd,
-+			    size_t req_size, size_t resp_size, gfp_t gfp)
- {
- 	struct scsi_cmnd *sc = cmd->sc;
--	struct scatterlist *sg = tgt->sg;
--	unsigned int idx = 0;
-+	struct scatterlist sg;
-+	unsigned int count, count_sg;
-+	struct sg_table *out, *in;
-+	struct virtqueue_buf buf;
-+	int ret;
+-Optional sub-node properties:
+-- label: Name for this LED. If omitted, the label is taken from the node name.
+-- linux,default-trigger: Trigger assigned to the LED.
+-
+-Example:
+-
+-ns2-leds {
+-	compatible = "lacie,ns2-leds";
+-
+-	blue-sata {
+-		label = "ns2:blue:sata";
+-		slow-gpio = <&gpio0 29 0>;
+-		cmd-gpio = <&gpio0 30 0>;
+-	};
+-};
+diff --git a/Documentation/devicetree/bindings/leds/leds-ns2.txt b/Documentation/devicetree/bindings/leds/leds-ns2.txt
+new file mode 100644
+index 0000000..aef3aca
+--- /dev/null
++++ b/Documentation/devicetree/bindings/leds/leds-ns2.txt
+@@ -0,0 +1,26 @@
++Binding for dual-GPIO LED found on Network Space v2 (and parents).
 +
-+	out = in = NULL;
++Required properties:
++- compatible: "lacie,ns2-leds".
 +
-+	if (sc && sc->sc_data_direction != DMA_NONE) {
-+		if (sc->sc_data_direction != DMA_FROM_DEVICE)
-+			out = &scsi_out(sc)->table;
-+		if (sc->sc_data_direction != DMA_TO_DEVICE)
-+			in = &scsi_in(sc)->table;
-+	}
++Each LED is represented as a sub-node of the ns2-leds device.
 +
-+	count_sg = 2 + (out ? 1 : 0)          + (in ? 1 : 0);
-+	count    = 2 + (out ? out->nents : 0) + (in ? in->nents : 0);
-+	ret = virtqueue_start_buf(vq, &buf, cmd, count, count_sg, gfp);
-+	if (ret < 0)
-+		return ret;
- 
- 	/* Request header.  */
--	sg_set_buf(&sg[idx++], &cmd->req, req_size);
-+	sg_init_one(&sg, &cmd->req, req_size);
-+	virtqueue_add_sg_single(&buf, &sg, DMA_TO_DEVICE);
- 
- 	/* Data-out buffer.  */
--	if (sc && sc->sc_data_direction != DMA_FROM_DEVICE)
--		virtscsi_map_sgl(sg, &idx, scsi_out(sc));
--
--	*out_num = idx;
-+	if (out)
-+		virtqueue_add_sg(&buf, out->sgl, out->nents, DMA_TO_DEVICE);
- 
- 	/* Response header.  */
--	sg_set_buf(&sg[idx++], &cmd->resp, resp_size);
-+	sg_init_one(&sg, &cmd->resp, resp_size);
-+	virtqueue_add_sg_single(&buf, &sg, DMA_FROM_DEVICE);
- 
- 	/* Data-in buffer */
--	if (sc && sc->sc_data_direction != DMA_TO_DEVICE)
--		virtscsi_map_sgl(sg, &idx, scsi_in(sc));
-+	if (in)
-+		virtqueue_add_sg(&buf, in->sgl, in->nents, DMA_FROM_DEVICE);
- 
--	*in_num = idx - *out_num;
-+	virtqueue_end_buf(&buf);
-+	return 0;
- }
- 
--static int virtscsi_kick_cmd(struct virtio_scsi_target_state *tgt,
--			     struct virtio_scsi_vq *vq,
-+static int virtscsi_kick_cmd(struct virtio_scsi_vq *vq,
- 			     struct virtio_scsi_cmd *cmd,
- 			     size_t req_size, size_t resp_size, gfp_t gfp)
- {
--	unsigned int out_num, in_num;
- 	unsigned long flags;
--	int err;
-+	int ret;
- 	bool needs_kick = false;
- 
--	spin_lock_irqsave(&tgt->tgt_lock, flags);
--	virtscsi_map_cmd(tgt, cmd, &out_num, &in_num, req_size, resp_size);
--
--	spin_lock(&vq->vq_lock);
--	err = virtqueue_add_buf(vq->vq, tgt->sg, out_num, in_num, cmd, gfp);
--	spin_unlock(&tgt->tgt_lock);
--	if (!err)
-+	spin_lock_irqsave(&vq->vq_lock, flags);
-+	ret = virtscsi_add_cmd(vq->vq, cmd, req_size, resp_size, gfp);
-+	if (!ret)
- 		needs_kick = virtqueue_kick_prepare(vq->vq);
- 
- 	spin_unlock_irqrestore(&vq->vq_lock, flags);
- 
- 	if (needs_kick)
- 		virtqueue_notify(vq->vq);
--	return err;
-+	return ret;
- }
- 
- static int virtscsi_queuecommand(struct Scsi_Host *sh, struct scsi_cmnd *sc)
- {
- 	struct virtio_scsi *vscsi = shost_priv(sh);
--	struct virtio_scsi_target_state *tgt = vscsi->tgt[sc->device->id];
- 	struct virtio_scsi_cmd *cmd;
- 	int ret;
- 
-@@ -467,7 +458,7 @@ static int virtscsi_queuecommand(struct Scsi_Host *sh, struct scsi_cmnd *sc)
- 	BUG_ON(sc->cmd_len > VIRTIO_SCSI_CDB_SIZE);
- 	memcpy(cmd->req.cmd.cdb, sc->cmnd, sc->cmd_len);
- 
--	if (virtscsi_kick_cmd(tgt, &vscsi->req_vq, cmd,
-+	if (virtscsi_kick_cmd(&vscsi->req_vq, cmd,
- 			      sizeof cmd->req.cmd, sizeof cmd->resp.cmd,
- 			      GFP_ATOMIC) == 0)
- 		ret = 0;
-@@ -481,11 +472,10 @@ out:
- static int virtscsi_tmf(struct virtio_scsi *vscsi, struct virtio_scsi_cmd *cmd)
- {
- 	DECLARE_COMPLETION_ONSTACK(comp);
--	struct virtio_scsi_target_state *tgt = vscsi->tgt[cmd->sc->device->id];
- 	int ret = FAILED;
- 
- 	cmd->comp = &comp;
--	if (virtscsi_kick_cmd(tgt, &vscsi->ctrl_vq, cmd,
-+	if (virtscsi_kick_cmd(&vscsi->ctrl_vq, cmd,
- 			      sizeof cmd->req.tmf, sizeof cmd->resp.tmf,
- 			      GFP_NOIO) < 0)
- 		goto out;
-@@ -592,14 +582,11 @@ static struct virtio_scsi_target_state *virtscsi_alloc_tgt(
- 	gfp_t gfp_mask = GFP_KERNEL;
- 
- 	/* We need extra sg elements at head and tail.  */
--	tgt = kmalloc(sizeof(*tgt) + sizeof(tgt->sg[0]) * (sg_elems + 2),
--		      gfp_mask);
--
-+	tgt = kmalloc(sizeof(*tgt), gfp_mask);
- 	if (!tgt)
- 		return NULL;
- 
- 	spin_lock_init(&tgt->tgt_lock);
--	sg_init_table(tgt->sg, sg_elems + 2);
- 	return tgt;
- }
- 
++Required sub-node properties:
++- cmd-gpio: Command LED GPIO. See OF device-tree GPIO specification.
++- slow-gpio: Slow LED GPIO. See OF device-tree GPIO specification.
++
++Optional sub-node properties:
++- label: Name for this LED. If omitted, the label is taken from the node name.
++- linux,default-trigger: Trigger assigned to the LED.
++
++Example:
++
++ns2-leds {
++	compatible = "lacie,ns2-leds";
++
++	blue-sata {
++		label = "ns2:blue:sata";
++		slow-gpio = <&gpio0 29 0>;
++		cmd-gpio = <&gpio0 30 0>;
++	};
++};
 -- 
-1.7.1
-
+1.7.10.4
 
