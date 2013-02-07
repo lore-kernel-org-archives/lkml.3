@@ -1,125 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422628Ab3BGVNN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 16:13:13 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:46474 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759281Ab3BGVNM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 16:13:12 -0500
-Date: Thu, 7 Feb 2013 13:13:06 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH wq/for-3.9] workqueue: pick cwq instead of pool in
- __queue_work()
-Message-ID: <20130207211306.GV2875@htj.dyndns.org>
-References: <1359657696-2767-1-git-send-email-laijs@cn.fujitsu.com>
- <1359657696-2767-8-git-send-email-laijs@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1359657696-2767-8-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1759375Ab3BGVQY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 16:16:24 -0500
+Received: from gate.crashing.org ([63.228.1.57]:58361 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758877Ab3BGVQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 16:16:23 -0500
+Message-ID: <1360271743.2650.38.camel@pasglop>
+Subject: Re: [PATCH] drivers/block/xsysace - replace
+ in(out)_8/in(out)_be16/in(out)_le16 with generic iowrite(read)8/16(be)
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
+        Michal Simek <monstr@monstr.eu>, Arnd Bergmann <arnd@arndb.de>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        dahinds@users.sourceforge.net
+Date: Fri, 08 Feb 2013 08:15:43 +1100
+In-Reply-To: <CACxGe6srNmX+qL+5BBFOzTHtQLRcw+4Aqjexy0Y=Vbh3XqPWPA@mail.gmail.com>
+References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com>
+	 <1781360.cmQWHCW5SC@wuerfel>
+	 <CAHTX3dJpuTRa4Ff29k95quPMVDO2mBiayPoocnw5R15=5ovOHQ@mail.gmail.com>
+	 <201302041724.47331.arnd@arndb.de> <1360031367.14701.47.camel@pasglop>
+	 <CAHTX3dL4dScmzgGyqbvPH-7UQvFrjQhHu2zh0iZyzWB=spZS+Q@mail.gmail.com>
+	 <1360066756.4529.6.camel@pasglop>
+	 <CAHTX3dLJy314mv39hprkmZ5XdzYiYGz1ngTERp7w6aAYud+Riw@mail.gmail.com>
+	 <51111133.7000105@synopsys.com> <1360098004.4529.13.camel@pasglop>
+	 <511178AC.7080304@synopsys.com> <1360105635.2707.7.camel@pasglop>
+	 <CACxGe6u=zhGXm0AO_h354g8OOkAQgdczdw_gCCRxL+=r8hM+-g@mail.gmail.com>
+	 <1360186550.2650.4.camel@pasglop>
+	 <CACxGe6uaVsng79Kni=0O_YK330vuqMuPO6=y9Bj=UZpZ0ozaDg@mail.gmail.com>
+	 <CACxGe6v3ZUEQhi764ivQqE9i2wGzJGcoC0sTVohb_6MQ9sE+hQ@mail.gmail.com>
+	 <5113C459.8000602@synopsys.com>
+	 <CACxGe6uHx4KdZRgAyL-wQ2GurojAH0eTa6YRCoSuCg89BAvBTA@mail.gmail.com>
+	 <5113C818.9050307@synopsys.com>
+	 <CACxGe6srNmX+qL+5BBFOzTHtQLRcw+4Aqjexy0Y=Vbh3XqPWPA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
+On Thu, 2013-02-07 at 16:44 +0000, Grant Likely wrote:
+> 
+> I've just spent some quality time with a piece of paper, and I think
+> I've figured it out...
 
-Currently, __queue_work() chooses the pool to queue a work item to and
-then determines cwq from the target wq and the chosen pool.  This is a
-bit backwards in that we can determine cwq first and simply use
-cwq->pool.  This way, we can skip get_std_worker_pool() in queueing
-path which will be a hurdle when implementing custom worker pools.
+http://linuxplumbers.ubicast.tv/videos/big-and-little-endian-inside-out/
 
-Update __queue_work() such that it chooses the target cwq and then use
-cwq->pool instead of the other way around.  While at it, add missing
-{} in an if statement.
+Watch the last part on IO busses....
 
-This patch doesn't introduce any functional changes.
+This all has to do which which byte of the bus is the lowest byte
+*address* regardless of significance. That's how the wiring should be
+consistent between CPU and device, in order for a data port to work
+properly.
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- kernel/workqueue.c |   29 +++++++++++++----------------
- 1 file changed, 13 insertions(+), 16 deletions(-)
+The data port then requires no swapping (which also means it works
+nicely with dumb DMA engines etc...)
 
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1193,8 +1193,6 @@ static bool is_chained_work(struct workq
- static void __queue_work(unsigned int cpu, struct workqueue_struct *wq,
- 			 struct work_struct *work)
- {
--	bool highpri = wq->flags & WQ_HIGHPRI;
--	struct worker_pool *pool;
- 	struct cpu_workqueue_struct *cwq;
- 	struct list_head *worklist;
- 	unsigned int work_flags;
-@@ -1215,7 +1213,7 @@ static void __queue_work(unsigned int cp
- 	    WARN_ON_ONCE(!is_chained_work(wq)))
- 		return;
- 
--	/* determine pool to use */
-+	/* determine the cwq to use */
- 	if (!(wq->flags & WQ_UNBOUND)) {
- 		struct worker_pool *last_pool;
- 
-@@ -1228,37 +1226,36 @@ static void __queue_work(unsigned int cp
- 		 * work needs to be queued on that cpu to guarantee
- 		 * non-reentrancy.
- 		 */
--		pool = get_std_worker_pool(cpu, highpri);
-+		cwq = get_cwq(cpu, wq);
- 		last_pool = get_work_pool(work);
- 
--		if (last_pool && last_pool != pool) {
-+		if (last_pool && last_pool != cwq->pool) {
- 			struct worker *worker;
- 
- 			spin_lock(&last_pool->lock);
- 
- 			worker = find_worker_executing_work(last_pool, work);
- 
--			if (worker && worker->current_cwq->wq == wq)
--				pool = last_pool;
--			else {
-+			if (worker && worker->current_cwq->wq == wq) {
-+				cwq = get_cwq(last_pool->cpu, wq);
-+			} else {
- 				/* meh... not running there, queue here */
- 				spin_unlock(&last_pool->lock);
--				spin_lock(&pool->lock);
-+				spin_lock(&cwq->pool->lock);
- 			}
- 		} else {
--			spin_lock(&pool->lock);
-+			spin_lock(&cwq->pool->lock);
- 		}
- 	} else {
--		pool = get_std_worker_pool(WORK_CPU_UNBOUND, highpri);
--		spin_lock(&pool->lock);
-+		cwq = get_cwq(WORK_CPU_UNBOUND, wq);
-+		spin_lock(&cwq->pool->lock);
- 	}
- 
--	/* pool determined, get cwq and queue */
--	cwq = get_cwq(pool->cpu, wq);
-+	/* cwq determined, queue */
- 	trace_workqueue_queue_work(req_cpu, cwq, work);
- 
- 	if (WARN_ON(!list_empty(&work->entry))) {
--		spin_unlock(&pool->lock);
-+		spin_unlock(&cwq->pool->lock);
- 		return;
- 	}
- 
-@@ -1276,7 +1273,7 @@ static void __queue_work(unsigned int cp
- 
- 	insert_work(cwq, work, worklist, work_flags);
- 
--	spin_unlock(&pool->lock);
-+	spin_unlock(&cwq->pool->lock);
- }
- 
- /**
+Whether the registers need swapping or not depends on which half is the
+MSB, which is somewhat a semantically higher level than the bus
+transport, and depends on whether the device exposes them as BE or LE
+registers. But data ports are just "windows" to a byte stream and
+shouldn't be affected by endianess (again, unless you get a moron doing
+the HW which seems to be still too common).
+
+There is only one right way to connect devices to CPUs basically, which
+is called byte address invariance, and preserves the order of bytes in
+term of byte addresses.
+
+(Note that for busses that also carry addresses such as PCI, this can
+get tricky as you might need to have the lanes routed in a different
+order for address vs. data cycles).
+
+Cheers,
+Ben.
+
+
