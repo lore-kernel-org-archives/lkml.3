@@ -1,90 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422626Ab3BGSAO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 13:00:14 -0500
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:35201 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759261Ab3BGSAM (ORCPT
+	id S1161025Ab3BGSD1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 13:03:27 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:52541 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030213Ab3BGSDZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 13:00:12 -0500
+	Thu, 7 Feb 2013 13:03:25 -0500
+Date: Thu, 7 Feb 2013 08:15:32 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Lai Jiangshan <eag0628@gmail.com>
+Cc: mingo@elte.hu, linux-kernel@vger.kernel.org, josh@joshtriplett.org,
+        rostedt@goodmis.org, rbraun@sceen.net, zhong@linux.vnet.ibm.com,
+        markus@trippelsdorf.de, sasha.levin@oracle.com,
+        cody@linux.vnet.ibm.com, dave@linux.vnet.ibm.com, fweisbec@gmail.com,
+        akpm@linux-foundation.org, tglx@linutronix.de
+Subject: Re: [GIT PULL rcu/next] RCU commits for 3.9
+Message-ID: <20130207161532.GR2632@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130204171817.GA18332@linux.vnet.ibm.com>
+ <51138E4C.2080005@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20130207172701.GX25591@8bytes.org>
-References: <5fc782f401fc7bb0cd829b2316d7f29eb2595036.1360206266.git.luto@amacapital.net>
- <20130207113340.GW25591@8bytes.org> <CALCETrUzX9efPafJ0W2vxU-KgQ_FOxQ4YqGDKbw5z6d1P0ZYEQ@mail.gmail.com>
- <20130207172701.GX25591@8bytes.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 7 Feb 2013 09:53:45 -0800
-Message-ID: <CALCETrWGgpipHVnutSdfqBWw1GoyrdJV7vTMxagtYC8Zzr8HzA@mail.gmail.com>
-Subject: Re: [PATCH] intel_iommu: Disable vfio and kvm interrupt assignment
- when unsafe
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        x86@kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Don Zickus <dzickus@redhat.com>, Prarit Bhargava <prarit@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51138E4C.2080005@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13020718-7408-0000-0000-00000C9B987F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 7, 2013 at 9:27 AM, Joerg Roedel <joro@8bytes.org> wrote:
-> On Thu, Feb 07, 2013 at 08:29:42AM -0800, Andy Lutomirski wrote:
->> On Thu, Feb 7, 2013 at 3:33 AM, Joerg Roedel <joro@8bytes.org> wrote:
->> > On Wed, Feb 06, 2013 at 07:08:24PM -0800, Andy Lutomirski wrote:
->> >> -     if (x2apic_present)
->> >> -             WARN(1, KERN_WARNING
->> >> -                     "Failed to enable irq remapping.  You are vulnerable to irq-injection attacks.\n");
->> >> -
->> >> +     irq_remapping_is_secure = 0;
->> >>       return -1;
->> >>  }
->> >
->> > Why do you remove this warning? It seems unrelated to the rest of the
->> > patch.
->>
->> The idea is that setting irq_remapping_is_secure = 0 makes you (much
->> less) vulnerable to irq-injection attacks: you're vulnerable to
->> malicious hardware but not to attack via vfio or kvm, because those
->> paths are disabled.
->>
->> I'd have no problem leaving the warning in and letting whoever manages
->> to trigger it and get annoyed fix it.  FWIW, it's actually likely to
->> be interesting if the warning hits.
->
-> Hmm, looking into the intel_irq_remapping.c version in the tip tree
-> makes me wonder even more.
+On Thu, Feb 07, 2013 at 07:21:48PM +0800, Lai Jiangshan wrote:
+> Hi, Paul
+> 
+> These (https://lkml.org/lkml/2012/11/29/123) are still not merged.
 
-Is this the version I'm based on (intel_irq_remapping: Clean up x2apic
-optout security warning mess), or something else?
+Ah, good point...
 
->
-> First, I wonder why the warning only hits when an x2apic is present. The
-> function is not x2apic-specific and the vulnerability also exists in
-> xapic mode. So that dependency can be removed.
->
-> Second, I think that it should be a pr_warn instead of a full WARN. When
-> IRQ remapping could not be enabled it's most likely because of the BIOS
-> or the hardware. So a message in the kernel log will do and the
-> backtrace provides no additional value.
->
+My intent was to merge as soon as https://lkml.org/lkml/2012/12/5/201
+was responded to.  The question should not have blocked merging, so I
+should have followed up, but the again, so should have you.  ;-)
 
-Which warning are you referring to?  Unless I'm failing at reading
-code this morning, the result of this patch has no such warning.
+I queued the patches, and if testing goes well, will push them to -tip
+in a few days.
 
-> Same is true for the warning in the function iommu_set_irq_remapping():
->
->        if (sts & DMA_GSTS_CFIS)
->                 WARN(1, KERN_WARNING
->                         "Compatibility-format IRQs enabled despite intr remapping;\n"
->                         "you are vulnerable to IRQ injection.\n");
->
-> From what I can see this condition depends only on the hardware too. So
-> a simple pr_warn() provides the same amount of information.
->
+The remaining issue for invoking srcu_read_lock() from offline CPUs is
+that lockdep does tracing that uses RCU.  So your patch 4/8 is incomplete,
+though a good step towards allowing SRCU to be invoked from offline CPUs.
+Thoughts on getting the rest of the way there?
 
-What's the general rule here?  If this warning hits, then my
-understanding of the Intel VT-d spec is wrong, and I don't think that
-firmware can cause it.  A buggy hypervisor could, I suppose.
+							Thanx, Paul
 
---Andy
+> Thanks,
+> lai
+> 
+> On 05/02/13 01:18, Paul E. McKenney wrote:
+> >Hello, Ingo,
+> >
+> >The major features of this series are:
+> >
+> >1.	Changes to rcutorture and to RCU documentation.  Posted to LKML at
+> >	https://lkml.org/lkml/2013/1/26/188.
+> >
+> >2.	Enhancements to uniprocessor handling in tiny RCU. Posted to LKML
+> >	at https://lkml.org/lkml/2013/1/27/2.
+> >
+> >3.	Tag RCU callbacks with grace-period number to simplify callback
+> >	advancement.  Posted to LKML at https://lkml.org/lkml/2013/1/26/203.
+> >
+> >4.	Miscellaneous fixes.  Posted to LKML at
+> >	https://lkml.org/lkml/2013/1/26/204.
+> >
+> >All of these commits have been subject to -next testing.
+> >
+> >These changes are available in the git repository at:
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/next
+> >
+> >--------------------->
+> >
+> >Cody P Schafer (1):
+> >       rcu: Correct 'optimized' to 'optimize' in header comment
+> >
+> >Dave Hansen (1):
+> >       rcu: Consolidate debugging Kconfig options
+> >
+> >Frederic Weisbecker (1):
+> >       context_tracking: Add comments on interface and internals
+> >
+> >Josh Triplett (1):
+> >       rcu: Make rcu_is_cpu_rrupt_from_idle helper functions static
+> >
+> >Li Zhong (2):
+> >       rcu: Use new nesting value for rcu_dyntick trace in rcu_eqs_enter_common
+> >       rcu: Remove unused code originally used for context tracking
+> >
+> >Paul E. McKenney (11):
+> >       tracing: Export trace_clock_local()
+> >       rcu: Reduce rcutorture tracing
+> >       rcu: Fix blimit type for trace_rcu_batch_start()
+> >       rcu: Silence compiler array out-of-bounds false positive
+> >       rcu: Tag callback lists with corresponding grace-period number
+> >       rcu: Trace callback acceleration
+> >       rcu: Remove obsolete Kconfig option from comment
+> >       rcu: Provide RCU CPU stall warnings for tiny RCU
+> >       rcu: Allow TREE_PREEMPT_RCU on UP systems
+> >       rcu: Make rcutorture's shuffler task shuffle recently added tasks
+> >       Merge branches 'doctorture.2013.01.29a', 'fixes.2013.01.26a', 'tagcb.2013.01.24a' and 'tiny.2013.01.29b' into HEAD
+> >
+> >Richard Braun (1):
+> >       Documentation: Memory barrier semantics of atomic_xchg()
+> >
+> >Sasha Levin (1):
+> >       rcutorture: Don't compare ptr with 0
+> >
+> >  Documentation/atomic_ops.txt      |    2 +
+> >  Documentation/memory-barriers.txt |    1 +
+> >  include/linux/rcupdate.h          |   15 ++-
+> >  include/trace/events/rcu.h        |   31 +++--
+> >  init/Kconfig                      |   12 ++-
+> >  kernel/context_tracking.c         |   75 +++++++++--
+> >  kernel/rcu.h                      |    7 +
+> >  kernel/rcupdate.c                 |   60 ++++++++-
+> >  kernel/rcutiny.c                  |    8 +-
+> >  kernel/rcutiny_plugin.h           |   56 ++++++++
+> >  kernel/rcutorture.c               |   57 +++++++--
+> >  kernel/rcutree.c                  |  260 ++++++++++++++++++++++++++-----------
+> >  kernel/rcutree.h                  |   11 +--
+> >  kernel/trace/trace_clock.c        |    1 +
+> >  lib/Kconfig.debug                 |  117 +++++++++--------
+> >  15 files changed, 528 insertions(+), 185 deletions(-)
+> >
+> >--
+> >To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> >the body of a message to majordomo@vger.kernel.org
+> >More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >Please read the FAQ at  http://www.tux.org/lkml/
+> >
+> 
+
