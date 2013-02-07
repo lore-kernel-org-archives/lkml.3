@@ -1,80 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758293Ab3BGMWs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 07:22:48 -0500
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:51705 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753276Ab3BGMWn (ORCPT
+	id S1758333Ab3BGMWx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 07:22:53 -0500
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:54790 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758292Ab3BGMWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 07:22:43 -0500
+	Thu, 7 Feb 2013 07:22:48 -0500
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>, asias@redhat.com,
         Rusty Russell <rusty@rustcorp.com.au>, mst@redhat.com,
         kvm@vger.kernel.org, virtualization@lists.linux-foundation.org
-Subject: [RFC PATCH 0/8] virtio: new API for addition of buffers, scatterlist changes
-Date: Thu,  7 Feb 2013 13:22:24 +0100
-Message-Id: <1360239752-2470-1-git-send-email-pbonzini@redhat.com>
+Subject: [RFC PATCH 2/8] virtio-blk: reorganize virtblk_add_req
+Date: Thu,  7 Feb 2013 13:22:26 +0100
+Message-Id: <1360239752-2470-3-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.1
+In-Reply-To: <1360239752-2470-1-git-send-email-pbonzini@redhat.com>
+References: <1360239752-2470-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The virtqueue_add_buf function has two limitations:
+Right now, both virtblk_add_req and virtblk_add_req_wait call
+virtqueue_add_buf.  To prepare for the next patches, abstract the call
+to virtqueue_add_buf into a new function __virtblk_add_req, and include
+the waiting logic directly in virtblk_add_req.
 
-1) it requires the caller to provide all the buffers in a single call;
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+ drivers/block/virtio_blk.c |   55 ++++++++++++++++----------------------------
+ 1 files changed, 20 insertions(+), 35 deletions(-)
 
-2) it does not support chained scatterlists: the buffers must be
-provided as an array of struct scatterlist.
+diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
+index 8ad21a2..fd8a689 100644
+--- a/drivers/block/virtio_blk.c
++++ b/drivers/block/virtio_blk.c
+@@ -100,50 +100,39 @@ static inline struct virtblk_req *virtblk_alloc_req(struct virtio_blk *vblk,
+ 	return vbr;
+ }
+ 
+-static void virtblk_add_buf_wait(struct virtio_blk *vblk,
+-				 struct virtblk_req *vbr,
+-				 unsigned long out,
+-				 unsigned long in)
++static inline int __virtblk_add_req(struct virtqueue *vq,
++			     struct virtblk_req *vbr,
++			     unsigned long out,
++			     unsigned long in)
+ {
++	return virtqueue_add_buf(vq, vbr->sg, out, in, vbr, GFP_ATOMIC);
++}
++
++static void virtblk_add_req(struct virtblk_req *vbr,
++			    unsigned int out, unsigned int in)
++{
++	struct virtio_blk *vblk = vbr->vblk;
+ 	DEFINE_WAIT(wait);
++	int ret;
+ 
+-	for (;;) {
++	spin_lock_irq(vblk->disk->queue->queue_lock);
++	while (unlikely((ret = __virtblk_add_req(vblk->vq, vbr,
++						 out, in)) < 0)) {
+ 		prepare_to_wait_exclusive(&vblk->queue_wait, &wait,
+ 					  TASK_UNINTERRUPTIBLE);
+ 
++		spin_unlock_irq(vblk->disk->queue->queue_lock);
++		io_schedule();
+ 		spin_lock_irq(vblk->disk->queue->queue_lock);
+-		if (virtqueue_add_buf(vblk->vq, vbr->sg, out, in, vbr,
+-				      GFP_ATOMIC) < 0) {
+-			spin_unlock_irq(vblk->disk->queue->queue_lock);
+-			io_schedule();
+-		} else {
+-			virtqueue_kick(vblk->vq);
+-			spin_unlock_irq(vblk->disk->queue->queue_lock);
+-			break;
+-		}
+ 
++		finish_wait(&vblk->queue_wait, &wait);
+ 	}
+ 
+-	finish_wait(&vblk->queue_wait, &wait);
+-}
+-
+-static inline void virtblk_add_req(struct virtblk_req *vbr,
+-				   unsigned int out, unsigned int in)
+-{
+-	struct virtio_blk *vblk = vbr->vblk;
+-
+-	spin_lock_irq(vblk->disk->queue->queue_lock);
+-	if (unlikely(virtqueue_add_buf(vblk->vq, vbr->sg, out, in, vbr,
+-					GFP_ATOMIC) < 0)) {
+-		spin_unlock_irq(vblk->disk->queue->queue_lock);
+-		virtblk_add_buf_wait(vblk, vbr, out, in);
+-		return;
+-	}
+ 	virtqueue_kick(vblk->vq);
+ 	spin_unlock_irq(vblk->disk->queue->queue_lock);
+ }
+ 
+-static int virtblk_bio_send_flush(struct virtblk_req *vbr)
++static void virtblk_bio_send_flush(struct virtblk_req *vbr)
+ {
+ 	unsigned int out = 0, in = 0;
+ 
+@@ -155,11 +144,9 @@ static int virtblk_bio_send_flush(struct virtblk_req *vbr)
+ 	sg_set_buf(&vbr->sg[out + in++], &vbr->status, sizeof(vbr->status));
+ 
+ 	virtblk_add_req(vbr, out, in);
+-
+-	return 0;
+ }
+ 
+-static int virtblk_bio_send_data(struct virtblk_req *vbr)
++static void virtblk_bio_send_data(struct virtblk_req *vbr)
+ {
+ 	struct virtio_blk *vblk = vbr->vblk;
+ 	unsigned int num, out = 0, in = 0;
+@@ -188,8 +175,6 @@ static int virtblk_bio_send_data(struct virtblk_req *vbr)
+ 	}
+ 
+ 	virtblk_add_req(vbr, out, in);
+-
+-	return 0;
+ }
+ 
+ static void virtblk_bio_send_data_work(struct work_struct *work)
+-- 
+1.7.1
 
-Because of these limitations, virtio-scsi has to copy each request into
-a scatterlist internal to the driver.  It cannot just use the one that
-was prepared by the upper SCSI layers.
-
-This series adds a different set of APIs for adding a buffer to a
-virtqueue.  The new API lets you pass the buffers piecewise, wrapping
-multiple calls to virtqueue_add_sg between virtqueue_start_buf and
-virtqueue_end_buf.  Letting drivers call virtqueue_add_sg multiple times
-if they already have a scatterlist provided by someone else simplifies the
-code and, for virtio-scsi, it saves the copying and the related locking.
-
-One major difference between virtqueue_add_buf and virtqueue_add_sg
-is that the latter uses scatterlist iterators, which follow chained
-scatterlist structs and stop at ending markers.  In order to avoid code
-duplication, and use the new API from virtqueue_add_buf (patch 8), we need
-to change all existing callers of virtqueue_add_buf to provide well-formed
-scatterlists.  This is what patches 2-7 do.  For virtio-blk it is easiest
-to just switch to the new API, just like for virtio-scsi.  For virtio-net
-the ending marker must be reset after calling virtqueue_add_buf, in
-preparation for the next usage of the scatterlist.  Other drivers are
-safe already.
-
-This is an RFC for two reasons.  First, because I haven't done enough
-testing yet (especially with all the variations on receiving that
-virtio-net has).  Second, because I still have two struct vring_desc *
-fields in virtqueue API, which is a layering violation.  I'm not really
-sure how important that is and how to fix that---except by making the
-fields void*.
-
-Paolo
-
-Paolo Bonzini (8):
-  virtio: add functions for piecewise addition of buffers
-  virtio-blk: reorganize virtblk_add_req
-  virtio-blk: use virtqueue_start_buf on bio path
-  virtio-blk: use virtqueue_start_buf on req path
-  scatterlist: introduce sg_unmark_end
-  virtio-net: unmark scatterlist ending after virtqueue_add_buf
-  virtio-scsi: use virtqueue_start_buf
-  virtio: reimplement virtqueue_add_buf using new functions
-
- block/blk-integrity.c        |    2 +-
- block/blk-merge.c            |    2 +-
- drivers/block/virtio_blk.c   |  165 +++++++++--------
- drivers/net/virtio_net.c     |   21 ++-
- drivers/scsi/virtio_scsi.c   |  103 +++++------
- drivers/virtio/virtio_ring.c |  417 +++++++++++++++++++++++++++---------------
- include/linux/scatterlist.h  |   16 ++
- include/linux/virtio.h       |   25 +++
- 8 files changed, 460 insertions(+), 291 deletions(-)
 
