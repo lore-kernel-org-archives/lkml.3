@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757274Ab3BGKVr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 05:21:47 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:44477 "EHLO
+	id S1757329Ab3BGKWk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 05:22:40 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:44738 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755579Ab3BGKVo convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754959Ab3BGKWg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 05:21:44 -0500
+	Thu, 7 Feb 2013 05:22:36 -0500
 From: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
 To: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>,
         "devicetree-discuss@lists.ozlabs.org" 
@@ -29,14 +29,16 @@ CC: "AnilKumar, Chimata" <anilkumar@ti.com>,
         "rob@landley.net" <rob@landley.net>,
         "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
         "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>
-Subject: RE: [PATCH V2 5/6] ARM: regulator: add tps6507x device tree data
-Thread-Topic: [PATCH V2 5/6] ARM: regulator: add tps6507x device tree data
-Thread-Index: AQHN/fO2hWERaiLA30WiHOydyEJ0GphuPGlA
-Date: Thu, 7 Feb 2013 10:21:09 +0000
-Message-ID: <A4887BF146CD57468F700B415D2F4701583311@DBDE01.ent.ti.com>
+Subject: RE: [PATCH V2 6/6] ARM: davinci: da850: add tps6507x regulator DT
+ data
+Thread-Topic: [PATCH V2 6/6] ARM: davinci: da850: add tps6507x regulator DT
+ data
+Thread-Index: AQHN/fO//qpFIBBNMka0HopE+8//hZhuPetQ
+Date: Thu, 7 Feb 2013 10:22:19 +0000
+Message-ID: <A4887BF146CD57468F700B415D2F4701583323@DBDE01.ent.ti.com>
 References: <1359445134-13323-1-git-send-email-manishv.b@ti.com>
- <1359445134-13323-6-git-send-email-manishv.b@ti.com>
-In-Reply-To: <1359445134-13323-6-git-send-email-manishv.b@ti.com>
+ <1359445134-13323-7-git-send-email-manishv.b@ti.com>
+In-Reply-To: <1359445134-13323-7-git-send-email-manishv.b@ti.com>
 Accept-Language: en-IN, en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -51,82 +53,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Mark,
 
-On Tue, Jan 29, 2013 at 13:08:53, Vishwanathrao Badarkhe, Manish wrote:
-> Add device tree data for tps6507x regulator by adding all tps6507x regulator nodes. Regulators are initialized based on compatible name provided in tps6507x DT file.
+On Tue, Jan 29, 2013 at 13:08:54, Vishwanathrao Badarkhe, Manish wrote:
+> Add tps6507x regulator device tree data to da850-evm by adding regulator consumers with tightened constraints and regulator-name.TPS6507x regulator handle can be obtained by using this regulator name.
+> Regulator constraints are added as per da850 board file.
 > 
-> All tps6507x PMIC regulator device tree nodes are placed in a separate device tree include file (tps6507x.dtsi).
-> tps6507x.dtsi file is created using datasheet http://www.ti.com/lit/ds/symlink/tps65070.pdf
+> Regulator names are given as per maximum output voltage the regulator is capable to provide.
+> for e.g. regulator name for dcdc1 is "VDCDC1_3.3V".
+> Also, add tps6507x PMIC I2C slave device under I2C0 node.
 > 
 > Tested on da850-evm.
 > 
 > Signed-off-by: Vishwanathrao Badarkhe, Manish <manishv.b@ti.com>
 > ---
 > Changes since V1:
->  - Updated Copyright information.
+>  - No change
 > 
-> :000000 100644 0000000... 4c326e5... A	arch/arm/boot/dts/tps6507x.dtsi
->  arch/arm/boot/dts/tps6507x.dtsi |   47 +++++++++++++++++++++++++++++++++++++++
->  1 files changed, 47 insertions(+), 0 deletions(-)
+> :100644 100644 c9ed683... 58e6961... M	arch/arm/boot/dts/da850-evm.dts
+>  arch/arm/boot/dts/da850-evm.dts |   63 +++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 63 insertions(+), 0 deletions(-)
 > 
-> diff --git a/arch/arm/boot/dts/tps6507x.dtsi b/arch/arm/boot/dts/tps6507x.dtsi new file mode 100644 index 0000000..4c326e5
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/tps6507x.dtsi
-> @@ -0,0 +1,47 @@
-> +/*
-> + * Copyright (C) 2013 Texas Instruments Incorporated - 
-> +http://www.ti.com/
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
+> diff --git a/arch/arm/boot/dts/da850-evm.dts b/arch/arm/boot/dts/da850-evm.dts index c9ed683..58e6961 100644
+> --- a/arch/arm/boot/dts/da850-evm.dts
+> +++ b/arch/arm/boot/dts/da850-evm.dts
+> @@ -31,6 +31,10 @@
+>  			status = "okay";
+>  			pinctrl-names = "default";
+>  			pinctrl-0 = <&i2c0_pins>;
 > +
-> +/*
-> + * Integrated Power Management Chip
-> + * http://www.ti.com/lit/ds/symlink/tps65070.pdf
-> + */
-> +
-> +&tps {
-> +	compatible = "ti,tps6507x";
-> +
-> +	regulators {
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +
-> +		vdcdc1_reg: regulator@0 {
-> +			reg = <0>;
-> +			regulator-compatible = "VDCDC1";
-> +		};
-> +
-> +		vdcdc2_reg: regulator@1 {
-> +			reg = <1>;
-> +			regulator-compatible = "VDCDC2";
-> +		};
-> +
-> +		vdcdc3_reg: regulator@2 {
-> +			reg = <2>;
-> +			regulator-compatible = "VDCDC3";
-> +		};
-> +
-> +		ldo1_reg: regulator@3 {
-> +			reg = <3>;
-> +			regulator-compatible = "LDO1";
-> +		};
-> +
-> +		ldo2_reg: regulator@4 {
-> +			reg = <4>;
-> +			regulator-compatible = "LDO2";
-> +		};
-> +
+> +			tps: tps@48 {
+> +				reg = <0x48>;
+> +			};
+>  		};
+>  	};
+>  	nand_cs3@62000000 {
+> @@ -38,4 +42,63 @@
+>  		pinctrl-names = "default";
+>  		pinctrl-0 = <&nand_cs3_pins>;
+>  	};
+> +	vbat: fixedregulator@0 {
+> +		compatible = "regulator-fixed";
+> +		regulator-name = "vbat";
+> +		regulator-min-microvolt = <5000000>;
+> +		regulator-max-microvolt = <5000000>;
+> +		regulator-boot-on;
 > +	};
 > +};
+> +
+> +/include/ "tps6507x.dtsi"
+> +
+> +&tps {
+> +        vdcdc1_2-supply = <&vbat>;
+> +        vdcdc3-supply = <&vbat>;
+> +        vldo1_2-supply = <&vbat>;
+> +
+> +        regulators {
+> +                vdcdc1_reg: regulator@0 {
+> +                        regulator-name = "VDCDC1_3.3V";
+> +                        regulator-min-microvolt = <3150000>;
+> +                        regulator-max-microvolt = <3450000>;
+> +                        regulator-always-on;
+> +                        regulator-boot-on;
+> +                };
+> +
+> +                vdcdc2_reg: regulator@1 {
+> +                        regulator-name = "VDCDC2_3.3V";
+> +                        regulator-min-microvolt = <1710000>;
+> +                        regulator-max-microvolt = <3450000>;
+> +                        regulator-always-on;
+> +                        regulator-boot-on;
+> +                        ti,defdcdc_default = <1>;
+> +                };
+> +
+> +                vdcdc3_reg: regulator@2 {
+> +                        regulator-name = "VDCDC3_1.2V";
+> +                        regulator-min-microvolt = <950000>;
+> +                        regulator-max-microvolt = <1350000>;
+> +                        regulator-always-on;
+> +                        regulator-boot-on;
+> +                        ti,defdcdc_default = <1>;
+> +                };
+> +
+> +                ldo1_reg: regulator@3 {
+> +                        regulator-name = "LDO1_1.8V";
+> +                        regulator-min-microvolt = <1710000>;
+> +                        regulator-max-microvolt = <1890000>;
+> +                        regulator-always-on;
+> +                        regulator-boot-on;
+> +                };
+> +
+> +                ldo2_reg: regulator@4 {
+> +                        regulator-name = "LDO2_1.2V";
+> +                        regulator-min-microvolt = <1140000>;
+> +                        regulator-max-microvolt = <1320000>;
+> +                        regulator-always-on;
+> +                        regulator-boot-on;
+> +                };
+> +        };
+>  };
 > --
 > 1.7.4.1
 > 
 > 
 
-If there are not any comments on this patch, Could you please 
-accept this patch?
+If there are not any comments on this patch, Could you please accept 
+this patch?
 
 Regards, 
 Manish
