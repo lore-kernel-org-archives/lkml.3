@@ -1,73 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759502Ab3BGXOM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 18:14:12 -0500
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:40807 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759409Ab3BGXOK (ORCPT
+	id S1759513Ab3BGXUA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 18:20:00 -0500
+Received: from us-mx2.synaptics.com ([12.239.216.76]:28327 "EHLO
+	us-mx2.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759492Ab3BGXT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 18:14:10 -0500
-Message-ID: <5114353D.1060202@linaro.org>
-Date: Thu, 07 Feb 2013 15:14:05 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Thu, 7 Feb 2013 18:19:58 -0500
+X-PGP-Universal: processed;
+	by securemail.synaptics.com on Thu, 07 Feb 2013 14:31:45 -0800
+Message-ID: <5114369C.4090904@synaptics.com>
+Date: Thu, 7 Feb 2013 15:19:56 -0800
+From: Christopher Heiny <cheiny@synaptics.com>
+Organization: Synaptics, Inc
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Eric Dumazet <edumazet@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 1/6] kernel: implement queue spinlock API
-References: <1358896415-28569-1-git-send-email-walken@google.com> <1358896415-28569-2-git-send-email-walken@google.com> <20130207223434.GG2545@linux.vnet.ibm.com>
-In-Reply-To: <20130207223434.GG2545@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Jean Delvare <khali@linux-fr.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Allie Xiong <axiong@synaptics.com>, Vivian Ly <vly@synaptics.com>,
+        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
+        Alexandra Chin <alexandra.chin@tw.synaptics.com>,
+        Joerie de Gram <j.de.gram@gmail.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>
+Subject: Re: [PATCH 04/05] input: RMI4 F01 device control
+References: <1358557965-29065-1-git-send-email-cheiny@synaptics.com> <1358557965-29065-5-git-send-email-cheiny@synaptics.com> <20130131080859.GA4356@core.coreip.homeip.net> <510ADEA2.1080407@synaptics.com>
+In-Reply-To: <510ADEA2.1080407@synaptics.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2013 02:34 PM, Paul E. McKenney wrote:
-> On Tue, Jan 22, 2013 at 03:13:30PM -0800, Michel Lespinasse wrote:
->> Introduce queue spinlocks, to be used in situations where it is desired
->> to have good throughput even under the occasional high-contention situation.
+On 01/31/2013 01:14 PM, Christopher Heiny wrote:
+> On 01/31/2013 12:08 AM, Dmitry Torokhov wrote:
+>> Hi Chris,
 >>
->> This initial implementation is based on the classic MCS spinlock,
->> because I think this represents the nicest API we can hope for in a
->> fast queue spinlock algorithm. The MCS spinlock has known limitations
->> in that it performs very well under high contention, but is not as
->> good as the ticket spinlock under low contention. I will address these
->> limitations in a later patch, which will propose an alternative,
->> higher performance implementation using (mostly) the same API.
+>> On Fri, Jan 18, 2013 at 05:12:44PM -0800, Christopher Heiny wrote:
+>>> In addition to the changes described in 0/0 of this patchset, this patch
+>>> includes device serialization updated to conform to the latest RMI4
+>>> specification.
 >>
->> Sample use case acquiring mystruct->lock:
->>
->>    struct q_spinlock_node node;
->>
->>    q_spin_lock(&mystruct->lock, &node);
->>    ...
->>    q_spin_unlock(&mystruct->lock, &node);
-> It is possible to keep the normal API for MCS locks by having the lock
-> holder remember the parameter in the lock word itself.  While spinning,
-> the node is on the stack, is not needed once the lock is acquired.
-> The pointer to the next node in the queue -is- needed, but this can be
-> stored in the lock word.
+>> I was looking at the various aspects of the RMI4 patchset, trying to
+>> fix the issues that I see, but there is one big issue that I simply do
+>> not have time to tackle - the driver is completely broken on big endian
+>> architectures due to reliance on bitfileds when exchanging the data with
+>> the device.
 >
-> I believe that John Stultz worked on something like this some years back,
-> so added him to CC.
-Oh yea, its been quite awhile.
+> Grumble.  I brought this up during the original development, but was
+> assured that it would work fine per the C language spec.  I'll have to
+> revisit that discussion and report back.
 
-Here are some of the discussion threads google remembers for me:
+OK, after some trivial research it turns out you're right, and I was 
+right originally, but let myself be blindsided by bafflegab.  Doh!
 
-http://marc.info/?l=lse-tech&m=101227079817027&w=2
+As you mentioned, fixing the endian-ness problem is a pretty wide 
+ranging change to the way things are done in the driver.  Fortunately 
+it's not a structural change to the architecture of the driver.
 
-http://marc.info/?l=lse-tech&m=101380783015065&w=2  (missing the patch)
-     http://marc.info/?l=lse-tech&m=101380783615084&w=2 (patch for above)
+But because it affects pretty much the whole code (which is actually a 
+LOT more code than we're currently submitting - but that unsubmitted 
+code will have to be updated concurrently with the submitted code to 
+prevent a trainwreck), I'd like to isolate that fix to a single event.
 
+So I propose we get all our other issues worked out, since a bunch of 
+them are already in progress.  Once that stuff is stable, my team can do 
+one big change to fix the endian bug.  If the code is stable, we can do 
+the update on our end pretty quickly.
 
-thanks
--john
+How does that sound?
 
-
+					Chris
