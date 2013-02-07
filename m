@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422808Ab3BGWln (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 17:41:43 -0500
-Received: from mga01.intel.com ([192.55.52.88]:51041 "EHLO mga01.intel.com"
+	id S1945912Ab3BGWmk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 17:42:40 -0500
+Received: from mout.gmx.net ([212.227.15.19]:52097 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422700Ab3BGWlm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 17:41:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,625,1355126400"; 
-   d="scan'208";a="284213345"
-Date: Thu, 7 Feb 2013 23:41:19 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Tomas Winkler <tomas.winkler@intel.com>, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [char-misc-next 08/11] mei: nfc: Initial nfc implementation
-Message-ID: <20130207224119.GC5072@sortiz-mobl>
-References: <1360270997-7639-1-git-send-email-tomas.winkler@intel.com>
- <1360270997-7639-9-git-send-email-tomas.winkler@intel.com>
- <201302072226.42375.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201302072226.42375.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1422737Ab3BGWmi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 17:42:38 -0500
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX19ixId7ayRiMGShhuc3BMMc877NMMngXHizqRT8x5
+	rp1AQHXJcm69C/
+From: Peter Huewe <peterhuewe@gmx.de>
+To: Randy Dunlap <rdunlap@infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        Yunhong Jiang <yunhong.jiang@intel.com>,
+        Sheng Yang <sheng@linux.intel.com>,
+        "Mike A. Chan" <mikechan@google.com>,
+        Xiaohui Xin <xiaohui.xin@intel.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Peter Huewe <peterhuewe@gmx.de>
+Subject: [PATCH] staging/goldfish: Add MTD dependency to KCONFIG
+Date: Thu,  7 Feb 2013 23:46:38 +0100
+Message-Id: <1360277198-18246-1-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.7.8.6
+In-Reply-To: <5113FAAE.4070501@infradead.org>
+References: <5113FAAE.4070501@infradead.org>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+If CONFIG_MTD is not set goldfish_nand fails to compile with the
+following linker warnings:
 
-On Thu, Feb 07, 2013 at 10:26:42PM +0000, Arnd Bergmann wrote:
-> On Thursday 07 February 2013, Tomas Winkler wrote:
-> > 
-> > From: Samuel Ortiz <sameo@linux.intel.com>
-> > 
-> > NFC ME client is exported through mei bus to be consumed by the
-> > NFC subsystem.
-> > 
-> > NFC is represented by two mei clients: An info one and the actual
-> > NFC one. In order for correct connection we first need to retrieve the
-> > firmware information from the info client.
-> > 
-> > Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
-> > Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-> 
-> Shouldn't this be moved to the drivers/nfc directory? Generally speaking,
-> all drivers nowadays tend to live in the directories of the subsystems
-> they are implementing support for, not the subsystems that they are
-> implemented with.
-This is a bit on the edge: This part of the MEI bus code doesn't implement
-support for any NFC chipset in particular but for the MEI specific commands to
-send and receive NFC HCI payloads.
-So the drivers under driver/nfc call into the MEI bus I/O API which then call
-this code to encapsulate the HCI payload into MEI (HECI) commands. The
-microread driver in my nfc-next git.kernel.org tree uses the MEI bus API for
-example.
-Moreover this code actually talks to the ME at init time to understand which
-exact NFC chipset is living behind the ME and add the correct device string to
-the bus. So it really needs to access the MEI internal API to do so.
+drivers/built-in.o: In function `goldfish_nand_remove':
+goldfish_nand.c:(.text+0x6e7d0e): undefined reference to
+`mtd_device_unregister'
+drivers/built-in.o: In function `goldfish_nand_erase':
+goldfish_nand.c:(.text+0x6e8ba2): undefined reference to
+`mtd_erase_callback'
+drivers/built-in.o: In function `goldfish_nand_init_device':
+goldfish_nand.c:(.text+0x6e8eba): undefined reference to
+`mtd_device_parse_register'
 
-Cheers,
-Samuel.
+Reported-by: Randy Dunlap <rdunlap@infradead.org>
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+@Randy: The contact info you're looking for is in CC of this mail.
 
+ drivers/staging/goldfish/Kconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/staging/goldfish/Kconfig b/drivers/staging/goldfish/Kconfig
+index d6c98d0..4e09460 100644
+--- a/drivers/staging/goldfish/Kconfig
++++ b/drivers/staging/goldfish/Kconfig
+@@ -7,6 +7,7 @@ config GOLDFISH_AUDIO
+ config MTD_GOLDFISH_NAND
+ 	tristate "Goldfish NAND device"
+ 	depends on GOLDFISH
++	depends on MTD
+ 	help
+ 	  Drives the emulated NAND flash device on the Google Goldfish
+ 	  Android virtual device.
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.7.8.6
+
