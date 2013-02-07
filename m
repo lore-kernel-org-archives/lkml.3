@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758467Ab3BGMXI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 07:23:08 -0500
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:41099 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757845Ab3BGMXE (ORCPT
+	id S1758518Ab3BGMX1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 07:23:27 -0500
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:54495 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758409Ab3BGMXB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 07:23:04 -0500
+	Thu, 7 Feb 2013 07:23:01 -0500
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>, asias@redhat.com,
         Rusty Russell <rusty@rustcorp.com.au>, mst@redhat.com,
         kvm@vger.kernel.org, virtualization@lists.linux-foundation.org
-Subject: [RFC PATCH 8/8] virtio: reimplement virtqueue_add_buf using new functions
-Date: Thu,  7 Feb 2013 13:22:32 +0100
-Message-Id: <1360239752-2470-9-git-send-email-pbonzini@redhat.com>
+Subject: [RFC PATCH 7/8] virtio-scsi: use virtqueue_start_buf
+Date: Thu,  7 Feb 2013 13:22:31 +0100
+Message-Id: <1360239752-2470-8-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1360239752-2470-1-git-send-email-pbonzini@redhat.com>
 References: <1360239752-2470-1-git-send-email-pbonzini@redhat.com>
@@ -22,199 +22,208 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eliminate the code duplication between virtqueue_add_buf and
-virtqueue_add_sg.  That's safe to do now that no devices will
-pass scatterlists with a termination marker in the middle.
+Using the new virtio_scsi_add_sg function lets us simplify the queueing
+path.  In particular, all data protected by the tgt_lock is just gone
+(multiqueue will find a new use for the lock).
 
+The speedup is relatively small (2-4%) but it is worthwhile because of
+the code simplification it enables.  And it will be particularly useful
+when adding multiqueue supoprt, because it keeps the tgt_lock critical
+sections very slim while avoiding a proliferation of locks.
+
+Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- drivers/virtio/virtio_ring.c |  157 +++---------------------------------------
- 1 files changed, 11 insertions(+), 146 deletions(-)
+ drivers/scsi/virtio_scsi.c |  103 +++++++++++++++++++-------------------------
+ 1 files changed, 45 insertions(+), 58 deletions(-)
 
-diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
-index 25f56e6..d19113d 100644
---- a/drivers/virtio/virtio_ring.c
-+++ b/drivers/virtio/virtio_ring.c
-@@ -119,63 +119,6 @@ struct vring_virtqueue
+diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+index 3449a1f..3b61173 100644
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@ -59,11 +59,8 @@ struct virtio_scsi_vq {
  
- #define to_vvq(_vq) container_of(_vq, struct vring_virtqueue, vq)
+ /* Per-target queue state */
+ struct virtio_scsi_target_state {
+-	/* Protects sg.  Lock hierarchy is tgt_lock -> vq_lock.  */
++	/* Never held at the same time as vq_lock.  */
+ 	spinlock_t tgt_lock;
+-
+-	/* For sglist construction when adding commands to the virtqueue.  */
+-	struct scatterlist sg[];
+ };
  
--/* Set up an indirect table of descriptors and add it to the queue. */
--static int vring_add_indirect(struct vring_virtqueue *vq,
--			      struct scatterlist sg[],
--			      unsigned int out,
--			      unsigned int in,
--			      gfp_t gfp)
+ /* Driver instance state */
+@@ -351,89 +348,83 @@ static void virtscsi_event_done(struct virtqueue *vq)
+ 	spin_unlock_irqrestore(&vscsi->event_vq.vq_lock, flags);
+ };
+ 
+-static void virtscsi_map_sgl(struct scatterlist *sg, unsigned int *p_idx,
+-			     struct scsi_data_buffer *sdb)
 -{
--	struct vring_desc *desc;
--	unsigned head;
+-	struct sg_table *table = &sdb->table;
+-	struct scatterlist *sg_elem;
+-	unsigned int idx = *p_idx;
 -	int i;
 -
--	/*
--	 * We require lowmem mappings for the descriptors because
--	 * otherwise virt_to_phys will give us bogus addresses in the
--	 * virtqueue.
--	 */
--	gfp &= ~(__GFP_HIGHMEM | __GFP_HIGH);
+-	for_each_sg(table->sgl, sg_elem, table->nents, i)
+-		sg[idx++] = *sg_elem;
 -
--	desc = kmalloc((out + in) * sizeof(struct vring_desc), gfp);
--	if (!desc)
--		return -ENOMEM;
--
--	/* Transfer entries from the sg list into the indirect page */
--	for (i = 0; i < out; i++) {
--		desc[i].flags = VRING_DESC_F_NEXT;
--		desc[i].addr = sg_phys(sg);
--		desc[i].len = sg->length;
--		desc[i].next = i+1;
--		sg++;
--	}
--	for (; i < (out + in); i++) {
--		desc[i].flags = VRING_DESC_F_NEXT|VRING_DESC_F_WRITE;
--		desc[i].addr = sg_phys(sg);
--		desc[i].len = sg->length;
--		desc[i].next = i+1;
--		sg++;
--	}
--
--	/* Last one doesn't continue. */
--	desc[i-1].flags &= ~VRING_DESC_F_NEXT;
--	desc[i-1].next = 0;
--
--	/* We're about to use a buffer */
--	vq->vq.num_free--;
--
--	/* Use a single buffer which doesn't continue */
--	head = vq->free_head;
--	vq->vring.desc[head].flags = VRING_DESC_F_INDIRECT;
--	vq->vring.desc[head].addr = virt_to_phys(desc);
--	vq->vring.desc[head].len = i * sizeof(struct vring_desc);
--
--	/* Update free pointer */
--	vq->free_head = vq->vring.desc[head].next;
--
--	return head;
+-	*p_idx = idx;
 -}
 -
  /**
-  * virtqueue_add_buf - expose buffer to other end
-  * @vq: the struct virtqueue we're talking about.
-@@ -190,104 +133,26 @@ static int vring_add_indirect(struct vring_virtqueue *vq,
-  *
-  * Returns zero or a negative error (ie. ENOSPC, ENOMEM).
+- * virtscsi_map_cmd - map a scsi_cmd to a virtqueue scatterlist
++ * virtscsi_add_cmd - add a virtio_scsi_cmd to a virtqueue
+  * @vscsi	: virtio_scsi state
+  * @cmd		: command structure
+- * @out_num	: number of read-only elements
+- * @in_num	: number of write-only elements
+  * @req_size	: size of the request buffer
+  * @resp_size	: size of the response buffer
+- *
+- * Called with tgt_lock held.
++ * @gfp	: flags to use for memory allocations
   */
--int virtqueue_add_buf(struct virtqueue *_vq,
-+int virtqueue_add_buf(struct virtqueue *vq,
- 		      struct scatterlist sg[],
- 		      unsigned int out,
- 		      unsigned int in,
- 		      void *data,
- 		      gfp_t gfp)
+-static void virtscsi_map_cmd(struct virtio_scsi_target_state *tgt,
+-			     struct virtio_scsi_cmd *cmd,
+-			     unsigned *out_num, unsigned *in_num,
+-			     size_t req_size, size_t resp_size)
++static int virtscsi_add_cmd(struct virtqueue *vq,
++			    struct virtio_scsi_cmd *cmd,
++			    size_t req_size, size_t resp_size, gfp_t gfp)
  {
--	struct vring_virtqueue *vq = to_vvq(_vq);
--	unsigned int i, avail, uninitialized_var(prev);
--	int head;
--
--	START_USE(vq);
--
--	BUG_ON(data == NULL);
--
--#ifdef DEBUG
--	{
--		ktime_t now = ktime_get();
+ 	struct scsi_cmnd *sc = cmd->sc;
+-	struct scatterlist *sg = tgt->sg;
+-	unsigned int idx = 0;
++	struct scatterlist sg;
++	unsigned int count, count_sg;
++	struct sg_table *out, *in;
 +	struct virtqueue_buf buf;
 +	int ret;
- 
--		/* No kick or get, with .1 second between?  Warn. */
--		if (vq->last_add_time_valid)
--			WARN_ON(ktime_to_ms(ktime_sub(now, vq->last_add_time))
--					    > 100);
--		vq->last_add_time = now;
--		vq->last_add_time_valid = true;
--	}
--#endif
-+	ret = virtqueue_start_buf(vq, &buf, data, out + in, !!out + !!in, gfp);
++
++	out = in = NULL;
++
++	if (sc && sc->sc_data_direction != DMA_NONE) {
++		if (sc->sc_data_direction != DMA_FROM_DEVICE)
++			out = &scsi_out(sc)->table;
++		if (sc->sc_data_direction != DMA_TO_DEVICE)
++			in = &scsi_in(sc)->table;
++	}
++
++	count_sg = 2 + (out ? 1 : 0)          + (in ? 1 : 0);
++	count    = 2 + (out ? out->nents : 0) + (in ? in->nents : 0);
++	ret = virtqueue_start_buf(vq, &buf, cmd, count, count_sg, gfp);
 +	if (ret < 0)
 +		return ret;
  
--	/* If the host supports indirect descriptor tables, and we have multiple
--	 * buffers, then go indirect. FIXME: tune this threshold */
--	if (vq->indirect && (out + in) > 1 && vq->vq.num_free) {
--		head = vring_add_indirect(vq, sg, out, in, gfp);
--		if (likely(head >= 0))
--			goto add_head;
--	}
--
--	BUG_ON(out + in > vq->vring.num);
--	BUG_ON(out + in == 0);
--
--	if (vq->vq.num_free < out + in) {
--		pr_debug("Can't add buf len %i - avail = %i\n",
--			 out + in, vq->vq.num_free);
--		/* FIXME: for historical reasons, we force a notify here if
--		 * there are outgoing parts to the buffer.  Presumably the
--		 * host should service the ring ASAP. */
--		if (out)
--			vq->notify(&vq->vq);
--		END_USE(vq);
--		return -ENOSPC;
--	}
--
--	/* We're about to use some buffers from the free list. */
--	vq->vq.num_free -= out + in;
--
--	head = vq->free_head;
--	for (i = vq->free_head; out; i = vq->vring.desc[i].next, out--) {
--		vq->vring.desc[i].flags = VRING_DESC_F_NEXT;
--		vq->vring.desc[i].addr = sg_phys(sg);
--		vq->vring.desc[i].len = sg->length;
--		prev = i;
--		sg++;
--	}
--	for (; in; i = vq->vring.desc[i].next, in--) {
--		vq->vring.desc[i].flags = VRING_DESC_F_NEXT|VRING_DESC_F_WRITE;
--		vq->vring.desc[i].addr = sg_phys(sg);
--		vq->vring.desc[i].len = sg->length;
--		prev = i;
--		sg++;
--	}
--	/* Last one doesn't continue. */
--	vq->vring.desc[prev].flags &= ~VRING_DESC_F_NEXT;
--
--	/* Update free pointer */
--	vq->free_head = i;
--
--add_head:
--	/* Set token. */
--	vq->data[head] = data;
--
--	/* Put entry in available array (but don't update avail->idx until they
--	 * do sync). */
--	avail = (vq->vring.avail->idx & (vq->vring.num-1));
--	vq->vring.avail->ring[avail] = head;
--
--	/* Descriptors and available array need to be set before we expose the
--	 * new available array entries. */
--	virtio_wmb(vq);
--	vq->vring.avail->idx++;
--	vq->num_added++;
--
--	/* This is very unlikely, but theoretically possible.  Kick
--	 * just in case. */
--	if (unlikely(vq->num_added == (1 << 16) - 1))
--		virtqueue_kick(_vq);
--
--	pr_debug("Added buffer head %i to %p\n", head, vq);
--	END_USE(vq);
-+	if (out)
-+		virtqueue_add_sg(&buf, sg, out, DMA_TO_DEVICE);
-+	if (in)
-+		virtqueue_add_sg(&buf, sg + out, in, DMA_FROM_DEVICE);
+ 	/* Request header.  */
+-	sg_set_buf(&sg[idx++], &cmd->req, req_size);
++	sg_init_one(&sg, &cmd->req, req_size);
++	virtqueue_add_sg_single(&buf, &sg, DMA_TO_DEVICE);
  
+ 	/* Data-out buffer.  */
+-	if (sc && sc->sc_data_direction != DMA_FROM_DEVICE)
+-		virtscsi_map_sgl(sg, &idx, scsi_out(sc));
+-
+-	*out_num = idx;
++	if (out)
++		virtqueue_add_sg(&buf, out->sgl, out->nents, DMA_TO_DEVICE);
+ 
+ 	/* Response header.  */
+-	sg_set_buf(&sg[idx++], &cmd->resp, resp_size);
++	sg_init_one(&sg, &cmd->resp, resp_size);
++	virtqueue_add_sg_single(&buf, &sg, DMA_FROM_DEVICE);
+ 
+ 	/* Data-in buffer */
+-	if (sc && sc->sc_data_direction != DMA_TO_DEVICE)
+-		virtscsi_map_sgl(sg, &idx, scsi_in(sc));
++	if (in)
++		virtqueue_add_sg(&buf, in->sgl, in->nents, DMA_FROM_DEVICE);
+ 
+-	*in_num = idx - *out_num;
 +	virtqueue_end_buf(&buf);
- 	return 0;
++	return 0;
  }
- EXPORT_SYMBOL_GPL(virtqueue_add_buf);
+ 
+-static int virtscsi_kick_cmd(struct virtio_scsi_target_state *tgt,
+-			     struct virtio_scsi_vq *vq,
++static int virtscsi_kick_cmd(struct virtio_scsi_vq *vq,
+ 			     struct virtio_scsi_cmd *cmd,
+ 			     size_t req_size, size_t resp_size, gfp_t gfp)
+ {
+-	unsigned int out_num, in_num;
+ 	unsigned long flags;
+-	int err;
++	int ret;
+ 	bool needs_kick = false;
+ 
+-	spin_lock_irqsave(&tgt->tgt_lock, flags);
+-	virtscsi_map_cmd(tgt, cmd, &out_num, &in_num, req_size, resp_size);
+-
+-	spin_lock(&vq->vq_lock);
+-	err = virtqueue_add_buf(vq->vq, tgt->sg, out_num, in_num, cmd, gfp);
+-	spin_unlock(&tgt->tgt_lock);
+-	if (!err)
++	spin_lock_irqsave(&vq->vq_lock, flags);
++	ret = virtscsi_add_cmd(vq->vq, cmd, req_size, resp_size, gfp);
++	if (!ret)
+ 		needs_kick = virtqueue_kick_prepare(vq->vq);
+ 
+ 	spin_unlock_irqrestore(&vq->vq_lock, flags);
+ 
+ 	if (needs_kick)
+ 		virtqueue_notify(vq->vq);
+-	return err;
++	return ret;
+ }
+ 
+ static int virtscsi_queuecommand(struct Scsi_Host *sh, struct scsi_cmnd *sc)
+ {
+ 	struct virtio_scsi *vscsi = shost_priv(sh);
+-	struct virtio_scsi_target_state *tgt = vscsi->tgt[sc->device->id];
+ 	struct virtio_scsi_cmd *cmd;
+ 	int ret;
+ 
+@@ -467,7 +458,7 @@ static int virtscsi_queuecommand(struct Scsi_Host *sh, struct scsi_cmnd *sc)
+ 	BUG_ON(sc->cmd_len > VIRTIO_SCSI_CDB_SIZE);
+ 	memcpy(cmd->req.cmd.cdb, sc->cmnd, sc->cmd_len);
+ 
+-	if (virtscsi_kick_cmd(tgt, &vscsi->req_vq, cmd,
++	if (virtscsi_kick_cmd(&vscsi->req_vq, cmd,
+ 			      sizeof cmd->req.cmd, sizeof cmd->resp.cmd,
+ 			      GFP_ATOMIC) == 0)
+ 		ret = 0;
+@@ -481,11 +472,10 @@ out:
+ static int virtscsi_tmf(struct virtio_scsi *vscsi, struct virtio_scsi_cmd *cmd)
+ {
+ 	DECLARE_COMPLETION_ONSTACK(comp);
+-	struct virtio_scsi_target_state *tgt = vscsi->tgt[cmd->sc->device->id];
+ 	int ret = FAILED;
+ 
+ 	cmd->comp = &comp;
+-	if (virtscsi_kick_cmd(tgt, &vscsi->ctrl_vq, cmd,
++	if (virtscsi_kick_cmd(&vscsi->ctrl_vq, cmd,
+ 			      sizeof cmd->req.tmf, sizeof cmd->resp.tmf,
+ 			      GFP_NOIO) < 0)
+ 		goto out;
+@@ -592,14 +582,11 @@ static struct virtio_scsi_target_state *virtscsi_alloc_tgt(
+ 	gfp_t gfp_mask = GFP_KERNEL;
+ 
+ 	/* We need extra sg elements at head and tail.  */
+-	tgt = kmalloc(sizeof(*tgt) + sizeof(tgt->sg[0]) * (sg_elems + 2),
+-		      gfp_mask);
+-
++	tgt = kmalloc(sizeof(*tgt), gfp_mask);
+ 	if (!tgt)
+ 		return NULL;
+ 
+ 	spin_lock_init(&tgt->tgt_lock);
+-	sg_init_table(tgt->sg, sg_elems + 2);
+ 	return tgt;
+ }
+ 
 -- 
 1.7.1
+
 
