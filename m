@@ -1,79 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759310Ab3BGTfw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 14:35:52 -0500
-Received: from mail.tpi.com ([70.99.223.143]:2477 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759236Ab3BGTfu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 14:35:50 -0500
-From: Tim Gardner <tim.gardner@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Tim Gardner <tim.gardner@canonical.com>,
-        Brett Rudley <brudley@broadcom.com>,
-        Arend van Spriel <arend@broadcom.com>,
-        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
-        Hante Meuleman <meuleman@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Pieter-Paul Giesberts <pieterpg@broadcom.com>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Hauke Mehrtens <hauke@hauke-m.de>, linux-wireless@vger.kernel.org,
-        brcm80211-dev-list@broadcom.com, netdev@vger.kernel.org
-Subject: [PATCH wireless-next] brcmsmac: fix u16 overflow warning
-Date: Thu,  7 Feb 2013 12:35:35 -0700
-Message-Id: <1360265735-42450-1-git-send-email-tim.gardner@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1422649Ab3BGTjo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 14:39:44 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:42115 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422629Ab3BGTjo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 14:39:44 -0500
+Message-ID: <511402FC.50807@wwwdotorg.org>
+Date: Thu, 07 Feb 2013 12:39:40 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Rob Herring <robherring2@gmail.com>, Hiroshi Doyu <hdoyu@nvidia.com>
+CC: arm@kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Rob Herring <rob.herring@calxeda.com>,
+        John Stultz <johnstul@us.ibm.com>
+Subject: Re: [PATCH 4/4] clocksource: tegra20: use the device_node pointer
+ passed to init
+References: <1360264144-20714-1-git-send-email-robherring2@gmail.com> <1360264144-20714-5-git-send-email-robherring2@gmail.com>
+In-Reply-To: <1360264144-20714-5-git-send-email-robherring2@gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DOT11_MIN_BEACON_PERIOD and DOT11_MAX_BEACON_PERIOD are
-superfluous. The only invalid beacon period is 0. Comparing
-a 16 bit quantity to 0xffff also causes a compile warning:
+On 02/07/2013 12:09 PM, Rob Herring wrote:
+> From: Rob Herring <rob.herring@calxeda.com>
+> 
+> We've already matched the node, so use the node pointer passed in. The rtc
+> init was intermingled with the timer init, so split this out to a separate
+> init function.
 
-drivers/net/wireless/brcm80211/brcmsmac/main.c:5560 brcms_c_set_beacon_period()
- warn: impossible condition '(period > 65535) => (0-65535 > 65535)'
+The series,
+Reviewed-by: Stephen Warren <swarren@nvidia.com>
 
-Observed from smatch analysis.
+Patches 1,4:
+Tested-by: Stephen Warren <swarren@nvidia.com>
 
-Cc: Brett Rudley <brudley@broadcom.com>
-Cc: Arend van Spriel <arend@broadcom.com>
-Cc: "Franky (Zhenhui) Lin" <frankyl@broadcom.com>
-Cc: Hante Meuleman <meuleman@broadcom.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>
-Cc: Pieter-Paul Giesberts <pieterpg@broadcom.com>
-Cc: Seth Forshee <seth.forshee@canonical.com>
-Cc: Hauke Mehrtens <hauke@hauke-m.de>
-Cc: linux-wireless@vger.kernel.org
-Cc: brcm80211-dev-list@broadcom.com
-Cc: netdev@vger.kernel.org
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
----
- drivers/net/wireless/brcm80211/brcmsmac/main.c |    5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
-
-diff --git a/drivers/net/wireless/brcm80211/brcmsmac/main.c b/drivers/net/wireless/brcm80211/brcmsmac/main.c
-index c26992a..080b54d 100644
---- a/drivers/net/wireless/brcm80211/brcmsmac/main.c
-+++ b/drivers/net/wireless/brcm80211/brcmsmac/main.c
-@@ -101,8 +101,6 @@
- #define DOT11_RTS_LEN			16
- #define DOT11_CTS_LEN			10
- #define DOT11_BA_BITMAP_LEN		128
--#define DOT11_MIN_BEACON_PERIOD		1
--#define DOT11_MAX_BEACON_PERIOD		0xFFFF
- #define DOT11_MAXNUMFRAGS		16
- #define DOT11_MAX_FRAG_LEN		2346
- 
-@@ -5555,8 +5553,7 @@ int brcms_c_set_rateset(struct brcms_c_info *wlc, struct brcm_rateset *rs)
- 
- int brcms_c_set_beacon_period(struct brcms_c_info *wlc, u16 period)
- {
--	if (period < DOT11_MIN_BEACON_PERIOD ||
--	    period > DOT11_MAX_BEACON_PERIOD)
-+	if (period == 0)
- 		return -EINVAL;
- 
- 	wlc->default_bss->beacon_period = period;
--- 
-1.7.9.5
-
+One thing I wonder re: patch 4 - I know someone (I think Hiroshi, now
+CC'd) planned to refactor drivers/clocksource/tegra20_timer.c to enhance
+it for Tegra114. I'd like to check with him that the refactoring in this
+patch won't impede that at all.
