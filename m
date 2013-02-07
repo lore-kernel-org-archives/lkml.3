@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759220Ab3BGTbB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 14:31:01 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:50882 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758948Ab3BGTa7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 14:30:59 -0500
-Message-ID: <51140084.3080902@zytor.com>
-Date: Thu, 07 Feb 2013 11:29:08 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1759282Ab3BGTdQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 14:33:16 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:18768 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758958Ab3BGTdP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 14:33:15 -0500
+Message-ID: <51140154.9040901@oracle.com>
+Date: Thu, 07 Feb 2013 14:32:36 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130113 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: Stephen Hemminger <stephen@networkplumber.org>,
-        LKML <linux-kernel@vger.kernel.org>, Rob Landley <rob@landley.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, Eric Dumazet <edumazet@google.com>,
-        Neil Horman <nhorman@tuxdriver.com>, Yuchung Cheng <ycheng@google.com>,
-        Shan Wei <davidshan@tencent.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        netdev@vger.kernel.org, Willy Tarreau <w@1wt.eu>
-Subject: Re: [PATCH] tcp: sysctl to disable TCP simultaneous connect
-References: <20130207175240.GA12520@www.outflux.net> <20130207103950.662698ea@nehalam.linuxnetplumber.net> <CAGXu5jJiupzommJYPEYQnk-4i9FUKai0NcPnihLN-QpWV64jtQ@mail.gmail.com>
-In-Reply-To: <CAGXu5jJiupzommJYPEYQnk-4i9FUKai0NcPnihLN-QpWV64jtQ@mail.gmail.com>
-X-Enigmail-Version: 1.5
+To: "David S. Miller" <davem@davemloft.net>, yoshfuji@linux-ipv6.org
+CC: Dave Jones <davej@redhat.com>, netdev@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: net: rcu warnings in ip6fl_get_first
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2013 10:44 AM, Kees Cook wrote:
->>
->> This patch probably also breaks TCP STUNT that is used by some applications for NAT
->> traversal.
-> 
-> The patch would not break it -- it defaults the sysctl to staying enabled.
-> 
-> If you mean the documentation should be updated, sure, that's easy to do.
-> 
-> David: I know you aren't a fan of this patch, but I'd like to try to
-> convince you. :) This leaves the feature enabled and add a toggle for
-> systems (like Chrome OS) that don't want to risk this DoS at all.
-> There are so very many other toggle, I don't see why this one would be
-> a problem to add.
-> 
+Hi guys,
 
-It is not just STUNT, but in NAT-less configurations behind stateful
-firewalls (which is expected to be the norm for IPv6), TCP rendezvous
-via crossed SYN is a very effective way to establish peer-to-peer
-connections.
+I got the following while fuzzing with trinity inside a KVM tools guest:
 
-	-hpa
+[   51.680236] ===============================
+[   51.681914] [ INFO: suspicious RCU usage. ]
+[   51.683610] 3.8.0-rc6-next-20130206-sasha-00028-g83214f7-dirty #276 Tainted: G        W
+[   51.686703] -------------------------------
+[   51.688281] net/ipv6/ip6_flowlabel.c:671 suspicious rcu_dereference_check() usage!
+[   51.691345]
+[   51.691345] other info that might help us debug this:
+[   51.691345]
+[   51.694479]
+[   51.694479] rcu_scheduler_active = 1, debug_locks = 1
+[   51.697650] 2 locks held by trinity/7421:
+[   51.701271]  #0:  (&p->lock){+.+.+.}, at: [<ffffffff812b049a>] seq_read+0x3a/0x3d0
+[   51.704292]  #1:  (rcu_read_lock_bh){.+....}, at: [<ffffffff8397cde0>] ip6fl_seq_start+0x0/0xe0
+[   51.707845]
+[   51.707845] stack backtrace:
+[   51.709678] Pid: 7421, comm: trinity Tainted: G        W    3.8.0-rc6-next-20130206-sasha-00028-g83214f7-dirty #276
+[   51.713495] Call Trace:
+[   51.714370]  [<ffffffff81181fdb>] lockdep_rcu_suspicious+0x10b/0x120
+[   51.716560]  [<ffffffff8397caca>] ip6fl_get_first+0x8a/0x140
+[   51.718755]  [<ffffffff8397cdb7>] ip6fl_seq_next+0x17/0x40
+[   51.720963]  [<ffffffff812b0711>] seq_read+0x2b1/0x3d0
+[   51.723056]  [<ffffffff812b0460>] ? seq_lseek+0x110/0x110
+[   51.725238]  [<ffffffff812f9c0c>] proc_reg_read+0x9c/0xd0
+[   51.727266]  [<ffffffff812f9b70>] ? proc_reg_write+0xd0/0xd0
+[   51.729337]  [<ffffffff8128b2eb>] do_loop_readv_writev+0x4b/0x90
+[   51.731846]  [<ffffffff8128b566>] do_readv_writev+0xf6/0x1d0
+[   51.734092]  [<ffffffff8128b6de>] vfs_readv+0x3e/0x60
+[   51.736015]  [<ffffffff8128b750>] sys_readv+0x50/0xd0
+[   51.737930]  [<ffffffff83d73d98>] tracesys+0xe1/0xe6
 
+This is the result of commit "ipv6 flowlabel: Convert hash list to RCU." which
+mixes between regular and _bh() locking.
+
+
+Thanks,
+Sasha
