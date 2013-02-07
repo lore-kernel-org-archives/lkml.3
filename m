@@ -1,47 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752061Ab3BGXqH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 18:46:07 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:59535 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750825Ab3BGXqE (ORCPT
+	id S1753804Ab3BGXxY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 18:53:24 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:47698 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751089Ab3BGXxX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 18:46:04 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Rob Herring <robherring2@gmail.com>
-Subject: Re: [PATCH 0/4] Improve CLKSRC_OF matching
-Date: Thu, 7 Feb 2013 23:45:52 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-4-generic; KDE/4.3.2; x86_64; ; )
-Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
+	Thu, 7 Feb 2013 18:53:23 -0500
+Date: Thu, 7 Feb 2013 15:53:18 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, David Howells <dhowells@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Warren <swarren@wwwdotorg.org>
-References: <1360264144-20714-1-git-send-email-robherring2@gmail.com> <201302072244.51588.arnd@arndb.de> <51143A87.4040205@gmail.com>
-In-Reply-To: <51143A87.4040205@gmail.com>
+        Eric Dumazet <edumazet@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        linux-kernel@vger.kernel.org, john.stultz@linaro.org
+Subject: Re: [RFC PATCH 1/6] kernel: implement queue spinlock API
+Message-ID: <20130207235318.GJ2545@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1358896415-28569-1-git-send-email-walken@google.com>
+ <1358896415-28569-2-git-send-email-walken@google.com>
+ <20130207223434.GG2545@linux.vnet.ibm.com>
+ <1360277809.28557.60.camel@edumazet-glaptop>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302072345.52195.arnd@arndb.de>
-X-Provags-ID: V02:K0:ey4NGPEo8SaEpkDoMWUN2sxf+GccA7uhBgoQdk27XEd
- o4bEpA/J4WW1fNZfxrgyMWwm35LAbbz3FW/J0+DWXSMcgSOwBw
- tPZOfIdqTsvpw/okuPojWZ7sldV3JwNyV0afO6ziJeT71RtJXa
- HlmS74YjAfzQp6A4+wGh0Plg15Ykmd5iuqPkR7ooeNYA8JZu9F
- U4mcm0niGMnE4ctJ5mZc+FP36zXC7eoeft+FVpsShTUDtBaK7S
- Seu2ceZoCPlQCgsKpyNyl11kZoZVDlBLbNM4v7y7BwdACG25Wk
- vMg+FlaeV5giR/c3JnLbM8XhXdqjL4uy9Dr4xeYOwVTgsIa2FM
- ppQUNwF+C6z5u/hGaHVA=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1360277809.28557.60.camel@edumazet-glaptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13020723-3620-0000-0000-00000122BDBA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 07 February 2013, Rob Herring wrote:
-> How so? I don't see a warning as there is no type checking on the init
-> function since of_device_id.data is just a void *. It would be good to
-> have type checking here if you know a way, but I don't.
+On Thu, Feb 07, 2013 at 02:56:49PM -0800, Eric Dumazet wrote:
+> On Thu, 2013-02-07 at 14:34 -0800, Paul E. McKenney wrote:
+> > On Tue, Jan 22, 2013 at 03:13:30PM -0800, Michel Lespinasse wrote:
+> > > Introduce queue spinlocks, to be used in situations where it is desired
+> > > to have good throughput even under the occasional high-contention situation.
+> > > 
+> > > This initial implementation is based on the classic MCS spinlock,
+> > > because I think this represents the nicest API we can hope for in a
+> > > fast queue spinlock algorithm. The MCS spinlock has known limitations
+> > > in that it performs very well under high contention, but is not as
+> > > good as the ticket spinlock under low contention. I will address these
+> > > limitations in a later patch, which will propose an alternative,
+> > > higher performance implementation using (mostly) the same API.
+> > > 
+> > > Sample use case acquiring mystruct->lock:
+> > > 
+> > >   struct q_spinlock_node node;
+> > > 
+> > >   q_spin_lock(&mystruct->lock, &node);
+> > >   ...
+> > >   q_spin_unlock(&mystruct->lock, &node);
+> > 
+> > It is possible to keep the normal API for MCS locks by having the lock
+> > holder remember the parameter in the lock word itself.  While spinning,
+> > the node is on the stack, is not needed once the lock is acquired.
+> > The pointer to the next node in the queue -is- needed, but this can be
+> > stored in the lock word.
+> > 
+> > I believe that John Stultz worked on something like this some years back,
+> > so added him to CC.
+> > 
+> 
+> Hmm...
+> 
+> This could easily break if the spin_lock() is embedded in a function,
+> and the unlock done in another one.
+> 
+> (storage for the node would disappear at function epilogue )
 
-Ah, that's right. So it silently builds find even though the
-prototypes don't match, and given the C calling conventions
-it even ends up working correctly, it just feels wrong.
+But that is OK -- the storage is used only for spinning on.  Once a given
+task has actually acquired the lock, that storage is no longer needed.
+What -is- needed is the pointer to the next CPU's node, and that node
+is guaranteed to persist until the next CPU acquires the lock, which
+cannot happen until this CPU releases that lock.
 
-	Arnd
+							Thanx, Paul
+
