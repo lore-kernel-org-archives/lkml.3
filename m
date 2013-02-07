@@ -1,93 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161022Ab3BGSQS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 13:16:18 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:47872 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030193Ab3BGSQR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 13:16:17 -0500
-Message-ID: <5113EF59.80508@ti.com>
-Date: Thu, 7 Feb 2013 23:45:53 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: "Kumar, Anil" <anilkumar.v@ti.com>
-CC: <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux@arm.linux.org.uk>, <khilman@deeprootsystems.com>, <hs@denx.de>,
-        <mporter@ti.com>, <broonie@opensource.wolfsonmicro.com>,
-        <mchehab@redhat.com>, <vaibhav.bedia@ti.com>, <b-cousson@ti.com>,
-        <tony@atomide.com>, <grant.likely@secretlab.ca>,
-        <rob.herring@calxeda.com>
-Subject: Re: [PATCH V2 2/2] ARM: davinci: restart: fix wdt to machine restart
- with DT
-References: <1360123204-9978-1-git-send-email-anilkumar.v@ti.com> <1360123204-9978-3-git-send-email-anilkumar.v@ti.com>
-In-Reply-To: <1360123204-9978-3-git-send-email-anilkumar.v@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	id S1759296Ab3BGSSP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 13:18:15 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:48452 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758789Ab3BGSSO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 13:18:14 -0500
+From: Dongjin Kim <tobetter@gmail.com>
+Cc: Dongjin Kim <tobetter@gmail.com>, Thomas Abraham <thomas.ab@samsung.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] mmc: dw_mmc: No bus setup if default pinctrl is used
+Date: Fri,  8 Feb 2013 03:17:58 +0900
+Message-Id: <1360261079-24361-1-git-send-email-tobetter@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Legacy gpio based bus setup is failed when the bus pins are listed with the
+property 'pinctrl-0' and 'pinctrl-names', instead of 'gpios'. The default
+pinctrls are handled by device core before probe, no need to configure the
+pins again in a device driver.
 
-On 2/6/2013 9:30 AM, Kumar, Anil wrote:
-> In non DT case da8xx_register_watchdog() is called to register platform device
-> "da8xx_wdt_device" by board file. But in DT case it is not called and wdt
-> device get registered via wdt DT node.
-> 
-> Currently code is passing platform device "da8xx_wdt_device" in
-> "davinci_watchdog_reset" function in both DT and non DT case and that
-> leads to crash in DT boot.
-> 
-> Update restart function to make it generic DaVinci machine restart
+[    1.190000] Synopsys Designware Multimedia Card Interface Driver
+[    1.195000] dwmmc_exynos 12550000.mshc: Using PIO mode.
+[    1.200000] dwmmc_exynos 12550000.mshc: DW MMC controller at irq 109, 32 bit host data width, 128 deep fifo
+[    1.210000] dwmmc_exynos 12550000.mshc: invalid gpio: -2
+[    1.215000] dwmmc_exynos: probe of 12550000.mshc failed with error -22
 
-s/DaVinci/da8xx. Also, subject can simply be "ARM: davinci: da850 DT:
-add support for machine reboot" since reboot never worked with DT
-before, "fix" isn't really appropriate.
+Cc: Thomas Abraham <thomas.ab@samsung.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Dongjin Kim <tobetter@gmail.com>
+---
+ drivers/mmc/host/dw_mmc-exynos.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-> in case of DT and non DT boot.
-> 
-> Signed-off-by: Kumar, Anil <anilkumar.v@ti.com>
-> ---
-> :100644 100644 2d5502d... 1df68fd... M	arch/arm/mach-davinci/devices-da8xx.c
-> :100644 100644 700d311... ef9f70e... M	arch/arm/mach-davinci/include/mach/da8xx.h
->  arch/arm/mach-davinci/devices-da8xx.c      |   14 ++++++++++++--
->  arch/arm/mach-davinci/include/mach/da8xx.h |    1 -
->  2 files changed, 12 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/arm/mach-davinci/devices-da8xx.c b/arch/arm/mach-davinci/devices-da8xx.c
-> index 2d5502d..1df68fd 100644
-> --- a/arch/arm/mach-davinci/devices-da8xx.c
-> +++ b/arch/arm/mach-davinci/devices-da8xx.c
-> @@ -359,7 +359,7 @@ static struct resource da8xx_watchdog_resources[] = {
->  	},
->  };
->  
-> -struct platform_device da8xx_wdt_device = {
-> +static struct platform_device da8xx_wdt_device = {
+diff --git a/drivers/mmc/host/dw_mmc-exynos.c b/drivers/mmc/host/dw_mmc-exynos.c
+index aafd485..f568c32 100644
+--- a/drivers/mmc/host/dw_mmc-exynos.c
++++ b/drivers/mmc/host/dw_mmc-exynos.c
+@@ -156,12 +156,19 @@ static int dw_mci_exynos_setup_bus(struct dw_mci *host,
+ 				struct device_node *slot_np, u8 bus_width)
+ {
+ 	int idx, gpio, ret;
++	int nr_pins = NUM_PINS(bus_width);
+ 
+ 	if (!slot_np)
+ 		return -EINVAL;
+ 
++#if defined(CONFIG_PINCTRL)
++	/* Default pinctrl is used */
++	if (!IS_ERR(host->dev->pins->default_state))
++		nr_pins = 0;
++#endif
++
+ 	/* cmd + clock + bus-width pins */
+-	for (idx = 0; idx < NUM_PINS(bus_width); idx++) {
++	for (idx = 0; idx < nr_pins; idx++) {
+ 		gpio = of_get_gpio(slot_np, idx);
+ 		if (!gpio_is_valid(gpio)) {
+ 			dev_err(host->dev, "invalid gpio: %d\n", gpio);
+-- 
+1.7.10.4
 
-Making of da8xx_wdt_device static should find a mention in description.
-
->  	.name		= "watchdog",
->  	.id		= -1,
->  	.num_resources	= ARRAY_SIZE(da8xx_watchdog_resources),
-> @@ -368,7 +368,17 @@ struct platform_device da8xx_wdt_device = {
->  
->  void da8xx_restart(char mode, const char *cmd)
->  {
-> -	davinci_watchdog_reset(&da8xx_wdt_device);
-> +	struct device *dev = NULL;
-> +	struct platform_device *wdt_device = NULL;
-
-No need to initialize these variables here.
-
-> +
-> +	dev = bus_find_device_by_name(&platform_bus_type, NULL, "watchdog");
-> +	if (!dev) {
-> +		pr_err("wdt device not found to machine reboot\n");
-
-Rather: "%s: failed to find watchdog device", __func__
-
-Thanks,
-Sekhar
