@@ -1,54 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758313Ab3BGMym (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 07:54:42 -0500
-Received: from a.mx.secunet.com ([195.81.216.161]:37554 "EHLO a.mx.secunet.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757566Ab3BGMyk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 07:54:40 -0500
-Date: Thu, 7 Feb 2013 13:54:37 +0100
-From: Steffen Klassert <steffen.klassert@secunet.com>
-To: Emmanuel Thierry <emmanuel.thierry@telecom-bretagne.eu>
-Cc: jamal <j.hadi123@gmail.com>, Romain KUNTZ <r.kuntz@ipflavors.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        herbert@gondor.hengli.com.au,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jamal Hadi Salim <hadi@cyberus.ca>
-Subject: Re: [RFC PATCH] xfrm: fix handling of XFRM policies mark and mask.
-Message-ID: <20130207125437.GC17794@secunet.com>
-References: <9E57ADA1-5770-47A8-8EBF-7FC262EEF1C7@ipflavors.com>
- <20130205081232.GF23291@secunet.com>
- <51125744.3030905@gmail.com>
- <D4563759-CEC5-4F33-BF0A-9FA10716F8DF@telecom-bretagne.eu>
- <20130207104908.GA17794@secunet.com>
- <2BEAF521-7218-415B-98ED-EC0812903479@telecom-bretagne.eu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2BEAF521-7218-415B-98ED-EC0812903479@telecom-bretagne.eu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 07 Feb 2013 12:54:37.0563 (UTC) FILETIME=[493E0CB0:01CE0532]
+	id S1758300Ab3BGM45 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 07:56:57 -0500
+Received: from mail-ye0-f182.google.com ([209.85.213.182]:53594 "EHLO
+	mail-ye0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751962Ab3BGM44 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 07:56:56 -0500
+Date: Thu, 7 Feb 2013 07:56:51 -0500
+From: Tom Horsley <horsley1953@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: BUG  at net/sunrpc/svc_xprt.c:921
+Message-ID: <20130207075651.3016819a@tomh>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.13; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 07, 2013 at 12:08:22PM +0100, Emmanuel Thierry wrote:
-> 
-> This is a nice idea, however you keep the insertion asymmetric. The usage of xfrm marks in non-conflicting cases will be made possible, but it stays disturbing for a user as the initial example will still have the same behavior:
-> * Inserting the marked one then the unmarked will succeed
-> * Inserting the unmarked then the marked one will fail
-> This gives to the user the feeling of an indeterministic behavior of the xfrm module.
+I noticed some previous messages with this subject, but the
+walkback I'm getting doesn't match exactly the ones shown
+in the threads I saw, so I figured I'd send this in.
 
-This was intended. Inserting the marked one then the unmarked
-is a working scenario. Some users might rely on it, so we can't
-change this as you proposed.
+This happens on both my Fedora 18 and Fedora 17 partitions
+when mounting filesystems from very old servers that
+need the proto=udp option to talk.
 
-On the other hand, inserting the unmarked one then the marked
-might result in a wrong policy lookup, so we can't allow this.
-The only possibility we have, is inserting with different
-priorites and that's what I'm proposing.
+The redhat bugzilla is here:
 
-I fear we have to live with that asymmetric behaviour if
-both policies have the same priority.
+https://bugzilla.redhat.com/show_bug.cgi?id=908451
 
+There is a photo of the walkback in that bugzilla:
+
+svc_delete_xprt+0x12a
+svc_recv+0x101
+? nfs_callback_authenticate+0x50
+nfs4_callback_svc+0x3b
+kthread+0xc0
+? ftrace_raw_event_xen_mmu_flush_tlb_others+0x50
+? kthread_create_on_node+0x120
+ret_from_fork+0x7c
+? kthread_create_on_node+0x120
