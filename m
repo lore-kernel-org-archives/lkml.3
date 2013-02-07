@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161145Ab3BGSyF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 13:54:05 -0500
-Received: from mail-ia0-f180.google.com ([209.85.210.180]:52669 "EHLO
-	mail-ia0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161093Ab3BGSyC (ORCPT
+	id S1161155Ab3BGSyU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 13:54:20 -0500
+Received: from server.prisktech.co.nz ([115.188.14.127]:53261 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161081Ab3BGSyR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 13:54:02 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130207115546.GA3801@sirena.org.uk>
-References: <1360105784-12282-1-git-send-email-ks.giri@samsung.com>
-	<1360105784-12282-4-git-send-email-ks.giri@samsung.com>
-	<20130207115546.GA3801@sirena.org.uk>
-Date: Thu, 7 Feb 2013 10:54:01 -0800
-Message-ID: <CAKrE-KfrWdOxm+DJyWqZn1Ye509E_LjzmDb5FMq55SF9-Sua0A@mail.gmail.com>
-Subject: Re: [PATCH 3/4] spi: s3c64xx: add gpio quirk for controller
-From: Girish KS <girishks2000@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 7 Feb 2013 13:54:17 -0500
+Message-ID: <1360263258.25382.4.camel@gitbox>
+Subject: Re: [PATCH 08/10] USB: EHCI: make ehci-vt8500 a separate driver
+From: Tony Prisk <linux@prisktech.co.nz>
+To: manjunath.goudar@linaro.org
+Cc: linux-usb@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        patches@linaro.org, stern@rowland.harvard.edu, arnd@linaro.org,
+        gregkh@linuxfoundation.org, Greg KH <greg@kroah.com>,
+        Alexey Charkov <alchark@gmail.com>, linux-kernel@vger.kernel.org
+Date: Fri, 08 Feb 2013 07:54:18 +1300
+In-Reply-To: <5113e626.c84e420a.08c3.ffffbf07@mx.google.com>
+References: <yes> <1360258447-27247-1-git-send-email-yes>
+	 <5113e626.c84e420a.08c3.ffffbf07@mx.google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 7, 2013 at 3:55 AM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Tue, Feb 05, 2013 at 03:09:43PM -0800, Girish K S wrote:
->> This patch adds support for spi controllers with
->> dedicated clk/miso/mosi/cs pins. It skips the gpio
->> parsing and initialization for controllers that
->> have dedicated pins.
->
->>               if (sdd->tgl_spi != spi) { /* if last mssg on diff device */
->>                       /* Deselect the last toggled device */
->>                       cs = sdd->tgl_spi->controller_data;
->> -                     gpio_set_value(cs->line,
->> -                             spi->mode & SPI_CS_HIGH ? 0 : 1);
->> +                     if (!(sdd->port_conf->quirks & S3C64XX_SPI_QUIRK_GPIO))
->> +                             gpio_set_value(cs->line,
->> +                                     spi->mode & SPI_CS_HIGH ? 0 : 1);
->>               }
->
-> This isn't going to work with system designs which ignore the /CS line
-> the controller has and just use a GPIO instead.  This is very common,
-> for example when connecting multiple devices to the same SPI bus.
-As per grant's comment i would remove the quirk option and check for
-"cs-gpio" property
-to handle /CS. When multiple devices are connected to the same spi
-bus, "cs-gpio" entry would exist in the dts
-file, and works with /CS gpio lines.
->
-> It seems like there's really two changes here.  One change is making the
-> provision of pinmux information optional, the other is allowing the user
-> to use the controller /CS management rather than using GPIO.
-As suggested i would make two changes.
-1. would parse the "gpios"  property and make decision whether to use
-gpios/dedicated pins for miso/miso/clk.
-2.would parse "cs-gpio"  property from dts node to handle the chip select
-correct me if my understanding is wrong
+On Thu, 2013-02-07 at 23:04 +0530, manjunath.goudar@linaro.org wrote:
+> From: Manjunath Goudar <manjunath.goudar@linaro.org>
+> 
+> Separate the vt8500 host controller driver from ehci-hcd host code
+> into its own driver module.
+> 
+> Signed-off-by: Manjunath Goudar <manjunath.goudar@linaro.org>
+> Cc: Greg KH <greg@kroah.com>
+> Cc: Alan Stern <stern@rowland.harvard.edu>
+> Cc: Tony Prisk <linux@prisktech.co.nz>
+> Cc: Alexey Charkov <alchark@gmail.com>
+> Cc: linux-usb@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  drivers/usb/host/Kconfig       |    8 +++++
+>  drivers/usb/host/Makefile      |    1 +
+>  drivers/usb/host/ehci-hcd.c    |    5 ---
+>  drivers/usb/host/ehci-vt8500.c |   73 ++++++++++++++++++----------------------
+>  4 files changed, 42 insertions(+), 45 deletions(-)
+> 
+...
+> diff --git a/drivers/usb/host/ehci-vt8500.c b/drivers/usb/host/ehci-vt8500.c
+> index 11695d5..ff4e3ae 100644
+> --- a/drivers/usb/host/ehci-vt8500.c
+> +++ b/drivers/usb/host/ehci-vt8500.c
+> @@ -16,52 +16,25 @@
+...
+> +MODULE_DESCRIPTION(DRIVER_DESC);
+> +MODULE_AUTHOR("Alexey Charkov");
+> +MODULE_LICENSE("GPL");
+Should be "GPL v2" as per the license header.
+
+>  MODULE_ALIAS("platform:vt8500-ehci");
+>  MODULE_DEVICE_TABLE(of, vt8500_ehci_ids);
+
+Regards
+Tony Prisk
+
