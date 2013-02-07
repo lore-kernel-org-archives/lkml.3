@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752536Ab3BGIMd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 03:12:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37143 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751925Ab3BGIMb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 03:12:31 -0500
-Date: Thu, 7 Feb 2013 10:16:35 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: netdev@vger.kernel.org, Eilon Greenstein <eilong@broadcom.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        Tushar Dave <tushar.n.dave@intel.com>,
-        Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>,
-        Sony Chacko <sony.chacko@qlogic.com>, linux-driver@qlogic.com,
-        John Fastabend <john.r.fastabend@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jacob Keller <jacob.e.keller@intel.com>, linux-kernel@vger.kernel.org,
-        e1000-devel@lists.sourceforge.net, bhutchings@solarflare.com
-Subject: Re: [PATCH 2/2] qlcnic: set gso_type
-Message-ID: <20130207081634.GB9126@redhat.com>
-References: <cover.1360191528.git.mst@redhat.com>
- <f262d9330d22447ed8fd487ad7b28d668efbf333.1360191528.git.mst@redhat.com>
- <1360207237.28557.48.camel@edumazet-glaptop>
+	id S1753718Ab3BGIUW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 03:20:22 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:52984 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752401Ab3BGIUT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 03:20:19 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360207237.28557.48.camel@edumazet-glaptop>
+In-Reply-To: <51135F43.4030209@monstr.eu>
+References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com>
+	<CACxGe6tjyx3GTgNgMRtvwhrFsTGizkeTqY_N6=2gdQjvMSD8Ug@mail.gmail.com>
+	<CAHTX3d+XZ6VJDVYKHhg33Z+O8Koo99Yq--W8qitcSe543dWUuA@mail.gmail.com>
+	<11273481.VQZWGoSGBC@wuerfel>
+	<511295A8.5070106@monstr.eu>
+	<CAMuHMdUia08Upt6p8cVrC7Uazo3KGbSCZEg-mLaNYALdty88bA@mail.gmail.com>
+	<CAHTX3dL1THVgfhJkMs9w4wxD3tSgvm=V5i057074pRGxQ1vTOQ@mail.gmail.com>
+	<CAMuHMdUtoSr=CuLQgZ0An8f-hriKun-EdkJPfEuUsKVEVNt7SA@mail.gmail.com>
+	<51135F43.4030209@monstr.eu>
+Date: Thu, 7 Feb 2013 09:20:18 +0100
+X-Google-Sender-Auth: 7dUx27ocVi7Gff-uEIqBA1dleoo
+Message-ID: <CAMuHMdWWfSaO-BSMjiGpScrrtZmsAHnpSDDOMAAsFOsWEJuSow@mail.gmail.com>
+Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16
+ with generic iowrite(read)8/16(be)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: monstr@monstr.eu
+Cc: Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@secretlab.ca>,
+        Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, dahinds@users.sourceforge.net
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 06, 2013 at 07:20:37PM -0800, Eric Dumazet wrote:
-> On Thu, 2013-02-07 at 01:02 +0200, Michael S. Tsirkin wrote:
-> > qlcnic set gso_size but not gso type. This leads to crashes
-> > in macvtap.
-> > 
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > ---
-> > This one I only compiled - don't have qlogic hardware.
-> > 
-> >  drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c | 7 ++++++-
-> >  1 file changed, 6 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c
-> > index bb4311e..370049c 100644
-> > --- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c
-> > +++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c
-> > @@ -1043,8 +1043,13 @@ qlcnic_process_lro(struct qlcnic_adapter *adapter,
-> >  	th->seq = htonl(seq_number);
-> >  	length = skb->len;
-> >  
-> > -	if (adapter->flags & QLCNIC_FW_LRO_MSS_CAP)
-> > +	if (adapter->flags & QLCNIC_FW_LRO_MSS_CAP) {
-> >  		skb_shinfo(skb)->gso_size = qlcnic_get_lro_sts_mss(sts_data1);
-> > +		if (skb->protocol == ETH_P_IPV6)
-> 
-> Are you sure its not skb->protocol == htons(ETH_P_IPV6) ?
+On Thu, Feb 7, 2013 at 9:01 AM, Michal Simek <monstr@monstr.eu> wrote:
+> ok. Can you please confirm with me that the same problem is also for
+> iowrite32be
+> ioread16be and ioread32be?
+>
+> This description seems to me correct for BE and LE.
+> #define ioread16be(addr)       __be16_to_cpu(__raw_readw(addr))
+> #define ioread32be(addr)       __be32_to_cpu(__raw_readl(addr))
+>
+> #define iowrite16be(v, addr)   __raw_writew(__cpu_to_be16(v), addr)
+> #define iowrite32be(v, addr)   __raw_writel(__cpu_to_be32(v), addr)
+>
+> What do you think?
 
-Um, so it is. It just happens to work correctly for ipv4 :)
-I'll respin.
+Looks fine to me. Arnd, Ben?
 
-> > +			skb_shinfo(skb)->gso_type = SKB_GSO_TCPV6;
-> > +		else
-> > +			skb_shinfo(skb)->gso_type = SKB_GSO_TCPV4;
-> > +	}
-> >  
-> >  	if (vid != 0xffff)
-> >  		__vlan_hwaccel_put_tag(skb, vid);
-> 
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
