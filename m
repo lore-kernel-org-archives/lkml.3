@@ -1,77 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757534Ab3BGDZa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 22:25:30 -0500
-Received: from mail-ia0-f175.google.com ([209.85.210.175]:62574 "EHLO
-	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754330Ab3BGDZZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 22:25:25 -0500
-Message-ID: <51131E99.8080400@gmail.com>
-Date: Thu, 07 Feb 2013 11:25:13 +0800
-From: Cong Wang <xiyou.wangcong@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1757419Ab3BGDbC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 22:31:02 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:60139 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752435Ab3BGDbA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 22:31:00 -0500
+From: "Kumar, Anil" <anilkumar.v@ti.com>
+To: <linux-watchdog@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>
+CC: <wim@iguana.be>, <nsekhar@ti.com>, <anilkumar.v@ti.com>
+Subject: [PATCH] watchdog: davinci_wdt: update to devm_* API
+Date: Thu, 7 Feb 2013 09:02:15 +0530
+Message-ID: <1360207935-24325-1-git-send-email-anilkumar.v@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: netdev@vger.kernel.org, Eilon Greenstein <eilong@broadcom.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        Tushar Dave <tushar.n.dave@intel.com>,
-        Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>,
-        Sony Chacko <sony.chacko@qlogic.com>, linux-driver@qlogic.com,
-        John Fastabend <john.r.fastabend@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jacob Keller <jacob.e.keller@intel.com>, linux-kernel@vger.kernel.org,
-        e1000-devel@lists.sourceforge.net, bhutchings@solarflare.com,
-        eric.dumazet@gmail.com
-Subject: Re: [PATCH 0/2] fix kernel crash with macvtap on top of LRO
-References: <cover.1360191528.git.mst@redhat.com>
-In-Reply-To: <cover.1360191528.git.mst@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2013 07:02 AM, Michael S. Tsirkin wrote:
-> At the moment, macvtap crashes are observed if macvtap is attached
-> to an interface with LRO enabled.
-> The crash in question is BUG() in macvtap_skb_to_vnet_hdr.
-> This happens because several drivers set gso_size but not gso_type
-> in incoming skbs.
-> The following patches fix this for
-> Additionally, cbf1de72324a8105ddcc3d9ce9acbc613faea17e is required
-> to fix this for broadcom - would it make sense to cherry-pick
-> this patch into 3.8?
+Update the code to use devm_* API so that driver
+core will manage resources.
 
+Signed-off-by: Kumar, Anil <anilkumar.v@ti.com>
+---
+This patch applies on top of v3.8-rc6.
 
-Doesn't macvtap need to call skb_warn_if_lro() too like bridge and 
-openvswitch? Something like...
+Tested on da850 EVM.
 
-diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-index b181dfb..b2c6227 100644
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -253,6 +253,9 @@ static int macvtap_forward(struct net_device *dev, 
-struct sk_buff *skb)
-         if (!q)
-                 goto drop;
+:100644 100644 e8e8724... 6ad76a3... M	drivers/watchdog/davinci_wdt.c
+ drivers/watchdog/davinci_wdt.c |   34 +++++++++-------------------------
+ 1 files changed, 9 insertions(+), 25 deletions(-)
 
-+       if (unlikely(skb_warn_if_lro(skb)))
-+               goto drop;
-+
-         if (skb_queue_len(&q->sk.sk_receive_queue) >= dev->tx_queue_len)
-                 goto drop;
+diff --git a/drivers/watchdog/davinci_wdt.c b/drivers/watchdog/davinci_wdt.c
+index e8e8724..6ad76a3 100644
+--- a/drivers/watchdog/davinci_wdt.c
++++ b/drivers/watchdog/davinci_wdt.c
+@@ -69,7 +69,6 @@ static unsigned long wdt_status;
+ #define WDT_REGION_INITED 2
+ #define WDT_DEVICE_INITED 3
+ 
+-static struct resource	*wdt_mem;
+ static void __iomem	*wdt_base;
+ struct clk		*wdt_clk;
+ 
+@@ -201,10 +200,10 @@ static struct miscdevice davinci_wdt_miscdev = {
+ 
+ static int davinci_wdt_probe(struct platform_device *pdev)
+ {
+-	int ret = 0, size;
+-	struct device *dev = &pdev->dev;
++	int ret = 0;
++	static struct resource  *wdt_mem;
+ 
+-	wdt_clk = clk_get(dev, NULL);
++	wdt_clk = clk_get(&pdev->dev, NULL);
+ 	if (WARN_ON(IS_ERR(wdt_clk)))
+ 		return PTR_ERR(wdt_clk);
+ 
+@@ -213,49 +212,34 @@ static int davinci_wdt_probe(struct platform_device *pdev)
+ 	if (heartbeat < 1 || heartbeat > MAX_HEARTBEAT)
+ 		heartbeat = DEFAULT_HEARTBEAT;
+ 
+-	dev_info(dev, "heartbeat %d sec\n", heartbeat);
++	dev_info(&pdev->dev, "heartbeat %d sec\n", heartbeat);
+ 
+ 	wdt_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (wdt_mem == NULL) {
+-		dev_err(dev, "failed to get memory region resource\n");
++		dev_err(&pdev->dev, "failed to get memory region resource\n");
+ 		return -ENOENT;
+ 	}
+ 
+-	size = resource_size(wdt_mem);
+-	if (!request_mem_region(wdt_mem->start, size, pdev->name)) {
+-		dev_err(dev, "failed to get memory region\n");
+-		return -ENOENT;
+-	}
+-
+-	wdt_base = ioremap(wdt_mem->start, size);
++	wdt_base = devm_request_and_ioremap(&pdev->dev, wdt_mem);
+ 	if (!wdt_base) {
+-		dev_err(dev, "failed to map memory region\n");
+-		release_mem_region(wdt_mem->start, size);
+-		wdt_mem = NULL;
++		dev_err(&pdev->dev, "ioremap failed\n");
+ 		return -ENOMEM;
+ 	}
+ 
+ 	ret = misc_register(&davinci_wdt_miscdev);
+ 	if (ret < 0) {
+-		dev_err(dev, "cannot register misc device\n");
+-		release_mem_region(wdt_mem->start, size);
+-		wdt_mem = NULL;
++		dev_err(&pdev->dev, "cannot register misc device\n");
+ 	} else {
+ 		set_bit(WDT_DEVICE_INITED, &wdt_status);
++		return ret;
+ 	}
+ 
+-	iounmap(wdt_base);
+ 	return ret;
+ }
+ 
+ static int davinci_wdt_remove(struct platform_device *pdev)
+ {
+ 	misc_deregister(&davinci_wdt_miscdev);
+-	if (wdt_mem) {
+-		release_mem_region(wdt_mem->start, resource_size(wdt_mem));
+-		wdt_mem = NULL;
+-	}
+-
+ 	clk_disable_unprepare(wdt_clk);
+ 	clk_put(wdt_clk);
+ 
+-- 
+1.7.4.1
 
-
-I am not saying these drivers don't need to fix, I am just saying if we 
-need to fix LRO case.
-
-Thanks.
