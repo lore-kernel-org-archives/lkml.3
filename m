@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422683Ab3BGWCe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 17:02:34 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:35114 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161023Ab3BGWCd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 17:02:33 -0500
-Date: Thu, 7 Feb 2013 14:02:27 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 13/13] workqueue: record global worker ID instead of pool
- ID in work->data when off-queue
-Message-ID: <20130207220227.GW2875@htj.dyndns.org>
-References: <1359657696-2767-1-git-send-email-laijs@cn.fujitsu.com>
- <1359657696-2767-14-git-send-email-laijs@cn.fujitsu.com>
+	id S1161089Ab3BGWIK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 17:08:10 -0500
+Received: from mms2.broadcom.com ([216.31.210.18]:3227 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161038Ab3BGWII (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 17:08:08 -0500
+X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
+Message-ID: <511425BA.1040005@broadcom.com>
+Date: Thu, 7 Feb 2013 23:07:54 +0100
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1359657696-2767-14-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Joe Perches" <joe@perches.com>
+cc: netdev <netdev@vger.kernel.org>, linux-can@vger.kernel.org,
+        linux-kernel@vger.kernel.org, e1000-devel@lists.sourceforge.net,
+        linux-usb@vger.kernel.org, linux-wireless@vger.kernel.org,
+        ath9k-devel@venema.h4ckr.net, wil6210@qca.qualcomm.com,
+        brcm80211-dev-list@broadcom.com,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH] drivers: net: Remove remaining alloc/OOM messages
+References: <1360273587.27863.15.camel@joe-AO722>
+In-Reply-To: <1360273587.27863.15.camel@joe-AO722>
+X-Enigmail-Version: 1.4.6
+X-WSS-ID: 7D0AFB723QG4131-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, again.
-
-On Fri, Feb 01, 2013 at 02:41:36AM +0800, Lai Jiangshan wrote:
-> Every time, when we need to find the executing worker from work,
-> we need 2 steps:
-> 	find the pool from the idr by pool id.
-> 	find the worker from the hash table of the pool.
+On 02/07/2013 10:46 PM, Joe Perches wrote:
+> alloc failures already get standardized OOM
+> messages and a dump_stack.
 > 
-> Now we merge them as one step: find the worker directly from the idr by worker gwid.
-> (lock_pool_executing_work(). If the work is onq, we still use hash table.)
+> For the affected mallocs around these OOM messages:
 > 
-> It makes the code more straightforward.
+> Converted kmallocs with multiplies to kmalloc_array.
+> Converted a kmalloc/memcpy to kmemdup.
+> Removed now unused stack variables.
+> Removed unnecessary parentheses.
+> Neatened alignment.
+
+for brcm80211 driver files listed below:
+
+Acked-by: Arend van Spriel <arend@broadcom.com>
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+> Let me know if you want multiple small patches instead.
 > 
-> In future, we may add percpu worker gwid <--> worker mapping cache when needed.
-> 
-> And we are planing to add non-std worker_pool, we still don't know how to
-> implement worker_pool_by_id() for non-std worker_pool, this patch solves it.
-> 
-> This patch slows down the very-slow-path destroy_worker(), if it is blamed,
-> we will move the synchronize_rcu() out.
-> 
-> This patch adds a small overhead(rcu_read_[un]lock) in fast path
-> lock_pool_executing_work(). if it is blamed, we will use rcu_sched instead.
-> (local_irq_disable() implies rcu_read_lock_sched(), so we can remove
-> this overhead.)
+>  drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c |  5 +--
+>  drivers/net/wireless/brcm80211/brcmfmac/usb.c      |  7 ++--
 
-So, I've been looking at the last six patches and am not really sure
-whether I want this.  At least not in the current form.  We end up
-locking, unlocking and then locking again the same thing in hot path.
-Having a proper locking API is all nice and good *if* it actually can
-support use case at hand.  The proposed one can't.
 
-Also, if worker is RCU protected then pool should be too (otherwise
-you can't do worker->pool->lock), so it doesn't really simplify that
-aspect either.
-
-I do like work items pointing back to workers instead of pools, so I
-think I'll try that differently.
-
-Thanks.
-
--- 
-tejun
