@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752334Ab3BGHcc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 02:32:32 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:1231 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751402Ab3BGHcb (ORCPT
+	id S1752243Ab3BGHfn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 02:35:43 -0500
+Received: from mail-qe0-f52.google.com ([209.85.128.52]:58188 "EHLO
+	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750900Ab3BGHfl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 02:32:31 -0500
-From: fangxiaozhi 00110321 <fangxiaozhi@huawei.com>
-To: <linux-usb@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <zihan@huawei.com>, <Lin.Lei@huawei.com>,
-        <greg@kroah.com>, <neil.yi@huawei.com>, <wangyuhua@huawei.com>,
-        <huqiao36@huawei.com>, <balbi@ti.com>, <mdharm-usb@one-eyed-alien.net>,
-        <sebastian@breakpoint.cc>
-Message-ID: <fe8ad35c629c.629cfe8ad35c@huawei.com>
-Date: Thu, 7 Feb 2013 15:32:07 +0800
-X-Mailer: iPlanet Messenger Express 5.2 HotFix 2.14 (built Aug  8 2006)
+	Thu, 7 Feb 2013 02:35:41 -0500
 MIME-Version: 1.0
-Content-Language: zh-CN
-Subject: [PATCH 1/1]linux-usb: fix the idProduct value to be compatible
- with current CPU in initializers.c
-X-Accept-Language: zh-CN
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-X-CFilter-Loop: Reflected
+In-Reply-To: <87fw18svky.fsf@sejong.aot.lge.com>
+References: <1360161962-9675-1-git-send-email-eranian@google.com>
+	<87fw18svky.fsf@sejong.aot.lge.com>
+Date: Thu, 7 Feb 2013 08:35:31 +0100
+Message-ID: <CABPqkBTv0aZ1_MiFkQPAc=CyxBaHY7MMELfWL0Ni2syzLXOSrQ@mail.gmail.com>
+Subject: Re: [PATCH 0/2] perf stat: add per processor socket count aggregation
+From: Stephane Eranian <eranian@google.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Feb 7, 2013 at 3:31 AM, Namhyung Kim <namhyung@kernel.org> wrote:
+> Hi Stephane,
+>
+> On Wed,  6 Feb 2013 15:46:00 +0100, Stephane Eranian wrote:
+>> This patch adds per-processor socket count aggregation
+>> for system-wide mode measurements. This is a useful
+>> mode to detect imbalance between sockets for uniform
+>> workloads.
+>>
+>> To enable this mode, use --aggr-socket in addition
+>> to -a. (system-wide). This mode can be combined with
+>> interval printing.
+>>
+>> The output includes the socket number and the number
+>> of online processors on that socket. This is useful
+>> to gauge the amount of aggregation.
+>>
+>>  # ./perf stat -I 1000 -a --aggr-socket -e cycles sleep 2
+>>  #           time socket cpus             counts events
+>>       1.000097680 S0        4          5,788,785 cycles
+>>       2.000379943 S0        4         27,361,546 cycles
+>>       2.001167808 S0        4            818,275 cycles
+>
+> Can it be genericized to support arbitrary cpu topology like per-core,
+> per-numa-node or something?
+>
+Yes, we could. I think that could be useful too. I will look into
+this. But please don't
+ask for stupid scripting to do this. We need to keep things simple. I
+think perf has
+gotten to be a very complex tool, hard to read code, more difficult to maintain.
 
-From: fangxiaozhi <huananhu@huawei.com>
-
-1. The idProduct is little endian, so make sure its value to be compatible with the current CPU. Make no break on big endian processors.
-
-Signed-off-by: fangxiaozhi <huananhu@huawei.com>
---------------------------------------------------------------------
-diff -uprN linux-3.8-rc6_orig/drivers/usb/storage/initializers.c linux-3.8-rc6/drivers/usb/storage/initializers.c
---- linux-3.8-rc6_orig/drivers/usb/storage/initializers.c	2013-02-06 14:48:51.564355283 +0800
-+++ linux-3.8-rc6/drivers/usb/storage/initializers.c	2013-02-07 15:29:59.929482630 +0800
-@@ -147,7 +147,7 @@ static int usb_stor_huawei_dongles_pid(s
- 	int idProduct;
- 
- 	idesc = &us->pusb_intf->cur_altsetting->desc;
--	idProduct = us->pusb_dev->descriptor.idProduct;
-+	idProduct = le16_to_cpu(us->pusb_dev->descriptor.idProduct);
- 	/* The first port is CDROM,
- 	 * means the dongle in the single port mode,
- 	 * and a switch command is required to be sent. */
-@@ -169,7 +169,7 @@ int usb_stor_huawei_init(struct us_data
- 	int result = 0;
- 
- 	if (usb_stor_huawei_dongles_pid(us)) {
--		if (us->pusb_dev->descriptor.idProduct >= 0x1446)
-+		if (le16_to_cpu(us->pusb_dev->descriptor.idProduct) >= 0x1446)
- 			result = usb_stor_huawei_scsi_init(us);
- 		else
- 			result = usb_stor_huawei_feature_init(us);
-
+As for the particular feature, I know how to make it work on x86, but
+it is not clear to me how portable is the sysfs topology tree? For instance,
+on PPC, would that work? Worst case, we can make the topology routines
+arch specific and use weak functions to cover any architecture which does
+not have topology info.
