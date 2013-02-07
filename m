@@ -1,121 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932222Ab3BGQDe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 11:03:34 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:43468 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932202Ab3BGQD2 (ORCPT
+	id S1758941Ab3BGQGH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 11:06:07 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:25097 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756622Ab3BGQDc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 11:03:28 -0500
-From: Roger Quadros <rogerq@ti.com>
-To: <tony@atomide.com>
-CC: <b-cousson@ti.com>, <balbi@ti.com>, <gregkh@linuxfoundation.org>,
-        <stern@rowland.harvard.edu>, <linux@arm.linux.org.uk>, <kishon@ti.com>,
-        <mark.rutland@arm.com>, <rogerq@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 07/14] USB: ohci-omap3: Add device tree support and binding information
-Date: Thu, 7 Feb 2013 18:02:47 +0200
-Message-ID: <1360252974-7912-8-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1360252974-7912-1-git-send-email-rogerq@ti.com>
-References: <1360252974-7912-1-git-send-email-rogerq@ti.com>
+	Thu, 7 Feb 2013 11:03:32 -0500
+Message-ID: <5113D04B.2060101@atmel.com>
+Date: Thu, 7 Feb 2013 17:03:23 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        "Linux Kernel list" <linux-kernel@vger.kernel.org>,
+        Joachim Eastwood <manabian@gmail.com>, "Wu, Josh" <Josh.wu@atmel.com>
+Subject: [GIT PULL] at91: Device Tree related material for 3.9
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allows the OHCI controller found in OMAP3 and later chips to
-be specified via device tree.
+Arnd, Olof,
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
----
- .../devicetree/bindings/usb/omap3-ohci.txt         |   17 +++++++++++++++++
- drivers/usb/host/ohci-omap3.c                      |   19 +++++++++++++++++++
- 2 files changed, 36 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/usb/omap3-ohci.txt
+Here is a pull request for AT91 Device Tree material. It is pretty small and
+mostly related to at91rm9200 work done by Joachim.
 
-diff --git a/Documentation/devicetree/bindings/usb/omap3-ohci.txt b/Documentation/devicetree/bindings/usb/omap3-ohci.txt
-new file mode 100644
-index 0000000..ad2ace0
---- /dev/null
-+++ b/Documentation/devicetree/bindings/usb/omap3-ohci.txt
-@@ -0,0 +1,17 @@
-+OMAP HS USB OHCI controller (OMAP3 and later)
-+
-+Required properties:
-+
-+- compatible: should be "ti,ohci-omap3"
-+- reg: should contain one register range i.e. start and length
-+- interrupt-parent: phandle to the interrupt controller
-+- interrupts: description of the interrupt line
-+
-+Example for OMAP4:
-+
-+usbhsohci: ohci@4a064800 {
-+	compatible = "ti,ohci-omap3", "usb-ohci";
-+	reg = <0x4a064800 0x400>;
-+	interrupt-parent = <&gic>;
-+	interrupts = <0 76 0x4>;
-+};
-diff --git a/drivers/usb/host/ohci-omap3.c b/drivers/usb/host/ohci-omap3.c
-index 5ed28c5..ddfc314 100644
---- a/drivers/usb/host/ohci-omap3.c
-+++ b/drivers/usb/host/ohci-omap3.c
-@@ -31,6 +31,8 @@
- 
- #include <linux/platform_device.h>
- #include <linux/pm_runtime.h>
-+#include <linux/of.h>
-+#include <linux/dma-mapping.h>
- 
- /*-------------------------------------------------------------------------*/
- 
-@@ -112,6 +114,8 @@ static const struct hc_driver ohci_omap3_hc_driver = {
- 
- /*-------------------------------------------------------------------------*/
- 
-+static u64 omap_ohci_dma_mask = DMA_BIT_MASK(32);
-+
- /*
-  * configure so an HC device and id are always provided
-  * always called with process context; sleeping is OK
-@@ -159,6 +163,13 @@ static int ohci_hcd_omap3_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
- 
-+	/*
-+	 * Right now device-tree probed devices don't get dma_mask set.
-+	 * Since shared usb code relies on it, set it here for now.
-+	 * Once we have dma capability bindings this can go away.
-+	 */
-+	if (!pdev->dev.dma_mask)
-+		pdev->dev.dma_mask = &omap_ohci_dma_mask;
- 
- 	hcd = usb_create_hcd(&ohci_omap3_hc_driver, dev,
- 			dev_name(dev));
-@@ -228,12 +239,20 @@ static void ohci_hcd_omap3_shutdown(struct platform_device *pdev)
- 		hcd->driver->shutdown(hcd);
- }
- 
-+static const struct of_device_id omap_ohci_dt_ids[] = {
-+	{ .compatible = "ti,ohci-omap3" },
-+	{ }
-+};
-+
-+MODULE_DEVICE_TABLE(of, omap_ohci_dt_ids);
-+
- static struct platform_driver ohci_hcd_omap3_driver = {
- 	.probe		= ohci_hcd_omap3_probe,
- 	.remove		= ohci_hcd_omap3_remove,
- 	.shutdown	= ohci_hcd_omap3_shutdown,
- 	.driver		= {
- 		.name	= "ohci-omap3",
-+		.of_match_table = of_match_ptr(omap_ohci_dt_ids),
- 	},
- };
- 
+This one can go on top of the GIT PULL request that I sent two days ago:
+"[GIT PULL] at91: fixes for 3.9-rc1". But actually it is not related...
+
+
+The following changes since commit 88b62b915b0b7e25870eb0604ed9a92ba4bfc9f7:
+
+  Linux 3.8-rc6 (2013-02-01 12:08:14 +1100)
+
+are available in the git repository at:
+
+  git://github.com/at91linux/linux-at91.git tags/at91-dt
+
+for you to fetch changes up to ce3b2630fd4737a3f9aa9119d40647a9ac7baa38:
+
+  ARM: at91: add EMAC bindings to RM9200 DT (2013-02-07 16:40:09 +0100)
+
+----------------------------------------------------------------
+Update to DT files for AT91:
+- adding the watchdog to Animeo IP board
+- some more DT support for at91rm9200 peripherals
+
+----------------------------------------------------------------
+Jean-Christophe PLAGNIOL-VILLARD (1):
+      ARM: at91: Animeo IP: enable watchdog support
+
+Joachim Eastwood (3):
+      ARM: at91: add MMC bindings to RM9200 DT
+      ARM: at91: add SSC bindings to RM9200 DT
+      ARM: at91: add EMAC bindings to RM9200 DT
+
+ arch/arm/boot/dts/animeo_ip.dts    |   4 +
+ arch/arm/boot/dts/at91rm9200.dtsi  | 158 +++++++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/at91rm9200ek.dts |   5 ++
+ arch/arm/mach-at91/at91rm9200.c    |   2 +
+ 4 files changed, 169 insertions(+)
+
+
+Thanks best regards,
 -- 
-1.7.4.1
-
+Nicolas Ferre
