@@ -1,87 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758337Ab3BGMgF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 07:36:05 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:44674 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754429Ab3BGMgC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 07:36:02 -0500
-From: Philip Avinash <avinashphilip@ti.com>
-To: <khilman@ti.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
-        <dwmw2@infradead.org>, <artem.bityutskiy@linux.intel.com>
-CC: <afzal@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mtd@lists.infradead.org>, <nsekhar@ti.com>,
-        <gururaja.hebbar@ti.com>, <hvaibhav@ti.com>,
-        Philip Avinash <avinashphilip@ti.com>
-Subject: [PATCH v2 1/4] arm: gpmc: Converts GPMC driver to pm_runtime capable
-Date: Thu, 7 Feb 2013 18:06:55 +0530
-Message-ID: <1360240618-11094-2-git-send-email-avinashphilip@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1360240618-11094-1-git-send-email-avinashphilip@ti.com>
-References: <1360240618-11094-1-git-send-email-avinashphilip@ti.com>
+	id S1758524Ab3BGMgh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 07:36:37 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:34782 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758460Ab3BGMgd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 07:36:33 -0500
+Date: Thu, 7 Feb 2013 13:35:27 +0100
+From: Jens Axboe <axboe@kernel.dk>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Wanlong Gao <gaowanlong@cn.fujitsu.com>,
+        asias@redhat.com, Rusty Russell <rusty@rustcorp.com.au>,
+        mst@redhat.com, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [RFC PATCH 5/8] scatterlist: introduce sg_unmark_end
+Message-ID: <20130207123527.GA15092@kernel.dk>
+References: <1360239752-2470-1-git-send-email-pbonzini@redhat.com>
+ <1360239752-2470-6-git-send-email-pbonzini@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1360239752-2470-6-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Support for pm_runtime add to GPMC driver.
+On Thu, Feb 07 2013, Paolo Bonzini wrote:
+> This is useful in places that recycle the same scatterlist multiple
+> times, and do not want to incur the cost of sg_init_table every
+> time in hot paths.
 
-Signed-off-by: Philip Avinash <avinashphilip@ti.com>
----
- arch/arm/mach-omap2/gpmc.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+Looks fine to me.
 
-diff --git a/arch/arm/mach-omap2/gpmc.c b/arch/arm/mach-omap2/gpmc.c
-index 2c57f81..b1cd6c1 100644
---- a/arch/arm/mach-omap2/gpmc.c
-+++ b/arch/arm/mach-omap2/gpmc.c
-@@ -29,6 +29,7 @@
- #include <linux/of_mtd.h>
- #include <linux/of_device.h>
- #include <linux/mtd/nand.h>
-+#include <linux/pm_runtime.h>
- 
- #include <linux/platform_data/mtd-nand-omap2.h>
- 
-@@ -1317,7 +1318,8 @@ static int gpmc_probe(struct platform_device *pdev)
- 		return PTR_ERR(gpmc_l3_clk);
- 	}
- 
--	clk_prepare_enable(gpmc_l3_clk);
-+	pm_runtime_enable(&pdev->dev);
-+	pm_runtime_get_sync(&pdev->dev);
- 
- 	gpmc_dev = &pdev->dev;
- 
-@@ -1329,7 +1331,7 @@ static int gpmc_probe(struct platform_device *pdev)
- 
- 	rc = gpmc_mem_init();
- 	if (IS_ERR_VALUE(rc)) {
--		clk_disable_unprepare(gpmc_l3_clk);
-+		pm_runtime_put_sync(&pdev->dev);
- 		clk_put(gpmc_l3_clk);
- 		dev_err(gpmc_dev, "failed to reserve memory\n");
- 		return rc;
-@@ -1340,7 +1342,7 @@ static int gpmc_probe(struct platform_device *pdev)
- 
- 	rc = gpmc_probe_dt(pdev);
- 	if (rc < 0) {
--		clk_disable_unprepare(gpmc_l3_clk);
-+		pm_runtime_put_sync(&pdev->dev);
- 		clk_put(gpmc_l3_clk);
- 		dev_err(gpmc_dev, "failed to probe DT parameters\n");
- 		return rc;
-@@ -1353,6 +1355,8 @@ static __devexit int gpmc_remove(struct platform_device *pdev)
- {
- 	gpmc_free_irq();
- 	gpmc_mem_exit();
-+	pm_runtime_put_sync(&pdev->dev);
-+	pm_runtime_disable(&pdev->dev);
- 	gpmc_dev = NULL;
- 	return 0;
- }
+Acked-by: Jens Axboe <axboe@kernel.dk>
+
 -- 
-1.7.9.5
+Jens Axboe
 
