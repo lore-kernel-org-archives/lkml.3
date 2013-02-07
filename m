@@ -1,50 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758535Ab3BGNhF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 08:37:05 -0500
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:57804 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751411Ab3BGNhC (ORCPT
+	id S1758685Ab3BGNhe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 08:37:34 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:55705 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758566Ab3BGNha (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 08:37:02 -0500
+	Thu, 7 Feb 2013 08:37:30 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Takashi Iwai <tiwai@suse.de>, axboe@kernel.dk, cbou@mail.ru,
+        davem@davemloft.net, dtor@mail.ru, dwmw2@infradead.org,
+        grant.likely@secretlab.ca, gregkh@linuxfoundation.org, jkosina@suse.cz,
+        jslaby@suse.cz, khali@linux-fr.org, mchehab@redhat.com, perex@perex.cz,
+        sameo@linux.intel.com, w.sang@pengutronix.de,
+        linux-kernel@vger.kernel.org, sebott@linux.vnet.ibm.com,
+        gerald.schaefer@de.ibm.com, schwidefsky@de.ibm.com
+Subject: Re: [PATCH 12/15] sound: add missing HAS_IOPORT and GENERIC_HARDIRQS dependencies
+Date: Thu, 07 Feb 2013 14:36:15 +0100
+Message-ID: <1376233.Q2CJ8VJpTB@wuerfel>
+User-Agent: KMail/4.10 rc3 (Linux/3.8.0-3-generic; KDE/4.9.98; x86_64; ; )
+In-Reply-To: <20130207133206.GB3929@osiris>
+References: <1360167843-3587-1-git-send-email-heiko.carstens@de.ibm.com> <201302062156.55910.arnd@arndb.de> <20130207133206.GB3929@osiris>
 MIME-Version: 1.0
-In-Reply-To: <20130207015259.GA760@wolff.to>
-References: <20130201201332.GA2965@wolff.to>
-	<20130207015259.GA760@wolff.to>
-Date: Thu, 7 Feb 2013 08:37:01 -0500
-Message-ID: <CA+5PVA5H0merTWq=wAe38m2WPg1_A06saHcST+VUfgkk9OuSOA@mail.gmail.com>
-Subject: Re: Problems with late 3.8-rc5 and 3.8-rc6 on i686
-From: Josh Boyer <jwboyer@gmail.com>
-To: Bruno Wolff III <bruno@wolff.to>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:6zxmePSkltcnAKtyDS0H7EDOCGfda6b5/MY5RV2jHGq
+ skfUjuTYXKjIj2+Kp0al9+Lq95ZPg5jOPBszA5+KGnUtKlZrDf
+ qWDCY5bSJ8G/wMUiC3qozQGnpdNJH/wuI+nN4osGpywb+wAltY
+ ygPiqfKkPUbNgxpHTUKn7IdY1dXsc+bbqK2Ackf0tADd1WDejf
+ 4m8355xdchNsZTiH2MUHk+ddE2d8LjOpTUe9qXf7ZbRXCrykXx
+ NfSTr8f5I/L5JZdDtLgbel5uA9/dYpJfdmbptQrhXMaPL7v4Yy
+ XVtpvEoKTr1Aql2L9pP4ZtTzOVvGHWz7N9pq0Hx3CSv5M1r9iU
+ hh6Tfpx2IYQk8wcAGAMo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 6, 2013 at 8:52 PM, Bruno Wolff III <bruno@wolff.to> wrote:
-> On Fri, Feb 01, 2013 at 14:13:32 -0600,
->   Bruno Wolff III <bruno@wolff.to> wrote:
->>
->> I have been testing 3.8 kernels on Fedora. The last good kernel was
->> 3.8.0-0.rc5.git1.1.fc19.i686.PAE. I tested 3.8.0-0.rc5.git2.1.fc19.i686.PAE,
->> 3.8.0-0.rc5.git3.1.fc19.i686 and 3.8.0-0.rc6.git0.1.fc19.i686.PAE and found
->> these all had two odd effects.
+On Thursday 07 February 2013 14:32:06 Heiko Carstens wrote:
+> 
+> That sounds reasonable. And a quick grep seems to indicate that s390
+> is the last architecture with !GENERIC_HARDIRQS.
+> However having two completely different IRQ subsystems within one
+> architecture will bring up some interesting questions like e.g.
+> how should /proc/interrupts look like? Or /proc/stat:intr ?
+
+/proc/interrupts can still be managed by architecture code, and
+you can put in there whatever makes sense. I would suggest
+keeping the current code for it, or adding the GENERIC_HARDIRQ
+support at the end of it.
+
+> Jan considered turning GENERIC_HARDIRQS on for PCI support, but didn't.
+> I don't know why he didn't and since he left, we can't ask him anymore.
+
+I briefly talked about it with him a couple of months ago, and
+he said that the thought Martin would hate it.  I still think
+it's the best solution though.
+
+> So for the time being I'd appreciate it if we can simply add the
+> additional GENERIC_HARDIRQS dependencies where needed, since I consider
+> a working allmodconfig quite important.
 >
->
-> This turned out to be due Fedora changing some config options to turn off
-> namespaces for i686 when it was thought by some people that they had been
-> off previously. (And so this wasn't thought to be a change.) This broke the
-> private network feature of systemd, used by rtkit-daemon.
+> Later on we should indeed try to switch to GENERIC_HARDIRQS and then
+> git rid of that config option completely. However I leave that to
+> Sebastian and Gerald who now take care of our PCI code 
 
-Yeah, the Kconfig entry for NAMESPACES is... misleading.  It seems it
-should depend on CONFIG_EXPERT, but if you have one of the _NS options
-set in the config it gets flipped on regardless.  It's either that or
-the weird "default !EXPERT" causing it to be enabled even when the
-CONFIG_EXPERT option is not set.
+Yes, makes sense.
 
-Anyway, still seems to me that systemd/rtkit-daemon should be _checking_
-to see if that feature is present instead of assuming it is and failing
-in weird ways when it isn't.
-
-josh
+	Arnd
