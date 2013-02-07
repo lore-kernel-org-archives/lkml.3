@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758544Ab3BGNMe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 08:12:34 -0500
-Received: from vsp-authed02.binero.net ([195.74.38.226]:23513 "HELO
-	vsp-authed-02-02.binero.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755023Ab3BGNMd (ORCPT
+	id S1758609Ab3BGNMl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 08:12:41 -0500
+Received: from vsp-authed02.binero.net ([195.74.38.226]:30909 "HELO
+	vsp-authed-03-02.binero.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1758571Ab3BGNMg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 08:12:33 -0500
+	Thu, 7 Feb 2013 08:12:36 -0500
 From: Andreas Larsson <andreas@gaisler.com>
 To: Grant Likely <grant.likely@secretlab.ca>
 Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
@@ -17,82 +17,67 @@ Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Kumar Gala <galak@kernel.crashing.org>,
         Peter Korsgaard <jacmet@sunsite.dk>, linux-kernel@vger.kernel.org,
         software@gaisler.com
-Subject: [PATCH v2 0/7] spi: spi-fsl-spi: Make spi-fsl-spi usable in cpu mode outside of FSL SOC environments and add a grlib variant normally running on sparc
-Date: Thu,  7 Feb 2013 14:12:04 +0100
-Message-Id: <1360242731-13700-1-git-send-email-andreas@gaisler.com>
+Subject: [PATCH v2 5/7] spi: spi-fsl-spi: Add support for setting a maximum number of bits per word
+Date: Thu,  7 Feb 2013 14:12:09 +0100
+Message-Id: <1360242731-13700-6-git-send-email-andreas@gaisler.com>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1360242731-13700-1-git-send-email-andreas@gaisler.com>
+References: <1360242731-13700-1-git-send-email-andreas@gaisler.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This makes the cpu mode of the driver available outside of an FSL SOC
-and even powerpc environment. Furthermore, this adds support for the
-mostly register-compatible SPICTRL core from the GRLIB VHDL IP core
-library normally running on SPARC.
-
-This effort is split up in several patches for clarity of what is being
-changed. Patches 3-5 prepares for the introduction of the GRLIB SPICTRL
-functionality in patch 6. 
-
-To use what is introduced right away they could eventually be merged:
-  Patch A: patch 1
-  Patch B: patch 2
-  Patch C: patches 3-6 merged
-  Patch D: patch 7
-
-Patch 1 makes the driver compileable and presumably useable outside of
-FSL SOC and powerpc environments (SPARC in particular)
-
-Patch 2 fixes a bug that can happen when a device uses SPI_CS_HIGH
-
-Patches 3-6 makes the driver working for GRLIB SPICTRL cores that has
-the built in slave select register and that uses that exclusively for
-chipselects.
-
-Patch 7 introduces gpio support for GRLIB SPICTRL cores. That patch (and
-that patch only) relies upon the "of, of_gpio, of_spi: Fix and improve
-of_parse_phandle_with_args, of_gpio_named_count and
-of_spi_register_master" patchset - https://lkml.org/lkml/2013/1/29/308
-
-The GRLIB type has been tested under sparc. The FSL type has been
-compile tested in powerpc, arm and x86 environments. It would be great
-if someone with an FSL board could test this out.
-
-One could argue that it would be better to add the GRLIB variant as a
-mode flag in of_mpc8xxx_spi_probe instead of using a new type field, but
-that would require to add a flag for this core in
-include/linux/fsl_devices.h which does not feel right given that this
-core is not part of an FSL device.
-
 Signed-off-by: Andreas Larsson <andreas@gaisler.com>
+---
+ drivers/spi/spi-fsl-lib.h |    1 +
+ drivers/spi/spi-fsl-spi.c |    8 +++++++-
+ 2 files changed, 8 insertions(+), 1 deletions(-)
 
-Andreas Larsson (7):
-  spi: spi-fsl-spi: Make driver usable in CPU mode outside of an
-    FSL_SOC environment
-  spi: spi-fsl-spi: Make sure in spi_fsl_setup that chipselect becomes
-    inactive
-  spi: spi-fsl-spi: Move setting non-zero tx and rx shifts to a
-    function accessed by a function pointer
-  spi: spi-fsl-spi: Introduce a type for the driver
-  spi: spi-fsl-spi: Add support for setting a maximum number of bits
-    per word
-  spi: spi-fsl-spi: Add support for Aeroflex Gaisler GRLIB cores
-    normally running on SPARC
-  spi: spi-fsl-spi: Add support for gpio chipselects for GRLIB type
-    cores
-
- Documentation/devicetree/bindings/spi/fsl-spi.txt  |    3 +-
- .../devicetree/bindings/vendor-prefixes.txt        |    1 +
- drivers/spi/Kconfig                                |   11 +-
- drivers/spi/Makefile                               |    1 +
- drivers/spi/spi-fsl-cpm.c                          |  387 +++++++++++++
- drivers/spi/spi-fsl-cpm.h                          |   43 ++
- drivers/spi/spi-fsl-lib.c                          |    8 +
- drivers/spi/spi-fsl-lib.h                          |   15 +-
- drivers/spi/spi-fsl-spi.c                          |  610 ++++++--------------
- drivers/spi/spi-fsl-spi.h                          |   72 +++
- 10 files changed, 725 insertions(+), 426 deletions(-)
- create mode 100644 drivers/spi/spi-fsl-cpm.c
- create mode 100644 drivers/spi/spi-fsl-cpm.h
- create mode 100644 drivers/spi/spi-fsl-spi.h
+diff --git a/drivers/spi/spi-fsl-lib.h b/drivers/spi/spi-fsl-lib.h
+index 5a9c36c..d5c788b 100644
+--- a/drivers/spi/spi-fsl-lib.h
++++ b/drivers/spi/spi-fsl-lib.h
+@@ -71,6 +71,7 @@ struct mpc8xxx_spi {
+ 
+ #ifdef CONFIG_SPI_FSL_SPI
+ 	int type;
++	u8 max_bits_per_word;
+ 
+ 	void (*set_shifts)(u32 *rx_shift, u32 *tx_shift,
+ 			   int bits_per_word, int msb_first);
+diff --git a/drivers/spi/spi-fsl-spi.c b/drivers/spi/spi-fsl-spi.c
+index c018e1c..437319f 100644
+--- a/drivers/spi/spi-fsl-spi.c
++++ b/drivers/spi/spi-fsl-spi.c
+@@ -213,7 +213,8 @@ static int fsl_spi_setup_transfer(struct spi_device *spi,
+ 
+ 	/* Make sure its a bit width we support [4..16, 32] */
+ 	if ((bits_per_word < 4)
+-	    || ((bits_per_word > 16) && (bits_per_word != 32)))
++	    || ((bits_per_word > 16) && (bits_per_word != 32))
++	    || (bits_per_word > mpc8xxx_spi->max_bits_per_word))
+ 		return -EINVAL;
+ 
+ 	if (!hz)
+@@ -520,6 +521,7 @@ static struct spi_master * fsl_spi_probe(struct device *dev,
+ 	mpc8xxx_spi = spi_master_get_devdata(master);
+ 	mpc8xxx_spi->spi_do_one_msg = fsl_spi_do_one_msg;
+ 	mpc8xxx_spi->spi_remove = fsl_spi_remove;
++	mpc8xxx_spi->max_bits_per_word = 32;
+ 	mpc8xxx_spi->type = fsl_spi_get_type(dev);
+ 
+ 	ret = fsl_spi_cpm_init(mpc8xxx_spi);
+@@ -557,6 +559,10 @@ static struct spi_master * fsl_spi_probe(struct device *dev,
+ 
+ 	/* Enable SPI interface */
+ 	regval = pdata->initial_spmode | SPMODE_INIT_VAL | SPMODE_ENABLE;
++	if (mpc8xxx_spi->max_bits_per_word < 8) {
++		regval &= ~SPMODE_LEN(0xF);
++		regval |= SPMODE_LEN(mpc8xxx_spi->max_bits_per_word - 1);
++	}
+ 	if (mpc8xxx_spi->flags & SPI_QE_CPU_MODE)
+ 		regval |= SPMODE_OP;
+ 
+-- 
+1.7.0.4
 
