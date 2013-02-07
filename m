@@ -1,83 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752341Ab3BGHOE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 02:14:04 -0500
-Received: from latitanza.investici.org ([82.94.249.234]:39499 "EHLO
-	latitanza.investici.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751629Ab3BGHOA (ORCPT
+	id S1752304Ab3BGHXq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 02:23:46 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:61926 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925Ab3BGHXn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 02:14:00 -0500
-X-DKIM: Sendmail DKIM Filter v2.8.2 latitanza.investici.org 3326A98063
-Date: Thu, 7 Feb 2013 08:13:05 +0100
-From: Antonio Quartulli <ordex@autistici.org>
-To: Emil Goode <emilgoode@gmail.com>
-Cc: akpm@linux-foundation.org, lindner_marek@yahoo.de, siwu@hrz.tu-chemnitz.de,
-        davem@davemloft.net, sasha.levin@oracle.com,
-        b.a.t.m.a.n@lists.open-mesh.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH v2] batman-adv: Remove unused variable
-Message-ID: <20130207071305.GG6008@ritirata.org>
-References: <1360193557-27554-1-git-send-email-emilgoode@gmail.com>
+	Thu, 7 Feb 2013 02:23:43 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="QWpDgw58+k1mSFBj"
-Content-Disposition: inline
-In-Reply-To: <1360193557-27554-1-git-send-email-emilgoode@gmail.com>
+In-Reply-To: <CAMuHMdUia08Upt6p8cVrC7Uazo3KGbSCZEg-mLaNYALdty88bA@mail.gmail.com>
+References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com>
+	<CACxGe6tjyx3GTgNgMRtvwhrFsTGizkeTqY_N6=2gdQjvMSD8Ug@mail.gmail.com>
+	<CAHTX3d+XZ6VJDVYKHhg33Z+O8Koo99Yq--W8qitcSe543dWUuA@mail.gmail.com>
+	<11273481.VQZWGoSGBC@wuerfel>
+	<511295A8.5070106@monstr.eu>
+	<CAMuHMdUia08Upt6p8cVrC7Uazo3KGbSCZEg-mLaNYALdty88bA@mail.gmail.com>
+Date: Thu, 7 Feb 2013 08:23:41 +0100
+Message-ID: <CAHTX3dL1THVgfhJkMs9w4wxD3tSgvm=V5i057074pRGxQ1vTOQ@mail.gmail.com>
+Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16
+ with generic iowrite(read)8/16(be)
+From: Michal Simek <monstr@monstr.eu>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@secretlab.ca>,
+        Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, dahinds@users.sourceforge.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2013/2/6 Geert Uytterhoeven <geert@linux-m68k.org>:
+> On Wed, Feb 6, 2013 at 6:40 PM, Michal Simek <monstr@monstr.eu> wrote:
+>> One question regarding to asm-generic/io.h about iowrite16be implementation
+>>
+>> #define iowrite16be(v, addr)   iowrite16(be16_to_cpu(v), (addr))
+>> #define iowrite16(v, addr)      writew((v), (addr))
+>> #define writew(b,addr) __raw_writew(__cpu_to_le16(b),addr)
+>>
+>> static inline void __raw_writew(u16 b, volatile void __iomem *addr)
+>> {
+>>         *(volatile u16 __force *) addr = b;
+>> }
+>>
+>> How is this suppose to work on Big Endian?
+>> be16_to_cpu(v) is (v)
+>> and
+>> __cpu_to_le16(b) is swab16(v)
+>
+> Yes.
 
---QWpDgw58+k1mSFBj
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+But on native BE system ( I expect that v is in big endian)
+iowrite16be(v, addr) should be just *(volatile u16 __force *) addr =
+v; not *(volatile u16 __force *) addr = swab16(v);
 
-On Thu, Feb 07, 2013 at 12:32:37AM +0100, Emil Goode wrote:
-> The below commit removed one node parameter from iterators.
-> ed242d01bbe22ea0877472db49b2752d866c921c
-> (hlist: drop the node parameter from iterators)
->=20
-> This patch removes a hlist_node struct that is no longer used.
->=20
-> Sparse gives a warning:
->=20
-> net/batman-adv/originator.c:411:21: warning:
-> 	unused variable =E2=80=98node_tmp=E2=80=99 [-Wunused-variable]
->=20
-> Signed-off-by: Emil Goode <emilgoode@gmail.com>
 
-Acked-by: Antonio Quartulli <ordex@autistici.org>
+>> On little
+>> be16_to_cpu(v) is swab16(v)
+>
+> Yes.
+>
+>> and
+>> __cpu_to_le16(swab(b)) is swab16(v)
+>
+> ???
+>
+> Don't you mean "__cpu_to_le16(b) is (b)"?
 
-Thanks Emil
+BTW: I took output value from the first line (be16_to_cpu(v) is swab16(v))
 
-Cheers,
+Grrr - on LE this code works. (I expect that v is in little endian)
+iowrite16be(v, addr) is *(volatile u16 __force *) addr = swab16(v);
 
---=20
-Antonio Quartulli
 
-=2E.each of us alone is worth nothing..
-Ernesto "Che" Guevara
+>> What I would expect is
+>> #define iowrite16be(v, addr)   __raw_writew(__cpu_to_be16(v), addr)
+>
+> Indeed, it should be "__cpu_to_be16(v)" instead of "be16_to_cpu(v)".
 
---QWpDgw58+k1mSFBj
-Content-Type: application/pgp-signature
+What do you mean by that?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+Thanks,
+Michal
 
-iQIcBAEBCAAGBQJRE1QBAAoJEADl0hg6qKeOIbQP/0619SbVBdH3FJ7s6Z7LFgI/
-wo3N/zUqxX4oIzR4lSfKRmFks7JoEnXneAK/tEr5YRzGFdeC9y9/ua7VQ3PCL7t8
-ivsB+qJ/be2ZyOn9QLY72e1sR5zn48HZLNdqGNGgoDY+C8H1qCZBNt3DY2sbpRpS
-Ojxp1jhl/PsFvqY2WXq6Vwvv0l85+ZY11fHACKAFrsDnKfJSuFxniQ09ir/Y/kHA
-L9CDGVHOTnkVFQitAs5y0fnIH3wwU8CSMF1DHGuNK0h/WBwuAQoXceO10bqKijcH
-guFY2kfJp0wyFsJmVIw/5CbdMBiYKgSlu7YynI9XbF/vahZUrcblW7qd9zzVABge
-t3SrtU3/oPWsSgMcpsZqHQbiPCg2z1zt7On46ExEpIqh3K7EcmvCyhLXNbQXR5H/
-DBV5/aY8yHEyq+njhenht4wteRHaFOF7n60MEuf2tr8d5A7dQUGVi+/gS4p1Ul91
-Rda4dV+2bcuMVNLPYuuxeY8HLm+ahvbPSdMsvxK+yyZ1z0fpiK+fPljB0gUBoDHp
-MWc2AFQ9WXQmjkhzW1m63C1ZwQ/z4Af8FOfM0k8JAhLc0fKAz7QgMp0RekisZ9NG
-AK2ZAxflxoI+wbZOI7uRvs/rzQqARhxf4AfzY4fNYeQDHsOWwgljazCTXEMblXX4
-UgowgwUjnmI8dHLfQv7D
-=SB6i
------END PGP SIGNATURE-----
-
---QWpDgw58+k1mSFBj--
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
