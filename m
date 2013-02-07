@@ -1,73 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758387Ab3BGN0F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 08:26:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50783 "EHLO mx1.redhat.com"
+	id S1758577Ab3BGN1V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 08:27:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64356 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751261Ab3BGN0B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 08:26:01 -0500
-Date: Thu, 7 Feb 2013 14:24:55 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, John Stultz <john.stultz@linaro.org>,
-        Tommi Rantala <tt.rantala@gmail.com>
-Subject: Re: [PATCH] posix-cpu-timers: fix nanosleep task_struct leak
-Message-ID: <20130207132455.GA25793@redhat.com>
-References: <CA+ydwtqUUAR9zf3dp+N1JRW+if88EZ73i+5BQtuggVPDFVdCBg@mail.gmail.com> <alpine.LFD.2.02.1302011450160.11905@ionos> <20130204193223.GA11910@redhat.com> <20130205103455.GB18313@redhat.com> <alpine.LFD.2.02.1302051155000.11905@ionos> <20130206112327.GA1824@redhat.com> <CA+ydwtrdNL_7AvZpmJ__06YUCVhSr7YPO8D=wzXhZiWp1-DVqg@mail.gmail.com> <20130206151550.GA1758@redhat.com> <20130206161011.GA11161@redhat.com> <20130207122212.GA2668@redhat.com>
+	id S1751261Ab3BGN1R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 08:27:17 -0500
+Date: Thu, 7 Feb 2013 15:31:33 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Wanlong Gao <gaowanlong@cn.fujitsu.com>,
+        asias@redhat.com, Rusty Russell <rusty@rustcorp.com.au>,
+        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org
+Subject: Re: [RFC PATCH 0/8] virtio: new API for addition of buffers,
+ scatterlist changes
+Message-ID: <20130207133133.GC21707@redhat.com>
+References: <1360239752-2470-1-git-send-email-pbonzini@redhat.com>
+ <20130207130912.GA20875@redhat.com>
+ <5113A8B0.5080104@redhat.com>
+ <20130207132349.GA21707@redhat.com>
+ <5113AA35.3010209@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130207122212.GA2668@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <5113AA35.3010209@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07, Stanislaw Gruszka wrote:
->
-> On Wed, Feb 06, 2013 at 05:10:11PM +0100, Oleg Nesterov wrote:
-> >
-> > It is not clear to me why other posix_cpu_timer_del's above can't fail..
-> > May be you can add a comment.
->
-> Sure, I'll add more comments.
+On Thu, Feb 07, 2013 at 02:20:53PM +0100, Paolo Bonzini wrote:
+> Il 07/02/2013 14:23, Michael S. Tsirkin ha scritto:
+> > On Thu, Feb 07, 2013 at 02:14:24PM +0100, Paolo Bonzini wrote:
+> >> Il 07/02/2013 14:09, Michael S. Tsirkin ha scritto:
+> >>>> One major difference between virtqueue_add_buf and virtqueue_add_sg
+> >>>> is that the latter uses scatterlist iterators, which follow chained
+> >>>> scatterlist structs and stop at ending markers.  In order to avoid code
+> >>>> duplication, and use the new API from virtqueue_add_buf (patch 8), we need
+> >>>> to change all existing callers of virtqueue_add_buf to provide well-formed
+> >>>> scatterlists.  This is what patches 2-7 do.  For virtio-blk it is easiest
+> >>>> to just switch to the new API, just like for virtio-scsi.  For virtio-net
+> >>>> the ending marker must be reset after calling virtqueue_add_buf, in
+> >>>> preparation for the next usage of the scatterlist.  Other drivers are
+> >>>> safe already.
+> >>>
+> >>> What are the changes as compared to the previous version?
+> >>> How about some comments made on the previous version?
+> >>> See e.g.
+> >>> https://patchwork.kernel.org/patch/1891541/
+> >>
+> >> Two changes: 1) added virtqueue_add_sg_single; 2) reimplemented
+> >> virtqueue_add_buf in terms of the new API, which requires virtio-blk and
+> >> virtio-net changes.
+> >>
+> >> The virtio-blk and virtio-net changes are based on some ideas in the
+> >> patch Rusty posted, but virtio-net is a bit simpler and virtio-blk was
+> >> redone from scratch.
+> >>
+> >>> Generally we have code for direct and indirect which is already
+> >>> painful. We do not want 4 more variants of this code.
+> >>
+> >> Yes, indeed, the other main difference is that I'm now reimplementing
+> >> virtqueue_add_buf using the new functions.  So:
+> >>
+> >> - we previously had 2 variants (direct/indirect)
+> >>
+> >> - v1 had 4 variants (direct/indirect x add_buf/add_sg)
+> >>
+> >> - v2 has 4 variants (direct/indirect x add_sg/add_sg_single)
+> > 
+> > single is never indirect so should have a single variant.
+> 
+> Single means *this piece* (for example a request header) is single.  It
+> could still end up in an indirect buffer because QEMU does not support
+> mixed direct/indirect buffers.
+> 
+> Paolo
 
-Yes, please. This will help the next reader to understand that no, we
-do not forget to check the error code, just we do not need to do this.
+Yes but why is the optimization worth it?
+It makes sense if all we want to do is add a single buffer
+in one go, this would give us virtqueue_add_buf_single.
 
-> Once posix_cpu_timer_set(..., &zero_it, it) succeed with 0 return value,
-> it's not possible to fire timer, so posix_cpu_timer_del() will not fail.
-> Similar assumption is with first posix_cpu_timer_del() call I added
-> in the patch.
+But if we are building up an s/g list anyway,
+speeding up one of the entries a tiny bit
+seems very unlikely to be measureable.
+No?
 
-OK, I see.
-
-> > And I am not sure that TIMER_RETRY is the only error we should worry.
-> > And perhaps we need even more posix_cpu_timer_del's?
-> >
-> > For example. Suppose that posix_cpu_timer_create() succeeds and does
-> > get_task_struct(p). But than p dies, and the first posix_cpu_timer_set()
-> > fails with -ESRCH. No?
->
-> On second -ESRCH case posix_cpu_timer_set() internally call
-> put_task_struct().
-
-Ah, missed that, thanks.
-
-> It does not remove from cpu_timers list, but
-> that is done at exit().
-
-Yes, posix_cpu_timers_exit().
-
-OK, thanks for your explanations, I think the patch is fine.
-
-
-> BTW: I don't think we handle correctly case when traced process -
-> - timer->it.cpu.task will die. Tracing process - timer->it_process will
-> probably not be woken up.
-
-Probably... or perhaps we can treat this case as "timer never expires".
-
-Oleg.
-
+> >>>> This is an RFC for two reasons.  First, because I haven't done enough
+> >>>> testing yet (especially with all the variations on receiving that
+> >>>> virtio-net has).  Second, because I still have two struct vring_desc *
+> >>>> fields in virtqueue API, which is a layering violation.  I'm not really
+> >>>> sure how important that is and how to fix that---except by making the
+> >>>> fields void*.
+> >>>
+> >>> Hide the whole structure as part of vring struct, the problem will go
+> >>> away.
+> >>
+> >> Yes, that's the other possibility.  Will do for the next submission.
+> >>
+> >> Paolo
+> >>
+> >>>> Paolo
+> >>>> Paolo Bonzini (8):
+> >>>>   virtio: add functions for piecewise addition of buffers
+> >>>>   virtio-blk: reorganize virtblk_add_req
+> >>>>   virtio-blk: use virtqueue_start_buf on bio path
+> >>>>   virtio-blk: use virtqueue_start_buf on req path
+> >>>>   scatterlist: introduce sg_unmark_end
+> >>>>   virtio-net: unmark scatterlist ending after virtqueue_add_buf
+> >>>>   virtio-scsi: use virtqueue_start_buf
+> >>>>   virtio: reimplement virtqueue_add_buf using new functions
+> >>>>
+> >>>>  block/blk-integrity.c        |    2 +-
+> >>>>  block/blk-merge.c            |    2 +-
+> >>>>  drivers/block/virtio_blk.c   |  165 +++++++++--------
+> >>>>  drivers/net/virtio_net.c     |   21 ++-
+> >>>>  drivers/scsi/virtio_scsi.c   |  103 +++++------
+> >>>>  drivers/virtio/virtio_ring.c |  417 +++++++++++++++++++++++++++---------------
+> >>>>  include/linux/scatterlist.h  |   16 ++
+> >>>>  include/linux/virtio.h       |   25 +++
+> >>>>  8 files changed, 460 insertions(+), 291 deletions(-)
