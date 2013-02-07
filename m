@@ -1,56 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757720Ab3BGCcD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 21:32:03 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:60310 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754094Ab3BGCb7 (ORCPT
+	id S1757942Ab3BGCdL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 21:33:11 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:35963 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754094Ab3BGCdG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 21:31:59 -0500
-X-AuditID: 9c93016f-b7b1fae000006419-24-5113121d33e5
-From: Namhyung Kim <namhyung@kernel.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        ak@linux.intel.com, acme@redhat.com, jolsa@redhat.com,
-        namhyung.kim@lge.com
-Subject: Re: [PATCH 0/2] perf stat: add per processor socket count aggregation
-References: <1360161962-9675-1-git-send-email-eranian@google.com>
-Date: Thu, 07 Feb 2013 11:31:57 +0900
-In-Reply-To: <1360161962-9675-1-git-send-email-eranian@google.com> (Stephane
-	Eranian's message of "Wed, 6 Feb 2013 15:46:00 +0100")
-Message-ID: <87fw18svky.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 6 Feb 2013 21:33:06 -0500
+Message-ID: <51131248.3080203@huawei.com>
+Date: Thu, 7 Feb 2013 10:32:40 +0800
+From: Xishi Qiu <qiuxishi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Matt Fleming <matt.fleming@intel.com>
+CC: "Luck, Tony" <tony.luck@intel.com>, <fenghua.yu@intel.com>,
+        Liujiang <jiang.liu@huawei.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <linux-ia64@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-efi@vger.kernel.org>, <linux-mm@kvack.org>,
+        Hanjun Guo <guohanjun@huawei.com>, WuJianguo <wujianguo@huawei.com>,
+        Xishi Qiu <qiuxishi@huawei.com>
+Subject: [PATCH V2] ia64/mm: fix a bad_page bug when crash kernel booting
+References: <51074786.5030007@huawei.com> <1359995565.7515.178.camel@mfleming-mobl1.ger.corp.intel.com>
+In-Reply-To: <1359995565.7515.178.camel@mfleming-mobl1.ger.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.196]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephane,
+On 2013/2/5 0:32, Matt Fleming wrote:
 
-On Wed,  6 Feb 2013 15:46:00 +0100, Stephane Eranian wrote:
-> This patch adds per-processor socket count aggregation
-> for system-wide mode measurements. This is a useful
-> mode to detect imbalance between sockets for uniform
-> workloads.
->
-> To enable this mode, use --aggr-socket in addition
-> to -a. (system-wide). This mode can be combined with
-> interval printing.
->
-> The output includes the socket number and the number
-> of online processors on that socket. This is useful
-> to gauge the amount of aggregation.
->
->  # ./perf stat -I 1000 -a --aggr-socket -e cycles sleep 2
->  #           time socket cpus             counts events
->       1.000097680 S0        4          5,788,785 cycles
->       2.000379943 S0        4         27,361,546 cycles
->       2.001167808 S0        4            818,275 cycles
+> On Tue, 2013-01-29 at 11:52 +0800, Xishi Qiu wrote:
+>> On ia64 platform, I set "crashkernel=1024M-:600M", and dmesg shows 128M-728M
+>> memory is reserved for crash kernel. Then "echo c > /proc/sysrq-trigger" to
+>> test kdump.
+>>
+>> When crash kernel booting, efi_init() will aligns the memory address in
+>> IA64_GRANULE_SIZE(16M), so 720M-728M memory will be dropped, It means
+>> crash kernel only manage 128M-720M memory.
+>>
+>> But initrd start and end are fixed in boot loader, it is before efi_init(),
+>> so initrd size maybe overflow when free_initrd_mem().
+> 
+> [...]
+> 
+>> diff --git a/arch/ia64/mm/init.c b/arch/ia64/mm/init.c
+>> index b755ea9..cfdb1eb 100644
+>> --- a/arch/ia64/mm/init.c
+>> +++ b/arch/ia64/mm/init.c
+>> @@ -207,6 +207,17 @@ free_initrd_mem (unsigned long start, unsigned long end)
+>>  	start = PAGE_ALIGN(start);
+>>  	end = end & PAGE_MASK;
+>>
+>> +	/*
+>> +	 * Initrd size is fixed in boot loader, but kernel parameter max_addr
+>> +	 * which aligns in granules is fixed after boot loader, so initrd size
+>> +	 * maybe overflow.
+>> +	 */
+>> +	if (max_addr != ~0UL) {
+>> +		end = GRANULEROUNDDOWN(end);
+>> +		if (start > end)
+>> +			start = end;
+>> +	}
+>> +
+>>  	if (start < end)
+>>  		printk(KERN_INFO "Freeing initrd memory: %ldkB freed\n", (end - start) >> 10);
+> 
+> I don't think this is the correct fix.
+> 
+> Now, my ia64-fu is weak, but could it be that there's actually a bug in
+> efi_init() and that the following patch would be the best way to fix
+> this?
+> 
+> ---
+> 
+> diff --git a/arch/ia64/kernel/efi.c b/arch/ia64/kernel/efi.c
+> index f034563..8d579f1 100644
+> --- a/arch/ia64/kernel/efi.c
+> +++ b/arch/ia64/kernel/efi.c
+> @@ -482,7 +482,7 @@ efi_init (void)
+>  		if (memcmp(cp, "mem=", 4) == 0) {
+>  			mem_limit = memparse(cp + 4, &cp);
+>  		} else if (memcmp(cp, "max_addr=", 9) == 0) {
+> -			max_addr = GRANULEROUNDDOWN(memparse(cp + 9, &cp));
+> +			max_addr = GRANULEROUNDUP(memparse(cp + 9, &cp));
+>  		} else if (memcmp(cp, "min_addr=", 9) == 0) {
+>  			min_addr = GRANULEROUNDDOWN(memparse(cp + 9, &cp));
+>  		} else {
+> 
+> 
 
-Can it be genericized to support arbitrary cpu topology like per-core,
-per-numa-node or something?
+Sorry, this bug will be happen when use Sparse-Memory(section is valid, but last
+several pages are invalid). If use Flat-Memory, crash kernel will boot successfully.
+I think the following patch would be better.
 
-Thanks,
-Namhyung
+Hi Andrew, will you just ignore the earlier patch and consider the following one? :>
+
+Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+---
+ arch/ia64/mm/init.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/arch/ia64/mm/init.c b/arch/ia64/mm/init.c
+index 082e383..23f2ee3 100644
+--- a/arch/ia64/mm/init.c
++++ b/arch/ia64/mm/init.c
+@@ -213,6 +213,8 @@ free_initrd_mem (unsigned long start, unsigned long end)
+ 	for (; start < end; start += PAGE_SIZE) {
+ 		if (!virt_addr_valid(start))
+ 			continue;
++		if ((start >> PAGE_SHIFT) >= max_low_pfn)
++			continue;
+ 		page = virt_to_page(start);
+ 		ClearPageReserved(page);
+ 		init_page_count(page);
+-- 
+1.7.6.1
+
+
+
+
