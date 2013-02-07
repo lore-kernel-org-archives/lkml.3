@@ -1,98 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758368Ab3BGMap (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 07:30:45 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:38959 "EHLO arroyo.ext.ti.com"
+	id S1758384Ab3BGMbu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 07:31:50 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55932 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751411Ab3BGMan (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 07:30:43 -0500
-Message-ID: <51139E63.2030302@ti.com>
-Date: Thu, 7 Feb 2013 14:30:27 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1755706Ab3BGMbt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 07:31:49 -0500
+Date: Thu, 7 Feb 2013 13:31:40 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: azurIt <azurit@pobox.sk>, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups mailinglist <cgroups@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH for 3.2.34] memcg: do not trigger OOM from
+ add_to_page_cache_locked
+Message-ID: <20130207123140.GA15820@dhcp22.suse.cz>
+References: <20121230020947.AA002F34@pobox.sk>
+ <20121230110815.GA12940@dhcp22.suse.cz>
+ <20130125160723.FAE73567@pobox.sk>
+ <20130125163130.GF4721@dhcp22.suse.cz>
+ <20130205134937.GA22804@dhcp22.suse.cz>
+ <20130205154947.CD6411E2@pobox.sk>
+ <20130205160934.GB22804@dhcp22.suse.cz>
+ <20130206021721.1AE9E3C7@pobox.sk>
+ <20130206140119.GD10254@dhcp22.suse.cz>
+ <51138999.3090006@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Rob Clark <robdclark@gmail.com>, <linux-arm-kernel@lists.infradead.org>,
-        <patches@linaro.org>, <linux-kernel@vger.kernel.org>, <arm@kernel.org>,
-        Tony Lindgren <tony@atomide.com>, Greg KH <greg@kroah.com>
-Subject: Re: [PATCH] OMAPDSS: enable omapdss for ARCH_MULTIPLATFORM
-References: <1358891160-9534-1-git-send-email-robdclark@gmail.com> <3969096.QosOfOb9QT@wuerfel> <511392B0.4040409@ti.com> <201302071155.12565.arnd@arndb.de>
-In-Reply-To: <201302071155.12565.arnd@arndb.de>
-X-Enigmail-Version: 1.4.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="------------enig130366AC9C2C8C21C382B3A5"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51138999.3090006@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------------enig130366AC9C2C8C21C382B3A5
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: quoted-printable
+On Thu 07-02-13 20:01:45, KAMEZAWA Hiroyuki wrote:
+> (2013/02/06 23:01), Michal Hocko wrote:
+> >On Wed 06-02-13 02:17:21, azurIt wrote:
+> >>>5-memcg-fix-1.patch is not complete. It doesn't contain the folloup I
+> >>>mentioned in a follow up email. Here is the full patch:
+> >>
+> >>
+> >>Here is the log where OOM, again, killed MySQL server [search for "(mysqld)"]:
+> >>http://www.watchdog.sk/lkml/oom_mysqld6
+> >
+> >[...]
+> >WARNING: at mm/memcontrol.c:2409 T.1149+0x2d9/0x610()
+> >Hardware name: S5000VSA
+> >gfp_mask:4304 nr_pages:1 oom:0 ret:2
+> >Pid: 3545, comm: apache2 Tainted: G        W    3.2.37-grsec #1
+> >Call Trace:
+> >  [<ffffffff8105502a>] warn_slowpath_common+0x7a/0xb0
+> >  [<ffffffff81055116>] warn_slowpath_fmt+0x46/0x50
+> >  [<ffffffff81108163>] ? mem_cgroup_margin+0x73/0xa0
+> >  [<ffffffff8110b6f9>] T.1149+0x2d9/0x610
+> >  [<ffffffff812af298>] ? blk_finish_plug+0x18/0x50
+> >  [<ffffffff8110c6b4>] mem_cgroup_cache_charge+0xc4/0xf0
+> >  [<ffffffff810ca6bf>] add_to_page_cache_locked+0x4f/0x140
+> >  [<ffffffff810ca7d2>] add_to_page_cache_lru+0x22/0x50
+> >  [<ffffffff810cad32>] filemap_fault+0x252/0x4f0
+> >  [<ffffffff810eab18>] __do_fault+0x78/0x5a0
+> >  [<ffffffff810edcb4>] handle_pte_fault+0x84/0x940
+> >  [<ffffffff810e2460>] ? vma_prio_tree_insert+0x30/0x50
+> >  [<ffffffff810f2508>] ? vma_link+0x88/0xe0
+> >  [<ffffffff810ee6a8>] handle_mm_fault+0x138/0x260
+> >  [<ffffffff8102709d>] do_page_fault+0x13d/0x460
+> >  [<ffffffff810f46fc>] ? do_mmap_pgoff+0x3dc/0x430
+> >  [<ffffffff815b61ff>] page_fault+0x1f/0x30
+> >---[ end trace 8817670349022007 ]---
+> >apache2 invoked oom-killer: gfp_mask=0x0, order=0, oom_adj=0, oom_score_adj=0
+> >apache2 cpuset=uid mems_allowed=0
+> >Pid: 3545, comm: apache2 Tainted: G        W    3.2.37-grsec #1
+> >Call Trace:
+> >  [<ffffffff810ccd2e>] dump_header+0x7e/0x1e0
+> >  [<ffffffff810ccc2f>] ? find_lock_task_mm+0x2f/0x70
+> >  [<ffffffff810cd1f5>] oom_kill_process+0x85/0x2a0
+> >  [<ffffffff810cd8a5>] out_of_memory+0xe5/0x200
+> >  [<ffffffff810cda7d>] pagefault_out_of_memory+0xbd/0x110
+> >  [<ffffffff81026e76>] mm_fault_error+0xb6/0x1a0
+> >  [<ffffffff8102734e>] do_page_fault+0x3ee/0x460
+> >  [<ffffffff810f46fc>] ? do_mmap_pgoff+0x3dc/0x430
+> >  [<ffffffff815b61ff>] page_fault+0x1f/0x30
+> >
+> >The first trace comes from the debugging WARN and it clearly points to
+> >a file fault path. __do_fault pre-charges a page in case we need to
+> >do CoW (copy-on-write) for the returned page. This one falls back to
+> >memcg OOM and never returns ENOMEM as I have mentioned earlier.
+> >However, the fs fault handler (filemap_fault here) can fallback to
+> >page_cache_read if the readahead (do_sync_mmap_readahead) fails
+> >to get page to the page cache. And we can see this happening in
+> >the first trace. page_cache_read then calls add_to_page_cache_lru
+> >and eventually gets to add_to_page_cache_locked which calls
+> >mem_cgroup_cache_charge_no_oom so we will get ENOMEM if oom should
+> >happen. This ENOMEM gets to the fault handler and kaboom.
+> >
+> 
+> Hmm. do we need to increase the "limit" virtually at memcg oom until
+> the oom-killed process dies ? It may be doable by increasing stock->cache
+> of each cpu....I think kernel can offer extra virtual charge up to
+> oom-killed process's memory usage.....
 
-On 2013-02-07 13:55, Arnd Bergmann wrote:
+If we can guarantee that the overflow charges do not exceed the memory
+usage of the killed process then this would work. The question is, how
+do we find out how much we can overflow. immigrate_on_move will play
+some role as well as the amount of the shared memory. I am afraid this
+would get too complex. Nevertheless the idea is nice.
 
-> omapdrm still has the 'select' statement in it if you only send the
-> first patch, so it should not be possible to disable omapdss when
-> it is actually needed.
-
-Yes, you're right. After adding ARCH_MULTIPLATFORM, the kconfig enables
-omapdss fully even if enabled by select. So select is only a problem if
-omapdss is enabled when omapdss's dependencies are missing.
-
-> I suggested doing only the minimum that is needed to unbreak the
-> allyesconfig build, which is to enable just omapdss but not omapfb
-> and the displays, in case they don't actually build on anything else.
-
-omapfb and the displays build also fine on all platforms. But it's true
-that they are not needed to fix allyesconfig.
-
-> I would suggest only the first patch, since Linus quite specifically
-> asked only for serious bug fixes. I think an allyesconfig build
-> breakage is serious enough, but doing multiple patches for one
-> bug should not be necessary and is much harder to justify.
-
-Well, as I see, the bug is omapdrm using "select", not "depends on". So
-if I'd have to pick one patch, I'd send 0003. That would fix allyesconfig=
-=2E
-
-Applying only 0003 means that omapdrm (and omapdss) won't be built on
-ARCH_MULTIPLATFORM, but building omapdrm on ARCH_MULTIPLATFORM is a
-feature added in this merge window, so leaving it out is not a regression=
-=2E
-
-But I'm not sure if I'm being overly pedantic here. Patch 0001 would fix
-allyesconfig, and allow building omapdrm with ARCH_MULTIPLATFORM.
-However, the fixing there happens as a side effect, and so the 0001
-patch isn't even called a "fix" in its subject. That's the reason I'm a
-bit reluctant with the 0001 patch as a fix.
-
- Tomi
-
-
-
---------------enig130366AC9C2C8C21C382B3A5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with undefined - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJRE55jAAoJEPo9qoy8lh71w+QP/35YWrYN4cI5mYlq1fybXu0d
-JPFHgdvxwqcNx83AHhv6rImqgLBgiHaPxOBwzuY/c1i4LH71NO3mojrYD6esLt24
-o3+H4kwnNUoCTUwfy6vC8AHXpDAGdh/VaKTrSAi0ccrnAvUTFWRp/icGjVeibmjR
-mVtxmxo70dUNp8YFWLMZLYwZn25Ek0Xnk807yCfacniRAWLA72fKaa/JLeawSHzl
-Av2jP6oWDEVt53SLlRXirb5O3oBUlT7CyxZwiD6aOIvnUDsZQ/q2CuzH/2ZLUssj
-Arozyv3BqKuOQ28h4utxEoSiP5+3eBLW603TTjirodMInaH7UfGXTyUWQdQlbs4t
-8BgvvP3dPygB7WIBBJKSgzH5Dig1qkcGLlTiud/pb8sMngJDUlZAOAQhyV09zDh4
-OvFutXVBhu1/9szwk+EN/7KBEnwRMJfF976aJET/BLA76UyXHhfcr/e4jXh90wWp
-zwBMnqS5LFySBBWq6gPbqniwTj3WjMNd8QpZCAk/sFrBqlsUmMBGfbMaKMdmR94u
-hO+2yeEoOE4xPfi9c77DT45jAYnGaN1Ot1iBmatFSphUhwTNkbyTDSR/jjGoCo7w
-JEarLIPKhtZGrnsfedqUEEXZzIsvXw6VxYB2nLLLjSdWkmm90BSQukf6Q/dZAOwN
-RoXop9A5/yGk6bidxRUR
-=vDkf
------END PGP SIGNATURE-----
-
---------------enig130366AC9C2C8C21C382B3A5--
+-- 
+Michal Hocko
+SUSE Labs
