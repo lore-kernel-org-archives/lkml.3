@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758868Ab3BGQOY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 11:14:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25478 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758166Ab3BGQOT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 11:14:19 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Tony Luck <tony.luck@intel.com>
-Cc: gong.chen@linux.intel.com, Wu Fengguang <fengguang.wu@intel.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] HWPOISON: change order of error_states[]'s elements
-Date: Thu,  7 Feb 2013 11:14:06 -0500
-Message-Id: <1360253646-10331-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1758793Ab3BGQPf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 11:15:35 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:60692 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757809Ab3BGQPe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 11:15:34 -0500
+Message-ID: <5113D291.2020903@linux.vnet.ibm.com>
+Date: Thu, 07 Feb 2013 10:13:05 -0600
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Lord Glauber Costa of Sealand <glommer@parallels.com>
+CC: Rik van Riel <riel@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCHv2 8/9] zswap: add to mm/
+References: <1357590280-31535-1-git-send-email-sjenning@linux.vnet.ibm.com> <1357590280-31535-9-git-send-email-sjenning@linux.vnet.ibm.com> <51030ADA.8030403@redhat.com> <510698F5.5060205@linux.vnet.ibm.com> <5107A2B8.4070505@parallels.com>
+In-Reply-To: <5107A2B8.4070505@parallels.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13020716-5518-0000-0000-00000B5FB5EC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-error_states[] has two separate states "unevictable LRU page" and
-"mlocked LRU page", and the former one has the higher priority now.
-But because of that the latter one is rarely chosen because pages with
-PageMlocked highly likely have PG_unevictable set. On the other hand,
-PG_unevictable without PageMlocked is common for ramfs or SHM_LOCKed
-shared memory, so reversing the priority of these two states helps us
-clearly distinguish them.
+On 01/29/2013 04:21 AM, Lord Glauber Costa of Sealand wrote:
+> On 01/28/2013 07:27 PM, Seth Jennings wrote:
+>> Yes, I prototyped a shrinker interface for zswap, but, as we both
+>> figured, it shrinks the zswap compressed pool too aggressively to the
+>> point of being useless.
+> Can't you advertise a smaller number of objects that you actively have?
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
----
- mm/memory-failure.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Thanks for looking at the code!
 
-diff --git v3.8-rc5.orig/mm/memory-failure.c v3.8-rc5/mm/memory-failure.c
-index e6d6022..837bce2 100644
---- v3.8-rc5.orig/mm/memory-failure.c
-+++ v3.8-rc5/mm/memory-failure.c
-@@ -856,12 +856,12 @@ static struct page_state {
- 	{ sc|dirty,	sc|dirty,	"dirty swapcache",	me_swapcache_dirty },
- 	{ sc|dirty,	sc,		"clean swapcache",	me_swapcache_clean },
- 
--	{ unevict|dirty, unevict|dirty,	"dirty unevictable LRU", me_pagecache_dirty },
--	{ unevict,	unevict,	"clean unevictable LRU", me_pagecache_clean },
--
- 	{ mlock|dirty,	mlock|dirty,	"dirty mlocked LRU",	me_pagecache_dirty },
- 	{ mlock,	mlock,		"clean mlocked LRU",	me_pagecache_clean },
- 
-+	{ unevict|dirty, unevict|dirty,	"dirty unevictable LRU", me_pagecache_dirty },
-+	{ unevict,	unevict,	"clean unevictable LRU", me_pagecache_clean },
-+
- 	{ lru|dirty,	lru|dirty,	"dirty LRU",	me_pagecache_dirty },
- 	{ lru|dirty,	lru,		"clean LRU",	me_pagecache_clean },
- 
--- 
-1.7.11.7
+An interesting idea.  I'm just not sure how you would manage the
+underlying policy of how aggressively does zswap allow itself to be
+shrunk?  The fact that zswap _only_ operates under memory pressure
+makes that policy difficult, because it is under continuous shrinking
+pressure, unlike other shrinkable caches in the kernel that spend most
+of their time operating in unconstrained or lightly/intermittently
+strained conditions.
+
+Thanks,
+Seth
 
