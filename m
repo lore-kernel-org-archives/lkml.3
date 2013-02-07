@@ -1,100 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758969Ab3BGQsW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 11:48:22 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:40920 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758830Ab3BGQsU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 11:48:20 -0500
-Date: Thu, 7 Feb 2013 08:30:04 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
+	id S1758993Ab3BGQtW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 11:49:22 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:65012 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758830Ab3BGQtU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 11:49:20 -0500
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+To: LMML <linux-media@vger.kernel.org>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>, LDOC <linux-doc@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [ANNOUNCE] 3.8-rc6-nohz4
-Message-ID: <20130207163004.GS2632@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1360175338-6735-1-git-send-email-fweisbec@gmail.com>
- <1360205415.2621.60.camel@gandalf.local.home>
- <20130207111025.GD8945@gmail.com>
- <1360253520.2621.66.camel@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360253520.2621.66.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13020716-5806-0000-0000-00001F4FB4D8
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Manjunath Hadli <manjunath.hadli@ti.com>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>, Rob Landley <rob@landley.net>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [PATCH v3] media: add support for decoder as one of media entity types
+Date: Thu,  7 Feb 2013 22:18:51 +0530
+Message-Id: <1360255731-3504-1-git-send-email-prabhakar.lad@ti.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 07, 2013 at 11:12:00AM -0500, Steven Rostedt wrote:
-> On Thu, 2013-02-07 at 12:10 +0100, Ingo Molnar wrote:
-> > * Steven Rostedt <rostedt@goodmis.org> wrote:
-> > 
-> > > I'll reply to this as I come up with comments.
-> > > 
-> > > First thing is, don't call it NO_HZ_FULL. A better name would 
-> > > be NO_HZ_CPU. I would like to reserve NO_HZ_FULL when we 
-> > > totally remove jiffies :-)
-> > 
-> > I don't think we want yet another config option named in a 
-> > weird way.
-> > 
-> > What we want instead is to just split NO_HZ up into its 
-> > conceptual parts:
-> > 
-> >    CONFIG_NO_HZ_IDLE
-> >    CONFIG_NO_HZ_USER_SPACE
-> >    CONFIG_NO_HZ_KERNEL_SPACE
-> > 
-> > Where the current status quo is NO_HZ_IDLE=y, and Frederic is 
-> > about to introduce NO_HZ_USER_SPACE=y. When jiffies get removed 
-> > we get NO_HZ_KERNEL_SPACE=y.
-> 
-> Saying NO_HZ_USER_SPACE is a bit of a misnomer. As we don't just stop
-> the tick for user space, but it may remained stopped when entering the
-> kernel. The rule is that when there's just a single task on a CPU, the
-> tick can stop (no scheduling work needed). But if the task triggers
-> something that may require a tick (like printk) then the tick will start
-> again. But just going into the kernel does not designate a tick restart.
-> 
-> Maybe a better name would be NO_HZ_SINGLE_TASK ?
-> 
-> > 
-> > The 'CONFIG_NO_HZ' meta-option, which we should leave for easy 
-> > configurability and for compatibility, should get us the 
-> > currently recommended default, which for the time being might 
-> > be:
-> > 
-> >    CONFIG_NO_HZ_IDLE=y
-> >    # CONFIG_NO_HZ_USER_SPACE is disabled
-> > 
-> > Btw., you could add CONFIG_NO_HZ_KERNEL_SPACE right away, just 
-> > keep it false all the time. That would document our future plans 
-> > pretty well.
-> 
-> Maybe the removal of jiffies would be NO_HZ_COMPLETE?
+From: Manjunath Hadli <manjunath.hadli@ti.com>
 
-I suspect that removal of jiffies from the kernel will take a few stages,
-with RCU being one of the laggards for awhile.  Making RCU's state
-machine depend wholly on process-based execution will take some care
-and experimentation, especially for extreme and corner-case workloads.
-For example, having RCU OOM the system just because a specific CPU was
-unable to run some RCU kthread for an extended time is something to
-be avoided.  ;-)
+A lot of SOCs including Texas Instruments Davinci family mainly use
+video decoders as input devices. This patch adds a flag
+'MEDIA_ENT_T_V4L2_SUBDEV_DECODER' media entity type for decoder's.
+Along side updates the documentation for this media entity type.
 
-							Thanx, Paul
+Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+Cc: Rob Landley <rob@landley.net>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+---
+ Changes for v3:
+ 1: Fixed Nit pointed by Sylwester.
+
+ Changes for v2:
+ 1: Sending as a separate patch.
+ 2: Added documentation for the added media entity type.
+ 3: Improved the commit message.
+ 
+ .../DocBook/media/v4l/media-ioc-enum-entities.xml  |   10 ++++++++++
+ include/uapi/linux/media.h                         |    2 ++
+ 2 files changed, 12 insertions(+), 0 deletions(-)
+
+diff --git a/Documentation/DocBook/media/v4l/media-ioc-enum-entities.xml b/Documentation/DocBook/media/v4l/media-ioc-enum-entities.xml
+index 576b68b..116c301 100644
+--- a/Documentation/DocBook/media/v4l/media-ioc-enum-entities.xml
++++ b/Documentation/DocBook/media/v4l/media-ioc-enum-entities.xml
+@@ -272,6 +272,16 @@
+ 	    <entry><constant>MEDIA_ENT_T_V4L2_SUBDEV_LENS</constant></entry>
+ 	    <entry>Lens controller</entry>
+ 	  </row>
++	  <row>
++	    <entry><constant>MEDIA_ENT_T_V4L2_SUBDEV_DECODER</constant></entry>
++	    <entry>Video decoder, the basic function of the video decoder is to
++	    accept analogue video from a wide variety of sources such as
++	    broadcast, DVD players, cameras and video cassette recorders, in
++	    either NTSC, PAL or HD format and still occasionally SECAM, separate
++	    it into its component parts, luminance and chrominance, and output
++	    it in some digital video standard, with appropriate embedded timing
++	    signals.</entry>
++	  </row>
+ 	</tbody>
+       </tgroup>
+     </table>
+diff --git a/include/uapi/linux/media.h b/include/uapi/linux/media.h
+index 0ef8833..ed49574 100644
+--- a/include/uapi/linux/media.h
++++ b/include/uapi/linux/media.h
+@@ -56,6 +56,8 @@ struct media_device_info {
+ #define MEDIA_ENT_T_V4L2_SUBDEV_SENSOR	(MEDIA_ENT_T_V4L2_SUBDEV + 1)
+ #define MEDIA_ENT_T_V4L2_SUBDEV_FLASH	(MEDIA_ENT_T_V4L2_SUBDEV + 2)
+ #define MEDIA_ENT_T_V4L2_SUBDEV_LENS	(MEDIA_ENT_T_V4L2_SUBDEV + 3)
++/* A converter of analogue video to its digital representation. */
++#define MEDIA_ENT_T_V4L2_SUBDEV_DECODER	(MEDIA_ENT_T_V4L2_SUBDEV + 4)
+ 
+ #define MEDIA_ENT_FL_DEFAULT		(1 << 0)
+ 
+-- 
+1.7.0.4
 
