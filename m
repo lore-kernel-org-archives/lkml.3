@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758881Ab3BGQDI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 11:03:08 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:50663 "EHLO
+	id S1758913Ab3BGQHu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 11:07:50 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:50683 "EHLO
 	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755656Ab3BGQDE (ORCPT
+	with ESMTP id S1755697Ab3BGQDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 11:03:04 -0500
-Subject: [PATCH 1/3] arch: make __mutex_fastpath_lock_retval return whether
- fastpath succeeded or not.
+	Thu, 7 Feb 2013 11:03:10 -0500
+Subject: [PATCH 3/3] reservation: Add tests to lib/locking-selftest.c.
 To: linux-kernel@vger.kernel.org
 From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 Cc: linux-arch@vger.kernel.org, a.p.zijlstra@chello.nl, daniel.vetter@ffwll.ch,
         x86@kernel.org, dri-devel@lists.freedesktop.org,
         linaro-mm-sig@lists.linaro.org, robclark@gmail.com, tglx@linutronix.de,
         mingo@elte.hu, linux-media@vger.kernel.org
-Date: Thu, 07 Feb 2013 16:18:31 +0100
-Message-ID: <20130207151831.2868.5146.stgit@patser.local>
+Date: Thu, 07 Feb 2013 16:18:44 +0100
+Message-ID: <20130207151844.2868.87833.stgit@patser.local>
+In-Reply-To: <20130207151831.2868.5146.stgit@patser.local>
+References: <20130207151831.2868.5146.stgit@patser.local>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -25,295 +26,602 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This will allow me to call functions that have multiple arguments if fastpath fails.
-This is required to support ticket mutexes, because they need to be able to pass an
-extra argument to the fail function.
+This stresses the lockdep code in some ways specifically useful to
+reservations. It adds checks for most of the common locking errors.
 
-Originally I duplicated the functions, by adding __mutex_fastpath_lock_retval_arg.
-This ended up being just a duplication of the existing function, so a way to test
-if fastpath was called ended up being better.
+Since the lockdep tests were originally written to stress the
+reservation code, I duplicated some of the definitions into
+lib/locking-selftest.c for now.
 
-This also cleaned up the reservation mutex patch some by being able to call an
-atomic_set instead of atomic_xchg, and making it easier to detect if the wrong
-unlock function was previously used.
+This will be cleaned up later when the api for reservations is
+accepted. I don't expect the tests to change, since the discussion
+is mostly about the fence aspect of reservations.
 
 Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 ---
- arch/ia64/include/asm/mutex.h    |   10 ++++------
- arch/powerpc/include/asm/mutex.h |   10 ++++------
- arch/sh/include/asm/mutex-llsc.h |    4 ++--
- arch/x86/include/asm/mutex_32.h  |   11 ++++-------
- arch/x86/include/asm/mutex_64.h  |   11 ++++-------
- include/asm-generic/mutex-dec.h  |   10 ++++------
- include/asm-generic/mutex-null.h |    2 +-
- include/asm-generic/mutex-xchg.h |   10 ++++------
- kernel/mutex.c                   |   32 ++++++++++++++------------------
- 9 files changed, 41 insertions(+), 59 deletions(-)
+ lib/locking-selftest.c |  522 ++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 503 insertions(+), 19 deletions(-)
 
-diff --git a/arch/ia64/include/asm/mutex.h b/arch/ia64/include/asm/mutex.h
-index bed73a6..f41e66d 100644
---- a/arch/ia64/include/asm/mutex.h
-+++ b/arch/ia64/include/asm/mutex.h
-@@ -29,17 +29,15 @@ __mutex_fastpath_lock(atomic_t *count, void (*fail_fn)(atomic_t *))
-  *  __mutex_fastpath_lock_retval - try to take the lock by moving the count
-  *                                 from 1 to a 0 value
-  *  @count: pointer of type atomic_t
-- *  @fail_fn: function to call if the original value was not 1
-  *
-- * Change the count from 1 to a value lower than 1, and call <fail_fn> if
-- * it wasn't 1 originally. This function returns 0 if the fastpath succeeds,
-- * or anything the slow path function returns.
-+ * Change the count from 1 to a value lower than 1. This function returns 0
-+ * if the fastpath succeeds, or -1 otherwise.
+diff --git a/lib/locking-selftest.c b/lib/locking-selftest.c
+index 7aae0f2..a3959af 100644
+--- a/lib/locking-selftest.c
++++ b/lib/locking-selftest.c
+@@ -26,6 +26,67 @@
   */
- static inline int
--__mutex_fastpath_lock_retval(atomic_t *count, int (*fail_fn)(atomic_t *))
-+__mutex_fastpath_lock_retval(atomic_t *count)
+ static unsigned int debug_locks_verbose;
+ 
++/*
++ * These definitions are from the reservation objects patch series.
++ * For now we have to define it ourselves here. These definitions will
++ * be removed upon acceptance of that patch series.
++ */
++static const char reservation_object_name[] = "reservation_object";
++static struct lock_class_key reservation_object_class;
++#ifdef CONFIG_DEBUG_LOCK_ALLOC
++static const char reservation_ticket_name[] = "reservation_ticket";
++static struct lock_class_key reservation_ticket_class;
++#endif
++
++struct reservation_object {
++	struct ticket_mutex lock;
++};
++
++struct reservation_ticket {
++	unsigned long seqno;
++#ifdef CONFIG_DEBUG_LOCK_ALLOC
++	struct lockdep_map dep_map;
++#endif
++};
++
++static inline void
++reservation_object_init(struct reservation_object *obj)
++{
++	__ticket_mutex_init(&obj->lock, reservation_object_name,
++			    &reservation_object_class);
++}
++
++static inline void
++reservation_object_fini(struct reservation_object *obj)
++{
++	mutex_destroy(&obj->lock.base);
++}
++
++static inline void
++reservation_ticket_init(struct reservation_ticket *t)
++{
++#ifdef CONFIG_DEBUG_LOCK_ALLOC
++	/*
++	 * Make sure we are not reinitializing a held ticket:
++	 */
++
++	debug_check_no_locks_freed((void *)t, sizeof(*t));
++	lockdep_init_map(&t->dep_map, reservation_ticket_name,
++			 &reservation_ticket_class, 0);
++#endif
++	mutex_acquire(&t->dep_map, 0, 0, _THIS_IP_);
++	t->seqno = 5;
++}
++
++static inline void
++reservation_ticket_fini(struct reservation_ticket *t)
++{
++#ifdef CONFIG_DEBUG_LOCK_ALLOC
++	mutex_release(&t->dep_map, 0, _THIS_IP_);
++	t->seqno = 0;
++#endif
++}
++
+ static int __init setup_debug_locks_verbose(char *str)
  {
- 	if (unlikely(ia64_fetchadd4_acq(count, -1) != 1))
--		return fail_fn(count);
-+		return -1;
- 	return 0;
- }
+ 	get_option(&str, &debug_locks_verbose);
+@@ -42,6 +103,7 @@ __setup("debug_locks_verbose=", setup_debug_locks_verbose);
+ #define LOCKTYPE_RWLOCK	0x2
+ #define LOCKTYPE_MUTEX	0x4
+ #define LOCKTYPE_RWSEM	0x8
++#define LOCKTYPE_RESERVATION	0x10
  
-diff --git a/arch/powerpc/include/asm/mutex.h b/arch/powerpc/include/asm/mutex.h
-index 5399f7e..127ab23 100644
---- a/arch/powerpc/include/asm/mutex.h
-+++ b/arch/powerpc/include/asm/mutex.h
-@@ -82,17 +82,15 @@ __mutex_fastpath_lock(atomic_t *count, void (*fail_fn)(atomic_t *))
-  *  __mutex_fastpath_lock_retval - try to take the lock by moving the count
-  *                                 from 1 to a 0 value
-  *  @count: pointer of type atomic_t
-- *  @fail_fn: function to call if the original value was not 1
-  *
-- * Change the count from 1 to a value lower than 1, and call <fail_fn> if
-- * it wasn't 1 originally. This function returns 0 if the fastpath succeeds,
-- * or anything the slow path function returns.
-+ * Change the count from 1 to a value lower than 1. This function returns 0
-+ * if the fastpath succeeds, or -1 otherwise.
-  */
- static inline int
--__mutex_fastpath_lock_retval(atomic_t *count, int (*fail_fn)(atomic_t *))
-+__mutex_fastpath_lock_retval(atomic_t *count)
+ /*
+  * Normal standalone locks, for the circular and irq-context
+@@ -920,11 +982,17 @@ GENERATE_PERMUTATIONS_3_EVENTS(irq_read_recursion_soft)
+ static void reset_locks(void)
  {
- 	if (unlikely(__mutex_dec_return_lock(count) < 0))
--		return fail_fn(count);
-+		return -1;
- 	return 0;
+ 	local_irq_disable();
++	lockdep_free_key_range(&reservation_object_class, 1);
++	lockdep_free_key_range(&reservation_ticket_class, 1);
++
+ 	I1(A); I1(B); I1(C); I1(D);
+ 	I1(X1); I1(X2); I1(Y1); I1(Y2); I1(Z1); I1(Z2);
+ 	lockdep_reset();
+ 	I2(A); I2(B); I2(C); I2(D);
+ 	init_shared_classes();
++
++	memset(&reservation_object_class, 0, sizeof(reservation_object_class));
++	memset(&reservation_ticket_class, 0, sizeof(reservation_ticket_class));
+ 	local_irq_enable();
  }
  
-diff --git a/arch/sh/include/asm/mutex-llsc.h b/arch/sh/include/asm/mutex-llsc.h
-index 090358a..dad29b6 100644
---- a/arch/sh/include/asm/mutex-llsc.h
-+++ b/arch/sh/include/asm/mutex-llsc.h
-@@ -37,7 +37,7 @@ __mutex_fastpath_lock(atomic_t *count, void (*fail_fn)(atomic_t *))
- }
- 
- static inline int
--__mutex_fastpath_lock_retval(atomic_t *count, int (*fail_fn)(atomic_t *))
-+__mutex_fastpath_lock_retval(atomic_t *count)
+@@ -938,7 +1006,6 @@ static int unexpected_testcase_failures;
+ static void dotest(void (*testcase_fn)(void), int expected, int lockclass_mask)
  {
- 	int __done, __res;
+ 	unsigned long saved_preempt_count = preempt_count();
+-	int expected_failure = 0;
  
-@@ -51,7 +51,7 @@ __mutex_fastpath_lock_retval(atomic_t *count, int (*fail_fn)(atomic_t *))
- 		: "t");
+ 	WARN_ON(irqs_disabled());
  
- 	if (unlikely(!__done || __res != 0))
--		__res = fail_fn(count);
-+		__res = -1;
- 
- 	return __res;
- }
-diff --git a/arch/x86/include/asm/mutex_32.h b/arch/x86/include/asm/mutex_32.h
-index 03f90c8..b7f6b34 100644
---- a/arch/x86/include/asm/mutex_32.h
-+++ b/arch/x86/include/asm/mutex_32.h
-@@ -42,17 +42,14 @@ do {								\
-  *  __mutex_fastpath_lock_retval - try to take the lock by moving the count
-  *                                 from 1 to a 0 value
-  *  @count: pointer of type atomic_t
-- *  @fail_fn: function to call if the original value was not 1
-  *
-- * Change the count from 1 to a value lower than 1, and call <fail_fn> if it
-- * wasn't 1 originally. This function returns 0 if the fastpath succeeds,
-- * or anything the slow path function returns
-+ * Change the count from 1 to a value lower than 1. This function returns 0
-+ * if the fastpath succeeds, or 1 otherwise.
-  */
--static inline int __mutex_fastpath_lock_retval(atomic_t *count,
--					       int (*fail_fn)(atomic_t *))
-+static inline int __mutex_fastpath_lock_retval(atomic_t *count)
- {
- 	if (unlikely(atomic_dec_return(count) < 0))
--		return fail_fn(count);
-+		return -1;
- 	else
- 		return 0;
- }
-diff --git a/arch/x86/include/asm/mutex_64.h b/arch/x86/include/asm/mutex_64.h
-index 68a87b0..2c543ff 100644
---- a/arch/x86/include/asm/mutex_64.h
-+++ b/arch/x86/include/asm/mutex_64.h
-@@ -37,17 +37,14 @@ do {								\
-  *  __mutex_fastpath_lock_retval - try to take the lock by moving the count
-  *                                 from 1 to a 0 value
-  *  @count: pointer of type atomic_t
-- *  @fail_fn: function to call if the original value was not 1
-  *
-- * Change the count from 1 to a value lower than 1, and call <fail_fn> if
-- * it wasn't 1 originally. This function returns 0 if the fastpath succeeds,
-- * or anything the slow path function returns
-+ * Change the count from 1 to a value lower than 1. This function returns 0
-+ * if the fastpath succeeds, or -1 otherwise.
-  */
--static inline int __mutex_fastpath_lock_retval(atomic_t *count,
--					       int (*fail_fn)(atomic_t *))
-+static inline int __mutex_fastpath_lock_retval(atomic_t *count)
- {
- 	if (unlikely(atomic_dec_return(count) < 0))
--		return fail_fn(count);
-+		return -1;
- 	else
- 		return 0;
- }
-diff --git a/include/asm-generic/mutex-dec.h b/include/asm-generic/mutex-dec.h
-index f104af7..d4f9fb4 100644
---- a/include/asm-generic/mutex-dec.h
-+++ b/include/asm-generic/mutex-dec.h
-@@ -28,17 +28,15 @@ __mutex_fastpath_lock(atomic_t *count, void (*fail_fn)(atomic_t *))
-  *  __mutex_fastpath_lock_retval - try to take the lock by moving the count
-  *                                 from 1 to a 0 value
-  *  @count: pointer of type atomic_t
-- *  @fail_fn: function to call if the original value was not 1
-  *
-- * Change the count from 1 to a value lower than 1, and call <fail_fn> if
-- * it wasn't 1 originally. This function returns 0 if the fastpath succeeds,
-- * or anything the slow path function returns.
-+ * Change the count from 1 to a value lower than 1. This function returns 0
-+ * if the fastpath succeeds, or -1 otherwise.
-  */
- static inline int
--__mutex_fastpath_lock_retval(atomic_t *count, int (*fail_fn)(atomic_t *))
-+__mutex_fastpath_lock_retval(atomic_t *count)
- {
- 	if (unlikely(atomic_dec_return(count) < 0))
--		return fail_fn(count);
-+		return -1;
- 	return 0;
- }
- 
-diff --git a/include/asm-generic/mutex-null.h b/include/asm-generic/mutex-null.h
-index e1bbbc7..efd6206 100644
---- a/include/asm-generic/mutex-null.h
-+++ b/include/asm-generic/mutex-null.h
-@@ -11,7 +11,7 @@
- #define _ASM_GENERIC_MUTEX_NULL_H
- 
- #define __mutex_fastpath_lock(count, fail_fn)		fail_fn(count)
--#define __mutex_fastpath_lock_retval(count, fail_fn)	fail_fn(count)
-+#define __mutex_fastpath_lock_retval(count, fail_fn)	(-1)
- #define __mutex_fastpath_unlock(count, fail_fn)		fail_fn(count)
- #define __mutex_fastpath_trylock(count, fail_fn)	fail_fn(count)
- #define __mutex_slowpath_needs_to_unlock()		1
-diff --git a/include/asm-generic/mutex-xchg.h b/include/asm-generic/mutex-xchg.h
-index c04e0db..f169ec0 100644
---- a/include/asm-generic/mutex-xchg.h
-+++ b/include/asm-generic/mutex-xchg.h
-@@ -39,18 +39,16 @@ __mutex_fastpath_lock(atomic_t *count, void (*fail_fn)(atomic_t *))
-  *  __mutex_fastpath_lock_retval - try to take the lock by moving the count
-  *                                 from 1 to a 0 value
-  *  @count: pointer of type atomic_t
-- *  @fail_fn: function to call if the original value was not 1
-  *
-- * Change the count from 1 to a value lower than 1, and call <fail_fn> if it
-- * wasn't 1 originally. This function returns 0 if the fastpath succeeds,
-- * or anything the slow path function returns
-+ * Change the count from 1 to a value lower than 1. This function returns 0
-+ * if the fastpath succeeds, or -1 otherwise.
-  */
- static inline int
--__mutex_fastpath_lock_retval(atomic_t *count, int (*fail_fn)(atomic_t *))
-+__mutex_fastpath_lock_retval(atomic_t *count)
- {
- 	if (unlikely(atomic_xchg(count, 0) != 1))
- 		if (likely(atomic_xchg(count, -1) != 1))
--			return fail_fn(count);
-+			return -1;
- 	return 0;
- }
- 
-diff --git a/kernel/mutex.c b/kernel/mutex.c
-index a307cc9..5ac4522 100644
---- a/kernel/mutex.c
-+++ b/kernel/mutex.c
-@@ -350,10 +350,10 @@ __mutex_unlock_slowpath(atomic_t *lock_count)
-  * mutex_lock_interruptible() and mutex_trylock().
-  */
- static noinline int __sched
--__mutex_lock_killable_slowpath(atomic_t *lock_count);
-+__mutex_lock_killable_slowpath(struct mutex *lock);
- 
- static noinline int __sched
--__mutex_lock_interruptible_slowpath(atomic_t *lock_count);
-+__mutex_lock_interruptible_slowpath(struct mutex *lock);
- 
- /**
-  * mutex_lock_interruptible - acquire the mutex, interruptible
-@@ -371,12 +371,12 @@ int __sched mutex_lock_interruptible(struct mutex *lock)
- 	int ret;
- 
- 	might_sleep();
--	ret =  __mutex_fastpath_lock_retval
--			(&lock->count, __mutex_lock_interruptible_slowpath);
--	if (!ret)
-+	ret =  __mutex_fastpath_lock_retval(&lock->count);
-+	if (likely(!ret)) {
- 		mutex_set_owner(lock);
--
--	return ret;
-+		return 0;
-+	} else
-+		return __mutex_lock_interruptible_slowpath(lock);
- }
- 
- EXPORT_SYMBOL(mutex_lock_interruptible);
-@@ -386,12 +386,12 @@ int __sched mutex_lock_killable(struct mutex *lock)
- 	int ret;
- 
- 	might_sleep();
--	ret = __mutex_fastpath_lock_retval
--			(&lock->count, __mutex_lock_killable_slowpath);
--	if (!ret)
-+	ret = __mutex_fastpath_lock_retval(&lock->count);
-+	if (likely(!ret)) {
- 		mutex_set_owner(lock);
--
--	return ret;
-+		return 0;
-+	} else
-+		return __mutex_lock_killable_slowpath(lock);
- }
- EXPORT_SYMBOL(mutex_lock_killable);
- 
-@@ -404,18 +404,14 @@ __mutex_lock_slowpath(atomic_t *lock_count)
- }
- 
- static noinline int __sched
--__mutex_lock_killable_slowpath(atomic_t *lock_count)
-+__mutex_lock_killable_slowpath(struct mutex *lock)
- {
--	struct mutex *lock = container_of(lock_count, struct mutex, count);
--
- 	return __mutex_lock_common(lock, TASK_KILLABLE, 0, NULL, _RET_IP_);
- }
- 
- static noinline int __sched
--__mutex_lock_interruptible_slowpath(atomic_t *lock_count)
-+__mutex_lock_interruptible_slowpath(struct mutex *lock)
- {
--	struct mutex *lock = container_of(lock_count, struct mutex, count);
--
- 	return __mutex_lock_common(lock, TASK_INTERRUPTIBLE, 0, NULL, _RET_IP_);
- }
+@@ -946,26 +1013,16 @@ static void dotest(void (*testcase_fn)(void), int expected, int lockclass_mask)
+ 	/*
+ 	 * Filter out expected failures:
+ 	 */
++	if (debug_locks != expected) {
+ #ifndef CONFIG_PROVE_LOCKING
+-	if ((lockclass_mask & LOCKTYPE_SPIN) && debug_locks != expected)
+-		expected_failure = 1;
+-	if ((lockclass_mask & LOCKTYPE_RWLOCK) && debug_locks != expected)
+-		expected_failure = 1;
+-	if ((lockclass_mask & LOCKTYPE_MUTEX) && debug_locks != expected)
+-		expected_failure = 1;
+-	if ((lockclass_mask & LOCKTYPE_RWSEM) && debug_locks != expected)
+-		expected_failure = 1;
++		expected_testcase_failures++;
++		printk("failed|");
++#else
++		unexpected_testcase_failures++;
++		printk("FAILED|");
++
++		dump_stack();
  #endif
+-	if (debug_locks != expected) {
+-		if (expected_failure) {
+-			expected_testcase_failures++;
+-			printk("failed|");
+-		} else {
+-			unexpected_testcase_failures++;
+-
+-			printk("FAILED|");
+-			dump_stack();
+-		}
+ 	} else {
+ 		testcase_successes++;
+ 		printk("  ok  |");
+@@ -1108,6 +1165,431 @@ static inline void print_testname(const char *testname)
+ 	DO_TESTCASE_6IRW(desc, name, 312);			\
+ 	DO_TESTCASE_6IRW(desc, name, 321);
+ 
++static void reservation_test_fail_reserve(void)
++{
++	struct reservation_ticket t;
++	struct reservation_object o;
++	int ret;
++
++	reservation_object_init(&o);
++	reservation_ticket_init(&t);
++	t.seqno++;
++
++	ret = mutex_reserve_lock(&o.lock, &t, t.seqno);
++
++	BUG_ON(!atomic_long_read(&o.lock.reservation_id));
++
++	/* No lockdep test, pure API */
++	ret = mutex_reserve_lock(&o.lock, &t, t.seqno);
++	WARN_ON(ret != -EDEADLK);
++
++	t.seqno++;
++	ret = mutex_trylock(&o.lock.base);
++	WARN_ON(ret);
++
++	ret = mutex_reserve_lock(&o.lock, &t, t.seqno);
++	WARN_ON(ret != -EAGAIN);
++	mutex_unlock(&o.lock.base);
++
++	if (mutex_trylock(&o.lock.base))
++		mutex_unlock(&o.lock.base);
++#ifdef CONFIG_DEBUG_LOCK_ALLOC
++	else
++		DEBUG_LOCKS_WARN_ON(1);
++#endif
++
++	reservation_ticket_fini(&t);
++}
++
++static void reservation_test_two_tickets(void)
++{
++	struct reservation_ticket t, t2;
++
++	reservation_ticket_init(&t);
++	reservation_ticket_init(&t2);
++
++	reservation_ticket_fini(&t2);
++	reservation_ticket_fini(&t);
++}
++
++static void reservation_test_ticket_unreserve_twice(void)
++{
++	struct reservation_ticket t;
++
++	reservation_ticket_init(&t);
++	reservation_ticket_fini(&t);
++	reservation_ticket_fini(&t);
++}
++
++static void reservation_test_object_unreserve_twice(void)
++{
++	struct reservation_object o;
++
++	reservation_object_init(&o);
++	mutex_lock(&o.lock.base);
++	mutex_unlock(&o.lock.base);
++	mutex_unlock(&o.lock.base);
++}
++
++static void reservation_test_fence_nest_unreserved(void)
++{
++	struct reservation_object o;
++
++	reservation_object_init(&o);
++
++	spin_lock_nest_lock(&lock_A, &o.lock.base);
++	spin_unlock(&lock_A);
++}
++
++static void reservation_test_mismatch_normal_reserve(void)
++{
++	struct reservation_object o;
++
++	reservation_object_init(&o);
++
++	mutex_lock(&o.lock.base);
++	mutex_unreserve_unlock(&o.lock);
++}
++
++static void reservation_test_mismatch_reserve_normal(void)
++{
++	struct reservation_ticket t;
++	struct reservation_object o;
++	int ret;
++
++	reservation_ticket_init(&t);
++	reservation_object_init(&o);
++
++	ret = mutex_reserve_lock(&o.lock, &t, t.seqno);
++	WARN_ON(ret);
++	mutex_unlock(&o.lock.base);
++
++	/*
++	 * the second mutex_reserve_lock will detect the
++	 * mismatch of the first one
++	 */
++	ret = mutex_reserve_lock(&o.lock, &t, t.seqno);
++	WARN_ON(ret);
++	mutex_unreserve_unlock(&o.lock);
++
++	reservation_ticket_fini(&t);
++}
++
++static void reservation_test_mismatch_reserve_normal_slow(void)
++{
++	struct reservation_ticket t;
++	struct reservation_object o;
++	int ret;
++
++	reservation_ticket_init(&t);
++	reservation_object_init(&o);
++
++	ret = mutex_reserve_lock(&o.lock, &t, t.seqno);
++	WARN_ON(ret);
++	mutex_unlock(&o.lock.base);
++
++	/*
++	 * the second mutex_reserve_lock will detect the
++	 * mismatch of the first one
++	 */
++	mutex_reserve_lock_slow(&o.lock, &t, t.seqno);
++	mutex_unreserve_unlock(&o.lock);
++
++	reservation_ticket_fini(&t);
++}
++
++static void reservation_test_ticket_block(void)
++{
++	struct reservation_ticket t;
++	struct reservation_object o, o2;
++	int ret;
++
++	reservation_object_init(&o);
++	reservation_object_init(&o2);
++	reservation_ticket_init(&t);
++
++	ret = mutex_reserve_lock(&o.lock, &t, t.seqno);
++	WARN_ON(ret);
++	mutex_lock(&o2.lock.base);
++	mutex_unlock(&o2.lock.base);
++	mutex_unreserve_unlock(&o.lock);
++
++	reservation_ticket_fini(&t);
++}
++
++static void reservation_test_ticket_try(void)
++{
++	struct reservation_ticket t;
++	struct reservation_object o, o2;
++	int ret;
++
++	reservation_object_init(&o);
++	reservation_object_init(&o2);
++	reservation_ticket_init(&t);
++
++	ret = mutex_reserve_lock(&o.lock, &t, t.seqno);
++	WARN_ON(ret);
++
++	ret = mutex_trylock(&o2.lock.base);
++	WARN_ON(!ret);
++	mutex_unlock(&o2.lock.base);
++	mutex_unreserve_unlock(&o.lock);
++
++	reservation_ticket_fini(&t);
++}
++
++static void reservation_test_ticket_ticket(void)
++{
++	struct reservation_ticket t;
++	struct reservation_object o, o2;
++	int ret;
++
++	reservation_object_init(&o);
++	reservation_object_init(&o2);
++	reservation_ticket_init(&t);
++
++	ret = mutex_reserve_lock(&o.lock, &t, t.seqno);
++	WARN_ON(ret);
++
++	ret = mutex_reserve_lock(&o2.lock, &t, t.seqno);
++	WARN_ON(ret);
++
++	mutex_unreserve_unlock(&o2.lock);
++	mutex_unreserve_unlock(&o.lock);
++
++	reservation_ticket_fini(&t);
++}
++
++static void reservation_test_try_block(void)
++{
++	struct reservation_object o, o2;
++	bool ret;
++
++	reservation_object_init(&o);
++	reservation_object_init(&o2);
++
++	ret = mutex_trylock(&o.lock.base);
++	WARN_ON(!ret);
++
++	mutex_lock(&o2.lock.base);
++	mutex_unlock(&o2.lock.base);
++	mutex_unlock(&o.lock.base);
++}
++
++static void reservation_test_try_try(void)
++{
++	struct reservation_object o, o2;
++	bool ret;
++
++	reservation_object_init(&o);
++	reservation_object_init(&o2);
++
++	ret = mutex_trylock(&o.lock.base);
++	WARN_ON(!ret);
++	ret = mutex_trylock(&o2.lock.base);
++	WARN_ON(!ret);
++	mutex_unlock(&o2.lock.base);
++	mutex_unlock(&o.lock.base);
++}
++
++static void reservation_test_try_ticket(void)
++{
++	struct reservation_ticket t;
++	struct reservation_object o, o2;
++	int ret;
++
++	reservation_object_init(&o);
++	reservation_object_init(&o2);
++
++	ret = mutex_trylock(&o.lock.base);
++	WARN_ON(!ret);
++	reservation_ticket_init(&t);
++
++	ret = mutex_reserve_lock(&o2.lock, &t, t.seqno);
++	WARN_ON(ret);
++
++	mutex_unreserve_unlock(&o2.lock);
++	mutex_unlock(&o.lock.base);
++
++	reservation_ticket_fini(&t);
++}
++
++static void reservation_test_block_block(void)
++{
++	struct reservation_object o, o2;
++
++	reservation_object_init(&o);
++	reservation_object_init(&o2);
++
++	mutex_lock(&o.lock.base);
++	mutex_lock(&o2.lock.base);
++	mutex_unlock(&o2.lock.base);
++	mutex_unlock(&o.lock.base);
++}
++
++static void reservation_test_block_try(void)
++{
++	struct reservation_object o, o2;
++	bool ret;
++
++	reservation_object_init(&o);
++	reservation_object_init(&o2);
++
++	mutex_lock(&o.lock.base);
++	ret = mutex_trylock(&o2.lock.base);
++	WARN_ON(!ret);
++	mutex_unlock(&o2.lock.base);
++	mutex_unlock(&o.lock.base);
++}
++
++static void reservation_test_block_ticket(void)
++{
++	struct reservation_ticket t;
++	struct reservation_object o, o2;
++	int ret;
++
++	reservation_object_init(&o);
++	reservation_object_init(&o2);
++
++	mutex_lock(&o.lock.base);
++	reservation_ticket_init(&t);
++
++	ret = mutex_reserve_lock(&o2.lock, &t, t.seqno);
++	WARN_ON(ret);
++	mutex_unreserve_unlock(&o2.lock);
++	mutex_unlock(&o.lock.base);
++
++	reservation_ticket_fini(&t);
++}
++
++static void reservation_test_fence_block(void)
++{
++	struct reservation_object o;
++
++	reservation_object_init(&o);
++	spin_lock(&lock_A);
++	spin_unlock(&lock_A);
++
++	mutex_lock(&o.lock.base);
++	spin_lock(&lock_A);
++	spin_unlock(&lock_A);
++	mutex_unlock(&o.lock.base);
++
++	spin_lock(&lock_A);
++	mutex_lock(&o.lock.base);
++	mutex_unlock(&o.lock.base);
++	spin_unlock(&lock_A);
++}
++
++static void reservation_test_fence_try(void)
++{
++	struct reservation_object o;
++	bool ret;
++
++	reservation_object_init(&o);
++	spin_lock(&lock_A);
++	spin_unlock(&lock_A);
++
++	ret = mutex_trylock(&o.lock.base);
++	WARN_ON(!ret);
++	spin_lock(&lock_A);
++	spin_unlock(&lock_A);
++	mutex_unlock(&o.lock.base);
++
++	spin_lock(&lock_A);
++	ret = mutex_trylock(&o.lock.base);
++	WARN_ON(!ret);
++	mutex_unlock(&o.lock.base);
++	spin_unlock(&lock_A);
++}
++
++static void reservation_test_fence_ticket(void)
++{
++	struct reservation_ticket t;
++	struct reservation_object o;
++	int ret;
++
++	reservation_object_init(&o);
++	spin_lock(&lock_A);
++	spin_unlock(&lock_A);
++
++	reservation_ticket_init(&t);
++
++	ret = mutex_reserve_lock(&o.lock, &t, t.seqno);
++	WARN_ON(ret);
++	spin_lock(&lock_A);
++	spin_unlock(&lock_A);
++	mutex_unreserve_unlock(&o.lock);
++
++	spin_lock(&lock_A);
++	ret = mutex_reserve_lock(&o.lock, &t, t.seqno);
++	WARN_ON(ret);
++	mutex_unreserve_unlock(&o.lock);
++	spin_unlock(&lock_A);
++
++	reservation_ticket_fini(&t);
++}
++
++static void reservation_tests(void)
++{
++	printk("  --------------------------------------------------------------------------\n");
++	printk("  | Reservation tests |\n");
++	printk("  ---------------------\n");
++
++	print_testname("reservation api failures");
++	dotest(reservation_test_fail_reserve, SUCCESS, LOCKTYPE_RESERVATION);
++	printk("\n");
++
++	print_testname("reserving two tickets");
++	dotest(reservation_test_two_tickets, FAILURE, LOCKTYPE_RESERVATION);
++	printk("\n");
++
++	print_testname("unreserve ticket twice");
++	dotest(reservation_test_ticket_unreserve_twice, FAILURE, LOCKTYPE_RESERVATION);
++	printk("\n");
++
++	print_testname("unreserve object twice");
++	dotest(reservation_test_object_unreserve_twice, FAILURE, LOCKTYPE_RESERVATION);
++	printk("\n");
++
++	print_testname("spinlock nest unreserved");
++	dotest(reservation_test_fence_nest_unreserved, FAILURE, LOCKTYPE_RESERVATION);
++	printk("\n");
++
++	print_testname("mutex reserve (un)lock mismatch");
++	dotest(reservation_test_mismatch_normal_reserve, FAILURE, LOCKTYPE_RESERVATION);
++	dotest(reservation_test_mismatch_reserve_normal, FAILURE, LOCKTYPE_RESERVATION);
++	dotest(reservation_test_mismatch_reserve_normal_slow, FAILURE, LOCKTYPE_RESERVATION);
++	printk("\n");
++
++	printk("  -----------------------------------------------------\n");
++	printk("                                 |block | try  |ticket|\n");
++	printk("  -----------------------------------------------------\n");
++
++	print_testname("ticket");
++	dotest(reservation_test_ticket_block, FAILURE, LOCKTYPE_RESERVATION);
++	dotest(reservation_test_ticket_try, SUCCESS, LOCKTYPE_RESERVATION);
++	dotest(reservation_test_ticket_ticket, SUCCESS, LOCKTYPE_RESERVATION);
++	printk("\n");
++
++	print_testname("try");
++	dotest(reservation_test_try_block, FAILURE, LOCKTYPE_RESERVATION);
++	dotest(reservation_test_try_try, SUCCESS, LOCKTYPE_RESERVATION);
++	dotest(reservation_test_try_ticket, FAILURE, LOCKTYPE_RESERVATION);
++	printk("\n");
++
++	print_testname("block");
++	dotest(reservation_test_block_block, FAILURE, LOCKTYPE_RESERVATION);
++	dotest(reservation_test_block_try, SUCCESS, LOCKTYPE_RESERVATION);
++	dotest(reservation_test_block_ticket, FAILURE, LOCKTYPE_RESERVATION);
++	printk("\n");
++
++	print_testname("spinlock");
++	dotest(reservation_test_fence_block, FAILURE, LOCKTYPE_RESERVATION);
++	dotest(reservation_test_fence_try, SUCCESS, LOCKTYPE_RESERVATION);
++	dotest(reservation_test_fence_ticket, FAILURE, LOCKTYPE_RESERVATION);
++	printk("\n");
++}
+ 
+ void locking_selftest(void)
+ {
+@@ -1188,6 +1670,8 @@ void locking_selftest(void)
+ 	DO_TESTCASE_6x2("irq read-recursion", irq_read_recursion);
+ //	DO_TESTCASE_6x2B("irq read-recursion #2", irq_read_recursion2);
+ 
++	reservation_tests();
++
+ 	if (unexpected_testcase_failures) {
+ 		printk("-----------------------------------------------------------------\n");
+ 		debug_locks = 0;
 
