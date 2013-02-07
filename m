@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752413Ab3BGILe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 03:11:34 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:39330 "EHLO zene.cmpxchg.org"
+	id S1753271Ab3BGILt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 03:11:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19603 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751535Ab3BGILa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 03:11:30 -0500
-Date: Thu, 7 Feb 2013 03:11:15 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Chanho Min <chanho.min@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Cong Wang <amwang@redhat.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vmalloc: Remove alloc_map from vmap_block.
-Message-ID: <20130207081115.GA1094@cmpxchg.org>
-References: <CAOAMb1AZaXHiW47MbstoVaDVEbVaSC+fqcZoSM0EXC5RpH7nHw@mail.gmail.com>
+	id S1752493Ab3BGILg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 03:11:36 -0500
+Date: Thu, 7 Feb 2013 10:15:29 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: netdev@vger.kernel.org, Eilon Greenstein <eilong@broadcom.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        Tushar Dave <tushar.n.dave@intel.com>,
+        Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>,
+        Sony Chacko <sony.chacko@qlogic.com>, linux-driver@qlogic.com,
+        John Fastabend <john.r.fastabend@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jacob Keller <jacob.e.keller@intel.com>, linux-kernel@vger.kernel.org,
+        e1000-devel@lists.sourceforge.net, bhutchings@solarflare.com,
+        eric.dumazet@gmail.com
+Subject: Re: [PATCH 0/2] fix kernel crash with macvtap on top of LRO
+Message-ID: <20130207081529.GA9126@redhat.com>
+References: <cover.1360191528.git.mst@redhat.com>
+ <51131E99.8080400@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAOAMb1AZaXHiW47MbstoVaDVEbVaSC+fqcZoSM0EXC5RpH7nHw@mail.gmail.com>
+In-Reply-To: <51131E99.8080400@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chanho,
-
-On Thu, Feb 07, 2013 at 11:27:54AM +0900, Chanho Min wrote:
-> There is no reason to maintain alloc_map in the vmap_block.
-> The use of alloc_map may require heavy bitmap operation sometimes.
-> In the worst-case, We need 1024 for-loops to find 1 free bit and
-> thus cause overhead. vmap_block is fragmented unnecessarily by
-> 2 order alignment as well.
+On Thu, Feb 07, 2013 at 11:25:13AM +0800, Cong Wang wrote:
+> On 02/07/2013 07:02 AM, Michael S. Tsirkin wrote:
+> >At the moment, macvtap crashes are observed if macvtap is attached
+> >to an interface with LRO enabled.
+> >The crash in question is BUG() in macvtap_skb_to_vnet_hdr.
+> >This happens because several drivers set gso_size but not gso_type
+> >in incoming skbs.
+> >The following patches fix this for
+> >Additionally, cbf1de72324a8105ddcc3d9ce9acbc613faea17e is required
+> >to fix this for broadcom - would it make sense to cherry-pick
+> >this patch into 3.8?
 > 
-> Instead we can map by using vb->free in order. When It is freed,
-> Its corresponding bit will be set in the dirty_map and all
-> free/purge operations are carried out in the dirty_map.
-> vmap_block is not fragmented sporadically anymore and thus
-> purge_fragmented_blocks_thiscpu in the vb_alloc can be removed.
+> 
+> Doesn't macvtap need to call skb_warn_if_lro() too like bridge and
+> openvswitch? Something like...
 
-I submitted a similar patch some time ago, but at the time Mel
-suggested instead to figure out if this bitmap was not supposed to be
-doing something useful and depending on that implement recycling of
-partially used vmap blocks.
+This is what Ben proposed a year ago
+http://thread.gmane.org/gmane.linux.network/221695
+but apparently people really want LRO to work with macvtap.
 
-Here is the thread:
-
-https://lkml.org/lkml/2011/4/14/619
-
-I started looking for workloads to profile but then lost interest.
-The current code can theoretically end up walking through a lot of
-partially used blocks if a string of allocations never fit any of
-them.  The number of these blocks depends on previous allocations that
-leave them unusable for future allocations and whether any other
-vmalloc/vmap user recently flushed them all.  So it's painful to think
-about it and hard to impossible to pin down should this ever actually
-result in a performance problem.
-
-Either way, short of an actual fix I suspect this patch will pop up
-again as it removes currently dead code.
+> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+> index b181dfb..b2c6227 100644
+> --- a/drivers/net/macvtap.c
+> +++ b/drivers/net/macvtap.c
+> @@ -253,6 +253,9 @@ static int macvtap_forward(struct net_device
+> *dev, struct sk_buff *skb)
+>         if (!q)
+>                 goto drop;
+> 
+> +       if (unlikely(skb_warn_if_lro(skb)))
+> +               goto drop;
+> +
+>         if (skb_queue_len(&q->sk.sk_receive_queue) >= dev->tx_queue_len)
+>                 goto drop;
+> 
+> 
+> I am not saying these drivers don't need to fix, I am just saying if
+> we need to fix LRO case.
+> 
+> Thanks.
