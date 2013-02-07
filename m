@@ -1,159 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758205Ab3BGLId (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 06:08:33 -0500
-Received: from zproxy210.enst-bretagne.fr ([192.108.117.8]:39491 "EHLO
-	zproxy210.enst-bretagne.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751962Ab3BGLIb convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 06:08:31 -0500
-Content-Type: text/plain; charset=iso-8859-1
-Mime-Version: 1.0 (Mac OS X Mail 6.2 \(1499\))
-Subject: Re: [RFC PATCH] xfrm: fix handling of XFRM policies mark and mask.
-From: Emmanuel Thierry <emmanuel.thierry@telecom-bretagne.eu>
-In-Reply-To: <20130207104908.GA17794@secunet.com>
-Date: Thu, 7 Feb 2013 12:08:22 +0100
-Cc: jamal <j.hadi123@gmail.com>, Romain KUNTZ <r.kuntz@ipflavors.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        herbert@gondor.hengli.com.au,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jamal Hadi Salim <hadi@cyberus.ca>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <2BEAF521-7218-415B-98ED-EC0812903479@telecom-bretagne.eu>
-References: <9E57ADA1-5770-47A8-8EBF-7FC262EEF1C7@ipflavors.com> <20130205081232.GF23291@secunet.com> <51125744.3030905@gmail.com> <D4563759-CEC5-4F33-BF0A-9FA10716F8DF@telecom-bretagne.eu> <20130207104908.GA17794@secunet.com>
-To: Steffen Klassert <steffen.klassert@secunet.com>
-X-Mailer: Apple Mail (2.1499)
+	id S1758049Ab3BGLJV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 06:09:21 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:45583 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755579Ab3BGLJR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 06:09:17 -0500
+X-AuditID: cbfee61a-b7f7d6d000000f4e-f8-51138b5c952d
+From: Tomasz Figa <t.figa@samsung.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Girish KS <girishks2000@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] spi: s3c64xx: modified error interrupt handling and
+ init
+Date: Thu, 07 Feb 2013 12:09:11 +0100
+Message-id: <1585017.derjdP1mHL@amdc1227>
+Organization: Samsung Poland R&D Center
+User-Agent: KMail/4.9.5 (Linux/3.7.4-gentoo; KDE/4.9.5; x86_64; ; )
+In-reply-to: <CAKrE-KdX+Nxk0X4xdz6Dx3WVtOpV+ms+gPB-Dq-MwZwetyZ5Nw@mail.gmail.com>
+References: <1360105784-12282-1-git-send-email-ks.giri@samsung.com>
+ <20130206102628.5E7413E1510@localhost>
+ <CAKrE-KdX+Nxk0X4xdz6Dx3WVtOpV+ms+gPB-Dq-MwZwetyZ5Nw@mail.gmail.com>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGLMWRmVeSWpSXmKPExsVy+t9jQd2YbuFAg38v+S0u75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAldGz9b77AUT5Somb9ZpYDws1sXIySEhYCJx48pRFghbTOLCvfVs
+	ILaQwHRGibtzzbsYuYDspUwSb2bvBUuwCahJfG54BGaLCGhITOl6zA5SxCwwm1Hi3tm/7CAJ
+	YYFgie2/ZjOD2CwCqhJT95wFi/MKaEpM+3yZFcTmF1CXeLftKROILSrgLLGw9zXYUE6g3oPv
+	W1khNm9mlNj64gMrRLOgxI/J98BOZRaQl9i3fyorhK0lsX7ncaYJjIKzkJTNQlI2C0nZAkbm
+	VYyiqQXJBcVJ6bmGesWJucWleel6yfm5mxjBoflMagfjygaLQ4wCHIxKPLw3lgoFCrEmlhVX
+	5h5ilOBgVhLhPVkjHCjEm5JYWZValB9fVJqTWnyIUZqDRUmcl/HUkwAhgfTEktTs1NSC1CKY
+	LBMHp1QD4+wb+z+IHM3Uf9k464W20szkL38Ek3dyn4x8etW5WmQp+xIliUyzFnWnJ6UXVxsZ
+	ca7d0XTvw6P4CqOGSh/vVReTXsyszm3bMG3SGYk5euXq50/3G8ueXnnN7ciKEzW19ZpXLl/6
+	o3o8+pZy0m+/96F5PknmLv9Dzb71u2R6/joe3BexKdezUYmlOCPRUIu5qDgRAPhzfH5JAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Girish,
 
-Le 7 févr. 2013 à 11:49, Steffen Klassert <steffen.klassert@secunet.com> a écrit :
+On Wednesday 06 of February 2013 12:12:29 Girish KS wrote:
+> On Wed, Feb 6, 2013 at 2:26 AM, Grant Likely <grant.likely@secretlab.ca> 
+wrote:
+> > On Tue,  5 Feb 2013 15:09:41 -0800, Girish K S 
+<girishks2000@gmail.com> wrote:
+> >> The status of the interrupt is available in the status register,
+> >> so reading the clear pending register and writing back the same
+> >> value will not actually clear the pending interrupts. This patch
+> >> modifies the interrupt handler to read the status register and
+> >> clear the corresponding pending bit in the clear pending register.
+> >> 
+> >> Modified the hwInit function to clear all the pending interrupts.
+> >> 
+> >> Signed-off-by: Girish K S <ks.giri@samsung.com>
+> >> ---
+> >> 
+> >>  drivers/spi/spi-s3c64xx.c |   41
+> >>  +++++++++++++++++++++++++---------------- 1 file changed, 25
+> >>  insertions(+), 16 deletions(-)
+> >> 
+> >> diff --git a/drivers/spi/spi-s3c64xx.c b/drivers/spi/spi-s3c64xx.c
+> >> index ad93231..b770f88 100644
+> >> --- a/drivers/spi/spi-s3c64xx.c
+> >> +++ b/drivers/spi/spi-s3c64xx.c
+> >> @@ -997,25 +997,30 @@ static irqreturn_t s3c64xx_spi_irq(int irq,
+> >> void *data)>> 
+> >>  {
+> >>  
+> >>       struct s3c64xx_spi_driver_data *sdd = data;
+> >>       struct spi_master *spi = sdd->master;
+> >> 
+> >> -     unsigned int val;
+> >> +     unsigned int val, clr = 0;
+> >> 
+> >> -     val = readl(sdd->regs + S3C64XX_SPI_PENDING_CLR);
+> >> +     val = readl(sdd->regs + S3C64XX_SPI_STATUS);
+> >> 
+> >> -     val &= S3C64XX_SPI_PND_RX_OVERRUN_CLR |
+> >> -             S3C64XX_SPI_PND_RX_UNDERRUN_CLR |
+> >> -             S3C64XX_SPI_PND_TX_OVERRUN_CLR |
+> >> -             S3C64XX_SPI_PND_TX_UNDERRUN_CLR;
+> >> -
+> >> -     writel(val, sdd->regs + S3C64XX_SPI_PENDING_CLR);
+> >> -
+> >> -     if (val & S3C64XX_SPI_PND_RX_OVERRUN_CLR)
+> >> +     if (val & S3C64XX_SPI_ST_RX_OVERRUN_ERR) {
+> >> +             clr = S3C64XX_SPI_PND_RX_OVERRUN_CLR;
+> >> 
+> >>               dev_err(&spi->dev, "RX overrun\n");
+> >> 
+> >> -     if (val & S3C64XX_SPI_PND_RX_UNDERRUN_CLR)
+> >> +     }
+> >> +     if (val & S3C64XX_SPI_ST_RX_UNDERRUN_ERR) {
+> >> +             clr |= S3C64XX_SPI_PND_RX_UNDERRUN_CLR;
+> >> 
+> >>               dev_err(&spi->dev, "RX underrun\n");
+> >> 
+> >> -     if (val & S3C64XX_SPI_PND_TX_OVERRUN_CLR)
+> >> +     }
+> >> +     if (val & S3C64XX_SPI_ST_TX_OVERRUN_ERR) {
+> >> +             clr |= S3C64XX_SPI_PND_TX_OVERRUN_CLR;
+> >> 
+> >>               dev_err(&spi->dev, "TX overrun\n");
+> >> 
+> >> -     if (val & S3C64XX_SPI_PND_TX_UNDERRUN_CLR)
+> >> +     }
+> >> +     if (val & S3C64XX_SPI_ST_TX_UNDERRUN_ERR) {
+> >> +             clr |= S3C64XX_SPI_PND_TX_UNDERRUN_CLR;
+> >> 
+> >>               dev_err(&spi->dev, "TX underrun\n");
+> >> 
+> >> +     }
+> >> +
+> >> +     /* Clear the pending irq by setting and then clearing it */
+> >> +     writel(clr, sdd->regs + S3C64XX_SPI_PENDING_CLR);
+> >> +     writel(clr & ~clr, sdd->regs + S3C64XX_SPI_PENDING_CLR);
+> > 
+> > Wait, what?  clr & ~clr == 0   Always.  What are you actually trying
+> > to do here?
+> The user manual says, wirting 1 to the pending clear register clears
+> the interrupt (its not auto clear to 0). so i need to explicitly reset
+> those bits thats what the 2nd write does
 
-> On Wed, Feb 06, 2013 at 02:53:48PM +0100, Emmanuel Thierry wrote:
->> 
->> Le 6 févr. 2013 à 14:14, jamal a écrit :
->> 
->>> 
->>> On 13-02-05 03:12 AM, Steffen Klassert wrote:
->>>>> For example, executing the below commands in that order succeed:
->>>>> ip -6 xfrm policy flush
->>>>> ip -6 xfrm policy add src fd00::1/128 dst fd00::2/128 dir out mark 1 mask 0xffffffff
->>>>> ip -6 xfrm policy add src fd00::1/128 dst fd00::2/128 dir out
->>>> The policy with mark 1 is the first we find. The policy passes the
->>>> mark check and if the flow matches the selectors, we use this policy.
->>>> 
->>>>> But it fails in the reverse order:
->>>>> ip -6 xfrm policy flush
->>>>> ip -6 xfrm policy add src fd00::1/128 dst fd00::2/128 dir out
->>>>> ip -6 xfrm policy add src fd00::1/128 dst fd00::2/128 dir out mark 1 mask 0xffffffff
->>>>> RTNETLINK answers: File exists
->>>> With this scenario, we would find the policy with mark and mask 0 first.
->>>> This policy passes the mark check too. So we would use this policy if the
->>>> flow matches the selectors, but the flow asked for a policy with mark 1.
->>> 
->>> I think the intent Romain is expressing is reasonable and should resolved at
->>> insertion time(xfrm_policy_insert()).
->>> i.e even though the policy (such as mark=1) is inserted afterwards, at
->>> insertion time if it proves it is more specific and not duplicate, it should be
->>> inserted ahead of the mark=0.
->>> The runtime check will work then.
->> 
->> Actually, we didn't think about this problem since we work with priorities, putting the default policy (without a mark) at a minor priority than the marked one.
->> Your remark makes clearer the ideas behind the design of XFRM, but this leads to an interesting concern. If on policy insertion, the policy were inserted depending on the accuracy of the mark (the more the mask is specific, the more the mark must be put at the beginning of the list), how would we decide which is the more specific between these ones ?
->> 
->> ip -6 xfrm policy add src fd00::1/128 dst fd00::2/128 dir out mark 0x00000001 mask 0x00000005
->> 
->> ip -6 xfrm policy add src fd00::1/128 dst fd00::2/128 dir out mark 0x00000001 mask 0x00000003
->> 
-> 
-> We can't decide on the order of these two policies, so we should not
-> allow to insert both. At least not if the have the same priority,
-> but we could insert both if they have different priorities.
-> 
-> Would the patch below meet your requirements?
-> 
-> ---
-> net/xfrm/xfrm_policy.c |   18 ++++++++++++++++--
-> 1 files changed, 16 insertions(+), 2 deletions(-)
-> 
-> diff --git a/net/xfrm/xfrm_policy.c b/net/xfrm/xfrm_policy.c
-> index 6c9aa64..b169a69 100644
-> --- a/net/xfrm/xfrm_policy.c
-> +++ b/net/xfrm/xfrm_policy.c
-> @@ -562,6 +562,21 @@ static inline int selector_cmp(struct xfrm_selector *s1, struct xfrm_selector *s
-> 	return 0;
-> }
-> 
-> +static bool xfrm_mark_match(struct xfrm_policy *policy,
-> +			    struct xfrm_policy *pol)
-> +{
-> +	u32 mark = policy->mark.v & policy->mark.m;
-> +
-> +	if (policy->mark.v == pol->mark.v && policy->mark.m == pol->mark.m)
-> +		return true;
-> +
-> +	if ((mark & pol->mark.m) == pol->mark.v &&
-> +	    policy->priority == pol->priority)
-> +		return true;
-> +
-> +	return false;
-> +}
-> +
-> int xfrm_policy_insert(int dir, struct xfrm_policy *policy, int excl)
-> {
-> 	struct net *net = xp_net(policy);
-> @@ -569,7 +584,6 @@ int xfrm_policy_insert(int dir, struct xfrm_policy *policy, int excl)
-> 	struct xfrm_policy *delpol;
-> 	struct hlist_head *chain;
-> 	struct hlist_node *entry, *newpos;
-> -	u32 mark = policy->mark.v & policy->mark.m;
-> 
-> 	write_lock_bh(&xfrm_policy_lock);
-> 	chain = policy_hash_bysel(net, &policy->selector, policy->family, dir);
-> @@ -578,7 +592,7 @@ int xfrm_policy_insert(int dir, struct xfrm_policy *policy, int excl)
-> 	hlist_for_each_entry(pol, entry, chain, bydst) {
-> 		if (pol->type == policy->type &&
-> 		    !selector_cmp(&pol->selector, &policy->selector) &&
-> -		    (mark & pol->mark.m) == pol->mark.v &&
-> +		    xfrm_mark_match(policy, pol) &&
-> 		    xfrm_sec_ctx_match(pol->security, policy->security) &&
-> 		    !WARN_ON(delpol)) {
-> 			if (excl) {
-> -- 
-> 1.7.2.5
-> 
+I have looked through user's manuals of different Samsung SoCs. All of 
+them said that writing 1 to a bit clears the corresponding interrupt, but 
+none of them contain any note that it must be manually cleared to 0.
 
-This is a nice idea, however you keep the insertion asymmetric. The usage of xfrm marks in non-conflicting cases will be made possible, but it stays disturbing for a user as the initial example will still have the same behavior:
-* Inserting the marked one then the unmarked will succeed
-* Inserting the unmarked then the marked one will fail
-This gives to the user the feeling of an indeterministic behavior of the xfrm module.
+In addition the expression
 
-On the base of your patch, i'd propose to make it symmetric (handmade patch below).
+clr & ~clr
 
-Best regards
-Emmanuel Thierry
+makes no sense, because it is equal to 0.
 
---- a/net/xfrm/xfrm_policy.c
-+++ b/net/xfrm/xfrm_policy.c
+If you really need to clear those bits manually (and I don't think so), 
+you should replace this expression with 0.
 
- static bool xfrm_mark_match(struct xfrm_policy *policy,
- 			    struct xfrm_policy *pol)
- {
- 	u32 mark = policy->mark.v & policy->mark.m;
-+	u32 mark2 = pol->mark.v & pol->mark.m;
- 
- 	if (policy->mark.v == pol->mark.v && policy->mark.m == pol->mark.m)
- 		return true;
- 
- 	if ((mark & pol->mark.m) == pol->mark.v &&
-+	    (mark2 & policy->mark.m) == policy->mark.v &&
- 	    policy->priority == pol->priority)
- 		return true;
- 
- 	return false;
- }
-
+Best regards,
+-- 
+Tomasz Figa
+Samsung Poland R&D Center
+SW Solution Development, Linux Platform
 
