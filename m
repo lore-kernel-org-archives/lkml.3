@@ -1,96 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755365Ab3BGJNM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 04:13:12 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:57166 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752322Ab3BGJNH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 04:13:07 -0500
-Message-ID: <5113701D.2080009@ti.com>
-Date: Thu, 7 Feb 2013 11:13:01 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+	id S1755593Ab3BGJRI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 04:17:08 -0500
+Received: from relay.parallels.com ([195.214.232.42]:58461 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754600Ab3BGJRD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 04:17:03 -0500
+Message-ID: <511370D5.4030100@parallels.com>
+Date: Thu, 7 Feb 2013 13:16:05 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: "Mohammed, Afzal" <afzal@ti.com>
-CC: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 00/10] video: da8xx-fb: runtime timing configuration
-References: <cover.1358250489.git.afzal@ti.com> <C8443D0743D26F4388EA172BF4E2A7A93EAA2846@DBDE01.ent.ti.com>
-In-Reply-To: <C8443D0743D26F4388EA172BF4E2A7A93EAA2846@DBDE01.ent.ti.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="------------enig84BFB8ADE209F0A10B699267"
+To: Tommi Rantala <tt.rantala@gmail.com>
+CC: Stephen Smalley <sds@tycho.nsa.gov>,
+        James Morris <james.l.morris@oracle.com>,
+        Eric Paris <eparis@parisplace.org>,
+        <linux-security-module@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: selinux_msg_queue_msgrcv() oops
+References: <CA+ydwtqgnMGuuHHWwj7jZh14WNdCFW_KA_APH-XZYX+RA-Ls1Q@mail.gmail.com> <5112662D.1010406@tycho.nsa.gov> <CA+ydwtpBNinVYa3zxoGVWjQLemxTyqTCm=o8mPut-F-DZx1xVg@mail.gmail.com> <511284B2.2070402@tycho.nsa.gov> <CA+ydwtp6fjMKsG4Oo5Ep2WXaykH+5D7MVWSHzUtnUFhr_HkJNw@mail.gmail.com>
+In-Reply-To: <CA+ydwtp6fjMKsG4Oo5Ep2WXaykH+5D7MVWSHzUtnUFhr_HkJNw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.29.37]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------------enig84BFB8ADE209F0A10B699267
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
-
-Hi,
-
-On 2013-02-07 11:05, Mohammed, Afzal wrote:
-> Hi Tomi, Florian,
->=20
-> On Tue, Jan 15, 2013 at 19:00:50, Mohammed, Afzal wrote:
->=20
->> This series makes da8xx-fb driver (device found on DaVinci and AM335x)=
-
->> capable of handling runtime timing configuration by adding fb_set_par.=
-
+06.02.2013 23:51, Tommi Rantala пишет:
+> 2013/2/6 Stephen Smalley <sds@tycho.nsa.gov>:
+>> On 02/06/2013 10:21 AM, Tommi Rantala wrote:
+>>>
+>>> 2013/2/6 Stephen Smalley <sds@tycho.nsa.gov>:
+>>>>
+>>>> On 02/06/2013 07:56 AM, Tommi Rantala wrote:
+>>>>>
+>>>>>
+>>>>> Hello,
+>>>>>
+>>>>> I'm hitting an oops in selinux_msg_queue_msgrcv() when fuzzing with
+>>>>> Trinity as the root user (in a qemu VM):
+>>>>
+>>>>
+>>>>
+>>>> NULL msg->security at that point is a bug in the ipc subsystem; SELinux
+>>>> is
+>>>> just the messenger.  Normally msg->security is set for every allocated
+>>>> msg
+>>>> by load_msg() -> security_msg_msg_alloc() ->
+>>>> selinux_msg_msg_alloc_security(), and freed/cleared upon free_msg() ->
+>>>> security_msg_msg_free() -> selinux_msg_msg_free_security().  Looking
+>>>> around,
+>>>> I see copy_msg() introduced for checkpoint-restore initializes
+>>>> dst->security
+>>>> to NULL but never sets it properly?
+>>>
+>>>
+>>> I am indeed building with CONFIG_CHECKPOINT_RESTORE=y, so your
+>>> analysis seems to be correct.
 >>
->> The last change adds actual fb_set_par support. Other preceeding
->> changes makes the way clear for it as well as does certain cleanup's
->> on the way.
 >>
->> This has been tested on da850 evm as is. This was also tested on
->> am335x-evm & am335x-evmsk with a series that adds DT support.
+>> (cc originator of the bug)
 >>
->> This is based on v3.8-rc3, this is the only change in this revision.
->> The new version of this series is being posted so that this series can=
+>> If I am reading this correctly, then when the copy msg was created, a msg
+>> security struct was already allocated
+>> (prepare_copy->load_msg->security_msg_msg_alloc).  So having copy_msg()
+>> clear dst->security is also a memory leak in addition to leading to this
+>> oops.  Attached is a possible, un-tested fix.
+>
+> I can still reproduce the exact same oops with the patch applied. I
+> also wanted to be sure that copy_msg() is called, so I added a warning
+> there, but that never gets triggered. So I suppose the problem is not
+> actually related to CONFIG_CHECKPOINT_RESTORE.
+>
 
->> be applied easily (as __dev* are removed, there would be merge
->> conflicts with v2, which was based on -rc2).
->> series
->=20
-> Can you please consider this series for inclusion. There are no
-> pending comments or dependency for this series. If you need a
-> pull request, let me know, I will sent it.
+Hello.
+Unfortunately, you are not the first one, who experience problems with Trinity running in KVM.
 
-I handled only the pull request for 3.8 merge window to help Florian
-with it. I didn't mean to become a co-maintainer or such =3D).
+copy_msg() won't be called unless you'll specify the MSG_COPY flag in msgrcv() flags parameter.
 
- Tomi
+Could you make a small investigation around the problem?
+For example, does this problem appear, is you disable CONFIG_CHECKPOINT_RESTORE config option?
 
 
-
---------------enig84BFB8ADE209F0A10B699267
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with undefined - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJRE3AdAAoJEPo9qoy8lh71KvwP/j7flxTpyAiBAE+bOxK4G7Kt
-9Gn1FdshJPQAfMtgq9i/8TPeAAEPAA5deXr3lzHFzZVRcmlgP/t20hW19Fd6G5BB
-17Z6ARmEXbl6zgMavI8G6eQ8VSs1RAOtrc1wksVRDSJzYNSQ7qeh2yjQ5xj/eUQu
-6a0vInt5UzYFOjnayqLMl4ur75PhLPQ1qfzwsTjQ5SNK4iX04SKDSJwIs2ujZeMH
-aICzD5CvoaMDxKljl6qu3IQ+9YOAmBJGIwW8jPc7s/MbUBsiFu680sRRKm69yeLZ
-9947pZ4o+889fywmEiaDW+FJIDte/IrYeI3WdM5eRQ9aYi8wVKY44lfmU6Uxiddc
-GSE5DnfNNMInUexcQcIZbYIjoqBbysG49CXdV/dm4QHdfbztoTuBoL3IdfIunUUC
-ki8CARKFEQvXUakrFZgHopFp5tndLlUK0TZ1Z0hH7BkbSpSAfV0qw7umZK4uYNki
-MPPLd6rClcdLavEvP0y/AJqbqqsN7ejPb6iUfraS87H4e6iO6KUnO6bYVMVdgfLU
-hwWeDtoKfS+P0TWApo89nWRO7mPbfrAQsNWWliL3XDcEVuJnhSSniYpjO+I9W3YW
-Ll6AjTEbCukLEgpwOZJKN1mtRy5w9PbLqq9xpOn46uwEzbl10/An+GdI8ovijQNF
-NnDJizsamiCHjVE7fweJ
-=l0He
------END PGP SIGNATURE-----
-
---------------enig84BFB8ADE209F0A10B699267--
+-- 
+Best regards,
+Stanislav Kinsbursky
