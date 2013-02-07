@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759415Ab3BGVD4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 16:03:56 -0500
-Received: from mga14.intel.com ([143.182.124.37]:15699 "EHLO mga14.intel.com"
+	id S1759430Ab3BGVD7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 16:03:59 -0500
+Received: from mga14.intel.com ([143.182.124.37]:49853 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759353Ab3BGVDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 16:03:52 -0500
+	id S1759353Ab3BGVD5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 16:03:57 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,623,1355126400"; 
-   d="scan'208";a="253970083"
+   d="scan'208";a="253970255"
 From: Tomas Winkler <tomas.winkler@intel.com>
 To: gregkh@linuxfoundation.org, sameo@linux.intel.com
 Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
         Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next 04/11] mei: bus: Add bus related structures to mei_cl
-Date: Thu,  7 Feb 2013 23:03:10 +0200
-Message-Id: <1360270997-7639-5-git-send-email-tomas.winkler@intel.com>
+Subject: [char-misc-next 10/11] mei: nfc: Add NFC device to the MEI bus
+Date: Thu,  7 Feb 2013 23:03:16 +0200
+Message-Id: <1360270997-7639-11-git-send-email-tomas.winkler@intel.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1360270997-7639-1-git-send-email-tomas.winkler@intel.com>
 References: <1360270997-7639-1-git-send-email-tomas.winkler@intel.com>
@@ -25,163 +25,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Samuel Ortiz <sameo@linux.intel.com>
 
-We keep track of all MEI bus clients through a specific linked list.
-We also have a mei_bus_client instance in the mei_cl structure.
+After building its bus name as a string based on its vendor id and radio
+type, we can add it to the bus.
 
 Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 ---
- drivers/misc/mei/bus.c     |   47 +++++++++++++++++++++++++++++++------------
- drivers/misc/mei/client.c  |    1 +
- drivers/misc/mei/init.c    |    1 +
- drivers/misc/mei/mei_dev.h |    8 +++++++
- 4 files changed, 44 insertions(+), 13 deletions(-)
+ drivers/misc/mei/nfc.c |   56 ++++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/misc/mei/nfc.h |    6 +++++
+ 2 files changed, 62 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/misc/mei/bus.c b/drivers/misc/mei/bus.c
-index 9689b95..97afec6 100644
---- a/drivers/misc/mei/bus.c
-+++ b/drivers/misc/mei/bus.c
-@@ -119,16 +119,37 @@ static struct device_type mei_client_type = {
- 	.release	= mei_client_dev_release,
+diff --git a/drivers/misc/mei/nfc.c b/drivers/misc/mei/nfc.c
+index ab66944..c65bd44 100644
+--- a/drivers/misc/mei/nfc.c
++++ b/drivers/misc/mei/nfc.c
+@@ -43,6 +43,8 @@ struct mei_bus_dev_nfc {
+ 	u8 fw_ivn;
+ 	u8 vendor_id;
+ 	u8 radio_type;
++
++	char *bus_name;
  };
  
-+static struct mei_cl *mei_bus_find_mei_cl_by_uuid(struct mei_device *mei_dev,
-+						uuid_le uuid)
+ struct mei_bus_dev_nfc nfc_bdev;
+@@ -71,6 +73,39 @@ static void mei_nfc_free(struct mei_bus_dev_nfc *bdev)
+ 	}
+ }
+ 
++static int mei_nfc_build_bus_name(struct mei_bus_dev_nfc *bdev)
 +{
-+	struct mei_cl *cl, *next;
++	struct mei_device *dev;
 +
-+	list_for_each_entry_safe(cl, next,
-+				 &mei_dev->bus_client_list, bus_client_link) {
-+		if (!uuid_le_cmp(uuid, cl->bus_client_uuid))
-+			return cl;
++	if (!bdev->cl)
++		return -ENODEV;
++
++	dev = bdev->cl->dev;
++
++	switch (bdev->vendor_id) {
++	case MEI_NFC_VENDOR_INSIDE:
++		switch (bdev->radio_type) {
++		case MEI_NFC_VENDOR_INSIDE_UREAD:
++			bdev->bus_name = "microread";
++			return 0;
++
++		default:
++			dev_err(&dev->pdev->dev, "Unknow radio type 0x%x\n",
++				bdev->radio_type);
++
++			return -EINVAL;
++		}
++
++	default:
++		dev_err(&dev->pdev->dev, "Unknow vendor ID 0x%x\n",
++			bdev->vendor_id);
++
++		return -EINVAL;
 +	}
 +
-+	return NULL;
++	return 0;
 +}
 +
- struct mei_bus_client *mei_add_device(struct mei_device *mei_dev,
- 				      uuid_le uuid, char *name)
+ static int mei_nfc_connect(struct mei_bus_dev_nfc *bdev)
  {
- 	struct mei_bus_client *client;
-+	struct mei_cl *cl;
- 	int status;
+ 	struct mei_device *dev;
+@@ -192,6 +227,7 @@ err:
+ static void mei_nfc_init(struct work_struct *work)
+ {
+ 	struct mei_device *dev;
++	struct mei_bus_client *bus_client;
+ 	struct mei_bus_dev_nfc *bdev;
+ 	struct mei_cl *cl_info, *cl;
+ 	int ret;
+@@ -243,6 +279,23 @@ static void mei_nfc_init(struct work_struct *work)
+ 		return;
+ 	}
  
-+	cl = mei_bus_find_mei_cl_by_uuid(mei_dev, uuid);
-+	if (cl == NULL)
-+		return NULL;
-+
- 	client = kzalloc(sizeof(struct mei_bus_client), GFP_KERNEL);
- 	if (!client)
- 		return NULL;
- 
-+	client->cl = cl;
-+
- 	client->mei_dev = mei_dev;
- 	client->uuid = uuid;
- 	strlcpy(client->name, name, sizeof(client->name));
-@@ -140,19 +161,17 @@ struct mei_bus_client *mei_add_device(struct mei_device *mei_dev,
- 	dev_set_name(&client->dev, "%s", client->name);
- 
- 	status = device_register(&client->dev);
--	if (status)
--		goto out_err;
-+	if (status) {
-+		kfree(client);
-+		dev_err(client->dev.parent, "Failed to register MEI client\n");
-+		return NULL;
++	if (mei_nfc_build_bus_name(bdev) < 0) {
++		dev_err(&dev->pdev->dev,
++			"Could not build the bus ID name\n");
++		return;
 +	}
 +
-+	cl->client = client;
++	bus_client = mei_add_device(dev, mei_nfc_guid,
++				    bdev->bus_name);
++	if (!bus_client) {
++		dev_err(&dev->pdev->dev,
++			"Could not add the NFC device to the MEI bus\n");
++
++		goto err;
++	}
++
++	bus_client->priv_data = bdev;
++
+ 	return;
  
- 	dev_dbg(&client->dev, "client %s registered\n", client->name);
+ err:
+@@ -324,5 +377,8 @@ void mei_nfc_host_exit(void)
+ {
+ 	struct mei_bus_dev_nfc *bdev = &nfc_bdev;
  
- 	return client;
--
--out_err:
--	dev_err(client->dev.parent, "Failed to register MEI client\n");
--
--	kfree(client);
--
--	return NULL;
++	if (bdev->cl && bdev->cl->client)
++		mei_remove_device(bdev->cl->client);
++
+ 	mei_nfc_free(bdev);
  }
- EXPORT_SYMBOL(mei_add_device);
+diff --git a/drivers/misc/mei/nfc.h b/drivers/misc/mei/nfc.h
+index 59e6703..4440436 100644
+--- a/drivers/misc/mei/nfc.h
++++ b/drivers/misc/mei/nfc.h
+@@ -119,4 +119,10 @@ struct mei_nfc_connect_resp {
+ #define MEI_NFC_SUBCMD_CONNECT    0x00
+ #define MEI_NFC_SUBCMD_IF_VERSION 0x01
  
-@@ -353,9 +372,10 @@ out:
- 
- int mei_bus_send(struct mei_bus_client *client, u8 *buf, size_t length)
- {
--	struct mei_cl *cl = NULL;
-+	struct mei_cl *cl = client->cl;
- 
--	/* TODO: hook between mei_bus_client and mei_cl */
-+	if (cl == NULL)
-+		return -ENODEV;
- 
- 	if (client->ops && client->ops->send)
- 		return client->ops->send(client, buf, length);
-@@ -366,9 +386,10 @@ EXPORT_SYMBOL(mei_bus_send);
- 
- int mei_bus_recv(struct mei_bus_client *client, u8 *buf, size_t length)
- {
--	struct mei_cl *cl = NULL;
-+	struct mei_cl *cl =  client->cl;
- 
--	/* TODO: hook between mei_bus_client and mei_cl */
-+	if (cl == NULL)
-+		return -ENODEV;
- 
- 	if (client->ops && client->ops->recv)
- 		return client->ops->recv(client, buf, length);
-diff --git a/drivers/misc/mei/client.c b/drivers/misc/mei/client.c
-index 1569afe..5724499 100644
---- a/drivers/misc/mei/client.c
-+++ b/drivers/misc/mei/client.c
-@@ -216,6 +216,7 @@ void mei_cl_init(struct mei_cl *cl, struct mei_device *dev)
- 	init_waitqueue_head(&cl->rx_wait);
- 	init_waitqueue_head(&cl->tx_wait);
- 	INIT_LIST_HEAD(&cl->link);
-+	INIT_LIST_HEAD(&cl->bus_client_link);
- 	cl->reading_state = MEI_IDLE;
- 	cl->writing_state = MEI_IDLE;
- 	cl->dev = dev;
-diff --git a/drivers/misc/mei/init.c b/drivers/misc/mei/init.c
-index 6ec5301..b812d56 100644
---- a/drivers/misc/mei/init.c
-+++ b/drivers/misc/mei/init.c
-@@ -46,6 +46,7 @@ void mei_device_init(struct mei_device *dev)
- {
- 	/* setup our list array */
- 	INIT_LIST_HEAD(&dev->file_list);
-+	INIT_LIST_HEAD(&dev->bus_client_list);
- 	mutex_init(&dev->device_lock);
- 	init_waitqueue_head(&dev->wait_recvd_msg);
- 	init_waitqueue_head(&dev->wait_stop_wd);
-diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
-index 948f791..d9adad6 100644
---- a/drivers/misc/mei/mei_dev.h
-+++ b/drivers/misc/mei/mei_dev.h
-@@ -210,6 +210,11 @@ struct mei_cl {
- 	enum mei_file_transaction_states writing_state;
- 	int sm_state;
- 	struct mei_cl_cb *read_cb;
++/* Vendors */
++#define MEI_NFC_VENDOR_INSIDE 0x00
 +
-+	/* MEI bus data */
-+	struct mei_bus_client *client;
-+	struct list_head bus_client_link;
-+	uuid_le bus_client_uuid;
- };
- 
- /** struct mei_hw_ops
-@@ -403,6 +408,9 @@ struct mei_device {
- 
- 	struct work_struct init_work;
- 
-+	/* List of bus clients */
-+	struct list_head bus_client_list;
++/* Radio types */
++#define MEI_NFC_VENDOR_INSIDE_UREAD 0x00
 +
- 	const struct mei_hw_ops *ops;
- 	char hw[0] __aligned(sizeof(void *));
- };
+ #endif /* _MEI_NFC_H */
 -- 
 1.7.4.4
 
