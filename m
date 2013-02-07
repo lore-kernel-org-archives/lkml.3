@@ -1,79 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755877Ab3BGAsy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 19:48:54 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:54964 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755269Ab3BGAsv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 19:48:51 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <liuj97@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] ACPI / scan: Simplify container driver
-Date: Thu, 07 Feb 2013 01:55:09 +0100
-Message-ID: <6374398.88OyYZxaMu@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1360189938.23410.276.camel@misato.fc.hp.com>
-References: <1873429.MS5RQDxTye@vostro.rjw.lan> <5090866.2BHgpRnuEZ@vostro.rjw.lan> <1360189938.23410.276.camel@misato.fc.hp.com>
+	id S1756582Ab3BGAxM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 19:53:12 -0500
+Received: from mail-da0-f49.google.com ([209.85.210.49]:34301 "EHLO
+	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755021Ab3BGAxH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 19:53:07 -0500
+Date: Wed, 6 Feb 2013 16:53:02 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH wq/for-3.9] workqueue: make work->data point to pool after
+ try_to_grab_pending()
+Message-ID: <20130207005302.GH2875@htj.dyndns.org>
+References: <1359657696-2767-1-git-send-email-laijs@cn.fujitsu.com>
+ <1359657696-2767-5-git-send-email-laijs@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1359657696-2767-5-git-send-email-laijs@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, February 06, 2013 03:32:18 PM Toshi Kani wrote:
-> On Mon, 2013-02-04 at 00:47 +0100, Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > 
-> > The only useful thing that the ACPI container driver does is to
-> > install system notify handlers for all container and module device
-> > objects it finds in the namespace.  The driver structure,
-> > acpi_container_driver, and the data structures created by its
-> > .add() callback are in fact not used by the driver, so remove
-> > them entirely.
-> > 
-> > It also makes a little sense to build that driver as a module,
-> > so make it non-modular and add its initialization to the
-> > namespace scanning code.
-> > 
-> > In addition to that, make the namespace walk callback used for
-> > installing the notify handlers more straightforward.
-> 
-> I think the container driver needs to be registered as an ACPI scan
-> driver so that sysfs eject will continue to work for container devices,
-> such as ACPI0004:XX/eject.  Since the container driver does not support
-> ACPI eject notification (and we have been discussing how system device
-> hot-plug should work), this sysfs eject is the only way to eject a
-> container device at this point.  I will send an update patchset that
-> applies on top of this patch.
-> 
-> With the update in my patchset:
-> Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-Thanks, but I'd like to (1) apply your patch from
-https://patchwork.kernel.org/patch/2108851/ first and then (2) fold your [2/2]
-into my [2/2], if you don't mind, and apply that next.
+We plan to use work->data pointing to cwq as the synchronization
+invariant when determining whether a given work item is on a locked
+pool or not, which requires work->data pointing to cwq only while the
+work item is queued on the associated pool.
 
-Moreover, I'm wondering if the #ifndef FORCE_EJECT thing in acpi_eject_store()
-actually makes sense after the recent changes to acpi_bus_trim(), because that
-can't fail now, so the eject will always be carried out.  So perhaps we can
-simply remove the acpi_device->driver check from there entirely in the first
-place?
+With delayed_work updated not to overload work->data for target
+workqueue recording, the only case where we still have off-queue
+work->data pointing to cwq is try_to_grab_pending() which doesn't
+update work->data after stealing a queued work item.  There's no
+reason for try_to_grab_pending() to not update work->data to point to
+the pool instead of cwq, like the normal execution does.
 
-If we really want to be able to prevent ejects from happening in some cases,
-we need to implement something along the lines discussed with Greg.
+This patch adds set_work_pool_and_keep_pending() which makes
+work->data point to pool instead of cwq but keeps the pending bit
+unlike set_work_pool_and_clear_pending() (surprise!).
 
-Thanks,
-Rafael
+After this patch, it's guaranteed that only queued work items point to
+cwqs.
 
+This patch doesn't introduce any visible behavior change.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+tj: Renamed the new helper function to match
+    set_work_pool_and_clear_pending() and rewrote the description.
+
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ kernel/workqueue.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -556,6 +556,13 @@ static void set_work_cwq(struct work_str
+ 		      WORK_STRUCT_PENDING | WORK_STRUCT_CWQ | extra_flags);
+ }
+ 
++static void set_work_pool_and_keep_pending(struct work_struct *work,
++					   int pool_id)
++{
++	set_work_data(work, (unsigned long)pool_id << WORK_OFFQ_POOL_SHIFT,
++		      WORK_STRUCT_PENDING);
++}
++
+ static void set_work_pool_and_clear_pending(struct work_struct *work,
+ 					    int pool_id)
+ {
+@@ -1115,6 +1122,9 @@ static int try_to_grab_pending(struct wo
+ 			cwq_dec_nr_in_flight(get_work_cwq(work),
+ 				get_work_color(work));
+ 
++			/* work->data points to cwq iff queued, point to pool */
++			set_work_pool_and_keep_pending(work, pool->id);
++
+ 			spin_unlock(&pool->lock);
+ 			return 1;
+ 		}
