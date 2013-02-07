@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161027Ab3BGSHr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 13:07:47 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:47149 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932117Ab3BGSHq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 13:07:46 -0500
-Message-ID: <5113ED43.1060609@ti.com>
-Date: Thu, 7 Feb 2013 23:36:59 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: "Kumar, Anil" <anilkumar.v@ti.com>
-CC: <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux@arm.linux.org.uk>, <khilman@deeprootsystems.com>, <hs@denx.de>,
-        <mporter@ti.com>, <broonie@opensource.wolfsonmicro.com>,
-        <mchehab@redhat.com>, <vaibhav.bedia@ti.com>, <b-cousson@ti.com>,
-        <tony@atomide.com>, <grant.likely@secretlab.ca>,
-        <rob.herring@calxeda.com>
-Subject: Re: [PATCH V2 1/2] ARM: davinci: da850: add wdt DT node
-References: <1360123204-9978-1-git-send-email-anilkumar.v@ti.com> <1360123204-9978-2-git-send-email-anilkumar.v@ti.com>
-In-Reply-To: <1360123204-9978-2-git-send-email-anilkumar.v@ti.com>
-Content-Type: text/plain; charset="UTF-8"
+	id S1759272Ab3BGSO1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 13:14:27 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:52817 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757017Ab3BGSO0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 13:14:26 -0500
+Date: Thu, 07 Feb 2013 13:14:20 -0500 (EST)
+Message-Id: <20130207.131420.1211188723341167971.davem@davemloft.net>
+To: bhutchings@solarflare.com
+Cc: eric.dumazet@gmail.com, mst@redhat.com, netdev@vger.kernel.org,
+        eilong@broadcom.com, jeffrey.t.kirsher@intel.com,
+        jesse.brandeburg@intel.com, bruce.w.allan@intel.com,
+        carolyn.wyborny@intel.com, donald.c.skidmore@intel.com,
+        gregory.v.rose@intel.com, peter.p.waskiewicz.jr@intel.com,
+        alexander.h.duyck@intel.com, john.ronciak@intel.com,
+        tushar.n.dave@intel.com, jitendra.kalsaria@qlogic.com,
+        sony.chacko@qlogic.com, linux-driver@qlogic.com,
+        john.r.fastabend@intel.com, jacob.e.keller@intel.com,
+        linux-kernel@vger.kernel.org, e1000-devel@lists.sourceforge.net
+Subject: Re: [PATCH 0/2] fix kernel crash with macvtap on top of LRO
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1360254046.3605.8.camel@bwh-desktop.uk.solarflarecom.com>
+References: <1360193660.32217.39.camel@deadeye.wl.decadent.org.uk>
+	<1360207111.28557.47.camel@edumazet-glaptop>
+	<1360254046.3605.8.camel@bwh-desktop.uk.solarflarecom.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/6/2013 9:30 AM, Kumar, Anil wrote:
-> Add da850 wdt DT node.
-> Add OF_DEV_AUXDATA for wdt driver to use wdt clock.
-> 
-> Signed-off-by: Kumar, Anil <anilkumar.v@ti.com>
+From: Ben Hutchings <bhutchings@solarflare.com>
+Date: Thu, 7 Feb 2013 16:20:46 +0000
 
-> --- a/arch/arm/mach-davinci/da8xx-dt.c
-> +++ b/arch/arm/mach-davinci/da8xx-dt.c
-> @@ -37,11 +37,17 @@ static void __init da8xx_init_irq(void)
->  	of_irq_init(da8xx_irq_match);
->  }
->  
-> +struct of_dev_auxdata da850_auxdata_lookup[] __initdata = {
-> +	OF_DEV_AUXDATA("ti,davinci-wdt", 0x01c21000, "watchdog", NULL),
-> +	{}
-> +};
-> +
->  #ifdef CONFIG_ARCH_DAVINCI_DA850
->  
->  static void __init da850_init_machine(void)
->  {
-> -	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
-> +	of_platform_populate(NULL, of_default_bus_match_table,
-> +			da850_auxdata_lookup, NULL);
+> If the consensus is still that we must preserve packets exactly (aside
+> from the usual modifications by IP routers) then LRO should be disabled
+> on all devices for which forwarding is enabled.
 
-These hunks clashed with Manish's I2C0 node addition. I resolved it
-locally. I pushed the commit to v3.9/dt-2 branch of my gitorious tree.
-Please use this as the baseline for further DT patches.
-
-Thanks,
-Sekhar
+I believe this is still undoubtedly the consensus.
