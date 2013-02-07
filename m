@@ -1,221 +1,479 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932261Ab3BGRg7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 12:36:59 -0500
-Received: from mail-da0-f41.google.com ([209.85.210.41]:63498 "EHLO
-	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932193Ab3BGRg5 (ORCPT
+	id S1030226Ab3BGRjs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 12:39:48 -0500
+Received: from mail1.adetelgroup.com ([109.7.94.227]:33157 "HELO
+	mail1.adetelgroup.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1030198Ab3BGRjp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 12:36:57 -0500
-From: manjunath.goudar@linaro.org
-To: linux-usb@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        stern@rowland.harvard.edu, arnd@linaro.org, gregkh@linuxfoundation.org,
-        Manjunath Goudar <manjunath.goudar@linaro.org>,
-        Greg KH <greg@kroah.com>, Wan ZongShun <mcuos.com@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 10/10] USB: EHCI: make ehci-w90X900 a separate driver
-Date: Thu,  7 Feb 2013 23:04:07 +0530
-Message-Id: <5113e637.c84e420a.08c3.ffffbf20@mx.google.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1360258447-27247-1-git-send-email-yes>
-References: <yes>
- <1360258447-27247-1-git-send-email-yes>
+	Thu, 7 Feb 2013 12:39:45 -0500
+X-Greylist: delayed 612 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Feb 2013 12:39:45 EST
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+In-Reply-To: <1360257092-13351-1-git-send-email-nicolas.ferre@atmel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+Content-class: urn:content-classes:message
+Subject: Re: [PATCH] ARM: at91: remove NEOCORE 926 board
+Date: Thu, 7 Feb 2013 18:29:28 +0100
+Message-ID: <3465D313FDFB824F9A9C8CD24FA4F6BCD67C02@frontmail.adetel.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH] ARM: at91: remove NEOCORE 926 board
+Thread-Index: Ac4FWK+hA3k/16MfS1Gu9UiC0S68ww==
+References: <1360257092-13351-1-git-send-email-nicolas.ferre@atmel.com>
+From: "BELLONI Alexandre" <abelloni@adeneo-embedded.com>
+To: "Nicolas Ferre" <nicolas.ferre@atmel.com>
+Cc: "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+X-OriginalArrivalTime: 07 Feb 2013 17:29:31.0341 (UTC) FILETIME=[B04CD7D0:01CE0558]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Manjunath Goudar <manjunath.goudar@linaro.org>
+Acked-by: Alexandre Belloni <abelloni@adeneo-embedded.com>
 
-Separate the Nuvoton On-Chip host controller driver from ehci-hcd host code
-into its own driver module.
+On 07/02/2013 18:11, Nicolas Ferre wrote:
+> The board is not available anymore and it seems its use
+> is very limited.
+>
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> Cc: Alexandre Belloni <abelloni@adeneo-embedded.com>
+> ---
+>   arch/arm/mach-at91/Kconfig            |   6 -
+>   arch/arm/mach-at91/Makefile           |   1 -
+>   arch/arm/mach-at91/board-neocore926.c | 387 ----------------------------------
+>   3 files changed, 394 deletions(-)
+>   delete mode 100644 arch/arm/mach-at91/board-neocore926.c
+>
+> diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
+> index 958358c..6071f4c 100644
+> --- a/arch/arm/mach-at91/Kconfig
+> +++ b/arch/arm/mach-at91/Kconfig
+> @@ -352,12 +352,6 @@ config MACH_USB_A9263
+>   	  Select this if you are using a Calao Systems USB-A9263.
+>   	  <http://www.calao-systems.com>
+>   
+> -config MACH_NEOCORE926
+> -	bool "Adeneo NEOCORE926"
+> -	select HAVE_AT91_DATAFLASH_CARD
+> -	help
+> -	  Select this if you are using the Adeneo Neocore 926 board.
+> -
+>   endif
+>   
+>   # ----------------------------------------------------------
+> diff --git a/arch/arm/mach-at91/Makefile b/arch/arm/mach-at91/Makefile
+> index b38a1dc..39218ca 100644
+> --- a/arch/arm/mach-at91/Makefile
+> +++ b/arch/arm/mach-at91/Makefile
+> @@ -66,7 +66,6 @@ obj-$(CONFIG_MACH_AT91SAM9G10EK) += board-sam9261ek.o
+>   # AT91SAM9263 board-specific support
+>   obj-$(CONFIG_MACH_AT91SAM9263EK) += board-sam9263ek.o
+>   obj-$(CONFIG_MACH_USB_A9263)	+= board-usb-a926x.o
+> -obj-$(CONFIG_MACH_NEOCORE926)	+= board-neocore926.o
+>   
+>   # AT91SAM9RL board-specific support
+>   obj-$(CONFIG_MACH_AT91SAM9RLEK)	+= board-sam9rlek.o
+> diff --git a/arch/arm/mach-at91/board-neocore926.c b/arch/arm/mach-at91/board-neocore926.c
+> deleted file mode 100644
+> index bc7a1c4..0000000
+> --- a/arch/arm/mach-at91/board-neocore926.c
+> +++ /dev/null
+> @@ -1,387 +0,0 @@
+> -/*
+> - * linux/arch/arm/mach-at91/board-neocore926.c
+> - *
+> - *  Copyright (C) 2005 SAN People
+> - *  Copyright (C) 2007 Atmel Corporation
+> - *  Copyright (C) 2008 ADENEO.
+> - *
+> - * This program is free software; you can redistribute it and/or modify
+> - * it under the terms of the GNU General Public License as published by
+> - * the Free Software Foundation; either version 2 of the License, or
+> - * (at your option) any later version.
+> - *
+> - * This program is distributed in the hope that it will be useful,
+> - * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> - * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> - * GNU General Public License for more details.
+> - *
+> - * You should have received a copy of the GNU General Public License
+> - * along with this program; if not, write to the Free Software
+> - * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+> - */
+> -
+> -#include <linux/types.h>
+> -#include <linux/gpio.h>
+> -#include <linux/init.h>
+> -#include <linux/mm.h>
+> -#include <linux/module.h>
+> -#include <linux/platform_device.h>
+> -#include <linux/spi/spi.h>
+> -#include <linux/spi/ads7846.h>
+> -#include <linux/fb.h>
+> -#include <linux/gpio_keys.h>
+> -#include <linux/input.h>
+> -
+> -#include <video/atmel_lcdc.h>
+> -
+> -#include <asm/setup.h>
+> -#include <asm/mach-types.h>
+> -#include <asm/irq.h>
+> -#include <asm/sizes.h>
+> -
+> -#include <asm/mach/arch.h>
+> -#include <asm/mach/map.h>
+> -#include <asm/mach/irq.h>
+> -
+> -#include <mach/hardware.h>
+> -#include <mach/at91sam9_smc.h>
+> -
+> -#include "at91_aic.h"
+> -#include "board.h"
+> -#include "sam9_smc.h"
+> -#include "generic.h"
+> -
+> -
+> -static void __init neocore926_init_early(void)
+> -{
+> -	/* Initialize processor: 20 MHz crystal */
+> -	at91_initialize(20000000);
+> -}
+> -
+> -/*
+> - * USB Host port
+> - */
+> -static struct at91_usbh_data __initdata neocore926_usbh_data = {
+> -	.ports		= 2,
+> -	.vbus_pin	= { AT91_PIN_PA24, AT91_PIN_PA21 },
+> -	.overcurrent_pin= {-EINVAL, -EINVAL},
+> -};
+> -
+> -/*
+> - * USB Device port
+> - */
+> -static struct at91_udc_data __initdata neocore926_udc_data = {
+> -	.vbus_pin	= AT91_PIN_PA25,
+> -	.pullup_pin	= -EINVAL,		/* pull-up driven by UDC */
+> -};
+> -
+> -
+> -/*
+> - * ADS7846 Touchscreen
+> - */
+> -#if defined(CONFIG_TOUCHSCREEN_ADS7846) || defined(CONFIG_TOUCHSCREEN_ADS7846_MODULE)
+> -static int ads7843_pendown_state(void)
+> -{
+> -	return !at91_get_gpio_value(AT91_PIN_PA15);	/* Touchscreen PENIRQ */
+> -}
+> -
+> -static struct ads7846_platform_data ads_info = {
+> -	.model			= 7843,
+> -	.x_min			= 150,
+> -	.x_max			= 3830,
+> -	.y_min			= 190,
+> -	.y_max			= 3830,
+> -	.vref_delay_usecs	= 100,
+> -	.x_plate_ohms		= 450,
+> -	.y_plate_ohms		= 250,
+> -	.pressure_max		= 15000,
+> -	.debounce_max		= 1,
+> -	.debounce_rep		= 0,
+> -	.debounce_tol		= (~0),
+> -	.get_pendown_state	= ads7843_pendown_state,
+> -};
+> -
+> -static void __init neocore926_add_device_ts(void)
+> -{
+> -	at91_set_B_periph(AT91_PIN_PA15, 1);	/* External IRQ1, with pullup */
+> -	at91_set_gpio_input(AT91_PIN_PC13, 1);	/* Touchscreen BUSY signal */
+> -}
+> -#else
+> -static void __init neocore926_add_device_ts(void) {}
+> -#endif
+> -
+> -/*
+> - * SPI devices.
+> - */
+> -static struct spi_board_info neocore926_spi_devices[] = {
+> -#if defined(CONFIG_MTD_AT91_DATAFLASH_CARD)
+> -	{	/* DataFlash card */
+> -		.modalias	= "mtd_dataflash",
+> -		.chip_select	= 0,
+> -		.max_speed_hz	= 15 * 1000 * 1000,
+> -		.bus_num	= 0,
+> -	},
+> -#endif
+> -#if defined(CONFIG_TOUCHSCREEN_ADS7846) || defined(CONFIG_TOUCHSCREEN_ADS7846_MODULE)
+> -	{
+> -		.modalias	= "ads7846",
+> -		.chip_select	= 1,
+> -		.max_speed_hz	= 125000 * 16,
+> -		.bus_num	= 0,
+> -		.platform_data	= &ads_info,
+> -		.irq		= NR_IRQS_LEGACY + AT91SAM9263_ID_IRQ1,
+> -	},
+> -#endif
+> -};
+> -
+> -
+> -/*
+> - * MCI (SD/MMC)
+> - */
+> -static struct mci_platform_data __initdata neocore926_mci0_data = {
+> -	.slot[0] = {
+> -		.bus_width	= 4,
+> -		.detect_pin	= AT91_PIN_PE18,
+> -		.wp_pin		= AT91_PIN_PE19,
+> -	},
+> -};
+> -
+> -
+> -/*
+> - * MACB Ethernet device
+> - */
+> -static struct macb_platform_data __initdata neocore926_macb_data = {
+> -	.phy_irq_pin	= AT91_PIN_PE31,
+> -	.is_rmii	= 1,
+> -};
+> -
+> -
+> -/*
+> - * NAND flash
+> - */
+> -static struct mtd_partition __initdata neocore926_nand_partition[] = {
+> -	{
+> -		.name	= "Linux Kernel",	/* "Partition 1", */
+> -		.offset	= 0,
+> -		.size	= SZ_8M,
+> -	},
+> -	{
+> -		.name	= "Filesystem",		/* "Partition 2", */
+> -		.offset	= MTDPART_OFS_NXTBLK,
+> -		.size	= SZ_32M,
+> -	},
+> -	{
+> -		.name	= "Free",		/* "Partition 3", */
+> -		.offset	= MTDPART_OFS_NXTBLK,
+> -		.size	= MTDPART_SIZ_FULL,
+> -	},
+> -};
+> -
+> -static struct atmel_nand_data __initdata neocore926_nand_data = {
+> -	.ale			= 21,
+> -	.cle			= 22,
+> -	.rdy_pin		= AT91_PIN_PB19,
+> -	.rdy_pin_active_low	= 1,
+> -	.enable_pin		= AT91_PIN_PD15,
+> -	.ecc_mode		= NAND_ECC_SOFT,
+> -	.parts			= neocore926_nand_partition,
+> -	.num_parts		= ARRAY_SIZE(neocore926_nand_partition),
+> -	.det_pin		= -EINVAL,
+> -};
+> -
+> -static struct sam9_smc_config __initdata neocore926_nand_smc_config = {
+> -	.ncs_read_setup		= 0,
+> -	.nrd_setup		= 1,
+> -	.ncs_write_setup	= 0,
+> -	.nwe_setup		= 1,
+> -
+> -	.ncs_read_pulse		= 4,
+> -	.nrd_pulse		= 4,
+> -	.ncs_write_pulse	= 4,
+> -	.nwe_pulse		= 4,
+> -
+> -	.read_cycle		= 6,
+> -	.write_cycle		= 6,
+> -
+> -	.mode			= AT91_SMC_READMODE | AT91_SMC_WRITEMODE | AT91_SMC_EXNWMODE_DISABLE | AT91_SMC_DBW_8,
+> -	.tdf_cycles		= 2,
+> -};
+> -
+> -static void __init neocore926_add_device_nand(void)
+> -{
+> -	/* configure chip-select 3 (NAND) */
+> -	sam9_smc_configure(0, 3, &neocore926_nand_smc_config);
+> -
+> -	at91_add_device_nand(&neocore926_nand_data);
+> -}
+> -
+> -
+> -/*
+> - * LCD Controller
+> - */
+> -#if defined(CONFIG_FB_ATMEL) || defined(CONFIG_FB_ATMEL_MODULE)
+> -static struct fb_videomode at91_tft_vga_modes[] = {
+> -	{
+> -		.name		= "TX09D50VM1CCA @ 60",
+> -		.refresh	= 60,
+> -		.xres		= 240,		.yres		= 320,
+> -		.pixclock	= KHZ2PICOS(5000),
+> -
+> -		.left_margin	= 1,		.right_margin	= 33,
+> -		.upper_margin	= 1,		.lower_margin	= 0,
+> -		.hsync_len	= 5,		.vsync_len	= 1,
+> -
+> -		.sync		= FB_SYNC_HOR_HIGH_ACT | FB_SYNC_VERT_HIGH_ACT,
+> -		.vmode		= FB_VMODE_NONINTERLACED,
+> -	},
+> -};
+> -
+> -static struct fb_monspecs at91fb_default_monspecs = {
+> -	.manufacturer	= "HIT",
+> -	.monitor	= "TX09D70VM1CCA",
+> -
+> -	.modedb		= at91_tft_vga_modes,
+> -	.modedb_len	= ARRAY_SIZE(at91_tft_vga_modes),
+> -	.hfmin		= 15000,
+> -	.hfmax		= 64000,
+> -	.vfmin		= 50,
+> -	.vfmax		= 150,
+> -};
+> -
+> -#define AT91SAM9263_DEFAULT_LCDCON2 (ATMEL_LCDC_MEMOR_LITTLE \
+> -					| ATMEL_LCDC_DISTYPE_TFT \
+> -					| ATMEL_LCDC_CLKMOD_ALWAYSACTIVE)
+> -
+> -static void at91_lcdc_power_control(int on)
+> -{
+> -	at91_set_gpio_value(AT91_PIN_PA30, on);
+> -}
+> -
+> -/* Driver datas */
+> -static struct atmel_lcdfb_info __initdata neocore926_lcdc_data = {
+> -	.lcdcon_is_backlight		= true,
+> -	.default_bpp			= 16,
+> -	.default_dmacon			= ATMEL_LCDC_DMAEN,
+> -	.default_lcdcon2		= AT91SAM9263_DEFAULT_LCDCON2,
+> -	.default_monspecs		= &at91fb_default_monspecs,
+> -	.atmel_lcdfb_power_control	= at91_lcdc_power_control,
+> -	.guard_time			= 1,
+> -	.lcd_wiring_mode		= ATMEL_LCDC_WIRING_RGB555,
+> -};
+> -
+> -#else
+> -static struct atmel_lcdfb_info __initdata neocore926_lcdc_data;
+> -#endif
+> -
+> -
+> -/*
+> - * GPIO Buttons
+> - */
+> -#if defined(CONFIG_KEYBOARD_GPIO) || defined(CONFIG_KEYBOARD_GPIO_MODULE)
+> -static struct gpio_keys_button neocore926_buttons[] = {
+> -	{	/* BP1, "leftclic" */
+> -		.code		= BTN_LEFT,
+> -		.gpio		= AT91_PIN_PC5,
+> -		.active_low	= 1,
+> -		.desc		= "left_click",
+> -		.wakeup		= 1,
+> -	},
+> -	{	/* BP2, "rightclic" */
+> -		.code		= BTN_RIGHT,
+> -		.gpio		= AT91_PIN_PC4,
+> -		.active_low	= 1,
+> -		.desc		= "right_click",
+> -		.wakeup		= 1,
+> -	},
+> -};
+> -
+> -static struct gpio_keys_platform_data neocore926_button_data = {
+> -	.buttons	= neocore926_buttons,
+> -	.nbuttons	= ARRAY_SIZE(neocore926_buttons),
+> -};
+> -
+> -static struct platform_device neocore926_button_device = {
+> -	.name		= "gpio-keys",
+> -	.id		= -1,
+> -	.num_resources	= 0,
+> -	.dev		= {
+> -		.platform_data	= &neocore926_button_data,
+> -	}
+> -};
+> -
+> -static void __init neocore926_add_device_buttons(void)
+> -{
+> -	at91_set_GPIO_periph(AT91_PIN_PC5, 0);	/* left button */
+> -	at91_set_deglitch(AT91_PIN_PC5, 1);
+> -	at91_set_GPIO_periph(AT91_PIN_PC4, 0);	/* right button */
+> -	at91_set_deglitch(AT91_PIN_PC4, 1);
+> -
+> -	platform_device_register(&neocore926_button_device);
+> -}
+> -#else
+> -static void __init neocore926_add_device_buttons(void) {}
+> -#endif
+> -
+> -
+> -/*
+> - * AC97
+> - */
+> -static struct ac97c_platform_data neocore926_ac97_data = {
+> -	.reset_pin	= AT91_PIN_PA13,
+> -};
+> -
+> -
+> -static void __init neocore926_board_init(void)
+> -{
+> -	/* Serial */
+> -	/* DBGU on ttyS0. (Rx & Tx only) */
+> -	at91_register_uart(0, 0, 0);
+> -
+> -	/* USART0 on ttyS1. (Rx, Tx, RTS, CTS) */
+> -	at91_register_uart(AT91SAM9263_ID_US0, 1, ATMEL_UART_CTS | ATMEL_UART_RTS);
+> -	at91_add_device_serial();
+> -
+> -	/* USB Host */
+> -	at91_add_device_usbh(&neocore926_usbh_data);
+> -
+> -	/* USB Device */
+> -	at91_add_device_udc(&neocore926_udc_data);
+> -
+> -	/* SPI */
+> -	at91_set_gpio_output(AT91_PIN_PE20, 1);		/* select spi0 clock */
+> -	at91_add_device_spi(neocore926_spi_devices, ARRAY_SIZE(neocore926_spi_devices));
+> -
+> -	/* Touchscreen */
+> -	neocore926_add_device_ts();
+> -
+> -	/* MMC */
+> -	at91_add_device_mci(0, &neocore926_mci0_data);
+> -
+> -	/* Ethernet */
+> -	at91_add_device_eth(&neocore926_macb_data);
+> -
+> -	/* NAND */
+> -	neocore926_add_device_nand();
+> -
+> -	/* I2C */
+> -	at91_add_device_i2c(NULL, 0);
+> -
+> -	/* LCD Controller */
+> -	at91_add_device_lcdc(&neocore926_lcdc_data);
+> -
+> -	/* Push Buttons */
+> -	neocore926_add_device_buttons();
+> -
+> -	/* AC97 */
+> -	at91_add_device_ac97(&neocore926_ac97_data);
+> -}
+> -
+> -MACHINE_START(NEOCORE926, "ADENEO NEOCORE 926")
+> -	/* Maintainer: ADENEO */
+> -	.timer		= &at91sam926x_timer,
+> -	.map_io		= at91_map_io,
+> -	.handle_irq	= at91_aic_handle_irq,
+> -	.init_early	= neocore926_init_early,
+> -	.init_irq	= at91_init_irq_default,
+> -	.init_machine	= neocore926_board_init,
+> -MACHINE_END
 
-Signed-off-by: Manjunath Goudar <manjunath.goudar@linaro.org>
-Cc: Greg KH <greg@kroah.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: Wan ZongShun <mcuos.com@gmail.com>
-Cc: linux-usb@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/usb/host/Kconfig        |    2 +-
- drivers/usb/host/Makefile       |    1 +
- drivers/usb/host/ehci-hcd.c     |    6 +--
- drivers/usb/host/ehci-w90x900.c |   90 +++++++++++++++++----------------------
- 4 files changed, 43 insertions(+), 56 deletions(-)
-
-diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index 8d18a6c..1b5e30b 100644
---- a/drivers/usb/host/Kconfig
-+++ b/drivers/usb/host/Kconfig
-@@ -245,7 +245,7 @@ config USB_EHCI_MV
- 	  only be EHCI host. OTG is controller that can switch to host mode.
- 
- config USB_W90X900_EHCI
--	bool "W90X900(W90P910) EHCI support"
-+	 tristate "W90X900(W90P910) EHCI support"
- 	depends on USB_EHCI_HCD && ARCH_W90X900
- 	---help---
- 		Enables support for the W90X900 USB controller
-diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
-index 6c1d0e0..74db4d4 100644
---- a/drivers/usb/host/Makefile
-+++ b/drivers/usb/host/Makefile
-@@ -36,6 +36,7 @@ obj-$(CONFIG_USB_EHCI_S5P)      += ehci-s5p.o
- obj-$(CONFIG_USB_EHCI_MV)       += ehci-mv.o
- obj-$(CONFIG_USB_EHCI_HCD_VT8500)+= ehci-vt8500.o
- obj-$(CONFIG_USB_EHCI_MSM)      += ehci-msm.o
-+obj-$(CONFIG_USB_W90X900_EHCI)  += ehci-w90x900.o
- obj-$(CONFIG_USB_ISP116X_HCD)	+= isp116x-hcd.o
- obj-$(CONFIG_USB_ISP1362_HCD)	+= isp1362-hcd.o
- obj-$(CONFIG_USB_OHCI_HCD)	+= ohci-hcd.o
-diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
-index d44115b..84ed7d7 100644
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -1267,11 +1267,6 @@ MODULE_LICENSE ("GPL");
- #define XILINX_OF_PLATFORM_DRIVER	ehci_hcd_xilinx_of_driver
- #endif
- 
--#ifdef CONFIG_USB_W90X900_EHCI
--#include "ehci-w90x900.c"
--#define	PLATFORM_DRIVER		ehci_hcd_w90x900_driver
--#endif
--
- #ifdef CONFIG_USB_OCTEON_EHCI
- #include "ehci-octeon.c"
- #define PLATFORM_DRIVER		ehci_octeon_driver
-@@ -1314,6 +1309,7 @@ MODULE_LICENSE ("GPL");
- 	!IS_ENABLED(CONFIG_USB_EHCI_MV) && \
- 	!IS_ENABLED(CONFIG_ARCH_VT8500) && \
- 	!IS_ENABLED(CONFIG_USB_EHCI_MSM) && \
-+	!IS_ENABLED(CONFIG_USB_W90X900_EHCI) && \
- 	!defined(PS3_SYSTEM_BUS_DRIVER) && \
- 	!defined(OF_PLATFORM_DRIVER) && \
- 	!defined(XILINX_OF_PLATFORM_DRIVER)
-diff --git a/drivers/usb/host/ehci-w90x900.c b/drivers/usb/host/ehci-w90x900.c
-index 59e0e24..0b677ec 100644
---- a/drivers/usb/host/ehci-w90x900.c
-+++ b/drivers/usb/host/ehci-w90x900.c
-@@ -13,11 +13,31 @@
- 
- #include <linux/platform_device.h>
- 
-+#include <linux/dma-mapping.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/usb.h>
-+#include <linux/usb/hcd.h>
-+#include <linux/io.h>
-+#include "ehci.h"
-+
- /* enable phy0 and phy1 for w90p910 */
- #define	ENPHY		(0x01<<8)
- #define PHY0_CTR	(0xA4)
- #define PHY1_CTR	(0xA8)
- 
-+#define DRIVER_DESC "Nuvoton w90x900 On-Chip EHCI Host driver"
-+
-+static const char hcd_name[] = "ehci-w90x900";
-+
-+static struct hc_driver __read_mostly ehci_w90x900_hc_driver;
-+
-+static const struct ehci_driver_overrides ehci_w90X900_overrides __initdata = {
-+	.reset = ehci_setup,
-+};
-+
- static int usb_w90x900_probe(const struct hc_driver *driver,
- 		      struct platform_device *pdev)
- {
-@@ -99,54 +119,6 @@ void usb_w90x900_remove(struct usb_hcd *hcd, struct platform_device *pdev)
- 	usb_put_hcd(hcd);
- }
- 
--static const struct hc_driver ehci_w90x900_hc_driver = {
--	.description = hcd_name,
--	.product_desc = "Nuvoton w90x900 EHCI Host Controller",
--	.hcd_priv_size = sizeof(struct ehci_hcd),
--
--	/*
--	 * generic hardware linkage
--	 */
--	.irq = ehci_irq,
--	.flags = HCD_USB2|HCD_MEMORY,
--
--	/*
--	 * basic lifecycle operations
--	 */
--	.reset = ehci_setup,
--	.start = ehci_run,
--
--	.stop = ehci_stop,
--	.shutdown = ehci_shutdown,
--
--	/*
--	 * managing i/o requests and associated device resources
--	 */
--	.urb_enqueue = ehci_urb_enqueue,
--	.urb_dequeue = ehci_urb_dequeue,
--	.endpoint_disable = ehci_endpoint_disable,
--	.endpoint_reset = ehci_endpoint_reset,
--
--	/*
--	 * scheduling support
--	 */
--	.get_frame_number = ehci_get_frame,
--
--	/*
--	 * root hub support
--	 */
--	.hub_status_data = ehci_hub_status_data,
--	.hub_control = ehci_hub_control,
--#ifdef	CONFIG_PM
--	.bus_suspend = ehci_bus_suspend,
--	.bus_resume = ehci_bus_resume,
--#endif
--	.relinquish_port	= ehci_relinquish_port,
--	.port_handed_over	= ehci_port_handed_over,
--
--	.clear_tt_buffer_complete = ehci_clear_tt_buffer_complete,
--};
--
- static int ehci_w90x900_probe(struct platform_device *pdev)
- {
- 	if (usb_disabled())
-@@ -168,12 +140,30 @@ static struct platform_driver ehci_hcd_w90x900_driver = {
- 	.probe  = ehci_w90x900_probe,
- 	.remove = ehci_w90x900_remove,
- 	.driver = {
--		.name = "w90x900-ehci",
-+		.name = hcd_name,
- 		.owner = THIS_MODULE,
- 	},
- };
- 
-+static int __init ehci_w90X900_init(void)
-+{
-+	if (usb_disabled())
-+		return -ENODEV;
-+
-+	pr_info("%s: " DRIVER_DESC "\n", hcd_name);
-+
-+	ehci_init_driver(&ehci_w90x900_hc_driver, &ehci_w90X900_overrides);
-+	return platform_driver_register(&ehci_hcd_w90x900_driver);
-+}
-+module_init(ehci_w90X900_init);
-+
-+static void __exit ehci_w90X900_cleanup(void)
-+{
-+	platform_driver_unregister(&ehci_hcd_w90x900_driver);
-+}
-+module_exit(ehci_w90X900_cleanup);
-+
- MODULE_AUTHOR("Wan ZongShun <mcuos.com@gmail.com>");
--MODULE_DESCRIPTION("w90p910 usb ehci driver!");
-+MODULE_DESCRIPTION(DRIVER_DESC);
- MODULE_LICENSE("GPL");
- MODULE_ALIAS("platform:w90p910-ehci");
 -- 
-1.7.9.5
-
+*Alexandre Belloni*
+_Direct Phone_ : +33 4 26 49 25 08
+// */Adeneo Embedded/*
+*/Adetel Group/*
+4, ch. du Ruisseau - 69134 Ecully, France - _Phone_: +33 4 72 18 08 40
+www.adeneo-embedded.com
