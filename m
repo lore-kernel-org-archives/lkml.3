@@ -1,140 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759331Ab3BGUDU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 15:03:20 -0500
-Received: from webmail.solarflare.com ([12.187.104.25]:54968 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759247Ab3BGUDQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 15:03:16 -0500
-Message-ID: <1360267375.3605.32.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [PATCH, resubmit] ax88179_178a: ASIX AX88179_178A USB 3.0/2.0
- to gigabit ethernet adapter driver
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Freddy Xin <freddy@asix.com.tw>
-CC: <netdev@vger.kernel.org>, <davem@davemloft.net>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Date: Thu, 7 Feb 2013 20:02:55 +0000
-In-Reply-To: <1360244360-2700-1-git-send-email-freddy@asix.com.tw>
-References: <1360244360-2700-1-git-send-email-freddy@asix.com.tw>
-Organization: Solarflare
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
+	id S1759348Ab3BGUDe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 15:03:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7654 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759335Ab3BGUDc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 15:03:32 -0500
+Message-ID: <5114088B.8060700@redhat.com>
+Date: Thu, 07 Feb 2013 15:03:23 -0500
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19620.001
-X-TM-AS-Result: No--21.283600-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+To: John Stultz <john.stultz@linaro.org>
+CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFE PATCH] time, Fix setting of hardware clock in NTP code
+References: <1360243741-25213-1-git-send-email-prarit@redhat.com> <CANcMJZAYY779QNCBV5OR7_ybk=RFqNazwPxUsWt12G60aiRuSw@mail.gmail.com> <5113F05E.30001@redhat.com> <511405E8.2060004@linaro.org>
+In-Reply-To: <511405E8.2060004@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-02-07 at 21:39 +0800, Freddy Xin wrote:
-> From: Freddy Xin <freddy@asix.com.tw>
+
+
+On 02/07/2013 02:52 PM, John Stultz wrote:
+> On 02/07/2013 10:20 AM, Prarit Bhargava wrote:
+>>
+>> On 02/07/2013 12:24 PM, John Stultz wrote:
+>>> On Thu, Feb 7, 2013 at 5:29 AM, Prarit Bhargava <prarit@redhat.com> wrote:
+>>>
+>> I'm not sure I understand the purpose behind the +/-15 minute window?  Is it
+>> just to prevent a wild swing on the RTC?  I can understand that to some degree,
+>> however, I'm not sure I agree with it being the default behaviour.
 > 
-> This is a resubmission.
-> Added "const" to ethtool_ops structure and fixed the coding style of AX88179_BULKIN_SIZE array.
-> Fixed the issue that the default MTU is not 1500.
-> Added ax88179_change_mtu function and enabled the hardware jumbo frame function to support an
-> MTU higher than 1500.
-> Fixed indentation and empty line coding style errors.
-> The _nopm version usb functions were added to access register in suspend and resume functions.
-> Serveral variables allocted dynamically were removed and replaced by stack variables.
-> ax88179_get_eeprom were modified from asix_get_eeprom in asix_common.
+> The 15 minute cap is totally an x86-ism, and I believe its due to the fact that
+> the main concern is we don't reliably know the timezone data has been set
+> properly, but we're expected to work well dual booting with Windows.
+
+Heh :)  I think some of the other arches have copied what x86 does.  alpha and
+mn10300 do the same thing. :)
+
+
 > 
-> This patch adds a driver for ASIX's AX88179 family of USB 3.0/2.0
-> to gigabit ethernet adapters. It's based on the AX88xxx driver but
-> the usb commands used to access registers for AX88179 are completely different.
-> This driver had been verified on x86 system with AX88179/AX88178A and
-> Sitcomm LN-032 USB dongles.
+>> 99.99999% of Linux users out there are using some sort of time protocol (usually
+>> NTP, but PTP is starting to catch on) to sync their systems.  NTP is a trusted
+>> source of timekeeping IMO.  How often do we see systems that run NTP but don't
+>> trust the numbers that come from it?
 > 
-> Signed-off-by: Freddy Xin <freddy@asix.com.tw>
-[...]
-> --- /dev/null
-> +++ b/drivers/net/usb/ax88179_178a.c
-[...]
-> +struct ax88179_data {
-> +       u16 rxctl;
-> +};
+> I actually doubt ntp usage is that high, given that some popular distros don't
+> install it by default, but that's a tangent. :)
 
-Should also be declared __packed, as on some architectures it may be
-padded to 4 bytes.
+:D  Fair enough :D
 
-rxctl is presumably required to be little-endian (__le16)?
+> 
+> Again, the quirks here are all about interacting with Windows on a dual-boot
+> environment.
+> 
 
-> +struct ax88179_int_data {
-> +       u16 res1;
-> +       u8 link;
-> +       u16 res2;
-> +       u8 status;
-> +       u16 res3;
-> +} __packed;
+Sure, that's been my understanding as well.
 
-Same here, the u16 fields are presumably little-endian?
+> Though I think it might be reasonable at this point to say we'll set the RTC as
+> accurately as we can with the given info, which requires the distro to trigger
+> warp clock if the RTC is kept in local time.
 
-[...]
-> +struct ax88179_rx_pkt_header {
-> +	u8	l4_csum_err:1,
-> +		l3_csum_err:1,
-> +		l4_type:3,
-> +		l3_type:2,
-> +		ce:1;
-> +
-> +	u8	vlan_ind:3,
-> +		rx_ok:1,
-> +		pri:3,
-> +		bmc:1;
-> +
-> +	u16	len:13,
-> +		crc:1,
-> +		mii:1,
-> +		drop:1;
-> +} __packed;
+Okay.
 
-This won't work on both big-endian systems (assuming this works on x86).
-You apparently try to convert the structure in-place in
-ax88179_rx_fixup() by calling le32_to_cpus(); that may work if you
-define all the bitfields to be part of a u32 but it won't work with the
-current definition.
+> 
+> 
+> 
+> 
+>>>>   /*
+>>>> + * Indicates if there is an offset between the system clock and the hardware
+>>>> + * clock/persistent clock/rtc.
+>>>> + */
+>>>> +int sys_time_offset;
+>>> So why is this extra flag necessary instead of just using if
+>>> (sys_tz.tz_minuteswest) ?
+>> sys_tz can be set during runtime via settimeofday() without affecting the
+>> current system time.  The bug *only* happens if the system clock is "warped"
+>> ahead relative to the hardware clock on the first call to settimeofday(), so
+>> checking for sys_tz.tz_minuteswest isn't good enough of a test.
+> 
+> So it would probably be better named as something like rtc_is_local.
 
-[...]
-> +static int
-> +ax88179_set_features(struct net_device *net, netdev_features_t features)
-> +{
-> +	u8 tmp;
-> +	struct usbnet *dev = netdev_priv(net);
-> +	netdev_features_t changed = net->features ^ features;
-> +
-> +	if (changed & NETIF_F_TSO)
-> +		net->features ^= NETIF_F_TSO;
-> +
-> +	if (changed & NETIF_F_SG)
-> +		net->features ^= NETIF_F_SG;
+I'll do a [v2] with that change as well.
 
-Don't change net->features; the caller will do that for you.
+> 
+> 
+> So yea, I think if we include your patch, we can probably consider dropping the
+> 15 min cap. There will probably be some situations where system setups don't
+> have RTC local configured, so that flag isn't set and we'll fight with a
+> dual-boot environment, but those hopefully should be rare.
+> 
+> I'd suggest we do this in two steps. First your current patch, adding
+> rtc_is_local flag and the RTC timezone correction in update_persistent_clock(),
+> then second a patch for x86 dropping the 15 min cap that gets wide distribution
+> so all the distros know its coming and can test it and object if necessary.
 
-> +       if (changed & NETIF_F_IP_CSUM) {
-> +               ax88179_read_cmd(dev, AX_ACCESS_MAC, AX_TXCOE_CTL, 1, 1, &tmp);
-> +               tmp ^= AX_TXCOE_TCP | AX_TXCOE_UDP;
-> +               ax88179_write_cmd(dev, AX_ACCESS_MAC, AX_TXCOE_CTL, 1, 1, &tmp);
-> +
-> +               net->features ^= NETIF_F_IP_CSUM;
-> +       }
-[...]
+That's what I was hoping for.  I'll post this as an actual patch and then get to
+work on the full sync code next.
 
-Isn't tmp going to be in little-endian byte order, so this doesn't work
-correctly on a big-endian system?
+Thanks,
 
-There are a lot of reads and writes of 16-bit registers using
-ax88179_{read,write}_cmd(); maybe you should add
-ax88179_{read,write}_le16() to handle this specific case.
+P.
 
-Ben.
-
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+> 
+> thanks
+> -john
+> 
+> 
+> 
+> 
+> 
