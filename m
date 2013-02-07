@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758787Ab3BGO1N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 09:27:13 -0500
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:59179 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758667Ab3BGO1L (ORCPT
+	id S1758798Ab3BGO1u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 09:27:50 -0500
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:37662 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758654Ab3BGO1s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 09:27:11 -0500
-Message-ID: <5113B9AF.5040109@linux.vnet.ibm.com>
-Date: Thu, 07 Feb 2013 08:26:55 -0600
+	Thu, 7 Feb 2013 09:27:48 -0500
+Message-ID: <5113B9D7.9090503@linux.vnet.ibm.com>
+Date: Thu, 07 Feb 2013 08:27:35 -0600
 From: Michael Wolf <mjw@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Rik van Riel <riel@redhat.com>
-CC: linux-kernel@vger.kernel.org, gleb@redhat.com, kvm@vger.kernel.org,
-        peterz@infradead.org, mtosatti@redhat.com, glommer@parallels.com,
+To: Glauber Costa <glommer@parallels.com>
+CC: linux-kernel@vger.kernel.org, riel@redhat.com, gleb@redhat.com,
+        kvm@vger.kernel.org, peterz@infradead.org, mtosatti@redhat.com,
         mingo@redhat.com, anthony@codemonkey.ws
-Subject: Re: [PATCH 3/4] Add the code to send the consigned time from the
- host to the guest
-References: <20130205214818.4615.12937.stgit@lambeau> <20130205214930.4615.37337.stgit@lambeau> <5112C889.7050308@redhat.com>
-In-Reply-To: <5112C889.7050308@redhat.com>
+Subject: Re: [PATCH 4/4] Add a timer to allow the separation of consigned
+ from steal time.
+References: <20130205214818.4615.12937.stgit@lambeau> <20130205214941.4615.29852.stgit@lambeau> <51126A84.5050005@parallels.com> <51129BEA.6090302@linux.vnet.ibm.com> <511369CC.6050405@parallels.com>
+In-Reply-To: <511369CC.6050405@parallels.com>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13020714-8256-0000-0000-000006233040
+x-cbid: 13020714-5816-0000-0000-0000069665F4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/2013 03:18 PM, Rik van Riel wrote:
-> On 02/05/2013 04:49 PM, Michael Wolf wrote:
->> Change the paravirt calls that retrieve the steal-time information
->> from the host.  Add to it getting the consigned value as well as
->> the steal time.
->>
->> Signed-off-by: Michael Wolf <mjw@linux.vnet.ibm.com>
+On 02/07/2013 02:46 AM, Glauber Costa wrote:
+> On 02/06/2013 10:07 PM, Michael Wolf wrote:
+>> On 02/06/2013 08:36 AM, Glauber Costa wrote:
+>>> On 02/06/2013 01:49 AM, Michael Wolf wrote:
+>>>> Add a helper routine to scheduler/core.c to allow the kvm module
+>>>> to retrieve the cpu hardlimit settings.  The values will be used
+>>>> to set up a timer that is used to separate the consigned from the
+>>>> steal time.
+>>> Sorry: What is the business of a timer in here?
+>>> Whenever we read steal time, we know how much time has passed and with
+>>> that information we can know the entitlement for the period. This breaks
+>>> if we suspend, but we know that we suspended, so this is not a problem.
+>> I may be missing something, but how do we know how much time has
+>> passed?  That is why
+>> I had the timer in there.  I will go look again at the code but I
+>> thought the data was collected
+>> as ticks and passed at random times.  The ticks are also accumulating so
+>> we are looking at the
+>> difference in the count between reads.....
+> They can be collected at random times, but you can of course record the
+> time in which it happened.
 >
->> diff --git a/arch/x86/include/uapi/asm/kvm_para.h 
->> b/arch/x86/include/uapi/asm/kvm_para.h
->> index 06fdbd9..55d617f 100644
->> --- a/arch/x86/include/uapi/asm/kvm_para.h
->> +++ b/arch/x86/include/uapi/asm/kvm_para.h
->> @@ -42,9 +42,10 @@
->>
->>   struct kvm_steal_time {
->>       __u64 steal;
->> +    __u64 consigned;
->>       __u32 version;
->>       __u32 flags;
->> -    __u32 pad[12];
->> +    __u32 pad[10];
->>   };
->
-> The function kvm_register_steal_time passes the address of such
-> a structure to the host kernel, which then does something with
-> it.
->
-> Could running a guest with the above patch, on top of a host
-> with the old code, result in the values for "version" and
-> "flags" being written into "consigned"?
-yes, good point.
->
-> Could that result in confusing the guest kernel to no end,
-> and generally breaking things?
->
-Ok I will move the consigned field to be after the flags.
+ok.  Let me add a previous_read field and take out the timer.
 
