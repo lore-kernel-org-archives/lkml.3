@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757303Ab3BGBf7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 20:35:59 -0500
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:8115 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751044Ab3BGBf5 (ORCPT
+	id S1757625Ab3BGBik (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 20:38:40 -0500
+Received: from intranet.asianux.com ([58.214.24.6]:58109 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755964Ab3BGBii (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 20:35:57 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VS-1(zz98dIzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839h944hd24he5bhf0ah1220h1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1155h)
-Date: Wed, 6 Feb 2013 19:33:15 -0600
-From: Kim Phillips <kim.phillips@freescale.com>
-To: Vakul Garg <vakul@freescale.com>
-CC: <linux-crypto@vger.kernel.org>, Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Shengzhou Liu <Shengzhou.Liu@freescale.com>,
-        Alex Porosanu <alexandru.porosanu@freescale.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] crypto: caam - set RDB bit in security configuration
- register
-Message-ID: <20130206193315.cb27accf9a7a7f95870fb47f@freescale.com>
-In-Reply-To: <1360151266-28428-1-git-send-email-vakul@freescale.com>
-References: <1360151266-28428-1-git-send-email-vakul@freescale.com>
-Organization: Freescale Semiconductor, Inc.
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
+	Wed, 6 Feb 2013 20:38:38 -0500
+X-Spam-Score: -100.8
+Message-ID: <51130593.30801@asianux.com>
+Date: Thu, 07 Feb 2013 09:38:27 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+To: Kees Cook <keescook@chromium.org>
+CC: Cyrill Gorcunov <gorcunov@openvz.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Marcel Holtmann <marcel@holtmann.org>
+Subject: Re: [PATCH] kernel: arg2 is unsigned long which is never < 0
+References: <511217F3.6050800@asianux.com> <20130206085653.GQ1712@moon> <51123236.3060001@asianux.com> <CAGXu5jJ7AY93Qn0BuECBJprxV2MH1-DV7qMfwEQ9J0UP-cHMqw@mail.gmail.com>
+In-Reply-To: <CAGXu5jJ7AY93Qn0BuECBJprxV2MH1-DV7qMfwEQ9J0UP-cHMqw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Feb 2013 17:17:46 +0530
-Vakul Garg <vakul@freescale.com> wrote:
+于 2013年02月07日 03:41, Kees Cook 写道:
+> Well, it seems we'd need to add an include to gain access to binfmts.h
+> in once place, but that doesn't seem bad. I'll send to patch to clean
+> this up.
 
-> This change is required for post SEC-5.0 devices which have RNG4. Setting RDB
+  thank you.
 
-wrap your commit message text to 75 chars
+  and after your patch is integrated into main branch (at least in
+next-* branch), I should send patch v2 for it, too.
 
-> in security configuration register allows CAAM to use the "Random Data Buffer"
-> to be filled by a single request. The Random Data Buffer is large enough for
-> ten packets to get their IVs from a single request. If the Random Data Buffer
-> is not enabled, then each IV causes a separate request, and RNG4 hardware
-> cannot keep up resulting in lower IPSEC throughput.
+  and excuse me I will 'disappear' during next 7-10 days for Chinese
+Year (Spring Festival).
 
-Linux kernel IPSec or another IPSEC stack?  how much lower?
+  during these days, welcome any members to send patch v2 instead of me
+(better to mark Reported-by Cyrill Gorcunov <gorcunov@openvz.org>, too)
 
-> +	if (of_device_is_compatible(nprop, "fsl,sec-v5.0"))
-> +		setbits32(&topregs->ctrl.scfgr, SCFGR_RDBENABLE);
-> +
+  thanks.
 
-this belongs further down - at the end of the RNG4 initialization
-section.
+  :-)
 
-Kim
+-- 
+Chen Gang
 
+Asianux Corporation
