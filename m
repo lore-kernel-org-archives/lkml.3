@@ -1,115 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758689Ab3BGA3m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 19:29:42 -0500
-Received: from mail-la0-f48.google.com ([209.85.215.48]:33858 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758092Ab3BGA3l (ORCPT
+	id S1758695Ab3BGAcg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 19:32:36 -0500
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:42825 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751979Ab3BGAcd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 19:29:41 -0500
+	Wed, 6 Feb 2013 19:32:33 -0500
+Date: Wed, 6 Feb 2013 16:32:30 -0800 (PST)
+From: Andy King <acking@vmware.com>
+To: Gerd Hoffmann <kraxel@redhat.com>
+Cc: pv-drivers@vmware.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, gregkh@linuxfoundation.org,
+        davem@davemloft.net
+Message-ID: <1231523602.1815949.1360197150398.JavaMail.root@vmware.com>
+In-Reply-To: <1315741351.2964541.1360083749055.JavaMail.root@vmware.com>
+Subject: Re: [Pv-drivers] [PATCH 0/1] VM Sockets for Linux upstreaming
 MIME-Version: 1.0
-In-Reply-To: <1359714465-6297-2-git-send-email-zhong@linux.vnet.ibm.com>
-References: <1359714465-6297-1-git-send-email-zhong@linux.vnet.ibm.com>
-	<1359714465-6297-2-git-send-email-zhong@linux.vnet.ibm.com>
-Date: Thu, 7 Feb 2013 01:29:39 +0100
-Message-ID: <CAFTL4hx7njUVVqp9FmtQQWaWG1i5dxscqQD8F_S838z2tUKVGQ@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/5] powerpc: Syscall hooks for context tracking subsystem
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        paulmck@linux.vnet.ibm.com, benh@kernel.crashing.org, paulus@samba.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.113.160.14]
+X-Mailer: Zimbra 7.2.0_GA_2681 (ZimbraWebClient - GC24 (Mac)/7.2.0_GA_2681)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/2/1 Li Zhong <zhong@linux.vnet.ibm.com>:
-> This is the syscall slow path hooks for context tracking subsystem,
-> corresponding to
-> [PATCH] x86: Syscall hooks for userspace RCU extended QS
->   commit bf5a3c13b939813d28ce26c01425054c740d6731
->
-> TIF_MEMDIE is moved to the second 16-bits (with value 17), as it seems there
-> is no asm code using it. TIF_NOHZ is added to _TIF_SYCALL_T_OR_A, so it is
-> better for it to be in the same 16 bits with others in the group, so in the
-> asm code, andi. with this group could work.
->
-> Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
-> ---
->  arch/powerpc/include/asm/thread_info.h |    7 +++++--
->  arch/powerpc/kernel/ptrace.c           |    5 +++++
->  2 files changed, 10 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/powerpc/include/asm/thread_info.h b/arch/powerpc/include/asm/thread_info.h
-> index 406b7b9..414a261 100644
-> --- a/arch/powerpc/include/asm/thread_info.h
-> +++ b/arch/powerpc/include/asm/thread_info.h
-> @@ -97,7 +97,7 @@ static inline struct thread_info *current_thread_info(void)
->  #define TIF_PERFMON_CTXSW      6       /* perfmon needs ctxsw calls */
->  #define TIF_SYSCALL_AUDIT      7       /* syscall auditing active */
->  #define TIF_SINGLESTEP         8       /* singlestepping active */
-> -#define TIF_MEMDIE             9       /* is terminating due to OOM killer */
-> +#define TIF_NOHZ               9       /* in adaptive nohz mode */
->  #define TIF_SECCOMP            10      /* secure computing */
->  #define TIF_RESTOREALL         11      /* Restore all regs (implies NOERROR) */
->  #define TIF_NOERROR            12      /* Force successful syscall return */
-> @@ -106,6 +106,7 @@ static inline struct thread_info *current_thread_info(void)
->  #define TIF_SYSCALL_TRACEPOINT 15      /* syscall tracepoint instrumentation */
->  #define TIF_EMULATE_STACK_STORE        16      /* Is an instruction emulation
->                                                 for stack store? */
-> +#define TIF_MEMDIE             17      /* is terminating due to OOM killer */
->
->  /* as above, but as bit values */
->  #define _TIF_SYSCALL_TRACE     (1<<TIF_SYSCALL_TRACE)
-> @@ -124,8 +125,10 @@ static inline struct thread_info *current_thread_info(void)
->  #define _TIF_UPROBE            (1<<TIF_UPROBE)
->  #define _TIF_SYSCALL_TRACEPOINT        (1<<TIF_SYSCALL_TRACEPOINT)
->  #define _TIF_EMULATE_STACK_STORE       (1<<TIF_EMULATE_STACK_STORE)
-> +#define _TIF_NOHZ              (1<<TIF_NOHZ)
->  #define _TIF_SYSCALL_T_OR_A    (_TIF_SYSCALL_TRACE | _TIF_SYSCALL_AUDIT | \
-> -                                _TIF_SECCOMP | _TIF_SYSCALL_TRACEPOINT)
-> +                                _TIF_SECCOMP | _TIF_SYSCALL_TRACEPOINT | \
-> +                                _TIF_NOHZ)
->
->  #define _TIF_USER_WORK_MASK    (_TIF_SIGPENDING | _TIF_NEED_RESCHED | \
->                                  _TIF_NOTIFY_RESUME | _TIF_UPROBE)
-> diff --git a/arch/powerpc/kernel/ptrace.c b/arch/powerpc/kernel/ptrace.c
-> index c497000..62238dd 100644
-> --- a/arch/powerpc/kernel/ptrace.c
-> +++ b/arch/powerpc/kernel/ptrace.c
-> @@ -32,6 +32,7 @@
->  #include <trace/syscall.h>
->  #include <linux/hw_breakpoint.h>
->  #include <linux/perf_event.h>
-> +#include <linux/context_tracking.h>
->
->  #include <asm/uaccess.h>
->  #include <asm/page.h>
-> @@ -1745,6 +1746,8 @@ long do_syscall_trace_enter(struct pt_regs *regs)
->  {
->         long ret = 0;
->
-> +       user_exit();
-> +
->         secure_computing_strict(regs->gpr[0]);
->
->         if (test_thread_flag(TIF_SYSCALL_TRACE) &&
-> @@ -1789,4 +1792,6 @@ void do_syscall_trace_leave(struct pt_regs *regs)
->         step = test_thread_flag(TIF_SINGLESTEP);
->         if (step || test_thread_flag(TIF_SYSCALL_TRACE))
->                 tracehook_report_syscall_exit(regs, step);
-> +
-> +       user_enter();
+Hi Gerd,
 
-In x86-64, schedule_user() and do_notify_resume() can be called before
-syscall_trace_leave(). As a result we may be entering
-syscall_trace_leave() in user mode (from a context tracking POV). To
-fix this I added a call to user_exit() on the very beginning of that
-function.
+> > linux/vmw_vmci_defs.h: No such file or directory
+> > compilation terminated.
+> > make[4]: *** [net/vmw_vsock/af_vsock.o] Error 1
+> 
+> Oops, you're right, it really shouldn't need that header.  Sorry
+> about that, let me rip that out.
 
-You can find the details in 2c5594df344cd1ff0cc9bf007dea3235582b3acf
-("rcu: Fix unrecovered RCU user mode in syscall_trace_leave()").
+Fixed.  The VMCI headers are now gone from the core in af_vsock.*
+and vsock_addr.*
 
-Could this problem happen in ppc as well?
+> > Only vmw_vsock_vmci_transport should have a vmw_vmci dependency,
+> > not vsock ...
+> 
+> Agreed, that's not right, I'll fix that too.
 
-Thanks.
+Fixed, lsmod now shows that only the transport has a dependency.
+
+Also, it turns out that we do need a dgram_recv(), since our
+transport currently enqueues skbs with VMCI DGRAMs in them, which
+need to be converted before copying into the user's buffer.  I've
+added that too.
+
+Please see latest patchset (sent a few minutes ago), hope it works
+for you this time.
+
+Thanks!
+- Andy
