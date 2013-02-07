@@ -1,98 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757001Ab3BGAzT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 19:55:19 -0500
-Received: from casper.infradead.org ([85.118.1.10]:56784 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755302Ab3BGAzQ (ORCPT
+	id S1757299Ab3BGAz2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 19:55:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55560 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757181Ab3BGAzY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 19:55:16 -0500
-Message-ID: <5112FB96.1040606@infradead.org>
-Date: Wed, 06 Feb 2013 16:55:50 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, mgorman@suse.de,
-        minchan@kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        Linux MM <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: accurately document nr_free_*_pages functions with
- code comments
-References: <5112138C.7040902@cn.fujitsu.com>
-In-Reply-To: <5112138C.7040902@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 6 Feb 2013 19:55:24 -0500
+Date: Wed, 6 Feb 2013 16:55:22 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: peter.senna@gmail.com, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH v2] hlist: drop the node parameter from iterators
+Message-Id: <20130206165522.ed6f10fc.akpm@linux-foundation.org>
+In-Reply-To: <1359597622-31532-1-git-send-email-sasha.levin@oracle.com>
+References: <1359597622-31532-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/13 00:25, Zhang Yanfei wrote:
-> Functions nr_free_zone_pages, nr_free_buffer_pages and nr_free_pagecache_pages
-> are horribly badly named, so accurately document them with code comments
-> in case of the misuse of them.
+On Wed, 30 Jan 2013 21:00:22 -0500
+Sasha Levin <sasha.levin@oracle.com> wrote:
+
+> I'm not sure why, but the hlist for each entry iterators were conceived
+> differently from the list ones. While the list ones are nice and elegant:
 > 
-> Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-> ---
->  mm/page_alloc.c |   23 +++++++++++++++++++----
->  1 files changed, 19 insertions(+), 4 deletions(-)
+>         list_for_each_entry(pos, head, member)
 > 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index df2022f..0790716 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -2785,6 +2785,15 @@ void free_pages_exact(void *virt, size_t size)
->  }
->  EXPORT_SYMBOL(free_pages_exact);
->  
-> +/**
-> + * nr_free_zone_pages - get pages that is beyond high watermark
-> + * @offset - The zone index of the highest zone
-
-Function parameter format uses a ':', not a '-'.  E.g.,
-
- * @offset: the zone index of the highest zone
-
-
-> + *
-> + * The function counts pages which are beyond high watermark within
-> + * all zones at or below a given zone index. For each zone, the
-> + * amount of pages is calculated as:
-> + *     present_pages - high_pages
-> + */
->  static unsigned int nr_free_zone_pages(int offset)
->  {
->  	struct zoneref *z;
-> @@ -2805,8 +2814,11 @@ static unsigned int nr_free_zone_pages(int offset)
->  	return sum;
->  }
->  
-> -/*
-> - * Amount of free RAM allocatable within ZONE_DMA and ZONE_NORMAL
-> +/**
-> + * nr_free_buffer_pages - get pages that is beyond high watermark
-> + *
-> + * The function counts pages which are beyond high watermark within
-> + * ZONE_DMA and ZONE_NORMAL.
->   */
->  unsigned int nr_free_buffer_pages(void)
->  {
-> @@ -2814,8 +2826,11 @@ unsigned int nr_free_buffer_pages(void)
->  }
->  EXPORT_SYMBOL_GPL(nr_free_buffer_pages);
->  
-> -/*
-> - * Amount of free RAM allocatable within all zones
-> +/**
-> + * nr_free_pagecache_pages - get pages that is beyond high watermark
-> + *
-> + * The function counts pages which are beyond high watermark within
-> + * all zones.
->   */
->  unsigned int nr_free_pagecache_pages(void)
->  {
+> The hlist ones were greedy and wanted an extra parameter:
 > 
+>         hlist_for_each_entry(tpos, pos, head, member)
+> 
+> Why did they need an extra pos parameter? I'm not quite sure. Not only
+> they don't really need it, it also prevents the iterator from looking
+> exactly like the list iterator, which is unfortunate.
+> 
+> Besides the semantic patch, there was some manual work required:
+> 
+>  - Fix up the actual hlist iterators in linux/list.h
+>  - Fix up the declaration of other iterators based on the hlist ones.
+>  - A very small amount of places were using the 'node' parameter, this
+>  was modified to use 'obj->member' instead.
+>  - Coccinelle didn't handle the hlist_for_each_entry_safe iterator
+>  properly, so those had to be fixed up manually.
+>
+> ...
+>
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+>
+> ...
+>
+> @@ -4525,7 +4524,7 @@ int __init_or_module cgroup_load_subsys(struct cgroup_subsys *ss)
+>  	 * this is all done under the css_set_lock.
+>  	 */
+>  	write_lock(&css_set_lock);
+> -	hash_for_each_safe(css_set_table, i, node, tmp, cg, hlist) {
+> +	hash_for_each_safe(css_set_table, i, tmp, cg, hlist) {
+>  		/* skip entries that we already rehashed */
+>  		if (cg->subsys[ss->subsys_id])
+>  			continue;
+
+Problems in cgroup_load_subsys().
+
+In linux-next, that function is now using the `node' storage which your
+patch removes:
+
+@@ -4503,23 +4525,17 @@ int __init_or_module cgroup_load_subsys(struct cgroup_subsys *ss)
+ 	 * this is all done under the css_set_lock.
+ 	 */
+ 	write_lock(&css_set_lock);
+-	for (i = 0; i < CSS_SET_TABLE_SIZE; i++) {
+-		struct css_set *cg;
+-		struct hlist_node *node, *tmp;
+-		struct hlist_head *bucket = &css_set_table[i], *new_bucket;
+-
+-		hlist_for_each_entry_safe(cg, node, tmp, bucket, hlist) {
+-			/* skip entries that we already rehashed */
+-			if (cg->subsys[ss->subsys_id])
+-				continue;
+-			/* remove existing entry */
+-			hlist_del(&cg->hlist);
+-			/* set new value */
+-			cg->subsys[ss->subsys_id] = css;
+-			/* recompute hash and restore entry */
+-			new_bucket = css_set_hash(cg->subsys);
+-			hlist_add_head(&cg->hlist, new_bucket);
+-		}
++	hash_for_each_safe(css_set_table, i, node, tmp, cg, hlist) {
++		/* skip entries that we already rehashed */
++		if (cg->subsys[ss->subsys_id])
++			continue;
++		/* remove existing entry */
++		hash_del(&cg->hlist);
++		/* set new value */
++		cg->subsys[ss->subsys_id] = css;
++		/* recompute hash and restore entry */
++		key = css_set_hash(cg->subsys);
++		hash_add(css_set_table, node, key);     <<<<---- here
+ 	}
+ 	write_unlock(&css_set_lock);
+ 
 
 
--- 
-~Randy
+This didn't show up (apart from a "used unintialized" warning) because
+your patch forgot to remove the definition of `node'.
+
+I did this.  Tejun, could you please opine?
+
+
+@@ -4456,7 +4455,7 @@ int __init_or_module cgroup_load_subsys(
+ {
+ 	struct cgroup_subsys_state *css;
+ 	int i, ret;
+-	struct hlist_node *node, *tmp;
++	struct hlist_node *tmp;
+ 	struct css_set *cg;
+ 	unsigned long key;
+ 
+@@ -4534,7 +4533,7 @@ int __init_or_module cgroup_load_subsys(
+ 		cg->subsys[ss->subsys_id] = css;
+ 		/* recompute hash and restore entry */
+ 		key = css_set_hash(cg->subsys);
+-		hash_add(css_set_table, node, key);
++		hash_add(css_set_table, &cg->hlist, key);
+ 	}
+ 	write_unlock(&css_set_lock);
+ 
+
