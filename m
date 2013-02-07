@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759335Ab3BGVDv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 16:03:51 -0500
-Received: from mga14.intel.com ([143.182.124.37]:15699 "EHLO mga14.intel.com"
+	id S1759448Ab3BGVHK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 16:07:10 -0500
+Received: from gate.crashing.org ([63.228.1.57]:50559 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757486Ab3BGVDu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 16:03:50 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,623,1355126400"; 
-   d="scan'208";a="253970039"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org, sameo@linux.intel.com
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next 00/11]  Add MEI BUS and NFC Device
-Date: Thu,  7 Feb 2013 23:03:06 +0200
-Message-Id: <1360270997-7639-1-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.7.4.4
+	id S1759369Ab3BGVHF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 16:07:05 -0500
+Message-ID: <1360271169.2650.31.camel@pasglop>
+Subject: Re: [PATCH] drivers/block/xsysace - replace
+ in(out)_8/in(out)_be16/in(out)_le16 with generic iowrite(read)8/16(be)
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>, Michal Simek <monstr@monstr.eu>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        dahinds@users.sourceforge.net
+Date: Fri, 08 Feb 2013 08:06:09 +1100
+In-Reply-To: <5113C459.8000602@synopsys.com>
+References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com>
+	 <1781360.cmQWHCW5SC@wuerfel>
+	 <CAHTX3dJpuTRa4Ff29k95quPMVDO2mBiayPoocnw5R15=5ovOHQ@mail.gmail.com>
+	 <201302041724.47331.arnd@arndb.de> <1360031367.14701.47.camel@pasglop>
+	 <CAHTX3dL4dScmzgGyqbvPH-7UQvFrjQhHu2zh0iZyzWB=spZS+Q@mail.gmail.com>
+	 <1360066756.4529.6.camel@pasglop>
+	 <CAHTX3dLJy314mv39hprkmZ5XdzYiYGz1ngTERp7w6aAYud+Riw@mail.gmail.com>
+	 <51111133.7000105@synopsys.com> <1360098004.4529.13.camel@pasglop>
+	 <511178AC.7080304@synopsys.com> <1360105635.2707.7.camel@pasglop>
+	 <CACxGe6u=zhGXm0AO_h354g8OOkAQgdczdw_gCCRxL+=r8hM+-g@mail.gmail.com>
+	 <1360186550.2650.4.camel@pasglop>
+	 <CACxGe6uaVsng79Kni=0O_YK330vuqMuPO6=y9Bj=UZpZ0ozaDg@mail.gmail.com>
+	 <CACxGe6v3ZUEQhi764ivQqE9i2wGzJGcoC0sTVohb_6MQ9sE+hQ@mail.gmail.com>
+	 <5113C459.8000602@synopsys.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set adds implementation of MEI BUS abstraction
-over MEI device, this allows standard Linux device drivers  
-to access functionality exposed by MEI device that was previously
-available only to the user space through /dev/mei
- 
-The first exercises is to export the NFC radio
+On Thu, 2013-02-07 at 19:12 +0400, Alexey Brodkin wrote:
+> not sure about items for "ace_datain/out_be16" - what about _rep
+> options here?
 
-More information can be found under
-Documentation/misc-devices/mei/mei-bus.txt
+Well, you have a backward wiring of an LE device so you can't use the
+_rep variants, unless you ping pong, so you either use a loop of
+ioread/write16 (le) and bite the bullet on extra barriers, or use _rep &
+bounce buffer for a separate swap pass.
+
+Point is, the backward wiring will require byteswap on both BE and LE
+hosts for data (which is why it's so stupid).
+
+Cheers,
+Ben.
 
 
-Samuel Ortiz (11):
-  mei: bus: Initial MEI bus type implementation
-  mei: bus: Implement driver registration
-  mei: bus: Initial implementation for I/O routines
-  mei: bus: Add bus related structures to mei_cl
-  mei: bus: Call bus routines from the core code
-  mei: bus: Synchronous API for the data transmission
-  mei: bus: Implement bus driver data setter/getter
-  mei: nfc: Initial nfc implementation
-  mei: nfc: Connect also the regular ME client
-  mei: nfc: Add NFC device to the MEI bus
-  mei: nfc: Implement MEI bus IO ops
-
- Documentation/misc-devices/mei/mei-bus.txt |  137 ++++++++
- drivers/misc/mei/Kconfig                   |    7 +
- drivers/misc/mei/Makefile                  |    2 +
- drivers/misc/mei/bus.c                     |  483 ++++++++++++++++++++++++++++
- drivers/misc/mei/bus.h                     |   32 ++
- drivers/misc/mei/client.c                  |    4 +
- drivers/misc/mei/init.c                    |    1 +
- drivers/misc/mei/interrupt.c               |    2 +
- drivers/misc/mei/mei_dev.h                 |   78 +++++
- drivers/misc/mei/nfc.c                     |  460 ++++++++++++++++++++++++++
- drivers/misc/mei/nfc.h                     |  141 ++++++++
- drivers/misc/mei/pci-me.c                  |    8 +
- include/linux/mei_bus.h                    |  108 ++++++
- 13 files changed, 1463 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/misc-devices/mei/mei-bus.txt
- create mode 100644 drivers/misc/mei/bus.c
- create mode 100644 drivers/misc/mei/bus.h
- create mode 100644 drivers/misc/mei/nfc.c
- create mode 100644 drivers/misc/mei/nfc.h
- create mode 100644 include/linux/mei_bus.h
-
--- 
-1.7.4.4
 
