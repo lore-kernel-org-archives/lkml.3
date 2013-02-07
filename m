@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758462Ab3BGO5e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 09:57:34 -0500
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:40576 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754000Ab3BGO5c (ORCPT
+	id S1758602Ab3BGO6g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 09:58:36 -0500
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:62017 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755589Ab3BGO6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 09:57:32 -0500
-Message-ID: <5113C0D8.60107@suse.cz>
-Date: Thu, 07 Feb 2013 15:57:28 +0100
+	Thu, 7 Feb 2013 09:58:31 -0500
+Message-ID: <5113BF7C.5060201@suse.cz>
+Date: Thu, 07 Feb 2013 15:51:40 +0100
 From: Jiri Slaby <jslaby@suse.cz>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:18.0) Gecko/20121129 Thunderbird/18.0
 MIME-Version: 1.0
@@ -18,9 +18,10 @@ CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
         Ilya Zykov <ilya@ilyx.ru>, Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH v3 03/23] n_tty: Don't flush buffer when closing ldisc
-References: <1355509370-5883-1-git-send-email-peter@hurleysoftware.com> <1360095638-6624-1-git-send-email-peter@hurleysoftware.com> <1360095638-6624-4-git-send-email-peter@hurleysoftware.com>
-In-Reply-To: <1360095638-6624-4-git-send-email-peter@hurleysoftware.com>
+Subject: Re: [PATCH v3 02/23] n_tty: Factor packet mode status change for
+ reuse
+References: <1355509370-5883-1-git-send-email-peter@hurleysoftware.com> <1360095638-6624-1-git-send-email-peter@hurleysoftware.com> <1360095638-6624-3-git-send-email-peter@hurleysoftware.com>
+In-Reply-To: <1360095638-6624-3-git-send-email-peter@hurleysoftware.com>
 X-Enigmail-Version: 1.5
 Content-Type: text/plain; charset=ISO-8859-2
 Content-Transfer-Encoding: 7bit
@@ -29,30 +30,27 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 02/05/2013 09:20 PM, Peter Hurley wrote:
-> A buffer flush is both undesirable and unnecessary when the ldisc
-> is closing. A buffer flush performs the following:
->  1. resets ldisc data fields to their initial state
->  2. resets tty->receive_room to indicate more data can be sent
->  3. schedules buffer work to receive more data
->  4. signals a buffer flush has happened to linked pty in packet mode
+> Factor the packet mode status change from n_tty_flush_buffer
+> for use by follow-on patch.
 > 
-> Since the ldisc has been halted and the tty may soon be destructed,
-> buffer work must not be scheduled as that work might access
-> an invalid tty and ldisc state. Also, the ldisc read buffer is about
-> to be freed, so that's pointless.
+> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+> ---
+>  drivers/tty/n_tty.c | 24 ++++++++++++++----------
+>  1 file changed, 14 insertions(+), 10 deletions(-)
 > 
-> Resetting the ldisc data fields is pointless as well since that
-> structure is about to be freed.
-> 
-> Resetting tty->receive_room is unnecessary, as it will be properly
-> reset if a new ldisc is reopened. Besides, resetting the original
-> receive_room value would be wrong since the read buffer will be
-> gone.
-> 
-> Since the packet mode flush is observable from userspace, this
-> behavior has been preserved.
+> diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+> index bf6958b..7194a33 100644
+> --- a/drivers/tty/n_tty.c
+> +++ b/drivers/tty/n_tty.c
+> @@ -237,6 +237,18 @@ static void reset_buffer_flags(struct tty_struct *tty)
+>  	n_tty_set_room(tty);
+>  }
+>  
+> +static void packet_mode_flush(struct tty_struct *tty)
 
-This one looks good to me.
+I prefer naming functions according the name space they live in. In this
+case n_tty_flush_packet_mode would be much better. Other than that this
+one looks good.
 
 -- 
 js
