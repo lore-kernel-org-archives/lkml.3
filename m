@@ -1,84 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757775Ab3BGDNr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 22:13:47 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:23698 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755216Ab3BGDNr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 22:13:47 -0500
-X-IronPort-AV: E=Sophos;i="4.84,619,1355068800"; 
-   d="scan'208";a="6698244"
-Message-ID: <51131B88.6040809@cn.fujitsu.com>
-Date: Thu, 07 Feb 2013 11:12:08 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: davem@davemloft.net, Julian Anastasov <ja@ssi.bg>,
-        Simon Horman <horms@verge.net.au>, Linux MM <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] net: fix functions and variables related to netns_ipvs->sysctl_sync_qlen_max
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/07 11:12:24,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/07 11:12:24,
-	Serialize complete at 2013/02/07 11:12:24
+	id S1757228Ab3BGDSj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 22:18:39 -0500
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:41636 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751869Ab3BGDSg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 22:18:36 -0500
+Message-ID: <1360207111.28557.47.camel@edumazet-glaptop>
+Subject: Re: [PATCH 0/2] fix kernel crash with macvtap on top of LRO
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Ben Hutchings <bhutchings@solarflare.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, netdev@vger.kernel.org,
+        Eilon Greenstein <eilong@broadcom.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        Tushar Dave <tushar.n.dave@intel.com>,
+        Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>,
+        Sony Chacko <sony.chacko@qlogic.com>, linux-driver@qlogic.com,
+        John Fastabend <john.r.fastabend@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jacob Keller <jacob.e.keller@intel.com>, linux-kernel@vger.kernel.org,
+        e1000-devel@lists.sourceforge.net
+Date: Wed, 06 Feb 2013 19:18:31 -0800
+In-Reply-To: <1360193660.32217.39.camel@deadeye.wl.decadent.org.uk>
+References: <cover.1360191528.git.mst@redhat.com>
+	 <1360193660.32217.39.camel@deadeye.wl.decadent.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the type of netns_ipvs->sysctl_sync_qlen_max has been changed to
-unsigned long, type of its related proc var sync_qlen_max should be changed
-to unsigned long, too. Also the return type of function sysctl_sync_qlen_max().
+On Wed, 2013-02-06 at 23:34 +0000, Ben Hutchings wrote:
 
-Cc: David Miller <davem@davemloft.net>
-Cc: Julian Anastasov <ja@ssi.bg>
-Cc: Simon Horman <horms@verge.net.au>
-Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
----
- include/net/ip_vs.h            |    4 ++--
- net/netfilter/ipvs/ip_vs_ctl.c |    4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+> If we want to allow forwarding from LRO then net/ipv4/inet_lro.c also
+> needs to set gso_type.
 
-diff --git a/include/net/ip_vs.h b/include/net/ip_vs.h
-index 68c69d5..ba3bd85 100644
---- a/include/net/ip_vs.h
-+++ b/include/net/ip_vs.h
-@@ -1052,7 +1052,7 @@ static inline int sysctl_sync_ports(struct netns_ipvs *ipvs)
- 	return ACCESS_ONCE(ipvs->sysctl_sync_ports);
- }
- 
--static inline int sysctl_sync_qlen_max(struct netns_ipvs *ipvs)
-+static inline unsigned long sysctl_sync_qlen_max(struct netns_ipvs *ipvs)
- {
- 	return ipvs->sysctl_sync_qlen_max;
- }
-@@ -1099,7 +1099,7 @@ static inline int sysctl_sync_ports(struct netns_ipvs *ipvs)
- 	return 1;
- }
- 
--static inline int sysctl_sync_qlen_max(struct netns_ipvs *ipvs)
-+static inline unsigned long sysctl_sync_qlen_max(struct netns_ipvs *ipvs)
- {
- 	return IPVS_SYNC_QLEN_MAX;
- }
-diff --git a/net/netfilter/ipvs/ip_vs_ctl.c b/net/netfilter/ipvs/ip_vs_ctl.c
-index ec664cb..d79a530 100644
---- a/net/netfilter/ipvs/ip_vs_ctl.c
-+++ b/net/netfilter/ipvs/ip_vs_ctl.c
-@@ -1747,9 +1747,9 @@ static struct ctl_table vs_vars[] = {
- 	},
- 	{
- 		.procname	= "sync_qlen_max",
--		.maxlen		= sizeof(int),
-+		.maxlen		= sizeof(unsigned long),
- 		.mode		= 0644,
--		.proc_handler	= proc_dointvec,
-+		.proc_handler	= proc_doulongvec_minmax,
- 	},
- 	{
- 		.procname	= "sync_sock_size",
--- 
-1.7.1
+Then, what is dev_disable_lro() purpose ?
+
+
+
