@@ -1,449 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756646Ab3BGJ0s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 04:26:48 -0500
-Received: from [212.90.139.80] ([212.90.139.80]:25434 "EHLO smtp1.goneo.de"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755575Ab3BGJ0n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 04:26:43 -0500
-X-Spam-Flag: NO
-X-Spam-Score: -2.749
-From: Lars Poeschel <poeschel@lemonage.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v2,RESEND] video console: add a driver for lcd2s character display
-Date: Thu, 7 Feb 2013 10:26:18 +0100
-User-Agent: KMail/1.13.7 (Linux/3.2.0-4-amd64; KDE/4.8.4; x86_64; ; )
-Cc: FlorianSchandinat@gmx.de, mathieu.poirier@linaro.org,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <201212170934.15312.poeschel@lemonage.de>
-In-Reply-To: <201212170934.15312.poeschel@lemonage.de>
+	id S1757154Ab3BGJiJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 04:38:09 -0500
+Received: from mail-qe0-f45.google.com ([209.85.128.45]:41217 "EHLO
+	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755140Ab3BGJiD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 04:38:03 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302071026.18145.poeschel@lemonage.de>
+Reply-To: sedat.dilek@gmail.com
+Date: Thu, 7 Feb 2013 10:38:02 +0100
+Message-ID: <CA+icZUXzh1S2+ZQ8vvPFSN8jXS62kijbAP+83F0hG9emLQzpQw@mail.gmail.com>
+Subject: Re: linux-next: Tree for Feb 7 (fakeroot BROKEN due to SYSV IPC support?)
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=047d7b6d88b0f2815004d51f32f0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As it seems there are no further comments, could this please be included ?
+--047d7b6d88b0f2815004d51f32f0
+Content-Type: text/plain; charset=UTF-8
 
-Thanks,
-Lars
+On Thu, Feb 7, 2013 at 7:37 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> Changes since 20130206:
+>
+> Removed tree: kvmtool (still present via the tip tree)
+>
+> The block tree lost its build failure.
+>
+> The tip tree gained a conflict against the s390 tree.
+>
+> The kvm tree gained a conflict against Linus' tree.
+>
+> The tty tree lost its build failure.
+>
+> The arm-soc tree gained conflicts against the iommu tree.
+>
+> The signal tree gained a conflict against the s390 tree.
+>
+> The akpm tree gained a conflict against the kvm tree and lost its build
+> failure.
+>
+> ----------------------------------------------------------------------------
+>
 
-On Monday 17 December 2012 at 09:34:15, Lars Poeschel wrote:
-> From: Lars Poeschel <poeschel@lemonage.de>
-> 
-> This driver allows to use a lcd2s 20x4 character display as
-> a linux console output device.
-> 
-> Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
-> 
-> ---
-> drivers/video/console/Kconfig    |   10 ++
->  drivers/video/console/Makefile   |    1 +
->  drivers/video/console/lcd2scon.c |  360
-> ++++++++++++++++++++++++++++++++++++++ 3 files changed, 371 insertions(+)
->  create mode 100644 drivers/video/console/lcd2scon.c
-> 
-> diff --git a/drivers/video/console/Kconfig b/drivers/video/console/Kconfig
-> index e2c96d0..44fc3bf 100644
-> --- a/drivers/video/console/Kconfig
-> +++ b/drivers/video/console/Kconfig
-> @@ -129,6 +129,16 @@ config STI_CONSOLE
->            machines.  Say Y here to build support for it into your kernel.
->            The alternative is to use your primary serial port as a
-> console.
-> 
-> +config LCD2S_CONSOLE
-> +        tristate "lcd2s 20x4 character display over I2C console"
-> +        depends on I2C
-> +        default n
-> +        help
-> +          This is a driver that lets you use the lcd2s 20x4 character
-> display +          from modtronix engineering as a console output device.
-> The display +          is a simple single color character display. You
-> have to connect it +          to an I2C bus.
-> +
->  config FONTS
->  	bool "Select compiled-in fonts"
->  	depends on FRAMEBUFFER_CONSOLE || STI_CONSOLE
-> diff --git a/drivers/video/console/Makefile
-> b/drivers/video/console/Makefile index a862e91..74d5993 100644
-> --- a/drivers/video/console/Makefile
-> +++ b/drivers/video/console/Makefile
-> @@ -23,6 +23,7 @@ font-objs += $(font-objs-y)
->  obj-$(CONFIG_DUMMY_CONSOLE)       += dummycon.o
->  obj-$(CONFIG_SGI_NEWPORT_CONSOLE) += newport_con.o font.o
->  obj-$(CONFIG_STI_CONSOLE)         += sticon.o sticore.o font.o
-> +obj-$(CONFIG_LCD2S_CONSOLE)       += lcd2scon.o
->  obj-$(CONFIG_VGA_CONSOLE)         += vgacon.o
->  obj-$(CONFIG_MDA_CONSOLE)         += mdacon.o
->  obj-$(CONFIG_FRAMEBUFFER_CONSOLE) += fbcon.o bitblit.o font.o
-> softcursor.o diff --git a/drivers/video/console/lcd2scon.c
-> b/drivers/video/console/lcd2scon.c new file mode 100644
-> index 0000000..c139811
-> --- /dev/null
-> +++ b/drivers/video/console/lcd2scon.c
-> @@ -0,0 +1,360 @@
-> +/*
-> + *  console driver for LCD2S 4x20 character displays connected through
-> i2c. + *
-> + *  This is a driver allowing you to use a LCD2S 4x20 from modtronix
-> + *  engineering as console output device.
-> + *
-> + *  (C) 2012 by Lemonage Software GmbH
-> + *  Author: Lars Poeschel <poeschel@lemonage.de>
-> + *  All rights reserved.
-> + *
-> + *  This program is free software; you can redistribute  it and/or modify
-> it + *  under  the terms of  the GNU General  Public License as published
-> by the + *  Free Software Foundation;  either version 2 of the  License,
-> or (at your + *  option) any later version.
-> + *
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/slab.h>
-> +#include <linux/kd.h>
-> +#include <linux/tty.h>
-> +#include <linux/console_struct.h>
-> +#include <linux/console.h>
-> +#include <linux/vt_kern.h>
-> +#include <linux/i2c.h>
-> +
-> +#define LCD2S_CMD_CUR_BLINK_OFF		0x10
-> +#define LCD2S_CMD_CUR_UL_OFF		0x11
-> +#define LCD2S_CMD_DISPLAY_OFF		0x12
-> +#define LCD2S_CMD_CUR_BLINK_ON		0x18
-> +#define LCD2S_CMD_CUR_UL_ON		0x19
-> +#define LCD2S_CMD_DISPLAY_ON		0x1a
-> +#define LCD2S_CMD_BACKLIGHT_OFF		0x20
-> +#define LCD2S_CMD_BACKLIGHT_ON		0x28
-> +#define LCD2S_CMD_WRITE			0x80
-> +#define LCD2S_CMD_SHIFT_UP		0x87
-> +#define LCD2S_CMD_SHIFT_DOWN		0x88
-> +#define LCD2S_CMD_CUR_ADDR		0x89
-> +#define LCD2S_CMD_CUR_POS		0x8a
-> +#define LCD2S_CMD_CUR_RESET		0x8b
-> +#define LCD2S_CMD_CLEAR			0x8c
-> +
-> +#define LCD2S_FIRST			8
-> +#define LCD2S_LAST			9
-> +
-> +#define LCD2S_ROWS			4
-> +#define LCD2S_COLS			20
-> +
-> +struct lcd2s_data {
-> +	struct i2c_client *i2c;
-> +	int row;
-> +	int col;
-> +	unsigned int cur_blink:1;
-> +	unsigned int cur_ul:1;
-> +};
-> +
-> +static struct lcd2s_data lcd2s;
-> +
-> +static void lcd2s_set_cursor(int row, int col)
-> +{
-> +	u8 buf[] = { LCD2S_CMD_CUR_POS, row + 1, col + 1};
-> +
-> +	if (row == lcd2s.row && col == lcd2s.col)
-> +		return;
-> +
-> +	i2c_master_send(lcd2s.i2c, buf, sizeof(buf));
-> +	lcd2s.row = row;
-> +	lcd2s.col = col;
-> +}
-> +
-> +static void lcd2s_reset_cursor(void)
-> +{
-> +	i2c_smbus_write_byte(lcd2s.i2c, LCD2S_CMD_CUR_RESET);
-> +	lcd2s.row = 0;
-> +	lcd2s.col = 0;
-> +}
-> +
-> +static void lcd2s_increase_cursor(struct vc_data *con, int inc)
-> +{
-> +	lcd2s.col += inc;
-> +	if ((lcd2s.col / con->vc_cols) >= 1) {
-> +		lcd2s.row += (lcd2s.col / con->vc_cols);
-> +		lcd2s.col %= con->vc_cols;
-> +	}
-> +}
-> +
-> +static void lcd2s_cursor_ul_on(void)
-> +{
-> +	if (!lcd2s.cur_ul) {
-> +		i2c_smbus_write_byte(lcd2s.i2c, LCD2S_CMD_CUR_UL_ON);
-> +		lcd2s.cur_ul = 1;
-> +	}
-> +}
-> +
-> +static void lcd2s_cursor_ul_off(void)
-> +{
-> +	if (lcd2s.cur_ul) {
-> +		i2c_smbus_write_byte(lcd2s.i2c, LCD2S_CMD_CUR_UL_OFF);
-> +		lcd2s.cur_ul = 0;
-> +	}
-> +}
-> +
-> +static void lcd2s_cursor_blink_on(void)
-> +{
-> +	if (!lcd2s.cur_blink) {
-> +		i2c_smbus_write_byte(lcd2s.i2c, LCD2S_CMD_CUR_BLINK_ON);
-> +		lcd2s.cur_blink = 1;
-> +	}
-> +}
-> +
-> +static void lcd2s_cursor_blink_off(void)
-> +{
-> +	if (lcd2s.cur_blink) {
-> +		i2c_smbus_write_byte(lcd2s.i2c, LCD2S_CMD_CUR_BLINK_OFF);
-> +		lcd2s.cur_blink = 0;
-> +	}
-> +}
-> +
-> +static const char *lcd2s_startup(void)
-> +{
-> +	return "lcd2s console";
-> +}
-> +
-> +
-> +/*
-> + * init is set if console is currently allocated during init
-> + */
-> +static void lcd2s_init(struct vc_data *con, int init)
-> +{
-> +	lcd2s.cur_blink = 0;
-> +	lcd2s.cur_ul = 0;
-> +
-> +	/* turn display on */
-> +	i2c_smbus_write_byte(lcd2s.i2c, LCD2S_CMD_DISPLAY_ON);
-> +	i2c_smbus_write_byte(lcd2s.i2c, LCD2S_CMD_BACKLIGHT_ON);
-> +	i2c_smbus_write_byte(lcd2s.i2c, LCD2S_CMD_CLEAR);
-> +	lcd2s_cursor_ul_on();
-> +	lcd2s_reset_cursor();
-> +
-> +	con->vc_can_do_color = 0;
-> +	con->vc_hi_font_mask = 0;
-> +
-> +	if (init) {
-> +		con->vc_rows = LCD2S_ROWS;
-> +		con->vc_cols = LCD2S_COLS;
-> +	} else
-> +		vc_resize(con, LCD2S_COLS, LCD2S_ROWS);
-> +}
-> +
-> +static void lcd2s_deinit(struct vc_data *con)
-> +{
-> +	i2c_smbus_write_byte(lcd2s.i2c, LCD2S_CMD_DISPLAY_OFF);
-> +	i2c_smbus_write_byte(lcd2s.i2c, LCD2S_CMD_BACKLIGHT_OFF);
-> +	lcd2s_cursor_blink_off();
-> +	lcd2s_cursor_ul_off();
-> +}
-> +
-> +static void lcd2s_clear(struct vc_data *con, int s_row, int s_col,
-> +			int height, int width)
-> +{
-> +	u8 buf[width];
-> +	int i;
-> +
-> +	if (width <= 0 || height <= 0)
-> +		return;
-> +
-> +	/* if the whole display is to clear, we have a single command */
-> +	if (s_col == 0 && s_row == 0 &&
-> +		height >= con->vc_rows - 1 && width >= con->vc_cols - 1) {
-> +		i2c_smbus_write_byte(lcd2s.i2c, LCD2S_CMD_CLEAR);
-> +		return;
-> +	}
-> +
-> +	for (i = 0; i <= width; i++)
-> +		buf[i] = ' ';
-> +
-> +	for (i = s_col; i <= height; i++) {
-> +		lcd2s_set_cursor(s_row, i);
-> +		i2c_master_send(lcd2s.i2c, buf, width);
-> +	}
-> +}
-> +
-> +static void lcd2s_putc(struct vc_data *con, int data, int row, int col)
-> +{
-> +	u8 buf[] = {LCD2S_CMD_WRITE, data};
-> +
-> +	lcd2s_set_cursor(row, col);
-> +
-> +	i2c_master_send(lcd2s.i2c, buf, sizeof(buf));
-> +	lcd2s_increase_cursor(con, 1);
-> +}
-> +
-> +static void lcd2s_putcs(struct vc_data *con, const unsigned short *buf,
-> +			int len, int row, int col)
-> +{
-> +	u8 *i2c_buf;
-> +	int i;
-> +
-> +	i2c_buf = kzalloc(len + 1, GFP_KERNEL);
-> +	if (!i2c_buf)
-> +		return;
-> +
-> +	lcd2s_set_cursor(row, col);
-> +
-> +	i2c_buf[0] = LCD2S_CMD_WRITE;
-> +	for (i = 0; i < len ; i++)
-> +		i2c_buf[i + 1] = buf[i];
-> +
-> +	i2c_master_send(lcd2s.i2c, i2c_buf, len + 1);
-> +	kfree(i2c_buf);
-> +	lcd2s_increase_cursor(con, len);
-> +}
-> +
-> +static void lcd2s_cursor(struct vc_data *con, int mode)
-> +{
-> +	switch (mode) {
-> +	case CM_ERASE:
-> +		lcd2s_cursor_blink_off();
-> +		lcd2s_cursor_ul_off();
-> +		break;
-> +	case CM_MOVE:
-> +	case CM_DRAW:
-> +		lcd2s_set_cursor(con->vc_y, con->vc_x);
-> +
-> +		switch (con->vc_cursor_type & CUR_HWMASK) {
-> +		case CUR_UNDERLINE:
-> +			lcd2s_cursor_ul_on();
-> +			lcd2s_cursor_blink_off();
-> +			break;
-> +		case CUR_NONE:
-> +			lcd2s_cursor_blink_off();
-> +			lcd2s_cursor_ul_off();
-> +			break;
-> +		default:
-> +			lcd2s_cursor_blink_on();
-> +			lcd2s_cursor_ul_off();
-> +			break;
-> +		}
-> +		break;
-> +	}
-> +}
-> +
-> +static int lcd2s_scroll(struct vc_data *con, int top, int bot,
-> +			int dir, int lines)
-> +{
-> +	/* we can only scroll the whole display */
-> +	if (top == 0 && bot == con->vc_rows) {
-> +		while (lines--) {
-> +			switch (dir) {
-> +			case SM_UP:
-> +				i2c_smbus_write_byte(lcd2s.i2c,
-> +					LCD2S_CMD_SHIFT_UP);
-> +				break;
-> +			case SM_DOWN:
-> +				i2c_smbus_write_byte(lcd2s.i2c,
-> +					LCD2S_CMD_SHIFT_DOWN);
-> +				break;
-> +			}
-> +		}
-> +		return 0;
-> +	}
-> +	return 1;
-> +}
-> +
-> +static void lcd2s_bmove(struct vc_data *conp, int s_row, int s_col,
-> +			int d_row, int d_col, int height, int width)
-> +{
-> +}
-> +
-> +static int lcd2s_switch(struct vc_data *con)
-> +{
-> +	return 1;
-> +}
-> +
-> +static int lcd2s_blank(struct vc_data *con, int blank, int mode_switch)
-> +{
-> +	switch (blank) {
-> +	case 0:		/* unblank */
-> +		i2c_smbus_write_byte(lcd2s.i2c, LCD2S_CMD_DISPLAY_ON);
-> +		i2c_smbus_write_byte(lcd2s.i2c, LCD2S_CMD_BACKLIGHT_ON);
-> +		break;
-> +	case 1:		/* normal blanking */
-> +		i2c_smbus_write_byte(lcd2s.i2c, LCD2S_CMD_DISPLAY_OFF);
-> +		i2c_smbus_write_byte(lcd2s.i2c, LCD2S_CMD_BACKLIGHT_OFF);
-> +		break;
-> +	}
-> +	return 0;
-> +}
-> +
-> +static int lcd2s_set_palette(struct vc_data *con, unsigned char *table)
-> +{
-> +	return -EINVAL;
-> +}
-> +
-> +static int lcd2s_scrolldelta(struct vc_data *con, int lines)
-> +{
-> +	return 0;
-> +}
-> +
-> +static struct consw lcd2s_con = {
-> +	.owner			= THIS_MODULE,
-> +	.con_startup		= lcd2s_startup,
-> +	.con_init		= lcd2s_init,
-> +	.con_deinit		= lcd2s_deinit,
-> +	.con_clear		= lcd2s_clear,
-> +	.con_putc		= lcd2s_putc,
-> +	.con_putcs		= lcd2s_putcs,
-> +	.con_cursor		= lcd2s_cursor,
-> +	.con_scroll		= lcd2s_scroll,
-> +	.con_bmove		= lcd2s_bmove,
-> +	.con_switch		= lcd2s_switch,
-> +	.con_blank		= lcd2s_blank,
-> +	.con_set_palette	= lcd2s_set_palette,
-> +	.con_scrolldelta	= lcd2s_scrolldelta,
-> +};
-> +
-> +static int __devinit lcd2s_i2c_probe(struct i2c_client *i2c,
-> +				const struct i2c_device_id *id)
-> +{
-> +	if (!i2c_check_functionality(i2c->adapter,
-> +			I2C_FUNC_SMBUS_WRITE_BYTE_DATA |
-> +			I2C_FUNC_SMBUS_WRITE_BLOCK_DATA))
-> +		return -EIO;
-> +
-> +	lcd2s.i2c = i2c;
-> +
-> +	take_over_console(&lcd2s_con, LCD2S_FIRST, LCD2S_LAST, 1);
-> +
-> +	return 0;
-> +}
-> +
-> +static __devexit int lcd2s_i2c_remove(struct i2c_client *i2c)
-> +{
-> +	/* unregister from console subsystem */
-> +	unregister_con_driver(&lcd2s_con);
-> +	return 0;
-> +}
-> +
-> +static const struct i2c_device_id lcd2s_i2c_id[] = {
-> +	{ "lcd2s", 0 },
-> +	{ }
-> +};
-> +MODULE_DEVICE_TABLE(i2c, lcd2s_i2c_id);
-> +
-> +static struct i2c_driver lcd2s_i2c_driver = {
-> +	.driver = {
-> +		.name = "lcd2s",
-> +		.owner = THIS_MODULE,
-> +	},
-> +	.probe = lcd2s_i2c_probe,
-> +	.remove = __devexit_p(lcd2s_i2c_remove),
-> +	.id_table = lcd2s_i2c_id,
-> +};
-> +
-> +module_i2c_driver(lcd2s_i2c_driver)
-> +
-> +MODULE_DESCRIPTION("LCD2S character display console driver");
-> +MODULE_AUTHOR("Lars Poeschel");
-> +MODULE_LICENSE("GPL");
+My build-script uses fakeroot and does no more start:
 
+$ ./scripts/build_linux-next.sh
+make options ...... CC=gcc-4.6 -j4
+KBUILD_BUILD_USER=sedat.dilek@gmail.com
+LOCALVERSION=-next20130207-2-iniza-small
+dep-pkg options ... KDEB_PKGVERSION=3.8.0~rc6~next20130207-2~iniza+dileks1
+fakeroot, while creating message channels: Invalid argument
+This may be due to a lack of SYSV IPC support.
+fakeroot: error while starting the `faked' daemon.
+kill: usage: kill [-s sigspec | -n signum | -sigspec] pid | jobspec
+... or kill -l [sigspec]
+
+
+Any hints?
+( I could run strace... )
+
+- Sedat -
+
+--047d7b6d88b0f2815004d51f32f0
+Content-Type: application/x-sh; name="build_linux-next.sh"
+Content-Disposition: attachment; filename="build_linux-next.sh"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hcvpom101
+
+IyEvYmluL3NoCgojIyMgSEVMUAojIDEuIG1ha2UgZGViLXBrZyAob3B0aW9ucyk6ICA8ZmlsZTog
+c2NyaXB0cy9wYWNrYWdlL2J1aWxkZGViPgojIDIuIGxvY2FsdmVyc2lvbiBoYW5kbGluZzogICA8
+ZmlsZTogc2NyaXB0cy9zZXRsb2NhbHZlcnNpb24+CiMgMy4gS0JVSUxEX1VTRVJfKiB2YXJpYWJs
+ZXM6IDxmaWxlOiBzY3JpcHRzL21rY29tcGlsZV9oPgojIDQuIFByZXJlcXMvUHJlcGFyYXRpb246
+ICAgICA8aHR0cDovL2tlcm5lbC1oYW5kYm9vay5hbGlvdGguZGViaWFuLm9yZy9jaC1jb21tb24t
+dGFza3MuaHRtbCNzNC4yLjE+CgojIyMgUFJFUkVRUzogSW5zdGFsbCBidWlsZC1lc3NlbnRpYWws
+IGZha2Vyb290IGFuZCBkcGtnLWRldiBwYWNrYWdlcyAob3B0aW9uYWw6IGdpdCkhCiNhcHQtZ2V0
+IHVwZGF0ZQojYXB0LWdldCBpbnN0YWxsIGJ1aWxkLWVzc2VudGlhbCBmYWtlcm9vdCBkcGtnLWRl
+dgojYXB0LWdldCBpbnN0YWxsIGdpdAoKIyMjIExhbmd1YWdlIHNldHRpbmdzCmV4cG9ydCBMQU5H
+PUMKZXhwb3J0IExDX0FMTD1DCgojIyMgQmFzZSBhbmQgTGludXgtTmV4dCBzb3VyY2UgZGlyZWN0
+b3J5CkJBU0VfRElSPSQocHdkKQpTUkNfRElSPSIke0JBU0VfRElSfS9saW51eC1uZXh0IgoKIyMj
+IENsb25lIExpbnV4LU5leHQgcmVtb3RlIEdJVCB0cmVlCiNHSVRfVVJMPSJnaXQ6Ly9naXQua2Vy
+bmVsLm9yZy9wdWIvc2NtL2xpbnV4L2tlcm5lbC9naXQvbmV4dC9saW51eC1uZXh0LmdpdCIKI2dp
+dCBjbG9uZSAke0dJVF9VUkx9CgojIyMgQ2hhbmdlIHRvIGJ1aWxkIGRpcmVjdG9yeQpjZCAke1NS
+Q19ESVJ9CgojIyMgTWFrZSBhbmQgY29tcGlsZXIgc2V0dGluZ3MKTUFLRT0ibWFrZSIKTUFLRV9K
+T0JTPSQoZ2V0Y29uZiBfTlBST0NFU1NPUlNfT05MTikKQ0NfRk9SX0JVSUxEPSJnY2MtNC42IgoK
+IyMjIFVwbG9hZGVyOiByZWFsbmFtZS9uaWNrbmFtZSBhbmQgZW1haWwgc2V0dGluZ3MKZXhwb3J0
+IERFQkZVTExOQU1FPSJTZWRhdCBEaWxlayIKZXhwb3J0IERFQkVNQUlMPSJzZWRhdC5kaWxla0Bn
+bWFpbC5jb20iCnVwbG9hZGVyPSJkaWxla3MiCgojIyMgVXBzdHJlYW0tdmVyc2lvbiBzZXR0aW5n
+cwp2ZXJzaW9uPSQoYXdrICcvXlZFUlNJT04gPSAvIHtwcmludCAkM30nIE1ha2VmaWxlKQpwYXRj
+aGxldmVsPSQoYXdrICcvXlBBVENITEVWRUwgPSAvIHtwcmludCAkM30nIE1ha2VmaWxlKQpzdWJs
+ZXZlbD0kKGF3ayAnL15TVUJMRVZFTCA9IC8ge3ByaW50ICQzfScgTWFrZWZpbGUpCmV4dHJhdmVy
+c2lvbj0kKGF3ayAnL15FWFRSQVZFUlNJT04gPSAvIHtwcmludCAkM30nIE1ha2VmaWxlKQp1cHN0
+cmVhbV92ZXJzaW9uPSIke3ZlcnNpb259LiR7cGF0Y2hsZXZlbH0uJHtzdWJsZXZlbH0ke2V4dHJh
+dmVyc2lvbn0iCgojIyMgRGViaWFuLXJldmlzaW9uIHNldHRpbmdzCiMgTm90ZS0xOiAkcmV2aXNp
+b24gd2lsbCBiZSBhcHBlbmRlZCB0byAkZGViaWFuX3JldmlzaW9uIGFuZCAkbXlsb2NhbHZlcnNp
+b24KIyBOb3RlLTI6IFVwc3RyZWFtOiAkcmV2aXNpb24gc3RhcnRzIGF0ICIxIiB3aXRoIGVhY2gg
+bmV3IDMueC55KzEgKHN0YWJsZSkgb3IgMy54LjAtcmNYKzEgKHJlbGVhc2UtY3ljbGUpCiMgTm90
+ZS0zOiBMaW51eC1OZXh0OiAkcmV2aXNpb24gc3RhcnRzIGF0ICIxIiB3aXRoIGVhY2ggbGludXgt
+bmV4dCByZWxlYXNlCiMgRXhhbXBsZTogZGViaWFuX3JldmlzaW9uPSIxK2RpbGVrczEiCnJldmlz
+aW9uPSIyIgp1cGxvYWRlcl9yZXZpc2lvbj0iMSIKZGViaWFuX3JldmlzaW9uPSIke3JldmlzaW9u
+fSske3VwbG9hZGVyfSR7dXBsb2FkZXJfcmV2aXNpb259IgoKIyMjIEV4dHJhY3QgJG15bG9jYWx2
+ZXJzaW9uX25leHQKIyBOb3RlOiAkbXlsb2NhbHZlcnNpb25fbmV4dCB3aWxsIGJlIGFwcGVuZGVk
+IHRvICRteWxvY2FsdmVyc2lvbgojIEV4YW1wbGU6IG15bG9jYWx2ZXJzaW9uX25leHQ9Im5leHQy
+MDEzMDEyNSIKbXlsb2NhbHZlcnNpb25fbmV4dD0kKGdpdCB0YWcgfCBncmVwIF4nbmV4dC0nIHwg
+dGFpbCAtMSB8IHRyIC1kICctJykKCiMjIyBNeSBmZWF0dXJlc2V0IHNldHRpbmdzCiMgSGVyZTog
+VXNlIG93biAiaW5pemEiIGZlYXR1cmVzZXQKbXlmZWF0dXJlc2V0PSJpbml6YSIKCiMjIyBNeSBr
+ZXJuZWwtZmxhdm91ciBzZXR0aW5ncwojIEhlcmU6IFVzZSBvd24gInNtYWxsIiBrZXJuZWwtZmxh
+dm91ciAobG9jYWxtb2Rjb25maWctZWQgcGx1cyBzb21lIGRlYnVnLW9wdGlvbnMgZW5hYmxlZCkg
+Cm15a2VybmVsZmxhdm91cj0ic21hbGwiCgojIyMgQ3VzdG9taXplZCBMT0NBTFZFUlNJT04gc2V0
+dGluZ3MKIyBOb3RlLTE6ICRteWxvY2FsdmVyc2lvbiBpcyBhdHRhY2hlZCBhcyBzdWZmaXggdG8g
+ImluY2x1ZGUvZ2VuZXJhdGVkL3V0c3JlbGVhc2UuaCIgZmlsZQojIE5vdGUtMjogVXNhZ2Ugb2Yg
+TE9DQUxWRVJTSU9OPSRteWxvY2FsdmVyc2lvbiBzdXBwcmVzc2VzICIrIiBzdWZmaXgKIyBOb3Rl
+LTM6IFNlZSBhbHNvICIjZGVmaW5lIFVUU19SRUxFQVNFIiBpbiB1dHNyZWxlYXNlLmggZmlsZS4K
+IyBFeGFtcGxlLTE6ICJuZXh0MjAxMzAxMjUiIChteWxvY2FsdmVyc2lvbl9uZXh0KSArICIxIiAo
+cmV2aXNpb24pICsgImluaXphIiAobXlmZWF0dXJlc2V0KSArICJzbWFsbCIgKG15a2VybmVsZmxh
+dm91cikKIyBFeGFtcGxlLTI6IG15bG9jYWx2ZXJzaW9uPSItbmV4dDIwMTMwMTI1LTEtaW5pemEt
+c21hbGwiCm15bG9jYWx2ZXJzaW9uPSItJHtteWxvY2FsdmVyc2lvbl9uZXh0fS0ke3JldmlzaW9u
+fS0ke215ZmVhdHVyZXNldH0tJHtteWtlcm5lbGZsYXZvdXJ9IgoKIyMjIE15IGtlcm5lbC1yZWxl
+YXNlIChha2EgS1ZFUikKbXlrZXJuZWxyZWxlYXNlPSIke3Vwc3RyZWFtX3ZlcnNpb259JHtteWxv
+Y2FsdmVyc2lvbn0iCgojIyMgQnVpbGQtbG9nIGZpbGUKQlVJTERfTE9HX0ZJTEU9ImJ1aWxkLWxv
+Z18ke215a2VybmVscmVsZWFzZX0udHh0IgoKIyMjIG1ha2Ugb3B0aW9ucwpNQUtFX09QVFM9IkND
+PSR7Q0NfRk9SX0JVSUxEfSAtaiR7TUFLRV9KT0JTfSBLQlVJTERfQlVJTERfVVNFUj0ke0RFQkVN
+QUlMfSBMT0NBTFZFUlNJT049JHtteWxvY2FsdmVyc2lvbn0iCgojIyMgZGViLXBrZyBvcHRpb25z
+CiMgTm90ZS0xOiBDaGFuZ2UgJy0nIGluICR1cHN0cmVhbV92ZXJzaW9uIHRvICd+JyBjYXVzZWQg
+YnkgJGV4dHJhdmVyc2lvbiAoMy44LjAtcmM0IFZTLiAzLjguMH5yYzQpCiMgTm90ZS0yOiBBZGQg
+JG15ZmVhdHVyZXNldCB0byAkZGViaWFuX3JldmlzaW9uCiMgRXhhbXBsZTogS0RFQl9QS0dWRVJT
+SU9OPSIzLjguMH5yYzR+bmV4dDIwMTMwMTI1LTF+aW5pemErZGlsZWtzMSIKdXBzdHJlYW1fdmVy
+c2lvbj0kKGVjaG8gJHVwc3RyZWFtX3ZlcnNpb24gfCB0ciAnLScgJ34nKQpkZWJpYW5fcmV2aXNp
+b249IiR7cmV2aXNpb259fiR7bXlmZWF0dXJlc2V0fSske3VwbG9hZGVyfSR7dXBsb2FkZXJfcmV2
+aXNpb259IgpERUJfUEtHX09QVFM9IktERUJfUEtHVkVSU0lPTj0ke3Vwc3RyZWFtX3ZlcnNpb259
+fiR7bXlsb2NhbHZlcnNpb25fbmV4dH0tJHtkZWJpYW5fcmV2aXNpb259IgoKZWNobyAibWFrZSBv
+cHRpb25zIC4uLi4uLiAke01BS0VfT1BUU30iCmVjaG8gImRlcC1wa2cgb3B0aW9ucyAuLi4gJHtE
+RUJfUEtHX09QVFN9IgoKIyMjIFJlbW92ZSBhbnkgZXhpc3RpbmcgbG9jYWx2ZXJzaW9uKiBmaWxl
+KHMpIGFzICRMT0NBTFZFUlNJT04gaXMgdXNlZAojIE5vdGU6IExpbnV4LU5leHQgc2hpcHMgbG9j
+YWx2ZXJzaW9uLW5leHQgZmlsZS4Kcm0gLXYgLWYgbG9jYWx2ZXJzaW9uKgoKIyMjIFN0YXJ0IGJ1
+aWxkCmZha2Vyb290ICR7TUFLRX0gJHtNQUtFX09QVFN9IGRlYi1wa2cgJHtERUJfUEtHX09QVFN9
+IDI+JjEgfCB0ZWUgLi4vJHtCVUlMRF9MT0dfRklMRX0K
+--047d7b6d88b0f2815004d51f32f0--
