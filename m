@@ -1,93 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758517Ab3BGNWw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 08:22:52 -0500
-Received: from mga03.intel.com ([143.182.124.21]:22948 "EHLO mga03.intel.com"
+	id S1758387Ab3BGN0F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 08:26:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50783 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751261Ab3BGNWv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 08:22:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,622,1355126400"; 
-   d="scan'208";a="253787575"
-From: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Koul, Vinod" <vinod.koul@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        spear-devel <spear-devel@list.st.com>
-Subject: Re: [PATCH] dw_dmac: adjust slave_id accordingly to request line
- base
-Thread-Topic: [PATCH] dw_dmac: adjust slave_id accordingly to request line
- base
-Thread-Index: AQHOBTY35FBAmkPv1kuygLrmdJOiAg==
-Date: Thu, 7 Feb 2013 13:22:46 +0000
-Message-ID: <1360243354.32329.20.camel@smile>
-References: <1359371060-9044-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <CAOh2x==psH4fYmr_MxwO8vjYb=sWk=V7Vs8fs_-6U00gmiko_w@mail.gmail.com>
-	 <20130129052247.GH2239@intel.com>
-	 <CAOh2x=nTJ1iz9aoR8VrkE5A+iaLMMbvFeebGPsO8KWRpDLw7=A@mail.gmail.com>
-	 <1359531176.31148.46.camel@smile>
-	 <CAOh2x==Ng1=iHOj-55mUTWCwpaJpRXjiQyfxz-a48ALDOW3aiA@mail.gmail.com>
-	 <1359533274.31148.52.camel@smile>
-In-Reply-To: <1359533274.31148.52.camel@smile>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.237.72.173]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <314A93787C31244EB4184BDE1D18D528@intel.com>
+	id S1751261Ab3BGN0B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 08:26:01 -0500
+Date: Thu, 7 Feb 2013 14:24:55 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>, John Stultz <john.stultz@linaro.org>,
+        Tommi Rantala <tt.rantala@gmail.com>
+Subject: Re: [PATCH] posix-cpu-timers: fix nanosleep task_struct leak
+Message-ID: <20130207132455.GA25793@redhat.com>
+References: <CA+ydwtqUUAR9zf3dp+N1JRW+if88EZ73i+5BQtuggVPDFVdCBg@mail.gmail.com> <alpine.LFD.2.02.1302011450160.11905@ionos> <20130204193223.GA11910@redhat.com> <20130205103455.GB18313@redhat.com> <alpine.LFD.2.02.1302051155000.11905@ionos> <20130206112327.GA1824@redhat.com> <CA+ydwtrdNL_7AvZpmJ__06YUCVhSr7YPO8D=wzXhZiWp1-DVqg@mail.gmail.com> <20130206151550.GA1758@redhat.com> <20130206161011.GA11161@redhat.com> <20130207122212.GA2668@redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130207122212.GA2668@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r17DMra9029032
 
-On Wed, 2013-01-30 at 10:07 +0200, Andy Shevchenko wrote: 
-> On Wed, 2013-01-30 at 13:31 +0530, Viresh Kumar wrote: 
-> > On Wed, Jan 30, 2013 at 1:02 PM, Andy Shevchenko
-> > <andriy.shevchenko@linux.intel.com> wrote:
-> > > We get a device from the ACPI CSRT table. During enumeration we don't
-> > > know what kind of the device it is. From the enumeration point of view
-> > > each device enumerated from CSRT is a platform device (see
-> > > drivers/acpi/csrt.c for the details).
-> > >
-> > > That's why we have to pass this info somehow to the DMAC driver. And
-> > > like Mika already mentioned we have no other generic way except
-> > > IORESOURCE_DMA. If you have something better in mind, please share. We
-> > > could adopt our code then.
-> > 
-> > You don't need this in DT case too? 
-> 
-> I think no. It seems the DT has a proper backlink from the slave device
-> to the dmac ("dma-names" property if I understood it correctly).
+On 02/07, Stanislaw Gruszka wrote:
+>
+> On Wed, Feb 06, 2013 at 05:10:11PM +0100, Oleg Nesterov wrote:
+> >
+> > It is not clear to me why other posix_cpu_timer_del's above can't fail..
+> > May be you can add a comment.
+>
+> Sure, I'll add more comments.
 
-Actually I meant "dmas" property in the brackets.
+Yes, please. This will help the next reader to understand that no, we
+do not forget to check the error code, just we do not need to do this.
 
-> > Or only for ACPI case?
-> 
-> ACPI 5 case only until now.
-> We would like to initiate the proposal to the ACPI specification
-> team/whoever to have this part designed better in next versions.
-> 
-> > I think "Yes" is the answer of both the questions. If so, then you
-> > can keep it this way or add another variable in platform data.
+> Once posix_cpu_timer_set(..., &zero_it, it) succeed with 0 return value,
+> it's not possible to fire timer, so posix_cpu_timer_del() will not fail.
+> Similar assumption is with first posix_cpu_timer_del() call I added
+> in the patch.
 
-So, are you fine with it? Could you please Ack it if there is neither
-objections nor more comments.
+OK, I see.
 
--- 
-Andy Shevchenko <andriy.shevchenko@intel.com>
-Intel Finland Oy
----------------------------------------------------------------------
-Intel Finland Oy
-Registered Address: PL 281, 00181 Helsinki 
-Business Identity Code: 0357606 - 4 
-Domiciled in Helsinki 
+> > And I am not sure that TIMER_RETRY is the only error we should worry.
+> > And perhaps we need even more posix_cpu_timer_del's?
+> >
+> > For example. Suppose that posix_cpu_timer_create() succeeds and does
+> > get_task_struct(p). But than p dies, and the first posix_cpu_timer_set()
+> > fails with -ESRCH. No?
+>
+> On second -ESRCH case posix_cpu_timer_set() internally call
+> put_task_struct().
 
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Ah, missed that, thanks.
+
+> It does not remove from cpu_timers list, but
+> that is done at exit().
+
+Yes, posix_cpu_timers_exit().
+
+OK, thanks for your explanations, I think the patch is fine.
+
+
+> BTW: I don't think we handle correctly case when traced process -
+> - timer->it.cpu.task will die. Tracing process - timer->it_process will
+> probably not be woken up.
+
+Probably... or perhaps we can treat this case as "timer never expires".
+
+Oleg.
+
