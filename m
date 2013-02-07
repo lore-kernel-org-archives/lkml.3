@@ -1,71 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758648Ab3BGNJk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 08:09:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19854 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758413Ab3BGNJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 08:09:36 -0500
-Date: Thu, 7 Feb 2013 15:13:13 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: netdev@vger.kernel.org
-Cc: Eilon Greenstein <eilong@broadcom.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        Tushar Dave <tushar.n.dave@intel.com>,
-        Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>,
-        Sony Chacko <sony.chacko@qlogic.com>, linux-driver@qlogic.com,
-        John Fastabend <john.r.fastabend@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jacob Keller <jacob.e.keller@intel.com>, linux-kernel@vger.kernel.org,
-        e1000-devel@lists.sourceforge.net, bhutchings@solarflare.com,
-        eric.dumazet@gmail.com
-Subject: [PATCHv2-net-3.8 2/3] qlcnic: set gso_type
-Message-ID: <50a60e1293901965901edb46ae49e52da1d469d5.1360236441.git.mst@redhat.com>
-References: <cover.1360236441.git.mst@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1360236441.git.mst@redhat.com>
-X-Mutt-Fcc: =sent
+	id S1758544Ab3BGNMe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 08:12:34 -0500
+Received: from vsp-authed02.binero.net ([195.74.38.226]:23513 "HELO
+	vsp-authed-02-02.binero.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755023Ab3BGNMd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 08:12:33 -0500
+From: Andreas Larsson <andreas@gaisler.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        spi-devel-general@lists.sourceforge.net,
+        Mingkai Hu <Mingkai.hu@freescale.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Joakim Tjernlund <Joakim.Tjernlund@transmode.se>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Peter Korsgaard <jacmet@sunsite.dk>, linux-kernel@vger.kernel.org,
+        software@gaisler.com
+Subject: [PATCH v2 0/7] spi: spi-fsl-spi: Make spi-fsl-spi usable in cpu mode outside of FSL SOC environments and add a grlib variant normally running on sparc
+Date: Thu,  7 Feb 2013 14:12:04 +0100
+Message-Id: <1360242731-13700-1-git-send-email-andreas@gaisler.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-qlcnic set gso_size but not gso type. This leads to crashes
-in macvtap.
+This makes the cpu mode of the driver available outside of an FSL SOC
+and even powerpc environment. Furthermore, this adds support for the
+mostly register-compatible SPICTRL core from the GRLIB VHDL IP core
+library normally running on SPARC.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+This effort is split up in several patches for clarity of what is being
+changed. Patches 3-5 prepares for the introduction of the GRLIB SPICTRL
+functionality in patch 6. 
 
-diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c
-index 6f82812..09aa310 100644
---- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c
-+++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c
-@@ -986,8 +986,13 @@ qlcnic_process_lro(struct qlcnic_adapter *adapter,
- 	th->seq = htonl(seq_number);
- 	length = skb->len;
- 
--	if (adapter->flags & QLCNIC_FW_LRO_MSS_CAP)
-+	if (adapter->flags & QLCNIC_FW_LRO_MSS_CAP) {
- 		skb_shinfo(skb)->gso_size = qlcnic_get_lro_sts_mss(sts_data1);
-+		if (skb->protocol == htons(ETH_P_IPV6))
-+			skb_shinfo(skb)->gso_type = SKB_GSO_TCPV6;
-+		else
-+			skb_shinfo(skb)->gso_type = SKB_GSO_TCPV4;
-+	}
- 
- 	if (vid != 0xffff)
- 		__vlan_hwaccel_put_tag(skb, vid);
--- 
-MST
+To use what is introduced right away they could eventually be merged:
+  Patch A: patch 1
+  Patch B: patch 2
+  Patch C: patches 3-6 merged
+  Patch D: patch 7
+
+Patch 1 makes the driver compileable and presumably useable outside of
+FSL SOC and powerpc environments (SPARC in particular)
+
+Patch 2 fixes a bug that can happen when a device uses SPI_CS_HIGH
+
+Patches 3-6 makes the driver working for GRLIB SPICTRL cores that has
+the built in slave select register and that uses that exclusively for
+chipselects.
+
+Patch 7 introduces gpio support for GRLIB SPICTRL cores. That patch (and
+that patch only) relies upon the "of, of_gpio, of_spi: Fix and improve
+of_parse_phandle_with_args, of_gpio_named_count and
+of_spi_register_master" patchset - https://lkml.org/lkml/2013/1/29/308
+
+The GRLIB type has been tested under sparc. The FSL type has been
+compile tested in powerpc, arm and x86 environments. It would be great
+if someone with an FSL board could test this out.
+
+One could argue that it would be better to add the GRLIB variant as a
+mode flag in of_mpc8xxx_spi_probe instead of using a new type field, but
+that would require to add a flag for this core in
+include/linux/fsl_devices.h which does not feel right given that this
+core is not part of an FSL device.
+
+Signed-off-by: Andreas Larsson <andreas@gaisler.com>
+
+Andreas Larsson (7):
+  spi: spi-fsl-spi: Make driver usable in CPU mode outside of an
+    FSL_SOC environment
+  spi: spi-fsl-spi: Make sure in spi_fsl_setup that chipselect becomes
+    inactive
+  spi: spi-fsl-spi: Move setting non-zero tx and rx shifts to a
+    function accessed by a function pointer
+  spi: spi-fsl-spi: Introduce a type for the driver
+  spi: spi-fsl-spi: Add support for setting a maximum number of bits
+    per word
+  spi: spi-fsl-spi: Add support for Aeroflex Gaisler GRLIB cores
+    normally running on SPARC
+  spi: spi-fsl-spi: Add support for gpio chipselects for GRLIB type
+    cores
+
+ Documentation/devicetree/bindings/spi/fsl-spi.txt  |    3 +-
+ .../devicetree/bindings/vendor-prefixes.txt        |    1 +
+ drivers/spi/Kconfig                                |   11 +-
+ drivers/spi/Makefile                               |    1 +
+ drivers/spi/spi-fsl-cpm.c                          |  387 +++++++++++++
+ drivers/spi/spi-fsl-cpm.h                          |   43 ++
+ drivers/spi/spi-fsl-lib.c                          |    8 +
+ drivers/spi/spi-fsl-lib.h                          |   15 +-
+ drivers/spi/spi-fsl-spi.c                          |  610 ++++++--------------
+ drivers/spi/spi-fsl-spi.h                          |   72 +++
+ 10 files changed, 725 insertions(+), 426 deletions(-)
+ create mode 100644 drivers/spi/spi-fsl-cpm.c
+ create mode 100644 drivers/spi/spi-fsl-cpm.h
+ create mode 100644 drivers/spi/spi-fsl-spi.h
 
