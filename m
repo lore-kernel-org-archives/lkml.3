@@ -1,82 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758757Ab3BGQZI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 11:25:08 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:6721 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754325Ab3BGQZF (ORCPT
+	id S1758848Ab3BGQZy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 11:25:54 -0500
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:38886 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754325Ab3BGQZw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 11:25:05 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 07 Feb 2013 08:25:00 -0800
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: <pdeschrijver@nvidia.com>
-CC: Stephen Warren <swarren@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] clk: tegra: Implement locking for super clock
-Date: Thu, 7 Feb 2013 18:24:14 +0200
-Message-ID: <1360254261-23000-1-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-X-NVConfidentiality: public
+	Thu, 7 Feb 2013 11:25:52 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20130207111025.GD8945@gmail.com>
+References: <1360175338-6735-1-git-send-email-fweisbec@gmail.com>
+	<1360205415.2621.60.camel@gandalf.local.home>
+	<20130207111025.GD8945@gmail.com>
+Date: Thu, 7 Feb 2013 17:25:51 +0100
+Message-ID: <CAFTL4hySiyn8Ci6XKFSRsMr7FabgpwSbOuNDP_GsefFDsbT2Cg@mail.gmail.com>
+Subject: Re: [ANNOUNCE] 3.8-rc6-nohz4
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Although tegra_clk_register_super_mux() has a lock parameter, the lock is not
-actually used by the code. Fixed with this patch.
+2013/2/7 Ingo Molnar <mingo@kernel.org>:
+>
+> * Steven Rostedt <rostedt@goodmis.org> wrote:
+>
+>> I'll reply to this as I come up with comments.
+>>
+>> First thing is, don't call it NO_HZ_FULL. A better name would
+>> be NO_HZ_CPU. I would like to reserve NO_HZ_FULL when we
+>> totally remove jiffies :-)
+>
+> I don't think we want yet another config option named in a
+> weird way.
+>
+> What we want instead is to just split NO_HZ up into its
+> conceptual parts:
+>
+>    CONFIG_NO_HZ_IDLE
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
----
- drivers/clk/tegra/clk-super.c |   18 +++++++++++++++---
- 1 files changed, 15 insertions(+), 3 deletions(-)
+Renaming CONFIG_NO_HZ to CONFIG_NO_HZ_IDLE is something I considered.
+I was just worried about this option being present in many defconfig.
+Perhaps we can do that renaming and keep CONFIG_NO_HZ around a little
+while for backward compatibility (pretty much like what we've done for
+CONFIG_PERF_COUNTERS -> CONFIG_PERF_EVENTS).
 
-diff --git a/drivers/clk/tegra/clk-super.c b/drivers/clk/tegra/clk-super.c
-index 7ad48a8..2fd924d 100644
---- a/drivers/clk/tegra/clk-super.c
-+++ b/drivers/clk/tegra/clk-super.c
-@@ -73,7 +73,12 @@ static int clk_super_set_parent(struct clk_hw *hw, u8 index)
- {
- 	struct tegra_clk_super_mux *mux = to_clk_super_mux(hw);
- 	u32 val, state;
-+	int err = 0;
- 	u8 parent_index, shift;
-+	unsigned long flags = 0;
-+
-+	if (mux->lock)
-+		spin_lock_irqsave(mux->lock, flags);
- 
- 	val = readl_relaxed(mux->reg);
- 	state = val & SUPER_STATE_MASK;
-@@ -92,8 +97,10 @@ static int clk_super_set_parent(struct clk_hw *hw, u8 index)
- 					       (index == mux->pllx_index))) {
- 		parent_index = clk_super_get_parent(hw);
- 		if ((parent_index == mux->div2_index) ||
--		    (parent_index == mux->pllx_index))
--			return -EINVAL;
-+		    (parent_index == mux->pllx_index)) {
-+			err = -EINVAL;
-+			goto out;
-+		}
- 
- 		val ^= SUPER_LP_DIV2_BYPASS;
- 		writel_relaxed(val, mux->reg);
-@@ -107,7 +114,12 @@ static int clk_super_set_parent(struct clk_hw *hw, u8 index)
- 
- 	writel_relaxed(val, mux->reg);
- 	udelay(2);
--	return 0;
-+
-+out:
-+	if (mux->lock)
-+		spin_unlock_irqrestore(mux->lock, flags);
-+
-+	return err;
- }
- 
- const struct clk_ops tegra_clk_super_ops = {
--- 
-1.7.7.rc0.72.g4b5ea.dirty
+>    CONFIG_NO_HZ_USER_SPACE
+>    CONFIG_NO_HZ_KERNEL_SPACE
+>
+> Where the current status quo is NO_HZ_IDLE=y, and Frederic is
+> about to introduce NO_HZ_USER_SPACE=y. When jiffies get removed
+> we get NO_HZ_KERNEL_SPACE=y.
 
+Note on my tree I stop the tick on both rings. I believe that
+restarting the tick on kernel entry isn't something we should
+seriously consider. It would be a costly operation that may make
+things worse. And in fact there is no big difference. Just kernelspace
+has more opportunities to be disturbed (RCU IPIs, async timer/work
+scheduled by the kernel, etc...) and get its tick restarted sometimes.
+
+>
+> The 'CONFIG_NO_HZ' meta-option, which we should leave for easy
+> configurability and for compatibility, should get us the
+> currently recommended default, which for the time being might
+> be:
+
+Ah looks like you considered the compatibility as well :)
+
+>
+>    CONFIG_NO_HZ_IDLE=y
+>    # CONFIG_NO_HZ_USER_SPACE is disabled
+>
+> Btw., you could add CONFIG_NO_HZ_KERNEL_SPACE right away, just
+> keep it false all the time. That would document our future plans
+> pretty well.
+>
+> Once CONFIG_NO_HZ_USER_SPACE is proven problem-free, we might
+> default to:
+>
+>    CONFIG_NO_HZ_IDLE=y
+>    CONFIG_NO_HZ_USER_SPACE=y
+>
+> The goal is to have this in the distant future:
+>
+>    CONFIG_NO_HZ=y
+>
+>    CONFIG_NO_HZ_IDLE=y
+>    CONFIG_NO_HZ_USER_SPACE=y
+>    CONFIG_NO_HZ_KERNEL_SPACE=y
+>
+> And eventually we might even be able to get rid of all the 3
+> variants, and only offer full-on/off.
+>
+> Agreed?
+
+At least for now we seem to agree on CONFIG_NO_HZ_IDLE and keep
+CONFIG_NO_HZ for compatibility. Are you ok with that? If so I'll send
+a patch.
