@@ -1,157 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758949Ab3BGQkY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 11:40:24 -0500
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:6462 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756855Ab3BGQkW (ORCPT
+	id S1758937Ab3BGQlW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 11:41:22 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:5148 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757884Ab3BGQlV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 11:40:22 -0500
-Subject: Re: [PATCH v2] Add the values related to buddy system for
- filtering free pages.
-From: Lisa Mitchell <lisa.mitchell@hp.com>
-To: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>, vgoyal@redhat.com
-Cc: "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "d.hatayama@jp.fujitsu.com" <d.hatayama@jp.fujitsu.com>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "cpw@sgi.com" <cpw@sgi.com>
-In-Reply-To: <20121227173523.5e414c342fed3e59a887fa87@mxc.nes.nec.co.jp>
-References: <20121210103913.020858db777e2f48c59713b6@mxc.nes.nec.co.jp>
-	 <20121219161856.e6aa984f.akpm@linux-foundation.org>
-	 <20121220112103.d698c09a9d1f27a253a63d37@mxc.nes.nec.co.jp>
-	 <33710E6CAA200E4583255F4FB666C4E20AB2DEA3@G01JPEXMBYT03>
-	 <87licsrwpg.fsf@xmission.com>
-	 <20121227173523.5e414c342fed3e59a887fa87@mxc.nes.nec.co.jp>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 07 Feb 2013 05:29:11 -0700
-Message-ID: <1360240151.12251.15.camel@lisamlinux.fc.hp.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
-Content-Transfer-Encoding: 7bit
+	Thu, 7 Feb 2013 11:41:21 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 07 Feb 2013 08:40:52 -0800
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: <pdeschrijver@nvidia.com>
+CC: Stephen Warren <swarren@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>, Joseph Lo <josephl@nvidia.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] clk: tegra: Add missing spinlock for hclk and pclk
+Date: Thu, 7 Feb 2013 18:37:35 +0200
+Message-ID: <1360255064-28833-1-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-12-27 at 08:35 +0000, Atsushi Kumagai wrote:
-> Hello,
-> 
-> On Thu, 20 Dec 2012 18:00:11 -0800
-> ebiederm@xmission.com (Eric W. Biederman) wrote:
-> 
-> > "Hatayama, Daisuke" <d.hatayama@jp.fujitsu.com> writes:
-> > 
-> > >> From: kexec-bounces@lists.infradead.org
-> > >> [mailto:kexec-bounces@lists.infradead.org] On Behalf Of Atsushi Kumagai
-> > >> Sent: Thursday, December 20, 2012 11:21 AM
-> > >
-> > >> On Wed, 19 Dec 2012 16:18:56 -0800
-> > >> Andrew Morton <akpm@linux-foundation.org> wrote:
-> > >> 
-> > >> > On Mon, 10 Dec 2012 10:39:13 +0900
-> > >> > Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp> wrote:
-> > >> >
-> > >
-> > >> >
-> > >> > We might change the PageBuddy() implementation at any time, and
-> > >> > makedumpfile will break.  Or in this case, become less efficient.
-> > >> >
-> > >> > Is there any way in which we can move some of this logic into the
-> > >> > kernel?  In this case, add some kernel code which uses PageBuddy() on
-> > >> > behalf of makedumpfile, rather than replicating the PageBuddy() logic
-> > >> > in userspace?
-> > >> 
-> > >> In last month, Cliff Wickman proposed such idea:
-> > >> 
-> > >>   [PATCH v2] makedumpfile: request the kernel do page scans
-> > >>   http://lists.infradead.org/pipermail/kexec/2012-November/007318.html
-> > >> 
-> > >>   [PATCH] scan page tables for makedumpfile, 3.0.13 kernel
-> > >>   http://lists.infradead.org/pipermail/kexec/2012-November/007319.html
-> > >> 
-> > >> In his idea, the kernel does page scans to distinguish unnecessary pages
-> > >> (free pages and others) and returns the list of PFN's which should be
-> > >> excluded for makedumpfile.
-> > >> As a result, makedumpfile doesn't need to consider internal kernel
-> > >> behavior.
-> > >> 
-> > >> I think it's a good idea from the viewpoint of maintainability and
-> > >> performance.
-> > 
-> > > I also think wide part of his code can be reused in this work. But the bad
-> > > performance is caused by a lot of ioremap, not a lot of copying. See my
-> > > profiling result I posted some days ago. Two issues, ioremap one and filtering
-> > > maintainability, should be considered separately. Even on ioremap issue,
-> > > there is secondary one to consider in memory consumption on the 2nd
-> > > kernel.
-> > 
-> > Thanks.  I was wondering why moving the code into /proc/vmcore would
-> > make things faster.
-> 
-> Thanks HATAYAMA-san, I've understood the issues correctly.
-> We should continue improving the ioremap issue as Cliff and HATAYAMA-san
-> are doing now.
-> 
-> > 
-> > > Also, I have one question. Can we always think of 1st and 2nd kernels
-> > > are same?
-> > 
-> > Not at all.  Distros frequently implement it with the same kernel in
-> > both role but it should be possible to use an old crusty stable kernel
-> > as the 2nd kernel.
-> > 
-> > > If I understand correctly, kexec/kdump can use the 2nd kernel different
-> > > from the 1st's. So, differnet kernels need to do the same thing as makedumpfile
-> > > does. If assuming two are same, problem is mush simplified.
-> > 
-> > As a developer it becomes attractive to use a known stable kernel to
-> > capture the crash dump even as I experiment with a brand new kernel.
-> 
-> To allow to use the 2nd kernel different from the 1st's, I think we have
-> to take care of each kernel version with the logic included in makedumpfile
-> for them. That's to say, makedumpfile goes on as before.
-> 
-> 
-> Thanks
-> Atsushi Kumagai
+The hclk and pclk clocks are controlled by the same register. Hence a lock is
+required to avoid corruption.
 
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+---
+ drivers/clk/tegra/clk-tegra20.c |   11 +++++++----
+ drivers/clk/tegra/clk-tegra30.c |   11 +++++++----
+ 2 files changed, 14 insertions(+), 8 deletions(-)
 
-Atsushi and Vivek:  
-
-I'm trying to get the status of whether the patch submitted in
-https://lkml.org/lkml/2012/11/21/90  is going to be accepted upstream
-and get in some version of the Linux 3.8 kernel.   I'm replying to the
-last email thread above on kexec_lists and lkml.org  that I could find
-about this patch.  
-
-I was counting on this kernel patch to improve performance of
-makedumpfilev1.5.1, so at least it wouldn't be a regression in
-performance over makedumpfile v1.4.   It was listed as recommended in
-the makedumpfilev1.5.1 release posting:
-http://lists.infradead.org/pipermail/kexec/2012-December/007460.html
-
-
-All the conversations in the thread since this patch was committed seem
-to voice some reservations now, and reference other fixes being tried to
-improve performance.  
-
-Does that mean you are abandoning getting this patch accepted upstream,
-in favor of pursuing other alternatives?
-
-I had hoped this patch would be okay to get accepted upstream, and then
-other improvements could be built on top of it.  
-
-Is that not the case?   
-
-Or has further review concluded now that this change is a bad idea due
-to adding dependence of this new makedumpfile feature on some deep
-kernel memory internals?
-
-Thanks,
-
-Lisa Mitchell
-
+diff --git a/drivers/clk/tegra/clk-tegra20.c b/drivers/clk/tegra/clk-tegra20.c
+index 5d41569..4612b2e 100644
+--- a/drivers/clk/tegra/clk-tegra20.c
++++ b/drivers/clk/tegra/clk-tegra20.c
+@@ -194,6 +194,7 @@ static void __iomem *clk_base;
+ static void __iomem *pmc_base;
  
+ static DEFINE_SPINLOCK(pll_div_lock);
++static DEFINE_SPINLOCK(sysrate_lock);
+ 
+ #define TEGRA_INIT_DATA_MUX(_name, _con_id, _dev_id, _parents, _offset,	\
+ 			    _clk_num, _regs, _gate_flags, _clk_id)	\
+@@ -768,19 +769,21 @@ static void tegra20_super_clk_init(void)
+ 
+ 	/* HCLK */
+ 	clk = clk_register_divider(NULL, "hclk_div", "sclk", 0,
+-				   clk_base + CLK_SYSTEM_RATE, 4, 2, 0, NULL);
++				   clk_base + CLK_SYSTEM_RATE, 4, 2, 0,
++				   &sysrate_lock);
+ 	clk = clk_register_gate(NULL, "hclk", "hclk_div", CLK_SET_RATE_PARENT,
+ 				clk_base + CLK_SYSTEM_RATE, 7,
+-				CLK_GATE_SET_TO_DISABLE, NULL);
++				CLK_GATE_SET_TO_DISABLE, &sysrate_lock);
+ 	clk_register_clkdev(clk, "hclk", NULL);
+ 	clks[hclk] = clk;
+ 
+ 	/* PCLK */
+ 	clk = clk_register_divider(NULL, "pclk_div", "hclk", 0,
+-				   clk_base + CLK_SYSTEM_RATE, 0, 2, 0, NULL);
++				   clk_base + CLK_SYSTEM_RATE, 0, 2, 0,
++				   &sysrate_lock);
+ 	clk = clk_register_gate(NULL, "pclk", "pclk_div", CLK_SET_RATE_PARENT,
+ 				clk_base + CLK_SYSTEM_RATE, 3,
+-				CLK_GATE_SET_TO_DISABLE, NULL);
++				CLK_GATE_SET_TO_DISABLE, &sysrate_lock);
+ 	clk_register_clkdev(clk, "pclk", NULL);
+ 	clks[pclk] = clk;
+ 
+diff --git a/drivers/clk/tegra/clk-tegra30.c b/drivers/clk/tegra/clk-tegra30.c
+index d169ef0..c5415ce 100644
+--- a/drivers/clk/tegra/clk-tegra30.c
++++ b/drivers/clk/tegra/clk-tegra30.c
+@@ -275,6 +275,7 @@ static DEFINE_SPINLOCK(clk_out_lock);
+ static DEFINE_SPINLOCK(pll_div_lock);
+ static DEFINE_SPINLOCK(cml_lock);
+ static DEFINE_SPINLOCK(pll_d_lock);
++static DEFINE_SPINLOCK(sysrate_lock);
+ 
+ #define TEGRA_INIT_DATA_MUX(_name, _con_id, _dev_id, _parents, _offset,	\
+ 			    _clk_num, _regs, _gate_flags, _clk_id)	\
+@@ -1348,19 +1349,21 @@ static void __init tegra30_super_clk_init(void)
+ 
+ 	/* HCLK */
+ 	clk = clk_register_divider(NULL, "hclk_div", "sclk", 0,
+-				   clk_base + SYSTEM_CLK_RATE, 4, 2, 0, NULL);
++				   clk_base + SYSTEM_CLK_RATE, 4, 2, 0,
++				   &sysrate_lock);
+ 	clk = clk_register_gate(NULL, "hclk", "hclk_div", CLK_SET_RATE_PARENT,
+ 				clk_base + SYSTEM_CLK_RATE, 7,
+-				CLK_GATE_SET_TO_DISABLE, NULL);
++				CLK_GATE_SET_TO_DISABLE, &sysrate_lock);
+ 	clk_register_clkdev(clk, "hclk", NULL);
+ 	clks[hclk] = clk;
+ 
+ 	/* PCLK */
+ 	clk = clk_register_divider(NULL, "pclk_div", "hclk", 0,
+-				   clk_base + SYSTEM_CLK_RATE, 0, 2, 0, NULL);
++				   clk_base + SYSTEM_CLK_RATE, 0, 2, 0,
++				   &sysrate_lock);
+ 	clk = clk_register_gate(NULL, "pclk", "pclk_div", CLK_SET_RATE_PARENT,
+ 				clk_base + SYSTEM_CLK_RATE, 3,
+-				CLK_GATE_SET_TO_DISABLE, NULL);
++				CLK_GATE_SET_TO_DISABLE, &sysrate_lock);
+ 	clk_register_clkdev(clk, "pclk", NULL);
+ 	clks[pclk] = clk;
+ 
+-- 
+1.7.7.rc0.72.g4b5ea.dirty
 
