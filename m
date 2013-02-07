@@ -1,171 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757987Ab3BGB44 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 20:56:56 -0500
-Received: from [1.9.68.9] ([1.9.68.9]:56596 "HELO mysmtp1.stec-inc.com"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with SMTP
-	id S1757866Ab3BGB4t convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 20:56:49 -0500
-X-ASG-Debug-ID: 1360202205-053ea90dcf238de0001-xx1T2L
-X-Barracuda-Envelope-From: akale@stec-inc.com
-X-Barracuda-RBL-Trusted-Forwarder: 172.30.0.57
-From: Amit Kale <akale@stec-inc.com>
-X-Barracuda-BWL-IP: fe80::64e7:ed5b:e6f9:c391
-X-Barracuda-Apparent-Source-IP: fe80::64e7:ed5b:e6f9:c391
-To: Kent Overstreet <koverstreet@google.com>
-CC: Michel Lespinasse <walken@google.com>,
-        "Darrick J. Wong" <darrick.wong@oracle.com>,
-        linux-bcache <linux-bcache@vger.kernel.org>,
-        device-mapper development <dm-devel@redhat.com>,
-        Kent Overstreet <kent.overstreet@gmail.com>,
-        Mike Snitzer <snitzer@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Jason Warr <jason@warr.net>,
-        "thornber@redhat.com" <thornber@redhat.com>
-Date: Thu, 7 Feb 2013 09:54:56 +0800
-Subject: RE: [RFC] [DONOTAPPLY] [PATCH] enhanceio: STEC EnhanceIO SSD
- caching software for Linux kernel
-Thread-Topic: [RFC] [DONOTAPPLY] [PATCH] enhanceio: STEC EnhanceIO SSD
- caching software for Linux kernel
-X-ASG-Orig-Subj: RE: [RFC] [DONOTAPPLY] [PATCH] enhanceio: STEC EnhanceIO SSD
- caching software for Linux kernel
-Thread-Index: Ac4ExghHW+HcK+SLTjukr64/Ddlc+gAD3Y+Q
-Message-ID: <C4B5704C6FEB5244B2A1BCC8CF83B86B0A624D6719@MYMBX.MY.STEC-INC.AD>
-References: <20130202004459.GA4760@blackbox.djwong.org>
- <CANN689ExTyhZBiQ-pg3jw+sA4X459qcy3kpt82n3obJ=9AVceQ@mail.gmail.com>
- <C4B5704C6FEB5244B2A1BCC8CF83B86B0A624D66FE@MYMBX.MY.STEC-INC.AD>
- <20130207000045.GE27179@google.com>
-In-Reply-To: <20130207000045.GE27179@google.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1757757Ab3BGB7J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 20:59:09 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:48206 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755551Ab3BGB7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 20:59:05 -0500
+X-IronPort-AV: E=Sophos;i="4.84,619,1355068800"; 
+   d="scan'208";a="6697938"
+Message-ID: <51130A07.2000805@cn.fujitsu.com>
+Date: Thu, 07 Feb 2013 09:57:27 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
 MIME-Version: 1.0
-X-Barracuda-Connect: mycas01.my.stec-inc.ad[172.30.0.57]
-X-Barracuda-Start-Time: 1360202205
-X-Barracuda-URL: http://myspam1.stec-inc.com:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.122025
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+To: Randy Dunlap <rdunlap@infradead.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, mgorman@suse.de,
+        minchan@kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        Linux MM <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH RESEND] mm: accurately document nr_free_*_pages functions
+ with code comments
+References: <5112138C.7040902@cn.fujitsu.com> <5112FB96.1040606@infradead.org>
+In-Reply-To: <5112FB96.1040606@infradead.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/07 09:57:43,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/07 09:57:44,
+	Serialize complete at 2013/02/07 09:57:44
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Kent Overstreet [mailto:koverstreet@google.com]
-> Sent: Wednesday, February 06, 2013 4:01 PM
-> To: Amit Kale
-> Cc: Michel Lespinasse; Darrick J. Wong; linux-bcache; device-mapper
-> development; Kent Overstreet; Mike Snitzer; LKML; Jason Warr;
-> thornber@redhat.com
-> Subject: Re: [RFC] [DONOTAPPLY] [PATCH] enhanceio: STEC EnhanceIO SSD
-> caching software for Linux kernel
-> 
-> On Thu, Feb 07, 2013 at 06:57:40AM +0800, Amit Kale wrote:
-> > > -----Original Message-----
-> > > From: Michel Lespinasse [mailto:walken@google.com]
-> > > Sent: Friday, February 01, 2013 4:58 PM
-> > > To: Darrick J. Wong
-> > > Cc: Amit Kale; linux-bcache; device-mapper development; Kent
-> > > Overstreet; Mike Snitzer; LKML; Jason Warr; thornber@redhat.com
-> > > Subject: Re: [RFC] [DONOTAPPLY] [PATCH] enhanceio: STEC EnhanceIO
-> > > SSD caching software for Linux kernel
-> > >
-> > > On Fri, Feb 1, 2013 at 4:44 PM, Darrick J. Wong
-> > > <darrick.wong@oracle.com> wrote:
-> > > > This is a patch to migrate STEC's enhanceio driver out of their
-> > > github
-> > > > repository and into the staging tree.  From their README:
-> > > >
-> > > > "EnhanceIO driver is based on EnhanceIO SSD caching software
-> > > > product developed by STEC Inc. EnhanceIO was derived from
-> > > > Facebook's open source Flashcache project. EnhanceIO uses SSDs as
-> > > > cache devices for traditional rotating hard disk drives (referred
-> > > > to as source volumes
-> > > throughout this document).
-> > > > EnhanceIO can work with any block device, be it an entire
-> physical
-> > > > disk, an individual disk partition,  a RAIDed DAS device, a SAN
-> > > > volume, a device mapper volume or a software RAID (md) device."
-> > >
-> > > What's your take on the benefits of this vs bcache ?
-> >
-> > EnhanceIO was designed for and has been validated in enterprise
-> > environments. The important benefits are - 1. There is no downtime
-> for cache creation, deletion, editing properties,
-> writeback/readonly/writethrough mode change.
-> 
-> True of bcache.
-> 
-> > 2. Wb mode comes with an option to control whether dirty data should
-> be clean-up across reboots, which prevents SSD/HDD going out of sync.
-> 
-> No idea why you'd want this. You have to be able to handle a rebooting
-> with a dirty cache, if you hope to handle unclean shutdown - bcache
-> does this. And if you're running in writeback mode there's probably
-> going to be many gigabytes of dirty data in your cache, at least
-> sometimes, and you aren't going to want to wait for that to flush
-> before you reboot.
-> 
-> If you want to flush dirty data with bcache, you can switch back to
-> writethrough mode whenever you want.
+Functions nr_free_zone_pages, nr_free_buffer_pages and nr_free_pagecache_pages
+are horribly badly named, so accurately document them with code comments
+in case of the misuse of them.
 
-We have two modes of operation with writeback
+Reviewed-by: Randy Dunlap <rdunlap@infradead.org>
+Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+---
+ mm/page_alloc.c |   23 +++++++++++++++++++----
+ 1 files changed, 19 insertions(+), 4 deletions(-)
 
-1. Warm restart mode (default) - Reboots are quick. Dirty data is kept as it is across reboots. So is clean data. Abrupt reboots are handled correctly by throwing away clean data and retaining dirty data. The throwing away clean data is a fallout of an optimization done to skip metadata updates for clean data.
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index df2022f..0790716 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2785,6 +2785,15 @@ void free_pages_exact(void *virt, size_t size)
+ }
+ EXPORT_SYMBOL(free_pages_exact);
+ 
++/**
++ * nr_free_zone_pages - get pages that is beyond high watermark
++ * @offset: The zone index of the highest zone
++ *
++ * The function counts pages which are beyond high watermark within
++ * all zones at or below a given zone index. For each zone, the
++ * amount of pages is calculated as:
++ *     present_pages - high_pages
++ */
+ static unsigned int nr_free_zone_pages(int offset)
+ {
+ 	struct zoneref *z;
+@@ -2805,8 +2814,11 @@ static unsigned int nr_free_zone_pages(int offset)
+ 	return sum;
+ }
+ 
+-/*
+- * Amount of free RAM allocatable within ZONE_DMA and ZONE_NORMAL
++/**
++ * nr_free_buffer_pages - get pages that is beyond high watermark
++ *
++ * The function counts pages which are beyond high watermark within
++ * ZONE_DMA and ZONE_NORMAL.
+  */
+ unsigned int nr_free_buffer_pages(void)
+ {
+@@ -2814,8 +2826,11 @@ unsigned int nr_free_buffer_pages(void)
+ }
+ EXPORT_SYMBOL_GPL(nr_free_buffer_pages);
+ 
+-/*
+- * Amount of free RAM allocatable within all zones
++/**
++ * nr_free_pagecache_pages - get pages that is beyond high watermark
++ *
++ * The function counts pages which are beyond high watermark within
++ * all zones.
+  */
+ unsigned int nr_free_pagecache_pages(void)
+ {
+-- 
+1.7.1
 
-2. Cold restart mode - A reboot or a shutdown involves clean-up of dirty data. This is for paranoid sysads who are afraid that iSCSI HDD setup may cause them to be reattached. Switching to writethrough mode will achieve the same thing, however with a persistent cache configuration in place, the cache will be write-through after a reboot.
-
-I am happy to see bcache being compliant with the rest of the items I had noted.
-
--Amit
-
-> 
-> > 3. Our in-house testing was done for large setups with 500GB+SSDs and
-> proportionately large HDDs, on 24CPU machines with plenty of RAM. It's
-> survived heavy IO loads without any locking or corruption problems.
-> 
-> True of bcache.
-> 
-> > 4. Error handling is exactly what enterprises look for -
-> writethrough/readonly modes work seamlessly regardless of SSD failures.
-> In all the three caching modes, the guarantees of completion in
-> presence of IO errors or shutdowns, in terms of granularity and
-> persistence of data written, is identical to underlying HDDs.
-> 
-> True of bcache.
-> 
-> > 5. It works for all known block devices - Software RAIDs, full block
-> devices with or without partitions, individual partitions, various
-> intelligent block devices.
-> 
-> True of bcache.
-> 
-> > -Amit
-> >
-> > PROPRIETARY-CONFIDENTIAL INFORMATION INCLUDED
-> >
-> > This electronic transmission, and any documents attached hereto, may
-> contain confidential, proprietary and/or legally privileged
-> information. The information is intended only for use by the recipient
-> named above. If you received this electronic message in error, please
-> notify the sender and delete the electronic message. Any disclosure,
-> copying, distribution, or use of the contents of information received
-> in error is strictly prohibited, and violators will be pursued legally.
-> 
-> Which of the above information was proprietary, and should I not be
-> resending this to lkml or - who?
-> 
-> ...
-
-PROPRIETARY-CONFIDENTIAL INFORMATION INCLUDED
-
-
-
-This electronic transmission, and any documents attached hereto, may contain confidential, proprietary and/or legally privileged information. The information is intended only for use by the recipient named above. If you received this electronic message in error, please notify the sender and delete the electronic message. Any disclosure, copying, distribution, or use of the contents of information received in error is strictly prohibited, and violators will be pursued legally.
