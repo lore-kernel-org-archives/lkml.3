@@ -1,65 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751595Ab3BGGNo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 01:13:44 -0500
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:46291 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750823Ab3BGGNl (ORCPT
+	id S1751156Ab3BGGTj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 01:19:39 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:44273 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750823Ab3BGGTi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 01:13:41 -0500
-Message-ID: <51134596.4080106@linux.vnet.ibm.com>
-Date: Thu, 07 Feb 2013 11:41:34 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Thu, 7 Feb 2013 01:19:38 -0500
+X-AuditID: 9c930197-b7ca4ae000006ba8-db-51134778b340
+From: Namhyung Kim <namhyung@kernel.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: mingo@kernel.org, peterz@infradead.org, jamie.iles@oracle.com,
+        penberg@kernel.org, acme@ghostprotocols.net, paulus@samba.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 11/11] liblockdep: preload helper
+References: <1360188694-25077-1-git-send-email-sasha.levin@oracle.com>
+	<1360188694-25077-12-git-send-email-sasha.levin@oracle.com>
+Date: Thu, 07 Feb 2013 15:19:36 +0900
+In-Reply-To: <1360188694-25077-12-git-send-email-sasha.levin@oracle.com>
+	(Sasha Levin's message of "Wed, 6 Feb 2013 17:11:34 -0500")
+Message-ID: <877gmksl1j.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
-        paulmck@linux.vnet.ibm.com, mingo@kernel.org,
-        linux-arch@vger.kernel.org, linux@arm.linux.org.uk,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        fweisbec@gmail.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rostedt@goodmis.org,
-        xiaoguangrong@linux.vnet.ibm.com, rjw@sisk.pl, sbw@mit.edu,
-        wangyun@linux.vnet.ibm.com, netdev@vger.kernel.org,
-        namhyung@kernel.org, akpm@linux-foundation.org, walken@google.com,
-        linuxppc-dev@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v5 00/45] CPU hotplug: stop_machine()-free CPU hotplug
-References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com> <510FBC01.2030405@linux.vnet.ibm.com> <87haloiwv0.fsf@rustcorp.com.au>
-In-Reply-To: <87haloiwv0.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13020706-8878-0000-0000-000005CF9FC7
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2013 09:44 AM, Rusty Russell wrote:
-> "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com> writes:
->> On 01/22/2013 01:03 PM, Srivatsa S. Bhat wrote:
->>                  Avg. latency of 1 CPU offline (ms) [stop-cpu/stop-m/c latency]
->>
->> # online CPUs    Mainline (with stop-m/c)       This patchset (no stop-m/c)
->>
->>       8                 17.04                          7.73
->>
->>      16                 18.05                          6.44
->>
->>      32                 17.31                          7.39
->>
->>      64                 32.40                          9.28
->>
->>     128                 98.23                          7.35
-> 
-> Nice!
+Hi Sasha,
 
-Thank you :-)
+On Wed,  6 Feb 2013 17:11:34 -0500, Sasha Levin wrote:
+> This is a simple wrapper to make using liblockdep on existing applications
+> much easier.
+>
+> After running 'make && make install', it becomes quite simple to test things
+> with liblockdep. For example, to try it on perf:
+>
+> 	liblockdep perf
 
->  I wonder how the ARM guys feel with their quad-cpu systems...
-> 
+Shouldn't it be 'lockdep perf ...'?
 
-That would be definitely interesting to know :-)
+Thanks,
+Namhyung
 
-Regards,
-Srivatsa S. Bhat
-
+>
+> No other integration required.
+>
+> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+> ---
+>  tools/lib/lockdep/Makefile | 12 ++++++++----
+>  tools/lib/lockdep/lockdep  |  3 +++
+>  2 files changed, 11 insertions(+), 4 deletions(-)
+>  create mode 100755 tools/lib/lockdep/lockdep
+>
+> diff --git a/tools/lib/lockdep/Makefile b/tools/lib/lockdep/Makefile
+> index 245f8ba..b22122f 100644
+> --- a/tools/lib/lockdep/Makefile
+> +++ b/tools/lib/lockdep/Makefile
+> @@ -34,7 +34,9 @@ DESTDIR ?=
+>  DESTDIR_SQ = '$(subst ','\'',$(DESTDIR))'
+>  
+>  prefix ?= /usr/local
+> -bindir_relative = lib
+> +libdir_relative = lib
+> +libdir = $(prefix)/$(libdir_relative)
+> +bindir_relative = bin
+>  bindir = $(prefix)/$(bindir_relative)
+>  
+>  export DESTDIR DESTDIR_SQ INSTALL
+> @@ -90,13 +92,14 @@ objtree		:= $(CURDIR)
+>  src		:= $(srctree)
+>  obj		:= $(objtree)
+>  
+> -export prefix bindir src obj
+> +export prefix libdir bindir src obj
+>  
+>  # Shell quotes
+> +libdir_SQ = $(subst ','\'',$(libdir))
+>  bindir_SQ = $(subst ','\'',$(bindir))
+> -bindir_relative_SQ = $(subst ','\'',$(bindir_relative))
+>  
+>  LIB_FILE = liblockdep.a liblockdep.so
+> +BIN_FILE = lockdep
+>  
+>  CONFIG_INCLUDES =
+>  CONFIG_LIBS	=
+> @@ -229,7 +232,8 @@ define do_install
+>  endef
+>  
+>  install_lib: all_cmd
+> -	$(Q)$(call do_install,$(LIB_FILE),$(bindir_SQ))
+> +	$(Q)$(call do_install,$(LIB_FILE),$(libdir_SQ))
+> +	$(Q)$(call do_install,$(BIN_FILE),$(bindir_SQ))
+>  
+>  install: install_lib
+>  
+> diff --git a/tools/lib/lockdep/lockdep b/tools/lib/lockdep/lockdep
+> new file mode 100755
+> index 0000000..616bf9a
+> --- /dev/null
+> +++ b/tools/lib/lockdep/lockdep
+> @@ -0,0 +1,3 @@
+> +#! /bin/bash
+> +
+> +LD_PRELOAD=liblockdep.so "$@"
