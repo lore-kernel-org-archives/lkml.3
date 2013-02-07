@@ -1,144 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757154Ab3BGJiJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 04:38:09 -0500
-Received: from mail-qe0-f45.google.com ([209.85.128.45]:41217 "EHLO
-	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755140Ab3BGJiD (ORCPT
+	id S1757459Ab3BGJlG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 04:41:06 -0500
+Received: from mail-ia0-f182.google.com ([209.85.210.182]:38027 "EHLO
+	mail-ia0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757293Ab3BGJk7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 04:38:03 -0500
+	Thu, 7 Feb 2013 04:40:59 -0500
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Thu, 7 Feb 2013 10:38:02 +0100
-Message-ID: <CA+icZUXzh1S2+ZQ8vvPFSN8jXS62kijbAP+83F0hG9emLQzpQw@mail.gmail.com>
-Subject: Re: linux-next: Tree for Feb 7 (fakeroot BROKEN due to SYSV IPC support?)
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=047d7b6d88b0f2815004d51f32f0
+In-Reply-To: <20130205143813.GB9886@fieldses.org>
+References: <1358441537-8672-1-git-send-email-piastry@etersoft.ru>
+	<20130130221118.GB15584@fieldses.org>
+	<CAKywueQcia1jJfdVJFzfHdc5zQ_86r3T4bmee9cpP18qqbcLFA@mail.gmail.com>
+	<20130205143813.GB9886@fieldses.org>
+Date: Thu, 7 Feb 2013 13:40:57 +0400
+X-Google-Sender-Auth: E5P7kgHi4jHVrvPAEfgjePYWTC8
+Message-ID: <CAKywueQ=YJ3L9=uQfqo7jMF1Fw+TP37Wo39o1-ayu453xhmDtg@mail.gmail.com>
+Subject: Re: [PATCH v2 0/8] Add O_DENY* support for VFS and CIFS/NFS
+From: Pavel Shilovsky <piastry@etersoft.ru>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
+        wine-devel@winehq.org
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7b6d88b0f2815004d51f32f0
-Content-Type: text/plain; charset=UTF-8
+2013/2/5 J. Bruce Fields <bfields@fieldses.org>:
+> On Tue, Feb 05, 2013 at 03:33:21PM +0400, Pavel Shilovsky wrote:
+>> 2013/1/31 J. Bruce Fields <bfields@fieldses.org>:
+>> > On Thu, Jan 17, 2013 at 08:52:09PM +0400, Pavel Shilovsky wrote:
+>> >> This patchset adds support of O_DENY* flags for Linux fs layer. These flags can be used by any application that needs share reservations to organize a file access. VFS already has some sort of this capability - now it's done through flock/LOCK_MAND mechanis, but that approach is non-atomic. This patchset build new capabilities on top of the existing one but doesn't bring any changes into the flock call semantic.
+>> >>
+>> >> These flags can be used by NFS (built-in-kernel) and CIFS (Samba) servers and Wine applications through VFS (for local filesystems) or CIFS/NFS modules. This will help when e.g. Samba and NFS server share the same directory for Windows and Linux users or Wine applications use Samba/NFS share to access the same data from different clients.
+>> >>
+>> >> According to the previous discussions the most problematic question is how to prevent situations like DoS attacks where e.g /lib/liba.so file can be open with DENYREAD, or smth like this. That's why one extra flag O_DENYMAND is added. It indicates to underlying layer that an application want to use O_DENY* flags semantic. It allows us not affect native Linux applications (that don't use O_DENYMAND flag) - so, these flags (and the semantic of open syscall that they bring) are used only for those applications that really want it proccessed that way.
+>> >
+>> > Maybe that's good enough.  A mount flag might be simpler and give
+>> > consistent enforcement for all users.
+>> >
+>> >>
+>> >> So, we have four new flags:
+>> >> O_DENYREAD - to prevent other opens with read access,
+>> >> O_DENYWRITE - to prevent other opens with write access,
+>> >> O_DENYDELETE - to prevent delete operations (this flag is not implemented in VFS and NFS part and only suitable for CIFS module),
+>> >> O_DENYMAND - to switch on/off three flags above.
+>> >
+>> > It would be useful to have some really careful documentation of how
+>> > these are meant to work.  Maybe try updating the open man page?
+>>
+>> Yes, that's a good idea. Do you mean smth like this?
+>>
+>> O_DENYMAND - used to inforce a mandatory share reservation scheme of
+>> the file access. If this flag is passed,
+>> the open fails with -ETXTBSY in following cases:
+>>
+>> 1) if O_DENYREAD flag is specified and there is another open with
+>> O_DENYMAND flag and READ access to the file;
+>> 2) if O_DENYWRITE flag is specified and there is another open with
+>> O_DENYMAND flag and WRITE access to the file;
+>> 3) if READ access is requested and there is another open with
+>> O_DENYMAND and O_DENYREAD flags;
+>> 4) if WRITE access is requested and there is another open with
+>> O_DENYMAND and O_DENYWRITE flags;
+>>
+>> Also, if O_DENYDELETE flag is specified and the open succeded, any
+>> further unlink operation will fail with -ETXTBSY untill this open is
+>> closed. Now this flag is processed by CIFS filesystems only.
+>
+> Do you need to document interactions with flock() as well?
 
-On Thu, Feb 7, 2013 at 7:37 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi all,
->
-> Changes since 20130206:
->
-> Removed tree: kvmtool (still present via the tip tree)
->
-> The block tree lost its build failure.
->
-> The tip tree gained a conflict against the s390 tree.
->
-> The kvm tree gained a conflict against Linus' tree.
->
-> The tty tree lost its build failure.
->
-> The arm-soc tree gained conflicts against the iommu tree.
->
-> The signal tree gained a conflict against the s390 tree.
->
-> The akpm tree gained a conflict against the kvm tree and lost its build
-> failure.
->
-> ----------------------------------------------------------------------------
->
+Yes, this needs to be documented, thanks. I am going to propose ver2
+of this patchset (with regards to your suggestions) - will add this
+part to open man page patch too.
 
-My build-script uses fakeroot and does no more start:
-
-$ ./scripts/build_linux-next.sh
-make options ...... CC=gcc-4.6 -j4
-KBUILD_BUILD_USER=sedat.dilek@gmail.com
-LOCALVERSION=-next20130207-2-iniza-small
-dep-pkg options ... KDEB_PKGVERSION=3.8.0~rc6~next20130207-2~iniza+dileks1
-fakeroot, while creating message channels: Invalid argument
-This may be due to a lack of SYSV IPC support.
-fakeroot: error while starting the `faked' daemon.
-kill: usage: kill [-s sigspec | -n signum | -sigspec] pid | jobspec
-... or kill -l [sigspec]
-
-
-Any hints?
-( I could run strace... )
-
-- Sedat -
-
---047d7b6d88b0f2815004d51f32f0
-Content-Type: application/x-sh; name="build_linux-next.sh"
-Content-Disposition: attachment; filename="build_linux-next.sh"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hcvpom101
-
-IyEvYmluL3NoCgojIyMgSEVMUAojIDEuIG1ha2UgZGViLXBrZyAob3B0aW9ucyk6ICA8ZmlsZTog
-c2NyaXB0cy9wYWNrYWdlL2J1aWxkZGViPgojIDIuIGxvY2FsdmVyc2lvbiBoYW5kbGluZzogICA8
-ZmlsZTogc2NyaXB0cy9zZXRsb2NhbHZlcnNpb24+CiMgMy4gS0JVSUxEX1VTRVJfKiB2YXJpYWJs
-ZXM6IDxmaWxlOiBzY3JpcHRzL21rY29tcGlsZV9oPgojIDQuIFByZXJlcXMvUHJlcGFyYXRpb246
-ICAgICA8aHR0cDovL2tlcm5lbC1oYW5kYm9vay5hbGlvdGguZGViaWFuLm9yZy9jaC1jb21tb24t
-dGFza3MuaHRtbCNzNC4yLjE+CgojIyMgUFJFUkVRUzogSW5zdGFsbCBidWlsZC1lc3NlbnRpYWws
-IGZha2Vyb290IGFuZCBkcGtnLWRldiBwYWNrYWdlcyAob3B0aW9uYWw6IGdpdCkhCiNhcHQtZ2V0
-IHVwZGF0ZQojYXB0LWdldCBpbnN0YWxsIGJ1aWxkLWVzc2VudGlhbCBmYWtlcm9vdCBkcGtnLWRl
-dgojYXB0LWdldCBpbnN0YWxsIGdpdAoKIyMjIExhbmd1YWdlIHNldHRpbmdzCmV4cG9ydCBMQU5H
-PUMKZXhwb3J0IExDX0FMTD1DCgojIyMgQmFzZSBhbmQgTGludXgtTmV4dCBzb3VyY2UgZGlyZWN0
-b3J5CkJBU0VfRElSPSQocHdkKQpTUkNfRElSPSIke0JBU0VfRElSfS9saW51eC1uZXh0IgoKIyMj
-IENsb25lIExpbnV4LU5leHQgcmVtb3RlIEdJVCB0cmVlCiNHSVRfVVJMPSJnaXQ6Ly9naXQua2Vy
-bmVsLm9yZy9wdWIvc2NtL2xpbnV4L2tlcm5lbC9naXQvbmV4dC9saW51eC1uZXh0LmdpdCIKI2dp
-dCBjbG9uZSAke0dJVF9VUkx9CgojIyMgQ2hhbmdlIHRvIGJ1aWxkIGRpcmVjdG9yeQpjZCAke1NS
-Q19ESVJ9CgojIyMgTWFrZSBhbmQgY29tcGlsZXIgc2V0dGluZ3MKTUFLRT0ibWFrZSIKTUFLRV9K
-T0JTPSQoZ2V0Y29uZiBfTlBST0NFU1NPUlNfT05MTikKQ0NfRk9SX0JVSUxEPSJnY2MtNC42IgoK
-IyMjIFVwbG9hZGVyOiByZWFsbmFtZS9uaWNrbmFtZSBhbmQgZW1haWwgc2V0dGluZ3MKZXhwb3J0
-IERFQkZVTExOQU1FPSJTZWRhdCBEaWxlayIKZXhwb3J0IERFQkVNQUlMPSJzZWRhdC5kaWxla0Bn
-bWFpbC5jb20iCnVwbG9hZGVyPSJkaWxla3MiCgojIyMgVXBzdHJlYW0tdmVyc2lvbiBzZXR0aW5n
-cwp2ZXJzaW9uPSQoYXdrICcvXlZFUlNJT04gPSAvIHtwcmludCAkM30nIE1ha2VmaWxlKQpwYXRj
-aGxldmVsPSQoYXdrICcvXlBBVENITEVWRUwgPSAvIHtwcmludCAkM30nIE1ha2VmaWxlKQpzdWJs
-ZXZlbD0kKGF3ayAnL15TVUJMRVZFTCA9IC8ge3ByaW50ICQzfScgTWFrZWZpbGUpCmV4dHJhdmVy
-c2lvbj0kKGF3ayAnL15FWFRSQVZFUlNJT04gPSAvIHtwcmludCAkM30nIE1ha2VmaWxlKQp1cHN0
-cmVhbV92ZXJzaW9uPSIke3ZlcnNpb259LiR7cGF0Y2hsZXZlbH0uJHtzdWJsZXZlbH0ke2V4dHJh
-dmVyc2lvbn0iCgojIyMgRGViaWFuLXJldmlzaW9uIHNldHRpbmdzCiMgTm90ZS0xOiAkcmV2aXNp
-b24gd2lsbCBiZSBhcHBlbmRlZCB0byAkZGViaWFuX3JldmlzaW9uIGFuZCAkbXlsb2NhbHZlcnNp
-b24KIyBOb3RlLTI6IFVwc3RyZWFtOiAkcmV2aXNpb24gc3RhcnRzIGF0ICIxIiB3aXRoIGVhY2gg
-bmV3IDMueC55KzEgKHN0YWJsZSkgb3IgMy54LjAtcmNYKzEgKHJlbGVhc2UtY3ljbGUpCiMgTm90
-ZS0zOiBMaW51eC1OZXh0OiAkcmV2aXNpb24gc3RhcnRzIGF0ICIxIiB3aXRoIGVhY2ggbGludXgt
-bmV4dCByZWxlYXNlCiMgRXhhbXBsZTogZGViaWFuX3JldmlzaW9uPSIxK2RpbGVrczEiCnJldmlz
-aW9uPSIyIgp1cGxvYWRlcl9yZXZpc2lvbj0iMSIKZGViaWFuX3JldmlzaW9uPSIke3JldmlzaW9u
-fSske3VwbG9hZGVyfSR7dXBsb2FkZXJfcmV2aXNpb259IgoKIyMjIEV4dHJhY3QgJG15bG9jYWx2
-ZXJzaW9uX25leHQKIyBOb3RlOiAkbXlsb2NhbHZlcnNpb25fbmV4dCB3aWxsIGJlIGFwcGVuZGVk
-IHRvICRteWxvY2FsdmVyc2lvbgojIEV4YW1wbGU6IG15bG9jYWx2ZXJzaW9uX25leHQ9Im5leHQy
-MDEzMDEyNSIKbXlsb2NhbHZlcnNpb25fbmV4dD0kKGdpdCB0YWcgfCBncmVwIF4nbmV4dC0nIHwg
-dGFpbCAtMSB8IHRyIC1kICctJykKCiMjIyBNeSBmZWF0dXJlc2V0IHNldHRpbmdzCiMgSGVyZTog
-VXNlIG93biAiaW5pemEiIGZlYXR1cmVzZXQKbXlmZWF0dXJlc2V0PSJpbml6YSIKCiMjIyBNeSBr
-ZXJuZWwtZmxhdm91ciBzZXR0aW5ncwojIEhlcmU6IFVzZSBvd24gInNtYWxsIiBrZXJuZWwtZmxh
-dm91ciAobG9jYWxtb2Rjb25maWctZWQgcGx1cyBzb21lIGRlYnVnLW9wdGlvbnMgZW5hYmxlZCkg
-Cm15a2VybmVsZmxhdm91cj0ic21hbGwiCgojIyMgQ3VzdG9taXplZCBMT0NBTFZFUlNJT04gc2V0
-dGluZ3MKIyBOb3RlLTE6ICRteWxvY2FsdmVyc2lvbiBpcyBhdHRhY2hlZCBhcyBzdWZmaXggdG8g
-ImluY2x1ZGUvZ2VuZXJhdGVkL3V0c3JlbGVhc2UuaCIgZmlsZQojIE5vdGUtMjogVXNhZ2Ugb2Yg
-TE9DQUxWRVJTSU9OPSRteWxvY2FsdmVyc2lvbiBzdXBwcmVzc2VzICIrIiBzdWZmaXgKIyBOb3Rl
-LTM6IFNlZSBhbHNvICIjZGVmaW5lIFVUU19SRUxFQVNFIiBpbiB1dHNyZWxlYXNlLmggZmlsZS4K
-IyBFeGFtcGxlLTE6ICJuZXh0MjAxMzAxMjUiIChteWxvY2FsdmVyc2lvbl9uZXh0KSArICIxIiAo
-cmV2aXNpb24pICsgImluaXphIiAobXlmZWF0dXJlc2V0KSArICJzbWFsbCIgKG15a2VybmVsZmxh
-dm91cikKIyBFeGFtcGxlLTI6IG15bG9jYWx2ZXJzaW9uPSItbmV4dDIwMTMwMTI1LTEtaW5pemEt
-c21hbGwiCm15bG9jYWx2ZXJzaW9uPSItJHtteWxvY2FsdmVyc2lvbl9uZXh0fS0ke3JldmlzaW9u
-fS0ke215ZmVhdHVyZXNldH0tJHtteWtlcm5lbGZsYXZvdXJ9IgoKIyMjIE15IGtlcm5lbC1yZWxl
-YXNlIChha2EgS1ZFUikKbXlrZXJuZWxyZWxlYXNlPSIke3Vwc3RyZWFtX3ZlcnNpb259JHtteWxv
-Y2FsdmVyc2lvbn0iCgojIyMgQnVpbGQtbG9nIGZpbGUKQlVJTERfTE9HX0ZJTEU9ImJ1aWxkLWxv
-Z18ke215a2VybmVscmVsZWFzZX0udHh0IgoKIyMjIG1ha2Ugb3B0aW9ucwpNQUtFX09QVFM9IkND
-PSR7Q0NfRk9SX0JVSUxEfSAtaiR7TUFLRV9KT0JTfSBLQlVJTERfQlVJTERfVVNFUj0ke0RFQkVN
-QUlMfSBMT0NBTFZFUlNJT049JHtteWxvY2FsdmVyc2lvbn0iCgojIyMgZGViLXBrZyBvcHRpb25z
-CiMgTm90ZS0xOiBDaGFuZ2UgJy0nIGluICR1cHN0cmVhbV92ZXJzaW9uIHRvICd+JyBjYXVzZWQg
-YnkgJGV4dHJhdmVyc2lvbiAoMy44LjAtcmM0IFZTLiAzLjguMH5yYzQpCiMgTm90ZS0yOiBBZGQg
-JG15ZmVhdHVyZXNldCB0byAkZGViaWFuX3JldmlzaW9uCiMgRXhhbXBsZTogS0RFQl9QS0dWRVJT
-SU9OPSIzLjguMH5yYzR+bmV4dDIwMTMwMTI1LTF+aW5pemErZGlsZWtzMSIKdXBzdHJlYW1fdmVy
-c2lvbj0kKGVjaG8gJHVwc3RyZWFtX3ZlcnNpb24gfCB0ciAnLScgJ34nKQpkZWJpYW5fcmV2aXNp
-b249IiR7cmV2aXNpb259fiR7bXlmZWF0dXJlc2V0fSske3VwbG9hZGVyfSR7dXBsb2FkZXJfcmV2
-aXNpb259IgpERUJfUEtHX09QVFM9IktERUJfUEtHVkVSU0lPTj0ke3Vwc3RyZWFtX3ZlcnNpb259
-fiR7bXlsb2NhbHZlcnNpb25fbmV4dH0tJHtkZWJpYW5fcmV2aXNpb259IgoKZWNobyAibWFrZSBv
-cHRpb25zIC4uLi4uLiAke01BS0VfT1BUU30iCmVjaG8gImRlcC1wa2cgb3B0aW9ucyAuLi4gJHtE
-RUJfUEtHX09QVFN9IgoKIyMjIFJlbW92ZSBhbnkgZXhpc3RpbmcgbG9jYWx2ZXJzaW9uKiBmaWxl
-KHMpIGFzICRMT0NBTFZFUlNJT04gaXMgdXNlZAojIE5vdGU6IExpbnV4LU5leHQgc2hpcHMgbG9j
-YWx2ZXJzaW9uLW5leHQgZmlsZS4Kcm0gLXYgLWYgbG9jYWx2ZXJzaW9uKgoKIyMjIFN0YXJ0IGJ1
-aWxkCmZha2Vyb290ICR7TUFLRX0gJHtNQUtFX09QVFN9IGRlYi1wa2cgJHtERUJfUEtHX09QVFN9
-IDI+JjEgfCB0ZWUgLi4vJHtCVUlMRF9MT0dfRklMRX0K
---047d7b6d88b0f2815004d51f32f0--
+-- 
+Best regards,
+Pavel Shilovsky.
