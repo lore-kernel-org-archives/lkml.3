@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758814Ab3BGPsH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 10:48:07 -0500
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:56542 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755829Ab3BGPsF (ORCPT
+	id S1758662Ab3BGPuW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 10:50:22 -0500
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:53352 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755829Ab3BGPuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 10:48:05 -0500
-Message-ID: <5113CCAF.8030600@suse.cz>
-Date: Thu, 07 Feb 2013 16:47:59 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:18.0) Gecko/20121129 Thunderbird/18.0
-MIME-Version: 1.0
-To: Peter Hurley <peter@hurleysoftware.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>, Sasha Levin <levinsasha928@gmail.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ilya Zykov <ilya@ilyx.ru>, Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH v3 12/23] tty: Kick waiters _after_ the ldisc is locked
-References: <1355509370-5883-1-git-send-email-peter@hurleysoftware.com> <1360095638-6624-1-git-send-email-peter@hurleysoftware.com> <1360095638-6624-13-git-send-email-peter@hurleysoftware.com>
-In-Reply-To: <1360095638-6624-13-git-send-email-peter@hurleysoftware.com>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+	Thu, 7 Feb 2013 10:50:21 -0500
+From: Cong Ding <dinggnu@gmail.com>
+To: Andrew Vasquez <andrew.vasquez@qlogic.com>, linux-driver@qlogic.com,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Cong Ding <dinggnu@gmail.com>
+Subject: [PATCH] scsi: qla2xxx/qla_attr.c: fix undefined behavior in using snprintf
+Date: Thu,  7 Feb 2013 16:50:22 +0100
+Message-Id: <1360252222-30877-1-git-send-email-dinggnu@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/05/2013 09:20 PM, Peter Hurley wrote:
+The original code
+	snprintf(buf, PAGE_SIZE, "%s\n", buf);
+uses buf as both source and destination string, which is undefined behavior
+based on C11:
+	If copying takes place between objects
+	that overlap, the behavior is undefined.
 
-The question is obvious: why?
+Signed-off-by: Cong Ding <dinggnu@gmail.com>
+---
+ drivers/scsi/qla2xxx/qla_attr.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-The waiters usually don't care about ldisc.
-
-> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
-> ---
->  drivers/tty/tty_ldisc.c | 12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
-> index c903778..8a86a72 100644
-> --- a/drivers/tty/tty_ldisc.c
-> +++ b/drivers/tty/tty_ldisc.c
-> @@ -604,6 +604,12 @@ static bool tty_ldisc_hangup_halt(struct tty_struct *tty)
->  
->  	clear_bit(TTY_LDISC, &tty->flags);
->  
-> +	/* Wakeup waiters so they can discover the tty is hupping, abort
-> +	 * their i/o loops, and release their ldisc references
-> +	 */
-> +	wake_up_interruptible_poll(&tty->write_wait, POLLOUT);
-> +	wake_up_interruptible_poll(&tty->read_wait, POLLIN);
-> +
->  	if (tty->ldisc) {	/* Not yet closed */
->  		tty_unlock(tty);
->  
-> @@ -875,12 +881,6 @@ void tty_ldisc_hangup(struct tty_struct *tty)
->  		tty_ldisc_deref(ld);
->  	}
->  	/*
-> -	 * FIXME: Once we trust the LDISC code better we can wait here for
-> -	 * ldisc completion and fix the driver call race
-> -	 */
-> -	wake_up_interruptible_poll(&tty->write_wait, POLLOUT);
-> -	wake_up_interruptible_poll(&tty->read_wait, POLLIN);
-> -	/*
->  	 * Shutdown the current line discipline, and reset it to
->  	 * N_TTY if need be.
->  	 *
-> 
-
-
+diff --git a/drivers/scsi/qla2xxx/qla_attr.c b/drivers/scsi/qla2xxx/qla_attr.c
+index 83d7984..ded7383 100644
+--- a/drivers/scsi/qla2xxx/qla_attr.c
++++ b/drivers/scsi/qla2xxx/qla_attr.c
+@@ -887,10 +887,16 @@ qla2x00_serial_num_show(struct device *dev, struct device_attribute *attr,
+ 	scsi_qla_host_t *vha = shost_priv(class_to_shost(dev));
+ 	struct qla_hw_data *ha = vha->hw;
+ 	uint32_t sn;
++	ssize_t bn;
+ 
+ 	if (IS_FWI2_CAPABLE(ha)) {
+ 		qla2xxx_get_vpd_field(vha, "SN", buf, PAGE_SIZE);
+-		return snprintf(buf, PAGE_SIZE, "%s\n", buf);
++		bn = strlen(buf);
++		if (bn < PAGE_SIZE - 1) {
++			buf[bn] = '\n';
++			buf[bn + 1] = '\0';
++		}
++		return bn + 1;
+ 	}
+ 
+ 	sn = ((ha->serial0 & 0x1f) << 16) | (ha->serial2 << 8) | ha->serial1;
 -- 
-js
-suse labs
+1.7.9.5
+
