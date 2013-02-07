@@ -1,105 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945920Ab3BGWxH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 17:53:07 -0500
-Received: from mout.gmx.net ([212.227.15.19]:64692 "EHLO mout.gmx.net"
+	id S1945933Ab3BGWzO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 17:55:14 -0500
+Received: from mga02.intel.com ([134.134.136.20]:1677 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422669Ab3BGWxF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 17:53:05 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX19XxKgGulNX5CQO2T0KAJLFo3cPiG1fkZ0Wh7Z/XF
-	CQQl33dP72Gspb
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Yunhong Jiang <yunhong.jiang@intel.com>,
-        Sheng Yang <sheng@linux.intel.com>,
-        "Mike A. Chan" <mikechan@google.com>,
-        Xiaohui Xin <xiaohui.xin@intel.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH] staging/goldfish: Use %zx for printing size_t variables
-Date: Thu,  7 Feb 2013 23:57:07 +0100
-Message-Id: <1360277827-25467-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.8.6
-X-Y-GMX-Trusted: 0
+	id S1422669Ab3BGWzN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 17:55:13 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,625,1355126400"; 
+   d="scan'208";a="282379461"
+Date: Thu, 7 Feb 2013 23:55:10 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Tomas Winkler <tomas.winkler@intel.com>, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [char-misc-next 03/11] mei: bus: Initial implementation for I/O
+ routines
+Message-ID: <20130207225510.GD5072@sortiz-mobl>
+References: <1360270997-7639-1-git-send-email-tomas.winkler@intel.com>
+ <1360270997-7639-4-git-send-email-tomas.winkler@intel.com>
+ <201302072234.44181.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201302072234.44181.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When building the driver, gcc emits the following warnings:
-.../drivers/staging/goldfish/goldfish_nand.c:
-In function 'goldfish_nand_read_oob':
-goldfish_nand.c:159:2:
-warning: format '%x' expects argument of type 'unsigned int', but
-argument 3 has type 'size_t' [-Wformat]
-goldfish_nand.c:159:2:
-warning: format '%x' expects argument of type 'unsigned int', but
-argument 4 has type 'size_t' [-Wformat]
+Hi Arnd,
 
-In function 'goldfish_nand_write_oob':
-goldfish_nand.c:191:2:
-warning: format '%x' expects argument of type 'unsigned int', but
-argument 3 has type 'size_t' [-Wformat]
-goldfish_nand.c:191:2:
-warning: format '%x' expects argument of type 'unsigned int', but
-argument 4 has type 'size_t' [-Wformat]
+On Thu, Feb 07, 2013 at 10:34:44PM +0000, Arnd Bergmann wrote:
+> On Thursday 07 February 2013, Tomas Winkler wrote:
+> > +
+> > +struct mei_bus_ops {
+> > +       int (*send)(struct mei_bus_client *client, u8 *buf, size_t length);
+> > +       int (*recv)(struct mei_bus_client *client, u8 *buf, size_t length);
+> > +};
+> > +
+> 
+> Can you have more than one set of mei_bus_ops in a driver? 
+You can have at most one mei_bus_ops per mei_bus_client.
 
-In function 'goldfish_nand_read':
-goldfish_nand.c:215:2:
-warning: format '%x' expects argument of type 'unsigned int', but
-argument 3 has type 'size_t' [-Wformat]
+> If not, how about adding the callbacks to the mei_bus_driver structure
+> directly as a simplification? 
+I can add the ops directly to the mei_bus_client structure, yes.
 
-In function 'goldfish_nand_write':
-goldfish_nand.c:239:2:
-warning: format '%x' expects argument of type 'unsigned int', but
-argument 3 has type 'size_t' [-Wformat]
+Cheers,
+Samuel.
 
--> As defined in the printk-formats use %zx for size_t variables
-
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
- drivers/staging/goldfish/goldfish_nand.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/staging/goldfish/goldfish_nand.c b/drivers/staging/goldfish/goldfish_nand.c
-index 1891d89..ab1f019 100644
---- a/drivers/staging/goldfish/goldfish_nand.c
-+++ b/drivers/staging/goldfish/goldfish_nand.c
-@@ -156,7 +156,7 @@ static int goldfish_nand_read_oob(struct mtd_info *mtd, loff_t ofs,
- 	return 0;
- 
- invalid_arg:
--	pr_err("goldfish_nand_read_oob: invalid read, start %llx, len %x, ooblen %x, dev_size %llx, write_size %x\n",
-+	pr_err("goldfish_nand_read_oob: invalid read, start %llx, len %zx, ooblen %zx, dev_size %llx, write_size %x\n",
- 		ofs, ops->len, ops->ooblen, mtd->size, mtd->writesize);
- 	return -EINVAL;
- }
-@@ -188,7 +188,7 @@ static int goldfish_nand_write_oob(struct mtd_info *mtd, loff_t ofs,
- 	return 0;
- 
- invalid_arg:
--	pr_err("goldfish_nand_write_oob: invalid write, start %llx, len %x, ooblen %x, dev_size %llx, write_size %x\n",
-+	pr_err("goldfish_nand_write_oob: invalid write, start %llx, len %zx, ooblen %zx, dev_size %llx, write_size %x\n",
- 		ofs, ops->len, ops->ooblen, mtd->size, mtd->writesize);
- 	return -EINVAL;
- }
-@@ -212,7 +212,7 @@ static int goldfish_nand_read(struct mtd_info *mtd, loff_t from, size_t len,
- 	return 0;
- 
- invalid_arg:
--	pr_err("goldfish_nand_read: invalid read, start %llx, len %x, dev_size %llx, write_size %x\n",
-+	pr_err("goldfish_nand_read: invalid read, start %llx, len %zx, dev_size %llx, write_size %x\n",
- 		from, len, mtd->size, mtd->writesize);
- 	return -EINVAL;
- }
-@@ -236,7 +236,7 @@ static int goldfish_nand_write(struct mtd_info *mtd, loff_t to, size_t len,
- 	return 0;
- 
- invalid_arg:
--	pr_err("goldfish_nand_write: invalid write, start %llx, len %x, dev_size %llx, write_size %x\n",
-+	pr_err("goldfish_nand_write: invalid write, start %llx, len %zx, dev_size %llx, write_size %x\n",
- 		to, len, mtd->size, mtd->writesize);
- 	return -EINVAL;
- }
 -- 
-1.7.8.6
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
