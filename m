@@ -1,52 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758664Ab3BGNV1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 08:21:27 -0500
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:17173 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758233Ab3BGNV0 (ORCPT
+	id S1758408Ab3BGNWY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 08:22:24 -0500
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:59067 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751261Ab3BGNWV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 08:21:26 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/ivdnrjacTuO18FPKY8ohSMurBOgYoRDg=
-Date: Thu, 7 Feb 2013 08:21:18 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Andrew Lunn <andrew@lunn.ch>, Simon Guinot <simon.guinot@sequanux.org>
-Subject: Re: [PATCH] devicetree: Move NS2 LEDs binding into LEDs directory
-Message-ID: <20130207132118.GE14746@titan.lakedaemon.net>
-References: <1360239776-14889-1-git-send-email-grant.likely@secretlab.ca>
+	Thu, 7 Feb 2013 08:22:21 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360239776-14889-1-git-send-email-grant.likely@secretlab.ca>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <2158181.aoVXdpLJe2@vostro.rjw.lan>
+References: <cover.1360232293.git.viresh.kumar@linaro.org>
+	<2158181.aoVXdpLJe2@vostro.rjw.lan>
+Date: Thu, 7 Feb 2013 18:52:20 +0530
+Message-ID: <CAKohponLrVG+ubf5Ok+7AvoWKRF16YLqUEWAU6hH7-H_R=r0Ow@mail.gmail.com>
+Subject: Re: [PATCH 0/4] CPUFreq Fixes for 3.9
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: valdis.kletnieks@vt.edu, artem.savkov@gmail.com, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com, dirk.brandewie@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 07, 2013 at 12:22:56PM +0000, Grant Likely wrote:
-> leds-ns2.txt is a binding for LEDs, not GPIOs. Move the documentation in
-> with the rest of the LEDs bindings.
-> 
-> Cc: Andrew Lunn <andrew@lunn.ch>
-> Cc: Simon Guinot <simon.guinot@sequanux.org>
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-> ---
->  .../devicetree/bindings/gpio/leds-ns2.txt          |   26 --------------------
->  .../devicetree/bindings/leds/leds-ns2.txt          |   26 ++++++++++++++++++++
->  2 files changed, 26 insertions(+), 26 deletions(-)
->  delete mode 100644 Documentation/devicetree/bindings/gpio/leds-ns2.txt
->  create mode 100644 Documentation/devicetree/bindings/leds/leds-ns2.txt
+On 7 February 2013 18:35, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> I think they all make sense, so applied to linux-next.
+>
+> I would prefer not to make any more changes to cpufreq before v3.9 from now on,
+> except for fixes and maybe the Drik's patchset that I kind of scheduled for
 
-Acked-by: Jason Cooper <jason@lakedaemon.net>
+Dirk :)
 
-or, if you want, I can queue it up.  Just let me know.
+> merging into bleeding-edge later today.
 
-thx,
+I probably have few more for you. Some sparse warnings to be fixed for
+Dirks work and an dangling exynos patch which is waiting for your reply :)
 
-Jason.
+--
+viresh
