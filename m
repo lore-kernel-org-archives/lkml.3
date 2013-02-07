@@ -1,136 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759459Ab3BGVGH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 16:06:07 -0500
-Received: from mga14.intel.com ([143.182.124.37]:49853 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759364Ab3BGVDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 16:03:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,623,1355126400"; 
-   d="scan'208";a="253970142"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org, sameo@linux.intel.com
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next 06/11] mei: bus: Synchronous API for the data transmission
-Date: Thu,  7 Feb 2013 23:03:12 +0200
-Message-Id: <1360270997-7639-7-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1360270997-7639-1-git-send-email-tomas.winkler@intel.com>
-References: <1360270997-7639-1-git-send-email-tomas.winkler@intel.com>
+	id S1759426Ab3BGVGj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 16:06:39 -0500
+Received: from mail-da0-f52.google.com ([209.85.210.52]:44296 "EHLO
+	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759417Ab3BGVGF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 16:06:05 -0500
+Date: Thu, 7 Feb 2013 13:06:00 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Joonsoo Kim <js1304@gmail.com>, Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH wq/for-3.9] workqueue: move nr_running into worker_pool
+Message-ID: <20130207210600.GU2875@htj.dyndns.org>
+References: <20130124193944.GR2373@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130124193944.GR2373@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Samuel Ortiz <sameo@linux.intel.com>
+On Thu, Jan 24, 2013 at 11:39:44AM -0800, Tejun Heo wrote:
+> As nr_running is likely to be accessed from other CPUs during
+> try_to_wake_up(), it was kept outside worker_pool; however, while less
+> frequent, other fields in worker_pool are accessed from other CPUs
+> for, e.g., non-reentrancy check.  Also, with recent pool related
+> changes, accessing nr_running matching the worker_pool isn't as simple
+> as it used to be.
+> 
+> Move nr_running inside worker_pool.  Keep it aligned to cacheline and
+> define CPU pools using DEFINE_PER_CPU_SHARED_ALIGNED().  This should
+> give at least the same cacheline behavior.
+> 
+> get_pool_nr_running() is replaced with direct pool->nr_running
+> accesses.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Joonsoo Kim <js1304@gmail.com>
 
-Define a truly synchronous API for the bus Tx path by putting all pending
-request to the write list and wait for the interrupt tx handler to wake
-us up.
-The __mei_send() out path is also slightly reworked to make it look more
-like main.c:mei_write().
+Applied to wq/for-3.9.
 
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
----
- drivers/misc/mei/bus.c |   38 ++++++++++++++++++++++++++++----------
- drivers/misc/mei/bus.h |    2 ++
- 2 files changed, 30 insertions(+), 10 deletions(-)
+Thanks.
 
-diff --git a/drivers/misc/mei/bus.c b/drivers/misc/mei/bus.c
-index e2e15d1..3f10d51 100644
---- a/drivers/misc/mei/bus.c
-+++ b/drivers/misc/mei/bus.c
-@@ -210,7 +210,7 @@ void mei_del_driver(struct mei_bus_driver *driver)
- }
- EXPORT_SYMBOL(mei_del_driver);
- 
--int mei_send(struct mei_cl *cl, u8 *buf, size_t length)
-+static int __mei_send(struct mei_cl *cl, u8 *buf, size_t length, bool blocking)
- {
- 	struct mei_device *dev;
- 	struct mei_msg_hdr mei_hdr;
-@@ -261,11 +261,8 @@ int mei_send(struct mei_cl *cl, u8 *buf, size_t length)
- 		cb->buf_idx = 0;
- 		mei_hdr.msg_complete = 0;
- 		cl->writing_state = MEI_WRITING;
--		list_add_tail(&cb->list, &dev->write_list.list);
--
--		mutex_unlock(&dev->device_lock);
- 
--		return length;
-+		goto out;
- 	}
- 
- 	dev->hbuf_is_ready = false;
-@@ -291,19 +288,30 @@ int mei_send(struct mei_cl *cl, u8 *buf, size_t length)
- 	cl->writing_state = MEI_WRITING;
- 	cb->buf_idx = mei_hdr.length;
- 
--	if (!mei_hdr.msg_complete) {
--		list_add_tail(&cb->list, &dev->write_list.list);
--	} else {
-+out:
-+	if (mei_hdr.msg_complete) {
- 		if (mei_cl_flow_ctrl_reduce(cl)) {
--			err = -EIO;
-+			err = -ENODEV;
- 			goto out_err;
- 		}
--
- 		list_add_tail(&cb->list, &dev->write_waiting_list.list);
-+	} else {
-+		list_add_tail(&cb->list, &dev->write_list.list);
- 	}
- 
- 	mutex_unlock(&dev->device_lock);
- 
-+	if (blocking && cl->writing_state != MEI_WRITE_COMPLETE) {
-+		if (wait_event_interruptible(cl->tx_wait,
-+			cl->writing_state == MEI_WRITE_COMPLETE)) {
-+				if (signal_pending(current))
-+					err = -EINTR;
-+			err = -ERESTARTSYS;
-+			mutex_lock(&dev->device_lock);
-+			goto out_err;
-+		}
-+	}
-+
- 	return mei_hdr.length;
- 
- out_err:
-@@ -370,6 +378,16 @@ out:
- 	return r_length;
- }
- 
-+inline int mei_async_send(struct mei_cl *cl, u8 *buf, size_t length)
-+{
-+	return __mei_send(cl, buf, length, 0);
-+}
-+
-+inline int mei_send(struct mei_cl *cl, u8 *buf, size_t length)
-+{
-+	return __mei_send(cl, buf, length, 1);
-+}
-+
- int mei_bus_send(struct mei_bus_client *client, u8 *buf, size_t length)
- {
- 	struct mei_cl *cl = client->cl;
-diff --git a/drivers/misc/mei/bus.h b/drivers/misc/mei/bus.h
-index 81789f6..d7bf3b5 100644
---- a/drivers/misc/mei/bus.h
-+++ b/drivers/misc/mei/bus.h
-@@ -24,7 +24,9 @@ struct mei_bus_client *mei_add_device(struct mei_device *mei_dev,
- 					uuid_le uuid, char *name);
- void mei_remove_device(struct mei_bus_client *client);
- 
-+int mei_async_send(struct mei_cl *cl, u8 *buf, size_t length);
- int mei_send(struct mei_cl *cl, u8 *buf, size_t length);
- int mei_recv(struct mei_cl *cl, u8 *buf, size_t length);
- 
-+
- #endif /* _MEI_BUS_H_ */
 -- 
-1.7.4.4
-
+tejun
