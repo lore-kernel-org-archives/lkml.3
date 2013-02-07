@@ -1,125 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757601Ab3BGEsc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 23:48:32 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:51880 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751472Ab3BGEsa (ORCPT
+	id S1751037Ab3BGFMS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 00:12:18 -0500
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:6116
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750763Ab3BGFMQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 23:48:30 -0500
-Date: Thu, 7 Feb 2013 15:48:28 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hideki EIRAKU <hdk@igel.co.jp>, Joerg Roedel <joro@8bytes.org>,
-        Simon Horman <horms+renesas@verge.net.au>
-Subject: linux-next: manual merge of the arm-soc tree with the iommu tree
-Message-Id: <20130207154828.57604e8aaeee23878c15c177@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__7_Feb_2013_15_48_28_+1100_R6qzNPXir2zD8T2h"
+	Thu, 7 Feb 2013 00:12:16 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1155h)
+From: Vakul Garg <vakul@freescale.com>
+To: <linux-crypto@vger.kernel.org>
+CC: Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Kim Phillips <kim.phillips@freescale.com>,
+        Shengzhou Liu <Shengzhou.Liu@freescale.com>,
+        Alex Porosanu <alexandru.porosanu@freescale.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCHv1] crypto: caam - set RDB bit in security configuration register
+Date: Thu, 7 Feb 2013 10:39:21 +0530
+Message-ID: <1360213761-7048-1-git-send-email-vakul@freescale.com>
+X-Mailer: git-send-email 1.7.7.6
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__7_Feb_2013_15_48_28_+1100_R6qzNPXir2zD8T2h
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This change is required for post SEC-5.0 devices which have RNG4.
+Setting RDB in security configuration register allows CAAM to use the
+"Random Data Buffer" to be filled by a single request. The Random Data
+Buffer is large enough for ten packets to get their IVs from a single
+request. If the Random Data Buffer is not enabled, then each IV causes a
+separate request, and RNG4 hardware cannot keep up resulting in lower
+IPSEC throughput if random IVs are used.
 
-Hi all,
+Signed-off-by: Vakul Garg <vakul@freescale.com>
+---
+ drivers/crypto/caam/ctrl.c |    3 +++
+ drivers/crypto/caam/regs.h |    4 +++-
+ 2 files changed, 6 insertions(+), 1 deletions(-)
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-arch/arm/mach-shmobile/setup-sh73a0.c between commit 9a27dee73f55 ("ARM:
-mach-shmobile: sh73a0: Add IPMMU device") from the iommu tree and commit
-486095331af0 ("ARM: mach-shmobile: sh73a0: Minimal setup using DT") from
-the arm-soc tree.
+diff --git a/drivers/crypto/caam/ctrl.c b/drivers/crypto/caam/ctrl.c
+index bf20dd8..79278d5 100644
+--- a/drivers/crypto/caam/ctrl.c
++++ b/drivers/crypto/caam/ctrl.c
+@@ -304,6 +304,9 @@ static int caam_probe(struct platform_device *pdev)
+ 			caam_remove(pdev);
+ 			return ret;
+ 		}
++
++		/* Enable RDB bit so that RNG works faster */
++		setbits32(&topregs->ctrl.scfgr, SCFGR_RDBENABLE);
+ 	}
+ 
+ 	/* NOTE: RTIC detection ought to go here, around Si time */
+diff --git a/drivers/crypto/caam/regs.h b/drivers/crypto/caam/regs.h
+index 3223fc6..cd6feda 100644
+--- a/drivers/crypto/caam/regs.h
++++ b/drivers/crypto/caam/regs.h
+@@ -252,7 +252,8 @@ struct caam_ctrl {
+ 	/* Read/Writable					        */
+ 	u32 rsvd1;
+ 	u32 mcr;		/* MCFG      Master Config Register  */
+-	u32 rsvd2[2];
++	u32 rsvd2;
++	u32 scfgr;		/* SCFGR, Security Config Register */
+ 
+ 	/* Bus Access Configuration Section			010-11f */
+ 	/* Read/Writable                                                */
+@@ -299,6 +300,7 @@ struct caam_ctrl {
+ #define MCFGR_WDFAIL		0x20000000 /* DECO watchdog force-fail */
+ #define MCFGR_DMA_RESET		0x10000000
+ #define MCFGR_LONG_PTR		0x00010000 /* Use >32-bit desc addressing */
++#define SCFGR_RDBENABLE		0x00000400
+ 
+ /* AXI read cache control */
+ #define MCFGR_ARCACHE_SHIFT	12
+-- 
+1.7.7.6
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm/mach-shmobile/setup-sh73a0.c
-index 36c2b2e,2ecd668..0000000
---- a/arch/arm/mach-shmobile/setup-sh73a0.c
-+++ b/arch/arm/mach-shmobile/setup-sh73a0.c
-@@@ -755,36 -780,7 +781,36 @@@ static struct platform_device pmu_devic
-  	.resource	=3D pmu_resources,
-  };
- =20
- +/* an IPMMU module for ICB */
- +static struct resource ipmmu_resources[] =3D {
- +	[0] =3D {
- +		.name	=3D "IPMMU",
- +		.start	=3D 0xfe951000,
- +		.end	=3D 0xfe9510ff,
- +		.flags	=3D IORESOURCE_MEM,
- +	},
- +};
- +
- +static const char * const ipmmu_dev_names[] =3D {
- +	"sh_mobile_lcdc_fb.0",
- +};
- +
- +static struct shmobile_ipmmu_platform_data ipmmu_platform_data =3D {
- +	.dev_names =3D ipmmu_dev_names,
- +	.num_dev_names =3D ARRAY_SIZE(ipmmu_dev_names),
- +};
- +
- +static struct platform_device ipmmu_device =3D {
- +	.name           =3D "ipmmu",
- +	.id             =3D -1,
- +	.dev =3D {
- +		.platform_data =3D &ipmmu_platform_data,
- +	},
- +	.resource       =3D ipmmu_resources,
- +	.num_resources  =3D ARRAY_SIZE(ipmmu_resources),
- +};
- +
-- static struct platform_device *sh73a0_early_devices[] __initdata =3D {
-+ static struct platform_device *sh73a0_early_devices_dt[] __initdata =3D {
-  	&scif0_device,
-  	&scif1_device,
-  	&scif2_device,
-@@@ -795,9 -791,11 +821,12 @@@
-  	&scif7_device,
-  	&scif8_device,
-  	&cmt10_device,
-+ };
-+=20
-+ static struct platform_device *sh73a0_early_devices[] __initdata =3D {
-  	&tmu00_device,
-  	&tmu01_device,
- +	&ipmmu_device,
-  };
- =20
-  static struct platform_device *sh73a0_late_devices[] __initdata =3D {
-
---Signature=_Thu__7_Feb_2013_15_48_28_+1100_R6qzNPXir2zD8T2h
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJREzIcAAoJEECxmPOUX5FEUTwP/ikbBUw0REpt1pZufKOn4lcP
-Mrss2yZ5dowMInBQIiT9tPdYHhx2D8Xi/XUKG6uwN9jSK9EpXzoRrdYUhTgA0xaE
-rN2AfaebAtYDwblUcbw0TxEKdutcr6RIia6vjTrhVvw1MhlPJGI4SUmDzowablog
-CViiVPsLMH0mwuotPW782++XFJhxUX/hVJDiHthlPqdOGKuwgoTnU4JJi65kd9QJ
-tbkRm7ysk/6tkPIJ0g1XWyON+DmBdj5jc/U8+oILMdNBU4qvBg/WlGIaRazNPUDR
-X17kfL2B0YNKsrI35nOBp2NXLKgL7MXWno4KJIwfUw2xaUQ80shoHP6a60QjCF7j
-5E1yqRuTrcC+ZPk6au/8BdvjFjxgH8QJsqrKOeAzWWnBNUkZYJ7PQstiYeP7wM6M
-1WN81rMDT0e5yeMcQUV87mmcRkfHYZF3S8QAZfgViTfZ2zhJsIBvnl48jv2b6fSB
-MJQ+rtu/YmRBaKSXfNY7EDTz+/aIMDu8yDrrdVNZ/gPNx8rY3VvVv/GfCe2sxR3Y
-lRafpph1jhmkJryCTiEGo1BalRHmy2khyslTAf6/PkJQyvNAWk60YJ0rGvotmmFh
-sLKtZPYD2wRf32OA3zZWoavsPlkVM2a6xGE7jICzVs9reRAZpLQkHNpkwYssnmM/
-stkP3wY7i2vWktWUHKXo
-=H0UB
------END PGP SIGNATURE-----
-
---Signature=_Thu__7_Feb_2013_15_48_28_+1100_R6qzNPXir2zD8T2h--
