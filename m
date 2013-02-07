@@ -1,77 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758103Ab3BGOsa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 09:48:30 -0500
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:32526 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754396Ab3BGOs2 (ORCPT
+	id S1758290Ab3BGOtg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 09:49:36 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:41086 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754396Ab3BGOtd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 09:48:28 -0500
-Message-ID: <1360247896.14416.11.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 2/2] ACPI / scan: Simplify container driver
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <liuj97@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 07 Feb 2013 07:38:16 -0700
-In-Reply-To: <7621884.ddmYGtd8MJ@vostro.rjw.lan>
-References: <1873429.MS5RQDxTye@vostro.rjw.lan>
-	 <5090866.2BHgpRnuEZ@vostro.rjw.lan> <5113668F.9060102@jp.fujitsu.com>
-	 <7621884.ddmYGtd8MJ@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 7 Feb 2013 09:49:33 -0500
+Date: Thu, 7 Feb 2013 09:49:05 -0500
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        Sridhar Samudrala <sri@us.ibm.com>, linux-sctp@vger.kernel.org
+Subject: Re: [PATCH 76/77] sctp: convert to idr_alloc()
+Message-ID: <20130207144905.GB2379@shamino.rdu.redhat.com>
+References: <1360179649-22465-1-git-send-email-tj@kernel.org>
+ <1360179649-22465-77-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1360179649-22465-77-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-02-07 at 12:43 +0100, Rafael J. Wysocki wrote:
-> On Thursday, February 07, 2013 05:32:15 PM Yasuaki Ishimatsu wrote:
- :
-> > > Index: test/drivers/acpi/internal.h
-> > > ===================================================================
-> > > --- test.orig/drivers/acpi/internal.h
-> > > +++ test/drivers/acpi/internal.h
-> > > @@ -40,6 +40,11 @@ void acpi_memory_hotplug_init(void);
-> > >   #else
-> > >   static inline void acpi_memory_hotplug_init(void) {}
-> > >   #endif
-> > 
-> > > +#ifdef ACPI_CONTAINER
-> > 
-> > It should be CONFIG_ACPI_CONTAINER.
+On Wed, Feb 06, 2013 at 11:40:48AM -0800, Tejun Heo wrote:
+> Convert to the much saner new idr interface.
 > 
-> Totally correct.
-
-Just FYI, this change is included in my patch 2/2 as well.
-https://patchwork.kernel.org/patch/2108881/
-
-Thanks,
--Toshi
-
-
-> > By this, acpi_container_init() do nothing. When I fix it and test the patch,
-> > the patch goes well.
-> > 
-> > If you update the patch, I'll test again.
+> Only compile tested.
 > 
-> This fix from Toshi Kani is necessary in addition to it, though
+> v2: Don't preload if @gfp doesn't contain __GFP_WAIT as the function
+>     may be being called from non-process ocntext.  Also, add a comment
+>     explaining @idr_low never becomes zero.
 > 
-> https://patchwork.kernel.org/patch/2108851/
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Acked-by: Neil Horman <nhorman@tuxdriver.com>
+> Cc: Vlad Yasevich <vyasevich@gmail.com>
+> Cc: Sridhar Samudrala <sri@us.ibm.com>
+> Cc: linux-sctp@vger.kernel.org
+> ---
+>  net/sctp/associola.c | 31 +++++++++++++++----------------
+>  1 file changed, 15 insertions(+), 16 deletions(-)
 > 
-> because FORCE_EJECT is never set as far as I can say.
+> diff --git a/net/sctp/associola.c b/net/sctp/associola.c
+> index b45ed1f..0c9a791 100644
+> --- a/net/sctp/associola.c
+> +++ b/net/sctp/associola.c
+> @@ -1592,32 +1592,31 @@ int sctp_assoc_lookup_laddr(struct sctp_association *asoc,
+>  /* Set an association id for a given association */
+>  int sctp_assoc_set_id(struct sctp_association *asoc, gfp_t gfp)
+>  {
+> -	int assoc_id;
+> -	int error = 0;
+> +	bool preload = gfp & __GFP_WAIT;
+> +	int ret;
+>  
+>  	/* If the id is already assigned, keep it. */
+>  	if (asoc->assoc_id)
+> -		return error;
+> -retry:
+> -	if (unlikely(!idr_pre_get(&sctp_assocs_id, gfp)))
+> -		return -ENOMEM;
+> +		return 0;
+>  
+> +	if (preload)
+> +		idr_preload(gfp);
+>  	spin_lock_bh(&sctp_assocs_id_lock);
+> -	error = idr_get_new_above(&sctp_assocs_id, (void *)asoc,
+> -				    idr_low, &assoc_id);
+> -	if (!error) {
+> -		idr_low = assoc_id + 1;
+> +	/* 0 is not a valid id, idr_low is always >= 1 */
+> +	ret = idr_alloc(&sctp_assocs_id, asoc, idr_low, 0, GFP_NOWAIT);
+> +	if (ret >= 0) {
+> +		idr_low = ret + 1;
+>  		if (idr_low == INT_MAX)
+>  			idr_low = 1;
+>  	}
+>  	spin_unlock_bh(&sctp_assocs_id_lock);
+> -	if (error == -EAGAIN)
+> -		goto retry;
+> -	else if (error)
+> -		return error;
+> +	if (preload)
+> +		idr_preload_end();
+> +	if (ret < 0)
+> +		return ret;
+>  
+> -	asoc->assoc_id = (sctp_assoc_t) assoc_id;
+> -	return error;
+> +	asoc->assoc_id = (sctp_assoc_t)ret;
+> +	return 0;
+>  }
+>  
+>  /* Free the ASCONF queue */
+> -- 
+> 1.8.1
 > 
-> Thanks,
-> Rafael
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-sctp" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
-> 
-> 
-
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
 
