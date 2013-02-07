@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945955Ab3BGXKE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 18:10:04 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:62883 "EHLO
+	id S1759467Ab3BGXNR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 18:13:17 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:52437 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753237Ab3BGXKC (ORCPT
+	with ESMTP id S1752095Ab3BGXNQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 18:10:02 -0500
+	Thu, 7 Feb 2013 18:13:16 -0500
 From: Arnd Bergmann <arnd@arndb.de>
-To: "Winkler, Tomas" <tomas.winkler@intel.com>
-Subject: Re: [char-misc-next 05/11] mei: bus: Call bus routines from the core code
-Date: Thu, 7 Feb 2013 23:09:58 +0000
+To: Michal Simek <monstr@monstr.eu>
+Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16 with generic iowrite(read)8/16(be)
+Date: Thu, 7 Feb 2013 23:12:45 +0000
 User-Agent: KMail/1.12.2 (Linux/3.8.0-4-generic; KDE/4.3.2; x86_64; ; )
-Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1360270997-7639-1-git-send-email-tomas.winkler@intel.com> <201302072237.31048.arnd@arndb.de> <5B8DA87D05A7694D9FA63FD143655C1B01EC3BB6@HASMSX106.ger.corp.intel.com>
-In-Reply-To: <5B8DA87D05A7694D9FA63FD143655C1B01EC3BB6@HASMSX106.ger.corp.intel.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, dahinds@users.sourceforge.net
+References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com> <201302070833.15443.arnd@arndb.de> <CAHTX3dLuAhpy-Yk10scRKrfRrbh+ZZs-hgFLAFn0Vj562V0Cew@mail.gmail.com>
+In-Reply-To: <CAHTX3dLuAhpy-Yk10scRKrfRrbh+ZZs-hgFLAFn0Vj562V0Cew@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201302072309.59009.arnd@arndb.de>
-X-Provags-ID: V02:K0:rN7sJ4EdDRZrEOpUdk9By3aP+tzTLzEi/XFTw8sZ7/5
- QwLZt3K7Ca2f6fNpuMLglsFMNU2/KT8ObIN0cNDHhnW573rMOU
- GZbDml2wYTHei/eilzsvwONfRKHlM5Dzh1nsl49h+fNGns3+R/
- LmEpphOto45PLHHx6ahqvqU3nxfe3Bj+K+mOt8EX/x7xiFPTrZ
- mlXvDMycF4s0NZUUPCQT5UDWHkZTXQM891yS8pE0aWkxhd/JNd
- jiwXS5sGlRDrqhkGhFiMo4bc4imDnIdj2N6l0AUd8BOxPWYo6w
- V04lQpOCM/Tdz8PNxRZIUtpfdvi6ucKqmgdHjRJId6jaQh9ipx
- pG2I+5VxhUtPr4m4G2Hs=
+Message-Id: <201302072312.45988.arnd@arndb.de>
+X-Provags-ID: V02:K0:pi8Y7YDOJ5bJMGVORi3k3MD8otrO21cDDx46SbPpJsm
+ SU8R82HHXErfTZiow1jlWRs1nT9LthRAubBVhltNicuKyW+v8P
+ vfK+J+/YyrYCyK1HnCPQtE7Em0z/txjYxpg2YHdAlPr4EyjI8O
+ +GZnETqw0ntYlsBpwGa8ARCbEa42xUPkFrTApRvjXdnIGEuPg8
+ jj+pkz72Vl07iXLhh+aYgXcZsvueQlw91ZXHEu/AXgExaI0ivr
+ k8UHExE5svRY23SRKtReZEeNRQ8x77hE5knISR0fXklkqY2UJs
+ ioqBDbj0Sttui7oWQroBTW0LVk09w6W1M0+pgFi1gNZUn+DTlf
+ SKXebyLmZ4MNMD4c7JWk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 07 February 2013, Winkler, Tomas wrote:
-> Second why to register anything if the MEI device is not present on the system. 
+On Thursday 07 February 2013, Michal Simek wrote:
+> Subject: "asm-generic: io: Fix ioread16/32be and iowrite16/32be"
 
-Mostly to match the expectations of readers of that code. Note that no memory
-is wasted if you do this, because it's a static data structure. You can
-actually save a few bytes because the registration call moves into an __init
-section that is discarded after boot.
+Ok, thanks. If you don't mind, I think this can just go with the other patches
+for xsysace that come out of this discussion.
 
 	Arnd
