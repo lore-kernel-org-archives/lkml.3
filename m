@@ -1,105 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757594Ab3BGEO2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 23:14:28 -0500
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:43616 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751846Ab3BGEO1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 23:14:27 -0500
+	id S1757611Ab3BGERD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 23:17:03 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:30409 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751846Ab3BGEQ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 23:16:59 -0500
+X-IronPort-AV: E=Sophos;i="4.84,619,1355068800"; 
+   d="scan'208";a="6698449"
+Message-ID: <51132A56.60906@cn.fujitsu.com>
+Date: Thu, 07 Feb 2013 12:15:18 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
 MIME-Version: 1.0
-In-Reply-To: <1360149785-19645-1-git-send-email-jonghwa3.lee@samsung.com>
-References: <1360149785-19645-1-git-send-email-jonghwa3.lee@samsung.com>
-Date: Thu, 7 Feb 2013 09:44:25 +0530
-Message-ID: <CAHdPZaOLJJYDwsaLadvCnLe=-Hr+_HpRPXHebm3jgQtPO4WASg@mail.gmail.com>
-Subject: Re: [PATCH] rtc: max8997: Add driver for max8997 rtc.
-From: "devendra.aaru" <devendra.aaru@gmail.com>
-To: Jonghwa Lee <jonghwa3.lee@samsung.com>
-Cc: linux-kernel@vger.kernel.org, a.zummo@towertech.it,
-        Andrew Morton <akpm@linux-foundation.org>, rtc-linux@googlegroups.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: davem@davemloft.net, Julian Anastasov <ja@ssi.bg>,
+        Simon Horman <horms@verge.net.au>, Linux MM <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] net: fix functions and variables related to netns_ipvs->sysctl_sync_qlen_max
+References: <51131B88.6040809@cn.fujitsu.com>
+In-Reply-To: <51131B88.6040809@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/07 12:15:34,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/07 12:15:36,
+	Serialize complete at 2013/02/07 12:15:36
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Since the type of netns_ipvs->sysctl_sync_qlen_max has been changed to
+unsigned long, type of its related proc var sync_qlen_max should be changed
+to unsigned long, too. Also the return type of function sysctl_sync_qlen_max().
 
-On Wed, Feb 6, 2013 at 4:53 PM, Jonghwa Lee <jonghwa3.lee@samsung.com> wrote:
-> This patch adds rtc driver for Maxim 8997 multifunction chip.
-> Max8997 has rtc module in it. and it can be used for timekeeping
-> clock and system alarm. It provide various operational mode those are
-> BCD/binary, 24/12hour, am/pm. Driver sets binary/24/ for default.
-> Maxim 8997 also supports SMPL(Sudden Momentary Power Loss), WTSR
-> (Watchdog Timeout and Software Reset).
->
-> Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
-> ---
->  drivers/rtc/Kconfig       |   30 +++
->  drivers/rtc/Makefile      |    1 +
->  drivers/rtc/rtc-max8997.c |  542 +++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 573 insertions(+)
->  create mode 100644 drivers/rtc/rtc-max8997.c
->
-> +
-> +static int max8997_rtc_probe(struct platform_device *pdev)
-> +{
-> +       struct max8997_dev *max8997 = dev_get_drvdata(pdev->dev.parent);
-> +       struct max8997_rtc_info *info;
-> +       int ret, virq;
-> +
-> +       info = devm_kzalloc(&pdev->dev, sizeof(struct max8997_rtc_info),
-> +                       GFP_KERNEL);
-> +       if (!info)
-> +               return -ENOMEM;
-> +
-> +       mutex_init(&info->lock);
-> +       info->dev = &pdev->dev;
-> +       info->max8997 = max8997;
-> +       info->rtc = max8997->rtc;
-> +
-> +       platform_set_drvdata(pdev, info);
-> +
-> +       ret = max8997_rtc_init_reg(info);
-> +
-> +       if (ret < 0) {
-> +               dev_err(&pdev->dev, "Failed to initialize RTC reg:%d\n", ret);
-> +               return ret;
-> +       }
-> +
-> +       max8997_rtc_enable_wtsr(info, true);
-> +       max8997_rtc_enable_smpl(info, true);
-> +
-> +       device_init_wakeup(&pdev->dev, 1);
-> +
-> +       info->rtc_dev = rtc_device_register("max8997-rtc", &pdev->dev,
-> +                       &max8997_rtc_ops, THIS_MODULE);
-> +
-> +       if (IS_ERR(info->rtc_dev)) {
-> +               ret = PTR_ERR(info->rtc_dev);
-> +               dev_err(&pdev->dev, "Failed to register RTC device: %d\n", ret);
-> +               return ret;
-> +       }
-> +
-> +       virq = irq_create_mapping(max8997->irq_domain, MAX8997_PMICIRQ_RTCA1);
-> +       if (!virq) {
-> +               dev_err(&pdev->dev, "Failed to create mapping alarm IRQ\n");
-   +               rtc_device_unregister(&pdev->dev, &max8997_rtc_ops) ?
-> +               return ret;
-> +       }
-> +       info->virq = virq;
-> +
-> +       ret = request_threaded_irq(virq, NULL, max8997_rtc_alarm_irq, 0,
-> +                               "rtc-alarm0", info);
-> +       if (ret < 0) {
-> +               dev_err(&pdev->dev, "Failed to request alarm IRQ: %d: %d\n",
-> +                       info->virq, ret);
-   +               here unregistering the rtc dev too?
-> +               return ret;
-> +       }
-> +
-> +       return ret;
-> +}
-> +
+Besides, the type of ipvs_master_sync_state->sync_queue_len should also be
+changed to unsigned long.
 
+Changelog from V1:
+- change type of ipvs_master_sync_state->sync_queue_len to unsigned long
+  as Simon addressed.
 
-Thanks,
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Miller <davem@davemloft.net>
+Cc: Julian Anastasov <ja@ssi.bg>
+Cc: Simon Horman <horms@verge.net.au>
+Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+---
+ include/net/ip_vs.h            |    6 +++---
+ net/netfilter/ipvs/ip_vs_ctl.c |    4 ++--
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/include/net/ip_vs.h b/include/net/ip_vs.h
+index 68c69d5..1d56f92 100644
+--- a/include/net/ip_vs.h
++++ b/include/net/ip_vs.h
+@@ -874,7 +874,7 @@ struct ip_vs_app {
+ struct ipvs_master_sync_state {
+ 	struct list_head	sync_queue;
+ 	struct ip_vs_sync_buff	*sync_buff;
+-	int			sync_queue_len;
++	unsigned long		sync_queue_len;
+ 	unsigned int		sync_queue_delay;
+ 	struct task_struct	*master_thread;
+ 	struct delayed_work	master_wakeup_work;
+@@ -1052,7 +1052,7 @@ static inline int sysctl_sync_ports(struct netns_ipvs *ipvs)
+ 	return ACCESS_ONCE(ipvs->sysctl_sync_ports);
+ }
+ 
+-static inline int sysctl_sync_qlen_max(struct netns_ipvs *ipvs)
++static inline unsigned long sysctl_sync_qlen_max(struct netns_ipvs *ipvs)
+ {
+ 	return ipvs->sysctl_sync_qlen_max;
+ }
+@@ -1099,7 +1099,7 @@ static inline int sysctl_sync_ports(struct netns_ipvs *ipvs)
+ 	return 1;
+ }
+ 
+-static inline int sysctl_sync_qlen_max(struct netns_ipvs *ipvs)
++static inline unsigned long sysctl_sync_qlen_max(struct netns_ipvs *ipvs)
+ {
+ 	return IPVS_SYNC_QLEN_MAX;
+ }
+diff --git a/net/netfilter/ipvs/ip_vs_ctl.c b/net/netfilter/ipvs/ip_vs_ctl.c
+index ec664cb..d79a530 100644
+--- a/net/netfilter/ipvs/ip_vs_ctl.c
++++ b/net/netfilter/ipvs/ip_vs_ctl.c
+@@ -1747,9 +1747,9 @@ static struct ctl_table vs_vars[] = {
+ 	},
+ 	{
+ 		.procname	= "sync_qlen_max",
+-		.maxlen		= sizeof(int),
++		.maxlen		= sizeof(unsigned long),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec,
++		.proc_handler	= proc_doulongvec_minmax,
+ 	},
+ 	{
+ 		.procname	= "sync_sock_size",
+-- 
+1.7.1
