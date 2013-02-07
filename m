@@ -1,46 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751779Ab3BGGu2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 01:50:28 -0500
-Received: from asix.com.tw ([113.196.140.82]:63341 "EHLO asix.com.tw"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750823Ab3BGGu1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 01:50:27 -0500
-Message-ID: <51134EA1.7000403@asix.com.tw>
-Date: Thu, 07 Feb 2013 14:50:09 +0800
-From: Freddy <freddy@asix.com.tw>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Stephen Hemminger <stephen@networkplumber.org>
-CC: netdev@vger.kernel.org, davem@davemloft.net, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH, resubmit] ax88179_178a: ASIX AX88179_178A USB 3.0/2.0
- to gigabit ethernet adapter driver
-References: <1360211794-4737-1-git-send-email-freddy@asix.com.tw> <20130206214603.72524632@nehalam.linuxnetplumber.net>
-In-Reply-To: <20130206214603.72524632@nehalam.linuxnetplumber.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751946Ab3BGGvl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 01:51:41 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:36535 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750900Ab3BGGvk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 01:51:40 -0500
+Date: Thu, 7 Feb 2013 17:51:30 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: Re: linux-next: manual merge of the akpm-current tree with the kvm
+ tree
+Message-Id: <20130207175130.ae5a558e5f498a24e0727374@canb.auug.org.au>
+In-Reply-To: <20130206222357.02d049e6.akpm@linux-foundation.org>
+References: <20130207170319.5b5c471398b134c676f9dc6c@canb.auug.org.au>
+	<20130206222357.02d049e6.akpm@linux-foundation.org>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__7_Feb_2013_17_51_30_+1100_AUL0eypAqK3r4FQB"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2013 01:46 PM, Stephen Hemminger wrote:
-> On Thu,  7 Feb 2013 12:36:34 +0800
-> Freddy Xin <freddy@asix.com.tw> wrote:
+--Signature=_Thu__7_Feb_2013_17_51_30_+1100_AUL0eypAqK3r4FQB
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi Andrew,
+
+On Wed, 6 Feb 2013 22:23:57 -0800 Andrew Morton <akpm@linux-foundation.org>=
+ wrote:
 >
->> +static struct ethtool_ops ax88179_ethtool_ops = {
->> +	.get_link		= ethtool_op_get_link,
->> +	.get_msglevel		= usbnet_get_msglevel,
->> +	.set_msglevel		= usbnet_set_msglevel,
->> +	.get_wol		= ax88179_get_wol,
->> +	.set_wol		= ax88179_set_wol,
->> +	.get_eeprom_len		= ax88179_get_eeprom_len,
->> +	.get_eeprom		= ax88179_get_eeprom,
->> +	.get_settings		= ax88179_get_settings,
->> +	.set_settings		= ax88179_set_settings,
->> +	.nway_reset		= usbnet_nway_reset,
->> +};
->> +
-> ethtool_ops should always be const
->
-Thank you, Stephen. I will fix these errors.
+> hm, not sure what you meant by "bad" but that patch went and took the
+> nice fits-in-80-cols kvm code and mucked it all up.  Shall unmuck
+> tomorrow.
+
+"bad" in the sense that there was lots of white space changes to lines
+not otherwise touched by the patch and those white space changes
+introduced extra levels of tabs (so the indentation was incorrect) and
+merged some lines.  I unmucked some of it, but got bored :-)
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__7_Feb_2013_17_51_30_+1100_AUL0eypAqK3r4FQB
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRE07yAAoJEECxmPOUX5FEaagQAKO14h6IdUxZJ7xh/6jjn+YK
+pvWbeHMSoHqxnnBZc9sd12HuY+ySBSlWH5lVaIEG4PUDn4VqFxgWfzKAAL4kR6aQ
+bR3Sn5zhB+w6XX4ejy2Rn5JFZDoNI1N7jIAGEc6dYhNGA3WhPIsgbuaDkU7/MY/N
+gb4YaxPy7/hDF5rdLsSA4TnX3xzpk9xz0zsEx8wePABNG5AnIDS9qulSYT/j3b2y
+a0BAWVoqXm+dYM0qu5wS2QDIMzjldS/U5W068RS0wBtdSJlooteEhvNRT9m+wxlJ
+VQ5ss4x78slF9RPPPPyV4xEtKY/eowchARuW0uA1+LKggIpL90XQ7sUEniXGAfje
+oMURdkScsZ6dgwg4F7Ys6UR08pOxcczgGLFCUmBQu1Rb8ew0uh0yKbbw+ZFIapR7
+rfIwUdk/44pMwUQI9Qpn2XiNPyekWJTvo0cIiEyt83lEr0FyfKYbfvJFqF9uyZA3
+64XKmuGlBLM0Qdt0Ust7ec11NkK1r0bfrzg3vJhDFRMxY75AUBNaibcdxEa56ATe
+D38cqI/6uqhA+5WHTxl48oivmyDCxl2406593v7XhUDNLBf1M6639snjjDitBK6N
+zHCxFBdrgCPQfvqSNRRoNTjFt3i6aSn/8iOBD+nu+8IItcXeU/8zEKLHa/NpgjkA
+V0TmSM5tPWZ8uUz33xRG
+=Fl2p
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__7_Feb_2013_17_51_30_+1100_AUL0eypAqK3r4FQB--
