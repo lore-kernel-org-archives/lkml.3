@@ -1,61 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759317Ab3BGTzp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 14:55:45 -0500
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:47676 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759058Ab3BGTzo (ORCPT
+	id S1759331Ab3BGUDU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 15:03:20 -0500
+Received: from webmail.solarflare.com ([12.187.104.25]:54968 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759247Ab3BGUDQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 14:55:44 -0500
-Date: Thu, 7 Feb 2013 20:55:39 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [ANNOUNCE] 3.8-rc6-nohz4
-Message-ID: <20130207195539.GD25223@gmail.com>
-References: <1360175338-6735-1-git-send-email-fweisbec@gmail.com>
- <1360205415.2621.60.camel@gandalf.local.home>
- <CAFTL4hzJ9FLNTqiBdB0SCWvxgN=p=M54e1PNWe6cp+C9A=DXxA@mail.gmail.com>
- <1360256447.2621.75.camel@gandalf.local.home>
- <CAFTL4hzXe=rYniSrth--n2Vp+wEYRt69r9+SPFu-Bac-_ZwM3Q@mail.gmail.com>
- <0000013cb614e4e5-10f6e9ce-08e1-47f6-9044-565b4084c354-000000@email.amazonses.com>
+	Thu, 7 Feb 2013 15:03:16 -0500
+Message-ID: <1360267375.3605.32.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [PATCH, resubmit] ax88179_178a: ASIX AX88179_178A USB 3.0/2.0
+ to gigabit ethernet adapter driver
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Freddy Xin <freddy@asix.com.tw>
+CC: <netdev@vger.kernel.org>, <davem@davemloft.net>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Date: Thu, 7 Feb 2013 20:02:55 +0000
+In-Reply-To: <1360244360-2700-1-git-send-email-freddy@asix.com.tw>
+References: <1360244360-2700-1-git-send-email-freddy@asix.com.tw>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <0000013cb614e4e5-10f6e9ce-08e1-47f6-9044-565b4084c354-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19620.001
+X-TM-AS-Result: No--21.283600-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Christoph Lameter <cl@linux.com> wrote:
-
-> On Thu, 7 Feb 2013, Frederic Weisbecker wrote:
+On Thu, 2013-02-07 at 21:39 +0800, Freddy Xin wrote:
+> From: Freddy Xin <freddy@asix.com.tw>
 > 
-> > Not with hrtick.
+> This is a resubmission.
+> Added "const" to ethtool_ops structure and fixed the coding style of AX88179_BULKIN_SIZE array.
+> Fixed the issue that the default MTU is not 1500.
+> Added ax88179_change_mtu function and enabled the hardware jumbo frame function to support an
+> MTU higher than 1500.
+> Fixed indentation and empty line coding style errors.
+> The _nopm version usb functions were added to access register in suspend and resume functions.
+> Serveral variables allocted dynamically were removed and replaced by stack variables.
+> ax88179_get_eeprom were modified from asix_get_eeprom in asix_common.
 > 
-> hrtick? Did we not already try that a couple of years back and 
-> it turned out that the overhead of constantly reprogramming a 
-> timer via the PCI bus was causing too much of a performance 
-> regression?
+> This patch adds a driver for ASIX's AX88179 family of USB 3.0/2.0
+> to gigabit ethernet adapters. It's based on the AX88xxx driver but
+> the usb commands used to access registers for AX88179 are completely different.
+> This driver had been verified on x86 system with AX88179/AX88178A and
+> Sitcomm LN-032 USB dongles.
+> 
+> Signed-off-by: Freddy Xin <freddy@asix.com.tw>
+[...]
+> --- /dev/null
+> +++ b/drivers/net/usb/ax88179_178a.c
+[...]
+> +struct ax88179_data {
+> +       u16 rxctl;
+> +};
 
-No, it was simply buggy.
+Should also be declared __packed, as on some architectures it may be
+padded to 4 bytes.
 
-Thanks,
+rxctl is presumably required to be little-endian (__le16)?
 
-	Ingo
+> +struct ax88179_int_data {
+> +       u16 res1;
+> +       u8 link;
+> +       u16 res2;
+> +       u8 status;
+> +       u16 res3;
+> +} __packed;
+
+Same here, the u16 fields are presumably little-endian?
+
+[...]
+> +struct ax88179_rx_pkt_header {
+> +	u8	l4_csum_err:1,
+> +		l3_csum_err:1,
+> +		l4_type:3,
+> +		l3_type:2,
+> +		ce:1;
+> +
+> +	u8	vlan_ind:3,
+> +		rx_ok:1,
+> +		pri:3,
+> +		bmc:1;
+> +
+> +	u16	len:13,
+> +		crc:1,
+> +		mii:1,
+> +		drop:1;
+> +} __packed;
+
+This won't work on both big-endian systems (assuming this works on x86).
+You apparently try to convert the structure in-place in
+ax88179_rx_fixup() by calling le32_to_cpus(); that may work if you
+define all the bitfields to be part of a u32 but it won't work with the
+current definition.
+
+[...]
+> +static int
+> +ax88179_set_features(struct net_device *net, netdev_features_t features)
+> +{
+> +	u8 tmp;
+> +	struct usbnet *dev = netdev_priv(net);
+> +	netdev_features_t changed = net->features ^ features;
+> +
+> +	if (changed & NETIF_F_TSO)
+> +		net->features ^= NETIF_F_TSO;
+> +
+> +	if (changed & NETIF_F_SG)
+> +		net->features ^= NETIF_F_SG;
+
+Don't change net->features; the caller will do that for you.
+
+> +       if (changed & NETIF_F_IP_CSUM) {
+> +               ax88179_read_cmd(dev, AX_ACCESS_MAC, AX_TXCOE_CTL, 1, 1, &tmp);
+> +               tmp ^= AX_TXCOE_TCP | AX_TXCOE_UDP;
+> +               ax88179_write_cmd(dev, AX_ACCESS_MAC, AX_TXCOE_CTL, 1, 1, &tmp);
+> +
+> +               net->features ^= NETIF_F_IP_CSUM;
+> +       }
+[...]
+
+Isn't tmp going to be in little-endian byte order, so this doesn't work
+correctly on a big-endian system?
+
+There are a lot of reads and writes of 16-bit registers using
+ax88179_{read,write}_cmd(); maybe you should add
+ax88179_{read,write}_le16() to handle this specific case.
+
+Ben.
+
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
