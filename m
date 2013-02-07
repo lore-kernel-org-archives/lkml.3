@@ -1,204 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758651Ab3BGOLu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 09:11:50 -0500
-Received: from mail-da0-f42.google.com ([209.85.210.42]:38988 "EHLO
-	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757499Ab3BGOLs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 09:11:48 -0500
-From: Anil Kumar <anilk4.v@gmail.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Cc: linux@arm.linux.org.uk, b-cousson@ti.com, tony@atomide.com,
-        grant.likely@secretlab.ca, anilk4.v@gmail.com, thomas@tomweber.eu
-Subject: [PATCH] ARM: dts: add minimal DT support for DevKit8000
-Date: Thu,  7 Feb 2013 19:41:37 +0530
-Message-Id: <1360246297-5500-1-git-send-email-anilk4.v@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1758686Ab3BGOPF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 09:15:05 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60557 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754000Ab3BGOPC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 09:15:02 -0500
+Date: Thu, 7 Feb 2013 15:14:55 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Henrik Rydberg <rydberg@euromail.se>, Stephane Chatty <chatty@enac.fr>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] HID: multitouch: do not use pointers towards hid-core
+In-Reply-To: <1360149047-23061-1-git-send-email-benjamin.tissoires@gmail.com>
+Message-ID: <alpine.LNX.2.00.1302071514340.16860@pobox.suse.cz>
+References: <1360149047-23061-1-git-send-email-benjamin.tissoires@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DevKit8000 is a beagle board clone from Timll, sold by
-armkits.com. The DevKit8000 has RS232 serial port, LCD, DVI-D,
-S-Video, Ethernet, SD/MMC, keyboard, camera, SPI, I2C, USB and
-JTAG interface.
+On Wed, 6 Feb 2013, Benjamin Tissoires wrote:
 
-This patch adds the basic DT support for devkit8000. At this time, Information
-of twl4030, MMC1, I2C1, leds and there pim mux information are added.
+> The previous implementation registered a pointer towards hid-core
+> to the value of contact count. This is not safe and may be difficult
+> to debug if hid-core ever changes its implementation.
+> The use of regular indexes is a better choice.
+> 
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
 
-Signed-off-by: Anil Kumar <anilk4.v@gmail.com>
-Tested-by: Thomas Weber <thomas@tomweber.eu>
----
+Applied this one on top of the previous hid-multitouch patchset. Thanks,
 
- -This patch is based on top of kernel 3.8-rc5.
-
- -Tested on Devkit8000.
-
-:100644 100644 5ebb44f... 22ebc76... M	arch/arm/boot/dts/Makefile
-:000000 100644 0000000... 9864fd7... A	arch/arm/boot/dts/omap3-devkit8000.dts
-:100644 100644 53cb380b.. 6e2cef6... M	arch/arm/mach-omap2/board-generic.c
- arch/arm/boot/dts/Makefile             |    1 +
- arch/arm/boot/dts/omap3-devkit8000.dts |  125 ++++++++++++++++++++++++++++++++
- arch/arm/mach-omap2/board-generic.c    |    1 +
- 3 files changed, 127 insertions(+), 0 deletions(-)
-
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index 5ebb44f..22ebc76 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -102,6 +102,7 @@ dtb-$(CONFIG_ARCH_MXS) += imx23-evk.dtb \
- 	imx28-tx28.dtb
- dtb-$(CONFIG_ARCH_OMAP2PLUS) += omap2420-h4.dtb \
- 	omap3-beagle.dtb \
-+	omap3-devkit8000.dtb \
- 	omap3-beagle-xm.dtb \
- 	omap3-evm.dtb \
- 	omap3-tobi.dtb \
-diff --git a/arch/arm/boot/dts/omap3-devkit8000.dts b/arch/arm/boot/dts/omap3-devkit8000.dts
-new file mode 100644
-index 0000000..9864fd7
---- /dev/null
-+++ b/arch/arm/boot/dts/omap3-devkit8000.dts
-@@ -0,0 +1,125 @@
-+/*
-+ * Anil Kumar <anilk4.v@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+/dts-v1/;
-+
-+/include/ "omap3.dtsi"
-+/ {
-+	model = "TI OMAP3 Devkit8000";
-+	compatible = "ti,omap3-devkit8000", "ti,omap3";
-+
-+	memory {
-+		device_type = "memory";
-+		reg = <0x80000000 0x10000000>;	/* 256 MB */
-+	};
-+
-+	leds {
-+		compatible = "gpio-leds";
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&leds_pins>;
-+
-+		heartbeat {
-+			label = "devkit8000::led1";
-+			gpios = <&gpio6 26 0>;	/* 186 -> LED1 */
-+			default-state = "on";
-+			linux,default-trigger = "heartbeat";
-+		};
-+
-+		mmc {
-+			label = "devkit8000::led2";
-+			gpios = <&gpio6 3 0>;	/* 163 -> LED2 */
-+			default-state = "on";
-+			linux,default-trigger = "none";
-+		};
-+
-+		usr {
-+			label = "devkit8000::led3";
-+			gpios = <&gpio6 4 0>;	/* 164 -> LED3 */
-+			default-state = "on";
-+			linux,default-trigger = "usr";
-+                };
-+
-+	};
-+};
-+
-+&omap3_pmx_core {
-+	leds_pins: pinmux_led_pins {
-+		pinctrl-single,pins = <
-+			0x168 0x4	/* GPIO_163 */
-+			0x16c 0x4	/* GPIO_164 */
-+			0x1b0 0x4	/* GPIO_186 */
-+
-+		>;
-+	};
-+
-+	i2c1_pins: pinmux_i2c1_pins {
-+		pinctrl-single,pins = <
-+			0x188 0x118	/* I2C1_SCL */
-+			0x18c 0x118	/* I2C1_SDA */
-+                >;
-+	};
-+};
-+
-+&i2c1 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&i2c1_pins>;
-+	clock-frequency = <2600000>;
-+
-+	twl: twl@48 {
-+		reg = <0x48>;
-+		interrupts = <7>;	/* SYS_NIRQ cascaded to intc */
-+		interrupt-parent = <&intc>;
-+	};
-+};
-+
-+&i2c2 {
-+	status = "disabled";
-+};
-+
-+&i2c3 {
-+	status = "disabled";
-+};
-+
-+/include/ "twl4030.dtsi"
-+
-+&mmc1 {
-+	vmmc-supply = <&vmmc1>;
-+	vmmc_aux-supply = <&vsim>;
-+	bus-width = <8>;
-+};
-+
-+&mmc2 {
-+	status = "disabled";
-+};
-+
-+&mmc3 {
-+	status = "disabled";
-+};
-+
-+&wdt2 {
-+	status = "disabled";
-+};
-+
-+&mcbsp1 {
-+	status = "disabled";
-+};
-+
-+&mcbsp2 {
-+	status = "disabled";
-+};
-+
-+&mcbsp3 {
-+	status = "disabled";
-+};
-+
-+&mcbsp4 {
-+	status = "disabled";
-+};
-+
-+&mcbsp5 {
-+	status = "disabled";
-+};
-diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
-index 53cb380..6e2cef6 100644
---- a/arch/arm/mach-omap2/board-generic.c
-+++ b/arch/arm/mach-omap2/board-generic.c
-@@ -110,6 +110,7 @@ MACHINE_END
- 
- static const char *omap3_gp_boards_compat[] __initdata = {
- 	"ti,omap3-beagle",
-+	"ti,omap3-devkit8000",
- 	NULL,
- };
- 
 -- 
-1.7.0.4
-
+Jiri Kosina
+SUSE Labs
