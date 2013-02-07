@@ -1,105 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759101Ab3BGRWw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 12:22:52 -0500
-Received: from vaxjo.synopsys.com ([198.182.60.75]:57825 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758916Ab3BGRWu (ORCPT
+	id S1759153Ab3BGRY6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 12:24:58 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:48330 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759011Ab3BGRY5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 12:22:50 -0500
-Message-ID: <5113E2E2.70706@synopsys.com>
-Date: Thu, 7 Feb 2013 21:22:42 +0400
-From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Thu, 7 Feb 2013 12:24:57 -0500
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Michal Simek <monstr@monstr.eu>, Arnd Bergmann <arnd@arndb.de>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "Geert Uytterhoeven" <geert@linux-m68k.org>,
-        <dahinds@users.sourceforge.net>
-Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16
- with generic iowrite(read)8/16(be)
-References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com> <201302041724.47331.arnd@arndb.de> <1360031367.14701.47.camel@pasglop> <CAHTX3dL4dScmzgGyqbvPH-7UQvFrjQhHu2zh0iZyzWB=spZS+Q@mail.gmail.com> <1360066756.4529.6.camel@pasglop> <CAHTX3dLJy314mv39hprkmZ5XdzYiYGz1ngTERp7w6aAYud+Riw@mail.gmail.com> <51111133.7000105@synopsys.com> <1360098004.4529.13.camel@pasglop> <511178AC.7080304@synopsys.com> <1360105635.2707.7.camel@pasglop> <CACxGe6u=zhGXm0AO_h354g8OOkAQgdczdw_gCCRxL+=r8hM+-g@mail.gmail.com> <1360186550.2650.4.camel@pasglop> <CACxGe6uaVsng79Kni=0O_YK330vuqMuPO6=y9Bj=UZpZ0ozaDg@mail.gmail.com> <CACxGe6v3ZUEQhi764ivQqE9i2wGzJGcoC0sTVohb_6MQ9sE+hQ@mail.gmail.com> <5113C459.8000602@synopsys.com> <CACxGe6uHx4KdZRgAyL-wQ2GurojAH0eTa6YRCoSuCg89BAvBTA@mail.gmail.com> <5113C818.9050307@synopsys.com> <CACxGe6srNmX+qL+5BBFOzTHtQLRcw+4Aqjexy0Y=Vbh3XqPWPA@mail.gmail.com> <5113DCC1.7040902@synopsys.com> <CACxGe6tMW_YpTfFn_gKu1YS9VzkOHfzJ1Ai6jVE7UiQQeZD-eg@mail.gmail.com>
-In-Reply-To: <CACxGe6tMW_YpTfFn_gKu1YS9VzkOHfzJ1Ai6jVE7UiQQeZD-eg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.121.8.160]
+In-Reply-To: <1360243741-25213-1-git-send-email-prarit@redhat.com>
+References: <1360243741-25213-1-git-send-email-prarit@redhat.com>
+Date: Thu, 7 Feb 2013 09:24:56 -0800
+X-Google-Sender-Auth: QAPnrOm7UI7CnCZHMpZ8hfXlZH8
+Message-ID: <CANcMJZAYY779QNCBV5OR7_ybk=RFqNazwPxUsWt12G60aiRuSw@mail.gmail.com>
+Subject: Re: [RFE PATCH] time, Fix setting of hardware clock in NTP code
+From: John Stultz <john.stultz@linaro.org>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2013 09:16 PM, Grant Likely wrote:
-> On Thu, Feb 7, 2013 at 4:56 PM, Alexey Brodkin
-> <Alexey.Brodkin@synopsys.com> wrote:
->> On 02/07/2013 08:44 PM, Grant Likely wrote:
->>> So, if I'm correct that means that for the data port (specifically
->>> copying between RAM and the data port) using ioread16/iowrite16 on the
->>> data port results in the correct behaviour. It also means that LE
->>> support in the current driver is broken.
->>
->> That matches my earlier note when I wrote that for correct work on LE (note
->> I'm on ARC, not PPC/MB) I needed to use "io{read|write}16" in
->> "ace_data{in|out}_le16".
->>
->> With original "io{read|write}16be" instead data was corrupted.
+On Thu, Feb 7, 2013 at 5:29 AM, Prarit Bhargava <prarit@redhat.com> wrote:
+> The problem with this model is what happens if /etc/adjtime is LOCAL, ie)
+> the rtc is set to localtime:
 >
-> In which case your bug-fix patch should drop the
-> ace_datain_le16/ace_dataout_le16 variants entirely and use the be16
-> ones for both (renaming appropriately).
+> Reboot the system, on the next boot,
+>         rtc0_time = rtc + sys_tz.tz_minuteswest
+> Reboot the system, on the next boot,
+>         rtc0_time = rtc + sys_tz.tz_minuteswest + sys_tz.tz_minuteswest
 >
-> g.
+> AFAICT the only call to update_persistent_clock() in the kernel is the
+> ntp code.  It is wired in to allow ntp to occasionally update the system
+> clock.  Other calls to update the rtc are made directly through the
+> RTC_SET_TIME ioctl.
 >
-> --
-> Grant Likely, B.Sc., P.Eng.
-> Secret Lab Technologies Ltd.
+> I believe that the value passed into update_persistent_time() is wrong.  It
+> should take into account the sys_tz data.  If the rtc is UTC, then the
+> offset is 0.  If the system is LOCAL, then there should be a 300 min offset
+> for the value of now.
 >
+> We do not see this manifest on some architectures because they limit changes
+> to the rtc to +/-15 minutes of the current value of the rtc (x86, alpha,
+> mn10300).  Other arches do nothing (cris, mips, sh), and only a few seem to
+> show this problem (power, sparc).  I can reproduce this reliably on powerpc
+> with the latest Fedoras (17, 18, rawhide), as well as an Ubuntu powerpc spin.
+> I can also reproduce it "older" OSes such as RHEL6.
 
-Sorry, do you mean to replace original lines:
-=======
-static void ace_datain_be16(struct ace_device *ace)
-{
-	int i = ACE_FIFO_SIZE / 2;
-	u16 *dst = ace->data_ptr;
-	while (i--)
-		*dst++ = in_le16(ace->baseaddr + 0x40);
-	ace->data_ptr = dst;
-}
+Interesting.
+Yea, local RTC time is probably pretty rare outside of x86 (due to windows).
+And the +/- 15minute trick has always explicitly masked this issue there.
 
-static void ace_dataout_be16(struct ace_device *ace)
-{
-	int i = ACE_FIFO_SIZE / 2;
-	u16 *src = ace->data_ptr;
-	while (i--)
-		ioread16(*src++, ace->baseaddr + 0x40);
-	ace->data_ptr = src;
-}
-=======
 
-with something like:
-=======
-static void ace_datain_16(struct ace_device *ace)
-{
-	int i = ACE_FIFO_SIZE / 2;
-	u16 *dst = ace->data_ptr;
-	while (i--)
-		*dst++ = in_le16(ace->baseaddr + 0x40);
-	ace->data_ptr = dst;
-}
+> A few things about the patch.  'sys_time_offset' certainly could have a
+> better name and it could be a bool.  Also, technically I do not need to add the
+> 'adjust' struct in sync_cmos_clock() as the value of now.tv_sec is not used
+> after being passed into update_persistent_clock().  However, I think the code
+> is easier to follow if I do add 'adjust'.
+>
+> ------8<---------
+>
+> Take the timezone offset applied in warp_clock() into account when writing
+> the hardware clock in the ntp code.  This patch adds sys_time_offset which
+> indicates that an offset has been applied in warp_clock().
+>
+> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+> Cc: John Stultz <johnstul@us.ibm.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> ---
+>  include/linux/time.h |    1 +
+>  kernel/time.c        |    8 ++++++++
+>  kernel/time/ntp.c    |    8 ++++++--
+>  3 files changed, 15 insertions(+), 2 deletions(-)
+>
+> diff --git a/include/linux/time.h b/include/linux/time.h
+> index 4d358e9..02754b5 100644
+> --- a/include/linux/time.h
+> +++ b/include/linux/time.h
+> @@ -117,6 +117,7 @@ static inline bool timespec_valid_strict(const struct timespec *ts)
+>
+>  extern void read_persistent_clock(struct timespec *ts);
+>  extern void read_boot_clock(struct timespec *ts);
+> +extern int sys_time_offset;
+>  extern int update_persistent_clock(struct timespec now);
+>  void timekeeping_init(void);
+>  extern int timekeeping_suspended;
+> diff --git a/kernel/time.c b/kernel/time.c
+> index d226c6a..66533d3 100644
+> --- a/kernel/time.c
+> +++ b/kernel/time.c
+> @@ -115,6 +115,12 @@ SYSCALL_DEFINE2(gettimeofday, struct timeval __user *, tv,
+>  }
+>
+>  /*
+> + * Indicates if there is an offset between the system clock and the hardware
+> + * clock/persistent clock/rtc.
+> + */
+> +int sys_time_offset;
 
-static void ace_dataout_16(struct ace_device *ace)
-{
-	int i = ACE_FIFO_SIZE / 2;
-	u16 *src = ace->data_ptr;
-	while (i--)
-		iowrite16(*src++, ace->baseaddr + 0x40);
-	ace->data_ptr = src;
-}
-=======
+So why is this extra flag necessary instead of just using if
+(sys_tz.tz_minuteswest) ?
 
-and then the next patch should replace "io{read|write}16" with 
-"io{read|write}16_rep" I guess, correct?
 
--Alexey
+> +
+> +/*
+>   * Adjust the time obtained from the CMOS to be UTC time instead of
+>   * local time.
+>   *
+> @@ -135,6 +141,8 @@ static inline void warp_clock(void)
+>         struct timespec adjust;
+>
+>         adjust = current_kernel_time();
+> +       if (sys_tz.tz_minuteswest > 0)
+> +               sys_time_offset = 1;
+
+This seems like it wouldn't work for localtimes that are east of GMT.
+Or am I misunderstanding this? I feel like the warp_clock code has
+always been a bit unloved, and I've never worked out all the
+subtleties around it.
+
+thanks
+-john
