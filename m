@@ -1,69 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758951Ab3BGRDF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 12:03:05 -0500
-Received: from fieldses.org ([174.143.236.118]:40000 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755656Ab3BGRDC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 12:03:02 -0500
-Date: Thu, 7 Feb 2013 12:03:00 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Pavel Shilovsky <piastry@etersoft.ru>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
-        wine-devel@winehq.org
-Subject: Re: [PATCH v2 3/8] vfs: Add O_DENYREAD/WRITE flags support for open
- syscall
-Message-ID: <20130207170300.GN3222@fieldses.org>
-References: <20130130221602.GC15584@fieldses.org>
- <CAKywueRh++TBazK8_kRN7AUb=EFhGv=Sv2CV0BESkfLFy+g5wA@mail.gmail.com>
- <20130205143514.GA9886@fieldses.org>
- <CAKywueS6oGNu9r_bypu32A89pOoiGb47kjXqw2ZcZQhZK+JV3g@mail.gmail.com>
- <20130207141832.GA3222@fieldses.org>
- <CAKywueTmU_L5cwwJSoUY6753eHf_38VtHadZGt9tcLS59sqmOA@mail.gmail.com>
- <20130207144156.GB3222@fieldses.org>
- <CAKywueShbPd9b+WmJwnfwPR_vzk_atBVRBZNTf-HpS7N2CK+AA@mail.gmail.com>
- <20130207161948.GG3222@fieldses.org>
- <CAKywueQDtjTxDF4-pcoBaJfXGS7Q+mvf+Jk3KE=2US=gFn_vTQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKywueQDtjTxDF4-pcoBaJfXGS7Q+mvf+Jk3KE=2US=gFn_vTQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1759018Ab3BGRDw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 12:03:52 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28222 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755656Ab3BGRDu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 12:03:50 -0500
+X-Authority-Analysis: v=2.0 cv=f8jK9ZOM c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=M5gr15I6uLgA:10 a=22uzNxQ2lQntyp8xS7IA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1360256627.2621.77.camel@gandalf.local.home>
+Subject: Re: [ANNOUNCE] 3.8-rc6-nohz4
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Thu, 07 Feb 2013 12:03:47 -0500
+In-Reply-To: <CAFTL4hy-hz=okOC7mWTwP=eh_OrL48c5hoLuXyBRFMAgquLCtw@mail.gmail.com>
+References: <1360175338-6735-1-git-send-email-fweisbec@gmail.com>
+	 <1360205415.2621.60.camel@gandalf.local.home>
+	 <20130207111025.GD8945@gmail.com>
+	 <CAFTL4hySiyn8Ci6XKFSRsMr7FabgpwSbOuNDP_GsefFDsbT2Cg@mail.gmail.com>
+	 <1360255280.2621.70.camel@gandalf.local.home>
+	 <CAFTL4hy-hz=okOC7mWTwP=eh_OrL48c5hoLuXyBRFMAgquLCtw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 07, 2013 at 08:50:16PM +0400, Pavel Shilovsky wrote:
-> 2013/2/7 J. Bruce Fields <bfields@fieldses.org>:
-> > That would be a bug, I think.  E.g. "man 3posix open":
+On Thu, 2013-02-07 at 17:45 +0100, Frederic Weisbecker wrote:
+
 > >
-> >         No  files  shall  be created or modified if the function returns
-> >         -1.
-> >
-> > Looking at the code...  See the references to FILE_CREATED in
-> > atomic_open--looks like that's trying to prevent may_open from failing
-> > in this case.
-> >
-> >> I think
-> >> there is no difference between this case and the situation with
-> >> deny_lock_file there.
-> >
-> > Looks to me like it would be a bug in either case.
+> > config NO_HZ_TASK
+> >         bool "Stop tick on specified CPUs when single task is running"
+> >         default n
+> >         depends on NO_HZ
 > 
-> Then we returned from lookup_open in do_last we go to 'opened' lable.
-> Then we have a 3(!) chances to return -1 while a file is created
-> (open_check_o_direct, ima_file_check, handle_truncate
+> Ok I launched another debate about that single task thing. I wish we
+> don't make it a fundamental component but rather an implementation
+> detail that can be dynamically dealt with in the future.
 
-I don't know about the first two, but handle_truncate won't be hit since
-will_truncate is false.
+It's not just an implementation detail, as it is very visible to the
+user. If they want to take advantage of a task NO_HZ they have to go
+through a bit of loops to make sure only a single task is running on a
+CPU. We should be broadcasting this requirement to educate the users on
+exactly how they can take advantage of this feature.
 
-> ). In this case
-> these places are bugs too.
-> 
-> We can call vfs_unlink if we failed after a file was created, but
-> possible affects need to be investigated.
 
-We definitely don't want to try to undo the create with an unlink.
+>  Anyway let's
+> talk about that on my previous answer.
 
---b.
+I already did ;-)
+
+-- Steve
+
+
