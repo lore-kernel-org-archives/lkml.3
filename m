@@ -1,83 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945950Ab3BGXGH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 18:06:07 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:64047 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753237Ab3BGXGG (ORCPT
+	id S1945943Ab3BGXHU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 18:07:20 -0500
+Received: from mga14.intel.com ([143.182.124.37]:42217 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753237Ab3BGXHT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 18:06:06 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16 with generic iowrite(read)8/16(be)
-Date: Thu, 7 Feb 2013 23:05:41 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-4-generic; KDE/4.3.2; x86_64; ; )
-Cc: Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Michal Simek <monstr@monstr.eu>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        dahinds@users.sourceforge.net
-References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com> <5113C818.9050307@synopsys.com> <CACxGe6srNmX+qL+5BBFOzTHtQLRcw+4Aqjexy0Y=Vbh3XqPWPA@mail.gmail.com>
-In-Reply-To: <CACxGe6srNmX+qL+5BBFOzTHtQLRcw+4Aqjexy0Y=Vbh3XqPWPA@mail.gmail.com>
+	Thu, 7 Feb 2013 18:07:19 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,625,1355126400"; 
+   d="scan'208";a="254015008"
+From: "Winkler, Tomas" <tomas.winkler@intel.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [char-misc-next 01/11] mei: bus: Initial MEI bus type
+ implementation
+Thread-Topic: [char-misc-next 01/11] mei: bus: Initial MEI bus type
+ implementation
+Thread-Index: AQHOBYQ3IS4Eu09ZfUys2lPY8fCUR5hu4PkAgAAi8zA=
+Date: Thu, 7 Feb 2013 23:07:14 +0000
+Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B01EC3BFE@HASMSX106.ger.corp.intel.com>
+References: <1360270997-7639-1-git-send-email-tomas.winkler@intel.com>
+ <1360270997-7639-2-git-send-email-tomas.winkler@intel.com>
+ <201302072241.07171.arnd@arndb.de> <20130207225922.GH5072@sortiz-mobl>
+In-Reply-To: <20130207225922.GH5072@sortiz-mobl>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.184.70.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302072305.41712.arnd@arndb.de>
-X-Provags-ID: V02:K0:JRoVSMPTpjx9Sh1iZJgelU2u9Qu7XZwoXncfhv3ahXT
- 1bfBL99fqBwvJWsSkjICtSqXp2zgzOj3el46XSCWrO9SOND+U0
- SsYi3kXgaekMrzSD60ngnentQizoLlFSiGq1IAOMxpt5TEutBR
- iL4xJ1Tm/WNq1cFQBU+P1iPKYf0PgBWgYdMWe8cF2xnSbdS+vv
- CPjAv3et+/kxa8HLap21CGUUnNvEeMukUWtTjGeOz/21oSk9sC
- z7wGmYQDu54qbBl07UZcB0pwM3dEQiNBfFzj+2aJKIw5OGo/W2
- Icb/xAFbdpwRJWnOZzE1nUm981TfQ2UmY8/BTy4r/k6704vkUx
- V/4vIjHyjmUqnv/GcWd4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 07 February 2013, Grant Likely wrote:
-> On Thu, Feb 7, 2013 at 3:28 PM, Alexey Brodkin
 
-> Starting with register (non-data) access. The bus bindings are such
-> that on both BE and LE systems a native 16 bit read results in the
-> bits being in the correct order. On powerpc, you want to do a BE read
-> because the device appears as a BE device, and on LE systems a LE read
-> is wanted because that is how the device is wired. So far this makes
-> sense and matches the driver.
 
-Well, until you get a little-endian PowerPC system with this
-device ;). I heard people are plannng to put those into
-production systems. I would assume that the device would
-still use big-endian registers, so the rule about PowerPC
-using the BE accessors still holds, but it stops making
-sense.
+> -----Original Message-----
+> From: Samuel Ortiz [mailto:sameo@linux.intel.com]
+> Sent: Friday, February 08, 2013 00:59
+> To: Arnd Bergmann
+> Cc: Winkler, Tomas; gregkh@linuxfoundation.org; linux-
+> kernel@vger.kernel.org
+> Subject: Re: [char-misc-next 01/11] mei: bus: Initial MEI bus type
+> implementation
+> 
+> On Thu, Feb 07, 2013 at 10:41:06PM +0000, Arnd Bergmann wrote:
+> > On Thursday 07 February 2013, Tomas Winkler wrote:
+> > > +}
+> > > +EXPORT_SYMBOL(mei_add_device);
+> > > +
+> > > +void mei_remove_device(struct mei_bus_client *client) {
+> > > +       device_unregister(&client->dev); }
+> > > +EXPORT_SYMBOL(mei_remove_device);
+> >
+> > One more point: did you intentionally pick EXPORT_SYMBOL over
+> > EXPORT_SYMBOL_GPL here?
+> No, I didn't.
+> 
+> > It is your decision as the copyright
+> > holder, but the default is often EXPORT_SYMBOL_GPL these days, to make
+> > it clear that you don't expect closed source drivers to plug in there.
+> I'll fix that if Tomas is ok with it.
 
-> The same is true for the data port. A BE read does the right thing on
-> a BE platform, and LE read on a LE platform. (again, this is all about
-> bus attachment). However, the difference is what is then done with the
-> data.
+So far I'm happy with not forcing GPL,  but I will check that issue.
 
-Well, except that we cannot use the ioread16be_rep function,
-which is made for the case where the bus does not swap.
+Thanks
+Tomas
 
-Of course, as long as the driver is only ever used to access
-the same non-removable block device and you don't change
-the driver, it does not matter at all whether you swap bytes
-on the data port or not, because they are swapped on both
-read and write, and it's just storage. Only if you try to
-read the device with a "correct" driver, you will see a problem
-if it was written with a "wrong" driver.
 
-> The ironic thing is that if the BE PPC/MB hardware engineers hadn't
-> swapped the bytelanes then we would *still* have to do special thinks
-> in the hardware; except it would be the data port accesses that would
-> need extra work, instead of the other registers.
-
-No, we would juse use the _rep() functions if they had done it right,
-just like any other driver with this problem.
-
-	Arnd
