@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758684Ab3BGPeU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 10:34:20 -0500
-Received: from mail-ia0-f176.google.com ([209.85.210.176]:50453 "EHLO
-	mail-ia0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752497Ab3BGPeT (ORCPT
+	id S1758182Ab3BGPe5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 10:34:57 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:33805 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751057Ab3BGPez (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 10:34:19 -0500
+	Thu, 7 Feb 2013 10:34:55 -0500
 MIME-Version: 1.0
-In-Reply-To: <1360148051-7560-10-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1360148051-7560-17-git-send-email-lee.jones@linaro.org>
 References: <1360148051-7560-1-git-send-email-lee.jones@linaro.org>
-	<1360148051-7560-10-git-send-email-lee.jones@linaro.org>
-Date: Thu, 7 Feb 2013 16:34:18 +0100
-Message-ID: <CACRpkda=HMwnip8EziZewMPmRb19gc9E1_vJHtAUJ+UjFJ6byQ@mail.gmail.com>
-Subject: Re: [PATCH 09/49] ARM: ux500: Update displays in vaux1 consumer list
+	<1360148051-7560-17-git-send-email-lee.jones@linaro.org>
+Date: Thu, 7 Feb 2013 16:34:54 +0100
+Message-ID: <CACRpkdZgheRT=xS5e5ajoDj_4oKEP0J9Gz9dPYT7gXTHZQXv3w@mail.gmail.com>
+Subject: Re: [PATCH 16/49] ARM: ux500: Add supply for the Proximity and Hal sensor
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Lee Jones <lee.jones@linaro.org>
 Cc: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com
@@ -24,16 +24,12 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Wed, Feb 6, 2013 at 11:53 AM, Lee Jones <lee.jones@linaro.org> wrote:
 
-> Add 3 more specific consumers pertaining to the displays found
-> on the u8500 and ST User Interface Boards (UIBs).
+> This patch lists the Proximity and Hal sensors as a consumer of
+> the AB8500 VAUX1 regulator.
 >
 > Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-This look correct,
 Acked-by: Linus Walleij <linus.walleij@linaro.org>
-
-Do you want me to merge the ux500 portions into the ux500
-maintenance tree?
 
 Yours,
 Linus Walleij
