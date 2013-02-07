@@ -1,49 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758185Ab3BGMNr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 07:13:47 -0500
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:56788 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753447Ab3BGMNp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 07:13:45 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130206184638.GA2875@htj.dyndns.org>
-References: <CAJd=RBD=yMa1-iAm_i71U+KKRNYmXDTb6yZzW5aVAGHQ+zD8Sw@mail.gmail.com>
-	<20130206184638.GA2875@htj.dyndns.org>
-Date: Thu, 7 Feb 2013 20:13:44 +0800
-Message-ID: <CAJd=RBB+A_=nzQA+dfbt_PoxSGh1B2U+GZLQ1f8Gr6hZ5gJ1hQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] stop_machine: check work->done while handling
- enqueued works
-From: Hillf Danton <dhillf@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1755390Ab3BGMVk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 07:21:40 -0500
+Received: from gate.crashing.org ([63.228.1.57]:48498 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757345Ab3BGMVh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 07:21:37 -0500
+Message-ID: <1360239636.2650.26.camel@pasglop>
+Subject: Re: [PATCH] drivers/block/xsysace - replace
+ in(out)_8/in(out)_be16/in(out)_le16 with generic iowrite(read)8/16(be)
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>, Michal Simek <monstr@monstr.eu>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        dahinds@users.sourceforge.net
+Date: Thu, 07 Feb 2013 23:20:36 +1100
+In-Reply-To: <51139974.2040601@synopsys.com>
+References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com>
+	 <1781360.cmQWHCW5SC@wuerfel>
+	 <CAHTX3dJpuTRa4Ff29k95quPMVDO2mBiayPoocnw5R15=5ovOHQ@mail.gmail.com>
+	 <201302041724.47331.arnd@arndb.de> <1360031367.14701.47.camel@pasglop>
+	 <CAHTX3dL4dScmzgGyqbvPH-7UQvFrjQhHu2zh0iZyzWB=spZS+Q@mail.gmail.com>
+	 <1360066756.4529.6.camel@pasglop>
+	 <CAHTX3dLJy314mv39hprkmZ5XdzYiYGz1ngTERp7w6aAYud+Riw@mail.gmail.com>
+	 <51111133.7000105@synopsys.com> <1360098004.4529.13.camel@pasglop>
+	 <511178AC.7080304@synopsys.com> <1360105635.2707.7.camel@pasglop>
+	 <CACxGe6u=zhGXm0AO_h354g8OOkAQgdczdw_gCCRxL+=r8hM+-g@mail.gmail.com>
+	 <1360186550.2650.4.camel@pasglop> <51139974.2040601@synopsys.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Tejun
+On Thu, 2013-02-07 at 16:09 +0400, Alexey Brodkin wrote:
+> 
+> BTW I've just realized that in case if there's no bridge between CPU and 
+> CF-controller or if this bridge is "transparent" (does no swapping
+> neither bytes nor bits) our data accessors here should be changed.
+> 
+> Isn't it strange in "ace_datain_le16" use "ioread16be" or the one it was 
+> here initially "in_be16"?
+> With BE ones I'd say similar changes should be done.
 
-On Thu, Feb 7, 2013 at 2:46 AM, Tejun Heo <tj@kernel.org> wrote:
->> @@ -279,8 +281,6 @@ repeat:
->>               preempt_disable();
->>
->>               ret = fn(arg);
->> -             if (ret)
->> -                     done->ret = ret;
->
-> If this is meant as a pure cleanup, I'm not sure it's an improvement.
-> You own your cpu_stop_done until you call cpu_stop_signal_done() on
-> it, so I don't think there's anything wrong with the current code.
-> The new code is different, not necessarily better.
+This is part of the problem with those bloody attempts at dealing with
+broken shit, they get the "right" case wrong :-)
 
-The comment just above cpu_stop_signal_done()
-says it is not certain that the input done is valid, so
-I did this work.
-Plus works enqueued through stop_one_cpu_nowait()
-do carry no done.
+So yes, if the bridge is wired up properly:
 
-Hillf
+ - Register access is LE
+
+ - Data port access is native endian (always) because what matters here
+is not endianness but byte ordering (ie, which byte is 0) and if things
+are wired properly, this is preserved.
+
+So the correct things is in that case is to use ioread16_rep which will
+do the right thing (and avoid the extra barriers and C loop) for the
+data in/out code, and ioread16/iowrite16 for the registers.
+
+For the "swapped" case, I would suggest using ioread16be for the registers
+for the data port, use ioread16_rep followed by a pass of byteswap. I assume
+that this incorrect wiring case only happens on BE platforms right ?
+
+Cheers,
+Ben.
+
+
