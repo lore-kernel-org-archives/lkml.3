@@ -1,59 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758662Ab3BGPuW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 10:50:22 -0500
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:53352 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755829Ab3BGPuV (ORCPT
+	id S1758827Ab3BGPyJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 10:54:09 -0500
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:57827 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758656Ab3BGPyH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 10:50:21 -0500
-From: Cong Ding <dinggnu@gmail.com>
-To: Andrew Vasquez <andrew.vasquez@qlogic.com>, linux-driver@qlogic.com,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Cong Ding <dinggnu@gmail.com>
-Subject: [PATCH] scsi: qla2xxx/qla_attr.c: fix undefined behavior in using snprintf
-Date: Thu,  7 Feb 2013 16:50:22 +0100
-Message-Id: <1360252222-30877-1-git-send-email-dinggnu@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 7 Feb 2013 10:54:07 -0500
+Message-ID: <1360252434.4102.37.camel@thor.lan>
+Subject: Re: [PATCH v3 01/23] tty: Add diagnostic for halted line discipline
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>, Sasha Levin <levinsasha928@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ilya Zykov <ilya@ilyx.ru>, Dave Jones <davej@redhat.com>
+Date: Thu, 07 Feb 2013 10:53:54 -0500
+In-Reply-To: <5113BF3B.3060307@suse.cz>
+References: <1355509370-5883-1-git-send-email-peter@hurleysoftware.com>
+	 <1360095638-6624-1-git-send-email-peter@hurleysoftware.com>
+	 <1360095638-6624-2-git-send-email-peter@hurleysoftware.com>
+	 <5113BF3B.3060307@suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3-0pjh1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 125194 peter@hurleysoftware.com
+X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The original code
-	snprintf(buf, PAGE_SIZE, "%s\n", buf);
-uses buf as both source and destination string, which is undefined behavior
-based on C11:
-	If copying takes place between objects
-	that overlap, the behavior is undefined.
+On Thu, 2013-02-07 at 15:50 +0100, Jiri Slaby wrote:
+> On 02/05/2013 09:20 PM, Peter Hurley wrote:
+> > --- a/drivers/tty/tty_ldisc.c
+> > +++ b/drivers/tty/tty_ldisc.c
+> > @@ -375,6 +375,7 @@ static inline void tty_ldisc_put(struct tty_ldisc *ld)
+> >  
+> >  void tty_ldisc_enable(struct tty_struct *tty)
+> >  {
+> > +	clear_bit(TTY_LDISC_HALTED, &tty->flags);
+> >  	set_bit(TTY_LDISC, &tty->flags);
+> >  	clear_bit(TTY_LDISC_CHANGING, &tty->flags);
+> >  	wake_up(&tty_ldisc_wait);
+> > @@ -498,26 +499,6 @@ static void tty_ldisc_restore(struct tty_struct *tty, struct tty_ldisc *old)
+> >  }
+> >  
+> >  /**
+> > - *	tty_ldisc_halt		-	shut down the line discipline
+> > - *	@tty: tty device
+> > - *
+> > - *	Shut down the line discipline and work queue for this tty device.
+> > - *	The TTY_LDISC flag being cleared ensures no further references can
+> > - *	be obtained while the delayed work queue halt ensures that no more
+> > - *	data is fed to the ldisc.
+> > - *
+> > - *	You need to do a 'flush_scheduled_work()' (outside the ldisc_mutex)
+> > - *	in order to make sure any currently executing ldisc work is also
+> > - *	flushed.
+> > - */
+> > -
+> > -static int tty_ldisc_halt(struct tty_struct *tty)
+> > -{
+> > -	clear_bit(TTY_LDISC, &tty->flags);
+> > -	return cancel_work_sync(&tty->port->buf.work);
+> > -}
+> > -
+> > -/**
+> >   *	tty_ldisc_flush_works	-	flush all works of a tty
+> >   *	@tty: tty device to flush works for
+> >   *
+> > @@ -547,6 +528,29 @@ static int tty_ldisc_wait_idle(struct tty_struct *tty, long timeout)
+> >  }
+> >  
+> >  /**
+> > + *	tty_ldisc_halt		-	shut down the line discipline
+> > + *	@tty: tty device
+> > + *
+> > + *	Shut down the line discipline and work queue for this tty device.
+> > + *	The TTY_LDISC flag being cleared ensures no further references can
+> > + *	be obtained while the delayed work queue halt ensures that no more
+> > + *	data is fed to the ldisc.
+> > + *
+> > + *	You need to do a 'flush_scheduled_work()' (outside the ldisc_mutex)
+> > + *	in order to make sure any currently executing ldisc work is also
+> > + *	flushed.
+> > + */
+> > +
+> > +static int tty_ldisc_halt(struct tty_struct *tty)
+> > +{
+> > +	int scheduled;
+> > +	clear_bit(TTY_LDISC, &tty->flags);
+> > +	scheduled = cancel_work_sync(&tty->port->buf.work);
+> > +	set_bit(TTY_LDISC_HALTED, &tty->flags);
+> > +	return scheduled;
+> > +}
+> 
+> Why did you move with that function? It makes the patch unnecessarily
+> bigger (and harder for a review).
 
-Signed-off-by: Cong Ding <dinggnu@gmail.com>
----
- drivers/scsi/qla2xxx/qla_attr.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+07/23 starts using tty_wait_for_idle() in tty_ldisc_halt().
 
-diff --git a/drivers/scsi/qla2xxx/qla_attr.c b/drivers/scsi/qla2xxx/qla_attr.c
-index 83d7984..ded7383 100644
---- a/drivers/scsi/qla2xxx/qla_attr.c
-+++ b/drivers/scsi/qla2xxx/qla_attr.c
-@@ -887,10 +887,16 @@ qla2x00_serial_num_show(struct device *dev, struct device_attribute *attr,
- 	scsi_qla_host_t *vha = shost_priv(class_to_shost(dev));
- 	struct qla_hw_data *ha = vha->hw;
- 	uint32_t sn;
-+	ssize_t bn;
- 
- 	if (IS_FWI2_CAPABLE(ha)) {
- 		qla2xxx_get_vpd_field(vha, "SN", buf, PAGE_SIZE);
--		return snprintf(buf, PAGE_SIZE, "%s\n", buf);
-+		bn = strlen(buf);
-+		if (bn < PAGE_SIZE - 1) {
-+			buf[bn] = '\n';
-+			buf[bn + 1] = '\0';
-+		}
-+		return bn + 1;
- 	}
- 
- 	sn = ((ha->serial0 & 0x1f) << 16) | (ha->serial2 << 8) | ha->serial1;
--- 
-1.7.9.5
+Should I split this?
+
+
 
