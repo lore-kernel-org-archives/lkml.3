@@ -1,95 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758929Ab3BGQMI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 11:12:08 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23365 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758873Ab3BGQME (ORCPT
+	id S1758898Ab3BGQMG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 11:12:06 -0500
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:48603 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758546Ab3BGQMD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 11:12:04 -0500
-X-Authority-Analysis: v=2.0 cv=C91rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=M5gr15I6uLgA:10 a=1VwvDSosexF8QB732s0A:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1360253520.2621.66.camel@gandalf.local.home>
-Subject: Re: [ANNOUNCE] 3.8-rc6-nohz4
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Thu, 07 Feb 2013 11:12:00 -0500
-In-Reply-To: <20130207111025.GD8945@gmail.com>
-References: <1360175338-6735-1-git-send-email-fweisbec@gmail.com>
-	 <1360205415.2621.60.camel@gandalf.local.home>
-	 <20130207111025.GD8945@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 7 Feb 2013 11:12:03 -0500
+Date: Thu, 7 Feb 2013 08:08:21 -0800
+From: Anton Vorontsov <anton@enomsg.org>
+To: Andreas Larsson <andreas@gaisler.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        spi-devel-general@lists.sourceforge.net,
+        Mingkai Hu <Mingkai.hu@freescale.com>,
+        Joakim Tjernlund <Joakim.Tjernlund@transmode.se>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Peter Korsgaard <jacmet@sunsite.dk>, linux-kernel@vger.kernel.org,
+        software@gaisler.com
+Subject: Re: [PATCH v2 7/7] spi: spi-fsl-spi: Add support for gpio
+ chipselects for GRLIB type cores
+Message-ID: <20130207160821.GA22224@lizard.gateway.2wire.net>
+References: <1360242731-13700-1-git-send-email-andreas@gaisler.com>
+ <1360242731-13700-8-git-send-email-andreas@gaisler.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1360242731-13700-8-git-send-email-andreas@gaisler.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-02-07 at 12:10 +0100, Ingo Molnar wrote:
-> * Steven Rostedt <rostedt@goodmis.org> wrote:
+On Thu, Feb 07, 2013 at 02:12:11PM +0100, Andreas Larsson wrote:
+> This relies upon of_spi_register_master to find out which gpios to use.
 > 
-> > I'll reply to this as I come up with comments.
-> > 
-> > First thing is, don't call it NO_HZ_FULL. A better name would 
-> > be NO_HZ_CPU. I would like to reserve NO_HZ_FULL when we 
-> > totally remove jiffies :-)
-> 
-> I don't think we want yet another config option named in a 
-> weird way.
-> 
-> What we want instead is to just split NO_HZ up into its 
-> conceptual parts:
-> 
->    CONFIG_NO_HZ_IDLE
->    CONFIG_NO_HZ_USER_SPACE
->    CONFIG_NO_HZ_KERNEL_SPACE
-> 
-> Where the current status quo is NO_HZ_IDLE=y, and Frederic is 
-> about to introduce NO_HZ_USER_SPACE=y. When jiffies get removed 
-> we get NO_HZ_KERNEL_SPACE=y.
+> Signed-off-by: Andreas Larsson <andreas@gaisler.com>
+> ---
+>  drivers/spi/spi-fsl-lib.h |    1 +
+>  drivers/spi/spi-fsl-spi.c |   53 +++++++++++++++++++++++++++++++++++++++-----
+>  2 files changed, 48 insertions(+), 6 deletions(-)
 
-Saying NO_HZ_USER_SPACE is a bit of a misnomer. As we don't just stop
-the tick for user space, but it may remained stopped when entering the
-kernel. The rule is that when there's just a single task on a CPU, the
-tick can stop (no scheduling work needed). But if the task triggers
-something that may require a tick (like printk) then the tick will start
-again. But just going into the kernel does not designate a tick restart.
+Just a couple of minor nits...
 
-Maybe a better name would be NO_HZ_SINGLE_TASK ?
+> diff --git a/drivers/spi/spi-fsl-lib.h b/drivers/spi/spi-fsl-lib.h
+> index d5c788b..52db693 100644
+> --- a/drivers/spi/spi-fsl-lib.h
+> +++ b/drivers/spi/spi-fsl-lib.h
+> @@ -71,6 +71,7 @@ struct mpc8xxx_spi {
+>  
+>  #ifdef CONFIG_SPI_FSL_SPI
+>  	int type;
+> +	int native_chipselects;
+>  	u8 max_bits_per_word;
+>  
+>  	void (*set_shifts)(u32 *rx_shift, u32 *tx_shift,
+> diff --git a/drivers/spi/spi-fsl-spi.c b/drivers/spi/spi-fsl-spi.c
+> index 55652e6..2befe16 100644
+> --- a/drivers/spi/spi-fsl-spi.c
+> +++ b/drivers/spi/spi-fsl-spi.c
+> @@ -418,7 +418,7 @@ static int fsl_spi_setup(struct spi_device *spi)
+>  {
+>  	struct mpc8xxx_spi *mpc8xxx_spi;
+>  	struct fsl_spi_reg *reg_base;
+> -	int retval;
+> +	int retval, desel;
 
-> 
-> The 'CONFIG_NO_HZ' meta-option, which we should leave for easy 
-> configurability and for compatibility, should get us the 
-> currently recommended default, which for the time being might 
-> be:
-> 
->    CONFIG_NO_HZ_IDLE=y
->    # CONFIG_NO_HZ_USER_SPACE is disabled
-> 
-> Btw., you could add CONFIG_NO_HZ_KERNEL_SPACE right away, just 
-> keep it false all the time. That would document our future plans 
-> pretty well.
+We don't usually place variable declarations on the same line, unless the
+variables are closely related.
 
-Maybe the removal of jiffies would be NO_HZ_COMPLETE?
+>  	u32 hw_mode;
+>  	struct spi_mpc8xxx_cs	*cs = spi->controller_state;
+>  
+> @@ -456,12 +456,45 @@ static int fsl_spi_setup(struct spi_device *spi)
+>  		return retval;
+>  	}
+>  
+> +	if (mpc8xxx_spi->type == TYPE_GRLIB) {
+> +		if (gpio_is_valid(spi->cs_gpio)) {
 
+<- You can place the 'int desel;' here, limiting the visibility for it.
 
--- Steve
+> +			retval = gpio_request(spi->cs_gpio,
+> +					      dev_name(&spi->dev));
+> +			if (retval)
+> +				return retval;
+> +
+> +			desel = !(spi->mode & SPI_CS_HIGH);
+> +			desel ^= !!(spi->cs_gpio_flags & OF_GPIO_ACTIVE_LOW);
+> +			retval = gpio_direction_output(spi->cs_gpio, desel);
+> +			if (retval) {
+> +				gpio_free(spi->cs_gpio);
+> +				return retval;
+> +			}
 
-
+Thanks,
+Anton
