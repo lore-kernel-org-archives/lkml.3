@@ -1,82 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758666Ab3BGQWZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 11:22:25 -0500
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:45629 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754325Ab3BGQWX (ORCPT
+	id S1758757Ab3BGQZI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 11:25:08 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:6721 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754325Ab3BGQZF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 11:22:23 -0500
-Message-ID: <1360254134.4102.47.camel@thor.lan>
-Subject: Re: [PATCH v3 07/23] tty: Strengthen no-subsequent-use guarantee of
- tty_ldisc_halt()
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>, Sasha Levin <levinsasha928@gmail.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ilya Zykov <ilya@ilyx.ru>, Dave Jones <davej@redhat.com>
-Date: Thu, 07 Feb 2013 11:22:14 -0500
-In-Reply-To: <5113CA5A.8070307@suse.cz>
-References: <1355509370-5883-1-git-send-email-peter@hurleysoftware.com>
-	 <1360095638-6624-1-git-send-email-peter@hurleysoftware.com>
-	 <1360095638-6624-8-git-send-email-peter@hurleysoftware.com>
-	 <5113CA5A.8070307@suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-0pjh1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 125194 peter@hurleysoftware.com
-X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+	Thu, 7 Feb 2013 11:25:05 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Thu, 07 Feb 2013 08:25:00 -0800
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: <pdeschrijver@nvidia.com>
+CC: Stephen Warren <swarren@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] clk: tegra: Implement locking for super clock
+Date: Thu, 7 Feb 2013 18:24:14 +0200
+Message-ID: <1360254261-23000-1-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-02-07 at 16:38 +0100, Jiri Slaby wrote:
-> On 02/05/2013 09:20 PM, Peter Hurley wrote:
-> > @@ -688,9 +702,9 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
-> >  	 *	parallel to the change and re-referencing the tty.
-> >  	 */
-> >  
-> > -	work = tty_ldisc_halt(tty);
-> > +	retval = tty_ldisc_halt(tty, &work, 5 * HZ);
-> >  	if (o_tty)
-> > -		o_work = tty_ldisc_halt(o_tty);
-> > +		tty_ldisc_halt(o_tty, &o_work, 0);
-> 
-> Zero in there will cause the other end's work not to be cancelled and
-> TTY_LDISC_HALTED unset if there are two or more readers on the slave,
-> right? So there should be something like:
-> if (timeout)
->   retval = tty_ldisc_wait_idle(tty, timeout);
->   ...
-> 
-> in tty_ldisc_halt.
+Although tegra_clk_register_super_mux() has a lock parameter, the lock is not
+actually used by the code. Fixed with this patch.
 
-True.
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+---
+ drivers/clk/tegra/clk-super.c |   18 +++++++++++++++---
+ 1 files changed, 15 insertions(+), 3 deletions(-)
 
-Fixed in 08/23, where both ldiscs are halted simultaneously, forced to
-wait for identical timeouts, and returns an error if either tty timed
-out. From 08/23
-
-in tty_ldisc_halt():
-
-        retval = tty_ldisc_wait_idle(tty, timeout);
-+       if (!retval && o_tty)
-+               retval = tty_ldisc_wait_idle(o_tty, timeout);
-        if (retval)
-                return retval;
-
-in tty_set_ldisc():
-
--       retval = tty_ldisc_halt(tty, &work, 5 * HZ);
--       if (o_tty)
--               tty_ldisc_halt(o_tty, &o_work, 0);
-+       retval = tty_ldisc_halt(tty, o_tty, &work, &o_work, 5 * HZ);
-
-
-If you'd prefer, I could put the 5 sec. wait in 7/23 as well, test the
-error and so forth.
+diff --git a/drivers/clk/tegra/clk-super.c b/drivers/clk/tegra/clk-super.c
+index 7ad48a8..2fd924d 100644
+--- a/drivers/clk/tegra/clk-super.c
++++ b/drivers/clk/tegra/clk-super.c
+@@ -73,7 +73,12 @@ static int clk_super_set_parent(struct clk_hw *hw, u8 index)
+ {
+ 	struct tegra_clk_super_mux *mux = to_clk_super_mux(hw);
+ 	u32 val, state;
++	int err = 0;
+ 	u8 parent_index, shift;
++	unsigned long flags = 0;
++
++	if (mux->lock)
++		spin_lock_irqsave(mux->lock, flags);
+ 
+ 	val = readl_relaxed(mux->reg);
+ 	state = val & SUPER_STATE_MASK;
+@@ -92,8 +97,10 @@ static int clk_super_set_parent(struct clk_hw *hw, u8 index)
+ 					       (index == mux->pllx_index))) {
+ 		parent_index = clk_super_get_parent(hw);
+ 		if ((parent_index == mux->div2_index) ||
+-		    (parent_index == mux->pllx_index))
+-			return -EINVAL;
++		    (parent_index == mux->pllx_index)) {
++			err = -EINVAL;
++			goto out;
++		}
+ 
+ 		val ^= SUPER_LP_DIV2_BYPASS;
+ 		writel_relaxed(val, mux->reg);
+@@ -107,7 +114,12 @@ static int clk_super_set_parent(struct clk_hw *hw, u8 index)
+ 
+ 	writel_relaxed(val, mux->reg);
+ 	udelay(2);
+-	return 0;
++
++out:
++	if (mux->lock)
++		spin_unlock_irqrestore(mux->lock, flags);
++
++	return err;
+ }
+ 
+ const struct clk_ops tegra_clk_super_ops = {
+-- 
+1.7.7.rc0.72.g4b5ea.dirty
 
