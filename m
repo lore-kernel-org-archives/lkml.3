@@ -1,39 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758780Ab3BGPis (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 10:38:48 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:45126 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757884Ab3BGPir (ORCPT
+	id S1758782Ab3BGPj7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 10:39:59 -0500
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:61557 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757884Ab3BGPj6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 10:38:47 -0500
+	Thu, 7 Feb 2013 10:39:58 -0500
 MIME-Version: 1.0
-In-Reply-To: <1360148051-7560-27-git-send-email-lee.jones@linaro.org>
-References: <1360148051-7560-1-git-send-email-lee.jones@linaro.org>
-	<1360148051-7560-27-git-send-email-lee.jones@linaro.org>
-Date: Thu, 7 Feb 2013 16:38:46 +0100
-Message-ID: <CACRpkday18vC=HeWGAEsLpNtVQ3yB43eK57FVinvQmejeqrM=g@mail.gmail.com>
-Subject: Re: [PATCH 26/49] ARM: ux500: Partially revert changes surrounding
- audio regulators
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>, Ola LILJA2 <ola.o.lilja@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com,
-        Philippe Langlais <philippe.langlais@linaro.org>
+In-Reply-To: <1360251388-16075-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1360251388-16075-1-git-send-email-andriy.shevchenko@linux.intel.com>
+Date: Thu, 7 Feb 2013 21:09:57 +0530
+Message-ID: <CAKohpo=w+LaUf0LMLBJBmEUjShCUzxKrqm5WzcrZmxAyg1vM4g@mail.gmail.com>
+Subject: Re: [PATCH] dw_dmac: add support for Lynxpoint DMA controllers
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 6, 2013 at 11:53 AM, Lee Jones <lee.jones@linaro.org> wrote:
-
-> From: Philippe Langlais <philippe.langlais@linaro.org>
+On 7 February 2013 21:06, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+> From: Mika Westerberg <mika.westerberg@linux.intel.com>
 >
-> Signed-off-by: Philippe Langlais <philippe.langlais@linaro.org>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> Intel Lynxpoint PCH Low Power Subsystem has DMA controller to support general
+> purpose serial buses like SPI, I2C, and HSUART. This controller is enumerated
+> from ACPI namespace with ACPI ID INTL9C60.
+>
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 
-There is an awfully small commit blurb for this change. Actually
-nothing. We need some explanation, and I want Ola to be in on this
-change.
+Looks like Mika is Author and you have your signed-off :)
 
-Yours,
-Linus Walleij
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
