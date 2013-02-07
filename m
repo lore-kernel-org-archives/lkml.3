@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758464Ab3BGOmX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 09:42:23 -0500
-Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:14772 "EHLO
-	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757088Ab3BGOmU (ORCPT
+	id S1758103Ab3BGOsa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 09:48:30 -0500
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:32526 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754396Ab3BGOs2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 09:42:20 -0500
-Message-ID: <1360247527.14416.8.camel@misato.fc.hp.com>
+	Thu, 7 Feb 2013 09:48:28 -0500
+Message-ID: <1360247896.14416.11.camel@misato.fc.hp.com>
 Subject: Re: [PATCH 2/2] ACPI / scan: Simplify container driver
 From: Toshi Kani <toshi.kani@hp.com>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Bjorn Helgaas <bhelgaas@google.com>,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
         Matthew Garrett <matthew.garrett@nebula.com>,
         Yinghai Lu <yinghai@kernel.org>, Jiang Liu <liuj97@gmail.com>,
         LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 07 Feb 2013 07:32:07 -0700
-In-Reply-To: <2629080.ji4YWC94Sj@vostro.rjw.lan>
+Date: Thu, 07 Feb 2013 07:38:16 -0700
+In-Reply-To: <7621884.ddmYGtd8MJ@vostro.rjw.lan>
 References: <1873429.MS5RQDxTye@vostro.rjw.lan>
-	 <6374398.88OyYZxaMu@vostro.rjw.lan>
-	 <1360198302.23410.283.camel@misato.fc.hp.com>
-	 <2629080.ji4YWC94Sj@vostro.rjw.lan>
+	 <5090866.2BHgpRnuEZ@vostro.rjw.lan> <5113668F.9060102@jp.fujitsu.com>
+	 <7621884.ddmYGtd8MJ@vostro.rjw.lan>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
@@ -32,70 +32,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-02-07 at 02:32 +0100, Rafael J. Wysocki wrote:
-> On Wednesday, February 06, 2013 05:51:42 PM Toshi Kani wrote:
-> > On Thu, 2013-02-07 at 01:55 +0100, Rafael J. Wysocki wrote:
-> > > On Wednesday, February 06, 2013 03:32:18 PM Toshi Kani wrote:
-> > > > On Mon, 2013-02-04 at 00:47 +0100, Rafael J. Wysocki wrote:
-> > > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > > > 
-> > > > > The only useful thing that the ACPI container driver does is to
-> > > > > install system notify handlers for all container and module device
-> > > > > objects it finds in the namespace.  The driver structure,
-> > > > > acpi_container_driver, and the data structures created by its
-> > > > > .add() callback are in fact not used by the driver, so remove
-> > > > > them entirely.
-> > > > > 
-> > > > > It also makes a little sense to build that driver as a module,
-> > > > > so make it non-modular and add its initialization to the
-> > > > > namespace scanning code.
-> > > > > 
-> > > > > In addition to that, make the namespace walk callback used for
-> > > > > installing the notify handlers more straightforward.
-> > > > 
-> > > > I think the container driver needs to be registered as an ACPI scan
-> > > > driver so that sysfs eject will continue to work for container devices,
-> > > > such as ACPI0004:XX/eject.  Since the container driver does not support
-> > > > ACPI eject notification (and we have been discussing how system device
-> > > > hot-plug should work), this sysfs eject is the only way to eject a
-> > > > container device at this point.  I will send an update patchset that
-> > > > applies on top of this patch.
-> > > > 
-> > > > With the update in my patchset:
-> > > > Reviewed-by: Toshi Kani <toshi.kani@hp.com>
-> > > 
-> > > Thanks, but I'd like to (1) apply your patch from
-> > > https://patchwork.kernel.org/patch/2108851/ first and then (2) fold your [2/2]
-> > > into my [2/2], if you don't mind, and apply that next.
+On Thu, 2013-02-07 at 12:43 +0100, Rafael J. Wysocki wrote:
+> On Thursday, February 07, 2013 05:32:15 PM Yasuaki Ishimatsu wrote:
+ :
+> > > Index: test/drivers/acpi/internal.h
+> > > ===================================================================
+> > > --- test.orig/drivers/acpi/internal.h
+> > > +++ test/drivers/acpi/internal.h
+> > > @@ -40,6 +40,11 @@ void acpi_memory_hotplug_init(void);
+> > >   #else
+> > >   static inline void acpi_memory_hotplug_init(void) {}
+> > >   #endif
 > > 
-> > That's fine by me.
+> > > +#ifdef ACPI_CONTAINER
 > > 
-> > > Moreover, I'm wondering if the #ifndef FORCE_EJECT thing in acpi_eject_store()
-> > > actually makes sense after the recent changes to acpi_bus_trim(), because that
-> > > can't fail now, so the eject will always be carried out.  So perhaps we can
-> > > simply remove the acpi_device->driver check from there entirely in the first
-> > > place?
-> > >
-> > > If we really want to be able to prevent ejects from happening in some cases,
-> > > we need to implement something along the lines discussed with Greg.
-> > 
-> > acpi_bus_trim() cannot fail, but sysfs eject can fail.  So, I think it
-> > makes sense to do some validation before calling acpi_bus_trim().  If we
-> > are to implement the no_eject flag thing, that check needs to be made
-> > before calling acpi_bus_trim().
+> > It should be CONFIG_ACPI_CONTAINER.
 > 
-> Sure, but now the logic seems to be "if FORCE_EJECT is not set, don't eject
-> devices that have no ACPI drivers", so I'm wondering what the purpose of this
-> is.  It definitely isn't too obvious. :-)
+> Totally correct.
 
-The check sounds odd for container, but is necessary for CPU and memory
-for now.  CPU and memory go online without their ACPI drivers at boot.
-So, without this check (i.e. FORCE_EJECT is set), it simply ejects them
-without attempting to offline when the ACPI drivers are not bound.  Of
-course, we have the issue of a failure in offline be ignored, so this
-offlining part needs to be moved out from acpi_bus_trim() in one way or
-the other.
+Just FYI, this change is included in my patch 2/2 as well.
+https://patchwork.kernel.org/patch/2108881/
 
 Thanks,
 -Toshi
+
+
+> > By this, acpi_container_init() do nothing. When I fix it and test the patch,
+> > the patch goes well.
+> > 
+> > If you update the patch, I'll test again.
+> 
+> This fix from Toshi Kani is necessary in addition to it, though
+> 
+> https://patchwork.kernel.org/patch/2108851/
+> 
+> because FORCE_EJECT is never set as far as I can say.
+> 
+> Thanks,
+> Rafael
+> 
+> 
+> 
+
 
