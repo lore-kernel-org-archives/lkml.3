@@ -1,81 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757459Ab3BGJlG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 04:41:06 -0500
-Received: from mail-ia0-f182.google.com ([209.85.210.182]:38027 "EHLO
-	mail-ia0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757293Ab3BGJk7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 04:40:59 -0500
+	id S1755182Ab3BGJvu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 04:51:50 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:60390 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754086Ab3BGJvq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 04:51:46 -0500
+Message-ID: <51137911.8080303@ti.com>
+Date: Thu, 7 Feb 2013 15:21:13 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130205143813.GB9886@fieldses.org>
-References: <1358441537-8672-1-git-send-email-piastry@etersoft.ru>
-	<20130130221118.GB15584@fieldses.org>
-	<CAKywueQcia1jJfdVJFzfHdc5zQ_86r3T4bmee9cpP18qqbcLFA@mail.gmail.com>
-	<20130205143813.GB9886@fieldses.org>
-Date: Thu, 7 Feb 2013 13:40:57 +0400
-X-Google-Sender-Auth: E5P7kgHi4jHVrvPAEfgjePYWTC8
-Message-ID: <CAKywueQ=YJ3L9=uQfqo7jMF1Fw+TP37Wo39o1-ayu453xhmDtg@mail.gmail.com>
-Subject: Re: [PATCH v2 0/8] Add O_DENY* support for VFS and CIFS/NFS
-From: Pavel Shilovsky <piastry@etersoft.ru>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
-        wine-devel@winehq.org
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+To: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
+CC: <linux-i2c@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <khilman@deeprootsystems.com>, <hs@denx.de>, <linux@arm.linux.org.uk>
+Subject: Re: [PATCH] ARM: davinci: da850: add DT node for I2C0
+References: <1360143382-24607-1-git-send-email-manishv.b@ti.com>
+In-Reply-To: <1360143382-24607-1-git-send-email-manishv.b@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/2/5 J. Bruce Fields <bfields@fieldses.org>:
-> On Tue, Feb 05, 2013 at 03:33:21PM +0400, Pavel Shilovsky wrote:
->> 2013/1/31 J. Bruce Fields <bfields@fieldses.org>:
->> > On Thu, Jan 17, 2013 at 08:52:09PM +0400, Pavel Shilovsky wrote:
->> >> This patchset adds support of O_DENY* flags for Linux fs layer. These flags can be used by any application that needs share reservations to organize a file access. VFS already has some sort of this capability - now it's done through flock/LOCK_MAND mechanis, but that approach is non-atomic. This patchset build new capabilities on top of the existing one but doesn't bring any changes into the flock call semantic.
->> >>
->> >> These flags can be used by NFS (built-in-kernel) and CIFS (Samba) servers and Wine applications through VFS (for local filesystems) or CIFS/NFS modules. This will help when e.g. Samba and NFS server share the same directory for Windows and Linux users or Wine applications use Samba/NFS share to access the same data from different clients.
->> >>
->> >> According to the previous discussions the most problematic question is how to prevent situations like DoS attacks where e.g /lib/liba.so file can be open with DENYREAD, or smth like this. That's why one extra flag O_DENYMAND is added. It indicates to underlying layer that an application want to use O_DENY* flags semantic. It allows us not affect native Linux applications (that don't use O_DENYMAND flag) - so, these flags (and the semantic of open syscall that they bring) are used only for those applications that really want it proccessed that way.
->> >
->> > Maybe that's good enough.  A mount flag might be simpler and give
->> > consistent enforcement for all users.
->> >
->> >>
->> >> So, we have four new flags:
->> >> O_DENYREAD - to prevent other opens with read access,
->> >> O_DENYWRITE - to prevent other opens with write access,
->> >> O_DENYDELETE - to prevent delete operations (this flag is not implemented in VFS and NFS part and only suitable for CIFS module),
->> >> O_DENYMAND - to switch on/off three flags above.
->> >
->> > It would be useful to have some really careful documentation of how
->> > these are meant to work.  Maybe try updating the open man page?
->>
->> Yes, that's a good idea. Do you mean smth like this?
->>
->> O_DENYMAND - used to inforce a mandatory share reservation scheme of
->> the file access. If this flag is passed,
->> the open fails with -ETXTBSY in following cases:
->>
->> 1) if O_DENYREAD flag is specified and there is another open with
->> O_DENYMAND flag and READ access to the file;
->> 2) if O_DENYWRITE flag is specified and there is another open with
->> O_DENYMAND flag and WRITE access to the file;
->> 3) if READ access is requested and there is another open with
->> O_DENYMAND and O_DENYREAD flags;
->> 4) if WRITE access is requested and there is another open with
->> O_DENYMAND and O_DENYWRITE flags;
->>
->> Also, if O_DENYDELETE flag is specified and the open succeded, any
->> further unlink operation will fail with -ETXTBSY untill this open is
->> closed. Now this flag is processed by CIFS filesystems only.
->
-> Do you need to document interactions with flock() as well?
+On 2/6/2013 3:06 PM, Vishwanathrao Badarkhe, Manish wrote:
+> Add I2C0 device tree and pin muxing information to da850-evm.
+> Also, add OF_DEV_AUXDATA for I2C0 controller driver in da850
+> board dt file to use I2C0 clock.
+> Verified i2c0 node gets created in sys class interface as
+> "/sys/class/i2c-dev/i2c-0/subsystem/i2c-0".
 
-Yes, this needs to be documented, thanks. I am going to propose ver2
-of this patchset (with regards to your suggestions) - will add this
-part to open man page patch too.
+That's not enough testing! (I know this would have gotten more testing
+as part of the bigger series you posted earlier). I tested on da850 evm
+with i2cdetect and i2cdump and it works fine.
 
--- 
-Best regards,
-Pavel Shilovsky.
+> 
+> Signed-off-by: Vishwanathrao Badarkhe, Manish <manishv.b@ti.com>
+> ---
+> Applies on top of v3.8-rc6 of linus tree.
+> Depends on
+>  - drivers/pinctrl: grab default handles from device core
+>    http://www.gossamer-threads.com/lists/linux/kernel/1665411
+>  - ARM: davinci: da850: add interrupt-parent property in soc node
+>    https://patchwork.kernel.org/patch/2044101/
+>  - ARM: davinci: da850: add pinctrl support
+>    http://comments.gmane.org/gmane.linux.davinci/25993
+> 
+> :100644 100644 433027f... 738d5d4... M	arch/arm/boot/dts/da850-evm.dts
+> :100644 100644 4b02167... a0072aa... M	arch/arm/boot/dts/da850.dtsi
+> :100644 100644 37c27af... 95ca4e9... M	arch/arm/mach-davinci/da8xx-dt.c
+>  arch/arm/boot/dts/da850-evm.dts  |    6 ++++++
+>  arch/arm/boot/dts/da850.dtsi     |   14 ++++++++++++++
+>  arch/arm/mach-davinci/da8xx-dt.c |    8 +++++++-
+>  3 files changed, 27 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/da850-evm.dts b/arch/arm/boot/dts/da850-evm.dts
+> index 433027f..738d5d4 100644
+> --- a/arch/arm/boot/dts/da850-evm.dts
+> +++ b/arch/arm/boot/dts/da850-evm.dts
+> @@ -27,6 +27,12 @@
+>  		serial2: serial@1d0d000 {
+>  			status = "okay";
+>  		};
+> +		i2c0: i2c@1c22000 {
+> +			status = "okay";
+> +			clock-frequency = <100000>;
+> +			pinctrl-names = "default";
+> +			pinctrl-0 = <&i2c0_pins>;
+> +		};
+>  	};
+>  	nand_cs3@62000000 {
+>  		status = "okay";
+> diff --git a/arch/arm/boot/dts/da850.dtsi b/arch/arm/boot/dts/da850.dtsi
+> index 4b02167..a0072aa 100644
+> --- a/arch/arm/boot/dts/da850.dtsi
+> +++ b/arch/arm/boot/dts/da850.dtsi
+> @@ -56,6 +56,12 @@
+>  					0x30 0x01100000  0x0ff00000
+>  				>;
+>  			};
+> +			i2c0_pins: pinmux_i2c0_pins {
+> +				pinctrl-single,bits = <
+> +					/* I2C0_SDA,I2C0_SCL */
+> +					0x10 0x00002200 0x0000ff00
+> +				>;
+> +			};
+>  		};
+>  		serial0: serial@1c42000 {
+>  			compatible = "ns16550a";
+> @@ -81,6 +87,14 @@
+>  			interrupts = <61>;
+>  			status = "disabled";
+>  		};
+> +		i2c0: i2c@1c22000 {
+> +			compatible = "ti,davinci-i2c";
+> +			reg = <0x22000 0x1000>;
+> +			interrupts = <15>;
+> +			#address-cells = <1>;
+> +			#size-cells = <0>;
+> +			status = "disabled";
+> +		};
+>  	};
+>  	nand_cs3@62000000 {
+>  		compatible = "ti,davinci-nand";
+> diff --git a/arch/arm/mach-davinci/da8xx-dt.c b/arch/arm/mach-davinci/da8xx-dt.c
+> index 37c27af..95ca4e9 100644
+> --- a/arch/arm/mach-davinci/da8xx-dt.c
+> +++ b/arch/arm/mach-davinci/da8xx-dt.c
+> @@ -37,11 +37,17 @@ static void __init da8xx_init_irq(void)
+>  	of_irq_init(da8xx_irq_match);
+>  }
+>  
+> +struct of_dev_auxdata da850_auxdata_lookup[] __initdata = {
+> +	OF_DEV_AUXDATA("ti,davinci-i2c", 0x01c22000, "i2c_davinci.1", NULL),
+> +	{}
+> +};
+> +
+>  #ifdef CONFIG_ARCH_DAVINCI_DA850
+>  
+>  static void __init da850_init_machine(void)
+>  {
+> -	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+> +	of_platform_populate(NULL, of_default_bus_match_table,
+> +				da850_auxdata_lookup, NULL);
+
+'checkpatch --strict' complains here of improper alignment. I fixed it
+locally. I am planning to send this to upstreams and see if this can
+make it for v3.9, but its pretty late already and it depends..
+
+Thanks,
+Sekhar
