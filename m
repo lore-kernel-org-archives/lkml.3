@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946929Ab3BHT1Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 14:27:24 -0500
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:42714
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1946782Ab3BHT1W (ORCPT
+	id S1946939Ab3BHT2T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 14:28:19 -0500
+Received: from relayoutw01.hubtelecom.net ([94.199.126.69]:51159 "EHLO
+	relayoutw01.hubtelecom.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1946826Ab3BHT2S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 14:27:22 -0500
-X-Forefront-Antispam-Report: CIP:157.56.236.101;KIP:(null);UIP:(null);IPV:NLI;H:BY2PRD0510HT002.namprd05.prod.outlook.com;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: PS-4(zz98dI9371I936eI1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275ch177df4h17326ah8275bhz2fh2a8h668h839h93fhd24he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1155h)
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: Kees Cook <keescook@chromium.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH] x86: Lock down MSR writing in secure boot
-Thread-Topic: [PATCH] x86: Lock down MSR writing in secure boot
-Thread-Index: AQHOBjA7mQsIMlqU/k+EElzc7Yz1iZhwVXyAgAABLICAAAGKgA==
-Date: Fri, 8 Feb 2013 19:27:09 +0000
-Message-ID: <1360351629.18083.15.camel@x230.lan>
-References: <20130208191213.GA25081@www.outflux.net>
-	 <1360351047.18083.14.camel@x230.lan>
-	 <CAGXu5j+aXxQb_Jyn6G+JUdjNOF2EGo9pTw8dBYuZUTb+S1vWow@mail.gmail.com>
-In-Reply-To: <CAGXu5j+aXxQb_Jyn6G+JUdjNOF2EGo9pTw8dBYuZUTb+S1vWow@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.255.84.4]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <1D2B3823B22DE547BEB4061801F001D6@namprd05.prod.outlook.com>
+	Fri, 8 Feb 2013 14:28:18 -0500
+Date: Fri, 8 Feb 2013 20:28:13 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>
+Subject: Re: [GIT PULL] ab8500-dependent MFD functions for GPIO IRQs
+Message-ID: <20130208192813.GC20996@sortiz-mobl>
+References: <CACRpkdbC+UnoxOj8AJFteYy+sjYe8+OUnT1Tyc_qBZH4Wy6sww@mail.gmail.com>
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdbC+UnoxOj8AJFteYy+sjYe8+OUnT1Tyc_qBZH4Wy6sww@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Assp-Version: 2.0.1(3.0.23) on relayoutw01.hubtelecom.net
+X-Assp-Message/IP-Score: 39 (Bayesian Probability: 0.6587)
+X-Assp-Envelope-From: sameo@linux.intel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r18JRNr3005453
 
-On Fri, 2013-02-08 at 11:21 -0800, Kees Cook wrote:
-> On Fri, Feb 8, 2013 at 11:17 AM, Matthew Garrett
-> <matthew.garrett@nebula.com> wrote:
-> > On Fri, 2013-02-08 at 11:12 -0800, Kees Cook wrote:
-> >> Writing to MSRs should not be allowed unless CAP_COMPROMISE_KERNEL is
-> >> set since it could lead to execution of arbitrary code in kernel mode.
-> >
-> > Willing to buy this, but do you have a description of one potential
-> > approach? We should probably also figure out what's writing to MSRs at
-> > the moment (anything other than energy_perf_bias?) and decide what the
-> > best thing to do there is.
+
+Hi Linus,
+
+On Fri, Feb 08, 2013 at 02:37:58PM +0100, Linus Walleij wrote:
+> Hi Sam,
 > 
-> Yes, change the SYSENTER entry point to where-ever you like. There are
-> examples already written:
-> http://grsecurity.net/~spender/msr32.c
+> could you please pull these changes into your MFD branch for the
+> next merge window?
+> 
+> These should be merged on top of Lee Jones' patch stack and
+> deal with how the GPIO IRQs are handled.
+> 
+> I based this off v3.8-rc6 as your branch appear to be.
+> If there are conflicts you need help with, tell me if you want me
+> to rebase it on your for-next branch or any other baseline.
+> 
+> After this I have only one ACKed patch in the pinctrl tree
+> that may conflict any other stuff, and that's this one:
+> http://git.kernel.org/?p=linux/kernel/git/linusw/linux-pinctrl.git;a=patch;h=56813f798e8cb3f79a25e0523e782d910f376083
+> 
+> This is in the middle of a branch that has been used as
+> a baseline by others and by other commits in the pinctrl
+> tree, so sadly I cannot take it out.
+> 
+> Please pull it in!
+Thanks for that, I pulled it now.
 
-Cool. Yup, this sounds like a good plan.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
