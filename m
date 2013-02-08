@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946058Ab3BHIU7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 03:20:59 -0500
-Received: from mail-we0-f176.google.com ([74.125.82.176]:46499 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759790Ab3BHIU5 (ORCPT
+	id S1760034Ab3BHIVa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 03:21:30 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:58128 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759790Ab3BHIV3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 03:20:57 -0500
-Date: Fri, 8 Feb 2013 08:20:50 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, linus.walleij@linaro.org
-Subject: Re: [PATCH 01/49] regulator: ab8500: Further populate initialisation
- registers
-Message-ID: <20130208082050.GE7519@gmail.com>
-References: <1360148051-7560-1-git-send-email-lee.jones@linaro.org>
- <1360148051-7560-2-git-send-email-lee.jones@linaro.org>
- <20130207184549.GA8879@opensource.wolfsonmicro.com>
+	Fri, 8 Feb 2013 03:21:29 -0500
+X-AuditID: 9c930179-b7c24ae00000119c-0b-5114b5877e8d
+From: Namhyung Kim <namhyung@kernel.org>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] stop_machine: check work->done while handling enqueued works
+References: <CAJd=RBD4ZJN7uXQ5xY1GF14j_DydDQEpuZNct-UiNXTBARpQSQ@mail.gmail.com>
+Date: Fri, 08 Feb 2013 17:21:27 +0900
+In-Reply-To: <CAJd=RBD4ZJN7uXQ5xY1GF14j_DydDQEpuZNct-UiNXTBARpQSQ@mail.gmail.com>
+	(Hillf Danton's message of "Fri, 8 Feb 2013 11:39:56 +0800")
+Message-ID: <87txpnqkqg.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130207184549.GA8879@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 07 Feb 2013, Mark Brown wrote:
+Hi Hillf,
 
-> On Wed, Feb 06, 2013 at 10:53:23AM +0000, Lee Jones wrote:
-> > This patch supplies access to some extra settings provided by the
-> > AB8500 regulator device. We also update some of the existing
-> > initialisation values in accordance with internal ST-Ericsson code
-> > submissions. This single patch was originally a collection of updates
-> > which have been squashed together to aid with clarity.
-> 
-> I tried to apply this but got conflicts - can you please check what's
-> going on with this vs my topic/ab8500 branch?
+On Fri, 8 Feb 2013 11:39:56 +0800, Hillf Danton wrote:
+> The comment just above cpu_stop_signal_done() says it is uncertain that
+> the input @done is valid, and the works enqueued through the function
+> stop_one_cpu_nowait() do carry no done, thus we have to check if it is
+> valid when updating work result.
 
-It's almost certainly because you're trying to pull the patches in out
-of order. This _will_ end in conflicts. Any chance you can start from
-01 and work your way though them. I will fixup any that you don't like
-on the fly.
+The only user of stop_one_cpu_nowait() is the scheduler active balancer
+and active_load_balance_cpu_stop() always returns 0.  But I think this
+change makes its sense and the code evolves, so:
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Reviewed-by: Namhyung Kim <namhyung@kernel.org>
+
+Thanks,
+Namhyung
+
+>
+> Signed-off-by: Hillf Danton <dhillf@gmail.com>
+> ---
+>
+> --- a/kernel/stop_machine.c	Thu Feb  7 20:03:10 2013
+> +++ b/kernel/stop_machine.c	Fri Feb  8 11:07:40 2013
+> @@ -279,7 +279,7 @@ repeat:
+>  		preempt_disable();
+>
+>  		ret = fn(arg);
+> -		if (ret)
+> +		if (ret && done != NULL)
+>  			done->ret = ret;
+>
+>  		/* restore preemption and check it's still balanced */
+> --
