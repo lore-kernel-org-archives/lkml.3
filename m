@@ -1,84 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760171Ab3BHOb6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 09:31:58 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:40906 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758687Ab3BHOb5 (ORCPT
+	id S1946333Ab3BHOfy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 09:35:54 -0500
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:41540 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753386Ab3BHOfx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 09:31:57 -0500
+	Fri, 8 Feb 2013 09:35:53 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130208141447.03914013db9a5f7308fc1675@canb.auug.org.au>
-References: <1359399845-10568-1-git-send-email-fweisbec@gmail.com>
-	<1359399845-10568-5-git-send-email-fweisbec@gmail.com>
-	<20130208140749.5a094f271e529dacfb962b51@canb.auug.org.au>
-	<20130208141447.03914013db9a5f7308fc1675@canb.auug.org.au>
-Date: Fri, 8 Feb 2013 15:31:55 +0100
-Message-ID: <CAFTL4hyx+hSg5n4D+PMTG6OBVgX66tkHcM7S2EvNYqv95qoC7w@mail.gmail.com>
-Subject: Re: [PATCH 4/8] cputime: Generic on-demand virtual cputime accounting
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Reply-To: syrine.tl@gmail.com
+Date: Fri, 8 Feb 2013 15:35:52 +0100
+Message-ID: <CAETb2JMQ05RGuBuaoD39Db1j9--sth-3u+JXG6jaZkTvQyVkPw@mail.gmail.com>
+Subject: [PATCH] linux-3.8-rc6 Fix Missing Allocation Failure Checks
+From: syrine tlili <syrine.tl@gmail.com>
+To: matt.fleming@intel.com, sage@inktank.com, isdn@linux-pingi.de,
+        megaraidlinux@lsi.com
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/2/8 Stephen Rothwell <sfr@canb.auug.org.au>:
-> Hi Frederic,
->
-> On Fri, 8 Feb 2013 14:07:49 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->>
->> This patch has the side effect of changing the default configurations:
->> (This is PowerPC pseries_defconfig before/after this patch)
->>
->> @@ -119,8 +120,8 @@
->>  #
->>  # CPU/Task time and stats accounting
->>  #
->> -# CONFIG_TICK_CPU_ACCOUNTING is not set
->> -CONFIG_VIRT_CPU_ACCOUNTING=y
->> +CONFIG_TICK_CPU_ACCOUNTING=y
->> +# CONFIG_VIRT_CPU_ACCOUNTING_NATIVE is not set
->>  # CONFIG_BSD_PROCESS_ACCT is not set
->>  CONFIG_TASKSTATS=y
->>  CONFIG_TASK_DELAY_ACCT=y
->>
->> I don't know if that was deliberate, but it was suprising.  I noticed
->> when this patch entered next-20130207.
->
-> I suspect that this is caused by the changes to init/Kconfig:
->
-> diff --git a/init/Kconfig b/init/Kconfig
-> index be8b7f5..a05f843 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -326,6 +326,9 @@ source "kernel/time/Kconfig"
->
->  menu "CPU/Task time and stats accounting"
->
-> +config VIRT_CPU_ACCOUNTING
-> +       bool
-> +
->  choice
->         prompt "Cputime accounting"
->         default TICK_CPU_ACCOUNTING if !PPC64
->
-> The next line of context is:
->
->         default VIRT_CPU_ACCOUNTING if PPC64
->
-> Which may have needed changing as well?  Indeed, changing that to
-> VIRT_CPU_ACCOUNTING_NATIVE restores the old defaults.
+From: Syrine Tlili <syrine.tl@gmail.com>
 
-Indeed, thanks for your fix!
+Check for memory allocation failures to avoid
+NULL pointer dereferencing.
+
+Signed-off-by: Syrine Tlili <syrine.tl@gmail.com>
+---
+
+
+diff -uprN -X linux-3.8-rc6-vanilla/Documentation/dontdiff
+linux-3.8-rc6-vanilla/arch/x86/platform/efi/efi.c
+b/arch/x86/platform/efi/efi.c
+--- linux-3.8-rc6-vanilla/arch/x86/platform/efi/efi.c	2013-02-01
+02:08:14.000000000 +0100
++++ b/arch/x86/platform/efi/efi.c	2013-02-06 20:33:36.390643500 +0100
+@@ -924,6 +924,8 @@ void __init efi_enter_virtual_mode(void)
+ 		new_memmap = krealloc(new_memmap,
+ 				      (count + 1) * memmap.desc_size,
+ 				      GFP_KERNEL);
++		if (!new_memmap)
++			return -ENOMEM;
+ 		memcpy(new_memmap + (count * memmap.desc_size), md,
+ 		       memmap.desc_size);
+ 		count++;
+diff -uprN -X linux-3.8-rc6-vanilla/Documentation/dontdiff
+linux-3.8-rc6-vanilla/drivers/isdn/mISDN/fsm.c
+b/drivers/isdn/mISDN/fsm.c
+--- linux-3.8-rc6-vanilla/drivers/isdn/mISDN/fsm.c	2013-02-01
+02:08:14.000000000 +0100
++++ b/drivers/isdn/mISDN/fsm.c	2013-02-06 20:33:01.772644948 +0100
+@@ -34,6 +34,8 @@ mISDN_FsmNew(struct Fsm *fsm,
+
+ 	fsm->jumpmatrix = kzalloc(sizeof(FSMFNPTR) * fsm->state_count *
+ 				  fsm->event_count, GFP_KERNEL);
++	if (!fsm->jumpmatrix)
++		return -ENOMEM;
+
+ 	for (i = 0; i < fncount; i++)
+ 		if ((fnlist[i].state >= fsm->state_count) ||
+diff -uprN -X linux-3.8-rc6-vanilla/Documentation/dontdiff
+linux-3.8-rc6-vanilla/drivers/scsi/megaraid.c
+b/drivers/scsi/megaraid.c
+--- linux-3.8-rc6-vanilla/drivers/scsi/megaraid.c	2013-02-01
+02:08:14.000000000 +0100
++++ b/drivers/scsi/megaraid.c	2013-02-06 21:22:23.051521099 +0100
+@@ -4437,6 +4437,8 @@ mega_internal_command(adapter_t *adapter
+ 	memset(scb, 0, sizeof(scb_t));
+
+ 	sdev = kzalloc(sizeof(struct scsi_device), GFP_KERNEL);
++	if (!sdev)
++		goto err_out;
+ 	scmd->device = sdev;
+
+ 	memset(adapter->int_cdb, 0, sizeof(adapter->int_cdb));
+@@ -4482,6 +4484,11 @@ mega_internal_command(adapter_t *adapter
+ 	scsi_free_command(GFP_KERNEL, scmd);
+
+ 	return rval;
++
++err_out:
++	mutex_unlock(&adapter->int_mtx);
++	scsi_free_command(GFP_KERNEL, scmd);
++	return -ENOMEM;
+ }
+
+
+diff -uprN -X linux-3.8-rc6-vanilla/Documentation/dontdiff
+linux-3.8-rc6-vanilla/fs/ceph/mdsmap.c b/fs/ceph/mdsmap.c
+--- linux-3.8-rc6-vanilla/fs/ceph/mdsmap.c	2013-02-01 02:08:14.000000000 +0100
++++ b/fs/ceph/mdsmap.c	2013-02-06 20:34:02.934642390 +0100
+@@ -132,6 +132,8 @@ struct ceph_mdsmap *ceph_mdsmap_decode(v
+ 				m->m_info[mds].export_targets =
+ 					kcalloc(num_export_targets, sizeof(u32),
+ 						GFP_NOFS);
++				if (m->m_info[mds].export_targets == NULL)
++					goto badmem;
+ 				for (j = 0; j < num_export_targets; j++)
+ 					m->m_info[mds].export_targets[j] =
+ 					       ceph_decode_32(&pexport_targets);
