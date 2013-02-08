@@ -1,85 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946599Ab3BHPT7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 10:19:59 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33484 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946062Ab3BHPT6 (ORCPT
+	id S1946591Ab3BHPVn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 10:21:43 -0500
+Received: from mail-qe0-f43.google.com ([209.85.128.43]:59550 "EHLO
+	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946062Ab3BHPVl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 10:19:58 -0500
-Date: Fri, 8 Feb 2013 07:18:56 -0800
-From: tip-bot for Stephen Rothwell <sfr@canb.auug.org.au>
-Message-ID: <tip-02fc8d37229d15c654876cf9ce56b5c1cf7945d7@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        linuxppc-dev@lists.ozlabs.org, peterz@infradead.org,
-        namhyung.kim@lge.com, zhong@linux.vnet.ibm.com,
-        paulmck@linux.vnet.ibm.com, benh@kernel.crashing.org,
-        fweisbec@gmail.com, rostedt@goodmis.org, tglx@linutronix.de,
-        sfr@canb.auug.org.au, paul.gortmaker@windriver.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, linuxppc-dev@lists.ozlabs.org,
-        namhyung.kim@lge.com, zhong@linux.vnet.ibm.com,
-        paulmck@linux.vnet.ibm.com, fweisbec@gmail.com,
-        benh@kernel.crashing.org, rostedt@goodmis.org, sfr@canb.auug.org.au,
-        tglx@linutronix.de, paul.gortmaker@windriver.com
-In-Reply-To: <20130208141938.f31b7b9e1acac5bbe769ee4c@canb.auug.org.au>
-References: <20130208141938.f31b7b9e1acac5bbe769ee4c@canb.auug.org.au>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] cputime:
-  Restore CPU_ACCOUNTING config defaults for PPC64
-Git-Commit-ID: 02fc8d37229d15c654876cf9ce56b5c1cf7945d7
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 8 Feb 2013 10:21:41 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CAOh2x=nn24DC-jpD_UsZ2z6=5d9GmZqwowKF8X0zQQX=vZmbqQ@mail.gmail.com>
+References: <CA+icZUX-hh+RjEOrKABBtecmb4C-5azSmdTx6D7SLuSpcQE+kQ@mail.gmail.com>
+	<CAJd=RBDwdO+n3H4M=5W5q75q3yUVL7L2RonWnCE7sfsfW1K5ig@mail.gmail.com>
+	<CA+icZUUaFb8zvdkY2JLz5h_7CBgaTzyyTphGid+GkigV+NfVKA@mail.gmail.com>
+	<2612804.Hcyse1lRVO@vostro.rjw.lan>
+	<CAKohpom0yjSyU+OhK4vdi5R=+JsmAEw2nOsvupDOiWMYsdz3Pg@mail.gmail.com>
+	<CA+icZUUedcLAo1OkDSD7K_zgZoLvUAPNYOWAJxSPLp9J3hCKNw@mail.gmail.com>
+	<CAOh2x=nn24DC-jpD_UsZ2z6=5d9GmZqwowKF8X0zQQX=vZmbqQ@mail.gmail.com>
+Date: Fri, 8 Feb 2013 16:21:39 +0100
+Message-ID: <CA+icZUV=813qjoTMUQzHvUD2AChgKO60ffRtrJ2OG0uSqZf3Mw@mail.gmail.com>
+Subject: Re: [linux-pm] linux-next: Tree for Feb 8 [ smp|cpufreq: WARNING: at
+ kernel/smp.c:245 smp_call_function_single ]
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        Hillf Danton <dhillf@gmail.com>, linux-next@vger.kernel.org,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        Chuansheng Liu <chuansheng.liu@intel.com>,
+        Ingo Molnar <mingo@redhat.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 08 Feb 2013 07:19:04 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  02fc8d37229d15c654876cf9ce56b5c1cf7945d7
-Gitweb:     http://git.kernel.org/tip/02fc8d37229d15c654876cf9ce56b5c1cf7945d7
-Author:     Stephen Rothwell <sfr@canb.auug.org.au>
-AuthorDate: Fri, 8 Feb 2013 14:19:38 +1100
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 8 Feb 2013 15:23:12 +0100
+On Fri, Feb 8, 2013 at 3:56 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On Fri, Feb 8, 2013 at 8:18 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>> Nah, I pulled in latest pm-next where this commit is new...
+>>
+>> commit 8d5666f3456f2fd4a4e5dced228475b829851e53
+>> "ACPI: Unbind ACPI drv when probe failed"
+>>
+>> ...building with it.
+>>
+>> Same to you, say concretely which commit is fixing what...
+>>
+>> Pull-N-B-Happy was never my strategy... I want to understand what went
+>> wrong and have stolen my time.
+>
+> I don't have any pointers to broken tree and so can't point you to the culprit,
+> but it was this patch:
+>
+> http://git.linaro.org/gitweb?p=people/vireshk/linux.git;a=commit;h=e034e731f4d9d18ad0401f033f485a3096796c58
+>
+> minus
+>
+> the patch i sent you as attachment.
+>
+> There were some locking introduced around init/exit of cpufreq_driver, which
+> caused some drivers to break. Its fixed now in the above commit.
 
-cputime: Restore CPU_ACCOUNTING config defaults for PPC64
+Hmm, this "high-patch-maths" is not user-friendly!
 
-Commit abf917cd91cb ("cputime: Generic on-demand virtual cputime
-accounting") inadvertantly changed the default CPU_ACCOUNTING
-config for PPC64.  Repair that.
+I will pull-in your tree into Linux-Next (next-20130208) and see if it
+applies cleanly.
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: ppc-dev <linuxppc-dev@lists.ozlabs.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Link: http://lkml.kernel.org/r/20130208141938.f31b7b9e1acac5bbe769ee4c@canb.auug.org.au
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- init/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/init/Kconfig b/init/Kconfig
-index a05f843..ccb9f8f 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -332,7 +332,7 @@ config VIRT_CPU_ACCOUNTING
- choice
- 	prompt "Cputime accounting"
- 	default TICK_CPU_ACCOUNTING if !PPC64
--	default VIRT_CPU_ACCOUNTING if PPC64
-+	default VIRT_CPU_ACCOUNTING_NATIVE if PPC64
- 
- # Kind of a stub config for the pure tick based cputime accounting
- config TICK_CPU_ACCOUNTING
+- Sedat -
