@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754695Ab3BHA6S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 19:58:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41996 "EHLO
+	id S1161110Ab3BHBCx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 20:02:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42008 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932271Ab3BHA6L (ORCPT
+	with ESMTP id S1945914Ab3BHA6S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 19:58:11 -0500
+	Thu, 7 Feb 2013 19:58:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 23/26] xhci: Fix isoc TD encoding.
-Date: Thu,  7 Feb 2013 16:57:51 -0800
-Message-Id: <20130208004631.016881253@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 01/16] drm/radeon/evergreen+: wait for the MC to settle after MC blackout
+Date: Thu,  7 Feb 2013 16:58:00 -0800
+Message-Id: <20130208004627.363828650@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130208004627.258272404@linuxfoundation.org>
-References: <20130208004627.258272404@linuxfoundation.org>
+In-Reply-To: <20130208004627.112511141@linuxfoundation.org>
+References: <20130208004627.112511141@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 760973d2a74b93eb1697981f7448f0e62767cfc4 upstream.
+commit ed39fadd6df01095378e499fac3674883f16b853 upstream.
 
-An isochronous TD is comprised of one isochronous TRB chained to zero or
-more normal TRBs.  Only the isoc TRB has the TBC and TLBPC fields.  The
-normal TRBs must set those fields to zeroes.  The code was setting the
-TBC and TLBPC fields for both isoc and normal TRBs.  Fix this.
+Some chips seem to need a little delay after blacking out
+the MC before the requests actually stop.
 
-This should be backported to stable kernels as old as 3.0, that contain
-the commit b61d378f2da41c748aba6ca19d77e1e1c02bcea5 " xhci 1.0: Set
-transfer burst last packet count field."
+May fix:
+https://bugs.freedesktop.org/show_bug.cgi?id=56139
+https://bugs.freedesktop.org/show_bug.cgi?id=57567
 
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-ring.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/evergreen.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -3662,9 +3662,11 @@ static int xhci_queue_isoc_tx(struct xhc
- 		td = urb_priv->td[i];
- 		for (j = 0; j < trbs_per_td; j++) {
- 			u32 remainder = 0;
--			field = TRB_TBC(burst_count) | TRB_TLBPC(residue);
-+			field = 0;
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -1065,6 +1065,8 @@ void evergreen_mc_stop(struct radeon_dev
+ 		WREG32(EVERGREEN_D5VGA_CONTROL, 0);
+ 		WREG32(EVERGREEN_D6VGA_CONTROL, 0);
+ 	}
++	/* wait for the MC to settle */
++	udelay(100);
+ }
  
- 			if (first_trb) {
-+				field = TRB_TBC(burst_count) |
-+					TRB_TLBPC(residue);
- 				/* Queue the isoc TRB */
- 				field |= TRB_TYPE(TRB_ISOC);
- 				/* Assume URB_ISO_ASAP is set */
+ void evergreen_mc_resume(struct radeon_device *rdev, struct evergreen_mc_save *save)
 
 
