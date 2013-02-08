@@ -1,52 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946866Ab3BHRt1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 12:49:27 -0500
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:57712 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946809Ab3BHRt0 (ORCPT
+	id S1946869Ab3BHRuo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 12:50:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48174 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946582Ab3BHRun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 12:49:26 -0500
-Date: Fri, 8 Feb 2013 12:49:22 -0500 (EST)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-cc: Vijay Kumar Mishra <vijay.kumar@st.com>, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>
-Subject: Re: [PATCH 1/3] SPEAr13xx_defconfig: Enable Memory split 2G/2G
- needed
-In-Reply-To: <CAKohpokPhHtuDDBPUYp9YPOrEnaaKxthjiAemq74qfour_3aYQ@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1302081243400.6300@xanadu.home>
-References: <cover.1360317993.git.vijay.kumar@st.com> <6cebd9755011670ecaeec7930b3fa7ed0f16b3b6.1360317993.git.vijay.kumar@st.com> <CAKohpokPhHtuDDBPUYp9YPOrEnaaKxthjiAemq74qfour_3aYQ@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 8 Feb 2013 12:50:43 -0500
+Date: Fri, 8 Feb 2013 09:50:41 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Tejun Heo <tj@kernel.org>, Kent Overstreet <koverstreet@google.com>,
+        linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org, zab@redhat.com, bcrl@kvack.org,
+        jmoyer@redhat.com, viro@zeniv.linux.org.uk, tytso@mit.edu
+Subject: Re: [PATCH 23/32] Generic dynamic per cpu refcounting
+Message-Id: <20130208095041.5ad9669e.akpm@linux-foundation.org>
+In-Reply-To: <20130208144902.GQ15092@kernel.dk>
+References: <1356573611-18590-1-git-send-email-koverstreet@google.com>
+	<1356573611-18590-26-git-send-email-koverstreet@google.com>
+	<20130208144408.GY2875@htj.dyndns.org>
+	<20130208144902.GQ15092@kernel.dk>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Feb 2013, Viresh Kumar wrote:
+On Fri, 8 Feb 2013 15:49:02 +0100 Jens Axboe <axboe@kernel.dk> wrote:
 
-> Hi Vijay,
+> > > Signed-off-by: Kent Overstreet <koverstreet@google.com>
+> > 
+> > What's the status of this series?  The percpu-refcnt part is still
+> > going through review and the merge window is opening up pretty soon.
+> > Kent, Andrew?
 > 
-> By mistake you have added an ST internal list in cc, fixed it now.
-> 
-> Subject should be:
-> 
-> ARM: SPEAr13xx: Enable 2G/2G Memory split in defconfig
-> 
-> On 8 February 2013 16:16, Vijay Kumar Mishra <vijay.kumar@st.com> wrote:
-> > Memory split 2G/2G is enabled as needed for SPEAr1310 RevC board to boot.
-> > Before enabling this option the boot was hanging at uncompressing linux.
+> I'd feel a lot better deferring the whole aio/dio performance series for
+> one merge window. There's very little point in rushing it, and I don't
+> think it's been reviewed/tested enough yet.
 
-I disagree.  The subject could have been "put our head in the sand and 
-paper over bugs".
-
-Please don't do that.  There is no reason for any machine not to boot 
-way past "Uncompressing Linux" with the default split.  The likely 
-reason it works with the 2G:2G split is because in that case the virtual 
-and physical RAM addresses in the kernel are the same, and therefore 
-missing p2v or v2p conversions are invisible.
-
-
-Nicolas
+OK by me.
