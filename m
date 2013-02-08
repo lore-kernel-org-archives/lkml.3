@@ -1,100 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946612Ab3BHPYH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 10:24:07 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36095 "EHLO mx2.suse.de"
+	id S1946609Ab3BHPZJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 10:25:09 -0500
+Received: from mga01.intel.com ([192.55.52.88]:58901 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1946450Ab3BHPYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 10:24:05 -0500
-Date: Fri, 8 Feb 2013 16:24:02 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: azurIt <azurit@pobox.sk>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups mailinglist <cgroups@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH for 3.2.34] memcg: do not trigger OOM if PF_NO_MEMCG_OOM
- is set
-Message-ID: <20130208152402.GD7557@dhcp22.suse.cz>
-References: <20130205160934.GB22804@dhcp22.suse.cz>
- <20130206021721.1AE9E3C7@pobox.sk>
- <20130206140119.GD10254@dhcp22.suse.cz>
- <20130206142219.GF10254@dhcp22.suse.cz>
- <20130206160051.GG10254@dhcp22.suse.cz>
- <20130208060304.799F362F@pobox.sk>
- <20130208094420.GA7557@dhcp22.suse.cz>
- <20130208120249.FD733220@pobox.sk>
- <20130208123854.GB7557@dhcp22.suse.cz>
- <20130208145616.FB78CE24@pobox.sk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130208145616.FB78CE24@pobox.sk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1946070Ab3BHPZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 10:25:08 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,630,1355126400"; 
+   d="scan'208";a="284536575"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Eric Miao <eric.miao@marvell.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH] platform: fall-back to driver name check if there is no id found
+Date: Fri,  8 Feb 2013 17:24:44 +0200
+Message-Id: <1360337084-9901-1-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 08-02-13 14:56:16, azurIt wrote:
-> >kernel log would be sufficient.
-> 
-> 
-> Full kernel log from kernel with you newest patch:
-> http://watchdog.sk/lkml/kern2.log
+Some of the platform devices rely on the name of their driver to match with. In
+the current implementation, if platform id table is needed, they have to add
+the name to the platform id table which sounds alogical. The patch adjustes the
+logic of the id table matching to make sure we will fall-back to match by the
+driver name. This will make it similar to the DT or ACPI cases.
 
-OK, so the log says that there is a little slaughter on your yard:
-$ grep "Memory cgroup out of memory:" kern2.log | wc -l
-220
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Reported-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Eric Miao <eric.miao@marvell.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/base/platform.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-$ grep "Memory cgroup out of memory:" kern2.log | sed 's@.*Kill process \([0-9]*\) .*@\1@' | sort -u | wc -l
-220
-
-Which means that the oom killer didn't try to kill any task more than
-once which is good because it tells us that the killed task manages to
-die before we trigger oom again. So this is definitely not a deadlock.
-You are just hitting OOM very often.
-$ grep "killed as a result of limit" kern2.log | sed 's@.*\] @@' | sort | uniq -c | sort -k1 -n
-      1 Task in /1091/uid killed as a result of limit of /1091
-      1 Task in /1223/uid killed as a result of limit of /1223
-      1 Task in /1229/uid killed as a result of limit of /1229
-      1 Task in /1255/uid killed as a result of limit of /1255
-      1 Task in /1424/uid killed as a result of limit of /1424
-      1 Task in /1470/uid killed as a result of limit of /1470
-      1 Task in /1567/uid killed as a result of limit of /1567
-      2 Task in /1080/uid killed as a result of limit of /1080
-      3 Task in /1381/uid killed as a result of limit of /1381
-      4 Task in /1185/uid killed as a result of limit of /1185
-      4 Task in /1289/uid killed as a result of limit of /1289
-      4 Task in /1709/uid killed as a result of limit of /1709
-      5 Task in /1279/uid killed as a result of limit of /1279
-      6 Task in /1020/uid killed as a result of limit of /1020
-      6 Task in /1527/uid killed as a result of limit of /1527
-      9 Task in /1388/uid killed as a result of limit of /1388
-     17 Task in /1281/uid killed as a result of limit of /1281
-     22 Task in /1599/uid killed as a result of limit of /1599
-     30 Task in /1155/uid killed as a result of limit of /1155
-     31 Task in /1258/uid killed as a result of limit of /1258
-     71 Task in /1293/uid killed as a result of limit of /1293
-
-So the group 1293 suffers the most. I would check how much memory the
-worklod in the group really needs because this level of OOM cannot
-possible be healthy.
-
-The log also says that the deadlock prevention implemented by the patch
-triggered and some writes really failed due to potential OOM:
-$ grep "If this message shows up" kern2.log 
-Feb  8 01:17:10 server01 kernel: [  431.033593] __mem_cgroup_try_charge: task:apache2 pid:6733 got ENOMEM without OOM for memcg:ffff8803807d5600. If this message shows up very often for the same task then there is a risk that the process is not able to make any progress because of the current limit. Try to enlarge the hard limit.
-Feb  8 01:22:52 server01 kernel: [  773.556782] __mem_cgroup_try_charge: task:apache2 pid:12092 got ENOMEM without OOM for memcg:ffff8803807d5600. If this message shows up very often for the same task then there is a risk that the process is not able to make any progress because of the current limit. Try to enlarge the hard limit.
-Feb  8 01:22:52 server01 kernel: [  773.567916] __mem_cgroup_try_charge: task:apache2 pid:12093 got ENOMEM without OOM for memcg:ffff8803807d5600. If this message shows up very often for the same task then there is a risk that the process is not able to make any progress because of the current limit. Try to enlarge the hard limit.
-Feb  8 01:29:00 server01 kernel: [ 1141.355693] __mem_cgroup_try_charge: task:apache2 pid:17734 got ENOMEM without OOM for memcg:ffff88036e956e00. If this message shows up very often for the same task then there is a risk that the process is not able to make any progress because of the current limit. Try to enlarge the hard limit.
-Feb  8 03:30:39 server01 kernel: [ 8440.346811] __mem_cgroup_try_charge: task:apache2 pid:8687 got ENOMEM without OOM for memcg:ffff8803654d6e00. If this message shows up very often for the same task then there is a risk that the process is not able to make any progress because of the current limit. Try to enlarge the hard limit.
-
-This doesn't look very unhealthy. I have expected that write would fail
-more often but it seems that the biggest memory pressure comes from
-mmaps and page faults which have no way other than OOM.
-
-So my suggestion would be to reconsider limits for groups to provide
-more realistical environment.
+diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+index c0b8df3..452ba4b 100644
+--- a/drivers/base/platform.c
++++ b/drivers/base/platform.c
+@@ -732,8 +732,8 @@ static int platform_match(struct device *dev, struct device_driver *drv)
+ 		return 1;
+ 
+ 	/* Then try to match against the id table */
+-	if (pdrv->id_table)
+-		return platform_match_id(pdrv->id_table, pdev) != NULL;
++	if (pdrv->id_table && platform_match_id(pdrv->id_table, pdev))
++		return 1;
+ 
+ 	/* fall-back to driver name match */
+ 	return (strcmp(pdev->name, drv->name) == 0);
 -- 
-Michal Hocko
-SUSE Labs
+1.7.10.4
+
