@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759913Ab3BHBRl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 20:17:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41858 "EHLO
+	id S1758738Ab3BHA5k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 19:57:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41835 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759152Ab3BHA5o (ORCPT
+	with ESMTP id S1758272Ab3BHA5g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 19:57:44 -0500
+	Thu, 7 Feb 2013 19:57:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Moody <pmoody@google.com>, Jan Beulich <jbeulich@suse.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [ 11/34] x86-64: Replace left over sti/cli in ia32 audit exit code
-Date: Thu,  7 Feb 2013 16:57:07 -0800
-Message-Id: <20130208004629.400665095@linuxfoundation.org>
+        Christopher Staite <chris@yourdreamnet.co.uk>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 06/34] drm/radeon: fix MC blackout on evergreen+
+Date: Thu,  7 Feb 2013 16:57:02 -0800
+Message-Id: <20130208004628.450496873@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130208004627.375461662@linuxfoundation.org>
 References: <20130208004627.375461662@linuxfoundation.org>
@@ -29,53 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Beulich <JBeulich@suse.com>
+From: Christopher Staite <chris@yourdreamnet.co.uk>
 
-commit 40a1ef95da85843696fc3ebe5fce39b0db32669f upstream.
+commit bb588820ef421c6098dca1fec29c3b347f1c8c19 upstream.
 
-For some reason they didn't get replaced so far by their
-paravirt equivalents, resulting in code to be run with
-interrupts disabled that doesn't expect so (causing, in the
-observed case, a BUG_ON() to trigger) when syscall auditing is
-enabled.
+Force the crtc mem requests on/off immediately rather
+than waiting for the double buffered updates to kick in.
+Seems we miss the update in certain conditions.  Also
+handle the DCE6 case.
 
-David (Cc-ed) came up with an identical fix, so likely this can
-be taken to count as an ack from him.
-
-Reported-by: Peter Moody <pmoody@google.com>
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Cc: David Vrabel <david.vrabel@citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Link: http://lkml.kernel.org/r/5108E01902000078000BA9C5@nat28.tlf.novell.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: David Vrabel <david.vrabel@citrix.com>
-Tested-by: Peter Moody <pmoody@google.com>
+Signed-off-by: Christopher Staite <chris@yourdreamnet.co.uk>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/ia32/ia32entry.S |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/evergreen.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/arch/x86/ia32/ia32entry.S
-+++ b/arch/x86/ia32/ia32entry.S
-@@ -207,7 +207,7 @@ sysexit_from_sys_call:
- 	testl $(_TIF_ALLWORK_MASK & ~_TIF_SYSCALL_AUDIT),TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
- 	jnz ia32_ret_from_sys_call
- 	TRACE_IRQS_ON
--	sti
-+	ENABLE_INTERRUPTS(CLBR_NONE)
- 	movl %eax,%esi		/* second arg, syscall return value */
- 	cmpl $-MAX_ERRNO,%eax	/* is it an error ? */
- 	jbe 1f
-@@ -217,7 +217,7 @@ sysexit_from_sys_call:
- 	call __audit_syscall_exit
- 	movq RAX-ARGOFFSET(%rsp),%rax	/* reload syscall return value */
- 	movl $(_TIF_ALLWORK_MASK & ~_TIF_SYSCALL_AUDIT),%edi
--	cli
-+	DISABLE_INTERRUPTS(CLBR_NONE)
- 	TRACE_IRQS_OFF
- 	testl %edi,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
- 	jz \exit
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -1313,14 +1313,18 @@ void evergreen_mc_stop(struct radeon_dev
+ 				if (!(tmp & EVERGREEN_CRTC_BLANK_DATA_EN)) {
+ 					radeon_wait_for_vblank(rdev, i);
+ 					tmp |= EVERGREEN_CRTC_BLANK_DATA_EN;
++					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 1);
+ 					WREG32(EVERGREEN_CRTC_BLANK_CONTROL + crtc_offsets[i], tmp);
++					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 0);
+ 				}
+ 			} else {
+ 				tmp = RREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i]);
+ 				if (!(tmp & EVERGREEN_CRTC_DISP_READ_REQUEST_DISABLE)) {
+ 					radeon_wait_for_vblank(rdev, i);
+ 					tmp |= EVERGREEN_CRTC_DISP_READ_REQUEST_DISABLE;
++					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 1);
+ 					WREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i], tmp);
++					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 0);
+ 				}
+ 			}
+ 			/* wait for the next frame */
+@@ -1380,11 +1384,15 @@ void evergreen_mc_resume(struct radeon_d
+ 			if (ASIC_IS_DCE6(rdev)) {
+ 				tmp = RREG32(EVERGREEN_CRTC_BLANK_CONTROL + crtc_offsets[i]);
+ 				tmp |= EVERGREEN_CRTC_BLANK_DATA_EN;
++				WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 1);
+ 				WREG32(EVERGREEN_CRTC_BLANK_CONTROL + crtc_offsets[i], tmp);
++				WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 0);
+ 			} else {
+ 				tmp = RREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i]);
+ 				tmp &= ~EVERGREEN_CRTC_DISP_READ_REQUEST_DISABLE;
++				WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 1);
+ 				WREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i], tmp);
++				WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 0);
+ 			}
+ 			/* wait for the next frame */
+ 			frame_count = radeon_get_vblank_counter(rdev, i);
 
 
