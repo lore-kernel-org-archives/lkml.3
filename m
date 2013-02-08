@@ -1,114 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759656Ab3BHDRN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 22:17:13 -0500
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:55074 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1759602Ab3BHDRL (ORCPT
+	id S1759677Ab3BHDTn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 22:19:43 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:56997 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758568Ab3BHDTm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 22:17:11 -0500
-Message-ID: <1360293418.3544.83.camel@thor.lan>
-Subject: Re: [PATCH v3 12/23] tty: Kick waiters _after_ the ldisc is locked
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>, Sasha Levin <levinsasha928@gmail.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ilya Zykov <ilya@ilyx.ru>, Dave Jones <davej@redhat.com>
-Date: Thu, 07 Feb 2013 22:16:58 -0500
-In-Reply-To: <5113CCAF.8030600@suse.cz>
-References: <1355509370-5883-1-git-send-email-peter@hurleysoftware.com>
-	 <1360095638-6624-1-git-send-email-peter@hurleysoftware.com>
-	 <1360095638-6624-13-git-send-email-peter@hurleysoftware.com>
-	 <5113CCAF.8030600@suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-0pjh1 
+	Thu, 7 Feb 2013 22:19:42 -0500
+Date: Fri, 8 Feb 2013 14:19:38 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH] cputime: restore CPU_ACCOUNTING config defaults for PPC64
+Message-Id: <20130208141938.f31b7b9e1acac5bbe769ee4c@canb.auug.org.au>
+In-Reply-To: <20130208141447.03914013db9a5f7308fc1675@canb.auug.org.au>
+References: <1359399845-10568-1-git-send-email-fweisbec@gmail.com>
+	<1359399845-10568-5-git-send-email-fweisbec@gmail.com>
+	<20130208140749.5a094f271e529dacfb962b51@canb.auug.org.au>
+	<20130208141447.03914013db9a5f7308fc1675@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 125194 peter@hurleysoftware.com
-X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__8_Feb_2013_14_19_38_+1100_SOsdWr+lcL4ZGI3j"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-02-07 at 16:47 +0100, Jiri Slaby wrote:
-> On 02/05/2013 09:20 PM, Peter Hurley wrote:
-> 
-> The question is obvious: why?
-> 
-> The waiters usually don't care about ldisc.
+--Signature=_Fri__8_Feb_2013_14_19_38_+1100_SOsdWr+lcL4ZGI3j
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This patch really needed a decent commit message, but this isn't a fix,
-per se.
+Commit abf917cd91cb ("cputime: Generic on-demand virtual cputime
+accounting") inadvertantly changed the default CPU_ACCOUNTING config
+for PPC64.  Repair that.
 
-While I was auditing the ldisc hangup, I realized that when a reader is
-woken from sleeping in n_tty_read() and loops back around because there
-is more room in the reader's buffer (nr > 0), input_available_p() will
-schedule buffer work and wait for it to complete before testing if the
-tty is hung up.
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ init/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-This change ensures that flush_to_ldisc() sees a halted ldisc and
-promptly returns.  A blocking reader whose read_buf is empty is the most
-likely state when a hangup occurs.
+diff --git a/init/Kconfig b/init/Kconfig
+index ed24d1b..ccd1ca5 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -301,7 +301,7 @@ config VIRT_CPU_ACCOUNTING
+ choice
+ 	prompt "Cputime accounting"
+ 	default TICK_CPU_ACCOUNTING if !PPC64
+-	default VIRT_CPU_ACCOUNTING if PPC64
++	default VIRT_CPU_ACCOUNTING_NATIVE if PPC64
+=20
+ # Kind of a stub config for the pure tick based cputime accounting
+ config TICK_CPU_ACCOUNTING
+--=20
+1.8.1
 
-I didn't include it tty_ldisc_halt(), because tty_set_ldisc() can't kick
-readers out of their i/o loops and tty_ldisc_release() has no waiters.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Even if the change is nixed, the comments should be changed; the FIXME
-is from before waiting for readers to exit their i/o loops.
+--Signature=_Fri__8_Feb_2013_14_19_38_+1100_SOsdWr+lcL4ZGI3j
+Content-Type: application/pgp-signature
 
----- separate but related discussion ----
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Another thing to note is this really does nothing to address the problem
-of a slave pty being unable to read all the data written by the master,
-if the master is closed with a lot of data in the tty buffer. In this
-case, when the slave is hungup as a result of the master closing, it's
-ldisc will be halted, preventing the tty_buffer from pushing more data. 
+iQIcBAEBCAAGBQJRFG7KAAoJEECxmPOUX5FEYBQP/1Y+sPcxnQBMukH+ihkbh+0a
+HUvw5GupbBaOGFDq4nrdKd6zb3crZiEOxDNpJM2gEoDRurhFusgbulwBfch4PvBm
+5U2XGGxgJbr7WyGjZi4l+VE5Z/OiGV/nG9R7aYHMX7ts0ivOKSPLRUT3xCfWZGf/
+gM4UB1ZpIr+q6LVMErFTLH7pzdk/Iudy3Wa6Xay33XEenuj5RI46Csycj1Flv7IS
+DCgiq9pJXePdGewrXR49rxJAOL0DU4sayvg+CaSrXQw2/S3kcjgufWdz0mKZYVUx
+v7Cuh/pZw7r5Er7ibVRocopjRArZfZq86tHxG84akGkmtIQotnaVtX2LBU8BEpv2
+lx6KXQalZuRfwT/jrfyCGPadMs4FaeAUMa0BfHms+saP+czmsSkNfcowbWLLtKt2
+CR961xL//SBgaEryjJS1pqTSe1pSMf9xiPULW1bcuK5xcXoS+IMOz32XRUxv4P3T
+FCmoU4dBep91uS3ge7sRwlVwgoClgbn5+A+K4ZKEQRoUljY1DqbVLDOFFXPo/lQ4
+XiKM2QQ1/1EXdrx6TB55mWa3m3ClXnDaAIr3V70J0QfA+5+CCz+cjdYa745aqGIS
+YMw+evJYSqvjzoj7LK/yon/2CGqhx9pVidxczJsLUQ2hUMN2Rd/5+Ix93IwqiOlS
+2ZChrri8Pv2p07UtuaqI
+=xG5S
+-----END PGP SIGNATURE-----
 
-In my opinion, this is an important fixme.  Almost as important as
-replacing the TTY_LDISC flag + reference count with a rwsem to get
-lockdep support...
-
-
-> > Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
-> > ---
-> >  drivers/tty/tty_ldisc.c | 12 ++++++------
-> >  1 file changed, 6 insertions(+), 6 deletions(-)
-> > 
-> > diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
-> > index c903778..8a86a72 100644
-> > --- a/drivers/tty/tty_ldisc.c
-> > +++ b/drivers/tty/tty_ldisc.c
-> > @@ -604,6 +604,12 @@ static bool tty_ldisc_hangup_halt(struct tty_struct *tty)
-> >  
-> >  	clear_bit(TTY_LDISC, &tty->flags);
-> >  
-> > +	/* Wakeup waiters so they can discover the tty is hupping, abort
-> > +	 * their i/o loops, and release their ldisc references
-> > +	 */
-> > +	wake_up_interruptible_poll(&tty->write_wait, POLLOUT);
-> > +	wake_up_interruptible_poll(&tty->read_wait, POLLIN);
-> > +
-> >  	if (tty->ldisc) {	/* Not yet closed */
-> >  		tty_unlock(tty);
-> >  
-> > @@ -875,12 +881,6 @@ void tty_ldisc_hangup(struct tty_struct *tty)
-> >  		tty_ldisc_deref(ld);
-> >  	}
-> >  	/*
-> > -	 * FIXME: Once we trust the LDISC code better we can wait here for
-> > -	 * ldisc completion and fix the driver call race
-> > -	 */
-> > -	wake_up_interruptible_poll(&tty->write_wait, POLLOUT);
-> > -	wake_up_interruptible_poll(&tty->read_wait, POLLIN);
-> > -	/*
-> >  	 * Shutdown the current line discipline, and reset it to
-> >  	 * N_TTY if need be.
-> >  	 *
-> > 
-> 
-> 
-
-
+--Signature=_Fri__8_Feb_2013_14_19_38_+1100_SOsdWr+lcL4ZGI3j--
