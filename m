@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759570Ab3BHA55 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 19:57:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41879 "EHLO
+	id S1759554Ab3BHA54 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 19:57:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41863 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759111Ab3BHA5u (ORCPT
+	with ESMTP id S1759480Ab3BHA5t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 19:57:50 -0500
+	Thu, 7 Feb 2013 19:57:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sergei Shtylyov <sshtylyov@ru.mvista.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [ 13/34] mtd: davinci_nand: fix modular build with CONFIG_OF=y
-Date: Thu,  7 Feb 2013 16:57:09 -0800
-Message-Id: <20130208004629.729449530@linuxfoundation.org>
+        Daniele Palmas <dnlplm@gmail.com>
+Subject: [ 20/34] USB: option: add support for Telit LE920
+Date: Thu,  7 Feb 2013 16:57:16 -0800
+Message-Id: <20130208004630.754093725@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130208004627.375461662@linuxfoundation.org>
 References: <20130208004627.375461662@linuxfoundation.org>
@@ -27,37 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+From: Daniele Palmas <dnlplm@gmail.com>
 
-commit 7a9c83888761a9a26049b439dc0b09e7ea8a854b upstream.
+commit 03eb466f276ceef9dcf023dc5474db02af68aad9 upstream.
 
-Commit cdeadd712f52b16a9285386d61ee26fd14eb4085 (mtd: nand: davinci: add OF
-support for davinci nand controller) has never been really build tested with
-the driver as a module.  When the driver is built-in, the missing semicolon
-after structure initializer is "compensated" by MODULE_DEVICE_TABLE() macro
-being empty and so the initializer using the trailing semicolon on the next
-line; when the driver is built as a module, compilation error ensues, and as
-the 'davinci_all_defconfig' has the NAND driver modular, this error prevents
-DaVinci family kernel from building...
+Add PID and special handling for Telit LE920
 
-Signed-off-by: Sergei Shtylyov <sshtylyov@ru.mvista.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Signed-off-by: Daniele Palmas <dnlplm@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/nand/davinci_nand.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/option.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/mtd/nand/davinci_nand.c
-+++ b/drivers/mtd/nand/davinci_nand.c
-@@ -523,7 +523,7 @@ static struct nand_ecclayout hwecc4_2048
- static const struct of_device_id davinci_nand_of_match[] = {
- 	{.compatible = "ti,davinci-nand", },
- 	{},
--}
-+};
- MODULE_DEVICE_TABLE(of, davinci_nand_of_match);
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -243,6 +243,7 @@ static void option_instat_callback(struc
+ #define TELIT_PRODUCT_CC864_DUAL		0x1005
+ #define TELIT_PRODUCT_CC864_SINGLE		0x1006
+ #define TELIT_PRODUCT_DE910_DUAL		0x1010
++#define TELIT_PRODUCT_LE920			0x1200
  
- static struct davinci_nand_pdata
+ /* ZTE PRODUCTS */
+ #define ZTE_VENDOR_ID				0x19d2
+@@ -535,6 +536,11 @@ static const struct option_blacklist_inf
+ 	.reserved = BIT(3) | BIT(4),
+ };
+ 
++static const struct option_blacklist_info telit_le920_blacklist = {
++	.sendsetup = BIT(0),
++	.reserved = BIT(1) | BIT(5),
++};
++
+ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_COLT) },
+ 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_RICOLA) },
+@@ -785,6 +791,8 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_CC864_DUAL) },
+ 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_CC864_SINGLE) },
+ 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_DE910_DUAL) },
++	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_LE920),
++		.driver_info = (kernel_ulong_t)&telit_le920_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MF622, 0xff, 0xff, 0xff) }, /* ZTE WCDMA products */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0002, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t)&net_intf1_blacklist },
 
 
