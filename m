@@ -1,86 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946637Ab3BHPfk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 10:35:40 -0500
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:65319 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946201Ab3BHPfj (ORCPT
+	id S1946649Ab3BHPg3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 10:36:29 -0500
+Received: from mail.dev.rtsoft.ru ([213.79.90.226]:47169 "EHLO
+	wasted.dev.rtsoft.ru" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1946617Ab3BHPg2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 10:35:39 -0500
+	Fri, 8 Feb 2013 10:36:28 -0500
+To: linux-usb@vger.kernel.org
+Subject: [PATCH] testusb: remove all mentions of 'usbfs'
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+From: Sergei Shtylyov <sshtylyov@dev.rtsoft.ru>
+Organization: MontaVista Software LLC
+Date: Fri, 8 Feb 2013 18:34:36 +0300
 MIME-Version: 1.0
-In-Reply-To: <CAKfTPtD2jRke2CUXiJdmaYYki_Voi4eTqJKgsyTnRpna7p8mJg@mail.gmail.com>
-References: <1359455940-1710-1-git-send-email-vincent.guittot@linaro.org>
-	<1359455940-1710-2-git-send-email-vincent.guittot@linaro.org>
-	<CAFTL4hzboD8Mv_-pRDHc+39QwXGWiT3MGtL8gJ=_ajnHdDCBcA@mail.gmail.com>
-	<CAKfTPtD2jRke2CUXiJdmaYYki_Voi4eTqJKgsyTnRpna7p8mJg@mail.gmail.com>
-Date: Fri, 8 Feb 2013 16:35:38 +0100
-Message-ID: <CAFTL4hzriJm1mK1A_9U5kX9Z0RCMGpxy8M3gKuzFtt9Bky5htQ@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] sched: fix init NOHZ_IDLE flag
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        peterz@infradead.org, mingo@kernel.org, Mike Galbraith <efault@gmx.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302081834.36661.sshtylyov@dev.rtsoft.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/2/4 Vincent Guittot <vincent.guittot@linaro.org>:
-> On 1 February 2013 19:03, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
->>> index 257002c..fd41924 100644
->>> --- a/kernel/sched/core.c
->>> +++ b/kernel/sched/core.c
->>> @@ -5884,6 +5884,7 @@ static void init_sched_groups_power(int cpu, struct sched_domain *sd)
->>>
->>>         update_group_power(sd, cpu);
->>>         atomic_set(&sg->sgp->nr_busy_cpus, sg->group_weight);
->>> +       clear_bit(NOHZ_IDLE, nohz_flags(cpu));
->>
->> So that's a real issue indeed.  nr_busy_cpus was never correct.
->>
->> Now I'm still a bit worried with this solution. What if an idle task
->> started in smp_init() has not yet stopped its tick, but is about to do
->> so? The domains are not yet available to the task but the nohz flags
->> are. When it later restarts the tick, it's going to erroneously
->> increase nr_busy_cpus.
->
-> My 1st idea was to clear NOHZ_IDLE flag and nr_busy_cpus in
-> init_sched_groups_power instead of setting them as it is done now. If
-> a CPU enters idle during the init sequence, the flag is already
-> cleared, and nohz_flags and nr_busy_cpus will stay synced and cleared
-> while a NULL sched_domain is attached to the CPU thanks to patch 2.
-> This should solve all use cases ?
+Commit 8a424bf40d772fedacc91862ecc86f10541fabb3 (tools/usb: remove last USBFS
+user) removed 'usbfs' files from the source but retained mentions of 'usbfs'
+all over the place, most importantly in the misleading error messages printed
+in case USB device files are not there.  Remove all the  mentions of 'usbfs'
+for good now!
 
-This may work on smp_init(). But the per cpu domain can be changed concurrently
-anytime on cpu hotplug, with a new sched group power struct, right?
+Signed-off-by: Sergei Shtylyov <sshtylyov@dev.rtsoft.ru>
 
-What if the following happen (inventing function names but you get the idea):
+---
+This patch is atop of 'usb-next' branch of Greg's tree...
 
-CPU 0                                           CPU 1
+Yes, I got that "usbfs files are missing" message on DaVinci recently, and it
+sent me on the wrong trail for some time, so I'd like to egt this sorted out...
 
-dom = new_domain(...) {
-           nr_cpus_busy = 0;
-           set_idle(CPU 1);                  old_dom =get_dom()
-                                                     clear_idle(CPU 1)
-}
-rcu_assign_pointer(cpu1_dom, dom);
+ tools/usb/testusb.c |   27 +++++++++++++--------------
+ 1 file changed, 13 insertions(+), 14 deletions(-)
 
-
-Can this scenario happen?
-
-
->>
->> It probably won't happen in practice. But then there is more: sched
->> domains can be concurrently rebuild anytime, right?  So what if we
->> call set_cpu_sd_state_idle() and decrease nr_busy_cpus while the
->> domain is switched concurrently. Are we having a new sched group along
->> the way? If so we have a bug here as well because we can have
->> NOHZ_IDLE set but nr_busy_cpus accounting the CPU.
->
-> When the sched_domain are rebuilt, we set a null sched_domain during
-> the rebuild sequence and a new sched_group_power is created as well
-
-So at that time we may race with a CPU setting/clearing its NOHZ_IDLE flag
-as in my above scenario?
+Index: usb/tools/usb/testusb.c
+===================================================================
+--- usb.orig/tools/usb/testusb.c
++++ usb/tools/usb/testusb.c
+@@ -279,8 +279,7 @@ nomem:
+ 
+ 	entry->ifnum = ifnum;
+ 
+-	/* FIXME ask usbfs what speed; update USBDEVFS_CONNECTINFO so
+-	 * it tells about high speed etc */
++	/* FIXME update USBDEVFS_CONNECTINFO so it tells about high speed etc */
+ 
+ 	fprintf(stderr, "%s speed\t%s\t%u\n",
+ 		speed(entry->speed), entry->name, entry->ifnum);
+@@ -351,7 +350,7 @@ restart:
+ 	return arg;
+ }
+ 
+-static const char *usbfs_dir_find(void)
++static const char *usb_dir_find(void)
+ {
+ 	static char udev_usb_path[] = "/dev/bus/usb";
+ 
+@@ -380,7 +379,7 @@ int main (int argc, char **argv)
+ 	int			c;
+ 	struct testdev		*entry;
+ 	char			*device;
+-	const char		*usbfs_dir = NULL;
++	const char		*usb_dir = NULL;
+ 	int			all = 0, forever = 0, not = 0;
+ 	int			test = -1 /* all */;
+ 	struct usbtest_param	param;
+@@ -407,8 +406,8 @@ int main (int argc, char **argv)
+ 	case 'D':	/* device, if only one */
+ 		device = optarg;
+ 		continue;
+-	case 'A':	/* use all devices with specified usbfs dir */
+-		usbfs_dir = optarg;
++	case 'A':	/* use all devices with specified USB dir */
++		usb_dir = optarg;
+ 		/* FALL THROUGH */
+ 	case 'a':	/* use all devices */
+ 		device = NULL;
+@@ -449,7 +448,7 @@ usage:
+ 			"usage: %s [options]\n"
+ 			"Options:\n"
+ 			"\t-D dev		only test specific device\n"
+-			"\t-A usbfs-dir\n"
++			"\t-A usb-dir\n"
+ 			"\t-a		test all recognized devices\n"
+ 			"\t-l		loop forever(for stress test)\n"
+ 			"\t-t testnum	only run specified case\n"
+@@ -470,18 +469,18 @@ usage:
+ 		goto usage;
+ 	}
+ 
+-	/* Find usbfs mount point */
+-	if (!usbfs_dir) {
+-		usbfs_dir = usbfs_dir_find();
+-		if (!usbfs_dir) {
+-			fputs ("usbfs files are missing\n", stderr);
++	/* Find usb device subdirectory */
++	if (!usb_dir) {
++		usb_dir = usb_dir_find();
++		if (!usb_dir) {
++			fputs ("USB device files are missing\n", stderr);
+ 			return -1;
+ 		}
+ 	}
+ 
+ 	/* collect and list the test devices */
+-	if (ftw (usbfs_dir, find_testdev, 3) != 0) {
+-		fputs ("ftw failed; is usbfs missing?\n", stderr);
++	if (ftw (usb_dir, find_testdev, 3) != 0) {
++		fputs ("ftw failed; are USB device files missing?\n", stderr);
+ 		return -1;
+ 	}
+ 
