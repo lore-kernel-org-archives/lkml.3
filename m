@@ -1,53 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946037Ab3BHIHb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 03:07:31 -0500
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:55110 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751317Ab3BHIHa (ORCPT
+	id S1760007Ab3BHIKT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 03:10:19 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:3220 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758082Ab3BHIKQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 03:07:30 -0500
+	Fri, 8 Feb 2013 03:10:16 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Fri, 08 Feb 2013 00:10:08 -0800
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: "balbi@ti.com" <balbi@ti.com>
+CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 8 Feb 2013 09:09:42 +0100
+Subject: Re: [PATCH 1/4] ARM: tegra: Unify tegra{20,30,114}_init_early()
+Thread-Topic: [PATCH 1/4] ARM: tegra: Unify tegra{20,30,114}_init_early()
+Thread-Index: Ac4F06qKQ6zWVLrkQk679nufXV/uAQ==
+Message-ID: <20130208.100942.592982910310763762.hdoyu@nvidia.com>
+References: <1360308574-19658-1-git-send-email-hdoyu@nvidia.com><1360308574-19658-2-git-send-email-hdoyu@nvidia.com><20130208074720.GB21879@arwen.pp.htv.fi>
+In-Reply-To: <20130208074720.GB21879@arwen.pp.htv.fi>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-nvconfidentiality: public
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Fri, 8 Feb 2013 09:07:29 +0100
-Message-ID: <CA+icZUVG_3-daoHOwuSLcaB4t987L23DeX0Q4cq=OGkO-3j5Ag@mail.gmail.com>
-Subject: Re: linux-next: Tree for Feb 8 [ idr fixes from akpm-tree ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 8, 2013 at 5:31 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi all,
->
-> Changes since 20130207:
->
-> The sound-asoc tree gained a build failure so I used the version from
-> next-20130207.
->
-> The watchdog tree gained a conflict against the mfd tree.
->
-> I applied a patch to restore some config defaults on PPC64.
->
-> ----------------------------------------------------------------------------
->
+Hi Felipe,
 
-Just FYI:
+Felipe Balbi <balbi@ti.com> wrote @ Fri, 8 Feb 2013 08:47:20 +0100:
 
-I know of thwo idr patches in akpm-tree which are broken, means revert
-the one in Linux-Next and apply v2 from patchwork-service!
-The idr-ipc patch for example breaks fakeroot usage.
+> > +#if defined(CONFIG_ARCH_TEGRA_3x_SOC)
+>
+> how about using:
+>
+> #if IS_BUILTIN(CONFIG_ARCH_TEGRA_3x_SOC)
+>
+> instead ?
 
-- Sedat -
+Why is IS_BUILTIN() prefered?
 
-[ Revert these ones ]
-http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commitdiff;h=2b24826129aab0352de55e44a99726aed47526a3
-http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commitdiff;h=5c72f8a116ad9e57b688e03ae9b44bf831100af9
+> > -void tegra20_hotplug_init(void);
+> > -void tegra30_hotplug_init(void);
+> > +void tegra20_hotplug_shutdown(void);
+> > +void tegra30_hotplug_shutdown(void);
+>
+> aren't these two called only by tegra_hotplug_init() now ?
 
-[ Apply v2 ]
-https://patchwork.kernel.org/patch/2111991/
-https://patchwork.kernel.org/patch/2112111/
+Yes
+
+> That means they don't need to be exposed.
+
+tegra{20,30}_hotplug_shutdown are defined in sleep-tegra{20,30}.S and
+used in hotplug.c So I think that the above are necessary here.
