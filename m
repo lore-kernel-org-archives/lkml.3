@@ -1,52 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753533Ab3BHAD6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 19:03:58 -0500
-Received: from mail-da0-f49.google.com ([209.85.210.49]:54784 "EHLO
-	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268Ab3BHAD5 (ORCPT
+	id S1754261Ab3BHAGY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 19:06:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41599 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751268Ab3BHAGX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 19:03:57 -0500
-Message-ID: <1360281834.28557.73.camel@edumazet-glaptop>
-Subject: Re: [RFC PATCH 1/6] kernel: implement queue spinlock API
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: paulmck@linux.vnet.ibm.com, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Eric Dumazet <edumazet@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        linux-kernel@vger.kernel.org, john.stultz@linaro.org
-Date: Thu, 07 Feb 2013 16:03:54 -0800
-In-Reply-To: <CANN689G0N0ynSMVcH9CbOFgL_mLSswOBx5yBzPBag0AO9fk8+A@mail.gmail.com>
-References: <1358896415-28569-1-git-send-email-walken@google.com>
-	 <1358896415-28569-2-git-send-email-walken@google.com>
-	 <20130207223434.GG2545@linux.vnet.ibm.com>
-	 <1360277809.28557.60.camel@edumazet-glaptop>
-	 <CANN689G0N0ynSMVcH9CbOFgL_mLSswOBx5yBzPBag0AO9fk8+A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	Thu, 7 Feb 2013 19:06:23 -0500
+Date: Thu, 7 Feb 2013 16:06:20 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, benh@kernel.crashing.org,
+        mahesh@linux.vnet.ibm.com, zhangyanfei@cn.fujitsu.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fs/proc/vmcore.c: Put if tests in the top of the while
+ loop to reduce duplication
+Message-Id: <20130207160620.6c8f93d4.akpm@linux-foundation.org>
+In-Reply-To: <510E6280.3070203@gmail.com>
+References: <510E6280.3070203@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-02-07 at 15:58 -0800, Michel Lespinasse wrote:
+On Sun, 03 Feb 2013 21:13:36 +0800
+Zhang Yanfei <zhangyanfei.yes@gmail.com> wrote:
 
-> No, I think that's doable. The trick would be that once a thread
-> acquires the lock, the only remaining use of the node is to receive
-> the 'next' pointer if/when another thread starts contending for the
-> lock. So if the lock state would need to distinguish between a lock
-> that is currently locked but not contended (the next value would then
-> be NULL), and a lock that is currently locked and contended (the
-> lock->next value is the node that goes after the current lock owner)
+> From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+> 
+> In function read_vmcore, two if tests are duplicate. Change the position
+> of them could reduce the duplication. This change does not affect
+> the behaviour of the function.
 > 
 
-It adds yet another memory write to store the node pointer in the
-lock...
+hm, yes.
 
-I suspect it's going to increase false sharing.
+> --- a/fs/proc/vmcore.c
+> +++ b/fs/proc/vmcore.c
+> @@ -175,15 +175,16 @@ static ssize_t read_vmcore(struct file *file, char __user *buffer,
+>  	start = map_offset_to_paddr(*fpos, &vmcore_list, &curr_m);
+>  	if (!curr_m)
+>          	return -EINVAL;
+> -	if ((tsz = (PAGE_SIZE - (start & ~PAGE_MASK))) > buflen)
+> -		tsz = buflen;
+> -
+> -	/* Calculate left bytes in current memory segment. */
+> -	nr_bytes = (curr_m->size - (start - curr_m->paddr));
+> -	if (tsz > nr_bytes)
+> -		tsz = nr_bytes;
+>  
+>  	while (buflen) {
+> +		if ((tsz = (PAGE_SIZE - (start & ~PAGE_MASK))) > buflen)
+> +			tsz = buflen;
+> +
+> +		/* Calculate left bytes in current memory segment. */
+> +		nr_bytes = (curr_m->size - (start - curr_m->paddr));
+> +		if (tsz > nr_bytes)
+> +			tsz = nr_bytes;
+> +
+>  		tmp = read_from_oldmem(buffer, tsz, &start, 1);
+>  		if (tmp < 0)
+>  			return tmp;
+> @@ -198,12 +199,6 @@ static ssize_t read_vmcore(struct file *file, char __user *buffer,
+>  						struct vmcore, list);
+>  			start = curr_m->paddr;
 
+`start' gets changed here
+
+>  		}
+> -		if ((tsz = (PAGE_SIZE - (start & ~PAGE_MASK))) > buflen)
+> -			tsz = buflen;
+> -		/* Calculate left bytes in current memory segment. */
+> -		nr_bytes = (curr_m->size - (start - curr_m->paddr));
+> -		if (tsz > nr_bytes)
+> -			tsz = nr_bytes;
+
+So this code can calcualte a different value of `tsz'.  But that won't
+get used.  Looks right to me.
+
+>  	}
+>  	return acc;
+>  }
+
+While we're there, let's squish that assignment-in-a-if pestilence and
+use max_t().
+
+--- a/fs/proc/vmcore.c~fs-proc-vmcorec-put-if-tests-in-the-top-of-the-while-loop-to-reduce-duplication-fix
++++ a/fs/proc/vmcore.c
+@@ -178,8 +178,7 @@ static ssize_t read_vmcore(struct file *
+         	return -EINVAL;
+ 
+ 	while (buflen) {
+-		if ((tsz = (PAGE_SIZE - (start & ~PAGE_MASK))) > buflen)
+-			tsz = buflen;
++		tsz = max_t(size_t, buflen, PAGE_SIZE - (start & ~PAGE_MASK));
+ 
+ 		/* Calculate left bytes in current memory segment. */
+ 		nr_bytes = (curr_m->size - (start - curr_m->paddr));
+_
 
