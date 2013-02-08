@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759646Ab3BHA6y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 19:58:54 -0500
+	id S1759692Ab3BHA71 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 19:59:27 -0500
 Received: from mail.linuxfoundation.org ([140.211.169.12]:42048 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759640Ab3BHA6Y (ORCPT
+	with ESMTP id S1759574Ab3BHA6Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 7 Feb 2013 19:58:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniele Palmas <dnlplm@gmail.com>
-Subject: [ 11/16] USB: qcserial: add Telit Gobi QDL device
-Date: Thu,  7 Feb 2013 16:58:10 -0800
-Message-Id: <20130208004629.090658196@linuxfoundation.org>
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 15/16] xhci: Fix isoc TD encoding.
+Date: Thu,  7 Feb 2013 16:58:14 -0800
+Message-Id: <20130208004629.780565347@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130208004627.112511141@linuxfoundation.org>
 References: <20130208004627.112511141@linuxfoundation.org>
@@ -26,28 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniele Palmas <dnlplm@gmail.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 78796ae17eacedcdcaaeb03ba73d2e532a4c8f83 upstream.
+commit 760973d2a74b93eb1697981f7448f0e62767cfc4 upstream.
 
-Add VID and PID for Telit Gobi QDL device
+An isochronous TD is comprised of one isochronous TRB chained to zero or
+more normal TRBs.  Only the isoc TRB has the TBC and TLBPC fields.  The
+normal TRBs must set those fields to zeroes.  The code was setting the
+TBC and TLBPC fields for both isoc and normal TRBs.  Fix this.
 
-Signed-off-by: Daniele Palmas <dnlplm@gmail.com>
+This should be backported to stable kernels as old as 3.0, that contain
+the commit b61d378f2da41c748aba6ca19d77e1e1c02bcea5 " xhci 1.0: Set
+transfer burst last packet count field."
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/qcserial.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/host/xhci-ring.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/qcserial.c
-+++ b/drivers/usb/serial/qcserial.c
-@@ -54,6 +54,7 @@ static const struct usb_device_id id_tab
- 	{DEVICE_G1K(0x05c6, 0x9221)},	/* Generic Gobi QDL device */
- 	{DEVICE_G1K(0x05c6, 0x9231)},	/* Generic Gobi QDL device */
- 	{DEVICE_G1K(0x1f45, 0x0001)},	/* Unknown Gobi QDL device */
-+	{DEVICE_G1K(0x1bc7, 0x900e)},	/* Telit Gobi QDL device */
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -3613,9 +3613,11 @@ static int xhci_queue_isoc_tx(struct xhc
+ 		td = urb_priv->td[i];
+ 		for (j = 0; j < trbs_per_td; j++) {
+ 			u32 remainder = 0;
+-			field = TRB_TBC(burst_count) | TRB_TLBPC(residue);
++			field = 0;
  
- 	/* Gobi 2000 devices */
- 	{USB_DEVICE(0x1410, 0xa010)},	/* Novatel Gobi 2000 QDL device */
+ 			if (first_trb) {
++				field = TRB_TBC(burst_count) |
++					TRB_TLBPC(residue);
+ 				/* Queue the isoc TRB */
+ 				field |= TRB_TYPE(TRB_ISOC);
+ 				/* Assume URB_ISO_ASAP is set */
 
 
