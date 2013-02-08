@@ -1,80 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759783Ab3BHBLp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 20:11:45 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47943 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759559Ab3BHBLo (ORCPT
+	id S1759530Ab3BHA5y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 19:57:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41858 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759483Ab3BHA5t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 20:11:44 -0500
-Message-ID: <1360285890.5374.76.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: Linux 3.2.38
-From: Ben Hutchings <ben@decadent.org.uk>
-To: tmhikaru@gmail.com
-Cc: linux-kernel@vger.kernel.org
-Date: Fri, 08 Feb 2013 01:11:30 +0000
-In-Reply-To: <20130207173630.GA8355@roll>
-References: <1360160863.32217.30.camel@deadeye.wl.decadent.org.uk>
-	 <20130207173630.GA8355@roll>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-GWRW7NjMGIe27SEBcfrl"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Thu, 7 Feb 2013 19:57:49 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+Subject: [ 21/34] USB: option: add Changhong CH690
+Date: Thu,  7 Feb 2013 16:57:17 -0800
+Message-Id: <20130208004630.871831635@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130208004627.375461662@linuxfoundation.org>
+References: <20130208004627.375461662@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
---=-GWRW7NjMGIe27SEBcfrl
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+------------------
 
-On Thu, 2013-02-07 at 12:36 -0500, tmhikaru@gmail.com wrote:
-> 	Hmm. I'm not sure what's going on here but ever since I upgraded to
-> this kernel my CPU use has always been at 100% - various apps (top, pidst=
-at,
-> conky) give different reasons for this, conky&pidstat claims things like
-> X/the most active X application are cpu hogging, while top seems to think
-> the majority of cpu use is being done by 'sys' - the interesting thing
-> though is that my loadaverage is staying very close to zero.
->=20
-> 	I know that this is far from a useful bug report, but to be honest I
-> don't even know where to begin checking, so I'll start a git bisect of
-> 3.2.37 vs 3.2.38 tonight and see what happens.
+From: Bjørn Mork <bjorn@mork.no>
 
-There weren't any scheduler changes in 3.2.38 so I can't make any better
-suggestion than to do that bisection.
+commit d4fa681541aa7bf8570d03426dd7ba663a71c467 upstream.
 
-Ben.
+New device with 3 serial interfaces:
 
---=20
-Ben Hutchings
-Any smoothly functioning technology is indistinguishable from a rigged demo=
-.
+ If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend) Sub=ff Prot=ff
+ If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend) Sub=ff Prot=ff
+ If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend) Sub=ff Prot=ff
+ If#= 3 Alt= 0 #EPs= 2 Cls=08(stor) Sub=06 Prot=50
 
---=-GWRW7NjMGIe27SEBcfrl
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+---
+ drivers/usb/serial/option.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-iQIVAwUAURRQwue/yOyVhhEJAQqTSw//UqwqBwMDFTU6N+miACmH2HZGLtmEDDpC
-xJw9/iQp7iYvCnyzSYwUW28zQ3cE3MOZzhJkWNPJjdOamt9+dNJ3TA97JPncjJWu
-gue+qsag7iR/BPhUYoyjBubq4NZo+7Yz/SlZ9GGZW8SOcrrwIFLjiLRT9AzOFcz7
-8S5htduUuJylZ/C+FYOofnloiggZIuyIVuiPams8y0VYtFn0fy7p+AEyEn0OpjEJ
-hTcslkpM0yjMlSYoShXueE6rGc5Z3OmJgCh2MgM7QZhkE+GcBxONGs2W35F0WsZo
-+xqnhSGOKeAMX5+35GGfwYMUcCUeebzAPKeHOzqxXN7R0EnRnejPfP/FhNzRPVWC
-y0Bmq9LXOAt5y7or3qS3gomly1+CU+CXzjW9vH5TyHSPEU9mqEkaFq7wiAi6Zeg/
-4Mk0yyGv4WjEohLjrrcMd8WTkG4ApCqTl5kEGNeGbnE0463na468Vm4SGtZ50foK
-JxgKkXGNVaO5qrfpHbZDOD4+6UtAzt5S3SlfwcaZav4ObAuiS+qVyVSxQ4EdyUFq
-V1EHIBDB6qdlIZJVN+CmluvSHHJfDCj0HvmJLvuZw4WkXKv+04i4yUaGUAR7TtIy
-gb8tKDg/ZyfxVzxCZgmJrrD4w9hOpO1QApFgAYWoZn90lDfk0AiRUru0Wpd6z27p
-TIb7wNVl8d8=
-=SVvT
------END PGP SIGNATURE-----
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -455,6 +455,10 @@ static void option_instat_callback(struc
+ #define TPLINK_VENDOR_ID			0x2357
+ #define TPLINK_PRODUCT_MA180			0x0201
+ 
++/* Changhong products */
++#define CHANGHONG_VENDOR_ID			0x2077
++#define CHANGHONG_PRODUCT_CH690			0x7001
++
+ /* some devices interfaces need special handling due to a number of reasons */
+ enum option_blacklist_reason {
+ 		OPTION_BLACKLIST_NONE = 0,
+@@ -1327,6 +1331,7 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T) },
+ 	{ USB_DEVICE(TPLINK_VENDOR_ID, TPLINK_PRODUCT_MA180),
+ 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
++	{ USB_DEVICE(CHANGHONG_VENDOR_ID, CHANGHONG_PRODUCT_CH690) },
+ 	{ } /* Terminating entry */
+ };
+ MODULE_DEVICE_TABLE(usb, option_ids);
 
---=-GWRW7NjMGIe27SEBcfrl--
+
