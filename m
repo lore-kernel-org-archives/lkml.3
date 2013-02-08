@@ -1,102 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946333Ab3BHOfy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 09:35:54 -0500
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:41540 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753386Ab3BHOfx (ORCPT
+	id S1946378Ab3BHOg4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 09:36:56 -0500
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:39334 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760142Ab3BHOgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 09:35:53 -0500
+	Fri, 8 Feb 2013 09:36:53 -0500
 MIME-Version: 1.0
-Reply-To: syrine.tl@gmail.com
-Date: Fri, 8 Feb 2013 15:35:52 +0100
-Message-ID: <CAETb2JMQ05RGuBuaoD39Db1j9--sth-3u+JXG6jaZkTvQyVkPw@mail.gmail.com>
-Subject: [PATCH] linux-3.8-rc6 Fix Missing Allocation Failure Checks
-From: syrine tlili <syrine.tl@gmail.com>
-To: matt.fleming@intel.com, sage@inktank.com, isdn@linux-pingi.de,
-        megaraidlinux@lsi.com
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+In-Reply-To: <2130803.VQA31hf2jE@vostro.rjw.lan>
+References: <cover.1360232293.git.viresh.kumar@linaro.org>
+	<2896238.eRV3G7kyl2@vostro.rjw.lan>
+	<CAKohpomrLAQiP58+OVBrm3jb8rd5DK3z+7_kyB_MsKM7UyyWRw@mail.gmail.com>
+	<2130803.VQA31hf2jE@vostro.rjw.lan>
+Date: Fri, 8 Feb 2013 20:06:52 +0530
+Message-ID: <CAKohpokp4YrxKHibewdt+3-WF7P2Fa_bvRidHpjd9SpsT6bPpw@mail.gmail.com>
+Subject: Re: [PATCH 0/4] CPUFreq Fixes for 3.9
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: valdis.kletnieks@vt.edu, artem.savkov@gmail.com, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Syrine Tlili <syrine.tl@gmail.com>
+On 8 February 2013 18:02, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> So as I said, please rework the fixes on top of linux-pm.git/pm-cpufreq.
 
-Check for memory allocation failures to avoid
-NULL pointer dereferencing.
+I already did. Please check for-rafael branch
 
-Signed-off-by: Syrine Tlili <syrine.tl@gmail.com>
----
+> Moreover, I'd very much prefer it if you fixed the problems introduced by
+> b8eed8a "cpufreq: Simplify __cpufreq_remove_dev()" separately and *then* any
+> other locking problems you're seeing in the code, although people are not
+> reporting them.
+>
+> You seem to have a clear picture of how the code should work now, so that
+> won't be a big trouble I guess.
 
-
-diff -uprN -X linux-3.8-rc6-vanilla/Documentation/dontdiff
-linux-3.8-rc6-vanilla/arch/x86/platform/efi/efi.c
-b/arch/x86/platform/efi/efi.c
---- linux-3.8-rc6-vanilla/arch/x86/platform/efi/efi.c	2013-02-01
-02:08:14.000000000 +0100
-+++ b/arch/x86/platform/efi/efi.c	2013-02-06 20:33:36.390643500 +0100
-@@ -924,6 +924,8 @@ void __init efi_enter_virtual_mode(void)
- 		new_memmap = krealloc(new_memmap,
- 				      (count + 1) * memmap.desc_size,
- 				      GFP_KERNEL);
-+		if (!new_memmap)
-+			return -ENOMEM;
- 		memcpy(new_memmap + (count * memmap.desc_size), md,
- 		       memmap.desc_size);
- 		count++;
-diff -uprN -X linux-3.8-rc6-vanilla/Documentation/dontdiff
-linux-3.8-rc6-vanilla/drivers/isdn/mISDN/fsm.c
-b/drivers/isdn/mISDN/fsm.c
---- linux-3.8-rc6-vanilla/drivers/isdn/mISDN/fsm.c	2013-02-01
-02:08:14.000000000 +0100
-+++ b/drivers/isdn/mISDN/fsm.c	2013-02-06 20:33:01.772644948 +0100
-@@ -34,6 +34,8 @@ mISDN_FsmNew(struct Fsm *fsm,
-
- 	fsm->jumpmatrix = kzalloc(sizeof(FSMFNPTR) * fsm->state_count *
- 				  fsm->event_count, GFP_KERNEL);
-+	if (!fsm->jumpmatrix)
-+		return -ENOMEM;
-
- 	for (i = 0; i < fncount; i++)
- 		if ((fnlist[i].state >= fsm->state_count) ||
-diff -uprN -X linux-3.8-rc6-vanilla/Documentation/dontdiff
-linux-3.8-rc6-vanilla/drivers/scsi/megaraid.c
-b/drivers/scsi/megaraid.c
---- linux-3.8-rc6-vanilla/drivers/scsi/megaraid.c	2013-02-01
-02:08:14.000000000 +0100
-+++ b/drivers/scsi/megaraid.c	2013-02-06 21:22:23.051521099 +0100
-@@ -4437,6 +4437,8 @@ mega_internal_command(adapter_t *adapter
- 	memset(scb, 0, sizeof(scb_t));
-
- 	sdev = kzalloc(sizeof(struct scsi_device), GFP_KERNEL);
-+	if (!sdev)
-+		goto err_out;
- 	scmd->device = sdev;
-
- 	memset(adapter->int_cdb, 0, sizeof(adapter->int_cdb));
-@@ -4482,6 +4484,11 @@ mega_internal_command(adapter_t *adapter
- 	scsi_free_command(GFP_KERNEL, scmd);
-
- 	return rval;
-+
-+err_out:
-+	mutex_unlock(&adapter->int_mtx);
-+	scsi_free_command(GFP_KERNEL, scmd);
-+	return -ENOMEM;
- }
-
-
-diff -uprN -X linux-3.8-rc6-vanilla/Documentation/dontdiff
-linux-3.8-rc6-vanilla/fs/ceph/mdsmap.c b/fs/ceph/mdsmap.c
---- linux-3.8-rc6-vanilla/fs/ceph/mdsmap.c	2013-02-01 02:08:14.000000000 +0100
-+++ b/fs/ceph/mdsmap.c	2013-02-06 20:34:02.934642390 +0100
-@@ -132,6 +132,8 @@ struct ceph_mdsmap *ceph_mdsmap_decode(v
- 				m->m_info[mds].export_targets =
- 					kcalloc(num_export_targets, sizeof(u32),
- 						GFP_NOFS);
-+				if (m->m_info[mds].export_targets == NULL)
-+					goto badmem;
- 				for (j = 0; j < num_export_targets; j++)
- 					m->m_info[mds].export_targets[j] =
- 					       ceph_decode_32(&pexport_targets);
+For me all problems are fixed in the current code. :)
