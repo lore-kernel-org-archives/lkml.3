@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760146Ab3BHOQt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 09:16:49 -0500
-Received: from zproxy210.enst-bretagne.fr ([192.108.117.8]:51748 "EHLO
-	zproxy210.enst-bretagne.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758547Ab3BHOQs convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 09:16:48 -0500
-Content-Type: text/plain; charset=iso-8859-1
-Mime-Version: 1.0 (Mac OS X Mail 6.2 \(1499\))
-Subject: Re: [RFC PATCH] xfrm: fix handling of XFRM policies mark and mask.
-From: Emmanuel Thierry <emmanuel.thierry@telecom-bretagne.eu>
-In-Reply-To: <20130207125437.GC17794@secunet.com>
-Date: Fri, 8 Feb 2013 15:16:45 +0100
-Cc: jamal <j.hadi123@gmail.com>, Romain KUNTZ <r.kuntz@ipflavors.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        herbert@gondor.hengli.com.au,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jamal Hadi Salim <hadi@cyberus.ca>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <1854603B-3AD1-4245-A8BA-53D841BCEA63@telecom-bretagne.eu>
-References: <9E57ADA1-5770-47A8-8EBF-7FC262EEF1C7@ipflavors.com> <20130205081232.GF23291@secunet.com> <51125744.3030905@gmail.com> <D4563759-CEC5-4F33-BF0A-9FA10716F8DF@telecom-bretagne.eu> <20130207104908.GA17794@secunet.com> <2BEAF521-7218-415B-98ED-EC0812903479@telecom-bretagne.eu> <20130207125437.GC17794@secunet.com>
-To: Steffen Klassert <steffen.klassert@secunet.com>
-X-Mailer: Apple Mail (2.1499)
+	id S1760153Ab3BHOSr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 09:18:47 -0500
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:41597 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760076Ab3BHOSq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 09:18:46 -0500
+Date: Fri, 8 Feb 2013 15:18:41 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Clark Williams <williams@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] scheduler include file reorganization
+Message-ID: <20130208141841.GB30334@gmail.com>
+References: <20130207094650.76302f47@riff.lan>
+ <20130207185608.GA25223@gmail.com>
+ <20130207191345.GA28960@gmail.com>
+ <20130207195257.GA29985@gmail.com>
+ <20130207150838.02226207@riff.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130207150838.02226207@riff.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-Le 7 févr. 2013 à 13:54, Steffen Klassert <steffen.klassert@secunet.com> a écrit :
+* Clark Williams <williams@redhat.com> wrote:
 
-> On Thu, Feb 07, 2013 at 12:08:22PM +0100, Emmanuel Thierry wrote:
->> 
->> This is a nice idea, however you keep the insertion asymmetric. The usage of xfrm marks in non-conflicting cases will be made possible, but it stays disturbing for a user as the initial example will still have the same behavior:
->> * Inserting the marked one then the unmarked will succeed
->> * Inserting the unmarked then the marked one will fail
->> This gives to the user the feeling of an indeterministic behavior of the xfrm module.
+> On Thu, 7 Feb 2013 20:52:57 +0100
+> Ingo Molnar <mingo@kernel.org> wrote:
 > 
-> This was intended. Inserting the marked one then the unmarked
-> is a working scenario. Some users might rely on it, so we can't
-> change this as you proposed.
+> > 
+> > * Ingo Molnar <mingo@kernel.org> wrote:
+> > 
+> > > 
+> > > * Ingo Molnar <mingo@kernel.org> wrote:
+> > > 
+> > > > Yeah, that looks pretty good.
+> > > > 
+> > > > I'll give it some testing.
+> > > 
+> > > Found one build error so far, applied the fix below.
+> > 
+> > Another one was in NOMMU mode (fixed below) - a hidden sched.h 
+> > include file dependency in mm/nommu.c.
+> > 
+> > It's looking good otherwise!
+> > 
+> > Thanks,
+> > 
+> > 	Ingo
+> >
 > 
-> On the other hand, inserting the unmarked one then the marked
-> might result in a wrong policy lookup, so we can't allow this.
-> The only possibility we have, is inserting with different
-> priorites and that's what I'm proposing.
-> 
-> I fear we have to live with that asymmetric behaviour if
-> both policies have the same priority.
-> 
+> Huh, I did a build with an allmodconfig config file. You must 
+> be doing some odd permutations.
 
-Ok, actually i understand the concern of backward compatibility you expose. It is true that users might be disturbed if we change such a behavior they would rely on.
-Anyway, i'm ok with your patch.
+Yeah, randconfig coverage and cross-arch build coverage. One of 
+the build errors triggered on allnoconfig, the other on the 
+blackfin architecture.
 
-Best regards
-Emmanuel Thierry
+> I have both of your fixes applied, send me any more you find 
+> and I'll regenerate.
+
+No need, I fixed your series locally and pushed out the result.
+
+Wanna split out some other parts of sched.h? ;-) I can do the 
+build coverage testing part for those as well.
+
+Thanks,
+
+	Ingo
