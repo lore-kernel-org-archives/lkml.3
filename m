@@ -1,85 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760056Ab3BHIaq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 03:30:46 -0500
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:57135 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760028Ab3BHIao (ORCPT
+	id S1946096Ab3BHIcp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 03:32:45 -0500
+Received: from georges.telenet-ops.be ([195.130.137.68]:48005 "EHLO
+	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946073Ab3BHIcm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 03:30:44 -0500
+	Fri, 8 Feb 2013 03:32:42 -0500
+Message-ID: <5114B827.60801@acm.org>
+Date: Fri, 08 Feb 2013 09:32:39 +0100
+From: Bart Van Assche <bvanassche@acm.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <CALLzPKYLqR-rXyf4FFQpo31tTNsKm1=gyfeVi==LPqV6qX8jSw@mail.gmail.com>
-References: <cover.1360067333.git.dmitry.kasatkin@intel.com>
-	<7fe9b3a51f3b7172fcb85721cea9162f840aaaa6.1360067333.git.dmitry.kasatkin@intel.com>
-	<20130205164817.GD2335@fenchurch.internal.datastacks.com>
-	<CALLzPKYLqR-rXyf4FFQpo31tTNsKm1=gyfeVi==LPqV6qX8jSw@mail.gmail.com>
-Date: Fri, 8 Feb 2013 10:30:43 +0200
-Message-ID: <CALLzPKZ5UJFRvEYL4C=XAExqnsvvv5zudD6tj_vOYs5ix1DbGQ@mail.gmail.com>
-Subject: Re: [RFC 1/2] export unpack_to_rootfs
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: Peter Jones <pjones@redhat.com>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Anatol Pomozov <anatol.pomozov@gmail.com>
+CC: linux-fsdevel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
+        koverstreet@google.com, linux-aio@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Improving AIO cancellation
+References: <CAOMFOmXiEUnqkoQg6bA4N3jg5ERMKoydOdmn7djkpFyfZk19cg@mail.gmail.com>
+In-Reply-To: <CAOMFOmXiEUnqkoQg6bA4N3jg5ERMKoydOdmn7djkpFyfZk19cg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 5, 2013 at 7:16 PM, Kasatkin, Dmitry
-<dmitry.kasatkin@intel.com> wrote:
-> On Tue, Feb 5, 2013 at 6:48 PM, Peter Jones <pjones@redhat.com> wrote:
->> On Tue, Feb 05, 2013 at 02:34:49PM +0200, Dmitry Kasatkin wrote:
->>> Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
->>> ---
->>>  init/do_mounts.h |    2 ++
->>>  init/initramfs.c |    2 +-
->>>  2 files changed, 3 insertions(+), 1 deletion(-)
->>>
->>> diff --git a/init/do_mounts.h b/init/do_mounts.h
->>> index f5b978a..11829eb 100644
->>> --- a/init/do_mounts.h
->>> +++ b/init/do_mounts.h
->>> @@ -74,3 +74,5 @@ void md_run_setup(void);
->>>  static inline void md_run_setup(void) {}
->>>
->>>  #endif
->>> +
->>> +char * __init unpack_to_rootfs(char *buf, unsigned len);
->>> diff --git a/init/initramfs.c b/init/initramfs.c
->>> index 84c6bf1..e32bc06 100644
->>> --- a/init/initramfs.c
->>> +++ b/init/initramfs.c
->>> @@ -421,7 +421,7 @@ static unsigned my_inptr;   /* index of next byte to be processed in inbuf */
->>>
->>>  #include <linux/decompress/generic.h>
->>>
->>> -static char * __init unpack_to_rootfs(char *buf, unsigned len)
->>> +char * __init unpack_to_rootfs(char *buf, unsigned len)
->>>  {
->>>       int written, res;
->>>       decompress_fn decompress;
->>
->> Doing this unconditionally seems to be inviting rootkit authors to use a
->> new and shiny tool.  I also don't think it's the best way to do this,
->> but I'll comment on the other patch to explain why.
->>
+On 02/08/13 04:42, Anatol Pomozov wrote:
+> Hi,
 >
-
-Just wanted to point out, that there is no chance for rootkits in
-anyway because of this:
-
-1) "rootkits" can have unpacking functionality inside, but if they are so lazy
-2) unpack_to_rootfs() is not EXPORT_SYMBOLed.
-3) and more over, unpack_to_rootfs() is "__init" and is freed before
-main initramfs or rootfs init is executed.
-
-- Dmitry
-
-> Sorry for re-post, but answering from mobile was in HTML and it was blocked.
-> Modifying an initramfs gives the same opportunity during boot only.
-> But agreed, it might be the part of the primary source code. It was
-> very to do it in this way to implement and test a solution.
+> At Google we have several applications that heavily use asynchronous
+> IO. One thing that our userspace developers need is effective AIO
+> cancellation. You might say "sure use io_cancel syscall". Well, while
+> it cancels AIO requests it does it ineffectively. Currently (I am
+> looking at linux-next) io_cancel only marks kiocb as cancelled. The
+> bios still be issued to device even after kiocb was cancelled. Let's
+> say you have a congested device and want to cancel some AIO requests -
+> io_cancel will not make situation better. We would like to see more
+> resource effective AIO cancellation.
 >
-> Thanks.
+> I had a discussion with Ted Tso and Kent Overstreet about improving
+> this situation and would like to share the ideas with you, linux
+> community.
 >
->> --
->>         Peter
+> Once direct async IO is submitted the request can be at several stages:
+> 1) Sitting in kernel request queue of a congested device
+> 2) Sent to device and sitting in device queue (if NCQ is enabled)
+> 3) Executing on device
+>
+> Ideally if we can cancel an IO request on any of these stages. But
+> currently we are especially interested in case #1. I do not know if
+> cancellation at stage #2 and #3 is possible and/or reasonable.
+>
+> BTW AIO cancellation makes sense only for direct IO. Buffered AIO will
+> end up in buffer soon and kiocb will be marked as completed. Later
+> (maybe much later) writeback will flush those buffers to disk, but you
+> cannot cancel it..
+>
+> And yet another thing to remember is md/RAID. Some types of raid
+> support stripes consistency. When md splits a WRITE across disks
+> either all or no of the child requests should be completed. If we do
+> partial write then the disk data will become inconsistent.
+>
+>
+> Ted and Kent suggested following solution: any time when we do forward
+> progress with request/bio we need to check its status. If user
+> cancelled the request then just skip this bio. So it covers case #1.
+>
+> The draft implementation will look like this. struct bio should have
+> some way to get current status of kiocb that generated bio. So we add
+> a pointer to bool flag.
+>
+> struct bio {
+>    bool *cancelled;
+> }
+>
+> in async DIO codepath this pointer will be initialized with bool at
+> "struct kiocb"
+>    bio->cancelled = &kiocb->cancelled;
+> except md. If it is RAID5 and we perform WRITE request then we do not
+> initialize this pointer.
+>
+>
+> when we do forward progress with request/bio we check its cancellation status:
+> if (bio->cancelled && *bio->cancelled)
+>    goto do_not_process_bio_because_it_cancelled;
+>
+> So to cancel kiocb we do
+> kiocb->cancelled = true;
+> and all bio created from the request will not be send to device anymore.
+>
+>
+> The solution seems straightforward, but I would like to hear if there
+> are other solutions to make AIO cancellation better. Does suggested
+> implementation looks good? Are there better solutions? What about
+> cancelling requests that are already sent to device?
+>
+> If the proposal is fine then I start implementing it.
+
+Hello Anatol,
+
+Had you already noticed this message: 
+http://marc.info/?l=linux-fsdevel&m=136024044202362 ?
+
+Bart.
+
