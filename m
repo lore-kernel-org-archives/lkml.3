@@ -1,97 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946740Ab3BHRBU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 12:01:20 -0500
-Received: from 4.mo4.mail-out.ovh.net ([178.32.98.131]:37153 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753258Ab3BHRBT (ORCPT
+	id S1760194Ab3BHRGZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 12:06:25 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:46674 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758581Ab3BHRGY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 12:01:19 -0500
-X-Greylist: delayed 462 seconds by postgrey-1.27 at vger.kernel.org; Fri, 08 Feb 2013 12:01:19 EST
-Date: Fri, 8 Feb 2013 17:52:24 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        FlorianSchandinat@gmx.de, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        jhovold@gmail.com, jacmet@sunsite.dk
-X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
-Subject: Re: [PATCH 0/5] at91: atmel_lcdfb: regression fixes and cpu_is
- removal
-Message-ID: <20130208165224.GF30595@game.jcrosoft.org>
-References: <cover.1360340791.git.nicolas.ferre@atmel.com>
+	Fri, 8 Feb 2013 12:06:24 -0500
+Message-ID: <5115308C.5010400@wwwdotorg.org>
+Date: Fri, 08 Feb 2013 10:06:20 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1360340791.git.nicolas.ferre@atmel.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 3282279705416346476
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeitddrtdelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeitddrtdelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+To: Lee Jones <lee.jones@linaro.org>
+CC: Anmar Oueja <anmar.oueja@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 09/14] pinctrl/abx500: use direct IRQ defines
+References: <1360093715-6348-1-git-send-email-linus.walleij@stericsson.com> <1360093715-6348-10-git-send-email-linus.walleij@stericsson.com> <5112F1B9.6010700@wwwdotorg.org> <CAF2Aj3jHe+mP0dU_BHThBV-va_iJLcFQedmWQOTaYafAZM1Yxg@mail.gmail.com> <5113EB8B.4060002@wwwdotorg.org> <20130208082536.GF7519@gmail.com>
+In-Reply-To: <20130208082536.GF7519@gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HI,
+On 02/08/2013 01:25 AM, Lee Jones wrote:
+> On Thu, 07 Feb 2013, Stephen Warren wrote:
+> 
+>> On 02/07/2013 02:01 AM, Lee Jones wrote:
+>>> I don't see myself on cc. Was that intentional?
+>>
+>> The original patch was that way; I assume git send-email only CC'd you
+>> on patches written by you.
+> 
+> No, I didn't send this patch at all.
+> 
+> I was asking Linus if he ment to CC me, as I thought I should have been.
+> 
+>>> I quite like the idea of this.
+>>>
+>>> Stephen,
+>>>
+>>> It doesn't mean the other patch was wrong, it just transfers the math.
+>>
+>> Ah, I see. The issue is that the code below clearly calculates the hwirq
+>> differently, and it wasn't immediately obvious that this part of the
+>> patch for example:
+>>
+>>>  struct abx500_gpio_irq_cluster ab8500_gpio_irq_cluster[] = {
+>>> -	GPIO_IRQ_CLUSTER(6,  13, 34),
+>>> -	GPIO_IRQ_CLUSTER(24, 25, 24),
+>>> -	GPIO_IRQ_CLUSTER(36, 41, 14),
+>>> +	GPIO_IRQ_CLUSTER(6,  13, AB8500_INT_GPIO6R),
+>>> +	GPIO_IRQ_CLUSTER(24, 25, AB8500_INT_GPIO24R),
+>>> +	GPIO_IRQ_CLUSTER(36, 41, AB8500_INT_GPIO36R),
+>>>  };
+>>
+>> ... actually changes the values in the table (AB8500_INT_GPIO6R is 40,
+>> so when using that value, you need to subtract of the value 6 for the
+>> base to get the original 34).
+> 
+> Yes, I see how that may of looked if you didn't see the other change.
+> 
+> So you're happy?
 
-on all
+Yes.
 
-Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-
-Best Regards,
-J.
-On 17:35 Fri 08 Feb     , Nicolas Ferre wrote:
-> These patches fix a regression in 16-bpp support for older SOCs which use
-> IBGR:555 rather than BGR:565 pixel layout. Use SOC-type to determine if the
-> controller uses the intensity-bit and restore the old layout in that case.
-> 
-> The last patch is a removal of uses of cpu_is_xxxx() macros in atmel_lcdfb with
-> a platform-device-id table and static configurations.
-> 
-> 
-> Patches from Johan Hovold taken from:
-> "[PATCH 0/3] atmel_lcdfb: fix 16-bpp regression"
-> and
-> "[PATCH v2 0/3] ARM: at91/avr32/atmel_lcdfb: remove cpu_is macros"
-> patch series to form a clean patch series with my signature.
-> 
-> Arnd, Olof,
-> as it seems that old fbdev drivers are not so much reviewed those days, can we
-> take the decision to queue this material through arm-soc with other AT91
-> drivers updates?
-> 
-> Best regards,
-> 
-> Johan Hovold (5):
->   atmel_lcdfb: fix 16-bpp modes on older SOCs
->   ARM: at91/neocore926: fix LCD-wiring mode
->   ARM: at91/avr32/atmel_lcdfb: add bus-clock entry
->   atmel_lcdfb: move lcdcon2 register access to compute_hozval
->   ARM: at91/avr32/atmel_lcdfb: add platform device-id table
-> 
->  arch/arm/mach-at91/at91sam9261.c         |   2 +
->  arch/arm/mach-at91/at91sam9261_devices.c |   6 +-
->  arch/arm/mach-at91/at91sam9263.c         |   1 +
->  arch/arm/mach-at91/at91sam9263_devices.c |   2 +-
->  arch/arm/mach-at91/at91sam9g45.c         |   2 +
->  arch/arm/mach-at91/at91sam9g45_devices.c |   6 +-
->  arch/arm/mach-at91/at91sam9rl.c          |   1 +
->  arch/arm/mach-at91/at91sam9rl_devices.c  |   2 +-
->  arch/arm/mach-at91/board-neocore926.c    |   2 +-
->  arch/avr32/mach-at32ap/at32ap700x.c      |   6 +-
->  drivers/video/atmel_lcdfb.c              | 130 ++++++++++++++++++++++++-------
->  include/video/atmel_lcdc.h               |   4 +-
->  12 files changed, 127 insertions(+), 37 deletions(-)
-> 
-> -- 
-> 1.8.0
-> 
