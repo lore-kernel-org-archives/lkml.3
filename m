@@ -1,46 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947292Ab3BHWpF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 17:45:05 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:37999 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760366Ab3BHWpD (ORCPT
+	id S1947300Ab3BHWqM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 17:46:12 -0500
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:42406 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760366Ab3BHWqK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 17:45:03 -0500
-Date: Fri, 08 Feb 2013 17:45:00 -0500 (EST)
-Message-Id: <20130208.174500.1518593039138341685.davem@davemloft.net>
-To: joe@perches.com
-Cc: netdev@vger.kernel.org, linux-can@vger.kernel.org,
-        linux-kernel@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        linux-usb@vger.kernel.org, linux-wireless@vger.kernel.org,
-        ath9k-devel@venema.h4ckr.net, wil6210@qca.qualcomm.com,
-        brcm80211-dev-list@broadcom.com, devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH] drivers: net: Remove remaining alloc/OOM messages
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1360273587.27863.15.camel@joe-AO722>
-References: <1360273587.27863.15.camel@joe-AO722>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Fri, 8 Feb 2013 17:46:10 -0500
+Message-ID: <1360363566.7515.310.camel@mfleming-mobl1.ger.corp.intel.com>
+Subject: Re: [PATCH v5 -next 0/2] make efivars/efi_pstore interrupt-safe
+From: Matt Fleming <matt.fleming@intel.com>
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
+        "mikew@google.com" <mikew@google.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "cbouatmailru@gmail.com" <cbouatmailru@gmail.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>
+Date: Fri, 08 Feb 2013 22:46:06 +0000
+In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D414A884D6@USINDEM103.corp.hds.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D414A5419C@USINDEM103.corp.hds.com>
+	 <A5ED84D3BB3A384992CBB9C77DEDA4D414A884D6@USINDEM103.corp.hds.com>
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Thu, 07 Feb 2013 13:46:27 -0800
+On Fri, 2013-02-08 at 22:31 +0000, Seiji Aguchi wrote:
+> Matt,
+> 
+> Can you please take a look at this patchset which removes
+> create_sysfs_entries() from efi_pstore_write()?
+> 
+> It has been updated in accordance with Mike's comment and fixes an
+> actual bug.
+> http://comments.gmane.org/gmane.linux.kernel.efi/406
 
-> alloc failures already get standardized OOM
-> messages and a dump_stack.
-> 
-> For the affected mallocs around these OOM messages:
-> 
-> Converted kmallocs with multiplies to kmalloc_array.
-> Converted a kmalloc/memcpy to kmemdup.
-> Removed now unused stack variables.
-> Removed unnecessary parentheses.
-> Neatened alignment.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+OK, I'll find some time to review these.
 
-Applied, thanks Joe.
