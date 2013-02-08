@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759734Ab3BHBGZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 20:06:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41966 "EHLO
+	id S1759763Ab3BHBGl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 20:06:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41969 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932195Ab3BHA6I (ORCPT
+	with ESMTP id S932177Ab3BHA6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 7 Feb 2013 19:58:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shawn Bohrer <sbohrer@rgmadvisors.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
-        peterz@infradead.org
-Subject: [ 09/26] sched/rt: Use root_domain of rt_rq not current processor
-Date: Thu,  7 Feb 2013 16:57:37 -0800
-Message-Id: <20130208004628.870544545@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [ 18/26] USB: EHCI: fix bug in scheduling periodic split transfers
+Date: Thu,  7 Feb 2013 16:57:46 -0800
+Message-Id: <20130208004630.382017727@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130208004627.258272404@linuxfoundation.org>
 References: <20130208004627.258272404@linuxfoundation.org>
@@ -29,48 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shawn Bohrer <sbohrer@rgmadvisors.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit aa7f67304d1a03180f463258aa6f15a8b434e77d upstream.
+commit 3e619d04159be54b3daa0b7036b0ce9e067f4b5d upstream.
 
-When the system has multiple domains do_sched_rt_period_timer()
-can run on any CPU and may iterate over all rt_rq in
-cpu_online_mask.  This means when balance_runtime() is run for a
-given rt_rq that rt_rq may be in a different rd than the current
-processor.  Thus if we use smp_processor_id() to get rd in
-do_balance_runtime() we may borrow runtime from a rt_rq that is
-not part of our rd.
+This patch (as1654) fixes a very old bug in ehci-hcd, connected with
+scheduling of periodic split transfers.  The calculations for
+full/low-speed bus usage are all carried out after the correction for
+bit-stuffing has been applied, but the values in the max_tt_usecs
+array assume it hasn't been.  The array should allow for allocation of
+up to 90% of the bus capacity, which is 900 us, not 780 us.
 
-This changes do_balance_runtime to get the rd from the passed in
-rt_rq ensuring that we borrow runtime only from the correct rd
-for the given rt_rq.
+The symptom caused by this bug is that any isochronous transfer to a
+full-speed device with a maxpacket size larger than about 980 bytes is
+always rejected with a -ENOSPC error.
 
-This fixes a BUG at kernel/sched/rt.c:687! in __disable_runtime
-when we try reclaim runtime lent to other rt_rq but runtime has
-been lent to a rt_rq in another rd.
-
-Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-Acked-by: Mike Galbraith <bitbucket@online.de>
-Cc: peterz@infradead.org
-Link: http://lkml.kernel.org/r/1358186131-29494-1-git-send-email-sbohrer@rgmadvisors.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sched/rt.c |    2 +-
+ drivers/usb/host/ehci-sched.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -560,7 +560,7 @@ static inline struct rt_bandwidth *sched
- static int do_balance_runtime(struct rt_rq *rt_rq)
- {
- 	struct rt_bandwidth *rt_b = sched_rt_bandwidth(rt_rq);
--	struct root_domain *rd = cpu_rq(smp_processor_id())->rd;
-+	struct root_domain *rd = rq_of_rt_rq(rt_rq)->rd;
- 	int i, weight, more = 0;
- 	u64 rt_period;
+--- a/drivers/usb/host/ehci-sched.c
++++ b/drivers/usb/host/ehci-sched.c
+@@ -236,7 +236,7 @@ static inline unsigned char tt_start_ufr
+ }
  
+ static const unsigned char
+-max_tt_usecs[] = { 125, 125, 125, 125, 125, 125, 30, 0 };
++max_tt_usecs[] = { 125, 125, 125, 125, 125, 125, 125, 25 };
+ 
+ /* carryover low/fullspeed bandwidth that crosses uframe boundries */
+ static inline void carryover_tt_bandwidth(unsigned short tt_usecs[8])
 
 
