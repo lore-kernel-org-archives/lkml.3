@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946831Ab3BHRav (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 12:30:51 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34521 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753555Ab3BHRau (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 12:30:50 -0500
-Message-ID: <5115361D.8060501@zytor.com>
-Date: Fri, 08 Feb 2013 09:30:05 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1946847Ab3BHRhc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 12:37:32 -0500
+Received: from mx3-phx2.redhat.com ([209.132.183.24]:38251 "EHLO
+	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946723Ab3BHRhb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 12:37:31 -0500
+Date: Fri, 8 Feb 2013 12:37:30 -0500 (EST)
+From: Rado Vrbovsky <rvrbovsk@redhat.com>
+To: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@redhat.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Message-ID: <2037057938.893524.1360345050772.JavaMail.root@redhat.com>
+In-Reply-To: <350315726.726339.1360327201303.JavaMail.root@redhat.com>
+Subject: [PATCH] time: Change log level of "NOHZ: local_softirq_pending"
+ message
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Ville_Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
-CC: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jamie Lokier <jamie@shareable.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: Re: [PATCH] x86: Add support for 64bit get_user() on x86-32
-References: <1355312043-11467-1-git-send-email-ville.syrjala@linux.intel.com> <20130207165347.GF9135@intel.com> <5113EB64.2080002@zytor.com> <20130208162427.GG9135@intel.com>
-In-Reply-To: <20130208162427.GG9135@intel.com>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.36.6.109]
+X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Linux)/7.2.0_GA_2669)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/08/2013 08:24 AM, Ville Syrjälä wrote:
->>
->> How have you tested it?
-> 
-> I've tried it with my drm/kms atomic pageflip/modeset code. I also had
-> a small test module that did a couple of different sized get_user()
-> calls, but I'll be damned if I can find it again.
-> 
+The "NOHZ: local_softirq_pending" message is a largely informational message.
+This makes extra work for customers that have a policy of investigating all
+kernel log messages logged at <= KERN_ERR log level.
+This patch sets the message to a different log level.
 
-Did you see the warning spewage for pointers when you built it?
+Signed-off-by: Rado Vrbovsky <rvrbovsk@redhat.com>
 
-	-hpa
+---
+ kernel/time/tick-sched.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index d58e552..ece2beb 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -481,7 +481,7 @@ static bool can_stop_idle_tick(int cpu, struct tick_sched *ts)
+ 
+                if (ratelimit < 10 &&
+                    (local_softirq_pending() & SOFTIRQ_STOP_IDLE_MASK)) {
+-                       printk(KERN_ERR "NOHZ: local_softirq_pending %02x\n",
++                       printk(KERN_WARNING "NOHZ: local_softirq_pending %02x\n",
+                               (unsigned int) local_softirq_pending());
+                        ratelimit++;
+                }
+-- 
+1.7.11.7
