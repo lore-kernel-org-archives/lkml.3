@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946713Ab3BHQSO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 11:18:14 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18156 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946450Ab3BHQSM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 11:18:12 -0500
-X-Authority-Analysis: v=2.0 cv=f8jK9ZOM c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=M5gr15I6uLgA:10 a=NufY4J3AAAAA:8 a=DOYHrJKly7pEN2T6RRIA:9 a=PUjeQqilurYA:10 a=re9sYKne76oA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1360340288.2621.112.camel@gandalf.local.home>
-Subject: Re: [ANNOUNCE] 3.8-rc6-nohz4
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Christoph Lameter <cl@linux.com>, LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Fri, 08 Feb 2013 11:18:08 -0500
-In-Reply-To: <CAFTL4hyfnhjezjL2QfVKYDB-bwh4BSGyX8xmhpdmxTf+EAu+yA@mail.gmail.com>
-References: <1360175338-6735-1-git-send-email-fweisbec@gmail.com>
-	 <1360205415.2621.60.camel@gandalf.local.home>
-	 <CAFTL4hzJ9FLNTqiBdB0SCWvxgN=p=M54e1PNWe6cp+C9A=DXxA@mail.gmail.com>
-	 <1360256447.2621.75.camel@gandalf.local.home>
-	 <CAFTL4hzXe=rYniSrth--n2Vp+wEYRt69r9+SPFu-Bac-_ZwM3Q@mail.gmail.com>
-	 <0000013cb614e4e5-10f6e9ce-08e1-47f6-9044-565b4084c354-000000@email.amazonses.com>
-	 <CAFTL4hyfnhjezjL2QfVKYDB-bwh4BSGyX8xmhpdmxTf+EAu+yA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1946708Ab3BHQYd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 11:24:33 -0500
+Received: from mga09.intel.com ([134.134.136.24]:51566 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1946552Ab3BHQYc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 11:24:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,630,1355126400"; 
+   d="scan'208";a="259776230"
+Date: Fri, 8 Feb 2013 18:24:27 +0200
+From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jamie Lokier <jamie@shareable.org>
+Subject: Re: [PATCH] x86: Add support for 64bit get_user() on x86-32
+Message-ID: <20130208162427.GG9135@intel.com>
+References: <1355312043-11467-1-git-send-email-ville.syrjala@linux.intel.com>
+ <20130207165347.GF9135@intel.com>
+ <5113EB64.2080002@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5113EB64.2080002@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-02-08 at 16:53 +0100, Frederic Weisbecker wrote:
-> 2013/2/7 Christoph Lameter <cl@linux.com>:
-> > On Thu, 7 Feb 2013, Frederic Weisbecker wrote:
-> >
-> >> Not with hrtick.
-> >
-> > hrtick? Did we not already try that a couple of years back and it turned
-> > out that the overhead of constantly reprogramming a timer via the PCI bus
-> > was causing too much of a performance regression?
+On Thu, Feb 07, 2013 at 09:59:00AM -0800, H. Peter Anvin wrote:
+> On 02/07/2013 08:53 AM, Ville Syrjälä wrote:
+> > 
+> > Based on the initial response there seems to be some interest towards
+> > it at least. So I'm wondering what's the next step. Is it OK as is,
+> > or does it need more work, or would people want to extend it to include
+> > more of the original work?
+> > 
+> > I have quite a lot of other stuff on my plate currently, so it'd
+> > actually be nice if I could find someone to adopt this patch,
+> > especially if there's interest in increasing the scope.
+> > 
 > 
-> Yeah Peter said that especially reprogramming the clock everytime we
-> call schedule() was killing the performances. Now may be on some
-> workloads, with the tick stopped, we can find some new results.
+> Well, we can put it in and see what happens.  It looks good from what I
+> can see.
+> 
+> How have you tested it?
 
-I could imagine this being dynamic. If the system isn't very loaded, and
-the scheduler is giving lots of time slices to tasks, then perhaps it
-could switch to a reprogramming the clock based scheduling. Or maybe, we
-could switch to a "skip ticks" method. That is, instead of completely
-disabling the tick, make the tick go off every other time or less, and
-use the NO_HZ code to calculate the missed ticks.
+I've tried it with my drm/kms atomic pageflip/modeset code. I also had
+a small test module that did a couple of different sized get_user()
+calls, but I'll be damned if I can find it again.
 
--- Steve
-
-
+-- 
+Ville Syrjälä
+Intel OTC
