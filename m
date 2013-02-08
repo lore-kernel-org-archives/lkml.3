@@ -1,104 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759671Ab3BHBEM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 20:04:12 -0500
-Received: from mail-ia0-f169.google.com ([209.85.210.169]:51351 "EHLO
-	mail-ia0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757859Ab3BHBEI (ORCPT
+	id S932284Ab3BHBEb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 20:04:31 -0500
+Received: from mail-vb0-f49.google.com ([209.85.212.49]:54871 "EHLO
+	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759410Ab3BHBEK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 20:04:08 -0500
+	Thu, 7 Feb 2013 20:04:10 -0500
 MIME-Version: 1.0
-In-Reply-To: <CACxGe6uOaoRbtuovEsA87d-MtCbGNd3KZCeHXbBQaEpp6NZ7fA@mail.gmail.com>
-References: <1360105784-12282-1-git-send-email-ks.giri@samsung.com>
-	<1360105784-12282-2-git-send-email-ks.giri@samsung.com>
-	<20130206102628.5E7413E1510@localhost>
-	<CAKrE-KdX+Nxk0X4xdz6Dx3WVtOpV+ms+gPB-Dq-MwZwetyZ5Nw@mail.gmail.com>
-	<CACxGe6uOaoRbtuovEsA87d-MtCbGNd3KZCeHXbBQaEpp6NZ7fA@mail.gmail.com>
-Date: Thu, 7 Feb 2013 17:04:08 -0800
-Message-ID: <CAKrE-KfvywLa4xTwCGzan9OfevzBdY8Z2EO2Mc2VaFm5y0XEzg@mail.gmail.com>
-Subject: Re: [PATCH 1/4] spi: s3c64xx: modified error interrupt handling and init
-From: Girish KS <girishks2000@gmail.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: spi-devel-general@lists.sourceforge.net,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <51140A60.4070705@250bpm.com>
+References: <1360219292-19754-1-git-send-email-sustrik@250bpm.com>
+ <5113FCA7.4020207@mit.edu> <51140A60.4070705@250bpm.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 7 Feb 2013 17:03:49 -0800
+Message-ID: <CALCETrXEy5hLh6i7nTGH607gnc=kd0S+of9i0-nt828MGwbQZQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] eventfd: implementation of EFD_MASK flag
+To: Martin Sustrik <sustrik@250bpm.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sha Zhengju <handai.szj@taobao.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 6, 2013 at 3:48 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Wed, Feb 6, 2013 at 8:12 PM, Girish KS <girishks2000@gmail.com> wrote:
->> On Wed, Feb 6, 2013 at 2:26 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
->>> On Tue,  5 Feb 2013 15:09:41 -0800, Girish K S <girishks2000@gmail.com> wrote:
->>>> The status of the interrupt is available in the status register,
->>>> so reading the clear pending register and writing back the same
->>>> value will not actually clear the pending interrupts. This patch
->>>> modifies the interrupt handler to read the status register and
->>>> clear the corresponding pending bit in the clear pending register.
->>>>
->>>> Modified the hwInit function to clear all the pending interrupts.
->>>>
->>>> Signed-off-by: Girish K S <ks.giri@samsung.com>
->>>> ---
->>>>  drivers/spi/spi-s3c64xx.c |   41 +++++++++++++++++++++++++----------------
->>>>  1 file changed, 25 insertions(+), 16 deletions(-)
->>>>
->>>> diff --git a/drivers/spi/spi-s3c64xx.c b/drivers/spi/spi-s3c64xx.c
->>>> index ad93231..b770f88 100644
->>>> --- a/drivers/spi/spi-s3c64xx.c
->>>> +++ b/drivers/spi/spi-s3c64xx.c
->>>> @@ -997,25 +997,30 @@ static irqreturn_t s3c64xx_spi_irq(int irq, void *data)
->>>>  {
->>>>       struct s3c64xx_spi_driver_data *sdd = data;
->>>>       struct spi_master *spi = sdd->master;
->>>> -     unsigned int val;
->>>> +     unsigned int val, clr = 0;
->>>>
->>>> -     val = readl(sdd->regs + S3C64XX_SPI_PENDING_CLR);
->>>> +     val = readl(sdd->regs + S3C64XX_SPI_STATUS);
->>>>
->>>> -     val &= S3C64XX_SPI_PND_RX_OVERRUN_CLR |
->>>> -             S3C64XX_SPI_PND_RX_UNDERRUN_CLR |
->>>> -             S3C64XX_SPI_PND_TX_OVERRUN_CLR |
->>>> -             S3C64XX_SPI_PND_TX_UNDERRUN_CLR;
->>>> -
->>>> -     writel(val, sdd->regs + S3C64XX_SPI_PENDING_CLR);
->>>> -
->>>> -     if (val & S3C64XX_SPI_PND_RX_OVERRUN_CLR)
->>>> +     if (val & S3C64XX_SPI_ST_RX_OVERRUN_ERR) {
->>>> +             clr = S3C64XX_SPI_PND_RX_OVERRUN_CLR;
->>>>               dev_err(&spi->dev, "RX overrun\n");
->>>> -     if (val & S3C64XX_SPI_PND_RX_UNDERRUN_CLR)
->>>> +     }
->>>> +     if (val & S3C64XX_SPI_ST_RX_UNDERRUN_ERR) {
->>>> +             clr |= S3C64XX_SPI_PND_RX_UNDERRUN_CLR;
->>>>               dev_err(&spi->dev, "RX underrun\n");
->>>> -     if (val & S3C64XX_SPI_PND_TX_OVERRUN_CLR)
->>>> +     }
->>>> +     if (val & S3C64XX_SPI_ST_TX_OVERRUN_ERR) {
->>>> +             clr |= S3C64XX_SPI_PND_TX_OVERRUN_CLR;
->>>>               dev_err(&spi->dev, "TX overrun\n");
->>>> -     if (val & S3C64XX_SPI_PND_TX_UNDERRUN_CLR)
->>>> +     }
->>>> +     if (val & S3C64XX_SPI_ST_TX_UNDERRUN_ERR) {
->>>> +             clr |= S3C64XX_SPI_PND_TX_UNDERRUN_CLR;
->>>>               dev_err(&spi->dev, "TX underrun\n");
->>>> +     }
->>>> +
->>>> +     /* Clear the pending irq by setting and then clearing it */
->>>> +     writel(clr, sdd->regs + S3C64XX_SPI_PENDING_CLR);
->>>> +     writel(clr & ~clr, sdd->regs + S3C64XX_SPI_PENDING_CLR);
+On Thu, Feb 7, 2013 at 12:11 PM, Martin Sustrik <sustrik@250bpm.com> wrote:
+> On 07/02/13 20:12, Andy Lutomirski wrote:
+>>
+>> On 02/06/2013 10:41 PM, Martin Sustrik wrote:
 >>>
->>> Wait, what?  clr & ~clr == 0   Always.  What are you actually trying to do here?
->> The user manual says, wirting 1 to the pending clear register clears
->> the interrupt (its not auto clear to 0). so i need to explicitly reset
->> those bits thats what the 2nd write does
+>>> When implementing network protocols in user space, one has to implement
+>>> fake user-space file descriptors to represent the sockets for the
+>>> protocol.
+>>>
+>>> While all the BSD socket API functionality for such descriptors may be
+>>> faked as
+>>> well (myproto_send(), myproto_recv() etc.) this approach doesn't work for
+>>> polling  (select, poll, epoll). For polling, real system-level file
+>>> descriptor
+>>> is needed.
+>>>
+>>> In theory, eventfd may be used for this purpose, except that it is well
+>>> suited
+>>> only for signaling POLLIN. With some hacking it can be also used to
+>>> signal
+>>> POLLOUT and POLLERR, however:
+>>>
+>>> I.  There's no way to signal POLLPRI, POLLHUP etc.
+>>> II. There's no way to signal arbitraty combination of POLL* flags. Most
+>>> notably,
+>>>      !POLLIN&  !POLLOUT, which is a perfectly valid combination for a
+>>> network
+>>>
+>>>      protocol (rx buffer is empty and tx buffer is full), cannot be
+>>> signaled
+>>>      using current implementation of eventfd.
+>>>
+>>> This patch implements new EFD_MASK flag which attempts to solve this
+>>> problem.
+>>>
+>>> Additionally, when implementing network protocols in user space, there's
+>>> a
+>>> need to associate user-space state with the each "socket". If eventfd
+>>> object is
+>>> used as a reference to the socket, it should be possible to associate an
+>>> opaque
+>>> pointer to user-space data with it.
+>>>
+>>> The semantics of EFD_MASK are as follows:
+>>>
+>>> eventfd(2):
+>>>
+>>> If eventfd is created with EFD_MASK flag set, it is initialised in such a
+>>> way
+>>> as to signal no events on the file descriptor when it is polled on.
+>>> 'initval'
+>>> argument is ignored.
+>>>
+>>> write(2):
+>>>
+>>> User is allowed to write only buffers containing the following structure:
+>>>
+>>> struct efd_mask {
+>>>    short events;
+>>>    void *ptr;
+>>> };
+>>
+>>
+>> IMO that should be u64 ptr to avoid compat problems.
 >
-> Then write 0. That's the result of what the code does anyway, but the
-> code as-written is nonsensical.
-i cannot write 0. because the 0th bit is trailing byte interrupt clear
-pending bit, which is not being handled in the handler.
 >
-> g.
+> I was following the user space declaration of epoll_data:
+>
+>            typedef union epoll_data {
+>                void        *ptr;  <-----
+>                int          fd;
+>                uint32_t     u32;
+>                uint64_t     u64;
+>            } epoll_data_t;
+>
+> However, now I'm looking at the kernel side definition of the whole union
+> which looks like this (obviously it assumes that pointer is never longer
+> than 64 bits):
+>
+>          __u64 data;
+>
+> Hm, not very helpful. Anyway, I am not a kernel developer, so any concrete
+> suggestion about what type to use to map cleanly to user-space void* is
+> welcome.
+
+Reusing epoll_data_t seems reasonable.  The main consideration is that
+the size of the object should not vary between 32-bit and 64-bit
+userspace.
+
+>
+>
+>>> The value of 'events' should be any combination of event flags as defined
+>>> by
+>>> poll(2) function (POLLIN, POLLOUT, POLLERR, POLLHUP etc.) Specified
+>>> events will
+>>> be signaled when polling (select, poll, epoll) on the eventfd is done
+>>> later on.
+>>> 'ptr' is an opaque pointer that is not interpreted by eventfd object.
+>>
+>>
+>> How does this interact with EPOLLET?
+>
+>
+> That's an interesting question. The original eventfd code doesn't do
+> anything specific to either edge or level mode. Neither does my patch.
+>
+> Inspection of the code seems to suggest that edge vs. level distinction is
+> handled elsewhere (ep_send_events_proc) where there is a separate list of
+> ready events and the function, after returning the event, decides whether to
+> leave the event in the list (level) or delete it from the list (edge).
+
+Hmm.  Having looked at the eventpoll.c source again, I remain
+unconvinced that EPOLLET works the way that any userspace developer
+would expect it to.  But your code probably has very little to do with
+this, so maybe you shouldn't worry about it.  There may be some
+advantage to adding (later on, if needed) an option to change the
+flags set in:
+
++		if (waitqueue_active(&ctx->wqh))
++			wake_up_locked_poll(&ctx->wqh,
++				(unsigned long)ctx->mask.events);
+
+(i.e. to allow the second parameter to omit some bits that were
+already signaled.)  Allowing write to write a bigger struct in the
+future won't break anything.
+
+It may be a good idea to return EINVAL if anyone tries to write() an
+unknown poll bit.
+
+--Andy
+
+>
+> In any case, review from someone with experience with epoll implementation
+> would help.
+>
+> Martin
