@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760426Ab3BHT3F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 14:29:05 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:33354 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760341Ab3BHT3A (ORCPT
+	id S1760412Ab3BHT3E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 14:29:04 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:26073 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760352Ab3BHT3A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Feb 2013 14:29:00 -0500
 From: Yinghai Lu <yinghai@kernel.org>
@@ -13,64 +13,58 @@ To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "Rafael J. Wysocki" <rjw@sisk.pl>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v2 25/26] PCI: Disable mem in the ioapic removing path
-Date: Fri,  8 Feb 2013 11:28:22 -0800
-Message-Id: <1360351703-20571-26-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v2 24/26] x86: Move declaration for mp_register_ioapic()
+Date: Fri,  8 Feb 2013 11:28:21 -0800
+Message-Id: <1360351703-20571-25-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1360351703-20571-1-git-send-email-yinghai@kernel.org>
 References: <1360351703-20571-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For physical hot plug should be ok, but for remove/rescan path will
-need us to disable that.
+Address compiling problem that Fengguang report.
 
-otherwise rescan mmio resource for pci ioapic device will not be
-sized and allocated, aka skiped.
-For ioapic_probe:pci_enable_device will not enable the device
-correctly, and will bail out early.
-
-So we can just disable mmio for all removing case, and that will not hurt
-real hotplug path.
-
-Signed-off-by: <yinghai@kernel.org>
+Reported-by: Fengguang Wu <wfg@linux.intel.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/pci/ioapic.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ arch/x86/include/asm/mpspec.h |   19 ++++++++++++++++++-
+ 1 file changed, 18 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/pci/ioapic.c b/drivers/pci/ioapic.c
-index 3c6bbdd..8dacfd0 100644
---- a/drivers/pci/ioapic.c
-+++ b/drivers/pci/ioapic.c
-@@ -88,6 +88,17 @@ exit_free:
- 	return -ENODEV;
- }
+diff --git a/arch/x86/include/asm/mpspec.h b/arch/x86/include/asm/mpspec.h
+index e70b7e5..13439c5 100644
+--- a/arch/x86/include/asm/mpspec.h
++++ b/arch/x86/include/asm/mpspec.h
+@@ -95,10 +95,27 @@ static inline void early_reserve_e820_mpc_new(void) { }
+ #endif
  
-+static void pci_disable_device_mem(struct pci_dev *dev)
+ void __cpuinit generic_processor_info(int apicid, int version);
+-#ifdef CONFIG_ACPI
++
++#ifdef CONFIG_X86_IO_APIC
+ int __mp_register_ioapic(int id, u32 address, u32 gsi_base, bool hot);
+ int mp_unregister_ioapic(u32 gsi_base);
+ extern void mp_register_ioapic(int id, u32 address, u32 gsi_base);
++#else
++static inline int __mp_register_ioapic(int id, u32 address, u32 gsi_base,
++					 bool hot)
 +{
-+	u16 pci_command;
-+
-+	pci_read_config_word(dev, PCI_COMMAND, &pci_command);
-+	if (pci_command & PCI_COMMAND_MEMORY) {
-+		pci_command &= ~PCI_COMMAND_MEMORY;
-+		pci_write_config_word(dev, PCI_COMMAND, pci_command);
-+	}
++	return 0;
 +}
++static inline int mp_unregister_ioapic(u32 gsi_base)
++{
++	return 0;
++}
++static inline void mp_register_ioapic(int id, u32 address, u32 gsi_base)
++{
++}
++#endif
 +
- static void ioapic_remove(struct pci_dev *dev)
- {
- 	struct ioapic *ioapic = pci_get_drvdata(dev);
-@@ -95,6 +106,8 @@ static void ioapic_remove(struct pci_dev *dev)
- 	acpi_unregister_ioapic(ioapic->handle, ioapic->gsi_base);
- 	pci_release_region(dev, 0);
- 	pci_disable_device(dev);
-+	/* need to disable it, otherwise remove/rescan will not work */
-+	pci_disable_device_mem(dev);
- 	kfree(ioapic);
- }
- 
++#ifdef CONFIG_ACPI
+ extern void mp_override_legacy_irq(u8 bus_irq, u8 polarity, u8 trigger,
+ 				   u32 gsi);
+ extern void mp_config_acpi_legacy_irqs(void);
 -- 
 1.7.10.4
 
