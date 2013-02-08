@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946024Ab3BHBBT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 20:01:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42016 "EHLO
+	id S1161085Ab3BHBBi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 20:01:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42024 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945948Ab3BHA6V (ORCPT
+	with ESMTP id S1945938Ab3BHA6U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 19:58:21 -0500
+	Thu, 7 Feb 2013 19:58:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniele Palmas <dnlplm@gmail.com>
-Subject: [ 09/16] USB: option: add support for Telit LE920
-Date: Thu,  7 Feb 2013 16:58:08 -0800
-Message-Id: <20130208004628.750355349@linuxfoundation.org>
+        Sven Killig <sven@killig.de>
+Subject: [ 08/16] USB: ftdi_sio: add PID/VID entries for ELV WS 300 PC II
+Date: Thu,  7 Feb 2013 16:58:07 -0800
+Message-Id: <20130208004628.541483927@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130208004627.112511141@linuxfoundation.org>
 References: <20130208004627.112511141@linuxfoundation.org>
@@ -26,49 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniele Palmas <dnlplm@gmail.com>
+From: Sven Killig <sven@killig.de>
 
-commit 03eb466f276ceef9dcf023dc5474db02af68aad9 upstream.
+commit c249f911406efcc7456cb4af79396726bf7b8c57 upstream.
 
-Add PID and special handling for Telit LE920
+Add PID/VID entries for ELV WS 300 PC II weather station
 
-Signed-off-by: Daniele Palmas <dnlplm@gmail.com>
+Signed-off-by: Sven Killig <sven@killig.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    4 +++-
+ 2 files changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -242,6 +242,7 @@ static void option_instat_callback(struc
- #define TELIT_PRODUCT_CC864_DUAL		0x1005
- #define TELIT_PRODUCT_CC864_SINGLE		0x1006
- #define TELIT_PRODUCT_DE910_DUAL		0x1010
-+#define TELIT_PRODUCT_LE920			0x1200
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -588,6 +588,7 @@ static struct usb_device_id id_table_com
+ 	/*
+ 	 * ELV devices:
+ 	 */
++	{ USB_DEVICE(FTDI_ELV_VID, FTDI_ELV_WS300_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_ELV_USR_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_ELV_MSM1_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_ELV_KL100_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -209,7 +209,7 @@
  
- /* ZTE PRODUCTS */
- #define ZTE_VENDOR_ID				0x19d2
-@@ -534,6 +535,11 @@ static const struct option_blacklist_inf
- 	.reserved = BIT(3) | BIT(4),
- };
- 
-+static const struct option_blacklist_info telit_le920_blacklist = {
-+	.sendsetup = BIT(0),
-+	.reserved = BIT(1) | BIT(5),
-+};
-+
- static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_COLT) },
- 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_RICOLA) },
-@@ -784,6 +790,8 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_CC864_DUAL) },
- 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_CC864_SINGLE) },
- 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_DE910_DUAL) },
-+	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_LE920),
-+		.driver_info = (kernel_ulong_t)&telit_le920_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MF622, 0xff, 0xff, 0xff) }, /* ZTE WCDMA products */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0002, 0xff, 0xff, 0xff),
- 		.driver_info = (kernel_ulong_t)&net_intf1_blacklist },
+ /*
+  * ELV USB devices submitted by Christian Abt of ELV (www.elv.de).
+- * All of these devices use FTDI's vendor ID (0x0403).
++ * Almost all of these devices use FTDI's vendor ID (0x0403).
+  * Further IDs taken from ELV Windows .inf file.
+  *
+  * The previously included PID for the UO 100 module was incorrect.
+@@ -217,6 +217,8 @@
+  *
+  * Armin Laeuger originally sent the PID for the UM 100 module.
+  */
++#define FTDI_ELV_VID	0x1B1F	/* ELV AG */
++#define FTDI_ELV_WS300_PID	0xC006	/* eQ3 WS 300 PC II */
+ #define FTDI_ELV_USR_PID	0xE000	/* ELV Universal-Sound-Recorder */
+ #define FTDI_ELV_MSM1_PID	0xE001	/* ELV Mini-Sound-Modul */
+ #define FTDI_ELV_KL100_PID	0xE002	/* ELV Kfz-Leistungsmesser KL 100 */
 
 
