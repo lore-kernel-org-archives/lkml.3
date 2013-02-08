@@ -1,59 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947467Ab3BHX41 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 18:56:27 -0500
-Received: from correo.unefa.edu.ve ([150.186.0.20]:20951 "EHLO
-	correo.unefa.edu.ve" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1947445Ab3BHX40 (ORCPT
+	id S1947451Ab3BHX5a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 18:57:30 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:52352 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1947361Ab3BHX53 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 18:56:26 -0500
-Date: Fri, 08 Feb 2013 17:42:03 -0430 (VET)
-From: "dr.smithabbott" <lquintero1@unefa.edu.ve>
-Reply-To: "dr.smithabbott@yahoo.co.uk" <dr.smithabbott@yahoo.co.uk>
-Subject: Fra Dr. smith Abbott (Business forslaget ber svare)
-Message-ID: <5055b986-a5c5-434d-94f2-ee1b3da0d509@mail2.unefa.edu.ve>
+	Fri, 8 Feb 2013 18:57:29 -0500
 MIME-Version: 1.0
-X-Originating-IP: [46.23.64.83]
-X-Mailer: Zimbra 7.1.0_GA_3140 (zclient/7.1.0_GA_3140)
-To: undisclosed-recipients:;
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <CA+55aFz9ERvaFayTy8QCtfi610Bt_r0GcOs68UNggJTHdY4oaQ@mail.gmail.com>
+References: <alpine.DEB.2.02.1302041002430.6063@chino.kir.corp.google.com>
+	<20130204184436.GA13256@gmail.com>
+	<alpine.DEB.2.02.1302041053330.6063@chino.kir.corp.google.com>
+	<20130204191408.GA32081@kroah.com>
+	<20130204191334.GB14837@gmail.com>
+	<CAOJsxLFy7K0cY-8SH4dXs=agYqCN8wW0eC2tQxFxfV8cf7uWqg@mail.gmail.com>
+	<alpine.DEB.2.02.1302061209450.18172@chino.kir.corp.google.com>
+	<20130207080236.ae38366537cf3f13b9668606@canb.auug.org.au>
+	<20130206214646.GA28135@gmail.com>
+	<20130208084029.d7d97d6e26580a5512712f91@canb.auug.org.au>
+	<20130208145539.GC30334@gmail.com>
+	<CA+55aFz9ERvaFayTy8QCtfi610Bt_r0GcOs68UNggJTHdY4oaQ@mail.gmail.com>
+Date: Sat, 9 Feb 2013 01:57:27 +0200
+X-Google-Sender-Auth: jzoHIQii9iBOZNOSAJJz9dS7irY
+Message-ID: <CAOJsxLFDa3sLwP2MWdXJMTfZNEopp5imy8nWNViuPnWH747ggQ@mail.gmail.com>
+Subject: Re: kvmtool tree (Was: Re: [patch] config: fix make kvmconfig)
+From: Pekka Enberg <penberg@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        David Rientjes <rientjes@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        David Woodhouse <dwmw2@infradead.org>, Michal Marek <mmarek@suse.cz>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r18NuSeb006822
 
-Fra: Dr. smith Abbott
-Privat Mobil: (+44) 7012961440
+Linus,
 
-Hei venn,
- 
-Jeg er Dr. Smith Abbott manager Regnskap / revisjon av Credit Suisse Bank, One Cabot Square,, England London EC14 4QJ. Jeg kontaktet deg med hensyn til en bedrift forslag som vil vÃ¦re av en enorm fordel for oss begge og de mindre privilegerte de vil ogsÃ¥ nytte. Ã… vÃ¦re leder regnskap / revisjon avdeling Greater London Regional Office, oppdaget jeg en sum av Â£ 16,500,000.00 GBP (seksten millioner Five Hundred Thousand Great British pund) i en konto som tilhÃ¸rer en av vÃ¥re utenlandske kunder Late Mr. Moises Saba Masri. Han var en jÃ¸disk virksomhet mogul fra Mexico som dÃ¸de pÃ¥ et helikopter krasj. Mr. Saba var 47 Ã¥r gammel da bÃ¥de hans kone, hans eneste sÃ¸nn Avraham (Albert) og hans datter svigersÃ¸nn dÃ¸de i en helikopterstyrt.
+I'm going to go out on a limb here and say that this might the odd out
+case that's not really supposed to happen where *you* are just WRONG,
+CRAZY, and IGNORING REALITY.
 
-Valget av kontakter du vekket fra den geografiske natur hvor du bor sÃ¦rlig pÃ¥ grunn av sensitiviteten av transaksjonen og konfidensialitet her. NÃ¥ vÃ¥r bank har ventet pÃ¥ noen av de pÃ¥rÃ¸rende til Ã¥ komme opp for kravet av arven fond men dessverre alt arbeid har Ã¥ vÃ¦re ugyldig. Jeg personlig har vÃ¦rt mislykket i finne verken slektninger eller noen pÃ¥rÃ¸rende til Mr. Saba. PÃ¥ denne hilsen, jeg sÃ¸ker ditt samtykke til Ã¥ presentere deg som pÃ¥rÃ¸rende / Will Betalingsmottakers til den avdÃ¸de, slik at utbyttet av denne kontoen verdsatt til Â£ 16,5 millioner britiske pund sterling kan bli utbetalt til deg.
+On Fri, Feb 8, 2013 at 11:14 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> I think merging it would be an active mistake, and would just tie two
+> projects together that just shouldn't be tied together.
 
-Dette vil bli utbetalt eller delt i disse prosenter 60% til meg og 40% til deg. Jeg vil gi deg all nÃ¸dvendig juridisk informasjon er som kan brukes til Ã¥ sikkerhetskopiere dette kravet vi er i ferd med Ã¥ gjÃ¸re. Alt jeg trenger er Ã¥ laste opp ditt navn til dokumenter og legalisere pÃ¥ den britiske High Court for Ã¥ bevise at du legitim betalingsmottakeren. Alt jeg trenger nÃ¥ er din Ã¦rlige samarbeid, taushetsplikt og tillit til at vi ser denne transaksjonen gjennom. Jeg kan garantere deg 100% suksess, og at denne virksomheten transaksjonen vil bli utfÃ¸rt under virkeomrÃ¥de av loven og vil ogsÃ¥ beskytte deg mot eventuelle brudd pÃ¥ kontrakten.
+The two are already tied together - that was the whole premise of the
+project!
 
-Vennligst gi meg fÃ¸lgende som vi har 7 virkedager for Ã¥ kjÃ¸re den gjennom:
+What Ingo proposed two years ago was to implement a (simple) userspace
+counterpart of KVM under tools/kvm using kernel development process
+and reusing kernel code as much as possible. He predicted that we'd
+eventually have:
 
-1. Ditt fulle navn:
-2. Telefonnummer:
-3. Kontakt Adresse:
-4. Alder:
-5. KjÃ¸nn:
-6. Yrke:
+  - a clean codebase that's accessible to new developers
 
-Etter Ã¥ ha gÃ¥tt gjennom en metodisk sÃ¸k, bestemte jeg meg for Ã¥ kontakte deg hÃ¥per at du vil finne dette forslaget interessant. VÃ¦r pÃ¥ bekreftelsessiden av denne meldingen og viser din interesse, vil jeg gi deg mer informasjon er som vi fortsette med banken akkurat som jeg tidligere sa.
+  - new kernel features developed in 'lock-step' with the userspace code
 
-Ditt samtykke til denne e-post og forretning forslaget vil bli hÃ¸yt verdsatt.
+  - encouraged kernel developers to write userspace code
 
-Ring meg pÃ¥ mottak av denne e-posten for flere diskusjoner.
+As it turns out, Ingo's predictions were correct. We support KVM on
+ARMv8 even before the in-kernel code has hit mainline. People
+implemented vhost drivers in lock-step. Most of the contributors are
+also kernel developers. And we in fact have a clean codebase that's
+accessible to anyone who knows the kernel coding style.
 
-Med vennlig hilsen,
-Dr. Smith Abbott.
+I honestly don't see any of these things happening had we not taken the
+path suggested by Ingo early on.
 
+On Fri, Feb 8, 2013 at 11:14 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> The fact that kvmtool isn't available as a standalone project probably
+> keeps people actively from using it. You can't just fetch kvmtool. You
+> have to fetch the kernel and kvmtool, and if you're a kernel developer
+> you either have to make a whole new kernel tree for it (which is
+> stupid) or merge it into your normal kernel tree that has development
+> that has nothing to do with kvmtool (which is stupid AND F*CKING
+> INSANE)
 
+Actually, as a kernel developer, you don't need to do that. You can
+'make install' from a kvmtool branch and leave it at that - just like
+with perf. [ And if it was in your tree, you'd wouldn't even need the
+branch ;-). ]
 
-********AVISO LEGAL**********
-Este mensaje es privado y confidencial,  estÃ¡ dirigido exclusivamente al uso del correo institucional. Si usted ha recibido este mensaje por error, debe abstenerse de distribuirlo, copiarlo o usarlo en cualquier sentido. 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+And yes, you are absolutely correct that living in the kernel tree is
+suboptimal for the casual user. However, it's a trade-off to make
+tools/kvm *development* easier especially when you need to touch both
+kernel and userspace code.
+
+On Fri, Feb 8, 2013 at 11:14 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> "git" is a hell of a lot more useful utility for kernel development,
+> to the point that practically we couldn't do without it any more, and
+> it isn't merged into the kernel. It's a separate project with a
+> separate life, and it is *better* for it.
+
+Sure but the difference between "git" and kvmtool is that a significant
+chuck of kvmtool development is directly related to in-kernel KVM and
+device drivers. That's why I've argued from day one that tools/kvm is
+'special'.
+
+			Pekka
