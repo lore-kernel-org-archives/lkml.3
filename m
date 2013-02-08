@@ -1,215 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755645Ab3BHGZp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 01:25:45 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:59340 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752843Ab3BHGZm convert rfc822-to-8bit (ORCPT
+	id S1945941Ab3BHG1n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 01:27:43 -0500
+Received: from mail-la0-f45.google.com ([209.85.215.45]:63016 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753032Ab3BHG1l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 01:25:42 -0500
-From: "Manjunathappa, Prakash" <prakash.pm@ti.com>
-To: Mark Rutland <mark.rutland@arm.com>
-CC: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "Porter, Matt" <mporter@ti.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "hs@denx.de" <hs@denx.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH v2 2/3] mmc: davinci_mmc: add DT support
-Thread-Topic: [PATCH v2 2/3] mmc: davinci_mmc: add DT support
-Thread-Index: AQHOBQiaR4i2K3bQekeNtxNjukEnzZht2qAAgABeknA=
-Date: Fri, 8 Feb 2013 06:25:09 +0000
-Message-ID: <A73F36158E33644199EB82C5EC81C7BC3EA465FE@DBDE01.ent.ti.com>
-References: <1360223825-23929-1-git-send-email-prakash.pm@ti.com>
- <1360223825-23929-3-git-send-email-prakash.pm@ti.com>
- <20130207104656.GE16987@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20130207104656.GE16987@e106331-lin.cambridge.arm.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.162.25]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 8 Feb 2013 01:27:41 -0500
+Date: Fri, 8 Feb 2013 10:27:36 +0400
+From: Artem Savkov <artem.savkov@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, valdis.kletnieks@vt.edu,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        dirk.brandewie@gmail.com
+Subject: Re: [PATCH 0/4] CPUFreq Fixes for 3.9
+Message-ID: <20130208062736.GA5563@thinkpad.lan>
+References: <cover.1360232293.git.viresh.kumar@linaro.org>
+ <2158181.aoVXdpLJe2@vostro.rjw.lan>
+ <CAKohponLrVG+ubf5Ok+7AvoWKRF16YLqUEWAU6hH7-H_R=r0Ow@mail.gmail.com>
+ <1947746.IyFppZQEx8@vostro.rjw.lan>
+ <CAKohpony25Ct94QyCOEmoNVS6Xc5O8=0Cnc6NxLxTP5Y-E1XJg@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAKohpony25Ct94QyCOEmoNVS6Xc5O8=0Cnc6NxLxTP5Y-E1XJg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On Fri, Feb 08, 2013 at 10:39:13AM +0530, Viresh Kumar wrote:
+> On 8 February 2013 04:37, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > BTW, there still are locking problems in linux-next.  Why do we need
+> > to take cpufreq_driver_lock() around driver->init() in cpufreq_add_dev(),
+> > in particular?
+> I thought a bit more and realized there is no such limitation on
+> cpufreq_driver->ops about calling routines which can sleep. And thus
+> we shoudln't
+> have locks around any of these. I have got a patch for it, that i
+> would fold-back into
+> the original patch that introduced locking fixes (attached too for testing):
+Tested this patch on top of linux-pm.git/bleeding-edge
+Now everything seems to be alright.
 
-On Thu, Feb 07, 2013 at 16:16:56, Mark Rutland wrote:
-> Hello,
+> From: Viresh Kumar <viresh.kumar@linaro.org>
+> Date: Fri, 8 Feb 2013 10:35:31 +0530
+> Subject: [PATCH] cpufreq: Remove unnecessary locking
 > 
-> I have a couple of comments on the dt bindings and the way it's parsed.
+> I have placed some locks intentionally around calls to driver->ops (init/exit),
+> which look to be wrong as these calls can call routines that potentially sleep.
 > 
-
-Thanks for your review comments.
-
-> On Thu, Feb 07, 2013 at 07:57:04AM +0000, Manjunathappa, Prakash wrote:
-> > Adds device tree support for davinci_mmc. Also add binding documentation.
-> > Tested in non-dma PIO mode and without GPIO card_detect/write_protect
-> > option because of dependencies on EDMA and GPIO module DT support.
-> > 
-> > Signed-off-by: Manjunathappa, Prakash <prakash.pm@ti.com>
-> > Cc: linux-mmc@vger.kernel.org
-> > Cc: linux-arm-kernel@lists.infradead.org
-> > Cc: linux-kernel@vger.kernel.org
-> > Cc: davinci-linux-open-source@linux.davincidsp.com
-> > Cc: devicetree-discuss@lists.ozlabs.org
-> > Cc: cjb@laptop.org
-> > Cc: Sekhar Nori <nsekhar@ti.com>
-> > Cc: mporter@ti.com
-> > ---
-> > Since v1:
-> > Modified DT parse function to take default values and accomodate controller
-> > version in compatible field.
-> > 
-> >  .../devicetree/bindings/mmc/davinci_mmc.txt        |   30 ++++++++
-> >  drivers/mmc/host/davinci_mmc.c                     |   70 +++++++++++++++++++-
-> >  2 files changed, 99 insertions(+), 1 deletions(-)
-> >  create mode 100644 Documentation/devicetree/bindings/mmc/davinci_mmc.txt
-> > 
-> > diff --git a/Documentation/devicetree/bindings/mmc/davinci_mmc.txt b/Documentation/devicetree/bindings/mmc/davinci_mmc.txt
-> > new file mode 100644
-> > index 0000000..6717ab1
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/mmc/davinci_mmc.txt
-> > @@ -0,0 +1,30 @@
-> > +* TI Highspeed MMC host controller for DaVinci
-> > +
-> > +The Highspeed MMC Host Controller on TI DaVinci family
-> > +provides an interface for MMC, SD and SDIO types of memory cards.
-> > +
-> > +This file documents the properties used by the davinci_mmc driver.
-> > +
-> > +Required properties:
-> > +- compatible:
-> > + Should be "ti,davinci-mmc-da830": for da830, da850, dm365
-> > + Should be "ti,davinci-mmc-dm355": for dm355, dm644x
-> > +
-> > +Optional properties:
-> > +- bus-width: Number of data lines, can be <4>, or <8>, default <1>
-> > +- max-frequency: Maximum operating clock frequency, default 25MHz.
-> > +- mmc-cap-mmc-highspeed: Indicates support for MMC in high speed mode
-> > +- mmc-cap-sd-highspeed: Indicates support for SD in high speed mode
+> Lets remove these locks.
 > 
-> I thought the last two were derivable from max-frequency?
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+>  drivers/cpufreq/cpufreq.c | 7 -------
+>  1 file changed, 7 deletions(-)
 > 
-
-Yes, but I see below comment that it doesnot support MMC/SD.
-arch/arm/mach-davinci/devices.c: davinci_setup_mmc
-	   "
-         * FIXME dm6441 (no MMC/SD), dm357 (one), and dm335 (two) are
-         * not handled right here ...
-         */"
-I was wondering how do we support such platforms, so I thought it is necessary
-to have these. But I see that on da850-evm even on skipping above flags EVM is able
-to detect card, does it mean there is no way to specify "no SD/MMC" capability?
-I will remove these and decide highspeed capability based on max-frequency.
-
-> https://lkml.org/lkml/2012/10/15/231
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 5d8a422..04aab05 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -795,10 +795,8 @@ static int cpufreq_add_dev_interface(unsigned int cpu,
 > 
-> [...]
+>  	if (ret) {
+>  		pr_debug("setting policy failed\n");
+> -		spin_lock_irqsave(&cpufreq_driver_lock, flags);
+>  		if (driver->exit)
+>  			driver->exit(policy);
+> -		spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
+>  	}
+>  	return ret;
 > 
-> > +static struct davinci_mmc_config
-> > +	*mmc_parse_pdata(struct platform_device *pdev)
-> >  {
-> > +	struct device_node *np;
-> >  	struct davinci_mmc_config *pdata = pdev->dev.platform_data;
-> > +	const struct of_device_id *match =
-> > +		of_match_device(of_match_ptr(davinci_mmc_dt_ids), &pdev->dev);
-> > +	u32 data;
-> > +
-> > +	np = pdev->dev.of_node;
-> > +	if (!np)
-> > +		return pdata;
-> > +
-> > +	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
-> > +	if (!pdata) {
-> > +		dev_err(&pdev->dev, "Failed to allocate memory for struct davinci_mmc_config\n");
-> > +		goto nodata;
-> > +	}
-> > +
-> > +	if (match->data)
-> > +		pdata->version = (u8)((int)match->data);
-> > +
-> > +	of_property_read_u32(np, "max-frequency", &pdata->max_freq);
-> > +	if (!pdata->max_freq)
-> > +		dev_info(&pdev->dev, "'max-frequency' property not specified, defaulting to 25MHz\n");
-> > +
-> > +	if (of_get_property(np, "mmc-cap-mmc-highspeed", NULL))
-> > +		pdata->caps |= MMC_CAP_MMC_HIGHSPEED;
-> > +	if (of_get_property(np, "mmc-cap-sd-highspeed", NULL))
-> > +		pdata->caps |= MMC_CAP_SD_HIGHSPEED;
+> @@ -920,17 +918,14 @@ static int cpufreq_add_dev(struct device *dev,
+> struct subsys_interface *sif)
+>  	init_completion(&policy->kobj_unregister);
+>  	INIT_WORK(&policy->update, handle_update);
 > 
-> If these aren't derivable from max-frequency, you could use
-> of_property_read_bool to make this clearer.
+> -	spin_lock_irqsave(&cpufreq_driver_lock, flags);
+>  	/* call driver. From then on the cpufreq must be able
+>  	 * to accept all calls to ->verify and ->setpolicy for this CPU
+>  	 */
+>  	ret = driver->init(policy);
+>  	if (ret) {
+>  		pr_debug("initialization failed\n");
+> -		spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
+>  		goto err_set_policy_cpu;
+>  	}
+> -	spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
 > 
-
-Correct, I will decide these based on max-frequency.
-
-> > +
-> > +	of_property_read_u32(np, "bus-width", &data);
-> > +	switch (data) {
-> > +	case 0:
+>  	/* related cpus should atleast have policy->cpus */
+>  	cpumask_or(policy->related_cpus, policy->related_cpus, policy->cpus);
+> @@ -1100,10 +1095,8 @@ static int __cpufreq_remove_dev(struct device
+> *dev, struct subsys_interface *sif
+>  		wait_for_completion(cmp);
+>  		pr_debug("wait complete\n");
 > 
-> Judging by the binding doc, should this be 1 rather than 0?
+> -		spin_lock_irqsave(&cpufreq_driver_lock, flags);
+>  		if (driver->exit)
+>  			driver->exit(data);
+> -		spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
 > 
+>  		free_cpumask_var(data->related_cpus);
+>  		free_cpumask_var(data->cpus);
 
-By default driver comes up in 4 bit mode when bus-width is not specified.
-Bus-width is set to 1 bit for invalid bus-widths. Below are the cases
-when bus-width 0 or 4, bus-width is set to 4bit mode
-When bus-width is 8, bus-width is set to 8 bit mode
+Tested-by: Artem Savkov <artem.savkov@gmail.com>
 
-I thought that if somebody specifies bus-width as 2, 3, 5, 6, 7..., then
-it should be defaulted to 1 bit mode, so I specified it as 1 bit in binding doc.
-But I feel that a person who is editing dts file will not make such a mistake.
-I will change binding document to default as 4 bit mode.
-
-> > +	case 4:
-> > +	case 8:
-> > +		pdata->wires = data;
-> > +		break;
-> > +	default:
-> > +		pdata->wires = 1;
-> > +		dev_info(&pdev->dev, "Unsupported buswidth, defaulting to 1 bit\n");
-> > +	}
-> > +nodata:
-> > +	return pdata;
-> > +}
-> > +
-> > +static int __init davinci_mmcsd_probe(struct platform_device *pdev)
-> > +{
-> > +	struct davinci_mmc_config *pdata = NULL;
-> >  	struct mmc_davinci_host *host = NULL;
-> >  	struct mmc_host *mmc = NULL;
-> >  	struct resource *r, *mem = NULL;
-> >  	int ret = 0, irq = 0;
-> >  	size_t mem_size;
-> >  
-> > +	pdata = mmc_parse_pdata(pdev);
-> > +	if (pdata == NULL) {
-> > +		dev_err(&pdev->dev, "Can not get platform data\n");
-> > +		return -ENOENT;
-> > +	}
-> > +
-> >  	/* REVISIT:  when we're fully converted, fail if pdata is NULL */
-> 
-> This comment can presumably disappear judging by the lines above?
-> 
-
-Agreed. I will remove it.
-
-Thanks,
-Prakash
-
+-- 
+Kind regards,
+Artem
