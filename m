@@ -1,409 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947277Ab3BHVZE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 16:25:04 -0500
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:50447 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1947227Ab3BHVY6 (ORCPT
+	id S1947219Ab3BHV1I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 16:27:08 -0500
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:40468 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1947146Ab3BHV1F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 16:24:58 -0500
+	Fri, 8 Feb 2013 16:27:05 -0500
+Message-ID: <51156DA3.2080006@gmail.com>
+Date: Fri, 08 Feb 2013 22:26:59 +0100
+From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <1360351703-20571-27-git-send-email-yinghai@kernel.org>
-References: <1360351703-20571-1-git-send-email-yinghai@kernel.org> <1360351703-20571-27-git-send-email-yinghai@kernel.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 8 Feb 2013 14:24:36 -0700
-Message-ID: <CAErSpo5PX--N5vuOm7X2u7LDZ4tfHE7OHjfCUFwMRDAFkvTA_Q@mail.gmail.com>
-Subject: Re: [PATCH v2 26/26] PCI, x86, ACPI: Add ioapic hotplug support with
- acpi host bridge.
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Benoit Thebaudeau <benoit.thebaudeau@advansee.com>,
+        David Hardeman <david@hardeman.nu>, Trilok Soni <tsoni@codeaurora.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Matus Ujhelyi <ujhelyi.m@gmail.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
+Subject: Re: [PATCH v2] media: rc: gpio-ir-recv: add support for device tree
+ parsing
+References: <1360137832-13086-1-git-send-email-sebastian.hesselbarth@gmail.com> <1360355887-19973-1-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1360355887-19973-1-git-send-email-sebastian.hesselbarth@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 8, 2013 at 12:28 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> We need to have ioapic setup before normal pci drivers.
-> otherwise other pci driver can not setup irq.
+On 02/08/2013 09:38 PM, Sebastian Hesselbarth wrote:
+> This patch adds device tree parsing for gpio_ir_recv platform_data and
+> the mandatory binding documentation. It basically follows what we already
+> have for e.g. gpio_keys. All required device tree properties are OS
+> independent but an optional property allow linux specific support for rc
+> maps.
 >
-> Make ioapic built-in, so can call add/remove during host-bridge add/remove
-> the same as the booting path.
+> There was a similar patch sent by Matus Ujhelyi but that discussion
+> died after the first reviews.
 >
-> Also need to make it depends on X86_IO_APIC.
-
-There are a lot of different things happening in this patch.  I'd
-prefer if they were split out so we can see what's happening.  For
-example, the Kconfig changes could be their own patch.  The removal of
-the PCI device table is worthy of mention and its own patch (if
-possible), since it's a pretty major change to how the driver binds to
-devices.
-
-> Signed-off-by: <yinghai@kernel.org>
+> Signed-off-by: Sebastian Hesselbarth<sebastian.hesselbarth@gmail.com>
 > ---
->  arch/x86/kernel/acpi/boot.c |   10 +-
->  drivers/acpi/pci_root.c     |    4 +
->  drivers/pci/Kconfig         |    3 +-
->  drivers/pci/ioapic.c        |  216 ++++++++++++++++++++++++++++++-------------
->  include/linux/pci-acpi.h    |    8 ++
->  5 files changed, 172 insertions(+), 69 deletions(-)
+> Changelog
 >
-> diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-> index 350879f..338163b 100644
-> --- a/arch/x86/kernel/acpi/boot.c
-> +++ b/arch/x86/kernel/acpi/boot.c
-> @@ -697,16 +697,18 @@ EXPORT_SYMBOL(acpi_unmap_lsapic);
+> v1->v2:
+> - get rid of ptr returned by _get_devtree_pdata()
+> - check for of_node instead for NULL pdata
+> - remove unneccessary double check for gpios property
+> - remove unneccessary #ifdef CONFIG_OF around match table
 >
->  int acpi_register_ioapic(acpi_handle handle, u64 phys_addr, u32 gsi_base)
->  {
-> -       /* TBD */
-> -       return -EINVAL;
-> +       unsigned long long id = 0;
+> Cc: Grant Likely<grant.likely@secretlab.ca>
+> Cc: Rob Herring<rob.herring@calxeda.com>
+> Cc: Rob Landley<rob@landley.net>
+> Cc: Mauro Carvalho Chehab<mchehab@redhat.com>
+> Cc: Sebastian Hesselbarth<sebastian.hesselbarth@gmail.com>
+> Cc: Benoit Thebaudeau<benoit.thebaudeau@advansee.com>
+> Cc: David Hardeman<david@hardeman.nu>
+> Cc: Trilok Soni<tsoni@codeaurora.org>
+> Cc: Sylwester Nawrocki<s.nawrocki@samsung.com>
+> Cc: Matus Ujhelyi<ujhelyi.m@gmail.com>
+> Cc: devicetree-discuss@lists.ozlabs.org
+> Cc: linux-doc@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: linux-media@vger.kernel.org
+> ---
+>   .../devicetree/bindings/media/gpio-ir-receiver.txt |   16 ++++++
+>   drivers/media/rc/gpio-ir-recv.c                    |   57 ++++++++++++++++++++
+>   2 files changed, 73 insertions(+)
+>   create mode 100644 Documentation/devicetree/bindings/media/gpio-ir-receiver.txt
+>
+> diff --git a/Documentation/devicetree/bindings/media/gpio-ir-receiver.txt b/Documentation/devicetree/bindings/media/gpio-ir-receiver.txt
+> new file mode 100644
+> index 0000000..8589f30
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/media/gpio-ir-receiver.txt
+> @@ -0,0 +1,16 @@
+> +Device-Tree bindings for GPIO IR receiver
 > +
-> +       acpi_evaluate_integer(handle, "_UID", NULL, &id);
+> +Required properties:
+> +	- compatible = "gpio-ir-receiver";
+> +	- gpios: OF device-tree gpio specification.
+
+Perhaps:
+	- compatible: should be "gpio-ir-receiver";
+	- gpios: specifies GPIO used for IR signal reception.
+?
 > +
-> +       return  __mp_register_ioapic(id, phys_addr, gsi_base, true);
->  }
->
->  EXPORT_SYMBOL(acpi_register_ioapic);
->
->  int acpi_unregister_ioapic(acpi_handle handle, u32 gsi_base)
->  {
-> -       /* TBD */
-> -       return -EINVAL;
-> +       return mp_unregister_ioapic(gsi_base);
->  }
->
->  EXPORT_SYMBOL(acpi_unregister_ioapic);
-> diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
-> index 417487a..54d61ce 100644
-> --- a/drivers/acpi/pci_root.c
-> +++ b/drivers/acpi/pci_root.c
-> @@ -587,6 +587,8 @@ static int acpi_pci_root_add(struct acpi_device *device)
->                 pci_assign_unassigned_bus_resources(root->bus);
->         }
->
-> +       acpi_pci_ioapic_add(root);
+> +Optional properties:
+> +	- linux,rc-map-name: Linux specific remote control map name.
 > +
->         mutex_lock(&acpi_pci_root_lock);
->         list_for_each_entry(driver, &acpi_pci_drivers, node)
->                 if (driver->add)
-> @@ -626,6 +628,8 @@ static int acpi_pci_root_remove(struct acpi_device *device, int type)
->                         driver->remove(root);
->         mutex_unlock(&acpi_pci_root_lock);
->
-> +       acpi_pci_ioapic_remove(root);
+> +Example node:
 > +
->         device_set_run_wake(root->bus->bridge, false);
->         pci_acpi_remove_bus_pm_notifier(device);
+> +	ir: ir-receiver {
+> +		compatible = "gpio-ir-receiver";
+> +		gpios =<&gpio0 19 1>;
+> +		linux,rc-map-name = "rc-rc6-mce";
+> +	};
+> diff --git a/drivers/media/rc/gpio-ir-recv.c b/drivers/media/rc/gpio-ir-recv.c
+> index 4f71a7d..3c62006 100644
+> --- a/drivers/media/rc/gpio-ir-recv.c
+> +++ b/drivers/media/rc/gpio-ir-recv.c
+> @@ -16,6 +16,7 @@
+>   #include<linux/interrupt.h>
+>   #include<linux/gpio.h>
+>   #include<linux/slab.h>
+> +#include<linux/of_gpio.h>
+>   #include<linux/platform_device.h>
+>   #include<linux/irq.h>
+>   #include<media/rc-core.h>
+> @@ -30,6 +31,50 @@ struct gpio_rc_dev {
+>   	bool active_low;
+>   };
 >
-> diff --git a/drivers/pci/Kconfig b/drivers/pci/Kconfig
-> index 6d51aa6..720989f 100644
-> --- a/drivers/pci/Kconfig
-> +++ b/drivers/pci/Kconfig
-> @@ -110,10 +110,11 @@ config PCI_PASID
->           If unsure, say N.
->
->  config PCI_IOAPIC
-> -       tristate "PCI IO-APIC hotplug support" if X86
-> +       bool "PCI IO-APIC hotplug support" if X86
->         depends on PCI
->         depends on ACPI
->         depends on HOTPLUG
-> +       depends on X86_IO_APIC
->         default !X86
->
->  config PCI_LABEL
-> diff --git a/drivers/pci/ioapic.c b/drivers/pci/ioapic.c
-> index 8dacfd0..12e56c7 100644
-> --- a/drivers/pci/ioapic.c
-> +++ b/drivers/pci/ioapic.c
-> @@ -22,70 +22,128 @@
->  #include <linux/slab.h>
->  #include <acpi/acpi_bus.h>
->
-> -struct ioapic {
-> -       acpi_handle     handle;
-> +struct acpi_pci_ioapic {
-> +       acpi_handle     root_handle;
->         u32             gsi_base;
-> +       struct pci_dev *pdev;
-> +       struct list_head list;
->  };
->
-> -static int ioapic_probe(struct pci_dev *dev, const struct pci_device_id *ent)
-> +static LIST_HEAD(ioapic_list);
-> +static DEFINE_MUTEX(ioapic_list_lock);
-> +
-> +static acpi_status setup_res(struct acpi_resource *acpi_res, void *data)
+> +#ifdef CONFIG_OF
+> +/*
+> + * Translate OpenFirmware node properties into platform_data
+> + */
+> +static int gpio_ir_recv_get_devtree_pdata(struct device *dev,
+> +				  struct gpio_ir_recv_platform_data *pdata)
 > +{
-> +       struct resource *res;
-> +       struct acpi_resource_address64 addr;
-> +       acpi_status status;
-> +       unsigned long flags;
-> +       u64 start, end;
+> +	struct device_node *np = dev->of_node;
+> +	enum of_gpio_flags flags;
+> +	int gpio;
 > +
-> +       status = acpi_resource_to_address64(acpi_res, &addr);
-> +       if (!ACPI_SUCCESS(status))
-> +               return AE_OK;
+> +	gpio = of_get_gpio_flags(np, 0,&flags);
+> +	if (gpio<  0) {
+> +		if (gpio != -EPROBE_DEFER)
+> +			dev_err(dev, "Failed to get gpio flags, error: %d\n",
+> +				gpio);
+
+			dev_err(dev, "Failed to get gpio flags (%d)\n",	gpio);
+?
+> +		return gpio;
+> +	}
 > +
-> +       if (addr.resource_type == ACPI_MEMORY_RANGE) {
-> +               if (addr.info.mem.caching == ACPI_PREFETCHABLE_MEMORY)
-> +                       return AE_OK;
-> +               flags = IORESOURCE_MEM;
-> +       } else
-> +               return AE_OK;
+> +	pdata->gpio_nr = gpio;
+> +	pdata->active_low = (flags&  OF_GPIO_ACTIVE_LOW) ? true : false;
+
+This could be simplified to:
+
+	pdata->active_low = (flags & OF_GPIO_ACTIVE_LOW);
+
+> +	/* probe() takes care of map_name == NULL or allowed_protos == 0 */
+> +	pdata->map_name = of_get_property(np, "linux,rc-map-name", NULL);
+> +	pdata->allowed_protos = 0;
 > +
-> +       start = addr.minimum + addr.translation_offset;
-> +       end = addr.maximum + addr.translation_offset;
-> +
-> +       res = data;
-> +       res->flags = flags;
-> +       res->start = start;
-> +       res->end = end;
-> +
-> +       return AE_OK;
+> +	return 0;
 > +}
 > +
-> +static void handle_ioapic_add(acpi_handle handle, struct pci_dev **pdev,
-> +                                u32 *pgsi_base)
->  {
-> -       acpi_handle handle;
->         acpi_status status;
->         unsigned long long gsb;
-> -       struct ioapic *ioapic;
-> +       struct pci_dev *dev;
-> +       u32 gsi_base;
->         int ret;
->         char *type;
-> -       struct resource *res;
-> +       struct resource r;
-> +       struct resource *res = &r;
-> +       char objname[64];
-> +       struct acpi_buffer buffer = {sizeof(objname), objname};
->
-> -       handle = DEVICE_ACPI_HANDLE(&dev->dev);
-> -       if (!handle)
-> -               return -EINVAL;
-> +       *pdev = NULL;
-> +       *pgsi_base = 0;
->
->         status = acpi_evaluate_integer(handle, "_GSB", NULL, &gsb);
-> -       if (ACPI_FAILURE(status))
-> -               return -EINVAL;
-> +       if (ACPI_FAILURE(status) || !gsb)
-> +               return;
+> +static struct of_device_id gpio_ir_recv_of_match[] = {
+> +	{ .compatible = "gpio-ir-receiver", },
+> +	{ },
+> +};
+> +MODULE_DEVICE_TABLE(of, gpio_ir_recv_of_match);
 > +
-> +       dev = acpi_get_pci_dev(handle);
-> +       if (!dev) {
-> +               struct acpi_device_info *info;
-> +               char *hid = NULL;
+> +#else /* !CONFIG_OF */
 > +
-> +               status = acpi_get_object_info(handle, &info);
-> +               if (ACPI_FAILURE(status))
-> +                       return;
-> +               if (info->valid & ACPI_VALID_HID)
-> +                       hid = info->hardware_id.string;
-> +               if (!hid || strcmp(hid, "ACPI0009")) {
-> +                       kfree(info);
-> +                       return;
-> +               }
-> +               kfree(info);
-> +               memset(res, 0, sizeof(*res));
-> +               acpi_walk_resources(handle, METHOD_NAME__CRS, setup_res, res);
-> +               if (!res->flags)
-> +                       return;
-> +       }
->
-> -       /*
-> -        * The previous code in acpiphp evaluated _MAT if _GSB failed, but
-> -        * ACPI spec 4.0 sec 6.2.2 requires _GSB for hot-pluggable I/O APICs.
-> -        */
-> +       acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
->
-> -       ioapic = kzalloc(sizeof(*ioapic), GFP_KERNEL);
-> -       if (!ioapic)
-> -               return -ENOMEM;
-> +       gsi_base = gsb;
-> +       type = "IOxAPIC";
-> +       if (dev) {
-> +               ret = pci_enable_device(dev);
-> +               if (ret < 0)
-> +                       goto exit_put;
->
-> -       ioapic->handle = handle;
-> -       ioapic->gsi_base = (u32) gsb;
-> +               pci_set_master(dev);
->
-> -       if (dev->class == PCI_CLASS_SYSTEM_PIC_IOAPIC)
-> -               type = "IOAPIC";
-> -       else
-> -               type = "IOxAPIC";
-> +               if (dev->class == PCI_CLASS_SYSTEM_PIC_IOAPIC)
-> +                       type = "IOAPIC";
->
-> -       ret = pci_enable_device(dev);
-> -       if (ret < 0)
-> -               goto exit_free;
-> +               if (pci_request_region(dev, 0, type))
-> +                       goto exit_disable;
->
-> -       pci_set_master(dev);
-> +               res = &dev->resource[0];
-> +       }
->
-> -       if (pci_request_region(dev, 0, type))
-> -               goto exit_disable;
-> +       if (acpi_register_ioapic(handle, res->start, gsi_base)) {
-> +               if (dev)
-> +                       goto exit_release;
-> +               return;
-> +       }
->
-> -       res = &dev->resource[0];
-> -       if (acpi_register_ioapic(ioapic->handle, res->start, ioapic->gsi_base))
-> -               goto exit_release;
-> +       pr_info("%s %s %s at %pR, GSI %u\n",
-> +               dev ? dev_name(&dev->dev) : "", objname, type,
-> +               res, gsi_base);
->
-> -       pci_set_drvdata(dev, ioapic);
-> -       dev_info(&dev->dev, "%s at %pR, GSI %u\n", type, res, ioapic->gsi_base);
-> -       return 0;
-> +       *pdev = dev;
-> +       *pgsi_base = gsi_base;
-> +       return;
->
->  exit_release:
->         pci_release_region(dev, 0);
->  exit_disable:
->         pci_disable_device(dev);
-> -exit_free:
-> -       kfree(ioapic);
-> -       return -ENODEV;
-> +exit_put:
-> +       pci_dev_put(dev);
->  }
->
->  static void pci_disable_device_mem(struct pci_dev *dev)
-> @@ -99,44 +157,74 @@ static void pci_disable_device_mem(struct pci_dev *dev)
->         }
->  }
->
-> -static void ioapic_remove(struct pci_dev *dev)
-> +static void handle_ioapic_remove(acpi_handle handle, struct pci_dev *dev,
-> +                                 u32 gsi_base)
->  {
-> -       struct ioapic *ioapic = pci_get_drvdata(dev);
-> +       acpi_unregister_ioapic(handle, gsi_base);
-> +
-> +       if (!dev)
-> +               return;
->
-> -       acpi_unregister_ioapic(ioapic->handle, ioapic->gsi_base);
->         pci_release_region(dev, 0);
->         pci_disable_device(dev);
->         /* need to disable it, otherwise remove/rescan will not work */
->         pci_disable_device_mem(dev);
-> -       kfree(ioapic);
-> +       pci_dev_put(dev);
->  }
->
-> +static acpi_status register_ioapic(acpi_handle handle, u32 lvl,
-> +                                       void *context, void **rv)
+> +static inline struct gpio_ir_recv_platform_data *
+> +gpio_ir_recv_get_devtree_pdata(struct device *dev)
+
+Please check how it compiles with CONFIG_OF disabled ;)
+
+You could also make it:
+
+#define gpio_ir_recv_get_devtree_pdata  (-ENOSYS)
+
 > +{
-> +       acpi_handle root_handle = context;
-> +       struct pci_dev *pdev;
-> +       u32 gsi_base;
-> +       struct acpi_pci_ioapic *ioapic;
->
-> -static DEFINE_PCI_DEVICE_TABLE(ioapic_devices) = {
-> -       { PCI_DEVICE_CLASS(PCI_CLASS_SYSTEM_PIC_IOAPIC, ~0) },
-> -       { PCI_DEVICE_CLASS(PCI_CLASS_SYSTEM_PIC_IOXAPIC, ~0) },
-> -       { }
-> -};
-> -MODULE_DEVICE_TABLE(pci, ioapic_devices);
-> +       handle_ioapic_add(handle, &pdev, &gsi_base);
-> +       if (!gsi_base)
-> +               return AE_OK;
->
-> -static struct pci_driver ioapic_driver = {
-> -       .name           = "ioapic",
-> -       .id_table       = ioapic_devices,
-> -       .probe          = ioapic_probe,
-> -       .remove         = ioapic_remove,
-> -};
-> +       ioapic = kzalloc(sizeof(*ioapic), GFP_KERNEL);
-> +       if (!ioapic) {
-> +               pr_err("%s: cannot allocate memory\n", __func__);
-> +               handle_ioapic_remove(root_handle, pdev, gsi_base);
-> +               return AE_OK;
-> +       }
-> +       ioapic->root_handle = root_handle;
-> +       ioapic->pdev = pdev;
-> +       ioapic->gsi_base = gsi_base;
->
-> -static int __init ioapic_init(void)
-> -{
-> -       return pci_register_driver(&ioapic_driver);
-> +       mutex_lock(&ioapic_list_lock);
-> +       list_add(&ioapic->list, &ioapic_list);
-> +       mutex_unlock(&ioapic_list_lock);
-> +
-> +       return AE_OK;
->  }
->
-> -static void __exit ioapic_exit(void)
-> +void acpi_pci_ioapic_add(struct acpi_pci_root *root)
->  {
-> -       pci_unregister_driver(&ioapic_driver);
-> -}
-> +       acpi_status status;
->
-> -module_init(ioapic_init);
-> -module_exit(ioapic_exit);
-> +       status = acpi_walk_namespace(ACPI_TYPE_DEVICE, root->device->handle,
-> +                                    (u32)1, register_ioapic, NULL,
-> +                                    root->device->handle,
-> +                                    NULL);
-> +       if (ACPI_FAILURE(status))
-> +               pr_err("%s: register_ioapic failure - %d", __func__, status);
+> +	return ERR_PTR(-ENODEV);
 > +}
->
-> -MODULE_LICENSE("GPL");
-> +void acpi_pci_ioapic_remove(struct acpi_pci_root *root)
-> +{
-> +       struct acpi_pci_ioapic *ioapic, *tmp;
 > +
-> +       mutex_lock(&ioapic_list_lock);
-> +       list_for_each_entry_safe(ioapic, tmp, &ioapic_list, list) {
-> +               if (root->device->handle != ioapic->root_handle)
-> +                       continue;
-> +               list_del(&ioapic->list);
-> +               handle_ioapic_remove(ioapic->root_handle, ioapic->pdev,
-> +                                       ioapic->gsi_base);
-> +               kfree(ioapic);
-> +       }
-> +       mutex_unlock(&ioapic_list_lock);
-> +}
-> diff --git a/include/linux/pci-acpi.h b/include/linux/pci-acpi.h
-> index 9a22b5e..6f83039 100644
-> --- a/include/linux/pci-acpi.h
-> +++ b/include/linux/pci-acpi.h
-> @@ -49,4 +49,12 @@ extern bool aer_acpi_firmware_first(void);
->  static inline bool aer_acpi_firmware_first(void) { return false; }
->  #endif
->
-> +#ifdef CONFIG_PCI_IOAPIC
-> +void acpi_pci_ioapic_add(struct acpi_pci_root *root);
-> +void acpi_pci_ioapic_remove(struct acpi_pci_root *root);
-> +#else
-> +static inline void acpi_pci_ioapic_add(struct acpi_pci_root *root) { }
-> +static inline void acpi_pci_ioapic_remove(struct acpi_pci_root *root) { }
 > +#endif
 > +
->  #endif /* _PCI_ACPI_H_ */
-> --
-> 1.7.10.4
+>   static irqreturn_t gpio_ir_recv_irq(int irq, void *dev_id)
+>   {
+>   	struct gpio_rc_dev *gpio_dev = dev_id;
+> @@ -66,6 +111,17 @@ static int gpio_ir_recv_probe(struct platform_device *pdev)
+>   					pdev->dev.platform_data;
+>   	int rc;
 >
+> +	if (pdev->dev.of_node) {
+> +		struct gpio_ir_recv_platform_data *dtpdata =
+
+I think you could use pdata here instead, as previously. But I'm fine with
+as it is now as well.
+
+> +			devm_kzalloc(&pdev->dev, sizeof(*dtpdata), GFP_KERNEL);
+> +		if (!dtpdata)
+> +			return -ENOMEM;
+> +		rc = gpio_ir_recv_get_devtree_pdata(&pdev->dev, dtpdata);
+> +		if (rc)
+> +			return rc;
+> +		pdata = dtpdata;
+> +	}
+> +
+>   	if (!pdata)
+>   		return -EINVAL;
+>
+> @@ -192,6 +248,7 @@ static struct platform_driver gpio_ir_recv_driver = {
+>   	.driver = {
+>   		.name   = GPIO_IR_DRIVER_NAME,
+>   		.owner  = THIS_MODULE,
+> +		.of_match_table = of_match_ptr(gpio_ir_recv_of_match),
+>   #ifdef CONFIG_PM
+>   		.pm	=&gpio_ir_recv_pm_ops,
+>   #endif
+
+The patch looks good to me in general, after fixing the empty function
+declaration please feel free to add:
+
+Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+
+--
+
+Thanks,
+Sylwester
+
+
