@@ -1,27 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946334Ab3BHLmI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 06:42:08 -0500
-Received: from mail-la0-f53.google.com ([209.85.215.53]:42439 "EHLO
+	id S1946350Ab3BHLmU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 06:42:20 -0500
+Received: from mail-la0-f53.google.com ([209.85.215.53]:49348 "EHLO
 	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946307Ab3BHLmG (ORCPT
+	with ESMTP id S1946317Ab3BHLmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 06:42:06 -0500
+	Fri, 8 Feb 2013 06:42:08 -0500
 From: Tommi Rantala <tt.rantala@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: davej@redhat.com, Bill Pemberton <wfp5p@virginia.edu>,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Tommi Rantala <tt.rantala@gmail.com>
-Subject: [PATCH 1/2] staging: dgrp: use correct release op for /proc/dgrp/info
-Date: Fri,  8 Feb 2013 13:41:25 +0200
-Message-Id: <1360323686-14845-1-git-send-email-tt.rantala@gmail.com>
+Subject: [PATCH 2/2] staging: dgrp: prefix function names with dgrp_ in dgrp_specproc.c
+Date: Fri,  8 Feb 2013 13:41:26 +0200
+Message-Id: <1360323686-14845-2-git-send-email-tt.rantala@gmail.com>
 X-Mailer: git-send-email 1.8.1
+In-Reply-To: <1360323686-14845-1-git-send-email-tt.rantala@gmail.com>
+References: <1360323686-14845-1-git-send-email-tt.rantala@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Trinity (the syscall fuzzer) discovered that reading /proc/dgrp/info was
-leaking some memory. Fix by using the correct release op in info_proc_file_ops.
+Prefix the functions in dgrp_specproc.c to avoid ambiguity in backtraces, such
+as the "info_proc_open" in this one:
 
 unreferenced object 0xffff88003b6696e0 (size 32):
   comm "cat", pid 2321, jiffies 4294705179 (age 29.434s)
@@ -46,22 +48,176 @@ unreferenced object 0xffff88003b6696e0 (size 32):
 
 Signed-off-by: Tommi Rantala <tt.rantala@gmail.com>
 ---
- drivers/staging/dgrp/dgrp_specproc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/dgrp/dgrp_specproc.c | 66 +++++++++++++++++++-----------------
+ 1 file changed, 34 insertions(+), 32 deletions(-)
 
 diff --git a/drivers/staging/dgrp/dgrp_specproc.c b/drivers/staging/dgrp/dgrp_specproc.c
-index c214078..aff6707c 100644
+index aff6707c..d55e639 100644
 --- a/drivers/staging/dgrp/dgrp_specproc.c
 +++ b/drivers/staging/dgrp/dgrp_specproc.c
-@@ -102,7 +102,7 @@ static struct file_operations info_proc_file_ops = {
- 	.open	 = info_proc_open,
+@@ -81,25 +81,26 @@ static struct dgrp_proc_entry dgrp_mon_table[];
+ static struct dgrp_proc_entry dgrp_ports_table[];
+ static struct dgrp_proc_entry dgrp_dpa_table[];
+ 
+-static ssize_t config_proc_write(struct file *file, const char __user *buffer,
+-				 size_t count, loff_t *pos);
++static ssize_t dgrp_config_proc_write(struct file *file,
++				      const char __user *buffer,
++				      size_t count, loff_t *pos);
+ 
+-static int nodeinfo_proc_open(struct inode *inode, struct file *file);
+-static int info_proc_open(struct inode *inode, struct file *file);
+-static int config_proc_open(struct inode *inode, struct file *file);
++static int dgrp_nodeinfo_proc_open(struct inode *inode, struct file *file);
++static int dgrp_info_proc_open(struct inode *inode, struct file *file);
++static int dgrp_config_proc_open(struct inode *inode, struct file *file);
+ 
+ static struct file_operations config_proc_file_ops = {
+ 	.owner	 = THIS_MODULE,
+-	.open	 = config_proc_open,
++	.open	 = dgrp_config_proc_open,
  	.read	 = seq_read,
  	.llseek	 = seq_lseek,
--	.release = seq_release,
-+	.release = single_release,
+ 	.release = seq_release,
+-	.write   = config_proc_write
++	.write   = dgrp_config_proc_write,
  };
  
+ static struct file_operations info_proc_file_ops = {
+ 	.owner	 = THIS_MODULE,
+-	.open	 = info_proc_open,
++	.open	 = dgrp_info_proc_open,
+ 	.read	 = seq_read,
+ 	.llseek	 = seq_lseek,
+ 	.release = single_release,
+@@ -107,7 +108,7 @@ static struct file_operations info_proc_file_ops = {
+ 
  static struct file_operations nodeinfo_proc_file_ops = {
+ 	.owner	 = THIS_MODULE,
+-	.open	 = nodeinfo_proc_open,
++	.open	 = dgrp_nodeinfo_proc_open,
+ 	.read	 = seq_read,
+ 	.llseek	 = seq_lseek,
+ 	.release = seq_release,
+@@ -403,21 +404,21 @@ done:
+ 	return 0;
+ }
+ 
+-static void *config_proc_start(struct seq_file *m, loff_t *pos)
++static void *dgrp_config_proc_start(struct seq_file *m, loff_t *pos)
+ {
+ 	return seq_list_start_head(&nd_struct_list, *pos);
+ }
+ 
+-static void *config_proc_next(struct seq_file *p, void *v, loff_t *pos)
++static void *dgrp_config_proc_next(struct seq_file *p, void *v, loff_t *pos)
+ {
+ 	return seq_list_next(v, &nd_struct_list, pos);
+ }
+ 
+-static void config_proc_stop(struct seq_file *m, void *v)
++static void dgrp_config_proc_stop(struct seq_file *m, void *v)
+ {
+ }
+ 
+-static int config_proc_show(struct seq_file *m, void *v)
++static int dgrp_config_proc_show(struct seq_file *m, void *v)
+ {
+ 	struct nd_struct *nd;
+ 	char tmp_id[4];
+@@ -443,13 +444,13 @@ static int config_proc_show(struct seq_file *m, void *v)
+ }
+ 
+ static const struct seq_operations proc_config_ops = {
+-	.start = config_proc_start,
+-	.next  = config_proc_next,
+-	.stop  = config_proc_stop,
+-	.show  = config_proc_show
++	.start = dgrp_config_proc_start,
++	.next  = dgrp_config_proc_next,
++	.stop  = dgrp_config_proc_stop,
++	.show  = dgrp_config_proc_show,
+ };
+ 
+-static int config_proc_open(struct inode *inode, struct file *file)
++static int dgrp_config_proc_open(struct inode *inode, struct file *file)
+ {
+ 	return seq_open(file, &proc_config_ops);
+ }
+@@ -460,8 +461,9 @@ static int config_proc_open(struct inode *inode, struct file *file)
+  *  write) is treated as an independent request.  See the "parse"
+  *  description for more details.
+  */
+-static ssize_t config_proc_write(struct file *file, const char __user *buffer,
+-				 size_t count, loff_t *pos)
++static ssize_t dgrp_config_proc_write(struct file *file,
++				      const char __user *buffer,
++				      size_t count, loff_t *pos)
+ {
+ 	ssize_t retval;
+ 	char *inbuf, *sp;
+@@ -625,7 +627,7 @@ static int parse_write_config(char *buf)
+ 	return retval;
+ }
+ 
+-static int info_proc_show(struct seq_file *m, void *v)
++static int dgrp_info_proc_show(struct seq_file *m, void *v)
+ {
+ 	seq_printf(m, "version: %s\n", DIGI_VERSION);
+ 	seq_puts(m, "register_with_sysfs: 1\n");
+@@ -635,27 +637,27 @@ static int info_proc_show(struct seq_file *m, void *v)
+ 	return 0;
+ }
+ 
+-static int info_proc_open(struct inode *inode, struct file *file)
++static int dgrp_info_proc_open(struct inode *inode, struct file *file)
+ {
+-	return single_open(file, info_proc_show, NULL);
++	return single_open(file, dgrp_info_proc_show, NULL);
+ }
+ 
+ 
+-static void *nodeinfo_start(struct seq_file *m, loff_t *pos)
++static void *dgrp_nodeinfo_start(struct seq_file *m, loff_t *pos)
+ {
+ 	return seq_list_start_head(&nd_struct_list, *pos);
+ }
+ 
+-static void *nodeinfo_next(struct seq_file *p, void *v, loff_t *pos)
++static void *dgrp_nodeinfo_next(struct seq_file *p, void *v, loff_t *pos)
+ {
+ 	return seq_list_next(v, &nd_struct_list, pos);
+ }
+ 
+-static void nodeinfo_stop(struct seq_file *m, void *v)
++static void dgrp_nodeinfo_stop(struct seq_file *m, void *v)
+ {
+ }
+ 
+-static int nodeinfo_show(struct seq_file *m, void *v)
++static int dgrp_nodeinfo_show(struct seq_file *m, void *v)
+ {
+ 	struct nd_struct *nd;
+ 	char hwver[8];
+@@ -697,13 +699,13 @@ static int nodeinfo_show(struct seq_file *m, void *v)
+ 
+ 
+ static const struct seq_operations nodeinfo_ops = {
+-	.start = nodeinfo_start,
+-	.next  = nodeinfo_next,
+-	.stop  = nodeinfo_stop,
+-	.show  = nodeinfo_show
++	.start = dgrp_nodeinfo_start,
++	.next  = dgrp_nodeinfo_next,
++	.stop  = dgrp_nodeinfo_stop,
++	.show  = dgrp_nodeinfo_show,
+ };
+ 
+-static int nodeinfo_proc_open(struct inode *inode, struct file *file)
++static int dgrp_nodeinfo_proc_open(struct inode *inode, struct file *file)
+ {
+ 	return seq_open(file, &nodeinfo_ops);
+ }
 -- 
 1.8.1
 
