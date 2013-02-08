@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946954Ab3BHTx0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 14:53:26 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:35253 "EHLO hydra.sisk.pl"
+	id S1946993Ab3BHT4S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 14:56:18 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:35261 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1946795Ab3BHTxZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 14:53:25 -0500
+	id S1946936Ab3BHT4R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 14:56:17 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <liuj97@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Subject: Re: [PATCH 0/2] ACPI / scan: Remove useless #ifndef and simplify container driver
-Date: Fri, 08 Feb 2013 20:59:44 +0100
-Message-ID: <1891536.LKCrpu1upY@vostro.rjw.lan>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: valdis.kletnieks@vt.edu, artem.savkov@gmail.com, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com
+Subject: Re: [PATCH 0/4] CPUFreq Fixes for 3.9
+Date: Fri, 08 Feb 2013 21:02:37 +0100
+Message-ID: <1653071.l2kN4Hy2U6@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1360342638.3869.59.camel@misato.fc.hp.com>
-References: <1873429.MS5RQDxTye@vostro.rjw.lan> <1468930.acVuhKfKYv@vostro.rjw.lan> <1360342638.3869.59.camel@misato.fc.hp.com>
+In-Reply-To: <CAKohpokp4YrxKHibewdt+3-WF7P2Fa_bvRidHpjd9SpsT6bPpw@mail.gmail.com>
+References: <cover.1360232293.git.viresh.kumar@linaro.org> <2130803.VQA31hf2jE@vostro.rjw.lan> <CAKohpokp4YrxKHibewdt+3-WF7P2Fa_bvRidHpjd9SpsT6bPpw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -29,41 +25,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, February 08, 2013 09:57:18 AM Toshi Kani wrote:
-> On Fri, 2013-02-08 at 01:24 +0100, Rafael J. Wysocki wrote:
-> > On Monday, February 04, 2013 12:47:31 AM Rafael J. Wysocki wrote:
-> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > 
-> > > The only useful thing that the ACPI container driver does is to
-> > > install system notify handlers for all container and module device
-> > > objects it finds in the namespace.  The driver structure,
-> > > acpi_container_driver, and the data structures created by its
-> > > .add() callback are in fact not used by the driver, so remove
-> > > them entirely.
-> > > 
-> > > It also makes a little sense to build that driver as a module,
-> > > so make it non-modular and add its initialization to the
-> > > namespace scanning code.
-> > > 
-> > > In addition to that, make the namespace walk callback used for
-> > > installing the notify handlers more straightforward.
-> > 
-> > As pointed out by Toshi Kani, the above changes would make acpi_eject_store()
-> > fail for containers and it is the only way to eject them currently, so patch
-> > [2/2] is an improved version of this (with Toshi's changes folded in).
-> > 
-> > Patch [1/2] is just a cleanup removing a useless #ifndef from acpi_eject_store().
+On Friday, February 08, 2013 08:06:52 PM Viresh Kumar wrote:
+> On 8 February 2013 18:02, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > So as I said, please rework the fixes on top of linux-pm.git/pm-cpufreq.
 > 
-> Thanks for the update!  They look good.  For the series:
-> 
-> Reviewed-by: Toshi Kani <toshi.kani@hp.com>
-> Tested-by: Toshi Kani <toshi.kani@hp.com>
-> 
-> BTW, did you intentionally keep the struct acpi_container definition in
-> <acpi/container.h>?  I deleted that one in my patch.
+> I already did. Please check for-rafael branch
 
-No, I overlooked that part.  I'll apply that part of your patch as a separate
-patch on top of this one.
+Cool.  This is the one I'm supposed to apply, then?
+
+> > Moreover, I'd very much prefer it if you fixed the problems introduced by
+> > b8eed8a "cpufreq: Simplify __cpufreq_remove_dev()" separately and *then* any
+> > other locking problems you're seeing in the code, although people are not
+> > reporting them.
+> >
+> > You seem to have a clear picture of how the code should work now, so that
+> > won't be a big trouble I guess.
+> 
+> For me all problems are fixed in the current code. :)
+
+Sounds great. :-)
 
 Thanks,
 Rafael
