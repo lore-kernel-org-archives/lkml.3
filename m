@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755242Ab3BHGEG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 01:04:06 -0500
-Received: from mail-ia0-f176.google.com ([209.85.210.176]:52540 "EHLO
-	mail-ia0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754110Ab3BHGEB (ORCPT
+	id S1756148Ab3BHGE0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 01:04:26 -0500
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:48323 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753182Ab3BHGDr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 01:04:01 -0500
+	Fri, 8 Feb 2013 01:03:47 -0500
 From: "NickCheng" <nick.cheng@areca.com.tw>
 To: <linux-scsi@vger.kernel.org>
 Cc: <linux-kernel@vger.kernel.org>, <jejb@kernel.org>,
         "???" <ching2048@areca.com.tw>
-Subject: [PATCH 5/5]  arcmsr: Modify ARC-1214 Inband Messages Behavior
-Date: Fri, 8 Feb 2013 14:03:13 +0800
-Message-ID: <5741810F8C904659B2563B4E3058B701@arecaaebe11fae>
+Subject: [PATCH 4/5]  arcmsr: Support a New RAID Model, ARC-1214
+Date: Fri, 8 Feb 2013 14:02:58 +0800
+Message-ID: <21CB1F39001C437A9ED005546E7A603C@arecaaebe11fae>
 MIME-Version: 1.0
 Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_000C_01CE0605.0B4382E0"
+	boundary="----=_NextPart_000_0009_01CE0605.027D91F0"
 X-Mailer: Microsoft Office Outlook 11
 Thread-Index: Ac2hXXYG8W24nt0/Q/6mWt8IlNnnHQ==
 X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
@@ -26,342 +26,236 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is a multi-part message in MIME format.
 
-------=_NextPart_000_000C_01CE0605.0B4382E0
+------=_NextPart_000_0009_01CE0605.027D91F0
 Content-Type: text/plain;
 	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 
 From: Nick Cheng <nick.cheng@areca.com.tw>
 
-Modify ARC-1214 inband messages behavior to make up for HW seldom malfunction.
+Add a New RAID Model, ARC-1214, which can support 8 SATA HDs at most, so far.
 Signed-off-by: Nick Cheng <nick.cheng@areca.com.tw>
 ---
 
-------=_NextPart_000_000C_01CE0605.0B4382E0
+------=_NextPart_000_0009_01CE0605.027D91F0
 Content-Type: application/octet-stream;
-	name="checkpatch5"
+	name="checkpatch4"
 Content-Transfer-Encoding: quoted-printable
 Content-Disposition: attachment;
-	filename="checkpatch5"
+	filename="checkpatch4"
 
+WARNING: msleep < 20ms can sleep for up to 20ms; see =
+Documentation/timers/timers-howto.txt=0A=
++		msleep(10);=0A=
 WARNING: line over 80 characters=0A=
-#26: FILE: drivers/scsi/arcmsr/arcmsr_attr.c:86:=0A=
-+			if ((ARCMSR_MAX_QBUFFER - acb->rqbuf_firstindex) >=3D 1032) {=0A=
+#428: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:496:=0A=
++	int retry_count =3D 6;/* enlarge wait flush adapter cache time: 10 =
+minute */=0A=
 =0A=
-WARNING: line over 80 characters=0A=
-#31: FILE: drivers/scsi/arcmsr/arcmsr_attr.c:91:=0A=
-+				if (((ARCMSR_MAX_QBUFFER - acb->rqbuf_firstindex) + =
-acb->rqbuf_lastindex) > 1032) {=0A=
+WARNING: quoted string split across lines=0A=
+#458: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:531:=0A=
++			pr_notice("arcmsr%d: wait 'flush adapter"=0A=
++			"cache' timeout, retry count down =3D %d\n",=0A=
 =0A=
-WARNING: line over 80 characters=0A=
-#32: FILE: drivers/scsi/arcmsr/arcmsr_attr.c:92:=0A=
-+					memcpy(ptmpQbuffer, pQbuffer, ARCMSR_MAX_QBUFFER - =
-acb->rqbuf_firstindex);=0A=
+WARNING: quoted string split across lines=0A=
+#531: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:598:=0A=
++			pr_notice("arcmsr%d: dma_alloc_coherent"=0A=
++			"got error\n", acb->host->host_no);=0A=
 =0A=
-WARNING: line over 80 characters=0A=
-#33: FILE: drivers/scsi/arcmsr/arcmsr_attr.c:93:=0A=
-+					ptmpQbuffer +=3D ARCMSR_MAX_QBUFFER - acb->rqbuf_firstindex;=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#34: FILE: drivers/scsi/arcmsr/arcmsr_attr.c:94:=0A=
-+					memcpy(ptmpQbuffer, acb->rqbuffer, 1032 - (ARCMSR_MAX_QBUFFER - =
-acb->rqbuf_firstindex));=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#35: FILE: drivers/scsi/arcmsr/arcmsr_attr.c:95:=0A=
-+					acb->rqbuf_firstindex =3D 1032 - (ARCMSR_MAX_QBUFFER - =
-acb->rqbuf_firstindex);=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#38: FILE: drivers/scsi/arcmsr/arcmsr_attr.c:98:=0A=
-+					memcpy(ptmpQbuffer, pQbuffer, ARCMSR_MAX_QBUFFER - =
-acb->rqbuf_firstindex);=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#39: FILE: drivers/scsi/arcmsr/arcmsr_attr.c:99:=0A=
-+					ptmpQbuffer +=3D ARCMSR_MAX_QBUFFER - acb->rqbuf_firstindex;=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#40: FILE: drivers/scsi/arcmsr/arcmsr_attr.c:100:=0A=
-+					memcpy(ptmpQbuffer, acb->rqbuffer, acb->rqbuf_lastindex);=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#41: FILE: drivers/scsi/arcmsr/arcmsr_attr.c:101:=0A=
-+					allxfer_len =3D ARCMSR_MAX_QBUFFER - acb->rqbuf_firstindex + =
-acb->rqbuf_lastindex;=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#42: FILE: drivers/scsi/arcmsr/arcmsr_attr.c:102:=0A=
-+					acb->rqbuf_firstindex =3D acb->rqbuf_lastindex;=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#46: FILE: drivers/scsi/arcmsr/arcmsr_attr.c:106:=0A=
-+			if ((acb->rqbuf_lastindex - acb->rqbuf_firstindex) > 1032) {=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#51: FILE: drivers/scsi/arcmsr/arcmsr_attr.c:111:=0A=
-+				memcpy(ptmpQbuffer, pQbuffer, acb->rqbuf_lastindex - =
-acb->rqbuf_firstindex);=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#52: FILE: drivers/scsi/arcmsr/arcmsr_attr.c:112:=0A=
-+				allxfer_len =3D acb->rqbuf_lastindex - acb->rqbuf_firstindex;=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#90: FILE: drivers/scsi/arcmsr/arcmsr_attr.c:137:=0A=
-+				memcpy(pQbuffer, temp, ARCMSR_MAX_QBUFFER - rqbuf_lastindex);=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#92: FILE: drivers/scsi/arcmsr/arcmsr_attr.c:139:=0A=
-+				rqbuf_lastindex =3D (rqbuf_lastindex + data_len) % =
-ARCMSR_MAX_QBUFFER;=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#93: FILE: drivers/scsi/arcmsr/arcmsr_attr.c:140:=0A=
-+				memcpy(&acb->rqbuffer[0], temp, rqbuf_lastindex);=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#96: FILE: drivers/scsi/arcmsr/arcmsr_attr.c:143:=0A=
-+				rqbuf_lastindex =3D (rqbuf_lastindex + data_len) % =
-ARCMSR_MAX_QBUFFER;=0A=
+WARNING: quoted string split across lines=0A=
+#621: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:671:=0A=
++			pr_notice("arcmsr%d: dma_alloc_coherent"=0A=
++			"got error\n", acb->host->host_no);=0A=
 =0A=
 WARNING: Too many leading tabs - consider code refactoring=0A=
-#225: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:771:=0A=
+#707: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:776:=0A=
++						if (psdev !=3D NULL) {=0A=
+=0A=
+WARNING: line over 80 characters=0A=
+#708: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:777:=0A=
++							scsi_remove_device(psdev);=0A=
+=0A=
+WARNING: Too many leading tabs - consider code refactoring=0A=
+#810: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:907:=0A=
++						if ((temp & 0x01) =3D=3D 1 &&=0A=
+=0A=
+WARNING: line over 80 characters=0A=
+#812: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:909:=0A=
++							scsi_add_device(acb->host,=0A=
+=0A=
+WARNING: Too many leading tabs - consider code refactoring=0A=
+#814: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:911:=0A=
 +						} else if ((temp & 0x01) =3D=3D 0=0A=
 =0A=
 WARNING: line over 80 characters=0A=
-#228: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:774:=0A=
-+							scsi_device_lookup(acb->host,=0A=
+#816: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:913:=0A=
++							psdev =3D scsi_device_lookup(acb->host,=0A=
 =0A=
 WARNING: Too many leading tabs - consider code refactoring=0A=
-#230: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:776:=0A=
+#818: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:915:=0A=
 +							if (psdev !=3D NULL) {=0A=
 =0A=
 WARNING: line over 80 characters=0A=
-#231: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:777:=0A=
+#819: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:916:=0A=
 +								scsi_remove_device(psdev);=0A=
 =0A=
 WARNING: line over 80 characters=0A=
-#232: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:778:=0A=
+#820: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:917:=0A=
 +								scsi_device_put(psdev);=0A=
 =0A=
-WARNING: line over 80 characters=0A=
-#328: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:1549:=0A=
-+			while ((doneq_index & 0xFFF) !=3D (outbound_write_pointer & 0xFFF)) {=0A=
+WARNING: quoted string split across lines=0A=
+#978: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:1008:=0A=
++			pr_warn("arcmsr%d: MSI-X"=0A=
++			"failed to enable\n", acb->host->host_no);=0A=
+=0A=
+WARNING: quoted string split across lines=0A=
+#1102: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:1213:=0A=
+ 		pr_notice("arcmsr%d: wait 'abort all outstanding"=0A=
++		"command' timeout\n"=0A=
+=0A=
+WARNING: quoted string split across lines=0A=
+#1111: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:1229:=0A=
+ 		pr_notice("arcmsr%d: wait 'abort all outstanding"=0A=
++		"command' timeout\n"=0A=
+=0A=
+WARNING: quoted string split across lines=0A=
+#1120: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:1243:=0A=
+ 		pr_notice("arcmsr%d: wait 'abort all outstanding"=0A=
++		"command' timeout\n"=0A=
+=0A=
+WARNING: quoted string split across lines=0A=
+#1133: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:1256:=0A=
++		pr_notice("arcmsr%d: wait 'abort all outstanding"=0A=
++		"command' timeout\n"=0A=
+=0A=
+WARNING: quoted string split across lines=0A=
+#1178: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:1424:=0A=
+ 			pr_notice("arcmsr%d: scsi id =3D %d lun =3D %d"=0A=
++			"isr get command error done, but got unknown"=0A=
+=0A=
+WARNING: quoted string split across lines=0A=
+#1216: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:1444:=0A=
++		pr_notice("arcmsr%d: isr get an illegal ccb"=0A=
++		"command done acb =3D 0x%p,"=0A=
 =0A=
 WARNING: line over 80 characters=0A=
-#339: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:1556:=0A=
-+					(index_stripped | 0x4000) : (index_stripped + 1);=0A=
+#1286: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:1570:=0A=
++				pmu->done_qbuffer[doneq_index & 0xFF].addressLow;=0A=
 =0A=
 WARNING: line over 80 characters=0A=
-#349: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:1563:=0A=
-+					index_stripped ? index_stripped : ((index_stripped | 0x4000) + 1);=0A=
+#1460: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:1865:=0A=
++		pinbound_srb =3D (struct InBound_SRB *)&pmu->post_qbuffer[postq_index =
+& 0xFF];=0A=
 =0A=
 WARNING: line over 80 characters=0A=
-#354: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:1567:=0A=
-+				pmu->done_qbuffer[doneq_index & 0xFFF].addressLow;=0A=
+#1469: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:1874:=0A=
++			pmu->postq_index =3D index_stripped ? (index_stripped | 0x4000) : =
+index_stripped;=0A=
 =0A=
-WARNING: braces {} are not necessary for single statement blocks=0A=
-#420: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2145:=0A=
-+			if (!vaddr) {=0A=
-+				goto leave;=0A=
-+			}=0A=
+WARNING: line over 80 characters=0A=
+#1474: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:1879:=0A=
++			pmu->postq_index =3D index_stripped ? index_stripped : =
+(index_stripped | 0x4000);=0A=
+=0A=
+WARNING: quoted string split across lines=0A=
+#1492: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:1894:=0A=
++		pr_notice("arcmsr%d: wait 'stop adapter"=0A=
++		"background rebulid' timeout\n"=0A=
+=0A=
+WARNING: quoted string split across lines=0A=
+#1510: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:1908:=0A=
++		pr_notice("arcmsr%d: wait 'stop adapter"=0A=
++		"background rebulid' timeout\n"=0A=
+=0A=
+WARNING: quoted string split across lines=0A=
+#1526: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:1923:=0A=
++		pr_notice("arcmsr%d: wait 'stop adapter"=0A=
++		"background rebulid' timeout\n"=0A=
+=0A=
+WARNING: line over 80 characters=0A=
+#1606: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2006:=0A=
++		writel(ARCMSR_HBCMU_DRV2IOP_DATA_READ_OK, &reg->inbound_doorbell);=0A=
+=0A=
+WARNING: quoted string split across lines=0A=
+#2193: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:3039:=0A=
+ 		pr_notice("arcmsr%d: wait 'get adapter firmware"=0A=
++		"miscellaneous data' timeout\n",=0A=
+=0A=
+WARNING: line over 80 characters=0A=
+#2221: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:3208:=0A=
++			writel(ARCMSR_HBCMU_IOP2DRV_MESSAGE_CMD_DONE_DOORBELL_CLEAR,=0A=
+=0A=
+WARNING: quoted string split across lines=0A=
+#2229: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:3216:=0A=
++		pr_notice("arcmsr%d: wait 'get adapter firmware"=0A=
++		"miscellaneous data' timeout\n", pACB->host->host_no);=0A=
+=0A=
+WARNING: quoted string split across lines=0A=
+#2247: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:3234:=0A=
++	pr_notice("Areca RAID Controller%d: F/W %s &"=0A=
++	"Model %s\n",=0A=
+=0A=
+WARNING: quoted string split across lines=0A=
+#2364: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:3339:=0A=
++		pr_notice("arcmsr%d: wait get adapter firmware"=0A=
++		"miscellaneous data timeout\n", acb->host->host_no);=0A=
 =0A=
 WARNING: labels should not be indented=0A=
-#460: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2183:=0A=
-+	leave:=0A=
+#2463: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:3620:=0A=
++	polling_hbaD_ccb_retry:=0A=
 =0A=
-WARNING: Too many leading tabs - consider code refactoring=0A=
-#506: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2223:=0A=
-+						if ((acb->wqbuf_lastindex=0A=
+WARNING: quoted string split across lines=0A=
+#2497: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:3654:=0A=
++				pr_notice("arcmsr%d: scsi id =3D %d"=0A=
++				"lun =3D %d ccb =3D '0x%p' poll command"=0A=
 =0A=
-WARNING: Too many leading tabs - consider code refactoring=0A=
-#515: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2232:=0A=
-+						} else {=0A=
+WARNING: quoted string split across lines=0A=
+#2508: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:3665:=0A=
++			pr_notice("arcmsr%d: polling an illegal"=0A=
++			"ccb command done ccb =3D '0x%p'"=0A=
 =0A=
-WARNING: line over 80 characters=0A=
-#516: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2233:=0A=
-+							memcpy(iop_data, pQbuffer,=0A=
+WARNING: quoted string split across lines=0A=
+#2642: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:3821:=0A=
++			pr_notice("arcmsr%d: 'set command Q"=0A=
++			"window' timeout\n", acb->host->host_no);=0A=
 =0A=
-WARNING: line over 80 characters=0A=
-#518: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2235:=0A=
-+							- acb->wqbuf_firstindex);=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#593: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2308:=0A=
-+		arcmsr_iop_message_wrote(acb);/*notice IOP the message has been =
-written*/=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#646: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2495:=0A=
-+				? (index_stripped | 0x4000) : (index_stripped + 1);=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#654: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2501:=0A=
-+				? index_stripped : ((index_stripped | 0x4000) + 1);=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#727: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2728:=0A=
-+						&acb->wqbuffer[acb->wqbuf_firstindex];=0A=
-=0A=
-WARNING: Too many leading tabs - consider code refactoring=0A=
-#728: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2729:=0A=
-+						if (acb->wqbuf_firstindex + 4 >=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#730: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2731:=0A=
-+							memcpy(iop_data, pQbuffer,=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#731: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2732:=0A=
-+							ARCMSR_MAX_QBUFFER - acb->wqbuf_firstindex);=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#732: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2733:=0A=
-+							iop_data +=3D ARCMSR_MAX_QBUFFER=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#734: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2735:=0A=
-+							acb->wqbuf_firstindex +=3D 4;=0A=
-=0A=
-WARNING: Too many leading tabs - consider code refactoring=0A=
-#742: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2743:=0A=
-+						} else {=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#743: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2744:=0A=
-+							if ((acb->wqbuf_lastindex -=0A=
-=0A=
-WARNING: Too many leading tabs - consider code refactoring=0A=
-#743: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2744:=0A=
-+							if ((acb->wqbuf_lastindex -=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#744: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2745:=0A=
-+							acb->wqbuf_firstindex) > 4) {=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#747: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2748:=0A=
-+								acb->wqbuf_firstindex=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#749: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2750:=0A=
-+								acb->wqbuf_firstindex=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#750: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2751:=0A=
-+								%=3D ARCMSR_MAX_QBUFFER;=0A=
-=0A=
-WARNING: Too many leading tabs - consider code refactoring=0A=
-#752: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2753:=0A=
-+							} else {=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#755: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2756:=0A=
-+								acb->wqbuf_lastindex=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#756: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2757:=0A=
-+								- acb->wqbuf_firstindex);=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#758: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2759:=0A=
-+								acb->wqbuf_lastindex=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#759: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2760:=0A=
-+								- acb->wqbuf_firstindex;=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#760: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2761:=0A=
-+								acb->wqbuf_firstindex=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#761: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2762:=0A=
-+								=3D acb->wqbuf_lastindex;=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#782: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2783:=0A=
-+						&acb->wqbuffer[acb->wqbuf_firstindex];=0A=
-=0A=
-WARNING: Too many leading tabs - consider code refactoring=0A=
-#783: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2784:=0A=
-+						if ((acb->wqbuf_lastindex -=0A=
-=0A=
-WARNING: Too many leading tabs - consider code refactoring=0A=
-#792: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2793:=0A=
-+						} else {=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#793: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2794:=0A=
-+							memcpy(iop_data, pQbuffer,=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#795: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2796:=0A=
-+							- acb->wqbuf_firstindex);=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#825: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2826:=0A=
-+						allxfer_len +=3D acb->wqbuf_lastindex=0A=
-=0A=
-WARNING: printk() should include KERN_ facility level=0A=
-#874: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2867:=0A=
-+		printk("%s: ARCMSR_MESSAGE_FAIL!\n", __func__);=0A=
-=0A=
-WARNING: printk() should include KERN_ facility level=0A=
-#890: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2879:=0A=
-+			printk("%s: memory not enough!\n", __func__);=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#953: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2935:=0A=
-+					acb->rqbuf_lastindex - acb->rqbuf_firstindex);=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#982: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2950:=0A=
-+			data_len_residual =3D data_len =3D readl(&prbuffer->data_len);=0A=
-=0A=
-WARNING: braces {} are not necessary for single statement blocks=0A=
-#985: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2953:=0A=
-+				if (!vaddr) {=0A=
-+					goto leave;=0A=
-+				}=0A=
+WARNING: quoted string split across lines=0A=
+#2744: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:4070:=0A=
++		pr_notice("arcmsr%d: wait 'start adapter"=0A=
++		"background rebulid' timeout\n", pACB->host->host_no);=0A=
 =0A=
 WARNING: labels should not be indented=0A=
-#1025: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2992:=0A=
-+		leave:=0A=
+#2831: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:4447:=0A=
++			nap:=0A=
 =0A=
-WARNING: line over 80 characters=0A=
-#1029: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2994:=0A=
-+		memcpy(pcmdmessagefld->messagedatabuffer, ver_addr, allxfer_len);=0A=
+WARNING: quoted string split across lines=0A=
+#2835: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:4451:=0A=
++				pr_err("arcmsr%d: waiting for"=0A=
++				"hw bus reset return, retry=3D%d\n",=0A=
 =0A=
-WARNING: line over 80 characters=0A=
-#1093: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:3046:=0A=
-+					pQbuffer =3D &acb->wqbuffer[acb->wqbuf_lastindex];=0A=
+WARNING: quoted string split across lines=0A=
+#2840: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:4456:=0A=
++					pr_err("arcmsr%d:"=0A=
++					"waiting for hw bus reset return,"=0A=
 =0A=
-WARNING: line over 80 characters=0A=
-#1099: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:3052:=0A=
-+						ptmpuserbuffer +=3D (ARCMSR_MAX_QBUFFER=0A=
+WARNING: quoted string split across lines=0A=
+#2863: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:4479:=0A=
++			pr_err("arcmsr: scsi bus reset"=0A=
++			"eh returns with success\n");=0A=
 =0A=
-WARNING: line over 80 characters=0A=
-#1107: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:3060:=0A=
-+						acb->wqbuf_lastindex +=3D user_len;=0A=
-=0A=
-WARNING: printk() should include KERN_ facility level=0A=
-#1282: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:3210:=0A=
-+		printk("unknown controlcode(%d)\n", __LINE__);=0A=
-=0A=
-WARNING: line over 80 characters=0A=
-#1354: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:3957:=0A=
-+			pmu->doneq_index =3D index_stripped ? (index_stripped | 0x4000)=0A=
+WARNING: quoted string split across lines=0A=
+#2883: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:4512:=0A=
+ 	pr_notice("arcmsr%d: abort device command of"=0A=
++		"scsi id =3D %d lun =3D %d\n",=0A=
 =0A=
 ERROR: Missing Signed-off-by: line(s)=0A=
 =0A=
-total: 1 errors, 74 warnings, 1349 lines checked=0A=
+total: 1 errors, 44 warnings, 2798 lines checked=0A=
 =0A=
-../patch5 has style problems, please review.=0A=
+../patch4 has style problems, please review.=0A=
 =0A=
 If any of these errors are false positives, please report=0A=
 them to the maintainer, see CHECKPATCH in MAINTAINERS.=0A=
 
-------=_NextPart_000_000C_01CE0605.0B4382E0--
+------=_NextPart_000_0009_01CE0605.027D91F0--
 
