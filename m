@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945990Ab3BHBAp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 20:00:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42024 "EHLO
+	id S1946017Ab3BHBA7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 20:00:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42033 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422729Ab3BHA6V (ORCPT
+	with ESMTP id S1945964Ab3BHA6V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 7 Feb 2013 19:58:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 02/16] drm/radeon: add quirk for RV100 board
-Date: Thu,  7 Feb 2013 16:58:01 -0800
-Message-Id: <20130208004627.517621977@linuxfoundation.org>
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+Subject: [ 10/16] USB: option: add Changhong CH690
+Date: Thu,  7 Feb 2013 16:58:09 -0800
+Message-Id: <20130208004628.922560816@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130208004627.112511141@linuxfoundation.org>
 References: <20130208004627.112511141@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,39 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Bjørn Mork <bjorn@mork.no>
 
-commit 9200ee4941a6e5d1ec5df88982243686882dff3f upstream.
+commit d4fa681541aa7bf8570d03426dd7ba663a71c467 upstream.
 
-vbios says external TMDS while the board is actually
-internal TMDS.
+New device with 3 serial interfaces:
 
-fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=60037
+ If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend) Sub=ff Prot=ff
+ If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend) Sub=ff Prot=ff
+ If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend) Sub=ff Prot=ff
+ If#= 3 Alt= 0 #EPs= 2 Cls=08(stor) Sub=06 Prot=50
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_combios.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/usb/serial/option.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/gpu/drm/radeon/radeon_combios.c
-+++ b/drivers/gpu/drm/radeon/radeon_combios.c
-@@ -2338,6 +2338,14 @@ bool radeon_get_legacy_connector_info_fr
- 								   1),
- 								  ATOM_DEVICE_CRT1_SUPPORT);
- 				}
-+				/* RV100 board with external TDMS bit mis-set.
-+				 * Actually uses internal TMDS, clear the bit.
-+				 */
-+				if (dev->pdev->device == 0x5159 &&
-+				    dev->pdev->subsystem_vendor == 0x1014 &&
-+				    dev->pdev->subsystem_device == 0x029A) {
-+					tmp &= ~(1 << 4);
-+				}
- 				if ((tmp >> 4) & 0x1) {
- 					devices |= ATOM_DEVICE_DFP2_SUPPORT;
- 					radeon_add_legacy_encoder(dev,
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -454,6 +454,10 @@ static void option_instat_callback(struc
+ #define TPLINK_VENDOR_ID			0x2357
+ #define TPLINK_PRODUCT_MA180			0x0201
+ 
++/* Changhong products */
++#define CHANGHONG_VENDOR_ID			0x2077
++#define CHANGHONG_PRODUCT_CH690			0x7001
++
+ /* some devices interfaces need special handling due to a number of reasons */
+ enum option_blacklist_reason {
+ 		OPTION_BLACKLIST_NONE = 0,
+@@ -1326,6 +1330,7 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T) },
+ 	{ USB_DEVICE(TPLINK_VENDOR_ID, TPLINK_PRODUCT_MA180),
+ 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
++	{ USB_DEVICE(CHANGHONG_VENDOR_ID, CHANGHONG_PRODUCT_CH690) },
+ 	{ } /* Terminating entry */
+ };
+ MODULE_DEVICE_TABLE(usb, option_ids);
 
 
