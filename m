@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947258Ab3BHWf4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 17:35:56 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:59497 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760323Ab3BHWfy (ORCPT
+	id S1947222Ab3BHWkY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 17:40:24 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:48044 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760297Ab3BHWkX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 17:35:54 -0500
+	Fri, 8 Feb 2013 17:40:23 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Clark Williams <williams@redhat.com>
+Cc: Josh Boyer <jwboyer@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Mel Gorman <mgorman@suse.de>,
+        linux-kernel@vger.kernel.org
+References: <20130207215742.GB31684@hansolo.jdub.homelinux.org>
+	<20130207141502.04625ea0.akpm@linux-foundation.org>
+	<20130208003501.GC31684@hansolo.jdub.homelinux.org>
+	<20130208181949.GD31684@hansolo.jdub.homelinux.org>
+	<87k3qiwomi.fsf@xmission.com>
+	<20130208202314.GF31684@hansolo.jdub.homelinux.org>
+	<87r4kqttz8.fsf@xmission.com>
+	<20130208212726.GH31684@hansolo.jdub.homelinux.org>
+	<20130208161031.28212e80@riff.lan>
+Date: Fri, 08 Feb 2013 14:40:13 -0800
+In-Reply-To: <20130208161031.28212e80@riff.lan> (Clark Williams's message of
+	"Fri, 8 Feb 2013 16:10:31 -0600")
+Message-ID: <874nhmpgz6.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo5PX--N5vuOm7X2u7LDZ4tfHE7OHjfCUFwMRDAFkvTA_Q@mail.gmail.com>
-References: <1360351703-20571-1-git-send-email-yinghai@kernel.org>
-	<1360351703-20571-27-git-send-email-yinghai@kernel.org>
-	<CAErSpo5PX--N5vuOm7X2u7LDZ4tfHE7OHjfCUFwMRDAFkvTA_Q@mail.gmail.com>
-Date: Fri, 8 Feb 2013 14:35:54 -0800
-X-Google-Sender-Auth: 0bXLfh71njKmshK7oDnoyZmQshc
-Message-ID: <CAE9FiQVhmH_TGqEwxGPusKNn-6Q7QkS3UTitEriV3dX8sPbzFA@mail.gmail.com>
-Subject: Re: [PATCH v2 26/26] PCI, x86, ACPI: Add ioapic hotplug support with
- acpi host bridge.
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1+ybGcO2AAv2o6/6KnZ8YLZyEQrRo5caEM=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Clark Williams <williams@redhat.com>
+X-Spam-Relay-Country: 
+Subject: Re: Odd ENOMEM being returned in 3.8-rcX
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 8, 2013 at 1:24 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Fri, Feb 8, 2013 at 12:28 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->> We need to have ioapic setup before normal pci drivers.
->> otherwise other pci driver can not setup irq.
->>
->> Make ioapic built-in, so can call add/remove during host-bridge add/remove
->> the same as the booting path.
->>
->> Also need to make it depends on X86_IO_APIC.
->
-> There are a lot of different things happening in this patch.  I'd
-> prefer if they were split out so we can see what's happening.  For
-> example, the Kconfig changes could be their own patch.  The removal of
-> the PCI device table is worthy of mention and its own patch (if
-> possible), since it's a pretty major change to how the driver binds to
-> devices.
+Clark Williams <williams@redhat.com> writes:
 
-ok, will try to split it small patches..
+> The more I look at that the more I think I should nuke CLONE_NEWPID in
+> mock. It came in with a commit that added NEWIPC, which I think is valid
+> for mock managing a chroot, but we're not looking to do full-up
+> containers at this point and it looks like containers is the only place
+> you'd want to start a new set of pids. 
 
-also I'd like to leave you and Rafael to decide if we need to move that file to
-drivers/acpi/pci_ioapic.c or something else.
+Just taking the code out seems reasonable.  Howerver there is a
+practical use for a pid namespace in a setup like mock.  A pid namespace
+makes it so your sub processes can not reparent and get away from you,
+which could be handy in case someone starts a system daemon in a post
+install script.
 
-Thanks
+Eric
 
-Yinghai
