@@ -1,144 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760215Ab3BHQfY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 11:35:24 -0500
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:17701 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760193Ab3BHQfW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1760197Ab3BHQfW (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 8 Feb 2013 11:35:22 -0500
-Message-ID: <1360340685.3869.56.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 2/2] ACPI / scan: Simplify container driver
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <liuj97@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 08 Feb 2013 09:24:45 -0700
-In-Reply-To: <3278140.sTTnzsAAzo@vostro.rjw.lan>
-References: <1873429.MS5RQDxTye@vostro.rjw.lan>
-	 <1619279.PL3OLF99br@vostro.rjw.lan>
-	 <1360285519.3869.49.camel@misato.fc.hp.com>
-	 <3278140.sTTnzsAAzo@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Received: from eusmtp01.atmel.com ([212.144.249.243]:35689 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760098Ab3BHQfU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 11:35:20 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <FlorianSchandinat@gmx.de>
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-fbdev@vger.kernel.org>, <jhovold@gmail.com>,
+        <jacmet@sunsite.dk>, Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH 0/5] at91: atmel_lcdfb: regression fixes and cpu_is removal
+Date: Fri, 8 Feb 2013 17:35:13 +0100
+Message-ID: <cover.1360340791.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.0
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-02-08 at 13:52 +0100, Rafael J. Wysocki wrote:
-> On Thursday, February 07, 2013 06:05:19 PM Toshi Kani wrote:
-> > On Thu, 2013-02-07 at 23:42 +0100, Rafael J. Wysocki wrote:
-> > > On Thursday, February 07, 2013 07:32:07 AM Toshi Kani wrote:
-> > > > On Thu, 2013-02-07 at 02:32 +0100, Rafael J. Wysocki wrote:
-> > > > > On Wednesday, February 06, 2013 05:51:42 PM Toshi Kani wrote:
-> > > > > > On Thu, 2013-02-07 at 01:55 +0100, Rafael J. Wysocki wrote:
-> > > > > > > On Wednesday, February 06, 2013 03:32:18 PM Toshi Kani wrote:
-> > > > > > > > On Mon, 2013-02-04 at 00:47 +0100, Rafael J. Wysocki wrote:
-> >  :
-> > > > > > > Moreover, I'm wondering if the #ifndef FORCE_EJECT thing in acpi_eject_store()
-> > > > > > > actually makes sense after the recent changes to acpi_bus_trim(), because that
-> > > > > > > can't fail now, so the eject will always be carried out.  So perhaps we can
-> > > > > > > simply remove the acpi_device->driver check from there entirely in the first
-> > > > > > > place?
-> > > > > > >
-> > > > > > > If we really want to be able to prevent ejects from happening in some cases,
-> > > > > > > we need to implement something along the lines discussed with Greg.
-> > > > > > 
-> > > > > > acpi_bus_trim() cannot fail, but sysfs eject can fail.  So, I think it
-> > > > > > makes sense to do some validation before calling acpi_bus_trim().  If we
-> > > > > > are to implement the no_eject flag thing, that check needs to be made
-> > > > > > before calling acpi_bus_trim().
-> > > > > 
-> > > > > Sure, but now the logic seems to be "if FORCE_EJECT is not set, don't eject
-> > > > > devices that have no ACPI drivers", so I'm wondering what the purpose of this
-> > > > > is.  It definitely isn't too obvious. :-)
-> > > > 
-> > > > The check sounds odd for container, but is necessary for CPU and memory
-> > > > for now.  CPU and memory go online without their ACPI drivers at boot.
-> > > > So, without this check (i.e. FORCE_EJECT is set), it simply ejects them
-> > > > without attempting to offline when the ACPI drivers are not bound.  Of
-> > > > course, we have the issue of a failure in offline be ignored, so this
-> > > > offlining part needs to be moved out from acpi_bus_trim() in one way or
-> > > > the other.
-> > > 
-> > > That was my point.
-> > > 
-> > > I'm going to add that change for now, but I think we need to take a step back
-> > > and talk about how we want the whole eject machinery to work, regardless of
-> > > the offline/online problem.
-> > 
-> > Right.
-> > 
-> > > I think that it should work in the same way for all things that may be ejected
-> > > or inserted.  Namely, they all should use the same notify handler, for example,
-> > > and if we generate a uevent for one, we should do that for all of them.
-> > 
-> > Agreed.
-> > 
-> > > Question is how that notify handler should work and here there are two chices
-> > > in my view: Either we'll always emit a uevent and wait for user space to start
-> > > the eject procedure via sysfs, or we won't emit uevents at all and rely on the
-> > > "no_eject" flag to trigger if something is not ready.  I'm basically fine with
-> > > any of them (the "no_eject" flag may be useful even if we rely on user space
-> > > to offline stuff before triggering the eject in my opinion), but if we're going
-> > > to rely on user space, then there needs to be a timeout for letting the BIOS
-> > > know that the eject has failed.
-> > > 
-> > > [There may be a flag for the common code telling it whether to emit a uevent
-> > > and wait for user space to trigger eject or to trigger eject by itself.]
-> > 
-> > IMHO, the kernel waiting for a user program to complete is a recipe for
-> > future problems.  So, I think two possible implementation choices are:
-> > 
-> > 1. Upon an eject request, off-line all devices and eject
-> >  => Implement a kernel sequencer (my RFC patchset)
-> > 
-> > 2. Upon an eject request, eject if all devices are off-lined beforehand 
-> >  => Implement the "no_eject" approach
-> > 
-> > Since we are heading to the user space approach, we need to go with #2.
-> > There are some challenges with #2, ex. if sysfs memory online/offline
-> > interfaces can correspond with ACPI memory objects, which we will also
-> > need to look into.
-> 
-> Sure.
-> 
-> > > Next, I think there needs to be a global list of IDs for which we'll install
-> > > hot-plug notify handlers and which we'll allow to be ejected via /sys/.../eject.
-> > > So, if a device ID is on that list, we'll install the (common) hot-plug notify
-> > > handler for its ACPI handle and we'll set an "eject_possible" flag in its
-> > > struct acpi_device (when created).  That will need to be done for every scan
-> > > of the ACPI namespace and not just once, BTW.  And we'll check the
-> > > "eject_possible" flag in acpi_eject_store() instead of the "does it have a
-> > > driver or scan handler" check.
-> > >
-> > > Then, the scan handlers for hot-plug devices will be able to add their IDs to
-> > > that global list instead of walking the namespace and installing notify handlers
-> > > by themselves (which as I said has a problem that it's done once, while it
-> > > should be done every time acpi_bus_scan() runs).
-> > 
-> > I agree.  I think we can use the global notify handler (as the common
-> > notify handler) to look up the eject_possible ID list, instead of
-> > installing a notify handler to each device.
-> 
-> Actually installing notify handlers for individual devices may be more
-> efficient, because then we'll know what device the notification is for without
-> looking it up.
+These patches fix a regression in 16-bpp support for older SOCs which use
+IBGR:555 rather than BGR:565 pixel layout. Use SOC-type to determine if the
+controller uses the intensity-bit and restore the old layout in that case.
 
-Right.  I am fine with either way as long as we can get rid of the
-scanning from each driver and support dynamic ACPI namespace.
+The last patch is a removal of uses of cpu_is_xxxx() macros in atmel_lcdfb with
+a platform-device-id table and static configurations.
 
-> OK, so it looks like I need to sit down and cut some more patches. :-)
 
-Cool!
+Patches from Johan Hovold taken from:
+"[PATCH 0/3] atmel_lcdfb: fix 16-bpp regression"
+and
+"[PATCH v2 0/3] ARM: at91/avr32/atmel_lcdfb: remove cpu_is macros"
+patch series to form a clean patch series with my signature.
 
-Thanks,
--Toshi
+Arnd, Olof,
+as it seems that old fbdev drivers are not so much reviewed those days, can we
+take the decision to queue this material through arm-soc with other AT91
+drivers updates?
+
+Best regards,
+
+Johan Hovold (5):
+  atmel_lcdfb: fix 16-bpp modes on older SOCs
+  ARM: at91/neocore926: fix LCD-wiring mode
+  ARM: at91/avr32/atmel_lcdfb: add bus-clock entry
+  atmel_lcdfb: move lcdcon2 register access to compute_hozval
+  ARM: at91/avr32/atmel_lcdfb: add platform device-id table
+
+ arch/arm/mach-at91/at91sam9261.c         |   2 +
+ arch/arm/mach-at91/at91sam9261_devices.c |   6 +-
+ arch/arm/mach-at91/at91sam9263.c         |   1 +
+ arch/arm/mach-at91/at91sam9263_devices.c |   2 +-
+ arch/arm/mach-at91/at91sam9g45.c         |   2 +
+ arch/arm/mach-at91/at91sam9g45_devices.c |   6 +-
+ arch/arm/mach-at91/at91sam9rl.c          |   1 +
+ arch/arm/mach-at91/at91sam9rl_devices.c  |   2 +-
+ arch/arm/mach-at91/board-neocore926.c    |   2 +-
+ arch/avr32/mach-at32ap/at32ap700x.c      |   6 +-
+ drivers/video/atmel_lcdfb.c              | 130 ++++++++++++++++++++++++-------
+ include/video/atmel_lcdc.h               |   4 +-
+ 12 files changed, 127 insertions(+), 37 deletions(-)
+
+-- 
+1.8.0
 
