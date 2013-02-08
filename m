@@ -1,45 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759906Ab3BHDmp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 22:42:45 -0500
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:34640 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759886Ab3BHDmo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 22:42:44 -0500
+	id S1759899Ab3BHDnW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 22:43:22 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:43520 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753825Ab3BHDnV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 22:43:21 -0500
+Date: Fri, 8 Feb 2013 03:43:11 +0000 (GMT)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+cc: linux-kernel@vger.kernel.org
+Subject: [git pull] drm regression fix
+Message-ID: <alpine.DEB.2.00.1302080342200.3999@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Date: Fri, 8 Feb 2013 11:42:43 +0800
-Message-ID: <CAJd=RBBvE-5f1UyJGu32EHGVCXe6rVYY0010SKa56j7OvtPG7g@mail.gmail.com>
-Subject: [PATCH 2/2] stop_machine: dequeue work before signal completion
-From: Hillf Danton <dhillf@gmail.com>
-To: Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Hillf Danton <dhillf@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As checked with BUG_ON in the case of CPU_UP_PREPARE, we have to dequeue
-work first for further actions, then stopper reaches sane and clear state.
 
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
----
+Hi Linus,
 
---- a/kernel/stop_machine.c	Fri Feb  8 11:22:44 2013
-+++ b/kernel/stop_machine.c	Fri Feb  8 11:29:40 2013
-@@ -342,8 +342,12 @@ static int __cpuinit cpu_stop_cpu_callba
- 		kthread_stop(stopper->thread);
- 		/* drain remaining works */
- 		spin_lock_irq(&stopper->lock);
--		list_for_each_entry(work, &stopper->works, list)
-+		while (!list_empty(&stopper->works)) {
-+			work = list_first_entry(&stopper->works,
-+					struct cpu_stop_work, list);
-+			list_del_init(&work->list);
- 			cpu_stop_signal_done(work->done, false);
-+		}
- 		stopper->enabled = false;
- 		spin_unlock_irq(&stopper->lock);
- 		/* release the stopper */
---
+this one fixes a sleep while locked regression that was introduced earlier 
+in 3.8.
+
+Dave.
+
+The following changes since commit 6bacaa9ddacb71c691d32c678d37bc59ffc71fac:
+
+  Merge tag 'sound-3.8' of git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound (2013-02-07 08:43:30 +1100)
+
+are available in the git repository at:
+
+
+  git://people.freedesktop.org/~airlied/linux drm-fixes
+
+for you to fetch changes up to ff7c60c580d9722f820d85c9c58ca55ecc1ee7c4:
+
+  drm/ttm: fix fence locking in ttm_buffer_object_transfer, 2nd try (2013-02-08 10:44:31 +1000)
+
+----------------------------------------------------------------
+Daniel Vetter (1):
+      drm/ttm: fix fence locking in ttm_buffer_object_transfer, 2nd try
+
+ drivers/gpu/drm/ttm/ttm_bo_util.c | 13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
