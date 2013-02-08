@@ -1,121 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760140Ab3BHOLd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 09:11:33 -0500
-Received: from mout.web.de ([212.227.17.12]:53588 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758547Ab3BHOLc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 09:11:32 -0500
-Date: Fri, 8 Feb 2013 15:11:23 +0100
-From: Goswin von Brederlow <goswin-v-b@web.de>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Li Fei <fei.li@intel.com>, pavel@ucw.cz, rjw@sisk.pl, len.brown@intel.com,
-        mingo@redhat.com, peterz@infradead.org, biao.wang@intel.com,
-        linux-pm@vger.kernel.org, fuse-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, chuansheng.liu@intel.com
-Subject: Re: [fuse-devel] [PATCH] fuse: make fuse daemon frozen along with
- kernel threads
-Message-ID: <20130208141123.GA29460@frosties>
-References: <1360113112.17267.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
- <CAJfpegvJD75ahBViUqAwVTBLuF5yrxOcVvzYHmcsTgwxX+7Oqg@mail.gmail.com>
- <20130207084144.GB6168@frosties>
- <CAJfpegv1-Db+0DxZ8QUQv9BJiEBG3-8a2YaOVMbkb=Y7m+3DTw@mail.gmail.com>
+	id S1760136Ab3BHOPN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 09:15:13 -0500
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:51925 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758547Ab3BHOPL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 09:15:11 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJfpegv1-Db+0DxZ8QUQv9BJiEBG3-8a2YaOVMbkb=Y7m+3DTw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:4C5lBmGVO7l3RHXbHQ5Dl6WMs4ZSVs+6pG1+0ua+c33
- FTBXxquk6QGedBe1Bjv5DAESKV2J4+nX9lhqlG/F2TqdorsZkY
- k0BopSxf2KbJVzy8BAl7XoxgJ25pnidmyUNtIAkdIjEERZyG0r
- 4ZDNex9rLxGw990RlnluJ957wjbbvdmyxQzEDdIb6Z8iBhUlEN
- bDVyiJL5tlUiwCPQfZ/Lg==
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <2612804.Hcyse1lRVO@vostro.rjw.lan>
+References: <CA+icZUX-hh+RjEOrKABBtecmb4C-5azSmdTx6D7SLuSpcQE+kQ@mail.gmail.com>
+	<CAJd=RBDwdO+n3H4M=5W5q75q3yUVL7L2RonWnCE7sfsfW1K5ig@mail.gmail.com>
+	<CA+icZUUaFb8zvdkY2JLz5h_7CBgaTzyyTphGid+GkigV+NfVKA@mail.gmail.com>
+	<2612804.Hcyse1lRVO@vostro.rjw.lan>
+Date: Fri, 8 Feb 2013 15:15:09 +0100
+Message-ID: <CA+icZUWQNU-z4VnVDneFmfAT=nyFB-r+9_vm2Ett1i-Rg5FMqA@mail.gmail.com>
+Subject: Re: linux-next: Tree for Feb 8 [ smp|cpufreq: WARNING: at
+ kernel/smp.c:245 smp_call_function_single ]
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Hillf Danton <dhillf@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>, x86@kernel.org,
+        Ingo Molnar <mingo@redhat.com>,
+        Chuansheng Liu <chuansheng.liu@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 07, 2013 at 10:59:19AM +0100, Miklos Szeredi wrote:
-> [CC list restored]
-> 
-> On Thu, Feb 7, 2013 at 9:41 AM, Goswin von Brederlow <goswin-v-b@web.de> wrote:
-> > On Wed, Feb 06, 2013 at 10:27:40AM +0100, Miklos Szeredi wrote:
-> >> On Wed, Feb 6, 2013 at 2:11 AM, Li Fei <fei.li@intel.com> wrote:
-> >> >
-> >> > There is well known issue that freezing will fail in case that fuse
-> >> > daemon is frozen firstly with some requests not handled, as the fuse
-> >> > usage task is waiting for the response from fuse daemon and can't be
-> >> > frozen.
-> >> >
-> >> > To solve the issue above, make fuse daemon frozen after all all user
-> >> > space processes frozen and during the kernel threads frozen phase.
-> >> > PF_FREEZE_DAEMON flag is added to indicate that the current thread is
-> >> > the fuse daemon,
-> >>
-> >> Okay and how do you know which thread, process or processes belong to
-> >> the "fuse daemon"?
-> >
-> > Maybe I'm talking about the wrong thing but isn't any process having
-> > /dev/fuse open "the fuse daemon"? And that doesn't even cover cases
-> > where one thread reads requests from the kernel and hands them to
-> > worker threads (that do not have /dev/fuse themself). Or the fuse
-> > request might need mysql to finish a request.
-> >
-> > I believe figuring out what processes handle fuse requests is a lost
-> > proposition.
-> 
-> Pretty much.
-> 
-> >
-> >
-> > Secondly how does freezing the daemon second garanty that it has
-> > replied to all pending requests? Or how is leaving it thawed the right
-> > decision?
-> >
-> > Instead the kernel side of fuse should be half frozen and stop sending
-> > out new requests. Then it should wait for all pending requests to
-> > complete. Then and only then can userspace processes be frozen safely.
-> 
-> The problem with that is one fuse filesystem might be calling into
-> another.  Say two fuse filesystems are mounted at /mnt/A and /mnt/B,
-> Process X starts a read request on /mnt/A. This is handled by process
-> A, which in turn starts a read request on /mnt/B, which is handled by
-> B.  If we freeze the system at the moment when A starts handling the
-> request but hasn't yet sent the request to B then things wil be stuck
-> and the freezing will fail.
-> 
-> So the order should be:  Freeze the "topmost" fuse filesystems (A in
-> the example) first and if all pending requests are completed then
-> freeze the next ones in the hierarchy, etc...  This would work if this
-> dependency between filesystems were known.  But it's not and again it
-> looks like an impossible task.
+On Fri, Feb 8, 2013 at 2:21 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Friday, February 08, 2013 01:47:44 PM Sedat Dilek wrote:
+>> On Fri, Feb 8, 2013 at 12:53 PM, Hillf Danton <dhillf@gmail.com> wrote:
+>> > Hello Sedat
+>> >
+>> > On Fri, Feb 8, 2013 at 4:46 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>> >> On Fri, Feb 8, 2013 at 5:31 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> >> With today's Linux-Next I see this warning:
+>> >>
+>> >> [    0.377442] ------------[ cut here ]------------
+>> >> [    0.377452] WARNING: at kernel/smp.c:245
+>> >> smp_call_function_single+0x146/0x190()
+>> >> [    0.377455] Hardware name: 530U3BI/530U4BI/530U4BH
+>> >> [    0.377458] Modules linked in:
+>> >> [    0.377463] Pid: 1, comm: swapper/0 Not tainted
+>> >> 3.8.0-rc6-next20130208-1-iniza-small #1
+>> >> [    0.377467] Call Trace:
+>> >> [    0.377473]  [<ffffffff8105a5ef>] warn_slowpath_common+0x7f/0xc0
+>> >> [    0.377479]  [<ffffffff81579130>] ? acpi_cpufreq_target+0x2c0/0x2c0
+>> >> [    0.377483]  [<ffffffff8105a64a>] warn_slowpath_null+0x1a/0x20
+>> >> [    0.377487]  [<ffffffff810bb7e6>] smp_call_function_single+0x146/0x190
+>> >> [    0.377492]  [<ffffffff81579130>] ? acpi_cpufreq_target+0x2c0/0x2c0
+>> >> [    0.377496]  [<ffffffff810bb881>] smp_call_function_any+0x51/0x100
+>> >> [    0.377500]  [<ffffffff815788c9>] get_cur_val+0x99/0x130
+>> >> [    0.377504]  [<ffffffff81579444>] ? acpi_cpufreq_cpu_init+0x2b4/0x6a0
+>> >> [    0.377508]  [<ffffffff81578db0>] get_cur_freq_on_cpu+0x60/0x80
+>> >> [    0.377512]  [<ffffffff815795a2>] acpi_cpufreq_cpu_init+0x412/0x6a0
+>> >> [    0.377517]  [<ffffffff81575bb9>] cpufreq_add_dev+0x2d9/0x4f0
+>> >> [    0.377523]  [<ffffffff81d44b22>] ? cpufreq_gov_dbs_init+0x2c/0x2c
+>> >> [    0.377528]  [<ffffffff8145d379>] subsys_interface_register+0x89/0xd0
+>> >> [    0.377533]  [<ffffffff81573dee>] cpufreq_register_driver+0x8e/0x180
+>> >> [    0.377537]  [<ffffffff81d44c18>] acpi_cpufreq_init+0xf6/0x1f8
+>> >> [    0.377542]  [<ffffffff814608e6>] ? platform_driver_register+0x46/0x50
+>> >> [    0.377547]  [<ffffffff8100206f>] do_one_initcall+0x3f/0x170
+>> >> [    0.377553]  [<ffffffff81d07029>] kernel_init_freeable+0x13e/0x1cd
+>> >> [    0.377560]  [<ffffffff81d06895>] ? do_early_param+0x86/0x86
+>> >> [    0.377565]  [<ffffffff8169cf20>] ? rest_init+0x80/0x80
+>> >> [    0.377569]  [<ffffffff8169cf2e>] kernel_init+0xe/0xf0
+>> >> [    0.377575]  [<ffffffff816c722c>] ret_from_fork+0x7c/0xb0
+>> >> [    0.377578]  [<ffffffff8169cf20>] ? rest_init+0x80/0x80
+>> >> [    0.377581] ---[ end trace c6ec8280ce20313a ]---
+>> >>
+>> >> kernel/smp.c: Line #245 see [1].
+>> >>
+>> > Can you please try the following?
+>> >
+>> > --- a/kernel/smp.c      Fri Feb  8 19:25:32 2013
+>> > +++ b/kernel/smp.c      Fri Feb  8 19:53:14 2013
+>> > @@ -241,7 +241,7 @@ int smp_call_function_single(int cpu, sm
+>> >          * send smp call function interrupt to this cpu and as such deadlocks
+>> >          * can't happen.
+>> >          */
+>> > -       WARN_ON_ONCE(cpu_online(this_cpu) && (irqs_disabled() || in_interrupt())
+>> > +       WARN_ON_ONCE(cpu_online(this_cpu) && irqs_disabled()
+>> >                      && !oops_in_progress);
+>> >
+>> >         if (cpu == this_cpu) {
+>> > --
+>>
+>> NO, it doesn't.
+>>
+>> So, you want to partly revert...
+>>
+>> commit b29f39c7c3e75a741a7da88244ec707f293ec04c
+>> "smp: Give WARN()ing if in_interrupt() when calling
+>> smp_call_function_many()/single()"
+>>
+>> ...why not completely?
+>>
+>> This patch was in last days Linux-Next and did not cause troubles (AFAICS).
+>
+> This problem was introduced by some cpufreq changes that have been dropped from
+> linux-next for now (they are still present in the one you're testing, though).
+>
 
-What is topmost? The kernel can't know that for sure.
- 
-> The only way to *reliably* freeze fuse filesystems is to let it freeze
-> even if there are outstanding requests.  But that's the hardest to
-> implement, because then it needs to allow freezing of tasks waiting on
-> i_mutex, for example, which is currently not possible.  But this is
-> the only way I see that would not have unsolvable corner cases that
-> prop up at the worst moment.
-> 
-> And yes, it would be prudent to  wait some time for pending requests
-> to finish before freezing.  But it's not a requirement, things
-> *should* work without that: suspending a machine is just like a very
-> long pause by the CPU, as long as no hardware is involved.  And with
-> fuse filesystems there is no hardware involved directly by definition.
-> 
-> But I'm open to ideas and at this stage I think even patches that
-> improve the situation for the majority of the cases would be
-> acceptable, since this is turning out to be a major problem for a lot
-> of people.
-> 
+"...some...changes..." is not very concrete :-).
+Which commit(s) caused this trouble?
+
+Is current (meanwhile updated?) linux-pm.git#linux-next good (didn't
+check last commit-ids of your tree from Next/ dir)?
+
+- Sedat -
+
 > Thanks,
-> Miklos
-
-For shutdown in userspace there is the sendsigs.omit.d/ to avoid the
-problem of halting/killing processes of the fuse filesystems (or other
-services) prematurely. I guess something similar needs to be done for
-freeze. The fuse filesystem has to tell the kernel what is up.
-
-MfG
-	Goswin
+> Rafael
+>
+>
+> --
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
