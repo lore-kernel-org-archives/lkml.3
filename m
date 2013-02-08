@@ -1,166 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758086Ab3BHA6Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 19:58:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42003 "EHLO
+	id S1161101Ab3BHA75 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 19:59:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42041 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759641Ab3BHA6M (ORCPT
+	with ESMTP id S1757315Ab3BHA6X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 19:58:12 -0500
+	Thu, 7 Feb 2013 19:58:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 19/26] usb: Using correct way to clear usb3.0 devices remote wakeup feature.
-Date: Thu,  7 Feb 2013 16:57:47 -0800
-Message-Id: <20130208004630.525902793@linuxfoundation.org>
+        fangxiaozhi <huananhu@huawei.com>
+Subject: [ 13/16] USB: storage: Define a new macro for USB storage match rules
+Date: Thu,  7 Feb 2013 16:58:12 -0800
+Message-Id: <20130208004629.472786346@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130208004627.258272404@linuxfoundation.org>
-References: <20130208004627.258272404@linuxfoundation.org>
+In-Reply-To: <20130208004627.112511141@linuxfoundation.org>
+References: <20130208004627.112511141@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+From: fangxiaozhi <huananhu@huawei.com>
 
-commit 54a3ac0c9e5b7213daa358ce74d154352657353a upstream.
+commit 07c7be3d87e5cdaf5f94c271c516456364ef286c upstream.
 
-Usb3.0 device defines function remote wakeup which is only for interface
-recipient rather than device recipient. This is different with usb2.0 device's
-remote wakeup feature which is defined for device recipient. According usb3.0
-spec 9.4.5, the function remote wakeup can be modified by the SetFeature()
-requests using the FUNCTION_SUSPEND feature selector. This patch is to use
-correct way to disable usb3.0 device's function remote wakeup after suspend
-error and resuming.
+1. Define a new macro for USB storage match rules:
+    matching with Vendor ID and interface descriptors.
 
-This should be backported to kernels as old as 3.4, that contain the
-commit 623bef9e03a60adc623b09673297ca7a1cdfb367 "USB/xhci: Enable remote
-wakeup for USB3 devices."
-
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: fangxiaozhi <huananhu@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c  |   70 +++++++++++++++++++++++++++++++++++-------------
- include/linux/usb/ch9.h |    6 ++++
- 2 files changed, 58 insertions(+), 18 deletions(-)
+ drivers/usb/storage/usb.c          |   12 ++++++++++++
+ drivers/usb/storage/usual-tables.c |   15 +++++++++++++++
+ 2 files changed, 27 insertions(+)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -2463,6 +2463,23 @@ static int check_port_resume_type(struct
+--- a/drivers/usb/storage/usb.c
++++ b/drivers/usb/storage/usb.c
+@@ -120,6 +120,17 @@ MODULE_PARM_DESC(quirks, "supplemental l
+ 	.useTransport = use_transport,	\
  }
  
- #ifdef	CONFIG_USB_SUSPEND
-+/*
-+ * usb_disable_function_remotewakeup - disable usb3.0
-+ * device's function remote wakeup
-+ * @udev: target device
-+ *
-+ * Assume there's only one function on the USB 3.0
-+ * device and disable remote wake for the first
-+ * interface. FIXME if the interface association
-+ * descriptor shows there's more than one function.
-+ */
-+static int usb_disable_function_remotewakeup(struct usb_device *udev)
-+{
-+	return usb_control_msg(udev, usb_sndctrlpipe(udev, 0),
-+				USB_REQ_CLEAR_FEATURE, USB_RECIP_INTERFACE,
-+				USB_INTRF_FUNC_SUSPEND,	0, NULL, 0,
-+				USB_CTRL_SET_TIMEOUT);
++#define UNUSUAL_VENDOR_INTF(idVendor, cl, sc, pr, \
++		vendor_name, product_name, use_protocol, use_transport, \
++		init_function, Flags) \
++{ \
++	.vendorName = vendor_name,	\
++	.productName = product_name,	\
++	.useProtocol = use_protocol,	\
++	.useTransport = use_transport,	\
++	.initFunction = init_function,	\
 +}
++
+ static struct us_unusual_dev us_unusual_dev_list[] = {
+ #	include "unusual_devs.h" 
+ 	{ }		/* Terminating entry */
+@@ -128,6 +139,7 @@ static struct us_unusual_dev us_unusual_
+ #undef UNUSUAL_DEV
+ #undef COMPLIANT_DEV
+ #undef USUAL_DEV
++#undef UNUSUAL_VENDOR_INTF
+ 
+ 
+ #ifdef CONFIG_PM	/* Minimal support for suspend and resume */
+--- a/drivers/usb/storage/usual-tables.c
++++ b/drivers/usb/storage/usual-tables.c
+@@ -46,6 +46,20 @@
+ { USB_INTERFACE_INFO(USB_CLASS_MASS_STORAGE, useProto, useTrans), \
+   .driver_info = ((useType)<<24) }
+ 
++/* Define the device is matched with Vendor ID and interface descriptors */
++#define UNUSUAL_VENDOR_INTF(id_vendor, cl, sc, pr, \
++			vendorName, productName, useProtocol, useTransport, \
++			initFunction, flags) \
++{ \
++	.match_flags = USB_DEVICE_ID_MATCH_INT_INFO \
++				| USB_DEVICE_ID_MATCH_VENDOR, \
++	.idVendor    = (id_vendor), \
++	.bInterfaceClass = (cl), \
++	.bInterfaceSubClass = (sc), \
++	.bInterfaceProtocol = (pr), \
++	.driver_info = (flags) \
++}
++
+ struct usb_device_id usb_storage_usb_ids[] = {
+ #	include "unusual_devs.h"
+ 	{ }		/* Terminating entry */
+@@ -57,6 +71,7 @@ MODULE_DEVICE_TABLE(usb, usb_storage_usb
+ #undef UNUSUAL_DEV
+ #undef COMPLIANT_DEV
+ #undef USUAL_DEV
++#undef UNUSUAL_VENDOR_INTF
+ 
  
  /*
-  * usb_port_suspend - suspend a usb device's upstream port
-@@ -2569,12 +2586,19 @@ int usb_port_suspend(struct usb_device *
- 		dev_dbg(hub->intfdev, "can't suspend port %d, status %d\n",
- 				port1, status);
- 		/* paranoia:  "should not happen" */
--		if (udev->do_remote_wakeup)
--			(void) usb_control_msg(udev, usb_sndctrlpipe(udev, 0),
--				USB_REQ_CLEAR_FEATURE, USB_RECIP_DEVICE,
--				USB_DEVICE_REMOTE_WAKEUP, 0,
--				NULL, 0,
--				USB_CTRL_SET_TIMEOUT);
-+		if (udev->do_remote_wakeup) {
-+			if (!hub_is_superspeed(hub->hdev)) {
-+				(void) usb_control_msg(udev,
-+						usb_sndctrlpipe(udev, 0),
-+						USB_REQ_CLEAR_FEATURE,
-+						USB_RECIP_DEVICE,
-+						USB_DEVICE_REMOTE_WAKEUP, 0,
-+						NULL, 0,
-+						USB_CTRL_SET_TIMEOUT);
-+			} else
-+				(void) usb_disable_function_remotewakeup(udev);
-+
-+		}
- 
- 		/* Try to enable USB2 hardware LPM again */
- 		if (udev->usb2_hw_lpm_capable == 1)
-@@ -2661,20 +2685,30 @@ static int finish_port_resume(struct usb
- 	 * udev->reset_resume
- 	 */
- 	} else if (udev->actconfig && !udev->reset_resume) {
--		le16_to_cpus(&devstatus);
--		if (devstatus & (1 << USB_DEVICE_REMOTE_WAKEUP)) {
--			status = usb_control_msg(udev,
--					usb_sndctrlpipe(udev, 0),
--					USB_REQ_CLEAR_FEATURE,
-+		if (!hub_is_superspeed(udev->parent)) {
-+			le16_to_cpus(&devstatus);
-+			if (devstatus & (1 << USB_DEVICE_REMOTE_WAKEUP))
-+				status = usb_control_msg(udev,
-+						usb_sndctrlpipe(udev, 0),
-+						USB_REQ_CLEAR_FEATURE,
- 						USB_RECIP_DEVICE,
--					USB_DEVICE_REMOTE_WAKEUP, 0,
--					NULL, 0,
--					USB_CTRL_SET_TIMEOUT);
--			if (status)
--				dev_dbg(&udev->dev,
--					"disable remote wakeup, status %d\n",
--					status);
-+						USB_DEVICE_REMOTE_WAKEUP, 0,
-+						NULL, 0,
-+						USB_CTRL_SET_TIMEOUT);
-+		} else {
-+			status = usb_get_status(udev, USB_RECIP_INTERFACE, 0,
-+					&devstatus);
-+			le16_to_cpus(&devstatus);
-+			if (!status && devstatus & (USB_INTRF_STAT_FUNC_RW_CAP
-+					| USB_INTRF_STAT_FUNC_RW))
-+				status =
-+					usb_disable_function_remotewakeup(udev);
- 		}
-+
-+		if (status)
-+			dev_dbg(&udev->dev,
-+				"disable remote wakeup, status %d\n",
-+				status);
- 		status = 0;
- 	}
- 	return status;
---- a/include/linux/usb/ch9.h
-+++ b/include/linux/usb/ch9.h
-@@ -150,6 +150,12 @@
- #define USB_INTRF_FUNC_SUSPEND_LP	(1 << (8 + 0))
- #define USB_INTRF_FUNC_SUSPEND_RW	(1 << (8 + 1))
- 
-+/*
-+ * Interface status, Figure 9-5 USB 3.0 spec
-+ */
-+#define USB_INTRF_STAT_FUNC_RW_CAP     1
-+#define USB_INTRF_STAT_FUNC_RW         2
-+
- #define USB_ENDPOINT_HALT		0	/* IN/OUT will STALL */
- 
- /* Bit array elements as returned by the USB_REQ_GET_STATUS request. */
 
 
