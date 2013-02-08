@@ -1,128 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759801Ab3BHDmJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 22:42:09 -0500
-Received: from asix.com.tw ([113.196.140.82]:55390 "EHLO asix.com.tw"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759682Ab3BHDmH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 22:42:07 -0500
-Message-ID: <511473FB.4060600@asix.com.tw>
-Date: Fri, 08 Feb 2013 11:41:47 +0800
-From: Freddy <freddy@asix.com.tw>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1759875Ab3BHDmb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 22:42:31 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:42207 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759842Ab3BHDm3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 22:42:29 -0500
 MIME-Version: 1.0
-To: Ben Hutchings <bhutchings@solarflare.com>
-CC: netdev@vger.kernel.org, davem@davemloft.net, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH, resubmit] ax88179_178a: ASIX AX88179_178A USB 3.0/2.0
- to gigabit ethernet adapter driver
-References: <1360244360-2700-1-git-send-email-freddy@asix.com.tw> <1360267375.3605.32.camel@bwh-desktop.uk.solarflarecom.com>
-In-Reply-To: <1360267375.3605.32.camel@bwh-desktop.uk.solarflarecom.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Date: Thu, 7 Feb 2013 19:42:28 -0800
+Message-ID: <CAOMFOmXiEUnqkoQg6bA4N3jg5ERMKoydOdmn7djkpFyfZk19cg@mail.gmail.com>
+Subject: Improving AIO cancellation
+From: Anatol Pomozov <anatol.pomozov@gmail.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: "Theodore Ts'o" <tytso@mit.edu>, koverstreet@google.com,
+        linux-aio@kvack.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/08/2013 04:02 AM, Ben Hutchings wrote:
-> On Thu, 2013-02-07 at 21:39 +0800, Freddy Xin wrote:
->> From: Freddy Xin <freddy@asix.com.tw>
->>
->> This is a resubmission.
->> Added "const" to ethtool_ops structure and fixed the coding style of AX88179_BULKIN_SIZE array.
->> Fixed the issue that the default MTU is not 1500.
->> Added ax88179_change_mtu function and enabled the hardware jumbo frame function to support an
->> MTU higher than 1500.
->> Fixed indentation and empty line coding style errors.
->> The _nopm version usb functions were added to access register in suspend and resume functions.
->> Serveral variables allocted dynamically were removed and replaced by stack variables.
->> ax88179_get_eeprom were modified from asix_get_eeprom in asix_common.
->>
->> This patch adds a driver for ASIX's AX88179 family of USB 3.0/2.0
->> to gigabit ethernet adapters. It's based on the AX88xxx driver but
->> the usb commands used to access registers for AX88179 are completely different.
->> This driver had been verified on x86 system with AX88179/AX88178A and
->> Sitcomm LN-032 USB dongles.
->>
->> Signed-off-by: Freddy Xin <freddy@asix.com.tw>
-> [...]
->> --- /dev/null
->> +++ b/drivers/net/usb/ax88179_178a.c
-> [...]
->> +struct ax88179_data {
->> +       u16 rxctl;
->> +};
-> Should also be declared __packed, as on some architectures it may be
-> padded to 4 bytes.
->
-> rxctl is presumably required to be little-endian (__le16)?
->
->> +struct ax88179_int_data {
->> +       u16 res1;
->> +       u8 link;
->> +       u16 res2;
->> +       u8 status;
->> +       u16 res3;
->> +} __packed;
-> Same here, the u16 fields are presumably little-endian?
->
-> [...]
->> +struct ax88179_rx_pkt_header {
->> +	u8	l4_csum_err:1,
->> +		l3_csum_err:1,
->> +		l4_type:3,
->> +		l3_type:2,
->> +		ce:1;
->> +
->> +	u8	vlan_ind:3,
->> +		rx_ok:1,
->> +		pri:3,
->> +		bmc:1;
->> +
->> +	u16	len:13,
->> +		crc:1,
->> +		mii:1,
->> +		drop:1;
->> +} __packed;
-> This won't work on both big-endian systems (assuming this works on x86).
-> You apparently try to convert the structure in-place in
-> ax88179_rx_fixup() by calling le32_to_cpus(); that may work if you
-> define all the bitfields to be part of a u32 but it won't work with the
-> current definition.
->
-> [...]
->> +static int
->> +ax88179_set_features(struct net_device *net, netdev_features_t features)
->> +{
->> +	u8 tmp;
->> +	struct usbnet *dev = netdev_priv(net);
->> +	netdev_features_t changed = net->features ^ features;
->> +
->> +	if (changed & NETIF_F_TSO)
->> +		net->features ^= NETIF_F_TSO;
->> +
->> +	if (changed & NETIF_F_SG)
->> +		net->features ^= NETIF_F_SG;
-> Don't change net->features; the caller will do that for you.
->
->> +       if (changed & NETIF_F_IP_CSUM) {
->> +               ax88179_read_cmd(dev, AX_ACCESS_MAC, AX_TXCOE_CTL, 1, 1, &tmp);
->> +               tmp ^= AX_TXCOE_TCP | AX_TXCOE_UDP;
->> +               ax88179_write_cmd(dev, AX_ACCESS_MAC, AX_TXCOE_CTL, 1, 1, &tmp);
->> +
->> +               net->features ^= NETIF_F_IP_CSUM;
->> +       }
-> [...]
->
-> Isn't tmp going to be in little-endian byte order, so this doesn't work
-> correctly on a big-endian system?
->
-> There are a lot of reads and writes of 16-bit registers using
-> ax88179_{read,write}_cmd(); maybe you should add
-> ax88179_{read,write}_le16() to handle this specific case.
->
-> Ben.
->
-Thank you, Ben. I will fix bugs and test it on a big-endian system.
+Hi,
 
-Freddy
+At Google we have several applications that heavily use asynchronous
+IO. One thing that our userspace developers need is effective AIO
+cancellation. You might say "sure use io_cancel syscall". Well, while
+it cancels AIO requests it does it ineffectively. Currently (I am
+looking at linux-next) io_cancel only marks kiocb as cancelled. The
+bios still be issued to device even after kiocb was cancelled. Let's
+say you have a congested device and want to cancel some AIO requests -
+io_cancel will not make situation better. We would like to see more
+resource effective AIO cancellation.
+
+I had a discussion with Ted Tso and Kent Overstreet about improving
+this situation and would like to share the ideas with you, linux
+community.
+
+Once direct async IO is submitted the request can be at several stages:
+1) Sitting in kernel request queue of a congested device
+2) Sent to device and sitting in device queue (if NCQ is enabled)
+3) Executing on device
+
+Ideally if we can cancel an IO request on any of these stages. But
+currently we are especially interested in case #1. I do not know if
+cancellation at stage #2 and #3 is possible and/or reasonable.
+
+BTW AIO cancellation makes sense only for direct IO. Buffered AIO will
+end up in buffer soon and kiocb will be marked as completed. Later
+(maybe much later) writeback will flush those buffers to disk, but you
+cannot cancel it..
+
+And yet another thing to remember is md/RAID. Some types of raid
+support stripes consistency. When md splits a WRITE across disks
+either all or no of the child requests should be completed. If we do
+partial write then the disk data will become inconsistent.
+
+
+Ted and Kent suggested following solution: any time when we do forward
+progress with request/bio we need to check its status. If user
+cancelled the request then just skip this bio. So it covers case #1.
+
+The draft implementation will look like this. struct bio should have
+some way to get current status of kiocb that generated bio. So we add
+a pointer to bool flag.
+
+struct bio {
+  bool *cancelled;
+}
+
+in async DIO codepath this pointer will be initialized with bool at
+"struct kiocb"
+  bio->cancelled = &kiocb->cancelled;
+except md. If it is RAID5 and we perform WRITE request then we do not
+initialize this pointer.
+
+
+when we do forward progress with request/bio we check its cancellation status:
+if (bio->cancelled && *bio->cancelled)
+  goto do_not_process_bio_because_it_cancelled;
+
+So to cancel kiocb we do
+kiocb->cancelled = true;
+and all bio created from the request will not be send to device anymore.
+
+
+The solution seems straightforward, but I would like to hear if there
+are other solutions to make AIO cancellation better. Does suggested
+implementation looks good? Are there better solutions? What about
+cancelling requests that are already sent to device?
+
+If the proposal is fine then I start implementing it.
