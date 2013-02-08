@@ -1,131 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760009Ab3BHHJI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 02:09:08 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:60396 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759945Ab3BHHJG (ORCPT
+	id S1759997Ab3BHHLL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 02:11:11 -0500
+Received: from relay.parallels.com ([195.214.232.42]:43737 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756304Ab3BHHLK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 02:09:06 -0500
-X-AuditID: 9c93016f-b7b1fae000006419-25-5114a48f9a58
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        Borislav Petkov <bp@alien8.de>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 7/7] perf annotate: Make it to be able to skip unannotatable symbols
-References: <1360227734-375-1-git-send-email-namhyung@kernel.org>
-	<1360227734-375-8-git-send-email-namhyung@kernel.org>
-	<20130205011247.GG19155@ghostprotocols.net>
-Date: Fri, 08 Feb 2013 16:09:03 +0900
-In-Reply-To: <20130205011247.GG19155@ghostprotocols.net> (Arnaldo Carvalho de
-	Melo's message of "Mon, 4 Feb 2013 22:12:47 -0300")
-Message-ID: <87y5ezqo34.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Fri, 8 Feb 2013 02:11:10 -0500
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>
+CC: Ingo Molnar <mingo@redhat.com>, <devel@openvz.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] sched: initialize runtime to non-zero on cfs bw set
+Date: Fri, 8 Feb 2013 11:10:46 +0400
+Message-ID: <1360307446-26978-1-git-send-email-vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+X-Originating-IP: [10.30.22.158]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaldo,
+If cfs_rq->runtime_remaining is <= 0 then either
+- cfs_rq is throttled and waiting for quota redistribution, or
+- cfs_rq is currently executing and will be throttled on
+  put_prev_entity, or
+- cfs_rq is not throttled and has not executed since its quota was set
+  (runtime_remaining is set to 0 on cfs bandwidth reconfiguration).
 
-On Mon, 4 Feb 2013 22:12:47 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Thu, Feb 07, 2013 at 06:02:14PM +0900, Namhyung Kim escreveu:
->> From: Namhyung Kim <namhyung.kim@lge.com>
->> 
->> Add --skip-missing option for skipping symbols that cannot be used for
->> annotation.  It's the case of kernel symbols that user doesn't have a
->> vmlinux image file.
->> 
->> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
->> ---
->>  tools/perf/builtin-annotate.c | 17 +++++++++++++++--
->
-> You forgot to add the entry in the man page...
+It is obvious that the last case is rather an exception from the rule
+"runtime_remaining<=0 iff cfs_rq is throttled or will be throttled as
+soon as it finishes its execution". Moreover, it can lead to a task hang
+as follows. If put_prev_task is called immediately after first
+pick_next_task after quota was set, "immediately" meaning rq->clock in
+both functions is the same, then the corresponding cfs_rq will be
+throttled. Besides being unfair (the cfs_rq has not executed in fact),
+the quota refilling timer can be idle at that time and it won't be
+activated on put_prev_task because update_curr calls
+account_cfs_rq_runtime, which activates the timer, only if delta_exec is
+strictly positive. As a result we can get a task "running" inside a
+throttled cfs_rq which will probably never be unthrottled.
 
-Arghh... resending..
+To avoid the problem, the patch makes tg_set_cfs_bandwidth initialize
+runtime_remaining of each cfs_rq to 1 instead of 0 so that the cfs_rq
+will be throttled only if it has executed for some positive number of
+nanoseconds.
+--
+Several times we had our customers encountered such hangs inside a VM
+(seems something is wrong or rather different in time accounting there).
+Analyzing crash dumps revealed that hung tasks were running inside
+cfs_rq's, which had the following setup
 
+cfs_rq->throttled=1
+cfs_rq->runtime_enabled=1
+cfs_rq->runtime_remaining=0
+cfs_rq->tg->cfs_bandwidth.idle=1
+cfs_rq->tg->cfs_bandwidth.timer_active=0
 
----------------------8<-----------------------
->From 797a62666d6098aaeda816279fa9181473762dc6 Mon Sep 17 00:00:00 2001
-From: Namhyung Kim <namhyung.kim@lge.com>
-Date: Thu, 7 Feb 2013 17:37:03 +0900
-Subject: [PATCH v2 7/7] perf annotate: Make it to be able to skip unannotatable
- symbols
+which conforms pretty nice to the explanation given above.
 
-Add --skip-missing option for skipping symbols that cannot be used for
-annotation.  It's the case of kernel symbols that user doesn't have a
-vmlinux image file.
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 ---
- tools/perf/Documentation/perf-annotate.txt |  3 +++
- tools/perf/builtin-annotate.c              | 17 +++++++++++++++--
- 2 files changed, 18 insertions(+), 2 deletions(-)
+ kernel/sched/core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-annotate.txt b/tools/perf/Documentation/perf-annotate.txt
-index e5e1d06efc37..5ad07ef417f0 100644
---- a/tools/perf/Documentation/perf-annotate.txt
-+++ b/tools/perf/Documentation/perf-annotate.txt
-@@ -90,6 +90,9 @@ OPTIONS
- --objdump=<path>::
-         Path to objdump binary.
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 26058d0..c7a078f 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -7686,7 +7686,7 @@ static int tg_set_cfs_bandwidth(struct task_group *tg, u64 period, u64 quota)
  
-+--skip-missing::
-+	Skip symbols that cannot be annotated.
-+
- SEE ALSO
- --------
- linkperf:perf-record[1], linkperf:perf-report[1]
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index 68e3a16abd3d..2e6961ea3184 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -37,6 +37,7 @@ struct perf_annotate {
- 	bool	   force, use_tui, use_stdio, use_gtk;
- 	bool	   full_paths;
- 	bool	   print_line;
-+	bool	   skip_missing;
- 	const char *sym_hist_filter;
- 	const char *cpu_list;
- 	DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
-@@ -139,11 +140,21 @@ find_next:
- 		}
+ 		raw_spin_lock_irq(&rq->lock);
+ 		cfs_rq->runtime_enabled = runtime_enabled;
+-		cfs_rq->runtime_remaining = 0;
++		cfs_rq->runtime_remaining = 1;
  
- 		if (use_browser == 2) {
--			hist_entry__gtk_annotate(he, evidx, NULL);
--			return;
-+			int ret;
-+
-+			ret = hist_entry__gtk_annotate(he, evidx, NULL);
-+			if (!ret || !ann->skip_missing)
-+				return;
-+
-+			/* skip missing symbols */
-+			nd = rb_next(nd);
- 		} else if (use_browser == 1) {
- 			key = hist_entry__tui_annotate(he, evidx, NULL);
- 			switch (key) {
-+			case -1:
-+				if (!ann->skip_missing)
-+					return;
-+				/* fall through */
- 			case K_RIGHT:
- 				next = rb_next(nd);
- 				break;
-@@ -288,6 +299,8 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __maybe_unused)
- 		    "print matching source lines (may be slow)"),
- 	OPT_BOOLEAN('P', "full-paths", &annotate.full_paths,
- 		    "Don't shorten the displayed pathnames"),
-+	OPT_BOOLEAN(0, "skip-missing", &annotate.skip_missing,
-+		    "Skip symbols that cannot be annotated"),
- 	OPT_STRING('C', "cpu", &annotate.cpu_list, "cpu", "list of cpus to profile"),
- 	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
- 		   "Look for files with symbols relative to this directory"),
+ 		if (cfs_rq->throttled)
+ 			unthrottle_cfs_rq(cfs_rq);
 -- 
-1.7.11.7
+1.7.1
 
