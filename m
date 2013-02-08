@@ -1,40 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760148Ab3BHPDz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 10:03:55 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38310 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758658Ab3BHPDy (ORCPT
+	id S1946462Ab3BHPF5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 10:05:57 -0500
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:48330 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759956Ab3BHPF4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 10:03:54 -0500
-Date: Fri, 8 Feb 2013 15:03:17 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND] ARM: sched: correct update_sched_clock()
-Message-ID: <20130208150317.GT17833@n2100.arm.linux.org.uk>
-References: <1360128076-8555-1-git-send-email-iamjoonsoo.kim@lge.com> <CACRpkdbwoExxKbbvBKpt_Wh9KsgCXQW566N-0BaeL3oGY8pvLg@mail.gmail.com> <20130206163355.GH17833@n2100.arm.linux.org.uk> <20130208065125.GA20440@lge.com>
+	Fri, 8 Feb 2013 10:05:56 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130208065125.GA20440@lge.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1360334778.2621.106.camel@gandalf.local.home>
+References: <1360321887-18251-1-git-send-email-vincent.guittot@linaro.org>
+	<1360334778.2621.106.camel@gandalf.local.home>
+Date: Fri, 8 Feb 2013 16:05:54 +0100
+Message-ID: <CAKfTPtB3u6yFj_mKY4OMRuX9SuRcSWC0e8DzyMp3BVBDymAb0w@mail.gmail.com>
+Subject: Re: [PATCH] sched: fix wrong rq's runnable_avg update with rt task
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        peterz@infradead.org, mingo@kernel.org, pjt@google.com,
+        fweisbec@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 08, 2013 at 03:51:25PM +0900, Joonsoo Kim wrote:
-> I try to put it into patch tracker, but I fail to put it.
-> I use following command.
-> 
-> git send-email --to patches@arm.linux.org.uk 0001-ARM-sched-correct~~~~~
-> 
-> Am I wrong?
-> Could you teach me how to put patch into your patch tracker?
-> I already read "help" on your website, but I can't find any stuff for
-> "git send-email".
+On 8 February 2013 15:46, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Fri, 2013-02-08 at 12:11 +0100, Vincent Guittot wrote:
+>> When a RT task is scheduled on an idle CPU, the update of the rq's load is
+>> not done because CFS's functions are not called. Then, the idle_balance,
+>> which is called just before entering the idle function, updates the
+>> rq's load and makes the assumption that the elapsed time since the last
+>> update, was only running time.
+>>
+>> The rq's load of a CPU that only runs a periodic RT task, is close to
+>> LOAD_AVG_MAX whatever the running duration of the RT task is.
+>>
+>> A new idle_exit function is called when the prev task is the idle function
+>> so the elapsed time will be accounted as idle time in the rq's load.
+>>
+>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+>> ---
+>>  kernel/sched/core.c  |    3 +++
+>>  kernel/sched/fair.c  |   10 ++++++++++
+>>  kernel/sched/sched.h |    5 +++++
+>>  3 files changed, 18 insertions(+)
+>>
+>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+>> index 26058d0..592e06c 100644
+>> --- a/kernel/sched/core.c
+>> +++ b/kernel/sched/core.c
+>> @@ -2927,6 +2927,9 @@ need_resched:
+>>
+>>       pre_schedule(rq, prev);
+>>
+>> +     if (unlikely(prev == rq->idle))
+>> +             idle_exit(cpu, rq);
+>> +
+>
+> Let's get rid of the added junk in the core code that should be isolated
+> in the idle code.
+>
 
-I've never used git to send email, so I'm afraid I can't help with that.
-Maybe someone with more experience with sending email from git can
-comment?
+i agree
+
+> I posted these patches before, and I'm about to post again:
+>
+> https://lkml.org/lkml/2012/12/21/378
+> https://lkml.org/lkml/2012/12/21/377
+>
+> I'm working to clean these patches up today and post them again. Would
+> working on top of these work for you?
+
+yes for sure.
+I will move that code in pre_schedule
+
+Vincent
+
+>
+> -- Steve
+>
+>
+>>       if (unlikely(!rq->nr_running))
+>>               idle_balance(cpu, rq);
+>>
+>
+>
