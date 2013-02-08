@@ -1,111 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946366Ab3BHL5Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 06:57:24 -0500
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:39561 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1946329Ab3BHL5V (ORCPT
+	id S1946363Ab3BHMDK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 07:03:10 -0500
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:35162 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946329Ab3BHMDJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 06:57:21 -0500
-Message-ID: <1360324631.3385.9.camel@thor.lan>
-Subject: Re: [-next-20130204] usb/hcd:  irq 18: nobody cared
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Lan Tianyu <tianyu.lan@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
-Date: Fri, 08 Feb 2013 06:57:11 -0500
-In-Reply-To: <Pine.LNX.4.44L0.1302051520220.2245-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1302051520220.2245-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-0pjh1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 125194 peter@hurleysoftware.com
-X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+	Fri, 8 Feb 2013 07:03:09 -0500
+MIME-Version: 1.0
+In-Reply-To: <87pq0bqkod.fsf@sejong.aot.lge.com>
+References: <CAJd=RBBvE-5f1UyJGu32EHGVCXe6rVYY0010SKa56j7OvtPG7g@mail.gmail.com>
+	<87pq0bqkod.fsf@sejong.aot.lge.com>
+Date: Fri, 8 Feb 2013 20:03:06 +0800
+Message-ID: <CAJd=RBAgNdXZjcKpJJLwrUUuUpD9Mqmi44etf3HJoA8Xr0iXeQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] stop_machine: dequeue work before signal completion
+From: Hillf Danton <dhillf@gmail.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-02-05 at 15:26 -0500, Alan Stern wrote:
-> On Tue, 5 Feb 2013, Peter Hurley wrote:
-> 
-> > With -next-20130204:
-> > 
-> > [   33.855570] irq 18: nobody cared (try booting with the "irqpoll" option)
-> > [   33.855580] Pid: 0, comm: swapper/4 Not tainted 3.8.0-next-20130204-xeon #20130204
-> > [   33.855582] Call Trace:
-> > [   33.855585]  <IRQ>  [<ffffffff810f1076>] __report_bad_irq+0x36/0xe0
-> > [   33.855600]  [<ffffffff810f152a>] note_interrupt+0x1aa/0x200
-> > [   33.855606]  [<ffffffff8101edf2>] ? mwait_idle+0x82/0x1b0
-> > [   33.855610]  [<ffffffff810eed89>] handle_irq_event_percpu+0xc9/0x260
-> > [   33.855614]  [<ffffffff810eef68>] handle_irq_event+0x48/0x70
-> > [   33.855618]  [<ffffffff810f20ba>] handle_fasteoi_irq+0x5a/0x100
-> > [   33.855624]  [<ffffffff810182f2>] handle_irq+0x22/0x40
-> > [   33.855630]  [<ffffffff816e2a9a>] do_IRQ+0x5a/0xd0
-> > [   33.855636]  [<ffffffff816d97ad>] common_interrupt+0x6d/0x6d
-> > [   33.855638]  <EOI>  [<ffffffff810f8e2a>] ? rcu_eqs_enter_common+0x4a/0x320
-> > [   33.855646]  [<ffffffff8101edf2>] ? mwait_idle+0x82/0x1b0
-> > [   33.855649]  [<ffffffff8101ed99>] ? mwait_idle+0x29/0x1b0
-> > [   33.855653]  [<ffffffff8101f8a6>] cpu_idle+0x116/0x130
-> > [   33.855658]  [<ffffffff816c0c0f>] start_secondary+0x251/0x258
-> > [   33.855660] handlers:
-> > [   33.855664] [<ffffffff814f98a0>] usb_hcd_irq
-> > [   33.855667] Disabling IRQ #18
-> > 
-> > From earlier in the boot log:
-> > [    1.297020] uhci_hcd 0000:00:1d.2: setting latency timer to 64
-> > [    1.297032] uhci_hcd 0000:00:1d.2: UHCI Host Controller
-> > [    1.297040] uhci_hcd 0000:00:1d.2: new USB bus registered, assigned bus number 4
-> > [    1.297076] uhci_hcd 0000:00:1d.2: irq 18, io base 0x0000ff40
-> > [    1.297213] hub 4-0:1.0: USB hub found
-> > [    1.297221] hub 4-0:1.0: 2 ports detected
-> > 
-> > lsusb:
-> > ...
-> > Bus 004 Device 002: ID 0764:0501 Cyber Power System, Inc. CP1500 AVR UPS
-> > Bus 004 Device 003: ID 046d:c52b Logitech, Inc. Unifying Receiver
-> > ...
-> > 
-> > Didn't have this problem with -next-20120125. One of these commits, maybe?
-> > next/drivers/usb/core$ git log --oneline next-20130125..next-20130204 -- *
-> > 2c2e865 usb: forbid memory allocation with I/O during bus reset
-> > e9121a8 Merge remote-tracking branch 'usb/usb-next'
-> > 3b2ab2b Revert "usb: Register usb port's acpi power resources"
-> > da0aa71 USB: add usb_hcd_{start,end}_port_resume
-> > 192fef1 usb: enable usb port device's async suspend.
-> > f6cced1 usb: expose usb port's pm qos flags to user space
-> > ad493e5 usb: add usb port auto power off mechanism
-> > 971fcd4 usb: add runtime pm support for usb port device
-> > 88bb965 usb: Register usb port's acpi power resources
-> > 54a3ac0 usb: Using correct way to clear usb3.0 device's remote wakeup feature.
-> 
-> None of those commits seems likely to have caused the problem.  The 
-> most likely is da0aa71, combined with one you didn't mention:
-> 
-> 840008bb USB: UHCI: notify usbcore about port resumes
-> 
-> If you revert these two commits, does that make any difference?  What
-> if you revert all of these commits?
+Hello Namhyung
 
-None of these commits are directly causing this. I tested Greg's usb
-master and usb-next and both run fine for me.
+On Fri, Feb 8, 2013 at 4:22 PM, Namhyung Kim <namhyung@kernel.org> wrote:
+> On Fri, 8 Feb 2013 11:42:43 +0800, Hillf Danton wrote:
+>> As checked with BUG_ON in the case of CPU_UP_PREPARE, we have to dequeue
+>> work first for further actions, then stopper reaches sane and clear state.
+>
+> Reviewed-by: Namhyung Kim <namhyung@kernel.org>
+>
+Double thanks since I did not add you in the cc list, may bad;(
 
-> > I didn't see any changes in the drivers/hid/hid-logitech-dj.c or usbhid
-> > but maybe it's doing something wrong anyway?
-> > 
-> > I'll open a bugzilla if a bunch more info is necessary.
-> 
-> If the suggestion above doesn't work out, bisection may be the best way
-> to find the answer.
-
-Any pointers on how to one of) build a linear history for -next, get
-bisect to work on an integration tree, or third option I haven't thought
-of?
-
-Thanks,
-Peter Hurley
-
-
+Hillf
