@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422746Ab3BHBGB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 20:06:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41969 "EHLO
+	id S1759734Ab3BHBGZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 20:06:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41966 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932216Ab3BHA6I (ORCPT
+	with ESMTP id S932195Ab3BHA6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 7 Feb 2013 19:58:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sergey Alexandrov <splavgm@gmail.com>,
-        Vyacheslav Dubeyko <slava@dubeyko.com>,
-        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 10/26] nilfs2: fix fix very long mount time issue
-Date: Thu,  7 Feb 2013 16:57:38 -0800
-Message-Id: <20130208004629.018301602@linuxfoundation.org>
+        Shawn Bohrer <sbohrer@rgmadvisors.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
+        peterz@infradead.org
+Subject: [ 09/26] sched/rt: Use root_domain of rt_rq not current processor
+Date: Thu,  7 Feb 2013 16:57:37 -0800
+Message-Id: <20130208004628.870544545@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130208004627.258272404@linuxfoundation.org>
 References: <20130208004627.258272404@linuxfoundation.org>
@@ -30,80 +29,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vyacheslav Dubeyko <slava@dubeyko.com>
+From: Shawn Bohrer <sbohrer@rgmadvisors.com>
 
-commit a9bae189542e71f91e61a4428adf6e5a7dfe8063 upstream.
+commit aa7f67304d1a03180f463258aa6f15a8b434e77d upstream.
 
-There exists a situation when GC can work in background alone without
-any other filesystem activity during significant time.
+When the system has multiple domains do_sched_rt_period_timer()
+can run on any CPU and may iterate over all rt_rq in
+cpu_online_mask.  This means when balance_runtime() is run for a
+given rt_rq that rt_rq may be in a different rd than the current
+processor.  Thus if we use smp_processor_id() to get rd in
+do_balance_runtime() we may borrow runtime from a rt_rq that is
+not part of our rd.
 
-The nilfs_clean_segments() method calls nilfs_segctor_construct() that
-updates superblocks in the case of NILFS_SC_SUPER_ROOT and
-THE_NILFS_DISCONTINUED flags are set.  But when GC is working alone the
-nilfs_clean_segments() is called with unset THE_NILFS_DISCONTINUED flag.
-As a result, the update of superblocks doesn't occurred all this time
-and in the case of SPOR superblocks keep very old values of last super
-root placement.
+This changes do_balance_runtime to get the rd from the passed in
+rt_rq ensuring that we borrow runtime only from the correct rd
+for the given rt_rq.
 
-SYMPTOMS:
+This fixes a BUG at kernel/sched/rt.c:687! in __disable_runtime
+when we try reclaim runtime lent to other rt_rq but runtime has
+been lent to a rt_rq in another rd.
 
-Trying to mount a NILFS2 volume after SPOR in such environment ends with
-very long mounting time (it can achieve about several hours in some
-cases).
-
-REPRODUCING PATH:
-
-1. It needs to use external USB HDD, disable automount and doesn't
-   make any additional filesystem activity on the NILFS2 volume.
-
-2. Generate temporary file with size about 100 - 500 GB (for example,
-   dd if=/dev/zero of=<file_name> bs=1073741824 count=200).  The size of
-   file defines duration of GC working.
-
-3. Then it needs to delete file.
-
-4. Start GC manually by means of command "nilfs-clean -p 0".  When you
-   start GC by means of such way then, at the end, superblocks is updated
-   by once.  So, for simulation of SPOR, it needs to wait sometime (15 -
-   40 minutes) and simply switch off USB HDD manually.
-
-5. Switch on USB HDD again and try to mount NILFS2 volume.  As a
-   result, NILFS2 volume will mount during very long time.
-
-REPRODUCIBILITY: 100%
-
-FIX:
-
-This patch adds checking that superblocks need to update and set
-THE_NILFS_DISCONTINUED flag before nilfs_clean_segments() call.
-
-Reported-by: Sergey Alexandrov <splavgm@gmail.com>
-Signed-off-by: Vyacheslav Dubeyko <slava@dubeyko.com>
-Tested-by: Vyacheslav Dubeyko <slava@dubeyko.com>
-Acked-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Tested-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Acked-by: Mike Galbraith <bitbucket@online.de>
+Cc: peterz@infradead.org
+Link: http://lkml.kernel.org/r/1358186131-29494-1-git-send-email-sbohrer@rgmadvisors.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nilfs2/ioctl.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ kernel/sched/rt.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/nilfs2/ioctl.c
-+++ b/fs/nilfs2/ioctl.c
-@@ -666,8 +666,11 @@ static int nilfs_ioctl_clean_segments(st
- 	if (ret < 0)
- 		printk(KERN_ERR "NILFS: GC failed during preparation: "
- 			"cannot read source blocks: err=%d\n", ret);
--	else
-+	else {
-+		if (nilfs_sb_need_update(nilfs))
-+			set_nilfs_discontinued(nilfs);
- 		ret = nilfs_clean_segments(inode->i_sb, argv, kbufs);
-+	}
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -560,7 +560,7 @@ static inline struct rt_bandwidth *sched
+ static int do_balance_runtime(struct rt_rq *rt_rq)
+ {
+ 	struct rt_bandwidth *rt_b = sched_rt_bandwidth(rt_rq);
+-	struct root_domain *rd = cpu_rq(smp_processor_id())->rd;
++	struct root_domain *rd = rq_of_rt_rq(rt_rq)->rd;
+ 	int i, weight, more = 0;
+ 	u64 rt_period;
  
- 	nilfs_remove_all_gcinodes(nilfs);
- 	clear_nilfs_gc_running(nilfs);
 
 
