@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759864Ab3BHBQf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 20:16:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41854 "EHLO
+	id S1759880Ab3BHBRB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 20:17:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41863 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759334Ab3BHA5p (ORCPT
+	with ESMTP id S1759197Ab3BHA5p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 7 Feb 2013 19:57:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 26/34] USB: EHCI: fix bug in scheduling periodic split transfers
-Date: Thu,  7 Feb 2013 16:57:22 -0800
-Message-Id: <20130208004631.517353267@linuxfoundation.org>
+Subject: [ 24/34] USB: EHCI: unlink one async QH at a time
+Date: Thu,  7 Feb 2013 16:57:20 -0800
+Message-Id: <20130208004631.272524117@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130208004627.375461662@linuxfoundation.org>
 References: <20130208004627.375461662@linuxfoundation.org>
@@ -28,36 +28,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 3e619d04159be54b3daa0b7036b0ce9e067f4b5d upstream.
+commit 6e0c3339a6f19d748f16091d0a05adeb1e1f822b upstream.
 
-This patch (as1654) fixes a very old bug in ehci-hcd, connected with
-scheduling of periodic split transfers.  The calculations for
-full/low-speed bus usage are all carried out after the correction for
-bit-stuffing has been applied, but the values in the max_tt_usecs
-array assume it hasn't been.  The array should allow for allocation of
-up to 90% of the bus capacity, which is 900 us, not 780 us.
+This patch (as1648) fixes a regression affecting nVidia EHCI
+controllers.  Evidently they don't like to have more than one async QH
+unlinked at a time.  I can't imagine how they manage to mess it up,
+but at least one of them does.
 
-The symptom caused by this bug is that any isochronous transfer to a
-full-speed device with a maxpacket size larger than about 980 bytes is
-always rejected with a -ENOSPC error.
+The patch changes the async unlink logic in two ways:
+
+	Each time an IAA cycle is started, only the first QH on the
+	async unlink list is handled (rather than all of them).
+
+	Async QHs do not all get unlinked as soon as they have been
+	empty for long enough.  Instead, only the last one (i.e., the
+	one that has been on the schedule the longest) is unlinked,
+	and then only if no other unlinks are in progress at the time.
+
+This means that when multiple QHs are empty, they won't be unlinked as
+quickly as before.  That's okay; it won't affect correct operation of
+the driver or add an excessive load.  Multiple unlinks tend to be
+relatively rare in any case.
 
 Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-and-tested-by: Piergiorgio Sartor <piergiorgio.sartor@nexgo.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ehci-sched.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/host/ehci-q.c |   50 +++++++++++++++++++++++++++-------------------
+ 1 file changed, 30 insertions(+), 20 deletions(-)
 
---- a/drivers/usb/host/ehci-sched.c
-+++ b/drivers/usb/host/ehci-sched.c
-@@ -236,7 +236,7 @@ static inline unsigned char tt_start_ufr
+--- a/drivers/usb/host/ehci-q.c
++++ b/drivers/usb/host/ehci-q.c
+@@ -1197,17 +1197,26 @@ static void start_iaa_cycle(struct ehci_
+ 	if (ehci->async_iaa || ehci->async_unlinking)
+ 		return;
+ 
+-	/* Do all the waiting QHs at once */
+-	ehci->async_iaa = ehci->async_unlink;
+-	ehci->async_unlink = NULL;
+-
+ 	/* If the controller isn't running, we don't have to wait for it */
+ 	if (unlikely(ehci->rh_state < EHCI_RH_RUNNING)) {
++
++		/* Do all the waiting QHs */
++		ehci->async_iaa = ehci->async_unlink;
++		ehci->async_unlink = NULL;
++
+ 		if (!nested)		/* Avoid recursion */
+ 			end_unlink_async(ehci);
+ 
+ 	/* Otherwise start a new IAA cycle */
+ 	} else if (likely(ehci->rh_state == EHCI_RH_RUNNING)) {
++		struct ehci_qh		*qh;
++
++		/* Do only the first waiting QH (nVidia bug?) */
++		qh = ehci->async_unlink;
++		ehci->async_iaa = qh;
++		ehci->async_unlink = qh->unlink_next;
++		qh->unlink_next = NULL;
++
+ 		/* Make sure the unlinks are all visible to the hardware */
+ 		wmb();
+ 
+@@ -1255,34 +1264,35 @@ static void end_unlink_async(struct ehci
+ 	}
  }
  
- static const unsigned char
--max_tt_usecs[] = { 125, 125, 125, 125, 125, 125, 30, 0 };
-+max_tt_usecs[] = { 125, 125, 125, 125, 125, 125, 125, 25 };
++static void start_unlink_async(struct ehci_hcd *ehci, struct ehci_qh *qh);
++
+ static void unlink_empty_async(struct ehci_hcd *ehci)
+ {
+-	struct ehci_qh		*qh, *next;
+-	bool			stopped = (ehci->rh_state < EHCI_RH_RUNNING);
++	struct ehci_qh		*qh;
++	struct ehci_qh		*qh_to_unlink = NULL;
+ 	bool			check_unlinks_later = false;
++	int			count = 0;
  
- /* carryover low/fullspeed bandwidth that crosses uframe boundries */
- static inline void carryover_tt_bandwidth(unsigned short tt_usecs[8])
+-	/* Unlink all the async QHs that have been empty for a timer cycle */
+-	next = ehci->async->qh_next.qh;
+-	while (next) {
+-		qh = next;
+-		next = qh->qh_next.qh;
+-
++	/* Find the last async QH which has been empty for a timer cycle */
++	for (qh = ehci->async->qh_next.qh; qh; qh = qh->qh_next.qh) {
+ 		if (list_empty(&qh->qtd_list) &&
+ 				qh->qh_state == QH_STATE_LINKED) {
+-			if (!stopped && qh->unlink_cycle ==
+-					ehci->async_unlink_cycle)
++			++count;
++			if (qh->unlink_cycle == ehci->async_unlink_cycle)
+ 				check_unlinks_later = true;
+ 			else
+-				single_unlink_async(ehci, qh);
++				qh_to_unlink = qh;
+ 		}
+ 	}
+ 
+-	/* Start a new IAA cycle if any QHs are waiting for it */
+-	if (ehci->async_unlink)
+-		start_iaa_cycle(ehci, false);
++	/* If nothing else is being unlinked, unlink the last empty QH */
++	if (!ehci->async_iaa && !ehci->async_unlink && qh_to_unlink) {
++		start_unlink_async(ehci, qh_to_unlink);
++		--count;
++	}
+ 
+-	/* QHs that haven't been empty for long enough will be handled later */
+-	if (check_unlinks_later) {
++	/* Other QHs will be handled later */
++	if (count > 0) {
+ 		ehci_enable_event(ehci, EHCI_HRTIMER_ASYNC_UNLINKS, true);
+ 		++ehci->async_unlink_cycle;
+ 	}
 
 
