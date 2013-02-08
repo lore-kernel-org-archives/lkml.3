@@ -1,172 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161106Ab3BHJiJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 04:38:09 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:42861 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161046Ab3BHJiE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 04:38:04 -0500
-Date: Fri, 8 Feb 2013 09:37:54 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: "Manjunathappa, Prakash" <prakash.pm@ti.com>
-Cc: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "Porter, Matt" <mporter@ti.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "hs@denx.de" <hs@denx.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 2/3] mmc: davinci_mmc: add DT support
-Message-ID: <20130208093754.GA27859@e106331-lin.cambridge.arm.com>
-References: <1360223825-23929-1-git-send-email-prakash.pm@ti.com>
- <1360223825-23929-3-git-send-email-prakash.pm@ti.com>
- <20130207104656.GE16987@e106331-lin.cambridge.arm.com>
- <A73F36158E33644199EB82C5EC81C7BC3EA465FE@DBDE01.ent.ti.com>
+	id S1946169Ab3BHJo2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 04:44:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51248 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758207Ab3BHJoY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 04:44:24 -0500
+Date: Fri, 8 Feb 2013 10:44:20 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: azurIt <azurit@pobox.sk>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups mailinglist <cgroups@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH for 3.2.34] memcg: do not trigger OOM if PF_NO_MEMCG_OOM
+ is set
+Message-ID: <20130208094420.GA7557@dhcp22.suse.cz>
+References: <20130125160723.FAE73567@pobox.sk>
+ <20130125163130.GF4721@dhcp22.suse.cz>
+ <20130205134937.GA22804@dhcp22.suse.cz>
+ <20130205154947.CD6411E2@pobox.sk>
+ <20130205160934.GB22804@dhcp22.suse.cz>
+ <20130206021721.1AE9E3C7@pobox.sk>
+ <20130206140119.GD10254@dhcp22.suse.cz>
+ <20130206142219.GF10254@dhcp22.suse.cz>
+ <20130206160051.GG10254@dhcp22.suse.cz>
+ <20130208060304.799F362F@pobox.sk>
 MIME-Version: 1.0
-In-Reply-To: <A73F36158E33644199EB82C5EC81C7BC3EA465FE@DBDE01.ent.ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 08 Feb 2013 09:37:59.0646 (UTC) FILETIME=[FB8C87E0:01CE05DF]
-X-MC-Unique: 113020809380006701
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130208060304.799F362F@pobox.sk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri 08-02-13 06:03:04, azurIt wrote:
+> Michal, thank you very much but it just didn't work and broke
+> everything :(
 
-[...]
+I am sorry to hear that. The patch should help to solve the deadlock you
+have seen earlier. It in no way can solve side effects of failing writes
+and it also cannot help much if the oom is permanent.
 
-> > > diff --git a/Documentation/devicetree/bindings/mmc/davinci_mmc.txt b/Documentation/devicetree/bindings/mmc/davinci_mmc.txt
-> > > new file mode 100644
-> > > index 0000000..6717ab1
-> > > --- /dev/null
-> > > +++ b/Documentation/devicetree/bindings/mmc/davinci_mmc.txt
-> > > @@ -0,0 +1,30 @@
-> > > +* TI Highspeed MMC host controller for DaVinci
-> > > +
-> > > +The Highspeed MMC Host Controller on TI DaVinci family
-> > > +provides an interface for MMC, SD and SDIO types of memory cards.
-> > > +
-> > > +This file documents the properties used by the davinci_mmc driver.
-> > > +
-> > > +Required properties:
-> > > +- compatible:
-> > > + Should be "ti,davinci-mmc-da830": for da830, da850, dm365
-> > > + Should be "ti,davinci-mmc-dm355": for dm355, dm644x
-> > > +
-> > > +Optional properties:
-> > > +- bus-width: Number of data lines, can be <4>, or <8>, default <1>
-> > > +- max-frequency: Maximum operating clock frequency, default 25MHz.
-> > > +- mmc-cap-mmc-highspeed: Indicates support for MMC in high speed mode
-> > > +- mmc-cap-sd-highspeed: Indicates support for SD in high speed mode
+> This happened:
+> Problem started to occur really often immediately after booting the
+> new kernel, every few minutes for one of my users. But everything
+> other seems to work fine so i gave it a try for a day (which was a
+> mistake). I grabbed some data for you and go to sleep:
+> http://watchdog.sk/lkml/memcg-bug-4.tar.gz
 
-[...]
+Do you have logs from that time period?
 
+I have only glanced through the stacks and most of the threads are
+waiting in the mem_cgroup_handle_oom (mostly from the page fault path
+where we do not have other options than waiting) which suggests that
+your memory limit is seriously underestimated. If you look at the number
+of charging failures (memory.failcnt per-group file) then you will get
+9332083 failures in _average_ per group. This is a lot!
+Not all those failures end with OOM, of course. But it clearly signals
+that the workload need much more memory than the limit allows.
 
-> > > +static struct davinci_mmc_config
-> > > +	*mmc_parse_pdata(struct platform_device *pdev)
-> > >  {
-> > > +	struct device_node *np;
-> > >  	struct davinci_mmc_config *pdata = pdev->dev.platform_data;
-> > > +	const struct of_device_id *match =
-> > > +		of_match_device(of_match_ptr(davinci_mmc_dt_ids), &pdev->dev);
-> > > +	u32 data;
-> > > +
-> > > +	np = pdev->dev.of_node;
-> > > +	if (!np)
-> > > +		return pdata;
-> > > +
-> > > +	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
-> > > +	if (!pdata) {
-> > > +		dev_err(&pdev->dev, "Failed to allocate memory for struct davinci_mmc_config\n");
-> > > +		goto nodata;
-> > > +	}
-> > > +
-> > > +	if (match->data)
-> > > +		pdata->version = (u8)((int)match->data);
-> > > +
-> > > +	of_property_read_u32(np, "max-frequency", &pdata->max_freq);
-> > > +	if (!pdata->max_freq)
-> > > +		dev_info(&pdev->dev, "'max-frequency' property not specified, defaulting to 25MHz\n");
-> > > +
-> > > +	if (of_get_property(np, "mmc-cap-mmc-highspeed", NULL))
-> > > +		pdata->caps |= MMC_CAP_MMC_HIGHSPEED;
-> > > +	if (of_get_property(np, "mmc-cap-sd-highspeed", NULL))
-> > > +		pdata->caps |= MMC_CAP_SD_HIGHSPEED;
-> > 
-> > If these aren't derivable from max-frequency, you could use
-> > of_property_read_bool to make this clearer.
-> > 
-> 
-> Correct, I will decide these based on max-frequency.
-> 
-> > > +
-> > > +	of_property_read_u32(np, "bus-width", &data);
-> > > +	switch (data) {
-> > > +	case 0:
-> > 
-> > Judging by the binding doc, should this be 1 rather than 0?
-> > 
-> 
-> By default driver comes up in 4 bit mode when bus-width is not specified.
-> Bus-width is set to 1 bit for invalid bus-widths. Below are the cases
-> when bus-width 0 or 4, bus-width is set to 4bit mode
-> When bus-width is 8, bus-width is set to 8 bit mode
+> Few hours later i was woke up from my sweet sweet dreams by alerts
+> smses - Apache wasn't working and our system failed to restart
+> it. When i observed the situation, two apache processes (of that user
+> as above) were still running and it wasn't possible to kill them by
+> any way. I grabbed some data for you:
+> http://watchdog.sk/lkml/memcg-bug-5.tar.gz
 
-Why is 0 a special value that means 4? Why not just use 4?
+There are only 5 groups in this one and all of them have no memory
+charged (so no OOM going on). All tasks are somewhere in the ptrace
+code.
 
-Here you just assign 0 to pdata->wires.
+grep cache -r .
+./1360297489/memory.stat:cache 0
+./1360297489/memory.stat:total_cache 65642496
+./1360297491/memory.stat:cache 0
+./1360297491/memory.stat:total_cache 65642496
+./1360297492/memory.stat:cache 0
+./1360297492/memory.stat:total_cache 65642496
+./1360297490/memory.stat:cache 0
+./1360297490/memory.stat:total_cache 65642496
+./1360297488/memory.stat:cache 0
+./1360297488/memory.stat:total_cache 65642496
 
-I see the current version of the driver handles this specially in
-davinci_mmcsd_probe, but I don't see why this should leak into the binding.
+which suggests that this is a parent group and the memory is charged in
+a child group. I guess that all those are under OOM as the number seems
+like they have limit at 62M.
 
-What I was originally trying to get at is that the binding says 8, 4, and 1 are
-acceptable values, but you check the cases 8, 4, or 0. So you're accepting
-something not documented, and producing a warning in a valid case (1).
+> Then I logged to the console and this was waiting for me:
+> http://watchdog.sk/lkml/error.jpg
 
-> 
-> I thought that if somebody specifies bus-width as 2, 3, 5, 6, 7..., then
-> it should be defaulted to 1 bit mode, so I specified it as 1 bit in binding doc.
+This is just a warning and it should be harmless. There is just one WARN
+in ptrace_check_attach:
+	WARN_ON_ONCE(task_is_stopped(child))
 
-If they specify something invalid, falling back to a sane value with a warning
-sounds good.
+This has been introduced by
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=321fb561
+and the commit description claim this shouldn't happen. I am not
+familiar with this code but it sounds like a bug in the tracing code
+which is not related to the discussed issue.
 
-> But I feel that a person who is editing dts file will not make such a mistake.
-> I will change binding document to default as 4 bit mode.
-
-There have been and inevitably will be plenty of errors in dts files. I think
-it'd be good to provide a warning and either use a value that's guaranteed to
-work, or bail out if that can't be done.
-
-If it's always valid to use 1 data line even if the hardware has more, I think
-falling back to 1 makes more sense, as it'd be guaranteed to work.
-
-> 
-> > > +	case 4:
-> > > +	case 8:
-> > > +		pdata->wires = data;
-> > > +		break;
-> > > +	default:
-> > > +		pdata->wires = 1;
-> > > +		dev_info(&pdev->dev, "Unsupported buswidth, defaulting to 1 bit\n");
-> > > +	}
-> > > +nodata:
-> > > +	return pdata;
-> > > +}
-
-With the first case changed to "case 1:", this block makes sense to me.
-
-Thanks,
-Mark.
-
+> Finally i rebooted into different kernel, wrote this e-mail and go to
+> my lovely bed ;)
+-- 
+Michal Hocko
+SUSE Labs
