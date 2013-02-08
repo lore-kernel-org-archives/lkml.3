@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759729Ab3BHBFr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 20:05:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41986 "EHLO
+	id S932219Ab3BHA6I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 19:58:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41955 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932231Ab3BHA6J (ORCPT
+	with ESMTP id S1757859Ab3BHA6G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 19:58:09 -0500
+	Thu, 7 Feb 2013 19:58:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Luebbe <jlu@pengutronix.de>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 11/26] drivers/rtc/rtc-isl1208.c: call rtc_update_irq() from the alarm irq handler
-Date: Thu,  7 Feb 2013 16:57:39 -0800
-Message-Id: <20130208004629.213635217@linuxfoundation.org>
+        Sven Killig <sven@killig.de>
+Subject: [ 13/26] USB: ftdi_sio: add PID/VID entries for ELV WS 300 PC II
+Date: Thu,  7 Feb 2013 16:57:41 -0800
+Message-Id: <20130208004629.574603394@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130208004627.258272404@linuxfoundation.org>
 References: <20130208004627.258272404@linuxfoundation.org>
@@ -29,42 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Luebbe <jlu@pengutronix.de>
+From: Sven Killig <sven@killig.de>
 
-commit 72fca4a4b32dc778b5b885c3498700e42b610d49 upstream.
+commit c249f911406efcc7456cb4af79396726bf7b8c57 upstream.
 
-Previously the alarm event was not propagated into the RTC subsystem.
-By adding a call to rtc_update_irq, this fixes a timeout problem with
-the hwclock utility.
+Add PID/VID entries for ELV WS 300 PC II weather station
 
-Signed-off-by: Jan Luebbe <jlu@pengutronix.de>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Sven Killig <sven@killig.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/rtc/rtc-isl1208.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    4 +++-
+ 2 files changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/rtc/rtc-isl1208.c
-+++ b/drivers/rtc/rtc-isl1208.c
-@@ -494,6 +494,7 @@ isl1208_rtc_interrupt(int irq, void *dat
- {
- 	unsigned long timeout = jiffies + msecs_to_jiffies(1000);
- 	struct i2c_client *client = data;
-+	struct rtc_device *rtc = i2c_get_clientdata(client);
- 	int handled = 0, sr, err;
- 
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -590,6 +590,7 @@ static struct usb_device_id id_table_com
  	/*
-@@ -516,6 +517,8 @@ isl1208_rtc_interrupt(int irq, void *dat
- 	if (sr & ISL1208_REG_SR_ALM) {
- 		dev_dbg(&client->dev, "alarm!\n");
+ 	 * ELV devices:
+ 	 */
++	{ USB_DEVICE(FTDI_ELV_VID, FTDI_ELV_WS300_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_ELV_USR_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_ELV_MSM1_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_ELV_KL100_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -209,7 +209,7 @@
  
-+		rtc_update_irq(rtc, 1, RTC_IRQF | RTC_AF);
-+
- 		/* Clear the alarm */
- 		sr &= ~ISL1208_REG_SR_ALM;
- 		sr = i2c_smbus_write_byte_data(client, ISL1208_REG_SR, sr);
+ /*
+  * ELV USB devices submitted by Christian Abt of ELV (www.elv.de).
+- * All of these devices use FTDI's vendor ID (0x0403).
++ * Almost all of these devices use FTDI's vendor ID (0x0403).
+  * Further IDs taken from ELV Windows .inf file.
+  *
+  * The previously included PID for the UO 100 module was incorrect.
+@@ -217,6 +217,8 @@
+  *
+  * Armin Laeuger originally sent the PID for the UM 100 module.
+  */
++#define FTDI_ELV_VID	0x1B1F	/* ELV AG */
++#define FTDI_ELV_WS300_PID	0xC006	/* eQ3 WS 300 PC II */
+ #define FTDI_ELV_USR_PID	0xE000	/* ELV Universal-Sound-Recorder */
+ #define FTDI_ELV_MSM1_PID	0xE001	/* ELV Mini-Sound-Modul */
+ #define FTDI_ELV_KL100_PID	0xE002	/* ELV Kfz-Leistungsmesser KL 100 */
 
 
