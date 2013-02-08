@@ -1,117 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756829Ab3BHAZk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 19:25:40 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35940 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751487Ab3BHAZi convert rfc822-to-8bit (ORCPT
+	id S1751499Ab3BHAdv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 19:33:51 -0500
+Received: from mail-da0-f41.google.com ([209.85.210.41]:45618 "EHLO
+	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750755Ab3BHAdu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 19:25:38 -0500
-From: "Hatayama, Daisuke" <d.hatayama@jp.fujitsu.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "cpw@sgi.com" <cpw@sgi.com>,
-        "kumagai-atsushi@mxc.nes.nec.co.jp" 
-	<kumagai-atsushi@mxc.nes.nec.co.jp>,
-        "lisa.mitchell@hp.com" <lisa.mitchell@hp.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] kdump, oldmem: support mmap on /dev/oldmem
-Thread-Topic: [PATCH] kdump, oldmem: support mmap on /dev/oldmem
-Thread-Index: Ac4ClGsOL11EzwL1RDqu1EeC+4dtFgA02u0AADTExpAAL5XfgAAlbcuA
-Date: Fri, 8 Feb 2013 00:25:35 +0000
-Message-ID: <33710E6CAA200E4583255F4FB666C4E20AC6735D@G01JPEXMBYT03>
-References: <33710E6CAA200E4583255F4FB666C4E20AC36B01@G01JPEXMBYT03>
- <20130205151256.GB12853@redhat.com>
- <33710E6CAA200E4583255F4FB666C4E20AC61B3C@G01JPEXMBYT03>
- <20130207150623.GC6462@redhat.com>
-In-Reply-To: <20130207150623.GC6462@redhat.com>
-Accept-Language: ja-JP, en-US
-Content-Language: ja-JP
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.124.101.76]
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	Thu, 7 Feb 2013 19:33:50 -0500
+Date: Thu, 7 Feb 2013 16:33:58 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Mel Gorman <mgorman@suse.de>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Petr Holasek <pholasek@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 5/11] ksm: get_ksm_page locked
+In-Reply-To: <20130205171805.GK21389@suse.de>
+Message-ID: <alpine.LNX.2.00.1302071607360.2133@eggly.anvils>
+References: <alpine.LNX.2.00.1301251747590.29196@eggly.anvils> <alpine.LNX.2.00.1301251759470.29196@eggly.anvils> <20130205171805.GK21389@suse.de>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Vivek Goyal [mailto:vgoyal@redhat.com]
-> Sent: Friday, February 08, 2013 12:06 AM
-
-> On Wed, Feb 06, 2013 at 07:24:46AM +0000, Hatayama, Daisuke wrote:
-> > From: Vivek Goyal <vgoyal@redhat.com>
-> > Subject: Re: [PATCH] kdump, oldmem: support mmap on /dev/oldmem
-> > Date: Tue, 5 Feb 2013 10:12:56 -0500
-> >
-> > > On Mon, Feb 04, 2013 at 04:59:35AM +0000, Hatayama, Daisuke wrote:
-> >
-> > > [..]
-> > >> For design decision, I didn't support mmap() on /proc/vmcore because
-> > >> it abstracts old memory as ELF format, so there's range consequtive
-> on
-> > >> /proc/vmcore but not consequtive on the actual old memory. For
-> > >> example, consider ELF headers on the 2nd kernel and the note objects,
-> > >> memory chunks corresponding to PT_LOAD entries on the first kernel.
-> > >> They are not consequtive on the old memory. So reampping them so
-> > >> /proc/vmcore appears consequtive using existing remap_pfn_range()
-> needs
-> > >> some complicated work.
-> > >
-> > > Can't we call remap_pfn_range() multiple times. Once for each sequential
-> > > range of memory. /proc/vmcore already has list of contiguous memory
-> areas.
-> > > So we can parse user passed file offset and size and map into respective
-> > > physical chunks and call rempa_pfn_range() on all these chunks.
-> > >
-> > > I think supporting mmap() both on /dev/oldmem as well as /proc/vmcore
-> will
-> > > be nice.
-> > >
-> > > Agreed that supporting mmap() on /proc/vmcore is more work as compared
-> to
-> > > /dev/oldmem but should be doable.
-> > >
-> >
-> > The complication to support mmap() on /proc/vmcore lies in kdump
-> > side. Objects exported from /proc/vmcore needs to be page-size aligned
-> > on /proc/vmcore. This comes from the restriction of mmap() that
-> > requires user-space address and physical address to be page-size
-> > aligned.
-> >
-> > As I said in the description, objects implicitly referened by
-> > /proc/vmcore are
-> >
-> >   - ELF headers,
-> >   - NOTE objects (NT_PRSTATUS entries x cpus, VMCOREINFO), and
-> >   - memory chunks x (the number of PT_LOAD entries).
-> >
-> > Note objects are scattered on old memory. They are exported as a
-> > single NOTE entry from program headers, so they need to be gathered at
-> > the same location in the 2nd kernel starting from the page-size
-> > aligned address.
-> >
-> > VMCOREINFO is about 1.5KB on 2.6.32 kernel. One NT_PRSTATUS is 355
-> > bytes. Recent limit of NR_CPUS is 5120 on x86_64. So less than about 2
-> > MB is enough even on the worst case.
-> >
-> > Note that the format of /proc/vmcore need to change since offset of
-> > each object need to be page-size aligned.
+On Tue, 5 Feb 2013, Mel Gorman wrote:
+> On Fri, Jan 25, 2013 at 06:00:50PM -0800, Hugh Dickins wrote:
+> > In some places where get_ksm_page() is used, we need the page to be locked.
+> > 
+> > When KSM migration is fully enabled, we shall want that to make sure that
+> > the page just acquired cannot be migrated beneath us (raised page count is
+> > only effective when there is serialization to make sure migration notices).
+> > Whereas when navigating through the stable tree, we certainly do not want
+> > to lock each node (raised page count is enough to guarantee the memcmps,
+> > even if page is migrated to another node).
+> > 
+> > Since we're about to add another use case, add the locked argument to
+> > get_ksm_page() now.
+> > 
+> > Hmm, what's that rcu_read_lock() about?  Complete misunderstanding, I
+> > really got the wrong end of the stick on that!  There's a configuration
+> > in which page_cache_get_speculative() can do something cheaper than
+> > get_page_unless_zero(), relying on its caller's rcu_read_lock() to have
+> > disabled preemption for it.  There's no need for rcu_read_lock() around
+> > get_page_unless_zero() (and mapping checks) here.  Cut out that
+> > silliness before making this any harder to understand.
+> > 
+> > Signed-off-by: Hugh Dickins <hughd@google.com>
+> > ---
+> >  mm/ksm.c |   23 +++++++++++++----------
+> >  1 file changed, 13 insertions(+), 10 deletions(-)
+> > 
+> > --- mmotm.orig/mm/ksm.c	2013-01-25 14:36:53.244205966 -0800
+> > +++ mmotm/mm/ksm.c	2013-01-25 14:36:58.856206099 -0800
+> > @@ -514,15 +514,14 @@ static void remove_node_from_stable_tree
+> >   * but this is different - made simpler by ksm_thread_mutex being held, but
+> >   * interesting for assuming that no other use of the struct page could ever
+> >   * put our expected_mapping into page->mapping (or a field of the union which
+> > - * coincides with page->mapping).  The RCU calls are not for KSM at all, but
+> > - * to keep the page_count protocol described with page_cache_get_speculative.
+> > + * coincides with page->mapping).
+> >   *
+> >   * Note: it is possible that get_ksm_page() will return NULL one moment,
+> >   * then page the next, if the page is in between page_freeze_refs() and
+> >   * page_unfreeze_refs(): this shouldn't be a problem anywhere, the page
+> >   * is on its way to being freed; but it is an anomaly to bear in mind.
+> >   */
+> > -static struct page *get_ksm_page(struct stable_node *stable_node)
+> > +static struct page *get_ksm_page(struct stable_node *stable_node, bool locked)
+> >  {
 > 
-> Ok, got it. So everything needs to be page aligned and if size is not
-> sufficient then we need a way to pad memory areas to make next object
-> page aligned.
+> The naming is unhelpful :(
 > 
-> To begin with supporting mmap on /dev/oldmem is fine with me. Once that
-> gets in, it will be good to look at how to make all the individual items
-> page aligned  so that mmap can be supported on /proc/vmcore.
+> Because the second parameter is called "locked", it implies that the
+> caller of this function holds the page lock (which is obviously very
+> silly). ret_locked maybe?
 
-I'm already beginning with making the patch set. At the time when I was writing /dev/oldmem patch, I was confused that remap_pfn_range must have been rewritten. But the complication is in fact simpler. I would post it early next week.
+I'd prefer "lock_it": I'll make that change unless you've a better.
 
-By the way, the third argument pfn of remap_pfn_range is defined as unsigned long, of 4 bytes on 32-bit x86. On PAE paging 32-bit linear addresses are converted maximally to 52-bit physical addresses (4 PiB). We need 40 bits to fully represent all page frame numbers over 52-bit physical memory space, so 4 bytes is not enough. But it seems to me unlikely that there's users who want to use huge memory with 32-bit kernel. I'll not support 32-bit x86 at least on the next patch.
+> 
+> As the function is akin to find_lock_page I would  prefer if there was
+> a new get_lock_ksm_page() instead of locking depending on the value of a
+> parameter.
 
-Thanks.
-HATAYAMA, Daisuke
+I demur.  If it were a global interface rather than a function static
+to ksm.c, yes, I'm sure Linus would side very strongly with you, and I'd
+be providing a pair of wrappers to get_ksm_page() to hide the bool arg.
 
+But this is a private function (you're invited :) which doesn't need
+that level of hand-holding.
+
+And I'm a firm believer in having one, difficult, function where all
+the heavy thought is focussed, which does the nasty work and spares
+everywhere else from having to worry about the difficulties.
+
+You'll shiver with horror as I recite shmem_getpage(_gfp),
+page_lock_anon_vma(_read), page_relock_lruvec (well, that one did
+not yet get beyond its posting): get_ksm_page is one of those.
+
+> We can do this because expected_mapping is recorded by the
+> stable_node and we only need to recalculate it if the page has been
+> successfully pinned. We calculate the expected value twice but that's
+> not earth shattering. It'd look something like;
+> 
+> /*
+>  * get_lock_ksm_page: Similar to get_ksm_page except returns with page
+>  * locked and pinned
+>  */
+> static struct page *get_lock_ksm_page(struct stable_node *stable_node)
+> {
+> 	struct page *page = get_ksm_page(stable_node);
+> 
+> 	if (page) {
+>   		expected_mapping = (void *)stable_node +
+>   				(PAGE_MAPPING_ANON | PAGE_MAPPING_KSM);
+> 		lock_page(page);
+> 		if (page->mapping != expected_mapping) {
+> 			unlock_page(page);
+> 
+> 			/* release pin taken by get_ksm_page() */
+> 			put_page(page);
+> 			page = NULL;
+> 		}
+> 	}
+> 
+> 	return page;
+> }
+
+Something like; but would also need the remove_node_from_stable_tree.
+
+> 
+> Up to you, I'm not going to make a big deal of it.
+
+Phew!  Probably my insistence springs from knowing what this function
+develops into a few patches later, rather than the simpler version
+that appears at this stage of the series.
+
+> 
+> FWIW, I agree that removing rcu_read_lock() is fine.
+
+Good, thanks, I was rather embarrassed by my misunderstanding there.
+
+Hugh
