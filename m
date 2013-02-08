@@ -1,242 +1,322 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947330Ab3BHXU4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 18:20:56 -0500
-Received: from mga03.intel.com ([143.182.124.21]:8061 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757205Ab3BHXUz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 18:20:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,632,1355126400"; 
-   d="scan'208";a="254556486"
-From: Darren Hart <dvhart@linux.intel.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Darren Hart <dvhart@linux.intel.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Denis Turischev <denis@compulab.co.il>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: [PATCH] lpc_sch: Accomodate partial population of the MFD devices
-Date: Fri,  8 Feb 2013 15:20:36 -0800
-Message-Id: <b2f78b0d872215533102ec6b9ef8cf42c8f75705.1360365636.git.dvhart@linux.intel.com>
-X-Mailer: git-send-email 1.8.1
+	id S1947357Ab3BHXVV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 18:21:21 -0500
+Received: from violet.fr.zoreil.com ([92.243.8.30]:56859 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757205Ab3BHXVT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 18:21:19 -0500
+Date: Fri, 8 Feb 2013 23:50:26 +0100
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Hayes Wang <hayeswang@realtek.com>,
+        =?utf-8?B?SsO2cmc=?= Otte <jrg.otte@gmail.com>
+Subject: Re: [GIT] Networking
+Message-ID: <20130208225026.GA24672@electric-eye.fr.zoreil.com>
+References: <20130208.151713.1708597749091717933.davem@davemloft.net> <CA+55aFx81-GGEEXx+MqJvwJsDoBMMqSN80=J8LmN-Ufu4+kKcw@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFx81-GGEEXx+MqJvwJsDoBMMqSN80=J8LmN-Ufu4+kKcw@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
+X-Organisation: Land of Sunshine Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current probe aborts if any of the 3 base address registers are
-disabled. On a TunnelCreek system I am working on, this resulted in the
-SMBIOS and GPIO devices being removed when it couldn't read the base
-address for the watchdog timer.
+Linus Torvalds <torvalds@linux-foundation.org> :
+[...]
+> However, there's still the r8169 regressions (see the emails with the
+> subject "regression: NETDEV WATCHDOG: eth0 (r8169): transmit queue 0
+> timed out"). It's bisected, and a revert is reported to fix things.
+> It's not in this pull request. Comments ?
 
-This patch accommodates partial population of the lpc_sch_cells array and
-only aborts if all the base address registers are disabled. A max size
-array is allocated and the individual device cells are added to it after
-their base addresses are successfully determined. This simplifies the
-code a bit by removing the need for the separate tunnelcreek cells array
-and combining some of the add/remove logic.
+Jörg asked Hayes. Hayes suggested to revert. Francois reverts, fixes a
+pair of rejects, builds, boot. Anyone should be able to pull from
+branch 'davem.r8169' in repository
 
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-Cc: Denis Turischev <denis@compulab.co.il>,
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
----
- drivers/mfd/lpc_sch.c | 148 ++++++++++++++++++++++++--------------------------
- 1 file changed, 70 insertions(+), 78 deletions(-)
+git://violet.fr.zoreil.com/romieu/linux davem.r8169
 
-diff --git a/drivers/mfd/lpc_sch.c b/drivers/mfd/lpc_sch.c
-index 5624fcb..9c255f2 100644
---- a/drivers/mfd/lpc_sch.c
-+++ b/drivers/mfd/lpc_sch.c
-@@ -45,34 +45,32 @@ static struct resource smbus_sch_resource = {
- 		.flags = IORESOURCE_IO,
+to get the changes below :
+
+Distance from 'davem' (a1c83b054ebe1264ed9ae9d5c286f9eae68e60ea)
+----------------------------------------------------------------
+
+4521e1a94279ce610d3f9b7945c17d581f804242
+eef63cc1c6ecf4898a973f870aec95d6e923ea77
+
+Diffstat
+--------
+
+ drivers/net/ethernet/realtek/r8169.c | 86 ++++++++----------------------------
+ 1 file changed, 19 insertions(+), 67 deletions(-)
+
+Shortlog
+--------
+
+Francois Romieu (2):
+      Revert "r8169: enable ALDPS for power saving".
+      Revert "r8169: enable internal ASPM and clock request settings".
+
+Patch
+-----
+
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index 1170232..998974f 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -450,7 +450,6 @@ enum rtl8168_registers {
+ #define PWM_EN				(1 << 22)
+ #define RXDV_GATED_EN			(1 << 19)
+ #define EARLY_TALLY_EN			(1 << 16)
+-#define FORCE_CLK			(1 << 15) /* force clock request */
  };
  
--
- static struct resource gpio_sch_resource = {
- 		.flags = IORESOURCE_IO,
+ enum rtl_register_content {
+@@ -514,7 +513,6 @@ enum rtl_register_content {
+ 	PMEnable	= (1 << 0),	/* Power Management Enable */
+ 
+ 	/* Config2 register p. 25 */
+-	ClkReqEn	= (1 << 7),	/* Clock Request Enable */
+ 	MSIEnable	= (1 << 5),	/* 8169 only. Reserved in the 8168. */
+ 	PCI_Clock_66MHz = 0x01,
+ 	PCI_Clock_33MHz = 0x00,
+@@ -535,7 +533,6 @@ enum rtl_register_content {
+ 	Spi_en		= (1 << 3),
+ 	LanWake		= (1 << 1),	/* LanWake enable/disable */
+ 	PMEStatus	= (1 << 0),	/* PME status can be reset by PCI RST# */
+-	ASPM_en		= (1 << 0),	/* ASPM enable */
+ 
+ 	/* TBICSR p.28 */
+ 	TBIReset	= 0x80000000,
+@@ -684,7 +681,6 @@ enum features {
+ 	RTL_FEATURE_WOL		= (1 << 0),
+ 	RTL_FEATURE_MSI		= (1 << 1),
+ 	RTL_FEATURE_GMII	= (1 << 2),
+-	RTL_FEATURE_FW_LOADED	= (1 << 3),
  };
  
--static struct mfd_cell lpc_sch_cells[] = {
--	{
--		.name = "isch_smbus",
--		.num_resources = 1,
--		.resources = &smbus_sch_resource,
--	},
--	{
--		.name = "sch_gpio",
--		.num_resources = 1,
--		.resources = &gpio_sch_resource,
--	},
--};
--
- static struct resource wdt_sch_resource = {
- 		.flags = IORESOURCE_IO,
- };
+ struct rtl8169_counters {
+@@ -2389,10 +2385,8 @@ static void rtl_apply_firmware(struct rtl8169_private *tp)
+ 	struct rtl_fw *rtl_fw = tp->rtl_fw;
  
--static struct mfd_cell tunnelcreek_cells[] = {
--	{
--		.name = "ie6xx_wdt",
--		.num_resources = 1,
--		.resources = &wdt_sch_resource,
--	},
-+static struct mfd_cell lpc_sch_cells[3];
-+
-+static struct mfd_cell isch_smbus_cell = {
-+	.name = "isch_smbus",
-+	.num_resources = 1,
-+	.resources = &smbus_sch_resource,
-+};
-+
-+static struct mfd_cell sch_gpio_cell = {
-+	.name = "sch_gpio",
-+	.num_resources = 1,
-+	.resources = &gpio_sch_resource,
-+};
-+
-+static struct mfd_cell wdt_sch_cell = {
-+	.name = "ie6xx_wdt",
-+	.num_resources = 1,
-+	.resources = &wdt_sch_resource,
- };
- 
- static DEFINE_PCI_DEVICE_TABLE(lpc_sch_ids) = {
-@@ -88,79 +86,73 @@ static int lpc_sch_probe(struct pci_dev *dev,
- {
- 	unsigned int base_addr_cfg;
- 	unsigned short base_addr;
--	int i;
-+	int i, cells = 0;
- 	int ret;
- 
- 	pci_read_config_dword(dev, SMBASE, &base_addr_cfg);
--	if (!(base_addr_cfg & (1 << 31))) {
--		dev_err(&dev->dev, "Decode of the SMBus I/O range disabled\n");
--		return -ENODEV;
+ 	/* TODO: release firmware once rtl_phy_write_fw signals failures. */
+-	if (!IS_ERR_OR_NULL(rtl_fw)) {
++	if (!IS_ERR_OR_NULL(rtl_fw))
+ 		rtl_phy_write_fw(tp, rtl_fw);
+-		tp->features |= RTL_FEATURE_FW_LOADED;
 -	}
--	base_addr = (unsigned short)base_addr_cfg;
--	if (base_addr == 0) {
--		dev_err(&dev->dev, "I/O space for SMBus uninitialized\n");
--		return -ENODEV;
-+	base_addr = 0;
-+	if (!(base_addr_cfg & (1 << 31)))
-+		dev_warn(&dev->dev, "Decode of the SMBus I/O range disabled\n");
-+	else
-+		base_addr = (unsigned short)base_addr_cfg;
-+	if (base_addr == 0)
-+		dev_warn(&dev->dev, "I/O space for SMBus uninitialized\n");
-+	else {
-+		lpc_sch_cells[cells++] = isch_smbus_cell;
-+		smbus_sch_resource.start = base_addr;
-+		smbus_sch_resource.end = base_addr + SMBUS_IO_SIZE - 1;
- 	}
- 
--	smbus_sch_resource.start = base_addr;
--	smbus_sch_resource.end = base_addr + SMBUS_IO_SIZE - 1;
--
- 	pci_read_config_dword(dev, GPIOBASE, &base_addr_cfg);
--	if (!(base_addr_cfg & (1 << 31))) {
--		dev_err(&dev->dev, "Decode of the GPIO I/O range disabled\n");
--		return -ENODEV;
--	}
--	base_addr = (unsigned short)base_addr_cfg;
--	if (base_addr == 0) {
--		dev_err(&dev->dev, "I/O space for GPIO uninitialized\n");
--		return -ENODEV;
--	}
--
--	gpio_sch_resource.start = base_addr;
--
--	if (id->device == PCI_DEVICE_ID_INTEL_CENTERTON_ILB)
--		gpio_sch_resource.end = base_addr + GPIO_IO_SIZE_CENTERTON - 1;
-+	base_addr = 0;
-+	if (!(base_addr_cfg & (1 << 31)))
-+		dev_warn(&dev->dev, "Decode of the GPIO I/O range disabled\n");
- 	else
--		gpio_sch_resource.end = base_addr + GPIO_IO_SIZE - 1;
--
--	for (i=0; i < ARRAY_SIZE(lpc_sch_cells); i++)
--		lpc_sch_cells[i].id = id->device;
--
--	ret = mfd_add_devices(&dev->dev, 0,
--			      lpc_sch_cells, ARRAY_SIZE(lpc_sch_cells), NULL,
--			      0, NULL);
--	if (ret)
--		goto out_dev;
-+		base_addr = (unsigned short)base_addr_cfg;
-+	if (base_addr == 0)
-+		dev_warn(&dev->dev, "I/O space for GPIO uninitialized\n");
-+	else {
-+		lpc_sch_cells[cells++] = sch_gpio_cell;
-+		gpio_sch_resource.start = base_addr;
-+		if (id->device == PCI_DEVICE_ID_INTEL_CENTERTON_ILB)
-+			gpio_sch_resource.end = base_addr + GPIO_IO_SIZE_CENTERTON - 1;
-+		else
-+			gpio_sch_resource.end = base_addr + GPIO_IO_SIZE - 1;
-+	}
- 
- 	if (id->device == PCI_DEVICE_ID_INTEL_ITC_LPC
- 	 || id->device == PCI_DEVICE_ID_INTEL_CENTERTON_ILB) {
- 		pci_read_config_dword(dev, WDTBASE, &base_addr_cfg);
--		if (!(base_addr_cfg & (1 << 31))) {
--			dev_err(&dev->dev, "Decode of the WDT I/O range disabled\n");
--			ret = -ENODEV;
--			goto out_dev;
--		}
--		base_addr = (unsigned short)base_addr_cfg;
--		if (base_addr == 0) {
--			dev_err(&dev->dev, "I/O space for WDT uninitialized\n");
--			ret = -ENODEV;
--			goto out_dev;
-+		base_addr = 0;
-+		if (!(base_addr_cfg & (1 << 31)))
-+			dev_warn(&dev->dev, "Decode of the WDT I/O range disabled\n");
-+		else
-+			base_addr = (unsigned short)base_addr_cfg;
-+		if (base_addr == 0)
-+			dev_warn(&dev->dev, "I/O space for WDT uninitialized\n");
-+		else {
-+			lpc_sch_cells[cells++] = wdt_sch_cell;
-+			wdt_sch_resource.start = base_addr;
-+			wdt_sch_resource.end = base_addr + WDT_IO_SIZE - 1;
- 		}
-+	}
- 
--		wdt_sch_resource.start = base_addr;
--		wdt_sch_resource.end = base_addr + WDT_IO_SIZE - 1;
--
--		for (i = 0; i < ARRAY_SIZE(tunnelcreek_cells); i++)
--			tunnelcreek_cells[i].id = id->device;
--
--		ret = mfd_add_devices(&dev->dev, 0, tunnelcreek_cells,
--				      ARRAY_SIZE(tunnelcreek_cells), NULL,
--				      0, NULL);
-+	if (WARN_ON(cells > ARRAY_SIZE(lpc_sch_cells))) {
-+		dev_err(&dev->dev, "Cell count exceeds array size");
-+		return -ENODEV;
-+	}
-+	if (cells == 0) {
-+		dev_err(&dev->dev, "All decode registers disabled.\n");
-+		return -ENODEV;
- 	}
- 
--	return ret;
--out_dev:
--	mfd_remove_devices(&dev->dev);
-+	for (i = 0; i < cells; i++)
-+		lpc_sch_cells[i].id = id->device;
-+	ret = mfd_add_devices(&dev->dev, 0, lpc_sch_cells, cells, NULL, 0, NULL);
-+	
-+	if (ret)
-+		mfd_remove_devices(&dev->dev);
-+
- 	return ret;
  }
  
+ static void rtl_apply_firmware_cond(struct rtl8169_private *tp, u8 reg, u16 val)
+@@ -2403,31 +2397,6 @@ static void rtl_apply_firmware_cond(struct rtl8169_private *tp, u8 reg, u16 val)
+ 		rtl_apply_firmware(tp);
+ }
+ 
+-static void r810x_aldps_disable(struct rtl8169_private *tp)
+-{
+-	rtl_writephy(tp, 0x1f, 0x0000);
+-	rtl_writephy(tp, 0x18, 0x0310);
+-	msleep(100);
+-}
+-
+-static void r810x_aldps_enable(struct rtl8169_private *tp)
+-{
+-	if (!(tp->features & RTL_FEATURE_FW_LOADED))
+-		return;
+-
+-	rtl_writephy(tp, 0x1f, 0x0000);
+-	rtl_writephy(tp, 0x18, 0x8310);
+-}
+-
+-static void r8168_aldps_enable_1(struct rtl8169_private *tp)
+-{
+-	if (!(tp->features & RTL_FEATURE_FW_LOADED))
+-		return;
+-
+-	rtl_writephy(tp, 0x1f, 0x0000);
+-	rtl_w1w0_phy(tp, 0x15, 0x1000, 0x0000);
+-}
+-
+ static void rtl8169s_hw_phy_config(struct rtl8169_private *tp)
+ {
+ 	static const struct phy_reg phy_reg_init[] = {
+@@ -3218,8 +3187,6 @@ static void rtl8168e_2_hw_phy_config(struct rtl8169_private *tp)
+ 	rtl_w1w0_phy(tp, 0x10, 0x0000, 0x0400);
+ 	rtl_writephy(tp, 0x1f, 0x0000);
+ 
+-	r8168_aldps_enable_1(tp);
+-
+ 	/* Broken BIOS workaround: feed GigaMAC registers with MAC address. */
+ 	rtl_rar_exgmac_set(tp, tp->dev->dev_addr);
+ }
+@@ -3294,8 +3261,6 @@ static void rtl8168f_1_hw_phy_config(struct rtl8169_private *tp)
+ 	rtl_writephy(tp, 0x05, 0x8b85);
+ 	rtl_w1w0_phy(tp, 0x06, 0x4000, 0x0000);
+ 	rtl_writephy(tp, 0x1f, 0x0000);
+-
+-	r8168_aldps_enable_1(tp);
+ }
+ 
+ static void rtl8168f_2_hw_phy_config(struct rtl8169_private *tp)
+@@ -3303,8 +3268,6 @@ static void rtl8168f_2_hw_phy_config(struct rtl8169_private *tp)
+ 	rtl_apply_firmware(tp);
+ 
+ 	rtl8168f_hw_phy_config(tp);
+-
+-	r8168_aldps_enable_1(tp);
+ }
+ 
+ static void rtl8411_hw_phy_config(struct rtl8169_private *tp)
+@@ -3402,8 +3365,6 @@ static void rtl8411_hw_phy_config(struct rtl8169_private *tp)
+ 	rtl_w1w0_phy(tp, 0x19, 0x0000, 0x0001);
+ 	rtl_w1w0_phy(tp, 0x10, 0x0000, 0x0400);
+ 	rtl_writephy(tp, 0x1f, 0x0000);
+-
+-	r8168_aldps_enable_1(tp);
+ }
+ 
+ static void rtl8168g_1_hw_phy_config(struct rtl8169_private *tp)
+@@ -3489,19 +3450,21 @@ static void rtl8105e_hw_phy_config(struct rtl8169_private *tp)
+ 	};
+ 
+ 	/* Disable ALDPS before ram code */
+-	r810x_aldps_disable(tp);
++	rtl_writephy(tp, 0x1f, 0x0000);
++	rtl_writephy(tp, 0x18, 0x0310);
++	msleep(100);
+ 
+ 	rtl_apply_firmware(tp);
+ 
+ 	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
+-
+-	r810x_aldps_enable(tp);
+ }
+ 
+ static void rtl8402_hw_phy_config(struct rtl8169_private *tp)
+ {
+ 	/* Disable ALDPS before setting firmware */
+-	r810x_aldps_disable(tp);
++	rtl_writephy(tp, 0x1f, 0x0000);
++	rtl_writephy(tp, 0x18, 0x0310);
++	msleep(20);
+ 
+ 	rtl_apply_firmware(tp);
+ 
+@@ -3511,8 +3474,6 @@ static void rtl8402_hw_phy_config(struct rtl8169_private *tp)
+ 	rtl_writephy(tp, 0x10, 0x401f);
+ 	rtl_writephy(tp, 0x19, 0x7030);
+ 	rtl_writephy(tp, 0x1f, 0x0000);
+-
+-	r810x_aldps_enable(tp);
+ }
+ 
+ static void rtl8106e_hw_phy_config(struct rtl8169_private *tp)
+@@ -3525,7 +3486,9 @@ static void rtl8106e_hw_phy_config(struct rtl8169_private *tp)
+ 	};
+ 
+ 	/* Disable ALDPS before ram code */
+-	r810x_aldps_disable(tp);
++	rtl_writephy(tp, 0x1f, 0x0000);
++	rtl_writephy(tp, 0x18, 0x0310);
++	msleep(100);
+ 
+ 	rtl_apply_firmware(tp);
+ 
+@@ -3533,8 +3496,6 @@ static void rtl8106e_hw_phy_config(struct rtl8169_private *tp)
+ 	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
+ 
+ 	rtl_eri_write(tp, 0x1d0, ERIAR_MASK_0011, 0x0000, ERIAR_EXGMAC);
+-
+-	r810x_aldps_enable(tp);
+ }
+ 
+ static void rtl_hw_phy_config(struct net_device *dev)
+@@ -5051,6 +5012,8 @@ static void rtl_hw_start_8168e_2(struct rtl8169_private *tp)
+ 
+ 	RTL_W8(MaxTxPacketSize, EarlySize);
+ 
++	rtl_disable_clock_request(pdev);
++
+ 	RTL_W32(TxConfig, RTL_R32(TxConfig) | TXCFG_AUTO_FIFO);
+ 	RTL_W8(MCU, RTL_R8(MCU) & ~NOW_IS_OOB);
+ 
+@@ -5059,8 +5022,7 @@ static void rtl_hw_start_8168e_2(struct rtl8169_private *tp)
+ 
+ 	RTL_W8(DLLPR, RTL_R8(DLLPR) | PFM_EN);
+ 	RTL_W32(MISC, RTL_R32(MISC) | PWM_EN);
+-	RTL_W8(Config5, (RTL_R8(Config5) & ~Spi_en) | ASPM_en);
+-	RTL_W8(Config2, RTL_R8(Config2) | ClkReqEn);
++	RTL_W8(Config5, RTL_R8(Config5) & ~Spi_en);
+ }
+ 
+ static void rtl_hw_start_8168f(struct rtl8169_private *tp)
+@@ -5085,12 +5047,13 @@ static void rtl_hw_start_8168f(struct rtl8169_private *tp)
+ 
+ 	RTL_W8(MaxTxPacketSize, EarlySize);
+ 
++	rtl_disable_clock_request(pdev);
++
+ 	RTL_W32(TxConfig, RTL_R32(TxConfig) | TXCFG_AUTO_FIFO);
+ 	RTL_W8(MCU, RTL_R8(MCU) & ~NOW_IS_OOB);
+ 	RTL_W8(DLLPR, RTL_R8(DLLPR) | PFM_EN);
+-	RTL_W32(MISC, RTL_R32(MISC) | PWM_EN | FORCE_CLK);
+-	RTL_W8(Config5, (RTL_R8(Config5) & ~Spi_en) | ASPM_en);
+-	RTL_W8(Config2, RTL_R8(Config2) | ClkReqEn);
++	RTL_W32(MISC, RTL_R32(MISC) | PWM_EN);
++	RTL_W8(Config5, RTL_R8(Config5) & ~Spi_en);
+ }
+ 
+ static void rtl_hw_start_8168f_1(struct rtl8169_private *tp)
+@@ -5147,10 +5110,8 @@ static void rtl_hw_start_8168g_1(struct rtl8169_private *tp)
+ 	rtl_w1w0_eri(tp, 0xdc, ERIAR_MASK_0001, 0x01, 0x00, ERIAR_EXGMAC);
+ 
+ 	RTL_W8(ChipCmd, CmdTxEnb | CmdRxEnb);
+-	RTL_W32(MISC, (RTL_R32(MISC) | FORCE_CLK) & ~RXDV_GATED_EN);
++	RTL_W32(MISC, RTL_R32(MISC) & ~RXDV_GATED_EN);
+ 	RTL_W8(MaxTxPacketSize, EarlySize);
+-	RTL_W8(Config5, RTL_R8(Config5) | ASPM_en);
+-	RTL_W8(Config2, RTL_R8(Config2) | ClkReqEn);
+ 
+ 	rtl_eri_write(tp, 0xc0, ERIAR_MASK_0011, 0x0000, ERIAR_EXGMAC);
+ 	rtl_eri_write(tp, 0xb8, ERIAR_MASK_0011, 0x0000, ERIAR_EXGMAC);
+@@ -5366,9 +5327,6 @@ static void rtl_hw_start_8105e_1(struct rtl8169_private *tp)
+ 
+ 	RTL_W8(MCU, RTL_R8(MCU) | EN_NDP | EN_OOB_RESET);
+ 	RTL_W8(DLLPR, RTL_R8(DLLPR) | PFM_EN);
+-	RTL_W8(Config5, RTL_R8(Config5) | ASPM_en);
+-	RTL_W8(Config2, RTL_R8(Config2) | ClkReqEn);
+-	RTL_W32(MISC, RTL_R32(MISC) | FORCE_CLK);
+ 
+ 	rtl_ephy_init(tp, e_info_8105e_1, ARRAY_SIZE(e_info_8105e_1));
+ }
+@@ -5394,9 +5352,6 @@ static void rtl_hw_start_8402(struct rtl8169_private *tp)
+ 
+ 	RTL_W32(TxConfig, RTL_R32(TxConfig) | TXCFG_AUTO_FIFO);
+ 	RTL_W8(MCU, RTL_R8(MCU) & ~NOW_IS_OOB);
+-	RTL_W8(Config5, RTL_R8(Config5) | ASPM_en);
+-	RTL_W8(Config2, RTL_R8(Config2) | ClkReqEn);
+-	RTL_W32(MISC, RTL_R32(MISC) | FORCE_CLK);
+ 
+ 	rtl_ephy_init(tp, e_info_8402, ARRAY_SIZE(e_info_8402));
+ 
+@@ -5418,10 +5373,7 @@ static void rtl_hw_start_8106(struct rtl8169_private *tp)
+ 	/* Force LAN exit from ASPM if Rx/Tx are not idle */
+ 	RTL_W32(FuncEvent, RTL_R32(FuncEvent) | 0x002800);
+ 
+-	RTL_W32(MISC,
+-		(RTL_R32(MISC) | DISABLE_LAN_EN | FORCE_CLK) & ~EARLY_TALLY_EN);
+-	RTL_W8(Config5, RTL_R8(Config5) | ASPM_en);
+-	RTL_W8(Config2, RTL_R8(Config2) | ClkReqEn);
++	RTL_W32(MISC, (RTL_R32(MISC) | DISABLE_LAN_EN) & ~EARLY_TALLY_EN);
+ 	RTL_W8(MCU, RTL_R8(MCU) | EN_NDP | EN_OOB_RESET);
+ 	RTL_W8(DLLPR, RTL_R8(DLLPR) & ~PFM_EN);
+ }
 -- 
-1.8.1
-
+Ueimor
