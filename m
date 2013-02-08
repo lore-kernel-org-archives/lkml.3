@@ -1,166 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946202Ab3BHKgU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 05:36:20 -0500
-Received: from mga03.intel.com ([143.182.124.21]:26030 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030242Ab3BHKgS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 05:36:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,628,1355126400"; 
-   d="scan'208";a="200056165"
-Message-ID: <5114D520.1080305@linux.intel.com>
-Date: Fri, 08 Feb 2013 02:36:16 -0800
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1946241Ab3BHKlH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 05:41:07 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:47770 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946128Ab3BHKlE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 05:41:04 -0500
+Message-ID: <5114D58A.1030903@openwrt.org>
+Date: Fri, 08 Feb 2013 11:38:02 +0100
+From: Florian Fainelli <florian@openwrt.org>
+Organization: OpenWrt
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        "lkml," <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Denis Turischev <denis@compulab.co.il>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: gpio-sch GPIO_SYSFS access
-References: <5112FC44.2000303@linux.intel.com> <CACRpkdacYOeG2tqSW5YhqbkxGnxCxamAc_UUyghEQXO98OvKJw@mail.gmail.com> <511481A2.7010100@linux.intel.com> <5114A453.8000408@linux.intel.com> <20130208084916.GM5072@sortiz-mobl>
-In-Reply-To: <20130208084916.GM5072@sortiz-mobl>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=ISO-8859-1
+To: manjunath.goudar@linaro.org
+CC: linux-usb@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        patches@linaro.org, stern@rowland.harvard.edu, arnd@linaro.org,
+        gregkh@linuxfoundation.org, Greg KH <greg@kroah.com>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 04/10] USB: EHCI: make ehci-orion a separate driver
+References: <yes> <1360258447-27247-1-git-send-email-yes> <5113e5f0.c84e420a.08c3.ffffbe9a@mx.google.com>
+In-Reply-To: <5113e5f0.c84e420a.08c3.ffffbe9a@mx.google.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Manjunath,
 
+On 02/07/2013 06:34 PM, manjunath.goudar@linaro.org wrote:
+> From: Manjunath Goudar <manjunath.goudar@linaro.org>
+>
+> Separate the Marvell Orion host controller driver from ehci-hcd host code
+> into its own driver module.
+>
+[snip]
 
-On 02/08/2013 12:49 AM, Samuel Ortiz wrote:
-> Hi Darren,
-> 
-> On Thu, Feb 07, 2013 at 11:08:03PM -0800, Darren Hart wrote:
->> On 02/07/2013 08:40 PM, Darren Hart wrote:
->>>
->>>
->>> On 02/07/2013 02:09 AM, Linus Walleij wrote:
->>>> On Thu, Feb 7, 2013 at 1:58 AM, Darren Hart <dvhart@linux.intel.com> wrote:
->>>>
->>>>> Is it that some other driver has claimed these GPIO lines? If so, how do
->>>>> I determine which one?
->>>>
->>>> Yes I think that could be it, the driver would need to call
->>>> gpio_export() for it to also be accessible in sysfs.
->>>>
->>>> Configure in debugfs and check the file "gpio" in debugfs
->>>> to figure out the client.
->>>>
->>>> Yours,
->>>> Linus Walleij
->>>>
->>>
->>> I found gpio_export() as you suggested above and instrumented it. What I
->>> found was that it was not getting called at all. As I understand it,
->>> calling gpiochip_export() should make the gpiochip# appear in
->>> /sys/class/gpio and then I should be able to configure which lines are
->>> exported via the /sys/class/gpio/export file.
->>>
->>> I haven't yet found how gpio-pch differs from gpio-sch that causes the
->>> gpio-pch chip to appear in sysfs and the gpio-sch one not to. I did
->>> patch gpio-sch with a request and export loop:
->>>
->>> $ git diff drivers/gpio/gpio-sch.c
->>> diff --git a/drivers/gpio/gpio-sch.c b/drivers/gpio/gpio-sch.c
->>> index 8cadf4d..79783c1 100644
->>> --- a/drivers/gpio/gpio-sch.c
->>> +++ b/drivers/gpio/gpio-sch.c
->>> @@ -188,7 +188,7 @@ static struct gpio_chip sch_gpio_resume = {
->>>  static int __devinit sch_gpio_probe(struct platform_device *pdev)
->>>  {
->>>         struct resource *res;
->>> -       int err, id;
->>> +       int err, id, gpio;
->>>
->>>         id = pdev->id;
->>>         if (!id)
->>> @@ -243,10 +243,24 @@ static int __devinit sch_gpio_probe(struct
->>> platform_device *p
->>>         if (err < 0)
->>>                 goto err_sch_gpio_core;
->>>
->>> +       /* DEBUG: export all the core GPIOS */
->>> +       for (gpio = sch_gpio_core.base;
->>> +            gpio < sch_gpio_core.base + sch_gpio_core.ngpio; gpio++) {
->>> +               gpio_request(gpio, "gpio-sch");
->>> +               gpio_export(gpio, true);
->>> +       }
->>> +
->>>         err = gpiochip_add(&sch_gpio_resume);
->>>         if (err < 0)
->>>                 goto err_sch_gpio_resume;
->>>
->>> +       /* DEBUG: export all the resume GPIOS */
->>> +       for (gpio = sch_gpio_resume.base;
->>> +            gpio < sch_gpio_resume.base + sch_gpio_resume.ngpio; gpio++) {
->>> +               gpio_request(gpio, "gpio-sch");
->>> +               gpio_export(gpio, true);
->>> +       }
->>> +
->>>         return 0;
->>>
->>>  err_sch_gpio_resume:
->>>
->>>
->>> With this both the gpiochip# and gpio# entries appear in sysfs. However,
->>> unlike those for the gpio-pch lines, these report an error in the sysfs
->>> interface:
->>>
->>> /sys/class/gpio# ls *
->>> ls: gpio0: No such file or directory
->>>
->>
->> Well, this happens when the driver in question gets removed by another
->> driver. 
-> removed by another driver ? I'm not sure I understand what that means.
+The changes you introduce in ehci-hcd.c would certainly deserve their 
+own preliminary patch in this serie and not be squashed into this one imho.
 
-In my case, the gpio-sch probe function runs and creates the gpiochip
-with 14 GPIO lines. Later lpc-sch probe runs, adds devices to the mfd
-device list, fails the WDT base address as described below, and then
-removes the devices in the mfd device list, which triggers the removal
-of the gpio-sch device.
+> --- a/drivers/usb/host/ehci-hcd.c
+> +++ b/drivers/usb/host/ehci-hcd.c
+> @@ -155,7 +155,7 @@ static inline unsigned ehci_read_frame_index(struct ehci_hcd *ehci)
+>    * before driver shutdown. But it also seems to be caused by bugs in cardbus
+>    * bridge shutdown:  shutting down the bridge before the devices using it.
+>    */
+> -static int handshake (struct ehci_hcd *ehci, void __iomem *ptr,
+> +int handshake(struct ehci_hcd *ehci, void __iomem *ptr,
+>   		      u32 mask, u32 done, int usec)
+>   {
+>   	u32	result;
+> @@ -172,9 +172,9 @@ static int handshake (struct ehci_hcd *ehci, void __iomem *ptr,
+>   	} while (usec > 0);
+>   	return -ETIMEDOUT;
+>   }
+> -
+> +EXPORT_SYMBOL_GPL(handshake);
 
-If I just skip the WDT lookup and not abort, then things work as I had
-expected. Sooo... does it make sense to remove ALL the MFD device when
-the read of the WDTBA registers indicates "Disabled"? Seems extreme to me.
+This sounds way too generic as a name to be exported as is, so please 
+namespace this with ehci_hcd_ at least.
 
-> 
->> In this case the mfd/lpc_sch.c driver fails reading some PCI
->> config after it has added the gpio-pch device to a list:
->>
->> lpc_sch 0000:00:1f.0: Decode of the WDT I/O range disabled
->>
->>
->> It then proceeds to remove all the devices it added - including gpio-pch.c.
->>
->> Dragging Samuel in as his name is on some of the commits, maybe he can
->> help here.
->>
->> Samuel, does it make sense for CONFIG_GPIO_SCH to require
->> CONFIG_LPC_SCH? I'm building for a Queensbay (Atom E6xx + EG20T PCH).
->> There is no SCH as I understand things. Can these be decoupled?
-> They actually don't have code dependency, GPIO_SCH selects LPC_SCH beacause
-> the MFD parts actually creates the GPIO device.
-> So you're saying Queensbay use the same GPIO IP block without actually having
-> SCH ?
+>   /* check TDI/ARC silicon is in host mode */
+> -static int tdi_in_host_mode (struct ehci_hcd *ehci)
+> +static int tdi_in_host_mode(struct ehci_hcd *ehci)
 
-That is how I currently understand it. These drivers appear to have been
-originaly written for the Silverthorne (Z5xx) CPUs and the Intel SCH
-chipset.
-TunnelCreek (E6xx) support was added later, but apparently the LPC
-bridge is onboard the CPU and it still contains the registers to setup
-the gpio-sch base address and such as you suggest - so still needed. The
-Queensbay platform is an E6xx CPU and the EG20T PCH (no SCH).
+Looks unrelated to the goals of your patches.
 
-The driver is failing when looking for the watchdog base address (bit 31
-isn't 1 apparently). I suppose this could be a firmware issue?
+>   {
+>   	u32		tmp;
+>
+> @@ -186,7 +186,7 @@ static int tdi_in_host_mode (struct ehci_hcd *ehci)
+>    * Force HC to halt state from unknown (EHCI spec section 2.3).
+>    * Must be called with interrupts enabled and the lock not held.
+>    */
+> -static int ehci_halt (struct ehci_hcd *ehci)
+> +int ehci_halt(struct ehci_hcd *ehci)
+>   {
+>   	u32	temp;
+>
+> @@ -215,9 +215,9 @@ static int ehci_halt (struct ehci_hcd *ehci)
+>   	return handshake(ehci, &ehci->regs->status,
+>   			  STS_HALT, STS_HALT, 16 * 125);
+>   }
+> -
+> +EXPORT_SYMBOL_GPL(ehci_halt);
 
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Technical Lead - Linux Kernel
+I would rename this to ehci_hcd_halt to express the fact that it takes 
+an ehci_hcd structure pointer as parameter, can be addressed later.
+
+>   /* put TDI/ARC silicon into EHCI mode */
+> -static void tdi_reset (struct ehci_hcd *ehci)
+> +void tdi_reset(struct ehci_hcd *ehci)
+>   {
+>   	u32		tmp;
+>
+> @@ -231,12 +231,12 @@ static void tdi_reset (struct ehci_hcd *ehci)
+>   		tmp |= USBMODE_BE;
+>   	ehci_writel(ehci, tmp, &ehci->regs->usbmode);
+>   }
+> -
+> +EXPORT_SYMBOL_GPL(tdi_reset);
+
+Same here, way too generic to be exported as is as a symbol name.
+--
+Florian
