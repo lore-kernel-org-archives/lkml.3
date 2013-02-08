@@ -1,69 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946408Ab3BHMOv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 07:14:51 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55437 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1946345Ab3BHMOt (ORCPT
+	id S1760110Ab3BHMYz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 07:24:55 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:48036 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758100Ab3BHMYx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 07:14:49 -0500
-Date: Fri, 8 Feb 2013 12:14:47 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, chao.bi@intel.com,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>, cxie4@marvell.com,
-        ytang5@marvell.com
-Subject: Re: [PATCH v3 08/10] spi/pxa2xx: add support for SPI_LOOP
-Message-ID: <20130208121447.GW8879@opensource.wolfsonmicro.com>
-References: <1358850393-23111-1-git-send-email-mika.westerberg@linux.intel.com>
- <1358850393-23111-9-git-send-email-mika.westerberg@linux.intel.com>
+	Fri, 8 Feb 2013 07:24:53 -0500
+Message-ID: <5114EE1C.1040802@linux.vnet.ibm.com>
+Date: Fri, 08 Feb 2013 17:52:52 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="L0mHLbha4YKvhGtu"
-Content-Disposition: inline
-In-Reply-To: <1358850393-23111-9-git-send-email-mika.westerberg@linux.intel.com>
-X-Cookie: Stay away from flying saucers today.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: lsf-pc@lists.linux-foundation.org
+CC: linux-mm@kvack.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [LSF/MM TOPIC][ATTEND] Linux VM Infrastructure to support Memory
+ Power Management
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13020812-0260-0000-0000-0000028187EF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---L0mHLbha4YKvhGtu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Today, we are increasingly seeing computer systems sporting larger and larger
+amounts of RAM, in order to meet workload demands. However, memory consumes a
+significant amount of power, potentially upto more than a third of total system
+power on server systems. So naturally, memory becomes the next big target for
+power management - on embedded systems and smartphones, and all the way upto
+large server systems.
 
-On Tue, Jan 22, 2013 at 12:26:31PM +0200, Mika Westerberg wrote:
-> This is useful when testing the functionality of the controller from userspace
-> and there aren't any real SPI slave devices connected to the bus.
+Modern memory hardware such as DDR3 support a number of power management
+capabilities. And new firmware standards such as ACPI 5.0 have added support
+for exposing the power-management capabilities of the underlying memory hardware
+to the Operating System. So it is upto the kernel's MM subsystem to make the
+best use of these capabilities and manage memory power-efficiently.
+It had been demonstrated on a Samsung Exynos board (with 2 GB RAM) that upto
+6% of total system power can be saved by making the Linux kernel MM subsystem
+power-aware[1]. (More savings can be expected on systems with larger amounts
+of memory, and perhaps improved further using better MM designs).
 
-Applied, thanks.
+Often this simply translates to having the Linux MM understand the granularity
+at which RAM modules can be power-managed, and consolidating the memory
+allocations and references to a minimum no. of these power-manageable
+"memory regions". It is of particular interest to note that most of these
+memory hardware have the intelligence to automatically save power, such as
+putting memory banks into (content-preserving) low-power states when not
+referenced for a threshold amount of time. All that the kernel has to do, is
+avoid wrecking the power-savings logic by scattering its allocations and
+references all over the system memory. IOW, the kernel/MM doesn't really need
+to keep track of memory DIMMs and perform their power-state transitions - most
+often it is automatically handled by the hardware/memory-controller. The MM
+has to just co-operate by keeping the references consolidated to a minimum
+no. of memory regions.
 
---L0mHLbha4YKvhGtu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+To that end, I had recently posted patchsets implementing 2 very different MM
+designs, namely the "Hierarchy" design[2] (originally developed by Ankita Garg)
+and the new "Sorted-buddy" design[3]. The challenge with the latter design is
+that it can potentially lead to increased run-time memory allocation overheads.
+At the summit, I would like to brainstorm on ideas and designs for reducing the
+run-time cost of implementing memory power management, and seek suggestions and
+feedback from MM developers on the issues involved.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+About myself:
+------------
+I have been contributing to CPU- and System-wide power management subsystems in
+the kernel such as CPU idle and Suspend-to-RAM, in terms of enhancements to their
+reliability/scalability. In particular, I have contributed to some of the
+core kernel infrastructure that Suspend-to-RAM depends on, such as Freezer and
+CPU hotplug, and have been working towards redesigning CPU hotplug to get rid of
+some of its pain points.
 
-iQIcBAEBAgAGBQJRFOwwAAoJELSic+t+oim97tEP+wc1WgU4HO+bvS6zx4FOtf76
-p+4Aq8yYq5OiA2hAQFOBv/PgK0YmxWjd9eHDARuPbcGURFekK92n0EQ7Rx73cALQ
-TWxN/B5N7wxcRlTzxvcfL/j+rMo3OXE5PBAJqeAb+C0nlXDB1B7Zx+yrP1iq1jtX
-VjW7sgE+qUaSiBH2qNAAQolVK5AVJLEz2WiVm8z9R1YutWP8Qx6RGLFdMm1dyfnA
-+IHuTqIQJtagNVIY+7y4KGw7fDr5ruCvar80uGJMHf8C2ir4YyLYKpTQfuKcL5TN
-x5Z5q8ojeWdt7Vkz7qGoJhjiUE1ALkUEsP8c8B1lSiJ08P+uCG3KtaJadsDmTrPa
-+Rl+SQ8WZbP57gNZ2MIKrdgLM56Srx09bHGTzlq+yl/awYdvuU+nGBgXMEXJiL0B
-UmnSglJHnRae0DN1SDxTROGpZwG6kucHz6FxV8CUkKeomdwpm0810V14LusylXMA
-GlEl1ZvnE9bOcvxDdtYUZzPPW/dLNRkAaIbjVq56JBt3XapVWJF1yhoDUyVvLYoi
-CwfcPcrp53dFSDmNWsvXP/lakF5SylMHvz2wttfJ4bXjjUGpdUCa4EPv2sfpFAWs
-+2DJyGly+eZOKJVZikX07KbI0q5GfVHyrEbFivhWJKxqGyCP4ncz+qcwUtCZn4Nz
-AqTEsSEajN4LyDVoEo0v
-=fnXI
------END PGP SIGNATURE-----
+Recently I have been looking at conserving memory power, and came up with the
+"Sorted-buddy" design [3] of the Linux MM, which alters the buddy allocator to
+keep memory allocations consolidated to a minimum no. of memory regions. I would
+like to discuss this topic with other MM developers at the summit and get
+feedback on the best way to take this technology forward.
 
---L0mHLbha4YKvhGtu--
+
+References:
+----------
+
+1. Estimate of potential power savings on Samsung exynos board
+   http://article.gmane.org/gmane.linux.kernel.mm/65935
+
+2. "Hierarchy" design for Memory Power Management:
+    http://lwn.net/Articles/445045/ (Original posting by Ankita Garg)
+    http://lwn.net/Articles/523311/ (Forward-port to 3.7-rc3)
+
+3. "Sorted-buddy" design for Memory Power Management:
+    http://article.gmane.org/gmane.linux.power-management.general/28498/
+
+
+Regards,
+Srivatsa S. Bhat
+
