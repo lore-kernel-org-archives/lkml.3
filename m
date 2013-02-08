@@ -1,91 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947265Ab3BHV1O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 16:27:14 -0500
-Received: from mail-da0-f49.google.com ([209.85.210.49]:47691 "EHLO
-	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1947146Ab3BHV1K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 16:27:10 -0500
-Date: Fri, 8 Feb 2013 13:27:06 -0800
-From: Kent Overstreet <koverstreet@google.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-aio@kvack.org, linux-fsdevel@vger.kernel.org, zab@redhat.com,
-        bcrl@kvack.org, jmoyer@redhat.com, viro@zeniv.linux.org.uk,
-        tytso@mit.edu, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 23/32] Generic dynamic per cpu refcounting
-Message-ID: <20130208212706.GH27179@google.com>
-References: <1356573611-18590-1-git-send-email-koverstreet@google.com>
- <1356573611-18590-26-git-send-email-koverstreet@google.com>
- <20130208144408.GY2875@htj.dyndns.org>
- <20130208144902.GQ15092@kernel.dk>
+	id S1947213Ab3BHV2O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 16:28:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64398 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1947086Ab3BHV2N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 16:28:13 -0500
+Date: Fri, 8 Feb 2013 16:27:26 -0500
+From: Josh Boyer <jwboyer@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Mel Gorman <mgorman@suse.de>,
+        linux-kernel@vger.kernel.org, williams@redhat.com
+Subject: Re: Odd ENOMEM being returned in 3.8-rcX
+Message-ID: <20130208212726.GH31684@hansolo.jdub.homelinux.org>
+References: <20130207215742.GB31684@hansolo.jdub.homelinux.org>
+ <20130207141502.04625ea0.akpm@linux-foundation.org>
+ <20130208003501.GC31684@hansolo.jdub.homelinux.org>
+ <20130208181949.GD31684@hansolo.jdub.homelinux.org>
+ <87k3qiwomi.fsf@xmission.com>
+ <20130208202314.GF31684@hansolo.jdub.homelinux.org>
+ <87r4kqttz8.fsf@xmission.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130208144902.GQ15092@kernel.dk>
+In-Reply-To: <87r4kqttz8.fsf@xmission.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 08, 2013 at 03:49:02PM +0100, Jens Axboe wrote:
-> On Fri, Feb 08 2013, Tejun Heo wrote:
-> > (cc'ing Andrew)
-> > 
-> > On Wed, Dec 26, 2012 at 06:00:02PM -0800, Kent Overstreet wrote:
-> > > This implements a refcount with similar semantics to
-> > > atomic_get()/atomic_dec_and_test(), that starts out as just an atomic_t
-> > > but dynamically switches to per cpu refcounting when the rate of
-> > > gets/puts becomes too high.
-> > > 
-> > > It also implements two stage shutdown, as we need it to tear down the
-> > > percpu counts. Before dropping the initial refcount, you must call
-> > > percpu_ref_kill(); this puts the refcount in "shutting down mode" and
-> > > switches back to a single atomic refcount with the appropriate barriers
-> > > (synchronize_rcu()).
-> > > 
-> > > It's also legal to call percpu_ref_kill() multiple times - it only
-> > > returns true once, so callers don't have to reimplement shutdown
-> > > synchronization.
-> > > 
-> > > For the sake of simplicity/efficiency, the heuristic is pretty simple -
-> > > it just switches to percpu refcounting if there are more than x gets
-> > > in one second (completely arbitrarily, 4096).
-> > > 
-> > > It'd be more correct to count the number of cache misses or something
-> > > else more profile driven, but doing so would require accessing the
-> > > shared ref twice per get - by just counting the number of gets(), we can
-> > > stick that counter in the high bits of the refcount and increment both
-> > > with a single atomic64_add(). But I expect this'll be good enough in
-> > > practice.
-> > > 
-> > > Signed-off-by: Kent Overstreet <koverstreet@google.com>
-> > 
-> > What's the status of this series?  The percpu-refcnt part is still
-> > going through review and the merge window is opening up pretty soon.
-> > Kent, Andrew?
+On Fri, Feb 08, 2013 at 12:45:47PM -0800, Eric W. Biederman wrote:
+> Josh Boyer <jwboyer@redhat.com> writes:
 > 
-> I'd feel a lot better deferring the whole aio/dio performance series for
-> one merge window. There's very little point in rushing it, and I don't
-> think it's been reviewed/tested enough yet.
+> > < Two emails fly past each other in the night >
+> 
+> Yep.
+> 
+> >> My best guess in some dark corner of mock has untested code to unshare a
+> >> pid namespace, and that corner started doing something now that
+> >> unsharing of the pid namespace actually works.
+> >> 
+> >> If mock has called unshare(CLONE_NEWPID). And then forked a process and
+> >> that process exited, and then forked anothe process that second and all
+> >> subsequent fork calls will fail with -ENOMEM (because init has exited in
+> >> the pid namespace).  -ENOMEM will be generated because of a failure of
+> >> alloc_pid.
+> >> 
+> >> Looking at that code path a little closer that just about has to be it,
+> >> because I goofed and the error path drops the lock but not irqs.  The
+> >> patch below should fix the nasty warning and confirm where the code is
+> >> failing in copy_process.
+> >
+> > OK.  I'll turn the debug option back on and give this patch a try.
+> 
+> Thanks.  Your minimal test case also confirms my hunch. But we should
+> fix the error path as well.
+> 
+> >> An strace to see which syscalls mock is making and with which flags
+> >> would be very interesting.  I am almost certain that there is a
+> >> unshare(CLONE_NEWPID) somewhere in there.  But in a remote corner of
+> >> possibility it could weird clone flags, or something else.
+> >
+> > Oh, I have that but it's a python app with a helper C app and it's a...
+> > verbose strace.  It's here for one failure:
+> >
+> > http://jwboyer.fedorapeople.org/pub/mock-strace
+> >
+> > Hopefully the testcase from my other email will help though.  It's much
+> > simpler.
+> 
+> Yes.  Your other test case confirms my patch you bisected this to is
+> working correctly.
+> 
+> >> Beyond that I suspect we want to work with the mock folks so they get
+> >> their code to use a pid namespace working the way they intended.
+> >
+> > Right.  CC'd Clark (for real this time).
+> >
+> > I'll let you know on the patch.
 
-It could probably use more review, but it has been sitting in linux-next
-and the issues that showed up there are all fixed. You going to help
-review it? :)
+The patch appears to work as expected.  With CONFIG_DEBUG_ATOMIC_SLEEP
+set I don't see the backtrace error.  That should go in.
 
-I'm not really set on it going in this merge cycle, but testing wise I
-do think it's in pretty good shape and I'm not sure where we're going to
-get more testing from before it goes in.
+> Cool.  Looking at the strace I can't figure out what mock expected
+> to happen or how mock was working before this.  As mock is calling
+> unshare(CLONE_NEWNS|CLONE_NEWUTS|CLONE_NEWIPC|CLONE_NEWPID) all in one
+> go.
+> 
+> Previous to my patch enabling CLONE_NEWPID that would cause the unshare
+> to fail.
 
-And Andrew - apologies for not getting you the benchmarks you asked for,
-getting hardware for it has turned out to be more troublesome than I
-expected. Still don't know what's going on with that.
+Oh.  Indeed.  On a kernel without the commit in question I see this from
+mock:
 
-(It turned out though that when I readded that second kiocb refcount
-that io_submit_one() owns, that was a real performance regression. So
-I've got a patch that refactors aio_rw_vect_retry() so it can safely be
-dropped, and I'm going to _try_ to refactor cancellation so that I can
-get rid of kiocb refcounting entirely. But I'm not really in a big hurry
-to pile more stuff into this patch series, I'd prefer to get what I've
-got in...)
+DEBUG: Unsharing. Flags: 738328576
+DEBUG: unshare(738328576) failed, falling back to unshare(67239936)
+DEBUG: Unsharing. Flags: 67239936
+
+So it's trying with NEWPID and that fails, so it falls back to just
+NEWNS | NEWUTS.  That explains it working.
+
+> So it looks mock is taking a buggy untested code path and things are not
+> working as it expected.
+
+Quite possibly, yes.  I instrumented the kernel a bit and it is indeed
+failing in the alloc_pid call.
+
+Clark, thoughts here?
+
+josh
