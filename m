@@ -1,105 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760214Ab3BHRKR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 12:10:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40639 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753555Ab3BHRKP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 12:10:15 -0500
-Date: Fri, 8 Feb 2013 18:10:12 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: azurIt <azurit@pobox.sk>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups mailinglist <cgroups@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH for 3.2.34] memcg: do not trigger OOM if PF_NO_MEMCG_OOM
- is set
-Message-ID: <20130208171012.GH7557@dhcp22.suse.cz>
-References: <20130206140119.GD10254@dhcp22.suse.cz>
- <20130206142219.GF10254@dhcp22.suse.cz>
- <20130206160051.GG10254@dhcp22.suse.cz>
- <20130208060304.799F362F@pobox.sk>
- <20130208094420.GA7557@dhcp22.suse.cz>
- <20130208120249.FD733220@pobox.sk>
- <20130208123854.GB7557@dhcp22.suse.cz>
- <20130208145616.FB78CE24@pobox.sk>
- <20130208152402.GD7557@dhcp22.suse.cz>
- <20130208165805.8908B143@pobox.sk>
+	id S1946776Ab3BHRQS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 12:16:18 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:51986 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946674Ab3BHRQQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 12:16:16 -0500
+Message-ID: <511532DD.2080306@wwwdotorg.org>
+Date: Fri, 08 Feb 2013 10:16:13 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130208165805.8908B143@pobox.sk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: balbi@ti.com
+CC: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 08/10] ARM: dt: Add references to tegra_car clocks
+References: <1360330602-30472-1-git-send-email-pdeschrijver@nvidia.com> <1360330602-30472-9-git-send-email-pdeschrijver@nvidia.com> <20130208140301.GA23979@arwen.pp.htv.fi>
+In-Reply-To: <20130208140301.GA23979@arwen.pp.htv.fi>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 08-02-13 16:58:05, azurIt wrote:
-[...]
-> I took the kernel log from yesterday from the same time frame:
+On 02/08/2013 07:03 AM, Felipe Balbi wrote:
+> Hi,
 > 
-> $ grep "killed as a result of limit" kern2.log | sed 's@.*\] @@' | sort | uniq -c | sort -k1 -n
->       1 Task in /1252/uid killed as a result of limit of /1252
->       1 Task in /1709/uid killed as a result of limit of /1709
->       2 Task in /1185/uid killed as a result of limit of /1185
->       2 Task in /1388/uid killed as a result of limit of /1388
->       2 Task in /1567/uid killed as a result of limit of /1567
->       2 Task in /1650/uid killed as a result of limit of /1650
->       3 Task in /1527/uid killed as a result of limit of /1527
->       5 Task in /1552/uid killed as a result of limit of /1552
->    1634 Task in /1258/uid killed as a result of limit of /1258
+> On Fri, Feb 08, 2013 at 03:36:40PM +0200, Peter De Schrijver
+> wrote:
+>> tegra_car: clock { -		compatible = "nvidia,tegra114-car,
+>> nvidia,tegra30-car"; +		compatible = "nvidia,tegra114-car";
 > 
-> As you can see, there were much more OOM in '1258' and no such
-> problems like this night (well, there were never such problems before
-> :) ).
+> trailing change or intentional ?
 
-Well, all the patch does is that it prevents from the deadlock we have
-seen earlier. Previously the writer would block on the oom wait queue
-while it fails with ENOMEM now. Caller sees this as a short write which
-can be retried (it is a question whether userspace can cope with that
-properly). All other OOMs are preserved.
-
-I suspect that all the problems you are seeing now are just side effects
-of the OOM conditions.
-
-> As i said, cgroup 1258 were freezing every few minutes with your
-> latest patch so there must be something wrong (it usually freezes
-> about once per day). And it was really freezed (i checked that), the
-> sypthoms were:
-
-I assume you have checked that the killed processes eventually die,
-right?
-
->  - cannot strace any of cgroup processes
->  - no new processes were started, still the same processes were 'running'
->  - kernel was unable to resolve this by it's own
->  - all processes togather were taking 100% CPU
->  - the whole memory limit was used
-> (see memcg-bug-4.tar.gz for more info)
-
-Well, I do not see anything supsicious during that time period
-(timestamps translate between Fri Feb  8 02:34:05 and Fri Feb  8
-02:36:48). The kernel log shows a lot of oom during that time. All
-killed processes die eventually.
-
-> Unfortunately i forget to check if killing only few of the processes
-> will resolve it (i always killed them all yesterday night). Don't
-> know if is was in deadlock or not but kernel was definitely unable
-> to resolve the problem.
-
-Nothing shows it would be a deadlock so far. It is well possible that
-the userspace went mad when seeing a lot of processes dying because it
-doesn't expect it.
-
-> And there is still a mystery of two freezed processes which cannot be
-> killed.
-> 
-> By the way, i KNOW that so much OOM is not healthy but the client
-> simply don't want to buy more memory. He knows about the problem of
-> unsufficient memory limit.
-
-Well, then you would see a permanent flood of OOM killing, I am afraid.
--- 
-Michal Hocko
-SUSE Labs
+I believe it's intentional since the HW isn't fully
+backwards-compatible. However, the commit description should mention this.
