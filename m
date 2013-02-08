@@ -1,87 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947228Ab3BHVln (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 16:41:43 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:59729 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1947198Ab3BHVll (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 16:41:41 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v3 1/2] ARM: Exynos5250: Enabling ehci-s5p driver
-To: Doug Anderson <dianders@chromium.org>,
-        Vivek Gautam <gautamvivek1987@gmail.com>
-Cc: linux-samsung-soc@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-usb@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>
-In-Reply-To: <CAD=FV=X=GRz0ZuFSqEHPy6i2ULtHk==M2_gaCvdmd=81YMNmMg@mail.gmail.com>
-References: <1355416562-25539-1-git-send-email-gautam.vivek@samsung.com> <1355416562-25539-2-git-send-email-gautam.vivek@samsung.com> <20121215072312.EBCAA3E0C06@localhost> <CAFp+6iHoS4XJWHNrsyVsQS4bYZs1PUNEGsRr=EqAS7kpm2XGMQ@mail.gmail.com> <CAFp+6iFSZjfVJp23j2dEz0hRap07RMo68GJpsQM7YqOMBCbqsQ@mail.gmail.com> <CAD=FV=X=GRz0ZuFSqEHPy6i2ULtHk==M2_gaCvdmd=81YMNmMg@mail.gmail.com>
-Date: Fri, 08 Feb 2013 21:41:36 +0000
-Message-Id: <20130208214137.05F7D3E2C27@localhost>
+	id S1947223Ab3BHVoT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 16:44:19 -0500
+Received: from tetsuo.zabbo.net ([50.193.208.193]:38345 "EHLO tetsuo.zabbo.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1947122Ab3BHVoS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 16:44:18 -0500
+Date: Fri, 8 Feb 2013 13:44:17 -0800
+From: Zach Brown <zab@zabbo.net>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: Anatol Pomozov <anatol.pomozov@gmail.com>, linux-fsdevel@vger.kernel.org,
+        "Theodore Ts'o" <tytso@mit.edu>, linux-aio@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Improving AIO cancellation
+Message-ID: <20130208214417.GX14246@lenny.home.zabbo.net>
+References: <CAOMFOmXiEUnqkoQg6bA4N3jg5ERMKoydOdmn7djkpFyfZk19cg@mail.gmail.com>
+ <20130208173811.GW14246@lenny.home.zabbo.net>
+ <20130208211144.GF27179@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130208211144.GF27179@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Dec 2012 10:13:50 -0800, Doug Anderson <dianders@chromium.org> wrote:
-> Vivek,
-> 
-> 
-> On Fri, Dec 21, 2012 at 12:16 AM, Vivek Gautam
-> <gautamvivek1987@gmail.com> wrote:
-> > Hi all,
-> >
-> >
-> > On Wed, Dec 19, 2012 at 7:20 PM, Vivek Gautam <gautamvivek1987@gmail.com> wrote:
-> >> CC: Doug Anderson
-> >>
-> >>
-> >> On Sat, Dec 15, 2012 at 12:53 PM, Grant Likely
-> >> <grant.likely@secretlab.ca> wrote:
-> >>> On Thu, 13 Dec 2012 22:06:01 +0530, Vivek Gautam <gautam.vivek@samsung.com> wrote:
-> >>>> diff --git a/arch/arm/mach-exynos/mach-exynos5-dt.c b/arch/arm/mach-exynos/mach-exynos5-dt.c
-> >>>> index 462e5ac..b3b9af1 100644
-> >>>> --- a/arch/arm/mach-exynos/mach-exynos5-dt.c
-> >>>> +++ b/arch/arm/mach-exynos/mach-exynos5-dt.c
-> >>>> @@ -110,6 +110,8 @@ static const struct of_dev_auxdata exynos5250_auxdata_lookup[] __initconst = {
-> >>>>                               "samsung-i2s.1", NULL),
-> >>>>       OF_DEV_AUXDATA("samsung,samsung-i2s", 0x12D70000,
-> >>>>                               "samsung-i2s.2", NULL),
-> >>>> +     OF_DEV_AUXDATA("samsung,exynos4210-ehci", EXYNOS5_PA_EHCI,
-> >>>> +                             "s5p-ehci", NULL),
-> >>>
-> >>> I'm assuming the above change is temporary. What is left to be done to
-> >>> drop the auxdata in theses two patches?
-> >>>
-> >>> Otherwise the patch looks fine.
-> >>>
-> >>> Acked-by: Grant Likely <grant.likely@secretlab.ca>
-> >
-> > Any more thought about this patch?
-> > Or does this change seems fine?
-> 
-> I'm fairly certain we can just drop the OF_DEV_AUXDATA entry here.  I
-> haven't been following this as closely as I should, but I know that
-> the comment for this table says that the whole purpose is to override
-> device names and that it should be temporary.  We don't need to do any
-> overriding of device names here, do we?
-> 
-> When I drop this (and the ohci and phy) entries from my table I can
-> still boot and still can use USB.  The big difference is what shows up
-> in dmesg
-> 
-> [    1.605000] s5p-ehci s5p-ehci: S5P EHCI Host Controller
-> 
-> Becomes:
-> 
-> [    1.550000] s5p-ehci 12110000.usb: S5P EHCI Host Controller
-> 
-> ...and some sysfs paths change.
+> We don't know if the bio was succesfully cancelled until the bio is
+> completed (and this doesn't change anything about how bio completion
+> works) - if it was cancelled, the bi_end_io callback will get
+> -ECANCELLED or something.
 
-Right. Drop the AUXDATA then.  :-)
+Yeah, I think that's the right design.
 
-g.
+> This is very different from the existing AIO cancellation; KIF_CANCEL
+> means "this kiocb _has been cancelled_". (sort of, I was just rereading
+> that code and I'm convinced it's buggy).
 
+I don't recall the details, but the last time I looked at it I was also
+convinced that it was buggy.
+
+> What we want is a new io_cancel_sane() syscall that doesn't return
+> anything, and only marks the iocb as "cancellation pending". The
+> completion would still get returned via io_getevents(), and userspace
+> would find out if it was cancelled or not then.
+
+Agreed.  I wonder if we can mash those semantics in to the existing call
+somehow.  This *does* have access to the iocb, so our hands aren't as
+tied as we are with io_setup()'s inability to request behavioural
+changes.
+
+Maybe we mark the submitted iocbs as ASYNC_BEST_EFFORT_CANCEL and then
+io_cancel() on them can return success and completion will proceeed as
+normal.  Maybe much more quickly with a cancelled status but maybe not.
+
+- z
