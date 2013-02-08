@@ -1,42 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759749Ab3BHDj5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 22:39:57 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:35743 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759533Ab3BHDj4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 22:39:56 -0500
+	id S1759801Ab3BHDmJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 22:42:09 -0500
+Received: from asix.com.tw ([113.196.140.82]:55390 "EHLO asix.com.tw"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759682Ab3BHDmH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 22:42:07 -0500
+Message-ID: <511473FB.4060600@asix.com.tw>
+Date: Fri, 08 Feb 2013 11:41:47 +0800
+From: Freddy <freddy@asix.com.tw>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Date: Fri, 8 Feb 2013 11:39:56 +0800
-Message-ID: <CAJd=RBD4ZJN7uXQ5xY1GF14j_DydDQEpuZNct-UiNXTBARpQSQ@mail.gmail.com>
-Subject: [PATCH 1/2] stop_machine: check work->done while handling enqueued works
-From: Hillf Danton <dhillf@gmail.com>
-To: Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Hillf Danton <dhillf@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Ben Hutchings <bhutchings@solarflare.com>
+CC: netdev@vger.kernel.org, davem@davemloft.net, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH, resubmit] ax88179_178a: ASIX AX88179_178A USB 3.0/2.0
+ to gigabit ethernet adapter driver
+References: <1360244360-2700-1-git-send-email-freddy@asix.com.tw> <1360267375.3605.32.camel@bwh-desktop.uk.solarflarecom.com>
+In-Reply-To: <1360267375.3605.32.camel@bwh-desktop.uk.solarflarecom.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The comment just above cpu_stop_signal_done() says it is uncertain that
-the input @done is valid, and the works enqueued through the function
-stop_one_cpu_nowait() do carry no done, thus we have to check if it is
-valid when updating work result.
+On 02/08/2013 04:02 AM, Ben Hutchings wrote:
+> On Thu, 2013-02-07 at 21:39 +0800, Freddy Xin wrote:
+>> From: Freddy Xin <freddy@asix.com.tw>
+>>
+>> This is a resubmission.
+>> Added "const" to ethtool_ops structure and fixed the coding style of AX88179_BULKIN_SIZE array.
+>> Fixed the issue that the default MTU is not 1500.
+>> Added ax88179_change_mtu function and enabled the hardware jumbo frame function to support an
+>> MTU higher than 1500.
+>> Fixed indentation and empty line coding style errors.
+>> The _nopm version usb functions were added to access register in suspend and resume functions.
+>> Serveral variables allocted dynamically were removed and replaced by stack variables.
+>> ax88179_get_eeprom were modified from asix_get_eeprom in asix_common.
+>>
+>> This patch adds a driver for ASIX's AX88179 family of USB 3.0/2.0
+>> to gigabit ethernet adapters. It's based on the AX88xxx driver but
+>> the usb commands used to access registers for AX88179 are completely different.
+>> This driver had been verified on x86 system with AX88179/AX88178A and
+>> Sitcomm LN-032 USB dongles.
+>>
+>> Signed-off-by: Freddy Xin <freddy@asix.com.tw>
+> [...]
+>> --- /dev/null
+>> +++ b/drivers/net/usb/ax88179_178a.c
+> [...]
+>> +struct ax88179_data {
+>> +       u16 rxctl;
+>> +};
+> Should also be declared __packed, as on some architectures it may be
+> padded to 4 bytes.
+>
+> rxctl is presumably required to be little-endian (__le16)?
+>
+>> +struct ax88179_int_data {
+>> +       u16 res1;
+>> +       u8 link;
+>> +       u16 res2;
+>> +       u8 status;
+>> +       u16 res3;
+>> +} __packed;
+> Same here, the u16 fields are presumably little-endian?
+>
+> [...]
+>> +struct ax88179_rx_pkt_header {
+>> +	u8	l4_csum_err:1,
+>> +		l3_csum_err:1,
+>> +		l4_type:3,
+>> +		l3_type:2,
+>> +		ce:1;
+>> +
+>> +	u8	vlan_ind:3,
+>> +		rx_ok:1,
+>> +		pri:3,
+>> +		bmc:1;
+>> +
+>> +	u16	len:13,
+>> +		crc:1,
+>> +		mii:1,
+>> +		drop:1;
+>> +} __packed;
+> This won't work on both big-endian systems (assuming this works on x86).
+> You apparently try to convert the structure in-place in
+> ax88179_rx_fixup() by calling le32_to_cpus(); that may work if you
+> define all the bitfields to be part of a u32 but it won't work with the
+> current definition.
+>
+> [...]
+>> +static int
+>> +ax88179_set_features(struct net_device *net, netdev_features_t features)
+>> +{
+>> +	u8 tmp;
+>> +	struct usbnet *dev = netdev_priv(net);
+>> +	netdev_features_t changed = net->features ^ features;
+>> +
+>> +	if (changed & NETIF_F_TSO)
+>> +		net->features ^= NETIF_F_TSO;
+>> +
+>> +	if (changed & NETIF_F_SG)
+>> +		net->features ^= NETIF_F_SG;
+> Don't change net->features; the caller will do that for you.
+>
+>> +       if (changed & NETIF_F_IP_CSUM) {
+>> +               ax88179_read_cmd(dev, AX_ACCESS_MAC, AX_TXCOE_CTL, 1, 1, &tmp);
+>> +               tmp ^= AX_TXCOE_TCP | AX_TXCOE_UDP;
+>> +               ax88179_write_cmd(dev, AX_ACCESS_MAC, AX_TXCOE_CTL, 1, 1, &tmp);
+>> +
+>> +               net->features ^= NETIF_F_IP_CSUM;
+>> +       }
+> [...]
+>
+> Isn't tmp going to be in little-endian byte order, so this doesn't work
+> correctly on a big-endian system?
+>
+> There are a lot of reads and writes of 16-bit registers using
+> ax88179_{read,write}_cmd(); maybe you should add
+> ax88179_{read,write}_le16() to handle this specific case.
+>
+> Ben.
+>
+Thank you, Ben. I will fix bugs and test it on a big-endian system.
 
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
----
-
---- a/kernel/stop_machine.c	Thu Feb  7 20:03:10 2013
-+++ b/kernel/stop_machine.c	Fri Feb  8 11:07:40 2013
-@@ -279,7 +279,7 @@ repeat:
- 		preempt_disable();
-
- 		ret = fn(arg);
--		if (ret)
-+		if (ret && done != NULL)
- 			done->ret = ret;
-
- 		/* restore preemption and check it's still balanced */
---
+Freddy
