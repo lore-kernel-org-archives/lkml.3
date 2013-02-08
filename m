@@ -1,135 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752312Ab3BHAd5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 19:33:57 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40858 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751579Ab3BHAdy convert rfc822-to-8bit (ORCPT
+	id S1751810Ab3BHAfh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 19:35:37 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:33222 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750755Ab3BHAff (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 19:33:54 -0500
-From: "Hatayama, Daisuke" <d.hatayama@jp.fujitsu.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lisa.mitchell@hp.com" <lisa.mitchell@hp.com>,
-        "kumagai-atsushi@mxc.nes.nec.co.jp" 
-	<kumagai-atsushi@mxc.nes.nec.co.jp>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "cpw@sgi.com" <cpw@sgi.com>
-Subject: RE: [PATCH] kdump, oldmem: support mmap on /dev/oldmem
-Thread-Topic: [PATCH] kdump, oldmem: support mmap on /dev/oldmem
-Thread-Index: Ac4ClGsOL11EzwL1RDqu1EeC+4dtFgA02u0AADTExpAAL5XfgAAlbcuAAAET5EA=
-Date: Fri, 8 Feb 2013 00:33:49 +0000
-Message-ID: <33710E6CAA200E4583255F4FB666C4E20AC67384@G01JPEXMBYT03>
-References: <33710E6CAA200E4583255F4FB666C4E20AC36B01@G01JPEXMBYT03>
- <20130205151256.GB12853@redhat.com>
- <33710E6CAA200E4583255F4FB666C4E20AC61B3C@G01JPEXMBYT03>
- <20130207150623.GC6462@redhat.com>
- <33710E6CAA200E4583255F4FB666C4E20AC6735D@G01JPEXMBYT03>
-In-Reply-To: <33710E6CAA200E4583255F4FB666C4E20AC6735D@G01JPEXMBYT03>
-Accept-Language: ja-JP, en-US
-Content-Language: ja-JP
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.124.101.76]
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	Thu, 7 Feb 2013 19:35:35 -0500
 MIME-Version: 1.0
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <20130207181706.GA8780@redhat.com>
+References: <1358849741-9611-1-git-send-email-avagin@openvz.org>
+ <1358849741-9611-3-git-send-email-avagin@openvz.org> <20130207181706.GA8780@redhat.com>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Fri, 8 Feb 2013 01:35:14 +0100
+Message-ID: <CAKgNAkjq3hVjYA3pVdBhyiFi1PbvXc_mOyvx_FaY67PmAifBOQ@mail.gmail.com>
+Subject: Re: [PATCH 2/3] signalfd: add ability to choose a private or shared queue
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrey Vagin <avagin@openvz.org>, linux-kernel@vger.kernel.org,
+        criu@openvz.org, linux-fsdevel@vger.kernel.org,
+        linux-api@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: kexec-bounces@lists.infradead.org
-> Sent: Friday, February 08, 2013 9:26 AM
+On Thu, Feb 7, 2013 at 7:17 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> AOn 01/22, Andrey Vagin wrote:
+>>
+>> This patch is added two flags SFD_SHARED_QUEUE and SFD_PER_THREAD_QUEUE
+>> SFD_SHARED_QUEUE
+>
+> I can't believe I am going to blame the naming ;) but these 2 do not look
+> "symmetrical"....
+>
+> SFD_PRIVATE_QUEUE looks a little bit better to me. At least it is simpler
+> to type. But I am fine either way.
 
-> > From: Vivek Goyal [mailto:vgoyal@redhat.com]
-> > Sent: Friday, February 08, 2013 12:06 AM
-> 
-> > On Wed, Feb 06, 2013 at 07:24:46AM +0000, Hatayama, Daisuke wrote:
-> > > From: Vivek Goyal <vgoyal@redhat.com>
-> > > Subject: Re: [PATCH] kdump, oldmem: support mmap on /dev/oldmem
-> > > Date: Tue, 5 Feb 2013 10:12:56 -0500
-> > >
-> > > > On Mon, Feb 04, 2013 at 04:59:35AM +0000, Hatayama, Daisuke wrote:
-> > >
-> > > > [..]
-> > > >> For design decision, I didn't support mmap() on /proc/vmcore because
-> > > >> it abstracts old memory as ELF format, so there's range consequtive
-> > on
-> > > >> /proc/vmcore but not consequtive on the actual old memory. For
-> > > >> example, consider ELF headers on the 2nd kernel and the note objects,
-> > > >> memory chunks corresponding to PT_LOAD entries on the first kernel.
-> > > >> They are not consequtive on the old memory. So reampping them so
-> > > >> /proc/vmcore appears consequtive using existing remap_pfn_range()
-> > needs
-> > > >> some complicated work.
-> > > >
-> > > > Can't we call remap_pfn_range() multiple times. Once for each
-> sequential
-> > > > range of memory. /proc/vmcore already has list of contiguous memory
-> > areas.
-> > > > So we can parse user passed file offset and size and map into respective
-> > > > physical chunks and call rempa_pfn_range() on all these chunks.
-> > > >
-> > > > I think supporting mmap() both on /dev/oldmem as well as /proc/vmcore
-> > will
-> > > > be nice.
-> > > >
-> > > > Agreed that supporting mmap() on /proc/vmcore is more work as compared
-> > to
-> > > > /dev/oldmem but should be doable.
-> > > >
-> > >
-> > > The complication to support mmap() on /proc/vmcore lies in kdump
-> > > side. Objects exported from /proc/vmcore needs to be page-size aligned
-> > > on /proc/vmcore. This comes from the restriction of mmap() that
-> > > requires user-space address and physical address to be page-size
-> > > aligned.
-> > >
-> > > As I said in the description, objects implicitly referened by
-> > > /proc/vmcore are
-> > >
-> > >   - ELF headers,
-> > >   - NOTE objects (NT_PRSTATUS entries x cpus, VMCOREINFO), and
-> > >   - memory chunks x (the number of PT_LOAD entries).
-> > >
-> > > Note objects are scattered on old memory. They are exported as a
-> > > single NOTE entry from program headers, so they need to be gathered
-> at
-> > > the same location in the 2nd kernel starting from the page-size
-> > > aligned address.
-> > >
-> > > VMCOREINFO is about 1.5KB on 2.6.32 kernel. One NT_PRSTATUS is 355
-> > > bytes. Recent limit of NR_CPUS is 5120 on x86_64. So less than about
-> 2
-> > > MB is enough even on the worst case.
-> > >
-> > > Note that the format of /proc/vmcore need to change since offset of
-> > > each object need to be page-size aligned.
-> >
-> > Ok, got it. So everything needs to be page aligned and if size is not
-> > sufficient then we need a way to pad memory areas to make next object
-> > page aligned.
-> >
-> > To begin with supporting mmap on /dev/oldmem is fine with me. Once that
-> > gets in, it will be good to look at how to make all the individual items
-> > page aligned  so that mmap can be supported on /proc/vmcore.
-> 
-> I'm already beginning with making the patch set. At the time when I was
-> writing /dev/oldmem patch, I was confused that remap_pfn_range must have
-> been rewritten. But the complication is in fact simpler. I would post it
-> early next week.
-> 
-> By the way, the third argument pfn of remap_pfn_range is defined as unsigned
-> long, of 4 bytes on 32-bit x86. On PAE paging 32-bit linear addresses are
-> converted maximally to 52-bit physical addresses (4 PiB). We need 40 bits
-> to fully represent all page frame numbers over 52-bit physical memory space,
-> so 4 bytes is not enough. But it seems to me unlikely that there's users
-> who want to use huge memory with 32-bit kernel. I'll not support 32-bit
-> x86 at least on the next patch.
+At the risk of bikeshedding.... The point is that there are two
+queues, the process-wide queue or the per-thread queue. "Private" does
+not come into. And "Shared" is a little confusing. Adding those two
+terms into the mix is just confusing: it doesn't fit with the
+user-space view of signals.
 
-Also, remap_pfn_range is the function exported into kernel modules, so changing the third argument means changing ABI. Introducing a kind of remap_pfn_range_64 is a good idea? if there's someone needing the feature on 32-bit kernel.
+I'd greatly prefer names that really say what these things are. Thus:
 
-Thanks.
-HATAYAMA, Daisuke
+SFD_PROCESS_QUEUE + SFD_THREAD_QUEUE
+or
+SFD_PROCESS_WIDE_QUEUE + SFD_PER_THREAD_QUEUE
+or
+SFD_PROCESS_Q + SFD_THREAD_Q
+or
+[some consistent variation of the above]
 
+Thanks,
+
+Michael
+
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface"; http://man7.org/tlpi/
