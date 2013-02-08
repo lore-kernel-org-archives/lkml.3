@@ -1,142 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760301Ab3BHTGh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 14:06:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52555 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760252Ab3BHTGg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 14:06:36 -0500
-Date: Fri, 8 Feb 2013 17:06:16 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Benoit Thebaudeau <benoit.thebaudeau@advansee.com>,
-        David Hardeman <david@hardeman.nu>, Trilok Soni <tsoni@codeaurora.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH RESEND] media: rc: gpio-ir-recv: add support for device
- tree parsing
-Message-ID: <20130208170616.7a9d1800@redhat.com>
-In-Reply-To: <CABJ1b_TSH+Cz_aScW7bX7=cMW0Yr-Pe7p_BUbeb0DSUBJA_BdA@mail.gmail.com>
-References: <1359400023-25804-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1360137832-13086-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<51125F44.3050603@samsung.com>
-	<5112905E.3020400@gmail.com>
-	<20130208155707.65a0fbab@redhat.com>
-	<CABJ1b_TSH+Cz_aScW7bX7=cMW0Yr-Pe7p_BUbeb0DSUBJA_BdA@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1760313Ab3BHTIZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 14:08:25 -0500
+Received: from mail-vb0-f41.google.com ([209.85.212.41]:56931 "EHLO
+	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760288Ab3BHTIY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 14:08:24 -0500
+Date: Fri, 8 Feb 2013 14:08:19 -0500
+From: tmhikaru@gmail.com
+To: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: Linux 3.2.38
+Message-ID: <20130208190819.GA16894@roll>
+References: <1360160863.32217.30.camel@deadeye.wl.decadent.org.uk>
+ <20130207173630.GA8355@roll>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FL5UXtIhxfXey3p5"
+Content-Disposition: inline
+In-Reply-To: <20130207173630.GA8355@roll>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, 8 Feb 2013 19:12:31 +0100
-Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> escreveu:
 
-> On Fri, Feb 8, 2013 at 6:57 PM, Mauro Carvalho Chehab
-> <mchehab@redhat.com> wrote:
-> > Em Wed, 06 Feb 2013 18:18:22 +0100
-> > Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> escreveu:
-> >> On 02/06/2013 02:48 PM, Sylwester Nawrocki wrote:
-> >> > On 02/06/2013 09:03 AM, Sebastian Hesselbarth wrote:
-> >> >> This patch adds device tree parsing for gpio_ir_recv platform_data and
-> >> >> the mandatory binding documentation. It basically follows what we already
-> >> >> have for e.g. gpio_keys. All required device tree properties are OS
-> >> >> independent but optional properties allow linux specific support for rc
-> >> >> protocols and maps.
-> >> >>
-> >> >> There was a similar patch sent by Matus Ujhelyi but that discussion
-> >> >> died after the first reviews.
-> >> >>
-> >> >> Signed-off-by: Sebastian Hesselbarth<sebastian.hesselbarth@gmail.com>
-> >> >> ---
-> >> > ...
-> >> >> diff --git a/Documentation/devicetree/bindings/media/gpio-ir-receiver.txt b/Documentation/devicetree/bindings/media/gpio-ir-receiver.txt
-> >> >> new file mode 100644
-> >> >> index 0000000..937760c
-> >> >> --- /dev/null
-> >> >> +++ b/Documentation/devicetree/bindings/media/gpio-ir-receiver.txt
-> >> >> @@ -0,0 +1,20 @@
-> >> >> +Device-Tree bindings for GPIO IR receiver
-> >> >> +
-> >> >> +Required properties:
-> >> >> +  - compatible = "gpio-ir-receiver";
-> >> >> +  - gpios: OF device-tree gpio specification.
-> >> >> +
-> >> >> +Optional properties:
-> >> >> +  - linux,allowed-rc-protocols: Linux specific u64 bitmask of allowed
-> >> >> +      rc protocols.
-> >> >
-> >> > You likely need to specify in these bindings documentation which bit
-> >> > corresponds to which RC protocol.
-> >> >
-> >> > I'm not very familiar with the RC internals, but why it has to be
-> >> > specified statically in the device tree, when decoding seems to be
-> >> > mostly software defined ? I might be missing something though..
-> >>
-> >> Sylwester,
-> >>
-> >> I am not familiar with RC internals either. Maybe somebody with more
-> >> insight in media/rc can clarify the specific needs for the rc subsystem.
-> >> I was just transferring the DT support approach taken by gpio_keys to
-> >> gpio_ir_recv as I will be using it on mach-dove/cubox soon.
-> >
-> > The allowed rc protocol field are there for devices with hardware IR
-> > support, where only a limited set of remote protocols can be decoded.
-> >
-> > For software decoders RC_BIT_ALL is the proper setup. Users of course
-> > can change it via sysfs at runtime, or a software decoder may be
-> > disabled at compilation time by not selecting its CONFIG_* var.
-> 
-> Mauro,
-> 
-> thanks for the clarification! So for v2 of the patch, you all agree on removing
-> linux,allowed-rc-protocols from device node properties?
+--FL5UXtIhxfXey3p5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Yes.
-> 
-> >> > Couldn't this be configured at run time, with all protocols allowed
-> >> > as the default ?
-> >>
-> >> Actually, this is how the internal rc code works. If there is nothing
-> >> defined for allowed_protocols it assumes that all protocols are supported.
-> >> That is why above node properties are optional.
-> >>
-> >> About the binding documentation of allowed_protocols, rc_map, or the
-> >> default behavior of current linux code, I don't think they will stay
-> >> in-sync for long.
-> >
-> > Why not? The rc_map name is used either by Kernelspace or by Userspace,
-> > in order to provide the IR keycode name that matches a given keytable.
-> >
-> > There's no plans to change it, even in the long term.
-> 
-> Actually, I wasn't referring to changing names or bitmasks but updating
-> the binding documentation with new allowed protocols or supported map
-> names.
-> 
-> For linux,rc-map-name property it should be enough to just write that it
-> relates to linux rc subsystem rc_map name - how to actually
-> set it to a useful name is documented in rc subsystem.
+	I just wanted to give a heads up so you knew where I'm at and that I
+haven't forgotten to do the bisection. Well, I'm doing the bisection - and
+it's having me chase wild geese. This bug is apparently not always occuring
+when it's possible for it to, confusing the issue.
 
-It should be one of the names that are there at include/media/rc-map.h.
+	Currently I'm recompiling 3.2.37 from scratch to ensure that my
+environment or hardware hasn't changed somehow since I originally built it
+and is causing some of my kernel compiles to miscompile or something.  If
+that build turns out okay I'll try bisecting again and see if I get anywhere
+different than before.
 
-> And if the
-> property is not set at all, DT parsing in gpio_ir_recv assumes the
-> subsystem (or gpio_ir_recv platform) default, IIRC "rc-none".
+Despite it obviously leading off into wild goose chasing territory, I think
+it's possible this could be illuminating for someone with more experience
+with bisect than I, so I'm including the bisect log below.
 
-The right default should be "rc-empty", but please use the macro RC_MAP_EMPTY
-instead.
+git bisect start
+# bad: [8eedd52017a07a5bae2aded2b5023bfba5971af9] Linux 3.2.38
+git bisect bad 8eedd52017a07a5bae2aded2b5023bfba5971af9
+# good: [2d18772602ba45629dfd4ffe1878ecb26fb3d3ed] Linux 3.2.37
+git bisect good 2d18772602ba45629dfd4ffe1878ecb26fb3d3ed
+# good: [157bb66c87286abc3dad2ed19a8cfb130ef24573] USB: option: add TP-LINK HSUPA Modem MA180
+git bisect good 157bb66c87286abc3dad2ed19a8cfb130ef24573
+# good: [6fad7bfb8aef9a8688d3d3b3ea917b3c7d1fc8b7] can: ti_hecc: fix invalid error codes
+git bisect good 6fad7bfb8aef9a8688d3d3b3ea917b3c7d1fc8b7
+# good: [8bdb5d1a2d352d58ac99be529bb8c006dfb9be83] sd: Reshuffle init_sd to avoid crash
+git bisect good 8bdb5d1a2d352d58ac99be529bb8c006dfb9be83
+# bad: [8a6d0db2f6a06c5fdfb7a208002d0f9961d1ad41] intel-iommu: Prevent devices with RMRRs from being placed into SI Domain
+git bisect bad 8a6d0db2f6a06c5fdfb7a208002d0f9961d1ad41
+# bad: [756a6d71c4f566f840cf4e04fe2540e6927d2613] x86: Use enum instead of literals for trap values
+git bisect bad 756a6d71c4f566f840cf4e04fe2540e6927d2613
+# good: [9a1f08a1a192f9177d7063d903773aed800b840f] drivers/firmware/dmi_scan.c: fetch dmi version from SMBIOS if it exists
+git bisect good 9a1f08a1a192f9177d7063d903773aed800b840f
+# bad: [a423a71dafbcd05bc263f9eb42c142e4b869ed95] drm/i915: Implement WaDisableHiZPlanesWhenMSAAEnabled
+git bisect bad a423a71dafbcd05bc263f9eb42c142e4b869ed95
 
-> I'll respin a v2 without allowed-protocols property soon.
-> 
-> Sebastian
+Now, here's the thing - that last bad entry is the one that bisect is
+convinced is the bad patch. Problem is, I don't have that hardware, so it
+strains belief that it could be the cause. I even went so far as to checkout
+a clean copy of 3.2.38 and reverse apply that particular patch for testing
+on top of it - and I still have the problem.
 
+Any suggestions on how to proceed would be appreciated in case I've missed
+some git magic that would make this easier.
 
--- 
+Tim McGrath
 
-Cheers,
-Mauro
+--FL5UXtIhxfXey3p5
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQEVAwUBURVNI5EncCrqzVruAQK8lAf/cnSywDM0aTNYHmhlTidyxkAGakLBA120
+RX9KhsWXIepyZsXvcdQeRsgZK/94dRMmKo0slJ6IEy10BOza/PLV7jfL4+vkRWG3
+yt5pXB5k/Sx0vJPb9IRAI6q04ADy0NiaEQ7yFbDsyr0KRFhwpg8BQPrj9HGDTjCF
+bOg5hHuT5krlW4+VINSTpBLkdWKjWr7PMwPVpzW+bGZrlHn8Kml1Jj/cxpcfn8+N
+M/+4Odbq197YTz+8xhJrjh066CVGqsS612el7ytXCI0/GvrvjF7J3fPDpwPf5p+7
+GheQI8YdrjqF1UXcIvui/COxM735A2D9/wnkNZQoIvL5I3cIBUDXXA==
+=ajhw
+-----END PGP SIGNATURE-----
+
+--FL5UXtIhxfXey3p5--
