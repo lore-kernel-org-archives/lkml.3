@@ -1,86 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947206Ab3BHVOm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 16:14:42 -0500
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:50469 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1947126Ab3BHVOk (ORCPT
+	id S1947209Ab3BHVPH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 16:15:07 -0500
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:34659 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1947139Ab3BHVPF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 16:14:40 -0500
+	Fri, 8 Feb 2013 16:15:05 -0500
 MIME-Version: 1.0
-In-Reply-To: <1360351703-20571-26-git-send-email-yinghai@kernel.org>
-References: <1360351703-20571-1-git-send-email-yinghai@kernel.org> <1360351703-20571-26-git-send-email-yinghai@kernel.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 8 Feb 2013 14:14:20 -0700
-Message-ID: <CAErSpo4iA17jh5rw05q=uaKOyMKesrPnxYrN2EvqWT_tGmE_FQ@mail.gmail.com>
-Subject: Re: [PATCH v2 25/26] PCI: Disable mem in the ioapic removing path
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20130208145539.GC30334@gmail.com>
+References: <alpine.DEB.2.02.1302041002430.6063@chino.kir.corp.google.com>
+ <20130204184436.GA13256@gmail.com> <alpine.DEB.2.02.1302041053330.6063@chino.kir.corp.google.com>
+ <20130204191408.GA32081@kroah.com> <20130204191334.GB14837@gmail.com>
+ <CAOJsxLFy7K0cY-8SH4dXs=agYqCN8wW0eC2tQxFxfV8cf7uWqg@mail.gmail.com>
+ <alpine.DEB.2.02.1302061209450.18172@chino.kir.corp.google.com>
+ <20130207080236.ae38366537cf3f13b9668606@canb.auug.org.au>
+ <20130206214646.GA28135@gmail.com> <20130208084029.d7d97d6e26580a5512712f91@canb.auug.org.au>
+ <20130208145539.GC30334@gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 9 Feb 2013 08:14:43 +1100
+X-Google-Sender-Auth: k_VEOy1s4QdgAnYwIRfCtgmy8Hg
+Message-ID: <CA+55aFz9ERvaFayTy8QCtfi610Bt_r0GcOs68UNggJTHdY4oaQ@mail.gmail.com>
+Subject: Re: kvmtool tree (Was: Re: [patch] config: fix make kvmconfig)
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        David Woodhouse <dwmw2@infradead.org>, Michal Marek <mmarek@suse.cz>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 8, 2013 at 12:28 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> For physical hot plug should be ok, but for remove/rescan path will
-> need us to disable that.
+On Sat, Feb 9, 2013 at 1:55 AM, Ingo Molnar <mingo@kernel.org> wrote:
 >
-> otherwise rescan mmio resource for pci ioapic device will not be
-> sized and allocated, aka skiped.
+> I'll remove it if Linus insists on it, but I think you guys are
+> putting form before substance and utility :-(
 
-When we scan other PCI devices, we can size memory BARs even if
-PCI_COMMAND_MEMORY is already set.  So there must be something
-different about IOAPICs?  Or maybe it's something different about
-rescan vs. the initial scan?
+No. Your pull requests are just illogical. I have yet to see a single
+reason why it should be merged.
 
-> For ioapic_probe:pci_enable_device will not enable the device
-> correctly, and will bail out early.
+I *thought* "ease of use" could be a reason, and then people posted
+five-liner scripts to give some of the other virtual boxes the same
+kind of interface.
 
-Exactly where and why do we bail out early?  The only early bail out I
-see is where __pci_enable_device_flags() returns if "dev->enable_cnt >
-1".  Is that what you mean?
+Avoiding five lines of shell script is not a reason to pull a project
+into the kernel.
 
-> So we can just disable mmio for all removing case, and that will not hurt
-> real hotplug path.
+> tools/kvm/ is a useful utility to kernel development, that in
+> just this past cycle was used as an incubator to:
 
-> Signed-off-by: <yinghai@kernel.org>
-> ---
->  drivers/pci/ioapic.c |   13 +++++++++++++
->  1 file changed, 13 insertions(+)
->
-> diff --git a/drivers/pci/ioapic.c b/drivers/pci/ioapic.c
-> index 3c6bbdd..8dacfd0 100644
-> --- a/drivers/pci/ioapic.c
-> +++ b/drivers/pci/ioapic.c
-> @@ -88,6 +88,17 @@ exit_free:
->         return -ENODEV;
->  }
->
-> +static void pci_disable_device_mem(struct pci_dev *dev)
-> +{
-> +       u16 pci_command;
-> +
-> +       pci_read_config_word(dev, PCI_COMMAND, &pci_command);
-> +       if (pci_command & PCI_COMMAND_MEMORY) {
-> +               pci_command &= ~PCI_COMMAND_MEMORY;
-> +               pci_write_config_word(dev, PCI_COMMAND, pci_command);
-> +       }
-> +}
-> +
->  static void ioapic_remove(struct pci_dev *dev)
->  {
->         struct ioapic *ioapic = pci_get_drvdata(dev);
-> @@ -95,6 +106,8 @@ static void ioapic_remove(struct pci_dev *dev)
->         acpi_unregister_ioapic(ioapic->handle, ioapic->gsi_base);
->         pci_release_region(dev, 0);
->         pci_disable_device(dev);
-> +       /* need to disable it, otherwise remove/rescan will not work */
-> +       pci_disable_device_mem(dev);
->         kfree(ioapic);
->  }
->
-> --
-> 1.7.10.4
->
+That's total bullshit.
+
+It could be useful whether it is merged into the kernel or not.
+
+"git" is a hell of a lot more useful utility for kernel development,
+to the point that practically we couldn't do without it any more, and
+it isn't merged into the kernel. It's a separate project with a
+separate life, and it is *better* for it. The same goes for all the
+tools that everybody uses every day for kernel development, often
+without even thinking about them.
+
+So "utility to kernel development" is not a reason for merging it into
+the kernel. NOT AT ALL.
+
+> *Please* don't try to harm useful code just for the heck of it.
+
+Again, total *bullshit*. Right now, the whole "attach the kvmtool to
+the kernel as a remora" doesn't make any sense at all, and not merging
+it doesn't harm anything AT ALL. Quite the reverse.
+
+The fact that kvmtool isn't available as a standalone project probably
+keeps people actively from using it. You can't just fetch kvmtool. You
+have to fetch the kernel and kvmtool, and if you're a kernel developer
+you either have to make a whole new kernel tree for it (which is
+stupid) or merge it into your normal kernel tree that has development
+that has nothing to do with kvmtool (which is stupid AND F*CKING
+INSANE)
+
+> Please stop this silliness, IMO it's not constructive at all ...
+
+Ingo, it's not us being silly, it is *you*.
+
+What the heck is the advantage of merging it into the kernel? It has
+never ever been explained.
+
+This is not like "perf", where there wasn't any alternatives, and
+oprofile had shown over many many years that the situation wasn't
+improving: it was only getting worse, and more disconnected from the
+actual capabilities of the hardware.
+
+But kvmtool is no "perf". There are other virtual boxes, and rather
+than being limited, they are more capable! The selling tool of kvmtool
+was never that it did something particularly magical, it was always
+that it did less, and was easier to use. But that does not in any way
+mean "should be merged". You can do less and be easier to use and
+stand on your own legs.
+
+So here, let me state it very very clearly: I will not be merging
+kvmtool. It's not about "useful code". It's not about the project
+keeping to improve. Both of those would seem to be *better* outside
+the kernel, where there isn't that artificial and actually harmful
+tie-in.
+
+In other words, I don't see *any* advantage to merging kvmtool. I
+think merging it would be an active mistake, and would just tie two
+projects together that just shouldn't be tied together.
+
+So nobody is "hurting useful code", except perhaps you.
+
+Explain to me why I'm wrong. I don't think you can. You certainly
+haven't so far.
+
+               Linus
