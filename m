@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946388Ab3BHOi2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 09:38:28 -0500
-Received: from mail-we0-f169.google.com ([74.125.82.169]:52756 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753386Ab3BHOi0 (ORCPT
+	id S1946525Ab3BHOif (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 09:38:35 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:54779 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946442Ab3BHOia (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 09:38:26 -0500
+	Fri, 8 Feb 2013 09:38:30 -0500
 From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
 To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
         Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 3/7] HID: Kconfig: Remove explicit transport layer dependencies
-Date: Fri,  8 Feb 2013 15:37:32 +0100
-Message-Id: <1360334256-22127-4-git-send-email-benjamin.tissoires@gmail.com>
+Subject: [PATCH 5/7] HID: use hid_hw_wait() instead of direct call to usbhid
+Date: Fri,  8 Feb 2013 15:37:34 +0100
+Message-Id: <1360334256-22127-6-git-send-email-benjamin.tissoires@gmail.com>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1360334256-22127-1-git-send-email-benjamin.tissoires@gmail.com>
 References: <1360334256-22127-1-git-send-email-benjamin.tissoires@gmail.com>
@@ -23,338 +23,231 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most HID drivers (rightfully) only depend on the HID bus, not the
-specific transport layer. Remove such dependencies where applicable.
+This removes most of the dependencies between hid drivers and usbhid.
 
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
 ---
- drivers/hid/Kconfig          | 66 ++++++++++++++++++++++----------------------
- drivers/hid/hid-apple.c      |  1 -
- drivers/hid/hid-magicmouse.c |  1 -
- drivers/hid/hid-speedlink.c  |  2 --
- 4 files changed, 33 insertions(+), 37 deletions(-)
+ drivers/hid/Kconfig            |  2 +-
+ drivers/hid/hid-ntrig.c        |  4 ++--
+ drivers/hid/hid-picolcd_fb.c   |  5 ++---
+ drivers/hid/hid-sensor-hub.c   |  5 ++---
+ drivers/hid/usbhid/hid-core.c  |  3 +--
+ drivers/hid/usbhid/hid-pidff.c | 16 ++++++++--------
+ drivers/hid/usbhid/hiddev.c    |  4 ++--
+ drivers/hid/usbhid/usbhid.h    |  1 -
+ 8 files changed, 18 insertions(+), 22 deletions(-)
 
 diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index 69ab7c2..581ca9f 100644
+index d60a427..f517d4a 100644
 --- a/drivers/hid/Kconfig
 +++ b/drivers/hid/Kconfig
-@@ -92,7 +92,7 @@ menu "Special HID drivers"
+@@ -479,7 +479,7 @@ config HID_PETALYNX
  
- config HID_A4TECH
- 	tristate "A4 tech mice" if EXPERT
--	depends on USB_HID
-+	depends on HID
- 	default !EXPERT
- 	---help---
- 	Support for A4 tech X5 and WOP-35 / Trust 450L mice.
-@@ -113,7 +113,7 @@ config HID_ACRUX_FF
- 
- config HID_APPLE
- 	tristate "Apple {i,Power,Mac}Books" if EXPERT
--	depends on (USB_HID || BT_HIDP)
-+	depends on HID
- 	default !EXPERT
- 	---help---
- 	Support for some Apple devices which less or more break
-@@ -124,27 +124,27 @@ config HID_APPLE
- 
- config HID_AUREAL
- 	tristate "Aureal"
+ config HID_PICOLCD
+ 	tristate "PicoLCD (graphic version)"
 -	depends on USB_HID
 +	depends on HID
  	---help---
- 	Support for Aureal Cy se W-01RN Remote Controller and other Aureal derived remotes.
+ 	  This provides support for Minibox PicoLCD devices, currently
+ 	  only the graphical ones are supported.
+diff --git a/drivers/hid/hid-ntrig.c b/drivers/hid/hid-ntrig.c
+index a722599..e3c2e52 100644
+--- a/drivers/hid/hid-ntrig.c
++++ b/drivers/hid/hid-ntrig.c
+@@ -119,7 +119,7 @@ static inline int ntrig_get_mode(struct hid_device *hdev)
+ 		return -EINVAL;
  
- config HID_BELKIN
- 	tristate "Belkin Flip KVM and Wireless keyboard" if EXPERT
--	depends on USB_HID
-+	depends on HID
- 	default !EXPERT
- 	---help---
- 	Support for Belkin Flip KVM and Wireless keyboard.
+ 	hid_hw_request(hdev, report, HID_REQ_GET_REPORT);
+-	usbhid_wait_io(hdev);
++	hid_hw_wait(hdev);
+ 	return (int)report->field[0]->value[0];
+ }
  
- config HID_CHERRY
- 	tristate "Cherry Cymotion keyboard" if EXPERT
--	depends on USB_HID
-+	depends on HID
- 	default !EXPERT
- 	---help---
- 	Support for Cherry Cymotion keyboard.
+@@ -938,7 +938,7 @@ static int ntrig_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 	if (report) {
+ 		/* Let the device settle to ensure the wakeup message gets
+ 		 * through */
+-		usbhid_wait_io(hdev);
++		hid_hw_wait(hdev);
+ 		hid_hw_request(hdev, report, HID_REQ_GET_REPORT);
  
- config HID_CHICONY
- 	tristate "Chicony Tactical pad" if EXPERT
--	depends on USB_HID
-+	depends on HID
- 	default !EXPERT
- 	---help---
- 	Support for Chicony Tactical pad.
-@@ -166,7 +166,7 @@ config HID_PRODIKEYS
- 
- config HID_CYPRESS
- 	tristate "Cypress mouse and barcode readers" if EXPERT
--	depends on USB_HID
-+	depends on HID
- 	default !EXPERT
- 	---help---
- 	Support for cypress mouse and barcode readers.
-@@ -202,13 +202,13 @@ config HID_EMS_FF
- 
- config HID_ELECOM
- 	tristate "ELECOM BM084 bluetooth mouse"
--	depends on BT_HIDP
-+	depends on HID
- 	---help---
- 	Support for the ELECOM BM084 (bluetooth mouse).
- 
- config HID_EZKEY
- 	tristate "Ezkey BTC 8193 keyboard" if EXPERT
--	depends on USB_HID
-+	depends on HID
- 	default !EXPERT
- 	---help---
- 	Support for Ezkey BTC 8193 keyboard.
-@@ -231,7 +231,7 @@ config HOLTEK_FF
- 
- config HID_KEYTOUCH
- 	tristate "Keytouch HID devices"
--	depends on USB_HID
-+	depends on HID
- 	---help---
- 	Support for Keytouch HID devices not fully compliant with
- 	the specification. Currently supported:
-@@ -249,25 +249,25 @@ config HID_KYE
- 
- config HID_UCLOGIC
- 	tristate "UC-Logic"
--	depends on USB_HID
-+	depends on HID
- 	---help---
- 	Support for UC-Logic tablets.
- 
- config HID_WALTOP
- 	tristate "Waltop"
--	depends on USB_HID
-+	depends on HID
- 	---help---
- 	Support for Waltop tablets.
- 
- config HID_GYRATION
- 	tristate "Gyration remote control"
--	depends on USB_HID
-+	depends on HID
- 	---help---
- 	Support for Gyration remote control.
- 
- config HID_ICADE
- 	tristate "ION iCade arcade controller"
--	depends on BT_HIDP
-+	depends on HID
- 	---help---
- 	Support for the ION iCade arcade controller to work as a joystick.
- 
-@@ -276,20 +276,20 @@ config HID_ICADE
- 
- config HID_TWINHAN
- 	tristate "Twinhan IR remote control"
--	depends on USB_HID
-+	depends on HID
- 	---help---
- 	Support for Twinhan IR remote control.
- 
- config HID_KENSINGTON
- 	tristate "Kensington Slimblade Trackball" if EXPERT
--	depends on USB_HID
-+	depends on HID
- 	default !EXPERT
- 	---help---
- 	Support for Kensington Slimblade Trackball.
- 
- config HID_LCPOWER
- 	tristate "LC-Power"
--	depends on USB_HID
-+	depends on HID
- 	---help---
- 	Support for LC-Power RC1000MCE RF remote control.
- 
-@@ -308,7 +308,7 @@ config HID_LENOVO_TPKBD
- 
- config HID_LOGITECH
- 	tristate "Logitech devices" if EXPERT
--	depends on USB_HID
-+	depends on HID
- 	default !EXPERT
- 	---help---
- 	Support for Logitech devices that are not fully compliant with HID standard.
-@@ -374,7 +374,7 @@ config LOGIWHEELS_FF
- 
- config HID_MAGICMOUSE
- 	tristate "Apple MagicMouse multi-touch support"
--	depends on BT_HIDP
-+	depends on HID
- 	---help---
- 	Support for the Apple Magic Mouse multi-touch.
- 
-@@ -383,14 +383,14 @@ config HID_MAGICMOUSE
- 
- config HID_MICROSOFT
- 	tristate "Microsoft non-fully HID-compliant devices" if EXPERT
--	depends on USB_HID
-+	depends on HID
- 	default !EXPERT
- 	---help---
- 	Support for Microsoft devices that are not fully compliant with HID standard.
- 
- config HID_MONTEREY
- 	tristate "Monterey Genius KB29E keyboard" if EXPERT
--	depends on USB_HID
-+	depends on HID
- 	default !EXPERT
- 	---help---
- 	Support for Monterey Genius KB29E.
-@@ -445,7 +445,7 @@ config HID_NTRIG
- 
- config HID_ORTEK
- 	tristate "Ortek PKB-1700/WKB-2000/Skycable wireless keyboard and mouse trackpad"
--	depends on USB_HID
-+	depends on HID
- 	---help---
- 	There are certain devices which have LogicalMaximum wrong in the keyboard
- 	usage page of their report descriptor. The most prevailing ones so far
-@@ -473,7 +473,7 @@ config PANTHERLORD_FF
- 
- config HID_PETALYNX
- 	tristate "Petalynx Maxter remote control"
--	depends on USB_HID
-+	depends on HID
- 	---help---
- 	Support for Petalynx Maxter remote control.
- 
-@@ -545,14 +545,14 @@ config HID_PICOLCD_CIR
- 
- config HID_PRIMAX
- 	tristate "Primax non-fully HID-compliant devices"
--	depends on USB_HID
-+	depends on HID
- 	---help---
- 	Support for Primax devices that are not fully compliant with the
- 	HID standard.
- 
- config HID_PS3REMOTE
- 	tristate "Sony PS3 BD Remote Control"
--	depends on BT_HIDP
-+	depends on HID
- 	---help---
- 	Support for the Sony PS3 Blue-ray Disk Remote Control and Logitech
- 	Harmony Adapter for PS3, which connect over Bluetooth.
-@@ -569,7 +569,7 @@ config HID_ROCCAT
- 
- config HID_SAITEK
- 	tristate "Saitek non-fully HID-compliant devices"
--	depends on USB_HID
-+	depends on HID
- 	---help---
- 	Support for Saitek devices that are not fully compliant with the
- 	HID standard.
-@@ -578,7 +578,7 @@ config HID_SAITEK
- 
- config HID_SAMSUNG
- 	tristate "Samsung InfraRed remote control or keyboards"
--	depends on USB_HID
-+	depends on HID
- 	---help---
- 	Support for Samsung InfraRed remote control or keyboards.
- 
-@@ -604,7 +604,7 @@ config HID_STEELSERIES
- 
- config HID_SUNPLUS
- 	tristate "Sunplus wireless desktop"
--	depends on USB_HID
-+	depends on HID
- 	---help---
- 	Support for Sunplus wireless desktop.
- 
-@@ -650,13 +650,13 @@ config SMARTJOYPLUS_FF
- 
- config HID_TIVO
- 	tristate "TiVo Slide Bluetooth remote control support"
--	depends on (USB_HID || BT_HIDP)
-+	depends on HID
- 	---help---
- 	Say Y if you have a TiVo Slide Bluetooth remote control.
- 
- config HID_TOPSEED
- 	tristate "TopSeed Cyberlink, BTC Emprex, Conceptronic remote control support"
--	depends on USB_HID
-+	depends on HID
- 	---help---
- 	Say Y if you have a TopSeed Cyberlink or BTC Emprex or Conceptronic
- 	CLLRCMCE remote control.
-@@ -679,7 +679,7 @@ config THRUSTMASTER_FF
- 
- config HID_WACOM
- 	tristate "Wacom Bluetooth devices support"
--	depends on BT_HIDP
-+	depends on HID
- 	depends on LEDS_CLASS
- 	select POWER_SUPPLY
- 	---help---
-@@ -687,7 +687,7 @@ config HID_WACOM
- 
- config HID_WIIMOTE
- 	tristate "Nintendo Wii Remote support"
--	depends on BT_HIDP
-+	depends on HID
- 	depends on LEDS_CLASS
- 	select POWER_SUPPLY
- 	select INPUT_FF_MEMLESS
-@@ -719,7 +719,7 @@ config ZEROPLUS_FF
- 
- config HID_ZYDACRON
- 	tristate "Zydacron remote control support"
--	depends on USB_HID
-+	depends on HID
- 	---help---
- 	Support for Zydacron remote control.
- 
-diff --git a/drivers/hid/hid-apple.c b/drivers/hid/hid-apple.c
-index 320a958..9e0c4fbb 100644
---- a/drivers/hid/hid-apple.c
-+++ b/drivers/hid/hid-apple.c
-@@ -21,7 +21,6 @@
- #include <linux/hid.h>
- #include <linux/module.h>
- #include <linux/slab.h>
--#include <linux/usb.h>
- 
- #include "hid-ids.h"
- 
-diff --git a/drivers/hid/hid-magicmouse.c b/drivers/hid/hid-magicmouse.c
-index f7f113b..ef89573 100644
---- a/drivers/hid/hid-magicmouse.c
-+++ b/drivers/hid/hid-magicmouse.c
+ 		/*
+diff --git a/drivers/hid/hid-picolcd_fb.c b/drivers/hid/hid-picolcd_fb.c
+index 98f61de..591f6b2 100644
+--- a/drivers/hid/hid-picolcd_fb.c
++++ b/drivers/hid/hid-picolcd_fb.c
 @@ -19,7 +19,6 @@
- #include <linux/input/mt.h>
- #include <linux/module.h>
- #include <linux/slab.h>
--#include <linux/usb.h>
  
- #include "hid-ids.h"
- 
-diff --git a/drivers/hid/hid-speedlink.c b/drivers/hid/hid-speedlink.c
-index e94371a..a2f587d 100644
---- a/drivers/hid/hid-speedlink.c
-+++ b/drivers/hid/hid-speedlink.c
-@@ -16,10 +16,8 @@
- #include <linux/device.h>
  #include <linux/hid.h>
- #include <linux/module.h>
--#include <linux/usb.h>
- 
- #include "hid-ids.h"
+ #include <linux/vmalloc.h>
 -#include "usbhid/usbhid.h"
  
- static const struct hid_device_id speedlink_devices[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_X_TENSIONS, USB_DEVICE_ID_SPEEDLINK_VAD_CEZANNE)},
+ #include <linux/fb.h>
+ #include <linux/module.h>
+@@ -269,7 +268,7 @@ static void picolcd_fb_update(struct fb_info *info)
+ 				mutex_unlock(&info->lock);
+ 				if (!data)
+ 					return;
+-				usbhid_wait_io(data->hdev);
++				hid_hw_wait(data->hdev);
+ 				mutex_lock(&info->lock);
+ 				n = 0;
+ 			}
+@@ -287,7 +286,7 @@ static void picolcd_fb_update(struct fb_info *info)
+ 		spin_unlock_irqrestore(&fbdata->lock, flags);
+ 		mutex_unlock(&info->lock);
+ 		if (data)
+-			usbhid_wait_io(data->hdev);
++			hid_hw_wait(data->hdev);
+ 		return;
+ 	}
+ out:
+diff --git a/drivers/hid/hid-sensor-hub.c b/drivers/hid/hid-sensor-hub.c
+index 569cc07..3731139 100644
+--- a/drivers/hid/hid-sensor-hub.c
++++ b/drivers/hid/hid-sensor-hub.c
+@@ -18,7 +18,6 @@
+  */
+ #include <linux/device.h>
+ #include <linux/hid.h>
+-#include "usbhid/usbhid.h"
+ #include <linux/module.h>
+ #include <linux/slab.h>
+ #include <linux/mfd/core.h>
+@@ -204,7 +203,7 @@ int sensor_hub_set_feature(struct hid_sensor_hub_device *hsdev, u32 report_id,
+ 	}
+ 	hid_set_field(report->field[field_index], 0, value);
+ 	hid_hw_request(hsdev->hdev, report, HID_REQ_SET_REPORT);
+-	usbhid_wait_io(hsdev->hdev);
++	hid_hw_wait(hsdev->hdev);
+ 
+ done_proc:
+ 	mutex_unlock(&data->mutex);
+@@ -227,7 +226,7 @@ int sensor_hub_get_feature(struct hid_sensor_hub_device *hsdev, u32 report_id,
+ 		goto done_proc;
+ 	}
+ 	hid_hw_request(hsdev->hdev, report, HID_REQ_GET_REPORT);
+-	usbhid_wait_io(hsdev->hdev);
++	hid_hw_wait(hsdev->hdev);
+ 	*value = report->field[field_index]->value[0];
+ 
+ done_proc:
+diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
+index da68687..420466b 100644
+--- a/drivers/hid/usbhid/hid-core.c
++++ b/drivers/hid/usbhid/hid-core.c
+@@ -705,7 +705,7 @@ static int usb_hidinput_input_event(struct input_dev *dev, unsigned int type, un
+ 	return 0;
+ }
+ 
+-int usbhid_wait_io(struct hid_device *hid)
++static int usbhid_wait_io(struct hid_device *hid)
+ {
+ 	struct usbhid_device *usbhid = hid->driver_data;
+ 
+@@ -719,7 +719,6 @@ int usbhid_wait_io(struct hid_device *hid)
+ 
+ 	return 0;
+ }
+-EXPORT_SYMBOL_GPL(usbhid_wait_io);
+ 
+ static int hid_set_idle(struct usb_device *dev, int ifnum, int report, int idle)
+ {
+diff --git a/drivers/hid/usbhid/hid-pidff.c b/drivers/hid/usbhid/hid-pidff.c
+index 0f1efa3..10b6167 100644
+--- a/drivers/hid/usbhid/hid-pidff.c
++++ b/drivers/hid/usbhid/hid-pidff.c
+@@ -471,13 +471,13 @@ static int pidff_request_effect_upload(struct pidff_device *pidff, int efnum)
+ 
+ 	pidff->block_load[PID_EFFECT_BLOCK_INDEX].value[0] = 0;
+ 	pidff->block_load_status->value[0] = 0;
+-	usbhid_wait_io(pidff->hid);
++	hid_hw_wait(pidff->hid);
+ 
+ 	for (j = 0; j < 60; j++) {
+ 		hid_dbg(pidff->hid, "pid_block_load requested\n");
+ 		hid_hw_request(pidff->hid, pidff->reports[PID_BLOCK_LOAD],
+ 				HID_REQ_GET_REPORT);
+-		usbhid_wait_io(pidff->hid);
++		hid_hw_wait(pidff->hid);
+ 		if (pidff->block_load_status->value[0] ==
+ 		    pidff->status_id[PID_BLOCK_LOAD_SUCCESS]) {
+ 			hid_dbg(pidff->hid, "device reported free memory: %d bytes\n",
+@@ -551,7 +551,7 @@ static int pidff_erase_effect(struct input_dev *dev, int effect_id)
+ 		effect_id, pidff->pid_id[effect_id]);
+ 	/* Wait for the queue to clear. We do not want a full fifo to
+ 	   prevent the effect removal. */
+-	usbhid_wait_io(pidff->hid);
++	hid_hw_wait(pidff->hid);
+ 	pidff_playback_pid(pidff, pid_id, 0);
+ 	pidff_erase_pid(pidff, pid_id);
+ 
+@@ -1159,18 +1159,18 @@ static void pidff_reset(struct pidff_device *pidff)
+ 	pidff->device_control->value[0] = pidff->control_id[PID_RESET];
+ 	/* We reset twice as sometimes hid_wait_io isn't waiting long enough */
+ 	hid_hw_request(hid, pidff->reports[PID_DEVICE_CONTROL], HID_REQ_SET_REPORT);
+-	usbhid_wait_io(hid);
++	hid_hw_wait(hid);
+ 	hid_hw_request(hid, pidff->reports[PID_DEVICE_CONTROL], HID_REQ_SET_REPORT);
+-	usbhid_wait_io(hid);
++	hid_hw_wait(hid);
+ 
+ 	pidff->device_control->value[0] =
+ 		pidff->control_id[PID_ENABLE_ACTUATORS];
+ 	hid_hw_request(hid, pidff->reports[PID_DEVICE_CONTROL], HID_REQ_SET_REPORT);
+-	usbhid_wait_io(hid);
++	hid_hw_wait(hid);
+ 
+ 	/* pool report is sometimes messed up, refetch it */
+ 	hid_hw_request(hid, pidff->reports[PID_POOL], HID_REQ_GET_REPORT);
+-	usbhid_wait_io(hid);
++	hid_hw_wait(hid);
+ 
+ 	if (pidff->pool[PID_SIMULTANEOUS_MAX].value) {
+ 		while (pidff->pool[PID_SIMULTANEOUS_MAX].value[0] < 2) {
+@@ -1183,7 +1183,7 @@ static void pidff_reset(struct pidff_device *pidff)
+ 			hid_dbg(pidff->hid, "pid_pool requested again\n");
+ 			hid_hw_request(hid, pidff->reports[PID_POOL],
+ 					  HID_REQ_GET_REPORT);
+-			usbhid_wait_io(hid);
++			hid_hw_wait(hid);
+ 		}
+ 	}
+ }
+diff --git a/drivers/hid/usbhid/hiddev.c b/drivers/hid/usbhid/hiddev.c
+index 430d2a9..2f1ddca 100644
+--- a/drivers/hid/usbhid/hiddev.c
++++ b/drivers/hid/usbhid/hiddev.c
+@@ -706,7 +706,7 @@ static long hiddev_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 			break;
+ 
+ 		hid_hw_request(hid, report, HID_REQ_GET_REPORT);
+-		usbhid_wait_io(hid);
++		hid_hw_wait(hid);
+ 
+ 		r = 0;
+ 		break;
+@@ -725,7 +725,7 @@ static long hiddev_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 			break;
+ 
+ 		hid_hw_request(hid, report, HID_REQ_SET_REPORT);
+-		usbhid_wait_io(hid);
++		hid_hw_wait(hid);
+ 
+ 		r = 0;
+ 		break;
+diff --git a/drivers/hid/usbhid/usbhid.h b/drivers/hid/usbhid/usbhid.h
+index aa1d5ff..dbb6af6 100644
+--- a/drivers/hid/usbhid/usbhid.h
++++ b/drivers/hid/usbhid/usbhid.h
+@@ -34,7 +34,6 @@
+ #include <linux/input.h>
+ 
+ /*  API provided by hid-core.c for USB HID drivers */
+-int usbhid_wait_io(struct hid_device* hid);
+ void usbhid_close(struct hid_device *hid);
+ int usbhid_open(struct hid_device *hid);
+ void usbhid_init_reports(struct hid_device *hid);
 -- 
 1.8.1
 
