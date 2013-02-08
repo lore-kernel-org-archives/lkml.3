@@ -1,124 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947322Ab3BHXRJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 18:17:09 -0500
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:59324 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757205Ab3BHXRH (ORCPT
+	id S1947340Ab3BHXS5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 18:18:57 -0500
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:41781 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1947302Ab3BHXS4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 18:17:07 -0500
+	Fri, 8 Feb 2013 18:18:56 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130208202550.GB9817@redhat.com>
-References: <1359962232-20811-1-git-send-email-walken@google.com>
-	<1359962232-20811-4-git-send-email-walken@google.com>
-	<20130208202550.GB9817@redhat.com>
-Date: Fri, 8 Feb 2013 15:17:05 -0800
-Message-ID: <CANN689EySbVO7Qc5zhpO4A2AazADD8+yx_Mg1Td5KxhxWvGGrw@mail.gmail.com>
-Subject: Re: [PATCH v2 3/3] mm: accelerate munlock() treatment of THP pages
-From: Michel Lespinasse <walken@google.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <CAE9FiQX6yLebtOVCRV7GDwxfJFPpVxBKJO_VJ_ndA-OjBD4LRg@mail.gmail.com>
+References: <1360351703-20571-1-git-send-email-yinghai@kernel.org>
+ <1360351703-20571-26-git-send-email-yinghai@kernel.org> <CAErSpo4iA17jh5rw05q=uaKOyMKesrPnxYrN2EvqWT_tGmE_FQ@mail.gmail.com>
+ <CAE9FiQX6yLebtOVCRV7GDwxfJFPpVxBKJO_VJ_ndA-OjBD4LRg@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 8 Feb 2013 16:18:35 -0700
+Message-ID: <CAErSpo6GZvEUP2GWuQ3hUsSGBaE5Ontpp5=AizfP1yVD8bkD_g@mail.gmail.com>
+Subject: Re: [PATCH v2 25/26] PCI: Disable mem in the ioapic removing path
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 8, 2013 at 12:25 PM, Andrea Arcangeli <aarcange@redhat.com> wrote:
-> Hi Michel,
->
-> On Sun, Feb 03, 2013 at 11:17:12PM -0800, Michel Lespinasse wrote:
->> munlock_vma_pages_range() was always incrementing addresses by PAGE_SIZE
->> at a time. When munlocking THP pages (or the huge zero page), this resulted
->> in taking the mm->page_table_lock 512 times in a row.
+On Fri, Feb 8, 2013 at 3:33 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Fri, Feb 8, 2013 at 1:14 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> On Fri, Feb 8, 2013 at 12:28 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>>> For physical hot plug should be ok, but for remove/rescan path will
+>>> need us to disable that.
+>>>
+>>> otherwise rescan mmio resource for pci ioapic device will not be
+>>> sized and allocated, aka skiped.
 >>
->> We can do better by making use of the page_mask returned by follow_page_mask
->> (for the huge zero page case), or the size of the page munlock_vma_page()
->> operated on (for the true THP page case).
+>> When we scan other PCI devices, we can size memory BARs even if
+>> PCI_COMMAND_MEMORY is already set.  So there must be something
+>> different about IOAPICs?  Or maybe it's something different about
+>> rescan vs. the initial scan?
+>
+> it is in drivers/pci/setup-bus.c::__dev_sort_resources()
+> it will skip the reallocation for ioapic controller.
+>
+> ...
+>         /* Don't touch ioapic devices already enabled by firmware */
+>         if (class == PCI_CLASS_SYSTEM_PIC) {
+>                 u16 command;
+>                 pci_read_config_word(dev, PCI_COMMAND, &command);
+>                 if (command & (PCI_COMMAND_IO | PCI_COMMAND_MEMORY))
+>                         return;
+>         }
+>
 >>
->> Note - I am sending this as RFC only for now as I can't currently put
->> my finger on what if anything prevents split_huge_page() from operating
->> concurrently on the same page as munlock_vma_page(), which would mess
->> up our NR_MLOCK statistics. Is this a latent bug or is there a subtle
->> point I missed here ?
+>>> For ioapic_probe:pci_enable_device will not enable the device
+>>> correctly, and will bail out early.
+>>
+>> Exactly where and why do we bail out early?  The only early bail out I
+>> see is where __pci_enable_device_flags() returns if "dev->enable_cnt >
+>> 1".  Is that what you mean?
 >
-> I agree something looks fishy: nor mmap_sem for writing, nor the page
-> lock can stop split_huge_page_refcount.
+> pci_enable_device==>pci_enable_device_flags
+> ==>do_pci_enable_device==>pcibios_enable_device==>pci_enable_resources
+> ...
+>                 if (!r->parent) {
+>                         dev_err(&dev->dev, "device not available "
+>                                 "(can't reserve %pR)\n", r);
+>                         return -EINVAL;
+>                 }
+> ...
 >
-> Now the mlock side was intended to be safe because mlock_vma_page is
-> called within follow_page while holding the PT lock or the
-> page_table_lock (so split_huge_page_refcount will have to wait for it
-> to be released before it can run). See follow_trans_huge_pmd
-> assert_spin_locked and the pte_unmap_unlock after mlock_vma_page
-> returns.
->
-> Problem is, the lock side dependen on the TestSetPageMlocked below to
-> be always repeated on the head page (follow_trans_huge_pmd will always
-> pass the head page to mlock_vma_page).
->
-> void mlock_vma_page(struct page *page)
-> {
->         BUG_ON(!PageLocked(page));
->
->         if (!TestSetPageMlocked(page)) {
->
-> But what if the head page was split in between two different
-> follow_page calls? The second call wouldn't take the pmd_trans_huge
-> path anymore and the stats would be increased too much.
+> only reassign one will have get it's parent.
 
-Ah, good point. I am getting increasingly scared about the locking
-here the more I look at it :/
+Hmmm, OK.  So basically this patch is a hack to work around previous
+hacks elsewhere.
 
-> The problem on the munlock side is even more apparent as you pointed
-> out above but now I think the mlock side was problematic too.
->
-> The good thing is, your accelleration code for the mlock side should
-> have fixed the mlock race already: not ever risking to end up calling
-> mlock_vma_page twice on the head page is not an "accelleration" only,
-> it should also be a natural fix for the race.
->
-> To fix the munlock side, which is still present, I think one way would
-> be to do mlock and unlock within get_user_pages, so they run in the
-> same place protected by the PT lock or page_table_lock.
-
-I actually had a quick try at this before submitting this patch
-series; the difficulty with it was that we want to have the page lock
-before calling munlock_vma_page() and we can't get it while holding
-the page table lock. So we'd need to do some gymnastics involving
-trylock_page() and if that fails, release the page table lock / lock
-the page / reacquire the page table lock / see if we locked the right
-page. This looked nasty, and then I noticed the existing
-hpage_nr_pages() test in munlock_vma_page() and decided to just ask
-you about it :)
-
-> There are few things that stop split_huge_page_refcount:
-> page_table_lock, lru_lock, compound_lock, anon_vma lock. So if we keep
-> calling munlock_vma_page outside of get_user_pages (so outside of the
-> page_table_lock) the other way would be to use the compound_lock.
->
-> NOTE: this a purely aesthetical issue in /proc/meminfo, there's
-> nothing functional (at least in the kernel) connected to it, so no
-> panic :).
-
-Yes.
-
-I think we should try and get the locking right, because wrong code is
-just confusing, and it leads people to make incorrect assumptions and
-propagate them to places where it may have larger consequences. But
-other than that, I agree that the statistics issue we're talking about
-here doesn't sound too severe.
-
-I am in a bit of a bind here, as I will be taking a vacation abroad
-soon. I would like to get these 3 patches out before then, but I don't
-want to do anything too major as I'm not sure what kind of
-connectivity I'll have to fix things if needed. I think I'll go with
-the simplest option of adding the THP optimizaiton first and fixing
-the locking issues at a later stage...
-
-Thanks,
-
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+We are like flies in a spider's web, bound tighter and tighter by
+every loop of silk.
