@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759530Ab3BHA5y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 19:57:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41858 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759483Ab3BHA5t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1759488Ab3BHA5t (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 7 Feb 2013 19:57:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41842 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759111Ab3BHA5n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 19:57:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: [ 21/34] USB: option: add Changhong CH690
-Date: Thu,  7 Feb 2013 16:57:17 -0800
-Message-Id: <20130208004630.871831635@linuxfoundation.org>
+        Shawn Bohrer <sbohrer@rgmadvisors.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
+        peterz@infradead.org
+Subject: [ 12/34] sched/rt: Use root_domain of rt_rq not current processor
+Date: Thu,  7 Feb 2013 16:57:08 -0800
+Message-Id: <20130208004629.553493961@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130208004627.375461662@linuxfoundation.org>
 References: <20130208004627.375461662@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,44 +29,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Shawn Bohrer <sbohrer@rgmadvisors.com>
 
-commit d4fa681541aa7bf8570d03426dd7ba663a71c467 upstream.
+commit aa7f67304d1a03180f463258aa6f15a8b434e77d upstream.
 
-New device with 3 serial interfaces:
+When the system has multiple domains do_sched_rt_period_timer()
+can run on any CPU and may iterate over all rt_rq in
+cpu_online_mask.  This means when balance_runtime() is run for a
+given rt_rq that rt_rq may be in a different rd than the current
+processor.  Thus if we use smp_processor_id() to get rd in
+do_balance_runtime() we may borrow runtime from a rt_rq that is
+not part of our rd.
 
- If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend) Sub=ff Prot=ff
- If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend) Sub=ff Prot=ff
- If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend) Sub=ff Prot=ff
- If#= 3 Alt= 0 #EPs= 2 Cls=08(stor) Sub=06 Prot=50
+This changes do_balance_runtime to get the rd from the passed in
+rt_rq ensuring that we borrow runtime only from the correct rd
+for the given rt_rq.
 
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+This fixes a BUG at kernel/sched/rt.c:687! in __disable_runtime
+when we try reclaim runtime lent to other rt_rq but runtime has
+been lent to a rt_rq in another rd.
+
+Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Acked-by: Mike Galbraith <bitbucket@online.de>
+Cc: peterz@infradead.org
+Link: http://lkml.kernel.org/r/1358186131-29494-1-git-send-email-sbohrer@rgmadvisors.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ kernel/sched/rt.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -455,6 +455,10 @@ static void option_instat_callback(struc
- #define TPLINK_VENDOR_ID			0x2357
- #define TPLINK_PRODUCT_MA180			0x0201
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -566,7 +566,7 @@ static inline struct rt_bandwidth *sched
+ static int do_balance_runtime(struct rt_rq *rt_rq)
+ {
+ 	struct rt_bandwidth *rt_b = sched_rt_bandwidth(rt_rq);
+-	struct root_domain *rd = cpu_rq(smp_processor_id())->rd;
++	struct root_domain *rd = rq_of_rt_rq(rt_rq)->rd;
+ 	int i, weight, more = 0;
+ 	u64 rt_period;
  
-+/* Changhong products */
-+#define CHANGHONG_VENDOR_ID			0x2077
-+#define CHANGHONG_PRODUCT_CH690			0x7001
-+
- /* some devices interfaces need special handling due to a number of reasons */
- enum option_blacklist_reason {
- 		OPTION_BLACKLIST_NONE = 0,
-@@ -1327,6 +1331,7 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T) },
- 	{ USB_DEVICE(TPLINK_VENDOR_ID, TPLINK_PRODUCT_MA180),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
-+	{ USB_DEVICE(CHANGHONG_VENDOR_ID, CHANGHONG_PRODUCT_CH690) },
- 	{ } /* Terminating entry */
- };
- MODULE_DEVICE_TABLE(usb, option_ids);
 
 
