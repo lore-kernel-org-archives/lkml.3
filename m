@@ -1,74 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947234Ab3BHWmv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 17:42:51 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:32782 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760359Ab3BHWmu (ORCPT
+	id S1947292Ab3BHWpF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 17:45:05 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:37999 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760366Ab3BHWpD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 17:42:50 -0500
-Message-ID: <51157F65.2050309@wwwdotorg.org>
-Date: Fri, 08 Feb 2013 15:42:45 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Rob Herring <robherring2@gmail.com>, Michal Marek <mmarek@suse.cz>,
-        Grant Likely <glikely@secretlab.ca>,
-        Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Scott Wood <scottwood@freescale.com>, Sam Ravnborg <sam@ravnborg.org>,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH V8] kbuild: create a rule to run the pre-processor on
- *.dts files
-References: <1360091188-24063-1-git-send-email-swarren@wwwdotorg.org> <20130208144527.0D8DD3E2C01@localhost> <51156D09.7060401@gmail.com> <20130208220448.EDA773E2C27@localhost>
-In-Reply-To: <20130208220448.EDA773E2C27@localhost>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 8 Feb 2013 17:45:03 -0500
+Date: Fri, 08 Feb 2013 17:45:00 -0500 (EST)
+Message-Id: <20130208.174500.1518593039138341685.davem@davemloft.net>
+To: joe@perches.com
+Cc: netdev@vger.kernel.org, linux-can@vger.kernel.org,
+        linux-kernel@vger.kernel.org, e1000-devel@lists.sourceforge.net,
+        linux-usb@vger.kernel.org, linux-wireless@vger.kernel.org,
+        ath9k-devel@venema.h4ckr.net, wil6210@qca.qualcomm.com,
+        brcm80211-dev-list@broadcom.com, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH] drivers: net: Remove remaining alloc/OOM messages
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1360273587.27863.15.camel@joe-AO722>
+References: <1360273587.27863.15.camel@joe-AO722>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/08/2013 03:04 PM, Grant Likely wrote:
-> On Fri, 08 Feb 2013 15:24:25 -0600, Rob Herring <robherring2@gmail.com> wrote:
->> On 02/08/2013 08:45 AM, Grant Likely wrote:
->>> On Tue,  5 Feb 2013 12:06:28 -0700, Stephen Warren <swarren@wwwdotorg.org> wrote:
->>>> From: Stephen Warren <swarren@nvidia.com>
->>>>
->>>> Create cmd_dtc_cpp to run the C pre-processor on *.dts file before
->>>> passing them to dtc for final compilation. This allows the use of #define
->>>> and #include within the .dts file.
->>>>
->>>> Acked-by: Simon Glass <sjg@chromium.org>
->>>> Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
->>>> Acked-by: Michal Marek <mmarek@suse.cz>
->>>> Acked-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
->>>> Signed-off-by: Stephen Warren <swarren@nvidia.com>
->>>
->>> I've applied this and was going to push it out, but I've just thought of
->>> a problem that could be a show stopper. Once a dtsp file includes a C
->>> header, the contents of that header become part of the Device Tree ABI.
->>> If someone changes that file (ie. to renumber a series of #defines) then
->>> that will break the binding. We need a way to protect against that.
->>> Someone changing a .h file may make the assumption that it is only
->>> kernel internal and won't realize that it has external implications.
->>>
->>> I'm thinking that any dts includes need to be treated in the same way as
->>> userspace headers. We could put them into include/uapi and piggy back on
->>> the protection already afforded by that directory, or come up with
->>> something new. Any thoughts?
->>
->> Also, we would never be able to separate the dts files from the kernel
->> tree without some separation.
+From: Joe Perches <joe@perches.com>
+Date: Thu, 07 Feb 2013 13:46:27 -0800
+
+> alloc failures already get standardized OOM
+> messages and a dump_stack.
 > 
-> Good point. They better be in a completely separate directory then.
+> For the affected mallocs around these OOM messages:
+> 
+> Converted kmallocs with multiplies to kmalloc_array.
+> Converted a kmalloc/memcpy to kmemdup.
+> Removed now unused stack variables.
+> Removed unnecessary parentheses.
+> Neatened alignment.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-How about arch/*/include/dts/.
-
-Both *.dts and kernel code will need to include those headers (so that
-the kernel can parse the DTB using the same values), so putting the
-headers right into arch/*/boot/dts/ or arch/*/boot/dts/include/ might
-not make sense, since then that directory would still have to exist even
-if/when the .dts files are separated from the kernel.
+Applied, thanks Joe.
