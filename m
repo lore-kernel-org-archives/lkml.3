@@ -1,78 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947214Ab3BHWfE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 17:35:04 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:35474 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760323Ab3BHWfB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 17:35:01 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <liuj97@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Subject: Re: [PATCH 0/2] ACPI / scan: Remove useless #ifndef and simplify container driver
-Date: Fri, 08 Feb 2013 23:41:21 +0100
-Message-ID: <1435179.fU91E9qMVO@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1891536.LKCrpu1upY@vostro.rjw.lan>
-References: <1873429.MS5RQDxTye@vostro.rjw.lan> <1360342638.3869.59.camel@misato.fc.hp.com> <1891536.LKCrpu1upY@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1947262Ab3BHWf2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 17:35:28 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:58949 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760328Ab3BHWfZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 17:35:25 -0500
+X-AuditID: cbfee61a-b7f7d6d000000f4e-90-51157dab704c
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Vivek Gautam'" <gautam.vivek@samsung.com>,
+        linux-samsung-soc@vger.kernel.org
+Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, grant.likely@secretlab.ca,
+        dianders@chromium.org, jg1.han@samsung.com,
+        Thomas Abraham <thomas.ab@samsung.com>
+References: <CAFp+6iFgaT9D2hR0pX34jo2g+GHftmA0Mw3y96-oKe0KakZOxA@mail.gmail.com>
+ <1358315143-16620-1-git-send-email-gautam.vivek@samsung.com>
+In-reply-to: <1358315143-16620-1-git-send-email-gautam.vivek@samsung.com>
+Subject: RE: [PATCH v5 1/4] ARM: Exynos5250: Enabling ehci-s5p driver
+Date: Fri, 08 Feb 2013 14:35:06 -0800
+Message-id: <1a5501ce064c$8d2ed1a0$a78c74e0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQKJ3PkCUeMen/p9rsbqXSC8/IESzQEV7/7jlvAsP2A=
+Content-language: en-us
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJIsWRmVeSWpSXmKPExsVy+t8zQ93VtaKBBht+y1hc3jWHzWLG+X1M
+	FouWtTI7MHt83iQXwBjFZZOSmpNZllqkb5fAlXF+3nGWgi/SFdOuzWFuYOwQ62Lk5JAQMJG4
+	0LqIGcIWk7hwbz1bFyMXh5DAMkaJu4f+McMUnT89lwkisYhR4tbuvywQzl9Gid8Xz7GBVLEJ
+	aEgcfv+MHcQWEQiQ+HrrBSNIEbPAZUaJk5/fM0N0TGSUOLHqI1A7BwengKfEz22GIA3CAq4S
+	jZfnMYGEWQRUJZZ2soCEeQUsJZbvamaGsAUlfky+BxZnFtCSWL/zOBOELS+xec1bqEsVJHac
+	fc0IcYOVxPFVTxkhasQlJj14yA5ygoTANnaJrpeHwBIsAgIS3yYfAjtHQkBWYtMBqDmSEgdX
+	3GCZwCgxC8nqWUhWz0KyehaSFQsYWVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525ihESc1A7G
+	lQ0WhxgFOBiVeHgXiIsGCrEmlhVX5h5ilOBgVhLh3WYLFOJNSaysSi3Kjy8qzUktPsSYDHTs
+	RGYp0eR8YDLIK4k3NDY2MTMxNTG3NDU3JU1YSZyX8dSTACGB9MSS1OzU1ILUIpgtTBycUg2M
+	Wj+cbRSmvzdb45jMzr14NkNjbBnTJeGbD5LPrl/h8mdZ+6QYFx7fqm9LmWOztm2aP0dwhpV0
+	w28vufk59/6KFZ+QMnkr9SjyOvPXTxP6jFVDc5grTjc0nL+qoMfzr9Yo7pdnas6WFYtt9eav
+	z3CoEa/v+2689c8TY+V7msdrt/qaRO94u4VHiaU4I9FQi7moOBEAstP/cvwCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBKsWRmVeSWpSXmKPExsVy+t9jAd3VtaKBBvN6xCwu75rDZjHj/D4m
+	i0XLWpkdmD0+b5ILYIxqYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xN
+	tVVy8QnQdcvMAZqvpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3JAiux8gADSSsY8w4P+84
+	S8EX6Ypp1+YwNzB2iHUxcnJICJhInD89lwnCFpO4cG89WxcjF4eQwCJGiVu7/7JAOH8ZJX5f
+	PMcGUsUmoCFx+P0zdhBbRCBA4uutF4wgRcwClxklTn5+zwzRMZFR4sSqj0DtHBycAp4SP7cZ
+	gjQIC7hKNF6exwQSZhFQlVjayQIS5hWwlFi+q5kZwhaU+DH5HlicWUBLYv3O40wQtrzE5jVv
+	mSEuVZDYcfY1I8QNVhLHVz1lhKgRl5j04CH7BEahWUhGzUIyahaSUbOQtCxgZFnFKJpakFxQ
+	nJSea6hXnJhbXJqXrpecn7uJERzPz6R2MK5ssDjEKMDBqMTDu0BcNFCINbGsuDL3EKMEB7OS
+	CO82W6AQb0piZVVqUX58UWlOavEhxmSgRycyS4km5wNTTV5JvKGxiZmRpZGZhZGJuTlpwkri
+	vIynngQICaQnlqRmp6YWpBbBbGHi4JRqYFRZe7/g1aXPMxNuf9HO923PX6A4bVb2mQcyx0od
+	X9cUedinZbhPCpliFBk92ali3WEBpQs7v+blPpP6fUxMmLFhz4JD/gYGGbfn/osv/RB5y2/y
+	3WaNOz0X1HxWNaXZ+DK/fdS0tXtNc//tZVG2Qdx+E29ZvclUm2Z/9MTGpVtZJhdZ7+P4VKrE
+	UpyRaKjFXFScCADqBaltKwMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, February 08, 2013 08:59:44 PM Rafael J. Wysocki wrote:
-> On Friday, February 08, 2013 09:57:18 AM Toshi Kani wrote:
-> > On Fri, 2013-02-08 at 01:24 +0100, Rafael J. Wysocki wrote:
-> > > On Monday, February 04, 2013 12:47:31 AM Rafael J. Wysocki wrote:
-> > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > > 
-> > > > The only useful thing that the ACPI container driver does is to
-> > > > install system notify handlers for all container and module device
-> > > > objects it finds in the namespace.  The driver structure,
-> > > > acpi_container_driver, and the data structures created by its
-> > > > .add() callback are in fact not used by the driver, so remove
-> > > > them entirely.
-> > > > 
-> > > > It also makes a little sense to build that driver as a module,
-> > > > so make it non-modular and add its initialization to the
-> > > > namespace scanning code.
-> > > > 
-> > > > In addition to that, make the namespace walk callback used for
-> > > > installing the notify handlers more straightforward.
-> > > 
-> > > As pointed out by Toshi Kani, the above changes would make acpi_eject_store()
-> > > fail for containers and it is the only way to eject them currently, so patch
-> > > [2/2] is an improved version of this (with Toshi's changes folded in).
-> > > 
-> > > Patch [1/2] is just a cleanup removing a useless #ifndef from acpi_eject_store().
-> > 
-> > Thanks for the update!  They look good.  For the series:
-> > 
-> > Reviewed-by: Toshi Kani <toshi.kani@hp.com>
-> > Tested-by: Toshi Kani <toshi.kani@hp.com>
-> > 
-> > BTW, did you intentionally keep the struct acpi_container definition in
-> > <acpi/container.h>?  I deleted that one in my patch.
+Vivek Gautam wrote:
 > 
-> No, I overlooked that part.  I'll apply that part of your patch as a separate
-> patch on top of this one.
+> Adding EHCI device tree node for Exynos5250 along with
+> the device base adress and gpio line for vbus.
+> 
+> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+> Acked-by: Jingoo Han <jg1.han@samsung.com>
+> Acked-by: Grant Likely <grant.likely@secretlab.ca>
+> ---
+> 
+> Changes from v4:
+>  - Added gpio line for VBUS of USB2.0 on snow board.
+> 
+>  .../devicetree/bindings/usb/exynos-usb.txt         |   25
+> ++++++++++++++++++++
+>  arch/arm/boot/dts/exynos5250-smdk5250.dts          |    4 +++
+>  arch/arm/boot/dts/exynos5250-snow.dts              |    4 +++
+>  arch/arm/boot/dts/exynos5250.dtsi                  |    6 ++++
+>  4 files changed, 39 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/usb/exynos-
+> usb.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/usb/exynos-usb.txt
+> b/Documentation/devicetree/bindings/usb/exynos-usb.txt
+> new file mode 100644
+> index 0000000..e8bbb47
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/usb/exynos-usb.txt
+> @@ -0,0 +1,25 @@
+> +Samsung Exynos SoC USB controller
+> +
+> +The USB devices interface with USB controllers on Exynos SOCs.
+> +The device node has following properties.
+> +
+> +EHCI
+> +Required properties:
+> + - compatible: should be "samsung,exynos4210-ehci" for USB 2.0
+> +   EHCI controller in host mode.
+> + - reg: physical base address of the controller and length of memory
+> mapped
+> +   region.
+> + - interrupts: interrupt number to the cpu.
+> +
+> +Optional properties:
+> + - samsung,vbus-gpio:  if present, specifies the GPIO that
+> +   needs to be pulled up for the bus to be powered.
+> +
+> +Example:
+> +
+> +	usb@12110000 {
+> +		compatible = "samsung,exynos4210-ehci";
+> +		reg = <0x12110000 0x100>;
+> +		interrupts = <0 71 0>;
+> +		samsung,vbus-gpio = <&gpx2 6 1 3 3>;
+> +	};
+> diff --git a/arch/arm/boot/dts/exynos5250-smdk5250.dts
+> b/arch/arm/boot/dts/exynos5250-smdk5250.dts
+> index 942d576..7363e14 100644
+> --- a/arch/arm/boot/dts/exynos5250-smdk5250.dts
+> +++ b/arch/arm/boot/dts/exynos5250-smdk5250.dts
+> @@ -204,4 +204,8 @@
+>  		samsung,mfc-r = <0x43000000 0x800000>;
+>  		samsung,mfc-l = <0x51000000 0x800000>;
+>  	};
+> +
+> +	usb@12110000 {
+> +		samsung,vbus-gpio = <&gpx2 6 1 3 3>;
+> +	};
+>  };
+> diff --git a/arch/arm/boot/dts/exynos5250-snow.dts
+> b/arch/arm/boot/dts/exynos5250-snow.dts
+> index 17dd951..47b6b84 100644
+> --- a/arch/arm/boot/dts/exynos5250-snow.dts
+> +++ b/arch/arm/boot/dts/exynos5250-snow.dts
+> @@ -40,4 +40,8 @@
+>  				<&gpc4 5 2 3 0>, <&gpc4 6 2 3 0>;
+>  		};
+>  	};
+> +
+> +	usb@12110000 {
+> +		samsung,vbus-gpio = <&gpx1 1 1 3 3>;
+> +	};
+>  };
+> diff --git a/arch/arm/boot/dts/exynos5250.dtsi
+> b/arch/arm/boot/dts/exynos5250.dtsi
+> index 30485de..2cbe53e 100644
+> --- a/arch/arm/boot/dts/exynos5250.dtsi
+> +++ b/arch/arm/boot/dts/exynos5250.dtsi
+> @@ -275,6 +275,12 @@
+>  		#size-cells = <0>;
+>  	};
+> 
+> +	usb@12110000 {
+> +		compatible = "samsung,exynos4210-ehci";
+> +		reg = <0x12110000 0x100>;
+> +		interrupts = <0 71 0>;
+> +	};
+> +
+>  	amba {
+>  		#address-cells = <1>;
+>  		#size-cells = <1>;
+> --
+> 1.7.6.5
 
-Actually, I prefer to remove container.h entirely.  I'll post a patch for that
-shortly.
+Looks good to me and applied this and "[PATCH v3 2/4] ARM: Exynos5250:
+Enabling ohci-exynos driver" in Samsung tree.
 
-Thanks,
-Rafael
+Note, I think, you need to implement to use pinctrl for this instead of old
+gpio bindings next time, probably after release v3.9-rc1.
 
+Ah, one more, please use subject lines appropriate like others, "ARM: dts:
+....".
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Thanks.
+
+- Kukjin
+
