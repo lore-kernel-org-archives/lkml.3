@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758738Ab3BHA5k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 19:57:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41835 "EHLO
+	id S1945949Ab3BHBST (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 20:18:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41825 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758272Ab3BHA5g (ORCPT
+	with ESMTP id S1758254Ab3BHA5f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 19:57:36 -0500
+	Thu, 7 Feb 2013 19:57:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christopher Staite <chris@yourdreamnet.co.uk>,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 06/34] drm/radeon: fix MC blackout on evergreen+
-Date: Thu,  7 Feb 2013 16:57:02 -0800
-Message-Id: <20130208004628.450496873@linuxfoundation.org>
+Subject: [ 03/34] drm/radeon/evergreen+: wait for the MC to settle after MC blackout
+Date: Thu,  7 Feb 2013 16:56:59 -0800
+Message-Id: <20130208004627.939261062@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130208004627.375461662@linuxfoundation.org>
 References: <20130208004627.375461662@linuxfoundation.org>
@@ -27,59 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christopher Staite <chris@yourdreamnet.co.uk>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit bb588820ef421c6098dca1fec29c3b347f1c8c19 upstream.
+commit ed39fadd6df01095378e499fac3674883f16b853 upstream.
 
-Force the crtc mem requests on/off immediately rather
-than waiting for the double buffered updates to kick in.
-Seems we miss the update in certain conditions.  Also
-handle the DCE6 case.
+Some chips seem to need a little delay after blacking out
+the MC before the requests actually stop.
 
-Signed-off-by: Christopher Staite <chris@yourdreamnet.co.uk>
+May fix:
+https://bugs.freedesktop.org/show_bug.cgi?id=56139
+https://bugs.freedesktop.org/show_bug.cgi?id=57567
+
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/evergreen.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/gpu/drm/radeon/evergreen.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
 --- a/drivers/gpu/drm/radeon/evergreen.c
 +++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -1313,14 +1313,18 @@ void evergreen_mc_stop(struct radeon_dev
- 				if (!(tmp & EVERGREEN_CRTC_BLANK_DATA_EN)) {
- 					radeon_wait_for_vblank(rdev, i);
- 					tmp |= EVERGREEN_CRTC_BLANK_DATA_EN;
-+					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 1);
- 					WREG32(EVERGREEN_CRTC_BLANK_CONTROL + crtc_offsets[i], tmp);
-+					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 0);
- 				}
- 			} else {
- 				tmp = RREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i]);
- 				if (!(tmp & EVERGREEN_CRTC_DISP_READ_REQUEST_DISABLE)) {
- 					radeon_wait_for_vblank(rdev, i);
- 					tmp |= EVERGREEN_CRTC_DISP_READ_REQUEST_DISABLE;
-+					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 1);
- 					WREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i], tmp);
-+					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 0);
- 				}
- 			}
- 			/* wait for the next frame */
-@@ -1380,11 +1384,15 @@ void evergreen_mc_resume(struct radeon_d
- 			if (ASIC_IS_DCE6(rdev)) {
- 				tmp = RREG32(EVERGREEN_CRTC_BLANK_CONTROL + crtc_offsets[i]);
- 				tmp |= EVERGREEN_CRTC_BLANK_DATA_EN;
-+				WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 1);
- 				WREG32(EVERGREEN_CRTC_BLANK_CONTROL + crtc_offsets[i], tmp);
-+				WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 0);
- 			} else {
- 				tmp = RREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i]);
- 				tmp &= ~EVERGREEN_CRTC_DISP_READ_REQUEST_DISABLE;
-+				WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 1);
- 				WREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i], tmp);
-+				WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 0);
- 			}
- 			/* wait for the next frame */
- 			frame_count = radeon_get_vblank_counter(rdev, i);
+@@ -1345,6 +1345,8 @@ void evergreen_mc_stop(struct radeon_dev
+ 		blackout &= ~BLACKOUT_MODE_MASK;
+ 		WREG32(MC_SHARED_BLACKOUT_CNTL, blackout | 1);
+ 	}
++	/* wait for the MC to settle */
++	udelay(100);
+ }
+ 
+ void evergreen_mc_resume(struct radeon_device *rdev, struct evergreen_mc_save *save)
 
 
