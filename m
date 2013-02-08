@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754782Ab3BHBUu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 20:20:50 -0500
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:39312 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751802Ab3BHBUt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 20:20:49 -0500
-Message-ID: <1360285813.3869.52.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 01/02] ACPI: sysfs eject support for ACPI scan handlers
-From: Toshi Kani <toshi.kani@hp.com>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: rjw@sisk.pl, linux-acpi@vger.kernel.org, gregkh@linuxfoundation.org,
-        bhelgaas@google.com, mika.westerberg@linux.intel.com,
-        matthew.garrett@nebula.com, yinghai@kernel.org, liuj97@gmail.com,
-        linux-kernel@vger.kernel.org
-Date: Thu, 07 Feb 2013 18:10:13 -0700
-In-Reply-To: <51144BD4.7070804@jp.fujitsu.com>
-References: <1360191056-13293-1-git-send-email-toshi.kani@hp.com>
-	 <1360191056-13293-2-git-send-email-toshi.kani@hp.com>
-	 <51144BD4.7070804@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755383Ab3BHB27 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 20:28:59 -0500
+Received: from trent.utfs.org ([94.185.90.103]:57958 "EHLO trent.utfs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752498Ab3BHB26 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 20:28:58 -0500
+Date: Thu, 7 Feb 2013 17:28:54 -0800 (PST)
+From: Christian Kujau <lists@nerdbynature.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: b43: /dev/hwrng isn't random
+Message-ID: <alpine.DEB.2.01.1302071727280.13050@trent.utfs.org>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-02-08 at 09:50 +0900, Yasuaki Ishimatsu wrote:
-> Hi Toshi,
-> 
-> 2013/02/07 7:50, Toshi Kani wrote:
-> > Changed sysfs eject, acpi_eject_store(), to support ACPI scan handlers.
-> > 
-> > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-> > ---
-> >   drivers/acpi/scan.c |    2 +-
-> >   1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-> > index cfd7a69..3ff632e 100644
-> > --- a/drivers/acpi/scan.c
-> > +++ b/drivers/acpi/scan.c
-> > @@ -203,7 +203,7 @@ acpi_eject_store(struct device *d, struct device_attribute *attr,
-> >   		return -EINVAL;
-> >   	}
-> >   #ifndef FORCE_EJECT
-> 
-> > -	if (acpi_device->driver == NULL) {
-> > +	if (!acpi_device->driver && !acpi_device->handler) {
-> 
-> I don't understand the fix.
-> 
-> The if sentence becomes true, when both acpi_device->driver and acpi_device->handler
-> are NULL. It means that acpi_eject_store() runs if either acpi_device->driver or
-> acpi_device->handler has pointer. Is it O.K.?
+forwarding to lkml, not sure how many people read b43-dev...
 
-Yes.
+Hi,
 
-> I think it should be if (!acpi_device->driver || !acpi_device->handler).
+while playing around with this BCM4306 (b43) wifi NIC (and reporting some 
+lockdep issues, [0]), I noticed that the chip could be used as a HWRNG and 
+driver support for this has been added years ago - great, I never knew!
 
-No, the condition has to be "&&" because an acpi_device is _either_
-bound to an ACPI driver or an ACPI scan handler. 
+But when attempting to read from /dev/hwrng (b43 is loaded, interface is 
+up & running), the device returns not random bytes, but:
+
+$ head -c 1000 /dev/hwrng | od -x
+0000000 0000 0000 0000 0000 0000 0000 0000 0000
+*
+0001740 0000 0000 0000 0000
+0001750
+
+I've used a custom-built 3.8-rc6 and a stock Debian 3.2.0-4, same results. 
+I should add that this BCM4306 wifi NIC is inside an older (2005) 
+PowerBook G4 laptop, so maybe it's a hardware fault. However, wifi is 
+working perfectly.
+
+I found a similar thing reported _years_ ago for the OLTP project, with 
+the following note, though I could not find the exact changeset for the 
+fix yet:
+
+   https://dev.laptop.org/ticket/8089#comment:4
+   > Turned out OFW wasn't turning on the AES module.
+
+CONFIG_CRYPTO_AES is enabled in my case. On another box with an BCM4312 
+chip (and a Fedora 3.7.2-204.fc18.i686 kernel) the hwrng is working.
+
+More details, .config & lspci here:
+
+  http://nerdbynature.de/bits/3.8.0-rc6/BCM4306/
+  http://nerdbynature.de/bits/3.8.0-rc6/BCM4312/
+
+Any thoughts how to find out if this is a software or a hardware issue?
 
 Thanks,
--Toshi
+Christian.
 
+[0] http://www.spinics.net/lists/kernel/msg1477153.html
+-- 
+BOFH excuse #144:
 
+Too few computrons available.
