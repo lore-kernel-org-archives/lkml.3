@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759105Ab3BHA5l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 19:57:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41832 "EHLO
+	id S1759629Ab3BHA6F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 19:58:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41935 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758264Ab3BHA5g (ORCPT
+	with ESMTP id S1759589Ab3BHA57 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 19:57:36 -0500
+	Thu, 7 Feb 2013 19:57:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 05/34] drm/radeon: add quirk for RV100 board
-Date: Thu,  7 Feb 2013 16:57:01 -0800
-Message-Id: <20130208004628.279832903@linuxfoundation.org>
+Subject: [ 04/26] drm/radeon: add quirk for RV100 board
+Date: Thu,  7 Feb 2013 16:57:32 -0800
+Message-Id: <20130208004627.972514980@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130208004627.375461662@linuxfoundation.org>
-References: <20130208004627.375461662@linuxfoundation.org>
+In-Reply-To: <20130208004627.258272404@linuxfoundation.org>
+References: <20130208004627.258272404@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
@@ -45,7 +45,7 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 --- a/drivers/gpu/drm/radeon/radeon_combios.c
 +++ b/drivers/gpu/drm/radeon/radeon_combios.c
-@@ -2470,6 +2470,14 @@ bool radeon_get_legacy_connector_info_fr
+@@ -2338,6 +2338,14 @@ bool radeon_get_legacy_connector_info_fr
  								   1),
  								  ATOM_DEVICE_CRT1_SUPPORT);
  				}
