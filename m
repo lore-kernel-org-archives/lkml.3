@@ -1,115 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760032Ab3BHIZn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 03:25:43 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:56043 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759790Ab3BHIZm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 03:25:42 -0500
-Date: Fri, 8 Feb 2013 08:25:36 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Anmar Oueja <anmar.oueja@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/14] pinctrl/abx500: use direct IRQ defines
-Message-ID: <20130208082536.GF7519@gmail.com>
-References: <1360093715-6348-1-git-send-email-linus.walleij@stericsson.com>
- <1360093715-6348-10-git-send-email-linus.walleij@stericsson.com>
- <5112F1B9.6010700@wwwdotorg.org>
- <CAF2Aj3jHe+mP0dU_BHThBV-va_iJLcFQedmWQOTaYafAZM1Yxg@mail.gmail.com>
- <5113EB8B.4060002@wwwdotorg.org>
+	id S1946076Ab3BHI1A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 03:27:00 -0500
+Received: from mga11.intel.com ([192.55.52.93]:61912 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759790Ab3BHI06 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 03:26:58 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,628,1355126400"; 
+   d="scan'208";a="288205732"
+From: "R, Durgadoss" <durgadoss.r@intel.com>
+To: "Zhang, Rui" <rui.zhang@intel.com>
+CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "eduardo.valentin@ti.com" <eduardo.valentin@ti.com>,
+        "hongbo.zhang@linaro.org" <hongbo.zhang@linaro.org>,
+        "wni@nvidia.com" <wni@nvidia.com>
+Subject: RE: [PATCH 1/8] Thermal: Create sensor level APIs
+Thread-Topic: [PATCH 1/8] Thermal: Create sensor level APIs
+Thread-Index: AQHOA47fUTh8eaYnjUCCH+SxflpMBJhvP4yAgABfOAA=
+Date: Fri, 8 Feb 2013 08:26:53 +0000
+Message-ID: <4D68720C2E767A4AA6A8796D42C8EB5927AA18@BGSMSX101.gar.corp.intel.com>
+References: <1360061183-14137-1-git-send-email-durgadoss.r@intel.com>
+	 <1360061183-14137-2-git-send-email-durgadoss.r@intel.com>
+ <1360310031.2242.24.camel@rzhang1-mobl4>
+In-Reply-To: <1360310031.2242.24.camel@rzhang1-mobl4>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5113EB8B.4060002@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r188R25s002406
 
-On Thu, 07 Feb 2013, Stephen Warren wrote:
+Hi Rui,
 
-> On 02/07/2013 02:01 AM, Lee Jones wrote:
-> > I don't see myself on cc. Was that intentional?
+> -----Original Message-----
+> From: Zhang, Rui
+> Sent: Friday, February 08, 2013 1:24 PM
+> To: R, Durgadoss
+> Cc: linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org;
+> eduardo.valentin@ti.com; hongbo.zhang@linaro.org; wni@nvidia.com
+> Subject: Re: [PATCH 1/8] Thermal: Create sensor level APIs
 > 
-> The original patch was that way; I assume git send-email only CC'd you
-> on patches written by you.
+> On Tue, 2013-02-05 at 16:16 +0530, Durgadoss R wrote:
+> > This patch creates sensor level APIs, in the
+> > generic thermal framework.
 
-No, I didn't send this patch at all.
+[snip.]
 
-I was asking Linus if he ment to CC me, as I thought I should have been.
-
-> > I quite like the idea of this.
-> > 
-> > Stephen,
-> > 
-> > It doesn't mean the other patch was wrong, it just transfers the math.
+> > +
+> >  static ssize_t
+> >  type_show(struct device *dev, struct device_attribute *attr, char *buf)
+> >  {
+> > @@ -707,6 +807,10 @@ static DEVICE_ATTR(mode, 0644, mode_show,
+> mode_store);
+> >  static DEVICE_ATTR(passive, S_IRUGO | S_IWUSR, passive_show,
+> passive_store);
+> >  static DEVICE_ATTR(policy, S_IRUGO | S_IWUSR, policy_show,
+> policy_store);
+> >
+> > +/* Thermal sensor attributes */
+> > +static DEVICE_ATTR(sensor_name, 0444, sensor_name_show, NULL);
+> > +static DEVICE_ATTR(temp_input, 0444, sensor_temp_show, NULL);
+> > +
+> >  /* sys I/F for cooling device */
+> >  #define to_cooling_device(_dev)	\
+> >  	container_of(_dev, struct thermal_cooling_device, device)
+> > @@ -1493,6 +1597,182 @@ static void remove_trip_attrs(struct
+> thermal_zone_device *tz)
+> >  }
+> >
+> >  /**
+> > + * enable_sensor_thresholds - create sysfs nodes for thresholdX
 > 
-> Ah, I see. The issue is that the code below clearly calculates the hwirq
-> differently, and it wasn't immediately obvious that this part of the
-> patch for example:
+> this is a little confusing.
+> I'd prefer
+> thermal_sensor_sysfs_add() and create sensor_name and temp_input
+> attribute in this function as well, and thermal_sensor_sysfs_remove()
+> to remove the sysfs I/F.
+> And further more, we can do this for thermal zones and cooling devices.
+
+I agree, and we will change this.
+Since this involves change for all standard APIs, I think it is better to submit
+a separate patch to do this. What do you think ?
+
 > 
-> >  struct abx500_gpio_irq_cluster ab8500_gpio_irq_cluster[] = {
-> > -	GPIO_IRQ_CLUSTER(6,  13, 34),
-> > -	GPIO_IRQ_CLUSTER(24, 25, 24),
-> > -	GPIO_IRQ_CLUSTER(36, 41, 14),
-> > +	GPIO_IRQ_CLUSTER(6,  13, AB8500_INT_GPIO6R),
-> > +	GPIO_IRQ_CLUSTER(24, 25, AB8500_INT_GPIO24R),
-> > +	GPIO_IRQ_CLUSTER(36, 41, AB8500_INT_GPIO36R),
-> >  };
+> others look okay to me.
+
+Thank you :-)
+
 > 
-> ... actually changes the values in the table (AB8500_INT_GPIO6R is 40,
-> so when using that value, you need to subtract of the value 6 for the
-> base to get the original 34).
+> thanks,
+> rui
 
-Yes, I see how that may of looked if you didn't see the other change.
-
-So you're happy?
-
-> > I wouldn't squash it into mine. I like the transition and the
-> > possibility to revert it if there's been some mistake.
-> > 
-> > (not to say there is one, but just in case.)
-> > 
-> > Sent from my mobile Linux device.
-> > 
-> > On Feb 7, 2013 12:14 AM, "Stephen Warren" <swarren@wwwdotorg.org
-> > <mailto:swarren@wwwdotorg.org>> wrote:
-> > 
-> >     On 02/05/2013 12:48 PM, Linus Walleij wrote:
-> >     > From: Linus Walleij <linus.walleij@linaro.org
-> >     <mailto:linus.walleij@linaro.org>>
-> >     >
-> >     > Make it harder to do mistakes by introducing the actual
-> >     > defined ABx500 IRQ number into the IRQ cluster definitions.
-> >     > Deduct cluster offset from the GPIO offset to make each
-> >     > cluster coherent.
-> > 
-> >     Shouldn't this patch be squashed into the previous patch to avoid churn?
-> > 
-> >     >  static struct abx500_pinctrl_soc_data ab9540_soc = {
-> > 
-> >     > @@ -273,8 +273,7 @@ static int abx500_gpio_to_irq(struct gpio_chip
-> >     *chip, unsigned offset)
-> > 
-> >     > -                     hwirq = gpio + cluster->to_irq;
-> >     > -
-> >     > +                     hwirq = gpio - cluster->start + cluster->to_irq;
-> >     >                       return
-> >     irq_create_mapping(pct->parent->domain, hwirq);
-> > 
-> >     In particular, this change implies that the previous patch was simply
-> >     incorrect, although I haven't really thought about it in detail.
-> > 
-> 
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org â”‚ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
