@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946053Ab3BHH4W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 02:56:22 -0500
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:36111 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945906Ab3BHH4V (ORCPT
+	id S1946006Ab3BHIBz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 03:01:55 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:53087 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751317Ab3BHIBy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 02:56:21 -0500
-Date: Fri, 8 Feb 2013 10:47:42 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Andreas Bombe <aeb@debian.org>
-Cc: Dave Airlie <airlied@redhat.com>, Dave Jones <davej@redhat.com>,
-        dri-devel@lists.freedesktop.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: radeon causing sleeping function called from invalid context
-Message-ID: <20130208074742.GA2357@swordfish.minsk.epam.com>
-References: <20130113012717.GA2673@redhat.com>
- <20130113113820.GA2503@swordfish>
- <20130207215301.GA11773@amos.fritz.box>
+	Fri, 8 Feb 2013 03:01:54 -0500
+Date: Fri, 8 Feb 2013 08:01:48 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Linux F2FS DEV, Mailing List" 
+	<linux-f2fs-devel@lists.sourceforge.net>,
+        "Linux Kernel, Mailing List" <linux-kernel@vger.kernel.org>,
+        "Linux FS DEV, Mailing List" <linux-fsdevel@vger.kernel.org>
+Subject: Re: [GIT PULL] f2fs fixes for v3.8-rc7
+Message-ID: <20130208080148.GG4503@ZenIV.linux.org.uk>
+References: <1360196464.26950.65.camel@kjgkr>
+ <CA+55aFzygotc-rGOBwHmdXU6KrpCE7srqWYs6j-iP5c5Ef3UnA@mail.gmail.com>
+ <20130208031021.GF4503@ZenIV.linux.org.uk>
+ <1360297231.8037.8.camel@kjgkr>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130207215301.GA11773@amos.fritz.box>
+In-Reply-To: <1360297231.8037.8.camel@kjgkr>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (02/07/13 22:53), Andreas Bombe wrote:
-> On Sun, Jan 13, 2013 at 02:38:20PM +0300, Sergey Senozhatsky wrote:
-> > On (01/12/13 20:27), Dave Jones wrote:
-> > > BUG: sleeping function called from invalid context at mm/slub.c:925
-> > > in_atomic(): 1, irqs_disabled(): 0, pid: 566, name: Xorg
-> > > INFO: lockdep is turned off.
-> > > Pid: 566, comm: Xorg Not tainted 3.8.0-rc3+ #49
-> > > Call Trace:
-> > >  [<ffffffff81087ad1>] __might_sleep+0x141/0x200
-> > >  [<ffffffff8119eddb>] kmem_cache_alloc_trace+0x4b/0x2a0
-> > >  [<ffffffffa0083fb3>] ttm_bo_move_accel_cleanup+0x1d3/0x330 [ttm]
-> > >  [<ffffffffa00c5418>] radeon_move_blit.isra.4+0xf8/0x160 [radeon]
-> > >  [<ffffffffa00c5db0>] radeon_bo_move+0xb0/0x1f0 [radeon]
-> > >  [<ffffffffa00820ed>] ttm_bo_handle_move_mem+0x27d/0x5d0 [ttm]
-> > >  [<ffffffff8108dd51>] ? get_parent_ip+0x11/0x50
-> > >  [<ffffffffa0083307>] ttm_bo_move_buffer+0x127/0x140 [ttm]
-> > >  [<ffffffffa008717d>] ? ttm_eu_list_ref_sub+0x3d/0x60 [ttm]
-> > >  [<ffffffffa00833c2>] ttm_bo_validate+0xa2/0x120 [ttm]
-> > >  [<ffffffffa00c6f45>] radeon_bo_list_validate+0x75/0x90 [radeon]
-> > >  [<ffffffffa00dca22>] radeon_cs_ioctl+0x582/0x950 [radeon]
-> > >  [<ffffffffa002e573>] drm_ioctl+0x4d3/0x580 [drm]
-> > >  [<ffffffffa00dc4a0>] ? radeon_cs_finish_pages+0xf0/0xf0 [radeon]
-> > >  [<ffffffff811c49f9>] do_vfs_ioctl+0x99/0x5a0
-> > >  [<ffffffff812cd3d7>] ? file_has_perm+0x97/0xb0
-> > >  [<ffffffff81103715>] ? rcu_eqs_exit+0x65/0xb0
-> > >  [<ffffffff811c4f91>] sys_ioctl+0x91/0xb0
-> > >  [<ffffffff81695ad4>] tracesys+0xdd/0xe2
-> > > 
-> > 
-> > I see lots of these [mostly from page fault], the following one (quick and dirty) works for me.
+On Fri, Feb 08, 2013 at 01:20:31PM +0900, Jaegeuk Kim wrote:
+
+> Hi Al,
 > 
-> Is that patch or any other fix being picked up? It's over three weeks
-> now and I'm still seeing those BUGs with the latest 3.8-rc.
-> 
+> Could you send the patches to me?
+> I'll merge them in my tree and submit them in the next merge window.
+> Is it OK?
 
-None that I'm aware of.
+Feel free to fetch/cherry-pick or simply pull from
 
+git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git f2fs
 
-	-ss
+- that branchlet grows directly off the mainline and it's not going to
+be rebased...
+
+Shortlog:
+Al Viro (4):
+      f2fs: init_dent_inode() should take qstr
+      f2fs: switch new_inode_page() from dentry to qstr
+      f2fs: switch init_inode_metadata() to passing parent and name separately
+      f2fs: get rid of fake on-stack dentries
+
+Diffstat:
+ fs/f2fs/dir.c      |   29 +++++++++++++----------------
+ fs/f2fs/f2fs.h     |   12 +++++++++---
+ fs/f2fs/node.c     |    4 ++--
+ fs/f2fs/recovery.c |   12 +++++-------
+ 4 files changed, 29 insertions(+), 28 deletions(-)
+
