@@ -1,100 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760110Ab3BHMYz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 07:24:55 -0500
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:48036 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758100Ab3BHMYx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 07:24:53 -0500
-Message-ID: <5114EE1C.1040802@linux.vnet.ibm.com>
-Date: Fri, 08 Feb 2013 17:52:52 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S1760122Ab3BHM0X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 07:26:23 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:34204 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758100Ab3BHM0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 07:26:22 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: valdis.kletnieks@vt.edu, artem.savkov@gmail.com, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com
+Subject: Re: [PATCH 0/4] CPUFreq Fixes for 3.9
+Date: Fri, 08 Feb 2013 13:32:39 +0100
+Message-ID: <2130803.VQA31hf2jE@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAKohpomrLAQiP58+OVBrm3jb8rd5DK3z+7_kyB_MsKM7UyyWRw@mail.gmail.com>
+References: <cover.1360232293.git.viresh.kumar@linaro.org> <2896238.eRV3G7kyl2@vostro.rjw.lan> <CAKohpomrLAQiP58+OVBrm3jb8rd5DK3z+7_kyB_MsKM7UyyWRw@mail.gmail.com>
 MIME-Version: 1.0
-To: lsf-pc@lists.linux-foundation.org
-CC: linux-mm@kvack.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [LSF/MM TOPIC][ATTEND] Linux VM Infrastructure to support Memory
- Power Management
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13020812-0260-0000-0000-0000028187EF
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Friday, February 08, 2013 08:20:55 AM Viresh Kumar wrote:
+> On 8 February 2013 05:03, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > I should have done that before, sorry about it.
+> >
+> > Can you please rework this series on top of linux-pm.git/pm-cpufreq and
+> > try to avoid introducing new issues this time?
+> 
+> Even i want to do that, but when i fetch your repo i don't see all applied
+> patches in this branch.
 
-Today, we are increasingly seeing computer systems sporting larger and larger
-amounts of RAM, in order to meet workload demands. However, memory consumes a
-significant amount of power, potentially upto more than a third of total system
-power on server systems. So naturally, memory becomes the next big target for
-power management - on embedded systems and smartphones, and all the way upto
-large server systems.
+The top-most commit in that branch is
 
-Modern memory hardware such as DDR3 support a number of power management
-capabilities. And new firmware standards such as ACPI 5.0 have added support
-for exposing the power-management capabilities of the underlying memory hardware
-to the Operating System. So it is upto the kernel's MM subsystem to make the
-best use of these capabilities and manage memory power-efficiently.
-It had been demonstrated on a Samsung Exynos board (with 2 GB RAM) that upto
-6% of total system power can be saved by making the Linux kernel MM subsystem
-power-aware[1]. (More savings can be expected on systems with larger amounts
-of memory, and perhaps improved further using better MM designs).
+commit 73bf0fc2b03d1f4fdada0ec430dc20bfb089cfd5
+Author: Viresh Kumar <viresh.kumar@linaro.org>
+Date:   Tue Feb 5 22:21:14 2013 +0100
 
-Often this simply translates to having the Linux MM understand the granularity
-at which RAM modules can be power-managed, and consolidating the memory
-allocations and references to a minimum no. of these power-manageable
-"memory regions". It is of particular interest to note that most of these
-memory hardware have the intelligence to automatically save power, such as
-putting memory banks into (content-preserving) low-power states when not
-referenced for a threshold amount of time. All that the kernel has to do, is
-avoid wrecking the power-savings logic by scattering its allocations and
-references all over the system memory. IOW, the kernel/MM doesn't really need
-to keep track of memory DIMMs and perform their power-state transitions - most
-often it is automatically handled by the hardware/memory-controller. The MM
-has to just co-operate by keeping the references consolidated to a minimum
-no. of memory regions.
+    cpufreq: Don't remove sysfs link for policy->cpu
 
-To that end, I had recently posted patchsets implementing 2 very different MM
-designs, namely the "Hierarchy" design[2] (originally developed by Ankita Garg)
-and the new "Sorted-buddy" design[3]. The challenge with the latter design is
-that it can potentially lead to increased run-time memory allocation overheads.
-At the summit, I would like to brainstorm on ideas and designs for reducing the
-run-time cost of implementing memory power management, and seek suggestions and
-feedback from MM developers on the issues involved.
+because that's when the locking problems were first reported and I stopped
+putting new commits into that branch.  And since the locking problems were
+introduced by b8eed8a "cpufreq: Simplify __cpufreq_remove_dev()" I want them
+to be fixed on top of pm-cpufreq rather than on top of more new stuff that
+very well may introduce *more* problems.
 
-About myself:
-------------
-I have been contributing to CPU- and System-wide power management subsystems in
-the kernel such as CPU idle and Suspend-to-RAM, in terms of enhancements to their
-reliability/scalability. In particular, I have contributed to some of the
-core kernel infrastructure that Suspend-to-RAM depends on, such as Freezer and
-CPU hotplug, and have been working towards redesigning CPU hotplug to get rid of
-some of its pain points.
+So as I said, please rework the fixes on top of linux-pm.git/pm-cpufreq.
 
-Recently I have been looking at conserving memory power, and came up with the
-"Sorted-buddy" design [3] of the Linux MM, which alters the buddy allocator to
-keep memory allocations consolidated to a minimum no. of memory regions. I would
-like to discuss this topic with other MM developers at the summit and get
-feedback on the best way to take this technology forward.
+Moreover, I'd very much prefer it if you fixed the problems introduced by
+b8eed8a "cpufreq: Simplify __cpufreq_remove_dev()" separately and *then* any
+other locking problems you're seeing in the code, although people are not
+reporting them.
+
+You seem to have a clear picture of how the code should work now, so that
+won't be a big trouble I guess.
+
+Thanks,
+Rafael
 
 
-References:
-----------
-
-1. Estimate of potential power savings on Samsung exynos board
-   http://article.gmane.org/gmane.linux.kernel.mm/65935
-
-2. "Hierarchy" design for Memory Power Management:
-    http://lwn.net/Articles/445045/ (Original posting by Ankita Garg)
-    http://lwn.net/Articles/523311/ (Forward-port to 3.7-rc3)
-
-3. "Sorted-buddy" design for Memory Power Management:
-    http://article.gmane.org/gmane.linux.power-management.general/28498/
-
-
-Regards,
-Srivatsa S. Bhat
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
