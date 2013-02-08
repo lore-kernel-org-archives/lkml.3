@@ -1,117 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759592Ab3BHDOu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 22:14:50 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:35877 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758568Ab3BHDOt (ORCPT
+	id S1759656Ab3BHDRN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 22:17:13 -0500
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:55074 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759602Ab3BHDRL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 22:14:49 -0500
-Date: Fri, 8 Feb 2013 14:14:47 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 4/8] cputime: Generic on-demand virtual cputime
- accounting
-Message-Id: <20130208141447.03914013db9a5f7308fc1675@canb.auug.org.au>
-In-Reply-To: <20130208140749.5a094f271e529dacfb962b51@canb.auug.org.au>
-References: <1359399845-10568-1-git-send-email-fweisbec@gmail.com>
-	<1359399845-10568-5-git-send-email-fweisbec@gmail.com>
-	<20130208140749.5a094f271e529dacfb962b51@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Thu, 7 Feb 2013 22:17:11 -0500
+Message-ID: <1360293418.3544.83.camel@thor.lan>
+Subject: Re: [PATCH v3 12/23] tty: Kick waiters _after_ the ldisc is locked
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>, Sasha Levin <levinsasha928@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ilya Zykov <ilya@ilyx.ru>, Dave Jones <davej@redhat.com>
+Date: Thu, 07 Feb 2013 22:16:58 -0500
+In-Reply-To: <5113CCAF.8030600@suse.cz>
+References: <1355509370-5883-1-git-send-email-peter@hurleysoftware.com>
+	 <1360095638-6624-1-git-send-email-peter@hurleysoftware.com>
+	 <1360095638-6624-13-git-send-email-peter@hurleysoftware.com>
+	 <5113CCAF.8030600@suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3-0pjh1 
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__8_Feb_2013_14_14_47_+1100_8PRWiGC1WXHj12yk"
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 125194 peter@hurleysoftware.com
+X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__8_Feb_2013_14_14_47_+1100_8PRWiGC1WXHj12yk
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, 2013-02-07 at 16:47 +0100, Jiri Slaby wrote:
+> On 02/05/2013 09:20 PM, Peter Hurley wrote:
+> 
+> The question is obvious: why?
+> 
+> The waiters usually don't care about ldisc.
 
-Hi Frederic,
+This patch really needed a decent commit message, but this isn't a fix,
+per se.
 
-On Fri, 8 Feb 2013 14:07:49 +1100 Stephen Rothwell <sfr@canb.auug.org.au> w=
-rote:
->
-> This patch has the side effect of changing the default configurations:
-> (This is PowerPC pseries_defconfig before/after this patch)
->=20
-> @@ -119,8 +120,8 @@
->  #
->  # CPU/Task time and stats accounting
->  #
-> -# CONFIG_TICK_CPU_ACCOUNTING is not set
-> -CONFIG_VIRT_CPU_ACCOUNTING=3Dy
-> +CONFIG_TICK_CPU_ACCOUNTING=3Dy
-> +# CONFIG_VIRT_CPU_ACCOUNTING_NATIVE is not set
->  # CONFIG_BSD_PROCESS_ACCT is not set
->  CONFIG_TASKSTATS=3Dy
->  CONFIG_TASK_DELAY_ACCT=3Dy
->=20
-> I don't know if that was deliberate, but it was suprising.  I noticed
-> when this patch entered next-20130207.
+While I was auditing the ldisc hangup, I realized that when a reader is
+woken from sleeping in n_tty_read() and loops back around because there
+is more room in the reader's buffer (nr > 0), input_available_p() will
+schedule buffer work and wait for it to complete before testing if the
+tty is hung up.
 
-I suspect that this is caused by the changes to init/Kconfig:
+This change ensures that flush_to_ldisc() sees a halted ldisc and
+promptly returns.  A blocking reader whose read_buf is empty is the most
+likely state when a hangup occurs.
 
-diff --git a/init/Kconfig b/init/Kconfig
-index be8b7f5..a05f843 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -326,6 +326,9 @@ source "kernel/time/Kconfig"
-=20
- menu "CPU/Task time and stats accounting"
-=20
-+config VIRT_CPU_ACCOUNTING
-+	bool
-+
- choice
- 	prompt "Cputime accounting"
- 	default TICK_CPU_ACCOUNTING if !PPC64
+I didn't include it tty_ldisc_halt(), because tty_set_ldisc() can't kick
+readers out of their i/o loops and tty_ldisc_release() has no waiters.
 
-The next line of context is:
+Even if the change is nixed, the comments should be changed; the FIXME
+is from before waiting for readers to exit their i/o loops.
 
-        default VIRT_CPU_ACCOUNTING if PPC64
+---- separate but related discussion ----
 
-Which may have needed changing as well?  Indeed, changing that to
-VIRT_CPU_ACCOUNTING_NATIVE restores the old defaults.
+Another thing to note is this really does nothing to address the problem
+of a slave pty being unable to read all the data written by the master,
+if the master is closed with a lot of data in the tty buffer. In this
+case, when the slave is hungup as a result of the master closing, it's
+ldisc will be halted, preventing the tty_buffer from pushing more data. 
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+In my opinion, this is an important fixme.  Almost as important as
+replacing the TTY_LDISC flag + reference count with a rwsem to get
+lockdep support...
 
---Signature=_Fri__8_Feb_2013_14_14_47_+1100_8PRWiGC1WXHj12yk
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> > Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+> > ---
+> >  drivers/tty/tty_ldisc.c | 12 ++++++------
+> >  1 file changed, 6 insertions(+), 6 deletions(-)
+> > 
+> > diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
+> > index c903778..8a86a72 100644
+> > --- a/drivers/tty/tty_ldisc.c
+> > +++ b/drivers/tty/tty_ldisc.c
+> > @@ -604,6 +604,12 @@ static bool tty_ldisc_hangup_halt(struct tty_struct *tty)
+> >  
+> >  	clear_bit(TTY_LDISC, &tty->flags);
+> >  
+> > +	/* Wakeup waiters so they can discover the tty is hupping, abort
+> > +	 * their i/o loops, and release their ldisc references
+> > +	 */
+> > +	wake_up_interruptible_poll(&tty->write_wait, POLLOUT);
+> > +	wake_up_interruptible_poll(&tty->read_wait, POLLIN);
+> > +
+> >  	if (tty->ldisc) {	/* Not yet closed */
+> >  		tty_unlock(tty);
+> >  
+> > @@ -875,12 +881,6 @@ void tty_ldisc_hangup(struct tty_struct *tty)
+> >  		tty_ldisc_deref(ld);
+> >  	}
+> >  	/*
+> > -	 * FIXME: Once we trust the LDISC code better we can wait here for
+> > -	 * ldisc completion and fix the driver call race
+> > -	 */
+> > -	wake_up_interruptible_poll(&tty->write_wait, POLLOUT);
+> > -	wake_up_interruptible_poll(&tty->read_wait, POLLIN);
+> > -	/*
+> >  	 * Shutdown the current line discipline, and reset it to
+> >  	 * N_TTY if need be.
+> >  	 *
+> > 
+> 
+> 
 
-iQIcBAEBCAAGBQJRFG2nAAoJEECxmPOUX5FEGF4P/3BLna8t0BGkV9U4Iqk576Tc
-/yHogk27oIY6LjqSaMbRXyPs1b0DdzyHuMQ/jhdKzazNZzQ9PzcZD1PlOo+h31Pw
-Y53JcalMqFuq2xvCNnYjralphv2mHKDOJXErp22srdnXN+8V93Qn1dMLWApKZ/MX
-ElHJGS6XGvBHwZ9CEPu+q80vDIE0ctHtMZlee0JJCPnXcsPvArUgoMzV/+5SArET
-oRwc7pXEtz/IbV+8bdjEVoVSSCC/J9ch40mVKF+y4g8aCxqIvpji+8uZyCAHrAmx
-1jrwTcaKb3ef6tQVQksQWSIfzj8qMeHJzDBiQhInrVmumQi7LE9u84IbyAo9hEsB
-0saEux8PHoBHjlt0tU7SH8B6nSMfywt8RKkZHEKa4vzLgQ7J+qDRFsZiEVCSZrTk
-LcJNyo0H9Dz+4R3hN/jgwHr9jdGtFynyGdg/y2agpaFmUxkbbkZ1hvFnoroXvTnF
-awm6CuJxG05EaV0BUINiJYeG9pLCDWJLuJRMvw8/wTKWCvh/rysC0Pju9s7GH+Ed
-QyJ1aLBQXSZWszhXXQm0Ry/XphqbzmhTqclRHfR0HnkvQa3fnY+LIr4OgQHLE5N/
-maV4LMaT3YrlLRlIZq3cDm72fbGggrW7YCPpV5DQTOb3v9uFjPUYw/PbnZb8nFgR
-UMdJAJUHMbl+eSAHQTkC
-=OV61
------END PGP SIGNATURE-----
 
---Signature=_Fri__8_Feb_2013_14_14_47_+1100_8PRWiGC1WXHj12yk--
