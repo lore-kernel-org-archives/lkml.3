@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946414Ab3BHM2q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 07:28:46 -0500
+	id S1946431Ab3BHM2s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 07:28:48 -0500
 Received: from mga11.intel.com ([192.55.52.93]:5359 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1946394Ab3BHM2m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 07:28:42 -0500
+	id S1946417Ab3BHM2q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 07:28:46 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,629,1355126400"; 
-   d="scan'208";a="284477748"
+   d="scan'208";a="284477773"
 From: Tomas Winkler <tomas.winkler@intel.com>
 To: gregkh@linuxfoundation.org, sameo@linux.intel.com
 Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
         Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next 03/11 V2] mei: bus: Initial implementation for I/O routines
-Date: Fri,  8 Feb 2013 14:28:16 +0200
-Message-Id: <1360326504-17041-4-git-send-email-tomas.winkler@intel.com>
+Subject: [char-misc-next 05/11 V2] mei: bus: Call bus routines from the core code
+Date: Fri,  8 Feb 2013 14:28:18 +0200
+Message-Id: <1360326504-17041-6-git-send-email-tomas.winkler@intel.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1360326504-17041-1-git-send-email-tomas.winkler@intel.com>
 References: <1360326504-17041-1-git-send-email-tomas.winkler@intel.com>
@@ -25,338 +25,115 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Samuel Ortiz <sameo@linux.intel.com>
 
+Register the MEI bus type against the kernel core bus APIs and
+call the bus Rx handler from interrupt.c
+
 Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 ---
- drivers/misc/mei/bus.c     |  226 ++++++++++++++++++++++++++++++++++++++++++++
- drivers/misc/mei/bus.h     |    3 +
- drivers/misc/mei/mei_dev.h |   15 +++
- include/linux/mei_bus.h    |   11 ++
- 4 files changed, 255 insertions(+), 0 deletions(-)
+ drivers/misc/mei/bus.c       |   22 ++++++++++++++++++++++
+ drivers/misc/mei/interrupt.c |    2 ++
+ drivers/misc/mei/mei_dev.h   |    4 ++++
+ drivers/misc/mei/pci-me.c    |   21 +++++++++++++++++++--
+ 4 files changed, 47 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/misc/mei/bus.c b/drivers/misc/mei/bus.c
-index 0a5e624..97e1988 100644
+index 2e12928..1048cd4 100644
 --- a/drivers/misc/mei/bus.c
 +++ b/drivers/misc/mei/bus.c
-@@ -16,6 +16,7 @@
- #include <linux/module.h>
- #include <linux/device.h>
- #include <linux/kernel.h>
-+#include <linux/sched.h>
- #include <linux/init.h>
- #include <linux/errno.h>
- #include <linux/slab.h>
-@@ -25,6 +26,8 @@
- #include <linux/mei_bus.h>
- 
- #include "mei_dev.h"
-+#include "hw-me.h"
-+#include "client.h"
- #include "bus.h"
- 
- static int mei_device_match(struct device *dev, struct device_driver *drv)
-@@ -73,6 +76,11 @@ static int mei_device_remove(struct device *dev)
- 	if (!client || !dev->driver)
- 		return 0;
- 
-+	if (client->event_cb) {
-+		client->event_cb = NULL;
-+		cancel_work_sync(&client->event_work);
-+	}
-+
- 	driver = to_mei_driver(dev->driver);
- 	if (!driver->remove) {
- 		dev->driver = NULL;
-@@ -182,3 +190,221 @@ void mei_driver_unregister(struct mei_bus_driver *driver)
- 	pr_debug("mei: driver [%s] unregistered\n", driver->driver.name);
+@@ -429,3 +429,25 @@ int mei_bus_register_event_cb(struct mei_bus_client *client,
+ 	return 0;
  }
- EXPORT_SYMBOL(mei_driver_unregister);
+ EXPORT_SYMBOL(mei_bus_register_event_cb);
 +
-+int mei_send(struct mei_cl *cl, u8 *buf, size_t length)
++void mei_bus_rx_event(struct mei_cl *cl)
 +{
-+	struct mei_device *dev;
-+	struct mei_msg_hdr mei_hdr;
-+	struct mei_cl_cb *cb;
-+	int me_cl_id, err;
++	struct mei_bus_client *client = cl->client;
 +
-+	if (WARN_ON(!cl || !cl->dev))
-+		return -ENODEV;
++	if (!client || !client->event_cb)
++		return;
 +
-+	if (cl->state != MEI_FILE_CONNECTED)
-+		return -ENODEV;
++	set_bit(MEI_BUS_EVENT_RX, &client->events);
 +
-+	cb = mei_io_cb_init(cl, NULL);
-+	if (!cb)
-+		return -ENOMEM;
-+
-+	err = mei_io_cb_alloc_req_buf(cb, length);
-+	if (err < 0) {
-+		mei_io_cb_free(cb);
-+		return err;
-+	}
-+
-+	memcpy(cb->request_buffer.data, buf, length);
-+	cb->fop_type = MEI_FOP_WRITE;
-+
-+	dev = cl->dev;
-+
-+	mutex_lock(&dev->device_lock);
-+
-+	/* Check if we have an ME client device */
-+	me_cl_id = mei_me_cl_by_id(dev, cl->me_client_id);
-+	if (me_cl_id == dev->me_clients_num) {
-+		err = -ENODEV;
-+		goto out_err;
-+	}
-+
-+	if (length > dev->me_clients[me_cl_id].props.max_msg_length) {
-+		err = -EINVAL;
-+		goto out_err;
-+	}
-+
-+	err = mei_cl_flow_ctrl_creds(cl);
-+	if (err < 0)
-+		goto out_err;
-+
-+	/* Host buffer is not ready, we queue the request */
-+	if (err == 0 || !dev->hbuf_is_ready) {
-+		cb->buf_idx = 0;
-+		mei_hdr.msg_complete = 0;
-+		cl->writing_state = MEI_WRITING;
-+		list_add_tail(&cb->list, &dev->write_list.list);
-+
-+		mutex_unlock(&dev->device_lock);
-+
-+		return length;
-+	}
-+
-+	dev->hbuf_is_ready = false;
-+
-+	/* Check for a maximum length */
-+	if (length > mei_hbuf_max_len(dev)) {
-+		mei_hdr.length = mei_hbuf_max_len(dev);
-+		mei_hdr.msg_complete = 0;
-+	} else {
-+		mei_hdr.length = length;
-+		mei_hdr.msg_complete = 1;
-+	}
-+
-+	mei_hdr.host_addr = cl->host_client_id;
-+	mei_hdr.me_addr = cl->me_client_id;
-+	mei_hdr.reserved = 0;
-+
-+	if (mei_write_message(dev, &mei_hdr, buf)) {
-+		err = -EIO;
-+		goto out_err;
-+	}
-+
-+	cl->writing_state = MEI_WRITING;
-+	cb->buf_idx = mei_hdr.length;
-+
-+	if (!mei_hdr.msg_complete) {
-+		list_add_tail(&cb->list, &dev->write_list.list);
-+	} else {
-+		if (mei_cl_flow_ctrl_reduce(cl)) {
-+			err = -EIO;
-+			goto out_err;
-+		}
-+
-+		list_add_tail(&cb->list, &dev->write_waiting_list.list);
-+	}
-+
-+	mutex_unlock(&dev->device_lock);
-+
-+	return mei_hdr.length;
-+
-+out_err:
-+	mutex_unlock(&dev->device_lock);
-+	mei_io_cb_free(cb);
-+
-+	return err;
++	schedule_work(&client->event_work);
 +}
 +
-+int mei_recv(struct mei_cl *cl, u8 *buf, size_t length)
++int __init mei_bus_init(struct pci_dev *pdev)
 +{
-+	struct mei_device *dev;
-+	struct mei_cl_cb *cb;
-+	size_t r_length;
-+	int err;
-+
-+	if (WARN_ON(!cl || !cl->dev))
-+		return -ENODEV;
-+
-+	dev = cl->dev;
-+
-+	mutex_lock(&dev->device_lock);
-+
-+	if (!cl->read_cb) {
-+		err = mei_cl_read_start(cl);
-+		if (err < 0) {
-+			mutex_unlock(&dev->device_lock);
-+			return err;
-+		}
-+	}
-+
-+	if (cl->reading_state != MEI_READ_COMPLETE &&
-+	    !waitqueue_active(&cl->rx_wait)) {
-+		mutex_unlock(&dev->device_lock);
-+
-+		if (wait_event_interruptible(cl->rx_wait,
-+				(MEI_READ_COMPLETE == cl->reading_state))) {
-+			if (signal_pending(current))
-+				return -EINTR;
-+			return -ERESTARTSYS;
-+		}
-+
-+		mutex_lock(&dev->device_lock);
-+	}
-+
-+	cb = cl->read_cb;
-+
-+	if (cl->reading_state != MEI_READ_COMPLETE) {
-+		r_length = 0;
-+		goto out;
-+	}
-+
-+	r_length = min_t(size_t, length, cb->buf_idx);
-+
-+	memcpy(buf, cb->response_buffer.data, r_length);
-+
-+	mei_io_cb_free(cb);
-+	cl->reading_state = MEI_IDLE;
-+	cl->read_cb = NULL;
-+
-+out:
-+	mutex_unlock(&dev->device_lock);
-+
-+	return r_length;
++	return bus_register(&mei_bus_type);
 +}
 +
-+int mei_bus_send(struct mei_bus_client *client, u8 *buf, size_t length)
++void __exit mei_bus_exit(void)
 +{
-+	struct mei_cl *cl = NULL;
-+
-+	/* TODO: hook between mei_bus_client and mei_cl */
-+
-+	if (client->send)
-+		return client->send(client, buf, length);
-+
-+	return mei_send(cl, buf, length);
++	bus_unregister(&mei_bus_type);
 +}
-+EXPORT_SYMBOL(mei_bus_send);
-+
-+int mei_bus_recv(struct mei_bus_client *client, u8 *buf, size_t length)
-+{
-+	struct mei_cl *cl = NULL;
-+
-+	/* TODO: hook between mei_bus_client and mei_cl */
-+
-+	if (client->recv)
-+		return client->recv(client, buf, length);
-+
-+	return mei_recv(cl, buf, length);
-+}
-+EXPORT_SYMBOL(mei_bus_recv);
-+
-+static void mei_bus_event_work(struct work_struct *work)
-+{
-+	struct mei_bus_client *client;
-+
-+	client = container_of(work, struct mei_bus_client, event_work);
-+
-+	if (client->event_cb)
-+		client->event_cb(client, client->events, client->event_context);
-+
-+	client->events = 0;
-+
-+	/* Prepare for the next read */
-+	mei_cl_read_start(client->cl);
-+}
-+
-+int mei_bus_register_event_cb(struct mei_bus_client *client,
-+			      mei_bus_event_cb_t event_cb, void *context)
-+{
-+	if (client->event_cb)
-+		return -EALREADY;
-+
-+	client->events = 0;
-+	client->event_cb = event_cb;
-+	client->event_context = context;
-+	INIT_WORK(&client->event_work, mei_bus_event_work);
-+
-+	mei_cl_read_start(client->cl);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(mei_bus_register_event_cb);
-diff --git a/drivers/misc/mei/bus.h b/drivers/misc/mei/bus.h
-index 7130b67..81789f6 100644
---- a/drivers/misc/mei/bus.h
-+++ b/drivers/misc/mei/bus.h
-@@ -24,4 +24,7 @@ struct mei_bus_client *mei_add_device(struct mei_device *mei_dev,
- 					uuid_le uuid, char *name);
- void mei_remove_device(struct mei_bus_client *client);
+diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
+index 3535b26..d0dea50 100644
+--- a/drivers/misc/mei/interrupt.c
++++ b/drivers/misc/mei/interrupt.c
+@@ -49,6 +49,8 @@ void mei_irq_complete_handler(struct mei_cl *cl, struct mei_cl_cb *cb_pos)
+ 		cl->reading_state = MEI_READ_COMPLETE;
+ 		if (waitqueue_active(&cl->rx_wait))
+ 			wake_up_interruptible(&cl->rx_wait);
++		else
++			mei_bus_rx_event(cl);
  
-+int mei_send(struct mei_cl *cl, u8 *buf, size_t length);
-+int mei_recv(struct mei_cl *cl, u8 *buf, size_t length);
-+
- #endif /* _MEI_BUS_H_ */
+ 	}
+ }
 diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
-index ce19b26..e95d6e1 100644
+index 4e1daf2..a9419a8 100644
 --- a/drivers/misc/mei/mei_dev.h
 +++ b/drivers/misc/mei/mei_dev.h
-@@ -273,6 +273,13 @@ struct mei_hw_ops {
-  * @cl: mei client
-  * @driver: mei bus driver for this client
-  * @dev: linux driver model device pointer
-+ * @send: Tx hook for the bus client. This allows clients to trap
-+ *	the driver buffers before actually pushing it to the ME.
-+ * @recv: Rx hook for the bus client. This allows clients to trap the
-+ *	ME buffers before forwarding them to the driver.
-+ * @event_cb: Drivers register this callback to get asynchronous ME
-+	events (e.g. Rx buffer pending) notifications.
-+ * @events: Events bitmask sent to the driver.
-  * @priv_data: client private data
-  */
- struct mei_bus_client {
-@@ -284,6 +291,14 @@ struct mei_bus_client {
- 	struct mei_bus_driver *driver;
- 	struct device dev;
+@@ -421,6 +421,10 @@ static inline unsigned long mei_secs_to_jiffies(unsigned long sec)
+ 	return msecs_to_jiffies(sec * MSEC_PER_SEC);
+ }
  
-+	int (*send)(struct mei_bus_client *client, u8 *buf, size_t length);
-+	int (*recv)(struct mei_bus_client *client, u8 *buf, size_t length);
++void mei_bus_rx_event(struct mei_cl *cl);
++int mei_bus_init(struct pci_dev *pdev);
++void mei_bus_exit(void);
 +
-+	struct work_struct event_work;
-+	mei_bus_event_cb_t event_cb;
-+	void *event_context;
-+	unsigned long events;
-+
- 	void *priv_data;
+ 
+ /*
+  * mei init function prototypes
+diff --git a/drivers/misc/mei/pci-me.c b/drivers/misc/mei/pci-me.c
+index b40ec06..5daaa0c 100644
+--- a/drivers/misc/mei/pci-me.c
++++ b/drivers/misc/mei/pci-me.c
+@@ -197,7 +197,6 @@ static int mei_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	mei_pdev = pdev;
+ 	pci_set_drvdata(pdev, dev);
+ 
+-
+ 	schedule_delayed_work(&dev->timer_work, HZ);
+ 
+ 	mutex_unlock(&mei_mutex);
+@@ -389,7 +388,25 @@ static struct pci_driver mei_driver = {
+ 	.driver.pm = MEI_PM_OPS,
  };
  
-diff --git a/include/linux/mei_bus.h b/include/linux/mei_bus.h
-index 0bd1189c..738e073 100644
---- a/include/linux/mei_bus.h
-+++ b/include/linux/mei_bus.h
-@@ -88,7 +88,18 @@ struct mei_bus_driver {
- 	int (*remove)(struct mei_bus_client *client);
- };
+-module_pci_driver(mei_driver);
++static int __init mei_init(void)
++{
++	int err;
++
++	err = mei_bus_init(mei_pdev);
++	if (err)
++		return err;
++
++	return pci_register_driver(&mei_driver);
++}
++
++static void __exit mei_exit(void)
++{
++	pci_unregister_driver(&mei_driver);
++	mei_bus_exit();
++}
++
++module_init(mei_init);
++module_exit(mei_exit);
  
-+#define MEI_BUS_EVENT_RX 0
-+#define MEI_BUS_EVENT_TX 1
-+
- int mei_driver_register(struct mei_bus_driver *driver);
- void mei_driver_unregister(struct mei_bus_driver *driver);
- 
-+int mei_bus_send(struct mei_bus_client *client, u8 *buf, size_t length);
-+int mei_bus_recv(struct mei_bus_client *client, u8 *buf, size_t length);
-+
-+typedef void (*mei_bus_event_cb_t)(struct mei_bus_client *client,
-+				   u32 events, void *context);
-+int mei_bus_register_event_cb(struct mei_bus_client *client,
-+			      mei_bus_event_cb_t read_cb, void *context);
-+
- #endif /* _LINUX_MEI_BUS_H */
+ MODULE_AUTHOR("Intel Corporation");
+ MODULE_DESCRIPTION("Intel(R) Management Engine Interface");
 -- 
 1.7.4.4
 
