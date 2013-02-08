@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947310Ab3BHXIJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 18:08:09 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:35524 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1947233Ab3BHXIG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 18:08:06 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH] Documentation / acpi: refer to correct file for acpi_platform_device_ids[] table
-Date: Sat, 09 Feb 2013 00:14:27 +0100
-Message-ID: <38872303.yk2lQjq1aC@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1360332421-32140-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1360332421-32140-1-git-send-email-mika.westerberg@linux.intel.com>
+	id S1947319Ab3BHXJZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 18:09:25 -0500
+Received: from mail-ia0-f173.google.com ([209.85.210.173]:61895 "EHLO
+	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1947250Ab3BHXJX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 18:09:23 -0500
+Message-ID: <5115859F.8070805@amacapital.net>
+Date: Fri, 08 Feb 2013 15:09:19 -0800
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: jwboyer@gmail.com
+CC: Matthew Garrett <mjg@redhat.com>, Kees Cook <keescook@chromium.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        x86@kernel.org, linux-efi@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH] x86: Lock down MSR writing in secure boot
+References: <20130208191213.GA25081@www.outflux.net> <00780235-deac-4f80-b936-867834e05661@email.android.com> <CAGXu5jJnLY6Qp3J6HBpVg-AdUGdKYm-e4wErZO3=NuRo04ajvg@mail.gmail.com> <5115553A.5000708@zytor.com> <CAGXu5j+_mGzR+72YqORhErMUY1aF1H2urczZ8SwuJHZK-oZL6g@mail.gmail.com> <dee64752-850c-4d78-b703-f47a985bc13e@email.android.com> <CAGXu5jLAufTRm=sDST0br_WEkn4o0Hpjv2jDP2Na=cCvuM+MGg@mail.gmail.com> <1360355671.18083.18.camel@x230.lan> <CAGXu5jKo2PfMBO4A0ZgQcrPuj8OHNaff+CjAesOAWkZc0vB9+Q@mail.gmail.com> <1360357636.18083.19.camel@x230.lan> <CA+5PVA4EbgBRgg+ZDa4+vG0Ngw8wJ3kH6NcmDvZ=+CP=kH82_A@mail.gmail.com>
+In-Reply-To: <CA+5PVA4EbgBRgg+ZDa4+vG0Ngw8wJ3kH6NcmDvZ=+CP=kH82_A@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, February 08, 2013 04:07:01 PM Mika Westerberg wrote:
-> When the ACPI platform device code was converted to the new ACPI scan
-> handler facility, the the acpi_platform_device_ids[] was moved to
-> drivers/acpi/acpi_platform.c. Update the documentation accordingly.
+On 02/08/2013 01:14 PM, Josh Boyer wrote:
+> On Fri, Feb 8, 2013 at 4:07 PM, Matthew Garrett
+> <matthew.garrett-05XSO3Yj/JvQT0dZR+AlfA@public.gmane.org> wrote:
+>> On Fri, 2013-02-08 at 13:02 -0800, Kees Cook wrote:
+>>
+>>> I don't find it unreasonable to drop all caps and lose access to
+>>> sensitive things. :) That's sort of the point, really. I think a cap
+>>> is the best match. It seems like it should either be a cap or a
+>>> namespace flag, but the latter seems messy.
+>>
+>> Yeah, I think it's an expected outcome, but it means that if (say) qemu
+>> drops privileges, qemu can no longer access PCI resources - even on
+>> non-secure boot systems. That breaks existing userspace.
 > 
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Right.  We've had a few reports in Fedora of things breaking on non-SB
+> systems because of this.  The qemu one is the latest, but the general
+> problem is people think dropping all caps blindly is making their apps
+> safer.  Then they find they can't do things they could do before the new
+> cap was added.  It's messy.
 
-Applied.
+Why not require CAP_COMPROMISE_KERNEL to open (with O_RDWR or O_WRONLY)
+/dev/msr?  After all, sudo </dev/null >/dev/msr will cause a privileged
+write() call on the fd as long as the capability is in your bounding set.
 
-When you post any patches touching ACPI, please send CCs of them to
-linux-acpi as well.
-
-Thanks,
-Rafael
-
-
-> ---
->  Documentation/acpi/enumeration.txt |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/Documentation/acpi/enumeration.txt b/Documentation/acpi/enumeration.txt
-> index 54469bc..94a6561 100644
-> --- a/Documentation/acpi/enumeration.txt
-> +++ b/Documentation/acpi/enumeration.txt
-> @@ -63,8 +63,8 @@ from ACPI tables.
->  Currently the kernel is not able to automatically determine from which ACPI
->  device it should make the corresponding platform device so we need to add
->  the ACPI device explicitly to acpi_platform_device_ids list defined in
-> -drivers/acpi/scan.c. This limitation is only for the platform devices, SPI
-> -and I2C devices are created automatically as described below.
-> +drivers/acpi/acpi_platform.c. This limitation is only for the platform
-> +devices, SPI and I2C devices are created automatically as described below.
->  
->  SPI serial bus support
->  ~~~~~~~~~~~~~~~~~~~~~~
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+--Andy
