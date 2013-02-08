@@ -1,59 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760452Ab3BHXQc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 18:16:32 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:60686 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757205Ab3BHXQa (ORCPT
+	id S1947322Ab3BHXRJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 18:17:09 -0500
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:59324 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757205Ab3BHXRH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 18:16:30 -0500
-Message-ID: <51158742.4030803@linux.vnet.ibm.com>
-Date: Fri, 08 Feb 2013 15:16:18 -0800
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Fri, 8 Feb 2013 18:17:07 -0500
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, bp@alien8.de,
-        mingo@kernel.org, tglx@linutronix.de
-Subject: Re: [PATCH 1/2] add helper for highmem checks
-References: <20130208202813.62965F25@kernel.stglabs.ibm.com> <51156507.50900@zytor.com>
-In-Reply-To: <51156507.50900@zytor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13020823-7408-0000-0000-00000CA4A9CB
+In-Reply-To: <20130208202550.GB9817@redhat.com>
+References: <1359962232-20811-1-git-send-email-walken@google.com>
+	<1359962232-20811-4-git-send-email-walken@google.com>
+	<20130208202550.GB9817@redhat.com>
+Date: Fri, 8 Feb 2013 15:17:05 -0800
+Message-ID: <CANN689EySbVO7Qc5zhpO4A2AazADD8+yx_Mg1Td5KxhxWvGGrw@mail.gmail.com>
+Subject: Re: [PATCH v2 3/3] mm: accelerate munlock() treatment of THP pages
+From: Michel Lespinasse <walken@google.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/08/2013 12:50 PM, H. Peter Anvin wrote:
-> On 02/08/2013 12:28 PM, Dave Hansen wrote:
->> +static inline phys_addr_t last_lowmem_phys_addr(void)
->> +{
->> +    /*
->> +     * 'high_memory' is not a pointer that can be dereferenced, so
->> +     * avoid calling __pa() on it directly.
->> +     */
->> +    return __pa(high_memory - 1);
->> +}
->> +static inline bool phys_addr_is_highmem(phys_addr_t addr)
->> +{
->> +    return addr > last_lowmem_paddr();
->> +}
->> +
-> 
-> Are we sure that high_memory - 1 is always a valid reference?  Consider
-> especially the case where there is MMIO beyond end of memory on a system
-> which has less RAM than the HIGHMEM boundary...
+On Fri, Feb 8, 2013 at 12:25 PM, Andrea Arcangeli <aarcange@redhat.com> wrote:
+> Hi Michel,
+>
+> On Sun, Feb 03, 2013 at 11:17:12PM -0800, Michel Lespinasse wrote:
+>> munlock_vma_pages_range() was always incrementing addresses by PAGE_SIZE
+>> at a time. When munlocking THP pages (or the huge zero page), this resulted
+>> in taking the mm->page_table_lock 512 times in a row.
+>>
+>> We can do better by making use of the page_mask returned by follow_page_mask
+>> (for the huge zero page case), or the size of the page munlock_vma_page()
+>> operated on (for the true THP page case).
+>>
+>> Note - I am sending this as RFC only for now as I can't currently put
+>> my finger on what if anything prevents split_huge_page() from operating
+>> concurrently on the same page as munlock_vma_page(), which would mess
+>> up our NR_MLOCK statistics. Is this a latent bug or is there a subtle
+>> point I missed here ?
+>
+> I agree something looks fishy: nor mmap_sem for writing, nor the page
+> lock can stop split_huge_page_refcount.
+>
+> Now the mlock side was intended to be safe because mlock_vma_page is
+> called within follow_page while holding the PT lock or the
+> page_table_lock (so split_huge_page_refcount will have to wait for it
+> to be released before it can run). See follow_trans_huge_pmd
+> assert_spin_locked and the pte_unmap_unlock after mlock_vma_page
+> returns.
+>
+> Problem is, the lock side dependen on the TestSetPageMlocked below to
+> be always repeated on the head page (follow_trans_huge_pmd will always
+> pass the head page to mlock_vma_page).
+>
+> void mlock_vma_page(struct page *page)
+> {
+>         BUG_ON(!PageLocked(page));
+>
+>         if (!TestSetPageMlocked(page)) {
+>
+> But what if the head page was split in between two different
+> follow_page calls? The second call wouldn't take the pmd_trans_huge
+> path anymore and the stats would be increased too much.
 
-Yeah, I think it is.  "high_memory" should point at either the end of
-RAM, or the end of the linear map, whichever is lower.  See setup_arch():
+Ah, good point. I am getting increasingly scared about the locking
+here the more I look at it :/
 
-        max_pfn = e820_end_of_ram_pfn();
-	...
-        high_memory = (void *)__va(max_pfn * PAGE_SIZE - 1) + 1;
+> The problem on the munlock side is even more apparent as you pointed
+> out above but now I think the mlock side was problematic too.
+>
+> The good thing is, your accelleration code for the mlock side should
+> have fixed the mlock race already: not ever risking to end up calling
+> mlock_vma_page twice on the head page is not an "accelleration" only,
+> it should also be a natural fix for the race.
+>
+> To fix the munlock side, which is still present, I think one way would
+> be to do mlock and unlock within get_user_pages, so they run in the
+> same place protected by the PT lock or page_table_lock.
 
-or in the highmem init code:
+I actually had a quick try at this before submitting this patch
+series; the difficulty with it was that we want to have the page lock
+before calling munlock_vma_page() and we can't get it while holding
+the page table lock. So we'd need to do some gymnastics involving
+trylock_page() and if that fails, release the page table lock / lock
+the page / reacquire the page table lock / see if we locked the right
+page. This looked nasty, and then I noticed the existing
+hpage_nr_pages() test in munlock_vma_page() and decided to just ask
+you about it :)
 
-        high_memory = (void *) __va(max_low_pfn * PAGE_SIZE - 1) + 1;
+> There are few things that stop split_huge_page_refcount:
+> page_table_lock, lru_lock, compound_lock, anon_vma lock. So if we keep
+> calling munlock_vma_page outside of get_user_pages (so outside of the
+> page_table_lock) the other way would be to use the compound_lock.
+>
+> NOTE: this a purely aesthetical issue in /proc/meminfo, there's
+> nothing functional (at least in the kernel) connected to it, so no
+> panic :).
 
+Yes.
+
+I think we should try and get the locking right, because wrong code is
+just confusing, and it leads people to make incorrect assumptions and
+propagate them to places where it may have larger consequences. But
+other than that, I agree that the statistics issue we're talking about
+here doesn't sound too severe.
+
+I am in a bit of a bind here, as I will be taking a vacation abroad
+soon. I would like to get these 3 patches out before then, but I don't
+want to do anything too major as I'm not sure what kind of
+connectivity I'll have to fix things if needed. I think I'll go with
+the simplest option of adding the THP optimizaiton first and fixing
+the locking issues at a later stage...
+
+Thanks,
+
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
