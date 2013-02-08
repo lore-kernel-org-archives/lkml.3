@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946963Ab3BHTnz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 14:43:55 -0500
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:2469 "EHLO
-	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1946842Ab3BHTnx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 14:43:53 -0500
-Date: Fri, 8 Feb 2013 19:43:52 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Clark Williams <williams@redhat.com>
-cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
+	id S1946954Ab3BHTx0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 14:53:26 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:35253 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1946795Ab3BHTxZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 14:53:25 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <liuj97@gmail.com>,
         LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [ANNOUNCE] 3.8-rc6-nohz4
-In-Reply-To: <20130208125747.06a1e260@riff.lan>
-Message-ID: <0000013cbb55dcfd-8b269a51-2d60-44de-a0c5-1ccf9925782f-000000@email.amazonses.com>
-References: <1360175338-6735-1-git-send-email-fweisbec@gmail.com> <1360205415.2621.60.camel@gandalf.local.home> <CAFTL4hzJ9FLNTqiBdB0SCWvxgN=p=M54e1PNWe6cp+C9A=DXxA@mail.gmail.com> <1360256447.2621.75.camel@gandalf.local.home>
- <CAFTL4hzXe=rYniSrth--n2Vp+wEYRt69r9+SPFu-Bac-_ZwM3Q@mail.gmail.com> <0000013cb614e4e5-10f6e9ce-08e1-47f6-9044-565b4084c354-000000@email.amazonses.com> <CAFTL4hyfnhjezjL2QfVKYDB-bwh4BSGyX8xmhpdmxTf+EAu+yA@mail.gmail.com> <20130208125747.06a1e260@riff.lan>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Subject: Re: [PATCH 0/2] ACPI / scan: Remove useless #ifndef and simplify container driver
+Date: Fri, 08 Feb 2013 20:59:44 +0100
+Message-ID: <1891536.LKCrpu1upY@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1360342638.3869.59.camel@misato.fc.hp.com>
+References: <1873429.MS5RQDxTye@vostro.rjw.lan> <1468930.acVuhKfKYv@vostro.rjw.lan> <1360342638.3869.59.camel@misato.fc.hp.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.193.30
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Feb 2013, Clark Williams wrote:
+On Friday, February 08, 2013 09:57:18 AM Toshi Kani wrote:
+> On Fri, 2013-02-08 at 01:24 +0100, Rafael J. Wysocki wrote:
+> > On Monday, February 04, 2013 12:47:31 AM Rafael J. Wysocki wrote:
+> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > 
+> > > The only useful thing that the ACPI container driver does is to
+> > > install system notify handlers for all container and module device
+> > > objects it finds in the namespace.  The driver structure,
+> > > acpi_container_driver, and the data structures created by its
+> > > .add() callback are in fact not used by the driver, so remove
+> > > them entirely.
+> > > 
+> > > It also makes a little sense to build that driver as a module,
+> > > so make it non-modular and add its initialization to the
+> > > namespace scanning code.
+> > > 
+> > > In addition to that, make the namespace walk callback used for
+> > > installing the notify handlers more straightforward.
+> > 
+> > As pointed out by Toshi Kani, the above changes would make acpi_eject_store()
+> > fail for containers and it is the only way to eject them currently, so patch
+> > [2/2] is an improved version of this (with Toshi's changes folded in).
+> > 
+> > Patch [1/2] is just a cleanup removing a useless #ifndef from acpi_eject_store().
+> 
+> Thanks for the update!  They look good.  For the series:
+> 
+> Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+> Tested-by: Toshi Kani <toshi.kani@hp.com>
+> 
+> BTW, did you intentionally keep the struct acpi_container definition in
+> <acpi/container.h>?  I deleted that one in my patch.
 
-> I was a little apprehensive when you started talking about multiple
-> tasks in Adaptive NOHZ mode on a core but the more I started thinking
-> about it, I realized that we might end up in a cooperative multitasking
-> mode with no tick at all going. Multiple SCHED_FIFO threads could
-> run until blocking and another would be picked. Depends on well
-> behaved threads of course, so probably many cases of users shooting off
-> some toes with this...
->
-> Of course if you mix scheduling policies or have RT throttling turned
-> on we'll need some sort of tick for preemption. But if we can keep the
-> timer reprogramming down we may see some big wins for RT and HPC loads.
+No, I overlooked that part.  I'll apply that part of your patch as a separate
+patch on top of this one.
 
-We could tune the (hr)timer tick to have the same interval as the time
-slice interval for a process and make that constant for all processes on a
-hardware thread?
+Thanks,
+Rafael
 
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
