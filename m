@@ -1,71 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760419Ab3BHWbP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 17:31:15 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37436 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751048Ab3BHWbO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 17:31:14 -0500
-Message-ID: <51157C9C.6030501@zytor.com>
-Date: Fri, 08 Feb 2013 14:30:52 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: Matthew Garrett <matthew.garrett@nebula.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
+	id S1947173Ab3BHWbn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 17:31:43 -0500
+Received: from usindpps03.hds.com ([207.126.252.16]:57028 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760466Ab3BHWbl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 17:31:41 -0500
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
+        "mikew@google.com" <mikew@google.com>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>
+CC: "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH] x86: Lock down MSR writing in secure boot
-References: <20130208191213.GA25081@www.outflux.net> <00780235-deac-4f80-b936-867834e05661@email.android.com> <CAGXu5jJnLY6Qp3J6HBpVg-AdUGdKYm-e4wErZO3=NuRo04ajvg@mail.gmail.com> <5115553A.5000708@zytor.com> <CAGXu5j+_mGzR+72YqORhErMUY1aF1H2urczZ8SwuJHZK-oZL6g@mail.gmail.com> <dee64752-850c-4d78-b703-f47a985bc13e@email.android.com> <CAGXu5jLAufTRm=sDST0br_WEkn4o0Hpjv2jDP2Na=cCvuM+MGg@mail.gmail.com> <1360355671.18083.18.camel@x230.lan> <CAGXu5jKo2PfMBO4A0ZgQcrPuj8OHNaff+CjAesOAWkZc0vB9+Q@mail.gmail.com>
-In-Reply-To: <CAGXu5jKo2PfMBO4A0ZgQcrPuj8OHNaff+CjAesOAWkZc0vB9+Q@mail.gmail.com>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+        "cbouatmailru@gmail.com" <cbouatmailru@gmail.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>
+Subject: RE: [PATCH v5 -next 0/2] make efivars/efi_pstore interrupt-safe
+Thread-Topic: [PATCH v5 -next 0/2] make efivars/efi_pstore interrupt-safe
+Thread-Index: Ac35yqIe9BPiMcvaTbaUDFx/K7uN/AMf3gnw
+Date: Fri, 8 Feb 2013 22:31:27 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D414A884D6@USINDEM103.corp.hds.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D414A5419C@USINDEM103.corp.hds.com>
+In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D414A5419C@USINDEM103.corp.hds.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.73.11]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
+ definitions=2013-02-08_07:2013-02-08,2013-02-08,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=2 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1211240000
+ definitions=main-1302080226
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/08/2013 01:02 PM, Kees Cook wrote:
-> On Fri, Feb 8, 2013 at 12:34 PM, Matthew Garrett
-> <matthew.garrett@nebula.com> wrote:
->> On Fri, 2013-02-08 at 12:28 -0800, Kees Cook wrote:
->>
->>> Maybe a capability isn't the right way to go, I'm not sure. I'll leave
->>> that to Matthew. Whatever the flag, it should be an immutable state of
->>> the boot. Though, it probably makes sense as a cap just so that
->>> non-secure-boot systems can still remove it from containers, etc.
->>
->> There was interest in ensuring that this wasn't something special-cased
->> to UEFI Secure Boot, so using a capability seemed like the most
->> straightforward way - it's fundamentally a restriction on what an
->> otherwise privileged user is able to do, so it seemed like it fit the
->> model. But I'm not wed to it in the slightest, and in fact it causes
->> problems for some userspace (anything that drops all capabilities
->> suddenly finds itself unable to do something that it expects to be able
->> to do), so if anyone has any suggestions for a better approach…
+Matt,
+
+Can you please take a look at this patchset which removes create_sysfs_entries() from efi_pstore_write()?
+
+It has been updated in accordance with Mike's comment and fixes an actual bug.
+http://comments.gmane.org/gmane.linux.kernel.efi/406
+
+Seiji
+
+> -----Original Message-----
+> From: Seiji Aguchi
+> Sent: Wednesday, January 23, 2013 7:41 PM
+> To: linux-kernel@vger.kernel.org; linux-efi@vger.kernel.org; Luck, Tony (tony.luck@intel.com); mikew@google.com;
+> matt.fleming@intel.com; cbouatmailru@gmail.com; dzickus@redhat.com
+> Cc: dle-develop@lists.sourceforge.net; Satoru Moriya
+> Subject: [PATCH v5 -next 0/2] make efivars/efi_pstore interrupt-safe
 > 
-> I don't find it unreasonable to drop all caps and lose access to
-> sensitive things. :) That's sort of the point, really. I think a cap
-> is the best match. It seems like it should either be a cap or a
-> namespace flag, but the latter seems messy.
+> Changelogv4 -> v5
+>    - Rebase from a linus tree to a linux-next tree to avoid getting
+>      a conflict when this patchset is merged to a linux-next tree.
+>    - Merge previous patches 2/3 and 3/3 into 2/2 because they fix
+>      a same problem.
+>    - Modify to fit a latest upstream kernel as follows.
+>     - Change spinlock operations of efivarfs which has been
+>       introduced recently.(Patch 1/2)
+>     - Remove delete_all_stale_sysfs_entries() from update_sysfs_entries()
+>       because a currnet efi_pstore doesn't erase existing entries
+>       in a write callback and sysfs entries don't become stale.
+>       (Patch 2/2)
 > 
-
-Caps are fine; the problem is the "putting it all under one cap".  The
-semi-problem here is that to preserve backwards compatibility we really
-should have a way to have hierarchical caps in Linux (which we currently
-don't), but it is not really an issue for this.
-
-Also, keep in mind that there is a very simple way to deny MSR access
-completely, which is to not include the driver in your kernel (and not
-allow module loading, but if you can load modules you can just load a
-module to muck with whatever MSR you want.)
-
-I am still wondering if there are any legitimate uses of CAP_RAWIO &
-~CAP_COMPROMISE_KERNEL that can't be used to subvert the latter.  I am
-not sure there are.
-
-	-hpa
-
+> v3 -> v4
+>   - Patch 2/3
+>     Move cancel_work_sync() above an efi_enabled test in efivars_exit().
+> 
+> v2 -> v3
+>   - Patch 1/3
+>     Replace spin_lock_irqsave/spin_unlock_irqrestore with spin_lock_irq/spin_unlock_irq in efivars_unregister(),
+>     efivar_create(), efivar_store_raw() and efivar_delete() which are called in a process context.
+> 
+>  - Patch 2/3
+>     Change a name of delete_sysfs_entry() to delete_all_stale_sysfs_entries().
+>     Also, don't release an efivar->lock while searching efivar->list in delete_all_stale_sysfs_entries().
+> 
+>  - Patch 3/3
+>     Remove a logic in efi_pstore_erase() which freshly created in patch v2.
+> 
+> v1 -> v2
+>  - Patch 1/3
+>     Add spin_lock_irq/spin_unlock_irq to open/close callbacks of efi_pstore
+>     instead of moving spin_locks to a read callback.
+> 
+>  - Patch 2/3
+>     Replace a periodical timer with schedule_work().
+> 
+>  - Patch 3/3
+>     freshly create to kick a workqueue in oops case only.
+> 
+> [Problem]
+>  There are following problems related to an interrupt context in efivars  including efivarfs and efi_pstore.
+> 
+> (1)There is a scenario which efi_pstore fails to log messages
+>    in a panic case.
+> 
+>    - CPUA holds an efi_var->lock in either efivarfs parts
+>      or efi_pstore with interrupt enabled.
+>    - CPUB panics and sends IPI to CPUA in smp_send_stop().
+>    - CPUA stops with holding the lock.
+>    - CPUB kicks efi_pstore_write() via kmsg_dump(KSMG_DUMP_PANIC)
+>      but it returns without logging messages.
+> 
+> (2)Also, efi_pstore creates sysfs entries, which enable users to access to
+>    NVRAM, in a write callback.
+>    If a kernel panic happens in an interrupt contexts, pstore may fail
+>    because it could sleep due to dynamic memory allocations during creating
+>    sysfs entries.
+>    An actual failure due to the create_sysfs_entry() has been reported.
+>    http://comments.gmane.org/gmane.linux.kernel.efi/406
+> 
+> To resolve problems above, this patchset makes efivars/efi_pstore interrupt-safe.
+> 
+> [Patch Description]
+>   Please see detailed explanations in each patch.
+> 
+> Seiji Aguchi (2):
+>   efivars: Disable external interrupt while holding efivars->lock
+>    - This patch fixes a problem (1).
+> 
+>   efi_pstore: Introducing workqueue updating sysfs entries
+>    - This patch fixes a problem (2).
+> 
+>  drivers/firmware/efivars.c |  171 ++++++++++++++++++++++++++++++++------------
+>  include/linux/efi.h        |    3 +-
+>  2 files changed, 126 insertions(+), 48 deletions(-)
