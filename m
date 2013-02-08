@@ -1,116 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946732Ab3BHQYv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 11:24:51 -0500
-Received: from mail-vb0-f47.google.com ([209.85.212.47]:44471 "EHLO
-	mail-vb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946646Ab3BHQYt (ORCPT
+	id S1946747Ab3BHQY4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 11:24:56 -0500
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:21311 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1946646Ab3BHQYy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 11:24:49 -0500
+	Fri, 8 Feb 2013 11:24:54 -0500
+Date: Fri, 8 Feb 2013 16:24:51 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [ANNOUNCE] 3.8-rc6-nohz4
+In-Reply-To: <1360340288.2621.112.camel@gandalf.local.home>
+Message-ID: <0000013cba9fa1cf-30aa7f28-2382-492e-bf09-83c8d4cdcba5-000000@email.amazonses.com>
+References: <1360175338-6735-1-git-send-email-fweisbec@gmail.com> <1360205415.2621.60.camel@gandalf.local.home> <CAFTL4hzJ9FLNTqiBdB0SCWvxgN=p=M54e1PNWe6cp+C9A=DXxA@mail.gmail.com> <1360256447.2621.75.camel@gandalf.local.home>
+ <CAFTL4hzXe=rYniSrth--n2Vp+wEYRt69r9+SPFu-Bac-_ZwM3Q@mail.gmail.com> <0000013cb614e4e5-10f6e9ce-08e1-47f6-9044-565b4084c354-000000@email.amazonses.com> <CAFTL4hyfnhjezjL2QfVKYDB-bwh4BSGyX8xmhpdmxTf+EAu+yA@mail.gmail.com>
+ <1360340288.2621.112.camel@gandalf.local.home>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <6b31c4f9-d98c-42fc-a510-39bf536b3299@email.android.com>
-References: <cover.1360067333.git.dmitry.kasatkin@intel.com>
-	<cc87f1242960fad1a9fb44bcec331915e14c832b.1360067333.git.dmitry.kasatkin@intel.com>
-	<20130205203616.GA8228@fenchurch.internal.datastacks.com>
-	<CALLzPKaTExm=eJ_f4x4NUROk83wDHQy0osexd4QqvHODd9ZPwA@mail.gmail.com>
-	<5111E44C.2040308@zytor.com>
-	<CALLzPKZRiWR1gBt4x9PM0pzAB6KVaE0ViEjLJLdVYk+==SSjHQ@mail.gmail.com>
-	<22d54b6d-6342-4826-bb93-c9fc46f2041a@email.android.com>
-	<CALLzPKYhmkyAobun4FhJv55ZpgOXg=fESWKvtfVpVeWR9jp88g@mail.gmail.com>
-	<6b31c4f9-d98c-42fc-a510-39bf536b3299@email.android.com>
-Date: Fri, 8 Feb 2013 18:24:48 +0200
-Message-ID: <CALLzPKZ7A6NW1ztX=hBjykMHkGofvtq6g-uK=Y2B2viskE9zDQ@mail.gmail.com>
-Subject: Re: [RFC 2/2] initramfs with digital signature protection
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Peter Jones <pjones@redhat.com>, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 8, 2013 at 5:49 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> Yes, but you can't umount rootfs.
+On Fri, 8 Feb 2013, Steven Rostedt wrote:
 
-But that was not a rootfs, but tmpfs/ramfs mounted to /root folder.
+> On Fri, 2013-02-08 at 16:53 +0100, Frederic Weisbecker wrote:
+> > 2013/2/7 Christoph Lameter <cl@linux.com>:
+> > > On Thu, 7 Feb 2013, Frederic Weisbecker wrote:
+> > >
+> > >> Not with hrtick.
+> > >
+> > > hrtick? Did we not already try that a couple of years back and it turned
+> > > out that the overhead of constantly reprogramming a timer via the PCI bus
+> > > was causing too much of a performance regression?
+> >
+> > Yeah Peter said that especially reprogramming the clock everytime we
+> > call schedule() was killing the performances. Now may be on some
+> > workloads, with the tick stopped, we can find some new results.
+>
+> I could imagine this being dynamic. If the system isn't very loaded, and
+> the scheduler is giving lots of time slices to tasks, then perhaps it
+> could switch to a reprogramming the clock based scheduling. Or maybe, we
+> could switch to a "skip ticks" method. That is, instead of completely
+> disabling the tick, make the tick go off every other time or less, and
+> use the NO_HZ code to calculate the missed ticks.
 
->
-> "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com> wrote:
->
->>On Wed, Feb 6, 2013 at 6:41 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->>> The cleanup is not a umount, it is actually a tree walk unlinking the
->>contents.
->>>
->>
->>Please see that umounting ramfs releases the memory.
->>There was no forced cleanup.
->>"cp" copied about 2GB of content.
->>After umounting we got 2GB back to free RAM...
->>
->>kds@kds:~$ sudo mount -t ramfs testramfs /test
->>kds@kds:~$ sudo cp -r /usr/ /test
->>kds@kds:~$ du -sm /test
->>2154    /test
->>kds@kds:~$ free
->>                       total       used            free     shared
->>buffers     cached
->>Mem:       8058600    7855780     202820          0      24768
->>4819136
->>-/+ buffers/cache:    3011876    5046724
->>Swap:            0          0          0
->>kds@kds:~$ sudo umount /test
->>kds@kds:~$ free
->>                      total       used            free     shared
->>buffers     cached
->>Mem:       8058600    5644864    2413736          0      25268
->>2623956
->>-/+ buffers/cache:    2995640    5062960
->>Swap:            0          0          0
->>
->>The same happens also with tmpfs.
->>
->>- Dmitry
->>
->>> "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com> wrote:
->>>
->>>>On Wed, Feb 6, 2013 at 7:04 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->>>>> On 02/05/2013 02:09 PM, Kasatkin, Dmitry wrote:
->>>>>>
->>>>>>
->>>>>> It should not be like that. Actually when pre-init exits, cleanup
->>>>code
->>>>>> umount tmpfs, which in turn cleanups the RAM.
->>>>>>
->>>>>
->>>>> It doesn't quite... the rootfs is permanent.  This is also only one
->>>>usage
->>>>> mode: there are quite a few Linux systems running directly out of
->>>>initramfs.
->>>>>
->>>>
->>>>rootfs is not permanent when it is ramfs. It is cleaned up on switch
->>>>root.
->>>>It is easy to find out that it is empty by mounting : mount -t ramfs
->>>>rootfs /mnt/
->>>>
->>>>In the case of running from normal storage, of course, there is
->>>>ridicules remove the content.
->>>>
->>>>- Dmitry
->>>>
->>>>
->>>>>         -hpa
->>>>>
->>>>>
->>>>> --
->>>>> H. Peter Anvin, Intel Open Source Technology Center
->>>>> I work for Intel.  I don't speak on their behalf.
->>>>>
->>>
->>> --
->>> Sent from my mobile phone. Please excuse brevity and lack of
->>formatting.
->
-> --
-> Sent from my mobile phone. Please excuse brevity and lack of formatting.
+Ok that sounds good. Automatically reducing the HZ as much as possible
+would also quiet down the OS and be beneficial for low latency tasks. We
+are configuring the kernels here with the lowest HZ that the hardware
+allows to reduce the number of events that impact on the app. The main
+problem is that the network stack becomes flaky at low HZ.
+
+
+
