@@ -1,483 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760104Ab3BHOJc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 09:09:32 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:32870 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758547Ab3BHOJa (ORCPT
+	id S1760128Ab3BHOLH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 09:11:07 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:58204 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758547Ab3BHOLE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 09:09:30 -0500
-Date: Fri, 8 Feb 2013 06:09:02 -0800
-From: tip-bot for Clark Williams <williams@redhat.com>
-Message-ID: <tip-8bd75c77b7c6a3954140dd2e20346aef3efe4a35@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        rostedt@goodmis.org, williams@redhat.com, peterz@infradead.org,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        williams@redhat.com, rostedt@goodmis.org, peterz@infradead.org,
-        tglx@linutronix.de
-In-Reply-To: <20130207094707.7b9f825f@riff.lan>
-References: <20130207094707.7b9f825f@riff.lan>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/rt:
-  Move rt specific bits into new header file
-Git-Commit-ID: 8bd75c77b7c6a3954140dd2e20346aef3efe4a35
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 8 Feb 2013 09:11:04 -0500
+Message-ID: <5115076E.3070703@pengutronix.de>
+Date: Fri, 08 Feb 2013 15:10:54 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix e.K.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 08 Feb 2013 06:09:08 -0800 (PST)
+To: linux-mtd@lists.infradead.org
+CC: linux-security-module@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>
+Subject: SELinux + ubifs: possible circular locking dependency
+References: <51123C80.2050400@pengutronix.de>
+In-Reply-To: <51123C80.2050400@pengutronix.de>
+X-Enigmail-Version: 1.5
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2XAMMBVJASNIMPQKCGWLH"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8bd75c77b7c6a3954140dd2e20346aef3efe4a35
-Gitweb:     http://git.kernel.org/tip/8bd75c77b7c6a3954140dd2e20346aef3efe4a35
-Author:     Clark Williams <williams@redhat.com>
-AuthorDate: Thu, 7 Feb 2013 09:47:07 -0600
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 7 Feb 2013 20:51:08 +0100
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2XAMMBVJASNIMPQKCGWLH
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-sched/rt: Move rt specific bits into new header file
+Hello,
 
-Move rt scheduler definitions out of include/linux/sched.h into
-new file include/linux/sched/rt.h
+I'm on a arm imx28 v3.8-rc6 (+ a handfull of patches to support the
+custom board) but no modifications on ubifs, selinux or the vfs layer.
+And not including the xattr patches by Subodh Nijsure.
 
-Signed-off-by: Clark Williams <williams@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/20130207094707.7b9f825f@riff.lan
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- drivers/spi/spi.c                 |  2 +-
- drivers/staging/csr/bh.c          |  2 +-
- drivers/staging/csr/unifi_sme.c   |  2 +-
- drivers/tty/sysrq.c               |  1 +
- fs/select.c                       |  1 +
- include/linux/sched.h             | 55 ++-----------------------------------
- include/linux/sched/rt.h          | 58 +++++++++++++++++++++++++++++++++++++++
- init/init_task.c                  |  1 +
- kernel/futex.c                    |  1 +
- kernel/hrtimer.c                  |  1 +
- kernel/irq/manage.c               |  1 +
- kernel/mutex.c                    |  1 +
- kernel/rtmutex-debug.c            |  1 +
- kernel/rtmutex-tester.c           |  1 +
- kernel/rtmutex.c                  |  1 +
- kernel/sched/cpupri.c             |  2 ++
- kernel/sched/sched.h              |  1 +
- kernel/trace/trace.c              |  1 +
- kernel/trace/trace_sched_wakeup.c |  2 +-
- kernel/watchdog.c                 |  1 +
- mm/page-writeback.c               |  1 +
- mm/page_alloc.c                   |  1 +
- 22 files changed, 81 insertions(+), 57 deletions(-)
+When booting with SELinux and lockdep enabled I see this _possible_
+circular locking dependency:
 
-diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index 19ee901..3a6083b 100644
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -33,7 +33,7 @@
- #include <linux/of_gpio.h>
- #include <linux/pm_runtime.h>
- #include <linux/export.h>
--#include <linux/sched.h>
-+#include <linux/sched/rt.h>
- #include <linux/delay.h>
- #include <linux/kthread.h>
- #include <linux/ioport.h>
-diff --git a/drivers/staging/csr/bh.c b/drivers/staging/csr/bh.c
-index 1a1f5c7..7b13359 100644
---- a/drivers/staging/csr/bh.c
-+++ b/drivers/staging/csr/bh.c
-@@ -15,7 +15,7 @@
-  */
- #include "csr_wifi_hip_unifi.h"
- #include "unifi_priv.h"
--
-+#include <linux/sched/rt.h>
- 
- /*
-  * ---------------------------------------------------------------------------
-diff --git a/drivers/staging/csr/unifi_sme.c b/drivers/staging/csr/unifi_sme.c
-index 7c6c413..49395da 100644
---- a/drivers/staging/csr/unifi_sme.c
-+++ b/drivers/staging/csr/unifi_sme.c
-@@ -15,7 +15,7 @@
- #include "unifi_priv.h"
- #include "csr_wifi_hip_unifi.h"
- #include "csr_wifi_hip_conversions.h"
--
-+#include <linux/sched/rt.h>
- 
- 
- 
-diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
-index b3c4a25..40e5b39 100644
---- a/drivers/tty/sysrq.c
-+++ b/drivers/tty/sysrq.c
-@@ -15,6 +15,7 @@
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
- 
- #include <linux/sched.h>
-+#include <linux/sched/rt.h>
- #include <linux/interrupt.h>
- #include <linux/mm.h>
- #include <linux/fs.h>
-diff --git a/fs/select.c b/fs/select.c
-index 2ef72d9..8c1c96c 100644
---- a/fs/select.c
-+++ b/fs/select.c
-@@ -26,6 +26,7 @@
- #include <linux/fs.h>
- #include <linux/rcupdate.h>
- #include <linux/hrtimer.h>
-+#include <linux/sched/rt.h>
- 
- #include <asm/uaccess.h>
- 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 8fc9b27..33cc421 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1164,6 +1164,7 @@ struct sched_entity {
- 	/* rq "owned" by this entity/group: */
- 	struct cfs_rq		*my_q;
- #endif
-+
- /*
-  * Load-tracking only depends on SMP, FAIR_GROUP_SCHED dependency below may be
-  * removed when useful for applications beyond shares distribution (e.g.
-@@ -1191,6 +1192,7 @@ struct sched_rt_entity {
- #endif
- };
- 
-+
- struct rcu_node;
- 
- enum perf_event_task_context {
-@@ -1596,37 +1598,6 @@ static inline void set_numabalancing_state(bool enabled)
- }
- #endif
- 
--/*
-- * Priority of a process goes from 0..MAX_PRIO-1, valid RT
-- * priority is 0..MAX_RT_PRIO-1, and SCHED_NORMAL/SCHED_BATCH
-- * tasks are in the range MAX_RT_PRIO..MAX_PRIO-1. Priority
-- * values are inverted: lower p->prio value means higher priority.
-- *
-- * The MAX_USER_RT_PRIO value allows the actual maximum
-- * RT priority to be separate from the value exported to
-- * user-space.  This allows kernel threads to set their
-- * priority to a value higher than any user task. Note:
-- * MAX_RT_PRIO must not be smaller than MAX_USER_RT_PRIO.
-- */
--
--#define MAX_USER_RT_PRIO	100
--#define MAX_RT_PRIO		MAX_USER_RT_PRIO
--
--#define MAX_PRIO		(MAX_RT_PRIO + 40)
--#define DEFAULT_PRIO		(MAX_RT_PRIO + 20)
--
--static inline int rt_prio(int prio)
--{
--	if (unlikely(prio < MAX_RT_PRIO))
--		return 1;
--	return 0;
--}
--
--static inline int rt_task(struct task_struct *p)
--{
--	return rt_prio(p->prio);
--}
--
- static inline struct pid *task_pid(struct task_struct *task)
- {
- 	return task->pids[PIDTYPE_PID].pid;
-@@ -2054,26 +2025,6 @@ static inline void sched_autogroup_fork(struct signal_struct *sig) { }
- static inline void sched_autogroup_exit(struct signal_struct *sig) { }
- #endif
- 
--#ifdef CONFIG_RT_MUTEXES
--extern int rt_mutex_getprio(struct task_struct *p);
--extern void rt_mutex_setprio(struct task_struct *p, int prio);
--extern void rt_mutex_adjust_pi(struct task_struct *p);
--static inline bool tsk_is_pi_blocked(struct task_struct *tsk)
--{
--	return tsk->pi_blocked_on != NULL;
--}
--#else
--static inline int rt_mutex_getprio(struct task_struct *p)
--{
--	return p->normal_prio;
--}
--# define rt_mutex_adjust_pi(p)		do { } while (0)
--static inline bool tsk_is_pi_blocked(struct task_struct *tsk)
--{
--	return false;
--}
--#endif
--
- extern bool yield_to(struct task_struct *p, bool preempt);
- extern void set_user_nice(struct task_struct *p, long nice);
- extern int task_prio(const struct task_struct *p);
-@@ -2703,8 +2654,6 @@ static inline void set_task_cpu(struct task_struct *p, unsigned int cpu)
- extern long sched_setaffinity(pid_t pid, const struct cpumask *new_mask);
- extern long sched_getaffinity(pid_t pid, struct cpumask *mask);
- 
--extern void normalize_rt_tasks(void);
--
- #ifdef CONFIG_CGROUP_SCHED
- 
- extern struct task_group root_task_group;
-diff --git a/include/linux/sched/rt.h b/include/linux/sched/rt.h
-new file mode 100644
-index 0000000..94e19ea
---- /dev/null
-+++ b/include/linux/sched/rt.h
-@@ -0,0 +1,58 @@
-+#ifndef _SCHED_RT_H
-+#define _SCHED_RT_H
-+
-+/*
-+ * Priority of a process goes from 0..MAX_PRIO-1, valid RT
-+ * priority is 0..MAX_RT_PRIO-1, and SCHED_NORMAL/SCHED_BATCH
-+ * tasks are in the range MAX_RT_PRIO..MAX_PRIO-1. Priority
-+ * values are inverted: lower p->prio value means higher priority.
-+ *
-+ * The MAX_USER_RT_PRIO value allows the actual maximum
-+ * RT priority to be separate from the value exported to
-+ * user-space.  This allows kernel threads to set their
-+ * priority to a value higher than any user task. Note:
-+ * MAX_RT_PRIO must not be smaller than MAX_USER_RT_PRIO.
-+ */
-+
-+#define MAX_USER_RT_PRIO	100
-+#define MAX_RT_PRIO		MAX_USER_RT_PRIO
-+
-+#define MAX_PRIO		(MAX_RT_PRIO + 40)
-+#define DEFAULT_PRIO		(MAX_RT_PRIO + 20)
-+
-+static inline int rt_prio(int prio)
-+{
-+	if (unlikely(prio < MAX_RT_PRIO))
-+		return 1;
-+	return 0;
-+}
-+
-+static inline int rt_task(struct task_struct *p)
-+{
-+	return rt_prio(p->prio);
-+}
-+
-+#ifdef CONFIG_RT_MUTEXES
-+extern int rt_mutex_getprio(struct task_struct *p);
-+extern void rt_mutex_setprio(struct task_struct *p, int prio);
-+extern void rt_mutex_adjust_pi(struct task_struct *p);
-+static inline bool tsk_is_pi_blocked(struct task_struct *tsk)
-+{
-+	return tsk->pi_blocked_on != NULL;
-+}
-+#else
-+static inline int rt_mutex_getprio(struct task_struct *p)
-+{
-+	return p->normal_prio;
-+}
-+# define rt_mutex_adjust_pi(p)		do { } while (0)
-+static inline bool tsk_is_pi_blocked(struct task_struct *tsk)
-+{
-+	return false;
-+}
-+#endif
-+
-+extern void normalize_rt_tasks(void);
-+
-+
-+#endif /* _SCHED_RT_H */
-diff --git a/init/init_task.c b/init/init_task.c
-index a031ad1..ba0a7f36 100644
---- a/init/init_task.c
-+++ b/init/init_task.c
-@@ -3,6 +3,7 @@
- #include <linux/mqueue.h>
- #include <linux/sched.h>
- #include <linux/sched/sysctl.h>
-+#include <linux/sched/rt.h>
- #include <linux/init.h>
- #include <linux/fs.h>
- #include <linux/mm.h>
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 19eb089..9618b6e 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -60,6 +60,7 @@
- #include <linux/pid.h>
- #include <linux/nsproxy.h>
- #include <linux/ptrace.h>
-+#include <linux/sched/rt.h>
- 
- #include <asm/futex.h>
- 
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 8a9aa59..c5dde98 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -45,6 +45,7 @@
- #include <linux/debugobjects.h>
- #include <linux/sched.h>
- #include <linux/sched/sysctl.h>
-+#include <linux/sched/rt.h>
- #include <linux/timer.h>
- 
- #include <asm/uaccess.h>
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index e49a288..02115d9 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -16,6 +16,7 @@
- #include <linux/interrupt.h>
- #include <linux/slab.h>
- #include <linux/sched.h>
-+#include <linux/sched/rt.h>
- #include <linux/task_work.h>
- 
- #include "internals.h"
-diff --git a/kernel/mutex.c b/kernel/mutex.c
-index a307cc9..52f2301 100644
---- a/kernel/mutex.c
-+++ b/kernel/mutex.c
-@@ -19,6 +19,7 @@
-  */
- #include <linux/mutex.h>
- #include <linux/sched.h>
-+#include <linux/sched/rt.h>
- #include <linux/export.h>
- #include <linux/spinlock.h>
- #include <linux/interrupt.h>
-diff --git a/kernel/rtmutex-debug.c b/kernel/rtmutex-debug.c
-index 16502d3..13b243a 100644
---- a/kernel/rtmutex-debug.c
-+++ b/kernel/rtmutex-debug.c
-@@ -17,6 +17,7 @@
-  * See rt.c in preempt-rt for proper credits and further information
-  */
- #include <linux/sched.h>
-+#include <linux/sched/rt.h>
- #include <linux/delay.h>
- #include <linux/export.h>
- #include <linux/spinlock.h>
-diff --git a/kernel/rtmutex-tester.c b/kernel/rtmutex-tester.c
-index 98ec494..7890b10 100644
---- a/kernel/rtmutex-tester.c
-+++ b/kernel/rtmutex-tester.c
-@@ -10,6 +10,7 @@
- #include <linux/kthread.h>
- #include <linux/export.h>
- #include <linux/sched.h>
-+#include <linux/sched/rt.h>
- #include <linux/spinlock.h>
- #include <linux/timer.h>
- #include <linux/freezer.h>
-diff --git a/kernel/rtmutex.c b/kernel/rtmutex.c
-index a242e69..1e09308 100644
---- a/kernel/rtmutex.c
-+++ b/kernel/rtmutex.c
-@@ -13,6 +13,7 @@
- #include <linux/spinlock.h>
- #include <linux/export.h>
- #include <linux/sched.h>
-+#include <linux/sched/rt.h>
- #include <linux/timer.h>
- 
- #include "rtmutex_common.h"
-diff --git a/kernel/sched/cpupri.c b/kernel/sched/cpupri.c
-index 23aa789..1095e87 100644
---- a/kernel/sched/cpupri.c
-+++ b/kernel/sched/cpupri.c
-@@ -28,6 +28,8 @@
-  */
- 
- #include <linux/gfp.h>
-+#include <linux/sched.h>
-+#include <linux/sched/rt.h>
- #include "cpupri.h"
- 
- /* Convert between a 140 based task->prio, and our 102 based cpupri */
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index ed8de30..cc03cfd 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -1,6 +1,7 @@
- 
- #include <linux/sched.h>
- #include <linux/sched/sysctl.h>
-+#include <linux/sched/rt.h>
- #include <linux/mutex.h>
- #include <linux/spinlock.h>
- #include <linux/stop_machine.h>
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 3c13e46..4d2e4af 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -39,6 +39,7 @@
- #include <linux/poll.h>
- #include <linux/nmi.h>
- #include <linux/fs.h>
-+#include <linux/sched/rt.h>
- 
- #include "trace.h"
- #include "trace_output.h"
-diff --git a/kernel/trace/trace_sched_wakeup.c b/kernel/trace/trace_sched_wakeup.c
-index 9fe45fc..75aa97f 100644
---- a/kernel/trace/trace_sched_wakeup.c
-+++ b/kernel/trace/trace_sched_wakeup.c
-@@ -15,8 +15,8 @@
- #include <linux/kallsyms.h>
- #include <linux/uaccess.h>
- #include <linux/ftrace.h>
-+#include <linux/sched/rt.h>
- #include <trace/events/sched.h>
--
- #include "trace.h"
- 
- static struct trace_array	*wakeup_trace;
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 75a2ab3..2768942 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -23,6 +23,7 @@
- #include <linux/module.h>
- #include <linux/sysctl.h>
- #include <linux/smpboot.h>
-+#include <linux/sched/rt.h>
- 
- #include <asm/irq_regs.h>
- #include <linux/kvm_para.h>
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 0713bfb..66a0024 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -35,6 +35,7 @@
- #include <linux/buffer_head.h> /* __set_page_dirty_buffers */
- #include <linux/pagevec.h>
- #include <linux/timer.h>
-+#include <linux/sched/rt.h>
- #include <trace/events/writeback.h>
- 
- /*
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index df2022f..42d18e4 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -58,6 +58,7 @@
- #include <linux/prefetch.h>
- #include <linux/migrate.h>
- #include <linux/page-debug-flags.h>
-+#include <linux/sched/rt.h>
- 
- #include <asm/tlbflush.h>
- #include <asm/div64.h>
+This warning shows up every boot, but not again later. Is lockep
+automatically disabled after the first circular lockdep warning?
+
+This particular situation, where the dependency chain is occurs as far
+as I understand only at boot. Three functions in this chain are only
+called once:
+- pinctrl_init()
+- clk_debug_init()
+- mount_block_root()
+
+Another critical ingredient is security_load_policy().
+
+Is this really an uncritical catch of the lock validator? If so, is it
+possible to annotate this, so that the system boot up quietly?
+
+> [    5.390312] =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+> [    5.396500] [ INFO: possible circular locking dependency detected ]
+> [    5.402781] 3.8.0-rc6-00005-g4f7e39d #49 Not tainted
+> [    5.407750] -------------------------------------------------------
+> [    5.414031] systemd/1 is trying to acquire lock:
+> [    5.418656]  (&c->tnc_mutex){+.+...}, at: [<c01552d0>] ubifs_tnc_loc=
+ate+0x30/0x198
+> [    5.426343]
+> [    5.426343] but task is already holding lock:
+> [    5.432218]  (&isec->lock){+.+.+.}, at: [<c018e298>] inode_doinit_wi=
+th_dentry+0x8c/0x55c
+> [    5.440375]
+> [    5.440375] which lock already depends on the new lock.
+> [    5.440375]
+> [    5.448593]
+> [    5.448593] the existing dependency chain (in reverse order) is:
+> [    5.456093]
+> -> #4 (&isec->lock){+.+.+.}:
+> [    5.460250]        [<c004e8e8>] lock_acquire+0x64/0x78
+> [    5.465437]        [<c0355d5c>] mutex_lock_nested+0x5c/0x2ec
+> [    5.471125]        [<c018e298>] inode_doinit_with_dentry+0x8c/0x55c
+> [    5.477437]        [<c0189bd8>] security_d_instantiate+0x1c/0x34
+> [    5.483500]        [<c017a614>] debugfs_mknod.part.15.constprop.18+0=
+x94/0x128
+> [    5.490656]        [<c017a858>] __create_file+0x1b0/0x25c
+> [    5.496093]        [<c017a98c>] debugfs_create_dir+0x1c/0x28
+> [    5.501781]        [<c0491ce8>] pinctrl_init+0x1c/0xd0
+> [    5.506968]        [<c0008900>] do_one_initcall+0x108/0x17c
+> [    5.512593]        [<c0483858>] kernel_init_freeable+0xec/0x1b4
+> [    5.518562]        [<c034f398>] kernel_init+0x8/0xe4
+> [    5.523562]        [<c0009448>] ret_from_fork+0x14/0x2c
+> [    5.528812]
+> -> #3 (&sb->s_type->i_mutex_key#2){+.+.+.}:
+> [    5.534312]        [<c004e8e8>] lock_acquire+0x64/0x78
+> [    5.539468]        [<c0355d5c>] mutex_lock_nested+0x5c/0x2ec
+> [    5.545187]        [<c017a6f8>] __create_file+0x50/0x25c
+> [    5.550531]        [<c017a98c>] debugfs_create_dir+0x1c/0x28
+> [    5.556218]        [<c026cfc4>] clk_debug_create_subtree+0x1c/0x108
+> [    5.562500]        [<c0495bfc>] clk_debug_init+0x68/0xc0
+> [    5.567875]        [<c0008900>] do_one_initcall+0x108/0x17c
+> [    5.573468]        [<c0483858>] kernel_init_freeable+0xec/0x1b4
+> [    5.579437]        [<c034f398>] kernel_init+0x8/0xe4
+> [    5.584437]        [<c0009448>] ret_from_fork+0x14/0x2c
+> [    5.589687]
+> -> #2 (prepare_lock){+.+.+.}:
+> [    5.593937]        [<c004e8e8>] lock_acquire+0x64/0x78
+> [    5.599125]        [<c0355d5c>] mutex_lock_nested+0x5c/0x2ec
+> [    5.604812]        [<c026d400>] clk_prepare+0x18/0x38
+> [    5.609906]        [<c023a2f8>] __gpmi_enable_clk+0x30/0xb0
+> [    5.615531]        [<c023a7bc>] gpmi_begin+0x18/0x530
+> [    5.620625]        [<c0239244>] gpmi_select_chip+0x3c/0x54
+> [    5.626156]        [<c02341ac>] nand_do_read_ops+0x7c/0x3e4
+> [    5.631750]        [<c023483c>] nand_read+0x50/0x74
+> [    5.636656]        [<c02198e4>] part_read+0x5c/0xa4
+> [    5.641593]        [<c0217404>] mtd_read+0x84/0xb8
+> [    5.646406]        [<c02450cc>] ubi_io_read+0xa0/0x2c0
+> [    5.651593]        [<c0242640>] ubi_eba_read_leb+0x190/0x424
+> [    5.657281]        [<c0241b18>] ubi_leb_read+0xac/0x120
+> [    5.662562]        [<c01503e4>] ubifs_leb_read+0x28/0x8c
+> [    5.667906]        [<c0151f74>] ubifs_read_node+0x98/0x2a0
+> [    5.673437]        [<c014e780>] ubifs_read_sb_node+0x54/0x78
+> [    5.679125]        [<c014f444>] ubifs_read_superblock+0xc60/0x163c
+> [    5.685343]        [<c014d64c>] ubifs_mount+0x800/0x171c
+> [    5.690687]        [<c00b5740>] mount_fs+0x44/0x184
+> [    5.695593]        [<c00cd7ec>] vfs_kern_mount+0x4c/0xc0
+> [    5.700968]        [<c00cf394>] do_mount+0x18c/0x8d0
+> [    5.705968]        [<c00cfb5c>] sys_mount+0x84/0xb8
+> [    5.710875]        [<c0483bc8>] mount_block_root+0x118/0x258
+> [    5.716562]        [<c0483eac>] prepare_namespace+0x8c/0x17c
+> [    5.722281]        [<c034f398>] kernel_init+0x8/0xe4
+> [    5.727281]        [<c0009448>] ret_from_fork+0x14/0x2c
+> [    5.732531]
+> -> #1 (&le->mutex){++++..}:
+> [    5.736625]        [<c004e8e8>] lock_acquire+0x64/0x78
+> [    5.741812]        [<c0356468>] down_read+0x40/0x54
+> [    5.746718]        [<c02424e4>] ubi_eba_read_leb+0x34/0x424
+> [    5.752312]        [<c0241b18>] ubi_leb_read+0xac/0x120
+> [    5.757562]        [<c01503e4>] ubifs_leb_read+0x28/0x8c
+> [    5.762937]        [<c0151f74>] ubifs_read_node+0x98/0x2a0
+> [    5.768437]        [<c016edc0>] ubifs_load_znode+0x88/0x560
+> [    5.774062]        [<c0155254>] ubifs_lookup_level0+0x190/0x1dc
+> [    5.780031]        [<c01552e4>] ubifs_tnc_locate+0x44/0x198
+> [    5.785656]        [<c014c614>] ubifs_iget+0x6c/0x8a4
+> [    5.790718]        [<c014da64>] ubifs_mount+0xc18/0x171c
+> [    5.796093]        [<c00b5740>] mount_fs+0x44/0x184
+> [    5.801000]        [<c00cd7ec>] vfs_kern_mount+0x4c/0xc0
+> [    5.806343]        [<c00cf394>] do_mount+0x18c/0x8d0
+> [    5.811343]        [<c00cfb5c>] sys_mount+0x84/0xb8
+> [    5.816250]        [<c0483bc8>] mount_block_root+0x118/0x258
+> [    5.821968]        [<c0483eac>] prepare_namespace+0x8c/0x17c
+> [    5.827656]        [<c034f398>] kernel_init+0x8/0xe4
+> [    5.832656]        [<c0009448>] ret_from_fork+0x14/0x2c
+> [    5.837906]
+> -> #0 (&c->tnc_mutex){+.+...}:
+> [    5.842250]        [<c004de48>] __lock_acquire+0x14ec/0x1b08
+> [    5.847968]        [<c004e8e8>] lock_acquire+0x64/0x78
+> [    5.853125]        [<c0355d5c>] mutex_lock_nested+0x5c/0x2ec
+> [    5.858812]        [<c01552d0>] ubifs_tnc_locate+0x30/0x198
+> [    5.864437]        [<c0155a48>] ubifs_tnc_lookup_nm+0x28/0x150
+> [    5.870312]        [<c016fc18>] ubifs_getxattr+0xc0/0x254
+> [    5.875750]        [<c018e468>] inode_doinit_with_dentry+0x25c/0x55c=
+
+> [    5.882125]        [<c018f1a8>] sb_finish_set_opts+0xa4/0x21c
+> [    5.887906]        [<c019055c>] selinux_set_mnt_opts+0x2ec/0x4b8
+> [    5.893968]        [<c01907dc>] superblock_doinit+0xb4/0xc0
+> [    5.899562]        [<c00b51f4>] iterate_supers+0xb4/0xdc
+> [    5.904906]        [<c01a02e8>] security_load_policy+0x248/0x3c4
+> [    5.910968]        [<c0194994>] sel_write_load+0x9c/0x6a0
+> [    5.916406]        [<c00b2148>] vfs_write+0xa0/0x17c
+> [    5.921406]        [<c00b2450>] sys_write+0x3c/0x70
+> [    5.926343]        [<c00093a0>] ret_fast_syscall+0x0/0x38
+> [    5.931781]
+> [    5.931781] other info that might help us debug this:
+> [    5.931781]
+> [    5.939781] Chain exists of:
+>   &c->tnc_mutex --> &sb->s_type->i_mutex_key#2 --> &isec->lock
+> [    5.948500]  Possible unsafe locking scenario:
+> [    5.948500]
+> [    5.954437]        CPU0                    CPU1
+> [    5.958968]        ----                    ----
+> [    5.963500]   lock(&isec->lock);
+> [    5.966781]                                lock(&sb->s_type->i_mutex=
+_key#2);
+> [    5.973843]                                lock(&isec->lock);
+> [    5.979625]   lock(&c->tnc_mutex);
+> [    5.983062]
+> [    5.983062]  *** DEADLOCK ***
+> [    5.983062]
+> [    5.989000] 4 locks held by systemd/1:
+> [    5.992781]  #0:  (sel_mutex){+.+.+.}, at: [<c0194918>] sel_write_lo=
+ad+0x20/0x6a0
+> [    6.000343]  #1:  (&type->s_umount_key#26){.+.+..}, at: [<c00b51d0>]=
+ iterate_supers+0x90/0xdc
+> [    6.008968]  #2:  (&sbsec->lock){+.+.+.}, at: [<c01902d4>] selinux_s=
+et_mnt_opts+0x64/0x4b8
+> [    6.017343]  #3:  (&isec->lock){+.+.+.}, at: [<c018e298>] inode_doin=
+it_with_dentry+0x8c/0x55c
+> [    6.025937]
+> [    6.025937] stack backtrace:
+> [    6.030375] [<c000d0f0>] (unwind_backtrace+0x0/0xf0) from [<c0351a2c=
+>] (print_circular_bug+0x25c/0x2a8)
+> [    6.039843] [<c0351a2c>] (print_circular_bug+0x25c/0x2a8) from [<c00=
+4de48>] (__lock_acquire+0x14ec/0x1b08)
+> [    6.049531] [<c004de48>] (__lock_acquire+0x14ec/0x1b08) from [<c004e=
+8e8>] (lock_acquire+0x64/0x78)
+> [    6.058531] [<c004e8e8>] (lock_acquire+0x64/0x78) from [<c0355d5c>] =
+(mutex_lock_nested+0x5c/0x2ec)
+> [    6.067531] [<c0355d5c>] (mutex_lock_nested+0x5c/0x2ec) from [<c0155=
+2d0>] (ubifs_tnc_locate+0x30/0x198)
+> [    6.076968] [<c01552d0>] (ubifs_tnc_locate+0x30/0x198) from [<c0155a=
+48>] (ubifs_tnc_lookup_nm+0x28/0x150)
+> [    6.086593] [<c0155a48>] (ubifs_tnc_lookup_nm+0x28/0x150) from [<c01=
+6fc18>] (ubifs_getxattr+0xc0/0x254)
+> [    6.096031] [<c016fc18>] (ubifs_getxattr+0xc0/0x254) from [<c018e468=
+>] (inode_doinit_with_dentry+0x25c/0x55c)
+> [    6.105968] [<c018e468>] (inode_doinit_with_dentry+0x25c/0x55c) from=
+ [<c018f1a8>] (sb_finish_set_opts+0xa4/0x21c)
+> [    6.116281] [<c018f1a8>] (sb_finish_set_opts+0xa4/0x21c) from [<c019=
+055c>] (selinux_set_mnt_opts+0x2ec/0x4b8)
+> [    6.126218] [<c019055c>] (selinux_set_mnt_opts+0x2ec/0x4b8) from [<c=
+01907dc>] (superblock_doinit+0xb4/0xc0)
+> [    6.136000] [<c01907dc>] (superblock_doinit+0xb4/0xc0) from [<c00b51=
+f4>] (iterate_supers+0xb4/0xdc)
+> [    6.145093] [<c00b51f4>] (iterate_supers+0xb4/0xdc) from [<c01a02e8>=
+] (security_load_policy+0x248/0x3c4)
+> [    6.154625] [<c01a02e8>] (security_load_policy+0x248/0x3c4) from [<c=
+0194994>] (sel_write_load+0x9c/0x6a0)
+> [    6.164218] [<c0194994>] (sel_write_load+0x9c/0x6a0) from [<c00b2148=
+>] (vfs_write+0xa0/0x17c)
+> [    6.172781] [<c00b2148>] (vfs_write+0xa0/0x17c) from [<c00b2450>] (s=
+ys_write+0x3c/0x70)
+> [    6.180843] [<c00b2450>] (sys_write+0x3c/0x70) from [<c00093a0>] (re=
+t_fast_syscall+0x0/0x38)
+
+regards,
+Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+------enig2XAMMBVJASNIMPQKCGWLH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlEVB3EACgkQjTAFq1RaXHNQTgCggZbDGtVvk7xMMjhXwxkNSowk
+LrQAnjrkEBJy6wbKmf0JvO7sV7vpWS03
+=0dZH
+-----END PGP SIGNATURE-----
+
+------enig2XAMMBVJASNIMPQKCGWLH--
