@@ -1,202 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946030Ab3BHHx7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 02:53:59 -0500
-Received: from mga09.intel.com ([134.134.136.24]:22520 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759676Ab3BHHx5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 02:53:57 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,628,1355126400"; 
-   d="scan'208";a="259497349"
-Message-ID: <1360310031.2242.24.camel@rzhang1-mobl4>
-Subject: Re: [PATCH 1/8] Thermal: Create sensor level APIs
-From: Zhang Rui <rui.zhang@intel.com>
-To: Durgadoss R <durgadoss.r@intel.com>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        eduardo.valentin@ti.com, hongbo.zhang@linaro.org, wni@nvidia.com
-Date: Fri, 08 Feb 2013 15:53:51 +0800
-In-Reply-To: <1360061183-14137-2-git-send-email-durgadoss.r@intel.com>
-References: <1360061183-14137-1-git-send-email-durgadoss.r@intel.com>
-	 <1360061183-14137-2-git-send-email-durgadoss.r@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1946053Ab3BHH4W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 02:56:22 -0500
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:36111 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1945906Ab3BHH4V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 02:56:21 -0500
+Date: Fri, 8 Feb 2013 10:47:42 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Andreas Bombe <aeb@debian.org>
+Cc: Dave Airlie <airlied@redhat.com>, Dave Jones <davej@redhat.com>,
+        dri-devel@lists.freedesktop.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: radeon causing sleeping function called from invalid context
+Message-ID: <20130208074742.GA2357@swordfish.minsk.epam.com>
+References: <20130113012717.GA2673@redhat.com>
+ <20130113113820.GA2503@swordfish>
+ <20130207215301.GA11773@amos.fritz.box>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130207215301.GA11773@amos.fritz.box>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-02-05 at 16:16 +0530, Durgadoss R wrote:
-> This patch creates sensor level APIs, in the
-> generic thermal framework.
+On (02/07/13 22:53), Andreas Bombe wrote:
+> On Sun, Jan 13, 2013 at 02:38:20PM +0300, Sergey Senozhatsky wrote:
+> > On (01/12/13 20:27), Dave Jones wrote:
+> > > BUG: sleeping function called from invalid context at mm/slub.c:925
+> > > in_atomic(): 1, irqs_disabled(): 0, pid: 566, name: Xorg
+> > > INFO: lockdep is turned off.
+> > > Pid: 566, comm: Xorg Not tainted 3.8.0-rc3+ #49
+> > > Call Trace:
+> > >  [<ffffffff81087ad1>] __might_sleep+0x141/0x200
+> > >  [<ffffffff8119eddb>] kmem_cache_alloc_trace+0x4b/0x2a0
+> > >  [<ffffffffa0083fb3>] ttm_bo_move_accel_cleanup+0x1d3/0x330 [ttm]
+> > >  [<ffffffffa00c5418>] radeon_move_blit.isra.4+0xf8/0x160 [radeon]
+> > >  [<ffffffffa00c5db0>] radeon_bo_move+0xb0/0x1f0 [radeon]
+> > >  [<ffffffffa00820ed>] ttm_bo_handle_move_mem+0x27d/0x5d0 [ttm]
+> > >  [<ffffffff8108dd51>] ? get_parent_ip+0x11/0x50
+> > >  [<ffffffffa0083307>] ttm_bo_move_buffer+0x127/0x140 [ttm]
+> > >  [<ffffffffa008717d>] ? ttm_eu_list_ref_sub+0x3d/0x60 [ttm]
+> > >  [<ffffffffa00833c2>] ttm_bo_validate+0xa2/0x120 [ttm]
+> > >  [<ffffffffa00c6f45>] radeon_bo_list_validate+0x75/0x90 [radeon]
+> > >  [<ffffffffa00dca22>] radeon_cs_ioctl+0x582/0x950 [radeon]
+> > >  [<ffffffffa002e573>] drm_ioctl+0x4d3/0x580 [drm]
+> > >  [<ffffffffa00dc4a0>] ? radeon_cs_finish_pages+0xf0/0xf0 [radeon]
+> > >  [<ffffffff811c49f9>] do_vfs_ioctl+0x99/0x5a0
+> > >  [<ffffffff812cd3d7>] ? file_has_perm+0x97/0xb0
+> > >  [<ffffffff81103715>] ? rcu_eqs_exit+0x65/0xb0
+> > >  [<ffffffff811c4f91>] sys_ioctl+0x91/0xb0
+> > >  [<ffffffff81695ad4>] tracesys+0xdd/0xe2
+> > > 
+> > 
+> > I see lots of these [mostly from page fault], the following one (quick and dirty) works for me.
 > 
-> A Thermal sensor is a piece of hardware that can report
-> temperature of the spot in which it is placed. A thermal
-> sensor driver reads the temperature from this sensor
-> and reports it out. This kind of driver can be in
-> any subsystem. If the sensor needs to participate
-> in platform thermal management, the corresponding
-> driver can use the APIs introduced in this patch, to
-> register(or unregister) with the thermal framework.
+> Is that patch or any other fix being picked up? It's over three weeks
+> now and I'm still seeing those BUGs with the latest 3.8-rc.
 > 
-> Signed-off-by: Durgadoss R <durgadoss.r@intel.com>
-> ---
->  drivers/thermal/thermal_sys.c |  280 +++++++++++++++++++++++++++++++++++++++++
->  include/linux/thermal.h       |   29 +++++
->  2 files changed, 309 insertions(+)
-> 
-> diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
-> index 0a1bf6b..cb94497 100644
-> --- a/drivers/thermal/thermal_sys.c
-> +++ b/drivers/thermal/thermal_sys.c
-> @@ -44,13 +44,16 @@ MODULE_LICENSE("GPL");
->  
->  static DEFINE_IDR(thermal_tz_idr);
->  static DEFINE_IDR(thermal_cdev_idr);
-> +static DEFINE_IDR(thermal_sensor_idr);
->  static DEFINE_MUTEX(thermal_idr_lock);
->  
->  static LIST_HEAD(thermal_tz_list);
-> +static LIST_HEAD(thermal_sensor_list);
->  static LIST_HEAD(thermal_cdev_list);
->  static LIST_HEAD(thermal_governor_list);
->  
->  static DEFINE_MUTEX(thermal_list_lock);
-> +static DEFINE_MUTEX(sensor_list_lock);
->  static DEFINE_MUTEX(thermal_governor_lock);
->  
->  static struct thermal_governor *__find_governor(const char *name)
-> @@ -423,6 +426,103 @@ static void thermal_zone_device_check(struct work_struct *work)
->  #define to_thermal_zone(_dev) \
->  	container_of(_dev, struct thermal_zone_device, device)
->  
-> +#define to_thermal_sensor(_dev) \
-> +	container_of(_dev, struct thermal_sensor, device)
-> +
-> +static ssize_t
-> +sensor_name_show(struct device *dev, struct device_attribute *attr, char *buf)
-> +{
-> +	struct thermal_sensor *ts = to_thermal_sensor(dev);
-> +
-> +	return sprintf(buf, "%s\n", ts->name);
-> +}
-> +
-> +static ssize_t
-> +sensor_temp_show(struct device *dev, struct device_attribute *attr, char *buf)
-> +{
-> +	int ret;
-> +	long val;
-> +	struct thermal_sensor *ts = to_thermal_sensor(dev);
-> +
-> +	ret = ts->ops->get_temp(ts, &val);
-> +
-> +	return ret ? ret : sprintf(buf, "%ld\n", val);
-> +}
-> +
-> +static ssize_t
-> +hyst_show(struct device *dev, struct device_attribute *attr, char *buf)
-> +{
-> +	int indx, ret;
-> +	long val;
-> +	struct thermal_sensor *ts = to_thermal_sensor(dev);
-> +
-> +	if (!sscanf(attr->attr.name, "threshold%d_hyst", &indx))
-> +		return -EINVAL;
-> +
-> +	ret = ts->ops->get_hyst(ts, indx, &val);
-> +
-> +	return ret ? ret : sprintf(buf, "%ld\n", val);
-> +}
-> +
-> +static ssize_t
-> +hyst_store(struct device *dev, struct device_attribute *attr,
-> +				   const char *buf, size_t count)
-> +{
-> +	int indx, ret;
-> +	long val;
-> +	struct thermal_sensor *ts = to_thermal_sensor(dev);
-> +
-> +	if (!ts->ops->set_hyst)
-> +		return -EPERM;
-> +
-> +	if (!sscanf(attr->attr.name, "threshold%d_hyst", &indx))
-> +		return -EINVAL;
-> +
-> +	if (kstrtol(buf, 10, &val))
-> +		return -EINVAL;
-> +
-> +	ret = ts->ops->set_hyst(ts, indx, val);
-> +
-> +	return ret ? ret : count;
-> +}
-> +
-> +static ssize_t
-> +threshold_show(struct device *dev, struct device_attribute *attr, char *buf)
-> +{
-> +	int indx, ret;
-> +	long val;
-> +	struct thermal_sensor *ts = to_thermal_sensor(dev);
-> +
-> +	if (!sscanf(attr->attr.name, "threshold%d", &indx))
-> +		return -EINVAL;
-> +
-> +	ret = ts->ops->get_threshold(ts, indx, &val);
-> +
-> +	return ret ? ret : sprintf(buf, "%ld\n", val);
-> +}
-> +
-> +static ssize_t
-> +threshold_store(struct device *dev, struct device_attribute *attr,
-> +				   const char *buf, size_t count)
-> +{
-> +	int indx, ret;
-> +	long val;
-> +	struct thermal_sensor *ts = to_thermal_sensor(dev);
-> +
-> +	if (!ts->ops->set_threshold)
-> +		return -EPERM;
-> +
-> +	if (!sscanf(attr->attr.name, "threshold%d", &indx))
-> +		return -EINVAL;
-> +
-> +	if (kstrtol(buf, 10, &val))
-> +		return -EINVAL;
-> +
-> +	ret = ts->ops->set_threshold(ts, indx, val);
-> +
-> +	return ret ? ret : count;
-> +}
-> +
->  static ssize_t
->  type_show(struct device *dev, struct device_attribute *attr, char *buf)
->  {
-> @@ -707,6 +807,10 @@ static DEVICE_ATTR(mode, 0644, mode_show, mode_store);
->  static DEVICE_ATTR(passive, S_IRUGO | S_IWUSR, passive_show, passive_store);
->  static DEVICE_ATTR(policy, S_IRUGO | S_IWUSR, policy_show, policy_store);
->  
-> +/* Thermal sensor attributes */
-> +static DEVICE_ATTR(sensor_name, 0444, sensor_name_show, NULL);
-> +static DEVICE_ATTR(temp_input, 0444, sensor_temp_show, NULL);
-> +
->  /* sys I/F for cooling device */
->  #define to_cooling_device(_dev)	\
->  	container_of(_dev, struct thermal_cooling_device, device)
-> @@ -1493,6 +1597,182 @@ static void remove_trip_attrs(struct thermal_zone_device *tz)
->  }
->  
->  /**
-> + * enable_sensor_thresholds - create sysfs nodes for thresholdX
 
-this is a little confusing.
-I'd prefer
-thermal_sensor_sysfs_add() and create sensor_name and temp_input
-attribute in this function as well, and thermal_sensor_sysfs_remove()
-to remove the sysfs I/F.
-And further more, we can do this for thermal zones and cooling devices.
+None that I'm aware of.
 
-others look okay to me.
 
-thanks,
-rui
-
+	-ss
