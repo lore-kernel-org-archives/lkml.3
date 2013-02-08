@@ -1,125 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947196Ab3BHVO0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 16:14:26 -0500
-Received: from fieldses.org ([174.143.236.118]:43433 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1947173Ab3BHVOJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 16:14:09 -0500
-Date: Fri, 8 Feb 2013 16:14:06 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Subject: Re: [PATCH v2 2/6] NFS; simlify and clean cache library
-Message-ID: <20130208211406.GB22748@fieldses.org>
-References: <20130204105728.11633.53621.stgit@localhost.localdomain>
- <20130204110240.11633.89082.stgit@localhost.localdomain>
+	id S1947206Ab3BHVOm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 16:14:42 -0500
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:50469 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1947126Ab3BHVOk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 16:14:40 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130204110240.11633.89082.stgit@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1360351703-20571-26-git-send-email-yinghai@kernel.org>
+References: <1360351703-20571-1-git-send-email-yinghai@kernel.org> <1360351703-20571-26-git-send-email-yinghai@kernel.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 8 Feb 2013 14:14:20 -0700
+Message-ID: <CAErSpo4iA17jh5rw05q=uaKOyMKesrPnxYrN2EvqWT_tGmE_FQ@mail.gmail.com>
+Subject: Re: [PATCH v2 25/26] PCI: Disable mem in the ioapic removing path
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 04, 2013 at 02:02:40PM +0300, Stanislav Kinsbursky wrote:
-> This is a cleanup patch.
-> Such helpers like nfs_cache_init() and nfs_cache_destroy() are redundant,
-> because they are just a wrappers around sunrpc_init_cache_detail() and
-> sunrpc_destroy_cache_detail() respectively.
-> So let's remove them completely and move corresponding logic to
-> nfs_cache_register_net() and nfs_cache_unregister_net() respectively (since
-> they are called together anyway).
+On Fri, Feb 8, 2013 at 12:28 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> For physical hot plug should be ok, but for remove/rescan path will
+> need us to disable that.
+>
+> otherwise rescan mmio resource for pci ioapic device will not be
+> sized and allocated, aka skiped.
 
-Ditto for this one--Trond, any objection?
+When we scan other PCI devices, we can size memory BARs even if
+PCI_COMMAND_MEMORY is already set.  So there must be something
+different about IOAPICs?  Or maybe it's something different about
+rescan vs. the initial scan?
 
---b.
+> For ioapic_probe:pci_enable_device will not enable the device
+> correctly, and will bail out early.
 
-> 
-> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Exactly where and why do we bail out early?  The only early bail out I
+see is where __pci_enable_device_flags() returns if "dev->enable_cnt >
+1".  Is that what you mean?
+
+> So we can just disable mmio for all removing case, and that will not hurt
+> real hotplug path.
+
+> Signed-off-by: <yinghai@kernel.org>
 > ---
->  fs/nfs/cache_lib.c   |   12 +++---------
->  fs/nfs/cache_lib.h   |    2 --
->  fs/nfs/dns_resolve.c |    6 +-----
->  3 files changed, 4 insertions(+), 16 deletions(-)
-> 
-> diff --git a/fs/nfs/cache_lib.c b/fs/nfs/cache_lib.c
-> index 862a2f1..5f7b053 100644
-> --- a/fs/nfs/cache_lib.c
-> +++ b/fs/nfs/cache_lib.c
-> @@ -128,10 +128,13 @@ int nfs_cache_register_net(struct net *net, struct cache_detail *cd)
->  	struct super_block *pipefs_sb;
->  	int ret = 0;
->  
-> +	sunrpc_init_cache_detail(cd);
->  	pipefs_sb = rpc_get_sb_net(net);
->  	if (pipefs_sb) {
->  		ret = nfs_cache_register_sb(pipefs_sb, cd);
->  		rpc_put_sb_net(net);
-> +		if (ret)
-> +			sunrpc_destroy_cache_detail(cd);
->  	}
->  	return ret;
+>  drivers/pci/ioapic.c |   13 +++++++++++++
+>  1 file changed, 13 insertions(+)
+>
+> diff --git a/drivers/pci/ioapic.c b/drivers/pci/ioapic.c
+> index 3c6bbdd..8dacfd0 100644
+> --- a/drivers/pci/ioapic.c
+> +++ b/drivers/pci/ioapic.c
+> @@ -88,6 +88,17 @@ exit_free:
+>         return -ENODEV;
 >  }
-> @@ -151,14 +154,5 @@ void nfs_cache_unregister_net(struct net *net, struct cache_detail *cd)
->  		nfs_cache_unregister_sb(pipefs_sb, cd);
->  		rpc_put_sb_net(net);
->  	}
-> -}
-> -
-> -void nfs_cache_init(struct cache_detail *cd)
-> -{
-> -	sunrpc_init_cache_detail(cd);
-> -}
-> -
-> -void nfs_cache_destroy(struct cache_detail *cd)
-> -{
->  	sunrpc_destroy_cache_detail(cd);
->  }
-> diff --git a/fs/nfs/cache_lib.h b/fs/nfs/cache_lib.h
-> index 317db95..4116d2c 100644
-> --- a/fs/nfs/cache_lib.h
-> +++ b/fs/nfs/cache_lib.h
-> @@ -23,8 +23,6 @@ extern struct nfs_cache_defer_req *nfs_cache_defer_req_alloc(void);
->  extern void nfs_cache_defer_req_put(struct nfs_cache_defer_req *dreq);
->  extern int nfs_cache_wait_for_upcall(struct nfs_cache_defer_req *dreq);
->  
-> -extern void nfs_cache_init(struct cache_detail *cd);
-> -extern void nfs_cache_destroy(struct cache_detail *cd);
->  extern int nfs_cache_register_net(struct net *net, struct cache_detail *cd);
->  extern void nfs_cache_unregister_net(struct net *net, struct cache_detail *cd);
->  extern int nfs_cache_register_sb(struct super_block *sb,
-> diff --git a/fs/nfs/dns_resolve.c b/fs/nfs/dns_resolve.c
-> index 5015447..499834b 100644
-> --- a/fs/nfs/dns_resolve.c
-> +++ b/fs/nfs/dns_resolve.c
-> @@ -375,14 +375,12 @@ int nfs_dns_resolver_cache_init(struct net *net)
->  	if (IS_ERR(nn->nfs_dns_resolve))
->  		return PTR_ERR(nn->nfs_dns_resolve);
->  
-> -	nfs_cache_init(nn->nfs_dns_resolve);
->  	err = nfs_cache_register_net(net, nn->nfs_dns_resolve);
->  	if (err)
->  		goto err_reg;
->  	return 0;
->  
->  err_reg:
-> -	nfs_cache_destroy(nn->nfs_dns_resolve);
->  	cache_destroy_net(nn->nfs_dns_resolve, net);
->  	return err;
->  }
-> @@ -390,10 +388,8 @@ err_reg:
->  void nfs_dns_resolver_cache_destroy(struct net *net)
+>
+> +static void pci_disable_device_mem(struct pci_dev *dev)
+> +{
+> +       u16 pci_command;
+> +
+> +       pci_read_config_word(dev, PCI_COMMAND, &pci_command);
+> +       if (pci_command & PCI_COMMAND_MEMORY) {
+> +               pci_command &= ~PCI_COMMAND_MEMORY;
+> +               pci_write_config_word(dev, PCI_COMMAND, pci_command);
+> +       }
+> +}
+> +
+>  static void ioapic_remove(struct pci_dev *dev)
 >  {
->  	struct nfs_net *nn = net_generic(net, nfs_net_id);
-> -	struct cache_detail *cd = nn->nfs_dns_resolve;
->  
-> -	nfs_cache_unregister_net(net, cd);
-> -	nfs_cache_destroy(cd);
-> +	nfs_cache_unregister_net(net, nn->nfs_dns_resolve);
->  	cache_destroy_net(nn->nfs_dns_resolve, net);
+>         struct ioapic *ioapic = pci_get_drvdata(dev);
+> @@ -95,6 +106,8 @@ static void ioapic_remove(struct pci_dev *dev)
+>         acpi_unregister_ioapic(ioapic->handle, ioapic->gsi_base);
+>         pci_release_region(dev, 0);
+>         pci_disable_device(dev);
+> +       /* need to disable it, otherwise remove/rescan will not work */
+> +       pci_disable_device_mem(dev);
+>         kfree(ioapic);
 >  }
->  
-> 
+>
+> --
+> 1.7.10.4
+>
