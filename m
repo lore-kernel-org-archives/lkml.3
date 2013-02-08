@@ -1,60 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757515Ab3BHAVq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 19:21:46 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:60253 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754195Ab3BHAVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 19:21:16 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <liuj97@gmail.com>,
-        Toshi Kani <toshi.kani@hp.com>, LKML <linux-kernel@vger.kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Subject: [PATCH 0/2] ACPI / scan: Remove useless #ifndef and simplify container driver
-Date: Fri, 08 Feb 2013 01:24:19 +0100
-Message-ID: <1468930.acVuhKfKYv@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <5090866.2BHgpRnuEZ@vostro.rjw.lan>
-References: <1873429.MS5RQDxTye@vostro.rjw.lan> <3164478.OcagzIMET0@vostro.rjw.lan> <5090866.2BHgpRnuEZ@vostro.rjw.lan>
+	id S1756829Ab3BHAZk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 19:25:40 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35940 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751487Ab3BHAZi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 19:25:38 -0500
+From: "Hatayama, Daisuke" <d.hatayama@jp.fujitsu.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: "ebiederm@xmission.com" <ebiederm@xmission.com>,
+        "cpw@sgi.com" <cpw@sgi.com>,
+        "kumagai-atsushi@mxc.nes.nec.co.jp" 
+	<kumagai-atsushi@mxc.nes.nec.co.jp>,
+        "lisa.mitchell@hp.com" <lisa.mitchell@hp.com>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] kdump, oldmem: support mmap on /dev/oldmem
+Thread-Topic: [PATCH] kdump, oldmem: support mmap on /dev/oldmem
+Thread-Index: Ac4ClGsOL11EzwL1RDqu1EeC+4dtFgA02u0AADTExpAAL5XfgAAlbcuA
+Date: Fri, 8 Feb 2013 00:25:35 +0000
+Message-ID: <33710E6CAA200E4583255F4FB666C4E20AC6735D@G01JPEXMBYT03>
+References: <33710E6CAA200E4583255F4FB666C4E20AC36B01@G01JPEXMBYT03>
+ <20130205151256.GB12853@redhat.com>
+ <33710E6CAA200E4583255F4FB666C4E20AC61B3C@G01JPEXMBYT03>
+ <20130207150623.GC6462@redhat.com>
+In-Reply-To: <20130207150623.GC6462@redhat.com>
+Accept-Language: ja-JP, en-US
+Content-Language: ja-JP
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.124.101.76]
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, February 04, 2013 12:47:31 AM Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> From: Vivek Goyal [mailto:vgoyal@redhat.com]
+> Sent: Friday, February 08, 2013 12:06 AM
+
+> On Wed, Feb 06, 2013 at 07:24:46AM +0000, Hatayama, Daisuke wrote:
+> > From: Vivek Goyal <vgoyal@redhat.com>
+> > Subject: Re: [PATCH] kdump, oldmem: support mmap on /dev/oldmem
+> > Date: Tue, 5 Feb 2013 10:12:56 -0500
+> >
+> > > On Mon, Feb 04, 2013 at 04:59:35AM +0000, Hatayama, Daisuke wrote:
+> >
+> > > [..]
+> > >> For design decision, I didn't support mmap() on /proc/vmcore because
+> > >> it abstracts old memory as ELF format, so there's range consequtive
+> on
+> > >> /proc/vmcore but not consequtive on the actual old memory. For
+> > >> example, consider ELF headers on the 2nd kernel and the note objects,
+> > >> memory chunks corresponding to PT_LOAD entries on the first kernel.
+> > >> They are not consequtive on the old memory. So reampping them so
+> > >> /proc/vmcore appears consequtive using existing remap_pfn_range()
+> needs
+> > >> some complicated work.
+> > >
+> > > Can't we call remap_pfn_range() multiple times. Once for each sequential
+> > > range of memory. /proc/vmcore already has list of contiguous memory
+> areas.
+> > > So we can parse user passed file offset and size and map into respective
+> > > physical chunks and call rempa_pfn_range() on all these chunks.
+> > >
+> > > I think supporting mmap() both on /dev/oldmem as well as /proc/vmcore
+> will
+> > > be nice.
+> > >
+> > > Agreed that supporting mmap() on /proc/vmcore is more work as compared
+> to
+> > > /dev/oldmem but should be doable.
+> > >
+> >
+> > The complication to support mmap() on /proc/vmcore lies in kdump
+> > side. Objects exported from /proc/vmcore needs to be page-size aligned
+> > on /proc/vmcore. This comes from the restriction of mmap() that
+> > requires user-space address and physical address to be page-size
+> > aligned.
+> >
+> > As I said in the description, objects implicitly referened by
+> > /proc/vmcore are
+> >
+> >   - ELF headers,
+> >   - NOTE objects (NT_PRSTATUS entries x cpus, VMCOREINFO), and
+> >   - memory chunks x (the number of PT_LOAD entries).
+> >
+> > Note objects are scattered on old memory. They are exported as a
+> > single NOTE entry from program headers, so they need to be gathered at
+> > the same location in the 2nd kernel starting from the page-size
+> > aligned address.
+> >
+> > VMCOREINFO is about 1.5KB on 2.6.32 kernel. One NT_PRSTATUS is 355
+> > bytes. Recent limit of NR_CPUS is 5120 on x86_64. So less than about 2
+> > MB is enough even on the worst case.
+> >
+> > Note that the format of /proc/vmcore need to change since offset of
+> > each object need to be page-size aligned.
 > 
-> The only useful thing that the ACPI container driver does is to
-> install system notify handlers for all container and module device
-> objects it finds in the namespace.  The driver structure,
-> acpi_container_driver, and the data structures created by its
-> .add() callback are in fact not used by the driver, so remove
-> them entirely.
+> Ok, got it. So everything needs to be page aligned and if size is not
+> sufficient then we need a way to pad memory areas to make next object
+> page aligned.
 > 
-> It also makes a little sense to build that driver as a module,
-> so make it non-modular and add its initialization to the
-> namespace scanning code.
-> 
-> In addition to that, make the namespace walk callback used for
-> installing the notify handlers more straightforward.
+> To begin with supporting mmap on /dev/oldmem is fine with me. Once that
+> gets in, it will be good to look at how to make all the individual items
+> page aligned  so that mmap can be supported on /proc/vmcore.
 
-As pointed out by Toshi Kani, the above changes would make acpi_eject_store()
-fail for containers and it is the only way to eject them currently, so patch
-[2/2] is an improved version of this (with Toshi's changes folded in).
+I'm already beginning with making the patch set. At the time when I was writing /dev/oldmem patch, I was confused that remap_pfn_range must have been rewritten. But the complication is in fact simpler. I would post it early next week.
 
-Patch [1/2] is just a cleanup removing a useless #ifndef from acpi_eject_store().
+By the way, the third argument pfn of remap_pfn_range is defined as unsigned long, of 4 bytes on 32-bit x86. On PAE paging 32-bit linear addresses are converted maximally to 52-bit physical addresses (4 PiB). We need 40 bits to fully represent all page frame numbers over 52-bit physical memory space, so 4 bytes is not enough. But it seems to me unlikely that there's users who want to use huge memory with 32-bit kernel. I'll not support 32-bit x86 at least on the next patch.
 
-Thanks,
-Rafael
+Thanks.
+HATAYAMA, Daisuke
 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
