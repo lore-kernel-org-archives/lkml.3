@@ -1,106 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946096Ab3BHIcp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 03:32:45 -0500
-Received: from georges.telenet-ops.be ([195.130.137.68]:48005 "EHLO
-	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946073Ab3BHIcm (ORCPT
+	id S1946109Ab3BHIdM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 03:33:12 -0500
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:51262 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946065Ab3BHIdK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 03:32:42 -0500
-Message-ID: <5114B827.60801@acm.org>
-Date: Fri, 08 Feb 2013 09:32:39 +0100
-From: Bart Van Assche <bvanassche@acm.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
+	Fri, 8 Feb 2013 03:33:10 -0500
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Girish KS <girishks2000@gmail.com>, Tomasz Figa <t.figa@samsung.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] spi: s3c64xx: modified error interrupt handling and init
+Date: Fri, 08 Feb 2013 09:33:08 +0100
+Message-ID: <2723874.KAatFKgahz@flatron>
+User-Agent: KMail/4.9.5 (Linux/3.7.4-gentoo; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAKrE-KfyGCi_+FozSpGTy0A0VJP=Jq-1SHmvKJU02iJKWHcvLQ@mail.gmail.com>
+References: <1360105784-12282-1-git-send-email-ks.giri@samsung.com> <1585017.derjdP1mHL@amdc1227> <CAKrE-KfyGCi_+FozSpGTy0A0VJP=Jq-1SHmvKJU02iJKWHcvLQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Anatol Pomozov <anatol.pomozov@gmail.com>
-CC: linux-fsdevel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
-        koverstreet@google.com, linux-aio@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Improving AIO cancellation
-References: <CAOMFOmXiEUnqkoQg6bA4N3jg5ERMKoydOdmn7djkpFyfZk19cg@mail.gmail.com>
-In-Reply-To: <CAOMFOmXiEUnqkoQg6bA4N3jg5ERMKoydOdmn7djkpFyfZk19cg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/08/13 04:42, Anatol Pomozov wrote:
-> Hi,
->
-> At Google we have several applications that heavily use asynchronous
-> IO. One thing that our userspace developers need is effective AIO
-> cancellation. You might say "sure use io_cancel syscall". Well, while
-> it cancels AIO requests it does it ineffectively. Currently (I am
-> looking at linux-next) io_cancel only marks kiocb as cancelled. The
-> bios still be issued to device even after kiocb was cancelled. Let's
-> say you have a congested device and want to cancel some AIO requests -
-> io_cancel will not make situation better. We would like to see more
-> resource effective AIO cancellation.
->
-> I had a discussion with Ted Tso and Kent Overstreet about improving
-> this situation and would like to share the ideas with you, linux
-> community.
->
-> Once direct async IO is submitted the request can be at several stages:
-> 1) Sitting in kernel request queue of a congested device
-> 2) Sent to device and sitting in device queue (if NCQ is enabled)
-> 3) Executing on device
->
-> Ideally if we can cancel an IO request on any of these stages. But
-> currently we are especially interested in case #1. I do not know if
-> cancellation at stage #2 and #3 is possible and/or reasonable.
->
-> BTW AIO cancellation makes sense only for direct IO. Buffered AIO will
-> end up in buffer soon and kiocb will be marked as completed. Later
-> (maybe much later) writeback will flush those buffers to disk, but you
-> cannot cancel it..
->
-> And yet another thing to remember is md/RAID. Some types of raid
-> support stripes consistency. When md splits a WRITE across disks
-> either all or no of the child requests should be completed. If we do
-> partial write then the disk data will become inconsistent.
->
->
-> Ted and Kent suggested following solution: any time when we do forward
-> progress with request/bio we need to check its status. If user
-> cancelled the request then just skip this bio. So it covers case #1.
->
-> The draft implementation will look like this. struct bio should have
-> some way to get current status of kiocb that generated bio. So we add
-> a pointer to bool flag.
->
-> struct bio {
->    bool *cancelled;
-> }
->
-> in async DIO codepath this pointer will be initialized with bool at
-> "struct kiocb"
->    bio->cancelled = &kiocb->cancelled;
-> except md. If it is RAID5 and we perform WRITE request then we do not
-> initialize this pointer.
->
->
-> when we do forward progress with request/bio we check its cancellation status:
-> if (bio->cancelled && *bio->cancelled)
->    goto do_not_process_bio_because_it_cancelled;
->
-> So to cancel kiocb we do
-> kiocb->cancelled = true;
-> and all bio created from the request will not be send to device anymore.
->
->
-> The solution seems straightforward, but I would like to hear if there
-> are other solutions to make AIO cancellation better. Does suggested
-> implementation looks good? Are there better solutions? What about
-> cancelling requests that are already sent to device?
->
-> If the proposal is fine then I start implementing it.
+On Thursday 07 of February 2013 09:46:58 Girish KS wrote:
+> On Thu, Feb 7, 2013 at 3:09 AM, Tomasz Figa <t.figa@samsung.com> wrote:
+> > Hi Girish,
+> > 
+> > On Wednesday 06 of February 2013 12:12:29 Girish KS wrote:
+> >> On Wed, Feb 6, 2013 at 2:26 AM, Grant Likely
+> >> <grant.likely@secretlab.ca>> 
+> > wrote:
+> >> > On Tue,  5 Feb 2013 15:09:41 -0800, Girish K S
+> > 
+> > <girishks2000@gmail.com> wrote:
+> >> >> The status of the interrupt is available in the status register,
+> >> >> so reading the clear pending register and writing back the same
+> >> >> value will not actually clear the pending interrupts. This patch
+> >> >> modifies the interrupt handler to read the status register and
+> >> >> clear the corresponding pending bit in the clear pending register.
+> >> >> 
+> >> >> Modified the hwInit function to clear all the pending interrupts.
+> >> >> 
+> >> >> Signed-off-by: Girish K S <ks.giri@samsung.com>
+> >> >> ---
+> >> >> 
+> >> >>  drivers/spi/spi-s3c64xx.c |   41
+> >> >>  +++++++++++++++++++++++++---------------- 1 file changed, 25
+> >> >>  insertions(+), 16 deletions(-)
+> >> >> 
+> >> >> diff --git a/drivers/spi/spi-s3c64xx.c b/drivers/spi/spi-s3c64xx.c
+> >> >> index ad93231..b770f88 100644
+> >> >> --- a/drivers/spi/spi-s3c64xx.c
+> >> >> +++ b/drivers/spi/spi-s3c64xx.c
+> >> >> @@ -997,25 +997,30 @@ static irqreturn_t s3c64xx_spi_irq(int irq,
+> >> >> void *data)>>
+> >> >> 
+> >> >>  {
+> >> >>  
+> >> >>       struct s3c64xx_spi_driver_data *sdd = data;
+> >> >>       struct spi_master *spi = sdd->master;
+> >> >> 
+> >> >> -     unsigned int val;
+> >> >> +     unsigned int val, clr = 0;
+> >> >> 
+> >> >> -     val = readl(sdd->regs + S3C64XX_SPI_PENDING_CLR);
+> >> >> +     val = readl(sdd->regs + S3C64XX_SPI_STATUS);
+> >> >> 
+> >> >> -     val &= S3C64XX_SPI_PND_RX_OVERRUN_CLR |
+> >> >> -             S3C64XX_SPI_PND_RX_UNDERRUN_CLR |
+> >> >> -             S3C64XX_SPI_PND_TX_OVERRUN_CLR |
+> >> >> -             S3C64XX_SPI_PND_TX_UNDERRUN_CLR;
+> >> >> -
+> >> >> -     writel(val, sdd->regs + S3C64XX_SPI_PENDING_CLR);
+> >> >> -
+> >> >> -     if (val & S3C64XX_SPI_PND_RX_OVERRUN_CLR)
+> >> >> +     if (val & S3C64XX_SPI_ST_RX_OVERRUN_ERR) {
+> >> >> +             clr = S3C64XX_SPI_PND_RX_OVERRUN_CLR;
+> >> >> 
+> >> >>               dev_err(&spi->dev, "RX overrun\n");
+> >> >> 
+> >> >> -     if (val & S3C64XX_SPI_PND_RX_UNDERRUN_CLR)
+> >> >> +     }
+> >> >> +     if (val & S3C64XX_SPI_ST_RX_UNDERRUN_ERR) {
+> >> >> +             clr |= S3C64XX_SPI_PND_RX_UNDERRUN_CLR;
+> >> >> 
+> >> >>               dev_err(&spi->dev, "RX underrun\n");
+> >> >> 
+> >> >> -     if (val & S3C64XX_SPI_PND_TX_OVERRUN_CLR)
+> >> >> +     }
+> >> >> +     if (val & S3C64XX_SPI_ST_TX_OVERRUN_ERR) {
+> >> >> +             clr |= S3C64XX_SPI_PND_TX_OVERRUN_CLR;
+> >> >> 
+> >> >>               dev_err(&spi->dev, "TX overrun\n");
+> >> >> 
+> >> >> -     if (val & S3C64XX_SPI_PND_TX_UNDERRUN_CLR)
+> >> >> +     }
+> >> >> +     if (val & S3C64XX_SPI_ST_TX_UNDERRUN_ERR) {
+> >> >> +             clr |= S3C64XX_SPI_PND_TX_UNDERRUN_CLR;
+> >> >> 
+> >> >>               dev_err(&spi->dev, "TX underrun\n");
+> >> >> 
+> >> >> +     }
+> >> >> +
+> >> >> +     /* Clear the pending irq by setting and then clearing it */
+> >> >> +     writel(clr, sdd->regs + S3C64XX_SPI_PENDING_CLR);
+> >> >> +     writel(clr & ~clr, sdd->regs + S3C64XX_SPI_PENDING_CLR);
+> >> > 
+> >> > Wait, what?  clr & ~clr == 0   Always.  What are you actually
+> >> > trying
+> >> > to do here?
+> >> 
+> >> The user manual says, wirting 1 to the pending clear register clears
+> >> the interrupt (its not auto clear to 0). so i need to explicitly
+> >> reset
+> >> those bits thats what the 2nd write does
+> > 
+> > I have looked through user's manuals of different Samsung SoCs. All of
+> > them said that writing 1 to a bit clears the corresponding interrupt,
+> > but none of them contain any note that it must be manually cleared to
+> > 0.
+> What i meant was the clear pending bit will not clear automatically.
+> When I set the
+> clear pending bit, it remains set. This is a problem for the next
+> interrupt cycle.
 
-Hello Anatol,
+How did you check that it does not clear automatically?
 
-Had you already noticed this message: 
-http://marc.info/?l=linux-fsdevel&m=136024044202362 ?
+> > In addition the expression
+> > 
+> > clr & ~clr
+> > 
+> > makes no sense, because it is equal to 0.
+> 
+> It makes sense, because we are not disturbing the interrupt pending
+> bit at position 0, which is a trailing clr bit.
 
-Bart.
+You either seem to misunderstand the problem I'm mentioning or not 
+understanding it at all.
+
+If you take a variable named clr, no matter what value it is set to, and 
+you AND it with bitwise negation of the same variable, you will get 0.
+
+See on this example:
+
+Bits:     7 | 6 | 5 | 4 | 3 | 2 | 1 | 0
+         -------------------------------
+Values:   1 | 1 | 0 | 0 | 1 | 0 | 0 | 1
+         -------------------------------
+Negation: 0 | 0 | 1 | 1 | 0 | 1 | 1 | 0
+         -------------------------------
+AND:      0 | 0 | 0 | 0 | 0 | 0 | 0 | 0
+
+Now, can you see that (clr & ~clr) is the same as (0)?
+
+Best regards,
+Tomasz
 
