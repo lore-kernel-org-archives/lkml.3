@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946583Ab3BHOjt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 09:39:49 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:62418 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946444Ab3BHOic (ORCPT
+	id S1946459Ab3BHOoT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 09:44:19 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:58996 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753194Ab3BHOoS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 09:38:32 -0500
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 6/7] HID: multitouch: remove usbhid dependency
-Date: Fri,  8 Feb 2013 15:37:35 +0100
-Message-Id: <1360334256-22127-7-git-send-email-benjamin.tissoires@gmail.com>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1360334256-22127-1-git-send-email-benjamin.tissoires@gmail.com>
-References: <1360334256-22127-1-git-send-email-benjamin.tissoires@gmail.com>
+	Fri, 8 Feb 2013 09:44:18 -0500
+Date: Fri, 8 Feb 2013 06:44:08 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org, zab@redhat.com, bcrl@kvack.org,
+        jmoyer@redhat.com, axboe@kernel.dk, viro@zeniv.linux.org.uk,
+        tytso@mit.edu, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 23/32] Generic dynamic per cpu refcounting
+Message-ID: <20130208144408.GY2875@htj.dyndns.org>
+References: <1356573611-18590-1-git-send-email-koverstreet@google.com>
+ <1356573611-18590-26-git-send-email-koverstreet@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1356573611-18590-26-git-send-email-koverstreet@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
----
- drivers/hid/hid-multitouch.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+(cc'ing Andrew)
 
-diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index 32258ba..184ac0a 100644
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -32,7 +32,6 @@
- #include <linux/slab.h>
- #include <linux/usb.h>
- #include <linux/input/mt.h>
--#include "usbhid/usbhid.h"
- 
- 
- MODULE_AUTHOR("Stephane Chatty <chatty@enac.fr>");
-@@ -907,7 +906,7 @@ static int mt_resume(struct hid_device *hdev)
- 
- 	intf = to_usb_interface(hdev->dev.parent);
- 	interface = intf->cur_altsetting;
--	dev = hid_to_usb_dev(hdev);
-+	dev = interface_to_usbdev(intf);
- 
- 	/* Some Elan legacy devices require SET_IDLE to be set on resume.
- 	 * It should be safe to send it to other devices too.
+On Wed, Dec 26, 2012 at 06:00:02PM -0800, Kent Overstreet wrote:
+> This implements a refcount with similar semantics to
+> atomic_get()/atomic_dec_and_test(), that starts out as just an atomic_t
+> but dynamically switches to per cpu refcounting when the rate of
+> gets/puts becomes too high.
+> 
+> It also implements two stage shutdown, as we need it to tear down the
+> percpu counts. Before dropping the initial refcount, you must call
+> percpu_ref_kill(); this puts the refcount in "shutting down mode" and
+> switches back to a single atomic refcount with the appropriate barriers
+> (synchronize_rcu()).
+> 
+> It's also legal to call percpu_ref_kill() multiple times - it only
+> returns true once, so callers don't have to reimplement shutdown
+> synchronization.
+> 
+> For the sake of simplicity/efficiency, the heuristic is pretty simple -
+> it just switches to percpu refcounting if there are more than x gets
+> in one second (completely arbitrarily, 4096).
+> 
+> It'd be more correct to count the number of cache misses or something
+> else more profile driven, but doing so would require accessing the
+> shared ref twice per get - by just counting the number of gets(), we can
+> stick that counter in the high bits of the refcount and increment both
+> with a single atomic64_add(). But I expect this'll be good enough in
+> practice.
+> 
+> Signed-off-by: Kent Overstreet <koverstreet@google.com>
+
+What's the status of this series?  The percpu-refcnt part is still
+going through review and the merge window is opening up pretty soon.
+Kent, Andrew?
+
+Thanks.
+
 -- 
-1.8.1
-
+tejun
