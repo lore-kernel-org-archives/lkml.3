@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759793Ab3BHBG5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 20:06:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41966 "EHLO
+	id S1759799Ab3BHBHU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 20:07:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41969 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759637Ab3BHA6H (ORCPT
+	with ESMTP id S1759635Ab3BHA6H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 7 Feb 2013 19:58:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Ming Lei <ming.lei@canonical.com>
-Subject: [ 17/26] USB: EHCI: fix timer bug affecting port resume
-Date: Thu,  7 Feb 2013 16:57:45 -0800
-Message-Id: <20130208004630.246079296@linuxfoundation.org>
+        Daniele Palmas <dnlplm@gmail.com>
+Subject: [ 16/26] USB: qcserial: add Telit Gobi QDL device
+Date: Thu,  7 Feb 2013 16:57:44 -0800
+Message-Id: <20130208004630.120526232@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130208004627.258272404@linuxfoundation.org>
 References: <20130208004627.258272404@linuxfoundation.org>
@@ -27,51 +26,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Daniele Palmas <dnlplm@gmail.com>
 
-commit ee74290b7853db9d5fd64db70e5c175241c59fba upstream.
+commit 78796ae17eacedcdcaaeb03ba73d2e532a4c8f83 upstream.
 
-This patch (as1652) fixes a long-standing bug in ehci-hcd.  The driver
-relies on status polls to know when to stop port-resume signalling.
-It uses the root-hub status timer to schedule these status polls.  But
-when the driver for the root hub is resumed, the timer is rescheduled
-to go off immediately -- before the port is ready.  When this happens
-the timer does not get re-enabled, which prevents the port resume from
-finishing until some other event occurs.
+Add VID and PID for Telit Gobi QDL device
 
-The symptom is that when a new device is plugged in, it doesn't get
-recognized or enumerated until lsusb is run or something else happens.
-
-The solution is to re-enable the root-hub status timer after every
-status poll while a port resume is in progress.
-
-This bug hasn't surfaced before now because we never used to try to
-suspend the root hub in the middle of a port resume (except by
-coincidence).
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-and-tested-by: Norbert Preining <preining@logic.at>
-Tested-by: Ming Lei <ming.lei@canonical.com>
+Signed-off-by: Daniele Palmas <dnlplm@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ehci-hub.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/usb/serial/qcserial.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/host/ehci-hub.c
-+++ b/drivers/usb/host/ehci-hub.c
-@@ -612,7 +612,11 @@ ehci_hub_status_data (struct usb_hcd *hc
- 			status = STS_PCD;
- 		}
- 	}
--	/* FIXME autosuspend idle root hubs */
-+
-+	/* If a resume is in progress, make sure it can finish */
-+	if (ehci->resuming_ports)
-+		mod_timer(&hcd->rh_timer, jiffies + msecs_to_jiffies(25));
-+
- 	spin_unlock_irqrestore (&ehci->lock, flags);
- 	return status ? retval : 0;
- }
+--- a/drivers/usb/serial/qcserial.c
++++ b/drivers/usb/serial/qcserial.c
+@@ -55,6 +55,7 @@ static const struct usb_device_id id_tab
+ 	{DEVICE_G1K(0x05c6, 0x9221)},	/* Generic Gobi QDL device */
+ 	{DEVICE_G1K(0x05c6, 0x9231)},	/* Generic Gobi QDL device */
+ 	{DEVICE_G1K(0x1f45, 0x0001)},	/* Unknown Gobi QDL device */
++	{DEVICE_G1K(0x1bc7, 0x900e)},	/* Telit Gobi QDL device */
+ 
+ 	/* Gobi 2000 devices */
+ 	{USB_DEVICE(0x1410, 0xa010)},	/* Novatel Gobi 2000 QDL device */
 
 
