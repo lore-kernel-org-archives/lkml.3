@@ -1,113 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945941Ab3BHG1n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 01:27:43 -0500
-Received: from mail-la0-f45.google.com ([209.85.215.45]:63016 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753032Ab3BHG1l (ORCPT
+	id S1757123Ab3BHGeW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 01:34:22 -0500
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:56874 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753031Ab3BHGeU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 01:27:41 -0500
-Date: Fri, 8 Feb 2013 10:27:36 +0400
-From: Artem Savkov <artem.savkov@gmail.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, valdis.kletnieks@vt.edu,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        dirk.brandewie@gmail.com
-Subject: Re: [PATCH 0/4] CPUFreq Fixes for 3.9
-Message-ID: <20130208062736.GA5563@thinkpad.lan>
-References: <cover.1360232293.git.viresh.kumar@linaro.org>
- <2158181.aoVXdpLJe2@vostro.rjw.lan>
- <CAKohponLrVG+ubf5Ok+7AvoWKRF16YLqUEWAU6hH7-H_R=r0Ow@mail.gmail.com>
- <1947746.IyFppZQEx8@vostro.rjw.lan>
- <CAKohpony25Ct94QyCOEmoNVS6Xc5O8=0Cnc6NxLxTP5Y-E1XJg@mail.gmail.com>
+	Fri, 8 Feb 2013 01:34:20 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAKohpony25Ct94QyCOEmoNVS6Xc5O8=0Cnc6NxLxTP5Y-E1XJg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87bobw4ab9.fsf@devron.myhome.or.jp>
+References: <1359989028-7457-1-git-send-email-linkinjeon@gmail.com>
+	<87bobw4ab9.fsf@devron.myhome.or.jp>
+Date: Fri, 8 Feb 2013 15:34:19 +0900
+Message-ID: <CAKYAXd_68nEdbdi5wEWMoavTE6kZcfwBd2Yi7jbk5nBE-_kGUw@mail.gmail.com>
+Subject: Re: [PATCH v2] fat: eliminate iterations in fat_search_long and
+ __fat_readdir in case of EOD
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 08, 2013 at 10:39:13AM +0530, Viresh Kumar wrote:
-> On 8 February 2013 04:37, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > BTW, there still are locking problems in linux-next.  Why do we need
-> > to take cpufreq_driver_lock() around driver->init() in cpufreq_add_dev(),
-> > in particular?
-> I thought a bit more and realized there is no such limitation on
-> cpufreq_driver->ops about calling routines which can sleep. And thus
-> we shoudln't
-> have locks around any of these. I have got a patch for it, that i
-> would fold-back into
-> the original patch that introduced locking fixes (attached too for testing):
-Tested this patch on top of linux-pm.git/bleeding-edge
-Now everything seems to be alright.
+2013/2/7, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
+> Namjae Jeon <linkinjeon@gmail.com> writes:
+>
+>> From: Namjae Jeon <namjae.jeon@samsung.com>
+>>
+>> When doing lookups via fat_search_long(), we can stop checking for
+>> further entries if we detect End of Directory, i.e. if (de->name[0] ==
+>> 0x00).The current code traverses the cluster chain of a directory until a
+>> hit
+>> is found or till the last cluster for that directory, ignoring the EOD
+>> mark. Fix this.
+>>
+>> Likewise,when readdir(3) is called, we can stop checking for further
+>> entries in __fat_readdir() when we hit EOD.
+>
+Hi OGAWA.
+> Don't we need to change fat_get_short_entry()?
+Yes, We need to change here. Thanks for review!
 
-> From: Viresh Kumar <viresh.kumar@linaro.org>
-> Date: Fri, 8 Feb 2013 10:35:31 +0530
-> Subject: [PATCH] cpufreq: Remove unnecessary locking
-> 
-> I have placed some locks intentionally around calls to driver->ops (init/exit),
-> which look to be wrong as these calls can call routines that potentially sleep.
-> 
-> Lets remove these locks.
-> 
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
->  drivers/cpufreq/cpufreq.c | 7 -------
->  1 file changed, 7 deletions(-)
-> 
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index 5d8a422..04aab05 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -795,10 +795,8 @@ static int cpufreq_add_dev_interface(unsigned int cpu,
-> 
->  	if (ret) {
->  		pr_debug("setting policy failed\n");
-> -		spin_lock_irqsave(&cpufreq_driver_lock, flags);
->  		if (driver->exit)
->  			driver->exit(policy);
-> -		spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
->  	}
->  	return ret;
-> 
-> @@ -920,17 +918,14 @@ static int cpufreq_add_dev(struct device *dev,
-> struct subsys_interface *sif)
->  	init_completion(&policy->kobj_unregister);
->  	INIT_WORK(&policy->update, handle_update);
-> 
-> -	spin_lock_irqsave(&cpufreq_driver_lock, flags);
->  	/* call driver. From then on the cpufreq must be able
->  	 * to accept all calls to ->verify and ->setpolicy for this CPU
->  	 */
->  	ret = driver->init(policy);
->  	if (ret) {
->  		pr_debug("initialization failed\n");
-> -		spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
->  		goto err_set_policy_cpu;
->  	}
-> -	spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
-> 
->  	/* related cpus should atleast have policy->cpus */
->  	cpumask_or(policy->related_cpus, policy->related_cpus, policy->cpus);
-> @@ -1100,10 +1095,8 @@ static int __cpufreq_remove_dev(struct device
-> *dev, struct subsys_interface *sif
->  		wait_for_completion(cmp);
->  		pr_debug("wait complete\n");
-> 
-> -		spin_lock_irqsave(&cpufreq_driver_lock, flags);
->  		if (driver->exit)
->  			driver->exit(data);
-> -		spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
-> 
->  		free_cpumask_var(data->related_cpus);
->  		free_cpumask_var(data->cpus);
+> And did this work correctly about f_pos for readdir?
+Yes, sure. f_pos is work correctly about each directory entry. because
+after name[0] == 0x00, there are no allocated directory entires.
+>
+> I'm not thinking about f_pos deeply though, it may have something
+> wrong. Because it stops at middle of cluster.
+Plz See the below descirption about name[0] in FAT spec.
+---------------------------------------------------------------------------------------------------------------------
+If DIR_Name[0] == 0x00, then the directory entry is free (same as for
+0xE5), and there are no allocated directory entries after this one
+(all of the DIR_Name[0] bytes in all of the entries after this one are
+also set to 0).
+The special 0 value, rather than the 0xE5 value, indicates to FAT file
+system driver code that the rest of the entries in this directory do
+not need to be examined because they are all free.
+-----------------------------------------------------------------------------------------------------------------------
 
-Tested-by: Artem Savkov <artem.savkov@gmail.com>
+I think that lookuping entry till the end of cluster is not needed.
+Let me know your opinion.
 
--- 
-Kind regards,
-Artem
+And Would you tell me your opinion about fat exportfs ?
+Thanks!
+>
+> Thanks.
+> --
+> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+>
