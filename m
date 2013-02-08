@@ -1,90 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946119Ab3BHImj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 03:42:39 -0500
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:34875 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946079Ab3BHImi (ORCPT
+	id S1946130Ab3BHIqK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 03:46:10 -0500
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:61612 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946061Ab3BHIqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 03:42:38 -0500
-Date: Fri, 8 Feb 2013 09:44:48 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Andreas Bombe <aeb@debian.org>, Dave Airlie <airlied@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org, Dave Jones <davej@redhat.com>
-Subject: Re: radeon causing sleeping function called from invalid context
-Message-ID: <20130208084448.GP5813@phenom.ffwll.local>
-Mail-Followup-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-	Andreas Bombe <aeb@debian.org>, Dave Airlie <airlied@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	dri-devel@lists.freedesktop.org, Dave Jones <davej@redhat.com>
-References: <20130113012717.GA2673@redhat.com>
- <20130113113820.GA2503@swordfish>
- <20130207215301.GA11773@amos.fritz.box>
- <20130208074742.GA2357@swordfish.minsk.epam.com>
+	Fri, 8 Feb 2013 03:46:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130208074742.GA2357@swordfish.minsk.epam.com>
-X-Operating-System: Linux phenom 3.7.0-rc4+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: sedat.dilek@gmail.com
+Date: Fri, 8 Feb 2013 09:46:07 +0100
+Message-ID: <CA+icZUX-hh+RjEOrKABBtecmb4C-5azSmdTx6D7SLuSpcQE+kQ@mail.gmail.com>
+Subject: Re: linux-next: Tree for Feb 8 [ smp|cpufreq: WARNING: at
+ kernel/smp.c:245 smp_call_function_single ]
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>, x86@kernel.org,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 08, 2013 at 10:47:42AM +0300, Sergey Senozhatsky wrote:
-> On (02/07/13 22:53), Andreas Bombe wrote:
-> > On Sun, Jan 13, 2013 at 02:38:20PM +0300, Sergey Senozhatsky wrote:
-> > > On (01/12/13 20:27), Dave Jones wrote:
-> > > > BUG: sleeping function called from invalid context at mm/slub.c:925
-> > > > in_atomic(): 1, irqs_disabled(): 0, pid: 566, name: Xorg
-> > > > INFO: lockdep is turned off.
-> > > > Pid: 566, comm: Xorg Not tainted 3.8.0-rc3+ #49
-> > > > Call Trace:
-> > > >  [<ffffffff81087ad1>] __might_sleep+0x141/0x200
-> > > >  [<ffffffff8119eddb>] kmem_cache_alloc_trace+0x4b/0x2a0
-> > > >  [<ffffffffa0083fb3>] ttm_bo_move_accel_cleanup+0x1d3/0x330 [ttm]
-> > > >  [<ffffffffa00c5418>] radeon_move_blit.isra.4+0xf8/0x160 [radeon]
-> > > >  [<ffffffffa00c5db0>] radeon_bo_move+0xb0/0x1f0 [radeon]
-> > > >  [<ffffffffa00820ed>] ttm_bo_handle_move_mem+0x27d/0x5d0 [ttm]
-> > > >  [<ffffffff8108dd51>] ? get_parent_ip+0x11/0x50
-> > > >  [<ffffffffa0083307>] ttm_bo_move_buffer+0x127/0x140 [ttm]
-> > > >  [<ffffffffa008717d>] ? ttm_eu_list_ref_sub+0x3d/0x60 [ttm]
-> > > >  [<ffffffffa00833c2>] ttm_bo_validate+0xa2/0x120 [ttm]
-> > > >  [<ffffffffa00c6f45>] radeon_bo_list_validate+0x75/0x90 [radeon]
-> > > >  [<ffffffffa00dca22>] radeon_cs_ioctl+0x582/0x950 [radeon]
-> > > >  [<ffffffffa002e573>] drm_ioctl+0x4d3/0x580 [drm]
-> > > >  [<ffffffffa00dc4a0>] ? radeon_cs_finish_pages+0xf0/0xf0 [radeon]
-> > > >  [<ffffffff811c49f9>] do_vfs_ioctl+0x99/0x5a0
-> > > >  [<ffffffff812cd3d7>] ? file_has_perm+0x97/0xb0
-> > > >  [<ffffffff81103715>] ? rcu_eqs_exit+0x65/0xb0
-> > > >  [<ffffffff811c4f91>] sys_ioctl+0x91/0xb0
-> > > >  [<ffffffff81695ad4>] tracesys+0xdd/0xe2
-> > > > 
-> > > 
-> > > I see lots of these [mostly from page fault], the following one (quick and dirty) works for me.
-> > 
-> > Is that patch or any other fix being picked up? It's over three weeks
-> > now and I'm still seeing those BUGs with the latest 3.8-rc.
-> > 
-> 
-> None that I'm aware of.
+On Fri, Feb 8, 2013 at 5:31 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> Changes since 20130207:
+>
+> The sound-asoc tree gained a build failure so I used the version from
+> next-20130207.
+>
+> The watchdog tree gained a conflict against the mfd tree.
+>
+> I applied a patch to restore some config defaults on PPC64.
+>
+> ----------------------------------------------------------------------------
+>
 
-Either this one
+With today's Linux-Next I see this warning:
 
-https://patchwork.kernel.org/patch/2094501/
+[    0.377442] ------------[ cut here ]------------
+[    0.377452] WARNING: at kernel/smp.c:245
+smp_call_function_single+0x146/0x190()
+[    0.377455] Hardware name: 530U3BI/530U4BI/530U4BH
+[    0.377458] Modules linked in:
+[    0.377463] Pid: 1, comm: swapper/0 Not tainted
+3.8.0-rc6-next20130208-1-iniza-small #1
+[    0.377467] Call Trace:
+[    0.377473]  [<ffffffff8105a5ef>] warn_slowpath_common+0x7f/0xc0
+[    0.377479]  [<ffffffff81579130>] ? acpi_cpufreq_target+0x2c0/0x2c0
+[    0.377483]  [<ffffffff8105a64a>] warn_slowpath_null+0x1a/0x20
+[    0.377487]  [<ffffffff810bb7e6>] smp_call_function_single+0x146/0x190
+[    0.377492]  [<ffffffff81579130>] ? acpi_cpufreq_target+0x2c0/0x2c0
+[    0.377496]  [<ffffffff810bb881>] smp_call_function_any+0x51/0x100
+[    0.377500]  [<ffffffff815788c9>] get_cur_val+0x99/0x130
+[    0.377504]  [<ffffffff81579444>] ? acpi_cpufreq_cpu_init+0x2b4/0x6a0
+[    0.377508]  [<ffffffff81578db0>] get_cur_freq_on_cpu+0x60/0x80
+[    0.377512]  [<ffffffff815795a2>] acpi_cpufreq_cpu_init+0x412/0x6a0
+[    0.377517]  [<ffffffff81575bb9>] cpufreq_add_dev+0x2d9/0x4f0
+[    0.377523]  [<ffffffff81d44b22>] ? cpufreq_gov_dbs_init+0x2c/0x2c
+[    0.377528]  [<ffffffff8145d379>] subsys_interface_register+0x89/0xd0
+[    0.377533]  [<ffffffff81573dee>] cpufreq_register_driver+0x8e/0x180
+[    0.377537]  [<ffffffff81d44c18>] acpi_cpufreq_init+0xf6/0x1f8
+[    0.377542]  [<ffffffff814608e6>] ? platform_driver_register+0x46/0x50
+[    0.377547]  [<ffffffff8100206f>] do_one_initcall+0x3f/0x170
+[    0.377553]  [<ffffffff81d07029>] kernel_init_freeable+0x13e/0x1cd
+[    0.377560]  [<ffffffff81d06895>] ? do_early_param+0x86/0x86
+[    0.377565]  [<ffffffff8169cf20>] ? rest_init+0x80/0x80
+[    0.377569]  [<ffffffff8169cf2e>] kernel_init+0xe/0xf0
+[    0.377575]  [<ffffffff816c722c>] ret_from_fork+0x7c/0xb0
+[    0.377578]  [<ffffffff8169cf20>] ? rest_init+0x80/0x80
+[    0.377581] ---[ end trace c6ec8280ce20313a ]---
 
-or a bit an older approach here
+kernel/smp.c: Line #245 see [1].
 
-https://patchwork.kernel.org/patch/1972071/
+- Sedat -
 
-should fix this.
-
-/me looks at Dave
-
-Cheers, Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+[1] http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=blob;f=kernel/smp.c;hb=refs/tags/next-20130208#l245
