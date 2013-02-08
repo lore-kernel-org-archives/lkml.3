@@ -1,78 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946160Ab3BHI6L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 03:58:11 -0500
-Received: from TYO201.gate.nec.co.jp ([210.143.35.51]:46328 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946134Ab3BHI6K (ORCPT
+	id S1946165Ab3BHI7E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 03:59:04 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:36755 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946139Ab3BHI7C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 03:58:10 -0500
-X-Greylist: delayed 21871 seconds by postgrey-1.27 at vger.kernel.org; Fri, 08 Feb 2013 03:58:10 EST
-Date: Fri, 8 Feb 2013 17:49:44 +0900
-From: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
-To: mitsuhiro.tanino.gm@hitachi.com
-Cc: vgoyal@redhat.com, kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com
-Subject: Re: [PATCH 2/2 v2] kexec: Export PG_hwpoison flag into vmcoreinfo
-Message-Id: <20130208174944.96a3b50952e45e1219a94819@mxc.nes.nec.co.jp>
-In-Reply-To: <50913011.2030900@hitachi.com>
-References: <508FDEF3.8030601@hitachi.com>
-	<20121030143750.GF2290@redhat.com>
-	<50913011.2030900@hitachi.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 8 Feb 2013 03:59:02 -0500
+MIME-Version: 1.0
+In-Reply-To: <2723874.KAatFKgahz@flatron>
+References: <1360105784-12282-1-git-send-email-ks.giri@samsung.com>
+	<1585017.derjdP1mHL@amdc1227>
+	<CAKrE-KfyGCi_+FozSpGTy0A0VJP=Jq-1SHmvKJU02iJKWHcvLQ@mail.gmail.com>
+	<2723874.KAatFKgahz@flatron>
+Date: Fri, 8 Feb 2013 00:58:59 -0800
+Message-ID: <CAKrE-Kd-mNv=_YkM7GjicgDx=0hqbp5B6qwEvcRzhuSibRNaZA@mail.gmail.com>
+Subject: Re: [PATCH 1/4] spi: s3c64xx: modified error interrupt handling and init
+From: Girish KS <girishks2000@gmail.com>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, Tomasz Figa <t.figa@samsung.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, Feb 8, 2013 at 12:33 AM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+> On Thursday 07 of February 2013 09:46:58 Girish KS wrote:
+>> On Thu, Feb 7, 2013 at 3:09 AM, Tomasz Figa <t.figa@samsung.com> wrote:
+>> > Hi Girish,
+>> >
+>> > On Wednesday 06 of February 2013 12:12:29 Girish KS wrote:
+>> >> On Wed, Feb 6, 2013 at 2:26 AM, Grant Likely
+>> >> <grant.likely@secretlab.ca>>
+>> > wrote:
+>> >> > On Tue,  5 Feb 2013 15:09:41 -0800, Girish K S
+>> >
+>> > <girishks2000@gmail.com> wrote:
+>> >> >> The status of the interrupt is available in the status register,
+>> >> >> so reading the clear pending register and writing back the same
+>> >> >> value will not actually clear the pending interrupts. This patch
+>> >> >> modifies the interrupt handler to read the status register and
+>> >> >> clear the corresponding pending bit in the clear pending register.
+>> >> >>
+>> >> >> Modified the hwInit function to clear all the pending interrupts.
+>> >> >>
+>> >> >> Signed-off-by: Girish K S <ks.giri@samsung.com>
+>> >> >> ---
+>> >> >>
+>> >> >>  drivers/spi/spi-s3c64xx.c |   41
+>> >> >>  +++++++++++++++++++++++++---------------- 1 file changed, 25
+>> >> >>  insertions(+), 16 deletions(-)
+>> >> >>
+>> >> >> diff --git a/drivers/spi/spi-s3c64xx.c b/drivers/spi/spi-s3c64xx.c
+>> >> >> index ad93231..b770f88 100644
+>> >> >> --- a/drivers/spi/spi-s3c64xx.c
+>> >> >> +++ b/drivers/spi/spi-s3c64xx.c
+>> >> >> @@ -997,25 +997,30 @@ static irqreturn_t s3c64xx_spi_irq(int irq,
+>> >> >> void *data)>>
+>> >> >>
+>> >> >>  {
+>> >> >>
+>> >> >>       struct s3c64xx_spi_driver_data *sdd = data;
+>> >> >>       struct spi_master *spi = sdd->master;
+>> >> >>
+>> >> >> -     unsigned int val;
+>> >> >> +     unsigned int val, clr = 0;
+>> >> >>
+>> >> >> -     val = readl(sdd->regs + S3C64XX_SPI_PENDING_CLR);
+>> >> >> +     val = readl(sdd->regs + S3C64XX_SPI_STATUS);
+>> >> >>
+>> >> >> -     val &= S3C64XX_SPI_PND_RX_OVERRUN_CLR |
+>> >> >> -             S3C64XX_SPI_PND_RX_UNDERRUN_CLR |
+>> >> >> -             S3C64XX_SPI_PND_TX_OVERRUN_CLR |
+>> >> >> -             S3C64XX_SPI_PND_TX_UNDERRUN_CLR;
+>> >> >> -
+>> >> >> -     writel(val, sdd->regs + S3C64XX_SPI_PENDING_CLR);
+>> >> >> -
+>> >> >> -     if (val & S3C64XX_SPI_PND_RX_OVERRUN_CLR)
+>> >> >> +     if (val & S3C64XX_SPI_ST_RX_OVERRUN_ERR) {
+>> >> >> +             clr = S3C64XX_SPI_PND_RX_OVERRUN_CLR;
+>> >> >>
+>> >> >>               dev_err(&spi->dev, "RX overrun\n");
+>> >> >>
+>> >> >> -     if (val & S3C64XX_SPI_PND_RX_UNDERRUN_CLR)
+>> >> >> +     }
+>> >> >> +     if (val & S3C64XX_SPI_ST_RX_UNDERRUN_ERR) {
+>> >> >> +             clr |= S3C64XX_SPI_PND_RX_UNDERRUN_CLR;
+>> >> >>
+>> >> >>               dev_err(&spi->dev, "RX underrun\n");
+>> >> >>
+>> >> >> -     if (val & S3C64XX_SPI_PND_TX_OVERRUN_CLR)
+>> >> >> +     }
+>> >> >> +     if (val & S3C64XX_SPI_ST_TX_OVERRUN_ERR) {
+>> >> >> +             clr |= S3C64XX_SPI_PND_TX_OVERRUN_CLR;
+>> >> >>
+>> >> >>               dev_err(&spi->dev, "TX overrun\n");
+>> >> >>
+>> >> >> -     if (val & S3C64XX_SPI_PND_TX_UNDERRUN_CLR)
+>> >> >> +     }
+>> >> >> +     if (val & S3C64XX_SPI_ST_TX_UNDERRUN_ERR) {
+>> >> >> +             clr |= S3C64XX_SPI_PND_TX_UNDERRUN_CLR;
+>> >> >>
+>> >> >>               dev_err(&spi->dev, "TX underrun\n");
+>> >> >>
+>> >> >> +     }
+>> >> >> +
+>> >> >> +     /* Clear the pending irq by setting and then clearing it */
+>> >> >> +     writel(clr, sdd->regs + S3C64XX_SPI_PENDING_CLR);
+>> >> >> +     writel(clr & ~clr, sdd->regs + S3C64XX_SPI_PENDING_CLR);
+>> >> >
+>> >> > Wait, what?  clr & ~clr == 0   Always.  What are you actually
+>> >> > trying
+>> >> > to do here?
+>> >>
+>> >> The user manual says, wirting 1 to the pending clear register clears
+>> >> the interrupt (its not auto clear to 0). so i need to explicitly
+>> >> reset
+>> >> those bits thats what the 2nd write does
+>> >
+>> > I have looked through user's manuals of different Samsung SoCs. All of
+>> > them said that writing 1 to a bit clears the corresponding interrupt,
+>> > but none of them contain any note that it must be manually cleared to
+>> > 0.
+>> What i meant was the clear pending bit will not clear automatically.
+>> When I set the
+>> clear pending bit, it remains set. This is a problem for the next
+>> interrupt cycle.
+>
+> How did you check that it does not clear automatically?
+I checked it with trace32 debugger. Also  confirmed with the IP
+validation engineer.
+>
+>> > In addition the expression
+>> >
+>> > clr & ~clr
+>> >
+>> > makes no sense, because it is equal to 0.
+>>
+>> It makes sense, because we are not disturbing the interrupt pending
+>> bit at position 0, which is a trailing clr bit.
+>
+> You either seem to misunderstand the problem I'm mentioning or not
+> understanding it at all.
+>
+> If you take a variable named clr, no matter what value it is set to, and
+> you AND it with bitwise negation of the same variable, you will get 0.
+>
+> See on this example:
+>
+> Bits:     7 | 6 | 5 | 4 | 3 | 2 | 1 | 0
+>          -------------------------------
+> Values:   1 | 1 | 0 | 0 | 1 | 0 | 0 | 1
+>          -------------------------------
+> Negation: 0 | 0 | 1 | 1 | 0 | 1 | 1 | 0
+>          -------------------------------
+> AND:      0 | 0 | 0 | 0 | 0 | 0 | 0 | 0
+>
+> Now, can you see that (clr & ~clr) is the same as (0)?
 
-On Wed, 31 Oct 2012 23:05:05 +0900
-Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com> wrote:
+Already apolozised for the same: will resubmit.
 
-> This patch exports a PG_hwpoison into vmcoreinfo when
-> CONFIG_MEMORY_FAILURE is defined.
-> "makedumpfile" needs to read information of memory, such as
-> 'mem_section', 'zone', 'pageflags' from vmcore.
-> 
-> We introduce a function into "makedumpfile" to exclude
-> hwpoison page from vmcore dump.
-> In order to introduce this function, PG_hwpoison flag have
-> to export into vmcoreinfo.
-> 
-> Signed-off-by: Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com>
-
-I'm curious to know the status of this patch because I'll release
-makedumpfile-1.5.2 with the feature to exclude hwpoison page soon.
-
-
-Thanks
-Atsushi Kumagai
-
-> ---
->  kernel/kexec.c |    3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/kernel/kexec.c b/kernel/kexec.c
-> index 0668d58..0d5d6bc 100644
-> --- a/kernel/kexec.c
-> +++ b/kernel/kexec.c
-> @@ -1513,6 +1513,9 @@ static int __init crash_save_vmcoreinfo_init(void)
->         VMCOREINFO_NUMBER(PG_lru);
->         VMCOREINFO_NUMBER(PG_private);
->         VMCOREINFO_NUMBER(PG_swapcache);
-> +#ifdef CONFIG_MEMORY_FAILURE
-> +       VMCOREINFO_NUMBER(PG_hwpoison);
-> +#endif
-> 
->         arch_crash_save_vmcoreinfo();
->         update_vmcoreinfo_note();
-> --
-> 1.7.10.1
-> 
-> _______________________________________________
-> kexec mailing list
-> kexec@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/kexec
+>
+> Best regards,
+> Tomasz
+>
