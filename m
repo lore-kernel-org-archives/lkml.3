@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932318Ab3BHBE5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 20:04:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41966 "EHLO
+	id S932322Ab3BHBFT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 20:05:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41990 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932240Ab3BHA6K (ORCPT
+	with ESMTP id S932235Ab3BHA6J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 19:58:10 -0500
+	Thu, 7 Feb 2013 19:58:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        fangxiaozhi <huananhu@huawei.com>
-Subject: [ 20/26] USB: storage: Define a new macro for USB storage match rules
-Date: Thu,  7 Feb 2013 16:57:48 -0800
-Message-Id: <20130208004630.649018361@linuxfoundation.org>
+        =?UTF-8?q?Petr=20Kub=C3=A1nek?= <petr@kubanek.net>
+Subject: [ 12/26] USB: ftdi_sio: add Zolix FTDI PID
+Date: Thu,  7 Feb 2013 16:57:40 -0800
+Message-Id: <20130208004629.390698406@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130208004627.258272404@linuxfoundation.org>
 References: <20130208004627.258272404@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,79 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: fangxiaozhi <huananhu@huawei.com>
+From: Petr Kubánek <petr@kubanek.net>
 
-commit 07c7be3d87e5cdaf5f94c271c516456364ef286c upstream.
+commit 0ba3b2ccc72b3df5c305d61f59d93ab0f0e87991 upstream.
 
-1. Define a new macro for USB storage match rules:
-    matching with Vendor ID and interface descriptors.
+Add support for Zolix Omni 1509 monochromator custom USB-RS232 converter.
 
-Signed-off-by: fangxiaozhi <huananhu@huawei.com>
+Signed-off-by: Petr Kubánek <petr@kubanek.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/storage/usb.c          |   12 ++++++++++++
- drivers/usb/storage/usual-tables.c |   15 +++++++++++++++
- 2 files changed, 27 insertions(+)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    5 +++++
+ 2 files changed, 6 insertions(+)
 
---- a/drivers/usb/storage/usb.c
-+++ b/drivers/usb/storage/usb.c
-@@ -120,6 +120,17 @@ MODULE_PARM_DESC(quirks, "supplemental l
- 	.useTransport = use_transport,	\
- }
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -676,6 +676,7 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_5_PID) },
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_6_PID) },
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_7_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_OMNI1509) },
+ 	{ USB_DEVICE(MOBILITY_VID, MOBILITY_USB_SERIAL_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_ACTIVE_ROBOTS_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_MHAM_KW_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -147,6 +147,11 @@
+ #define XSENS_CONVERTER_6_PID	0xD38E
+ #define XSENS_CONVERTER_7_PID	0xD38F
  
-+#define UNUSUAL_VENDOR_INTF(idVendor, cl, sc, pr, \
-+		vendor_name, product_name, use_protocol, use_transport, \
-+		init_function, Flags) \
-+{ \
-+	.vendorName = vendor_name,	\
-+	.productName = product_name,	\
-+	.useProtocol = use_protocol,	\
-+	.useTransport = use_transport,	\
-+	.initFunction = init_function,	\
-+}
++/**
++ * Zolix (www.zolix.com.cb) product ids
++ */
++#define FTDI_OMNI1509			0xD491	/* Omni1509 embedded USB-serial */
 +
- static struct us_unusual_dev us_unusual_dev_list[] = {
- #	include "unusual_devs.h" 
- 	{ }		/* Terminating entry */
-@@ -131,6 +142,7 @@ static struct us_unusual_dev for_dynamic
- #undef UNUSUAL_DEV
- #undef COMPLIANT_DEV
- #undef USUAL_DEV
-+#undef UNUSUAL_VENDOR_INTF
- 
- #ifdef CONFIG_LOCKDEP
- 
---- a/drivers/usb/storage/usual-tables.c
-+++ b/drivers/usb/storage/usual-tables.c
-@@ -46,6 +46,20 @@
- { USB_INTERFACE_INFO(USB_CLASS_MASS_STORAGE, useProto, useTrans), \
-   .driver_info = ((useType)<<24) }
- 
-+/* Define the device is matched with Vendor ID and interface descriptors */
-+#define UNUSUAL_VENDOR_INTF(id_vendor, cl, sc, pr, \
-+			vendorName, productName, useProtocol, useTransport, \
-+			initFunction, flags) \
-+{ \
-+	.match_flags = USB_DEVICE_ID_MATCH_INT_INFO \
-+				| USB_DEVICE_ID_MATCH_VENDOR, \
-+	.idVendor    = (id_vendor), \
-+	.bInterfaceClass = (cl), \
-+	.bInterfaceSubClass = (sc), \
-+	.bInterfaceProtocol = (pr), \
-+	.driver_info = (flags) \
-+}
-+
- struct usb_device_id usb_storage_usb_ids[] = {
- #	include "unusual_devs.h"
- 	{ }		/* Terminating entry */
-@@ -57,6 +71,7 @@ MODULE_DEVICE_TABLE(usb, usb_storage_usb
- #undef UNUSUAL_DEV
- #undef COMPLIANT_DEV
- #undef USUAL_DEV
-+#undef UNUSUAL_VENDOR_INTF
- 
- 
  /*
+  * NDI (www.ndigital.com) product ids
+  */
 
 
