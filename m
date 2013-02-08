@@ -1,76 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760448Ab3BHWdT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 17:33:19 -0500
-Received: from mail-ia0-f176.google.com ([209.85.210.176]:54372 "EHLO
-	mail-ia0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760321Ab3BHWdR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 17:33:17 -0500
+	id S1947214Ab3BHWfE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 17:35:04 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:35474 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760323Ab3BHWfB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 17:35:01 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <liuj97@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Subject: Re: [PATCH 0/2] ACPI / scan: Remove useless #ifndef and simplify container driver
+Date: Fri, 08 Feb 2013 23:41:21 +0100
+Message-ID: <1435179.fU91E9qMVO@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1891536.LKCrpu1upY@vostro.rjw.lan>
+References: <1873429.MS5RQDxTye@vostro.rjw.lan> <1360342638.3869.59.camel@misato.fc.hp.com> <1891536.LKCrpu1upY@vostro.rjw.lan>
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo4iA17jh5rw05q=uaKOyMKesrPnxYrN2EvqWT_tGmE_FQ@mail.gmail.com>
-References: <1360351703-20571-1-git-send-email-yinghai@kernel.org>
-	<1360351703-20571-26-git-send-email-yinghai@kernel.org>
-	<CAErSpo4iA17jh5rw05q=uaKOyMKesrPnxYrN2EvqWT_tGmE_FQ@mail.gmail.com>
-Date: Fri, 8 Feb 2013 14:33:17 -0800
-X-Google-Sender-Auth: GmvJ736dbcqieN3s2qlDIHb1Yc8
-Message-ID: <CAE9FiQX6yLebtOVCRV7GDwxfJFPpVxBKJO_VJ_ndA-OjBD4LRg@mail.gmail.com>
-Subject: Re: [PATCH v2 25/26] PCI: Disable mem in the ioapic removing path
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 8, 2013 at 1:14 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Fri, Feb 8, 2013 at 12:28 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->> For physical hot plug should be ok, but for remove/rescan path will
->> need us to disable that.
->>
->> otherwise rescan mmio resource for pci ioapic device will not be
->> sized and allocated, aka skiped.
->
-> When we scan other PCI devices, we can size memory BARs even if
-> PCI_COMMAND_MEMORY is already set.  So there must be something
-> different about IOAPICs?  Or maybe it's something different about
-> rescan vs. the initial scan?
+On Friday, February 08, 2013 08:59:44 PM Rafael J. Wysocki wrote:
+> On Friday, February 08, 2013 09:57:18 AM Toshi Kani wrote:
+> > On Fri, 2013-02-08 at 01:24 +0100, Rafael J. Wysocki wrote:
+> > > On Monday, February 04, 2013 12:47:31 AM Rafael J. Wysocki wrote:
+> > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > > 
+> > > > The only useful thing that the ACPI container driver does is to
+> > > > install system notify handlers for all container and module device
+> > > > objects it finds in the namespace.  The driver structure,
+> > > > acpi_container_driver, and the data structures created by its
+> > > > .add() callback are in fact not used by the driver, so remove
+> > > > them entirely.
+> > > > 
+> > > > It also makes a little sense to build that driver as a module,
+> > > > so make it non-modular and add its initialization to the
+> > > > namespace scanning code.
+> > > > 
+> > > > In addition to that, make the namespace walk callback used for
+> > > > installing the notify handlers more straightforward.
+> > > 
+> > > As pointed out by Toshi Kani, the above changes would make acpi_eject_store()
+> > > fail for containers and it is the only way to eject them currently, so patch
+> > > [2/2] is an improved version of this (with Toshi's changes folded in).
+> > > 
+> > > Patch [1/2] is just a cleanup removing a useless #ifndef from acpi_eject_store().
+> > 
+> > Thanks for the update!  They look good.  For the series:
+> > 
+> > Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+> > Tested-by: Toshi Kani <toshi.kani@hp.com>
+> > 
+> > BTW, did you intentionally keep the struct acpi_container definition in
+> > <acpi/container.h>?  I deleted that one in my patch.
+> 
+> No, I overlooked that part.  I'll apply that part of your patch as a separate
+> patch on top of this one.
 
-it is in drivers/pci/setup-bus.c::__dev_sort_resources()
-it will skip the reallocation for ioapic controller.
+Actually, I prefer to remove container.h entirely.  I'll post a patch for that
+shortly.
 
-...
-        /* Don't touch ioapic devices already enabled by firmware */
-        if (class == PCI_CLASS_SYSTEM_PIC) {
-                u16 command;
-                pci_read_config_word(dev, PCI_COMMAND, &command);
-                if (command & (PCI_COMMAND_IO | PCI_COMMAND_MEMORY))
-                        return;
-        }
+Thanks,
+Rafael
 
->
->> For ioapic_probe:pci_enable_device will not enable the device
->> correctly, and will bail out early.
->
-> Exactly where and why do we bail out early?  The only early bail out I
-> see is where __pci_enable_device_flags() returns if "dev->enable_cnt >
-> 1".  Is that what you mean?
 
-pci_enable_device==>pci_enable_device_flags
-==>do_pci_enable_device==>pcibios_enable_device==>pci_enable_resources
-...
-                if (!r->parent) {
-                        dev_err(&dev->dev, "device not available "
-                                "(can't reserve %pR)\n", r);
-                        return -EINVAL;
-                }
-...
-
-only reassign one will have get it's parent.
-
-Thanks
-
-Yinghai
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
