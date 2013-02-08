@@ -1,46 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947368Ab3BHXhE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 18:37:04 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:64797 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1947308Ab3BHXhA (ORCPT
+	id S1947378Ab3BHXiQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 18:38:16 -0500
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:36447 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1947297Ab3BHXiO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 18:37:00 -0500
-Date: Fri, 8 Feb 2013 15:36:56 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: George Spelvin <linux@horizon.com>
-Cc: linux-serial@vger.kernel.org, peter@hurleysoftware.com,
-        linux-kernel@vger.kernel.org, giometti@linux.it
-Subject: Re: [PATCH 0/7] 3.8-rc regression with pps-ldisc due to 70ece7a731
-Message-ID: <20130208233656.GA7700@kroah.com>
-References: <cover.1360307140.git.linux@horizon.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1360307140.git.linux@horizon.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 8 Feb 2013 18:38:14 -0500
+Message-ID: <1360366054.3869.60.camel@misato.fc.hp.com>
+Subject: Re: [PATCH] ACPI: Drop the container.h header file
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <liuj97@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Date: Fri, 08 Feb 2013 16:27:34 -0700
+In-Reply-To: <1845543.1spGohx2XC@vostro.rjw.lan>
+References: <1873429.MS5RQDxTye@vostro.rjw.lan>
+	 <1891536.LKCrpu1upY@vostro.rjw.lan> <1435179.fU91E9qMVO@vostro.rjw.lan>
+	 <1845543.1spGohx2XC@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 08, 2013 at 02:05:40AM -0500, George Spelvin wrote:
-> The standard N_TTY line discipline used to not use the tty->disc_data
-> field, so N_PPS felt free to use it.  That has now changed, requiring
-> that N_PPS use a different method to find its private data.
+On Sat, 2013-02-09 at 00:18 +0100, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > 
-> (In the current, buggy, state, N_PPS follows a wild pointer and explodes
-> in an interrupt hander as soon as a pulse actually arrives.)
+> The include/acpi/container.h only contains a definition of a
+> structure that is not used any more, so drop it entirely.
 > 
-> Strictly speaking, only patches 5 and 6 are the bugfix proper; the
-> rest are various cleanups enabled by the looser coupling of the
-> line disciplines.
+> Similar change was proposed earlier by Toshi Kani.
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-As this is a breakage in 3.8-rc1, is there any way to pull out patches 5
-and 6 in a format that I can apply them now, or in a way that I can get
-them into 3.8.1 so that this gets fixed?  I can't apply all of these to
-3.8-final now, as it's way too late.
+Acked-by: Toshi Kani <toshi.kani@hp.com>
 
-thanks,
+Thanks,
+-Toshi
 
-greg k-h
+
+> ---
+> 
+> On top of current linux-pm.git/bleeding-edge.
+> 
+> Thanks,
+> Rafael
+> 
+> ---
+>  drivers/acpi/container.c |    1 -
+>  include/acpi/container.h |   12 ------------
+>  2 files changed, 13 deletions(-)
+> 
+> Index: test/include/acpi/container.h
+> ===================================================================
+> --- test.orig/include/acpi/container.h
+> +++ /dev/null
+> @@ -1,12 +0,0 @@
+> -#ifndef __ACPI_CONTAINER_H
+> -#define __ACPI_CONTAINER_H
+> -
+> -#include <linux/kernel.h>
+> -
+> -struct acpi_container {
+> -	acpi_handle handle;
+> -	unsigned long sun;
+> -	int state;
+> -};
+> -
+> -#endif				/* __ACPI_CONTAINER_H */
+> Index: test/drivers/acpi/container.c
+> ===================================================================
+> --- test.orig/drivers/acpi/container.c
+> +++ test/drivers/acpi/container.c
+> @@ -34,7 +34,6 @@
+>  #include <linux/acpi.h>
+>  #include <acpi/acpi_bus.h>
+>  #include <acpi/acpi_drivers.h>
+> -#include <acpi/container.h>
+>  
+>  #define PREFIX "ACPI: "
+>  
+> 
+
+
