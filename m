@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759948Ab3BHEVW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 23:21:22 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:38077 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759759Ab3BHEVS (ORCPT
+	id S1759958Ab3BHEZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 23:25:29 -0500
+Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:49058 "EHLO
+	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759869Ab3BHEZ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 23:21:18 -0500
-From: "Kumar, Anil" <anilkumar.v@ti.com>
-To: "Nori, Sekhar" <nsekhar@ti.com>
-CC: "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
+	Thu, 7 Feb 2013 23:25:28 -0500
+Date: Fri, 8 Feb 2013 09:55:04 +0530
+From: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "wim@iguana.be" <wim@iguana.be>
-Subject: RE: [PATCH] watchdog: davinci_wdt: update to devm_* API
-Thread-Topic: [PATCH] watchdog: davinci_wdt: update to devm_* API
-Thread-Index: AQHOBOOHURAx9H28hUGry08/sigqhJhuUVgAgADtVoD//8JOgIAAXIdg
-Date: Fri, 8 Feb 2013 04:21:10 +0000
-Message-ID: <F3DBB1B3EF102E4994C89758CFCA32412C5A63@DBDE01.ent.ti.com>
-References: <1360207935-24325-1-git-send-email-anilkumar.v@ti.com>
- <5113E978.2060201@ti.com>
- <F3DBB1B3EF102E4994C89758CFCA32412C59CA@DBDE01.ent.ti.com>
- <51147CCF.7050100@ti.com>
-In-Reply-To: <51147CCF.7050100@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.162.25]
-Content-Type: text/plain; charset="utf-8"
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH 15/49] ARM: ux500: Add supply for the L3G4200D Gyroscope
+Message-ID: <20130208042503.GA18611@bnru10>
+References: <1360148051-7560-1-git-send-email-lee.jones@linaro.org>
+ <1360148051-7560-16-git-send-email-lee.jones@linaro.org>
+ <CACRpkdZH1YWfbxY8yEwZ=ko8GAbPG=3ejS1Rt_yUD9ZsXeZ5Dw@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CACRpkdZH1YWfbxY8yEwZ=ko8GAbPG=3ejS1Rt_yUD9ZsXeZ5Dw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r184LPqW001594
 
-On Fri, Feb 08, 2013 at 09:49:27, Nori, Sekhar wrote:
-> On 2/8/2013 8:05 AM, Kumar, Anil wrote:
-> > On Thu, Feb 07, 2013 at 23:20:48, Nori, Sekhar wrote:
-> >> On 2/7/2013 9:02 AM, Kumar, Anil wrote:
+On Thu, Feb 07, 2013 at 16:36:03 +0100, Linus Walleij wrote:
+> On Wed, Feb 6, 2013 at 11:53 AM, Lee Jones <lee.jones@linaro.org> wrote:
 > 
-> >>> Update the code to use devm_* API so that driver
-> >>> core will manage resources.
+> > This patch lists the L3G4200D Gyroscope as a consumer of the
+> > AB8500 VAUX1 regulator.
+> >
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > ---
+> >  arch/arm/mach-ux500/board-mop500-regulators.c |    2 ++
+> >  1 file changed, 2 insertions(+)
+> >
+> > diff --git a/arch/arm/mach-ux500/board-mop500-regulators.c b/arch/arm/mach-ux500/board-mop500-regulators.c
+> > index dbbeb20..097cf65 100644
+> > --- a/arch/arm/mach-ux500/board-mop500-regulators.c
+> > +++ b/arch/arm/mach-ux500/board-mop500-regulators.c
+> > @@ -73,6 +73,8 @@ static struct regulator_consumer_supply ab8500_vaux1_consumers[] = {
+> >         REGULATOR_SUPPLY("avdd", "3-005d"),
+> >         /* Synaptics RMI4 Touchscreen device */
+> >         REGULATOR_SUPPLY("vdd", "3-004b"),
+> > +       /* L3G4200D Gyroscope device */
+> > +       REGULATOR_SUPPLY("vdd", "l3g4200d"),
 > 
-> >>> Signed-off-by: Kumar, Anil <anilkumar.v@ti.com>
-> 
-> >>> diff --git a/drivers/watchdog/davinci_wdt.c b/drivers/watchdog/davinci_wdt.c
-> 
-> >>> @@ -201,10 +200,10 @@ static struct miscdevice davinci_wdt_miscdev = {
-> >>>  
-> >>>  static int davinci_wdt_probe(struct platform_device *pdev)
-> >>>  {
-> >>> -	int ret = 0, size;
-> >>> -	struct device *dev = &pdev->dev;
-> >>
-> >> Its not clear why you had to drop use of this variable?
-> > 
-> > Actually, I have not found any particular need to take pointer
-> > into dev and then use in the code. Rather we can directly use. 
-> 
-> No, it is good enough as-is. It will help rid your patch of unnecessary
-> changes and its not really convenient to to keep reading &pdev->dev all
-> the time.
-> 
+> Hmmm isn't this an I2C device? Better check with Srinidhi about that
+> device name.
 
-Ok
+Yes, it is. If you want to maintain consistency in the above table, it should be
+rather.. 
 
-Thanks,
-Anil 
+REGULATOR_SUPPLY("vdd", "2-0068")
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+srinidhi
+
+> 
+> Yours,
+> Linus Walleij
