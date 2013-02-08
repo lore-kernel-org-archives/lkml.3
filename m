@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946715Ab3BHQRn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 11:17:43 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:56425 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1946500Ab3BHQRm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 11:17:42 -0500
-Date: Fri, 8 Feb 2013 08:17:32 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Eric Dumazet <edumazet@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        linux-kernel@vger.kernel.org, john.stultz@linaro.org
-Subject: Re: [RFC PATCH 1/6] kernel: implement queue spinlock API
-Message-ID: <20130208161723.GA2666@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1358896415-28569-2-git-send-email-walken@google.com>
- <20130207223434.GG2545@linux.vnet.ibm.com>
- <1360277809.28557.60.camel@edumazet-glaptop>
- <CANN689G0N0ynSMVcH9CbOFgL_mLSswOBx5yBzPBag0AO9fk8+A@mail.gmail.com>
- <1360281834.28557.73.camel@edumazet-glaptop>
- <20130208004023.GM2545@linux.vnet.ibm.com>
- <CANN689EUBav=9LkC0s4+teQirGhymgvRxaHRcnK7brjwDU28FQ@mail.gmail.com>
- <20130208043643.GN2545@linux.vnet.ibm.com>
- <20130208050342.GA23362@linux.vnet.ibm.com>
- <CANN689EMOxriEvsyp=kiA95b3m1gg4fYc0oyMnTtjC1+zunQ7w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANN689EMOxriEvsyp=kiA95b3m1gg4fYc0oyMnTtjC1+zunQ7w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13020816-7182-0000-0000-000005133A96
+	id S1946713Ab3BHQSO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 11:18:14 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18156 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946450Ab3BHQSM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 11:18:12 -0500
+X-Authority-Analysis: v=2.0 cv=f8jK9ZOM c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=M5gr15I6uLgA:10 a=NufY4J3AAAAA:8 a=DOYHrJKly7pEN2T6RRIA:9 a=PUjeQqilurYA:10 a=re9sYKne76oA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1360340288.2621.112.camel@gandalf.local.home>
+Subject: Re: [ANNOUNCE] 3.8-rc6-nohz4
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Christoph Lameter <cl@linux.com>, LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Fri, 08 Feb 2013 11:18:08 -0500
+In-Reply-To: <CAFTL4hyfnhjezjL2QfVKYDB-bwh4BSGyX8xmhpdmxTf+EAu+yA@mail.gmail.com>
+References: <1360175338-6735-1-git-send-email-fweisbec@gmail.com>
+	 <1360205415.2621.60.camel@gandalf.local.home>
+	 <CAFTL4hzJ9FLNTqiBdB0SCWvxgN=p=M54e1PNWe6cp+C9A=DXxA@mail.gmail.com>
+	 <1360256447.2621.75.camel@gandalf.local.home>
+	 <CAFTL4hzXe=rYniSrth--n2Vp+wEYRt69r9+SPFu-Bac-_ZwM3Q@mail.gmail.com>
+	 <0000013cb614e4e5-10f6e9ce-08e1-47f6-9044-565b4084c354-000000@email.amazonses.com>
+	 <CAFTL4hyfnhjezjL2QfVKYDB-bwh4BSGyX8xmhpdmxTf+EAu+yA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 07, 2013 at 09:11:14PM -0800, Michel Lespinasse wrote:
-> On Thu, Feb 7, 2013 at 9:03 PM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > Right...  For spinlocks that -don't- disable irqs, you need to deal with
-> > the possibility that a CPU gets interrupted while spinning, and the
-> > interrupt handler also tries to acquire a queued lock.  One way to deal
-> > with this is to have a node per CPUxirq.  Of course, if interrupts
-> > handlers always disable irqs when acquiring a spinlock, then you only
-> > need CPUx2.
+On Fri, 2013-02-08 at 16:53 +0100, Frederic Weisbecker wrote:
+> 2013/2/7 Christoph Lameter <cl@linux.com>:
+> > On Thu, 7 Feb 2013, Frederic Weisbecker wrote:
+> >
+> >> Not with hrtick.
+> >
+> > hrtick? Did we not already try that a couple of years back and it turned
+> > out that the overhead of constantly reprogramming a timer via the PCI bus
+> > was causing too much of a performance regression?
 > 
-> The simple solution would be to do like I proposed in my faster queue
-> spinlock proposal, have one function for process context lock
-> acquisitions, another for bh-disabled acquisitions, and just say that
-> hardirqs can't use the queue spinlocks (I don't expect we have any
-> locks taken from hardirq context where contention might be an issue ?)
+> Yeah Peter said that especially reprogramming the clock everytime we
+> call schedule() was killing the performances. Now may be on some
+> workloads, with the tick stopped, we can find some new results.
 
-Makes sense!  The spinlocks that disable hardirqs should get extra
-contention-reduction attention, after which the main benefit for
-queued spinlocks is process-level spinlocks.
+I could imagine this being dynamic. If the system isn't very loaded, and
+the scheduler is giving lots of time slices to tasks, then perhaps it
+could switch to a reprogramming the clock based scheduling. Or maybe, we
+could switch to a "skip ticks" method. That is, instead of completely
+disabling the tick, make the tick go off every other time or less, and
+use the NO_HZ code to calculate the missed ticks.
 
-							Thanx, Paul
+-- Steve
+
 
