@@ -1,69 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946760Ab3BHRH6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 12:07:58 -0500
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:3983 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946667Ab3BHRH5 (ORCPT
+	id S1946755Ab3BHRJO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 12:09:14 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:46666 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946596Ab3BHRJN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 12:07:57 -0500
-Message-ID: <1360342638.3869.59.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 0/2] ACPI / scan: Remove useless #ifndef and simplify
- container driver
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <liuj97@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Date: Fri, 08 Feb 2013 09:57:18 -0700
-In-Reply-To: <1468930.acVuhKfKYv@vostro.rjw.lan>
-References: <1873429.MS5RQDxTye@vostro.rjw.lan>
-	 <3164478.OcagzIMET0@vostro.rjw.lan> <5090866.2BHgpRnuEZ@vostro.rjw.lan>
-	 <1468930.acVuhKfKYv@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	Fri, 8 Feb 2013 12:09:13 -0500
+Message-ID: <51153136.7010705@wwwdotorg.org>
+Date: Fri, 08 Feb 2013 10:09:10 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Marc Dietrich <marvin24@gmx.de>
+CC: Hiroshi Doyu <hdoyu@nvidia.com>, linux-tegra@vger.kernel.org,
+        arnd@arndb.de, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] ARM: tegra: Unify tegra{20,30,114}_init_early()
+References: <1360308574-19658-1-git-send-email-hdoyu@nvidia.com> <1360308574-19658-2-git-send-email-hdoyu@nvidia.com> <340098510.UosBEPkrGv@fb07-iapwap2>
+In-Reply-To: <340098510.UosBEPkrGv@fb07-iapwap2>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-02-08 at 01:24 +0100, Rafael J. Wysocki wrote:
-> On Monday, February 04, 2013 12:47:31 AM Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > 
-> > The only useful thing that the ACPI container driver does is to
-> > install system notify handlers for all container and module device
-> > objects it finds in the namespace.  The driver structure,
-> > acpi_container_driver, and the data structures created by its
-> > .add() callback are in fact not used by the driver, so remove
-> > them entirely.
-> > 
-> > It also makes a little sense to build that driver as a module,
-> > so make it non-modular and add its initialization to the
-> > namespace scanning code.
-> > 
-> > In addition to that, make the namespace walk callback used for
-> > installing the notify handlers more straightforward.
+On 02/08/2013 05:29 AM, Marc Dietrich wrote:
+> Hiroshi,
 > 
-> As pointed out by Toshi Kani, the above changes would make acpi_eject_store()
-> fail for containers and it is the only way to eject them currently, so patch
-> [2/2] is an improved version of this (with Toshi's changes folded in).
+> Am Freitag, 8. Februar 2013, 09:29:31 schrieb Hiroshi Doyu:
+>> Refactored tegra{20,30,114}_init_early() so that we have the unified
+>> tegra_init_early().
+
+>> diff --git a/arch/arm/mach-tegra/hotplug.c b/arch/arm/mach-tegra/hotplug.c
+
+>> +void __init tegra_hotplug_init(void)
+>>  {
+>> +	switch (tegra_chip_id) {
+>> +#ifdef CONFIG_ARCH_TEGRA_2x_SOC
+>> +	case TEGRA20:
+>> +		tegra_hotplug_shutdown = tegra20_hotplug_shutdown;
+>> +		break;
+>>  #endif
+>> +#if defined(CONFIG_ARCH_TEGRA_3x_SOC)
+>> +	case TEGRA30:
+>> +		tegra_hotplug_shutdown = tegra30_hotplug_shutdown;
+>> +		break;
+>>  #endif
+>> +	default:
+>> +		BUG_ON(IS_ENABLED(CONFIG_HOTPLUG_CPU));
+>> +		break;
+>> +	}
+>> +}
 > 
-> Patch [1/2] is just a cleanup removing a useless #ifndef from acpi_eject_store().
+> are these ifdefs really needed? Multisoc kernels will enable them all anyway 
+> and there is a case structure which protects the assignments. Also the hotplug 
+> functions are very tiny, so there shouldn't be a big loss.
 
-Thanks for the update!  They look good.  For the series:
+The files that contain/implement those functions are separate for each
+SoC and only included in the build when the individual SoCs are enabled.
 
-Reviewed-by: Toshi Kani <toshi.kani@hp.com>
-Tested-by: Toshi Kani <toshi.kani@hp.com>
+While multi-platform SoCs do make sense for distros, we also very
+specifically want to support the case where only Tegra, and only a
+single Tegra SoC, is enabled, hence this separation.
 
-BTW, did you intentionally keep the struct acpi_container definition in
-<acpi/container.h>?  I deleted that one in my patch.
-
--Toshi
+(and Tegra doesn't support multi-platform yet; maybe in another kernel
+release or two)
 
