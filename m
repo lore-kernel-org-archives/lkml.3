@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759394Ab3BHA5q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 19:57:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41846 "EHLO
+	id S1759827Ab3BHBPr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 20:15:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41863 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759112Ab3BHA5n (ORCPT
+	with ESMTP id S1759385Ab3BHA5q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 19:57:43 -0500
+	Thu, 7 Feb 2013 19:57:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 09/34] drm/radeon: prevent crash in the ring space allocation
-Date: Thu,  7 Feb 2013 16:57:05 -0800
-Message-Id: <20130208004629.044380677@linuxfoundation.org>
+        Lan Tianyu <tianyu.lan@intel.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 27/34] usb: Using correct way to clear usb3.0 devices remote wakeup feature.
+Date: Thu,  7 Feb 2013 16:57:23 -0800
+Message-Id: <20130208004631.634680492@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130208004627.375461662@linuxfoundation.org>
 References: <20130208004627.375461662@linuxfoundation.org>
@@ -26,40 +27,140 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-commit fd5d93a0015ce1a7db881382022b2fcdfdc61760 upstream.
+commit 54a3ac0c9e5b7213daa358ce74d154352657353a upstream.
 
-If the requested number of DWs on the ring is larger than
-the size of the ring itself, return an error.
+Usb3.0 device defines function remote wakeup which is only for interface
+recipient rather than device recipient. This is different with usb2.0 device's
+remote wakeup feature which is defined for device recipient. According usb3.0
+spec 9.4.5, the function remote wakeup can be modified by the SetFeature()
+requests using the FUNCTION_SUSPEND feature selector. This patch is to use
+correct way to disable usb3.0 device's function remote wakeup after suspend
+error and resuming.
 
-In testing with large VM updates, we've seen crashes when we
-try and allocate more space on the ring than the total size
-of the ring without checking.
+This should be backported to kernels as old as 3.4, that contain the
+commit 623bef9e03a60adc623b09673297ca7a1cdfb367 "USB/xhci: Enable remote
+wakeup for USB3 devices."
 
-This prevents the crash but for large VM updates or bo moves
-of very large buffers, we will need to break the transaction
-down into multiple batches.  I have patches to use IBs for
-the next kernel.
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_ring.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/core/hub.c       |   70 +++++++++++++++++++++++++++++++------------
+ include/uapi/linux/usb/ch9.h |    6 +++
+ 2 files changed, 58 insertions(+), 18 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_ring.c
-+++ b/drivers/gpu/drm/radeon/radeon_ring.c
-@@ -377,6 +377,9 @@ int radeon_ring_alloc(struct radeon_devi
- {
- 	int r;
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -2799,6 +2799,23 @@ void usb_enable_ltm(struct usb_device *u
+ EXPORT_SYMBOL_GPL(usb_enable_ltm);
  
-+	/* make sure we aren't trying to allocate more space than there is on the ring */
-+	if (ndw > (ring->ring_size / 4))
-+		return -ENOMEM;
- 	/* Align requested size with padding so unlock_commit can
- 	 * pad safely */
- 	ndw = (ndw + ring->align_mask) & ~ring->align_mask;
+ #ifdef	CONFIG_USB_SUSPEND
++/*
++ * usb_disable_function_remotewakeup - disable usb3.0
++ * device's function remote wakeup
++ * @udev: target device
++ *
++ * Assume there's only one function on the USB 3.0
++ * device and disable remote wake for the first
++ * interface. FIXME if the interface association
++ * descriptor shows there's more than one function.
++ */
++static int usb_disable_function_remotewakeup(struct usb_device *udev)
++{
++	return usb_control_msg(udev, usb_sndctrlpipe(udev, 0),
++				USB_REQ_CLEAR_FEATURE, USB_RECIP_INTERFACE,
++				USB_INTRF_FUNC_SUSPEND,	0, NULL, 0,
++				USB_CTRL_SET_TIMEOUT);
++}
+ 
+ /*
+  * usb_port_suspend - suspend a usb device's upstream port
+@@ -2916,12 +2933,19 @@ int usb_port_suspend(struct usb_device *
+ 		dev_dbg(hub->intfdev, "can't suspend port %d, status %d\n",
+ 				port1, status);
+ 		/* paranoia:  "should not happen" */
+-		if (udev->do_remote_wakeup)
+-			(void) usb_control_msg(udev, usb_sndctrlpipe(udev, 0),
+-				USB_REQ_CLEAR_FEATURE, USB_RECIP_DEVICE,
+-				USB_DEVICE_REMOTE_WAKEUP, 0,
+-				NULL, 0,
+-				USB_CTRL_SET_TIMEOUT);
++		if (udev->do_remote_wakeup) {
++			if (!hub_is_superspeed(hub->hdev)) {
++				(void) usb_control_msg(udev,
++						usb_sndctrlpipe(udev, 0),
++						USB_REQ_CLEAR_FEATURE,
++						USB_RECIP_DEVICE,
++						USB_DEVICE_REMOTE_WAKEUP, 0,
++						NULL, 0,
++						USB_CTRL_SET_TIMEOUT);
++			} else
++				(void) usb_disable_function_remotewakeup(udev);
++
++		}
+ 
+ 		/* Try to enable USB2 hardware LPM again */
+ 		if (udev->usb2_hw_lpm_capable == 1)
+@@ -3012,20 +3036,30 @@ static int finish_port_resume(struct usb
+ 	 * udev->reset_resume
+ 	 */
+ 	} else if (udev->actconfig && !udev->reset_resume) {
+-		le16_to_cpus(&devstatus);
+-		if (devstatus & (1 << USB_DEVICE_REMOTE_WAKEUP)) {
+-			status = usb_control_msg(udev,
+-					usb_sndctrlpipe(udev, 0),
+-					USB_REQ_CLEAR_FEATURE,
++		if (!hub_is_superspeed(udev->parent)) {
++			le16_to_cpus(&devstatus);
++			if (devstatus & (1 << USB_DEVICE_REMOTE_WAKEUP))
++				status = usb_control_msg(udev,
++						usb_sndctrlpipe(udev, 0),
++						USB_REQ_CLEAR_FEATURE,
+ 						USB_RECIP_DEVICE,
+-					USB_DEVICE_REMOTE_WAKEUP, 0,
+-					NULL, 0,
+-					USB_CTRL_SET_TIMEOUT);
+-			if (status)
+-				dev_dbg(&udev->dev,
+-					"disable remote wakeup, status %d\n",
+-					status);
++						USB_DEVICE_REMOTE_WAKEUP, 0,
++						NULL, 0,
++						USB_CTRL_SET_TIMEOUT);
++		} else {
++			status = usb_get_status(udev, USB_RECIP_INTERFACE, 0,
++					&devstatus);
++			le16_to_cpus(&devstatus);
++			if (!status && devstatus & (USB_INTRF_STAT_FUNC_RW_CAP
++					| USB_INTRF_STAT_FUNC_RW))
++				status =
++					usb_disable_function_remotewakeup(udev);
+ 		}
++
++		if (status)
++			dev_dbg(&udev->dev,
++				"disable remote wakeup, status %d\n",
++				status);
+ 		status = 0;
+ 	}
+ 	return status;
+--- a/include/uapi/linux/usb/ch9.h
++++ b/include/uapi/linux/usb/ch9.h
+@@ -152,6 +152,12 @@
+ #define USB_INTRF_FUNC_SUSPEND_LP	(1 << (8 + 0))
+ #define USB_INTRF_FUNC_SUSPEND_RW	(1 << (8 + 1))
+ 
++/*
++ * Interface status, Figure 9-5 USB 3.0 spec
++ */
++#define USB_INTRF_STAT_FUNC_RW_CAP     1
++#define USB_INTRF_STAT_FUNC_RW         2
++
+ #define USB_ENDPOINT_HALT		0	/* IN/OUT will STALL */
+ 
+ /* Bit array elements as returned by the USB_REQ_GET_STATUS request. */
 
 
