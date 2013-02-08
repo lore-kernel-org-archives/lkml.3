@@ -1,73 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757123Ab3BHGeW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 01:34:22 -0500
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:56874 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753031Ab3BHGeU (ORCPT
+	id S1756440Ab3BHGfw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 01:35:52 -0500
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:34308 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753107Ab3BHGfv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 01:34:20 -0500
+	Fri, 8 Feb 2013 01:35:51 -0500
+Message-ID: <51149CC0.4080702@redhat.com>
+Date: Fri, 08 Feb 2013 07:35:44 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <87bobw4ab9.fsf@devron.myhome.or.jp>
-References: <1359989028-7457-1-git-send-email-linkinjeon@gmail.com>
-	<87bobw4ab9.fsf@devron.myhome.or.jp>
-Date: Fri, 8 Feb 2013 15:34:19 +0900
-Message-ID: <CAKYAXd_68nEdbdi5wEWMoavTE6kZcfwBd2Yi7jbk5nBE-_kGUw@mail.gmail.com>
-Subject: Re: [PATCH v2] fat: eliminate iterations in fat_search_long and
- __fat_readdir in case of EOD
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        kvm@vger.kernel.org, mst@redhat.com,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [RFC PATCH 0/8] virtio: new API for addition of buffers, scatterlist
+ changes
+References: <1360239752-2470-1-git-send-email-pbonzini@redhat.com> <8738x7ih5o.fsf@rustcorp.com.au>
+In-Reply-To: <8738x7ih5o.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/2/7, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
-> Namjae Jeon <linkinjeon@gmail.com> writes:
->
->> From: Namjae Jeon <namjae.jeon@samsung.com>
+Il 08/02/2013 05:05, Rusty Russell ha scritto:
+> Paolo Bonzini <pbonzini@redhat.com> writes:
+>> The virtqueue_add_buf function has two limitations:
 >>
->> When doing lookups via fat_search_long(), we can stop checking for
->> further entries if we detect End of Directory, i.e. if (de->name[0] ==
->> 0x00).The current code traverses the cluster chain of a directory until a
->> hit
->> is found or till the last cluster for that directory, ignoring the EOD
->> mark. Fix this.
+>> 1) it requires the caller to provide all the buffers in a single call;
 >>
->> Likewise,when readdir(3) is called, we can stop checking for further
->> entries in __fat_readdir() when we hit EOD.
->
-Hi OGAWA.
-> Don't we need to change fat_get_short_entry()?
-Yes, We need to change here. Thanks for review!
+>> 2) it does not support chained scatterlists: the buffers must be
+>> provided as an array of struct scatterlist.
+>>
+>> Because of these limitations, virtio-scsi has to copy each request into
+>> a scatterlist internal to the driver.  It cannot just use the one that
+>> was prepared by the upper SCSI layers.
+> 
+> Hi Paulo,
+> 
+>         Note that you've defined your problem in terms of your solution
+> here.  For clarity:
 
-> And did this work correctly about f_pos for readdir?
-Yes, sure. f_pos is work correctly about each directory entry. because
-after name[0] == 0x00, there are no allocated directory entires.
->
-> I'm not thinking about f_pos deeply though, it may have something
-> wrong. Because it stops at middle of cluster.
-Plz See the below descirption about name[0] in FAT spec.
----------------------------------------------------------------------------------------------------------------------
-If DIR_Name[0] == 0x00, then the directory entry is free (same as for
-0xE5), and there are no allocated directory entries after this one
-(all of the DIR_Name[0] bytes in all of the entries after this one are
-also set to 0).
-The special 0 value, rather than the 0xE5 value, indicates to FAT file
-system driver code that the rest of the entries in this directory do
-not need to be examined because they are all free.
------------------------------------------------------------------------------------------------------------------------
+Good catch. :)
 
-I think that lookuping entry till the end of cluster is not needed.
-Let me know your opinion.
+> The problem: we want to prepend and append to a scatterlist.  We can't
+>         append, because the chained scatterlist implementation requires
+>         an element to be appended to join two scatterlists together.
+> 
+> The solution: fix scatterlists by introducing struct sg_ring:
+>         struct sg_ring {
+>                 struct list_head ring;
+>         	unsigned int nents;
+>         	unsigned int orig_nents; /* do we want to replace sg_table? */
+>                 struct scatterlist *sg;
+>         };
+> 
+> The workaround: make virtio accept multiple scatterlists for a single
+>         buffer.
+> 
+> There's nothing wrong with your workaround, but if other subsystems have
+> the same problem we do, perhaps we should consider a broader solution?
 
-And Would you tell me your opinion about fat exportfs ?
-Thanks!
->
-> Thanks.
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
->
+Do they?  Given the resistance you have had on the topic, perhaps they
+don't (though I agree that chained scatterlist are horrible).
+
+But I'll add a note on this to the commit message and why the workaround
+is IMHO acceptable.
+
+Paolo
