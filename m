@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759606Ab3BHA6A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 19:58:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41863 "EHLO
+	id S1759804Ab3BHBJG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 20:09:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41939 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759504Ab3BHA5w (ORCPT
+	with ESMTP id S1759602Ab3BHA6A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 19:57:52 -0500
+	Thu, 7 Feb 2013 19:58:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Moore <david.moore@gmail.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 34/34] usb: Prevent dead ports when xhci is not enabled
-Date: Thu,  7 Feb 2013 16:57:30 -0800
-Message-Id: <20130208004632.398811873@linuxfoundation.org>
+        liu chuansheng <chuansheng.liu@intel.com>,
+        xueminsu <xuemin.su@intel.com>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 07/26] drm/radeon: Calling object_unrefer() when creating fb failure
+Date: Thu,  7 Feb 2013 16:57:35 -0800
+Message-Id: <20130208004628.480411328@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130208004627.375461662@linuxfoundation.org>
-References: <20130208004627.375461662@linuxfoundation.org>
+In-Reply-To: <20130208004627.258272404@linuxfoundation.org>
+References: <20130208004627.258272404@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: David Moore <david.moore@gmail.com>
+From: liu chuansheng <chuansheng.liu@intel.com>
 
-commit 58b2939b4d5a030eaec469d29812ab8477ee7e76 upstream.
+commit f2d68cf4daa4de97d400d94836b907e35228e54f upstream.
 
-When the xHCI driver is not available, actively switch the ports to EHCI
-mode since some BIOSes leave them in xHCI mode where they would
-otherwise appear dead.  This was discovered on a  Dell Optiplex 7010,
-but it's possible other systems could be affected.
+When kzalloc() failed in radeon_user_framebuffer_create(), need to
+call object_unreference() to match the object_reference().
 
-This should be backported to kernels as old as 3.0, that contain the
-commit 69e848c2090aebba5698a1620604c7dccb448684 "Intel xhci: Support
-EHCI/xHCI port switching."
-
-Signed-off-by: David Moore <david.moore@gmail.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+Signed-off-by: xueminsu <xuemin.su@intel.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/pci-quirks.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/radeon/radeon_display.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -780,6 +780,7 @@ void usb_enable_xhci_ports(struct pci_de
- 				"defaulting to EHCI.\n");
- 		dev_warn(&xhci_pdev->dev,
- 				"USB 3.0 devices will work at USB 2.0 speeds.\n");
-+		usb_disable_xhci_ports(xhci_pdev);
- 		return;
+--- a/drivers/gpu/drm/radeon/radeon_display.c
++++ b/drivers/gpu/drm/radeon/radeon_display.c
+@@ -1129,8 +1129,10 @@ radeon_user_framebuffer_create(struct dr
  	}
  
+ 	radeon_fb = kzalloc(sizeof(*radeon_fb), GFP_KERNEL);
+-	if (radeon_fb == NULL)
++	if (radeon_fb == NULL) {
++		drm_gem_object_unreference_unlocked(obj);
+ 		return ERR_PTR(-ENOMEM);
++	}
+ 
+ 	ret = radeon_framebuffer_init(dev, radeon_fb, mode_cmd, obj);
+ 	if (ret) {
 
 
