@@ -1,58 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947080Ab3BHUuh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 15:50:37 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:36556 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1946936Ab3BHUuh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 15:50:37 -0500
-Message-ID: <51156507.50900@zytor.com>
-Date: Fri, 08 Feb 2013 12:50:15 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1947096Ab3BHUvK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 15:51:10 -0500
+Received: from mail-ia0-f171.google.com ([209.85.210.171]:55842 "EHLO
+	mail-ia0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946936Ab3BHUvI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 15:51:08 -0500
 MIME-Version: 1.0
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, bp@alien8.de,
-        mingo@kernel.org, tglx@linutronix.de
-Subject: Re: [PATCH 1/2] add helper for highmem checks
-References: <20130208202813.62965F25@kernel.stglabs.ibm.com>
-In-Reply-To: <20130208202813.62965F25@kernel.stglabs.ibm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <51153365.5010109@wwwdotorg.org>
+References: <1360091188-24063-1-git-send-email-swarren@wwwdotorg.org>
+ <20130208144527.0D8DD3E2C01@localhost> <51153365.5010109@wwwdotorg.org>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 8 Feb 2013 20:50:47 +0000
+X-Google-Sender-Auth: LW4TlfoP5QttHnEkWk4qA3xvjXg
+Message-ID: <CACxGe6t=Bi=4ZiZFyye9iSGBe4k-pa7h2c39iruGhKi3oJjzWA@mail.gmail.com>
+Subject: Re: [PATCH V8] kbuild: create a rule to run the pre-processor on
+ *.dts files
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Michal Marek <mmarek@suse.cz>, Rob Herring <robherring2@gmail.com>,
+        Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Scott Wood <scottwood@freescale.com>, Sam Ravnborg <sam@ravnborg.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+        Stephen Warren <swarren@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/08/2013 12:28 PM, Dave Hansen wrote:
->   #endif
-> diff -puN include/linux/mm.h~clean-up-highmem-checks include/linux/mm.h
-> --- linux-2.6.git/include/linux/mm.h~clean-up-highmem-checks	2013-02-08 08:42:37.295222148 -0800
-> +++ linux-2.6.git-dave/include/linux/mm.h	2013-02-08 09:01:49.758254468 -0800
-> @@ -1771,5 +1771,18 @@ static inline unsigned int debug_guardpa
->   static inline bool page_is_guard(struct page *page) { return false; }
->   #endif /* CONFIG_DEBUG_PAGEALLOC */
+On Fri, Feb 8, 2013 at 5:18 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 02/08/2013 07:45 AM, Grant Likely wrote:
+>> On Tue,  5 Feb 2013 12:06:28 -0700, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>>> From: Stephen Warren <swarren@nvidia.com>
+>>>
+>>> Create cmd_dtc_cpp to run the C pre-processor on *.dts file before
+>>> passing them to dtc for final compilation. This allows the use of #define
+>>> and #include within the .dts file.
+>>>
+>>> Acked-by: Simon Glass <sjg@chromium.org>
+>>> Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+>>> Acked-by: Michal Marek <mmarek@suse.cz>
+>>> Acked-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+>>> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+>>
+>> I've applied this and was going to push it out, but I've just thought of
+>> a problem that could be a show stopper. Once a dtsp file includes a C
+>> header, the contents of that header become part of the Device Tree ABI.
+>> If someone changes that file (ie. to renumber a series of #defines) then
+>> that will break the binding. We need a way to protect against that.
+>> Someone changing a .h file may make the assumption that it is only
+>> kernel internal and won't realize that it has external implications.
+>>
+>> I'm thinking that any dts includes need to be treated in the same way as
+>> userspace headers. We could put them into include/uapi and piggy back on
+>> the protection already afforded by that directory, or come up with
+>> something new. Any thoughts?
 >
-> +static inline phys_addr_t last_lowmem_phys_addr(void)
-> +{
-> +	/*
-> +	 * 'high_memory' is not a pointer that can be dereferenced, so
-> +	 * avoid calling __pa() on it directly.
-> +	 */
-> +	return __pa(high_memory - 1);
-> +}
-> +static inline bool phys_addr_is_highmem(phys_addr_t addr)
-> +{
-> +	return addr > last_lowmem_paddr();
-> +}
-> +
+> Yes, that's true.
+>
+> What protection is provided by include/uapi - something programmatic or
+> simply stricter review?
 
-Are we sure that high_memory - 1 is always a valid reference?  Consider 
-especially the case where there is MMIO beyond end of memory on a system 
-which has less RAM than the HIGHMEM boundary...
+I believe there are tools that parse the userspace ABI and flag
+incompatibilities, but also stricter review.
 
-	-hpa
+> I wondered if we shouldn't put the headers into the .dts directory, then
+> update the kernel to include them too. That would also make it obvious
+> they were part of the DT ABI.
+
+That would also help be good. In either case the CPP options need to
+only include the ABI headers. No normal headers allowed.
+
+g.
+
+
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
