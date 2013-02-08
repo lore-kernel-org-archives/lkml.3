@@ -1,213 +1,326 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946836Ab3BHSpY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 13:45:24 -0500
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:34569 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946783Ab3BHSpV (ORCPT
+	id S1946871Ab3BHSqK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 13:46:10 -0500
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:62876 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946751Ab3BHSqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 13:45:21 -0500
-Date: Fri, 8 Feb 2013 19:45:10 +0100
-From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Petr Holasek <pholasek@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 11/11] ksm: stop hotremove lockdep warning
-Message-ID: <20130208194510.65fadd37@thinkpad.boeblingen.de.com>
-In-Reply-To: <alpine.LNX.2.00.1301251808120.29196@eggly.anvils>
-References: <alpine.LNX.2.00.1301251747590.29196@eggly.anvils>
-	<alpine.LNX.2.00.1301251808120.29196@eggly.anvils>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 8 Feb 2013 13:46:07 -0500
+Message-ID: <511547EA.4090902@gmail.com>
+Date: Fri, 08 Feb 2013 13:46:02 -0500
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130113 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Li Zefan <lizefan@huawei.com>
+CC: Tejun Heo <tj@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH] cgroup: fix cgroup_path() vs rename() race
+References: <51022FC7.5020607@huawei.com>
+In-Reply-To: <51022FC7.5020607@huawei.com>
+Content-Type: text/plain; charset=GB2312
 Content-Transfer-Encoding: 7bit
-x-cbid: 13020818-1948-0000-0000-00000441A517
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Jan 2013 18:10:18 -0800 (PST)
-Hugh Dickins <hughd@google.com> wrote:
+On 01/25/2013 02:09 AM, Li Zefan wrote:
+> rename() will change dentry->d_name. The result of this race can
+> be worse than seeing partially rewritten name, but we might access
+> a stale pointer because rename() will re-allocate memory to hold
+> a longer name.
+> 
+> Use dentry_path_raw(), and this vfs API will take care of lockings.
+> 
+> Signed-off-by: Li Zefan <lizefan@huawei.com>
 
-> Complaints are rare, but lockdep still does not understand the way
-> ksm_memory_callback(MEM_GOING_OFFLINE) takes ksm_thread_mutex, and
-> holds it until the ksm_memory_callback(MEM_OFFLINE): that appears
-> to be a problem because notifier callbacks are made under down_read
-> of blocking_notifier_head->rwsem (so first the mutex is taken while
-> holding the rwsem, then later the rwsem is taken while still holding
-> the mutex); but is not in fact a problem because mem_hotplug_mutex
-> is held throughout the dance.
-> 
-> There was an attempt to fix this with mutex_lock_nested(); but if that
-> happened to fool lockdep two years ago, apparently it does so no
-> longer.
-> 
-> I had hoped to eradicate this issue in extending KSM page migration
-> not to need the ksm_thread_mutex.  But then realized that although
-> the page migration itself is safe, we do still need to lock out ksmd
-> and other users of get_ksm_page() while offlining memory - at some
-> point between MEM_GOING_OFFLINE and MEM_OFFLINE, the struct pages
-> themselves may vanish, and get_ksm_page()'s accesses to them become a
-> violation.
-> 
-> So, give up on holding ksm_thread_mutex itself from MEM_GOING_OFFLINE
-> to MEM_OFFLINE, and add a KSM_RUN_OFFLINE flag, and
-> wait_while_offlining() checks, to achieve the same lockout without
-> being caught by lockdep. This is less elegant for KSM, but it's more
-> important to keep lockdep useful to other users - and I apologize for
-> how long it took to fix.
+Hi Li,
 
-Thanks a lot for the patch! I verified that it fixes the lockdep warning
-that we got on memory hotremove.
+I was fuzzing with trinity inside a KVM tools guest, and stumbled on
+a lockdep spew related to this patch.
 
-> 
-> Reported-by: Gerald Schaefer <gerald.schaefer@de.ibm.com>
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> ---
->  mm/ksm.c |   55 +++++++++++++++++++++++++++++++++++++++--------------
->  1 file changed, 41 insertions(+), 14 deletions(-)
-> 
-> --- mmotm.orig/mm/ksm.c	2013-01-25 14:37:06.880206290 -0800
-> +++ mmotm/mm/ksm.c	2013-01-25 14:38:53.984208836 -0800
-> @@ -226,7 +226,9 @@ static unsigned int ksm_merge_across_nod
->  #define KSM_RUN_STOP	0
->  #define KSM_RUN_MERGE	1
->  #define KSM_RUN_UNMERGE	2
-> -static unsigned int ksm_run = KSM_RUN_STOP;
-> +#define KSM_RUN_OFFLINE	4
-> +static unsigned long ksm_run = KSM_RUN_STOP;
-> +static void wait_while_offlining(void);
-> 
->  static DECLARE_WAIT_QUEUE_HEAD(ksm_thread_wait);
->  static DEFINE_MUTEX(ksm_thread_mutex);
-> @@ -1700,6 +1702,7 @@ static int ksm_scan_thread(void *nothing
-> 
->  	while (!kthread_should_stop()) {
->  		mutex_lock(&ksm_thread_mutex);
-> +		wait_while_offlining();
->  		if (ksmd_should_run())
->  			ksm_do_scan(ksm_thread_pages_to_scan);
->  		mutex_unlock(&ksm_thread_mutex);
-> @@ -2056,6 +2059,22 @@ void ksm_migrate_page(struct page *newpa
->  #endif /* CONFIG_MIGRATION */
-> 
->  #ifdef CONFIG_MEMORY_HOTREMOVE
-> +static int just_wait(void *word)
-> +{
-> +	schedule();
-> +	return 0;
-> +}
-> +
-> +static void wait_while_offlining(void)
-> +{
-> +	while (ksm_run & KSM_RUN_OFFLINE) {
-> +		mutex_unlock(&ksm_thread_mutex);
-> +		wait_on_bit(&ksm_run, ilog2(KSM_RUN_OFFLINE),
-> +				just_wait, TASK_UNINTERRUPTIBLE);
-> +		mutex_lock(&ksm_thread_mutex);
-> +	}
-> +}
-> +
->  static void ksm_check_stable_tree(unsigned long start_pfn,
->  				  unsigned long end_pfn)
->  {
-> @@ -2098,15 +2117,15 @@ static int ksm_memory_callback(struct no
->  	switch (action) {
->  	case MEM_GOING_OFFLINE:
->  		/*
-> -		 * Keep it very simple for now: just lock out ksmd
-> and
-> -		 * MADV_UNMERGEABLE while any memory is going
-> offline.
-> -		 * mutex_lock_nested() is necessary because lockdep
-> was alarmed
-> -		 * that here we take ksm_thread_mutex inside
-> notifier chain
-> -		 * mutex, and later take notifier chain mutex inside
-> -		 * ksm_thread_mutex to unlock it.   But that's safe
-> because both
-> -		 * are inside mem_hotplug_mutex.
-> +		 * Prevent ksm_do_scan(),
-> unmerge_and_remove_all_rmap_items()
-> +		 * and remove_all_stable_nodes() while memory is
-> going offline:
-> +		 * it is unsafe for them to touch the stable tree at
-> this time.
-> +		 * But unmerge_ksm_pages(), rmap lookups and other
-> entry points
-> +		 * which do not need the ksm_thread_mutex are all
-> safe. */
-> -		mutex_lock_nested(&ksm_thread_mutex,
-> SINGLE_DEPTH_NESTING);
-> +		mutex_lock(&ksm_thread_mutex);
-> +		ksm_run |= KSM_RUN_OFFLINE;
-> +		mutex_unlock(&ksm_thread_mutex);
->  		break;
-> 
->  	case MEM_OFFLINE:
-> @@ -2122,11 +2141,20 @@ static int ksm_memory_callback(struct no
->  		/* fallthrough */
-> 
->  	case MEM_CANCEL_OFFLINE:
-> +		mutex_lock(&ksm_thread_mutex);
-> +		ksm_run &= ~KSM_RUN_OFFLINE;
->  		mutex_unlock(&ksm_thread_mutex);
-> +
-> +		smp_mb();	/* wake_up_bit advises this */
-> +		wake_up_bit(&ksm_run, ilog2(KSM_RUN_OFFLINE));
->  		break;
->  	}
->  	return NOTIFY_OK;
->  }
-> +#else
-> +static void wait_while_offlining(void)
-> +{
-> +}
->  #endif /* CONFIG_MEMORY_HOTREMOVE */
-> 
->  #ifdef CONFIG_SYSFS
-> @@ -2189,7 +2217,7 @@ KSM_ATTR(pages_to_scan);
->  static ssize_t run_show(struct kobject *kobj, struct kobj_attribute
-> *attr, char *buf)
->  {
-> -	return sprintf(buf, "%u\n", ksm_run);
-> +	return sprintf(buf, "%lu\n", ksm_run);
->  }
-> 
->  static ssize_t run_store(struct kobject *kobj, struct kobj_attribute
-> *attr, @@ -2212,6 +2240,7 @@ static ssize_t run_store(struct kobject
->  	 */
-> 
->  	mutex_lock(&ksm_thread_mutex);
-> +	wait_while_offlining();
->  	if (ksm_run != flags) {
->  		ksm_run = flags;
->  		if (flags & KSM_RUN_UNMERGE) {
-> @@ -2254,6 +2283,7 @@ static ssize_t merge_across_nodes_store(
->  		return -EINVAL;
-> 
->  	mutex_lock(&ksm_thread_mutex);
-> +	wait_while_offlining();
->  	if (ksm_merge_across_nodes != knob) {
->  		if (ksm_pages_shared || remove_all_stable_nodes())
->  			err = -EBUSY;
-> @@ -2366,10 +2396,7 @@ static int __init ksm_init(void)
->  #endif /* CONFIG_SYSFS */
-> 
->  #ifdef CONFIG_MEMORY_HOTREMOVE
-> -	/*
-> -	 * Choose a high priority since the callback takes
-> ksm_thread_mutex:
-> -	 * later callbacks could only be taking locks which nest
-> within that.
-> -	 */
-> +	/* There is no significance to this priority 100 */
->  	hotplug_memory_notifier(ksm_memory_callback, 100);
->  #endif
->  	return 0;
-> 
+Here's the spew (brace yourself):
+
+[  313.262599] ======================================================
+[  313.271340] [ INFO: HARDIRQ-safe -> HARDIRQ-unsafe lock order detected ]
+[  313.277542] 3.8.0-rc6-next-20130208-sasha-00028-ge4e162d #278 Tainted: G        W
+[  313.277542] ------------------------------------------------------
+[  313.277542] kworker/u:3/4490 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
+[  313.277542]  (rename_lock){+.+...}, at: [<ffffffff812a11f9>] dentry_path_raw+0x29/0x70
+[  313.277542]
+[  313.277542] and this task is already holding:
+[  313.277542]  (&(&q->__queue_lock)->rlock){-.-...}, at: [<ffffffff819e78f3>] put_io_context_active+0x63/0x100
+[  313.277542] which would create a new lock dependency:
+[  313.277542]  (&(&q->__queue_lock)->rlock){-.-...} -> (rename_lock){+.+...}
+[  313.277542]
+[  313.277542] but this new dependency connects a HARDIRQ-irq-safe lock:
+[  313.277542]  (&(&q->__queue_lock)->rlock){-.-...}
+... which became HARDIRQ-irq-safe at:
+[  313.277542]   [<ffffffff8118452e>] mark_irqflags+0x7e/0x1a0
+[  313.277542]   [<ffffffff81186fce>] __lock_acquire+0x87e/0xb00
+[  313.277542]   [<ffffffff81187b3a>] lock_acquire+0x1ca/0x270
+[  313.277542]   [<ffffffff83d74749>] _raw_spin_lock_irqsave+0x79/0xc0
+[  313.277542]   [<ffffffff81f4a1b1>] virtblk_done+0x51/0x2d0
+[  313.277542]   [<ffffffff81bf1f34>] vring_interrupt+0x94/0xc0
+[  313.277542]   [<ffffffff811c7909>] handle_irq_event_percpu+0x139/0x420
+[  313.277542]   [<ffffffff811c7c33>] handle_irq_event+0x43/0x70
+[  313.277542]   [<ffffffff811ca638>] handle_edge_irq+0xe8/0x120
+[  313.277542]   [<ffffffff810706b4>] handle_irq+0x164/0x190
+[  313.277542]   [<ffffffff810701e5>] do_IRQ+0x55/0xd0
+[  313.277542]   [<ffffffff83d74af2>] ret_from_intr+0x0/0x1a
+[  313.277542]   [<ffffffff811db968>] rcu_note_context_switch+0xc8/0x1e0
+[  313.277542]   [<ffffffff83d72363>] __schedule+0x53/0x3b0
+[  313.277542]   [<ffffffff83d72825>] schedule+0x55/0x60
+[  313.277542]   [<ffffffff83d728ba>] io_schedule+0x8a/0xd0
+[  313.277542]   [<ffffffff8120f7f9>] sleep_on_page+0x9/0x10
+[  313.277542]   [<ffffffff83d70db8>] __wait_on_bit_lock+0x48/0xa0
+[  313.277542]   [<ffffffff8120f7e2>] __lock_page+0x62/0x70
+[  313.277542]   [<ffffffff81210968>] do_read_cache_page+0xf8/0x190
+[  313.277542]   [<ffffffff81210a47>] read_cache_page_async+0x17/0x20
+[  313.277542]   [<ffffffff81210a59>] read_cache_page+0x9/0x20
+[  313.277542]   [<ffffffff819efb3b>] read_dev_sector+0x2b/0x90
+[  313.277542]   [<ffffffff819f1812>] adfspart_check_ICS+0x52/0x2a0
+[  313.277542]   [<ffffffff819f0d45>] check_partition+0xf5/0x1f0
+[  313.277542]   [<ffffffff819f09ad>] rescan_partitions+0x8d/0x2b0
+[  313.277542]   [<ffffffff812ca178>] __blkdev_get+0x1d8/0x470
+[  313.277542]   [<ffffffff812ca605>] blkdev_get+0x1f5/0x200
+[  313.277542]   [<ffffffff819ed832>] register_disk+0x102/0x170
+[  313.277542]   [<ffffffff819ee034>] add_disk+0xf4/0x1f0
+[  313.277542]   [<ffffffff81f4b719>] virtblk_probe+0x5b9/0x700
+[  313.277542]   [<ffffffff81bf19cb>] virtio_dev_probe+0xeb/0x160
+[  313.277542]   [<ffffffff81ef9f0f>] really_probe+0x10f/0x2e0
+[  313.277542]   [<ffffffff81efa28b>] driver_probe_device+0x7b/0xa0
+[  313.277542]   [<ffffffff81efa313>] __driver_attach+0x63/0xa0
+[  313.277542]   [<ffffffff81ef8269>] bus_for_each_dev+0x59/0x90
+[  313.277542]   [<ffffffff81ef9b39>] driver_attach+0x19/0x20
+[  313.277542]   [<ffffffff81ef9513>] bus_add_driver+0xf3/0x270
+[  313.277542]   [<ffffffff81efa978>] driver_register+0xa8/0x150
+[  313.277542]   [<ffffffff81bf1c0d>] register_virtio_driver+0x2d/0x30
+[  313.277542]   [<ffffffff861c0d74>] init+0x59/0x83
+[  313.277542]   [<ffffffff810020ca>] do_one_initcall+0x8a/0x180
+[  313.277542]   [<ffffffff8616df6a>] do_basic_setup+0x96/0xb4
+[  313.277542]   [<ffffffff8616e05a>] kernel_init_freeable+0xd2/0x14c
+[  313.277542]   [<ffffffff83cca109>] kernel_init+0x9/0xf0
+[  313.277542]   [<ffffffff83d7543c>] ret_from_fork+0x7c/0xb0
+[  313.277542]
+[  313.277542] to a HARDIRQ-irq-unsafe lock:
+[  313.277542]  (rename_lock){+.+...}
+... which became HARDIRQ-irq-unsafe at:
+[  313.277542] ...  [<ffffffff811845c0>] mark_irqflags+0x110/0x1a0
+[  313.277542]   [<ffffffff81186fce>] __lock_acquire+0x87e/0xb00
+[  313.277542]   [<ffffffff81187b3a>] lock_acquire+0x1ca/0x270
+[  313.277542]   [<ffffffff83d7396b>] _raw_spin_lock+0x3b/0x70
+[  313.277542]   [<ffffffff812a4a21>] sys_getcwd+0xa1/0x200
+[  313.277542]   [<ffffffff83d75718>] tracesys+0xe1/0xe6
+[  313.277542]
+[  313.277542] other info that might help us debug this:
+[  313.277542]
+[  313.277542]  Possible interrupt unsafe locking scenario:
+[  313.277542]
+[  313.277542]        CPU0                    CPU1
+[  313.277542]        ----                    ----
+[  313.277542]   lock(rename_lock);
+[  313.277542]                                local_irq_disable();
+[  313.277542]                                lock(&(&q->__queue_lock)->rlock);
+[  313.277542]                                lock(rename_lock);
+[  313.277542]   <Interrupt>
+[  313.277542]     lock(&(&q->__queue_lock)->rlock);
+[  313.277542]
+[  313.277542]  *** DEADLOCK ***
+[  313.277542]
+[  313.277542] 3 locks held by kworker/u:3/4490:
+[  313.277542]  #0:  (&(&ioc->lock)->rlock/1){......}, at: [<ffffffff819e78be>] put_io_context_active+0x2e/0x100
+[  313.277542]  #1:  (&(&q->__queue_lock)->rlock){-.-...}, at: [<ffffffff819e78f3>] put_io_context_active+0x63/0x100
+[  313.277542]  #2:  (rcu_read_lock){.+.+..}, at: [<ffffffff81a03def>] cfq_put_queue+0x4f/0x320
+[  313.277542]
+the dependencies between HARDIRQ-irq-safe lock and the holding lock:
+[  313.277542] -> (&(&q->__queue_lock)->rlock){-.-...} ops: 1166 {
+[  313.277542]    IN-HARDIRQ-W at:
+[  313.277542]                     [<ffffffff8118452e>] mark_irqflags+0x7e/0x1a0
+[  313.277542]                     [<ffffffff81186fce>] __lock_acquire+0x87e/0xb00
+[  313.277542]                     [<ffffffff81187b3a>] lock_acquire+0x1ca/0x270
+[  313.277542]                     [<ffffffff83d74749>] _raw_spin_lock_irqsave+0x79/0xc0
+[  313.277542]                     [<ffffffff81f4a1b1>] virtblk_done+0x51/0x2d0
+[  313.277542]                     [<ffffffff81bf1f34>] vring_interrupt+0x94/0xc0
+[  313.277542]                     [<ffffffff811c7909>] handle_irq_event_percpu+0x139/0x420
+[  313.277542]                     [<ffffffff811c7c33>] handle_irq_event+0x43/0x70
+[  313.277542]                     [<ffffffff811ca638>] handle_edge_irq+0xe8/0x120
+[  313.277542]                     [<ffffffff810706b4>] handle_irq+0x164/0x190
+[  313.277542]                     [<ffffffff810701e5>] do_IRQ+0x55/0xd0
+[  313.277542]                     [<ffffffff83d74af2>] ret_from_intr+0x0/0x1a
+[  313.277542]                     [<ffffffff811db968>] rcu_note_context_switch+0xc8/0x1e0
+[  313.277542]                     [<ffffffff83d72363>] __schedule+0x53/0x3b0
+[  313.277542]                     [<ffffffff83d72825>] schedule+0x55/0x60
+[  313.277542]                     [<ffffffff83d728ba>] io_schedule+0x8a/0xd0
+[  313.277542]                     [<ffffffff8120f7f9>] sleep_on_page+0x9/0x10
+[  313.277542]                     [<ffffffff83d70db8>] __wait_on_bit_lock+0x48/0xa0
+[  313.277542]                     [<ffffffff8120f7e2>] __lock_page+0x62/0x70
+[  313.277542]                     [<ffffffff81210968>] do_read_cache_page+0xf8/0x190
+[  313.277542]                     [<ffffffff81210a47>] read_cache_page_async+0x17/0x20
+[  313.277542]                     [<ffffffff81210a59>] read_cache_page+0x9/0x20
+[  313.277542]                     [<ffffffff819efb3b>] read_dev_sector+0x2b/0x90
+[  313.277542]                     [<ffffffff819f1812>] adfspart_check_ICS+0x52/0x2a0
+[  313.277542]                     [<ffffffff819f0d45>] check_partition+0xf5/0x1f0
+[  313.277542]                     [<ffffffff819f09ad>] rescan_partitions+0x8d/0x2b0
+[  313.277542]                     [<ffffffff812ca178>] __blkdev_get+0x1d8/0x470
+[  313.277542]                     [<ffffffff812ca605>] blkdev_get+0x1f5/0x200
+[  313.277542]                     [<ffffffff819ed832>] register_disk+0x102/0x170
+[  313.277542]                     [<ffffffff819ee034>] add_disk+0xf4/0x1f0
+[  313.277542]                     [<ffffffff81f4b719>] virtblk_probe+0x5b9/0x700
+[  313.277542]                     [<ffffffff81bf19cb>] virtio_dev_probe+0xeb/0x160
+[  313.277542]                     [<ffffffff81ef9f0f>] really_probe+0x10f/0x2e0
+[  313.277542]                     [<ffffffff81efa28b>] driver_probe_device+0x7b/0xa0
+[  313.277542]                     [<ffffffff81efa313>] __driver_attach+0x63/0xa0
+[  313.277542]                     [<ffffffff81ef8269>] bus_for_each_dev+0x59/0x90
+[  313.277542]                     [<ffffffff81ef9b39>] driver_attach+0x19/0x20
+[  313.277542]                     [<ffffffff81ef9513>] bus_add_driver+0xf3/0x270
+[  313.277542]                     [<ffffffff81efa978>] driver_register+0xa8/0x150
+[  313.277542]                     [<ffffffff81bf1c0d>] register_virtio_driver+0x2d/0x30
+[  313.277542]                     [<ffffffff861c0d74>] init+0x59/0x83
+[  313.277542]                     [<ffffffff810020ca>] do_one_initcall+0x8a/0x180
+[  313.277542]                     [<ffffffff8616df6a>] do_basic_setup+0x96/0xb4
+[  313.277542]                     [<ffffffff8616e05a>] kernel_init_freeable+0xd2/0x14c
+[  313.277542]                     [<ffffffff83cca109>] kernel_init+0x9/0xf0
+[  313.277542]                     [<ffffffff83d7543c>] ret_from_fork+0x7c/0xb0
+[  313.277542]    IN-SOFTIRQ-W at:
+[  313.277542]                     [<ffffffff81184560>] mark_irqflags+0xb0/0x1a0
+[  313.277542]                     [<ffffffff81186fce>] __lock_acquire+0x87e/0xb00
+[  313.277542]                     [<ffffffff81187b3a>] lock_acquire+0x1ca/0x270
+[  313.277542]                     [<ffffffff83d7396b>] _raw_spin_lock+0x3b/0x70
+[  313.277542]                     [<ffffffff82025925>] scsi_device_unbusy+0x95/0xd0
+[  313.277542]                     [<ffffffff8201c172>] scsi_finish_command+0x32/0x110
+[  313.277542]                     [<ffffffff82025bc5>] scsi_softirq_done+0x135/0x150
+[  313.277542]                     [<ffffffff819e9b84>] blk_done_softirq+0xb4/0xd0
+[  313.277542]                     [<ffffffff81117315>] __do_softirq+0x1e5/0x490
+[  313.277542]                     [<ffffffff811175fd>] run_ksoftirqd+0x3d/0xa0
+[  313.277542]                     [<ffffffff8114815e>] smpboot_thread_fn+0x2ae/0x2c0
+[  313.277542]                     [<ffffffff8113dcc3>] kthread+0xe3/0xf0
+[  313.277542]                     [<ffffffff83d7543c>] ret_from_fork+0x7c/0xb0
+[  313.277542]    INITIAL USE at:
+[  313.277542]                    [<ffffffff81186ff4>] __lock_acquire+0x8a4/0xb00
+[  313.277542]                    [<ffffffff81187b3a>] lock_acquire+0x1ca/0x270
+[  313.277542]                    [<ffffffff83d743e9>] _raw_spin_lock_irq+0x59/0x90
+[  313.277542]                    [<ffffffff819dfa36>] blk_queue_bypass_start+0x16/0xc0
+[  313.277542]                    [<ffffffff819fbbb8>] blkcg_activate_policy+0x68/0x3d0
+[  313.277542]                    [<ffffffff819fe4a5>] blk_throtl_init+0xf5/0x130
+[  313.277542]                    [<ffffffff819fbfb7>] blkcg_init_queue+0x27/0x30
+[  313.277542]                    [<ffffffff819de428>] blk_alloc_queue_node+0x278/0x2b0
+[  313.277542]                    [<ffffffff819e3a86>] blk_init_queue_node+0x26/0x70
+[  313.277542]                    [<ffffffff819e3ade>] blk_init_queue+0xe/0x10
+[  313.277542]                    [<ffffffff861bfa80>] do_floppy_init+0xaf/0x6a4
+[  313.277542]                    [<ffffffff861c007e>] floppy_async_init+0x9/0xb
+[  313.277542]                    [<ffffffff811468fb>] async_run_entry_fn+0x6b/0x130
+[  313.277542]                    [<ffffffff81132b08>] process_one_work+0x388/0x670
+[  313.277542]                    [<ffffffff811337df>] worker_thread+0x1df/0x2e0
+[  313.277542]                    [<ffffffff8113dcc3>] kthread+0xe3/0xf0
+[  313.277542]                    [<ffffffff83d7543c>] ret_from_fork+0x7c/0xb0
+[  313.277542]  }
+[  313.277542]  ... key      at: [<ffffffff86f022d0>] __key.38539+0x0/0x8
+[  313.277542]  ... acquired at:
+[  313.277542]    [<ffffffff81182f5d>] check_usage+0x1bd/0x1e0
+[  313.277542]    [<ffffffff81182fea>] check_irq_usage+0x6a/0xe0
+[  313.277542]    [<ffffffff811831ab>] check_prev_add+0x14b/0x640
+[  313.277542]    [<ffffffff8118375a>] check_prevs_add+0xba/0x1a0
+[  313.277542]    [<ffffffff81183ee0>] validate_chain.isra.21+0x6a0/0x7b0
+[  313.277542]    [<ffffffff81187163>] __lock_acquire+0xa13/0xb00
+[  313.277542]    [<ffffffff81187b3a>] lock_acquire+0x1ca/0x270
+[  313.277542]    [<ffffffff83d7396b>] _raw_spin_lock+0x3b/0x70
+[  313.277542]    [<ffffffff812a11f9>] dentry_path_raw+0x29/0x70
+[  313.277542]    [<ffffffff811a3e2e>] cgroup_path+0xbe/0xf0
+[  313.277542]    [<ffffffff81a03e71>] cfq_put_queue+0xd1/0x320
+[  313.277542]    [<ffffffff81a047d8>] cfq_exit_cfqq+0x58/0x70
+[  313.277542]    [<ffffffff81a04838>] cfq_exit_icq+0x48/0x60
+[  313.277542]    [<ffffffff819e7919>] put_io_context_active+0x89/0x100
+[  313.277542]    [<ffffffff819e79de>] exit_io_context+0x4e/0x60
+[  313.277542]    [<ffffffff811147fe>] do_exit+0x4be/0x590
+[  313.277542]    [<ffffffff8113dccb>] kthread+0xeb/0xf0
+[  313.277542]    [<ffffffff83d7543c>] ret_from_fork+0x7c/0xb0
+[  313.277542]
+[  313.277542]
+the dependencies between the lock to be acquired and HARDIRQ-irq-unsafe lock:
+[  313.277542] -> (rename_lock){+.+...} ops: 2972 {
+[  313.277542]    HARDIRQ-ON-W at:
+[  313.277542]                     [<ffffffff811845c0>] mark_irqflags+0x110/0x1a0
+[  313.277542]                     [<ffffffff81186fce>] __lock_acquire+0x87e/0xb00
+[  313.277542]                     [<ffffffff81187b3a>] lock_acquire+0x1ca/0x270
+[  313.277542]                     [<ffffffff83d7396b>] _raw_spin_lock+0x3b/0x70
+[  313.277542]                     [<ffffffff812a4a21>] sys_getcwd+0xa1/0x200
+[  313.277542]                     [<ffffffff83d75718>] tracesys+0xe1/0xe6
+[  313.277542]    SOFTIRQ-ON-W at:
+[  313.277542]                     [<ffffffff811845e3>] mark_irqflags+0x133/0x1a0
+[  313.277542]                     [<ffffffff81186fce>] __lock_acquire+0x87e/0xb00
+[  313.277542]                     [<ffffffff81187b3a>] lock_acquire+0x1ca/0x270
+[  313.277542]                     [<ffffffff83d7396b>] _raw_spin_lock+0x3b/0x70
+[  313.277542]                     [<ffffffff812a4a21>] sys_getcwd+0xa1/0x200
+[  313.277542]                     [<ffffffff83d75718>] tracesys+0xe1/0xe6
+[  313.277542]    INITIAL USE at:
+[  313.277542]                    [<ffffffff81186ff4>] __lock_acquire+0x8a4/0xb00
+[  313.277542]                    [<ffffffff81187b3a>] lock_acquire+0x1ca/0x270
+[  313.277542]                    [<ffffffff83d7396b>] _raw_spin_lock+0x3b/0x70
+[  313.277542]                    [<ffffffff812a4a21>] sys_getcwd+0xa1/0x200
+[  313.277542]                    [<ffffffff83d75718>] tracesys+0xe1/0xe6
+[  313.277542]  }
+[  313.277542]  ... key      at: [<ffffffff8540e020>] rename_lock+0x20/0x1000
+[  313.277542]  ... acquired at:
+[  313.277542]    [<ffffffff81182f5d>] check_usage+0x1bd/0x1e0
+[  313.277542]    [<ffffffff81182fea>] check_irq_usage+0x6a/0xe0
+[  313.277542]    [<ffffffff811831ab>] check_prev_add+0x14b/0x640
+[  313.277542]    [<ffffffff8118375a>] check_prevs_add+0xba/0x1a0
+[  313.277542]    [<ffffffff81183ee0>] validate_chain.isra.21+0x6a0/0x7b0
+[  313.277542]    [<ffffffff81187163>] __lock_acquire+0xa13/0xb00
+[  313.277542]    [<ffffffff81187b3a>] lock_acquire+0x1ca/0x270
+[  313.277542]    [<ffffffff83d7396b>] _raw_spin_lock+0x3b/0x70
+[  313.277542]    [<ffffffff812a11f9>] dentry_path_raw+0x29/0x70
+[  313.277542]    [<ffffffff811a3e2e>] cgroup_path+0xbe/0xf0
+[  313.277542]    [<ffffffff81a03e71>] cfq_put_queue+0xd1/0x320
+[  313.277542]    [<ffffffff81a047d8>] cfq_exit_cfqq+0x58/0x70
+[  313.277542]    [<ffffffff81a04838>] cfq_exit_icq+0x48/0x60
+[  313.277542]    [<ffffffff819e7919>] put_io_context_active+0x89/0x100
+[  313.277542]    [<ffffffff819e79de>] exit_io_context+0x4e/0x60
+[  313.277542]    [<ffffffff811147fe>] do_exit+0x4be/0x590
+[  313.277542]    [<ffffffff8113dccb>] kthread+0xeb/0xf0
+[  313.277542]    [<ffffffff83d7543c>] ret_from_fork+0x7c/0xb0
+[  313.277542]
+[  313.277542]
+[  313.277542] stack backtrace:
+[  313.277542] Pid: 4490, comm: kworker/u:3 Tainted: G        W    3.8.0-rc6-next-20130208-sasha-00028-ge4e162d #278
+[  313.277542] Call Trace:
+[  313.277542]  [<ffffffff81182d7a>] print_bad_irq_dependency+0x2ea/0x310
+[  313.277542]  [<ffffffff81182f5d>] check_usage+0x1bd/0x1e0
+[  313.277542]  [<ffffffff81156e65>] ? sched_clock_local+0x25/0x90
+[  313.277542]  [<ffffffff81182fea>] check_irq_usage+0x6a/0xe0
+[  313.277542]  [<ffffffff811831ab>] check_prev_add+0x14b/0x640
+[  313.277542]  [<ffffffff810a42b8>] ? kvm_clock_read+0x38/0x70
+[  313.277542]  [<ffffffff8118375a>] check_prevs_add+0xba/0x1a0
+[  313.277542]  [<ffffffff810774a5>] ? sched_clock+0x15/0x20
+[  313.277542]  [<ffffffff81183ee0>] validate_chain.isra.21+0x6a0/0x7b0
+[  313.277542]  [<ffffffff81187163>] __lock_acquire+0xa13/0xb00
+[  313.277542]  [<ffffffff81156e65>] ? sched_clock_local+0x25/0x90
+[  313.277542]  [<ffffffff81157098>] ? sched_clock_cpu+0x108/0x120
+[  313.277542]  [<ffffffff81187b3a>] lock_acquire+0x1ca/0x270
+[  313.277542]  [<ffffffff812a11f9>] ? dentry_path_raw+0x29/0x70
+[  313.277542]  [<ffffffff810774a5>] ? sched_clock+0x15/0x20
+[  313.277542]  [<ffffffff83d7396b>] _raw_spin_lock+0x3b/0x70
+[  313.277542]  [<ffffffff812a11f9>] ? dentry_path_raw+0x29/0x70
+[  313.277542]  [<ffffffff812a11f9>] dentry_path_raw+0x29/0x70
+[  313.277542]  [<ffffffff811a3e2e>] cgroup_path+0xbe/0xf0
+[  313.277542]  [<ffffffff81a03e71>] cfq_put_queue+0xd1/0x320
+[  313.277542]  [<ffffffff81a03def>] ? cfq_put_queue+0x4f/0x320
+[  313.277542]  [<ffffffff819e78f3>] ? put_io_context_active+0x63/0x100
+[  313.277542]  [<ffffffff819e78be>] ? put_io_context_active+0x2e/0x100
+[  313.277542]  [<ffffffff81a047d8>] cfq_exit_cfqq+0x58/0x70
+[  313.277542]  [<ffffffff81a04838>] cfq_exit_icq+0x48/0x60
+[  313.277542]  [<ffffffff819e7919>] put_io_context_active+0x89/0x100
+[  313.277542]  [<ffffffff819e79de>] exit_io_context+0x4e/0x60
+[  313.277542]  [<ffffffff811147fe>] do_exit+0x4be/0x590
+[  313.277542]  [<ffffffff81133600>] ? manage_workers+0x110/0x110
+[  313.277542]  [<ffffffff8113dccb>] kthread+0xeb/0xf0
+[  313.277542]  [<ffffffff83d721f6>] ? wait_for_common+0x106/0x170
+[  313.277542]  [<ffffffff8113dbe0>] ? flush_kthread_worker+0x190/0x190
+[  313.277542]  [<ffffffff83d7543c>] ret_from_fork+0x7c/0xb0
+[  313.277542]  [<ffffffff8113dbe0>] ? flush_kthread_worker+0x190/0x190
+
+
+Thanks,
+Sasha
 
