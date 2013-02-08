@@ -1,165 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756339Ab3BHANi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 19:13:38 -0500
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:51514 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751487Ab3BHANg convert rfc822-to-8bit (ORCPT
+	id S1755460Ab3BHARa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 19:17:30 -0500
+Received: from nm20.bullet.mail.bf1.yahoo.com ([98.139.212.179]:21539 "HELO
+	nm20.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751542Ab3BHARa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 19:13:36 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:date:message-id:mime-version:content-type
-	:content-transfer-encoding; q=dns; s=sasl; b=tPHI3Xi/nnqL7IJiRlC
-	Y+vst8vrY9SMiHjkA9WWK2VGyMhKKoUUowol8TA6xDPN6xKTf9ikv4VkixMQrk9k
-	rQ7RN6Tr6LKAFo61t+tm2gSnyybKjP0jar/PmnRGAtwk41zAqJt57NQuXwoZlgOt
-	qnstq0Tdm2duXyCOUqWHgoSQ=
-From: Junio C Hamano <gitster@pobox.com>
-To: git@vger.kernel.org
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [ANNOUNCE] Git v1.8.1.3
-Date: Thu, 07 Feb 2013 16:13:30 -0800
-Message-ID: <7vpq0b4q8l.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-X-Pobox-Relay-ID: 5F77629C-7184-11E2-A204-BCD12E706CDE-77302942!b-pb-sasl-quonix.pobox.com
-Content-Transfer-Encoding: 8BIT
+	Thu, 7 Feb 2013 19:17:30 -0500
+X-Yahoo-Newman-Id: 72241.92420.bm@smtp101.mail.bf1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: yMFGUIAVM1nYZsSeOJEcDV5mLZWjHNF9w.B3BRssS6Hdrf2
+ AvvoE2i5gMTCtW9If4vrbkgBJ_e9G1RN3pvVE.YGpF9k1APeusQ1wGMecQOB
+ DeMJ5tmLdCxyNIk_InmHTyIbnb.XWv0tnXziuq.ndPJlOUX6DdXmP8KhjMkr
+ HaxbwWCJAay9fJuIqnNvEf_nX4WGnL.22l9KFVtHC2dlo52Q3QReBjLHZ7HT
+ MXvpKiL3mV7b.2QKV.LRZ6pT2kcTJZG1OCnZZWO4g6DNDGLniMCJMvOdjchM
+ INhThu3z0M0QvrPfohZWphG1J_uovD_tOG.d.5da_VgqxTlzp.2CKK1LZE.J
+ MVti.uk4pKCX7JbstfTvE30w2ZaFXB.DckoVcUe.3FId1T9t0D8qnYHDsAVW
+ n5ZCcrDJiNAVc0A9ClsvWL4aH8Q2nnA.Yj2aLzTTSvzzWO.pUkvEMzxYGBqd
+ ERgQq62klXCv8Vlhp
+X-Yahoo-SMTP: izt95ZKswBDBT1bN16dPvD5jLHMKn5IFkJA-
+Subject: Re: SATA error initializing Marvell 88SX6081
+From: "James C. Georgas" <james.georgas@yahoo.ca>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 07 Feb 2013 17:17:27 -0700
+Message-ID: <1360282647.2235.2.camel@Rainsong>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest maintenance release Git v1.8.1.3 is now available at
-the usual places.
+> When using the sata_mv driver, I can't see my drives.
+> 
+> The drives are SATA6Gbps.
+> 
+> The SATA card is a Supermicro AOC-SAT2-MV8 SATA3Gbps card with a
+Marvell
+> 88SX6081 chip onboard.
 
-The release tarballs are found at:
-
-    http://code.google.com/p/git-core/downloads/list
-
-and their SHA-1 checksums are:
-
-29ed9047263f9835726200226451339276641779  git-1.8.1.3.tar.gz
-6b1e57bde2f2b0a86532390c15bfa7b181c50db2  git-htmldocs-1.8.1.3.tar.gz
-12aaa8a0428e64d194665379ab0335d786728930  git-manpages-1.8.1.3.tar.gz
-
-Also the following public repositories all have a copy of the v1.8.1.3
-tag and the maint branch that the tag points at:
-
-  url = git://repo.or.cz/alt-git.git
-  url = https://code.google.com/p/git-core/
-  url = git://git.sourceforge.jp/gitroot/git-core/git.git
-  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
-  url = https://github.com/gitster/git
-
-Git 1.8.1.3 Release Notes
-=========================
-
-Fixes since v1.8.1.2
---------------------
-
- * The attribute mechanism didn't allow limiting attributes to be
-   applied to only a single directory itself with "path/" like the
-   exclude mechanism does.  The fix for this in 1.8.1.2 had
-   performance degradations.
-
- * Command line completion code was inadvertently made incompatible with
-   older versions of bash by using a newer array notation.
-
- * Scripts to test bash completion was inherently flaky as it was
-   affected by whatever random things the user may have on $PATH.
-
- * A fix was added to the build procedure to work around buggy
-   versions of ccache broke the auto-generation of dependencies, which
-   unfortunately is still relevant because some people use ancient
-   distros.
-
- * We used to stuff "user@" and then append what we read from
-   /etc/mailname to come up with a default e-mail ident, but a bug
-   lost the "user@" part.
-
- * "git am" did not parse datestamp correctly from Hg generated patch,
-   when it is run in a locale outside C (or en).
-
- * Attempt to "branch --edit-description" an existing branch, while
-   being on a detached HEAD, errored out.
-
- * "git cherry-pick" did not replay a root commit to an unborn branch.
-
- * We forgot to close the file descriptor reading from "gpg" output,
-   killing "git log --show-signature" on a long history.
-
- * "git rebase --preserve-merges" lost empty merges in recent versions
-   of Git.
-
- * Rebasing the history of superproject with change in the submodule
-   has been broken since v1.7.12.
-
- * A failure to push due to non-ff while on an unborn branch
-   dereferenced a NULL pointer when showing an error message.
-
-Also contains various documentation fixes.
-
-----------------------------------------------------------------
-
-Changes since v1.8.1.2 are as follows:
-
-Brandon Casey (3):
-      git-completion.bash: replace zsh notation that breaks bash 3.X
-      git-p4.py: support Python 2.5
-      git-p4.py: support Python 2.4
-
-Dmitry V. Levin (1):
-      am: invoke perl's strftime in C locale
-
-Fraser Tweedale (1):
-      push: fix segfault when HEAD points nowhere
-
-John Keeping (1):
-      git-cvsimport.txt: cvsps-2 is deprecated
-
-Jonathan Nieder (2):
-      ident: do not drop username when reading from /etc/mailname
-      Makefile: explicitly set target name for autogenerated dependencies
-
-Junio C Hamano (17):
-      Which merge_file() function do you mean?
-      merge-tree: lose unused "flags" from merge_list
-      merge-tree: lose unused "resolve_directories"
-      merge-tree: add comments to clarify what these functions are doing
-      merge-tree: fix d/f conflicts
-      Documentation: update "howto maintain git"
-      howto/maintain: mark titles for asciidoc
-      help: include <common-cmds.h> only in one file
-      t9902: protect test from stray build artifacts
-      howto/maintain: document "### match next" convention in jch/pu branch
-      README: update stale and/or incorrect information
-      INSTALL: git-p4 does not support Python 3
-      git-am: record full index line in the patch used while rebasing
-      apply: simplify build_fake_ancestor()
-      apply: diagnose incomplete submodule object name better
-      Start preparing for 1.8.1.3
-      Git 1.8.1.3
-
-Martin von Zweigbergk (2):
-      tests: move test_cmp_rev to test-lib-functions
-      learn to pick/revert into unborn branch
-
-Nguyễn Thái Ngọc Duy (4):
-      attr: fix off-by-one directory component length calculation
-      test-lib.sh: unfilter GIT_PERF_*
-      attr: avoid calling find_basename() twice per path
-      branch: no detached HEAD check when editing another branch's description
-
-Phil Hord (1):
-      rebase --preserve-merges: keep all merge commits including empty ones
-
-Ramsay Allan Jones (1):
-      Makefile: Replace merge-file.h with merge-blobs.h in LIB_H
-
-Stephen Boyd (1):
-      gpg: close stderr once finished with it in verify_signed_buffer()
-
-Torsten Bögershausen (3):
-      t0050: known breakage vanished in merge (case change)
-      t0050: honor CASE_INSENSITIVE_FS in add (with different case)
-      t0050: Use TAB for indentation
+Never mind, old kernel. Fixed in 3.7.6. Sorry for the noise.
 
