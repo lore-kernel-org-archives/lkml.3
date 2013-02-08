@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946982Ab3BHUEW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 15:04:22 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:52790 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946873Ab3BHUEV (ORCPT
+	id S1947021Ab3BHUE7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 15:04:59 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:34753 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946975Ab3BHUE5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 15:04:21 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; CHARSET=US-ASCII
-Date: Fri, 08 Feb 2013 15:04:19 -0500 (EST)
-From: Nicolas Pitre <nico@fluxnic.net>
-To: "Woodhouse, David" <david.woodhouse@intel.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Kim Phillips <kim.phillips@freescale.com>,
-        Borislav Petkov <bp@alien8.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Santos <daniel.santos@pobox.com>,
-        David Rientjes <rientjes@google.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robherring2@gmail.com>
-Subject: Re: [RFC] arm: use built-in byte swap function
-In-reply-to: <1360344301.6066.263.camel@shinybook.infradead.org>
-Message-id: <alpine.LFD.2.02.1302081503430.6300@xanadu.home>
-References: <20130129181046.GC25415@pd.tnic>
- <1359541333.3529.186.camel@shinybook.infradead.org>
- <20130130200900.9d7cf7908caeaef4ecee1d61@freescale.com>
- <20130131092801.GV23505@n2100.arm.linux.org.uk>
- <20130131145947.f62474a0600848df86548b96@freescale.com>
- <20130201011712.GF23505@n2100.arm.linux.org.uk>
- <1359703995.23531.6.camel@shinybook.infradead.org>
- <20130205210436.670c62e26d2121330e87af35@freescale.com>
- <1360141322.6066.4.camel@shinybook.infradead.org>
- <20130206191905.ac8eb6743e69425f30888704@freescale.com>
- <20130207181315.GM17833@n2100.arm.linux.org.uk>
- <1360344301.6066.263.camel@shinybook.infradead.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 8 Feb 2013 15:04:57 -0500
+From: Stephen Warren <swarren@wwwdotorg.org>
+To: arm@kernel.org
+Cc: linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH] MAINTAINERS: add keyword "tegra" to Tegra section
+Date: Fri,  8 Feb 2013 13:04:51 -0700
+Message-Id: <1360353891-24210-1-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.7.10.4
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Feb 2013, Woodhouse, David wrote:
+From: Stephen Warren <swarren@nvidia.com>
 
-> On Thu, 2013-02-07 at 18:13 +0000, Russell King - ARM Linux wrote:
-> > 
-> > However, the biggest reason not to use libgcc is that we want to control
-> > what gets used in the kernel - for example, no floating point, and no
-> > use of 64 x 64bit division.
-> 
-> Which is all very sensible. But there's no particular reason we couldn't
-> add a __bswap[sd]i2 to the kernel's version of libgcc if we wanted to.
+The intent is to ensure that all Tegra-related patches are sent to the
+linux-tegra@ mailing list, so people can keep up-to-date on all misc
+driver changes.
 
-Absolutely.
+Doing this with a keyword is far simpler and more compact than listing
+all Tegra-related drivers, even if wildcards were used.
 
+Words such as integrate or integrator are common. Use a negative look-
+behind assertion to make sure the keyword doesn't match those.
 
-Nicolas
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+---
+ MAINTAINERS |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 972fd51..ebd3c64 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -7850,9 +7850,7 @@ L:	linux-tegra@vger.kernel.org
+ Q:	http://patchwork.ozlabs.org/project/linux-tegra/list/
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/swarren/linux-tegra.git
+ S:	Supported
+-F:	arch/arm/mach-tegra
+-F:	arch/arm/boot/dts/tegra*
+-F:	arch/arm/configs/tegra_defconfig
++K:	(?<!in)tegra
+ 
+ TEHUTI ETHERNET DRIVER
+ M:	Andy Gospodarek <andy@greyhouse.net>
+-- 
+1.7.10.4
+
