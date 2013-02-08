@@ -1,82 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760000Ab3BHOqX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 09:46:23 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8005 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753386Ab3BHOqV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 09:46:21 -0500
-X-Authority-Analysis: v=2.0 cv=bJmU0YCZ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Q7m8p2VVOasA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=XFz9PPAos6YA:10 a=KKAkSRfTAAAA:8 a=D19gQVrFAAAA:8 a=Fgu8Ls2hX2PifQBoYEIA:9 a=PUjeQqilurYA:10 a=WwgC8nHKvroA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1360334778.2621.106.camel@gandalf.local.home>
-Subject: Re: [PATCH] sched: fix wrong rq's runnable_avg update with rt task
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        peterz@infradead.org, mingo@kernel.org, pjt@google.com,
-        fweisbec@gmail.com
-Date: Fri, 08 Feb 2013 09:46:18 -0500
-In-Reply-To: <1360321887-18251-1-git-send-email-vincent.guittot@linaro.org>
-References: <1360321887-18251-1-git-send-email-vincent.guittot@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1760118Ab3BHOrX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 09:47:23 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34342 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753386Ab3BHOrW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 09:47:22 -0500
+Date: Fri, 8 Feb 2013 15:47:20 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: azurIt <azurit@pobox.sk>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups mailinglist <cgroups@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH for 3.2.34] memcg: do not trigger OOM if PF_NO_MEMCG_OOM
+ is set
+Message-ID: <20130208144720.GC7557@dhcp22.suse.cz>
+References: <20130205160934.GB22804@dhcp22.suse.cz>
+ <20130206021721.1AE9E3C7@pobox.sk>
+ <20130206140119.GD10254@dhcp22.suse.cz>
+ <20130206142219.GF10254@dhcp22.suse.cz>
+ <20130206160051.GG10254@dhcp22.suse.cz>
+ <20130208060304.799F362F@pobox.sk>
+ <20130208094420.GA7557@dhcp22.suse.cz>
+ <20130208120249.FD733220@pobox.sk>
+ <20130208123854.GB7557@dhcp22.suse.cz>
+ <20130208145616.FB78CE24@pobox.sk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130208145616.FB78CE24@pobox.sk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-02-08 at 12:11 +0100, Vincent Guittot wrote:
-> When a RT task is scheduled on an idle CPU, the update of the rq's load is
-> not done because CFS's functions are not called. Then, the idle_balance,
-> which is called just before entering the idle function, updates the
-> rq's load and makes the assumption that the elapsed time since the last
-> update, was only running time.
-> 
-> The rq's load of a CPU that only runs a periodic RT task, is close to
-> LOAD_AVG_MAX whatever the running duration of the RT task is.
-> 
-> A new idle_exit function is called when the prev task is the idle function
-> so the elapsed time will be accounted as idle time in the rq's load.
-> 
-> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
-> ---
->  kernel/sched/core.c  |    3 +++
->  kernel/sched/fair.c  |   10 ++++++++++
->  kernel/sched/sched.h |    5 +++++
->  3 files changed, 18 insertions(+)
-> 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 26058d0..592e06c 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -2927,6 +2927,9 @@ need_resched:
->  
->  	pre_schedule(rq, prev);
->  
-> +	if (unlikely(prev == rq->idle))
-> +		idle_exit(cpu, rq);
-> +
+On Fri 08-02-13 14:56:16, azurIt wrote:
+> Data are inside memcg-bug-5.tar.gz in directories bug/<timestamp>/<pids>/
 
-Let's get rid of the added junk in the core code that should be isolated
-in the idle code.
-
-I posted these patches before, and I'm about to post again:
-
-https://lkml.org/lkml/2012/12/21/378
-https://lkml.org/lkml/2012/12/21/377
-
-I'm working to clean these patches up today and post them again. Would
-working on top of these work for you?
-
--- Steve
-
-
->  	if (unlikely(!rq->nr_running))
->  		idle_balance(cpu, rq);
->  
-
-
+ohh, I didn't get those were timestamp directories. It makes more sense
+now.
+-- 
+Michal Hocko
+SUSE Labs
