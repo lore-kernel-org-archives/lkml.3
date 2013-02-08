@@ -1,95 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759677Ab3BHDTn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 22:19:43 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:56997 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758568Ab3BHDTm (ORCPT
+	id S1759733Ab3BHDUH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 22:20:07 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46092 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758939Ab3BHDUF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 22:19:42 -0500
-Date: Fri, 8 Feb 2013 14:19:38 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH] cputime: restore CPU_ACCOUNTING config defaults for PPC64
-Message-Id: <20130208141938.f31b7b9e1acac5bbe769ee4c@canb.auug.org.au>
-In-Reply-To: <20130208141447.03914013db9a5f7308fc1675@canb.auug.org.au>
-References: <1359399845-10568-1-git-send-email-fweisbec@gmail.com>
-	<1359399845-10568-5-git-send-email-fweisbec@gmail.com>
-	<20130208140749.5a094f271e529dacfb962b51@canb.auug.org.au>
-	<20130208141447.03914013db9a5f7308fc1675@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__8_Feb_2013_14_19_38_+1100_SOsdWr+lcL4ZGI3j"
+	Thu, 7 Feb 2013 22:20:05 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <51146EC7.5090504@jp.fujitsu.com>
+Date: Fri, 8 Feb 2013 12:19:35 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <liuj97@gmail.com>,
+        Toshi Kani <toshi.kani@hp.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2] ACPI / scan: Remove useless #ifndef and simplify
+ container driver
+References: <1873429.MS5RQDxTye@vostro.rjw.lan> <3164478.OcagzIMET0@vostro.rjw.lan> <5090866.2BHgpRnuEZ@vostro.rjw.lan> <1468930.acVuhKfKYv@vostro.rjw.lan>
+In-Reply-To: <1468930.acVuhKfKYv@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__8_Feb_2013_14_19_38_+1100_SOsdWr+lcL4ZGI3j
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Rafael,
 
-Commit abf917cd91cb ("cputime: Generic on-demand virtual cputime
-accounting") inadvertantly changed the default CPU_ACCOUNTING config
-for PPC64.  Repair that.
+2013/02/08 9:24, Rafael J. Wysocki wrote:
+> On Monday, February 04, 2013 12:47:31 AM Rafael J. Wysocki wrote:
+>> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>>
+>> The only useful thing that the ACPI container driver does is to
+>> install system notify handlers for all container and module device
+>> objects it finds in the namespace.  The driver structure,
+>> acpi_container_driver, and the data structures created by its
+>> .add() callback are in fact not used by the driver, so remove
+>> them entirely.
+>>
+>> It also makes a little sense to build that driver as a module,
+>> so make it non-modular and add its initialization to the
+>> namespace scanning code.
+>>
+>> In addition to that, make the namespace walk callback used for
+>> installing the notify handlers more straightforward.
+>
+> As pointed out by Toshi Kani, the above changes would make acpi_eject_store()
+> fail for containers and it is the only way to eject them currently, so patch
+> [2/2] is an improved version of this (with Toshi's changes folded in).
+>
+> Patch [1/2] is just a cleanup removing a useless #ifndef from acpi_eject_store().
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- init/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I confimed the patch series works well.
 
-diff --git a/init/Kconfig b/init/Kconfig
-index ed24d1b..ccd1ca5 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -301,7 +301,7 @@ config VIRT_CPU_ACCOUNTING
- choice
- 	prompt "Cputime accounting"
- 	default TICK_CPU_ACCOUNTING if !PPC64
--	default VIRT_CPU_ACCOUNTING if PPC64
-+	default VIRT_CPU_ACCOUNTING_NATIVE if PPC64
-=20
- # Kind of a stub config for the pure tick based cputime accounting
- config TICK_CPU_ACCOUNTING
---=20
-1.8.1
+Acked-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Tested-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Thanks,
+Yasuaki Ishimatsu
 
---Signature=_Fri__8_Feb_2013_14_19_38_+1100_SOsdWr+lcL4ZGI3j
-Content-Type: application/pgp-signature
+>
+> Thanks,
+> Rafael
+>
+>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJRFG7KAAoJEECxmPOUX5FEYBQP/1Y+sPcxnQBMukH+ihkbh+0a
-HUvw5GupbBaOGFDq4nrdKd6zb3crZiEOxDNpJM2gEoDRurhFusgbulwBfch4PvBm
-5U2XGGxgJbr7WyGjZi4l+VE5Z/OiGV/nG9R7aYHMX7ts0ivOKSPLRUT3xCfWZGf/
-gM4UB1ZpIr+q6LVMErFTLH7pzdk/Iudy3Wa6Xay33XEenuj5RI46Csycj1Flv7IS
-DCgiq9pJXePdGewrXR49rxJAOL0DU4sayvg+CaSrXQw2/S3kcjgufWdz0mKZYVUx
-v7Cuh/pZw7r5Er7ibVRocopjRArZfZq86tHxG84akGkmtIQotnaVtX2LBU8BEpv2
-lx6KXQalZuRfwT/jrfyCGPadMs4FaeAUMa0BfHms+saP+czmsSkNfcowbWLLtKt2
-CR961xL//SBgaEryjJS1pqTSe1pSMf9xiPULW1bcuK5xcXoS+IMOz32XRUxv4P3T
-FCmoU4dBep91uS3ge7sRwlVwgoClgbn5+A+K4ZKEQRoUljY1DqbVLDOFFXPo/lQ4
-XiKM2QQ1/1EXdrx6TB55mWa3m3ClXnDaAIr3V70J0QfA+5+CCz+cjdYa745aqGIS
-YMw+evJYSqvjzoj7LK/yon/2CGqhx9pVidxczJsLUQ2hUMN2Rd/5+Ix93IwqiOlS
-2ZChrri8Pv2p07UtuaqI
-=xG5S
------END PGP SIGNATURE-----
-
---Signature=_Fri__8_Feb_2013_14_19_38_+1100_SOsdWr+lcL4ZGI3j--
