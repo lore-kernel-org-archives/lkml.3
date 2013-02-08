@@ -1,55 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946401Ab3BHNfW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 08:35:22 -0500
-Received: from relay1.sgi.com ([192.48.179.29]:51362 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1946057Ab3BHNen (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 08:34:43 -0500
-Date: Fri, 8 Feb 2013 07:34:41 -0600
-From: Robin Holt <holt@sgi.com>
-To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Zhang Yanfei <zhangyanfei.yes@gmail.com>,
-        Linux MM <linux-mm@kvack.org>, mgorman@suse.de, minchan@kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, m.szyprowski@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] mm: rename confusing function names
-Message-ID: <20130208133441.GH3460@sgi.com>
-References: <51113CE3.5090000@gmail.com>
- <20130205192640.GC6481@cmpxchg.org>
- <20130205141332.04fcceac.akpm@linux-foundation.org>
- <5111AC7D.9070505@cn.fujitsu.com>
- <20130205172057.3be4dbd4.akpm@linux-foundation.org>
- <5111B318.9020204@cn.fujitsu.com>
+	id S1946453Ab3BHNfk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 08:35:40 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:50941 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946057Ab3BHNfh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 08:35:37 -0500
+From: "AnilKumar" <anilk4.v@gmail.com>
+To: "'Mark Rutland'" <mark.rutland@arm.com>
+Cc: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux@arm.linux.org.uk>, <b-cousson@ti.com>, <tony@atomide.com>,
+        <grant.likely@secretlab.ca>, <thomas@tomweber.eu>
+References: <1360246297-5500-1-git-send-email-anilk4.v@gmail.com> <20130207173949.GA21723@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20130207173949.GA21723@e106331-lin.cambridge.arm.com>
+Subject: RE: [PATCH] ARM: dts: add minimal DT support for DevKit8000
+Date: Fri, 8 Feb 2013 19:05:32 +0530
+Message-ID: <007b01ce0601$2f46b4e0$8dd41ea0$@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5111B318.9020204@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Content-Language: en-in
+Thread-Index: AQF5JjNHlTi0sar8E2Egs+yOeiCfQQFrkC3BmQ5WRNA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > static unsigned int nr_free_zone_pages(int offset)
-> > {
-> > 	...
-> > 	unsigned int sum = 0;
-> > 	...
-> > 	return sum;
-> > }
-> > 
-> > How long will it be until these things start exploding from
-> > sums-of-zones which exceed 16TB?  
-> > 
+Hi Mark,
+
+Thanks for the review comments. Please find my comments inline.
+
+On Thu, Feb 07, 2013 at 23:09:49, Mark Rutland wrote:
+> Hello,
 > 
-> You mean overflow? Hmm.. it might happens. Change the sum to
-> unsigned long is ok?
+> I have a couple of minor comments.
+> 
+> On Thu, Feb 07, 2013 at 02:11:37PM +0000, Anil Kumar wrote:
+> > DevKit8000 is a beagle board clone from Timll, sold by armkits.com.
+> > The DevKit8000 has RS232 serial port, LCD, DVI-D, S-Video, Ethernet, 
+> > SD/MMC, keyboard, camera, SPI, I2C, USB and JTAG interface.
+> >
+> > This patch adds the basic DT support for devkit8000. At this time, 
+> > Information of twl4030, MMC1, I2C1, leds and there pim mux 
+> > information are
+> added.
+> >
+> > Signed-off-by: Anil Kumar <anilk4.v@gmail.com>
+> > Tested-by: Thomas Weber <thomas@tomweber.eu>
+> > ---
+> >
+> >  -This patch is based on top of kernel 3.8-rc5.
+> >
+> >  -Tested on Devkit8000.
+> >
+> 
+> [...]
+> 
+> > diff --git a/arch/arm/boot/dts/omap3-devkit8000.dts
+> > b/arch/arm/boot/dts/omap3-devkit8000.dts
+> > new file mode 100644
+> > index 0000000..9864fd7
+> > --- /dev/null
+> > +++ b/arch/arm/boot/dts/omap3-devkit8000.dts
+> > @@ -0,0 +1,125 @@
+> > +/*
+> > + * Anil Kumar <anilk4.v@gmail.com>
+> > + *
+> > + * This program is free software; you can redistribute it and/or 
+> > +modify
+> > + * it under the terms of the GNU General Public License version 2 
+> > +as
+> > + * published by the Free Software Foundation.
+> > + */
+> > +/dts-v1/;
+> > +
+> > +/include/ "omap3.dtsi"
+> > +/ {
+> > +	model = "TI OMAP3 Devkit8000";
+> 
+> Should this not be "TimLL Devkit8000" ?
 
-We are in the process right now of building a 32TB machine.  Let me make
-a note about this right away.  Thankfully, the memory will be spread
-over 256 zones so it should not impact us right away.
+Hmm..  I think it will be better as  "TimLL OMAP3 Devkit8000"  as this board
+is omap3 based.
 
+> 
+> > +	compatible = "ti,omap3-devkit8000", "ti,omap3";
+> 
+> "timll,devkit8000" ?
+
+I think it will be better  as  "timll,omap3-devkit8000"  as this board is
+omap3 based.
+ 
 Thanks,
-Robin
+Anil
+[...]
+
+
+
