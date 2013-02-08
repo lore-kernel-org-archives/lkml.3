@@ -1,95 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947035Ab3BHUYB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 15:24:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26378 "EHLO mx1.redhat.com"
+	id S1947026Ab3BHU0i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 15:26:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26133 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1946902Ab3BHUYA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 15:24:00 -0500
-Date: Fri, 8 Feb 2013 15:23:14 -0500
-From: Josh Boyer <jwboyer@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Mel Gorman <mgorman@suse.de>,
-        linux-kernel@vger.kernel.org, williams@redhat.com
-Subject: Re: Odd ENOMEM being returned in 3.8-rcX
-Message-ID: <20130208202314.GF31684@hansolo.jdub.homelinux.org>
-References: <20130207215742.GB31684@hansolo.jdub.homelinux.org>
- <20130207141502.04625ea0.akpm@linux-foundation.org>
- <20130208003501.GC31684@hansolo.jdub.homelinux.org>
- <20130208181949.GD31684@hansolo.jdub.homelinux.org>
- <87k3qiwomi.fsf@xmission.com>
+	id S1946902Ab3BHU0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 15:26:37 -0500
+Date: Fri, 8 Feb 2013 21:25:51 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 3/3] mm: accelerate munlock() treatment of THP pages
+Message-ID: <20130208202550.GB9817@redhat.com>
+References: <1359962232-20811-1-git-send-email-walken@google.com>
+ <1359962232-20811-4-git-send-email-walken@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87k3qiwomi.fsf@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1359962232-20811-4-git-send-email-walken@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 08, 2013 at 12:13:09PM -0800, Eric W. Biederman wrote:
-> Josh Boyer <jwboyer@redhat.com> writes:
-> >> Right, agreed.  As I said, I think that is mostly a secondary issue.
-> >> Hopefully it will be easy to fix once we figure out why we're getting
-> >> the ENOMEM error.
-> >> 
-> >> Python backtrace below.  Seems to be failing on forking a umount command
-> >> after init'ing the chroot.  I can put the full output somewhere if
-> >> people are interested.
-> >
-> > OK.  I've bisected this down to:
-> >
-> > 50804fe3737ca6a5942fdc2057a18a8141d00141 is the first bad commit
-> > commit 50804fe3737ca6a5942fdc2057a18a8141d00141
-> > Author: Eric W. Biederman <ebiederm@xmission.com>
-> > Date:   Tue Mar 2 15:41:50 2010 -0800
-> >
-> >     pidns: Support unsharing the pid namespace.
-> >     
-> >
-> > I haven't really gotten much farther than that yet, but the bisect was
-> > pretty straight forward.  Eric, is there anything specific I can gather
-> > or do to help figure out why that is causing mock to get such a weird
-> > error?  I can provide the bisect log if you'd like.
+Hi Michel,
 
-< Two emails fly past each other in the night >
-
-> My best guess in some dark corner of mock has untested code to unshare a
-> pid namespace, and that corner started doing something now that
-> unsharing of the pid namespace actually works.
+On Sun, Feb 03, 2013 at 11:17:12PM -0800, Michel Lespinasse wrote:
+> munlock_vma_pages_range() was always incrementing addresses by PAGE_SIZE
+> at a time. When munlocking THP pages (or the huge zero page), this resulted
+> in taking the mm->page_table_lock 512 times in a row.
 > 
-> If mock has called unshare(CLONE_NEWPID). And then forked a process and
-> that process exited, and then forked anothe process that second and all
-> subsequent fork calls will fail with -ENOMEM (because init has exited in
-> the pid namespace).  -ENOMEM will be generated because of a failure of
-> alloc_pid.
+> We can do better by making use of the page_mask returned by follow_page_mask
+> (for the huge zero page case), or the size of the page munlock_vma_page()
+> operated on (for the true THP page case).
 > 
-> Looking at that code path a little closer that just about has to be it,
-> because I goofed and the error path drops the lock but not irqs.  The
-> patch below should fix the nasty warning and confirm where the code is
-> failing in copy_process.
+> Note - I am sending this as RFC only for now as I can't currently put
+> my finger on what if anything prevents split_huge_page() from operating
+> concurrently on the same page as munlock_vma_page(), which would mess
+> up our NR_MLOCK statistics. Is this a latent bug or is there a subtle
+> point I missed here ?
 
-OK.  I'll turn the debug option back on and give this patch a try.
+I agree something looks fishy: nor mmap_sem for writing, nor the page
+lock can stop split_huge_page_refcount.
 
-> An strace to see which syscalls mock is making and with which flags
-> would be very interesting.  I am almost certain that there is a
-> unshare(CLONE_NEWPID) somewhere in there.  But in a remote corner of
-> possibility it could weird clone flags, or something else.
+Now the mlock side was intended to be safe because mlock_vma_page is
+called within follow_page while holding the PT lock or the
+page_table_lock (so split_huge_page_refcount will have to wait for it
+to be released before it can run). See follow_trans_huge_pmd
+assert_spin_locked and the pte_unmap_unlock after mlock_vma_page
+returns.
 
-Oh, I have that but it's a python app with a helper C app and it's a...
-verbose strace.  It's here for one failure:
+Problem is, the lock side dependen on the TestSetPageMlocked below to
+be always repeated on the head page (follow_trans_huge_pmd will always
+pass the head page to mlock_vma_page).
 
-http://jwboyer.fedorapeople.org/pub/mock-strace
+void mlock_vma_page(struct page *page)
+{
+	BUG_ON(!PageLocked(page));
 
-Hopefully the testcase from my other email will help though.  It's much
-simpler.
+	if (!TestSetPageMlocked(page)) {
 
-> Beyond that I suspect we want to work with the mock folks so they get
-> their code to use a pid namespace working the way they intended.
+But what if the head page was split in between two different
+follow_page calls? The second call wouldn't take the pmd_trans_huge
+path anymore and the stats would be increased too much.
 
-Right.  CC'd Clark (for real this time).
+The problem on the munlock side is even more apparent as you pointed
+out above but now I think the mlock side was problematic too.
 
-I'll let you know on the patch.
+The good thing is, your accelleration code for the mlock side should
+have fixed the mlock race already: not ever risking to end up calling
+mlock_vma_page twice on the head page is not an "accelleration" only,
+it should also be a natural fix for the race.
 
-josh
+To fix the munlock side, which is still present, I think one way would
+be to do mlock and unlock within get_user_pages, so they run in the
+same place protected by the PT lock or page_table_lock.
+
+There are few things that stop split_huge_page_refcount:
+page_table_lock, lru_lock, compound_lock, anon_vma lock. So if we keep
+calling munlock_vma_page outside of get_user_pages (so outside of the
+page_table_lock) the other way would be to use the compound_lock.
+
+NOTE: this a purely aesthetical issue in /proc/meminfo, there's
+nothing functional (at least in the kernel) connected to it, so no
+panic :).
+
+Thanks,
+Andrea
