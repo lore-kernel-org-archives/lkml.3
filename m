@@ -1,82 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946130Ab3BHIqK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 03:46:10 -0500
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:61612 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946061Ab3BHIqI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 03:46:08 -0500
+	id S1946137Ab3BHItV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 03:49:21 -0500
+Received: from mga11.intel.com ([192.55.52.93]:54047 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1946113Ab3BHItU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 03:49:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,628,1355126400"; 
+   d="scan'208";a="288212736"
+Date: Fri, 8 Feb 2013 09:49:16 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        "lkml," <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Denis Turischev <denis@compulab.co.il>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: gpio-sch GPIO_SYSFS access
+Message-ID: <20130208084916.GM5072@sortiz-mobl>
+References: <5112FC44.2000303@linux.intel.com>
+ <CACRpkdacYOeG2tqSW5YhqbkxGnxCxamAc_UUyghEQXO98OvKJw@mail.gmail.com>
+ <511481A2.7010100@linux.intel.com>
+ <5114A453.8000408@linux.intel.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Fri, 8 Feb 2013 09:46:07 +0100
-Message-ID: <CA+icZUX-hh+RjEOrKABBtecmb4C-5azSmdTx6D7SLuSpcQE+kQ@mail.gmail.com>
-Subject: Re: linux-next: Tree for Feb 8 [ smp|cpufreq: WARNING: at
- kernel/smp.c:245 smp_call_function_single ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        Linux PM List <linux-pm@lists.linux-foundation.org>, x86@kernel.org,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5114A453.8000408@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 8, 2013 at 5:31 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi all,
->
-> Changes since 20130207:
->
-> The sound-asoc tree gained a build failure so I used the version from
-> next-20130207.
->
-> The watchdog tree gained a conflict against the mfd tree.
->
-> I applied a patch to restore some config defaults on PPC64.
->
-> ----------------------------------------------------------------------------
->
+Hi Darren,
 
-With today's Linux-Next I see this warning:
+On Thu, Feb 07, 2013 at 11:08:03PM -0800, Darren Hart wrote:
+> On 02/07/2013 08:40 PM, Darren Hart wrote:
+> > 
+> > 
+> > On 02/07/2013 02:09 AM, Linus Walleij wrote:
+> >> On Thu, Feb 7, 2013 at 1:58 AM, Darren Hart <dvhart@linux.intel.com> wrote:
+> >>
+> >>> Is it that some other driver has claimed these GPIO lines? If so, how do
+> >>> I determine which one?
+> >>
+> >> Yes I think that could be it, the driver would need to call
+> >> gpio_export() for it to also be accessible in sysfs.
+> >>
+> >> Configure in debugfs and check the file "gpio" in debugfs
+> >> to figure out the client.
+> >>
+> >> Yours,
+> >> Linus Walleij
+> >>
+> > 
+> > I found gpio_export() as you suggested above and instrumented it. What I
+> > found was that it was not getting called at all. As I understand it,
+> > calling gpiochip_export() should make the gpiochip# appear in
+> > /sys/class/gpio and then I should be able to configure which lines are
+> > exported via the /sys/class/gpio/export file.
+> > 
+> > I haven't yet found how gpio-pch differs from gpio-sch that causes the
+> > gpio-pch chip to appear in sysfs and the gpio-sch one not to. I did
+> > patch gpio-sch with a request and export loop:
+> > 
+> > $ git diff drivers/gpio/gpio-sch.c
+> > diff --git a/drivers/gpio/gpio-sch.c b/drivers/gpio/gpio-sch.c
+> > index 8cadf4d..79783c1 100644
+> > --- a/drivers/gpio/gpio-sch.c
+> > +++ b/drivers/gpio/gpio-sch.c
+> > @@ -188,7 +188,7 @@ static struct gpio_chip sch_gpio_resume = {
+> >  static int __devinit sch_gpio_probe(struct platform_device *pdev)
+> >  {
+> >         struct resource *res;
+> > -       int err, id;
+> > +       int err, id, gpio;
+> > 
+> >         id = pdev->id;
+> >         if (!id)
+> > @@ -243,10 +243,24 @@ static int __devinit sch_gpio_probe(struct
+> > platform_device *p
+> >         if (err < 0)
+> >                 goto err_sch_gpio_core;
+> > 
+> > +       /* DEBUG: export all the core GPIOS */
+> > +       for (gpio = sch_gpio_core.base;
+> > +            gpio < sch_gpio_core.base + sch_gpio_core.ngpio; gpio++) {
+> > +               gpio_request(gpio, "gpio-sch");
+> > +               gpio_export(gpio, true);
+> > +       }
+> > +
+> >         err = gpiochip_add(&sch_gpio_resume);
+> >         if (err < 0)
+> >                 goto err_sch_gpio_resume;
+> > 
+> > +       /* DEBUG: export all the resume GPIOS */
+> > +       for (gpio = sch_gpio_resume.base;
+> > +            gpio < sch_gpio_resume.base + sch_gpio_resume.ngpio; gpio++) {
+> > +               gpio_request(gpio, "gpio-sch");
+> > +               gpio_export(gpio, true);
+> > +       }
+> > +
+> >         return 0;
+> > 
+> >  err_sch_gpio_resume:
+> > 
+> > 
+> > With this both the gpiochip# and gpio# entries appear in sysfs. However,
+> > unlike those for the gpio-pch lines, these report an error in the sysfs
+> > interface:
+> > 
+> > /sys/class/gpio# ls *
+> > ls: gpio0: No such file or directory
+> > 
+> 
+> Well, this happens when the driver in question gets removed by another
+> driver. 
+removed by another driver ? I'm not sure I understand what that means.
 
-[    0.377442] ------------[ cut here ]------------
-[    0.377452] WARNING: at kernel/smp.c:245
-smp_call_function_single+0x146/0x190()
-[    0.377455] Hardware name: 530U3BI/530U4BI/530U4BH
-[    0.377458] Modules linked in:
-[    0.377463] Pid: 1, comm: swapper/0 Not tainted
-3.8.0-rc6-next20130208-1-iniza-small #1
-[    0.377467] Call Trace:
-[    0.377473]  [<ffffffff8105a5ef>] warn_slowpath_common+0x7f/0xc0
-[    0.377479]  [<ffffffff81579130>] ? acpi_cpufreq_target+0x2c0/0x2c0
-[    0.377483]  [<ffffffff8105a64a>] warn_slowpath_null+0x1a/0x20
-[    0.377487]  [<ffffffff810bb7e6>] smp_call_function_single+0x146/0x190
-[    0.377492]  [<ffffffff81579130>] ? acpi_cpufreq_target+0x2c0/0x2c0
-[    0.377496]  [<ffffffff810bb881>] smp_call_function_any+0x51/0x100
-[    0.377500]  [<ffffffff815788c9>] get_cur_val+0x99/0x130
-[    0.377504]  [<ffffffff81579444>] ? acpi_cpufreq_cpu_init+0x2b4/0x6a0
-[    0.377508]  [<ffffffff81578db0>] get_cur_freq_on_cpu+0x60/0x80
-[    0.377512]  [<ffffffff815795a2>] acpi_cpufreq_cpu_init+0x412/0x6a0
-[    0.377517]  [<ffffffff81575bb9>] cpufreq_add_dev+0x2d9/0x4f0
-[    0.377523]  [<ffffffff81d44b22>] ? cpufreq_gov_dbs_init+0x2c/0x2c
-[    0.377528]  [<ffffffff8145d379>] subsys_interface_register+0x89/0xd0
-[    0.377533]  [<ffffffff81573dee>] cpufreq_register_driver+0x8e/0x180
-[    0.377537]  [<ffffffff81d44c18>] acpi_cpufreq_init+0xf6/0x1f8
-[    0.377542]  [<ffffffff814608e6>] ? platform_driver_register+0x46/0x50
-[    0.377547]  [<ffffffff8100206f>] do_one_initcall+0x3f/0x170
-[    0.377553]  [<ffffffff81d07029>] kernel_init_freeable+0x13e/0x1cd
-[    0.377560]  [<ffffffff81d06895>] ? do_early_param+0x86/0x86
-[    0.377565]  [<ffffffff8169cf20>] ? rest_init+0x80/0x80
-[    0.377569]  [<ffffffff8169cf2e>] kernel_init+0xe/0xf0
-[    0.377575]  [<ffffffff816c722c>] ret_from_fork+0x7c/0xb0
-[    0.377578]  [<ffffffff8169cf20>] ? rest_init+0x80/0x80
-[    0.377581] ---[ end trace c6ec8280ce20313a ]---
+> In this case the mfd/lpc_sch.c driver fails reading some PCI
+> config after it has added the gpio-pch device to a list:
+> 
+> lpc_sch 0000:00:1f.0: Decode of the WDT I/O range disabled
+> 
+> 
+> It then proceeds to remove all the devices it added - including gpio-pch.c.
+> 
+> Dragging Samuel in as his name is on some of the commits, maybe he can
+> help here.
+> 
+> Samuel, does it make sense for CONFIG_GPIO_SCH to require
+> CONFIG_LPC_SCH? I'm building for a Queensbay (Atom E6xx + EG20T PCH).
+> There is no SCH as I understand things. Can these be decoupled?
+They actually don't have code dependency, GPIO_SCH selects LPC_SCH beacause
+the MFD parts actually creates the GPIO device.
+So you're saying Queensbay use the same GPIO IP block without actually having
+SCH ?
 
-kernel/smp.c: Line #245 see [1].
+Cheers,
+Samuel.
 
-- Sedat -
-
-[1] http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=blob;f=kernel/smp.c;hb=refs/tags/next-20130208#l245
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
