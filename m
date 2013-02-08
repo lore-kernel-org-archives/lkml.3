@@ -1,42 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759761Ab3BHEE1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 23:04:27 -0500
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:40387 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759333Ab3BHEE0 (ORCPT
+	id S1759850Ab3BHEHL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 23:07:11 -0500
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:64621 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759784Ab3BHEHI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 23:04:26 -0500
+	Thu, 7 Feb 2013 23:07:08 -0500
 MIME-Version: 1.0
-In-Reply-To: <1360179649-22465-1-git-send-email-tj@kernel.org>
-References: <1360179649-22465-1-git-send-email-tj@kernel.org>
-Date: Fri, 8 Feb 2013 14:04:24 +1000
-Message-ID: <CAPM=9tznoedeBP5s8nd_kNubEwENKBtxoYtcL=UcC6T21Z9+wQ@mail.gmail.com>
-Subject: Re: [PATCHSET] idr: deprecate idr_remova_all() and add idr_alloc()
+In-Reply-To: <5111431D.8070906@ahsoftware.de>
+References: <51071E21.9030008@ahsoftware.de>
+	<5107A5ED.7020009@ahsoftware.de>
+	<5107AE4F.9000809@ahsoftware.de>
+	<5107F014.4030704@ahsoftware.de>
+	<5108329E.2050802@ahsoftware.de>
+	<20130204011413.GA6413@kroah.com>
+	<510FA409.2080201@ahsoftware.de>
+	<51100930.6080405@ahsoftware.de>
+	<20130204192514.GA32318@kroah.com>
+	<5110AFEC.8020406@ahsoftware.de>
+	<20130205172245.GA1426@kroah.com>
+	<5111431D.8070906@ahsoftware.de>
+Date: Fri, 8 Feb 2013 14:07:05 +1000
+Message-ID: <CAPM=9tzNeQTXAmvZZ1RCmn6uTYHvweYKKnSPYAh7QYRGNMgeUw@mail.gmail.com>
+Subject: Re: [PATCH 2/3 v2] fb: udlfb: fix hang at disconnect
 From: Dave Airlie <airlied@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Bernie Thompson <bernie@plugable.com>,
+        Steve Glendinning <steve.glendinning@shawell.net>,
+        stable@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 7, 2013 at 5:39 AM, Tejun Heo <tj@kernel.org> wrote:
-> (If you're reading this patchset for the first time, this patchset is
->  an effort to improve idr interface.  This posting is mostly for
->  collecting and routing the patches towards -mm.  Please follow the
->  link at the end for details on each patchset.)
 >
-> Hello, Andrew.
->
-> This patchset is combination of the following three on top of
-> linux-next as of 20130204 (the one before idr_removal_all() got
-> included).
+> But I've just switched to udl (instead of udlfb) and will see if I can fix
+> the bugs there to make it usable as a console. udl is a rewrite of udlfb
+> with some additional features (e.g. drm), so hopefully fixing the remaining
+> problems there will require less work.
 
-just FYI, all the drm bits are
-
-Acked-by: Dave Airlie <airlied@redhat.com>
-
-Don't worry about attaching that to the patches though :-)
+I may have fixed the major udl problem with being a console, patch was
+posted to dri-devel yesterday, and I've pushed it into -next.
 
 Dave.
