@@ -1,104 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754261Ab3BHAGY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 19:06:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41599 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268Ab3BHAGX (ORCPT
+	id S1755079Ab3BHAHL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 19:07:11 -0500
+Received: from mail-da0-f48.google.com ([209.85.210.48]:36107 "EHLO
+	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751542Ab3BHAHJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 19:06:23 -0500
-Date: Thu, 7 Feb 2013 16:06:20 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, benh@kernel.crashing.org,
-        mahesh@linux.vnet.ibm.com, zhangyanfei@cn.fujitsu.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fs/proc/vmcore.c: Put if tests in the top of the while
- loop to reduce duplication
-Message-Id: <20130207160620.6c8f93d4.akpm@linux-foundation.org>
-In-Reply-To: <510E6280.3070203@gmail.com>
-References: <510E6280.3070203@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 7 Feb 2013 19:07:09 -0500
+Date: Thu, 7 Feb 2013 16:07:17 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Mel Gorman <mgorman@suse.de>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Petr Holasek <pholasek@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 4/11] ksm: reorganize ksm_check_stable_tree
+In-Reply-To: <20130205164823.GJ21389@suse.de>
+Message-ID: <alpine.LNX.2.00.1302071558100.2133@eggly.anvils>
+References: <alpine.LNX.2.00.1301251747590.29196@eggly.anvils> <alpine.LNX.2.00.1301251758190.29196@eggly.anvils> <20130205164823.GJ21389@suse.de>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 03 Feb 2013 21:13:36 +0800
-Zhang Yanfei <zhangyanfei.yes@gmail.com> wrote:
-
-> From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+On Tue, 5 Feb 2013, Mel Gorman wrote:
+> On Fri, Jan 25, 2013 at 05:59:35PM -0800, Hugh Dickins wrote:
+> > Memory hotremove's ksm_check_stable_tree() is pitifully inefficient
+> > (restarting whenever it finds a stale node to remove), but rearrange
+> > so that at least it does not needlessly restart from nid 0 each time.
+> > And add a couple of comments: here is why we keep pfn instead of page.
+> > 
+> > Signed-off-by: Hugh Dickins <hughd@google.com>
+> > ---
+> >  mm/ksm.c |   38 ++++++++++++++++++++++----------------
+> >  1 file changed, 22 insertions(+), 16 deletions(-)
+> > 
+> > --- mmotm.orig/mm/ksm.c	2013-01-25 14:36:52.152205940 -0800
+> > +++ mmotm/mm/ksm.c	2013-01-25 14:36:53.244205966 -0800
+> > @@ -1830,31 +1830,36 @@ void ksm_migrate_page(struct page *newpa
+> >  #endif /* CONFIG_MIGRATION */
+> >  
+> >  #ifdef CONFIG_MEMORY_HOTREMOVE
+> > -static struct stable_node *ksm_check_stable_tree(unsigned long start_pfn,
+> > -						 unsigned long end_pfn)
+> > +static void ksm_check_stable_tree(unsigned long start_pfn,
+> > +				  unsigned long end_pfn)
+> >  {
+> > +	struct stable_node *stable_node;
+> >  	struct rb_node *node;
+> >  	int nid;
+> >  
+> > -	for (nid = 0; nid < nr_node_ids; nid++)
+> > -		for (node = rb_first(&root_stable_tree[nid]); node;
+> > -				node = rb_next(node)) {
+> > -			struct stable_node *stable_node;
+> > -
+> > +	for (nid = 0; nid < nr_node_ids; nid++) {
+> > +		node = rb_first(&root_stable_tree[nid]);
+> > +		while (node) {
 > 
-> In function read_vmcore, two if tests are duplicate. Change the position
-> of them could reduce the duplication. This change does not affect
-> the behaviour of the function.
-> 
+> This is not your fault, the old code is wrong too. It is assuming that all
+> nodes are populated in numeric orders with no holes. It won't work if just
+> two nodes 0 and 4 are online. It should be using for_each_online_node().
 
-hm, yes.
+If the old code is wrong, it probably would be my fault!  But I believe
+this is okay: these rb_roots we're looking at, they are in memory which
+is not being offlined, and the trees for offline nodes will simply be
+empty, won't they?  Something's badly wrong if otherwise.
 
-> --- a/fs/proc/vmcore.c
-> +++ b/fs/proc/vmcore.c
-> @@ -175,15 +175,16 @@ static ssize_t read_vmcore(struct file *file, char __user *buffer,
->  	start = map_offset_to_paddr(*fpos, &vmcore_list, &curr_m);
->  	if (!curr_m)
->          	return -EINVAL;
-> -	if ((tsz = (PAGE_SIZE - (start & ~PAGE_MASK))) > buflen)
-> -		tsz = buflen;
-> -
-> -	/* Calculate left bytes in current memory segment. */
-> -	nr_bytes = (curr_m->size - (start - curr_m->paddr));
-> -	if (tsz > nr_bytes)
-> -		tsz = nr_bytes;
->  
->  	while (buflen) {
-> +		if ((tsz = (PAGE_SIZE - (start & ~PAGE_MASK))) > buflen)
-> +			tsz = buflen;
-> +
-> +		/* Calculate left bytes in current memory segment. */
-> +		nr_bytes = (curr_m->size - (start - curr_m->paddr));
-> +		if (tsz > nr_bytes)
-> +			tsz = nr_bytes;
-> +
->  		tmp = read_from_oldmem(buffer, tsz, &start, 1);
->  		if (tmp < 0)
->  			return tmp;
-> @@ -198,12 +199,6 @@ static ssize_t read_vmcore(struct file *file, char __user *buffer,
->  						struct vmcore, list);
->  			start = curr_m->paddr;
+I certainly prefer to avoid for_each_online_node() etc: maybe I'm
+confusing with for_each_online_something_else(), but experience tells
+that you can get into nasty hotplug mutex ordering issues with those
+things - not worth the pain if you can easily and safely avoid them.
 
-`start' gets changed here
-
->  		}
-> -		if ((tsz = (PAGE_SIZE - (start & ~PAGE_MASK))) > buflen)
-> -			tsz = buflen;
-> -		/* Calculate left bytes in current memory segment. */
-> -		nr_bytes = (curr_m->size - (start - curr_m->paddr));
-> -		if (tsz > nr_bytes)
-> -			tsz = nr_bytes;
-
-So this code can calcualte a different value of `tsz'.  But that won't
-get used.  Looks right to me.
-
->  	}
->  	return acc;
->  }
-
-While we're there, let's squish that assignment-in-a-if pestilence and
-use max_t().
-
---- a/fs/proc/vmcore.c~fs-proc-vmcorec-put-if-tests-in-the-top-of-the-while-loop-to-reduce-duplication-fix
-+++ a/fs/proc/vmcore.c
-@@ -178,8 +178,7 @@ static ssize_t read_vmcore(struct file *
-         	return -EINVAL;
- 
- 	while (buflen) {
--		if ((tsz = (PAGE_SIZE - (start & ~PAGE_MASK))) > buflen)
--			tsz = buflen;
-+		tsz = max_t(size_t, buflen, PAGE_SIZE - (start & ~PAGE_MASK));
- 
- 		/* Calculate left bytes in current memory segment. */
- 		nr_bytes = (curr_m->size - (start - curr_m->paddr));
-_
-
+Hugh
