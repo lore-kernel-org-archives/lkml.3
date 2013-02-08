@@ -1,87 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760084Ab3BHKGP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 05:06:15 -0500
-Received: from ozlabs.org ([203.10.76.45]:56380 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752866Ab3BHKGL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 05:06:11 -0500
-Content-Type: text/plain; charset="us-ascii"
-MIME-Version: 1.0
+	id S1760079Ab3BHKJA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 05:09:00 -0500
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:53240 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760016Ab3BHKI6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 05:08:58 -0500
+Message-ID: <1360318129.7515.278.camel@mfleming-mobl1.ger.corp.intel.com>
+Subject: Re: [PATCH 1/3 v3] selftests: Add tests for efivarfs
+From: Matt Fleming <matt.fleming@intel.com>
+To: Jeremy Kerr <jk@ozlabs.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-efi@vger.kernel.org, Lingzhu Xiang <lxiang@redhat.com>,
+        Dave Young <dyoung@redhat.com>
+Date: Fri, 08 Feb 2013 10:08:49 +0000
+In-Reply-To: <5114CE00.6050307@ozlabs.org>
+References: <1360162088.142733.191120808822.0.gpush@pecola>
+	 <1360162088.143076.913706486688.1.gpush@pecola>
+	 <20130207151333.f01d415c.akpm@linux-foundation.org>
+	 <5114CE00.6050307@ozlabs.org>
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Subject: [PATCH] Documentation: Add a simple doc for selftests
-Message-Id: <1360317764.684151.590003024082.1.gpush@pecola>
-In-Reply-To: <20130207151333.f01d415c.akpm@linux-foundation.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-From: Jeremy Kerr <jk@ozlabs.org>
-Date: Fri, 08 Feb 2013 18:02:44 +0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/13 07:13, Andrew Morton wrote:
+On Fri, 2013-02-08 at 18:05 +0800, Jeremy Kerr wrote:
+> However, the tests expose a bug at the moment, so run_tests will fail. 
+> Matt will have that fixed soon though :)
 
-> The general ruleset for selftests is: do as much as you can if you're not
-> root and don't take too long and don't break the build on any
-> architecture and don't cause the top-level "make run_tests" to fail if
-> your feature is unconfigured.
+In which case, would it make more sense for me to take these tests
+through the efi tree? I'm fine either way, I'm just looking for the
+least surprising option.
 
-This change adds a little documentation to the tests under
-tools/testing/selftests/, based on akpm's explanation.
 
-Signed-off-by: Jeremy Kerr <jk@ozlabs.org>
-
----
- Documentation/selftests.txt |   43 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 43 insertions(+)
-
-diff --git a/Documentation/selftests.txt b/Documentation/selftests.txt
-new file mode 100644
-index 0000000..a00e477
---- /dev/null
-+++ b/Documentation/selftests.txt
-@@ -0,0 +1,43 @@
-+Linux Kernel Selftests
-+
-+The kernel contains a set of "self tests" under the tools/testing/selftests/
-+directory. These are intended to be small unit tests to exercise individual
-+code paths in the kernel.
-+
-+Running the selftests
-+=====================
-+
-+To build the tests:
-+
-+  $ make -C tools/testing/selftests
-+
-+
-+To run the tests:
-+
-+  $ make -C tools/testing/selftests run_tests
-+
-+- note that some tests will require root privileges.
-+
-+
-+To run only tests targetted for a single subsystem:
-+
-+  $  make -C tools/testing/selftests TARGETS=cpu-hotplug run_tests
-+
-+See the top-level tools/testing/selftests/Makefile for the list of all possible
-+targets.
-+
-+
-+Contributing new tests
-+======================
-+
-+In general, the rules for for selftests are
-+
-+ * Do as much as you can if you're not root;
-+
-+ * Don't take too long;
-+
-+ * Don't break the build on any architecture, and
-+
-+ * Don't cause the top-level "make run_tests" to fail if your feature is
-+   unconfigured.
-+
