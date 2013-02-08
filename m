@@ -1,124 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760185Ab3BHQvH (ORCPT <rfc822;w@1wt.eu>);
+	id S1946710Ab3BHQvM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 11:51:12 -0500
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:55161 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760098Ab3BHQvH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Feb 2013 11:51:07 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34225 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758134Ab3BHQvF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 11:51:05 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CALLzPKZ7A6NW1ztX=hBjykMHkGofvtq6g-uK=Y2B2viskE9zDQ@mail.gmail.com>
-References: <cover.1360067333.git.dmitry.kasatkin@intel.com> <cc87f1242960fad1a9fb44bcec331915e14c832b.1360067333.git.dmitry.kasatkin@intel.com> <20130205203616.GA8228@fenchurch.internal.datastacks.com> <CALLzPKaTExm=eJ_f4x4NUROk83wDHQy0osexd4QqvHODd9ZPwA@mail.gmail.com> <5111E44C.2040308@zytor.com> <CALLzPKZRiWR1gBt4x9PM0pzAB6KVaE0ViEjLJLdVYk+==SSjHQ@mail.gmail.com> <22d54b6d-6342-4826-bb93-c9fc46f2041a@email.android.com> <CALLzPKYhmkyAobun4FhJv55ZpgOXg=fESWKvtfVpVeWR9jp88g@mail.gmail.com> <6b31c4f9-d98c-42fc-a510-39bf536b3299@email.android.com> <CALLzPKZ7A6NW1ztX=hBjykMHkGofvtq6g-uK=Y2B2viskE9zDQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [RFC 2/2] initramfs with digital signature protection
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Fri, 08 Feb 2013 08:50:52 -0800
-To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-CC: Peter Jones <pjones@redhat.com>, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <56d80e23-a177-49dd-bb9f-eec4e7775c04@email.android.com>
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUXHD9kQ0JUZ-31Oc3OWaKr7zpWfBG7L_n5kG7QQW+aUDg@mail.gmail.com>
+References: <CA+icZUX-hh+RjEOrKABBtecmb4C-5azSmdTx6D7SLuSpcQE+kQ@mail.gmail.com>
+	<CAJd=RBDwdO+n3H4M=5W5q75q3yUVL7L2RonWnCE7sfsfW1K5ig@mail.gmail.com>
+	<CA+icZUUaFb8zvdkY2JLz5h_7CBgaTzyyTphGid+GkigV+NfVKA@mail.gmail.com>
+	<2612804.Hcyse1lRVO@vostro.rjw.lan>
+	<CAKohpom0yjSyU+OhK4vdi5R=+JsmAEw2nOsvupDOiWMYsdz3Pg@mail.gmail.com>
+	<CA+icZUUedcLAo1OkDSD7K_zgZoLvUAPNYOWAJxSPLp9J3hCKNw@mail.gmail.com>
+	<CAOh2x=nn24DC-jpD_UsZ2z6=5d9GmZqwowKF8X0zQQX=vZmbqQ@mail.gmail.com>
+	<CA+icZUV=813qjoTMUQzHvUD2AChgKO60ffRtrJ2OG0uSqZf3Mw@mail.gmail.com>
+	<CA+icZUXHD9kQ0JUZ-31Oc3OWaKr7zpWfBG7L_n5kG7QQW+aUDg@mail.gmail.com>
+Date: Fri, 8 Feb 2013 17:51:05 +0100
+Message-ID: <CA+icZUWo4um9s-FhF5HoN5-WbkbNDTjnGkMMRHc60GWohcrPvA@mail.gmail.com>
+Subject: Re: [linux-pm] linux-next: Tree for Feb 8 [ smp|cpufreq: WARNING: at
+ kernel/smp.c:245 smp_call_function_single ]
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        Hillf Danton <dhillf@gmail.com>, linux-next@vger.kernel.org,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        Chuansheng Liu <chuansheng.liu@intel.com>,
+        Ingo Molnar <mingo@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes, but I am talking about initramfs.
-
-"Kasatkin, Dmitry" <dmitry.kasatkin@intel.com> wrote:
-
->On Fri, Feb 8, 2013 at 5:49 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> Yes, but you can't umount rootfs.
+On Fri, Feb 8, 2013 at 5:28 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> On Fri, Feb 8, 2013 at 4:21 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>> On Fri, Feb 8, 2013 at 3:56 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>>> On Fri, Feb 8, 2013 at 8:18 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>>> Nah, I pulled in latest pm-next where this commit is new...
+>>>>
+>>>> commit 8d5666f3456f2fd4a4e5dced228475b829851e53
+>>>> "ACPI: Unbind ACPI drv when probe failed"
+>>>>
+>>>> ...building with it.
+>>>>
+>>>> Same to you, say concretely which commit is fixing what...
+>>>>
+>>>> Pull-N-B-Happy was never my strategy... I want to understand what went
+>>>> wrong and have stolen my time.
+>>>
+>>> I don't have any pointers to broken tree and so can't point you to the culprit,
+>>> but it was this patch:
+>>>
+>>> http://git.linaro.org/gitweb?p=people/vireshk/linux.git;a=commit;h=e034e731f4d9d18ad0401f033f485a3096796c58
+>>>
+>>> minus
+>>>
+>>> the patch i sent you as attachment.
+>>>
+>>> There were some locking introduced around init/exit of cpufreq_driver, which
+>>> caused some drivers to break. Its fixed now in the above commit.
+>>
+>> Hmm, this "high-patch-maths" is not user-friendly!
+>>
+>> I will pull-in your tree into Linux-Next (next-20130208) and see if it
+>> applies cleanly.
+>>
+>> - Sedat -
 >
->But that was not a rootfs, but tmpfs/ramfs mounted to /root folder.
+> No, it did NOT apply cleanly and I merged your tree like this.
+> To me it does not look like your changes from the patch you sent me
+> are included?
 >
->>
->> "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com> wrote:
->>
->>>On Wed, Feb 6, 2013 at 6:41 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->>>> The cleanup is not a umount, it is actually a tree walk unlinking
->the
->>>contents.
->>>>
->>>
->>>Please see that umounting ramfs releases the memory.
->>>There was no forced cleanup.
->>>"cp" copied about 2GB of content.
->>>After umounting we got 2GB back to free RAM...
->>>
->>>kds@kds:~$ sudo mount -t ramfs testramfs /test
->>>kds@kds:~$ sudo cp -r /usr/ /test
->>>kds@kds:~$ du -sm /test
->>>2154    /test
->>>kds@kds:~$ free
->>>                       total       used            free     shared
->>>buffers     cached
->>>Mem:       8058600    7855780     202820          0      24768
->>>4819136
->>>-/+ buffers/cache:    3011876    5046724
->>>Swap:            0          0          0
->>>kds@kds:~$ sudo umount /test
->>>kds@kds:~$ free
->>>                      total       used            free     shared
->>>buffers     cached
->>>Mem:       8058600    5644864    2413736          0      25268
->>>2623956
->>>-/+ buffers/cache:    2995640    5062960
->>>Swap:            0          0          0
->>>
->>>The same happens also with tmpfs.
->>>
->>>- Dmitry
->>>
->>>> "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com> wrote:
->>>>
->>>>>On Wed, Feb 6, 2013 at 7:04 AM, H. Peter Anvin <hpa@zytor.com>
->wrote:
->>>>>> On 02/05/2013 02:09 PM, Kasatkin, Dmitry wrote:
->>>>>>>
->>>>>>>
->>>>>>> It should not be like that. Actually when pre-init exits,
->cleanup
->>>>>code
->>>>>>> umount tmpfs, which in turn cleanups the RAM.
->>>>>>>
->>>>>>
->>>>>> It doesn't quite... the rootfs is permanent.  This is also only
->one
->>>>>usage
->>>>>> mode: there are quite a few Linux systems running directly out of
->>>>>initramfs.
->>>>>>
->>>>>
->>>>>rootfs is not permanent when it is ramfs. It is cleaned up on
->switch
->>>>>root.
->>>>>It is easy to find out that it is empty by mounting : mount -t
->ramfs
->>>>>rootfs /mnt/
->>>>>
->>>>>In the case of running from normal storage, of course, there is
->>>>>ridicules remove the content.
->>>>>
->>>>>- Dmitry
->>>>>
->>>>>
->>>>>>         -hpa
->>>>>>
->>>>>>
->>>>>> --
->>>>>> H. Peter Anvin, Intel Open Source Technology Center
->>>>>> I work for Intel.  I don't speak on their behalf.
->>>>>>
->>>>
->>>> --
->>>> Sent from my mobile phone. Please excuse brevity and lack of
->>>formatting.
->>
->> --
->> Sent from my mobile phone. Please excuse brevity and lack of
->formatting.
+> - Sedat -
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+Looks like I did it correct - no WARNINGs.
+
+# diff -uprN /boot/config-3.8.0-rc6-next20130208-1-iniza-small
+/boot/config-3.8.0-rc6-next20130208-6-iniza-small
+--- /boot/config-3.8.0-rc6-next20130208-1-iniza-small   2013-02-08
+09:34:59.000000000 +0100
++++ /boot/config-3.8.0-rc6-next20130208-6-iniza-small   2013-02-08
+17:36:02.000000000 +0100
+@@ -601,6 +601,7 @@ CONFIG_CPU_FREQ_GOV_CONSERVATIVE=y
+ #
+ # x86 CPU frequency scaling drivers
+ #
++CONFIG_X86_INTEL_PSTATE=y
+ CONFIG_X86_PCC_CPUFREQ=y
+ CONFIG_X86_ACPI_CPUFREQ=y
+ CONFIG_X86_ACPI_CPUFREQ_CPB=y
+
+# dmesg | grep -i pstate
+[    0.387256] Intel pstate controlling: cpu 0
+[    0.387273] Intel pstate controlling: cpu 1
+[    0.387286] Intel pstate controlling: cpu 2
+[    0.387303] Intel pstate controlling: cpu 3
+[  151.315937] Intel pstate controlling: cpu 1
+[  151.329400] Intel pstate controlling: cpu 2
+[  151.342778] Intel pstate controlling: cpu 3
+
+So, suspend-resume is good here.
+
+- Sedat -
