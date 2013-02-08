@@ -1,180 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947013Ab3BHTdt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 14:33:49 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:57691 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946873Ab3BHTdh (ORCPT
+	id S1946997Ab3BHTeh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 14:34:37 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:26574 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760511Ab3BHTaC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 14:33:37 -0500
-Date: Fri, 8 Feb 2013 11:33:40 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Mel Gorman <mgorman@suse.de>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Petr Holasek <pholasek@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 6/11] ksm: remove old stable nodes more thoroughly
-In-Reply-To: <20130205175551.GL21389@suse.de>
-Message-ID: <alpine.LNX.2.00.1302081057110.4233@eggly.anvils>
-References: <alpine.LNX.2.00.1301251747590.29196@eggly.anvils> <alpine.LNX.2.00.1301251800550.29196@eggly.anvils> <20130205175551.GL21389@suse.de>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 8 Feb 2013 14:30:02 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Joerg Roedel <joro@8bytes.org>
+Subject: [PATCH v2 02/26] x86, irq: Modify irq chip once for irq remapping
+Date: Fri,  8 Feb 2013 11:27:59 -0800
+Message-Id: <1360351703-20571-3-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1360351703-20571-1-git-send-email-yinghai@kernel.org>
+References: <1360351703-20571-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Feb 2013, Mel Gorman wrote:
-> On Fri, Jan 25, 2013 at 06:01:59PM -0800, Hugh Dickins wrote:
-> > Switching merge_across_nodes after running KSM is liable to oops on stale
-> > nodes still left over from the previous stable tree.  It's not something
-> > that people will often want to do, but it would be lame to demand a reboot
-> > when they're trying to determine which merge_across_nodes setting is best.
-> > 
-> > How can this happen?  We only permit switching merge_across_nodes when
-> > pages_shared is 0, and usually set run 2 to force that beforehand, which
-> > ought to unmerge everything: yet oopses still occur when you then run 1.
-> > 
-> 
-> When reviewing patch 1, I missed that the pages_shared check would prevent
-> most of the problems I was envisioning with leftover entries in the
-> stable tree. Sorry about that.
+Now after irq remapping is enabled, irq_chip fields are modified during
+every irq setup.
 
-No apology necessary!
+Only need to change them one during we enable irq mapping.
 
-> 
-> > Three causes:
-> > 
-> > 1. The old stable tree (built according to the inverse merge_across_nodes)
-> > has not been fully torn down.  A stable node lingers until get_ksm_page()
-> > notices that the page it references no longer references it: but the page
-> > is not necessarily freed as soon as expected, particularly when swapcache.
-> > 
-> > Fix this with a pass through the old stable tree, applying get_ksm_page()
-> > to each of the remaining nodes (most found stale and removed immediately),
-> > with forced removal of any left over.  Unless the page is still mapped:
-> > I've not seen that case, it shouldn't occur, but better to WARN_ON_ONCE
-> > and EBUSY than BUG.
+Also change irq_remap_modify_chip_defaults() to __init.
 
-But once I applied the testing for this to the completed patch series,
-I did start seeing that WARN_ON_ONCE: it's made safe by the EBUSY,
-but not working as intended.  Cause outlined below.
+We don't need to use #ifdef in irq_remap_modify_chips(), as
+IRQ_REMAP only support x86_64 AND X86_IO_APIC AND PCI_MSI,
+also HPET_TIMER is set when x86_64 is set.
 
-> > 
-> > 2. __ksm_enter() has a nice little optimization, to insert the new mm
-> > just behind ksmd's cursor, so there's a full pass for it to stabilize
-> > (or be removed) before ksmd addresses it.  Nice when ksmd is running,
-> > but not so nice when we're trying to unmerge all mms: we were missing
-> > those mms forked and inserted behind the unmerge cursor.  Easily fixed
-> > by inserting at the end when KSM_RUN_UNMERGE.
-> > 
-> > 3. It is possible for a KSM page to be faulted back from swapcache into
-> > an mm, just after unmerge_and_remove_all_rmap_items() scanned past it.
-> > Fix this by copying on fault when KSM_RUN_UNMERGE: but that is private
-> > to ksm.c, so dissolve the distinction between ksm_might_need_to_copy()
-> > and ksm_does_need_to_copy(), doing it all in the one call into ksm.c.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Cc: Joerg Roedel <joro@8bytes.org>
+---
+ arch/x86/include/asm/io_apic.h |    5 +++++
+ arch/x86/kernel/apic/apic.c    |    9 ++++++++-
+ arch/x86/kernel/apic/io_apic.c |    8 +++-----
+ drivers/iommu/irq_remapping.c  |   11 +++++++++--
+ 4 files changed, 25 insertions(+), 8 deletions(-)
 
-What I found is that a 4th cause emerges once KSM migration
-is properly working: that interval during page migration when the old
-page has been fully unmapped but the new not yet mapped in its place.
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index 459e50a..eaff3ad 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -215,6 +215,11 @@ static inline void io_apic_modify(unsigned int apic, unsigned int reg, unsigned
+ 
+ extern void io_apic_eoi(unsigned int apic, unsigned int vector);
+ 
++extern struct irq_chip ioapic_chip;
++extern struct irq_chip msi_chip;
++extern struct irq_chip hpet_msi_type;
++void irq_remap_modify_chips(void);
++
+ #else  /* !CONFIG_X86_IO_APIC */
+ 
+ #define io_apic_assign_pci_irqs 0
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index a5b4dce..84815b1 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -1552,6 +1552,8 @@ void enable_x2apic(void)
+ int __init enable_IR(void)
+ {
+ #ifdef CONFIG_IRQ_REMAP
++	int ret;
++
+ 	if (!irq_remapping_supported()) {
+ 		pr_debug("intr-remapping not supported\n");
+ 		return -1;
+@@ -1563,7 +1565,12 @@ int __init enable_IR(void)
+ 		return -1;
+ 	}
+ 
+-	return irq_remapping_enable();
++	ret = irq_remapping_enable();
++
++	if (ret >= 0)
++		irq_remap_modify_chips();
++
++	return ret;
+ #endif
+ 	return -1;
+ }
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 9ed796c..f78f7f6 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1238,8 +1238,6 @@ void __setup_vector_irq(int cpu)
+ 	raw_spin_unlock(&vector_lock);
+ }
+ 
+-static struct irq_chip ioapic_chip;
+-
+ #ifdef CONFIG_X86_32
+ static inline int IO_APIC_irq_trigger(int irq)
+ {
+@@ -2511,7 +2509,7 @@ static void ack_apic_level(struct irq_data *data)
+ 	ioapic_irqd_unmask(data, cfg, masked);
+ }
+ 
+-static struct irq_chip ioapic_chip __read_mostly = {
++struct irq_chip ioapic_chip __read_mostly = {
+ 	.name			= "IO-APIC",
+ 	.irq_startup		= startup_ioapic_irq,
+ 	.irq_mask		= mask_ioapic_irq,
+@@ -3093,7 +3091,7 @@ msi_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
+  * IRQ Chip for MSI PCI/PCI-X/PCI-Express Devices,
+  * which implement the MSI or MSI-X Capability Structure.
+  */
+-static struct irq_chip msi_chip = {
++struct irq_chip msi_chip = {
+ 	.name			= "PCI-MSI",
+ 	.irq_unmask		= unmask_msi_irq,
+ 	.irq_mask		= mask_msi_irq,
+@@ -3240,7 +3238,7 @@ static int hpet_msi_set_affinity(struct irq_data *data,
+ 	return IRQ_SET_MASK_OK_NOCOPY;
+ }
+ 
+-static struct irq_chip hpet_msi_type = {
++struct irq_chip hpet_msi_type = {
+ 	.name = "HPET_MSI",
+ 	.irq_unmask = hpet_msi_unmask,
+ 	.irq_mask = hpet_msi_mask,
+diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
+index 01ed477..33918c3 100644
+--- a/drivers/iommu/irq_remapping.c
++++ b/drivers/iommu/irq_remapping.c
+@@ -368,19 +368,26 @@ static void ir_print_prefix(struct irq_data *data, struct seq_file *p)
+ 	seq_printf(p, " IR-%s", data->chip->name);
+ }
+ 
+-static void irq_remap_modify_chip_defaults(struct irq_chip *chip)
++static void __init irq_remap_modify_chip_defaults(struct irq_chip *chip)
+ {
++	printk(KERN_DEBUG "irq_chip: %s ==> IR-%s", chip->name, chip->name);
+ 	chip->irq_print_chip = ir_print_prefix;
+ 	chip->irq_ack = ir_ack_apic_edge;
+ 	chip->irq_eoi = ir_ack_apic_level;
+ 	chip->irq_set_affinity = x86_io_apic_ops.set_affinity;
+ }
+ 
++void __init irq_remap_modify_chips(void)
++{
++	irq_remap_modify_chip_defaults(&ioapic_chip);
++	irq_remap_modify_chip_defaults(&msi_chip);
++	irq_remap_modify_chip_defaults(&hpet_msi_type);
++}
++
+ bool setup_remapped_irq(int irq, struct irq_cfg *cfg, struct irq_chip *chip)
+ {
+ 	if (!irq_remapped(cfg))
+ 		return false;
+ 	irq_set_status_flags(irq, IRQ_MOVE_PCNTXT);
+-	irq_remap_modify_chip_defaults(chip);
+ 	return true;
+ }
+-- 
+1.7.10.4
 
-The KSM COW breaking cannot see a page there then, so it ends up with
-a (newly migrated) KSM page left behind.  Almost certainly has to be
-fixed in follow_page(), but I've not yet settled on its final form -
-the fix I have works well, but a different approach might be better.
-
-I'm also puzzled that I've never in practice been hit by a 5th cause:
-swapoff's try_to_unuse() is much like faulting, and ought to have the
-same ksm_might_need_to_copy() safeguards as faulting (or at least,
-I cannot see why not).
-
-> > --- mmotm.orig/mm/ksm.c	2013-01-25 14:36:58.856206099 -0800
-> > +++ mmotm/mm/ksm.c	2013-01-25 14:37:00.768206145 -0800
-> > @@ -644,6 +644,57 @@ static int unmerge_ksm_pages(struct vm_a
-> >  /*
-> >   * Only called through the sysfs control interface:
-> >   */
-> > +static int remove_stable_node(struct stable_node *stable_node)
-> > +{
-> > +	struct page *page;
-> > +	int err;
-> > +
-> > +	page = get_ksm_page(stable_node, true);
-> > +	if (!page) {
-> > +		/*
-> > +		 * get_ksm_page did remove_node_from_stable_tree itself.
-> > +		 */
-> > +		return 0;
-> > +	}
-> > +
-> > +	if (WARN_ON_ONCE(page_mapped(page)))
-> > +		err = -EBUSY;
-> > +	else {
-> > +		/*
-> 
-> It will probably be very obvious to people familiar with ksm.c but even
-> so maybe remind the reader that the pages must already have been unmerged
-> 
-> * This page must already have been unmerged and should be stale.
-> * It might be in a pagevec waiting to be freed or it might be
-
-Okay, I'll add a little more comment there;
-but I need to think longer for exactly how to express it.
-
-> ......
-> 
-> 
-> 
-> > +		 * This page might be in a pagevec waiting to be freed,
-> > +		 * or it might be PageSwapCache (perhaps under writeback),
-> > +		 * or it might have been removed from swapcache a moment ago.
-> > +		 */
-> > +		set_page_stable_node(page, NULL);
-> > +		remove_node_from_stable_tree(stable_node);
-> > +		err = 0;
-> > +	}
-> > +
-> > +	unlock_page(page);
-> > +	put_page(page);
-> > +	return err;
-> > +}
-> > +
-> > +static int remove_all_stable_nodes(void)
-> > +{
-> > +	struct stable_node *stable_node;
-> > +	int nid;
-> > +	int err = 0;
-> > +
-> > +	for (nid = 0; nid < nr_node_ids; nid++) {
-> > +		while (root_stable_tree[nid].rb_node) {
-> > +			stable_node = rb_entry(root_stable_tree[nid].rb_node,
-> > +						struct stable_node, node);
-> > +			if (remove_stable_node(stable_node)) {
-> > +				err = -EBUSY;
-> > +				break;	/* proceed to next nid */
-> > +			}
-> 
-> If remove_stable_node() returns an error then it's quite possible that it'll
-> go boom when that page is encountered later but it's not guaranteed. It'd
-> be best effort to continue removing as many of the stable nodes anyway.
-> We're in trouble either way of course.
-
-If it returns an error, then indeed something we don't yet understand
-has occurred, and we shall want to debug it.  But unless it's due to
-corruption somewhere, we shouldn't be in much trouble, shouldn't go boom:
-remove_all_stable_nodes() error is ignored at the end of unmerging, it
-will be tried again when changing merge_across_nodes, and an error
-then will just prevent changing merge_across_nodes at that time.  So
-the mysteriously unremovable stable nodes remain the same kind of tree.
-
-> 
-> Otherwise I didn't spot a problem so as weak as it is due my familiarity
-> with KSM;
-> 
-> Acked-by: Mel Gorman <mgorman@suse.de>
-
-Thanks,
-Hugh
