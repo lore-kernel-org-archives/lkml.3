@@ -1,109 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946108Ab3BHNPg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 08:15:36 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:34366 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753644Ab3BHNPe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 08:15:34 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: sedat.dilek@gmail.com
-Cc: Hillf Danton <dhillf@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        Linux PM List <linux-pm@lists.linux-foundation.org>, x86@kernel.org,
-        Ingo Molnar <mingo@redhat.com>,
-        Chuansheng Liu <chuansheng.liu@intel.com>
-Subject: Re: linux-next: Tree for Feb 8 [ smp|cpufreq: WARNING: at kernel/smp.c:245 smp_call_function_single ]
-Date: Fri, 08 Feb 2013 14:21:53 +0100
-Message-ID: <2612804.Hcyse1lRVO@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CA+icZUUaFb8zvdkY2JLz5h_7CBgaTzyyTphGid+GkigV+NfVKA@mail.gmail.com>
-References: <CA+icZUX-hh+RjEOrKABBtecmb4C-5azSmdTx6D7SLuSpcQE+kQ@mail.gmail.com> <CAJd=RBDwdO+n3H4M=5W5q75q3yUVL7L2RonWnCE7sfsfW1K5ig@mail.gmail.com> <CA+icZUUaFb8zvdkY2JLz5h_7CBgaTzyyTphGid+GkigV+NfVKA@mail.gmail.com>
+	id S1946144Ab3BHNQE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 08:16:04 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51078 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753644Ab3BHNQC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 08:16:02 -0500
+Date: Fri, 8 Feb 2013 13:16:00 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, chao.bi@intel.com,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>, cxie4@marvell.com,
+        ytang5@marvell.com
+Subject: Re: [PATCH v3 10/10] spi/pxa2xx: add support for Lynxpoint SPI
+ controllers
+Message-ID: <20130208131559.GY8879@opensource.wolfsonmicro.com>
+References: <1358850393-23111-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1358850393-23111-11-git-send-email-mika.westerberg@linux.intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="RLVVO53zhS75EYih"
+Content-Disposition: inline
+In-Reply-To: <1358850393-23111-11-git-send-email-mika.westerberg@linux.intel.com>
+X-Cookie: Stay away from flying saucers today.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, February 08, 2013 01:47:44 PM Sedat Dilek wrote:
-> On Fri, Feb 8, 2013 at 12:53 PM, Hillf Danton <dhillf@gmail.com> wrote:
-> > Hello Sedat
-> >
-> > On Fri, Feb 8, 2013 at 4:46 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> >> On Fri, Feb 8, 2013 at 5:31 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> >> With today's Linux-Next I see this warning:
-> >>
-> >> [    0.377442] ------------[ cut here ]------------
-> >> [    0.377452] WARNING: at kernel/smp.c:245
-> >> smp_call_function_single+0x146/0x190()
-> >> [    0.377455] Hardware name: 530U3BI/530U4BI/530U4BH
-> >> [    0.377458] Modules linked in:
-> >> [    0.377463] Pid: 1, comm: swapper/0 Not tainted
-> >> 3.8.0-rc6-next20130208-1-iniza-small #1
-> >> [    0.377467] Call Trace:
-> >> [    0.377473]  [<ffffffff8105a5ef>] warn_slowpath_common+0x7f/0xc0
-> >> [    0.377479]  [<ffffffff81579130>] ? acpi_cpufreq_target+0x2c0/0x2c0
-> >> [    0.377483]  [<ffffffff8105a64a>] warn_slowpath_null+0x1a/0x20
-> >> [    0.377487]  [<ffffffff810bb7e6>] smp_call_function_single+0x146/0x190
-> >> [    0.377492]  [<ffffffff81579130>] ? acpi_cpufreq_target+0x2c0/0x2c0
-> >> [    0.377496]  [<ffffffff810bb881>] smp_call_function_any+0x51/0x100
-> >> [    0.377500]  [<ffffffff815788c9>] get_cur_val+0x99/0x130
-> >> [    0.377504]  [<ffffffff81579444>] ? acpi_cpufreq_cpu_init+0x2b4/0x6a0
-> >> [    0.377508]  [<ffffffff81578db0>] get_cur_freq_on_cpu+0x60/0x80
-> >> [    0.377512]  [<ffffffff815795a2>] acpi_cpufreq_cpu_init+0x412/0x6a0
-> >> [    0.377517]  [<ffffffff81575bb9>] cpufreq_add_dev+0x2d9/0x4f0
-> >> [    0.377523]  [<ffffffff81d44b22>] ? cpufreq_gov_dbs_init+0x2c/0x2c
-> >> [    0.377528]  [<ffffffff8145d379>] subsys_interface_register+0x89/0xd0
-> >> [    0.377533]  [<ffffffff81573dee>] cpufreq_register_driver+0x8e/0x180
-> >> [    0.377537]  [<ffffffff81d44c18>] acpi_cpufreq_init+0xf6/0x1f8
-> >> [    0.377542]  [<ffffffff814608e6>] ? platform_driver_register+0x46/0x50
-> >> [    0.377547]  [<ffffffff8100206f>] do_one_initcall+0x3f/0x170
-> >> [    0.377553]  [<ffffffff81d07029>] kernel_init_freeable+0x13e/0x1cd
-> >> [    0.377560]  [<ffffffff81d06895>] ? do_early_param+0x86/0x86
-> >> [    0.377565]  [<ffffffff8169cf20>] ? rest_init+0x80/0x80
-> >> [    0.377569]  [<ffffffff8169cf2e>] kernel_init+0xe/0xf0
-> >> [    0.377575]  [<ffffffff816c722c>] ret_from_fork+0x7c/0xb0
-> >> [    0.377578]  [<ffffffff8169cf20>] ? rest_init+0x80/0x80
-> >> [    0.377581] ---[ end trace c6ec8280ce20313a ]---
-> >>
-> >> kernel/smp.c: Line #245 see [1].
-> >>
-> > Can you please try the following?
-> >
-> > --- a/kernel/smp.c      Fri Feb  8 19:25:32 2013
-> > +++ b/kernel/smp.c      Fri Feb  8 19:53:14 2013
-> > @@ -241,7 +241,7 @@ int smp_call_function_single(int cpu, sm
-> >          * send smp call function interrupt to this cpu and as such deadlocks
-> >          * can't happen.
-> >          */
-> > -       WARN_ON_ONCE(cpu_online(this_cpu) && (irqs_disabled() || in_interrupt())
-> > +       WARN_ON_ONCE(cpu_online(this_cpu) && irqs_disabled()
-> >                      && !oops_in_progress);
-> >
-> >         if (cpu == this_cpu) {
-> > --
-> 
-> NO, it doesn't.
-> 
-> So, you want to partly revert...
-> 
-> commit b29f39c7c3e75a741a7da88244ec707f293ec04c
-> "smp: Give WARN()ing if in_interrupt() when calling
-> smp_call_function_many()/single()"
-> 
-> ...why not completely?
-> 
-> This patch was in last days Linux-Next and did not cause troubles (AFAICS).
 
-This problem was introduced by some cpufreq changes that have been dropped from
-linux-next for now (they are still present in the one you're testing, though).
+--RLVVO53zhS75EYih
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thanks,
-Rafael
+On Tue, Jan 22, 2013 at 12:26:33PM +0200, Mika Westerberg wrote:
+> Intel Lynxpoint PCH Low Power Subsystem has two general purpose SPI
+> controllers that are LPSS_SSP compatible. These controllers are enumerated
+> from ACPI namespace with ACPI IDs INT33C0 and INT33C1.
 
+Applied, thanks.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+--RLVVO53zhS75EYih
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRFPqIAAoJELSic+t+oim9yGwP/iD3Qi0Ip6yN7wpjkpt/NleV
+BvM1kfz4K/QFPAXHMRjVKBYBbYCYY9JNmZg+S/gaTLBkbqvyNyVVta39kfSJy3ju
+KTNqiO4QEbwx5h0NWf8c3h88xGWvnch52XszjGt4RBEv4yx7zewxq/H8h3qD0b6A
+LotIr5bdZVZ28L19lS8OsrJ1GzH4mVNN+ur9GAQajlexTAAiBsUynaQ7XsKoLyyf
+6Mdh4XpHsL8nFXcDVa/PuXTCgshfMumg9O1W/gd6GCH3E+P4eQkzyzr1n8Ok+PGq
+9+A8iCtHU2d/zFRORjLU0FSNBY4vkGtBwiPLHGhkEQPP6AP/Cd8/TcI/qyVuYVAw
+OJr6vHYUOeCXeOuiRqZEfbSPjE0R8a4Xaro1XlbQgupC4+T5ia0PjTzJJBJ1IZQ0
+SL0B35qH3K2fuL8giVjf3WMMQf8w2wQuhgAVkIu5CO9p+uTg+wX1LrYMwl4VoCSD
+IfqtjZx/bpFp+k6sibPNvCRdWnec1aSJ7cWmvYnvyIvJaWfSbq2OAsFfez/7FTe4
+oi3Avfr8eEVKhoxRHrqDcZ+UhqYdgRpkSFhQkv18ptMeU4YkzibyxF5sbESOTPtB
+KDeZW8yfDC1KqIBwLwGy0zYxLpbIuPkmQ3wFZuKTqns0EbmIJvtrYU8ajS6qw1BV
+A3qznym+A6e6QcfJOI+W
+=p7D8
+-----END PGP SIGNATURE-----
+
+--RLVVO53zhS75EYih--
