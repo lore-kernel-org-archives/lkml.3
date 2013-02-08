@@ -1,70 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946530Ab3BHMk1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 07:40:27 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:34262 "EHLO hydra.sisk.pl"
+	id S1946542Ab3BHMnJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 07:43:09 -0500
+Received: from chrocht.moloch.sk ([62.176.169.44]:48118 "EHLO mail.moloch.sk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1946435Ab3BHMkT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 07:40:19 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <liuj97@gmail.com>,
-        Toshi Kani <toshi.kani@hp.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] ACPI / scan: Remove useless #ifndef and simplify container driver
-Date: Fri, 08 Feb 2013 13:46:40 +0100
-Message-ID: <3432353.MRsevDcPKP@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <51146EC7.5090504@jp.fujitsu.com>
-References: <1873429.MS5RQDxTye@vostro.rjw.lan> <1468930.acVuhKfKYv@vostro.rjw.lan> <51146EC7.5090504@jp.fujitsu.com>
+	id S1946412Ab3BHMnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 07:43:08 -0500
+Message-ID: <5114F2D8.5020300@250bpm.com>
+Date: Fri, 08 Feb 2013 13:43:04 +0100
+From: Martin Sustrik <sustrik@250bpm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Sha Zhengju <handai.szj@taobao.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 1/1] eventfd: implementation of EFD_MASK flag
+References: <1360219292-19754-1-git-send-email-sustrik@250bpm.com> <20130207144433.527ef024.akpm@linux-foundation.org>
+In-Reply-To: <20130207144433.527ef024.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, February 08, 2013 12:19:35 PM Yasuaki Ishimatsu wrote:
-> Hi Rafael,
-> 
-> 2013/02/08 9:24, Rafael J. Wysocki wrote:
-> > On Monday, February 04, 2013 12:47:31 AM Rafael J. Wysocki wrote:
-> >> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >>
-> >> The only useful thing that the ACPI container driver does is to
-> >> install system notify handlers for all container and module device
-> >> objects it finds in the namespace.  The driver structure,
-> >> acpi_container_driver, and the data structures created by its
-> >> .add() callback are in fact not used by the driver, so remove
-> >> them entirely.
-> >>
-> >> It also makes a little sense to build that driver as a module,
-> >> so make it non-modular and add its initialization to the
-> >> namespace scanning code.
-> >>
-> >> In addition to that, make the namespace walk callback used for
-> >> installing the notify handlers more straightforward.
-> >
-> > As pointed out by Toshi Kani, the above changes would make acpi_eject_store()
-> > fail for containers and it is the only way to eject them currently, so patch
-> > [2/2] is an improved version of this (with Toshi's changes folded in).
-> >
-> > Patch [1/2] is just a cleanup removing a useless #ifndef from acpi_eject_store().
-> 
-> I confimed the patch series works well.
-> 
-> Acked-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> Tested-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+On 07/02/13 23:44, Andrew Morton wrote:
 
-Thanks a lot!
+> That's a nice changelog but it omitted a critical thing: why do you
+> think the kernel needs this feature?  What's the value and use case for
+> being able to poll these descriptors?
 
-Rafael
+To address the question, I've written down detailed description of the 
+challenges of the network protocol development in user space and how the 
+proposed feature addresses the problems.
 
+It's too long to fit into ChangeLog, but it may be worth reading when 
+trying to judge the merit of the patch.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+It can be found here: http://www.250bpm.com/blog:16
+
+Martin
