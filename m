@@ -1,72 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946017Ab3BHBA7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 20:00:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42033 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945964Ab3BHA6V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1945970Ab3BHA6V (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 7 Feb 2013 19:58:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41966 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932274Ab3BHA6L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 19:58:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: [ 10/16] USB: option: add Changhong CH690
-Date: Thu,  7 Feb 2013 16:58:09 -0800
-Message-Id: <20130208004628.922560816@linuxfoundation.org>
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 24/26] xhci: Fix TD size for isochronous URBs.
+Date: Thu,  7 Feb 2013 16:57:52 -0800
+Message-Id: <20130208004631.165609474@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130208004627.112511141@linuxfoundation.org>
-References: <20130208004627.112511141@linuxfoundation.org>
+In-Reply-To: <20130208004627.258272404@linuxfoundation.org>
+References: <20130208004627.258272404@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit d4fa681541aa7bf8570d03426dd7ba663a71c467 upstream.
+commit f18f8ed2a9adc41c2d9294b85b6af115829d2af1 upstream.
 
-New device with 3 serial interfaces:
+To calculate the TD size for a particular TRB in an isoc TD, we need
+know the endpoint's max packet size.  Isochronous endpoints also encode
+the number of additional service opportunities in their wMaxPacketSize
+field.  The TD size calculation did not mask off those bits before using
+the field.  This resulted in incorrect TD size information for
+isochronous TRBs when an URB frame buffer crossed a 64KB boundary.
 
- If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend) Sub=ff Prot=ff
- If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend) Sub=ff Prot=ff
- If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend) Sub=ff Prot=ff
- If#= 3 Alt= 0 #EPs= 2 Cls=08(stor) Sub=06 Prot=50
+For example:
+ - an isoc endpoint has 2 additional service opportunites and
+   a max packet size of 1020 bytes
+ - a frame transfer buffer contains 3060 bytes
+ - one frame buffer crosses a 64KB boundary, and must be split into
+   one 1276 byte TRB, and one 1784 byte TRB.
 
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+The TD size is is the number of packets that remain to be transferred
+for a TD after processing all the max packet sized packets in the
+current TRB and all previous TRBs.
+
+For this TD, the number of packets to be transferred is (3060 / 1020),
+or 3.  The first TRB contains 1276 bytes, which means it contains one
+full packet, and a 256 byte remainder.  After processing all the max
+packet-sized packets in the first TRB, the host will have 2 packets left
+to transfer.
+
+The old code would calculate the TD size for the first TRB as:
+
+total packet count = DIV_ROUND_UP (TD length / endpoint wMaxPacketSize)
+total packet count - (first TRB length / endpoint wMaxPacketSize)
+
+The math should have been:
+
+total packet count = DIV_ROUND_UP (3060 / 1020) = 3
+3 - (1276 / 1020) = 2
+
+Since the old code didn't mask off the additional service interval bits
+from the wMaxPacketSize field, the math ended up as
+
+total packet count = DIV_ROUND_UP (3060 / 5116) = 1
+1 - (1276 / 5116) = 1
+
+Fix this by masking off the number of additional service opportunities
+in the wMaxPacketSize field.
+
+This patch should be backported to stable kernels as old as 3.0, that
+contain the commit 4da6e6f247a2601ab9f1e63424e4d944ed4124f3 "xhci 1.0:
+Update TD size field format."  It may not apply well to kernels older
+than 3.2 because of commit 29cc88979a8818cd8c5019426e945aed118b400e
+"USB: use usb_endpoint_maxp() instead of le16_to_cpu()".
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/usb/host/xhci-ring.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -454,6 +454,10 @@ static void option_instat_callback(struc
- #define TPLINK_VENDOR_ID			0x2357
- #define TPLINK_PRODUCT_MA180			0x0201
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -3106,7 +3106,7 @@ static u32 xhci_v1_0_td_remainder(int ru
+ 	 * running_total.
+ 	 */
+ 	packets_transferred = (running_total + trb_buff_len) /
+-		usb_endpoint_maxp(&urb->ep->desc);
++		GET_MAX_PACKET(usb_endpoint_maxp(&urb->ep->desc));
  
-+/* Changhong products */
-+#define CHANGHONG_VENDOR_ID			0x2077
-+#define CHANGHONG_PRODUCT_CH690			0x7001
-+
- /* some devices interfaces need special handling due to a number of reasons */
- enum option_blacklist_reason {
- 		OPTION_BLACKLIST_NONE = 0,
-@@ -1326,6 +1330,7 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T) },
- 	{ USB_DEVICE(TPLINK_VENDOR_ID, TPLINK_PRODUCT_MA180),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
-+	{ USB_DEVICE(CHANGHONG_VENDOR_ID, CHANGHONG_PRODUCT_CH690) },
- 	{ } /* Terminating entry */
- };
- MODULE_DEVICE_TABLE(usb, option_ids);
+ 	if ((total_packet_count - packets_transferred) > 31)
+ 		return 31 << 17;
+@@ -3640,7 +3640,8 @@ static int xhci_queue_isoc_tx(struct xhc
+ 		td_len = urb->iso_frame_desc[i].length;
+ 		td_remain_len = td_len;
+ 		total_packet_count = DIV_ROUND_UP(td_len,
+-				usb_endpoint_maxp(&urb->ep->desc));
++				GET_MAX_PACKET(
++					usb_endpoint_maxp(&urb->ep->desc)));
+ 		/* A zero-length transfer still involves at least one packet. */
+ 		if (total_packet_count == 0)
+ 			total_packet_count++;
 
 
