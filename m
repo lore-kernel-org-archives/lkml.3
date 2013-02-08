@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946845Ab3BHTSP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 14:18:15 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35369 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760323Ab3BHTSN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 14:18:13 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20130208191213.GA25081@www.outflux.net>
-References: <20130208191213.GA25081@www.outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1946904Ab3BHTSk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 14:18:40 -0500
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:56732 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1946814Ab3BHTSg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 14:18:36 -0500
+X-Forefront-Antispam-Report: CIP:157.56.236.101;KIP:(null);UIP:(null);IPV:NLI;H:BY2PRD0510HT004.namprd05.prod.outlook.com;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: PS-2(zz98dI936eIzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2fh2a8h668h839h93fhd24he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1155h)
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: Kees Cook <keescook@chromium.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>
 Subject: Re: [PATCH] x86: Lock down MSR writing in secure boot
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Fri, 08 Feb 2013 11:17:24 -0800
-To: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org
-CC: Matthew Garrett <matthew.garrett@nebula.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, linux-efi@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Message-ID: <00780235-deac-4f80-b936-867834e05661@email.android.com>
+Thread-Topic: [PATCH] x86: Lock down MSR writing in secure boot
+Thread-Index: AQHOBjA7mQsIMlqU/k+EElzc7Yz1iZhwVXyA
+Date: Fri, 8 Feb 2013 19:17:28 +0000
+Message-ID: <1360351047.18083.14.camel@x230.lan>
+References: <20130208191213.GA25081@www.outflux.net>
+In-Reply-To: <20130208191213.GA25081@www.outflux.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.255.84.4]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <A8A41633817DA54C8C0DF1F899C08210@namprd05.prod.outlook.com>
+MIME-Version: 1.0
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r18JIgZD005388
 
-We already have CAP_RAWIO for this in mainline; I am not sure if this should be harder than that...
+On Fri, 2013-02-08 at 11:12 -0800, Kees Cook wrote:
+> Writing to MSRs should not be allowed unless CAP_COMPROMISE_KERNEL is
+> set since it could lead to execution of arbitrary code in kernel mode.
 
-Kees Cook <keescook@chromium.org> wrote:
-
->Writing to MSRs should not be allowed unless CAP_COMPROMISE_KERNEL is
->set since it could lead to execution of arbitrary code in kernel mode.
->
->Signed-off-by: Kees Cook <keescook@chromium.org>
->---
->This would be used on top of Matthew Garrett's existing "Secure boot
->policy support" patch series.
->---
-> arch/x86/kernel/msr.c |    7 +++++++
-> 1 file changed, 7 insertions(+)
->
->diff --git a/arch/x86/kernel/msr.c b/arch/x86/kernel/msr.c
->index 4929502..adaab3d 100644
->--- a/arch/x86/kernel/msr.c
->+++ b/arch/x86/kernel/msr.c
->@@ -103,6 +103,9 @@ static ssize_t msr_write(struct file *file, const
->char __user *buf,
-> 	int err = 0;
-> 	ssize_t bytes = 0;
-> 
->+	if (!capable(CAP_COMPROMISE_KERNEL))
->+		return -EPERM;
->+
-> 	if (count % 8)
-> 		return -EINVAL;	/* Invalid chunk size */
-> 
->@@ -150,6 +153,10 @@ static long msr_ioctl(struct file *file, unsigned
->int ioc, unsigned long arg)
-> 			err = -EBADF;
-> 			break;
-> 		}
->+		if (!capable(CAP_COMPROMISE_KERNEL)) {
->+			err = -EPERM;
->+			break;
->+		}
-> 		if (copy_from_user(&regs, uregs, sizeof regs)) {
-> 			err = -EFAULT;
-> 			break;
-
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+Willing to buy this, but do you have a description of one potential
+approach? We should probably also figure out what's writing to MSRs at
+the moment (anything other than energy_perf_bias?) and decide what the
+best thing to do there is.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
