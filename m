@@ -1,113 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946586Ab3BHPTh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 10:19:37 -0500
-Received: from mail-qe0-f54.google.com ([209.85.128.54]:40729 "EHLO
-	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946062Ab3BHPTe (ORCPT
+	id S1946599Ab3BHPT7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 10:19:59 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33484 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946062Ab3BHPT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 10:19:34 -0500
+	Fri, 8 Feb 2013 10:19:58 -0500
+Date: Fri, 8 Feb 2013 07:18:56 -0800
+From: tip-bot for Stephen Rothwell <sfr@canb.auug.org.au>
+Message-ID: <tip-02fc8d37229d15c654876cf9ce56b5c1cf7945d7@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        linuxppc-dev@lists.ozlabs.org, peterz@infradead.org,
+        namhyung.kim@lge.com, zhong@linux.vnet.ibm.com,
+        paulmck@linux.vnet.ibm.com, benh@kernel.crashing.org,
+        fweisbec@gmail.com, rostedt@goodmis.org, tglx@linutronix.de,
+        sfr@canb.auug.org.au, paul.gortmaker@windriver.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, linuxppc-dev@lists.ozlabs.org,
+        namhyung.kim@lge.com, zhong@linux.vnet.ibm.com,
+        paulmck@linux.vnet.ibm.com, fweisbec@gmail.com,
+        benh@kernel.crashing.org, rostedt@goodmis.org, sfr@canb.auug.org.au,
+        tglx@linutronix.de, paul.gortmaker@windriver.com
+In-Reply-To: <20130208141938.f31b7b9e1acac5bbe769ee4c@canb.auug.org.au>
+References: <20130208141938.f31b7b9e1acac5bbe769ee4c@canb.auug.org.au>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] cputime:
+  Restore CPU_ACCOUNTING config defaults for PPC64
+Git-Commit-ID: 02fc8d37229d15c654876cf9ce56b5c1cf7945d7
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CAOh2x=nB1LpoiUjg2zDT6TvL6vM9q0D4kDG1cFZPtEnSvZc07w@mail.gmail.com>
-References: <CA+icZUX-hh+RjEOrKABBtecmb4C-5azSmdTx6D7SLuSpcQE+kQ@mail.gmail.com>
-	<CAJd=RBDwdO+n3H4M=5W5q75q3yUVL7L2RonWnCE7sfsfW1K5ig@mail.gmail.com>
-	<CA+icZUUaFb8zvdkY2JLz5h_7CBgaTzyyTphGid+GkigV+NfVKA@mail.gmail.com>
-	<2612804.Hcyse1lRVO@vostro.rjw.lan>
-	<CA+icZUWQNU-z4VnVDneFmfAT=nyFB-r+9_vm2Ett1i-Rg5FMqA@mail.gmail.com>
-	<CAOh2x=nB1LpoiUjg2zDT6TvL6vM9q0D4kDG1cFZPtEnSvZc07w@mail.gmail.com>
-Date: Fri, 8 Feb 2013 16:19:33 +0100
-Message-ID: <CA+icZUW+iPmoz9iFzg+LEdK9UTfgkySEE79Gdc64RSo_RWmsog@mail.gmail.com>
-Subject: Re: linux-next: Tree for Feb 8 [ smp|cpufreq: WARNING: at
- kernel/smp.c:245 smp_call_function_single ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Hillf Danton <dhillf@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Linux ACPI <linux-acpi@vger.kernel.org>,
-        Linux PM List <linux-pm@lists.linux-foundation.org>, x86@kernel.org,
-        Ingo Molnar <mingo@redhat.com>,
-        Chuansheng Liu <chuansheng.liu@intel.com>
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 08 Feb 2013 07:19:04 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 8, 2013 at 3:50 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On Fri, Feb 8, 2013 at 7:45 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> "...some...changes..." is not very concrete :-).
->> Which commit(s) caused this trouble?
->>
->> Is current (meanwhile updated?) linux-pm.git#linux-next good (didn't
->> check last commit-ids of your tree from Next/ dir)?
->
-> Attached patch would fix it for you and it looks like and is going to be
-> pulled in by Rafael:
->
-> From: Viresh Kumar <viresh.kumar@linaro.org>
-> Date: Fri, 8 Feb 2013 10:35:31 +0530
-> Subject: [PATCH] cpufreq: Remove unnecessary locking
->
-> I have placed some locks intentionally around calls to driver->ops (init/exit),
-> which look to be wrong as these calls can call routines that potentially sleep.
->
-> Lets remove these locks.
->
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Commit-ID:  02fc8d37229d15c654876cf9ce56b5c1cf7945d7
+Gitweb:     http://git.kernel.org/tip/02fc8d37229d15c654876cf9ce56b5c1cf7945d7
+Author:     Stephen Rothwell <sfr@canb.auug.org.au>
+AuthorDate: Fri, 8 Feb 2013 14:19:38 +1100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Fri, 8 Feb 2013 15:23:12 +0100
 
-Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+cputime: Restore CPU_ACCOUNTING config defaults for PPC64
 
-( 0001-cpufreq-Remove-unnecessary-locking.patch fixes the issue here! )
+Commit abf917cd91cb ("cputime: Generic on-demand virtual cputime
+accounting") inadvertantly changed the default CPU_ACCOUNTING
+config for PPC64.  Repair that.
 
-- Sedat -
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Li Zhong <zhong@linux.vnet.ibm.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: ppc-dev <linuxppc-dev@lists.ozlabs.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Link: http://lkml.kernel.org/r/20130208141938.f31b7b9e1acac5bbe769ee4c@canb.auug.org.au
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ init/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> ---
->  drivers/cpufreq/cpufreq.c | 7 -------
->  1 file changed, 7 deletions(-)
->
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index 5d8a422..04aab05 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -795,10 +795,8 @@ static int cpufreq_add_dev_interface(unsigned int cpu,
->
->         if (ret) {
->                 pr_debug("setting policy failed\n");
-> -               spin_lock_irqsave(&cpufreq_driver_lock, flags);
->                 if (driver->exit)
->                         driver->exit(policy);
-> -               spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
->         }
->         return ret;
->
-> @@ -920,17 +918,14 @@ static int cpufreq_add_dev(struct device *dev,
-> struct subsys_interface *sif)
->         init_completion(&policy->kobj_unregister);
->         INIT_WORK(&policy->update, handle_update);
->
-> -       spin_lock_irqsave(&cpufreq_driver_lock, flags);
->         /* call driver. From then on the cpufreq must be able
->          * to accept all calls to ->verify and ->setpolicy for this CPU
->          */
->         ret = driver->init(policy);
->         if (ret) {
->                 pr_debug("initialization failed\n");
-> -               spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
->                 goto err_set_policy_cpu;
->         }
-> -       spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
->
->         /* related cpus should atleast have policy->cpus */
->         cpumask_or(policy->related_cpus, policy->related_cpus, policy->cpus);
-> @@ -1100,10 +1095,8 @@ static int __cpufreq_remove_dev(struct device
-> *dev, struct subsys_interface *sif
->                 wait_for_completion(cmp);
->                 pr_debug("wait complete\n");
->
-> -               spin_lock_irqsave(&cpufreq_driver_lock, flags);
->                 if (driver->exit)
->                         driver->exit(data);
-> -               spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
->
->                 free_cpumask_var(data->related_cpus);
->                 free_cpumask_var(data->cpus);
+diff --git a/init/Kconfig b/init/Kconfig
+index a05f843..ccb9f8f 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -332,7 +332,7 @@ config VIRT_CPU_ACCOUNTING
+ choice
+ 	prompt "Cputime accounting"
+ 	default TICK_CPU_ACCOUNTING if !PPC64
+-	default VIRT_CPU_ACCOUNTING if PPC64
++	default VIRT_CPU_ACCOUNTING_NATIVE if PPC64
+ 
+ # Kind of a stub config for the pure tick based cputime accounting
+ config TICK_CPU_ACCOUNTING
