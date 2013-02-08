@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946035Ab3BHBCK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 20:02:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42016 "EHLO
+	id S1946010Ab3BHBCJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 20:02:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42024 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945917Ab3BHA6T (ORCPT
+	with ESMTP id S1945923Ab3BHA6U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 19:58:19 -0500
+	Thu, 7 Feb 2013 19:58:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Moody <pmoody@google.com>, Jan Beulich <jbeulich@suse.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [ 04/16] x86-64: Replace left over sti/cli in ia32 audit exit code
-Date: Thu,  7 Feb 2013 16:58:03 -0800
-Message-Id: <20130208004627.831001175@linuxfoundation.org>
+        Sergey Alexandrov <splavgm@gmail.com>,
+        Vyacheslav Dubeyko <slava@dubeyko.com>,
+        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 05/16] nilfs2: fix fix very long mount time issue
+Date: Thu,  7 Feb 2013 16:58:04 -0800
+Message-Id: <20130208004628.017644234@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130208004627.112511141@linuxfoundation.org>
 References: <20130208004627.112511141@linuxfoundation.org>
@@ -29,53 +30,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Beulich <JBeulich@suse.com>
+From: Vyacheslav Dubeyko <slava@dubeyko.com>
 
-commit 40a1ef95da85843696fc3ebe5fce39b0db32669f upstream.
+commit a9bae189542e71f91e61a4428adf6e5a7dfe8063 upstream.
 
-For some reason they didn't get replaced so far by their
-paravirt equivalents, resulting in code to be run with
-interrupts disabled that doesn't expect so (causing, in the
-observed case, a BUG_ON() to trigger) when syscall auditing is
-enabled.
+There exists a situation when GC can work in background alone without
+any other filesystem activity during significant time.
 
-David (Cc-ed) came up with an identical fix, so likely this can
-be taken to count as an ack from him.
+The nilfs_clean_segments() method calls nilfs_segctor_construct() that
+updates superblocks in the case of NILFS_SC_SUPER_ROOT and
+THE_NILFS_DISCONTINUED flags are set.  But when GC is working alone the
+nilfs_clean_segments() is called with unset THE_NILFS_DISCONTINUED flag.
+As a result, the update of superblocks doesn't occurred all this time
+and in the case of SPOR superblocks keep very old values of last super
+root placement.
 
-Reported-by: Peter Moody <pmoody@google.com>
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Cc: David Vrabel <david.vrabel@citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Link: http://lkml.kernel.org/r/5108E01902000078000BA9C5@nat28.tlf.novell.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: David Vrabel <david.vrabel@citrix.com>
-Tested-by: Peter Moody <pmoody@google.com>
+SYMPTOMS:
+
+Trying to mount a NILFS2 volume after SPOR in such environment ends with
+very long mounting time (it can achieve about several hours in some
+cases).
+
+REPRODUCING PATH:
+
+1. It needs to use external USB HDD, disable automount and doesn't
+   make any additional filesystem activity on the NILFS2 volume.
+
+2. Generate temporary file with size about 100 - 500 GB (for example,
+   dd if=/dev/zero of=<file_name> bs=1073741824 count=200).  The size of
+   file defines duration of GC working.
+
+3. Then it needs to delete file.
+
+4. Start GC manually by means of command "nilfs-clean -p 0".  When you
+   start GC by means of such way then, at the end, superblocks is updated
+   by once.  So, for simulation of SPOR, it needs to wait sometime (15 -
+   40 minutes) and simply switch off USB HDD manually.
+
+5. Switch on USB HDD again and try to mount NILFS2 volume.  As a
+   result, NILFS2 volume will mount during very long time.
+
+REPRODUCIBILITY: 100%
+
+FIX:
+
+This patch adds checking that superblocks need to update and set
+THE_NILFS_DISCONTINUED flag before nilfs_clean_segments() call.
+
+Reported-by: Sergey Alexandrov <splavgm@gmail.com>
+Signed-off-by: Vyacheslav Dubeyko <slava@dubeyko.com>
+Tested-by: Vyacheslav Dubeyko <slava@dubeyko.com>
+Acked-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Tested-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/ia32/ia32entry.S |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/nilfs2/ioctl.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/arch/x86/ia32/ia32entry.S
-+++ b/arch/x86/ia32/ia32entry.S
-@@ -208,7 +208,7 @@ sysexit_from_sys_call:
- 	testl $(_TIF_ALLWORK_MASK & ~_TIF_SYSCALL_AUDIT),TI_flags(%r10)
- 	jnz ia32_ret_from_sys_call
- 	TRACE_IRQS_ON
--	sti
-+	ENABLE_INTERRUPTS(CLBR_NONE)
- 	movl %eax,%esi		/* second arg, syscall return value */
- 	cmpl $0,%eax		/* is it < 0? */
- 	setl %al		/* 1 if so, 0 if not */
-@@ -218,7 +218,7 @@ sysexit_from_sys_call:
- 	GET_THREAD_INFO(%r10)
- 	movl RAX-ARGOFFSET(%rsp),%eax	/* reload syscall return value */
- 	movl $(_TIF_ALLWORK_MASK & ~_TIF_SYSCALL_AUDIT),%edi
--	cli
-+	DISABLE_INTERRUPTS(CLBR_NONE)
- 	TRACE_IRQS_OFF
- 	testl %edi,TI_flags(%r10)
- 	jz \exit
+--- a/fs/nilfs2/ioctl.c
++++ b/fs/nilfs2/ioctl.c
+@@ -661,8 +661,11 @@ static int nilfs_ioctl_clean_segments(st
+ 	if (ret < 0)
+ 		printk(KERN_ERR "NILFS: GC failed during preparation: "
+ 			"cannot read source blocks: err=%d\n", ret);
+-	else
++	else {
++		if (nilfs_sb_need_update(nilfs))
++			set_nilfs_discontinued(nilfs);
+ 		ret = nilfs_clean_segments(inode->i_sb, argv, kbufs);
++	}
+ 
+ 	nilfs_remove_all_gcinodes(nilfs);
+ 	clear_nilfs_gc_running(nilfs);
 
 
