@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759661Ab3BHA64 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 19:58:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42052 "EHLO
+	id S1759646Ab3BHA6y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 19:58:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42048 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758059Ab3BHA6Y (ORCPT
+	with ESMTP id S1759640Ab3BHA6Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 7 Feb 2013 19:58:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 16/16] USB: XHCI: fix memory leak of URB-private data
-Date: Thu,  7 Feb 2013 16:58:15 -0800
-Message-Id: <20130208004629.939790095@linuxfoundation.org>
+        Daniele Palmas <dnlplm@gmail.com>
+Subject: [ 11/16] USB: qcserial: add Telit Gobi QDL device
+Date: Thu,  7 Feb 2013 16:58:10 -0800
+Message-Id: <20130208004629.090658196@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130208004627.112511141@linuxfoundation.org>
 References: <20130208004627.112511141@linuxfoundation.org>
@@ -27,38 +26,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Daniele Palmas <dnlplm@gmail.com>
 
-commit 48c3375c5f69b1c2ef3d1051a0009cb9bce0ce24 upstream.
+commit 78796ae17eacedcdcaaeb03ba73d2e532a4c8f83 upstream.
 
-This patch (as1640) fixes a memory leak in xhci-hcd.  The urb_priv
-data structure isn't always deallocated in the handle_tx_event()
-routine for non-control transfers.  The patch adds a kfree() call so
-that all paths end up freeing the memory properly.
+Add VID and PID for Telit Gobi QDL device
 
-This patch should be backported to kernels as old as 2.6.36, that
-contain the commit 8e51adccd4c4b9ffcd509d7f2afce0a906139f75 "USB: xHCI:
-Introduce urb_priv structure"
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reported-and-tested-by: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
+Signed-off-by: Daniele Palmas <dnlplm@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-ring.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/serial/qcserial.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -2506,6 +2506,8 @@ cleanup:
- 				(trb_comp_code != COMP_STALL &&
- 					trb_comp_code != COMP_BABBLE))
- 				xhci_urb_free_priv(xhci, urb_priv);
-+			else
-+				kfree(urb_priv);
+--- a/drivers/usb/serial/qcserial.c
++++ b/drivers/usb/serial/qcserial.c
+@@ -54,6 +54,7 @@ static const struct usb_device_id id_tab
+ 	{DEVICE_G1K(0x05c6, 0x9221)},	/* Generic Gobi QDL device */
+ 	{DEVICE_G1K(0x05c6, 0x9231)},	/* Generic Gobi QDL device */
+ 	{DEVICE_G1K(0x1f45, 0x0001)},	/* Unknown Gobi QDL device */
++	{DEVICE_G1K(0x1bc7, 0x900e)},	/* Telit Gobi QDL device */
  
- 			usb_hcd_unlink_urb_from_ep(bus_to_hcd(urb->dev->bus), urb);
- 			if ((urb->actual_length != urb->transfer_buffer_length &&
+ 	/* Gobi 2000 devices */
+ 	{USB_DEVICE(0x1410, 0xa010)},	/* Novatel Gobi 2000 QDL device */
 
 
