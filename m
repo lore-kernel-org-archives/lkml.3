@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759634Ab3BHBPp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 20:15:45 -0500
+	id S1759903Ab3BHBQg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 20:16:36 -0500
 Received: from mail.linuxfoundation.org ([140.211.169.12]:41858 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759400Ab3BHA5q (ORCPT
+	with ESMTP id S1759209Ab3BHA5p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 19:57:46 -0500
+	Thu, 7 Feb 2013 19:57:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        fangxiaozhi <huananhu@huawei.com>
-Subject: [ 28/34] USB: storage: Define a new macro for USB storage match rules
-Date: Thu,  7 Feb 2013 16:57:24 -0800
-Message-Id: <20130208004631.749331933@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>,
+        Ming Lei <ming.lei@canonical.com>
+Subject: [ 25/34] USB: EHCI: fix timer bug affecting port resume
+Date: Thu,  7 Feb 2013 16:57:21 -0800
+Message-Id: <20130208004631.401466668@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130208004627.375461662@linuxfoundation.org>
 References: <20130208004627.375461662@linuxfoundation.org>
@@ -26,79 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: fangxiaozhi <huananhu@huawei.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 07c7be3d87e5cdaf5f94c271c516456364ef286c upstream.
+commit ee74290b7853db9d5fd64db70e5c175241c59fba upstream.
 
-1. Define a new macro for USB storage match rules:
-    matching with Vendor ID and interface descriptors.
+This patch (as1652) fixes a long-standing bug in ehci-hcd.  The driver
+relies on status polls to know when to stop port-resume signalling.
+It uses the root-hub status timer to schedule these status polls.  But
+when the driver for the root hub is resumed, the timer is rescheduled
+to go off immediately -- before the port is ready.  When this happens
+the timer does not get re-enabled, which prevents the port resume from
+finishing until some other event occurs.
 
-Signed-off-by: fangxiaozhi <huananhu@huawei.com>
+The symptom is that when a new device is plugged in, it doesn't get
+recognized or enumerated until lsusb is run or something else happens.
+
+The solution is to re-enable the root-hub status timer after every
+status poll while a port resume is in progress.
+
+This bug hasn't surfaced before now because we never used to try to
+suspend the root hub in the middle of a port resume (except by
+coincidence).
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-and-tested-by: Norbert Preining <preining@logic.at>
+Tested-by: Ming Lei <ming.lei@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/storage/usb.c          |   12 ++++++++++++
- drivers/usb/storage/usual-tables.c |   15 +++++++++++++++
- 2 files changed, 27 insertions(+)
+ drivers/usb/host/ehci-hub.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/storage/usb.c
-+++ b/drivers/usb/storage/usb.c
-@@ -120,6 +120,17 @@ MODULE_PARM_DESC(quirks, "supplemental l
- 	.useTransport = use_transport,	\
+--- a/drivers/usb/host/ehci-hub.c
++++ b/drivers/usb/host/ehci-hub.c
+@@ -623,7 +623,11 @@ ehci_hub_status_data (struct usb_hcd *hc
+ 			status = STS_PCD;
+ 		}
+ 	}
+-	/* FIXME autosuspend idle root hubs */
++
++	/* If a resume is in progress, make sure it can finish */
++	if (ehci->resuming_ports)
++		mod_timer(&hcd->rh_timer, jiffies + msecs_to_jiffies(25));
++
+ 	spin_unlock_irqrestore (&ehci->lock, flags);
+ 	return status ? retval : 0;
  }
- 
-+#define UNUSUAL_VENDOR_INTF(idVendor, cl, sc, pr, \
-+		vendor_name, product_name, use_protocol, use_transport, \
-+		init_function, Flags) \
-+{ \
-+	.vendorName = vendor_name,	\
-+	.productName = product_name,	\
-+	.useProtocol = use_protocol,	\
-+	.useTransport = use_transport,	\
-+	.initFunction = init_function,	\
-+}
-+
- static struct us_unusual_dev us_unusual_dev_list[] = {
- #	include "unusual_devs.h"
- 	{ }		/* Terminating entry */
-@@ -131,6 +142,7 @@ static struct us_unusual_dev for_dynamic
- #undef UNUSUAL_DEV
- #undef COMPLIANT_DEV
- #undef USUAL_DEV
-+#undef UNUSUAL_VENDOR_INTF
- 
- #ifdef CONFIG_LOCKDEP
- 
---- a/drivers/usb/storage/usual-tables.c
-+++ b/drivers/usb/storage/usual-tables.c
-@@ -41,6 +41,20 @@
- #define USUAL_DEV(useProto, useTrans) \
- { USB_INTERFACE_INFO(USB_CLASS_MASS_STORAGE, useProto, useTrans) }
- 
-+/* Define the device is matched with Vendor ID and interface descriptors */
-+#define UNUSUAL_VENDOR_INTF(id_vendor, cl, sc, pr, \
-+			vendorName, productName, useProtocol, useTransport, \
-+			initFunction, flags) \
-+{ \
-+	.match_flags = USB_DEVICE_ID_MATCH_INT_INFO \
-+				| USB_DEVICE_ID_MATCH_VENDOR, \
-+	.idVendor    = (id_vendor), \
-+	.bInterfaceClass = (cl), \
-+	.bInterfaceSubClass = (sc), \
-+	.bInterfaceProtocol = (pr), \
-+	.driver_info = (flags) \
-+}
-+
- struct usb_device_id usb_storage_usb_ids[] = {
- #	include "unusual_devs.h"
- 	{ }		/* Terminating entry */
-@@ -50,6 +64,7 @@ MODULE_DEVICE_TABLE(usb, usb_storage_usb
- #undef UNUSUAL_DEV
- #undef COMPLIANT_DEV
- #undef USUAL_DEV
-+#undef UNUSUAL_VENDOR_INTF
- 
- /*
-  * The table of devices to ignore
 
 
