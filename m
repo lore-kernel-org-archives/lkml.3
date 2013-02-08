@@ -1,119 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946649Ab3BHPg3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 10:36:29 -0500
-Received: from mail.dev.rtsoft.ru ([213.79.90.226]:47169 "EHLO
-	wasted.dev.rtsoft.ru" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1946617Ab3BHPg2 (ORCPT
+	id S1760190Ab3BHPm1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 10:42:27 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38404 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760132Ab3BHPm0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 10:36:28 -0500
-To: linux-usb@vger.kernel.org
-Subject: [PATCH] testusb: remove all mentions of 'usbfs'
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-From: Sergei Shtylyov <sshtylyov@dev.rtsoft.ru>
-Organization: MontaVista Software LLC
-Date: Fri, 8 Feb 2013 18:34:36 +0300
+	Fri, 8 Feb 2013 10:42:26 -0500
+Date: Fri, 8 Feb 2013 15:41:13 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, tglx@linutronix.de,
+        peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
+        paulmck@linux.vnet.ibm.com, mingo@kernel.org,
+        linux-arch@vger.kernel.org, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, fweisbec@gmail.com,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rostedt@goodmis.org, xiaoguangrong@linux.vnet.ibm.com, rjw@sisk.pl,
+        sbw@mit.edu, wangyun@linux.vnet.ibm.com, netdev@vger.kernel.org,
+        namhyung@kernel.org, akpm@linux-foundation.org, walken@google.com,
+        linuxppc-dev@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v5 00/45] CPU hotplug: stop_machine()-free CPU hotplug
+Message-ID: <20130208154113.GV17833@n2100.arm.linux.org.uk>
+References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com> <510FBC01.2030405@linux.vnet.ibm.com> <87haloiwv0.fsf@rustcorp.com.au> <51134596.4080106@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302081834.36661.sshtylyov@dev.rtsoft.ru>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51134596.4080106@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 8a424bf40d772fedacc91862ecc86f10541fabb3 (tools/usb: remove last USBFS
-user) removed 'usbfs' files from the source but retained mentions of 'usbfs'
-all over the place, most importantly in the misleading error messages printed
-in case USB device files are not there.  Remove all the  mentions of 'usbfs'
-for good now!
+On Thu, Feb 07, 2013 at 11:41:34AM +0530, Srivatsa S. Bhat wrote:
+> On 02/07/2013 09:44 AM, Rusty Russell wrote:
+> > "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com> writes:
+> >> On 01/22/2013 01:03 PM, Srivatsa S. Bhat wrote:
+> >>                  Avg. latency of 1 CPU offline (ms) [stop-cpu/stop-m/c latency]
+> >>
+> >> # online CPUs    Mainline (with stop-m/c)       This patchset (no stop-m/c)
+> >>
+> >>       8                 17.04                          7.73
+> >>
+> >>      16                 18.05                          6.44
+> >>
+> >>      32                 17.31                          7.39
+> >>
+> >>      64                 32.40                          9.28
+> >>
+> >>     128                 98.23                          7.35
+> > 
+> > Nice!
+> 
+> Thank you :-)
+> 
+> >  I wonder how the ARM guys feel with their quad-cpu systems...
+> > 
+> 
+> That would be definitely interesting to know :-)
 
-Signed-off-by: Sergei Shtylyov <sshtylyov@dev.rtsoft.ru>
+That depends what exactly you'd like tested (and how) and whether you'd
+like it to be a test-chip based quad core, or an OMAP dual-core SoC.
 
----
-This patch is atop of 'usb-next' branch of Greg's tree...
-
-Yes, I got that "usbfs files are missing" message on DaVinci recently, and it
-sent me on the wrong trail for some time, so I'd like to egt this sorted out...
-
- tools/usb/testusb.c |   27 +++++++++++++--------------
- 1 file changed, 13 insertions(+), 14 deletions(-)
-
-Index: usb/tools/usb/testusb.c
-===================================================================
---- usb.orig/tools/usb/testusb.c
-+++ usb/tools/usb/testusb.c
-@@ -279,8 +279,7 @@ nomem:
- 
- 	entry->ifnum = ifnum;
- 
--	/* FIXME ask usbfs what speed; update USBDEVFS_CONNECTINFO so
--	 * it tells about high speed etc */
-+	/* FIXME update USBDEVFS_CONNECTINFO so it tells about high speed etc */
- 
- 	fprintf(stderr, "%s speed\t%s\t%u\n",
- 		speed(entry->speed), entry->name, entry->ifnum);
-@@ -351,7 +350,7 @@ restart:
- 	return arg;
- }
- 
--static const char *usbfs_dir_find(void)
-+static const char *usb_dir_find(void)
- {
- 	static char udev_usb_path[] = "/dev/bus/usb";
- 
-@@ -380,7 +379,7 @@ int main (int argc, char **argv)
- 	int			c;
- 	struct testdev		*entry;
- 	char			*device;
--	const char		*usbfs_dir = NULL;
-+	const char		*usb_dir = NULL;
- 	int			all = 0, forever = 0, not = 0;
- 	int			test = -1 /* all */;
- 	struct usbtest_param	param;
-@@ -407,8 +406,8 @@ int main (int argc, char **argv)
- 	case 'D':	/* device, if only one */
- 		device = optarg;
- 		continue;
--	case 'A':	/* use all devices with specified usbfs dir */
--		usbfs_dir = optarg;
-+	case 'A':	/* use all devices with specified USB dir */
-+		usb_dir = optarg;
- 		/* FALL THROUGH */
- 	case 'a':	/* use all devices */
- 		device = NULL;
-@@ -449,7 +448,7 @@ usage:
- 			"usage: %s [options]\n"
- 			"Options:\n"
- 			"\t-D dev		only test specific device\n"
--			"\t-A usbfs-dir\n"
-+			"\t-A usb-dir\n"
- 			"\t-a		test all recognized devices\n"
- 			"\t-l		loop forever(for stress test)\n"
- 			"\t-t testnum	only run specified case\n"
-@@ -470,18 +469,18 @@ usage:
- 		goto usage;
- 	}
- 
--	/* Find usbfs mount point */
--	if (!usbfs_dir) {
--		usbfs_dir = usbfs_dir_find();
--		if (!usbfs_dir) {
--			fputs ("usbfs files are missing\n", stderr);
-+	/* Find usb device subdirectory */
-+	if (!usb_dir) {
-+		usb_dir = usb_dir_find();
-+		if (!usb_dir) {
-+			fputs ("USB device files are missing\n", stderr);
- 			return -1;
- 		}
- 	}
- 
- 	/* collect and list the test devices */
--	if (ftw (usbfs_dir, find_testdev, 3) != 0) {
--		fputs ("ftw failed; is usbfs missing?\n", stderr);
-+	if (ftw (usb_dir, find_testdev, 3) != 0) {
-+		fputs ("ftw failed; are USB device files missing?\n", stderr);
- 		return -1;
- 	}
- 
