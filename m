@@ -1,111 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947049Ab3BHUp4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 15:45:56 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:53653 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946959Ab3BHUpy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 15:45:54 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Mel Gorman <mgorman@suse.de>,
-        linux-kernel@vger.kernel.org, williams@redhat.com
-References: <20130207215742.GB31684@hansolo.jdub.homelinux.org>
-	<20130207141502.04625ea0.akpm@linux-foundation.org>
-	<20130208003501.GC31684@hansolo.jdub.homelinux.org>
-	<20130208181949.GD31684@hansolo.jdub.homelinux.org>
-	<87k3qiwomi.fsf@xmission.com>
-	<20130208202314.GF31684@hansolo.jdub.homelinux.org>
-Date: Fri, 08 Feb 2013 12:45:47 -0800
-In-Reply-To: <20130208202314.GF31684@hansolo.jdub.homelinux.org> (Josh Boyer's
-	message of "Fri, 8 Feb 2013 15:23:14 -0500")
-Message-ID: <87r4kqttz8.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1947082Ab3BHUqK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 15:46:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42303 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1946959Ab3BHUqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 15:46:07 -0500
+Message-ID: <511563F6.1080009@redhat.com>
+Date: Fri, 08 Feb 2013 15:45:42 -0500
+From: Don Dutile <ddutile@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120601 Thunderbird/10.0.5
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX18BlEzCe2x6ICKsUgCqKngh1Iny4OMd2mc=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  2.5 XMGppyBdWords BODY: Gappy or l33t words
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.4 FVGT_m_MULTI_ODD Contains multiple odd letter combinations
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  0.1 XMSolicitRefs_0 Weightloss drug
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: **;Josh Boyer <jwboyer@redhat.com>
-X-Spam-Relay-Country: 
-Subject: Re: Odd ENOMEM being returned in 3.8-rcX
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>
+Subject: Re: [PATCH v2 08/26] iommu, irq: Allocate irq_desc for dmar_msi with
+ local node
+References: <1360351703-20571-1-git-send-email-yinghai@kernel.org> <1360351703-20571-9-git-send-email-yinghai@kernel.org>
+In-Reply-To: <1360351703-20571-9-git-send-email-yinghai@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Josh Boyer <jwboyer@redhat.com> writes:
-
-> < Two emails fly past each other in the night >
-
-Yep.
-
->> My best guess in some dark corner of mock has untested code to unshare a
->> pid namespace, and that corner started doing something now that
->> unsharing of the pid namespace actually works.
->> 
->> If mock has called unshare(CLONE_NEWPID). And then forked a process and
->> that process exited, and then forked anothe process that second and all
->> subsequent fork calls will fail with -ENOMEM (because init has exited in
->> the pid namespace).  -ENOMEM will be generated because of a failure of
->> alloc_pid.
->> 
->> Looking at that code path a little closer that just about has to be it,
->> because I goofed and the error path drops the lock but not irqs.  The
->> patch below should fix the nasty warning and confirm where the code is
->> failing in copy_process.
+On 02/08/2013 02:28 PM, Yinghai Lu wrote:
+> iommu irq's irq_desc should be on local node ram.
 >
-> OK.  I'll turn the debug option back on and give this patch a try.
-
-Thanks.  Your minimal test case also confirms my hunch. But we should
-fix the error path as well.
-
->> An strace to see which syscalls mock is making and with which flags
->> would be very interesting.  I am almost certain that there is a
->> unshare(CLONE_NEWPID) somewhere in there.  But in a remote corner of
->> possibility it could weird clone flags, or something else.
+> Fix the return value checking problem.
 >
-> Oh, I have that but it's a python app with a helper C app and it's a...
-> verbose strace.  It's here for one failure:
+> create_irq() will return -1 when fail to allocate.
+> create_irq_nr() will return 0 when fail to allocate.
 >
-> http://jwboyer.fedorapeople.org/pub/mock-strace
+> here only check !irq, so need to change it to use create_irq_nr instead.
 >
-> Hopefully the testcase from my other email will help though.  It's much
-> simpler.
-
-Yes.  Your other test case confirms my patch you bisected this to is
-working correctly.
-
->> Beyond that I suspect we want to work with the mock folks so they get
->> their code to use a pid namespace working the way they intended.
+> Signed-off-by: Yinghai Lu<yinghai@kernel.org>
+> Cc: Joerg Roedel<joro@8bytes.org>
+> Cc: Donald Dutile<ddutile@redhat.com>
+> ---
+>   drivers/iommu/dmar.c |    2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
 >
-> Right.  CC'd Clark (for real this time).
+> diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
+> index 174bb65..316b5a2 100644
+> --- a/drivers/iommu/dmar.c
+> +++ b/drivers/iommu/dmar.c
+> @@ -1263,7 +1263,7 @@ int dmar_set_interrupt(struct intel_iommu *iommu)
+>   	if (iommu->irq)
+>   		return 0;
 >
-> I'll let you know on the patch.
+> -	irq = create_irq();
+> +	irq = create_irq_nr(0, iommu->node);
+>   	if (!irq) {
+>   		pr_err("IOMMU: no free vectors\n");
+>   		return -EINVAL;
+Good catch!
 
-Cool.  Looking at the strace I can't figure out what mock expected
-to happen or how mock was working before this.  As mock is calling
-unshare(CLONE_NEWNS|CLONE_NEWUTS|CLONE_NEWIPC|CLONE_NEWPID) all in one
-go.
-
-Previous to my patch enabling CLONE_NEWPID that would cause the unshare
-to fail.
-
-So it looks mock is taking a buggy untested code path and things are not
-working as it expected.
-
-Eric
+you can add my ack to it.
 
