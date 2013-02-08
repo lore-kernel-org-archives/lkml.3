@@ -1,48 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947178Ab3BHVlX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 16:41:23 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:37008 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760321Ab3BHVlW (ORCPT
+	id S1947228Ab3BHVln (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 16:41:43 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:59729 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1947198Ab3BHVll (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 16:41:22 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130208001458.GA24140@earth.universe>
-References: <CACRpkdZD6XWxgVFfO3-h_8+2y36o4mnT+ZW0d+GAVTOpC2yWRA@mail.gmail.com>
-	<CACRpkdZmM4oNhXcaFWEFLkABCLcxEXDRxKmoev=_vx4g+o0qtA@mail.gmail.com>
-	<CACRpkdZxOW_Zk3dv45RraUM6dyOTEifcfASuBDehxB4SsYKgsw@mail.gmail.com>
-	<20130208001458.GA24140@earth.universe>
-Date: Fri, 8 Feb 2013 22:41:19 +0100
-Message-ID: <CACRpkdZFgVtMYBOfz3hKFLZnRXX3PThna1aFNKTFNC_ec7wx7g@mail.gmail.com>
-Subject: Re: HSI subsystem status
-From: Linus Walleij <linus.walleij@linaro.org>
-To: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Deepak Saxena <dsaxena@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 8 Feb 2013 16:41:41 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v3 1/2] ARM: Exynos5250: Enabling ehci-s5p driver
+To: Doug Anderson <dianders@chromium.org>,
+        Vivek Gautam <gautamvivek1987@gmail.com>
+Cc: linux-samsung-soc@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        devicetree-discuss@lists.ozlabs.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-usb@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>
+In-Reply-To: <CAD=FV=X=GRz0ZuFSqEHPy6i2ULtHk==M2_gaCvdmd=81YMNmMg@mail.gmail.com>
+References: <1355416562-25539-1-git-send-email-gautam.vivek@samsung.com> <1355416562-25539-2-git-send-email-gautam.vivek@samsung.com> <20121215072312.EBCAA3E0C06@localhost> <CAFp+6iHoS4XJWHNrsyVsQS4bYZs1PUNEGsRr=EqAS7kpm2XGMQ@mail.gmail.com> <CAFp+6iFSZjfVJp23j2dEz0hRap07RMo68GJpsQM7YqOMBCbqsQ@mail.gmail.com> <CAD=FV=X=GRz0ZuFSqEHPy6i2ULtHk==M2_gaCvdmd=81YMNmMg@mail.gmail.com>
+Date: Fri, 08 Feb 2013 21:41:36 +0000
+Message-Id: <20130208214137.05F7D3E2C27@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 8, 2013 at 1:14 AM, Sebastian Reichel <sre@debian.org> wrote:
-> On Mon, Jan 07, 2013 at 03:38:21PM +0100, Linus Walleij wrote:
->> >> what is the status on the HSI subsystem? We have based some patches for
->> >> HSI master on top of the OMAP HSI master patches, but these never seem
->> >> to reach the tree?
->> >
->> > Ping on the cch.devel address instead...
->> And ping on Carlos' private mail address, hehe :-)
->
-> Did you receive a private answer? I'm interested in seeing OMAP HSI
-> patches in the mainline kernel, so that the Nokia N900 modem can be
-> used with a mainline kernel.
+On Fri, 21 Dec 2012 10:13:50 -0800, Doug Anderson <dianders@chromium.org> wrote:
+> Vivek,
+> 
+> 
+> On Fri, Dec 21, 2012 at 12:16 AM, Vivek Gautam
+> <gautamvivek1987@gmail.com> wrote:
+> > Hi all,
+> >
+> >
+> > On Wed, Dec 19, 2012 at 7:20 PM, Vivek Gautam <gautamvivek1987@gmail.com> wrote:
+> >> CC: Doug Anderson
+> >>
+> >>
+> >> On Sat, Dec 15, 2012 at 12:53 PM, Grant Likely
+> >> <grant.likely@secretlab.ca> wrote:
+> >>> On Thu, 13 Dec 2012 22:06:01 +0530, Vivek Gautam <gautam.vivek@samsung.com> wrote:
+> >>>> diff --git a/arch/arm/mach-exynos/mach-exynos5-dt.c b/arch/arm/mach-exynos/mach-exynos5-dt.c
+> >>>> index 462e5ac..b3b9af1 100644
+> >>>> --- a/arch/arm/mach-exynos/mach-exynos5-dt.c
+> >>>> +++ b/arch/arm/mach-exynos/mach-exynos5-dt.c
+> >>>> @@ -110,6 +110,8 @@ static const struct of_dev_auxdata exynos5250_auxdata_lookup[] __initconst = {
+> >>>>                               "samsung-i2s.1", NULL),
+> >>>>       OF_DEV_AUXDATA("samsung,samsung-i2s", 0x12D70000,
+> >>>>                               "samsung-i2s.2", NULL),
+> >>>> +     OF_DEV_AUXDATA("samsung,exynos4210-ehci", EXYNOS5_PA_EHCI,
+> >>>> +                             "s5p-ehci", NULL),
+> >>>
+> >>> I'm assuming the above change is temporary. What is left to be done to
+> >>> drop the auxdata in theses two patches?
+> >>>
+> >>> Otherwise the patch looks fine.
+> >>>
+> >>> Acked-by: Grant Likely <grant.likely@secretlab.ca>
+> >
+> > Any more thought about this patch?
+> > Or does this change seems fine?
+> 
+> I'm fairly certain we can just drop the OF_DEV_AUXDATA entry here.  I
+> haven't been following this as closely as I should, but I know that
+> the comment for this table says that the whole purpose is to override
+> device names and that it should be temporary.  We don't need to do any
+> overriding of device names here, do we?
+> 
+> When I drop this (and the ohci and phy) entries from my table I can
+> still boot and still can use USB.  The big difference is what shows up
+> in dmesg
+> 
+> [    1.605000] s5p-ehci s5p-ehci: S5P EHCI Host Controller
+> 
+> Becomes:
+> 
+> [    1.550000] s5p-ehci 12110000.usb: S5P EHCI Host Controller
+> 
+> ...and some sysfs paths change.
 
-Yes, so realizing that this needs maintenance, and since it is part of
-the HW in several Linaro member company boards, I put an item forward
-to Linaro, who work cross ARM-boards, to try to locate a new
-(co-)maintainer for HSI. However that needs to be processed and
-prioritized.
-https://blueprints.launchpad.net/linux-linaro/+spec/hsi-subsystem-maint
+Right. Drop the AUXDATA then.  :-)
 
-Yours,
-Linus Walleij
+g.
+
