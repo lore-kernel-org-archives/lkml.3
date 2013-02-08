@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946526Ab3BHMrX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 07:47:23 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48111 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1946353Ab3BHMrV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 07:47:21 -0500
-From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: [PATCH 2/2 v2] regmap: debugfs: Optimize seeking within blocks of registers
-Date: Fri,  8 Feb 2013 12:47:20 +0000
-Message-Id: <1360327640-16705-1-git-send-email-dp@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1946554Ab3BHMrl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 07:47:41 -0500
+Received: from etezian.org ([198.101.225.253]:38430 "EHLO mail.etezian.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1946353Ab3BHMrj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 07:47:39 -0500
+Date: Fri, 8 Feb 2013 13:48:30 +0100
+From: Andi Shyti <andi@etezian.org>
+To: Ruslan Bilovol <ruslan.bilovol@ti.com>
+Cc: Andi Shyti <andi@etezian.org>, tomi.valkeinen@ti.com,
+        FlorianSchandinat@gmx.de, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Subject: Re: [PATCH 1/1] OMAP4: DSS: Add panel for Blaze Tablet boards
+Message-ID: <20130208124829.GB10564@jack.whiskey>
+References: <1360248051-16541-1-git-send-email-ruslan.bilovol@ti.com>
+ <1360248051-16541-2-git-send-email-ruslan.bilovol@ti.com>
+ <20130207145952.GA7860@jack.whiskey>
+ <CAB=otbTH8bQp5X4Y2cvMYKwYqMbT0HQxmuRD9gRtna=-vy2ptA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAB=otbTH8bQp5X4Y2cvMYKwYqMbT0HQxmuRD9gRtna=-vy2ptA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Optimize this so that we can better guess where to start scanning
-from.  We know the length of the register field format, therefore
-given the file pointer position align to the nearest register
-field and scan from there onwards.  We round down in this calculation
-and we let the rest of the code figure out where to start scanning
-from.
+Hi,
 
-Signed-off-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
----
- drivers/base/regmap/regmap-debugfs.c | 12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+> Thanks for looking into
 
-diff --git a/drivers/base/regmap/regmap-debugfs.c b/drivers/base/regmap/regmap-debugfs.c
-index 5fa2e6d..8584fac 100644
---- a/drivers/base/regmap/regmap-debugfs.c
-+++ b/drivers/base/regmap/regmap-debugfs.c
-@@ -139,15 +139,17 @@ static unsigned int regmap_debugfs_get_dump_start(struct regmap *map,
- 	WARN_ON(list_empty(&map->debugfs_off_cache));
- 	ret = base;
- 
--	/* Find the relevant block */
-+	/* Find the relevant block:offset */
- 	list_for_each_entry(c, &map->debugfs_off_cache, list) {
- 		if (from >= c->min && from <= c->max) {
--			*pos = c->min;
--			return c->base_reg;
-+			fpos_offset = from - c->min;
-+			reg_offset = fpos_offset / map->debugfs_tot_len;
-+			*pos = c->min + (reg_offset * map->debugfs_tot_len);
-+			return c->base_reg + reg_offset;
- 		}
- 
--		*pos = c->min;
--		ret = c->base_reg;
-+		*pos = c->max;
-+		ret = c->max_reg;
- 	}
- 
- 	return ret;
--- 
-1.8.1.2
+if you want you can put me in CC and I can review the next
+patches (perhaps V2 of the patches)
 
+> >> +     mutex_lock(&tc358765_i2c->xfer_lock);
+> >> +     ret = i2c_transfer(tc358765_i2c->client->adapter, &msg, 1);
+> >> +     mutex_unlock(&tc358765_i2c->xfer_lock);
+> >
+> > What about using smbus?
+> 
+> OMAP2+ SoCs have full I2C controller so panel drivers traditionally use I2C.
+> Since implementation is OMAP-specific, I don't think we need to use smbus here.
+> 
+> Also please look at other panels implementation:
+> drivers/video/omap2/displays/panel-tfp410.c
+> drivers/video/omap2/displays/panel-picodlp.c
+
+Yeah, it's the same problem with other i2c drivers, they should
+be written to be working as much as possible with the emulated
+smbus.
+
+I don't actually know the internals of the omap2 driver
+controller, but not being able to use smbus, definitely sucks!
+
+> Will be fixed in next patchset
+
+What about sending a patch V2? :)
+
+Andi
