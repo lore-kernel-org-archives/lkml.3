@@ -1,121 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947209Ab3BHVPH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 16:15:07 -0500
-Received: from mail-ve0-f169.google.com ([209.85.128.169]:34659 "EHLO
-	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1947139Ab3BHVPF (ORCPT
+	id S1947187Ab3BHVRl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 16:17:41 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:39729 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1947139Ab3BHVRj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 16:15:05 -0500
+	Fri, 8 Feb 2013 16:17:39 -0500
+Date: Fri, 8 Feb 2013 13:17:35 -0800
+From: Kent Overstreet <koverstreet@google.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org, zab@redhat.com, bcrl@kvack.org,
+        jmoyer@redhat.com, axboe@kernel.dk, viro@zeniv.linux.org.uk,
+        tytso@mit.edu, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 23/32] Generic dynamic per cpu refcounting
+Message-ID: <20130208211735.GG27179@google.com>
+References: <1356573611-18590-1-git-send-email-koverstreet@google.com>
+ <1356573611-18590-26-git-send-email-koverstreet@google.com>
+ <20130208144408.GY2875@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <20130208145539.GC30334@gmail.com>
-References: <alpine.DEB.2.02.1302041002430.6063@chino.kir.corp.google.com>
- <20130204184436.GA13256@gmail.com> <alpine.DEB.2.02.1302041053330.6063@chino.kir.corp.google.com>
- <20130204191408.GA32081@kroah.com> <20130204191334.GB14837@gmail.com>
- <CAOJsxLFy7K0cY-8SH4dXs=agYqCN8wW0eC2tQxFxfV8cf7uWqg@mail.gmail.com>
- <alpine.DEB.2.02.1302061209450.18172@chino.kir.corp.google.com>
- <20130207080236.ae38366537cf3f13b9668606@canb.auug.org.au>
- <20130206214646.GA28135@gmail.com> <20130208084029.d7d97d6e26580a5512712f91@canb.auug.org.au>
- <20130208145539.GC30334@gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 9 Feb 2013 08:14:43 +1100
-X-Google-Sender-Auth: k_VEOy1s4QdgAnYwIRfCtgmy8Hg
-Message-ID: <CA+55aFz9ERvaFayTy8QCtfi610Bt_r0GcOs68UNggJTHdY4oaQ@mail.gmail.com>
-Subject: Re: kvmtool tree (Was: Re: [patch] config: fix make kvmconfig)
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        David Woodhouse <dwmw2@infradead.org>, Michal Marek <mmarek@suse.cz>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130208144408.GY2875@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 9, 2013 at 1:55 AM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> I'll remove it if Linus insists on it, but I think you guys are
-> putting form before substance and utility :-(
+On Fri, Feb 08, 2013 at 06:44:08AM -0800, Tejun Heo wrote:
+> (cc'ing Andrew)
+> 
+> On Wed, Dec 26, 2012 at 06:00:02PM -0800, Kent Overstreet wrote:
+> > This implements a refcount with similar semantics to
+> > atomic_get()/atomic_dec_and_test(), that starts out as just an atomic_t
+> > but dynamically switches to per cpu refcounting when the rate of
+> > gets/puts becomes too high.
+> > 
+> > It also implements two stage shutdown, as we need it to tear down the
+> > percpu counts. Before dropping the initial refcount, you must call
+> > percpu_ref_kill(); this puts the refcount in "shutting down mode" and
+> > switches back to a single atomic refcount with the appropriate barriers
+> > (synchronize_rcu()).
+> > 
+> > It's also legal to call percpu_ref_kill() multiple times - it only
+> > returns true once, so callers don't have to reimplement shutdown
+> > synchronization.
+> > 
+> > For the sake of simplicity/efficiency, the heuristic is pretty simple -
+> > it just switches to percpu refcounting if there are more than x gets
+> > in one second (completely arbitrarily, 4096).
+> > 
+> > It'd be more correct to count the number of cache misses or something
+> > else more profile driven, but doing so would require accessing the
+> > shared ref twice per get - by just counting the number of gets(), we can
+> > stick that counter in the high bits of the refcount and increment both
+> > with a single atomic64_add(). But I expect this'll be good enough in
+> > practice.
+> > 
+> > Signed-off-by: Kent Overstreet <koverstreet@google.com>
+> 
+> What's the status of this series?  The percpu-refcnt part is still
+> going through review and the merge window is opening up pretty soon.
+> Kent, Andrew?
 
-No. Your pull requests are just illogical. I have yet to see a single
-reason why it should be merged.
+I don't think the percpu-refcount stuff should be blocking, the existing
+code in Andrew's tree isn't ideal w.r.t. the api but it is stable and
+tested.
 
-I *thought* "ease of use" could be a reason, and then people posted
-five-liner scripts to give some of the other virtual boxes the same
-kind of interface.
-
-Avoiding five lines of shell script is not a reason to pull a project
-into the kernel.
-
-> tools/kvm/ is a useful utility to kernel development, that in
-> just this past cycle was used as an incubator to:
-
-That's total bullshit.
-
-It could be useful whether it is merged into the kernel or not.
-
-"git" is a hell of a lot more useful utility for kernel development,
-to the point that practically we couldn't do without it any more, and
-it isn't merged into the kernel. It's a separate project with a
-separate life, and it is *better* for it. The same goes for all the
-tools that everybody uses every day for kernel development, often
-without even thinking about them.
-
-So "utility to kernel development" is not a reason for merging it into
-the kernel. NOT AT ALL.
-
-> *Please* don't try to harm useful code just for the heck of it.
-
-Again, total *bullshit*. Right now, the whole "attach the kvmtool to
-the kernel as a remora" doesn't make any sense at all, and not merging
-it doesn't harm anything AT ALL. Quite the reverse.
-
-The fact that kvmtool isn't available as a standalone project probably
-keeps people actively from using it. You can't just fetch kvmtool. You
-have to fetch the kernel and kvmtool, and if you're a kernel developer
-you either have to make a whole new kernel tree for it (which is
-stupid) or merge it into your normal kernel tree that has development
-that has nothing to do with kvmtool (which is stupid AND F*CKING
-INSANE)
-
-> Please stop this silliness, IMO it's not constructive at all ...
-
-Ingo, it's not us being silly, it is *you*.
-
-What the heck is the advantage of merging it into the kernel? It has
-never ever been explained.
-
-This is not like "perf", where there wasn't any alternatives, and
-oprofile had shown over many many years that the situation wasn't
-improving: it was only getting worse, and more disconnected from the
-actual capabilities of the hardware.
-
-But kvmtool is no "perf". There are other virtual boxes, and rather
-than being limited, they are more capable! The selling tool of kvmtool
-was never that it did something particularly magical, it was always
-that it did less, and was easier to use. But that does not in any way
-mean "should be merged". You can do less and be easier to use and
-stand on your own legs.
-
-So here, let me state it very very clearly: I will not be merging
-kvmtool. It's not about "useful code". It's not about the project
-keeping to improve. Both of those would seem to be *better* outside
-the kernel, where there isn't that artificial and actually harmful
-tie-in.
-
-In other words, I don't see *any* advantage to merging kvmtool. I
-think merging it would be an active mistake, and would just tie two
-projects together that just shouldn't be tied together.
-
-So nobody is "hurting useful code", except perhaps you.
-
-Explain to me why I'm wrong. I don't think you can. You certainly
-haven't so far.
-
-               Linus
+I have patches on top of that that incorporate most of your ideas and
+are definite improvements, I've just been holding off on them because I
+want to come up with a good torture test (mainly because of the bias
+mechanism for teardown).
