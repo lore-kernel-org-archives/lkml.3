@@ -1,109 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760188Ab3BHO43 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 09:56:29 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:52830 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758687Ab3BHO41 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 09:56:27 -0500
-X-Originating-IP: 108.223.40.66
-Date: Fri, 8 Feb 2013 06:56:41 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "Mark M. Hoffman" <mhoffman@lightlink.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: MAINTAINERS: Remove Mark M. Hoffman
-Message-ID: <20130208145641.GA24787@roeck-us.net>
-References: <20130208105437.347ea5b4@endymion.delvare>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130208105437.347ea5b4@endymion.delvare>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1946469Ab3BHO6r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 09:58:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1059 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1946249Ab3BHO6q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 09:58:46 -0500
+Date: Fri, 8 Feb 2013 08:58:28 -0600
+From: Clark Williams <williams@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] scheduler include file reorganization
+Message-ID: <20130208085828.02e61518@riff.lan>
+In-Reply-To: <20130208141841.GB30334@gmail.com>
+References: <20130207094650.76302f47@riff.lan>
+	<20130207185608.GA25223@gmail.com>
+	<20130207191345.GA28960@gmail.com>
+	<20130207195257.GA29985@gmail.com>
+	<20130207150838.02226207@riff.lan>
+	<20130208141841.GB30334@gmail.com>
+Organization: Red Hat, Inc
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/kxkaIq3lMIEcpEAV8ER_3B4"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 08, 2013 at 10:54:37AM +0100, Jean Delvare wrote:
-> Mark M. Hoffman stopped working on the Linux kernel several years
-> ago, so he should no longer be listed as a driver maintainer. I'm not
-> even sure if his e-mail address still works.
-> 
-> I can take over 3 drivers he was responsible for, the 4th one will
+--Sig_/kxkaIq3lMIEcpEAV8ER_3B4
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Hi Jean,
+On Fri, 8 Feb 2013 15:18:41 +0100
+Ingo Molnar <mingo@kernel.org> wrote:
 
-	... 2 drivers, the other two ...
+>=20
+> * Clark Williams <williams@redhat.com> wrote:
+>=20
+> > On Thu, 7 Feb 2013 20:52:57 +0100
+> > Ingo Molnar <mingo@kernel.org> wrote:
+> >=20
+> > >=20
+> > > * Ingo Molnar <mingo@kernel.org> wrote:
+> > >=20
+> > > >=20
+> > > > * Ingo Molnar <mingo@kernel.org> wrote:
+> > > >=20
+> > > > > Yeah, that looks pretty good.
+> > > > >=20
+> > > > > I'll give it some testing.
+> > > >=20
+> > > > Found one build error so far, applied the fix below.
+> > >=20
+> > > Another one was in NOMMU mode (fixed below) - a hidden sched.h=20
+> > > include file dependency in mm/nommu.c.
+> > >=20
+> > > It's looking good otherwise!
+> > >=20
+> > > Thanks,
+> > >=20
+> > > 	Ingo
+> > >
+> >=20
+> > Huh, I did a build with an allmodconfig config file. You must=20
+> > be doing some odd permutations.
+>=20
+> Yeah, randconfig coverage and cross-arch build coverage. One of=20
+> the build errors triggered on allnoconfig, the other on the=20
+> blackfin architecture.
+>=20
+> > I have both of your fixes applied, send me any more you find=20
+> > and I'll regenerate.
+>=20
+> No need, I fixed your series locally and pushed out the result.
+>=20
+> Wanna split out some other parts of sched.h? ;-) I can do the=20
+> build coverage testing part for those as well.
+>=20
+> Thanks,
+>=20
+> 	Ingo
 
-as far as I can see from the patch.
 
-Thanks,
-Guenter
+I figured that was coming. :)
 
-> fall down to the subsystem maintainer.
-> 
-> Signed-off-by: Jean Delvare <khali@linux-fr.org>
-> Cc: "Mark M. Hoffman" <mhoffman@lightlink.com>
-> Cc: Guenter Roeck <linux@roeck-us.net>
-> Cc: Wolfram Sang <w.sang@pengutronix.de>
-> ---
-> Mark, if you have any objection, it's now or never.
-> 
->  MAINTAINERS |   17 ++---------------
->  1 file changed, 2 insertions(+), 15 deletions(-)
-> 
-> --- linux-3.8-rc6.orig/MAINTAINERS	2013-02-02 13:17:46.160665445 +0100
-> +++ linux-3.8-rc6/MAINTAINERS	2013-02-08 10:47:01.933759899 +0100
-> @@ -1286,12 +1286,6 @@ S:	Maintained
->  F:	drivers/platform/x86/asus*.c
->  F:	drivers/platform/x86/eeepc*.c
->  
-> -ASUS ASB100 HARDWARE MONITOR DRIVER
-> -M:	"Mark M. Hoffman" <mhoffman@lightlink.com>
-> -L:	lm-sensors@lm-sensors.org
-> -S:	Maintained
-> -F:	drivers/hwmon/asb100.c
-> -
->  ASYNCHRONOUS TRANSFERS/TRANSFORMS (IOAT) API
->  M:	Dan Williams <djbw@fb.com>
->  W:	http://sourceforge.net/projects/xscaleiop
-> @@ -3751,7 +3745,7 @@ F:	drivers/i2c/busses/i2c-via.c
->  F:	drivers/i2c/busses/i2c-viapro.c
->  
->  I2C/SMBUS STUB DRIVER
-> -M:	"Mark M. Hoffman" <mhoffman@lightlink.com>
-> +M:	Jean Delvare <khali@linux-fr.org>
->  L:	linux-i2c@vger.kernel.org
->  S:	Maintained
->  F:	drivers/i2c/i2c-stub.c
-> @@ -6906,13 +6900,6 @@ L:	netdev@vger.kernel.org
->  S:	Maintained
->  F:	drivers/net/ethernet/sis/sis900.*
->  
-> -SIS 96X I2C/SMBUS DRIVER
-> -M:	"Mark M. Hoffman" <mhoffman@lightlink.com>
-> -L:	linux-i2c@vger.kernel.org
-> -S:	Maintained
-> -F:	Documentation/i2c/busses/i2c-sis96x
-> -F:	drivers/i2c/busses/i2c-sis96x.c
-> -
->  SIS FRAMEBUFFER DRIVER
->  M:	Thomas Winischhofer <thomas@winischhofer.net>
->  W:	http://www.winischhofer.net/linuxsisvga.shtml
-> @@ -6990,7 +6977,7 @@ F:	Documentation/hwmon/sch5627
->  F:	drivers/hwmon/sch5627.c
->  
->  SMSC47B397 HARDWARE MONITOR DRIVER
-> -M:	"Mark M. Hoffman" <mhoffman@lightlink.com>
-> +M:	Jean Delvare <khali@linux-fr.org>
->  L:	lm-sensors@lm-sensors.org
->  S:	Maintained
->  F:	Documentation/hwmon/smsc47b397
-> 
-> 
-> -- 
-> Jean Delvare
-> 
+I'll look at it again and see about pulling the autogroup/cgroup stuff
+into it's own header. After that it's probably going to require some
+serious changes.=20
+
+Any suggestions?
+
+Clark
+
+--Sig_/kxkaIq3lMIEcpEAV8ER_3B4
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iEYEARECAAYFAlEVEpQACgkQHyuj/+TTEp25FgCgwLaCblTIFuYJvGPkByftLYS9
+5IUAoJAjNoxONBaU95GF3S+5c2c7VYHl
+=7NCX
+-----END PGP SIGNATURE-----
+
+--Sig_/kxkaIq3lMIEcpEAV8ER_3B4--
