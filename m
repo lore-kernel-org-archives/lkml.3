@@ -1,94 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947378Ab3BHXiQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 18:38:16 -0500
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:36447 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1947297Ab3BHXiO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 18:38:14 -0500
-Message-ID: <1360366054.3869.60.camel@misato.fc.hp.com>
-Subject: Re: [PATCH] ACPI: Drop the container.h header file
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <liuj97@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Date: Fri, 08 Feb 2013 16:27:34 -0700
-In-Reply-To: <1845543.1spGohx2XC@vostro.rjw.lan>
-References: <1873429.MS5RQDxTye@vostro.rjw.lan>
-	 <1891536.LKCrpu1upY@vostro.rjw.lan> <1435179.fU91E9qMVO@vostro.rjw.lan>
-	 <1845543.1spGohx2XC@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1947384Ab3BHXl1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 18:41:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23715 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1947302Ab3BHXl0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 18:41:26 -0500
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] time, Fix setting of hardware clock in NTP code
+Date: Fri,  8 Feb 2013 17:59:53 -0500
+Message-Id: <1360364393-17595-1-git-send-email-prarit@redhat.com>
+In-Reply-To: <CANcMJZAzT-fCXY2P0ZRjdMoXq+dNd3rrq3eNY18pgob-hS6L9g@mail.gmail.com>
+References: <CANcMJZAzT-fCXY2P0ZRjdMoXq+dNd3rrq3eNY18pgob-hS6L9g@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-02-09 at 00:18 +0100, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> The include/acpi/container.h only contains a definition of a
-> structure that is not used any more, so drop it entirely.
-> 
-> Similar change was proposed earlier by Toshi Kani.
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+At init time, if the system time is "warped" forward in warp_clock()
+it will differ from the hardware clock by sys_tz.tz_minuteswest.  This time
+difference is not taken into account when ntp updates the hardware clock,
+and this causes the system time to jump forward by this offset every reboot.
 
-Acked-by: Toshi Kani <toshi.kani@hp.com>
+The kernel must take this offset into account when writing the system time
+to the hardware clock in the ntp code.  This patch adds
+persistent_clock_is_local which indicates that an offset has been applied
+in warp_clock() and accounts for the "warp" before writing the hardware
+clock.
 
-Thanks,
--Toshi
+x86 does not have this problem as rtc writes are software limited to a
++/-15 minute window relative to the current rtc time.  Other arches, such
+as powerpc, however do a full synchronization of the system time to the
+rtc and will see this problem.
 
+[v2]: generated against tip/timers/core
 
-> ---
-> 
-> On top of current linux-pm.git/bleeding-edge.
-> 
-> Thanks,
-> Rafael
-> 
-> ---
->  drivers/acpi/container.c |    1 -
->  include/acpi/container.h |   12 ------------
->  2 files changed, 13 deletions(-)
-> 
-> Index: test/include/acpi/container.h
-> ===================================================================
-> --- test.orig/include/acpi/container.h
-> +++ /dev/null
-> @@ -1,12 +0,0 @@
-> -#ifndef __ACPI_CONTAINER_H
-> -#define __ACPI_CONTAINER_H
-> -
-> -#include <linux/kernel.h>
-> -
-> -struct acpi_container {
-> -	acpi_handle handle;
-> -	unsigned long sun;
-> -	int state;
-> -};
-> -
-> -#endif				/* __ACPI_CONTAINER_H */
-> Index: test/drivers/acpi/container.c
-> ===================================================================
-> --- test.orig/drivers/acpi/container.c
-> +++ test/drivers/acpi/container.c
-> @@ -34,7 +34,6 @@
->  #include <linux/acpi.h>
->  #include <acpi/acpi_bus.h>
->  #include <acpi/acpi_drivers.h>
-> -#include <acpi/container.h>
->  
->  #define PREFIX "ACPI: "
->  
-> 
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+---
+ include/linux/time.h | 1 +
+ kernel/time.c        | 8 ++++++++
+ kernel/time/ntp.c    | 8 ++++++--
+ 3 files changed, 15 insertions(+), 2 deletions(-)
 
+diff --git a/include/linux/time.h b/include/linux/time.h
+index 476e1d7..a3ab6a8 100644
+--- a/include/linux/time.h
++++ b/include/linux/time.h
+@@ -128,6 +128,7 @@ static inline bool has_persistent_clock(void)
+ 
+ extern void read_persistent_clock(struct timespec *ts);
+ extern void read_boot_clock(struct timespec *ts);
++extern int persistent_clock_is_local;
+ extern int update_persistent_clock(struct timespec now);
+ void timekeeping_init(void);
+ extern int timekeeping_suspended;
+diff --git a/kernel/time.c b/kernel/time.c
+index d226c6a..c2a27dd 100644
+--- a/kernel/time.c
++++ b/kernel/time.c
+@@ -115,6 +115,12 @@ SYSCALL_DEFINE2(gettimeofday, struct timeval __user *, tv,
+ }
+ 
+ /*
++ * Indicates if there is an offset between the system clock and the hardware
++ * clock/persistent clock/rtc.
++ */
++int persistent_clock_is_local;
++
++/*
+  * Adjust the time obtained from the CMOS to be UTC time instead of
+  * local time.
+  *
+@@ -135,6 +141,8 @@ static inline void warp_clock(void)
+ 	struct timespec adjust;
+ 
+ 	adjust = current_kernel_time();
++	if (sys_tz.tz_minuteswest != 0)
++		persistent_clock_is_local = 1;
+ 	adjust.tv_sec += sys_tz.tz_minuteswest * 60;
+ 	do_settimeofday(&adjust);
+ }
+diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
+index 313b161..b10a42b 100644
+--- a/kernel/time/ntp.c
++++ b/kernel/time/ntp.c
+@@ -511,13 +511,17 @@ static void sync_cmos_clock(struct work_struct *work)
+ 
+ 	getnstimeofday(&now);
+ 	if (abs(now.tv_nsec - (NSEC_PER_SEC / 2)) <= tick_nsec / 2) {
++		struct timespec adjust = now;
++
+ 		fail = -ENODEV;
++		if (persistent_clock_is_local)
++			adjust.tv_sec -= (sys_tz.tz_minuteswest * 60);
+ #ifdef CONFIG_GENERIC_CMOS_UPDATE
+-		fail = update_persistent_clock(now);
++		fail = update_persistent_clock(adjust);
+ #endif
+ #ifdef CONFIG_RTC_SYSTOHC
+ 		if (fail == -ENODEV)
+-			fail = rtc_set_ntp_time(now);
++			fail = rtc_set_ntp_time(adjust);
+ #endif
+ 	}
+ 
+-- 
+1.8.1.2
 
