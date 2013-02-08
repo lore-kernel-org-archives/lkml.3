@@ -1,53 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760405Ab3BHWVJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 17:21:09 -0500
-Received: from dcvr.yhbt.net ([64.71.152.64]:55543 "EHLO dcvr.yhbt.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758163Ab3BHWVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 17:21:08 -0500
-Date: Fri, 8 Feb 2013 22:21:07 +0000
-From: Eric Wong <normalperson@yhbt.net>
-To: Martin Sustrik <sustrik@250bpm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Sha Zhengju <handai.szj@taobao.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 1/1] eventfd: implementation of EFD_MASK flag
-Message-ID: <20130208222107.GA4762@dcvr.yhbt.net>
-References: <1360219292-19754-1-git-send-email-sustrik@250bpm.com>
- <20130207144433.527ef024.akpm@linux-foundation.org>
- <5114F2D8.5020300@250bpm.com>
+	id S1947274Ab3BHWWj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 17:22:39 -0500
+Received: from queue01a.mail.zen.net.uk ([212.23.3.234]:44988 "EHLO
+	queue01a.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1947059Ab3BHWWh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 17:22:37 -0500
+X-Greylist: delayed 4021 seconds by postgrey-1.27 at vger.kernel.org; Fri, 08 Feb 2013 17:22:37 EST
+Message-ID: <51156A91.5070801@cantab.net>
+Date: Fri, 08 Feb 2013 21:13:53 +0000
+From: David Vrabel <dvrabel@cantab.net>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5114F2D8.5020300@250bpm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tim Gardner <tim.gardner@canonical.com>
+CC: linux-kernel@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
+        xen-devel@lists.xensource.com,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, x86@kernel.org,
+        stable@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+References: <1360355677-52442-1-git-send-email-tim.gardner@canonical.com>
+In-Reply-To: <1360355677-52442-1-git-send-email-tim.gardner@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 82.70.146.43
+X-SA-Exim-Mail-From: dvrabel@cantab.net
+Subject: Re: [Xen-devel] [PATCH linux-next] xen/multicall: xen_mc_callback():
+ avoid buffer overflow
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:26:47 +0000)
+X-SA-Exim-Scanned: Yes (on pear)
+X-Originating-Smarthost03-IP: [82.70.146.41]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Martin Sustrik <sustrik@250bpm.com> wrote:
-> On 07/02/13 23:44, Andrew Morton wrote:
-> >That's a nice changelog but it omitted a critical thing: why do you
-> >think the kernel needs this feature?  What's the value and use case for
-> >being able to poll these descriptors?
+On 08/02/2013 20:34, Tim Gardner wrote:
+> This buffer overflow was introduced with 91e0c5f3dad47838cb2ecc1865ce789a0b7182b1
+> (2.6.24).
+
+There's no buffer overflow here. xen_mc_flush() resets b->cbidx.
+
+David
+
+>  arch/x86/xen/multicalls.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
 > 
-> To address the question, I've written down detailed description of
-> the challenges of the network protocol development in user space and
-> how the proposed feature addresses the problems.
+> diff --git a/arch/x86/xen/multicalls.c b/arch/x86/xen/multicalls.c
+> index 0d82003..5270407 100644
+> --- a/arch/x86/xen/multicalls.c
+> +++ b/arch/x86/xen/multicalls.c
+> @@ -195,9 +195,10 @@ void xen_mc_callback(void (*fn)(void *), void *data)
+>  	struct mc_buffer *b = &__get_cpu_var(mc_buffer);
+>  	struct callback *cb;
+>  
+> -	if (b->cbidx == MC_BATCH) {
+> +	if (b->cbidx >= MC_BATCH) {
+>  		trace_xen_mc_flush_reason(XEN_MC_FL_CALLBACK);
+>  		xen_mc_flush();
+> +		return;
+>  	}
+>  
+>  	trace_xen_mc_callback(fn, data);
 > 
-> It's too long to fit into ChangeLog, but it may be worth reading
-> when trying to judge the merit of the patch.
-> 
-> It can be found here: http://www.250bpm.com/blog:16
 
-Using one eventfd per userspace socket still seems a bit wasteful.
-
-Couldn't you use a single pipe for all sockets and write the efd_mask to
-the pipe for each socket?
-
-A read from the pipe would behave like epoll_wait.
-
-You might need to use one-shot semantics; but that's probably
-the easiest thing in multithreaded apps anyways.
