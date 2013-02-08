@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759637Ab3BHBTM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 20:19:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41823 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758240Ab3BHA5f (ORCPT
+	id S1754782Ab3BHBUu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 20:20:50 -0500
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:39312 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751802Ab3BHBUt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 19:57:35 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        James Morris <james.l.morris@oracle.com>
-Subject: [ 02/34] digsig: Fix memory leakage in digsig_verify_rsa()
-Date: Thu,  7 Feb 2013 16:56:58 -0800
-Message-Id: <20130208004627.763632327@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130208004627.375461662@linuxfoundation.org>
-References: <20130208004627.375461662@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Thu, 7 Feb 2013 20:20:49 -0500
+Message-ID: <1360285813.3869.52.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 01/02] ACPI: sysfs eject support for ACPI scan handlers
+From: Toshi Kani <toshi.kani@hp.com>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: rjw@sisk.pl, linux-acpi@vger.kernel.org, gregkh@linuxfoundation.org,
+        bhelgaas@google.com, mika.westerberg@linux.intel.com,
+        matthew.garrett@nebula.com, yinghai@kernel.org, liuj97@gmail.com,
+        linux-kernel@vger.kernel.org
+Date: Thu, 07 Feb 2013 18:10:13 -0700
+In-Reply-To: <51144BD4.7070804@jp.fujitsu.com>
+References: <1360191056-13293-1-git-send-email-toshi.kani@hp.com>
+	 <1360191056-13293-2-git-send-email-toshi.kani@hp.com>
+	 <51144BD4.7070804@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+On Fri, 2013-02-08 at 09:50 +0900, Yasuaki Ishimatsu wrote:
+> Hi Toshi,
+> 
+> 2013/02/07 7:50, Toshi Kani wrote:
+> > Changed sysfs eject, acpi_eject_store(), to support ACPI scan handlers.
+> > 
+> > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> > ---
+> >   drivers/acpi/scan.c |    2 +-
+> >   1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> > index cfd7a69..3ff632e 100644
+> > --- a/drivers/acpi/scan.c
+> > +++ b/drivers/acpi/scan.c
+> > @@ -203,7 +203,7 @@ acpi_eject_store(struct device *d, struct device_attribute *attr,
+> >   		return -EINVAL;
+> >   	}
+> >   #ifndef FORCE_EJECT
+> 
+> > -	if (acpi_device->driver == NULL) {
+> > +	if (!acpi_device->driver && !acpi_device->handler) {
+> 
+> I don't understand the fix.
+> 
+> The if sentence becomes true, when both acpi_device->driver and acpi_device->handler
+> are NULL. It means that acpi_eject_store() runs if either acpi_device->driver or
+> acpi_device->handler has pointer. Is it O.K.?
 
-------------------
+Yes.
 
-From: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+> I think it should be if (!acpi_device->driver || !acpi_device->handler).
 
-commit 7810cc1e7721220f1ed2a23ca95113d6434f6dcd upstream.
+No, the condition has to be "&&" because an acpi_device is _either_
+bound to an ACPI driver or an ACPI scan handler. 
 
-digsig_verify_rsa() does not free kmalloc'ed buffer returned by
-mpi_get_buffer().
-
-Signed-off-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Signed-off-by: James Morris <james.l.morris@oracle.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- lib/digsig.c |    2 ++
- 1 file changed, 2 insertions(+)
-
---- a/lib/digsig.c
-+++ b/lib/digsig.c
-@@ -162,6 +162,8 @@ static int digsig_verify_rsa(struct key
- 	memset(out1, 0, head);
- 	memcpy(out1 + head, p, l);
- 
-+	kfree(p);
-+
- 	err = pkcs_1_v1_5_decode_emsa(out1, len, mblen, out2, &len);
- 	if (err)
- 		goto err;
+Thanks,
+-Toshi
 
 
