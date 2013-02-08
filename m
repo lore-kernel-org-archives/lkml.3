@@ -1,92 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759883Ab3BHBNU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 20:13:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41889 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759138Ab3BHA5s (ORCPT
+	id S932237Ab3BHBNa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 20:13:30 -0500
+Received: from mail-gh0-f175.google.com ([209.85.160.175]:38409 "EHLO
+	mail-gh0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759566Ab3BHBN0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 19:57:48 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 17/34] drivers/rtc/rtc-pl031.c: fix the missing operation on enable
-Date: Thu,  7 Feb 2013 16:57:13 -0800
-Message-Id: <20130208004630.359979062@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130208004627.375461662@linuxfoundation.org>
-References: <20130208004627.375461662@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Thu, 7 Feb 2013 20:13:26 -0500
+From: Amit Daniel Kachhap <amit.daniel@samsung.com>
+To: linux-pm@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>
+Cc: jonghwa3.lee@samsung.com, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kgene.kim@samsung.com
+Subject: [PATCH V3 1/2] Thermal: exynos: Add support for temperature falling interrupt.
+Date: Thu,  7 Feb 2013 17:13:06 -0800
+Message-Id: <1360285987-13921-1-git-send-email-amit.daniel@samsung.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+From: Jonghwa Lee <jonghwa3.lee@samsung.com>
 
-------------------
+This patch introduces using temperature falling interrupt in exynos
+thermal driver. Former patch, it only use polling way to check
+whether if system themperature is fallen. However, exynos SOC also
+provides temperature falling interrupt way to do same things by hw.
+This feature is not supported in exynos4210.
 
-From: Haojian Zhuang <haojian.zhuang@linaro.org>
-
-commit e7e034e18a0ab6bafb2425c3242cac311164f4d6 upstream.
-
-The RTC control register should be enabled in the process of
-initializing.
-
-Without this patch, I failed to enable RTC in Hisilicon Hi3620 SoC.  The
-register mapping section in RTC is always read as zero.  So I doubt that
-ST guys may already enable this register in bootloader.  So they won't
-meet this issue.
-
-Signed-off-by: Haojian Zhuang <haojian.zhuang@linaro.org>
-Cc: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
 ---
- drivers/rtc/rtc-pl031.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+Hi,
 
---- a/drivers/rtc/rtc-pl031.c
-+++ b/drivers/rtc/rtc-pl031.c
-@@ -44,6 +44,7 @@
- #define RTC_YMR		0x34	/* Year match register */
- #define RTC_YLR		0x38	/* Year data load register */
- 
-+#define RTC_CR_EN	(1 << 0)	/* counter enable bit */
- #define RTC_CR_CWEN	(1 << 26)	/* Clockwatch enable bit */
- 
- #define RTC_TCR_EN	(1 << 1) /* Periodic timer enable bit */
-@@ -320,7 +321,7 @@ static int pl031_probe(struct amba_devic
- 	struct pl031_local *ldata;
- 	struct pl031_vendor_data *vendor = id->data;
- 	struct rtc_class_ops *ops = &vendor->ops;
--	unsigned long time;
-+	unsigned long time, data;
- 
- 	ret = amba_request_regions(adev, NULL);
- 	if (ret)
-@@ -345,10 +346,11 @@ static int pl031_probe(struct amba_devic
- 	dev_dbg(&adev->dev, "designer ID = 0x%02x\n", amba_manf(adev));
- 	dev_dbg(&adev->dev, "revision = 0x%01x\n", amba_rev(adev));
- 
-+	data = readl(ldata->base + RTC_CR);
- 	/* Enable the clockwatch on ST Variants */
- 	if (vendor->clockwatch)
--		writel(readl(ldata->base + RTC_CR) | RTC_CR_CWEN,
--		       ldata->base + RTC_CR);
-+		data |= RTC_CR_CWEN;
-+	writel(data | RTC_CR_EN, ldata->base + RTC_CR);
- 
- 	/*
- 	 * On ST PL031 variants, the RTC reset value does not provide correct
+Submitting these patches again as they got lost somewhere and was not merged.
 
+Changes since V2:
+* Rebased against Rui Zhang next tree.
+* Added Kukjin Kim acked by.
+
+Changes since V1: Used the new thermal trend type macro
+
+All these patches are based on thermal maintainer next branch.
+git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux.git thermal
+
+ drivers/thermal/exynos_thermal.c             |   81 +++++++++++++++-----------
+ include/linux/platform_data/exynos_thermal.h |    3 +
+ 2 files changed, 49 insertions(+), 35 deletions(-)
+
+diff --git a/drivers/thermal/exynos_thermal.c b/drivers/thermal/exynos_thermal.c
+index 3a1b01e..65f69cf 100644
+--- a/drivers/thermal/exynos_thermal.c
++++ b/drivers/thermal/exynos_thermal.c
+@@ -94,6 +94,7 @@
+ #define SENSOR_NAME_LEN	16
+ #define MAX_TRIP_COUNT	8
+ #define MAX_COOLING_DEVICE 4
++#define MAX_THRESHOLD_LEVS 4
+ 
+ #define ACTIVE_INTERVAL 500
+ #define IDLE_INTERVAL 10000
+@@ -133,6 +134,7 @@ struct exynos_tmu_data {
+ struct	thermal_trip_point_conf {
+ 	int trip_val[MAX_TRIP_COUNT];
+ 	int trip_count;
++	u8 trigger_falling;
+ };
+ 
+ struct	thermal_cooling_conf {
+@@ -183,7 +185,8 @@ static int exynos_set_mode(struct thermal_zone_device *thermal,
+ 
+ 	mutex_lock(&th_zone->therm_dev->lock);
+ 
+-	if (mode == THERMAL_DEVICE_ENABLED)
++	if (mode == THERMAL_DEVICE_ENABLED &&
++		!th_zone->sensor_conf->trip_data.trigger_falling)
+ 		th_zone->therm_dev->polling_delay = IDLE_INTERVAL;
+ 	else
+ 		th_zone->therm_dev->polling_delay = 0;
+@@ -447,7 +450,8 @@ static void exynos_report_trigger(void)
+ 			break;
+ 	}
+ 
+-	if (th_zone->mode == THERMAL_DEVICE_ENABLED) {
++	if (th_zone->mode == THERMAL_DEVICE_ENABLED &&
++		!th_zone->sensor_conf->trip_data.trigger_falling) {
+ 		if (i > 0)
+ 			th_zone->therm_dev->polling_delay = ACTIVE_INTERVAL;
+ 		else
+@@ -486,7 +490,8 @@ static int exynos_register_thermal(struct thermal_sensor_conf *sensor_conf)
+ 
+ 	th_zone->therm_dev = thermal_zone_device_register(sensor_conf->name,
+ 			EXYNOS_ZONE_COUNT, 0, NULL, &exynos_dev_ops, NULL, 0,
+-			IDLE_INTERVAL);
++			sensor_conf->trip_data.trigger_falling ?
++			0 : IDLE_INTERVAL);
+ 
+ 	if (IS_ERR(th_zone->therm_dev)) {
+ 		pr_err("Failed to register thermal zone device\n");
+@@ -593,8 +598,9 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+ {
+ 	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
+ 	struct exynos_tmu_platform_data *pdata = data->pdata;
+-	unsigned int status, trim_info, rising_threshold;
+-	int ret = 0, threshold_code;
++	unsigned int status, trim_info;
++	unsigned int rising_threshold = 0, falling_threshold = 0;
++	int ret = 0, threshold_code, i, trigger_levs = 0;
+ 
+ 	mutex_lock(&data->lock);
+ 	clk_enable(data->clk);
+@@ -619,6 +625,11 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+ 			(data->temp_error2 != 0))
+ 		data->temp_error1 = pdata->efuse_value;
+ 
++	/* Count trigger levels to be enabled */
++	for (i = 0; i < MAX_THRESHOLD_LEVS; i++)
++		if (pdata->trigger_levels[i])
++			trigger_levs++;
++
+ 	if (data->soc == SOC_ARCH_EXYNOS4210) {
+ 		/* Write temperature code for threshold */
+ 		threshold_code = temp_to_code(data, pdata->threshold);
+@@ -628,44 +639,38 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+ 		}
+ 		writeb(threshold_code,
+ 			data->base + EXYNOS4210_TMU_REG_THRESHOLD_TEMP);
+-
+-		writeb(pdata->trigger_levels[0],
+-			data->base + EXYNOS4210_TMU_REG_TRIG_LEVEL0);
+-		writeb(pdata->trigger_levels[1],
+-			data->base + EXYNOS4210_TMU_REG_TRIG_LEVEL1);
+-		writeb(pdata->trigger_levels[2],
+-			data->base + EXYNOS4210_TMU_REG_TRIG_LEVEL2);
+-		writeb(pdata->trigger_levels[3],
+-			data->base + EXYNOS4210_TMU_REG_TRIG_LEVEL3);
++		for (i = 0; i < trigger_levs; i++)
++			writeb(pdata->trigger_levels[i],
++			data->base + EXYNOS4210_TMU_REG_TRIG_LEVEL0 + i * 4);
+ 
+ 		writel(EXYNOS4210_TMU_INTCLEAR_VAL,
+ 			data->base + EXYNOS_TMU_REG_INTCLEAR);
+ 	} else if (data->soc == SOC_ARCH_EXYNOS) {
+-		/* Write temperature code for threshold */
+-		threshold_code = temp_to_code(data, pdata->trigger_levels[0]);
+-		if (threshold_code < 0) {
+-			ret = threshold_code;
+-			goto out;
+-		}
+-		rising_threshold = threshold_code;
+-		threshold_code = temp_to_code(data, pdata->trigger_levels[1]);
+-		if (threshold_code < 0) {
+-			ret = threshold_code;
+-			goto out;
+-		}
+-		rising_threshold |= (threshold_code << 8);
+-		threshold_code = temp_to_code(data, pdata->trigger_levels[2]);
+-		if (threshold_code < 0) {
+-			ret = threshold_code;
+-			goto out;
++		/* Write temperature code for rising and falling threshold */
++		for (i = 0; i < trigger_levs; i++) {
++			threshold_code = temp_to_code(data,
++						pdata->trigger_levels[i]);
++			if (threshold_code < 0) {
++				ret = threshold_code;
++				goto out;
++			}
++			rising_threshold |= threshold_code << 8 * i;
++			if (pdata->threshold_falling) {
++				threshold_code = temp_to_code(data,
++						pdata->trigger_levels[i] -
++						pdata->threshold_falling);
++				if (threshold_code > 0)
++					falling_threshold |=
++						threshold_code << 8 * i;
++			}
+ 		}
+-		rising_threshold |= (threshold_code << 16);
+ 
+ 		writel(rising_threshold,
+ 				data->base + EXYNOS_THD_TEMP_RISE);
+-		writel(0, data->base + EXYNOS_THD_TEMP_FALL);
++		writel(falling_threshold,
++				data->base + EXYNOS_THD_TEMP_FALL);
+ 
+-		writel(EXYNOS_TMU_CLEAR_RISE_INT|EXYNOS_TMU_CLEAR_FALL_INT,
++		writel(EXYNOS_TMU_CLEAR_RISE_INT | EXYNOS_TMU_CLEAR_FALL_INT,
+ 				data->base + EXYNOS_TMU_REG_INTCLEAR);
+ 	}
+ out:
+@@ -698,6 +703,8 @@ static void exynos_tmu_control(struct platform_device *pdev, bool on)
+ 			pdata->trigger_level2_en << 8 |
+ 			pdata->trigger_level1_en << 4 |
+ 			pdata->trigger_level0_en;
++		if (pdata->threshold_falling)
++			interrupt_en |= interrupt_en << 16;
+ 	} else {
+ 		con |= EXYNOS_TMU_CORE_OFF;
+ 		interrupt_en = 0; /* Disable all interrupts */
+@@ -773,7 +780,8 @@ static void exynos_tmu_work(struct work_struct *work)
+ 	mutex_lock(&data->lock);
+ 	clk_enable(data->clk);
+ 	if (data->soc == SOC_ARCH_EXYNOS)
+-		writel(EXYNOS_TMU_CLEAR_RISE_INT,
++		writel(EXYNOS_TMU_CLEAR_RISE_INT |
++				EXYNOS_TMU_CLEAR_FALL_INT,
+ 				data->base + EXYNOS_TMU_REG_INTCLEAR);
+ 	else
+ 		writel(EXYNOS4210_TMU_INTCLEAR_VAL,
+@@ -829,6 +837,7 @@ static struct exynos_tmu_platform_data const exynos4210_default_tmu_data = {
+ 
+ #if defined(CONFIG_SOC_EXYNOS5250) || defined(CONFIG_SOC_EXYNOS4412)
+ static struct exynos_tmu_platform_data const exynos_default_tmu_data = {
++	.threshold_falling = 10,
+ 	.trigger_levels[0] = 85,
+ 	.trigger_levels[1] = 103,
+ 	.trigger_levels[2] = 110,
+@@ -1076,6 +1085,8 @@ static int __devinit exynos_tmu_probe(struct platform_device *pdev)
+ 		exynos_sensor_conf.trip_data.trip_val[i] =
+ 			pdata->threshold + pdata->trigger_levels[i];
+ 
++	exynos_sensor_conf.trip_data.trigger_falling = pdata->threshold_falling;
++
+ 	exynos_sensor_conf.cooling_data.freq_clip_count =
+ 						pdata->freq_tab_count;
+ 	for (i = 0; i < pdata->freq_tab_count; i++) {
+diff --git a/include/linux/platform_data/exynos_thermal.h b/include/linux/platform_data/exynos_thermal.h
+index a7bdb2f..da7e627 100644
+--- a/include/linux/platform_data/exynos_thermal.h
++++ b/include/linux/platform_data/exynos_thermal.h
+@@ -53,6 +53,8 @@ struct freq_clip_table {
+  * struct exynos_tmu_platform_data
+  * @threshold: basic temperature for generating interrupt
+  *	       25 <= threshold <= 125 [unit: degree Celsius]
++ * @threshold_falling: differntial value for setting threshold
++ *		       of temperature falling interrupt.
+  * @trigger_levels: array for each interrupt levels
+  *	[unit: degree Celsius]
+  *	0: temperature for trigger_level0 interrupt
+@@ -97,6 +99,7 @@ struct freq_clip_table {
+  */
+ struct exynos_tmu_platform_data {
+ 	u8 threshold;
++	u8 threshold_falling;
+ 	u8 trigger_levels[4];
+ 	bool trigger_level0_en;
+ 	bool trigger_level1_en;
+-- 
+1.7.5.4
 
