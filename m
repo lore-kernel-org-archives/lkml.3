@@ -1,83 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757529Ab3BHAvw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 19:51:52 -0500
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:55083 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757307Ab3BHAvu (ORCPT
+	id S1757924Ab3BHA5T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 19:57:19 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:33502 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757005Ab3BHA5S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 19:51:50 -0500
-MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <CANaxB-xmSiPfbUAh+rQSgVxBzTXmVQcC7U741WYKaasG3_yc5w@mail.gmail.com>
-References: <1358849741-9611-4-git-send-email-avagin@openvz.org>
- <1359486181-29088-1-git-send-email-avagin@openvz.org> <20130207173447.GA5888@redhat.com>
- <CANaxB-xmSiPfbUAh+rQSgVxBzTXmVQcC7U741WYKaasG3_yc5w@mail.gmail.com>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Fri, 8 Feb 2013 01:51:29 +0100
-Message-ID: <CAKgNAkhrtkfeq1+_W-fK1+H5=teSoCJEA7dzzg5kmyOFGvw92g@mail.gmail.com>
-Subject: Re: [PATCH 3/3] signalfd: add ability to read siginfo-s without
- dequeuing signals (v2)
-To: Andrey Wagin <avagin@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        criu@openvz.org, linux-fsdevel@vger.kernel.org,
-        linux-api@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 7 Feb 2013 19:57:18 -0500
+Date: Fri, 8 Feb 2013 11:57:08 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lgirdwood@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the sound-asoc tree
+Message-Id: <20130208115708.33af567496b8aeb8ca6b30c6@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__8_Feb_2013_11_57_08_+1100_c_YhssDQnANd5Z0L"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 7, 2013 at 10:13 PM, Andrey Wagin <avagin@gmail.com> wrote:
-> 2013/2/7 Oleg Nesterov <oleg@redhat.com>:
->> Andrey, sorry for delay.
->>
->> As for API, I leave this to you and Michael. Not that I like these
->> new flags, but I agree that pread() hack was not pretty too.
->>
->> On 01/29, Andrey Vagin wrote:
+--Signature=_Fri__8_Feb_2013_11_57_08_+1100_c_YhssDQnANd5Z0L
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-[...]
+Hi all,
 
->>Damn. But after I wrote this email I realized that llseek() probably can't
->> work. Because peek_offset/f_pos/whatever has to be shared with all processes
->> which have this file opened.
->>
->> Suppose that the task forks after sys_signalfd(). Now if parent or child
->> do llseek this affects them both. This is insane because signalfd is
->> "strange" to say at least, fork/dup/etc inherits signalfd_ctx but not the
->> "source" of the data.
+After merging the sound-asoc tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-(Good catch, Oleg.)
+sound/soc/soc-core.c: In function 'snd_soc_dai_digital_mute':
+sound/soc/soc-core.c:3555:22: error: 'const struct snd_soc_dai_ops' has no =
+member named 'mute_stream'
+sound/soc/soc-core.c:3556:26: error: 'const struct snd_soc_dai_ops' has no =
+member named 'mute_stream'
 
-> So I want to suggest a way how to forbid read() for SIGNALFD_PEEK.
-> file->f_pos can be initialized to -1. read() returns EINVAL in this
-> case. In a man page we will write that signals can be dumped only with
-> help pread(). Is it overload or too ugly?
+Caused by commit df6dc7a26e7d ("ASoC: core: Allow digital mute for
+capture").
 
->From an interface perspective I have no problem with limiting the API
-to allow just pread(). If we later decide that there is some way that
-the semantics using read() + lseek() could be sensible (which seems
-unlikely), we could relax things and allow read().
+I have used the sound-asoc tree from next-20130207 for today.
 
-[...]
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> Oleg, thank you for the comments. I'm waiting an answer on the
-> question and after that I'm going to send a final version.
+--Signature=_Fri__8_Feb_2013_11_57_08_+1100_c_YhssDQnANd5Z0L
+Content-Type: application/pgp-signature
 
-It would be nice if the new patch series has a changelog of the
-changes to date, and also includes a fairly detailed description of
-the user-space API. Would that be possible?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Thanks,
+iQIcBAEBCAAGBQJRFE1kAAoJEECxmPOUX5FEaI4QAKLn/zUXMpIp2PZ12HM1VJkg
+NXQGUFR2u5xq4NfW6Snz38+RCoYLQKqe9LFsous5ZH8XvM5YmurdjGc5yvYoB82I
+dmnJjxj2JH3kgj42ICnrQbtDDgTVhCF3WyaPuRFYvcepRdu62/9E+G9WpQgLZVLv
+SHsi3RRpF3MpDuLGOMaj4zDy17FGN975FD6RZ39yZQ1g2OLPUVWEkt1ty7nDGeXy
+C8DMANjWrcnbfFB/hZfImsoj6PGP/eXNkOSlEAb+HQP9POqnYeYwKptCMt5YFn2/
+JsaapLqY5wuDT/BXrQreyStWR3avEjmOssSpA/pHpDuIjhzP5Eam0FMeZsE0K5/M
+ysU05po64VdmpAyTpVh8LE2T3XdY1wU7yUohvqMEYxYdb/7oOyUknD7fac2wLUXZ
+svudfbe+HggMTgNi+AKIooi/1M7TWwv9dNWNgd1bjubol3g8tpl91YRd+D/UdKuM
+RuqYs5Vz3y6iLvxbzzApDJdynjPc0NUBVGecq5vWDEkyjg+unzKCExOVEslyaU7M
+MIbtZaROuNgN4ABo8jrhvuvhwjFfMUtxuXTsH3Fm3YRs7DCiG25STqRHey25XrbF
+CqODpi5DGpdLKgW5sywYpm0v2a2z+uEVvAToc1R9nKGG7GviYxhU+9OzAGt1o3mX
+dPsyAFFQD9d6YZeerfhi
+=RNvT
+-----END PGP SIGNATURE-----
 
-Michael
-
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface"; http://man7.org/tlpi/
+--Signature=_Fri__8_Feb_2013_11_57_08_+1100_c_YhssDQnANd5Z0L--
