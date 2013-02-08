@@ -1,110 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161078Ab3BHJfq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 04:35:46 -0500
-Received: from mga01.intel.com ([192.55.52.88]:53816 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752146Ab3BHJfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 04:35:44 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,628,1355126400"; 
-   d="scan'208";a="284400043"
-Message-ID: <1360316139.2242.65.camel@rzhang1-mobl4>
-Subject: Re: [PATCHv3 0/8] Thermal Framework Enhancements
-From: Zhang Rui <rui.zhang@intel.com>
-To: Durgadoss R <durgadoss.r@intel.com>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        eduardo.valentin@ti.com, hongbo.zhang@linaro.org, wni@nvidia.com
-Date: Fri, 08 Feb 2013 17:35:39 +0800
-In-Reply-To: <1360061183-14137-1-git-send-email-durgadoss.r@intel.com>
-References: <1360061183-14137-1-git-send-email-durgadoss.r@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1161106Ab3BHJiJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 04:38:09 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:42861 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161046Ab3BHJiE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 04:38:04 -0500
+Date: Fri, 8 Feb 2013 09:37:54 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: "Manjunathappa, Prakash" <prakash.pm@ti.com>
+Cc: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "Porter, Matt" <mporter@ti.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "hs@denx.de" <hs@denx.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 2/3] mmc: davinci_mmc: add DT support
+Message-ID: <20130208093754.GA27859@e106331-lin.cambridge.arm.com>
+References: <1360223825-23929-1-git-send-email-prakash.pm@ti.com>
+ <1360223825-23929-3-git-send-email-prakash.pm@ti.com>
+ <20130207104656.GE16987@e106331-lin.cambridge.arm.com>
+ <A73F36158E33644199EB82C5EC81C7BC3EA465FE@DBDE01.ent.ti.com>
+MIME-Version: 1.0
+In-Reply-To: <A73F36158E33644199EB82C5EC81C7BC3EA465FE@DBDE01.ent.ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 08 Feb 2013 09:37:59.0646 (UTC) FILETIME=[FB8C87E0:01CE05DF]
+X-MC-Unique: 113020809380006701
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-02-05 at 16:16 +0530, Durgadoss R wrote:
-> This patch set is a v3 of the previous versions submitted here:
-> [v2]: http://lwn.net/Articles/531720/
-> [v1]: https://lkml.org/lkml/2012/12/18/108 
-> [RFC]:https://patchwork.kernel.org/patch/1758921/
-> 
-> This patch set is based on Rui's -next tree, and is
-> tested on a Core-i5 and an Atom netbook.
-> 
-> Changes since v2:
->  * Reworked the map sysfs attributes in patch [5/8]
->  * Dropped configuration for maximum sensors and
->    cooling devices, through Kconfig.
->  * Added __remove_trip_attr method
->  * Renamed __clean_map_entry to __remove_map_entry
->    for consistency in naming.
-> Changes Since v1:
->  * Removed kobject creation for thermal_trip and thermal_map
->    nodes as per Greg-KH's comments.
->  * Added ABI Documentation under 'testing'.
->  * Modified the GET_INDEX macro to be more linux-like, thanks
->    to Joe Perches.
->  * Added get_[sensor/cdev]_by_name APIs to thermal.h
-> 
-> This series contains 8 patches:
-> Patch 1/8: Creates new sensor level APIs
-> Patch 2/8: Creates new zone level APIs. The existing tzd structure is
->            kept as such for clarity and compatibility purposes.
-> Patch 3/8: Creates functions to add/remove a cdev to/from a zone. The
->            existing tcd structure need not be modified.
-> Patch 4/8: Adds sensorX_trip_[active/passive/hot/critical] sysfs nodes,
-> 	   under /sys/class/thermal/zoneY/. This exposes various trip
->            points for sensorX present in zoneY.
-> Patch 5/8: Adds mapY_* sysfs node. These attributes represent
->            the binding relationship between a sensor and a cdev,
->            within a zone.
-> Patch 6/8: Creates Documentation for the new APIs. A new file is
->            created for clarity. Final goal is to merge with the existing
->            file or refactor the files, as whatever seems appropriate.
-> Patch 7/8: Add ABI documentation for sysfs interfaces introduced in this patch.
-> Patch 8/8: A dummy driver that can be used for testing. This is not for merge.
-> 
-Generally, this patch set looks good to me.
-But My suggestion would be:
-1. introduce a new config option for the new framework.
-2. If your patches are target for 3.9, you still need to introduce a
-   wrapper so that platform thermal drivers can be redirect
-   to either the new framework or the old one via the Kconfig option.
-   (All the current platform thermal drivers should be zones with single
-   sensor). And with this wrapper, users should be able to
-   switching between the new ABI and old ABI via kernel config option,
-   without touching the platform thermal driver code in 3.9 kernel.
-3. in next release, make the old framework optional, and make the new
-   framework set by default.
-4. in next next release, remove the old framework.
+Hi,
 
-thanks,
-rui
-> Durgadoss R (8):
->   Thermal: Create sensor level APIs
->   Thermal: Create zone level APIs
->   Thermal: Add APIs to bind cdev to new zone structure
->   Thermal: Add trip point sysfs nodes for sensor
->   Thermal: Create Thermal map sysfs attributes for a zone
->   Thermal: Add Documentation to new APIs
->   Thermal: Add ABI Documentation for sysfs interfaces
->   Thermal: Dummy driver used for testing
-> 
->  Documentation/ABI/testing/sysfs-class-thermal |  137 ++++
->  Documentation/thermal/sysfs-api2.txt          |  247 ++++++
->  drivers/thermal/Kconfig                       |    5 +
->  drivers/thermal/Makefile                      |    2 +
->  drivers/thermal/thermal_sys.c                 |  994 +++++++++++++++++++++++++
->  drivers/thermal/thermal_test.c                |  324 ++++++++
->  include/linux/thermal.h                       |  123 ++-
->  7 files changed, 1831 insertions(+), 1 deletion(-)
->  create mode 100644 Documentation/ABI/testing/sysfs-class-thermal
->  create mode 100644 Documentation/thermal/sysfs-api2.txt
->  create mode 100644 drivers/thermal/thermal_test.c
-> 
+[...]
 
+> > > diff --git a/Documentation/devicetree/bindings/mmc/davinci_mmc.txt b/Documentation/devicetree/bindings/mmc/davinci_mmc.txt
+> > > new file mode 100644
+> > > index 0000000..6717ab1
+> > > --- /dev/null
+> > > +++ b/Documentation/devicetree/bindings/mmc/davinci_mmc.txt
+> > > @@ -0,0 +1,30 @@
+> > > +* TI Highspeed MMC host controller for DaVinci
+> > > +
+> > > +The Highspeed MMC Host Controller on TI DaVinci family
+> > > +provides an interface for MMC, SD and SDIO types of memory cards.
+> > > +
+> > > +This file documents the properties used by the davinci_mmc driver.
+> > > +
+> > > +Required properties:
+> > > +- compatible:
+> > > + Should be "ti,davinci-mmc-da830": for da830, da850, dm365
+> > > + Should be "ti,davinci-mmc-dm355": for dm355, dm644x
+> > > +
+> > > +Optional properties:
+> > > +- bus-width: Number of data lines, can be <4>, or <8>, default <1>
+> > > +- max-frequency: Maximum operating clock frequency, default 25MHz.
+> > > +- mmc-cap-mmc-highspeed: Indicates support for MMC in high speed mode
+> > > +- mmc-cap-sd-highspeed: Indicates support for SD in high speed mode
+
+[...]
+
+
+> > > +static struct davinci_mmc_config
+> > > +	*mmc_parse_pdata(struct platform_device *pdev)
+> > >  {
+> > > +	struct device_node *np;
+> > >  	struct davinci_mmc_config *pdata = pdev->dev.platform_data;
+> > > +	const struct of_device_id *match =
+> > > +		of_match_device(of_match_ptr(davinci_mmc_dt_ids), &pdev->dev);
+> > > +	u32 data;
+> > > +
+> > > +	np = pdev->dev.of_node;
+> > > +	if (!np)
+> > > +		return pdata;
+> > > +
+> > > +	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
+> > > +	if (!pdata) {
+> > > +		dev_err(&pdev->dev, "Failed to allocate memory for struct davinci_mmc_config\n");
+> > > +		goto nodata;
+> > > +	}
+> > > +
+> > > +	if (match->data)
+> > > +		pdata->version = (u8)((int)match->data);
+> > > +
+> > > +	of_property_read_u32(np, "max-frequency", &pdata->max_freq);
+> > > +	if (!pdata->max_freq)
+> > > +		dev_info(&pdev->dev, "'max-frequency' property not specified, defaulting to 25MHz\n");
+> > > +
+> > > +	if (of_get_property(np, "mmc-cap-mmc-highspeed", NULL))
+> > > +		pdata->caps |= MMC_CAP_MMC_HIGHSPEED;
+> > > +	if (of_get_property(np, "mmc-cap-sd-highspeed", NULL))
+> > > +		pdata->caps |= MMC_CAP_SD_HIGHSPEED;
+> > 
+> > If these aren't derivable from max-frequency, you could use
+> > of_property_read_bool to make this clearer.
+> > 
+> 
+> Correct, I will decide these based on max-frequency.
+> 
+> > > +
+> > > +	of_property_read_u32(np, "bus-width", &data);
+> > > +	switch (data) {
+> > > +	case 0:
+> > 
+> > Judging by the binding doc, should this be 1 rather than 0?
+> > 
+> 
+> By default driver comes up in 4 bit mode when bus-width is not specified.
+> Bus-width is set to 1 bit for invalid bus-widths. Below are the cases
+> when bus-width 0 or 4, bus-width is set to 4bit mode
+> When bus-width is 8, bus-width is set to 8 bit mode
+
+Why is 0 a special value that means 4? Why not just use 4?
+
+Here you just assign 0 to pdata->wires.
+
+I see the current version of the driver handles this specially in
+davinci_mmcsd_probe, but I don't see why this should leak into the binding.
+
+What I was originally trying to get at is that the binding says 8, 4, and 1 are
+acceptable values, but you check the cases 8, 4, or 0. So you're accepting
+something not documented, and producing a warning in a valid case (1).
+
+> 
+> I thought that if somebody specifies bus-width as 2, 3, 5, 6, 7..., then
+> it should be defaulted to 1 bit mode, so I specified it as 1 bit in binding doc.
+
+If they specify something invalid, falling back to a sane value with a warning
+sounds good.
+
+> But I feel that a person who is editing dts file will not make such a mistake.
+> I will change binding document to default as 4 bit mode.
+
+There have been and inevitably will be plenty of errors in dts files. I think
+it'd be good to provide a warning and either use a value that's guaranteed to
+work, or bail out if that can't be done.
+
+If it's always valid to use 1 data line even if the hardware has more, I think
+falling back to 1 makes more sense, as it'd be guaranteed to work.
+
+> 
+> > > +	case 4:
+> > > +	case 8:
+> > > +		pdata->wires = data;
+> > > +		break;
+> > > +	default:
+> > > +		pdata->wires = 1;
+> > > +		dev_info(&pdev->dev, "Unsupported buswidth, defaulting to 1 bit\n");
+> > > +	}
+> > > +nodata:
+> > > +	return pdata;
+> > > +}
+
+With the first case changed to "case 1:", this block makes sense to me.
+
+Thanks,
+Mark.
 
