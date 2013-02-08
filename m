@@ -1,81 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030243Ab3BHBIq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 20:08:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41946 "EHLO
+	id S1759606Ab3BHA6A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 19:58:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41863 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759504Ab3BHA6B (ORCPT
+	with ESMTP id S1759504Ab3BHA5w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 19:58:01 -0500
+	Thu, 7 Feb 2013 19:57:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Moody <pmoody@google.com>, Jan Beulich <jbeulich@suse.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [ 08/26] x86-64: Replace left over sti/cli in ia32 audit exit code
-Date: Thu,  7 Feb 2013 16:57:36 -0800
-Message-Id: <20130208004628.687962488@linuxfoundation.org>
+        David Moore <david.moore@gmail.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 34/34] usb: Prevent dead ports when xhci is not enabled
+Date: Thu,  7 Feb 2013 16:57:30 -0800
+Message-Id: <20130208004632.398811873@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130208004627.258272404@linuxfoundation.org>
-References: <20130208004627.258272404@linuxfoundation.org>
+In-Reply-To: <20130208004627.375461662@linuxfoundation.org>
+References: <20130208004627.375461662@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jan Beulich <JBeulich@suse.com>
+From: David Moore <david.moore@gmail.com>
 
-commit 40a1ef95da85843696fc3ebe5fce39b0db32669f upstream.
+commit 58b2939b4d5a030eaec469d29812ab8477ee7e76 upstream.
 
-For some reason they didn't get replaced so far by their
-paravirt equivalents, resulting in code to be run with
-interrupts disabled that doesn't expect so (causing, in the
-observed case, a BUG_ON() to trigger) when syscall auditing is
-enabled.
+When the xHCI driver is not available, actively switch the ports to EHCI
+mode since some BIOSes leave them in xHCI mode where they would
+otherwise appear dead.  This was discovered on a  Dell Optiplex 7010,
+but it's possible other systems could be affected.
 
-David (Cc-ed) came up with an identical fix, so likely this can
-be taken to count as an ack from him.
+This should be backported to kernels as old as 3.0, that contain the
+commit 69e848c2090aebba5698a1620604c7dccb448684 "Intel xhci: Support
+EHCI/xHCI port switching."
 
-Reported-by: Peter Moody <pmoody@google.com>
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Cc: David Vrabel <david.vrabel@citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Link: http://lkml.kernel.org/r/5108E01902000078000BA9C5@nat28.tlf.novell.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: David Vrabel <david.vrabel@citrix.com>
-Tested-by: Peter Moody <pmoody@google.com>
+Signed-off-by: David Moore <david.moore@gmail.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/ia32/ia32entry.S |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/host/pci-quirks.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/x86/ia32/ia32entry.S
-+++ b/arch/x86/ia32/ia32entry.S
-@@ -205,7 +205,7 @@ sysexit_from_sys_call:
- 	testl $(_TIF_ALLWORK_MASK & ~_TIF_SYSCALL_AUDIT),TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
- 	jnz ia32_ret_from_sys_call
- 	TRACE_IRQS_ON
--	sti
-+	ENABLE_INTERRUPTS(CLBR_NONE)
- 	movl %eax,%esi		/* second arg, syscall return value */
- 	cmpl $-MAX_ERRNO,%eax	/* is it an error ? */
- 	jbe 1f
-@@ -215,7 +215,7 @@ sysexit_from_sys_call:
- 	call __audit_syscall_exit
- 	movq RAX-ARGOFFSET(%rsp),%rax	/* reload syscall return value */
- 	movl $(_TIF_ALLWORK_MASK & ~_TIF_SYSCALL_AUDIT),%edi
--	cli
-+	DISABLE_INTERRUPTS(CLBR_NONE)
- 	TRACE_IRQS_OFF
- 	testl %edi,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
- 	jz \exit
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -780,6 +780,7 @@ void usb_enable_xhci_ports(struct pci_de
+ 				"defaulting to EHCI.\n");
+ 		dev_warn(&xhci_pdev->dev,
+ 				"USB 3.0 devices will work at USB 2.0 speeds.\n");
++		usb_disable_xhci_ports(xhci_pdev);
+ 		return;
+ 	}
+ 
 
 
