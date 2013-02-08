@@ -1,73 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760133Ab3BHOs7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 09:48:59 -0500
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:35508 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758687Ab3BHOs6 (ORCPT
+	id S1760156Ab3BHOtk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 09:49:40 -0500
+Received: from mail.dev.rtsoft.ru ([213.79.90.226]:50617 "EHLO
+	wasted.dev.rtsoft.ru" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758171Ab3BHOtj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 09:48:58 -0500
+	Fri, 8 Feb 2013 09:49:39 -0500
+X-Greylist: delayed 811 seconds by postgrey-1.27 at vger.kernel.org; Fri, 08 Feb 2013 09:49:38 EST
+To: linux-usb@vger.kernel.org
+Subject: [PATCH resend] testusb: remove all mentions of 'usbfs'
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+From: Sergei Shtylyov <sshtylyov@dev.rtsoft.ru>
+Organization: RTSoft, Inc.
+Date: Fri, 8 Feb 2013 18:48:03 +0300
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CAKohpom0yjSyU+OhK4vdi5R=+JsmAEw2nOsvupDOiWMYsdz3Pg@mail.gmail.com>
-References: <CA+icZUX-hh+RjEOrKABBtecmb4C-5azSmdTx6D7SLuSpcQE+kQ@mail.gmail.com>
-	<CAJd=RBDwdO+n3H4M=5W5q75q3yUVL7L2RonWnCE7sfsfW1K5ig@mail.gmail.com>
-	<CA+icZUUaFb8zvdkY2JLz5h_7CBgaTzyyTphGid+GkigV+NfVKA@mail.gmail.com>
-	<2612804.Hcyse1lRVO@vostro.rjw.lan>
-	<CAKohpom0yjSyU+OhK4vdi5R=+JsmAEw2nOsvupDOiWMYsdz3Pg@mail.gmail.com>
-Date: Fri, 8 Feb 2013 15:48:56 +0100
-Message-ID: <CA+icZUUedcLAo1OkDSD7K_zgZoLvUAPNYOWAJxSPLp9J3hCKNw@mail.gmail.com>
-Subject: Re: [linux-pm] linux-next: Tree for Feb 8 [ smp|cpufreq: WARNING: at
- kernel/smp.c:245 smp_call_function_single ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        Hillf Danton <dhillf@gmail.com>, linux-next@vger.kernel.org,
-        Linux PM List <linux-pm@lists.linux-foundation.org>,
-        Chuansheng Liu <chuansheng.liu@intel.com>,
-        Ingo Molnar <mingo@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302081848.03347.sshtylyov@dev.rtsoft.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 8, 2013 at 3:45 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 8 February 2013 18:51, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> On Friday, February 08, 2013 01:47:44 PM Sedat Dilek wrote:
->>> >> [    0.377473]  [<ffffffff8105a5ef>] warn_slowpath_common+0x7f/0xc0
->>> >> [    0.377479]  [<ffffffff81579130>] ? acpi_cpufreq_target+0x2c0/0x2c0
->>> >> [    0.377483]  [<ffffffff8105a64a>] warn_slowpath_null+0x1a/0x20
->>> >> [    0.377487]  [<ffffffff810bb7e6>] smp_call_function_single+0x146/0x190
->>> >> [    0.377492]  [<ffffffff81579130>] ? acpi_cpufreq_target+0x2c0/0x2c0
->>> >> [    0.377496]  [<ffffffff810bb881>] smp_call_function_any+0x51/0x100
->>> >> [    0.377500]  [<ffffffff815788c9>] get_cur_val+0x99/0x130
->>> >> [    0.377504]  [<ffffffff81579444>] ? acpi_cpufreq_cpu_init+0x2b4/0x6a0
->>> >> [    0.377508]  [<ffffffff81578db0>] get_cur_freq_on_cpu+0x60/0x80
->>> >> [    0.377512]  [<ffffffff815795a2>] acpi_cpufreq_cpu_init+0x412/0x6a0
->>> >> [    0.377517]  [<ffffffff81575bb9>] cpufreq_add_dev+0x2d9/0x4f0
->
->> This problem was introduced by some cpufreq changes that have been dropped from
->> linux-next for now (they are still present in the one you're testing, though).
->
-> I know why you got this crash and a pull from following would
-> certainly fix it :)
->
-> http://git.linaro.org/gitweb?p=people/vireshk/linux.git;a=shortlog;h=refs/heads/for-rafael
+Commit 8a424bf40d772fedacc91862ecc86f10541fabb3 (tools/usb: remove last USBFS
+user) removed 'usbfs' files from the source but retained mentions of 'usbfs'
+all over the place, most importantly in the misleading error messages printed
+in case USB device files are not there.  Remove all the  mentions of 'usbfs'
+for good now!
 
-Nah, I pulled in latest pm-next where this commit is new...
+Signed-off-by: Sergei Shtylyov <sshtylyov@dev.rtsoft.ru>
 
-commit 8d5666f3456f2fd4a4e5dced228475b829851e53
-"ACPI: Unbind ACPI drv when probe failed"
+---
+This patch is atop of 'usb-next' branch of Greg's tree...
 
-...building with it.
+Yes, I got that "usbfs files are missing" message on DaVinci recently, and it
+sent me on the wrong trail for some time, so I'd like to egt this sorted out...
 
-Same to you, say concretely which commit is fixing what...
+Resending as I messed out with KMail config. and not seeing the message in the
+list archives...
 
-Pull-N-B-Happy was never my strategy... I want to understand what went
-wrong and have stolen my time.
+ tools/usb/testusb.c |   27 +++++++++++++--------------
+ 1 file changed, 13 insertions(+), 14 deletions(-)
 
-- Sedat -
-
-[1] http://git.kernel.org/?p=linux/kernel/git/rafael/linux-pm.git;a=commitdiff;h=8d5666f3456f2fd4a4e5dced228475b829851e53
+Index: usb/tools/usb/testusb.c
+===================================================================
+--- usb.orig/tools/usb/testusb.c
++++ usb/tools/usb/testusb.c
+@@ -279,8 +279,7 @@ nomem:
+ 
+ 	entry->ifnum = ifnum;
+ 
+-	/* FIXME ask usbfs what speed; update USBDEVFS_CONNECTINFO so
+-	 * it tells about high speed etc */
++	/* FIXME update USBDEVFS_CONNECTINFO so it tells about high speed etc */
+ 
+ 	fprintf(stderr, "%s speed\t%s\t%u\n",
+ 		speed(entry->speed), entry->name, entry->ifnum);
+@@ -351,7 +350,7 @@ restart:
+ 	return arg;
+ }
+ 
+-static const char *usbfs_dir_find(void)
++static const char *usb_dir_find(void)
+ {
+ 	static char udev_usb_path[] = "/dev/bus/usb";
+ 
+@@ -380,7 +379,7 @@ int main (int argc, char **argv)
+ 	int			c;
+ 	struct testdev		*entry;
+ 	char			*device;
+-	const char		*usbfs_dir = NULL;
++	const char		*usb_dir = NULL;
+ 	int			all = 0, forever = 0, not = 0;
+ 	int			test = -1 /* all */;
+ 	struct usbtest_param	param;
+@@ -407,8 +406,8 @@ int main (int argc, char **argv)
+ 	case 'D':	/* device, if only one */
+ 		device = optarg;
+ 		continue;
+-	case 'A':	/* use all devices with specified usbfs dir */
+-		usbfs_dir = optarg;
++	case 'A':	/* use all devices with specified USB dir */
++		usb_dir = optarg;
+ 		/* FALL THROUGH */
+ 	case 'a':	/* use all devices */
+ 		device = NULL;
+@@ -449,7 +448,7 @@ usage:
+ 			"usage: %s [options]\n"
+ 			"Options:\n"
+ 			"\t-D dev		only test specific device\n"
+-			"\t-A usbfs-dir\n"
++			"\t-A usb-dir\n"
+ 			"\t-a		test all recognized devices\n"
+ 			"\t-l		loop forever(for stress test)\n"
+ 			"\t-t testnum	only run specified case\n"
+@@ -470,18 +469,18 @@ usage:
+ 		goto usage;
+ 	}
+ 
+-	/* Find usbfs mount point */
+-	if (!usbfs_dir) {
+-		usbfs_dir = usbfs_dir_find();
+-		if (!usbfs_dir) {
+-			fputs ("usbfs files are missing\n", stderr);
++	/* Find usb device subdirectory */
++	if (!usb_dir) {
++		usb_dir = usb_dir_find();
++		if (!usb_dir) {
++			fputs ("USB device files are missing\n", stderr);
+ 			return -1;
+ 		}
+ 	}
+ 
+ 	/* collect and list the test devices */
+-	if (ftw (usbfs_dir, find_testdev, 3) != 0) {
+-		fputs ("ftw failed; is usbfs missing?\n", stderr);
++	if (ftw (usb_dir, find_testdev, 3) != 0) {
++		fputs ("ftw failed; are USB device files missing?\n", stderr);
+ 		return -1;
+ 	}
+ 
