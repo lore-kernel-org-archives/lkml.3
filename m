@@ -1,73 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945924Ab3BHBNp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 20:13:45 -0500
-Received: from mail-ye0-f171.google.com ([209.85.213.171]:40881 "EHLO
-	mail-ye0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759578Ab3BHBN3 (ORCPT
+	id S1759871Ab3BHBNS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 20:13:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41892 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759456Ab3BHA5s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 20:13:29 -0500
-From: Amit Daniel Kachhap <amit.daniel@samsung.com>
-To: linux-pm@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>
-Cc: jonghwa3.lee@samsung.com, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kgene.kim@samsung.com
-Subject: [PATCH V3 2/2] thermal: exynos: Use the new thermal trend type for quick cooling action.
-Date: Thu,  7 Feb 2013 17:13:07 -0800
-Message-Id: <1360285987-13921-2-git-send-email-amit.daniel@samsung.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1360285987-13921-1-git-send-email-amit.daniel@samsung.com>
-References: <1360285987-13921-1-git-send-email-amit.daniel@samsung.com>
+	Thu, 7 Feb 2013 19:57:48 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        =?UTF-8?q?Petr=20Kub=C3=A1nek?= <petr@kubanek.net>
+Subject: [ 18/34] USB: ftdi_sio: add Zolix FTDI PID
+Date: Thu,  7 Feb 2013 16:57:14 -0800
+Message-Id: <20130208004630.515368512@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130208004627.375461662@linuxfoundation.org>
+References: <20130208004627.375461662@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch uses the quick thermal cooling trend type macros. This is needed
-as exynos5 and other thermal sensors now supports only interrupt method for
-thresold temperature check.
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+------------------
+
+From: Petr Kubánek <petr@kubanek.net>
+
+commit 0ba3b2ccc72b3df5c305d61f59d93ab0f0e87991 upstream.
+
+Add support for Zolix Omni 1509 monochromator custom USB-RS232 converter.
+
+Signed-off-by: Petr Kubánek <petr@kubanek.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    5 +++++
+ 2 files changed, 6 insertions(+)
 
-Hi,
-
-Submitting these patches again as they got lost somewhere and was not merged.
-
-Changes since V2:
-* Rebased against Rui Zhang next tree.
-* Added Kukjin Kim acked by.
-
-All these patches are based on thermal maintainer next branch.
-git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux.git thermal
-
- drivers/thermal/exynos_thermal.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/thermal/exynos_thermal.c b/drivers/thermal/exynos_thermal.c
-index 65f69cf..030bba3 100644
---- a/drivers/thermal/exynos_thermal.c
-+++ b/drivers/thermal/exynos_thermal.c
-@@ -296,7 +296,7 @@ static int exynos_bind(struct thermal_zone_device *thermal,
- 		case MONITOR_ZONE:
- 		case WARN_ZONE:
- 			if (thermal_zone_bind_cooling_device(thermal, i, cdev,
--								level, level)) {
-+								level, 0)) {
- 				pr_err("error binding cdev inst %d\n", i);
- 				ret = -EINVAL;
- 			}
-@@ -399,9 +399,9 @@ static int exynos_get_trend(struct thermal_zone_device *thermal,
- 		return ret;
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -671,6 +671,7 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_5_PID) },
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_6_PID) },
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_7_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_OMNI1509) },
+ 	{ USB_DEVICE(MOBILITY_VID, MOBILITY_USB_SERIAL_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_ACTIVE_ROBOTS_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_MHAM_KW_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -147,6 +147,11 @@
+ #define XSENS_CONVERTER_6_PID	0xD38E
+ #define XSENS_CONVERTER_7_PID	0xD38F
  
- 	if (thermal->temperature >= trip_temp)
--		*trend = THERMAL_TREND_RAISING;
-+		*trend = THERMAL_TREND_RAISE_FULL;
- 	else
--		*trend = THERMAL_TREND_DROPPING;
-+		*trend = THERMAL_TREND_DROP_FULL;
- 
- 	return 0;
- }
--- 
-1.7.5.4
++/**
++ * Zolix (www.zolix.com.cb) product ids
++ */
++#define FTDI_OMNI1509			0xD491	/* Omni1509 embedded USB-serial */
++
+ /*
+  * NDI (www.ndigital.com) product ids
+  */
+
 
