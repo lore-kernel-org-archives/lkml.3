@@ -1,60 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946063Ab3BHHa4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 02:30:56 -0500
-Received: from mga11.intel.com ([192.55.52.93]:16750 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751287Ab3BHHax (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 02:30:53 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,627,1355126400"; 
-   d="scan'208";a="288179801"
-Date: Fri, 8 Feb 2013 09:34:28 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: zergmk2 <zergmk2@gmail.com>, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Eric Miao <eric.y.miao@gmail.com>,
+	id S1760005Ab3BHHbB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 02:31:01 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:19350 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946058Ab3BHHaz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 02:30:55 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 07 Feb 2013 23:30:21 -0800
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: <linux-tegra@vger.kernel.org>
+CC: <arnd@arndb.de>, Hiroshi Doyu <hdoyu@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
         Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, chao.bi@intel.com,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>, cxie4@marvell.com,
-        ytang5@marvell.com
-Subject: Re: [PATCH v3 00/10] spi/pxa2xx: add Intel Lynxpoint SPI controller
- support
-Message-ID: <20130208073428.GG20771@intel.com>
-References: <1358850393-23111-1-git-send-email-mika.westerberg@linux.intel.com>
- <CACb1VKtD+pc5cAJAqBg82uCXH_icm9fk1yLB_UnwmEq4Lq-NVQ@mail.gmail.com>
- <20130201102247.GM869@intel.com>
- <20130204094548.GA4720@opensource.wolfsonmicro.com>
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 4/4] ARM: tegra: Restore USB/PCIE info in new DT board file
+Date: Fri, 8 Feb 2013 09:29:34 +0200
+Message-ID: <1360308574-19658-5-git-send-email-hdoyu@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1360308574-19658-1-git-send-email-hdoyu@nvidia.com>
+References: <1360308574-19658-1-git-send-email-hdoyu@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130204094548.GA4720@opensource.wolfsonmicro.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark/Grant,
+Mainly for the compatibility for the existing driver.
+This would be removed once new USB/PCIE DT supports come.
 
-On Mon, Feb 04, 2013 at 05:45:49PM +0800, Mark Brown wrote:
-> On Fri, Feb 01, 2013 at 12:22:47PM +0200, Mika Westerberg wrote:
-> 
-> > Mark, thank you for applying patches 1-4/10. Is there anything you want me
-> > to do for the rest of the patches in order to get those merged?
-> 
-> I stopped at patch 4 mostly because it's very large but also because you
-> said you were hoping for an ack from Linus.
+Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+---
+ arch/arm/mach-tegra/tegra.c |   92 ++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 90 insertions(+), 2 deletions(-)
 
-It is large because I had to break out the private PXA DMA implementation
-from the driver and I'm not sure if it can be split into a smaller patches.
-The series has been tested on PXA by Lu Cao at Marvell and Linus W acked
-the DMA patches.
+diff --git a/arch/arm/mach-tegra/tegra.c b/arch/arm/mach-tegra/tegra.c
+index 62ae39a..82fea64 100644
+--- a/arch/arm/mach-tegra/tegra.c
++++ b/arch/arm/mach-tegra/tegra.c
+@@ -23,6 +23,8 @@
+ #include <linux/of_fdt.h>
+ #include <linux/of_irq.h>
+ #include <linux/of_platform.h>
++#include <linux/platform_data/tegra_usb.h>
++#include <linux/usb/tegra_usb_phy.h>
+ 
+ #include <asm/mach/arch.h>
+ 
+@@ -30,9 +32,63 @@
+ #include "common.h"
+ #include "iomap.h"
+ 
++#ifdef USB_EHCI_TEGRA
++static struct tegra_ulpi_config tegra_ehci2_ulpi_phy_config = {
++	.reset_gpio = -1,
++	.clk = "cdev2",
++};
++
++static struct tegra_ehci_platform_data tegra_ehci_pdata[] = {
++	{
++		.operating_mode = TEGRA_USB_OTG,
++		.power_down_on_bus_suspend = 1,
++		.vbus_gpio = -1,
++	},
++	{
++		.operating_mode = TEGRA_USB_HOST,
++		.power_down_on_bus_suspend = 1,
++		.vbus_gpio = -1,
++		.phy_config = &tegra_ehci2_ulpi_phy_config,
++	},
++	{
++		.operating_mode = TEGRA_USB_HOST,
++		.power_down_on_bus_suspend = 1,
++		.vbus_gpio = -1,
++	},
++};
++
+ static struct of_dev_auxdata tegra_auxdata_lookup[] __initdata = {
+-	{},
++	OF_DEV_AUXDATA("nvidia,tegra20-ehci", 0xc5000000, "tegra-ehci.0", &tegra_ehci_pdata[0]),
++	OF_DEV_AUXDATA("nvidia,tegra20-ehci", 0xc5004000, "tegra-ehci.1", &tegra_ehci_pdata[1]),
++	OF_DEV_AUXDATA("nvidia,tegra20-ehci", 0xC5008000, "tegra-ehci.2", &tegra_ehci_pdata[2]),
++	{}
+ };
++#else
++#define tegra_auxdata_lookup	NULL
++#endif
++
++#if defined(CONFIG_TEGRA_PCI) && defined(CONFIG_ARCH_TEGRA_2x_SOC)
++static void __init trimslice_init(void)
++{
++	int err;
++
++	err = tegra_pcie_init(true, true);
++	if (err)
++		pr_err("%s failed: %d\n", __func__, err);
++}
++static void __init harmony_init(void)
++{
++	harmony_pcie_init();
++}
++static void __init paz00_init(void)
++{
++	tegra_paz00_wifikill_init();
++}
++#else
++#define trimslice_init	NULL
++#define harmony_init	NULL
++#define paz00_init	NULL
++#endif
+ 
+ static void __init tegra_dt_init(void)
+ {
+@@ -40,6 +96,38 @@ static void __init tegra_dt_init(void)
+ 			     tegra_auxdata_lookup, NULL);
+ }
+ 
++static void __init tegra_dt_init_late(void)
++{
++	int i;
++	struct {
++		const char *name;
++		void (*init)(void);
++	} board[] = {
++		{
++			.name = "compulab,trimslice",
++			.init = trimslice_init,
++		},
++		{
++			.name = "nvidia,harmony",
++			.init = harmony_init,
++		},
++		{
++			.name = "compal,paz00",
++			.init = paz00_init
++		},
++	};
++
++	tegra_init_late();
++
++	for (i = 0; i < ARRAY_SIZE(board); i++) {
++		if (of_machine_is_compatible(board[i].name)) {
++			if (board[i].init)
++				board[i].init();
++			break;
++		}
++	}
++}
++
+ static const char * const tegra_dt_board_compat[] = {
+ 	"nvidia,tegra20",
+ 	"nvidia,tegra30",
+@@ -54,7 +142,7 @@ DT_MACHINE_START(TEGRA_DT, "NVIDIA Tegra SoC (Flattened Device Tree)")
+ 	.init_irq	= tegra_dt_init_irq,
+ 	.init_time	= clocksource_of_init,
+ 	.init_machine	= tegra_dt_init,
+-	.init_late	= tegra_init_late,
++	.init_late	= tegra_dt_init_late,
+ 	.restart	= tegra_assert_system_reset,
+ 	.dt_compat	= tegra_dt_board_compat,
+ MACHINE_END
+-- 
+1.7.9.5
 
-Do you think you could take this for 3.9 or is there anything (besides the
-one patch being large) preventhing this?
-
-Thanks!
