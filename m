@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947187Ab3BHVRl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 16:17:41 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:39729 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1947139Ab3BHVRj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 16:17:39 -0500
-Date: Fri, 8 Feb 2013 13:17:35 -0800
-From: Kent Overstreet <koverstreet@google.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org, zab@redhat.com, bcrl@kvack.org,
-        jmoyer@redhat.com, axboe@kernel.dk, viro@zeniv.linux.org.uk,
-        tytso@mit.edu, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 23/32] Generic dynamic per cpu refcounting
-Message-ID: <20130208211735.GG27179@google.com>
-References: <1356573611-18590-1-git-send-email-koverstreet@google.com>
- <1356573611-18590-26-git-send-email-koverstreet@google.com>
- <20130208144408.GY2875@htj.dyndns.org>
+	id S1947192Ab3BHVTn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 16:19:43 -0500
+Received: from fieldses.org ([174.143.236.118]:54061 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1947114Ab3BHVTm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 16:19:42 -0500
+Date: Fri, 8 Feb 2013 16:19:37 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the nfsd tree
+Message-ID: <20130208211937.GC22748@fieldses.org>
+References: <20130202130403.a29346b583a802ed6ce6880b@canb.auug.org.au>
+ <20130202125719.GF30668@fieldses.org>
+ <20130203144123.GA22854@fieldses.org>
+ <51148FF1.4040108@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130208144408.GY2875@htj.dyndns.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <51148FF1.4040108@parallels.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 08, 2013 at 06:44:08AM -0800, Tejun Heo wrote:
-> (cc'ing Andrew)
+On Fri, Feb 08, 2013 at 09:41:05AM +0400, Stanislav Kinsbursky wrote:
+> 03.02.2013 18:41, J. Bruce Fields пишет:
+> >On Sat, Feb 02, 2013 at 07:57:19AM -0500, J. Bruce Fields wrote:
+> >>On Sat, Feb 02, 2013 at 01:04:03PM +1100, Stephen Rothwell wrote:
+> >>>Hi,
+> >>>
+> >>>After merging the nfsd tree, today's linux-next build (x86_64
+> >>>allmodconfig) failed like this:
+> >>>
+> >>>fs/nfs/dns_resolve.c: In function 'nfs_dns_resolver_cache_init':
+> >>>fs/nfs/dns_resolve.c:375:4: error: 'struct cache_detail' has no member named 'cache_upcall'
+> >>>fs/nfs/dns_resolve.c:375:35: warning: left-hand operand of comma expression has no effect [-Wunused-value]
+> >>>fs/nfs/dns_resolve.c:375:35: warning: value computed is not used [-Wunused-value]
+> >>>fs/nfs/dns_resolve.c:375:35: warning: value computed is not used [-Wunused-value]
+> >>>fs/nfs/dns_resolve.c:375:35: warning: value computed is not used [-Wunused-value]
+> >>>fs/nfs/dns_resolve.c:375:35: warning: value computed is not used [-Wunused-value]
+> >>>fs/nfs/dns_resolve.c:375:35: warning: value computed is not used [-Wunused-value]
+> >>>fs/nfs/dns_resolve.c:375:35: warning: value computed is not used [-Wunused-value]
+> >>>
+> >>>Caused by commit aab982cb5dfb ("SUNRPC: remove cache_detail->cache_upcall
+> >>>callback").
+> >>
+> >>Yes, I knew why we'd introduced cache_upcall, so I'm not sure how I
+> >>overlooked that.  It must have slipped through testing because I didn't
+> >>set CONFIG_NFS_USE_KERNEL_DNS.
+> >>
+> >>We may just be able to revert that patch....  I can take care of that by
+> >>tomorrow.
+> >
+> >Stanislav, any objections to this?
+> >
 > 
-> On Wed, Dec 26, 2012 at 06:00:02PM -0800, Kent Overstreet wrote:
-> > This implements a refcount with similar semantics to
-> > atomic_get()/atomic_dec_and_test(), that starts out as just an atomic_t
-> > but dynamically switches to per cpu refcounting when the rate of
-> > gets/puts becomes too high.
-> > 
-> > It also implements two stage shutdown, as we need it to tear down the
-> > percpu counts. Before dropping the initial refcount, you must call
-> > percpu_ref_kill(); this puts the refcount in "shutting down mode" and
-> > switches back to a single atomic refcount with the appropriate barriers
-> > (synchronize_rcu()).
-> > 
-> > It's also legal to call percpu_ref_kill() multiple times - it only
-> > returns true once, so callers don't have to reimplement shutdown
-> > synchronization.
-> > 
-> > For the sake of simplicity/efficiency, the heuristic is pretty simple -
-> > it just switches to percpu refcounting if there are more than x gets
-> > in one second (completely arbitrarily, 4096).
-> > 
-> > It'd be more correct to count the number of cache misses or something
-> > else more profile driven, but doing so would require accessing the
-> > shared ref twice per get - by just counting the number of gets(), we can
-> > stick that counter in the high bits of the refcount and increment both
-> > with a single atomic64_add(). But I expect this'll be good enough in
-> > practice.
-> > 
-> > Signed-off-by: Kent Overstreet <koverstreet@google.com>
+> The only objection is that I've sent you the patch set witch fixes all these problems already:
 > 
-> What's the status of this series?  The percpu-refcnt part is still
-> going through review and the merge window is opening up pretty soon.
-> Kent, Andrew?
+> "[PATCH v2 0/6] SUNRPC: rework cache upcall to avoid NFSd root". :)
+> 
+> The only reason why I removed cache_upcall at all was that all it's
+> users (except NFS DNS cache - my mistake) just call
+> sunrpc_cache_pipe_upcall and thus these wrapper looked redundant to
+> me.
+> Second patch set leaves cache_upcall only for NFS DNS cache (since this upcall is not just a wrapper around sunrpc_cache_pipe_upcall).
+> And second patch set implies the first one will be dropped.
+> I can, actually, send one more (incremental  this time) patch set to fix the problem, if you wish.
 
-I don't think the percpu-refcount stuff should be blocking, the existing
-code in Andrew's tree isn't ideal w.r.t. the api but it is stable and
-tested.
-
-I have patches on top of that that incorporate most of your ideas and
-are definite improvements, I've just been holding off on them because I
-want to come up with a good torture test (mainly because of the bias
-mechanism for teardown).
+No, the replacement series is fine.  I gave Trond another poke and then
+they should get committed.--b.
