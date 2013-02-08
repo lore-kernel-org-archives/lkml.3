@@ -1,209 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947137Ab3BHVCk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 16:02:40 -0500
-Received: from mail-vb0-f45.google.com ([209.85.212.45]:57253 "EHLO
-	mail-vb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1947068Ab3BHVCj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 16:02:39 -0500
-Date: Fri, 8 Feb 2013 13:02:34 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>
-Subject: [PATCH 3/6] idr: remove length restriction from idr_layer->bitmap
-Message-ID: <20130208210234.GC26660@mtj.dyndns.org>
-References: <20130208210050.GA26660@mtj.dyndns.org>
+	id S1947149Ab3BHVCu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 16:02:50 -0500
+Received: from gmmr8.centrum.cz ([46.255.227.254]:41941 "EHLO gmmr8.centrum.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1947069Ab3BHVCq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 16:02:46 -0500
+To: =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>
+Subject: =?utf-8?q?Re=3A_=5BPATCH_for_3=2E2=2E34=5D_memcg=3A_do_not_trigger_OOM_if_PF=5FNO=5FMEMCG=5FOOM_is_set?=
+Date: Fri, 08 Feb 2013 22:02:43 +0100
+From: "azurIt" <azurit@pobox.sk>
+Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        =?utf-8?q?cgroups_mailinglist?= <cgroups@vger.kernel.org>,
+        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
+        =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>
+References: <20130206140119.GD10254@dhcp22.suse.cz>, <20130206142219.GF10254@dhcp22.suse.cz>, <20130206160051.GG10254@dhcp22.suse.cz>, <20130208060304.799F362F@pobox.sk>, <20130208094420.GA7557@dhcp22.suse.cz>, <20130208120249.FD733220@pobox.sk>, <20130208123854.GB7557@dhcp22.suse.cz>, <20130208145616.FB78CE24@pobox.sk>, <20130208152402.GD7557@dhcp22.suse.cz>, <20130208165805.8908B143@pobox.sk> <20130208171012.GH7557@dhcp22.suse.cz>
+In-Reply-To: <20130208171012.GH7557@dhcp22.suse.cz>
+X-Mailer: Centrum Email 5.3
+X-Priority: 3
+X-Original-From: azurit@pobox.sk
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130208210050.GA26660@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-Id: <20130208220243.EDEE0825@pobox.sk>
+X-Maser: Georgo
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, idr->bitmap is declared as an unsigned long which restricts
-the number of bits an idr_layer can contain.  All bitops can handle
-arbitrary positive integer bit number and there's no reason for this
-restriction.
+>
+>I assume you have checked that the killed processes eventually die,
+>right?
+>
 
-Declare idr_layer->bitmap using DECLARE_BITMAP() instead of a single
-unsigned long.
 
-* idr_layer->bitmap is now an array.  '&' dropped from params to
-  bitops.
+When i killed them by hand, yes, they dissappeard from process list (i saw it). I don't know if they really died when OOM killed them.
 
-* Replaced "== IDR_FULL" tests with bitmap_full() and removed
-  IDR_FULL.
 
-* Replaced find_next_bit() on ~bitmap with find_next_zero_bit().
+>Well, I do not see anything supsicious during that time period
+>(timestamps translate between Fri Feb  8 02:34:05 and Fri Feb  8
+>02:36:48). The kernel log shows a lot of oom during that time. All
+>killed processes die eventually.
 
-* Replaced "bitmap = 0" with bitmap_clear().
 
-This patch doesn't (or at least shouldn't) introduce any behavior
-changes.
+No, they didn't died by OOM when cgroup was freezed. Just check PIDs from memcg-bug-4.tar.gz and try to find them in kernel log. Why are all PIDs waiting on 'mem_cgroup_handle_oom' and there is no OOM message in the log? Data in memcg-bug-4.tar.gz are only for 2 minutes but i let it run for about 15-20 minutes, no single process killed by OOM. I'm 100% sure that OOM was not killing them (maybe it was trying to but it didn't happen).
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- include/linux/idr.h |   12 +-----------
- lib/idr.c           |   34 +++++++++++++++++-----------------
- 2 files changed, 18 insertions(+), 28 deletions(-)
 
---- a/include/linux/idr.h
-+++ b/include/linux/idr.h
-@@ -19,18 +19,8 @@
- 
- #if BITS_PER_LONG == 32
- # define IDR_BITS 5
--# define IDR_FULL 0xfffffffful
--/* We can only use two of the bits in the top level because there is
--   only one possible bit in the top level (5 bits * 7 levels = 35
--   bits, but you only use 31 bits in the id). */
--# define TOP_LEVEL_FULL (IDR_FULL >> 30)
- #elif BITS_PER_LONG == 64
- # define IDR_BITS 6
--# define IDR_FULL 0xfffffffffffffffful
--/* We can only use two of the bits in the top level because there is
--   only one possible bit in the top level (6 bits * 6 levels = 36
--   bits, but you only use 31 bits in the id). */
--# define TOP_LEVEL_FULL (IDR_FULL >> 62)
- #else
- # error "BITS_PER_LONG is not 32 or 64"
- #endif
-@@ -39,7 +29,7 @@
- #define IDR_MASK ((1 << IDR_BITS)-1)
- 
- struct idr_layer {
--	unsigned long		bitmap;	/* A zero bit means "space here" */
-+	DECLARE_BITMAP(bitmap, IDR_SIZE); /* A zero bit means "space here" */
- 	struct idr_layer __rcu	*ary[1<<IDR_BITS];
- 	int			count;	/* When zero, we can release it */
- 	int			layer;	/* distance from leaf */
---- a/lib/idr.c
-+++ b/lib/idr.c
-@@ -149,18 +149,18 @@ static void idr_mark_full(struct idr_lay
- 	struct idr_layer *p = pa[0];
- 	int l = 0;
- 
--	__set_bit(id & IDR_MASK, &p->bitmap);
-+	__set_bit(id & IDR_MASK, p->bitmap);
- 	/*
- 	 * If this layer is full mark the bit in the layer above to
- 	 * show that this part of the radix tree is full.  This may
- 	 * complete the layer above and require walking up the radix
- 	 * tree.
- 	 */
--	while (p->bitmap == IDR_FULL) {
-+	while (bitmap_full(p->bitmap, IDR_SIZE)) {
- 		if (!(p = pa[++l]))
- 			break;
- 		id = id >> IDR_BITS;
--		__set_bit((id & IDR_MASK), &p->bitmap);
-+		__set_bit((id & IDR_MASK), p->bitmap);
- 	}
- }
- 
-@@ -213,7 +213,6 @@ static int sub_alloc(struct idr *idp, in
- 	int n, m, sh;
- 	struct idr_layer *p, *new;
- 	int l, id, oid;
--	unsigned long bm;
- 
- 	id = *starting_id;
-  restart:
-@@ -225,8 +224,7 @@ static int sub_alloc(struct idr *idp, in
- 		 * We run around this while until we reach the leaf node...
- 		 */
- 		n = (id >> (IDR_BITS*l)) & IDR_MASK;
--		bm = ~p->bitmap;
--		m = find_next_bit(&bm, IDR_SIZE, n);
-+		m = find_next_zero_bit(p->bitmap, IDR_SIZE, n);
- 		if (m == IDR_SIZE) {
- 			/* no space available go back to previous layer. */
- 			l++;
-@@ -318,7 +316,8 @@ build_up:
- 			for (new = p; p && p != idp->top; new = p) {
- 				p = p->ary[0];
- 				new->ary[0] = NULL;
--				new->bitmap = new->count = 0;
-+				new->count = 0;
-+				bitmap_clear(new->bitmap, 0, IDR_SIZE);
- 				__move_to_free_list(idp, new);
- 			}
- 			spin_unlock_irqrestore(&idp->lock, flags);
-@@ -327,8 +326,8 @@ build_up:
- 		new->ary[0] = p;
- 		new->count = 1;
- 		new->layer = layers-1;
--		if (p->bitmap == IDR_FULL)
--			__set_bit(0, &new->bitmap);
-+		if (bitmap_full(p->bitmap, IDR_SIZE))
-+			__set_bit(0, new->bitmap);
- 		p = new;
- 	}
- 	rcu_assign_pointer(idp->top, p);
-@@ -506,14 +505,14 @@ static void sub_remove(struct idr *idp,
- 
- 	while ((shift > 0) && p) {
- 		n = (id >> shift) & IDR_MASK;
--		__clear_bit(n, &p->bitmap);
-+		__clear_bit(n, p->bitmap);
- 		*++paa = &p->ary[n];
- 		p = p->ary[n];
- 		shift -= IDR_BITS;
- 	}
- 	n = id & IDR_MASK;
--	if (likely(p != NULL && test_bit(n, &p->bitmap))){
--		__clear_bit(n, &p->bitmap);
-+	if (likely(p != NULL && test_bit(n, p->bitmap))){
-+		__clear_bit(n, p->bitmap);
- 		rcu_assign_pointer(p->ary[n], NULL);
- 		to_free = NULL;
- 		while(*paa && ! --((**paa)->count)){
-@@ -556,7 +555,8 @@ void idr_remove(struct idr *idp, int id)
- 		p = idp->top->ary[0];
- 		rcu_assign_pointer(idp->top, p);
- 		--idp->layers;
--		to_free->bitmap = to_free->count = 0;
-+		to_free->count = 0;
-+		bitmap_clear(to_free->bitmap, 0, IDR_SIZE);
- 		free_layer(to_free);
- 	}
- 	while (idp->id_free_cnt >= MAX_IDR_FREE) {
-@@ -816,7 +816,7 @@ void *idr_replace(struct idr *idp, void
- 	}
- 
- 	n = id & IDR_MASK;
--	if (unlikely(p == NULL || !test_bit(n, &p->bitmap)))
-+	if (unlikely(p == NULL || !test_bit(n, p->bitmap)))
- 		return ERR_PTR(-ENOENT);
- 
- 	old_p = p->ary[n];
-@@ -1013,7 +1013,7 @@ void ida_remove(struct ida *ida, int id)
- 	/* clear full bits while looking up the leaf idr_layer */
- 	while ((shift > 0) && p) {
- 		n = (idr_id >> shift) & IDR_MASK;
--		__clear_bit(n, &p->bitmap);
-+		__clear_bit(n, p->bitmap);
- 		p = p->ary[n];
- 		shift -= IDR_BITS;
- 	}
-@@ -1022,7 +1022,7 @@ void ida_remove(struct ida *ida, int id)
- 		goto err;
- 
- 	n = idr_id & IDR_MASK;
--	__clear_bit(n, &p->bitmap);
-+	__clear_bit(n, p->bitmap);
- 
- 	bitmap = (void *)p->ary[n];
- 	if (!test_bit(offset, bitmap->bitmap))
-@@ -1031,7 +1031,7 @@ void ida_remove(struct ida *ida, int id)
- 	/* update bitmap and remove it if empty */
- 	__clear_bit(offset, bitmap->bitmap);
- 	if (--bitmap->nr_busy == 0) {
--		__set_bit(n, &p->bitmap);	/* to please idr_remove() */
-+		__set_bit(n, p->bitmap);	/* to please idr_remove() */
- 		idr_remove(&ida->idr, idr_id);
- 		free_bitmap(ida, bitmap);
- 	}
+>
+>Nothing shows it would be a deadlock so far. It is well possible that
+>the userspace went mad when seeing a lot of processes dying because it
+>doesn't expect it.
+>
+
+
+Lots of processes are dying also now, without your latest patch, and no such things are happening. I'm sure there is something more it this, maybe it revealed another bug?
+
+
+azur
