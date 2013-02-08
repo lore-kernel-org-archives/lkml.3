@@ -1,78 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947340Ab3BHXS5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 18:18:57 -0500
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:41781 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1947302Ab3BHXS4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 18:18:56 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAE9FiQX6yLebtOVCRV7GDwxfJFPpVxBKJO_VJ_ndA-OjBD4LRg@mail.gmail.com>
-References: <1360351703-20571-1-git-send-email-yinghai@kernel.org>
- <1360351703-20571-26-git-send-email-yinghai@kernel.org> <CAErSpo4iA17jh5rw05q=uaKOyMKesrPnxYrN2EvqWT_tGmE_FQ@mail.gmail.com>
- <CAE9FiQX6yLebtOVCRV7GDwxfJFPpVxBKJO_VJ_ndA-OjBD4LRg@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 8 Feb 2013 16:18:35 -0700
-Message-ID: <CAErSpo6GZvEUP2GWuQ3hUsSGBaE5Ontpp5=AizfP1yVD8bkD_g@mail.gmail.com>
-Subject: Re: [PATCH v2 25/26] PCI: Disable mem in the ioapic removing path
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1947330Ab3BHXU4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 18:20:56 -0500
+Received: from mga03.intel.com ([143.182.124.21]:8061 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757205Ab3BHXUz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 18:20:55 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,632,1355126400"; 
+   d="scan'208";a="254556486"
+From: Darren Hart <dvhart@linux.intel.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Darren Hart <dvhart@linux.intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Denis Turischev <denis@compulab.co.il>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [PATCH] lpc_sch: Accomodate partial population of the MFD devices
+Date: Fri,  8 Feb 2013 15:20:36 -0800
+Message-Id: <b2f78b0d872215533102ec6b9ef8cf42c8f75705.1360365636.git.dvhart@linux.intel.com>
+X-Mailer: git-send-email 1.8.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 8, 2013 at 3:33 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Fri, Feb 8, 2013 at 1:14 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> On Fri, Feb 8, 2013 at 12:28 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->>> For physical hot plug should be ok, but for remove/rescan path will
->>> need us to disable that.
->>>
->>> otherwise rescan mmio resource for pci ioapic device will not be
->>> sized and allocated, aka skiped.
->>
->> When we scan other PCI devices, we can size memory BARs even if
->> PCI_COMMAND_MEMORY is already set.  So there must be something
->> different about IOAPICs?  Or maybe it's something different about
->> rescan vs. the initial scan?
->
-> it is in drivers/pci/setup-bus.c::__dev_sort_resources()
-> it will skip the reallocation for ioapic controller.
->
-> ...
->         /* Don't touch ioapic devices already enabled by firmware */
->         if (class == PCI_CLASS_SYSTEM_PIC) {
->                 u16 command;
->                 pci_read_config_word(dev, PCI_COMMAND, &command);
->                 if (command & (PCI_COMMAND_IO | PCI_COMMAND_MEMORY))
->                         return;
->         }
->
->>
->>> For ioapic_probe:pci_enable_device will not enable the device
->>> correctly, and will bail out early.
->>
->> Exactly where and why do we bail out early?  The only early bail out I
->> see is where __pci_enable_device_flags() returns if "dev->enable_cnt >
->> 1".  Is that what you mean?
->
-> pci_enable_device==>pci_enable_device_flags
-> ==>do_pci_enable_device==>pcibios_enable_device==>pci_enable_resources
-> ...
->                 if (!r->parent) {
->                         dev_err(&dev->dev, "device not available "
->                                 "(can't reserve %pR)\n", r);
->                         return -EINVAL;
->                 }
-> ...
->
-> only reassign one will have get it's parent.
+The current probe aborts if any of the 3 base address registers are
+disabled. On a TunnelCreek system I am working on, this resulted in the
+SMBIOS and GPIO devices being removed when it couldn't read the base
+address for the watchdog timer.
 
-Hmmm, OK.  So basically this patch is a hack to work around previous
-hacks elsewhere.
+This patch accommodates partial population of the lpc_sch_cells array and
+only aborts if all the base address registers are disabled. A max size
+array is allocated and the individual device cells are added to it after
+their base addresses are successfully determined. This simplifies the
+code a bit by removing the need for the separate tunnelcreek cells array
+and combining some of the add/remove logic.
 
-We are like flies in a spider's web, bound tighter and tighter by
-every loop of silk.
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+Cc: Denis Turischev <denis@compulab.co.il>,
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+---
+ drivers/mfd/lpc_sch.c | 148 ++++++++++++++++++++++++--------------------------
+ 1 file changed, 70 insertions(+), 78 deletions(-)
+
+diff --git a/drivers/mfd/lpc_sch.c b/drivers/mfd/lpc_sch.c
+index 5624fcb..9c255f2 100644
+--- a/drivers/mfd/lpc_sch.c
++++ b/drivers/mfd/lpc_sch.c
+@@ -45,34 +45,32 @@ static struct resource smbus_sch_resource = {
+ 		.flags = IORESOURCE_IO,
+ };
+ 
+-
+ static struct resource gpio_sch_resource = {
+ 		.flags = IORESOURCE_IO,
+ };
+ 
+-static struct mfd_cell lpc_sch_cells[] = {
+-	{
+-		.name = "isch_smbus",
+-		.num_resources = 1,
+-		.resources = &smbus_sch_resource,
+-	},
+-	{
+-		.name = "sch_gpio",
+-		.num_resources = 1,
+-		.resources = &gpio_sch_resource,
+-	},
+-};
+-
+ static struct resource wdt_sch_resource = {
+ 		.flags = IORESOURCE_IO,
+ };
+ 
+-static struct mfd_cell tunnelcreek_cells[] = {
+-	{
+-		.name = "ie6xx_wdt",
+-		.num_resources = 1,
+-		.resources = &wdt_sch_resource,
+-	},
++static struct mfd_cell lpc_sch_cells[3];
++
++static struct mfd_cell isch_smbus_cell = {
++	.name = "isch_smbus",
++	.num_resources = 1,
++	.resources = &smbus_sch_resource,
++};
++
++static struct mfd_cell sch_gpio_cell = {
++	.name = "sch_gpio",
++	.num_resources = 1,
++	.resources = &gpio_sch_resource,
++};
++
++static struct mfd_cell wdt_sch_cell = {
++	.name = "ie6xx_wdt",
++	.num_resources = 1,
++	.resources = &wdt_sch_resource,
+ };
+ 
+ static DEFINE_PCI_DEVICE_TABLE(lpc_sch_ids) = {
+@@ -88,79 +86,73 @@ static int lpc_sch_probe(struct pci_dev *dev,
+ {
+ 	unsigned int base_addr_cfg;
+ 	unsigned short base_addr;
+-	int i;
++	int i, cells = 0;
+ 	int ret;
+ 
+ 	pci_read_config_dword(dev, SMBASE, &base_addr_cfg);
+-	if (!(base_addr_cfg & (1 << 31))) {
+-		dev_err(&dev->dev, "Decode of the SMBus I/O range disabled\n");
+-		return -ENODEV;
+-	}
+-	base_addr = (unsigned short)base_addr_cfg;
+-	if (base_addr == 0) {
+-		dev_err(&dev->dev, "I/O space for SMBus uninitialized\n");
+-		return -ENODEV;
++	base_addr = 0;
++	if (!(base_addr_cfg & (1 << 31)))
++		dev_warn(&dev->dev, "Decode of the SMBus I/O range disabled\n");
++	else
++		base_addr = (unsigned short)base_addr_cfg;
++	if (base_addr == 0)
++		dev_warn(&dev->dev, "I/O space for SMBus uninitialized\n");
++	else {
++		lpc_sch_cells[cells++] = isch_smbus_cell;
++		smbus_sch_resource.start = base_addr;
++		smbus_sch_resource.end = base_addr + SMBUS_IO_SIZE - 1;
+ 	}
+ 
+-	smbus_sch_resource.start = base_addr;
+-	smbus_sch_resource.end = base_addr + SMBUS_IO_SIZE - 1;
+-
+ 	pci_read_config_dword(dev, GPIOBASE, &base_addr_cfg);
+-	if (!(base_addr_cfg & (1 << 31))) {
+-		dev_err(&dev->dev, "Decode of the GPIO I/O range disabled\n");
+-		return -ENODEV;
+-	}
+-	base_addr = (unsigned short)base_addr_cfg;
+-	if (base_addr == 0) {
+-		dev_err(&dev->dev, "I/O space for GPIO uninitialized\n");
+-		return -ENODEV;
+-	}
+-
+-	gpio_sch_resource.start = base_addr;
+-
+-	if (id->device == PCI_DEVICE_ID_INTEL_CENTERTON_ILB)
+-		gpio_sch_resource.end = base_addr + GPIO_IO_SIZE_CENTERTON - 1;
++	base_addr = 0;
++	if (!(base_addr_cfg & (1 << 31)))
++		dev_warn(&dev->dev, "Decode of the GPIO I/O range disabled\n");
+ 	else
+-		gpio_sch_resource.end = base_addr + GPIO_IO_SIZE - 1;
+-
+-	for (i=0; i < ARRAY_SIZE(lpc_sch_cells); i++)
+-		lpc_sch_cells[i].id = id->device;
+-
+-	ret = mfd_add_devices(&dev->dev, 0,
+-			      lpc_sch_cells, ARRAY_SIZE(lpc_sch_cells), NULL,
+-			      0, NULL);
+-	if (ret)
+-		goto out_dev;
++		base_addr = (unsigned short)base_addr_cfg;
++	if (base_addr == 0)
++		dev_warn(&dev->dev, "I/O space for GPIO uninitialized\n");
++	else {
++		lpc_sch_cells[cells++] = sch_gpio_cell;
++		gpio_sch_resource.start = base_addr;
++		if (id->device == PCI_DEVICE_ID_INTEL_CENTERTON_ILB)
++			gpio_sch_resource.end = base_addr + GPIO_IO_SIZE_CENTERTON - 1;
++		else
++			gpio_sch_resource.end = base_addr + GPIO_IO_SIZE - 1;
++	}
+ 
+ 	if (id->device == PCI_DEVICE_ID_INTEL_ITC_LPC
+ 	 || id->device == PCI_DEVICE_ID_INTEL_CENTERTON_ILB) {
+ 		pci_read_config_dword(dev, WDTBASE, &base_addr_cfg);
+-		if (!(base_addr_cfg & (1 << 31))) {
+-			dev_err(&dev->dev, "Decode of the WDT I/O range disabled\n");
+-			ret = -ENODEV;
+-			goto out_dev;
+-		}
+-		base_addr = (unsigned short)base_addr_cfg;
+-		if (base_addr == 0) {
+-			dev_err(&dev->dev, "I/O space for WDT uninitialized\n");
+-			ret = -ENODEV;
+-			goto out_dev;
++		base_addr = 0;
++		if (!(base_addr_cfg & (1 << 31)))
++			dev_warn(&dev->dev, "Decode of the WDT I/O range disabled\n");
++		else
++			base_addr = (unsigned short)base_addr_cfg;
++		if (base_addr == 0)
++			dev_warn(&dev->dev, "I/O space for WDT uninitialized\n");
++		else {
++			lpc_sch_cells[cells++] = wdt_sch_cell;
++			wdt_sch_resource.start = base_addr;
++			wdt_sch_resource.end = base_addr + WDT_IO_SIZE - 1;
+ 		}
++	}
+ 
+-		wdt_sch_resource.start = base_addr;
+-		wdt_sch_resource.end = base_addr + WDT_IO_SIZE - 1;
+-
+-		for (i = 0; i < ARRAY_SIZE(tunnelcreek_cells); i++)
+-			tunnelcreek_cells[i].id = id->device;
+-
+-		ret = mfd_add_devices(&dev->dev, 0, tunnelcreek_cells,
+-				      ARRAY_SIZE(tunnelcreek_cells), NULL,
+-				      0, NULL);
++	if (WARN_ON(cells > ARRAY_SIZE(lpc_sch_cells))) {
++		dev_err(&dev->dev, "Cell count exceeds array size");
++		return -ENODEV;
++	}
++	if (cells == 0) {
++		dev_err(&dev->dev, "All decode registers disabled.\n");
++		return -ENODEV;
+ 	}
+ 
+-	return ret;
+-out_dev:
+-	mfd_remove_devices(&dev->dev);
++	for (i = 0; i < cells; i++)
++		lpc_sch_cells[i].id = id->device;
++	ret = mfd_add_devices(&dev->dev, 0, lpc_sch_cells, cells, NULL, 0, NULL);
++	
++	if (ret)
++		mfd_remove_devices(&dev->dev);
++
+ 	return ret;
+ }
+ 
+-- 
+1.8.1
+
