@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947082Ab3BHUqK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 15:46:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42303 "EHLO mx1.redhat.com"
+	id S1947075Ab3BHUs5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 15:48:57 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:36531 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1946959Ab3BHUqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 15:46:07 -0500
-Message-ID: <511563F6.1080009@redhat.com>
-Date: Fri, 08 Feb 2013 15:45:42 -0500
-From: Don Dutile <ddutile@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120601 Thunderbird/10.0.5
+	id S1947017Ab3BHUs4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 15:48:56 -0500
+Message-ID: <51156494.3050300@zytor.com>
+Date: Fri, 08 Feb 2013 12:48:20 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>
-Subject: Re: [PATCH v2 08/26] iommu, irq: Allocate irq_desc for dmar_msi with
- local node
-References: <1360351703-20571-1-git-send-email-yinghai@kernel.org> <1360351703-20571-9-git-send-email-yinghai@kernel.org>
-In-Reply-To: <1360351703-20571-9-git-send-email-yinghai@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, bp@alien8.de,
+        mingo@kernel.org, tglx@linutronix.de
+Subject: Re: [PATCH 2/2] make /dev/kmem return error for highmem
+References: <20130208202813.62965F25@kernel.stglabs.ibm.com> <20130208202814.E1196596@kernel.stglabs.ibm.com>
+In-Reply-To: <20130208202814.E1196596@kernel.stglabs.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/08/2013 02:28 PM, Yinghai Lu wrote:
-> iommu irq's irq_desc should be on local node ram.
+On 02/08/2013 12:28 PM, Dave Hansen wrote:
+> I was auding the /dev/mem code for more questionable uses of
+> __pa(), and ran across this.
 >
-> Fix the return value checking problem.
+> My assumption is that if you use /dev/kmem, you expect to be
+> able to read the kernel virtual mappings.  However, those
+> mappings _stop_ as soon as we hit high memory.  The
+> pfn_valid() check in here is good for memory holes, but since
+> highmem pages are still valid, it does no good for those.
 >
-> create_irq() will return -1 when fail to allocate.
-> create_irq_nr() will return 0 when fail to allocate.
+> Also, since we are now checking that __pa() is being done on
+> valid virtual addresses, this might have tripped the new
+> check.  Even with the new check, this code would have been
+> broken with the NUMA remapping code had we not ripped it
+> out:
 >
-> here only check !irq, so need to change it to use create_irq_nr instead.
->
-> Signed-off-by: Yinghai Lu<yinghai@kernel.org>
-> Cc: Joerg Roedel<joro@8bytes.org>
-> Cc: Donald Dutile<ddutile@redhat.com>
-> ---
->   drivers/iommu/dmar.c |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
-> index 174bb65..316b5a2 100644
-> --- a/drivers/iommu/dmar.c
-> +++ b/drivers/iommu/dmar.c
-> @@ -1263,7 +1263,7 @@ int dmar_set_interrupt(struct intel_iommu *iommu)
->   	if (iommu->irq)
->   		return 0;
->
-> -	irq = create_irq();
-> +	irq = create_irq_nr(0, iommu->node);
->   	if (!irq) {
->   		pr_err("IOMMU: no free vectors\n");
->   		return -EINVAL;
-Good catch!
 
-you can add my ack to it.
+It would be great if you could take a stab at fixing /dev/mem and 
+/dev/kmem... there are a bunch of problems with both which seem to 
+really translate to "HIGHMEM was never properly implemented"...
+
+	-hpa
+
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
