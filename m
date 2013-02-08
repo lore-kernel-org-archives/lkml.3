@@ -1,123 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760156Ab3BHOtk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 09:49:40 -0500
-Received: from mail.dev.rtsoft.ru ([213.79.90.226]:50617 "EHLO
-	wasted.dev.rtsoft.ru" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758171Ab3BHOtj (ORCPT
+	id S1760103Ab3BHOuP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 09:50:15 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:41657
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752515Ab3BHOuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 09:49:39 -0500
-X-Greylist: delayed 811 seconds by postgrey-1.27 at vger.kernel.org; Fri, 08 Feb 2013 09:49:38 EST
-To: linux-usb@vger.kernel.org
-Subject: [PATCH resend] testusb: remove all mentions of 'usbfs'
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-From: Sergei Shtylyov <sshtylyov@dev.rtsoft.ru>
-Organization: RTSoft, Inc.
-Date: Fri, 8 Feb 2013 18:48:03 +0300
+	Fri, 8 Feb 2013 09:50:13 -0500
+Date: Fri, 8 Feb 2013 15:49:02 +0100
+From: Jens Axboe <axboe@kernel.dk>
+To: Tejun Heo <tj@kernel.org>
+Cc: Kent Overstreet <koverstreet@google.com>, linux-kernel@vger.kernel.org,
+        linux-aio@kvack.org, linux-fsdevel@vger.kernel.org, zab@redhat.com,
+        bcrl@kvack.org, jmoyer@redhat.com, viro@zeniv.linux.org.uk,
+        tytso@mit.edu, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 23/32] Generic dynamic per cpu refcounting
+Message-ID: <20130208144902.GQ15092@kernel.dk>
+References: <1356573611-18590-1-git-send-email-koverstreet@google.com>
+ <1356573611-18590-26-git-send-email-koverstreet@google.com>
+ <20130208144408.GY2875@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302081848.03347.sshtylyov@dev.rtsoft.ru>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130208144408.GY2875@htj.dyndns.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 8a424bf40d772fedacc91862ecc86f10541fabb3 (tools/usb: remove last USBFS
-user) removed 'usbfs' files from the source but retained mentions of 'usbfs'
-all over the place, most importantly in the misleading error messages printed
-in case USB device files are not there.  Remove all the  mentions of 'usbfs'
-for good now!
+On Fri, Feb 08 2013, Tejun Heo wrote:
+> (cc'ing Andrew)
+> 
+> On Wed, Dec 26, 2012 at 06:00:02PM -0800, Kent Overstreet wrote:
+> > This implements a refcount with similar semantics to
+> > atomic_get()/atomic_dec_and_test(), that starts out as just an atomic_t
+> > but dynamically switches to per cpu refcounting when the rate of
+> > gets/puts becomes too high.
+> > 
+> > It also implements two stage shutdown, as we need it to tear down the
+> > percpu counts. Before dropping the initial refcount, you must call
+> > percpu_ref_kill(); this puts the refcount in "shutting down mode" and
+> > switches back to a single atomic refcount with the appropriate barriers
+> > (synchronize_rcu()).
+> > 
+> > It's also legal to call percpu_ref_kill() multiple times - it only
+> > returns true once, so callers don't have to reimplement shutdown
+> > synchronization.
+> > 
+> > For the sake of simplicity/efficiency, the heuristic is pretty simple -
+> > it just switches to percpu refcounting if there are more than x gets
+> > in one second (completely arbitrarily, 4096).
+> > 
+> > It'd be more correct to count the number of cache misses or something
+> > else more profile driven, but doing so would require accessing the
+> > shared ref twice per get - by just counting the number of gets(), we can
+> > stick that counter in the high bits of the refcount and increment both
+> > with a single atomic64_add(). But I expect this'll be good enough in
+> > practice.
+> > 
+> > Signed-off-by: Kent Overstreet <koverstreet@google.com>
+> 
+> What's the status of this series?  The percpu-refcnt part is still
+> going through review and the merge window is opening up pretty soon.
+> Kent, Andrew?
 
-Signed-off-by: Sergei Shtylyov <sshtylyov@dev.rtsoft.ru>
+I'd feel a lot better deferring the whole aio/dio performance series for
+one merge window. There's very little point in rushing it, and I don't
+think it's been reviewed/tested enough yet.
 
----
-This patch is atop of 'usb-next' branch of Greg's tree...
+-- 
+Jens Axboe
 
-Yes, I got that "usbfs files are missing" message on DaVinci recently, and it
-sent me on the wrong trail for some time, so I'd like to egt this sorted out...
-
-Resending as I messed out with KMail config. and not seeing the message in the
-list archives...
-
- tools/usb/testusb.c |   27 +++++++++++++--------------
- 1 file changed, 13 insertions(+), 14 deletions(-)
-
-Index: usb/tools/usb/testusb.c
-===================================================================
---- usb.orig/tools/usb/testusb.c
-+++ usb/tools/usb/testusb.c
-@@ -279,8 +279,7 @@ nomem:
- 
- 	entry->ifnum = ifnum;
- 
--	/* FIXME ask usbfs what speed; update USBDEVFS_CONNECTINFO so
--	 * it tells about high speed etc */
-+	/* FIXME update USBDEVFS_CONNECTINFO so it tells about high speed etc */
- 
- 	fprintf(stderr, "%s speed\t%s\t%u\n",
- 		speed(entry->speed), entry->name, entry->ifnum);
-@@ -351,7 +350,7 @@ restart:
- 	return arg;
- }
- 
--static const char *usbfs_dir_find(void)
-+static const char *usb_dir_find(void)
- {
- 	static char udev_usb_path[] = "/dev/bus/usb";
- 
-@@ -380,7 +379,7 @@ int main (int argc, char **argv)
- 	int			c;
- 	struct testdev		*entry;
- 	char			*device;
--	const char		*usbfs_dir = NULL;
-+	const char		*usb_dir = NULL;
- 	int			all = 0, forever = 0, not = 0;
- 	int			test = -1 /* all */;
- 	struct usbtest_param	param;
-@@ -407,8 +406,8 @@ int main (int argc, char **argv)
- 	case 'D':	/* device, if only one */
- 		device = optarg;
- 		continue;
--	case 'A':	/* use all devices with specified usbfs dir */
--		usbfs_dir = optarg;
-+	case 'A':	/* use all devices with specified USB dir */
-+		usb_dir = optarg;
- 		/* FALL THROUGH */
- 	case 'a':	/* use all devices */
- 		device = NULL;
-@@ -449,7 +448,7 @@ usage:
- 			"usage: %s [options]\n"
- 			"Options:\n"
- 			"\t-D dev		only test specific device\n"
--			"\t-A usbfs-dir\n"
-+			"\t-A usb-dir\n"
- 			"\t-a		test all recognized devices\n"
- 			"\t-l		loop forever(for stress test)\n"
- 			"\t-t testnum	only run specified case\n"
-@@ -470,18 +469,18 @@ usage:
- 		goto usage;
- 	}
- 
--	/* Find usbfs mount point */
--	if (!usbfs_dir) {
--		usbfs_dir = usbfs_dir_find();
--		if (!usbfs_dir) {
--			fputs ("usbfs files are missing\n", stderr);
-+	/* Find usb device subdirectory */
-+	if (!usb_dir) {
-+		usb_dir = usb_dir_find();
-+		if (!usb_dir) {
-+			fputs ("USB device files are missing\n", stderr);
- 			return -1;
- 		}
- 	}
- 
- 	/* collect and list the test devices */
--	if (ftw (usbfs_dir, find_testdev, 3) != 0) {
--		fputs ("ftw failed; is usbfs missing?\n", stderr);
-+	if (ftw (usb_dir, find_testdev, 3) != 0) {
-+		fputs ("ftw failed; are USB device files missing?\n", stderr);
- 		return -1;
- 	}
- 
