@@ -1,118 +1,366 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758455Ab3BHBwd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 20:52:33 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:51938 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751864Ab3BHBwb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 20:52:31 -0500
-Date: Fri, 8 Feb 2013 12:52:20 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Wim Van Sebroeck <wim@iguana.be>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Fabio Baltieri <fabio.baltieri@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>
-Subject: linux-next: manual merge of the watchdog tree with the mfd tree
-Message-Id: <20130208125220.37a34d89ea4cc7e43b27cf4e@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__8_Feb_2013_12_52_20_+1100_/5hTjrN9Ff9/3T=m"
+	id S932085Ab3BHBxE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 20:53:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38071 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757010Ab3BHBxA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Feb 2013 20:53:00 -0500
+Date: Thu, 7 Feb 2013 23:39:47 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Hu Tao <hutao@cn.fujitsu.com>
+Cc: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>,
+        Blue Swirl <blauwirbel@gmail.com>, Eric Blake <eblake@redhat.com>,
+        Andrew Jones <drjones@redhat.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        Wen Congyang <wency@cn.fujitsu.com>
+Subject: Re: [PATCH v12 rebased] kvm: notify host when the guest is panicked
+Message-ID: <20130208013947.GA3364@amt.cnet>
+References: <cover.1358920534.git.hutao@cn.fujitsu.com>
+ <1358925575-4505-1-git-send-email-hutao@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1358925575-4505-1-git-send-email-hutao@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__8_Feb_2013_12_52_20_+1100_/5hTjrN9Ff9/3T=m
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-Hi Wim,
+On Wed, Jan 23, 2013 at 03:19:21PM +0800, Hu Tao wrote:
+> We can know the guest is panicked when the guest runs on xen.
+> But we do not have such feature on kvm.
+> 
+> Another purpose of this feature is: management app(for example:
+> libvirt) can do auto dump when the guest is panicked. If management
+> app does not do auto dump, the guest's user can do dump by hand if
+> he sees the guest is panicked.
+> 
+> We have three solutions to implement this feature:
+> 1. use vmcall
+> 2. use I/O port
+> 3. use virtio-serial.
+> 
+> We have decided to avoid touching hypervisor. The reason why I choose
+> choose the I/O port is:
+> 1. it is easier to implememt
+> 2. it does not depend any virtual device
+> 3. it can work when starting the kernel
+> 
+> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+> Signed-off-by: Hu Tao <hutao@cn.fujitsu.com>
+> ---
+>  arch/ia64/kvm/irq.h                  | 19 +++++++++++++
+>  arch/powerpc/include/asm/kvm_para.h  | 18 ++++++++++++
+>  arch/s390/include/asm/kvm_para.h     | 19 +++++++++++++
+>  arch/x86/include/asm/kvm_para.h      | 20 ++++++++++++++
+>  arch/x86/include/uapi/asm/kvm_para.h |  2 ++
+>  arch/x86/kernel/kvm.c                | 53 ++++++++++++++++++++++++++++++++++++
+>  include/linux/kvm_para.h             | 18 ++++++++++++
+>  include/uapi/linux/kvm_para.h        |  6 ++++
+>  kernel/panic.c                       |  4 +++
+>  9 files changed, 159 insertions(+)
+> 
+> diff --git a/arch/ia64/kvm/irq.h b/arch/ia64/kvm/irq.h
+> index c0785a7..b3870f8 100644
+> --- a/arch/ia64/kvm/irq.h
+> +++ b/arch/ia64/kvm/irq.h
+> @@ -30,4 +30,23 @@ static inline int irqchip_in_kernel(struct kvm *kvm)
+>  	return 1;
+>  }
+>  
+> +static inline int kvm_arch_pv_event_init(void)
+> +{
+> +	return 0;
+> +}
+> +
+> +static inline unsigned int kvm_arch_pv_features(void)
+> +{
+> +	return 0;
+> +}
+> +
+> +static inline void kvm_arch_pv_eject_event(unsigned int event)
+> +{
+> +}
+> +
+> +static inline bool kvm_arch_pv_event_enabled(void)
+> +{
+> +	return false;
+> +}
+> +
 
-Today's linux-next merge of the watchdog tree got conflicts in
-drivers/watchdog/Kconfig and drivers/watchdog/Makefile between commit
-699ff59052e7 ("watchdog: Add support for ux500_wdt watchdog") from the
-mfd tree and commit 77b709cb6c9d ("watchdog: introduce retu_wdt driver")
-from the watchdog tree.
+The interface is x86 only, no need to touch other architectures.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+>  #endif
+> diff --git a/arch/powerpc/include/asm/kvm_para.h b/arch/powerpc/include/asm/kvm_para.h
+> index 2b11965..17dd013 100644
+> --- a/arch/powerpc/include/asm/kvm_para.h
+> +++ b/arch/powerpc/include/asm/kvm_para.h
+> @@ -144,4 +144,22 @@ static inline bool kvm_check_and_clear_guest_paused(void)
+>  	return false;
+>  }
+>  
+> +static inline int kvm_arch_pv_event_init(void)
+> +{
+> +	return 0;
+> +}
+> +
+> +static inline unsigned int kvm_arch_pv_features(void)
+> +{
+> +	return 0;
+> +}
+> +
+> +static inline void kvm_arch_pv_eject_event(unsigned int event)
+> +{
+> +}
+> +
+> +static inline bool kvm_arch_pv_event_enabled(void)
+> +{
+> +	return false;
+> +}
+>  #endif /* __POWERPC_KVM_PARA_H__ */
+> diff --git a/arch/s390/include/asm/kvm_para.h b/arch/s390/include/asm/kvm_para.h
+> index e0f8423..81d87ec 100644
+> --- a/arch/s390/include/asm/kvm_para.h
+> +++ b/arch/s390/include/asm/kvm_para.h
+> @@ -154,4 +154,23 @@ static inline bool kvm_check_and_clear_guest_paused(void)
+>  	return false;
+>  }
+>  
+> +static inline int kvm_arch_pv_event_init(void)
+> +{
+> +	return 0;
+> +}
+> +
+> +static inline unsigned int kvm_arch_pv_features(void)
+> +{
+> +	return 0;
+> +}
+> +
+> +static inline void kvm_arch_pv_eject_event(unsigned int event)
+> +{
+> +}
+> +
+> +static inline bool kvm_arch_pv_event_enabled(void)
+> +{
+> +	return false;
+> +}
+> +
+>  #endif /* __S390_KVM_PARA_H */
+> --- a/arch/x86/include/asm/kvm_para.h
+> +++ b/arch/x86/include/asm/kvm_para.h
+> @@ -133,4 +133,24 @@ static inline void kvm_disable_steal_time(void)
+>  }
+>  #endif
+>  
+> +static inline int kvm_arch_pv_event_init(void)
+> +{
+> +	if (!request_region(KVM_PV_EVENT_PORT, 4, "KVM_PV_EVENT"))
+> +		return -1;
+> +
+> +	return 0;
+> +}
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+This should be in a driver in arch/x86/kernel/kvm-panic.c, or so.
 
-diff --cc drivers/watchdog/Kconfig
-index 26e1fdb,3cc04ea..0000000
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@@ -364,18 -366,18 +366,30 @@@ config IMX2_WD
-  	  To compile this driver as a module, choose M here: the
-  	  module will be called imx2_wdt.
- =20
- +config UX500_WATCHDOG
- +	tristate "ST-Ericsson Ux500 watchdog"
- +	depends on MFD_DB8500_PRCMU
- +	select WATCHDOG_CORE
- +	default y
- +	help
- +	  Say Y here to include Watchdog timer support for the watchdog
- +	  existing in the prcmu of ST-Ericsson Ux500 series platforms.
- +
- +	  To compile this driver as a module, choose M here: the
- +	  module will be called ux500_wdt.
- +
-+ config RETU_WATCHDOG
-+ 	tristate "Retu watchdog"
-+ 	depends on MFD_RETU
-+ 	select WATCHDOG_CORE
-+ 	help
-+ 	  Retu watchdog driver for Nokia Internet Tablets (770, N800,
-+ 	  N810). At least on N800 the watchdog cannot be disabled, so
-+ 	  this driver is essential and you should enable it.
-+=20
-+ 	  To compile this driver as a module, choose M here: the
-+ 	  module will be called retu_wdt.
-+=20
-  # AVR32 Architecture
- =20
-  config AT32AP700X_WDT
-diff --cc drivers/watchdog/Makefile
-index bec86ee,15813d4..0000000
---- a/drivers/watchdog/Makefile
-+++ b/drivers/watchdog/Makefile
-@@@ -52,7 -52,7 +52,8 @@@ obj-$(CONFIG_STMP3XXX_RTC_WATCHDOG) +=3D=20
-  obj-$(CONFIG_NUC900_WATCHDOG) +=3D nuc900_wdt.o
-  obj-$(CONFIG_TS72XX_WATCHDOG) +=3D ts72xx_wdt.o
-  obj-$(CONFIG_IMX2_WDT) +=3D imx2_wdt.o
- +obj-$(CONFIG_UX500_WATCHDOG) +=3D ux500_wdt.o
-+ obj-$(CONFIG_RETU_WATCHDOG) +=3D retu_wdt.o
- =20
-  # AVR32 Architecture
-  obj-$(CONFIG_AT32AP700X_WDT) +=3D at32ap700x_wdt.o
+> +
+> +static inline unsigned int kvm_arch_pv_features(void)
+> +{
+> +	return inl(KVM_PV_EVENT_PORT);
+> +}
+> +
+> +static inline void kvm_arch_pv_eject_event(unsigned int event)
+> +{
+> +	outl(event, KVM_PV_EVENT_PORT);
+> +}
 
---Signature=_Fri__8_Feb_2013_12_52_20_+1100_/5hTjrN9Ff9/3T=m
-Content-Type: application/pgp-signature
+> +
+> +bool kvm_arch_pv_event_enabled(void);
+> +
+>  #endif /* _ASM_X86_KVM_PARA_H */
+> diff --git a/arch/x86/include/uapi/asm/kvm_para.h b/arch/x86/include/uapi/asm/kvm_para.h
+> index 06fdbd9..c15ef33 100644
+> --- a/arch/x86/include/uapi/asm/kvm_para.h
+> +++ b/arch/x86/include/uapi/asm/kvm_para.h
+> @@ -96,5 +96,7 @@ struct kvm_vcpu_pv_apf_data {
+>  #define KVM_PV_EOI_ENABLED KVM_PV_EOI_MASK
+>  #define KVM_PV_EOI_DISABLED 0x0
+>  
+> +#define KVM_PV_EVENT_PORT	(0x505UL)
+> +
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+No need for the ioport to be hard coded. What are the options to
+communicate an address to the guest? An MSR, via ACPI?
 
-iQIcBAEBCAAGBQJRFFpUAAoJEECxmPOUX5FE/qcQAIXdkPKndI8FxRq+tkXGNb2j
-RKpxsqrTni17WYa7rBUAS3eHcvL5PusqsLQjeYP7yfO+z4SKZ6brHRq12WZ3Hq7k
-dBfS3cFguqI2vL7+3+czCY17eRqO+T73roGHQfPRGLPA4TlDz1TjEkUZ4OcqAWLC
-O7fslWa9j32oIJyIN1BXfU7VmUtvvY+vbVKootypM3YzQruD5xx2J1xg0MSzMvz5
-mx/VxHP6T9lVhNex/EcwFSJAW9t/DjaW7ORsq7qsgD/JrK2bq3NYiU4Xz9+Kbb69
-+iZgTXPdIsVlra/yos7H1pT7OI3AmMpN5ROrsWKZoqaMbalSi02Hrh2xPomoAekz
-AW9aYXGavtUNBXjTHJz5CSCytm6B9KhZDKvPY4/vSS9d5gKzskhctQHpkpUKQ72/
-7tRCQ4AHgiob6Bm0EBnyc5vxlcXCdX0/1VyKL9q5wgF5ZwStRRMjMjAEm7aM3Rkf
-QP/XatFqmNhj6GVtKg93KXIkduxI6lvWwbRENgm65E7eCLGB2CNu7UKR3pFOPBAk
-oC9UVpzyWkVwzfrPbZrtQmqsqp7vkAcTTbWZ63NpTqHR9fTx3uy4yHnZo09OsIqj
-D+w+DJr5sYBdn6EKw0uZrpG3kMaiEUQsFOca1bF2UDSDhfDhHbAJ7eYkE85aZdzo
-s8M1b0Drk284vtj02B2a
-=OQLJ
------END PGP SIGNATURE-----
+>  
+>  #endif /* _UAPI_ASM_X86_KVM_PARA_H */
+> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+> index 9c2bd8b..0aa7b3e 100644
+> --- a/arch/x86/kernel/kvm.c
+> +++ b/arch/x86/kernel/kvm.c
+> @@ -73,6 +73,20 @@ static int parse_no_kvmclock_vsyscall(char *arg)
+>  
+>  early_param("no-kvmclock-vsyscall", parse_no_kvmclock_vsyscall);
+>  
+> +static int pv_event = 1;
+> +static int parse_no_pv_event(char *arg)
+> +{
+> +	pv_event = 0;
+> +	return 0;
+> +}
+> +
+> +bool kvm_arch_pv_event_enabled(void)
+> +{
+> +	return !!pv_event;
+> +}
+> +
+> +early_param("no-pv-event", parse_no_pv_event);
+> +
 
---Signature=_Fri__8_Feb_2013_12_52_20_+1100_/5hTjrN9Ff9/3T=m--
+"pv-event" is a bad name for an interface which is specific to notify
+panic events. Please use pv-panic everywhere.
+
+>  static DEFINE_PER_CPU(struct kvm_vcpu_pv_apf_data, apf_reason) __aligned(64);
+>  static DEFINE_PER_CPU(struct kvm_steal_time, steal_time) __aligned(64);
+>  static int has_steal_clock = 0;
+> @@ -385,6 +399,17 @@ static struct notifier_block kvm_pv_reboot_nb = {
+>  	.notifier_call = kvm_pv_reboot_notify,
+>  };
+>  
+> +static int
+> +kvm_pv_panic_notify(struct notifier_block *nb, unsigned long code, void *unused)
+> +{
+> +	kvm_pv_eject_event(KVM_PV_EVENT_PANICKED);
+> +	return NOTIFY_DONE;
+> +}
+
+Why 'eject' ?
+
+> +
+> +static struct notifier_block kvm_pv_panic_nb = {
+> +	.notifier_call = kvm_pv_panic_notify,
+> +};
+> +
+>  static u64 kvm_steal_clock(int cpu)
+>  {
+>  	u64 steal;
+> @@ -462,6 +487,34 @@ static void __init kvm_apf_trap_init(void)
+>  	set_intr_gate(14, &async_page_fault);
+>  }
+>  
+> +static void __init kvm_pv_panicked_event_init(void)
+> +{
+> +	if (!kvm_para_available())
+> +		return;
+> +
+> +	if (kvm_pv_has_feature(KVM_PV_FEATURE_PANICKED))
+> +		atomic_notifier_chain_register(&panic_notifier_list,
+> +			&kvm_pv_panic_nb);
+> +}
+> +
+> +static inline int kvm_pv_event_init(void)
+> +{
+> +	return kvm_arch_pv_event_init();
+> +}
+> +
+> +static int __init enable_pv_event(void)
+> +{
+> +	if (pv_event) {
+> +		if (kvm_pv_event_init())
+> +			return 0;
+> +
+> +		kvm_pv_panicked_event_init();
+> +	}
+> +
+> +	return 0;
+> +}
+> +arch_initcall(enable_pv_event);
+
+Call the initialization code from kvm_guest_init, only one function is
+necessary.
+
+> +
+>  void __init kvm_guest_init(void)
+>  {
+>  	int i;
+> diff --git a/include/linux/kvm_para.h b/include/linux/kvm_para.h
+> index 00a97bb..6fb6198 100644
+> --- a/include/linux/kvm_para.h
+> +++ b/include/linux/kvm_para.h
+> @@ -10,4 +10,22 @@ static inline int kvm_para_has_feature(unsigned int feature)
+>  		return 1;
+>  	return 0;
+>  }
+> +
+> +static inline int kvm_pv_has_feature(unsigned int feature)
+> +{
+> +	if (kvm_arch_pv_features() & (1UL << feature))
+> +		return 1;
+> +	return 0;
+> +}
+> +
+> +static inline void kvm_pv_eject_event(unsigned int event)
+> +{
+> +	kvm_arch_pv_eject_event(event);
+> +}
+> +
+> +static inline bool kvm_pv_event_enabled(void)
+> +{
+> +	return kvm_arch_pv_event_enabled();
+> +}
+
+No need for this helpers, as noted.
+
+>  #endif /* __LINUX_KVM_PARA_H */
+> diff --git a/include/uapi/linux/kvm_para.h b/include/uapi/linux/kvm_para.h
+> index cea2c5c..c41ddce 100644
+> --- a/include/uapi/linux/kvm_para.h
+> +++ b/include/uapi/linux/kvm_para.h
+> @@ -20,6 +20,12 @@
+>  #define KVM_HC_FEATURES			3
+>  #define KVM_HC_PPC_MAP_MAGIC_PAGE	4
+>  
+> +/* The bit of supported pv event */
+> +#define KVM_PV_FEATURE_PANICKED	0
+> +
+> +/* The pv event value */
+> +#define KVM_PV_EVENT_PANICKED	1
+> +
+
+This is a hypercall header. You want
+
+arch/x86/include/asm/kvm_para.h
+
+>  /*
+>   * hypercalls use architecture specific
+>   */
+> diff --git a/kernel/panic.c b/kernel/panic.c
+> index e1b2822..a764d2e 100644
+> --- a/kernel/panic.c
+> +++ b/kernel/panic.c
+> @@ -23,6 +23,7 @@
+>  #include <linux/init.h>
+>  #include <linux/nmi.h>
+>  #include <linux/dmi.h>
+> +#include <linux/kvm_para.h>
+>  
+>  #define PANIC_TIMER_STEP 100
+>  #define PANIC_BLINK_SPD 18
+> @@ -132,6 +133,9 @@ void panic(const char *fmt, ...)
+>  	if (!panic_blink)
+>  		panic_blink = no_blink;
+>  
+> +	if (kvm_pv_event_enabled())
+> +		panic_timeout = 0;
+> +
+
+What is the rationale behind this?
+
+
