@@ -1,92 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947439Ab3BHXz2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 18:55:28 -0500
-Received: from mail-da0-f41.google.com ([209.85.210.41]:36146 "EHLO
-	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1947361Ab3BHXz1 (ORCPT
+	id S1947448Ab3BHX4J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 18:56:09 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:29170 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1947361Ab3BHX4H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 18:55:27 -0500
-Date: Fri, 8 Feb 2013 15:55:24 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Tomas Winkler <tomas.winkler@intel.com>
-Cc: sameo@linux.intel.com, arnd@arndb.de, linux-kernel@vger.kernel.org
-Subject: Re: [char-misc-next 02/11 V2] mei: bus: Implement driver registration
-Message-ID: <20130208235524.GB24127@kroah.com>
-References: <1360326504-17041-1-git-send-email-tomas.winkler@intel.com>
- <1360326504-17041-3-git-send-email-tomas.winkler@intel.com>
+	Fri, 8 Feb 2013 18:56:07 -0500
+Message-ID: <5115908A.2000302@oracle.com>
+Date: Fri, 08 Feb 2013 18:55:54 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130113 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360326504-17041-3-git-send-email-tomas.winkler@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jamie Iles <jamie.iles@oracle.com>
+CC: mingo@kernel.org, peterz@infradead.org, penberg@kernel.org,
+        acme@ghostprotocols.net, paulus@samba.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 09/11] liblockdep: support using LD_PRELOAD
+References: <1360188694-25077-1-git-send-email-sasha.levin@oracle.com> <1360188694-25077-10-git-send-email-sasha.levin@oracle.com> <20130207102843.GG17781@cedar> <5113BABA.6010306@oracle.com> <20130208104318.GG3468@cedar>
+In-Reply-To: <20130208104318.GG3468@cedar>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 08, 2013 at 02:28:15PM +0200, Tomas Winkler wrote:
-> From: Samuel Ortiz <sameo@linux.intel.com>
+On 02/08/2013 05:43 AM, Jamie Iles wrote:
+> On Thu, Feb 07, 2013 at 09:31:22AM -0500, Sasha Levin wrote:
+>> On 02/07/2013 05:28 AM, Jamie Iles wrote:
+>>>> +int pthread_rwlock_init(pthread_rwlock_t *rwlock,
+>>>>> +			const pthread_rwlockattr_t *attr)
+>>>>> +{
+>>>>> +	if (ll_pthread_rwlock_init == NULL)
+>>>>> +		init_preload();
+>>> Why is this one special, doesn't init_preload being a constructor make 
+>>> this redundant?
+>>
+>> I was testing it on different things, and stumbled on an interesting case:
+>> when pthread_mutex was taken from the constructor of a different module.
+>>
+>> In that case, the other constructor would try to init the mutex and take
+>> a lock, but we would segfault because we haven't resolved the pthread
+>> symbols yet ourselves (since our constructor was yet to be called).
 > 
-> Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
-> Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
-> ---
->  drivers/misc/mei/bus.c  |   29 +++++++++++++++++++++++++++++
->  include/linux/mei_bus.h |    3 +++
->  2 files changed, 32 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/misc/mei/bus.c b/drivers/misc/mei/bus.c
-> index bb96423c..0a5e624 100644
-> --- a/drivers/misc/mei/bus.c
-> +++ b/drivers/misc/mei/bus.c
-> @@ -153,3 +153,32 @@ void mei_remove_device(struct mei_bus_client *client)
->  	device_unregister(&client->dev);
->  }
->  EXPORT_SYMBOL(mei_remove_device);
-> +
-> +int mei_driver_register(struct mei_bus_driver *driver)
-> +{
-> +	int err;
-> +
-> +	/* Can't register until after driver model init */
-> +	if (unlikely(WARN_ON(!mei_bus_type.p)))
-> +		return -EAGAIN;
+> Okay, that makes sense, but shouldn't we do this for all of the lock 
+> operations?  pthread locks can be statically initialized and they are 
+> initializaed lazily on the first access so I think that this could 
+> happen on any of the lock operations.
 
-No, you really don't know what 'p' is, so don't assume you do.  You have
-fields you can test to see if your driver model is up and registered,
-use them instead.  Don't you think that something called 'p' is not
-there for you to use?
+hmm... I've had it only in init() because I thought it doesn't make sense
+to actually lock/unlock in constructor code, but yeah - better safe than
+sorry.
 
-> +	driver->driver.owner = THIS_MODULE;
 
-Nope, this should be the module that owns the driver, not this one.  It
-needs to be passed in with the call, or as part of the driver structure.
+Thanks,
+Sasha
 
-> +	driver->driver.bus = &mei_bus_type;
-> +
-> +	err = driver_register(&driver->driver);
-> +	if (err)
-> +		return err;
-> +
-> +	pr_debug("mei: driver [%s] registered\n", driver->driver.name);
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL(mei_driver_register);
-
-_GPL() please?
-
-> +
-> +void mei_driver_unregister(struct mei_bus_driver *driver)
-> +{
-> +	driver_unregister(&driver->driver);
-> +
-> +	pr_debug("mei: driver [%s] unregistered\n", driver->driver.name);
-> +}
-> +EXPORT_SYMBOL(mei_driver_unregister);
-
-Same here.
-
-thanks,
-
-greg k-h
