@@ -1,214 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947072Ab3BHUwF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 15:52:05 -0500
-Received: from mail-da0-f47.google.com ([209.85.210.47]:56978 "EHLO
-	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946936Ab3BHUwE (ORCPT
+	id S1947100Ab3BHUwv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 15:52:51 -0500
+Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:23076
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1946936Ab3BHUwu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 15:52:04 -0500
-Date: Fri, 8 Feb 2013 12:52:12 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Mel Gorman <mgorman@suse.de>
-cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Petr Holasek <pholasek@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 7/11] ksm: make KSM page migration possible
-In-Reply-To: <20130205191102.GM21389@suse.de>
-Message-ID: <alpine.LNX.2.00.1302081133540.4233@eggly.anvils>
-References: <alpine.LNX.2.00.1301251747590.29196@eggly.anvils> <alpine.LNX.2.00.1301251802050.29196@eggly.anvils> <20130205191102.GM21389@suse.de>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Fri, 8 Feb 2013 15:52:50 -0500
+X-Forefront-Antispam-Report: CIP:157.56.236.101;KIP:(null);UIP:(null);IPV:NLI;H:BY2PRD0510HT005.namprd05.prod.outlook.com;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: PS-2(zz98dIc89bh936eIzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2fh2a8h668h839h93fhd24he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1155h)
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: Kees Cook <keescook@chromium.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH] x86: Lock down MSR writing in secure boot
+Thread-Topic: [PATCH] x86: Lock down MSR writing in secure boot
+Thread-Index: AQHOBjA7mQsIMlqU/k+EElzc7Yz1iZhwVXgAgAAAbACAAAawAIAACLcAgAABPICAAAKrAIAAAdKA
+Date: Fri, 8 Feb 2013 20:34:31 +0000
+Message-ID: <1360355671.18083.18.camel@x230.lan>
+References: <20130208191213.GA25081@www.outflux.net>
+	 <00780235-deac-4f80-b936-867834e05661@email.android.com>
+	 <CAGXu5jJnLY6Qp3J6HBpVg-AdUGdKYm-e4wErZO3=NuRo04ajvg@mail.gmail.com>
+	 <5115553A.5000708@zytor.com>
+	 <CAGXu5j+_mGzR+72YqORhErMUY1aF1H2urczZ8SwuJHZK-oZL6g@mail.gmail.com>
+	 <dee64752-850c-4d78-b703-f47a985bc13e@email.android.com>
+	 <CAGXu5jLAufTRm=sDST0br_WEkn4o0Hpjv2jDP2Na=cCvuM+MGg@mail.gmail.com>
+In-Reply-To: <CAGXu5jLAufTRm=sDST0br_WEkn4o0Hpjv2jDP2Na=cCvuM+MGg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.255.84.4]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <DA29DA631E563D46A770BFA754550B0D@namprd05.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r18Kqosv005978
 
-Paul, I've added you to the Cc in the hope that you can shed your light
-on an smp_read_barrier_depends() question with which Mel taxes me below.
-You may ask for more context: linux-next currently has an mm/ksm.c after
-this patch is applied, but you may have questions beyond that - thanks!
+On Fri, 2013-02-08 at 12:28 -0800, Kees Cook wrote:
 
-On Tue, 5 Feb 2013, Mel Gorman wrote:
-> On Fri, Jan 25, 2013 at 06:03:31PM -0800, Hugh Dickins wrote:
-> > KSM page migration is already supported in the case of memory hotremove,
-> > which takes the ksm_thread_mutex across all its migrations to keep life
-> > simple.
-> > 
-> > But the new KSM NUMA merge_across_nodes knob introduces a problem, when
-> > it's set to non-default 0: if a KSM page is migrated to a different NUMA
-> > node, how do we migrate its stable node to the right tree?  And what if
-> > that collides with an existing stable node?
-> > 
-> > So far there's no provision for that, and this patch does not attempt
-> > to deal with it either.  But how will I test a solution, when I don't
-> > know how to hotremove memory? 
-> 
-> Just reach in and yank it straight out with a chisel.
+> Maybe a capability isn't the right way to go, I'm not sure. I'll leave
+> that to Matthew. Whatever the flag, it should be an immutable state of
+> the boot. Though, it probably makes sense as a cap just so that
+> non-secure-boot systems can still remove it from containers, etc.
 
-:)
-
-> 
-> > The best answer is to enable KSM page
-> > migration in all cases now, and test more common cases.  With THP and
-> > compaction added since KSM came in, page migration is now mainstream,
-> > and it's a shame that a KSM page can frustrate freeing a page block.
-> > 
-> 
-> THP will at least check if migration within a node works. It won't
-> necessarily check we can migrate across nodes properly but it's a lot
-> better than nothing.
-
-No, I went back and dug out a hack-patch I was using three or four years
-ago: occasionally on fault, just migrate every possible page in that mm
-for no reason other than to test page migration.
-
-> >  static struct page *get_ksm_page(struct stable_node *stable_node, bool locked)
-> >  {
-> >  	struct page *page;
-> >  	void *expected_mapping;
-> > +	unsigned long kpfn;
-> >  
-> > -	page = pfn_to_page(stable_node->kpfn);
-> >  	expected_mapping = (void *)stable_node +
-> >  				(PAGE_MAPPING_ANON | PAGE_MAPPING_KSM);
-> > -	if (page->mapping != expected_mapping)
-> > -		goto stale;
-> > -	if (!get_page_unless_zero(page))
-> > +again:
-> > +	kpfn = ACCESS_ONCE(stable_node->kpfn);
-> > +	page = pfn_to_page(kpfn);
-> > +
-> 
-> Ok.
-> 
-> There should be no concern that hot-remove made the kpfn invalid because
-> those stable tree entries should have been discarded.
-
-Yes.
-
-> 
-> > +	/*
-> > +	 * page is computed from kpfn, so on most architectures reading
-> > +	 * page->mapping is naturally ordered after reading node->kpfn,
-> > +	 * but on Alpha we need to be more careful.
-> > +	 */
-> > +	smp_read_barrier_depends();
-> 
-> The value of page is data dependant on pfn_to_page(). Is it really possible
-> for that to be re-ordered even on Alpha?
-
-My intuition (to say "understanding" would be an exaggeration) is that
-on Alpha a very old value of page->mapping (in the line below) might be
-lying around and read from one cache, which has not necessarily been
-invalidated by ksm_migrate_page() pointing stable_node->kpfn to this
-new page.
-
-And if that happens, we could easily and mistakenly conclude that this
-stable node is stale: although there's an smp_rmb() after goto stale,
-stable_node->kpfn would still match kpfn, and we wrongly remove the node.
-
-My confidence that I've expressed that clearly in words, is lower than
-my confidence that I've coded it right; and if I'm wrong, yes, surely
-it's better to remove any cargo-cult smp_read_barrier_depends().
-
-> 
-> > +	if (ACCESS_ONCE(page->mapping) != expected_mapping)
-> >  		goto stale;
-> > -	if (page->mapping != expected_mapping) {
-> > +
-> > +	/*
-> > +	 * We cannot do anything with the page while its refcount is 0.
-> > +	 * Usually 0 means free, or tail of a higher-order page: in which
-> > +	 * case this node is no longer referenced, and should be freed;
-> > +	 * however, it might mean that the page is under page_freeze_refs().
-> > +	 * The __remove_mapping() case is easy, again the node is now stale;
-> > +	 * but if page is swapcache in migrate_page_move_mapping(), it might
-> > +	 * still be our page, in which case it's essential to keep the node.
-> > +	 */
-> > +	while (!get_page_unless_zero(page)) {
-> > +		/*
-> > +		 * Another check for page->mapping != expected_mapping would
-> > +		 * work here too.  We have chosen the !PageSwapCache test to
-> > +		 * optimize the common case, when the page is or is about to
-> > +		 * be freed: PageSwapCache is cleared (under spin_lock_irq)
-> > +		 * in the freeze_refs section of __remove_mapping(); but Anon
-> > +		 * page->mapping reset to NULL later, in free_pages_prepare().
-> > +		 */
-> > +		if (!PageSwapCache(page))
-> > +			goto stale;
-> > +		cpu_relax();
-> > +	}
-> 
-> The recheck of stable_node->kpfn check after a barrier distinguishes between
-> a free and a completed migration, that's fine. I'm hesitate to ask because
-> it must be obvious but where is the guarantee that a KSM page is in the
-> swap cache?
-
-Certainly none at all: it's the less common case that a KSM page is in
-swap cache.  But if it is not in swap cache, how could its page count be
-0 (causing get_page_unless_zero to fail)?  By being free, or well on its
-way to being freed (hence stale); or reused as part of a compound page
-(hence stale also); or reused for another purpose which arrives at a
-page_freeze_refs() (hence stale also); other cases?
-
-It's hard to see from the diff, but in the original version of
-get_ksm_page(), !get_page_unless_zero goes straight to stale.
-
-Don't for a moment imagine that this function sprang fully formed
-from my mind: it was hard to get it working right (the swap cache
-get_page_unless_zero failure during migration really caught me out),
-and then to pare it down to its fairly simple final form.
-
-Hugh
-
-> 
-> > +
-> > +	if (ACCESS_ONCE(page->mapping) != expected_mapping) {
-> >  		put_page(page);
-> >  		goto stale;
-> >  	}
-> > +
-> >  	if (locked) {
-> >  		lock_page(page);
-> > -		if (page->mapping != expected_mapping) {
-> > +		if (ACCESS_ONCE(page->mapping) != expected_mapping) {
-> >  			unlock_page(page);
-> >  			put_page(page);
-> >  			goto stale;
-> >  		}
-> >  	}
-> >  	return page;
-> > +
-> >  stale:
-> > +	/*
-> > +	 * We come here from above when page->mapping or !PageSwapCache
-> > +	 * suggests that the node is stale; but it might be under migration.
-> > +	 * We need smp_rmb(), matching the smp_wmb() in ksm_migrate_page(),
-> > +	 * before checking whether node->kpfn has been changed.
-> > +	 */
-> > +	smp_rmb();
-> > +	if (ACCESS_ONCE(stable_node->kpfn) != kpfn)
-> > +		goto again;
-> >  	remove_node_from_stable_tree(stable_node);
-> >  	return NULL;
-> >  }
-> > @@ -1903,6 +1947,14 @@ void ksm_migrate_page(struct page *newpa
-> >  	if (stable_node) {
-> >  		VM_BUG_ON(stable_node->kpfn != page_to_pfn(oldpage));
-> >  		stable_node->kpfn = page_to_pfn(newpage);
-> > +		/*
-> > +		 * newpage->mapping was set in advance; now we need smp_wmb()
-> > +		 * to make sure that the new stable_node->kpfn is visible
-> > +		 * to get_ksm_page() before it can see that oldpage->mapping
-> > +		 * has gone stale (or that PageSwapCache has been cleared).
-> > +		 */
-> > +		smp_wmb();
-> > +		set_page_stable_node(oldpage, NULL);
-> >  	}
-> >  }
-> >  #endif /* CONFIG_MIGRATION */
+There was interest in ensuring that this wasn't something special-cased
+to UEFI Secure Boot, so using a capability seemed like the most
+straightforward way - it's fundamentally a restriction on what an
+otherwise privileged user is able to do, so it seemed like it fit the
+model. But I'm not wed to it in the slightest, and in fact it causes
+problems for some userspace (anything that drops all capabilities
+suddenly finds itself unable to do something that it expects to be able
+to do), so if anyone has any suggestions for a better approachâ€¦
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
