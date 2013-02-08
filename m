@@ -1,323 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946560Ab3BHPOV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 10:14:21 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:48609 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946062Ab3BHPOU convert rfc822-to-8bit (ORCPT
+	id S1946577Ab3BHPSZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 10:18:25 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33456 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946278Ab3BHPSX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 10:14:20 -0500
-From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
-To: Paul Walmsley <paul@pwsan.com>, "Philip, Avinash" <avinashphilip@ti.com>
-CC: "tony@atomide.com" <tony@atomide.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "Cousson, Benoit" <b-cousson@ti.com>,
-        "AnilKumar, Chimata" <anilkumar@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
-        "Bedia, Vaibhav" <vaibhav.bedia@ti.com>
-Subject: RE: [PATCH 1/7] ARM: OMAP: AM33xx hwmod: Corrects PWM subsystem
- HWMOD entries
-Thread-Topic: [PATCH 1/7] ARM: OMAP: AM33xx hwmod: Corrects PWM subsystem
- HWMOD entries
-Thread-Index: AQHN6OyBBZKoSWW+aU2e6DKWWp7nKJhv7sMAgABcldA=
-Date: Fri, 8 Feb 2013 15:14:10 +0000
-Message-ID: <79CD15C6BA57404B839C016229A409A83EC06FB1@DBDE01.ent.ti.com>
-References: <1357133094-30806-1-git-send-email-avinashphilip@ti.com>
- <1357133094-30806-2-git-send-email-avinashphilip@ti.com>
- <alpine.DEB.2.00.1302081507480.28008@utopia.booyaka.com>
-In-Reply-To: <alpine.DEB.2.00.1302081507480.28008@utopia.booyaka.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.133.105]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 8 Feb 2013 10:18:23 -0500
+Date: Fri, 8 Feb 2013 07:17:47 -0800
+From: tip-bot for Vladimir Davydov <vdavydov@parallels.com>
+Message-ID: <tip-0a702bb8af3c1b2dff355fb3c27e7f7d5285e30b@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        pjt@google.com, peterz@infradead.org, devel@openvz.org,
+        tglx@linutronix.de, vdavydov@parallels.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, pjt@google.com, devel@openvz.org,
+        tglx@linutronix.de, vdavydov@parallels.com
+In-Reply-To: <1360307446-26978-1-git-send-email-vdavydov@parallels.com>
+References: <1360307446-26978-1-git-send-email-vdavydov@parallels.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/urgent] sched: Initialize cfs_rq->
+ runtime_remaining to non-zero on cfs bw set
+Git-Commit-ID: 0a702bb8af3c1b2dff355fb3c27e7f7d5285e30b
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 08 Feb 2013 07:17:55 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 08, 2013 at 20:40:18, Paul Walmsley wrote:
-> Hi
-> 
-> On Wed, 2 Jan 2013, Philip Avinash wrote:
-> 
-> > EQEP entry is HWMOD entry is not present in HWMOD entry.
-> 
-> Patch descriptions need to make sense.  This one does not.  I've fixed it 
-> for you this time, but please take more care in the future.
-> 
-> 
-> - Paul
-> 
-> 
-> From: Philip Avinash <avinashphilip@ti.com>
-> Date: Wed, 2 Jan 2013 18:54:48 +0530
-> Subject: [PATCH] ARM: OMAP: AM33xx hwmod: Corrects PWM subsystem HWMOD
->  entries
-> 
-> EQEP IP block integration data is not present in HWMOD data. Also
-> address ranges specified for EACP & EHRPWM are not correct & HWMOD
-> flags of ADDR_TYPE_RT are added to PWM subsystem register address
-> space. This patch:
-> 1. Corrects register address mapping for ECAP & EHRPWM
-> 2. Removes  HWMOD flags in PWM submodule register address space.
-> 3. Adds EQEP HWMOD entries.
-> 
-> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
-> [paul@pwsan.com: tweaked patch description]
-> Signed-off-by: Paul Walmsley <paul@pwsan.com>
+Commit-ID:  0a702bb8af3c1b2dff355fb3c27e7f7d5285e30b
+Gitweb:     http://git.kernel.org/tip/0a702bb8af3c1b2dff355fb3c27e7f7d5285e30b
+Author:     Vladimir Davydov <vdavydov@parallels.com>
+AuthorDate: Fri, 8 Feb 2013 11:10:46 +0400
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Fri, 8 Feb 2013 15:14:38 +0100
 
+sched: Initialize cfs_rq->runtime_remaining to non-zero on cfs bw set
 
-Feel free to add my Acked-by on this.
+If cfs_rq->runtime_remaining is <= 0 then either
 
-Thanks,
-Vaibhav
+ - cfs_rq is throttled and waiting for quota redistribution, or
+ - cfs_rq is currently executing and will be throttled on put_prev_entity, or
+ - cfs_rq is not throttled and has not executed since its quota was set
+   (runtime_remaining is set to 0 on cfs bandwidth reconfiguration).
 
-> ---
->  arch/arm/mach-omap2/omap_hwmod_33xx_data.c |  158 +++++++++++++++++++++++++---
->  1 file changed, 145 insertions(+), 13 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap2/omap_hwmod_33xx_data.c b/arch/arm/mach-omap2/omap_hwmod_33xx_data.c
-> index 9e34d4c..4b1cc4d 100644
-> --- a/arch/arm/mach-omap2/omap_hwmod_33xx_data.c
-> +++ b/arch/arm/mach-omap2/omap_hwmod_33xx_data.c
-> @@ -784,7 +784,7 @@ static struct omap_hwmod am33xx_elm_hwmod = {
->  };
->  
->  /*
-> - * 'epwmss' class: ecap0,1,2,  ehrpwm0,1,2
-> + * 'epwmss' class: ehrpwm0,1,2 eqep0,1,2 ecap0,1,2
->   */
->  static struct omap_hwmod_class_sysconfig am33xx_epwmss_sysc = {
->  	.rev_offs	= 0x0,
-> @@ -864,6 +864,66 @@ static struct omap_hwmod am33xx_ehrpwm2_hwmod = {
->  	},
->  };
->  
-> +/* eqep0 */
-> +static struct omap_hwmod_irq_info am33xx_eqep0_irqs[] = {
-> +	{ .irq = 79 + OMAP_INTC_START, },
-> +	{ .irq = -1 },
-> +};
-> +
-> +static struct omap_hwmod am33xx_eqep0_hwmod = {
-> +	.name		= "eqep0",
-> +	.class		= &am33xx_epwmss_hwmod_class,
-> +	.clkdm_name	= "l4ls_clkdm",
-> +	.mpu_irqs	= am33xx_eqep0_irqs,
-> +	.main_clk	= "l4ls_gclk",
-> +	.prcm		= {
-> +		.omap4	= {
-> +			.clkctrl_offs	= AM33XX_CM_PER_EPWMSS0_CLKCTRL_OFFSET,
-> +			.modulemode	= MODULEMODE_SWCTRL,
-> +		},
-> +	},
-> +};
-> +
-> +/* eqep1 */
-> +static struct omap_hwmod_irq_info am33xx_eqep1_irqs[] = {
-> +	{ .irq = 88 + OMAP_INTC_START, },
-> +	{ .irq = -1 },
-> +};
-> +
-> +static struct omap_hwmod am33xx_eqep1_hwmod = {
-> +	.name		= "eqep1",
-> +	.class		= &am33xx_epwmss_hwmod_class,
-> +	.clkdm_name	= "l4ls_clkdm",
-> +	.mpu_irqs	= am33xx_eqep1_irqs,
-> +	.main_clk	= "l4ls_gclk",
-> +	.prcm		= {
-> +		.omap4	= {
-> +			.clkctrl_offs	= AM33XX_CM_PER_EPWMSS1_CLKCTRL_OFFSET,
-> +			.modulemode	= MODULEMODE_SWCTRL,
-> +		},
-> +	},
-> +};
-> +
-> +/* eqep2 */
-> +static struct omap_hwmod_irq_info am33xx_eqep2_irqs[] = {
-> +	{ .irq = 89 + OMAP_INTC_START, },
-> +	{ .irq = -1 },
-> +};
-> +
-> +static struct omap_hwmod am33xx_eqep2_hwmod = {
-> +	.name		= "eqep2",
-> +	.class		= &am33xx_epwmss_hwmod_class,
-> +	.clkdm_name	= "l4ls_clkdm",
-> +	.mpu_irqs	= am33xx_eqep2_irqs,
-> +	.main_clk	= "l4ls_gclk",
-> +	.prcm		= {
-> +		.omap4	= {
-> +			.clkctrl_offs	= AM33XX_CM_PER_EPWMSS2_CLKCTRL_OFFSET,
-> +			.modulemode	= MODULEMODE_SWCTRL,
-> +		},
-> +	},
-> +};
-> +
->  /* ecap0 */
->  static struct omap_hwmod_irq_info am33xx_ecap0_irqs[] = {
->  	{ .irq = 31 + OMAP_INTC_START, },
-> @@ -2559,8 +2619,7 @@ static struct omap_hwmod_addr_space am33xx_ehrpwm0_addr_space[] = {
->  	},
->  	{
->  		.pa_start	= 0x48300200,
-> -		.pa_end		= 0x48300200 + SZ_256 - 1,
-> -		.flags		= ADDR_TYPE_RT
-> +		.pa_end		= 0x48300200 + SZ_128 - 1,
->  	},
->  	{ }
->  };
-> @@ -2585,8 +2644,7 @@ static struct omap_hwmod_addr_space am33xx_ehrpwm1_addr_space[] = {
->  	},
->  	{
->  		.pa_start	= 0x48302200,
-> -		.pa_end		= 0x48302200 + SZ_256 - 1,
-> -		.flags		= ADDR_TYPE_RT
-> +		.pa_end		= 0x48302200 + SZ_128 - 1,
->  	},
->  	{ }
->  };
-> @@ -2611,8 +2669,7 @@ static struct omap_hwmod_addr_space am33xx_ehrpwm2_addr_space[] = {
->  	},
->  	{
->  		.pa_start	= 0x48304200,
-> -		.pa_end		= 0x48304200 + SZ_256 - 1,
-> -		.flags		= ADDR_TYPE_RT
-> +		.pa_end		= 0x48304200 + SZ_128 - 1,
->  	},
->  	{ }
->  };
-> @@ -2629,6 +2686,81 @@ static struct omap_hwmod_ocp_if am33xx_l4_ls__ehrpwm2 = {
->   * Splitting the resources to handle access of PWMSS config space
->   * and module specific part independently
->   */
-> +static struct omap_hwmod_addr_space am33xx_eqep0_addr_space[] = {
-> +	{
-> +		.pa_start	= 0x48300000,
-> +		.pa_end		= 0x48300000 + SZ_16 - 1,
-> +		.flags		= ADDR_TYPE_RT
-> +	},
-> +	{
-> +		.pa_start	= 0x48300180,
-> +		.pa_end		= 0x48300180 + SZ_128 - 1,
-> +	},
-> +	{ }
-> +};
-> +
-> +static struct omap_hwmod_ocp_if am33xx_l4_ls__eqep0 = {
-> +	.master		= &am33xx_l4_ls_hwmod,
-> +	.slave		= &am33xx_eqep0_hwmod,
-> +	.clk		= "l4ls_gclk",
-> +	.addr		= am33xx_eqep0_addr_space,
-> +	.user		= OCP_USER_MPU,
-> +};
-> +
-> +/*
-> + * Splitting the resources to handle access of PWMSS config space
-> + * and module specific part independently
-> + */
-> +static struct omap_hwmod_addr_space am33xx_eqep1_addr_space[] = {
-> +	{
-> +		.pa_start	= 0x48302000,
-> +		.pa_end		= 0x48302000 + SZ_16 - 1,
-> +		.flags		= ADDR_TYPE_RT
-> +	},
-> +	{
-> +		.pa_start	= 0x48302180,
-> +		.pa_end		= 0x48302180 + SZ_128 - 1,
-> +	},
-> +	{ }
-> +};
-> +
-> +static struct omap_hwmod_ocp_if am33xx_l4_ls__eqep1 = {
-> +	.master		= &am33xx_l4_ls_hwmod,
-> +	.slave		= &am33xx_eqep1_hwmod,
-> +	.clk		= "l4ls_gclk",
-> +	.addr		= am33xx_eqep1_addr_space,
-> +	.user		= OCP_USER_MPU,
-> +};
-> +
-> +/*
-> + * Splitting the resources to handle access of PWMSS config space
-> + * and module specific part independently
-> + */
-> +static struct omap_hwmod_addr_space am33xx_eqep2_addr_space[] = {
-> +	{
-> +		.pa_start	= 0x48304000,
-> +		.pa_end		= 0x48304000 + SZ_16 - 1,
-> +		.flags		= ADDR_TYPE_RT
-> +	},
-> +	{
-> +		.pa_start	= 0x48304180,
-> +		.pa_end		= 0x48304180 + SZ_128 - 1,
-> +	},
-> +	{ }
-> +};
-> +
-> +static struct omap_hwmod_ocp_if am33xx_l4_ls__eqep2 = {
-> +	.master		= &am33xx_l4_ls_hwmod,
-> +	.slave		= &am33xx_eqep2_hwmod,
-> +	.clk		= "l4ls_gclk",
-> +	.addr		= am33xx_eqep2_addr_space,
-> +	.user		= OCP_USER_MPU,
-> +};
-> +
-> +/*
-> + * Splitting the resources to handle access of PWMSS config space
-> + * and module specific part independently
-> + */
->  static struct omap_hwmod_addr_space am33xx_ecap0_addr_space[] = {
->  	{
->  		.pa_start	= 0x48300000,
-> @@ -2637,8 +2769,7 @@ static struct omap_hwmod_addr_space am33xx_ecap0_addr_space[] = {
->  	},
->  	{
->  		.pa_start	= 0x48300100,
-> -		.pa_end		= 0x48300100 + SZ_256 - 1,
-> -		.flags		= ADDR_TYPE_RT
-> +		.pa_end		= 0x48300100 + SZ_128 - 1,
->  	},
->  	{ }
->  };
-> @@ -2663,8 +2794,7 @@ static struct omap_hwmod_addr_space am33xx_ecap1_addr_space[] = {
->  	},
->  	{
->  		.pa_start	= 0x48302100,
-> -		.pa_end		= 0x48302100 + SZ_256 - 1,
-> -		.flags		= ADDR_TYPE_RT
-> +		.pa_end		= 0x48302100 + SZ_128 - 1,
->  	},
->  	{ }
->  };
-> @@ -2689,8 +2819,7 @@ static struct omap_hwmod_addr_space am33xx_ecap2_addr_space[] = {
->  	},
->  	{
->  		.pa_start	= 0x48304100,
-> -		.pa_end		= 0x48304100 + SZ_256 - 1,
-> -		.flags		= ADDR_TYPE_RT
-> +		.pa_end		= 0x48304100 + SZ_128 - 1,
->  	},
->  	{ }
->  };
-> @@ -3395,6 +3524,9 @@ static struct omap_hwmod_ocp_if *am33xx_hwmod_ocp_ifs[] __initdata = {
->  	&am33xx_l4_ls__ehrpwm0,
->  	&am33xx_l4_ls__ehrpwm1,
->  	&am33xx_l4_ls__ehrpwm2,
-> +	&am33xx_l4_ls__eqep0,
-> +	&am33xx_l4_ls__eqep1,
-> +	&am33xx_l4_ls__eqep2,
->  	&am33xx_l4_ls__ecap0,
->  	&am33xx_l4_ls__ecap1,
->  	&am33xx_l4_ls__ecap2,
-> -- 
-> 1.7.10.4
-> 
-> 
+It is obvious that the last case is rather an exception from the
+rule "runtime_remaining<=0 iff cfs_rq is throttled or will be
+throttled as soon as it finishes its execution".
 
+Moreover, it can lead to a task hang as follows. If
+put_prev_task() is called immediately after first pick_next_task
+after quota was set, "immediately" meaning rq->clock in both
+functions is the same, then the corresponding cfs_rq will be
+throttled.
+
+Besides being unfair (the cfs_rq has not executed in fact), the
+quota refilling timer can be idle at that time and it won't be
+activated on put_prev_task because update_curr calls
+account_cfs_rq_runtime, which activates the timer, only if
+delta_exec is strictly positive. As a result we can get a task
+"running" inside a throttled cfs_rq which will probably never be
+unthrottled.
+
+To avoid the problem, the patch makes tg_set_cfs_bandwidth
+initialize runtime_remaining of each cfs_rq to 1 instead of 0 so
+that the cfs_rq will be throttled only if it has executed for
+some positive number of nanoseconds.
+
+Several times we had our customers encountered such hangs inside
+a VM (seems something is wrong or rather different in time
+accounting there). Analyzing crash dumps revealed that hung
+tasks were running inside cfs_rq's, which had the following
+setup:
+
+ cfs_rq->throttled=1
+ cfs_rq->runtime_enabled=1
+ cfs_rq->runtime_remaining=0
+ cfs_rq->tg->cfs_bandwidth.idle=1
+ cfs_rq->tg->cfs_bandwidth.timer_active=0
+
+which conforms pretty nice to the explanation given above.
+
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Cc: <devel@openvz.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Paul Turner <pjt@google.com>
+Link: http://lkml.kernel.org/r/1360307446-26978-1-git-send-email-vdavydov@parallels.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/sched/core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 26058d0..c7a078f 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -7686,7 +7686,7 @@ static int tg_set_cfs_bandwidth(struct task_group *tg, u64 period, u64 quota)
+ 
+ 		raw_spin_lock_irq(&rq->lock);
+ 		cfs_rq->runtime_enabled = runtime_enabled;
+-		cfs_rq->runtime_remaining = 0;
++		cfs_rq->runtime_remaining = 1;
+ 
+ 		if (cfs_rq->throttled)
+ 			unthrottle_cfs_rq(cfs_rq);
