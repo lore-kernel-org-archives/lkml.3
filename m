@@ -1,64 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947129Ab3BHVCT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 16:02:19 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:36383 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1947115Ab3BHVCQ convert rfc822-to-8bit (ORCPT
+	id S1947137Ab3BHVCk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 16:02:40 -0500
+Received: from mail-vb0-f45.google.com ([209.85.212.45]:57253 "EHLO
+	mail-vb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1947068Ab3BHVCj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 16:02:16 -0500
+	Fri, 8 Feb 2013 16:02:39 -0500
+Date: Fri, 8 Feb 2013 13:02:34 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>
+Subject: [PATCH 3/6] idr: remove length restriction from idr_layer->bitmap
+Message-ID: <20130208210234.GC26660@mtj.dyndns.org>
+References: <20130208210050.GA26660@mtj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <1360355671.18083.18.camel@x230.lan>
-References: <20130208191213.GA25081@www.outflux.net>
-	<00780235-deac-4f80-b936-867834e05661@email.android.com>
-	<CAGXu5jJnLY6Qp3J6HBpVg-AdUGdKYm-e4wErZO3=NuRo04ajvg@mail.gmail.com>
-	<5115553A.5000708@zytor.com>
-	<CAGXu5j+_mGzR+72YqORhErMUY1aF1H2urczZ8SwuJHZK-oZL6g@mail.gmail.com>
-	<dee64752-850c-4d78-b703-f47a985bc13e@email.android.com>
-	<CAGXu5jLAufTRm=sDST0br_WEkn4o0Hpjv2jDP2Na=cCvuM+MGg@mail.gmail.com>
-	<1360355671.18083.18.camel@x230.lan>
-Date: Fri, 8 Feb 2013 13:02:15 -0800
-X-Google-Sender-Auth: 3CKGUXEP46XednI_S7GSChhp2Vk
-Message-ID: <CAGXu5jKo2PfMBO4A0ZgQcrPuj8OHNaff+CjAesOAWkZc0vB9+Q@mail.gmail.com>
-Subject: Re: [PATCH] x86: Lock down MSR writing in secure boot
-From: Kees Cook <keescook@chromium.org>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130208210050.GA26660@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 8, 2013 at 12:34 PM, Matthew Garrett
-<matthew.garrett@nebula.com> wrote:
-> On Fri, 2013-02-08 at 12:28 -0800, Kees Cook wrote:
->
->> Maybe a capability isn't the right way to go, I'm not sure. I'll leave
->> that to Matthew. Whatever the flag, it should be an immutable state of
->> the boot. Though, it probably makes sense as a cap just so that
->> non-secure-boot systems can still remove it from containers, etc.
->
-> There was interest in ensuring that this wasn't something special-cased
-> to UEFI Secure Boot, so using a capability seemed like the most
-> straightforward way - it's fundamentally a restriction on what an
-> otherwise privileged user is able to do, so it seemed like it fit the
-> model. But I'm not wed to it in the slightest, and in fact it causes
-> problems for some userspace (anything that drops all capabilities
-> suddenly finds itself unable to do something that it expects to be able
-> to do), so if anyone has any suggestions for a better approach…
+Currently, idr->bitmap is declared as an unsigned long which restricts
+the number of bits an idr_layer can contain.  All bitops can handle
+arbitrary positive integer bit number and there's no reason for this
+restriction.
 
-I don't find it unreasonable to drop all caps and lose access to
-sensitive things. :) That's sort of the point, really. I think a cap
-is the best match. It seems like it should either be a cap or a
-namespace flag, but the latter seems messy.
+Declare idr_layer->bitmap using DECLARE_BITMAP() instead of a single
+unsigned long.
 
--Kees
+* idr_layer->bitmap is now an array.  '&' dropped from params to
+  bitops.
 
---
-Kees Cook
-Chrome OS Security
+* Replaced "== IDR_FULL" tests with bitmap_full() and removed
+  IDR_FULL.
+
+* Replaced find_next_bit() on ~bitmap with find_next_zero_bit().
+
+* Replaced "bitmap = 0" with bitmap_clear().
+
+This patch doesn't (or at least shouldn't) introduce any behavior
+changes.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ include/linux/idr.h |   12 +-----------
+ lib/idr.c           |   34 +++++++++++++++++-----------------
+ 2 files changed, 18 insertions(+), 28 deletions(-)
+
+--- a/include/linux/idr.h
++++ b/include/linux/idr.h
+@@ -19,18 +19,8 @@
+ 
+ #if BITS_PER_LONG == 32
+ # define IDR_BITS 5
+-# define IDR_FULL 0xfffffffful
+-/* We can only use two of the bits in the top level because there is
+-   only one possible bit in the top level (5 bits * 7 levels = 35
+-   bits, but you only use 31 bits in the id). */
+-# define TOP_LEVEL_FULL (IDR_FULL >> 30)
+ #elif BITS_PER_LONG == 64
+ # define IDR_BITS 6
+-# define IDR_FULL 0xfffffffffffffffful
+-/* We can only use two of the bits in the top level because there is
+-   only one possible bit in the top level (6 bits * 6 levels = 36
+-   bits, but you only use 31 bits in the id). */
+-# define TOP_LEVEL_FULL (IDR_FULL >> 62)
+ #else
+ # error "BITS_PER_LONG is not 32 or 64"
+ #endif
+@@ -39,7 +29,7 @@
+ #define IDR_MASK ((1 << IDR_BITS)-1)
+ 
+ struct idr_layer {
+-	unsigned long		bitmap;	/* A zero bit means "space here" */
++	DECLARE_BITMAP(bitmap, IDR_SIZE); /* A zero bit means "space here" */
+ 	struct idr_layer __rcu	*ary[1<<IDR_BITS];
+ 	int			count;	/* When zero, we can release it */
+ 	int			layer;	/* distance from leaf */
+--- a/lib/idr.c
++++ b/lib/idr.c
+@@ -149,18 +149,18 @@ static void idr_mark_full(struct idr_lay
+ 	struct idr_layer *p = pa[0];
+ 	int l = 0;
+ 
+-	__set_bit(id & IDR_MASK, &p->bitmap);
++	__set_bit(id & IDR_MASK, p->bitmap);
+ 	/*
+ 	 * If this layer is full mark the bit in the layer above to
+ 	 * show that this part of the radix tree is full.  This may
+ 	 * complete the layer above and require walking up the radix
+ 	 * tree.
+ 	 */
+-	while (p->bitmap == IDR_FULL) {
++	while (bitmap_full(p->bitmap, IDR_SIZE)) {
+ 		if (!(p = pa[++l]))
+ 			break;
+ 		id = id >> IDR_BITS;
+-		__set_bit((id & IDR_MASK), &p->bitmap);
++		__set_bit((id & IDR_MASK), p->bitmap);
+ 	}
+ }
+ 
+@@ -213,7 +213,6 @@ static int sub_alloc(struct idr *idp, in
+ 	int n, m, sh;
+ 	struct idr_layer *p, *new;
+ 	int l, id, oid;
+-	unsigned long bm;
+ 
+ 	id = *starting_id;
+  restart:
+@@ -225,8 +224,7 @@ static int sub_alloc(struct idr *idp, in
+ 		 * We run around this while until we reach the leaf node...
+ 		 */
+ 		n = (id >> (IDR_BITS*l)) & IDR_MASK;
+-		bm = ~p->bitmap;
+-		m = find_next_bit(&bm, IDR_SIZE, n);
++		m = find_next_zero_bit(p->bitmap, IDR_SIZE, n);
+ 		if (m == IDR_SIZE) {
+ 			/* no space available go back to previous layer. */
+ 			l++;
+@@ -318,7 +316,8 @@ build_up:
+ 			for (new = p; p && p != idp->top; new = p) {
+ 				p = p->ary[0];
+ 				new->ary[0] = NULL;
+-				new->bitmap = new->count = 0;
++				new->count = 0;
++				bitmap_clear(new->bitmap, 0, IDR_SIZE);
+ 				__move_to_free_list(idp, new);
+ 			}
+ 			spin_unlock_irqrestore(&idp->lock, flags);
+@@ -327,8 +326,8 @@ build_up:
+ 		new->ary[0] = p;
+ 		new->count = 1;
+ 		new->layer = layers-1;
+-		if (p->bitmap == IDR_FULL)
+-			__set_bit(0, &new->bitmap);
++		if (bitmap_full(p->bitmap, IDR_SIZE))
++			__set_bit(0, new->bitmap);
+ 		p = new;
+ 	}
+ 	rcu_assign_pointer(idp->top, p);
+@@ -506,14 +505,14 @@ static void sub_remove(struct idr *idp,
+ 
+ 	while ((shift > 0) && p) {
+ 		n = (id >> shift) & IDR_MASK;
+-		__clear_bit(n, &p->bitmap);
++		__clear_bit(n, p->bitmap);
+ 		*++paa = &p->ary[n];
+ 		p = p->ary[n];
+ 		shift -= IDR_BITS;
+ 	}
+ 	n = id & IDR_MASK;
+-	if (likely(p != NULL && test_bit(n, &p->bitmap))){
+-		__clear_bit(n, &p->bitmap);
++	if (likely(p != NULL && test_bit(n, p->bitmap))){
++		__clear_bit(n, p->bitmap);
+ 		rcu_assign_pointer(p->ary[n], NULL);
+ 		to_free = NULL;
+ 		while(*paa && ! --((**paa)->count)){
+@@ -556,7 +555,8 @@ void idr_remove(struct idr *idp, int id)
+ 		p = idp->top->ary[0];
+ 		rcu_assign_pointer(idp->top, p);
+ 		--idp->layers;
+-		to_free->bitmap = to_free->count = 0;
++		to_free->count = 0;
++		bitmap_clear(to_free->bitmap, 0, IDR_SIZE);
+ 		free_layer(to_free);
+ 	}
+ 	while (idp->id_free_cnt >= MAX_IDR_FREE) {
+@@ -816,7 +816,7 @@ void *idr_replace(struct idr *idp, void
+ 	}
+ 
+ 	n = id & IDR_MASK;
+-	if (unlikely(p == NULL || !test_bit(n, &p->bitmap)))
++	if (unlikely(p == NULL || !test_bit(n, p->bitmap)))
+ 		return ERR_PTR(-ENOENT);
+ 
+ 	old_p = p->ary[n];
+@@ -1013,7 +1013,7 @@ void ida_remove(struct ida *ida, int id)
+ 	/* clear full bits while looking up the leaf idr_layer */
+ 	while ((shift > 0) && p) {
+ 		n = (idr_id >> shift) & IDR_MASK;
+-		__clear_bit(n, &p->bitmap);
++		__clear_bit(n, p->bitmap);
+ 		p = p->ary[n];
+ 		shift -= IDR_BITS;
+ 	}
+@@ -1022,7 +1022,7 @@ void ida_remove(struct ida *ida, int id)
+ 		goto err;
+ 
+ 	n = idr_id & IDR_MASK;
+-	__clear_bit(n, &p->bitmap);
++	__clear_bit(n, p->bitmap);
+ 
+ 	bitmap = (void *)p->ary[n];
+ 	if (!test_bit(offset, bitmap->bitmap))
+@@ -1031,7 +1031,7 @@ void ida_remove(struct ida *ida, int id)
+ 	/* update bitmap and remove it if empty */
+ 	__clear_bit(offset, bitmap->bitmap);
+ 	if (--bitmap->nr_busy == 0) {
+-		__set_bit(n, &p->bitmap);	/* to please idr_remove() */
++		__set_bit(n, p->bitmap);	/* to please idr_remove() */
+ 		idr_remove(&ida->idr, idr_id);
+ 		free_bitmap(ida, bitmap);
+ 	}
