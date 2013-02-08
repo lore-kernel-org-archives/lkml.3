@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756440Ab3BHGfw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 01:35:52 -0500
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:34308 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753107Ab3BHGfv (ORCPT
+	id S1759866Ab3BHGhG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 01:37:06 -0500
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:36202 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753956Ab3BHGhF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 01:35:51 -0500
-Message-ID: <51149CC0.4080702@redhat.com>
-Date: Fri, 08 Feb 2013 07:35:44 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Fri, 8 Feb 2013 01:37:05 -0500
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        kvm@vger.kernel.org, mst@redhat.com,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [RFC PATCH 0/8] virtio: new API for addition of buffers, scatterlist
- changes
-References: <1360239752-2470-1-git-send-email-pbonzini@redhat.com> <8738x7ih5o.fsf@rustcorp.com.au>
-In-Reply-To: <8738x7ih5o.fsf@rustcorp.com.au>
+In-Reply-To: <51148C93.6020204@250bpm.com>
+References: <1360219292-19754-1-git-send-email-sustrik@250bpm.com>
+ <5113FCA7.4020207@mit.edu> <51140A60.4070705@250bpm.com> <CALCETrXEy5hLh6i7nTGH607gnc=kd0S+of9i0-nt828MGwbQZQ@mail.gmail.com>
+ <51148C93.6020204@250bpm.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 7 Feb 2013 22:36:43 -0800
+Message-ID: <CALCETrVjRg95+xDnsg0L6JMYeFjFTr3HST9Mmi9utxrF1PggNQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] eventfd: implementation of EFD_MASK flag
+To: Martin Sustrik <sustrik@250bpm.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sha Zhengju <handai.szj@taobao.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 08/02/2013 05:05, Rusty Russell ha scritto:
-> Paolo Bonzini <pbonzini@redhat.com> writes:
->> The virtqueue_add_buf function has two limitations:
+On Thu, Feb 7, 2013 at 9:26 PM, Martin Sustrik <sustrik@250bpm.com> wrote:
+> Hi Andy,
+>
+>
+> On 08/02/13 02:03, Andy Lutomirski wrote:
 >>
->> 1) it requires the caller to provide all the buffers in a single call;
+>> There may be some
+>> advantage to adding (later on, if needed) an option to change the
+>> flags set in:
 >>
->> 2) it does not support chained scatterlists: the buffers must be
->> provided as an array of struct scatterlist.
+>> +               if (waitqueue_active(&ctx->wqh))
+>> +                       wake_up_locked_poll(&ctx->wqh,
+>> +                               (unsigned long)ctx->mask.events);
 >>
->> Because of these limitations, virtio-scsi has to copy each request into
->> a scatterlist internal to the driver.  It cannot just use the one that
->> was prepared by the upper SCSI layers.
-> 
-> Hi Paulo,
-> 
->         Note that you've defined your problem in terms of your solution
-> here.  For clarity:
+>> (i.e. to allow the second parameter to omit some bits that were
+>> already signaled.)  Allowing write to write a bigger struct in the
+>> future won't break anything.
+>
+>
+> I think I don't follow. Either the second parameter is supposed to be
+> *newly* signaled events, in which case the events that were already signaled
+> in the past should be ommitted, or it is meant to be *all* signaled events,
+> in which case the current implementation is OK.
 
-Good catch. :)
+I defer to the experts here.  But I suspect that if you want to
+perfectly emulate sockets, you may need to vary what you specify.
+(IIRC tcp sockets report an EPOLLIN edge every time data is received
+even if the receive buffer wasn't empty.)
 
-> The problem: we want to prepend and append to a scatterlist.  We can't
->         append, because the chained scatterlist implementation requires
->         an element to be appended to join two scatterlists together.
-> 
-> The solution: fix scatterlists by introducing struct sg_ring:
->         struct sg_ring {
->                 struct list_head ring;
->         	unsigned int nents;
->         	unsigned int orig_nents; /* do we want to replace sg_table? */
->                 struct scatterlist *sg;
->         };
-> 
-> The workaround: make virtio accept multiple scatterlists for a single
->         buffer.
-> 
-> There's nothing wrong with your workaround, but if other subsystems have
-> the same problem we do, perhaps we should consider a broader solution?
-
-Do they?  Given the resistance you have had on the topic, perhaps they
-don't (though I agree that chained scatterlist are horrible).
-
-But I'll add a note on this to the commit message and why the workaround
-is IMHO acceptable.
-
-Paolo
+--Andy
