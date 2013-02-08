@@ -1,168 +1,385 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946165Ab3BHI7E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 03:59:04 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:36755 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946139Ab3BHI7C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 03:59:02 -0500
-MIME-Version: 1.0
-In-Reply-To: <2723874.KAatFKgahz@flatron>
-References: <1360105784-12282-1-git-send-email-ks.giri@samsung.com>
-	<1585017.derjdP1mHL@amdc1227>
-	<CAKrE-KfyGCi_+FozSpGTy0A0VJP=Jq-1SHmvKJU02iJKWHcvLQ@mail.gmail.com>
-	<2723874.KAatFKgahz@flatron>
-Date: Fri, 8 Feb 2013 00:58:59 -0800
-Message-ID: <CAKrE-Kd-mNv=_YkM7GjicgDx=0hqbp5B6qwEvcRzhuSibRNaZA@mail.gmail.com>
-Subject: Re: [PATCH 1/4] spi: s3c64xx: modified error interrupt handling and init
-From: Girish KS <girishks2000@gmail.com>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, Tomasz Figa <t.figa@samsung.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1946172Ab3BHJEp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 04:04:45 -0500
+Received: from mga01.intel.com ([192.55.52.88]:60168 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1946143Ab3BHJEm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 04:04:42 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,628,1355126400"; 
+   d="scan'208";a="284390961"
+Message-ID: <1360314270.2242.45.camel@rzhang1-mobl4>
+Subject: Re: [PATCH 5/8] Thermal: Create Thermal map sysfs attributes for a
+ zone
+From: Zhang Rui <rui.zhang@intel.com>
+To: Durgadoss R <durgadoss.r@intel.com>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        eduardo.valentin@ti.com, hongbo.zhang@linaro.org, wni@nvidia.com
+Date: Fri, 08 Feb 2013 17:04:30 +0800
+In-Reply-To: <1360061183-14137-6-git-send-email-durgadoss.r@intel.com>
+References: <1360061183-14137-1-git-send-email-durgadoss.r@intel.com>
+	 <1360061183-14137-6-git-send-email-durgadoss.r@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 8, 2013 at 12:33 AM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
-> On Thursday 07 of February 2013 09:46:58 Girish KS wrote:
->> On Thu, Feb 7, 2013 at 3:09 AM, Tomasz Figa <t.figa@samsung.com> wrote:
->> > Hi Girish,
->> >
->> > On Wednesday 06 of February 2013 12:12:29 Girish KS wrote:
->> >> On Wed, Feb 6, 2013 at 2:26 AM, Grant Likely
->> >> <grant.likely@secretlab.ca>>
->> > wrote:
->> >> > On Tue,  5 Feb 2013 15:09:41 -0800, Girish K S
->> >
->> > <girishks2000@gmail.com> wrote:
->> >> >> The status of the interrupt is available in the status register,
->> >> >> so reading the clear pending register and writing back the same
->> >> >> value will not actually clear the pending interrupts. This patch
->> >> >> modifies the interrupt handler to read the status register and
->> >> >> clear the corresponding pending bit in the clear pending register.
->> >> >>
->> >> >> Modified the hwInit function to clear all the pending interrupts.
->> >> >>
->> >> >> Signed-off-by: Girish K S <ks.giri@samsung.com>
->> >> >> ---
->> >> >>
->> >> >>  drivers/spi/spi-s3c64xx.c |   41
->> >> >>  +++++++++++++++++++++++++---------------- 1 file changed, 25
->> >> >>  insertions(+), 16 deletions(-)
->> >> >>
->> >> >> diff --git a/drivers/spi/spi-s3c64xx.c b/drivers/spi/spi-s3c64xx.c
->> >> >> index ad93231..b770f88 100644
->> >> >> --- a/drivers/spi/spi-s3c64xx.c
->> >> >> +++ b/drivers/spi/spi-s3c64xx.c
->> >> >> @@ -997,25 +997,30 @@ static irqreturn_t s3c64xx_spi_irq(int irq,
->> >> >> void *data)>>
->> >> >>
->> >> >>  {
->> >> >>
->> >> >>       struct s3c64xx_spi_driver_data *sdd = data;
->> >> >>       struct spi_master *spi = sdd->master;
->> >> >>
->> >> >> -     unsigned int val;
->> >> >> +     unsigned int val, clr = 0;
->> >> >>
->> >> >> -     val = readl(sdd->regs + S3C64XX_SPI_PENDING_CLR);
->> >> >> +     val = readl(sdd->regs + S3C64XX_SPI_STATUS);
->> >> >>
->> >> >> -     val &= S3C64XX_SPI_PND_RX_OVERRUN_CLR |
->> >> >> -             S3C64XX_SPI_PND_RX_UNDERRUN_CLR |
->> >> >> -             S3C64XX_SPI_PND_TX_OVERRUN_CLR |
->> >> >> -             S3C64XX_SPI_PND_TX_UNDERRUN_CLR;
->> >> >> -
->> >> >> -     writel(val, sdd->regs + S3C64XX_SPI_PENDING_CLR);
->> >> >> -
->> >> >> -     if (val & S3C64XX_SPI_PND_RX_OVERRUN_CLR)
->> >> >> +     if (val & S3C64XX_SPI_ST_RX_OVERRUN_ERR) {
->> >> >> +             clr = S3C64XX_SPI_PND_RX_OVERRUN_CLR;
->> >> >>
->> >> >>               dev_err(&spi->dev, "RX overrun\n");
->> >> >>
->> >> >> -     if (val & S3C64XX_SPI_PND_RX_UNDERRUN_CLR)
->> >> >> +     }
->> >> >> +     if (val & S3C64XX_SPI_ST_RX_UNDERRUN_ERR) {
->> >> >> +             clr |= S3C64XX_SPI_PND_RX_UNDERRUN_CLR;
->> >> >>
->> >> >>               dev_err(&spi->dev, "RX underrun\n");
->> >> >>
->> >> >> -     if (val & S3C64XX_SPI_PND_TX_OVERRUN_CLR)
->> >> >> +     }
->> >> >> +     if (val & S3C64XX_SPI_ST_TX_OVERRUN_ERR) {
->> >> >> +             clr |= S3C64XX_SPI_PND_TX_OVERRUN_CLR;
->> >> >>
->> >> >>               dev_err(&spi->dev, "TX overrun\n");
->> >> >>
->> >> >> -     if (val & S3C64XX_SPI_PND_TX_UNDERRUN_CLR)
->> >> >> +     }
->> >> >> +     if (val & S3C64XX_SPI_ST_TX_UNDERRUN_ERR) {
->> >> >> +             clr |= S3C64XX_SPI_PND_TX_UNDERRUN_CLR;
->> >> >>
->> >> >>               dev_err(&spi->dev, "TX underrun\n");
->> >> >>
->> >> >> +     }
->> >> >> +
->> >> >> +     /* Clear the pending irq by setting and then clearing it */
->> >> >> +     writel(clr, sdd->regs + S3C64XX_SPI_PENDING_CLR);
->> >> >> +     writel(clr & ~clr, sdd->regs + S3C64XX_SPI_PENDING_CLR);
->> >> >
->> >> > Wait, what?  clr & ~clr == 0   Always.  What are you actually
->> >> > trying
->> >> > to do here?
->> >>
->> >> The user manual says, wirting 1 to the pending clear register clears
->> >> the interrupt (its not auto clear to 0). so i need to explicitly
->> >> reset
->> >> those bits thats what the 2nd write does
->> >
->> > I have looked through user's manuals of different Samsung SoCs. All of
->> > them said that writing 1 to a bit clears the corresponding interrupt,
->> > but none of them contain any note that it must be manually cleared to
->> > 0.
->> What i meant was the clear pending bit will not clear automatically.
->> When I set the
->> clear pending bit, it remains set. This is a problem for the next
->> interrupt cycle.
->
-> How did you check that it does not clear automatically?
-I checked it with trace32 debugger. Also  confirmed with the IP
-validation engineer.
->
->> > In addition the expression
->> >
->> > clr & ~clr
->> >
->> > makes no sense, because it is equal to 0.
->>
->> It makes sense, because we are not disturbing the interrupt pending
->> bit at position 0, which is a trailing clr bit.
->
-> You either seem to misunderstand the problem I'm mentioning or not
-> understanding it at all.
->
-> If you take a variable named clr, no matter what value it is set to, and
-> you AND it with bitwise negation of the same variable, you will get 0.
->
-> See on this example:
->
-> Bits:     7 | 6 | 5 | 4 | 3 | 2 | 1 | 0
->          -------------------------------
-> Values:   1 | 1 | 0 | 0 | 1 | 0 | 0 | 1
->          -------------------------------
-> Negation: 0 | 0 | 1 | 1 | 0 | 1 | 1 | 0
->          -------------------------------
-> AND:      0 | 0 | 0 | 0 | 0 | 0 | 0 | 0
->
-> Now, can you see that (clr & ~clr) is the same as (0)?
+On Tue, 2013-02-05 at 16:16 +0530, Durgadoss R wrote:
+> This patch creates a thermal map sysfs node under
+> /sys/class/thermal/zoneX/. This contains
+> entries named mapY_trip_type, mapY_sensor_name,
+> mapY_cdev_name, mapY_trip_mask, mapY_weights.
+sorry I still not quite understand.
 
-Already apolozised for the same: will resubmit.
+does it look like?
+/sys/class/thermal/zoneX/
+|
+map-->|-->map0_trip_type
+      |...
+      |-->map0_weight
+      |-->map1_trip_type
+      |...
+      |-->map1_weight
+      |...
 
->
-> Best regards,
-> Tomasz
->
+thanks,
+rui
+> 
+> Signed-off-by: Durgadoss R <durgadoss.r@intel.com>
+> ---
+>  drivers/thermal/thermal_sys.c |  221 ++++++++++++++++++++++++++++++++++++++++-
+>  include/linux/thermal.h       |   25 +++++
+>  2 files changed, 244 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
+> index 69a60a4..e284b67 100644
+> --- a/drivers/thermal/thermal_sys.c
+> +++ b/drivers/thermal/thermal_sys.c
+> @@ -525,6 +525,44 @@ static void remove_cdev_from_zone(struct thermal_zone *tz,
+>  	tz->cdev_indx--;
+>  }
+>  
+> +static inline void __remove_map_entry(struct thermal_zone *tz, int indx)
+> +{
+> +	int i;
+> +	struct thermal_map_attr *attr = tz->map_attr[indx];
+> +
+> +	for (i = 0; i < NUM_MAP_ATTRS; i++)
+> +		device_remove_file(&tz->device, &attr->attrs[i].attr);
+> +
+> +	kfree(tz->map_attr[indx]);
+> +	tz->map[indx] = NULL;
+> +}
+> +
+> +static void remove_sensor_map_entry(struct thermal_zone *tz,
+> +				struct thermal_sensor *ts)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i < MAX_MAPS_PER_ZONE; i++) {
+> +		if (tz->map[i] && !strnicmp(ts->name, tz->map[i]->sensor_name,
+> +						THERMAL_NAME_LENGTH)) {
+> +			__remove_map_entry(tz, i);
+> +		}
+> +	}
+> +}
+> +
+> +static void remove_cdev_map_entry(struct thermal_zone *tz,
+> +				struct thermal_cooling_device *cdev)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i < MAX_MAPS_PER_ZONE; i++) {
+> +		if (tz->map[i] && !strnicmp(cdev->type, tz->map[i]->cdev_name,
+> +						THERMAL_NAME_LENGTH)) {
+> +			__remove_map_entry(tz, i);
+> +		}
+> +	}
+> +}
+> +
+>  /* sys I/F for thermal zone */
+>  
+>  #define to_thermal_zone(_dev) \
+> @@ -917,6 +955,107 @@ policy_show(struct device *dev, struct device_attribute *devattr, char *buf)
+>  }
+>  
+>  static ssize_t
+> +map_ttype_show(struct device *dev, struct device_attribute *attr, char *buf)
+> +{
+> +	char *trip;
+> +	int indx;
+> +	struct thermal_zone *tz = to_zone(dev);
+> +
+> +	if (!sscanf(attr->attr.name, "map%d_trip_type", &indx))
+> +		return -EINVAL;
+> +
+> +	if (indx < 0 || indx >= MAX_MAPS_PER_ZONE)
+> +		return -EINVAL;
+> +
+> +	if (!tz->map[indx])
+> +		return sprintf(buf, "<Unavailable>\n");
+> +
+> +	trip = (tz->map[indx]->trip_type == THERMAL_TRIP_ACTIVE) ?
+> +						"active" : "passive";
+> +	return sprintf(buf, "%s\n", trip);
+> +}
+> +
+> +static ssize_t map_ts_name_show(struct device *dev,
+> +				struct device_attribute *attr, char *buf)
+> +{
+> +	int indx;
+> +	struct thermal_zone *tz = to_zone(dev);
+> +
+> +	if (!sscanf(attr->attr.name, "map%d_sensor_name", &indx))
+> +		return -EINVAL;
+> +
+> +	if (indx < 0 || indx >= MAX_MAPS_PER_ZONE)
+> +		return -EINVAL;
+> +
+> +	if (!tz->map[indx])
+> +		return sprintf(buf, "<Unavailable>\n");
+> +
+> +	return sprintf(buf, "%s\n", tz->map[indx]->sensor_name);
+> +}
+> +
+> +static ssize_t map_cdev_name_show(struct device *dev,
+> +				struct device_attribute *attr, char *buf)
+> +{
+> +	int indx;
+> +	struct thermal_zone *tz = to_zone(dev);
+> +
+> +	if (!sscanf(attr->attr.name, "map%d_cdev_name", &indx))
+> +		return -EINVAL;
+> +
+> +	if (indx < 0 || indx >= MAX_MAPS_PER_ZONE)
+> +		return -EINVAL;
+> +
+> +	if (!tz->map[indx])
+> +		return sprintf(buf, "<Unavailable>\n");
+> +
+> +	return sprintf(buf, "%s\n", tz->map[indx]->cdev_name);
+> +}
+> +
+> +static ssize_t map_trip_mask_show(struct device *dev,
+> +				struct device_attribute *attr, char *buf)
+> +{
+> +	int indx;
+> +	struct thermal_zone *tz = to_zone(dev);
+> +
+> +	if (!sscanf(attr->attr.name, "map%d_trip_mask", &indx))
+> +		return -EINVAL;
+> +
+> +	if (indx < 0 || indx >= MAX_MAPS_PER_ZONE)
+> +		return -EINVAL;
+> +
+> +	if (!tz->map[indx])
+> +		return sprintf(buf, "<Unavailable>\n");
+> +
+> +	return sprintf(buf, "0x%x\n", tz->map[indx]->trip_mask);
+> +}
+> +
+> +static ssize_t map_weights_show(struct device *dev,
+> +				struct device_attribute *attr, char *buf)
+> +{
+> +	int i, indx, ret = 0;
+> +	struct thermal_map *map;
+> +	struct thermal_zone *tz = to_zone(dev);
+> +
+> +	if (!sscanf(attr->attr.name, "map%d_weights", &indx))
+> +		return -EINVAL;
+> +
+> +	if (indx < 0 || indx >= MAX_MAPS_PER_ZONE)
+> +		return -EINVAL;
+> +
+> +	if (!tz->map[indx])
+> +		return sprintf(buf, "<Unavailable>\n");
+> +
+> +	map = tz->map[indx];
+> +
+> +	ret += sprintf(buf, "%d", map->weights[0]);
+> +	for (i = 1; i < map->num_weights; i++)
+> +		ret += sprintf(buf + ret, " %d", map->weights[i]);
+> +
+> +	ret += sprintf(buf + ret, "\n");
+> +	return ret;
+> +}
+> +
+> +static ssize_t
+>  active_show(struct device *dev, struct device_attribute *attr, char *buf)
+>  {
+>  	int i, indx, ret = 0;
+> @@ -1655,8 +1794,10 @@ void thermal_cooling_device_unregister(struct thermal_cooling_device *cdev)
+>  
+>  	mutex_lock(&zone_list_lock);
+>  
+> -	for_each_thermal_zone(tmp_tz)
+> +	for_each_thermal_zone(tmp_tz) {
+>  		remove_cdev_from_zone(tmp_tz, cdev);
+> +		remove_cdev_map_entry(tmp_tz, cdev);
+> +	}
+>  
+>  	mutex_unlock(&zone_list_lock);
+>  
+> @@ -1994,6 +2135,9 @@ void remove_thermal_zone(struct thermal_zone *tz)
+>  				kobject_name(&tz->cdevs[i]->device.kobj));
+>  	}
+>  
+> +	for (i = 0; i < MAX_MAPS_PER_ZONE; i++)
+> +		__remove_map_entry(tz, i);
+> +
+>  	release_idr(&thermal_zone_idr, &thermal_idr_lock, tz->id);
+>  	idr_destroy(&tz->idr);
+>  
+> @@ -2039,6 +2183,77 @@ struct thermal_sensor *get_sensor_by_name(const char *name)
+>  }
+>  EXPORT_SYMBOL(get_sensor_by_name);
+>  
+> +static int create_map_attrs(struct thermal_zone *tz, int indx)
+> +{
+> +	int ret, i;
+> +	struct thermal_map_attr *attr = tz->map_attr[indx];
+> +
+> +	static const char *const names[NUM_MAP_ATTRS] = { "map%d_trip_type",
+> +			"map%d_sensor_name", "map%d_cdev_name",
+> +			"map%d_trip_mask", "map%d_weights" };
+> +	static ssize_t (*const rd_ptr[NUM_MAP_ATTRS]) (struct device *dev,
+> +			struct device_attribute *devattr, char *buf) = {
+> +			map_ttype_show, map_ts_name_show, map_cdev_name_show,
+> +			map_trip_mask_show, map_weights_show };
+> +
+> +	for (i = 0; i < NUM_MAP_ATTRS; i++) {
+> +		snprintf(attr->attrs[i].name,
+> +			THERMAL_NAME_LENGTH, names[i], indx);
+> +		attr->attrs[i].attr.attr.name = attr->attrs[i].name;
+> +		attr->attrs[i].attr.attr.mode = S_IRUGO;
+> +		attr->attrs[i].attr.show = rd_ptr[i];
+> +		sysfs_attr_init(&attr->attrs[i].attr);
+> +
+> +		ret = device_create_file(&tz->device, &attr->attrs[i].attr);
+> +		if (ret)
+> +			goto exit_free;
+> +	}
+> +	return 0;
+> +exit_free:
+> +	while (--i >= 0)
+> +		device_remove_file(&tz->device, &attr->attrs[i].attr);
+> +	return ret;
+> +}
+> +
+> +int add_map_entry(struct thermal_zone *tz, struct thermal_map *map)
+> +{
+> +	int ret, indx;
+> +
+> +	if (!tz || !map)
+> +		return -EINVAL;
+> +
+> +	mutex_lock(&zone_list_lock);
+> +
+> +	for (indx = 0; indx < MAX_MAPS_PER_ZONE; indx++) {
+> +		if (tz->map[indx] == NULL)
+> +			break;
+> +	}
+> +
+> +	if (indx >= MAX_MAPS_PER_ZONE) {
+> +		ret = -EINVAL;
+> +		goto exit;
+> +	}
+> +
+> +	tz->map_attr[indx] = kzalloc(sizeof(struct thermal_map_attr),
+> +						GFP_KERNEL);
+> +	if (!tz->map_attr[indx]) {
+> +		ret = -ENOMEM;
+> +		goto exit;
+> +	}
+> +
+> +	ret = create_map_attrs(tz, indx);
+> +	if (ret) {
+> +		kfree(tz->map_attr[indx]);
+> +		goto exit;
+> +	}
+> +
+> +	tz->map[indx] = map;
+> +exit:
+> +	mutex_unlock(&zone_list_lock);
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL(add_map_entry);
+> +
+>  int add_sensor_to_zone(struct thermal_zone *tz, struct thermal_sensor *ts)
+>  {
+>  	int ret;
+> @@ -2243,8 +2458,10 @@ void thermal_sensor_unregister(struct thermal_sensor *ts)
+>  
+>  	mutex_lock(&zone_list_lock);
+>  
+> -	for_each_thermal_zone(tz)
+> +	for_each_thermal_zone(tz) {
+>  		remove_sensor_from_zone(tz, ts);
+> +		remove_sensor_map_entry(tz, ts);
+> +	}
+>  
+>  	mutex_unlock(&zone_list_lock);
+>  
+> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+> index 2f68018..4389599 100644
+> --- a/include/linux/thermal.h
+> +++ b/include/linux/thermal.h
+> @@ -60,6 +60,11 @@
+>  
+>  #define MAX_CDEVS_PER_ZONE		5
+>  
+> +#define NUM_MAP_ATTRS			5
+> +
+> +/* If we map each sensor with every possible cdev for a zone */
+> +#define MAX_MAPS_PER_ZONE	(MAX_SENSORS_PER_ZONE * MAX_CDEVS_PER_ZONE)
+> +
+>  struct thermal_sensor;
+>  struct thermal_zone_device;
+>  struct thermal_cooling_device;
+> @@ -167,6 +172,20 @@ struct thermal_attr {
+>  	char name[THERMAL_NAME_LENGTH];
+>  };
+>  
+> +struct thermal_map {
+> +	enum thermal_trip_type trip_type;
+> +	char cdev_name[THERMAL_NAME_LENGTH];
+> +	char sensor_name[THERMAL_NAME_LENGTH];
+> +
+> +	int trip_mask;
+> +	int num_weights;
+> +	int *weights;
+> +};
+> +
+> +struct thermal_map_attr {
+> +	struct thermal_attr attrs[NUM_MAP_ATTRS];
+> +};
+> +
+>  /*
+>   * This structure defines the trip points for a sensor.
+>   * The actual values for these trip points come from
+> @@ -256,6 +275,10 @@ struct thermal_zone {
+>  	/* Thermal sensors trip information */
+>  	struct thermal_trip_point *sensor_trip[MAX_SENSORS_PER_ZONE];
+>  	struct thermal_trip_attr *trip_attr[MAX_SENSORS_PER_ZONE];
+> +
+> +	/* Thermal map information */
+> +	struct thermal_map *map[MAX_MAPS_PER_ZONE];
+> +	struct thermal_map_attr *map_attr[MAX_MAPS_PER_ZONE];
+>  };
+>  
+>  /* Structure that holds thermal governor information */
+> @@ -341,6 +364,8 @@ struct thermal_cooling_device *get_cdev_by_name(const char *);
+>  int add_sensor_trip_info(struct thermal_zone *, struct thermal_sensor *,
+>  			struct thermal_trip_point *);
+>  
+> +int add_map_entry(struct thermal_zone *, struct thermal_map *);
+> +
+>  #ifdef CONFIG_NET
+>  extern int thermal_generate_netlink_event(struct thermal_zone_device *tz,
+>  						enum events event);
+
+
