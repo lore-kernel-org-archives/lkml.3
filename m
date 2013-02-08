@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946216Ab3BHKrX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 05:47:23 -0500
-Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:58726 "EHLO
-	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964789Ab3BHKqu (ORCPT
+	id S1946231Ab3BHKuc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 05:50:32 -0500
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:52539 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161046Ab3BHKua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 05:46:50 -0500
-From: Vijay Kumar Mishra <vijay.kumar@st.com>
-To: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Cc: <spear-devel@codex.cro.st.com>, <viresh.kumar@linaro.org>,
-        Vijay Kumar Mishra <vijay.kumar@st.com>
-Subject: [PATCH 3/3] SPEAr13xx_defconfig: Enable compilation using the latest
-Date: Fri, 8 Feb 2013 16:16:31 +0530
-Message-ID: <4d1cdf05ed312af2d8004496765f8fc82c27f2c1.1360317993.git.vijay.kumar@st.com>
-X-Mailer: git-send-email 1.6.0.2
-In-Reply-To: <cover.1360317993.git.vijay.kumar@st.com>
-References: <cover.1360317993.git.vijay.kumar@st.com>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+	Fri, 8 Feb 2013 05:50:30 -0500
 MIME-Version: 1.0
+In-Reply-To: <6cebd9755011670ecaeec7930b3fa7ed0f16b3b6.1360317993.git.vijay.kumar@st.com>
+References: <cover.1360317993.git.vijay.kumar@st.com>
+	<6cebd9755011670ecaeec7930b3fa7ed0f16b3b6.1360317993.git.vijay.kumar@st.com>
+Date: Fri, 8 Feb 2013 16:20:29 +0530
+Message-ID: <CAKohpokPhHtuDDBPUYp9YPOrEnaaKxthjiAemq74qfour_3aYQ@mail.gmail.com>
+Subject: Re: [PATCH 1/3] SPEAr13xx_defconfig: Enable Memory split 2G/2G needed
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Vijay Kumar Mishra <vijay.kumar@st.com>
+Cc: linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This Patch is to enable CONFIG_AEABI option in kernel. Which basically adds
-support for latest ARMABI (EABI).
+Hi Vijay,
 
-It also include support for changes the kernel syscall calling convention to
-disambiguate both ABIs and allow for backward compatibility support.
+By mistake you have added an ST internal list in cc, fixed it now.
 
-Without this option the kernel crashes. Crash log is below:
+Subject should be:
 
-Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000004
-Exception stack(0xbf873f64 to 0xbf873fac)
-3f60:          00000020 804725b4 00000001 00000000 bf872000 80498684 803308bc
-3f80: 80474fe8 bf872000 412fc091 00000000 bf873fb8 bf873fbc bf873fac 80009c50
-3fa0: 80009c54 60000113 ffffffff
- r7:bf873f98 r6:ffffffff r5:60000113 r4:80009c54
-[<80009c24>] (default_idle+0x0/0x38) from [<80009e24>] (cpu_idle+0xac/0xf0)
-[<80009d78>] (cpu_idle+0x0/0xf0) from [<803277ec>]
-(secondary_start_kernel+0xec/0x10c)
- r8:0000406a r7:80498950 r6:10c03c7d r5:00000001 r4:80478bd0
-[<80327700>] (secondary_start_kernel+0x0/0x10c) from [<00326dc8>] (0x326dc8)
- r5:0
----
- arch/arm/configs/spear13xx_defconfig |    1 +
- 1 file changed, 1 insertion(+)
+ARM: SPEAr13xx: Enable 2G/2G Memory split in defconfig
 
-diff --git a/arch/arm/configs/spear13xx_defconfig b/arch/arm/configs/spear13xx_defconfig
-index 1b5ceff..4e2866d 100644
---- a/arch/arm/configs/spear13xx_defconfig
-+++ b/arch/arm/configs/spear13xx_defconfig
-@@ -15,6 +15,7 @@ CONFIG_SMP=y
- # CONFIG_SMP_ON_UP is not set
- # CONFIG_ARM_CPU_TOPOLOGY is not set
- CONFIG_VMSPLIT_2G=y
-+CONFIG_AEABI=y
- CONFIG_ARM_APPENDED_DTB=y
- CONFIG_ARM_ATAG_DTB_COMPAT=y
- CONFIG_BINFMT_MISC=y
--- 
-1.7.9.5
+On 8 February 2013 16:16, Vijay Kumar Mishra <vijay.kumar@st.com> wrote:
+> Memory split 2G/2G is enabled as needed for SPEAr1310 RevC board to boot.
+> Before enabling this option the boot was hanging at uncompressing linux.
+> ---
+>  arch/arm/configs/spear13xx_defconfig |    4 +---
+>  1 file changed, 1 insertion(+), 3 deletions(-)
+>
+> diff --git a/arch/arm/configs/spear13xx_defconfig b/arch/arm/configs/spear13xx_defconfig
+> index 1fdb826..1b5ceff 100644
+> --- a/arch/arm/configs/spear13xx_defconfig
+> +++ b/arch/arm/configs/spear13xx_defconfig
+> @@ -14,13 +14,13 @@ CONFIG_MACH_SPEAR1340=y
+>  CONFIG_SMP=y
+>  # CONFIG_SMP_ON_UP is not set
+>  # CONFIG_ARM_CPU_TOPOLOGY is not set
+> +CONFIG_VMSPLIT_2G=y
+>  CONFIG_ARM_APPENDED_DTB=y
+>  CONFIG_ARM_ATAG_DTB_COMPAT=y
+>  CONFIG_BINFMT_MISC=y
+>  CONFIG_NET=y
+>  CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
+>  CONFIG_MTD=y
 
+> -CONFIG_MTD_OF_PARTS=y
+> -# CONFIG_HID_SUPPORT is not set
+> -# CONFIG_USB_DEVICE_CLASS is not set
+
+Unrelated chages. Don't get them in next time. In case they
+just got added automatically because you did and make savedefconfig,
+do a make savedefconfig before any of these patches to make things
+stable for all SPEAr SoCs. And then add these patches.
