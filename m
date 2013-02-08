@@ -1,106 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946668Ab3BHPto (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 10:49:44 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33720 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1946635Ab3BHPtm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 10:49:42 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CALLzPKYhmkyAobun4FhJv55ZpgOXg=fESWKvtfVpVeWR9jp88g@mail.gmail.com>
-References: <cover.1360067333.git.dmitry.kasatkin@intel.com> <cc87f1242960fad1a9fb44bcec331915e14c832b.1360067333.git.dmitry.kasatkin@intel.com> <20130205203616.GA8228@fenchurch.internal.datastacks.com> <CALLzPKaTExm=eJ_f4x4NUROk83wDHQy0osexd4QqvHODd9ZPwA@mail.gmail.com> <5111E44C.2040308@zytor.com> <CALLzPKZRiWR1gBt4x9PM0pzAB6KVaE0ViEjLJLdVYk+==SSjHQ@mail.gmail.com> <22d54b6d-6342-4826-bb93-c9fc46f2041a@email.android.com> <CALLzPKYhmkyAobun4FhJv55ZpgOXg=fESWKvtfVpVeWR9jp88g@mail.gmail.com>
+	id S1946678Ab3BHPvd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 10:51:33 -0500
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:45725 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946654Ab3BHPvb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 10:51:31 -0500
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [RFC 2/2] initramfs with digital signature protection
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Fri, 08 Feb 2013 07:49:26 -0800
-To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-CC: Peter Jones <pjones@redhat.com>, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <6b31c4f9-d98c-42fc-a510-39bf536b3299@email.android.com>
+In-Reply-To: <20130207190754.GB25223@gmail.com>
+References: <1360175338-6735-1-git-send-email-fweisbec@gmail.com>
+	<1360205415.2621.60.camel@gandalf.local.home>
+	<20130207111025.GD8945@gmail.com>
+	<CAFTL4hySiyn8Ci6XKFSRsMr7FabgpwSbOuNDP_GsefFDsbT2Cg@mail.gmail.com>
+	<20130207190754.GB25223@gmail.com>
+Date: Fri, 8 Feb 2013 16:51:29 +0100
+Message-ID: <CAFTL4hwKzcNEr8G1h1SErhwxAuQKR3rEX3cxxCyxf_LFHudL0Q@mail.gmail.com>
+Subject: Re: [ANNOUNCE] 3.8-rc6-nohz4
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes, but you can't umount rootfs.
-
-"Kasatkin, Dmitry" <dmitry.kasatkin@intel.com> wrote:
-
->On Wed, Feb 6, 2013 at 6:41 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> The cleanup is not a umount, it is actually a tree walk unlinking the
->contents.
+2013/2/7 Ingo Molnar <mingo@kernel.org>:
+>
+> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>
+>> 2013/2/7 Ingo Molnar <mingo@kernel.org>:
+>> >
+>> > * Steven Rostedt <rostedt@goodmis.org> wrote:
+>> >
+>> >> I'll reply to this as I come up with comments.
+>> >>
+>> >> First thing is, don't call it NO_HZ_FULL. A better name would
+>> >> be NO_HZ_CPU. I would like to reserve NO_HZ_FULL when we
+>> >> totally remove jiffies :-)
+>> >
+>> > I don't think we want yet another config option named in a
+>> > weird way.
+>> >
+>> > What we want instead is to just split NO_HZ up into its
+>> > conceptual parts:
+>> >
+>> >    CONFIG_NO_HZ_IDLE
 >>
+>> Renaming CONFIG_NO_HZ to CONFIG_NO_HZ_IDLE is something I
+>> considered. I was just worried about this option being present
+>> in many defconfig.
 >
->Please see that umounting ramfs releases the memory.
->There was no forced cleanup.
->"cp" copied about 2GB of content.
->After umounting we got 2GB back to free RAM...
+> I don't think renaming it is an option - it's present not just
+> in defconfigs, but in various distro configs, etc.
 >
->kds@kds:~$ sudo mount -t ramfs testramfs /test
->kds@kds:~$ sudo cp -r /usr/ /test
->kds@kds:~$ du -sm /test
->2154    /test
->kds@kds:~$ free
->                       total       used            free     shared
->buffers     cached
->Mem:       8058600    7855780     202820          0      24768   
->4819136
->-/+ buffers/cache:    3011876    5046724
->Swap:            0          0          0
->kds@kds:~$ sudo umount /test
->kds@kds:~$ free
->                      total       used            free     shared
->buffers     cached
->Mem:       8058600    5644864    2413736          0      25268   
->2623956
->-/+ buffers/cache:    2995640    5062960
->Swap:            0          0          0
->
->The same happens also with tmpfs.
->
->- Dmitry
->
->> "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com> wrote:
->>
->>>On Wed, Feb 6, 2013 at 7:04 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->>>> On 02/05/2013 02:09 PM, Kasatkin, Dmitry wrote:
->>>>>
->>>>>
->>>>> It should not be like that. Actually when pre-init exits, cleanup
->>>code
->>>>> umount tmpfs, which in turn cleanups the RAM.
->>>>>
->>>>
->>>> It doesn't quite... the rootfs is permanent.  This is also only one
->>>usage
->>>> mode: there are quite a few Linux systems running directly out of
->>>initramfs.
->>>>
->>>
->>>rootfs is not permanent when it is ramfs. It is cleaned up on switch
->>>root.
->>>It is easy to find out that it is empty by mounting : mount -t ramfs
->>>rootfs /mnt/
->>>
->>>In the case of running from normal storage, of course, there is
->>>ridicules remove the content.
->>>
->>>- Dmitry
->>>
->>>
->>>>         -hpa
->>>>
->>>>
->>>> --
->>>> H. Peter Anvin, Intel Open Source Technology Center
->>>> I work for Intel.  I don't speak on their behalf.
->>>>
->>
->> --
->> Sent from my mobile phone. Please excuse brevity and lack of
->formatting.
+> But we can add new config variables and use the existing
+> CONFIG_NO_HZ value to set their default values.
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+Sure.
+
+>> Note on my tree I stop the tick on both rings. I believe that
+>> restarting the tick on kernel entry isn't something we should
+>> seriously consider. It would be a costly operation that may
+>> make things worse. And in fact there is no big difference.
+>> Just kernelspace has more opportunities to be disturbed (RCU
+>> IPIs, async timer/work scheduled by the kernel, etc...) and
+>> get its tick restarted sometimes.
+>
+> Ok.
+>
+> Could we just simplify things and make this an unconditional
+> option of NO_HZ? Any reason why we'd want to make this
+> configurable, other than debugging?
+>
+> I'm worried about the proliferation of not easily separable
+> config options. We already have way too many timer and scheduler
+> options to begin with.
+
+Like Steve said, this is for overhead reasons. The syscall uses the
+slow path so that's ok. But we add a callback to every exception, irq
+entry/exit, scheduler sched switch, signal handling, user and kernel
+preemption point. This all could be lowered using static keys but even
+that doesn't make me feel comfortable with this idea.
+
+Moreover, for now this is going to be used only on extreme usecases
+such as real time and HPC. If we really have to merge this into an
+all-in-one nohz kconfig, I suggest we wait for the feature to mature a
+bit and prove that it can be useful further those specialized
+workloads, and also that we can ensure it's off-case overhead is not
+significant.
