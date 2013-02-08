@@ -1,244 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758101Ab3BHBvY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 20:51:24 -0500
-Received: from nasmtp02.atmel.com ([204.2.163.16]:5879 "EHLO
-	nasmtp02.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751537Ab3BHBvX (ORCPT
+	id S1758455Ab3BHBwd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 20:52:33 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:51938 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751864Ab3BHBwb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 20:51:23 -0500
-From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
-        "richard.genoud@gmail.com" <richard.genoud@gmail.com>,
-        "Lin, JM" <JM.Lin@atmel.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-Subject: RE: [v4 PATCH 12/12] ARM: dts: add spi nodes for the atmel boards
-Thread-Topic: [v4 PATCH 12/12] ARM: dts: add spi nodes for the atmel boards
-Thread-Index: AQHN8irD1CwgvSpvHUWfH15IC76BbZhrSY4AgADiliCAAydTIA==
-Date: Fri, 8 Feb 2013 01:51:09 +0000
-Message-ID: <B256D81BAE5131468A838E5D7A2436413A0875A3@penmbx02>
-References: <1358148877-18679-1-git-send-email-wenyou.yang@atmel.com>
- <1358148877-18679-13-git-send-email-wenyou.yang@atmel.com>
- <20130205195008.GA30595@game.jcrosoft.org> 
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.168.5.13]
-Content-Type: text/plain; charset="gb2312"
-MIME-Version: 1.0
+	Thu, 7 Feb 2013 20:52:31 -0500
+Date: Fri, 8 Feb 2013 12:52:20 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Wim Van Sebroeck <wim@iguana.be>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Fabio Baltieri <fabio.baltieri@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>
+Subject: linux-next: manual merge of the watchdog tree with the mfd tree
+Message-Id: <20130208125220.37a34d89ea4cc7e43b27cf4e@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__8_Feb_2013_12_52_20_+1100_/5hTjrN9Ff9/3T=m"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r181pgKW000838
 
-Hello, JC
+--Signature=_Fri__8_Feb_2013_12_52_20_+1100_/5hTjrN9Ff9/3T=m
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> -----Original Message-----
-> From: Yang, Wenyou
-> Sent: 2013ƒÍ2‘¬6»’ 9:35
-> To: 'Jean-Christophe PLAGNIOL-VILLARD'
-> Cc: linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org; Ferre,
-> Nicolas; richard.genoud@gmail.com; Lin, JM; linux@arm.linux.org.uk
-> Subject: RE: [v4 PATCH 12/12] ARM: dts: add spi nodes for the atmel boards
-> 
-> 
-> 
-> > -----Original Message-----
-> > From: Jean-Christophe PLAGNIOL-VILLARD [mailto:plagnioj@jcrosoft.com]
-> > Sent: 2013ƒÍ2‘¬6»’ 3:50
-> > To: Yang, Wenyou
-> > Cc: linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org;
-> Ferre,
-> > Nicolas; richard.genoud@gmail.com; Lin, JM; linux@arm.linux.org.uk
-> > Subject: Re: [v4 PATCH 12/12] ARM: dts: add spi nodes for the atmel boards
-> >
-> > On 15:34 Mon 14 Jan     , Wenyou Yang wrote:
-> > > From: Richard Genoud <richard.genoud@gmail.com>
-> > >
-> > > Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
-> > > [wenyou.yang@atmel.com: added spi nodes for the sam9263ek,
-> sam9g20ek,
-> > sam9m10g45ek and sam9n12ek boards]
-> > > Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
-> > > Cc: linux@arm.linux.org.uk
-> > > ---
-> > >  arch/arm/boot/dts/at91sam9263ek.dts         |   14
-> > ++++++++++++++
-> > >  arch/arm/boot/dts/at91sam9g20ek_common.dtsi |   14
-> > ++++++++++++++
-> > >  arch/arm/boot/dts/at91sam9m10g45ek.dts      |   14
-> > ++++++++++++++
-> > >  arch/arm/boot/dts/at91sam9n12ek.dts         |   14
-> > ++++++++++++++
-> > >  arch/arm/boot/dts/at91sam9x5ek.dtsi         |   14
-> ++++++++++++++
-> > >  5 files changed, 70 insertions(+)
-> > >
-> > > diff --git a/arch/arm/boot/dts/at91sam9263ek.dts
-> > b/arch/arm/boot/dts/at91sam9263ek.dts
-> > > index 1eb0872..63ba57b 100644
-> > > --- a/arch/arm/boot/dts/at91sam9263ek.dts
-> > > +++ b/arch/arm/boot/dts/at91sam9263ek.dts
-> > > @@ -79,6 +79,20 @@
-> > >  					};
-> > >  				};
-> > >  			};
-> > > +
-> > > +			spi0: spi@fffa4000 {
-> > > +				status = "okay";
-> > > +				cs-gpios = <&pioA 5 0
-> > > +					    &pioA 3 0
-> > > +					    &pioA 4 0
-> > > +					    &pioB 11 0
-> > NACK
-> >
-> > we no use that much as cs-gpios on this hw
-> 
-> Thanks for your feedback.
-> 
-> Listing the all choices for cs-gpios, one cs-gpio is selected by reg value.
-> Maybe listing one cs-gpio is OK.
-> I will try it.
-> 
-> I am going to dig the feasibility of removing cs-gpios.
+Hi Wim,
 
-I need remain the list of cs-gpios, because "master->num_chipselect" is got from the number of item of this list.
-If this list is removed, only the cs-gpio for used chip-select is provided , it works for CS0 chip-select, but it fails to work for other than CS0, e.g. CS1.
+Today's linux-next merge of the watchdog tree got conflicts in
+drivers/watchdog/Kconfig and drivers/watchdog/Makefile between commit
+699ff59052e7 ("watchdog: Add support for ux500_wdt watchdog") from the
+mfd tree and commit 77b709cb6c9d ("watchdog: introduce retu_wdt driver")
+from the watchdog tree.
 
-Could you give me some idea?
-Thank you in advance.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-> 
-> > > +					   >;
-> > > +				mtd_dataflash@0 {
-> > > +					compatible = "atmel,at45", "atmel,dataflash";
-> > > +					spi-max-frequency = <50000000>;
-> > > +					reg = <0>;
-> > > +				};
-> > > +			};
-> > >  		};
-> > >
-> > >  		nand0: nand@40000000 {
-> > > diff --git a/arch/arm/boot/dts/at91sam9g20ek_common.dtsi
-> > b/arch/arm/boot/dts/at91sam9g20ek_common.dtsi
-> > > index da15e83..49ad49e 100644
-> > > --- a/arch/arm/boot/dts/at91sam9g20ek_common.dtsi
-> > > +++ b/arch/arm/boot/dts/at91sam9g20ek_common.dtsi
-> > > @@ -96,6 +96,20 @@
-> > >  				status = "okay";
-> > >  				pinctrl-0 = <&pinctrl_ssc0_tx>;
-> > >  			};
-> > > +
-> > > +			spi0: spi@fffc8000 {
-> > > +				status = "okay";
-> > > +				cs-gpios = <&pioA 3 0
-> > > +					    &pioC 11 0
-> > > +					    &pioC 16 0
-> > > +					    &pioC 17 0
-> > ditto and so on
-> >
-> > you must only provife the gpio use by the hw
-> > > +					   >;
-> > > +				mtd_dataflash@0 {
-> > > +					compatible = "atmel,at45", "atmel,dataflash";
-> > > +					spi-max-frequency = <50000000>;
-> > > +					reg = <1>;
-> > > +				};
-> > > +			};
-> > >  		};
-> > >
-> > >  		nand0: nand@40000000 {
-> > > diff --git a/arch/arm/boot/dts/at91sam9m10g45ek.dts
-> > b/arch/arm/boot/dts/at91sam9m10g45ek.dts
-> > > index 20c3191..275f22d 100644
-> > > --- a/arch/arm/boot/dts/at91sam9m10g45ek.dts
-> > > +++ b/arch/arm/boot/dts/at91sam9m10g45ek.dts
-> > > @@ -102,6 +102,20 @@
-> > >  					};
-> > >  				};
-> > >  			};
-> > > +
-> > > +			spi0: spi@fffa4000{
-> > > +				status = "okay";
-> > > +				cs-gpios = <&pioB 3 0
-> > > +					    &pioB 18 0
-> > > +					    &pioB 19 0
-> > > +					    &pioD 27 0
-> > > +					   >;
-> > > +				mtd_dataflash@0 {
-> > > +					compatible = "atmel,at45", "atmel,dataflash";
-> > > +					spi-max-frequency = <13000000>;
-> > > +					reg = <0>;
-> > > +				};
-> > > +			};
-> > >  		};
-> > >
-> > >  		nand0: nand@40000000 {
-> > > diff --git a/arch/arm/boot/dts/at91sam9n12ek.dts
-> > b/arch/arm/boot/dts/at91sam9n12ek.dts
-> > > index 0376bf4..4eeca7b 100644
-> > > --- a/arch/arm/boot/dts/at91sam9n12ek.dts
-> > > +++ b/arch/arm/boot/dts/at91sam9n12ek.dts
-> > > @@ -67,6 +67,20 @@
-> > >  					};
-> > >  				};
-> > >  			};
-> > > +
-> > > +			spi0: spi@f0000000 {
-> > > +				status = "okay";
-> > > +				cs-gpios = <&pioA 14 0
-> > > +					    &pioA 7 0
-> > > +					    &pioA 1 0
-> > > +					    &pioB 3 0
-> > > +					   >;
-> > > +				m25p80@0 {
-> > > +					compatible = "atmel,at25df321a";
-> > > +					spi-max-frequency = <50000000>;
-> > > +					reg = <0>;
-> > > +				};
-> > > +			};
-> > >  		};
-> > >
-> > >  		nand0: nand@40000000 {
-> > > diff --git a/arch/arm/boot/dts/at91sam9x5ek.dtsi
-> > b/arch/arm/boot/dts/at91sam9x5ek.dtsi
-> > > index 8a7cf1d..ca0a056 100644
-> > > --- a/arch/arm/boot/dts/at91sam9x5ek.dtsi
-> > > +++ b/arch/arm/boot/dts/at91sam9x5ek.dtsi
-> > > @@ -84,6 +84,20 @@
-> > >  					};
-> > >  				};
-> > >  			};
-> > > +
-> > > +			spi0: spi@f0000000 {
-> > > +				status = "okay";
-> > > +				cs-gpios = <&pioA 14 0
-> > > +					    &pioA 7 0
-> > > +					    &pioA 1 0
-> > > +					    &pioB 3 0
-> > > +					   >;
-> > > +				m25p80@0 {
-> > > +					compatible = "atmel,at25df321a";
-> > > +					spi-max-frequency = <50000000>;
-> > > +					reg = <0>;
-> > > +				};
-> > > +			};
-> > >  		};
-> > >
-> > >  		usb0: ohci@00600000 {
-> > > --
-> > > 1.7.9.5
-> > >
-> 
-> Best Regards,
-> Wenyou Yang
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Best Regards,
-Wenyou Yang
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+diff --cc drivers/watchdog/Kconfig
+index 26e1fdb,3cc04ea..0000000
+--- a/drivers/watchdog/Kconfig
++++ b/drivers/watchdog/Kconfig
+@@@ -364,18 -366,18 +366,30 @@@ config IMX2_WD
+  	  To compile this driver as a module, choose M here: the
+  	  module will be called imx2_wdt.
+ =20
+ +config UX500_WATCHDOG
+ +	tristate "ST-Ericsson Ux500 watchdog"
+ +	depends on MFD_DB8500_PRCMU
+ +	select WATCHDOG_CORE
+ +	default y
+ +	help
+ +	  Say Y here to include Watchdog timer support for the watchdog
+ +	  existing in the prcmu of ST-Ericsson Ux500 series platforms.
+ +
+ +	  To compile this driver as a module, choose M here: the
+ +	  module will be called ux500_wdt.
+ +
++ config RETU_WATCHDOG
++ 	tristate "Retu watchdog"
++ 	depends on MFD_RETU
++ 	select WATCHDOG_CORE
++ 	help
++ 	  Retu watchdog driver for Nokia Internet Tablets (770, N800,
++ 	  N810). At least on N800 the watchdog cannot be disabled, so
++ 	  this driver is essential and you should enable it.
++=20
++ 	  To compile this driver as a module, choose M here: the
++ 	  module will be called retu_wdt.
++=20
+  # AVR32 Architecture
+ =20
+  config AT32AP700X_WDT
+diff --cc drivers/watchdog/Makefile
+index bec86ee,15813d4..0000000
+--- a/drivers/watchdog/Makefile
++++ b/drivers/watchdog/Makefile
+@@@ -52,7 -52,7 +52,8 @@@ obj-$(CONFIG_STMP3XXX_RTC_WATCHDOG) +=3D=20
+  obj-$(CONFIG_NUC900_WATCHDOG) +=3D nuc900_wdt.o
+  obj-$(CONFIG_TS72XX_WATCHDOG) +=3D ts72xx_wdt.o
+  obj-$(CONFIG_IMX2_WDT) +=3D imx2_wdt.o
+ +obj-$(CONFIG_UX500_WATCHDOG) +=3D ux500_wdt.o
++ obj-$(CONFIG_RETU_WATCHDOG) +=3D retu_wdt.o
+ =20
+  # AVR32 Architecture
+  obj-$(CONFIG_AT32AP700X_WDT) +=3D at32ap700x_wdt.o
+
+--Signature=_Fri__8_Feb_2013_12_52_20_+1100_/5hTjrN9Ff9/3T=m
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRFFpUAAoJEECxmPOUX5FE/qcQAIXdkPKndI8FxRq+tkXGNb2j
+RKpxsqrTni17WYa7rBUAS3eHcvL5PusqsLQjeYP7yfO+z4SKZ6brHRq12WZ3Hq7k
+dBfS3cFguqI2vL7+3+czCY17eRqO+T73roGHQfPRGLPA4TlDz1TjEkUZ4OcqAWLC
+O7fslWa9j32oIJyIN1BXfU7VmUtvvY+vbVKootypM3YzQruD5xx2J1xg0MSzMvz5
+mx/VxHP6T9lVhNex/EcwFSJAW9t/DjaW7ORsq7qsgD/JrK2bq3NYiU4Xz9+Kbb69
++iZgTXPdIsVlra/yos7H1pT7OI3AmMpN5ROrsWKZoqaMbalSi02Hrh2xPomoAekz
+AW9aYXGavtUNBXjTHJz5CSCytm6B9KhZDKvPY4/vSS9d5gKzskhctQHpkpUKQ72/
+7tRCQ4AHgiob6Bm0EBnyc5vxlcXCdX0/1VyKL9q5wgF5ZwStRRMjMjAEm7aM3Rkf
+QP/XatFqmNhj6GVtKg93KXIkduxI6lvWwbRENgm65E7eCLGB2CNu7UKR3pFOPBAk
+oC9UVpzyWkVwzfrPbZrtQmqsqp7vkAcTTbWZ63NpTqHR9fTx3uy4yHnZo09OsIqj
+D+w+DJr5sYBdn6EKw0uZrpG3kMaiEUQsFOca1bF2UDSDhfDhHbAJ7eYkE85aZdzo
+s8M1b0Drk284vtj02B2a
+=OQLJ
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__8_Feb_2013_12_52_20_+1100_/5hTjrN9Ff9/3T=m--
