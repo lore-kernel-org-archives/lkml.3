@@ -1,72 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757208Ab3BHAvZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 19:51:25 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:38939 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752553Ab3BHAvY (ORCPT
+	id S1757529Ab3BHAvw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 19:51:52 -0500
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:55083 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757307Ab3BHAvu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 19:51:24 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <51144BD4.7070804@jp.fujitsu.com>
-Date: Fri, 8 Feb 2013 09:50:28 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Thu, 7 Feb 2013 19:51:50 -0500
 MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: <rjw@sisk.pl>, <linux-acpi@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <bhelgaas@google.com>, <mika.westerberg@linux.intel.com>,
-        <matthew.garrett@nebula.com>, <yinghai@kernel.org>, <liuj97@gmail.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 01/02] ACPI: sysfs eject support for ACPI scan handlers
-References: <1360191056-13293-1-git-send-email-toshi.kani@hp.com> <1360191056-13293-2-git-send-email-toshi.kani@hp.com>
-In-Reply-To: <1360191056-13293-2-git-send-email-toshi.kani@hp.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <CANaxB-xmSiPfbUAh+rQSgVxBzTXmVQcC7U741WYKaasG3_yc5w@mail.gmail.com>
+References: <1358849741-9611-4-git-send-email-avagin@openvz.org>
+ <1359486181-29088-1-git-send-email-avagin@openvz.org> <20130207173447.GA5888@redhat.com>
+ <CANaxB-xmSiPfbUAh+rQSgVxBzTXmVQcC7U741WYKaasG3_yc5w@mail.gmail.com>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Fri, 8 Feb 2013 01:51:29 +0100
+Message-ID: <CAKgNAkhrtkfeq1+_W-fK1+H5=teSoCJEA7dzzg5kmyOFGvw92g@mail.gmail.com>
+Subject: Re: [PATCH 3/3] signalfd: add ability to read siginfo-s without
+ dequeuing signals (v2)
+To: Andrey Wagin <avagin@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        criu@openvz.org, linux-fsdevel@vger.kernel.org,
+        linux-api@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Toshi,
+On Thu, Feb 7, 2013 at 10:13 PM, Andrey Wagin <avagin@gmail.com> wrote:
+> 2013/2/7 Oleg Nesterov <oleg@redhat.com>:
+>> Andrey, sorry for delay.
+>>
+>> As for API, I leave this to you and Michael. Not that I like these
+>> new flags, but I agree that pread() hack was not pretty too.
+>>
+>> On 01/29, Andrey Vagin wrote:
 
-2013/02/07 7:50, Toshi Kani wrote:
-> Changed sysfs eject, acpi_eject_store(), to support ACPI scan handlers.
-> 
-> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-> ---
->   drivers/acpi/scan.c |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-> index cfd7a69..3ff632e 100644
-> --- a/drivers/acpi/scan.c
-> +++ b/drivers/acpi/scan.c
-> @@ -203,7 +203,7 @@ acpi_eject_store(struct device *d, struct device_attribute *attr,
->   		return -EINVAL;
->   	}
->   #ifndef FORCE_EJECT
+[...]
 
-> -	if (acpi_device->driver == NULL) {
-> +	if (!acpi_device->driver && !acpi_device->handler) {
+>>Damn. But after I wrote this email I realized that llseek() probably can't
+>> work. Because peek_offset/f_pos/whatever has to be shared with all processes
+>> which have this file opened.
+>>
+>> Suppose that the task forks after sys_signalfd(). Now if parent or child
+>> do llseek this affects them both. This is insane because signalfd is
+>> "strange" to say at least, fork/dup/etc inherits signalfd_ctx but not the
+>> "source" of the data.
 
-I don't understand the fix.
+(Good catch, Oleg.)
 
-The if sentence becomes true, when both acpi_device->driver and acpi_device->handler
-are NULL. It means that acpi_eject_store() runs if either acpi_device->driver or
-acpi_device->handler has pointer. Is it O.K.?
+> So I want to suggest a way how to forbid read() for SIGNALFD_PEEK.
+> file->f_pos can be initialized to -1. read() returns EINVAL in this
+> case. In a man page we will write that signals can be dumped only with
+> help pread(). Is it overload or too ugly?
 
-I think it should be if (!acpi_device->driver || !acpi_device->handler).
+>From an interface perspective I have no problem with limiting the API
+to allow just pread(). If we later decide that there is some way that
+the semantics using read() + lseek() could be sensible (which seems
+unlikely), we could relax things and allow read().
+
+[...]
+
+> Oleg, thank you for the comments. I'm waiting an answer on the
+> question and after that I'm going to send a final version.
+
+It would be nice if the new patch series has a changelog of the
+changes to date, and also includes a fairly detailed description of
+the user-space API. Would that be possible?
 
 Thanks,
-Yasuaki Ishimatsu
 
->   		ret = -ENODEV;
->   		goto err;
->   	}
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Michael
 
 
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface"; http://man7.org/tlpi/
