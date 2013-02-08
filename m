@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932322Ab3BHBFT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 20:05:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41990 "EHLO
+	id S1759729Ab3BHBFr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 20:05:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41986 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932235Ab3BHA6J (ORCPT
+	with ESMTP id S932231Ab3BHA6J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 7 Feb 2013 19:58:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Petr=20Kub=C3=A1nek?= <petr@kubanek.net>
-Subject: [ 12/26] USB: ftdi_sio: add Zolix FTDI PID
-Date: Thu,  7 Feb 2013 16:57:40 -0800
-Message-Id: <20130208004629.390698406@linuxfoundation.org>
+        Jan Luebbe <jlu@pengutronix.de>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 11/26] drivers/rtc/rtc-isl1208.c: call rtc_update_irq() from the alarm irq handler
+Date: Thu,  7 Feb 2013 16:57:39 -0800
+Message-Id: <20130208004629.213635217@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130208004627.258272404@linuxfoundation.org>
 References: <20130208004627.258272404@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,43 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Petr Kubánek <petr@kubanek.net>
+From: Jan Luebbe <jlu@pengutronix.de>
 
-commit 0ba3b2ccc72b3df5c305d61f59d93ab0f0e87991 upstream.
+commit 72fca4a4b32dc778b5b885c3498700e42b610d49 upstream.
 
-Add support for Zolix Omni 1509 monochromator custom USB-RS232 converter.
+Previously the alarm event was not propagated into the RTC subsystem.
+By adding a call to rtc_update_irq, this fixes a timeout problem with
+the hwclock utility.
 
-Signed-off-by: Petr Kubánek <petr@kubanek.net>
+Signed-off-by: Jan Luebbe <jlu@pengutronix.de>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    5 +++++
- 2 files changed, 6 insertions(+)
+ drivers/rtc/rtc-isl1208.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -676,6 +676,7 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_5_PID) },
- 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_6_PID) },
- 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_7_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_OMNI1509) },
- 	{ USB_DEVICE(MOBILITY_VID, MOBILITY_USB_SERIAL_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ACTIVE_ROBOTS_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_MHAM_KW_PID) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -147,6 +147,11 @@
- #define XSENS_CONVERTER_6_PID	0xD38E
- #define XSENS_CONVERTER_7_PID	0xD38F
+--- a/drivers/rtc/rtc-isl1208.c
++++ b/drivers/rtc/rtc-isl1208.c
+@@ -494,6 +494,7 @@ isl1208_rtc_interrupt(int irq, void *dat
+ {
+ 	unsigned long timeout = jiffies + msecs_to_jiffies(1000);
+ 	struct i2c_client *client = data;
++	struct rtc_device *rtc = i2c_get_clientdata(client);
+ 	int handled = 0, sr, err;
  
-+/**
-+ * Zolix (www.zolix.com.cb) product ids
-+ */
-+#define FTDI_OMNI1509			0xD491	/* Omni1509 embedded USB-serial */
+ 	/*
+@@ -516,6 +517,8 @@ isl1208_rtc_interrupt(int irq, void *dat
+ 	if (sr & ISL1208_REG_SR_ALM) {
+ 		dev_dbg(&client->dev, "alarm!\n");
+ 
++		rtc_update_irq(rtc, 1, RTC_IRQF | RTC_AF);
 +
- /*
-  * NDI (www.ndigital.com) product ids
-  */
+ 		/* Clear the alarm */
+ 		sr &= ~ISL1208_REG_SR_ALM;
+ 		sr = i2c_smbus_write_byte_data(client, ISL1208_REG_SR, sr);
 
 
