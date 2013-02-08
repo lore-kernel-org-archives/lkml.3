@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161101Ab3BHA75 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 19:59:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42041 "EHLO
+	id S1759657Ab3BHBAS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 20:00:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42039 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757315Ab3BHA6X (ORCPT
+	with ESMTP id S1945980Ab3BHA6X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 7 Feb 2013 19:58:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        fangxiaozhi <huananhu@huawei.com>
-Subject: [ 13/16] USB: storage: Define a new macro for USB storage match rules
-Date: Thu,  7 Feb 2013 16:58:12 -0800
-Message-Id: <20130208004629.472786346@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [ 12/16] USB: EHCI: fix bug in scheduling periodic split transfers
+Date: Thu,  7 Feb 2013 16:58:11 -0800
+Message-Id: <20130208004629.261587402@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130208004627.112511141@linuxfoundation.org>
 References: <20130208004627.112511141@linuxfoundation.org>
@@ -26,79 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: fangxiaozhi <huananhu@huawei.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 07c7be3d87e5cdaf5f94c271c516456364ef286c upstream.
+commit 3e619d04159be54b3daa0b7036b0ce9e067f4b5d upstream.
 
-1. Define a new macro for USB storage match rules:
-    matching with Vendor ID and interface descriptors.
+This patch (as1654) fixes a very old bug in ehci-hcd, connected with
+scheduling of periodic split transfers.  The calculations for
+full/low-speed bus usage are all carried out after the correction for
+bit-stuffing has been applied, but the values in the max_tt_usecs
+array assume it hasn't been.  The array should allow for allocation of
+up to 90% of the bus capacity, which is 900 us, not 780 us.
 
-Signed-off-by: fangxiaozhi <huananhu@huawei.com>
+The symptom caused by this bug is that any isochronous transfer to a
+full-speed device with a maxpacket size larger than about 980 bytes is
+always rejected with a -ENOSPC error.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/storage/usb.c          |   12 ++++++++++++
- drivers/usb/storage/usual-tables.c |   15 +++++++++++++++
- 2 files changed, 27 insertions(+)
+ drivers/usb/host/ehci-sched.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/storage/usb.c
-+++ b/drivers/usb/storage/usb.c
-@@ -120,6 +120,17 @@ MODULE_PARM_DESC(quirks, "supplemental l
- 	.useTransport = use_transport,	\
+--- a/drivers/usb/host/ehci-sched.c
++++ b/drivers/usb/host/ehci-sched.c
+@@ -236,7 +236,7 @@ static inline unsigned char tt_start_ufr
  }
  
-+#define UNUSUAL_VENDOR_INTF(idVendor, cl, sc, pr, \
-+		vendor_name, product_name, use_protocol, use_transport, \
-+		init_function, Flags) \
-+{ \
-+	.vendorName = vendor_name,	\
-+	.productName = product_name,	\
-+	.useProtocol = use_protocol,	\
-+	.useTransport = use_transport,	\
-+	.initFunction = init_function,	\
-+}
-+
- static struct us_unusual_dev us_unusual_dev_list[] = {
- #	include "unusual_devs.h" 
- 	{ }		/* Terminating entry */
-@@ -128,6 +139,7 @@ static struct us_unusual_dev us_unusual_
- #undef UNUSUAL_DEV
- #undef COMPLIANT_DEV
- #undef USUAL_DEV
-+#undef UNUSUAL_VENDOR_INTF
+ static const unsigned char
+-max_tt_usecs[] = { 125, 125, 125, 125, 125, 125, 30, 0 };
++max_tt_usecs[] = { 125, 125, 125, 125, 125, 125, 125, 25 };
  
- 
- #ifdef CONFIG_PM	/* Minimal support for suspend and resume */
---- a/drivers/usb/storage/usual-tables.c
-+++ b/drivers/usb/storage/usual-tables.c
-@@ -46,6 +46,20 @@
- { USB_INTERFACE_INFO(USB_CLASS_MASS_STORAGE, useProto, useTrans), \
-   .driver_info = ((useType)<<24) }
- 
-+/* Define the device is matched with Vendor ID and interface descriptors */
-+#define UNUSUAL_VENDOR_INTF(id_vendor, cl, sc, pr, \
-+			vendorName, productName, useProtocol, useTransport, \
-+			initFunction, flags) \
-+{ \
-+	.match_flags = USB_DEVICE_ID_MATCH_INT_INFO \
-+				| USB_DEVICE_ID_MATCH_VENDOR, \
-+	.idVendor    = (id_vendor), \
-+	.bInterfaceClass = (cl), \
-+	.bInterfaceSubClass = (sc), \
-+	.bInterfaceProtocol = (pr), \
-+	.driver_info = (flags) \
-+}
-+
- struct usb_device_id usb_storage_usb_ids[] = {
- #	include "unusual_devs.h"
- 	{ }		/* Terminating entry */
-@@ -57,6 +71,7 @@ MODULE_DEVICE_TABLE(usb, usb_storage_usb
- #undef UNUSUAL_DEV
- #undef COMPLIANT_DEV
- #undef USUAL_DEV
-+#undef UNUSUAL_VENDOR_INTF
- 
- 
- /*
+ /* carryover low/fullspeed bandwidth that crosses uframe boundries */
+ static inline void carryover_tt_bandwidth(unsigned short tt_usecs[8])
 
 
