@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946033Ab3BHBOj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 20:14:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41854 "EHLO
+	id S1945957Ab3BHBOh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 20:14:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41879 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756982Ab3BHA5r (ORCPT
+	with ESMTP id S1759433Ab3BHA5r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 7 Feb 2013 19:57:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sergey Alexandrov <splavgm@gmail.com>,
-        Vyacheslav Dubeyko <slava@dubeyko.com>,
-        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
+        Zhigang Lu <zlu@tilera.com>, Chris Metcalf <cmetcalf@tilera.com>,
+        Michal Hocko <mhocko@suse.cz>, Hillf Danton <dhillf@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 14/34] nilfs2: fix fix very long mount time issue
-Date: Thu,  7 Feb 2013 16:57:10 -0800
-Message-Id: <20130208004629.908471684@linuxfoundation.org>
+Subject: [ 15/34] mm/hugetlb: set PTE as huge in hugetlb_change_protection and remove_migration_pte
+Date: Thu,  7 Feb 2013 16:57:11 -0800
+Message-Id: <20130208004630.049628857@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130208004627.375461662@linuxfoundation.org>
 References: <20130208004627.375461662@linuxfoundation.org>
@@ -30,80 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vyacheslav Dubeyko <slava@dubeyko.com>
+From: Tony Lu <zlu@tilera.com>
 
-commit a9bae189542e71f91e61a4428adf6e5a7dfe8063 upstream.
+commit be7517d6ab9722f0abad6ba5ffd39cfced95549c upstream.
 
-There exists a situation when GC can work in background alone without
-any other filesystem activity during significant time.
+When setting a huge PTE, besides calling pte_mkhuge(), we also need to
+call arch_make_huge_pte(), which we indeed do in make_huge_pte(), but we
+forget to do in hugetlb_change_protection() and remove_migration_pte().
 
-The nilfs_clean_segments() method calls nilfs_segctor_construct() that
-updates superblocks in the case of NILFS_SC_SUPER_ROOT and
-THE_NILFS_DISCONTINUED flags are set.  But when GC is working alone the
-nilfs_clean_segments() is called with unset THE_NILFS_DISCONTINUED flag.
-As a result, the update of superblocks doesn't occurred all this time
-and in the case of SPOR superblocks keep very old values of last super
-root placement.
-
-SYMPTOMS:
-
-Trying to mount a NILFS2 volume after SPOR in such environment ends with
-very long mounting time (it can achieve about several hours in some
-cases).
-
-REPRODUCING PATH:
-
-1. It needs to use external USB HDD, disable automount and doesn't
-   make any additional filesystem activity on the NILFS2 volume.
-
-2. Generate temporary file with size about 100 - 500 GB (for example,
-   dd if=/dev/zero of=<file_name> bs=1073741824 count=200).  The size of
-   file defines duration of GC working.
-
-3. Then it needs to delete file.
-
-4. Start GC manually by means of command "nilfs-clean -p 0".  When you
-   start GC by means of such way then, at the end, superblocks is updated
-   by once.  So, for simulation of SPOR, it needs to wait sometime (15 -
-   40 minutes) and simply switch off USB HDD manually.
-
-5. Switch on USB HDD again and try to mount NILFS2 volume.  As a
-   result, NILFS2 volume will mount during very long time.
-
-REPRODUCIBILITY: 100%
-
-FIX:
-
-This patch adds checking that superblocks need to update and set
-THE_NILFS_DISCONTINUED flag before nilfs_clean_segments() call.
-
-Reported-by: Sergey Alexandrov <splavgm@gmail.com>
-Signed-off-by: Vyacheslav Dubeyko <slava@dubeyko.com>
-Tested-by: Vyacheslav Dubeyko <slava@dubeyko.com>
-Acked-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Tested-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Signed-off-by: Zhigang Lu <zlu@tilera.com>
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Hillf Danton <dhillf@gmail.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nilfs2/ioctl.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ mm/hugetlb.c |    1 +
+ mm/migrate.c |    4 +++-
+ 2 files changed, 4 insertions(+), 1 deletion(-)
 
---- a/fs/nilfs2/ioctl.c
-+++ b/fs/nilfs2/ioctl.c
-@@ -664,8 +664,11 @@ static int nilfs_ioctl_clean_segments(st
- 	if (ret < 0)
- 		printk(KERN_ERR "NILFS: GC failed during preparation: "
- 			"cannot read source blocks: err=%d\n", ret);
--	else
-+	else {
-+		if (nilfs_sb_need_update(nilfs))
-+			set_nilfs_discontinued(nilfs);
- 		ret = nilfs_clean_segments(inode->i_sb, argv, kbufs);
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -3028,6 +3028,7 @@ void hugetlb_change_protection(struct vm
+ 		if (!huge_pte_none(huge_ptep_get(ptep))) {
+ 			pte = huge_ptep_get_and_clear(mm, address, ptep);
+ 			pte = pte_mkhuge(pte_modify(pte, newprot));
++			pte = arch_make_huge_pte(pte, vma, NULL, 0);
+ 			set_huge_pte_at(mm, address, ptep, pte);
+ 		}
+ 	}
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -143,8 +143,10 @@ static int remove_migration_pte(struct p
+ 	if (is_write_migration_entry(entry))
+ 		pte = pte_mkwrite(pte);
+ #ifdef CONFIG_HUGETLB_PAGE
+-	if (PageHuge(new))
++	if (PageHuge(new)) {
+ 		pte = pte_mkhuge(pte);
++		pte = arch_make_huge_pte(pte, vma, new, 0);
 +	}
- 
- 	nilfs_remove_all_gcinodes(nilfs);
- 	clear_nilfs_gc_running(nilfs);
+ #endif
+ 	flush_cache_page(vma, addr, pte_pfn(pte));
+ 	set_pte_at(mm, addr, ptep, pte);
 
 
