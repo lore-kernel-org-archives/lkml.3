@@ -1,89 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760355Ab3BHUl2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 15:41:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26321 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760255Ab3BHUl1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 15:41:27 -0500
-Date: Fri, 8 Feb 2013 15:40:38 -0500
-From: Josh Boyer <jwboyer@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
+	id S1947049Ab3BHUp4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 15:45:56 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:53653 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946959Ab3BHUpy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 15:45:54 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Josh Boyer <jwboyer@redhat.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         Al Viro <viro@zeniv.linux.org.uk>, Mel Gorman <mgorman@suse.de>,
         linux-kernel@vger.kernel.org, williams@redhat.com
-Subject: Re: Odd ENOMEM being returned in 3.8-rcX
-Message-ID: <20130208204038.GG31684@hansolo.jdub.homelinux.org>
 References: <20130207215742.GB31684@hansolo.jdub.homelinux.org>
- <20130207141502.04625ea0.akpm@linux-foundation.org>
- <20130208003501.GC31684@hansolo.jdub.homelinux.org>
- <20130208181949.GD31684@hansolo.jdub.homelinux.org>
- <20130208201826.GE31684@hansolo.jdub.homelinux.org>
- <87fw16v8zr.fsf@xmission.com>
+	<20130207141502.04625ea0.akpm@linux-foundation.org>
+	<20130208003501.GC31684@hansolo.jdub.homelinux.org>
+	<20130208181949.GD31684@hansolo.jdub.homelinux.org>
+	<87k3qiwomi.fsf@xmission.com>
+	<20130208202314.GF31684@hansolo.jdub.homelinux.org>
+Date: Fri, 08 Feb 2013 12:45:47 -0800
+In-Reply-To: <20130208202314.GF31684@hansolo.jdub.homelinux.org> (Josh Boyer's
+	message of "Fri, 8 Feb 2013 15:23:14 -0500")
+Message-ID: <87r4kqttz8.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87fw16v8zr.fsf@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX18BlEzCe2x6ICKsUgCqKngh1Iny4OMd2mc=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	*  2.5 XMGppyBdWords BODY: Gappy or l33t words
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 FVGT_m_MULTI_ODD Contains multiple odd letter combinations
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  0.1 XMSolicitRefs_0 Weightloss drug
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: **;Josh Boyer <jwboyer@redhat.com>
+X-Spam-Relay-Country: 
+Subject: Re: Odd ENOMEM being returned in 3.8-rcX
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 08, 2013 at 12:36:08PM -0800, Eric W. Biederman wrote:
-> Josh Boyer <jwboyer@redhat.com> writes:
-> >> OK.  I've bisected this down to:
-> >> 
-> >> 50804fe3737ca6a5942fdc2057a18a8141d00141 is the first bad commit
-> >> commit 50804fe3737ca6a5942fdc2057a18a8141d00141
-> >> Author: Eric W. Biederman <ebiederm@xmission.com>
-> >> Date:   Tue Mar 2 15:41:50 2010 -0800
-> >> 
-> >>     pidns: Support unsharing the pid namespace.
-> >>     
-> >> 
-> >> I haven't really gotten much farther than that yet, but the bisect was
-> >> pretty straight forward.  Eric, is there anything specific I can gather
-> >> or do to help figure out why that is causing mock to get such a weird
-> >> error?  I can provide the bisect log if you'd like.
-> >
-> > I took a look at what mock was doing and it was mostly very simple
-> > stuff.  The two exceptions were that it was calling unshare, then doing
-> > some file checks and I/O, and then calling fork to exec off some helper
-> > things.  Up until the point it fails, the forks work and the children go
-> > do whatever it is they were supposed to do.  I've CC'd Clark Williams
-> > just in case people have questions on mock itself, but I'm not sure that
-> > will be needed.
-> 
-> Our emails crossed paths.  You have just confirmed my suspicion about
-> what was going wrong.
-> 
-> The practical question is why mock is calling unshare(CLONE_NEWPID)
-> because it clearly seems not to understand how to unshare the pid
-> namespace and use it that way.
+Josh Boyer <jwboyer@redhat.com> writes:
 
-I don't know either, and I've CC'd Clark on this thread now (again for
-real this time).
+> < Two emails fly past each other in the night >
 
-> Except for forgeting to reenable irqs in the failure path of alloc_pid
-> the behavior is exactly correct and is how the pid namespace is designed
-> to behave in the case of unshare.
+Yep.
 
-Well... ok.  Personally, I'm confused why mock was working before that
-commit and now it doesn't.  Were we just buggy in the kernel prior to
-that?
+>> My best guess in some dark corner of mock has untested code to unshare a
+>> pid namespace, and that corner started doing something now that
+>> unsharing of the pid namespace actually works.
+>> 
+>> If mock has called unshare(CLONE_NEWPID). And then forked a process and
+>> that process exited, and then forked anothe process that second and all
+>> subsequent fork calls will fail with -ENOMEM (because init has exited in
+>> the pid namespace).  -ENOMEM will be generated because of a failure of
+>> alloc_pid.
+>> 
+>> Looking at that code path a little closer that just about has to be it,
+>> because I goofed and the error path drops the lock but not irqs.  The
+>> patch below should fix the nasty warning and confirm where the code is
+>> failing in copy_process.
+>
+> OK.  I'll turn the debug option back on and give this patch a try.
 
-> > which is consistent with what mock is seeing.  If I comment out the call
-> > to unshare, it seems to always work.  It seems to consistently fail with
-> > ENOMEM after the first 3-5 forked children, but it varies within that
-> > range.
-> 
-> If you add a waitpid or space out your forks you will see that it always
-> fails after your first child in the pid namespace has exited.
-> 
-> We don't allow children in a pid namespace after fork has exited.
+Thanks.  Your minimal test case also confirms my hunch. But we should
+fix the error path as well.
 
-Hm.  Mock seems to make it a ways along as well though, and it isn't
-doing rapid fire fork/exec.  I believe it's forking helpers and waiting
-for them to return before continuing on.
+>> An strace to see which syscalls mock is making and with which flags
+>> would be very interesting.  I am almost certain that there is a
+>> unshare(CLONE_NEWPID) somewhere in there.  But in a remote corner of
+>> possibility it could weird clone flags, or something else.
+>
+> Oh, I have that but it's a python app with a helper C app and it's a...
+> verbose strace.  It's here for one failure:
+>
+> http://jwboyer.fedorapeople.org/pub/mock-strace
+>
+> Hopefully the testcase from my other email will help though.  It's much
+> simpler.
 
-josh
+Yes.  Your other test case confirms my patch you bisected this to is
+working correctly.
+
+>> Beyond that I suspect we want to work with the mock folks so they get
+>> their code to use a pid namespace working the way they intended.
+>
+> Right.  CC'd Clark (for real this time).
+>
+> I'll let you know on the patch.
+
+Cool.  Looking at the strace I can't figure out what mock expected
+to happen or how mock was working before this.  As mock is calling
+unshare(CLONE_NEWNS|CLONE_NEWUTS|CLONE_NEWIPC|CLONE_NEWPID) all in one
+go.
+
+Previous to my patch enabling CLONE_NEWPID that would cause the unshare
+to fail.
+
+So it looks mock is taking a buggy untested code path and things are not
+working as it expected.
+
+Eric
+
