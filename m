@@ -1,118 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759957Ab3BHHar (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 02:30:47 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:11518 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751222Ab3BHHap (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 02:30:45 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 07 Feb 2013 23:30:38 -0800
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: <linux-tegra@vger.kernel.org>
-CC: <arnd@arndb.de>, Hiroshi Doyu <hdoyu@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
+	id S1946063Ab3BHHa4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 02:30:56 -0500
+Received: from mga11.intel.com ([192.55.52.93]:16750 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751287Ab3BHHax (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 02:30:53 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,627,1355126400"; 
+   d="scan'208";a="288179801"
+Date: Fri, 8 Feb 2013 09:34:28 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: zergmk2 <zergmk2@gmail.com>, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Eric Miao <eric.y.miao@gmail.com>,
         Russell King <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/4] ARM: tegra: Unify board-dt-tegra{20,30}.c to tegra.c
-Date: Fri, 8 Feb 2013 09:29:33 +0200
-Message-ID: <1360308574-19658-4-git-send-email-hdoyu@nvidia.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1360308574-19658-1-git-send-email-hdoyu@nvidia.com>
-References: <1360308574-19658-1-git-send-email-hdoyu@nvidia.com>
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, chao.bi@intel.com,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>, cxie4@marvell.com,
+        ytang5@marvell.com
+Subject: Re: [PATCH v3 00/10] spi/pxa2xx: add Intel Lynxpoint SPI controller
+ support
+Message-ID: <20130208073428.GG20771@intel.com>
+References: <1358850393-23111-1-git-send-email-mika.westerberg@linux.intel.com>
+ <CACb1VKtD+pc5cAJAqBg82uCXH_icm9fk1yLB_UnwmEq4Lq-NVQ@mail.gmail.com>
+ <20130201102247.GM869@intel.com>
+ <20130204094548.GA4720@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130204094548.GA4720@opensource.wolfsonmicro.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Refactored that Tegra{20,30,114} use the same board file.
+Hi Mark/Grant,
 
-Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
----
- arch/arm/mach-tegra/Makefile                       |    5 ++--
- .../arm/mach-tegra/{board-dt-tegra30.c => tegra.c} |   27 ++++++++++----------
- 2 files changed, 15 insertions(+), 17 deletions(-)
- rename arch/arm/mach-tegra/{board-dt-tegra30.c => tegra.c} (71%)
+On Mon, Feb 04, 2013 at 05:45:49PM +0800, Mark Brown wrote:
+> On Fri, Feb 01, 2013 at 12:22:47PM +0200, Mika Westerberg wrote:
+> 
+> > Mark, thank you for applying patches 1-4/10. Is there anything you want me
+> > to do for the rest of the patches in order to get those merged?
+> 
+> I stopped at patch 4 mostly because it's very large but also because you
+> said you were hoping for an ack from Linus.
 
-diff --git a/arch/arm/mach-tegra/Makefile b/arch/arm/mach-tegra/Makefile
-index 1a08ecd..ee866337 100644
---- a/arch/arm/mach-tegra/Makefile
-+++ b/arch/arm/mach-tegra/Makefile
-@@ -27,9 +27,8 @@ obj-$(CONFIG_HOTPLUG_CPU)               += hotplug.o
- obj-$(CONFIG_CPU_FREQ)                  += cpu-tegra.o
- obj-$(CONFIG_TEGRA_PCI)			+= pcie.o
- 
--obj-$(CONFIG_ARCH_TEGRA_2x_SOC)		+= board-dt-tegra20.o
--obj-$(CONFIG_ARCH_TEGRA_3x_SOC)		+= board-dt-tegra30.o
--obj-$(CONFIG_ARCH_TEGRA_114_SOC)	+= board-dt-tegra30.o
-+obj-y					+= tegra.o
-+
- ifeq ($(CONFIG_CPU_IDLE),y)
- obj-$(CONFIG_ARCH_TEGRA_114_SOC)	+= cpuidle-tegra114.o
- endif
-diff --git a/arch/arm/mach-tegra/board-dt-tegra30.c b/arch/arm/mach-tegra/tegra.c
-similarity index 71%
-rename from arch/arm/mach-tegra/board-dt-tegra30.c
-rename to arch/arm/mach-tegra/tegra.c
-index 82cd85c..62ae39a 100644
---- a/arch/arm/mach-tegra/board-dt-tegra30.c
-+++ b/arch/arm/mach-tegra/tegra.c
-@@ -1,14 +1,7 @@
- /*
-- * arch/arm/mach-tegra/board-dt-tegra30.c
-- *
-- * NVIDIA Tegra30 device tree board support
-+ * NVIDIA Tegra SoC device tree board support
-  *
-  * Copyright (C) 2011, 2013, NVIDIA Corporation
-- *
-- * Derived from:
-- *
-- * arch/arm/mach-tegra/board-dt-tegra20.c
-- *
-  * Copyright (C) 2010 Secret Lab Technologies, Ltd.
-  * Copyright (C) 2010 Google, Inc.
-  *
-@@ -37,25 +30,31 @@
- #include "common.h"
- #include "iomap.h"
- 
--static void __init tegra30_dt_init(void)
-+static struct of_dev_auxdata tegra_auxdata_lookup[] __initdata = {
-+	{},
-+};
-+
-+static void __init tegra_dt_init(void)
- {
--	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
-+	of_platform_populate(NULL, of_default_bus_match_table,
-+			     tegra_auxdata_lookup, NULL);
- }
- 
--static const char *tegra30_dt_board_compat[] = {
-+static const char * const tegra_dt_board_compat[] = {
-+	"nvidia,tegra20",
- 	"nvidia,tegra30",
- 	"nvidia,tegra114",
- 	NULL
- };
- 
--DT_MACHINE_START(TEGRA30_DT, "NVIDIA Tegra30/114 (Flattened Device Tree)")
-+DT_MACHINE_START(TEGRA_DT, "NVIDIA Tegra SoC (Flattened Device Tree)")
- 	.smp		= smp_ops(tegra_smp_ops),
- 	.map_io		= tegra_map_common_io,
- 	.init_early	= tegra_init_early,
- 	.init_irq	= tegra_dt_init_irq,
- 	.init_time	= clocksource_of_init,
--	.init_machine	= tegra30_dt_init,
-+	.init_machine	= tegra_dt_init,
- 	.init_late	= tegra_init_late,
- 	.restart	= tegra_assert_system_reset,
--	.dt_compat	= tegra30_dt_board_compat,
-+	.dt_compat	= tegra_dt_board_compat,
- MACHINE_END
--- 
-1.7.9.5
+It is large because I had to break out the private PXA DMA implementation
+from the driver and I'm not sure if it can be split into a smaller patches.
+The series has been tested on PXA by Lu Cao at Marvell and Linus W acked
+the DMA patches.
 
+Do you think you could take this for 3.9 or is there anything (besides the
+one patch being large) preventhing this?
+
+Thanks!
