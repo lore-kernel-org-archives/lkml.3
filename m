@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759895Ab3BHDsh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 22:48:37 -0500
-Received: from mail-vb0-f45.google.com ([209.85.212.45]:51085 "EHLO
-	mail-vb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759703Ab3BHDsf (ORCPT
+	id S1945911Ab3BHDzM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 22:55:12 -0500
+Received: from mail-la0-f41.google.com ([209.85.215.41]:37273 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759295Ab3BHDzK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 22:48:35 -0500
+	Thu, 7 Feb 2013 22:55:10 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130208004023.GM2545@linux.vnet.ibm.com>
-References: <1358896415-28569-1-git-send-email-walken@google.com>
-	<1358896415-28569-2-git-send-email-walken@google.com>
-	<20130207223434.GG2545@linux.vnet.ibm.com>
-	<1360277809.28557.60.camel@edumazet-glaptop>
-	<CANN689G0N0ynSMVcH9CbOFgL_mLSswOBx5yBzPBag0AO9fk8+A@mail.gmail.com>
-	<1360281834.28557.73.camel@edumazet-glaptop>
-	<20130208004023.GM2545@linux.vnet.ibm.com>
-Date: Thu, 7 Feb 2013 19:48:33 -0800
-Message-ID: <CANN689EUBav=9LkC0s4+teQirGhymgvRxaHRcnK7brjwDU28FQ@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/6] kernel: implement queue spinlock API
-From: Michel Lespinasse <walken@google.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Eric Dumazet <edumazet@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        linux-kernel@vger.kernel.org, john.stultz@linaro.org
+In-Reply-To: <kf1kul$699$2@ger.gmane.org>
+References: <51140154.9040901@oracle.com> <kf1kul$699$2@ger.gmane.org>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Thu, 7 Feb 2013 22:54:48 -0500
+Message-ID: <CA+1xoqeND5452=W0HLYoBzfou+0NM_x2d5GubivQX8mKOFExsg@mail.gmail.com>
+Subject: Re: net: rcu warnings in ip6fl_get_first
+To: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        davem <davem@davemloft.net>, yoshfuji@linux-ipv6.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 7, 2013 at 4:40 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Thu, Feb 07, 2013 at 04:03:54PM -0800, Eric Dumazet wrote:
->> It adds yet another memory write to store the node pointer in the
->> lock...
+On Thu, Feb 7, 2013 at 8:38 PM, Cong Wang <xiyou.wangcong@gmail.com> wrote:
+> On Thu, 07 Feb 2013 at 19:32 GMT, Sasha Levin <sasha.levin@oracle.com> wrote:
+>> Hi guys,
 >>
->> I suspect it's going to increase false sharing.
+>> I got the following while fuzzing with trinity inside a KVM tools guest:
+>>
+>> [   51.680236] ===============================
+>> [   51.681914] [ INFO: suspicious RCU usage. ]
+>> [   51.683610] 3.8.0-rc6-next-20130206-sasha-00028-g83214f7-dirty #276 Tainted: G        W
+>> [   51.686703] -------------------------------
+>> [   51.688281] net/ipv6/ip6_flowlabel.c:671 suspicious rcu_dereference_check() usage!
+>> [   51.691345]
 >
-> On the other hand, compared to straight MCS, it reduces the need to
-> pass the node address around.  Furthermore, the node pointer is likely
-> to be in the same cache line as the lock word itself, and finally
-> some architectures can do a double-pointer store.
+> It should use rcu_dereference_bh()...
 >
-> Of course, it might well be slower, but it seems like it is worth
-> giving it a try.
+> diff --git a/net/ipv6/ip6_flowlabel.c b/net/ipv6/ip6_flowlabel.c
+> index ea42bf4..c50080f 100644
+> --- a/net/ipv6/ip6_flowlabel.c
+> +++ b/net/ipv6/ip6_flowlabel.c
+> @@ -65,13 +65,13 @@ static DEFINE_SPINLOCK(ip6_fl_lock);
+>  static DEFINE_SPINLOCK(ip6_sk_fl_lock);
+>
+>  #define for_each_fl_rcu(hash, fl)                              \
+> -       for (fl = rcu_dereference(fl_ht[(hash)]);               \
+> +       for (fl = rcu_dereference_bh(fl_ht[(hash)]);            \
+>              fl != NULL;                                        \
+> -            fl = rcu_dereference(fl->next))
+> +            fl = rcu_dereference_hb(fl->next))
+>  #define for_each_fl_continue_rcu(fl)                           \
+> -       for (fl = rcu_dereference(fl->next);                    \
+> +       for (fl = rcu_dereference_bh(fl->next);                 \
+>              fl != NULL;                                        \
+> -            fl = rcu_dereference(fl->next))
+> +            fl = rcu_dereference_bh(fl->next))
+>
+>  #define for_each_sk_fl_rcu(np, sfl)                            \
+>         for (sfl = rcu_dereference_bh(np->ipv6_fl_list);        \
 
-Right. Another nice point about this approach is that there needs to
-be only one node per spinning CPU, so the node pointers (both tail and
-next) might be replaced with CPU identifiers, which would bring the
-spinlock size down to the same as with the ticket spinlock (which in
-turns makes it that much more likely that we'll have atomic stores of
-that size).
+Yup, that's how I fixed it locally and it was running without warnings
+for couple of hours now.
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+
+Thanks,
+Sasha
