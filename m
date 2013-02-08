@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946381Ab3BHMNc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 07:13:32 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55406 "EHLO
+	id S1946399Ab3BHMNv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 07:13:51 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55417 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1946347Ab3BHMNb (ORCPT
+	by vger.kernel.org with ESMTP id S1946347Ab3BHMNt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 07:13:31 -0500
-Date: Fri, 8 Feb 2013 12:13:29 +0000
+	Fri, 8 Feb 2013 07:13:49 -0500
+Date: Fri, 8 Feb 2013 12:13:47 +0000
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Mika Westerberg <mika.westerberg@linux.intel.com>
 Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
@@ -18,16 +18,15 @@ Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, chao.bi@intel.com,
         Andy Shevchenko <andriy.shevchenko@linux.intel.com>, cxie4@marvell.com,
         ytang5@marvell.com
-Subject: Re: [PATCH v3 05/10] spi/pxa2xx: break out the private DMA API usage
- into a separate file
-Message-ID: <20130208121329.GT8879@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH v3 06/10] spi/pxa2xx: add support for DMA engine
+Message-ID: <20130208121347.GU8879@opensource.wolfsonmicro.com>
 References: <1358850393-23111-1-git-send-email-mika.westerberg@linux.intel.com>
- <1358850393-23111-6-git-send-email-mika.westerberg@linux.intel.com>
+ <1358850393-23111-7-git-send-email-mika.westerberg@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/FJxnyttrH06HRq2"
+	protocol="application/pgp-signature"; boundary="O0IT7rLmWuveAsNR"
 Content-Disposition: inline
-In-Reply-To: <1358850393-23111-6-git-send-email-mika.westerberg@linux.intel.com>
+In-Reply-To: <1358850393-23111-7-git-send-email-mika.westerberg@linux.intel.com>
 X-Cookie: Stay away from flying saucers today.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -35,37 +34,37 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---/FJxnyttrH06HRq2
+--O0IT7rLmWuveAsNR
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Tue, Jan 22, 2013 at 12:26:28PM +0200, Mika Westerberg wrote:
-> The PXA SPI driver uses PXA platform specific private DMA implementation
-> which does not work on non-PXA platforms. In order to use this driver on
-> other platforms we break out the private DMA implementation into a separate
+On Tue, Jan 22, 2013 at 12:26:29PM +0200, Mika Westerberg wrote:
+> To be able to use DMA with this driver on non-PXA platforms we implement
+> support for the generic DMA engine API. This lets user to use different DMA
+> engines with little or no modification to the driver.
 
 Applied, thanks.
 
---/FJxnyttrH06HRq2
+--O0IT7rLmWuveAsNR
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRFOviAAoJELSic+t+oim9ksoQAJ5D4hk1C6GaNjmHxYKk7Wja
-FgHEyUa5wUHMQUJUNklUa9vrYLUCbjMsLxJoH5H/i9+IUI7XURDoxx7pLNdyVq6y
-OxPWF5D3gt9kKEa82qV11sM3hwVk5JZJqMJh3KExl11n+L/0wqTDcwgJFpbb+ihQ
-LhcF31s7SBSENuZ0i7Vd2aHgc2z82WNimQg6teq734FsojrTt8ndUT6oOgeuyl0G
-6zYofZobvc/PcKFYPM1wtCohEOTxQEYkzkAlCaFoq166EjWIU422+UcGkh//8Xps
-rob78zrR0L/Lmf9iDFo00S/TZ628sdsUlBIRzsLEVky/hQf/0pppxyXn1pcj8Vbp
-+887m439nfBoM+B7jVq+0fEN+cBain2DtKWy93SIZjevbEybFQ7bqOumbf1NiPGi
-yf7U0d2RNvjF7sIeKVN6CFywsLwo36SFX0RIANPH3yXbzss86y+gnXYHge+W3zCS
-TUO5zVcv9BpxXQuFzkKpHO2PC8z6EGhRfJ1YFJzdf8E0eHgURB+t1RKWtYh+ud/c
-Q2Q+Xt/+pkjSNBipeaTbqixTI2oO6qyE73mYCyyPDuq0x90U45WzcX5299YpGZ+P
-sRY7ECC6leJL5G42b1El50k7E7gmkVO4VS0L+D7JxD9Cdy4zo71jBQ7OGWzOHAYn
-m/2k2DfL49axdzISocIK
-=b0/U
+iQIcBAEBAgAGBQJRFOv0AAoJELSic+t+oim94DMP/jcFoiTJ4zB4em7cm4XFmGjZ
+zWpc4GgaSiLBelhCLwqm/INeVrB1oRnwHSz2hYLmrQVoZ5buXP2bBDNKMBQ6S3uY
+Wzg9iynyoD+y/gzSq5sF9zgezeOfD2/eQkMxrAI5YlqO+7GCB1Il+72et+blcnZz
+wy7icX9HpvHg4ZNA/YcUKC+0BXr5cFmmQr4kVHR0ODXNI6a3dguuloN75i/MAz9J
+ftMs7HzR0NEkXAvW0U3e6VpGnR8h/14eGCIlUwP6GRqJeNEeia5fGrh17hQsinbz
+YNzCg54Ok8DOMm9PzjnAaMiEm69UNVvcTOmG8pAFq6Ip8ovhxFztJ5TjjAKcp/fI
+kgEUWcJ+sBLfCfG+ryI+cGcckNcTttA1y5Mer2+zFuPXPalI9N/B2YIBlWOHUA8+
+CEnXmG4RDYoabOC6ps9npnXX0UzRc6CZXWmOC+bwOTNAff63/wU/ybHhw3aF8hl2
+YR4QkZm5rhnuO7U4zLt6z0ZK+mjoggQuObCbTR4pVARCpNhz+ppZxtfBPs6/+2x7
+GhcABqKbUdYQCRKJ6fjeEm+t7auIJHmDfO6rE60yeiToBFHhWJxTgxIMQPkdpvwx
+6tBejPj9WGYf1PnJHtXJIqzD/jn63Nx9O7RoRtlFw09kvCqPrNTINp6LcQp6l7dv
+xPnkXkOzN4sM2QNOV/wJ
+=B4PF
 -----END PGP SIGNATURE-----
 
---/FJxnyttrH06HRq2--
+--O0IT7rLmWuveAsNR--
