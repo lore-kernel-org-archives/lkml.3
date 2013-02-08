@@ -1,44 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946361Ab3BHNe5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 08:34:57 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:56870 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946075Ab3BHNew (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 08:34:52 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Tomas Winkler <tomas.winkler@intel.com>
-Cc: gregkh@linuxfoundation.org, sameo@linux.intel.com,
+	id S1946401Ab3BHNfW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 08:35:22 -0500
+Received: from relay1.sgi.com ([192.48.179.29]:51362 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1946057Ab3BHNen (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 08:34:43 -0500
+Date: Fri, 8 Feb 2013 07:34:41 -0600
+From: Robin Holt <holt@sgi.com>
+To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Zhang Yanfei <zhangyanfei.yes@gmail.com>,
+        Linux MM <linux-mm@kvack.org>, mgorman@suse.de, minchan@kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, m.szyprowski@samsung.com,
         linux-kernel@vger.kernel.org
-Subject: Re: [char-misc-next 05/11 V2] mei: bus: Call bus routines from the core code
-Date: Fri, 08 Feb 2013 14:34:49 +0100
-Message-ID: <1672492.QPn8YfMt1A@wuerfel>
-User-Agent: KMail/4.10 rc3 (Linux/3.8.0-4-generic; KDE/4.10.0; x86_64; ; )
-In-Reply-To: <1360326504-17041-6-git-send-email-tomas.winkler@intel.com>
-References: <1360326504-17041-1-git-send-email-tomas.winkler@intel.com> <1360326504-17041-6-git-send-email-tomas.winkler@intel.com>
+Subject: Re: [PATCH 0/3] mm: rename confusing function names
+Message-ID: <20130208133441.GH3460@sgi.com>
+References: <51113CE3.5090000@gmail.com>
+ <20130205192640.GC6481@cmpxchg.org>
+ <20130205141332.04fcceac.akpm@linux-foundation.org>
+ <5111AC7D.9070505@cn.fujitsu.com>
+ <20130205172057.3be4dbd4.akpm@linux-foundation.org>
+ <5111B318.9020204@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:NxrADvPOeib49OL0c2o8pK4GyDZTr4kFzBZ1lNrVDI+
- jqz+6/cIWxpcqDuoDFwFSMU/9tdSwiCuXRKvdOehkgckAXLuog
- ZbNTUjv8hp1GWne6PX5ARPJFjE/iN3+8APo12EPFUEH6TkYTlu
- gpOLhWtlDi2/CDgA6kvBjjCHUJ790op0f2gUlghYk8eegpMiff
- JKXjEYOQ/p7b+8pjls+/1PfZc+1TZnPK1f0lvlFRE19yPYdZEU
- lgAM/l/Ixi6jVKq95dW5P3tHoZIgyJ6MJHsBwyzj9/8DjdN5Bq
- vO7fd/QUj79n+pyqv+ctbM5N/1bXRoN69DumUx0rGcVjZUT2sq
- F+94bVzLcsv3ysm3vfTw=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5111B318.9020204@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 08 February 2013 14:28:18 Tomas Winkler wrote:
-> From: Samuel Ortiz <sameo@linux.intel.com>
+> > static unsigned int nr_free_zone_pages(int offset)
+> > {
+> > 	...
+> > 	unsigned int sum = 0;
+> > 	...
+> > 	return sum;
+> > }
+> > 
+> > How long will it be until these things start exploding from
+> > sums-of-zones which exceed 16TB?  
+> > 
 > 
-> Register the MEI bus type against the kernel core bus APIs and
-> call the bus Rx handler from interrupt.c
-> 
-> Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
-> Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+> You mean overflow? Hmm.. it might happens. Change the sum to
+> unsigned long is ok?
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+We are in the process right now of building a 32TB machine.  Let me make
+a note about this right away.  Thankfully, the memory will be spread
+over 256 zones so it should not impact us right away.
+
+Thanks,
+Robin
