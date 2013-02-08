@@ -1,73 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759660Ab3BHCw5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 21:52:57 -0500
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:58096 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758568Ab3BHCwz (ORCPT
+	id S1759679Ab3BHC7m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 21:59:42 -0500
+Received: from TYO200.gate.nec.co.jp ([210.143.35.50]:39167 "EHLO
+	tyo200.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758568Ab3BHC7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 21:52:55 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130207193944.GA4016@thinkpad.lan>
-References: <cover.1360232293.git.viresh.kumar@linaro.org>
-	<20130207193944.GA4016@thinkpad.lan>
-Date: Fri, 8 Feb 2013 08:22:54 +0530
-Message-ID: <CAKohponxYknVgZQpubaCQ0d4fw_TJzxqavY0ssjR8Kyu988Y7g@mail.gmail.com>
-Subject: Re: [PATCH 0/4] CPUFreq Fixes for 3.9
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Artem Savkov <artem.savkov@gmail.com>
-Cc: rjw@sisk.pl, valdis.kletnieks@vt.edu, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 7 Feb 2013 21:59:41 -0500
+Date: Fri, 8 Feb 2013 11:45:09 +0900
+From: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
+To: lisa.mitchell@hp.com
+Cc: vgoyal@redhat.com, kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, d.hatayama@jp.fujitsu.com, ebiederm@xmission.com,
+        akpm@linux-foundation.org, cpw@sgi.com
+Subject: Re: [PATCH v2] Add the values related to buddy system for filtering
+ free pages.
+Message-Id: <20130208114509.0755d9012cdfbcbd99c3a4ff@mxc.nes.nec.co.jp>
+In-Reply-To: <1360240151.12251.15.camel@lisamlinux.fc.hp.com>
+References: <20121210103913.020858db777e2f48c59713b6@mxc.nes.nec.co.jp>
+	<20121219161856.e6aa984f.akpm@linux-foundation.org>
+	<20121220112103.d698c09a9d1f27a253a63d37@mxc.nes.nec.co.jp>
+	<33710E6CAA200E4583255F4FB666C4E20AB2DEA3@G01JPEXMBYT03>
+	<87licsrwpg.fsf@xmission.com>
+	<20121227173523.5e414c342fed3e59a887fa87@mxc.nes.nec.co.jp>
+	<1360240151.12251.15.camel@lisamlinux.fc.hp.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 February 2013 01:09, Artem Savkov <artem.savkov@gmail.com> wrote:
-> Tested out linux-pm.git/linux-next with this patches pulled. It seems
-> that my systemd-sleep issue is fixed, however there is a new 'sleeping
-> in invalid context' bug during boot:
+Hello Lisa,
+
+On Thu, 07 Feb 2013 05:29:11 -0700
+Lisa Mitchell <lisa.mitchell@hp.com> wrote:
+
+> > > > Also, I have one question. Can we always think of 1st and 2nd kernels
+> > > > are same?
+> > > 
+> > > Not at all.  Distros frequently implement it with the same kernel in
+> > > both role but it should be possible to use an old crusty stable kernel
+> > > as the 2nd kernel.
+> > > 
+> > > > If I understand correctly, kexec/kdump can use the 2nd kernel different
+> > > > from the 1st's. So, differnet kernels need to do the same thing as makedumpfile
+> > > > does. If assuming two are same, problem is mush simplified.
+> > > 
+> > > As a developer it becomes attractive to use a known stable kernel to
+> > > capture the crash dump even as I experiment with a brand new kernel.
+> > 
+> > To allow to use the 2nd kernel different from the 1st's, I think we have
+> > to take care of each kernel version with the logic included in makedumpfile
+> > for them. That's to say, makedumpfile goes on as before.
+> > 
+> > 
+> > Thanks
+> > Atsushi Kumagai
+> 
+> 
+> Atsushi and Vivek:  
+> 
+> I'm trying to get the status of whether the patch submitted in
+> https://lkml.org/lkml/2012/11/21/90  is going to be accepted upstream
+> and get in some version of the Linux 3.8 kernel.   I'm replying to the
+> last email thread above on kexec_lists and lkml.org  that I could find
+> about this patch.  
+> 
+> I was counting on this kernel patch to improve performance of
+> makedumpfilev1.5.1, so at least it wouldn't be a regression in
+> performance over makedumpfile v1.4.   It was listed as recommended in
+> the makedumpfilev1.5.1 release posting:
+> http://lists.infradead.org/pipermail/kexec/2012-December/007460.html
+> 
+> 
+> All the conversations in the thread since this patch was committed seem
+> to voice some reservations now, and reference other fixes being tried to
+> improve performance.
+> 
+> Does that mean you are abandoning getting this patch accepted upstream,
+> in favor of pursuing other alternatives?
+
+No, this patch has been merged into -next, we should just wait for it to be
+merged into linus tree.
+
+  http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commit;h=0c63e90dd1c7b35ae2ea9475ba67cf68d8801a26
+
+What interests us now is improvement for interfaces of /proc/vmcore,
+it's not alternative but another idea which can be consistent with
+this patch.
+
+
+Thanks
+Atsushi Kumagai
+
+> 
+> I had hoped this patch would be okay to get accepted upstream, and then
+> other improvements could be built on top of it.  
+> 
+> Is that not the case?   
+> 
+> Or has further review concluded now that this change is a bad idea due
+> to adding dependence of this new makedumpfile feature on some deep
+> kernel memory internals?
+> 
+> Thanks,
+> 
+> Lisa Mitchell
+> 
 >
-> [   12.736484] BUG: sleeping function called from invalid context at mm/slub.c:925
-> [   12.739727] in_atomic(): 1, irqs_disabled(): 1, pid: 1799, name: systemd-modules
-> [   12.742961] 2 locks held by systemd-modules/1799:
-> [   12.746153]  #0:  (subsys mutex#3){......}, at: [<c13f4056>] subsys_interface_register+0x36/0xb0
-> [   12.749499]  #1:  (cpufreq_driver_lock){......}, at: [<c14ba53b>] cpufreq_add_dev+0x22b/0x3d0
-> [   12.752865] Pid: 1799, comm: systemd-modules Not tainted 3.8.0-rc6+ #1
-> [   12.756175] Call Trace:
-> [   12.759538]  [<c1068150>] __might_sleep+0xe0/0x100
-> [   12.762156]  [<c112a481>] kmem_cache_alloc_trace+0xb1/0x150
-> [   12.765432]  [<f804e653>] ? acpi_cpufreq_cpu_init+0x73/0x5c0 [acpi_cpufreq]
-> [   12.768780]  [<f804e653>] acpi_cpufreq_cpu_init+0x73/0x5c0 [acpi_cpufreq]
-> [   12.772161]  [<c14ba53b>] ? cpufreq_add_dev+0x22b/0x3d0
-> [   12.775549]  [<c1695af7>] ? _raw_spin_lock_irqsave+0x77/0x90
-> [   12.778932]  [<c14ba53b>] ? cpufreq_add_dev+0x22b/0x3d0
-> [   12.782307]  [<c14ba548>] cpufreq_add_dev+0x238/0x3d0
-
-Can you please try out this:
-
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 819aa33..a77d0bc 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -919,17 +919,14 @@ static int cpufreq_add_dev(struct device *dev,
-struct subsys_interface *sif)
-        init_completion(&policy->kobj_unregister);
-        INIT_WORK(&policy->update, handle_update);
-
--       spin_lock_irqsave(&cpufreq_driver_lock, flags);
-        /* call driver. From then on the cpufreq must be able
-         * to accept all calls to ->verify and ->setpolicy for this CPU
-         */
-        ret = driver->init(policy);
-        if (ret) {
-                pr_debug("initialization failed\n");
--               spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
-                goto err_set_policy_cpu;
-        }
--       spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
-
-        /* related cpus should atleast have policy->cpus */
-        cpumask_or(policy->related_cpus, policy->related_cpus, policy->cpus);
