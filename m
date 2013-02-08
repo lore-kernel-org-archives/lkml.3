@@ -1,59 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752368Ab3BHFQm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 00:16:42 -0500
-Received: from us01smtp2.synopsys.com ([198.182.44.80]:64554 "EHLO
-	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751541Ab3BHFQl (ORCPT
+	id S1752305Ab3BHFVk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 00:21:40 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:11668 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750745Ab3BHFVj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 00:16:41 -0500
-Message-ID: <51148A28.4030307@synopsys.com>
-Date: Fri, 8 Feb 2013 10:46:24 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Fri, 8 Feb 2013 00:21:39 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 07 Feb 2013 21:18:22 -0800
+Message-ID: <51148B5B.1090701@nvidia.com>
+Date: Fri, 8 Feb 2013 10:51:31 +0530
+From: Prashant Gaikwad <pgaikwad@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.next,gmane.linux.kernel
-To: James Hogan <james.hogan@imgtec.com>
-CC: Rusty Russell <rusty@rustcorp.com.au>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: linux-next build conflict between modules and metag trees (LOCKDEP_NOW_UNRELIABLE)
-References: <51138CFC.9000508@imgtec.com>
-In-Reply-To: <51138CFC.9000508@imgtec.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Stephen Warren <swarren@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] clk: tegra: Implement locking for super clock
+References: <1360254261-23000-1-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1360254261-23000-1-git-send-email-pdeschrijver@nvidia.com>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.43]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 07 February 2013 04:46 PM, James Hogan wrote:
-> Hi Rusty,
-> 
-> The metag architecture tree adds an add_taint(TAINT_DIE) like other
-> architectures do, and the modules-next tree adds the
-> LOCKDEP_NOW_UNRELIABLE flag to all uses of add_taint (but obviously
-> misses arch/metag since it doesn't exist yet), causing a compile error
-> on metag in -next when the two are merged together.
-> 
-> Is it okay for me to merge your commit 373d4d0 ("taint: add explicit
-> flag to show whether lock dep is still OK.") in modules-next into the
-> base of the metag tree and expect it not to be rebased, so that I can
-> then squash the fix into the metag tree?
-> 
-> The only commits this would include are:
-> $ git log --oneline linus/master..373d4d0
-> 373d4d0 taint: add explicit flag to show whether lock dep is still OK.
-> 64748a2 module: printk message when module signature fail taints kernel.
-> 
-> Thanks
-> James
-> 
+On Thursday 07 February 2013 09:54 PM, Peter De Schrijver wrote:
+> Although tegra_clk_register_super_mux() has a lock parameter, the lock is not
+> actually used by the code. Fixed with this patch.
+>
+> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
 
-Being in the same situation as metag (ARC Port), what's the recommended practice
-here - do we simply cherry-pick these changes into our tree - or do we merge the
-"other" tree on top - ofcourse with premise that "other" tree will not rebase.
+Reviewed-by: Prashant Gaikwad <pgaikwad@nvidia.com>
 
-Thx,
--Vineet
+> ---
+>   drivers/clk/tegra/clk-super.c |   18 +++++++++++++++---
+>   1 files changed, 15 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/clk/tegra/clk-super.c b/drivers/clk/tegra/clk-super.c
+> index 7ad48a8..2fd924d 100644
+> --- a/drivers/clk/tegra/clk-super.c
+> +++ b/drivers/clk/tegra/clk-super.c
+> @@ -73,7 +73,12 @@ static int clk_super_set_parent(struct clk_hw *hw, u8 index)
+>   {
+>   	struct tegra_clk_super_mux *mux = to_clk_super_mux(hw);
+>   	u32 val, state;
+> +	int err = 0;
+>   	u8 parent_index, shift;
+> +	unsigned long flags = 0;
+> +
+> +	if (mux->lock)
+> +		spin_lock_irqsave(mux->lock, flags);
+>   
+>   	val = readl_relaxed(mux->reg);
+>   	state = val & SUPER_STATE_MASK;
+> @@ -92,8 +97,10 @@ static int clk_super_set_parent(struct clk_hw *hw, u8 index)
+>   					       (index == mux->pllx_index))) {
+>   		parent_index = clk_super_get_parent(hw);
+>   		if ((parent_index == mux->div2_index) ||
+> -		    (parent_index == mux->pllx_index))
+> -			return -EINVAL;
+> +		    (parent_index == mux->pllx_index)) {
+> +			err = -EINVAL;
+> +			goto out;
+> +		}
+>   
+>   		val ^= SUPER_LP_DIV2_BYPASS;
+>   		writel_relaxed(val, mux->reg);
+> @@ -107,7 +114,12 @@ static int clk_super_set_parent(struct clk_hw *hw, u8 index)
+>   
+>   	writel_relaxed(val, mux->reg);
+>   	udelay(2);
+> -	return 0;
+> +
+> +out:
+> +	if (mux->lock)
+> +		spin_unlock_irqrestore(mux->lock, flags);
+> +
+> +	return err;
+>   }
+>   
+>   const struct clk_ops tegra_clk_super_ops = {
+
