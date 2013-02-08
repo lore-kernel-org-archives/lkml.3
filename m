@@ -1,322 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947357Ab3BHXVV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 18:21:21 -0500
-Received: from violet.fr.zoreil.com ([92.243.8.30]:56859 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757205Ab3BHXVT (ORCPT
+	id S1947335Ab3BHXWl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 18:22:41 -0500
+Received: from nm17.bullet.mail.ird.yahoo.com ([77.238.189.70]:42906 "HELO
+	nm17.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756968Ab3BHXWk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 18:21:19 -0500
-Date: Fri, 8 Feb 2013 23:50:26 +0100
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Hayes Wang <hayeswang@realtek.com>,
-        =?utf-8?B?SsO2cmc=?= Otte <jrg.otte@gmail.com>
-Subject: Re: [GIT] Networking
-Message-ID: <20130208225026.GA24672@electric-eye.fr.zoreil.com>
-References: <20130208.151713.1708597749091717933.davem@davemloft.net> <CA+55aFx81-GGEEXx+MqJvwJsDoBMMqSN80=J8LmN-Ufu4+kKcw@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFx81-GGEEXx+MqJvwJsDoBMMqSN80=J8LmN-Ufu4+kKcw@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+	Fri, 8 Feb 2013 18:22:40 -0500
+X-Yahoo-Newman-Id: 964896.21563.bm@smtp105.mail.ir2.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: WuhdLp4VM1kp79I3hYVSQOvDTfPBHOtv1ewU5PsujEf1PpJ
+ 0NDXvHcwMB87S3fpQpeUMdMNtPwUkVXNIEJHwy8hY_jFEHyAAtmSKAN4iyKe
+ BACDH5vXwxsJVJpp8r6L2C_OhR3IZQMZC_3wiF5E2Tq5QxjX.C2D5Qo9wqHi
+ R2aymCd_oBhntlTOqTzk9w2K5mSqN8u0LzO4NJ1aCU.mDWRaX.jFP8H0QhWB
+ 7yVzHeJCD1wQOW5w7EAJO1KIgxK82wK3LwUtBrGDp0qS4mKahWHZANe78ovq
+ kCGVlEtj98ELeXJV_8lfPsNqXzHhBKpJdQUKNT422WmyFPbmXDs8qT_b2.hK
+ R5ODxLb.Ucn4UBDBT9aeY8_KeO0tx4_BQsLm2OnJkZ_Y3zvloQvhlRn5tndO
+ _3OPekPlJ5XfS7ywYXhh4ktAaSxxIZK.BNLpJZ5neoGnGjX3SklzN8F5Uoh6
+ T_WIRkO4NOQ9S7pCM5VS5pIjX1IFbreVbHoX6RzyvvTaJUbb4.DCMC8E-
+X-Yahoo-SMTP: ccYakBWswBCVT_hGkhX71KdYH8rk7ldrzQ--
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.1198
+Message-ID: <21e2cfaf$13fe6b6c$313e725d@smtp.mail.yahoo.com>
+Date: Fri, 8 Feb 2013 15:22:33 -0800
+From: "sexcrazymike@yahoo.com" <sexcrazymike@yahoo.com>
+Subject: You have (1) new ecard!
+To: yogiso@concentric.net
+Content-Type: text/plain; charset=UTF-8;
+X-Mailer: Microsoft Outlook IMO, Build 9.0.2416 (9.0.2910.0)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> :
-[...]
-> However, there's still the r8169 regressions (see the emails with the
-> subject "regression: NETDEV WATCHDOG: eth0 (r8169): transmit queue 0
-> timed out"). It's bisected, and a revert is reported to fix things.
-> It's not in this pull request. Comments ?
+Click here to read it now! http://bit.ly/V4nJxn
 
-Jörg asked Hayes. Hayes suggested to revert. Francois reverts, fixes a
-pair of rejects, builds, boot. Anyone should be able to pull from
-branch 'davem.r8169' in repository
-
-git://violet.fr.zoreil.com/romieu/linux davem.r8169
-
-to get the changes below :
-
-Distance from 'davem' (a1c83b054ebe1264ed9ae9d5c286f9eae68e60ea)
-----------------------------------------------------------------
-
-4521e1a94279ce610d3f9b7945c17d581f804242
-eef63cc1c6ecf4898a973f870aec95d6e923ea77
-
-Diffstat
---------
-
- drivers/net/ethernet/realtek/r8169.c | 86 ++++++++----------------------------
- 1 file changed, 19 insertions(+), 67 deletions(-)
-
-Shortlog
---------
-
-Francois Romieu (2):
-      Revert "r8169: enable ALDPS for power saving".
-      Revert "r8169: enable internal ASPM and clock request settings".
-
-Patch
------
-
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index 1170232..998974f 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -450,7 +450,6 @@ enum rtl8168_registers {
- #define PWM_EN				(1 << 22)
- #define RXDV_GATED_EN			(1 << 19)
- #define EARLY_TALLY_EN			(1 << 16)
--#define FORCE_CLK			(1 << 15) /* force clock request */
- };
- 
- enum rtl_register_content {
-@@ -514,7 +513,6 @@ enum rtl_register_content {
- 	PMEnable	= (1 << 0),	/* Power Management Enable */
- 
- 	/* Config2 register p. 25 */
--	ClkReqEn	= (1 << 7),	/* Clock Request Enable */
- 	MSIEnable	= (1 << 5),	/* 8169 only. Reserved in the 8168. */
- 	PCI_Clock_66MHz = 0x01,
- 	PCI_Clock_33MHz = 0x00,
-@@ -535,7 +533,6 @@ enum rtl_register_content {
- 	Spi_en		= (1 << 3),
- 	LanWake		= (1 << 1),	/* LanWake enable/disable */
- 	PMEStatus	= (1 << 0),	/* PME status can be reset by PCI RST# */
--	ASPM_en		= (1 << 0),	/* ASPM enable */
- 
- 	/* TBICSR p.28 */
- 	TBIReset	= 0x80000000,
-@@ -684,7 +681,6 @@ enum features {
- 	RTL_FEATURE_WOL		= (1 << 0),
- 	RTL_FEATURE_MSI		= (1 << 1),
- 	RTL_FEATURE_GMII	= (1 << 2),
--	RTL_FEATURE_FW_LOADED	= (1 << 3),
- };
- 
- struct rtl8169_counters {
-@@ -2389,10 +2385,8 @@ static void rtl_apply_firmware(struct rtl8169_private *tp)
- 	struct rtl_fw *rtl_fw = tp->rtl_fw;
- 
- 	/* TODO: release firmware once rtl_phy_write_fw signals failures. */
--	if (!IS_ERR_OR_NULL(rtl_fw)) {
-+	if (!IS_ERR_OR_NULL(rtl_fw))
- 		rtl_phy_write_fw(tp, rtl_fw);
--		tp->features |= RTL_FEATURE_FW_LOADED;
--	}
- }
- 
- static void rtl_apply_firmware_cond(struct rtl8169_private *tp, u8 reg, u16 val)
-@@ -2403,31 +2397,6 @@ static void rtl_apply_firmware_cond(struct rtl8169_private *tp, u8 reg, u16 val)
- 		rtl_apply_firmware(tp);
- }
- 
--static void r810x_aldps_disable(struct rtl8169_private *tp)
--{
--	rtl_writephy(tp, 0x1f, 0x0000);
--	rtl_writephy(tp, 0x18, 0x0310);
--	msleep(100);
--}
--
--static void r810x_aldps_enable(struct rtl8169_private *tp)
--{
--	if (!(tp->features & RTL_FEATURE_FW_LOADED))
--		return;
--
--	rtl_writephy(tp, 0x1f, 0x0000);
--	rtl_writephy(tp, 0x18, 0x8310);
--}
--
--static void r8168_aldps_enable_1(struct rtl8169_private *tp)
--{
--	if (!(tp->features & RTL_FEATURE_FW_LOADED))
--		return;
--
--	rtl_writephy(tp, 0x1f, 0x0000);
--	rtl_w1w0_phy(tp, 0x15, 0x1000, 0x0000);
--}
--
- static void rtl8169s_hw_phy_config(struct rtl8169_private *tp)
- {
- 	static const struct phy_reg phy_reg_init[] = {
-@@ -3218,8 +3187,6 @@ static void rtl8168e_2_hw_phy_config(struct rtl8169_private *tp)
- 	rtl_w1w0_phy(tp, 0x10, 0x0000, 0x0400);
- 	rtl_writephy(tp, 0x1f, 0x0000);
- 
--	r8168_aldps_enable_1(tp);
--
- 	/* Broken BIOS workaround: feed GigaMAC registers with MAC address. */
- 	rtl_rar_exgmac_set(tp, tp->dev->dev_addr);
- }
-@@ -3294,8 +3261,6 @@ static void rtl8168f_1_hw_phy_config(struct rtl8169_private *tp)
- 	rtl_writephy(tp, 0x05, 0x8b85);
- 	rtl_w1w0_phy(tp, 0x06, 0x4000, 0x0000);
- 	rtl_writephy(tp, 0x1f, 0x0000);
--
--	r8168_aldps_enable_1(tp);
- }
- 
- static void rtl8168f_2_hw_phy_config(struct rtl8169_private *tp)
-@@ -3303,8 +3268,6 @@ static void rtl8168f_2_hw_phy_config(struct rtl8169_private *tp)
- 	rtl_apply_firmware(tp);
- 
- 	rtl8168f_hw_phy_config(tp);
--
--	r8168_aldps_enable_1(tp);
- }
- 
- static void rtl8411_hw_phy_config(struct rtl8169_private *tp)
-@@ -3402,8 +3365,6 @@ static void rtl8411_hw_phy_config(struct rtl8169_private *tp)
- 	rtl_w1w0_phy(tp, 0x19, 0x0000, 0x0001);
- 	rtl_w1w0_phy(tp, 0x10, 0x0000, 0x0400);
- 	rtl_writephy(tp, 0x1f, 0x0000);
--
--	r8168_aldps_enable_1(tp);
- }
- 
- static void rtl8168g_1_hw_phy_config(struct rtl8169_private *tp)
-@@ -3489,19 +3450,21 @@ static void rtl8105e_hw_phy_config(struct rtl8169_private *tp)
- 	};
- 
- 	/* Disable ALDPS before ram code */
--	r810x_aldps_disable(tp);
-+	rtl_writephy(tp, 0x1f, 0x0000);
-+	rtl_writephy(tp, 0x18, 0x0310);
-+	msleep(100);
- 
- 	rtl_apply_firmware(tp);
- 
- 	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
--
--	r810x_aldps_enable(tp);
- }
- 
- static void rtl8402_hw_phy_config(struct rtl8169_private *tp)
- {
- 	/* Disable ALDPS before setting firmware */
--	r810x_aldps_disable(tp);
-+	rtl_writephy(tp, 0x1f, 0x0000);
-+	rtl_writephy(tp, 0x18, 0x0310);
-+	msleep(20);
- 
- 	rtl_apply_firmware(tp);
- 
-@@ -3511,8 +3474,6 @@ static void rtl8402_hw_phy_config(struct rtl8169_private *tp)
- 	rtl_writephy(tp, 0x10, 0x401f);
- 	rtl_writephy(tp, 0x19, 0x7030);
- 	rtl_writephy(tp, 0x1f, 0x0000);
--
--	r810x_aldps_enable(tp);
- }
- 
- static void rtl8106e_hw_phy_config(struct rtl8169_private *tp)
-@@ -3525,7 +3486,9 @@ static void rtl8106e_hw_phy_config(struct rtl8169_private *tp)
- 	};
- 
- 	/* Disable ALDPS before ram code */
--	r810x_aldps_disable(tp);
-+	rtl_writephy(tp, 0x1f, 0x0000);
-+	rtl_writephy(tp, 0x18, 0x0310);
-+	msleep(100);
- 
- 	rtl_apply_firmware(tp);
- 
-@@ -3533,8 +3496,6 @@ static void rtl8106e_hw_phy_config(struct rtl8169_private *tp)
- 	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
- 
- 	rtl_eri_write(tp, 0x1d0, ERIAR_MASK_0011, 0x0000, ERIAR_EXGMAC);
--
--	r810x_aldps_enable(tp);
- }
- 
- static void rtl_hw_phy_config(struct net_device *dev)
-@@ -5051,6 +5012,8 @@ static void rtl_hw_start_8168e_2(struct rtl8169_private *tp)
- 
- 	RTL_W8(MaxTxPacketSize, EarlySize);
- 
-+	rtl_disable_clock_request(pdev);
-+
- 	RTL_W32(TxConfig, RTL_R32(TxConfig) | TXCFG_AUTO_FIFO);
- 	RTL_W8(MCU, RTL_R8(MCU) & ~NOW_IS_OOB);
- 
-@@ -5059,8 +5022,7 @@ static void rtl_hw_start_8168e_2(struct rtl8169_private *tp)
- 
- 	RTL_W8(DLLPR, RTL_R8(DLLPR) | PFM_EN);
- 	RTL_W32(MISC, RTL_R32(MISC) | PWM_EN);
--	RTL_W8(Config5, (RTL_R8(Config5) & ~Spi_en) | ASPM_en);
--	RTL_W8(Config2, RTL_R8(Config2) | ClkReqEn);
-+	RTL_W8(Config5, RTL_R8(Config5) & ~Spi_en);
- }
- 
- static void rtl_hw_start_8168f(struct rtl8169_private *tp)
-@@ -5085,12 +5047,13 @@ static void rtl_hw_start_8168f(struct rtl8169_private *tp)
- 
- 	RTL_W8(MaxTxPacketSize, EarlySize);
- 
-+	rtl_disable_clock_request(pdev);
-+
- 	RTL_W32(TxConfig, RTL_R32(TxConfig) | TXCFG_AUTO_FIFO);
- 	RTL_W8(MCU, RTL_R8(MCU) & ~NOW_IS_OOB);
- 	RTL_W8(DLLPR, RTL_R8(DLLPR) | PFM_EN);
--	RTL_W32(MISC, RTL_R32(MISC) | PWM_EN | FORCE_CLK);
--	RTL_W8(Config5, (RTL_R8(Config5) & ~Spi_en) | ASPM_en);
--	RTL_W8(Config2, RTL_R8(Config2) | ClkReqEn);
-+	RTL_W32(MISC, RTL_R32(MISC) | PWM_EN);
-+	RTL_W8(Config5, RTL_R8(Config5) & ~Spi_en);
- }
- 
- static void rtl_hw_start_8168f_1(struct rtl8169_private *tp)
-@@ -5147,10 +5110,8 @@ static void rtl_hw_start_8168g_1(struct rtl8169_private *tp)
- 	rtl_w1w0_eri(tp, 0xdc, ERIAR_MASK_0001, 0x01, 0x00, ERIAR_EXGMAC);
- 
- 	RTL_W8(ChipCmd, CmdTxEnb | CmdRxEnb);
--	RTL_W32(MISC, (RTL_R32(MISC) | FORCE_CLK) & ~RXDV_GATED_EN);
-+	RTL_W32(MISC, RTL_R32(MISC) & ~RXDV_GATED_EN);
- 	RTL_W8(MaxTxPacketSize, EarlySize);
--	RTL_W8(Config5, RTL_R8(Config5) | ASPM_en);
--	RTL_W8(Config2, RTL_R8(Config2) | ClkReqEn);
- 
- 	rtl_eri_write(tp, 0xc0, ERIAR_MASK_0011, 0x0000, ERIAR_EXGMAC);
- 	rtl_eri_write(tp, 0xb8, ERIAR_MASK_0011, 0x0000, ERIAR_EXGMAC);
-@@ -5366,9 +5327,6 @@ static void rtl_hw_start_8105e_1(struct rtl8169_private *tp)
- 
- 	RTL_W8(MCU, RTL_R8(MCU) | EN_NDP | EN_OOB_RESET);
- 	RTL_W8(DLLPR, RTL_R8(DLLPR) | PFM_EN);
--	RTL_W8(Config5, RTL_R8(Config5) | ASPM_en);
--	RTL_W8(Config2, RTL_R8(Config2) | ClkReqEn);
--	RTL_W32(MISC, RTL_R32(MISC) | FORCE_CLK);
- 
- 	rtl_ephy_init(tp, e_info_8105e_1, ARRAY_SIZE(e_info_8105e_1));
- }
-@@ -5394,9 +5352,6 @@ static void rtl_hw_start_8402(struct rtl8169_private *tp)
- 
- 	RTL_W32(TxConfig, RTL_R32(TxConfig) | TXCFG_AUTO_FIFO);
- 	RTL_W8(MCU, RTL_R8(MCU) & ~NOW_IS_OOB);
--	RTL_W8(Config5, RTL_R8(Config5) | ASPM_en);
--	RTL_W8(Config2, RTL_R8(Config2) | ClkReqEn);
--	RTL_W32(MISC, RTL_R32(MISC) | FORCE_CLK);
- 
- 	rtl_ephy_init(tp, e_info_8402, ARRAY_SIZE(e_info_8402));
- 
-@@ -5418,10 +5373,7 @@ static void rtl_hw_start_8106(struct rtl8169_private *tp)
- 	/* Force LAN exit from ASPM if Rx/Tx are not idle */
- 	RTL_W32(FuncEvent, RTL_R32(FuncEvent) | 0x002800);
- 
--	RTL_W32(MISC,
--		(RTL_R32(MISC) | DISABLE_LAN_EN | FORCE_CLK) & ~EARLY_TALLY_EN);
--	RTL_W8(Config5, RTL_R8(Config5) | ASPM_en);
--	RTL_W8(Config2, RTL_R8(Config2) | ClkReqEn);
-+	RTL_W32(MISC, (RTL_R32(MISC) | DISABLE_LAN_EN) & ~EARLY_TALLY_EN);
- 	RTL_W8(MCU, RTL_R8(MCU) | EN_NDP | EN_OOB_RESET);
- 	RTL_W8(DLLPR, RTL_R8(DLLPR) & ~PFM_EN);
- }
--- 
-Ueimor
