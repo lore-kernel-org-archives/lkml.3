@@ -1,69 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760033Ab3BHODU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 09:03:20 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:49130 "EHLO arroyo.ext.ti.com"
+	id S1760062Ab3BHOFq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 09:05:46 -0500
+Received: from mga14.intel.com ([143.182.124.37]:14246 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758353Ab3BHODT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 09:03:19 -0500
-Date: Fri, 8 Feb 2013 16:03:02 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King <linux@arm.linux.org.uk>, <linux-tegra@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6 08/10] ARM: dt: Add references to tegra_car clocks
-Message-ID: <20130208140301.GA23979@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1360330602-30472-1-git-send-email-pdeschrijver@nvidia.com>
- <1360330602-30472-9-git-send-email-pdeschrijver@nvidia.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="EeQfGwPcQSOJBaQU"
-Content-Disposition: inline
-In-Reply-To: <1360330602-30472-9-git-send-email-pdeschrijver@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758353Ab3BHOFp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 09:05:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,629,1355126400"; 
+   d="scan'208";a="200119550"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Rob Landley <rob@landley.net>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH] Documentation / acpi: refer to correct file for acpi_platform_device_ids[] table
+Date: Fri,  8 Feb 2013 16:07:01 +0200
+Message-Id: <1360332421-32140-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---EeQfGwPcQSOJBaQU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+When the ACPI platform device code was converted to the new ACPI scan
+handler facility, the the acpi_platform_device_ids[] was moved to
+drivers/acpi/acpi_platform.c. Update the documentation accordingly.
 
-Hi,
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+ Documentation/acpi/enumeration.txt |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-On Fri, Feb 08, 2013 at 03:36:40PM +0200, Peter De Schrijver wrote:
->  	tegra_car: clock {
-> -		compatible =3D "nvidia,tegra114-car, nvidia,tegra30-car";
-> +		compatible =3D "nvidia,tegra114-car";
+diff --git a/Documentation/acpi/enumeration.txt b/Documentation/acpi/enumeration.txt
+index 54469bc..94a6561 100644
+--- a/Documentation/acpi/enumeration.txt
++++ b/Documentation/acpi/enumeration.txt
+@@ -63,8 +63,8 @@ from ACPI tables.
+ Currently the kernel is not able to automatically determine from which ACPI
+ device it should make the corresponding platform device so we need to add
+ the ACPI device explicitly to acpi_platform_device_ids list defined in
+-drivers/acpi/scan.c. This limitation is only for the platform devices, SPI
+-and I2C devices are created automatically as described below.
++drivers/acpi/acpi_platform.c. This limitation is only for the platform
++devices, SPI and I2C devices are created automatically as described below.
+ 
+ SPI serial bus support
+ ~~~~~~~~~~~~~~~~~~~~~~
+-- 
+1.7.10.4
 
-trailing change or intentional ?
-
---=20
-balbi
-
---EeQfGwPcQSOJBaQU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRFQWVAAoJEIaOsuA1yqRE8VQP/jb3s4240ftU0ywaW20Ums3p
-+YeWH0qJJ+fj3qF5ZjOAYZSTYBTvaQRzlZiqG3dr9vzd+IsC1D2d9USoBb/jddH4
-cFA0HXB0v7dLyweSSA1v87Mvuqv7r3CxJNvdrw59GDbx5aHHFGZcP9MmM2lEsyv5
-+KbQ8Fbs5OZygDQcybUjMlyl5K4pFsLa/F6mafMJBYBEbu3BJ/Ve54BkPuNrpjDQ
-+rdcJ9LJG6pjGy0XbftimJ0C8oRsH/vgQoZOgPcsbpYMSAuRz8wHF7lBnU9SS7vt
-UdY+4b7BRRTB6uZFZ3pWf74U7h6cRJ9iSimVD1ziHgWofHnUtCVDmohieiRRqG5H
-/GKYFMpba6VEBQZT6As8Ir/dG8lwechuMIUlMoM0WG9CAcfEe7FkH3rTttjE0OBz
-58+rRHJQdDcDzyWti0Fzf47zhLKYVCxT2D9dA90ILwcZ6epiRtlAbk5KjSLamKHk
-AExrSCjEevVqoBzyfYl9Zu1EliTfv8L93MBbTIZyIDuAKREU+wGrAf5Har6yyo+q
-uFO276w4HeAFCJruHqHAFc2Q8zc0d8+jI5HOwHHzcSyMOwtJ9Ya7O2jQ5jWXQbYt
-Mvr+MF+yvjX+4NlHRha+bGA+jwRG8c33TAgoikzEcxfm3xkUNz/xWtvEskfM83V1
-I/u3NU2eVs+hhWpnY7XC
-=Lbll
------END PGP SIGNATURE-----
-
---EeQfGwPcQSOJBaQU--
