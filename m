@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946939Ab3BHT2T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 14:28:19 -0500
-Received: from relayoutw01.hubtelecom.net ([94.199.126.69]:51159 "EHLO
-	relayoutw01.hubtelecom.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1946826Ab3BHT2S (ORCPT
+	id S1760426Ab3BHT3F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 14:29:05 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:33354 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760341Ab3BHT3A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 14:28:18 -0500
-Date: Fri, 8 Feb 2013 20:28:13 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>
-Subject: Re: [GIT PULL] ab8500-dependent MFD functions for GPIO IRQs
-Message-ID: <20130208192813.GC20996@sortiz-mobl>
-References: <CACRpkdbC+UnoxOj8AJFteYy+sjYe8+OUnT1Tyc_qBZH4Wy6sww@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdbC+UnoxOj8AJFteYy+sjYe8+OUnT1Tyc_qBZH4Wy6sww@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Assp-Version: 2.0.1(3.0.23) on relayoutw01.hubtelecom.net
-X-Assp-Message/IP-Score: 39 (Bayesian Probability: 0.6587)
-X-Assp-Envelope-From: sameo@linux.intel.com
+	Fri, 8 Feb 2013 14:29:00 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v2 25/26] PCI: Disable mem in the ioapic removing path
+Date: Fri,  8 Feb 2013 11:28:22 -0800
+Message-Id: <1360351703-20571-26-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1360351703-20571-1-git-send-email-yinghai@kernel.org>
+References: <1360351703-20571-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+For physical hot plug should be ok, but for remove/rescan path will
+need us to disable that.
 
-Hi Linus,
+otherwise rescan mmio resource for pci ioapic device will not be
+sized and allocated, aka skiped.
+For ioapic_probe:pci_enable_device will not enable the device
+correctly, and will bail out early.
 
-On Fri, Feb 08, 2013 at 02:37:58PM +0100, Linus Walleij wrote:
-> Hi Sam,
-> 
-> could you please pull these changes into your MFD branch for the
-> next merge window?
-> 
-> These should be merged on top of Lee Jones' patch stack and
-> deal with how the GPIO IRQs are handled.
-> 
-> I based this off v3.8-rc6 as your branch appear to be.
-> If there are conflicts you need help with, tell me if you want me
-> to rebase it on your for-next branch or any other baseline.
-> 
-> After this I have only one ACKed patch in the pinctrl tree
-> that may conflict any other stuff, and that's this one:
-> http://git.kernel.org/?p=linux/kernel/git/linusw/linux-pinctrl.git;a=patch;h=56813f798e8cb3f79a25e0523e782d910f376083
-> 
-> This is in the middle of a branch that has been used as
-> a baseline by others and by other commits in the pinctrl
-> tree, so sadly I cannot take it out.
-> 
-> Please pull it in!
-Thanks for that, I pulled it now.
+So we can just disable mmio for all removing case, and that will not hurt
+real hotplug path.
 
-Cheers,
-Samuel.
+Signed-off-by: <yinghai@kernel.org>
+---
+ drivers/pci/ioapic.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
+diff --git a/drivers/pci/ioapic.c b/drivers/pci/ioapic.c
+index 3c6bbdd..8dacfd0 100644
+--- a/drivers/pci/ioapic.c
++++ b/drivers/pci/ioapic.c
+@@ -88,6 +88,17 @@ exit_free:
+ 	return -ENODEV;
+ }
+ 
++static void pci_disable_device_mem(struct pci_dev *dev)
++{
++	u16 pci_command;
++
++	pci_read_config_word(dev, PCI_COMMAND, &pci_command);
++	if (pci_command & PCI_COMMAND_MEMORY) {
++		pci_command &= ~PCI_COMMAND_MEMORY;
++		pci_write_config_word(dev, PCI_COMMAND, pci_command);
++	}
++}
++
+ static void ioapic_remove(struct pci_dev *dev)
+ {
+ 	struct ioapic *ioapic = pci_get_drvdata(dev);
+@@ -95,6 +106,8 @@ static void ioapic_remove(struct pci_dev *dev)
+ 	acpi_unregister_ioapic(ioapic->handle, ioapic->gsi_base);
+ 	pci_release_region(dev, 0);
+ 	pci_disable_device(dev);
++	/* need to disable it, otherwise remove/rescan will not work */
++	pci_disable_device_mem(dev);
+ 	kfree(ioapic);
+ }
+ 
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.7.10.4
+
