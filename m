@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945957Ab3BHBOh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 20:14:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41879 "EHLO
+	id S1945896Ab3BHBOg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 20:14:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41886 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759433Ab3BHA5r (ORCPT
+	with ESMTP id S1759453Ab3BHA5r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 7 Feb 2013 19:57:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Zhigang Lu <zlu@tilera.com>, Chris Metcalf <cmetcalf@tilera.com>,
-        Michal Hocko <mhocko@suse.cz>, Hillf Danton <dhillf@gmail.com>,
+        Jan Luebbe <jlu@pengutronix.de>,
+        Alessandro Zummo <a.zummo@towertech.it>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 15/34] mm/hugetlb: set PTE as huge in hugetlb_change_protection and remove_migration_pte
-Date: Thu,  7 Feb 2013 16:57:11 -0800
-Message-Id: <20130208004630.049628857@linuxfoundation.org>
+Subject: [ 16/34] drivers/rtc/rtc-isl1208.c: call rtc_update_irq() from the alarm irq handler
+Date: Thu,  7 Feb 2013 16:57:12 -0800
+Message-Id: <20130208004630.217783758@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130208004627.375461662@linuxfoundation.org>
 References: <20130208004627.375461662@linuxfoundation.org>
@@ -29,50 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tony Lu <zlu@tilera.com>
+From: Jan Luebbe <jlu@pengutronix.de>
 
-commit be7517d6ab9722f0abad6ba5ffd39cfced95549c upstream.
+commit 72fca4a4b32dc778b5b885c3498700e42b610d49 upstream.
 
-When setting a huge PTE, besides calling pte_mkhuge(), we also need to
-call arch_make_huge_pte(), which we indeed do in make_huge_pte(), but we
-forget to do in hugetlb_change_protection() and remove_migration_pte().
+Previously the alarm event was not propagated into the RTC subsystem.
+By adding a call to rtc_update_irq, this fixes a timeout problem with
+the hwclock utility.
 
-Signed-off-by: Zhigang Lu <zlu@tilera.com>
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: Hillf Danton <dhillf@gmail.com>
+Signed-off-by: Jan Luebbe <jlu@pengutronix.de>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/hugetlb.c |    1 +
- mm/migrate.c |    4 +++-
- 2 files changed, 4 insertions(+), 1 deletion(-)
+ drivers/rtc/rtc-isl1208.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -3028,6 +3028,7 @@ void hugetlb_change_protection(struct vm
- 		if (!huge_pte_none(huge_ptep_get(ptep))) {
- 			pte = huge_ptep_get_and_clear(mm, address, ptep);
- 			pte = pte_mkhuge(pte_modify(pte, newprot));
-+			pte = arch_make_huge_pte(pte, vma, NULL, 0);
- 			set_huge_pte_at(mm, address, ptep, pte);
- 		}
- 	}
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -143,8 +143,10 @@ static int remove_migration_pte(struct p
- 	if (is_write_migration_entry(entry))
- 		pte = pte_mkwrite(pte);
- #ifdef CONFIG_HUGETLB_PAGE
--	if (PageHuge(new))
-+	if (PageHuge(new)) {
- 		pte = pte_mkhuge(pte);
-+		pte = arch_make_huge_pte(pte, vma, new, 0);
-+	}
- #endif
- 	flush_cache_page(vma, addr, pte_pfn(pte));
- 	set_pte_at(mm, addr, ptep, pte);
+--- a/drivers/rtc/rtc-isl1208.c
++++ b/drivers/rtc/rtc-isl1208.c
+@@ -506,6 +506,7 @@ isl1208_rtc_interrupt(int irq, void *dat
+ {
+ 	unsigned long timeout = jiffies + msecs_to_jiffies(1000);
+ 	struct i2c_client *client = data;
++	struct rtc_device *rtc = i2c_get_clientdata(client);
+ 	int handled = 0, sr, err;
+ 
+ 	/*
+@@ -528,6 +529,8 @@ isl1208_rtc_interrupt(int irq, void *dat
+ 	if (sr & ISL1208_REG_SR_ALM) {
+ 		dev_dbg(&client->dev, "alarm!\n");
+ 
++		rtc_update_irq(rtc, 1, RTC_IRQF | RTC_AF);
++
+ 		/* Clear the alarm */
+ 		sr &= ~ISL1208_REG_SR_ALM;
+ 		sr = i2c_smbus_write_byte_data(client, ISL1208_REG_SR, sr);
 
 
