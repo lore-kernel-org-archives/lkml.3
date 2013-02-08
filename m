@@ -1,37 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946067Ab3BHIWo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 03:22:44 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:60761 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759790Ab3BHIWn (ORCPT
+	id S1946071Ab3BHIYN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 03:24:13 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:57262 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759790Ab3BHIYM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 03:22:43 -0500
-X-AuditID: 9c930179-b7c24ae00000119c-5c-5114b5d239a5
-From: Namhyung Kim <namhyung@kernel.org>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] stop_machine: dequeue work before signal completion
-References: <CAJd=RBBvE-5f1UyJGu32EHGVCXe6rVYY0010SKa56j7OvtPG7g@mail.gmail.com>
-Date: Fri, 08 Feb 2013 17:22:42 +0900
-In-Reply-To: <CAJd=RBBvE-5f1UyJGu32EHGVCXe6rVYY0010SKa56j7OvtPG7g@mail.gmail.com>
-	(Hillf Danton's message of "Fri, 8 Feb 2013 11:42:43 +0800")
-Message-ID: <87pq0bqkod.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Fri, 8 Feb 2013 03:24:12 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <CAMuHMdWEr-uZqc6P1CGNw0P6JG3FGsRKJLB1tLWzuYuBujTzfQ@mail.gmail.com>
+References: <1360246728-3490-1-git-send-email-michal.simek@xilinx.com>
+	<CAMuHMdWEr-uZqc6P1CGNw0P6JG3FGsRKJLB1tLWzuYuBujTzfQ@mail.gmail.com>
+Date: Fri, 8 Feb 2013 09:24:11 +0100
+Message-ID: <CAHTX3d+2SpK5pe5d-++j+CrDEF7orDa7zHfQChy21z+Ls2MDJQ@mail.gmail.com>
+Subject: Re: [PATCH] asm-generic: io: Fix ioread16/32be and iowrite16/32be
+From: Michal Simek <monstr@monstr.eu>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Arnd Bergmann <arnd@arndb.de>, Will Deacon <will.deacon@arm.com>,
+        linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Feb 2013 11:42:43 +0800, Hillf Danton wrote:
-> As checked with BUG_ON in the case of CPU_UP_PREPARE, we have to dequeue
-> work first for further actions, then stopper reaches sane and clear state.
+2013/2/8 Geert Uytterhoeven <geert@linux-m68k.org>:
+> On Thu, Feb 7, 2013 at 3:18 PM, Michal Simek <michal.simek@xilinx.com> wrote:
+>> Fix ioreadXXbe and iowriteXXbe functions which did
+>> additional little endian conversion on native big endian systems.
+>> Using be_to_cpu (cpu_to_be) conversions with __raw_read/write
+>> functions have resolved it.
+>>
+>> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+>> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>> CC: Arnd Bergmann <arnd@arndb.de>
+>> CC: Geert Uytterhoeven <geert@linux-m68k.org>
+>> CC: Will Deacon <will.deacon@arm.com>
+>> CC: linux-arch@vger.kernel.org
+>
+> I have one question (see below). Apart from that:
+> Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+>
+>> -#define ioread16be(addr)       be16_to_cpu(ioread16(addr))
+>> +#define ioread16be(addr)       __be16_to_cpu(__raw_readw(addr))
+>
+> Why did you change it to the __beX_to_cpu variant with underscores?
 
-Reviewed-by: Namhyung Kim <namhyung@kernel.org>
+The question could be probably different. Why are they even defined?
+I have grepped the kernel and all archs use these generic macros
+
+include/linux/byteorder/generic.h:94:#define be32_to_cpu __be32_to_cpu
+include/linux/byteorder/generic.h:106:#define be32_to_cpup __be32_to_cpup
+include/linux/byteorder/generic.h:118:#define be32_to_cpus __be32_to_cpus
+
+What about to remove them?
+
+Back to you question. I can't remember particular reason for that maybe
+just experience that __ versions should be the fastest kernel implementation.
 
 Thanks,
-Namhyung
+Michal
+
+
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
