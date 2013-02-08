@@ -1,61 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760099Ab3BHKQl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 05:16:41 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:2195 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760058Ab3BHKQk (ORCPT
+	id S1760108Ab3BHKTW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 05:19:22 -0500
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:55290 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756584Ab3BHKTU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 05:16:40 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Fri, 08 Feb 2013 02:16:38 -0800
-Date: Fri, 8 Feb 2013 12:16:35 +0200
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Mike Turquette <mturquette@linaro.org>
-CC: Stephen Warren <swarren@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] clk: tegra: Implement locking for super clock
-Message-ID: <20130208101635.GS3073@tbergstrom-lnx.Nvidia.com>
-References: <1360254261-23000-1-git-send-email-pdeschrijver@nvidia.com>
- <20130207185742.11471.19037@quantum>
+	Fri, 8 Feb 2013 05:19:20 -0500
+Date: Fri, 8 Feb 2013 11:19:11 +0100
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] atm/iphase: rename fregt_t -> ffreg_t
+Message-ID: <20130208101911.GA12195@osiris>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130207185742.11471.19037@quantum>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 13020810-1948-0000-0000-000004404ECA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 07, 2013 at 07:57:42PM +0100, Mike Turquette wrote:
-> Quoting Peter De Schrijver (2013-02-07 08:24:14)
-> > Although tegra_clk_register_super_mux() has a lock parameter, the lock is not
-> > actually used by the code. Fixed with this patch.
-> > 
-> > Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
-> > ---
-> >  drivers/clk/tegra/clk-super.c |   18 +++++++++++++++---
-> >  1 files changed, 15 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/drivers/clk/tegra/clk-super.c b/drivers/clk/tegra/clk-super.c
-> > index 7ad48a8..2fd924d 100644
-> > --- a/drivers/clk/tegra/clk-super.c
-> > +++ b/drivers/clk/tegra/clk-super.c
-> > @@ -73,7 +73,12 @@ static int clk_super_set_parent(struct clk_hw *hw, u8 index)
-> >  {
-> >         struct tegra_clk_super_mux *mux = to_clk_super_mux(hw);
-> >         u32 val, state;
-> > +       int err = 0;
-> >         u8 parent_index, shift;
-> > +       unsigned long flags = 0;
-> 
-> I don't think initializing flags to zero is necessary but it is not a
-> big deal.  Is gcc throwing a warning?  Otherwise:
-> 
+We have conflicting type qualifiers for "freg_t" in s390's ptrace.h and the
+iphase atm device driver, which causes the compile error below.
+Unfortunately the s390 typedef can't be renamed, since it's a user visible api,
+nor can I change the include order in s390 code to avoid the conflict.
 
-Yes. gcc throws a warning if it's not initialized.
+So simply rename the iphase typedef to a new name. Fixes this compile error:
 
-Cheers,
+In file included from drivers/atm/iphase.c:66:0:
+drivers/atm/iphase.h:639:25: error: conflicting type qualifiers for 'freg_t'
+In file included from next/arch/s390/include/asm/ptrace.h:9:0,
+                 from next/arch/s390/include/asm/lowcore.h:12,
+                 from next/arch/s390/include/asm/thread_info.h:30,
+                 from include/linux/thread_info.h:54,
+                 from include/linux/preempt.h:9,
+                 from include/linux/spinlock.h:50,
+                 from include/linux/seqlock.h:29,
+                 from include/linux/time.h:5,
+                 from include/linux/stat.h:18,
+                 from include/linux/module.h:10,
+                 from drivers/atm/iphase.c:43:
+next/arch/s390/include/uapi/asm/ptrace.h:197:3: note: previous declaration of 'freg_t' was here
 
-Peter.
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+---
+ drivers/atm/iphase.h | 146 +++++++++++++++++++++++++--------------------------
+ 1 file changed, 73 insertions(+), 73 deletions(-)
+
+diff --git a/drivers/atm/iphase.h b/drivers/atm/iphase.h
+index 6a0955e..53ecac5 100644
+--- a/drivers/atm/iphase.h
++++ b/drivers/atm/iphase.h
+@@ -636,82 +636,82 @@ struct rx_buf_desc {
+ #define SEG_BASE IPHASE5575_FRAG_CONTROL_REG_BASE  
+ #define REASS_BASE IPHASE5575_REASS_CONTROL_REG_BASE  
+ 
+-typedef volatile u_int  freg_t;
++typedef volatile u_int	ffreg_t;
+ typedef u_int   rreg_t;
+ 
+ typedef struct _ffredn_t {
+-        freg_t  idlehead_high;  /* Idle cell header (high)              */
+-        freg_t  idlehead_low;   /* Idle cell header (low)               */
+-        freg_t  maxrate;        /* Maximum rate                         */
+-        freg_t  stparms;        /* Traffic Management Parameters        */
+-        freg_t  abrubr_abr;     /* ABRUBR Priority Byte 1, TCR Byte 0   */
+-        freg_t  rm_type;        /*                                      */
+-        u_int   filler5[0x17 - 0x06];
+-        freg_t  cmd_reg;        /* Command register                     */
+-        u_int   filler18[0x20 - 0x18];
+-        freg_t  cbr_base;       /* CBR Pointer Base                     */
+-        freg_t  vbr_base;       /* VBR Pointer Base                     */
+-        freg_t  abr_base;       /* ABR Pointer Base                     */
+-        freg_t  ubr_base;       /* UBR Pointer Base                     */
+-        u_int   filler24;
+-        freg_t  vbrwq_base;     /* VBR Wait Queue Base                  */
+-        freg_t  abrwq_base;     /* ABR Wait Queue Base                  */
+-        freg_t  ubrwq_base;     /* UBR Wait Queue Base                  */
+-        freg_t  vct_base;       /* Main VC Table Base                   */
+-        freg_t  vcte_base;      /* Extended Main VC Table Base          */
+-        u_int   filler2a[0x2C - 0x2A];
+-        freg_t  cbr_tab_beg;    /* CBR Table Begin                      */
+-        freg_t  cbr_tab_end;    /* CBR Table End                        */
+-        freg_t  cbr_pointer;    /* CBR Pointer                          */
+-        u_int   filler2f[0x30 - 0x2F];
+-        freg_t  prq_st_adr;     /* Packet Ready Queue Start Address     */
+-        freg_t  prq_ed_adr;     /* Packet Ready Queue End Address       */
+-        freg_t  prq_rd_ptr;     /* Packet Ready Queue read pointer      */
+-        freg_t  prq_wr_ptr;     /* Packet Ready Queue write pointer     */
+-        freg_t  tcq_st_adr;     /* Transmit Complete Queue Start Address*/
+-        freg_t  tcq_ed_adr;     /* Transmit Complete Queue End Address  */
+-        freg_t  tcq_rd_ptr;     /* Transmit Complete Queue read pointer */
+-        freg_t  tcq_wr_ptr;     /* Transmit Complete Queue write pointer*/
+-        u_int   filler38[0x40 - 0x38];
+-        freg_t  queue_base;     /* Base address for PRQ and TCQ         */
+-        freg_t  desc_base;      /* Base address of descriptor table     */
+-        u_int   filler42[0x45 - 0x42];
+-        freg_t  mode_reg_0;     /* Mode register 0                      */
+-        freg_t  mode_reg_1;     /* Mode register 1                      */
+-        freg_t  intr_status_reg;/* Interrupt Status register            */
+-        freg_t  mask_reg;       /* Mask Register                        */
+-        freg_t  cell_ctr_high1; /* Total cell transfer count (high)     */
+-        freg_t  cell_ctr_lo1;   /* Total cell transfer count (low)      */
+-        freg_t  state_reg;      /* Status register                      */
+-        u_int   filler4c[0x58 - 0x4c];
+-        freg_t  curr_desc_num;  /* Contains the current descriptor num  */
+-        freg_t  next_desc;      /* Next descriptor                      */
+-        freg_t  next_vc;        /* Next VC                              */
+-        u_int   filler5b[0x5d - 0x5b];
+-        freg_t  present_slot_cnt;/* Present slot count                  */
+-        u_int   filler5e[0x6a - 0x5e];
+-        freg_t  new_desc_num;   /* New descriptor number                */
+-        freg_t  new_vc;         /* New VC                               */
+-        freg_t  sched_tbl_ptr;  /* Schedule table pointer               */
+-        freg_t  vbrwq_wptr;     /* VBR wait queue write pointer         */
+-        freg_t  vbrwq_rptr;     /* VBR wait queue read pointer          */
+-        freg_t  abrwq_wptr;     /* ABR wait queue write pointer         */
+-        freg_t  abrwq_rptr;     /* ABR wait queue read pointer          */
+-        freg_t  ubrwq_wptr;     /* UBR wait queue write pointer         */
+-        freg_t  ubrwq_rptr;     /* UBR wait queue read pointer          */
+-        freg_t  cbr_vc;         /* CBR VC                               */
+-        freg_t  vbr_sb_vc;      /* VBR SB VC                            */
+-        freg_t  abr_sb_vc;      /* ABR SB VC                            */
+-        freg_t  ubr_sb_vc;      /* UBR SB VC                            */
+-        freg_t  vbr_next_link;  /* VBR next link                        */
+-        freg_t  abr_next_link;  /* ABR next link                        */
+-        freg_t  ubr_next_link;  /* UBR next link                        */
+-        u_int   filler7a[0x7c-0x7a];
+-        freg_t  out_rate_head;  /* Out of rate head                     */
+-        u_int   filler7d[0xca-0x7d]; /* pad out to full address space   */
+-        freg_t  cell_ctr_high1_nc;/* Total cell transfer count (high)   */
+-        freg_t  cell_ctr_lo1_nc;/* Total cell transfer count (low)      */
+-        u_int   fillercc[0x100-0xcc]; /* pad out to full address space   */
++	ffreg_t	idlehead_high;	/* Idle cell header (high)		*/
++	ffreg_t	idlehead_low;	/* Idle cell header (low)		*/
++	ffreg_t	maxrate;	/* Maximum rate				*/
++	ffreg_t	stparms;	/* Traffic Management Parameters	*/
++	ffreg_t	abrubr_abr;	/* ABRUBR Priority Byte 1, TCR Byte 0	*/
++	ffreg_t	rm_type;	/*					*/
++	u_int	filler5[0x17 - 0x06];
++	ffreg_t	cmd_reg;	/* Command register			*/
++	u_int	filler18[0x20 - 0x18];
++	ffreg_t	cbr_base;	/* CBR Pointer Base			*/
++	ffreg_t	vbr_base;	/* VBR Pointer Base			*/
++	ffreg_t	abr_base;	/* ABR Pointer Base			*/
++	ffreg_t	ubr_base;	/* UBR Pointer Base			*/
++	u_int	filler24;
++	ffreg_t	vbrwq_base;	/* VBR Wait Queue Base			*/
++	ffreg_t	abrwq_base;	/* ABR Wait Queue Base			*/
++	ffreg_t	ubrwq_base;	/* UBR Wait Queue Base			*/
++	ffreg_t	vct_base;	/* Main VC Table Base			*/
++	ffreg_t	vcte_base;	/* Extended Main VC Table Base		*/
++	u_int	filler2a[0x2C - 0x2A];
++	ffreg_t	cbr_tab_beg;	/* CBR Table Begin			*/
++	ffreg_t	cbr_tab_end;	/* CBR Table End			*/
++	ffreg_t	cbr_pointer;	/* CBR Pointer				*/
++	u_int	filler2f[0x30 - 0x2F];
++	ffreg_t	prq_st_adr;	/* Packet Ready Queue Start Address	*/
++	ffreg_t	prq_ed_adr;	/* Packet Ready Queue End Address	*/
++	ffreg_t	prq_rd_ptr;	/* Packet Ready Queue read pointer	*/
++	ffreg_t	prq_wr_ptr;	/* Packet Ready Queue write pointer	*/
++	ffreg_t	tcq_st_adr;	/* Transmit Complete Queue Start Address*/
++	ffreg_t	tcq_ed_adr;	/* Transmit Complete Queue End Address	*/
++	ffreg_t	tcq_rd_ptr;	/* Transmit Complete Queue read pointer */
++	ffreg_t	tcq_wr_ptr;	/* Transmit Complete Queue write pointer*/
++	u_int	filler38[0x40 - 0x38];
++	ffreg_t	queue_base;	/* Base address for PRQ and TCQ		*/
++	ffreg_t	desc_base;	/* Base address of descriptor table	*/
++	u_int	filler42[0x45 - 0x42];
++	ffreg_t	mode_reg_0;	/* Mode register 0			*/
++	ffreg_t	mode_reg_1;	/* Mode register 1			*/
++	ffreg_t	intr_status_reg;/* Interrupt Status register		*/
++	ffreg_t	mask_reg;	/* Mask Register			*/
++	ffreg_t	cell_ctr_high1; /* Total cell transfer count (high)	*/
++	ffreg_t	cell_ctr_lo1;	/* Total cell transfer count (low)	*/
++	ffreg_t	state_reg;	/* Status register			*/
++	u_int	filler4c[0x58 - 0x4c];
++	ffreg_t	curr_desc_num;	/* Contains the current descriptor num	*/
++	ffreg_t	next_desc;	/* Next descriptor			*/
++	ffreg_t	next_vc;	/* Next VC				*/
++	u_int	filler5b[0x5d - 0x5b];
++	ffreg_t	present_slot_cnt;/* Present slot count			*/
++	u_int	filler5e[0x6a - 0x5e];
++	ffreg_t	new_desc_num;	/* New descriptor number		*/
++	ffreg_t	new_vc;		/* New VC				*/
++	ffreg_t	sched_tbl_ptr;	/* Schedule table pointer		*/
++	ffreg_t	vbrwq_wptr;	/* VBR wait queue write pointer		*/
++	ffreg_t	vbrwq_rptr;	/* VBR wait queue read pointer		*/
++	ffreg_t	abrwq_wptr;	/* ABR wait queue write pointer		*/
++	ffreg_t	abrwq_rptr;	/* ABR wait queue read pointer		*/
++	ffreg_t	ubrwq_wptr;	/* UBR wait queue write pointer		*/
++	ffreg_t	ubrwq_rptr;	/* UBR wait queue read pointer		*/
++	ffreg_t	cbr_vc;		/* CBR VC				*/
++	ffreg_t	vbr_sb_vc;	/* VBR SB VC				*/
++	ffreg_t	abr_sb_vc;	/* ABR SB VC				*/
++	ffreg_t	ubr_sb_vc;	/* UBR SB VC				*/
++	ffreg_t	vbr_next_link;	/* VBR next link			*/
++	ffreg_t	abr_next_link;	/* ABR next link			*/
++	ffreg_t	ubr_next_link;	/* UBR next link			*/
++	u_int	filler7a[0x7c-0x7a];
++	ffreg_t	out_rate_head;	/* Out of rate head			*/
++	u_int	filler7d[0xca-0x7d]; /* pad out to full address space	*/
++	ffreg_t	cell_ctr_high1_nc;/* Total cell transfer count (high)	*/
++	ffreg_t	cell_ctr_lo1_nc;/* Total cell transfer count (low)	*/
++	u_int	fillercc[0x100-0xcc]; /* pad out to full address space	 */
+ } ffredn_t;
+ 
+ typedef struct _rfredn_t {
+-- 
+1.7.12.4
+
