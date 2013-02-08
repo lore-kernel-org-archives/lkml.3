@@ -1,102 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946280Ab3BHLR0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 06:17:26 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:60155 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946228Ab3BHLRZ (ORCPT
+	id S1946282Ab3BHLUc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 06:20:32 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35570 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1946247Ab3BHLUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 06:17:25 -0500
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        peterz@infradead.org, mingo@kernel.org, pjt@google.com,
-        rostedt@goodmis.org, fweisbec@gmail.com
-Cc: Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [PATCH] sched: fix wrong rq's runnable_avg update with rt task
-Date: Fri,  8 Feb 2013 12:11:27 +0100
-Message-Id: <1360321887-18251-1-git-send-email-vincent.guittot@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 8 Feb 2013 06:20:31 -0500
+Date: Fri, 8 Feb 2013 11:20:28 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Sangbeom Kim <sbkim73@samsung.com>, LiamGirdwood <lgirdwood@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] regulator: s5m8767: Fix using wrong dev argument at
+ various places
+Message-ID: <20130208112027.GI8879@opensource.wolfsonmicro.com>
+References: <1360119305.8965.1.camel@phoenix>
+ <1360119412.8965.3.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BghK6+krpKHjj+jk"
+Content-Disposition: inline
+In-Reply-To: <1360119412.8965.3.camel@phoenix>
+X-Cookie: Stay away from flying saucers today.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a RT task is scheduled on an idle CPU, the update of the rq's load is
-not done because CFS's functions are not called. Then, the idle_balance,
-which is called just before entering the idle function, updates the
-rq's load and makes the assumption that the elapsed time since the last
-update, was only running time.
 
-The rq's load of a CPU that only runs a periodic RT task, is close to
-LOAD_AVG_MAX whatever the running duration of the RT task is.
+--BghK6+krpKHjj+jk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-A new idle_exit function is called when the prev task is the idle function
-so the elapsed time will be accounted as idle time in the rq's load.
+On Wed, Feb 06, 2013 at 10:56:52AM +0800, Axel Lin wrote:
 
-Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
----
- kernel/sched/core.c  |    3 +++
- kernel/sched/fair.c  |   10 ++++++++++
- kernel/sched/sched.h |    5 +++++
- 3 files changed, 18 insertions(+)
+> Use &pdev->dev rather than iodev->dev for dev_err(), dev_warn() and dev_info().
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 26058d0..592e06c 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2927,6 +2927,9 @@ need_resched:
- 
- 	pre_schedule(rq, prev);
- 
-+	if (unlikely(prev == rq->idle))
-+		idle_exit(cpu, rq);
-+
- 	if (unlikely(!rq->nr_running))
- 		idle_balance(cpu, rq);
- 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 5eea870..520fe55 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1562,6 +1562,16 @@ static inline void dequeue_entity_load_avg(struct cfs_rq *cfs_rq,
- 		se->avg.decay_count = atomic64_read(&cfs_rq->decay_counter);
- 	} /* migrations, e.g. sleep=0 leave decay_count == 0 */
- }
-+
-+/*
-+ * Update the rq's load with the elapsed idle time before a task is
-+ * scheduled. if the newly scheduled task is not a CFS  task, idle_exit will
-+ * be the only way to update the runnable statistic.
-+ */
-+void idle_exit(int this_cpu, struct rq *this_rq)
-+{
-+	update_rq_runnable_avg(this_rq, 0);
-+}
- #else
- static inline void update_entity_load_avg(struct sched_entity *se,
- 					  int update_cfs_rq) {}
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index fc88644..9707092 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -877,6 +877,7 @@ extern const struct sched_class idle_sched_class;
- 
- extern void trigger_load_balance(struct rq *rq, int cpu);
- extern void idle_balance(int this_cpu, struct rq *this_rq);
-+extern void idle_exit(int this_cpu, struct rq *this_rq);
- 
- #else	/* CONFIG_SMP */
- 
-@@ -884,6 +885,10 @@ static inline void idle_balance(int cpu, struct rq *rq)
- {
- }
- 
-+static inline void idle_exit(int this_cpu, struct rq *this_rq)
-+{
-+}
-+
- #endif
- 
- extern void sysrq_sched_debug_show(void);
--- 
-1.7.9.5
+It's not clear to me that this is actually an improvement, the pdev is
+mostly just an internal Linux implementation detail so it's common to
+use the physical device for MFD logging in order to help the user
+understand what's causing the log message.
 
+> Use &pdev->dev rather than iodev->dev for devm_kzalloc() and
+> of_get_regulator_init_data(), this fixes memory leak.
+
+This is a good fix though.  This sort of thing is one reason for
+splitting out unrelated changes.
+
+--BghK6+krpKHjj+jk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRFN9qAAoJELSic+t+oim9CLAP/jWUTStapzrzK2DzjziUzB0q
+Wym66s329wvRH1/+SwLNywyJ7Wp+6L4nF6bOaohUMS3D8Vsg0BX0xy3UHc6lAgkR
+bnyV82qYaBscLwTRs3LhhG2+zyq1XguQfKtucPjKm+E1+GJGTHA/gGgPWfTPBJ1Q
+mYGpXCXgFxuIt3zZX8OuNBEZL50kO4RCcbZ37PSczyCUoMcAHGzpfiCnZcCMg+3m
+UzuqOQ5LssgLeUco20xepSOdvxMCWlNx1/d6j+FUeF7MqQUH3UKlruDOCcasOjxS
+/K7PrlyoOPIY9KxPgrvWamT8l4XKZKT2cwT8oehUG3ANDHZZKuTSg4ZIr+cDHQAD
+3HcAhqrpsF9Z1CBqANoTFSjVvxIy0FNqlEw5XVDCV8c3NIUh2/3jd81dK8m/vuys
+Za46tzWQ3C3G4NK+muRz00uMs+vVaPjnX6t6IIsUC3uAK/SVvoiT7zmA+Z70edIN
+EBCMbehBUEkSv83b2AH95IFNF5KnP9RJRPz1CT9ucz+KWmIOEev5ZeEVixe3Xj+k
+G6YNKEoKd0iiiRNsIoLdBznPRmS/WiNiqQrk8G5cBpx1sUXoerutDJ5RaKyOMFkl
+LbEMxDc8CnR1YU7+ON6xqknDR0qDbMrPRXC0wd5hWs2dg7mzQu2+on5JJ0tbcw6x
+0X3h6x8bEsRMfbDOsHue
+=+vNJ
+-----END PGP SIGNATURE-----
+
+--BghK6+krpKHjj+jk--
