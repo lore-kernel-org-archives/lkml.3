@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945949Ab3BHBST (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 20:18:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41825 "EHLO
+	id S1757472Ab3BHBSS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 20:18:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41828 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758254Ab3BHA5f (ORCPT
+	with ESMTP id S1758260Ab3BHA5g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 19:57:35 -0500
+	Thu, 7 Feb 2013 19:57:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 03/34] drm/radeon/evergreen+: wait for the MC to settle after MC blackout
-Date: Thu,  7 Feb 2013 16:56:59 -0800
-Message-Id: <20130208004627.939261062@linuxfoundation.org>
+Subject: [ 04/34] drm/radeon: add WAIT_UNTIL to the non-VM safe regs list for cayman/TN
+Date: Thu,  7 Feb 2013 16:57:00 -0800
+Message-Id: <20130208004628.139604655@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130208004627.375461662@linuxfoundation.org>
 References: <20130208004627.375461662@linuxfoundation.org>
@@ -28,32 +28,25 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit ed39fadd6df01095378e499fac3674883f16b853 upstream.
+commit 674a16f2b4724880d07389abbb95abf320b924aa upstream.
 
-Some chips seem to need a little delay after blacking out
-the MC before the requests actually stop.
-
-May fix:
-https://bugs.freedesktop.org/show_bug.cgi?id=56139
-https://bugs.freedesktop.org/show_bug.cgi?id=57567
+Newer versions of mesa emit this.
 
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/evergreen.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/gpu/drm/radeon/reg_srcs/cayman |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -1345,6 +1345,8 @@ void evergreen_mc_stop(struct radeon_dev
- 		blackout &= ~BLACKOUT_MODE_MASK;
- 		WREG32(MC_SHARED_BLACKOUT_CNTL, blackout | 1);
- 	}
-+	/* wait for the MC to settle */
-+	udelay(100);
- }
- 
- void evergreen_mc_resume(struct radeon_device *rdev, struct evergreen_mc_save *save)
+--- a/drivers/gpu/drm/radeon/reg_srcs/cayman
++++ b/drivers/gpu/drm/radeon/reg_srcs/cayman
+@@ -1,5 +1,6 @@
+ cayman 0x9400
+ 0x0000802C GRBM_GFX_INDEX
++0x00008040 WAIT_UNTIL
+ 0x000084FC CP_STRMOUT_CNTL
+ 0x000085F0 CP_COHER_CNTL
+ 0x000085F4 CP_COHER_SIZE
 
 
