@@ -1,54 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946993Ab3BHT4S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 14:56:18 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:35261 "EHLO hydra.sisk.pl"
+	id S1947001Ab3BHUCK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 15:02:10 -0500
+Received: from mail.tpi.com ([70.99.223.143]:3367 "EHLO mail.tpi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1946936Ab3BHT4R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 14:56:17 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: valdis.kletnieks@vt.edu, artem.savkov@gmail.com, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com
-Subject: Re: [PATCH 0/4] CPUFreq Fixes for 3.9
-Date: Fri, 08 Feb 2013 21:02:37 +0100
-Message-ID: <1653071.l2kN4Hy2U6@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAKohpokp4YrxKHibewdt+3-WF7P2Fa_bvRidHpjd9SpsT6bPpw@mail.gmail.com>
-References: <cover.1360232293.git.viresh.kumar@linaro.org> <2130803.VQA31hf2jE@vostro.rjw.lan> <CAKohpokp4YrxKHibewdt+3-WF7P2Fa_bvRidHpjd9SpsT6bPpw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1946915Ab3BHUCI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 15:02:08 -0500
+From: Tim Gardner <tim.gardner@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: Tim Gardner <tim.gardner@canonical.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org
+Subject: [PATCH linux-next] perf/x86: x86_schedule_events(): avoid 512 byte stack variable
+Date: Fri,  8 Feb 2013 13:01:56 -0700
+Message-Id: <1360353716-51368-1-git-send-email-tim.gardner@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, February 08, 2013 08:06:52 PM Viresh Kumar wrote:
-> On 8 February 2013 18:02, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > So as I said, please rework the fixes on top of linux-pm.git/pm-cpufreq.
-> 
-> I already did. Please check for-rafael branch
+x86_schedule_events() creates a 512 byte automatic variable
+when compiled for 64 bit. Dynamically allocate this array
+to avoid possible stack corruption. Smatch analysis:
 
-Cool.  This is the one I'm supposed to apply, then?
+arch/x86/kernel/cpu/perf_event.c:727 x86_schedule_events() warn:
+ 'constraints' puts 512 bytes on stack
 
-> > Moreover, I'd very much prefer it if you fixed the problems introduced by
-> > b8eed8a "cpufreq: Simplify __cpufreq_remove_dev()" separately and *then* any
-> > other locking problems you're seeing in the code, although people are not
-> > reporting them.
-> >
-> > You seem to have a clear picture of how the code should work now, so that
-> > won't be a big trouble I guess.
-> 
-> For me all problems are fixed in the current code. :)
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+Cc: <stable@vger.kernel.org> # 2.6.34.y and higher
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+---
 
-Sounds great. :-)
+This large stack variable was introduced with 63b146490befc027a7e0923e333269e68b20d380
+in 2.6.34. Since it has been around for awhile I don't know if its really a
+problem on this code path, but it does consume a good size chunk of the kernel stack.
 
-Thanks,
-Rafael
+Applies cleanly to 3.3.y and higher. Needs backport for older kernels.
 
+ arch/x86/kernel/cpu/perf_event.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index bf0f01a..1f2005e 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -718,11 +718,15 @@ int perf_assign_events(struct event_constraint **constraints, int n,
+ 
+ int x86_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign)
+ {
+-	struct event_constraint *c, *constraints[X86_PMC_IDX_MAX];
++	struct event_constraint *c, **constraints;
+ 	unsigned long used_mask[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
+ 	int i, wmin, wmax, num = 0;
+ 	struct hw_perf_event *hwc;
+ 
++	constraints = kmalloc(X86_PMC_IDX_MAX*sizeof(*constraints), GFP_ATOMIC);
++	if (!constraints)
++		return -ENOMEM;
++
+ 	bitmap_zero(used_mask, X86_PMC_IDX_MAX);
+ 
+ 	for (i = 0, wmin = X86_PMC_IDX_MAX, wmax = 0; i < n; i++) {
+@@ -770,6 +774,9 @@ int x86_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign)
+ 				x86_pmu.put_event_constraints(cpuc, cpuc->event_list[i]);
+ 		}
+ 	}
++
++	kfree(constraints);
++
+ 	return num ? -EINVAL : 0;
+ }
+ 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.9.5
+
