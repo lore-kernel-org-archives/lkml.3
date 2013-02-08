@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760190Ab3BHPm1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 10:42:27 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38404 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760132Ab3BHPm0 (ORCPT
+	id S1760203Ab3BHPnt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 10:43:49 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:50959 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760159Ab3BHPnq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 10:42:26 -0500
-Date: Fri, 8 Feb 2013 15:41:13 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, tglx@linutronix.de,
-        peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
-        paulmck@linux.vnet.ibm.com, mingo@kernel.org,
-        linux-arch@vger.kernel.org, nikunj@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, fweisbec@gmail.com,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, xiaoguangrong@linux.vnet.ibm.com, rjw@sisk.pl,
-        sbw@mit.edu, wangyun@linux.vnet.ibm.com, netdev@vger.kernel.org,
-        namhyung@kernel.org, akpm@linux-foundation.org, walken@google.com,
-        linuxppc-dev@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v5 00/45] CPU hotplug: stop_machine()-free CPU hotplug
-Message-ID: <20130208154113.GV17833@n2100.arm.linux.org.uk>
-References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com> <510FBC01.2030405@linux.vnet.ibm.com> <87haloiwv0.fsf@rustcorp.com.au> <51134596.4080106@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51134596.4080106@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Fri, 8 Feb 2013 10:43:46 -0500
+From: Ruslan Bilovol <ruslan.bilovol@ti.com>
+To: andi@etezian.org, tomi.valkeinen@ti.com, FlorianSchandinat@gmx.de,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Subject: [PATCH v2 0/1] OMAP4: DSS: Add panel for Blaze Tablet boards
+Date: Fri,  8 Feb 2013 17:43:39 +0200
+Message-Id: <1360338220-12753-1-git-send-email-ruslan.bilovol@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 07, 2013 at 11:41:34AM +0530, Srivatsa S. Bhat wrote:
-> On 02/07/2013 09:44 AM, Rusty Russell wrote:
-> > "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com> writes:
-> >> On 01/22/2013 01:03 PM, Srivatsa S. Bhat wrote:
-> >>                  Avg. latency of 1 CPU offline (ms) [stop-cpu/stop-m/c latency]
-> >>
-> >> # online CPUs    Mainline (with stop-m/c)       This patchset (no stop-m/c)
-> >>
-> >>       8                 17.04                          7.73
-> >>
-> >>      16                 18.05                          6.44
-> >>
-> >>      32                 17.31                          7.39
-> >>
-> >>      64                 32.40                          9.28
-> >>
-> >>     128                 98.23                          7.35
-> > 
-> > Nice!
-> 
-> Thank you :-)
-> 
-> >  I wonder how the ARM guys feel with their quad-cpu systems...
-> > 
-> 
-> That would be definitely interesting to know :-)
+Hi,
 
-That depends what exactly you'd like tested (and how) and whether you'd
-like it to be a test-chip based quad core, or an OMAP dual-core SoC.
+This patch adds support for TC358765 DSI-to-LVDS transmitter
+from Toshiba, that is used in OMAP4 Blaze Tablet development
+platform. It was originally developed a long time ago and
+was used internally survived few kernel migrations.
+Different people worked in this driver during last two
+years changing its sources to what each new version of
+kernel expects.
+
+Current version is ported from internal kernel v3.4 to 3.8.0-rc6
+Tested basic functioning under busybox.
+
+------------------------------------------------
+v2:
+- added returns of correct errno instead of magic numbers
+- used delays, based on hrtimers where possible
+- fixed typo
+- switched to devres management of resources instead of raw
+  calls
+
+
+Tomi Valkeinen (1):
+  OMAP4: DSS: Add panel for Blaze Tablet boards
+
+ drivers/video/omap2/displays/Kconfig          |   15 +
+ drivers/video/omap2/displays/Makefile         |    1 +
+ drivers/video/omap2/displays/panel-tc358765.c | 1000 +++++++++++++++++++++++++
+ drivers/video/omap2/displays/panel-tc358765.h |  170 +++++
+ include/video/omap-panel-tc358765.h           |   53 ++
+ 5 files changed, 1239 insertions(+)
+ create mode 100644 drivers/video/omap2/displays/panel-tc358765.c
+ create mode 100644 drivers/video/omap2/displays/panel-tc358765.h
+ create mode 100644 include/video/omap-panel-tc358765.h
+
+-- 
+1.7.9.5
 
