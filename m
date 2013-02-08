@@ -1,80 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755079Ab3BHAHL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Feb 2013 19:07:11 -0500
-Received: from mail-da0-f48.google.com ([209.85.210.48]:36107 "EHLO
-	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751542Ab3BHAHJ (ORCPT
+	id S1756339Ab3BHANi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Feb 2013 19:13:38 -0500
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:51514 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751487Ab3BHANg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Feb 2013 19:07:09 -0500
-Date: Thu, 7 Feb 2013 16:07:17 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Mel Gorman <mgorman@suse.de>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Petr Holasek <pholasek@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 4/11] ksm: reorganize ksm_check_stable_tree
-In-Reply-To: <20130205164823.GJ21389@suse.de>
-Message-ID: <alpine.LNX.2.00.1302071558100.2133@eggly.anvils>
-References: <alpine.LNX.2.00.1301251747590.29196@eggly.anvils> <alpine.LNX.2.00.1301251758190.29196@eggly.anvils> <20130205164823.GJ21389@suse.de>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Thu, 7 Feb 2013 19:13:36 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:date:message-id:mime-version:content-type
+	:content-transfer-encoding; q=dns; s=sasl; b=tPHI3Xi/nnqL7IJiRlC
+	Y+vst8vrY9SMiHjkA9WWK2VGyMhKKoUUowol8TA6xDPN6xKTf9ikv4VkixMQrk9k
+	rQ7RN6Tr6LKAFo61t+tm2gSnyybKjP0jar/PmnRGAtwk41zAqJt57NQuXwoZlgOt
+	qnstq0Tdm2duXyCOUqWHgoSQ=
+From: Junio C Hamano <gitster@pobox.com>
+To: git@vger.kernel.org
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [ANNOUNCE] Git v1.8.1.3
+Date: Thu, 07 Feb 2013 16:13:30 -0800
+Message-ID: <7vpq0b4q8l.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+X-Pobox-Relay-ID: 5F77629C-7184-11E2-A204-BCD12E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Feb 2013, Mel Gorman wrote:
-> On Fri, Jan 25, 2013 at 05:59:35PM -0800, Hugh Dickins wrote:
-> > Memory hotremove's ksm_check_stable_tree() is pitifully inefficient
-> > (restarting whenever it finds a stale node to remove), but rearrange
-> > so that at least it does not needlessly restart from nid 0 each time.
-> > And add a couple of comments: here is why we keep pfn instead of page.
-> > 
-> > Signed-off-by: Hugh Dickins <hughd@google.com>
-> > ---
-> >  mm/ksm.c |   38 ++++++++++++++++++++++----------------
-> >  1 file changed, 22 insertions(+), 16 deletions(-)
-> > 
-> > --- mmotm.orig/mm/ksm.c	2013-01-25 14:36:52.152205940 -0800
-> > +++ mmotm/mm/ksm.c	2013-01-25 14:36:53.244205966 -0800
-> > @@ -1830,31 +1830,36 @@ void ksm_migrate_page(struct page *newpa
-> >  #endif /* CONFIG_MIGRATION */
-> >  
-> >  #ifdef CONFIG_MEMORY_HOTREMOVE
-> > -static struct stable_node *ksm_check_stable_tree(unsigned long start_pfn,
-> > -						 unsigned long end_pfn)
-> > +static void ksm_check_stable_tree(unsigned long start_pfn,
-> > +				  unsigned long end_pfn)
-> >  {
-> > +	struct stable_node *stable_node;
-> >  	struct rb_node *node;
-> >  	int nid;
-> >  
-> > -	for (nid = 0; nid < nr_node_ids; nid++)
-> > -		for (node = rb_first(&root_stable_tree[nid]); node;
-> > -				node = rb_next(node)) {
-> > -			struct stable_node *stable_node;
-> > -
-> > +	for (nid = 0; nid < nr_node_ids; nid++) {
-> > +		node = rb_first(&root_stable_tree[nid]);
-> > +		while (node) {
-> 
-> This is not your fault, the old code is wrong too. It is assuming that all
-> nodes are populated in numeric orders with no holes. It won't work if just
-> two nodes 0 and 4 are online. It should be using for_each_online_node().
+The latest maintenance release Git v1.8.1.3 is now available at
+the usual places.
 
-If the old code is wrong, it probably would be my fault!  But I believe
-this is okay: these rb_roots we're looking at, they are in memory which
-is not being offlined, and the trees for offline nodes will simply be
-empty, won't they?  Something's badly wrong if otherwise.
+The release tarballs are found at:
 
-I certainly prefer to avoid for_each_online_node() etc: maybe I'm
-confusing with for_each_online_something_else(), but experience tells
-that you can get into nasty hotplug mutex ordering issues with those
-things - not worth the pain if you can easily and safely avoid them.
+    http://code.google.com/p/git-core/downloads/list
 
-Hugh
+and their SHA-1 checksums are:
+
+29ed9047263f9835726200226451339276641779  git-1.8.1.3.tar.gz
+6b1e57bde2f2b0a86532390c15bfa7b181c50db2  git-htmldocs-1.8.1.3.tar.gz
+12aaa8a0428e64d194665379ab0335d786728930  git-manpages-1.8.1.3.tar.gz
+
+Also the following public repositories all have a copy of the v1.8.1.3
+tag and the maint branch that the tag points at:
+
+  url = git://repo.or.cz/alt-git.git
+  url = https://code.google.com/p/git-core/
+  url = git://git.sourceforge.jp/gitroot/git-core/git.git
+  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
+  url = https://github.com/gitster/git
+
+Git 1.8.1.3 Release Notes
+=========================
+
+Fixes since v1.8.1.2
+--------------------
+
+ * The attribute mechanism didn't allow limiting attributes to be
+   applied to only a single directory itself with "path/" like the
+   exclude mechanism does.  The fix for this in 1.8.1.2 had
+   performance degradations.
+
+ * Command line completion code was inadvertently made incompatible with
+   older versions of bash by using a newer array notation.
+
+ * Scripts to test bash completion was inherently flaky as it was
+   affected by whatever random things the user may have on $PATH.
+
+ * A fix was added to the build procedure to work around buggy
+   versions of ccache broke the auto-generation of dependencies, which
+   unfortunately is still relevant because some people use ancient
+   distros.
+
+ * We used to stuff "user@" and then append what we read from
+   /etc/mailname to come up with a default e-mail ident, but a bug
+   lost the "user@" part.
+
+ * "git am" did not parse datestamp correctly from Hg generated patch,
+   when it is run in a locale outside C (or en).
+
+ * Attempt to "branch --edit-description" an existing branch, while
+   being on a detached HEAD, errored out.
+
+ * "git cherry-pick" did not replay a root commit to an unborn branch.
+
+ * We forgot to close the file descriptor reading from "gpg" output,
+   killing "git log --show-signature" on a long history.
+
+ * "git rebase --preserve-merges" lost empty merges in recent versions
+   of Git.
+
+ * Rebasing the history of superproject with change in the submodule
+   has been broken since v1.7.12.
+
+ * A failure to push due to non-ff while on an unborn branch
+   dereferenced a NULL pointer when showing an error message.
+
+Also contains various documentation fixes.
+
+----------------------------------------------------------------
+
+Changes since v1.8.1.2 are as follows:
+
+Brandon Casey (3):
+      git-completion.bash: replace zsh notation that breaks bash 3.X
+      git-p4.py: support Python 2.5
+      git-p4.py: support Python 2.4
+
+Dmitry V. Levin (1):
+      am: invoke perl's strftime in C locale
+
+Fraser Tweedale (1):
+      push: fix segfault when HEAD points nowhere
+
+John Keeping (1):
+      git-cvsimport.txt: cvsps-2 is deprecated
+
+Jonathan Nieder (2):
+      ident: do not drop username when reading from /etc/mailname
+      Makefile: explicitly set target name for autogenerated dependencies
+
+Junio C Hamano (17):
+      Which merge_file() function do you mean?
+      merge-tree: lose unused "flags" from merge_list
+      merge-tree: lose unused "resolve_directories"
+      merge-tree: add comments to clarify what these functions are doing
+      merge-tree: fix d/f conflicts
+      Documentation: update "howto maintain git"
+      howto/maintain: mark titles for asciidoc
+      help: include <common-cmds.h> only in one file
+      t9902: protect test from stray build artifacts
+      howto/maintain: document "### match next" convention in jch/pu branch
+      README: update stale and/or incorrect information
+      INSTALL: git-p4 does not support Python 3
+      git-am: record full index line in the patch used while rebasing
+      apply: simplify build_fake_ancestor()
+      apply: diagnose incomplete submodule object name better
+      Start preparing for 1.8.1.3
+      Git 1.8.1.3
+
+Martin von Zweigbergk (2):
+      tests: move test_cmp_rev to test-lib-functions
+      learn to pick/revert into unborn branch
+
+Nguyễn Thái Ngọc Duy (4):
+      attr: fix off-by-one directory component length calculation
+      test-lib.sh: unfilter GIT_PERF_*
+      attr: avoid calling find_basename() twice per path
+      branch: no detached HEAD check when editing another branch's description
+
+Phil Hord (1):
+      rebase --preserve-merges: keep all merge commits including empty ones
+
+Ramsay Allan Jones (1):
+      Makefile: Replace merge-file.h with merge-blobs.h in LIB_H
+
+Stephen Boyd (1):
+      gpg: close stderr once finished with it in verify_signed_buffer()
+
+Torsten Bögershausen (3):
+      t0050: known breakage vanished in merge (case change)
+      t0050: honor CASE_INSENSITIVE_FS in add (with different case)
+      t0050: Use TAB for indentation
+
