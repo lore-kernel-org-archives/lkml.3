@@ -1,53 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760504Ab3BIBfM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 20:35:12 -0500
-Received: from mga09.intel.com ([134.134.136.24]:22770 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758652Ab3BIBfL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 20:35:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,632,1355126400"; 
-   d="scan'208";a="260094779"
-From: James Ralston <james.d.ralston@intel.com>
-To: Jeff Garzik <jgarzik@pobox.com>
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Seth Heasley <seth.heasley@intel.com>,
-        James Ralston <james.d.ralston@intel.com>
-Subject: [PATCH 5/5] ahci: Add Device IDs for Intel Wellsburg PCH
-Date: Fri,  8 Feb 2013 17:34:47 -0800
-Message-Id: <1360373687-2127-1-git-send-email-james.d.ralston@intel.com>
-X-Mailer: git-send-email 1.7.7.6
+	id S1760500Ab3BIBtA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 20:49:00 -0500
+Received: from mail-da0-f48.google.com ([209.85.210.48]:36908 "EHLO
+	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760434Ab3BIBs7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 20:48:59 -0500
+Date: Fri, 8 Feb 2013 17:45:15 -0800
+From: Anton Vorontsov <anton@enomsg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
+        Axel Lin <axel.lin@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] da9030_battery: include notifier.h
+Message-ID: <20130209014515.GA9289@lizard.sbx05663.mountca.wayport.net>
+References: <1360142098-13124-1-git-send-email-mhocko@suse.cz>
+ <20130206140959.GE10254@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130206140959.GE10254@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the AHCI-mode SATA Device IDs for the Intel Wellsburg PCH
+On Wed, Feb 06, 2013 at 03:09:59PM +0100, Michal Hocko wrote:
+> Ohh, I have just noticed that this could be introduced by "mm: break
+> circular include from linux/mmzone.h" in mm tree.
+> Adding Andrew to CC.
 
-Signed-off-by: James Ralston <james.d.ralston@intel.com>
----
- drivers/ata/ahci.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+The patch is legit, actually. So, I've applied it, thank you!
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 4979127..6aac3f7 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -265,6 +265,14 @@ static const struct pci_device_id ahci_pci_tbl[] = {
- 	{ PCI_VDEVICE(INTEL, 0x9c07), board_ahci }, /* Lynx Point-LP RAID */
- 	{ PCI_VDEVICE(INTEL, 0x9c0e), board_ahci }, /* Lynx Point-LP RAID */
- 	{ PCI_VDEVICE(INTEL, 0x9c0f), board_ahci }, /* Lynx Point-LP RAID */
-+	{ PCI_VDEVICE(INTEL, 0x8d02), board_ahci }, /* Wellsburg AHCI */
-+	{ PCI_VDEVICE(INTEL, 0x8d04), board_ahci }, /* Wellsburg RAID */
-+	{ PCI_VDEVICE(INTEL, 0x8d06), board_ahci }, /* Wellsburg RAID */
-+	{ PCI_VDEVICE(INTEL, 0x8d0e), board_ahci }, /* Wellsburg RAID */
-+	{ PCI_VDEVICE(INTEL, 0x8d62), board_ahci }, /* Wellsburg AHCI */
-+	{ PCI_VDEVICE(INTEL, 0x8d64), board_ahci }, /* Wellsburg RAID */
-+	{ PCI_VDEVICE(INTEL, 0x8d66), board_ahci }, /* Wellsburg RAID */
-+	{ PCI_VDEVICE(INTEL, 0x8d6e), board_ahci }, /* Wellsburg RAID */
- 
- 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
- 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
--- 
-1.7.7.6
+Anton
 
+> On Wed 06-02-13 10:14:58, Michal Hocko wrote:
+> > randconfig complains about:
+> > drivers/power/da9030_battery.c:113: error: field ‘nb’ has incomplete type
+> > 
+> > because there is no direct include for notifier.h which defines
+> > struct notifier_block.
+> > 
+> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> > ---
+> >  drivers/power/da9030_battery.c |    1 +
+> >  1 file changed, 1 insertion(+)
+> > 
+> > diff --git a/drivers/power/da9030_battery.c b/drivers/power/da9030_battery.c
+> > index 94762e6..e8c5a39 100644
+> > --- a/drivers/power/da9030_battery.c
+> > +++ b/drivers/power/da9030_battery.c
+> > @@ -22,6 +22,7 @@
+> >  
+> >  #include <linux/debugfs.h>
+> >  #include <linux/seq_file.h>
+> > +#include <linux/notifier.h>
+> >  
+> >  #define DA9030_FAULT_LOG		0x0a
+> >  #define DA9030_FAULT_LOG_OVER_TEMP	(1 << 7)
+> > -- 
+> > 1.7.10.4
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> -- 
+> Michal Hocko
+> SUSE Labs
+> 
