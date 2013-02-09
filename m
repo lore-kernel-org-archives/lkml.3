@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760526Ab3BINwJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 08:52:09 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:59023 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755529Ab3BINwH (ORCPT
+	id S932315Ab3BINxo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 08:53:44 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:55474 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756080Ab3BINxn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 08:52:07 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 08/33] gpio: Convert to devm_ioremap_resource()
-To: Viresh Kumar <viresh.kumar@linaro.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>,
-        Linus Walleij <linus.walleij@linaro.org>
-In-Reply-To: <CAOh2x=ne_Oe7V=BzjQJtuPv20syorLTq-C89aKQDo4JK78Y8YA@mail.gmail.com>
-References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de> <1358762966-20791-9-git-send-email-thierry.reding@avionic-design.de> <CAOh2x=ne_Oe7V=BzjQJtuPv20syorLTq-C89aKQDo4JK78Y8YA@mail.gmail.com>
-Date: Sat, 09 Feb 2013 13:52:02 +0000
-Message-Id: <20130209135202.C8EA73E30EC@localhost>
+	Sat, 9 Feb 2013 08:53:43 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130209093753.654C53E2C59@localhost>
+References: <1359822572-26009-1-git-send-email-acourbot@nvidia.com>
+ <1359822572-26009-6-git-send-email-acourbot@nvidia.com> <CACRpkdaC3pu3tBZrw0Az226XEt6+AzJ_NiiCaLwV9o6NUZ8MQw@mail.gmail.com>
+ <20130209093753.654C53E2C59@localhost>
+From: Alexandre Courbot <acourbot@nvidia.com>
+Date: Sat, 9 Feb 2013 22:53:22 +0900
+X-Google-Sender-Auth: pc_hHHzDS5o0MauH4EYnNfgZNmQ
+Message-ID: <CAAVeFuLW5pP=Kk7wh63eNAuycvEcXV1op6GkXyZwK85Gqz+DJQ@mail.gmail.com>
+Subject: Re: [PATCH 4/9] gpiolib: use gpio_chips list in sysfs ops
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Linus Walleij <linus.walleij@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Jan 2013 16:22:21 +0530, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On Mon, Jan 21, 2013 at 3:39 PM, Thierry Reding
-> <thierry.reding@avionic-design.de> wrote:
-> > diff --git a/drivers/gpio/gpio-spear-spics.c b/drivers/gpio/gpio-spear-spics.c
-> > index 5f45fc4..7a4bf7c 100644
-> > --- a/drivers/gpio/gpio-spear-spics.c
-> > +++ b/drivers/gpio/gpio-spear-spics.c
-> > @@ -140,11 +140,9 @@ static int spics_gpio_probe(struct platform_device *pdev)
-> >                 return -ENOMEM;
-> >         }
-> >
-> > -       spics->base = devm_request_and_ioremap(&pdev->dev, res);
-> > -       if (!spics->base) {
-> > -               dev_err(&pdev->dev, "request and ioremap fail\n");
-> 
-> can we keep it as is?
+On Sat, Feb 9, 2013 at 6:37 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> However, this code is incorrect (it was incorrect before you touched it,
+> so not your fault). Moving it to a list makes it a lot worse though
+> because it introduces the possibility of dereferencing an invalid
+> pointer. The hooks need to grab the spinlock before parsing the list.
+>
+> I've got a patch which I'll post. I'd appreciate it if you can test
+> also.
+>
+> In actual fact, I'd like to replace the spinlock with a mutex, but that
+> requires some auditing to make sure there aren't any users from an
+> atomic context.
 
-And this is why I dislike the ERR_PTR pattern so much. It goes against
-every instinct about what is and is not a valid pointer.
+I thought about doing that as well actually, but left it for later. It
+looks safe at first sight, but as you mention we cannot exclude a few
+users will break as a consequence of such a switch.
 
-I know people want error codes, but I think hoping that all users will
-remember to do 'if (IS_ERR(ptr))' instead of 'if (!ptr)' makes things
-worse not better.
+In any case, I plan to give it a try once that big chunk is merged.
 
-g.
-
+Alex.
