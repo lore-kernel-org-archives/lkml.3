@@ -1,89 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750989Ab3BIFIk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 00:08:40 -0500
-Received: from ngcobalt07.manitu.net ([217.11.48.107]:43446 "EHLO
-	ngcobalt07.manitu.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750711Ab3BIFIi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 00:08:38 -0500
-X-manitu-Original-Sender-IP: 127.0.0.1
-X-manitu-Original-Receiver-Name: ngcobalt07.manitu.net
-Date: Sat, 9 Feb 2013 06:07:48 +0100
-From: Roland Eggner <edvx1@systemanalysen.net>
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Cc: linux-kbuild@vger.kernel.org, Dmitry Voytik <dvv.kernel@gmail.com>,
-        Michal Marek <mmarek@suse.cz>, Stephen Boyd <sboyd@codeaurora.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH resend v3 3/3] kconfig: nconf:  add vi-style navigation
- keys
-Message-ID: <20130209050748.GB8891@mobil.systemanalysen.net>
-Reply-To: Roland Eggner <edvx1@systemanalysen.net>
-Mail-Followup-To: "Yann E. MORIN" <yann.morin.1998@free.fr>,
-	linux-kbuild@vger.kernel.org, Dmitry Voytik <dvv.kernel@gmail.com>,
-	Michal Marek <mmarek@suse.cz>, Stephen Boyd <sboyd@codeaurora.org>,
-	linux-kernel@vger.kernel.org
-References: <20130201182237.GA11098@mobil.systemanalysen.net>
- <20130201183357.GD11098@mobil.systemanalysen.net>
- <201302090203.04055.yann.morin.1998@free.fr>
+	id S1751610Ab3BIFux (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 00:50:53 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55941 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751213Ab3BIFuw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Feb 2013 00:50:52 -0500
+Message-ID: <5115E3B9.6090100@ti.com>
+Date: Sat, 9 Feb 2013 06:50:49 +0100
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130115 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ftEhullJWpWg/VHq"
-Content-Disposition: inline
-In-Reply-To: <201302090203.04055.yann.morin.1998@free.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jon Hunter <jon-hunter@ti.com>
+CC: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, Tero Kristo <t-kristo@ti.com>
+Subject: Re: [PATCH v2 09/11] mfd: twl-core: Collect global variables behind
+ one private structure (global)
+References: <1358344439-23017-1-git-send-email-peter.ujfalusi@ti.com> <1358344439-23017-10-git-send-email-peter.ujfalusi@ti.com> <51154A7A.2010709@ti.com>
+In-Reply-To: <51154A7A.2010709@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/08/2013 07:56 PM, Jon Hunter wrote:
+>>  /**
+>>   * twl_i2c_write - Writes a n bit register in TWL4030/TWL5030/TWL60X0
+>>   * @mod_no: module number
+>> @@ -322,16 +323,17 @@ int twl_i2c_write(u8 mod_no, u8 *value, u8 reg, unsigned num_bytes)
+>>  		pr_err("%s: invalid module number %d\n", DRIVER_NAME, mod_no);
+>>  		return -EPERM;
+>>  	}
+>> -	if (unlikely(!inuse)) {
+>> +	if (unlikely(!twl_priv->ready)) {
+> 
+> This is causing the kernel to panic on all my omap2 boards when booting linux-next
+> because twl_priv is not initialised yet.
 
---ftEhullJWpWg/VHq
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Good catch.
+I just wonder from where the twl_* call is coming on OMAP2. AFAIK the twl code
+is for OMAP3/4, for OMAP2 Menelaus is the one which is used.
+I'm currently working on to remove all those twl_* calls from random places in
+the kernel so we will only access twl via the MFD stack.
 
-On 2013-02-09 Saturday at 02:03 +0100 Yann E. MORIN wrote:
-> On Friday 01 February 2013 Roland Eggner wrote:
-> > Add vi-style navigation keys, based on initial work by Dmitry Voytik.
->=20
-> As much I am a unconditional vim user, I doubt this is a sane idea to
-> include this, as it conflicts with the established UI that people expect,
-> especially since <h> is remapped and people already rely on <h> to provide
-> help, not do any other weird thing (like exiting the current submenu).
+> 
+>>  		pr_err("%s: not initialized\n", DRIVER_NAME);
+>>  		return -EPERM;
+>>  	}
+>>  
+>> -	sid = twl_map[mod_no].sid;
+>> -	twl = &twl_modules[sid];
+>> +	sid = twl_priv->twl_map[mod_no].sid;
+>> +	twl = &twl_priv->twl_modules[sid];
+>>  
+>> -	ret = regmap_bulk_write(twl->regmap, twl_map[mod_no].base + reg,
+>> -				value, num_bytes);
+>> +	ret = regmap_bulk_write(twl->regmap,
+>> +				twl_priv->twl_map[mod_no].base + reg, value,
+>> +				num_bytes);
+>>  
+>>  	if (ret)
+>>  		pr_err("%s: Write failed (mod %d, reg 0x%02x count %d)\n",
+>> @@ -360,16 +362,17 @@ int twl_i2c_read(u8 mod_no, u8 *value, u8 reg, unsigned num_bytes)
+>>  		pr_err("%s: invalid module number %d\n", DRIVER_NAME, mod_no);
+>>  		return -EPERM;
+>>  	}
+>> -	if (unlikely(!inuse)) {
+>> +	if (unlikely(!twl_priv->ready)) {
+> 
+> Same problem here. 
+> 
+> Here is a fix ...
+> 
+> From 141fcbbdee6bdc14d5a444ff20fad6b3440215dc Mon Sep 17 00:00:00 2001
+> From: Jon Hunter <jon-hunter@ti.com>
+> Date: Fri, 8 Feb 2013 12:42:20 -0600
+> Subject: [PATCH] ARM: OMAP2+: Fix kernel panic on boot
+> 
+> Commit 8a6aaa3 (mfd: twl-core: Collect global variables behind one
+> private structure (global)) removed the variable "inuse" that is used
+> to determine if the device has been initialised and now use the
+> twl_priv structure instead. This is causing the kernel to panic on all
+> OMAP2+ devices, because we try to access the twl_priv->ready member
+> before checking if twl_priv is initialised. Fix this and move this test
+> to the beginning of the twl_i2c_read/write function because
+> twl_get_last_module() also uses the twl_priv structure.
+> 
+> Signed-off-by: Jon Hunter <jon-hunter@ti.com>
 
-Having the most frequently used keys in the middle of the keyboard is=20
-a professional computer usage pattern, not an anachronistic one.
+Acked-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 
-Regarding the <h>/<H> conflict:  My vision is to eliminate the need for hel=
-p=20
-keybindings <h> <?> at all by displaying the related help text beside the m=
-enu=20
-permanently, similar to some graphical backends.  For terminals with=20
-COLUMNS>=3D160 this should be rather easy to implement.  nouveaufb gives me=
- by=20
-default terminal with 274 columns, =E2=80=9Cretina=E2=80=9D displays are en=
-tering the market=20
-=E2=80=A6 the frequency of COLUMNS>=3D160 terminals probably will continue =
-to grow.  While=20
-staying compatible with COLUMNS=3D80, it seems reasonable to use the capabi=
-lities=20
-of wider terminals, or what would you say?
+> ---
+>  drivers/mfd/twl-core.c |   16 ++++++++--------
+>  1 file changed, 8 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
+> index 557f9ee..89ab4d9 100644
+> --- a/drivers/mfd/twl-core.c
+> +++ b/drivers/mfd/twl-core.c
+> @@ -316,12 +316,12 @@ int twl_i2c_write(u8 mod_no, u8 *value, u8 reg, unsigned num_bytes)
+>  	int sid;
+>  	struct twl_client *twl;
+>  
+> -	if (unlikely(mod_no >= twl_get_last_module())) {
+> -		pr_err("%s: invalid module number %d\n", DRIVER_NAME, mod_no);
+> +	if (unlikely(!twl_priv || !twl_priv->ready)) {
+> +		pr_err("%s: not initialized\n", DRIVER_NAME);
+>  		return -EPERM;
+>  	}
+> -	if (unlikely(!twl_priv->ready)) {
+> -		pr_err("%s: not initialized\n", DRIVER_NAME);
+> +	if (unlikely(mod_no >= twl_get_last_module())) {
+> +		pr_err("%s: invalid module number %d\n", DRIVER_NAME, mod_no);
+>  		return -EPERM;
+>  	}
+>  
+> @@ -355,12 +355,12 @@ int twl_i2c_read(u8 mod_no, u8 *value, u8 reg, unsigned num_bytes)
+>  	int sid;
+>  	struct twl_client *twl;
+>  
+> -	if (unlikely(mod_no >= twl_get_last_module())) {
+> -		pr_err("%s: invalid module number %d\n", DRIVER_NAME, mod_no);
+> +	if (unlikely(!twl_priv || !twl_priv->ready)) {
+> +		pr_err("%s: not initialized\n", DRIVER_NAME);
+>  		return -EPERM;
+>  	}
+> -	if (unlikely(!twl_priv->ready)) {
+> -		pr_err("%s: not initialized\n", DRIVER_NAME);
+> +	if (unlikely(mod_no >= twl_get_last_module())) {
+> +		pr_err("%s: invalid module number %d\n", DRIVER_NAME, mod_no);
+>  		return -EPERM;
+>  	}
+>  
+> 
 
-Cannot promise when I will find the time to prepare a patch.
 
---=20
-Regards
-Roland Eggner
-
---ftEhullJWpWg/VHq
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iEYEARECAAYFAlEV2aQACgkQdN/hKfT7G/Li8wCghN4v8W1fFkkA6heKgTxh0KsG
-K/8AoK2Vi8LJWQ04tnXVjMNBXH5eTkuB
-=1bVV
------END PGP SIGNATURE-----
-
---ftEhullJWpWg/VHq--
+-- 
+Péter
