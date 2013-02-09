@@ -1,117 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947508Ab3BIAE1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 19:04:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56274 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1947390Ab3BIAEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 19:04:24 -0500
-Date: Fri, 8 Feb 2013 22:03:57 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Benoit Thebaudeau <benoit.thebaudeau@advansee.com>,
-        David Hardeman <david@hardeman.nu>, Trilok Soni <tsoni@codeaurora.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Matus Ujhelyi <ujhelyi.m@gmail.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
-Subject: Re: [PATCH v2] media: rc: gpio-ir-recv: add support for device tree
- parsing
-Message-ID: <20130208220357.198c313c@redhat.com>
-In-Reply-To: <1360355887-19973-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1360137832-13086-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1360355887-19973-1-git-send-email-sebastian.hesselbarth@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1947509Ab3BIAE4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 19:04:56 -0500
+Received: from mail-da0-f52.google.com ([209.85.210.52]:63105 "EHLO
+	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1947321Ab3BIAEG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 19:04:06 -0500
+From: Michel Lespinasse <walken@google.com>
+To: Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH v3 3/3] mm: accelerate munlock() treatment of THP pages
+Date: Fri,  8 Feb 2013 16:03:57 -0800
+Message-Id: <1360368237-26768-4-git-send-email-walken@google.com>
+X-Mailer: git-send-email 1.8.1
+In-Reply-To: <1360368237-26768-1-git-send-email-walken@google.com>
+References: <1360368237-26768-1-git-send-email-walken@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri,  8 Feb 2013 21:38:07 +0100
-Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> escreveu:
+munlock_vma_pages_range() was always incrementing addresses by PAGE_SIZE
+at a time. When munlocking THP pages (or the huge zero page), this resulted
+in taking the mm->page_table_lock 512 times in a row.
 
-> This patch adds device tree parsing for gpio_ir_recv platform_data and
-> the mandatory binding documentation. It basically follows what we already
-> have for e.g. gpio_keys. All required device tree properties are OS
-> independent but an optional property allow linux specific support for rc
-> maps.
-> 
-> There was a similar patch sent by Matus Ujhelyi but that discussion
-> died after the first reviews.
-> 
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> ---
-> Changelog
-> 
-> v1->v2:
-> - get rid of ptr returned by _get_devtree_pdata()
-> - check for of_node instead for NULL pdata
-> - remove unneccessary double check for gpios property
-> - remove unneccessary #ifdef CONFIG_OF around match table
-> 
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: Rob Landley <rob@landley.net>
-> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-> Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> Cc: Benoit Thebaudeau <benoit.thebaudeau@advansee.com>
-> Cc: David Hardeman <david@hardeman.nu>
-> Cc: Trilok Soni <tsoni@codeaurora.org>
-> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
-> Cc: Matus Ujhelyi <ujhelyi.m@gmail.com>
-> Cc: devicetree-discuss@lists.ozlabs.org
-> Cc: linux-doc@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: linux-media@vger.kernel.org
-> ---
->  .../devicetree/bindings/media/gpio-ir-receiver.txt |   16 ++++++
->  drivers/media/rc/gpio-ir-recv.c                    |   57 ++++++++++++++++++++
->  2 files changed, 73 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/media/gpio-ir-receiver.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/media/gpio-ir-receiver.txt b/Documentation/devicetree/bindings/media/gpio-ir-receiver.txt
-> new file mode 100644
-> index 0000000..8589f30
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/media/gpio-ir-receiver.txt
-> @@ -0,0 +1,16 @@
-> +Device-Tree bindings for GPIO IR receiver
-> +
-> +Required properties:
-> +	- compatible = "gpio-ir-receiver";
-> +	- gpios: OF device-tree gpio specification.
-> +
-> +Optional properties:
-> +	- linux,rc-map-name: Linux specific remote control map name.
-> +
-> +Example node:
-> +
-> +	ir: ir-receiver {
-> +		compatible = "gpio-ir-receiver";
-> +		gpios = <&gpio0 19 1>;
-> +		linux,rc-map-name = "rc-rc6-mce";
+We can do better by making use of the page_mask returned by follow_page_mask
+(for the huge zero page case), or the size of the page munlock_vma_page()
+operated on (for the true THP page case).
 
-Please change this to:
-		linux,rc-map-name = RC_MAP_RC6_MCE;
+Note - I am sending this as RFC only for now as I can't currently put
+my finger on what if anything prevents split_huge_page() from operating
+concurrently on the same page as munlock_vma_page(), which would mess
+up our NR_MLOCK statistics. Is this a latent bug or is there a subtle
+point I missed here ?
 
-(as defined at include/media/rc-map.h).
+Signed-off-by: Michel Lespinasse <walken@google.com>
 
-The idea of having those strings defined at the same header file is to:
+---
+ mm/internal.h |  2 +-
+ mm/mlock.c    | 34 +++++++++++++++++++++++-----------
+ 2 files changed, 24 insertions(+), 12 deletions(-)
 
-	- make sure that the same keyboard is spelled at the same way on
-all places;
-
-	- avoid people to duplicate IR keytables, using different names;
-
-	- help userspace to get the right table. In the future, the
-plan is to remove all keytables from kernelspace, keeping there just the
-name of the keytable. The existing userspace code (ir-keytables, part
-of v4l-utils) use the keytable name to dynamically load the right table
-in runtime and to switch the IR core to only handle the protocol that
-it is associated with the loaded keytable.
-
-Regards,
-Mauro
+diff --git a/mm/internal.h b/mm/internal.h
+index 1c0c4cc0fcf7..8562de0a5197 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -195,7 +195,7 @@ static inline int mlocked_vma_newpage(struct vm_area_struct *vma,
+  * must be called with vma's mmap_sem held for read or write, and page locked.
+  */
+ extern void mlock_vma_page(struct page *page);
+-extern void munlock_vma_page(struct page *page);
++extern unsigned int munlock_vma_page(struct page *page);
+ 
+ /*
+  * Clear the page's PageMlocked().  This can be useful in a situation where
+diff --git a/mm/mlock.c b/mm/mlock.c
+index 1f863a1481d3..486c7f1b5462 100644
+--- a/mm/mlock.c
++++ b/mm/mlock.c
+@@ -102,13 +102,16 @@ void mlock_vma_page(struct page *page)
+  * can't isolate the page, we leave it for putback_lru_page() and vmscan
+  * [page_referenced()/try_to_unmap()] to deal with.
+  */
+-void munlock_vma_page(struct page *page)
++unsigned int munlock_vma_page(struct page *page)
+ {
++	unsigned int page_mask = 0;
++
+ 	BUG_ON(!PageLocked(page));
+ 
+ 	if (TestClearPageMlocked(page)) {
+-		mod_zone_page_state(page_zone(page), NR_MLOCK,
+-				    -hpage_nr_pages(page));
++		unsigned int nr_pages = hpage_nr_pages(page);
++		mod_zone_page_state(page_zone(page), NR_MLOCK, -nr_pages);
++		page_mask = nr_pages - 1;
+ 		if (!isolate_lru_page(page)) {
+ 			int ret = SWAP_AGAIN;
+ 
+@@ -141,6 +144,8 @@ void munlock_vma_page(struct page *page)
+ 				count_vm_event(UNEVICTABLE_PGMUNLOCKED);
+ 		}
+ 	}
++
++	return page_mask;
+ }
+ 
+ /**
+@@ -159,7 +164,6 @@ long __mlock_vma_pages_range(struct vm_area_struct *vma,
+ 		unsigned long start, unsigned long end, int *nonblocking)
+ {
+ 	struct mm_struct *mm = vma->vm_mm;
+-	unsigned long addr = start;
+ 	unsigned long nr_pages = (end - start) / PAGE_SIZE;
+ 	int gup_flags;
+ 
+@@ -185,7 +189,7 @@ long __mlock_vma_pages_range(struct vm_area_struct *vma,
+ 	if (vma->vm_flags & (VM_READ | VM_WRITE | VM_EXEC))
+ 		gup_flags |= FOLL_FORCE;
+ 
+-	return __get_user_pages(current, mm, addr, nr_pages, gup_flags,
++	return __get_user_pages(current, mm, start, nr_pages, gup_flags,
+ 				NULL, NULL, nonblocking);
+ }
+ 
+@@ -222,13 +226,12 @@ static int __mlock_posix_error_return(long retval)
+ void munlock_vma_pages_range(struct vm_area_struct *vma,
+ 			     unsigned long start, unsigned long end)
+ {
+-	unsigned long addr;
+-
+-	lru_add_drain();
+ 	vma->vm_flags &= ~VM_LOCKED;
+ 
+-	for (addr = start; addr < end; addr += PAGE_SIZE) {
++	while (start < end) {
+ 		struct page *page;
++		unsigned int page_mask, page_increm;
++
+ 		/*
+ 		 * Although FOLL_DUMP is intended for get_dump_page(),
+ 		 * it just so happens that its special treatment of the
+@@ -236,13 +239,22 @@ void munlock_vma_pages_range(struct vm_area_struct *vma,
+ 		 * suits munlock very well (and if somehow an abnormal page
+ 		 * has sneaked into the range, we won't oops here: great).
+ 		 */
+-		page = follow_page(vma, addr, FOLL_GET | FOLL_DUMP);
++		page = follow_page_mask(vma, start, FOLL_GET | FOLL_DUMP,
++					&page_mask);
+ 		if (page && !IS_ERR(page)) {
+ 			lock_page(page);
+-			munlock_vma_page(page);
++			lru_add_drain();
++			/*
++			 * Any THP page found by follow_page_mask() may have
++			 * gotten split before reaching munlock_vma_page(),
++			 * so we need to recompute the page_mask here.
++			 */
++			page_mask = munlock_vma_page(page);
+ 			unlock_page(page);
+ 			put_page(page);
+ 		}
++		page_increm = 1 + (~(start >> PAGE_SHIFT) & page_mask);
++		start += page_increm * PAGE_SIZE;
+ 		cond_resched();
+ 	}
+ }
+-- 
+1.8.1
