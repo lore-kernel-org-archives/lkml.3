@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760740Ab3BIPBi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 10:01:38 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:44316 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760702Ab3BIPBg (ORCPT
+	id S932374Ab3BIPBx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 10:01:53 -0500
+Received: from mail-da0-f43.google.com ([209.85.210.43]:47958 "EHLO
+	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760702Ab3BIPBv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 10:01:36 -0500
+	Sat, 9 Feb 2013 10:01:51 -0500
 From: Namjae Jeon <linkinjeon@gmail.com>
 To: hirofumi@mail.parknet.co.jp, akpm@linux-foundation.org
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         Namjae Jeon <linkinjeon@gmail.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>
-Subject: [PATCH v6 0/7] fat (exportfs): support stale_rw and nostale_ro mount options.
-Date: Sun, 10 Feb 2013 00:01:21 +0900
-Message-Id: <1360422081-12144-1-git-send-email-linkinjeon@gmail.com>
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: [PATCH v6 1/7] fat: Introduce 2 new values for the -o nfs mount option
+Date: Sun, 10 Feb 2013 00:01:41 +0900
+Message-Id: <1360422101-12178-1-git-send-email-linkinjeon@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,51 +24,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namjae Jeon <namjae.jeon@samsung.com>
 
-This patch set eliminates the client side ESTALE errors when a FAT partition
-exported over NFS has it's dentries evicted from the cache. The idea is to
-find the on-disk location_'i_pos' of the dirent of the inode that has been
-evicted and use it to rebuild the inode.
+Provide two possible values 'stale_rw' and 'nostale_ro' for
+the -o nfs mount option.The first one allows all file operations but
+does not reduce ESTALE errors on memory constrained systems. The second
+one eliminates ESTALE errors but mounts the filesystem as
+read-only. Not specifying a value defaults to 'stale_rw'.
 
-Change log
-v6:
-Dummy inode approach to eliminate custom function fat_traverse_cluster().
+Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+Signed-off-by: Ravishankar N <ravi.n1@samsung.com>
+Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
+---
+ fs/fat/fat.h   |    7 +++++--
+ fs/fat/inode.c |   23 ++++++++++++++++-------
+ 2 files changed, 21 insertions(+), 9 deletions(-)
 
-v5:
-Modified  fat_ent_read() arguments so that the custom function 
-fat_read_next_clus() can be eliminated.
-
-v(no name):
-Define two nfs export_operation structures, one for 'stale_rw' mounts and 
-the other for 'nostale_ro'
-
-fat_nfs_get_inode does not hold i_mutex of parent directory. So introduce
-fat_lock_build_inode().
-
-v4:
-Instead of assigning i_pos to inode->i_ino, assign it to kstat->ino
-
-v3:
-Dropped busy-list approach and made the filesystem read only when
-rebuilding evicted inodes, by providing stale_rw and nostale_ro mount options
+diff --git a/fs/fat/fat.h b/fs/fat/fat.h
+index e9cc3f0..a7b1d86 100644
+--- a/fs/fat/fat.h
++++ b/fs/fat/fat.h
+@@ -23,6 +23,9 @@
+ #define FAT_ERRORS_PANIC	2      /* panic on error */
+ #define FAT_ERRORS_RO		3      /* remount r/o on error */
  
-v2:
-Introduced a list of busy i_pos values for inodes that are unlinked but
-having open file handles. Did this to avoid assigning such i_pos values to new
-files created at same location.
-
-v1:
-Permanent inode number based approach by assigning i_pos to i_ino.
-Added custom function fat_read_next_clus() and  fat_traverse_cluster()
-to read disk entries.
-
-Namjae Jeon (7):
-  fat: Introduce 2 new values for the -o nfs mount option
-  fat: move fat_i_pos_read to fat.h
-  fat: introduce a helper fat_get_blknr_offset()
-  fat: restructure export_operations
-  fat (exportfs): rebuild inode if ilookup() fails
-  fat (exportfs): rebuild directory-inode if fat_dget() fails
-  Documentation: update nfs option in filesystem/vfat.txt
++#define FAT_NFS_STALE_RW	1      /* NFS RW support, can cause ESTALE */
++#define FAT_NFS_NOSTALE_RO	2      /* NFS RO support, no ESTALE issue */
++
+ struct fat_mount_options {
+ 	kuid_t fs_uid;
+ 	kgid_t fs_gid;
+@@ -34,6 +37,7 @@ struct fat_mount_options {
+ 	unsigned short shortname;  /* flags for shortname display/create rule */
+ 	unsigned char name_check;  /* r = relaxed, n = normal, s = strict */
+ 	unsigned char errors;	   /* On error: continue, panic, remount-ro */
++	unsigned char nfs;	  /* NFS support: nostale_ro, stale_rw */
+ 	unsigned short allow_utime;/* permission for setting the [am]time */
+ 	unsigned quiet:1,          /* set = fake successful chmods and chowns */
+ 		 showexec:1,       /* set = only set x bit for com/exe/bat */
+@@ -48,8 +52,7 @@ struct fat_mount_options {
+ 		 usefree:1,	   /* Use free_clusters for FAT32 */
+ 		 tz_set:1,	   /* Filesystem timestamps' offset set */
+ 		 rodir:1,	   /* allow ATTR_RO for directory */
+-		 discard:1,	   /* Issue discard requests on deletions */
+-		 nfs:1;		   /* Do extra work needed for NFS export */
++		 discard:1;	   /* Issue discard requests on deletions */
+ };
+ 
+ #define FAT_HASH_BITS	8
+diff --git a/fs/fat/inode.c b/fs/fat/inode.c
+index d1d502a..82cef99 100644
+--- a/fs/fat/inode.c
++++ b/fs/fat/inode.c
+@@ -815,8 +815,6 @@ static int fat_show_options(struct seq_file *m, struct dentry *root)
+ 		seq_puts(m, ",usefree");
+ 	if (opts->quiet)
+ 		seq_puts(m, ",quiet");
+-	if (opts->nfs)
+-		seq_puts(m, ",nfs");
+ 	if (opts->showexec)
+ 		seq_puts(m, ",showexec");
+ 	if (opts->sys_immutable)
+@@ -850,6 +848,10 @@ static int fat_show_options(struct seq_file *m, struct dentry *root)
+ 		seq_puts(m, ",errors=panic");
+ 	else
+ 		seq_puts(m, ",errors=remount-ro");
++	if (opts->nfs == FAT_NFS_NOSTALE_RO)
++		seq_puts(m, ",nfs=nostale_ro");
++	else if (opts->nfs)
++		seq_puts(m, ",nfs=stale_rw");
+ 	if (opts->discard)
+ 		seq_puts(m, ",discard");
+ 
+@@ -866,7 +868,7 @@ enum {
+ 	Opt_uni_xl_no, Opt_uni_xl_yes, Opt_nonumtail_no, Opt_nonumtail_yes,
+ 	Opt_obsolete, Opt_flush, Opt_tz_utc, Opt_rodir, Opt_err_cont,
+ 	Opt_err_panic, Opt_err_ro, Opt_discard, Opt_nfs, Opt_time_offset,
+-	Opt_err,
++	Opt_nfs_stale_rw, Opt_nfs_nostale_ro, Opt_err,
+ };
+ 
+ static const match_table_t fat_tokens = {
+@@ -896,7 +898,9 @@ static const match_table_t fat_tokens = {
+ 	{Opt_err_panic, "errors=panic"},
+ 	{Opt_err_ro, "errors=remount-ro"},
+ 	{Opt_discard, "discard"},
+-	{Opt_nfs, "nfs"},
++	{Opt_nfs_stale_rw, "nfs"},
++	{Opt_nfs_stale_rw, "nfs=stale_rw"},
++	{Opt_nfs_nostale_ro, "nfs=nostale_ro"},
+ 	{Opt_obsolete, "conv=binary"},
+ 	{Opt_obsolete, "conv=text"},
+ 	{Opt_obsolete, "conv=auto"},
+@@ -1093,6 +1097,12 @@ static int parse_options(struct super_block *sb, char *options, int is_vfat,
+ 		case Opt_err_ro:
+ 			opts->errors = FAT_ERRORS_RO;
+ 			break;
++		case Opt_nfs_stale_rw:
++			opts->nfs = FAT_NFS_STALE_RW;
++			break;
++		case Opt_nfs_nostale_ro:
++			opts->nfs = FAT_NFS_NOSTALE_RO;
++			break;
+ 
+ 		/* msdos specific */
+ 		case Opt_dots:
+@@ -1151,9 +1161,6 @@ static int parse_options(struct super_block *sb, char *options, int is_vfat,
+ 		case Opt_discard:
+ 			opts->discard = 1;
+ 			break;
+-		case Opt_nfs:
+-			opts->nfs = 1;
+-			break;
+ 
+ 		/* obsolete mount options */
+ 		case Opt_obsolete:
+@@ -1184,6 +1191,8 @@ out:
+ 		opts->allow_utime = ~opts->fs_dmask & (S_IWGRP | S_IWOTH);
+ 	if (opts->unicode_xlate)
+ 		opts->utf8 = 0;
++	if (opts->nfs == FAT_NFS_NOSTALE_RO)
++		sb->s_flags |= MS_RDONLY;
+ 
+ 	return 0;
+ }
 -- 
 1.7.9.5
 
