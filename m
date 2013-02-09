@@ -1,118 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760805Ab3BISZs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 13:25:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50159 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760778Ab3BISZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 13:25:46 -0500
-Date: Sat, 9 Feb 2013 19:22:39 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: Andrey Wagin <avagin@gmail.com>, linux-kernel@vger.kernel.org,
-        criu@openvz.org, linux-fsdevel@vger.kernel.org,
-        linux-api@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: Re: [PATCH 3/3] signalfd: add ability to read siginfo-s without
-	dequeuing signals (v2)
-Message-ID: <20130209182239.GA9947@redhat.com>
-References: <1358849741-9611-4-git-send-email-avagin@openvz.org> <1359486181-29088-1-git-send-email-avagin@openvz.org> <20130207173447.GA5888@redhat.com> <CANaxB-xmSiPfbUAh+rQSgVxBzTXmVQcC7U741WYKaasG3_yc5w@mail.gmail.com> <20130208191056.GA13674@redhat.com> <CAKgNAki0xt_wwixp7kdv04fKOCtCh-ObQjkFE9PiX6FapkO34A@mail.gmail.com>
+	id S932486Ab3BISyZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 13:54:25 -0500
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:44897 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760818Ab3BISyY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Feb 2013 13:54:24 -0500
+Date: Sat, 9 Feb 2013 19:56:37 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Imre Deak <imre.deak@intel.com>
+Cc: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        LKML <linux-kernel@vger.kernel.org>, linaro-mm-sig@lists.linaro.org
+Subject: Re: [Intel-gfx] [PATCH 1/4] drm: add helper to walk a dma scatter
+ list a page at a time
+Message-ID: <20130209185637.GT5813@phenom.ffwll.local>
+Mail-Followup-To: Imre Deak <imre.deak@intel.com>,
+	intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+	Rahul Sharma <rahul.sharma@samsung.com>,
+	LKML <linux-kernel@vger.kernel.org>, linaro-mm-sig@lists.linaro.org
+References: <1360423656-10816-1-git-send-email-imre.deak@intel.com>
+ <1360423656-10816-2-git-send-email-imre.deak@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAKgNAki0xt_wwixp7kdv04fKOCtCh-ObQjkFE9PiX6FapkO34A@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1360423656-10816-2-git-send-email-imre.deak@intel.com>
+X-Operating-System: Linux phenom 3.7.0-rc4+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/08, Michael Kerrisk (man-pages) wrote:
->
-> On Fri, Feb 8, 2013 at 8:10 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> >
-> > Well. I do not know. Up to you and Michael.
-> >
-> > But honestly, I can't say this all looks really nice. And why do we
-> > need SIGNALFD_PEEK then?
->
-> It surely is no beauty. The hope is at least to make it less ugly than it was.
+Hi Imre!
 
-This is subjective, but I am not sure about "less" ;) Yes, we avoid the
-magic offsets, but we add SFD_SHARED/PER_THREAD which need to change
-dequeue_signal plus other complications. And for what?
+On Sat, Feb 09, 2013 at 05:27:33PM +0200, Imre Deak wrote:
+> Add a helper to walk through a scatter list a page at a time. Needed by
+> upcoming patches fixing the scatter list walking logic in the i915 driver.
 
-> > Seriously, perhaps we should simply add signalfd_fops->ioctl() for PEEK.
-> > Or add PTRACE_{PEEK,POKE}_SIGNAL which looks even logical and useful...
-> > And much simpler/straightforward.
-> >
-> > But I am not going to argue.
->
-> I suppose I had wondered along similar lines, but in a slightly
-> different direction: would the use of a /proc interface to get the
-> queued signals make some sense?
+Nice patch, but I think this would make a rather nice addition to the
+common scatterlist api in scatterlist.h, maybe called sg_page_iter.
+There's already another helper which does cpu mappings, but it has a
+different use-case (gives you the page mapped, which we don't neeed and
+can cope with not page-aligned sg tables). With dma-buf using sg tables I
+expect more users of such a sg page iterator to pop up. Most possible
+users of this will hang around on linaro-mm-sig, so please also cc that
+besides the usual suspects.
 
-(Can't resist sorry... yes we need /proc/pid/cr or /dev/cr or whatever
- which dumps almost everything c/r needs without need to add a lot of
- cr code everywhere).
+Cheers, Daniel
 
-Perhaps, but I am not sure about the textual representation.
+> 
+> Signed-off-by: Imre Deak <imre.deak@intel.com>
+> ---
+>  include/drm/drmP.h |   44 ++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 44 insertions(+)
+> 
+> diff --git a/include/drm/drmP.h b/include/drm/drmP.h
+> index fad21c9..0c0c213 100644
+> --- a/include/drm/drmP.h
+> +++ b/include/drm/drmP.h
+> @@ -1578,6 +1578,50 @@ extern int drm_sg_alloc_ioctl(struct drm_device *dev, void *data,
+>  extern int drm_sg_alloc(struct drm_device *dev, struct drm_scatter_gather * request);
+>  extern int drm_sg_free(struct drm_device *dev, void *data,
+>  		       struct drm_file *file_priv);
+> +struct drm_sg_iter {
+> +	struct scatterlist *sg;
+> +	int sg_offset;
 
-And to me, the best solution is the simplest solution. Please look
-at the patch below. It is trivial. And we can also drop the SFD_RAW
-patch in -mm.
+Imo using sg_pfn_offset (i.e. sg_offset >> PAGE_SIZE) would make it
+clearer that this is all about iterating page-aligned sg tables.
 
-Oleg.
+> +	struct page *page;
+> +};
+> +
+> +static inline int
+> +__drm_sg_iter_seek(struct drm_sg_iter *iter)
+> +{
+> +	while (iter->sg && iter->sg_offset >= iter->sg->length) {
+> +		iter->sg_offset -= iter->sg->length;
+> +		iter->sg = sg_next(iter->sg);
 
---- x/kernel/ptrace.c
-+++ x/kernel/ptrace.c
-@@ -618,6 +618,35 @@ static int ptrace_setsiginfo(struct task
- 	return error;
- }
- 
-+static int ptrace_peek_signal(struct task_struct *child,
-+				unsigned long addr, siginfo_t __user *uinfo)
-+{
-+	siginfo_t info;
-+	struct sigpending *pending;
-+	int ret = -ESOMETHING;
-+
-+	pending = &child->pending;
-+	if (addr & PTRACE_PEEK_SHARED) {
-+		addr &= ~PTRACE_PEEK_SHARED;
-+		pending = &child->signal->shared_pending;
-+	}
-+
-+	spin_lock_irq(&child->sighand->siglock);
-+	list_for_each_entry(q, &pending->list, list) {
-+		if (!addr--) {
-+			copy_siginfo(info, &q->info);
-+			ret = 0;
-+			break;
-+		}
-+	}
-+	spin_lock_irq(&child->sighand->siglock);
-+
-+	if (!ret)
-+		ret = copy_siginfo_to_user(uinfo, info);
-+	if (!ret)
-+		ret = __put_user(info, si_code);
-+	return ret;
-+}
- 
- #ifdef PTRACE_SINGLESTEP
- #define is_singlestep(request)		((request) == PTRACE_SINGLESTEP)
-@@ -742,6 +771,10 @@ int ptrace_request(struct task_struct *c
- 		ret = put_user(child->ptrace_message, datalp);
- 		break;
- 
-+	case PTRACE_PEEKSIGNAL:
-+		ret = ptrace_peek_signal(child, addr, datavp);
-+		break;
-+
- 	case PTRACE_GETSIGINFO:
- 		ret = ptrace_getsiginfo(child, &siginfo);
- 		if (!ret)
+And adding a WARN_ON(sg->legnth & ~PAGE_MASK); here would enforce that.
 
+> +	}
+> +
+> +	return iter->sg ? 0 : -1;
+> +}
+> +
+> +static inline struct page *
+> +drm_sg_iter_next(struct drm_sg_iter *iter)
+> +{
+> +	struct page *page;
+> +
+> +	if (__drm_sg_iter_seek(iter))
+> +		return NULL;
+> +
+> +	page = nth_page(sg_page(iter->sg), iter->sg_offset >> PAGE_SHIFT);
+> +	iter->sg_offset = (iter->sg_offset + PAGE_SIZE) & PAGE_MASK;
+> +
+> +	return page;
+> +}
+> +
+> +static inline struct page *
+> +drm_sg_iter_start(struct drm_sg_iter *iter, struct scatterlist *sg,
+> +		   unsigned long offset)
+> +{
+> +	iter->sg = sg;
+> +	iter->sg_offset = offset;
+> +
+> +	return drm_sg_iter_next(iter);
+> +}
+> +
+> +#define drm_for_each_sg_page(iter, sg, pgoffset)			\
+> +	for ((iter)->page = drm_sg_iter_start((iter), (sg), (pgoffset));\
+> +	     (iter)->page; (iter)->page = drm_sg_iter_next(iter))
+
+Again, for the initialization I'd go with page numbers, not an offset in
+bytes.
+
+>  
+>  			       /* ATI PCIGART support (ati_pcigart.h) */
+>  extern int drm_ati_pcigart_init(struct drm_device *dev,
+> -- 
+> 1.7.10.4
+> 
+> _______________________________________________
+> Intel-gfx mailing list
+> Intel-gfx@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/intel-gfx
+
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
