@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752539Ab3BIJ2v (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 04:28:51 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:58071 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751972Ab3BIJ2s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 04:28:48 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: Re: [PATCH 4/4] serial/arc-uart: switch to devicetree based probing
-Date: Sat, 9 Feb 2013 09:28:43 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-4-generic; KDE/4.3.2; x86_64; ; )
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>
-References: <1357885223-19243-1-git-send-email-vgupta@synopsys.com> <20130208230127.5F3063E2C27@localhost> <5115F076.5000909@synopsys.com>
-In-Reply-To: <5115F076.5000909@synopsys.com>
+	id S1752624Ab3BIJ3g (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 04:29:36 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:36063 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752494Ab3BIJ3d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Feb 2013 04:29:33 -0500
+Date: Sat, 9 Feb 2013 10:29:25 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Kees Cook <keescook@chromium.org>
+Cc: Matthew Garrett <matthew.garrett@nebula.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH] x86: Lock down MSR writing in secure boot
+Message-ID: <20130209092925.GA17728@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Kees Cook <keescook@chromium.org>,
+	Matthew Garrett <matthew.garrett@nebula.com>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Ingo Molnar <mingo@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
+	"linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+	linux-security-module <linux-security-module@vger.kernel.org>
+References: <dee64752-850c-4d78-b703-f47a985bc13e@email.android.com>
+ <CAGXu5jLAufTRm=sDST0br_WEkn4o0Hpjv2jDP2Na=cCvuM+MGg@mail.gmail.com>
+ <1360355671.18083.18.camel@x230.lan>
+ <CAGXu5jKo2PfMBO4A0ZgQcrPuj8OHNaff+CjAesOAWkZc0vB9+Q@mail.gmail.com>
+ <51157C9C.6030501@zytor.com>
+ <20130208230655.GB28990@pd.tnic>
+ <1360366012.18083.21.camel@x230.lan>
+ <5115A4CC.3080102@zytor.com>
+ <1360373383.18083.23.camel@x230.lan>
+ <CAGXu5j+xvJ3L5ejxtZ-Jw3F6rV7OsrE0_HZCGu_er0rH2_PwKA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302090928.43929.arnd@arndb.de>
-X-Provags-ID: V02:K0:LvrCCogq1mCKW/vCTTH7BUAt4/99MeyXxR16YPj8H/N
- 5lz2EoA8k7hxogj7JW+XugnRzqrF6QhAgExaVRdbb8zPy4/+pG
- KdOlD+QXRVDW66vG+WVMrpmWjLZ1gieSEkbV5gR/U5+2YpmgN/
- zR9TVjTH/MCKKUmHG2uzWvEaQK0mVHtSdWFoBmRaciuDaEML8I
- 2kASwOee5fGqlOurfsJxRbIVuwBF6nHhheP7YIj48rObH+QGJ7
- wfCrpJZZlvf2Etra/AKwF9UHPjM//ER+VB2Zy6VBa0G5zzBzey
- KXyCkj85HwMqwOsmBU30U+4mNOh6JkxHTSN0DicCpLIhVQXP7z
- 8VwcnOCYlE8vdzz2XsaM=
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAGXu5j+xvJ3L5ejxtZ-Jw3F6rV7OsrE0_HZCGu_er0rH2_PwKA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 09 February 2013, Vineet Gupta wrote:
-> On Saturday 09 February 2013 04:31 AM, Grant Likely wrote:
-> > On Fri, 11 Jan 2013 11:50:23 +0530, Vineet Gupta <Vineet.Gupta1@synopsys.com> wrote:
-> >> +- clock-frequency   : the input clock frequency for the UART
-> >> +- baud                      : baud rate for UART
-> > change 'baud' to 'current-speed'. There is already precedence for this
-> > with other serial devices.
-> 
-> While I'm OK with this - I can only see of_serial.c following the rule :-)
-> More importantly I'm not clear about the logistics of this fix. Obviously this has
-> a bearing on DT files in arch/arc/boot/*. So are such changes (platform + driver)
-> routed thru the subsystem tree or the arch tree or bits from both with
-> bisectability not considered - which feels wrong. We have to also consider the
-> fact that Greg has closed the tty/serial for 3.9. So while I have no objection to
-> your comment, it seems that the it needs to wait till 3.9-rc1 - or is there an
-> alternate way.
+On Fri, Feb 08, 2013 at 10:45:35PM -0800, Kees Cook wrote:
+> Also, _reading_ MSRs from userspace arguably has utility that doesn't
+> compromise ring-0.
 
-I'd consider this one a bug fix, so while Greg is not accepting any new
-features for the serial tree, I think it should still get in that way
-and should not be controversial as an add-on change.
+And to come back to the original question: what is that utility, who
+would need it on a secure boot system and why?
 
-	
-	Arnd
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
