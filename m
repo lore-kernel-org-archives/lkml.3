@@ -1,53 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754030Ab3BILBD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 06:01:03 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39197 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752348Ab3BILBB (ORCPT
+	id S1754072Ab3BILCW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 06:02:22 -0500
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:37992 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752348Ab3BILCU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 06:01:01 -0500
-Date: Sat, 9 Feb 2013 11:00:31 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Borislav Petkov <bp@alien8.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Ville =?iso-8859-1?Q?Syrj=E4l=E4?= 
-	<ville.syrjala@linux.intel.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jamie Lokier <jamie@shareable.org>
-Subject: Re: [PATCH] x86: Add support for 64bit get_user() on x86-32
-Message-ID: <20130209110031.GA17833@n2100.arm.linux.org.uk>
-References: <1355312043-11467-1-git-send-email-ville.syrjala@linux.intel.com> <20130207165347.GF9135@intel.com> <5113EB64.2080002@zytor.com> <20130208162427.GG9135@intel.com> <5115361D.8060501@zytor.com> <20130208182308.GI9135@intel.com> <ea6b316f-c142-4fc0-9f74-281380ab1dac@email.android.com> <20130209104142.GA17907@pd.tnic>
+	Sat, 9 Feb 2013 06:02:20 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Anton Vorontsov <anton@enomsg.org>
+Subject: Re: [PATCH] bq27x00_battery: Fix reporting battery temperature
+Date: Sat, 9 Feb 2013 12:02:15 +0100
+User-Agent: KMail/1.13.7 (Linux/3.5.0-23-generic; KDE/4.9.4; x86_64; ; )
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
+References: <1359799569-5322-1-git-send-email-pali.rohar@gmail.com> <201302061856.35366@pali> <20130209015718.GA13561@lizard.sbx05663.mountca.wayport.net>
+In-Reply-To: <20130209015718.GA13561@lizard.sbx05663.mountca.wayport.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130209104142.GA17907@pd.tnic>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: multipart/signed;
+  boundary="nextPart1413886.p5mlmc2fRI";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302091202.16019@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 09, 2013 at 11:41:42AM +0100, Borislav Petkov wrote:
-> On Fri, Feb 08, 2013 at 11:08:52AM -0800, H. Peter Anvin wrote:
-> > Yes, or anything else getting a pointer in memory from user space.
-> 
-> Here are some more from a 32-bit build here:
-> 
-> fs/exec.c: In function ‘get_user_arg_ptr’:
-> fs/exec.c:414:6: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
-> fs/splice.c: In function ‘vmsplice_to_user’:
-> fs/splice.c:1556:11: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
-> ipc/syscall.c: In function ‘sys_ipc’:
-> ipc/syscall.c:39:7: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
+--nextPart1413886.p5mlmc2fRI
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Note that there's no need to build the entire tree to check for these -
-you just need to have enough test cases which cover those found in the
-kernel.
+On Saturday 09 February 2013 02:57:18 Anton Vorontsov wrote:
+>=20
+> Hm. The documentation says tenth (1/10) degrees, and you even
+> restate it in the commit message. But the subject, and your
+> example seem to prove that you still report it in 1/100 of
+> Celsius.
+>=20
+> Unless your phone was on fire during the time you took the
+> values, I tend to think the patch needs to be fixed. :-)
+>=20
+> Thanks,
+> Anton
+>=20
 
-The set of test functions I replied with on the previous thread covers
-all the cases I'm aware of in the kernel that matter, and should be
-warning free except for the final test function (which is there to check
-that the typechecking in get_user() does work.)
+Ah, my mistake. I very quicky looked that bq and rx driver
+reporting different values... But bad conversation is in
+rx51_battery driver, not in bq. So drop previous bq patch...
+
+Here is patch for rx51_battery. I think now it should report
+correct temperature. On Nokia N900 it reporting: POWER_SUPPLY_TEMP=3D350
+
+=46rom 92efbf24ac2fdc7af41abb12afd5e8c319479f6b Mon Sep 17 00:00:00 2001
+=46rom: =3D?UTF-8?q?Pali=3D20Roh=3DC3=3DA1r?=3D <pali.rohar@gmail.com>
+Date: Sat, 9 Feb 2013 11:06:48 +0100
+Subject: [PATCH] =3D?UTF-8?q?rx51=3D5Fbattery:=3D20Fix=3D20reporting=3D20te=
+mperature=3D20?=3D
+ =3D?UTF-8?q?(in=3D201/10=3D20=3DC2=3DB0C)?=3D
+MIME-Version: 1.0
+Content-Type: text/plain; charset=3DUTF-8
+Content-Transfer-Encoding: 8bit
+
+=2D--
+ drivers/power/rx51_battery.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/power/rx51_battery.c b/drivers/power/rx51_battery.c
+index 8208888..527d256 100644
+=2D-- a/drivers/power/rx51_battery.c
++++ b/drivers/power/rx51_battery.c
+@@ -119,7 +119,7 @@ static int rx51_battery_read_temperature(struct rx51_de=
+vice_info *di)
+=20
+ 	/* First check for temperature in first direct table */
+ 	if (raw < ARRAY_SIZE(rx51_temp_table1))
+=2D		return rx51_temp_table1[raw] * 100;
++		return rx51_temp_table1[raw] * 10;
+=20
+ 	/* Binary search RAW value in second inverse table */
+ 	while (max - min > 1) {
+@@ -132,7 +132,7 @@ static int rx51_battery_read_temperature(struct rx51_de=
+vice_info *di)
+ 			break;
+ 	}
+=20
+=2D	return (rx51_temp_table2_first - min) * 100;
++	return (rx51_temp_table2_first - min) * 10;
+ }
+=20
+ /*
+=2D-=20
+1.7.10.4
+
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart1413886.p5mlmc2fRI
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlEWLLcACgkQi/DJPQPkQ1IUDACfdoB1KVrPexgnUI4FQxQWTwqb
+1JEAoJ3hoYjHcKbp8FTGm5GGUGEkRwam
+=HKx5
+-----END PGP SIGNATURE-----
+
+--nextPart1413886.p5mlmc2fRI--
