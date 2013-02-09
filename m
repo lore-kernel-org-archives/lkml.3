@@ -1,78 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932446Ab3BIRGG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 12:06:06 -0500
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:58208 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760759Ab3BIRGE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 12:06:04 -0500
-Message-ID: <511681F6.4010102@gmail.com>
-Date: Sat, 09 Feb 2013 18:05:58 +0100
-From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
+	id S1760786Ab3BIRI5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 12:08:57 -0500
+Received: from mga09.intel.com ([134.134.136.24]:1740 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760759Ab3BIRI4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Feb 2013 12:08:56 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,634,1355126400"; 
+   d="scan'208";a="260371123"
+Message-ID: <511682A6.60208@linux.intel.com>
+Date: Sat, 09 Feb 2013 09:08:54 -0800
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: Mauro Carvalho Chehab <mchehab@redhat.com>,
+To: Darren Hart <dvhart@linux.intel.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Benoit Thebaudeau <benoit.thebaudeau@advansee.com>,
-        David Hardeman <david@hardeman.nu>, Trilok Soni <tsoni@codeaurora.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Matus Ujhelyi <ujhelyi.m@gmail.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
-Subject: Re: [PATCH v2] media: rc: gpio-ir-recv: add support for device tree
- parsing
-References: <1360137832-13086-1-git-send-email-sebastian.hesselbarth@gmail.com> <1360355887-19973-1-git-send-email-sebastian.hesselbarth@gmail.com> <20130208220357.198c313c@redhat.com> <51159C36.1060602@gmail.com>
-In-Reply-To: <51159C36.1060602@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+        Denis Turischev <denis@compulab.co.il>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        =?ISO-8859-1?Q?Jean-Fran=E7ois_Dagenais?= <jeff.dagenais@gmail.com>,
+        Alexander Stein <alexander.stein@systec-electronic.com>
+Subject: Re: [PATCH] lpc_sch: Accomodate partial population of the MFD devices
+References: <b2f78b0d872215533102ec6b9ef8cf42c8f75705.1360365636.git.dvhart@linux.intel.com>
+In-Reply-To: <b2f78b0d872215533102ec6b9ef8cf42c8f75705.1360365636.git.dvhart@linux.intel.com>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/09/2013 01:45 AM, Sebastian Hesselbarth wrote:
->>> new file mode 100644
->>> index 0000000..8589f30
->>> --- /dev/null
->>> +++ b/Documentation/devicetree/bindings/media/gpio-ir-receiver.txt
->>> @@ -0,0 +1,16 @@
->>> +Device-Tree bindings for GPIO IR receiver
->>> +
->>> +Required properties:
->>> + - compatible = "gpio-ir-receiver";
->>> + - gpios: OF device-tree gpio specification.
->>> +
->>> +Optional properties:
->>> + - linux,rc-map-name: Linux specific remote control map name.
->>> +
->>> +Example node:
->>> +
->>> + ir: ir-receiver {
->>> + compatible = "gpio-ir-receiver";
->>> + gpios =<&gpio0 19 1>;
->>> + linux,rc-map-name = "rc-rc6-mce";
->>
->> Please change this to:
->> linux,rc-map-name = RC_MAP_RC6_MCE;
->>
->> (as defined at include/media/rc-map.h).
->
-> Mauro,
->
-> this is not possible in device tree bindings. Device tree properties
-> can only carry numeric or string types (and some other stuff) but no
-> OS specific enumerations. So using strings is the only option here.
->
->> The idea of having those strings defined at the same header file is to:
->
-> Unfortunately, device tree blobs don't know about linux header files.
+On 02/08/2013 03:20 PM, Darren Hart wrote:
+> The current probe aborts if any of the 3 base address registers are
+> disabled. On a TunnelCreek system I am working on, this resulted in the
+> SMBIOS and GPIO devices being removed when it couldn't read the base
+> address for the watchdog timer.
+> 
+> This patch accommodates partial population of the lpc_sch_cells array and
+> only aborts if all the base address registers are disabled. A max size
+> array is allocated and the individual device cells are added to it after
+> their base addresses are successfully determined. This simplifies the
+> code a bit by removing the need for the separate tunnelcreek cells array
+> and combining some of the add/remove logic.
 
-I suppose this will change when it will be possible to run C pre-processor
-on *.dts files. This is still under discussion though [1] and for the
-device tree there will likely be separate copies of the header files
-needed. Thus I guess explicit string names for now need to be used.
+I later found that someone else attempted to address this problem in a
+slightly different way, but it was never merged. One difference was that
+it allowed for the device to be disabled, but not for it to be enabled
+with a 0x0 base address. In that case their change would still abort,
+remove any added devices, and return ENODEV.
 
-[1] http://www.spinics.net/lists/kernel/msg1458360.html
+I can see the value in either approach, and don't feel strongly about
+either. So long as it doesn't abort everything when something is
+disabled, I'm happy. Would anyone care to argue for one approach or the
+other.
 
+Previous attempt:
+http://article.gmane.org/gmane.linux.kernel/1295891/match=lpc_sch+tolerate
+
+Thanks,
+
+Darren
+
+> 
+> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+> Cc: Grant Likely <grant.likely@secretlab.ca>,
+> Cc: Denis Turischev <denis@compulab.co.il>,
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+> ---
+>  drivers/mfd/lpc_sch.c | 148 ++++++++++++++++++++++++--------------------------
+>  1 file changed, 70 insertions(+), 78 deletions(-)
+> 
+> diff --git a/drivers/mfd/lpc_sch.c b/drivers/mfd/lpc_sch.c
+> index 5624fcb..9c255f2 100644
+> --- a/drivers/mfd/lpc_sch.c
+> +++ b/drivers/mfd/lpc_sch.c
+> @@ -45,34 +45,32 @@ static struct resource smbus_sch_resource = {
+>  		.flags = IORESOURCE_IO,
+>  };
+>  
+> -
+>  static struct resource gpio_sch_resource = {
+>  		.flags = IORESOURCE_IO,
+>  };
+>  
+> -static struct mfd_cell lpc_sch_cells[] = {
+> -	{
+> -		.name = "isch_smbus",
+> -		.num_resources = 1,
+> -		.resources = &smbus_sch_resource,
+> -	},
+> -	{
+> -		.name = "sch_gpio",
+> -		.num_resources = 1,
+> -		.resources = &gpio_sch_resource,
+> -	},
+> -};
+> -
+>  static struct resource wdt_sch_resource = {
+>  		.flags = IORESOURCE_IO,
+>  };
+>  
+> -static struct mfd_cell tunnelcreek_cells[] = {
+> -	{
+> -		.name = "ie6xx_wdt",
+> -		.num_resources = 1,
+> -		.resources = &wdt_sch_resource,
+> -	},
+> +static struct mfd_cell lpc_sch_cells[3];
+> +
+> +static struct mfd_cell isch_smbus_cell = {
+> +	.name = "isch_smbus",
+> +	.num_resources = 1,
+> +	.resources = &smbus_sch_resource,
+> +};
+> +
+> +static struct mfd_cell sch_gpio_cell = {
+> +	.name = "sch_gpio",
+> +	.num_resources = 1,
+> +	.resources = &gpio_sch_resource,
+> +};
+> +
+> +static struct mfd_cell wdt_sch_cell = {
+> +	.name = "ie6xx_wdt",
+> +	.num_resources = 1,
+> +	.resources = &wdt_sch_resource,
+>  };
+>  
+>  static DEFINE_PCI_DEVICE_TABLE(lpc_sch_ids) = {
+> @@ -88,79 +86,73 @@ static int lpc_sch_probe(struct pci_dev *dev,
+>  {
+>  	unsigned int base_addr_cfg;
+>  	unsigned short base_addr;
+> -	int i;
+> +	int i, cells = 0;
+>  	int ret;
+>  
+>  	pci_read_config_dword(dev, SMBASE, &base_addr_cfg);
+> -	if (!(base_addr_cfg & (1 << 31))) {
+> -		dev_err(&dev->dev, "Decode of the SMBus I/O range disabled\n");
+> -		return -ENODEV;
+> -	}
+> -	base_addr = (unsigned short)base_addr_cfg;
+> -	if (base_addr == 0) {
+> -		dev_err(&dev->dev, "I/O space for SMBus uninitialized\n");
+> -		return -ENODEV;
+> +	base_addr = 0;
+> +	if (!(base_addr_cfg & (1 << 31)))
+> +		dev_warn(&dev->dev, "Decode of the SMBus I/O range disabled\n");
+> +	else
+> +		base_addr = (unsigned short)base_addr_cfg;
+> +	if (base_addr == 0)
+> +		dev_warn(&dev->dev, "I/O space for SMBus uninitialized\n");
+> +	else {
+> +		lpc_sch_cells[cells++] = isch_smbus_cell;
+> +		smbus_sch_resource.start = base_addr;
+> +		smbus_sch_resource.end = base_addr + SMBUS_IO_SIZE - 1;
+>  	}
+>  
+> -	smbus_sch_resource.start = base_addr;
+> -	smbus_sch_resource.end = base_addr + SMBUS_IO_SIZE - 1;
+> -
+>  	pci_read_config_dword(dev, GPIOBASE, &base_addr_cfg);
+> -	if (!(base_addr_cfg & (1 << 31))) {
+> -		dev_err(&dev->dev, "Decode of the GPIO I/O range disabled\n");
+> -		return -ENODEV;
+> -	}
+> -	base_addr = (unsigned short)base_addr_cfg;
+> -	if (base_addr == 0) {
+> -		dev_err(&dev->dev, "I/O space for GPIO uninitialized\n");
+> -		return -ENODEV;
+> -	}
+> -
+> -	gpio_sch_resource.start = base_addr;
+> -
+> -	if (id->device == PCI_DEVICE_ID_INTEL_CENTERTON_ILB)
+> -		gpio_sch_resource.end = base_addr + GPIO_IO_SIZE_CENTERTON - 1;
+> +	base_addr = 0;
+> +	if (!(base_addr_cfg & (1 << 31)))
+> +		dev_warn(&dev->dev, "Decode of the GPIO I/O range disabled\n");
+>  	else
+> -		gpio_sch_resource.end = base_addr + GPIO_IO_SIZE - 1;
+> -
+> -	for (i=0; i < ARRAY_SIZE(lpc_sch_cells); i++)
+> -		lpc_sch_cells[i].id = id->device;
+> -
+> -	ret = mfd_add_devices(&dev->dev, 0,
+> -			      lpc_sch_cells, ARRAY_SIZE(lpc_sch_cells), NULL,
+> -			      0, NULL);
+> -	if (ret)
+> -		goto out_dev;
+> +		base_addr = (unsigned short)base_addr_cfg;
+> +	if (base_addr == 0)
+> +		dev_warn(&dev->dev, "I/O space for GPIO uninitialized\n");
+> +	else {
+> +		lpc_sch_cells[cells++] = sch_gpio_cell;
+> +		gpio_sch_resource.start = base_addr;
+> +		if (id->device == PCI_DEVICE_ID_INTEL_CENTERTON_ILB)
+> +			gpio_sch_resource.end = base_addr + GPIO_IO_SIZE_CENTERTON - 1;
+> +		else
+> +			gpio_sch_resource.end = base_addr + GPIO_IO_SIZE - 1;
+> +	}
+>  
+>  	if (id->device == PCI_DEVICE_ID_INTEL_ITC_LPC
+>  	 || id->device == PCI_DEVICE_ID_INTEL_CENTERTON_ILB) {
+>  		pci_read_config_dword(dev, WDTBASE, &base_addr_cfg);
+> -		if (!(base_addr_cfg & (1 << 31))) {
+> -			dev_err(&dev->dev, "Decode of the WDT I/O range disabled\n");
+> -			ret = -ENODEV;
+> -			goto out_dev;
+> -		}
+> -		base_addr = (unsigned short)base_addr_cfg;
+> -		if (base_addr == 0) {
+> -			dev_err(&dev->dev, "I/O space for WDT uninitialized\n");
+> -			ret = -ENODEV;
+> -			goto out_dev;
+> +		base_addr = 0;
+> +		if (!(base_addr_cfg & (1 << 31)))
+> +			dev_warn(&dev->dev, "Decode of the WDT I/O range disabled\n");
+> +		else
+> +			base_addr = (unsigned short)base_addr_cfg;
+> +		if (base_addr == 0)
+> +			dev_warn(&dev->dev, "I/O space for WDT uninitialized\n");
+> +		else {
+> +			lpc_sch_cells[cells++] = wdt_sch_cell;
+> +			wdt_sch_resource.start = base_addr;
+> +			wdt_sch_resource.end = base_addr + WDT_IO_SIZE - 1;
+>  		}
+> +	}
+>  
+> -		wdt_sch_resource.start = base_addr;
+> -		wdt_sch_resource.end = base_addr + WDT_IO_SIZE - 1;
+> -
+> -		for (i = 0; i < ARRAY_SIZE(tunnelcreek_cells); i++)
+> -			tunnelcreek_cells[i].id = id->device;
+> -
+> -		ret = mfd_add_devices(&dev->dev, 0, tunnelcreek_cells,
+> -				      ARRAY_SIZE(tunnelcreek_cells), NULL,
+> -				      0, NULL);
+> +	if (WARN_ON(cells > ARRAY_SIZE(lpc_sch_cells))) {
+> +		dev_err(&dev->dev, "Cell count exceeds array size");
+> +		return -ENODEV;
+> +	}
+> +	if (cells == 0) {
+> +		dev_err(&dev->dev, "All decode registers disabled.\n");
+> +		return -ENODEV;
+>  	}
+>  
+> -	return ret;
+> -out_dev:
+> -	mfd_remove_devices(&dev->dev);
+> +	for (i = 0; i < cells; i++)
+> +		lpc_sch_cells[i].id = id->device;
+> +	ret = mfd_add_devices(&dev->dev, 0, lpc_sch_cells, cells, NULL, 0, NULL);
+> +	
+> +	if (ret)
+> +		mfd_remove_devices(&dev->dev);
+> +
+>  	return ret;
+>  }
+>  
+> 
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Technical Lead - Linux Kernel
