@@ -1,53 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760865Ab3BIWkh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 17:40:37 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:36741 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758543Ab3BIWkg (ORCPT
+	id S1760871Ab3BIWx2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 17:53:28 -0500
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:37322 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757982Ab3BIWx0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 17:40:36 -0500
-Date: Sat, 9 Feb 2013 14:36:53 -0800
-From: Anton Vorontsov <anton@enomsg.org>
-To: Andreas Larsson <andreas@gaisler.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, software@gaisler.com
-Subject: Re: [PATCH] gpio: Add device driver for GRGPIO cores
-Message-ID: <20130209223653.GA22874@lizard.sbx05280.losalca.wayport.net>
-References: <1359548921-14925-1-git-send-email-andreas@gaisler.com>
- <CACRpkdbAS05dVOrE2E5Uu6qfzfgcoz_KqQmqZxz5Pne9BbCt-g@mail.gmail.com>
- <510F6CF8.3000700@gaisler.com>
- <CACRpkdYbJiBT5u0qJz+Krpky7W0WNqtSsO6Jo2TYZ2LRcyassA@mail.gmail.com>
- <510F8D15.30804@gaisler.com>
+	Sat, 9 Feb 2013 17:53:26 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <510F8D15.30804@gaisler.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <20130209182239.GA9947@redhat.com>
+References: <1358849741-9611-4-git-send-email-avagin@openvz.org>
+ <1359486181-29088-1-git-send-email-avagin@openvz.org> <20130207173447.GA5888@redhat.com>
+ <CANaxB-xmSiPfbUAh+rQSgVxBzTXmVQcC7U741WYKaasG3_yc5w@mail.gmail.com>
+ <20130208191056.GA13674@redhat.com> <CAKgNAki0xt_wwixp7kdv04fKOCtCh-ObQjkFE9PiX6FapkO34A@mail.gmail.com>
+ <20130209182239.GA9947@redhat.com>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Sat, 9 Feb 2013 23:53:04 +0100
+Message-ID: <CAKgNAkiYrP046mEv1_GJED5DckJrZSHvwu2u=P_BRxx-NuKALQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] signalfd: add ability to read siginfo-s without
+ dequeuing signals (v2)
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrey Wagin <avagin@gmail.com>, linux-kernel@vger.kernel.org,
+        criu@openvz.org, linux-fsdevel@vger.kernel.org,
+        linux-api@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 04, 2013 at 11:27:33AM +0100, Andreas Larsson wrote:
-[...]
-> >>2) The grgpio_to_irq function is very hardware specific, and there is of
-> >>course no gpio_to_irq support in gpio-generic.
-> >
-> >Well, the idea about gpio-generic is to use the pieces you need
-> >IIRC. You may override.
-> 
-> Ah, I see, bgpio_init is exported, so I might be able use that from
-> my driver to get rid of some functions. There is support for BE I
-> saw now. It seems broken to me (flips bits, not bytes), but that can
-> be fixed.
+On Sat, Feb 9, 2013 at 7:22 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 02/08, Michael Kerrisk (man-pages) wrote:
+>>
+>> On Fri, Feb 8, 2013 at 8:10 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+>> >
+>> > Well. I do not know. Up to you and Michael.
+>> >
+>> > But honestly, I can't say this all looks really nice. And why do we
+>> > need SIGNALFD_PEEK then?
+>>
+>> It surely is no beauty. The hope is at least to make it less ugly than it was.
+>
+> This is subjective, but I am not sure about "less" ;) Yes, we avoid the
+> magic offsets, but we add SFD_SHARED/PER_THREAD which need to change
+> dequeue_signal plus other complications. And for what?
+>
+>> > Seriously, perhaps we should simply add signalfd_fops->ioctl() for PEEK.
+>> > Or add PTRACE_{PEEK,POKE}_SIGNAL which looks even logical and useful...
+>> > And much simpler/straightforward.
+>> >
+>> > But I am not going to argue.
+>>
+>> I suppose I had wondered along similar lines, but in a slightly
+>> different direction: would the use of a /proc interface to get the
+>> queued signals make some sense?
+>
+> (Can't resist sorry... yes we need /proc/pid/cr or /dev/cr or whatever
+>  which dumps almost everything c/r needs without need to add a lot of
+>  cr code everywhere).
+>
+> Perhaps, but I am not sure about the textual representation.
+>
+> And to me, the best solution is the simplest solution. Please look
+> at the patch below. It is trivial. And we can also drop the SFD_RAW
+> patch in -mm.
 
-No, it is not broken. :-) There is a BE-notation of GPIO numbering. BE/LE
-issue is also valid for bits. Please don't "fix" this. :)
+Oleg,
 
-If you need to introduce byte endianness support in addition, that's fine.
+This looks promising, but I am not sure I understand the user-space
+API. Could you explain how it would look to (say) pull all per-thread
+signals from user space?
 
 Thanks,
 
-Anton
+Michael
+
+
+> --- x/kernel/ptrace.c
+> +++ x/kernel/ptrace.c
+> @@ -618,6 +618,35 @@ static int ptrace_setsiginfo(struct task
+>         return error;
+>  }
+>
+> +static int ptrace_peek_signal(struct task_struct *child,
+> +                               unsigned long addr, siginfo_t __user *uinfo)
+> +{
+> +       siginfo_t info;
+> +       struct sigpending *pending;
+> +       int ret = -ESOMETHING;
+> +
+> +       pending = &child->pending;
+> +       if (addr & PTRACE_PEEK_SHARED) {
+> +               addr &= ~PTRACE_PEEK_SHARED;
+> +               pending = &child->signal->shared_pending;
+> +       }
+> +
+> +       spin_lock_irq(&child->sighand->siglock);
+> +       list_for_each_entry(q, &pending->list, list) {
+> +               if (!addr--) {
+> +                       copy_siginfo(info, &q->info);
+> +                       ret = 0;
+> +                       break;
+> +               }
+> +       }
+> +       spin_lock_irq(&child->sighand->siglock);
+> +
+> +       if (!ret)
+> +               ret = copy_siginfo_to_user(uinfo, info);
+> +       if (!ret)
+> +               ret = __put_user(info, si_code);
+> +       return ret;
+> +}
+>
+>  #ifdef PTRACE_SINGLESTEP
+>  #define is_singlestep(request)         ((request) == PTRACE_SINGLESTEP)
+> @@ -742,6 +771,10 @@ int ptrace_request(struct task_struct *c
+>                 ret = put_user(child->ptrace_message, datalp);
+>                 break;
+>
+> +       case PTRACE_PEEKSIGNAL:
+> +               ret = ptrace_peek_signal(child, addr, datavp);
+> +               break;
+> +
+>         case PTRACE_GETSIGINFO:
+>                 ret = ptrace_getsiginfo(child, &siginfo);
+>                 if (!ret)
+>
+
+
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface"; http://man7.org/tlpi/
