@@ -1,97 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753842Ab3BIKLF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 05:11:05 -0500
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:37245 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752737Ab3BIKKK (ORCPT
+	id S1752672Ab3BIKKH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 05:10:07 -0500
+Received: from mail-we0-f181.google.com ([74.125.82.181]:36539 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752404Ab3BIKKE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 05:10:10 -0500
+	Sat, 9 Feb 2013 05:10:04 -0500
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 8/9] gpiolib: use gpio_chips list in gpio_to_desc
-To: Alexandre Courbot <acourbot@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, gnurou@gmail.com,
+Subject: Re: [PATCH 4/9] gpiolib: use gpio_chips list in sysfs ops
+To: Linus Walleij <linus.walleij@linaro.org>,
         Alexandre Courbot <acourbot@nvidia.com>
-In-Reply-To: <1359822572-26009-10-git-send-email-acourbot@nvidia.com>
-References: <1359822572-26009-1-git-send-email-acourbot@nvidia.com> <1359822572-26009-10-git-send-email-acourbot@nvidia.com>
-Date: Sat, 09 Feb 2013 09:58:03 +0000
-Message-Id: <20130209095803.61C653E2CF2@localhost>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        gnurou@gmail.com
+In-Reply-To: <CACRpkdaC3pu3tBZrw0Az226XEt6+AzJ_NiiCaLwV9o6NUZ8MQw@mail.gmail.com>
+References: <1359822572-26009-1-git-send-email-acourbot@nvidia.com> <1359822572-26009-6-git-send-email-acourbot@nvidia.com> <CACRpkdaC3pu3tBZrw0Az226XEt6+AzJ_NiiCaLwV9o6NUZ8MQw@mail.gmail.com>
+Date: Sat, 09 Feb 2013 09:37:53 +0000
+Message-Id: <20130209093753.654C53E2C59@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun,  3 Feb 2013 01:29:31 +0900, Alexandre Courbot <acourbot@nvidia.com> wrote:
-> Parse the list of chips to find the descriptor corresponding to a GPIO
-> number instead of directly picking the entry of the global gpio_desc[]
-> array, which is due to be removed.
+On Tue, 5 Feb 2013 18:15:54 +0100, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Sat, Feb 2, 2013 at 5:29 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
 > 
-> This turns the complexity of converting a GPIO number into a descriptor
-> from O(1) to O(n) where n is the number of GPIO chips in the system.
-> Since n is ought to be small anyway, there should be no noticeable
-> performance impact. Moreover, GPIO users who care for speed already have
-> implemented their own gpio_get_value() and gpio_set_value() with a
-> fast path for the GPIO numbers that matter and this change does not
-> affect such use cases.
+> > This makes the code both simpler and faster compared to parsing the GPIO
+> > number space.
+> >
+> > Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 > 
-> The descriptor-based GPIO API, due to be introduced soon, will make this
-> lookup unnecessary.
+> Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
 
-I'm actually going to NAK this one. This is a hot path. Having a O(1)
-lookup from gpio number to gpio desc is important. I know you want to be
-rid of the gpio_desc table entirely, but in this case I think it is
-warranted. However, you can change the gpio_desc table to be a table of
-pointers to gpio_descs instead of a table of gpio_descs. That would save
-a lot of memory since unused GPIOs wouldn't have gpio_descs associated
-with them. It is also the mechanism used by the IRQ subsystem.
+Applied, thanks.
 
-So, it makes sense for the primary gpio_chip lookup to be the list, but
-the table needs to stick around as a secondary lookup.
+However, this code is incorrect (it was incorrect before you touched it,
+so not your fault). Moving it to a list makes it a lot worse though
+because it introduces the possibility of dereferencing an invalid
+pointer. The hooks need to grab the spinlock before parsing the list.
+
+I've got a patch which I'll post. I'd appreciate it if you can test
+also.
+
+In actual fact, I'd like to replace the spinlock with a mutex, but that
+requires some auditing to make sure there aren't any users from an
+atomic context.
 
 g.
 
-> 
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> ---
->  drivers/gpio/gpiolib.c | 19 +++++++++++++++----
->  1 file changed, 15 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-> index 9599b9a..0247c48 100644
-> --- a/drivers/gpio/gpiolib.c
-> +++ b/drivers/gpio/gpiolib.c
-> @@ -122,10 +122,21 @@ static int gpio_chip_hwgpio(const struct gpio_desc *desc)
->   */
->  static struct gpio_desc *gpio_to_desc(unsigned gpio)
->  {
-> -	if (WARN(!gpio_is_valid(gpio), "invalid GPIO %d\n", gpio))
-> -		return NULL;
-> -	else
-> -		return &gpio_desc[gpio];
-> +	struct gpio_chip *chip;
-> +
-> +	list_for_each_entry(chip, &gpio_chips, list) {
-> +		int gpio_min = chip->base;
-> +		int gpio_max = gpio_min + chip->ngpio;
-> +		if (gpio >= gpio_min && gpio < gpio_max)
-> +			return &chip->desc[gpio - gpio_min];
-> +		else if (gpio < gpio_min)
-> +			/* gpio_chips are ordered by base, so we won't get any
-> +			 * hit if we arrive here... */
-> +			break;
-> +	}
-> +
-> +	pr_warn("%s: no registered chip to handle GPIO %d\n", __func__, gpio);
-> +	return NULL;
->  }
->  
->  /**
-> -- 
-> 1.8.1.1
-> 
-
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies, Ltd.
