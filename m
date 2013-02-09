@@ -1,41 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947495Ab3BIAEP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 19:04:15 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:65153 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1947459Ab3BIAEK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 19:04:10 -0500
-Date: Fri, 8 Feb 2013 16:04:08 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-serial@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: TTY/serial tree now closed for 3.9
-Message-ID: <20130209000408.GB29346@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1947508Ab3BIAE1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 19:04:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56274 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1947390Ab3BIAEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 19:04:24 -0500
+Date: Fri, 8 Feb 2013 22:03:57 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Benoit Thebaudeau <benoit.thebaudeau@advansee.com>,
+        David Hardeman <david@hardeman.nu>, Trilok Soni <tsoni@codeaurora.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Matus Ujhelyi <ujhelyi.m@gmail.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
+Subject: Re: [PATCH v2] media: rc: gpio-ir-recv: add support for device tree
+ parsing
+Message-ID: <20130208220357.198c313c@redhat.com>
+In-Reply-To: <1360355887-19973-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1360137832-13086-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<1360355887-19973-1-git-send-email-sebastian.hesselbarth@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Em Fri,  8 Feb 2013 21:38:07 +0100
+Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> escreveu:
 
-With the release of the 3.8-rc7 kernel, I think it's time to close the
-TTY/serial tree for new features / cleanups for 3.9.  So I'm closing my
-tree, and will only be applying obvious bugfixes or regressions to it
-until 3.9-rc1 comes out.
+> This patch adds device tree parsing for gpio_ir_recv platform_data and
+> the mandatory binding documentation. It basically follows what we already
+> have for e.g. gpio_keys. All required device tree properties are OS
+> independent but an optional property allow linux specific support for rc
+> maps.
+> 
+> There was a similar patch sent by Matus Ujhelyi but that discussion
+> died after the first reviews.
+> 
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> ---
+> Changelog
+> 
+> v1->v2:
+> - get rid of ptr returned by _get_devtree_pdata()
+> - check for of_node instead for NULL pdata
+> - remove unneccessary double check for gpios property
+> - remove unneccessary #ifdef CONFIG_OF around match table
+> 
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: Rob Landley <rob@landley.net>
+> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+> Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> Cc: Benoit Thebaudeau <benoit.thebaudeau@advansee.com>
+> Cc: David Hardeman <david@hardeman.nu>
+> Cc: Trilok Soni <tsoni@codeaurora.org>
+> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> Cc: Matus Ujhelyi <ujhelyi.m@gmail.com>
+> Cc: devicetree-discuss@lists.ozlabs.org
+> Cc: linux-doc@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: linux-media@vger.kernel.org
+> ---
+>  .../devicetree/bindings/media/gpio-ir-receiver.txt |   16 ++++++
+>  drivers/media/rc/gpio-ir-recv.c                    |   57 ++++++++++++++++++++
+>  2 files changed, 73 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/media/gpio-ir-receiver.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/media/gpio-ir-receiver.txt b/Documentation/devicetree/bindings/media/gpio-ir-receiver.txt
+> new file mode 100644
+> index 0000000..8589f30
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/media/gpio-ir-receiver.txt
+> @@ -0,0 +1,16 @@
+> +Device-Tree bindings for GPIO IR receiver
+> +
+> +Required properties:
+> +	- compatible = "gpio-ir-receiver";
+> +	- gpios: OF device-tree gpio specification.
+> +
+> +Optional properties:
+> +	- linux,rc-map-name: Linux specific remote control map name.
+> +
+> +Example node:
+> +
+> +	ir: ir-receiver {
+> +		compatible = "gpio-ir-receiver";
+> +		gpios = <&gpio0 19 1>;
+> +		linux,rc-map-name = "rc-rc6-mce";
 
-You can keep sending me patches for the tree that don't fit the "bugfix"
-category, but note that I'll be storing them away to wait for 3.9-rc1
-comes out, which might be a few weeks, so please be patient.
+Please change this to:
+		linux,rc-map-name = RC_MAP_RC6_MCE;
 
-The TTY tree right now contains 120 patches, and the diffstat
-summary is:
-	 254 files changed, 6720 insertions(+), 2528 deletions(-)
+(as defined at include/media/rc-map.h).
 
-thanks,
+The idea of having those strings defined at the same header file is to:
 
-greg k-h
+	- make sure that the same keyboard is spelled at the same way on
+all places;
+
+	- avoid people to duplicate IR keytables, using different names;
+
+	- help userspace to get the right table. In the future, the
+plan is to remove all keytables from kernelspace, keeping there just the
+name of the keytable. The existing userspace code (ir-keytables, part
+of v4l-utils) use the keytable name to dynamically load the right table
+in runtime and to switch the IR core to only handle the protocol that
+it is associated with the loaded keytable.
+
+Regards,
+Mauro
