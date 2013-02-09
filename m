@@ -1,77 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932455Ab3BIPDZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 10:03:25 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37692 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932289Ab3BIPDV (ORCPT
+	id S932407Ab3BIPH5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 10:07:57 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:48789 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758092Ab3BIPHz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 10:03:21 -0500
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: hirofumi@mail.parknet.co.jp, akpm@linux-foundation.org
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <linkinjeon@gmail.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: [PATCH v6 7/7] Documentation: update nfs option in filesystem/vfat.txt
-Date: Sun, 10 Feb 2013 00:03:11 +0900
-Message-Id: <1360422191-12382-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sat, 9 Feb 2013 10:07:55 -0500
+Message-ID: <1360422473.6696.28.camel@edumazet-glaptop>
+Subject: Re: BUG: soft lockup on all kernels after 2.6.3x
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Alexey Vlasov <renton@renton.name>
+Cc: linux-kernel@vger.kernel.org
+Date: Sat, 09 Feb 2013 07:07:53 -0800
+In-Reply-To: <20130209141029.GA13493@beaver>
+References: <20130209141029.GA13493@beaver>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+On Sat, 2013-02-09 at 18:10 +0400, Alexey Vlasov wrote:
+> Hello.
+> 
+> I used 2.6.2x kernel for a long time on my shared hosting and I didn't
+> have any problems. Kernels worked well and server uptime was about 2-3
+> years.
+> 
+> But investigating some strange hangings of my clients' sites I came to
+> this:
+> http://bugs.mysql.com/bug.php?id=50399
+> from this bug it is clear that on kernels younger than 2.6.32 (
+> unfortunately I can't remember if it is true with 2.6.30-31) happens
+> mysql client hanging.
+> 
+> It is not clear whether it is a bug of kernel or libc or mysql-client, I
+> didn't manage to find it out. I decided to do simpler (as it seemed to
+> me at that moment) to start using 2.6.3x kernels. And that caused
+> greater problems. By trying to use new kernels on my working servers
+> with peak load I got an uptime from an hour to 1-3 months.
+> 
+> I even got some statistics for how long can every kernel from version
+> 2.6.32 work in peak load situations. It sounds funny but my clients are
+> not happy with all these reboots.
+> 
+> From all the variety of servers from 2.6.32 to 3.7.4 I can say that
+> 2.6.35 is the most stabil, I got about 30 servers on it. But they hang
+> usually once in 1-3 months.
+> 
+> Returning to the problem of kernels >= 2.6.32, as I have noticed they
+> hang totally alike, giving the console:
+> 
+> ...
+> Feb  8 10:27:45 10.2.0.7 [470393.417168] BUG: soft lockup - CPU#2 stuck for 61s! [vsftpd:29013]
+> ...
+> [see the attachment]
+> 
+> it doesn't happen on an empty server, only on loaded ones. Unfortunately
+> I don't know how to provoke such hanging artificially.
+> 
+> I' ve given a trace attached. In fact I don't know what to do with all
+> these bugs, I can't use 2.6.2x because of MySQL hanging and = >2.6.3
+> start hanging themselves.
+> 
 
-Add descriptions about 'stale_rw' and 'nostale_ro' nfs options in
-filesystem/vfat.txt
+Did you compile the kernel yourself, or is it a standard kernel (distro
+provided) ?
 
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Ravishankar N <ravi.n1@samsung.com>
-Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
----
- Documentation/filesystems/vfat.txt |   26 +++++++++++++++++++++-----
- 1 file changed, 21 insertions(+), 5 deletions(-)
+Your traces dont contain symbols, its quite hard to guess the issue.
 
-diff --git a/Documentation/filesystems/vfat.txt b/Documentation/filesystems/vfat.txt
-index d230dd9..1ce26d5 100644
---- a/Documentation/filesystems/vfat.txt
-+++ b/Documentation/filesystems/vfat.txt
-@@ -150,12 +150,28 @@ discard       -- If set, issues discard/TRIM commands to the block
- 		 device when blocks are freed. This is useful for SSD devices
- 		 and sparse/thinly-provisoned LUNs.
- 
--nfs           -- This option maintains an index (cache) of directory
--		 inodes by i_logstart which is used by the nfs-related code to
--		 improve look-ups.
-+nfs= stale_rw|nostale_ro
-+		Enable this only if you want to export the FAT filesystem
-+		over NFS.
-+
-+		stale_rw: This option maintains an index (cache) of directory
-+		inodes by i_logstart which is used by the nfs-related code to
-+		improve look-ups. Full file operations (read/write) over NFS is
-+		supported but with cache eviction at NFS server, this could
-+		result in ESTALE issues.
-+
-+		nostale_ro: This option bases the inode number and filehandle
-+		on the on-disk location of a file in the MS-DOS directory entry.
-+		This ensures that ESTALE will not be returned after a file is
-+		evicted from the inode cache. However, it means that operations
-+		such as rename, create and unlink could cause filehandles that
-+		previously pointed at one file to point at a different file,
-+		potentially causing data corruption. For this reason, this
-+		option also mounts the filesystem readonly.
-+
-+		To maintain backward compatibility, '-o nfs' is also accepted,
-+		defaulting to stale_rw
- 
--		 Enable this only if you want to export the FAT filesystem
--		 over NFS
- 
- <bool>: 0,1,yes,no,true,false
- 
--- 
-1.7.9.5
 
