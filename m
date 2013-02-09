@@ -1,69 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760554Ab3BICPq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 21:15:46 -0500
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:35179 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760508Ab3BICPp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 21:15:45 -0500
+	id S1947440Ab3BICkh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 21:40:37 -0500
+Received: from chrocht.moloch.sk ([62.176.169.44]:48898 "EHLO mail.moloch.sk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760552Ab3BICkf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 21:40:35 -0500
+Message-ID: <5115B720.2080207@250bpm.com>
+Date: Sat, 09 Feb 2013 03:40:32 +0100
+From: Martin Sustrik <sustrik@250bpm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Thunderbird/3.1.16
 MIME-Version: 1.0
-In-Reply-To: <874nhn46qm.fsf@devron.myhome.or.jp>
-References: <1359989028-7457-1-git-send-email-linkinjeon@gmail.com>
-	<87bobw4ab9.fsf@devron.myhome.or.jp>
-	<CAKYAXd_68nEdbdi5wEWMoavTE6kZcfwBd2Yi7jbk5nBE-_kGUw@mail.gmail.com>
-	<874nhn46qm.fsf@devron.myhome.or.jp>
-Date: Sat, 9 Feb 2013 11:15:43 +0900
-Message-ID: <CAKYAXd-=TWefqrN+75GZHabns6OU7+arPHBGD4Vf-WUQpCdTLQ@mail.gmail.com>
-Subject: Re: [PATCH v2] fat: eliminate iterations in fat_search_long and
- __fat_readdir in case of EOD
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+To: Eric Wong <normalperson@yhbt.net>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Sha Zhengju <handai.szj@taobao.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 1/1] eventfd: implementation of EFD_MASK flag
+References: <1360219292-19754-1-git-send-email-sustrik@250bpm.com> <20130207144433.527ef024.akpm@linux-foundation.org> <5114F2D8.5020300@250bpm.com> <20130208222107.GA4762@dcvr.yhbt.net>
+In-Reply-To: <20130208222107.GA4762@dcvr.yhbt.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/2/8, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
-> Namjae Jeon <linkinjeon@gmail.com> writes:
->
->>> And did this work correctly about f_pos for readdir?
->> Yes, sure. f_pos is work correctly about each directory entry. because
->> after name[0] == 0x00, there are no allocated directory entires.
->>>
->>> I'm not thinking about f_pos deeply though, it may have something
->>> wrong. Because it stops at middle of cluster.
->> Plz See the below descirption about name[0] in FAT spec.
->> ---------------------------------------------------------------------------------------------------------------------
->> If DIR_Name[0] == 0x00, then the directory entry is free (same as for
->> 0xE5), and there are no allocated directory entries after this one
->> (all of the DIR_Name[0] bytes in all of the entries after this one are
->> also set to 0).
->> The special 0 value, rather than the 0xE5 value, indicates to FAT file
->> system driver code that the rest of the entries in this directory do
->> not need to be examined because they are all free.
->> -----------------------------------------------------------------------------------------------------------------------
->>
->> I think that lookuping entry till the end of cluster is not needed.
->> Let me know your opinion.
->
-> I know it though. There is seek() and broken drivers adds entries after
-> name[0] == 0. I think we don't need to care much about broken drivers
-> though. Even if so, kernel should not be crash, and corrupts fs more.
-Yes, Right. I understood. Plz ignore this patch.
->
->> And Would you tell me your opinion about fat exportfs ?
->
-> Ah, I was thinking I did. But it seems I didn't actually. Can you post
-> full of series? So, I can review and probably we can start to test it.
-Okay, I will post full patch-set today.
+Hi Eric,
 
-Thanks OGAWA.
+On 08/02/13 23:21, Eric Wong wrote:
+> Martin Sustrik<sustrik@250bpm.com>  wrote:
+>> On 07/02/13 23:44, Andrew Morton wrote:
+>>> That's a nice changelog but it omitted a critical thing: why do you
+>>> think the kernel needs this feature?  What's the value and use case for
+>>> being able to poll these descriptors?
+>>
+>> To address the question, I've written down detailed description of
+>> the challenges of the network protocol development in user space and
+>> how the proposed feature addresses the problems.
+>>
+>> It's too long to fit into ChangeLog, but it may be worth reading
+>> when trying to judge the merit of the patch.
+>>
+>> It can be found here: http://www.250bpm.com/blog:16
 >
-> Thanks.
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+> Using one eventfd per userspace socket still seems a bit wasteful.
+
+Wasteful in what sense? Occupying a slot in file descriptor table? 
+That's the price for having the socket uniquely identified by the fd.
+
+> Couldn't you use a single pipe for all sockets and write the efd_mask to
+> the pipe for each socket?
 >
+> A read from the pipe would behave like epoll_wait.
+>
+> You might need to use one-shot semantics; but that's probably
+> the easiest thing in multithreaded apps anyways.
+
+Having multiple sockets represented by a single eventfd. how would you 
+distinguish where did individual events came from?
+
+   struct pollfd pfd;
+   ...
+   poll (pfd, 1, -1);
+   if (pfd.revents & POLLIN) /* Incoming data on which socket? */
+     ...
+
+Martin
