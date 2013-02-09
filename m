@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932315Ab3BINxo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 08:53:44 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:55474 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756080Ab3BINxn (ORCPT
+	id S1760664Ab3BIN6r (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 08:58:47 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:59111 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757149Ab3BIN6q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 08:53:43 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130209093753.654C53E2C59@localhost>
-References: <1359822572-26009-1-git-send-email-acourbot@nvidia.com>
- <1359822572-26009-6-git-send-email-acourbot@nvidia.com> <CACRpkdaC3pu3tBZrw0Az226XEt6+AzJ_NiiCaLwV9o6NUZ8MQw@mail.gmail.com>
- <20130209093753.654C53E2C59@localhost>
-From: Alexandre Courbot <acourbot@nvidia.com>
-Date: Sat, 9 Feb 2013 22:53:22 +0900
-X-Google-Sender-Auth: pc_hHHzDS5o0MauH4EYnNfgZNmQ
-Message-ID: <CAAVeFuLW5pP=Kk7wh63eNAuycvEcXV1op6GkXyZwK85Gqz+DJQ@mail.gmail.com>
-Subject: Re: [PATCH 4/9] gpiolib: use gpio_chips list in sysfs ops
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 9 Feb 2013 08:58:46 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 00/33] Sanitize devm_request_and_ioremap()
+To: Thierry Reding <thierry.reding@avionic-design.de>,
+        linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>
+In-Reply-To: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
+References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
+Date: Sat, 09 Feb 2013 13:58:42 +0000
+Message-Id: <20130209135842.5D8D83E30EC@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 9, 2013 at 6:37 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> However, this code is incorrect (it was incorrect before you touched it,
-> so not your fault). Moving it to a list makes it a lot worse though
-> because it introduces the possibility of dereferencing an invalid
-> pointer. The hooks need to grab the spinlock before parsing the list.
->
-> I've got a patch which I'll post. I'd appreciate it if you can test
-> also.
->
-> In actual fact, I'd like to replace the spinlock with a mutex, but that
-> requires some auditing to make sure there aren't any users from an
-> atomic context.
+On Mon, 21 Jan 2013 11:08:53 +0100, Thierry Reding <thierry.reding@avionic-design.de> wrote:
+> Recent discussions about the lack of a meaningful error code returned by
+> devm_request_and_ioremap() have triggered this patch series. One common
+> issue is that the function returns NULL in all failure cases, making it
+> impossible to determine what went wrong exactly. Another problem is that
+> people can't seem to agree on what error code to return in case where
+> the function fails. Both of these problems lead to inconsistent usage.
+> 
+> This series attempts to fix this by providing a replacement function,
+> devm_ioremap_resource(), which returns a pointer to the remapped memory
+> region on success and an ERR_PTR()-encoded error code on failure. Users
+> can check for failure using the IS_ERR() macro and determine the exact
+> cause by extracting the error code using PTR_ERR().
+> 
+> Patch 1 adds the new devm_ioremap_resource() function, which is really
+> just a renamed version of devm_request_and_ioremap() that returns
+> ERR_PTR()-encoded error codes on failure and makes the old function a
+> wrapper around it, returning NULL in case of devm_ioremap_resource()
+> failure. Furthermore the patch marks devm_request_and_ioremap() as a
+> deprecated function to make it clear that it should no longer be used.
+> A semantic patch is included that was used to convert the bulk of the
+> existing calls to devm_request_and_ioremap() to the new API. The patch
+> is far from perfect and a few occurrences had to be converted or fixed
+> up manually.
+> 
+> The remaining patches convert each subsystem separately to use the new
+> API.
+> 
+> Thierry
 
-I thought about doing that as well actually, but left it for later. It
-looks safe at first sight, but as you mention we cannot exclude a few
-users will break as a consequence of such a switch.
+I know that this series has wide support and will probably be merged,
+but I'm reply to this for the record. I do not think the ERR_PTR pattern
+is a good idea because it goes against expectations of what is and is
+not a valid pointer.
 
-In any case, I plan to give it a try once that big chunk is merged.
+Nacked-by: Grant Likely <grant.likely@secretlab.ca>
 
-Alex.
+Greg, if you're merging this series then don't let my objection inhibit
+spi & gpio changes. I may not be happy, but I won't be an ass about it.
+
+g.
