@@ -1,61 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932418Ab3BIPMA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 10:12:00 -0500
-Received: from co1ehsobe006.messaging.microsoft.com ([216.32.180.189]:34327
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932274Ab3BIPL7 (ORCPT
+	id S1760750Ab3BIPcL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 10:32:11 -0500
+Received: from mail.renton.name ([90.155.165.44]:38689 "EHLO
+	beaver.old-horrors.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760722Ab3BIPcK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 10:11:59 -0500
-X-Forefront-Antispam-Report: CIP:157.56.236.101;KIP:(null);UIP:(null);IPV:NLI;H:BY2PRD0510HT001.namprd05.prod.outlook.com;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: PS-3(zz98dI936eI1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2fh2a8h668h839h93fhd24he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1155h)
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: Borislav Petkov <bp@alien8.de>
-CC: Kees Cook <keescook@chromium.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH] x86: Lock down MSR writing in secure boot
-Thread-Topic: [PATCH] x86: Lock down MSR writing in secure boot
-Thread-Index: AQHOBjA7mQsIMlqU/k+EElzc7Yz1iZhwVXgAgAAAbACAAAawAIAACLcAgAABPICAAAKrAIAAAdKAgAAHwICAABjCAIAAChOAgAAFkwCAACBDAIAAAhCAgABYQICAAC3GgIAAX64A
-Date: Sat, 9 Feb 2013 15:11:53 +0000
-Message-ID: <1360422712.18083.24.camel@x230.lan>
-References: <dee64752-850c-4d78-b703-f47a985bc13e@email.android.com>
-	 <CAGXu5jLAufTRm=sDST0br_WEkn4o0Hpjv2jDP2Na=cCvuM+MGg@mail.gmail.com>
-	 <1360355671.18083.18.camel@x230.lan>
-	 <CAGXu5jKo2PfMBO4A0ZgQcrPuj8OHNaff+CjAesOAWkZc0vB9+Q@mail.gmail.com>
-	 <51157C9C.6030501@zytor.com> <20130208230655.GB28990@pd.tnic>
-	 <1360366012.18083.21.camel@x230.lan> <5115A4CC.3080102@zytor.com>
-	 <1360373383.18083.23.camel@x230.lan>
-	 <CAGXu5j+xvJ3L5ejxtZ-Jw3F6rV7OsrE0_HZCGu_er0rH2_PwKA@mail.gmail.com>
-	 <20130209092925.GA17728@pd.tnic>
-In-Reply-To: <20130209092925.GA17728@pd.tnic>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.255.116.4]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <D5B35CDC68C90D4D84608D359B8A9F59@namprd05.prod.outlook.com>
+	Sat, 9 Feb 2013 10:32:10 -0500
+Date: Sat, 9 Feb 2013 19:30:26 +0400
+From: Alexey Vlasov <renton@renton.name>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: BUG: soft lockup on all kernels after 2.6.3x
+Message-ID: <20130209153026.GB13493@beaver>
+References: <20130209141029.GA13493@beaver>
+ <1360422473.6696.28.camel@edumazet-glaptop>
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1360422473.6696.28.camel@edumazet-glaptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r19FC3va009443
 
-On Sat, 2013-02-09 at 10:29 +0100, Borislav Petkov wrote:
-> On Fri, Feb 08, 2013 at 10:45:35PM -0800, Kees Cook wrote:
-> > Also, _reading_ MSRs from userspace arguably has utility that doesn't
-> > compromise ring-0.
+On Sat, Feb 09, 2013 at 07:07:53AM -0800, Eric Dumazet wrote:
+> Did you compile the kernel yourself, or is it a standard kernel (distro
+> provided) ?
 > 
-> And to come back to the original question: what is that utility, who
-> would need it on a secure boot system and why?
+> Your traces dont contain symbols, its quite hard to guess the issue.
 
-Things like Turbostat are useful, although perhaps that information
-should be exposed in a better way.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I compile the kernel myself. Should I add CONFIG_DEBUG_INFO ? ok then
+I'll try it. May be I should switch on anything else to get more info
+for debug?
+Thanks.
+
+-- 
+BRGDS. Alexey Vlasov.
