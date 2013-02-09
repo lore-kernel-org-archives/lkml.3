@@ -1,68 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947440Ab3BICkh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 21:40:37 -0500
-Received: from chrocht.moloch.sk ([62.176.169.44]:48898 "EHLO mail.moloch.sk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760552Ab3BICkf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 21:40:35 -0500
-Message-ID: <5115B720.2080207@250bpm.com>
-Date: Sat, 09 Feb 2013 03:40:32 +0100
-From: Martin Sustrik <sustrik@250bpm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Eric Wong <normalperson@yhbt.net>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Sha Zhengju <handai.szj@taobao.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 1/1] eventfd: implementation of EFD_MASK flag
-References: <1360219292-19754-1-git-send-email-sustrik@250bpm.com> <20130207144433.527ef024.akpm@linux-foundation.org> <5114F2D8.5020300@250bpm.com> <20130208222107.GA4762@dcvr.yhbt.net>
-In-Reply-To: <20130208222107.GA4762@dcvr.yhbt.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1760578Ab3BICpo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 21:45:44 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:37375 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757682Ab3BICpm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 21:45:42 -0500
+From: Michel Lespinasse <walken@google.com>
+To: linux-kernel@vger.kernel.org, anton@samba.org, hpa@zytor.com,
+        mingo@kernel.org, arjan@linux.intel.com, a.p.zijlstra@chello.nl,
+        torvalds@linux-foundation.org, alex.shi@intel.com,
+        yuanhan.liu@linux.intel.com, dhowells@redhat.com,
+        akpm@linux-foundation.org, tglx@linutronix.de
+Subject: [PATCH 0/4] rwsem: Implement writer lock-stealing
+Date: Fri,  8 Feb 2013 18:45:33 -0800
+Message-Id: <1360377937-16297-1-git-send-email-walken@google.com>
+X-Mailer: git-send-email 1.8.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric,
+This proposal implements writer lock stealing in lib/rwsem.c, just as
+Alex Shi's earlier proposal did for the simpler lib/rwsem-spinlock.c
 
-On 08/02/13 23:21, Eric Wong wrote:
-> Martin Sustrik<sustrik@250bpm.com>  wrote:
->> On 07/02/13 23:44, Andrew Morton wrote:
->>> That's a nice changelog but it omitted a critical thing: why do you
->>> think the kernel needs this feature?  What's the value and use case for
->>> being able to poll these descriptors?
->>
->> To address the question, I've written down detailed description of
->> the challenges of the network protocol development in user space and
->> how the proposed feature addresses the problems.
->>
->> It's too long to fit into ChangeLog, but it may be worth reading
->> when trying to judge the merit of the patch.
->>
->> It can be found here: http://www.250bpm.com/blog:16
->
-> Using one eventfd per userspace socket still seems a bit wasteful.
+Patches 1 and 2 are small cleanups that I thought I should separate
+from the bulk of the changes; Patch 3 is the generic support for write
+lock stealing; Patch 4 is the x86 support (optional, only required for
+higher performance).
 
-Wasteful in what sense? Occupying a slot in file descriptor table? 
-That's the price for having the socket uniquely identified by the fd.
+I am not in an ideal position to push this as I will be out of town
+starting from the middle of next week. However, I hope that this
+proposal will at least get the ball rolling. I did run some basic
+testing including David Howell's synchro-test module (as found in
+Andrew's -mm tree).
 
-> Couldn't you use a single pipe for all sockets and write the efd_mask to
-> the pipe for each socket?
->
-> A read from the pipe would behave like epoll_wait.
->
-> You might need to use one-shot semantics; but that's probably
-> the easiest thing in multithreaded apps anyways.
+Michel Lespinasse (4):
+  rwsem: make the waiter type an enumeration rather than a bitmask
+  rwsem: shorter spinlocked section in rwsem_down_failed_common()
+  rwsem: implement write lock stealing
+  x86 rwsem: avoid taking slow path when stealing write lock
 
-Having multiple sockets represented by a single eventfd. how would you 
-distinguish where did individual events came from?
+ arch/x86/include/asm/rwsem.h |  28 +++--
+ include/linux/rwsem.h        |   2 +
+ lib/rwsem.c                  | 252 ++++++++++++++++++++-----------------------
+ 3 files changed, 139 insertions(+), 143 deletions(-)
 
-   struct pollfd pfd;
-   ...
-   poll (pfd, 1, -1);
-   if (pfd.revents & POLLIN) /* Incoming data on which socket? */
-     ...
-
-Martin
+-- 
+1.8.1
