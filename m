@@ -1,57 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752221Ab3BIHaJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 02:30:09 -0500
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:64734 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750916Ab3BIHaI (ORCPT
+	id S1752339Ab3BIHan (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 02:30:43 -0500
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:36311 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751988Ab3BIHal (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 02:30:08 -0500
+	Sat, 9 Feb 2013 02:30:41 -0500
 MIME-Version: 1.0
-In-Reply-To: <1360377937-16297-4-git-send-email-walken@google.com>
-References: <1360377937-16297-1-git-send-email-walken@google.com>
-	<1360377937-16297-4-git-send-email-walken@google.com>
-Date: Sat, 9 Feb 2013 15:30:06 +0800
-Message-ID: <CAJd=RBBd+pGG6=Qjpt-Zkxt5VdP5T3YV5_RVao+kHpz9dCzqXA@mail.gmail.com>
-Subject: Re: [PATCH 3/4] rwsem: implement write lock stealing
-From: Hillf Danton <dhillf@gmail.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: linux-kernel@vger.kernel.org, anton@samba.org, hpa@zytor.com,
-        mingo@kernel.org, arjan@linux.intel.com, a.p.zijlstra@chello.nl,
-        torvalds@linux-foundation.org, alex.shi@intel.com,
-        yuanhan.liu@linux.intel.com, dhowells@redhat.com,
-        akpm@linux-foundation.org
-Content-Type: text/plain; charset=UTF-8
+From: Sagar Borikar <sagar.borikar@gmail.com>
+Date: Fri, 8 Feb 2013 23:30:19 -0800
+Message-ID: <CAFwMWxtk4Kmo5ztBdoLCOowsaPgzvO2JfU6jiADM4kBR8zRM5A@mail.gmail.com>
+Subject: LSI controller resetting with fault_state 0x2622
+To: linux-scsi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-ide@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 9, 2013 at 10:45 AM, Michel Lespinasse <walken@google.com> wrote:
-> +               if (waiter->type != RWSEM_WAITING_FOR_WRITE) {
-> +                       list_del(&waiter->list);
-> +
-> +                       /* Set RWSEM_WAITING_BIAS before waking the last reader
-> +                        * so we know there will be a remaining active locker.
-> +                        */
-> +                       if (!(--readers) && !list_empty(&sem->wait_list))
-> +                               rwsem_atomic_add(RWSEM_WAITING_BIAS, sem);
-> +
-> +                       tsk = waiter->task;
-> +                       smp_mb();
+Hi,
 
-For what with mb?
+I am using LSI 9207 controller on mips board and ported the standard
+driver came with the controller on linux-mips 2.6.23 kernel. I know
+its bit old but that's what I have available on the board that I am
+using.
 
-> +                       waiter->task = NULL;
-> +                       wake_up_process(tsk);
-> +                       put_task_struct(tsk);
-> +               }
-> +       } while (readers);
-> +       sem->wait_readers = 0;
+After loading the driver, I can see the end device properly.
 
 
-> +       /* If there are no active locks, wake the front queued process(es). */
+# lsmod
+Module                  Size  Used by    Not tainted
+mpt2sas 246000 0 - Live 0xc01a9000
+# /config/lsscsi -t
+[0:0:0:0]    disk    sas:0x5000c5001db47d9d          /dev/sda
 
-s/locks/lockers/
+But when I am creating the ext3 fs on the disk, It throws following error:
+8192 inodes per group
+Superblock backups stored on blocks:
+        32768, 98304, 163840, 229376, 294912, 819200, 884736, 1605632, 2654208,
+        4096000, 7962624, 11239424, 20480000, 23887872
 
-> +       if (!(count & RWSEM_ACTIVE_MASK))
-> +               sem = __rwsem_do_wake(sem, RWSEM_WAKE_ANY);
+Allocating group tables: done
+Writing inode tables: [16844.399000] mpt2sas0: fault_state(0x2622)!
+[16844.400000] mpt2sas0: sending diag reset !!
+[16845.590000] mpt2sas0: diag reset: SUCCESS
+[16845.687000] mpt2sas0: LSISAS2308: FWVersion(13.00.57.00),
+ChipRevision(0x05), BiosVersion(07.25.00.00)
+[16845.688000] mpt2sas0: Protocol=(Initiator,Target),
+Capabilities=(TLR,EEDP,Snapshot Buffer,Diag Trace Buffer,Task Set
+Full,NCQ)
+[16845.720000] mpt2sas0: sending port enable !!
+[16853.398000] mpt2sas0: port enable: SUCCESS
+
+While checking the meaning of fault_state 0x2622, I happen to find a
+link which states that there was an issue with the controller firmware
+as following:
+
+SCS Engineering Release Notice
+Phase14 Pre-Alpha Release Version 13.250.01.00 - SAS2FW_Phase14 (SCGCQ00276613)
+
+Total Defects Resolved (6)
+(SCGCQ00268527)
+HEADLINE:
+DESC OF CHANGE:
+TO REPRODUCE:
+ISSUE DESC:
+Defect 1/6
+Fault 0x2622 will occur if Request Equalization bit is set during PCIe Training
+Masked the unnecessary interrupts.
+Using a PCIe protocol exerciser, set the Request Equalization bit in
+the PCIe Training Sets. No known
+systems currently set this bit.
+Devices supporting Gen3 PCIe speeds can have interrupts occur when
+PCIe training sets the Request
+Equalization bit. The interrupt should be masked since firmware
+intervention is not required. Firmware
+faults on the unexpected interrupt with the belief that it is an error.
+
+Not sure whether the problem is as described above.
+
+Thanks
+Sagar
