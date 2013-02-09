@@ -1,92 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932567Ab3BIUYv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 15:24:51 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:36449 "EHLO hydra.sisk.pl"
+	id S932586Ab3BIUw3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 15:52:29 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45017 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932527Ab3BIUYt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 15:24:49 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Goswin von Brederlow <goswin-v-b@web.de>,
-        Miklos Szeredi <miklos@szeredi.hu>, Li Fei <fei.li@intel.com>,
-        len.brown@intel.com, mingo@redhat.com, peterz@infradead.org,
-        biao.wang@intel.com, linux-pm@vger.kernel.org,
-        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        chuansheng.liu@intel.com
-Subject: Re: [fuse-devel] [PATCH] fuse: make fuse daemon frozen along with kernel threads
-Date: Sat, 09 Feb 2013 21:31:10 +0100
-Message-ID: <1595169.zvx3Wi6SMv@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130209174910.GA28370@amd.pavel.ucw.cz>
-References: <1360113112.17267.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC> <20130208141123.GA29460@frosties> <20130209174910.GA28370@amd.pavel.ucw.cz>
+	id S932548Ab3BIUw2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Feb 2013 15:52:28 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1360439574-16122-6-git-send-email-bp@alien8.de>
+References: <1360439574-16122-1-git-send-email-bp@alien8.de> <1360439574-16122-6-git-send-email-bp@alien8.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH 5/5] x86, head_32: Remove an old gcc2 fix
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Sat, 09 Feb 2013 12:51:13 -0800
+To: Borislav Petkov <bp@alien8.de>
+CC: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>
+Message-ID: <85fca026-9940-470c-bb76-250901557513@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+ALL versions of gcc want DF=0 at all times...
 
-On Saturday, February 09, 2013 06:49:10 PM Pavel Machek wrote:
-> Hi!
+Borislav Petkov <bp@alien8.de> wrote:
+
+>From: Borislav Petkov <bp@suse.de>
+>
+>gcc2 wants direction flag cleared but we don't support gcc2 anymore. So
+>drop it. Original patch adding this was:
+>
+>commit 57d40092c375d2b6d34f814f5fb306967e22c4f5
+>Author: linus1 <torvalds@linuxfoundation.org>
+>Date:   Mon Nov 9 12:00:00 1992 -0600
+>
+>    [PATCH] Linux-0.98.4 (November 9, 1992)
+>...
+>
+>Signed-off-by: Borislav Petkov <bp@suse.de>
+>---
+> arch/x86/kernel/head_32.S | 1 -
+> 1 file changed, 1 deletion(-)
+>
+>diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
+>index 75e96d7e4e5f..fc56613224c3 100644
+>--- a/arch/x86/kernel/head_32.S
+>+++ b/arch/x86/kernel/head_32.S
+>@@ -463,7 +463,6 @@ is486:
+> 	xorl %eax,%eax			# Clear LDT
+> 	lldt %ax
 > 
-> > > The only way to *reliably* freeze fuse filesystems is to let it freeze
-> > > even if there are outstanding requests.  But that's the hardest to
-> > > implement, because then it needs to allow freezing of tasks waiting on
-> > > i_mutex, for example, which is currently not possible.  But this is
-> > > the only way I see that would not have unsolvable corner cases that
-> > > prop up at the worst moment.
-> > > 
-> > > And yes, it would be prudent to  wait some time for pending requests
-> > > to finish before freezing.  But it's not a requirement, things
-> > > *should* work without that: suspending a machine is just like a very
-> > > long pause by the CPU, as long as no hardware is involved.  And with
-> > > fuse filesystems there is no hardware involved directly by definition.
-> > > 
-> > > But I'm open to ideas and at this stage I think even patches that
-> > > improve the situation for the majority of the cases would be
-> > > acceptable, since this is turning out to be a major problem for a lot
-> > > of people.
-> > 
-> > For shutdown in userspace there is the sendsigs.omit.d/ to avoid the
-> > problem of halting/killing processes of the fuse filesystems (or other
-> > services) prematurely. I guess something similar needs to be done for
-> > freeze. The fuse filesystem has to tell the kernel what is up.
+>-	cld			# gcc2 wants the direction flag cleared at all times
+> 	pushl $0		# fake return address for unwinder
+> 	jmp *(initial_code)
 > 
-> Would it be feasible to create some kind of fuse-stop-script.sh, and
-> run it before suspend (from userspace)? It should be pretty similar to
-> sendsigs.omit.d/ mechanism AFAICT.
-> 
-> I'm sorry, freezer is not too suitable for fuse.
-> 
-> (BTW: for suspend, we may be able to improve it so that it is possible
-> to remove freezer from it. For hibernation, it would be very hard.)
-
-Well, this is so incorrect that it's not even funny. :-(
-
-The whole memory shrinking we do for hibernation is now done by allocating
-memory, so the freezer is not necessary for *that* and there's *zero*
-difference between suspend and hibernation with respect to why the freezer is
-used.
-
-And *the* reason why it's used is that intercepting all of the possible ways
-user space could interfere with the suspend process without the freezer is
-simply totally impractical.  System calls (including ioctls and fctls),
-sysfs accesses, /proc accesses, debugfs, to name a few, and mmap (I wonder how
-you would handle *that* alone).  And I'm sure there's more I didn't even
-think about.  Moreover, all of the drivers we have assume that user space will
-be frozen before their suspend callbacks are run by now and changing that is
-totally unrealistic.
-
-So please don't tell people that something is doable while it practically
-realisticly isn't.
-
-Thanks,
-Rafael
-
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
