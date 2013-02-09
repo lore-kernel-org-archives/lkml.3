@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932491Ab3BITA1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 14:00:27 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:5367 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758526Ab3BITAZ (ORCPT
+	id S1760840Ab3BITAp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 14:00:45 -0500
+Received: from mail-da0-f52.google.com ([209.85.210.52]:37152 "EHLO
+	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758526Ab3BITAn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 14:00:25 -0500
-Date: Sat, 9 Feb 2013 20:00:10 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: James Ralston <james.d.ralston@intel.com>
-Cc: Wolfram Sang <w.sang@pengutronix.de>, linux-i2c@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Seth Heasley <seth.heasley@intel.com>
-Subject: Re: [PATCH 3/5] i2c-i801: Add Device IDs for Intel Wellsburg PCH
-Message-ID: <20130209200010.1b18fdb3@endymion.delvare>
-In-Reply-To: <1360373535-2055-1-git-send-email-james.d.ralston@intel.com>
-References: <1360373535-2055-1-git-send-email-james.d.ralston@intel.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 9 Feb 2013 14:00:43 -0500
+Date: Sat, 9 Feb 2013 11:00:37 -0800
+From: Tejun Heo <tj@kernel.org>
+To: "Hefty, Sean" <sean.hefty@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Jean Delvare <khali@linux-fr.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        Roland Dreier <roland@kernel.org>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        "Marciniszyn, Mike" <mike.marciniszyn@intel.com>,
+        Jack Morgenstein <jackm@dev.mellanox.co.il>,
+        Or Gerlitz <ogerlitz@mellanox.com>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH 2/6] idr: remove MAX_IDR_MASK and move left MAX_IDR_*
+ into idr.c
+Message-ID: <20130209190037.GB2875@htj.dyndns.org>
+References: <20130208210050.GA26660@mtj.dyndns.org>
+ <20130208210149.GB26660@mtj.dyndns.org>
+ <1828884A29C6694DAF28B7E6B8A8237357D44677@ORSMSX101.amr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1828884A29C6694DAF28B7E6B8A8237357D44677@ORSMSX101.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James,
+Hello,
 
-On Fri,  8 Feb 2013 17:32:15 -0800, James Ralston wrote:
-> This patch adds the SMBus Device IDs for the Intel Wellsburg PCH
+On Fri, Feb 08, 2013 at 10:09:13PM +0000, Hefty, Sean wrote:
+> >   Used to wrap cyclic @start.  Can be replaced with max(next, 0).
+> >   Note that this type of cyclic allocation using idr is buggy.  These
+> >   are prone to spurious -ENOSPC failure after the first wraparound.
 > 
-> Signed-off-by: James Ralston <james.d.ralston@intel.com>
-> ---
->  Documentation/i2c/busses/i2c-i801 |    1 +
->  drivers/i2c/busses/Kconfig        |    1 +
->  drivers/i2c/busses/i2c-i801.c     |    3 +++
->  3 files changed, 5 insertions(+), 0 deletions(-)
-> (...)
+> The replacement code looks fine, but can you explain why the use is buggy?
 
-Seth recently sent a patch adding IDs for the Avoton:
-http://marc.info/?l=linux-kernel&m=135959209218860&w=2
+So, if you want a cyclic allocation, the allocation should be tried in
+[start, END) and then [0, start); otherwise, after the allocation
+wraps for the first time, as the closer the starting point gets to
+END, the chance of not finding a vacant slot in [start, END) goes
+higher.  When @start equals END - 1 for the second time, if the first
+END - 1 allocation is still around, you'll get -ENOSPC.
 
-Your patch conflicts with his. Please rebase on top of Seth's patch, so
-that both patches can be applied in sequence.
+In practice, I don't think anyone is hitting this.  idr has always
+been horribly broken when it reaches higher range (> 1<<30 on 64bit)
+so things would have broken even before the first wraparound.  It
+still is a theoretical possibility which may trigger if idr is used
+for, say, ipc messages or storage commands.
 
-> (...)
-> --- a/drivers/i2c/busses/i2c-i801.c
-> +++ b/drivers/i2c/busses/i2c-i801.c
-> (...)
-> @@ -165,6 +166,7 @@
->  #define PCI_DEVICE_ID_INTEL_DH89XXCC_SMBUS	0x2330
->  #define PCI_DEVICE_ID_INTEL_5_3400_SERIES_SMBUS	0x3b30
->  #define PCI_DEVICE_ID_INTEL_LYNXPOINT_SMBUS	0x8c22
-> +#define PCI_DEVICE_ID_INTEL_WELLSBURG_SMBUS	0x8d22
->  #define PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_SMBUS	0x9c22
-
-Please keep sorted by ID.
+Thanks.
 
 -- 
-Jean Delvare
+tejun
