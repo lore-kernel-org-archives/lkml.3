@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752316Ab3BIHmR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 02:42:17 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:41669 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750999Ab3BIHmQ (ORCPT
+	id S1752525Ab3BIHwb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 02:52:31 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:50926 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752186Ab3BIHwa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 02:42:16 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAJd=RBBd+pGG6=Qjpt-Zkxt5VdP5T3YV5_RVao+kHpz9dCzqXA@mail.gmail.com>
-References: <1360377937-16297-1-git-send-email-walken@google.com>
-	<1360377937-16297-4-git-send-email-walken@google.com>
-	<CAJd=RBBd+pGG6=Qjpt-Zkxt5VdP5T3YV5_RVao+kHpz9dCzqXA@mail.gmail.com>
-Date: Fri, 8 Feb 2013 23:42:15 -0800
-Message-ID: <CANN689F-Gbh56bDFDMSogxsYtUTTqObxyFTzvrz_somvWh-CUw@mail.gmail.com>
-Subject: Re: [PATCH 3/4] rwsem: implement write lock stealing
-From: Michel Lespinasse <walken@google.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: linux-kernel@vger.kernel.org, anton@samba.org, hpa@zytor.com,
-        mingo@kernel.org, arjan@linux.intel.com, a.p.zijlstra@chello.nl,
-        torvalds@linux-foundation.org, alex.shi@intel.com,
-        yuanhan.liu@linux.intel.com, dhowells@redhat.com,
-        akpm@linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 9 Feb 2013 02:52:30 -0500
+Subject: Re: Kernel code interrupted by Timer
+From: anish kumar <anish198519851985@gmail.com>
+To: Peter Teoh <htmldeveloper@gmail.com>
+Cc: Gaurav Jain <gjainroorkee@gmail.com>,
+        Kernel Newbies <kernelnewbies@kernelnewbies.org>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <CAHnt0GVvhROgJ2=ekPY8syB5p0Vkb9A1jLHtt1Uyvi2-7CiJmw@mail.gmail.com>
+References: <CAAFF8wQLm-DDq=knZJUgXVSNnUL4WOcXH9=17a-UesD3P5AB-Q@mail.gmail.com>
+	 <1360388827.582.122.camel@anish-Inspiron-N5050>
+	 <CAHnt0GVvhROgJ2=ekPY8syB5p0Vkb9A1jLHtt1Uyvi2-7CiJmw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 09 Feb 2013 13:21:56 +0530
+Message-ID: <1360396316.582.128.camel@anish-Inspiron-N5050>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 8, 2013 at 11:30 PM, Hillf Danton <dhillf@gmail.com> wrote:
-> On Sat, Feb 9, 2013 at 10:45 AM, Michel Lespinasse <walken@google.com> wrote:
->> +               if (waiter->type != RWSEM_WAITING_FOR_WRITE) {
->> +                       list_del(&waiter->list);
->> +
->> +                       /* Set RWSEM_WAITING_BIAS before waking the last reader
->> +                        * so we know there will be a remaining active locker.
->> +                        */
->> +                       if (!(--readers) && !list_empty(&sem->wait_list))
->> +                               rwsem_atomic_add(RWSEM_WAITING_BIAS, sem);
->> +
->> +                       tsk = waiter->task;
->> +                       smp_mb();
->
-> For what with mb?
+On Sat, 2013-02-09 at 14:57 +0800, Peter Teoh wrote:
+> 
+> 
+> On Sat, Feb 9, 2013 at 1:47 PM, anish kumar 
+> .
+>         Timer interrupts is supposed to cause scheduling and scheduler
+>         may or
+>         may not pick up your last process(we always use the term
+>         "task" in
+>         kernel space) after handling timer interrupt.
+>         >
+>         
+> 
+> 
+> Sorry if I may disagree, correct me if wrong.   Timer interrupt and
+> scheduler is two different thing.   I just counted in the "drivers"
+> subdirectory, there are at least more than 200 places where
+> "setup_timer()" is called, and these have nothing to do with
+> scheduling.   For eg, heartbeat operation etc.  Not sure I
+> misunderstood something?
+Have a look at kernel/timer.c and kernel/hrtimer.c.
+There are many sched() calls in these files.This will invoke scheduler.
+> 
+> 
+> -- 
+> Regards,
+> Peter Teoh
 
-This is the same mb that used to be before the readers_only label
-before this change.
-The intention is that the write to waiter->task must be the last
-access to waiter - after that, the reader is granted the lock so it
-could do anything, including deallocating the waiter structure as it
-gets out of rwsem_down_read_failed() and possibly deallocating the
-task structure if it exits
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
