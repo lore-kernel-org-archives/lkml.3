@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760545Ab3BICK3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 21:10:29 -0500
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:49824 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760482Ab3BICK1 (ORCPT
+	id S1760554Ab3BICPq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 21:15:46 -0500
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:35179 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760508Ab3BICPp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 21:10:27 -0500
+	Fri, 8 Feb 2013 21:15:45 -0500
 MIME-Version: 1.0
-In-Reply-To: <51159391.2020002@gmail.com>
-References: <cover.1360232293.git.viresh.kumar@linaro.org>
-	<CAKohpokp4YrxKHibewdt+3-WF7P2Fa_bvRidHpjd9SpsT6bPpw@mail.gmail.com>
-	<1653071.l2kN4Hy2U6@vostro.rjw.lan>
-	<2792362.JXCag4GJsR@vostro.rjw.lan>
-	<51159391.2020002@gmail.com>
-Date: Sat, 9 Feb 2013 07:40:26 +0530
-Message-ID: <CAKohpomSSKRmhmmYk5dn4d84yk9qSs0U-9S=W=CT0yjjzJJ3=g@mail.gmail.com>
-Subject: Re: [PATCH 0/4] CPUFreq Fixes for 3.9
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Dirk Brandewie <dirk.brandewie@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, valdis.kletnieks@vt.edu,
-        artem.savkov@gmail.com, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        Nathan Zimmer <nzimmer@sgi.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <874nhn46qm.fsf@devron.myhome.or.jp>
+References: <1359989028-7457-1-git-send-email-linkinjeon@gmail.com>
+	<87bobw4ab9.fsf@devron.myhome.or.jp>
+	<CAKYAXd_68nEdbdi5wEWMoavTE6kZcfwBd2Yi7jbk5nBE-_kGUw@mail.gmail.com>
+	<874nhn46qm.fsf@devron.myhome.or.jp>
+Date: Sat, 9 Feb 2013 11:15:43 +0900
+Message-ID: <CAKYAXd-=TWefqrN+75GZHabns6OU7+arPHBGD4Vf-WUQpCdTLQ@mail.gmail.com>
+Subject: Re: [PATCH v2] fat: eliminate iterations in fat_search_long and
+ __fat_readdir in case of EOD
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 February 2013 05:38, Dirk Brandewie <dirk.brandewie@gmail.com> wrote:
-> On 02/08/2013 03:56 PM, Rafael J. Wysocki wrote:
->>
->> On Friday, February 08, 2013 09:02:37 PM Rafael J. Wysocki wrote:
+2013/2/8, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
+> Namjae Jeon <linkinjeon@gmail.com> writes:
+>
+>>> And did this work correctly about f_pos for readdir?
+>> Yes, sure. f_pos is work correctly about each directory entry. because
+>> after name[0] == 0x00, there are no allocated directory entires.
 >>>
->>> On Friday, February 08, 2013 08:06:52 PM Viresh Kumar wrote:
->>>>
->>>> On 8 February 2013 18:02, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->>>>>
->>>>> So as I said, please rework the fixes on top of
->>>>> linux-pm.git/pm-cpufreq.
->>>>
->>>>
->>>> I already did. Please check for-rafael branch
->>>
->>>
->>> Cool.  This is the one I'm supposed to apply, then?
+>>> I'm not thinking about f_pos deeply though, it may have something
+>>> wrong. Because it stops at middle of cluster.
+>> Plz See the below descirption about name[0] in FAT spec.
+>> ---------------------------------------------------------------------------------------------------------------------
+>> If DIR_Name[0] == 0x00, then the directory entry is free (same as for
+>> 0xE5), and there are no allocated directory entries after this one
+>> (all of the DIR_Name[0] bytes in all of the entries after this one are
+>> also set to 0).
+>> The special 0 value, rather than the 0xE5 value, indicates to FAT file
+>> system driver code that the rest of the entries in this directory do
+>> not need to be examined because they are all free.
+>> -----------------------------------------------------------------------------------------------------------------------
 >>
->>
->> OK, applied to bleeding-edge.  Hopefully it will be build-tested over the
->> weekend and I can move it to linux-next.
->>
->> I dropped the rwlock/RCU patches from Nathan, though, because I had some
->> doubts about the correctness of the RCU one and the rwlock one alone would
->> conflict with your further changes.
+>> I think that lookuping entry till the end of cluster is not needed.
+>> Let me know your opinion.
+>
+> I know it though. There is seek() and broken drivers adds entries after
+> name[0] == 0. I think we don't need to care much about broken drivers
+> though. Even if so, kernel should not be crash, and corrupts fs more.
+Yes, Right. I understood. Plz ignore this patch.
+>
+>> And Would you tell me your opinion about fat exportfs ?
+>
+> Ah, I was thinking I did. But it seems I didn't actually. Can you post
+> full of series? So, I can review and probably we can start to test it.
+Okay, I will post full patch-set today.
 
-As soon as i read Rafael's mail, i realized Dirk's patch might be broken
-and immediately i saw your mail :)
-
-@Rafael: Sorry for not reviewing Nathan's patch well. I didn't knew much about
-RCU then. I am going through its lwn articles now ;)
+Thanks OGAWA.
+>
+> Thanks.
+> --
+> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+>
