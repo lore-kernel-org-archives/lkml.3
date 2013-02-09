@@ -1,48 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760696Ab3BIOWT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 09:22:19 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:48159 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757951Ab3BIOWR (ORCPT
+	id S1760705Ab3BIOYM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 09:24:12 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:58830 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760656Ab3BIOYJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 09:22:17 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130209095803.61C653E2CF2@localhost>
-References: <1359822572-26009-1-git-send-email-acourbot@nvidia.com>
- <1359822572-26009-10-git-send-email-acourbot@nvidia.com> <20130209095803.61C653E2CF2@localhost>
-From: Alexandre Courbot <acourbot@nvidia.com>
-Date: Sat, 9 Feb 2013 23:21:56 +0900
-X-Google-Sender-Auth: ArZ5GEupFra4P7vH197VKT_2BAg
-Message-ID: <CAAVeFuK39k322MeQuzLDibGDSdidrhzqwstSWOPWwCy41Ehg-Q@mail.gmail.com>
-Subject: Re: [PATCH 8/9] gpiolib: use gpio_chips list in gpio_to_desc
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 9 Feb 2013 09:24:09 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH RFC 1/1] gpio: mcp23s08: convert driver to DT
+To: Lars Poeschel <poeschel@lemonage.de>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Lars Poeschel <larsi@wh2.tu-dresden.de>, rob.herring@calxeda.com,
+        rob@landley.net, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        spi-devel-general@lists.sourceforge.net, w.sang@pengutronix.de,
+        ben-linux@fluff.org, linux-i2c@vger.kernel.org
+In-Reply-To: <201302061031.04264.poeschel@lemonage.de>
+References: <1359647903-15801-1-git-send-email-larsi@wh2.tu-dresden.de> <CACRpkda_HjzWNMD1H_a_fsWtbRWuTDsutS8kndb9jY31qf7Yyg@mail.gmail.com> <20130205142909.4F5B83E1265@localhost> <201302061031.04264.poeschel@lemonage.de>
+Date: Sat, 09 Feb 2013 14:24:04 +0000
+Message-Id: <20130209142404.698303E30EC@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 9, 2013 at 6:58 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> I'm actually going to NAK this one. This is a hot path. Having a O(1)
-> lookup from gpio number to gpio desc is important. I know you want to be
-> rid of the gpio_desc table entirely, but in this case I think it is
-> warranted. However, you can change the gpio_desc table to be a table of
-> pointers to gpio_descs instead of a table of gpio_descs. That would save
-> a lot of memory since unused GPIOs wouldn't have gpio_descs associated
-> with them. It is also the mechanism used by the IRQ subsystem.
+On Wed, 6 Feb 2013 10:31:04 +0100, Lars Poeschel <poeschel@lemonage.de> wrote:
+> On Tuesday 05 February 2013 at 15:29:09, Grant Likely wrote:
+> > On Thu, 31 Jan 2013 21:51:36 +0100, Linus Walleij 
+> <linus.walleij@linaro.org> wrote:
+> > > On Thu, Jan 31, 2013 at 4:58 PM, Lars Poeschel <larsi@wh2.tu-dresden.de> 
+> wrote:
+> > > > --- /dev/null
+> > > > +++ b/Documentation/devicetree/bindings/gpio/gpio-mcp23s08.txt
+> > > > @@ -0,0 +1,27 @@
+> > > > +Microchip MCP2308/MCP23S08/MCP23017/MCP23S17 driver for
+> > > > +8-/16-bit I/O expander with serial interface (I2C/SPI)
+> > > > +
+> > > > +Required properties:
+> > > > +- compatible : Should be "mcp,mcp23s08-gpio", "mcp,mcp23s17-gpio",
+> > > > +                       "mcp,mcp23008-gpio" or "mcp,mcp23017-gpio"
+> > > > +- base : The first gpio number that should be assigned by this chip.
+> > > 
+> > > No. We do not tie the global GPIO numbers into the device tree.
+> > > 
+> > > In the DT GPIOs are referenced by ampersand <&gpio0 1 2>
+> > > notation referring to the instance, so as you realize DT itself
+> > > has no need for that number.
+> > > 
+> > > Further it is not OS-neutral.
+> > > 
+> > > You have to find another way to handle this in the driver code.
+> > > In worst case: use AUXDATA.
+> > 
+> > Hi Lars,
+> > 
+> > The trick is to declare the io expander to be a "gpio-controller" and
+> > use the #gpio-cells property to declare how many cells (32-bit numbers)
+> > are need to specify a single gpio line. Most gpio controllers use
+> > "gpio-cells=<2>"; The first cell is the *controller local* gpio
+> > number, and the second cell is used for flags. That way your gpio
+> > controller can be referenced by other nodes in the tree with a "gpios"
+> > property.
+> > 
+> > You can find lots of examples of this in the tree.
+> 
+> Linus, Grant, thanks for the explanations. I think I have catched where it 
+> should go.
+> The thing that confused me was, that the platform_data for the chip has a 
+> mandatory "base" member, that sets the linux global gpio number at which the 
+> chip should appear. A value of -1 for automatic assigning gpio number is not 
+> allowed, the chip will not probe.
+> I have to change the driver to allow at least this -1 as an additional value.
+> As Linus pointed out, it is not desirable to set the global gpio base number 
+> from device tree, right ? If I have 3 instances of this chips then, how can 
+> userspace sw distinguish then to which one it is talking ?
 
-That would work - what I don't like is that it still ends being a
-fixed-size static array that is not necessarily tailored to the
-platform's needs. But I understand you don't want to punish the users
-of the integer-based API, even though the penalty should really be
-neglectable here.
+You look in sysfs to find the chip you are interested in. That is the
+place to find out how dynamic numbers have been assigned.
 
-Well, maybe I can try to come again with this once everybody uses GPIO
-descriptors instead of integers. ;)
+g.
 
-Alex.
