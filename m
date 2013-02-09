@@ -1,93 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932310Ab3BIAkv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 19:40:51 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:53386 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932276Ab3BIAkt (ORCPT
+	id S932290Ab3BIAoV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 19:44:21 -0500
+Received: from mail-da0-f44.google.com ([209.85.210.44]:59734 "EHLO
+	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932195Ab3BIAoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 19:40:49 -0500
-Date: Fri, 8 Feb 2013 16:16:49 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
-        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
-        namhyung@kernel.org, rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, rjw@sisk.pl, sbw@mit.edu,
-        fweisbec@gmail.com, linux@arm.linux.org.uk, nikunj@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
-        netdev@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 45/45] Documentation/cpu-hotplug: Remove references to
- stop_machine()
-Message-ID: <20130209001649.GS2666@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com>
- <20130122074543.13822.44724.stgit@srivatsabhat.in.ibm.com>
+	Fri, 8 Feb 2013 19:44:20 -0500
+Date: Fri, 8 Feb 2013 16:44:17 -0800
+From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, "olaf@aepfle.de" <olaf@aepfle.de>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "James.Bottomley@HansenPartnership.com" 
+	<James.Bottomley@HansenPartnership.com>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "davem@davemloft.net" <davem@davemloft.net>
+Subject: Re: [PATCH 6/6] Drivers: hv: Execute shutdown in a thread context
+Message-ID: <20130209004417.GA31290@kroah.com>
+References: <1358991737-22675-1-git-send-email-kys@microsoft.com>
+ <1358991765-22715-1-git-send-email-kys@microsoft.com>
+ <1358991765-22715-6-git-send-email-kys@microsoft.com>
+ <alpine.LNX.2.00.1301241108590.31600@pobox.suse.cz>
+ <53da151ef8494d5084ef5aa089b9f102@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130124171740.GA5420@kroah.com>
+ <4555fa7d062a4fc18763f3f204c1df8b@SN2PR03MB061.namprd03.prod.outlook.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130122074543.13822.44724.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <4555fa7d062a4fc18763f3f204c1df8b@SN2PR03MB061.namprd03.prod.outlook.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13020900-2398-0000-0000-000010E125D9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 01:15:48PM +0530, Srivatsa S. Bhat wrote:
-> Since stop_machine() is no longer used in the CPU offline path, we cannot
-> disable CPU hotplug using preempt_disable()/local_irq_disable() etc. We
-> need to use the newly introduced get/put_online_cpus_atomic() APIs.
-> Reflect this in the documentation.
+On Sat, Feb 09, 2013 at 12:31:49AM +0000, KY Srinivasan wrote:
 > 
-> Cc: Rob Landley <rob@landley.net>
-> Cc: linux-doc@vger.kernel.org
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> 
+> > -----Original Message-----
+> > From: gregkh@linuxfoundation.org [mailto:gregkh@linuxfoundation.org]
+> > Sent: Thursday, January 24, 2013 12:18 PM
+> > To: KY Srinivasan
+> > Cc: Jiri Kosina; olaf@aepfle.de; jasowang@redhat.com; linux-
+> > kernel@vger.kernel.org; James.Bottomley@HansenPartnership.com;
+> > apw@canonical.com; devel@linuxdriverproject.org; davem@davemloft.net
+> > Subject: Re: [PATCH 6/6] Drivers: hv: Execute shutdown in a thread context
+> > 
+> > On Thu, Jan 24, 2013 at 05:06:27PM +0000, KY Srinivasan wrote:
+> > >
+> > >
+> > > > -----Original Message-----
+> > > > From: Jiri Kosina [mailto:jkosina@suse.cz]
+> > > > Sent: Thursday, January 24, 2013 5:10 AM
+> > > > To: KY Srinivasan
+> > > > Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> > > > devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+> > > > jasowang@redhat.com; davem@davemloft.net;
+> > > > James.Bottomley@HansenPartnership.com
+> > > > Subject: Re: [PATCH 6/6] Drivers: hv: Execute shutdown in a thread context
+> > > >
+> > > > On Wed, 23 Jan 2013, K. Y. Srinivasan wrote:
+> > > >
+> > > > > Execute the shutdown code in a thread context. With recent changes made
+> > to
+> > > > the
+> > > > > shutdown code, shutdown code cannot be invoked from an interrupt
+> > context.
+> > > > >
+> > > > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > > > > Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > > > > ---
+> > > > >  drivers/hv/hv_util.c |   12 +++++++++++-
+> > > > >  1 files changed, 11 insertions(+), 1 deletions(-)
+> > > > >
+> > > > > diff --git a/drivers/hv/hv_util.c b/drivers/hv/hv_util.c
+> > > > > index 8b7868a..aceb67f 100644
+> > > > > --- a/drivers/hv/hv_util.c
+> > > > > +++ b/drivers/hv/hv_util.c
+> > > > > @@ -49,6 +49,16 @@ static struct hv_util_service util_kvp = {
+> > > > >  	.util_deinit = hv_kvp_deinit,
+> > > > >  };
+> > > > >
+> > > > > +static void perform_shutdown(struct work_struct *dummy)
+> > > > > +{
+> > > > > +		orderly_poweroff(true);
+> > > > > +}
+> > > >
+> > > > Is there any particular reason for this kind of crazy indentation?
+> > > I don't know how this extra tab crept through! Greg, if you want I can resend
+> > > this patch minus the extra tab. Let me know.
+> > 
+> > I'll edit it by hand, but someone owes me a beer for it...  :)
+> 
+> I just saw that you closed the tree. Did these patches go in?
 
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+They should have, didn't you get an email saying they were in?  If not,
+check my git trees to verify.
 
-> ---
-> 
->  Documentation/cpu-hotplug.txt |   17 +++++++++++------
->  1 file changed, 11 insertions(+), 6 deletions(-)
-> 
-> diff --git a/Documentation/cpu-hotplug.txt b/Documentation/cpu-hotplug.txt
-> index 9f40135..7f907ec 100644
-> --- a/Documentation/cpu-hotplug.txt
-> +++ b/Documentation/cpu-hotplug.txt
-> @@ -113,13 +113,15 @@ Never use anything other than cpumask_t to represent bitmap of CPUs.
->  	#include <linux/cpu.h>
->  	get_online_cpus() and put_online_cpus():
-> 
-> -The above calls are used to inhibit cpu hotplug operations. While the
-> +The above calls are used to inhibit cpu hotplug operations, when invoked from
-> +non-atomic context (because the above functions can sleep). While the
->  cpu_hotplug.refcount is non zero, the cpu_online_mask will not change.
-> -If you merely need to avoid cpus going away, you could also use
-> -preempt_disable() and preempt_enable() for those sections.
-> -Just remember the critical section cannot call any
-> -function that can sleep or schedule this process away. The preempt_disable()
-> -will work as long as stop_machine_run() is used to take a cpu down.
-> +
-> +However, if you are executing in atomic context (ie., you can't afford to
-> +sleep), and you merely need to avoid cpus going offline, you can use
-> +get_online_cpus_atomic() and put_online_cpus_atomic() for those sections.
-> +Just remember the critical section cannot call any function that can sleep or
-> +schedule this process away.
-> 
->  CPU Hotplug - Frequently Asked Questions.
-> 
-> @@ -360,6 +362,9 @@ A: There are two ways.  If your code can be run in interrupt context, use
->  		return err;
->  	}
-> 
-> +   If my_func_on_cpu() itself cannot block, use get/put_online_cpus_atomic()
-> +   instead of get/put_online_cpus() to prevent CPUs from going offline.
-> +
->  Q: How do we determine how many CPUs are available for hotplug.
->  A: There is no clear spec defined way from ACPI that can give us that
->     information today. Based on some input from Natalie of Unisys,
-> 
+thanks,
 
+greg k-h
