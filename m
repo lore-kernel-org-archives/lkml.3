@@ -1,90 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932346Ab3BICBE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 21:01:04 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:39055 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755931Ab3BICBC (ORCPT
+	id S1760545Ab3BICK3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 21:10:29 -0500
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:49824 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760482Ab3BICK1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 21:01:02 -0500
-Date: Fri, 8 Feb 2013 17:57:18 -0800
-From: Anton Vorontsov <anton@enomsg.org>
-To: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] bq27x00_battery: Fix reporting battery temperature
-Message-ID: <20130209015718.GA13561@lizard.sbx05663.mountca.wayport.net>
-References: <1359799569-5322-1-git-send-email-pali.rohar@gmail.com>
- <201302032101.54487@pali>
- <20130203200557.GA15430@lizard.gateway.2wire.net>
- <201302061856.35366@pali>
+	Fri, 8 Feb 2013 21:10:27 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201302061856.35366@pali>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51159391.2020002@gmail.com>
+References: <cover.1360232293.git.viresh.kumar@linaro.org>
+	<CAKohpokp4YrxKHibewdt+3-WF7P2Fa_bvRidHpjd9SpsT6bPpw@mail.gmail.com>
+	<1653071.l2kN4Hy2U6@vostro.rjw.lan>
+	<2792362.JXCag4GJsR@vostro.rjw.lan>
+	<51159391.2020002@gmail.com>
+Date: Sat, 9 Feb 2013 07:40:26 +0530
+Message-ID: <CAKohpomSSKRmhmmYk5dn4d84yk9qSs0U-9S=W=CT0yjjzJJ3=g@mail.gmail.com>
+Subject: Re: [PATCH 0/4] CPUFreq Fixes for 3.9
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Dirk Brandewie <dirk.brandewie@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, valdis.kletnieks@vt.edu,
+        artem.savkov@gmail.com, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        Nathan Zimmer <nzimmer@sgi.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 06, 2013 at 06:56:34PM +0100, Pali Rohár wrote:
-[...]
-> >  * All voltages, currents, charges, energies, time and
-> > temperatures in uV, * µA, µAh, µWh, seconds and tenths of
-> > degree Celsius unless otherwise * stated. It's driver's job
-[...]
-> bq27x00_battery reporting "POWER_SUPPLY_TEMP=2700"
-> and rx51_battery reporting "POWER_SUPPLY_TEMP=3590"
-[...]
-> Subject: [PATCH] bq27x00_battery: Report temperature in 1/100 degree Celsius
+On 9 February 2013 05:38, Dirk Brandewie <dirk.brandewie@gmail.com> wrote:
+> On 02/08/2013 03:56 PM, Rafael J. Wysocki wrote:
+>>
+>> On Friday, February 08, 2013 09:02:37 PM Rafael J. Wysocki wrote:
+>>>
+>>> On Friday, February 08, 2013 08:06:52 PM Viresh Kumar wrote:
+>>>>
+>>>> On 8 February 2013 18:02, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>>>>>
+>>>>> So as I said, please rework the fixes on top of
+>>>>> linux-pm.git/pm-cpufreq.
+>>>>
+>>>>
+>>>> I already did. Please check for-rafael branch
+>>>
+>>>
+>>> Cool.  This is the one I'm supposed to apply, then?
+>>
+>>
+>> OK, applied to bleeding-edge.  Hopefully it will be build-tested over the
+>> weekend and I can move it to linux-next.
+>>
+>> I dropped the rwlock/RCU patches from Nathan, though, because I had some
+>> doubts about the correctness of the RCU one and the rwlock one alone would
+>> conflict with your further changes.
 
-Hm. The documentation says tenth (1/10) degrees, and you even restate it
-in the commit message. But the subject, and your example seem to prove
-that you still report it in 1/100 of Celsius.
+As soon as i read Rafael's mail, i realized Dirk's patch might be broken
+and immediately i saw your mail :)
 
-Unless your phone was on fire during the time you took the values, I tend
-to think the patch needs to be fixed. :-)
-
-Thanks,
-Anton
-
-> * Documentation/power/power_supply_class.txt say that temperature must be reported in tenths of degree 
-> Celsius
-> 
-> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-> ---
->  drivers/power/bq27x00_battery.c |    8 +++++---
->  1 file changed, 5 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/power/bq27x00_battery.c b/drivers/power/bq27x00_battery.c
-> index 5b077af..482755f 100644
-> --- a/drivers/power/bq27x00_battery.c
-> +++ b/drivers/power/bq27x00_battery.c
-> @@ -312,8 +312,10 @@ static int bq27x00_battery_read_temperature(struct bq27x00_device_info *di)
->  		return temp;
->  	}
->  
-> -	if (!bq27xxx_is_chip_version_higher(di))
-> -		temp = 5 * temp / 2;
-> +	if (bq27xxx_is_chip_version_higher(di))
-> +		temp *= 10;
-> +	else
-> +		temp *= 25;
->  
->  	return temp;
->  }
-> @@ -640,7 +642,7 @@ static int bq27x00_battery_get_property(struct power_supply *psy,
->  	case POWER_SUPPLY_PROP_TEMP:
->  		ret = bq27x00_simple_value(di->cache.temperature, val);
->  		if (ret == 0)
-> -			val->intval -= 2731;
-> +			val->intval -= 27310;
->  		break;
->  	case POWER_SUPPLY_PROP_TIME_TO_EMPTY_NOW:
->  		ret = bq27x00_simple_value(di->cache.time_to_empty, val);
-> -- 
-> 1.7.10.4
-> 
-> -- 
-> Pali Rohár
-> pali.rohar@gmail.com
+@Rafael: Sorry for not reviewing Nathan's patch well. I didn't knew much about
+RCU then. I am going through its lwn articles now ;)
