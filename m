@@ -1,46 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932267Ab3BIAqs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 19:46:48 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:51173 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932205Ab3BIAqq (ORCPT
+	id S1947545Ab3BIArX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 19:47:23 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:59105 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1947333Ab3BIArW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 19:46:46 -0500
-Date: Fri, 8 Feb 2013 16:46:44 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-wireless@vger.kernel.org
-Subject: Re: Other alloc/OOM message question
-Message-ID: <20130209004644.GC31290@kroah.com>
-References: <1360273587.27863.15.camel@joe-AO722>
- <20130208.174500.1518593039138341685.davem@davemloft.net>
- <1360369799.13487.5.camel@joe-AO722>
+	Fri, 8 Feb 2013 19:47:22 -0500
+Message-ID: <51159C96.5080505@wwwdotorg.org>
+Date: Fri, 08 Feb 2013 17:47:18 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360369799.13487.5.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Joe Perches <joe@perches.com>
+CC: arm@kernel.org, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH] MAINTAINERS: add keyword "tegra" to Tegra section
+References: <1360353891-24210-1-git-send-email-swarren@wwwdotorg.org> <1360370419.13487.8.camel@joe-AO722>
+In-Reply-To: <1360370419.13487.8.camel@joe-AO722>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 08, 2013 at 04:29:59PM -0800, Joe Perches wrote:
-> On Fri, 2013-02-08 at 17:45 -0500, David Miller wrote:
-> > From: Joe Perches <joe@perches.com>
-> > Date: Thu, 07 Feb 2013 13:46:27 -0800
-> > > alloc failures already get standardized OOM
-> > > messages and a dump_stack.
+On 02/08/2013 05:40 PM, Joe Perches wrote:
+> On Fri, 2013-02-08 at 13:04 -0700, Stephen Warren wrote:
+>> (?<!in)tegra
 > 
-> Does anyone know if all the other alloc's like
-> dma_alloc_coherent, dma_alloc_noncoherent,
-> pci_alloc_consistent always produce OOM messages
-> via page_alloc/warn_alloc_failed for all arches?
+> This doesn't work well.   It matches too many
+> words like integral.
 
-If not, they should, to allow this type of cleanups.
+Hmmm. That's exactly what the (?<!in) negative look-behind assertion is
+attempting to avoid. It works fine here. Is there some dependency on
+Perl version or something? My Perl version is v5.14.2.
 
-thanks,
+> I suggest
+> 
+> K:	(?:\btegra\b|\bTEGRA_)
+> 
 
-greg k-h
