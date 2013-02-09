@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932586Ab3BIUw3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 15:52:29 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:45017 "EHLO mail.zytor.com"
+	id S932599Ab3BIUxH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 15:53:07 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45020 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932548Ab3BIUw2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 15:52:28 -0500
+	id S932548Ab3BIUxF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Feb 2013 15:53:05 -0500
 User-Agent: K-9 Mail for Android
 In-Reply-To: <1360439574-16122-6-git-send-email-bp@alien8.de>
 References: <1360439574-16122-1-git-send-email-bp@alien8.de> <1360439574-16122-6-git-send-email-bp@alien8.de>
@@ -15,16 +15,16 @@ Content-Type: text/plain;
 Content-Transfer-Encoding: 8bit
 Subject: Re: [PATCH 5/5] x86, head_32: Remove an old gcc2 fix
 From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sat, 09 Feb 2013 12:51:13 -0800
+Date: Sat, 09 Feb 2013 12:52:01 -0800
 To: Borislav Petkov <bp@alien8.de>
 CC: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Borislav Petkov <bp@suse.de>
-Message-ID: <85fca026-9940-470c-bb76-250901557513@email.android.com>
+Message-ID: <af2ed3e1-3ac4-421c-b1a8-bfa243327ffb@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ALL versions of gcc want DF=0 at all times...
+However... DF should have been cleared long before this...
 
 Borislav Petkov <bp@alien8.de> wrote:
 
