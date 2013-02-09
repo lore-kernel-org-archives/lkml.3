@@ -1,63 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753153Ab3BIKKM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 05:10:12 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:37409 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752649Ab3BIKKI (ORCPT
+	id S1753539Ab3BIKKt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 05:10:49 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:43778 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752514Ab3BIKKL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 05:10:08 -0500
+	Sat, 9 Feb 2013 05:10:11 -0500
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 1/9] gpiolib: link all gpio_chips using a list
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        gnurou@gmail.com
-In-Reply-To: <CACRpkdZDtJ3AN+Pgxy9nNgVx_YYTC=7AuDC48w7kDbDAeqdufw@mail.gmail.com>
-References: <1359822572-26009-1-git-send-email-acourbot@nvidia.com> <1359822572-26009-3-git-send-email-acourbot@nvidia.com> <CACRpkdZDtJ3AN+Pgxy9nNgVx_YYTC=7AuDC48w7kDbDAeqdufw@mail.gmail.com>
-Date: Sat, 09 Feb 2013 09:20:38 +0000
-Message-Id: <20130209092039.0C5D23E2548@localhost>
+Subject: Re: [PATCH v2 2/4] input: keyboard: tegra: use devm_* for resource allocation
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>, rob.herring@calxeda.com,
+        swarren@nvidia.com, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-tegra@vger.kernel.org,
+        Wolfram Sang <w.sang@pengutronix.de>
+In-Reply-To: <20130109091939.GA4369@core.coreip.homeip.net>
+References: <1357371910-3164-1-git-send-email-ldewangan@nvidia.com> <1357371910-3164-3-git-send-email-ldewangan@nvidia.com> <20130105080658.GA1315@core.coreip.homeip.net> <20130106192739.GA11566@avionic-0098.adnet.avionic-design.de> <20130106195748.GA28212@core.coreip.homeip.net> <20130109070745.GA12782@avionic-0098.adnet.avionic-design.de> <20130109091939.GA4369@core.coreip.homeip.net>
+Date: Sat, 09 Feb 2013 09:04:46 +0000
+Message-Id: <20130209090446.C848F3E196E@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Feb 2013 18:00:56 +0100, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Sat, Feb 2, 2013 at 5:29 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
-> 
-> > Add a list member to gpio_chip that allows all chips to be parsed
-> > quickly. The current method requires parsing the entire GPIO integer
-> > space, which is painfully slow. Using a list makes many chip operations
-> > that involve lookup or parsing faster, and also simplifies the code. It
-> > is also necessary to eventually get rid of the global gpio_desc[] array.
-> >
-> > The list of gpio_chips is always ordered by base GPIO number to ensure
-> > chips traversal is done in the right order.
-> >
-> > Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> 
-> OK!
-> 
-> > + * Return -EBUSY if the new chip overlaps with some other chip's integer
-> > + * space.
-> (...)
-> > +       /* are we stepping on the chip right before? */
-> > +       if (pos != &gpio_chips && pos->prev != &gpio_chips) {
-> > +               _chip = list_entry(pos->prev, struct gpio_chip, list);
-> > +               if (_chip->base + _chip->ngpio > chip->base) {
-> > +                       dev_err(chip->dev,
-> > +                              "GPIO integer space overlap, cannot add chip\n");
-> > +                       err = -EBUSY;
-> > +               }
-> > +       }
-> 
-> This robustness change on its own is a merit for merging the patch.
-> And keeping a list of gpiochips available is great for stuff like
-> debugfs.
-> 
-> Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+On Wed, 9 Jan 2013 01:19:39 -0800, Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
+> On Wed, Jan 09, 2013 at 08:07:45AM +0100, Thierry Reding wrote:
+> > On Sun, Jan 06, 2013 at 11:57:48AM -0800, Dmitry Torokhov wrote:
+> > > On Sun, Jan 06, 2013 at 08:27:39PM +0100, Thierry Reding wrote:
+> > > > On Sat, Jan 05, 2013 at 12:06:58AM -0800, Dmitry Torokhov wrote:
+> > > > > On Sat, Jan 05, 2013 at 01:15:08PM +0530, Laxman Dewangan wrote:
+> > > > [...]
+> > > > > > @@ -735,25 +738,16 @@ static int tegra_kbc_probe(struct platform_device *pdev)
+> > > > > >  	spin_lock_init(&kbc->lock);
+> > > > > >  	setup_timer(&kbc->timer, tegra_kbc_keypress_timer, (unsigned long)kbc);
+> > > > > >  
+> > > > > > -	res = request_mem_region(res->start, resource_size(res), pdev->name);
+> > > > > > -	if (!res) {
+> > > > > > -		dev_err(&pdev->dev, "failed to request I/O memory\n");
+> > > > > > -		err = -EBUSY;
+> > > > > > -		goto err_free_mem;
+> > > > > > -	}
+> > > > > > -
+> > > > > > -	kbc->mmio = ioremap(res->start, resource_size(res));
+> > > > > > +	kbc->mmio = devm_request_and_ioremap(&pdev->dev, res);
+> > > > > >  	if (!kbc->mmio) {
+> > > > > > -		dev_err(&pdev->dev, "failed to remap I/O memory\n");
+> > > > > > -		err = -ENXIO;
+> > > > > > -		goto err_free_mem_region;
+> > > > > > +		dev_err(&pdev->dev, "Cannot request memregion/iomap address\n");
+> > > > > > +		return -EADDRNOTAVAIL;
+> > > > > 
+> > > > > Erm, no, -EBUSY please.
+> > > > 
+> > > > EADDRNOTAVAIL is the canonical error for devm_request_and_ioremap()
+> > > > failure. The kerneldoc comment in lib/devres.c even gives a short
+> > > > example that uses this error code.
+> > > 
+> > > I am sorry, but I do not consider a function that was added a little
+> > > over a year ago as a canon. If you look at the uses of EADDRNOTAVAIL it
+> > > is used predominantly in networking code to indicate that attempted
+> > > _network_ address is not available.
+> > 
+> > EBUSY might be misleading, though. devm_request_and_ioremap() can fail
+> > in both the request_mem_region() and ioremap() calls. Furthermore it'd
+> > be good to settle on a consistent error-code instead of doing it
+> > differently depending on subsystem and/or driver. Currently the various
+> > error codes used are:
+> > 
+> > 	EBUSY, EADDRNOTAVAIL, ENXIO, ENOMEM, ENODEV, ENOENT, EINVAL,
+> > 	EIO, EFAULT, EADDRINUSE
+> > 
+> > Also if we can settle on one error code we should follow up with a patch
+> > to make it consistent across the tree and also update that kerneldoc
+> > comment. I volunteer to do that if nobody else steps up. I'm also Cc'ing
+> > Wolfram (the original author), maybe he has some thoughts on this.
 
-Applied, thanks.
+This really doesn't matter. As far as the driver is concerned if the
+memory isn't available then it is a failure. Period. Who cares what
+the reason was.
+
+> If you going to change all drivers make devm_request_and_ioremap()
+> return ERR_PTR()-encoded errors and then we can differentiate what
+> part of it failed.
+
+The ERR_PTR() pattern is actually worse when it comes to reading and
+understanding code. Us C coders have had beaten into us that the correct
+test for an invalid pointer is "if (!ptr)". ERR_PTR() is actively
+dangerous in this regard because it breaks that pattern, but you cannot
+tell from looking at the API that it is wrong.
+
+There are places where it makes sense, but *please* don't use the
+ERR_PTR pattern unless absolutely necessary.
+
+Rarely are the actual error codes important for kernel internal stuff.
+The error codes only really matter when passing them up to userspace
+where they have specific meanings. As far as in-kernel stuff goes, the
+policy for choosing error codes consists of "go look at the errno file
+and choose one that looks vaguely relevant".
 
 g.
-
