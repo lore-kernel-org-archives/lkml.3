@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932466Ab3BIRyz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 12:54:55 -0500
-Received: from juliette.telenet-ops.be ([195.130.137.74]:34574 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760770Ab3BIRyy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 12:54:54 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] s390: Add missing PAGE_SHARED as an alias for PAGE_RW
-Date: Sat,  9 Feb 2013 18:54:45 +0100
-Message-Id: <1360432485-25726-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
+	id S932478Ab3BISGf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 13:06:35 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:47530 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760774Ab3BISGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Feb 2013 13:06:33 -0500
+Date: Sat, 9 Feb 2013 13:06:29 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Stephan Mueller <smueller@chronox.de>
+Cc: linux-crypto@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH] Entropy generator with 100 kB/s throughput
+Message-ID: <20130209180629.GD8091@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Stephan Mueller <smueller@chronox.de>, linux-crypto@vger.kernel.org,
+	lkml <linux-kernel@vger.kernel.org>
+References: <51157686.9000404@chronox.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51157686.9000404@chronox.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-s390 allmodconfig:
+On Fri, Feb 08, 2013 at 11:04:54PM +0100, Stephan Mueller wrote:
+> * an array of statistical test suites pass the output of the entropy
+> collector
+>   (again, the output is not mangled with cryptography)
 
-drivers/gpu/drm/udl/udl_fb.c:237:52: error: 'PAGE_SHARED' undeclared (first use in this function)
-drivers/media/pci/zoran/zoran_driver.c:2955:14: error: 'PAGE_SHARED' undeclared (first use in this function)
-drivers/media/usb/cpia2/cpia2_core.c:2405:66: error: 'PAGE_SHARED' undeclared (first use in this function)
-drivers/video/udlfb.c:337:52: error: 'PAGE_SHARED' undeclared (first use in this function)
-drivers/video/smscufx.c:795:52: error: 'PAGE_SHARED' undeclared (first use in this function)
-drivers/video/vfb.c:431:52: error: 'PAGE_SHARED' undeclared (first use in this function)
+You're not mangling the output with cryptography, but you are doing
+some mangling in jitterentropy_cpu_jitter().
 
-According to an email from Martin a few years ago, the equivalent define
-for s390 is PAGE_RW, so make PAGE_SHARED an alias for PAGE_RW.
+So let's be clear about what the heart of your entropy source is:
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- arch/s390/include/asm/pgtable.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+You're getting the nanoseconds out of clock_gettime(CLOCK_REALTIME),
+and then mixing it using XOR and a ROL(3) into a 64-bit buffer, and
+interspersing the calls to clock_gettime() with schedule().
 
-diff --git a/arch/s390/include/asm/pgtable.h b/arch/s390/include/asm/pgtable.h
-index 098adbb..0ca3e62 100644
---- a/arch/s390/include/asm/pgtable.h
-+++ b/arch/s390/include/asm/pgtable.h
-@@ -386,6 +386,7 @@ extern unsigned long MODULES_END;
- 
- #define PAGE_KERNEL	PAGE_RW
- #define PAGE_COPY	PAGE_RO
-+#define PAGE_SHARED	PAGE_RW
- 
- /*
-  * On s390 the page table entry has an invalid bit and a read-only bit.
--- 
-1.7.0.4
+So what a code breaker at the NSA would probably try to do first is to
+measure is whether there is any kind of bias or non-entropy in the
+nanoseconds returned by CLOCK_REALTIME after calls to schedule().  If
+they can find any kind of bias, they can use that to calculate what
+kind of patterns or non-random bits might end up showing up after you
+do your non-cryptographic mangling.
 
+For that reasons, what I would suggest doing first is generate a
+series of outputs of jitterentropy_get_nstime() followed by
+schedule().  Look and see if there is any pattern.  That's the problem
+with the FIPS 140-2 tests.  Passing those tests are necessary, but
+*NOT* sufficient to prove that you have a good cryptographic
+generator.  Even the tiniest amount of post-processing, even if they
+aren't cryptographic, can result in an utterly predictable series of
+numbers to pass the FIPS 140-2 tests.
+
+Regards,
+
+						- Ted
