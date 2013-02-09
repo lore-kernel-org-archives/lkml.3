@@ -1,115 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752563Ab3BIJle (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 04:41:34 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:45924 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752403Ab3BIJla (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 04:41:30 -0500
-Date: Sat, 9 Feb 2013 10:41:21 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, hpa@zytor.com,
-        mingo@kernel.org, tglx@linutronix.de
-Subject: Re: [PATCH 1/2] add helper for highmem checks
-Message-ID: <20130209094121.GB17728@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-	linux-mm@kvack.org, hpa@zytor.com, mingo@kernel.org,
-	tglx@linutronix.de
-References: <20130208202813.62965F25@kernel.stglabs.ibm.com>
+	id S1752764Ab3BIKB2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 05:01:28 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:62773 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752559Ab3BIKBO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Feb 2013 05:01:14 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130208202813.62965F25@kernel.stglabs.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFzEEbZqBaOKYB8H8+i904nXjNEgH=CUPtVMQU60QTTJaw@mail.gmail.com>
+References: <alpine.DEB.2.02.1302041002430.6063@chino.kir.corp.google.com>
+	<20130204184436.GA13256@gmail.com>
+	<alpine.DEB.2.02.1302041053330.6063@chino.kir.corp.google.com>
+	<20130204191408.GA32081@kroah.com>
+	<20130204191334.GB14837@gmail.com>
+	<CAOJsxLFy7K0cY-8SH4dXs=agYqCN8wW0eC2tQxFxfV8cf7uWqg@mail.gmail.com>
+	<alpine.DEB.2.02.1302061209450.18172@chino.kir.corp.google.com>
+	<20130207080236.ae38366537cf3f13b9668606@canb.auug.org.au>
+	<20130206214646.GA28135@gmail.com>
+	<20130208084029.d7d97d6e26580a5512712f91@canb.auug.org.au>
+	<20130208145539.GC30334@gmail.com>
+	<CA+55aFz9ERvaFayTy8QCtfi610Bt_r0GcOs68UNggJTHdY4oaQ@mail.gmail.com>
+	<CAOJsxLFDa3sLwP2MWdXJMTfZNEopp5imy8nWNViuPnWH747ggQ@mail.gmail.com>
+	<CA+55aFzEEbZqBaOKYB8H8+i904nXjNEgH=CUPtVMQU60QTTJaw@mail.gmail.com>
+Date: Sat, 9 Feb 2013 12:01:13 +0200
+X-Google-Sender-Auth: nI-RLjBGmsSqEKLe21wAev1iSnE
+Message-ID: <CAOJsxLFDbmNitH=N8v3jSno0SFL33s=nPc+hGRAqJfYFZS0RGw@mail.gmail.com>
+Subject: Re: kvmtool tree (Was: Re: [patch] config: fix make kvmconfig)
+From: Pekka Enberg <penberg@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        David Rientjes <rientjes@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        David Woodhouse <dwmw2@infradead.org>, Michal Marek <mmarek@suse.cz>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 08, 2013 at 12:28:13PM -0800, Dave Hansen wrote:
-> 
-> Boris, could you check that this series also fixes the /dev/mem
-> problem you were seeing?
-> 
-> --
-> 
-> We have a new debugging check on x86 that has caught a number
-> of long-standing bugs.  However, there is a _bit_ of collateral
-> damage with things that call __pa(high_memory).
-> 
-> We are now checking that any addresses passed to __pa() are
-> *valid* and can be dereferenced.
-> 
-> "high_memory", however, is not valid.  It marks the start of
-> highmem, and isn't itself a valid pointer.  But, those users
-> are really just asking "is this vaddr mapped"?  So, give them
-> a helper that does that, plus is also kind to our new
-> debugging check.
-> 
-> 
-> Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
-> ---
-> 
->  linux-2.6.git-dave/arch/x86/mm/pat.c     |   11 ++++++-----
->  linux-2.6.git-dave/drivers/char/mem.c    |    4 ++--
->  linux-2.6.git-dave/drivers/mtd/mtdchar.c |    2 +-
->  linux-2.6.git-dave/include/linux/mm.h    |   13 +++++++++++++
->  4 files changed, 22 insertions(+), 8 deletions(-)
-> 
-> diff -puN drivers/char/mem.c~clean-up-highmem-checks drivers/char/mem.c
-> --- linux-2.6.git/drivers/char/mem.c~clean-up-highmem-checks	2013-02-08 08:42:37.291222110 -0800
-> +++ linux-2.6.git-dave/drivers/char/mem.c	2013-02-08 12:27:27.837477867 -0800
-> @@ -51,7 +51,7 @@ static inline unsigned long size_inside_
->  #ifndef ARCH_HAS_VALID_PHYS_ADDR_RANGE
->  static inline int valid_phys_addr_range(phys_addr_t addr, size_t count)
->  {
-> -	return addr + count <= __pa(high_memory);
-> +	return !phys_addr_is_highmem(addr + count);
->  }
->  
->  static inline int valid_mmap_phys_addr_range(unsigned long pfn, size_t size)
-> @@ -250,7 +250,7 @@ static int uncached_access(struct file *
->  	 */
->  	if (file->f_flags & O_DSYNC)
->  		return 1;
-> -	return addr >= __pa(high_memory);
-> +	return phys_addr_is_highmem(addr);
->  #endif
->  }
->  #endif
-> diff -puN include/linux/mm.h~clean-up-highmem-checks include/linux/mm.h
-> --- linux-2.6.git/include/linux/mm.h~clean-up-highmem-checks	2013-02-08 08:42:37.295222148 -0800
-> +++ linux-2.6.git-dave/include/linux/mm.h	2013-02-08 09:01:49.758254468 -0800
-> @@ -1771,5 +1771,18 @@ static inline unsigned int debug_guardpa
->  static inline bool page_is_guard(struct page *page) { return false; }
->  #endif /* CONFIG_DEBUG_PAGEALLOC */
->  
-> +static inline phys_addr_t last_lowmem_phys_addr(void)
-> +{
-> +	/*
-> +	 * 'high_memory' is not a pointer that can be dereferenced, so
-> +	 * avoid calling __pa() on it directly.
-> +	 */
-> +	return __pa(high_memory - 1);
-> +}
-> +static inline bool phys_addr_is_highmem(phys_addr_t addr)
-> +{
-> +	return addr > last_lowmem_paddr();
+On Sat, Feb 9, 2013 at 2:45 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> Quite frankly, that's just optimizing for the wrong case.
 
-I think you mean last_lowmem_phys_addr() here:
+I obviously don't agree. I'm fairly sure there wouldn't be a kvmtool
+that supports x86, PPC64, ARM, and all the virtio drivers had we not
+optimized for making development for kernel folks easy.
 
-include/linux/mm.h: In function ‘phys_addr_is_highmem’:
-include/linux/mm.h:1764:2: error: implicit declaration of function ‘last_lowmem_paddr’ [-Werror=implicit-function-declaration]
-cc1: some warnings being treated as errors
-make[1]: *** [arch/x86/kernel/asm-offsets.s] Error 1
+In fact that's something Ingo pushed for pretty hard early on and we
+also worked hard just to make the code 'feel familiar' to kernel folks.
+The assumption was that if we did that, we'd see contributions from
+people who would normally not write userspace code.
 
-Changed.
+On Sat, Feb 9, 2013 at 2:45 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> The merged case seems to make sense for you and Ingo, and nobody else.
 
--- 
-Regards/Gruss,
-    Boris.
+That's hardly surprising. I'm the only person who was crazy enough to
+listen to Ingo and follow through with the damn thing. So I either have
+the same experience and perspective as Ingo does on the matter - or I'm
+just as full of 'bullshit' as he is.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+On Sat, Feb 9, 2013 at 2:45 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> The only thing the lock-step does is to generate the kind of
+> dependency that I ABSOLUTELY DETEST, where one version of kvmtools
+> goes along with one version of the kernel.
+
+That is simply NOT TRUE. We have never done such a thing with 'kvmtool'
+nor I have any evidence that 'perf' has done that either. I regularily
+run old versions to make sure that we stay that way.
+
+On Sat, Feb 9, 2013 at 2:45 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> So you can't have it both ways. What's so wrong with just making it a
+> separate project?
+
+Do you really think it's an option I have not considered several times?
+
+There are the immediate practical problems:
+
+  - What code should we take with us from the Linux repository. If I take
+    just tools/kvm, it won't even build.
+
+  - Where do we do our development? Right now we are using the KVM list
+    and are part of tip tree workflow. As a separate project, we need to
+    build the kind of infrastructure we already are relying on now.
+
+Then there are the long term issues:
+
+  - How do we keep up with KVM and virtio improvements?
+
+  - How do we ensure we get improvements that happened in the kernel
+    tree to our codebase for the code we share?
+
+  - How do we make it easy for future KVM and virtio developers to
+    access our code?
+
+If you want perspective on this just ask Ingo sometime how he feels
+about making tools/perf a separate project (which I have actually done).
+Much of the *practical* aspects applies to tools/kvm.
+
+And really, I'm a practical kind of guy. Why do you think I'm willing to
+bang to my head to the wall if spinning off as a separate project would
+be as simple as you seem to think it is?
+
+			Pekka
