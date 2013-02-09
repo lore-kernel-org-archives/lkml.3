@@ -1,108 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760784Ab3BIRE6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 12:04:58 -0500
-Received: from 94.43.138.210.xn.2iij.net ([210.138.43.94]:59674 "EHLO
-	mail.st-paulia.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1760759Ab3BIRE5 (ORCPT
+	id S932446Ab3BIRGG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 12:06:06 -0500
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:58208 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760759Ab3BIRGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 12:04:57 -0500
-Message-ID: <511681B7.5080002@linux-ipv6.org>
-Date: Sun, 10 Feb 2013 02:04:55 +0900
-From: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Organization: USAGI Project
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Sat, 9 Feb 2013 12:06:04 -0500
+Message-ID: <511681F6.4010102@gmail.com>
+Date: Sat, 09 Feb 2013 18:05:58 +0100
+From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Fengguang Wu <fengguang.wu@intel.com>, netdev@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Subject: Re: WARNING: at net/core/neighbour.c:1545 neigh_table_init()
-References: <20130209123937.GA23420@localhost> <1360421780.6696.24.camel@edumazet-glaptop>
-In-Reply-To: <1360421780.6696.24.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Benoit Thebaudeau <benoit.thebaudeau@advansee.com>,
+        David Hardeman <david@hardeman.nu>, Trilok Soni <tsoni@codeaurora.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Matus Ujhelyi <ujhelyi.m@gmail.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
+Subject: Re: [PATCH v2] media: rc: gpio-ir-recv: add support for device tree
+ parsing
+References: <1360137832-13086-1-git-send-email-sebastian.hesselbarth@gmail.com> <1360355887-19973-1-git-send-email-sebastian.hesselbarth@gmail.com> <20130208220357.198c313c@redhat.com> <51159C36.1060602@gmail.com>
+In-Reply-To: <51159C36.1060602@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric Dumazet wrote:
-> On Sat, 2013-02-09 at 20:39 +0800, Fengguang Wu wrote:
->> Greetings,
+On 02/09/2013 01:45 AM, Sebastian Hesselbarth wrote:
+>>> new file mode 100644
+>>> index 0000000..8589f30
+>>> --- /dev/null
+>>> +++ b/Documentation/devicetree/bindings/media/gpio-ir-receiver.txt
+>>> @@ -0,0 +1,16 @@
+>>> +Device-Tree bindings for GPIO IR receiver
+>>> +
+>>> +Required properties:
+>>> + - compatible = "gpio-ir-receiver";
+>>> + - gpios: OF device-tree gpio specification.
+>>> +
+>>> +Optional properties:
+>>> + - linux,rc-map-name: Linux specific remote control map name.
+>>> +
+>>> +Example node:
+>>> +
+>>> + ir: ir-receiver {
+>>> + compatible = "gpio-ir-receiver";
+>>> + gpios =<&gpio0 19 1>;
+>>> + linux,rc-map-name = "rc-rc6-mce";
 >>
->> I got the below oops in linux-next and the first bad commit is
+>> Please change this to:
+>> linux,rc-map-name = RC_MAP_RC6_MCE;
 >>
->> commit 455e987c0c2eb2c9045dc854559474cf41509965
->> Merge: 7c17e48 fd6da69
->> Author: Linus Torvalds <torvalds@linux-foundation.org>
->> Date:   Sat Dec 1 13:07:48 2012 -0800
->>
->>     Merge branch 'perf-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
->>     
->>     Pull perf fixes from Ingo Molnar:
->>      "This is mostly about unbreaking architectures that took the UAPI
->>       changes in the v3.7 cycle, plus misc fixes."
->>     
->>     * 'perf-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip:
->>       perf kvm: Fix building perf kvm on non x86 arches
->>       perf kvm: Rename perf_kvm to perf_kvm_stat
->>       perf: Make perf build for x86 with UAPI disintegration applied
->>       perf powerpc: Use uapi/unistd.h to fix build error
->>       tools: Pass the target in descend
->>       tools: Honour the O= flag when tool build called from a higher Makefile
->>       tools: Define a Makefile function to do subdir processing
->>       x86: Export asm/{svm.h,vmx.h,perf_regs.h}
->>       perf tools: Fix strbuf_addf() when the buffer needs to grow
->>       perf header: Fix numa topology printing
->>       perf, powerpc: Fix hw breakpoints returning -ENOSPC
->>
->> [  108.102297] NET4: DECnet for Linux: V.2.5.68s (C) 1995-2003 Linux DECnet Project Team
->> [  108.105501] ------------[ cut here ]------------
->> [  108.106286] WARNING: at /c/kernel-tests/src/i386/net/core/neighbour.c:1545 neigh_table_init+0x16f/0x490()
->> [  108.107506] Hardware name: Bochs
->> [  108.108577] Pid: 1, comm: swapper Not tainted 3.8.0-rc5-01118-geee5035 #17
->> [  108.109506] Call Trace:
->> [  108.111179]  [<c1054e52>] warn_slowpath_common+0xf2/0x140
->> [  108.112064]  [<c1acc2af>] ? neigh_table_init+0x16f/0x490
->> [  108.112880]  [<c1acc2af>] ? neigh_table_init+0x16f/0x490
->> [  108.114164]  [<c24d8c67>] ? atm_clip_init+0x98/0x98
->> [  108.115409]  [<c1054ff9>] warn_slowpath_null+0x39/0x50
->> [  108.116776]  [<c1acc2af>] neigh_table_init+0x16f/0x490
->> [  108.118169]  [<c1d0ba16>] ? mutex_unlock+0x16/0x30
->> [  108.119260]  [<c1a9cbf5>] ? proto_register+0x65/0x350
->> [  108.120016]  [<c24d8c67>] ? atm_clip_init+0x98/0x98
->> [  108.121591]  [<c24d91c6>] dn_neigh_init+0x1b/0x2b
->> [  108.122305]  [<c24d8cce>] decnet_init+0x67/0xfc
->> [  108.123169]  [<c2472470>] do_one_initcall+0xf2/0x259
->> [  108.124259]  [<c24727fa>] kernel_init_freeable+0x223/0x393
->> [  108.125053]  [<c2471548>] ? loglevel+0x55/0x55
->> [  108.125712]  [<c1ce8b59>] kernel_init+0x19/0x200
->> [  108.126411]  [<c1d114fb>] ret_from_kernel_thread+0x1b/0x30
->> [  108.127194]  [<c1ce8b40>] ? rest_init+0x1f0/0x1f0
->> [  108.128351] ---[ end trace 1bcbb5f262552fec ]---
->>
->> git bisect start v3.7 v3.6 --
->> git bisect good d66e6737d454553e1e62109d8298ede5351178a4  #    10  2013-02-09 11:28:24  Merge git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6
->> git bisect good e1b28147f684af67bfac989756c27c19859d3d4e  #    10  2013-02-09 11:58:58  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux
->> git bisect good 37820108f395032e850e400139d956561a043c26  #    10  2013-02-09 12:28:59  Merge tag 'fixes-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc
->> git bisect good 60541d778e536455970281de25b2476e01c03aef  #    10  2013-02-09 12:59:29  unicore32: switch to generic sys_execve()
->> git bisect good 403f43c937d24832b18524f65415c0bbba6b5064  #    10  2013-02-09 13:29:53  team: bcast: convert return value of team_dev_queue_xmit() to bool correctly
->> git bisect good e23739b4ade80a3a7f87198f008f6c44a7cbc9fd  #    10  2013-02-09 14:00:15  Merge branch 'v4l_for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media
->> git bisect  bad 455e987c0c2eb2c9045dc854559474cf41509965  #     0  2013-02-09 14:03:12  Merge branch 'perf-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
->> git bisect good 50a53bbe1280839755cb120eef729ad150f644f9  #    10  2013-02-09 14:31:02  Merge branch 'akpm' (Fixes from Andrew)
->> git bisect good 31e06a42a34395111842707a85774151245447b7  #    10  2013-02-09 15:01:25  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/viro/signal
->> git bisect good 97a13bf3fed11a7508d58b67515c4b83cce25540  #    10  2013-02-09 15:31:48  Merge tag 'perf-uapi-20121119' of git://git.infradead.org/users/dhowells/linux-headers into perf/urgent
->> git bisect good 8fdd78eeb11aeda018b22424f863344ef83a92d3  #    10  2013-02-09 16:02:24  Merge tag 'for-linus' of git://linux-c6x.org/git/projects/linux-c6x-upstreaming
->> git bisect good 7c17e486e865d616f0e37c7f7f0e4dcfab704cd8  #    10  2013-02-09 16:32:42  Merge branch 'x86/urgent' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
->> git bisect good 7321090f6751c9987c26a8c81c63680d16a614d7  #    10  2013-02-09 17:03:13  perf kvm: Fix building perf kvm on non x86 arches
->> git bisect good fd6da696f38b00ffeae1185d6f0ec5d4ab3b472d  #    10  2013-02-09 17:33:37  Merge tag 'perf-urgent-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/urgent
->> git bisect good 7c17e486e865d616f0e37c7f7f0e4dcfab704cd8  #    30  2013-02-09 18:34:45  Merge branch 'x86/urgent' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
->> git bisect good fd6da696f38b00ffeae1185d6f0ec5d4ab3b472d  #    30  2013-02-09 19:35:42  Merge tag 'perf-urgent-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/urgent
->> git bisect  bad e347c988b34344c5192c2c238ad1c4bae51e975b  #     0  2013-02-09 19:51:48  Add linux-next specific files for 20130208
-> 
-> Well, bug as added in commit 08433eff2d041b263c68306f6a6ccb4e1f75e196
-> (net neigh: Optimize neighbor entry size calculation.)
+>> (as defined at include/media/rc-map.h).
+>
+> Mauro,
+>
+> this is not possible in device tree bindings. Device tree properties
+> can only carry numeric or string types (and some other stuff) but no
+> OS specific enumerations. So using strings is the only option here.
+>
+>> The idea of having those strings defined at the same header file is to:
+>
+> Unfortunately, device tree blobs don't know about linux header files.
 
-Thanks.  I've sent a patch to fix this as a separate mail.
+I suppose this will change when it will be possible to run C pre-processor
+on *.dts files. This is still under discussion though [1] and for the
+device tree there will likely be separate copies of the header files
+needed. Thus I guess explicit string names for now need to be used.
 
---yoshfuji
+[1] http://www.spinics.net/lists/kernel/msg1458360.html
+
