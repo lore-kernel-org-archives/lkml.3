@@ -1,60 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751990Ab3BIGpj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 01:45:39 -0500
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:47961 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751737Ab3BIGph (ORCPT
+	id S1752018Ab3BIGre (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 01:47:34 -0500
+Received: from hermes.synopsys.com ([198.182.44.81]:34121 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751726Ab3BIGrc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 01:45:37 -0500
+	Sat, 9 Feb 2013 01:47:32 -0500
+Message-ID: <5115F076.5000909@synopsys.com>
+Date: Sat, 9 Feb 2013 12:15:10 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <1360373383.18083.23.camel@x230.lan>
-References: <20130208191213.GA25081@www.outflux.net>
-	<00780235-deac-4f80-b936-867834e05661@email.android.com>
-	<CAGXu5jJnLY6Qp3J6HBpVg-AdUGdKYm-e4wErZO3=NuRo04ajvg@mail.gmail.com>
-	<5115553A.5000708@zytor.com>
-	<CAGXu5j+_mGzR+72YqORhErMUY1aF1H2urczZ8SwuJHZK-oZL6g@mail.gmail.com>
-	<dee64752-850c-4d78-b703-f47a985bc13e@email.android.com>
-	<CAGXu5jLAufTRm=sDST0br_WEkn4o0Hpjv2jDP2Na=cCvuM+MGg@mail.gmail.com>
-	<1360355671.18083.18.camel@x230.lan>
-	<CAGXu5jKo2PfMBO4A0ZgQcrPuj8OHNaff+CjAesOAWkZc0vB9+Q@mail.gmail.com>
-	<51157C9C.6030501@zytor.com>
-	<20130208230655.GB28990@pd.tnic>
-	<1360366012.18083.21.camel@x230.lan>
-	<5115A4CC.3080102@zytor.com>
-	<1360373383.18083.23.camel@x230.lan>
-Date: Fri, 8 Feb 2013 22:45:35 -0800
-X-Google-Sender-Auth: fPbqVtMplClgy9_EsQYJm7rGvjo
-Message-ID: <CAGXu5j+xvJ3L5ejxtZ-Jw3F6rV7OsrE0_HZCGu_er0rH2_PwKA@mail.gmail.com>
-Subject: Re: [PATCH] x86: Lock down MSR writing in secure boot
-From: Kees Cook <keescook@chromium.org>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "Arnd Bergmann" <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>
+Subject: Re: [PATCH 4/4] serial/arc-uart: switch to devicetree based probing
+References: <1357885223-19243-1-git-send-email-vgupta@synopsys.com> <1357885223-19243-5-git-send-email-vgupta@synopsys.com> <20130208230127.5F3063E2C27@localhost>
+In-Reply-To: <20130208230127.5F3063E2C27@localhost>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.43]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 8, 2013 at 5:29 PM, Matthew Garrett
-<matthew.garrett@nebula.com> wrote:
-> On Fri, 2013-02-08 at 17:22 -0800, H. Peter Anvin wrote:
+On Saturday 09 February 2013 04:31 AM, Grant Likely wrote:
+> On Fri, 11 Jan 2013 11:50:23 +0530, Vineet Gupta <Vineet.Gupta1@synopsys.com> wrote:
+>> +- clock-frequency	: the input clock frequency for the UART
+>> +- baud			: baud rate for UART
+> change 'baud' to 'current-speed'. There is already precedence for this
+> with other serial devices.
+
+While I'm OK with this - I can only see of_serial.c following the rule :-)
+More importantly I'm not clear about the logistics of this fix. Obviously this has
+a bearing on DT files in arch/arc/boot/*. So are such changes (platform + driver)
+routed thru the subsystem tree or the arch tree or bits from both with
+bisectability not considered - which feels wrong. We have to also consider the
+fact that Greg has closed the tty/serial for 3.9. So while I have no objection to
+your comment, it seems that the it needs to wait till 3.9-rc1 - or is there an
+alternate way.
+
 >
->> You don't have to build the kernel twice to exclude a loadable module.
->
-> I guess you could just strip the signatures off any modules you don't
-> want to support under Secure Boot, but that breaks some other use cases.
+>> @@ -673,8 +693,18 @@ static int __init arc_serial_probe_earlyprintk(struct platform_device *pdev)
+>>  static int arc_serial_probe(struct platform_device *pdev)
+>>  {
+>>  	int rc, dev_id;
+>> +	struct device_node *np = pdev->dev.of_node;
+>> +
+>> +	/* no device tree device */
+>> +	if (!np)
+>> +		return -ENODEV;
+> This breaks non-DT users. Is this what you intend? It creates a flag day
+> where users have to switch from non-DT to DT cold-turkey.
 
-Also, _reading_ MSRs from userspace arguably has utility that doesn't
-compromise ring-0. So excluding the driver entirely seems like
-overkill.
+Not supporting non-DT user was not the idea - it just simplifies the code a bit
+given that it would only even be runtime used in a ARC Linux port based platform -
+which unconditionally enables OF.  Further - the ARC port itself is not yet
+upstream so there are no "official" user of this in tree driver.
+FWIW, ARC Linux port was recently reviewed on lkml/arch mailing lists and is now
+in linux-next for a possible 3.9 merge.
 
--Kees
+>> +	dev_id = of_alias_get_id(np, "serial");
+>> +	if (dev_id < 0) {
+>> +		dev_err(&pdev->dev, "failed to get alias id: %d\n", dev_id);
+>> +		return dev_id;
+>> +	}
+> Don't fail on this. If you can't get an id then choose one dynamically.
 
---
-Kees Cook
-Chrome OS Security
+You mean just assume 0.
+
+Thanks for reviewing.
+-Vineet
