@@ -1,135 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760796Ab3BISII (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 13:08:08 -0500
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:60703 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760774Ab3BISIG (ORCPT
+	id S932487Ab3BISWC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 13:22:02 -0500
+Received: from smtprelay.restena.lu ([158.64.1.62]:34623 "EHLO
+	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932472Ab3BISWB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 13:08:06 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAOJsxLFDbmNitH=N8v3jSno0SFL33s=nPc+hGRAqJfYFZS0RGw@mail.gmail.com>
-References: <alpine.DEB.2.02.1302041002430.6063@chino.kir.corp.google.com>
- <20130204184436.GA13256@gmail.com> <alpine.DEB.2.02.1302041053330.6063@chino.kir.corp.google.com>
- <20130204191408.GA32081@kroah.com> <20130204191334.GB14837@gmail.com>
- <CAOJsxLFy7K0cY-8SH4dXs=agYqCN8wW0eC2tQxFxfV8cf7uWqg@mail.gmail.com>
- <alpine.DEB.2.02.1302061209450.18172@chino.kir.corp.google.com>
- <20130207080236.ae38366537cf3f13b9668606@canb.auug.org.au>
- <20130206214646.GA28135@gmail.com> <20130208084029.d7d97d6e26580a5512712f91@canb.auug.org.au>
- <20130208145539.GC30334@gmail.com> <CA+55aFz9ERvaFayTy8QCtfi610Bt_r0GcOs68UNggJTHdY4oaQ@mail.gmail.com>
- <CAOJsxLFDa3sLwP2MWdXJMTfZNEopp5imy8nWNViuPnWH747ggQ@mail.gmail.com>
- <CA+55aFzEEbZqBaOKYB8H8+i904nXjNEgH=CUPtVMQU60QTTJaw@mail.gmail.com> <CAOJsxLFDbmNitH=N8v3jSno0SFL33s=nPc+hGRAqJfYFZS0RGw@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 10 Feb 2013 05:07:45 +1100
-X-Google-Sender-Auth: evuUzAvnzXavvBmcQHYPh_k2y6I
-Message-ID: <CA+55aFy=SaVjNby=Jy_O9ZRQ_Ofc-6_+bLv=HeMMSzQQHw9vMQ@mail.gmail.com>
-Subject: Re: kvmtool tree (Was: Re: [patch] config: fix make kvmconfig)
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Rientjes <rientjes@google.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 9 Feb 2013 13:22:01 -0500
+X-Greylist: delayed 459 seconds by postgrey-1.27 at vger.kernel.org; Sat, 09 Feb 2013 13:22:00 EST
+Date: Sat, 9 Feb 2013 19:14:09 +0100
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Corey Minyard <minyard@acm.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Corey Minyard <cminyard@mvista.com>,
+        containers@lists.linux-foundation.org
+Subject: Re: [PATCH] Move console redirect to pid namespace
+Message-ID: <20130209191409.643c3d7f@neptune.home>
+In-Reply-To: <1360376920-30824-1-git-send-email-minyard@acm.org>
+References: <1360376920-30824-1-git-send-email-minyard@acm.org>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.12; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You do realize that none of your arguments touched the "why should
-Linus merge the tree" question at all?
+CCing containers list
 
-Everything you said was about how it's more convenient for you and
-Ingo, not at all about why it should be better for anybody else. You
-haven't bothered to even try making it an external project, so it
-doesn't compile that way. You're the only one working on it, so being
-convenient for you is the primary issue. Arguments like that actively
-make me not want to merge it, because they are only arguments for you
-continuing to work the way you have, not arguments for why the project
-would make sense to merge into the main kernel repository.
+On Fri, 08 February 2013 minyard@acm.org wrote:
+> From: Corey Minyard <cminyard@mvista.com>
+> 
+> The console redirect - ioctl(fd, TIOCCONS) - is not in a namespace,
+> thus a container can do a redirect and grab all the I/O on the host
+> and all container consoles.
+> 
+> This change puts the redirect in the pid namespace.
+> 
+> Signed-off-by: Corey Minyard <cminyard@mvista.com>
+> ---
+> 
+> I'm pretty sure this patch is not correct, but I'm not quite sure the
+> best way to fix this.  I'm not 100% sure that the pid namespace is the
+> right place, but it seemed the most reasonable of all the choices.  The
+> other obvious choice is the mount namespace, but it didn't seem as good
+> a fit.
 
-So I think we should just remove this from linux-next, and be done
-with the fantasy that it makes sense to merge this. You're not even
-trying to convince anybody else about the merge making sense.
+With recent changes, tying it to init user namespace might even be better.
 
-You might as well continue to work the way you do, and I don't mind -
-but none of it argues for me merging it into the kernel. There's no
-reason why kvmtool couldn't be external the way all the other
-virtualization projects are.
+> The other problem is that I don't think you can call fput() from
+> destroy_pid_namespace().  That can be called from interrupt context,
+> and I don't think fput() is safe there.  I know it's not safe in 3.4
+> with the RT patch applied.  However, the only way I've come up with to
+> fix it is to add a workqueue, and that seems a bit heavy for this.
+> 
+>  drivers/tty/tty_io.c          |   29 ++++++++++++++++++-----------
+>  include/linux/pid_namespace.h |    1 +
+>  kernel/pid_namespace.c        |    3 +++
+>  3 files changed, 22 insertions(+), 11 deletions(-)
+> 
+> diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+> index da9fde8..c93c23d 100644
+> --- a/drivers/tty/tty_io.c
+> +++ b/drivers/tty/tty_io.c
+> @@ -95,6 +95,7 @@
+>  #include <linux/seq_file.h>
+>  #include <linux/serial.h>
+>  #include <linux/ratelimit.h>
+> +#include <linux/pid_namespace.h>
+>  
+>  #include <linux/uaccess.h>
+>  
+> @@ -503,8 +504,10 @@ static const struct file_operations hung_up_tty_fops = {
+>  	.release	= tty_release,
+>  };
+>  
+> +/*
+> + * redirect is in the pid namespace, but we use a global lock.
+> + */
+>  static DEFINE_SPINLOCK(redirect_lock);
+> -static struct file *redirect;
+>  
+>  /**
+>   *	tty_wakeup	-	request more data
+> @@ -563,15 +566,17 @@ static void __tty_hangup(struct tty_struct *tty)
+>  	int    closecount = 0, n;
+>  	unsigned long flags;
+>  	int refs = 0;
+> +	struct file *redir;
+>  
+>  	if (!tty)
+>  		return;
+>  
+>  
+>  	spin_lock(&redirect_lock);
+> -	if (redirect && file_tty(redirect) == tty) {
+> -		f = redirect;
+> -		redirect = NULL;
+> +	redir = current->nsproxy->pid_ns->redirect;
+> +	if (redir && file_tty(redir) == tty) {
+> +		f = redir;
+> +		current->nsproxy->pid_ns->redirect = NULL;
+>  	}
+>  	spin_unlock(&redirect_lock);
+>  
+> @@ -1163,10 +1168,12 @@ ssize_t redirected_tty_write(struct file *file, const char __user *buf,
+>  						size_t count, loff_t *ppos)
+>  {
+>  	struct file *p = NULL;
+> +	struct file *redir;
+>  
+>  	spin_lock(&redirect_lock);
+> -	if (redirect)
+> -		p = get_file(redirect);
+> +	redir = current->nsproxy->pid_ns->redirect;
+> +	if (redir)
+> +		p = get_file(redir);
+>  	spin_unlock(&redirect_lock);
+>  
+>  	if (p) {
+> @@ -2247,19 +2254,19 @@ static int tioccons(struct file *file)
+>  	if (file->f_op->write == redirected_tty_write) {
+>  		struct file *f;
+>  		spin_lock(&redirect_lock);
+> -		f = redirect;
+> -		redirect = NULL;
+> +		f = current->nsproxy->pid_ns->redirect;
+> +		current->nsproxy->pid_ns->redirect = NULL;
+>  		spin_unlock(&redirect_lock);
+>  		if (f)
+>  			fput(f);
+>  		return 0;
+>  	}
+>  	spin_lock(&redirect_lock);
+> -	if (redirect) {
+> +	if (current->nsproxy->pid_ns->redirect) {
+>  		spin_unlock(&redirect_lock);
+>  		return -EBUSY;
+>  	}
+> -	redirect = get_file(file);
+> +	current->nsproxy->pid_ns->redirect = get_file(file);
+>  	spin_unlock(&redirect_lock);
+>  	return 0;
+>  }
+> diff --git a/include/linux/pid_namespace.h b/include/linux/pid_namespace.h
+> index 215e5e3..b04870f 100644
+> --- a/include/linux/pid_namespace.h
+> +++ b/include/linux/pid_namespace.h
+> @@ -38,6 +38,7 @@ struct pid_namespace {
+>  	int hide_pid;
+>  	int reboot;	/* group exit code if this pidns was rebooted */
+>  	unsigned int proc_inum;
+> +	struct file *redirect;
+>  };
+>  
+>  extern struct pid_namespace init_pid_ns;
+> diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
+> index c1c3dc1..af1bfce 100644
+> --- a/kernel/pid_namespace.c
+> +++ b/kernel/pid_namespace.c
+> @@ -18,6 +18,7 @@
+>  #include <linux/proc_fs.h>
+>  #include <linux/reboot.h>
+>  #include <linux/export.h>
+> +#include <linux/file.h>
+>  
+>  #define BITS_PER_PAGE		(PAGE_SIZE*8)
+>  
+> @@ -138,6 +139,8 @@ static void destroy_pid_namespace(struct pid_namespace *ns)
+>  {
+>  	int i;
+>  
+> +	if (ns->redirect)
+> +	    fput(ns->redirect);
+>  	proc_free_inum(ns->proc_inum);
+>  	for (i = 0; i < PIDMAP_ENTRIES; i++)
+>  		kfree(ns->pidmap[i].page);
 
-             Linus
-
-On Feb 9, 2013 2:01 AM, "Pekka Enberg" <penberg@kernel.org> wrote:
->
-> On Sat, Feb 9, 2013 at 2:45 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> > Quite frankly, that's just optimizing for the wrong case.
->
-> I obviously don't agree. I'm fairly sure there wouldn't be a kvmtool
-> that supports x86, PPC64, ARM, and all the virtio drivers had we not
-> optimized for making development for kernel folks easy.
->
-> In fact that's something Ingo pushed for pretty hard early on and we
-> also worked hard just to make the code 'feel familiar' to kernel folks.
-> The assumption was that if we did that, we'd see contributions from
-> people who would normally not write userspace code.
->
-> On Sat, Feb 9, 2013 at 2:45 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> > The merged case seems to make sense for you and Ingo, and nobody else.
->
-> That's hardly surprising. I'm the only person who was crazy enough to
-> listen to Ingo and follow through with the damn thing. So I either have
-> the same experience and perspective as Ingo does on the matter - or I'm
-> just as full of 'bullshit' as he is.
->
-> On Sat, Feb 9, 2013 at 2:45 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> > The only thing the lock-step does is to generate the kind of
-> > dependency that I ABSOLUTELY DETEST, where one version of kvmtools
-> > goes along with one version of the kernel.
->
-> That is simply NOT TRUE. We have never done such a thing with 'kvmtool'
-> nor I have any evidence that 'perf' has done that either. I regularily
-> run old versions to make sure that we stay that way.
->
-> On Sat, Feb 9, 2013 at 2:45 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> > So you can't have it both ways. What's so wrong with just making it a
-> > separate project?
->
-> Do you really think it's an option I have not considered several times?
->
-> There are the immediate practical problems:
->
->   - What code should we take with us from the Linux repository. If I take
->     just tools/kvm, it won't even build.
->
->   - Where do we do our development? Right now we are using the KVM list
->     and are part of tip tree workflow. As a separate project, we need to
->     build the kind of infrastructure we already are relying on now.
->
-> Then there are the long term issues:
->
->   - How do we keep up with KVM and virtio improvements?
->
->   - How do we ensure we get improvements that happened in the kernel
->     tree to our codebase for the code we share?
->
->   - How do we make it easy for future KVM and virtio developers to
->     access our code?
->
-> If you want perspective on this just ask Ingo sometime how he feels
-> about making tools/perf a separate project (which I have actually done).
-> Much of the *practical* aspects applies to tools/kvm.
->
-> And really, I'm a practical kind of guy. Why do you think I'm willing to
-> bang to my head to the wall if spinning off as a separate project would
-> be as simple as you seem to think it is?
->
->                         Pekka
