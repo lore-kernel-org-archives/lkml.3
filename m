@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932407Ab3BIPH5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 10:07:57 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:48789 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758092Ab3BIPHz (ORCPT
+	id S932402Ab3BIPKU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 10:10:20 -0500
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:47381 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760715Ab3BIPKR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 10:07:55 -0500
-Message-ID: <1360422473.6696.28.camel@edumazet-glaptop>
-Subject: Re: BUG: soft lockup on all kernels after 2.6.3x
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Alexey Vlasov <renton@renton.name>
-Cc: linux-kernel@vger.kernel.org
-Date: Sat, 09 Feb 2013 07:07:53 -0800
-In-Reply-To: <20130209141029.GA13493@beaver>
-References: <20130209141029.GA13493@beaver>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sat, 9 Feb 2013 10:10:17 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130209092925.GA17728@pd.tnic>
+References: <dee64752-850c-4d78-b703-f47a985bc13e@email.android.com>
+	<CAGXu5jLAufTRm=sDST0br_WEkn4o0Hpjv2jDP2Na=cCvuM+MGg@mail.gmail.com>
+	<1360355671.18083.18.camel@x230.lan>
+	<CAGXu5jKo2PfMBO4A0ZgQcrPuj8OHNaff+CjAesOAWkZc0vB9+Q@mail.gmail.com>
+	<51157C9C.6030501@zytor.com>
+	<20130208230655.GB28990@pd.tnic>
+	<1360366012.18083.21.camel@x230.lan>
+	<5115A4CC.3080102@zytor.com>
+	<1360373383.18083.23.camel@x230.lan>
+	<CAGXu5j+xvJ3L5ejxtZ-Jw3F6rV7OsrE0_HZCGu_er0rH2_PwKA@mail.gmail.com>
+	<20130209092925.GA17728@pd.tnic>
+Date: Sat, 9 Feb 2013 07:10:16 -0800
+X-Google-Sender-Auth: EqOWthEDL0DFHDoo6XMbfv5iwlA
+Message-ID: <CAGXu5j+XTq6vyn176fHCDDgkLtVyBwEC8J3DUDVhy9z87ODF2Q@mail.gmail.com>
+Subject: Re: [PATCH] x86: Lock down MSR writing in secure boot
+From: Kees Cook <keescook@chromium.org>
+To: Borislav Petkov <bp@alien8.de>, Kees Cook <keescook@chromium.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-02-09 at 18:10 +0400, Alexey Vlasov wrote:
-> Hello.
-> 
-> I used 2.6.2x kernel for a long time on my shared hosting and I didn't
-> have any problems. Kernels worked well and server uptime was about 2-3
-> years.
-> 
-> But investigating some strange hangings of my clients' sites I came to
-> this:
-> http://bugs.mysql.com/bug.php?id=50399
-> from this bug it is clear that on kernels younger than 2.6.32 (
-> unfortunately I can't remember if it is true with 2.6.30-31) happens
-> mysql client hanging.
-> 
-> It is not clear whether it is a bug of kernel or libc or mysql-client, I
-> didn't manage to find it out. I decided to do simpler (as it seemed to
-> me at that moment) to start using 2.6.3x kernels. And that caused
-> greater problems. By trying to use new kernels on my working servers
-> with peak load I got an uptime from an hour to 1-3 months.
-> 
-> I even got some statistics for how long can every kernel from version
-> 2.6.32 work in peak load situations. It sounds funny but my clients are
-> not happy with all these reboots.
-> 
-> From all the variety of servers from 2.6.32 to 3.7.4 I can say that
-> 2.6.35 is the most stabil, I got about 30 servers on it. But they hang
-> usually once in 1-3 months.
-> 
-> Returning to the problem of kernels >= 2.6.32, as I have noticed they
-> hang totally alike, giving the console:
-> 
-> ...
-> Feb  8 10:27:45 10.2.0.7 [470393.417168] BUG: soft lockup - CPU#2 stuck for 61s! [vsftpd:29013]
-> ...
-> [see the attachment]
-> 
-> it doesn't happen on an empty server, only on loaded ones. Unfortunately
-> I don't know how to provoke such hanging artificially.
-> 
-> I' ve given a trace attached. In fact I don't know what to do with all
-> these bugs, I can't use 2.6.2x because of MySQL hanging and = >2.6.3
-> start hanging themselves.
-> 
+On Sat, Feb 9, 2013 at 1:29 AM, Borislav Petkov <bp@alien8.de> wrote:
+> On Fri, Feb 08, 2013 at 10:45:35PM -0800, Kees Cook wrote:
+>> Also, _reading_ MSRs from userspace arguably has utility that doesn't
+>> compromise ring-0.
+>
+> And to come back to the original question: what is that utility, who
+> would need it on a secure boot system and why?
 
-Did you compile the kernel yourself, or is it a standard kernel (distro
-provided) ?
+I have used it for double-checking the state of VMX (is it disabled
+and locked), and for making sure that XD isn't masked, checking
+thermal stuff, etc. I'm not arguing to keep the MSR driver while in
+secure mode, mind you, I was just pointing out that like /dev/mem
+there could be some utility to keeping the read half around. That
+said, it could also be seen as an info leak. *shrug* My goal was just
+to make sure it wasn't writable in the secure boot mode.
 
-Your traces dont contain symbols, its quite hard to guess the issue.
+-Kees
 
-
+--
+Kees Cook
+Chrome OS Security
