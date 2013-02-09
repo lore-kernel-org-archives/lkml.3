@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932392Ab3BIBJs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 20:09:48 -0500
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:64473 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1947665Ab3BIBIv (ORCPT
+	id S1947662Ab3BIBIs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 20:08:48 -0500
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:46021 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1947640Ab3BIBIq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 20:08:51 -0500
+	Fri, 8 Feb 2013 20:08:46 -0500
 From: Len Brown <lenb@kernel.org>
 To: linux-pm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>
-Subject: [PATCH 13/16] tools/power turbostat: decode MSR_IA32_POWER_CTL
-Date: Fri,  8 Feb 2013 20:08:17 -0500
-Message-Id: <679204183472af16e8e75d2b1479459ad19bc67c.1360371180.git.len.brown@intel.com>
+Subject: [PATCH 10/16] cpuidle: remove vestage definition of cpuidle_state_usage.driver_data
+Date: Fri,  8 Feb 2013 20:08:14 -0500
+Message-Id: <fe265459a3bbcfada267f181f00b83fb02f6d5cb.1360371180.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.8.1.3.535.ga923c31
 In-Reply-To: <1360372100-28482-1-git-send-email-lenb@kernel.org>
 References: <1360372100-28482-1-git-send-email-lenb@kernel.org>
@@ -26,73 +26,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Len Brown <len.brown@intel.com>
 
-When verbose is enabled, print the C1E-Enable
-bit in MSR_IA32_POWER_CTL.
-
-also delete some redundant tests on the verbose variable.
+This field is no longer used.
 
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- arch/x86/include/uapi/asm/msr-index.h |  2 ++
- tools/power/x86/turbostat/turbostat.c | 13 +++++++------
- 2 files changed, 9 insertions(+), 6 deletions(-)
+ include/linux/cpuidle.h | 22 ----------------------
+ 1 file changed, 22 deletions(-)
 
-diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
-index 433a59f..7bdaf7c 100644
---- a/arch/x86/include/uapi/asm/msr-index.h
-+++ b/arch/x86/include/uapi/asm/msr-index.h
-@@ -103,6 +103,8 @@
- #define DEBUGCTLMSR_BTS_OFF_USR		(1UL << 10)
- #define DEBUGCTLMSR_FREEZE_LBRS_ON_PMI	(1UL << 11)
+diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
+index 24cd1037..480c14d 100644
+--- a/include/linux/cpuidle.h
++++ b/include/linux/cpuidle.h
+@@ -32,8 +32,6 @@ struct cpuidle_driver;
+  ****************************/
  
-+#define MSR_IA32_POWER_CTL		0x000001fc
-+
- #define MSR_IA32_MC0_CTL		0x00000400
- #define MSR_IA32_MC0_STATUS		0x00000401
- #define MSR_IA32_MC0_ADDR		0x00000402
-diff --git a/tools/power/x86/turbostat/turbostat.c b/tools/power/x86/turbostat/turbostat.c
-index b326878..75f64e0 100644
---- a/tools/power/x86/turbostat/turbostat.c
-+++ b/tools/power/x86/turbostat/turbostat.c
-@@ -908,8 +908,7 @@ void print_verbose_header(void)
+ struct cpuidle_state_usage {
+-	void		*driver_data;
+-
+ 	unsigned long long	disable;
+ 	unsigned long long	usage;
+ 	unsigned long long	time; /* in US */
+@@ -62,26 +60,6 @@ struct cpuidle_state {
  
- 	get_msr(0, MSR_NHM_PLATFORM_INFO, &msr);
+ #define CPUIDLE_DRIVER_FLAGS_MASK (0xFFFF0000)
  
--	if (verbose)
--		fprintf(stderr, "cpu0: MSR_NHM_PLATFORM_INFO: 0x%08llx\n", msr);
-+	fprintf(stderr, "cpu0: MSR_NHM_PLATFORM_INFO: 0x%08llx\n", msr);
- 
- 	ratio = (msr >> 40) & 0xFF;
- 	fprintf(stderr, "%d * %.0f = %.0f MHz max efficiency\n",
-@@ -919,13 +918,16 @@ void print_verbose_header(void)
- 	fprintf(stderr, "%d * %.0f = %.0f MHz TSC frequency\n",
- 		ratio, bclk, ratio * bclk);
- 
-+	get_msr(0, MSR_IA32_POWER_CTL, &msr);
-+	fprintf(stderr, "cpu0: MSR_IA32_POWER_CTL: 0x%08llx (C1E: %sabled)\n",
-+		msr, msr & 0x2 ? "EN" : "DIS");
-+
- 	if (!do_ivt_turbo_ratio_limit)
- 		goto print_nhm_turbo_ratio_limits;
- 
- 	get_msr(0, MSR_IVT_TURBO_RATIO_LIMIT, &msr);
- 
--	if (verbose)
--		fprintf(stderr, "cpu0: MSR_IVT_TURBO_RATIO_LIMIT: 0x%08llx\n", msr);
-+	fprintf(stderr, "cpu0: MSR_IVT_TURBO_RATIO_LIMIT: 0x%08llx\n", msr);
- 
- 	ratio = (msr >> 56) & 0xFF;
- 	if (ratio)
-@@ -1016,8 +1018,7 @@ print_nhm_turbo_ratio_limits:
- 
- 	get_msr(0, MSR_NHM_TURBO_RATIO_LIMIT, &msr);
- 
--	if (verbose)
--		fprintf(stderr, "cpu0: MSR_NHM_TURBO_RATIO_LIMIT: 0x%08llx\n", msr);
-+	fprintf(stderr, "cpu0: MSR_NHM_TURBO_RATIO_LIMIT: 0x%08llx\n", msr);
- 
- 	ratio = (msr >> 56) & 0xFF;
- 	if (ratio)
+-/**
+- * cpuidle_get_statedata - retrieves private driver state data
+- * @st_usage: the state usage statistics
+- */
+-static inline void *cpuidle_get_statedata(struct cpuidle_state_usage *st_usage)
+-{
+-	return st_usage->driver_data;
+-}
+-
+-/**
+- * cpuidle_set_statedata - stores private driver state data
+- * @st_usage: the state usage statistics
+- * @data: the private data
+- */
+-static inline void
+-cpuidle_set_statedata(struct cpuidle_state_usage *st_usage, void *data)
+-{
+-	st_usage->driver_data = data;
+-}
+-
+ struct cpuidle_device {
+ 	unsigned int		registered:1;
+ 	unsigned int		enabled:1;
 -- 
 1.8.1.3.535.ga923c31
 
