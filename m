@@ -1,60 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754601Ab3BILvw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 06:51:52 -0500
-Received: from dcvr.yhbt.net ([64.71.152.64]:32829 "EHLO dcvr.yhbt.net"
+	id S1754916Ab3BIMEb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 07:04:31 -0500
+Received: from chrocht.moloch.sk ([62.176.169.44]:49743 "EHLO mail.moloch.sk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753958Ab3BILvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 06:51:50 -0500
-Date: Sat, 9 Feb 2013 11:51:49 +0000
-From: Eric Wong <normalperson@yhbt.net>
-To: Martin Sustrik <sustrik@250bpm.com>
+	id S1754130Ab3BIME3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Feb 2013 07:04:29 -0500
+To: Eric Wong <normalperson@yhbt.net>
+Subject: Re: [PATCH 1/1] eventfd: implementation of =?UTF-8?Q?EFD=5FMASK?=  =?UTF-8?Q?=20flag?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Sat, 09 Feb 2013 13:04:27 +0100
+From: Martin Sustrik <sustrik@250bpm.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         Alexander Viro <viro@zeniv.linux.org.uk>,
-        Sha Zhengju <handai.szj@taobao.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 1/1] eventfd: implementation of EFD_MASK flag
-Message-ID: <20130209115149.GA15636@dcvr.yhbt.net>
+        Sha Zhengju <handai.szj@taobao.com>, <linux-fsdevel@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
+In-Reply-To: <20130209115149.GA15636@dcvr.yhbt.net>
 References: <1360219292-19754-1-git-send-email-sustrik@250bpm.com>
  <20130207144433.527ef024.akpm@linux-foundation.org>
- <5114F2D8.5020300@250bpm.com>
- <20130208222107.GA4762@dcvr.yhbt.net>
- <5115B720.2080207@250bpm.com>
- <20130209035431.GA28448@dcvr.yhbt.net>
- <5115FC6A.8000603@250bpm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5115FC6A.8000603@250bpm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+ <5114F2D8.5020300@250bpm.com> <20130208222107.GA4762@dcvr.yhbt.net>
+ <5115B720.2080207@250bpm.com> <20130209035431.GA28448@dcvr.yhbt.net>
+ <5115FC6A.8000603@250bpm.com> <20130209115149.GA15636@dcvr.yhbt.net>
+Message-ID: <522eddabbd205305038fef897d283f26@webmail.moloch.sk>
+User-Agent: Roundcube Webmail/0.8.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Martin Sustrik <sustrik@250bpm.com> wrote:
-> On 09/02/13 04:54, Eric Wong wrote:
-> >>>Using one eventfd per userspace socket still seems a bit wasteful.
-> >>
-> >>Wasteful in what sense? Occupying a slot in file descriptor table?
-> >>That's the price for having the socket uniquely identified by the
-> >>fd.
-> >
-> >Yes.  I realize eventfd is small, but I don't think eventfd is needed
-> >at all, here.  Just one pipe.
-> 
-> Ah. Got you! You mean not to change the kernel, just use pipe for
-> the purpose.
-> 
-> However, the convoluted pipe-style design is the problem I am trying
-> to solve rather than the solution. It leads to convoluted APIs with
-> convoluted semantics as described in the article. I've been using
-> that kind of design for past 8 years and every time I have to deal
-> with it I swear that one day I will implement a proper in-kernel
-> solution to get rid of the hack.
-> 
-> And now I have finally done so.
+On 2013-02-09 12:51, Eric Wong wrote:
 
-Yes, your eventfd change is probably the best way if you want/need
-to only watch a subset of your sockets, especially if you want
-poll/select to be an option.
+> Yes, your eventfd change is probably the best way if you want/need
+> to only watch a subset of your sockets, especially if you want
+> poll/select to be an option.
 
+Yes, the poll/select thing is the important point.
+
+I wouldn't care if the only problem was that I, as the protocol 
+implementer, would have to implement some kind of workaround in my 
+protocol library. The problem is that these convoluted semantics leak -- 
+through the use of poll, select et al. -- to the end user.
+
+ From my personal experience I can say that end users have pretty hard 
+time using such complex workarounds instead of simply using a native 
+file descriptor with standardised semantics.
+
+Martin
