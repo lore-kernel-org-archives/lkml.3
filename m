@@ -1,229 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760645Ab3BIDxq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 22:53:46 -0500
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:47178 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760616Ab3BIDxp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 22:53:45 -0500
-Date: Sat, 9 Feb 2013 03:53:57 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Aristeu Rozanski <aris@redhat.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>
-Subject: Re: [PATCH v6 9/9] devcg: propagate local changes down the
- hierarchy
-Message-ID: <20130209035357.GA31122@mail.hallyn.com>
-References: <20130130171101.060853036@napanee.usersys.redhat.com>
- <20130130171102.390708521@napanee.usersys.redhat.com>
- <20130131043839.GA14726@mail.hallyn.com>
- <20130205183646.GT17632@redhat.com>
+	id S932369Ab3BIDyd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 22:54:33 -0500
+Received: from dcvr.yhbt.net ([64.71.152.64]:58057 "EHLO dcvr.yhbt.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760616Ab3BIDyc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Feb 2013 22:54:32 -0500
+Date: Sat, 9 Feb 2013 03:54:31 +0000
+From: Eric Wong <normalperson@yhbt.net>
+To: Martin Sustrik <sustrik@250bpm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Sha Zhengju <handai.szj@taobao.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 1/1] eventfd: implementation of EFD_MASK flag
+Message-ID: <20130209035431.GA28448@dcvr.yhbt.net>
+References: <1360219292-19754-1-git-send-email-sustrik@250bpm.com>
+ <20130207144433.527ef024.akpm@linux-foundation.org>
+ <5114F2D8.5020300@250bpm.com>
+ <20130208222107.GA4762@dcvr.yhbt.net>
+ <5115B720.2080207@250bpm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130205183646.GT17632@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <5115B720.2080207@250bpm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Aristeu Rozanski (aris@redhat.com):
+Martin Sustrik <sustrik@250bpm.com> wrote:
+> On 08/02/13 23:21, Eric Wong wrote:
+> >Martin Sustrik<sustrik@250bpm.com>  wrote:
+> >>To address the question, I've written down detailed description of
+> >>the challenges of the network protocol development in user space and
+> >>how the proposed feature addresses the problems.
+> >>
+> >>It can be found here: http://www.250bpm.com/blog:16
+> >
+> >Using one eventfd per userspace socket still seems a bit wasteful.
+> 
+> Wasteful in what sense? Occupying a slot in file descriptor table?
+> That's the price for having the socket uniquely identified by the
+> fd.
 
-Thanks, Aristeu.  I'm sorry it feels like I'm just trying to give you a
-hard time, I'm really not :)
+Yes.  I realize eventfd is small, but I don't think eventfd is needed
+at all, here.  Just one pipe.
 
-I do feel like you're really close.  At the same time this is so subtle
-and complicated that I wonder if there must not be a simpler way,
-perhaps a small change in assumptions that would help do away with a lot
-of this.  It's not just about the iterations you're having to do, but
-more about how subtle it still all feels, suggesting it will be hard to
-prevent regressions as it gets maintained.
+> >Couldn't you use a single pipe for all sockets and write the efd_mask to
+> >the pipe for each socket?
+> >
+> >A read from the pipe would behave like epoll_wait.
+> >
+> >You might need to use one-shot semantics; but that's probably
+> >the easiest thing in multithreaded apps anyways.
+> 
+> Having multiple sockets represented by a single eventfd. how would
+> you distinguish where did individual events came from?
+> 
+>   struct pollfd pfd;
+>   ...
+>   poll (pfd, 1, -1);
+>   if (pfd.revents & POLLIN) /* Incoming data on which socket? */
+>     ...
 
-(But maybe I'm wrong about that)
+No eventfd, you write just write struct to the pipe, and consume the
+struct to a fixed size buffer:
 
-Anyway, I really appreciate all the work you're doing on this.
+/* trigger readiness notification for sock,
+ * this probably needs a lock around it
+ */
+void sock_trigger(struct my_sock *sock, int events)
+{
+	struct efd_mask mask;
 
-After you reply to my questions below, if there are no further changes
-I'd like to take one more long look at the whole thing before acking.
+	/* check if the triggeered event is something sock wants: */
+	events &= sock->watched_events;
 
-> +/**
-> + * propagate_behavior - propagates a change in the behavior down in hierarchy
-> + * @devcg_root: device cgroup that changed behavior
-> + *
-> + * returns: 0 in case of success, != 0 in case of error
-> + *
-> + * This is one of the two key functions for hierarchy implementation.
-> + * All cgroup's children recursively will have the behavior changed and
-> + * exceptions copied from the parent then its local behavior and exceptions
-> + * re-evaluated and applied if they're still allowed.  Refer to
-> + * Documentation/cgroups/devices.txt for more details.
-> + */
-> +static int propagate_behavior(struct dev_cgroup *devcg_root)
-> +{
-> +	struct cgroup *root = devcg_root->css.cgroup;
-> +	struct dev_cgroup *parent, *devcg, *tmp;
-> +	int rc = 0;
-> +	LIST_HEAD(pending);
-> +
-> +	get_online_devcg(root, &pending);
-> +
-> +	list_for_each_entry_safe(devcg, tmp, &pending, propagate_pending) {
-> +		parent = cgroup_to_devcgroup(devcg->css.cgroup->parent);
-> +
-> +		/* first copy parent's state */
-> +		devcg->behavior = parent->behavior;
-> +		dev_exception_clean(&devcg->exceptions);
-> +
-> +		if (devcg->local.behavior == DEVCG_DEFAULT_DENY &&
-> +		    devcg->behavior == DEVCG_DEFAULT_ALLOW) {
-> +			/*
-> +			 * the only case when the local exceptions
-> +			 * will be reused
-> +			 */
-> +			devcg->behavior = DEVCG_DEFAULT_DENY;
-> +			rc = revalidate_local_exceptions(devcg);
-> +		} else {
+	if (!events)
+		return;
 
-So, what if parent A and child B are both deny, then parent A switches
-to allow, then parent A switches back to deny?  You'll be dropping B's
-local exceptions, is that what you want?  (Maybe it is, I'm not sure)
+	mask.events = events;
+	mask.ptr = sock;
 
-> +			dev_exception_clean(&devcg->local.exceptions);
-> +			devcg->local.behavior = DEVCG_DEFAULT_NONE;
-> +
-> +			/* just copy the parent's exceptions over */
-> +			rc = dev_exceptions_copy(&devcg->exceptions,
-> +						 &parent->exceptions);
-> +			if (rc)
-> +				devcg->behavior = DEVCG_DEFAULT_DENY;
-> +		}
-> +		if (rc)
-> +			break;
-> +		list_del_init(&devcg->propagate_pending);
-> +	}
-> +
-> +	return rc;
-> +}
-> +
-> +/**
-> + * propagate_exception - propagates a new exception to the children
-> + * @devcg_root: device cgroup that added a new exception
-> + * @ex: new exception to be propagated
-> + *
-> + * returns: 0 in case of success, != 0 in case of error
-> + */
-> +static int propagate_exception(struct dev_cgroup *devcg_root,
-> +			       struct dev_exception_item *ex)
-> +{
-> +	struct cgroup *root = devcg_root->css.cgroup;
-> +	struct dev_cgroup *devcg, *parent, *tmp;
-> +	int rc = 0;
-> +	LIST_HEAD(pending);
-> +
-> +	get_online_devcg(root, &pending);
-> +
-> +	list_for_each_entry_safe(devcg, tmp, &pending, propagate_pending) {
-> +		parent = cgroup_to_devcgroup(devcg->css.cgroup->parent);
-> +
-> +		/*
-> +		 * in case both root's behavior and devcg is allow, a new
-> +		 * restriction means adding to the exception list
-> +		 */
-> +		if (devcg_root->behavior == DEVCG_DEFAULT_ALLOW &&
-> +		    devcg->behavior == DEVCG_DEFAULT_ALLOW) {
-> +			rc = dev_exception_add(devcg, ex);
-> +			if (rc)
-> +				break;
-> +		} else {
-> +			/*
-> +			 * in the other possible cases:
-> +			 * root's behavior: allow, devcg's: deny
-> +			 * root's behavior: deny, devcg's: deny
-> +			 * the exception will be removed
-> +			 */
-> +			dev_exception_rm(devcg, ex);
-> +		}
-> +		revalidate_active_exceptions(devcg);
+	/*
+	 * preventing sock from being in the pipe multiple times
+	 * is probably required (or just a good idea).  Which is
+	 * why I mentioned oneshot semantics are probably required.
+	 */
+	if (oneshot)
+		sock->watched_events = 0;
 
-this looks good.
+	/*
+	 * This is analogous to:
+	 *   list_add_tail(&epi->rdllink, &ep->rdllist);
+	 * in fs/eventpoll.c
+	 *
+	 * This may block, but that's why consumer_loop runs in different
+	 * threads.  Or run some iteration of consumer_loop here if
+	 * it blocks (beware of stack depth from recursion, though)
+	 */
+	write(pipe_wr, &mask, sizeof(mask));
+}
 
-> +
-> +		list_del_init(&devcg->propagate_pending);
-> +	}
-> +	return rc;
-> +}
-> +
->  /*
->   * Modify the exception list using allow/deny rules.
->   * CAP_SYS_ADMIN is needed for this.  It's at least separate from CAP_MKNOD
-> @@ -510,16 +708,21 @@ 	memset(&ex, 0, sizeof(ex));
->  			if (!may_allow_all(parent))
->  				return -EPERM;
->  			dev_exception_clean_all(devcgroup);
-> -			if (parent)
-> +			if (parent) {
->  				rc = dev_exceptions_copy(&devcgroup->exceptions,
->  							 &parent->exceptions);
-> +				if (rc)
-> +					break;
-> +			}
->  			devcgroup->behavior = DEVCG_DEFAULT_ALLOW;
->  			devcgroup->local.behavior = DEVCG_DEFAULT_ALLOW;
-> +			rc = propagate_behavior(devcgroup);
->  			break;
->  		case DEVCG_DENY:
->  			dev_exception_clean_all(devcgroup);
->  			devcgroup->behavior = DEVCG_DEFAULT_DENY;
->  			devcgroup->local.behavior = DEVCG_DEFAULT_DENY;
-> +			rc = propagate_behavior(devcgroup);
->  			break;
->  		default:
->  			rc = -EINVAL;
-> @@ -612,7 +815,11 @@ 		case '\0':
->  			dev_exception_rm(devcgroup, &ex);
->  			return 0;
->  		}
-> -		return dev_exception_add(devcgroup, &ex);
-> +		rc = dev_exception_add(devcgroup, &ex);
-> +		if (!rc)
-> +			/* if a local behavior wasn't explicitely choosen, pick it */
-> +			devcgroup->local.behavior = devcgroup->behavior;
-> +		break;
->  	case DEVCG_DENY:
->  		/*
->  		 * If the default policy is to deny by default, try to remove
-> @@ -621,13 +828,22 @@ 			return 0;
->  		 */
->  		if (devcgroup->behavior == DEVCG_DEFAULT_DENY) {
->  			dev_exception_rm(devcgroup, &ex);
-> -			return 0;
-> +			rc = propagate_exception(devcgroup, &ex);
+/* in another thread (or several threads) */
+void consumer_loop(int pipe_rd)
+{
+	struct efd_mask mask;
+	struct my_sock *sock;
 
-Note that this is a case where we made a change to the cgroups
-exceptions, but do not set the cgroup's local behavior explicitly.
-That's important bc we have parent A and child B, where child B
-made a change, but when child A changes its behavior, child B's
-behavior will be changed as well despite having made local changes.
+	for (;;) {
+		/*
+		 * analogous to:
+		 *    epoll_wait(.., maxevents=1, ...);
+		 *
+		 * You can read several masks at once if have one thread,
+		 * but I usually use maxevents=1 (+several threads) to
+		 * distribute traffic between threads
+		 */
+		read(pipe_rd, &mask, sizeof(mask));
+		sock = mask.ptr;
+		if (mask.events & POLLIN)
+			sock_read(sock);
+		else if (mask.events & POLLOUT)
+			sock_write(sock);
+		...
 
-I assume you were thinking that local.behavior gets set if a
-local.exception gets added, not if a devcg->exception gets removed
-with no change to local.exceptions.
+		/* analogous to epoll_ctl() */
+		if (sock->write_buffered)
+			sock->watched_events |= POLLOUT;
+		if (sock->wants_more_data)
+			sock->watched_events |= POLLIN;
 
-While the reasoning may be clear looking at it from this level,
-I think that as an admin configuring cgroups on a system, the
-rules about when the behavior change to A are propagated to B
-will seem random.
-
-(Or, it may just be an oversight and you meant to set local.behavior
-here? :)
-
-Oh, that brings up another point,
-
-in the two cases where you do dev_exception_rm(devcgroup, &ex)
-instead of dev_exception_add(devcgroup, &ex), should that
-action be recorded locally somehow, so it can be reproduced
-after a parent behavior change?
-
--serge
+		/* onto the next ready event */
+	}
+}
