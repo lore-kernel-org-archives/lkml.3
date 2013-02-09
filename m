@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760840Ab3BITAp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 14:00:45 -0500
-Received: from mail-da0-f52.google.com ([209.85.210.52]:37152 "EHLO
-	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758526Ab3BITAn (ORCPT
+	id S932494Ab3BITId (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 14:08:33 -0500
+Received: from mail-da0-f43.google.com ([209.85.210.43]:34789 "EHLO
+	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758526Ab3BITIb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 14:00:43 -0500
-Date: Sat, 9 Feb 2013 11:00:37 -0800
+	Sat, 9 Feb 2013 14:08:31 -0500
+Date: Sat, 9 Feb 2013 11:08:26 -0800
 From: Tejun Heo <tj@kernel.org>
-To: "Hefty, Sean" <sean.hefty@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Jean Delvare <khali@linux-fr.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        Roland Dreier <roland@kernel.org>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        "Marciniszyn, Mike" <mike.marciniszyn@intel.com>,
-        Jack Morgenstein <jackm@dev.mellanox.co.il>,
-        Or Gerlitz <ogerlitz@mellanox.com>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH 2/6] idr: remove MAX_IDR_MASK and move left MAX_IDR_*
- into idr.c
-Message-ID: <20130209190037.GB2875@htj.dyndns.org>
-References: <20130208210050.GA26660@mtj.dyndns.org>
- <20130208210149.GB26660@mtj.dyndns.org>
- <1828884A29C6694DAF28B7E6B8A8237357D44677@ORSMSX101.amr.corp.intel.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] stop_machine: check work->done while handling
+ enqueued works
+Message-ID: <20130209190826.GC2875@htj.dyndns.org>
+References: <CAJd=RBD4ZJN7uXQ5xY1GF14j_DydDQEpuZNct-UiNXTBARpQSQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1828884A29C6694DAF28B7E6B8A8237357D44677@ORSMSX101.amr.corp.intel.com>
+In-Reply-To: <CAJd=RBD4ZJN7uXQ5xY1GF14j_DydDQEpuZNct-UiNXTBARpQSQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hello, Hillf.
 
-On Fri, Feb 08, 2013 at 10:09:13PM +0000, Hefty, Sean wrote:
-> >   Used to wrap cyclic @start.  Can be replaced with max(next, 0).
-> >   Note that this type of cyclic allocation using idr is buggy.  These
-> >   are prone to spurious -ENOSPC failure after the first wraparound.
+On Fri, Feb 08, 2013 at 11:39:56AM +0800, Hillf Danton wrote:
+> The comment just above cpu_stop_signal_done() says it is uncertain that
+> the input @done is valid, and the works enqueued through the function
+> stop_one_cpu_nowait() do carry no done, thus we have to check if it is
+> valid when updating work result.
+
+How about something like the following?
+
+In cpu_stopper_thread(), @work->done may be NULL if the cpu stop work
+is queued from stop_one_cpu_nowait(); however, cpu_stopper_thread()
+updates @done->ret without checking whether @done exists or not when
+the work function fails.
+
+While this can lead to oops, the only current user of
+stop_one_cpu_nowait() - active_load_balance_cpu_stop() - always
+returns 0 and thus there's no in-kernel user which triggers this bug.
+
+Fix it by checking whether @done exists before updating @done->ret.
+
+> Signed-off-by: Hillf Danton <dhillf@gmail.com>
+> ---
 > 
-> The replacement code looks fine, but can you explain why the use is buggy?
+> --- a/kernel/stop_machine.c	Thu Feb  7 20:03:10 2013
+> +++ b/kernel/stop_machine.c	Fri Feb  8 11:07:40 2013
+> @@ -279,7 +279,7 @@ repeat:
+>  		preempt_disable();
+> 
+>  		ret = fn(arg);
+> -		if (ret)
+> +		if (ret && done != NULL)
 
-So, if you want a cyclic allocation, the allocation should be tried in
-[start, END) and then [0, start); otherwise, after the allocation
-wraps for the first time, as the closer the starting point gets to
-END, the chance of not finding a vacant slot in [start, END) goes
-higher.  When @start equals END - 1 for the second time, if the first
-END - 1 allocation is still around, you'll get -ENOSPC.
-
-In practice, I don't think anyone is hitting this.  idr has always
-been horribly broken when it reaches higher range (> 1<<30 on 64bit)
-so things would have broken even before the first wraparound.  It
-still is a theoretical possibility which may trigger if idr is used
-for, say, ipc messages or storage commands.
+It's a nitpick and probalby is just a preference but I've never liked
+!= NULL or != 0.  Can we just do if (ret && done)?
 
 Thanks.
 
