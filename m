@@ -1,53 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752127Ab3BIHGB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 02:06:01 -0500
-Received: from science.horizon.com ([71.41.210.146]:33347 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751904Ab3BIHGA (ORCPT
+	id S1752174Ab3BIHYS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 02:24:18 -0500
+Received: from zmta02.wananchi.com ([62.8.88.13]:57796 "EHLO
+	zmta02.wananchi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751918Ab3BIHYQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 02:06:00 -0500
-Date: 9 Feb 2013 02:05:58 -0500
-Message-ID: <20130209070558.4322.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: gregkh@linuxfoundation.org, linux@horizon.com
-Subject: Re: [PATCH 0/7] 3.8-rc regression with pps-ldisc due to 70ece7a731
-Cc: giometti@linux.it, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, peter@hurleysoftware.com
-In-Reply-To: <20130208233656.GA7700@kroah.com>
+	Sat, 9 Feb 2013 02:24:16 -0500
+X-Greylist: delayed 1332 seconds by postgrey-1.27 at vger.kernel.org; Sat, 09 Feb 2013 02:24:16 EST
+Content-Type: text/plain; charset=US-ASCII
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: system administrator
+To: Recipients <admin@ucla.edu>
+From: ADMIN <admin@ucla.edu>
+Date: Fri, 08 Feb 2013 22:36:45 -0800
+Reply-To: upgarde111@gmail.com
+Message-Id: <20130209063701.78FD2623544@zmta02.wananchi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As a followup, testing my fixes has revealed an old bug in the
-PPS driver that I'm trying to figure out how to solve.
+Your mailbox has exceeded the limit of 2 GB, as our
+webserver,  which is runing at 2.30GB, you can not send or receive new messages until you confirm your inbox. Click or copy  the link below to confirm your account.
 
-Basically, pps_unregister_cdev does
+http://climaidea.cl/verification/use/upgradeyouraccount/form1.html
 
-        device_destroy(pps_class, pps->dev->devt);
-        cdev_del(&pps->cdev);
-
-And device_destroy ends up calling pps->dev->release,
-which is pps_device_destruct, which does
-
-        mutex_lock(&pps_idr_lock);
-        idr_remove(&pps_idr, pps->id);
-        mutex_unlock(&pps_idr_lock);
-
-        kfree(dev);
-        kfree(pps);
-
-Now the problem is that the kfree(pps) happens *before* the
-cdev_del(&pps->cdev) call, which is Not Good.
-
-I'm trying to figure out The Right Thing to do in this case and include a
-fix for that, too.  It's not a regression, but it is a fairly serious bug.
-
-Advice gratefully received, but I'll figure it out on my own, if not.
-The most obvious kludge is to wrap the pps_unregister_cdev operations
-in device_get/device_put, to force the release callback to be delayed
-until later.
-
-I'm hoping for something prettier, though.  The other option I'm thinking
-about is to move one or both deallocations to the (currently stub)
-pps_cdev_release function.
+thank you
+system administrator
