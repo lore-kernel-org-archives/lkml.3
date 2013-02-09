@@ -1,139 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760871Ab3BIWx2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 17:53:28 -0500
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:37322 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757982Ab3BIWx0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 17:53:26 -0500
-MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <20130209182239.GA9947@redhat.com>
-References: <1358849741-9611-4-git-send-email-avagin@openvz.org>
- <1359486181-29088-1-git-send-email-avagin@openvz.org> <20130207173447.GA5888@redhat.com>
- <CANaxB-xmSiPfbUAh+rQSgVxBzTXmVQcC7U741WYKaasG3_yc5w@mail.gmail.com>
- <20130208191056.GA13674@redhat.com> <CAKgNAki0xt_wwixp7kdv04fKOCtCh-ObQjkFE9PiX6FapkO34A@mail.gmail.com>
- <20130209182239.GA9947@redhat.com>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Sat, 9 Feb 2013 23:53:04 +0100
-Message-ID: <CAKgNAkiYrP046mEv1_GJED5DckJrZSHvwu2u=P_BRxx-NuKALQ@mail.gmail.com>
-Subject: Re: [PATCH 3/3] signalfd: add ability to read siginfo-s without
- dequeuing signals (v2)
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrey Wagin <avagin@gmail.com>, linux-kernel@vger.kernel.org,
-        criu@openvz.org, linux-fsdevel@vger.kernel.org,
-        linux-api@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1760868Ab3BIWzO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 17:55:14 -0500
+Received: from mga02.intel.com ([134.134.136.20]:43723 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757982Ab3BIWzM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Feb 2013 17:55:12 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,634,1355126400"; 
+   d="scan'208";a="283599896"
+Message-ID: <1360450508.5252.15.camel@ideak-mobl>
+Subject: Re: [Intel-gfx] [PATCH 1/4] drm: add helper to walk a dma scatter
+ list a page at a time
+From: Imre Deak <imre.deak@intel.com>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        LKML <linux-kernel@vger.kernel.org>, linaro-mm-sig@lists.linaro.org
+Date: Sun, 10 Feb 2013 00:55:08 +0200
+In-Reply-To: <20130209185637.GT5813@phenom.ffwll.local>
+References: <1360423656-10816-1-git-send-email-imre.deak@intel.com>
+	 <1360423656-10816-2-git-send-email-imre.deak@intel.com>
+	 <20130209185637.GT5813@phenom.ffwll.local>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 9, 2013 at 7:22 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 02/08, Michael Kerrisk (man-pages) wrote:
->>
->> On Fri, Feb 8, 2013 at 8:10 PM, Oleg Nesterov <oleg@redhat.com> wrote:
->> >
->> > Well. I do not know. Up to you and Michael.
->> >
->> > But honestly, I can't say this all looks really nice. And why do we
->> > need SIGNALFD_PEEK then?
->>
->> It surely is no beauty. The hope is at least to make it less ugly than it was.
->
-> This is subjective, but I am not sure about "less" ;) Yes, we avoid the
-> magic offsets, but we add SFD_SHARED/PER_THREAD which need to change
-> dequeue_signal plus other complications. And for what?
->
->> > Seriously, perhaps we should simply add signalfd_fops->ioctl() for PEEK.
->> > Or add PTRACE_{PEEK,POKE}_SIGNAL which looks even logical and useful...
->> > And much simpler/straightforward.
->> >
->> > But I am not going to argue.
->>
->> I suppose I had wondered along similar lines, but in a slightly
->> different direction: would the use of a /proc interface to get the
->> queued signals make some sense?
->
-> (Can't resist sorry... yes we need /proc/pid/cr or /dev/cr or whatever
->  which dumps almost everything c/r needs without need to add a lot of
->  cr code everywhere).
->
-> Perhaps, but I am not sure about the textual representation.
->
-> And to me, the best solution is the simplest solution. Please look
-> at the patch below. It is trivial. And we can also drop the SFD_RAW
-> patch in -mm.
+On Sat, 2013-02-09 at 19:56 +0100, Daniel Vetter wrote:
+> Hi Imre!
+> 
+> On Sat, Feb 09, 2013 at 05:27:33PM +0200, Imre Deak wrote:
+> > Add a helper to walk through a scatter list a page at a time. Needed by
+> > upcoming patches fixing the scatter list walking logic in the i915 driver.
+> 
+> Nice patch, but I think this would make a rather nice addition to the
+> common scatterlist api in scatterlist.h, maybe called sg_page_iter.
+> There's already another helper which does cpu mappings, but it has a
+> different use-case (gives you the page mapped, which we don't neeed and
+> can cope with not page-aligned sg tables). With dma-buf using sg tables I
+> expect more users of such a sg page iterator to pop up. Most possible
+> users of this will hang around on linaro-mm-sig, so please also cc that
+> besides the usual suspects.
 
-Oleg,
+Ok, I wanted to sneak this in to drm (and win some time) thinking there
+isn't any other user of it atm. But I agree the ideal place for it is in
+scatterlist.h, so will send it there.
 
-This looks promising, but I am not sure I understand the user-space
-API. Could you explain how it would look to (say) pull all per-thread
-signals from user space?
+> Cheers, Daniel
+> 
+> > 
+> > Signed-off-by: Imre Deak <imre.deak@intel.com>
+> > ---
+> >  include/drm/drmP.h |   44 ++++++++++++++++++++++++++++++++++++++++++++
+> >  1 file changed, 44 insertions(+)
+> > 
+> > diff --git a/include/drm/drmP.h b/include/drm/drmP.h
+> > index fad21c9..0c0c213 100644
+> > --- a/include/drm/drmP.h
+> > +++ b/include/drm/drmP.h
+> > @@ -1578,6 +1578,50 @@ extern int drm_sg_alloc_ioctl(struct drm_device *dev, void *data,
+> >  extern int drm_sg_alloc(struct drm_device *dev, struct drm_scatter_gather * request);
+> >  extern int drm_sg_free(struct drm_device *dev, void *data,
+> >  		       struct drm_file *file_priv);
+> > +struct drm_sg_iter {
+> > +	struct scatterlist *sg;
+> > +	int sg_offset;
+> 
+> Imo using sg_pfn_offset (i.e. sg_offset >> PAGE_SIZE) would make it
+> clearer that this is all about iterating page-aligned sg tables.
+> 
+> > +	struct page *page;
+> > +};
+> > +
+> > +static inline int
+> > +__drm_sg_iter_seek(struct drm_sg_iter *iter)
+> > +{
+> > +	while (iter->sg && iter->sg_offset >= iter->sg->length) {
+> > +		iter->sg_offset -= iter->sg->length;
+> > +		iter->sg = sg_next(iter->sg);
+> 
+> And adding a WARN_ON(sg->legnth & ~PAGE_MASK); here would enforce that.
+> 
+> > +	}
+> > +
+> > +	return iter->sg ? 0 : -1;
+> > +}
+> > +
+> > +static inline struct page *
+> > +drm_sg_iter_next(struct drm_sg_iter *iter)
+> > +{
+> > +	struct page *page;
+> > +
+> > +	if (__drm_sg_iter_seek(iter))
+> > +		return NULL;
+> > +
+> > +	page = nth_page(sg_page(iter->sg), iter->sg_offset >> PAGE_SHIFT);
+> > +	iter->sg_offset = (iter->sg_offset + PAGE_SIZE) & PAGE_MASK;
+> > +
+> > +	return page;
+> > +}
+> > +
+> > +static inline struct page *
+> > +drm_sg_iter_start(struct drm_sg_iter *iter, struct scatterlist *sg,
+> > +		   unsigned long offset)
+> > +{
+> > +	iter->sg = sg;
+> > +	iter->sg_offset = offset;
+> > +
+> > +	return drm_sg_iter_next(iter);
+> > +}
+> > +
+> > +#define drm_for_each_sg_page(iter, sg, pgoffset)			\
+> > +	for ((iter)->page = drm_sg_iter_start((iter), (sg), (pgoffset));\
+> > +	     (iter)->page; (iter)->page = drm_sg_iter_next(iter))
+> 
+> Again, for the initialization I'd go with page numbers, not an offset in
+> bytes.
 
-Thanks,
+Ok, can change it to use page numbers instead.
 
-Michael
-
-
-> --- x/kernel/ptrace.c
-> +++ x/kernel/ptrace.c
-> @@ -618,6 +618,35 @@ static int ptrace_setsiginfo(struct task
->         return error;
->  }
->
-> +static int ptrace_peek_signal(struct task_struct *child,
-> +                               unsigned long addr, siginfo_t __user *uinfo)
-> +{
-> +       siginfo_t info;
-> +       struct sigpending *pending;
-> +       int ret = -ESOMETHING;
-> +
-> +       pending = &child->pending;
-> +       if (addr & PTRACE_PEEK_SHARED) {
-> +               addr &= ~PTRACE_PEEK_SHARED;
-> +               pending = &child->signal->shared_pending;
-> +       }
-> +
-> +       spin_lock_irq(&child->sighand->siglock);
-> +       list_for_each_entry(q, &pending->list, list) {
-> +               if (!addr--) {
-> +                       copy_siginfo(info, &q->info);
-> +                       ret = 0;
-> +                       break;
-> +               }
-> +       }
-> +       spin_lock_irq(&child->sighand->siglock);
-> +
-> +       if (!ret)
-> +               ret = copy_siginfo_to_user(uinfo, info);
-> +       if (!ret)
-> +               ret = __put_user(info, si_code);
-> +       return ret;
-> +}
->
->  #ifdef PTRACE_SINGLESTEP
->  #define is_singlestep(request)         ((request) == PTRACE_SINGLESTEP)
-> @@ -742,6 +771,10 @@ int ptrace_request(struct task_struct *c
->                 ret = put_user(child->ptrace_message, datalp);
->                 break;
->
-> +       case PTRACE_PEEKSIGNAL:
-> +               ret = ptrace_peek_signal(child, addr, datavp);
-> +               break;
-> +
->         case PTRACE_GETSIGINFO:
->                 ret = ptrace_getsiginfo(child, &siginfo);
->                 if (!ret)
->
+--Imre
 
 
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface"; http://man7.org/tlpi/
