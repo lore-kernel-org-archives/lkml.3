@@ -1,84 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932543Ab3BIT57 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 14:57:59 -0500
-Received: from mail-ia0-f176.google.com ([209.85.210.176]:42566 "EHLO
-	mail-ia0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932504Ab3BIT55 (ORCPT
+	id S932559Ab3BIT6I (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 14:58:08 -0500
+Received: from mail-vb0-f44.google.com ([209.85.212.44]:40730 "EHLO
+	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932504Ab3BIT6D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 14:57:57 -0500
+	Sat, 9 Feb 2013 14:58:03 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAD77+gQFfNvz02=0FWDq+KUGk5QO_MywWw=NBMk6YaFGNQ4+kA@mail.gmail.com>
-References: <CAD77+gQFfNvz02=0FWDq+KUGk5QO_MywWw=NBMk6YaFGNQ4+kA@mail.gmail.com>
-From: Richard Hartmann <richih.mailinglist@gmail.com>
-Date: Sat, 9 Feb 2013 20:57:36 +0100
-Message-ID: <CAD77+gTFDbNopgJjMv+BGJCbueR-k8Uiyq41DfOeF_t1oJm7EA@mail.gmail.com>
-Subject: Re: drivers/net/wireless/iwlwifi/dvm/tx.c and arch/x86/kernel/apic/ipi.c:
- Kernel trace when roaming between different Access Points with the same ESSID
-To: Johannes Berg <johannes.berg@intel.com>,
-        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        Intel Linux Wireless <ilw@linux.intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org
+In-Reply-To: <CAOJsxLFpE=HjkPcX6NsWS8636qnEhDFDJi+49xX2Ge3Xp4MeUg@mail.gmail.com>
+References: <alpine.DEB.2.02.1302041002430.6063@chino.kir.corp.google.com>
+ <20130204184436.GA13256@gmail.com> <alpine.DEB.2.02.1302041053330.6063@chino.kir.corp.google.com>
+ <20130204191408.GA32081@kroah.com> <20130204191334.GB14837@gmail.com>
+ <CAOJsxLFy7K0cY-8SH4dXs=agYqCN8wW0eC2tQxFxfV8cf7uWqg@mail.gmail.com>
+ <alpine.DEB.2.02.1302061209450.18172@chino.kir.corp.google.com>
+ <20130207080236.ae38366537cf3f13b9668606@canb.auug.org.au>
+ <20130206214646.GA28135@gmail.com> <20130208084029.d7d97d6e26580a5512712f91@canb.auug.org.au>
+ <20130208145539.GC30334@gmail.com> <CA+55aFz9ERvaFayTy8QCtfi610Bt_r0GcOs68UNggJTHdY4oaQ@mail.gmail.com>
+ <CAOJsxLFDa3sLwP2MWdXJMTfZNEopp5imy8nWNViuPnWH747ggQ@mail.gmail.com>
+ <CA+55aFzEEbZqBaOKYB8H8+i904nXjNEgH=CUPtVMQU60QTTJaw@mail.gmail.com>
+ <CAOJsxLFDbmNitH=N8v3jSno0SFL33s=nPc+hGRAqJfYFZS0RGw@mail.gmail.com>
+ <CA+55aFy=SaVjNby=Jy_O9ZRQ_Ofc-6_+bLv=HeMMSzQQHw9vMQ@mail.gmail.com> <CAOJsxLFpE=HjkPcX6NsWS8636qnEhDFDJi+49xX2Ge3Xp4MeUg@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 10 Feb 2013 06:57:41 +1100
+X-Google-Sender-Auth: S7gaq_X_riMCuFezPxNDE047POY
+Message-ID: <CA+55aFzXF-4Xwc4HU8vnTin4WqtvYcpXq0TsqTN_vRg=myLH_Q@mail.gmail.com>
+Subject: Re: kvmtool tree (Was: Re: [patch] config: fix make kvmconfig)
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        David Rientjes <rientjes@google.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Ingo Molnar <mingo@kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yet another one, this time during high USB i/o load.
+On Sun, Feb 10, 2013 at 6:39 AM, Pekka Enberg <penberg@kernel.org> wrote:
+>
+> The main argument for merging into the main kernel repository has always been
+> that (we think) it improves the kernel because significant amount of
+> development is directly linked to kernel code (think KVM ARM port here, for
+> example). The secondary argument has been to make it easy for kernel developers
+> to work on both userspace and kernel in tandem (like has happened with vhost
+> drivers). In short: it speeds up development of Linux virtualization code.
 
-Could this be a hardware issue as well?
+Why? You've made this statement over and over and over again, and I've
+dismissed it over and over and over again because I simply don't think
+it's true.
 
-Does it still make sense to send these reports to anyone?
+It's simply a statement with nothing to back it up. Why repeat it?
 
+THAT is my main contention. I told you why I think it's actually
+actively untrue. You claim it helps, but what is it about kvmtool that
+makes it so magically helpful to be inside the kernel repository? What
+is it about this that makes it so critical that you get the kernel and
+kvmtool with a single pull, and they have to be in sync? When you then
+at the same time claim that you make very sure that they don't have to
+be in sync at all. See your earlier emails about how you claim to have
+worked very hard to make sure they work across different versions.
 
-[95553.449219] ------------[ cut here ]------------
-[95553.449257] WARNING: at
-/build/buildd-linux_3.7.1-1~experimental.1-i386-Au6THQ/linux-3.7.1/drivers/net/wireless/iwlwifi/dvm/tx.c:1189
-iwlagn_rx_reply_tx+0x288/0x6e2 [iwldvm]()
-[95553.449262] Hardware name: 4286CTO
-[95553.449265] Modules linked in: nls_utf8 nls_cp437 vfat fat
-mmc_block usb_storage parport_pc ppdev rfcomm lp parport bnep
-cpufreq_userspace cpufreq_stats cpufreq_powersave cpufreq_conservative
-uinput nfsd auth_rpcgss nfs_acl nfs lockd dns_resolver fscache sunrpc
-ext4 jbd2 mbcache loop fuse snd_hda_codec_hdmi snd_hda_codec_conexant
-arc4 coretemp iwldvm mac80211 kvm_intel snd_hda_intel thinkpad_acpi
-snd_hda_codec nvram snd_hwdep snd_pcm snd_page_alloc kvm i915
-drm_kms_helper crc32c_intel joydev drm i2c_algo_bit snd_seq btusb
-bluetooth iTCO_wdt snd_seq_device snd_timer aesni_intel aes_i586 crc16
-iwlwifi iTCO_vendor_support xts lrw i2c_i801 pcspkr snd gf128mul
-i2c_core ablk_helper cryptd soundcore lpc_ich mfd_core cfg80211
-psmouse serio_raw acpi_cpufreq mperf mei rfkill ac wmi battery tpm_tis
-tpm evdev processor tpm_bios button video xfs sg sd_mod crc_t10dif
-xhci_hcd ahci libahci libata microcode scsi_mod ehci_hcd sdhci_pci
-sdhci mmc_core usbcore usb_common e1000e thermal thermal_sys
-[95553.449427] Pid: 0, comm: swapper/0 Tainted: G        W
-3.7-trunk-686-pae #1 Debian 3.7.1-1~experimental.1
-[95553.449431] Call Trace:
-[95553.449446]  [<c10310c5>] ? warn_slowpath_common+0x68/0x79
-[95553.449464]  [<f87291e2>] ? iwlagn_rx_reply_tx+0x288/0x6e2 [iwldvm]
-[95553.449472]  [<c10310e3>] ? warn_slowpath_null+0xd/0x10
-[95553.449487]  [<f87291e2>] ? iwlagn_rx_reply_tx+0x288/0x6e2 [iwldvm]
-[95553.449502]  [<f859008b>] ? check_event_type_and_length+0x37/0x4b [snd_seq]
-[95553.449520]  [<f872e344>] ? iwl_rx_dispatch+0x57/0x63 [iwldvm]
-[95553.449537]  [<f859fd14>] ? iwl_irq_tasklet+0x39c/0x698 [iwlwifi]
-[95553.449546]  [<c1037457>] ? tasklet_action+0x62/0xa5
-[95553.449552]  [<c103711b>] ? __do_softirq+0x90/0x192
-[95553.449559]  [<c103708b>] ? perf_trace_irq_handler_entry+0xd7/0xd7
-[95553.449563]  <IRQ>  [<c10372cb>] ? irq_exit+0x32/0x7d
-[95553.449577]  [<c100d070>] ? do_IRQ+0x65/0x76
-[95553.449586]  [<c12ed2f3>] ? common_interrupt+0x33/0x38
-[95553.449593]  [<c10300d8>] ? copy_process.part.33+0x8a8/0xf0c
-[95553.449602]  [<c11b1c03>] ? intel_idle+0xc4/0xec
-[95553.449612]  [<c122ea2e>] ? cpuidle_enter+0xb/0xe
-[95553.449619]  [<c122edb9>] ? cpuidle_enter_state+0x9/0x33
-[95553.449626]  [<c122ee8e>] ? cpuidle_idle_call+0xab/0x146
-[95553.449634]  [<c10114d7>] ? cpu_idle+0x88/0xac
-[95553.449641]  [<c1464966>] ? start_kernel+0x334/0x339
-[95553.449646] ---[ end trace e2ce8294be2c8dca ]---
+So you make these unsubstantiated claims about how much easier it is,
+and they make no sense. You never explain *why* it's so magically
+easier. Is git so hard to use that you can't do "git pull" twice? And
+why would you normally even *want* to do git pull twice? 99% of the
+work in the kernel has nothing what-so-ever to do with kvmtool, and
+hopefully the reverse is equally true.
 
--- 
-Richard
+And tying into the kernel just creates this myopic world of only
+looking at the current kernel. What if somebody decides that they
+actually want to try to boot Windows with kvmtool? What if somebody
+tells you that they are really tired of Xen, and actually want to turn
+kvmtool into  *replacement* for Xen instead? What if somebody wants to
+branch off their own work, concentrating on some other issue entirely,
+and wants to merge with upstream kvmtool but not worry about the
+kernel, because they aren't working on the Linux kernel at all, and
+their work is about something else?
+
+I just don't think it makes sense. I don't see what the huge advantage
+of a single git tree is.
+
+Anyway, I'm done arguing. You can do what you want, but just stop
+misrepresenting it as being "linux-next" material unless you are
+willing to actually explain why it should be so.
+
+                Linus
