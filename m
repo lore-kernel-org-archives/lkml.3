@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947630Ab3BIBIo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 20:08:44 -0500
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:48979 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1947580Ab3BIBIh (ORCPT
+	id S932404Ab3BIBLV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 20:11:21 -0500
+Received: from mail-vb0-f42.google.com ([209.85.212.42]:56103 "EHLO
+	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1947581Ab3BIBIn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 20:08:37 -0500
+	Fri, 8 Feb 2013 20:08:43 -0500
 From: Len Brown <lenb@kernel.org>
 To: linux-pm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Daniel Lezcano <daniel.lezcano@linaro.org>,
         Len Brown <len.brown@intel.com>
-Subject: [PATCH 04/16] davinci: cpuidle - remove the ops
-Date: Fri,  8 Feb 2013 20:08:08 -0500
-Message-Id: <36ce8d4f5fecc20c2dfb08f24fe01c5eb81f6245.1360371180.git.len.brown@intel.com>
+Subject: [PATCH 08/16] ACPI / idle: pass the cpuidle_device parameter
+Date: Fri,  8 Feb 2013 20:08:12 -0500
+Message-Id: <6ef0f086beafb3c7d81cd3de81d886d105ea25b2.1360371180.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.8.1.3.535.ga923c31
 In-Reply-To: <1360372100-28482-1-git-send-email-lenb@kernel.org>
 References: <1360372100-28482-1-git-send-email-lenb@kernel.org>
@@ -27,88 +27,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
 
-With one function handling the idle state and a single variable,
-the usage of the davinci_ops is overkill.
-
-This patch removes these ops and simplify the code.
-
-Furthermore, the 'driver_data' field is no longer used, we have
-1 of the 3 remaining user of this field removed.
+The cpuidle_device is retrieved in the function by using directly
+the global variable. But the caller of this function already have
+this device and it can be passed as a parameter. That is one small
+step to encapsulate the code more.
 
 Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-Acked-by: Sekhar Nori <nsekhar@ti.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- arch/arm/mach-davinci/cpuidle.c | 33 ++-------------------------------
- 1 file changed, 2 insertions(+), 31 deletions(-)
+ drivers/acpi/processor_idle.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm/mach-davinci/cpuidle.c b/arch/arm/mach-davinci/cpuidle.c
-index 697febe..5e430bf 100644
---- a/arch/arm/mach-davinci/cpuidle.c
-+++ b/arch/arm/mach-davinci/cpuidle.c
-@@ -25,12 +25,6 @@
- 
- #define DAVINCI_CPUIDLE_MAX_STATES	2
- 
--struct davinci_ops {
--	void (*enter) (void);
--	void (*exit) (void);
--	u32 flags;
--};
--
- static DEFINE_PER_CPU(struct cpuidle_device, davinci_cpuidle_device);
- static void __iomem *ddr2_reg_base;
- static bool ddr2_pdown;
-@@ -54,39 +48,17 @@ static void davinci_save_ddr_power(int enter, bool pdown)
- 	__raw_writel(val, ddr2_reg_base + DDR2_SDRCR_OFFSET);
- }
- 
--static void davinci_c2state_enter(void)
--{
--	davinci_save_ddr_power(1, ddr2_pdown);
--}
--
--static void davinci_c2state_exit(void)
--{
--	davinci_save_ddr_power(0, ddr2_pdown);
--}
--
--static struct davinci_ops davinci_states[DAVINCI_CPUIDLE_MAX_STATES] = {
--	[1] = {
--		.enter	= davinci_c2state_enter,
--		.exit	= davinci_c2state_exit,
--	},
--};
--
- /* Actual code that puts the SoC in different idle states */
- static int davinci_enter_idle(struct cpuidle_device *dev,
- 				struct cpuidle_driver *drv,
- 						int index)
+diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
+index 82626e9..6837065 100644
+--- a/drivers/acpi/processor_idle.c
++++ b/drivers/acpi/processor_idle.c
+@@ -928,13 +928,14 @@ struct cpuidle_driver acpi_idle_driver = {
+  * device i.e. per-cpu data
+  *
+  * @pr: the ACPI processor
++ * @dev : the cpuidle device
+  */
+-static int acpi_processor_setup_cpuidle_cx(struct acpi_processor *pr)
++static int acpi_processor_setup_cpuidle_cx(struct acpi_processor *pr,
++					   struct cpuidle_device *dev)
  {
--	struct cpuidle_state_usage *state_usage = &dev->states_usage[index];
--	struct davinci_ops *ops = cpuidle_get_statedata(state_usage);
--
--	if (ops && ops->enter)
--		ops->enter();
-+	davinci_save_ddr_power(1, ddr2_pdown);
+ 	int i, count = CPUIDLE_DRIVER_STATE_START;
+ 	struct acpi_processor_cx *cx;
+ 	struct cpuidle_state_usage *state_usage;
+-	struct cpuidle_device *dev = per_cpu(acpi_cpuidle_device, pr->id);
  
- 	index = cpuidle_wrap_enter(dev,	drv, index,
- 				arm_cpuidle_simple_enter);
+ 	if (!pr->flags.power_setup_done)
+ 		return -EINVAL;
+@@ -1089,7 +1090,7 @@ int acpi_processor_hotplug(struct acpi_processor *pr)
+ 	cpuidle_disable_device(dev);
+ 	acpi_processor_get_power_info(pr);
+ 	if (pr->flags.power) {
+-		acpi_processor_setup_cpuidle_cx(pr);
++		acpi_processor_setup_cpuidle_cx(pr, dev);
+ 		ret = cpuidle_enable_device(dev);
+ 	}
+ 	cpuidle_resume_and_unlock();
+@@ -1147,8 +1148,8 @@ int acpi_processor_cst_has_changed(struct acpi_processor *pr)
+ 				continue;
+ 			acpi_processor_get_power_info(_pr);
+ 			if (_pr->flags.power) {
+-				acpi_processor_setup_cpuidle_cx(_pr);
+ 				dev = per_cpu(acpi_cpuidle_device, cpu);
++				acpi_processor_setup_cpuidle_cx(_pr, dev);
+ 				cpuidle_enable_device(dev);
+ 			}
+ 		}
+@@ -1217,7 +1218,7 @@ int __cpuinit acpi_processor_power_init(struct acpi_processor *pr)
+ 			return -ENOMEM;
+ 		per_cpu(acpi_cpuidle_device, pr->id) = dev;
  
--	if (ops && ops->exit)
--		ops->exit();
-+	davinci_save_ddr_power(0, ddr2_pdown);
+-		acpi_processor_setup_cpuidle_cx(pr);
++		acpi_processor_setup_cpuidle_cx(pr, dev);
  
- 	return index;
- }
-@@ -123,7 +95,6 @@ static int __init davinci_cpuidle_probe(struct platform_device *pdev)
- 	ddr2_reg_base = pdata->ddr2_ctlr_base;
- 
- 	ddr2_pdown = pdata->ddr2_pdown;
--	cpuidle_set_statedata(&device->states_usage[1], &davinci_states[1]);
- 
- 	device->state_count = DAVINCI_CPUIDLE_MAX_STATES;
- 
+ 		/* Register per-cpu cpuidle_device. Cpuidle driver
+ 		 * must already be registered before registering device
 -- 
 1.8.1.3.535.ga923c31
 
