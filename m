@@ -1,35 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760589Ab3BIC53 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 21:57:29 -0500
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:53784 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760552Ab3BIC51 (ORCPT
+	id S1760606Ab3BIC7U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 21:59:20 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:39769 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760560Ab3BIC7T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 21:57:27 -0500
-MIME-Version: 1.0
-In-Reply-To: <511534C8.1080502@semaphore.gr>
-References: <511534C8.1080502@semaphore.gr>
-Date: Sat, 9 Feb 2013 08:27:26 +0530
-X-Google-Sender-Auth: dPgkjd01Cv9rZAGSS2HfuWfBaLc
-Message-ID: <CAOh2x=ni5gv-f2GNmNRDOSKa_wT=D5YXtpXD3WemT3TbjRF0rA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] cpufreq: conservative: Fix typos in comments
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Stratos Karafotis <stratosk@semaphore.gr>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 8 Feb 2013 21:59:19 -0500
+Date: Fri, 08 Feb 2013 21:59:15 -0500 (EST)
+Message-Id: <20130208.215915.822365427361761741.davem@davemloft.net>
+To: dtor@vmware.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, pv-drivers@vmware.com,
+        gregkh@linuxfoundation.org, kraxel@redhat.com, acking@vmware.com
+Subject: Re: [Pv-drivers] [PATCH 0/1] VM Sockets for Linux upstreaming
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20130209012044.GB5194@dtor-ws.eng.vmware.com>
+References: <1360196636-9357-1-git-send-email-acking@vmware.com>
+	<20130209012044.GB5194@dtor-ws.eng.vmware.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 8, 2013 at 10:54 PM, Stratos Karafotis
-<stratosk@semaphore.gr> wrote:
-> Fix a couple of typos in comments.
->
-> Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
-> ---
->  drivers/cpufreq/cpufreq_conservative.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+From: Dmitry Torokhov <dtor@vmware.com>
+Date: Fri, 8 Feb 2013 17:20:44 -0800
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+> Hi David,
+> 
+> On Wed, Feb 06, 2013 at 04:23:55PM -0800, Andy King wrote:
+>> In an effort to improve the out-of-the-box experience with Linux kernels for
+>> VMware users, VMware is working on readying the VM Sockets (VSOCK, formerly
+>> VMCI Sockets) (vsock) kernel module for inclusion in the Linux kernel. The
+>> purpose of this post is to acquire feedback on the vsock kernel module.
+>> 
+>> Unlike previous submissions, where the new socket family was entirely reliant
+>> on VMware's VMCI PCI device (and thus VMware's hypervisor), VM Sockets is now
+>> completely[1] separated out into two parts, each in its own module:
+>> 
+>> o Core socket code, which is transport-neutral and invokes transport
+>>   callbacks to communicate with the hypervisor.  This is vsock.ko.
+>> o A VMCI transport, which communicates over VMCI with the VMware hypervisor.
+>>   This is vmw_vsock_vmci_transport.ko, and it registers with the core module
+>>   as a transport.
+>> 
+>> This should provide a path to introducing additional transports, for example
+>> virtio, with the ultimate goal being to make this new socket family
+>> hypervisor-neutral.
+> 
+> As Andy mentioned in another e-mail, we would like very much to get
+> vsock in 3.9 release, so now that it is split into hypervisor neutral
+> and transport parts is there any high level issues that we need to
+> resolve before the code can be accepted?
+
+I have no idea, I haven't gotten to reviewing your changes yet, and
+I will do so at a time of my own choosing.  Pressing me about the matter
+is unlikely to make me review things any faster, and in fact will have
+the opposite effect.
+
+Therefore, just be patient like everyone else is.
