@@ -1,2001 +1,681 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947463Ab3BIVqE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 16:46:04 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:57872 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932571Ab3BIVp6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 16:45:58 -0500
-Message-ID: <1360446356.23616.11.camel@joe-AO722>
-Subject: [RFC PATCH] dma_alloc_consistent: Remove OOM messages after failure
-From: Joe Perches <joe@perches.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-wireless@vger.kernel.org
-Date: Sat, 09 Feb 2013 13:45:56 -0800
-In-Reply-To: <20130209004644.GC31290@kroah.com>
-References: <1360273587.27863.15.camel@joe-AO722>
-	 <20130208.174500.1518593039138341685.davem@davemloft.net>
-	 <1360369799.13487.5.camel@joe-AO722> <20130209004644.GC31290@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932626Ab3BIVqu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 16:46:50 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:36479 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1947398Ab3BIVqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Feb 2013 16:46:48 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: ACPI / PM: Candidate material for the v3.9 merge window
+Date: Sat, 09 Feb 2013 22:53:09 +0100
+Message-ID: <3791674.DRIMSY8bnF@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-02-08 at 16:46 -0800, Greg KH wrote:
-> On Fri, Feb 08, 2013 at 04:29:59PM -0800, Joe Perches wrote:
-> > Does anyone know if all the other alloc's like
-> > dma_alloc_coherent, dma_alloc_noncoherent,
-> > pci_alloc_consistent always produce OOM messages
-> > via page_alloc/warn_alloc_failed for all arches?
-> 
-> If not, they should, to allow this type of cleanups.
+Hi All,
 
-As far as I can tell, the x86 arches do warn.
+Below is the summary of ACPI and power management material I'm going to include
+into my first pull request during the upcoming merge window.  I also would like
+to add the following two patches two that:
 
-Maybe all of the OOM messages should just be
-deleted and let's see if anyone complains.
+https://patchwork.kernel.org/patch/2120281/
+https://patchwork.kernel.org/patch/2120251/
 
-Perhaps also the memsets to zero following the
-allocs could be removed by adding __GFP_ZERO
-instead of introducing new functions/macros
-like dma_zalloc_consistent.
+if there are no major objections against them.  I'm not considering any other
+patches for v3.9 at the moment, so please let me know if you have any.
 
-For instance, maybe something like this for the
-dma_alloc_consistent cases:
+As usual, the commits are available from the tree at:
 
--------------------------------------
+git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git linux-next
 
-dma_alloc_consistent for x86 already gets a
-standardized OOM message and a dump_stack() which
-makes the specific OOM message unnecessary.
+Please let me know ASAP if you have any problems with any of them.
 
-Remove those dma_alloc_consistent OOM messages.
-
-For the code involved with the alloc:
-
-Remove unnecessary casts.
-Align arguments.
-Replace any memset to 0 with __GFP_ZERO.
-Miscellaneous whitespace neatening.
----
- drivers/net/ethernet/aeroflex/greth.c              | 24 +++-------
- drivers/net/ethernet/amd/sunlance.c                |  5 +-
- drivers/net/ethernet/apple/macmace.c               | 16 +++----
- drivers/net/ethernet/broadcom/bcm63xx_enet.c       | 10 ++--
- drivers/net/ethernet/broadcom/bnx2.c               |  5 +-
- drivers/net/ethernet/broadcom/bnx2x/bnx2x.h        |  9 ++--
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.h    | 14 +++---
- drivers/net/ethernet/broadcom/tg3.c                | 11 ++---
- drivers/net/ethernet/brocade/bna/bnad.c            |  5 +-
- drivers/net/ethernet/cadence/at91_ether.c          | 18 +++-----
- drivers/net/ethernet/dec/tulip/xircom_cb.c         |  9 ++--
- drivers/net/ethernet/emulex/benet/be_cmds.c        |  4 +-
- drivers/net/ethernet/emulex/benet/be_ethtool.c     |  9 +---
- drivers/net/ethernet/emulex/benet/be_main.c        | 20 +++-----
- drivers/net/ethernet/faraday/ftgmac100.c           |  5 +-
- drivers/net/ethernet/faraday/ftmac100.c            |  8 ++--
- drivers/net/ethernet/freescale/fec.c               |  6 +--
- drivers/net/ethernet/freescale/gianfar.c           | 13 +++---
- drivers/net/ethernet/ibm/emac/mal.c                |  9 +---
- drivers/net/ethernet/ibm/ibmveth.c                 |  6 +--
- drivers/net/ethernet/intel/e1000/e1000_ethtool.c   |  6 +--
- drivers/net/ethernet/intel/e1000/e1000_main.c      |  7 ---
- drivers/net/ethernet/intel/igbvf/netdev.c          |  2 -
- drivers/net/ethernet/intel/ixgb/ixgb_main.c        | 11 +----
- drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c  |  4 --
- drivers/net/ethernet/marvell/mvneta.c              | 14 +-----
- drivers/net/ethernet/marvell/pxa168_eth.c          | 27 +++++------
- drivers/net/ethernet/mellanox/mlx4/cmd.c           |  7 ++-
- drivers/net/ethernet/myricom/myri10ge/myri10ge.c   |  3 +-
- drivers/net/ethernet/natsemi/jazzsonic.c           | 12 ++---
- drivers/net/ethernet/natsemi/macsonic.c            | 12 ++---
- drivers/net/ethernet/natsemi/xtsonic.c             | 12 ++---
- drivers/net/ethernet/nuvoton/w90p910_ether.c       | 19 +++-----
- drivers/net/ethernet/nxp/lpc_eth.c                 |  2 -
- .../net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c   | 21 ++++-----
- drivers/net/ethernet/pasemi/pasemi_mac.c           |  5 +-
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_ctx.c    | 53 +++++++---------------
- .../net/ethernet/qlogic/qlcnic/qlcnic_minidump.c   |  5 +-
- drivers/net/ethernet/renesas/sh_eth.c              |  9 +---
- drivers/net/ethernet/sfc/nic.c                     |  4 +-
- drivers/net/ethernet/sgi/meth.c                    |  5 +-
- drivers/net/ethernet/stmicro/stmmac/stmmac_main.c  | 24 ++++------
- drivers/net/ethernet/sun/sunbmac.c                 |  4 +-
- drivers/net/ethernet/sun/sunhme.c                  | 13 ++----
- drivers/net/ethernet/toshiba/spider_net.c          |  3 +-
- drivers/net/ethernet/tundra/tsi108_eth.c           | 21 ++-------
- drivers/net/ethernet/xilinx/ll_temac_main.c        | 17 ++-----
- drivers/net/ethernet/xilinx/xilinx_axienet_main.c  | 16 ++-----
- drivers/net/fddi/defxx.c                           |  9 ++--
- drivers/net/irda/ali-ircc.c                        |  6 +--
- drivers/net/irda/bfin_sir.c                        |  3 +-
- drivers/net/irda/nsc-ircc.c                        |  6 +--
- drivers/net/irda/pxaficp_ir.c                      |  4 +-
- drivers/net/irda/smsc-ircc2.c                      | 25 ++++------
- drivers/net/irda/via-ircc.c                        |  6 +--
- drivers/net/irda/w83977af_ir.c                     |  7 +--
- drivers/net/wireless/ath/wil6210/txrx.c            |  2 -
- drivers/net/wireless/b43/dma.c                     |  9 +---
- drivers/net/wireless/b43legacy/dma.c               |  8 +---
- drivers/net/wireless/iwlegacy/3945.c               |  9 ++--
- drivers/net/wireless/iwlegacy/4965-mac.c           |  4 +-
- drivers/net/wireless/iwlegacy/common.c             | 19 ++++----
- drivers/net/wireless/iwlegacy/common.h             |  5 +-
- drivers/net/wireless/iwlwifi/pcie/tx.c             |  5 +-
- drivers/net/wireless/rt2x00/rt2x00pci.c            |  4 +-
- 65 files changed, 227 insertions(+), 448 deletions(-)
-
-diff --git a/drivers/net/ethernet/aeroflex/greth.c b/drivers/net/ethernet/aeroflex/greth.c
-index 0be2195..2692954 100644
---- a/drivers/net/ethernet/aeroflex/greth.c
-+++ b/drivers/net/ethernet/aeroflex/greth.c
-@@ -1464,35 +1464,23 @@ static int greth_of_probe(struct platform_device *ofdev)
- 	}
- 
- 	/* Allocate TX descriptor ring in coherent memory */
--	greth->tx_bd_base = (struct greth_bd *) dma_alloc_coherent(greth->dev,
--								   1024,
--								   &greth->tx_bd_base_phys,
--								   GFP_KERNEL);
--
-+	greth->tx_bd_base = dma_alloc_coherent(greth->dev, 1024,
-+					       &greth->tx_bd_base_phys,
-+					       GFP_KERNEL | __GFP_ZERO);
- 	if (!greth->tx_bd_base) {
--		if (netif_msg_probe(greth))
--			dev_err(&dev->dev, "could not allocate descriptor memory.\n");
- 		err = -ENOMEM;
- 		goto error3;
- 	}
- 
--	memset(greth->tx_bd_base, 0, 1024);
--
- 	/* Allocate RX descriptor ring in coherent memory */
--	greth->rx_bd_base = (struct greth_bd *) dma_alloc_coherent(greth->dev,
--								   1024,
--								   &greth->rx_bd_base_phys,
--								   GFP_KERNEL);
--
-+	greth->rx_bd_base = dma_alloc_coherent(greth->dev, 1024,
-+					       &greth->rx_bd_base_phys,
-+					       GFP_KERNEL | __GFP_ZERO);
- 	if (!greth->rx_bd_base) {
--		if (netif_msg_probe(greth))
--			dev_err(greth->dev, "could not allocate descriptor memory.\n");
- 		err = -ENOMEM;
- 		goto error4;
- 	}
- 
--	memset(greth->rx_bd_base, 0, 1024);
--
- 	/* Get MAC address from: module param, OF property or ID prom */
- 	for (i = 0; i < 6; i++) {
- 		if (macaddr[i] != 0)
-diff --git a/drivers/net/ethernet/amd/sunlance.c b/drivers/net/ethernet/amd/sunlance.c
-index 6a40290..3d17013 100644
---- a/drivers/net/ethernet/amd/sunlance.c
-+++ b/drivers/net/ethernet/amd/sunlance.c
-@@ -1377,10 +1377,9 @@ static int sparc_lance_probe_one(struct platform_device *op,
- 			dma_alloc_coherent(&op->dev,
- 					   sizeof(struct lance_init_block),
- 					   &lp->init_block_dvma, GFP_ATOMIC);
--		if (!lp->init_block_mem) {
--			printk(KERN_ERR "SunLance: Cannot allocate consistent DMA memory.\n");
-+		if (!lp->init_block_mem)
- 			goto fail;
--		}
-+
- 		lp->pio_buffer = 0;
- 		lp->init_ring = lance_init_ring_dvma;
- 		lp->rx = lance_rx_dvma;
-diff --git a/drivers/net/ethernet/apple/macmace.c b/drivers/net/ethernet/apple/macmace.c
-index a206779..4ce8ceb 100644
---- a/drivers/net/ethernet/apple/macmace.c
-+++ b/drivers/net/ethernet/apple/macmace.c
-@@ -386,20 +386,16 @@ static int mace_open(struct net_device *dev)
- 	/* Allocate the DMA ring buffers */
- 
- 	mp->tx_ring = dma_alloc_coherent(mp->device,
--			N_TX_RING * MACE_BUFF_SIZE,
--			&mp->tx_ring_phys, GFP_KERNEL);
--	if (mp->tx_ring == NULL) {
--		printk(KERN_ERR "%s: unable to allocate DMA tx buffers\n", dev->name);
-+					 N_TX_RING * MACE_BUFF_SIZE,
-+					 &mp->tx_ring_phys, GFP_KERNEL);
-+	if (mp->tx_ring == NULL)
- 		goto out1;
--	}
- 
- 	mp->rx_ring = dma_alloc_coherent(mp->device,
--			N_RX_RING * MACE_BUFF_SIZE,
--			&mp->rx_ring_phys, GFP_KERNEL);
--	if (mp->rx_ring == NULL) {
--		printk(KERN_ERR "%s: unable to allocate DMA rx buffers\n", dev->name);
-+					 N_RX_RING * MACE_BUFF_SIZE,
-+					 &mp->rx_ring_phys, GFP_KERNEL);
-+	if (mp->rx_ring == NULL)
- 		goto out2;
--	}
- 
- 	mace_dma_off(dev);
- 
-diff --git a/drivers/net/ethernet/broadcom/bcm63xx_enet.c b/drivers/net/ethernet/broadcom/bcm63xx_enet.c
-index 7d81e05..dec19972 100644
---- a/drivers/net/ethernet/broadcom/bcm63xx_enet.c
-+++ b/drivers/net/ethernet/broadcom/bcm63xx_enet.c
-@@ -862,27 +862,25 @@ static int bcm_enet_open(struct net_device *dev)
- 
- 	/* allocate rx dma ring */
- 	size = priv->rx_ring_size * sizeof(struct bcm_enet_desc);
--	p = dma_alloc_coherent(kdev, size, &priv->rx_desc_dma, GFP_KERNEL);
-+	p = dma_alloc_coherent(kdev, size, &priv->rx_desc_dma,
-+			       GFP_KERNEL | __GFP_ZERO);
- 	if (!p) {
--		dev_err(kdev, "cannot allocate rx ring %u\n", size);
- 		ret = -ENOMEM;
- 		goto out_freeirq_tx;
- 	}
- 
--	memset(p, 0, size);
- 	priv->rx_desc_alloc_size = size;
- 	priv->rx_desc_cpu = p;
- 
- 	/* allocate tx dma ring */
- 	size = priv->tx_ring_size * sizeof(struct bcm_enet_desc);
--	p = dma_alloc_coherent(kdev, size, &priv->tx_desc_dma, GFP_KERNEL);
-+	p = dma_alloc_coherent(kdev, size, &priv->tx_desc_dma,
-+			       GFP_KERNEL | __GFP_ZERO);
- 	if (!p) {
--		dev_err(kdev, "cannot allocate tx ring\n");
- 		ret = -ENOMEM;
- 		goto out_free_rx_ring;
- 	}
- 
--	memset(p, 0, size);
- 	priv->tx_desc_alloc_size = size;
- 	priv->tx_desc_cpu = p;
- 
-diff --git a/drivers/net/ethernet/broadcom/bnx2.c b/drivers/net/ethernet/broadcom/bnx2.c
-index 2f0ba8f..e709296 100644
---- a/drivers/net/ethernet/broadcom/bnx2.c
-+++ b/drivers/net/ethernet/broadcom/bnx2.c
-@@ -854,12 +854,11 @@ bnx2_alloc_mem(struct bnx2 *bp)
- 				sizeof(struct statistics_block);
- 
- 	status_blk = dma_alloc_coherent(&bp->pdev->dev, bp->status_stats_size,
--					&bp->status_blk_mapping, GFP_KERNEL);
-+					&bp->status_blk_mapping,
-+					GFP_KERNEL | __GFP_ZERO);
- 	if (status_blk == NULL)
- 		goto alloc_mem_err;
- 
--	memset(status_blk, 0, bp->status_stats_size);
--
- 	bnapi = &bp->bnx2_napi[0];
- 	bnapi->status_blk.msi = status_blk;
- 	bnapi->hw_tx_cons_ptr =
-diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x.h b/drivers/net/ethernet/broadcom/bnx2x/bnx2x.h
-index e4605a9..d7a4ae5 100644
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x.h
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x.h
-@@ -1944,12 +1944,9 @@ static inline u32 reg_poll(struct bnx2x *bp, u32 reg, u32 expected, int ms,
- void bnx2x_igu_clear_sb_gen(struct bnx2x *bp, u8 func, u8 idu_sb_id,
- 			    bool is_pf);
- 
--#define BNX2X_ILT_ZALLOC(x, y, size) \
--	do { \
--		x = dma_alloc_coherent(&bp->pdev->dev, size, y, GFP_KERNEL); \
--		if (x) \
--			memset(x, 0, size); \
--	} while (0)
-+#define BNX2X_ILT_ZALLOC(x, y, size)				\
-+	x = dma_alloc_coherent(&bp->pdev->dev, size, y,		\
-+			       GFP_KERNEL | __GFP_ZERO)
- 
- #define BNX2X_ILT_FREE(x, y, size) \
- 	do { \
-diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.h b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.h
-index aee7671..3c4854a 100644
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.h
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.h
-@@ -50,13 +50,13 @@ extern int int_mode;
- 		} \
- 	} while (0)
- 
--#define BNX2X_PCI_ALLOC(x, y, size) \
--	do { \
--		x = dma_alloc_coherent(&bp->pdev->dev, size, y, GFP_KERNEL); \
--		if (x == NULL) \
--			goto alloc_mem_err; \
--		memset((void *)x, 0, size); \
--	} while (0)
-+#define BNX2X_PCI_ALLOC(x, y, size)				\
-+do {								\
-+	x = dma_alloc_coherent(&bp->pdev->dev, size, y,		\
-+			       GFP_KERNEL | __GFP_ZERO);	\
-+	if (x == NULL)						\
-+		goto alloc_mem_err;				\
-+} while (0)
- 
- #define BNX2X_ALLOC(x, size) \
- 	do { \
-diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
-index b1b3bc0..6d31c1f 100644
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -8036,11 +8036,9 @@ static int tg3_mem_rx_acquire(struct tg3 *tp)
- 		tnapi->rx_rcb = dma_alloc_coherent(&tp->pdev->dev,
- 						   TG3_RX_RCB_RING_BYTES(tp),
- 						   &tnapi->rx_rcb_mapping,
--						   GFP_KERNEL);
-+						   GFP_KERNEL | __GFP_ZERO);
- 		if (!tnapi->rx_rcb)
- 			goto err_out;
--
--		memset(tnapi->rx_rcb, 0, TG3_RX_RCB_RING_BYTES(tp));
- 	}
- 
- 	return 0;
-@@ -8090,12 +8088,10 @@ static int tg3_alloc_consistent(struct tg3 *tp)
- 	tp->hw_stats = dma_alloc_coherent(&tp->pdev->dev,
- 					  sizeof(struct tg3_hw_stats),
- 					  &tp->stats_mapping,
--					  GFP_KERNEL);
-+					  GFP_KERNEL | __GFP_ZERO);
- 	if (!tp->hw_stats)
- 		goto err_out;
- 
--	memset(tp->hw_stats, 0, sizeof(struct tg3_hw_stats));
--
- 	for (i = 0; i < tp->irq_cnt; i++) {
- 		struct tg3_napi *tnapi = &tp->napi[i];
- 		struct tg3_hw_status *sblk;
-@@ -8103,11 +8099,10 @@ static int tg3_alloc_consistent(struct tg3 *tp)
- 		tnapi->hw_status = dma_alloc_coherent(&tp->pdev->dev,
- 						      TG3_HW_STATUS_SIZE,
- 						      &tnapi->status_mapping,
--						      GFP_KERNEL);
-+						      GFP_KERNEL | __GFP_ZERO);
- 		if (!tnapi->hw_status)
- 			goto err_out;
- 
--		memset(tnapi->hw_status, 0, TG3_HW_STATUS_SIZE);
- 		sblk = tnapi->hw_status;
- 
- 		if (tg3_flag(tp, ENABLE_RSS)) {
-diff --git a/drivers/net/ethernet/brocade/bna/bnad.c b/drivers/net/ethernet/brocade/bna/bnad.c
-index 7cce42d..d588f84 100644
---- a/drivers/net/ethernet/brocade/bna/bnad.c
-+++ b/drivers/net/ethernet/brocade/bna/bnad.c
-@@ -1264,9 +1264,8 @@ bnad_mem_alloc(struct bnad *bnad,
- 			mem_info->mdl[i].len = mem_info->len;
- 			mem_info->mdl[i].kva =
- 				dma_alloc_coherent(&bnad->pcidev->dev,
--						mem_info->len, &dma_pa,
--						GFP_KERNEL);
--
-+						   mem_info->len, &dma_pa,
-+						   GFP_KERNEL);
- 			if (mem_info->mdl[i].kva == NULL)
- 				goto err_return;
- 
-diff --git a/drivers/net/ethernet/cadence/at91_ether.c b/drivers/net/ethernet/cadence/at91_ether.c
-index 3becdb2..b15fafec 100644
---- a/drivers/net/ethernet/cadence/at91_ether.c
-+++ b/drivers/net/ethernet/cadence/at91_ether.c
-@@ -47,22 +47,18 @@ static int at91ether_start(struct net_device *dev)
- 	int i;
- 
- 	lp->rx_ring = dma_alloc_coherent(&lp->pdev->dev,
--					MAX_RX_DESCR * sizeof(struct macb_dma_desc),
--					&lp->rx_ring_dma, GFP_KERNEL);
--	if (!lp->rx_ring) {
--		netdev_err(dev, "unable to alloc rx ring DMA buffer\n");
-+					 MAX_RX_DESCR * sizeof(struct macb_dma_desc),
-+					 &lp->rx_ring_dma, GFP_KERNEL);
-+	if (!lp->rx_ring)
- 		return -ENOMEM;
--	}
- 
- 	lp->rx_buffers = dma_alloc_coherent(&lp->pdev->dev,
--					MAX_RX_DESCR * MAX_RBUFF_SZ,
--					&lp->rx_buffers_dma, GFP_KERNEL);
-+					    MAX_RX_DESCR * MAX_RBUFF_SZ,
-+					    &lp->rx_buffers_dma, GFP_KERNEL);
- 	if (!lp->rx_buffers) {
--		netdev_err(dev, "unable to alloc rx data DMA buffer\n");
--
- 		dma_free_coherent(&lp->pdev->dev,
--					MAX_RX_DESCR * sizeof(struct macb_dma_desc),
--					lp->rx_ring, lp->rx_ring_dma);
-+				  MAX_RX_DESCR * sizeof(struct macb_dma_desc),
-+				  lp->rx_ring, lp->rx_ring_dma);
- 		lp->rx_ring = NULL;
- 		return -ENOMEM;
- 	}
-diff --git a/drivers/net/ethernet/dec/tulip/xircom_cb.c b/drivers/net/ethernet/dec/tulip/xircom_cb.c
-index 88feced..cdbcd16 100644
---- a/drivers/net/ethernet/dec/tulip/xircom_cb.c
-+++ b/drivers/net/ethernet/dec/tulip/xircom_cb.c
-@@ -236,17 +236,14 @@ static int xircom_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 	private->rx_buffer = dma_alloc_coherent(d, 8192,
- 						&private->rx_dma_handle,
- 						GFP_KERNEL);
--	if (private->rx_buffer == NULL) {
--		pr_err("%s: no memory for rx buffer\n", __func__);
-+	if (private->rx_buffer == NULL)
- 		goto rx_buf_fail;
--	}
-+
- 	private->tx_buffer = dma_alloc_coherent(d, 8192,
- 						&private->tx_dma_handle,
- 						GFP_KERNEL);
--	if (private->tx_buffer == NULL) {
--		pr_err("%s: no memory for tx buffer\n", __func__);
-+	if (private->tx_buffer == NULL)
- 		goto tx_buf_fail;
--	}
- 
- 	SET_NETDEV_DEV(dev, &pdev->dev);
- 
-diff --git a/drivers/net/ethernet/emulex/benet/be_cmds.c b/drivers/net/ethernet/emulex/benet/be_cmds.c
-index 8b04880..b8bec58 100644
---- a/drivers/net/ethernet/emulex/benet/be_cmds.c
-+++ b/drivers/net/ethernet/emulex/benet/be_cmds.c
-@@ -2668,10 +2668,8 @@ int be_cmd_set_mac_list(struct be_adapter *adapter, u8 *mac_array,
- 	cmd.size = sizeof(struct be_cmd_req_set_mac_list);
- 	cmd.va = dma_alloc_coherent(&adapter->pdev->dev, cmd.size,
- 			&cmd.dma, GFP_KERNEL);
--	if (!cmd.va) {
--		dev_err(&adapter->pdev->dev, "Memory alloc failure\n");
-+	if (!cmd.va)
- 		return -ENOMEM;
--	}
- 
- 	spin_lock_bh(&adapter->mcc_lock);
- 
-diff --git a/drivers/net/ethernet/emulex/benet/be_ethtool.c b/drivers/net/ethernet/emulex/benet/be_ethtool.c
-index 76b302f..a50703c 100644
---- a/drivers/net/ethernet/emulex/benet/be_ethtool.c
-+++ b/drivers/net/ethernet/emulex/benet/be_ethtool.c
-@@ -719,10 +719,8 @@ be_test_ddr_dma(struct be_adapter *adapter)
- 	ddrdma_cmd.size = sizeof(struct be_cmd_req_ddrdma_test);
- 	ddrdma_cmd.va = dma_alloc_coherent(&adapter->pdev->dev, ddrdma_cmd.size,
- 					   &ddrdma_cmd.dma, GFP_KERNEL);
--	if (!ddrdma_cmd.va) {
--		dev_err(&adapter->pdev->dev, "Memory allocation failure\n");
-+	if (!ddrdma_cmd.va)
- 		return -ENOMEM;
--	}
- 
- 	for (i = 0; i < 2; i++) {
- 		ret = be_cmd_ddr_dma_test(adapter, pattern[i],
-@@ -845,11 +843,8 @@ be_read_eeprom(struct net_device *netdev, struct ethtool_eeprom *eeprom,
- 	eeprom_cmd.va = dma_alloc_coherent(&adapter->pdev->dev, eeprom_cmd.size,
- 					   &eeprom_cmd.dma, GFP_KERNEL);
- 
--	if (!eeprom_cmd.va) {
--		dev_err(&adapter->pdev->dev,
--			"Memory allocation failure. Could not read eeprom\n");
-+	if (!eeprom_cmd.va)
- 		return -ENOMEM;
--	}
- 
- 	status = be_cmd_get_seeprom_data(adapter, &eeprom_cmd);
- 
-diff --git a/drivers/net/ethernet/emulex/benet/be_main.c b/drivers/net/ethernet/emulex/benet/be_main.c
-index 3860888..b8a8da5 100644
---- a/drivers/net/ethernet/emulex/benet/be_main.c
-+++ b/drivers/net/ethernet/emulex/benet/be_main.c
-@@ -146,10 +146,9 @@ static int be_queue_alloc(struct be_adapter *adapter, struct be_queue_info *q,
- 	q->entry_size = entry_size;
- 	mem->size = len * entry_size;
- 	mem->va = dma_alloc_coherent(&adapter->pdev->dev, mem->size, &mem->dma,
--				     GFP_KERNEL);
-+				     GFP_KERNEL | __GFP_ZERO);
- 	if (!mem->va)
- 		return -ENOMEM;
--	memset(mem->va, 0, mem->size);
- 	return 0;
- }
- 
-@@ -2562,10 +2561,9 @@ static int be_setup_wol(struct be_adapter *adapter, bool enable)
- 
- 	cmd.size = sizeof(struct be_cmd_req_acpi_wol_magic_config);
- 	cmd.va = dma_alloc_coherent(&adapter->pdev->dev, cmd.size, &cmd.dma,
--				    GFP_KERNEL);
-+				    GFP_KERNEL | __GFP_ZERO);
- 	if (cmd.va == NULL)
- 		return -1;
--	memset(cmd.va, 0, cmd.size);
- 
- 	if (enable) {
- 		status = pci_write_config_dword(adapter->pdev,
-@@ -3457,11 +3455,9 @@ static int lancer_fw_download(struct be_adapter *adapter,
- 	flash_cmd.size = sizeof(struct lancer_cmd_req_write_object)
- 				+ LANCER_FW_DOWNLOAD_CHUNK;
- 	flash_cmd.va = dma_alloc_coherent(&adapter->pdev->dev, flash_cmd.size,
--						&flash_cmd.dma, GFP_KERNEL);
-+					  &flash_cmd.dma, GFP_KERNEL);
- 	if (!flash_cmd.va) {
- 		status = -ENOMEM;
--		dev_err(&adapter->pdev->dev,
--			"Memory allocation failure while flashing\n");
- 		goto lancer_fw_exit;
- 	}
- 
-@@ -3563,8 +3559,6 @@ static int be_fw_download(struct be_adapter *adapter, const struct firmware* fw)
- 					  &flash_cmd.dma, GFP_KERNEL);
- 	if (!flash_cmd.va) {
- 		status = -ENOMEM;
--		dev_err(&adapter->pdev->dev,
--			"Memory allocation failure while flashing\n");
- 		goto be_fw_exit;
- 	}
- 
-@@ -3783,12 +3777,13 @@ static int be_ctrl_init(struct be_adapter *adapter)
- 
- 	rx_filter->size = sizeof(struct be_cmd_req_rx_filter);
- 	rx_filter->va = dma_alloc_coherent(&adapter->pdev->dev, rx_filter->size,
--					&rx_filter->dma, GFP_KERNEL);
-+					   &rx_filter->dma,
-+					   GFP_KERNEL | __GFP_ZERO);
- 	if (rx_filter->va == NULL) {
- 		status = -ENOMEM;
- 		goto free_mbox;
- 	}
--	memset(rx_filter->va, 0, rx_filter->size);
-+
- 	mutex_init(&adapter->mbox_lock);
- 	spin_lock_init(&adapter->mcc_lock);
- 	spin_lock_init(&adapter->mcc_cq_lock);
-@@ -3830,10 +3825,9 @@ static int be_stats_init(struct be_adapter *adapter)
- 		cmd->size = sizeof(struct be_cmd_req_get_stats_v1);
- 
- 	cmd->va = dma_alloc_coherent(&adapter->pdev->dev, cmd->size, &cmd->dma,
--				     GFP_KERNEL);
-+				     GFP_KERNEL | __GFP_ZERO);
- 	if (cmd->va == NULL)
- 		return -1;
--	memset(cmd->va, 0, cmd->size);
- 	return 0;
- }
- 
-diff --git a/drivers/net/ethernet/faraday/ftgmac100.c b/drivers/net/ethernet/faraday/ftgmac100.c
-index 7c361d1..0e817e6 100644
---- a/drivers/net/ethernet/faraday/ftgmac100.c
-+++ b/drivers/net/ethernet/faraday/ftgmac100.c
-@@ -780,12 +780,11 @@ static int ftgmac100_alloc_buffers(struct ftgmac100 *priv)
- 
- 	priv->descs = dma_alloc_coherent(priv->dev,
- 					 sizeof(struct ftgmac100_descs),
--					 &priv->descs_dma_addr, GFP_KERNEL);
-+					 &priv->descs_dma_addr,
-+					 GFP_KERNEL | __GFP_ZERO);
- 	if (!priv->descs)
- 		return -ENOMEM;
- 
--	memset(priv->descs, 0, sizeof(struct ftgmac100_descs));
--
- 	/* initialize RX ring */
- 	ftgmac100_rxdes_set_end_of_ring(&priv->descs->rxdes[RX_QUEUE_ENTRIES - 1]);
- 
-diff --git a/drivers/net/ethernet/faraday/ftmac100.c b/drivers/net/ethernet/faraday/ftmac100.c
-index b5ea8fb..a6eda8d 100644
---- a/drivers/net/ethernet/faraday/ftmac100.c
-+++ b/drivers/net/ethernet/faraday/ftmac100.c
-@@ -732,13 +732,13 @@ static int ftmac100_alloc_buffers(struct ftmac100 *priv)
- {
- 	int i;
- 
--	priv->descs = dma_alloc_coherent(priv->dev, sizeof(struct ftmac100_descs),
--					 &priv->descs_dma_addr, GFP_KERNEL);
-+	priv->descs = dma_alloc_coherent(priv->dev,
-+					 sizeof(struct ftmac100_descs),
-+					 &priv->descs_dma_addr,
-+					 GFP_KERNEL | __GFP_ZERO);
- 	if (!priv->descs)
- 		return -ENOMEM;
- 
--	memset(priv->descs, 0, sizeof(struct ftmac100_descs));
--
- 	/* initialize RX ring */
- 	ftmac100_rxdes_set_end_of_ring(&priv->descs->rxdes[RX_QUEUE_ENTRIES - 1]);
- 
-diff --git a/drivers/net/ethernet/freescale/fec.c b/drivers/net/ethernet/freescale/fec.c
-index 0fe68c4..40d751d 100644
---- a/drivers/net/ethernet/freescale/fec.c
-+++ b/drivers/net/ethernet/freescale/fec.c
-@@ -1602,11 +1602,9 @@ static int fec_enet_init(struct net_device *ndev)
- 
- 	/* Allocate memory for buffer descriptors. */
- 	cbd_base = dma_alloc_coherent(NULL, PAGE_SIZE, &fep->bd_dma,
--			GFP_KERNEL);
--	if (!cbd_base) {
--		printk("FEC: allocate descriptor memory failed?\n");
-+				      GFP_KERNEL);
-+	if (!cbd_base)
- 		return -ENOMEM;
--	}
- 
- 	spin_lock_init(&fep->hw_lock);
- 
-diff --git a/drivers/net/ethernet/freescale/gianfar.c b/drivers/net/ethernet/freescale/gianfar.c
-index ab32bd0..ff78ff3 100644
---- a/drivers/net/ethernet/freescale/gianfar.c
-+++ b/drivers/net/ethernet/freescale/gianfar.c
-@@ -245,14 +245,13 @@ static int gfar_alloc_skb_resources(struct net_device *ndev)
- 
- 	/* Allocate memory for the buffer descriptors */
- 	vaddr = dma_alloc_coherent(dev,
--			sizeof(struct txbd8) * priv->total_tx_ring_size +
--			sizeof(struct rxbd8) * priv->total_rx_ring_size,
--			&addr, GFP_KERNEL);
--	if (!vaddr) {
--		netif_err(priv, ifup, ndev,
--			  "Could not allocate buffer descriptors!\n");
-+				   (priv->total_tx_ring_size *
-+				    sizeof(struct txbd8)) +
-+				   (priv->total_rx_ring_size *
-+				    sizeof(struct rxbd8)),
-+				   &addr, GFP_KERNEL);
-+	if (!vaddr)
- 		return -ENOMEM;
--	}
- 
- 	for (i = 0; i < priv->num_tx_queues; i++) {
- 		tx_queue = priv->tx_queue[i];
-diff --git a/drivers/net/ethernet/ibm/emac/mal.c b/drivers/net/ethernet/ibm/emac/mal.c
-index 1f7ecf5..610ed223 100644
---- a/drivers/net/ethernet/ibm/emac/mal.c
-+++ b/drivers/net/ethernet/ibm/emac/mal.c
-@@ -637,17 +637,12 @@ static int mal_probe(struct platform_device *ofdev)
- 	bd_size = sizeof(struct mal_descriptor) *
- 		(NUM_TX_BUFF * mal->num_tx_chans +
- 		 NUM_RX_BUFF * mal->num_rx_chans);
--	mal->bd_virt =
--		dma_alloc_coherent(&ofdev->dev, bd_size, &mal->bd_dma,
--				   GFP_KERNEL);
-+	mal->bd_virt = dma_alloc_coherent(&ofdev->dev, bd_size, &mal->bd_dma,
-+					  GFP_KERNEL | __GFP_ZERO);
- 	if (mal->bd_virt == NULL) {
--		printk(KERN_ERR
--		       "mal%d: out of memory allocating RX/TX descriptors!\n",
--		       index);
- 		err = -ENOMEM;
- 		goto fail_unmap;
- 	}
--	memset(mal->bd_virt, 0, bd_size);
- 
- 	for (i = 0; i < mal->num_tx_chans; ++i)
- 		set_mal_dcrn(mal, MAL_TXCTPR(i), mal->bd_dma +
-diff --git a/drivers/net/ethernet/ibm/ibmveth.c b/drivers/net/ethernet/ibm/ibmveth.c
-index c859771..302d594 100644
---- a/drivers/net/ethernet/ibm/ibmveth.c
-+++ b/drivers/net/ethernet/ibm/ibmveth.c
-@@ -556,11 +556,9 @@ static int ibmveth_open(struct net_device *netdev)
- 	adapter->rx_queue.queue_len = sizeof(struct ibmveth_rx_q_entry) *
- 						rxq_entries;
- 	adapter->rx_queue.queue_addr =
--	    dma_alloc_coherent(dev, adapter->rx_queue.queue_len,
--			       &adapter->rx_queue.queue_dma, GFP_KERNEL);
--
-+		dma_alloc_coherent(dev, adapter->rx_queue.queue_len,
-+				   &adapter->rx_queue.queue_dma, GFP_KERNEL);
- 	if (!adapter->rx_queue.queue_addr) {
--		netdev_err(netdev, "unable to allocate rx queue pages\n");
- 		rc = -ENOMEM;
- 		goto err_out;
- 	}
-diff --git a/drivers/net/ethernet/intel/e1000/e1000_ethtool.c b/drivers/net/ethernet/intel/e1000/e1000_ethtool.c
-index 14e3051..95f02c1 100644
---- a/drivers/net/ethernet/intel/e1000/e1000_ethtool.c
-+++ b/drivers/net/ethernet/intel/e1000/e1000_ethtool.c
-@@ -1021,12 +1021,11 @@ static int e1000_setup_desc_rings(struct e1000_adapter *adapter)
- 	txdr->size = txdr->count * sizeof(struct e1000_tx_desc);
- 	txdr->size = ALIGN(txdr->size, 4096);
- 	txdr->desc = dma_alloc_coherent(&pdev->dev, txdr->size, &txdr->dma,
--					GFP_KERNEL);
-+					GFP_KERNEL | __GFP_ZERO);
- 	if (!txdr->desc) {
- 		ret_val = 2;
- 		goto err_nomem;
- 	}
--	memset(txdr->desc, 0, txdr->size);
- 	txdr->next_to_use = txdr->next_to_clean = 0;
- 
- 	ew32(TDBAL, ((u64)txdr->dma & 0x00000000FFFFFFFF));
-@@ -1076,12 +1075,11 @@ static int e1000_setup_desc_rings(struct e1000_adapter *adapter)
- 
- 	rxdr->size = rxdr->count * sizeof(struct e1000_rx_desc);
- 	rxdr->desc = dma_alloc_coherent(&pdev->dev, rxdr->size, &rxdr->dma,
--					GFP_KERNEL);
-+					GFP_KERNEL | __GFP_ZERO);
- 	if (!rxdr->desc) {
- 		ret_val = 5;
- 		goto err_nomem;
- 	}
--	memset(rxdr->desc, 0, rxdr->size);
- 	rxdr->next_to_use = rxdr->next_to_clean = 0;
- 
- 	rctl = er32(RCTL);
-diff --git a/drivers/net/ethernet/intel/e1000/e1000_main.c b/drivers/net/ethernet/intel/e1000/e1000_main.c
-index d947e3a..10782c4 100644
---- a/drivers/net/ethernet/intel/e1000/e1000_main.c
-+++ b/drivers/net/ethernet/intel/e1000/e1000_main.c
-@@ -1522,8 +1522,6 @@ static int e1000_setup_tx_resources(struct e1000_adapter *adapter,
- 	if (!txdr->desc) {
- setup_tx_desc_die:
- 		vfree(txdr->buffer_info);
--		e_err(probe, "Unable to allocate memory for the Tx descriptor "
--		      "ring\n");
- 		return -ENOMEM;
- 	}
- 
-@@ -1713,10 +1711,7 @@ static int e1000_setup_rx_resources(struct e1000_adapter *adapter,
- 
- 	rxdr->desc = dma_alloc_coherent(&pdev->dev, rxdr->size, &rxdr->dma,
- 					GFP_KERNEL);
--
- 	if (!rxdr->desc) {
--		e_err(probe, "Unable to allocate memory for the Rx descriptor "
--		      "ring\n");
- setup_rx_desc_die:
- 		vfree(rxdr->buffer_info);
- 		return -ENOMEM;
-@@ -1735,8 +1730,6 @@ setup_rx_desc_die:
- 		if (!rxdr->desc) {
- 			dma_free_coherent(&pdev->dev, rxdr->size, olddesc,
- 					  olddma);
--			e_err(probe, "Unable to allocate memory for the Rx "
--			      "descriptor ring\n");
- 			goto setup_rx_desc_die;
- 		}
- 
-diff --git a/drivers/net/ethernet/intel/igbvf/netdev.c b/drivers/net/ethernet/intel/igbvf/netdev.c
-index f53f713..b2c5f0c 100644
---- a/drivers/net/ethernet/intel/igbvf/netdev.c
-+++ b/drivers/net/ethernet/intel/igbvf/netdev.c
-@@ -447,7 +447,6 @@ int igbvf_setup_tx_resources(struct igbvf_adapter *adapter,
- 
- 	tx_ring->desc = dma_alloc_coherent(&pdev->dev, tx_ring->size,
- 					   &tx_ring->dma, GFP_KERNEL);
--
- 	if (!tx_ring->desc)
- 		goto err;
- 
-@@ -488,7 +487,6 @@ int igbvf_setup_rx_resources(struct igbvf_adapter *adapter,
- 
- 	rx_ring->desc = dma_alloc_coherent(&pdev->dev, rx_ring->size,
- 					   &rx_ring->dma, GFP_KERNEL);
--
- 	if (!rx_ring->desc)
- 		goto err;
- 
-diff --git a/drivers/net/ethernet/intel/ixgb/ixgb_main.c b/drivers/net/ethernet/intel/ixgb/ixgb_main.c
-index ea48083..3e7295c 100644
---- a/drivers/net/ethernet/intel/ixgb/ixgb_main.c
-+++ b/drivers/net/ethernet/intel/ixgb/ixgb_main.c
-@@ -717,14 +717,11 @@ ixgb_setup_tx_resources(struct ixgb_adapter *adapter)
- 	txdr->size = ALIGN(txdr->size, 4096);
- 
- 	txdr->desc = dma_alloc_coherent(&pdev->dev, txdr->size, &txdr->dma,
--					GFP_KERNEL);
-+					GFP_KERNEL | __GFP_ZERO);
- 	if (!txdr->desc) {
- 		vfree(txdr->buffer_info);
--		netif_err(adapter, probe, adapter->netdev,
--			  "Unable to allocate transmit descriptor memory\n");
- 		return -ENOMEM;
- 	}
--	memset(txdr->desc, 0, txdr->size);
- 
- 	txdr->next_to_use = 0;
- 	txdr->next_to_clean = 0;
-@@ -803,15 +800,11 @@ ixgb_setup_rx_resources(struct ixgb_adapter *adapter)
- 	rxdr->size = ALIGN(rxdr->size, 4096);
- 
- 	rxdr->desc = dma_alloc_coherent(&pdev->dev, rxdr->size, &rxdr->dma,
--					GFP_KERNEL);
--
-+					GFP_KERNEL | __GFP_ZERO);
- 	if (!rxdr->desc) {
- 		vfree(rxdr->buffer_info);
--		netif_err(adapter, probe, adapter->netdev,
--			  "Unable to allocate receive descriptors\n");
- 		return -ENOMEM;
- 	}
--	memset(rxdr->desc, 0, rxdr->size);
- 
- 	rxdr->next_to_clean = 0;
- 	rxdr->next_to_use = 0;
-diff --git a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
-index c3db6cd..d87291a 100644
---- a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
-+++ b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
-@@ -2415,11 +2415,7 @@ int ixgbevf_setup_rx_resources(struct ixgbevf_adapter *adapter,
- 
- 	rx_ring->desc = dma_alloc_coherent(&pdev->dev, rx_ring->size,
- 					   &rx_ring->dma, GFP_KERNEL);
--
- 	if (!rx_ring->desc) {
--		hw_dbg(&adapter->hw,
--		       "Unable to allocate memory for "
--		       "the receive descriptor ring\n");
- 		vfree(rx_ring->rx_buffer_info);
- 		rx_ring->rx_buffer_info = NULL;
- 		goto alloc_failed;
-diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
-index b6025c3..c17ab48 100644
---- a/drivers/net/ethernet/marvell/mvneta.c
-+++ b/drivers/net/ethernet/marvell/mvneta.c
-@@ -1970,13 +1970,8 @@ static int mvneta_rxq_init(struct mvneta_port *pp,
- 	rxq->descs = dma_alloc_coherent(pp->dev->dev.parent,
- 					rxq->size * MVNETA_DESC_ALIGNED_SIZE,
- 					&rxq->descs_phys, GFP_KERNEL);
--	if (rxq->descs == NULL) {
--		netdev_err(pp->dev,
--			   "rxq=%d: Can't allocate %d bytes for %d RX descr\n",
--			   rxq->id, rxq->size * MVNETA_DESC_ALIGNED_SIZE,
--			   rxq->size);
-+	if (rxq->descs == NULL)
- 		return -ENOMEM;
--	}
- 
- 	BUG_ON(rxq->descs !=
- 	       PTR_ALIGN(rxq->descs, MVNETA_CPU_D_CACHE_LINE_SIZE));
-@@ -2030,13 +2025,8 @@ static int mvneta_txq_init(struct mvneta_port *pp,
- 	txq->descs = dma_alloc_coherent(pp->dev->dev.parent,
- 					txq->size * MVNETA_DESC_ALIGNED_SIZE,
- 					&txq->descs_phys, GFP_KERNEL);
--	if (txq->descs == NULL) {
--		netdev_err(pp->dev,
--			   "txQ=%d: Can't allocate %d bytes for %d TX descr\n",
--			   txq->id, txq->size * MVNETA_DESC_ALIGNED_SIZE,
--			   txq->size);
-+	if (txq->descs == NULL)
- 		return -ENOMEM;
--	}
- 
- 	/* Make sure descriptor address is cache line size aligned  */
- 	BUG_ON(txq->descs !=
-diff --git a/drivers/net/ethernet/marvell/pxa168_eth.c b/drivers/net/ethernet/marvell/pxa168_eth.c
-index 037ed86..339bb32 100644
---- a/drivers/net/ethernet/marvell/pxa168_eth.c
-+++ b/drivers/net/ethernet/marvell/pxa168_eth.c
-@@ -584,12 +584,14 @@ static int init_hash_table(struct pxa168_eth_private *pep)
- 	 */
- 	if (pep->htpr == NULL) {
- 		pep->htpr = dma_alloc_coherent(pep->dev->dev.parent,
--					      HASH_ADDR_TABLE_SIZE,
--					      &pep->htpr_dma, GFP_KERNEL);
-+					       HASH_ADDR_TABLE_SIZE,
-+					       &pep->htpr_dma,
-+					       GFP_KERNEL | __GFP_ZERO);
- 		if (pep->htpr == NULL)
- 			return -ENOMEM;
-+	} else {
-+		memset(pep->htpr, 0, HASH_ADDR_TABLE_SIZE);
- 	}
--	memset(pep->htpr, 0, HASH_ADDR_TABLE_SIZE);
- 	wrl(pep, HTPR, pep->htpr_dma);
- 	return 0;
- }
-@@ -1023,13 +1025,11 @@ static int rxq_init(struct net_device *dev)
- 	size = pep->rx_ring_size * sizeof(struct rx_desc);
- 	pep->rx_desc_area_size = size;
- 	pep->p_rx_desc_area = dma_alloc_coherent(pep->dev->dev.parent, size,
--						&pep->rx_desc_dma, GFP_KERNEL);
--	if (!pep->p_rx_desc_area) {
--		printk(KERN_ERR "%s: Cannot alloc RX ring (size %d bytes)\n",
--		       dev->name, size);
-+						 &pep->rx_desc_dma,
-+						 GFP_KERNEL | __GFP_ZERO);
-+	if (!pep->p_rx_desc_area)
- 		goto out;
--	}
--	memset((void *)pep->p_rx_desc_area, 0, size);
-+
- 	/* initialize the next_desc_ptr links in the Rx descriptors ring */
- 	p_rx_desc = pep->p_rx_desc_area;
- 	for (i = 0; i < rx_desc_num; i++) {
-@@ -1086,13 +1086,10 @@ static int txq_init(struct net_device *dev)
- 	size = pep->tx_ring_size * sizeof(struct tx_desc);
- 	pep->tx_desc_area_size = size;
- 	pep->p_tx_desc_area = dma_alloc_coherent(pep->dev->dev.parent, size,
--						&pep->tx_desc_dma, GFP_KERNEL);
--	if (!pep->p_tx_desc_area) {
--		printk(KERN_ERR "%s: Cannot allocate Tx Ring (size %d bytes)\n",
--		       dev->name, size);
-+						 &pep->tx_desc_dma,
-+						 GFP_KERNEL | __GFP_ZERO);
-+	if (!pep->p_tx_desc_area)
- 		goto out;
--	}
--	memset((void *)pep->p_tx_desc_area, 0, pep->tx_desc_area_size);
- 	/* Initialize the next_desc_ptr links in the Tx descriptors ring */
- 	p_tx_desc = pep->p_tx_desc_area;
- 	for (i = 0; i < tx_desc_num; i++) {
-diff --git a/drivers/net/ethernet/mellanox/mlx4/cmd.c b/drivers/net/ethernet/mellanox/mlx4/cmd.c
-index fdc5f23..c8a80ed 100644
---- a/drivers/net/ethernet/mellanox/mlx4/cmd.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/cmd.c
-@@ -1834,13 +1834,12 @@ int mlx4_cmd_init(struct mlx4_dev *dev)
- 	}
- 
- 	if (mlx4_is_mfunc(dev)) {
--		priv->mfunc.vhcr = dma_alloc_coherent(&(dev->pdev->dev), PAGE_SIZE,
-+		priv->mfunc.vhcr = dma_alloc_coherent(&(dev->pdev->dev),
-+						      PAGE_SIZE,
- 						      &priv->mfunc.vhcr_dma,
- 						      GFP_KERNEL);
--		if (!priv->mfunc.vhcr) {
--			mlx4_err(dev, "Couldn't allocate VHCR.\n");
-+		if (!priv->mfunc.vhcr)
- 			goto err_hcr;
--		}
- 	}
- 
- 	priv->cmd.pool = pci_pool_create("mlx4_cmd", dev->pdev,
-diff --git a/drivers/net/ethernet/myricom/myri10ge/myri10ge.c b/drivers/net/ethernet/myricom/myri10ge/myri10ge.c
-index 4f9937e..d5ffdc8 100644
---- a/drivers/net/ethernet/myricom/myri10ge/myri10ge.c
-+++ b/drivers/net/ethernet/myricom/myri10ge/myri10ge.c
-@@ -3592,10 +3592,9 @@ static int myri10ge_alloc_slices(struct myri10ge_priv *mgp)
- 		bytes = mgp->max_intr_slots * sizeof(*ss->rx_done.entry);
- 		ss->rx_done.entry = dma_alloc_coherent(&pdev->dev, bytes,
- 						       &ss->rx_done.bus,
--						       GFP_KERNEL);
-+						       GFP_KERNEL | __GFP_ZERO);
- 		if (ss->rx_done.entry == NULL)
- 			goto abort;
--		memset(ss->rx_done.entry, 0, bytes);
- 		bytes = sizeof(*ss->fw_stats);
- 		ss->fw_stats = dma_alloc_coherent(&pdev->dev, bytes,
- 						  &ss->fw_stats_bus,
-diff --git a/drivers/net/ethernet/natsemi/jazzsonic.c b/drivers/net/ethernet/natsemi/jazzsonic.c
-index b0b3615..c20766c 100644
---- a/drivers/net/ethernet/natsemi/jazzsonic.c
-+++ b/drivers/net/ethernet/natsemi/jazzsonic.c
-@@ -175,13 +175,13 @@ static int sonic_probe1(struct net_device *dev)
- 
- 	/* Allocate the entire chunk of memory for the descriptors.
-            Note that this cannot cross a 64K boundary. */
--	if ((lp->descriptors = dma_alloc_coherent(lp->device,
--				SIZEOF_SONIC_DESC * SONIC_BUS_SCALE(lp->dma_bitmode),
--				&lp->descriptors_laddr, GFP_KERNEL)) == NULL) {
--		printk(KERN_ERR "%s: couldn't alloc DMA memory for descriptors.\n",
--		       dev_name(lp->device));
-+	lp->descriptors = dma_alloc_coherent(lp->device,
-+					     SIZEOF_SONIC_DESC *
-+					     SONIC_BUS_SCALE(lp->dma_bitmode),
-+					     &lp->descriptors_laddr,
-+					     GFP_KERNEL);
-+	if (lp->descriptors == NULL)
- 		goto out;
--	}
- 
- 	/* Now set up the pointers to point to the appropriate places */
- 	lp->cda = lp->descriptors;
-diff --git a/drivers/net/ethernet/natsemi/macsonic.c b/drivers/net/ethernet/natsemi/macsonic.c
-index 0ffde69..346a4e0 100644
---- a/drivers/net/ethernet/natsemi/macsonic.c
-+++ b/drivers/net/ethernet/natsemi/macsonic.c
-@@ -202,13 +202,13 @@ static int macsonic_init(struct net_device *dev)
- 
- 	/* Allocate the entire chunk of memory for the descriptors.
-            Note that this cannot cross a 64K boundary. */
--	if ((lp->descriptors = dma_alloc_coherent(lp->device,
--	            SIZEOF_SONIC_DESC * SONIC_BUS_SCALE(lp->dma_bitmode),
--	            &lp->descriptors_laddr, GFP_KERNEL)) == NULL) {
--		printk(KERN_ERR "%s: couldn't alloc DMA memory for descriptors.\n",
--		       dev_name(lp->device));
-+	lp->descriptors = dma_alloc_coherent(lp->device,
-+					     SIZEOF_SONIC_DESC *
-+					     SONIC_BUS_SCALE(lp->dma_bitmode),
-+					     &lp->descriptors_laddr,
-+					     GFP_KERNEL);
-+	if (lp->descriptors == NULL)
- 		return -ENOMEM;
--	}
- 
- 	/* Now set up the pointers to point to the appropriate places */
- 	lp->cda = lp->descriptors;
-diff --git a/drivers/net/ethernet/natsemi/xtsonic.c b/drivers/net/ethernet/natsemi/xtsonic.c
-index 5e4748e..c2e0256 100644
---- a/drivers/net/ethernet/natsemi/xtsonic.c
-+++ b/drivers/net/ethernet/natsemi/xtsonic.c
-@@ -197,14 +197,12 @@ static int __init sonic_probe1(struct net_device *dev)
- 	 *  We also allocate extra space for a pointer to allow freeing
- 	 *  this structure later on (in xtsonic_cleanup_module()).
- 	 */
--	lp->descriptors =
--		dma_alloc_coherent(lp->device,
--			SIZEOF_SONIC_DESC * SONIC_BUS_SCALE(lp->dma_bitmode),
--			&lp->descriptors_laddr, GFP_KERNEL);
--
-+	lp->descriptors = dma_alloc_coherent(lp->device,
-+					     SIZEOF_SONIC_DESC *
-+					     SONIC_BUS_SCALE(lp->dma_bitmode),
-+					     &lp->descriptors_laddr,
-+					     GFP_KERNEL);
- 	if (lp->descriptors == NULL) {
--		printk(KERN_ERR "%s: couldn't alloc DMA memory for "
--				" descriptors.\n", dev_name(lp->device));
- 		err = -ENOMEM;
- 		goto out;
- 	}
-diff --git a/drivers/net/ethernet/nuvoton/w90p910_ether.c b/drivers/net/ethernet/nuvoton/w90p910_ether.c
-index 162da89..6e8b8d5 100644
---- a/drivers/net/ethernet/nuvoton/w90p910_ether.c
-+++ b/drivers/net/ethernet/nuvoton/w90p910_ether.c
-@@ -287,23 +287,16 @@ static int w90p910_init_desc(struct net_device *dev)
- 	ether = netdev_priv(dev);
- 	pdev = ether->pdev;
- 
--	ether->tdesc = (struct tran_pdesc *)
--		dma_alloc_coherent(&pdev->dev, sizeof(struct tran_pdesc),
--					&ether->tdesc_phys, GFP_KERNEL);
--
--	if (!ether->tdesc) {
--		dev_err(&pdev->dev, "Failed to allocate memory for tx desc\n");
-+	ether->tdesc = dma_alloc_coherent(&pdev->dev, sizeof(struct tran_pdesc),
-+					  &ether->tdesc_phys, GFP_KERNEL);
-+	if (!ether->tdesc)
- 		return -ENOMEM;
--	}
--
--	ether->rdesc = (struct recv_pdesc *)
--		dma_alloc_coherent(&pdev->dev, sizeof(struct recv_pdesc),
--					&ether->rdesc_phys, GFP_KERNEL);
- 
-+	ether->rdesc = dma_alloc_coherent(&pdev->dev, sizeof(struct recv_pdesc),
-+					  &ether->rdesc_phys, GFP_KERNEL);
- 	if (!ether->rdesc) {
--		dev_err(&pdev->dev, "Failed to allocate memory for rx desc\n");
- 		dma_free_coherent(&pdev->dev, sizeof(struct tran_pdesc),
--					ether->tdesc, ether->tdesc_phys);
-+				  ether->tdesc, ether->tdesc_phys);
- 		return -ENOMEM;
- 	}
- 
-diff --git a/drivers/net/ethernet/nxp/lpc_eth.c b/drivers/net/ethernet/nxp/lpc_eth.c
-index c4122c8..9c88c00 100644
---- a/drivers/net/ethernet/nxp/lpc_eth.c
-+++ b/drivers/net/ethernet/nxp/lpc_eth.c
-@@ -1409,9 +1409,7 @@ static int lpc_eth_drv_probe(struct platform_device *pdev)
- 			dma_alloc_coherent(&pldat->pdev->dev,
- 					   pldat->dma_buff_size, &dma_handle,
- 					   GFP_KERNEL);
--
- 		if (pldat->dma_buff_base_v == NULL) {
--			dev_err(&pdev->dev, "error getting DMA region.\n");
- 			ret = -ENOMEM;
- 			goto err_out_free_irq;
- 		}
-diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-index 39ab4d0..abd5fba 100644
---- a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-+++ b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-@@ -1469,13 +1469,11 @@ pch_gbe_alloc_rx_buffers_pool(struct pch_gbe_adapter *adapter,
- 
- 	size = rx_ring->count * bufsz + PCH_GBE_RESERVE_MEMORY;
- 	rx_ring->rx_buff_pool = dma_alloc_coherent(&pdev->dev, size,
--						&rx_ring->rx_buff_pool_logic,
--						GFP_KERNEL);
--	if (!rx_ring->rx_buff_pool) {
--		pr_err("Unable to allocate memory for the receive pool buffer\n");
-+						   &rx_ring->rx_buff_pool_logic,
-+						   GFP_KERNEL | __GFP_ZERO);
-+	if (!rx_ring->rx_buff_pool)
- 		return -ENOMEM;
--	}
--	memset(rx_ring->rx_buff_pool, 0, size);
-+
- 	rx_ring->rx_buff_pool_size = size;
- 	for (i = 0; i < rx_ring->count; i++) {
- 		buffer_info = &rx_ring->buffer_info[i];
-@@ -1774,13 +1772,12 @@ int pch_gbe_setup_tx_resources(struct pch_gbe_adapter *adapter,
- 	tx_ring->size = tx_ring->count * (int)sizeof(struct pch_gbe_tx_desc);
- 
- 	tx_ring->desc = dma_alloc_coherent(&pdev->dev, tx_ring->size,
--					   &tx_ring->dma, GFP_KERNEL);
-+					   &tx_ring->dma,
-+					   GFP_KERNEL | __GFP_ZERO);
- 	if (!tx_ring->desc) {
- 		vfree(tx_ring->buffer_info);
--		pr_err("Unable to allocate memory for the transmit descriptor ring\n");
- 		return -ENOMEM;
- 	}
--	memset(tx_ring->desc, 0, tx_ring->size);
- 
- 	tx_ring->next_to_use = 0;
- 	tx_ring->next_to_clean = 0;
-@@ -1820,14 +1817,12 @@ int pch_gbe_setup_rx_resources(struct pch_gbe_adapter *adapter,
- 
- 	rx_ring->size = rx_ring->count * (int)sizeof(struct pch_gbe_rx_desc);
- 	rx_ring->desc =	dma_alloc_coherent(&pdev->dev, rx_ring->size,
--					   &rx_ring->dma, GFP_KERNEL);
--
-+					   &rx_ring->dma,
-+					   GFP_KERNEL | __GFP_ZERO);
- 	if (!rx_ring->desc) {
--		pr_err("Unable to allocate memory for the receive descriptor ring\n");
- 		vfree(rx_ring->buffer_info);
- 		return -ENOMEM;
- 	}
--	memset(rx_ring->desc, 0, rx_ring->size);
- 	rx_ring->next_to_clean = 0;
- 	rx_ring->next_to_use = 0;
- 	for (desNo = 0; desNo < rx_ring->count; desNo++) {
-diff --git a/drivers/net/ethernet/pasemi/pasemi_mac.c b/drivers/net/ethernet/pasemi/pasemi_mac.c
-index 0be5844..5b92526 100644
---- a/drivers/net/ethernet/pasemi/pasemi_mac.c
-+++ b/drivers/net/ethernet/pasemi/pasemi_mac.c
-@@ -441,12 +441,11 @@ static int pasemi_mac_setup_rx_resources(const struct net_device *dev)
- 
- 	ring->buffers = dma_alloc_coherent(&mac->dma_pdev->dev,
- 					   RX_RING_SIZE * sizeof(u64),
--					   &ring->buf_dma, GFP_KERNEL);
-+					   &ring->buf_dma,
-+					   GFP_KERNEL | __GFP_ZERO);
- 	if (!ring->buffers)
- 		goto out_ring_desc;
- 
--	memset(ring->buffers, 0, RX_RING_SIZE * sizeof(u64));
--
- 	write_dma_reg(PAS_DMA_RXCHAN_BASEL(chno),
- 		      PAS_DMA_RXCHAN_BASEL_BRBL(ring->chan.ring_dma));
- 
-diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_ctx.c b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_ctx.c
-index 4a3bd64..9363b6f 100644
---- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_ctx.c
-+++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_ctx.c
-@@ -401,22 +401,20 @@ int qlcnic_82xx_fw_cmd_create_tx_ctx(struct qlcnic_adapter *adapter,
- 
- 	rq_size = SIZEOF_HOSTRQ_TX(struct qlcnic_hostrq_tx_ctx);
- 	rq_addr = dma_alloc_coherent(&adapter->pdev->dev, rq_size,
--			&rq_phys_addr, GFP_KERNEL);
-+				     &rq_phys_addr, GFP_KERNEL | __GFP_ZERO);
- 	if (!rq_addr)
- 		return -ENOMEM;
- 
- 	rsp_size = SIZEOF_CARDRSP_TX(struct qlcnic_cardrsp_tx_ctx);
- 	rsp_addr = dma_alloc_coherent(&adapter->pdev->dev, rsp_size,
--			&rsp_phys_addr, GFP_KERNEL);
-+				      &rsp_phys_addr, GFP_KERNEL | __GFP_ZERO);
- 	if (!rsp_addr) {
- 		err = -ENOMEM;
- 		goto out_free_rq;
- 	}
- 
--	memset(rq_addr, 0, rq_size);
- 	prq = rq_addr;
- 
--	memset(rsp_addr, 0, rsp_size);
- 	prsp = rsp_addr;
- 
- 	prq->host_rsp_dma_addr = cpu_to_le64(rsp_phys_addr);
-@@ -511,20 +509,15 @@ int qlcnic_alloc_hw_resources(struct qlcnic_adapter *adapter)
- 		ptr = (__le32 *)dma_alloc_coherent(&pdev->dev, sizeof(u32),
- 						   &tx_ring->hw_cons_phys_addr,
- 						   GFP_KERNEL);
--
--		if (ptr == NULL) {
--			dev_err(&pdev->dev, "failed to allocate tx consumer\n");
-+		if (ptr == NULL)
- 			return -ENOMEM;
--		}
-+
- 		tx_ring->hw_consumer = ptr;
- 		/* cmd desc ring */
- 		addr = dma_alloc_coherent(&pdev->dev, TX_DESC_RINGSIZE(tx_ring),
- 					  &tx_ring->phys_addr,
- 					  GFP_KERNEL);
--
- 		if (addr == NULL) {
--			dev_err(&pdev->dev,
--				"failed to allocate tx desc ring\n");
- 			err = -ENOMEM;
- 			goto err_out_free;
- 		}
-@@ -535,11 +528,9 @@ int qlcnic_alloc_hw_resources(struct qlcnic_adapter *adapter)
- 	for (ring = 0; ring < adapter->max_rds_rings; ring++) {
- 		rds_ring = &recv_ctx->rds_rings[ring];
- 		addr = dma_alloc_coherent(&adapter->pdev->dev,
--				RCV_DESC_RINGSIZE(rds_ring),
--				&rds_ring->phys_addr, GFP_KERNEL);
-+					  RCV_DESC_RINGSIZE(rds_ring),
-+					  &rds_ring->phys_addr, GFP_KERNEL);
- 		if (addr == NULL) {
--			dev_err(&pdev->dev,
--				"failed to allocate rds ring [%d]\n", ring);
- 			err = -ENOMEM;
- 			goto err_out_free;
- 		}
-@@ -551,11 +542,9 @@ int qlcnic_alloc_hw_resources(struct qlcnic_adapter *adapter)
- 		sds_ring = &recv_ctx->sds_rings[ring];
- 
- 		addr = dma_alloc_coherent(&adapter->pdev->dev,
--				STATUS_DESC_RINGSIZE(sds_ring),
--				&sds_ring->phys_addr, GFP_KERNEL);
-+					  STATUS_DESC_RINGSIZE(sds_ring),
-+					  &sds_ring->phys_addr, GFP_KERNEL);
- 		if (addr == NULL) {
--			dev_err(&pdev->dev,
--				"failed to allocate sds ring [%d]\n", ring);
- 			err = -ENOMEM;
- 			goto err_out_free;
- 		}
-@@ -711,10 +700,9 @@ int qlcnic_82xx_get_nic_info(struct qlcnic_adapter *adapter,
- 	size_t  nic_size = sizeof(struct qlcnic_info_le);
- 
- 	nic_info_addr = dma_alloc_coherent(&adapter->pdev->dev, nic_size,
--				&nic_dma_t, GFP_KERNEL);
-+					   &nic_dma_t, GFP_KERNEL | __GFP_ZERO);
- 	if (!nic_info_addr)
- 		return -ENOMEM;
--	memset(nic_info_addr, 0, nic_size);
- 
- 	nic_info = nic_info_addr;
- 
-@@ -762,11 +750,10 @@ int qlcnic_82xx_set_nic_info(struct qlcnic_adapter *adapter,
- 		return err;
- 
- 	nic_info_addr = dma_alloc_coherent(&adapter->pdev->dev, nic_size,
--			&nic_dma_t, GFP_KERNEL);
-+					   &nic_dma_t, GFP_KERNEL | __GFP_ZERO);
- 	if (!nic_info_addr)
- 		return -ENOMEM;
- 
--	memset(nic_info_addr, 0, nic_size);
- 	nic_info = nic_info_addr;
- 
- 	nic_info->pci_func = cpu_to_le16(nic->pci_func);
-@@ -812,10 +799,10 @@ int qlcnic_82xx_get_pci_info(struct qlcnic_adapter *adapter,
- 	size_t pci_size = npar_size * QLCNIC_MAX_PCI_FUNC;
- 
- 	pci_info_addr = dma_alloc_coherent(&adapter->pdev->dev, pci_size,
--			&pci_info_dma_t, GFP_KERNEL);
-+					   &pci_info_dma_t,
-+					   GFP_KERNEL | __GFP_ZERO);
- 	if (!pci_info_addr)
- 		return -ENOMEM;
--	memset(pci_info_addr, 0, pci_size);
- 
- 	npar = pci_info_addr;
- 	qlcnic_alloc_mbx_args(&cmd, adapter, QLCNIC_CMD_GET_PCI_INFO);
-@@ -907,12 +894,9 @@ int qlcnic_get_port_stats(struct qlcnic_adapter *adapter, const u8 func,
- 	}
- 
- 	stats_addr = dma_alloc_coherent(&adapter->pdev->dev, stats_size,
--			&stats_dma_t, GFP_KERNEL);
--	if (!stats_addr) {
--		dev_err(&adapter->pdev->dev, "Unable to allocate memory\n");
-+					&stats_dma_t, GFP_KERNEL | __GFP_ZERO);
-+	if (!stats_addr)
- 		return -ENOMEM;
--	}
--	memset(stats_addr, 0, stats_size);
- 
- 	arg1 = func | QLCNIC_STATS_VERSION << 8 | QLCNIC_STATS_PORT << 12;
- 	arg1 |= rx_tx << 15 | stats_size << 16;
-@@ -961,13 +945,10 @@ int qlcnic_get_mac_stats(struct qlcnic_adapter *adapter,
- 		return -ENOMEM;
- 
- 	stats_addr = dma_alloc_coherent(&adapter->pdev->dev, stats_size,
--			&stats_dma_t, GFP_KERNEL);
--	if (!stats_addr) {
--		dev_err(&adapter->pdev->dev,
--			"%s: Unable to allocate memory.\n", __func__);
-+					&stats_dma_t, GFP_KERNEL | __GFP_ZERO);
-+	if (!stats_addr)
- 		return -ENOMEM;
--	}
--	memset(stats_addr, 0, stats_size);
-+
- 	qlcnic_alloc_mbx_args(&cmd, adapter, QLCNIC_CMD_GET_MAC_STATS);
- 	cmd.req.arg[1] = stats_size << 16;
- 	cmd.req.arg[2] = MSD(stats_dma_t);
-diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_minidump.c b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_minidump.c
-index abbd22c..4b9bab1 100644
---- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_minidump.c
-+++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_minidump.c
-@@ -810,11 +810,8 @@ static int __qlcnic_fw_cmd_get_minidump_temp(struct qlcnic_adapter *adapter,
- 
- 	tmp_addr = dma_alloc_coherent(&adapter->pdev->dev, temp_size,
- 				      &tmp_addr_t, GFP_KERNEL);
--	if (!tmp_addr) {
--		dev_err(&adapter->pdev->dev,
--			"Can't get memory for FW dump template\n");
-+	if (!tmp_addr)
- 		return -ENOMEM;
--	}
- 
- 	if (qlcnic_alloc_mbx_args(&cmd, adapter, QLCNIC_CMD_GET_TEMP_HDR)) {
- 		err = -ENOMEM;
-diff --git a/drivers/net/ethernet/renesas/sh_eth.c b/drivers/net/ethernet/renesas/sh_eth.c
-index 33e9617..7a6471d 100644
---- a/drivers/net/ethernet/renesas/sh_eth.c
-+++ b/drivers/net/ethernet/renesas/sh_eth.c
-@@ -908,11 +908,8 @@ static int sh_eth_ring_init(struct net_device *ndev)
- 	/* Allocate all Rx descriptors. */
- 	rx_ringsize = sizeof(struct sh_eth_rxdesc) * mdp->num_rx_ring;
- 	mdp->rx_ring = dma_alloc_coherent(NULL, rx_ringsize, &mdp->rx_desc_dma,
--			GFP_KERNEL);
--
-+					  GFP_KERNEL);
- 	if (!mdp->rx_ring) {
--		dev_err(&ndev->dev, "Cannot allocate Rx Ring (size %d bytes)\n",
--			rx_ringsize);
- 		ret = -ENOMEM;
- 		goto desc_ring_free;
- 	}
-@@ -922,10 +919,8 @@ static int sh_eth_ring_init(struct net_device *ndev)
- 	/* Allocate all Tx descriptors. */
- 	tx_ringsize = sizeof(struct sh_eth_txdesc) * mdp->num_tx_ring;
- 	mdp->tx_ring = dma_alloc_coherent(NULL, tx_ringsize, &mdp->tx_desc_dma,
--			GFP_KERNEL);
-+					  GFP_KERNEL);
- 	if (!mdp->tx_ring) {
--		dev_err(&ndev->dev, "Cannot allocate Tx Ring (size %d bytes)\n",
--			tx_ringsize);
- 		ret = -ENOMEM;
- 		goto desc_ring_free;
- 	}
-diff --git a/drivers/net/ethernet/sfc/nic.c b/drivers/net/ethernet/sfc/nic.c
-index 0ad790c..da044c9 100644
---- a/drivers/net/ethernet/sfc/nic.c
-+++ b/drivers/net/ethernet/sfc/nic.c
-@@ -305,11 +305,11 @@ int efx_nic_alloc_buffer(struct efx_nic *efx, struct efx_buffer *buffer,
- 			 unsigned int len)
- {
- 	buffer->addr = dma_alloc_coherent(&efx->pci_dev->dev, len,
--					  &buffer->dma_addr, GFP_ATOMIC);
-+					  &buffer->dma_addr,
-+					  GFP_ATOMIC | __GFP_ZERO);
- 	if (!buffer->addr)
- 		return -ENOMEM;
- 	buffer->len = len;
--	memset(buffer->addr, 0, len);
- 	return 0;
- }
- 
-diff --git a/drivers/net/ethernet/sgi/meth.c b/drivers/net/ethernet/sgi/meth.c
-index 79ad9c9..4bdbaad9 100644
---- a/drivers/net/ethernet/sgi/meth.c
-+++ b/drivers/net/ethernet/sgi/meth.c
-@@ -213,10 +213,11 @@ static int meth_init_tx_ring(struct meth_private *priv)
- {
- 	/* Init TX ring */
- 	priv->tx_ring = dma_alloc_coherent(NULL, TX_RING_BUFFER_SIZE,
--	                                   &priv->tx_ring_dma, GFP_ATOMIC);
-+	                                   &priv->tx_ring_dma,
-+					   GFP_ATOMIC | __GFP_ZERO);
- 	if (!priv->tx_ring)
- 		return -ENOMEM;
--	memset(priv->tx_ring, 0, TX_RING_BUFFER_SIZE);
-+
- 	priv->tx_count = priv->tx_read = priv->tx_write = 0;
- 	mace->eth.tx_ring_base = priv->tx_ring_dma;
- 	/* Now init skb save area */
-diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-index fd4d659..8328213 100644
---- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-@@ -534,25 +534,17 @@ static void init_dma_desc_rings(struct net_device *dev)
- 					    GFP_KERNEL);
- 	priv->rx_skbuff = kmalloc_array(rxsize, sizeof(struct sk_buff *),
- 					GFP_KERNEL);
--	priv->dma_rx =
--	    (struct dma_desc *)dma_alloc_coherent(priv->device,
--						  rxsize *
--						  sizeof(struct dma_desc),
--						  &priv->dma_rx_phy,
--						  GFP_KERNEL);
-+	priv->dma_rx = dma_alloc_coherent(priv->device,
-+					  rxsize * sizeof(struct dma_desc),
-+					  &priv->dma_rx_phy, GFP_KERNEL);
- 	priv->tx_skbuff = kmalloc_array(txsize, sizeof(struct sk_buff *),
- 					GFP_KERNEL);
--	priv->dma_tx =
--	    (struct dma_desc *)dma_alloc_coherent(priv->device,
--						  txsize *
--						  sizeof(struct dma_desc),
--						  &priv->dma_tx_phy,
--						  GFP_KERNEL);
--
--	if ((priv->dma_rx == NULL) || (priv->dma_tx == NULL)) {
--		pr_err("%s:ERROR allocating the DMA Tx/Rx desc\n", __func__);
-+	priv->dma_tx = dma_alloc_coherent(priv->device,
-+					  txsize * sizeof(struct dma_desc),
-+					  &priv->dma_tx_phy, GFP_KERNEL);
-+
-+	if ((priv->dma_rx == NULL) || (priv->dma_tx == NULL))
- 		return;
--	}
- 
- 	DBG(probe, INFO, "stmmac (%s) DMA desc: virt addr (Rx %p, "
- 	    "Tx %p)\n\tDMA phy addr (Rx 0x%08x, Tx 0x%08x)\n",
-diff --git a/drivers/net/ethernet/sun/sunbmac.c b/drivers/net/ethernet/sun/sunbmac.c
-index 5fafca0..0549759 100644
---- a/drivers/net/ethernet/sun/sunbmac.c
-+++ b/drivers/net/ethernet/sun/sunbmac.c
-@@ -1169,10 +1169,8 @@ static int bigmac_ether_init(struct platform_device *op,
- 	bp->bmac_block = dma_alloc_coherent(&bp->bigmac_op->dev,
- 					    PAGE_SIZE,
- 					    &bp->bblock_dvma, GFP_ATOMIC);
--	if (bp->bmac_block == NULL || bp->bblock_dvma == 0) {
--		printk(KERN_ERR "BIGMAC: Cannot allocate consistent DMA.\n");
-+	if (bp->bmac_block == NULL || bp->bblock_dvma == 0)
- 		goto fail_and_cleanup;
--	}
- 
- 	/* Get the board revision of this BigMAC. */
- 	bp->board_rev = of_getintprop_default(bp->bigmac_op->dev.of_node,
-diff --git a/drivers/net/ethernet/sun/sunhme.c b/drivers/net/ethernet/sun/sunhme.c
-index a1bff49..436fa9d 100644
---- a/drivers/net/ethernet/sun/sunhme.c
-+++ b/drivers/net/ethernet/sun/sunhme.c
-@@ -2752,10 +2752,8 @@ static int happy_meal_sbus_probe_one(struct platform_device *op, int is_qfe)
- 					     &hp->hblock_dvma,
- 					     GFP_ATOMIC);
- 	err = -ENOMEM;
--	if (!hp->happy_block) {
--		printk(KERN_ERR "happymeal: Cannot allocate descriptors.\n");
-+	if (!hp->happy_block)
- 		goto err_out_iounmap;
--	}
- 
- 	/* Force check of the link first time we are brought up. */
- 	hp->linkcheck = 0;
-@@ -3068,14 +3066,11 @@ static int happy_meal_pci_probe(struct pci_dev *pdev,
- 	hp->happy_bursts = DMA_BURSTBITS;
- #endif
- 
--	hp->happy_block = (struct hmeal_init_block *)
--		dma_alloc_coherent(&pdev->dev, PAGE_SIZE, &hp->hblock_dvma, GFP_KERNEL);
--
-+	hp->happy_block = dma_alloc_coherent(&pdev->dev, PAGE_SIZE,
-+					     &hp->hblock_dvma, GFP_KERNEL);
- 	err = -ENODEV;
--	if (!hp->happy_block) {
--		printk(KERN_ERR "happymeal(PCI): Cannot get hme init block.\n");
-+	if (!hp->happy_block)
- 		goto err_out_iounmap;
--	}
- 
- 	hp->linkcheck = 0;
- 	hp->timer_state = asleep;
-diff --git a/drivers/net/ethernet/toshiba/spider_net.c b/drivers/net/ethernet/toshiba/spider_net.c
-index f1b91fd..fef6b59 100644
---- a/drivers/net/ethernet/toshiba/spider_net.c
-+++ b/drivers/net/ethernet/toshiba/spider_net.c
-@@ -352,8 +352,7 @@ spider_net_init_chain(struct spider_net_card *card,
- 	alloc_size = chain->num_desc * sizeof(struct spider_net_hw_descr);
- 
- 	chain->hwring = dma_alloc_coherent(&card->pdev->dev, alloc_size,
--		&chain->dma_addr, GFP_KERNEL);
--
-+					   &chain->dma_addr, GFP_KERNEL);
- 	if (!chain->hwring)
- 		return -ENOMEM;
- 
-diff --git a/drivers/net/ethernet/tundra/tsi108_eth.c b/drivers/net/ethernet/tundra/tsi108_eth.c
-index 8fa947a..3c69a04 100644
---- a/drivers/net/ethernet/tundra/tsi108_eth.c
-+++ b/drivers/net/ethernet/tundra/tsi108_eth.c
-@@ -1308,27 +1308,16 @@ static int tsi108_open(struct net_device *dev)
- 		       data->id, dev->irq, dev->name);
- 	}
- 
--	data->rxring = dma_alloc_coherent(NULL, rxring_size,
--			&data->rxdma, GFP_KERNEL);
--
--	if (!data->rxring) {
--		printk(KERN_DEBUG
--		       "TSI108_ETH: failed to allocate memory for rxring!\n");
-+	data->rxring = dma_alloc_coherent(NULL, rxring_size, &data->rxdma,
-+					  GFP_KERNEL | __GFP_ZERO);
-+	if (!data->rxring)
- 		return -ENOMEM;
--	} else {
--		memset(data->rxring, 0, rxring_size);
--	}
--
--	data->txring = dma_alloc_coherent(NULL, txring_size,
--			&data->txdma, GFP_KERNEL);
- 
-+	data->txring = dma_alloc_coherent(NULL, txring_size, &data->txdma,
-+					  GFP_KERNEL | __GFP_ZERO);
- 	if (!data->txring) {
--		printk(KERN_DEBUG
--		       "TSI108_ETH: failed to allocate memory for txring!\n");
- 		pci_free_consistent(0, rxring_size, data->rxring, data->rxdma);
- 		return -ENOMEM;
--	} else {
--		memset(data->txring, 0, txring_size);
- 	}
- 
- 	for (i = 0; i < TSI108_RXRING_LEN; i++) {
-diff --git a/drivers/net/ethernet/xilinx/ll_temac_main.c b/drivers/net/ethernet/xilinx/ll_temac_main.c
-index 9fc2ada..fb4b75c 100644
---- a/drivers/net/ethernet/xilinx/ll_temac_main.c
-+++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
-@@ -245,28 +245,21 @@ static int temac_dma_bd_init(struct net_device *ndev)
- 	/* returns a virtual address and a physical address. */
- 	lp->tx_bd_v = dma_alloc_coherent(ndev->dev.parent,
- 					 sizeof(*lp->tx_bd_v) * TX_BD_NUM,
--					 &lp->tx_bd_p, GFP_KERNEL);
--	if (!lp->tx_bd_v) {
--		dev_err(&ndev->dev,
--				"unable to allocate DMA TX buffer descriptors");
-+					 &lp->tx_bd_p, GFP_KERNEL | __GFP_ZERO);
-+	if (!lp->tx_bd_v)
- 		goto out;
--	}
-+
- 	lp->rx_bd_v = dma_alloc_coherent(ndev->dev.parent,
- 					 sizeof(*lp->rx_bd_v) * RX_BD_NUM,
--					 &lp->rx_bd_p, GFP_KERNEL);
--	if (!lp->rx_bd_v) {
--		dev_err(&ndev->dev,
--				"unable to allocate DMA RX buffer descriptors");
-+					 &lp->rx_bd_p, GFP_KERNEL | __GFP_ZERO);
-+	if (!lp->rx_bd_v)
- 		goto out;
--	}
- 
--	memset(lp->tx_bd_v, 0, sizeof(*lp->tx_bd_v) * TX_BD_NUM);
- 	for (i = 0; i < TX_BD_NUM; i++) {
- 		lp->tx_bd_v[i].next = lp->tx_bd_p +
- 				sizeof(*lp->tx_bd_v) * ((i + 1) % TX_BD_NUM);
- 	}
- 
--	memset(lp->rx_bd_v, 0, sizeof(*lp->rx_bd_v) * RX_BD_NUM);
- 	for (i = 0; i < RX_BD_NUM; i++) {
- 		lp->rx_bd_v[i].next = lp->rx_bd_p +
- 				sizeof(*lp->rx_bd_v) * ((i + 1) % RX_BD_NUM);
-diff --git a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
-index 278c9db..89d5a17 100644
---- a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
-+++ b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
-@@ -204,31 +204,23 @@ static int axienet_dma_bd_init(struct net_device *ndev)
- 	lp->tx_bd_v = dma_alloc_coherent(ndev->dev.parent,
- 					 sizeof(*lp->tx_bd_v) * TX_BD_NUM,
- 					 &lp->tx_bd_p,
--					 GFP_KERNEL);
--	if (!lp->tx_bd_v) {
--		dev_err(&ndev->dev, "unable to allocate DMA Tx buffer "
--			"descriptors");
-+					 GFP_KERNEL | __GFP_ZERO);
-+	if (!lp->tx_bd_v)
- 		goto out;
--	}
- 
- 	lp->rx_bd_v = dma_alloc_coherent(ndev->dev.parent,
- 					 sizeof(*lp->rx_bd_v) * RX_BD_NUM,
- 					 &lp->rx_bd_p,
--					 GFP_KERNEL);
--	if (!lp->rx_bd_v) {
--		dev_err(&ndev->dev, "unable to allocate DMA Rx buffer "
--			"descriptors");
-+					 GFP_KERNEL | __GFP_ZERO);
-+	if (!lp->rx_bd_v)
- 		goto out;
--	}
- 
--	memset(lp->tx_bd_v, 0, sizeof(*lp->tx_bd_v) * TX_BD_NUM);
- 	for (i = 0; i < TX_BD_NUM; i++) {
- 		lp->tx_bd_v[i].next = lp->tx_bd_p +
- 				      sizeof(*lp->tx_bd_v) *
- 				      ((i + 1) % TX_BD_NUM);
- 	}
- 
--	memset(lp->rx_bd_v, 0, sizeof(*lp->rx_bd_v) * RX_BD_NUM);
- 	for (i = 0; i < RX_BD_NUM; i++) {
- 		lp->rx_bd_v[i].next = lp->rx_bd_p +
- 				      sizeof(*lp->rx_bd_v) *
-diff --git a/drivers/net/fddi/defxx.c b/drivers/net/fddi/defxx.c
-index 502c8ff..4c8ddc9 100644
---- a/drivers/net/fddi/defxx.c
-+++ b/drivers/net/fddi/defxx.c
-@@ -1070,13 +1070,10 @@ static int dfx_driver_init(struct net_device *dev, const char *print_name,
- 					(PI_ALIGN_K_DESC_BLK - 1);
- 	bp->kmalloced = top_v = dma_alloc_coherent(bp->bus_dev, alloc_size,
- 						   &bp->kmalloced_dma,
--						   GFP_ATOMIC);
--	if (top_v == NULL) {
--		printk("%s: Could not allocate memory for host buffers "
--		       "and structures!\n", print_name);
-+						   GFP_ATOMIC | __GFP_ZERO);
-+	if (top_v == NULL)
- 		return DFX_K_FAILURE;
--	}
--	memset(top_v, 0, alloc_size);	/* zero out memory before continuing */
-+
- 	top_p = bp->kmalloced_dma;	/* get physical address of buffer */
- 
- 	/*
-diff --git a/drivers/net/irda/ali-ircc.c b/drivers/net/irda/ali-ircc.c
-index 8487204..e907572 100644
---- a/drivers/net/irda/ali-ircc.c
-+++ b/drivers/net/irda/ali-ircc.c
-@@ -352,21 +352,19 @@ static int ali_ircc_open(int i, chipio_t *info)
- 	/* Allocate memory if needed */
- 	self->rx_buff.head =
- 		dma_alloc_coherent(NULL, self->rx_buff.truesize,
--				   &self->rx_buff_dma, GFP_KERNEL);
-+				   &self->rx_buff_dma, GFP_KERNEL | __GFP_ZERO);
- 	if (self->rx_buff.head == NULL) {
- 		err = -ENOMEM;
- 		goto err_out2;
- 	}
--	memset(self->rx_buff.head, 0, self->rx_buff.truesize);
- 	
- 	self->tx_buff.head =
- 		dma_alloc_coherent(NULL, self->tx_buff.truesize,
--				   &self->tx_buff_dma, GFP_KERNEL);
-+				   &self->tx_buff_dma, GFP_KERNEL | __GFP_ZERO);
- 	if (self->tx_buff.head == NULL) {
- 		err = -ENOMEM;
- 		goto err_out3;
- 	}
--	memset(self->tx_buff.head, 0, self->tx_buff.truesize);
- 
- 	self->rx_buff.in_frame = FALSE;
- 	self->rx_buff.state = OUTSIDE_FRAME;
-diff --git a/drivers/net/irda/bfin_sir.c b/drivers/net/irda/bfin_sir.c
-index fed4a05..a06fca6 100644
---- a/drivers/net/irda/bfin_sir.c
-+++ b/drivers/net/irda/bfin_sir.c
-@@ -389,7 +389,8 @@ static int bfin_sir_startup(struct bfin_sir_port *port, struct net_device *dev)
- 	set_dma_callback(port->rx_dma_channel, bfin_sir_dma_rx_int, dev);
- 	set_dma_callback(port->tx_dma_channel, bfin_sir_dma_tx_int, dev);
- 
--	port->rx_dma_buf.buf = (unsigned char *)dma_alloc_coherent(NULL, PAGE_SIZE, &dma_handle, GFP_DMA);
-+	port->rx_dma_buf.buf = dma_alloc_coherent(NULL, PAGE_SIZE,
-+						  &dma_handle, GFP_DMA);
- 	port->rx_dma_buf.head = 0;
- 	port->rx_dma_buf.tail = 0;
- 	port->rx_dma_nrows = 0;
-diff --git a/drivers/net/irda/nsc-ircc.c b/drivers/net/irda/nsc-ircc.c
-index 2a4f2f1..9cf836b 100644
---- a/drivers/net/irda/nsc-ircc.c
-+++ b/drivers/net/irda/nsc-ircc.c
-@@ -431,22 +431,20 @@ static int __init nsc_ircc_open(chipio_t *info)
- 	/* Allocate memory if needed */
- 	self->rx_buff.head =
- 		dma_alloc_coherent(NULL, self->rx_buff.truesize,
--				   &self->rx_buff_dma, GFP_KERNEL);
-+				   &self->rx_buff_dma, GFP_KERNEL | __GFP_ZERO);
- 	if (self->rx_buff.head == NULL) {
- 		err = -ENOMEM;
- 		goto out2;
- 
- 	}
--	memset(self->rx_buff.head, 0, self->rx_buff.truesize);
- 	
- 	self->tx_buff.head =
- 		dma_alloc_coherent(NULL, self->tx_buff.truesize,
--				   &self->tx_buff_dma, GFP_KERNEL);
-+				   &self->tx_buff_dma, GFP_KERNEL | __GFP_ZERO);
- 	if (self->tx_buff.head == NULL) {
- 		err = -ENOMEM;
- 		goto out3;
- 	}
--	memset(self->tx_buff.head, 0, self->tx_buff.truesize);
- 
- 	self->rx_buff.in_frame = FALSE;
- 	self->rx_buff.state = OUTSIDE_FRAME;
-diff --git a/drivers/net/irda/pxaficp_ir.c b/drivers/net/irda/pxaficp_ir.c
-index 858de05..964b116 100644
---- a/drivers/net/irda/pxaficp_ir.c
-+++ b/drivers/net/irda/pxaficp_ir.c
-@@ -700,12 +700,12 @@ static int pxa_irda_start(struct net_device *dev)
- 
- 	err = -ENOMEM;
- 	si->dma_rx_buff = dma_alloc_coherent(si->dev, IRDA_FRAME_SIZE_LIMIT,
--					     &si->dma_rx_buff_phy, GFP_KERNEL );
-+					     &si->dma_rx_buff_phy, GFP_KERNEL);
- 	if (!si->dma_rx_buff)
- 		goto err_dma_rx_buff;
- 
- 	si->dma_tx_buff = dma_alloc_coherent(si->dev, IRDA_FRAME_SIZE_LIMIT,
--					     &si->dma_tx_buff_phy, GFP_KERNEL );
-+					     &si->dma_tx_buff_phy, GFP_KERNEL);
- 	if (!si->dma_tx_buff)
- 		goto err_dma_tx_buff;
- 
-diff --git a/drivers/net/irda/smsc-ircc2.c b/drivers/net/irda/smsc-ircc2.c
-index 5290952..fbb2253 100644
---- a/drivers/net/irda/smsc-ircc2.c
-+++ b/drivers/net/irda/smsc-ircc2.c
-@@ -561,26 +561,17 @@ static int smsc_ircc_open(unsigned int fir_base, unsigned int sir_base, u8 dma,
- 	self->rx_buff.truesize = SMSC_IRCC2_RX_BUFF_TRUESIZE;
- 	self->tx_buff.truesize = SMSC_IRCC2_TX_BUFF_TRUESIZE;
- 
--	self->rx_buff.head =
--		dma_alloc_coherent(NULL, self->rx_buff.truesize,
--				   &self->rx_buff_dma, GFP_KERNEL);
--	if (self->rx_buff.head == NULL) {
--		IRDA_ERROR("%s, Can't allocate memory for receive buffer!\n",
--			   driver_name);
-+	self->rx_buff.head = dma_alloc_coherent(NULL, self->rx_buff.truesize,
-+						&self->rx_buff_dma,
-+						GFP_KERNEL | __GFP_ZERO);
-+	if (self->rx_buff.head == NULL)
- 		goto err_out2;
--	}
- 
--	self->tx_buff.head =
--		dma_alloc_coherent(NULL, self->tx_buff.truesize,
--				   &self->tx_buff_dma, GFP_KERNEL);
--	if (self->tx_buff.head == NULL) {
--		IRDA_ERROR("%s, Can't allocate memory for transmit buffer!\n",
--			   driver_name);
-+	self->tx_buff.head = dma_alloc_coherent(NULL, self->tx_buff.truesize,
-+						&self->tx_buff_dma,
-+						GFP_KERNEL | __GFP_ZERO);
-+	if (self->tx_buff.head == NULL)
- 		goto err_out3;
--	}
--
--	memset(self->rx_buff.head, 0, self->rx_buff.truesize);
--	memset(self->tx_buff.head, 0, self->tx_buff.truesize);
- 
- 	self->rx_buff.in_frame = FALSE;
- 	self->rx_buff.state = OUTSIDE_FRAME;
-diff --git a/drivers/net/irda/via-ircc.c b/drivers/net/irda/via-ircc.c
-index f9033c6..51f2bc3 100644
---- a/drivers/net/irda/via-ircc.c
-+++ b/drivers/net/irda/via-ircc.c
-@@ -364,21 +364,19 @@ static int via_ircc_open(struct pci_dev *pdev, chipio_t *info, unsigned int id)
- 	/* Allocate memory if needed */
- 	self->rx_buff.head =
- 		dma_alloc_coherent(&pdev->dev, self->rx_buff.truesize,
--				   &self->rx_buff_dma, GFP_KERNEL);
-+				   &self->rx_buff_dma, GFP_KERNEL | __GFP_ZERO);
- 	if (self->rx_buff.head == NULL) {
- 		err = -ENOMEM;
- 		goto err_out2;
- 	}
--	memset(self->rx_buff.head, 0, self->rx_buff.truesize);
- 
- 	self->tx_buff.head =
- 		dma_alloc_coherent(&pdev->dev, self->tx_buff.truesize,
--				   &self->tx_buff_dma, GFP_KERNEL);
-+				   &self->tx_buff_dma, GFP_KERNEL | __GFP_ZERO);
- 	if (self->tx_buff.head == NULL) {
- 		err = -ENOMEM;
- 		goto err_out3;
- 	}
--	memset(self->tx_buff.head, 0, self->tx_buff.truesize);
- 
- 	self->rx_buff.in_frame = FALSE;
- 	self->rx_buff.state = OUTSIDE_FRAME;
-diff --git a/drivers/net/irda/w83977af_ir.c b/drivers/net/irda/w83977af_ir.c
-index f5bb92f..bb8857a 100644
---- a/drivers/net/irda/w83977af_ir.c
-+++ b/drivers/net/irda/w83977af_ir.c
-@@ -216,22 +216,19 @@ static int w83977af_open(int i, unsigned int iobase, unsigned int irq,
- 	/* Allocate memory if needed */
- 	self->rx_buff.head =
- 		dma_alloc_coherent(NULL, self->rx_buff.truesize,
--				   &self->rx_buff_dma, GFP_KERNEL);
-+				   &self->rx_buff_dma, GFP_KERNEL | __GFP_ZERO);
- 	if (self->rx_buff.head == NULL) {
- 		err = -ENOMEM;
- 		goto err_out1;
- 	}
- 
--	memset(self->rx_buff.head, 0, self->rx_buff.truesize);
--	
- 	self->tx_buff.head =
- 		dma_alloc_coherent(NULL, self->tx_buff.truesize,
--				   &self->tx_buff_dma, GFP_KERNEL);
-+				   &self->tx_buff_dma, GFP_KERNEL | __GFP_ZERO);
- 	if (self->tx_buff.head == NULL) {
- 		err = -ENOMEM;
- 		goto err_out2;
- 	}
--	memset(self->tx_buff.head, 0, self->tx_buff.truesize);
- 
- 	self->rx_buff.in_frame = FALSE;
- 	self->rx_buff.state = OUTSIDE_FRAME;
-diff --git a/drivers/net/wireless/ath/wil6210/txrx.c b/drivers/net/wireless/ath/wil6210/txrx.c
-index d1315b4..55dd95f 100644
---- a/drivers/net/wireless/ath/wil6210/txrx.c
-+++ b/drivers/net/wireless/ath/wil6210/txrx.c
-@@ -83,8 +83,6 @@ static int wil_vring_alloc(struct wil6210_priv *wil, struct vring *vring)
- 	 */
- 	vring->va = dma_alloc_coherent(dev, sz, &vring->pa, GFP_KERNEL);
- 	if (!vring->va) {
--		wil_err(wil, "vring_alloc [%d] failed to alloc DMA mem\n",
--			vring->size);
- 		kfree(vring->ctx);
- 		vring->ctx = NULL;
- 		return -ENOMEM;
-diff --git a/drivers/net/wireless/b43/dma.c b/drivers/net/wireless/b43/dma.c
-index 38bc5a7..f73cbb5 100644
---- a/drivers/net/wireless/b43/dma.c
-+++ b/drivers/net/wireless/b43/dma.c
-@@ -419,8 +419,6 @@ static inline
- 
- static int alloc_ringmemory(struct b43_dmaring *ring)
- {
--	gfp_t flags = GFP_KERNEL;
--
- 	/* The specs call for 4K buffers for 30- and 32-bit DMA with 4K
- 	 * alignment and 8K buffers for 64-bit DMA with 8K alignment.
- 	 * In practice we could use smaller buffers for the latter, but the
-@@ -435,12 +433,9 @@ static int alloc_ringmemory(struct b43_dmaring *ring)
- 
- 	ring->descbase = dma_alloc_coherent(ring->dev->dev->dma_dev,
- 					    ring_mem_size, &(ring->dmabase),
--					    flags);
--	if (!ring->descbase) {
--		b43err(ring->dev->wl, "DMA ringmemory allocation failed\n");
-+					    GFP_KERNEL | __GFP_ZERO);
-+	if (!ring->descbase)
- 		return -ENOMEM;
--	}
--	memset(ring->descbase, 0, ring_mem_size);
- 
- 	return 0;
- }
-diff --git a/drivers/net/wireless/b43legacy/dma.c b/drivers/net/wireless/b43legacy/dma.c
-index 2d3c664..faeafe2 100644
---- a/drivers/net/wireless/b43legacy/dma.c
-+++ b/drivers/net/wireless/b43legacy/dma.c
-@@ -334,13 +334,9 @@ static int alloc_ringmemory(struct b43legacy_dmaring *ring)
- 	ring->descbase = dma_alloc_coherent(ring->dev->dev->dma_dev,
- 					    B43legacy_DMA_RINGMEMSIZE,
- 					    &(ring->dmabase),
--					    GFP_KERNEL);
--	if (!ring->descbase) {
--		b43legacyerr(ring->dev->wl, "DMA ringmemory allocation"
--			     " failed\n");
-+					    GFP_KERNEL | __GFP_ZERO);
-+	if (!ring->descbase)
- 		return -ENOMEM;
--	}
--	memset(ring->descbase, 0, B43legacy_DMA_RINGMEMSIZE);
- 
- 	return 0;
- }
-diff --git a/drivers/net/wireless/iwlegacy/3945.c b/drivers/net/wireless/iwlegacy/3945.c
-index e0b9d7f..9e2857c 100644
---- a/drivers/net/wireless/iwlegacy/3945.c
-+++ b/drivers/net/wireless/iwlegacy/3945.c
-@@ -2377,12 +2377,11 @@ il3945_hw_set_hw_params(struct il_priv *il)
- 	memset((void *)&il->hw_params, 0, sizeof(struct il_hw_params));
- 
- 	il->_3945.shared_virt =
--	    dma_alloc_coherent(&il->pci_dev->dev, sizeof(struct il3945_shared),
--			       &il->_3945.shared_phys, GFP_KERNEL);
--	if (!il->_3945.shared_virt) {
--		IL_ERR("failed to allocate pci memory\n");
-+		dma_alloc_coherent(&il->pci_dev->dev,
-+				   sizeof(struct il3945_shared),
-+				   &il->_3945.shared_phys, GFP_KERNEL);
-+	if (!il->_3945.shared_virt)
- 		return -ENOMEM;
--	}
- 
- 	il->hw_params.bcast_id = IL3945_BROADCAST_ID;
- 
-diff --git a/drivers/net/wireless/iwlegacy/4965-mac.c b/drivers/net/wireless/iwlegacy/4965-mac.c
-index 9741ac1..0d5d50e 100644
---- a/drivers/net/wireless/iwlegacy/4965-mac.c
-+++ b/drivers/net/wireless/iwlegacy/4965-mac.c
-@@ -1915,8 +1915,8 @@ drop_unlock:
- static inline int
- il4965_alloc_dma_ptr(struct il_priv *il, struct il_dma_ptr *ptr, size_t size)
- {
--	ptr->addr =
--	    dma_alloc_coherent(&il->pci_dev->dev, size, &ptr->dma, GFP_KERNEL);
-+	ptr->addr = dma_alloc_coherent(&il->pci_dev->dev, size, &ptr->dma,
-+				       GFP_KERNEL);
- 	if (!ptr->addr)
- 		return -ENOMEM;
- 	ptr->size = size;
-diff --git a/drivers/net/wireless/iwlegacy/common.c b/drivers/net/wireless/iwlegacy/common.c
-index 1f59860..81a470e 100644
---- a/drivers/net/wireless/iwlegacy/common.c
-+++ b/drivers/net/wireless/iwlegacy/common.c
-@@ -2568,15 +2568,13 @@ il_rx_queue_alloc(struct il_priv *il)
- 	INIT_LIST_HEAD(&rxq->rx_used);
- 
- 	/* Alloc the circular buffer of Read Buffer Descriptors (RBDs) */
--	rxq->bd =
--	    dma_alloc_coherent(dev, 4 * RX_QUEUE_SIZE, &rxq->bd_dma,
--			       GFP_KERNEL);
-+	rxq->bd = dma_alloc_coherent(dev, 4 * RX_QUEUE_SIZE, &rxq->bd_dma,
-+				     GFP_KERNEL);
- 	if (!rxq->bd)
- 		goto err_bd;
- 
--	rxq->rb_stts =
--	    dma_alloc_coherent(dev, sizeof(struct il_rb_status),
--			       &rxq->rb_stts_dma, GFP_KERNEL);
-+	rxq->rb_stts = dma_alloc_coherent(dev, sizeof(struct il_rb_status),
-+					  &rxq->rb_stts_dma, GFP_KERNEL);
- 	if (!rxq->rb_stts)
- 		goto err_rb;
- 
-@@ -2941,12 +2939,11 @@ il_tx_queue_alloc(struct il_priv *il, struct il_tx_queue *txq, u32 id)
- 
- 	/* Circular buffer of transmit frame descriptors (TFDs),
- 	 * shared with device */
--	txq->tfds =
--	    dma_alloc_coherent(dev, tfd_sz, &txq->q.dma_addr, GFP_KERNEL);
--	if (!txq->tfds) {
--		IL_ERR("Fail to alloc TFDs\n");
-+	txq->tfds = dma_alloc_coherent(dev, tfd_sz, &txq->q.dma_addr,
-+				       GFP_KERNEL);
-+	if (!txq->tfds)
- 		goto error;
--	}
-+
- 	txq->q.id = id;
- 
- 	return 0;
-diff --git a/drivers/net/wireless/iwlegacy/common.h b/drivers/net/wireless/iwlegacy/common.h
-index 96f2025..458e699 100644
---- a/drivers/net/wireless/iwlegacy/common.h
-+++ b/drivers/net/wireless/iwlegacy/common.h
-@@ -2235,9 +2235,8 @@ il_alloc_fw_desc(struct pci_dev *pci_dev, struct fw_desc *desc)
- 		return -EINVAL;
- 	}
- 
--	desc->v_addr =
--	    dma_alloc_coherent(&pci_dev->dev, desc->len, &desc->p_addr,
--			       GFP_KERNEL);
-+	desc->v_addr = dma_alloc_coherent(&pci_dev->dev, desc->len,
-+					  &desc->p_addr, GFP_KERNEL);
- 	return (desc->v_addr != NULL) ? 0 : -ENOMEM;
- }
- 
-diff --git a/drivers/net/wireless/iwlwifi/pcie/tx.c b/drivers/net/wireless/iwlwifi/pcie/tx.c
-index 041127a..22cc1a9 100644
---- a/drivers/net/wireless/iwlwifi/pcie/tx.c
-+++ b/drivers/net/wireless/iwlwifi/pcie/tx.c
-@@ -510,10 +510,9 @@ static int iwl_pcie_txq_alloc(struct iwl_trans *trans,
- 	 * shared with device */
- 	txq->tfds = dma_alloc_coherent(trans->dev, tfd_sz,
- 				       &txq->q.dma_addr, GFP_KERNEL);
--	if (!txq->tfds) {
--		IWL_ERR(trans, "dma_alloc_coherent(%zd) failed\n", tfd_sz);
-+	if (!txq->tfds)
- 		goto error;
--	}
-+
- 	txq->q.id = txq_id;
- 
- 	return 0;
-diff --git a/drivers/net/wireless/rt2x00/rt2x00pci.c b/drivers/net/wireless/rt2x00/rt2x00pci.c
-index a0c8cae..696abed 100644
---- a/drivers/net/wireless/rt2x00/rt2x00pci.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00pci.c
-@@ -124,12 +124,10 @@ static int rt2x00pci_alloc_queue_dma(struct rt2x00_dev *rt2x00dev,
- 	 */
- 	addr = dma_alloc_coherent(rt2x00dev->dev,
- 				  queue->limit * queue->desc_size,
--				  &dma, GFP_KERNEL);
-+				  &dma, GFP_KERNEL | __GFP_ZERO);
- 	if (!addr)
- 		return -ENOMEM;
- 
--	memset(addr, 0, queue->limit * queue->desc_size);
--
- 	/*
- 	 * Initialize all queue entries to contain valid addresses.
- 	 */
+Thanks,
+Rafael
 
 
+ .../ABI/testing/sysfs-devices-power_resources_D0        |   13 +
+ .../ABI/testing/sysfs-devices-power_resources_D1        |   14 +
+ .../ABI/testing/sysfs-devices-power_resources_D2        |   14 +
+ .../ABI/testing/sysfs-devices-power_resources_D3hot     |   14 +
+ Documentation/ABI/testing/sysfs-devices-power_state     |   20 +
+ .../ABI/testing/sysfs-devices-real_power_state          |   23 +
+ Documentation/ABI/testing/sysfs-devices-resource_in_use |   12 +
+ Documentation/acpi/enumeration.txt                      |    4 +-
+ Documentation/acpi/scan_handlers.txt                    |   77 ++
+ Documentation/cpu-freq/cpu-drivers.txt                  |    6 +
+ Documentation/cpu-freq/user-guide.txt                   |    8 +-
+ Documentation/devicetree/bindings/arm/kirkwood.txt      |   27 +
+ Documentation/power/freezing-of-tasks.txt               |    5 +
+ Documentation/power/runtime_pm.txt                      |    4 +
+ Documentation/trace/events-power.txt                    |   27 +-
+ arch/arm/boot/dts/highbank.dts                          |   10 +
+ arch/arm/kernel/smp_twd.c                               |   53 +-
+ arch/arm/mach-highbank/Kconfig                          |    4 +
+ arch/arm/mach-omap2/pm34xx.c                            |    2 -
+ arch/arm/mach-tegra/cpu-tegra.c                         |    3 +-
+ arch/ia64/hp/common/aml_nfw.c                           |    2 +-
+ arch/ia64/include/asm/acpi.h                            |    4 -
+ arch/x86/Kconfig                                        |   10 +
+ arch/x86/include/asm/acpi.h                             |    4 -
+ arch/x86/kernel/process.c                               |    6 -
+ arch/x86/platform/olpc/olpc-xo15-sci.c                  |    2 +-
+ drivers/Kconfig                                         |    2 +
+ drivers/Makefile                                        |    1 +
+ drivers/acpi/Kconfig                                    |    7 +-
+ drivers/acpi/Makefile                                   |    3 +-
+ drivers/acpi/ac.c                                       |    4 +-
+ drivers/acpi/acpi_memhotplug.c                          |   30 +-
+ drivers/acpi/acpi_pad.c                                 |    3 +-
+ drivers/acpi/acpi_platform.c                            |   72 +-
+ drivers/acpi/acpica/Makefile                            |    8 +-
+ drivers/acpi/acpica/accommon.h                          |    3 +-
+ drivers/acpi/acpica/acdebug.h                           |   19 +-
+ drivers/acpi/acpica/acdispat.h                          |    2 +-
+ drivers/acpi/acpica/acevents.h                          |   23 +-
+ drivers/acpi/acpica/acglobal.h                          |   43 +-
+ drivers/acpi/acpica/achware.h                           |    2 +-
+ drivers/acpi/acpica/acinterp.h                          |    4 +-
+ drivers/acpi/acpica/aclocal.h                           |   47 +-
+ drivers/acpi/acpica/acmacros.h                          |  173 +----
+ drivers/acpi/acpica/acnamesp.h                          |   16 +-
+ drivers/acpi/acpica/acobject.h                          |    4 +-
+ drivers/acpi/acpica/acopcode.h                          |    2 +-
+ drivers/acpi/acpica/acparser.h                          |   27 +-
+ drivers/acpi/acpica/acpredef.h                          |   31 +-
+ drivers/acpi/acpica/acresrc.h                           |    8 +-
+ drivers/acpi/acpica/acstruct.h                          |    2 +-
+ drivers/acpi/acpica/actables.h                          |    2 +-
+ drivers/acpi/acpica/acutils.h                           |   59 +-
+ drivers/acpi/acpica/amlcode.h                           |    2 +-
+ drivers/acpi/acpica/amlresrc.h                          |    8 +-
+ drivers/acpi/acpica/dsargs.c                            |    2 +-
+ drivers/acpi/acpica/dscontrol.c                         |    2 +-
+ drivers/acpi/acpica/dsfield.c                           |    2 +-
+ drivers/acpi/acpica/dsinit.c                            |    2 +-
+ drivers/acpi/acpica/dsmethod.c                          |    8 +-
+ drivers/acpi/acpica/dsmthdat.c                          |    2 +-
+ drivers/acpi/acpica/dsobject.c                          |   20 +-
+ drivers/acpi/acpica/dsopcode.c                          |   16 +-
+ drivers/acpi/acpica/dsutils.c                           |   12 +-
+ drivers/acpi/acpica/dswexec.c                           |    6 +-
+ drivers/acpi/acpica/dswload.c                           |    7 +-
+ drivers/acpi/acpica/dswload2.c                          |    4 +-
+ drivers/acpi/acpica/dswscope.c                          |    2 +-
+ drivers/acpi/acpica/dswstate.c                          |    2 +-
+ drivers/acpi/acpica/evevent.c                           |    2 +-
+ drivers/acpi/acpica/evglock.c                           |    2 +-
+ drivers/acpi/acpica/evgpe.c                             |   14 +-
+ drivers/acpi/acpica/evgpeblk.c                          |   24 +-
+ drivers/acpi/acpica/evgpeinit.c                         |    5 +-
+ drivers/acpi/acpica/evgpeutil.c                         |    2 +-
+ drivers/acpi/acpica/evhandler.c                         |  529 +++++++++++++
+ drivers/acpi/acpica/evmisc.c                            |    2 +-
+ drivers/acpi/acpica/evregion.c                          |  584 ++------------
+ drivers/acpi/acpica/evrgnini.c                          |    2 +-
+ drivers/acpi/acpica/evsci.c                             |    6 +-
+ drivers/acpi/acpica/evxface.c                           |   36 +-
+ drivers/acpi/acpica/evxfevnt.c                          |    7 +-
+ drivers/acpi/acpica/evxfgpe.c                           |   11 +-
+ drivers/acpi/acpica/evxfregn.c                          |    2 +-
+ drivers/acpi/acpica/exconfig.c                          |   22 +-
+ drivers/acpi/acpica/exconvrt.c                          |    4 +-
+ drivers/acpi/acpica/excreate.c                          |    2 +-
+ drivers/acpi/acpica/exdebug.c                           |    2 +-
+ drivers/acpi/acpica/exdump.c                            |   21 +-
+ drivers/acpi/acpica/exfield.c                           |    2 +-
+ drivers/acpi/acpica/exfldio.c                           |    3 +-
+ drivers/acpi/acpica/exmisc.c                            |    2 +-
+ drivers/acpi/acpica/exmutex.c                           |    5 +-
+ drivers/acpi/acpica/exnames.c                           |    2 +-
+ drivers/acpi/acpica/exoparg1.c                          |   10 +-
+ drivers/acpi/acpica/exoparg2.c                          |    2 +-
+ drivers/acpi/acpica/exoparg3.c                          |    2 +-
+ drivers/acpi/acpica/exoparg6.c                          |    2 +-
+ drivers/acpi/acpica/exprep.c                            |    6 +-
+ drivers/acpi/acpica/exregion.c                          |   25 +-
+ drivers/acpi/acpica/exresnte.c                          |    2 +-
+ drivers/acpi/acpica/exresolv.c                          |    2 +-
+ drivers/acpi/acpica/exresop.c                           |    2 +-
+ drivers/acpi/acpica/exstore.c                           |   31 +-
+ drivers/acpi/acpica/exstoren.c                          |    4 +-
+ drivers/acpi/acpica/exstorob.c                          |    2 +-
+ drivers/acpi/acpica/exsystem.c                          |    2 +-
+ drivers/acpi/acpica/exutils.c                           |   24 +-
+ drivers/acpi/acpica/hwacpi.c                            |   13 +-
+ drivers/acpi/acpica/hwesleep.c                          |    3 +-
+ drivers/acpi/acpica/hwgpe.c                             |   10 +-
+ drivers/acpi/acpica/hwpci.c                             |    2 +-
+ drivers/acpi/acpica/hwregs.c                            |    8 +-
+ drivers/acpi/acpica/hwsleep.c                           |    8 +-
+ drivers/acpi/acpica/hwtimer.c                           |    9 +-
+ drivers/acpi/acpica/hwvalid.c                           |   20 +-
+ drivers/acpi/acpica/hwxface.c                           |  137 ++--
+ drivers/acpi/acpica/hwxfsleep.c                         |   13 +-
+ drivers/acpi/acpica/nsaccess.c                          |    2 +-
+ drivers/acpi/acpica/nsalloc.c                           |    2 +-
+ drivers/acpi/acpica/nsdump.c                            |   14 +-
+ drivers/acpi/acpica/nsdumpdv.c                          |    3 +-
+ drivers/acpi/acpica/nseval.c                            |    2 +-
+ drivers/acpi/acpica/nsinit.c                            |   29 +-
+ drivers/acpi/acpica/nsload.c                            |    2 +-
+ drivers/acpi/acpica/nsnames.c                           |    5 +-
+ drivers/acpi/acpica/nsobject.c                          |    2 +-
+ drivers/acpi/acpica/nsparse.c                           |    2 +-
+ drivers/acpi/acpica/nspredef.c                          |  586 +--------------
+ drivers/acpi/acpica/nsprepkg.c                          |  621 +++++++++++++++
+ drivers/acpi/acpica/nsrepair.c                          |    2 +-
+ drivers/acpi/acpica/nsrepair2.c                         |    5 +-
+ drivers/acpi/acpica/nssearch.c                          |    7 +-
+ drivers/acpi/acpica/nsutils.c                           |   88 +--
+ drivers/acpi/acpica/nswalk.c                            |    6 +-
+ drivers/acpi/acpica/nsxfeval.c                          |   19 +-
+ drivers/acpi/acpica/nsxfname.c                          |   20 +-
+ drivers/acpi/acpica/nsxfobj.c                           |    2 +-
+ drivers/acpi/acpica/psargs.c                            |    9 +-
+ drivers/acpi/acpica/psloop.c                            |  623 +--------------
+ drivers/acpi/acpica/psobject.c                          |  647 ++++++++++++++++
+ drivers/acpi/acpica/psopcode.c                          |  174 +----
+ drivers/acpi/acpica/psopinfo.c                          |  223 ++++++
+ drivers/acpi/acpica/psparse.c                           |    2 +-
+ drivers/acpi/acpica/psscope.c                           |    2 +-
+ drivers/acpi/acpica/pstree.c                            |    2 +-
+ drivers/acpi/acpica/psutils.c                           |   10 +-
+ drivers/acpi/acpica/pswalk.c                            |    2 +-
+ drivers/acpi/acpica/psxface.c                           |    2 +-
+ drivers/acpi/acpica/rsaddr.c                            |    2 +-
+ drivers/acpi/acpica/rscalc.c                            |    8 +-
+ drivers/acpi/acpica/rscreate.c                          |    9 +-
+ drivers/acpi/acpica/rsdump.c                            |  424 +----------
+ drivers/acpi/acpica/rsdumpinfo.c                        |  454 +++++++++++
+ drivers/acpi/acpica/rsinfo.c                            |    2 +-
+ drivers/acpi/acpica/rsio.c                              |    2 +-
+ drivers/acpi/acpica/rsirq.c                             |   40 +-
+ drivers/acpi/acpica/rslist.c                            |    9 +-
+ drivers/acpi/acpica/rsmemory.c                          |    8 +-
+ drivers/acpi/acpica/rsmisc.c                            |   76 +-
+ drivers/acpi/acpica/rsserial.c                          |   10 +-
+ drivers/acpi/acpica/rsutils.c                           |   14 +-
+ drivers/acpi/acpica/rsxface.c                           |  107 ++-
+ drivers/acpi/acpica/tbfadt.c                            |    7 +-
+ drivers/acpi/acpica/tbfind.c                            |    2 +-
+ drivers/acpi/acpica/tbinstal.c                          |    2 +-
+ drivers/acpi/acpica/tbutils.c                           |    4 +-
+ drivers/acpi/acpica/tbxface.c                           |    7 +-
+ drivers/acpi/acpica/tbxfload.c                          |    4 +-
+ drivers/acpi/acpica/tbxfroot.c                          |    2 +-
+ drivers/acpi/acpica/utaddress.c                         |    6 +-
+ drivers/acpi/acpica/utalloc.c                           |    2 +-
+ drivers/acpi/acpica/utcache.c                           |    2 +-
+ drivers/acpi/acpica/utcopy.c                            |    6 +-
+ drivers/acpi/acpica/utdebug.c                           |  120 ++-
+ drivers/acpi/acpica/utdecode.c                          |    2 +-
+ drivers/acpi/acpica/utdelete.c                          |   70 +-
+ drivers/acpi/acpica/uteval.c                            |    4 +-
+ drivers/acpi/acpica/utexcep.c                           |    2 +-
+ drivers/acpi/acpica/utglobal.c                          |   11 +-
+ drivers/acpi/acpica/utids.c                             |    2 +-
+ drivers/acpi/acpica/utinit.c                            |    2 +-
+ drivers/acpi/acpica/utlock.c                            |   16 +-
+ drivers/acpi/acpica/utmath.c                            |    2 +-
+ drivers/acpi/acpica/utmisc.c                            |  830 ++------------------
+ drivers/acpi/acpica/utmutex.c                           |    2 +-
+ drivers/acpi/acpica/utobject.c                          |    4 +-
+ drivers/acpi/acpica/utosi.c                             |    2 +-
+ drivers/acpi/acpica/utownerid.c                         |  218 ++++++
+ drivers/acpi/acpica/utresrc.c                           |   83 +-
+ drivers/acpi/acpica/utstate.c                           |   42 +-
+ drivers/acpi/acpica/utstring.c                          |  574 ++++++++++++++
+ drivers/acpi/acpica/uttrack.c                           |   18 +-
+ drivers/acpi/acpica/utxface.c                           |    6 +-
+ drivers/acpi/acpica/utxferror.c                         |    6 +-
+ drivers/acpi/acpica/utxfinit.c                          |    2 +-
+ drivers/acpi/acpica/utxfmutex.c                         |    2 +-
+ drivers/acpi/battery.c                                  |    2 +-
+ drivers/acpi/bus.c                                      |  270 -------
+ drivers/acpi/button.c                                   |    4 +-
+ drivers/acpi/container.c                                |  199 ++---
+ drivers/acpi/csrt.c                                     |  159 ++++
+ drivers/acpi/custom_method.c                            |    2 +-
+ drivers/acpi/device_pm.c                                |  359 ++++++++-
+ drivers/acpi/dock.c                                     |   25 +-
+ drivers/acpi/ec.c                                       |    2 +-
+ drivers/acpi/fan.c                                      |    4 +-
+ drivers/acpi/glue.c                                     |   85 ++-
+ drivers/acpi/hed.c                                      |    2 +-
+ drivers/acpi/internal.h                                 |   36 +-
+ drivers/acpi/numa.c                                     |    8 +-
+ drivers/acpi/osl.c                                      |    2 +-
+ drivers/acpi/pci_bind.c                                 |  122 ---
+ drivers/acpi/pci_link.c                                 |   47 +-
+ drivers/acpi/pci_root.c                                 |  101 +--
+ drivers/acpi/pci_slot.c                                 |   20 +-
+ drivers/acpi/power.c                                    |  730 +++++++++---------
+ drivers/acpi/proc.c                                     |    9 +-
+ drivers/acpi/processor_driver.c                         |   38 +-
+ drivers/acpi/processor_idle.c                           |    5 +-
+ drivers/acpi/sbs.c                                      |    6 +-
+ drivers/acpi/sbshc.c                                    |    4 +-
+ drivers/acpi/scan.c                                     |  920 +++++++++++------------
+ drivers/acpi/sleep.c                                    |   97 ++-
+ drivers/acpi/sleep.h                                    |    2 +
+ drivers/acpi/sysfs.c                                    |    2 +-
+ drivers/acpi/tables.c                                   |    6 +-
+ drivers/acpi/thermal.c                                  |   10 +-
+ drivers/acpi/video.c                                    |    8 +-
+ drivers/ata/libata-acpi.c                               |   18 +-
+ drivers/base/power/domain.c                             |    3 +-
+ drivers/base/power/opp.c                                |   19 +-
+ drivers/base/power/wakeup.c                             |    6 +
+ drivers/char/hpet.c                                     |    2 +-
+ drivers/char/sonypi.c                                   |    2 +-
+ drivers/clk/Makefile                                    |    1 +
+ drivers/clk/clk-highbank.c                              |    2 +
+ drivers/clk/mvebu/clk-gating-ctrl.c                     |    1 +
+ drivers/clk/x86/Makefile                                |    2 +
+ drivers/clk/x86/clk-lpss.c                              |   99 +++
+ drivers/clk/x86/clk-lpss.h                              |   36 +
+ drivers/clk/x86/clk-lpt.c                               |   86 +++
+ drivers/cpufreq/Kconfig                                 |    2 +-
+ drivers/cpufreq/Kconfig.arm                             |   30 +
+ drivers/cpufreq/Kconfig.x86                             |   18 +
+ drivers/cpufreq/Makefile                                |   11 +-
+ drivers/cpufreq/acpi-cpufreq.c                          |    8 +-
+ drivers/cpufreq/cpufreq-cpu0.c                          |   42 +-
+ drivers/cpufreq/cpufreq.c                               |  460 ++++++------
+ drivers/cpufreq/cpufreq_conservative.c                  |   19 +-
+ drivers/cpufreq/cpufreq_governor.c                      |  131 ++--
+ drivers/cpufreq/cpufreq_governor.h                      |    6 +-
+ drivers/cpufreq/cpufreq_ondemand.c                      |   70 +-
+ drivers/cpufreq/cpufreq_stats.c                         |   49 +-
+ drivers/cpufreq/cpufreq_userspace.c                     |    2 -
+ drivers/cpufreq/db8500-cpufreq.c                        |    4 +-
+ drivers/cpufreq/exynos-cpufreq.c                        |   14 +-
+ drivers/cpufreq/freq_table.c                            |   15 +-
+ drivers/cpufreq/highbank-cpufreq.c                      |  120 +++
+ drivers/cpufreq/imx6q-cpufreq.c                         |  336 +++++++++
+ drivers/cpufreq/intel_pstate.c                          |  806 ++++++++++++++++++++
+ drivers/cpufreq/kirkwood-cpufreq.c                      |  259 +++++++
+ drivers/cpufreq/maple-cpufreq.c                         |    2 +-
+ drivers/cpufreq/omap-cpufreq.c                          |    4 +-
+ drivers/cpufreq/powernow-k8.c                           |   46 +-
+ drivers/cpufreq/spear-cpufreq.c                         |   12 +-
+ drivers/cpuidle/cpuidle.c                               |    2 -
+ drivers/hwmon/acpi_power_meter.c                        |    2 +-
+ drivers/hwmon/asus_atk0110.c                            |    4 +-
+ drivers/i2c/busses/i2c-scmi.c                           |    2 +-
+ drivers/input/misc/atlas_btns.c                         |    2 +-
+ drivers/mailbox/Kconfig                                 |   19 +
+ drivers/mailbox/Makefile                                |    1 +
+ drivers/mailbox/pl320-ipc.c                             |  199 +++++
+ drivers/pci/hotplug/acpiphp_glue.c                      |   50 +-
+ drivers/pci/hotplug/sgi_hotplug.c                       |   10 +-
+ drivers/pci/pci-acpi.c                                  |   56 +-
+ drivers/pci/pci.c                                       |   26 +-
+ drivers/pci/pci.h                                       |    5 -
+ drivers/pci/probe.c                                     |    1 -
+ drivers/platform/x86/asus-laptop.c                      |    2 +-
+ drivers/platform/x86/classmate-laptop.c                 |   10 +-
+ drivers/platform/x86/eeepc-laptop.c                     |    2 +-
+ drivers/platform/x86/fujitsu-laptop.c                   |    4 +-
+ drivers/platform/x86/fujitsu-tablet.c                   |    2 +-
+ drivers/platform/x86/hp_accel.c                         |    2 +-
+ drivers/platform/x86/ideapad-laptop.c                   |    2 +-
+ drivers/platform/x86/intel_menlow.c                     |    2 +-
+ drivers/platform/x86/panasonic-laptop.c                 |    4 +-
+ drivers/platform/x86/sony-laptop.c                      |    4 +-
+ drivers/platform/x86/topstar-laptop.c                   |    2 +-
+ drivers/platform/x86/toshiba_acpi.c                     |    4 +-
+ drivers/platform/x86/toshiba_bluetooth.c                |    4 +-
+ drivers/platform/x86/wmi.c                              |    4 +-
+ drivers/platform/x86/xo15-ebook.c                       |    2 +-
+ drivers/pnp/pnpacpi/core.c                              |   10 +-
+ drivers/pnp/pnpbios/Kconfig                             |    4 +-
+ drivers/staging/quickstart/quickstart.c                 |    2 +-
+ drivers/video/backlight/apple_bl.c                      |    2 +-
+ drivers/xen/xen-acpi-pad.c                              |    3 +-
+ fs/sysfs/group.c                                        |   42 ++
+ fs/sysfs/symlink.c                                      |   45 +-
+ fs/sysfs/sysfs.h                                        |    2 +
+ include/acpi/acbuffer.h                                 |    2 +-
+ include/acpi/acconfig.h                                 |   27 +-
+ include/acpi/acexcep.h                                  |    2 +-
+ include/acpi/acnames.h                                  |    2 +-
+ include/acpi/acoutput.h                                 |  159 +++-
+ include/acpi/acpi.h                                     |    2 +-
+ include/acpi/acpi_bus.h                                 |   97 ++-
+ include/acpi/acpiosxf.h                                 |   13 +-
+ include/acpi/acpixf.h                                   |   68 +-
+ include/acpi/acrestyp.h                                 |   17 +-
+ include/acpi/actbl.h                                    |    9 +-
+ include/acpi/actbl1.h                                   |    8 +-
+ include/acpi/actbl2.h                                   |   25 +-
+ include/acpi/actbl3.h                                   |   34 +-
+ include/acpi/actypes.h                                  |   38 +-
+ include/acpi/container.h                                |   12 -
+ include/acpi/platform/acenv.h                           |  319 ++++----
+ include/acpi/platform/acgcc.h                           |    6 +-
+ include/acpi/platform/aclinux.h                         |    3 +-
+ include/linux/acpi.h                                    |   22 +-
+ include/linux/cpufreq.h                                 |   34 +-
+ include/linux/freezer.h                                 |    5 +
+ include/linux/mailbox.h                                 |   17 +
+ include/linux/pm_runtime.h                              |    7 +
+ include/linux/suspend.h                                 |    6 +-
+ include/linux/sysfs.h                                   |   16 +
+ include/trace/events/power.h                            |   92 ---
+ kernel/power/autosleep.c                                |    2 +-
+ kernel/power/main.c                                     |   29 +-
+ kernel/power/process.c                                  |    4 +-
+ kernel/power/qos.c                                      |    9 +-
+ kernel/power/suspend.c                                  |   69 +-
+ kernel/trace/Kconfig                                    |   15 -
+ kernel/trace/power-traces.c                             |    3 -
+ tools/power/acpi/Makefile                               |    2 +-
+ 338 files changed, 9968 insertions(+), 6813 deletions(-)
+
+---------------
+
+Aaron Lu (2):
+      ACPICA: Resource manager: Add support for ACPI 5 wake bit in IRQ descriptor.
+      ACPICA: Resources: Support for ACPI 5 wake bit in ExtendedInterrupt descriptor.
+
+Andreas Fleig (1):
+      ACPI / PM: Fix /proc/acpi/wakeup for devices w/o bus or parent
+
+Andrew Lunn (1):
+      cpufreq: kirkwood: Add a cpufreq driver for Marvell Kirkwood SoCs
+
+Bjorn Helgaas (1):
+      ACPI: Remove unused struct acpi_pci_root.id member
+
+Bob Moore (36):
+      ACPICA: Performance: Remove function tracing from critical allocation functions.
+      ACPICA: Debugger: Major update for the Disassemble<method> command.
+      ACPICA: Disassembler: Add new ACPI 5 interrupt sharing flags.
+      ACPICA: Add macros to extract flag bits from resource descriptors.
+      ACPICA: AcpiGetObjectInfo: optimize exit for mutex failure.
+      ACPICA: Update version to 20121114.
+      ACPICA: Resources: New interface, AcpiWalkResourceBuffer.
+      ACPICA: Change exception code for LoadTable operator.
+      ACPICA: Eliminate some small unnecessary pathname functions.
+      ACPICA: Add root node optimization to internal get namespace node function.
+      ACPICA: Lint changes, no functional change.
+      ACPICA: Add time macros for various timer/time manipulation.
+      ACPICA: Add header file support for the ACPI 5 TPM2 ACPI table.
+      ACPICA: DEBUG_PRINT macros: Update to improve performance.
+      ACPICA: FUNCTION_TRACE macros: Check if debug is enabled up-front.
+      ACPICA: Eliminate superfluous return_UINT8 and return_UINT32 macros.
+      ACPICA: Update ACPI_IS_DEBUG_ENABLED macro.
+      ACPICA: Deploy new ACPI_IS_DEBUG_ENABLED macro in debug output code.
+      ACPICA: Merge all debug output macros into a single file, acoutput.
+      ACPICA: iASL: Finish support for CSRT table.
+      ACPICA: iASL: Finish support for the TPM2 table.
+      ACPICA: Update for non-configured ACPI_IS_DEBUG_ENABLED macro.
+      ACPICA: Namespace: Eliminate dot...dot output during initialization.
+      ACPICA: Update ACPICA initialization messages.
+      ACPICA: Interpreter: Add warning if 64-bit constant appears in 32-bit table.
+      ACPICA: Resources: Split interrupt share/wake bits into two fields.
+      ACPICA: Interpreter: Fix Store() when implicit conversion is not possible.
+      ACPICA: Update version to 20121220.
+      ACPICA: Cleanup ACPI_DEBUG_PRINT macros to fix potential build breakages.
+      ACPICA: Source restructuring: split large files into 8 new files.
+      ACPICA: Update ACPICA copyrights to 2013
+      ACPICA: AcpiGetSleepTypeData: Allow \_Sx to return either 1 or 2 integers
+      ACPICA: iASL/Disassembler: Add option to ignore NOOP opcodes/operators
+      ACPICA: Remove some extraneous newlines in ACPI_ERROR type calls
+      ACPICA: Update predefined info table for _MLS method
+      ACPICA: Update version to 20130117
+
+Borislav Petkov (5):
+      cpufreq: Make acpi-cpufreq link first
+      cpufreq: Add a get_current_driver helper
+      powernow-k8: Cleanup module request
+      powernow-k8: Cleanup init function
+      cpufreq: Sort function prototypes properly
+
+Chao Guan (1):
+      ACPICA: Performance enhancement for ACPI package objects.
+
+Colin Ian King (3):
+      ACPI video: remove unnecessary newline from error messages
+      ACPI sysfs: remove unnecessary newline from exception
+      ACPI thermal: remove unnecessary newline from exception message
+
+Davidlohr Bueso (1):
+      ACPI: SRAT: report non-volatile memory in debug
+
+Dirk Brandewie (6):
+      cpufreq: handle cpufreq being disabled for all exported function.
+      cpufreq: Retrieve current frequency from scaling drivers with internal governors
+      cpufreq: Only call cpufreq_out_of_sync() for driver that implement cpufreq_driver.target()
+      cpufreq: Do not track governor name for scaling drivers with internal governors.
+      cpufreq_stats: do not remove sysfs files if frequency table is not present
+      cpufreq/x86: Add P-state driver for sandy bridge.
+
+Fabio Baltieri (6):
+      cpufreq: ondemand: call dbs_check_cpu only when necessary
+      cpufreq: conservative: call dbs_check_cpu only when necessary
+      cpufreq: ondemand: use all CPUs in update_sampling_rate
+      cpufreq: governors: clean timer init and exit code
+      cpufreq: governors: implement generic policy_is_shared
+      cpufreq: governors: fix misuse of cdbs.cpu
+
+Jesper Juhl (1):
+      ACPICA: Fix possible memory leak.
+
+Jiang Liu (3):
+      ACPI: remove unused acpi_op_bind and acpi_op_unbind
+      ACPI / PCI: avoid building pci_slot as module
+      ACPI / PCI: pci_slot: replace printk(KERN_xxx) with pr_xxx()
+
+Joseph Salisbury (1):
+      ACPI: Add DMI entry for Sony VGN-FW41E_H
+
+Kees Cook (1):
+      drivers/pnp/pnpbios: remove depends on CONFIG_EXPERIMENTAL
+
+Li Fei (1):
+      suspend: enable freeze timeout configuration through sys
+
+Lv Zheng (14):
+      ACPICA: Cleanup updated comments.
+      ACPICA: Update compilation environment settings.
+      ACPICA: Update codes under disabled build options.
+      ACPICA: Cleanup source to reduce differences between Linux and ACPICA.
+      ACPICA: Cleanup indentation to reduce differences between Linux and ACPICA.
+      ACPICA: Cleanup coding style to reduce differences between Linux and ACPICA.
+      ACPICA: Fix broken call depth tracing logic.
+      ACPICA: Enhance error messages.
+      ACPICA: Update initialization codes.
+      ACPICA: Enhance the ACPI_GETx and ACPI_SETx macros.
+      ACPICA: Resource Manager: update template walking with ACPI_NEXT_RESOURCE.
+      ACPICA: Cleanup PM_TIMER_FREQUENCY definition.
+      ACPICA: Cleanup table handler naming conflicts.
+      ACPICA: Update predefined info table
+
+Mark Langsdorf (3):
+      clk / highbank: Prevent glitches in non-bypass reset mode
+      cpufreq / highbank: add support for highbank cpufreq
+      PM / OPP: Export more symbols for module usage
+
+Matthew Garrett (1):
+      acpi-cpufreq: Do not load on K8
+
+Mika Westerberg (8):
+      ACPI / scan: Fix check of device_attach() return value.
+      ACPI / PM: remove leading whitespace from #ifdef
+      ACPI: add support for CSRT table
+      ACPI / platform: fix comment about the platform device name
+      x86: add support for Intel Low Power Subsystem
+      clk: x86: add support for Lynxpoint LPSS clocks
+      ACPI / platform: create LPSS clocks if Lynxpoint devices are found during scan
+      ACPI / Documentation: refer to correct file for acpi_platform_device_ids[] table
+
+Nishanth Menon (1):
+      PM / OPP: switch exported symbols to GPL variant
+
+Paul Gortmaker (1):
+      PM / tracing: remove deprecated power trace API
+
+Rafael J. Wysocki (72):
+      ACPI: Separate adding ACPI device objects from probing ACPI drivers
+      ACPI: Change the ordering of PCI root bridge driver registrarion
+      ACPI: Make acpi_bus_add() and acpi_bus_start() visibly different
+      ACPI: Reduce the usage of struct acpi_bus_ops
+      ACPI: Replace struct acpi_bus_ops with enum type
+      ACPI: Change the ordering of acpi_bus_check_add()
+      ACPI / PCI: Fold acpi_pci_root_start() into acpi_pci_root_add()
+      ACPI: Remove acpi_start_single_object() and acpi_bus_start()
+      ACPI: Remove the arguments of acpi_bus_add() that are not used
+      ACPI: Drop the second argument of acpi_bus_scan()
+      ACPI: Replace ACPI device add_type field with a match_driver flag
+      ACPI: Make acpi_bus_scan() and acpi_bus_add() take only one argument
+      ACPI: Add .setup() and .cleanup() callbacks to struct acpi_bus_type
+      ACPI / PCI: Rework the setup and cleanup of device wakeup
+      ACPI / PCI: Move the _PRT setup and cleanup code to pci-acpi.c
+      ACPI: Drop ACPI device .bind() and .unbind() callbacks
+      ACPI / scan: Treat power resources in a special way
+      ACPICA: Resource Manager: Add a pointer cast for a namespace node.
+      ACPI: Remove the ops field from struct acpi_device
+      ACPI / scan: Drop the second argument of acpi_device_unregister()
+      ACPI / scan: Drop the second argument of acpi_bus_trim()
+      ACPI / scan: Change the implementation of acpi_bus_trim()
+      ACPI / scan: Add second pass to acpi_bus_trim()
+      ACPI / PM: Rework the handling of devices depending on power resources
+      ACPI / scan: More straightforward preparation of ACPI device objects
+      ACPI / scan: Treat power resources in a special way
+      ACPI: Drop power resources driver
+      ACPI: Do not use device power states of power resources
+      ACPI / PM: Take order attribute of power resources into account
+      ACPI / PM: Take order attribute of wakeup power resources into account
+      ACPI / scan: Move power state initialization to a separate routine
+      ACPI / scan: Remove unnecessary initialization of local variables
+      ACPI / scan: Consolidate extraction of power resources lists
+      ACPI: Take power resource initialization errors into account
+      ACPI: Use system level attribute of wakeup power resources
+      ACPI / PM: Change the way power transitions to D3cold are carried out
+      ACPI / PM: More visible function for retrieving device power states
+      ACPI / PM: Common string representations of device power states
+      ACPI / scan: Drop acpi_bus_add() and use acpi_bus_scan() instead
+      ACPI / PM: Move device power management functions to device_pm.c
+      ACPI / PM: Consolidate suspend-specific and hibernate-specific code
+      ACPI / PM: Fix build for unusual combination of Kconfig options
+      ACPI / PM: Make acpi_bus_init_power() more robust
+      ACPI / PM: Introduce helper for executing _PSn methods
+      ACPI / PM: Always evaluate _PSn after setting power resources
+      ACPI / PM: Sanitize checks in acpi_power_on_resources()
+      ACPI / PM: Use string "D3cold" to represent ACPI_STATE_D3_COLD
+      ACPI / PM: Fix device power state value after transitions to D3cold
+      ACPI / scan: Prevent device add uevents from racing with user space
+      ACPI / PM: Expose power states of ACPI devices to user space
+      ACPI / PM: Expose current status of ACPI power resources
+      sysfs: Functions for adding/removing symlinks to/from attribute groups
+      ACPI / PM: Expose lists of device power resources to user space
+      ACPI / PM: Fix consistency check for power resources during resume
+      ACPI / scan: Make it clear that acpi_bus_trim() cannot fail
+      ACPI: Rework acpi_get_child() to be more efficient
+      ACPI: Remove useless type argument of driver .remove() operation
+      ACPI: Drop device start operation that is not used
+      ACPI / scan: Make namespace scanning and trimming mutually exclusive
+      ACPI / scan: Make scanning of fixed devices follow the general scheme
+      ACPI / scan: Introduce struct acpi_scan_handler
+      ACPI / PCI: Make PCI root driver use struct acpi_scan_handler
+      ACPI / PCI: Make PCI IRQ link driver use struct acpi_scan_handler
+      ACPI / platform: Use struct acpi_scan_handler for creating devices
+      ACPI / scan: Fix acpi_bus_get_device() check in acpi_match_device()
+      ACPI / scan: Clean up acpi_bus_get_parent()
+      ACPI / PM: Do not power manage devices in unknown initial states
+      ACPI / PM: Handle missing _PSC in acpi_bus_update_power()
+      ACPI / scan: Follow priorities of IDs when matching scan handlers
+      ACPI / scan: Remove useless #ifndef from acpi_eject_store()
+      ACPI / scan: Make container driver use struct acpi_scan_handler
+      ACPI: Drop the container.h header file
+
+Rickard Andersson (1):
+      cpufreq: handle SW coordinated CPUs
+
+Rob Herring (2):
+      ARM: use device tree to get smp_twd clock
+      ARM / highbank: add support for pl320 IPC
+
+Shawn Guo (2):
+      cpufreq: instantiate cpufreq-cpu0 as a platform_driver
+      cpufreq: add imx6q-cpufreq driver
+
+ShuoX Liu (1):
+      PM / Runtime: Add new helper function: pm_runtime_active()
+
+Srinivas Pandruvada (1):
+      ACPI / thermal: Use mode to enable/disable kernel thermal processing
+
+Stratos Karafotis (3):
+      cpufreq: ondemand: Replace down_differential tuner with adj_up_threshold
+      cpufreq: ondemand: Fix typos in comments
+      cpufreq: conservative: Fix typos in comments
+
+Tejun Heo (2):
+      PM / Domains: don't use [delayed_]work_pending()
+      PM: don't use [delayed_]work_pending()
+
+Thomas Renninger (1):
+      ACPI tools / acpidump: must be run as root - install it into /usr/sbin
+
+Tim Gardner (1):
+      ACPICA: Fix possible memory leak in dispatcher error path.
+
+Toshi Kani (2):
+      ACPI: sysfs eject support for ACPI scan handlers
+      ACPI: Unbind ACPI drv when probe failed
+
+Viresh Kumar (23):
+      cpufreq: Manage only online cpus
+      cpufreq: Notify governors when cpus are hot-[un]plugged
+      cpufreq: Don't use cpu removed during cpufreq_driver_unregister
+      cpufreq: SPEAr: Fix sparse warning for cpufreq driver
+      cpufreq: Simplify __cpufreq_remove_dev()
+      cpufreq: Revert "cpufreq: Don't use cpu removed during cpufreq_driver_unregister"
+      cpufreq: Simplify cpufreq_add_dev()
+      cpufreq: Update Documentation for cpus and related_cpus
+      cpufreq: SPEAr: Notify all policy->cpus of frequency change
+      cpufreq: governors: Get rid of dbs_data->enable field
+      cpufreq: governors: Remove code redundancy between governors
+      cpufreq: governors: Reset tunables only for cpufreq_unregister_governor()
+      cpufreq: TEGRA: Set policy->cpus from driver->init()
+      cpufreq: Set all cpus in policy->cpus for single cluster SoCs
+      cpufreq: Remove unnecessary use of policy->shared_type
+      cpufreq: Don't remove sysfs link for policy->cpu
+      cpufreq: Don't check cpu_online(policy->cpu)
+      cpufreq / stats: Get rid of CPUFREQ_STATDEVICE_ATTR
+      cpufreq: governors: Fix WARN_ON() for multi-policy platforms
+      cpufreq: Remove unused HOTPLUG_CPU code
+      cpufreq: Create a macro for unlock_policy_rwsem{read,write}
+      cpufreq: Fix locking issues
+      cpufreq: exynos: simplify .init() for setting policy->cpus
+
+Yasuaki Ishimatsu (3):
+      ACPI / PM: Fix acpi_bus_get_device() check in drivers/acpi/device_pm.c
+      PNPACPI: Fix acpi_bus_get_device() check in drivers/pnp/pnpacpi/core.c
+      ACPI / dock: Fix acpi_bus_get_device() check in drivers/acpi/dock.c
+
+Yinghai Lu (1):
+      ACPI: update ej_event interface to take acpi_device
+
+Zhang Rui (3):
+      ACPI: fix obsolete comment in custom_method.c
+      PM: Introduce suspend state PM_SUSPEND_FREEZE
+      ACPI: enable ACPI SCI during suspend
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
