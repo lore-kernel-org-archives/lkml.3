@@ -1,94 +1,311 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932559Ab3BIT6I (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 14:58:08 -0500
-Received: from mail-vb0-f44.google.com ([209.85.212.44]:40730 "EHLO
-	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932504Ab3BIT6D (ORCPT
+	id S932537Ab3BIUBW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 15:01:22 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:35471 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932499Ab3BIUBU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 14:58:03 -0500
+	Sat, 9 Feb 2013 15:01:20 -0500
+Date: Sat, 09 Feb 2013 10:15:44 -0600
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH v5 20/20] scripts/gdb: Add basic documentation
+To: Jan Kiszka <jan.kiszka@siemens.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
+        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
+        Borislav Petkov <bp@alien8.de>, linux-doc@vger.kernel.org
+In-Reply-To: <adb8ca13259fed849a5cabc66303d495edea03f3.1359463075.git.jan.kiszka@siemens.com>
+	(from jan.kiszka@siemens.com on Tue Jan 29 06:38:03 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1360426544.12062.26@driftwood>
 MIME-Version: 1.0
-In-Reply-To: <CAOJsxLFpE=HjkPcX6NsWS8636qnEhDFDJi+49xX2Ge3Xp4MeUg@mail.gmail.com>
-References: <alpine.DEB.2.02.1302041002430.6063@chino.kir.corp.google.com>
- <20130204184436.GA13256@gmail.com> <alpine.DEB.2.02.1302041053330.6063@chino.kir.corp.google.com>
- <20130204191408.GA32081@kroah.com> <20130204191334.GB14837@gmail.com>
- <CAOJsxLFy7K0cY-8SH4dXs=agYqCN8wW0eC2tQxFxfV8cf7uWqg@mail.gmail.com>
- <alpine.DEB.2.02.1302061209450.18172@chino.kir.corp.google.com>
- <20130207080236.ae38366537cf3f13b9668606@canb.auug.org.au>
- <20130206214646.GA28135@gmail.com> <20130208084029.d7d97d6e26580a5512712f91@canb.auug.org.au>
- <20130208145539.GC30334@gmail.com> <CA+55aFz9ERvaFayTy8QCtfi610Bt_r0GcOs68UNggJTHdY4oaQ@mail.gmail.com>
- <CAOJsxLFDa3sLwP2MWdXJMTfZNEopp5imy8nWNViuPnWH747ggQ@mail.gmail.com>
- <CA+55aFzEEbZqBaOKYB8H8+i904nXjNEgH=CUPtVMQU60QTTJaw@mail.gmail.com>
- <CAOJsxLFDbmNitH=N8v3jSno0SFL33s=nPc+hGRAqJfYFZS0RGw@mail.gmail.com>
- <CA+55aFy=SaVjNby=Jy_O9ZRQ_Ofc-6_+bLv=HeMMSzQQHw9vMQ@mail.gmail.com> <CAOJsxLFpE=HjkPcX6NsWS8636qnEhDFDJi+49xX2Ge3Xp4MeUg@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 10 Feb 2013 06:57:41 +1100
-X-Google-Sender-Auth: S7gaq_X_riMCuFezPxNDE047POY
-Message-ID: <CA+55aFzXF-4Xwc4HU8vnTin4WqtvYcpXq0TsqTN_vRg=myLH_Q@mail.gmail.com>
-Subject: Re: kvmtool tree (Was: Re: [patch] config: fix make kvmconfig)
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Rientjes <rientjes@google.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 10, 2013 at 6:39 AM, Pekka Enberg <penberg@kernel.org> wrote:
->
-> The main argument for merging into the main kernel repository has always been
-> that (we think) it improves the kernel because significant amount of
-> development is directly linked to kernel code (think KVM ARM port here, for
-> example). The secondary argument has been to make it easy for kernel developers
-> to work on both userspace and kernel in tandem (like has happened with vhost
-> drivers). In short: it speeds up development of Linux virtualization code.
+On 01/29/2013 06:38:03 AM, Jan Kiszka wrote:
+> CC: Rob Landley <rob@landley.net>
+> CC: linux-doc@vger.kernel.org
+> Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+> ---
+>  Documentation/gdb-kernel-debugging.txt |  155  
+> ++++++++++++++++++++++++++++++++
+>  1 files changed, 155 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/gdb-kernel-debugging.txt
+> 
+> diff --git a/Documentation/gdb-kernel-debugging.txt  
+> b/Documentation/gdb-kernel-debugging.txt
+> new file mode 100644
+> index 0000000..0ea46e1
+> --- /dev/null
+> +++ b/Documentation/gdb-kernel-debugging.txt
+> @@ -0,0 +1,155 @@
+> +Debugging kernel and modules via gdb
+> +====================================
+> +
+> +The kernel debugger kgdb, hypervisors like QEMU or JTAG-based  
+> hardware
+> +interfaces allow to debug the Linux kernel and its modules during  
+> runtime
+> +using gdb.
 
-Why? You've made this statement over and over and over again, and I've
-dismissed it over and over and over again because I simply don't think
-it's true.
+This could use some clarification.
 
-It's simply a statement with nothing to back it up. Why repeat it?
+Technically they're attaching gdb to the hardware using the gdbserver  
+protocol, instead of attaching to a specific process like the gdbserver  
+client program does. (I think of it as "pid 0": your register state  
+isn't a "register profile" but the actual contents of the hardware  
+registers, and your memory map is physical.)
 
-THAT is my main contention. I told you why I think it's actually
-actively untrue. You claim it helps, but what is it about kvmtool that
-makes it so magically helpful to be inside the kernel repository? What
-is it about this that makes it so critical that you get the kernel and
-kvmtool with a single pull, and they have to be in sync? When you then
-at the same time claim that you make very sure that they don't have to
-be in sync at all. See your earlier emails about how you claim to have
-worked very hard to make sure they work across different versions.
+Two of these three methods (jtag and emulator) are independent of  
+linux, and the fact the hardware you're attached to may or may not be  
+running linux (or u-boot, or a bare metal hello world) is irrelevant.  
+Only kgdb requires linux to be running to produce/consume gdbserver  
+procol with information about current hardware state.
 
-So you make these unsubstantiated claims about how much easier it is,
-and they make no sense. You never explain *why* it's so magically
-easier. Is git so hard to use that you can't do "git pull" twice? And
-why would you normally even *want* to do git pull twice? 99% of the
-work in the kernel has nothing what-so-ever to do with kvmtool, and
-hopefully the reverse is equally true.
+When Linux _is_ running, if you want symbol data you can point gdb at  
+an unstripped vmlinux. (Which is an ELF image, the build usually feeds  
+that through objdump and glues a wrapper on the front to make it  
+bootable on bare metal, but this is the one with symbols still in it.)  
+But even with symbols, trying to dig through Linux's various  
+abstractions and data structures to find anything belonging to an  
+actual process from outside the kernel is a flaming pain, so you've  
+made some gdb plugins to help out there. Cool.
 
-And tying into the kernel just creates this myopic world of only
-looking at the current kernel. What if somebody decides that they
-actually want to try to boot Windows with kvmtool? What if somebody
-tells you that they are really tired of Xen, and actually want to turn
-kvmtool into  *replacement* for Xen instead? What if somebody wants to
-branch off their own work, concentrating on some other issue entirely,
-and wants to merge with upstream kvmtool but not worry about the
-kernel, because they aren't working on the Linux kernel at all, and
-their work is about something else?
+> Gdb comes with a powerful scripting interface for python. The
+> +kernel provides a collection of helper scripts that can simplify  
+> typical
+> +kernel debugging steps. This is a short tutorial about how to enable  
+> and use
+> +them. It focuses on QEMU/KVM virtual machines as target, but the  
+> examples can
+> +be transferred to the other gdb stubs as well.
+> +
+> +
+> +Requirements
+> +------------
+> +
+> + o gdb 7.1+ (recommended: 7.3+) with python support enabled  
+> (typically true
+> +   for distributions)
+> +
+> +
+> +Setup
+> +-----
+> +
+> + o Create a virtual Linux machine for QEMU/KVM (see  
+> www.linux-kvm.org and
+> +   www.qemu.org for more details)
 
-I just don't think it makes sense. I don't see what the huge advantage
-of a single git tree is.
+If it helps, I've got a dozen different targets as  
+"system-image-*.tar.bz2" at
+http://landley.net/aboriginal/bin and the "run-emulator.sh" script  
+inside each one gives the qemu command line to boot it to a shell  
+prompt. At that shell prompt you can grab the relevant kernel config  
+with "zcat /proc/config.gz" to build your own kernel, and the  
+toolchains I did so with are in the same directory. (The README in  
+there describes other categories of file in the directory.)
 
-Anyway, I'm done arguing. You can do what you want, but just stop
-misrepresenting it as being "linux-next" material unless you are
-willing to actually explain why it should be so.
+That at least gives you a "known working" version to compare your own  
+attempts against.
 
-                Linus
+> + o Build the kernel with CONFIG_DEBUG_INFO enabled, but leave
+> +   CONFIG_DEBUG_INFO_REDUCED off
+> +
+> + o Install that kernel on the guest.
+> +
+> +   Alternatively, QEMU allows to boot the kernel directly using  
+> -kernel,
+> +   -append, -initrd command line switches. This is generally only  
+> useful if
+> +   you do not depend on modules. See QEMU documentation for more  
+> details on
+> +   this mode.
+
+It's qemu's built-in bootloader, no different than any other  
+bootloader. If your hardware needs a module to access the block device  
+you want to keep the rest of your modules on, A) you're making a  
+peverse architectural decision, B) stick it in the initramfs.
+
+(I could do up an example of that sort of setup if you like. The images  
+I linked to above keep a squashfs on a virtual hard drive, I could do  
+an initramfs that loads the IDE module and then switch_root to it. I  
+just haven't bothered because the easy way works.)
+
+> + o Enable the gdb stub of QEMU/KVM, either
+> +    - at VM startup time by appending "-s" to the QEMU command line
+> +   or
+> +    - during runtime by issuing "gdbserver" from the QEMU monitor
+> +      console
+
+Initiallly I thought this document would be more about kgdb, but this  
+is about how to use a direct hardware attached debugger (or kgdb  
+emulating one). Hence the clarification up top.
+
+> + o cd /path/to/linux-build
+> +
+> + o Start gdb: gdb vmlinux
+> +
+> +   Note: Some distros may restrict auto-loading of gdb scripts to  
+> known safe
+> +   directories. In case gdb reports to refuse loading  
+> vmlinux-gdb.py, add
+> +
+> +    add-add-auto-load-safe-path /path/to/linux-build
+> +
+> +   to ~/.gdbinit. See gdb help for more details.
+> +
+> + o Attach to the booted guest:
+> +    (gdb) target remote :1234
+
+I've found the "target remote |" option useful, where you pipe the I/O  
+to another command that forwards data to the target board.
+
+(I once had to debug a program on a board that only had a serial  
+console, and that was always on and attached to another machine. So I  
+piped to ssh which ran a term program which launched netcat on the  
+board to connect the remote end because the FSF didn't bother to make a  
+stdio option for gdbserver so you _have_ to use loopback. Although that  
+was a few versions back, maybe they fixed this...)
+
+*shrug* Possibly off topic...
+
+The rest is about what the plugins do, looks fine to me. :)
+
+Rob
+
+> +
+> +Examples of using the Linux-provided gdb helpers
+> +------------------------------------------------
+> +
+> + o Load module (and main kernel) symbols:
+> +    (gdb) lx-symbols
+> +    loading vmlinux
+> +    scanning for modules in /home/user/linux/build
+> +    loading @0xffffffffa0020000:  
+> /home/user/linux/build/net/netfilter/xt_tcpudp.ko
+> +    loading @0xffffffffa0016000:  
+> /home/user/linux/build/net/netfilter/xt_pkttype.ko
+> +    loading @0xffffffffa0002000:  
+> /home/user/linux/build/net/netfilter/xt_limit.ko
+> +    loading @0xffffffffa00ca000:  
+> /home/user/linux/build/net/packet/af_packet.ko
+> +    loading @0xffffffffa003c000:  
+> /home/user/linux/build/fs/fuse/fuse.ko
+> +    ...
+> +    loading @0xffffffffa0000000:  
+> /home/user/linux/build/drivers/ata/ata_generic.ko
+> +
+> + o Set a breakpoint on some not yet loaded module function, e.g.:
+> +    (gdb) b btrfs_init_sysfs
+> +    Function "btrfs_init_sysfs" not defined.
+> +    Make breakpoint pending on future shared library load? (y or  
+> [n]) y
+> +    Breakpoint 1 (btrfs_init_sysfs) pending.
+> +
+> + o Continue the target
+> +    (gdb) c
+> +
+> + o Load the module on the target and watch the symbols being loaded  
+> as well as
+> +   the breakpoint hit:
+> +    loading @0xffffffffa0034000:  
+> /home/user/linux/build/lib/libcrc32c.ko
+> +    loading @0xffffffffa0050000:  
+> /home/user/linux/build/lib/lzo/lzo_compress.ko
+> +    loading @0xffffffffa006e000:  
+> /home/user/linux/build/lib/zlib_deflate/zlib_deflate.ko
+> +    loading @0xffffffffa01b1000:  
+> /home/user/linux/build/fs/btrfs/btrfs.ko
+> +
+> +    Breakpoint 1, btrfs_init_sysfs () at  
+> /home/user/linux/fs/btrfs/sysfs.c:36
+> +    36              btrfs_kset = kset_create_and_add("btrfs", NULL,  
+> fs_kobj);
+> +
+> + o Dump the log buffer of the target kernel:
+> +    (gdb) lx-dmesg
+> +    [     0.000000] Initializing cgroup subsys cpuset
+> +    [     0.000000] Initializing cgroup subsys cpu
+> +    [     0.000000] Linux version 3.8.0-rc4-dbg+ (...
+> +    [     0.000000] Command line: root=/dev/sda2 resume=/dev/sda1  
+> vga=0x314
+> +    [     0.000000] e820: BIOS-provided physical RAM map:
+> +    [     0.000000] BIOS-e820: [mem  
+> 0x0000000000000000-0x000000000009fbff] usable
+> +    [     0.000000] BIOS-e820: [mem  
+> 0x000000000009fc00-0x000000000009ffff] reserved
+> +    ....
+> +
+> + o Examine fields of the current task struct:
+> +    (gdb) p $lx_current().pid
+> +    $1 = 4998
+> +    (gdb) p $lx_current().comm
+> +    $2 = "modprobe\000\000\000\000\000\000\000"
+> +
+> + o Make use of the per-cpu helper for the current or a specified CPU:
+> +    (gdb) p $lx_per_cpu("runqueues").nr_running
+> +    $3 = 1
+> +    (gdb) p $lx_per_cpu("runqueues", 2).nr_running
+> +    $4 = 0
+> +
+> + o Dig into hrtimers using the container_of helper:
+> +    (gdb) set $next =  
+> $lx_per_cpu("hrtimer_bases").clock_base[0].active.next
+> +    (gdb) p *$container_of($next, "struct hrtimer", "node")
+> +    $5 = {
+> +      node = {
+> +        node = {
+> +          __rb_parent_color = 18446612133355256072,
+> +          rb_right = 0x0 <irq_stack_union>,
+> +          rb_left = 0x0 <irq_stack_union>
+> +        },
+> +        expires = {
+> +          tv64 = 1835268000000
+> +        }
+> +      },
+> +      _softexpires = {
+> +        tv64 = 1835268000000
+> +      },
+> +      function = 0xffffffff81078232 <tick_sched_timer>,
+> +      base = 0xffff88003fd0d6f0,
+> +      state = 1,
+> +      start_pid = 0,
+> +      start_site = 0xffffffff81055c1f <hrtimer_start_range_ns+20>,
+> +      start_comm = "swapper/2\000\000\000\000\000\000"
+> +    }
+> +
+> +
+> +List of commands and helper
+> +---------------------------
+> +
+> +The number of commands and convenience helpers may evolve over the  
+> time, this
+> +is just a snapshot of the initial version:
+> +
+> + (gdb) apropos lx
+> + function lx_current -- Return current task
+> + function lx_module -- Find module by name and return the module  
+> variable
+> + function lx_modvar -- Return global variable of a module
+> + function lx_per_cpu -- Return per-cpu variable
+> + function lx_task_by_pid -- Find Linux task by PID and return the  
+> task_struct variable
+> + function lx_thread_info -- Calculate Linux thread_info from task  
+> variable
+> + lx-dmesg -- Print Linux kernel log buffer
+> + lx-lsmod -- List currently loaded modules
+> + lx-symbols -- (Re-)load symbols of Linux kernel and currently  
+> loaded modules
+> --
+> 1.7.3.4
+> 
+> 
+> 
+
+
