@@ -1,107 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760731Ab3BIO4Z (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 09:56:25 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:53200 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758210Ab3BIO4X (ORCPT
+	id S1760734Ab3BIO7C (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 09:59:02 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:34822 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755751Ab3BIO7A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 09:56:23 -0500
-Message-ID: <1360421780.6696.24.camel@edumazet-glaptop>
-Subject: Re: WARNING: at net/core/neighbour.c:1545 neigh_table_init()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: netdev@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Date: Sat, 09 Feb 2013 06:56:20 -0800
-In-Reply-To: <20130209123937.GA23420@localhost>
-References: <20130209123937.GA23420@localhost>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sat, 9 Feb 2013 09:59:00 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 1/2] gpio: gpio-generic: Fix bug in big endian bit conversion
+To: Andreas Larsson <andreas@gaisler.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, software@gaisler.com
+In-Reply-To: <1360060383-16880-2-git-send-email-andreas@gaisler.com>
+References: <1360060383-16880-1-git-send-email-andreas@gaisler.com> <1360060383-16880-2-git-send-email-andreas@gaisler.com>
+Date: Sat, 09 Feb 2013 14:58:55 +0000
+Message-Id: <20130209145855.D517E3E328E@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-02-09 at 20:39 +0800, Fengguang Wu wrote:
-> Greetings,
+On Tue,  5 Feb 2013 11:33:02 +0100, Andreas Larsson <andreas@gaisler.com> wrote:
+> The swap to convert LE to BE in bgpio_pin2mask_be should be on byte level, not
+> on bit level.
 > 
-> I got the below oops in linux-next and the first bad commit is
+> Signed-off-by: Andreas Larsson <andreas@gaisler.com>
+> ---
+>  drivers/gpio/gpio-generic.c |    5 ++++-
+>  1 files changed, 4 insertions(+), 1 deletions(-)
 > 
-> commit 455e987c0c2eb2c9045dc854559474cf41509965
-> Merge: 7c17e48 fd6da69
-> Author: Linus Torvalds <torvalds@linux-foundation.org>
-> Date:   Sat Dec 1 13:07:48 2012 -0800
-> 
->     Merge branch 'perf-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
->     
->     Pull perf fixes from Ingo Molnar:
->      "This is mostly about unbreaking architectures that took the UAPI
->       changes in the v3.7 cycle, plus misc fixes."
->     
->     * 'perf-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip:
->       perf kvm: Fix building perf kvm on non x86 arches
->       perf kvm: Rename perf_kvm to perf_kvm_stat
->       perf: Make perf build for x86 with UAPI disintegration applied
->       perf powerpc: Use uapi/unistd.h to fix build error
->       tools: Pass the target in descend
->       tools: Honour the O= flag when tool build called from a higher Makefile
->       tools: Define a Makefile function to do subdir processing
->       x86: Export asm/{svm.h,vmx.h,perf_regs.h}
->       perf tools: Fix strbuf_addf() when the buffer needs to grow
->       perf header: Fix numa topology printing
->       perf, powerpc: Fix hw breakpoints returning -ENOSPC
-> 
-> [  108.102297] NET4: DECnet for Linux: V.2.5.68s (C) 1995-2003 Linux DECnet Project Team
-> [  108.105501] ------------[ cut here ]------------
-> [  108.106286] WARNING: at /c/kernel-tests/src/i386/net/core/neighbour.c:1545 neigh_table_init+0x16f/0x490()
-> [  108.107506] Hardware name: Bochs
-> [  108.108577] Pid: 1, comm: swapper Not tainted 3.8.0-rc5-01118-geee5035 #17
-> [  108.109506] Call Trace:
-> [  108.111179]  [<c1054e52>] warn_slowpath_common+0xf2/0x140
-> [  108.112064]  [<c1acc2af>] ? neigh_table_init+0x16f/0x490
-> [  108.112880]  [<c1acc2af>] ? neigh_table_init+0x16f/0x490
-> [  108.114164]  [<c24d8c67>] ? atm_clip_init+0x98/0x98
-> [  108.115409]  [<c1054ff9>] warn_slowpath_null+0x39/0x50
-> [  108.116776]  [<c1acc2af>] neigh_table_init+0x16f/0x490
-> [  108.118169]  [<c1d0ba16>] ? mutex_unlock+0x16/0x30
-> [  108.119260]  [<c1a9cbf5>] ? proto_register+0x65/0x350
-> [  108.120016]  [<c24d8c67>] ? atm_clip_init+0x98/0x98
-> [  108.121591]  [<c24d91c6>] dn_neigh_init+0x1b/0x2b
-> [  108.122305]  [<c24d8cce>] decnet_init+0x67/0xfc
-> [  108.123169]  [<c2472470>] do_one_initcall+0xf2/0x259
-> [  108.124259]  [<c24727fa>] kernel_init_freeable+0x223/0x393
-> [  108.125053]  [<c2471548>] ? loglevel+0x55/0x55
-> [  108.125712]  [<c1ce8b59>] kernel_init+0x19/0x200
-> [  108.126411]  [<c1d114fb>] ret_from_kernel_thread+0x1b/0x30
-> [  108.127194]  [<c1ce8b40>] ? rest_init+0x1f0/0x1f0
-> [  108.128351] ---[ end trace 1bcbb5f262552fec ]---
-> 
-> git bisect start v3.7 v3.6 --
-> git bisect good d66e6737d454553e1e62109d8298ede5351178a4  #    10  2013-02-09 11:28:24  Merge git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6
-> git bisect good e1b28147f684af67bfac989756c27c19859d3d4e  #    10  2013-02-09 11:58:58  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux
-> git bisect good 37820108f395032e850e400139d956561a043c26  #    10  2013-02-09 12:28:59  Merge tag 'fixes-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc
-> git bisect good 60541d778e536455970281de25b2476e01c03aef  #    10  2013-02-09 12:59:29  unicore32: switch to generic sys_execve()
-> git bisect good 403f43c937d24832b18524f65415c0bbba6b5064  #    10  2013-02-09 13:29:53  team: bcast: convert return value of team_dev_queue_xmit() to bool correctly
-> git bisect good e23739b4ade80a3a7f87198f008f6c44a7cbc9fd  #    10  2013-02-09 14:00:15  Merge branch 'v4l_for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media
-> git bisect  bad 455e987c0c2eb2c9045dc854559474cf41509965  #     0  2013-02-09 14:03:12  Merge branch 'perf-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
-> git bisect good 50a53bbe1280839755cb120eef729ad150f644f9  #    10  2013-02-09 14:31:02  Merge branch 'akpm' (Fixes from Andrew)
-> git bisect good 31e06a42a34395111842707a85774151245447b7  #    10  2013-02-09 15:01:25  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/viro/signal
-> git bisect good 97a13bf3fed11a7508d58b67515c4b83cce25540  #    10  2013-02-09 15:31:48  Merge tag 'perf-uapi-20121119' of git://git.infradead.org/users/dhowells/linux-headers into perf/urgent
-> git bisect good 8fdd78eeb11aeda018b22424f863344ef83a92d3  #    10  2013-02-09 16:02:24  Merge tag 'for-linus' of git://linux-c6x.org/git/projects/linux-c6x-upstreaming
-> git bisect good 7c17e486e865d616f0e37c7f7f0e4dcfab704cd8  #    10  2013-02-09 16:32:42  Merge branch 'x86/urgent' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
-> git bisect good 7321090f6751c9987c26a8c81c63680d16a614d7  #    10  2013-02-09 17:03:13  perf kvm: Fix building perf kvm on non x86 arches
-> git bisect good fd6da696f38b00ffeae1185d6f0ec5d4ab3b472d  #    10  2013-02-09 17:33:37  Merge tag 'perf-urgent-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/urgent
-> git bisect good 7c17e486e865d616f0e37c7f7f0e4dcfab704cd8  #    30  2013-02-09 18:34:45  Merge branch 'x86/urgent' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
-> git bisect good fd6da696f38b00ffeae1185d6f0ec5d4ab3b472d  #    30  2013-02-09 19:35:42  Merge tag 'perf-urgent-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/urgent
-> git bisect  bad e347c988b34344c5192c2c238ad1c4bae51e975b  #     0  2013-02-09 19:51:48  Add linux-next specific files for 20130208
+> diff --git a/drivers/gpio/gpio-generic.c b/drivers/gpio/gpio-generic.c
+> index 05fcc0f..7f11537 100644
+> --- a/drivers/gpio/gpio-generic.c
+> +++ b/drivers/gpio/gpio-generic.c
+> @@ -112,7 +112,10 @@ static unsigned long bgpio_pin2mask(struct bgpio_chip *bgc, unsigned int pin)
+>  static unsigned long bgpio_pin2mask_be(struct bgpio_chip *bgc,
+>  				       unsigned int pin)
+>  {
+> -	return 1 << (bgc->bits - 1 - pin);
+> +	unsigned int bit = pin & 0x7; /* Bit number within byte */
+> +	unsigned int base = pin - bit; /* Pin that is bit 0 within byte */
+> +
+> +	return 1 << ((bgc->bits - base - 8) + bit); /* shifted base + bit */
 
-Well, bug as added in commit 08433eff2d041b263c68306f6a6ccb4e1f75e196
-(net neigh: Optimize neighbor entry size calculation.)
+Ah, sorry for my previous reply. I see you have seen gpio-generic.  :-)
 
-CC Yoshifuji
+No, the original calculation is correct. BE and LE bit numbering are
+opposite, bit Linux always uses LE numbers as far as bit masks are
+concerned. Therefore pin 0 is the most significant bit, and
+pin (nr_bits-1) is the least significant bit.
 
-
-
+g.
