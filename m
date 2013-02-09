@@ -1,79 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755964Ab3BINL2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 08:11:28 -0500
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:56131 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751571Ab3BINL0 (ORCPT
+	id S1757690Ab3BINMF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 08:12:05 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:52406 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755836Ab3BINMD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 08:11:26 -0500
-MIME-Version: 1.0
-In-Reply-To: <CANN689F-Gbh56bDFDMSogxsYtUTTqObxyFTzvrz_somvWh-CUw@mail.gmail.com>
-References: <1360377937-16297-1-git-send-email-walken@google.com>
-	<1360377937-16297-4-git-send-email-walken@google.com>
-	<CAJd=RBBd+pGG6=Qjpt-Zkxt5VdP5T3YV5_RVao+kHpz9dCzqXA@mail.gmail.com>
-	<CANN689F-Gbh56bDFDMSogxsYtUTTqObxyFTzvrz_somvWh-CUw@mail.gmail.com>
-Date: Sat, 9 Feb 2013 21:11:25 +0800
-Message-ID: <CAJd=RBB2Hcn7mAdAXF-K7sM=5pxpd8sre6rEJExC79LUO3iEbA@mail.gmail.com>
-Subject: Re: [PATCH 3/4] rwsem: implement write lock stealing
-From: Hillf Danton <dhillf@gmail.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: linux-kernel@vger.kernel.org, anton@samba.org, hpa@zytor.com,
-        mingo@kernel.org, arjan@linux.intel.com, a.p.zijlstra@chello.nl,
-        torvalds@linux-foundation.org, alex.shi@intel.com,
-        yuanhan.liu@linux.intel.com, dhowells@redhat.com,
-        akpm@linux-foundation.org
-Content-Type: text/plain; charset=UTF-8
+	Sat, 9 Feb 2013 08:12:03 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 6/9] gpiolib: use descriptors internally
+To: Alexandre Courbot <acourbot@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, gnurou@gmail.com,
+        Alexandre Courbot <acourbot@nvidia.com>
+In-Reply-To: <1359822572-26009-8-git-send-email-acourbot@nvidia.com>
+References: <1359822572-26009-1-git-send-email-acourbot@nvidia.com> <1359822572-26009-8-git-send-email-acourbot@nvidia.com>
+Date: Sat, 09 Feb 2013 13:11:58 +0000
+Message-Id: <20130209131158.22FD53E30EC@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 9, 2013 at 3:42 PM, Michel Lespinasse <walken@google.com> wrote:
-> On Fri, Feb 8, 2013 at 11:30 PM, Hillf Danton <dhillf@gmail.com> wrote:
->> On Sat, Feb 9, 2013 at 10:45 AM, Michel Lespinasse <walken@google.com> wrote:
->>> +               if (waiter->type != RWSEM_WAITING_FOR_WRITE) {
->>> +                       list_del(&waiter->list);
->>> +
->>> +                       /* Set RWSEM_WAITING_BIAS before waking the last reader
->>> +                        * so we know there will be a remaining active locker.
->>> +                        */
->>> +                       if (!(--readers) && !list_empty(&sem->wait_list))
->>> +                               rwsem_atomic_add(RWSEM_WAITING_BIAS, sem);
->>> +
->>> +                       tsk = waiter->task;
->>> +                       smp_mb();
->>
->> For what with mb?
->
-> This is the same mb that used to be before the readers_only label
-> before this change.
-> The intention is that the write to waiter->task must be the last
-> access to waiter - after that, the reader is granted the lock so it
-> could do anything, including deallocating the waiter structure as it
-> gets out of rwsem_down_read_failed() and possibly deallocating the
-> task structure if it exits
->
-Perhaps the waiting process needs to see if no more wait needed,
-	/* wait to be given the lock */
-	for (;;) {
-		if (!waiter.task)
-			break;
-		schedule();
-		set_task_state(tsk, TASK_UNINTERRUPTIBLE);
-	}
-and another mb do exist at the beginning of try_to_wake_up().
+On Sun,  3 Feb 2013 01:29:29 +0900, Alexandre Courbot <acourbot@nvidia.com> wrote:
+> Make sure gpiolib works internally with descriptors and (chip, offset)
+> pairs instead of using the global integer namespace. This prepares the
+> ground for the removal of the global gpio_desc[] array and the
+> introduction of the descriptor-based GPIO API.
+> 
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> ---
+>  drivers/gpio/gpiolib.c | 493 +++++++++++++++++++++++++++++++------------------
+>  1 file changed, 317 insertions(+), 176 deletions(-)
+> 
+> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+> index af4c350..82c40bd 100644
+> --- a/drivers/gpio/gpiolib.c
+> +++ b/drivers/gpio/gpiolib.c
+> @@ -78,6 +78,28 @@ static LIST_HEAD(gpio_chips);
+>  static DEFINE_IDR(dirent_idr);
+>  #endif
+>  
+> +/*
+> + * Internal gpiod_* API using descriptors instead of the integer namespace.
+> + * Most of this should eventually go public.
+> + */
+> +static int gpiod_request(struct gpio_desc *desc, const char *label);
+> +static void gpiod_free(struct gpio_desc *desc);
+> +static int gpiod_direction_input(struct gpio_desc *desc);
+> +static int gpiod_direction_output(struct gpio_desc *desc, int value);
+> +static int gpiod_set_debounce(struct gpio_desc *desc, unsigned debounce);
+> +static int gpiod_get_value_cansleep(struct gpio_desc *desc);
+> +static void gpiod_set_value_cansleep(struct gpio_desc *desc, int value);
+> +static int gpiod_get_value(struct gpio_desc *desc);
+> +static void gpiod_set_value(struct gpio_desc *desc, int value);
+> +static int gpiod_cansleep(struct gpio_desc *desc);
+> +static int gpiod_to_irq(struct gpio_desc *desc);
+> +static int gpiod_export(struct gpio_desc *desc, bool direction_may_change);
+> +static int gpiod_export_link(struct device *dev, const char *name,
+> +			     struct gpio_desc *desc);
+> +static int gpiod_sysfs_set_active_low(struct gpio_desc *desc, int value);
+> +static void gpiod_unexport(struct gpio_desc *desc);
 
-And I want to change
-+       /* Block until there are no active lockers. */
-+       do {
-+               schedule();
-+               set_task_state(tsk, TASK_UNINTERRUPTIBLE);
-+       } while (sem->count & RWSEM_ACTIVE_MASK);
+I've been thinking about the adding of a new API to supplant the old,
+and I'm wondering if we're going about this the wrong way around; at
+least for the public api. We've moved to a model where device drivers
+are really supposed to tread GPIO numbers as opaque handles. Most device
+drivers are well behaved on this point. (Others of course are not so
+well behaved and either hard code or interpret what a number means, but
+those users already need to be fixed before they will work with the
+device tree)
 
-to
-	/* Block until there are no active lockers. */
-	while (sem->count & RWSEM_ACTIVE_MASK) {
-		schedule();
-		set_task_state(tsk, TASK_UNINTERRUPTIBLE);
-	}
-for sure that we have to wait.
+Rather than creating a new API with a long-term-plan to move all old
+users to the new API - touching a lot of code all over the kernel in the
+process - what if we repurposed the existing API in a backwards
+compatible way.
+
+I think the maximum GPIO number I've seen in use is 65535, and that was
+based on dynamic allocation. What if we did the following:
+
+typedef unsigned long gpio_handle_t;
+
+struct gpio_desc *gpio_handle_to_desc(gpio_handle_t gpio)
+{
+	if (gpio <= NR_GPIOS)
+		return &gpio_desc[gpio];
+	return (struct gpio_desc *)gpio;
+}
+
+int gpio_get_direction(gpio_handle_t gpio)
+{
+	struct gpio_desc *desc = gpio_handle_to_desc(gpio);
+	if (!desc)
+		return -EEXIST;
+	return gpiod_get_direction(desc);
+}
+
+And do the same for all the other hooks. That will make the gpio changes
+much lower impact across the kernel, allow legacy gpio users to keep
+doing what they are doing, and encourage driver authors to keep out of
+the gpio_desc internals.
+
+Thoughts?
+
+I'm probably going to apply this patch anyway because it only affects
+the gpiolib internals, I need to take one more look over it before I
+make a decision. I want to get as much of this as possible queued up for
+v3.9 to make future work easier.
+
+g.
