@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932546Ab3BIUCr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 15:02:47 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:41751 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932485Ab3BIUCp (ORCPT
+	id S932549Ab3BIUJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 15:09:28 -0500
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:64117 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932499Ab3BIUJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 15:02:45 -0500
-Message-ID: <1360440158.7515.321.camel@mfleming-mobl1.ger.corp.intel.com>
-Subject: Re: [PATCH v5 -next 1/2]efivars: Disable external interrupt while
- holding efivars->lock
-From: Matt Fleming <matt@console-pimps.org>
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
-        "mikew@google.com" <mikew@google.com>,
-        "cbouatmailru@gmail.com" <cbouatmailru@gmail.com>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Date: Sat, 09 Feb 2013 20:02:38 +0000
-In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D414A541B5@USINDEM103.corp.hds.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D414A541B5@USINDEM103.corp.hds.com>
+	Sat, 9 Feb 2013 15:09:27 -0500
+Message-ID: <1360440561.1350.27.camel@x61.thuisdomein>
+Subject: [PATCH] [SCSI] aacraid: silence two GCC warnings
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Adaptec OEM Raid Solutions <aacraid@adaptec.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Sat, 09 Feb 2013 21:09:21 +0100
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 09 Feb 2013 20:09:22.0072 (UTC) FILETIME=[59A5C180:01CE0701]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-01-24 at 00:41 +0000, Seiji Aguchi wrote:
-> [Problem]
-> There is a scenario which efi_pstore fails to log messages in a panic case.
-> 
->  - CPUA holds an efi_var->lock in either efivarfs parts 
->    or efi_pstore with interrupt enabled.
->  - CPUB panics and sends IPI to CPUA in smp_send_stop().
->  - CPUA stops with holding the lock.
->  - CPUB kicks efi_pstore_write() via kmsg_dump(KSMG_DUMP_PANIC)
->    but it returns without logging messages.
-> 
-> [Patch Description]
-> This patch disables an external interruption while holding efivars->lock 
-> as follows.
-> 
-> In efi_pstore_write() and get_var_data(), spin_lock/spin_unlock is 
-> replaced by spin_lock_irqsave/spin_unlock_irqrestore because they may 
-> be called in an interrupt context.
-> 
-> In other functions, they are replaced by spin_lock_irq/spin_unlock_irq.
-> because they are all called from a process context.
-> 
-> By applying this patch, we can avoid the problem above with 
-> a following senario.
-> 
->  - CPUA holds an efi_var->lock with interrupt disabled.
->  - CPUB panics and sends IPI to CPUA in smp_send_stop().
->  - CPUA receives the IPI after releasing the lock because it is
->    disabling interrupt while holding the lock.
->  - CPUB waits for one sec until CPUA releases the lock.
->  - CPUB kicks efi_pstore_write() via kmsg_dump(KSMG_DUMP_PANIC)
->    And it can hold the lock successfully.
-> 
-> Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
-> Acked-by: Mike Waychison <mikew@google.com>
-> ---
->  drivers/firmware/efivars.c |   86 ++++++++++++++++++++++---------------------
->  1 files changed, 44 insertions(+), 42 deletions(-)
+Compiling src.o for a 32 bit system triggers two GCC warnings:
+    drivers/scsi/aacraid/src.c: In function ‘aac_src_deliver_message’:
+    drivers/scsi/aacraid/src.c:410:3: warning: right shift count >= width of type [enabled by default]
+    drivers/scsi/aacraid/src.c:434:2: warning: right shift count >= width of type [enabled by default]
 
-Acked-by: Matt Fleming <matt.fleming@intel.com>
+Silence these warnings by casting the 'address' variable (of type
+dma_addr_t) to u64 on those two lines.
 
-Tony, are you picking this up?
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) Compile tested only.
 
+1) Changing '0L' to 'OUL' might be a bit of cargo cult programming. I
+doubt it's necessary. Members of that cult might also change
+'0xffffffff' to '0xffffffffUL', but I didn't.
+
+ drivers/scsi/aacraid/src.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/scsi/aacraid/src.c b/drivers/scsi/aacraid/src.c
+index 3b021ec..dfa8a37 100644
+--- a/drivers/scsi/aacraid/src.c
++++ b/drivers/scsi/aacraid/src.c
+@@ -407,7 +407,7 @@ static int aac_src_deliver_message(struct fib *fib)
+ 		fib->hw_fib_va->header.StructType = FIB_MAGIC2;
+ 		fib->hw_fib_va->header.SenderFibAddress = (u32)address;
+ 		fib->hw_fib_va->header.u.TimeStamp = 0;
+-		BUG_ON((u32)(address >> 32) != 0L);
++		BUG_ON(((u64)address >> 32) != 0UL);
+ 		address |= fibsize;
+ 	} else {
+ 		/* Calculate the amount to the fibsize bits */
+@@ -431,7 +431,7 @@ static int aac_src_deliver_message(struct fib *fib)
+ 		address |= fibsize;
+ 	}
+ 
+-	src_writel(dev, MUnit.IQ_H, (address >> 32) & 0xffffffff);
++	src_writel(dev, MUnit.IQ_H, ((u64)address >> 32) & 0xffffffff);
+ 	src_writel(dev, MUnit.IQ_L, address & 0xffffffff);
+ 
+ 	return 0;
 -- 
-Matt Fleming, Intel Open Source Technology Center
+1.8.1.2
 
