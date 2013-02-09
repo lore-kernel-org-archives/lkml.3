@@ -1,198 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947483Ab3BIAHx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Feb 2013 19:07:53 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:34143 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1947339Ab3BIAHs (ORCPT
+	id S1947491Ab3BIAI4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Feb 2013 19:08:56 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:39603 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1947339Ab3BIAIy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Feb 2013 19:07:48 -0500
-Date: Fri, 8 Feb 2013 16:07:17 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
-        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
-        namhyung@kernel.org, rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, rjw@sisk.pl, sbw@mit.edu,
-        fweisbec@gmail.com, linux@arm.linux.org.uk, nikunj@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
-        netdev@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 09/45] smp, cpu hotplug: Fix smp_call_function_*() to
- prevent CPU offline properly
-Message-ID: <20130209000717.GP2666@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com>
- <20130122073508.13822.12784.stgit@srivatsabhat.in.ibm.com>
+	Fri, 8 Feb 2013 19:08:54 -0500
+Message-ID: <51159391.2020002@gmail.com>
+Date: Fri, 08 Feb 2013 16:08:49 -0800
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130122073508.13822.12784.stgit@srivatsabhat.in.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13020900-5518-0000-0000-00000B693D0A
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Viresh Kumar <viresh.kumar@linaro.org>, valdis.kletnieks@vt.edu,
+        artem.savkov@gmail.com, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        Nathan Zimmer <nzimmer@sgi.com>, dirk.brandewie@gmail.com
+Subject: Re: [PATCH 0/4] CPUFreq Fixes for 3.9
+References: <cover.1360232293.git.viresh.kumar@linaro.org> <CAKohpokp4YrxKHibewdt+3-WF7P2Fa_bvRidHpjd9SpsT6bPpw@mail.gmail.com> <1653071.l2kN4Hy2U6@vostro.rjw.lan> <2792362.JXCag4GJsR@vostro.rjw.lan>
+In-Reply-To: <2792362.JXCag4GJsR@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 01:05:10PM +0530, Srivatsa S. Bhat wrote:
-> Once stop_machine() is gone from the CPU offline path, we won't be able to
-> depend on preempt_disable() to prevent CPUs from going offline from under us.
-> 
-> Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going offline,
-> while invoking from atomic context.
-> 
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+On 02/08/2013 03:56 PM, Rafael J. Wysocki wrote:
+> On Friday, February 08, 2013 09:02:37 PM Rafael J. Wysocki wrote:
+>> On Friday, February 08, 2013 08:06:52 PM Viresh Kumar wrote:
+>>> On 8 February 2013 18:02, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>>>> So as I said, please rework the fixes on top of linux-pm.git/pm-cpufreq.
+>>>
+>>> I already did. Please check for-rafael branch
+>>
+>> Cool.  This is the one I'm supposed to apply, then?
+>
+> OK, applied to bleeding-edge.  Hopefully it will be build-tested over the
+> weekend and I can move it to linux-next.
+>
+> I dropped the rwlock/RCU patches from Nathan, though, because I had some
+> doubts about the correctness of the RCU one and the rwlock one alone would
+> conflict with your further changes.
 
-Would it make sense for get_online_cpus_atomic() to return the current
-CPU number?  Looks good otherwise.
+One piece of fallout from dropping Nathan patches I had rebased mine on top of 
+them.
 
-							Thanx, Paul
+This fixes the breakage do you want me to spin my patches or send this separately?:
 
-> ---
-> 
->  kernel/smp.c |   40 ++++++++++++++++++++++++++--------------
->  1 file changed, 26 insertions(+), 14 deletions(-)
-> 
-> diff --git a/kernel/smp.c b/kernel/smp.c
-> index 29dd40a..f421bcc 100644
-> --- a/kernel/smp.c
-> +++ b/kernel/smp.c
-> @@ -310,7 +310,8 @@ int smp_call_function_single(int cpu, smp_call_func_t func, void *info,
->  	 * prevent preemption and reschedule on another processor,
->  	 * as well as CPU removal
->  	 */
-> -	this_cpu = get_cpu();
-> +	get_online_cpus_atomic();
-> +	this_cpu = smp_processor_id();
-> 
->  	/*
->  	 * Can deadlock when called with interrupts disabled.
-> @@ -342,7 +343,7 @@ int smp_call_function_single(int cpu, smp_call_func_t func, void *info,
->  		}
->  	}
-> 
-> -	put_cpu();
-> +	put_online_cpus_atomic();
-> 
->  	return err;
->  }
-> @@ -371,8 +372,10 @@ int smp_call_function_any(const struct cpumask *mask,
->  	const struct cpumask *nodemask;
->  	int ret;
-> 
-> +	get_online_cpus_atomic();
->  	/* Try for same CPU (cheapest) */
-> -	cpu = get_cpu();
-> +	cpu = smp_processor_id();
-> +
->  	if (cpumask_test_cpu(cpu, mask))
->  		goto call;
-> 
-> @@ -388,7 +391,7 @@ int smp_call_function_any(const struct cpumask *mask,
->  	cpu = cpumask_any_and(mask, cpu_online_mask);
->  call:
->  	ret = smp_call_function_single(cpu, func, info, wait);
-> -	put_cpu();
-> +	put_online_cpus_atomic();
->  	return ret;
->  }
->  EXPORT_SYMBOL_GPL(smp_call_function_any);
-> @@ -409,25 +412,28 @@ void __smp_call_function_single(int cpu, struct call_single_data *data,
->  	unsigned int this_cpu;
->  	unsigned long flags;
-> 
-> -	this_cpu = get_cpu();
-> +	get_online_cpus_atomic();
-> +
-> +	this_cpu = smp_processor_id();
-> +
->  	/*
->  	 * Can deadlock when called with interrupts disabled.
->  	 * We allow cpu's that are not yet online though, as no one else can
->  	 * send smp call function interrupt to this cpu and as such deadlocks
->  	 * can't happen.
->  	 */
-> -	WARN_ON_ONCE(cpu_online(smp_processor_id()) && wait && irqs_disabled()
-> +	WARN_ON_ONCE(cpu_online(this_cpu) && wait && irqs_disabled()
->  		     && !oops_in_progress);
-> 
->  	if (cpu == this_cpu) {
->  		local_irq_save(flags);
->  		data->func(data->info);
->  		local_irq_restore(flags);
-> -	} else {
-> +	} else if ((unsigned)cpu < nr_cpu_ids && cpu_online(cpu)) {
->  		csd_lock(data);
->  		generic_exec_single(cpu, data, wait);
->  	}
-> -	put_cpu();
-> +	put_online_cpus_atomic();
->  }
-> 
->  /**
-> @@ -451,6 +457,8 @@ void smp_call_function_many(const struct cpumask *mask,
->  	unsigned long flags;
->  	int refs, cpu, next_cpu, this_cpu = smp_processor_id();
-> 
-> +	get_online_cpus_atomic();
-> +
->  	/*
->  	 * Can deadlock when called with interrupts disabled.
->  	 * We allow cpu's that are not yet online though, as no one else can
-> @@ -467,17 +475,18 @@ void smp_call_function_many(const struct cpumask *mask,
-> 
->  	/* No online cpus?  We're done. */
->  	if (cpu >= nr_cpu_ids)
-> -		return;
-> +		goto out_unlock;
-> 
->  	/* Do we have another CPU which isn't us? */
->  	next_cpu = cpumask_next_and(cpu, mask, cpu_online_mask);
->  	if (next_cpu == this_cpu)
-> -		next_cpu = cpumask_next_and(next_cpu, mask, cpu_online_mask);
-> +		next_cpu = cpumask_next_and(next_cpu, mask,
-> +						cpu_online_mask);
-> 
->  	/* Fastpath: do that cpu by itself. */
->  	if (next_cpu >= nr_cpu_ids) {
->  		smp_call_function_single(cpu, func, info, wait);
-> -		return;
-> +		goto out_unlock;
->  	}
-> 
->  	data = &__get_cpu_var(cfd_data);
-> @@ -523,7 +532,7 @@ void smp_call_function_many(const struct cpumask *mask,
->  	/* Some callers race with other cpus changing the passed mask */
->  	if (unlikely(!refs)) {
->  		csd_unlock(&data->csd);
-> -		return;
-> +		goto out_unlock;
->  	}
-> 
->  	raw_spin_lock_irqsave(&call_function.lock, flags);
-> @@ -554,6 +563,9 @@ void smp_call_function_many(const struct cpumask *mask,
->  	/* Optionally wait for the CPUs to complete */
->  	if (wait)
->  		csd_lock_wait(&data->csd);
-> +
-> +out_unlock:
-> +	put_online_cpus_atomic();
->  }
->  EXPORT_SYMBOL(smp_call_function_many);
-> 
-> @@ -574,9 +586,9 @@ EXPORT_SYMBOL(smp_call_function_many);
->   */
->  int smp_call_function(smp_call_func_t func, void *info, int wait)
->  {
-> -	preempt_disable();
-> +	get_online_cpus_atomic();
->  	smp_call_function_many(cpu_online_mask, func, info, wait);
-> -	preempt_enable();
-> +	put_online_cpus_atomic();
-> 
->  	return 0;
->  }
-> 
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 0ebdf8c..a008b8e 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1024,7 +1024,7 @@ static int __cpufreq_remove_dev(struct device *dev, struct
+                 __cpufreq_governor(data, CPUFREQ_GOV_STOP);
+
+  #ifdef CONFIG_HOTPLUG_CPU
+-       if (!driver->setpolicy)
++       if (!cpufreq_driver->setpolicy)
+                 strncpy(per_cpu(cpufreq_cpu_governor, cpu),
+                         data->governor->name, CPUFREQ_NAME_LEN);
+  #endif
+@@ -1771,7 +1771,7 @@ int cpufreq_update_policy(unsigned int cpu)
+                         pr_debug("Driver did not initialize current freq");
+                         data->cur = policy.cur;
+                 } else {
+-                       if (data->cur != policy.cur && driver->target)
++                       if (data->cur != policy.cur && cpufreq_driver->target)
+                                 cpufreq_out_of_sync(cpu, data->cur,
+                                                                 policy.cur);
+                 }
 
