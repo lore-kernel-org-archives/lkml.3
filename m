@@ -1,110 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932595Ab3BITxz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 14:53:55 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:35115 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932510Ab3BITw7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 14:52:59 -0500
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>
-Subject: [PATCH 2/5] x86: Detect CPUID support early at boot
-Date: Sat,  9 Feb 2013 20:52:51 +0100
-Message-Id: <1360439574-16122-3-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 1.8.1.3.535.ga923c31
-In-Reply-To: <1360439574-16122-1-git-send-email-bp@alien8.de>
-References: <1360439574-16122-1-git-send-email-bp@alien8.de>
+	id S932543Ab3BIT57 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 14:57:59 -0500
+Received: from mail-ia0-f176.google.com ([209.85.210.176]:42566 "EHLO
+	mail-ia0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932504Ab3BIT55 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Feb 2013 14:57:57 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAD77+gQFfNvz02=0FWDq+KUGk5QO_MywWw=NBMk6YaFGNQ4+kA@mail.gmail.com>
+References: <CAD77+gQFfNvz02=0FWDq+KUGk5QO_MywWw=NBMk6YaFGNQ4+kA@mail.gmail.com>
+From: Richard Hartmann <richih.mailinglist@gmail.com>
+Date: Sat, 9 Feb 2013 20:57:36 +0100
+Message-ID: <CAD77+gTFDbNopgJjMv+BGJCbueR-k8Uiyq41DfOeF_t1oJm7EA@mail.gmail.com>
+Subject: Re: drivers/net/wireless/iwlwifi/dvm/tx.c and arch/x86/kernel/apic/ipi.c:
+ Kernel trace when roaming between different Access Points with the same ESSID
+To: Johannes Berg <johannes.berg@intel.com>,
+        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
+Yet another one, this time during high USB i/o load.
 
-We detect CPUID function support on each CPU and save it for later use,
-obviating the need to play the toggle EFLAGS.ID game every time. C code
-is looking at ->cpuid_level anyway.
+Could this be a hardware issue as well?
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
- arch/x86/kernel/head_32.S | 48 +++++++++++++++++++++++------------------------
- 1 file changed, 24 insertions(+), 24 deletions(-)
+Does it still make sense to send these reports to anyone?
 
-diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
-index f4d919e2cd2b..df0b324d2854 100644
---- a/arch/x86/kernel/head_32.S
-+++ b/arch/x86/kernel/head_32.S
-@@ -318,30 +318,38 @@ default_entry:
- 	movl %eax,%cr0
- 
- /*
-- *	New page tables may be in 4Mbyte page mode and may
-- *	be using the global pages. 
-+ * Initialize EFLAGS. Some BIOSes leave bits like NT set. This would confuse the
-+ * debugger if this code is traced. Best to initialize before switching to
-+ * protected mode.
-+ */
-+
-+	pushl $0
-+	popfl
-+
-+/*
-+ * New page tables may be in 4Mbyte page mode and may be using the global pages.
-  *
-- *	NOTE! If we are on a 486 we may have no cr4 at all!
-- *	Specifically, cr4 exists if and only if CPUID exists
-- *	and has flags other than the FPU flag set.
-+ * NOTE! If we are on a 486 we may have no cr4 at all! Specifically, cr4 exists
-+ * if and only if CPUID exists and has flags other than the FPU flag set.
-  */
-+	movl $-1,pa(X86_CPUID)		# preset CPUID level
- 	movl $X86_EFLAGS_ID,%ecx
- 	pushl %ecx
--	popfl
--	pushfl
--	popl %eax
--	pushl $0
--	popfl
-+	popfl				# set EFLAGS=ID
- 	pushfl
--	popl %edx
--	xorl %edx,%eax
--	testl %ecx,%eax
--	jz 6f			# No ID flag = no CPUID = no CR4
-+	popl %eax			# get EFLAGS
-+	testl $X86_EFLAGS_ID,%eax	# did EFLAGS.ID remained set?
-+	jz 6f				# hw disallowed setting of ID bit
-+					# which means no CPUID and no CR4
-+
-+	xorl %eax,%eax
-+	cpuid
-+	movl %eax,pa(X86_CPUID)		# save largest std CPUID function
- 
- 	movl $1,%eax
- 	cpuid
--	andl $~1,%edx		# Ignore CPUID.FPU
--	jz 6f			# No flags or only CPUID.FPU = no CR4
-+	andl $~1,%edx			# Ignore CPUID.FPU
-+	jz 6f				# No flags or only CPUID.FPU = no CR4
- 
- 	movl pa(mmu_cr4_features),%eax
- 	movl %eax,%cr4
-@@ -389,14 +397,6 @@ default_entry:
- 	addl $__PAGE_OFFSET, %esp
- 
- /*
-- * Initialize eflags.  Some BIOS's leave bits like NT set.  This would
-- * confuse the debugger if this code is traced.
-- * XXX - best to initialize before switching to protected mode.
-- */
--	pushl $0
--	popfl
--
--/*
-  * start system 32-bit setup. We need to re-do some of the things done
-  * in 16-bit mode for the "real" operations.
-  */
+
+[95553.449219] ------------[ cut here ]------------
+[95553.449257] WARNING: at
+/build/buildd-linux_3.7.1-1~experimental.1-i386-Au6THQ/linux-3.7.1/drivers/net/wireless/iwlwifi/dvm/tx.c:1189
+iwlagn_rx_reply_tx+0x288/0x6e2 [iwldvm]()
+[95553.449262] Hardware name: 4286CTO
+[95553.449265] Modules linked in: nls_utf8 nls_cp437 vfat fat
+mmc_block usb_storage parport_pc ppdev rfcomm lp parport bnep
+cpufreq_userspace cpufreq_stats cpufreq_powersave cpufreq_conservative
+uinput nfsd auth_rpcgss nfs_acl nfs lockd dns_resolver fscache sunrpc
+ext4 jbd2 mbcache loop fuse snd_hda_codec_hdmi snd_hda_codec_conexant
+arc4 coretemp iwldvm mac80211 kvm_intel snd_hda_intel thinkpad_acpi
+snd_hda_codec nvram snd_hwdep snd_pcm snd_page_alloc kvm i915
+drm_kms_helper crc32c_intel joydev drm i2c_algo_bit snd_seq btusb
+bluetooth iTCO_wdt snd_seq_device snd_timer aesni_intel aes_i586 crc16
+iwlwifi iTCO_vendor_support xts lrw i2c_i801 pcspkr snd gf128mul
+i2c_core ablk_helper cryptd soundcore lpc_ich mfd_core cfg80211
+psmouse serio_raw acpi_cpufreq mperf mei rfkill ac wmi battery tpm_tis
+tpm evdev processor tpm_bios button video xfs sg sd_mod crc_t10dif
+xhci_hcd ahci libahci libata microcode scsi_mod ehci_hcd sdhci_pci
+sdhci mmc_core usbcore usb_common e1000e thermal thermal_sys
+[95553.449427] Pid: 0, comm: swapper/0 Tainted: G        W
+3.7-trunk-686-pae #1 Debian 3.7.1-1~experimental.1
+[95553.449431] Call Trace:
+[95553.449446]  [<c10310c5>] ? warn_slowpath_common+0x68/0x79
+[95553.449464]  [<f87291e2>] ? iwlagn_rx_reply_tx+0x288/0x6e2 [iwldvm]
+[95553.449472]  [<c10310e3>] ? warn_slowpath_null+0xd/0x10
+[95553.449487]  [<f87291e2>] ? iwlagn_rx_reply_tx+0x288/0x6e2 [iwldvm]
+[95553.449502]  [<f859008b>] ? check_event_type_and_length+0x37/0x4b [snd_seq]
+[95553.449520]  [<f872e344>] ? iwl_rx_dispatch+0x57/0x63 [iwldvm]
+[95553.449537]  [<f859fd14>] ? iwl_irq_tasklet+0x39c/0x698 [iwlwifi]
+[95553.449546]  [<c1037457>] ? tasklet_action+0x62/0xa5
+[95553.449552]  [<c103711b>] ? __do_softirq+0x90/0x192
+[95553.449559]  [<c103708b>] ? perf_trace_irq_handler_entry+0xd7/0xd7
+[95553.449563]  <IRQ>  [<c10372cb>] ? irq_exit+0x32/0x7d
+[95553.449577]  [<c100d070>] ? do_IRQ+0x65/0x76
+[95553.449586]  [<c12ed2f3>] ? common_interrupt+0x33/0x38
+[95553.449593]  [<c10300d8>] ? copy_process.part.33+0x8a8/0xf0c
+[95553.449602]  [<c11b1c03>] ? intel_idle+0xc4/0xec
+[95553.449612]  [<c122ea2e>] ? cpuidle_enter+0xb/0xe
+[95553.449619]  [<c122edb9>] ? cpuidle_enter_state+0x9/0x33
+[95553.449626]  [<c122ee8e>] ? cpuidle_idle_call+0xab/0x146
+[95553.449634]  [<c10114d7>] ? cpu_idle+0x88/0xac
+[95553.449641]  [<c1464966>] ? start_kernel+0x334/0x339
+[95553.449646] ---[ end trace e2ce8294be2c8dca ]---
+
 -- 
-1.8.1.3.535.ga923c31
-
+Richard
