@@ -1,56 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752624Ab3BIJ3g (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 04:29:36 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:36063 "EHLO mail.skyhub.de"
+	id S1752563Ab3BIJle (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 04:41:34 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:45924 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752494Ab3BIJ3d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 04:29:33 -0500
-Date: Sat, 9 Feb 2013 10:29:25 +0100
+	id S1752403Ab3BIJla (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Feb 2013 04:41:30 -0500
+Date: Sat, 9 Feb 2013 10:41:21 +0100
 From: Borislav Petkov <bp@alien8.de>
-To: Kees Cook <keescook@chromium.org>
-Cc: Matthew Garrett <matthew.garrett@nebula.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH] x86: Lock down MSR writing in secure boot
-Message-ID: <20130209092925.GA17728@pd.tnic>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, hpa@zytor.com,
+        mingo@kernel.org, tglx@linutronix.de
+Subject: Re: [PATCH 1/2] add helper for highmem checks
+Message-ID: <20130209094121.GB17728@pd.tnic>
 Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Kees Cook <keescook@chromium.org>,
-	Matthew Garrett <matthew.garrett@nebula.com>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Ingo Molnar <mingo@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
-	"linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-	linux-security-module <linux-security-module@vger.kernel.org>
-References: <dee64752-850c-4d78-b703-f47a985bc13e@email.android.com>
- <CAGXu5jLAufTRm=sDST0br_WEkn4o0Hpjv2jDP2Na=cCvuM+MGg@mail.gmail.com>
- <1360355671.18083.18.camel@x230.lan>
- <CAGXu5jKo2PfMBO4A0ZgQcrPuj8OHNaff+CjAesOAWkZc0vB9+Q@mail.gmail.com>
- <51157C9C.6030501@zytor.com>
- <20130208230655.GB28990@pd.tnic>
- <1360366012.18083.21.camel@x230.lan>
- <5115A4CC.3080102@zytor.com>
- <1360373383.18083.23.camel@x230.lan>
- <CAGXu5j+xvJ3L5ejxtZ-Jw3F6rV7OsrE0_HZCGu_er0rH2_PwKA@mail.gmail.com>
+	Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+	linux-mm@kvack.org, hpa@zytor.com, mingo@kernel.org,
+	tglx@linutronix.de
+References: <20130208202813.62965F25@kernel.stglabs.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAGXu5j+xvJ3L5ejxtZ-Jw3F6rV7OsrE0_HZCGu_er0rH2_PwKA@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130208202813.62965F25@kernel.stglabs.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 08, 2013 at 10:45:35PM -0800, Kees Cook wrote:
-> Also, _reading_ MSRs from userspace arguably has utility that doesn't
-> compromise ring-0.
+On Fri, Feb 08, 2013 at 12:28:13PM -0800, Dave Hansen wrote:
+> 
+> Boris, could you check that this series also fixes the /dev/mem
+> problem you were seeing?
+> 
+> --
+> 
+> We have a new debugging check on x86 that has caught a number
+> of long-standing bugs.  However, there is a _bit_ of collateral
+> damage with things that call __pa(high_memory).
+> 
+> We are now checking that any addresses passed to __pa() are
+> *valid* and can be dereferenced.
+> 
+> "high_memory", however, is not valid.  It marks the start of
+> highmem, and isn't itself a valid pointer.  But, those users
+> are really just asking "is this vaddr mapped"?  So, give them
+> a helper that does that, plus is also kind to our new
+> debugging check.
+> 
+> 
+> Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+> ---
+> 
+>  linux-2.6.git-dave/arch/x86/mm/pat.c     |   11 ++++++-----
+>  linux-2.6.git-dave/drivers/char/mem.c    |    4 ++--
+>  linux-2.6.git-dave/drivers/mtd/mtdchar.c |    2 +-
+>  linux-2.6.git-dave/include/linux/mm.h    |   13 +++++++++++++
+>  4 files changed, 22 insertions(+), 8 deletions(-)
+> 
+> diff -puN drivers/char/mem.c~clean-up-highmem-checks drivers/char/mem.c
+> --- linux-2.6.git/drivers/char/mem.c~clean-up-highmem-checks	2013-02-08 08:42:37.291222110 -0800
+> +++ linux-2.6.git-dave/drivers/char/mem.c	2013-02-08 12:27:27.837477867 -0800
+> @@ -51,7 +51,7 @@ static inline unsigned long size_inside_
+>  #ifndef ARCH_HAS_VALID_PHYS_ADDR_RANGE
+>  static inline int valid_phys_addr_range(phys_addr_t addr, size_t count)
+>  {
+> -	return addr + count <= __pa(high_memory);
+> +	return !phys_addr_is_highmem(addr + count);
+>  }
+>  
+>  static inline int valid_mmap_phys_addr_range(unsigned long pfn, size_t size)
+> @@ -250,7 +250,7 @@ static int uncached_access(struct file *
+>  	 */
+>  	if (file->f_flags & O_DSYNC)
+>  		return 1;
+> -	return addr >= __pa(high_memory);
+> +	return phys_addr_is_highmem(addr);
+>  #endif
+>  }
+>  #endif
+> diff -puN include/linux/mm.h~clean-up-highmem-checks include/linux/mm.h
+> --- linux-2.6.git/include/linux/mm.h~clean-up-highmem-checks	2013-02-08 08:42:37.295222148 -0800
+> +++ linux-2.6.git-dave/include/linux/mm.h	2013-02-08 09:01:49.758254468 -0800
+> @@ -1771,5 +1771,18 @@ static inline unsigned int debug_guardpa
+>  static inline bool page_is_guard(struct page *page) { return false; }
+>  #endif /* CONFIG_DEBUG_PAGEALLOC */
+>  
+> +static inline phys_addr_t last_lowmem_phys_addr(void)
+> +{
+> +	/*
+> +	 * 'high_memory' is not a pointer that can be dereferenced, so
+> +	 * avoid calling __pa() on it directly.
+> +	 */
+> +	return __pa(high_memory - 1);
+> +}
+> +static inline bool phys_addr_is_highmem(phys_addr_t addr)
+> +{
+> +	return addr > last_lowmem_paddr();
 
-And to come back to the original question: what is that utility, who
-would need it on a secure boot system and why?
+I think you mean last_lowmem_phys_addr() here:
+
+include/linux/mm.h: In function ‘phys_addr_is_highmem’:
+include/linux/mm.h:1764:2: error: implicit declaration of function ‘last_lowmem_paddr’ [-Werror=implicit-function-declaration]
+cc1: some warnings being treated as errors
+make[1]: *** [arch/x86/kernel/asm-offsets.s] Error 1
+
+Changed.
 
 -- 
 Regards/Gruss,
