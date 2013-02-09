@@ -1,38 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755836Ab3BIN2L (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 08:28:11 -0500
-Received: from mail-we0-f172.google.com ([74.125.82.172]:42531 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752865Ab3BIN2I (ORCPT
+	id S1757521Ab3BINi1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 08:38:27 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:62952 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755584Ab3BINiZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 08:28:08 -0500
+	Sat, 9 Feb 2013 08:38:25 -0500
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 7/9] gpiolib: let gpio_chip reference its descriptors
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        gnurou@gmail.com
-In-Reply-To: <CACRpkdZ3L15vbfBGC-SmmGKnt8N_GZGKP92su3aZWQZdPPVR2Q@mail.gmail.com>
-References: <1359822572-26009-1-git-send-email-acourbot@nvidia.com> <1359822572-26009-9-git-send-email-acourbot@nvidia.com> <CACRpkdZ3L15vbfBGC-SmmGKnt8N_GZGKP92su3aZWQZdPPVR2Q@mail.gmail.com>
-Date: Sat, 09 Feb 2013 13:28:03 +0000
-Message-Id: <20130209132803.AC8323E30EC@localhost>
+Subject: Re: [PATCH v3] gpio: vt8500: memory cleanup missing
+To: Tony Prisk <linux@prisktech.co.nz>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com,
+        Tony Prisk <linux@prisktech.co.nz>
+In-Reply-To: <1358485102-6585-1-git-send-email-linux@prisktech.co.nz>
+References: <1358485102-6585-1-git-send-email-linux@prisktech.co.nz>
+Date: Sat, 09 Feb 2013 13:38:21 +0000
+Message-Id: <20130209133821.5FDC93E30EC@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Feb 2013 19:00:09 +0100, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Sat, Feb 2, 2013 at 5:29 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+On Fri, 18 Jan 2013 17:58:22 +1300, Tony Prisk <linux@prisktech.co.nz> wrote:
+> This driver is missing a .remove callback, and the fail path on
+> probe is incomplete.
 > 
-> > Add a pointer to the gpio_chip structure that references the array of
-> > GPIO descriptors belonging to the chip, and update gpiolib code to use
-> > this pointer instead of the global gpio_desc[] array. This is another
-> > step towards the removal of the gpio_desc[] global array.
-> >
-> > Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> If an error occurs in vt8500_add_chips, gpio_base is not unmapped.
+> The driver is also ignoring the return value from this function so
+> if a chip fails to register it completes as successful.
 > 
-> Reviewed-by: Linus Walleij <linus.walleij@linaro.orh>
+> Replaced pr_err with dev_err in vt8500_add_chips since the device is
+> available.
+> 
+> There is also no .remove callback defined so the function is added.
+> 
+> Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
 
 Applied, thanks.
 
