@@ -1,50 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752657Ab3BIKXe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 05:23:34 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39168 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752567Ab3BIKXc (ORCPT
+	id S1752754Ab3BIKea (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 05:34:30 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:35805 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752559Ab3BIKe3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 05:23:32 -0500
-Date: Sat, 9 Feb 2013 10:22:44 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Philip Avinash <avinashphilip@ti.com>
-Cc: khilman@ti.com, tony@atomide.com, dwmw2@infradead.org,
-        artem.bityutskiy@linux.intel.com, afzal@ti.com,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
-        nsekhar@ti.com, gururaja.hebbar@ti.com, hvaibhav@ti.com
-Subject: Re: [PATCH v2 3/4] mtd: devices: elm: Low power transition support
-Message-ID: <20130209102243.GH17852@n2100.arm.linux.org.uk>
-References: <1360240618-11094-1-git-send-email-avinashphilip@ti.com> <1360240618-11094-4-git-send-email-avinashphilip@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360240618-11094-4-git-send-email-avinashphilip@ti.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Sat, 9 Feb 2013 05:34:29 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+To: linux-kernel@vger.kernel.org
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] gpiolib: Fix locking on gpio debugfs files
+Date: Sat,  9 Feb 2013 10:34:22 +0000
+Message-Id: <1360406062-14982-1-git-send-email-grant.likely@secretlab.ca>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 07, 2013 at 06:06:57PM +0530, Philip Avinash wrote:
-> +static int elm_suspend(struct device *dev)
-> +{
-> +	struct elm_info *info = dev_get_drvdata(dev);
-> +	wait_queue_head_t wq;
-> +	DECLARE_WAITQUEUE(wait, current);
-> +
-> +	init_waitqueue_head(&wq);
-> +	while (1) {
-> +		/* Make sure that ELM not running */
-> +		if (info->idle) {
-> +			add_wait_queue(&wq, &wait);
-> +			schedule();
-> +			remove_wait_queue(&wq, &wait);
-> +		} else {
-> +			break;
-> +		}
-> +	}
+The debugfs files really need to hold the gpiolib spinlock before
+accessing the list. Otherwise chip addition/removal will cause an oops.
 
-The above code looks really wrong - it will just spin endlessly with the
-waitqueues doing nothing useful.  What are you trying to do here?
+Cc: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+---
+ drivers/gpio/gpiolib.c |   12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+index 8ccf68b..807c9d3 100644
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -1884,29 +1884,35 @@ static void gpiolib_dbg_show(struct seq_file *s, struct gpio_chip *chip)
+ 
+ static void *gpiolib_seq_start(struct seq_file *s, loff_t *pos)
+ {
++	unsigned long flags;
+ 	struct gpio_chip *chip = NULL;
+ 	loff_t index = *pos;
+ 
+-	/* REVISIT this isn't locked against gpio_chip removal ... */
+-
+ 	s->private = "";
+ 
++	spin_lock_irqsave(&gpio_lock, flags);
+ 	list_for_each_entry(chip, &gpio_chips, list)
+-		if (index-- == 0)
++		if (index-- == 0) {
++			spin_unlock_irqrestore(&gpio_lock, flags);
+ 			return chip;
++		}
++	spin_unlock_irqrestore(&gpio_lock, flags);
+ 
+ 	return NULL;
+ }
+ 
+ static void *gpiolib_seq_next(struct seq_file *s, void *v, loff_t *pos)
+ {
++	unsigned long flags;
+ 	struct gpio_chip *chip = v;
+ 	void *ret = NULL;
+ 
++	spin_lock_irqsave(&gpio_lock, flags);
+ 	if (list_is_last(&chip->list, &gpio_chips))
+ 		ret = NULL;
+ 	else
+ 		ret = list_entry(chip->list.next, struct gpio_chip, list);
++	spin_unlock_irqrestore(&gpio_lock, flags);
+ 
+ 	s->private = "\n";
+ 	++*pos;
+-- 
+1.7.10.4
+
