@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932580Ab3BJLjq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Feb 2013 06:39:46 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:48956 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754779Ab3BJLjg (ORCPT
+	id S1755177Ab3BJLjh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Feb 2013 06:39:37 -0500
+Received: from mail-we0-f169.google.com ([74.125.82.169]:35962 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754786Ab3BJLjb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Feb 2013 06:39:36 -0500
+	Sun, 10 Feb 2013 06:39:31 -0500
 From: sjur.brandeland@stericsson.com
 To: Ido Yariv <ido@wizery.com>, Ohad Ben-Cohen <ohad@wizery.com>
 Cc: linux-kernel@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org,
         Linus Walleij <linus.walleij@linaro.org>,
         Erwan Yvin <erwan.yvin@stericsson.com>, sjur@brendeland.net,
         =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-Subject: [PATCH 5/9] remoteproc: Set vring addresses in resource table
-Date: Sun, 10 Feb 2013 12:39:08 +0100
-Message-Id: <1360496352-29482-6-git-send-email-sjur.brandeland@stericsson.com>
+Subject: [PATCH 3/9] remoteproc: Parse ELF file to find resource table address
+Date: Sun, 10 Feb 2013 12:39:06 +0100
+Message-Id: <1360496352-29482-4-git-send-email-sjur.brandeland@stericsson.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1360496352-29482-1-git-send-email-sjur.brandeland@stericsson.com>
 References: <1360496352-29482-1-git-send-email-sjur.brandeland@stericsson.com>
@@ -29,80 +29,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sjur Brændeland <sjur.brandeland@stericsson.com>
 
-Set the vring addresses in the resource table so that
-the remote device can read the actual addresses used.
+Add function find_rsc_table_va to firmware ops. This function
+returns the location of the resource table in shared memory
+after loading.
 
 Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
 ---
- drivers/remoteproc/remoteproc_core.c |   13 +++++++++++--
- include/linux/remoteproc.h           |    2 ++
- 2 files changed, 13 insertions(+), 2 deletions(-)
+ drivers/remoteproc/remoteproc_elf_loader.c |   17 ++++++++++++++++-
+ drivers/remoteproc/remoteproc_internal.h   |   13 +++++++++++++
+ 2 files changed, 29 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
-index dd3bfaf..c12a385 100644
---- a/drivers/remoteproc/remoteproc_core.c
-+++ b/drivers/remoteproc/remoteproc_core.c
-@@ -207,7 +207,6 @@ int rproc_alloc_vring(struct rproc_vdev *rvdev, int i)
- 	/*
- 	 * Allocate non-cacheable memory for the vring. In the future
- 	 * this call will also configure the IOMMU for us
--	 * TODO: let the rproc know the da of this vring
- 	 */
- 	va = dma_alloc_coherent(dev->parent, size, &dma, GFP_KERNEL);
- 	if (!va) {
-@@ -218,7 +217,6 @@ int rproc_alloc_vring(struct rproc_vdev *rvdev, int i)
- 	/*
- 	 * Assign an rproc-wide unique index for this vring
- 	 * TODO: assign a notifyid for rvdev updates as well
--	 * TODO: let the rproc know the notifyid of this vring
- 	 * TODO: support predefined notifyids (via resource table)
- 	 */
- 	ret = idr_get_new(&rproc->notifyids, rvring, &notifyid);
-@@ -238,6 +236,14 @@ int rproc_alloc_vring(struct rproc_vdev *rvdev, int i)
- 	rvring->dma = dma;
- 	rvring->notifyid = notifyid;
- 
-+	/*
-+	 * Let the rproc know the notifyid and da of this vring.
-+	 * Not all platforms use dma_alloc_coherent to automatically
-+	 * set up the iommu. In this case the device address (da) will
-+	 * hold the physical address and not the device address.
-+	 */
-+	rvdev->rsc->vring[i].da = dma;
-+	rvdev->rsc->vring[i].notifyid = notifyid;
- 	return 0;
+diff --git a/drivers/remoteproc/remoteproc_elf_loader.c b/drivers/remoteproc/remoteproc_elf_loader.c
+index a958950..3137fba 100644
+--- a/drivers/remoteproc/remoteproc_elf_loader.c
++++ b/drivers/remoteproc/remoteproc_elf_loader.c
+@@ -312,9 +312,24 @@ rproc_elf_find_rsc_table(struct rproc *rproc, const struct firmware *fw,
+ 	return table;
  }
  
-@@ -365,6 +371,9 @@ static int rproc_handle_vdev(struct rproc *rproc, struct fw_rsc_vdev *rsc,
- 	/* remember the device features */
- 	rvdev->dfeatures = rsc->dfeatures;
- 
-+	/* remember the resource entry */
-+	rvdev->rsc = rsc;
++struct resource_table *rproc_elf_get_rsctab_addr(struct rproc *rproc,
++						 const struct firmware *fw)
++{
++	struct elf32_shdr *shdr;
 +
- 	list_add_tail(&rvdev->node, &rproc->rvdevs);
- 
- 	/* it is now safe to add the virtio device */
-diff --git a/include/linux/remoteproc.h b/include/linux/remoteproc.h
-index faf3332..cdacd66 100644
---- a/include/linux/remoteproc.h
-+++ b/include/linux/remoteproc.h
-@@ -464,6 +464,7 @@ struct rproc_vring {
-  * @vring: the vrings for this vdev
-  * @dfeatures: virtio device features
-  * @gfeatures: virtio guest features
-+ * @rsc: vdev resource entry
++	shdr = find_rsc_shdr(&rproc->dev, (struct elf32_hdr *)fw->data,
++				fw->size);
++	if (!shdr)
++		return NULL;
++
++	/* Find resource table in loaded segments */
++	return rproc_da_to_va(rproc, shdr->sh_addr, shdr->sh_size);
++}
++
+ const struct rproc_fw_ops rproc_elf_fw_ops = {
+ 	.load = rproc_elf_load_segments,
+ 	.find_rsc_table = rproc_elf_find_rsc_table,
+ 	.sanity_check = rproc_elf_sanity_check,
+-	.get_boot_addr = rproc_elf_get_boot_addr
++	.get_boot_addr = rproc_elf_get_boot_addr,
++	.get_rsctab_addr = rproc_elf_get_rsctab_addr
+ };
+diff --git a/drivers/remoteproc/remoteproc_internal.h b/drivers/remoteproc/remoteproc_internal.h
+index 7bb6648..3a5cb7d 100644
+--- a/drivers/remoteproc/remoteproc_internal.h
++++ b/drivers/remoteproc/remoteproc_internal.h
+@@ -32,6 +32,7 @@ struct rproc;
+  *			expects to find it
+  * @sanity_check:	sanity check the fw image
+  * @get_boot_addr:	get boot address to entry point specified in firmware
++ * @get_rsctab_addr:	get resouce table address as specified in firmware
   */
- struct rproc_vdev {
- 	struct list_head node;
-@@ -472,6 +473,7 @@ struct rproc_vdev {
- 	struct rproc_vring vring[RVDEV_NUM_VRINGS];
- 	unsigned long dfeatures;
- 	unsigned long gfeatures;
-+	struct fw_rsc_vdev *rsc;
+ struct rproc_fw_ops {
+ 	struct resource_table *(*find_rsc_table) (struct rproc *rproc,
+@@ -40,6 +41,8 @@ struct rproc_fw_ops {
+ 	int (*load)(struct rproc *rproc, const struct firmware *fw);
+ 	int (*sanity_check)(struct rproc *rproc, const struct firmware *fw);
+ 	u32 (*get_boot_addr)(struct rproc *rproc, const struct firmware *fw);
++	struct resource_table *(*get_rsctab_addr)(struct rproc *rproc,
++						const struct firmware *fw);
  };
  
- struct rproc *rproc_alloc(struct device *dev, const char *name,
+ /* from remoteproc_core.c */
+@@ -102,6 +105,16 @@ struct resource_table *rproc_find_rsc_table(struct rproc *rproc,
+ 	return NULL;
+ }
+ 
++static inline
++struct resource_table *rproc_get_rsctab_addr(struct rproc *rproc,
++				const struct firmware *fw)
++{
++	if (rproc->fw_ops->get_rsctab_addr)
++		return rproc->fw_ops->get_rsctab_addr(rproc, fw);
++
++	return NULL;
++}
++
+ extern const struct rproc_fw_ops rproc_elf_fw_ops;
+ 
+ #endif /* REMOTEPROC_INTERNAL_H */
 -- 
 1.7.5.4
 
