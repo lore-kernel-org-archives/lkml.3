@@ -1,280 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761025Ab3BJAkm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 19:40:42 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:45272 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760903Ab3BJAkJ (ORCPT
+	id S1760976Ab3BJAkP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 19:40:15 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:40760 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758493Ab3BJAkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 19:40:09 -0500
+	Sat, 9 Feb 2013 19:40:06 -0500
 From: Sasha Levin <sasha.levin@oracle.com>
 To: mingo@kernel.org, peterz@infradead.org
 Cc: jamie.iles@oracle.com, penberg@kernel.org, acme@ghostprotocols.net,
         paulus@samba.org, linux-kernel@vger.kernel.org, namhyung@kernel.org,
         Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH v2 09/11] liblockdep: support using LD_PRELOAD
-Date: Sat,  9 Feb 2013 19:39:39 -0500
-Message-Id: <1360456781-32462-9-git-send-email-sasha.levin@oracle.com>
+Subject: [PATCH v2 02/11] liblockdep: remove the need for liblockdep_set_thread
+Date: Sat,  9 Feb 2013 19:39:32 -0500
+Message-Id: <1360456781-32462-2-git-send-email-sasha.levin@oracle.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1360456781-32462-1-git-send-email-sasha.levin@oracle.com>
 References: <1360456781-32462-1-git-send-email-sasha.levin@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows lockdep to be used without being compiled in the original program.
-
-Usage is quite simple:
-
-	LD_PRELOAD=/path/to/liblockdep.so /path/to/my/program
-
-And magically, you'll have lockdep in your program!
+Generate the task_struct data on the fly when needed, instead on on
+thread creation.
 
 Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 ---
- tools/lib/lockdep/Makefile  |   4 +-
- tools/lib/lockdep/preload.c | 209 ++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 211 insertions(+), 2 deletions(-)
- create mode 100644 tools/lib/lockdep/preload.c
+ tools/lib/lockdep/common.c                    | 8 +++++---
+ tools/lib/lockdep/include/liblockdep/common.h | 1 -
+ tools/lib/lockdep/tests/AA.c                  | 2 --
+ tools/lib/lockdep/tests/ABBA.c                | 2 --
+ tools/lib/lockdep/tests/ABBCCA.c              | 2 --
+ tools/lib/lockdep/tests/ABBCCDDA.c            | 2 --
+ tools/lib/lockdep/tests/ABCABC.c              | 2 --
+ tools/lib/lockdep/tests/ABCDBCDA.c            | 2 --
+ tools/lib/lockdep/tests/ABCDBDDA.c            | 2 --
+ tools/lib/lockdep/tests/WW.c                  | 2 --
+ tools/lib/lockdep/tests/unlock_balance.c      | 2 --
+ tools/lib/lockdep/uinclude/linux/lockdep.h    | 4 ++--
+ 12 files changed, 7 insertions(+), 24 deletions(-)
 
-diff --git a/tools/lib/lockdep/Makefile b/tools/lib/lockdep/Makefile
-index e82ffe9..245f8ba 100644
---- a/tools/lib/lockdep/Makefile
-+++ b/tools/lib/lockdep/Makefile
-@@ -143,7 +143,7 @@ do_app_build =						\
+diff --git a/tools/lib/lockdep/common.c b/tools/lib/lockdep/common.c
+index d2946e0..c0f1166 100644
+--- a/tools/lib/lockdep/common.c
++++ b/tools/lib/lockdep/common.c
+@@ -15,8 +15,10 @@ __attribute__((constructor)) static void liblockdep_init(void)
+ 	lockdep_init();
+ }
  
- do_compile_shared_library =			\
- 	($(print_shared_lib_compile)		\
--	$(CC) --shared $^ -o $@)
-+	$(CC) --shared -ldl $^ -o $@)
+-void liblockdep_set_thread(void)
++struct task_struct *__curr(void)
+ {
+-	prctl(PR_GET_NAME, current->comm);
+-	current->pid = syscall(__NR_gettid);
++	prctl(PR_GET_NAME, current_obj.comm);
++	current_obj.pid = syscall(__NR_gettid);
++
++	return &current_obj;
+ }
+diff --git a/tools/lib/lockdep/include/liblockdep/common.h b/tools/lib/lockdep/include/liblockdep/common.h
+index f6f7fec8..a675ef0 100644
+--- a/tools/lib/lockdep/include/liblockdep/common.h
++++ b/tools/lib/lockdep/include/liblockdep/common.h
+@@ -26,7 +26,6 @@ struct lockdep_map {
+ #endif
+ };
  
- do_build_static_lib =				\
- 	($(print_static_lib_build)		\
-@@ -161,7 +161,7 @@ $(obj)/%.o: $(src)/%.c
- %.o: $(src)/%.c
- 	$(Q)$(call do_compile)
+-void liblockdep_set_thread(void);
+ void lockdep_init_map(struct lockdep_map *lock, const char *name,
+ 			struct lock_class_key *key, int subclass);
+ void lock_acquire(struct lockdep_map *lock, unsigned int subclass,
+diff --git a/tools/lib/lockdep/tests/AA.c b/tools/lib/lockdep/tests/AA.c
+index 3f71333..a443e65 100644
+--- a/tools/lib/lockdep/tests/AA.c
++++ b/tools/lib/lockdep/tests/AA.c
+@@ -4,8 +4,6 @@ void main(void)
+ {
+ 	pthread_mutex_t a, b;
  
--PEVENT_LIB_OBJS = common.o lockdep.o
-+PEVENT_LIB_OBJS = common.o lockdep.o preload.o rbtree.o
+-	liblockdep_set_thread();
+-
+ 	pthread_mutex_init(&a, NULL);
+ 	pthread_mutex_init(&b, NULL);
  
- ALL_OBJS = $(PEVENT_LIB_OBJS)
+diff --git a/tools/lib/lockdep/tests/ABBA.c b/tools/lib/lockdep/tests/ABBA.c
+index 08d87a7..07f0e29 100644
+--- a/tools/lib/lockdep/tests/ABBA.c
++++ b/tools/lib/lockdep/tests/ABBA.c
+@@ -5,8 +5,6 @@ void main(void)
+ {
+ 	pthread_mutex_t a, b;
  
-diff --git a/tools/lib/lockdep/preload.c b/tools/lib/lockdep/preload.c
-new file mode 100644
-index 0000000..b65a3f3
---- /dev/null
-+++ b/tools/lib/lockdep/preload.c
-@@ -0,0 +1,209 @@
-+#define _GNU_SOURCE
-+#include <pthread.h>
-+#include <stdio.h>
-+#include <dlfcn.h>
-+#include <stdlib.h>
-+#include "include/liblockdep/mutex.h"
-+#include "../../../include/linux/rbtree.h"
-+
-+struct lock_lookup {
-+	void *orig;
-+	struct lockdep_map dep_map;
-+	struct rb_node node;
-+};
-+
-+struct rb_root locks = RB_ROOT;
-+
-+int (*ll_pthread_mutex_init)(pthread_mutex_t *mutex,
-+			const pthread_mutexattr_t *attr);
-+int (*ll_pthread_mutex_lock)(pthread_mutex_t *mutex);
-+int (*ll_pthread_mutex_trylock)(pthread_mutex_t *mutex);
-+int (*ll_pthread_mutex_unlock)(pthread_mutex_t *mutex);
-+int (*ll_pthread_mutex_destroy)(pthread_mutex_t *mutex);
-+
-+int (*ll_pthread_rwlock_init)(pthread_rwlock_t *rwlock,
-+			const pthread_rwlockattr_t *attr);
-+int (*ll_pthread_rwlock_destroy)(pthread_rwlock_t *rwlock);
-+int (*ll_pthread_rwlock_rdlock)(pthread_rwlock_t *rwlock);
-+int (*ll_pthread_rwlock_tryrdlock)(pthread_rwlock_t *rwlock);
-+int (*ll_pthread_rwlock_trywrlock)(pthread_rwlock_t *rwlock);
-+int (*ll_pthread_rwlock_wrlock)(pthread_rwlock_t *rwlock);
-+int (*ll_pthread_rwlock_unlock)(pthread_rwlock_t *rwlock);
-+
-+static void init_preload();
-+
-+static struct lock_lookup *__get_lock(void *lock)
-+{
-+	struct rb_node **node = &locks.rb_node, *parent = NULL;
-+	struct lock_lookup *l;
-+
-+	while (*node) {
-+		l = rb_entry(*node, struct lock_lookup, node);
-+
-+		parent = *node;
-+		if (lock < l->orig)
-+			node = &l->node.rb_left;
-+		else if (lock > l->orig)
-+			node = &l->node.rb_right;
-+		else
-+			return l;
-+	}
-+
-+	l = malloc(sizeof(*l));
-+	if (l == NULL)
-+		return NULL;
-+
-+	*l = (struct lock_lookup) {
-+		.orig = lock,
-+		.dep_map = STATIC_LOCKDEP_MAP_INIT("lock", &l->dep_map),
-+	};
-+
-+	rb_link_node(&l->node, parent, node);
-+	rb_insert_color(&l->node, &locks);
-+
-+	return l;
-+}
-+
-+int pthread_mutex_init(pthread_mutex_t *mutex,
-+			const pthread_mutexattr_t *attr)
-+{
-+	init_preload();
-+
-+	__get_lock(mutex);
-+	return ll_pthread_mutex_init(mutex, attr);
-+}
-+
-+int pthread_mutex_lock(pthread_mutex_t *mutex)
-+{
-+	void *ip = _THIS_IP_;
-+
-+        init_preload();
-+
-+	lock_acquire(&__get_lock(mutex)->dep_map, 0, 0, 0, 2, NULL, (unsigned long)ip);
-+	return ll_pthread_mutex_lock(mutex);
-+}
-+
-+int pthread_mutex_trylock(pthread_mutex_t *mutex)
-+{
-+	void *ip = _THIS_IP_;
-+
-+        init_preload();
-+
-+	lock_acquire(&__get_lock(mutex)->dep_map, 0, 1, 0, 2, NULL, (unsigned long)ip);
-+	return ll_pthread_mutex_trylock(mutex);
-+}
-+
-+int pthread_mutex_unlock(pthread_mutex_t *mutex)
-+{
-+	void *ip = _THIS_IP_;
-+
-+        init_preload();
-+
-+	lock_release(&__get_lock(mutex)->dep_map, 0, (unsigned long)ip);
-+	return ll_pthread_mutex_unlock(mutex);
-+}
-+
-+int pthread_mutex_destroy(pthread_mutex_t *mutex)
-+{
-+	struct lock_lookup *l = __get_lock(mutex);
-+
-+        init_preload();
-+
-+	rb_erase(&l->node, &locks);
-+	free(l);
-+	return ll_pthread_mutex_destroy(mutex);
-+}
-+
-+int pthread_rwlock_init(pthread_rwlock_t *rwlock,
-+			const pthread_rwlockattr_t *attr)
-+{
-+        init_preload();
-+
-+	__get_lock(rwlock);
-+	return ll_pthread_rwlock_init(rwlock, attr);
-+}
-+
-+int pthread_rwlock_destroy(pthread_rwlock_t *rwlock)
-+{
-+	struct lock_lookup *l = __get_lock(rwlock);
-+
-+        init_preload();
-+
-+	rb_erase(&l->node, &locks);
-+	free(l);
-+	return ll_pthread_rwlock_destroy(rwlock);
-+}
-+
-+int pthread_rwlock_rdlock(pthread_rwlock_t *rwlock)
-+{
-+	void *ip = _THIS_IP_;
-+
-+        init_preload();
-+
-+	lock_acquire(&__get_lock(rwlock)->dep_map, 0, 0, 2, 2, NULL, (unsigned long)ip);
-+	return ll_pthread_rwlock_rdlock(rwlock);
-+}
-+
-+int pthread_rwlock_tryrdlock(pthread_rwlock_t *rwlock)
-+{
-+	void *ip = _THIS_IP_;
-+
-+        init_preload();
-+
-+	lock_acquire(&__get_lock(rwlock)->dep_map, 0, 1, 2, 2, NULL, (unsigned long)ip);
-+	return ll_pthread_rwlock_tryrdlock(rwlock);
-+}
-+
-+int pthread_rwlock_trywrlock(pthread_rwlock_t *rwlock)
-+{
-+	void *ip = _THIS_IP_;
-+
-+        init_preload();
-+
-+	lock_acquire(&__get_lock(rwlock)->dep_map, 0, 1, 0, 2, NULL, (unsigned long)ip);
-+	return ll_pthread_rwlock_trywrlock(rwlock);
-+}
-+
-+int pthread_rwlock_wrlock(pthread_rwlock_t *rwlock)
-+{
-+	void *ip = _THIS_IP_;
-+
-+        init_preload();
-+
-+	lock_acquire(&__get_lock(rwlock)->dep_map, 0, 0, 0, 2, NULL, (unsigned long)ip);
-+	return ll_pthread_rwlock_wrlock(rwlock);
-+}
-+
-+int pthread_rwlock_unlock(pthread_rwlock_t *rwlock)
-+{
-+	void *ip = _THIS_IP_;
-+
-+        init_preload();
-+
-+	lock_release(&__get_lock(rwlock)->dep_map, 0, (unsigned long)ip);
-+	return ll_pthread_rwlock_unlock(rwlock);
-+}
-+
-+__attribute__((constructor)) static void init_preload(void)
-+{
-+	static bool preload_done;
-+
-+	if (preload_done)
-+		return;
-+
-+	ll_pthread_mutex_init = dlsym(RTLD_NEXT, "pthread_mutex_init");
-+	ll_pthread_mutex_lock = dlsym(RTLD_NEXT, "pthread_mutex_lock");
-+	ll_pthread_mutex_trylock = dlsym(RTLD_NEXT, "pthread_mutex_trylock");
-+	ll_pthread_mutex_unlock = dlsym(RTLD_NEXT, "pthread_mutex_unlock");
-+	ll_pthread_mutex_destroy = dlsym(RTLD_NEXT, "pthread_mutex_destroy");
-+
-+	ll_pthread_rwlock_init = dlsym(RTLD_NEXT, "pthread_rwlock_init");
-+	ll_pthread_rwlock_destroy = dlsym(RTLD_NEXT, "pthread_rwlock_destroy");
-+	ll_pthread_rwlock_rdlock = dlsym(RTLD_NEXT, "pthread_rwlock_rdlock");
-+	ll_pthread_rwlock_tryrdlock = dlsym(RTLD_NEXT, "pthread_rwlock_tryrdlock");
-+	ll_pthread_rwlock_wrlock = dlsym(RTLD_NEXT, "pthread_rwlock_wrlock");
-+	ll_pthread_rwlock_trywrlock = dlsym(RTLD_NEXT, "pthread_rwlock_trywrlock");
-+	ll_pthread_rwlock_unlock = dlsym(RTLD_NEXT, "pthread_rwlock_unlock");
-+
-+	preload_done = true;
-+}
+-	liblockdep_set_thread();
+-
+ 	pthread_mutex_init(&a, NULL);
+ 	pthread_mutex_init(&b, NULL);
+ 
+diff --git a/tools/lib/lockdep/tests/ABBCCA.c b/tools/lib/lockdep/tests/ABBCCA.c
+index c5d0e5c..843db09 100644
+--- a/tools/lib/lockdep/tests/ABBCCA.c
++++ b/tools/lib/lockdep/tests/ABBCCA.c
+@@ -5,8 +5,6 @@ void main(void)
+ {
+ 	pthread_mutex_t a, b, c;
+ 
+-	liblockdep_set_thread();
+-
+ 	pthread_mutex_init(&a, NULL);
+ 	pthread_mutex_init(&b, NULL);
+ 	pthread_mutex_init(&c, NULL);
+diff --git a/tools/lib/lockdep/tests/ABBCCDDA.c b/tools/lib/lockdep/tests/ABBCCDDA.c
+index e12dc98..33620e2 100644
+--- a/tools/lib/lockdep/tests/ABBCCDDA.c
++++ b/tools/lib/lockdep/tests/ABBCCDDA.c
+@@ -5,8 +5,6 @@ void main(void)
+ {
+ 	pthread_mutex_t a, b, c, d;
+ 
+-	liblockdep_set_thread();
+-
+ 	pthread_mutex_init(&a, NULL);
+ 	pthread_mutex_init(&b, NULL);
+ 	pthread_mutex_init(&c, NULL);
+diff --git a/tools/lib/lockdep/tests/ABCABC.c b/tools/lib/lockdep/tests/ABCABC.c
+index 70879c95..3fee51e 100644
+--- a/tools/lib/lockdep/tests/ABCABC.c
++++ b/tools/lib/lockdep/tests/ABCABC.c
+@@ -5,8 +5,6 @@ void main(void)
+ {
+ 	pthread_mutex_t a, b, c;
+ 
+-	liblockdep_set_thread();
+-
+ 	pthread_mutex_init(&a, NULL);
+ 	pthread_mutex_init(&b, NULL);
+ 	pthread_mutex_init(&c, NULL);
+diff --git a/tools/lib/lockdep/tests/ABCDBCDA.c b/tools/lib/lockdep/tests/ABCDBCDA.c
+index 00cd676..aadf11e 100644
+--- a/tools/lib/lockdep/tests/ABCDBCDA.c
++++ b/tools/lib/lockdep/tests/ABCDBCDA.c
+@@ -5,8 +5,6 @@ void main(void)
+ {
+ 	liblockdep_pthread_mutex_t a, b, c, d;
+ 
+-	liblockdep_set_thread();
+-
+ 	liblockdep_pthread_mutex_init(&a, NULL);
+ 	liblockdep_pthread_mutex_init(&b, NULL);
+ 	liblockdep_pthread_mutex_init(&c, NULL);
+diff --git a/tools/lib/lockdep/tests/ABCDBDDA.c b/tools/lib/lockdep/tests/ABCDBDDA.c
+index 19b3ed1..680c6cf 100644
+--- a/tools/lib/lockdep/tests/ABCDBDDA.c
++++ b/tools/lib/lockdep/tests/ABCDBDDA.c
+@@ -5,8 +5,6 @@ void main(void)
+ {
+ 	pthread_mutex_t a, b, c, d;
+ 
+-	liblockdep_set_thread();
+-
+ 	pthread_mutex_init(&a, NULL);
+ 	pthread_mutex_init(&b, NULL);
+ 	pthread_mutex_init(&c, NULL);
+diff --git a/tools/lib/lockdep/tests/WW.c b/tools/lib/lockdep/tests/WW.c
+index 2467b13..d44f77d 100644
+--- a/tools/lib/lockdep/tests/WW.c
++++ b/tools/lib/lockdep/tests/WW.c
+@@ -4,8 +4,6 @@ void main(void)
+ {
+ 	pthread_rwlock_t a, b;
+ 
+-	liblockdep_set_thread();
+-
+ 	pthread_rwlock_init(&a, NULL);
+ 	pthread_rwlock_init(&b, NULL);
+ 
+diff --git a/tools/lib/lockdep/tests/unlock_balance.c b/tools/lib/lockdep/tests/unlock_balance.c
+index 07a4c21..0bc62de 100644
+--- a/tools/lib/lockdep/tests/unlock_balance.c
++++ b/tools/lib/lockdep/tests/unlock_balance.c
+@@ -4,8 +4,6 @@ void main(void)
+ {
+ 	pthread_mutex_t a;
+ 
+-	liblockdep_set_thread();
+-
+ 	pthread_mutex_init(&a, NULL);
+ 
+ 	pthread_mutex_lock(&a);
+diff --git a/tools/lib/lockdep/uinclude/linux/lockdep.h b/tools/lib/lockdep/uinclude/linux/lockdep.h
+index 611cb28..52609c5 100644
+--- a/tools/lib/lockdep/uinclude/linux/lockdep.h
++++ b/tools/lib/lockdep/uinclude/linux/lockdep.h
+@@ -23,9 +23,9 @@ struct task_struct {
+ };
+ 
+ extern __thread struct task_struct current_obj;
+-#define current (&current_obj)
++extern struct task_struct *__curr(void);
+ 
+-void liblockdep_set_thread(void);
++#define current (__curr())
+ 
+ #define debug_locks_off() 1
+ #define task_pid_nr(tsk) ((tsk)->pid)
 -- 
 1.8.1.2
 
