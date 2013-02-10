@@ -1,60 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755912Ab3BJRZe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Feb 2013 12:25:34 -0500
-Received: from mail.southpole.se ([37.247.8.11]:48944 "EHLO mail.southpole.se"
+	id S1756055Ab3BJR2b (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Feb 2013 12:28:31 -0500
+Received: from mout.gmx.net ([212.227.17.20]:52576 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755492Ab3BJRZd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Feb 2013 12:25:33 -0500
-Message-ID: <5117D818.1080407@southpole.se>
-Date: Sun, 10 Feb 2013 18:25:44 +0100
-From: Jonas Bonn <jonas@southpole.se>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
+	id S1755642Ab3BJR23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Feb 2013 12:28:29 -0500
+X-Authenticated: #9962044
+X-Provags-ID: V01U2FsdGVkX19Yay1tFrhY0/CatIxwpKKxE2iMREJu3sV1qG8gbA
+	7u0Mp+YePX4M2Z
+From: Marc Dietrich <marvin24@gmx.de>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Hiroshi Doyu <hdoyu@nvidia.com>, linux-tegra@vger.kernel.org,
+        arnd@arndb.de, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] ARM: tegra: Unify tegra{20,30,114}_init_early()
+Date: Sun, 10 Feb 2013 18:28:14 +0100
+Message-ID: <2499199.srlLvkihNZ@ax5200p>
+User-Agent: KMail/4.8.5 (Linux/3.5.0-21-generic; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <51153136.7010705@wwwdotorg.org>
+References: <1360308574-19658-1-git-send-email-hdoyu@nvidia.com> <340098510.UosBEPkrGv@fb07-iapwap2> <51153136.7010705@wwwdotorg.org>
 MIME-Version: 1.0
-To: James Hogan <james.hogan@imgtec.com>
-CC: linux-kernel@vger.kernel.org, linux@openrisc.net,
-        Mike Frysinger <vapier@gentoo.org>
-Subject: Re: [PATCH 1/1] openrisc: remove CONFIG_SYMBOL_PREFIX
-References: <1360155488-12600-1-git-send-email-james.hogan@imgtec.com>
-In-Reply-To: <1360155488-12600-1-git-send-email-james.hogan@imgtec.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Assp-Version: 2.2.2(12343) on assp.southpole.se
-X-Assp-Client-SSL: yes
-X-Assp-Server-TLS: yes
-X-Assp-ID: assp.southpole.se 17128-07031
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/13 13:58, James Hogan wrote:
-> Remove the SYMBOL_PREFIX Kconfig symbol as it's empty anyway.
->
-> Signed-off-by: James Hogan <james.hogan@imgtec.com>
-> Cc: Jonas Bonn <jonas@southpole.se>
-> Cc: linux@lists.openrisc.net
-> Cc: Mike Frysinger <vapier@gentoo.org>
-> ---
->   arch/openrisc/Kconfig |    4 ----
->   1 files changed, 0 insertions(+), 4 deletions(-)
+On Friday 08 February 2013 10:09:10 Stephen Warren wrote:
+> On 02/08/2013 05:29 AM, Marc Dietrich wrote:
+> > Hiroshi,
+> > 
+> > Am Freitag, 8. Februar 2013, 09:29:31 schrieb Hiroshi Doyu:
+> >> Refactored tegra{20,30,114}_init_early() so that we have the unified
+> >> tegra_init_early().
+> >> 
+> >> diff --git a/arch/arm/mach-tegra/hotplug.c
+> >> b/arch/arm/mach-tegra/hotplug.c
+> >> 
+> >> +void __init tegra_hotplug_init(void)
+> >> 
+> >>  {
+> >> 
+> >> +	switch (tegra_chip_id) {
+> >> +#ifdef CONFIG_ARCH_TEGRA_2x_SOC
+> >> +	case TEGRA20:
+> >> +		tegra_hotplug_shutdown = tegra20_hotplug_shutdown;
+> >> +		break;
+> >> 
+> >>  #endif
+> >> 
+> >> +#if defined(CONFIG_ARCH_TEGRA_3x_SOC)
+> >> +	case TEGRA30:
+> >> +		tegra_hotplug_shutdown = tegra30_hotplug_shutdown;
+> >> +		break;
+> >> 
+> >>  #endif
+> >> 
+> >> +	default:
+> >> +		BUG_ON(IS_ENABLED(CONFIG_HOTPLUG_CPU));
+> >> +		break;
+> >> +	}
+> >> +}
+> > 
+> > are these ifdefs really needed? Multisoc kernels will enable them all
+> > anyway and there is a case structure which protects the assignments. Also
+> > the hotplug functions are very tiny, so there shouldn't be a big loss.
+> 
+> The files that contain/implement those functions are separate for each
+> SoC and only included in the build when the individual SoCs are enabled.
+> 
+> While multi-platform SoCs do make sense for distros, we also very
+> specifically want to support the case where only Tegra, and only a
+> single Tegra SoC, is enabled, hence this separation.
 
-Thanks, James.  Will apply.
-/Jonas
+Huh? so tegra_defconfig is not supported?
 
->
-> diff --git a/arch/openrisc/Kconfig b/arch/openrisc/Kconfig
-> index 0ac66f6..35a4e5f 100644
-> --- a/arch/openrisc/Kconfig
-> +++ b/arch/openrisc/Kconfig
-> @@ -26,10 +26,6 @@ config OPENRISC
->   config MMU
->   	def_bool y
->   
-> -config SYMBOL_PREFIX
-> -        string
-> -        default ""
-> -
->   config HAVE_DMA_ATTRS
->   	def_bool y
->   
+grep "TEGRA_.*_SOC" tegra_defconfig:
+
+CONFIG_ARCH_TEGRA_2x_SOC=y
+CONFIG_ARCH_TEGRA_3x_SOC=y
+
+Marc
 
