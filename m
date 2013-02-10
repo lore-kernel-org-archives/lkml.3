@@ -1,54 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752531Ab3BJH6D (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Feb 2013 02:58:03 -0500
-Received: from sabertooth02.qualcomm.com ([65.197.215.38]:14198 "EHLO
-	sabertooth02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752211Ab3BJH6A (ORCPT
+	id S1752626Ab3BJIKn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Feb 2013 03:10:43 -0500
+Received: from mail-vb0-f43.google.com ([209.85.212.43]:61139 "EHLO
+	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752240Ab3BJIKl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Feb 2013 02:58:00 -0500
-X-IronPort-AV: E=Sophos;i="4.84,636,1355126400"; 
-   d="scan'208";a="21731722"
-From: Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>
-To: Joe Perches <joe@perches.com>
-CC: netdev <netdev@vger.kernel.org>, <linux-can@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <e1000-devel@lists.sourceforge.net>,
-        <linux-usb@vger.kernel.org>, <linux-wireless@vger.kernel.org>,
-        <ath9k-devel@venema.h4ckr.net>, <wil6210@qca.qualcomm.com>,
-        <brcm80211-dev-list@broadcom.com>,
-        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH] drivers: net: Remove remaining alloc/OOM messages
-Date: Sun, 10 Feb 2013 09:57:54 +0200
-Message-ID: <1877379.y4GS62BPgg@lx-vladimir>
-Organization: Qualcomm Atheros
-User-Agent: KMail/4.9.4 (Linux/3.5.0-23-generic; KDE/4.9.4; x86_64; ; )
-In-Reply-To: <1360273587.27863.15.camel@joe-AO722>
-References: <1360273587.27863.15.camel@joe-AO722>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Originating-IP: [172.30.48.1]
+	Sun, 10 Feb 2013 03:10:41 -0500
+From: Len Brown <lenb@kernel.org>
+To: linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: Two x86 idle cleanups
+Date: Sun, 10 Feb 2013 03:10:27 -0500
+Message-Id: <1360483829-16349-1-git-send-email-lenb@kernel.org>
+X-Mailer: git-send-email 1.8.1.3.535.ga923c31
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, February 07, 2013 01:46:27 PM Joe Perches wrote:
-> alloc failures already get standardized OOM
-> messages and a dump_stack.
-> 
-> For the affected mallocs around these OOM messages:
-> 
-> Converted kmallocs with multiplies to kmalloc_array.
-> Converted a kmalloc/memcpy to kmemdup.
-> Removed now unused stack variables.
-> Removed unnecessary parentheses.
-> Neatened alignment.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> 
+The following two patches remove cruft from the x86 native idle code.
+These two removals have been marked with a WARN() since Linux 3.0.
 
-For wil6210:
+Let me know if you see any troubles w/ these patches.
 
-Acked--by: Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>
+TIP,
+These will conflict with another patch in my tree.
+So if you approve, please Ack and I can carry in my tree.
 
-Thanks, Vladimir
+thanks,
+Len Brown, Intel Open Source Technology Center
+
