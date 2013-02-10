@@ -1,74 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756801Ab3BJVQg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Feb 2013 16:16:36 -0500
-Received: from mout.gmx.net ([212.227.15.18]:61370 "EHLO mout.gmx.net"
+	id S1756868Ab3BJVTP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Feb 2013 16:19:15 -0500
+Received: from mga14.intel.com ([143.182.124.37]:60113 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754201Ab3BJVQf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Feb 2013 16:16:35 -0500
-X-Authenticated: #9962044
-X-Provags-ID: V01U2FsdGVkX19fFXFnhCxfFUNXdXLkHbKIz940rLQ5CiywKeC4Dr
-	Sa9xzM45zINm+F
-From: Marc Dietrich <marvin24@gmx.de>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Hiroshi Doyu <hdoyu@nvidia.com>, linux-tegra@vger.kernel.org,
-        arnd@arndb.de, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] ARM: tegra: Unify tegra{20,30,114}_init_early()
-Date: Sun, 10 Feb 2013 22:16:14 +0100
-Message-ID: <1828614.u7HcYf891a@ax5200p>
-User-Agent: KMail/4.8.5 (Linux/3.5.0-21-generic; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <51180121.6040803@wwwdotorg.org>
-References: <1360308574-19658-1-git-send-email-hdoyu@nvidia.com> <2499199.srlLvkihNZ@ax5200p> <51180121.6040803@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
+	id S1755027Ab3BJVTN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Feb 2013 16:19:13 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,639,1355126400"; 
+   d="scan'208";a="255194067"
+From: "Hefty, Sean" <sean.hefty@intel.com>
+To: Tejun Heo <tj@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Jean Delvare <khali@linux-fr.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        Roland Dreier <roland@kernel.org>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        "Marciniszyn, Mike" <mike.marciniszyn@intel.com>,
+        Jack Morgenstein <jackm@dev.mellanox.co.il>,
+        Or Gerlitz <ogerlitz@mellanox.com>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: RE: [PATCH 2/6] idr: remove MAX_IDR_MASK and move left MAX_IDR_*
+ into idr.c
+Thread-Topic: [PATCH 2/6] idr: remove MAX_IDR_MASK and move left MAX_IDR_*
+ into idr.c
+Thread-Index: AQHOBj+Q/tin3FfbzUm/J7sB5mI4OZhwhOCggAHkOoCAATJwUA==
+Date: Sun, 10 Feb 2013 21:19:10 +0000
+Message-ID: <1828884A29C6694DAF28B7E6B8A8237368B96C1F@ORSMSX101.amr.corp.intel.com>
+References: <20130208210050.GA26660@mtj.dyndns.org>
+ <20130208210149.GB26660@mtj.dyndns.org>
+ <1828884A29C6694DAF28B7E6B8A8237357D44677@ORSMSX101.amr.corp.intel.com>
+ <20130209190037.GB2875@htj.dyndns.org>
+In-Reply-To: <20130209190037.GB2875@htj.dyndns.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
 Content-Type: text/plain; charset="us-ascii"
-X-Y-GMX-Trusted: 0
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 10 February 2013 13:20:49 Stephen Warren wrote:
-> 1On 02/10/2013 10:28 AM, Marc Dietrich wrote:
-> > On Friday 08 February 2013 10:09:10 Stephen Warren wrote:
-> >> On 02/08/2013 05:29 AM, Marc Dietrich wrote:
-> >>> Hiroshi,
-> >>> 
-> >>> Am Freitag, 8. Februar 2013, 09:29:31 schrieb Hiroshi Doyu:
-> >>>> Refactored tegra{20,30,114}_init_early() so that we have the unified
-> >>>> tegra_init_early().
-> 
-> ...
-> 
-> >>> are these ifdefs really needed? Multisoc kernels will enable them all
-> >>> anyway and there is a case structure which protects the assignments.
-> >>> Also
-> >>> the hotplug functions are very tiny, so there shouldn't be a big loss.
-> >> 
-> >> The files that contain/implement those functions are separate for each
-> >> SoC and only included in the build when the individual SoCs are enabled.
-> >> 
-> >> While multi-platform SoCs do make sense for distros, we also very
-> >> specifically want to support the case where only Tegra, and only a
-> >> single Tegra SoC, is enabled, hence this separation.
-> > 
-> > Huh? so tegra_defconfig is not supported?
-> > 
-> > grep "TEGRA_.*_SOC" tegra_defconfig:
-> > 
-> > CONFIG_ARCH_TEGRA_2x_SOC=y
-> > CONFIG_ARCH_TEGRA_3x_SOC=y
-> 
-> I don't understand the question.
-> 
-> But to be clear. There are now 3 variants of Tegra supported. (Tegra20,
-> Tegra30, Tegra114). We want to be able to build a minimal-size kernel
-> (e.g. for embedded applications) that supports just one, any combination
-> of two, or all three Tegra variants.
+> So, if you want a cyclic allocation, the allocation should be tried in
+> [start, END) and then [0, start); otherwise, after the allocation
+> wraps for the first time, as the closer the starting point gets to
+> END, the chance of not finding a vacant slot in [start, END) goes
+> higher.  When @start equals END - 1 for the second time, if the first
+> END - 1 allocation is still around, you'll get -ENOSPC.
 
-ah, ok - I just skipped the "also" in your sentence above. But still, the 
-#ifdefs look strange to me and save only a few byte of code. Just me few 
-cents.
-
-Marc
-
+Got it - thanks.  I'll make a note to fix this.
