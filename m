@@ -1,77 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761164Ab3BJUB1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Feb 2013 15:01:27 -0500
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:42429 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756808Ab3BJUBX (ORCPT
+	id S1761175Ab3BJULi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Feb 2013 15:11:38 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:36180 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756794Ab3BJULf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Feb 2013 15:01:23 -0500
-Message-ID: <5117FC13.1030002@linux.vnet.ibm.com>
-Date: Mon, 11 Feb 2013 01:29:15 +0530
+	Sun, 10 Feb 2013 15:11:35 -0500
+Message-ID: <5117FE74.4020000@linux.vnet.ibm.com>
+Date: Mon, 11 Feb 2013 01:39:24 +0530
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
-        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
-        namhyung@kernel.org, rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
+To: Oleg Nesterov <oleg@redhat.com>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, tglx@linutronix.de,
+        peterz@infradead.org, tj@kernel.org, rusty@rustcorp.com.au,
+        mingo@kernel.org, akpm@linux-foundation.org, namhyung@kernel.org,
+        rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
         xiaoguangrong@linux.vnet.ibm.com, rjw@sisk.pl, sbw@mit.edu,
         fweisbec@gmail.com, linux@arm.linux.org.uk, nikunj@linux.vnet.ibm.com,
         linux-pm@vger.kernel.org, linux-arch@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
         netdev@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 09/45] smp, cpu hotplug: Fix smp_call_function_*()
- to prevent CPU offline properly
-References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com> <20130122073508.13822.12784.stgit@srivatsabhat.in.ibm.com> <20130209000717.GP2666@linux.vnet.ibm.com> <5117F7E9.7070906@linux.vnet.ibm.com> <20130210195639.GL2666@linux.vnet.ibm.com>
-In-Reply-To: <20130210195639.GL2666@linux.vnet.ibm.com>
+Subject: Re: [PATCH v5 04/45] percpu_rwlock: Implement the core design of
+ Per-CPU Reader-Writer Locks
+References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com> <20130122073347.13822.85876.stgit@srivatsabhat.in.ibm.com> <20130208231017.GK2666@linux.vnet.ibm.com> <20130210180607.GA1375@redhat.com> <5117F403.1050300@linux.vnet.ibm.com> <20130210195042.GA6236@redhat.com>
+In-Reply-To: <20130210195042.GA6236@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13021019-5490-0000-0000-000002F0FECC
+x-cbid: 13021020-0260-0000-0000-00000282B730
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2013 01:26 AM, Paul E. McKenney wrote:
-> On Mon, Feb 11, 2013 at 01:11:29AM +0530, Srivatsa S. Bhat wrote:
->> On 02/09/2013 05:37 AM, Paul E. McKenney wrote:
->>> On Tue, Jan 22, 2013 at 01:05:10PM +0530, Srivatsa S. Bhat wrote:
->>>> Once stop_machine() is gone from the CPU offline path, we won't be able to
->>>> depend on preempt_disable() to prevent CPUs from going offline from under us.
+On 02/11/2013 01:20 AM, Oleg Nesterov wrote:
+> On 02/11, Srivatsa S. Bhat wrote:
+>>
+>> On 02/10/2013 11:36 PM, Oleg Nesterov wrote:
+>>>>> +static void announce_writer_inactive(struct percpu_rwlock *pcpu_rwlock)
+>>>>> +{
+>>>>> +   unsigned int cpu;
+>>>>> +
+>>>>> +   drop_writer_signal(pcpu_rwlock, smp_processor_id());
 >>>>
->>>> Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going offline,
->>>> while invoking from atomic context.
->>>>
->>>> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+>>>> Why do we drop ourselves twice?  More to the point, why is it important to
+>>>> drop ourselves first?
 >>>
->>> Would it make sense for get_online_cpus_atomic() to return the current
->>> CPU number?
+>>> And don't we need mb() _before_ we clear ->writer_signal ?
+>>>
 >>
->> Hmm, I'm not so sure. I tried to model it after get_online_cpus(), which doesn't
->> return anything (for other reasons, of course..)
->>
->> Moreover, a function name like *_cpu_* returning the CPU number would be intuitive.
->> But a name such as *_cpus_* (plural) returning a CPU number might appear confusing..
->>
->> And also I don't think it'll make a huge improvement in the callers.. (We might
->> be better off avoiding an smp_processor_id() if possible, since this function could
->> be called in very hot paths).. So I don't see a strong case for returning the
->> CPU number. But let me know if you think it'll still be worth it for some reason...
+>> Oh, right! Or, how about moving announce_writer_inactive() to _after_
+>> write_unlock()?
 > 
-> I just noted a lot of two-line code sequences in your patch that would be
-> one line if the CPU number was returned.
+> Not sure this will help... but, either way it seems we have another
+> problem...
+> 
+> percpu_rwlock tries to be "generic". This means we should "ignore" its
+> usage in hotplug, and _write_lock should not race with _write_unlock.
+> 
 
-Ah, in that case, I'll reconsider your suggestion while working on the next version.
-Thanks!
+Yes, good point!
+
+> IOW. Suppose that _write_unlock clears ->writer_signal. We need to ensure
+> that this can't race with another write which wants to set this flag.
+> Perhaps it should be counter as well, and it should be protected by
+> the same ->global_rwlock, but _write_lock() should drop it before
+> sync_all_readers() and then take it again?
+
+Hmm, or we could just add an extra mb() like you suggested, and keep it
+simple...
+
+> 
+>>>>> +static inline void sync_reader(struct percpu_rwlock *pcpu_rwlock,
+>>>>> +			       unsigned int cpu)
+>>>>> +{
+>>>>> +	smp_rmb(); /* Paired with smp_[w]mb() in percpu_read_[un]lock() */
+>>>>
+>>>> As I understand it, the purpose of this memory barrier is to ensure
+>>>> that the stores in drop_writer_signal() happen before the reads from
+>>>> ->reader_refcnt in reader_uses_percpu_refcnt(), thus preventing the
+>>>> race between a new reader attempting to use the fastpath and this writer
+>>>> acquiring the lock.  Unless I am confused, this must be smp_mb() rather
+>>>> than smp_rmb().
+>>>
+>>> And note that before sync_reader() we call announce_writer_active() which
+>>> already adds mb() before sync_all_readers/sync_reader, so this rmb() looks
+>>> unneeded.
+>>>
+>>
+>> My intention was to help the writer see the ->reader_refcnt drop to zero
+>> ASAP; hence I used smp_wmb() at reader and smp_rmb() here at the writer.
+> 
+> Hmm, interesting... Not sure, but can't really comment. However I can
+> answer your next question:
+>
+
+Paul told me in another mail that I was expecting too much out of memory
+barriers, like increasing the speed of electrons and what not ;-)
+[ It would have been cool though, if it had such magical powers :P ]
+ 
+>> Please correct me if my understanding of memory barriers is wrong here..
+> 
+> Who? Me??? No we have paulmck for that ;)
+>
+
+Haha ;-)
 
 Regards,
 Srivatsa S. Bhat
-
->  But I don't feel strongly about
-> it, so if people are OK with the current version, no problem.
-> 
-> 							Thanx, Paul
-> 
 
