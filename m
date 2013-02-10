@@ -1,34 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756373Ab3BJXbE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Feb 2013 18:31:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52926 "EHLO mx1.redhat.com"
+	id S1756553Ab3BJXpT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Feb 2013 18:45:19 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:57263 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754536Ab3BJXbC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Feb 2013 18:31:02 -0500
-Message-ID: <51182DAB.1030708@redhat.com>
-Date: Mon, 11 Feb 2013 00:30:51 +0100
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: gregkh@linuxfoundation.org, akpm@linux-foundation.org,
+	id S1753456Ab3BJXpR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Feb 2013 18:45:17 -0500
+Date: Sun, 10 Feb 2013 23:45:15 +0000 (GMT)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] lib: memcmp_nta: add timing-attack secure memcmp
-References: <cover.1360528614.git.dborkman@redhat.com>  <e73de7873eadcd7a1922535359c46caf25cbf0a2.1360528614.git.dborkman@redhat.com> <1360538650.2028.2.camel@joe-AO722>
-In-Reply-To: <1360538650.2028.2.camel@joe-AO722>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: [git pull] drm nouveau fixes.
+Message-ID: <alpine.DEB.2.00.1302102344160.28198@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2013 12:24 AM, Joe Perches wrote:
-> On Sun, 2013-02-10 at 23:00 +0100, Daniel Borkmann wrote:
->> add memcmp_nta ({n}o {t}iming {a}ttacks)
->
-> Why should this be in the kernel?
 
-As the commit message already says, so that current or future (e.g.) network
-protocol code or modules can make use of this when dealing with cryptographic
-hash comparisons.
+Hi Linus,
+
+just 3 nouveau fixes, all user visible issues, I have one radeon 
+regression fix I'm hoping to send tomorrow once I'm happy with it.
+
+Dave.
+
+The following changes since commit ff7c60c580d9722f820d85c9c58ca55ecc1ee7c4:
+
+  drm/ttm: fix fence locking in ttm_buffer_object_transfer, 2nd try (2013-02-08 10:44:31 +1000)
+
+are available in the git repository at:
+
+  git://people.freedesktop.org/~airlied/linux.git drm-fixes
+
+for you to fetch changes up to e28f639eeaa97b6029b0db8890b2a4ce99e642c6:
+
+  Merge branch 'drm-nouveau-fixes-3.8' of git://anongit.freedesktop.org/git/nouveau/linux-2.6 into drm-next (2013-02-11 09:40:14 +1000)
+
+----------------------------------------------------------------
+
+Dave Airlie (1):
+      Merge branch 'drm-nouveau-fixes-3.8' of git://anongit.freedesktop.org/git/nouveau/linux-2.6 into drm-next
+
+Maarten Lankhorst (1):
+      drm/nouveau: use different register to wait for secret scrubber
+
+Marcin Slusarz (1):
+      drm/nouveau: add lockdep annotations
+
+Roy Spliet (1):
+      drm/nv50/fb: Fix nullptr-deref on IGPs
+
+ drivers/gpu/drm/nouveau/core/core/falcon.c         | 7 +++++--
+ drivers/gpu/drm/nouveau/core/core/subdev.c         | 2 +-
+ drivers/gpu/drm/nouveau/core/include/core/object.h | 7 +++++--
+ drivers/gpu/drm/nouveau/core/subdev/fb/base.c      | 4 ++--
+ drivers/gpu/drm/nouveau/core/subdev/fb/nv50.c      | 5 +++--
+ drivers/gpu/drm/nouveau/nouveau_drm.c              | 3 +++
+ 6 files changed, 19 insertions(+), 9 deletions(-)
