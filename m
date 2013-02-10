@@ -1,96 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760942Ab3BJAmg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 19:42:36 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:45262 "EHLO
+	id S1760912Ab3BJAmu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 19:42:50 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:45257 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760886Ab3BJAkI (ORCPT
+	with ESMTP id S1760877Ab3BJAkH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 19:40:08 -0500
+	Sat, 9 Feb 2013 19:40:07 -0500
 From: Sasha Levin <sasha.levin@oracle.com>
 To: mingo@kernel.org, peterz@infradead.org
 Cc: jamie.iles@oracle.com, penberg@kernel.org, acme@ghostprotocols.net,
         paulus@samba.org, linux-kernel@vger.kernel.org, namhyung@kernel.org,
         Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH v2 11/11] liblockdep: preload helper
-Date: Sat,  9 Feb 2013 19:39:41 -0500
-Message-Id: <1360456781-32462-11-git-send-email-sasha.levin@oracle.com>
+Subject: [PATCH v2 03/11] perf: stop using liblockdep_init and liblockdep_set_thread
+Date: Sat,  9 Feb 2013 19:39:33 -0500
+Message-Id: <1360456781-32462-3-git-send-email-sasha.levin@oracle.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1360456781-32462-1-git-send-email-sasha.levin@oracle.com>
 References: <1360456781-32462-1-git-send-email-sasha.levin@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a simple wrapper to make using liblockdep on existing applications
-much easier.
-
-After running 'make && make install', it becomes quite simple to test things
-with liblockdep. For example, to try it on perf:
-
-	lockdep perf
-
-No other integration required.
+These functions are no longer needed by liblockdep, drop them.
 
 Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 ---
- tools/lib/lockdep/Makefile | 12 ++++++++----
- tools/lib/lockdep/lockdep  |  3 +++
- 2 files changed, 11 insertions(+), 4 deletions(-)
- create mode 100755 tools/lib/lockdep/lockdep
+ tools/perf/builtin-sched.c          | 2 --
+ tools/perf/builtin-top.c            | 4 ----
+ tools/perf/config/feature-tests.mak | 1 -
+ tools/perf/perf.c                   | 3 ---
+ tools/perf/util/liblockdep.h        | 2 --
+ 5 files changed, 12 deletions(-)
 
-diff --git a/tools/lib/lockdep/Makefile b/tools/lib/lockdep/Makefile
-index 245f8ba..b22122f 100644
---- a/tools/lib/lockdep/Makefile
-+++ b/tools/lib/lockdep/Makefile
-@@ -34,7 +34,9 @@ DESTDIR ?=
- DESTDIR_SQ = '$(subst ','\'',$(DESTDIR))'
+diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
+index 53d9225..e1f0c44 100644
+--- a/tools/perf/builtin-sched.c
++++ b/tools/perf/builtin-sched.c
+@@ -468,8 +468,6 @@ static void *thread_func(void *ctx)
+ 	char comm2[22];
+ 	int fd;
  
- prefix ?= /usr/local
--bindir_relative = lib
-+libdir_relative = lib
-+libdir = $(prefix)/$(libdir_relative)
-+bindir_relative = bin
- bindir = $(prefix)/$(bindir_relative)
+-	liblockdep_set_thread();
+-
+ 	free(parms);
  
- export DESTDIR DESTDIR_SQ INSTALL
-@@ -90,13 +92,14 @@ objtree		:= $(CURDIR)
- src		:= $(srctree)
- obj		:= $(objtree)
+ 	sprintf(comm2, ":%s", this_task->comm);
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index c9b99ef..c9ff395 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -588,8 +588,6 @@ static void *display_thread_tui(void *arg)
+ 		.refresh	= top->delay_secs,
+ 	};
  
--export prefix bindir src obj
-+export prefix libdir bindir src obj
+-	liblockdep_set_thread();
+-
+ 	perf_top__sort_new_samples(top);
  
- # Shell quotes
-+libdir_SQ = $(subst ','\'',$(libdir))
- bindir_SQ = $(subst ','\'',$(bindir))
--bindir_relative_SQ = $(subst ','\'',$(bindir_relative))
+ 	/*
+@@ -615,8 +613,6 @@ static void *display_thread(void *arg)
+ 	struct perf_top *top = arg;
+ 	int delay_msecs, c;
  
- LIB_FILE = liblockdep.a liblockdep.so
-+BIN_FILE = lockdep
+-	liblockdep_set_thread();
+-
+ 	tcgetattr(0, &save);
+ 	tc = save;
+ 	tc.c_lflag &= ~(ICANON | ECHO);
+diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
+index 1f5a37e..20f8f7b 100644
+--- a/tools/perf/config/feature-tests.mak
++++ b/tools/perf/config/feature-tests.mak
+@@ -223,7 +223,6 @@ define SOURCE_LIBLOCKDEP
  
- CONFIG_INCLUDES =
- CONFIG_LIBS	=
-@@ -229,7 +232,8 @@ define do_install
+ int main(void)
+ {
+-	liblockdep_init();
+ 	return 0;
+ }
  endef
+diff --git a/tools/perf/perf.c b/tools/perf/perf.c
+index ddbd315..0f661fb 100644
+--- a/tools/perf/perf.c
++++ b/tools/perf/perf.c
+@@ -446,9 +446,6 @@ int main(int argc, const char **argv)
+ {
+ 	const char *cmd;
  
- install_lib: all_cmd
--	$(Q)$(call do_install,$(LIB_FILE),$(bindir_SQ))
-+	$(Q)$(call do_install,$(LIB_FILE),$(libdir_SQ))
-+	$(Q)$(call do_install,$(BIN_FILE),$(bindir_SQ))
+-	liblockdep_init();
+-	liblockdep_set_thread();
+-
+ 	page_size = sysconf(_SC_PAGE_SIZE);
  
- install: install_lib
+ 	cmd = perf_extract_argv0_path(argv[0]);
+diff --git a/tools/perf/util/liblockdep.h b/tools/perf/util/liblockdep.h
+index 628a2f5..798263f 100644
+--- a/tools/perf/util/liblockdep.h
++++ b/tools/perf/util/liblockdep.h
+@@ -5,7 +5,5 @@
+ #else
  
-diff --git a/tools/lib/lockdep/lockdep b/tools/lib/lockdep/lockdep
-new file mode 100755
-index 0000000..a805c81
---- /dev/null
-+++ b/tools/lib/lockdep/lockdep
-@@ -0,0 +1,3 @@
-+#! /bin/bash
-+
-+LD_PRELOAD="liblockdep.so $LD_PRELOAD" "$@"
+ #define LIBLOCKDEP_PTHREAD_MUTEX_INITIALIZER(mtx) PTHREAD_MUTEX_INITIALIZER
+-#define liblockdep_init()
+-#define liblockdep_set_thread()
+ 
+ #endif
 -- 
 1.8.1.2
 
