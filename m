@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756927Ab3BJXux (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Feb 2013 18:50:53 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:54812 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756773Ab3BJXuv (ORCPT
+	id S1755924Ab3BJX4h (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Feb 2013 18:56:37 -0500
+Received: from mail-we0-f169.google.com ([74.125.82.169]:65367 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753456Ab3BJX4g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Feb 2013 18:50:51 -0500
-Date: Sun, 10 Feb 2013 15:50:57 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Daniel Borkmann <dborkman@redhat.com>
-Cc: Joe Perches <joe@perches.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] lib: memcmp_nta: add timing-attack secure memcmp
-Message-ID: <20130210235057.GA5485@kroah.com>
-References: <cover.1360528614.git.dborkman@redhat.com>
- <e73de7873eadcd7a1922535359c46caf25cbf0a2.1360528614.git.dborkman@redhat.com>
- <1360538650.2028.2.camel@joe-AO722>
- <51182DAB.1030708@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51182DAB.1030708@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 10 Feb 2013 18:56:36 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v2 2/6] of: Return -ENXIO from of_parse_phandle_with_args for too large index and return errors from of_gpio_named_count
+To: Andreas Larsson <andreas@gaisler.com>
+Cc: Rob Herring <rob.herring@calxeda.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        software@gaisler.com
+In-Reply-To: <1359471223-4794-3-git-send-email-andreas@gaisler.com>
+References: <1359471223-4794-1-git-send-email-andreas@gaisler.com> <1359471223-4794-3-git-send-email-andreas@gaisler.com>
+Date: Sun, 10 Feb 2013 23:56:31 +0000
+Message-Id: <20130210235631.DD54D3E0C13@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 11, 2013 at 12:30:51AM +0100, Daniel Borkmann wrote:
-> On 02/11/2013 12:24 AM, Joe Perches wrote:
-> >On Sun, 2013-02-10 at 23:00 +0100, Daniel Borkmann wrote:
-> >>add memcmp_nta ({n}o {t}iming {a}ttacks)
-> >
-> >Why should this be in the kernel?
+On Tue, 29 Jan 2013 15:53:39 +0100, Andreas Larsson <andreas@gaisler.com> wrote:
+> This lets of_gpio_named_count return an errno on errors by being able to
+> distinguish between reaching the end of the phandle list and getting some other
+> error from of_parse_phandle_with_args.
 > 
-> As the commit message already says, so that current or future (e.g.) network
-> protocol code or modules can make use of this when dealing with cryptographic
-> hash comparisons.
+> Return error from of_spi_register_master when there is an "cs-gpios" list for
+> which gp_gpio_named_count fails.
+> 
+> Adjust various drivers cope with error return from of_gpio_named_count,
+> including via of_gpio_count.
+> 
+> Signed-off-by: Andreas Larsson <andreas@gaisler.com>
 
-Do we have any in-kernel users that need this?  If not, then don't add
-it now, but rather, add it when we actually have a user.  We almost
-never add kernel functions that no one calls, that would be just
-wasteful.
+Actually, I'd been meaning to fix of_gpio_count for quite a while now.
+The current code uses a stupid algorithm to parse each specifier one at
+a time and count how many iterations it takes before getting an error.
+BLECH! A pox on me for being so lazy when I wrote it.
 
-sorry,
+Anyway, your patch here spurred me on to fix it. I've just done so and
+will post the patch in a few minutes. Please test and let me know if it
+works for you.
 
-greg k-h
+g.
+
