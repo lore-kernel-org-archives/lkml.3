@@ -1,90 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754329Ab3BJKdt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Feb 2013 05:33:49 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:40376 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751826Ab3BJKdr (ORCPT
+	id S1754402Ab3BJKge (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Feb 2013 05:36:34 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:49284 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753467Ab3BJKgc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Feb 2013 05:33:47 -0500
-Date: Sun, 10 Feb 2013 11:33:45 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Goswin von Brederlow <goswin-v-b@web.de>,
-        Miklos Szeredi <miklos@szeredi.hu>, Li Fei <fei.li@intel.com>,
-        len.brown@intel.com, mingo@redhat.com, peterz@infradead.org,
-        biao.wang@intel.com, linux-pm@vger.kernel.org,
-        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        chuansheng.liu@intel.com
-Subject: Getting rid of freezer for suspend [was Re: [fuse-devel] [PATCH]
- fuse: make fuse daemon frozen along with kernel threads]
-Message-ID: <20130210103344.GA8888@amd.pavel.ucw.cz>
-References: <1360113112.17267.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
- <20130208141123.GA29460@frosties>
- <20130209174910.GA28370@amd.pavel.ucw.cz>
- <1595169.zvx3Wi6SMv@vostro.rjw.lan>
+	Sun, 10 Feb 2013 05:36:32 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1595169.zvx3Wi6SMv@vostro.rjw.lan>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130131002344.1161E360095@xplor.waratah.dyndns.org>
+References: <20130131002344.1161E360095@xplor.waratah.dyndns.org>
+Date: Sun, 10 Feb 2013 11:36:31 +0100
+X-Google-Sender-Auth: c5UffY64IobKLq4oHTXTGwES3Q4
+Message-ID: <CAMuHMdUFuNpiZzTr=86Yi2yx73xh_qv8S6PnT0hp9U8x86vskw@mail.gmail.com>
+Subject: Re: [PATCH 09/17] [m68k] IRQ: add handle_polled_irq() for timer based
+ soft interrupts
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Michael Schmitz <schmitzmic@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Thu, Jan 31, 2013 at 1:23 AM, Michael Schmitz <schmitzmic@gmail.com> wrote:
+> [PATCH 09/17] [m68k] IRQ: add handle_polled_irq() for timer based soft interrupts -
+>         experimental hack to avoid unhandled interrupt timer to fire
+>         on EtherNEC/NetUSBee cards that have no hardware interrupt
+>         and need to be polled from a timer
+>
+> This patch adds a special 'polled interrupt' handler for timer based software interrupts.
 
-> > > For shutdown in userspace there is the sendsigs.omit.d/ to avoid the
-> > > problem of halting/killing processes of the fuse filesystems (or other
-> > > services) prematurely. I guess something similar needs to be done for
-> > > freeze. The fuse filesystem has to tell the kernel what is up.
-> > 
-> > Would it be feasible to create some kind of fuse-stop-script.sh, and
-> > run it before suspend (from userspace)? It should be pretty similar to
-> > sendsigs.omit.d/ mechanism AFAICT.
-> > 
-> > I'm sorry, freezer is not too suitable for fuse.
-> > 
-> > (BTW: for suspend, we may be able to improve it so that it is possible
-> > to remove freezer from it. For hibernation, it would be very hard.)
-> 
-> Well, this is so incorrect that it's not even funny. :-(
-> 
-> The whole memory shrinking we do for hibernation is now done by allocating
-> memory, so the freezer is not necessary for *that* and there's *zero*
-> difference between suspend and hibernation with respect to why the freezer is
-> used.
+Adding Thomas and lkml.
 
-Funny. Freezer was put there so that hibernation image was safe to
-write out. You need disk subsystems in workable state for hibernation.
+> handle_simple_irq() will respond to excessive unhandled interrupts (as are expected for a
+> polling timer interrupt) by disabling the apparently unhandled interrupt source.
+>
+> handle_polled_irq() prevents this by setting the IRQS_POLL_INPROGRESS flag which will cause
+> the unhandled interrupt events to be ignored.
+>
+> This is a temporary hack to allow timer based polling of the Atari ROM port network and USB
+> cards only. Suggestions on how to properly handle this in the normal interrupt framework are
+> most welcome.
+>
+> Signed-off-by: Michael Schmitz <schmitz@debian.org>
+> ---
+>  include/linux/irq.h |    1 +
+>  kernel/irq/chip.c   |   36 ++++++++++++++++++++++++++++++++++++
+>  2 files changed, 37 insertions(+), 0 deletions(-)
+>
+> diff --git a/include/linux/irq.h b/include/linux/irq.h
+> index fdf2c4a..39bfcff 100644
+> --- a/include/linux/irq.h
+> +++ b/include/linux/irq.h
+> @@ -407,6 +407,7 @@ extern void handle_fasteoi_irq(unsigned int irq, struct irq_desc *desc);
+>  extern void handle_edge_irq(unsigned int irq, struct irq_desc *desc);
+>  extern void handle_edge_eoi_irq(unsigned int irq, struct irq_desc *desc);
+>  extern void handle_simple_irq(unsigned int irq, struct irq_desc *desc);
+> +extern void handle_polled_irq(unsigned int irq, struct irq_desc *desc);
+>  extern void handle_percpu_irq(unsigned int irq, struct irq_desc *desc);
+>  extern void handle_percpu_devid_irq(unsigned int irq, struct irq_desc *desc);
+>  extern void handle_bad_irq(unsigned int irq, struct irq_desc *desc);
+> diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+> index 3aca9f2..ae7ef4d 100644
+> --- a/kernel/irq/chip.c
+> +++ b/kernel/irq/chip.c
+> @@ -339,6 +339,42 @@ out_unlock:
+>  }
+>  EXPORT_SYMBOL_GPL(handle_simple_irq);
+>
+> +/**
+> + *     handle_polled_irq - Simple and software-decoded IRQs.
+> + *     @irq:   the interrupt number
+> + *     @desc:  the interrupt description structure for this irq
+> + *
+> + *     Polled interrupts are sent from a demultiplexing software interrupt
+> + *     handler, where no interrupt hardware control is necessary.
+> + */
+> +void
+> +handle_polled_irq(unsigned int irq, struct irq_desc *desc)
+> +{
+> +       raw_spin_lock(&desc->lock);
+> +
+> +       if (unlikely(irqd_irq_inprogress(&desc->irq_data)))
+> +               if (!irq_check_poll(desc))
+> +                       goto out_unlock;
+> +
+> +       desc->istate &= ~(IRQS_REPLAY | IRQS_WAITING);
+> +       kstat_incr_irqs_this_cpu(irq, desc);
+> +
+> +       if (unlikely(!desc->action || irqd_irq_disabled(&desc->irq_data))) {
+> +               desc->istate |= IRQS_PENDING;
+> +               goto out_unlock;
+> +       }
+> +
+> +       desc->istate |= IRQS_POLL_INPROGRESS;
+> +
+> +       handle_irq_event(desc);
+> +
+> +       desc->istate &= ~(IRQS_POLL_INPROGRESS);
+> +
+> +out_unlock:
+> +       raw_spin_unlock(&desc->lock);
+> +}
+> +EXPORT_SYMBOL_GPL(handle_polled_irq);
+> +
+>  /*
+>   * Called unconditionally from handle_level_irq() and only for oneshot
+>   * interrupts from handle_fasteoi_irq()
+> --
+> 1.7.0.4
 
-> And *the* reason why it's used is that intercepting all of the possible ways
-> user space could interfere with the suspend process without the freezer is
-> simply totally impractical.  System calls (including ioctls and
-> fctls),
+Gr{oetje,eeting}s,
 
-It is a lot of work, agreed. But runtime power management is already
-moving in that direction. And I could imagine introducing "big suspend
-lock" to be grabbed pretty much everywhere.
+                        Geert
 
-(And IIRC n900 pretty much suspends when idle.)
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-> sysfs accesses, /proc accesses, debugfs, to name a few, and mmap (I wonder how
-> you would handle *that* alone).  And I'm sure there's more I didn't
-> even
-
-mmap... what is problem with mmap? For suspend, memory is powered, so
-you can permit people changing it.
-
-> So please don't tell people that something is doable while it practically
-> realisticly isn't.
-
-I can imagine doing that for suspend, and believe we are moving in
-that direction with runtime suspend. For hibernation, we need to write
-image the image to the disk (which is the important difference, not
-memory shrinking), and "big suspend lock" would interfere with
-that. I can not imagine reasonable solution for that.
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
