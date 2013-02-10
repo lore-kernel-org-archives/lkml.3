@@ -1,111 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975Ab3BJKcx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Feb 2013 05:32:53 -0500
-Received: from mail-la0-f54.google.com ([209.85.215.54]:51860 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751480Ab3BJKcv (ORCPT
+	id S1754329Ab3BJKdt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Feb 2013 05:33:49 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:40376 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751826Ab3BJKdr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Feb 2013 05:32:51 -0500
+	Sun, 10 Feb 2013 05:33:47 -0500
+Date: Sun, 10 Feb 2013 11:33:45 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Goswin von Brederlow <goswin-v-b@web.de>,
+        Miklos Szeredi <miklos@szeredi.hu>, Li Fei <fei.li@intel.com>,
+        len.brown@intel.com, mingo@redhat.com, peterz@infradead.org,
+        biao.wang@intel.com, linux-pm@vger.kernel.org,
+        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        chuansheng.liu@intel.com
+Subject: Getting rid of freezer for suspend [was Re: [fuse-devel] [PATCH]
+ fuse: make fuse daemon frozen along with kernel threads]
+Message-ID: <20130210103344.GA8888@amd.pavel.ucw.cz>
+References: <1360113112.17267.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+ <20130208141123.GA29460@frosties>
+ <20130209174910.GA28370@amd.pavel.ucw.cz>
+ <1595169.zvx3Wi6SMv@vostro.rjw.lan>
 MIME-Version: 1.0
-In-Reply-To: <1359714465-6297-2-git-send-email-zhong@linux.vnet.ibm.com>
-References: <1359714465-6297-1-git-send-email-zhong@linux.vnet.ibm.com>
-	<1359714465-6297-2-git-send-email-zhong@linux.vnet.ibm.com>
-Date: Sun, 10 Feb 2013 11:32:49 +0100
-Message-ID: <CAFTL4hzpwLO--SRUzpJz=zKbupSEYirNcO-KM=ShOMwjoJ0LvA@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/5] powerpc: Syscall hooks for context tracking subsystem
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        paulmck@linux.vnet.ibm.com, benh@kernel.crashing.org, paulus@samba.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1595169.zvx3Wi6SMv@vostro.rjw.lan>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/2/1 Li Zhong <zhong@linux.vnet.ibm.com>:
-> This is the syscall slow path hooks for context tracking subsystem,
-> corresponding to
-> [PATCH] x86: Syscall hooks for userspace RCU extended QS
->   commit bf5a3c13b939813d28ce26c01425054c740d6731
->
-> TIF_MEMDIE is moved to the second 16-bits (with value 17), as it seems there
-> is no asm code using it. TIF_NOHZ is added to _TIF_SYCALL_T_OR_A, so it is
-> better for it to be in the same 16 bits with others in the group, so in the
-> asm code, andi. with this group could work.
->
-> Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+Hi!
 
-Looks good. Thanks.
+> > > For shutdown in userspace there is the sendsigs.omit.d/ to avoid the
+> > > problem of halting/killing processes of the fuse filesystems (or other
+> > > services) prematurely. I guess something similar needs to be done for
+> > > freeze. The fuse filesystem has to tell the kernel what is up.
+> > 
+> > Would it be feasible to create some kind of fuse-stop-script.sh, and
+> > run it before suspend (from userspace)? It should be pretty similar to
+> > sendsigs.omit.d/ mechanism AFAICT.
+> > 
+> > I'm sorry, freezer is not too suitable for fuse.
+> > 
+> > (BTW: for suspend, we may be able to improve it so that it is possible
+> > to remove freezer from it. For hibernation, it would be very hard.)
+> 
+> Well, this is so incorrect that it's not even funny. :-(
+> 
+> The whole memory shrinking we do for hibernation is now done by allocating
+> memory, so the freezer is not necessary for *that* and there's *zero*
+> difference between suspend and hibernation with respect to why the freezer is
+> used.
 
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+Funny. Freezer was put there so that hibernation image was safe to
+write out. You need disk subsystems in workable state for hibernation.
 
-> ---
->  arch/powerpc/include/asm/thread_info.h |    7 +++++--
->  arch/powerpc/kernel/ptrace.c           |    5 +++++
->  2 files changed, 10 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/powerpc/include/asm/thread_info.h b/arch/powerpc/include/asm/thread_info.h
-> index 406b7b9..414a261 100644
-> --- a/arch/powerpc/include/asm/thread_info.h
-> +++ b/arch/powerpc/include/asm/thread_info.h
-> @@ -97,7 +97,7 @@ static inline struct thread_info *current_thread_info(void)
->  #define TIF_PERFMON_CTXSW      6       /* perfmon needs ctxsw calls */
->  #define TIF_SYSCALL_AUDIT      7       /* syscall auditing active */
->  #define TIF_SINGLESTEP         8       /* singlestepping active */
-> -#define TIF_MEMDIE             9       /* is terminating due to OOM killer */
-> +#define TIF_NOHZ               9       /* in adaptive nohz mode */
->  #define TIF_SECCOMP            10      /* secure computing */
->  #define TIF_RESTOREALL         11      /* Restore all regs (implies NOERROR) */
->  #define TIF_NOERROR            12      /* Force successful syscall return */
-> @@ -106,6 +106,7 @@ static inline struct thread_info *current_thread_info(void)
->  #define TIF_SYSCALL_TRACEPOINT 15      /* syscall tracepoint instrumentation */
->  #define TIF_EMULATE_STACK_STORE        16      /* Is an instruction emulation
->                                                 for stack store? */
-> +#define TIF_MEMDIE             17      /* is terminating due to OOM killer */
->
->  /* as above, but as bit values */
->  #define _TIF_SYSCALL_TRACE     (1<<TIF_SYSCALL_TRACE)
-> @@ -124,8 +125,10 @@ static inline struct thread_info *current_thread_info(void)
->  #define _TIF_UPROBE            (1<<TIF_UPROBE)
->  #define _TIF_SYSCALL_TRACEPOINT        (1<<TIF_SYSCALL_TRACEPOINT)
->  #define _TIF_EMULATE_STACK_STORE       (1<<TIF_EMULATE_STACK_STORE)
-> +#define _TIF_NOHZ              (1<<TIF_NOHZ)
->  #define _TIF_SYSCALL_T_OR_A    (_TIF_SYSCALL_TRACE | _TIF_SYSCALL_AUDIT | \
-> -                                _TIF_SECCOMP | _TIF_SYSCALL_TRACEPOINT)
-> +                                _TIF_SECCOMP | _TIF_SYSCALL_TRACEPOINT | \
-> +                                _TIF_NOHZ)
->
->  #define _TIF_USER_WORK_MASK    (_TIF_SIGPENDING | _TIF_NEED_RESCHED | \
->                                  _TIF_NOTIFY_RESUME | _TIF_UPROBE)
-> diff --git a/arch/powerpc/kernel/ptrace.c b/arch/powerpc/kernel/ptrace.c
-> index c497000..62238dd 100644
-> --- a/arch/powerpc/kernel/ptrace.c
-> +++ b/arch/powerpc/kernel/ptrace.c
-> @@ -32,6 +32,7 @@
->  #include <trace/syscall.h>
->  #include <linux/hw_breakpoint.h>
->  #include <linux/perf_event.h>
-> +#include <linux/context_tracking.h>
->
->  #include <asm/uaccess.h>
->  #include <asm/page.h>
-> @@ -1745,6 +1746,8 @@ long do_syscall_trace_enter(struct pt_regs *regs)
->  {
->         long ret = 0;
->
-> +       user_exit();
-> +
->         secure_computing_strict(regs->gpr[0]);
->
->         if (test_thread_flag(TIF_SYSCALL_TRACE) &&
-> @@ -1789,4 +1792,6 @@ void do_syscall_trace_leave(struct pt_regs *regs)
->         step = test_thread_flag(TIF_SINGLESTEP);
->         if (step || test_thread_flag(TIF_SYSCALL_TRACE))
->                 tracehook_report_syscall_exit(regs, step);
-> +
-> +       user_enter();
->  }
-> --
-> 1.7.9.5
->
+> And *the* reason why it's used is that intercepting all of the possible ways
+> user space could interfere with the suspend process without the freezer is
+> simply totally impractical.  System calls (including ioctls and
+> fctls),
+
+It is a lot of work, agreed. But runtime power management is already
+moving in that direction. And I could imagine introducing "big suspend
+lock" to be grabbed pretty much everywhere.
+
+(And IIRC n900 pretty much suspends when idle.)
+
+> sysfs accesses, /proc accesses, debugfs, to name a few, and mmap (I wonder how
+> you would handle *that* alone).  And I'm sure there's more I didn't
+> even
+
+mmap... what is problem with mmap? For suspend, memory is powered, so
+you can permit people changing it.
+
+> So please don't tell people that something is doable while it practically
+> realisticly isn't.
+
+I can imagine doing that for suspend, and believe we are moving in
+that direction with runtime suspend. For hibernation, we need to write
+image the image to the disk (which is the important difference, not
+memory shrinking), and "big suspend lock" would interfere with
+that. I can not imagine reasonable solution for that.
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
