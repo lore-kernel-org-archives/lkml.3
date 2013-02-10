@@ -1,121 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568Ab3BJM0H (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Feb 2013 07:26:07 -0500
-Received: from mo-p00-ob.rzone.de ([81.169.146.161]:47718 "EHLO
+	id S1754788Ab3BJMqX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Feb 2013 07:46:23 -0500
+Received: from mo-p00-ob.rzone.de ([81.169.146.161]:64966 "EHLO
 	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754173Ab3BJM0D (ORCPT
+	with ESMTP id S1754244Ab3BJMqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Feb 2013 07:26:03 -0500
+	Sun, 10 Feb 2013 07:46:21 -0500
 X-RZG-AUTH: :P2ERcEykfu11Y98lp/T7+hdri+uKZK8QS9ij0PRv0OgBX++PB3K3G/7rbhwz
 X-RZG-CLASS-ID: mo00
-Message-ID: <511791D6.7000600@chronox.de>
-Date: Sun, 10 Feb 2013 13:25:58 +0100
+Message-ID: <5117969A.1080909@chronox.de>
+Date: Sun, 10 Feb 2013 13:46:18 +0100
 From: Stephan Mueller <smueller@chronox.de>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, linux-crypto@vger.kernel.org,
+To: Jeff Epler <jepler@unpythonic.net>
+CC: "Theodore Ts'o" <tytso@mit.edu>, linux-crypto@vger.kernel.org,
         lkml <linux-kernel@vger.kernel.org>
 Subject: Re: [RFC][PATCH] Entropy generator with 100 kB/s throughput
-References: <51157686.9000404@chronox.de> <20130209180629.GD8091@thunk.org>
-In-Reply-To: <20130209180629.GD8091@thunk.org>
+References: <51157686.9000404@chronox.de> <20130209180629.GD8091@thunk.org> <20130210015751.GA13690@unpythonic.net>
+In-Reply-To: <20130210015751.GA13690@unpythonic.net>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09.02.2013 19:06:29, +0100, Theodore Ts'o <tytso@mit.edu> wrote:
+On 10.02.2013 02:57:51, +0100, Jeff Epler <jepler@unpythonic.net> wrote:
 
-Hi Ted,
+Hi Jeff,
+> On Sat, Feb 09, 2013 at 01:06:29PM -0500, Theodore Ts'o wrote:
+>> For that reasons, what I would suggest doing first is generate a
+>> series of outputs of jitterentropy_get_nstime() followed by
+>> schedule().  Look and see if there is any pattern.  That's the problem
+>> with the FIPS 140-2 tests.  Passing those tests are necessary, but
+>> *NOT* sufficient to prove that you have a good cryptographic
+>> generator.  Even the tiniest amount of post-processing, even if they
+>> aren't cryptographic, can result in an utterly predictable series of
+>> numbers to pass the FIPS 140-2 tests.
+> In fact, Stephan's 'xor and shift a counter' design, even with zero
+> input entropy (a counter incrementing at a constant rate), passes FIPS
+> and a surprising fraction of dieharder tests (though some of the tests,
+> such as diehard_count_1s_str, have this generator dead to rights); it
+> also gives an ent entropy well in excess of 7.9999 bits per byte.  This
+> means it's hard to be confident that the entropy measured by ent is
+> coming from the input entropy as opposed to the (exceedingly
+> minimal-seeming on the surface!) amount of mixing done by the
+> xor-and-shift...
 
-thank you for the review.
-> On Fri, Feb 08, 2013 at 11:04:54PM +0100, Stephan Mueller wrote:
->> * an array of statistical test suites pass the output of the entropy
->> collector
->>   (again, the output is not mangled with cryptography)
-> You're not mangling the output with cryptography, but you are doing
-> some mangling in jitterentropy_cpu_jitter().
+I am totally on your side that passing the tests is a necessary
+prerequisite for a good RNG but by no means a proof that the RNG
+produces entropy.
+
+However, the CPU has timing jitter in the execution of instruction. And
+I try to harvest that jitter. The good thing is that this jitter is
+always present and can be harvested on demand.
 >
-> So let's be clear about what the heart of your entropy source is:
+> It appears the entropy counted is equal to the log2 of the difference
+> between successive samples (minus one?), but even if you have a good
+> argument why the ones bit is unpredictable it doesn't seem an argument
+> that applies as strongly to the weight-128 bit.
+
+Why are you mentioning 128 bit? The pool I try to fill is 64 bit and it
+is filled with at least 16 * 9 clock measurements and an equal amount of
+code in-between due to the schedule call.
 >
-> You're getting the nanoseconds out of clock_gettime(CLOCK_REALTIME),
-> and then mixing it using XOR and a ROL(3) into a 64-bit buffer, and
-> interspersing the calls to clock_gettime() with schedule().
+> When the jitterrand loop runs 10 times, the LSB of that first loop has
+> only gotten up to the 30th bit, so there are 20+ MSBs of the register
+> that have not yet had bits rolled into them that are 'entropic' under
+> the definition being used.
 
-Correct.
+If you apply this argument to my suggested code, after executing the 16
+loops in jitterentropy_cpu_jitter once, you rolled up to bit 48 (3 *
+16). Now, you have at least 9 invocations of this loop of 16. This
+implies you rolled over the pool buffer several times.
 >
-> So what a code breaker at the NSA would probably try to do first is to
-> measure is whether there is any kind of bias or non-entropy in the
-> nanoseconds returned by CLOCK_REALTIME after calls to schedule().  If
-> they can find any kind of bias, they can use that to calculate what
-> kind of patterns or non-random bits might end up showing up after you
-> do your non-cryptographic mangling.
+> Finally, in the 'turbid' random number generator
+> (http://www.av8n.com/turbid/), the author develops a
+> concept of hash saturation.  He concludes that if you have a noise
+> source with a known (or assumed!) entropy and a has function that is
+> well-distributed over N bits, you'd better put in M > N bits of entropy
+> in order to be confident that the output register has N bits.  He
+> appears to suggest adding around 10 extra bits of randomness, or 74 bits
+> randomness for a 64-bit hash, relatively indepently of the size of the
+> hash.  This design gathers only 64 bits if you trust the input entropy
+> calculation, which according to the hash saturation calculation means
+> that the output will only have about 63.2 bits of randomness per 64
+> bits output.
 
-I thought I have countered such possibility already with the following 2
-concepts:
+I am not sure how that applies to the suggested code. The entropy source
+just generates raw entropy without using a hash. The entropy then is
+used to seed a DRNG. The so-called "strong DRNG" is initially seeded
+with 48 bytes out of my entropy source. After generating 16 bytes of
+output, it is reseeded with another 16 bytes of entropy. And after
+reaching 1024 bits of output, it is also re-keyed.
 
-1. Before entropy is extracted from the pool, at the minimum 9 * 16
-clock measurements (we have 16 rounds in jitterentropy_cpu_jitter and at
-least 9 rounds in jitterentropy_gen_entropy due to the entropy
-calculation and the limit of 7 bits of entropy per round) are fed into
-the pool with the strong possibility of more. The number of measurements
-mixed into the pool depends on the amount of entropy the heuristic
-applies to the time needed to perform the 16 rounds of measurements and
-the previous delta.
+Only the "regular DRNG" is reseeded after 1024 bytes of output and
+rekeyed after 1MB of output.
 
-2. The entropy heuristic is measuring the delta of deltas to calculate
-the entropy -- and thus implicitly how often the 16 clock measurements
-are applied. With the use of deltas of deltas (i.e. kind of the 2nd
-derivation of the absolute time measurements), the code implies 0 bit of
-entropy for evenly spaced time measurements (i.e. no jitter) and time
-measurements with a too coarse timer.
->
-> For that reasons, what I would suggest doing first is generate a
-> series of outputs of jitterentropy_get_nstime() followed by
-> schedule().  Look and see if there is any pattern.  That's the problem
-> with the FIPS 140-2 tests.  Passing those tests are necessary, but
+Only those two DRNGs are supposed to be interface for a user to obtain
+random data.
 
-Note, I am not using FIPS 140-2 tests as there are none. I try to use
-the tests NIST and the German BSI would require when you come along with
-an RNG for validation. In addition, I use the dieharder test suite with
-its tons of tests.
-
-> *NOT* sufficient to prove that you have a good cryptographic
-> generator.  Even the tiniest amount of post-processing, even if they
-> aren't cryptographic, can result in an utterly predictable series of
-> numbers to pass the FIPS 140-2 tests.
-
-Thank you very much for the suggestions. I will perform the suggested test.
-
-On the other hand the entropy generator is intended to serve as a seed
-source for the DRNGs. One of the goals I tried to achieve is ease of use
-without the possibility to misuse the implementation. With that in mind,
-for the kernel implementation, I guess jitterentropy_read_entropy should
-not be exported with EXPORT_SYMBOL and should be static.
-
-This change implies that in the kernel only the DRNGs are accessible
-where the strong DRNG (jitterentropy_strong_drng) should conceptually be
-as strong as blocking_pool (without the blocking nature) and the regular
-DRNG (jitterentropy_reg_drng) is conceptually the equivalent to
-nonblocking_pool which is guaranteed to be reseeded.
+Note: reseeding and rekeying are not yet implemented in the kernel
+crypto API, but can easily be added.
 
 Thanks
 Stephan
+
 >
-> Regards,
 >
-> 						- Ted
+> Here's my 'absolutely zero entropy' version of the jitter random
+> algorithm as I understand it:
 >
-> -- 
-> Ciao
-> Stephan
+> #include <stdint.h>
+> #include <unistd.h>
 >
-> atsec information security GmbH, Steinstraße 70, 81667 München, Germany
-> P: +49 89 442 49 830 - F: +49 89 442 49 831
-> M: +49 172 216 55 78 - HRB: 129439 (Amtsgericht München)
-> GF: Salvatore la Pietra, Staffan Persson
-> atsec it security news blog - atsec-information-security.blogspot.com
+> const uint64_t dt = 65309;
+> uint64_t t, r;
 >
-> -- 
-> | Cui bono? |
+> static inline uint64_t rol64(uint64_t word, unsigned int shift)
+> {
+>     return (word << shift) | (word >> (64 - shift));
+> }
+>
+> uint64_t jitterrand() {
+>     int i;
+>     // each sample from the 'stuck counter' will be accounted as 7 bits of
+>     // entropy, so 10 cycles to get >= 63 bits of randomness
+>     for(i=0; i<10; i++) {
+>         t += dt;
+>         r = rol64(r ^ t, 3);
+>     }
+>     return r;
+> }
+>
+> int main() {
+>     while(1) {
+>         uint64_t val = jitterrand();
+>         ssize_t res = write(1, &val, sizeof(val));
+>         if(res < 0) break;
+>     }
+>     return 0;
+> }
+>
+> // Jeff
+
+-- 
+| Cui bono? |
+
