@@ -1,57 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756688Ab3BJSpY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Feb 2013 13:45:24 -0500
-Received: from mail-qe0-f49.google.com ([209.85.128.49]:52101 "EHLO
-	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755398Ab3BJSpW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Feb 2013 13:45:22 -0500
+	id S1759223Ab3BJSuO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Feb 2013 13:50:14 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:47751 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756010Ab3BJSuL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Feb 2013 13:50:11 -0500
+Date: Sun, 10 Feb 2013 13:50:02 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Stephan Mueller <smueller@chronox.de>
+Cc: Jeff Epler <jepler@unpythonic.net>, linux-crypto@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH] Entropy generator with 100 kB/s throughput
+Message-ID: <20130210185002.GA10801@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Stephan Mueller <smueller@chronox.de>,
+	Jeff Epler <jepler@unpythonic.net>, linux-crypto@vger.kernel.org,
+	lkml <linux-kernel@vger.kernel.org>
+References: <51157686.9000404@chronox.de>
+ <20130209180629.GD8091@thunk.org>
+ <20130210015751.GA13690@unpythonic.net>
+ <5117969A.1080909@chronox.de>
 MIME-Version: 1.0
-In-Reply-To: <20130210004740.GH16278@quad.lixom.net>
-References: <cover.1360340791.git.nicolas.ferre@atmel.com>
-	<20130210004740.GH16278@quad.lixom.net>
-Date: Sun, 10 Feb 2013 19:45:21 +0100
-Message-ID: <CAMgPeKV4=C_msvZixVS-o3-QHaJxZP7T4EwLa9vnmYgVheXHgQ@mail.gmail.com>
-Subject: Re: [PATCH 0/5] at91: atmel_lcdfb: regression fixes and cpu_is removal
-From: Johan Hovold <jhovold@gmail.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, Arnd Bergmann <arnd@arndb.de>,
-        FlorianSchandinat@gmx.de,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, jacmet@sunsite.dk
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5117969A.1080909@chronox.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 10, 2013 at 1:47 AM, Olof Johansson <olof@lixom.net> wrote:
-> On Fri, Feb 08, 2013 at 05:35:13PM +0100, Nicolas Ferre wrote:
->> These patches fix a regression in 16-bpp support for older SOCs which
->> use IBGR:555 rather than BGR:565 pixel layout. Use SOC-type to
->> determine if the controller uses the intensity-bit and restore the
->> old layout in that case.
->>
->> The last patch is a removal of uses of cpu_is_xxxx() macros in
->> atmel_lcdfb with a platform-device-id table and static
->> configurations.
->>
->>
->> Patches from Johan Hovold taken from: "[PATCH 0/3] atmel_lcdfb: fix
->> 16-bpp regression" and "[PATCH v2 0/3] ARM: at91/avr32/atmel_lcdfb:
->> remove cpu_is macros" patch series to form a clean patch series with
->> my signature.
->>
->> Arnd, Olof, as it seems that old fbdev drivers are not so much
->> reviewed those days, can we take the decision to queue this material
->> through arm-soc with other AT91 drivers updates?
->
-> It would be beneficial to get an ack from Florian. Was he involved in
-> the review of the code that regressed 16-bpp support in the first
-> place? When was the regression introduced?
+On Sun, Feb 10, 2013 at 01:46:18PM +0100, Stephan Mueller wrote:
+> 
+> However, the CPU has timing jitter in the execution of instruction. And
+> I try to harvest that jitter. The good thing is that this jitter is
+> always present and can be harvested on demand.
 
-In v3.4 by commit 787f9fd2328 ("atmel_lcdfb: support 16bit BGR:565 mode,
-remove unsupported 15bit modes").
+How do you know, though, that this is what you are harvesting?
+Depending on the hardware and CPU that you are using, CLOCK_REALTIME
+might be quantized in no more than 4ms intervals.  Even on systems
+with a TSC register, the TSC register has all sorts of effects which
+can limit its granularity, and in fact is generally quantized as a
+multiple of the bus cycles.  Intel states that the quantization
+effects mean that for timing purposes, you can't really accurately
+time anything under 1000 cycles.  So at that point, you're not
+measuring CPU timing jitter, but something else; perhaps the frequency
+beats between the CPU clock and the bus clock.  Also, consider what
+might happen if you are booted on a VM; at that point, I can pretty
+much guarantee that whatever you are measuring, it will almost
+certainly _not_ be from CPU timer jitter.  It may be some very
+hard-to-predict pattern generated from the timing interactions of the
+host OS scheduler and the guest OS's scheduler, but that does _not_
+necessarily mean that there is true randominess which you are getting.
 
-Johan
+After all, if I give you a sequence of numbers which is generated by
+encrypting a counter with a secret AES key which only I know, that
+does _not_ mean that you have a strong cryptographic random number
+generator.  If you use that sequence to generate session keys, I will
+be able to break all of your encrypted traffic.  The mere fact that
+the sequence of numbers is one which passes pretty much all RNG tests,
+whether they be FIPS 140, or the BSI tests, or the dieharder tests,
+and just because _you_ can't figure out the pattern, does not mean
+that therefore the sequence is random.
+
+> I am not sure how that applies to the suggested code. The entropy source
+> just generates raw entropy without using a hash. 
+
+And what's your proof that your entropy source really is an entropy
+source?
+
+After all, I can claim that the dice rolls are random based on the
+chaotic air movements influencing how the die spins through the air.
+The fact that there are chaotic air movements isn't the question.  The
+question is whether or not the die is perfectly balanced.  If the die
+is weighted unevenly, the fact that there are all sorts of subtle
+chaotic effects which could be influencing the roll of the dice is
+utterly irrelevant.
+
+Similarly, if the time stamp counter, even though supposedly it is
+giving you granularity measured in nanoseconds, is in fact getting
+granularized somewhere in the hardware in in the thousands of cycles,
+even if there are apparently many digits of precision, does not mean
+that you actually have that many significant digits.
+
+Regards,
+
+						- Ted
