@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932476Ab3BJGBI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Feb 2013 01:01:08 -0500
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:47551 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752520Ab3BJF6q (ORCPT
+	id S1753635Ab3BJGBh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Feb 2013 01:01:37 -0500
+Received: from mail-vb0-f41.google.com ([209.85.212.41]:33573 "EHLO
+	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752240Ab3BJF6j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Feb 2013 00:58:46 -0500
+	Sun, 10 Feb 2013 00:58:39 -0500
 From: Len Brown <lenb@kernel.org>
 To: linux-pm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
-        microblaze-uclinux@itee.uq.edu.au
-Subject: [PATCH 11/16] microblaze idle: delete pm_idle
-Date: Sun, 10 Feb 2013 00:58:18 -0500
-Message-Id: <fe98b401efe3034c1684b8625ac266601c3b4ad1.1360475150.git.len.brown@intel.com>
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 06/16] ARM idle: delete pm_idle
+Date: Sun, 10 Feb 2013 00:58:13 -0500
+Message-Id: <9838a4aeee256adeaef90efe56df2c9988206982.1360475150.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.8.1.3.535.ga923c31
 In-Reply-To: <1360475903-30007-1-git-send-email-lenb@kernel.org>
 References: <1360475903-30007-1-git-send-email-lenb@kernel.org>
@@ -27,35 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Len Brown <len.brown@intel.com>
 
-pm_idle on microblaze served no purpose.
+pm_idle() on ARM was a synonym for default_idle(),
+so simply invoke default_idle() directly.
 
 Signed-off-by: Len Brown <len.brown@intel.com>
-Cc: microblaze-uclinux@itee.uq.edu.au
+Cc: linux-arm-kernel@lists.infradead.org
 ---
- arch/microblaze/kernel/process.c | 3 ---
- 1 file changed, 3 deletions(-)
+ arch/arm/kernel/process.c | 13 ++++---------
+ 1 file changed, 4 insertions(+), 9 deletions(-)
 
-diff --git a/arch/microblaze/kernel/process.c b/arch/microblaze/kernel/process.c
-index a5b74f7..6ff2dcf 100644
---- a/arch/microblaze/kernel/process.c
-+++ b/arch/microblaze/kernel/process.c
-@@ -41,7 +41,6 @@ void show_regs(struct pt_regs *regs)
- 				regs->msr, regs->ear, regs->esr, regs->fsr);
+diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+index c6dec5f..047d3e4 100644
+--- a/arch/arm/kernel/process.c
++++ b/arch/arm/kernel/process.c
+@@ -172,14 +172,9 @@ static void default_idle(void)
+ 	local_irq_enable();
  }
  
--void (*pm_idle)(void);
- void (*pm_power_off)(void) = NULL;
- EXPORT_SYMBOL(pm_power_off);
- 
-@@ -98,8 +97,6 @@ void cpu_idle(void)
- 
- 	/* endless idle loop with no priority at all */
- 	while (1) {
--		void (*idle)(void) = pm_idle;
+-void (*pm_idle)(void) = default_idle;
+-EXPORT_SYMBOL(pm_idle);
 -
- 		if (!idle)
- 			idle = default_idle;
- 
+ /*
+- * The idle thread, has rather strange semantics for calling pm_idle,
+- * but this is what x86 does and we need to do the same, so that
+- * things like cpuidle get called in the same way.  The only difference
+- * is that we always respect 'hlt_counter' to prevent low power idle.
++ * The idle thread.
++ * We always respect 'hlt_counter' to prevent low power idle.
+  */
+ void cpu_idle(void)
+ {
+@@ -210,10 +205,10 @@ void cpu_idle(void)
+ 			} else if (!need_resched()) {
+ 				stop_critical_timings();
+ 				if (cpuidle_idle_call())
+-					pm_idle();
++					default_idle();
+ 				start_critical_timings();
+ 				/*
+-				 * pm_idle functions must always
++				 * default_idle functions must always
+ 				 * return with IRQs enabled.
+ 				 */
+ 				WARN_ON(irqs_disabled());
 -- 
 1.8.1.3.535.ga923c31
 
