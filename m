@@ -1,116 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755147Ab3BJNpC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Feb 2013 08:45:02 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:36776 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754791Ab3BJNpA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Feb 2013 08:45:00 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Goswin von Brederlow <goswin-v-b@web.de>,
-        Miklos Szeredi <miklos@szeredi.hu>, Li Fei <fei.li@intel.com>,
-        len.brown@intel.com, mingo@redhat.com, peterz@infradead.org,
-        biao.wang@intel.com, linux-pm@vger.kernel.org,
-        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        chuansheng.liu@intel.com
-Subject: Re: Getting rid of freezer for suspend [was Re: [fuse-devel] [PATCH] fuse: make fuse daemon frozen along with kernel threads]
-Date: Sun, 10 Feb 2013 14:51:22 +0100
-Message-ID: <3538583.NDAkGLdQOZ@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc7; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130210103344.GA8888@amd.pavel.ucw.cz>
-References: <1360113112.17267.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC> <1595169.zvx3Wi6SMv@vostro.rjw.lan> <20130210103344.GA8888@amd.pavel.ucw.cz>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1755206Ab3BJN6G (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Feb 2013 08:58:06 -0500
+Received: from mail-da0-f44.google.com ([209.85.210.44]:35693 "EHLO
+	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754961Ab3BJN6F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Feb 2013 08:58:05 -0500
+From: Alexandre Courbot <gnurou@gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, gnurou@gmail.com,
+        Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH] gpiolib: fix link error when sysfs is not built
+Date: Sun, 10 Feb 2013 23:00:21 +0900
+Message-Id: <1360504821-13110-1-git-send-email-gnurou@gmail.com>
+X-Mailer: git-send-email 1.8.1.3
+In-Reply-To: <CACxGe6tAEX7o9dxNTXtwKwzZHmEteKAS+7uy4j-DTX_2V583tg@mail.gmail.com>
+References: <CACxGe6tAEX7o9dxNTXtwKwzZHmEteKAS+7uy4j-DTX_2V583tg@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, February 10, 2013 11:33:45 AM Pavel Machek wrote:
-> Hi!
-> 
-> > > > For shutdown in userspace there is the sendsigs.omit.d/ to avoid the
-> > > > problem of halting/killing processes of the fuse filesystems (or other
-> > > > services) prematurely. I guess something similar needs to be done for
-> > > > freeze. The fuse filesystem has to tell the kernel what is up.
-> > > 
-> > > Would it be feasible to create some kind of fuse-stop-script.sh, and
-> > > run it before suspend (from userspace)? It should be pretty similar to
-> > > sendsigs.omit.d/ mechanism AFAICT.
-> > > 
-> > > I'm sorry, freezer is not too suitable for fuse.
-> > > 
-> > > (BTW: for suspend, we may be able to improve it so that it is possible
-> > > to remove freezer from it. For hibernation, it would be very hard.)
-> > 
-> > Well, this is so incorrect that it's not even funny. :-(
-> > 
-> > The whole memory shrinking we do for hibernation is now done by allocating
-> > memory, so the freezer is not necessary for *that* and there's *zero*
-> > difference between suspend and hibernation with respect to why the freezer is
-> > used.
-> 
-> Funny. Freezer was put there so that hibernation image was safe to
-> write out. You need disk subsystems in workable state for hibernation.
+From: Alexandre Courbot <acourbot@nvidia.com>
 
-I'm not really sure what you're talking about.  Why do you think the freezer is
-necessary for that?
+Fix all compilation errors and warnings triggered by my latest series of
+patch on Grant's linux-next branch. Please meld this patch into the culprit
+one to avoid ending with a commit that breaks compilation in the git history.
 
-> > And *the* reason why it's used is that intercepting all of the possible ways
-> > user space could interfere with the suspend process without the freezer is
-> > simply totally impractical.  System calls (including ioctls and
-> > fctls),
-> 
-> It is a lot of work, agreed. But runtime power management is already
-> moving in that direction.
+Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+---
+ drivers/gpio/gpiolib.c | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
 
-Runtime PM is a different thing.  It works on the "this device is not in use
-right now, so it can be suspended" basis, while the system suspend's principle
-is "I want everything to quiesce now and go low-power".  So system suspend can
-trigger while devices are still in use and there are good reasons for that to
-happen sometimes.
-
-> And I could imagine introducing "big suspend lock" to be grabbed pretty much
-> everywhere.
-
-Sorry, I can't imagine *that*.
-
-> (And IIRC n900 pretty much suspends when idle.)
->
-> > sysfs accesses, /proc accesses, debugfs, to name a few, and mmap (I wonder how
-> > you would handle *that* alone).  And I'm sure there's more I didn't
-> > even
-> 
-> mmap... what is problem with mmap? For suspend, memory is powered, so
-> you can permit people changing it.
-
-Suppose mmap is used to make the registers of some device available to user
-space.  Yes, that can happen.
-
-> > So please don't tell people that something is doable while it practically
-> > realisticly isn't.
-> 
-> I can imagine doing that for suspend, and believe we are moving in
-> that direction with runtime suspend. For hibernation, we need to write
-> image the image to the disk (which is the important difference, not
-> memory shrinking), and "big suspend lock" would interfere with
-> that. I can not imagine reasonable solution for that.
-
-Again, I'm not sure what you're talking about.  Once the image has been
-created, it can be saved while user space is running just fine.
-
-And that "big suspend lock" would be pretty much the same as the BKL that
-people spent quite some time an effort to remove, so I don't think your idea
-to reintroduce something similar just for suspend purposes would be popular.
-
-And since the freezer is now used for other things beyond suspend and
-hibernation, introducing such a lock wouldn't even address the Fuse problem.
-
-Thanks,
-Rafael
-
-
+diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+index b24e820..d283e70 100644
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -1087,6 +1087,27 @@ static inline void gpiochip_unexport(struct gpio_chip *chip)
+ {
+ }
+ 
++static inline int gpiod_export(struct gpio_desc *desc,
++			       bool direction_may_change)
++{
++	return -ENOSYS;
++}
++
++static inline int gpiod_export_link(struct device *dev, const char *name,
++				    struct gpio_desc *desc)
++{
++	return -ENOSYS;
++}
++
++static inline int gpiod_sysfs_set_active_low(struct gpio_desc *desc, int value)
++{
++	return -ENOSYS;
++}
++
++static inline void gpiod_unexport(struct gpio_desc *desc)
++{
++}
++
+ #endif /* CONFIG_GPIO_SYSFS */
+ 
+ /*
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.8.1.3
+
