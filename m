@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756312Ab3BJOrZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Feb 2013 09:47:25 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:40659 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755566Ab3BJOrY (ORCPT
+	id S1755842Ab3BJPB4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Feb 2013 10:01:56 -0500
+Received: from mail-ia0-f171.google.com ([209.85.210.171]:47444 "EHLO
+	mail-ia0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755643Ab3BJPBz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Feb 2013 09:47:24 -0500
-Date: Sun, 10 Feb 2013 09:47:22 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Otavio Salvador <otavio@ossystems.com.br>
-cc: Kernel development list <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Subject: Re: Linux 3.8 broken for MacBookAir5,1
-In-Reply-To: <CAP9ODKr2gomJR6Zrwc41ddhxn3nkFYtTLL-_xhbdRKN=n-A_+w@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1302100946040.29460-100000@netrider.rowland.org>
+	Sun, 10 Feb 2013 10:01:55 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20130210024141.GE25302@quad.lixom.net>
+References: <1360093715-6348-1-git-send-email-linus.walleij@stericsson.com>
+	<1360093715-6348-12-git-send-email-linus.walleij@stericsson.com>
+	<20130210024141.GE25302@quad.lixom.net>
+Date: Sun, 10 Feb 2013 16:01:54 +0100
+Message-ID: <CACRpkdYfG35UUGZZ=N4GQEkEEV_xEK9dhrz3YQ+kS7DaOSOjGA@mail.gmail.com>
+Subject: Re: [PATCH 11/14] ARM: ux500: remove irq_base property from platform_data
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Olof Johansson <olof@lixom.net>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Anmar Oueja <anmar.oueja@linaro.org>, Lee Jones <lee.jones@linaro.org>,
+        arm@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 10 Feb 2013, Otavio Salvador wrote:
+On Sun, Feb 10, 2013 at 3:42 AM, Olof Johansson <olof@lixom.net> wrote:
 
-> Hello,
-> 
-> On Sat, Jan 12, 2013 at 8:41 PM, Otavio Salvador
-> <otavio@ossystems.com.br> wrote:
-> > Today I tried to update my kernel from 3.7.2 to 3.8-rc3 and I had no
-> > success; I used localmodconfig to generate the .config for my machine
-> > but keyboard does not work.
-> >
-> > Using same generated .config with 3.7.2 works fine.
-> >
-> > Anyone has a clue about?
-> 
-> I finally found time to do a bisect and I found:
-> 
-> commit adfa79d1c06a32650332930ca4c488ca570b3407
-> Author: Alan Stern <stern@rowland.harvard.edu>
-> Date:   Thu Nov 1 11:13:04 2012 -0400
-> 
->     USB: EHCI: make ehci-pci a separate driver
-> 
->     This patch (as1625) splits the PCI portion of ehci-hcd out into its
->     own separate driver module, called ehci-pci.  Consistently with the
->     current practice, the decision whether to build this module is not
->     user-configurable.  If EHCI and PCI are enabled then the module will
->     be built, always.
-> 
->     Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
->     CC: Felipe Balbi <balbi@ti.com>
->     Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> 
-> As the problem start.
-> 
-> I do have EHCI and PCI enabled so it should be working. Any clue about
-> why it breaks it?
+> This patch on its own doesn't apply cleanly at all to arm-soc, I'm guessing
+> because I need the rest of the series. With the presumption that you're not
+> going to cause grief from sfr due to excessive conflicts. I.e. please try
+> merging with arm-soc for-next to see how bad it is:
 
-Perhaps your system is not loading the new ehci-pci kernel module.
+OK, there were bad conflicts with two device tree patches.
 
-Alan Stern
+So I'm going to take that stuff out and funnel through ARM SoC
+instead.
 
+I have a number of DT patches from Lee on a queues pull request
+anyway, so I'll just stack these on top of that and then hopefully things
+will fix themselves up.
+
+> patch 11-14:
+> Acked-by: Olof Johansson <olof@lixom.net>
+
+Thanks, I took only 11, 12 into the pinctrl tree. It's better off
+like this.
+
+Yours,
+Linus Walleij
