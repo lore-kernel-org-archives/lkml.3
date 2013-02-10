@@ -1,98 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760981Ab3BJDBX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 22:01:23 -0500
-Received: from ngcobalt07.manitu.net ([217.11.48.107]:41845 "EHLO
-	ngcobalt07.manitu.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756944Ab3BJDBW (ORCPT
+	id S1761000Ab3BJDLY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 22:11:24 -0500
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:46977 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755368Ab3BJDLW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 22:01:22 -0500
-X-manitu-Original-Sender-IP: 127.0.0.1
-X-manitu-Original-Receiver-Name: ngcobalt07.manitu.net
-Date: Sun, 10 Feb 2013 04:00:30 +0100
-From: Roland Eggner <edvx1@systemanalysen.net>
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Cc: linux-kbuild@vger.kernel.org, Dmitry Voytik <dvv.kernel@gmail.com>,
-        Michal Marek <mmarek@suse.cz>, Stephen Boyd <sboyd@codeaurora.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH resend v3 1/3] kconfig: nconf:  rewrite help texts
-Message-ID: <20130210030030.GA20308@mobil.systemanalysen.net>
-Reply-To: Roland Eggner <edvx1@systemanalysen.net>
-Mail-Followup-To: "Yann E. MORIN" <yann.morin.1998@free.fr>,
-	linux-kbuild@vger.kernel.org, Dmitry Voytik <dvv.kernel@gmail.com>,
-	Michal Marek <mmarek@suse.cz>, Stephen Boyd <sboyd@codeaurora.org>,
-	linux-kernel@vger.kernel.org
-References: <20130201182237.GA11098@mobil.systemanalysen.net>
- <201302090130.07194.yann.morin.1998@free.fr>
- <20130209034609.GA8891@mobil.systemanalysen.net>
- <201302091223.36881.yann.morin.1998@free.fr>
+	Sat, 9 Feb 2013 22:11:22 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="opJtzjQTFsWo+cga"
-Content-Disposition: inline
-In-Reply-To: <201302091223.36881.yann.morin.1998@free.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAP9ODKq0jPS9x2LnYc0qTnAB_WeiBDosSohQ-7=uGVDiR0jWtg@mail.gmail.com>
+References: <CAP9ODKq0jPS9x2LnYc0qTnAB_WeiBDosSohQ-7=uGVDiR0jWtg@mail.gmail.com>
+Date: Sun, 10 Feb 2013 01:11:21 -0200
+X-Google-Sender-Auth: cP9uuaeEB1J97uv77tAnf5DDA7g
+Message-ID: <CAP9ODKr2gomJR6Zrwc41ddhxn3nkFYtTLL-_xhbdRKN=n-A_+w@mail.gmail.com>
+Subject: Re: Linux 3.8 broken for MacBookAir5,1
+From: Otavio Salvador <otavio@ossystems.com.br>
+To: Kernel development list <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
---opJtzjQTFsWo+cga
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sat, Jan 12, 2013 at 8:41 PM, Otavio Salvador
+<otavio@ossystems.com.br> wrote:
+> Today I tried to update my kernel from 3.7.2 to 3.8-rc3 and I had no
+> success; I used localmodconfig to generate the .config for my machine
+> but keyboard does not work.
+>
+> Using same generated .config with 3.7.2 works fine.
+>
+> Anyone has a clue about?
 
-On 2013-02-09 Saturday at 12:23 +0100 Yann E. MORIN wrote:
-> Rolland, All,
->=20
-> On Saturday 09 February 2013 Roland Eggner wrote:
-> > On 2013-02-09 Saturday at 01:30 +0100 Yann E. MORIN wrote:
-> [--SNIP--]
-> > > > +"Text Box (Help Window)\n"
-> > > > +"----------------------\n"
-> > > > +"Use movement keys <Down> <Up> <PageDown> <PageUp> <End> <Home> as=
- listed in\n"
-> > > > +"table above.\n"
-> > >=20
-> > > ... keys [elided] as listed ...
-> >=20
-> > Ok, because you are dropping patch 3/3.
->=20
-> If that was related to patch 3/3, that should have been in that patch,
-> not this one.
+I finally found time to do a bisect and I found:
 
-My =E2=80=9COk, because =E2=80=A6=E2=80=9D referred to your =E2=80=9Ckeys [=
-elided] as listed =E2=80=A6=E2=80=9D in that=20
-particular hunk, whereas my =E2=80=9CYou performed a nice polish =E2=80=A6=
-=E2=80=9D several hunks later=20
-referred to the whole patch.  Just to avoid misunderstanding.
+commit adfa79d1c06a32650332930ca4c488ca570b3407
+Author: Alan Stern <stern@rowland.harvard.edu>
+Date:   Thu Nov 1 11:13:04 2012 -0400
 
->=20
-> [--SNIP--]
-> > > Any reason for the re-indent with one more space?
-> >=20
-> > Intention is optimization for fast reading, as usual in professional te=
-xt=20
-> > processing:  seperate words by single space;  separate sentences, half-=
-sentences=20
-> > and listing symbols by two spaces.
->=20
-> OK, I kept it.
+    USB: EHCI: make ehci-pci a separate driver
 
-Thank you.
---=20
-Regards
-Roland Eggner
+    This patch (as1625) splits the PCI portion of ehci-hcd out into its
+    own separate driver module, called ehci-pci.  Consistently with the
+    current practice, the decision whether to build this module is not
+    user-configurable.  If EHCI and PCI are enabled then the module will
+    be built, always.
 
---opJtzjQTFsWo+cga
-Content-Type: application/pgp-signature
+    Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+    CC: Felipe Balbi <balbi@ti.com>
+    Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+As the problem start.
 
-iEYEARECAAYFAlEXDU4ACgkQdN/hKfT7G/JPXACcDPvQnO7eHUg8rBxewWidqslX
-+tIAniiJjXQkdCmdYyHOaUst2W0o2h1E
-=NQB0
------END PGP SIGNATURE-----
+I do have EHCI and PCI enabled so it should be working. Any clue about
+why it breaks it?
 
---opJtzjQTFsWo+cga--
+--
+Otavio Salvador                             O.S. Systems
+E-mail: otavio@ossystems.com.br  http://www.ossystems.com.br
+Mobile: +55 53 9981-7854              http://projetos.ossystems.com.br
