@@ -1,91 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759223Ab3BJSuO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Feb 2013 13:50:14 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:47751 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756010Ab3BJSuL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Feb 2013 13:50:11 -0500
-Date: Sun, 10 Feb 2013 13:50:02 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Stephan Mueller <smueller@chronox.de>
-Cc: Jeff Epler <jepler@unpythonic.net>, linux-crypto@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH] Entropy generator with 100 kB/s throughput
-Message-ID: <20130210185002.GA10801@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Stephan Mueller <smueller@chronox.de>,
-	Jeff Epler <jepler@unpythonic.net>, linux-crypto@vger.kernel.org,
-	lkml <linux-kernel@vger.kernel.org>
-References: <51157686.9000404@chronox.de>
- <20130209180629.GD8091@thunk.org>
- <20130210015751.GA13690@unpythonic.net>
- <5117969A.1080909@chronox.de>
+	id S1759412Ab3BJSzJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Feb 2013 13:55:09 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:44888 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756010Ab3BJSzH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Feb 2013 13:55:07 -0500
+Date: Sun, 10 Feb 2013 19:55:05 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Miklos Szeredi <miklos@szeredi.hu>,
+        Goswin von Brederlow <goswin-v-b@web.de>, Li Fei <fei.li@intel.com>,
+        len.brown@intel.com, mingo@redhat.com, peterz@infradead.org,
+        biao.wang@intel.com, linux-pm@vger.kernel.org,
+        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        chuansheng.liu@intel.com
+Subject: Re: Getting rid of freezer for suspend [was Re: [fuse-devel]
+ [PATCH] fuse: make fuse daemon frozen along with kernel threads]
+Message-ID: <20130210185504.GA17268@amd.pavel.ucw.cz>
+References: <1360113112.17267.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+ <20130210103344.GA8888@amd.pavel.ucw.cz>
+ <3538583.NDAkGLdQOZ@vostro.rjw.lan>
+ <3938124.8eafYb16IB@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5117969A.1080909@chronox.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <3938124.8eafYb16IB@vostro.rjw.lan>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 10, 2013 at 01:46:18PM +0100, Stephan Mueller wrote:
+Hi!
+
+> > > > The whole memory shrinking we do for hibernation is now done by allocating
+> > > > memory, so the freezer is not necessary for *that* and there's *zero*
+> > > > difference between suspend and hibernation with respect to why the freezer is
+> > > > used.
+> > > 
+> > > Funny. Freezer was put there so that hibernation image was safe to
+> > > write out. You need disk subsystems in workable state for hibernation.
+> > 
+> > I'm not really sure what you're talking about.  Why do you think the freezer is
+> > necessary for that?
+
+Well, from freezer you need:
+
+1) user process frozen.
+
+2) essential locks _not_ held so that block devices are still functional.
+
+> > > mmap... what is problem with mmap? For suspend, memory is powered, so
+> > > you can permit people changing it.
+> > 
+> > Suppose mmap is used to make the registers of some device available to user
+> > space.  Yes, that can happen.
+
+"Don't do it, then". Yes, can happen, but hopefully is not too common
+these days. [And... freezer doing 1) but not 2) would be enough to
+handle that. Freezer doing 1) but not 2) would also be simpler...]
+
+> > Again, I'm not sure what you're talking about.  Once the image has been
+> > created, it can be saved while user space is running just fine.
 > 
-> However, the CPU has timing jitter in the execution of instruction. And
-> I try to harvest that jitter. The good thing is that this jitter is
-> always present and can be harvested on demand.
+> Of course, we don't want random changes to be made to persistent storage after
+> the image has been created, because those changes might not be consistent with
+> the memory contents stored in the image, and that's why user space is still
+> frozen when we're saving the image.
 
-How do you know, though, that this is what you are harvesting?
-Depending on the hardware and CPU that you are using, CLOCK_REALTIME
-might be quantized in no more than 4ms intervals.  Even on systems
-with a TSC register, the TSC register has all sorts of effects which
-can limit its granularity, and in fact is generally quantized as a
-multiple of the bus cycles.  Intel states that the quantization
-effects mean that for timing purposes, you can't really accurately
-time anything under 1000 cycles.  So at that point, you're not
-measuring CPU timing jitter, but something else; perhaps the frequency
-beats between the CPU clock and the bus clock.  Also, consider what
-might happen if you are booted on a VM; at that point, I can pretty
-much guarantee that whatever you are measuring, it will almost
-certainly _not_ be from CPU timer jitter.  It may be some very
-hard-to-predict pattern generated from the timing interactions of the
-host OS scheduler and the guest OS's scheduler, but that does _not_
-necessarily mean that there is true randominess which you are getting.
+Yes. That's the reason 1) for freezer.
 
-After all, if I give you a sequence of numbers which is generated by
-encrypting a counter with a secret AES key which only I know, that
-does _not_ mean that you have a strong cryptographic random number
-generator.  If you use that sequence to generate session keys, I will
-be able to break all of your encrypted traffic.  The mere fact that
-the sequence of numbers is one which passes pretty much all RNG tests,
-whether they be FIPS 140, or the BSI tests, or the dieharder tests,
-and just because _you_ can't figure out the pattern, does not mean
-that therefore the sequence is random.
-
-> I am not sure how that applies to the suggested code. The entropy source
-> just generates raw entropy without using a hash. 
-
-And what's your proof that your entropy source really is an entropy
-source?
-
-After all, I can claim that the dice rolls are random based on the
-chaotic air movements influencing how the die spins through the air.
-The fact that there are chaotic air movements isn't the question.  The
-question is whether or not the die is perfectly balanced.  If the die
-is weighted unevenly, the fact that there are all sorts of subtle
-chaotic effects which could be influencing the roll of the dice is
-utterly irrelevant.
-
-Similarly, if the time stamp counter, even though supposedly it is
-giving you granularity measured in nanoseconds, is in fact getting
-granularized somewhere in the hardware in in the thousands of cycles,
-even if there are apparently many digits of precision, does not mean
-that you actually have that many significant digits.
-
-Regards,
-
-						- Ted
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
