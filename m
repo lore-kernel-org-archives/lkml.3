@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761212Ab3BJUUx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Feb 2013 15:20:53 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:49830 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761108Ab3BJUUv (ORCPT
+	id S1761234Ab3BJUWg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Feb 2013 15:22:36 -0500
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:60513 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761188Ab3BJUWd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Feb 2013 15:20:51 -0500
-Message-ID: <51180121.6040803@wwwdotorg.org>
-Date: Sun, 10 Feb 2013 13:20:49 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Sun, 10 Feb 2013 15:22:33 -0500
+Message-ID: <511800FA.1060007@linux.vnet.ibm.com>
+Date: Mon, 11 Feb 2013 01:50:10 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-To: Marc Dietrich <marvin24@gmx.de>
-CC: Hiroshi Doyu <hdoyu@nvidia.com>, linux-tegra@vger.kernel.org,
-        arnd@arndb.de, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] ARM: tegra: Unify tegra{20,30,114}_init_early()
-References: <1360308574-19658-1-git-send-email-hdoyu@nvidia.com> <340098510.UosBEPkrGv@fb07-iapwap2> <51153136.7010705@wwwdotorg.org> <2499199.srlLvkihNZ@ax5200p>
-In-Reply-To: <2499199.srlLvkihNZ@ax5200p>
-X-Enigmail-Version: 1.4.6
+To: Oleg Nesterov <oleg@redhat.com>
+CC: linux-doc@vger.kernel.org, peterz@infradead.org, fweisbec@gmail.com,
+        mingo@kernel.org, linux-arch@vger.kernel.org, linux@arm.linux.org.uk,
+        xiaoguangrong@linux.vnet.ibm.com, wangyun@linux.vnet.ibm.com,
+        paulmck@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, rusty@rustcorp.com.au, rostedt@goodmis.org,
+        rjw@sisk.pl, namhyung@kernel.org, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, sbw@mit.edu, tj@kernel.org,
+        akpm@linux-foundation.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v5 04/45] percpu_rwlock: Implement the core design of
+ Per-CPU Reader-Writer Locks
+References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com> <20130122073347.13822.85876.stgit@srivatsabhat.in.ibm.com> <20130208231017.GK2666@linux.vnet.ibm.com> <5117F0C0.2030605@linux.vnet.ibm.com> <20130210201312.GB6236@redhat.com>
+In-Reply-To: <20130210201312.GB6236@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13021020-6102-0000-0000-000002FAF41D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1On 02/10/2013 10:28 AM, Marc Dietrich wrote:
-> On Friday 08 February 2013 10:09:10 Stephen Warren wrote:
->> On 02/08/2013 05:29 AM, Marc Dietrich wrote:
->>> Hiroshi,
+On 02/11/2013 01:43 AM, Oleg Nesterov wrote:
+> On 02/11, Srivatsa S. Bhat wrote:
+>>
+>> On 02/09/2013 04:40 AM, Paul E. McKenney wrote:
+>>>> +static void announce_writer_inactive(struct percpu_rwlock *pcpu_rwlock)
+>>>> +{
+>>>> +	unsigned int cpu;
+>>>> +
+>>>> +	drop_writer_signal(pcpu_rwlock, smp_processor_id());
 >>>
->>> Am Freitag, 8. Februar 2013, 09:29:31 schrieb Hiroshi Doyu:
->>>> Refactored tegra{20,30,114}_init_early() so that we have the unified
->>>> tegra_init_early().
-...
->>> are these ifdefs really needed? Multisoc kernels will enable them all
->>> anyway and there is a case structure which protects the assignments. Also
->>> the hotplug functions are very tiny, so there shouldn't be a big loss.
+>>> Why do we drop ourselves twice?  More to the point, why is it important to
+>>> drop ourselves first?
+>>>
 >>
->> The files that contain/implement those functions are separate for each
->> SoC and only included in the build when the individual SoCs are enabled.
->>
->> While multi-platform SoCs do make sense for distros, we also very
->> specifically want to support the case where only Tegra, and only a
->> single Tegra SoC, is enabled, hence this separation.
+>> I don't see where we are dropping ourselves twice. Note that we are no longer
+>> in the cpu_online_mask, so the 'for' loop below won't include us. So we need
+>> to manually drop ourselves. It doesn't matter whether we drop ourselves first
+>> or later.
 > 
-> Huh? so tegra_defconfig is not supported?
+> Yes, but this just reflects its usage in cpu-hotplug. cpu goes away under
+> _write_lock.
 > 
-> grep "TEGRA_.*_SOC" tegra_defconfig:
-> 
-> CONFIG_ARCH_TEGRA_2x_SOC=y
-> CONFIG_ARCH_TEGRA_3x_SOC=y
 
-I don't understand the question.
+Ah, right. I guess the code still has remnants from the older version in which
+this locking scheme wasn't generic and was tied to cpu-hotplug alone..
 
-But to be clear. There are now 3 variants of Tegra supported. (Tegra20,
-Tegra30, Tegra114). We want to be able to build a minimal-size kernel
-(e.g. for embedded applications) that supports just one, any combination
-of two, or all three Tegra variants.
+> Perhaps _write_lock/unlock shoud use for_each_possible_cpu() instead?
+> 
+
+Hmm, that wouldn't be too bad.
+
+> Hmm... I think this makes sense anyway. Otherwise, in theory,
+> percpu_write_lock(random_non_hotplug_lock) can race with cpu_up?
+> 
+
+Yeah, makes sense. Will change it to for_each_possible_cpu().
+And I had previously fixed such races with lglocks with a complicated scheme (to
+avoid the costly for_each_possible loop), which was finally rewritten to use
+for_each_possible_cpu() for the sake of simplicity..
+Regards,
+Srivatsa S. Bhat
+
