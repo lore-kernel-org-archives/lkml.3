@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755735Ab3BJLjo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Feb 2013 06:39:44 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:58484 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755362Ab3BJLjj (ORCPT
+	id S1756082Ab3BJLkm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Feb 2013 06:40:42 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:62426 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755606Ab3BJLjo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Feb 2013 06:39:39 -0500
+	Sun, 10 Feb 2013 06:39:44 -0500
 From: sjur.brandeland@stericsson.com
 To: Ido Yariv <ido@wizery.com>, Ohad Ben-Cohen <ohad@wizery.com>
 Cc: linux-kernel@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org,
         Linus Walleij <linus.walleij@linaro.org>,
         Erwan Yvin <erwan.yvin@stericsson.com>, sjur@brendeland.net,
         =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-Subject: [PATCH 6/9] remoteproc: Support virtio config space.
-Date: Sun, 10 Feb 2013 12:39:09 +0100
-Message-Id: <1360496352-29482-7-git-send-email-sjur.brandeland@stericsson.com>
+Subject: [PATCH 8/9] remoteproc: Calculate max_notifyid by counting vrings
+Date: Sun, 10 Feb 2013 12:39:11 +0100
+Message-Id: <1360496352-29482-9-git-send-email-sjur.brandeland@stericsson.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1360496352-29482-1-git-send-email-sjur.brandeland@stericsson.com>
 References: <1360496352-29482-1-git-send-email-sjur.brandeland@stericsson.com>
@@ -29,123 +29,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sjur Brændeland <sjur.brandeland@stericsson.com>
 
-Support virtio configuration space and device status and
-feature negotiation with remote device. This virtio device
-can now access the resource table in shared memory.
+Simplify handling of max_notifyid by simply counting the
+number of vrings.
 
 Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
 ---
- drivers/remoteproc/remoteproc_core.c   |    3 --
- drivers/remoteproc/remoteproc_virtio.c |   38 +++++++++++++++++++++++++++++--
- include/linux/remoteproc.h             |    2 -
- 3 files changed, 35 insertions(+), 8 deletions(-)
+ drivers/remoteproc/remoteproc_core.c |   34 +++++++++++++++++++---------------
+ 1 files changed, 19 insertions(+), 15 deletions(-)
 
 diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
-index c12a385..1bf410d 100644
+index ec9f81e..14f40eb 100644
 --- a/drivers/remoteproc/remoteproc_core.c
 +++ b/drivers/remoteproc/remoteproc_core.c
-@@ -368,9 +368,6 @@ static int rproc_handle_vdev(struct rproc *rproc, struct fw_rsc_vdev *rsc,
- 			goto free_rvdev;
+@@ -226,9 +226,6 @@ int rproc_alloc_vring(struct rproc_vdev *rvdev, int i)
+ 		return ret;
  	}
  
--	/* remember the device features */
--	rvdev->dfeatures = rsc->dfeatures;
+-	/* Store largest notifyid */
+-	rproc->max_notifyid = max(rproc->max_notifyid, notifyid);
 -
- 	/* remember the resource entry */
- 	rvdev->rsc = rsc;
+ 	dev_dbg(dev, "vring%d: va %p dma %llx size %x idr %d\n", i, va,
+ 				(unsigned long long)dma, size, notifyid);
  
-diff --git a/drivers/remoteproc/remoteproc_virtio.c b/drivers/remoteproc/remoteproc_virtio.c
-index 9e198e5..d98cdd8 100644
---- a/drivers/remoteproc/remoteproc_virtio.c
-+++ b/drivers/remoteproc/remoteproc_virtio.c
-@@ -182,16 +182,21 @@ error:
-  */
- static u8 rproc_virtio_get_status(struct virtio_device *vdev)
- {
+@@ -278,25 +275,13 @@ rproc_parse_vring(struct rproc_vdev *rvdev, struct fw_rsc_vdev *rsc, int i)
+ 	return 0;
+ }
+ 
+-static int rproc_max_notifyid(int id, void *p, void *data)
+-{
+-	int *maxid = data;
+-	*maxid = max(*maxid, id);
 -	return 0;
-+	struct rproc_vdev *rvdev = vdev_to_rvdev(vdev);
-+	return rvdev->rsc->status;
- }
- 
- static void rproc_virtio_set_status(struct virtio_device *vdev, u8 status)
+-}
+-
+ void rproc_free_vring(struct rproc_vring *rvring)
  {
-+	struct rproc_vdev *rvdev = vdev_to_rvdev(vdev);
-+	rvdev->rsc->status = status;
- 	dev_dbg(&vdev->dev, "status: %d\n", status);
+ 	int size = PAGE_ALIGN(vring_size(rvring->len, rvring->align));
+ 	struct rproc *rproc = rvring->rvdev->rproc;
+-	int maxid = 0;
+ 
+ 	dma_free_coherent(rproc->dev.parent, size, rvring->va, rvring->dma);
+ 	idr_remove(&rproc->notifyids, rvring->notifyid);
+-
+-	/* Find the largest remaining notifyid */
+-	idr_for_each(&rproc->notifyids, rproc_max_notifyid, &maxid);
+-	rproc->max_notifyid = maxid;
  }
  
- static void rproc_virtio_reset(struct virtio_device *vdev)
- {
-+	struct rproc_vdev *rvdev = vdev_to_rvdev(vdev);
-+	rvdev->rsc->status = 0;
- 	dev_dbg(&vdev->dev, "reset !\n");
+ /**
+@@ -679,6 +664,15 @@ free_carv:
+ 	return ret;
  }
  
-@@ -200,7 +205,7 @@ static u32 rproc_virtio_get_features(struct virtio_device *vdev)
- {
- 	struct rproc_vdev *rvdev = vdev_to_rvdev(vdev);
- 
--	return rvdev->dfeatures;
-+	return rvdev->rsc->dfeatures;
- }
- 
- static void rproc_virtio_finalize_features(struct virtio_device *vdev)
-@@ -219,7 +224,31 @@ static void rproc_virtio_finalize_features(struct virtio_device *vdev)
- 	 * fixed as part of a small resource table overhaul and then an
- 	 * extension of the virtio resource entries.
- 	 */
--	rvdev->gfeatures = vdev->features[0];
-+	rvdev->rsc->gfeatures = vdev->features[0];
++static int rproc_handle_notifyid(struct rproc *rproc, struct fw_rsc_vdev *rsc,
++								int avail)
++{
++	/* Summerize the number of notification IDs */
++	rproc->max_notifyid += rsc->num_of_vrings;
++
++	return 0;
 +}
 +
-+void rproc_virtio_get(struct virtio_device *vdev, unsigned offset,
-+							void *buf, unsigned len)
-+{
-+	struct rproc_vdev *rvdev = vdev_to_rvdev(vdev);
-+	void *cfg = &rvdev->rsc->vring[rvdev->rsc->num_of_vrings];
-+	if (offset + len > rvdev->rsc->config_len)
-+		dev_err(&vdev->dev,
-+			"rproc_virtio_get: access out of bounds\n");
-+	else
-+		memcpy(buf, cfg + offset, len);
-+}
-+
-+void rproc_virtio_set(struct virtio_device *vdev, unsigned offset,
-+		      const void *buf, unsigned len)
-+{
-+	struct rproc_vdev *rvdev = vdev_to_rvdev(vdev);
-+	void *cfg = &rvdev->rsc->vring[rvdev->rsc->num_of_vrings];
-+	if (offset + len > rvdev->rsc->config_len)
-+		dev_err(&vdev->dev,
-+			"rproc_virtio_set: access out of bounds\n");
-+	else
-+		memcpy(cfg + offset, buf, len);
- }
- 
- static struct virtio_config_ops rproc_virtio_config_ops = {
-@@ -230,6 +259,9 @@ static struct virtio_config_ops rproc_virtio_config_ops = {
- 	.reset		= rproc_virtio_reset,
- 	.set_status	= rproc_virtio_set_status,
- 	.get_status	= rproc_virtio_get_status,
-+	.get		= rproc_virtio_get,
-+	.set		= rproc_virtio_set,
-+
- };
- 
  /*
-diff --git a/include/linux/remoteproc.h b/include/linux/remoteproc.h
-index cdacd66..c0c363c 100644
---- a/include/linux/remoteproc.h
-+++ b/include/linux/remoteproc.h
-@@ -471,8 +471,6 @@ struct rproc_vdev {
- 	struct rproc *rproc;
- 	struct virtio_device vdev;
- 	struct rproc_vring vring[RVDEV_NUM_VRINGS];
--	unsigned long dfeatures;
--	unsigned long gfeatures;
- 	struct fw_rsc_vdev *rsc;
+  * A lookup table for resource handlers. The indices are defined in
+  * enum fw_resource_type.
+@@ -694,6 +688,10 @@ static rproc_handle_resource_t rproc_handle_vdev_rsc[RSC_LAST] = {
+ 	[RSC_VDEV] = (rproc_handle_resource_t)rproc_handle_vdev,
  };
  
++static rproc_handle_resource_t rproc_handle_notifyid_rsc[RSC_LAST] = {
++	[RSC_VDEV] = (rproc_handle_resource_t)rproc_handle_notifyid,
++};
++
+ /* handle firmware resource entries before booting the remote processor */
+ static int
+ rproc_handle_resource(struct rproc *rproc, struct resource_table *table,
+@@ -868,6 +866,12 @@ static void rproc_fw_config_virtio(const struct firmware *fw, void *context)
+ 	if (!table)
+ 		goto out;
+ 
++	rproc->max_notifyid = 0;
++
++	/* count the numbe of notify-ids */
++	ret = rproc_handle_resource(rproc, table, tablesz,
++						rproc_handle_notifyid_rsc);
++
+ 	/* look for virtio devices and register them */
+ 	ret = rproc_handle_resource(rproc, table, tablesz,
+ 						rproc_handle_vdev_rsc);
 -- 
 1.7.5.4
 
