@@ -1,298 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754850Ab3BJLF2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Feb 2013 06:05:28 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:47380 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754669Ab3BJLFN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Feb 2013 06:05:13 -0500
-From: sjur.brandeland@stericsson.com
-To: Rusty Russell <rusty@rustcorp.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ohad Ben-Cohen <ohad@wizery.com>
-Cc: sjur@brendeland.net, netdev@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        Dmitry Tarnyagin <dmitry.tarnyagin@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Erwan Yvin <erwan.yvin@stericsson.com>,
-        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>,
-        Ido Yariv <ido@wizery.com>
-Subject: [PATCH vringh 1/2] remoteproc: Add support for vringh (Host vrings)
-Date: Sun, 10 Feb 2013 12:04:32 +0100
-Message-Id: <1360494273-27889-2-git-send-email-sjur.brandeland@stericsson.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1360494273-27889-1-git-send-email-sjur.brandeland@stericsson.com>
-References: <1360494273-27889-1-git-send-email-sjur.brandeland@stericsson.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1754649Ab3BJLQk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Feb 2013 06:16:40 -0500
+Received: from smtp206.alice.it ([82.57.200.102]:48286 "EHLO smtp206.alice.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754126Ab3BJLQh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Feb 2013 06:16:37 -0500
+Date: Sun, 10 Feb 2013 12:16:25 +0100
+From: Antonio Ospite <ospite@studenti.unina.it>
+To: bskeggs@redhat.com
+Cc: dri-devel@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
+        linux-kernel@vger.kernel.org
+Subject: Re: nouveau, linux3.8-rc5:  BUG: unable to handle kernel paging
+ request at fffffffffffffff8
+Message-Id: <20130210121625.219deeae511e4310286b9d8f@studenti.unina.it>
+In-Reply-To: <1359200447.29660.0.camel@turiel>
+References: <20130126115318.24f2e6aec77d046e6fef67ce@studenti.unina.it>
+	<1359200447.29660.0.camel@turiel>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
+ ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sjur Brændeland <sjur.brandeland@stericsson.com>
+On Sat, 26 Jan 2013 21:40:47 +1000
+Ben Skeggs <bskeggs@redhat.com> wrote:
 
-Add functions for creating, deleting and kicking host-side virtio rings.
+> On Sat, 2013-01-26 at 11:53 +0100, Antonio Ospite wrote:
+> > Hi,
+> > 
+> > I am experiencing a bug with nouveau with linux-3.8-rc5, my video
+> > adapter is the one integrated on the MSI M3N78-VM motherboard (hence
+> > x86_64):
+> > 
+> > 02:00.0 VGA compatible controller: NVIDIA Corporation C77 [GeForce 8200] (rev a2) (prog-if 00 [VGA controller])
+> >         Subsystem: ASUSTeK Computer Inc. Device 82f2
+> >         Flags: bus master, fast devsel, latency 0, IRQ 21
+> >         Memory at fd000000 (32-bit, non-prefetchable) [size=16M]
+> >         Memory at f0000000 (64-bit, prefetchable) [size=128M]
+> >         Memory at fa000000 (64-bit, prefetchable) [size=32M]
+> >         I/O ports at ec00 [size=128]
+> >         Expansion ROM at febe0000 [disabled] [size=128K]
+> >         Capabilities: <access denied>
+> >         Kernel driver in use: nouveau
+> > 
+> > The problem happens every time I use some 3D feature, for instance the
+> > trace below is from after I started "blender":
+> > 
+> > 
+> > [ 6163.299538] BUG: unable to handle kernel paging request at fffffffffffffff8
+> > [ 6163.299600] IP: [<ffffffffa02cff32>] nouveau_mm_head+0x30/0x127 [nouveau]
+>
+> It's a known issue, and the fix will be in my next -fixes merge request.
+> 
+> Ben.
 
-The host ring is not integrated with virtiqueues and cannot be managed
-through virtio-config. Remoteproc must export functions for handling the
-host-side virtio rings.
+Hi Ben, the problem is still there in 3.8-rc7.
 
-The functions rproc_virtio_get_vringh(), rproc_virtio_del_vringh(),
-rproc_virtio_kick_vringh() are added to remoteproc_virtio.c. The
-existing functions rproc_vq_interrupt() and rproc_virtio_find_vqs()
-are updated to handle the new vhost rings.
-
-Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
-cc: Ohad Ben-Cohen <ohad@wizery.com>
-cc: Rusty Russell <rusty@rustcorp.com.au>
-cc: Ido Yariv <ido@wizery.com>
-cc: Erwan Yvin <erwan.yvin@stericsson.com>
-
----
-Hi Ohad,
-
-I would really appreciate if you could find time to
-review this patch. It will go via Rusty's vringh tree.
-
-Feedback and review comments are welcomed.
-
-Thanks,
-Sjur
-
-
- drivers/remoteproc/Kconfig             |    3 +
- drivers/remoteproc/remoteproc_virtio.c |  127 ++++++++++++++++++++++++++++++--
- include/linux/remoteproc.h             |   14 ++++
- 3 files changed, 137 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/remoteproc/Kconfig b/drivers/remoteproc/Kconfig
-index 96ce101..c7d1d36 100644
---- a/drivers/remoteproc/Kconfig
-+++ b/drivers/remoteproc/Kconfig
-@@ -7,6 +7,9 @@ config REMOTEPROC
- 	depends on HAS_DMA
- 	select FW_CONFIG
- 	select VIRTIO
-+	select VHOST_RING
-+
-+source drivers/vhost/Kconfig
+Regards,
+   Antonio
  
- config OMAP_REMOTEPROC
- 	tristate "OMAP remoteproc support"
-diff --git a/drivers/remoteproc/remoteproc_virtio.c b/drivers/remoteproc/remoteproc_virtio.c
-index 9e198e5..fa7bf7b 100644
---- a/drivers/remoteproc/remoteproc_virtio.c
-+++ b/drivers/remoteproc/remoteproc_virtio.c
-@@ -23,6 +23,7 @@
- #include <linux/virtio_config.h>
- #include <linux/virtio_ids.h>
- #include <linux/virtio_ring.h>
-+#include <linux/vringh.h>
- #include <linux/err.h>
- #include <linux/kref.h>
- #include <linux/slab.h>
-@@ -60,10 +61,15 @@ irqreturn_t rproc_vq_interrupt(struct rproc *rproc, int notifyid)
- 	dev_dbg(&rproc->dev, "vq index %d is interrupted\n", notifyid);
- 
- 	rvring = idr_find(&rproc->notifyids, notifyid);
--	if (!rvring || !rvring->vq)
-+	if (!rvring)
- 		return IRQ_NONE;
- 
--	return vring_interrupt(0, rvring->vq);
-+	if (rvring->vringh && rvring->vringh_cb)
-+		return rvring->vringh_cb(&rvring->rvdev->vdev, rvring->vringh);
-+	else if (rvring->vq)
-+		return vring_interrupt(0, rvring->vq);
-+	else
-+		return IRQ_NONE;
- }
- EXPORT_SYMBOL(rproc_vq_interrupt);
- 
-@@ -149,14 +155,21 @@ static int rproc_virtio_find_vqs(struct virtio_device *vdev, unsigned nvqs,
- 		       const char *names[])
- {
- 	struct rproc *rproc = vdev_to_rproc(vdev);
--	int i, ret;
-+	struct rproc_vdev *rvdev = vdev_to_rvdev(vdev);
-+	int rng, id, ret, nrings = ARRAY_SIZE(rvdev->vring);
-+
-+	for (id = 0, rng = 0; rng < nrings; ++rng) {
-+		struct rproc_vring *rvring = &rvdev->vring[rng];
-+		/* Skip the host side rings */
-+		if (rvring->vringh)
-+			continue;
- 
--	for (i = 0; i < nvqs; ++i) {
--		vqs[i] = rp_find_vq(vdev, i, callbacks[i], names[i]);
--		if (IS_ERR(vqs[i])) {
--			ret = PTR_ERR(vqs[i]);
-+		vqs[id] = rp_find_vq(vdev, rng, callbacks[id], names[id]);
-+		if (IS_ERR(vqs[id])) {
-+			ret = PTR_ERR(vqs[id]);
- 			goto error;
- 		}
-+		++id;
- 	}
- 
- 	/* now that the vqs are all set, boot the remote processor */
-@@ -173,6 +186,106 @@ error:
- 	return ret;
- }
- 
-+/**
-+ * rproc_virtio_new_vringh() - create a reversed virtio ring.
-+ * @vdev: the virtio device
-+ * @index: the virtio ring index
-+ * @cb: callback for the reversed virtio ring
-+ *
-+ * This function should be called by the virtio-driver
-+ * before calling find_vqs(). It returns a struct vringh for
-+ * accessing the virtio ring.
-+ *
-+ * Return: struct vhost, or NULL upon error.
-+ */
-+struct vringh *
-+rproc_virtio_new_vringh(struct virtio_device *vdev, unsigned index,
-+			irqreturn_t (*cb)(struct virtio_device *vdev,
-+					  struct vringh *vring))
-+{
-+	struct rproc_vdev *rvdev = vdev_to_rvdev(vdev);
-+	struct rproc_vring *rvring;
-+	struct vringh *vrh;
-+	int err;
-+
-+	if (index > ARRAY_SIZE(rvdev->vring)) {
-+		dev_err(&rvdev->vdev.dev, "bad vring index: %d\n", index);
-+		return NULL;
-+	}
-+
-+	vrh = kzalloc(sizeof(*vrh), GFP_KERNEL);
-+	if (!vrh)
-+		return NULL;
-+
-+	err = rproc_alloc_vring(rvdev, index);
-+	if (err)
-+		goto free_vring;
-+
-+
-+	rvring = &rvdev->vring[index];
-+	/* zero vring */
-+	memset(rvring->va, 0, vring_size(rvring->len, rvring->align));
-+	vring_init(&vrh->vring, rvring->len, rvring->va, rvring->align);
-+
-+	rvring->vringh_cb = cb;
-+	rvring->vringh = vrh;
-+
-+	err = vringh_init_kern(vrh,
-+			       rvdev->dfeatures,
-+			       rvring->len,
-+			       false,
-+			       vrh->vring.desc,
-+			       vrh->vring.avail,
-+			       vrh->vring.used);
-+	if (!err)
-+		return vrh;
-+
-+	dev_err(&vdev->dev, "failed to create vhost: %d\n", err);
-+	rproc_free_vring(rvring);
-+free_vring:
-+	kfree(vrh);
-+	return NULL;
-+}
-+EXPORT_SYMBOL(rproc_virtio_new_vringh);
-+
-+/**
-+ * rproc_virtio_del_vringh() - release a reversed virtio ring.
-+ * @vdev: the virtio device
-+ * @index: the virtio ring index
-+ *
-+ * This function release the reversed virtio ring.
-+ */
-+void rproc_virtio_del_vringh(struct virtio_device *vdev, unsigned index)
-+{
-+	struct rproc_vdev *rvdev = vdev_to_rvdev(vdev);
-+	struct rproc_vring *rvring = &rvdev->vring[index];
-+	kfree(rvring->vringh);
-+	rproc_free_vring(rvring);
-+	rvring->vringh_cb = NULL;
-+	rvring->vringh = NULL;
-+}
-+EXPORT_SYMBOL(rproc_virtio_del_vringh);
-+
-+/**
-+ * rproc_virtio_kick_vringh() - kick the remote processor.
-+ * @vdev: the virtio device
-+ * @index: the virtio ring index
-+ *
-+ * kick the remote processor, and let it know which vring to poke at
-+ */
-+void rproc_virtio_kick_vringh(struct virtio_device *vdev, unsigned index)
-+{
-+	struct rproc_vdev *rvdev = vdev_to_rvdev(vdev);
-+	struct rproc_vring *rvring = &rvdev->vring[index];
-+	struct rproc *rproc = rvring->rvdev->rproc;
-+	int notifyid = rvring->notifyid;
-+
-+	dev_dbg(&rproc->dev, "kicking vq index: %d\n", notifyid);
-+
-+	rproc->ops->kick(rproc, notifyid);
-+}
-+EXPORT_SYMBOL(rproc_virtio_kick_vringh);
-+
- /*
-  * We don't support yet real virtio status semantics.
-  *
-diff --git a/include/linux/remoteproc.h b/include/linux/remoteproc.h
-index faf3332..414a1fd 100644
---- a/include/linux/remoteproc.h
-+++ b/include/linux/remoteproc.h
-@@ -39,7 +39,9 @@
- #include <linux/klist.h>
- #include <linux/mutex.h>
- #include <linux/virtio.h>
-+#include <linux/vringh.h>
- #include <linux/completion.h>
-+#include <linux/interrupt.h>
- #include <linux/idr.h>
- 
- /**
-@@ -444,6 +446,8 @@ struct rproc {
-  * @notifyid: rproc-specific unique vring index
-  * @rvdev: remote vdev
-  * @vq: the virtqueue of this vring
-+ * @vringh_cb: callback used when device has kicked
-+ * @vringh: the reversed host-side vring
-  */
- struct rproc_vring {
- 	void *va;
-@@ -454,6 +458,9 @@ struct rproc_vring {
- 	int notifyid;
- 	struct rproc_vdev *rvdev;
- 	struct virtqueue *vq;
-+	irqreturn_t (*vringh_cb)(struct virtio_device *vdev,
-+				 struct vringh *vring);
-+	struct vringh *vringh;
- };
- 
- /**
-@@ -485,6 +492,13 @@ int rproc_boot(struct rproc *rproc);
- void rproc_shutdown(struct rproc *rproc);
- void rproc_report_crash(struct rproc *rproc, enum rproc_crash_type type);
- 
-+struct vringh *
-+rproc_virtio_new_vringh(struct virtio_device *vdev, unsigned index,
-+			irqreturn_t (*cb)(struct virtio_device *vdev,
-+					  struct vringh *vring));
-+void rproc_virtio_del_vringh(struct virtio_device *vdev, unsigned index);
-+void rproc_virtio_kick_vringh(struct virtio_device *vdev, unsigned index);
-+
- static inline struct rproc_vdev *vdev_to_rvdev(struct virtio_device *vdev)
- {
- 	return container_of(vdev, struct rproc_vdev, vdev);
+> > [ 6163.299714] PGD 160e067 PUD 160f067 PMD 0 
+> > [ 6163.299739] Oops: 0000 [#1] SMP 
+> > [ 6163.299757] Modules linked in: hidp ebtable_nat ebtables cpufreq_powersave cpufreq_conservative cpufreq_stats cpufreq_userspace ipt_MASQUERADE xt_CHECKSUM bridge stp llc ppdev lp bnep rfcomm tun sit tunnel4 binfmt_misc uinput ib_iser rdma_cm ib_addr iw_cm ib_cm ib_sa ib_mad ib_core iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi ip6table_raw ip6table_mangle ip6t_REJECT xt_LOG nf_conntrack_ipv6 nf_defrag_ipv6 ip6t_rt ip6table_filter ip6_tables xt_tcpudp ipt_REJECT ipt_ULOG xt_limit xt_multiport xt_conntrack iptable_filter iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack iptable_mangle iptable_raw ip_tables x_tables loop fuse snd_hda_codec_hdmi snd_hda_codec_via lm63 adm1021 snd_hda_intel snd_hda_codec snd_usb_audio snd_usbmidi_lib snd_hwdep lm90 snd_pcm_oss snd_mixer_oss f75375s snd_seq_midi snd_pcm snd_seq_midi_event snd_rawmidi snd_seq snd_page_alloc snd_seq_device adt7475 hwmon_vid snd_timer btusb snd nouveau bluetooth ttm drm_kms_help!
+>  er!
+> >   drm mx
+> > m_wmi powernow_k8 i2c_algo_bit edac_mce_amd edac_core parport_pc shpchp kvm_amd soundcore rfkill crc16 kvm evdev pcspkr parport ehci_pci k8temp video asus_atk0110 wmi processor thermal_sys i2c_nforce2 i2c_core button ext3 mbcache jbd sg sr_mod cdrom usb_storage hid_generic usbhid hid sd_mod crc_t10dif dm_mod ahci libahci libata ohci_hcd ehci_hcd forcedeth scsi_mod usbcore usb_common floppy
+> > [ 6163.300023] CPU 0 
+> > [ 6163.300023] Pid: 3460, comm: Xorg Not tainted 3.8.0-rc5-ao2 #6 System manufacturer System Product Name/M3N78-VM
+> > [ 6163.300023] RIP: 0010:[<ffffffffa02cff32>]  [<ffffffffa02cff32>] nouveau_mm_head+0x30/0x127 [nouveau]
+> > [ 6163.300023] RSP: 0018:ffff8801167eb9c8  EFLAGS: 00010216
+> > [ 6163.300023] RAX: 00000000ffffffff RBX: fffffffffffffff0 RCX: 000000000000006c
+> > [ 6163.300023] RDX: 000000000000006c RSI: 0000000000000001 RDI: ffff8801167e6108
+> > [ 6163.300023] RBP: ffff8800bb334d78 R08: 0000000000000000 R09: ffff8800bb334d78
+> > [ 6163.300023] R10: 0000000000000360 R11: ffff8800bb334cc0 R12: 000000000000006c
+> > [ 6163.300023] R13: ffff8801167e6001 R14: ffff8801167e6020 R15: ffff8801167eba90
+> > [ 6163.300023] FS:  00007f23f04c2880(0000) GS:ffff88011fc00000(0000) knlGS:0000000000000000
+> > [ 6163.300023] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> > [ 6163.300023] CR2: fffffffffffffff8 CR3: 00000001194d6000 CR4: 00000000000007f0
+> > [ 6163.300023] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> > [ 6163.300023] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> > [ 6163.300023] Process Xorg (pid: 3460, threadinfo ffff8801167ea000, task ffff88011770a7c0)
+> > [ 6163.300023] Stack:
+> > [ 6163.300023]  00000000000080d0 ffffffff167e6020 0000000000000002 0000000000000360
+> > [ 6163.300023]  0000000000000002 0000000000000010 ffff8801167e6000 ffff8801167e6020
+> > [ 6163.300023]  ffff8801167eba90 ffffffffa02e19be ffff8801167ebb00 00000360ffffe000
+> > [ 6163.300023] Call Trace:
+> > [ 6163.300023]  [<ffffffffa02e19be>] ? nv50_fb_vram_new+0xc5/0x1f2 [nouveau]
+> > [ 6163.300023]  [<ffffffffa0324e3a>] ? nouveau_vram_manager_new+0x62/0xa4 [nouveau]
+> > [ 6163.300023]  [<ffffffffa029fc6a>] ? ttm_bo_mem_space+0x113/0x301 [ttm]
+> > [ 6163.300023]  [<ffffffff81383c00>] ? _raw_write_lock_irqsave+0x19/0x2a
+> > [ 6163.300023]  [<ffffffff8110b000>] ? create_object+0x1e9/0x299
+> > [ 6163.300023]  [<ffffffffa029feef>] ? ttm_bo_move_buffer+0x97/0xdd [ttm]
+> > [ 6163.300023]  [<ffffffffa029ffd4>] ? ttm_bo_validate+0x9f/0xdd [ttm]
+> > [ 6163.300023]  [<ffffffffa02a0353>] ? ttm_bo_init+0x341/0x37d [ttm]
+> > [ 6163.300023]  [<ffffffffa0326663>] ? nouveau_bo_new+0x239/0x25e [nouveau]
+> > [ 6163.300023]  [<ffffffffa032629d>] ? nouveau_ttm_tt_unpopulate+0xa3/0xa3 [nouveau]
+> > [ 6163.300023]  [<ffffffff811c796b>] ? idr_get_empty_slot+0x18a/0x292
+> > [ 6163.300023]  [<ffffffffa0327d92>] ? nouveau_gem_new+0x53/0xf7 [nouveau]
+> > [ 6163.300023]  [<ffffffffa0327ed5>] ? nouveau_gem_ioctl_new+0x9f/0x107 [nouveau]
+> > [ 6163.300023]  [<ffffffffa02700ea>] ? drm_gem_flink_ioctl+0xc1/0xde [drm]
+> > [ 6163.300023]  [<ffffffffa026e603>] ? drm_ioctl+0x28c/0x36a [drm]
+> > [ 6163.300023]  [<ffffffffa0327e36>] ? nouveau_gem_new+0xf7/0xf7 [nouveau]
+> > [ 6163.300023]  [<ffffffff8111949e>] ? vfs_ioctl+0x1e/0x31
+> > [ 6163.300023]  [<ffffffff81119cd6>] ? do_vfs_ioctl+0x3ee/0x430
+> > [ 6163.300023]  [<ffffffff8110cf1c>] ? vfs_read+0xac/0xf5
+> > [ 6163.300023]  [<ffffffff81119d65>] ? sys_ioctl+0x4d/0x7c
+> > [ 6163.300023]  [<ffffffff81388f29>] ? system_call_fastpath+0x16/0x1b
+> > [ 6163.300023] Code: 44 89 c0 41 56 f7 d0 41 55 41 88 f5 41 54 41 89 d4 55 4c 89 cd 53 48 83 ec 18 48 8b 5f 10 89 44 24 0c 48 83 eb 10 e9 da 00 00 00 <48> 8b 43 08 44 8b 53 34 44 8b 7b 38 48 39 f8 45 89 d3 47 8d 0c 
+> > [ 6163.300023] RIP  [<ffffffffa02cff32>] nouveau_mm_head+0x30/0x127 [nouveau]
+> > [ 6163.300023]  RSP <ffff8801167eb9c8>
+> > [ 6163.300023] CR2: fffffffffffffff8
+> > [ 6163.300023] ---[ end trace b0239eaa41f9b476 ]---
+> > [ 6165.326199] nouveau E[   PDISP][0000:02:00.0] chid 1 mthd 0x0080 data 0x00000000 0x000b5080
+> > 
+> > 
+> > I had a similar issue in 3.7-rc cycle, here is a link to the discussion
+> > https://lkml.org/lkml/2012/10/29/696 where David explained the cause,
+> > I am not sure if this is the same scenario tho.
+> > 
+
 -- 
-1.7.5.4
+Antonio Ospite
+http://ao2.it
 
+A: Because it messes up the order in which people normally read text.
+   See http://en.wikipedia.org/wiki/Posting_style
+Q: Why is top-posting such a bad thing?
