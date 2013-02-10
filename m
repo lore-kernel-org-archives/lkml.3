@@ -1,44 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755285Ab3BJOF5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Feb 2013 09:05:57 -0500
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:56603 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754998Ab3BJOF4 (ORCPT
+	id S1755332Ab3BJOKR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Feb 2013 09:10:17 -0500
+Received: from mail-la0-f42.google.com ([209.85.215.42]:56025 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754998Ab3BJOKP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Feb 2013 09:05:56 -0500
-Date: Sun, 10 Feb 2013 15:05:54 +0100
-From: Andreas Mohr <andi@lisas.de>
-To: Andreas Mohr <andi@lisas.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-usb@vger.kernel.org
-Subject: Re: [REGRESSION] -rc7/-rc4+: unable to USB boot - enumeration
- partially broken (was: Linux v3.8-rc7)
-Message-ID: <20130210140554.GA5299@rhlx01.hs-esslingen.de>
-References: <CA+55aFz50VvnMjoDCbg01N+rMu5vscu88kr0SV3tWLjaiL0TeA@mail.gmail.com>
- <20130210001442.GA5744@rhlx01.hs-esslingen.de>
+	Sun, 10 Feb 2013 09:10:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130210001442.GA5744@rhlx01.hs-esslingen.de>
-X-Priority: none
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1359714465-6297-3-git-send-email-zhong@linux.vnet.ibm.com>
+References: <1359714465-6297-1-git-send-email-zhong@linux.vnet.ibm.com>
+	<1359714465-6297-3-git-send-email-zhong@linux.vnet.ibm.com>
+Date: Sun, 10 Feb 2013 15:10:13 +0100
+Message-ID: <CAFTL4hzfXfCGDjwjW=Frcs5+jS_i3U_JHytNOEhEF5X7_Fw6Sg@mail.gmail.com>
+Subject: Re: [RFC PATCH 2/5] powerpc: Exception hooks for context tracking subsystem
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Li Zhong <zhong@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        paulmck@linux.vnet.ibm.com, benh@kernel.crashing.org, paulus@samba.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+2013/2/1 Li Zhong <zhong@linux.vnet.ibm.com>:
+> This is the exception hooks for context tracking subsystem, including
+> data access, program check, single step, instruction breakpoint, machine check,
+> alignment, fp unavailable, altivec assist, unknown exception, whose handlers
+> might use RCU.
+>
+> This patch corresponds to
+> [PATCH] x86: Exception hooks for userspace RCU extended QS
+>   commit 6ba3c97a38803883c2eee489505796cb0a727122
+>
+> Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
 
-On Sun, Feb 10, 2013 at 01:14:42AM +0100, Andreas Mohr wrote:
-> After the reinstall I tried to get a current -rc (-rc4+) working.
-> To my surprise initramfs USB boot failed, completely.
-> (the tell-tale sign that it likely is a regression was that the same 3.7.0
-> kernel that had been working previously, built via make oldconfig of
-> the **-rc** .config and with identical commands as -rc - using make install -
-> was then again found to be booting fine!)
+Looks good!
 
-Regression sorta confirmed now. -rc3 with a fully suitable .config does
-not boot either. Will start bisection. Will take ages.
+I guess we should move exception_enter/exit definition to the generic
+code. They should be the same for all archs after all. Also we are
+relying on user_mode(regs) but this may be buggy with some corner
+cases. For example if an exception happen after a call to user_exit()
+(on syscall exit) but before we actually resume in userspace, the
+exception will exit in kernel mode from the context tracking POV.
 
-Andreas Mohr
+So instead on relying on the regs, which are not sync with the context
+tracking state, we should use something like:
+
+prev_state = exception_enter();
+...
+exception_exit(prev_state);
+
+Also preempt_schedule_irq() is concerned as well by this problem. So I
+should convert it to that scheme as well. I'm going to prepare some
+patches.
+
+Feel free to merge this patch in the powerpc tree, I'll do the
+conversion along the way.
+
+Thanks.
