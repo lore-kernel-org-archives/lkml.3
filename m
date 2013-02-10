@@ -1,137 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754176Ab3BJKIx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Feb 2013 05:08:53 -0500
-Received: from relay.parallels.com ([195.214.232.42]:52429 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751708Ab3BJKIw (ORCPT
+	id S1753835Ab3BJKPn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Feb 2013 05:15:43 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:41654 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751426Ab3BJKPm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Feb 2013 05:08:52 -0500
-Date: Sun, 10 Feb 2013 14:07:24 +0400
-From: Andrew Vagin <avagin@parallels.com>
-To: Oleg Nesterov <oleg@redhat.com>
-CC: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        David Howells <dhowells@redhat.com>,
-        Pavel Emelyanov <xemul@parallels.com>, <linux-api@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <criu@openvz.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>, Andrey Wagin <avagin@gmail.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        <linux-fsdevel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [CRIU] [PATCH 3/3] signalfd: add ability to read siginfo-s
- without	dequeuing signals (v2)
-Message-ID: <20130210100724.GB15978@paralelels.com>
-References: <1358849741-9611-4-git-send-email-avagin@openvz.org>
- <1359486181-29088-1-git-send-email-avagin@openvz.org>
- <20130207173447.GA5888@redhat.com>
- <CANaxB-xmSiPfbUAh+rQSgVxBzTXmVQcC7U741WYKaasG3_yc5w@mail.gmail.com>
- <20130208191056.GA13674@redhat.com>
- <CAKgNAki0xt_wwixp7kdv04fKOCtCh-ObQjkFE9PiX6FapkO34A@mail.gmail.com>
- <20130209182239.GA9947@redhat.com>
+	Sun, 10 Feb 2013 05:15:42 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="koi8-r"
-Content-Disposition: inline
-In-Reply-To: <20130209182239.GA9947@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [79.172.101.205]
+X-Originating-IP: [1.161.137.134]
+In-Reply-To: <20130208112027.GI8879@opensource.wolfsonmicro.com>
+References: <1360119305.8965.1.camel@phoenix>
+	<1360119412.8965.3.camel@phoenix>
+	<20130208112027.GI8879@opensource.wolfsonmicro.com>
+Date: Sun, 10 Feb 2013 18:15:41 +0800
+Message-ID: <CAFRkauD3F-s3PZs9xiDznwpH82V7iEDShUq-SuHmTN68A+=CSQ@mail.gmail.com>
+Subject: Re: [PATCH 2/3] regulator: s5m8767: Fix using wrong dev argument at
+ various places
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Sangbeom Kim <sbkim73@samsung.com>, LiamGirdwood <lgirdwood@gmail.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 09, 2013 at 07:22:39PM +0100, Oleg Nesterov wrote:
-> On 02/08, Michael Kerrisk (man-pages) wrote:
-> >
-> > On Fri, Feb 8, 2013 at 8:10 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> > >
-> > > Well. I do not know. Up to you and Michael.
-> > >
-> > > But honestly, I can't say this all looks really nice. And why do we
-> > > need SIGNALFD_PEEK then?
-> >
-> > It surely is no beauty. The hope is at least to make it less ugly than it was.
-> 
-> This is subjective, but I am not sure about "less" ;) Yes, we avoid the
-> magic offsets, but we add SFD_SHARED/PER_THREAD which need to change
-> dequeue_signal plus other complications. And for what?
-> 
-> > > Seriously, perhaps we should simply add signalfd_fops->ioctl() for PEEK.
-> > > Or add PTRACE_{PEEK,POKE}_SIGNAL which looks even logical and useful...
-> > > And much simpler/straightforward.
-> > >
-> > > But I am not going to argue.
-> >
-> > I suppose I had wondered along similar lines, but in a slightly
-> > different direction: would the use of a /proc interface to get the
-> > queued signals make some sense?
-> 
-> (Can't resist sorry... yes we need /proc/pid/cr or /dev/cr or whatever
->  which dumps almost everything c/r needs without need to add a lot of
->  cr code everywhere).
-> 
-> Perhaps, but I am not sure about the textual representation.
-> 
-> And to me, the best solution is the simplest solution. Please look
-> at the patch below. It is trivial. And we can also drop the SFD_RAW
-> patch in -mm.
+2013/2/8, Mark Brown <broonie@opensource.wolfsonmicro.com>:
+> On Wed, Feb 06, 2013 at 10:56:52AM +0800, Axel Lin wrote:
+>
+>> Use &pdev->dev rather than iodev->dev for dev_err(), dev_warn() and
+>> dev_info().
+>
+> It's not clear to me that this is actually an improvement, the pdev is
+> mostly just an internal Linux implementation detail so it's common to
+> use the physical device for MFD logging in order to help the user
+> understand what's causing the log message.
 
-I'm agree with you and I will ask Andrew to drop the SFD_RAW patch.
+My understanding is if people (at least it's me) found some error message
+in dmesg, they usually grep the driver that emit the error message.
+If we use the parent device here, people might grep wrong files.
 
-Thanks.
+>
+>> Use &pdev->dev rather than iodev->dev for devm_kzalloc() and
+>> of_get_regulator_init_data(), this fixes memory leak.
+>
+> This is a good fix though.  This sort of thing is one reason for
+> splitting out unrelated changes.
 
-> 
-> Oleg.
-> 
-> --- x/kernel/ptrace.c
-> +++ x/kernel/ptrace.c
-> @@ -618,6 +618,35 @@ static int ptrace_setsiginfo(struct task
->  	return error;
->  }
->  
-> +static int ptrace_peek_signal(struct task_struct *child,
-> +				unsigned long addr, siginfo_t __user *uinfo)
-> +{
-> +	siginfo_t info;
-> +	struct sigpending *pending;
-> +	int ret = -ESOMETHING;
-> +
-> +	pending = &child->pending;
-> +	if (addr & PTRACE_PEEK_SHARED) {
-> +		addr &= ~PTRACE_PEEK_SHARED;
-> +		pending = &child->signal->shared_pending;
-> +	}
-> +
-> +	spin_lock_irq(&child->sighand->siglock);
-> +	list_for_each_entry(q, &pending->list, list) {
-> +		if (!addr--) {
-> +			copy_siginfo(info, &q->info);
-> +			ret = 0;
-> +			break;
-> +		}
-> +	}
-> +	spin_lock_irq(&child->sighand->siglock);
-> +
-> +	if (!ret)
-> +		ret = copy_siginfo_to_user(uinfo, info);
-> +	if (!ret)
-> +		ret = __put_user(info, si_code);
-> +	return ret;
-> +}
->  
->  #ifdef PTRACE_SINGLESTEP
->  #define is_singlestep(request)		((request) == PTRACE_SINGLESTEP)
-> @@ -742,6 +771,10 @@ int ptrace_request(struct task_struct *c
->  		ret = put_user(child->ptrace_message, datalp);
->  		break;
->  
-> +	case PTRACE_PEEKSIGNAL:
-> +		ret = ptrace_peek_signal(child, addr, datavp);
-> +		break;
-> +
->  	case PTRACE_GETSIGINFO:
->  		ret = ptrace_getsiginfo(child, &siginfo);
->  		if (!ret)
-> 
-> _______________________________________________
-> CRIU mailing list
-> CRIU@openvz.org
-> https://lists.openvz.org/mailman/listinfo/criu
+Ok. I'll resend the patchs (for one topic a patch) a few days latter.
+(It's Chinese New Year vacation in Taiwan now.)
