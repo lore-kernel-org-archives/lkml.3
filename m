@@ -1,55 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756150Ab3BJRvA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Feb 2013 12:51:00 -0500
-Received: from correo.unefa.edu.ve ([150.186.0.20]:16004 "EHLO
-	correo.unefa.edu.ve" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755585Ab3BJRu6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Feb 2013 12:50:58 -0500
-Date: Sun, 10 Feb 2013 11:33:30 -0430 (VET)
-From: "Sir. Michel Weiner" <lquintero1@unefa.edu.ve>
-Reply-To: "mic_weiner@hotmail.com" <mic_weiner@hotmail.com>
-Subject: Od pane. Michael Weiner
-Message-ID: <9feb2e4e-681e-454a-95bc-b6ca92ff027e@mail2.unefa.edu.ve>
+	id S1758942Ab3BJSJo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Feb 2013 13:09:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29911 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756314Ab3BJSJm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Feb 2013 13:09:42 -0500
+Date: Sun, 10 Feb 2013 19:06:07 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, tglx@linutronix.de,
+        peterz@infradead.org, tj@kernel.org, rusty@rustcorp.com.au,
+        mingo@kernel.org, akpm@linux-foundation.org, namhyung@kernel.org,
+        rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
+        xiaoguangrong@linux.vnet.ibm.com, rjw@sisk.pl, sbw@mit.edu,
+        fweisbec@gmail.com, linux@arm.linux.org.uk, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
+        netdev@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 04/45] percpu_rwlock: Implement the core design of
+	Per-CPU Reader-Writer Locks
+Message-ID: <20130210180607.GA1375@redhat.com>
+References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com> <20130122073347.13822.85876.stgit@srivatsabhat.in.ibm.com> <20130208231017.GK2666@linux.vnet.ibm.com>
 MIME-Version: 1.0
-X-Originating-IP: [41.138.168.234]
-X-Mailer: Zimbra 7.1.0_GA_3140 (zclient/7.1.0_GA_3140)
-To: undisclosed-recipients:;
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130208231017.GK2666@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1AHp1YM013015
 
-Od pane. Michael Weiner
-Harlesden, North West
-Londýn
- 
-Vážení přítele.
- 
-Já jsem pan Michael Weiner z Harlesden, North West London, tady v Anglii. Pracuji pro UBS Investment Bank londýnské pobočky. Píši vám z mé kanceláře a já mám návrh, který bude mít obrovský přínos pro nás oba. V mém oddělení, je členem výkonného výboru skupiny a Chief Risk Officer (Greater London Krajský úřad), jsem zjistil, opuštěné částku ve výši 13,5 libry milionů Velké britské Pounds libry (Třináct milionů pět set tisíc Velká britská libra) v účtu, který patří k jednomu z našich zahraničních zákazníků Pozdní Pan Don Shaw, který bohužel přišel o život při automobilové nehodě, včetně jeho manželky a jediná dcera.
- 
-Volba Vás kontaktovat se vzbudila z geografické povahy, kde žijete, obzvláště vzhledem k citlivosti této transakce. Banka úředníci bylo čekání na některý z příbuzných přijde pro toto tvrzení, ale nikdo nemá dělat. Já osobně jsem byl neúspěšný při rozmisťování příbuzným po dobu čtyř let, mám usilovat o váš souhlas k vám jako další příbuzný / Bude příjemce na zemřelého tohoto fondu tak, že výtěžek z tohoto účtu oceněn na 13,5 libry liber milionů EUR bude převedeny na váš bankovní účet jako další kin k pozdní pan Don Shaw.
- 
-To bude vyplacena, nebo sdílená v těchto procent, 60% pro mě a 40% na vás. Mám zajištěné veškeré nezbytné právní dokumenty, které budou použity pro zálohování toto tvrzení jsme tvorby. Všechno, co musíte udělat, je vyplnit vaše jména na dokumenty a legalizovat to u soudu dokázat, jste zde jako oprávněný příjemce fondu.
- 
-Všechny Žádám nyní je vaše upřímná Co-operace, důvěrnosti a Trust umožnit nás vidí tuto transakci prostřednictvím. Já vám zaručit, že to bude popraven za legitimní uspořádání, které bude chránit vás z jakéhokoli porušení zákona. Chci, abyste pochopili, že jsem pracoval v této bance už 17 let, a já jsem byl schopen zajistit všechny právní dokumenty, které vám zdědí tento fond.
- 
-Prosím, uveďte mi následující: jak jsme pár dní spustíme ji projít, je to velmi URGENT PROSÍM.
- 
-1. Celé jméno
-2. Direct Mobile Number
-3. Kontaktní adresa
-4. Datum narození
-5. Rod
- 
-S prošla metodický vyhledávání, rozhodl jsem se Vás kontaktovat doufat, že vás najdou tento obchod zajímavá. Prosím o Vaše potvrzení této zprávy a naznačuje váš zájem budu vám poskytne více informací. Endeavor dejte mi vědět vaše rozhodnutí co nejdříve.
- 
-S pozdravem,
-Sir. Michael Weiner
-Telefon: +447024069184
-********AVISO LEGAL**********
-Este mensaje es privado y confidencial,  está dirigido exclusivamente al uso del correo institucional. Si usted ha recibido este mensaje por error, debe abstenerse de distribuirlo, copiarlo o usarlo en cualquier sentido. 
-���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+On 02/08, Paul E. McKenney wrote:
+>
+> On Tue, Jan 22, 2013 at 01:03:53PM +0530, Srivatsa S. Bhat wrote:
+> >
+> >  void percpu_read_unlock(struct percpu_rwlock *pcpu_rwlock)
+> >  {
+> > -	read_unlock(&pcpu_rwlock->global_rwlock);
+>
+> We need an smp_mb() here to keep the critical section ordered before the
+> this_cpu_dec() below.  Otherwise, if a writer shows up just after we
+> exit the fastpath, that writer is not guaranteed to see the effects of
+> our critical section.  Equivalently, the prior read-side critical section
+> just might see some of the writer's updates, which could be a bit of
+> a surprise to the reader.
+
+Agreed, we should not assume that a "reader" doesn't write. And we should
+ensure that this "read" section actually completes before this_cpu_dec().
+
+> > +	/*
+> > +	 * We never allow heterogeneous nesting of readers. So it is trivial
+> > +	 * to find out the kind of reader we are, and undo the operation
+> > +	 * done by our corresponding percpu_read_lock().
+> > +	 */
+> > +	if (__this_cpu_read(*pcpu_rwlock->reader_refcnt)) {
+> > +		this_cpu_dec(*pcpu_rwlock->reader_refcnt);
+> > +		smp_wmb(); /* Paired with smp_rmb() in sync_reader() */
+>
+> Given an smp_mb() above, I don't understand the need for this smp_wmb().
+> Isn't the idea that if the writer sees ->reader_refcnt decremented to
+> zero, it also needs to see the effects of the corresponding reader's
+> critical section?
+
+I am equally confused ;)
+
+OTOH, we can probably aboid any barrier if reader_nested_percpu() == T.
+
+
+> > +static void announce_writer_inactive(struct percpu_rwlock *pcpu_rwlock)
+> > +{
+> > +   unsigned int cpu;
+> > +
+> > +   drop_writer_signal(pcpu_rwlock, smp_processor_id());
+>
+> Why do we drop ourselves twice?  More to the point, why is it important to
+> drop ourselves first?
+
+And don't we need mb() _before_ we clear ->writer_signal ?
+
+> > +static inline void sync_reader(struct percpu_rwlock *pcpu_rwlock,
+> > +			       unsigned int cpu)
+> > +{
+> > +	smp_rmb(); /* Paired with smp_[w]mb() in percpu_read_[un]lock() */
+>
+> As I understand it, the purpose of this memory barrier is to ensure
+> that the stores in drop_writer_signal() happen before the reads from
+> ->reader_refcnt in reader_uses_percpu_refcnt(), thus preventing the
+> race between a new reader attempting to use the fastpath and this writer
+> acquiring the lock.  Unless I am confused, this must be smp_mb() rather
+> than smp_rmb().
+
+And note that before sync_reader() we call announce_writer_active() which
+already adds mb() before sync_all_readers/sync_reader, so this rmb() looks
+unneeded.
+
+But, at the same time, could you confirm that we do not need another mb()
+after sync_all_readers() in percpu_write_lock() ? I mean, without mb(),
+can't this reader_uses_percpu_refcnt() LOAD leak into the critical section
+protected by ->global_rwlock? Then this LOAD can be re-ordered with other
+memory operations done by the writer.
+
+
+
+Srivatsa, I think that the code would be more understandable if you kill
+the helpers like sync_reader/raise_writer_signal. Perhaps even all "write"
+helpers, I am not sure. At least, it seems to me that all barriers should
+be moved to percpu_write_lock/unlock. But I won't insist of course, up to
+you.
+
+And cosmetic nit... How about
+
+	struct xxx {
+		unsigned long	reader_refcnt;
+		bool		writer_signal;
+	}
+
+	struct percpu_rwlock {
+		struct xxx __percpu	*xxx;
+		rwlock_t		global_rwlock;
+	};
+
+?
+
+This saves one alloc_percpu() and ensures that reader_refcnt/writer_signal
+are always in the same cache-line.
+
+Oleg.
+
