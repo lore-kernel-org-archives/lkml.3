@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752788Ab3BJIgU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Feb 2013 03:36:20 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:50662 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752373Ab3BJIgT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Feb 2013 03:36:19 -0500
-Date: Sun, 10 Feb 2013 09:36:16 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH 2/5 -v2.1] x86: Detect CPUID support early at boot
-Message-ID: <20130210083616.GA4878@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
-References: <20130209231351.GB5556@pd.tnic>
- <1360451762-10175-1-git-send-email-bp@alien8.de>
- <5117236D.5000607@zytor.com>
+	id S1754700Ab3BJJRS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Feb 2013 04:17:18 -0500
+Received: from mail-we0-f177.google.com ([74.125.82.177]:40721 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754497Ab3BJJRP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Feb 2013 04:17:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <5117236D.5000607@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130208225026.GA24672@electric-eye.fr.zoreil.com>
+References: <20130208.151713.1708597749091717933.davem@davemloft.net>
+	<CA+55aFx81-GGEEXx+MqJvwJsDoBMMqSN80=J8LmN-Ufu4+kKcw@mail.gmail.com>
+	<20130208225026.GA24672@electric-eye.fr.zoreil.com>
+Date: Sun, 10 Feb 2013 10:17:13 +0100
+Message-ID: <CADDKRnB9dNkE4gL3de+F7bU5H3wQ47+3V3DH7Zeg-wjbOCB5ww@mail.gmail.com>
+Subject: Re: [GIT] Networking
+From: =?UTF-8?Q?J=C3=B6rg_Otte?= <jrg.otte@gmail.com>
+To: Francois Romieu <romieu@fr.zoreil.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Hayes Wang <hayeswang@realtek.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 09, 2013 at 08:34:53PM -0800, H. Peter Anvin wrote:
-> I wouldn't really call it a "side effect". Perhaps the right thing
-> here is to say something like "we want to start out with %eflags
-> unambiguously clear".
+2013/2/8 Francois Romieu <romieu@fr.zoreil.com>:
+> Linus Torvalds <torvalds@linux-foundation.org> :
+> [...]
+>> However, there's still the r8169 regressions (see the emails with the
+>> subject "regression: NETDEV WATCHDOG: eth0 (r8169): transmit queue 0
+>> timed out"). It's bisected, and a revert is reported to fix things.
+>> It's not in this pull request. Comments ?
 >
-> (Note also we have had to CLD earlier because we have already copied
-> the command line.)
+> Jörg asked Hayes. Hayes suggested to revert. Francois reverts, fixes a
+> pair of rejects, builds, boot. Anyone should be able to pull from
+> branch 'davem.r8169' in repository
+>
+> git://violet.fr.zoreil.com/romieu/linux davem.r8169
+>
+> to get the changes below :
+>
+> Distance from 'davem' (a1c83b054ebe1264ed9ae9d5c286f9eae68e60ea)
+> ----------------------------------------------------------------
+>
+> 4521e1a94279ce610d3f9b7945c17d581f804242
+> eef63cc1c6ecf4898a973f870aec95d6e923ea77
+>
+> Diffstat
+> --------
+>
+>  drivers/net/ethernet/realtek/r8169.c | 86 ++++++++----------------------------
+>  1 file changed, 19 insertions(+), 67 deletions(-)
+>
+> Shortlog
+> --------
+>
+> Francois Romieu (2):
+>       Revert "r8169: enable ALDPS for power saving".
+>       Revert "r8169: enable internal ASPM and clock request settings".
+>
 
-Ok, let's make it even more verbose so that people know in the future:
+Applied that patch on top of v3.8-rc7. Works well for me.
 
-"... we want to start out with EFLAGS unambiguously clear. That means DF
-in particular (even though we have cleared it earlier after copying the
-command line) because GCC expects it."
-
-How does that sound?
-
-Also, I was wondering about the whole reasoning behind that: do you know
-why DF=0 is a GCC requirement? I mean, nothing hurts GCC from issuing a
-CLD each time?
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Thanks, Jörg
