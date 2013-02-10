@@ -1,137 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759328Ab3BJSku (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Feb 2013 13:40:50 -0500
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:57619 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756583Ab3BJSkr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Feb 2013 13:40:47 -0500
-Message-ID: <5117E92C.3050207@linux.vnet.ibm.com>
-Date: Mon, 11 Feb 2013 00:08:36 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S1756589Ab3BJSnr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Feb 2013 13:43:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40296 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754843Ab3BJSnp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Feb 2013 13:43:45 -0500
+Date: Sun, 10 Feb 2013 19:42:09 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org,
+        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
+        akpm@linux-foundation.org, namhyung@kernel.org, rostedt@goodmis.org,
+        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
+        rjw@sisk.pl, sbw@mit.edu, fweisbec@gmail.com, linux@arm.linux.org.uk,
+        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 05/45] percpu_rwlock: Make percpu-rwlocks IRQ-safe,
+	optimally
+Message-ID: <20130210184209.GA3041@redhat.com>
+References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com> <20130122073400.13822.52336.stgit@srivatsabhat.in.ibm.com>
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Namhyung Kim <namhyung@kernel.org>, Tejun Heo <tj@kernel.org>,
-        tglx@linutronix.de, peterz@infradead.org, oleg@redhat.com,
-        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
-        rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, rjw@sisk.pl, sbw@mit.edu,
-        fweisbec@gmail.com, linux@arm.linux.org.uk, nikunj@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
-        netdev@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, walken@google.com
-Subject: Re: [PATCH v5 04/45] percpu_rwlock: Implement the core design of
- Per-CPU Reader-Writer Locks
-References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com> <20130122073347.13822.85876.stgit@srivatsabhat.in.ibm.com> <20130123185522.GG2373@mtj.dyndns.org> <51003B20.2060506@linux.vnet.ibm.com> <20130123195740.GI2373@mtj.dyndns.org> <5100B8CC.4080406@linux.vnet.ibm.com> <87ip6gutsq.fsf@sejong.aot.lge.com> <20130208224742.GJ2666@linux.vnet.ibm.com>
-In-Reply-To: <20130208224742.GJ2666@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13021018-7014-0000-0000-000002921DFB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130122073400.13822.52336.stgit@srivatsabhat.in.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/09/2013 04:17 AM, Paul E. McKenney wrote:
-> On Tue, Jan 29, 2013 at 08:12:37PM +0900, Namhyung Kim wrote:
->> On Thu, 24 Jan 2013 10:00:04 +0530, Srivatsa S. Bhat wrote:
->>> On 01/24/2013 01:27 AM, Tejun Heo wrote:
->>>> On Thu, Jan 24, 2013 at 01:03:52AM +0530, Srivatsa S. Bhat wrote:
->>>>> CPU 0                          CPU 1
->>>>>
->>>>> read_lock(&rwlock)
->>>>>
->>>>>                               write_lock(&rwlock) //spins, because CPU 0
->>>>>                               //has acquired the lock for read
->>>>>
->>>>> read_lock(&rwlock)
->>>>>    ^^^^^
->>>>> What happens here? Does CPU 0 start spinning (and hence deadlock) or will
->>>>> it continue realizing that it already holds the rwlock for read?
->>>>
->>>> I don't think rwlock allows nesting write lock inside read lock.
->>>> read_lock(); write_lock() will always deadlock.
->>>>
->>>
->>> Sure, I understand that :-) My question was, what happens when *two* CPUs
->>> are involved, as in, the read_lock() is invoked only on CPU 0 whereas the
->>> write_lock() is invoked on CPU 1.
->>>
->>> For example, the same scenario shown above, but with slightly different
->>> timing, will NOT result in a deadlock:
->>>
->>> Scenario 2:
->>>   CPU 0                                CPU 1
->>>
->>> read_lock(&rwlock)
->>>
->>>
->>> read_lock(&rwlock) //doesn't spin
->>>
->>>                                     write_lock(&rwlock) //spins, because CPU 0
->>>                                     //has acquired the lock for read
->>>
->>>
->>> So I was wondering whether the "fairness" logic of rwlocks would cause
->>> the second read_lock() to spin (in the first scenario shown above) because
->>> a writer is already waiting (and hence new readers should spin) and thus
->>> cause a deadlock.
->>
->> In my understanding, current x86 rwlock does basically this (of course,
->> in an atomic fashion):
->>
->>
->> #define RW_LOCK_BIAS 0x10000
->>
->> rwlock_init(rwlock)
->> {
->> 	rwlock->lock = RW_LOCK_BIAS;
->> }
->>
->> arch_read_lock(rwlock)
->> {
->> retry:
->> 	if (--rwlock->lock >= 0)
->> 		return;
->>
->>         rwlock->lock++;
->>         while (rwlock->lock < 1)
->>         	continue;
->>
->>         goto retry;
->> }
->>
->> arch_write_lock(rwlock)
->> {
->> retry:
->> 	if ((rwlock->lock -= RW_LOCK_BIAS) == 0)
->>         	return;
->>
->>         rwlock->lock += RW_LOCK_BIAS;
->> 	while (rwlock->lock != RW_LOCK_BIAS)
->> 		continue;
->>
->>         goto retry;
->> }
->>
->>
->> So I can't find where the 'fairness' logic comes from..
-> 
-> I looked through several of the rwlock implementations, and in all of
-> them the writer backs off if it sees readers -- or refrains from asserting
-> ownership of the lock to begin with.
-> 
-> So it should be OK to use rwlock as shown in the underlying patch.
-> 
+only one cosmetic nit...
 
-Thanks a lot for confirming that Paul! So I guess we can use rwlocks
-as it is, since its behaviour suits our needs perfectly. So I won't tinker
-with atomic counters for a while, atleast not until someone starts making
-rwlocks fair.. ;-)
+On 01/22, Srivatsa S. Bhat wrote:
+>
+> +#define READER_PRESENT		(1UL << 16)
+> +#define READER_REFCNT_MASK	(READER_PRESENT - 1)
+> +
+>  #define reader_uses_percpu_refcnt(pcpu_rwlock, cpu)			\
+>  		(ACCESS_ONCE(per_cpu(*((pcpu_rwlock)->reader_refcnt), cpu)))
+>
+>  #define reader_nested_percpu(pcpu_rwlock)				\
+> -			(__this_cpu_read(*((pcpu_rwlock)->reader_refcnt)) > 1)
+> +	(__this_cpu_read(*((pcpu_rwlock)->reader_refcnt)) & READER_REFCNT_MASK)
+>
+>  #define writer_active(pcpu_rwlock)					\
+>  			(__this_cpu_read(*((pcpu_rwlock)->writer_signal)))
 
-Regards,
-Srivatsa S. Bhat
+I think this all can go to lib/percpu-rwlock.c. Nobody needs to know
+these implementation details.
+
+Oleg.
 
