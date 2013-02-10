@@ -1,99 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761065Ab3BJEKB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 23:10:01 -0500
-Received: from ngcobalt07.manitu.net ([217.11.48.107]:45759 "EHLO
-	ngcobalt07.manitu.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761045Ab3BJEJ7 (ORCPT
+	id S1761073Ab3BJESr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 23:18:47 -0500
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:47474 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761052Ab3BJESp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 23:09:59 -0500
-X-manitu-Original-Sender-IP: 127.0.0.1
-X-manitu-Original-Receiver-Name: ngcobalt07.manitu.net
-Date: Sun, 10 Feb 2013 05:09:07 +0100
-From: Roland Eggner <edvx1@systemanalysen.net>
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Cc: linux-kbuild@vger.kernel.org, Dmitry Voytik <dvv.kernel@gmail.com>,
-        Michal Marek <mmarek@suse.cz>, Stephen Boyd <sboyd@codeaurora.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH resend v3 3/3] kconfig: nconf:  add vi-style navigation
- keys
-Message-ID: <20130210040907.GB20308@mobil.systemanalysen.net>
-Reply-To: Roland Eggner <edvx1@systemanalysen.net>
-Mail-Followup-To: "Yann E. MORIN" <yann.morin.1998@free.fr>,
-	linux-kbuild@vger.kernel.org, Dmitry Voytik <dvv.kernel@gmail.com>,
-	Michal Marek <mmarek@suse.cz>, Stephen Boyd <sboyd@codeaurora.org>,
-	linux-kernel@vger.kernel.org
-References: <20130201182237.GA11098@mobil.systemanalysen.net>
- <201302090203.04055.yann.morin.1998@free.fr>
- <20130209050748.GB8891@mobil.systemanalysen.net>
- <201302091236.23641.yann.morin.1998@free.fr>
+	Sat, 9 Feb 2013 23:18:45 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="eJnRUKwClWJh1Khz"
-Content-Disposition: inline
-In-Reply-To: <201302091236.23641.yann.morin.1998@free.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130209190826.GC2875@htj.dyndns.org>
+References: <CAJd=RBD4ZJN7uXQ5xY1GF14j_DydDQEpuZNct-UiNXTBARpQSQ@mail.gmail.com>
+	<20130209190826.GC2875@htj.dyndns.org>
+Date: Sun, 10 Feb 2013 12:18:45 +0800
+Message-ID: <CAJd=RBB2U5MVpwey7J8Hag1tb1Hi_Nepem+6H7qH_=QD8a2h-g@mail.gmail.com>
+Subject: Re: [PATCH 1/2] stop_machine: check work->done while handling
+ enqueued works
+From: Hillf Danton <dhillf@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Feb 10, 2013 at 3:08 AM, Tejun Heo <tj@kernel.org> wrote:
+> Hello, Hillf.
+>
+> On Fri, Feb 08, 2013 at 11:39:56AM +0800, Hillf Danton wrote:
+>> The comment just above cpu_stop_signal_done() says it is uncertain that
+>> the input @done is valid, and the works enqueued through the function
+>> stop_one_cpu_nowait() do carry no done, thus we have to check if it is
+>> valid when updating work result.
+>
+> How about something like the following?
 
---eJnRUKwClWJh1Khz
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Cool, I like it, thanks.
 
-On 2013-02-09 Saturday at 12:36 +0100 Yann E. MORIN wrote:
-> Rolland, All,
->=20
-> On Saturday 09 February 2013 Roland Eggner wrote:
-> > Regarding the <h>/<H> conflict:  My vision is to eliminate the need for=
- help=20
-> > keybindings <h> <?> at all by displaying the related help text beside t=
-he=20
-> > menu permanently, similar to some graphical backends.  For terminals wi=
-th=20
-> > COLUMNS>=3D160 this should be rather easy to implement.  nouveaufb give=
-s me by=20
-> > default terminal with 274 columns, =E2=80=9Cretina=E2=80=9D displays ar=
-e entering the market=20
-> > =E2=80=A6 the frequency of COLUMNS>=3D160 terminals probably will conti=
-nue to grow. =20
-> > While staying compatible with COLUMNS=3D80, it seems reasonable to use =
-the=20
-> > capabilities of wider terminals, or what would you say?
->=20
-> How do you navigate up/down in the help text (when the terminal is not
-> high enought to display the entire help) if it is displayed at the same
-> time the menu entries are, yet without breaking the UI behavior people
-> expect?
-
-Good question.  My vision is a UI similar to mc with directory listing in o=
-ne=20
-panel, file content in the other panel, =E2=80=9Cquick view=E2=80=9D and =
-=E2=80=9Clynx-like navigation=E2=80=9D=20
-switched on.  Help keybindings <h> <?> will become superfluous, and keybind=
-ings=20
-<Tab> <Ctrl-i> to switch focus between menu and help =E2=80=9Cpanel=E2=80=
-=9D will be added. =20
-Implementation will require some ncurses exercise and more time, than I hav=
-e=20
-available in near future.  Thus I keep saying =E2=80=9Cno promise =E2=80=A6=
-=E2=80=9D
-
---=20
-Regards
-Roland Eggner
-
---eJnRUKwClWJh1Khz
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iEYEARECAAYFAlEXHWMACgkQdN/hKfT7G/KfcgCeM7kYqOECxZa3T+8BceGrDVIA
-Oy4An1hYI2glCxwzZjjqjvXIRXLxxv80
-=iiPJ
------END PGP SIGNATURE-----
-
---eJnRUKwClWJh1Khz--
+Hillf
+>
+> In cpu_stopper_thread(), @work->done may be NULL if the cpu stop work
+> is queued from stop_one_cpu_nowait(); however, cpu_stopper_thread()
+> updates @done->ret without checking whether @done exists or not when
+> the work function fails.
+>
+> While this can lead to oops, the only current user of
+> stop_one_cpu_nowait() - active_load_balance_cpu_stop() - always
+> returns 0 and thus there's no in-kernel user which triggers this bug.
+>
+> Fix it by checking whether @done exists before updating @done->ret.
+>
+>> Signed-off-by: Hillf Danton <dhillf@gmail.com>
+>> ---
+>>
+>> --- a/kernel/stop_machine.c   Thu Feb  7 20:03:10 2013
+>> +++ b/kernel/stop_machine.c   Fri Feb  8 11:07:40 2013
+>> @@ -279,7 +279,7 @@ repeat:
+>>               preempt_disable();
+>>
+>>               ret = fn(arg);
+>> -             if (ret)
+>> +             if (ret && done != NULL)
+>
+> It's a nitpick and probalby is just a preference but I've never liked
+> != NULL or != 0.  Can we just do if (ret && done)?
+>
+> Thanks.
+>
+> --
+> tejun
