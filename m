@@ -1,112 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760912Ab3BJAmu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 19:42:50 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:45257 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760877Ab3BJAkH (ORCPT
+	id S1760906Ab3BJAri (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Feb 2013 19:47:38 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:61373 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757124Ab3BJArg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 19:40:07 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-To: mingo@kernel.org, peterz@infradead.org
-Cc: jamie.iles@oracle.com, penberg@kernel.org, acme@ghostprotocols.net,
-        paulus@samba.org, linux-kernel@vger.kernel.org, namhyung@kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH v2 03/11] perf: stop using liblockdep_init and liblockdep_set_thread
-Date: Sat,  9 Feb 2013 19:39:33 -0500
-Message-Id: <1360456781-32462-3-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1360456781-32462-1-git-send-email-sasha.levin@oracle.com>
-References: <1360456781-32462-1-git-send-email-sasha.levin@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Sat, 9 Feb 2013 19:47:36 -0500
+Date: Sat, 9 Feb 2013 16:47:40 -0800
+From: Olof Johansson <olof@lixom.net>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, FlorianSchandinat@gmx.de,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, jhovold@gmail.com, jacmet@sunsite.dk
+Subject: Re: [PATCH 0/5] at91: atmel_lcdfb: regression fixes and cpu_is
+ removal
+Message-ID: <20130210004740.GH16278@quad.lixom.net>
+References: <cover.1360340791.git.nicolas.ferre@atmel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1360340791.git.nicolas.ferre@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These functions are no longer needed by liblockdep, drop them.
+On Fri, Feb 08, 2013 at 05:35:13PM +0100, Nicolas Ferre wrote:
+> These patches fix a regression in 16-bpp support for older SOCs which use
+> IBGR:555 rather than BGR:565 pixel layout. Use SOC-type to determine if the
+> controller uses the intensity-bit and restore the old layout in that case.
+> 
+> The last patch is a removal of uses of cpu_is_xxxx() macros in atmel_lcdfb with
+> a platform-device-id table and static configurations.
+> 
+> 
+> Patches from Johan Hovold taken from:
+> "[PATCH 0/3] atmel_lcdfb: fix 16-bpp regression"
+> and
+> "[PATCH v2 0/3] ARM: at91/avr32/atmel_lcdfb: remove cpu_is macros"
+> patch series to form a clean patch series with my signature.
+> 
+> Arnd, Olof,
+> as it seems that old fbdev drivers are not so much reviewed those days, can we
+> take the decision to queue this material through arm-soc with other AT91
+> drivers updates?
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- tools/perf/builtin-sched.c          | 2 --
- tools/perf/builtin-top.c            | 4 ----
- tools/perf/config/feature-tests.mak | 1 -
- tools/perf/perf.c                   | 3 ---
- tools/perf/util/liblockdep.h        | 2 --
- 5 files changed, 12 deletions(-)
+It would be beneficial to get an ack from Florian. Was he involved in the
+review of the code that regressed 16-bpp support in the first place? When was
+the regression introduced?
 
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index 53d9225..e1f0c44 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -468,8 +468,6 @@ static void *thread_func(void *ctx)
- 	char comm2[22];
- 	int fd;
- 
--	liblockdep_set_thread();
--
- 	free(parms);
- 
- 	sprintf(comm2, ":%s", this_task->comm);
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index c9b99ef..c9ff395 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -588,8 +588,6 @@ static void *display_thread_tui(void *arg)
- 		.refresh	= top->delay_secs,
- 	};
- 
--	liblockdep_set_thread();
--
- 	perf_top__sort_new_samples(top);
- 
- 	/*
-@@ -615,8 +613,6 @@ static void *display_thread(void *arg)
- 	struct perf_top *top = arg;
- 	int delay_msecs, c;
- 
--	liblockdep_set_thread();
--
- 	tcgetattr(0, &save);
- 	tc = save;
- 	tc.c_lflag &= ~(ICANON | ECHO);
-diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
-index 1f5a37e..20f8f7b 100644
---- a/tools/perf/config/feature-tests.mak
-+++ b/tools/perf/config/feature-tests.mak
-@@ -223,7 +223,6 @@ define SOURCE_LIBLOCKDEP
- 
- int main(void)
- {
--	liblockdep_init();
- 	return 0;
- }
- endef
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index ddbd315..0f661fb 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -446,9 +446,6 @@ int main(int argc, const char **argv)
- {
- 	const char *cmd;
- 
--	liblockdep_init();
--	liblockdep_set_thread();
--
- 	page_size = sysconf(_SC_PAGE_SIZE);
- 
- 	cmd = perf_extract_argv0_path(argv[0]);
-diff --git a/tools/perf/util/liblockdep.h b/tools/perf/util/liblockdep.h
-index 628a2f5..798263f 100644
---- a/tools/perf/util/liblockdep.h
-+++ b/tools/perf/util/liblockdep.h
-@@ -5,7 +5,5 @@
- #else
- 
- #define LIBLOCKDEP_PTHREAD_MUTEX_INITIALIZER(mtx) PTHREAD_MUTEX_INITIALIZER
--#define liblockdep_init()
--#define liblockdep_set_thread()
- 
- #endif
--- 
-1.8.1.2
 
+-Olof
