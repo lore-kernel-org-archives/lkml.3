@@ -1,137 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754409Ab3BJMTH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Feb 2013 07:19:07 -0500
-Received: from sauhun.de ([89.238.76.85]:58645 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753967Ab3BJMTF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Feb 2013 07:19:05 -0500
-Date: Sun, 10 Feb 2013 13:19:01 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Doug Anderson <dianders@chromium.org>
-Cc: linux-i2c@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Padmavathi Venna <padma.v@samsung.com>,
-        Ben Dooks <ben-linux@fluff.org>, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] i2c-core: dt: Pick i2c bus number from i2c alias
- if present
-Message-ID: <20130210121901.GA15546@nekote.pengutronix.de>
-References: <1357927027-4857-2-git-send-email-dianders@chromium.org>
- <1358189602-24180-1-git-send-email-dianders@chromium.org>
- <1358189602-24180-2-git-send-email-dianders@chromium.org>
+	id S1754568Ab3BJM0H (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Feb 2013 07:26:07 -0500
+Received: from mo-p00-ob.rzone.de ([81.169.146.161]:47718 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754173Ab3BJM0D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Feb 2013 07:26:03 -0500
+X-RZG-AUTH: :P2ERcEykfu11Y98lp/T7+hdri+uKZK8QS9ij0PRv0OgBX++PB3K3G/7rbhwz
+X-RZG-CLASS-ID: mo00
+Message-ID: <511791D6.7000600@chronox.de>
+Date: Sun, 10 Feb 2013 13:25:58 +0100
+From: Stephan Mueller <smueller@chronox.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358189602-24180-2-git-send-email-dianders@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Theodore Ts'o" <tytso@mit.edu>, linux-crypto@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH] Entropy generator with 100 kB/s throughput
+References: <51157686.9000404@chronox.de> <20130209180629.GD8091@thunk.org>
+In-Reply-To: <20130209180629.GD8091@thunk.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Doug,
+On 09.02.2013 19:06:29, +0100, Theodore Ts'o <tytso@mit.edu> wrote:
 
-On Mon, Jan 14, 2013 at 10:53:21AM -0800, Doug Anderson wrote:
-> This allows you to get the equivalent functionality of
-> i2c_add_numbered_adapter() with all data in the device tree and no
-> special case code in your driver.  This is a common device tree
-> technique.
-> 
-> For quick reference, the FDT syntax for using an alias to provide an
-> ID looks like:
->   aliases {
->     i2c0 = &i2c_0;
->     i2c1 = &i2c_1;
->   };
-> 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>
-> ---
-> Changes in v2: None
-> 
->  drivers/i2c/i2c-core.c |  105 +++++++++++++++++++++++++++++++++++-------------
->  1 files changed, 77 insertions(+), 28 deletions(-)
-> 
-> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-> index e388590..a60ed6d 100644
-> --- a/drivers/i2c/i2c-core.c
-> +++ b/drivers/i2c/i2c-core.c
-> @@ -921,13 +921,81 @@ out_list:
->  }
->  
->  /**
-> + * i2c_get_number_from_dt - get the adapter number based on dt alias
-> + * @adap: the adapter to look at
-> + *
-> + * Check whether there's an alias in the FDT that gives an ID for this i2c
-> + * device.  Use an alias like "i2c<nr>", like:
-> + *   aliases {
-> + *     i2c0 = &i2c_0;
-> + *     i2c1 = &i2c_1;
-> + *   };
-> + *
-> + * Returns the ID if found.  If no alias is found returns -1.
-> + */
-> +static int i2c_get_number_from_dt(struct i2c_adapter *adap)
+Hi Ted,
 
-i2c_get_id_from_dt()?
+thank you for the review.
+> On Fri, Feb 08, 2013 at 11:04:54PM +0100, Stephan Mueller wrote:
+>> * an array of statistical test suites pass the output of the entropy
+>> collector
+>>   (again, the output is not mangled with cryptography)
+> You're not mangling the output with cryptography, but you are doing
+> some mangling in jitterentropy_cpu_jitter().
+>
+> So let's be clear about what the heart of your entropy source is:
+>
+> You're getting the nanoseconds out of clock_gettime(CLOCK_REALTIME),
+> and then mixing it using XOR and a ROL(3) into a 64-bit buffer, and
+> interspersing the calls to clock_gettime() with schedule().
 
-> +{
-> +	struct device *dev = &adap->dev;
-> +	int id;
-> +
-> +	if (!dev->of_node)
-> +		return -1;
+Correct.
+>
+> So what a code breaker at the NSA would probably try to do first is to
+> measure is whether there is any kind of bias or non-entropy in the
+> nanoseconds returned by CLOCK_REALTIME after calls to schedule().  If
+> they can find any kind of bias, they can use that to calculate what
+> kind of patterns or non-random bits might end up showing up after you
+> do your non-cryptographic mangling.
 
--ESOMETHING?
+I thought I have countered such possibility already with the following 2
+concepts:
 
-> +
-> +	id = of_alias_get_id(dev->of_node, "i2c");
-> +	if (id < 0)
-> +		return -1;
-> +	return id;
+1. Before entropy is extracted from the pool, at the minimum 9 * 16
+clock measurements (we have 16 rounds in jitterentropy_cpu_jitter and at
+least 9 rounds in jitterentropy_gen_entropy due to the entropy
+calculation and the limit of 7 bits of entropy per round) are fed into
+the pool with the strong possibility of more. The number of measurements
+mixed into the pool depends on the amount of entropy the heuristic
+applies to the time needed to perform the 16 rounds of measurements and
+the previous delta.
 
-Simply 'return of_alias_get_id(...)'? Even more, since this function
-boils down to calling of_alias_get_id only and is only used once, I'd
-think we can implement that directly and drop this function. That
-shouldn't hurt readability.
+2. The entropy heuristic is measuring the delta of deltas to calculate
+the entropy -- and thus implicitly how often the 16 clock measurements
+are applied. With the use of deltas of deltas (i.e. kind of the 2nd
+derivation of the absolute time measurements), the code implies 0 bit of
+entropy for evenly spaced time measurements (i.e. no jitter) and time
+measurements with a too coarse timer.
+>
+> For that reasons, what I would suggest doing first is generate a
+> series of outputs of jitterentropy_get_nstime() followed by
+> schedule().  Look and see if there is any pattern.  That's the problem
+> with the FIPS 140-2 tests.  Passing those tests are necessary, but
 
-> +}
-> +
-> +/**
-> + * _i2c_add_numbered_adapter - i2c_add_numbered_adapter where nr is never -1
-> + * @adap: the adapter to register (with adap->nr initialized)
-> + * Context: can sleep
-> + *
-> + * See i2c_add_numbered_adapter() for details.
-> + */
-> +static int _i2c_add_numbered_adapter(struct i2c_adapter *adap)
+Note, I am not using FIPS 140-2 tests as there are none. I try to use
+the tests NIST and the German BSI would require when you come along with
+an RNG for validation. In addition, I use the dieharder test suite with
+its tons of tests.
 
-All other internal functions are prefixed with '__'.
+> *NOT* sufficient to prove that you have a good cryptographic
+> generator.  Even the tiniest amount of post-processing, even if they
+> aren't cryptographic, can result in an utterly predictable series of
+> numbers to pass the FIPS 140-2 tests.
 
-> +{
-> +	int	id;
-> +	int	status;
-> +
-> +	/* Handled by wrappers */
-> +	BUG_ON(adap->nr == -1);
+Thank you very much for the suggestions. I will perform the suggested test.
 
-Is that a reason to halt the kernel? WARN and bailing out would do IMO.
+On the other hand the entropy generator is intended to serve as a seed
+source for the DRNGs. One of the goals I tried to achieve is ease of use
+without the possibility to misuse the implementation. With that in mind,
+for the kernel implementation, I guess jitterentropy_read_entropy should
+not be exported with EXPORT_SYMBOL and should be static.
 
-> +
-> +	if (adap->nr & ~MAX_IDR_MASK)
-> +		return -EINVAL;
+This change implies that in the kernel only the DRNGs are accessible
+where the strong DRNG (jitterentropy_strong_drng) should conceptually be
+as strong as blocking_pool (without the blocking nature) and the regular
+DRNG (jitterentropy_reg_drng) is conceptually the equivalent to
+nonblocking_pool which is guaranteed to be reseeded.
 
-Note the idr-cleanup series from Tejun Heo. Given that his series is
-scheduled for v3.9, I'd like to have your patches on top of his.
-
-Thanks,
-
-   Wolfram
-
+Thanks
+Stephan
+>
+> Regards,
+>
+> 						- Ted
+>
+> -- 
+> Ciao
+> Stephan
+>
+> atsec information security GmbH, Steinstraße 70, 81667 München, Germany
+> P: +49 89 442 49 830 - F: +49 89 442 49 831
+> M: +49 172 216 55 78 - HRB: 129439 (Amtsgericht München)
+> GF: Salvatore la Pietra, Staffan Persson
+> atsec it security news blog - atsec-information-security.blogspot.com
+>
+> -- 
+> | Cui bono? |
