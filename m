@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932649Ab3BJEzm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Feb 2013 23:55:42 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:51362 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761083Ab3BJEzk (ORCPT
+	id S1750950Ab3BJFWp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Feb 2013 00:22:45 -0500
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:33142 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750768Ab3BJFWo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Feb 2013 23:55:40 -0500
+	Sun, 10 Feb 2013 00:22:44 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAP9ODKr2gomJR6Zrwc41ddhxn3nkFYtTLL-_xhbdRKN=n-A_+w@mail.gmail.com>
-References: <CAP9ODKq0jPS9x2LnYc0qTnAB_WeiBDosSohQ-7=uGVDiR0jWtg@mail.gmail.com>
-	<CAP9ODKr2gomJR6Zrwc41ddhxn3nkFYtTLL-_xhbdRKN=n-A_+w@mail.gmail.com>
-Date: Sun, 10 Feb 2013 02:55:39 -0200
-X-Google-Sender-Auth: dmNZd0yqEjtCA2H9vkHNAJJ8npQ
-Message-ID: <CAP9ODKrP4BgFvkMb+vZR3tOfn90SAvD=Kykwznmr2_M9okeDag@mail.gmail.com>
-Subject: Re: Linux 3.8 broken for MacBookAir5,1
-From: Otavio Salvador <otavio@ossystems.com.br>
-To: Kernel development list <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Date: Sun, 10 Feb 2013 13:22:43 +0800
+Message-ID: <CAJd=RBCi0gRGf2ronNyGDBeNsBJkEZ6aTe29gVnTUD2qh6Bnog@mail.gmail.com>
+Subject: [PATCH 1/2] stop_machine: check work->done while handling enqueued works
+From: Hillf Danton <dhillf@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 10, 2013 at 1:11 AM, Otavio Salvador
-<otavio@ossystems.com.br> wrote:
-> Hello,
->
-> On Sat, Jan 12, 2013 at 8:41 PM, Otavio Salvador
-> <otavio@ossystems.com.br> wrote:
->> Today I tried to update my kernel from 3.7.2 to 3.8-rc3 and I had no
->> success; I used localmodconfig to generate the .config for my machine
->> but keyboard does not work.
->>
->> Using same generated .config with 3.7.2 works fine.
->>
->> Anyone has a clue about?
->
-> I finally found time to do a bisect and I found:
->
-> commit adfa79d1c06a32650332930ca4c488ca570b3407
-> Author: Alan Stern <stern@rowland.harvard.edu>
-> Date:   Thu Nov 1 11:13:04 2012 -0400
->
->     USB: EHCI: make ehci-pci a separate driver
->
->     This patch (as1625) splits the PCI portion of ehci-hcd out into its
->     own separate driver module, called ehci-pci.  Consistently with the
->     current practice, the decision whether to build this module is not
->     user-configurable.  If EHCI and PCI are enabled then the module will
->     be built, always.
->
->     Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
->     CC: Felipe Balbi <balbi@ti.com>
->     Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->
-> As the problem start.
->
-> I do have EHCI and PCI enabled so it should be working. Any clue about
-> why it breaks it?
+In cpu_stopper_thread(), @work->done may be NULL if the cpu stop work
+is queued from stop_one_cpu_nowait(); however, cpu_stopper_thread()
+updates @done->ret without checking whether @done exists or not when
+the work function fails.
 
-If it is built-in it works. So it fails just when used as a module.
+While this can lead to oops, the only current user of
+stop_one_cpu_nowait() - active_load_balance_cpu_stop() - always
+returns 0 and thus there's no in-kernel user which triggers this bug.
 
--- 
-Otavio Salvador                             O.S. Systems
-E-mail: otavio@ossystems.com.br  http://www.ossystems.com.br
-Mobile: +55 53 9981-7854              http://projetos.ossystems.com.br
+Fix it by checking whether @done exists before updating @done->ret.
+
+Thanks Tejun for sharing commit message.
+
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
+Reviewed-by: Namhyung Kim <namhyung@kernel.org>
+---
+
+--- a/kernel/stop_machine.c	Sun Feb 10 12:51:46 2013
++++ b/kernel/stop_machine.c	Sun Feb 10 12:58:58 2013
+@@ -279,7 +279,7 @@ repeat:
+ 		preempt_disable();
+
+ 		ret = fn(arg);
+-		if (ret)
++		if (ret && done)
+ 			done->ret = ret;
+
+ 		/* restore preemption and check it's still balanced */
+--
