@@ -1,50 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758775Ab3BJSiu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Feb 2013 13:38:50 -0500
-Received: from sauhun.de ([89.238.76.85]:48995 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756463Ab3BJSit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Feb 2013 13:38:49 -0500
-Date: Sun, 10 Feb 2013 19:38:45 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: James Ralston <james.d.ralston@intel.com>, linux-i2c@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Seth Heasley <seth.heasley@intel.com>
-Subject: Re: [PATCH 3/5] i2c-i801: Add Device IDs for Intel Wellsburg PCH
-Message-ID: <20130210183845.GC12760@nekote.pengutronix.de>
-References: <1360373535-2055-1-git-send-email-james.d.ralston@intel.com>
- <20130209200010.1b18fdb3@endymion.delvare>
+	id S1759328Ab3BJSku (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Feb 2013 13:40:50 -0500
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:57619 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756583Ab3BJSkr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Feb 2013 13:40:47 -0500
+Message-ID: <5117E92C.3050207@linux.vnet.ibm.com>
+Date: Mon, 11 Feb 2013 00:08:36 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130209200010.1b18fdb3@endymion.delvare>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: paulmck@linux.vnet.ibm.com
+CC: Namhyung Kim <namhyung@kernel.org>, Tejun Heo <tj@kernel.org>,
+        tglx@linutronix.de, peterz@infradead.org, oleg@redhat.com,
+        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
+        rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
+        xiaoguangrong@linux.vnet.ibm.com, rjw@sisk.pl, sbw@mit.edu,
+        fweisbec@gmail.com, linux@arm.linux.org.uk, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
+        netdev@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, walken@google.com
+Subject: Re: [PATCH v5 04/45] percpu_rwlock: Implement the core design of
+ Per-CPU Reader-Writer Locks
+References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com> <20130122073347.13822.85876.stgit@srivatsabhat.in.ibm.com> <20130123185522.GG2373@mtj.dyndns.org> <51003B20.2060506@linux.vnet.ibm.com> <20130123195740.GI2373@mtj.dyndns.org> <5100B8CC.4080406@linux.vnet.ibm.com> <87ip6gutsq.fsf@sejong.aot.lge.com> <20130208224742.GJ2666@linux.vnet.ibm.com>
+In-Reply-To: <20130208224742.GJ2666@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13021018-7014-0000-0000-000002921DFB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> Seth recently sent a patch adding IDs for the Avoton:
-> http://marc.info/?l=linux-kernel&m=135959209218860&w=2
+On 02/09/2013 04:17 AM, Paul E. McKenney wrote:
+> On Tue, Jan 29, 2013 at 08:12:37PM +0900, Namhyung Kim wrote:
+>> On Thu, 24 Jan 2013 10:00:04 +0530, Srivatsa S. Bhat wrote:
+>>> On 01/24/2013 01:27 AM, Tejun Heo wrote:
+>>>> On Thu, Jan 24, 2013 at 01:03:52AM +0530, Srivatsa S. Bhat wrote:
+>>>>> CPU 0                          CPU 1
+>>>>>
+>>>>> read_lock(&rwlock)
+>>>>>
+>>>>>                               write_lock(&rwlock) //spins, because CPU 0
+>>>>>                               //has acquired the lock for read
+>>>>>
+>>>>> read_lock(&rwlock)
+>>>>>    ^^^^^
+>>>>> What happens here? Does CPU 0 start spinning (and hence deadlock) or will
+>>>>> it continue realizing that it already holds the rwlock for read?
+>>>>
+>>>> I don't think rwlock allows nesting write lock inside read lock.
+>>>> read_lock(); write_lock() will always deadlock.
+>>>>
+>>>
+>>> Sure, I understand that :-) My question was, what happens when *two* CPUs
+>>> are involved, as in, the read_lock() is invoked only on CPU 0 whereas the
+>>> write_lock() is invoked on CPU 1.
+>>>
+>>> For example, the same scenario shown above, but with slightly different
+>>> timing, will NOT result in a deadlock:
+>>>
+>>> Scenario 2:
+>>>   CPU 0                                CPU 1
+>>>
+>>> read_lock(&rwlock)
+>>>
+>>>
+>>> read_lock(&rwlock) //doesn't spin
+>>>
+>>>                                     write_lock(&rwlock) //spins, because CPU 0
+>>>                                     //has acquired the lock for read
+>>>
+>>>
+>>> So I was wondering whether the "fairness" logic of rwlocks would cause
+>>> the second read_lock() to spin (in the first scenario shown above) because
+>>> a writer is already waiting (and hence new readers should spin) and thus
+>>> cause a deadlock.
+>>
+>> In my understanding, current x86 rwlock does basically this (of course,
+>> in an atomic fashion):
+>>
+>>
+>> #define RW_LOCK_BIAS 0x10000
+>>
+>> rwlock_init(rwlock)
+>> {
+>> 	rwlock->lock = RW_LOCK_BIAS;
+>> }
+>>
+>> arch_read_lock(rwlock)
+>> {
+>> retry:
+>> 	if (--rwlock->lock >= 0)
+>> 		return;
+>>
+>>         rwlock->lock++;
+>>         while (rwlock->lock < 1)
+>>         	continue;
+>>
+>>         goto retry;
+>> }
+>>
+>> arch_write_lock(rwlock)
+>> {
+>> retry:
+>> 	if ((rwlock->lock -= RW_LOCK_BIAS) == 0)
+>>         	return;
+>>
+>>         rwlock->lock += RW_LOCK_BIAS;
+>> 	while (rwlock->lock != RW_LOCK_BIAS)
+>> 		continue;
+>>
+>>         goto retry;
+>> }
+>>
+>>
+>> So I can't find where the 'fairness' logic comes from..
 > 
-> Your patch conflicts with his. Please rebase on top of Seth's patch, so
-> that both patches can be applied in sequence.
-
-Yes, please.
-
-> > --- a/drivers/i2c/busses/i2c-i801.c
-> > +++ b/drivers/i2c/busses/i2c-i801.c
-> > (...)
-> > @@ -165,6 +166,7 @@
-> >  #define PCI_DEVICE_ID_INTEL_DH89XXCC_SMBUS	0x2330
-> >  #define PCI_DEVICE_ID_INTEL_5_3400_SERIES_SMBUS	0x3b30
-> >  #define PCI_DEVICE_ID_INTEL_LYNXPOINT_SMBUS	0x8c22
-> > +#define PCI_DEVICE_ID_INTEL_WELLSBURG_SMBUS	0x8d22
-> >  #define PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_SMBUS	0x9c22
+> I looked through several of the rwlock implementations, and in all of
+> them the writer backs off if it sees readers -- or refrains from asserting
+> ownership of the lock to begin with.
 > 
-> Please keep sorted by ID.
+> So it should be OK to use rwlock as shown in the underlying patch.
+> 
 
-Hum? This table looks sorted by numbers to me, so OK.
+Thanks a lot for confirming that Paul! So I guess we can use rwlocks
+as it is, since its behaviour suits our needs perfectly. So I won't tinker
+with atomic counters for a while, atleast not until someone starts making
+rwlocks fair.. ;-)
+
+Regards,
+Srivatsa S. Bhat
 
