@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755177Ab3BJLjh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Feb 2013 06:39:37 -0500
-Received: from mail-we0-f169.google.com ([74.125.82.169]:35962 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754786Ab3BJLjb (ORCPT
+	id S1756326Ab3BJLjs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Feb 2013 06:39:48 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:42653 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755378Ab3BJLjm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Feb 2013 06:39:31 -0500
+	Sun, 10 Feb 2013 06:39:42 -0500
 From: sjur.brandeland@stericsson.com
 To: Ido Yariv <ido@wizery.com>, Ohad Ben-Cohen <ohad@wizery.com>
 Cc: linux-kernel@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org,
         Linus Walleij <linus.walleij@linaro.org>,
         Erwan Yvin <erwan.yvin@stericsson.com>, sjur@brendeland.net,
         =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-Subject: [PATCH 3/9] remoteproc: Parse ELF file to find resource table address
-Date: Sun, 10 Feb 2013 12:39:06 +0100
-Message-Id: <1360496352-29482-4-git-send-email-sjur.brandeland@stericsson.com>
+Subject: [PATCH 7/9] remoteproc: Code cleanup of resource parsing
+Date: Sun, 10 Feb 2013 12:39:10 +0100
+Message-Id: <1360496352-29482-8-git-send-email-sjur.brandeland@stericsson.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1360496352-29482-1-git-send-email-sjur.brandeland@stericsson.com>
 References: <1360496352-29482-1-git-send-email-sjur.brandeland@stericsson.com>
@@ -29,84 +29,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sjur Brændeland <sjur.brandeland@stericsson.com>
 
-Add function find_rsc_table_va to firmware ops. This function
-returns the location of the resource table in shared memory
-after loading.
+Combine the almost identical functions rproc_handle_virtio_rsc
+and rproc_handle_boot_rsc.
 
 Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
 ---
- drivers/remoteproc/remoteproc_elf_loader.c |   17 ++++++++++++++++-
- drivers/remoteproc/remoteproc_internal.h   |   13 +++++++++++++
- 2 files changed, 29 insertions(+), 1 deletions(-)
+ drivers/remoteproc/remoteproc_core.c |   51 ++++++++--------------------------
+ 1 files changed, 12 insertions(+), 39 deletions(-)
 
-diff --git a/drivers/remoteproc/remoteproc_elf_loader.c b/drivers/remoteproc/remoteproc_elf_loader.c
-index a958950..3137fba 100644
---- a/drivers/remoteproc/remoteproc_elf_loader.c
-+++ b/drivers/remoteproc/remoteproc_elf_loader.c
-@@ -312,9 +312,24 @@ rproc_elf_find_rsc_table(struct rproc *rproc, const struct firmware *fw,
- 	return table;
- }
- 
-+struct resource_table *rproc_elf_get_rsctab_addr(struct rproc *rproc,
-+						 const struct firmware *fw)
-+{
-+	struct elf32_shdr *shdr;
-+
-+	shdr = find_rsc_shdr(&rproc->dev, (struct elf32_hdr *)fw->data,
-+				fw->size);
-+	if (!shdr)
-+		return NULL;
-+
-+	/* Find resource table in loaded segments */
-+	return rproc_da_to_va(rproc, shdr->sh_addr, shdr->sh_size);
-+}
-+
- const struct rproc_fw_ops rproc_elf_fw_ops = {
- 	.load = rproc_elf_load_segments,
- 	.find_rsc_table = rproc_elf_find_rsc_table,
- 	.sanity_check = rproc_elf_sanity_check,
--	.get_boot_addr = rproc_elf_get_boot_addr
-+	.get_boot_addr = rproc_elf_get_boot_addr,
-+	.get_rsctab_addr = rproc_elf_get_rsctab_addr
- };
-diff --git a/drivers/remoteproc/remoteproc_internal.h b/drivers/remoteproc/remoteproc_internal.h
-index 7bb6648..3a5cb7d 100644
---- a/drivers/remoteproc/remoteproc_internal.h
-+++ b/drivers/remoteproc/remoteproc_internal.h
-@@ -32,6 +32,7 @@ struct rproc;
-  *			expects to find it
-  * @sanity_check:	sanity check the fw image
-  * @get_boot_addr:	get boot address to entry point specified in firmware
-+ * @get_rsctab_addr:	get resouce table address as specified in firmware
+diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
+index 1bf410d..ec9f81e 100644
+--- a/drivers/remoteproc/remoteproc_core.c
++++ b/drivers/remoteproc/remoteproc_core.c
+@@ -683,16 +683,22 @@ free_carv:
+  * A lookup table for resource handlers. The indices are defined in
+  * enum fw_resource_type.
   */
- struct rproc_fw_ops {
- 	struct resource_table *(*find_rsc_table) (struct rproc *rproc,
-@@ -40,6 +41,8 @@ struct rproc_fw_ops {
- 	int (*load)(struct rproc *rproc, const struct firmware *fw);
- 	int (*sanity_check)(struct rproc *rproc, const struct firmware *fw);
- 	u32 (*get_boot_addr)(struct rproc *rproc, const struct firmware *fw);
-+	struct resource_table *(*get_rsctab_addr)(struct rproc *rproc,
-+						const struct firmware *fw);
+-static rproc_handle_resource_t rproc_handle_rsc[] = {
++static rproc_handle_resource_t rproc_handle_rsc[RSC_LAST] = {
+ 	[RSC_CARVEOUT] = (rproc_handle_resource_t)rproc_handle_carveout,
+ 	[RSC_DEVMEM] = (rproc_handle_resource_t)rproc_handle_devmem,
+ 	[RSC_TRACE] = (rproc_handle_resource_t)rproc_handle_trace,
+ 	[RSC_VDEV] = NULL, /* VDEVs were handled upon registrarion */
  };
  
- /* from remoteproc_core.c */
-@@ -102,6 +105,16 @@ struct resource_table *rproc_find_rsc_table(struct rproc *rproc,
- 	return NULL;
++static rproc_handle_resource_t rproc_handle_vdev_rsc[RSC_LAST] = {
++	[RSC_VDEV] = (rproc_handle_resource_t)rproc_handle_vdev,
++};
++
+ /* handle firmware resource entries before booting the remote processor */
+ static int
+-rproc_handle_boot_rsc(struct rproc *rproc, struct resource_table *table, int len)
++rproc_handle_resource(struct rproc *rproc, struct resource_table *table,
++				int len,
++				rproc_handle_resource_t handlers[RSC_LAST])
+ {
+ 	struct device *dev = &rproc->dev;
+ 	rproc_handle_resource_t handler;
+@@ -717,7 +723,7 @@ rproc_handle_boot_rsc(struct rproc *rproc, struct resource_table *table, int len
+ 			continue;
+ 		}
+ 
+-		handler = rproc_handle_rsc[hdr->type];
++		handler = handlers[hdr->type];
+ 		if (!handler)
+ 			continue;
+ 
+@@ -729,40 +735,6 @@ rproc_handle_boot_rsc(struct rproc *rproc, struct resource_table *table, int len
+ 	return ret;
  }
  
-+static inline
-+struct resource_table *rproc_get_rsctab_addr(struct rproc *rproc,
-+				const struct firmware *fw)
-+{
-+	if (rproc->fw_ops->get_rsctab_addr)
-+		return rproc->fw_ops->get_rsctab_addr(rproc, fw);
-+
-+	return NULL;
-+}
-+
- extern const struct rproc_fw_ops rproc_elf_fw_ops;
+-/* handle firmware resource entries while registering the remote processor */
+-static int
+-rproc_handle_virtio_rsc(struct rproc *rproc, struct resource_table *table, int len)
+-{
+-	struct device *dev = &rproc->dev;
+-	int ret = 0, i;
+-
+-	for (i = 0; i < table->num; i++) {
+-		int offset = table->offset[i];
+-		struct fw_rsc_hdr *hdr = (void *)table + offset;
+-		int avail = len - offset - sizeof(*hdr);
+-		struct fw_rsc_vdev *vrsc;
+-
+-		/* make sure table isn't truncated */
+-		if (avail < 0) {
+-			dev_err(dev, "rsc table is truncated\n");
+-			return -EINVAL;
+-		}
+-
+-		dev_dbg(dev, "%s: rsc type %d\n", __func__, hdr->type);
+-
+-		if (hdr->type != RSC_VDEV)
+-			continue;
+-
+-		vrsc = (struct fw_rsc_vdev *)hdr->data;
+-
+-		ret = rproc_handle_vdev(rproc, vrsc, avail);
+-		if (ret)
+-			break;
+-	}
+-
+-	return ret;
+-}
+-
+ /**
+  * rproc_resource_cleanup() - clean up and free all acquired resources
+  * @rproc: rproc handle
+@@ -842,7 +814,7 @@ static int rproc_fw_boot(struct rproc *rproc, const struct firmware *fw)
+ 	}
  
- #endif /* REMOTEPROC_INTERNAL_H */
+ 	/* handle fw resources which are required to boot rproc */
+-	ret = rproc_handle_boot_rsc(rproc, table, tablesz);
++	ret = rproc_handle_resource(rproc, table, tablesz, rproc_handle_rsc);
+ 	if (ret) {
+ 		dev_err(dev, "Failed to process resources: %d\n", ret);
+ 		goto clean_up;
+@@ -897,7 +869,8 @@ static void rproc_fw_config_virtio(const struct firmware *fw, void *context)
+ 		goto out;
+ 
+ 	/* look for virtio devices and register them */
+-	ret = rproc_handle_virtio_rsc(rproc, table, tablesz);
++	ret = rproc_handle_resource(rproc, table, tablesz,
++						rproc_handle_vdev_rsc);
+ 	if (ret)
+ 		goto out;
+ 
 -- 
 1.7.5.4
 
