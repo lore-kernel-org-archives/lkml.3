@@ -1,76 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751233Ab3BJF0M (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Feb 2013 00:26:12 -0500
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:36920 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750837Ab3BJF0L (ORCPT
+	id S1752419Ab3BJF6k (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Feb 2013 00:58:40 -0500
+Received: from mail-vb0-f50.google.com ([209.85.212.50]:46087 "EHLO
+	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167Ab3BJF6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Feb 2013 00:26:11 -0500
-MIME-Version: 1.0
-Date: Sun, 10 Feb 2013 13:26:11 +0800
-Message-ID: <CAJd=RBAJdTewGVs2CFoto6ybnxUOJKHSF57nZQT25uF7B-b+fg@mail.gmail.com>
-Subject: [PATCH 2/2] stop_machine: dequeue work before signal completion
-From: Hillf Danton <dhillf@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>,
-        Stable <stable@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 10 Feb 2013 00:58:36 -0500
+From: Len Brown <lenb@kernel.org>
+To: linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
+        sparclinux@vger.kernel.org
+Subject: [PATCH 04/16] sparc idle: rename pm_idle to sparc_idle
+Date: Sun, 10 Feb 2013 00:58:11 -0500
+Message-Id: <3a242f58a5f40c60568cb1e3b13f119432203f48.1360475150.git.len.brown@intel.com>
+X-Mailer: git-send-email 1.8.1.3.535.ga923c31
+In-Reply-To: <1360475903-30007-1-git-send-email-lenb@kernel.org>
+References: <1360475903-30007-1-git-send-email-lenb@kernel.org>
+In-Reply-To: <2b219d07e0f287c2c713f5465fc8646158fa986e.1360475150.git.len.brown@intel.com>
+References: <2b219d07e0f287c2c713f5465fc8646158fa986e.1360475150.git.len.brown@intel.com>
+Reply-To: Len Brown <lenb@kernel.org>
+Organization: Intel Open Source Technology Center
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a CPU is finally put down in either CPU_UP_CANCELLED or
-CPU_POST_DEAD, cpu_stop_cpu_callback() signals immediate completion on
-all cpu_stop_works still queued on the dead CPU; unfortunately, this
-code is buggy in that it doesn't remove the canceled work items off
-the stopper->works leaving it corrupted, which will trigger BUG_ON()
-during CPU_UP_PREPARE if the CPU is brought back online.
+From: Len Brown <len.brown@intel.com>
 
-This bug isn't easily triggered because CPU_DOWN has to race against
-cpu_stop calls and most, if not all, cpu stop users pin target CPUs.
+(pm_idle)() is being removed from linux/pm.h
+because Linux does not have such a cross-architecture concept.
 
-Fix it by popping each work item off stopper->works.
+sparc uses an idle function pointer in its architecture
+specific code.  So we re-name sparc use of pm_idle to sparc_idle.
 
-Thanks Tejun for sharing commit message, again.
+Maybe some day, SPARC will cut over to cpuidle...
 
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
-Reviewed-by: Namhyung Kim <namhyung@kernel.org>
-Cc: stable@vger.kernel.org
+Signed-off-by: Len Brown <len.brown@intel.com>
+Cc: sparclinux@vger.kernel.org
 ---
+ arch/sparc/include/asm/processor.h | 1 +
+ arch/sparc/kernel/apc.c            | 3 ++-
+ arch/sparc/kernel/leon_pmc.c       | 5 +++--
+ arch/sparc/kernel/pmc.c            | 3 ++-
+ arch/sparc/kernel/process_32.c     | 7 +++----
+ 5 files changed, 11 insertions(+), 8 deletions(-)
 
---- a/kernel/stop_machine.c	Sun Feb 10 13:00:00 2013
-+++ b/kernel/stop_machine.c	Sun Feb 10 13:02:18 2013
-@@ -334,23 +334,24 @@ static int __cpuinit cpu_stop_cpu_callba
- #ifdef CONFIG_HOTPLUG_CPU
- 	case CPU_UP_CANCELED:
- 	case CPU_POST_DEAD:
--	{
--		struct cpu_stop_work *work;
--
- 		sched_set_stop_task(cpu, NULL);
- 		/* kill the stopper */
- 		kthread_stop(stopper->thread);
- 		/* drain remaining works */
- 		spin_lock_irq(&stopper->lock);
--		list_for_each_entry(work, &stopper->works, list)
-+		while (!list_empty(&stopper->works)) {
-+			struct cpu_stop_work *work;
-+			work = list_first_entry(&stopper->works,
-+					struct cpu_stop_work, list);
-+			list_del_init(&work->list);
- 			cpu_stop_signal_done(work->done, false);
-+		}
- 		stopper->enabled = false;
- 		spin_unlock_irq(&stopper->lock);
- 		/* release the stopper */
- 		put_task_struct(stopper->thread);
- 		stopper->thread = NULL;
- 		break;
--	}
+diff --git a/arch/sparc/include/asm/processor.h b/arch/sparc/include/asm/processor.h
+index 2fe99e6..34baa35 100644
+--- a/arch/sparc/include/asm/processor.h
++++ b/arch/sparc/include/asm/processor.h
+@@ -7,5 +7,6 @@
  #endif
+ 
+ #define nop() 		__asm__ __volatile__ ("nop")
++extern void (*sparc_idle)(void);
+ 
+ #endif
+diff --git a/arch/sparc/kernel/apc.c b/arch/sparc/kernel/apc.c
+index 348fa1a..eefda32 100644
+--- a/arch/sparc/kernel/apc.c
++++ b/arch/sparc/kernel/apc.c
+@@ -20,6 +20,7 @@
+ #include <asm/uaccess.h>
+ #include <asm/auxio.h>
+ #include <asm/apc.h>
++#include <asm/processor.h>
+ 
+ /* Debugging
+  * 
+@@ -158,7 +159,7 @@ static int apc_probe(struct platform_device *op)
+ 
+ 	/* Assign power management IDLE handler */
+ 	if (!apc_no_idle)
+-		pm_idle = apc_swift_idle;	
++		sparc_idle = apc_swift_idle;
+ 
+ 	printk(KERN_INFO "%s: power management initialized%s\n", 
+ 	       APC_DEVNAME, apc_no_idle ? " (CPU idle disabled)" : "");
+diff --git a/arch/sparc/kernel/leon_pmc.c b/arch/sparc/kernel/leon_pmc.c
+index 4e17432..708bca4 100644
+--- a/arch/sparc/kernel/leon_pmc.c
++++ b/arch/sparc/kernel/leon_pmc.c
+@@ -9,6 +9,7 @@
+ #include <asm/leon_amba.h>
+ #include <asm/cpu_type.h>
+ #include <asm/leon.h>
++#include <asm/processor.h>
+ 
+ /* List of Systems that need fixup instructions around power-down instruction */
+ unsigned int pmc_leon_fixup_ids[] = {
+@@ -69,9 +70,9 @@ static int __init leon_pmc_install(void)
+ 	if (sparc_cpu_model == sparc_leon) {
+ 		/* Assign power management IDLE handler */
+ 		if (pmc_leon_need_fixup())
+-			pm_idle = pmc_leon_idle_fixup;
++			sparc_idle = pmc_leon_idle_fixup;
+ 		else
+-			pm_idle = pmc_leon_idle;
++			sparc_idle = pmc_leon_idle;
+ 
+ 		printk(KERN_INFO "leon: power management initialized\n");
  	}
+diff --git a/arch/sparc/kernel/pmc.c b/arch/sparc/kernel/pmc.c
+index dcbb62f..8b7297f 100644
+--- a/arch/sparc/kernel/pmc.c
++++ b/arch/sparc/kernel/pmc.c
+@@ -17,6 +17,7 @@
+ #include <asm/oplib.h>
+ #include <asm/uaccess.h>
+ #include <asm/auxio.h>
++#include <asm/processor.h>
+ 
+ /* Debug
+  *
+@@ -63,7 +64,7 @@ static int pmc_probe(struct platform_device *op)
+ 
+ #ifndef PMC_NO_IDLE
+ 	/* Assign power management IDLE handler */
+-	pm_idle = pmc_swift_idle;
++	sparc_idle = pmc_swift_idle;
+ #endif
+ 
+ 	printk(KERN_INFO "%s: power management initialized\n", PMC_DEVNAME);
+diff --git a/arch/sparc/kernel/process_32.c b/arch/sparc/kernel/process_32.c
+index be8e862..62eede1 100644
+--- a/arch/sparc/kernel/process_32.c
++++ b/arch/sparc/kernel/process_32.c
+@@ -43,8 +43,7 @@
+  * Power management idle function 
+  * Set in pm platform drivers (apc.c and pmc.c)
+  */
+-void (*pm_idle)(void);
+-EXPORT_SYMBOL(pm_idle);
++void (*sparc_idle)(void);
+ 
+ /* 
+  * Power-off handler instantiation for pm.h compliance
+@@ -75,8 +74,8 @@ void cpu_idle(void)
+ 	/* endless idle loop with no priority at all */
+ 	for (;;) {
+ 		while (!need_resched()) {
+-			if (pm_idle)
+-				(*pm_idle)();
++			if (sparc_idle)
++				(*sparc_idle)();
+ 			else
+ 				cpu_relax();
+ 		}
+-- 
+1.8.1.3.535.ga923c31
 
---
