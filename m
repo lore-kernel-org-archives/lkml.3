@@ -1,161 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760899Ab3BJT05 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Feb 2013 14:26:57 -0500
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:41289 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756517Ab3BJT0y (ORCPT
+	id S1761026Ab3BJT1K (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Feb 2013 14:27:10 -0500
+Received: from mail-vb0-f48.google.com ([209.85.212.48]:64665 "EHLO
+	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760943Ab3BJT1C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Feb 2013 14:26:54 -0500
-Message-ID: <5117F403.1050300@linux.vnet.ibm.com>
-Date: Mon, 11 Feb 2013 00:54:51 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Sun, 10 Feb 2013 14:27:02 -0500
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, tglx@linutronix.de,
-        peterz@infradead.org, tj@kernel.org, rusty@rustcorp.com.au,
-        mingo@kernel.org, akpm@linux-foundation.org, namhyung@kernel.org,
-        rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, rjw@sisk.pl, sbw@mit.edu,
-        fweisbec@gmail.com, linux@arm.linux.org.uk, nikunj@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
-        netdev@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 04/45] percpu_rwlock: Implement the core design of
- Per-CPU Reader-Writer Locks
-References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com> <20130122073347.13822.85876.stgit@srivatsabhat.in.ibm.com> <20130208231017.GK2666@linux.vnet.ibm.com> <20130210180607.GA1375@redhat.com>
-In-Reply-To: <20130210180607.GA1375@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13021019-4790-0000-0000-000006DBE083
+In-Reply-To: <20130210185002.GA10801@thunk.org>
+References: <51157686.9000404@chronox.de>
+	<20130209180629.GD8091@thunk.org>
+	<20130210015751.GA13690@unpythonic.net>
+	<5117969A.1080909@chronox.de>
+	<20130210185002.GA10801@thunk.org>
+Date: Sun, 10 Feb 2013 14:27:00 -0500
+Message-ID: <CACXcFmm6Xfc_W06DNQ=d0wmGgqFLsUuzCnEivVzoFmKmTNv1GA@mail.gmail.com>
+Subject: Re: [RFC][PATCH] Entropy generator with 100 kB/s throughput
+From: Sandy Harris <sandyinchina@gmail.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Stephan Mueller <smueller@chronox.de>,
+        Jeff Epler <jepler@unpythonic.net>, linux-crypto@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/10/2013 11:36 PM, Oleg Nesterov wrote:
-> On 02/08, Paul E. McKenney wrote:
+On Sun, Feb 10, 2013 at 1:50 PM, Theodore Ts'o <tytso@mit.edu> wrote:
+
+> On Sun, Feb 10, 2013 at 01:46:18PM +0100, Stephan Mueller wrote:
 >>
->> On Tue, Jan 22, 2013 at 01:03:53PM +0530, Srivatsa S. Bhat wrote:
->>>
->>>  void percpu_read_unlock(struct percpu_rwlock *pcpu_rwlock)
->>>  {
->>> -	read_unlock(&pcpu_rwlock->global_rwlock);
->>
->> We need an smp_mb() here to keep the critical section ordered before the
->> this_cpu_dec() below.  Otherwise, if a writer shows up just after we
->> exit the fastpath, that writer is not guaranteed to see the effects of
->> our critical section.  Equivalently, the prior read-side critical section
->> just might see some of the writer's updates, which could be a bit of
->> a surprise to the reader.
-> 
-> Agreed, we should not assume that a "reader" doesn't write. And we should
-> ensure that this "read" section actually completes before this_cpu_dec().
+>> However, the CPU has timing jitter in the execution of instruction. And
+>> I try to harvest that jitter. The good thing is that this jitter is
+>> always present and can be harvested on demand.
 >
+> How do you know, though, that this is what you are harvesting?
+> ...
+> And what's your proof that your entropy source really is an entropy
+> source?
 
-Right, will fix.
- 
->>> +	/*
->>> +	 * We never allow heterogeneous nesting of readers. So it is trivial
->>> +	 * to find out the kind of reader we are, and undo the operation
->>> +	 * done by our corresponding percpu_read_lock().
->>> +	 */
->>> +	if (__this_cpu_read(*pcpu_rwlock->reader_refcnt)) {
->>> +		this_cpu_dec(*pcpu_rwlock->reader_refcnt);
->>> +		smp_wmb(); /* Paired with smp_rmb() in sync_reader() */
->>
->> Given an smp_mb() above, I don't understand the need for this smp_wmb().
->> Isn't the idea that if the writer sees ->reader_refcnt decremented to
->> zero, it also needs to see the effects of the corresponding reader's
->> critical section?
-> 
-> I am equally confused ;)
-> 
-> OTOH, we can probably aboid any barrier if reader_nested_percpu() == T.
-> 
+One paper that seems to show there is some randomness in
+such measurements is McGuire, Okech & Schiesser
+"Analysis of inherent randomness of the Linux kernel",
+http://lwn.net/images/conf/rtlws11/random-hardware.pdf
 
-Good point! Will add that optimization, thank you!
+They do two clock calls with a usleep() between, take the
+low bit of the difference and pack them unmixed into
+bytes for testing. Their tests show over 7.5 bits of entropy
+per byte, even with interrupts disabled. The same paper
+shows that simple arithmetic sequences give some
+apparent entropy, due to TLB misses, interrupts, etc.
 
-> 
->>> +static void announce_writer_inactive(struct percpu_rwlock *pcpu_rwlock)
->>> +{
->>> +   unsigned int cpu;
->>> +
->>> +   drop_writer_signal(pcpu_rwlock, smp_processor_id());
->>
->> Why do we drop ourselves twice?  More to the point, why is it important to
->> drop ourselves first?
-> 
-> And don't we need mb() _before_ we clear ->writer_signal ?
-> 
+There are lots of caveats in how this should be used and
+it is unclear how much real entropy it gives, but is seems
+clear it gives some.
 
-Oh, right! Or, how about moving announce_writer_inactive() to _after_
-write_unlock()?
+My own program to feed into random(4) is based on
+such things:
+ftp://ftp.cs.sjtu.edu.cn:990/sandy/maxwell/
 
->>> +static inline void sync_reader(struct percpu_rwlock *pcpu_rwlock,
->>> +			       unsigned int cpu)
->>> +{
->>> +	smp_rmb(); /* Paired with smp_[w]mb() in percpu_read_[un]lock() */
->>
->> As I understand it, the purpose of this memory barrier is to ensure
->> that the stores in drop_writer_signal() happen before the reads from
->> ->reader_refcnt in reader_uses_percpu_refcnt(), thus preventing the
->> race between a new reader attempting to use the fastpath and this writer
->> acquiring the lock.  Unless I am confused, this must be smp_mb() rather
->> than smp_rmb().
-> 
-> And note that before sync_reader() we call announce_writer_active() which
-> already adds mb() before sync_all_readers/sync_reader, so this rmb() looks
-> unneeded.
-> 
+HAVEGE also uses them
+http://www.irisa.fr/caps/projects/hipsor/
+& there is a havegd daemon for Linux
+http://www.issihosts.com/haveged/
 
-My intention was to help the writer see the ->reader_refcnt drop to zero
-ASAP; hence I used smp_wmb() at reader and smp_rmb() here at the writer.
-Please correct me if my understanding of memory barriers is wrong here..
-
-> But, at the same time, could you confirm that we do not need another mb()
-> after sync_all_readers() in percpu_write_lock() ? I mean, without mb(),
-> can't this reader_uses_percpu_refcnt() LOAD leak into the critical section
-> protected by ->global_rwlock? Then this LOAD can be re-ordered with other
-> memory operations done by the writer.
-> 
-
-Hmm.. it appears that we need a smp_mb() there.
-
-> 
-> 
-> Srivatsa, I think that the code would be more understandable if you kill
-> the helpers like sync_reader/raise_writer_signal. Perhaps even all "write"
-> helpers, I am not sure. At least, it seems to me that all barriers should
-> be moved to percpu_write_lock/unlock. But I won't insist of course, up to
-> you.
-> 
-
-Sure, sure. Even Tejun pointed out that those helpers are getting in the way
-of readability. I'll get rid of them in the next version.
-
-> And cosmetic nit... How about
-> 
-> 	struct xxx {
-> 		unsigned long	reader_refcnt;
-> 		bool		writer_signal;
-> 	}
-> 
-> 	struct percpu_rwlock {
-> 		struct xxx __percpu	*xxx;
-> 		rwlock_t		global_rwlock;
-> 	};
-> 
-> ?
-> 
-> This saves one alloc_percpu() and ensures that reader_refcnt/writer_signal
-> are always in the same cache-line.
->
-
-Ok, that sounds better. Will make that change. Thanks a lot Oleg!
-
-Regards,
-Srivatsa S. Bhat
-
+random(4) also mixed in timer data at one point,
+which seems the correct thing for it to do. Later
+I heard something about that code having been
+removed. What is the current status?
