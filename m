@@ -1,78 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758007Ab3BKQ1S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 11:27:18 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35467 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757955Ab3BKQ1M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 11:27:12 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 04/11] extcon: arizona: Support additional configuration of microphone detection
-Date: Mon, 11 Feb 2013 16:26:59 +0000
-Message-Id: <1360600026-16878-4-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1360600026-16878-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <20130211162614.GH4607@opensource.wolfsonmicro.com>
- <1360600026-16878-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	id S1758068Ab3BKQ2J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 11:28:09 -0500
+Received: from mga03.intel.com ([143.182.124.21]:30819 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757764Ab3BKQ2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 11:28:06 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,643,1355126400"; 
+   d="scan'208";a="255483746"
+From: Imre Deak <imre.deak@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Maxim Levitsky <maximlevitsky@gmail.com>, Tejun Heo <tj@kernel.org>,
+        daniel@vger.kernel.org, inaro-mm-sig@lists.linaro.org
+Subject: [PATCH] lib/scatterlist: add simple page iterator
+Date: Mon, 11 Feb 2013 18:28:02 +0200
+Message-Id: <1360600082-24460-1-git-send-email-imre.deak@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow systems to tune detection rate and debounce suitably for their
-mechanical parameters.
+Add an iterator to walk through a scatter list a page at a time starting
+at a specific page offset. As opposed to the mapping iterator this is
+meant to be small, performing well even in simple loops like collecting
+all pages on the scatterlist into an array or setting up an iommu table
+based on the pages' DMA address.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Imre Deak <imre.deak@intel.com>
 ---
- drivers/extcon/extcon-arizona.c   |   12 ++++++++++++
- include/linux/mfd/arizona/pdata.h |    6 ++++++
- 2 files changed, 18 insertions(+)
+ include/linux/scatterlist.h |   48 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 48 insertions(+)
 
-diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
-index ab8b9c7..d7e1047 100644
---- a/drivers/extcon/extcon-arizona.c
-+++ b/drivers/extcon/extcon-arizona.c
-@@ -907,6 +907,18 @@ static int arizona_extcon_probe(struct platform_device *pdev)
- 				   arizona->pdata.micd_bias_start_time
- 				   << ARIZONA_MICD_BIAS_STARTTIME_SHIFT);
+diff --git a/include/linux/scatterlist.h b/include/linux/scatterlist.h
+index 4bd6c06..d22851c 100644
+--- a/include/linux/scatterlist.h
++++ b/include/linux/scatterlist.h
+@@ -231,6 +231,54 @@ size_t sg_copy_to_buffer(struct scatterlist *sgl, unsigned int nents,
+  */
+ #define SG_MAX_SINGLE_ALLOC		(PAGE_SIZE / sizeof(struct scatterlist))
  
-+	if (arizona->pdata.micd_rate)
-+		regmap_update_bits(arizona->regmap, ARIZONA_MIC_DETECT_1,
-+				   ARIZONA_MICD_RATE_MASK,
-+				   arizona->pdata.micd_rate
-+				   << ARIZONA_MICD_RATE_SHIFT);
++struct sg_page_iter {
++	struct scatterlist *sg;
++	int sg_pgoffset;
++	struct page *page;
++};
 +
-+	if (arizona->pdata.micd_dbtime)
-+		regmap_update_bits(arizona->regmap, ARIZONA_MIC_DETECT_1,
-+				   ARIZONA_MICD_DBTIME_MASK,
-+				   arizona->pdata.micd_dbtime
-+				   << ARIZONA_MICD_DBTIME_SHIFT);
++static inline int
++sg_page_cnt(struct scatterlist *sg)
++{
++	BUG_ON(sg->offset || sg->length & ~PAGE_MASK);
 +
- 	/*
- 	 * If we have a clamp use it, activating in conjunction with
- 	 * GPIO5 if that is connected for jack detect operation.
-diff --git a/include/linux/mfd/arizona/pdata.h b/include/linux/mfd/arizona/pdata.h
-index bcbe4fd..2f5f08e 100644
---- a/include/linux/mfd/arizona/pdata.h
-+++ b/include/linux/mfd/arizona/pdata.h
-@@ -111,6 +111,12 @@ struct arizona_pdata {
- 	/** Mic detect ramp rate */
- 	int micd_bias_start_time;
++	return sg->length >> PAGE_SHIFT;
++}
++
++static inline void
++sg_page_iter_next(struct sg_page_iter *iter)
++{
++	while (iter->sg && iter->sg_pgoffset >= sg_page_cnt(iter->sg)) {
++		iter->sg_pgoffset -= sg_page_cnt(iter->sg);
++		iter->sg = sg_next(iter->sg);
++	}
++
++	if (iter->sg) {
++		iter->page = nth_page(sg_page(iter->sg), iter->sg_pgoffset);
++		iter->sg_pgoffset++;
++	}
++}
++
++static inline void
++sg_page_iter_start(struct sg_page_iter *iter, struct scatterlist *sglist,
++		   unsigned long pgoffset)
++{
++	iter->sg = sglist;
++	iter->sg_pgoffset = pgoffset;
++	iter->page = NULL;
++
++	sg_page_iter_next(iter);
++}
++
++/*
++ * Simple sg page iterator, starting off at the given page offset. Each entry
++ * on the sglist must start at offset 0 and can contain only full pages.
++ * iter->page will point to the current page, iter->sg_pgoffset to the page
++ * offset within the sg holding that page.
++ */
++#define for_each_sg_page(sglist, iter, pgoffset)				\
++	for (sg_page_iter_start((iter), (sglist), (pgoffset));		\
++	     (iter)->sg; sg_page_iter_next(iter))
  
-+	/** Mic detect sample rate */
-+	int micd_rate;
-+
-+	/** Mic detect debounce level */
-+	int micd_dbtime;
-+
- 	/** Headset polarity configurations */
- 	struct arizona_micd_config *micd_configs;
- 	int num_micd_configs;
+ /*
+  * Mapping sg iterator
 -- 
-1.7.10.4
+1.7.9.5
 
