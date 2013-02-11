@@ -1,106 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758623Ab3BKR7G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 12:59:06 -0500
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:52940 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758504Ab3BKR7E (ORCPT
+	id S1758663Ab3BKR7J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 12:59:09 -0500
+Received: from usindpps03.hds.com ([207.126.252.16]:49731 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758504Ab3BKR7H convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 12:59:04 -0500
-Date: Mon, 11 Feb 2013 18:58:56 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Rientjes <rientjes@google.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Pekka Enberg <penberg@kernel.org>,
-        Michal Marek <mmarek@suse.cz>, Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: kvmtool tree (Was: Re: [patch] config: fix make kvmconfig)
-Message-ID: <20130211175856.GC9716@gmail.com>
-References: <CAOJsxLFDa3sLwP2MWdXJMTfZNEopp5imy8nWNViuPnWH747ggQ@mail.gmail.com>
- <CA+55aFzEEbZqBaOKYB8H8+i904nXjNEgH=CUPtVMQU60QTTJaw@mail.gmail.com>
- <CAOJsxLFDbmNitH=N8v3jSno0SFL33s=nPc+hGRAqJfYFZS0RGw@mail.gmail.com>
- <CA+55aFy=SaVjNby=Jy_O9ZRQ_Ofc-6_+bLv=HeMMSzQQHw9vMQ@mail.gmail.com>
- <CAOJsxLFpE=HjkPcX6NsWS8636qnEhDFDJi+49xX2Ge3Xp4MeUg@mail.gmail.com>
- <CA+55aFzXF-4Xwc4HU8vnTin4WqtvYcpXq0TsqTN_vRg=myLH_Q@mail.gmail.com>
- <20130211122654.GA5802@gmail.com>
- <CA+55aFwq+_TvOZNEPO-eFPjYuPuMFL0bgR0x=nLq_tvfATqaTA@mail.gmail.com>
- <20130211172807.GA9716@gmail.com>
- <CA+55aFx-0-qcYMqH2wnJJ7iAPhoEvD_EQ0xqVW3VGS3G9=_1_w@mail.gmail.com>
+	Mon, 11 Feb 2013 12:59:07 -0500
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>
+CC: "Matt Fleming (matt@console-pimps.org)" <matt@console-pimps.org>,
+        "mikew@google.com" <mikew@google.com>,
+        "cbouatmailru@gmail.com" <cbouatmailru@gmail.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: [PATCH v6 -next 0/2] make efivars/efi_pstore interrupt-safe
+Thread-Topic: [PATCH v6 -next 0/2] make efivars/efi_pstore interrupt-safe
+Thread-Index: Ac4IgIcxM7O3s+EQSmu/fWeiIUzHoA==
+Date: Mon, 11 Feb 2013 17:58:28 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D414A91283@USINDEM103.corp.hds.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.73.11]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFx-0-qcYMqH2wnJJ7iAPhoEvD_EQ0xqVW3VGS3G9=_1_w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
+ definitions=2013-02-11_03:2013-02-11,2013-02-11,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=2 phishscore=0 bulkscore=21 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1211240000
+ definitions=main-1302110161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Changelog
+v5 -> v6
+   - Rebase to a latest linux-next tree.
+   - Modify a comment from "efivar_update_sysfs_entry" to 
+     "efivar_update_sysfs_entries" in include/linux/efi.h (Patch 2/2)
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+v4 -> v5
+   - Rebase from a linus tree to a linux-next tree to avoid getting
+     a conflict when this patchset is merged to a linux-next tree.
+   - Merge previous patches 2/3 and 3/3 into 2/2 because they fix
+     a same problem.
+   - Modify to fit a latest upstream kernel as follows.
+    - Change spinlock operations of efivarfs which has been 
+      introduced recently.(Patch 1/2)
+    - Remove delete_all_stale_sysfs_entries() from update_sysfs_entries()
+      because a currnet efi_pstore doesn't erase existing entries
+      in a write callback and sysfs entries don't become stale. 
+      (Patch 2/2)
 
-> On Feb 11, 2013 9:28 AM, "Ingo Molnar" <mingo@kernel.org> wrote:
->
-> > How on earth can anyone, against all that evidence, still 
-> > claim that it's a net minus?
-> 
-> Because I don't think there is any reason for mixing up the 
-> projects. Why do you not just make it separate? Everything you 
-> claim is such a big deal would still work perfectly well.
-> 
-> Every time you talk about "negative" it's as of the project 
-> wouldn't exist if it was external. Which is total bull, since 
-> it is effectively external already. [...]
+v3 -> v4
+  - Patch 2/3
+    Move cancel_work_sync() above an efi_enabled test in efivars_exit().
 
-That's not actually true. If you check the list of early 
-tools/kvm/ contributors you will see an overlap with -tip 
-contributors. I know tools/kvm/ developers who just use their 
-existing -tip repo to pick up the latest. They are using the 
--tip commit notifications to see what went in and what not, etc.
+v2 -> v3
+  - Patch 1/3
+    Replace spin_lock_irqsave/spin_unlock_irqrestore with spin_lock_irq/spin_unlock_irq in efivars_unregister(),
+    efivar_create(), efivar_store_raw() and efivar_delete() which are called in a process context. 
 
-Claiming that because the contribution model works to a certain 
-degree integrated into a small Linux subsystem tree it does not 
-ever have to go upstream is so wrong on so many levels ...
+ - Patch 2/3
+    Change a name of delete_sysfs_entry() to delete_all_stale_sysfs_entries().
+    Also, don't release an efivar->lock while searching efivar->list in delete_all_stale_sysfs_entries().
 
-The most likely correct statement would be something like: "if 
-it worked on a small scale it will probably work even better 
-with more exposure on a larger scale." We'll never know that 
-though.
+ - Patch 3/3
+    Remove a logic in efi_pstore_erase() which freshly created in patch v2.
 
-( That is also why some of the focus was on lockdep - knowing 
-  that it's close in terms of maintenance distance made it an 
-  easier topic - socially. )
+v1 -> v2
+ - Patch 1/3
+    Add spin_lock_irq/spin_unlock_irq to open/close callbacks of efi_pstore 
+    instead of moving spin_locks to a read callback.    
 
-Since I'm using it on an almost daily basis to test out failed 
-bzImages, and because I (mistakenly) thought it had some 
-upstream chances, I found it good to help out (a bit) with 
-maintenance and code review.
+ - Patch 2/3
+    Replace a periodical timer with schedule_work().
 
-While it works it's obviously limited - there's just so many 
--tip developers and I thought everyone would benefit from this 
-going the next natural step.
+ - Patch 3/3
+    freshly create to kick a workqueue in oops case only.
 
-> [...] And it will stay that way. You are just in denial and 
-> trying to say that integrating it would somehow help.
-> 
-> And I claim it wouldn't. It works fine outside already. Just 
-> ADMIT it.
+[Problem]
+ There are following problems related to an interrupt context in efivars
+ including efivarfs and efi_pstore.
 
-So tools/kvm/ works 'just fine' - in its current limited form - 
-because for the developers involved it's already "upstream", for 
-the first hop of upstream.
+(1)There is a scenario which efi_pstore fails to log messages 
+   in a panic case.
 
-So basically Pekka optimistically thought it's an eventual 'tit 
-for tat', a constant stream of benefits to the kernel, in the 
-hope of finding a home in the upstream kernel which would 
-further help both projects. The kernel wants to keep the 'tit' 
-only though.
+   - CPUA holds an efi_var->lock in either efivarfs parts 
+     or efi_pstore with interrupt enabled.
+   - CPUB panics and sends IPI to CPUA in smp_send_stop().
+   - CPUA stops with holding the lock.
+   - CPUB kicks efi_pstore_write() via kmsg_dump(KSMG_DUMP_PANIC)
+     but it returns without logging messages.
 
-Thanks,
+(2)Also, efi_pstore creates sysfs entries, which enable users to access to 
+   NVRAM, in a write callback.
+   If a kernel panic happens in an interrupt contexts, pstore may fail
+   because it could sleep due to dynamic memory allocations during creating 
+   sysfs entries.
+   An actual failure due to the create_sysfs_entry() has been reported.
+   http://comments.gmane.org/gmane.linux.kernel.efi/406
 
-	Ingo
+To resolve problems above, this patchset makes efivars/efi_pstore
+interrupt-safe.
+
+[Patch Description]
+  Please see detailed explanations in each patch.
+
+Seiji Aguchi (2):
+  efivars: Disable external interrupt while holding efivars->lock
+  efi_pstore: Introducing workqueue updating sysfs entries
+
+ drivers/firmware/efivars.c |  171 ++++++++++++++++++++++++++++++++------------
+ include/linux/efi.h        |    3 +-
+ 2 files changed, 126 insertions(+), 48 deletions(-)
+
