@@ -1,65 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932846Ab3BKWnB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 17:43:01 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:55090 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932782Ab3BKWm7 (ORCPT
+	id S932853Ab3BKWoN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 17:44:13 -0500
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:38493 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932779Ab3BKWoM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 17:42:59 -0500
-Message-ID: <511973EF.8080007@kernel.org>
-Date: Mon, 11 Feb 2013 17:42:55 -0500
-From: Len Brown <lenb@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Catalin Marinas <catalin.marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH 06/16] ARM idle: delete pm_idle
-References: <2b219d07e0f287c2c713f5465fc8646158fa986e.1360475150.git.len.brown@intel.com> <9838a4aeee256adeaef90efe56df2c9988206982.1360475150.git.len.brown@intel.com> <20130211160229.GB5676@MacBook-Pro.local> <20130211161125.GM17833@n2100.arm.linux.org.uk>
-In-Reply-To: <20130211161125.GM17833@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 11 Feb 2013 17:44:12 -0500
+From: Toshi Kani <toshi.kani@hp.com>
+To: rjw@sisk.pl, linux-acpi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Toshi Kani <toshi.kani@hp.com>
+Subject: [PATCH] ACPI: Remove the use of CONFIG_ACPI_CONTAINER_MODULE
+Date: Mon, 11 Feb 2013 15:33:20 -0700
+Message-Id: <1360622000-22140-1-git-send-email-toshi.kani@hp.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2013 11:11 AM, Russell King - ARM Linux wrote:
-> On Mon, Feb 11, 2013 at 04:02:30PM +0000, Catalin Marinas wrote:
->> On Sun, Feb 10, 2013 at 05:58:13AM +0000, Len Brown wrote:
->>> pm_idle() on ARM was a synonym for default_idle(),
->>> so simply invoke default_idle() directly.
->>
->> The clean-up looks fine as we already have an arm_pm_idle but longer
->> term I was thinking about having a common declaration similar to
->> pm_power_off that code under drivers/power/(reset/) can override (and
->> such driver may be shared by multiple architectures). OTOH, if you get
->> rid of the generic linux/pm.h declaration architectures can use a common
->> pm_idle name and type (though I think having it in the common header
->> would be better). For ARM this would mean s/arm_pm_idle/pm_idle/ on top
->> if your patch.
-> 
-> pm_idle() was that common declaration - but it had the side effect that
-> it was defined to be called with interrupts disabled, but return with
-> interrupts enabled.
+config ACPI_CONTAINER has been changed to bool (y/n), and its
+module option is no longer valid.  So, remove the use of
+CONFIG_ACPI_CONTAINER_MODULE.
 
-Yeah, I expect that grew out of the x86 idiom "STI;HLT",
-which dictated default_idle(), which in-turn dictated pm_idle().
-x86's MWAIT instruction now has more flexibility WRT interrupts,
-but the cast was already set...
+Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+---
+ include/linux/acpi.h |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-Please let me know if you Ack the patch as is,
-or would like it changed.
-
-thanks,
--Len Brown, Intel Open Source Technology Center
-
-> arm_pm_idle() "fixed" that weirdness such that it's now expected to
-> return with IRQs in the same state that it was called.
-> 
-> pm_power_off() is a cross-arch hook already.
-> 
-
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index c6ccd9f..bcbdd74 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -363,8 +363,7 @@ extern acpi_status acpi_pci_osc_control_set(acpi_handle handle,
+ #if defined(CONFIG_ACPI_HOTPLUG_CPU) &&			\
+ 	(defined(CONFIG_ACPI_HOTPLUG_MEMORY) ||		\
+ 	 defined(CONFIG_ACPI_HOTPLUG_MEMORY_MODULE)) &&	\
+-	(defined(CONFIG_ACPI_CONTAINER) ||		\
+-	 defined(CONFIG_ACPI_CONTAINER_MODULE))
++	defined(CONFIG_ACPI_CONTAINER)
+ #define ACPI_HOTPLUG_OST
+ #endif
+ 
