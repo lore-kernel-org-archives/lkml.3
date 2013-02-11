@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757761Ab3BKRF2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 12:05:28 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58316 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757640Ab3BKRF1 (ORCPT
+	id S1758021Ab3BKRGU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 12:06:20 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:57218 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757664Ab3BKRGP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 12:05:27 -0500
-Date: Mon, 11 Feb 2013 17:05:25 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: J Keerthy <j-keerthy@ti.com>
-Cc: linux-kernel@vger.kernel.org, lgirdwood@gmail.com
-Subject: Re: [PATCH V2] Regulator: Reorder the min max assignment in the
- sequence of regulator_set_voltage function
-Message-ID: <20130211170525.GK4607@opensource.wolfsonmicro.com>
-References: <1360565374-1553-1-git-send-email-j-keerthy@ti.com>
+	Mon, 11 Feb 2013 12:06:15 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: dsterba@suse.cz
+Subject: Re: Oops when mounting btrfs partition
+Date: Mon, 11 Feb 2013 17:06:10 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-5-generic; KDE/4.3.2; x86_64; ; )
+Cc: Chris Mason <chris.mason@fusionio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
+References: <4028366.UQxPtEU6If@wuerfel> <201302042155.50977.arnd@arndb.de> <20130208161035.GI12339@twin.jikos.cz>
+In-Reply-To: <20130208161035.GI12339@twin.jikos.cz>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="IJAclU0AInkryoed"
-Content-Disposition: inline
-In-Reply-To: <1360565374-1553-1-git-send-email-j-keerthy@ti.com>
-X-Cookie: It's all in the mind, ya know.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302111706.10332.arnd@arndb.de>
+X-Provags-ID: V02:K0:xLfj/YPR4ou45Fp2qfg/HywXRBOp4k+Uc+fQbgYgbe7
+ LX2Nd9GlYM9ZdpKL5HoLNp2h5f/CBB6paPkM4YaLEqnfhkVsBJ
+ Q0mJdRVIT3GTAQZDmuowxtJGY/fafXL1bwZwpsy/WPNy44BqIR
+ HLqjFkbcfxx2QW0jVe1eHSDag5sch0vYeQxDHe9H4U8YwfIRIk
+ j+DIhJE05xyb7lVBAeX4vhbTOFdJV9YLD2mZd+4/6m12lpVBt2
+ yh0RBLe6hTkYOYXgggimXcjCgMq/+lGFIHGaoTY4/UvBozraba
+ JvRFQQenkkWR8UKS9SL0FcTssF3dN0Pstpg29aQfuebS/Le6UN
+ IuTdM3E/vZas1vMY/Uug=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Friday 08 February 2013, David Sterba wrote:
+> On Mon, Feb 04, 2013 at 09:55:50PM +0000, Arnd Bergmann wrote:
+> > On Saturday 02 February 2013, Chris Mason wrote:
+> > 
+> > I've done a full backup of all data now, without any further Ooops messages, but
+> > I did get these:
+> > 
+> > [66155.429029] btrfs no csum found for inode 1212139 start 23707648
+> 
+> The missing csums were caused by a bug introcuded in 3.8-rc1 and fixed
+> in rc5.
+> 
 
---IJAclU0AInkryoed
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Ok, thanks for the information.
 
-On Mon, Feb 11, 2013 at 12:19:34PM +0530, J Keerthy wrote:
-
-> The min and max values for regulators are getting assigned before actually
-> the voltage is set. So making sure that min and max values are assigned
-> only if the voltage is successfully set else keeping the last successfully
-> set voltage's min and max values.
-
-> This is boot tested on OMAP4430 and OMAP4460 boards.
-
-This seems fine but doesn't apply against topic/core or -next, can you
-please regenerate against topic/core and resend?
-
-> V2: Fixed comment from Mark. Introduced local variables to hold current
-> min and max values.
-
-Don't include things like this in the changelog, include them after the
---- as covered in SubmittingPatches.
-
---IJAclU0AInkryoed
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRGSTOAAoJELSic+t+oim9rZwQAJfAeRakCk18Qkni8yvvWS9r
-FG07wtIsjY9iV09Nn2K6KrbYi07WmYr3zTuhDxKRjYicgqmM+dic8ik0coglyFMG
-KhVp/1Lg/dNXG9aS3z0WU/8XkhdOwro5+bjrqAxPBfZMRFAHwrAe0GUbxbFn2TnX
-AD/bWj5LLrXM0RKjEuScUn8HRlzgz043aVcSMGgJ74qF+6NBu78ro0k/6VGqcxP4
-5RZ71r46G4crvEQr8L5bxJB8icOCH6XUKYiUU/8FQQ245Da3F3OctOX2oy7ZBb5M
-1W4pWyjZ1zdU0pxYga9155v/z5HyBxnHiexcG2cgPYpngw20kMHo1llPu/pUoaAE
-y2tcr/PH3obYqSFm99kD7yd3sbLndg97qmMV3EESEue5jdAI1WUYqB0xDBUc/PKL
-lz4lq01j2VoOYlUfYqpAjXRraWVu9tX4MrFI/h11VLs1/4ya7ZGFLWzE83wez8VC
-SWdRRJSQx292pNYdSKzczFd6URSFDpZ5kS+fvKjA9/EjbPoqBdicnDhGRkkZyFQS
-S8M9yqWnnqc1O6PXJ2Idtz+DoXCPD2Z51sZQnVdDltQiL3DYb571C8WO0n+GN+yh
-gtrFaMcYXWWm60lTLdClGrx1L8g+MRZHZElwG7oa7M1cArHUDZLbDpzhsf867PVX
-DLrvHY/lKD2reQ/K1Rxv
-=34v2
------END PGP SIGNATURE-----
-
---IJAclU0AInkryoed--
+	Arnd
