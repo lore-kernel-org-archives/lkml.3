@@ -1,73 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757552Ab3BKPHX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 10:07:23 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40261 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757120Ab3BKPHV (ORCPT
+	id S1757559Ab3BKPIb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 10:08:31 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:53124 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757444Ab3BKPIa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 10:07:21 -0500
-Date: Mon, 11 Feb 2013 15:07:09 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>
-Subject: Re: [PATCH 08/33] gpio: Convert to devm_ioremap_resource()
-Message-ID: <20130211150709.GL17833@n2100.arm.linux.org.uk>
-References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de> <1358762966-20791-9-git-send-email-thierry.reding@avionic-design.de> <CAOh2x=ne_Oe7V=BzjQJtuPv20syorLTq-C89aKQDo4JK78Y8YA@mail.gmail.com> <20130209135202.C8EA73E30EC@localhost> <CACRpkdaxxn9nWKjFF=XD5F2kus69-8uxqPWA1vt1RJ0aGJ-Mvw@mail.gmail.com>
+	Mon, 11 Feb 2013 10:08:30 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [char-misc-next 03/11] mei: bus: Initial implementation for I/O routines
+Date: Mon, 11 Feb 2013 15:08:24 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-5-generic; KDE/4.3.2; x86_64; ; )
+Cc: Tomas Winkler <tomas.winkler@intel.com>, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org
+References: <1360270997-7639-1-git-send-email-tomas.winkler@intel.com> <201302111152.42483.arnd@arndb.de> <20130211125836.GN20996@sortiz-mobl>
+In-Reply-To: <20130211125836.GN20996@sortiz-mobl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdaxxn9nWKjFF=XD5F2kus69-8uxqPWA1vt1RJ0aGJ-Mvw@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302111508.24317.arnd@arndb.de>
+X-Provags-ID: V02:K0:JylMCgbYgm5S3oIVspbhqBt7t4sJDU6TM8CaE81i5l8
+ PFLsHRcbAXko+JU2snicUkT0UOkAuSiN1pRJ+D2agWEfHnKyOv
+ A2ZX02USJNZF4+tP/p4jQvB1qOljoey3eTmMfrcaVgHo0zUdDe
+ JT+WxGpCrUQsZszqcaFDXpS7dFiG7LD13eEQqnoERmUWJFiiVL
+ 3dprVQ0PYmbbV58A3EfkscR4RW4O4fOraSsBB9VnGQtrfGGvZO
+ eSQuC1cdp7EB7a4ZvnYM4ErDnZs+rWPj47Yf1fqLmYY+eCIQBv
+ rA6b/ML5sNjEZrt7TP/YugsIRVaYFFHL2iE1NLE8WSCCYlIh4p
+ BQ8REqcaxzD/RrPU5/MI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 11, 2013 at 02:53:47PM +0100, Linus Walleij wrote:
-> NB: among the error codes people want to propagate from
-> consumer interfaces such as say, clk_get(), regulator_get()
-> and pinctrl_get() is -EPROBE_DEFER. So just "something
-> failed" (return NULL) isn't enough.
-> 
-> We then obviously need to return an int as error code instead
-> and pass the pointer as argument, so do you mean we should
-> refactor all the *_get() things from e.g.:
-> 
-> struct clk *clk_get(struct device *dev, const char *id);
-> 
-> into something like:
-> 
-> int clk_get(struct clk **clk, struct device *dev, const char *id);
-> 
-> across the entire kernel?
+On Monday 11 February 2013, Samuel Ortiz wrote:
+> On Mon, Feb 11, 2013 at 11:52:42AM +0000, Arnd Bergmann wrote:
+> > On Thursday 07 February 2013, Samuel Ortiz wrote:
+> > > On Thu, Feb 07, 2013 at 10:34:44PM +0000, Arnd Bergmann wrote:
+> > > > On Thursday 07 February 2013, Tomas Winkler wrote:
+> > > > > +
+> > > > > +struct mei_bus_ops {
+> > > > > +       int (*send)(struct mei_bus_client *client, u8 *buf, size_t length);
+> > > > > +       int (*recv)(struct mei_bus_client *client, u8 *buf, size_t length);
+> > > > > +};
+> > > > > +
+> > > > 
+> > > > Can you have more than one set of mei_bus_ops in a driver? 
+> > > You can have at most one mei_bus_ops per mei_bus_client.
+> > > 
+> > > > If not, how about adding the callbacks to the mei_bus_driver structure
+> > > > directly as a simplification? 
+> > > I can add the ops directly to the mei_bus_client structure, yes.
+> > 
+> > I looked at the new version, and it's not what I assumed it would be.
+> > I thought the operations were specific to a client driver and should
+> > be part of the /mei_bus_driver/ structure, not the /mei_bus_client/.
+> The ops should be part of mei_bus_client as they're specific to the MEI
+> protocol for a given IP block on the ME. You need to have MEI and HECI
+> knowledge to implement those ops and drivers (defining their mei_bus_driver
+> structure) should not have that kind of knowledge but rather focus on the
+> technology they're driving.
+> If we take the NFC example again, the drivers/nfc/ code will send NFC payloads
+> to the bus I/O routines and this is where the mei_bus_client ops will add the
+> ME specific protocol (command and request id for the NFC block) on top of it.
+> In practice, this is an additional header which handles a transport layer that's
+> specific not only to the ME but to the NFC block of it. So each ME block can
+> have its own protocol to send and receive technology specific payloads, that's
+> what those ops implement.
+> That's why I think that those ops should not be defined by the drivers/nfc/ code
+> and in fact should be opaque to it.
 
-I really don't want to do that.  What we have today I think is far
-better than having to munge things like that - you just get a different
-set of problems through doing that, such as what happens if people
-ignore the returned error code, etc.
+I think I'm still confused. What I read in your description is that unlike
+other subsystems that have a common bus implementation that is hooked into
+by two kinds of drivers (bus drivers that provide devices like a USB host
+controller, and device drivers that use those devices), you have three
+components that can be mixed independently: the bus (based on which
+PCI device you have), the transport and the endpoint device. Is that
+correct?
 
-We _should_ really be able to get Sparse to deal with this.  Sparse
-really should be taught about a pointer attribute that says "this is
-fine to dereference, but it should also have the magic IS_ERR() check
-done on it too."  As IS_ERR() is a function, we can surely mark the
-passed pointer in some way to tell sparse "this has been appropraitely
-checked".
+If so, how do you know which transport to use?
 
-Practically, we don't end up with that many problems though with people
-failing to check the returned pointer (I've seen relatively few of these
-in the bigger scheme of things).  What I have seen through is repeated
-confusion between IS_ERR() and IS_ERR_OR_NULL() since the second one was
-introduced - which then leads people into coding their error paths such
-that they return zero should NULL be returned.
-
-I've said before - almost every usage of IS_ERR_OR_NULL() appears to be
-a bug... and I've been mooting its removal.  I have acks against a patch
-which deprecates it - but we can't deprecate it until we've removed most
-of the existing users of it (otherwise akpm will hunt down those who
-added the deprecated marker.)
+	Arnd
