@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932736Ab3BKVzf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 16:55:35 -0500
-Received: from mail-out.m-online.net ([212.18.0.10]:38949 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932692Ab3BKVze (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 16:55:34 -0500
-X-Auth-Info: Yyy1ykd2o3gCcmlxzvTvWquRSSoa9st8d8BV0fHWJx0=
-Date: Mon, 11 Feb 2013 22:55:29 +0100
-From: Anatolij Gustschin <agust@denx.de>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linuxppc-dev@list.ozlabs.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 2/2] powerpc/5200: Use the gpt* labels to simplify
- mpc5200 dts files
-Message-ID: <20130211225529.7ac05eca@crub>
-In-Reply-To: <1360310571-31494-2-git-send-email-grant.likely@secretlab.ca>
-References: <1360310571-31494-1-git-send-email-grant.likely@secretlab.ca>
-	<1360310571-31494-2-git-send-email-grant.likely@secretlab.ca>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932749Ab3BKV7g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 16:59:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49021 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932691Ab3BKV7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 16:59:35 -0500
+Date: Mon, 11 Feb 2013 16:59:29 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 2/2] initramfs with digital signature protection
+Message-ID: <20130211215929.GB24936@redhat.com>
+References: <cover.1360067333.git.dmitry.kasatkin@intel.com>
+ <cc87f1242960fad1a9fb44bcec331915e14c832b.1360067333.git.dmitry.kasatkin@intel.com>
+ <20130207170542.GF6462@redhat.com>
+ <CALLzPKYCjihDy32=ZQbwVN0jEitVCWKadFCxjN=vw2GnBUFmyA@mail.gmail.com>
+ <CALLzPKZpzDY0b_GvYgiKWeu1KFeLqyfKaKzBbiw8ze6ssE2N6Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALLzPKZpzDY0b_GvYgiKWeu1KFeLqyfKaKzBbiw8ze6ssE2N6Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  8 Feb 2013 08:02:51 +0000
-Grant Likely <grant.likely@secretlab.ca> wrote:
-
-> The DTC labels feature allows a dts file to reference a node without
-> having to reproduce the entire node hierarchy above it. We can use this
-> to simplify the MPC5200 board dts files by referencing the gpt nodes by
-> label.
+On Fri, Feb 08, 2013 at 03:27:30PM +0200, Kasatkin, Dmitry wrote:
+> >>
+> >> Dmitry,
+> >>
+> >> How do we make sure that this is the first call to user mode helpers. I
+> >> see that we first unpacked unsigned initramfs. Then after a while we
+> >> unpacked signed initramfs on /root and did a chroot. But now there is
+> >> a window before chroot, where kernel might call into /sbin/hotplug or
+> >> /sbin/modprobe from unsigned initramfs?
+> >>
+> >> Specifically, I put some printk and I am seeing calls to /sbin/hotplug
+> >> before we even unpacked signed initramfs.
+> >
 > 
-> Cc: Anatolij Gustschin <agust@denx.de>
-> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-> ---
->  arch/powerpc/boot/dts/a3m071.dts    |    6 ++--
->  arch/powerpc/boot/dts/a4m072.dts    |   27 ++++--------------
->  arch/powerpc/boot/dts/cm5200.dts    |    6 ++--
->  arch/powerpc/boot/dts/digsy_mtc.dts |   14 ++--------
->  arch/powerpc/boot/dts/media5200.dts |    6 ++--
->  arch/powerpc/boot/dts/motionpro.dts |   26 ++++++++----------
->  arch/powerpc/boot/dts/mucmc52.dts   |   48 ++++++++------------------------
->  arch/powerpc/boot/dts/o2d.dtsi      |   25 +++++------------
->  arch/powerpc/boot/dts/pcm030.dts    |   48 ++++++--------------------------
->  arch/powerpc/boot/dts/pcm032.dts    |   45 ++++++------------------------
->  arch/powerpc/boot/dts/uc101.dts     |   52 ++++++-----------------------------
->  11 files changed, 69 insertions(+), 234 deletions(-)
+> I did some experiments and made this  patch which prevents launching
+> of user mode helpers before pre-init from signed image is executed.
+> 
+> I do not know if this is the right way to do it, but at least it works for me.
+> The whole idea of these patches is to allow simple usage of signed image,
+> without the need to modify kernel parameters (0 block) and boot loaders....
+> 
+> --------------------------------------------------------------------------------------------------
+> commit a99eaa06ab142906da67800423425b7c5def0a3e
+> Author: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+> Date:   Fri Feb 8 15:05:22 2013 +0200
+> 
+>     initramfs_sig: prevent usermode helpers before signed image is executed
+> 
+>     This patch prevents execution of user mode helper before /pre-init
+>     is executed.
+> 
+>     Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
 
-Applied, thanks!
+Yep. This seems to have blocked the calls going out to user space and
+returns with -EBUSY
 
-Anatolij
+Thanks
+Vivek
