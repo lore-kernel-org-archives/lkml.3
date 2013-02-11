@@ -1,45 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755310Ab3BKKPL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 05:15:11 -0500
-Received: from us01smtp3.synopsys.com ([198.182.44.81]:59565 "EHLO
-	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755131Ab3BKKPJ (ORCPT
+	id S1755345Ab3BKKWW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 05:22:22 -0500
+Received: from mx0.parallels.com ([199.115.104.20]:43050 "EHLO
+	mx0.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755131Ab3BKKWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 05:15:09 -0500
-Message-ID: <5118C458.2070205@synopsys.com>
-Date: Mon, 11 Feb 2013 15:43:44 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Mon, 11 Feb 2013 05:22:20 -0500
+X-Greylist: delayed 308 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Feb 2013 05:22:20 EST
+Message-ID: <5118C522.3070905@parallels.com>
+Date: Mon, 11 Feb 2013 14:17:06 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Jonas Bonn <jonas.bonn@gmail.com>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: pt_regs leak into userspace (was Re: [PATCH v3 20/71] ARC: Signal
- handling)
-References: <1359024639-21915-1-git-send-email-vgupta@synopsys.com> <1359024639-21915-9-git-send-email-vgupta@synopsys.com> <51189D2F.4030000@synopsys.com> <CACM3HyGNZxfOXpw01POBVT-YcVKQsnPkO6Kgg+epfZS-x-BRCg@mail.gmail.com>
-In-Reply-To: <CACM3HyGNZxfOXpw01POBVT-YcVKQsnPkO6Kgg+epfZS-x-BRCg@mail.gmail.com>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+CC: <cgroups@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        John Stultz <john.stultz@linaro.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, <linaro-kernel@lists.linaro.org>,
+        <patches@linaro.org>, <kernel-team@android.com>
+Subject: Re: [PATCH] memcg: Add memory.pressure_level events
+References: <20130211000220.GA28247@lizard.gateway.2wire.net>
+In-Reply-To: <20130211000220.GA28247@lizard.gateway.2wire.net>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.43]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 11 February 2013 03:06 PM, Jonas Bonn wrote:
-> On 11 February 2013 08:26, Vineet Gupta <Vineet.Gupta1@synopsys.com> wrote:
->
->> The only downside of this patch is that userspace signal stack grows in size,
->> since signal frame only cares about scratch regs (pt_regs), but has to accommodate
->> unused placeholder for callee regs too by virtue of using user_regs_struct.
-> Is this really true?  Don't setcontext and friends require that _all_
-> the registers be part of sigcontext?
+Hi Anton,
 
-But for an ABI - callee saved regs will anyhow be saved/restored even in
-setcontext case ! So collecting it for that purpose seems useless, or am I missing
-something here.
+> diff --git a/mm/vmpressure.c b/mm/vmpressure.c
+> new file mode 100644
+> index 0000000..7922503
 
--Vineet
+
+> +struct vmpressure_event {
+> +	struct eventfd_ctx *efd;
+> +	enum vmpressure_levels level;
+> +	struct list_head node;
+> +};
+> +
+> +static bool vmpressure_event(struct vmpressure *vmpr,
+> +			     unsigned long s, unsigned long r)
+> +{
+> +	struct vmpressure_event *ev;
+> +	int level = vmpressure_calc_level(vmpressure_win, s, r);
+> +	bool signalled = 0;
+> +
+> +	mutex_lock(&vmpr->events_lock);
+> +
+> +	list_for_each_entry(ev, &vmpr->events, node) {
+> +		if (level >= ev->level) {
+> +			eventfd_signal(ev->efd, 1);
+> +			signalled++;
+> +		}
+> +	}
+> +
+> +	mutex_unlock(&vmpr->events_lock);
+> +
+> +	return signalled;
+> +}
+> +
+> +static struct vmpressure *vmpressure_parent(struct vmpressure *vmpr)
+> +{
+> +	struct cgroup *cg = vmpr_to_css(vmpr)->cgroup->parent;
+> +
+> +	if (!cg)
+> +		return NULL;
+> +	return cg_to_vmpr(cg);
+> +}
+
+Unfortunately, "parent" in memcg have different meanings for information
+propagation purposes depending on the value of the flag "use_hierarchy".
+That is set for deprecation, but still...
+
+I suggest you use the helper mem_cgroup_parent, that will already give
+you the right parent (either immediate parent or root) with all that
+taken into account.
+
+> +
+> +static int vmpressure_register_level(struct cgroup *cg, struct cftype *cft,
+> +				     struct eventfd_ctx *eventfd,
+> +				     const char *args)
+> +{
+> +	struct vmpressure *vmpr = cg_to_vmpr(cg);
+> +	struct vmpressure_event *ev;
+> +	int lvl;
+> +
+> +	for (lvl = 0; lvl < VMPRESSURE_NUM_LEVELS; lvl++) {
+> +		if (!strcmp(vmpressure_str_levels[lvl], args))
+> +			break;
+> +	}
+> +
+> +	if (lvl >= VMPRESSURE_NUM_LEVELS)
+> +		return -EINVAL;
+> +
+> +	ev = kzalloc(sizeof(*ev), GFP_KERNEL);
+> +	if (!ev)
+> +		return -ENOMEM;
+> +
+> +	ev->efd = eventfd;
+> +	ev->level = lvl;
+> +
+> +	mutex_lock(&vmpr->events_lock);
+> +	list_add(&ev->node, &vmpr->events);
+> +	mutex_unlock(&vmpr->events_lock);
+> +
+> +	return 0;
+> +}
+> +
+> +static void vmpressure_unregister_level(struct cgroup *cg, struct cftype *cft,
+> +					struct eventfd_ctx *eventfd)
+> +{
+> +	struct vmpressure *vmpr = cg_to_vmpr(cg);
+> +	struct vmpressure_event *ev;
+> +
+> +	mutex_lock(&vmpr->events_lock);
+> +	list_for_each_entry(ev, &vmpr->events, node) {
+> +		if (ev->efd != eventfd)
+> +			continue;
+> +		list_del(&ev->node);
+> +		kfree(ev);
+> +		break;
+> +	}
+> +	mutex_unlock(&vmpr->events_lock);
+> +}
+> +
+> +static struct cftype vmpressure_cgroup_files[] = {
+> +	{
+> +		.name = "pressure_level",
+> +		.read = vmpressure_read_level,
+> +		.register_event = vmpressure_register_level,
+> +		.unregister_event = vmpressure_unregister_level,
+> +	},
+> +	{},
+> +};
+> +
+
+> +
+> +void __init enable_pressure_cgroup(void)
+> +{
+> +	WARN_ON(cgroup_add_cftypes(&mem_cgroup_subsys,
+> +				   vmpressure_cgroup_files));
+> +}
+
+There is no functionality discovery going on here, and this is
+conditional on nothing. Isn't it better then to just add the register +
+read functions to memcontrol.c and add the files in the memcontrol cftype ?
+
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 88c5fed..34f09b9 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1982,6 +1982,10 @@ static void shrink_zone(struct zone *zone, struct scan_control *sc)
+>  			}
+>  			memcg = mem_cgroup_iter(root, memcg, &reclaim);
+>  		} while (memcg);
+> +
+> +		vmpressure(sc->gfp_mask, sc->target_mem_cgroup,
+> +			   sc->nr_scanned - nr_scanned, nr_reclaimed);
+> +
+>  	} while (should_continue_reclaim(zone, sc->nr_reclaimed - nr_reclaimed,
+>  					 sc->nr_scanned - nr_scanned, sc));
+>  }
+> @@ -2167,6 +2171,8 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+>  		count_vm_event(ALLOCSTALL);
+>  
+>  	do {
+> +		vmpressure_prio(sc->gfp_mask, sc->target_mem_cgroup,
+> +				sc->priority);
+>  		sc->nr_scanned = 0;
+>  		aborted_reclaim = shrink_zones(zonelist, sc);
+>  
+vmscan part seems okay to me.
+
+
+
 
