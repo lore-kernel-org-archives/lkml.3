@@ -1,44 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757387Ab3BKNq0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 08:46:26 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55678 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757215Ab3BKNqX (ORCPT
+	id S1757364Ab3BKNt4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 08:49:56 -0500
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:55007 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757215Ab3BKNtz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 08:46:23 -0500
-Date: Mon, 11 Feb 2013 13:46:21 +0000
-From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH] regmap: debugfs: Add a registers `range' file
-Message-ID: <20130211134621.GA14648@opensource.wolfsonmicro.com>
-References: <1360579943-29938-1-git-send-email-dp@opensource.wolfsonmicro.com> <20130211131641.GG4607@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130211131641.GG4607@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	Mon, 11 Feb 2013 08:49:55 -0500
+Date: Mon, 11 Feb 2013 14:49:43 +0100
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: [GIT PULL] s390 regression patch for 3.8-rc8
+Message-ID: <20130211144943.69c83140@mschwide>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+x-cbid: 13021113-1948-0000-0000-000004456D07
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 11, 2013 at 01:16:41PM +0000, Mark Brown wrote:
-> On Mon, Feb 11, 2013 at 10:52:23AM +0000, Dimitris Papastamos wrote:
-> 
-> > +struct regmap_reg_range  {
-> > +	unsigned int start;
-> > +	unsigned int end;
-> > +	unsigned int attr;
-> > +};
-> 
-> All we ever do with this struct is
-> 
-> > +		r.start = c->base_reg;
-> > +		r.end = c->max_reg;
-> > +		r.attr = c->reg_attr;
-> 
-> pack it with the contents of a cache entry.  Why not just use the cache
-> entry directly?
+Hi Linus,
 
-Yea, will fix and re-send.
+please pull from the 'for-linus' branch of
+
+	git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux.git for-linus
+
+to receive the following updates:
+The recent fix for the s390 sched_clock() function uncovered yet
+another bug in s390_next_ktime which causes an endless loop in KVM.
+This regression should be fixed before v3.8.
+
+I keep the fingers crossed that this is the last one for v3.8.
+
+Heiko Carstens (1):
+      s390/timer: avoid overflow when programming clock comparator
+
+ arch/s390/kernel/time.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/arch/s390/kernel/time.c b/arch/s390/kernel/time.c
+index a5f4f5a..0aa98db 100644
+--- a/arch/s390/kernel/time.c
++++ b/arch/s390/kernel/time.c
+@@ -120,6 +120,9 @@ static int s390_next_ktime(ktime_t expires,
+ 	nsecs = ktime_to_ns(ktime_add(timespec_to_ktime(ts), expires));
+ 	do_div(nsecs, 125);
+ 	S390_lowcore.clock_comparator = sched_clock_base_cc + (nsecs << 9);
++	/* Program the maximum value if we have an overflow (== year 2042) */
++	if (unlikely(S390_lowcore.clock_comparator < sched_clock_base_cc))
++		S390_lowcore.clock_comparator = -1ULL;
+ 	set_clock_comparator(S390_lowcore.clock_comparator);
+ 	return 0;
+ }
+
