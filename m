@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755983Ab3BKLpJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 06:45:09 -0500
-Received: from alvesta.synopsys.com ([198.182.60.77]:50376 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755853Ab3BKLpH (ORCPT
+	id S1756035Ab3BKLqS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 06:46:18 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:36570 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755886Ab3BKLqQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 06:45:07 -0500
-Message-ID: <5118D9B0.5030106@synopsys.com>
-Date: Mon, 11 Feb 2013 17:14:48 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Mon, 11 Feb 2013 06:46:16 -0500
+Date: Mon, 11 Feb 2013 11:46:11 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: "tony@atomide.com" <tony@atomide.com>,
+        "b-cousson@ti.com" <b-cousson@ti.com>, "balbi@ti.com" <balbi@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "kishon@ti.com" <kishon@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 07/14] USB: ohci-omap3: Add device tree support and
+ binding information
+Message-ID: <20130211114611.GB2726@e106331-lin.cambridge.arm.com>
+References: <1360252974-7912-1-git-send-email-rogerq@ti.com>
+ <1360252974-7912-8-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.cross-arch,gmane.linux.kernel
-To: James Hogan <james.hogan@imgtec.com>
-CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <arnd@arndb.de>, Sam Ravnborg <sam@ravnborg.org>
-Subject: Re: [PATCH v3 02/71] ARC: Build system: Makefiles, Kconfig, Linker
- script
-References: <1359024639-21915-1-git-send-email-vgupta@synopsys.com> <1359024639-21915-3-git-send-email-vgupta@synopsys.com> <5118D61D.7010302@imgtec.com>
-In-Reply-To: <5118D61D.7010302@imgtec.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.43]
+In-Reply-To: <1360252974-7912-8-git-send-email-rogerq@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 11 Feb 2013 11:46:12.0381 (UTC) FILETIME=[6403FCD0:01CE084D]
+X-MC-Unique: 113021111461500401
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 11 February 2013 04:59 PM, James Hogan wrote:
-> Hi Vineet,
+On Thu, Feb 07, 2013 at 04:02:47PM +0000, Roger Quadros wrote:
+> Allows the OHCI controller found in OMAP3 and later chips to
+> be specified via device tree.
 > 
-> On 24/01/13 10:50, Vineet Gupta wrote:
->> diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
->> new file mode 100644
->> index 0000000..b0b09ae
->> --- /dev/null
->> +++ b/arch/arc/Kconfig
->> @@ -0,0 +1,328 @@
->> +#
->> +# Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
->> +#
->> +# This program is free software; you can redistribute it and/or modify
->> +# it under the terms of the GNU General Public License version 2 as
->> +# published by the Free Software Foundation.
->> +#
->> +
->> +config ARC
->> +	def_bool y
->> +	select ARCH_NO_VIRT_TO_BUS
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> Acked-by: Alan Stern <stern@rowland.harvard.edu>
+> ---
+>  .../devicetree/bindings/usb/omap3-ohci.txt         |   17 +++++++++++++++++
+>  drivers/usb/host/ohci-omap3.c                      |   19 +++++++++++++++++++
+>  2 files changed, 36 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/usb/omap3-ohci.txt
 > 
-> I noticed this in linux-next. ARCH_NO_VIRT_TO_BUS was defined
-> generically in the past in linux-next but the patch seems to have gone.
-> Therefore with an arc defconfig I see CONFIG_VIRT_TO_BUS=y defined which
-> I'm guessing it shouldn't be.
+> diff --git a/Documentation/devicetree/bindings/usb/omap3-ohci.txt b/Documentation/devicetree/bindings/usb/omap3-ohci.txt
+> new file mode 100644
+> index 0000000..ad2ace0
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/usb/omap3-ohci.txt
+> @@ -0,0 +1,17 @@
+> +OMAP HS USB OHCI controller (OMAP3 and later)
+> +
+> +Required properties:
+> +
+> +- compatible: should be "ti,ohci-omap3"
+> +- reg: should contain one register range i.e. start and length
+> +- interrupt-parent: phandle to the interrupt controller
 
-Good catch ! I'll add a config ARCH_NO_VIRT_TO_BUS, but it would seem this is
-better done in arch/Kconfig and get rid of extraneous defs in arch/*/Kconfig. I
-can spin that patch, the only issue is merging logistics - our trees are not yet
-apt for such changes.
+I'm not sure that needs to be documented as a required property. It's a
+standard property, and if it's defined for the parent node, you won't need it
+here.
 
-Thx,
--Vineet
+Otherwise, this looks fine to me.
+
+Thanks,
+Mark.
+
