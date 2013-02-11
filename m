@@ -1,89 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758720Ab3BKSML (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 13:12:11 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:35172 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758498Ab3BKSMK (ORCPT
+	id S1758741Ab3BKSOc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 13:14:32 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:57598 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758709Ab3BKSOb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 13:12:10 -0500
-Message-ID: <51193476.8020509@wwwdotorg.org>
-Date: Mon, 11 Feb 2013 11:12:06 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
+	Mon, 11 Feb 2013 13:14:31 -0500
+Date: Mon, 11 Feb 2013 10:14:28 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
 To: Joe Perches <joe@perches.com>
-CC: arm@kernel.org, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH V2] MAINTAINERS: add keyword "tegra" to Tegra section
-References: <1360605099-7088-1-git-send-email-swarren@wwwdotorg.org>  <1360605395.2028.28.camel@joe-AO722> <511931E8.3080802@wwwdotorg.org> <1360605873.2028.30.camel@joe-AO722>
-In-Reply-To: <1360605873.2028.30.camel@joe-AO722>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Cc: devel <devel@driverdev.osuosl.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging: Remove unnecessary OOM messages
+Message-ID: <20130211181428.GA21288@kroah.com>
+References: <1360604489.2028.25.camel@joe-AO722>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1360604489.2028.25.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2013 11:04 AM, Joe Perches wrote:
-> On Mon, 2013-02-11 at 11:01 -0700, Stephen Warren wrote:
->> On 02/11/2013 10:56 AM, Joe Perches wrote:
->>> On Mon, 2013-02-11 at 10:51 -0700, Stephen Warren wrote:
->>>> From: Stephen Warren <swarren@nvidia.com>
->>>>
->>>> The intent is to ensure that all Tegra-related patches are sent to the
->>>> linux-tegra@ mailing list, so people can keep up-to-date on all misc
->>>> driver changes.
->>>>
->>>> Doing this with a keyword is far simpler and more compact than listing
->>>> all Tegra-related drivers, even if wildcards were used.
->>>>
->>>> Words such as integrate or integrator are common. Ensure the character
->>>> right before "tegra" isn't a-z (case-insensitive), to make sure the
->>>> keyword doesn't match those.
->>>>
->>>> Cc: Joe Perches <joe@perches.com>
->>>> Signed-off-by: Stephen Warren <swarren@nvidia.com>
->>>> ---
->>>>  MAINTAINERS |    4 +---
->>>>  1 file changed, 1 insertion(+), 3 deletions(-)
->>>>
->>>> diff --git a/MAINTAINERS b/MAINTAINERS
->>>> index b98c89b..10e9b31 100644
->>>> --- a/MAINTAINERS
->>>> +++ b/MAINTAINERS
->>>> @@ -7829,9 +7829,7 @@ L:	linux-tegra@vger.kernel.org
->>>>  Q:	http://patchwork.ozlabs.org/project/linux-tegra/list/
->>>>  T:	git git://git.kernel.org/pub/scm/linux/kernel/git/swarren/linux-tegra.git
->>>>  S:	Supported
->>>> -F:	arch/arm/mach-tegra
->>>> -F:	arch/arm/boot/dts/tegra*
->>>> -F:	arch/arm/configs/tegra_defconfig
->>>> +K:	(?i)[^a-z]tegra
->>>>  
->>>>  TEHUTI ETHERNET DRIVER
->>>>  M:	Andy Gospodarek <andy@greyhouse.net>
->>>
->>> It's probably not a good idea to remove
->>> any of the F: lines as there are files
->>> that could get modified in those paths
->>> without any tegra word in the patch.
->>
->> At least for those F: lines that exist already and are removed above,
->> the keyword will match their filename, so there's no issue here.
->>
+On Mon, Feb 11, 2013 at 09:41:29AM -0800, Joe Perches wrote:
+> alloc failures already get standardized OOM
+> messages and a dump_stack.
 > 
-> Not every use of get_maintainers is by patch.
+> For the affected mallocs around these OOM messages:
 > 
-> ./scripts/get_maintainer.pl -f arch/arm/mach-tegra
+> Converted kzallocs with multiplies to kcalloc.
+> Converted kmallocs with multiplies to kmalloc_array.
+> Converted a kmalloc/strlen/strncpy to kstrdup.
+> Moved a spin_lock below a removed OOM message and
+> removed a now unnecessary spin_unlock.
+> Neatened alignment and whitespace.
 > 
-> wouldn't match anything.
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  drivers/staging/asus_oled/asus_oled.c              | 15 ++-----
+>  drivers/staging/bcm/InterfaceInit.c                | 14 ++----
+>  drivers/staging/ced1401/usb1401.c                  |  4 +-
+>  drivers/staging/comedi/drivers.c                   |  5 +--
+>  drivers/staging/comedi/drivers/amplc_dio200.c      |  9 ++--
+>  drivers/staging/comedi/drivers/comedi_bond.c       |  5 +--
+>  drivers/staging/comedi/drivers/dt9812.c            |  5 +--
+>  drivers/staging/comedi/drivers/ni_labpc.c          | 10 ++---
+>  drivers/staging/comedi/drivers/pcmuio.c            | 11 ++---
+>  drivers/staging/comedi/drivers/unioxx5.c           |  6 +--
+>  drivers/staging/comedi/drivers/usbdux.c            | 27 ++----------
+>  drivers/staging/comedi/drivers/usbduxfast.c        |  6 ---
+>  drivers/staging/comedi/drivers/usbduxsigma.c       | 31 +++----------
+>  drivers/staging/cptm1217/clearpad_tm1217.c         |  5 +--
+>  drivers/staging/et131x/et131x.c                    | 20 +++------
+>  drivers/staging/frontier/alphatrack.c              | 51 +++++++++-------------
+>  drivers/staging/frontier/tranzport.c               | 26 +++++------
+>  drivers/staging/ft1000/ft1000-usb/ft1000_usb.c     |  5 +--
+>  drivers/staging/gdm72xx/gdm_sdio.c                 |  8 +---
+>  drivers/staging/gdm72xx/sdio_boot.c                |  9 +---
+>  drivers/staging/gdm72xx/usb_boot.c                 |  8 +---
+>  drivers/staging/iio/accel/lis3l02dq_ring.c         |  5 +--
+>  drivers/staging/keucr/usb.c                        |  5 +--
+>  drivers/staging/line6/driver.c                     | 25 ++---------
+>  drivers/staging/line6/pcm.c                        |  6 ---
+>  drivers/staging/media/as102/as102_usb_drv.c        |  4 +-
+>  drivers/staging/media/go7007/go7007-fw.c           | 24 +++-------
+>  drivers/staging/media/go7007/s2250-loader.c        |  5 +--
+>  drivers/staging/media/lirc/lirc_imon.c             |  3 --
+>  drivers/staging/media/lirc/lirc_sasem.c            |  6 ---
 
-That's annoying; it kinda defeats the whole purpose of this patch then.
+I cut the drivers/staging/media/* patches out of this larger patch as
+those need to go through Mauro's tree, not mine (they also don't apply
+to mine because of that.)
 
-The way this patch works out with a patch is because the file-names are
-matched against the keywords since they appear in the patch. A solution
-to the issue you raise would be to do the same in -f mode, by adding an
-explicit pass to check the filenames that are found against MAINTAINERS
-too. Do you have any objection to that?
+thanks,
+
+greg k-h
