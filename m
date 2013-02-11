@@ -1,109 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757608Ab3BKPsQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 10:48:16 -0500
-Received: from mga09.intel.com ([134.134.136.24]:57321 "EHLO mga09.intel.com"
+	id S1757630Ab3BKPuI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 10:50:08 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:58609 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757290Ab3BKPsP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 10:48:15 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,643,1355126400"; 
-   d="scan'208";a="261095629"
-Date: Mon, 11 Feb 2013 16:48:12 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Tomas Winkler <tomas.winkler@intel.com>, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [char-misc-next 03/11] mei: bus: Initial implementation for I/O
- routines
-Message-ID: <20130211154812.GU20996@sortiz-mobl>
-References: <1360270997-7639-1-git-send-email-tomas.winkler@intel.com>
- <201302111152.42483.arnd@arndb.de>
- <20130211125836.GN20996@sortiz-mobl>
- <201302111508.24317.arnd@arndb.de>
+	id S1757551Ab3BKPuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 10:50:06 -0500
+Date: Mon, 11 Feb 2013 17:49:47 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Roger Quadros <rogerq@ti.com>
+CC: <tony@atomide.com>, <b-cousson@ti.com>, <balbi@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        Russell King <linux@arm.linux.org.uk>, Rajendra Nayak <rnayak@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: Re: [PATCH 1/2] ARM: OMAP2+: Allow clock alias provision from device
+ tree
+Message-ID: <20130211154947.GA18684@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1360597464-8491-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3MwIy2ne0vdjdPXF"
 Content-Disposition: inline
-In-Reply-To: <201302111508.24317.arnd@arndb.de>
+In-Reply-To: <1360597464-8491-1-git-send-email-rogerq@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+--3MwIy2ne0vdjdPXF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, Feb 11, 2013 at 03:08:24PM +0000, Arnd Bergmann wrote:
-> On Monday 11 February 2013, Samuel Ortiz wrote:
-> > On Mon, Feb 11, 2013 at 11:52:42AM +0000, Arnd Bergmann wrote:
-> > > On Thursday 07 February 2013, Samuel Ortiz wrote:
-> > > > On Thu, Feb 07, 2013 at 10:34:44PM +0000, Arnd Bergmann wrote:
-> > > > > On Thursday 07 February 2013, Tomas Winkler wrote:
-> > > > > > +
-> > > > > > +struct mei_bus_ops {
-> > > > > > +       int (*send)(struct mei_bus_client *client, u8 *buf, size_t length);
-> > > > > > +       int (*recv)(struct mei_bus_client *client, u8 *buf, size_t length);
-> > > > > > +};
-> > > > > > +
-> > > > > 
-> > > > > Can you have more than one set of mei_bus_ops in a driver? 
-> > > > You can have at most one mei_bus_ops per mei_bus_client.
-> > > > 
-> > > > > If not, how about adding the callbacks to the mei_bus_driver structure
-> > > > > directly as a simplification? 
-> > > > I can add the ops directly to the mei_bus_client structure, yes.
-> > > 
-> > > I looked at the new version, and it's not what I assumed it would be.
-> > > I thought the operations were specific to a client driver and should
-> > > be part of the /mei_bus_driver/ structure, not the /mei_bus_client/.
-> > The ops should be part of mei_bus_client as they're specific to the MEI
-> > protocol for a given IP block on the ME. You need to have MEI and HECI
-> > knowledge to implement those ops and drivers (defining their mei_bus_driver
-> > structure) should not have that kind of knowledge but rather focus on the
-> > technology they're driving.
-> > If we take the NFC example again, the drivers/nfc/ code will send NFC payloads
-> > to the bus I/O routines and this is where the mei_bus_client ops will add the
-> > ME specific protocol (command and request id for the NFC block) on top of it.
-> > In practice, this is an additional header which handles a transport layer that's
-> > specific not only to the ME but to the NFC block of it. So each ME block can
-> > have its own protocol to send and receive technology specific payloads, that's
-> > what those ops implement.
-> > That's why I think that those ops should not be defined by the drivers/nfc/ code
-> > and in fact should be opaque to it.
-> 
-> I think I'm still confused. 
-It is confusing, and my explanations are probably not as good as they should 
-be.
+Hi,
 
-> What I read in your description is that unlike
-> other subsystems that have a common bus implementation that is hooked into
-> by two kinds of drivers (bus drivers that provide devices like a USB host
-> controller, and device drivers that use those devices), you have three
-> components that can be mixed independently: the bus (based on which
-> PCI device you have), the transport and the endpoint device. Is that
-> correct?
-That's quite accurate, yes.
+On Mon, Feb 11, 2013 at 05:44:23PM +0200, Roger Quadros wrote:
+> @@ -36,12 +39,76 @@ static struct of_device_id omap_dt_match_table[] __in=
+itdata =3D {
+>  	{ }
+>  };
+> =20
+> +static int __init omap_create_clk_alias(struct device_node *np)
+
+if the rest of the folks agree with the aproach, looks like most of this
+can be made a bit more generic ;-)
 
 
-> If so, how do you know which transport to use?
-Through the mei_bus_client ops. Device drivers get a mei_bus_client pointer
-from their probe routine and the ops pointers there (If any) are set by
-whoever creates the device. In the NFC case mei/nfc.c does that and implements
-the NFC specific transport code for this technology. mei/nfc.c is also the
-part of the code that actually adds the device to the bus.
+--=20
+balbi
 
-So when a device driver wants e.g. to send its payload through the MEI bus, it
-calls mei_bus_send() which takes the device driver mei_bus client pointer as
-its first argument.
-Then the payload may go through mei_bus_client->send() first which will eventually
-physically sent the newly built frame through mei_send(). Some ME blocks don't require any
-additional transport layer and in that case the device driver payload will go
-straight to mei_send() since the mei_bus_client ops will be NULL.
+--3MwIy2ne0vdjdPXF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Does that make more sense now ?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Cheers,
-Samuel.
+iQIcBAEBAgAGBQJRGRMbAAoJEIaOsuA1yqRE1mUP/10O7v8YdQtKVvLLTfP3jy3s
+bvhYQJKxCsztJQ9LeJB1ODDjBCcXejuidUSrABL5tlWumjXT40bvbR9zxe6aCjiX
+FOUYazuSQoFtFBY4QKRyQtikgdIS4NBNbHmvB9JupQmRS9jvPt2g+YoUpm9YUQlL
+OIiTRLhNMBSK7k9gCfj0x8eHK+w7GtAhKWhomA/+d+4yGu6Fk4nfmMlJbnELdhho
+4AnP6AG6+BnG73pTIlpJMiUg7vPSiyLOEcfPa/KAU1mTMCyYY488hFsN2Zt9quc3
+hT0+1JZCvpATEVDC5i3colqqYSSV2D9D7aFtT7mi9jHuFgzCMENN9ocUuQ42E2v+
+pD452xSPQDf6LnterU6ZLuNZfJrUFX94K3Gf5Fs2YR1tf5Q8/zAFmN1pJ+WKr2Kj
+Vi935mnZC+9WS0m/cKVjiV4fDQNaYMtpqLpjXxSzCdJTlCsyEEkwWpNzbZUOumfZ
+JX7GvxP0OVc9LHyOBsPFo3gpkkqQqwtiEBoEGaBuu33Pwf2iWaciAx4oc7ie7zN/
+HS4ngzB57QXgEIDggnWe0VsSABow233+cPy8i2Yi9p3FHf5o1JqwK4WCofGEV7ZV
+FFmsrB9mTf0iiQ1ynYB0haPO1bsb9sX3gVNatDEVb9i2HRRelXJsR2rEHAttP238
+CJaMMBPRYLUznB+5i8qA
+=6+e6
+-----END PGP SIGNATURE-----
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+--3MwIy2ne0vdjdPXF--
