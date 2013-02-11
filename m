@@ -1,66 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755936Ab3BKAGW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Feb 2013 19:06:22 -0500
-Received: from mail-we0-f177.google.com ([74.125.82.177]:34728 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754939Ab3BKAGT (ORCPT
+	id S1751821Ab3BKAHj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Feb 2013 19:07:39 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:60078 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751157Ab3BKAHh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Feb 2013 19:06:19 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v2 4/6] of_spi: Document cs_gpios and cs_gpio in kernel-doc
-To: Andreas Larsson <andreas@gaisler.com>
-Cc: Rob Herring <rob.herring@calxeda.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        software@gaisler.com
-In-Reply-To: <1359471223-4794-5-git-send-email-andreas@gaisler.com>
-References: <1359471223-4794-1-git-send-email-andreas@gaisler.com> <1359471223-4794-5-git-send-email-andreas@gaisler.com>
-Date: Mon, 11 Feb 2013 00:06:15 +0000
-Message-Id: <20130211000615.2BD4A3E0C13@localhost>
+	Sun, 10 Feb 2013 19:07:37 -0500
+Date: Sun, 10 Feb 2013 19:07:33 -0500 (EST)
+Message-Id: <20130210.190733.2188067351706209540.davem@davemloft.net>
+To: romieu@fr.zoreil.com
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hayeswang@realtek.com, jrg.otte@gmail.com
+Subject: Re: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20130208225026.GA24672@electric-eye.fr.zoreil.com>
+References: <20130208.151713.1708597749091717933.davem@davemloft.net>
+	<CA+55aFx81-GGEEXx+MqJvwJsDoBMMqSN80=J8LmN-Ufu4+kKcw@mail.gmail.com>
+	<20130208225026.GA24672@electric-eye.fr.zoreil.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Jan 2013 15:53:41 +0100, Andreas Larsson <andreas@gaisler.com> wrote:
-> This adds missing kernel-doc entries for cs_gpios in struct spi_master and
-> cs_gpio in struct spi_device.
+From: Francois Romieu <romieu@fr.zoreil.com>
+Date: Fri, 8 Feb 2013 23:50:26 +0100
+
+> Linus Torvalds <torvalds@linux-foundation.org> :
+> [...]
+>> However, there's still the r8169 regressions (see the emails with the
+>> subject "regression: NETDEV WATCHDOG: eth0 (r8169): transmit queue 0
+>> timed out"). It's bisected, and a revert is reported to fix things.
+>> It's not in this pull request. Comments ?
 > 
-> Signed-off-by: Andreas Larsson <andreas@gaisler.com>
-
-Applied, thanks. I did tweak the language a bit.
-
-g.
-
-> ---
->  include/linux/spi/spi.h |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
+> Jörg asked Hayes. Hayes suggested to revert. Francois reverts, fixes a
+> pair of rejects, builds, boot. Anyone should be able to pull from
+> branch 'davem.r8169' in repository
 > 
-> diff --git a/include/linux/spi/spi.h b/include/linux/spi/spi.h
-> index f629189..88a669c 100644
-> --- a/include/linux/spi/spi.h
-> +++ b/include/linux/spi/spi.h
-> @@ -57,6 +57,7 @@ extern struct bus_type spi_bus_type;
->   * @modalias: Name of the driver to use with this device, or an alias
->   *	for that name.  This appears in the sysfs "modalias" attribute
->   *	for driver coldplugging, and in uevents used for hotplugging
-> + * @cs_gpio: Negative or gpio for chip select.
->   *
->   * A @spi_device is used to interchange data between an SPI slave
->   * (usually a discrete chip) and CPU memory.
-> @@ -258,6 +259,7 @@ static inline void spi_unregister_driver(struct spi_driver *sdrv)
->   * @unprepare_transfer_hardware: there are currently no more messages on the
->   *	queue so the subsystem notifies the driver that it may relax the
->   *	hardware by issuing this call
-> + * @cs_gpios: possible array of negative values or gpios for chip selects
->   *
->   * Each SPI master controller can communicate with one or more @spi_device
->   * children.  These make a small bus, sharing MOSI, MISO and SCK signals
-> -- 
-> 1.7.0.4
-> 
+> git://violet.fr.zoreil.com/romieu/linux davem.r8169
 
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies, Ltd.
+Now that Jörg has tested these reverts successfully, I've pulled
+them into my tree, thanks everyone.
