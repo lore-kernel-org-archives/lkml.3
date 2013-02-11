@@ -1,59 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755754Ab3BKLb5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 06:31:57 -0500
-Received: from mail-ia0-f178.google.com ([209.85.210.178]:44705 "EHLO
-	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755512Ab3BKLbz (ORCPT
+	id S1755913Ab3BKLku (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 06:40:50 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:38179 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755804Ab3BKLks convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 06:31:55 -0500
+	Mon, 11 Feb 2013 06:40:48 -0500
+Date: Mon, 11 Feb 2013 11:40:40 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: "tony@atomide.com" <tony@atomide.com>,
+        "b-cousson@ti.com" <b-cousson@ti.com>, "balbi@ti.com" <balbi@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "kishon@ti.com" <kishon@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 01/14] usb: phy: nop: Add device tree support and
+ binding information
+Message-ID: <20130211114040.GA2726@e106331-lin.cambridge.arm.com>
+References: <1360252974-7912-1-git-send-email-rogerq@ti.com>
+ <1360252974-7912-2-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <51187376.2060106@nvidia.com>
-References: <1360406062-14982-1-git-send-email-grant.likely@secretlab.ca> <51187376.2060106@nvidia.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 11 Feb 2013 11:31:34 +0000
-X-Google-Sender-Auth: uZgwUyAIyJVOXWsf8YnsI9wpGYM
-Message-ID: <CACxGe6sEmcyRveM9630qyGQm21ZUhSMKTThDnO+MMu=ejfdP2w@mail.gmail.com>
-Subject: Re: [PATCH] gpiolib: Fix locking on gpio debugfs files
-To: Alex Courbot <acourbot@nvidia.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1360252974-7912-2-git-send-email-rogerq@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 11 Feb 2013 11:40:43.0323 (UTC) FILETIME=[9FE1B8B0:01CE084C]
+X-MC-Unique: 113021111404619001
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 11, 2013 at 4:28 AM, Alex Courbot <acourbot@nvidia.com> wrote:
-> On 02/09/2013 07:34 PM, Grant Likely wrote:
->>
->> The debugfs files really need to hold the gpiolib spinlock before
->> accessing the list. Otherwise chip addition/removal will cause an oops.
->>
->> Cc: Alexandre Courbot <acourbot@nvidia.com>
->> Cc: Linus Walleij <linus.walleij@linaro.org>
->> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
->
->
-> Tested-by: Alexandre Courbot <acourbot@nvidia.com>
->
-> Just wondering: if we manage to change this spinlock into a mutex in the
-> future, wouldn't it be better to acquire it only once in gpiolib_seq_start()
-> and release it in gpiolib_seq_stop()?
->
-> Even though the protection introduced by this patch definitely improves the
-> situation, it seems to me that chips could still be removed while being
-> displayed by gpiolib_seq_show().
+Hello,
 
-Probably, but need to first verify that the mutex won't end up getting
-held between read() syscalls. Otherwise it would be possible to block
-addition/removal by holding the file open. I cursory read of seq_file
-looks like ->stop() is always called, but I would appreciate someone
-more cluefull to give an opinion here.
+On Thu, Feb 07, 2013 at 04:02:41PM +0000, Roger Quadros wrote:
+> The PHY clock, clock rate, VCC regulator and RESET regulator
+> can now be provided via device tree.
+> 
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> Acked-by: Felipe Balbi <balbi@ti.com>
+> ---
+>  .../devicetree/bindings/usb/usb-nop-xceiv.txt      |   34 ++++++++++++++++++
+>  drivers/usb/otg/nop-usb-xceiv.c                    |   36 +++++++++++++++----
+>  2 files changed, 62 insertions(+), 8 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/usb/usb-nop-xceiv.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/usb/usb-nop-xceiv.txt b/Documentation/devicetree/bindings/usb/usb-nop-xceiv.txt
+> new file mode 100644
+> index 0000000..d7e2726
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/usb/usb-nop-xceiv.txt
+> @@ -0,0 +1,34 @@
+> +USB NOP PHY
+> +
+> +Required properties:
+> +- compatible: should be usb-nop-xceiv
 
-I've also got a draft patch that turns gpio chips into first-class
-kobjects which means we can do proper reference counting on them and
-prevent the structure from actually disappearing while other drivers
-still hold references.
+This might be better as "linux,usb-no-xceiv", given this is a Linux-specific
+'device'.
 
-g.
+Saying that, I'm not sure I understand why this device needs to be instantiated
+from devicetree. As I understand it from looking at the driver, it's purely a
+Linux implementation detail used in the case of autonomous PHYs, and not an
+actual piece of hardware or firmware system. I must admit to being unfamiliar
+with this area of hardware, have I misunderstood somethign here?
+
+Can we not have drivers for autonomous PHYs initialise/register nop-usb-xceiv?
+That way we don't leak Linux implementation details to the outside world, and
+the dt can describe purely what's actually present in the system.
+
+[...]
+
+Thanks,
+Mark.
+
+
