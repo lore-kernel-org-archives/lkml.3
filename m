@@ -1,140 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755111Ab3BKJ5v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 04:57:51 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:53879 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755042Ab3BKJ5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 04:57:49 -0500
-Date: Mon, 11 Feb 2013 15:25:22 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>, Anton Arapov <anton@redhat.com>,
-        Frank Eigler <fche@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Josh Stone <jistone@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 7/7] uprobes/perf: Avoid uprobe_apply() whenever
- possible
-Message-ID: <20130211095522.GI525@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20130204190225.GA10840@redhat.com>
- <20130204190305.GA10892@redhat.com>
+	id S1755060Ab3BKJ7P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 04:59:15 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:39223 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754696Ab3BKJ7O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 04:59:14 -0500
+Date: Mon, 11 Feb 2013 10:59:09 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [ANNOUNCE] 3.8-rc6-nohz4
+Message-ID: <20130211095909.GG23932@gmail.com>
+References: <1360175338-6735-1-git-send-email-fweisbec@gmail.com>
+ <1360205415.2621.60.camel@gandalf.local.home>
+ <20130207111025.GD8945@gmail.com>
+ <CAFTL4hySiyn8Ci6XKFSRsMr7FabgpwSbOuNDP_GsefFDsbT2Cg@mail.gmail.com>
+ <20130207190754.GB25223@gmail.com>
+ <CAFTL4hwKzcNEr8G1h1SErhwxAuQKR3rEX3cxxCyxf_LFHudL0Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130204190305.GA10892@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13021109-7182-0000-0000-0000051B049A
+In-Reply-To: <CAFTL4hwKzcNEr8G1h1SErhwxAuQKR3rEX3cxxCyxf_LFHudL0Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2013-02-04 20:03:05]:
 
-> uprobe_perf_open/close call the costly uprobe_apply() every time,
-> we can avoid it if:
-> 
-> 	- "nr_systemwide != 0" is not changed.
-> 
-> 	- There is another process/thread with the same ->mm.
-> 
-> 	- copy_proccess() does inherit_event(). dup_mmap() preserves the
-> 	  inserted breakpoints.
-> 
-> 	- event->attr.enable_on_exec == T, we can rely on uprobe_mmap()
-> 	  called by exec/mmap paths.
-> 
-> 	- tp_target is exiting. Only _close() checks PF_EXITING, I don't
-> 	  think TRACE_REG_PERF_OPEN can hit the dying task too often.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> > I'm worried about the proliferation of not easily separable 
+> > config options. We already have way too many timer and 
+> > scheduler options to begin with.
+> 
+> Like Steve said, this is for overhead reasons. The syscall 
+> uses the slow path so that's ok. But we add a callback to 
+> every exception, irq entry/exit, scheduler sched switch, 
+> signal handling, user and kernel preemption point. This all 
+> could be lowered using static keys but even that doesn't make 
+> me feel comfortable with this idea.
+> 
+> Moreover, for now this is going to be used only on extreme 
+> usecases such as real time and HPC. If we really have to merge 
+> this into an all-in-one nohz kconfig, I suggest we wait for 
+> the feature to mature a bit and prove that it can be useful 
+> further those specialized workloads, and also that we can 
+> ensure it's off-case overhead is not significant.
 
-> ---
->  kernel/trace/trace_uprobe.c |   42 ++++++++++++++++++++++++++++++++++++------
->  1 files changed, 36 insertions(+), 6 deletions(-)
-> 
-> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-> index 1114619..e4aab34 100644
-> --- a/kernel/trace/trace_uprobe.c
-> +++ b/kernel/trace/trace_uprobe.c
-> @@ -677,30 +677,60 @@ __uprobe_perf_filter(struct trace_uprobe_filter *filter, struct mm_struct *mm)
->  	return false;
->  }
-> 
-> +static inline bool
-> +uprobe_filter_event(struct trace_uprobe *tu, struct perf_event *event)
-> +{
-> +	return __uprobe_perf_filter(&tu->filter, event->hw.tp_target->mm);
-> +}
-> +
->  static int uprobe_perf_open(struct trace_uprobe *tu, struct perf_event *event)
->  {
-> +	bool done;
-> +
->  	write_lock(&tu->filter.rwlock);
-> -	if (event->hw.tp_target)
-> +	if (event->hw.tp_target) {
-> +		/*
-> +		 * event->parent != NULL means copy_process(), we can avoid
-> +		 * uprobe_apply(). current->mm must be probed and we can rely
-> +		 * on dup_mmap() which preserves the already installed bp's.
-> +		 *
-> +		 * attr.enable_on_exec means that exec/mmap will install the
-> +		 * breakpoints we need.
-> +		 */
-> +		done = tu->filter.nr_systemwide ||
-> +			event->parent || event->attr.enable_on_exec ||
-> +			uprobe_filter_event(tu, event);
->  		list_add(&event->hw.tp_list, &tu->filter.perf_events);
-> -	else
-> +	} else {
-> +		done = tu->filter.nr_systemwide;
->  		tu->filter.nr_systemwide++;
-> +	}
->  	write_unlock(&tu->filter.rwlock);
-> 
-> -	uprobe_apply(tu->inode, tu->offset, &tu->consumer, true);
-> +	if (!done)
-> +		uprobe_apply(tu->inode, tu->offset, &tu->consumer, true);
-> 
->  	return 0;
->  }
-> 
->  static int uprobe_perf_close(struct trace_uprobe *tu, struct perf_event *event)
->  {
-> +	bool done;
-> +
->  	write_lock(&tu->filter.rwlock);
-> -	if (event->hw.tp_target)
-> +	if (event->hw.tp_target) {
->  		list_del(&event->hw.tp_list);
-> -	else
-> +		done = tu->filter.nr_systemwide ||
-> +			(event->hw.tp_target->flags & PF_EXITING) ||
-> +			uprobe_filter_event(tu, event);
-> +	} else {
->  		tu->filter.nr_systemwide--;
-> +		done = tu->filter.nr_systemwide;
-> +	}
->  	write_unlock(&tu->filter.rwlock);
-> 
-> -	uprobe_apply(tu->inode, tu->offset, &tu->consumer, false);
-> +	if (!done)
-> +		uprobe_apply(tu->inode, tu->offset, &tu->consumer, false);
-> 
->  	return 0;
->  }
-> -- 
-> 1.5.5.1
-> 
+I have no problems with making it an option initially - as long 
+as the options are logically named and interconnected.
 
--- 
-Thanks and Regards
-Srikar Dronamraju
+In terms of overhead, a big plus is the reduction in user-space 
+execution overhead. At HZ=1000 we easily have 0.5%-1.0% overhead 
+currently. That is a *lot* of overhead if the box does mostly 
+user-space execution - which most boxes do, both servers and 
+desktops - not HPC systems.
 
+Thanks,
+
+	Ingo
