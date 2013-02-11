@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759090Ab3BKSvc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 13:51:32 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:40873 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758881Ab3BKSva (ORCPT
+	id S1759183Ab3BKSvl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 13:51:41 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:58354 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759081Ab3BKSvj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 13:51:30 -0500
+	Mon, 11 Feb 2013 13:51:39 -0500
 From: Juri Lelli <juri.lelli@gmail.com>
 To: peterz@infradead.org, tglx@linutronix.de
 Cc: mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
@@ -19,141 +19,57 @@ Cc: mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
         raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
         jkacur@redhat.com, harald.gustafsson@ericsson.com,
         vincent.guittot@linaro.org
-Subject: [PATCH 00/14] sched: SCHED_DEADLINE v7
-Date: Mon, 11 Feb 2013 10:50:42 -0800
-Message-Id: <1360608656-7969-1-git-send-email-juri.lelli@gmail.com>
+Subject: [PATCH 01/14] sched: add sched_class->task_dead.
+Date: Mon, 11 Feb 2013 10:50:43 -0800
+Message-Id: <1360608656-7969-2-git-send-email-juri.lelli@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1360608656-7969-1-git-send-email-juri.lelli@gmail.com>
+References: <1360608656-7969-1-git-send-email-juri.lelli@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello everyone,
+From: Dario Faggioli <raistlin@linux.it>
 
-several changes, some bugfixes and a major testing effort bring me to
-release a new version of the SCHED_DEADLINE patchset (v7). In addition,
-given the fact that the project has been around for quite some time with
-always a positive feedback from the community and since we have reached
-a stable and tested set of functionalities, I think it is time to remove
-the RFC tag. However, I consider this as another intermediate release as
-I would like even more testing from the community itself and I'm also
-working to ship a motivating use case with next releases. I had many
-interactions with users, especially from industry, after past releases.
-Some of them seem to confirm their interest proposing enhancements and
-modifications (e.g., http://bit.ly/XVQWrb); some others are willing to
-collaborate directly. This makes me confident that such a use case is
-on the way. 
+Add a new function to the scheduling class interface. It is called
+at the end of a context switch, if the prev task is in TASK_DEAD state.
 
-If you missed the whole story[1], this patchset introduces a new deadline
-based real-time task scheduling policy --called SCHED_DEADLINE-- with
-bandwidth isolation (aka "resource reservation") capabilities. It supports
-global/clustered multiprocessor scheduling through dynamic task migrations.
+It might be useful for the scheduling classes that want to be notified
+when one of their task dies, e.g. to perform some cleanup actions.
 
->From the previous releases[1]:
+Signed-off-by: Dario Faggioli <raistlin@linux.it>
+Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
+---
+ include/linux/sched.h |    1 +
+ kernel/sched/core.c   |    3 +++
+ 2 files changed, 4 insertions(+)
 
-  - rebase on top of 3.8-rc7;
-  - comments and fixes coming from the reviews we got have been considered
-    and applied;
-  - u128 support has been removed and internal math has been restricted
-    to microseconds resolution (to avoid overflows);
-  - dl.c, cpudl.{c,h} renamed as deadline.c, cpudeadline.{c,h};
-  - documentation fixed and extended (how to pin -dl tasks to CPUs via
-    cpusets example added).
-
-The development is taking place at:
-   https://github.com/jlelli/sched-deadline
-
-Main branches:
-
- - sched-dl-V7: this patchset on top of tip/master.
- - mainline-dl: tracking tip/master (raw commits);
-
-Check the repositories frequently if you're interested, and feel free to
-e-mail me for any issue you run into.
-
-Test applications:
-  https://github.com/gbagnoli/rt-app 
-  https://github.com/jlelli/schedtool-dl
-
-Development mailing list: linux-dl; you can subscribe from here:
-http://feanor.sssup.it/mailman/listinfo/linux-dl
-or via e-mail (send a message to linux-dl-request@retis.sssup.it with
-just the word `help' as subject or in the body to receive info).
-
-The code was being jointly developed by ReTiS Lab (http://retis.sssup.it)
-and Evidence S.r.l (http://www.evidence.eu.com) in the context of the ACTORS
-EU-funded project (http://www.actors-project.eu). It is now supported by
-the S(o)OS EU-funded project (http://www.soos-project.eu/).
-It has also some users, both in academic and applied research. We got
-positive feedbacks from Ericsson, Wind River, Porto (ISEP), Trento,
-Lund and Malardalen universities.
-
-As usual, any kind of feedback is welcome and appreciated.
-
-Thanks in advice and regards,
-
- - Juri
-
-[1] http://lwn.net/Articles/376502, http://lwn.net/Articles/353797,
-    http://lwn.net/Articles/412410, http://lwn.net/Articles/490944,
-    http://lwn.net/Articles/498472, http://lwn.net/Articles/521091
-
-Dario Faggioli (9):
-  sched: add sched_class->task_dead.
-  sched: add extended scheduling interface.
-  sched: SCHED_DEADLINE structures & implementation.
-  sched: SCHED_DEADLINE avg_update accounting.
-  sched: add schedstats for -deadline tasks.
-  sched: add latency tracing for -deadline tasks.
-  sched: drafted deadline inheritance logic.
-  sched: add bandwidth management for sched_dl.
-  sched: add sched_dl documentation.
-
-Harald Gustafsson (1):
-  sched: add period support for -deadline tasks.
-
-Juri Lelli (3):
-  sched: SCHED_DEADLINE SMP-related data structures & logic.
-  sched: make dl_bw a sub-quota of rt_bw
-  sched: speed up -dl pushes with a push-heap.
-
-Peter Zijlstra (1):
-  rtmutex: turn the plist into an rb-tree.
-
- Documentation/scheduler/sched-deadline.txt |  195 ++++
- arch/arm/include/asm/unistd.h              |    2 +-
- arch/arm/include/uapi/asm/unistd.h         |    3 +
- arch/arm/kernel/calls.S                    |    3 +
- arch/x86/syscalls/syscall_32.tbl           |    3 +
- arch/x86/syscalls/syscall_64.tbl           |    3 +
- include/linux/init_task.h                  |   10 +
- include/linux/rtmutex.h                    |   18 +-
- include/linux/sched.h                      |  152 ++-
- include/linux/syscalls.h                   |    7 +
- include/uapi/linux/sched.h                 |    1 +
- kernel/fork.c                              |    8 +-
- kernel/futex.c                             |    2 +
- kernel/hrtimer.c                           |    2 +-
- kernel/rtmutex-debug.c                     |    8 +-
- kernel/rtmutex.c                           |  163 ++-
- kernel/rtmutex_common.h                    |   22 +-
- kernel/sched/Makefile                      |    4 +-
- kernel/sched/core.c                        |  657 ++++++++++-
- kernel/sched/cpudeadline.c                 |  208 ++++
- kernel/sched/cpudeadline.h                 |   33 +
- kernel/sched/deadline.c                    | 1658 ++++++++++++++++++++++++++++
- kernel/sched/debug.c                       |   46 +
- kernel/sched/rt.c                          |    2 +-
- kernel/sched/sched.h                       |  146 +++
- kernel/sched/stop_task.c                   |    2 +-
- kernel/sysctl.c                            |    7 +
- kernel/trace/trace_sched_wakeup.c          |   44 +-
- kernel/trace/trace_selftest.c              |   28 +-
- 29 files changed, 3317 insertions(+), 120 deletions(-)
- create mode 100644 Documentation/scheduler/sched-deadline.txt
- create mode 100644 kernel/sched/cpudeadline.c
- create mode 100644 kernel/sched/cpudeadline.h
- create mode 100644 kernel/sched/deadline.c
-
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index d211247..640c741 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1104,6 +1104,7 @@ struct sched_class {
+ 	void (*set_curr_task) (struct rq *rq);
+ 	void (*task_tick) (struct rq *rq, struct task_struct *p, int queued);
+ 	void (*task_fork) (struct task_struct *p);
++	void (*task_dead) (struct task_struct *p);
+ 
+ 	void (*switched_from) (struct rq *this_rq, struct task_struct *task);
+ 	void (*switched_to) (struct rq *this_rq, struct task_struct *task);
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 26058d0..7e99105 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1843,6 +1843,9 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
+ 	if (mm)
+ 		mmdrop(mm);
+ 	if (unlikely(prev_state == TASK_DEAD)) {
++		if (prev->sched_class->task_dead)
++			prev->sched_class->task_dead(prev);
++
+ 		/*
+ 		 * Remove function-return probe instances associated with this
+ 		 * task and put them back on the free list.
 -- 
 1.7.9.5
 
