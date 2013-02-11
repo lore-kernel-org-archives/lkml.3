@@ -1,29 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756923Ab3BKMd7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 07:33:59 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60533 "EHLO
+	id S1756945Ab3BKMgU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 07:36:20 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60770 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756321Ab3BKMd5 (ORCPT
+	with ESMTP id S1756814Ab3BKMgS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 07:33:57 -0500
-Date: Mon, 11 Feb 2013 04:33:43 -0800
-From: tip-bot for Sasha Levin <sasha.levin@oracle.com>
-Message-ID: <tip-c2823ae46fb1641cc691c3dcc0eeb4356fce267a@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, sasha.levin@oracle.com, hpa@zytor.com,
-        mingo@kernel.org, a.p.zijlstra@chello.nl,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, sasha.levin@oracle.com,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de
-In-Reply-To: <1360456781-32462-11-git-send-email-sasha.levin@oracle.com>
-References: <1360456781-32462-11-git-send-email-sasha.levin@oracle.com>
+	Mon, 11 Feb 2013 07:36:18 -0500
+Date: Mon, 11 Feb 2013 04:36:02 -0800
+From: tip-bot for Shuah Khan <shuah.khan@hp.com>
+Message-ID: <tip-136867f517cbc3f8a91f035677911a6b503c3323@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        dave@linux.vnet.ibm.com, gleb@redhat.com, riel@redhat.com,
+        shuah.khan@hp.com, mtosatti@redhat.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        dave@linux.vnet.ibm.com, gleb@redhat.com, riel@redhat.com,
+        shuah.khan@hp.com, mtosatti@redhat.com, tglx@linutronix.de
+In-Reply-To: <1360119442.8356.8.camel@lorien2>
+References: <1360119442.8356.8.camel@lorien2>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/locking] liblockdep: Add the 'lockdep'
-  user-space utility
-Git-Commit-ID: c2823ae46fb1641cc691c3dcc0eeb4356fce267a
+Subject: [tip:x86/mm] x86/kvm:
+  Fix compile warning in kvm_register_steal_time()
+Git-Commit-ID: 136867f517cbc3f8a91f035677911a6b503c3323
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,96 +30,61 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 11 Feb 2013 04:33:49 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 11 Feb 2013 04:36:07 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c2823ae46fb1641cc691c3dcc0eeb4356fce267a
-Gitweb:     http://git.kernel.org/tip/c2823ae46fb1641cc691c3dcc0eeb4356fce267a
-Author:     Sasha Levin <sasha.levin@oracle.com>
-AuthorDate: Sat, 9 Feb 2013 19:39:41 -0500
+Commit-ID:  136867f517cbc3f8a91f035677911a6b503c3323
+Gitweb:     http://git.kernel.org/tip/136867f517cbc3f8a91f035677911a6b503c3323
+Author:     Shuah Khan <shuah.khan@hp.com>
+AuthorDate: Tue, 5 Feb 2013 19:57:22 -0700
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 11 Feb 2013 10:12:41 +0100
+CommitDate: Mon, 11 Feb 2013 11:04:31 +0100
 
-liblockdep: Add the 'lockdep' user-space utility
+x86/kvm: Fix compile warning in kvm_register_steal_time()
 
-This is a simple wrapper to make using liblockdep on existing
-applications much easier.
+Fix the following compile warning in kvm_register_steal_time():
 
-After running 'make && make install', it becomes quite simple to
-test things with liblockdep. For example, to try it on perf:
+  CC      arch/x86/kernel/kvm.o
+  arch/x86/kernel/kvm.c: In function ‘kvm_register_steal_time’: arch/x86/kernel/kvm.c:302:3:
+  warning: format ‘%lx’ expects argument of type ‘long unsigned int’, but argument 3 has type ‘phys_addr_t’ [-Wformat]
 
-	lockdep perf
+Introduced via:
 
-No other integration required.
+  5dfd486c4750 x86, kvm: Fix kvm's use of __pa() on percpu areas
+  d76565344512 x86, mm: Create slow_virt_to_phys()
+  f3c4fbb68e93 x86, mm: Use new pagetable helpers in try_preserve_large_page()
+  4cbeb51b860c x86, mm: Pagetable level size/shift/mask helpers
+  a25b9316841c x86, mm: Make DEBUG_VIRTUAL work earlier in boot
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-Cc: jamie.iles@oracle.com
-Cc: penberg@kernel.org
-Cc: acme@ghostprotocols.net
-Cc: paulus@samba.org
-Cc: namhyung@kernel.org
-Cc: peterz@infradead.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/1360456781-32462-11-git-send-email-sasha.levin@oracle.com
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+Acked-by: Gleb Natapov <gleb@redhat.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: shuahkhan@gmail.com
+Cc: avi@redhat.com
+Cc: gleb@redhat.com
+Cc: mst@redhat.com
+Link: http://lkml.kernel.org/r/1360119442.8356.8.camel@lorien2
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/lib/lockdep/Makefile | 12 ++++++++----
- tools/lib/lockdep/lockdep  |  3 +++
- 2 files changed, 11 insertions(+), 4 deletions(-)
+ arch/x86/kernel/kvm.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/tools/lib/lockdep/Makefile b/tools/lib/lockdep/Makefile
-index 245f8ba..b22122f 100644
---- a/tools/lib/lockdep/Makefile
-+++ b/tools/lib/lockdep/Makefile
-@@ -34,7 +34,9 @@ DESTDIR ?=
- DESTDIR_SQ = '$(subst ','\'',$(DESTDIR))'
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index aa7e58b..9cec202 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -298,8 +298,8 @@ static void kvm_register_steal_time(void)
+ 	memset(st, 0, sizeof(*st));
  
- prefix ?= /usr/local
--bindir_relative = lib
-+libdir_relative = lib
-+libdir = $(prefix)/$(libdir_relative)
-+bindir_relative = bin
- bindir = $(prefix)/$(bindir_relative)
+ 	wrmsrl(MSR_KVM_STEAL_TIME, (slow_virt_to_phys(st) | KVM_MSR_ENABLED));
+-	printk(KERN_INFO "kvm-stealtime: cpu %d, msr %lx\n",
+-		cpu, slow_virt_to_phys(st));
++	pr_info("kvm-stealtime: cpu %d, msr %llx\n",
++		cpu, (unsigned long long) slow_virt_to_phys(st));
+ }
  
- export DESTDIR DESTDIR_SQ INSTALL
-@@ -90,13 +92,14 @@ objtree		:= $(CURDIR)
- src		:= $(srctree)
- obj		:= $(objtree)
- 
--export prefix bindir src obj
-+export prefix libdir bindir src obj
- 
- # Shell quotes
-+libdir_SQ = $(subst ','\'',$(libdir))
- bindir_SQ = $(subst ','\'',$(bindir))
--bindir_relative_SQ = $(subst ','\'',$(bindir_relative))
- 
- LIB_FILE = liblockdep.a liblockdep.so
-+BIN_FILE = lockdep
- 
- CONFIG_INCLUDES =
- CONFIG_LIBS	=
-@@ -229,7 +232,8 @@ define do_install
- endef
- 
- install_lib: all_cmd
--	$(Q)$(call do_install,$(LIB_FILE),$(bindir_SQ))
-+	$(Q)$(call do_install,$(LIB_FILE),$(libdir_SQ))
-+	$(Q)$(call do_install,$(BIN_FILE),$(bindir_SQ))
- 
- install: install_lib
- 
-diff --git a/tools/lib/lockdep/lockdep b/tools/lib/lockdep/lockdep
-new file mode 100755
-index 0000000..a805c81
---- /dev/null
-+++ b/tools/lib/lockdep/lockdep
-@@ -0,0 +1,3 @@
-+#! /bin/bash
-+
-+LD_PRELOAD="liblockdep.so $LD_PRELOAD" "$@"
+ static DEFINE_PER_CPU(unsigned long, kvm_apic_eoi) = KVM_PV_EOI_DISABLED;
