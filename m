@@ -1,94 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932780Ab3BKWVK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 17:21:10 -0500
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:60909 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932630Ab3BKWVI (ORCPT
+	id S932792Ab3BKWZF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 17:25:05 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:53171 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932729Ab3BKWZB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 17:21:08 -0500
-Message-ID: <51196ED1.9090202@gmail.com>
-Date: Mon, 11 Feb 2013 16:21:05 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Mon, 11 Feb 2013 17:25:01 -0500
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        rt-users <linux-rt-users@vger.kernel.org>,
-        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        sparclinux@vger.kernel.org, Sam Ravnborg <sam@ravnborg.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Subject: Re: [PATCH next v2] OF: convert devtree lock from rw_lock to raw
- spinlock
-References: <1359993921-18145-1-git-send-email-paul.gortmaker@windriver.com> <1360182656-15898-1-git-send-email-paul.gortmaker@windriver.com> <511585A9.9090008@gmail.com> <51194685.5010904@wwwdotorg.org> <51194C75.5040302@gmail.com> <CACxGe6umkZ0D2AGircEVtMfito-DWtgUBWnR15iPEDGrBGFZKA@mail.gmail.com>
-In-Reply-To: <CACxGe6umkZ0D2AGircEVtMfito-DWtgUBWnR15iPEDGrBGFZKA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130211213311.GE8257@dastard>
+References: <1360571159-3666-1-git-send-email-linkinjeon@gmail.com>
+	<20130211213311.GE8257@dastard>
+Date: Tue, 12 Feb 2013 07:24:59 +0900
+Message-ID: <CAKYAXd8rPwaxe5wzeJ7RfCkkCV22H2FDHzJb4c_D2Qro4eJhXQ@mail.gmail.com>
+Subject: Re: [PATCH] fs: encode_fh: return FILEID_INVALID if invalid fid_type
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: bfields@fieldses.org, akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
+        chris.mason@fusionio.com, sage@inktank.com, miklos@szeredi.hu,
+        konishi.ryusuke@lab.ntt.co.jp, mfasheh@suse.com, jlbec@ejvilplan.org,
+        jack@suse.cz, bpm@sgi.com, elder@kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, ceph-devel@vger.kernel.org,
+        linux-nilfs@vger.kernel.org, reiserfs-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Vivek Trivedi <t.vivek@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2013 04:18 PM, Grant Likely wrote:
-> On Mon, Feb 11, 2013 at 7:54 PM, Rob Herring <robherring2@gmail.com> wrote:
->> On 02/11/2013 01:29 PM, Stephen Warren wrote:
->>> On 02/08/2013 04:09 PM, Rob Herring wrote:
->>>> On 02/06/2013 02:30 PM, Paul Gortmaker wrote:
->>>>> From: Thomas Gleixner <tglx@linutronix.de>
->>>>>
->>>>> With the locking cleanup in place (from "OF: Fixup resursive
->>>>> locking code paths"), we can now do the conversion from the
->>>>> rw_lock to a raw spinlock as required for preempt-rt.
->>>>>
->>>>> The previous cleanup and this conversion were originally
->>>>> separate since they predated when mainline got raw spinlock (in
->>>>> commit c2f21ce2e31286a "locking: Implement new raw_spinlock").
->>>>>
->>>>> So, at that point in time, the cleanup was considered plausible
->>>>> for mainline, but not this conversion.  In any case, we've kept
->>>>> them separate as it makes for easier review and better bisection.
->>>>>
->>>>> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
->>>>> [PG: taken from preempt-rt, update subject & add a commit log]
->>>>> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
->>>>> ---
->>>>>
->>>>> [v2: recent commit e81b329 ("powerpc+of: Add /proc device tree
->>>>>  updating to of node add/remove") added two more instances of
->>>>>  write_unlock that also needed converting to raw_spin_unlock.
->>>>>  Retested (boot) on sbc8548, defconfig builds on arm/sparc; no
->>>>>  new warnings observed.]
->>>>>
->>>>>  arch/sparc/kernel/prom_common.c |   4 +-
->>>>>  drivers/of/base.c               | 100 ++++++++++++++++++++++------------------
->>>>>  include/linux/of.h              |   2 +-
->>>>>  3 files changed, 59 insertions(+), 47 deletions(-)
->>>>
->>>> Applied.
->>>
->>> This commit is present in next-20130211, and causes a boot failure
->>> (hang) early while booting on Tegra. Reverting just this one commit
->>> solves the issue.
->>>
->>> I'll see if I can track down where the issue is. Given the commit
->>> description, I assume there's some new recursive lock issue that snuck
->>> in between the previous fix for them and this commit? Any hints welcome.
->>>
->>> One thing I wonder looking at the patch: Most paths use
->>> raw_spin_lock_irqsave() but a few use just raw_spin_lock(). I wonder how
->>> that decision was made?
+2013/2/12, Dave Chinner <david@fromorbit.com>:
+> On Mon, Feb 11, 2013 at 05:25:58PM +0900, Namjae Jeon wrote:
+>> From: Namjae Jeon <namjae.jeon@samsung.com>
 >>
->> I found the problem. of_get_next_available_child ->
->> of_device_is_available -> of_get_property -> of_get_property. An
->> unlocked version of of_device_is_available is needed here.
-> 
-> Oops, I had testbooted on a single core machine which would mask the
-> issue. I've crafted a fix and am posting it for review before I apply
-> it.
-> 
-
-I'm in the process of applying Stephen's fix.
-
-Rob
+>> This patch is a follow up on below patch:
+>>
+>> [PATCH] exportfs: add FILEID_INVALID to indicate invalid fid_type
+>> commit: 216b6cbdcbd86b1db0754d58886b466ae31f5a63
+> ....
+>> diff --git a/fs/xfs/xfs_export.c b/fs/xfs/xfs_export.c
+>> index a836118..3391800 100644
+>> --- a/fs/xfs/xfs_export.c
+>> +++ b/fs/xfs/xfs_export.c
+>> @@ -48,7 +48,7 @@ static int xfs_fileid_length(int fileid_type)
+>>  	case FILEID_INO32_GEN_PARENT | XFS_FILEID_TYPE_64FLAG:
+>>  		return 6;
+>>  	}
+>> -	return 255; /* invalid */
+>> +	return FILEID_INVALID; /* invalid */
+>>  }
+>
+> I think you can drop the "/* invalid */" comment from there now as
+> it is redundant with this change.
+Okay, Thanks for review :-)
+>
+> Cheers,
+>
+> Dave.
+> --
+> Dave Chinner
+> david@fromorbit.com
+>
