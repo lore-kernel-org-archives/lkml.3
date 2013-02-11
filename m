@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758834Ab3BKSab (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 13:30:31 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:46114 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758776Ab3BKSa3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 13:30:29 -0500
-Message-ID: <1360607428.2028.37.camel@joe-AO722>
-Subject: Re: [PATCH V2] MAINTAINERS: add keyword "tegra" to Tegra section
-From: Joe Perches <joe@perches.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: arm@kernel.org, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>
-Date: Mon, 11 Feb 2013 10:30:28 -0800
-In-Reply-To: <1360606760.2028.34.camel@joe-AO722>
-References: <1360605099-7088-1-git-send-email-swarren@wwwdotorg.org>
-	 <1360605395.2028.28.camel@joe-AO722> <511931E8.3080802@wwwdotorg.org>
-	 <1360605873.2028.30.camel@joe-AO722> <51193476.8020509@wwwdotorg.org>
-	 <1360606760.2028.34.camel@joe-AO722>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
+	id S1758848Ab3BKShu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 13:37:50 -0500
+Received: from mail-ia0-f181.google.com ([209.85.210.181]:50966 "EHLO
+	mail-ia0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758777Ab3BKShs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 13:37:48 -0500
+Message-ID: <51193A79.9090907@amacapital.net>
+Date: Mon, 11 Feb 2013 10:37:45 -0800
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Daniel Borkmann <dborkman@redhat.com>
+CC: gregkh@linuxfoundation.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] lib: memcmp_nta: add timing-attack secure memcmp
+References: <cover.1360528614.git.dborkman@redhat.com> <e73de7873eadcd7a1922535359c46caf25cbf0a2.1360528614.git.dborkman@redhat.com>
+In-Reply-To: <e73de7873eadcd7a1922535359c46caf25cbf0a2.1360528614.git.dborkman@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-02-11 at 10:19 -0800, Joe Perches wrote:
-> On Mon, 2013-02-11 at 11:12 -0700, Stephen Warren wrote:
-> > On 02/11/2013 11:04 AM, Joe Perches wrote:
-> > > ./scripts/get_maintainer.pl -f arch/arm/mach-tegra
-> > > wouldn't match anything.
-> > 
-> > That's annoying; it kinda defeats the whole purpose of this patch then.
-> > 
-> > The way this patch works out with a patch is because the file-names are
-> > matched against the keywords since they appear in the patch. A solution
-> > to the issue you raise would be to do the same in -f mode, by adding an
-> > explicit pass to check the filenames that are found against MAINTAINERS
-> > too. Do you have any objection to that?
+On 02/10/2013 02:00 PM, Daniel Borkmann wrote:
+> If you need to compare a password or a hash value, the timing of the
+> comparison function can give valuable clues to the attacker. Let's
+> say the password is 123456 and the attacker tries abcdef. If the
+> comparision function fails at the first byte without looking at the
+> other bytes, then the attacker can measure the difference in runtime
+> and deduce which byte was wrong, reducing the attack space from
+> exponential to polynomial. [Daniel J. Bernstein]
 > 
-> Knock yourself out.
+> Therefore add memcmp_nta ({n}o {t}iming {a}ttacks) in order to avoid
+> such scenarios and to facilitate development by providing a generic
+> function for (e.g.) the crypto and networking subsystems.
 > 
-> Are there any tegra related files that would not
-> have tegra in the path?
+> Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+> ---
 
-To answer my own question:
+I read this as "compare memory with non-temporal access".  Perhaps
+something like "memcpy_constant_time" would be less confusing.
 
-$ git ls-files | grep -v tegra | xargs grep -Pl "(?i)[^a-z]tegra"
-...
-
-Several.  Most are Kconfig and Makefiles.
-Most except staging/nvec don't seem to be very important.
-
+--Andy
