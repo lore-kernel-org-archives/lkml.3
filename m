@@ -1,80 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759426Ab3BKTWu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 14:22:50 -0500
-Received: from fallback6.mail.ru ([94.100.176.134]:60061 "EHLO
-	fallback6.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759126Ab3BKTWt (ORCPT
+	id S1759350Ab3BKTYQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 14:24:16 -0500
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:49022 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758568Ab3BKTYO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 14:22:49 -0500
-From: Alexander Shiyan <shc_work@mail.ru>
-To: linux-kernel@vger.kernel.org
-Cc: Dong Aisheng <dong.aisheng@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Arnd Bergmann <arnd@arndb.de>, Alexander Shiyan <shc_work@mail.ru>
-Subject: [PATCH v2 1/3] mfd: syscon: Removed support for unloading
-Date: Mon, 11 Feb 2013 22:42:51 +0400
-Message-Id: <1360608173-12907-1-git-send-email-shc_work@mail.ru>
-X-Mailer: git-send-email 1.7.12.4
-X-Spam: Not detected
-X-Mras: Ok
+	Mon, 11 Feb 2013 14:24:14 -0500
+From: Artem Savkov <artem.savkov@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Artem Savkov <artem.savkov@gmail.com>
+Subject: [PATCH] cpufreq: 64bit divide in intel_pstate_calc_busy()
+Date: Mon, 11 Feb 2013 23:24:08 +0400
+Message-Id: <1360610648-6952-1-git-send-email-artem.savkov@gmail.com>
+X-Mailer: git-send-email 1.8.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver can be used in various subsystems and therefore should not
-be unloaded when it is defined in the kernel configuration, so remove
-support for unloading it.
+intel_pstate.c won't compile on i686 because of a linking error:
+drivers/cpufreq/intel_pstate.c:459: undefined reference to `__udivdi3'
 
-Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+Signed-off-by: Artem Savkov <artem.savkov@gmail.com>
 ---
- drivers/mfd/syscon.c | 18 ------------------
- 1 file changed, 18 deletions(-)
+ drivers/cpufreq/intel_pstate.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
-index 3f10591..e1886fb 100644
---- a/drivers/mfd/syscon.c
-+++ b/drivers/mfd/syscon.c
-@@ -138,17 +138,6 @@ static int syscon_probe(struct platform_device *pdev)
- 	return 0;
+diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+index 86ad482..dc43208 100644
+--- a/drivers/cpufreq/intel_pstate.c
++++ b/drivers/cpufreq/intel_pstate.c
+@@ -456,7 +456,9 @@ static inline void intel_pstate_calc_busy(struct cpudata *cpu,
+ 	core_pct = div64_u64(sample->aperf * 100, sample->mperf);
+ 	sample->freq = cpu->pstate.turbo_pstate * core_pct * 1000;
+ 
+-	sample->core_pct_busy = sample->pstate_pct_busy * core_pct / 100;
++	sample->core_pct_busy = div64_u64(
++					sample->pstate_pct_busy * core_pct,
++					100);
  }
  
--static int syscon_remove(struct platform_device *pdev)
--{
--	struct syscon *syscon;
--
--	syscon = platform_get_drvdata(pdev);
--	iounmap(syscon->base);
--	platform_set_drvdata(pdev, NULL);
--
--	return 0;
--}
--
- static struct platform_driver syscon_driver = {
- 	.driver = {
- 		.name = "syscon",
-@@ -156,7 +145,6 @@ static struct platform_driver syscon_driver = {
- 		.of_match_table = of_syscon_match,
- 	},
- 	.probe		= syscon_probe,
--	.remove		= syscon_remove,
- };
- 
- static int __init syscon_init(void)
-@@ -165,12 +153,6 @@ static int __init syscon_init(void)
- }
- postcore_initcall(syscon_init);
- 
--static void __exit syscon_exit(void)
--{
--	platform_driver_unregister(&syscon_driver);
--}
--module_exit(syscon_exit);
--
- MODULE_AUTHOR("Dong Aisheng <dong.aisheng@linaro.org>");
- MODULE_DESCRIPTION("System Control driver");
- MODULE_LICENSE("GPL v2");
+ static inline void intel_pstate_sample(struct cpudata *cpu)
 -- 
-1.7.12.4
+1.8.1.1
 
