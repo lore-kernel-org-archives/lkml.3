@@ -1,71 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932154Ab3BKTqh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 14:46:37 -0500
-Received: from relay1.sgi.com ([192.48.179.29]:50399 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759692Ab3BKTpJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932175Ab3BKTr1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 14:47:27 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:34894 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1759677Ab3BKTpJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 11 Feb 2013 14:45:09 -0500
-Message-Id: <20130211194508.893907185@gulag1.americas.sgi.com>
+Message-Id: <20130211194508.610723192@gulag1.americas.sgi.com>
 User-Agent: quilt/0.47-15.17.1
-Date: Mon, 11 Feb 2013 13:45:13 -0600
+Date: Mon, 11 Feb 2013 13:45:11 -0600
 From: Mike Travis <travis@sgi.com>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
         "H. Peter Anvin" <hpa@zytor.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
         linux-kernel@vger.kernel.org, Russ Anderson <rja@sgi.com>
-Subject: [PATCH 5/7] x86/UV/UV3: Update Time Support for SGI UV3
+Subject: [PATCH 3/7] x86/UV/UV3: Update Hub Info for SGI UV3
 References: <20130211194508.033167376@gulag1.americas.sgi.com>
-Content-Disposition: inline; filename=uv3-update-time-support.patch
+Content-Disposition: inline; filename=uv3-update-hub-info.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch updates time support for the SGI UV3 hub.  Since the UV2
-and UV3 time support is identical, "is_uvx_hub" is used instead of
-having both "is_uv2_hub" and "is_uv3_hub".
+This patch updates the UV HUB info for UV3.  The "is_uv3_hub" and
+"is_uvx_hub" (UV2 or UV3) functions are added as well as the addresses
+and sizes of the MMR regions for UV3.
 
 Signed-off-by: Mike Travis <travis@sgi.com>
 Acked-by: Russ Anderson <rja@sgi.com>
 Reviewed-by: Dimitri Sivanich <sivanich@sgi.com>
 ---
- arch/x86/platform/uv/uv_time.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ arch/x86/include/asm/uv/uv_hub.h |   44 +++++++++++++++++++++++++++++++--------
+ 1 file changed, 36 insertions(+), 8 deletions(-)
 
---- linux.orig/arch/x86/platform/uv/uv_time.c
-+++ linux/arch/x86/platform/uv/uv_time.c
-@@ -15,7 +15,7 @@
-  *  along with this program; if not, write to the Free Software
-  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+--- linux.orig/arch/x86/include/asm/uv/uv_hub.h
++++ linux/arch/x86/include/asm/uv/uv_hub.h
+@@ -5,7 +5,7 @@
   *
-- *  Copyright (c) 2009 Silicon Graphics, Inc.  All Rights Reserved.
-+ *  Copyright (c) 2009-2013 Silicon Graphics, Inc.  All Rights Reserved.
-  *  Copyright (c) Dimitri Sivanich
+  * SGI UV architectural definitions
+  *
+- * Copyright (C) 2007-2010 Silicon Graphics, Inc. All rights reserved.
++ * Copyright (C) 2007-2013 Silicon Graphics, Inc. All rights reserved.
   */
- #include <linux/clockchips.h>
-@@ -102,9 +102,10 @@ static int uv_intr_pending(int pnode)
- 	if (is_uv1_hub())
- 		return uv_read_global_mmr64(pnode, UVH_EVENT_OCCURRED0) &
- 			UV1H_EVENT_OCCURRED0_RTC1_MASK;
--	else
--		return uv_read_global_mmr64(pnode, UV2H_EVENT_OCCURRED2) &
--			UV2H_EVENT_OCCURRED2_RTC_1_MASK;
-+	else if (is_uvx_hub())
-+		return uv_read_global_mmr64(pnode, UVXH_EVENT_OCCURRED2) &
-+			UVXH_EVENT_OCCURRED2_RTC_1_MASK;
-+	return 0;
+ 
+ #ifndef _ASM_X86_UV_UV_HUB_H
+@@ -175,6 +175,7 @@ DECLARE_PER_CPU(struct uv_hub_info_s, __
+  */
+ #define UV1_HUB_REVISION_BASE		1
+ #define UV2_HUB_REVISION_BASE		3
++#define UV3_HUB_REVISION_BASE		5
+ 
+ static inline int is_uv1_hub(void)
+ {
+@@ -183,6 +184,23 @@ static inline int is_uv1_hub(void)
+ 
+ static inline int is_uv2_hub(void)
+ {
++	return ((uv_hub_info->hub_revision >= UV2_HUB_REVISION_BASE) &&
++		(uv_hub_info->hub_revision < UV3_HUB_REVISION_BASE));
++}
++
++static inline int is_uv3_hub(void)
++{
++	return uv_hub_info->hub_revision >= UV3_HUB_REVISION_BASE;
++}
++
++static inline int is_uv_hub(void)
++{
++	return uv_hub_info->hub_revision;
++}
++
++/* code common to uv2 and uv3 only */
++static inline int is_uvx_hub(void)
++{
+ 	return uv_hub_info->hub_revision >= UV2_HUB_REVISION_BASE;
  }
  
- /* Setup interrupt and return non-zero if early expiration occurred. */
-@@ -122,8 +123,8 @@ static int uv_setup_intr(int cpu, u64 ex
- 		uv_write_global_mmr64(pnode, UVH_EVENT_OCCURRED0_ALIAS,
- 				UV1H_EVENT_OCCURRED0_RTC1_MASK);
- 	else
--		uv_write_global_mmr64(pnode, UV2H_EVENT_OCCURRED2_ALIAS,
--				UV2H_EVENT_OCCURRED2_RTC_1_MASK);
-+		uv_write_global_mmr64(pnode, UVXH_EVENT_OCCURRED2_ALIAS,
-+				UVXH_EVENT_OCCURRED2_RTC_1_MASK);
+@@ -230,14 +248,23 @@ union uvh_apicid {
+ #define UV2_LOCAL_MMR_SIZE		(32UL * 1024 * 1024)
+ #define UV2_GLOBAL_MMR32_SIZE		(32UL * 1024 * 1024)
  
- 	val = (X86_PLATFORM_IPI_VECTOR << UVH_RTC1_INT_CONFIG_VECTOR_SHFT) |
- 		((u64)apicid << UVH_RTC1_INT_CONFIG_APIC_ID_SHFT);
+-#define UV_LOCAL_MMR_BASE		(is_uv1_hub() ? UV1_LOCAL_MMR_BASE     \
+-						: UV2_LOCAL_MMR_BASE)
+-#define UV_GLOBAL_MMR32_BASE		(is_uv1_hub() ? UV1_GLOBAL_MMR32_BASE  \
+-						: UV2_GLOBAL_MMR32_BASE)
+-#define UV_LOCAL_MMR_SIZE		(is_uv1_hub() ? UV1_LOCAL_MMR_SIZE :   \
+-						UV2_LOCAL_MMR_SIZE)
++#define UV3_LOCAL_MMR_BASE		0xfa000000UL
++#define UV3_GLOBAL_MMR32_BASE		0xfc000000UL
++#define UV3_LOCAL_MMR_SIZE		(32UL * 1024 * 1024)
++#define UV3_GLOBAL_MMR32_SIZE		(32UL * 1024 * 1024)
++
++#define UV_LOCAL_MMR_BASE		(is_uv1_hub() ? UV1_LOCAL_MMR_BASE : \
++					(is_uv2_hub() ? UV2_LOCAL_MMR_BASE : \
++							UV3_LOCAL_MMR_BASE))
++#define UV_GLOBAL_MMR32_BASE		(is_uv1_hub() ? UV1_GLOBAL_MMR32_BASE :\
++					(is_uv2_hub() ? UV2_GLOBAL_MMR32_BASE :\
++							UV3_GLOBAL_MMR32_BASE))
++#define UV_LOCAL_MMR_SIZE		(is_uv1_hub() ? UV1_LOCAL_MMR_SIZE : \
++					(is_uv2_hub() ? UV2_LOCAL_MMR_SIZE : \
++							UV3_LOCAL_MMR_SIZE))
+ #define UV_GLOBAL_MMR32_SIZE		(is_uv1_hub() ? UV1_GLOBAL_MMR32_SIZE :\
+-						UV2_GLOBAL_MMR32_SIZE)
++					(is_uv2_hub() ? UV2_GLOBAL_MMR32_SIZE :\
++							UV3_GLOBAL_MMR32_SIZE))
+ #define UV_GLOBAL_MMR64_BASE		(uv_hub_info->global_mmr_base)
+ 
+ #define UV_GLOBAL_GRU_MMR_BASE		0x4000000
+@@ -599,6 +626,7 @@ static inline void uv_hub_send_ipi(int p
+  *     1 - UV1 rev 1.0 initial silicon
+  *     2 - UV1 rev 2.0 production silicon
+  *     3 - UV2 rev 1.0 initial silicon
++ *     5 - UV3 rev 1.0 initial silicon
+  */
+ static inline int uv_get_min_hub_revision_id(void)
+ {
 
