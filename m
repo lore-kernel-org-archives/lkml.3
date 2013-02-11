@@ -1,134 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758602Ab3BKR6H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 12:58:07 -0500
-Received: from mail-ia0-f176.google.com ([209.85.210.176]:64808 "EHLO
-	mail-ia0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758466Ab3BKR6G (ORCPT
+	id S1758623Ab3BKR7G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 12:59:06 -0500
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:52940 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758504Ab3BKR7E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 12:58:06 -0500
+	Mon, 11 Feb 2013 12:59:04 -0500
+Date: Mon, 11 Feb 2013 18:58:56 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        David Rientjes <rientjes@google.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Pekka Enberg <penberg@kernel.org>,
+        Michal Marek <mmarek@suse.cz>, Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: kvmtool tree (Was: Re: [patch] config: fix make kvmconfig)
+Message-ID: <20130211175856.GC9716@gmail.com>
+References: <CAOJsxLFDa3sLwP2MWdXJMTfZNEopp5imy8nWNViuPnWH747ggQ@mail.gmail.com>
+ <CA+55aFzEEbZqBaOKYB8H8+i904nXjNEgH=CUPtVMQU60QTTJaw@mail.gmail.com>
+ <CAOJsxLFDbmNitH=N8v3jSno0SFL33s=nPc+hGRAqJfYFZS0RGw@mail.gmail.com>
+ <CA+55aFy=SaVjNby=Jy_O9ZRQ_Ofc-6_+bLv=HeMMSzQQHw9vMQ@mail.gmail.com>
+ <CAOJsxLFpE=HjkPcX6NsWS8636qnEhDFDJi+49xX2Ge3Xp4MeUg@mail.gmail.com>
+ <CA+55aFzXF-4Xwc4HU8vnTin4WqtvYcpXq0TsqTN_vRg=myLH_Q@mail.gmail.com>
+ <20130211122654.GA5802@gmail.com>
+ <CA+55aFwq+_TvOZNEPO-eFPjYuPuMFL0bgR0x=nLq_tvfATqaTA@mail.gmail.com>
+ <20130211172807.GA9716@gmail.com>
+ <CA+55aFx-0-qcYMqH2wnJJ7iAPhoEvD_EQ0xqVW3VGS3G9=_1_w@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <5118EF75.30107@ti.com>
-References: <CABYxbz5ECxoWZtkfL3UbZ=R4LVoNeMVxjYbPdZoarstCod-gQw@mail.gmail.com>
-	<5118EF75.30107@ti.com>
-Date: Mon, 11 Feb 2013 23:28:04 +0530
-Message-ID: <CABYxbz7HcZTK+y20mtDR+1coRUbUMgNHNDdJ3O7Ln7U7d0LEzA@mail.gmail.com>
-Subject: Re: Sound record on Devkit8000 with DT boot issue
-From: Anil Kumar <anilk4.v@gmail.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        alsa-devel@alsa-project.org, tony@atomide.com, thomas@tomweber.eu,
-        perex@perex.cz, tiwai@suse.de,
-        Liam Girdwood <liam.r.girdwood@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFx-0-qcYMqH2wnJJ7iAPhoEvD_EQ0xqVW3VGS3G9=_1_w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
 
-Thanks for helping me. please see my comment inline
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-On Mon, Feb 11, 2013 at 6:47 PM, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
-> On 02/10/2013 04:21 PM, Anil Kumar wrote:
->> Hi All,
->>
->> I am working on Devkit8000 and adding DT support for that. I am trying
->> to add sound DT node support for this boards.
->> I have nearly done with this but facing issue on record. I do not have
->> much knowledge of twl4030 audio codec but with
->> small Hack[1] (as MainMic connected to the input jack)  i am able to
->> record sound on Devkit8000.
->> I do not know that MICBIAS1_EN can be enable by amixer commands.
->> Could you please help me to get out of this ?
+> On Feb 11, 2013 9:28 AM, "Ingo Molnar" <mingo@kernel.org> wrote:
 >
-> You need to pass the routing information via DT for Devkit8000. This is not
-> done for the BeagleBoard since it works without it (no need for MICBIAS for
-> example)
->
->>
->>
->> 1) Hack [1]
->>
->> diff --git a/sound/soc/codecs/twl4030.c b/sound/soc/codecs/twl4030.c
->> index 63b280b..6780681 100644
->> --- a/sound/soc/codecs/twl4030.c
->> +++ b/sound/soc/codecs/twl4030.c
->> @@ -1473,7 +1473,7 @@ static const struct snd_soc_dapm_widget
->> twl4030_dapm_widgets[] = {
->>         SND_SOC_DAPM_SUPPLY("micbias2 select", TWL4030_REG_MICBIAS_CTL, 6, 0,
->>                             NULL, 0),
->>
->> -       SND_SOC_DAPM_MICBIAS("Mic Bias 1", TWL4030_REG_MICBIAS_CTL, 0, 0),
->> +       SND_SOC_DAPM_MICBIAS("Mic Bias 1", TWL4030_REG_MICBIAS_CTL, 0, 1),
->
-> Yes, this is HACK and it is wrong at the same time.
+> > How on earth can anyone, against all that evidence, still 
+> > claim that it's a net minus?
+> 
+> Because I don't think there is any reason for mixing up the 
+> projects. Why do you not just make it separate? Everything you 
+> claim is such a big deal would still work perfectly well.
+> 
+> Every time you talk about "negative" it's as of the project 
+> wouldn't exist if it was external. Which is total bull, since 
+> it is effectively external already. [...]
 
-Agree
+That's not actually true. If you check the list of early 
+tools/kvm/ contributors you will see an overlap with -tip 
+contributors. I know tools/kvm/ developers who just use their 
+existing -tip repo to pick up the latest. They are using the 
+-tip commit notifications to see what went in and what not, etc.
 
->
->>         SND_SOC_DAPM_MICBIAS("Mic Bias 2", TWL4030_REG_MICBIAS_CTL, 1, 0),
->>         SND_SOC_DAPM_MICBIAS("Headset Mic Bias", TWL4030_REG_MICBIAS_CTL, 2, 0),
->>
->>
->> 2) Sound DT node patch for Devkit8000
->>
->> diff --git a/arch/arm/boot/dts/omap3-
->> devkit8000.dts b/arch/arm/boot/dts/omap3-devkit8000.dts
->> index dc59272..5f3eec0 100644
->> --- a/arch/arm/boot/dts/omap3-devkit8000.dts
->> +++ b/arch/arm/boot/dts/omap3-devkit8000.dts
->> @@ -44,11 +44,22 @@
->>                  };
->>
->>         };
->> +
->> +       sound {
->> +               compatible = "ti,omap-twl4030";
->> +               ti,model = "devkit8000";
->> +
->> +               ti,mcbsp = <&mcbsp2>;
->> +               ti,codec = <&twl_audio>;
->
-> Here you should have something like:
-> ti,audio-routing =
->         "Ext Spk", "PREDRIVEL",
->         "Ext Spk", "PREDRIVER",
->         "MAINMIC", "Main Mic",
->         "Main Mic", "Mic Bias 1";
->
-> So you connect the MicBias1 to Main Mic. When you start playback MicBias1 will
-> be turned on for you.
+Claiming that because the contribution model works to a certain 
+degree integrated into a small Linux subsystem tree it does not 
+ever have to go upstream is so wrong on so many levels ...
 
-I tried with this routing (next-20130211 tag kernel). But it is not
-working for me.
-So i have gone through other board and found snd_soc_dapm_route for
+The most likely correct statement would be something like: "if 
+it worked on a small scale it will probably work even better 
+with more exposure on a larger scale." We'll never know that 
+though.
 
-1) zoom2.c
-       {"MAINMIC", NULL, "Mic Bias 1"},
-       {"Mic Bias 1", NULL, "Ext Mic"},
+( That is also why some of the focus was on lockdep - knowing 
+  that it's close in terms of maintenance distance made it an 
+  easier topic - socially. )
 
-2) omap3pandora.c
-        {"MAINMIC", NULL, "Mic Bias 1"},
-        {"Mic Bias 1", NULL, "Mic (internal)"},
+Since I'm using it on an almost daily basis to test out failed 
+bzImages, and because I (mistakenly) thought it had some 
+upstream chances, I found it good to help out (a bit) with 
+maintenance and code review.
 
-But for omap-twl4030.c it is
-        {"MAINMIC", NULL, "Main Mic"},
-        {"Main Mic", NULL, "Mic Bias 1"},
+While it works it's obviously limited - there's just so many 
+-tip developers and I thought everyone would benefit from this 
+going the next natural step.
 
- It Should will be as ?
-        {"MAINMIC", NULL, "Mic Bias 1"},
-        {"Mic Bias 1", NULL, "Main Mic"},
+> [...] And it will stay that way. You are just in denial and 
+> trying to say that integrating it would somehow help.
+> 
+> And I claim it wouldn't. It works fine outside already. Just 
+> ADMIT it.
 
-Because with this i am able to get audio on Devkit8000 as
-             ti,audio-routing =
-                        "Ext Spk", "PREDRIVEL",
-                        "Ext Spk", "PREDRIVER",
-                        "MAINMIC", "Mic Bias 1",
-                        "Mic Bias 1", "Main Mic";
+So tools/kvm/ works 'just fine' - in its current limited form - 
+because for the developers involved it's already "upstream", for 
+the first hop of upstream.
 
-Sorry if i am saying nonsense.
+So basically Pekka optimistically thought it's an eventual 'tit 
+for tat', a constant stream of benefits to the kernel, in the 
+hope of finding a home in the upstream kernel which would 
+further help both projects. The kernel wants to keep the 'tit' 
+only though.
 
 Thanks,
-Anil
-[...]
+
+	Ingo
