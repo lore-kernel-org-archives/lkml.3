@@ -1,141 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756425Ab3BKMAd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 07:00:33 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:39404 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756231Ab3BKMAb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 07:00:31 -0500
-Date: Mon, 11 Feb 2013 12:00:26 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Roger Quadros <rogerq@ti.com>
-Cc: "tony@atomide.com" <tony@atomide.com>,
-        "b-cousson@ti.com" <b-cousson@ti.com>, "balbi@ti.com" <balbi@ti.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "kishon@ti.com" <kishon@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH v2 09/14] mfd: omap-usb-host: Add device tree support
- and binding information
-Message-ID: <20130211120026.GD2726@e106331-lin.cambridge.arm.com>
-References: <1360252974-7912-1-git-send-email-rogerq@ti.com>
- <1360252974-7912-10-git-send-email-rogerq@ti.com>
+	id S1756351Ab3BKMCd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 07:02:33 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:37119 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755967Ab3BKMCb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 07:02:31 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Pavel Machek <pavel@ucw.cz>, Goswin von Brederlow <goswin-v-b@web.de>,
+        Li Fei <fei.li@intel.com>, len.brown@intel.com, mingo@redhat.com,
+        peterz@infradead.org, biao.wang@intel.com, linux-pm@vger.kernel.org,
+        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        chuansheng.liu@intel.com
+Subject: Re: Getting rid of freezer for suspend [was Re: [fuse-devel] [PATCH] fuse: make fuse daemon frozen along with kernel threads]
+Date: Mon, 11 Feb 2013 13:08:56 +0100
+Message-ID: <1660768.prnx6s70rD@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc7; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAJfpegtNUr+AJXZcKmLEGBYqu20DVFwzg-OvOk_nS3fBS3wd=Q@mail.gmail.com>
+References: <1360113112.17267.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC> <2964781.rPUOipNRNb@vostro.rjw.lan> <CAJfpegtNUr+AJXZcKmLEGBYqu20DVFwzg-OvOk_nS3fBS3wd=Q@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1360252974-7912-10-git-send-email-rogerq@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 11 Feb 2013 12:00:27.0620 (UTC) FILETIME=[61C71A40:01CE084F]
-X-MC-Unique: 113021112003002501
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 07, 2013 at 04:02:49PM +0000, Roger Quadros wrote:
-> Allows the OMAP HS USB host controller to be specified
-> via device tree.
+On Monday, February 11, 2013 11:11:40 AM Miklos Szeredi wrote:
+> On Mon, Feb 11, 2013 at 12:31 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Sunday, February 10, 2013 07:55:05 PM Pavel Machek wrote:
 > 
-> CC: Samuel Ortiz <sameo@linux.intel.com>
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> ---
->  .../devicetree/bindings/mfd/omap-usb-host.txt      |   80 ++++++++++
->  drivers/mfd/omap-usb-host.c                        |  160 +++++++++++++++++++-
->  2 files changed, 234 insertions(+), 6 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/mfd/omap-usb-host.txt
+> >> Well, from freezer you need:
+> >>
+> >> 1) user process frozen.
+> >>
+> >> 2) essential locks _not_ held so that block devices are still functional.
+> >>
+> >> > > > mmap... what is problem with mmap? For suspend, memory is powered, so
+> >> > > > you can permit people changing it.
+> >> > >
+> >> > > Suppose mmap is used to make the registers of some device available to user
+> >> > > space.  Yes, that can happen.
+> >>
+> >> "Don't do it, then". Yes, can happen, but hopefully is not too common
+> >> these days. [And... freezer doing 1) but not 2) would be enough to
+> >> handle that. Freezer doing 1) but not 2) would also be simpler...]
+> >
+> > Again, I'm not sure what you mean.
+> >
+> > Are you trying to say that it would be OK to freeze user space tasks in
+> > the D state?
 > 
-> diff --git a/Documentation/devicetree/bindings/mfd/omap-usb-host.txt b/Documentation/devicetree/bindings/mfd/omap-usb-host.txt
-> new file mode 100644
-> index 0000000..b381fa6
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/mfd/omap-usb-host.txt
-> @@ -0,0 +1,80 @@
-> +OMAP HS USB Host
-> +
-> +Required properties:
-> +
-> +- compatible: should be "ti,usbhs-host"
-> +- reg: should contain one register range i.e. start and length
-> +- ti,hwmods: must contain "usb_host_hs"
-> +
-> +Optional properties:
-> +
-> +- num-ports: number of USB ports. Usually this is automatically detected
-> +  from the IP's revision register but can be overridden by specifying
-> +  this property. A maximum of 3 ports are supported at the moment.
-> +
-> +- portN-mode: String specifying the port mode for port N, where N can be
-> +  from 1 to 3. If the port mode is not specified, that port is treated
-> +  as unused. When specified, it must be one of the following.
-> +	"ehci-phy",
-> +        "ehci-tll",
-> +        "ehci-hsic",
-> +        "ohci-phy-6pin-datse0",
-> +        "ohci-phy-6pin-dpdm",
-> +        "ohci-phy-3pin-datse0",
-> +        "ohci-phy-4pin-dpdm",
-> +        "ohci-tll-6pin-datse0",
-> +        "ohci-tll-6pin-dpdm",
-> +        "ohci-tll-3pin-datse0",
-> +        "ohci-tll-4pin-dpdm",
-> +        "ohci-tll-2pin-datse0",
-> +        "ohci-tll-2pin-dpdm",
-> +
+> I think that's what Pavel is saying.   Processes in D state sleeping
+> on non-device mutexes _are_ actually OK to freeze.  And that would
+> nicely solve the fuse freeze problem.
 
-[...]
+That's potentially deeadlock-prone, because a task waiting for mutex X may
+very well be holding mutex Y, so if there's another task waiting for mutex Y,
+it needs to be frozen at the same time.
 
-> +/**
-> + * Map 'enum usbhs_omap_port_mode' found in <linux/platform_data/usb-omap.h>
-> + * to the device tree binding portN-mode found in
-> + * 'Documentation/devicetree/bindings/mfd/omap-usb-host.txt'
-> + */
-> +static const char *port_modes[] = {
-> +	[OMAP_USBHS_PORT_MODE_UNUSED]	= "",
-> +	[OMAP_EHCI_PORT_MODE_PHY]	= "ehci-phy",
-> +	[OMAP_EHCI_PORT_MODE_TLL]	= "ehci-tll",
-> +	[OMAP_EHCI_PORT_MODE_HSIC]	= "ehci-hsic",
-> +	[OMAP_OHCI_PORT_MODE_PHY_6PIN_DATSE0]	= "ohci-phy-6pin-datse0",
-> +	[OMAP_OHCI_PORT_MODE_PHY_6PIN_DPDM]	= "ohci-phy-6pin-dpdm",
-> +	[OMAP_OHCI_PORT_MODE_PHY_3PIN_DATSE0]	= "ohci-phy-3pin-datse0",
-> +	[OMAP_OHCI_PORT_MODE_PHY_4PIN_DPDM]	= "ohci-phy-4pin-dpdm",
-> +	[OMAP_OHCI_PORT_MODE_TLL_6PIN_DATSE0]	= "ohci-tll-6pin-datse0",
-> +	[OMAP_OHCI_PORT_MODE_TLL_6PIN_DPDM]	= "ohci-tll-6pin-dpdm",
-> +	[OMAP_OHCI_PORT_MODE_TLL_3PIN_DATSE0]	= "ohci-tll-3pin-datse0",
-> +	[OMAP_OHCI_PORT_MODE_TLL_4PIN_DPDM]	= "ohci-tll-4pin-dpdm",
-> +	[OMAP_OHCI_PORT_MODE_TLL_2PIN_DATSE0]	= "ohci-tll-2pin-datse0",
-> +	[OMAP_OHCI_PORT_MODE_TLL_2PIN_DPDM]	= "ohci-tll-2pin-dpdm",
-> +};
-> +
-> +/**
-> + * omap_usbhs_get_dt_port_mode - Get the 'enum usbhs_omap_port_mode'
-> + * from the port mode string.
-> + * @mode: The port mode string, usually obtained from device tree.
-> + *
-> + * The function returns the 'enum usbhs_omap_port_mode' that matches the
-> + * provided port mode string as per the port_modes table.
-> + * If no match is found it returns -ENODEV
-> + */
-> +static const int omap_usbhs_get_dt_port_mode(const char *mode)
-> +{
-> +	int i;
-> +
-> +	for (i = 0; i < ARRAY_SIZE(port_modes); i++) {
-> +		if (!strcasecmp(mode, port_modes[i]))
-> +			return i;
-> +	}
+> The only little detail is how do we implement that...
 
-Any reason for using strcasecmp rather than strcmp? The binding only specified
-lower case versions, and this allows people to write "oHcI-PhY-6PiN-DaTsE0"
-with impunity.
+This means the only way I can see would be to hack the mutex code so that the
+try_to_freeze() was called for user space tasks after the
+sched_preempt_enable_no_resched() before schedule().
 
-Otherwise, this looks fine to me.
+That shouldn't be a big deal performance-wise, because we are in the slow
+path anyway then.  I'm not sure if Peter Z will like it, though.
 
-Thanks,
-Mark.
+Moreover, a task waiting for a mutex may be holding a semaphore or be
+participating in some other mutual-exclusion mechanism, so we'd need to
+address them all.  Plus, as noted by Pavel, freezing those things would make
+it difficult to save hibernation images to us.
 
+What about having a "freeze me after all of my children" flag that will be
+inherited from parents?  Would that help the fuse case?
+
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
