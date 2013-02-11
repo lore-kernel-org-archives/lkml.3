@@ -1,97 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932838Ab3BKWjg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 17:39:36 -0500
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:37949 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932641Ab3BKWjf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 17:39:35 -0500
+	id S932842Ab3BKWkD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 17:40:03 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:39606 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932641Ab3BKWkA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 17:40:00 -0500
+Date: Mon, 11 Feb 2013 17:39:43 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ying Han <yinghan@google.com>, Tejun Heo <htejun@gmail.com>,
+        Glauber Costa <glommer@parallels.com>, Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH v3 4/7] memcg: remove memcg from the reclaim iterators
+Message-ID: <20130211223943.GC15951@cmpxchg.org>
+References: <1357235661-29564-1-git-send-email-mhocko@suse.cz>
+ <1357235661-29564-5-git-send-email-mhocko@suse.cz>
+ <20130208193318.GA15951@cmpxchg.org>
+ <20130211151649.GD19922@dhcp22.suse.cz>
+ <20130211175619.GC13218@cmpxchg.org>
+ <20130211192929.GB29000@dhcp22.suse.cz>
+ <20130211195824.GB15951@cmpxchg.org>
+ <20130211212756.GC29000@dhcp22.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <1351017872-32488-1-git-send-email-andrey.smirnov@convergeddevices.net>
-References: <1351017872-32488-1-git-send-email-andrey.smirnov@convergeddevices.net>
-Date: Mon, 11 Feb 2013 22:39:32 +0000
-Message-ID: <CALW4P+LH55JPRi=bzzt85H0Qv8OGBcbW3Jt5+5QNv1BhLjnk-Q@mail.gmail.com>
-Subject: Re: [PATCH v3 0/6] Driver for Si476x series of chips
-From: Alexey Klimov <klimov.linux@gmail.com>
-To: Andrey Smirnov <andrey.smirnov@convergeddevices.net>,
-        Hans Verkuil <hverkuil@xs4all.nl>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: sameo@linux.intel.com, broonie@opensource.wolfsonmicro.com, perex@perex.cz,
-        tiwai@suse.de, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130211212756.GC29000@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Andrey, Mauro, Hans,
+On Mon, Feb 11, 2013 at 10:27:56PM +0100, Michal Hocko wrote:
+> On Mon 11-02-13 14:58:24, Johannes Weiner wrote:
+> > On Mon, Feb 11, 2013 at 08:29:29PM +0100, Michal Hocko wrote:
+> > > On Mon 11-02-13 12:56:19, Johannes Weiner wrote:
+> > > > On Mon, Feb 11, 2013 at 04:16:49PM +0100, Michal Hocko wrote:
+> > > > > Maybe we could keep the counter per memcg but that would mean that we
+> > > > > would need to go up the hierarchy as well. We wouldn't have to go over
+> > > > > node-zone-priority cleanup so it would be much more lightweight.
+> > > > > 
+> > > > > I am not sure this is necessarily better than explicit cleanup because
+> > > > > it brings yet another kind of generation number to the game but I guess
+> > > > > I can live with it if people really thing the relaxed way is much
+> > > > > better.
+> > > > > What do you think about the patch below (untested yet)?
+> > > > 
+> > > > Better, but I think you can get rid of both locks:
+> > > 
+> > > What is the other lock you have in mind.
+> > 
+> > The iter lock itself.  I mean, multiple reclaimers can still race but
+> > there won't be any corruption (if you make iter->dead_count a long,
+> > setting it happens atomically, we nly need the memcg->dead_count to be
+> > an atomic because of the inc) and the worst that could happen is that
+> > a reclaim starts at the wrong point in hierarchy, right?
+> 
+> The lack of synchronization basically means that 2 parallel reclaimers
+> can reclaim every group exactly once (ideally) or up to each group
+> twice in the worst case.
+> So the exclusion was quite comfortable.
 
-On Tue, Oct 23, 2012 at 6:44 PM, Andrey Smirnov
-<andrey.smirnov@convergeddevices.net> wrote:
-> This is a third version of the patchset originaly posted here:
-> https://lkml.org/lkml/2012/9/13/590
->
-> Second version of the patch was posted here:
-> https://lkml.org/lkml/2012/10/5/598
->
-> To save everyone's time I'll repost the original description of it:
->
-> This patchset contains a driver for a Silicon Laboratories 476x series
-> of radio tuners. The driver itself is implemented as an MFD devices
-> comprised of three parts:
->  1. Core device that provides all the other devices with basic
-> functionality and locking scheme.
->  2. Radio device that translates between V4L2 subsystem requests into
-> Core device commands.
->  3. Codec device that does similar to the earlier described task, but
-> for ALSA SoC subsystem.
->
-> v3 of this driver has following changes:
->  - All custom ioctls were moved to be V4L2 controls or debugfs files
->  - Chip properties handling was moved to regmap API, so this should
->    allow for cleaner code, and hopefully more consistent behaviour of
->    the driver during switch between AM/FM(wich involevs power-cycling
->    of the chip)
->
-> I was hoping to not touch the code of the codec driver, since Mark has
-> already appplied the previous version, but because of the last item I
-> had to.
->
-> Unfotunately, since my ARM setup runs only 3.1 kernel, I was only able
-> to test this driver on a standalone USB-connected board that has a
-> dedicated Cortex M3 working as a transparent USB to I2C bridge which
-> was connected to a off-the-shelf x86-64 laptop running Ubuntu with
-> custom kernel compile form git.linuxtv.org/media_tree.git. Which means
-> that I was unable to test the change in the codec code, except for the
-> fact the it compiles.
->
->
-> Here is v4l2-compliance output for one of the tuners(as per Hans'
-> request):
-[]
+It's quite unlikely, though.  Don't forget that they actually reclaim
+in between, I just can't see them line up perfectly and race to the
+iterator at the same time repeatedly.  It's more likely to happen at
+the higher priority levels where less reclaim happens, and then it's
+not a big deal anyway.  With lower priority levels, when the glitches
+would be more problematic, they also become even less likely.
 
-> Andrey Smirnov (6):
->   Add header files and Kbuild plumbing for SI476x MFD core
->   Add the main bulk of core driver for SI476x code
->   Add commands abstraction layer for SI476X MFD
->   Add chip properties handling code for SI476X MFD
->   Add a V4L2 driver for SI476X MFD
->   Add a codec driver for SI476X MFD
+> > But as you said in the changelog that introduced the lock, it's never
+> > actually been a practical problem.
+> 
+> That is true but those bugs would be subtle though so I wouldn't be
+> opposed to prevent from them before we get burnt. But if you think that
+> we should keep the previous semantic I can drop that patch.
 
-What is the final destiny of this patch series?
-I found that only "codec driver for SI476X MFD" is pushed in kernel
-3.8 by Mark Brown and that's all, is it? I can't find this patch
-series on patchwork.linuxtv.org or in media git trees, for example,
-scheduled for 3.9.
+I just think that the problem is unlikely and not that big of a deal.
 
-I also see that comments for this patches aren't answered and looks
-like v4 is necessary.
-Andrey, do you plan to make v4 series? May be it was already emailed
-but i can't find it. Maybe review or comments from alsa and mfd
-communities are missed?
+> > You just need to put the wmb back in place, so that we never see the
+> > dead_count give the green light while the cached position is stale, or
+> > we'll tryget random memory.
+> > 
+> > > > mem_cgroup_iter:
+> > > > rcu_read_lock()
+> > > > if atomic_read(&root->dead_count) == iter->dead_count:
+> > > >   smp_rmb()
+> > > >   if tryget(iter->position):
+> > > >     position = iter->position
+> > > > memcg = find_next(postion)
+> > > > css_put(position)
+> > > > iter->position = memcg
+> > > > smp_wmb() /* Write position cache BEFORE marking it uptodate */
+> > > > iter->dead_count = atomic_read(&root->dead_count)
+> > > > rcu_read_unlock()
+> > > 
+> > > Updated patch bellow:
+> > 
+> > Cool, thanks.  I hope you don't find it too ugly anymore :-)
+> 
+> It's getting trick and you know how people love when you have to play
+> and rely on atomics with memory barriers...
 
-So, without v4 it will not find its way into kernel, right?
+My bumper sticker reads "I don't believe in mutual exclusion" (the
+kernel hacker's version of smile for the red light camera).
 
--- 
-Best regards, Klimov Alexey
+I mean, you were the one complaining about the lock...
+
+> > That way, if the dead count gives the go-ahead, you KNOW that the
+> > position cache is valid, because it has been updated first.
+> 
+> OK, you are right. We can live without css_tryget because dead_count is
+> either OK which means that css would be alive at least this rcu period
+> (and RCU walk would be safe as well) or it is incremented which means
+> that we have started css_offline already and then css is dead already.
+> So css_tryget can be dropped.
+
+Not quite :)
+
+The dead_count check is for completed destructions, but the try_get is
+needed to detect a race with an ongoing destruction.
+
+Basically, the dead_count verifies the iterator pointer is valid (and
+the rcu reader lock keeps it that way), the try_get verifies that the
+object pointed to is still alive.
