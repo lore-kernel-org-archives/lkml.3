@@ -1,52 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758021Ab3BKRGU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 12:06:20 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:57218 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757664Ab3BKRGP (ORCPT
+	id S1757983Ab3BKRHI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 12:07:08 -0500
+Received: from mail.aeronautica.gob.pa ([190.34.189.246]:57521 "EHLO
+	mail.aeronautica.gob.pa" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756931Ab3BKRHH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 12:06:15 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: dsterba@suse.cz
-Subject: Re: Oops when mounting btrfs partition
-Date: Mon, 11 Feb 2013 17:06:10 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-5-generic; KDE/4.3.2; x86_64; ; )
-Cc: Chris Mason <chris.mason@fusionio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-References: <4028366.UQxPtEU6If@wuerfel> <201302042155.50977.arnd@arndb.de> <20130208161035.GI12339@twin.jikos.cz>
-In-Reply-To: <20130208161035.GI12339@twin.jikos.cz>
+	Mon, 11 Feb 2013 12:07:07 -0500
+X-Greylist: delayed 2639 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Feb 2013 12:07:06 EST
+Date: Mon, 11 Feb 2013 10:43:25 -0500 (EST)
+From: CORREO <gfamania@aeronautica.gob.pa>
+Message-ID: <2021087981.9255.1360597405330.JavaMail.root@mail.aeronautica.gob.pa>
+Subject: Actualizar Cuenta
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302111706.10332.arnd@arndb.de>
-X-Provags-ID: V02:K0:xLfj/YPR4ou45Fp2qfg/HywXRBOp4k+Uc+fQbgYgbe7
- LX2Nd9GlYM9ZdpKL5HoLNp2h5f/CBB6paPkM4YaLEqnfhkVsBJ
- Q0mJdRVIT3GTAQZDmuowxtJGY/fafXL1bwZwpsy/WPNy44BqIR
- HLqjFkbcfxx2QW0jVe1eHSDag5sch0vYeQxDHe9H4U8YwfIRIk
- j+DIhJE05xyb7lVBAeX4vhbTOFdJV9YLD2mZd+4/6m12lpVBt2
- yh0RBLe6hTkYOYXgggimXcjCgMq/+lGFIHGaoTY4/UvBozraba
- JvRFQQenkkWR8UKS9SL0FcTssF3dN0Pstpg29aQfuebS/Le6UN
- IuTdM3E/vZas1vMY/Uug=
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [10.10.1.2]
+X-Mailer: Zimbra 7.1.4_GA_2555 (zclient/7.1.4_GA_2555)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 08 February 2013, David Sterba wrote:
-> On Mon, Feb 04, 2013 at 09:55:50PM +0000, Arnd Bergmann wrote:
-> > On Saturday 02 February 2013, Chris Mason wrote:
-> > 
-> > I've done a full backup of all data now, without any further Ooops messages, but
-> > I did get these:
-> > 
-> > [66155.429029] btrfs no csum found for inode 1212139 start 23707648
-> 
-> The missing csums were caused by a bug introcuded in 3.8-rc1 and fixed
-> in rc5.
-> 
-
-Ok, thanks for the information.
-
-	Arnd
+Su buzón se ha superado el límite de almacenamiento según lo establecido por el administrador, 
+Y Usted no será capaz de recibir correos nuevos hasta que se volverá a validar. 
+De revalidar - por favor HAGA CLICK AQUÍ 
+http://www.formstack.com/forms/?1396225-GQwMQKmU3Y
+Administrador del sistema.
