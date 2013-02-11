@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758233Ab3BKRiq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 12:38:46 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:38587 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757846Ab3BKRio (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 12:38:44 -0500
-Message-ID: <51192B95.1000103@zytor.com>
-Date: Mon, 11 Feb 2013 09:34:13 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1758283Ab3BKRjW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 12:39:22 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:58891 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757846Ab3BKRjV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 12:39:21 -0500
+Message-ID: <51192CC5.9060300@wwwdotorg.org>
+Date: Mon, 11 Feb 2013 10:39:17 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: David Woodhouse <dwmw2@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Pekka Enberg <penberg@kernel.org>,
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Alexandre Courbot <acourbot@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Rientjes <rientjes@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sasha Levin <levinsasha928@gmail.com>, Michal Marek <mmarek@suse.cz>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: kvmtool tree (Was: Re: [patch] config: fix make kvmconfig)
-References: <20130208084029.d7d97d6e26580a5512712f91@canb.auug.org.au> <20130208145539.GC30334@gmail.com> <CA+55aFz9ERvaFayTy8QCtfi610Bt_r0GcOs68UNggJTHdY4oaQ@mail.gmail.com> <CAOJsxLFDa3sLwP2MWdXJMTfZNEopp5imy8nWNViuPnWH747ggQ@mail.gmail.com> <CA+55aFzEEbZqBaOKYB8H8+i904nXjNEgH=CUPtVMQU60QTTJaw@mail.gmail.com> <CAOJsxLFDbmNitH=N8v3jSno0SFL33s=nPc+hGRAqJfYFZS0RGw@mail.gmail.com> <CA+55aFy=SaVjNby=Jy_O9ZRQ_Ofc-6_+bLv=HeMMSzQQHw9vMQ@mail.gmail.com> <CAOJsxLFpE=HjkPcX6NsWS8636qnEhDFDJi+49xX2Ge3Xp4MeUg@mail.gmail.com> <CA+55aFzXF-4Xwc4HU8vnTin4WqtvYcpXq0TsqTN_vRg=myLH_Q@mail.gmail.com> <20130211122654.GA5802@gmail.com> <20130211125627.GA7583@gmail.com> <1360588699.7383.52.camel@shinybook.infradead.org> <CA+55aFz1pnqdrXCEQThZc3S2r6kQPiDtOKacJQtHpPbjpXkmqg@mail.gmail.com>
-In-Reply-To: <CA+55aFz1pnqdrXCEQThZc3S2r6kQPiDtOKacJQtHpPbjpXkmqg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+        Alexandre Courbot <gnurou@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: Re: [PATCH 6/9] gpiolib: use descriptors internally
+References: <1359822572-26009-1-git-send-email-acourbot@nvidia.com> <1359822572-26009-8-git-send-email-acourbot@nvidia.com> <CACRpkdbib-+pvMiLQN=f6d-1dhK2OK3znJeGoL7rDxDQYuJRuA@mail.gmail.com> <CAAVeFu+phNtzzj7rw96g9iH8sj9gGqd5SfAqtkDHvu3PeL_oQA@mail.gmail.com> <20130209091729.978C73E1A18@localhost> <CACRpkdagLssOG3FW8Qr1zqFabGMgdupADwg1=c0eQ7e76_XM5A@mail.gmail.com>
+In-Reply-To: <CACRpkdagLssOG3FW8Qr1zqFabGMgdupADwg1=c0eQ7e76_XM5A@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2013 08:34 AM, Linus Torvalds wrote:
-> On Mon, Feb 11, 2013 at 5:18 AM, David Woodhouse <dwmw2@infradead.org> wrote:
+On 02/11/2013 07:09 AM, Linus Walleij wrote:
+> On Sat, Feb 9, 2013 at 10:17 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> 
+>> The ERR_PTR()/IS_ERR() is a horrible pattern for code
+>> readability because it breaks the expectations that programmers have for
+>> what is and is not a bad pointer. There are decades of history where the
+>> test for a bad pointer is 'if (!ptr)'. Not only does ERR_PTR make make
+>> that test not work, but the compiler won't tell you when you get it
+>> wrong.
 >>
->> That's complete nonsense. If you want to use pieces of the kernel
->> infrastructure, then just *take* them. There are loads of projects which
->> use the kernel config tools, for example. There's no need to be *in* the
->> kernel repo.
->
-> Exactly. I do *not* want a abstraction layer just because somebody
-> wants to use it. It causes idiotic guards in the header files etc. We
-> already had that pain with the user-level header inclusions etc.
->
-> Just copy it.
->
+>> There are places where ERR_PTR makes sense. Particularly when
+>> communicating with userspace where error codes have very specific
+>> meanings, but I don't want it in the GPIO subsystem.
+> 
+> OK I disagree but you get to decide.
+> 
+> However if you take this all the way to the descriptor API
+> it will make the consumer (driver) API for GPIO descriptors deviate
+> from what is today used for clocks, regulators and pins.
+> 
+> With all the resulting confusion for users.
+> I've seen worse subsystem deviations though.
 
-The UAPI work and "make headers_install" already has cleaned things up 
-immensely.
-
-	-hpa
-
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Sorry I haven't looked at the specific APIs this discussion refers to,
+but clients of the GPIO descriptor API are going to need to distinguish
+"fail" from "deferred probe", so at least some initial get-like API will
+need to pass back some error detail...
