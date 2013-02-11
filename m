@@ -1,128 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932695Ab3BKVoz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 16:44:55 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:45631 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932219Ab3BKVox convert rfc822-to-8bit (ORCPT
+	id S932703Ab3BKVpm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 16:45:42 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:60759 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932219Ab3BKVpl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 16:44:53 -0500
+	Mon, 11 Feb 2013 16:45:41 -0500
+Date: Mon, 11 Feb 2013 13:45:31 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com
+Subject: Re: [PATCH 00/11] extcon-arizona updates
+Message-ID: <20130211214531.GA12745@kroah.com>
+References: <20130211162614.GH4607@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Message-ID: <7393d8c5-fb02-4087-93d1-0f999fb3cafd@default>
-Date: Mon, 11 Feb 2013 13:43:58 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: sjenning@linux.vnet.ibm.com, Konrad Wilk <konrad.wilk@oracle.com>,
-        minchan@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        devel@linuxdriverproject.org, ngupta@vflare.org
-Subject: RE: [PATCH] staging/zcache: Fix/improve zcache writeback code, tie to
- a config option
-References: <1360175261-13287-1-git-send-email-dan.magenheimer@oracle.com>
- <20130206190924.GB32275@kroah.com>
- <761b5c6e-df13-49ff-b322-97a737def114@default>
- <20130206214316.GA21148@kroah.com>
- <abbc2f75-2982-470c-a3ca-675933d112c3@default>
- <20130207000338.GB18984@kroah.com>
-In-Reply-To: <20130207000338.GB18984@kroah.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6665.5003 (x86)]
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Disposition: inline
+In-Reply-To: <20130211162614.GH4607@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+On Mon, Feb 11, 2013 at 04:26:14PM +0000, Mark Brown wrote:
+> The following changes since commit 689557d3c7045320958d5bc4141088f7b4dff7ba:
+> 
+>   mfd: wm5102: Add microphone clamp control registers (2013-01-15 15:42:18 +0900)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/broonie/misc.git tags/extcon-arizona-3.9
 
-> So, how about this, please draw up a specific plan for how you are going
-> to get this code out of drivers/staging/  I want to see the steps
-> involved, who is going to be doing the work, and who you are going to
-> have to get to agree with your changes to make it happen.
->  :
-> Yeah, a plan, I know it goes against normal kernel development
-> procedures, but hey, we're in our early 20's now, it's about time we
-> started getting responsible.
+Pulled and pushed out, thanks.
 
-Hi Greg --
-
-I'm a big fan of planning, though a wise boss once told me:
-"Plans fail... planning succeeds".
-
-So here's the plan I've been basically trying to pursue since about
-ten months ago, ignoring the diversion due to "zcache1 vs zcache2"
-from last summer.  There is no new functionality on this plan
-other than as necessary from feedback obtained at or prior to
-LSF/MM in April 2012.
-
-Hope this meets your needs, and feedback welcome!
-Dan
-
-=======
-
-** ZCACHE PLAN FOR PROMOTION FROM STAGING **
-
-PLAN STEPS
-
-1. merge zcache and ramster to eliminate horrible code duplication
-2. converge on a predictable, writeback-capable allocator
-3. use debugfs instead of sysfs (per akpm feedback in 2011)
-4. zcache side of cleancache/mm WasActive patch
-5. zcache side of frontswap exclusive gets
-6. zcache must be able to writeback to physical swap disk
-    (per Andrea Arcangeli feedback in 2011)
-7. implement adequate policy for writeback
-8. frontswap/cleancache work to allow zcache to be loaded
-    as a module
-9. get core mm developer to review
-10. incorporate feedback from review
-11. get review/acks from 1-2 additional mm developers
-12. incorporate any feedback from additional mm reviews
-13. propose location/file-naming in mm tree
-14. repeat 9-13 as necessary until akpm is happy and merges
-
-STATUS/OWNERSHIP
-
-1. DONE as part of "new" zcache; now in staging/zcache
-2. DONE as part of "new" zcache (cf zbud.[ch]); now in staging/zcache
-    (this was the core of the zcache1 vs zcache2 flail)
-3. DONE as part of "new" zcache; now in staging/zcache
-4. DONE as part of "new" zcache; per cleancache performance
-    feedback see https://lkml.org/lkml/2011/8/17/351, now
-    in staging/zcache; dependent on proposed mm patch, see
-    https://lkml.org/lkml/2012/1/25/300 
-5. DONE as part of "new" zcache; performance tuning only,
-    now in staging/zcache; dependent on frontswap patch
-    merged in 3.7 (33c2a174)
-6. PROTOTYPED as part of "new" zcache; protoype is now
-    in staging/zcache but has bad memory leak; reimplemented
-    to use sjennings clever tricks and proposed mm patches
-    with new version posted https://lkml.org/lkml/2013/2/6/437;
-    rejected by GregKH as it smells like new functionality
-
-    (******** YOU ARE HERE *********)
-
-7. PROTOTYPED as part of "new" zcache; now in staging/zcache;
-    needs more review (plan to discuss at LSF/MM 2013)
-8. IN PROGRESS; owned by Konrad Wilk; v2 recently posted
-   http://lkml.org/lkml/2013/2/1/542
-9. IN PROGRESS; owned by Konrad Wilk; Mel Gorman provided
-   great feedback in August 2012 (unfortunately of "old"
-   zcache)
-10. Konrad posted series of fixes (that now need rebasing)
-    https://lkml.org/lkml/2013/2/1/566 
-11. NOT DONE; owned by Konrad Wilk
-12. TBD (depends on quantity of feedback)
-13. PROPOSED; one suggestion proposed by Dan; needs
-    more ideas/feedback
-14. TBD (depends on feedback)
-
-WHO NEEDS TO AGREE
-
-Not sure I can answer that.  Seth seems to now be pursuing
-a separate but semi-parallel track.  Akpm clearly has to
-approve for any mm merge to happen.  Minchan has interest
-but may be happy if/when zram is merged into mm.  Konrad
-may be maintainer if akpm decides compression is maintainable
-separately from the rest of mm.  (More LSF/MM 2013 discussion.)
+greg k-h
