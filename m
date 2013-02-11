@@ -1,117 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932175Ab3BKTr1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 14:47:27 -0500
-Received: from relay2.sgi.com ([192.48.179.30]:34894 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1759677Ab3BKTpJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 14:45:09 -0500
-Message-Id: <20130211194508.610723192@gulag1.americas.sgi.com>
-User-Agent: quilt/0.47-15.17.1
-Date: Mon, 11 Feb 2013 13:45:11 -0600
-From: Mike Travis <travis@sgi.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Russ Anderson <rja@sgi.com>
-Subject: [PATCH 3/7] x86/UV/UV3: Update Hub Info for SGI UV3
-References: <20130211194508.033167376@gulag1.americas.sgi.com>
-Content-Disposition: inline; filename=uv3-update-hub-info.patch
+	id S932132Ab3BKTtH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 14:49:07 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:55149 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759406Ab3BKTtE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 14:49:04 -0500
+Date: Mon, 11 Feb 2013 11:49:01 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Shuah Khan <shuah.khan@hp.com>
+Cc: Joerg Roedel <joro@8bytes.org>, LKML <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>, iommu@lists.linux-foundation.org,
+        shuahkhan@gmail.com
+Subject: Re: IO_PAGE_FAULTs on unity mapped regions during amd_iommu_init()
+ in Linux 3.4
+Message-ID: <20130211194901.GA18115@kroah.com>
+References: <1359657210.6061.3.camel@lorien2>
+ <20130201130035.GE25591@8bytes.org>
+ <1359743519.2759.38.camel@lorien2>
+ <20130205133104.GC2532@8bytes.org>
+ <CAKocOOO6Z2LyLYiuQMWf4iv4PAP8h5jbNWxRcSXKgXD1es6GYg@mail.gmail.com>
+ <20130206121223.GT25591@8bytes.org>
+ <1360204850.2615.10.camel@lorien2>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1360204850.2615.10.camel@lorien2>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch updates the UV HUB info for UV3.  The "is_uv3_hub" and
-"is_uvx_hub" (UV2 or UV3) functions are added as well as the addresses
-and sizes of the MMR regions for UV3.
+On Wed, Feb 06, 2013 at 07:40:50PM -0700, Shuah Khan wrote:
+> On Wed, 2013-02-06 at 13:12 +0100, Joerg Roedel wrote:
+> > On Tue, Feb 05, 2013 at 06:57:21AM -0700, Shuah Khan wrote:
+> > > Thanks much. I will hang on to this test system for testing your fix.
+> > 
+> > Okay, here is the simple fix for v3.8-rc6. I guess it is not
+> > straighforward to port it to v3.4, but it should be doable.
+> > 
+> > From 2ecf57c85e67e0243b36b787d0490c0b47202ba8 Mon Sep 17 00:00:00 2001
+> > From: Joerg Roedel <joro@8bytes.org>
+> > Date: Wed, 6 Feb 2013 12:55:23 +0100
+> > Subject: [PATCH] iommu/amd: Initialize device table after dma_ops
+> > 
+> > When dma_ops are initialized the unity mappings are
+> > created. The init_device_table_dma() function makes sure DMA
+> > from all devices is blocked by default. This opens a short
+> > window in time where DMA to unity mapped regions is blocked
+> > by the IOMMU. Make sure this does not happen by initializing
+> > the device table after dma_ops.
+> > 
+> > Signed-off-by: Joerg Roedel <joro@8bytes.org>
+> 
+> Joerg,
+> 
+> I tested your patch on 3.8. I was able to reproduce the problem and then
+> apply your patch to verify that the problem is fixed. This patch applies
+> cleanly to 3.7.6, however I could not reproduce the problem on 3.7.6
+> without the patch. But the window exists on 3.7 as well. Your patch can
+> be applied to 3.7.6 as is.
+> 
+> I back-ported the patch to 3.4 and 3.0 and tested. I am sending those
+> patches after this email.
+> 
+> On 3.4.29 and 3.0.62 I was able to reproduce the problem and then
+> applied the back-ported patch to verify that the problem is fixed.
+> 
+> Thanks again for the fix.
 
-Signed-off-by: Mike Travis <travis@sgi.com>
-Acked-by: Russ Anderson <rja@sgi.com>
-Reviewed-by: Dimitri Sivanich <sivanich@sgi.com>
----
- arch/x86/include/asm/uv/uv_hub.h |   44 +++++++++++++++++++++++++++++++--------
- 1 file changed, 36 insertions(+), 8 deletions(-)
+I'm lost here, why isn't this patch in Linus's tree already?  You seem
+to be sending backports for something that isn't there to backport yet.
 
---- linux.orig/arch/x86/include/asm/uv/uv_hub.h
-+++ linux/arch/x86/include/asm/uv/uv_hub.h
-@@ -5,7 +5,7 @@
-  *
-  * SGI UV architectural definitions
-  *
-- * Copyright (C) 2007-2010 Silicon Graphics, Inc. All rights reserved.
-+ * Copyright (C) 2007-2013 Silicon Graphics, Inc. All rights reserved.
-  */
- 
- #ifndef _ASM_X86_UV_UV_HUB_H
-@@ -175,6 +175,7 @@ DECLARE_PER_CPU(struct uv_hub_info_s, __
-  */
- #define UV1_HUB_REVISION_BASE		1
- #define UV2_HUB_REVISION_BASE		3
-+#define UV3_HUB_REVISION_BASE		5
- 
- static inline int is_uv1_hub(void)
- {
-@@ -183,6 +184,23 @@ static inline int is_uv1_hub(void)
- 
- static inline int is_uv2_hub(void)
- {
-+	return ((uv_hub_info->hub_revision >= UV2_HUB_REVISION_BASE) &&
-+		(uv_hub_info->hub_revision < UV3_HUB_REVISION_BASE));
-+}
-+
-+static inline int is_uv3_hub(void)
-+{
-+	return uv_hub_info->hub_revision >= UV3_HUB_REVISION_BASE;
-+}
-+
-+static inline int is_uv_hub(void)
-+{
-+	return uv_hub_info->hub_revision;
-+}
-+
-+/* code common to uv2 and uv3 only */
-+static inline int is_uvx_hub(void)
-+{
- 	return uv_hub_info->hub_revision >= UV2_HUB_REVISION_BASE;
- }
- 
-@@ -230,14 +248,23 @@ union uvh_apicid {
- #define UV2_LOCAL_MMR_SIZE		(32UL * 1024 * 1024)
- #define UV2_GLOBAL_MMR32_SIZE		(32UL * 1024 * 1024)
- 
--#define UV_LOCAL_MMR_BASE		(is_uv1_hub() ? UV1_LOCAL_MMR_BASE     \
--						: UV2_LOCAL_MMR_BASE)
--#define UV_GLOBAL_MMR32_BASE		(is_uv1_hub() ? UV1_GLOBAL_MMR32_BASE  \
--						: UV2_GLOBAL_MMR32_BASE)
--#define UV_LOCAL_MMR_SIZE		(is_uv1_hub() ? UV1_LOCAL_MMR_SIZE :   \
--						UV2_LOCAL_MMR_SIZE)
-+#define UV3_LOCAL_MMR_BASE		0xfa000000UL
-+#define UV3_GLOBAL_MMR32_BASE		0xfc000000UL
-+#define UV3_LOCAL_MMR_SIZE		(32UL * 1024 * 1024)
-+#define UV3_GLOBAL_MMR32_SIZE		(32UL * 1024 * 1024)
-+
-+#define UV_LOCAL_MMR_BASE		(is_uv1_hub() ? UV1_LOCAL_MMR_BASE : \
-+					(is_uv2_hub() ? UV2_LOCAL_MMR_BASE : \
-+							UV3_LOCAL_MMR_BASE))
-+#define UV_GLOBAL_MMR32_BASE		(is_uv1_hub() ? UV1_GLOBAL_MMR32_BASE :\
-+					(is_uv2_hub() ? UV2_GLOBAL_MMR32_BASE :\
-+							UV3_GLOBAL_MMR32_BASE))
-+#define UV_LOCAL_MMR_SIZE		(is_uv1_hub() ? UV1_LOCAL_MMR_SIZE : \
-+					(is_uv2_hub() ? UV2_LOCAL_MMR_SIZE : \
-+							UV3_LOCAL_MMR_SIZE))
- #define UV_GLOBAL_MMR32_SIZE		(is_uv1_hub() ? UV1_GLOBAL_MMR32_SIZE :\
--						UV2_GLOBAL_MMR32_SIZE)
-+					(is_uv2_hub() ? UV2_GLOBAL_MMR32_SIZE :\
-+							UV3_GLOBAL_MMR32_SIZE))
- #define UV_GLOBAL_MMR64_BASE		(uv_hub_info->global_mmr_base)
- 
- #define UV_GLOBAL_GRU_MMR_BASE		0x4000000
-@@ -599,6 +626,7 @@ static inline void uv_hub_send_ipi(int p
-  *     1 - UV1 rev 1.0 initial silicon
-  *     2 - UV1 rev 2.0 production silicon
-  *     3 - UV2 rev 1.0 initial silicon
-+ *     5 - UV3 rev 1.0 initial silicon
-  */
- static inline int uv_get_min_hub_revision_id(void)
- {
+Please resend these patches to stable@vger.kernel.org, with the upstream
+git commit id, when they are in Linus's tree, there's nothing I can do
+with them for now, sorry.
 
+greg k-h
