@@ -1,128 +1,360 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759916Ab3BKTpv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 14:45:51 -0500
-Received: from mail-we0-f182.google.com ([74.125.82.182]:32800 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759879Ab3BKTps (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 14:45:48 -0500
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CAE9FiQWUZ3BgLOtcGePppLzWBv-uR8L+7abditH2MNA7zZW-WA@mail.gmail.com>
-References: <Pine.LNX.4.44L0.1302051520220.2245-100000@iolanthe.rowland.org>
-	<1360466060.3703.15.camel@thor.lan>
-	<1360506199.3461.5.camel@thor.lan>
-	<CAE9FiQX0Jzqi=Dy=r3MoU9vK7HgAf+919LvbgLygW7VH3O4=bg@mail.gmail.com>
-	<CAE9FiQX5wQ8zFzPfgmvm0BESyLVxzDRQ33XPgj+QjBZ0kxuHXg@mail.gmail.com>
-	<1360587768.3454.2.camel@thor.lan>
-	<CAE9FiQWUZ3BgLOtcGePppLzWBv-uR8L+7abditH2MNA7zZW-WA@mail.gmail.com>
-Date: Mon, 11 Feb 2013 20:45:46 +0100
-Message-ID: <CA+icZUXiVE2b-JQ-=GCUc7=0itUEfuR-cVzhLv3ebrYkgY4_yw@mail.gmail.com>
-Subject: Re: [Bisected] [-next-20130204] usb/hcd: irq 18: nobody cared
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S932106Ab3BKTqS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 14:46:18 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:34906 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1759705Ab3BKTpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 14:45:10 -0500
+Message-Id: <20130211194508.752924185@gulag1.americas.sgi.com>
+User-Agent: quilt/0.47-15.17.1
+Date: Mon, 11 Feb 2013 13:45:12 -0600
+From: Mike Travis <travis@sgi.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Russ Anderson <rja@sgi.com>,
+        Alexander Gordeev <agordeev@redhat.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Steffen Persvold <sp@numascale.com>
+Subject: [PATCH 4/7] x86/UV/UV3: Update x2apic Support for SGI UV3
+References: <20130211194508.033167376@gulag1.americas.sgi.com>
+Content-Disposition: inline; filename=uv3-update-x2apic.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 11, 2013 at 8:19 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Mon, Feb 11, 2013 at 5:02 AM, Peter Hurley <peter@hurleysoftware.com> wrote:
->> On Sun, 2013-02-10 at 22:40 -0800, Yinghai Lu wrote:
->>> On Sun, Feb 10, 2013 at 12:33 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->>> > On Sun, Feb 10, 2013 at 6:23 AM, Peter Hurley <peter@hurleysoftware.com> wrote:
->>> >> On Sat, 2013-02-09 at 22:14 -0500, Peter Hurley wrote:
->>> >>> On Tue, 2013-02-05 at 15:26 -0500, Alan Stern wrote:
->>> >>> > On Tue, 5 Feb 2013, Peter Hurley wrote:
->>> >>> >
->>> >>> > > With -next-20130204:
->>> >>> > >
->>> >>> > > [   33.855570] irq 18: nobody cared (try booting with the "irqpoll" option)
->>> >>> > > [   33.855580] Pid: 0, comm: swapper/4 Not tainted 3.8.0-next-20130204-xeon #20130204
->>> >>> > > [   33.855582] Call Trace:
->>> >>> > > [   33.855585]  <IRQ>  [<ffffffff810f1076>] __report_bad_irq+0x36/0xe0
->>> >>> > > [   33.855600]  [<ffffffff810f152a>] note_interrupt+0x1aa/0x200
->>> >>> > > [   33.855606]  [<ffffffff8101edf2>] ? mwait_idle+0x82/0x1b0
->>> >>> > > [   33.855610]  [<ffffffff810eed89>] handle_irq_event_percpu+0xc9/0x260
->>> >>> > > [   33.855614]  [<ffffffff810eef68>] handle_irq_event+0x48/0x70
->>> >>> > > [   33.855618]  [<ffffffff810f20ba>] handle_fasteoi_irq+0x5a/0x100
->>> >>> > > [   33.855624]  [<ffffffff810182f2>] handle_irq+0x22/0x40
->>> >>> > > [   33.855630]  [<ffffffff816e2a9a>] do_IRQ+0x5a/0xd0
->>> >>> > > [   33.855636]  [<ffffffff816d97ad>] common_interrupt+0x6d/0x6d
->>> >>> > > [   33.855638]  <EOI>  [<ffffffff810f8e2a>] ? rcu_eqs_enter_common+0x4a/0x320
->>> >>> > > [   33.855646]  [<ffffffff8101edf2>] ? mwait_idle+0x82/0x1b0
->>> >>> > > [   33.855649]  [<ffffffff8101ed99>] ? mwait_idle+0x29/0x1b0
->>> >>> > > [   33.855653]  [<ffffffff8101f8a6>] cpu_idle+0x116/0x130
->>> >>> > > [   33.855658]  [<ffffffff816c0c0f>] start_secondary+0x251/0x258
->>> >>> > > [   33.855660] handlers:
->>> >>> > > [   33.855664] [<ffffffff814f98a0>] usb_hcd_irq
->>> >>> > > [   33.855667] Disabling IRQ #18
->>> >>> > >
->>> >> https://bugzilla.kernel.org/show_bug.cgi?id=53561
->>> >>
->>> >> Maybe this is some interaction with all the new ACPI code and fixes
->>> >> written in those 8 days.
->>> >
->>> > interrupt routing seems get changed:
->>> > next:
->>> >    5:          0          0          0          0          0
->>> > 0          0          0   IO-APIC-fasteoi   snd_ctxfi
->>> >   18:      99970         13         16         20      99940
->>> > 13         13         16   IO-APIC-fasteoi   uhci_hcd:usb4
->>> > v3.8-rc7:
->>> >   18:        424         15         11        112        420
->>> > 16         18        105   IO-APIC-fasteoi   uhci_hcd:usb4, snd_ctxfi
->>> >
->>> > These messages in the bad dmesg log are interesting since PCI INT A is routed
->>> > on
->>> > irq 18 with the kernels that work.
->>> > [    8.983246] pci 0000:00:1e.0: can't derive routing for PCI INT A
->>> > [    8.983600] snd_ctxfi 0000:09:02.0: PCI INT A: no GSI - using ISA IRQ 5
->>> > ...
->>> >
->>> > acpi_pci_irq_add_prt() add wrong bus for that bridge, because that
->>> > that bridge is not scanned.
->>> >
->>> > Will check if I can produce one patch for it.
->>>
->>> Hi Peter,
->>>
->>> Can you try attached debug patch?
->>
->> Fixed, thanks.
->
-> Bjorn, Rafael,
->
-> acpi_pci_irq_add_prt need to be called after pci bridge get scanned,
-> so we can not call it from pci_acpi_setup, after we move dev_register
-> for pci_dev early.
->
-> The attached debug patch move down that calling into
-> pci_bus_add_devices and that will make prt works again.
->
-> Can acpi provide another hook after bridge get scanned?
->
+This patch adds support for the SGI UV3 hub to the common x2apic
+functions.  The primary changes are to account for the similarities
+between UV2 and UV3 which are encompassed within the "UVX" nomenclature.
 
-23: +	/* need to after bridge is scanned */
-24: +	pcibios_irq_setup(&dev->dev);
+One significant difference within UV3 is the handling of the MMIOH
+regions which are redirected to the target blade (with the device) in
+a different manner.  It also now has two MMIOH regions for both small and
+large BARs.  This aids in limiting the amount of physical address space
+removed from real memory that's used for I/O in the max config of 64TB.
 
-... need to *be called* after...
+Signed-off-by: Mike Travis <travis@sgi.com>
+Acked-by: Russ Anderson <rja@sgi.com>
+Reviewed-by: Dimitri Sivanich <sivanich@sgi.com>
+Cc: Alexander Gordeev <agordeev@redhat.com>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Steffen Persvold <sp@numascale.com>
+---
+ arch/x86/kernel/apic/x2apic_uv_x.c |  206 ++++++++++++++++++++++++++++++-------
+ 1 file changed, 171 insertions(+), 35 deletions(-)
 
-Even this is a temporary workaround, can you send a separate patch for this?
+--- linux.orig/arch/x86/kernel/apic/x2apic_uv_x.c
++++ linux/arch/x86/kernel/apic/x2apic_uv_x.c
+@@ -5,7 +5,7 @@
+  *
+  * SGI UV APIC functions (note: not an Intel compatible APIC)
+  *
+- * Copyright (C) 2007-2010 Silicon Graphics, Inc. All rights reserved.
++ * Copyright (C) 2007-2013 Silicon Graphics, Inc. All rights reserved.
+  */
+ #include <linux/cpumask.h>
+ #include <linux/hardirq.h>
+@@ -91,10 +91,16 @@ static int __init early_get_pnodeid(void
+ 	m_n_config.v = uv_early_read_mmr(UVH_RH_GAM_CONFIG_MMR);
+ 	uv_min_hub_revision_id = node_id.s.revision;
+ 
+-	if (node_id.s.part_number == UV2_HUB_PART_NUMBER)
+-		uv_min_hub_revision_id += UV2_HUB_REVISION_BASE - 1;
+-	if (node_id.s.part_number == UV2_HUB_PART_NUMBER_X)
++	switch (node_id.s.part_number) {
++	case UV2_HUB_PART_NUMBER:
++	case UV2_HUB_PART_NUMBER_X:
+ 		uv_min_hub_revision_id += UV2_HUB_REVISION_BASE - 1;
++		break;
++	case UV3_HUB_PART_NUMBER:
++	case UV3_HUB_PART_NUMBER_X:
++		uv_min_hub_revision_id += UV3_HUB_REVISION_BASE - 1;
++		break;
++	}
+ 
+ 	uv_hub_info->hub_revision = uv_min_hub_revision_id;
+ 	pnode = (node_id.s.node_id >> 1) & ((1 << m_n_config.s.n_skt) - 1);
+@@ -130,13 +136,16 @@ static void __init uv_set_apicid_hibit(v
+ 
+ static int __init uv_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
+ {
+-	int pnodeid, is_uv1, is_uv2;
++	int pnodeid, is_uv1, is_uv2, is_uv3;
+ 
+ 	is_uv1 = !strcmp(oem_id, "SGI");
+ 	is_uv2 = !strcmp(oem_id, "SGI2");
+-	if (is_uv1 || is_uv2) {
++	is_uv3 = !strncmp(oem_id, "SGI3", 4);	/* there are varieties of UV3 */
++	if (is_uv1 || is_uv2 || is_uv3) {
+ 		uv_hub_info->hub_revision =
+-			is_uv1 ? UV1_HUB_REVISION_BASE : UV2_HUB_REVISION_BASE;
++			(is_uv1 ? UV1_HUB_REVISION_BASE :
++			(is_uv2 ? UV2_HUB_REVISION_BASE :
++				  UV3_HUB_REVISION_BASE));
+ 		pnodeid = early_get_pnodeid();
+ 		early_get_apic_pnode_shift();
+ 		x86_platform.is_untracked_pat_range =  uv_is_untracked_pat_range;
+@@ -450,14 +459,17 @@ static __init void map_high(char *id, un
+ 
+ 	paddr = base << pshift;
+ 	bytes = (1UL << bshift) * (max_pnode + 1);
+-	printk(KERN_INFO "UV: Map %s_HI 0x%lx - 0x%lx\n", id, paddr,
+-						paddr + bytes);
++	if (!paddr) {
++		pr_info("UV: Map %s_HI base address NULL\n", id);
++		return;
++	}
++	pr_info("UV: Map %s_HI 0x%lx - 0x%lx\n", id, paddr, paddr + bytes);
+ 	if (map_type == map_uc)
+ 		init_extra_mapping_uc(paddr, bytes);
+ 	else
+ 		init_extra_mapping_wb(paddr, bytes);
+-
+ }
++
+ static __init void map_gru_high(int max_pnode)
+ {
+ 	union uvh_rh_gam_gru_overlay_config_mmr_u gru;
+@@ -468,7 +480,8 @@ static __init void map_gru_high(int max_
+ 		map_high("GRU", gru.s.base, shift, shift, max_pnode, map_wb);
+ 		gru_start_paddr = ((u64)gru.s.base << shift);
+ 		gru_end_paddr = gru_start_paddr + (1UL << shift) * (max_pnode + 1);
+-
++	} else {
++		pr_info("UV: GRU disabled\n");
+ 	}
+ }
+ 
+@@ -480,23 +493,146 @@ static __init void map_mmr_high(int max_
+ 	mmr.v = uv_read_local_mmr(UVH_RH_GAM_MMR_OVERLAY_CONFIG_MMR);
+ 	if (mmr.s.enable)
+ 		map_high("MMR", mmr.s.base, shift, shift, max_pnode, map_uc);
++	else
++		pr_info("UV: MMR disabled\n");
+ }
+ 
+-static __init void map_mmioh_high(int max_pnode)
++/*
++ * This commonality works because both 0 & 1 versions of the MMIOH OVERLAY
++ * and REDIRECT MMR regs are exactly the same on UV3.
++ */
++struct mmioh_config {
++	unsigned long overlay;
++	unsigned long redirect;
++	char *id;
++};
++
++static __initdata struct mmioh_config mmiohs[] = {
++	{
++		UV3H_RH_GAM_MMIOH_OVERLAY_CONFIG0_MMR,
++		UV3H_RH_GAM_MMIOH_REDIRECT_CONFIG0_MMR,
++		"MMIOH0"
++	},
++	{
++		UV3H_RH_GAM_MMIOH_OVERLAY_CONFIG1_MMR,
++		UV3H_RH_GAM_MMIOH_REDIRECT_CONFIG1_MMR,
++		"MMIOH1"
++	},
++};
++
++static __init void map_mmioh_high_uv3(int index, int min_pnode, int max_pnode)
++{
++	union uv3h_rh_gam_mmioh_overlay_config0_mmr_u overlay;
++	unsigned long mmr;
++	unsigned long base;
++	int i, n, shift, m_io, max_io;
++	int nasid, lnasid, fi, li;
++	char *id;
++
++	id = mmiohs[index].id;
++	overlay.v = uv_read_local_mmr(mmiohs[index].overlay);
++	pr_info("UV: %s overlay 0x%lx base:0x%x m_io:%d\n",
++		id, overlay.v, overlay.s3.base, overlay.s3.m_io);
++	if (!overlay.s3.enable) {
++		pr_info("UV: %s disabled\n", id);
++		return;
++	}
++
++	shift = UV3H_RH_GAM_MMIOH_OVERLAY_CONFIG0_MMR_BASE_SHFT;
++	base = (unsigned long)overlay.s3.base;
++	m_io = overlay.s3.m_io;
++	mmr = mmiohs[index].redirect;
++	n = UV3H_RH_GAM_MMIOH_REDIRECT_CONFIG0_MMR_DEPTH;
++	min_pnode *= 2;				/* convert to NASID */
++	max_pnode *= 2;
++	max_io = lnasid = fi = li = -1;
++
++	for (i = 0; i < n; i++) {
++		union uv3h_rh_gam_mmioh_redirect_config0_mmr_u redirect;
++
++		redirect.v = uv_read_local_mmr(mmr + i * 8);
++		nasid = redirect.s3.nasid;
++		if (nasid < min_pnode || max_pnode < nasid)
++			nasid = -1;		/* invalid NASID */
++
++		if (nasid == lnasid) {
++			li = i;
++			if (i != n-1)		/* last entry check */
++				continue;
++		}
++
++		/* check if we have a cached (or last) redirect to print */
++		if (lnasid != -1 || (i == n-1 && nasid != -1))  {
++			unsigned long addr1, addr2;
++			int f, l;
++
++			if (lnasid == -1) {
++				f = l = i;
++				lnasid = nasid;
++			} else {
++				f = fi;
++				l = li;
++			}
++			addr1 = (base << shift) +
++				f * (unsigned long)(1 << m_io);
++			addr2 = (base << shift) +
++				(l + 1) * (unsigned long)(1 << m_io);
++			pr_info("UV: %s[%03d..%03d] NASID 0x%04x ADDR 0x%016lx - 0x%016lx\n",
++				id, fi, li, lnasid, addr1, addr2);
++			if (max_io < l)
++				max_io = l;
++		}
++		fi = li = i;
++		lnasid = nasid;
++	}
++
++	pr_info("UV: %s base:0x%lx shift:%d M_IO:%d MAX_IO:%d\n",
++		id, base, shift, m_io, max_io);
++
++	if (max_io >= 0)
++		map_high(id, base, shift, m_io, max_io, map_uc);
++}
++
++static __init void map_mmioh_high(int min_pnode, int max_pnode)
+ {
+ 	union uvh_rh_gam_mmioh_overlay_config_mmr_u mmioh;
+-	int shift;
++	unsigned long mmr, base;
++	int shift, enable, m_io, n_io;
+ 
+-	mmioh.v = uv_read_local_mmr(UVH_RH_GAM_MMIOH_OVERLAY_CONFIG_MMR);
+-	if (is_uv1_hub() && mmioh.s1.enable) {
+-		shift = UV1H_RH_GAM_MMIOH_OVERLAY_CONFIG_MMR_BASE_SHFT;
+-		map_high("MMIOH", mmioh.s1.base, shift, mmioh.s1.m_io,
+-			max_pnode, map_uc);
++	if (is_uv3_hub()) {
++		/* Map both MMIOH Regions */
++		map_mmioh_high_uv3(0, min_pnode, max_pnode);
++		map_mmioh_high_uv3(1, min_pnode, max_pnode);
++		return;
+ 	}
+-	if (is_uv2_hub() && mmioh.s2.enable) {
++
++	if (is_uv1_hub()) {
++		mmr = UV1H_RH_GAM_MMIOH_OVERLAY_CONFIG_MMR;
++		shift = UV1H_RH_GAM_MMIOH_OVERLAY_CONFIG_MMR_BASE_SHFT;
++		mmioh.v = uv_read_local_mmr(mmr);
++		enable = !!mmioh.s1.enable;
++		base = mmioh.s1.base;
++		m_io = mmioh.s1.m_io;
++		n_io = mmioh.s1.n_io;
++	} else if (is_uv2_hub()) {
++		mmr = UV2H_RH_GAM_MMIOH_OVERLAY_CONFIG_MMR;
+ 		shift = UV2H_RH_GAM_MMIOH_OVERLAY_CONFIG_MMR_BASE_SHFT;
+-		map_high("MMIOH", mmioh.s2.base, shift, mmioh.s2.m_io,
+-			max_pnode, map_uc);
++		mmioh.v = uv_read_local_mmr(mmr);
++		enable = !!mmioh.s2.enable;
++		base = mmioh.s2.base;
++		m_io = mmioh.s2.m_io;
++		n_io = mmioh.s2.n_io;
++	} else
++		return;
++
++	if (enable) {
++		max_pnode &= (1 << n_io) - 1;
++		pr_info(
++		    "UV: base:0x%lx shift:%d N_IO:%d M_IO:%d max_pnode:0x%x\n",
++			base, shift, m_io, n_io, max_pnode);
++		map_high("MMIOH", base, shift, m_io, max_pnode, map_uc);
++	} else {
++		pr_info("UV: MMIOH disabled\n");
+ 	}
+ }
+ 
+@@ -724,42 +860,41 @@ void uv_nmi_init(void)
+ void __init uv_system_init(void)
+ {
+ 	union uvh_rh_gam_config_mmr_u  m_n_config;
+-	union uvh_rh_gam_mmioh_overlay_config_mmr_u mmioh;
+ 	union uvh_node_id_u node_id;
+ 	unsigned long gnode_upper, lowmem_redir_base, lowmem_redir_size;
+-	int bytes, nid, cpu, lcpu, pnode, blade, i, j, m_val, n_val, n_io;
+-	int gnode_extra, max_pnode = 0;
++	int bytes, nid, cpu, lcpu, pnode, blade, i, j, m_val, n_val;
++	int gnode_extra, min_pnode = 999999, max_pnode = -1;
+ 	unsigned long mmr_base, present, paddr;
+-	unsigned short pnode_mask, pnode_io_mask;
++	unsigned short pnode_mask;
++	char *hub = (is_uv1_hub() ? "UV1" :
++		    (is_uv2_hub() ? "UV2" :
++				    "UV3"));
+ 
+-	printk(KERN_INFO "UV: Found %s hub\n", is_uv1_hub() ? "UV1" : "UV2");
++	pr_info("UV: Found %s hub\n", hub);
+ 	map_low_mmrs();
+ 
+ 	m_n_config.v = uv_read_local_mmr(UVH_RH_GAM_CONFIG_MMR );
+ 	m_val = m_n_config.s.m_skt;
+ 	n_val = m_n_config.s.n_skt;
+-	mmioh.v = uv_read_local_mmr(UVH_RH_GAM_MMIOH_OVERLAY_CONFIG_MMR);
+-	n_io = is_uv1_hub() ? mmioh.s1.n_io : mmioh.s2.n_io;
++	pnode_mask = (1 << n_val) - 1;
+ 	mmr_base =
+ 	    uv_read_local_mmr(UVH_RH_GAM_MMR_OVERLAY_CONFIG_MMR) &
+ 	    ~UV_MMR_ENABLE;
+-	pnode_mask = (1 << n_val) - 1;
+-	pnode_io_mask = (1 << n_io) - 1;
+ 
+ 	node_id.v = uv_read_local_mmr(UVH_NODE_ID);
+ 	gnode_extra = (node_id.s.node_id & ~((1 << n_val) - 1)) >> 1;
+ 	gnode_upper = ((unsigned long)gnode_extra  << m_val);
+-	printk(KERN_INFO "UV: N %d, M %d, N_IO: %d, gnode_upper 0x%lx, gnode_extra 0x%x, pnode_mask 0x%x, pnode_io_mask 0x%x\n",
+-			n_val, m_val, n_io, gnode_upper, gnode_extra, pnode_mask, pnode_io_mask);
++	pr_info("UV: N:%d M:%d pnode_mask:0x%x gnode_upper/extra:0x%lx/0x%x\n",
++			n_val, m_val, pnode_mask, gnode_upper, gnode_extra);
+ 
+-	printk(KERN_DEBUG "UV: global MMR base 0x%lx\n", mmr_base);
++	pr_info("UV: global MMR base 0x%lx\n", mmr_base);
+ 
+ 	for(i = 0; i < UVH_NODE_PRESENT_TABLE_DEPTH; i++)
+ 		uv_possible_blades +=
+ 		  hweight64(uv_read_local_mmr( UVH_NODE_PRESENT_TABLE + i * 8));
+ 
+ 	/* uv_num_possible_blades() is really the hub count */
+-	printk(KERN_INFO "UV: Found %d blades, %d hubs\n",
++	pr_info("UV: Found %d blades, %d hubs\n",
+ 			is_uv1_hub() ? uv_num_possible_blades() :
+ 			(uv_num_possible_blades() + 1) / 2,
+ 			uv_num_possible_blades());
+@@ -794,6 +929,7 @@ void __init uv_system_init(void)
+ 			uv_blade_info[blade].nr_possible_cpus = 0;
+ 			uv_blade_info[blade].nr_online_cpus = 0;
+ 			spin_lock_init(&uv_blade_info[blade].nmi_lock);
++			min_pnode = min(pnode, min_pnode);
+ 			max_pnode = max(pnode, max_pnode);
+ 			blade++;
+ 		}
+@@ -856,7 +992,7 @@ void __init uv_system_init(void)
+ 
+ 	map_gru_high(max_pnode);
+ 	map_mmr_high(max_pnode);
+-	map_mmioh_high(max_pnode & pnode_io_mask);
++	map_mmioh_high(min_pnode, max_pnode);
+ 
+ 	uv_cpu_init();
+ 	uv_scir_register_cpu_notifier();
 
-- Sedat -
-
-P.S.: Still wonder why people use "linux-2.6" as prefix in their patches.
-
-> Thanks
->
-> Yinghai
