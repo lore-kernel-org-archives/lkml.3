@@ -1,78 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753852Ab3BKIJF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 03:09:05 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:52983 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753457Ab3BKIJC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 03:09:02 -0500
-Date: Mon, 11 Feb 2013 10:08:45 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Luciano Coelho <coelho@ti.com>
-CC: <linville@tuxdriver.com>, <sfr@canb.auug.org.au>, <joe@perches.com>,
-        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <davem@davemloft.net>, <netdev@vger.kernel.org>
-Subject: Re: [PATCH] wlcore: remove newly introduced alloc/OOM messages
-Message-ID: <20130211080845.GB25438@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1360569218.12803.50.camel@cumari.coelho.fi>
- <1360569749-28372-1-git-send-email-coelho@ti.com>
+	id S1753469Ab3BKIQZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 03:16:25 -0500
+Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:56223 "EHLO
+	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752934Ab3BKIQX convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 03:16:23 -0500
+From: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
+To: Rusty Russell <rusty@rustcorp.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ohad Ben-Cohen <ohad@wizery.com>
+Cc: "sjur@brendeland.net" <sjur@brendeland.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dmitry TARNYAGIN <dmitry.tarnyagin@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Erwan YVIN <erwan.yvin@stericsson.com>,
+        Vikram ARV <vikram.arv@stericsson.com>, Ido Yariv <ido@wizery.com>
+Date: Mon, 11 Feb 2013 09:15:55 +0100
+Subject: RE: [PATCH vringh 2/2] caif_virtio: Introduce caif over virtio
+Thread-Topic: [PATCH vringh 2/2] caif_virtio: Introduce caif over virtio
+Thread-Index: Ac4IJSEdhK89pBw1TqWjjqXCKhHh/gAB7BxA
+Message-ID: <81C3A93C17462B4BBD7E272753C105792458EDD161@EXDCVYMBSTM005.EQ1STM.local>
+References: <1360494273-27889-1-git-send-email-sjur.brandeland@stericsson.com>
+ <1360494273-27889-3-git-send-email-sjur.brandeland@stericsson.com>
+ <87vc9zfic8.fsf@rustcorp.com.au>
+In-Reply-To: <87vc9zfic8.fsf@rustcorp.com.au>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bCsyhTFzCvuiizWE"
-Content-Disposition: inline
-In-Reply-To: <1360569749-28372-1-git-send-email-coelho@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---bCsyhTFzCvuiizWE
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Rusty,
 
-On Mon, Feb 11, 2013 at 10:02:29AM +0200, Luciano Coelho wrote:
-> In commit 0d2e7a5c (wireless: Remove unnecessary alloc/OOM messages,
-> alloc cleanups) OOM messages after alloc were removed from the wlcore
-> modules.
->=20
-> Commit afb43e6d (wlcore: remove if_ops from platform_data)
-> reintroduced a couple of those.  This patch removes them.
->=20
-> Signed-off-by: Luciano Coelho <coelho@ti.com>
-> ---
->=20
-> John,
->=20
-> Can you apply this directly on wireless-next after you process my latest =
-pull-request?
+> From: Rusty Russell [mailto:rusty@rustcorp.com.au]
+> sjur.brandeland@stericsson.com writes:
+> > From: Vikram ARV <vikram.arv@stericsson.com>
+> >
+> > Add the the Virtio shared memory driver for STE Modems.
+> > caif_virtio is implemented utilizing the virtio framework
+> > for data transport and is managed with the remoteproc frameworks.
+> >
+> > The Virtio queue is used for transmitting data to the modem, and
+> > the new vringh implementation is receiving data over the vring.
+> 
+> OK, let's refine vringh now we can see another user:
+> 
+> > + * @head: Last descriptor ID we received from vringh_getdesc_kern.
+> > + *	  We use this to put descriptor back on the used ring. USHRT_MAX is
+> > + *	  used to indicate invalid head-id.
+> 
+> > + */
+> > +struct cfv_napi_context {
+> > +	struct vringh_kiov riov;
+> > +	unsigned short head;
+> > +};
+> 
+> Usually we use an int, and -1.  I imagine it'll take no more space,
+> due to padding.
 
-please don't... patch isn't really what commit log says :-)
+I'm passing a pointer to "head" to vringh_getdesc_kern() directly, are you
+suggesting to change the head argument in  vringh_getdesc_kern()
+to a int pointer as well then?
 
---=20
-balbi
+> > +static inline void ctx_prep_iov(struct cfv_napi_context *ctx)
+> > +{
+> > +	if (ctx->riov.allocated) {
+> > +		kfree(ctx->riov.iov);
+> > +		ctx->riov.iov = NULL;
+> > +		ctx->riov.allocated = false;
+> > +	}
+> > +	ctx->riov.iov = NULL;
+> > +	ctx->riov.i = 0;
+> > +	ctx->riov.max = 0;
+> > +}
+> 
+> Hmm, we should probably make sure you don't have to do this: that if
+> allocated once, you can simply reuse it by setting i = 0.
 
---bCsyhTFzCvuiizWE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Yes, I had problems getting the alloc/free of iov right. This is
+perhaps the least intuitively part of the API. I maybe it's just me, but
+I think some more helper functions and support from vringh in this
+area would be great.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> 
+> (This requires some care in the error handling paths, so we don't
+> free it from under you)...
+> 
+> And you probably want to free this up in cfv_remove() instead?
 
-iQIcBAEBAgAGBQJRGKcNAAoJEIaOsuA1yqREAOsQAJJNeVOLFAc5GrPVl+1X7zpK
-Rj2rXhyfb7FcSWfCCHNnwGVkqq0aiCePkXewjmTMYYUz/yPSj9TO8aci0G53LyY7
-PIEX+xF4Ws4OFG3nGpl2m+j1ETDhzHtMWag2M70Uid1NZapb66VvlqXpEJPtYGdi
-1t3LEALJCFmBjzzxWpooOHh6h2pWQxu/5lEv8NfHVSlo2Pm2o7vlabdwGNfulpGv
-VjfudefeWoUIgYC1wwm1BgSDQ1oUwd1vKEbyQqXzQ2iKHQ+fEHK/8jIJStJqyfDD
-f/376aGFjOBVebhLdtidENhPGNBPVH68REv0uqgaVYT0Msuzh5p5fyEKwGYLz8ZY
-7wRdSJvCmvME/wr2zyn+GgLR6XHSysCRNs836dNS/e+lUFc1z6EWn8zI2bwH92Nd
-z0EynLfG5Ecw5AmHANDl26vWOQPC/mJPMb1O1NPBk4nEmN9Y5rLXG1DkR+FeFkK2
-cYVeVuwBABrvYinY21SAr+OXWKfdlv3k8ORr/H91Cu5WciiV3PeWPlsvYnhLJL92
-g8RRxVM91TBJXmfbznuekI+5LrbFKlrzHinqZdBSGjL61JPFEud3fwlMdc84aeBJ
-byRN2E+1Ilvsh0X5CgkoRd8F4V6kr8FoZZYi07HeffnVZHGEDw8vHU4hGex++hP0
-kvhGhDBn+fzHabIoJ7WW
-=y+w4
------END PGP SIGNATURE-----
+OK, I'll look into this when you have a some more code ready...
 
---bCsyhTFzCvuiizWE--
+> 
+> I'll create and test a patch now.
+> 
+> > +		if (riov->i == riov->max) {
+> > +			if (cfv->ctx.head != USHRT_MAX) {
+> > +				vringh_complete_kern(cfv->vr_rx,
+> > +						     cfv->ctx.head,
+> > +						     0);
+> > +				cfv->ctx.head = USHRT_MAX;
+> > +			}
+> > +
+> > +			ctx_prep_iov(&cfv->ctx);
+> > +			err = vringh_getdesc_kern(
+> > +				cfv->vr_rx,
+> > +				riov,
+> > +				&wiov,
+> > +				&cfv->ctx.head,
+> > +				GFP_ATOMIC);
+> > +
+> > +			if (err <= 0)
+> > +				goto out;
+> > +
+> > +			if (wiov.max != 0) {
+> > +				/* CAIF does not use write descriptors */
+> > +				err = -EPROTO;
+> > +				goto out;
+> > +			}
+> 
+> This is probably a common case, so we should generate this error inside
+> vringh_getdesc (if wiov is NULL).
+> 
+> I'll do that too...
+> 
+> > +module_driver(caif_virtio_driver, register_virtio_driver,
+> > +	      unregister_virtio_driver);
+> > +MODULE_DEVICE_TABLE(virtio, id_table);
+> 
+> The comment on module_driver says:
+> 
+>  * Use this macro to construct bus specific macros for registering
+>  * drivers, and do not use it on its own.
+> 
+> Want to send me a patch to define module_virtio_driver?
+
+Sure, I can do that.
+
+Thanks a lot Rusty.
+
+Regards,
+Sjur
