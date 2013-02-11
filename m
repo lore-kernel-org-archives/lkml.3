@@ -1,49 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757796Ab3BKQCp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 11:02:45 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53410 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757658Ab3BKQCo (ORCPT
+	id S1757808Ab3BKQDk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 11:03:40 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:60099 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757614Ab3BKQDi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 11:02:44 -0500
-Date: Mon, 11 Feb 2013 16:02:30 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Len Brown <lenb@kernel.org>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Len Brown <len.brown@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 06/16] ARM idle: delete pm_idle
-Message-ID: <20130211160229.GB5676@MacBook-Pro.local>
-References: <2b219d07e0f287c2c713f5465fc8646158fa986e.1360475150.git.len.brown@intel.com>
- <9838a4aeee256adeaef90efe56df2c9988206982.1360475150.git.len.brown@intel.com>
+	Mon, 11 Feb 2013 11:03:38 -0500
+Date: Mon, 11 Feb 2013 08:03:46 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Tomas Winkler <tomas.winkler@intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [char-misc-next 07/11] mei: bus: Implement bus driver data
+ setter/getter
+Message-ID: <20130211160346.GA1534@kroah.com>
+References: <1360270997-7639-1-git-send-email-tomas.winkler@intel.com>
+ <20130207225809.GG5072@sortiz-mobl>
+ <20130207235724.GA14612@sortiz-mobl>
+ <201302111458.37452.arnd@arndb.de>
+ <20130211152929.GS20996@sortiz-mobl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <9838a4aeee256adeaef90efe56df2c9988206982.1360475150.git.len.brown@intel.com>
+In-Reply-To: <20130211152929.GS20996@sortiz-mobl>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 10, 2013 at 05:58:13AM +0000, Len Brown wrote:
-> pm_idle() on ARM was a synonym for default_idle(),
-> so simply invoke default_idle() directly.
+On Mon, Feb 11, 2013 at 04:29:29PM +0100, Samuel Ortiz wrote:
+> Hi Arnd,
+> 
+> On Mon, Feb 11, 2013 at 02:58:37PM +0000, Arnd Bergmann wrote:
+> > On Thursday 07 February 2013, Samuel Ortiz wrote:
+> > > 
+> > > On Thu, Feb 07, 2013 at 11:58:09PM +0100, Samuel Ortiz wrote:
+> > > > On Thu, Feb 07, 2013 at 10:38:44PM +0000, Arnd Bergmann wrote:
+> > > > > On Thursday 07 February 2013, Tomas Winkler wrote:
+> > > > > > 
+> > > > > > +inline void *mei_bus_get_clientdata(const struct mei_bus_client *client)
+> > > > > > +{
+> > > > > > +       return dev_get_drvdata(&client->dev);
+> > > > > > +}
+> > > > > > +EXPORT_SYMBOL(mei_bus_get_clientdata);
+> > > > > > +
+> > > > > 
+> > > > > Did you really mean to export an inline function?
+> > > > > 
+> > > > > Can you make this a static inline function in a header file instead?
+> > > > Sure, will do.
+> > > Actually, I'd like to keep the mei_bus_client structure opaque to the MEI bus
+> > > drivers. So I'll still export those symbols without inlining them.
+> > 
+> > Ok, makes sense. I assume when you say "bus driver" you mean what other
+> > subsystems call a "device driver".
+> That's correct, yes.
 
-The clean-up looks fine as we already have an arm_pm_idle but longer
-term I was thinking about having a common declaration similar to
-pm_power_off that code under drivers/power/(reset/) can override (and
-such driver may be shared by multiple architectures). OTOH, if you get
-rid of the generic linux/pm.h declaration architectures can use a common
-pm_idle name and type (though I think having it in the common header
-would be better). For ARM this would mean s/arm_pm_idle/pm_idle/ on top
-if your patch.
+Thanks for clearing that up.  So, in your next revision, can you use the
+"proper" names for everything so that we all can understand the code
+easier as it will follow the normal standards for kernel driver model
+interaction?
 
-Do you have any plans with pm_power_off as well?
+thanks,
 
-Thanks.
-
--- 
-Catalin
+greg k-h
