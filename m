@@ -1,98 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751538Ab3BKAXZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Feb 2013 19:23:25 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:47676 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751061Ab3BKAXY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Feb 2013 19:23:24 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v2 6/6] of_spi: Initialize cs_gpios and cs_gpio with -EEXIST
-To: Andreas Larsson <andreas@gaisler.com>
-Cc: Rob Herring <rob.herring@calxeda.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        software@gaisler.com
-In-Reply-To: <1359471223-4794-7-git-send-email-andreas@gaisler.com>
-References: <1359471223-4794-1-git-send-email-andreas@gaisler.com> <1359471223-4794-7-git-send-email-andreas@gaisler.com>
-Date: Mon, 11 Feb 2013 00:23:20 +0000
-Message-Id: <20130211002320.824593E0C13@localhost>
+	id S1751595Ab3BKA0F (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Feb 2013 19:26:05 -0500
+Received: from fieldses.org ([174.143.236.118]:38349 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751037Ab3BKA0D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Feb 2013 19:26:03 -0500
+Date: Sun, 10 Feb 2013 19:25:58 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: akpm@linux-foundation.org, linux-nfs@vger.kernel.org,
+        Trond.Myklebust@netapp.com, linux-kernel@vger.kernel.org,
+        devel@openvz.org
+Subject: Re: [PATCH 0/2] NFSD: fix races in service per-net resources
+ allocation
+Message-ID: <20130211002558.GD10161@fieldses.org>
+References: <20130201111046.24066.72836.stgit@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130201111046.24066.72836.stgit@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Jan 2013 15:53:43 +0100, Andreas Larsson <andreas@gaisler.com> wrote:
-> Holes in the cs-gpios DT phandle list is supposed to mark that native
-> chipselects is to be used. The value returned from of_get_named_gpio_flags in
-> this case is -EEXIST. By initializing cs_gpios and cs_gpio with -EEXIST, this
-> and only this errno will indicate to a spi controller driver that a native
-> chipselect is to be used.
+On Fri, Feb 01, 2013 at 02:28:21PM +0300, Stanislav Kinsbursky wrote:
+> After "NFS" (SUNRPC + NFSd actually) containerization work some basic
+> principles of SUNRPC service initialization and deinitialization has been
+> changed: now one service can be shared between different network namespaces
+> and network "resources" can be attached or detached from the running service.
+> This leads to races, described here:
 > 
-> Signed-off-by: Andreas Larsson <andreas@gaisler.com>
-
-I've left this one off for now. Take a look at the patch I posted and
-let me know if you think this one should still be applied.
-
-g.
-
-> ---
->  drivers/spi/spi.c       |    4 ++--
->  include/linux/spi/spi.h |    7 +++++--
->  2 files changed, 7 insertions(+), 4 deletions(-)
+> https://bugzilla.redhat.com/show_bug.cgi?id=904870
 > 
-> diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-> index 6f1b717..7494bad 100644
-> --- a/drivers/spi/spi.c
-> +++ b/drivers/spi/spi.c
-> @@ -334,7 +334,7 @@ struct spi_device *spi_alloc_device(struct spi_master *master)
->  	spi->dev.parent = &master->dev;
->  	spi->dev.bus = &spi_bus_type;
->  	spi->dev.release = spidev_release;
-> -	spi->cs_gpio = -EINVAL;
-> +	spi->cs_gpio = -EEXIST;
->  	device_initialize(&spi->dev);
->  	return spi;
->  }
-> @@ -1097,7 +1097,7 @@ static int of_spi_register_master(struct spi_master *master)
->  	}
->  
->  	for (i = 0; i < master->num_chipselect; i++)
-> -		cs[i] = -EINVAL;
-> +		cs[i] = -EEXIST;
->  
->  	for (i = 0; i < nb; i++)
->  		cs[i] = of_get_named_gpio_flags(np, "cs-gpios", i, &flags[i]);
-> diff --git a/include/linux/spi/spi.h b/include/linux/spi/spi.h
-> index 96b1055..0701882 100644
-> --- a/include/linux/spi/spi.h
-> +++ b/include/linux/spi/spi.h
-> @@ -58,7 +58,8 @@ extern struct bus_type spi_bus_type;
->   * @modalias: Name of the driver to use with this device, or an alias
->   *	for that name.  This appears in the sysfs "modalias" attribute
->   *	for driver coldplugging, and in uevents used for hotplugging
-> - * @cs_gpio: Negative or gpio for chip select.
-> + * @cs_gpio: Negative or gpio for chip select.  Set to -EEXIST when chipselect
-> + *	should be handled natively by the controller driver
->   * @cs_gpio_flags: of_gpio_flags corresponding to cs_gpio
->   *
->   * A @spi_device is used to interchange data between an SPI slave
-> @@ -262,7 +263,9 @@ static inline void spi_unregister_driver(struct spi_driver *sdrv)
->   * @unprepare_transfer_hardware: there are currently no more messages on the
->   *	queue so the subsystem notifies the driver that it may relax the
->   *	hardware by issuing this call
-> - * @cs_gpios: possible array of negative values or gpios for chip selects
-> + * @cs_gpios: possible array of negative values or gpios for chip selects.  A
-> + *	chipselect that should be handled natively by the controller driver is
-> + *	set to -EEXIST.
->   * @cs_gpio_flags: possible array of of_gpio_flags corresponding to cs_gpios
->   *
->   * Each SPI master controller can communicate with one or more @spi_device
-> -- 
-> 1.7.0.4
-> 
+> and which this small patch set is aimed to solve by using per-cpu rw semphores
+> to sync per-net resources processing and shutdown.
 
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies, Ltd.
+Sorry for the slow response.  I think this is probably correct.
+
+But I think we got into this mess because the server shutdown logic is
+too complicated.  So I'd prefer to find a way to fix the problem by
+simplifying things rather than by adding another lock.
+
+Do you see anything wrong with the following?
+
+--b
+
+commit e8202f39f84b8863337f55159dd18478b9ccb616
+Author: J. Bruce Fields <bfields@redhat.com>
+Date:   Sun Feb 10 16:08:11 2013 -0500
+
+    svcrpc: fix and simplify server shutdown
+    
+    Simplify server shutdown, and make it correct whether or not there are
+    still threads running (as will happen in the case we're only shutting
+    down the service in one network namespace).
+    
+    Do that by doing what we'd do in normal circumstances: just CLOSE each
+    socket, then enqueue it.
+    
+    Since there may not be threads to handle the resulting queued xprts,
+    also run a simplified version of the svc_recv() loop run by a server to
+    clean up any closed xprts afterwards.
+    
+    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+
+diff --git a/net/sunrpc/svc_xprt.c b/net/sunrpc/svc_xprt.c
+index 024a241..a98e818 100644
+--- a/net/sunrpc/svc_xprt.c
++++ b/net/sunrpc/svc_xprt.c
+@@ -966,12 +966,12 @@ static void svc_close_list(struct svc_serv *serv, struct list_head *xprt_list, s
+ 		if (xprt->xpt_net != net)
+ 			continue;
+ 		set_bit(XPT_CLOSE, &xprt->xpt_flags);
+-		set_bit(XPT_BUSY, &xprt->xpt_flags);
++		svc_xprt_enqueue(xprt);
+ 	}
+ 	spin_unlock(&serv->sv_lock);
+ }
+ 
+-static void svc_clear_pools(struct svc_serv *serv, struct net *net)
++static struct svc_xprt *svc_dequeue_net(struct svc_serv *serv, struct net *net)
+ {
+ 	struct svc_pool *pool;
+ 	struct svc_xprt *xprt;
+@@ -986,42 +986,31 @@ static void svc_clear_pools(struct svc_serv *serv, struct net *net)
+ 			if (xprt->xpt_net != net)
+ 				continue;
+ 			list_del_init(&xprt->xpt_ready);
++			spin_unlock_bh(&pool->sp_lock);
++			return xprt;
+ 		}
+ 		spin_unlock_bh(&pool->sp_lock);
+ 	}
++	return NULL;
+ }
+ 
+-static void svc_clear_list(struct svc_serv *serv, struct list_head *xprt_list, struct net *net)
++static void svc_clean_up_xprts(struct svc_serv *serv, struct net *net)
+ {
+ 	struct svc_xprt *xprt;
+-	struct svc_xprt *tmp;
+-	LIST_HEAD(victims);
+ 
+-	spin_lock(&serv->sv_lock);
+-	list_for_each_entry_safe(xprt, tmp, xprt_list, xpt_list) {
+-		if (xprt->xpt_net != net)
+-			continue;
+-		list_move(&xprt->xpt_list, &victims);
+-	}
+-	spin_unlock(&serv->sv_lock);
+-
+-	list_for_each_entry_safe(xprt, tmp, &victims, xpt_list)
++	while ((xprt = svc_dequeue_net(serv, net))) {
++		if (!test_bit(XPT_CLOSE, &xprt->xpt_flags))
++			pr_err("found un-closed xprt on service shutdown\n");
+ 		svc_delete_xprt(xprt);
++	}
+ }
+ 
+ void svc_close_net(struct svc_serv *serv, struct net *net)
+ {
+-	svc_close_list(serv, &serv->sv_tempsocks, net);
+ 	svc_close_list(serv, &serv->sv_permsocks, net);
+-
+-	svc_clear_pools(serv, net);
+-	/*
+-	 * At this point the sp_sockets lists will stay empty, since
+-	 * svc_xprt_enqueue will not add new entries without taking the
+-	 * sp_lock and checking XPT_BUSY.
+-	 */
+-	svc_clear_list(serv, &serv->sv_tempsocks, net);
+-	svc_clear_list(serv, &serv->sv_permsocks, net);
++	svc_clean_up_xprts(serv, net);
++	svc_close_list(serv, &serv->sv_tempsocks, net);
++	svc_clean_up_xprts(serv, net);
+ }
+ 
+ /*
