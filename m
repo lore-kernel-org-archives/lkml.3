@@ -1,76 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757630Ab3BKPuI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 10:50:08 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:58609 "EHLO comal.ext.ti.com"
+	id S1757665Ab3BKPu3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 10:50:29 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:36263 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757551Ab3BKPuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 10:50:06 -0500
-Date: Mon, 11 Feb 2013 17:49:47 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Roger Quadros <rogerq@ti.com>
-CC: <tony@atomide.com>, <b-cousson@ti.com>, <balbi@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        Russell King <linux@arm.linux.org.uk>, Rajendra Nayak <rnayak@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: Re: [PATCH 1/2] ARM: OMAP2+: Allow clock alias provision from device
- tree
-Message-ID: <20130211154947.GA18684@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1360597464-8491-1-git-send-email-rogerq@ti.com>
+	id S1757645Ab3BKPuZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 10:50:25 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1360592538-10643-4-git-send-email-bp@alien8.de>
+References: <1360592538-10643-1-git-send-email-bp@alien8.de> <1360592538-10643-4-git-send-email-bp@alien8.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3MwIy2ne0vdjdPXF"
-Content-Disposition: inline
-In-Reply-To: <1360597464-8491-1-git-send-email-rogerq@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH 3/4] x86, head_32: Remove second CPUID detection from default_entry
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Mon, 11 Feb 2013 07:49:14 -0800
+To: Borislav Petkov <bp@alien8.de>
+CC: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>
+Message-ID: <18557aed-383a-4454-8222-3d2c0f0a78be@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---3MwIy2ne0vdjdPXF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+What about CPUs with inconsistent cpuid levels?  Yes, they can and do happen, as we discussed on IRC.
 
-Hi,
+Borislav Petkov <bp@alien8.de> wrote:
 
-On Mon, Feb 11, 2013 at 05:44:23PM +0200, Roger Quadros wrote:
-> @@ -36,12 +39,76 @@ static struct of_device_id omap_dt_match_table[] __in=
-itdata =3D {
->  	{ }
->  };
-> =20
-> +static int __init omap_create_clk_alias(struct device_node *np)
+>From: Borislav Petkov <bp@suse.de>
+>
+>We do that once earlier now and cache it into new_cpu_data.cpuid_level
+>so no need for the EFLAGS.ID toggling dance anymore.
+>
+>Signed-off-by: Borislav Petkov <bp@suse.de>
+>---
+> arch/x86/kernel/head_32.S | 17 ++++-------------
+> 1 file changed, 4 insertions(+), 13 deletions(-)
+>
+>diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
+>index 73e084a6d2c5..e893ac09ca03 100644
+>--- a/arch/x86/kernel/head_32.S
+>+++ b/arch/x86/kernel/head_32.S
+>@@ -410,18 +410,7 @@ default_entry:
+> /*
+>  * Check if it is 486
+>  */
+>-	movl $-1,X86_CPUID	# -1 for no CPUID initially
+>-	movb $4,X86		# at least 486
+>-	pushfl			# push EFLAGS
+>-	popl %eax		# get EFLAGS
+>-	movl %eax,%ecx		# save original EFLAGS
+>-	xorl $0x200000,%eax	# flip ID bit in EFLAGS
+>-	pushl %eax		# copy to EFLAGS
+>-	popfl			# set EFLAGS
+>-	pushfl			# get new EFLAGS
+>-	popl %eax		# put it in eax
+>-	xorl %ecx,%eax		# change in flags
+>-	testl $0x200000,%eax	# check if ID bit changed
+>+	cmpl $-1,X86_CPUID
+> 	je is486
+> 
+> 	/* get vendor info */
+>@@ -447,7 +436,9 @@ default_entry:
+> 	movb %cl,X86_MASK
+> 	movl %edx,X86_CAPABILITY
+> 
+>-is486:	movl $0x50022,%ecx	# set AM, WP, NE and MP
+>+is486:
+>+	movb $4,X86
+>+	movl $0x50022,%ecx	# set AM, WP, NE and MP
+> 	movl %cr0,%eax
+> 	andl $0x80000011,%eax	# Save PG,PE,ET
+> 	orl %ecx,%eax
 
-if the rest of the folks agree with the aproach, looks like most of this
-can be made a bit more generic ;-)
-
-
---=20
-balbi
-
---3MwIy2ne0vdjdPXF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRGRMbAAoJEIaOsuA1yqRE1mUP/10O7v8YdQtKVvLLTfP3jy3s
-bvhYQJKxCsztJQ9LeJB1ODDjBCcXejuidUSrABL5tlWumjXT40bvbR9zxe6aCjiX
-FOUYazuSQoFtFBY4QKRyQtikgdIS4NBNbHmvB9JupQmRS9jvPt2g+YoUpm9YUQlL
-OIiTRLhNMBSK7k9gCfj0x8eHK+w7GtAhKWhomA/+d+4yGu6Fk4nfmMlJbnELdhho
-4AnP6AG6+BnG73pTIlpJMiUg7vPSiyLOEcfPa/KAU1mTMCyYY488hFsN2Zt9quc3
-hT0+1JZCvpATEVDC5i3colqqYSSV2D9D7aFtT7mi9jHuFgzCMENN9ocUuQ42E2v+
-pD452xSPQDf6LnterU6ZLuNZfJrUFX94K3Gf5Fs2YR1tf5Q8/zAFmN1pJ+WKr2Kj
-Vi935mnZC+9WS0m/cKVjiV4fDQNaYMtpqLpjXxSzCdJTlCsyEEkwWpNzbZUOumfZ
-JX7GvxP0OVc9LHyOBsPFo3gpkkqQqwtiEBoEGaBuu33Pwf2iWaciAx4oc7ie7zN/
-HS4ngzB57QXgEIDggnWe0VsSABow233+cPy8i2Yi9p3FHf5o1JqwK4WCofGEV7ZV
-FFmsrB9mTf0iiQ1ynYB0haPO1bsb9sX3gVNatDEVb9i2HRRelXJsR2rEHAttP238
-CJaMMBPRYLUznB+5i8qA
-=6+e6
------END PGP SIGNATURE-----
-
---3MwIy2ne0vdjdPXF--
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
