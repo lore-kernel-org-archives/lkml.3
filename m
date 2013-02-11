@@ -1,64 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932679Ab3BKVdU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 16:33:20 -0500
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:19858 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932605Ab3BKVdS (ORCPT
+	id S932651Ab3BKVd4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 16:33:56 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:62521 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759394Ab3BKVdy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 16:33:18 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Aj8XAAhjGVF5LbG7/2dsb2JhbABEuw+FEQOBAhdzgh8BAQU6HCMQCAMOBwMJJQ8FJQMhE4gRsESPZRWOJIJzYQOWI4lXhn2DGg
-Date: Tue, 12 Feb 2013 08:33:11 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: bfields@fieldses.org, akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-        chris.mason@fusionio.com, sage@inktank.com, miklos@szeredi.hu,
-        konishi.ryusuke@lab.ntt.co.jp, mfasheh@suse.com, jlbec@ejvilplan.org,
-        jack@suse.cz, bpm@sgi.com, elder@kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, ceph-devel@vger.kernel.org,
-        linux-nilfs@vger.kernel.org, reiserfs-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Vivek Trivedi <t.vivek@samsung.com>
-Subject: Re: [PATCH] fs: encode_fh: return FILEID_INVALID if invalid fid_type
-Message-ID: <20130211213311.GE8257@dastard>
-References: <1360571159-3666-1-git-send-email-linkinjeon@gmail.com>
+	Mon, 11 Feb 2013 16:33:54 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+1TfJ+ziiFUHnMPOGuHCvK
+Date: Mon, 11 Feb 2013 13:33:49 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Anmar Oueja <anmar.oueja@linaro.org>,
+        Laurent Meunier <laurent.meunier@st.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH] pinctrl/pinconfig: add debug interface
+Message-ID: <20130211213348.GY4801@atomide.com>
+References: <1360527070-18430-1-git-send-email-linus.walleij@stericsson.com>
+ <51195A63.7080706@wwwdotorg.org>
+ <20130211210041.GW4801@atomide.com>
+ <51195F00.4020309@wwwdotorg.org>
+ <20130211212105.GX4801@atomide.com>
+ <51196161.7020901@wwwdotorg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1360571159-3666-1-git-send-email-linkinjeon@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51196161.7020901@wwwdotorg.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 11, 2013 at 05:25:58PM +0900, Namjae Jeon wrote:
-> From: Namjae Jeon <namjae.jeon@samsung.com>
+* Stephen Warren <swarren@wwwdotorg.org> [130211 13:27]:
+> On 02/11/2013 02:21 PM, Tony Lindgren wrote:
+> > * Stephen Warren <swarren@wwwdotorg.org> [130211 13:17]:
+> >> On 02/11/2013 02:00 PM, Tony Lindgren wrote:
+> >>> * Stephen Warren <swarren@wwwdotorg.org> [130211 12:57]:
+> >>>> On 02/10/2013 01:11 PM, Linus Walleij wrote:
+> >>>>> From: Laurent Meunier <laurent.meunier@st.com>
+> >>>>>
+> >>>>> This update adds a debugfs interface to modify a pin configuration
+> >>>>> for a given state in the pinctrl map. This allows to modify the
+> >>>>> configuration for a non-active state, typically sleep state.
+> >>>>> This configuration is not applied right away, but only when the state
+> >>>>> will be entered.
+> >>>>>
+> >>>>> This solution is mandated for us by HW validation: in order
+> >>>>> to test and verify several pin configurations during sleep without
+> >>>>> recompiling the software.
+> >>>>
+> >>>> I never understood why HW engineers can't just recompile the kernel.
+> >>>> Besides, it's just a device tree change these days - no recompile even
+> >>>> required, right?
+> >>>
+> >>> Typically when bringing up a new board you do not have the driver
+> >>> specific mux settings verified. For developers, it's easiest to tweak
+> >>> the muxing during runtime do the drivers as a loadable module, then
+> >>> export the verified mux configuration into a .dts file.
+> >>
+> >> Well HW engineers typically just write to the HW registers directly
+> >> rather than screwing around with the Linux pinctrl tables and
+> >> unloading/reloading drivers.
+> > 
+> > I've seen cases where most of the mux register configuration are
+> > done correctly by HW engineers.. But there's always been some pieces
+> > of the pin configuration wrong initially and that needs to be fixed by
+> > the driver people to get things working.
+> > 
+> > Being able to set the mux configuration via debugfs is also very
+> > useful for the case of adding external devices to your proto boards
+> > like beagle etc.
 > 
-> This patch is a follow up on below patch:
-> 
-> [PATCH] exportfs: add FILEID_INVALID to indicate invalid fid_type
-> commit: 216b6cbdcbd86b1db0754d58886b466ae31f5a63 
-....
-> diff --git a/fs/xfs/xfs_export.c b/fs/xfs/xfs_export.c
-> index a836118..3391800 100644
-> --- a/fs/xfs/xfs_export.c
-> +++ b/fs/xfs/xfs_export.c
-> @@ -48,7 +48,7 @@ static int xfs_fileid_length(int fileid_type)
->  	case FILEID_INO32_GEN_PARENT | XFS_FILEID_TYPE_64FLAG:
->  		return 6;
->  	}
-> -	return 255; /* invalid */
-> +	return FILEID_INVALID; /* invalid */
->  }
+> This patch won't work for that, since it doesn't support adding new
+> entries to the mux table, just editing existing entries.
 
-I think you can drop the "/* invalid */" comment from there now as
-it is redundant with this change.
+Being able to change the existing mux entries still helps developers to
+debug things like pull values needed for i2c device impedance etc.
 
-Cheers,
+Regards,
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Tony
