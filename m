@@ -1,67 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758269Ab3BKR0z (ORCPT <rfc822;w@1wt.eu>);
+	id S1758290Ab3BKR05 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 12:26:57 -0500
+Received: from void.printf.net ([89.145.121.20]:52393 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758257Ab3BKR0z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 11 Feb 2013 12:26:55 -0500
-Received: from mail-da0-f52.google.com ([209.85.210.52]:35038 "EHLO
-	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758249Ab3BKR0y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 12:26:54 -0500
+From: Chris Ball <cjb@laptop.org>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Kevin Liu <keyuan.liu@gmail.com>
+Subject: Re: [PATCH 2/3] mmc: use regulator_can_change_voltage() instead of regulator_count_voltages() hacks
+References: <1354629663-29091-1-git-send-email-m.szyprowski@samsung.com>
+	<1354629663-29091-3-git-send-email-m.szyprowski@samsung.com>
+	<510BD3B1.3040601@samsung.com>
+Date: Mon, 11 Feb 2013 12:26:42 -0500
+In-Reply-To: <510BD3B1.3040601@samsung.com> (Marek Szyprowski's message of
+	"Fri, 01 Feb 2013 15:39:45 +0100")
+Message-ID: <87fw12rcbx.fsf@octavius.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1360601199.4156.24.camel@i7.infradead.org>
-References: <20130206214646.GA28135@gmail.com>
-	<20130208084029.d7d97d6e26580a5512712f91@canb.auug.org.au>
-	<20130208145539.GC30334@gmail.com>
-	<CA+55aFz9ERvaFayTy8QCtfi610Bt_r0GcOs68UNggJTHdY4oaQ@mail.gmail.com>
-	<CAOJsxLFDa3sLwP2MWdXJMTfZNEopp5imy8nWNViuPnWH747ggQ@mail.gmail.com>
-	<CA+55aFzEEbZqBaOKYB8H8+i904nXjNEgH=CUPtVMQU60QTTJaw@mail.gmail.com>
-	<CAOJsxLFDbmNitH=N8v3jSno0SFL33s=nPc+hGRAqJfYFZS0RGw@mail.gmail.com>
-	<CA+55aFy=SaVjNby=Jy_O9ZRQ_Ofc-6_+bLv=HeMMSzQQHw9vMQ@mail.gmail.com>
-	<CAOJsxLFpE=HjkPcX6NsWS8636qnEhDFDJi+49xX2Ge3Xp4MeUg@mail.gmail.com>
-	<CA+55aFzXF-4Xwc4HU8vnTin4WqtvYcpXq0TsqTN_vRg=myLH_Q@mail.gmail.com>
-	<20130211122654.GA5802@gmail.com>
-	<CAOJsxLFzc_39tuQazCKe+vO0evWhWwW9QasFiEqCgjKye9iNDg@mail.gmail.com>
-	<1360601199.4156.24.camel@i7.infradead.org>
-Date: Mon, 11 Feb 2013 19:26:53 +0200
-Message-ID: <CAJL_dMus6i4G4FcoYRaXn8=dMpqzoXRw9mZTuCykNbk67oARFQ@mail.gmail.com>
-Subject: Re: kvmtool tree (Was: Re: [patch] config: fix make kvmconfig)
-From: Anca Emanuel <anca.emanuel@gmail.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Pekka Enberg <penberg@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Rientjes <rientjes@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, will you help to the project ?
-Talk to Linaro guys.
+Hi Marek,
 
-On Mon, Feb 11, 2013 at 6:46 PM, David Woodhouse <dwmw2@infradead.org> wrote:
-> On Mon, 2013-02-11 at 16:47 +0200, Pekka Enberg wrote:
->> On Mon, Feb 11, 2013 at 2:26 PM, Ingo Molnar <mingo@kernel.org> wrote:
->> > IIRC Windows support for kmvtool is work in progress - some
->> > patches already got applied.
+On Fri, Feb 01 2013, Marek Szyprowski wrote:
+> On 12/4/2012 3:01 PM, Marek Szyprowski wrote:
+>> mmc_regulator_set_ocr() depends on the ability of regulator to change the
+>> voltage value. When regulator cannot change its voltage output, some code is
+>> skipped to avoid reporting false errors on some boards, which use MMC hosts
+>> with fixed regulators (example: Samsung Goni and UniversalC210 boards).
 >>
->> People are working on SeaBIOS support which is just one part of
->> running Windows. But yeah, we'll hopefully support non-Linux guest at
->> some point.
+>> This patch replaces a hacky workaround based on regulator_count_voltages()
+>> value with the correct call to recently introduced
+>> regulator_can_change_voltage() function in regulators core.
+>>
+>> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 >
-> <digression>
->
-> You're probably better off focusing on OVMF rather than just SeaBIOS.
->
-> SeaBIOS has CSM support now, so it can provide 'legacy' BIOS services
-> under OVMF. So if OVMF runs, you get both EFI and legacy support.
->
-> --
-> dwmw2
+> Any chance to get this patch scheduled for v3.9?
+
+Thanks, pushed to mmc-next for 3.9.
+
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
