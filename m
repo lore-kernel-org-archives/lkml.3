@@ -1,12 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754687Ab3BKJqW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 04:46:22 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:54894 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753930Ab3BKJqU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 04:46:20 -0500
-Date: Mon, 11 Feb 2013 15:13:53 +0530
+	id S1754779Ab3BKJqx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 04:46:53 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:38693 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753930Ab3BKJqv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 04:46:51 -0500
+Date: Mon, 11 Feb 2013 15:14:24 +0530
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Oleg Nesterov <oleg@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
@@ -16,157 +17,104 @@ Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Josh Stone <jistone@redhat.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/7] uprobes: Introduce uprobe_apply()
-Message-ID: <20130211094353.GD525@linux.vnet.ibm.com>
+Subject: Re: [PATCH 2/7] perf: Introduce hw_perf_event->tp_target and
+ ->tp_list
+Message-ID: <20130211094424.GE525@linux.vnet.ibm.com>
 Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 References: <20130204190225.GA10840@redhat.com>
- <20130204190250.GA10868@redhat.com>
+ <20130204190246.GA10865@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20130204190250.GA10868@redhat.com>
+In-Reply-To: <20130204190246.GA10865@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13021109-9360-0000-0000-00001065DEC4
+x-cbid: 13021109-5406-0000-0000-0000052780C2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2013-02-04 20:02:50]:
+* Oleg Nesterov <oleg@redhat.com> [2013-02-04 20:02:46]:
 
-> Currently it is not possible to change the filtering constraints after
-> uprobe_register(), so a consumer can not, say, start to trace a task/mm
-> which was previously filtered out, or remove the no longer needed bp's.
+> sys_perf_event_open()->perf_init_event(event) is called before
+> find_get_context(event), this means that event->ctx == NULL when
+> class->reg(TRACE_REG_PERF_REGISTER/OPEN) is called and thus it
+> can't know if this event is per-task or system-wide.
 > 
-> Introduce uprobe_apply() which simply does register_for_each_vma() again
-> to consult uprobe_consumer->filter() and install/remove the breakpoints.
-> The only complication is that register_for_each_vma() can no longer
-> assume that uprobe->consumers should be consulter if is_register == T,
-> so we change it to accept "struct uprobe_consumer *new" instead.
+> This patch adds hw_perf_event->tp_target for PERF_TYPE_TRACEPOINT,
+> this is analogous to PERF_TYPE_BREAKPOINT/bp_target we already have.
+> The patch also moves ->bp_target up so that it can overlap with the
+> new member, this can help the compiler to generate the better code.
 > 
-> Unlike uprobe_register(), uprobe_apply(true) doesn't do "unregister" if
-> register_for_each_vma() fails, it is up to caller to handle the error.
+> trace_uprobe_register() will use it for prefiltering to avoid the
+> unnecessary breakpoints in mm's we do not want to trace.
 > 
-> Note: we probably need to cleanup the current interface, it is strange
-> that uprobe_apply/unregister need inode/offset. We should either change
-> uprobe_register() to return "struct uprobe *", or add a private ->uprobe
-> member in uprobe_consumer. And in the long term uprobe_apply() should
-> take a single argument, uprobe or consumer, even "bool add" should go
-> away.
+> ->tp_target doesn't have its own reference, but we can rely on the
+> fact that either sys_perf_event_open() holds a reference, or it is
+> equal to event->ctx->task. So this pointer is always valid until
+> free_event().
+> 
+> Also add the "struct list_head tp_list" into this union. It is not
+> strictly necessary, but it can simplify the next changes and we can
+> add it for free.
 > 
 > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-
 
 Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
 > ---
->  include/linux/uprobes.h |    6 ++++++
->  kernel/events/uprobes.c |   39 +++++++++++++++++++++++++++++++++++----
->  2 files changed, 41 insertions(+), 4 deletions(-)
+>  include/linux/perf_event.h |    9 +++++++--
+>  kernel/events/core.c       |    5 ++++-
+>  2 files changed, 11 insertions(+), 3 deletions(-)
 > 
-> diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-> index 95d0002..02b83db 100644
-> --- a/include/linux/uprobes.h
-> +++ b/include/linux/uprobes.h
-> @@ -101,6 +101,7 @@ extern int __weak set_swbp(struct arch_uprobe *aup, struct mm_struct *mm, unsign
->  extern int __weak set_orig_insn(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long vaddr);
->  extern bool __weak is_swbp_insn(uprobe_opcode_t *insn);
->  extern int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *uc);
-> +extern int uprobe_apply(struct inode *inode, loff_t offset, struct uprobe_consumer *uc, bool);
->  extern void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consumer *uc);
->  extern int uprobe_mmap(struct vm_area_struct *vma);
->  extern void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned long end);
-> @@ -124,6 +125,11 @@ uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *uc)
->  {
->  	return -ENOSYS;
->  }
-> +static inline int
-> +uprobe_apply(struct inode *inode, loff_t offset, struct uprobe_consumer *uc, bool add)
-> +{
-> +	return -ENOSYS;
-> +}
->  static inline void
->  uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consumer *uc)
->  {
-> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-> index 23340a7..2bcd08e 100644
-> --- a/kernel/events/uprobes.c
-> +++ b/kernel/events/uprobes.c
-> @@ -733,8 +733,10 @@ build_map_info(struct address_space *mapping, loff_t offset, bool is_register)
->  	return curr;
->  }
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index 6bfb2fa..c9775e9 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -135,16 +135,21 @@ struct hw_perf_event {
+>  		struct { /* software */
+>  			struct hrtimer	hrtimer;
+>  		};
+> +		struct { /* tracepoint */
+> +			struct task_struct	*tp_target;
+> +			/* for tp_event->class */
+> +			struct list_head	tp_list;
+> +		};
+>  #ifdef CONFIG_HAVE_HW_BREAKPOINT
+>  		struct { /* breakpoint */
+> -			struct arch_hw_breakpoint	info;
+> -			struct list_head		bp_list;
+>  			/*
+>  			 * Crufty hack to avoid the chicken and egg
+>  			 * problem hw_breakpoint has with context
+>  			 * creation and event initalization.
+>  			 */
+>  			struct task_struct		*bp_target;
+> +			struct arch_hw_breakpoint	info;
+> +			struct list_head		bp_list;
+>  		};
+>  #endif
+>  	};
+> diff --git a/kernel/events/core.c b/kernel/events/core.c
+> index 1b2e516..340fb53 100644
+> --- a/kernel/events/core.c
+> +++ b/kernel/events/core.c
+> @@ -6162,11 +6162,14 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
 > 
-> -static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
-> +static int
-> +register_for_each_vma(struct uprobe *uprobe, struct uprobe_consumer *new)
->  {
-> +	bool is_register = !!new;
->  	struct map_info *info;
->  	int err = 0;
-> 
-> @@ -765,7 +767,7 @@ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
-> 
->  		if (is_register) {
->  			/* consult only the "caller", new consumer. */
-> -			if (consumer_filter(uprobe->consumers,
-> +			if (consumer_filter(new,
->  					UPROBE_FILTER_REGISTER, mm))
->  				err = install_breakpoint(uprobe, mm, vma, info->vaddr);
->  		} else if (test_bit(MMF_HAS_UPROBES, &mm->flags)) {
-> @@ -788,7 +790,7 @@ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
->  static int __uprobe_register(struct uprobe *uprobe, struct uprobe_consumer *uc)
->  {
->  	consumer_add(uprobe, uc);
-> -	return register_for_each_vma(uprobe, true);
-> +	return register_for_each_vma(uprobe, uc);
->  }
-> 
->  static void __uprobe_unregister(struct uprobe *uprobe, struct uprobe_consumer *uc)
-> @@ -798,7 +800,7 @@ static void __uprobe_unregister(struct uprobe *uprobe, struct uprobe_consumer *u
->  	if (!consumer_del(uprobe, uc))	/* WARN? */
->  		return;
-> 
-> -	err = register_for_each_vma(uprobe, false);
-> +	err = register_for_each_vma(uprobe, NULL);
->  	/* TODO : cant unregister? schedule a worker thread */
->  	if (!uprobe->consumers && !err)
->  		delete_uprobe(uprobe);
-> @@ -855,6 +857,35 @@ int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *
->  EXPORT_SYMBOL_GPL(uprobe_register);
-> 
->  /*
-> + * uprobe_apply - unregister a already registered probe.
-> + * @inode: the file in which the probe has to be removed.
-> + * @offset: offset from the start of the file.
-> + * @uc: consumer which wants to add more or remove some breakpoints
-> + * @add: add or remove the breakpoints
-> + */
-> +int uprobe_apply(struct inode *inode, loff_t offset,
-> +			struct uprobe_consumer *uc, bool add)
-> +{
-> +	struct uprobe *uprobe;
-> +	struct uprobe_consumer *con;
-> +	int ret = -ENOENT;
+>  	if (task) {
+>  		event->attach_state = PERF_ATTACH_TASK;
 > +
-> +	uprobe = find_uprobe(inode, offset);
-> +	if (!uprobe)
-> +		return ret;
-> +
-> +	down_write(&uprobe->register_rwsem);
-> +	for (con = uprobe->consumers; con && con != uc ; con = con->next)
-> +		;
-> +	if (con)
-> +		ret = register_for_each_vma(uprobe, add ? uc : NULL);
-> +	up_write(&uprobe->register_rwsem);
-> +	put_uprobe(uprobe);
-> +
-> +	return ret;
-> +}
-> +
-> +/*
->   * uprobe_unregister - unregister a already registered probe.
->   * @inode: the file in which the probe has to be removed.
->   * @offset: offset from the start of the file.
+> +		if (attr->type == PERF_TYPE_TRACEPOINT)
+> +			event->hw.tp_target = task;
+>  #ifdef CONFIG_HAVE_HW_BREAKPOINT
+>  		/*
+>  		 * hw_breakpoint is a bit difficult here..
+>  		 */
+> -		if (attr->type == PERF_TYPE_BREAKPOINT)
+> +		else if (attr->type == PERF_TYPE_BREAKPOINT)
+>  			event->hw.bp_target = task;
+>  #endif
+>  	}
 > -- 
 > 1.5.5.1
 > 
