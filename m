@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755528Ab3BKL3l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 06:29:41 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:35237 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755447Ab3BKL3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 06:29:39 -0500
-Message-ID: <5118D61D.7010302@imgtec.com>
-Date: Mon, 11 Feb 2013 11:29:33 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1755754Ab3BKLb5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 06:31:57 -0500
+Received: from mail-ia0-f178.google.com ([209.85.210.178]:44705 "EHLO
+	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755512Ab3BKLbz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 06:31:55 -0500
 MIME-Version: 1.0
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <arnd@arndb.de>, Sam Ravnborg <sam@ravnborg.org>
-Subject: Re: [PATCH v3 02/71] ARC: Build system: Makefiles, Kconfig, Linker
- script
-References: <1359024639-21915-1-git-send-email-vgupta@synopsys.com> <1359024639-21915-3-git-send-email-vgupta@synopsys.com>
-In-Reply-To: <1359024639-21915-3-git-send-email-vgupta@synopsys.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2013_02_11_11_29_36
+In-Reply-To: <51187376.2060106@nvidia.com>
+References: <1360406062-14982-1-git-send-email-grant.likely@secretlab.ca> <51187376.2060106@nvidia.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Mon, 11 Feb 2013 11:31:34 +0000
+X-Google-Sender-Auth: uZgwUyAIyJVOXWsf8YnsI9wpGYM
+Message-ID: <CACxGe6sEmcyRveM9630qyGQm21ZUhSMKTThDnO+MMu=ejfdP2w@mail.gmail.com>
+Subject: Re: [PATCH] gpiolib: Fix locking on gpio debugfs files
+To: Alex Courbot <acourbot@nvidia.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vineet,
+On Mon, Feb 11, 2013 at 4:28 AM, Alex Courbot <acourbot@nvidia.com> wrote:
+> On 02/09/2013 07:34 PM, Grant Likely wrote:
+>>
+>> The debugfs files really need to hold the gpiolib spinlock before
+>> accessing the list. Otherwise chip addition/removal will cause an oops.
+>>
+>> Cc: Alexandre Courbot <acourbot@nvidia.com>
+>> Cc: Linus Walleij <linus.walleij@linaro.org>
+>> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+>
+>
+> Tested-by: Alexandre Courbot <acourbot@nvidia.com>
+>
+> Just wondering: if we manage to change this spinlock into a mutex in the
+> future, wouldn't it be better to acquire it only once in gpiolib_seq_start()
+> and release it in gpiolib_seq_stop()?
+>
+> Even though the protection introduced by this patch definitely improves the
+> situation, it seems to me that chips could still be removed while being
+> displayed by gpiolib_seq_show().
 
-On 24/01/13 10:50, Vineet Gupta wrote:
-> diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
-> new file mode 100644
-> index 0000000..b0b09ae
-> --- /dev/null
-> +++ b/arch/arc/Kconfig
-> @@ -0,0 +1,328 @@
-> +#
-> +# Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-> +#
-> +# This program is free software; you can redistribute it and/or modify
-> +# it under the terms of the GNU General Public License version 2 as
-> +# published by the Free Software Foundation.
-> +#
-> +
-> +config ARC
-> +	def_bool y
-> +	select ARCH_NO_VIRT_TO_BUS
+Probably, but need to first verify that the mutex won't end up getting
+held between read() syscalls. Otherwise it would be possible to block
+addition/removal by holding the file open. I cursory read of seq_file
+looks like ->stop() is always called, but I would appreciate someone
+more cluefull to give an opinion here.
 
-I noticed this in linux-next. ARCH_NO_VIRT_TO_BUS was defined
-generically in the past in linux-next but the patch seems to have gone.
-Therefore with an arc defconfig I see CONFIG_VIRT_TO_BUS=y defined which
-I'm guessing it shouldn't be.
+I've also got a draft patch that turns gpio chips into first-class
+kobjects which means we can do proper reference counting on them and
+prevent the structure from actually disappearing while other drivers
+still hold references.
 
-Cheers
-James
-
+g.
