@@ -1,105 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757062Ab3BKMh4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 07:37:56 -0500
-Received: from us02smtp2.synopsys.com ([198.182.60.77]:51237 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756896Ab3BKMhx (ORCPT
+	id S1757085Ab3BKMie (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 07:38:34 -0500
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:65167 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757008Ab3BKMib (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 07:37:53 -0500
-Message-ID: <5118E60E.5060606@synopsys.com>
-Date: Mon, 11 Feb 2013 18:07:34 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Mon, 11 Feb 2013 07:38:31 -0500
+Date: Mon, 11 Feb 2013 13:38:27 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: "Theodore Ts'o" <tytso@mit.edu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        David Rientjes <rientjes@google.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: kvmtool tree (Was: Re: [patch] config: fix make kvmconfig)
+Message-ID: <20130211123827.GB5802@gmail.com>
+References: <20130208084029.d7d97d6e26580a5512712f91@canb.auug.org.au>
+ <20130208145539.GC30334@gmail.com>
+ <CA+55aFz9ERvaFayTy8QCtfi610Bt_r0GcOs68UNggJTHdY4oaQ@mail.gmail.com>
+ <CAOJsxLFDa3sLwP2MWdXJMTfZNEopp5imy8nWNViuPnWH747ggQ@mail.gmail.com>
+ <CA+55aFzEEbZqBaOKYB8H8+i904nXjNEgH=CUPtVMQU60QTTJaw@mail.gmail.com>
+ <CAOJsxLFDbmNitH=N8v3jSno0SFL33s=nPc+hGRAqJfYFZS0RGw@mail.gmail.com>
+ <CA+55aFy=SaVjNby=Jy_O9ZRQ_Ofc-6_+bLv=HeMMSzQQHw9vMQ@mail.gmail.com>
+ <CAOJsxLFpE=HjkPcX6NsWS8636qnEhDFDJi+49xX2Ge3Xp4MeUg@mail.gmail.com>
+ <CA+55aFzXF-4Xwc4HU8vnTin4WqtvYcpXq0TsqTN_vRg=myLH_Q@mail.gmail.com>
+ <20130209210640.GG8091@thunk.org>
 MIME-Version: 1.0
-To: Jonas Bonn <jonas.bonn@gmail.com>
-CC: James Hogan <james.hogan@imgtec.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: pt_regs leak into userspace (was Re: [PATCH v3 20/71] ARC: Signal
- handling)
-References: <1359024639-21915-1-git-send-email-vgupta@synopsys.com> <1359024639-21915-9-git-send-email-vgupta@synopsys.com> <51189D2F.4030000@synopsys.com> <CACM3HyGNZxfOXpw01POBVT-YcVKQsnPkO6Kgg+epfZS-x-BRCg@mail.gmail.com> <5118C458.2070205@synopsys.com> <5118C7B6.6040807@imgtec.com> <CACM3HyG+4Pzx02iL9atxG+FOLiCcTeXR+ivzRO78bqDHNp5rGQ@mail.gmail.com> <5118D478.3010205@synopsys.com> <CACM3HyG7B=iMb4cHYP2cb8np55t8WefWTh4x3SYkGK4Lc=RXbA@mail.gmail.com>
-In-Reply-To: <CACM3HyG7B=iMb4cHYP2cb8np55t8WefWTh4x3SYkGK4Lc=RXbA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.43]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130209210640.GG8091@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 11 February 2013 05:42 PM, Jonas Bonn wrote:
-> On 11 February 2013 12:22, Vineet Gupta <Vineet.Gupta1@synopsys.com> wrote:
->> On Monday 11 February 2013 04:23 PM, Jonas Bonn wrote:
->>> On 11 February 2013 11:28, James Hogan <james.hogan@imgtec.com> wrote:
->>>> On 11/02/13 10:13, Vineet Gupta wrote:
->>>>> On Monday 11 February 2013 03:06 PM, Jonas Bonn wrote:
->>>>>> On 11 February 2013 08:26, Vineet Gupta <Vineet.Gupta1@synopsys.com> wrote:
->>>>>>
->>>>>>> The only downside of this patch is that userspace signal stack grows in size,
->>>>>>> since signal frame only cares about scratch regs (pt_regs), but has to accommodate
->>>>>>> unused placeholder for callee regs too by virtue of using user_regs_struct.
->>>>>> Is this really true?  Don't setcontext and friends require that _all_
->>>>>> the registers be part of sigcontext?
->>>>> But for an ABI - callee saved regs will anyhow be saved/restored even in
->>>>> setcontext case ! So collecting it for that purpose seems useless, or am I missing
->>>>> something here.
->>>> I think Jonas' point was that signals are asynchronous, i.e. you could
->>>> get interrupted by a signal at virtually any time during the program's
->>>> execution.
->>> No, I agree that the callee-saved regs don't need to be saved across a
->>> signal handler invocation.  It's really just the setcontext case that
->>> wants to be able to swap out the callee-saved regs.
->> I don't think that's needed either - and if thats mandated somewhere, it would
->> seem a unnecessary mis-optimization IMHO.
->>
->> See, even a setcontext enabled control flow needs to be ABI compliant so that it
->> plays nicely with other normal flows of execution. Thus e.g. it can't fudge a
->> callee reg - it needs to save orig callee reg(s) and restore them in the end. And
->> if we agree to those semantics - I don't see any value in swapping the callee reg
->> context around usage of setcontext as it would be a wasted effort.
-> Yeah, that makes sense.  I can see where you're coming from... and the
-> fact that you switch the stack, as James pointed out, means that you
-> end up restoring whatever callee-saved registers you need in the new
-> control flow on the way out of your setcontext wrapper.
->
-> BUT... a successful call to setcontext() does not return and whatever
-> code you end up jumping to as a result of the call has its own
-> expectations about the state of the registers. 
 
-It doesn't matter if the call returns or not. The point is the code jumped to - if
-ABI compliant will save the callee regs before clobbering them.
-For a new execution context, callee regs (for any ABI whatsoever) can have random
-state, as the caller will save/restore them. It's only in the __switch_to kind of
-scenario (see below) does the orig values really matter.
+* Theodore Ts'o <tytso@mit.edu> wrote:
 
+> I completely agree with Linus here; in fact, the main reason 
+> why it's important to keep userspace tools outside of the 
+> kernel is that it keeps us careful about interface design.
 
-> Somebody has to set up
-> the registers to meet these expectations and, as far as I can see,
-> this means:
->
-> i) sigreturn fixes up the internal pt_regs with the new userspace state
-> ii) the syscall return path restores _all_ the regs, as though there
-> had been a context switch
->
-> What am I missing?  I'm totally open to the idea that I'm the one
-> who's confused here...
+We have first hand experience there: tools/perf/.
 
-Far from that - u seem to be the one in charge here :-)
+None of the predicted extreme badness happened. Yes, sometimes 
+we broke compatibility as ABI changes/enhancements do - but 
+treated them as regressions and fixed them. I also think that 
+considering the rate of changes our breakage ratio is very good.
 
-I don't know how setcontext enabled app works - but there's a different use case
-we can compare with - __switch_to( ) is the only legit place in kernel (ignoring
-ptrace-peek/pokeusr for now) which saves callee regs (kernel mode) and restores
-them for different task. And the only reason it does that is because it switches
-context from the "middle" of control flow. Now if setcontext based switching works
-in that fashion - then yes we do need callee regs setup there - if not then we don't.
+So no badness happened, and in fact a lot of goodness happened: 
+which goodness never happened while Linux profiling was a 
+separate project isolated as a user-space utility!
 
-> ...and perhaps this is all moot since it seems that
-> getcontext/setcontext are obsolete anyway(???).
+Anyone opposing integration I think *HAS* to explain the 
+mechanics behind this very example in plain sight.
 
-That would make it so much be easy :-)
+Why the heck has pretty much every other out of tree profiling 
+project died, while the in-tree one is thriving?
 
-Anyhow going back to my orig patch - if we park the
-callee-regs-in-sigcontext-or-not, other bits look OK ?
+Yes, the key is that Arnaldo is good, and so are the other perf 
+contributors - and they are good because they feel at home and 
+they are productive. Being in the kernel repo is actually 90% 
+responsible for that environment!
 
--Vineet
+> For example, I consider it a *feature* that when we extend the 
+> file system data structures for ext4, [...]
+
+I consider filesystems the most extreme example. It's so extreme 
+that it's almost a separate class for itself.
+
+Filesystems have the most extreme data persistency constraints 
+possible: they define the ABI and anything that gets written out 
+through them to persistent storage stays there forever and has 
+to work, years down the line. So one must be absolutely, 110% 
+careful - to the level of inventing new validation technologies 
+just to be more careful.
+
+*NONE* of that applies to tools/perf/ or tools/kvm/: neither 
+really writes any data structure defined by itself that will be 
+persistent forever. perf.data comes closest, but when was it the 
+last time you used a year old perf.data? I'd say never. It 
+either gets used within a few days or does not get used at all.
+
+( Yet we even keep perf.data compatibility because being careful 
+  about data is generally good technology - it's just not 
+  *critical*. )
+
+Same goes for tools/kvm/: it has very short data persistency 
+latency as well. Such are in fact most other kernel related 
+utilities.
+
+So your 'filesystem utilities' example is totally inapplicable 
+to tools/perf/ and tools/kvm/. Shaping all utilities based on 
+that extreme example is a sad mistake.
+
+Thanks,
+
+	Ingo
