@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932858Ab3BKWrB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 17:47:01 -0500
-Received: from cmexedge2.ext.emulex.com ([138.239.224.100]:21403 "EHLO
-	CMEXEDGE2.ext.emulex.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932776Ab3BKWq7 (ORCPT
+	id S932876Ab3BKWrP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 17:47:15 -0500
+Received: from cmexedge1.ext.emulex.com ([138.239.224.99]:56455 "EHLO
+	CMEXEDGE1.ext.emulex.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932776Ab3BKWrM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 17:46:59 -0500
-Message-ID: <511974E0.4040703@emulex.com>
-Date: Mon, 11 Feb 2013 17:46:56 -0500
+	Mon, 11 Feb 2013 17:47:12 -0500
+Message-ID: <511974ED.2020305@emulex.com>
+Date: Mon, 11 Feb 2013 17:47:09 -0500
 From: James Smart <James.Smart@emulex.com>
 Reply-To: <James.Smart@emulex.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
 To: Tejun Heo <tj@kernel.org>
 CC: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <rusty@rustcorp.com.au>, <bfields@fieldses.org>,
-        <skinsbursky@parallels.com>, <ebiederm@xmission.com>,
-        <jmorris@namei.org>, <axboe@kernel.dk>, <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH 47/62] scsi/lpfc: convert to idr_alloc()
-References: <1359854463-2538-1-git-send-email-tj@kernel.org> <1359854463-2538-48-git-send-email-tj@kernel.org>
-In-Reply-To: <1359854463-2538-48-git-send-email-tj@kernel.org>
+        <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH 63/77] scsi/lpfc: convert to idr_alloc()
+References: <1360179649-22465-1-git-send-email-tj@kernel.org> <1360179649-22465-64-git-send-email-tj@kernel.org>
+In-Reply-To: <1360179649-22465-64-git-send-email-tj@kernel.org>
 Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -32,7 +30,7 @@ Acked-by: James Smart <james.smart@emulex.com>
 -- james s
 
 
-On 2/2/2013 8:20 PM, Tejun Heo wrote:
+On 2/6/2013 2:40 PM, Tejun Heo wrote:
 > Convert to the much saner new idr interface.
 >
 > Only compile tested.
@@ -41,15 +39,11 @@ On 2/2/2013 8:20 PM, Tejun Heo wrote:
 > Cc: James Smart <james.smart@emulex.com>
 > Cc: linux-scsi@vger.kernel.org
 > ---
-> This patch depends on an earlier idr changes and I think it would be
-> best to route these together through -mm.  Please holler if there's
-> any objection.  Thanks.
->
 >   drivers/scsi/lpfc/lpfc_init.c | 12 ++++--------
 >   1 file changed, 4 insertions(+), 8 deletions(-)
 >
 > diff --git a/drivers/scsi/lpfc/lpfc_init.c b/drivers/scsi/lpfc/lpfc_init.c
-> index 89ad558..7de4ef14 100644
+> index 26ca2ef..314b4f6 100644
 > --- a/drivers/scsi/lpfc/lpfc_init.c
 > +++ b/drivers/scsi/lpfc/lpfc_init.c
 > @@ -3165,14 +3165,10 @@ destroy_port(struct lpfc_vport *vport)
