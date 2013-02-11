@@ -1,44 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751302Ab3BKFXI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 00:23:08 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:33835 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750762Ab3BKFXH (ORCPT
+	id S1751443Ab3BKFZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 00:25:57 -0500
+Received: from [46.197.63.54] ([46.197.63.54]:57064 "HELO 1pc.local"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with SMTP
+	id S1751110Ab3BKFZ4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 00:23:07 -0500
-Date: Mon, 11 Feb 2013 00:23:05 -0500 (EST)
-Message-Id: <20130211.002305.116088533226868074.davem@davemloft.net>
-To: yoshfuji@linux-ipv6.org
-Cc: fengguang.wu@intel.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next] net neighbour,decnet: Ensure to align device
- private data on preferred alignment.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <511680CB.9010502@linux-ipv6.org>
-References: <511680CB.9010502@linux-ipv6.org>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Mon, 11 Feb 2013 00:25:56 -0500
+X-Greylist: delayed 34891 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Feb 2013 00:25:55 EST
+Reply-To: evtemizliksirketim@gmail.com
+Message-ID: <8104258f924ba9656c1791d515ecf5dc@gmail.com>
+From: "=?iso-8859-9?B?aXN0YW5idWwgZXYgdGVtaXpsaWsg/mlya2V0bGVyaQ==?=" 
+	<evtemizliksirketim@gmail.com>
+To: <linux-kernel@vger.kernel.org>
+Subject: =?iso-8859-9?B?U2l6ZSD2emVsIGZpeWF0bGFybGEgMiBraf5peWxlIDQgc2FhdHRlIHRlbWl6bGlrIGhpem1ldGkg
+	dmVyaXlvcnV6Li4u?=
+Date: Mon, 11 Feb 2013 07:25:29 +0200
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="iso-8859-9"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Date: Sun, 10 Feb 2013 02:00:59 +0900
+Merhaba,
+Size özel fiyatlara,
+2 kiþiyle 4 saatte ev ve iþyeri temizliði yapan þirketimiz Ýstanbul genelinde tüm semtlere hizmet vermektedir. 120 Metrekareye kadar olan ev ve iþyerlerini tüm temizlik malzemeleri de þirketimizden olmak üzere temizliyoruz.
+	4 saatlik temizlik sistemini; çalýþan ev hanýmlarý, bekâr beyler, üniversite öðrencilerinin tercih etme sebebi kýsa zamanda evlerini temizleterek zamandan tasarruf etmeleridir.
+Ýþyerlerinin tercih sebebi ise çalýþanlarý rahatsýz etmeden kýsa zamanda hizmet almalarý ve hizmet ödemesi ekstra masraf yapýlmamasýdýr.
+Ýþyerleri için ayrýca akþamlarý veya haftanýn belirli günleri temizlik hizmet alabilirsiniz.
+Bunu için size özel fiyat çalýþmamýz olacaktýr.
+	Sizde ev ve iþyeri temizlik ihtiyaçlarýnýz için iletiþim bilgilerimizden bize ulaþabilir veya http://bit.ly/WTb9l7 sitemizden mail ile ulaþabilirsiniz.
 
-> To allow both of protocol-specific data and device-specific data
-> attached with neighbour entry, and to eliminate size calculation
-> cost when allocating entry, sizeof protocol-speicic data must be
-> multiple of NEIGH_PRIV_ALIGN.  On 64bit archs,
-> sizeof(struct dn_neigh) is multiple of NEIGH_PRIV_ALIGN, but on
-> 32bit archs, it was not.
-> 
-> Introduce NEIGH_ENTRY_SPACE() macro to ensure that protocol-specific
-> entry-size meets our requirement.
-> 
-> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-> Signed-off-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Saygýlarýmýzla.
+Tel	: +90 (212) 482 11 99
+Tsm	: +90 (533)  414 50 37
+Adres	: Park sok. No:23/6 Merter / Ýstanbul
 
-Applied.
+
+
+
+
+Mail istemiyorsanýz lütfen boþ bir mail atarak cevaplayýnýz....
+
