@@ -1,97 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752771Ab3BKHeT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 02:34:19 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:55622 "EHLO
+	id S1752859Ab3BKHlN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 02:41:13 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:37866 "EHLO
 	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751711Ab3BKHeS (ORCPT
+	with ESMTP id S1752544Ab3BKHlL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 02:34:18 -0500
-Date: Mon, 11 Feb 2013 18:34:09 +1100
+	Mon, 11 Feb 2013 02:41:11 -0500
+Date: Mon, 11 Feb 2013 18:40:56 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Len Brown <len.brown@intel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
-Subject: linux-next: build failure after merge of the final tree (acpi tree
- related)
-Message-Id: <20130211183409.7519b73ca320baeac5ec886f@canb.auug.org.au>
+To: Luciano Coelho <coelho@ti.com>
+Cc: Joe Perches <joe@perches.com>, "John W. Linville" <linville@tuxdriver.com>,
+        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Subject: Re: linux-next: manual merge of the wireless-next tree with the
+ net-next tree
+Message-Id: <20130211184056.9a128947490514408c33b3ae@canb.auug.org.au>
+In-Reply-To: <1360565274.12803.45.camel@cumari.coelho.fi>
+References: <20130211133350.5f510bbb28759960a19a98af@canb.auug.org.au>
+	<1360551527.2028.10.camel@joe-AO722>
+	<1360565274.12803.45.camel@cumari.coelho.fi>
 X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Mon__11_Feb_2013_18_34_09_+1100_fSZSOVNmThUvLVOt"
+ boundary="Signature=_Mon__11_Feb_2013_18_40_56_+1100_o_mYMsAByh/4=fxi"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__11_Feb_2013_18_34_09_+1100_fSZSOVNmThUvLVOt
+--Signature=_Mon__11_Feb_2013_18_40_56_+1100_o_mYMsAByh/4=fxi
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
 Hi all,
 
-After merging the final tree, today's linux-next build (sparc64 defconfig)
-failed like this:
+On Mon, 11 Feb 2013 08:47:54 +0200 Luciano Coelho <coelho@ti.com> wrote:
+>
+> On Sun, 2013-02-10 at 18:58 -0800, Joe Perches wrote:
+> > On Mon, 2013-02-11 at 13:33 +1100, Stephen Rothwell wrote:
+> > >=20
+> > > Today's linux-next merge of the wireless-next tree got conflicts in
+> > > drivers/net/wireless/ti/wlcore/sdio.c and
+> > > drivers/net/wireless/ti/wlcore/spi.c between commit 0d2e7a5c6080
+> > > ("wireless: Remove unnecessary alloc/OOM messages, alloc cleanups") f=
+rom
+> > > the net-next tree and commit afb43e6d88e5 ("wlcore: remove if_ops from
+> > > platform_data") from the wireless-next tree.
+> > >=20
+> > > I fixed it up (see below) and can carry the fix as necessary (no acti=
+on
+> > > is required).
+>=20
+> The fix up looks good.  Thanks!
+>=20
+> > Thanks Stephen.
+> >=20
+> > Can you remove just the dev_err below too please.
+> >=20
+> > +       pdev_data =3D kzalloc(sizeof(*pdev_data), GFP_KERNEL);
+> > +       if (!pdev_data) {
+> > +               dev_err(&func->dev, "can't allocate platdev_data\n");
+> > +               goto out;
+> > +       }
+>=20
+> Yes, and there's also another one in
+> drivers/net/wireless/ti/wlcore/spi.c:
+>=20
+> +       pdev_data =3D kzalloc(sizeof(*pdev_data), GFP_KERNEL);
+> +       if (!pdev_data) {
+> +               dev_err(&spi->dev, "can't allocate platdev_data\n");
+> +               goto out;
+> +       }
 
-arch/sparc/include/asm/processor.h: Assembler messages:
-arch/sparc/include/asm/processor.h:10: Error: Unknown opcode: `extern'
-
-Caused by commit 3a242f58a5f4 ("sparc idle: rename pm_idle to
-sparc_idle") from the acpi tree.
-
-I have applied this patch for today:
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 11 Feb 2013 18:30:19 +1100
-Subject: [PATCH] sparc idle: protect variable declarations against the asse=
-mbler
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- arch/sparc/include/asm/processor.h | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/arch/sparc/include/asm/processor.h b/arch/sparc/include/asm/pr=
-ocessor.h
-index 34baa35..622cfa5 100644
---- a/arch/sparc/include/asm/processor.h
-+++ b/arch/sparc/include/asm/processor.h
-@@ -7,6 +7,8 @@
- #endif
-=20
- #define nop() 		__asm__ __volatile__ ("nop")
-+#ifndef __ASSEMBLY__
- extern void (*sparc_idle)(void);
-+#endif
-=20
- #endif
---=20
-1.8.1
+I presume that there is no harm in actually fixing these extra ones
+directly in the wireless-next tree, right?  (hint, John, hint :-))
 
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Mon__11_Feb_2013_18_34_09_+1100_fSZSOVNmThUvLVOt
+--Signature=_Mon__11_Feb_2013_18_40_56_+1100_o_mYMsAByh/4=fxi
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJRGJ7xAAoJEECxmPOUX5FEnLwP/04K30fHki/U5509xh0MtwVU
-MMSdyrFsDrU3q+KIEQCbwjZb++jTL7B9p+siGvneG929VXzzsws9eRpoAXg6YJox
-WNnYLAeuTEkIyfw+GmRbBY1ROOXJBEMNVs9Tnl5qhHxEt7IVmMDGjtV20JHgRfIY
-CuVVfouVA1wf1WlwHwQudULtuna2lraq7DGjh1CXOkgYWmtZoifmfwQqHo63GSKF
-IsWU+G8pqOhCxyyEIURHi/6yD/2rXMpHEOSxuXMFyjHFVXO5hBF94NVGEchRUTY5
-puOWhKf6XfdwZpxvaSi3YUPpuXW+hBvyEFd0ovXhv63bMnAnUsBHWY69vp1yXol6
-wb8z79Xxj4137f84gyaDgE/Xd+0NtyxFrX7k94hzf93WX5jl9PvwMrXtUhrt6Je5
-Xtg3ZcYIQcwkFxVpvEaTpjCm6dbST7HzJug6N238QJn1emZwjepoefUzX0bamppX
-qC+/e4zqirlR45i4E9rItTJWCAU4At8G5MfdhrK9FHC6DXtUkFHjCSyqWZ8H+CrC
-co1ZjtF8YQ0ljIJx9yFDgol8JnaH29rH4JAERoNQjxmmP4bOG410W2VGA5HD0+9a
-Z+MyIf8wERhF/72W0QZqqPORUxNnR4H0Lp1yboQOW1qMMEAqIKgF3JI+K8/ibBMn
-QNY7htU6kVfiJuPdxge2
-=J7fR
+iQIcBAEBCAAGBQJRGKCIAAoJEECxmPOUX5FEWgwQAKaFRZYUp7LoFIBfVGvChgv7
+t/L6gu84EoPd7za6z7Kxqch9lIDMXviLIFCJ6gpoc2TDT+o1F5Kx5SBuQzjVRqfu
+Uk+xDUHOF82H/XXfd43el3pZwrw2grYfE9oUPns62y/FtEMS1obEU34Q0KHb60UU
+F2srkX4K5WMsoT6krqz8+1xadTxC1T/SpM3VFywXxXQB5X1zB8FO57b3QzEf2prj
+CNHZdV+bKj0Ex3zXQw57nGvKSb3yCsgdN/g2grzftlWdi0Lkbd6A7rmCwHi0O8Z2
+XhvIGF7KOgXx3OQkUS/BF3GAIlw2x6Io9UNCSlml81K8pk3ISz48VIivScDzeQ6c
+Nhyf+99+9/4L5wUtranpG7W0U+OV7jFi00l8s/+0jB6JJu0s9P2PjeBYUdRrHg/D
+QEpEXtesfbveyZfxw9tmxA0yjp8S60FJyZN5VDw2Nmll71pjsPn9GWNEmTL6E8Pp
+aNHvKmTBj8ub7iLHrAPMwb/kA64fFXqtb1lGFy3o9+lL8W7eSyARQJVm84PfQyIz
+m6kDYUp7goAekO8T/UuukSnUjrLzbJaqYyHvgvg1n6N486ds8ouaLWdT/FgfICQw
+gLdpxePskKXhSfu0CGUcjgnPC4DenGUiKPqst27J7J8MIgPyTcUO5AcCsoGgNRch
+HnPTEwHlbm1QF0QcW7eF
+=hAUx
 -----END PGP SIGNATURE-----
 
---Signature=_Mon__11_Feb_2013_18_34_09_+1100_fSZSOVNmThUvLVOt--
+--Signature=_Mon__11_Feb_2013_18_40_56_+1100_o_mYMsAByh/4=fxi--
