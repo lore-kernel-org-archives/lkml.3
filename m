@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759282Ab3BKTV0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 14:21:26 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:37235 "EHLO hydra.sisk.pl"
+	id S1759343Ab3BKTWW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 14:22:22 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:37241 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757820Ab3BKTVY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 14:21:24 -0500
+	id S1757820Ab3BKTWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 14:22:21 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Daniel J Blueman <daniel@quora.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: Re: [3.8-rc7] PCI hotplug wakeup oops
-Date: Mon, 11 Feb 2013 20:27:49 +0100
-Message-ID: <6086479.ycKj2j8yeP@vostro.rjw.lan>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Pavel Machek <pavel@ucw.cz>, Goswin von Brederlow <goswin-v-b@web.de>,
+        Li Fei <fei.li@intel.com>, len.brown@intel.com, mingo@redhat.com,
+        peterz@infradead.org, biao.wang@intel.com, linux-pm@vger.kernel.org,
+        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        chuansheng.liu@intel.com
+Subject: Re: Getting rid of freezer for suspend [was Re: [fuse-devel] [PATCH] fuse: make fuse daemon frozen along with kernel threads]
+Date: Mon, 11 Feb 2013 20:28:46 +0100
+Message-ID: <2407765.5u9DGJxmKr@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.8.0-rc7; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAErSpo6rGYLQeP8Myu=octSPY_0R+B7ptBLhLawd_A2E3NRsAw@mail.gmail.com>
-References: <CAMVG2svG21yiM1wkH4_2pen2n+cr2-Zv7TbH3Gj+8MwevZjDbw@mail.gmail.com> <CAMVG2svM+j8_sfWdSY+JVRspxDucp8aKRhLR+79wcM-V_DnbCg@mail.gmail.com> <CAErSpo6rGYLQeP8Myu=octSPY_0R+B7ptBLhLawd_A2E3NRsAw@mail.gmail.com>
+In-Reply-To: <CAJfpegt2B3n-QNK_W7O2H0JVfS=4jcUOzV_+w8ELPq19RJPewQ@mail.gmail.com>
+References: <1360113112.17267.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC> <1660768.prnx6s70rD@vostro.rjw.lan> <CAJfpegt2B3n-QNK_W7O2H0JVfS=4jcUOzV_+w8ELPq19RJPewQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -25,85 +26,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, February 11, 2013 12:01:37 PM Bjorn Helgaas wrote:
-> [+cc Rafael]
+On Monday, February 11, 2013 02:59:56 PM Miklos Szeredi wrote:
+> On Mon, Feb 11, 2013 at 1:08 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Monday, February 11, 2013 11:11:40 AM Miklos Szeredi wrote:
+> >> On Mon, Feb 11, 2013 at 12:31 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >> > On Sunday, February 10, 2013 07:55:05 PM Pavel Machek wrote:
+> >>
+> >> >> Well, from freezer you need:
+> >> >>
+> >> >> 1) user process frozen.
+> >> >>
+> >> >> 2) essential locks _not_ held so that block devices are still functional.
+> >> >>
+> >> >> > > > mmap... what is problem with mmap? For suspend, memory is powered, so
+> >> >> > > > you can permit people changing it.
+> >> >> > >
+> >> >> > > Suppose mmap is used to make the registers of some device available to user
+> >> >> > > space.  Yes, that can happen.
+> >> >>
+> >> >> "Don't do it, then". Yes, can happen, but hopefully is not too common
+> >> >> these days. [And... freezer doing 1) but not 2) would be enough to
+> >> >> handle that. Freezer doing 1) but not 2) would also be simpler...]
+> >> >
+> >> > Again, I'm not sure what you mean.
+> >> >
+> >> > Are you trying to say that it would be OK to freeze user space tasks in
+> >> > the D state?
+> >>
+> >> I think that's what Pavel is saying.   Processes in D state sleeping
+> >> on non-device mutexes _are_ actually OK to freeze.  And that would
+> >> nicely solve the fuse freeze problem.
+> >
+> > That's potentially deeadlock-prone, because a task waiting for mutex X may
+> > very well be holding mutex Y, so if there's another task waiting for mutex Y,
+> > it needs to be frozen at the same time.
+> >
+> >> The only little detail is how do we implement that...
+> >
+> > This means the only way I can see would be to hack the mutex code so that the
+> > try_to_freeze() was called for user space tasks after the
+> > sched_preempt_enable_no_resched() before schedule().
+> >
+> > That shouldn't be a big deal performance-wise, because we are in the slow
+> > path anyway then.  I'm not sure if Peter Z will like it, though.
+> >
+> > Moreover, a task waiting for a mutex may be holding a semaphore or be
+> > participating in some other mutual-exclusion mechanism, so we'd need to
+> > address them all.  Plus, as noted by Pavel, freezing those things would make
+> > it difficult to save hibernation images to us.
 > 
-> On Mon, Feb 11, 2013 at 10:08 AM, Daniel J Blueman <daniel@quora.org> wrote:
-> > On 11 February 2013 21:03, Daniel J Blueman <daniel@quora.org> wrote:
-> >> With 3.8-rc7, when unplugging the Thunderbolt ethernet adapter (bus 0a
-> >> [1]) on a Macbook Pro 10,1, we see the PCIe port correctly released:
-> >>
-> >> pciehp 0000:06:03.0:pcie24: Card not present on Slot(3)
-> >> tg3 0000:0a:00.0: tg3_abort_hw timed out, TX_MODE_ENABLE will not
-> >> clear MAC_TX_MODE=ffffffff
-> >> tg3 0000:0a:00.0 eth0: No firmware running
-> >> tg3 0000:0a:00.0 eth0: Link is down
-> >> [sched_delayed] sched: RT throttling activated
-> >> pcieport 0000:00:01.1: System wakeup enabled by ACPI
-> >> pciehp 0000:09:00.0:pcie24: unloading service driver pciehp
-> >> pci_bus 0000:0a: busn_res: [bus 0a] is released
-> >> pci_bus 0000:09: busn_res: [bus 09-0a] is released
-> >>
-> >> After some activity later (eg I can reproduce this by switching to a
-> >> text console and back), often we'll see an oops:
-> >>
-> >> Unable to handle kernel paging request at 0000000000001070
-> >> pci_pme_list_scan+0x3d/0xe0
-> >> Call Trace:
-> >> process_one_work+0x193
-> >> ? process_one_work+0x131
-> >> ? pci_pme_wakeup+0x60
-> >> worker_thread+0x15d
-> >>
-> >> (gdb) list *(pci_pme_list_scan+0x3d)
-> >> 0xffffffff8123f6dd is in pci_pme_list_scan (drivers/pci/pci.c:1556).
-> >> 1551                                    /*
-> >> 1552                                     * If bridge is in low power state, the
-> >> 1553                                     * configuration space of subordinate devices
-> >> 1554                                     * may be not accessible
-> >> 1555                                     */
-> >> 1556                                    if (bridge && bridge->current_state != PCI_D0)
-> >> 1557                                            continue;
-> >> 1558                                    pci_pme_wakeup(pme_dev->dev, NULL);
-> >> 1559                            } else {
-> >> 1560                                    list_del(&pme_dev->list);
-> >>
-> >> Since a panic in vsnprintf happens after the oops (hence I can't catch
-> >> it with EFI pstore), it is almost certainly significant heap
-> >> corruption; this would explain why pme_dev became null (the load has
-> >> been ordered ahead).
-> >>
-> >> I'll see what I can find out with memory poisoning and list debugging.
-> >
-> > Enabling a bunch of related debugging, we see pme_dev is non-null and:
-> >
-> > BUG: Unable to handle NULL pointer dereference at
-> > pci_bus_read_config_word+0x6c
-> > PGD 26314c067 PUD 2633f9067 PMD 0
-> > Oops: 0000 [#1] SMP
-> > pci_check_pme_status+0x4f
-> > pci_pme_wakeup+0x21
-> > pci_pme_list_scan+0xd5
-> > process_one_work+0x1ca
-> > ? process_one_work+0x160
-> > ? pci_pme_wakeup+0x60
-> > worker_thread+0x14e
-> >
-> > Anyway, it looks like the device being unplugged wasn't removed from
-> > pci_pme_list as pci_pme_active(dev, false) wasn't called.
-> >
-> > From a quick review, I wasn't able to find the right place in the
-> > call-chain which I only see releases the child busses and PCIe port
-> > drivers. Anyone?
-> 
-> It looks like drivers *add* devices to pci_pme_list when they use
-> pci_enable_wake() or pci_wake_from_d3().  But many drivers never
-> remove their devices, and I don't see any place where the core does it
-> either.  My guess is we need to remove it in pci_stop_dev() (we
-> already do pcie_aspm_exit_link_state() there) or somewhere similar.
+> Well, as a first step I could cook up a patch that adds a flag to the
+> mutex indicating that it's freezable.  Fuse would mark its mutexes
+> (and the mutexes that VFS uses on its behalf) as freezable.  That way
+> we don't interfere with hibernation, except if hibernation uses fuse
+> but that's a very special case.
 
-Yes, we should call pci_pme_active(dev, false) somewhere in there I think.
-It's fine to call that even if PME was not "active" before.
+Yes, that may be worth a shot. :-)
 
 Thanks,
 Rafael
