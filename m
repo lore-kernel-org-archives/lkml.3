@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932794Ab3BKWaA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 17:30:00 -0500
-Received: from mail-ia0-f176.google.com ([209.85.210.176]:62080 "EHLO
-	mail-ia0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932757Ab3BKW36 (ORCPT
+	id S932809Ab3BKWbL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 17:31:11 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:59597 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932730Ab3BKWbK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 17:29:58 -0500
+	Mon, 11 Feb 2013 17:31:10 -0500
 MIME-Version: 1.0
-In-Reply-To: <51196ED1.9090202@gmail.com>
-References: <1359993921-18145-1-git-send-email-paul.gortmaker@windriver.com>
- <1360182656-15898-1-git-send-email-paul.gortmaker@windriver.com>
- <511585A9.9090008@gmail.com> <51194685.5010904@wwwdotorg.org>
- <51194C75.5040302@gmail.com> <CACxGe6umkZ0D2AGircEVtMfito-DWtgUBWnR15iPEDGrBGFZKA@mail.gmail.com>
- <51196ED1.9090202@gmail.com>
+In-Reply-To: <5119706F.1080902@gmail.com>
+References: <1360621157-23570-1-git-send-email-grant.likely@secretlab.ca> <5119706F.1080902@gmail.com>
 From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 11 Feb 2013 22:29:37 +0000
-X-Google-Sender-Auth: fRc1jSQBDvdlTmtOXwHAJy4l7v8
-Message-ID: <CACxGe6sd1tjPYjM5MTZiRHN_PtYDsRUyZxKRxcfQx6MEUBGUyg@mail.gmail.com>
-Subject: Re: [PATCH next v2] OF: convert devtree lock from rw_lock to raw spinlock
+Date: Mon, 11 Feb 2013 22:30:49 +0000
+X-Google-Sender-Auth: QlZ_Ty3_n7_4O56nkAsKqWW0EDs
+Message-ID: <CACxGe6uv-DZ2u1eqnvo11mONuu95oPCnUZU_5JhqDz1-DXwkfQ@mail.gmail.com>
+Subject: Re: [PATCH] of: Fix locking when calling of_get_next_available_child()
 To: Rob Herring <robherring2@gmail.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        rt-users <linux-rt-users@vger.kernel.org>,
-        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+Cc: devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        sparclinux@vger.kernel.org, Sam Ravnborg <sam@ravnborg.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+        Stephen Warren <swarren@wwwdotorg.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 11, 2013 at 10:21 PM, Rob Herring <robherring2@gmail.com> wrote:
-> On 02/11/2013 04:18 PM, Grant Likely wrote:
->> On Mon, Feb 11, 2013 at 7:54 PM, Rob Herring <robherring2@gmail.com> wrote:
->>> I found the problem. of_get_next_available_child ->
->>> of_device_is_available -> of_get_property -> of_get_property. An
->>> unlocked version of of_device_is_available is needed here.
+On Mon, Feb 11, 2013 at 10:27 PM, Rob Herring <robherring2@gmail.com> wrote:
+> On 02/11/2013 04:19 PM, Grant Likely wrote:
+>> of_get_next_available_child() obtains the devtree_lock and then calls
+>> of_device_is_available() which also attempts to claim the lock. This is
+>> obviously incorrect and causes a deadlock on boot. Fix issue by adding
+>> an variant of of_device_is_available() which doesn't obtain the lock.
 >>
->> Oops, I had testbooted on a single core machine which would mask the
->> issue. I've crafted a fix and am posting it for review before I apply
->> it.
+>> Cc: Stephen Warren <swarren@wwwdotorg.org>
+>> Cc: Rob Herring <robherring2@gmail.com>
+>> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+>> ---
+>>  drivers/of/base.c |   15 +++++++++++++--
+>>  1 file changed, 13 insertions(+), 2 deletions(-)
 >>
+>> diff --git a/drivers/of/base.c b/drivers/of/base.c
+>> index e8d65af..4af74b7 100644
+>> --- a/drivers/of/base.c
+>> +++ b/drivers/of/base.c
+>> @@ -297,7 +297,7 @@ EXPORT_SYMBOL(of_machine_is_compatible);
+>>   *  Returns 1 if the status property is absent or set to "okay" or "ok",
+>>   *  0 otherwise
+>>   */
+>> -int of_device_is_available(const struct device_node *device)
+>> +int __of_device_is_available(const struct device_node *device)
+>>  {
+>>       const char *status;
+>>       int statlen;
+>> @@ -313,6 +313,17 @@ int of_device_is_available(const struct device_node *device)
+>>
+>>       return 0;
+>>  }
+>> +
+>> +int of_device_is_available(const struct device_node *device)
 >
-> I'm in the process of applying Stephen's fix.
+> Stephen's version wins because he preserved the documentation. :)
 
-I didn't actually see Stephen's fix until just now, after I had
-already written, posted and pushed out basically the same thing. :-)
+Pish. He just cut and paste the documentation so now we have 2 copies.
+My version wins because it is already in my tree. So ptfff!
+
+:-)
 
 g.
