@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758544Ab3BKRvv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 12:51:51 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:46816 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757918Ab3BKRvu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 12:51:50 -0500
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: arm@kernel.org
-Cc: linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        Joe Perches <joe@perches.com>
-Subject: [PATCH V2] MAINTAINERS: add keyword "tegra" to Tegra section
-Date: Mon, 11 Feb 2013 10:51:39 -0700
-Message-Id: <1360605099-7088-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.10.4
-X-NVConfidentiality: public
+	id S1758569Ab3BKRx1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 12:53:27 -0500
+Received: from void.printf.net ([89.145.121.20]:37661 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758520Ab3BKRxZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 12:53:25 -0500
+From: Chris Ball <cjb@laptop.org>
+To: Roger Tseng <rogerable@realtek.com>
+Cc: <sameo@linux.intel.com>, <devel@linuxdriverproject.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <wei_wang@realsil.com.cn>
+Subject: Re: [PATCH 1/3] MMC: rtsx: remove driving adjustment
+References: <1359963959-2305-1-git-send-email-rogerable@realtek.com>
+	<1359963959-2305-2-git-send-email-rogerable@realtek.com>
+Date: Mon, 11 Feb 2013 12:53:13 -0500
+In-Reply-To: <1359963959-2305-2-git-send-email-rogerable@realtek.com> (Roger
+	Tseng's message of "Mon, 4 Feb 2013 15:45:57 +0800")
+Message-ID: <87txpipwja.fsf@octavius.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+Hi,
 
-The intent is to ensure that all Tegra-related patches are sent to the
-linux-tegra@ mailing list, so people can keep up-to-date on all misc
-driver changes.
+On Mon, Feb 04 2013, Roger Tseng wrote:
+> Several new models of readers use different way to select driving
+> capability(a necessary adjustment along with voltage change). Removing this
+> from device-independent rtsx_pci_sdmmc module. It will be implemented in
+> device-depend calls encapsulated by rtsx_pci_switch_output_voltage().
+>
+> Signed-off-by: Roger Tseng <rogerable@realtek.com>
+> Reviewed-by: Wei WANG <wei_wang@realsil.com.cn>
+> ---
+>  drivers/mmc/host/rtsx_pci_sdmmc.c | 5 -----
+>  1 file changed, 5 deletions(-)
+>
+> diff --git a/drivers/mmc/host/rtsx_pci_sdmmc.c b/drivers/mmc/host/rtsx_pci_sdmmc.c
+> index f74b5ad..f93f100 100644
+> --- a/drivers/mmc/host/rtsx_pci_sdmmc.c
+> +++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
+> @@ -1083,11 +1083,6 @@ static int sdmmc_switch_voltage(struct mmc_host *mmc, struct mmc_ios *ios)
+>  		voltage = OUTPUT_1V8;
+>  
+>  	if (voltage == OUTPUT_1V8) {
+> -		err = rtsx_pci_write_register(pcr,
+> -				SD30_DRIVE_SEL, 0x07, DRIVER_TYPE_B);
+> -		if (err < 0)
+> -			goto out;
+> -
+>  		err = sd_wait_voltage_stable_1(host);
+>  		if (err < 0)
+>  			goto out;
 
-Doing this with a keyword is far simpler and more compact than listing
-all Tegra-related drivers, even if wildcards were used.
+Thanks, I've pushed 1/3 to mmc-next for 3.9 now.
 
-Words such as integrate or integrator are common. Ensure the character
-right before "tegra" isn't a-z (case-insensitive), to make sure the
-keyword doesn't match those.
-
-Cc: Joe Perches <joe@perches.com>
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
- MAINTAINERS |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index b98c89b..10e9b31 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -7829,9 +7829,7 @@ L:	linux-tegra@vger.kernel.org
- Q:	http://patchwork.ozlabs.org/project/linux-tegra/list/
- T:	git git://git.kernel.org/pub/scm/linux/kernel/git/swarren/linux-tegra.git
- S:	Supported
--F:	arch/arm/mach-tegra
--F:	arch/arm/boot/dts/tegra*
--F:	arch/arm/configs/tegra_defconfig
-+K:	(?i)[^a-z]tegra
- 
- TEHUTI ETHERNET DRIVER
- M:	Andy Gospodarek <andy@greyhouse.net>
+- Chris.
 -- 
-1.7.10.4
-
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
