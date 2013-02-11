@@ -1,263 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759472Ab3BKSwO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 13:52:14 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:34950 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759454Ab3BKSwI (ORCPT
+	id S1759575Ab3BKSwa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 13:52:30 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:38896 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759520Ab3BKSw1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 13:52:08 -0500
-From: Juri Lelli <juri.lelli@gmail.com>
-To: peterz@infradead.org, tglx@linutronix.de
-Cc: mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
-        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, juri.lelli@gmail.com,
-        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
-        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
-        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
-        jkacur@redhat.com, harald.gustafsson@ericsson.com,
-        vincent.guittot@linaro.org
-Subject: [PATCH 14/14] sched: add sched_dl documentation.
-Date: Mon, 11 Feb 2013 10:50:56 -0800
-Message-Id: <1360608656-7969-15-git-send-email-juri.lelli@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1360608656-7969-1-git-send-email-juri.lelli@gmail.com>
-References: <1360608656-7969-1-git-send-email-juri.lelli@gmail.com>
+	Mon, 11 Feb 2013 13:52:27 -0500
+Message-ID: <51193DE1.6080704@ti.com>
+Date: Mon, 11 Feb 2013 12:52:17 -0600
+From: Jon Hunter <jon-hunter@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Tony Lindgren <tony@atomide.com>
+CC: Ruslan Bilovol <ruslan.bilovol@ti.com>, <linux@arm.linux.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] ARM: OMAP4: Add OMAP4 Blaze Tablet support
+References: <1360352269-14922-1-git-send-email-ruslan.bilovol@ti.com> <1360352269-14922-2-git-send-email-ruslan.bilovol@ti.com> <20130210025225.GB4801@atomide.com>
+In-Reply-To: <20130210025225.GB4801@atomide.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.157.144.139]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dario Faggioli <raistlin@linux.it>
 
-Add in Documentation/scheduler/ some hints about the design
-choices, the usage and the future possible developments of the
-sched_dl scheduling class and of the SCHED_DEADLINE policy.
+On 02/09/2013 08:52 PM, Tony Lindgren wrote:
+> Hi,
+> 
+> * Ruslan Bilovol <ruslan.bilovol@ti.com> [130208 11:41]:
+>> The OMAP4 Blaze Tablet is TI OMAP4 processor-based
+>> development platform in a tablet formfactor.
+>> The platform contains many of the features found in
+>> present-day handsets (such as audio, video, wireless
+>> functions and user interfaces) and in addition
+>> contains features for software development and test.
+>>
+>> This patch adds initial support for the OMAP4 Blaze
+>> Tablet development platform. Additional functionality
+>> depends on different drivers and code modifications that
+>> are not upstreamed yet so will be added later.
+> 
+> Nice that you have it working, however, we're not adding
+> any more board-*.c files as we're moving things to device
+> tree based booting.
+> 
+> Care to try to get the basic .dts file done for this?
+> You will probably need to add CONFIG_ARM_APPENDED_DTB=y
+> and CONFIG_ARM_ATAG_DTB_COMPAT=y to omap2plus_defconfig
+> and append the .dtb file to zImage and run mkimage then
+> manually to boot it. But you should get serial and MMC
+> at least working to start with :)
 
-Signed-off-by: Dario Faggioli <raistlin@linux.it>
-Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
----
- Documentation/scheduler/sched-deadline.txt |  195 ++++++++++++++++++++++++++++
- kernel/sched/deadline.c                    |    3 +-
- 2 files changed, 197 insertions(+), 1 deletion(-)
- create mode 100644 Documentation/scheduler/sched-deadline.txt
+Please note that the blaze is derived from the omap4-sdp board and so I
+would hope that we can use the existing for sdp dts and board file for
+blaze. In fact this is what I do today for basic booting.
 
-diff --git a/Documentation/scheduler/sched-deadline.txt b/Documentation/scheduler/sched-deadline.txt
-new file mode 100644
-index 0000000..9ba02631
---- /dev/null
-+++ b/Documentation/scheduler/sched-deadline.txt
-@@ -0,0 +1,195 @@
-+			  Deadline Task Scheduling
-+			  ------------------------
-+
-+CONTENTS
-+========
-+
-+0. WARNING
-+1. Overview
-+2. Task scheduling
-+2. The Interface
-+3. Bandwidth management
-+  3.1 System-wide settings
-+  3.2 Task interface
-+  3.4 Default behavior
-+4. Tasks CPU affinity
-+  4.1 SCHED_DEADLINE and cpusets HOWTO
-+5. Future plans
-+
-+
-+0. WARNING
-+==========
-+
-+ Fiddling with these settings can result in an unpredictable or even unstable
-+ system behavior. As for -rt (group) scheduling, it is assumed that root users
-+ know what they're doing.
-+
-+
-+1. Overview
-+===========
-+
-+ The SCHED_DEADLINE policy contained inside the sched_dl scheduling class is
-+ basically an implementation of the Earliest Deadline First (EDF) scheduling
-+ algorithm, augmented with a mechanism (called Constant Bandwidth Server, CBS)
-+ that makes it possible to isolate the behavior of tasks between each other.
-+
-+
-+2. Task scheduling
-+==================
-+
-+ The typical -deadline task is composed of a computation phase (instance)
-+ which is activated on a periodic or sporadic fashion. The expected (maximum)
-+ duration of such computation is called the task's runtime; the time interval
-+ by which each instance needs to be completed is called the task's relative
-+ deadline. The task's absolute deadline is dynamically calculated as the
-+ time instant a task (or, more properly) activates plus the relative
-+ deadline.
-+
-+ The EDF[1] algorithm selects the task with the smallest absolute deadline as
-+ the one to be executed first, while the CBS[2,3] ensures that each task runs
-+ for at most its runtime every period, avoiding any interference between
-+ different tasks (bandwidth isolation).
-+ Thanks to this feature, also tasks that do not strictly comply with the
-+ computational model described above can effectively use the new policy.
-+ IOW, there are no limitations on what kind of task can exploit this new
-+ scheduling discipline, even if it must be said that it is particularly
-+ suited for periodic or sporadic tasks that need guarantees on their
-+ timing behavior, e.g., multimedia, streaming, control applications, etc.
-+
-+ References:
-+  1 - C. L. Liu and J. W. Layland. Scheduling algorithms for multiprogram-
-+      ming in a hard-real-time environment. Journal of the Association for
-+      Computing Machinery, 20(1), 1973.
-+  2 - L. Abeni , G. Buttazzo. Integrating Multimedia Applications in Hard
-+      Real-Time Systems. Proceedings of the 19th IEEE Real-time Systems
-+      Symposium, 1998. http://retis.sssup.it/~giorgio/paps/1998/rtss98-cbs.pdf
-+  3 - L. Abeni. Server Mechanisms for Multimedia Applications. ReTiS Lab
-+      Technical Report. http://xoomer.virgilio.it/lucabe72/pubs/tr-98-01.ps
-+
-+3. Bandwidth management
-+=======================
-+
-+ In order for the -deadline scheduling to be effective and useful, it is
-+ important to have some method to keep the allocation of the available CPU
-+ bandwidth to the tasks under control.
-+ This is usually called "admission control" and if it is not performed at all,
-+ no guarantee can be given on the actual scheduling of the -deadline tasks.
-+
-+ Since when RT-throttling has been introduced each task group has a bandwidth
-+ associated, calculated as a certain amount of runtime over a period.
-+ Moreover, to make it possible to manipulate such bandwidth, readable/writable
-+ controls have been added to both procfs (for system wide settings) and cgroupfs
-+ (for per-group settings).
-+ Therefore, the same interface is being used for controlling the bandwidth
-+ distrubution to -deadline tasks and task groups, i.e., new controls but with
-+ similar names, equivalent meaning and with the same usage paradigm are added.
-+
-+ However, more discussion is needed in order to figure out how we want to manage
-+ SCHED_DEADLINE bandwidth at the task group level. Therefore, SCHED_DEADLINE
-+ uses (for now) a less sophisticated, but actually very sensible, mechanism to
-+ ensure that a certain utilization cap is not overcome per each root_domain.
-+
-+ Another main difference between deadline bandwidth management and RT-throttling
-+ is that -deadline tasks have bandwidth on their own (while -rt ones don't!),
-+ and thus we don't need an higher level throttling mechanism to enforce the
-+ desired bandwidth.
-+
-+3.1 System wide settings
-+------------------------
-+
-+ The system wide settings are configured under the /proc virtual file system.
-+
-+ The control knob that is added to the /proc virtual file system is
-+ /proc/sys/kernel/sched_dl_runtime_us. It accepts (if written) and provides (if
-+ read) the new runtime for each CPU in each root_domain. The period control knob
-+ is instead shared with -rt settings (/proc/sys/kernel/sched_rt_period_us). 
-+
-+ The CPU bandwidth available to -deadline tasks is actually a sub-quota of
-+ the -rt bandwidth. By default 95% of system bandwidth is allocate to -rt tasks;
-+ among this, a 40% quota is reserved for -dl tasks. To have the actual quota a
-+ simple multiplication is needed: .95 * .40 = .38 (38% of system bandwidth for
-+ deadline tasks).
-+
-+ This means that, for a root_domain comprising M CPUs, -deadline tasks
-+ can be created until the sum of their bandwidths stay below:
-+
-+   M * (sched_dl_runtime_us / sched_rt_period_us)
-+
-+ It is also possible to disable this bandwidth management logic, and
-+ be thus free of oversubscribing the system up to any arbitrary level.
-+ This is done by writing -1 in /proc/sys/kernel/sched_dl_runtime_us.
-+
-+
-+3.2 Task interface
-+------------------
-+
-+ Specifying a periodic/sporadic task that executes for a given amount of
-+ runtime at each instance, and that is scheduled according to the urgency of
-+ its own timing constraints needs, in general, a way of declaring:
-+  - a (maximum/typical) instance execution time,
-+  - a minimum interval between consecutive instances,
-+  - a time constraint by which each instance must be completed.
-+
-+ Therefore:
-+  * a new struct sched_param2, containing all the necessary fields is
-+    provided;
-+  * the new scheduling related syscalls that manipulate it, i.e.,
-+    sched_setscheduler2(), sched_setparam2() and sched_getparam2()
-+    are implemented.
-+
-+
-+3.3 Default behavior
-+---------------------
-+
-+The default value for SCHED_DEADLINE bandwidth is to have dl_runtime equal to
-+40000. Being rt_period equal to 1000000, by default, it means that -deadline
-+tasks can use at most 40%, multiplied by the number of CPUs that compose the
-+root_domain, for each root_domain.
-+
-+A -deadline task cannot fork.
-+
-+4. Tasks CPU affinity
-+=====================
-+
-+-deadline tasks cannot have an affinity mask smaller that the entire
-+root_domain they are created on. However, affinities can be specified
-+through the cpuset facility (Documentation/cgroups/cpusets.txt).
-+
-+4.1 SCHED_DEADLINE and cpusets HOWTO
-+------------------------------------
-+
-+An example of a simple configuration (pin a -deadline task to CPU0)
-+follows (rt-app is used to create a -deadline task).
-+
-+mkdir /dev/cpuset
-+mount -t cgroup -o cpuset cpuset /dev/cpuset
-+cd /dev/cpuset
-+mkdir cpu0
-+echo 0 > cpu0/cpuset.cpus
-+echo 0 > cpu0/cpuset.mems
-+echo 1 > cpuset.cpu_exclusive
-+echo 0 > cpuset.sched_load_balance
-+echo 1 > cpu0/cpuset.cpu_exclusive
-+echo 1 > cpu0/cpuset.mem_exclusive
-+echo $$ > cpu0/tasks
-+rt-app -t 100000:10000:d:0 -D5 (it is now actually superfluous to specify
-+task affinity)
-+
-+5. Future plans
-+===============
-+
-+Still missing:
-+
-+ - refinements to deadline inheritance, especially regarding the possibility
-+   of retaining bandwidth isolation among non-interacting tasks. This is
-+   being studied from both theoretical and practical point of views, and
-+   hopefully we should be able to produce some demonstrative code soon;
-+ - (c)group based bandwidth management, and maybe scheduling;
-+ - access control for non-root users (and related security concerns to
-+   address), which is the best way to allow unprivileged use of the mechanisms
-+   and how to prevent non-root users "cheat" the system?
-+
-+As already discussed, we are planning also to merge this work with the EDF
-+throttling patches [https://lkml.org/lkml/2010/2/23/239] but we still are in
-+the preliminary phases of the merge and we really seek feedback that would
-+help us decide on the direction it should take.
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index 0ece746..e7a1d34 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -348,7 +348,8 @@ static void replenish_dl_entity(struct sched_dl_entity *dl_se,
-  * disrupting the schedulability of the system. Otherwise, we should
-  * refill the runtime and set the deadline a period in the future,
-  * because keeping the current (absolute) deadline of the task would
-- * result in breaking guarantees promised to other tasks.
-+ * result in breaking guarantees promised to other tasks (refer to
-+ * Documentation/scheduler/sched-deadline.txt for more informations).
-  *
-  * This function returns true if:
-  *
--- 
-1.7.9.5
+So unless there is some feature on the blaze that is not compatible with
+the original sdp, we should just use the sdp dts.
 
+Cheers
+Jon
