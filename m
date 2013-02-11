@@ -1,121 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756835Ab3BKMZx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 07:25:53 -0500
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:47344 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756674Ab3BKMZv (ORCPT
+	id S1756876Ab3BKM0Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 07:26:16 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60042 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756713Ab3BKM0O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 07:25:51 -0500
-Message-ID: <5118E2CD.90401@linux.vnet.ibm.com>
-Date: Mon, 11 Feb 2013 17:53:41 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Mon, 11 Feb 2013 07:26:14 -0500
+Date: Mon, 11 Feb 2013 04:25:54 -0800
+From: tip-bot for Sasha Levin <sasha.levin@oracle.com>
+Message-ID: <tip-23e9e95acb727267e171a34e2bb65dbe0b188ee1@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, sasha.levin@oracle.com, hpa@zytor.com,
+        mingo@kernel.org, a.p.zijlstra@chello.nl,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, sasha.levin@oracle.com,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
+        tglx@linutronix.de
+In-Reply-To: <1360456781-32462-5-git-send-email-sasha.levin@oracle.com>
+References: <1360456781-32462-5-git-send-email-sasha.levin@oracle.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/locking] liblockdep: Correct the ABCDBCDA test
+Git-Commit-ID: 23e9e95acb727267e171a34e2bb65dbe0b188ee1
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-doc@vger.kernel.org, peterz@infradead.org, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org, walken@google.com, mingo@kernel.org,
-        linux-arch@vger.kernel.org, xiaoguangrong@linux.vnet.ibm.com,
-        wangyun@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>, rostedt@goodmis.org,
-        rjw@sisk.pl, namhyung@kernel.org, tglx@linutronix.de,
-        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
-        oleg@redhat.com, sbw@mit.edu, tj@kernel.org, akpm@linux-foundation.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v5 00/45] CPU hotplug: stop_machine()-free CPU hotplug
-References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com> <510FBC01.2030405@linux.vnet.ibm.com>	<87haloiwv0.fsf@rustcorp.com.au> <51134596.4080106@linux.vnet.ibm.com> <20130208154113.GV17833@n2100.arm.linux.org.uk> <51152B81.2050501@linux.vnet.ibm.com>	<51153F72.1060005@linux.vnet.ibm.com> <CAKfTPtCe+cD7LLkb+D6pqG1SwG2V08ws=4XO3ttHEHV2qgmqPg@mail.gmail.com>
-In-Reply-To: <CAKfTPtCe+cD7LLkb+D6pqG1SwG2V08ws=4XO3ttHEHV2qgmqPg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13021112-1618-0000-0000-000003511A73
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 11 Feb 2013 04:26:00 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2013 05:28 PM, Vincent Guittot wrote:
-> On 8 February 2013 19:09, Srivatsa S. Bhat
-> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
->> On 02/08/2013 10:14 PM, Srivatsa S. Bhat wrote:
->>> On 02/08/2013 09:11 PM, Russell King - ARM Linux wrote:
->>>> On Thu, Feb 07, 2013 at 11:41:34AM +0530, Srivatsa S. Bhat wrote:
->>>>> On 02/07/2013 09:44 AM, Rusty Russell wrote:
->>>>>> "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com> writes:
->>>>>>> On 01/22/2013 01:03 PM, Srivatsa S. Bhat wrote:
->>>>>>>                  Avg. latency of 1 CPU offline (ms) [stop-cpu/stop-m/c latency]
->>>>>>>
->>>>>>> # online CPUs    Mainline (with stop-m/c)       This patchset (no stop-m/c)
->>>>>>>
->>>>>>>       8                 17.04                          7.73
->>>>>>>
->>>>>>>      16                 18.05                          6.44
->>>>>>>
->>>>>>>      32                 17.31                          7.39
->>>>>>>
->>>>>>>      64                 32.40                          9.28
->>>>>>>
->>>>>>>     128                 98.23                          7.35
->>>>>>
->>>>>> Nice!
->>>>>
->>>>> Thank you :-)
->>>>>
->>>>>>  I wonder how the ARM guys feel with their quad-cpu systems...
->>>>>>
->>>>>
->>>>> That would be definitely interesting to know :-)
->>>>
->>>> That depends what exactly you'd like tested (and how) and whether you'd
->>>> like it to be a test-chip based quad core, or an OMAP dual-core SoC.
->>>>
->>>
->>> The effect of stop_machine() doesn't really depend on the CPU architecture
->>> used underneath or the platform. It depends only on the _number_ of
->>> _logical_ CPUs used.
->>>
->>> And stop_machine() has 2 noticeable drawbacks:
->>> 1. It makes the hotplug operation itself slow
->>> 2. and it causes disruptions to the workloads running on the other
->>> CPUs by hijacking the entire machine for significant amounts of time.
->>>
->>> In my experiments (mentioned above), I tried to measure how my patchset
->>> improves (reduces) the duration of hotplug (CPU offline) itself. Which is
->>> also slightly indicative of the impact it has on the rest of the system.
->>>
->>> But what would be nice to test, is a setup where the workloads running on
->>> the rest of the system are latency-sensitive, and measure the impact of
->>> CPU offline on them, with this patchset applied. That would tell us how
->>> far is this useful in making CPU hotplug less disruptive on the system.
->>>
->>> Of course, it would be nice to also see whether we observe any reduction
->>> in hotplug duration itself (point 1 above) on ARM platforms with lot
->>> of CPUs. [This could potentially speed up suspend/resume, which is used
->>> rather heavily on ARM platforms].
->>>
->>> The benefits from this patchset over mainline (both in terms of points
->>> 1 and 2 above) is expected to increase, with increasing number of CPUs in
->>> the system.
->>>
->>
->> Adding Vincent to CC, who had previously evaluated the performance and
->> latency implications of CPU hotplug on ARM platforms, IIRC.
->>
->
-> Hi Srivatsa,
-> 
-> I can try to run some of our stress tests on your patches.
+Commit-ID:  23e9e95acb727267e171a34e2bb65dbe0b188ee1
+Gitweb:     http://git.kernel.org/tip/23e9e95acb727267e171a34e2bb65dbe0b188ee1
+Author:     Sasha Levin <sasha.levin@oracle.com>
+AuthorDate: Sat, 9 Feb 2013 19:39:35 -0500
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 11 Feb 2013 10:12:38 +0100
 
-Great!
+liblockdep: Correct the ABCDBCDA test
 
-> Have you
-> got a git tree that i can pull ?
-> 
+There's no need to use liblockdep specific calls, they are
+wrapped for us.
 
-Unfortunately, no, none at the moment..  :-(
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Cc: jamie.iles@oracle.com
+Cc: penberg@kernel.org
+Cc: acme@ghostprotocols.net
+Cc: paulus@samba.org
+Cc: namhyung@kernel.org
+Cc: peterz@infradead.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Link: http://lkml.kernel.org/r/1360456781-32462-5-git-send-email-sasha.levin@oracle.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ tools/lib/lockdep/tests/ABCDBCDA.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-Regards,
-Srivatsa S. Bhat
-
-
+diff --git a/tools/lib/lockdep/tests/ABCDBCDA.c b/tools/lib/lockdep/tests/ABCDBCDA.c
+index aadf11e..427ba56 100644
+--- a/tools/lib/lockdep/tests/ABCDBCDA.c
++++ b/tools/lib/lockdep/tests/ABCDBCDA.c
+@@ -3,12 +3,12 @@
+ 
+ void main(void)
+ {
+-	liblockdep_pthread_mutex_t a, b, c, d;
++	pthread_mutex_t a, b, c, d;
+ 
+-	liblockdep_pthread_mutex_init(&a, NULL);
+-	liblockdep_pthread_mutex_init(&b, NULL);
+-	liblockdep_pthread_mutex_init(&c, NULL);
+-	liblockdep_pthread_mutex_init(&d, NULL);
++	pthread_mutex_init(&a, NULL);
++	pthread_mutex_init(&b, NULL);
++	pthread_mutex_init(&c, NULL);
++	pthread_mutex_init(&d, NULL);
+ 
+ 	LOCK_UNLOCK_2(a, b);
+ 	LOCK_UNLOCK_2(c, d);
