@@ -1,47 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758567Ab3BKTC5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 14:02:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4825 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758187Ab3BKTCz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 14:02:55 -0500
-Date: Mon, 11 Feb 2013 14:02:51 -0500
-From: Aristeu Rozanski <aris@redhat.com>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Serge Hallyn <serge.hallyn@canonical.com>
-Subject: Re: [PATCH v6 9/9] devcg: propagate local changes down the hierarchy
-Message-ID: <20130211190251.GH30962@redhat.com>
-References: <20130130171101.060853036@napanee.usersys.redhat.com>
- <20130130171102.390708521@napanee.usersys.redhat.com>
- <20130131043839.GA14726@mail.hallyn.com>
- <20130205183646.GT17632@redhat.com>
- <20130209040402.GA31942@mail.hallyn.com>
- <20130211143241.GF30962@redhat.com>
- <20130211174259.GA18179@mail.hallyn.com>
- <20130211183847.GG30962@redhat.com>
- <20130211185239.GA18779@mail.hallyn.com>
+	id S1758762Ab3BKTIm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 14:08:42 -0500
+Received: from mail-we0-f169.google.com ([74.125.82.169]:33602 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758530Ab3BKTIk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 14:08:40 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130211185239.GA18779@mail.hallyn.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [2620:0:1000:1b02:ae16:2dff:fe07:4e83]
+In-Reply-To: <20130211185221.GR4801@atomide.com>
+References: <20130211170616.73fd9fd30bb10c27a698ad4d@canb.auug.org.au>
+	<20130211185221.GR4801@atomide.com>
+Date: Mon, 11 Feb 2013 11:08:38 -0800
+Message-ID: <CAOesGMi5xCahJ=5emwxiXeKEZkK4yhctcTddPZNQXO5wzcdQwQ@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the mfd tree
+From: Olof Johansson <olof@lixom.net>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Roger Quadros <rogerq@ti.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Paul Walmsley <paul@pwsan.com>,
+        Felipe Balbi <balbi@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 11, 2013 at 06:52:39PM +0000, Serge E. Hallyn wrote:
-> > getting rid of local settings would buy more simplicity
-> 
-> (Not sure which you mean here by 'getting rid of local settings')
+On Mon, Feb 11, 2013 at 10:52 AM, Tony Lindgren <tony@atomide.com> wrote:
+> * Stephen Rothwell <sfr@canb.auug.org.au> [130210 22:11]:
+>> Hi all,
+>>
+>> Today's linux-next merge of the arm-soc tree got a conflict in
+>> arch/arm/mach-omap2/usb-host.c between commit 8a89e93237e1 ("mfd:
+>> omap-usb-host: Consolidate OMAP USB-HS platform data") from the mfd tree
+>> and commit c1d1cd597fc7 ("ARM: OMAP2+: omap_device: remove obsolete
+>> pm_lats and early_device code") from the arm-soc tree.
+>>
+>> I fixed it up (see below) and can carry the fix as necessary (no action
+>> is required).
+>
+> Thanks again.
+>
+> Samuel, up to you, but I suggest you just drop these patches for
+> now if still possible unless other patches are based on these.
 
-no local.{behavior,exceptions}, which still would allow behavior
-propagation, but simply wouldn't keep local behavior or exceptions.
-a change in behavior on parent would simply reset the child to parent's
-state. exception propagation would mean inserting/removing the new
-exception and making sure the others are still valid.
+Yes, as I replied on the original patch series last night, please sort
+this out so we can avoid these nagging merge conflicts. Tony's steps
+in the previous email is the right way to handle these kind of things.
 
--- 
-Aristeu
 
+-Olof
