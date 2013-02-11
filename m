@@ -1,156 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757489Ab3BKOc6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 09:32:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55643 "EHLO mx1.redhat.com"
+	id S1757468Ab3BKOfg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 09:35:36 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:52787 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757400Ab3BKOcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 09:32:48 -0500
-Date: Mon, 11 Feb 2013 09:30:22 -0500
-From: Aristeu Rozanski <aris@redhat.com>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Serge Hallyn <serge.hallyn@canonical.com>
-Subject: Re: [PATCH v6 9/9] devcg: propagate local changes down the hierarchy
-Message-ID: <20130211143022.GE30962@redhat.com>
-References: <20130130171101.060853036@napanee.usersys.redhat.com>
- <20130130171102.390708521@napanee.usersys.redhat.com>
- <20130131043839.GA14726@mail.hallyn.com>
- <20130205183646.GT17632@redhat.com>
- <20130209035357.GA31122@mail.hallyn.com>
+	id S1757365Ab3BKOff (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 09:35:35 -0500
+Date: Mon, 11 Feb 2013 15:35:29 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 07/33] nohz: Basic full dynticks interface
+Message-ID: <20130211143529.GB2749@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Alessio Igor Bogani <abogani@kernel.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Chris Metcalf <cmetcalf@tilera.com>,
+	Christoph Lameter <cl@linux.com>,
+	Geoff Levand <geoff@infradead.org>,
+	Gilad Ben Yossef <gilad@benyossef.com>,
+	Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+	Li Zhong <zhong@linux.vnet.ibm.com>,
+	Namhyung Kim <namhyung.kim@lge.com>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Paul Gortmaker <paul.gortmaker@windriver.com>,
+	Peter Zijlstra <peterz@infradead.org>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Thomas Gleixner <tglx@linutronix.de>
+References: <1357610913-1080-1-git-send-email-fweisbec@gmail.com>
+ <1357610913-1080-8-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130209035357.GA31122@mail.hallyn.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1357610913-1080-8-git-send-email-fweisbec@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 09, 2013 at 03:53:57AM +0000, Serge E. Hallyn wrote:
-> Quoting Aristeu Rozanski (aris@redhat.com):
-> 
-> Thanks, Aristeu.  I'm sorry it feels like I'm just trying to give you a
-> hard time, I'm really not :)
+On Tue, Jan 08, 2013 at 03:08:07AM +0100, Frederic Weisbecker wrote:
 
-no worries on that, it's important this is done right and I appreciate
-your reviews.
+[ … ]
 
-> I do feel like you're really close.  At the same time this is so subtle
-> and complicated that I wonder if there must not be a simpler way,
-> perhaps a small change in assumptions that would help do away with a lot
-> of this.  It's not just about the iterations you're having to do, but
-> more about how subtle it still all feels, suggesting it will be hard to
-> prevent regressions as it gets maintained.
+> diff --git a/kernel/time/Kconfig b/kernel/time/Kconfig
+> index 8601f0d..dc6381d 100644
+> --- a/kernel/time/Kconfig
+> +++ b/kernel/time/Kconfig
+> @@ -70,6 +70,15 @@ config NO_HZ
+>  	  only trigger on an as-needed basis both when the system is
+>  	  busy and when the system is idle.
+>  
+> +config NO_HZ_FULL
+> +       bool "Full tickless system"
 
-what could make it simpler is simply drop the notion of local settings:
-if it's changed locally, just check if it's allowed and do it.
-propagation simply will mirror the parent cgroup. But other than that, I
-don't see any easier way.
+I think you want to say here "Almost-completely tickless system".
+"Almost" because of that one CPU outside of the range :-)
 
-> (But maybe I'm wrong about that)
-> 
-> Anyway, I really appreciate all the work you're doing on this.
-> 
-> After you reply to my questions below, if there are no further changes
-> I'd like to take one more long look at the whole thing before acking.
-> 
-> > +/**
-> > + * propagate_behavior - propagates a change in the behavior down in hierarchy
-> > + * @devcg_root: device cgroup that changed behavior
-> > + *
-> > + * returns: 0 in case of success, != 0 in case of error
-> > + *
-> > + * This is one of the two key functions for hierarchy implementation.
-> > + * All cgroup's children recursively will have the behavior changed and
-> > + * exceptions copied from the parent then its local behavior and exceptions
-> > + * re-evaluated and applied if they're still allowed.  Refer to
-> > + * Documentation/cgroups/devices.txt for more details.
-> > + */
-> > +static int propagate_behavior(struct dev_cgroup *devcg_root)
-> > +{
-> > +	struct cgroup *root = devcg_root->css.cgroup;
-> > +	struct dev_cgroup *parent, *devcg, *tmp;
-> > +	int rc = 0;
-> > +	LIST_HEAD(pending);
-> > +
-> > +	get_online_devcg(root, &pending);
-> > +
-> > +	list_for_each_entry_safe(devcg, tmp, &pending, propagate_pending) {
-> > +		parent = cgroup_to_devcgroup(devcg->css.cgroup->parent);
-> > +
-> > +		/* first copy parent's state */
-> > +		devcg->behavior = parent->behavior;
-> > +		dev_exception_clean(&devcg->exceptions);
-> > +
-> > +		if (devcg->local.behavior == DEVCG_DEFAULT_DENY &&
-> > +		    devcg->behavior == DEVCG_DEFAULT_ALLOW) {
-> > +			/*
-> > +			 * the only case when the local exceptions
-> > +			 * will be reused
-> > +			 */
-> > +			devcg->behavior = DEVCG_DEFAULT_DENY;
-> > +			rc = revalidate_local_exceptions(devcg);
-> > +		} else {
-> 
-> So, what if parent A and child B are both deny, then parent A switches
-> to allow, then parent A switches back to deny?  You'll be dropping B's
-> local exceptions, is that what you want?  (Maybe it is, I'm not sure)
+> +       depends on NO_HZ && RCU_USER_QS && VIRT_CPU_ACCOUNTING_GEN && RCU_NOCB_CPU && SMP
+> +       select CONTEXT_TRACKING_FORCE
+> +       help
+> +         Try to be tickless everywhere, not just in idle. (You need
+> +	 to fill up the full_nohz_mask boot parameter).
+> +
+> +
+>  config HIGH_RES_TIMERS
+>  	bool "High Resolution Timer Support"
+>  	depends on !ARCH_USES_GETTIMEOFFSET && GENERIC_CLOCKEVENTS
+> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+> index 314b9ee..494a2aa 100644
+> --- a/kernel/time/tick-sched.c
+> +++ b/kernel/time/tick-sched.c
+> @@ -142,6 +142,29 @@ static void tick_sched_handle(struct tick_sched *ts, struct pt_regs *regs)
+>  	profile_tick(CPU_PROFILING);
+>  }
+>  
+> +#ifdef CONFIG_NO_HZ_FULL
+> +static cpumask_var_t full_nohz_mask;
+> +bool have_full_nohz_mask;
+> +
+> +int tick_nohz_full_cpu(int cpu)
+> +{
+> +	if (!have_full_nohz_mask)
+> +		return 0;
+> +
+> +	return cpumask_test_cpu(cpu, full_nohz_mask);
+> +}
+> +
+> +/* Parse the boot-time nohz CPU list from the kernel parameters. */
+> +static int __init tick_nohz_full_setup(char *str)
+> +{
+> +	alloc_bootmem_cpumask_var(&full_nohz_mask);
+> +	have_full_nohz_mask = true;
+> +	cpulist_parse(str, full_nohz_mask);
 
-so, doing the two steps slowly:
-1) parent changes to ALLOW: B gets to keep deny because it's a local
-   setting and it's allowed. revalidate_local_exceptions() will probably
-   keep all the local exceptions since parent's change to ALLOW will
-   reset its exception list; so any exception to DENY in B will be
-   allowed.
-1.1) parent gets new exceptions (or not): some of the local exceptions
-     in B might be dropped since they'll not be allowed anymore
-2) parent changes to DENY: B keeps DENY but ends up indirectly losing
-   all its local exceptions anyway because parent's behavior change will
-   also clear all exceptions and will deny everything.
+Don't you want to check retval of cpulist_parse first here before
+assigning have_full_nohz_mask and allocating cpumask var?
 
-the whole idea is to never a child should have access to more devices than
-its parent.
+We don't trust userspace, you know.
 
-> > @@ -621,13 +828,22 @@ 			return 0;
-> >  		 */
-> >  		if (devcgroup->behavior == DEVCG_DEFAULT_DENY) {
-> >  			dev_exception_rm(devcgroup, &ex);
-> > -			return 0;
-> > +			rc = propagate_exception(devcgroup, &ex);
-> 
-> Note that this is a case where we made a change to the cgroups
-> exceptions, but do not set the cgroup's local behavior explicitly.
-> That's important bc we have parent A and child B, where child B
-> made a change, but when child A changes its behavior, child B's
-> behavior will be changed as well despite having made local changes.
-> 
-> I assume you were thinking that local.behavior gets set if a
-> local.exception gets added, not if a devcg->exception gets removed
-> with no change to local.exceptions.
+> +	return 1;
+> +}
+> +__setup("full_nohz=", tick_nohz_full_setup);
 
-that is correct. the idea of setting local.behavior is to make sure
-local.exceptions are interpreted correctly: are they exceptions to
-DENY or ALLOW?
+I'd guess this kernel parameter needs to go into
+Documentation/kernel-parameters.txt along with a referral to
+Documentation/cputopology.txt which explains how to specify cpulists for
+n00bs like me :-)
 
-> While the reasoning may be clear looking at it from this level,
-> I think that as an admin configuring cgroups on a system, the
-> rules about when the behavior change to A are propagated to B
-> will seem random.
-> 
-> (Or, it may just be an oversight and you meant to set local.behavior
-> here? :)
-> 
-> Oh, that brings up another point,
-> 
-> in the two cases where you do dev_exception_rm(devcgroup, &ex)
-> instead of dev_exception_add(devcgroup, &ex), should that
-> action be recorded locally somehow, so it can be reproduced
-> after a parent behavior change?
-
-that makes sense. not sure how to do that though. will think in
-something.
+Thanks.
 
 -- 
-Aristeu
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
