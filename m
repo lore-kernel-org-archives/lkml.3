@@ -1,82 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757207Ab3BKM6d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 07:58:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57068 "EHLO mx2.suse.de"
+	id S1757227Ab3BKM6m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 07:58:42 -0500
+Received: from mga09.intel.com ([134.134.136.24]:5782 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757182Ab3BKM6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 07:58:31 -0500
-Date: Mon, 11 Feb 2013 13:58:29 +0100
-From: Jan Kara <jack@suse.cz>
-To: Michel Lespinasse <walken@google.com>
-Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 1/6] lib: Implement range locks
-Message-ID: <20130211125829.GD5318@quack.suse.cz>
-References: <1359668994-13433-1-git-send-email-jack@suse.cz>
- <1359668994-13433-2-git-send-email-jack@suse.cz>
- <CANN689ExHJjXvAdYM=eYP_hZFT78SHZb1AbJv6743Q=KjohBVQ@mail.gmail.com>
- <20130211102730.GA5318@quack.suse.cz>
- <CANN689G8f2QuROecapFcbcNUggGWv9bTuHSV+k4KBLj=_E7uFg@mail.gmail.com>
+	id S1757020Ab3BKM6k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 07:58:40 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,643,1355126400"; 
+   d="scan'208";a="284162406"
+Date: Mon, 11 Feb 2013 13:58:36 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Tomas Winkler <tomas.winkler@intel.com>, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [char-misc-next 03/11] mei: bus: Initial implementation for I/O
+ routines
+Message-ID: <20130211125836.GN20996@sortiz-mobl>
+References: <1360270997-7639-1-git-send-email-tomas.winkler@intel.com>
+ <201302072234.44181.arnd@arndb.de>
+ <20130207225510.GD5072@sortiz-mobl>
+ <201302111152.42483.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CANN689G8f2QuROecapFcbcNUggGWv9bTuHSV+k4KBLj=_E7uFg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201302111152.42483.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 11-02-13 03:03:30, Michel Lespinasse wrote:
-> On Mon, Feb 11, 2013 at 2:27 AM, Jan Kara <jack@suse.cz> wrote:
-> > On Sun 10-02-13 21:42:32, Michel Lespinasse wrote:
-> >> On Thu, Jan 31, 2013 at 1:49 PM, Jan Kara <jack@suse.cz> wrote:
-> >> > +void range_lock_init(struct range_lock *lock, unsigned long start,
-> >> > +                    unsigned long end);
-> >> > +void range_lock(struct range_lock_tree *tree, struct range_lock *lock);
-> >> > +void range_unlock(struct range_lock_tree *tree, struct range_lock *lock);
-> >>
-> >> Is there a point to separating the init and lock stages ? maybe the API could be
-> >> void range_lock(struct range_lock_tree *tree, struct range_lock *lock,
-> >> unsigned long start, unsigned long last);
-> >> void range_unlock(struct range_lock_tree *tree, struct range_lock *lock);
-> >   I was thinking about this as well. Currently I don't have a place which
-> > would make it beneficial to separate _init and _lock but I can imagine such
-> > uses (where you don't want to pass the interval information down the stack
-> > and it's easier to pass the whole lock structure). Also it looks a bit
-> > confusing to pass (tree, lock, start, last) to the locking functon. So I
-> > left it there.
-> >
-> > OTOH I had to somewhat change the API so that the locking phase is now
-> > separated in "lock_prep" phase which inserts the node into the tree and
-> > counts blocking ranges and "wait" phase which waits for the blocking ranges
-> > to unlock. The reason for this split is that while "lock_prep" needs to
-> > happen under some lock synchronizing operations on the tree, "wait" phase
-> > can be easily lockless. So this allows me to remove the knowledge of how
-> > operations on the tree are synchronized from range locking code itself.
-> > That further allowed me to use mapping->tree_lock for synchronization and
-> > basically reduce the cost of mapping range locking close to 0 for buffered
-> > IO (just a single tree lookup in the tree in the fast path).
-> 
-> Ah yes, being able to externalize the lock is good.
-> 
-> I think in this case, it makes the most sense for lock_prep phase to
-> also initialize the lock node, though.
-  I guess so.
+Hi Arnd,
 
-> >> Reviewed-by: Michel Lespinasse <walken@google.com>
-> >   I actually didn't add this because there are some differences in the
-> > current version...
+On Mon, Feb 11, 2013 at 11:52:42AM +0000, Arnd Bergmann wrote:
+> On Thursday 07 February 2013, Samuel Ortiz wrote:
+> > On Thu, Feb 07, 2013 at 10:34:44PM +0000, Arnd Bergmann wrote:
+> > > On Thursday 07 February 2013, Tomas Winkler wrote:
+> > > > +
+> > > > +struct mei_bus_ops {
+> > > > +       int (*send)(struct mei_bus_client *client, u8 *buf, size_t length);
+> > > > +       int (*recv)(struct mei_bus_client *client, u8 *buf, size_t length);
+> > > > +};
+> > > > +
+> > > 
+> > > Can you have more than one set of mei_bus_ops in a driver? 
+> > You can have at most one mei_bus_ops per mei_bus_client.
+> > 
+> > > If not, how about adding the callbacks to the mei_bus_driver structure
+> > > directly as a simplification? 
+> > I can add the ops directly to the mei_bus_client structure, yes.
 > 
-> Did I miss another posting of yours, or is that coming up ?
-  That will come. But as Dave Chinner pointed out for buffered writes we
-should rather lock the whole range specified in the syscall (to avoid
-strange results of racing truncate / write when i_mutex isn't used) and
-that requires us to put the range lock above mmap_sem which isn't currently
-easily possible due to page fault handling... So if the whole patch set
-should go anywhere I need to solve that somehow.
+> I looked at the new version, and it's not what I assumed it would be.
+> I thought the operations were specific to a client driver and should
+> be part of the /mei_bus_driver/ structure, not the /mei_bus_client/.
+The ops should be part of mei_bus_client as they're specific to the MEI
+protocol for a given IP block on the ME. You need to have MEI and HECI
+knowledge to implement those ops and drivers (defining their mei_bus_driver
+structure) should not have that kind of knowledge but rather focus on the
+technology they're driving.
+If we take the NFC example again, the drivers/nfc/ code will send NFC payloads
+to the bus I/O routines and this is where the mei_bus_client ops will add the
+ME specific protocol (command and request id for the NFC block) on top of it.
+In practice, this is an additional header which handles a transport layer that's
+specific not only to the ME but to the NFC block of it. So each ME block can
+have its own protocol to send and receive technology specific payloads, that's
+what those ops implement.
+That's why I think that those ops should not be defined by the drivers/nfc/ code
+and in fact should be opaque to it.
 
-								Honza
+
+> Did I misunderstand what these functions do, or did you misunderstand
+> what I was asking for?
+Probably both. I really thought you were looking for a structure cleanup by
+directly putting the ops into the mei_bus_client structure.
+
+Cheers,
+Samuel.
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Intel Open Source Technology Centre
+http://oss.intel.com/
