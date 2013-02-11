@@ -1,204 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932324Ab3BKUXM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 15:23:12 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:50732 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759705Ab3BKUXL (ORCPT
+	id S1759339Ab3BKUXT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 15:23:19 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:35741 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758539Ab3BKUXR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 15:23:11 -0500
-Date: Mon, 11 Feb 2013 12:17:14 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Arjan van de Veen <arjan@infradead.org>, Paul Turner <pjt@google.com>,
-        Richard Weinberger <rw@linutronix.de>,
-        Magnus Damm <magnus.damm@gmail.com>
-Subject: Re: [patch 08/40] cpu: hotplug: Convert the hotplugged processor
- work to a state machine
-Message-ID: <20130211201714.GX2666@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130131120348.372374706@linutronix.de>
- <20130131120742.037117020@linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130131120742.037117020@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13021120-5406-0000-0000-0000052F0838
+	Mon, 11 Feb 2013 15:23:17 -0500
+Date: Tue, 12 Feb 2013 07:23:14 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Max Filippov <jcmvbkbc@gmail.com>, Shawn Guo <shawn.guo@linaro.org>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] gpio: devm_gpio_* support should not depend on
+ GPIOLIB
+Message-Id: <20130212072314.e956c3ea4d51405ad561418f@canb.auug.org.au>
+In-Reply-To: <CACRpkdbT2eAZR2Ud5f9h0TFsA5M0RpysE9SqMgoL-hcB8fS+Ew@mail.gmail.com>
+References: <20130118140346.3f9b182aa7daa175b4f136bf@canb.auug.org.au>
+	<1358495866-9329-1-git-send-email-shawn.guo@linaro.org>
+	<CACRpkdZA9O6N7hmtU-6R1Ff6hW5vjD_ar9RLG1dbkd+MWyoKiw@mail.gmail.com>
+	<CAMo8BfJ=6WbAHoCpftRHW1iMtG8robyYUEqqCG2SecixDTgC+g@mail.gmail.com>
+	<CACRpkdbT2eAZR2Ud5f9h0TFsA5M0RpysE9SqMgoL-hcB8fS+Ew@mail.gmail.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__12_Feb_2013_07_23_14_+1100_coy9dIYRfR4b0nf7"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 31, 2013 at 12:11:18PM -0000, Thomas Gleixner wrote:
-> Move the functions which need to run on the hotplugged processor into
-> a state machine array and let the code iterate through these functions.
-> 
-> In a later state, this will grow synchronization points between the
-> control processor and the hotplugged processor, so we can move the
-> various architecture implementations of the synchronizations to the
-> core.
-> 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+--Signature=_Tue__12_Feb_2013_07_23_14_+1100_coy9dIYRfR4b0nf7
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Hi Linus,
 
-> ---
->  include/linux/cpuhotplug.h |    4 ++
->  kernel/cpu.c               |   70 +++++++++++++++++++++++++++++++++++----------
->  2 files changed, 59 insertions(+), 15 deletions(-)
-> 
-> Index: linux-2.6/include/linux/cpuhotplug.h
-> ===================================================================
-> --- linux-2.6.orig/include/linux/cpuhotplug.h
-> +++ linux-2.6/include/linux/cpuhotplug.h
-> @@ -7,6 +7,10 @@ enum cpuhp_states {
->  	CPUHP_NOTIFY_PREPARE,
->  	CPUHP_NOTIFY_DEAD,
->  	CPUHP_BRINGUP_CPU,
-> +	CPUHP_AP_OFFLINE,
-> +	CPUHP_AP_NOTIFY_STARTING,
-> +	CPUHP_AP_NOTIFY_DYING,
-> +	CPUHP_AP_MAX,
->  	CPUHP_TEARDOWN_CPU,
->  	CPUHP_PERCPU_THREADS,
->  	CPUHP_NOTIFY_ONLINE,
-> Index: linux-2.6/kernel/cpu.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/cpu.c
-> +++ linux-2.6/kernel/cpu.c
-> @@ -32,6 +32,7 @@ struct cpuhp_step {
->  };
-> 
->  static struct cpuhp_step cpuhp_bp_states[];
-> +static struct cpuhp_step cpuhp_ap_states[];
-> 
->  #ifdef CONFIG_SMP
->  /* Serializes the updates to cpu_online_mask, cpu_present_mask */
-> @@ -216,6 +217,12 @@ static int bringup_cpu(unsigned int cpu)
->  	return 0;
->  }
-> 
-> +static int notify_starting(unsigned int cpu)
-> +{
-> +	cpu_notify(CPU_STARTING, cpu);
-> +	return 0;
-> +}
-> +
->  #ifdef CONFIG_HOTPLUG_CPU
->  EXPORT_SYMBOL(register_cpu_notifier);
-> 
-> @@ -303,17 +310,26 @@ static int notify_down_prepare(unsigned 
->  	return err;
->  }
-> 
-> +static int notify_dying(unsigned int cpu)
-> +{
-> +	cpu_notify(CPU_DYING, cpu);
-> +	return 0;
-> +}
-> +
->  /* Take this CPU down. */
->  static int __ref take_cpu_down(void *_param)
->  {
-> -	int err, cpu = smp_processor_id();
-> +	int step, err, cpu = smp_processor_id();
-> 
->  	/* Ensure this CPU doesn't handle any more interrupts. */
->  	err = __cpu_disable();
->  	if (err < 0)
->  		return err;
-> 
-> -	cpu_notify(CPU_DYING, cpu);
-> +	for (step = CPUHP_AP_MAX; step >= CPUHP_AP_OFFLINE; step--) {
-> +		if (cpuhp_ap_states[step].teardown)
-> +			cpuhp_ap_states[step].teardown(cpu);
-> +	}
->  	/* Park the stopper thread */
->  	kthread_park(current);
->  	return 0;
-> @@ -357,6 +373,7 @@ static int notify_dead(unsigned int cpu)
->  #define notify_down_prepare	NULL
->  #define takedown_cpu		NULL
->  #define notify_dead		NULL
-> +#define notify_dying		NULL
->  #endif
-> 
->  #ifdef CONFIG_HOTPLUG_CPU
-> @@ -429,6 +446,24 @@ out:
->  EXPORT_SYMBOL(cpu_down);
->  #endif /*CONFIG_HOTPLUG_CPU*/
-> 
-> +/**
-> + * notify_cpu_starting(cpu) - call the CPU_STARTING notifiers
-> + * @cpu: cpu that just started
-> + *
-> + * This function calls the cpu_chain notifiers with CPU_STARTING.
-> + * It must be called by the arch code on the new cpu, before the new cpu
-> + * enables interrupts and before the "boot" cpu returns from __cpu_up().
-> + */
-> +void notify_cpu_starting(unsigned int cpu)
-> +{
-> +	int step;
-> +
-> +	for (step = CPUHP_AP_OFFLINE; step <  CPUHP_AP_MAX; step++) {
-> +		if (cpuhp_ap_states[step].startup)
-> +			cpuhp_ap_states[step].startup(cpu);
-> +	}
-> +}
-> +
->  static void undo_cpu_up(unsigned int cpu, int step)
->  {
->  	while (step--) {
-> @@ -703,19 +738,6 @@ core_initcall(cpu_hotplug_pm_sync_init);
-> 
->  #endif /* CONFIG_PM_SLEEP_SMP */
-> 
-> -/**
-> - * notify_cpu_starting(cpu) - call the CPU_STARTING notifiers
-> - * @cpu: cpu that just started
-> - *
-> - * This function calls the cpu_chain notifiers with CPU_STARTING.
-> - * It must be called by the arch code on the new cpu, before the new cpu
-> - * enables interrupts and before the "boot" cpu returns from __cpu_up().
-> - */
-> -void __cpuinit notify_cpu_starting(unsigned int cpu)
-> -{
-> -	cpu_notify(CPU_STARTING, cpu);
-> -}
-> -
->  #endif /* CONFIG_SMP */
-> 
->  /* Boot processor state steps */
-> @@ -764,6 +786,24 @@ static struct cpuhp_step cpuhp_bp_states
->  	},
->  };
-> 
-> +/* Application processor state steps */
-> +static struct cpuhp_step cpuhp_ap_states[] = {
-> +#ifdef CONFIG_SMP
-> +	[CPUHP_AP_NOTIFY_STARTING] = {
-> +		.startup = notify_starting,
-> +		.teardown = NULL,
-> +	},
-> +	[CPUHP_AP_NOTIFY_DYING] = {
-> +		.startup = NULL,
-> +		.teardown = notify_dying,
-> +	},
-> +#endif
-> +	[CPUHP_MAX] = {
-> +		.startup = NULL,
-> +		.teardown = NULL,
-> +	},
-> +};
-> +
->  /*
->   * cpu_bit_bitmap[] is a special, "compressed" data structure that
->   * represents all NR_CPUS bits binary values of 1<<nr.
-> 
-> 
+On Mon, 11 Feb 2013 15:13:20 +0100 Linus Walleij <linus.walleij@linaro.org>=
+ wrote:
+>
+> Max, can you point us to an xtensa cross-compiler so we can
+> figure out where the problem is?
 
+Prebuilt toolchains suitable for building the kernel can be found at
+http://www.kernel.org/pub/tools/crosstool/ .
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__12_Feb_2013_07_23_14_+1100_coy9dIYRfR4b0nf7
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRGVMyAAoJEECxmPOUX5FEqPsP/j1zddaAhdAuLI3IbNXIPEna
+T9s6JrzSbo3atFl+z2HcNBEXBAlJDu/lqIEMoKHC1097/eqz+pQVWKc6ikH4a79z
+48Z63BoIGV8i+zefvsMM8T/gegrwH47Xn68yeNWFxmkSgP4rVvzq46UprA1RBuiC
+VHRq6VgCuYSZBtK9+zLJOQxXOj9MibuylaycGsYF8WBwmQ7SCIv+ETYiZiyC4KuU
+gsLSs5Y01W6mhFqwOoF6sra+4ZY7El711f1b2d39AgK8pVbOiEJE53sjtFs9eSY5
+MMefGePD09wYpw8Ncq2/XE2tP6oTyIS7emGM8dBgz2ohnZ4VwgH/+EpzNmNiGbYq
+XPry+dZjpGu3T+9hWPvPbNCqPI/QI7MQDHNviLo8eRDdOrCRHMz52/rUOZiHWfL1
+BGpP8wwzh7rqj2bbocxKo7EwaGexKt+SPr06t0W1kEWohqiNyx9Zf9PLBb6oPfvI
+pQsSPpPKxFk3xu9NFo3W2Mer08y03+YG2ahmRDIs5I9ELpReuDNEqcAaXEpkbMHI
++rFHRT2S1vy8t4hHSikLwbOy8PxUNQEQDt0cqvngvxPi+ZBUzyqQ+E5FQJs+JEgJ
+TGZgM2uhOt/vbhZabiKugxo3gk+RxBOM0vcvi2NCl0Z6x8fpMjAik76ENE+tBIRv
+LIePONJJcTWR9BcRbXX3
+=jtLd
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__12_Feb_2013_07_23_14_+1100_coy9dIYRfR4b0nf7--
