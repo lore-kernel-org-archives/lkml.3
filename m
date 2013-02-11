@@ -1,222 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754604Ab3BKKw0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 05:52:26 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45630 "EHLO
+	id S1754688Ab3BKKxI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 05:53:08 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45645 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753886Ab3BKKwZ (ORCPT
+	by vger.kernel.org with ESMTP id S1753886Ab3BKKxH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 05:52:25 -0500
-From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: [PATCH] regmap: debugfs: Add a registers `range' file
-Date: Mon, 11 Feb 2013 10:52:23 +0000
-Message-Id: <1360579943-29938-1-git-send-email-dp@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.8.1.3
+	Mon, 11 Feb 2013 05:53:07 -0500
+Date: Mon, 11 Feb 2013 10:53:05 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Shawn Joo <sjoo@nvidia.com>
+Cc: Liam Girdwood <lrg@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: regulator name for regulator core (core.c)
+Message-ID: <20130211105305.GA4607@opensource.wolfsonmicro.com>
+References: <5F2C6DA655B36C43B21C7FB179CEC9F4E4229E54D9@HKMAIL02.nvidia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="y0ulUmNC+osPPQO6"
+Content-Disposition: inline
+In-Reply-To: <5F2C6DA655B36C43B21C7FB179CEC9F4E4229E54D9@HKMAIL02.nvidia.com>
+X-Cookie: It's all in the mind, ya know.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This file lists the register ranges in the register map.  The condition
-to split the range is based on the actual register attributes.  A range
-is a contiguous block of registers with the same register attributes.
 
-Signed-off-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
----
- Hi,
+--y0ulUmNC+osPPQO6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
- This is applied on top of commit fea5ecc
- `regmap: debugfs: Optimize seeking within blocks of registers'
+On Sat, Feb 09, 2013 at 05:15:43AM +0800, Shawn Joo wrote:
+> Resending sine Liam's email is invalid, adding linux-kernel.
+>=20
+> Hi Liam and Mark,
+> Here is commit message for my attached change.
+> Please review it to make easy world, thanks!
 
- drivers/base/regmap/internal.h       |   1 +
- drivers/base/regmap/regmap-debugfs.c | 128 ++++++++++++++++++++++++++++++++++-
- 2 files changed, 128 insertions(+), 1 deletion(-)
+Please follow the process for submitting patches outlined in the kernel
+documentation in Documentation/SubmittingPatches.
 
-diff --git a/drivers/base/regmap/internal.h b/drivers/base/regmap/internal.h
-index 5a22bd3..b4e55a0 100644
---- a/drivers/base/regmap/internal.h
-+++ b/drivers/base/regmap/internal.h
-@@ -27,6 +27,7 @@ struct regmap_debugfs_off_cache {
- 	off_t max;
- 	unsigned int base_reg;
- 	unsigned int max_reg;
-+	unsigned int reg_attr;
- };
- 
- struct regmap_format {
-diff --git a/drivers/base/regmap/regmap-debugfs.c b/drivers/base/regmap/regmap-debugfs.c
-index 78d5f20..fe3b6aa 100644
---- a/drivers/base/regmap/regmap-debugfs.c
-+++ b/drivers/base/regmap/regmap-debugfs.c
-@@ -56,6 +56,26 @@ static const struct file_operations regmap_name_fops = {
- 	.llseek = default_llseek,
- };
- 
-+enum reg_attributes {
-+	READABLE = 0x1,
-+	WRITEABLE = 0x2,
-+	VOLATILE = 0x4,
-+};
-+
-+static inline unsigned int regmap_attr_bitmap(struct regmap *map,
-+					      unsigned int reg)
-+{
-+	unsigned int reg_attr = 0;
-+
-+	if (regmap_readable(map, reg))
-+		reg_attr |= READABLE;
-+	if (regmap_writeable(map, reg))
-+		reg_attr |= WRITEABLE;
-+	if (regmap_volatile(map, reg))
-+		reg_attr |= VOLATILE;
-+	return reg_attr;
-+}
-+
- static void regmap_debugfs_free_dump_cache(struct regmap *map)
- {
- 	struct regmap_debugfs_off_cache *c;
-@@ -98,6 +118,7 @@ static unsigned int regmap_debugfs_get_dump_start(struct regmap *map,
- 					fpos_offset = c->max - c->min;
- 					reg_offset = fpos_offset / map->debugfs_tot_len;
- 					c->max_reg = c->base_reg + reg_offset;
-+					c->reg_attr = regmap_attr_bitmap(map, c->max_reg);
- 					list_add_tail(&c->list,
- 						      &map->debugfs_off_cache);
- 					c = NULL;
-@@ -127,6 +148,7 @@ static unsigned int regmap_debugfs_get_dump_start(struct regmap *map,
- 		fpos_offset = c->max - c->min;
- 		reg_offset = fpos_offset / map->debugfs_tot_len;
- 		c->max_reg = c->base_reg + reg_offset;
-+		c->reg_attr = regmap_attr_bitmap(map, c->max_reg);
- 		list_add_tail(&c->list,
- 			      &map->debugfs_off_cache);
- 	}
-@@ -305,12 +327,113 @@ static ssize_t regmap_range_read_file(struct file *file, char __user *user_buf,
- 				   user_buf, count, ppos);
- }
- 
--static const struct file_operations regmap_range_fops = {
-+static const struct file_operations regmap_reg_ranges_fops = {
- 	.open = simple_open,
- 	.read = regmap_range_read_file,
- 	.llseek = default_llseek,
- };
- 
-+struct regmap_reg_range  {
-+	unsigned int start;
-+	unsigned int end;
-+	unsigned int attr;
-+};
-+
-+static void regmap_range_format_line(struct regmap *map,
-+				     struct regmap_reg_range *r,
-+				     char *buf, size_t len)
-+{
-+	ssize_t buf_offset;
-+
-+	buf_offset = snprintf(buf, PAGE_SIZE, "%x-%x ",
-+			      r->start, r->end);
-+	buf_offset += snprintf(buf + buf_offset,
-+			       PAGE_SIZE - buf_offset, "(");
-+	if (r->attr & READABLE)
-+		buf_offset += snprintf(buf + buf_offset,
-+				       PAGE_SIZE - buf_offset,
-+				       "read, ");
-+	if (r->attr & WRITEABLE)
-+		buf_offset += snprintf(buf + buf_offset,
-+				       PAGE_SIZE - buf_offset,
-+				       "write, ");
-+	if (r->attr & VOLATILE)
-+		buf_offset += snprintf(buf + buf_offset,
-+				       PAGE_SIZE - buf_offset,
-+				       "volatile, ");
-+	/* Rewind the last ", " as well */
-+	buf_offset += snprintf(buf + buf_offset - 2,
-+			       PAGE_SIZE - buf_offset, ")");
-+}
-+
-+static ssize_t regmap_reg_ranges_read_file(struct file *file,
-+					   char __user *user_buf, size_t count,
-+					   loff_t *ppos)
-+{
-+	struct regmap *map = file->private_data;
-+	struct regmap_reg_range r;
-+	struct regmap_debugfs_off_cache *c;
-+	loff_t p = 0;
-+	size_t buf_pos = 0;
-+	char *buf;
-+	char *entry;
-+	int ret;
-+
-+	if (*ppos < 0 || !count)
-+		return -EINVAL;
-+
-+	buf = kmalloc(count, GFP_KERNEL);
-+	if (!buf)
-+		return -ENOMEM;
-+
-+	entry = kmalloc(PAGE_SIZE, GFP_KERNEL);
-+	if (!entry) {
-+		kfree(buf);
-+		return -ENOMEM;
-+	}
-+
-+	regmap_calc_tot_len(map, buf, count);
-+
-+	/* Build up the cache if necessary */
-+	regmap_debugfs_get_dump_start(map, 0, *ppos, &p);
-+	p = 0;
-+	list_for_each_entry(c, &map->debugfs_off_cache, list) {
-+		r.start = c->base_reg;
-+		r.end = c->max_reg;
-+		r.attr = c->reg_attr;
-+		regmap_range_format_line(map, &r, entry, PAGE_SIZE);
-+		if (p >= *ppos) {
-+			if (buf_pos + 1 + strlen(entry) > count)
-+				break;
-+			snprintf(buf + buf_pos, count - buf_pos,
-+				 "%s", entry);
-+			buf_pos += strlen(entry);
-+			buf[buf_pos] = '\n';
-+			buf_pos++;
-+		}
-+		p += strlen(entry) + 1;
-+	}
-+
-+	kfree(entry);
-+	ret = buf_pos;
-+
-+	if (copy_to_user(user_buf, buf, buf_pos)) {
-+		ret = -EFAULT;
-+		goto out_buf;
-+	}
-+
-+	*ppos += buf_pos;
-+out_buf:
-+	kfree(buf);
-+	return ret;
-+}
-+
-+static const struct file_operations regmap_range_fops = {
-+	.open = simple_open,
-+	.read = regmap_reg_ranges_read_file,
-+	.llseek = default_llseek,
-+};
-+
- static ssize_t regmap_access_read_file(struct file *file,
- 				       char __user *user_buf, size_t count,
- 				       loff_t *ppos)
-@@ -403,6 +526,9 @@ void regmap_debugfs_init(struct regmap *map, const char *name)
- 	debugfs_create_file("name", 0400, map->debugfs,
- 			    map, &regmap_name_fops);
- 
-+	debugfs_create_file("range", 0400, map->debugfs,
-+			    map, &regmap_reg_ranges_fops);
-+
- 	if (map->max_register) {
- 		debugfs_create_file("registers", 0400, map->debugfs,
- 				    map, &regmap_map_fops);
--- 
-1.8.1.3
+--y0ulUmNC+osPPQO6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRGM2JAAoJELSic+t+oim9J/sP/1ejJIZXoq+03v2uBty+YSzl
+n9E6UETD0N1r8KM870XxqNI5n2qF5mUJ9PK0H4DKc/eipUJiTGpTjX3bSGGPNOJU
+N442KPHMXK6G23v3DD9dvgPiPwnrnTEI67SFDl0Izm2OMG2Z3ZP9vsEBeRAJczle
+CAxTLSKV6+OoqOPkILnQdUPWFLuXZ2ngQbLAm9Q5VxroGLLX+olGWHAUXalFaP7a
+hndPVvm9VIY3tyGpnkwVuDVDor6VUhVlpiot6lIoI0x5hREen/Hl2thKHweZS+dP
+y8nuFUiMKoOI5oKwY2bXgNvYQv4DdULQ52HyZ5cBa1hI89cQZZF+3x7m8L2/C1Fz
+68dC4jLVN9LWaEyHLCuM52urLd8AqS9vhNO3StF2CiR04T4f177kZa+Z5bz1Q0TP
+KSCCbK+Hbp8NlAfw9hE4ILK2SX+0J4BYyOmJPObTNEH7tq07cYl8Un6Iq/WXf4eV
+2U0PiwVle/SEdIKhpJr9twu6evp7MD7IoXt1aVQqbANTjEzp2tIeD4bxIjEolsd1
+Eoe5fvWx77/HRbzo9SXqj07GqNCdabjrYKPFbNkBsYrs/TH47sdWSFtRrPrV7Y+F
+4Li9VZGLXg+i5dIXrf5ub0yhC0PAwdfx3X414HDUJfHLrJ3shDqEQ1/qGamdS3GB
+KCEoTuYKlKOlllyLGSj8
+=mTWR
+-----END PGP SIGNATURE-----
+
+--y0ulUmNC+osPPQO6--
