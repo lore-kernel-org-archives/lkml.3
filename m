@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759855Ab3BKUoi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 15:44:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18794 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758813Ab3BKUoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 15:44:37 -0500
-Date: Mon, 11 Feb 2013 15:44:14 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "Hatayama, Daisuke" <d.hatayama@jp.fujitsu.com>
-Cc: "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lisa.mitchell@hp.com" <lisa.mitchell@hp.com>,
-        "kumagai-atsushi@mxc.nes.nec.co.jp" 
-	<kumagai-atsushi@mxc.nes.nec.co.jp>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "cpw@sgi.com" <cpw@sgi.com>
-Subject: Re: [PATCH] kdump, oldmem: support mmap on /dev/oldmem
-Message-ID: <20130211204414.GA24936@redhat.com>
-References: <33710E6CAA200E4583255F4FB666C4E20AC36B01@G01JPEXMBYT03>
- <20130205151256.GB12853@redhat.com>
- <33710E6CAA200E4583255F4FB666C4E20AC61B3C@G01JPEXMBYT03>
- <20130207150623.GC6462@redhat.com>
- <33710E6CAA200E4583255F4FB666C4E20AC6735D@G01JPEXMBYT03>
- <33710E6CAA200E4583255F4FB666C4E20AC67384@G01JPEXMBYT03>
+	id S1759901Ab3BKUrj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 15:47:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46256 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758813Ab3BKUrh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 15:47:37 -0500
+Date: Mon, 11 Feb 2013 14:47:29 -0600
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
+To: Aristeu Rozanski <aris@redhat.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>
+Subject: Re: [PATCH v6 9/9] devcg: propagate local changes down the hierarchy
+Message-ID: <20130211204729.GA12224@sergelap>
+References: <20130130171101.060853036@napanee.usersys.redhat.com>
+ <20130130171102.390708521@napanee.usersys.redhat.com>
+ <20130131043839.GA14726@mail.hallyn.com>
+ <20130205183646.GT17632@redhat.com>
+ <20130209040402.GA31942@mail.hallyn.com>
+ <20130211143241.GF30962@redhat.com>
+ <20130211174259.GA18179@mail.hallyn.com>
+ <20130211183847.GG30962@redhat.com>
+ <20130211185239.GA18779@mail.hallyn.com>
+ <20130211190251.GH30962@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <33710E6CAA200E4583255F4FB666C4E20AC67384@G01JPEXMBYT03>
+In-Reply-To: <20130211190251.GH30962@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 08, 2013 at 12:33:49AM +0000, Hatayama, Daisuke wrote:
+Quoting Aristeu Rozanski (aris@redhat.com):
+> On Mon, Feb 11, 2013 at 06:52:39PM +0000, Serge E. Hallyn wrote:
+> > > getting rid of local settings would buy more simplicity
+> > 
+> > (Not sure which you mean here by 'getting rid of local settings')
+> 
+> no local.{behavior,exceptions}, which still would allow behavior
+> propagation, but simply wouldn't keep local behavior or exceptions.
+> a change in behavior on parent would simply reset the child to parent's
 
-[..]
-> Also, remap_pfn_range is the function exported into kernel modules, so changing the third argument means changing ABI. Introducing a kind of remap_pfn_range_64 is a good idea? if there's someone needing the feature on 32-bit kernel.
+Why would that be necessary?  If I add permission to the parent, I just
+don't propagate it.  If I remove permission from the parent, I make sure
+all children don't have that permission, but keep everything else.
+The child's permission is never allowed to exceed its parent's.
 
-I thought kernel does not care about compatibility with out of tree
-modules and any user of in-tree module is updated to use new API. I could
-be wrong though...
+We don't need to reset the child's to the parent's.
 
-Thanks
-Vivek
+> state. exception propagation would mean inserting/removing the new
+> exception and making sure the others are still valid.
+> 
+> -- 
+> Aristeu
+> 
