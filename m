@@ -1,87 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755385Ab3BKLDU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 06:03:20 -0500
-Received: from mga03.intel.com ([143.182.124.21]:54273 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754500Ab3BKLDT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 06:03:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,641,1355126400"; 
-   d="scan'208";a="255369225"
-Date: Mon, 11 Feb 2013 12:03:11 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Tomas Winkler <tomas.winkler@intel.com>, arnd@arndb.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [char-misc-next 02/11 V2] mei: bus: Implement driver registration
-Message-ID: <20130211110311.GM20996@sortiz-mobl>
-References: <1360326504-17041-1-git-send-email-tomas.winkler@intel.com>
- <1360326504-17041-3-git-send-email-tomas.winkler@intel.com>
- <20130208235524.GB24127@kroah.com>
- <20130210033218.GH20996@sortiz-mobl>
- <20130210163623.GB939@kroah.com>
+	id S1755483Ab3BKLDc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 06:03:32 -0500
+Received: from mail-vb0-f41.google.com ([209.85.212.41]:40107 "EHLO
+	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754967Ab3BKLDb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 06:03:31 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130210163623.GB939@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130211102730.GA5318@quack.suse.cz>
+References: <1359668994-13433-1-git-send-email-jack@suse.cz>
+	<1359668994-13433-2-git-send-email-jack@suse.cz>
+	<CANN689ExHJjXvAdYM=eYP_hZFT78SHZb1AbJv6743Q=KjohBVQ@mail.gmail.com>
+	<20130211102730.GA5318@quack.suse.cz>
+Date: Mon, 11 Feb 2013 03:03:30 -0800
+Message-ID: <CANN689G8f2QuROecapFcbcNUggGWv9bTuHSV+k4KBLj=_E7uFg@mail.gmail.com>
+Subject: Re: [PATCH 1/6] lib: Implement range locks
+From: Michel Lespinasse <walken@google.com>
+To: Jan Kara <jack@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 10, 2013 at 08:36:23AM -0800, Greg KH wrote:
-> On Sun, Feb 10, 2013 at 04:32:18AM +0100, Samuel Ortiz wrote:
-> > Hi Greg,
-> > 
-> > On Fri, Feb 08, 2013 at 03:55:24PM -0800, Greg KH wrote:
-> > > On Fri, Feb 08, 2013 at 02:28:15PM +0200, Tomas Winkler wrote:
-> > > > From: Samuel Ortiz <sameo@linux.intel.com>
-> > > > 
-> > > > Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
-> > > > Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-> > > > Acked-by: Arnd Bergmann <arnd@arndb.de>
-> > > > ---
-> > > >  drivers/misc/mei/bus.c  |   29 +++++++++++++++++++++++++++++
-> > > >  include/linux/mei_bus.h |    3 +++
-> > > >  2 files changed, 32 insertions(+), 0 deletions(-)
-> > > > 
-> > > > diff --git a/drivers/misc/mei/bus.c b/drivers/misc/mei/bus.c
-> > > > index bb96423c..0a5e624 100644
-> > > > --- a/drivers/misc/mei/bus.c
-> > > > +++ b/drivers/misc/mei/bus.c
-> > > > @@ -153,3 +153,32 @@ void mei_remove_device(struct mei_bus_client *client)
-> > > >  	device_unregister(&client->dev);
-> > > >  }
-> > > >  EXPORT_SYMBOL(mei_remove_device);
-> > > > +
-> > > > +int mei_driver_register(struct mei_bus_driver *driver)
-> > > > +{
-> > > > +	int err;
-> > > > +
-> > > > +	/* Can't register until after driver model init */
-> > > > +	if (unlikely(WARN_ON(!mei_bus_type.p)))
-> > > > +		return -EAGAIN;
-> > > 
-> > > No, you really don't know what 'p' is, so don't assume you do.  You have
-> > > fields you can test to see if your driver model is up and registered,
-> > > use them instead.  
-> > Unless I'm missing something, I would actually need to track if the bus type
-> > is registered or not from bus.c. I can't find any field from bus_type that
-> > tells me for sure if my bus is registered or not, except for p.
-> > I actually think I don't need that check anyway. IIRC, this is something I
-> > took from i2c-core.c but in the ME case it's most likely not needed.
-> 
-> It's your bus, if you need to check this, then have your own flag, don't
-> poke in the driver core internals.  As you point out, I don't think you
-> need to check this at all.
-Yes, I removed the check. Tomas should sent v3 later today with all your comments
-adressed.
-Thanks for the review.
+On Mon, Feb 11, 2013 at 2:27 AM, Jan Kara <jack@suse.cz> wrote:
+> On Sun 10-02-13 21:42:32, Michel Lespinasse wrote:
+>> On Thu, Jan 31, 2013 at 1:49 PM, Jan Kara <jack@suse.cz> wrote:
+>> > +void range_lock_init(struct range_lock *lock, unsigned long start,
+>> > +                    unsigned long end);
+>> > +void range_lock(struct range_lock_tree *tree, struct range_lock *lock);
+>> > +void range_unlock(struct range_lock_tree *tree, struct range_lock *lock);
+>>
+>> Is there a point to separating the init and lock stages ? maybe the API could be
+>> void range_lock(struct range_lock_tree *tree, struct range_lock *lock,
+>> unsigned long start, unsigned long last);
+>> void range_unlock(struct range_lock_tree *tree, struct range_lock *lock);
+>   I was thinking about this as well. Currently I don't have a place which
+> would make it beneficial to separate _init and _lock but I can imagine such
+> uses (where you don't want to pass the interval information down the stack
+> and it's easier to pass the whole lock structure). Also it looks a bit
+> confusing to pass (tree, lock, start, last) to the locking functon. So I
+> left it there.
+>
+> OTOH I had to somewhat change the API so that the locking phase is now
+> separated in "lock_prep" phase which inserts the node into the tree and
+> counts blocking ranges and "wait" phase which waits for the blocking ranges
+> to unlock. The reason for this split is that while "lock_prep" needs to
+> happen under some lock synchronizing operations on the tree, "wait" phase
+> can be easily lockless. So this allows me to remove the knowledge of how
+> operations on the tree are synchronized from range locking code itself.
+> That further allowed me to use mapping->tree_lock for synchronization and
+> basically reduce the cost of mapping range locking close to 0 for buffered
+> IO (just a single tree lookup in the tree in the fast path).
+
+Ah yes, being able to externalize the lock is good.
+
+I think in this case, it makes the most sense for lock_prep phase to
+also initialize the lock node, though.
+
+>> Reviewed-by: Michel Lespinasse <walken@google.com>
+>   I actually didn't add this because there are some differences in the
+> current version...
+
+Did I miss another posting of yours, or is that coming up ?
 
 Cheers,
-Samuel.
 
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
