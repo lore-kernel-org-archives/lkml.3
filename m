@@ -1,122 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752615Ab3BKG5v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 01:57:51 -0500
-Received: from ozlabs.org ([203.10.76.45]:43429 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751926Ab3BKG5u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 01:57:50 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: sjur.brandeland@stericsson.com, "David S. Miller" <davem@davemloft.net>,
-        Ohad Ben-Cohen <ohad@wizery.com>
-Cc: sjur@brendeland.net, netdev@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        Dmitry Tarnyagin <dmitry.tarnyagin@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Erwan Yvin <erwan.yvin@stericsson.com>,
-        Vikram ARV <vikram.arv@stericsson.com>,
-        Sjur =?utf-8?Q?Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>,
-        Ido Yariv <ido@wizery.com>
-Subject: Re: [PATCH vringh 2/2] caif_virtio: Introduce caif over virtio
-In-Reply-To: <1360494273-27889-3-git-send-email-sjur.brandeland@stericsson.com>
-References: <1360494273-27889-1-git-send-email-sjur.brandeland@stericsson.com> <1360494273-27889-3-git-send-email-sjur.brandeland@stericsson.com>
-User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Mon, 11 Feb 2013 17:27:43 +1030
-Message-ID: <87vc9zfic8.fsf@rustcorp.com.au>
+	id S1752658Ab3BKHGR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 02:06:17 -0500
+Received: from mysmtp1.stec-inc.com ([1.9.68.9]:40296 "HELO
+	mysmtp1.stec-inc.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752456Ab3BKHGQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 02:06:16 -0500
+X-ASG-Debug-ID: 1360566371-053ea90dcf26dba0001-xx1T2L
+X-Barracuda-Envelope-From: akale@stec-inc.com
+X-Barracuda-RBL-Trusted-Forwarder: 172.30.0.57
+From: Amit Kale <akale@stec-inc.com>
+X-Barracuda-BWL-IP: fe80::64e7:ed5b:e6f9:c391
+X-Barracuda-Apparent-Source-IP: fe80::64e7:ed5b:e6f9:c391
+To: Joseph Glanville <joseph.glanville@orionvm.com.au>
+CC: Kent Overstreet <koverstreet@google.com>,
+        Michel Lespinasse <walken@google.com>,
+        "Darrick J. Wong" <darrick.wong@oracle.com>,
+        linux-bcache <linux-bcache@vger.kernel.org>,
+        device-mapper development <dm-devel@redhat.com>,
+        Kent Overstreet <kent.overstreet@gmail.com>,
+        Mike Snitzer <snitzer@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Jason Warr <jason@warr.net>,
+        "thornber@redhat.com" <thornber@redhat.com>
+Date: Mon, 11 Feb 2013 15:04:18 +0800
+Subject: RE: [RFC] [DONOTAPPLY] [PATCH] enhanceio: STEC EnhanceIO SSD
+ caching software for Linux kernel
+Thread-Topic: [RFC] [DONOTAPPLY] [PATCH] enhanceio: STEC EnhanceIO SSD
+ caching software for Linux kernel
+X-ASG-Orig-Subj: RE: [RFC] [DONOTAPPLY] [PATCH] enhanceio: STEC EnhanceIO SSD
+ caching software for Linux kernel
+Thread-Index: Ac4GpRAK7LxkJk7/TsGke2cVnouIoQBgLqmA
+Message-ID: <C4B5704C6FEB5244B2A1BCC8CF83B86B0A624D6879@MYMBX.MY.STEC-INC.AD>
+References: <20130202004459.GA4760@blackbox.djwong.org>
+	<CANN689ExTyhZBiQ-pg3jw+sA4X459qcy3kpt82n3obJ=9AVceQ@mail.gmail.com>
+	<C4B5704C6FEB5244B2A1BCC8CF83B86B0A624D66FE@MYMBX.MY.STEC-INC.AD>
+	<20130207000045.GE27179@google.com>
+	<C4B5704C6FEB5244B2A1BCC8CF83B86B0A624D6719@MYMBX.MY.STEC-INC.AD>
+ <CAOzFzEhPWNmYEr8wzjV4YLjGo_JrSwVJkL9144qaiNfc1gLoyw@mail.gmail.com>
+In-Reply-To: <CAOzFzEhPWNmYEr8wzjV4YLjGo_JrSwVJkL9144qaiNfc1gLoyw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+X-Barracuda-Connect: mycas01.my.stec-inc.ad[172.30.0.57]
+X-Barracuda-Start-Time: 1360566371
+X-Barracuda-URL: http://myspam1.stec-inc.com:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.122350
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sjur.brandeland@stericsson.com writes:
-> From: Vikram ARV <vikram.arv@stericsson.com>
->
-> Add the the Virtio shared memory driver for STE Modems.
-> caif_virtio is implemented utilizing the virtio framework
-> for data transport and is managed with the remoteproc frameworks.
->
-> The Virtio queue is used for transmitting data to the modem, and
-> the new vringh implementation is receiving data over the vring.
+> -----Original Message-----
+> From: Joseph Glanville [mailto:joseph.glanville@orionvm.com.au]
+> Sent: Saturday, February 09, 2013 1:10 AM
+> To: Amit Kale
+> Cc: Kent Overstreet; Michel Lespinasse; Darrick J. Wong; linux-bcache;
+> device-mapper development; Kent Overstreet; Mike Snitzer; LKML; Jason
+> Warr; thornber@redhat.com
+> Subject: Re: [RFC] [DONOTAPPLY] [PATCH] enhanceio: STEC EnhanceIO SSD
+> caching software for Linux kernel
+> 
+> On 7 February 2013 12:54, Amit Kale <akale@stec-inc.com> wrote:
+> >> -----Original Message-----
+> >> From: Kent Overstreet [mailto:koverstreet@google.com]
+> >> Sent: Wednesday, February 06, 2013 4:01 PM
+> >> To: Amit Kale
+> >> Cc: Michel Lespinasse; Darrick J. Wong; linux-bcache; device-mapper
+> >> development; Kent Overstreet; Mike Snitzer; LKML; Jason Warr;
+> >> thornber@redhat.com
+> >> Subject: Re: [RFC] [DONOTAPPLY] [PATCH] enhanceio: STEC EnhanceIO
+> SSD
+> >> caching software for Linux kernel
+> >>
+> >> On Thu, Feb 07, 2013 at 06:57:40AM +0800, Amit Kale wrote:
+> >> > > -----Original Message-----
+> >> > > From: Michel Lespinasse [mailto:walken@google.com]
+> >> > > Sent: Friday, February 01, 2013 4:58 PM
+> >> > > To: Darrick J. Wong
+> >> > > Cc: Amit Kale; linux-bcache; device-mapper development; Kent
+> >> > > Overstreet; Mike Snitzer; LKML; Jason Warr; thornber@redhat.com
+> >> > > Subject: Re: [RFC] [DONOTAPPLY] [PATCH] enhanceio: STEC
+> EnhanceIO
+> >> > > SSD caching software for Linux kernel
+> >> > >
+> >> > > On Fri, Feb 1, 2013 at 4:44 PM, Darrick J. Wong
+> >> > > <darrick.wong@oracle.com> wrote:
+> >> > > > This is a patch to migrate STEC's enhanceio driver out of
+> their
+> >> > > github
+> >> > > > repository and into the staging tree.  From their README:
+> >> > > >
+> >> > > > "EnhanceIO driver is based on EnhanceIO SSD caching software
+> >> > > > product developed by STEC Inc. EnhanceIO was derived from
+> >> > > > Facebook's open source Flashcache project. EnhanceIO uses SSDs
+> >> > > > as cache devices for traditional rotating hard disk drives
+> >> > > > (referred to as source volumes
+> >> > > throughout this document).
+> >> > > > EnhanceIO can work with any block device, be it an entire
+> >> physical
+> >> > > > disk, an individual disk partition,  a RAIDed DAS device, a
+> SAN
+> >> > > > volume, a device mapper volume or a software RAID (md)
+> device."
+> >> > >
+> >> > > What's your take on the benefits of this vs bcache ?
+> >> >
+> >> > EnhanceIO was designed for and has been validated in enterprise
+> >> > environments. The important benefits are - 1. There is no downtime
+> >> for cache creation, deletion, editing properties,
+> >> writeback/readonly/writethrough mode change.
+> >>
+> >> True of bcache.
+> >>
+> >> > 2. Wb mode comes with an option to control whether dirty data
+> >> > should
+> >> be clean-up across reboots, which prevents SSD/HDD going out of
+> sync.
+> >>
+> >> No idea why you'd want this. You have to be able to handle a
+> >> rebooting with a dirty cache, if you hope to handle unclean shutdown
+> >> - bcache does this. And if you're running in writeback mode there's
+> >> probably going to be many gigabytes of dirty data in your cache, at
+> >> least sometimes, and you aren't going to want to wait for that to
+> >> flush before you reboot.
+> >>
+> >> If you want to flush dirty data with bcache, you can switch back to
+> >> writethrough mode whenever you want.
+> >
+> > We have two modes of operation with writeback
+> >
+> > 1. Warm restart mode (default) - Reboots are quick. Dirty data is
+> kept as it is across reboots. So is clean data. Abrupt reboots are
+> handled correctly by throwing away clean data and retaining dirty data.
+> The throwing away clean data is a fallout of an optimization done to
+> skip metadata updates for clean data.
+> >
+> > 2. Cold restart mode - A reboot or a shutdown involves clean-up of
+> dirty data. This is for paranoid sysads who are afraid that iSCSI HDD
+> setup may cause them to be reattached. Switching to writethrough mode
+> will achieve the same thing, however with a persistent cache
+> configuration in place, the cache will be write-through after a reboot.
+> 
+> How does Enhance-IO prevent mounting of the backing device if the cache
+> device doesn't show up due to failure etc?
+> I was reviewing the setup/tear-down code but I couldn't find where EIO
+> writes any superblock etc to the backing device to prevent udev etc
+> from mounting the filesystem.
 
-OK, let's refine vringh now we can see another user:
+EnhanceIO kernel driver doesn't do anything to prevent it. User level scripts have to do that. Kindly check the documentation for an example of how to do this using udev. We have tested several failure scenarios and udev scripts to handle them correctly.
 
-> + * @head: Last descriptor ID we received from vringh_getdesc_kern.
-> + *	  We use this to put descriptor back on the used ring. USHRT_MAX is
-> + *	  used to indicate invalid head-id.
+-Amit
 
-> + */
-> +struct cfv_napi_context {
-> +	struct vringh_kiov riov;
-> +	unsigned short head;
-> +};
+> 
+> >
+> > I am happy to see bcache being compliant with the rest of the items I
+> had noted.
+> >
+> > -Amit
+> >
+> >>
+> >> > 3. Our in-house testing was done for large setups with 500GB+SSDs
+> >> > and
+> >> proportionately large HDDs, on 24CPU machines with plenty of RAM.
+> >> It's survived heavy IO loads without any locking or corruption
+> problems.
+> >>
+> >> True of bcache.
+> >>
+> >> > 4. Error handling is exactly what enterprises look for -
+> >> writethrough/readonly modes work seamlessly regardless of SSD
+> failures.
+> >> In all the three caching modes, the guarantees of completion in
+> >> presence of IO errors or shutdowns, in terms of granularity and
+> >> persistence of data written, is identical to underlying HDDs.
+> >>
+> >> True of bcache.
+> >>
+> >> > 5. It works for all known block devices - Software RAIDs, full
+> >> > block
+> >> devices with or without partitions, individual partitions, various
+> >> intelligent block devices.
+> >>
+> >> True of bcache.
+> >>
+> >> > -Amit
+> >> >
+> >> > PROPRIETARY-CONFIDENTIAL INFORMATION INCLUDED
+> >> >
+> >> > This electronic transmission, and any documents attached hereto,
+> >> > may
+> >> contain confidential, proprietary and/or legally privileged
+> >> information. The information is intended only for use by the
+> >> recipient named above. If you received this electronic message in
+> >> error, please notify the sender and delete the electronic message.
+> >> Any disclosure, copying, distribution, or use of the contents of
+> >> information received in error is strictly prohibited, and violators
+> will be pursued legally.
+> >>
+> >> Which of the above information was proprietary, and should I not be
+> >> resending this to lkml or - who?
+> >>
+> >> ...
+> >
+> > PROPRIETARY-CONFIDENTIAL INFORMATION INCLUDED
+> >
+> > This electronic transmission, and any documents attached hereto, may
+> contain confidential, proprietary and/or legally privileged
+> information. The information is intended only for use by the recipient
+> named above. If you received this electronic message in error, please
+> notify the sender and delete the electronic message. Any disclosure,
+> copying, distribution, or use of the contents of information received
+> in error is strictly prohibited, and violators will be pursued legally.
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe
+> > linux-bcache" in the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
+> 
+> --
+> CTO | Orion Virtualisation Solutions | www.orionvm.com.au
+> Phone: 1300 56 99 52 | Mobile: 0428 754 846
 
-Usually we use an int, and -1.  I imagine it'll take no more space,
-due to padding.
+PROPRIETARY-CONFIDENTIAL INFORMATION INCLUDED
 
-> +static inline void ctx_prep_iov(struct cfv_napi_context *ctx)
-> +{
-> +	if (ctx->riov.allocated) {
-> +		kfree(ctx->riov.iov);
-> +		ctx->riov.iov = NULL;
-> +		ctx->riov.allocated = false;
-> +	}
-> +	ctx->riov.iov = NULL;
-> +	ctx->riov.i = 0;
-> +	ctx->riov.max = 0;
-> +}
 
-Hmm, we should probably make sure you don't have to do this: that if
-allocated once, you can simply reuse it by setting i = 0.
 
-(This requires some care in the error handling paths, so we don't
-free it from under you)...
-
-And you probably want to free this up in cfv_remove() instead?
-
-I'll create and test a patch now.
-
-> +		if (riov->i == riov->max) {
-> +			if (cfv->ctx.head != USHRT_MAX) {
-> +				vringh_complete_kern(cfv->vr_rx,
-> +						     cfv->ctx.head,
-> +						     0);
-> +				cfv->ctx.head = USHRT_MAX;
-> +			}
-> +
-> +			ctx_prep_iov(&cfv->ctx);
-> +			err = vringh_getdesc_kern(
-> +				cfv->vr_rx,
-> +				riov,
-> +				&wiov,
-> +				&cfv->ctx.head,
-> +				GFP_ATOMIC);
-> +
-> +			if (err <= 0)
-> +				goto out;
-> +
-> +			if (wiov.max != 0) {
-> +				/* CAIF does not use write descriptors */
-> +				err = -EPROTO;
-> +				goto out;
-> +			}
-
-This is probably a common case, so we should generate this error inside
-vringh_getdesc (if wiov is NULL).
-
-I'll do that too...
-
-> +module_driver(caif_virtio_driver, register_virtio_driver,
-> +	      unregister_virtio_driver);
-> +MODULE_DEVICE_TABLE(virtio, id_table);
-
-The comment on module_driver says:
-
- * Use this macro to construct bus specific macros for registering
- * drivers, and do not use it on its own.
-
-Want to send me a patch to define module_virtio_driver?
-
-Thanks!
-Rusty.
+This electronic transmission, and any documents attached hereto, may contain confidential, proprietary and/or legally privileged information. The information is intended only for use by the recipient named above. If you received this electronic message in error, please notify the sender and delete the electronic message. Any disclosure, copying, distribution, or use of the contents of information received in error is strictly prohibited, and violators will be pursued legally.
