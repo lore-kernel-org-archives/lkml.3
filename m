@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756035Ab3BKLqS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 06:46:18 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:36570 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755886Ab3BKLqQ convert rfc822-to-8bit (ORCPT
+	id S1756144Ab3BKLuf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 06:50:35 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:50459 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755883Ab3BKLue (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 06:46:16 -0500
-Date: Mon, 11 Feb 2013 11:46:11 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Roger Quadros <rogerq@ti.com>
-Cc: "tony@atomide.com" <tony@atomide.com>,
-        "b-cousson@ti.com" <b-cousson@ti.com>, "balbi@ti.com" <balbi@ti.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "kishon@ti.com" <kishon@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 07/14] USB: ohci-omap3: Add device tree support and
- binding information
-Message-ID: <20130211114611.GB2726@e106331-lin.cambridge.arm.com>
-References: <1360252974-7912-1-git-send-email-rogerq@ti.com>
- <1360252974-7912-8-git-send-email-rogerq@ti.com>
+	Mon, 11 Feb 2013 06:50:34 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [char-misc-next 01/11 V2] mei: bus: Initial MEI bus type implementation
+Date: Mon, 11 Feb 2013 11:50:26 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-5-generic; KDE/4.3.2; x86_64; ; )
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Tomas Winkler <tomas.winkler@intel.com>, linux-kernel@vger.kernel.org
+References: <1360326504-17041-1-git-send-email-tomas.winkler@intel.com> <20130208235341.GA24127@kroah.com> <20130210032555.GG20996@sortiz-mobl>
+In-Reply-To: <20130210032555.GG20996@sortiz-mobl>
 MIME-Version: 1.0
-In-Reply-To: <1360252974-7912-8-git-send-email-rogerq@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 11 Feb 2013 11:46:12.0381 (UTC) FILETIME=[6403FCD0:01CE084D]
-X-MC-Unique: 113021111461500401
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302111150.26785.arnd@arndb.de>
+X-Provags-ID: V02:K0:BBuKSYaFbTZS5UITAJLeCLQWM1lSKIaJe1Ccc7N7k9k
+ DxNI8FwnhCoPFpTEI8ms5ftrw2j7hLaoY/jMRoZs7rYXDvl/5O
+ D6K7tah6thu3od+wO0Fsk2XN1N4xGAeL5dzr3ax2Rhcn1uUk10
+ yXJxwStUN9HBUrEKK7GP6G0+9YDQkNDxdakwvEehYl2iN0jpmW
+ fvUccG53E7ETElXbYltcNrZQT+a/R0iaZ6ysFQBiPmKzP5kMNi
+ ZnTPJKy9C/Kx0vy88EcqNkHKb9Ug5lng+sS7vshhhWyzHZEfrq
+ i7eM8dhTY1IrDagmORKOH+HecxuGhn4PeMS5groL7m6zqhIWVI
+ yQ53xBpZhHmebWNfUjnM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 07, 2013 at 04:02:47PM +0000, Roger Quadros wrote:
-> Allows the OHCI controller found in OMAP3 and later chips to
-> be specified via device tree.
-> 
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> Acked-by: Alan Stern <stern@rowland.harvard.edu>
-> ---
->  .../devicetree/bindings/usb/omap3-ohci.txt         |   17 +++++++++++++++++
->  drivers/usb/host/ohci-omap3.c                      |   19 +++++++++++++++++++
->  2 files changed, 36 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/usb/omap3-ohci.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/usb/omap3-ohci.txt b/Documentation/devicetree/bindings/usb/omap3-ohci.txt
-> new file mode 100644
-> index 0000000..ad2ace0
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/usb/omap3-ohci.txt
-> @@ -0,0 +1,17 @@
-> +OMAP HS USB OHCI controller (OMAP3 and later)
-> +
-> +Required properties:
-> +
-> +- compatible: should be "ti,ohci-omap3"
-> +- reg: should contain one register range i.e. start and length
-> +- interrupt-parent: phandle to the interrupt controller
+On Sunday 10 February 2013, Samuel Ortiz wrote:
+> > >  
+> > >  /**
+> > > + * mei_bus_client
+> > 
+> > I don't really understand this structure, please explain it better.
+> This is a structure that links the MEI bus client pointer passed to the driver
+> with the actual ME client. It also allows the ME driver to implement
+> technology specific ME protocol through the send/recv hooks.
 
-I'm not sure that needs to be documented as a required property. It's a
-standard property, and if it's defined for the parent node, you won't need it
-here.
+I think part of the confusion is that this is what in other subsystems
+is called a device, not a client. I believe I'm still confused in the
+same way that Greg is.
 
-Otherwise, this looks fine to me.
+You already have a 'struct mei_device', which refers to the PCI device
+that owns the bus, and has clients attached to it. While it may be
+a little confusing to people that already worked with the current
+mei code, I think it would help to rename the existing 'mei_device'
+to 'mei_host' or something else that feels appropriate, and introduce
+the new structure as 'mei_device' derived from 'struct device', again
+matching what most other subsystems do.
 
-Thanks,
-Mark.
+Similarly, you can then rename 'mei_bus_driver' to 'mei_driver' to fit
+that logic, since I would consider a 'bus_driver' to be something
+that is responsible for the entire bus, not just for one device.
 
+	Arnd
