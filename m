@@ -1,101 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753876Ab3BKImu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 03:42:50 -0500
-Received: from us01smtp3.synopsys.com ([198.182.44.81]:57869 "EHLO
-	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750915Ab3BKIms (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 03:42:48 -0500
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Grant Likely <grant.likely@secretlab.ca>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-serial@vger.kernel.org>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] serial/arc-uart: Miscll DT related updates (Grant's review comments)
-Date: Mon, 11 Feb 2013 14:11:41 +0530
-Message-ID: <1360572101-12744-2-git-send-email-vgupta@synopsys.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1360572101-12744-1-git-send-email-vgupta@synopsys.com>
-References: <201302090928.43929.arnd@arndb.de>
- <1360572101-12744-1-git-send-email-vgupta@synopsys.com>
+	id S1754041Ab3BKImy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 03:42:54 -0500
+Received: from ra.se.axis.com ([195.60.68.13]:35788 "EHLO ra.se.axis.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750915Ab3BKImv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 03:42:51 -0500
+Date: Mon, 11 Feb 2013 09:42:48 +0100
+From: Jesper Nilsson <jesper.nilsson@axis.com>
+To: Len Brown <lenb@kernel.org>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Len Brown <len.brown@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-cris-kernel <linux-cris-kernel@axis.com>
+Subject: Re: [PATCH 08/16] cris idle: delete idle and pm_idle
+Message-ID: <20130211084248.GY23529@axis.com>
+References: <2b219d07e0f287c2c713f5465fc8646158fa986e.1360475150.git.len.brown@intel.com>
+ <128d290dacc38d1a3d09031018adf017eec0b5f2.1360475150.git.len.brown@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.12.197.43]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <128d290dacc38d1a3d09031018adf017eec0b5f2.1360475150.git.len.brown@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
--replace "baud" with "current-speed"
--if uart alias doesn't exist in DT, don't abort, pick 0
+On Sun, Feb 10, 2013 at 06:58:15AM +0100, Len Brown wrote:
+> From: Len Brown <len.brown@intel.com>
+> 
+> pm_idle() and idle() served no purpose on cris --
+> invoke default_idle() directly.
+> 
+> Signed-off-by: Len Brown <len.brown@intel.com>
+> Cc: linux-cris-kernel@axis.com
 
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: devicetree-discuss@lists.ozlabs.org
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Rob Landley <rob@landley.net>
-Cc: linux-serial@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- .../devicetree/bindings/tty/serial/arc-uart.txt    |    4 ++--
- drivers/tty/serial/arc_uart.c                      |   10 ++++------
- 2 files changed, 6 insertions(+), 8 deletions(-)
+Looks good!
 
-diff --git a/Documentation/devicetree/bindings/tty/serial/arc-uart.txt b/Documentation/devicetree/bindings/tty/serial/arc-uart.txt
-index c3bd8f9..5cae2eb 100644
---- a/Documentation/devicetree/bindings/tty/serial/arc-uart.txt
-+++ b/Documentation/devicetree/bindings/tty/serial/arc-uart.txt
-@@ -5,7 +5,7 @@ Required properties:
- - reg			: offset and length of the register set for the device.
- - interrupts		: device interrupt
- - clock-frequency	: the input clock frequency for the UART
--- baud			: baud rate for UART
-+- current-speed		: baud rate for UART
- 
- e.g.
- 
-@@ -14,7 +14,7 @@ arcuart0: serial@c0fc1000 {
- 	reg = <0xc0fc1000 0x100>;
- 	interrupts = <5>;
- 	clock-frequency = <80000000>;
--	baud = <115200>;
-+	current-speed = <115200>;
- 	status = "okay";
- };
- 
-diff --git a/drivers/tty/serial/arc_uart.c b/drivers/tty/serial/arc_uart.c
-index 6f7eadc..d97e194 100644
---- a/drivers/tty/serial/arc_uart.c
-+++ b/drivers/tty/serial/arc_uart.c
-@@ -547,8 +547,8 @@ arc_uart_init_one(struct platform_device *pdev, int dev_id)
- 		}
- 		uart->port.uartclk = val;
- 
--		if (of_property_read_u32(np, "baud", &val)) {
--			dev_err(&pdev->dev, "baud property NOT set\n");
-+		if (of_property_read_u32(np, "current-speed", &val)) {
-+			dev_err(&pdev->dev, "current-speed property NOT set\n");
- 			return -EINVAL;
- 		}
- 		uart->baud = val;
-@@ -694,10 +694,8 @@ static int arc_serial_probe(struct platform_device *pdev)
- 		return -ENODEV;
- 
- 	dev_id = of_alias_get_id(np, "serial");
--	if (dev_id < 0) {
--		dev_err(&pdev->dev, "failed to get alias id: %d\n", dev_id);
--		return dev_id;
--	}
-+	if (dev_id < 0)
-+		dev_id = 0;
- 
- 	rc = arc_uart_init_one(pdev, dev_id);
- 	if (rc)
+Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
+
+> ---
+>  arch/cris/kernel/process.c | 11 +----------
+>  1 file changed, 1 insertion(+), 10 deletions(-)
+> 
+> diff --git a/arch/cris/kernel/process.c b/arch/cris/kernel/process.c
+> index 7f65be6..104ff4d 100644
+> --- a/arch/cris/kernel/process.c
+> +++ b/arch/cris/kernel/process.c
+> @@ -54,11 +54,6 @@ void enable_hlt(void)
+>  
+>  EXPORT_SYMBOL(enable_hlt);
+>   
+> -/*
+> - * The following aren't currently used.
+> - */
+> -void (*pm_idle)(void);
+> -
+>  extern void default_idle(void);
+>  
+>  void (*pm_power_off)(void);
+> @@ -77,16 +72,12 @@ void cpu_idle (void)
+>  	while (1) {
+>  		rcu_idle_enter();
+>  		while (!need_resched()) {
+> -			void (*idle)(void);
+>  			/*
+>  			 * Mark this as an RCU critical section so that
+>  			 * synchronize_kernel() in the unload path waits
+>  			 * for our completion.
+>  			 */
+> -			idle = pm_idle;
+> -			if (!idle)
+> -				idle = default_idle;
+> -			idle();
+> +			default_idle();
+>  		}
+>  		rcu_idle_exit();
+>  		schedule_preempt_disabled();
+> -- 
+> 1.8.1.3.535.ga923c31
+
+/^JN - Jesper Nilsson
 -- 
-1.7.4.1
-
+               Jesper Nilsson -- jesper.nilsson@axis.com
