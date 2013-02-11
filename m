@@ -1,64 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758764Ab3BKSQb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 13:16:31 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:48515 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758621Ab3BKSQa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 13:16:30 -0500
-Date: Mon, 11 Feb 2013 10:16:27 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Cc: linux-kernel@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH 2/2] zram: gather statistics in a unique file
-Message-ID: <20130211181627.GA21390@kroah.com>
-References: <1360556946.4204.5.camel@buesod1.americas.hpqcorp.net>
- <20130211054117.GA31340@kroah.com>
- <1360606065.4204.10.camel@buesod1.americas.hpqcorp.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360606065.4204.10.camel@buesod1.americas.hpqcorp.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758794Ab3BKSTX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 13:19:23 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:39180 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758748Ab3BKSTV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 13:19:21 -0500
+Message-ID: <1360606760.2028.34.camel@joe-AO722>
+Subject: Re: [PATCH V2] MAINTAINERS: add keyword "tegra" to Tegra section
+From: Joe Perches <joe@perches.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: arm@kernel.org, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>
+Date: Mon, 11 Feb 2013 10:19:20 -0800
+In-Reply-To: <51193476.8020509@wwwdotorg.org>
+References: <1360605099-7088-1-git-send-email-swarren@wwwdotorg.org>
+	 <1360605395.2028.28.camel@joe-AO722> <511931E8.3080802@wwwdotorg.org>
+	 <1360605873.2028.30.camel@joe-AO722> <51193476.8020509@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 11, 2013 at 10:07:45AM -0800, Davidlohr Bueso wrote:
-> On Sun, 2013-02-10 at 21:41 -0800, Greg Kroah-Hartman wrote:
-> > On Sun, Feb 10, 2013 at 08:29:06PM -0800, Davidlohr Bueso wrote:
-> > > Instead of having one sysfs file per zram statistic, group them all
-> > > in a single, reader-friendly, 'statistics' file. This not only reduces
-> > > code but is also makes it easier to visualize. The new file looks like:
-> > > 
-> > > Number of reads:        24
-> > > Number of writes:       1055
-> > > Invalid IO:             0
-> > > Notify free:            0
-> > > Zero pages:             1042
-> > > Orig data size:         49152 bytes
-> > > Compressed data:        838 bytes
-> > > Total memory used:      53248 bytes
-> > > 
-> > > Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
-> > 
-> > No, please, the rule for sysfs is "one value per file", not files with
-> > lots of data that you need to parse.
+On Mon, 2013-02-11 at 11:12 -0700, Stephen Warren wrote:
+> On 02/11/2013 11:04 AM, Joe Perches wrote:
+> > ./scripts/get_maintainer.pl -f arch/arm/mach-tegra
+> > wouldn't match anything.
 > 
-> Ok.
+> That's annoying; it kinda defeats the whole purpose of this patch then.
 > 
-> > 
-> > If you want to do something like this, then do it in debugfs, but NEVER
-> > in sysfs.
-> 
-> So, you would you be open to having the statistics file in debugfs and
-> removing the individual files sysfs?
+> The way this patch works out with a patch is because the file-names are
+> matched against the keywords since they appear in the patch. A solution
+> to the issue you raise would be to do the same in -f mode, by adding an
+> explicit pass to check the filenames that are found against MAINTAINERS
+> too. Do you have any objection to that?
 
-If these are merely debugging information, they should go to debugfs.
-If they are something that all users need/want, they should stay in
-sysfs as-is.
+Knock yourself out.
 
-thanks,
+Are there any tegra related files that would not
+have tegra in the path?
 
-greg k-h
+
