@@ -1,46 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758135Ab3BKQ5H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 11:57:07 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37508 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757893Ab3BKQ5F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 11:57:05 -0500
-Message-ID: <511922A5.4020208@zytor.com>
-Date: Mon, 11 Feb 2013 08:56:05 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1757761Ab3BKRF2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 12:05:28 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58316 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757640Ab3BKRF1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 12:05:27 -0500
+Date: Mon, 11 Feb 2013 17:05:25 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: J Keerthy <j-keerthy@ti.com>
+Cc: linux-kernel@vger.kernel.org, lgirdwood@gmail.com
+Subject: Re: [PATCH V2] Regulator: Reorder the min max assignment in the
+ sequence of regulator_set_voltage function
+Message-ID: <20130211170525.GK4607@opensource.wolfsonmicro.com>
+References: <1360565374-1553-1-git-send-email-j-keerthy@ti.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH 0/4 -v3]  x86, head_32: Some cleanups
-References: <1360592538-10643-1-git-send-email-bp@alien8.de>
-In-Reply-To: <1360592538-10643-1-git-send-email-bp@alien8.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="IJAclU0AInkryoed"
+Content-Disposition: inline
+In-Reply-To: <1360565374-1553-1-git-send-email-j-keerthy@ti.com>
+X-Cookie: It's all in the mind, ya know.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2013 06:22 AM, Borislav Petkov wrote:
-> From: Borislav Petkov <bp@suse.de>
->
-> Hi,
->
-> this is the new version with patch 5 from the old transformed into an
-> expanded, more verbose comment at the beginning of default_entry. No
-> changes otherwise.
->
 
-By the way, I like the series.  I do think we should try to keep the 
-current "best effort" support for hetero systems (they do happen, I see 
-them every now and then in the field), but other than that this is a 
-nice cleanup.
+--IJAclU0AInkryoed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-	-hpa
+On Mon, Feb 11, 2013 at 12:19:34PM +0530, J Keerthy wrote:
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+> The min and max values for regulators are getting assigned before actually
+> the voltage is set. So making sure that min and max values are assigned
+> only if the voltage is successfully set else keeping the last successfully
+> set voltage's min and max values.
 
+> This is boot tested on OMAP4430 and OMAP4460 boards.
+
+This seems fine but doesn't apply against topic/core or -next, can you
+please regenerate against topic/core and resend?
+
+> V2: Fixed comment from Mark. Introduced local variables to hold current
+> min and max values.
+
+Don't include things like this in the changelog, include them after the
+--- as covered in SubmittingPatches.
+
+--IJAclU0AInkryoed
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRGSTOAAoJELSic+t+oim9rZwQAJfAeRakCk18Qkni8yvvWS9r
+FG07wtIsjY9iV09Nn2K6KrbYi07WmYr3zTuhDxKRjYicgqmM+dic8ik0coglyFMG
+KhVp/1Lg/dNXG9aS3z0WU/8XkhdOwro5+bjrqAxPBfZMRFAHwrAe0GUbxbFn2TnX
+AD/bWj5LLrXM0RKjEuScUn8HRlzgz043aVcSMGgJ74qF+6NBu78ro0k/6VGqcxP4
+5RZ71r46G4crvEQr8L5bxJB8icOCH6XUKYiUU/8FQQ245Da3F3OctOX2oy7ZBb5M
+1W4pWyjZ1zdU0pxYga9155v/z5HyBxnHiexcG2cgPYpngw20kMHo1llPu/pUoaAE
+y2tcr/PH3obYqSFm99kD7yd3sbLndg97qmMV3EESEue5jdAI1WUYqB0xDBUc/PKL
+lz4lq01j2VoOYlUfYqpAjXRraWVu9tX4MrFI/h11VLs1/4ya7ZGFLWzE83wez8VC
+SWdRRJSQx292pNYdSKzczFd6URSFDpZ5kS+fvKjA9/EjbPoqBdicnDhGRkkZyFQS
+S8M9yqWnnqc1O6PXJ2Idtz+DoXCPD2Z51sZQnVdDltQiL3DYb571C8WO0n+GN+yh
+gtrFaMcYXWWm60lTLdClGrx1L8g+MRZHZElwG7oa7M1cArHUDZLbDpzhsf867PVX
+DLrvHY/lKD2reQ/K1Rxv
+=34v2
+-----END PGP SIGNATURE-----
+
+--IJAclU0AInkryoed--
