@@ -1,123 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757483Ab3BKOX0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 09:23:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:16474 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757383Ab3BKOWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757479Ab3BKOWl (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 11 Feb 2013 09:22:41 -0500
-Message-ID: <5118FEA9.2080201@redhat.com>
-Date: Mon, 11 Feb 2013 15:22:33 +0100
-From: Gerd Hoffmann <kraxel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130108 Thunderbird/10.0.12
-MIME-Version: 1.0
-To: Andy King <acking@vmware.com>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, gregkh@linuxfoundation.org,
-        davem@davemloft.net, pv-drivers@vmware.com
-Subject: Re: [PATCH 1/1] VSOCK: Introduce VM Sockets
-References: <1360196636-9357-1-git-send-email-acking@vmware.com> <1360196636-9357-2-git-send-email-acking@vmware.com>
-In-Reply-To: <1360196636-9357-2-git-send-email-acking@vmware.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Received: from mail.skyhub.de ([78.46.96.112]:45174 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757383Ab3BKOWY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 09:22:24 -0500
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>
+Subject: [PATCH 2/4] x86: Detect CPUID support early at boot
+Date: Mon, 11 Feb 2013 15:22:16 +0100
+Message-Id: <1360592538-10643-3-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 1.8.1.3.535.ga923c31
+In-Reply-To: <1360592538-10643-1-git-send-email-bp@alien8.de>
+References: <1360592538-10643-1-git-send-email-bp@alien8.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/13 01:23, Andy King wrote:
-> +struct vsock_transport_recv_notify_data {
-> +	u64 data1; /* Transport-defined. */
-> +	u64 data2; /* Transport-defined. */
-> +	bool notify_on_block;
-> +};
-> +
-> +struct vsock_transport_send_notify_data {
-> +	u64 data1; /* Transport-defined. */
-> +	u64 data2; /* Transport-defined. */
-> +};
-> +
-> +struct vsock_transport {
-> +	/* Initialize/tear-down socket. */
-> +	int (*init)(struct vsock_sock *, struct vsock_sock *);
-> +	void (*destruct)(struct vsock_sock *);
-> +	void (*release)(struct vsock_sock *);
-> +
-> +	/* Connections. */
-> +	int (*connect)(struct vsock_sock *);
-> +
-> +	/* DGRAM. */
-> +	int (*dgram_bind)(struct vsock_sock *, struct sockaddr_vm *);
-> +	int (*dgram_dequeue)(struct kiocb *kiocb, struct vsock_sock *vsk,
-> +			     struct msghdr *msg, size_t len, int flags);
-> +	int (*dgram_enqueue)(struct vsock_sock *, struct sockaddr_vm *,
-> +			     struct iovec *, size_t len);
-> +	bool (*dgram_allow)(u32 cid, u32 port);
-> +
-> +	/* STREAM. */
-> +	/* TODO: stream_bind() */
-> +	ssize_t (*stream_dequeue)(struct vsock_sock *, struct iovec *,
-> +				  size_t len, int flags);
-> +	ssize_t (*stream_enqueue)(struct vsock_sock *, struct iovec *,
-> +				  size_t len);
-> +	s64 (*stream_has_data)(struct vsock_sock *);
-> +	s64 (*stream_has_space)(struct vsock_sock *);
-> +	u64 (*stream_rcvhiwat)(struct vsock_sock *);
-> +	bool (*stream_is_active)(struct vsock_sock *);
-> +	bool (*stream_allow)(u32 cid, u32 port);
-> +
-> +	/* Notification. */
-> +	int (*notify_poll_in)(struct vsock_sock *, size_t, bool *);
-> +	int (*notify_poll_out)(struct vsock_sock *, size_t, bool *);
-> +	int (*notify_recv_init)(struct vsock_sock *, size_t,
-> +		struct vsock_transport_recv_notify_data *);
-> +	int (*notify_recv_pre_block)(struct vsock_sock *, size_t,
-> +		struct vsock_transport_recv_notify_data *);
-> +	int (*notify_recv_pre_dequeue)(struct vsock_sock *, size_t,
-> +		struct vsock_transport_recv_notify_data *);
-> +	int (*notify_recv_post_dequeue)(struct vsock_sock *, size_t,
-> +		ssize_t, bool, struct vsock_transport_recv_notify_data *);
-> +	int (*notify_send_init)(struct vsock_sock *,
-> +		struct vsock_transport_send_notify_data *);
-> +	int (*notify_send_pre_block)(struct vsock_sock *,
-> +		struct vsock_transport_send_notify_data *);
-> +	int (*notify_send_pre_enqueue)(struct vsock_sock *,
-> +		struct vsock_transport_send_notify_data *);
-> +	int (*notify_send_post_enqueue)(struct vsock_sock *, ssize_t,
-> +		struct vsock_transport_send_notify_data *);
-> +
-> +	/* Shutdown. */
-> +	int (*shutdown)(struct vsock_sock *, int);
-> +
-> +	/* Buffer sizes. */
-> +	void (*set_buffer_size)(struct vsock_sock *, u64);
-> +	void (*set_min_buffer_size)(struct vsock_sock *, u64);
-> +	void (*set_max_buffer_size)(struct vsock_sock *, u64);
-> +	u64 (*get_buffer_size)(struct vsock_sock *);
-> +	u64 (*get_min_buffer_size)(struct vsock_sock *);
-> +	u64 (*get_max_buffer_size)(struct vsock_sock *);
-> +
-> +	/* Addressing. */
-> +	u32 (*get_local_cid)(void);
-> +};
-> +
+From: Borislav Petkov <bp@suse.de>
 
-Whoa.  This has grown *alot*.  Care to explain this please?  Patch
-creating a Documentation/virtual/vsock.txt would be cool.
+We detect CPUID function support on each CPU and save it for later use,
+obviating the need to play the toggle EFLAGS.ID game every time. C code
+is looking at ->cpuid_level anyway.
 
-*_enqueue + *_dequeue is sending/receiving data, ok.
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ arch/x86/kernel/head_32.S | 50 +++++++++++++++++++++++------------------------
+ 1 file changed, 25 insertions(+), 25 deletions(-)
 
-stream_has_data + stream_has_space + stream_rcvhiwat look like they are
-needed for buffer management.  Details please (especially for
-stream_rcvhiwat).
+diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
+index f4d919e2cd2b..73e084a6d2c5 100644
+--- a/arch/x86/kernel/head_32.S
++++ b/arch/x86/kernel/head_32.S
+@@ -318,30 +318,39 @@ default_entry:
+ 	movl %eax,%cr0
+ 
+ /*
+- *	New page tables may be in 4Mbyte page mode and may
+- *	be using the global pages. 
++ * We want to start out with EFLAGS unambiguously cleared. Some BIOSes leave
++ * bits like NT set. This would confuse the debugger if this code is traced. So
++ * initialize them properly now before switching to protected mode. That means
++ * DF in particular (even though we have cleared it earlier after copying the
++ * command line) because GCC expects it.
++ */
++	pushl $0
++	popfl
++
++/*
++ * New page tables may be in 4Mbyte page mode and may be using the global pages.
+  *
+- *	NOTE! If we are on a 486 we may have no cr4 at all!
+- *	Specifically, cr4 exists if and only if CPUID exists
+- *	and has flags other than the FPU flag set.
++ * NOTE! If we are on a 486 we may have no cr4 at all! Specifically, cr4 exists
++ * if and only if CPUID exists and has flags other than the FPU flag set.
+  */
++	movl $-1,pa(X86_CPUID)		# preset CPUID level
+ 	movl $X86_EFLAGS_ID,%ecx
+ 	pushl %ecx
+-	popfl
+-	pushfl
+-	popl %eax
+-	pushl $0
+-	popfl
++	popfl				# set EFLAGS=ID
+ 	pushfl
+-	popl %edx
+-	xorl %edx,%eax
+-	testl %ecx,%eax
+-	jz 6f			# No ID flag = no CPUID = no CR4
++	popl %eax			# get EFLAGS
++	testl $X86_EFLAGS_ID,%eax	# did EFLAGS.ID remained set?
++	jz 6f				# hw disallowed setting of ID bit
++					# which means no CPUID and no CR4
++
++	xorl %eax,%eax
++	cpuid
++	movl %eax,pa(X86_CPUID)		# save largest std CPUID function
+ 
+ 	movl $1,%eax
+ 	cpuid
+-	andl $~1,%edx		# Ignore CPUID.FPU
+-	jz 6f			# No flags or only CPUID.FPU = no CR4
++	andl $~1,%edx			# Ignore CPUID.FPU
++	jz 6f				# No flags or only CPUID.FPU = no CR4
+ 
+ 	movl pa(mmu_cr4_features),%eax
+ 	movl %eax,%cr4
+@@ -389,14 +398,6 @@ default_entry:
+ 	addl $__PAGE_OFFSET, %esp
+ 
+ /*
+- * Initialize eflags.  Some BIOS's leave bits like NT set.  This would
+- * confuse the debugger if this code is traced.
+- * XXX - best to initialize before switching to protected mode.
+- */
+-	pushl $0
+-	popfl
+-
+-/*
+  * start system 32-bit setup. We need to re-do some of the things done
+  * in 16-bit mode for the "real" operations.
+  */
+@@ -472,7 +473,6 @@ is486:	movl $0x50022,%ecx	# set AM, WP, NE and MP
+ 	xorl %eax,%eax			# Clear LDT
+ 	lldt %ax
+ 
+-	cld			# gcc2 wants the direction flag cleared at all times
+ 	pushl $0		# fake return address for unwinder
+ 	jmp *(initial_code)
+ 
+-- 
+1.8.1.3.535.ga923c31
 
-What is stream_is_active?
-What is *_allow?
-
-What are all those notify_* calls?
-
-Why do you need vsock_transport_{send,recv}_notify_data structs?
-Can't this live in vsock_sock->trans?
-
-thanks,
-  Gerd
