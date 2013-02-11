@@ -1,131 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758049Ab3BKQtE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 11:49:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48122 "EHLO mx1.redhat.com"
+	id S1758124Ab3BKQtT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 11:49:19 -0500
+Received: from void.printf.net ([89.145.121.20]:53031 "EHLO void.printf.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757698Ab3BKQtC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 11:49:02 -0500
-Date: Mon, 11 Feb 2013 17:47:27 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Vagin <avagin@parallels.com>
-Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        David Howells <dhowells@redhat.com>,
-        Pavel Emelyanov <xemul@parallels.com>, linux-api@vger.kernel.org,
-        linux-kernel@vger.kernel.org, criu@openvz.org,
-        Cyrill Gorcunov <gorcunov@openvz.org>, Andrey Wagin <avagin@gmail.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, Dave Jones <davej@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Denys Vlasenko <dvlasenk@redhat.com>
-Subject: Re: [CRIU] [PATCH 3/3] signalfd: add ability to read siginfo-s
-	without dequeuing signals (v2)
-Message-ID: <20130211164727.GA27511@redhat.com>
-References: <1358849741-9611-4-git-send-email-avagin@openvz.org> <1359486181-29088-1-git-send-email-avagin@openvz.org> <20130207173447.GA5888@redhat.com> <CANaxB-xmSiPfbUAh+rQSgVxBzTXmVQcC7U741WYKaasG3_yc5w@mail.gmail.com> <20130208191056.GA13674@redhat.com> <CAKgNAki0xt_wwixp7kdv04fKOCtCh-ObQjkFE9PiX6FapkO34A@mail.gmail.com> <20130209182239.GA9947@redhat.com> <CAKgNAkiYrP046mEv1_GJED5DckJrZSHvwu2u=P_BRxx-NuKALQ@mail.gmail.com> <20130210100424.GA15978@paralelels.com>
+	id S1757764Ab3BKQtQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 11:49:16 -0500
+From: Chris Ball <cjb@laptop.org>
+To: Roland Stigge <stigge@antcom.de>
+Cc: plagnioj@jcrosoft.com, grant.likely@secretlab.ca,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] mmc: mmc_spi: Fix return value evaluation of irq_of_parse_and_map()
+References: <1359565508-13362-1-git-send-email-stigge@antcom.de>
+Date: Mon, 11 Feb 2013 11:49:11 -0500
+In-Reply-To: <1359565508-13362-1-git-send-email-stigge@antcom.de> (Roland
+	Stigge's message of "Wed, 30 Jan 2013 18:05:08 +0100")
+Message-ID: <878v6ussmw.fsf@octavius.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130210100424.GA15978@paralelels.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/10, Andrew Vagin wrote:
+Hi,
+
+On Wed, Jan 30 2013, Roland Stigge wrote:
+> When irq_of_parse_and_map() returns an error, it does as zero. But in
+> mmc_spi_get_pdata(), the error return case is compared against NO_IRQ. This
+> might work where NO_IRQ is zero (defaults to zero when undefined, as on MIPS)
+> but not where NO_IRQ is sth. different, e.g. on ARM, where it is -1.
 >
-> On Sat, Feb 09, 2013 at 11:53:04PM +0100, Michael Kerrisk (man-pages) wrote:
-> >
-> > This looks promising, but I am not sure I understand the user-space
-> > API. Could you explain how it would look to (say) pull all per-thread
-> > signals from user space?
-> >
+> This patch changes to comparison with 0 which is the error return value of
+> irq_of_parse_and_map(). 
 >
-> 	siginfo_t *signals = malloc(...);
-> 	...
+> Tested on ARM that mmc_spi is working now.
 >
-> 	ret = ptrace(PTRACE_ATTACH, pid, NULL, NULL);
+> Signed-off-by: Roland Stigge <stigge@antcom.de>
+>
+> diff --git a/drivers/mmc/host/of_mmc_spi.c b/drivers/mmc/host/of_mmc_spi.c
+> index 1534b58..d720b5e 100644
+> --- a/drivers/mmc/host/of_mmc_spi.c
+> +++ b/drivers/mmc/host/of_mmc_spi.c
+> @@ -146,7 +146,7 @@ struct mmc_spi_platform_data *mmc_spi_get_pdata(struct spi_device *spi)
+>  		oms->pdata.get_ro = of_mmc_spi_get_ro;
+>  
+>  	oms->detect_irq = irq_of_parse_and_map(np, 0);
+> -	if (oms->detect_irq != NO_IRQ) {
+> +	if (oms->detect_irq != 0) {
+>  		oms->pdata.init = of_mmc_spi_init;
+>  		oms->pdata.exit = of_mmc_spi_exit;
+>  	} else {
 
-Yes. I assume this should not be a problem since c/r needs to ptrace
-the task anyway?
+Thanks, pushed to mmc-next for 3.9.
 
-> For shared (per-process) signals one line should be changed:
->  ret = ptrace(PTRACE_PEEKSIGNAL, pid, PTRACE_PEEK_SHARED + i, signals + i);
-
-Yes. Except I'd say "PTRACE_PEEK_SHARED | i" to clarify that
-PTRACE_PEEK_SHARED is "flag". Note that we can more flags, say,
-PTRACE_PEEK_DEQUEUE which obviously means "dequeue signal" (but in
-this case we should filter out SIGKILL/SIGSTOP).
-
-And note that either way (I mean ptrace or signalfd) this can not
-actually peek a signal which doesn't have the sigqueue (say,
-SEND_SIG_FORCED). I guess this is not the problem, c/r can look
-at /proc/pid/status#*Pnd aditionally.
-
-OK, you seem to agree with this approach, I'll try to make the
-working patch tomorrow. At least ptrace_peek_signal() needs another
-is_compat argument for compat_ptrace_request().
-
-Oleg.
-
-> > > --- x/kernel/ptrace.c
-> > > +++ x/kernel/ptrace.c
-> > > @@ -618,6 +618,35 @@ static int ptrace_setsiginfo(struct task
-> > >         return error;
-> > >  }
-> > >
-> > > +static int ptrace_peek_signal(struct task_struct *child,
-> > > +                               unsigned long addr, siginfo_t __user *uinfo)
-> > > +{
-> > > +       siginfo_t info;
-> > > +       struct sigpending *pending;
-> > > +       int ret = -ESOMETHING;
-> > > +
-> > > +       pending = &child->pending;
-> > > +       if (addr & PTRACE_PEEK_SHARED) {
-> > > +               addr &= ~PTRACE_PEEK_SHARED;
-> > > +               pending = &child->signal->shared_pending;
-> > > +       }
-> > > +
-> > > +       spin_lock_irq(&child->sighand->siglock);
-> > > +       list_for_each_entry(q, &pending->list, list) {
-> > > +               if (!addr--) {
-> > > +                       copy_siginfo(info, &q->info);
-> > > +                       ret = 0;
-> > > +                       break;
-> > > +               }
-> > > +       }
-> > > +       spin_lock_irq(&child->sighand->siglock);
-> > > +
-> > > +       if (!ret)
-> > > +               ret = copy_siginfo_to_user(uinfo, info);
-> > > +       if (!ret)
-> > > +               ret = __put_user(info, si_code);
-> > > +       return ret;
-> > > +}
-> > >
-> > >  #ifdef PTRACE_SINGLESTEP
-> > >  #define is_singlestep(request)         ((request) == PTRACE_SINGLESTEP)
-> > > @@ -742,6 +771,10 @@ int ptrace_request(struct task_struct *c
-> > >                 ret = put_user(child->ptrace_message, datalp);
-> > >                 break;
-> > >
-> > > +       case PTRACE_PEEKSIGNAL:
-> > > +               ret = ptrace_peek_signal(child, addr, datavp);
-> > > +               break;
-> > > +
-> > >         case PTRACE_GETSIGINFO:
-> > >                 ret = ptrace_getsiginfo(child, &siginfo);
-> > >                 if (!ret)
-> > >
-> >
-> >
-> >
-> > --
-> > Michael Kerrisk
-> > Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-> > Author of "The Linux Programming Interface"; http://man7.org/tlpi/
-> > _______________________________________________
-> > CRIU mailing list
-> > CRIU@openvz.org
-> > https://lists.openvz.org/mailman/listinfo/criu
-
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
