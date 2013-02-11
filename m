@@ -1,43 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757439Ab3BKOcB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 09:32:01 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:63886 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757095Ab3BKOcA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 09:32:00 -0500
+	id S1757457Ab3BKOcs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 09:32:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59226 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756753Ab3BKOcq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 09:32:46 -0500
+Date: Mon, 11 Feb 2013 09:32:42 -0500
+From: Aristeu Rozanski <aris@redhat.com>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Serge Hallyn <serge.hallyn@canonical.com>
+Subject: Re: [PATCH v6 9/9] devcg: propagate local changes down the hierarchy
+Message-ID: <20130211143241.GF30962@redhat.com>
+References: <20130130171101.060853036@napanee.usersys.redhat.com>
+ <20130130171102.390708521@napanee.usersys.redhat.com>
+ <20130131043839.GA14726@mail.hallyn.com>
+ <20130205183646.GT17632@redhat.com>
+ <20130209040402.GA31942@mail.hallyn.com>
 MIME-Version: 1.0
-In-Reply-To: <1360406062-14982-1-git-send-email-grant.likely@secretlab.ca>
-References: <1360406062-14982-1-git-send-email-grant.likely@secretlab.ca>
-Date: Mon, 11 Feb 2013 15:31:45 +0100
-Message-ID: <CACRpkdYBQDCuyff1cVaG2p_AaFvZ-sEX0B=j=Y4nsko8UDChHA@mail.gmail.com>
-Subject: Re: [PATCH] gpiolib: Fix locking on gpio debugfs files
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, Alexandre Courbot <acourbot@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130209040402.GA31942@mail.hallyn.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 9, 2013 at 11:34 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
+On Sat, Feb 09, 2013 at 04:04:02AM +0000, Serge E. Hallyn wrote:
+> Quoting Aristeu Rozanski (aris@redhat.com):
+> > devcg: propagate local changes down the hierarchy
+> > 
+> > This patch makes all changes propagate down in hierarchy respecting when
+> > possible local configurations.
+> > 
+> > Behavior changes will clean up exceptions in all the children except when the
+> > parent changes the behavior from allow to deny and the child's behavior was
+> > already deny, in which case the local exceptions will be reused. The inverse
+> > is not possible: you can't have a parent with behavior deny and a child with
+> > behavior accept.
+> > 
+> > New exceptions allowing additional access to devices won't be propagated, but
+> > it'll be possible to add an exception to access all of part of the newly
+> > allowed device(s).
+> > 
+> > New exceptions disallowing access to devices will be propagated down and the
+> > local group's exceptions will be revalidated for the new situation.
+> > Example:
+> >       A
+> >      / \
+> >         B
+> > 
+> >     group        behavior          exceptions
+> >     A            allow             "b 8:* rwm", "c 116:1 rw"
+> >     B            deny              "c 1:3 rwm", "c 116:2 rwm", "b 3:* rwm"
+> > 
+> > If a new exception is added to group A:
+> > 	# echo "c 116:* r" > A/devices.deny
+> > it'll propagate down and after revalidating B's local exceptions, the exception
+> > "c 116:2 rwm" will be removed.
+> > 
+> > In case parent behavior or exceptions change and local settings are not
+> > allowed anymore, they'll be deleted.
+> 
+> Do you have a use case which would be broken if we simply refuse to
+> allow behavior changes for any cgroup with children?
+> 
+> It seems like that would drastically simplify much of this.  We would
+> no longer need local.exceptions at all, right?  Your comment says
+> 
+>          * local set rules, saved so when a parent propagates new rules, the
+>          * local preferences can be preserved
+> 
+> but if there were no parent behavior changes, then any exception change
+> in a parent could be enforced by simply removing violating exceptions
+> in the child, and subsequently refusing the addition of new rules in the
+> child which are not allowed in the parent.  Both of which you already do.
+> 
+> Or am I thinking wrongly?
 
-> The debugfs files really need to hold the gpiolib spinlock before
-> accessing the list. Otherwise chip addition/removal will cause an oops.
->
-> Cc: Alexandre Courbot <acourbot@nvidia.com>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+That would be an option even simpler than not keeping local settings. In
+production I doubt the sysadmin will keep playing with permissions,
+although until one gets right, it'll be annoying as hell to have to
+remove the whole hierarchy because you forgot to add a certain device to
+the list.
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+-- 
+Aristeu
 
-> I've also got a draft patch that turns gpio chips into first-class
-> kobjects which means we can do proper reference counting on them and
-> prevent the structure from actually disappearing while other drivers
-> still hold references.
-
-Thank you for doing this!
-
-Yours,
-Linus Walleij
