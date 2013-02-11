@@ -1,66 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932749Ab3BKV7g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 16:59:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49021 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932691Ab3BKV7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 16:59:35 -0500
-Date: Mon, 11 Feb 2013 16:59:29 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 2/2] initramfs with digital signature protection
-Message-ID: <20130211215929.GB24936@redhat.com>
-References: <cover.1360067333.git.dmitry.kasatkin@intel.com>
- <cc87f1242960fad1a9fb44bcec331915e14c832b.1360067333.git.dmitry.kasatkin@intel.com>
- <20130207170542.GF6462@redhat.com>
- <CALLzPKYCjihDy32=ZQbwVN0jEitVCWKadFCxjN=vw2GnBUFmyA@mail.gmail.com>
- <CALLzPKZpzDY0b_GvYgiKWeu1KFeLqyfKaKzBbiw8ze6ssE2N6Q@mail.gmail.com>
+	id S932753Ab3BKWFS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 17:05:18 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:19738 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932691Ab3BKWFQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 17:05:16 -0500
 MIME-Version: 1.0
+Message-ID: <334c7852-9d68-4cda-b25c-01dc5b74aaed@default>
+Date: Mon, 11 Feb 2013 14:05:01 -0800 (PST)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: sjenning@linux.vnet.ibm.com, minchan@kernel.org,
+        Konrad Wilk <konrad.wilk@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, devel@linuxdriverproject.org, ngupta@vflare.org
+Subject: RE: [PATCH] staging/zcache: Fix/improve zcache writeback code, tie to
+ a config option
+References: <1360175261-13287-1-git-send-email-dan.magenheimer@oracle.com>
+ <20130206190924.GB32275@kroah.com>
+ <761b5c6e-df13-49ff-b322-97a737def114@default>
+ <20130206214316.GA21148@kroah.com>
+ <abbc2f75-2982-470c-a3ca-675933d112c3@default>
+ <20130207000338.GB18984@kroah.com>
+ <7393d8c5-fb02-4087-93d1-0f999fb3cafd@default>
+ <20130211214944.GA22090@kroah.com>
+In-Reply-To: <20130211214944.GA22090@kroah.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
+ 12.0.6665.5003 (x86)]
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALLzPKZpzDY0b_GvYgiKWeu1KFeLqyfKaKzBbiw8ze6ssE2N6Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 08, 2013 at 03:27:30PM +0200, Kasatkin, Dmitry wrote:
-> >>
-> >> Dmitry,
-> >>
-> >> How do we make sure that this is the first call to user mode helpers. I
-> >> see that we first unpacked unsigned initramfs. Then after a while we
-> >> unpacked signed initramfs on /root and did a chroot. But now there is
-> >> a window before chroot, where kernel might call into /sbin/hotplug or
-> >> /sbin/modprobe from unsigned initramfs?
-> >>
-> >> Specifically, I put some printk and I am seeing calls to /sbin/hotplug
-> >> before we even unpacked signed initramfs.
+> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> Subject: Re: [PATCH] staging/zcache: Fix/improve zcache writeback code, tie to a config option
+> 
+> On Mon, Feb 11, 2013 at 01:43:58PM -0800, Dan Magenheimer wrote:
+> > > From: Greg KH [mailto:gregkh@linuxfoundation.org]
 > >
+> > > So, how about this, please draw up a specific plan for how you are going
+> > > to get this code out of drivers/staging/  I want to see the steps
+> > > involved, who is going to be doing the work, and who you are going to
+> > > have to get to agree with your changes to make it happen.
+> > >  :
+> > > Yeah, a plan, I know it goes against normal kernel development
+> > > procedures, but hey, we're in our early 20's now, it's about time we
+> > > started getting responsible.
+> >
+> > Hi Greg --
+> >
+> > I'm a big fan of planning, though a wise boss once told me:
+> > "Plans fail... planning succeeds".
+> >
+> > So here's the plan I've been basically trying to pursue since about
+> > ten months ago, ignoring the diversion due to "zcache1 vs zcache2"
+> > from last summer.  There is no new functionality on this plan
+> > other than as necessary from feedback obtained at or prior to
+> > LSF/MM in April 2012.
+> >
+> > Hope this meets your needs, and feedback welcome!
+> > Dan
+> >
+> > =======
+> >
+> > ** ZCACHE PLAN FOR PROMOTION FROM STAGING **
+> >
+> > PLAN STEPS
+> >
+> > 1. merge zcache and ramster to eliminate horrible code duplication
+> > 2. converge on a predictable, writeback-capable allocator
+> > 3. use debugfs instead of sysfs (per akpm feedback in 2011)
+> > 4. zcache side of cleancache/mm WasActive patch
+> > 5. zcache side of frontswap exclusive gets
+> > 6. zcache must be able to writeback to physical swap disk
+> >     (per Andrea Arcangeli feedback in 2011)
+> > 7. implement adequate policy for writeback
+> > 8. frontswap/cleancache work to allow zcache to be loaded
+> >     as a module
+> > 9. get core mm developer to review
+> > 10. incorporate feedback from review
+> > 11. get review/acks from 1-2 additional mm developers
+> > 12. incorporate any feedback from additional mm reviews
+> > 13. propose location/file-naming in mm tree
+> > 14. repeat 9-13 as necessary until akpm is happy and merges
+> >
+> > STATUS/OWNERSHIP
+> >
+> > 1. DONE as part of "new" zcache; now in staging/zcache
+> > 2. DONE as part of "new" zcache (cf zbud.[ch]); now in staging/zcache
+> >     (this was the core of the zcache1 vs zcache2 flail)
+> > 3. DONE as part of "new" zcache; now in staging/zcache
+> > 4. DONE as part of "new" zcache; per cleancache performance
+> >     feedback see https://lkml.org/lkml/2011/8/17/351, now
+> >     in staging/zcache; dependent on proposed mm patch, see
+> >     https://lkml.org/lkml/2012/1/25/300
+> > 5. DONE as part of "new" zcache; performance tuning only,
+> >     now in staging/zcache; dependent on frontswap patch
+> >     merged in 3.7 (33c2a174)
+> > 6. PROTOTYPED as part of "new" zcache; protoype is now
+> >     in staging/zcache but has bad memory leak; reimplemented
+> >     to use sjennings clever tricks and proposed mm patches
+> >     with new version posted https://lkml.org/lkml/2013/2/6/437;
+> >     rejected by GregKH as it smells like new functionality
+> >
+> >     (******** YOU ARE HERE *********)
+> >
+> > 7. PROTOTYPED as part of "new" zcache; now in staging/zcache;
+> >     needs more review (plan to discuss at LSF/MM 2013)
+> > 8. IN PROGRESS; owned by Konrad Wilk; v2 recently posted
+> >    http://lkml.org/lkml/2013/2/1/542
+> > 9. IN PROGRESS; owned by Konrad Wilk; Mel Gorman provided
+> >    great feedback in August 2012 (unfortunately of "old"
+> >    zcache)
+> > 10. Konrad posted series of fixes (that now need rebasing)
+> >     https://lkml.org/lkml/2013/2/1/566
+> > 11. NOT DONE; owned by Konrad Wilk
+> > 12. TBD (depends on quantity of feedback)
+> > 13. PROPOSED; one suggestion proposed by Dan; needs
+> >     more ideas/feedback
+> > 14. TBD (depends on feedback)
+> >
+> > WHO NEEDS TO AGREE
+> >
+> > Not sure I can answer that.  Seth seems to now be pursuing
+> > a separate but semi-parallel track.  Akpm clearly has to
+> > approve for any mm merge to happen.  Minchan has interest
+> > but may be happy if/when zram is merged into mm.  Konrad
+> > may be maintainer if akpm decides compression is maintainable
+> > separately from the rest of mm.  (More LSF/MM 2013 discussion.)
 > 
-> I did some experiments and made this  patch which prevents launching
-> of user mode helpers before pre-init from signed image is executed.
+> Thanks so much for this, this looks great.
 > 
-> I do not know if this is the right way to do it, but at least it works for me.
-> The whole idea of these patches is to allow simple usage of signed image,
-> without the need to modify kernel parameters (0 block) and boot loaders....
+> So, according to your plan, I shouldn't have rejected those patches,
+> right?  :)
 > 
-> --------------------------------------------------------------------------------------------------
-> commit a99eaa06ab142906da67800423425b7c5def0a3e
-> Author: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-> Date:   Fri Feb 8 15:05:22 2013 +0200
+> If so, please resend them in the next day or so, so that they can get
+> into 3.9, and then you can move on to the next steps of what you need to
+> do here.
 > 
->     initramfs_sig: prevent usermode helpers before signed image is executed
-> 
->     This patch prevents execution of user mode helper before /pre-init
->     is executed.
-> 
->     Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+> Sound good?
 
-Yep. This seems to have blocked the calls going out to user space and
-returns with -EBUSY
-
-Thanks
-Vivek
+Excellent.  Thanks very much.  Resend coming right up!
+Dan
