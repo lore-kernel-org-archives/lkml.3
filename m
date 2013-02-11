@@ -1,85 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754041Ab3BKImy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 03:42:54 -0500
-Received: from ra.se.axis.com ([195.60.68.13]:35788 "EHLO ra.se.axis.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750915Ab3BKImv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 03:42:51 -0500
-Date: Mon, 11 Feb 2013 09:42:48 +0100
-From: Jesper Nilsson <jesper.nilsson@axis.com>
-To: Len Brown <lenb@kernel.org>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Len Brown <len.brown@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-cris-kernel <linux-cris-kernel@axis.com>
-Subject: Re: [PATCH 08/16] cris idle: delete idle and pm_idle
-Message-ID: <20130211084248.GY23529@axis.com>
-References: <2b219d07e0f287c2c713f5465fc8646158fa986e.1360475150.git.len.brown@intel.com>
- <128d290dacc38d1a3d09031018adf017eec0b5f2.1360475150.git.len.brown@intel.com>
+	id S1753937Ab3BKIsA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 03:48:00 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:44253 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750845Ab3BKIr7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 03:47:59 -0500
+Message-ID: <5118B040.9010600@linaro.org>
+Date: Mon, 11 Feb 2013 09:48:00 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <128d290dacc38d1a3d09031018adf017eec0b5f2.1360475150.git.len.brown@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Len Brown <lenb@kernel.org>
+CC: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Len Brown <len.brown@intel.com>
+Subject: Re: [PATCH 10/16] cpuidle: remove vestage definition of cpuidle_state_usage.driver_data
+References: <1360372100-28482-1-git-send-email-lenb@kernel.org> <fe265459a3bbcfada267f181f00b83fb02f6d5cb.1360371180.git.len.brown@intel.com>
+In-Reply-To: <fe265459a3bbcfada267f181f00b83fb02f6d5cb.1360371180.git.len.brown@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 10, 2013 at 06:58:15AM +0100, Len Brown wrote:
+On 02/09/2013 02:08 AM, Len Brown wrote:
 > From: Len Brown <len.brown@intel.com>
 > 
-> pm_idle() and idle() served no purpose on cris --
-> invoke default_idle() directly.
+> This field is no longer used.
 > 
 > Signed-off-by: Len Brown <len.brown@intel.com>
-> Cc: linux-cris-kernel@axis.com
 
-Looks good!
-
-Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
+Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 
 > ---
->  arch/cris/kernel/process.c | 11 +----------
->  1 file changed, 1 insertion(+), 10 deletions(-)
+>  include/linux/cpuidle.h | 22 ----------------------
+>  1 file changed, 22 deletions(-)
 > 
-> diff --git a/arch/cris/kernel/process.c b/arch/cris/kernel/process.c
-> index 7f65be6..104ff4d 100644
-> --- a/arch/cris/kernel/process.c
-> +++ b/arch/cris/kernel/process.c
-> @@ -54,11 +54,6 @@ void enable_hlt(void)
+> diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
+> index 24cd1037..480c14d 100644
+> --- a/include/linux/cpuidle.h
+> +++ b/include/linux/cpuidle.h
+> @@ -32,8 +32,6 @@ struct cpuidle_driver;
+>   ****************************/
 >  
->  EXPORT_SYMBOL(enable_hlt);
->   
-> -/*
-> - * The following aren't currently used.
-> - */
-> -void (*pm_idle)(void);
+>  struct cpuidle_state_usage {
+> -	void		*driver_data;
 > -
->  extern void default_idle(void);
+>  	unsigned long long	disable;
+>  	unsigned long long	usage;
+>  	unsigned long long	time; /* in US */
+> @@ -62,26 +60,6 @@ struct cpuidle_state {
 >  
->  void (*pm_power_off)(void);
-> @@ -77,16 +72,12 @@ void cpu_idle (void)
->  	while (1) {
->  		rcu_idle_enter();
->  		while (!need_resched()) {
-> -			void (*idle)(void);
->  			/*
->  			 * Mark this as an RCU critical section so that
->  			 * synchronize_kernel() in the unload path waits
->  			 * for our completion.
->  			 */
-> -			idle = pm_idle;
-> -			if (!idle)
-> -				idle = default_idle;
-> -			idle();
-> +			default_idle();
->  		}
->  		rcu_idle_exit();
->  		schedule_preempt_disabled();
-> -- 
-> 1.8.1.3.535.ga923c31
+>  #define CPUIDLE_DRIVER_FLAGS_MASK (0xFFFF0000)
+>  
+> -/**
+> - * cpuidle_get_statedata - retrieves private driver state data
+> - * @st_usage: the state usage statistics
+> - */
+> -static inline void *cpuidle_get_statedata(struct cpuidle_state_usage *st_usage)
+> -{
+> -	return st_usage->driver_data;
+> -}
+> -
+> -/**
+> - * cpuidle_set_statedata - stores private driver state data
+> - * @st_usage: the state usage statistics
+> - * @data: the private data
+> - */
+> -static inline void
+> -cpuidle_set_statedata(struct cpuidle_state_usage *st_usage, void *data)
+> -{
+> -	st_usage->driver_data = data;
+> -}
+> -
+>  struct cpuidle_device {
+>  	unsigned int		registered:1;
+>  	unsigned int		enabled:1;
+> 
 
-/^JN - Jesper Nilsson
+
 -- 
-               Jesper Nilsson -- jesper.nilsson@axis.com
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
