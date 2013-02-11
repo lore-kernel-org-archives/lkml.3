@@ -1,69 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760514Ab3BKXVO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 18:21:14 -0500
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:46261 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758427Ab3BKXVN (ORCPT
+	id S1760540Ab3BKXYB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 18:24:01 -0500
+Received: from mail-vb0-f48.google.com ([209.85.212.48]:53003 "EHLO
+	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760000Ab3BKXX6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 18:21:13 -0500
-Message-ID: <1360624234.3869.61.camel@misato.fc.hp.com>
-Subject: Re: [PATCH] ACPI: Remove the use of CONFIG_ACPI_CONTAINER_MODULE
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 11 Feb 2013 16:10:34 -0700
-In-Reply-To: <2134502.Uo3joRHVj1@vostro.rjw.lan>
-References: <1360622000-22140-1-git-send-email-toshi.kani@hp.com>
-	 <2134502.Uo3joRHVj1@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	Mon, 11 Feb 2013 18:23:58 -0500
+Message-ID: <51197D8B.6010407@kernel.org>
+Date: Mon, 11 Feb 2013 18:23:55 -0500
+From: Len Brown <lenb@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Len Brown <len.brown@intel.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        sparclinux@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree (acpi
+ tree related)
+References: <20130211183409.7519b73ca320baeac5ec886f@canb.auug.org.au>
+In-Reply-To: <20130211183409.7519b73ca320baeac5ec886f@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-02-12 at 00:22 +0100, Rafael J. Wysocki wrote:
-> On Monday, February 11, 2013 03:33:20 PM Toshi Kani wrote:
-> > config ACPI_CONTAINER has been changed to bool (y/n), and its
-> > module option is no longer valid.  So, remove the use of
-> > CONFIG_ACPI_CONTAINER_MODULE.
-> > 
-> > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+On 02/11/2013 02:34 AM, Stephen Rothwell wrote:
+> Hi all,
 > 
-> I'm going to take it.
+> After merging the final tree, today's linux-next build (sparc64 defconfig)
+> failed like this:
+> 
+> arch/sparc/include/asm/processor.h: Assembler messages:
+> arch/sparc/include/asm/processor.h:10: Error: Unknown opcode: `extern'
+> 
+> Caused by commit 3a242f58a5f4 ("sparc idle: rename pm_idle to
+> sparc_idle") from the acpi tree.
+> 
+> I have applied this patch for today:
+> 
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Mon, 11 Feb 2013 18:30:19 +1100
+> Subject: [PATCH] sparc idle: protect variable declarations against the assembler
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  arch/sparc/include/asm/processor.h | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/arch/sparc/include/asm/processor.h b/arch/sparc/include/asm/processor.h
+> index 34baa35..622cfa5 100644
+> --- a/arch/sparc/include/asm/processor.h
+> +++ b/arch/sparc/include/asm/processor.h
+> @@ -7,6 +7,8 @@
+>  #endif
+>  
+>  #define nop() 		__asm__ __volatile__ ("nop")
+> +#ifndef __ASSEMBLY__
+>  extern void (*sparc_idle)(void);
+> +#endif
+>  
+>  #endif
+> 
 
-Thanks!
--Toshi
+Thank you Stephen!
 
+The last time I compiled a sparc kernel was in 1993:-)
 
-> 
-> Thanks,
-> Rafael
-> 
-> 
-> > ---
-> >  include/linux/acpi.h |    3 +--
-> >  1 file changed, 1 insertion(+), 2 deletions(-)
-> > 
-> > diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-> > index c6ccd9f..bcbdd74 100644
-> > --- a/include/linux/acpi.h
-> > +++ b/include/linux/acpi.h
-> > @@ -363,8 +363,7 @@ extern acpi_status acpi_pci_osc_control_set(acpi_handle handle,
-> >  #if defined(CONFIG_ACPI_HOTPLUG_CPU) &&			\
-> >  	(defined(CONFIG_ACPI_HOTPLUG_MEMORY) ||		\
-> >  	 defined(CONFIG_ACPI_HOTPLUG_MEMORY_MODULE)) &&	\
-> > -	(defined(CONFIG_ACPI_CONTAINER) ||		\
-> > -	 defined(CONFIG_ACPI_CONTAINER_MODULE))
-> > +	defined(CONFIG_ACPI_CONTAINER)
-> >  #define ACPI_HOTPLUG_OST
-> >  #endif
-> >  
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+I've added your fix and Dave's Ack to this patch,
+and updated it in my next branch.
+
+Len Brown, Intel Open Source Technology Center
 
 
