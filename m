@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755182Ab3BKKHD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 05:07:03 -0500
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:47035 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754821Ab3BKKHB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 05:07:01 -0500
-Date: Mon, 11 Feb 2013 11:06:56 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Shuah Khan <shuah.khan@hp.com>, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, avi@redhat.com, mtosatti@redhat.com, mst@redhat.com,
-        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org,
-        shuahkhan@gmail.com
-Subject: Re: [PATCH linux-next] x86/kvm: Fix compile warning in
- kvm_register_steal_time()
-Message-ID: <20130211100656.GA4560@gmail.com>
-References: <1360119442.8356.8.camel@lorien2>
- <20130211090626.GV7837@redhat.com>
- <20130211100439.GH23932@gmail.com>
+	id S1755209Ab3BKKJq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 05:09:46 -0500
+Received: from mga03.intel.com ([143.182.124.21]:6025 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754907Ab3BKKJp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 05:09:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,641,1355126400"; 
+   d="scan'208";a="201018814"
+Date: Mon, 11 Feb 2013 12:13:36 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/7] hid driver transport cleanup
+Message-ID: <20130211101336.GA20771@intel.com>
+References: <1360334256-22127-1-git-send-email-benjamin.tissoires@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130211100439.GH23932@gmail.com>
+In-Reply-To: <1360334256-22127-1-git-send-email-benjamin.tissoires@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Feb 08, 2013 at 03:37:29PM +0100, Benjamin Tissoires wrote:
+> so, here is the hid drivers cleanup. The aim is to remove as much as possible
+> direct calls to usbhid for hid drivers. Thus, other transport layers can use
+> the existing hid drivers (like I2C or uhid).
 
-* Ingo Molnar <mingo@kernel.org> wrote:
+We also found out that there is a dependency to usbhid in many of the
+drivers, especially in sensor-hub which caused the system crash while the
+driver tried to transmit over USB even though it was behind I2C.
 
-> 
-> * Gleb Natapov <gleb@redhat.com> wrote:
-> 
-> > On Tue, Feb 05, 2013 at 07:57:22PM -0700, Shuah Khan wrote:
-> > > Fix the following compile warning in kvm_register_steal_time():
-> > >   CC      arch/x86/kernel/kvm.o
-> > > arch/x86/kernel/kvm.c: In function ?kvm_register_steal_time?:
-> > > arch/x86/kernel/kvm.c:302:3: warning: format ?%lx? expects argument of type ?long unsigned int?, but argument 3 has type ?phys_addr_t? [-Wformat]
-> > > 
-> > Ingo, the warning is from the tip tree. Can you take the fix?
-> 
-> Yeah, it came via these x86 improvements to __pa():
-> 
-> 5dfd486c4750 x86, kvm: Fix kvm's use of __pa() on percpu areas
-> d76565344512 x86, mm: Create slow_virt_to_phys()
-> f3c4fbb68e93 x86, mm: Use new pagetable helpers in try_preserve_large_page()
-> 4cbeb51b860c x86, mm: Pagetable level size/shift/mask helpers
-> a25b9316841c x86, mm: Make DEBUG_VIRTUAL work earlier in boot
-> 
-> So up the fix - I added an Acked-by from you as well, is that 
+Your series fixes that nicely :)
 
-s/So I applied the fix
+You can add,
 
-Thanks,
+Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-	Ingo
+for the whole series and in addition,
+
+Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+
+for the sensor-hub part (HID over I2C). I have few more patches to the
+sensor-hub myself and I'm going to rebase them on top of this series.
