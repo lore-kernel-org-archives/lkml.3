@@ -1,65 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755941Ab3BKLW7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 06:22:59 -0500
-Received: from us01smtp2.synopsys.com ([198.182.44.80]:50083 "EHLO
-	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755536Ab3BKLW5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 06:22:57 -0500
-Message-ID: <5118D478.3010205@synopsys.com>
-Date: Mon, 11 Feb 2013 16:52:32 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1755536Ab3BKLZz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 06:25:55 -0500
+Received: from mga09.intel.com ([134.134.136.24]:24915 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754860Ab3BKLZy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 06:25:54 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,641,1355126400"; 
+   d="scan'208";a="260999088"
+Date: Mon, 11 Feb 2013 13:29:45 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/7] hid driver transport cleanup
+Message-ID: <20130211112945.GD20771@intel.com>
+References: <1360334256-22127-1-git-send-email-benjamin.tissoires@gmail.com>
+ <20130211101336.GA20771@intel.com>
+ <CAN+gG=GJH-jTFE5OEsme57RzN_L1_gQMAD9Dy2=NXZdDOYCUxA@mail.gmail.com>
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.cross-arch,gmane.linux.kernel
-To: Jonas Bonn <jonas.bonn@gmail.com>
-CC: James Hogan <james.hogan@imgtec.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: pt_regs leak into userspace (was Re: [PATCH v3 20/71] ARC: Signal
- handling)
-References: <1359024639-21915-1-git-send-email-vgupta@synopsys.com> <1359024639-21915-9-git-send-email-vgupta@synopsys.com> <51189D2F.4030000@synopsys.com> <CACM3HyGNZxfOXpw01POBVT-YcVKQsnPkO6Kgg+epfZS-x-BRCg@mail.gmail.com> <5118C458.2070205@synopsys.com> <5118C7B6.6040807@imgtec.com> <CACM3HyG+4Pzx02iL9atxG+FOLiCcTeXR+ivzRO78bqDHNp5rGQ@mail.gmail.com>
-In-Reply-To: <CACM3HyG+4Pzx02iL9atxG+FOLiCcTeXR+ivzRO78bqDHNp5rGQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.43]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAN+gG=GJH-jTFE5OEsme57RzN_L1_gQMAD9Dy2=NXZdDOYCUxA@mail.gmail.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 11 February 2013 04:23 PM, Jonas Bonn wrote:
-> On 11 February 2013 11:28, James Hogan <james.hogan@imgtec.com> wrote:
->> On 11/02/13 10:13, Vineet Gupta wrote:
->>> On Monday 11 February 2013 03:06 PM, Jonas Bonn wrote:
->>>> On 11 February 2013 08:26, Vineet Gupta <Vineet.Gupta1@synopsys.com> wrote:
->>>>
->>>>> The only downside of this patch is that userspace signal stack grows in size,
->>>>> since signal frame only cares about scratch regs (pt_regs), but has to accommodate
->>>>> unused placeholder for callee regs too by virtue of using user_regs_struct.
->>>> Is this really true?  Don't setcontext and friends require that _all_
->>>> the registers be part of sigcontext?
->>>
->>> But for an ABI - callee saved regs will anyhow be saved/restored even in
->>> setcontext case ! So collecting it for that purpose seems useless, or am I missing
->>> something here.
->>
->> I think Jonas' point was that signals are asynchronous, i.e. you could
->> get interrupted by a signal at virtually any time during the program's
->> execution.
+On Mon, Feb 11, 2013 at 12:19:13PM +0100, Benjamin Tissoires wrote:
+> On Mon, Feb 11, 2013 at 11:13 AM, Mika Westerberg
+> <mika.westerberg@linux.intel.com> wrote:
+> > On Fri, Feb 08, 2013 at 03:37:29PM +0100, Benjamin Tissoires wrote:
+> >> so, here is the hid drivers cleanup. The aim is to remove as much as possible
+> >> direct calls to usbhid for hid drivers. Thus, other transport layers can use
+> >> the existing hid drivers (like I2C or uhid).
+> >
+> > We also found out that there is a dependency to usbhid in many of the
+> > drivers, especially in sensor-hub which caused the system crash while the
+> > driver tried to transmit over USB even though it was behind I2C.
+> >
+> > Your series fixes that nicely :)
+> >
+> > You can add,
+> >
+> > Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> >
+> > for the whole series and in addition,
+> >
+> > Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> >
+> > for the sensor-hub part (HID over I2C). I have few more patches to the
+> > sensor-hub myself and I'm going to rebase them on top of this series.
 > 
-> No, I agree that the callee-saved regs don't need to be saved across a
-> signal handler invocation.  It's really just the setcontext case that
-> wants to be able to swap out the callee-saved regs.
+> Thanks Mika for reviewing.
+> 
+> I just wanted to warn you that the HID over I2C part is still lacking
+> the support of requests through hid_hw_request(). So the functions
+> sensor_hub_set_feature(), sensor_hub_get_feature() and
+> sensor_hub_input_attr_get_raw_value() won't work, in a silently way
+> :(.
 
-I don't think that's needed either - and if thats mandated somewhere, it would
-seem a unnecessary mis-optimization IMHO.
+OK.
 
-See, even a setcontext enabled control flow needs to be ABI compliant so that it
-plays nicely with other normal flows of execution. Thus e.g. it can't fudge a
-callee reg - it needs to save orig callee reg(s) and restore them in the end. And
-if we agree to those semantics - I don't see any value in swapping the callee reg
-context around usage of setcontext as it would be a wasted effort.
+> I started writing the patch but stopped at some point due to lack of
+> ways to test it.
 
--Vineet
+Well, I have the HW here so if you have something please send to me. I can
+test it.
