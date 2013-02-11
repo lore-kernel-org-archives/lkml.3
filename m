@@ -1,92 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759343Ab3BKTWW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 14:22:22 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:37241 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757820Ab3BKTWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 14:22:21 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Pavel Machek <pavel@ucw.cz>, Goswin von Brederlow <goswin-v-b@web.de>,
-        Li Fei <fei.li@intel.com>, len.brown@intel.com, mingo@redhat.com,
-        peterz@infradead.org, biao.wang@intel.com, linux-pm@vger.kernel.org,
-        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        chuansheng.liu@intel.com
-Subject: Re: Getting rid of freezer for suspend [was Re: [fuse-devel] [PATCH] fuse: make fuse daemon frozen along with kernel threads]
-Date: Mon, 11 Feb 2013 20:28:46 +0100
-Message-ID: <2407765.5u9DGJxmKr@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc7; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAJfpegt2B3n-QNK_W7O2H0JVfS=4jcUOzV_+w8ELPq19RJPewQ@mail.gmail.com>
-References: <1360113112.17267.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC> <1660768.prnx6s70rD@vostro.rjw.lan> <CAJfpegt2B3n-QNK_W7O2H0JVfS=4jcUOzV_+w8ELPq19RJPewQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1759426Ab3BKTWu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 14:22:50 -0500
+Received: from fallback6.mail.ru ([94.100.176.134]:60061 "EHLO
+	fallback6.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759126Ab3BKTWt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 14:22:49 -0500
+From: Alexander Shiyan <shc_work@mail.ru>
+To: linux-kernel@vger.kernel.org
+Cc: Dong Aisheng <dong.aisheng@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Arnd Bergmann <arnd@arndb.de>, Alexander Shiyan <shc_work@mail.ru>
+Subject: [PATCH v2 1/3] mfd: syscon: Removed support for unloading
+Date: Mon, 11 Feb 2013 22:42:51 +0400
+Message-Id: <1360608173-12907-1-git-send-email-shc_work@mail.ru>
+X-Mailer: git-send-email 1.7.12.4
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, February 11, 2013 02:59:56 PM Miklos Szeredi wrote:
-> On Mon, Feb 11, 2013 at 1:08 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Monday, February 11, 2013 11:11:40 AM Miklos Szeredi wrote:
-> >> On Mon, Feb 11, 2013 at 12:31 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> > On Sunday, February 10, 2013 07:55:05 PM Pavel Machek wrote:
-> >>
-> >> >> Well, from freezer you need:
-> >> >>
-> >> >> 1) user process frozen.
-> >> >>
-> >> >> 2) essential locks _not_ held so that block devices are still functional.
-> >> >>
-> >> >> > > > mmap... what is problem with mmap? For suspend, memory is powered, so
-> >> >> > > > you can permit people changing it.
-> >> >> > >
-> >> >> > > Suppose mmap is used to make the registers of some device available to user
-> >> >> > > space.  Yes, that can happen.
-> >> >>
-> >> >> "Don't do it, then". Yes, can happen, but hopefully is not too common
-> >> >> these days. [And... freezer doing 1) but not 2) would be enough to
-> >> >> handle that. Freezer doing 1) but not 2) would also be simpler...]
-> >> >
-> >> > Again, I'm not sure what you mean.
-> >> >
-> >> > Are you trying to say that it would be OK to freeze user space tasks in
-> >> > the D state?
-> >>
-> >> I think that's what Pavel is saying.   Processes in D state sleeping
-> >> on non-device mutexes _are_ actually OK to freeze.  And that would
-> >> nicely solve the fuse freeze problem.
-> >
-> > That's potentially deeadlock-prone, because a task waiting for mutex X may
-> > very well be holding mutex Y, so if there's another task waiting for mutex Y,
-> > it needs to be frozen at the same time.
-> >
-> >> The only little detail is how do we implement that...
-> >
-> > This means the only way I can see would be to hack the mutex code so that the
-> > try_to_freeze() was called for user space tasks after the
-> > sched_preempt_enable_no_resched() before schedule().
-> >
-> > That shouldn't be a big deal performance-wise, because we are in the slow
-> > path anyway then.  I'm not sure if Peter Z will like it, though.
-> >
-> > Moreover, a task waiting for a mutex may be holding a semaphore or be
-> > participating in some other mutual-exclusion mechanism, so we'd need to
-> > address them all.  Plus, as noted by Pavel, freezing those things would make
-> > it difficult to save hibernation images to us.
-> 
-> Well, as a first step I could cook up a patch that adds a flag to the
-> mutex indicating that it's freezable.  Fuse would mark its mutexes
-> (and the mutexes that VFS uses on its behalf) as freezable.  That way
-> we don't interfere with hibernation, except if hibernation uses fuse
-> but that's a very special case.
+The driver can be used in various subsystems and therefore should not
+be unloaded when it is defined in the kernel configuration, so remove
+support for unloading it.
 
-Yes, that may be worth a shot. :-)
+Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+---
+ drivers/mfd/syscon.c | 18 ------------------
+ 1 file changed, 18 deletions(-)
 
-Thanks,
-Rafael
-
-
+diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
+index 3f10591..e1886fb 100644
+--- a/drivers/mfd/syscon.c
++++ b/drivers/mfd/syscon.c
+@@ -138,17 +138,6 @@ static int syscon_probe(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-static int syscon_remove(struct platform_device *pdev)
+-{
+-	struct syscon *syscon;
+-
+-	syscon = platform_get_drvdata(pdev);
+-	iounmap(syscon->base);
+-	platform_set_drvdata(pdev, NULL);
+-
+-	return 0;
+-}
+-
+ static struct platform_driver syscon_driver = {
+ 	.driver = {
+ 		.name = "syscon",
+@@ -156,7 +145,6 @@ static struct platform_driver syscon_driver = {
+ 		.of_match_table = of_syscon_match,
+ 	},
+ 	.probe		= syscon_probe,
+-	.remove		= syscon_remove,
+ };
+ 
+ static int __init syscon_init(void)
+@@ -165,12 +153,6 @@ static int __init syscon_init(void)
+ }
+ postcore_initcall(syscon_init);
+ 
+-static void __exit syscon_exit(void)
+-{
+-	platform_driver_unregister(&syscon_driver);
+-}
+-module_exit(syscon_exit);
+-
+ MODULE_AUTHOR("Dong Aisheng <dong.aisheng@linaro.org>");
+ MODULE_DESCRIPTION("System Control driver");
+ MODULE_LICENSE("GPL v2");
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.12.4
+
