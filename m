@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758741Ab3BKSOc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 13:14:32 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:57598 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758709Ab3BKSOb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 13:14:31 -0500
-Date: Mon, 11 Feb 2013 10:14:28 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: devel <devel@driverdev.osuosl.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging: Remove unnecessary OOM messages
-Message-ID: <20130211181428.GA21288@kroah.com>
-References: <1360604489.2028.25.camel@joe-AO722>
+	id S1758757Ab3BKSPK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 13:15:10 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:50207 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758684Ab3BKSPJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 13:15:09 -0500
+Message-ID: <511934ED.2020104@ti.com>
+Date: Mon, 11 Feb 2013 19:14:05 +0100
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130115 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360604489.2028.25.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Anil Kumar <anilk4.v@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <alsa-devel@alsa-project.org>, <tony@atomide.com>,
+        <thomas@tomweber.eu>, <perex@perex.cz>, <tiwai@suse.de>,
+        Liam Girdwood <liam.r.girdwood@linux.intel.com>
+Subject: Re: Sound record on Devkit8000 with DT boot issue
+References: <CABYxbz5ECxoWZtkfL3UbZ=R4LVoNeMVxjYbPdZoarstCod-gQw@mail.gmail.com> <5118EF75.30107@ti.com> <CABYxbz7HcZTK+y20mtDR+1coRUbUMgNHNDdJ3O7Ln7U7d0LEzA@mail.gmail.com>
+In-Reply-To: <CABYxbz7HcZTK+y20mtDR+1coRUbUMgNHNDdJ3O7Ln7U7d0LEzA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 11, 2013 at 09:41:29AM -0800, Joe Perches wrote:
-> alloc failures already get standardized OOM
-> messages and a dump_stack.
-> 
-> For the affected mallocs around these OOM messages:
-> 
-> Converted kzallocs with multiplies to kcalloc.
-> Converted kmallocs with multiplies to kmalloc_array.
-> Converted a kmalloc/strlen/strncpy to kstrdup.
-> Moved a spin_lock below a removed OOM message and
-> removed a now unnecessary spin_unlock.
-> Neatened alignment and whitespace.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  drivers/staging/asus_oled/asus_oled.c              | 15 ++-----
->  drivers/staging/bcm/InterfaceInit.c                | 14 ++----
->  drivers/staging/ced1401/usb1401.c                  |  4 +-
->  drivers/staging/comedi/drivers.c                   |  5 +--
->  drivers/staging/comedi/drivers/amplc_dio200.c      |  9 ++--
->  drivers/staging/comedi/drivers/comedi_bond.c       |  5 +--
->  drivers/staging/comedi/drivers/dt9812.c            |  5 +--
->  drivers/staging/comedi/drivers/ni_labpc.c          | 10 ++---
->  drivers/staging/comedi/drivers/pcmuio.c            | 11 ++---
->  drivers/staging/comedi/drivers/unioxx5.c           |  6 +--
->  drivers/staging/comedi/drivers/usbdux.c            | 27 ++----------
->  drivers/staging/comedi/drivers/usbduxfast.c        |  6 ---
->  drivers/staging/comedi/drivers/usbduxsigma.c       | 31 +++----------
->  drivers/staging/cptm1217/clearpad_tm1217.c         |  5 +--
->  drivers/staging/et131x/et131x.c                    | 20 +++------
->  drivers/staging/frontier/alphatrack.c              | 51 +++++++++-------------
->  drivers/staging/frontier/tranzport.c               | 26 +++++------
->  drivers/staging/ft1000/ft1000-usb/ft1000_usb.c     |  5 +--
->  drivers/staging/gdm72xx/gdm_sdio.c                 |  8 +---
->  drivers/staging/gdm72xx/sdio_boot.c                |  9 +---
->  drivers/staging/gdm72xx/usb_boot.c                 |  8 +---
->  drivers/staging/iio/accel/lis3l02dq_ring.c         |  5 +--
->  drivers/staging/keucr/usb.c                        |  5 +--
->  drivers/staging/line6/driver.c                     | 25 ++---------
->  drivers/staging/line6/pcm.c                        |  6 ---
->  drivers/staging/media/as102/as102_usb_drv.c        |  4 +-
->  drivers/staging/media/go7007/go7007-fw.c           | 24 +++-------
->  drivers/staging/media/go7007/s2250-loader.c        |  5 +--
->  drivers/staging/media/lirc/lirc_imon.c             |  3 --
->  drivers/staging/media/lirc/lirc_sasem.c            |  6 ---
+Hi,
 
-I cut the drivers/staging/media/* patches out of this larger patch as
-those need to go through Mauro's tree, not mine (they also don't apply
-to mine because of that.)
+On 02/11/2013 06:58 PM, Anil Kumar wrote:
+>> Here you should have something like:
+>> ti,audio-routing =
+>>         "Ext Spk", "PREDRIVEL",
+>>         "Ext Spk", "PREDRIVER",
+>>         "MAINMIC", "Main Mic",
+>>         "Main Mic", "Mic Bias 1";
+>>
+>> So you connect the MicBias1 to Main Mic. When you start playback MicBias1 will
+>> be turned on for you.
+> 
+> I tried with this routing (next-20130211 tag kernel). But it is not
+> working for me.
+> So i have gone through other board and found snd_soc_dapm_route for
+> 
+> 1) zoom2.c
+>        {"MAINMIC", NULL, "Mic Bias 1"},
+>        {"Mic Bias 1", NULL, "Ext Mic"},
+> 
+> 2) omap3pandora.c
+>         {"MAINMIC", NULL, "Mic Bias 1"},
+>         {"Mic Bias 1", NULL, "Mic (internal)"},
+> 
+> But for omap-twl4030.c it is
+>         {"MAINMIC", NULL, "Main Mic"},
+>         {"Main Mic", NULL, "Mic Bias 1"},
+> 
+>  It Should will be as ?
+>         {"MAINMIC", NULL, "Mic Bias 1"},
+>         {"Mic Bias 1", NULL, "Main Mic"},
+> 
+> Because with this i am able to get audio on Devkit8000 as
+>              ti,audio-routing =
+>                         "Ext Spk", "PREDRIVEL",
+>                         "Ext Spk", "PREDRIVER",
+>                         "MAINMIC", "Mic Bias 1",
+>                         "Mic Bias 1", "Main Mic";
 
-thanks,
+In 3.9 this should not work...
 
-greg k-h
+linux-next should not have zoom2 at least and I converted the machine drivers
+as well in regards to micbias handling:
+e04d6e5 ASoC: twl4030: Convert MICBIAS to SUPPLY widget
+57d61b9 ASoC: OMAP: Remove obsolete machine drivers for Zoom2 and SDP3430
+
+-- 
+Péter
