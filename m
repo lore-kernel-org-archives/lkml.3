@@ -1,67 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758045Ab3BKRgb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 12:36:31 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:35188 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757822Ab3BKRg3 convert rfc822-to-8bit (ORCPT
+	id S1758252Ab3BKRhH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 12:37:07 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:41701 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758191Ab3BKRhF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 12:36:29 -0500
-From: "J, KEERTHY" <j-keerthy@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>
-Subject: RE: [PATCH V2] Regulator: Reorder the min max assignment in the
- sequence of regulator_set_voltage function
-Thread-Topic: [PATCH V2] Regulator: Reorder the min max assignment in the
- sequence of regulator_set_voltage function
-Thread-Index: AQHOCCSeeDJo8q2CGUu0t11Gm6LTiph0h3uAgABkiqA=
-Date: Mon, 11 Feb 2013 17:36:23 +0000
-Message-ID: <DC88CAD03C0052499C1907B327FC63229B976F@DBDE01.ent.ti.com>
-References: <1360565374-1553-1-git-send-email-j-keerthy@ti.com>
- <20130211170525.GK4607@opensource.wolfsonmicro.com>
-In-Reply-To: <20130211170525.GK4607@opensource.wolfsonmicro.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.113.52]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 11 Feb 2013 12:37:05 -0500
+Message-ID: <51192C3D.5050403@wwwdotorg.org>
+Date: Mon, 11 Feb 2013 10:37:01 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
+To: manjunath.goudar@linaro.org
+CC: linux-usb@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        patches@linaro.org, stern@rowland.harvard.edu, arnd@linaro.org,
+        gregkh@linuxfoundation.org, Greg KH <greg@kroah.com>,
+        David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Brian Swetland <swetland@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/8] USB: EHCI: make ehci-msm a separate driver
+References: <y> <1360522697-22902-1-git-send-email-y> <5117ee12.860e440a.097c.3521@mx.google.com>
+In-Reply-To: <5117ee12.860e440a.097c.3521@mx.google.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/10/2013 11:58 AM, manjunath.goudar@linaro.org wrote:
+> Separate the Qualcomm On-Chip host controller driver from ehci-hcd host code
 
+> diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
 
-> -----Original Message-----
-> From: Mark Brown [mailto:broonie@opensource.wolfsonmicro.com]
-> Sent: Monday, February 11, 2013 10:35 PM
-> To: J, KEERTHY
-> Cc: linux-kernel@vger.kernel.org; lgirdwood@gmail.com
-> Subject: Re: [PATCH V2] Regulator: Reorder the min max assignment in
-> the sequence of regulator_set_voltage function
-> 
-> On Mon, Feb 11, 2013 at 12:19:34PM +0530, J Keerthy wrote:
-> 
-> > The min and max values for regulators are getting assigned before
-> > actually the voltage is set. So making sure that min and max values
-> > are assigned only if the voltage is successfully set else keeping the
-> > last successfully set voltage's min and max values.
-> 
-> > This is boot tested on OMAP4430 and OMAP4460 boards.
-> 
-> This seems fine but doesn't apply against topic/core or -next, can you
-> please regenerate against topic/core and resend?
+> @@ -203,7 +203,7 @@ config USB_EHCI_TEGRA
+>         boolean "NVIDIA Tegra HCD support"
+>         depends on USB_EHCI_HCD && ARCH_TEGRA
+>         select USB_EHCI_ROOT_HUB_TT
+> -       help
+> +      --- help---
+>           This driver enables support for the internal USB Host Controllers
+>           found in NVIDIA Tegra SoCs. The controllers are EHCI compliant.
 
-Ok. I will rebase.
-
-> 
-> > V2: Fixed comment from Mark. Introduced local variables to hold
-> > current min and max values.
-> 
-> Don't include things like this in the changelog, include them after the
-> --- as covered in SubmittingPatches.
-
-Ok.
+I still don't think that's correct.
