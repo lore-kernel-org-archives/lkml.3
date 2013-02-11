@@ -1,136 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759849Ab3BKTn0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 14:43:26 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:37265 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759797Ab3BKTnY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 14:43:24 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>, Daniel J Blueman <daniel@quora.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: Re: [3.8-rc7] PCI hotplug wakeup oops
-Date: Mon, 11 Feb 2013 20:49:49 +0100
-Message-ID: <1843565.7Y1sC8j6FG@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc7; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <6086479.ycKj2j8yeP@vostro.rjw.lan>
-References: <CAMVG2svG21yiM1wkH4_2pen2n+cr2-Zv7TbH3Gj+8MwevZjDbw@mail.gmail.com> <CAErSpo6rGYLQeP8Myu=octSPY_0R+B7ptBLhLawd_A2E3NRsAw@mail.gmail.com> <6086479.ycKj2j8yeP@vostro.rjw.lan>
+	id S1759643Ab3BKTnK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 14:43:10 -0500
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:64341 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759739Ab3BKTnG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 14:43:06 -0500
+Message-ID: <511949C7.7070604@gmail.com>
+Date: Mon, 11 Feb 2013 13:43:03 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Andrew Murray <andrew.murray@arm.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] of/pci: Provide support for parsing PCI DT ranges
+ property
+References: <1360570940-17086-1-git-send-email-thierry.reding@avionic-design.de> <1360570940-17086-2-git-send-email-thierry.reding@avionic-design.de>
+In-Reply-To: <1360570940-17086-2-git-send-email-thierry.reding@avionic-design.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, February 11, 2013 08:27:49 PM Rafael J. Wysocki wrote:
-> On Monday, February 11, 2013 12:01:37 PM Bjorn Helgaas wrote:
-> > [+cc Rafael]
-> > 
-> > On Mon, Feb 11, 2013 at 10:08 AM, Daniel J Blueman <daniel@quora.org> wrote:
-> > > On 11 February 2013 21:03, Daniel J Blueman <daniel@quora.org> wrote:
-> > >> With 3.8-rc7, when unplugging the Thunderbolt ethernet adapter (bus 0a
-> > >> [1]) on a Macbook Pro 10,1, we see the PCIe port correctly released:
-> > >>
-> > >> pciehp 0000:06:03.0:pcie24: Card not present on Slot(3)
-> > >> tg3 0000:0a:00.0: tg3_abort_hw timed out, TX_MODE_ENABLE will not
-> > >> clear MAC_TX_MODE=ffffffff
-> > >> tg3 0000:0a:00.0 eth0: No firmware running
-> > >> tg3 0000:0a:00.0 eth0: Link is down
-> > >> [sched_delayed] sched: RT throttling activated
-> > >> pcieport 0000:00:01.1: System wakeup enabled by ACPI
-> > >> pciehp 0000:09:00.0:pcie24: unloading service driver pciehp
-> > >> pci_bus 0000:0a: busn_res: [bus 0a] is released
-> > >> pci_bus 0000:09: busn_res: [bus 09-0a] is released
-> > >>
-> > >> After some activity later (eg I can reproduce this by switching to a
-> > >> text console and back), often we'll see an oops:
-> > >>
-> > >> Unable to handle kernel paging request at 0000000000001070
-> > >> pci_pme_list_scan+0x3d/0xe0
-> > >> Call Trace:
-> > >> process_one_work+0x193
-> > >> ? process_one_work+0x131
-> > >> ? pci_pme_wakeup+0x60
-> > >> worker_thread+0x15d
-> > >>
-> > >> (gdb) list *(pci_pme_list_scan+0x3d)
-> > >> 0xffffffff8123f6dd is in pci_pme_list_scan (drivers/pci/pci.c:1556).
-> > >> 1551                                    /*
-> > >> 1552                                     * If bridge is in low power state, the
-> > >> 1553                                     * configuration space of subordinate devices
-> > >> 1554                                     * may be not accessible
-> > >> 1555                                     */
-> > >> 1556                                    if (bridge && bridge->current_state != PCI_D0)
-> > >> 1557                                            continue;
-> > >> 1558                                    pci_pme_wakeup(pme_dev->dev, NULL);
-> > >> 1559                            } else {
-> > >> 1560                                    list_del(&pme_dev->list);
-> > >>
-> > >> Since a panic in vsnprintf happens after the oops (hence I can't catch
-> > >> it with EFI pstore), it is almost certainly significant heap
-> > >> corruption; this would explain why pme_dev became null (the load has
-> > >> been ordered ahead).
-> > >>
-> > >> I'll see what I can find out with memory poisoning and list debugging.
-> > >
-> > > Enabling a bunch of related debugging, we see pme_dev is non-null and:
-> > >
-> > > BUG: Unable to handle NULL pointer dereference at
-> > > pci_bus_read_config_word+0x6c
-> > > PGD 26314c067 PUD 2633f9067 PMD 0
-> > > Oops: 0000 [#1] SMP
-> > > pci_check_pme_status+0x4f
-> > > pci_pme_wakeup+0x21
-> > > pci_pme_list_scan+0xd5
-> > > process_one_work+0x1ca
-> > > ? process_one_work+0x160
-> > > ? pci_pme_wakeup+0x60
-> > > worker_thread+0x14e
-> > >
-> > > Anyway, it looks like the device being unplugged wasn't removed from
-> > > pci_pme_list as pci_pme_active(dev, false) wasn't called.
-> > >
-> > > From a quick review, I wasn't able to find the right place in the
-> > > call-chain which I only see releases the child busses and PCIe port
-> > > drivers. Anyone?
-> > 
-> > It looks like drivers *add* devices to pci_pme_list when they use
-> > pci_enable_wake() or pci_wake_from_d3().  But many drivers never
-> > remove their devices, and I don't see any place where the core does it
-> > either.  My guess is we need to remove it in pci_stop_dev() (we
-> > already do pcie_aspm_exit_link_state() there) or somewhere similar.
+On 02/11/2013 02:22 AM, Thierry Reding wrote:
+> From: Andrew Murray <andrew.murray@arm.com>
 > 
-> Yes, we should call pci_pme_active(dev, false) somewhere in there I think.
-> It's fine to call that even if PME was not "active" before.
+> DT bindings for PCI host bridges often use the ranges property to describe
+> memory and IO ranges - this binding tends to be the same across architectures
+> yet several parsing implementations exist, e.g. arch/mips/pci/pci.c,
+> arch/powerpc/kernel/pci-common.c, arch/sparc/kernel/pci.c and
+> arch/microblaze/pci/pci-common.c (clone of PPC). Some of these duplicate
+> functionality provided by drivers/of/address.c.
+> 
+> This patch provides a common iterator-based parser for the ranges property, it
+> is hoped this will reduce DT representation differences between architectures
+> and that architectures will migrate in part to this new parser.
+> 
+> It is also hoped (and the motativation for the patch) that this patch will
+> reduce duplication of code when writing host bridge drivers that are supported
+> by multiple architectures.
+> 
+> This patch provides struct resources from a device tree node, e.g.:
+> 
+> 	u32 *last = NULL;
+> 	struct resource res;
+> 	while ((last = of_pci_process_ranges(np, res, last))) {
+> 		//do something with res
+> 	}
+> 
+> Platforms with quirks can then do what they like with the resource or migrate
+> common quirk handling to the parser. In an ideal world drivers can just request
+> the obtained resources and pass them on (e.g. pci_add_resource_offset).
+> 
+> Signed-off-by: Andrew Murray <Andrew.Murray@arm.com>
+> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+> ---
+>  drivers/of/address.c       | 63 ++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/of_address.h |  9 +++++++
+>  2 files changed, 72 insertions(+)
+> 
+> diff --git a/drivers/of/address.c b/drivers/of/address.c
+> index 04da786..f607008 100644
+> --- a/drivers/of/address.c
+> +++ b/drivers/of/address.c
+> @@ -13,6 +13,7 @@
+>  #define OF_CHECK_COUNTS(na, ns)	(OF_CHECK_ADDR_COUNT(na) && (ns) > 0)
+>  
+>  static struct of_bus *of_match_bus(struct device_node *np);
+> +static struct of_bus *of_find_bus(const char *name);
 
-Daniel, I wonder if the patch below helps?
+Can you move this function up to avoid the forward declaration.
 
-Rafael
+>  static int __of_address_to_resource(struct device_node *dev,
+>  		const __be32 *addrp, u64 size, unsigned int flags,
+>  		const char *name, struct resource *r);
+> @@ -227,6 +228,57 @@ int of_pci_address_to_resource(struct device_node *dev, int bar,
+>  	return __of_address_to_resource(dev, addrp, size, flags, NULL, r);
+>  }
+>  EXPORT_SYMBOL_GPL(of_pci_address_to_resource);
+> +
+> +const __be32 *of_pci_process_ranges(struct device_node *node,
+> +				    struct resource *res, const __be32 *from)
+> +{
+> +	const __be32 *start, *end;
+> +	int na, ns, np, pna;
+> +	int rlen;
+> +	struct of_bus *bus;
+> +
+> +	WARN_ON(!res);
+> +
+> +	bus = of_find_bus("pci");
+> +	bus->count_cells(node, &na, &ns);
+> +	if (!OF_CHECK_COUNTS(na, ns)) {
+> +		pr_err("Bad cell count for %s\n", node->full_name);
+> +		return NULL;
+> +	}
+> +
+> +	pna = of_n_addr_cells(node);
+> +	np = pna + na + ns;
+> +
+> +	start = of_get_property(node, "ranges", &rlen);
+> +	if (start == NULL)
+> +		return NULL;
+> +
+> +	end = start + rlen / sizeof(__be32);
+> +
+> +	if (!from)
+> +		from = start;
+> +
+> +	while (from + np <= end) {
+> +		u64 cpu_addr, size;
+> +
+> +		cpu_addr = of_translate_address(node, from + na);
+> +		size = of_read_number(from + na + pna, ns);
+> +		res->flags = bus->get_flags(from);
+> +		from += np;
+> +
+> +		if (cpu_addr == OF_BAD_ADDR || size == 0)
+> +			continue;
+> +
+> +		res->name = node->full_name;
+> +		res->start = cpu_addr;
+> +		res->end = res->start + size - 1;
+> +		res->parent = res->child = res->sibling = NULL;
+> +		return from;
+> +	}
+> +
+> +	return NULL;
+> +}
+> +EXPORT_SYMBOL_GPL(of_pci_process_ranges);
+>  #endif /* CONFIG_PCI */
+>  
+>  /*
+> @@ -337,6 +389,17 @@ static struct of_bus *of_match_bus(struct device_node *np)
+>  	return NULL;
+>  }
+>  
+> +static struct of_bus *of_find_bus(const char *name)
+> +{
+> +	unsigned int i;
+> +
+> +	for (i = 0; i < ARRAY_SIZE(of_busses); i++)
+> +		if (strcmp(name, of_busses[i].name) == 0)
+                                              ^
+space needed.
 
+> +			return &of_busses[i];
+> +
+> +	return NULL;
+> +}
+> +
+>  static int of_translate_one(struct device_node *parent, struct of_bus *bus,
+>  			    struct of_bus *pbus, __be32 *addr,
+>  			    int na, int ns, int pna, const char *rprop)
+> diff --git a/include/linux/of_address.h b/include/linux/of_address.h
+> index 0506eb5..751e889 100644
+> --- a/include/linux/of_address.h
+> +++ b/include/linux/of_address.h
+> @@ -27,6 +27,8 @@ static inline unsigned long pci_address_to_pio(phys_addr_t addr) { return -1; }
+>  #define pci_address_to_pio pci_address_to_pio
+>  #endif
+>  
+> +const __be32 *of_pci_process_ranges(struct device_node *node,
+> +				    struct resource *res, const __be32 *from);
+>  #else /* CONFIG_OF_ADDRESS */
+>  #ifndef of_address_to_resource
+>  static inline int of_address_to_resource(struct device_node *dev, int index,
+> @@ -53,6 +55,13 @@ static inline const __be32 *of_get_address(struct device_node *dev, int index,
+>  {
+>  	return NULL;
+>  }
+> +
+> +static inline const __be32 *of_pci_process_ranges(struct device_node *node,
+> +						  struct resource *res,
+> +						  const __be32 *from)
+> +{
+> +	return NULL;
+> +}
+>  #endif /* CONFIG_OF_ADDRESS */
+>  
+>  
+> 
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/pci/remove.c |    2 ++
- 1 file changed, 2 insertions(+)
-
-Index: test/drivers/pci/remove.c
-===================================================================
---- test.orig/drivers/pci/remove.c
-+++ test/drivers/pci/remove.c
-@@ -19,6 +19,8 @@ static void pci_free_resources(struct pc
- 
- static void pci_stop_dev(struct pci_dev *dev)
- {
-+	pci_pme_active(dev, false);
-+
- 	if (dev->is_added) {
- 		pci_proc_detach_device(dev);
- 		pci_remove_sysfs_dev_files(dev);
-
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
