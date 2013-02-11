@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760076Ab3BKXAa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 18:00:30 -0500
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:48046 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759990Ab3BKXA1 (ORCPT
+	id S1758275Ab3BKXAq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 18:00:46 -0500
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:41934 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758423Ab3BKXAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 18:00:27 -0500
-Message-ID: <1360623614.2950.60.camel@lorien2>
-Subject: [PATCH 0/4] pci: Add PCI_BUS() and PCI_DEVID() interfaces to return
+	Mon, 11 Feb 2013 18:00:44 -0500
+Message-ID: <1360623637.2950.63.camel@lorien2>
+Subject: [PATCH 1/4] pci: Add PCI_BUS() and PCI_DEVID() interfaces to return
  bus number and device id
 From: Shuah Khan <shuah.khan@hp.com>
 Reply-To: shuah.khan@hp.com
-To: Joerg Roedel <joro@8bytes.org>, bhelgaas@google.com
-Cc: jiang.liu@huawei.com, shemminger@vyatta.com, paulmck@linux.vnet.ibm.com,
-        linasvepstas@gmail.com, dhowells@redhat.com, davej@redhat.com,
-        tglx@linutronix.de, mtk.manpages@gmail.com,
-        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
-        wangyijing@huawei.com, LKML <linux-kernel@vger.kernel.org>,
-        shuahkhan@gmail.com
-Date: Mon, 11 Feb 2013 16:00:14 -0700
+To: bhelgaas@google.com, Joerg Roedel <joro@8bytes.org>
+Cc: paulmck@linux.vnet.ibm.com, linasvepstas@gmail.com, dhowells@redhat.com,
+        davej@redhat.com, tglx@linutronix.de, mtk.manpages@gmail.com,
+        iommu@lists.linux-foundation.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-pci@vger.kernel.org, shemminger@vyatta.com, jiang.liu@huawei.com,
+        wangyijing@huawei.com, shuahkhan@gmail.com
+Date: Mon, 11 Feb 2013 16:00:37 -0700
 Organization: ISS-Linux
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.3-0ubuntu6 
@@ -31,28 +30,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 pci defines PCI_DEVFN(), PCI_SLOT(), and PCI_FUNC() interfaces, however,
 it doesn't have interfaces to return PCI bus and PCI device id. Drivers
-(AMD IOMMU, and AER) have module specific definitions for PCI_BUS() and
-AMD_IOMMU driver also has a module specific interface to calculate PCI
+(AMD IOMMU, and AER) implement module specific definitions for PCI_BUS()
+and AMD_IOMMU driver also has a module specific interface to calculate PCI   
 device id from bus number and devfn.
 
-This patch set adds PCI_BUS(), and PCI_DEVID() to pci.h, changes are to
-use PCI_BUS() from pci. Changes AMD_IOMMU driver to use PCI_BUS() and
-PCI_DEVID() from pci.
+Add PCI_BUS and PCI_DEVID interfaces to return PCI bus number and PCI device
+id respectively to avoid the need for duplicate definitions in other modules.
+AER driver code and AMD IOMMU driver define PCI_BUS. AMD IOMMU driver defines
+an interface to calculate device id from bus number, and devfn pair.
 
-Files changed:
-
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+---
  include/uapi/linux/pci.h |    4 ++++
  1 file changed, 4 insertions(+)
 
- drivers/pci/pcie/aer/aerdrv_core.c |    2 --
- 1 file changed, 2 deletions(-)
+diff --git a/include/uapi/linux/pci.h b/include/uapi/linux/pci.h
+index 3c292bc0..6b2c8b3 100644
+--- a/include/uapi/linux/pci.h
++++ b/include/uapi/linux/pci.h
+@@ -30,6 +30,10 @@
+ #define PCI_DEVFN(slot, func)	((((slot) & 0x1f) << 3) | ((func) & 0x07))
+ #define PCI_SLOT(devfn)		(((devfn) >> 3) & 0x1f)
+ #define PCI_FUNC(devfn)		((devfn) & 0x07)
++#define PCI_DEVID(bus, devfn)	((((u16)bus) << 8) | devfn)
++
++/* return bus from PCI devid = ((u16)bus_number) << 8) | devfn */
++#define PCI_BUS(x) (((x) >> 8) & 0xff)
+ 
+ /* Ioctls for /proc/bus/pci/X/Y nodes. */
+ #define PCIIOC_BASE		('P' << 24 | 'C' << 16 | 'I' << 8)
+-- 
+1.7.9.5
 
- drivers/iommu/amd_iommu_types.h |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
-
- drivers/iommu/amd_iommu.c       |    2 +-
- drivers/iommu/amd_iommu_init.c  |    6 +++---
- drivers/iommu/amd_iommu_types.h |    7 -------
- 3 files changed, 4 insertions(+), 11 deletions(-)
 
 
