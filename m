@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756763Ab3BKMWv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 07:22:51 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:59986 "EHLO
+	id S1756786Ab3BKMXx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 07:23:53 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:59998 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756674Ab3BKMWt (ORCPT
+	with ESMTP id S1756321Ab3BKMXw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 07:22:49 -0500
-Date: Mon, 11 Feb 2013 04:22:27 -0800
+	Mon, 11 Feb 2013 07:23:52 -0500
+Date: Mon, 11 Feb 2013 04:23:36 -0800
 From: tip-bot for Sasha Levin <sasha.levin@oracle.com>
-Message-ID: <tip-4d81b02bbc6aa485e9cf0bdb6951b7b1b4952bb8@git.kernel.org>
+Message-ID: <tip-bf48cfee5efb3f86c0620acd76b873a6f50bb11a@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, sasha.levin@oracle.com, hpa@zytor.com,
         mingo@kernel.org, a.p.zijlstra@chello.nl,
         torvalds@linux-foundation.org, akpm@linux-foundation.org,
@@ -18,12 +18,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, sasha.levin@oracle.com,
         linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
         torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
         tglx@linutronix.de
-In-Reply-To: <1360456781-32462-2-git-send-email-sasha.levin@oracle.com>
-References: <1360456781-32462-2-git-send-email-sasha.levin@oracle.com>
+In-Reply-To: <1360456781-32462-3-git-send-email-sasha.levin@oracle.com>
+References: <1360456781-32462-3-git-send-email-sasha.levin@oracle.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/locking] liblockdep:
-  Remove the need for liblockdep_set_thread()
-Git-Commit-ID: 4d81b02bbc6aa485e9cf0bdb6951b7b1b4952bb8
+Subject: [tip:core/locking] perf: Stop using liblockdep_init()
+  and liblockdep_set_thread()
+Git-Commit-ID: bf48cfee5efb3f86c0620acd76b873a6f50bb11a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,22 +32,21 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 11 Feb 2013 04:22:33 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 11 Feb 2013 04:23:42 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4d81b02bbc6aa485e9cf0bdb6951b7b1b4952bb8
-Gitweb:     http://git.kernel.org/tip/4d81b02bbc6aa485e9cf0bdb6951b7b1b4952bb8
+Commit-ID:  bf48cfee5efb3f86c0620acd76b873a6f50bb11a
+Gitweb:     http://git.kernel.org/tip/bf48cfee5efb3f86c0620acd76b873a6f50bb11a
 Author:     Sasha Levin <sasha.levin@oracle.com>
-AuthorDate: Sat, 9 Feb 2013 19:39:32 -0500
+AuthorDate: Sat, 9 Feb 2013 19:39:33 -0500
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 11 Feb 2013 10:12:36 +0100
+CommitDate: Mon, 11 Feb 2013 10:12:37 +0100
 
-liblockdep: Remove the need for liblockdep_set_thread()
+perf: Stop using liblockdep_init() and liblockdep_set_thread()
 
-Generate the task_struct data on the fly when needed, instead on
-on thread creation.
+These functions are no longer needed by liblockdep, drop them.
 
 Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 Cc: jamie.iles@oracle.com
@@ -60,183 +59,86 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/1360456781-32462-2-git-send-email-sasha.levin@oracle.com
+Link: http://lkml.kernel.org/r/1360456781-32462-3-git-send-email-sasha.levin@oracle.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/lib/lockdep/common.c                    | 8 +++++---
- tools/lib/lockdep/include/liblockdep/common.h | 1 -
- tools/lib/lockdep/tests/AA.c                  | 2 --
- tools/lib/lockdep/tests/ABBA.c                | 2 --
- tools/lib/lockdep/tests/ABBCCA.c              | 2 --
- tools/lib/lockdep/tests/ABBCCDDA.c            | 2 --
- tools/lib/lockdep/tests/ABCABC.c              | 2 --
- tools/lib/lockdep/tests/ABCDBCDA.c            | 2 --
- tools/lib/lockdep/tests/ABCDBDDA.c            | 2 --
- tools/lib/lockdep/tests/WW.c                  | 2 --
- tools/lib/lockdep/tests/unlock_balance.c      | 2 --
- tools/lib/lockdep/uinclude/linux/lockdep.h    | 4 ++--
- 12 files changed, 7 insertions(+), 24 deletions(-)
+ tools/perf/builtin-sched.c          | 2 --
+ tools/perf/builtin-top.c            | 4 ----
+ tools/perf/config/feature-tests.mak | 1 -
+ tools/perf/perf.c                   | 3 ---
+ tools/perf/util/liblockdep.h        | 2 --
+ 5 files changed, 12 deletions(-)
 
-diff --git a/tools/lib/lockdep/common.c b/tools/lib/lockdep/common.c
-index d2946e0..c0f1166 100644
---- a/tools/lib/lockdep/common.c
-+++ b/tools/lib/lockdep/common.c
-@@ -15,8 +15,10 @@ __attribute__((constructor)) static void liblockdep_init(void)
- 	lockdep_init();
- }
+diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
+index 53d9225..e1f0c44 100644
+--- a/tools/perf/builtin-sched.c
++++ b/tools/perf/builtin-sched.c
+@@ -468,8 +468,6 @@ static void *thread_func(void *ctx)
+ 	char comm2[22];
+ 	int fd;
  
--void liblockdep_set_thread(void)
-+struct task_struct *__curr(void)
+-	liblockdep_set_thread();
+-
+ 	free(parms);
+ 
+ 	sprintf(comm2, ":%s", this_task->comm);
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index c9b99ef..c9ff395 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -588,8 +588,6 @@ static void *display_thread_tui(void *arg)
+ 		.refresh	= top->delay_secs,
+ 	};
+ 
+-	liblockdep_set_thread();
+-
+ 	perf_top__sort_new_samples(top);
+ 
+ 	/*
+@@ -615,8 +613,6 @@ static void *display_thread(void *arg)
+ 	struct perf_top *top = arg;
+ 	int delay_msecs, c;
+ 
+-	liblockdep_set_thread();
+-
+ 	tcgetattr(0, &save);
+ 	tc = save;
+ 	tc.c_lflag &= ~(ICANON | ECHO);
+diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
+index 1f5a37e..20f8f7b 100644
+--- a/tools/perf/config/feature-tests.mak
++++ b/tools/perf/config/feature-tests.mak
+@@ -223,7 +223,6 @@ define SOURCE_LIBLOCKDEP
+ 
+ int main(void)
  {
--	prctl(PR_GET_NAME, current->comm);
--	current->pid = syscall(__NR_gettid);
-+	prctl(PR_GET_NAME, current_obj.comm);
-+	current_obj.pid = syscall(__NR_gettid);
-+
-+	return &current_obj;
+-	liblockdep_init();
+ 	return 0;
  }
-diff --git a/tools/lib/lockdep/include/liblockdep/common.h b/tools/lib/lockdep/include/liblockdep/common.h
-index f6f7fec8..a675ef0 100644
---- a/tools/lib/lockdep/include/liblockdep/common.h
-+++ b/tools/lib/lockdep/include/liblockdep/common.h
-@@ -26,7 +26,6 @@ struct lockdep_map {
+ endef
+diff --git a/tools/perf/perf.c b/tools/perf/perf.c
+index ddbd315..0f661fb 100644
+--- a/tools/perf/perf.c
++++ b/tools/perf/perf.c
+@@ -446,9 +446,6 @@ int main(int argc, const char **argv)
+ {
+ 	const char *cmd;
+ 
+-	liblockdep_init();
+-	liblockdep_set_thread();
+-
+ 	page_size = sysconf(_SC_PAGE_SIZE);
+ 
+ 	cmd = perf_extract_argv0_path(argv[0]);
+diff --git a/tools/perf/util/liblockdep.h b/tools/perf/util/liblockdep.h
+index 628a2f5..798263f 100644
+--- a/tools/perf/util/liblockdep.h
++++ b/tools/perf/util/liblockdep.h
+@@ -5,7 +5,5 @@
+ #else
+ 
+ #define LIBLOCKDEP_PTHREAD_MUTEX_INITIALIZER(mtx) PTHREAD_MUTEX_INITIALIZER
+-#define liblockdep_init()
+-#define liblockdep_set_thread()
+ 
  #endif
- };
- 
--void liblockdep_set_thread(void);
- void lockdep_init_map(struct lockdep_map *lock, const char *name,
- 			struct lock_class_key *key, int subclass);
- void lock_acquire(struct lockdep_map *lock, unsigned int subclass,
-diff --git a/tools/lib/lockdep/tests/AA.c b/tools/lib/lockdep/tests/AA.c
-index 3f71333..a443e65 100644
---- a/tools/lib/lockdep/tests/AA.c
-+++ b/tools/lib/lockdep/tests/AA.c
-@@ -4,8 +4,6 @@ void main(void)
- {
- 	pthread_mutex_t a, b;
- 
--	liblockdep_set_thread();
--
- 	pthread_mutex_init(&a, NULL);
- 	pthread_mutex_init(&b, NULL);
- 
-diff --git a/tools/lib/lockdep/tests/ABBA.c b/tools/lib/lockdep/tests/ABBA.c
-index 08d87a7..07f0e29 100644
---- a/tools/lib/lockdep/tests/ABBA.c
-+++ b/tools/lib/lockdep/tests/ABBA.c
-@@ -5,8 +5,6 @@ void main(void)
- {
- 	pthread_mutex_t a, b;
- 
--	liblockdep_set_thread();
--
- 	pthread_mutex_init(&a, NULL);
- 	pthread_mutex_init(&b, NULL);
- 
-diff --git a/tools/lib/lockdep/tests/ABBCCA.c b/tools/lib/lockdep/tests/ABBCCA.c
-index c5d0e5c..843db09 100644
---- a/tools/lib/lockdep/tests/ABBCCA.c
-+++ b/tools/lib/lockdep/tests/ABBCCA.c
-@@ -5,8 +5,6 @@ void main(void)
- {
- 	pthread_mutex_t a, b, c;
- 
--	liblockdep_set_thread();
--
- 	pthread_mutex_init(&a, NULL);
- 	pthread_mutex_init(&b, NULL);
- 	pthread_mutex_init(&c, NULL);
-diff --git a/tools/lib/lockdep/tests/ABBCCDDA.c b/tools/lib/lockdep/tests/ABBCCDDA.c
-index e12dc98..33620e2 100644
---- a/tools/lib/lockdep/tests/ABBCCDDA.c
-+++ b/tools/lib/lockdep/tests/ABBCCDDA.c
-@@ -5,8 +5,6 @@ void main(void)
- {
- 	pthread_mutex_t a, b, c, d;
- 
--	liblockdep_set_thread();
--
- 	pthread_mutex_init(&a, NULL);
- 	pthread_mutex_init(&b, NULL);
- 	pthread_mutex_init(&c, NULL);
-diff --git a/tools/lib/lockdep/tests/ABCABC.c b/tools/lib/lockdep/tests/ABCABC.c
-index 70879c95..3fee51e 100644
---- a/tools/lib/lockdep/tests/ABCABC.c
-+++ b/tools/lib/lockdep/tests/ABCABC.c
-@@ -5,8 +5,6 @@ void main(void)
- {
- 	pthread_mutex_t a, b, c;
- 
--	liblockdep_set_thread();
--
- 	pthread_mutex_init(&a, NULL);
- 	pthread_mutex_init(&b, NULL);
- 	pthread_mutex_init(&c, NULL);
-diff --git a/tools/lib/lockdep/tests/ABCDBCDA.c b/tools/lib/lockdep/tests/ABCDBCDA.c
-index 00cd676..aadf11e 100644
---- a/tools/lib/lockdep/tests/ABCDBCDA.c
-+++ b/tools/lib/lockdep/tests/ABCDBCDA.c
-@@ -5,8 +5,6 @@ void main(void)
- {
- 	liblockdep_pthread_mutex_t a, b, c, d;
- 
--	liblockdep_set_thread();
--
- 	liblockdep_pthread_mutex_init(&a, NULL);
- 	liblockdep_pthread_mutex_init(&b, NULL);
- 	liblockdep_pthread_mutex_init(&c, NULL);
-diff --git a/tools/lib/lockdep/tests/ABCDBDDA.c b/tools/lib/lockdep/tests/ABCDBDDA.c
-index 19b3ed1..680c6cf 100644
---- a/tools/lib/lockdep/tests/ABCDBDDA.c
-+++ b/tools/lib/lockdep/tests/ABCDBDDA.c
-@@ -5,8 +5,6 @@ void main(void)
- {
- 	pthread_mutex_t a, b, c, d;
- 
--	liblockdep_set_thread();
--
- 	pthread_mutex_init(&a, NULL);
- 	pthread_mutex_init(&b, NULL);
- 	pthread_mutex_init(&c, NULL);
-diff --git a/tools/lib/lockdep/tests/WW.c b/tools/lib/lockdep/tests/WW.c
-index 2467b13..d44f77d 100644
---- a/tools/lib/lockdep/tests/WW.c
-+++ b/tools/lib/lockdep/tests/WW.c
-@@ -4,8 +4,6 @@ void main(void)
- {
- 	pthread_rwlock_t a, b;
- 
--	liblockdep_set_thread();
--
- 	pthread_rwlock_init(&a, NULL);
- 	pthread_rwlock_init(&b, NULL);
- 
-diff --git a/tools/lib/lockdep/tests/unlock_balance.c b/tools/lib/lockdep/tests/unlock_balance.c
-index 07a4c21..0bc62de 100644
---- a/tools/lib/lockdep/tests/unlock_balance.c
-+++ b/tools/lib/lockdep/tests/unlock_balance.c
-@@ -4,8 +4,6 @@ void main(void)
- {
- 	pthread_mutex_t a;
- 
--	liblockdep_set_thread();
--
- 	pthread_mutex_init(&a, NULL);
- 
- 	pthread_mutex_lock(&a);
-diff --git a/tools/lib/lockdep/uinclude/linux/lockdep.h b/tools/lib/lockdep/uinclude/linux/lockdep.h
-index 611cb28..52609c5 100644
---- a/tools/lib/lockdep/uinclude/linux/lockdep.h
-+++ b/tools/lib/lockdep/uinclude/linux/lockdep.h
-@@ -23,9 +23,9 @@ struct task_struct {
- };
- 
- extern __thread struct task_struct current_obj;
--#define current (&current_obj)
-+extern struct task_struct *__curr(void);
- 
--void liblockdep_set_thread(void);
-+#define current (__curr())
- 
- #define debug_locks_off() 1
- #define task_pid_nr(tsk) ((tsk)->pid)
