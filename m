@@ -1,47 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757263Ab3BKNJQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 08:09:16 -0500
-Received: from us02smtp1.synopsys.com ([198.182.60.75]:50833 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757146Ab3BKNJN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 08:09:13 -0500
-Message-ID: <5118ED6A.3050809@synopsys.com>
-Date: Mon, 11 Feb 2013 18:38:58 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1757272Ab3BKNOQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 08:14:16 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:44832 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757086Ab3BKNOP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 08:14:15 -0500
+Message-ID: <5118EA3B.9010904@imgtec.com>
+Date: Mon, 11 Feb 2013 12:55:23 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Jonas Bonn <jonas.bonn@gmail.com>
-CC: James Hogan <james.hogan@imgtec.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: pt_regs leak into userspace (was Re: [PATCH v3 20/71] ARC: Signal
- handling)
-References: <1359024639-21915-1-git-send-email-vgupta@synopsys.com> <1359024639-21915-9-git-send-email-vgupta@synopsys.com> <51189D2F.4030000@synopsys.com> <CACM3HyGNZxfOXpw01POBVT-YcVKQsnPkO6Kgg+epfZS-x-BRCg@mail.gmail.com> <5118C458.2070205@synopsys.com> <5118C7B6.6040807@imgtec.com> <CACM3HyG+4Pzx02iL9atxG+FOLiCcTeXR+ivzRO78bqDHNp5rGQ@mail.gmail.com> <5118D478.3010205@synopsys.com> <CACM3HyG7B=iMb4cHYP2cb8np55t8WefWTh4x3SYkGK4Lc=RXbA@mail.gmail.com> <5118E60E.5060606@synopsys.com> <CACM3HyF8VhGo9zaAFiX8z97nz-fLeyCSZOCwAN=py5NfxhCfGw@mail.gmail.com>
-In-Reply-To: <CACM3HyF8VhGo9zaAFiX8z97nz-fLeyCSZOCwAN=py5NfxhCfGw@mail.gmail.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [RESEND PATCH] scsi: make struct scsi_varlen_cdb_hdr packed
+References: <1349946933-30314-1-git-send-email-james.hogan@imgtec.com>  <1349951069.2425.44.camel@dabdike.int.hansenpartnership.com>  <5076AE3B.5040509@imgtec.com> <1349960296.2425.53.camel@dabdike.int.hansenpartnership.com> <5076D360.2010804@imgtec.com>
+In-Reply-To: <5076D360.2010804@imgtec.com>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.43]
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2013_02_11_12_55_24
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 11 February 2013 06:32 PM, Jonas Bonn wrote:
-> On 11 February 2013 13:37, Vineet Gupta <Vineet.Gupta1@synopsys.com> wrote:
->> Anyhow going back to my orig patch - if we park the
->> callee-regs-in-sigcontext-or-not, other bits look OK ?
+Hi James,
+
+On 11/10/12 15:10, James Hogan wrote:
+> On 11/10/12 13:58, James Bottomley wrote:
+>> On Thu, 2012-10-11 at 12:32 +0100, James Hogan wrote:
+>>> On 11/10/12 11:24, James Bottomley wrote:
+>>>> On Thu, 2012-10-11 at 10:15 +0100, James Hogan wrote:
+>>>>> The struct scsi_varlen_cdb_hdr is expected to be exactly 10 bytes when
+>>>>> used in struct osd_cdb_head, but it isn't marked as packed. Some
+>>>>> architectures will round the struct size up which triggers BUILD_BUG_ON
+>>>>> compile errors in osd_initiator.c when the outer structs are unexpected
+>>>>> sizes. This is fixed by marking struct scsi_varlen_cdb_hdr as __packed.
+>>>>
+>>>> What actual problem have you encountered? The structure is {u8[8], u16}
+>>>> which is naturally packed on every architecture I know about.  I've even
+>>>> built osd_initiator without problem on parisc, which has some of the
+>>>> most rigid alignment rules I've seen.
+>>>
+>>> Hi James,
+>>>
+>>> The alignment is fine (the offset of the u16 is 8 bytes), but
+>>> unfortunately with the metag port of gcc, sizeof(struct
+>>> scsi_varlen_cdb_hdr) is rounded up to a 4 byte boundary (even though the
+>>> largest data member alignment is only 2 bytes), which is 12 bytes
+>>> instead of 10.
 >>
-> Aside from the callee-regs question (which I hope somebody more
-> knowledgeable can chime in on):  Acked-by: Jonas Bonn
-> <jonas@southpole.se>
+>> That sounds to be a bug in your compiler ... it shouldn't be rounding up
+>> structure sizes if the structure can fit in 10 bytes.  This isn't
+>> happening in any other architecture that I know of (otherwise we'd have
+>> had a reported build break).
+> 
+> This was my initial thought, and I share your feeling that this isn't
+> ideal compiler behaviour, however it's pretty much set in stone as part
+> of our ABI now. Having talked to one of our compiler folk about it
+> here's what he had to say:
+>> In GCC 4.2 the following backends have STRUCTURE_SIZE_BOUNDARY set to >=32 which will trigger this behaviour:
+>>
+>> Alpha+unicos
+>> Arm prior to AAPCS
+>> Mt
+>>
+>> This is within standards to my knowledge.
 
-Thx. As I mentioned, this patch will needed to be chopped and squashed into
-several existing commits.
-I presume I'll add the Ack to "ARC: Fundamental ARCH data-types/defines" which
-contains the initial def of ptrace.h
+What are the chances of getting this patch accepted? I believe it is
+correct and the compiler behaviour is within standards, and hopefully
+arch/metag will be merged for v3.9 so without this patch the build of
+osd_initiator.c will be broken on an in-tree architecture.
 
--Vineet
-
+Thanks
+James
 
