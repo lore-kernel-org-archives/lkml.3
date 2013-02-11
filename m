@@ -1,131 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757240Ab3BKNDc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 08:03:32 -0500
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:62522 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757047Ab3BKND3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 08:03:29 -0500
+	id S1757159Ab3BKNEy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 08:04:54 -0500
+Received: from a.mx.secunet.com ([195.81.216.161]:50496 "EHLO a.mx.secunet.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751836Ab3BKNEx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 08:04:53 -0500
+Date: Mon, 11 Feb 2013 14:04:47 +0100
+From: Steffen Klassert <steffen.klassert@secunet.com>
+To: Romain KUNTZ <r.kuntz@ipflavors.com>
+Cc: jamal <j.hadi123@gmail.com>, netdev@vger.kernel.org, davem@davemloft.net,
+        herbert@gondor.hengli.com.au,
+        Emmanuel THIERRY <emmanuel.thierry@telecom-bretagne.eu>,
+        linux-kernel@vger.kernel.org, Jamal Hadi Salim <hadi@cyberus.ca>
+Subject: Re: [RFC PATCH] xfrm: fix handling of XFRM policies mark and mask.
+Message-ID: <20130211130447.GE17794@secunet.com>
+References: <9E57ADA1-5770-47A8-8EBF-7FC262EEF1C7@ipflavors.com>
+ <20130205081232.GF23291@secunet.com>
+ <51125744.3030905@gmail.com>
+ <D4563759-CEC5-4F33-BF0A-9FA10716F8DF@telecom-bretagne.eu>
+ <20130207104908.GA17794@secunet.com>
+ <2BEAF521-7218-415B-98ED-EC0812903479@telecom-bretagne.eu>
+ <20130207125437.GC17794@secunet.com>
+ <1854603B-3AD1-4245-A8BA-53D841BCEA63@telecom-bretagne.eu>
+ <9EFD8AF1-2EDC-4361-A6CA-52FD5D42ED9E@ipflavors.com>
 MIME-Version: 1.0
-X-Originating-IP: [121.6.200.219]
-Date: Mon, 11 Feb 2013 21:03:28 +0800
-Message-ID: <CAMVG2svG21yiM1wkH4_2pen2n+cr2-Zv7TbH3Gj+8MwevZjDbw@mail.gmail.com>
-Subject: [3.8-rc7] PCI hotplug wakeup oops
-From: Daniel J Blueman <daniel@quora.org>
-To: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <9EFD8AF1-2EDC-4361-A6CA-52FD5D42ED9E@ipflavors.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 11 Feb 2013 13:04:47.0797 (UTC) FILETIME=[5E9F5E50:01CE0858]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With 3.8-rc7, when unplugging the Thunderbolt ethernet adapter (bus 0a
-[1]) on a Macbook Pro 10,1, we see the PCIe port correctly released:
+On Mon, Feb 11, 2013 at 01:57:59PM +0100, Romain KUNTZ wrote:
+> Hi Steffen,
+> 
+> Do you plan to resubmit a patch to the mailing list or shall we take care of that?
+> 
 
-pciehp 0000:06:03.0:pcie24: Card not present on Slot(3)
-tg3 0000:0a:00.0: tg3_abort_hw timed out, TX_MODE_ENABLE will not
-clear MAC_TX_MODE=ffffffff
-tg3 0000:0a:00.0 eth0: No firmware running
-tg3 0000:0a:00.0 eth0: Link is down
-[sched_delayed] sched: RT throttling activated
-pcieport 0000:00:01.1: System wakeup enabled by ACPI
-pciehp 0000:09:00.0:pcie24: unloading service driver pciehp
-pci_bus 0000:0a: busn_res: [bus 0a] is released
-pci_bus 0000:09: busn_res: [bus 09-0a] is released
+I'm testing with the patch below. If it shows no regression,
+I'll apply it to the ipsec-next tree.
 
-After some activity later (eg I can reproduce this by switching to a
-text console and back), often we'll see an oops:
+Subject: [PATCH] xfrm: Allow inserting policies with matching mark and
+ different priorities
 
-Unable to handle kernel paging request at 0000000000001070
-pci_pme_list_scan+0x3d/0xe0
-Call Trace:
-process_one_work+0x193
-? process_one_work+0x131
-? pci_pme_wakeup+0x60
-worker_thread+0x15d
+We currently can not insert policies with mark and mask
+such that some flows would be matched from both policies.
+We make this possible when the priority of these policies
+are different. If both policies match a flow, the one with
+the higher priority is used.
 
-(gdb) list *(pci_pme_list_scan+0x3d)
-0xffffffff8123f6dd is in pci_pme_list_scan (drivers/pci/pci.c:1556).
-1551					/*
-1552					 * If bridge is in low power state, the
-1553					 * configuration space of subordinate devices
-1554					 * may be not accessible
-1555					 */
-1556					if (bridge && bridge->current_state != PCI_D0)
-1557						continue;
-1558					pci_pme_wakeup(pme_dev->dev, NULL);
-1559				} else {
-1560					list_del(&pme_dev->list);
+Reported-by: Emmanuel Thierry <emmanuel.thierry@telecom-bretagne.eu>
+Reported-by: Romain Kuntz <r.kuntz@ipflavors.com>
+Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
+---
+ net/xfrm/xfrm_policy.c |   18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
-Since a panic in vsnprintf happens after the oops (hence I can't catch
-it with EFI pstore), it is almost certainly significant heap
-corruption; this would explain why pme_dev became null (the load has
-been ordered ahead).
-
-I'll see what I can find out with memory poisoning and list debugging.
-
-Thanks,
-  Daniel
-
---- [1]
-
-$ lspci
-00:00.0 Host bridge: Intel Corporation 3rd Gen Core processor DRAM
-Controller (rev 09)
-00:01.0 PCI bridge: Intel Corporation Xeon E3-1200 v2/3rd Gen Core
-processor PCI Express Root Port (rev 09)
-00:01.1 PCI bridge: Intel Corporation Xeon E3-1200 v2/3rd Gen Core
-processor PCI Express Root Port (rev 09)
-00:01.2 PCI bridge: Intel Corporation Xeon E3-1200 v2/3rd Gen Core
-processor PCI Express Root Port (rev 09)
-00:02.0 VGA compatible controller: Intel Corporation 3rd Gen Core
-processor Graphics Controller (rev 09)
-00:14.0 USB controller: Intel Corporation 7 Series/C210 Series Chipset
-Family USB xHCI Host Controller (rev 04)
-00:16.0 Communication controller: Intel Corporation 7 Series/C210
-Series Chipset Family MEI Controller #1 (rev 04)
-00:1a.0 USB controller: Intel Corporation 7 Series/C210 Series Chipset
-Family USB Enhanced Host Controller #2 (rev 04)
-00:1b.0 Audio device: Intel Corporation 7 Series/C210 Series Chipset
-Family High Definition Audio Controller (rev 04)
-00:1c.0 PCI bridge: Intel Corporation 7 Series/C210 Series Chipset
-Family PCI Express Root Port 1 (rev c4)
-00:1c.1 PCI bridge: Intel Corporation 7 Series/C210 Series Chipset
-Family PCI Express Root Port 2 (rev c4)
-00:1d.0 USB controller: Intel Corporation 7 Series/C210 Series Chipset
-Family USB Enhanced Host Controller #1 (rev 04)
-00:1f.0 ISA bridge: Intel Corporation HM77 Express Chipset LPC
-Controller (rev 04)
-00:1f.2 SATA controller: Intel Corporation 7 Series Chipset Family
-6-port SATA Controller [AHCI mode] (rev 04)
-00:1f.3 SMBus: Intel Corporation 7 Series/C210 Series Chipset Family
-SMBus Controller (rev 04)
-01:00.0 VGA compatible controller: NVIDIA Corporation Device 0fd5 (rev ff)
-01:00.1 Audio device: NVIDIA Corporation Device 0e1b (rev ff)
-03:00.0 Ethernet controller: Broadcom Corporation Device 16a3 (rev 10)
-03:00.1 SD Host controller: Broadcom Corporation NetXtreme BCM57765
-Memory Card Reader (rev 10)
-04:00.0 Network controller: Broadcom Corporation BCM4331 802.11a/b/g/n (rev 02)
-05:00.0 PCI bridge: Intel Corporation DSL3510 Thunderbolt Port [Cactus
-Ridge] (rev 03)
-06:00.0 PCI bridge: Intel Corporation DSL3510 Thunderbolt Port [Cactus
-Ridge] (rev 03)
-06:03.0 PCI bridge: Intel Corporation DSL3510 Thunderbolt Port [Cactus
-Ridge] (rev 03)
-06:04.0 PCI bridge: Intel Corporation DSL3510 Thunderbolt Port [Cactus
-Ridge] (rev 03)
-06:05.0 PCI bridge: Intel Corporation DSL3510 Thunderbolt Port [Cactus
-Ridge] (rev 03)
-06:06.0 PCI bridge: Intel Corporation DSL3510 Thunderbolt Port [Cactus
-Ridge] (rev 03)
-07:00.0 System peripheral: Intel Corporation DSL3510 Thunderbolt Port
-[Cactus Ridge] (rev 03)
-08:00.0 PCI bridge: Intel Corporation DSL3510 Thunderbolt Controller
-[Cactus Ridge]
-09:00.0 PCI bridge: Intel Corporation DSL3510 Thunderbolt Controller
-[Cactus Ridge]
-0a:00.0 Ethernet controller: Broadcom Corporation NetXtreme BCM57762
-Gigabit Ethernet PCIe
+diff --git a/net/xfrm/xfrm_policy.c b/net/xfrm/xfrm_policy.c
+index 456b11b..257dfb1 100644
+--- a/net/xfrm/xfrm_policy.c
++++ b/net/xfrm/xfrm_policy.c
+@@ -607,6 +607,21 @@ static void xfrm_policy_requeue(struct xfrm_policy *old,
+ 	spin_unlock_bh(&pq->hold_queue.lock);
+ }
+ 
++static bool xfrm_policy_mark_match(struct xfrm_policy *policy,
++				   struct xfrm_policy *pol)
++{
++	u32 mark = policy->mark.v & policy->mark.m;
++
++	if (policy->mark.v == pol->mark.v && policy->mark.m == pol->mark.m)
++		return true;
++
++	if ((mark & pol->mark.m) == pol->mark.v &&
++	    policy->priority == pol->priority)
++		return true;
++
++	return false;
++}
++
+ int xfrm_policy_insert(int dir, struct xfrm_policy *policy, int excl)
+ {
+ 	struct net *net = xp_net(policy);
+@@ -614,7 +629,6 @@ int xfrm_policy_insert(int dir, struct xfrm_policy *policy, int excl)
+ 	struct xfrm_policy *delpol;
+ 	struct hlist_head *chain;
+ 	struct hlist_node *entry, *newpos;
+-	u32 mark = policy->mark.v & policy->mark.m;
+ 
+ 	write_lock_bh(&xfrm_policy_lock);
+ 	chain = policy_hash_bysel(net, &policy->selector, policy->family, dir);
+@@ -623,7 +637,7 @@ int xfrm_policy_insert(int dir, struct xfrm_policy *policy, int excl)
+ 	hlist_for_each_entry(pol, entry, chain, bydst) {
+ 		if (pol->type == policy->type &&
+ 		    !selector_cmp(&pol->selector, &policy->selector) &&
+-		    (mark & pol->mark.m) == pol->mark.v &&
++		    xfrm_policy_mark_match(policy, pol) &&
+ 		    xfrm_sec_ctx_match(pol->security, policy->security) &&
+ 		    !WARN_ON(delpol)) {
+ 			if (excl) {
 -- 
-Daniel J Blueman
+1.7.9.5
+
