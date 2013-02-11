@@ -1,63 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755205Ab3BKKLp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 05:11:45 -0500
-Received: from mail-la0-f49.google.com ([209.85.215.49]:47629 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755005Ab3BKKLo (ORCPT
+	id S1755310Ab3BKKPL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 05:15:11 -0500
+Received: from us01smtp3.synopsys.com ([198.182.44.81]:59565 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755131Ab3BKKPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 05:11:44 -0500
+	Mon, 11 Feb 2013 05:15:09 -0500
+Message-ID: <5118C458.2070205@synopsys.com>
+Date: Mon, 11 Feb 2013 15:43:44 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-X-Originating-IP: [188.6.195.195]
-In-Reply-To: <2964781.rPUOipNRNb@vostro.rjw.lan>
-References: <1360113112.17267.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
-	<3938124.8eafYb16IB@vostro.rjw.lan>
-	<20130210185504.GA17268@amd.pavel.ucw.cz>
-	<2964781.rPUOipNRNb@vostro.rjw.lan>
-Date: Mon, 11 Feb 2013 11:11:40 +0100
-Message-ID: <CAJfpegtNUr+AJXZcKmLEGBYqu20DVFwzg-OvOk_nS3fBS3wd=Q@mail.gmail.com>
-Subject: Re: Getting rid of freezer for suspend [was Re: [fuse-devel] [PATCH]
- fuse: make fuse daemon frozen along with kernel threads]
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Pavel Machek <pavel@ucw.cz>, Goswin von Brederlow <goswin-v-b@web.de>,
-        Li Fei <fei.li@intel.com>, len.brown@intel.com, mingo@redhat.com,
-        peterz@infradead.org, biao.wang@intel.com, linux-pm@vger.kernel.org,
-        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        chuansheng.liu@intel.com
-Content-Type: text/plain; charset=UTF-8
+To: Jonas Bonn <jonas.bonn@gmail.com>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: pt_regs leak into userspace (was Re: [PATCH v3 20/71] ARC: Signal
+ handling)
+References: <1359024639-21915-1-git-send-email-vgupta@synopsys.com> <1359024639-21915-9-git-send-email-vgupta@synopsys.com> <51189D2F.4030000@synopsys.com> <CACM3HyGNZxfOXpw01POBVT-YcVKQsnPkO6Kgg+epfZS-x-BRCg@mail.gmail.com>
+In-Reply-To: <CACM3HyGNZxfOXpw01POBVT-YcVKQsnPkO6Kgg+epfZS-x-BRCg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.43]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 11, 2013 at 12:31 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Sunday, February 10, 2013 07:55:05 PM Pavel Machek wrote:
-
->> Well, from freezer you need:
->>
->> 1) user process frozen.
->>
->> 2) essential locks _not_ held so that block devices are still functional.
->>
->> > > > mmap... what is problem with mmap? For suspend, memory is powered, so
->> > > > you can permit people changing it.
->> > >
->> > > Suppose mmap is used to make the registers of some device available to user
->> > > space.  Yes, that can happen.
->>
->> "Don't do it, then". Yes, can happen, but hopefully is not too common
->> these days. [And... freezer doing 1) but not 2) would be enough to
->> handle that. Freezer doing 1) but not 2) would also be simpler...]
+On Monday 11 February 2013 03:06 PM, Jonas Bonn wrote:
+> On 11 February 2013 08:26, Vineet Gupta <Vineet.Gupta1@synopsys.com> wrote:
 >
-> Again, I'm not sure what you mean.
->
-> Are you trying to say that it would be OK to freeze user space tasks in
-> the D state?
+>> The only downside of this patch is that userspace signal stack grows in size,
+>> since signal frame only cares about scratch regs (pt_regs), but has to accommodate
+>> unused placeholder for callee regs too by virtue of using user_regs_struct.
+> Is this really true?  Don't setcontext and friends require that _all_
+> the registers be part of sigcontext?
 
-I think that's what Pavel is saying.   Processes in D state sleeping
-on non-device mutexes _are_ actually OK to freeze.  And that would
-nicely solve the fuse freeze problem.  The only little detail is how
-do we implement that...
+But for an ABI - callee saved regs will anyhow be saved/restored even in
+setcontext case ! So collecting it for that purpose seems useless, or am I missing
+something here.
 
-Thanks,
-Miklos
+-Vineet
+
