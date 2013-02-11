@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755536Ab3BKLZz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 06:25:55 -0500
-Received: from mga09.intel.com ([134.134.136.24]:24915 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754860Ab3BKLZy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 06:25:54 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,641,1355126400"; 
-   d="scan'208";a="260999088"
-Date: Mon, 11 Feb 2013 13:29:45 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/7] hid driver transport cleanup
-Message-ID: <20130211112945.GD20771@intel.com>
-References: <1360334256-22127-1-git-send-email-benjamin.tissoires@gmail.com>
- <20130211101336.GA20771@intel.com>
- <CAN+gG=GJH-jTFE5OEsme57RzN_L1_gQMAD9Dy2=NXZdDOYCUxA@mail.gmail.com>
+	id S1755744Ab3BKL0B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 06:26:01 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36599 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755577Ab3BKLZ6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 06:25:58 -0500
+Date: Mon, 11 Feb 2013 11:25:55 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Subject: Re: [PATCH 1/2 v2] regmap: debugfs: Add a `max_reg' member in struct
+ regmap_debugfs_off_cache
+Message-ID: <20130211112555.GC4607@opensource.wolfsonmicro.com>
+References: <1360327634-16669-1-git-send-email-dp@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="/Uq4LBwYP4y1W6pO"
 Content-Disposition: inline
-In-Reply-To: <CAN+gG=GJH-jTFE5OEsme57RzN_L1_gQMAD9Dy2=NXZdDOYCUxA@mail.gmail.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+In-Reply-To: <1360327634-16669-1-git-send-email-dp@opensource.wolfsonmicro.com>
+X-Cookie: It's all in the mind, ya know.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 11, 2013 at 12:19:13PM +0100, Benjamin Tissoires wrote:
-> On Mon, Feb 11, 2013 at 11:13 AM, Mika Westerberg
-> <mika.westerberg@linux.intel.com> wrote:
-> > On Fri, Feb 08, 2013 at 03:37:29PM +0100, Benjamin Tissoires wrote:
-> >> so, here is the hid drivers cleanup. The aim is to remove as much as possible
-> >> direct calls to usbhid for hid drivers. Thus, other transport layers can use
-> >> the existing hid drivers (like I2C or uhid).
-> >
-> > We also found out that there is a dependency to usbhid in many of the
-> > drivers, especially in sensor-hub which caused the system crash while the
-> > driver tried to transmit over USB even though it was behind I2C.
-> >
-> > Your series fixes that nicely :)
-> >
-> > You can add,
-> >
-> > Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> >
-> > for the whole series and in addition,
-> >
-> > Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> >
-> > for the sensor-hub part (HID over I2C). I have few more patches to the
-> > sensor-hub myself and I'm going to rebase them on top of this series.
-> 
-> Thanks Mika for reviewing.
-> 
-> I just wanted to warn you that the HID over I2C part is still lacking
-> the support of requests through hid_hw_request(). So the functions
-> sensor_hub_set_feature(), sensor_hub_get_feature() and
-> sensor_hub_input_attr_get_raw_value() won't work, in a silently way
-> :(.
 
-OK.
+--/Uq4LBwYP4y1W6pO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> I started writing the patch but stopped at some point due to lack of
-> ways to test it.
+On Fri, Feb 08, 2013 at 12:47:14PM +0000, Dimitris Papastamos wrote:
+> We are keeping track of the maximum register as well, this will make
+> things easier for us in sharing this code with the code implementing
+> the register ranges functionality.  It also simplifies a bit the
+> calculations when looking for the relevant block:offset from within
+> the cache.
 
-Well, I have the HW here so if you have something please send to me. I can
-test it.
+Applied, thanks.
+
+--/Uq4LBwYP4y1W6pO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRGNU6AAoJELSic+t+oim947EQAIBFHdXHh1u7N5+/3RN+JbeU
+9d5+jnEqqBPneSAsoPAryTQ66IZj2AWBKEqnMh69z4xpm7CbO+3+mi/Eie2GoKPO
+fHXEoerG9SOfGpI3OWQkRHM1KLdD36L8ZHQcZklo0zspBdejtWhwoowN1nCo+7zE
+nwsxAnx5WzD6uP7hIlTDYAkc2Z/rW+VAf6rEf9WUHXz3zsq31jrsDmFvYs0WX2c3
+2Tx8gC7d4APKL2fqqaYgEBNa0wCgCk10VxIWdToX7jjhwSqk5pADwEb30ZnXJ+Q3
+N7wo4CbD24Ctg/XcVbiEgK7YqMW/hhc1guUSR/h/UOO/WZxzWc7JVSmlXNbGMG+W
+0EmTMIairEdQGJ+oArBZJrKHj1FwywKfYo/PpVX4zP8F+CHCBBEoSmVRpONl0LBe
+xIYc+ULG//U17W/pCGdn3pv8xvMOXVf+g86IXXF378fffiIJ58r5bH9EesEQ0d1T
+z6sN9YDc2xZXTpwAxeeRg7I5oX0b2P15KrjMf7yVl77wMCYBzlG7GaxT7obHgZeP
+T7Z2TKgjIx3ti0YSLBwtFS4gmyH1aGXIybYFPilPZlPdkdIXKN5BGHkLD+gLwcu0
+MXN2N6sFi+GSZs7ag7NS6UPmPugoOYKbMd6xOkzhLCp5UKEJX635YkqXB//iuJo/
+yco6rNs8gZAXPil/MFRX
+=VL3U
+-----END PGP SIGNATURE-----
+
+--/Uq4LBwYP4y1W6pO--
