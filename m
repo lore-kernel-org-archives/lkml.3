@@ -1,465 +1,361 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932825Ab3BKXp0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 18:45:26 -0500
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:44377 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760215Ab3BKXpY (ORCPT
+	id S932869Ab3BKXqQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 18:46:16 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:41448 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932675Ab3BKXqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 18:45:24 -0500
-Message-ID: <5119828C.3020106@ozlabs.ru>
-Date: Tue, 12 Feb 2013 10:45:16 +1100
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Mon, 11 Feb 2013 18:46:14 -0500
+Date: Mon, 11 Feb 2013 15:46:07 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Arjan van de Veen <arjan@infradead.org>, Paul Turner <pjt@google.com>,
+        Richard Weinberger <rw@linutronix.de>,
+        Magnus Damm <magnus.damm@gmail.com>
+Subject: Re: [patch 10/40] sched: Convert to state machine callbacks
+Message-ID: <20130211234607.GA2666@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130131120348.372374706@linutronix.de>
+ <20130131120742.160047181@linutronix.de>
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        David Gibson <david@gibson.dropbear.id.au>
-Subject: Re: [PATCH 2/2] vfio powerpc: implemented IOMMU driver for VFIO
-References: <1360583672-21924-1-git-send-email-aik@ozlabs.ru>  <1360583672-21924-3-git-send-email-aik@ozlabs.ru> <1360621078.12392.119.camel@bling.home>
-In-Reply-To: <1360621078.12392.119.camel@bling.home>
-Content-Type: text/plain; charset=KOI8-R; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130131120742.160047181@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13021123-2876-0000-0000-0000052E1960
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/13 09:17, Alex Williamson wrote:
-> On Mon, 2013-02-11 at 22:54 +1100, Alexey Kardashevskiy wrote:
->> VFIO implements platform independent stuff such as
->> a PCI driver, BAR access (via read/write on a file descriptor
->> or direct mapping when possible) and IRQ signaling.
->>
->> The platform dependent part includes IOMMU initialization
->> and handling. This patch implements an IOMMU driver for VFIO
->> which does mapping/unmapping pages for the guest IO and
->> provides information about DMA window (required by a POWERPC
->> guest).
->>
->> The counterpart in QEMU is required to support this functionality.
->
-> Revision info would be great here too.
- >
->
->> Cc: David Gibson <david@gibson.dropbear.id.au>
->> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
->> ---
->>   drivers/vfio/Kconfig                |    6 +
->>   drivers/vfio/Makefile               |    1 +
->>   drivers/vfio/vfio_iommu_spapr_tce.c |  269 +++++++++++++++++++++++++++++++++++
->>   include/uapi/linux/vfio.h           |   31 ++++
->>   4 files changed, 307 insertions(+)
->>   create mode 100644 drivers/vfio/vfio_iommu_spapr_tce.c
->>
->> diff --git a/drivers/vfio/Kconfig b/drivers/vfio/Kconfig
->> index 7cd5dec..b464687 100644
->> --- a/drivers/vfio/Kconfig
->> +++ b/drivers/vfio/Kconfig
->> @@ -3,10 +3,16 @@ config VFIO_IOMMU_TYPE1
->>   	depends on VFIO
->>   	default n
->>
->> +config VFIO_IOMMU_SPAPR_TCE
->> +	tristate
->> +	depends on VFIO && SPAPR_TCE_IOMMU
->> +	default n
->> +
->>   menuconfig VFIO
->>   	tristate "VFIO Non-Privileged userspace driver framework"
->>   	depends on IOMMU_API
->>   	select VFIO_IOMMU_TYPE1 if X86
->> +	select VFIO_IOMMU_SPAPR_TCE if PPC_POWERNV
->>   	help
->>   	  VFIO provides a framework for secure userspace device drivers.
->>   	  See Documentation/vfio.txt for more details.
->> diff --git a/drivers/vfio/Makefile b/drivers/vfio/Makefile
->> index 2398d4a..72bfabc 100644
->> --- a/drivers/vfio/Makefile
->> +++ b/drivers/vfio/Makefile
->> @@ -1,3 +1,4 @@
->>   obj-$(CONFIG_VFIO) += vfio.o
->>   obj-$(CONFIG_VFIO_IOMMU_TYPE1) += vfio_iommu_type1.o
->> +obj-$(CONFIG_VFIO_IOMMU_SPAPR_TCE) += vfio_iommu_spapr_tce.o
->>   obj-$(CONFIG_VFIO_PCI) += pci/
->> diff --git a/drivers/vfio/vfio_iommu_spapr_tce.c b/drivers/vfio/vfio_iommu_spapr_tce.c
->> new file mode 100644
->> index 0000000..9b3fa88
->> --- /dev/null
->> +++ b/drivers/vfio/vfio_iommu_spapr_tce.c
->> @@ -0,0 +1,269 @@
->> +/*
->> + * VFIO: IOMMU DMA mapping support for TCE on POWER
->> + *
->> + * Copyright (C) 2012 IBM Corp.  All rights reserved.
->
-> 2013 now
->
->> + *     Author: Alexey Kardashevskiy <aik@ozlabs.ru>
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published by the Free Software Foundation.
->> + *
->> + * Derived from original vfio_iommu_type1.c:
->> + * Copyright (C) 2012 Red Hat, Inc.  All rights reserved.
->> + *     Author: Alex Williamson <alex.williamson@redhat.com>
->> + */
->> +
->> +#include <linux/module.h>
->> +#include <linux/pci.h>
->> +#include <linux/slab.h>
->> +#include <linux/uaccess.h>
->> +#include <linux/err.h>
->> +#include <linux/vfio.h>
->> +#include <asm/iommu.h>
->> +#include <asm/tce.h>
->> +
->> +#define DRIVER_VERSION  "0.1"
->> +#define DRIVER_AUTHOR   "aik@ozlabs.ru"
->> +#define DRIVER_DESC     "VFIO IOMMU SPAPR TCE"
->> +
->> +static void tce_iommu_detach_group(void *iommu_data,
->> +		struct iommu_group *iommu_group);
->> +
->> +/*
->> + * VFIO IOMMU fd for SPAPR_TCE IOMMU implementation
->> + *
->> + * This code handles mapping and unmapping of user data buffers
->> + * into DMA'ble space using the IOMMU
->> + */
->> +
->> +/*
->> + * The container descriptor supports only a single group per container.
->> + * Required by the API as the container is not supplied with the IOMMU group
->> + * at the moment of initialization.
->> + */
->> +struct tce_container {
->> +	struct mutex lock;
->> +	struct iommu_table *tbl;
->> +};
->> +
->> +static void *tce_iommu_open(unsigned long arg)
->> +{
->> +	struct tce_container *container;
->> +
->> +	if (arg != VFIO_SPAPR_TCE_IOMMU) {
->> +		pr_err("tce_vfio: Wrong IOMMU type\n");
->> +		return ERR_PTR(-EINVAL);
->> +	}
->> +
->> +	container = kzalloc(sizeof(*container), GFP_KERNEL);
->> +	if (!container)
->> +		return ERR_PTR(-ENOMEM);
->> +
->> +	mutex_init(&container->lock);
->> +
->> +	return container;
->> +}
->> +
->> +static void tce_iommu_release(void *iommu_data)
->> +{
->> +	struct tce_container *container = iommu_data;
->> +
->> +	WARN_ON(container->tbl && !container->tbl->it_group);
->> +	if (container->tbl && container->tbl->it_group)
->> +		tce_iommu_detach_group(iommu_data, container->tbl->it_group);
->> +
->> +	mutex_destroy(&container->lock);
->> +
->> +	kfree(container);
->> +}
->> +
->> +static long tce_iommu_ioctl(void *iommu_data,
->> +				 unsigned int cmd, unsigned long arg)
->> +{
->> +	struct tce_container *container = iommu_data;
->> +	unsigned long minsz;
->> +	long ret;
->> +
->> +	switch (cmd) {
->> +	case VFIO_CHECK_EXTENSION:
->> +		return (arg == VFIO_SPAPR_TCE_IOMMU) ? 1 : 0;
->> +
->> +	case VFIO_IOMMU_SPAPR_TCE_GET_INFO: {
->> +		struct vfio_iommu_spapr_tce_info info;
->> +		struct iommu_table *tbl = container->tbl;
->> +
->> +		if (WARN_ON(!tbl))
->> +			return -ENXIO;
->> +
->> +		minsz = offsetofend(struct vfio_iommu_spapr_tce_info,
->> +				dma32_window_size);
->> +
->> +		if (copy_from_user(&info, (void __user *)arg, minsz))
->> +			return -EFAULT;
->> +
->> +		if (info.argsz < minsz)
->> +			return -EINVAL;
->> +
->> +		info.dma32_window_start = tbl->it_offset << IOMMU_PAGE_SHIFT;
->> +		info.dma32_window_size = tbl->it_size << IOMMU_PAGE_SHIFT;
->> +		info.flags = 0;
->> +
->> +		if (copy_to_user((void __user *)arg, &info, minsz))
->> +			return -EFAULT;
->> +
->> +		return 0;
->> +	}
->> +	case VFIO_IOMMU_MAP_DMA: {
->> +		vfio_iommu_spapr_tce_dma_map param;
->> +		struct iommu_table *tbl = container->tbl;
->> +		unsigned long tce;
->> +
->> +		if (WARN_ON(!tbl))
->> +			return -ENXIO;
->> +
->> +		minsz = offsetofend(vfio_iommu_spapr_tce_dma_map, size);
->> +
->> +		if (copy_from_user(&param, (void __user *)arg, minsz))
->> +			return -EFAULT;
->> +
->> +		if (param.argsz < minsz)
->> +			return -EINVAL;
->> +
->> +		if (param.flags & ~(VFIO_DMA_MAP_FLAG_READ |
->> +				VFIO_DMA_MAP_FLAG_WRITE))
->> +			return -EINVAL;
->> +
->> +		if ((param.size & ~IOMMU_PAGE_MASK) ||
->> +				(param.vaddr & ~IOMMU_PAGE_MASK))
->> +			return -EINVAL;
->> +
->> +		/* TODO: support multiple TCEs */
->> +		if (param.size != IOMMU_PAGE_SIZE) {
->
-> Ouch, ioctl per page...
+On Thu, Jan 31, 2013 at 12:11:19PM -0000, Thomas Gleixner wrote:
+> The scheduler sports quite a bunch of hotplug notifiers. One reason
+> for multiple notifiers is the fact, that the startup and teardown
+> process are asymetric. Now the scheduler wants to be called early on
+> startup and late on teardown. That requires to install two different
+> notifiers for the same issue.
+> 
+> With the state machine implementation we can register a callback pair
+> for startup and teardown at the appropriate spot.
+> 
+> This patch converts the notifiers which are setup with special
+> priorities and combines CPU_PRI_SCHED and CPU_PRI_CPUSET notifiers to
+> a single callback. They run back to back anyway and we can make sure
+> in the callbacks that the ordering inside the scheduler is
+> correct. These notifiers are installed in sched_init_smp() as we can't
+> run them during the bringup of the non boot cpus because the smp
+> scheduler is setup after that. It would be nice if we just could
+> compile them in, but that needs a larger surgery to the scheduler code
+> and is beyond the scope of this patch.
+> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
-Well, there is something to discuss.
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-On POWER, there is an interface to add multiple pages at once but the guest 
-does not supply the range of guest phys addresses, it puts some addresses 
-to a small page (so it is up to 512 pages at once) and passes this address 
-to the host as a parameter.
+> ---
+>  include/linux/cpu.h        |   16 ----
+>  include/linux/cpuhotplug.h |    6 +
+>  kernel/cpu.c               |    4 +
+>  kernel/sched/core.c        |  154 +++++++++++++++++----------------------------
+>  4 files changed, 69 insertions(+), 111 deletions(-)
+> 
+> Index: linux-2.6/include/linux/cpu.h
+> ===================================================================
+> --- linux-2.6.orig/include/linux/cpu.h
+> +++ linux-2.6/include/linux/cpu.h
+> @@ -58,22 +58,6 @@ extern ssize_t arch_print_cpu_modalias(s
+>   * CPU notifier priorities.
+>   */
+>  enum {
+> -	/*
+> -	 * SCHED_ACTIVE marks a cpu which is coming up active during
+> -	 * CPU_ONLINE and CPU_DOWN_FAILED and must be the first
+> -	 * notifier.  CPUSET_ACTIVE adjusts cpuset according to
+> -	 * cpu_active mask right after SCHED_ACTIVE.  During
+> -	 * CPU_DOWN_PREPARE, SCHED_INACTIVE and CPUSET_INACTIVE are
+> -	 * ordered in the similar way.
+> -	 *
+> -	 * This ordering guarantees consistent cpu_active mask and
+> -	 * migration behavior to all cpu notifiers.
+> -	 */
+> -	CPU_PRI_SCHED_ACTIVE	= INT_MAX,
+> -	CPU_PRI_CPUSET_ACTIVE	= INT_MAX - 1,
+> -	CPU_PRI_SCHED_INACTIVE	= INT_MIN + 1,
+> -	CPU_PRI_CPUSET_INACTIVE	= INT_MIN,
+> -
+>  	/* migration should happen before other stuff but after perf */
+>  	CPU_PRI_PERF		= 20,
+>  	CPU_PRI_MIGRATION	= 10,
+> Index: linux-2.6/include/linux/cpuhotplug.h
+> ===================================================================
+> --- linux-2.6.orig/include/linux/cpuhotplug.h
+> +++ linux-2.6/include/linux/cpuhotplug.h
+> @@ -6,13 +6,16 @@ enum cpuhp_states {
+>  	CPUHP_CREATE_THREADS,
+>  	CPUHP_NOTIFY_PREPARE,
+>  	CPUHP_NOTIFY_DEAD,
+> +	CPUHP_SCHED_DEAD,
+>  	CPUHP_BRINGUP_CPU,
+>  	CPUHP_AP_OFFLINE,
+> +	CPUHP_AP_SCHED_STARTING,
+>  	CPUHP_AP_NOTIFY_STARTING,
+>  	CPUHP_AP_NOTIFY_DYING,
+>  	CPUHP_AP_MAX,
+>  	CPUHP_TEARDOWN_CPU,
+>  	CPUHP_PERCPU_THREADS,
+> +	CPUHP_SCHED_ONLINE,
+>  	CPUHP_NOTIFY_ONLINE,
+>  	CPUHP_NOTIFY_DOWN_PREPARE,
+>  	CPUHP_MAX,
+> @@ -87,4 +90,7 @@ static inline void cpuhp_remove_state_no
+>  	__cpuhp_remove_state(state, false);
+>  }
+> 
+> +/* Compiled in scheduler hotplug functions */
+> +int sched_starting_cpu(unsigned int cpu);
+> +
+>  #endif
+> Index: linux-2.6/kernel/cpu.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/cpu.c
+> +++ linux-2.6/kernel/cpu.c
+> @@ -788,6 +788,10 @@ static struct cpuhp_step cpuhp_bp_states
+>  /* Application processor state steps */
+>  static struct cpuhp_step cpuhp_ap_states[] = {
+>  #ifdef CONFIG_SMP
+> +	[CPUHP_AP_SCHED_STARTING] = {
+> +		.startup = sched_starting_cpu,
+> +		.teardown = NULL,
+> +	},
+>  	[CPUHP_AP_NOTIFY_STARTING] = {
+>  		.startup = notify_starting,
+>  		.teardown = NULL,
+> Index: linux-2.6/kernel/sched/core.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/sched/core.c
+> +++ linux-2.6/kernel/sched/core.c
+> @@ -5167,31 +5167,6 @@ static struct notifier_block __cpuinitda
+>  	.priority = CPU_PRI_MIGRATION,
+>  };
+> 
+> -static int __cpuinit sched_cpu_active(struct notifier_block *nfb,
+> -				      unsigned long action, void *hcpu)
+> -{
+> -	switch (action & ~CPU_TASKS_FROZEN) {
+> -	case CPU_STARTING:
+> -	case CPU_DOWN_FAILED:
+> -		set_cpu_active((long)hcpu, true);
+> -		return NOTIFY_OK;
+> -	default:
+> -		return NOTIFY_DONE;
+> -	}
+> -}
+> -
+> -static int __cpuinit sched_cpu_inactive(struct notifier_block *nfb,
+> -					unsigned long action, void *hcpu)
+> -{
+> -	switch (action & ~CPU_TASKS_FROZEN) {
+> -	case CPU_DOWN_PREPARE:
+> -		set_cpu_active((long)hcpu, false);
+> -		return NOTIFY_OK;
+> -	default:
+> -		return NOTIFY_DONE;
+> -	}
+> -}
+> -
+>  static int __init migration_init(void)
+>  {
+>  	void *cpu = (void *)(long)smp_processor_id();
+> @@ -5203,10 +5178,6 @@ static int __init migration_init(void)
+>  	migration_call(&migration_notifier, CPU_ONLINE, cpu);
+>  	register_cpu_notifier(&migration_notifier);
+> 
+> -	/* Register cpu active notifiers */
+> -	cpu_notifier(sched_cpu_active, CPU_PRI_SCHED_ACTIVE);
+> -	cpu_notifier(sched_cpu_inactive, CPU_PRI_SCHED_INACTIVE);
+> -
+>  	return 0;
+>  }
+>  early_initcall(migration_init);
+> @@ -6292,42 +6263,12 @@ static void sched_domains_numa_masks_cle
+>  	}
+>  }
+> 
+> -/*
+> - * Update sched_domains_numa_masks[level][node] array when new cpus
+> - * are onlined.
+> - */
+> -static int sched_domains_numa_masks_update(struct notifier_block *nfb,
+> -					   unsigned long action,
+> -					   void *hcpu)
+> -{
+> -	int cpu = (long)hcpu;
+> -
+> -	switch (action & ~CPU_TASKS_FROZEN) {
+> -	case CPU_ONLINE:
+> -		sched_domains_numa_masks_set(cpu);
+> -		break;
+> -
+> -	case CPU_DEAD:
+> -		sched_domains_numa_masks_clear(cpu);
+> -		break;
+> -
+> -	default:
+> -		return NOTIFY_DONE;
+> -	}
+> -
+> -	return NOTIFY_OK;
+> -}
+>  #else
+> -static inline void sched_init_numa(void)
+> -{
+> -}
+> -
+> -static int sched_domains_numa_masks_update(struct notifier_block *nfb,
+> -					   unsigned long action,
+> -					   void *hcpu)
+> -{
+> -	return 0;
+> -}
+> +static inline void sched_init_numa(void) { }
+> +#ifdef CONFIG_HOTPLUG_CPU
+> +static void sched_domains_numa_masks_set(int cpu) { }
+> +static void sched_domains_numa_masks_clear(int cpu) { }
+> +#endif
+>  #endif /* CONFIG_NUMA */
+> 
+>  static int __sdt_alloc(const struct cpumask *cpu_map)
+> @@ -6696,6 +6637,7 @@ match2:
+>  	mutex_unlock(&sched_domains_mutex);
+>  }
+> 
+> +#ifdef CONFIG_HOTPLUG_CPU
+>  static int num_cpus_frozen;	/* used to mark begin/end of suspend/resume */
+> 
+>  /*
+> @@ -6706,13 +6648,9 @@ static int num_cpus_frozen;	/* used to m
+>   * If we come here as part of a suspend/resume, don't touch cpusets because we
+>   * want to restore it back to its original state upon resume anyway.
+>   */
+> -static int cpuset_cpu_active(struct notifier_block *nfb, unsigned long action,
+> -			     void *hcpu)
+> +static void cpuset_cpu_active(void)
+>  {
+> -	switch (action) {
+> -	case CPU_ONLINE_FROZEN:
+> -	case CPU_DOWN_FAILED_FROZEN:
+> -
+> +	if (cpuhp_tasks_frozen) {
+>  		/*
+>  		 * num_cpus_frozen tracks how many CPUs are involved in suspend
+>  		 * resume sequence. As long as this is not the last online
+> @@ -6722,40 +6660,62 @@ static int cpuset_cpu_active(struct noti
+>  		num_cpus_frozen--;
+>  		if (likely(num_cpus_frozen)) {
+>  			partition_sched_domains(1, NULL, NULL);
+> -			break;
+> +			return;
+>  		}
+> -
+>  		/*
+>  		 * This is the last CPU online operation. So fall through and
+>  		 * restore the original sched domains by considering the
+>  		 * cpuset configurations.
+>  		 */
+> -
+> -	case CPU_ONLINE:
+> -	case CPU_DOWN_FAILED:
+> -		cpuset_update_active_cpus(true);
+> -		break;
+> -	default:
+> -		return NOTIFY_DONE;
+>  	}
+> -	return NOTIFY_OK;
+> +	cpuset_update_active_cpus(true);
+>  }
+> 
+> -static int cpuset_cpu_inactive(struct notifier_block *nfb, unsigned long action,
+> -			       void *hcpu)
+> +static void cpuset_cpu_inactive(void)
+>  {
+> -	switch (action) {
+> -	case CPU_DOWN_PREPARE:
+> -		cpuset_update_active_cpus(false);
+> -		break;
+> -	case CPU_DOWN_PREPARE_FROZEN:
+> +	if (cpuhp_tasks_frozen) {
+>  		num_cpus_frozen++;
+>  		partition_sched_domains(1, NULL, NULL);
+> -		break;
+> -	default:
+> -		return NOTIFY_DONE;
+> -	}
+> -	return NOTIFY_OK;
+> +	} else
+> +		cpuset_update_active_cpus(false);
+> +}
+> +
+> +static int sched_dead_cpu(unsigned int cpu)
+> +{
+> +	sched_domains_numa_masks_clear(cpu);
+> +	return 0;
+> +}
+> +
+> +static int sched_online_cpu(unsigned int cpu)
+> +{
+> +	/* Looks redundant, but we need it in case of down canceled */
+> +	set_cpu_active(cpu, true);
+> +	/*
+> +	 * Asymetric to sched_dead_cpu, but this just fiddles with
+> +	 * bits. Sigh
+> +	 */
+> +	sched_domains_numa_masks_set(cpu);
+> +	/* This is actually symetric */
+> +	cpuset_cpu_active();
+> +	return 0;
+> +}
+> +
+> +static int sched_offline_cpu(unsigned int cpu)
+> +{
+> +	set_cpu_active(cpu, false);
+> +	cpuset_cpu_inactive();
+> +	return 0;
+> +}
+> +#else
+> +#define sched_dead_cpu		NULL
+> +#define sched_online_cpu	NULL
+> +#define sched_offline_cpu	NULL
+> +#endif
+> +
+> +int __cpuinit sched_starting_cpu(unsigned int cpu)
+> +{
+> +	set_cpu_active(cpu, true);
+> +	return 0;
+>  }
+> 
+>  void __init sched_init_smp(void)
+> @@ -6776,9 +6736,13 @@ void __init sched_init_smp(void)
+>  	mutex_unlock(&sched_domains_mutex);
+>  	put_online_cpus();
+> 
+> -	hotcpu_notifier(sched_domains_numa_masks_update, CPU_PRI_SCHED_ACTIVE);
+> -	hotcpu_notifier(cpuset_cpu_active, CPU_PRI_CPUSET_ACTIVE);
+> -	hotcpu_notifier(cpuset_cpu_inactive, CPU_PRI_CPUSET_INACTIVE);
+> +	/*
+> +	 * Note: These callbacks are installed late because we init
+> +	 * numa and sched domains after we brought up the cpus.
+> +	 */
+> +	cpuhp_setup_state_nocalls(CPUHP_SCHED_DEAD, NULL, sched_dead_cpu);
+> +	cpuhp_setup_state_nocalls(CPUHP_SCHED_ONLINE, sched_online_cpu,
+> +				  sched_offline_cpu);
+> 
+>  	/* RT runtime code needs to handle some hotplug events */
+>  	hotcpu_notifier(update_runtime, 0);
+> 
+> 
 
-I posted another series yesterday but forgot to cc: you :) You can find 
-them here - http://patchwork.ozlabs.org/patch/219592/ (emulated devices) 
-and http://patchwork.ozlabs.org/patch/219594/ (vfio). There I convert guest 
-phys address (real and virtual mode are handled different ways) and call 
-iommu_put_tce_user_mode() (or analog) in a loop.
-
-Either way, I did some tests with 10Gb card and without real mode stuff it 
-does 220MB/s, and even if I do multi-tce it won't be faster than ~400MB/s 
-which is still not enough as the real mode code makes it 1020MB/s. Slower 
-devices work on the same speed no matter what.
-
-
->> +			pr_err("VFIO map on POWER supports only %lu page size\n",
->> +					IOMMU_PAGE_SIZE);
->> +			return -EINVAL;
->> +		}
->> +
->> +		/* iova is checked by the IOMMU API */
->> +		tce = param.vaddr;
->> +		if (param.flags & VFIO_DMA_MAP_FLAG_READ)
->> +			tce |= TCE_PCI_READ;
->> +		if (param.flags & VFIO_DMA_MAP_FLAG_WRITE)
->> +			tce |= TCE_PCI_WRITE;
->> +
->> +		ret = iommu_put_tce_user_mode(tbl, param.iova, tce);
->> +		iommu_flush_tce(tbl);
->> +
->> +		return ret;
->> +	}
->> +	case VFIO_IOMMU_UNMAP_DMA: {
->> +		vfio_iommu_spapr_tce_dma_unmap param;
->> +		struct iommu_table *tbl = container->tbl;
->> +
->> +		if (WARN_ON(!tbl))
->> +			return -ENXIO;
->> +
->> +		minsz = offsetofend(vfio_iommu_spapr_tce_dma_unmap, size);
->> +
->> +		if (copy_from_user(&param, (void __user *)arg, minsz))
->> +			return -EFAULT;
->> +
->> +		if (param.argsz < minsz)
->> +			return -EINVAL;
->> +
->> +		/* No flag is supported now */
->> +		if (param.flags)
->> +			return -EINVAL;
->> +
->> +		if (param.size & ~IOMMU_PAGE_MASK)
->> +			return -EINVAL;
->
-> But you support multi-page unmaps?
-
-Yes, this is a lot easier :)
-
-
->> +		/* iova is checked by the IOMMU API */
->> +		ret = iommu_clear_tce_user_mode(tbl, param.iova, 0,
->> +				param.size >> IOMMU_PAGE_SHIFT);
->> +		iommu_flush_tce(tbl);
->> +
->> +		return ret;
->> +	}
->> +	}
->> +
->> +	return -ENOTTY;
->> +}
->> +
->> +static int tce_iommu_attach_group(void *iommu_data,
->> +		struct iommu_group *iommu_group)
->> +{
->> +	int ret;
->> +	struct tce_container *container = iommu_data;
->> +	struct iommu_table *tbl = iommu_group_get_iommudata(iommu_group);
->> +
->> +	BUG_ON(!tbl);
->> +	mutex_lock(&container->lock);
->> +	pr_debug("tce_vfio: Attaching group #%u to iommu %p\n",
->> +			iommu_group_id(iommu_group), iommu_group);
->> +	if (container->tbl) {
->> +		pr_warn("tce_vfio: Only one group per IOMMU container is allowed, existing id=%d, attaching id=%d\n",
->> +				iommu_group_id(container->tbl->it_group),
->> +				iommu_group_id(iommu_group));
->> +		mutex_unlock(&container->lock);
->> +		return -EBUSY;
->> +	}
->> +
->> +	container->tbl = tbl;
->> +	ret = iommu_lock_table(tbl, true);
->
-> Bug, container->tbl is set regardless of iommu_lock_table.
-
-Oops, bug.
-
-> Ok, so now we're checking rlimits and handling page accounting on
-> VFIO_GROUP_SET_CONTAINER to avoid any overhead at map/unmap.  How can
-> the user learn tbl->it_size to set their locked page limit prior to
-> this?  It's available from GET_INFO, but there's a chicken and egg
-> problem that to get it there you have to get past this, which means
-> you're already ok.  Maybe it's in sysfs somewhere already or it could be
-> exposed in the iommu group like the name attribute.  Otherwise we might
-> consider doing locking on first mapping.  Thanks,
-
-GET_INFO is called in the beginning so QEMU will exit right there. No real 
-work will have been done till that moment so what is the problem?
-
-
-
-> Alex
->
->> +	mutex_unlock(&container->lock);
->> +
->> +	return ret;
->> +}
->> +
->> +static void tce_iommu_detach_group(void *iommu_data,
->> +		struct iommu_group *iommu_group)
->> +{
->> +	struct tce_container *container = iommu_data;
->> +	struct iommu_table *tbl = iommu_group_get_iommudata(iommu_group);
->> +
->> +	BUG_ON(!tbl);
->> +	mutex_lock(&container->lock);
->> +	if (tbl != container->tbl) {
->> +		pr_warn("tce_vfio: detaching group #%u, expected group is #%u\n",
->> +				iommu_group_id(iommu_group),
->> +				iommu_group_id(tbl->it_group));
->> +	} else {
->> +
->> +		pr_debug("tce_vfio: detaching group #%u from iommu %p\n",
->> +				iommu_group_id(iommu_group), iommu_group);
->> +
->> +		container->tbl = NULL;
->> +		iommu_lock_table(tbl, false);
->> +	}
->> +	mutex_unlock(&container->lock);
->> +}
->> +
->> +const struct vfio_iommu_driver_ops tce_iommu_driver_ops = {
->> +	.name		= "iommu-vfio-powerpc",
->> +	.owner		= THIS_MODULE,
->> +	.open		= tce_iommu_open,
->> +	.release	= tce_iommu_release,
->> +	.ioctl		= tce_iommu_ioctl,
->> +	.attach_group	= tce_iommu_attach_group,
->> +	.detach_group	= tce_iommu_detach_group,
->> +};
->> +
->> +static int __init tce_iommu_init(void)
->> +{
->> +	return vfio_register_iommu_driver(&tce_iommu_driver_ops);
->> +}
->> +
->> +static void __exit tce_iommu_cleanup(void)
->> +{
->> +	vfio_unregister_iommu_driver(&tce_iommu_driver_ops);
->> +}
->> +
->> +module_init(tce_iommu_init);
->> +module_exit(tce_iommu_cleanup);
->> +
->> +MODULE_VERSION(DRIVER_VERSION);
->> +MODULE_LICENSE("GPL v2");
->> +MODULE_AUTHOR(DRIVER_AUTHOR);
->> +MODULE_DESCRIPTION(DRIVER_DESC);
->> +
->> diff --git a/include/uapi/linux/vfio.h b/include/uapi/linux/vfio.h
->> index 4758d1b..ea9a9a7 100644
->> --- a/include/uapi/linux/vfio.h
->> +++ b/include/uapi/linux/vfio.h
->> @@ -22,6 +22,7 @@
->>   /* Extensions */
->>
->>   #define VFIO_TYPE1_IOMMU		1
->> +#define VFIO_SPAPR_TCE_IOMMU		2
->>
->>   /*
->>    * The IOCTL interface is designed for extensibility by embedding the
->> @@ -365,4 +366,34 @@ struct vfio_iommu_type1_dma_unmap {
->>
->>   #define VFIO_IOMMU_UNMAP_DMA _IO(VFIO_TYPE, VFIO_BASE + 14)
->>
->> +/* -------- Additional API for SPAPR TCE (Server POWERPC) IOMMU -------- */
->> +
->> +/*
->> + * The SPAPR TCE info struct provides the information about the PCI bus
->> + * address ranges available for DMA, these values are programmed into
->> + * the hardware so the guest has to know that information.
->> + *
->> + * The DMA 32 bit window start is an absolute PCI bus address.
->> + * The IOVA address passed via map/unmap ioctls are absolute PCI bus
->> + * addresses too so the window works as a filter rather than an offset
->> + * for IOVA addresses.
->> + *
->> + * A flag will need to be added if other page sizes are supported,
->> + * so as defined here, it is always 4k.
->> + */
->> +struct vfio_iommu_spapr_tce_info {
->> +	__u32 argsz;
->> +	__u32 flags;			/* reserved for future use */
->> +	__u32 dma32_window_start;	/* 32 bit window start (bytes) */
->> +	__u32 dma32_window_size;	/* 32 bit window size (bytes) */
->> +};
->> +
->> +#define VFIO_IOMMU_SPAPR_TCE_GET_INFO	_IO(VFIO_TYPE, VFIO_BASE + 12)
->> +
->> +/* Reuse type1 map/unmap structs as they are the same at the moment */
->> +typedef struct vfio_iommu_type1_dma_map vfio_iommu_spapr_tce_dma_map;
->> +typedef struct vfio_iommu_type1_dma_unmap vfio_iommu_spapr_tce_dma_unmap;
->> +
->> +/* ***************************************************************** */
->> +
->>   #endif /* _UAPIVFIO_H */
->
->
->
-
-
--- 
-Alexey
