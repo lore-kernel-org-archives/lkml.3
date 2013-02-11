@@ -1,81 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758656Ab3BKSEg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 13:04:36 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:43284 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758469Ab3BKSEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 13:04:34 -0500
-Message-ID: <1360605873.2028.30.camel@joe-AO722>
-Subject: Re: [PATCH V2] MAINTAINERS: add keyword "tegra" to Tegra section
-From: Joe Perches <joe@perches.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: arm@kernel.org, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>
-Date: Mon, 11 Feb 2013 10:04:33 -0800
-In-Reply-To: <511931E8.3080802@wwwdotorg.org>
-References: <1360605099-7088-1-git-send-email-swarren@wwwdotorg.org>
-	 <1360605395.2028.28.camel@joe-AO722> <511931E8.3080802@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1758702Ab3BKSEm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 13:04:42 -0500
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:43078 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758469Ab3BKSEi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 13:04:38 -0500
+From: Michal Simek <michal.simek@xilinx.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org, monstr@monstr.eu, arnd@arndb.de,
+        Peter Korsgaard <jacmet@sunsite.dk>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] tty: serial: uartlite: Fix sparse and checkpatch warnings
+Date: Mon, 11 Feb 2013 19:04:33 +0100
+Message-Id: <1360605874-18310-1-git-send-email-michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-02-11 at 11:01 -0700, Stephen Warren wrote:
-> On 02/11/2013 10:56 AM, Joe Perches wrote:
-> > On Mon, 2013-02-11 at 10:51 -0700, Stephen Warren wrote:
-> >> From: Stephen Warren <swarren@nvidia.com>
-> >>
-> >> The intent is to ensure that all Tegra-related patches are sent to the
-> >> linux-tegra@ mailing list, so people can keep up-to-date on all misc
-> >> driver changes.
-> >>
-> >> Doing this with a keyword is far simpler and more compact than listing
-> >> all Tegra-related drivers, even if wildcards were used.
-> >>
-> >> Words such as integrate or integrator are common. Ensure the character
-> >> right before "tegra" isn't a-z (case-insensitive), to make sure the
-> >> keyword doesn't match those.
-> >>
-> >> Cc: Joe Perches <joe@perches.com>
-> >> Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> >> ---
-> >>  MAINTAINERS |    4 +---
-> >>  1 file changed, 1 insertion(+), 3 deletions(-)
-> >>
-> >> diff --git a/MAINTAINERS b/MAINTAINERS
-> >> index b98c89b..10e9b31 100644
-> >> --- a/MAINTAINERS
-> >> +++ b/MAINTAINERS
-> >> @@ -7829,9 +7829,7 @@ L:	linux-tegra@vger.kernel.org
-> >>  Q:	http://patchwork.ozlabs.org/project/linux-tegra/list/
-> >>  T:	git git://git.kernel.org/pub/scm/linux/kernel/git/swarren/linux-tegra.git
-> >>  S:	Supported
-> >> -F:	arch/arm/mach-tegra
-> >> -F:	arch/arm/boot/dts/tegra*
-> >> -F:	arch/arm/configs/tegra_defconfig
-> >> +K:	(?i)[^a-z]tegra
-> >>  
-> >>  TEHUTI ETHERNET DRIVER
-> >>  M:	Andy Gospodarek <andy@greyhouse.net>
-> > 
-> > It's probably not a good idea to remove
-> > any of the F: lines as there are files
-> > that could get modified in those paths
-> > without any tegra word in the patch.
-> 
-> At least for those F: lines that exist already and are removed above,
-> the keyword will match their filename, so there's no issue here.
-> 
+Clean coding style and sparse warnings.
 
-Not every use of get_maintainers is by patch.
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+---
+ drivers/tty/serial/uartlite.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-./scripts/get_maintainer.pl -f arch/arm/mach-tegra
-
-wouldn't match anything.
-
+diff --git a/drivers/tty/serial/uartlite.c b/drivers/tty/serial/uartlite.c
+index 89eee43..31444be 100644
+--- a/drivers/tty/serial/uartlite.c
++++ b/drivers/tty/serial/uartlite.c
+@@ -19,7 +19,7 @@
+ #include <linux/delay.h>
+ #include <linux/interrupt.h>
+ #include <linux/init.h>
+-#include <asm/io.h>
++#include <linux/io.h>
+ #include <linux/of.h>
+ #include <linux/of_address.h>
+ #include <linux/of_device.h>
+@@ -615,7 +615,7 @@ static struct platform_driver ulite_platform_driver = {
+  * Module setup/teardown
+  */
+ 
+-int __init ulite_init(void)
++static int __init ulite_init(void)
+ {
+ 	int ret;
+ 
+@@ -634,11 +634,11 @@ int __init ulite_init(void)
+ err_plat:
+ 	uart_unregister_driver(&ulite_uart_driver);
+ err_uart:
+-	printk(KERN_ERR "registering uartlite driver failed: err=%i", ret);
++	pr_err("registering uartlite driver failed: err=%i", ret);
+ 	return ret;
+ }
+ 
+-void __exit ulite_exit(void)
++static void __exit ulite_exit(void)
+ {
+ 	platform_driver_unregister(&ulite_platform_driver);
+ 	uart_unregister_driver(&ulite_uart_driver);
+-- 
+1.7.0.4
 
