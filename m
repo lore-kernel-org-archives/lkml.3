@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757390Ab3BKNvS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 08:51:18 -0500
-Received: from mga01.intel.com ([192.55.52.88]:23685 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757282Ab3BKNvR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 08:51:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,643,1355126400"; 
-   d="scan'208";a="285695155"
-Date: Mon, 11 Feb 2013 21:51:09 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: netdev@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org
-Subject: Re: WARNING: at net/core/neighbour.c:1545 neigh_table_init()
-Message-ID: <20130211135109.GA17277@localhost>
-References: <20130209123937.GA23420@localhost>
- <20130211092600.GB23932@gmail.com>
+	id S1757412Ab3BKNxu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 08:53:50 -0500
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:32775 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757353Ab3BKNxs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 08:53:48 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130211092600.GB23932@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130209135202.C8EA73E30EC@localhost>
+References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
+	<1358762966-20791-9-git-send-email-thierry.reding@avionic-design.de>
+	<CAOh2x=ne_Oe7V=BzjQJtuPv20syorLTq-C89aKQDo4JK78Y8YA@mail.gmail.com>
+	<20130209135202.C8EA73E30EC@localhost>
+Date: Mon, 11 Feb 2013 14:53:47 +0100
+Message-ID: <CACRpkdaxxn9nWKjFF=XD5F2kus69-8uxqPWA1vt1RJ0aGJ-Mvw@mail.gmail.com>
+Subject: Re: [PATCH 08/33] gpio: Convert to devm_ioremap_resource()
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 11, 2013 at 10:26:00AM +0100, Ingo Molnar wrote:
-> 
-> * Fengguang Wu <fengguang.wu@intel.com> wrote:
-> 
-> > Greetings,
-> > 
-> > I got the below oops in linux-next and the first bad commit is
-> > 
-> > commit 455e987c0c2eb2c9045dc854559474cf41509965
-> > Merge: 7c17e48 fd6da69
-> > Author: Linus Torvalds <torvalds@linux-foundation.org>
-> > Date:   Sat Dec 1 13:07:48 2012 -0800
-> > 
-> >     Merge branch 'perf-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
-> 
-> This bisection result is probably spurious?
+On Sat, Feb 9, 2013 at 2:52 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> On Mon, 21 Jan 2013 16:22:21 +0530, Viresh Kumar <viresh.kumar@linaro.org> wrote:
 
-You are right. Sorry! I just fixed a recently introduced bug in the
-test script and it probably lead to the wrong bisect.
+>> > -       spics->base = devm_request_and_ioremap(&pdev->dev, res);
+>> > -       if (!spics->base) {
+>> > -               dev_err(&pdev->dev, "request and ioremap fail\n");
+>>
+>> can we keep it as is?
+>
+> And this is why I dislike the ERR_PTR pattern so much. It goes against
+> every instinct about what is and is not a valid pointer.
+>
+> I know people want error codes, but I think hoping that all users will
+> remember to do 'if (IS_ERR(ptr))' instead of 'if (!ptr)' makes things
+> worse not better.
 
-I've restarted the bisect and the initial steps till now are already
-different from that of the previous bisect.
+NB: among the error codes people want to propagate from
+consumer interfaces such as say, clk_get(), regulator_get()
+and pinctrl_get() is -EPROBE_DEFER. So just "something
+failed" (return NULL) isn't enough.
 
-Thanks,
-Fengguang
+We then obviously need to return an int as error code instead
+and pass the pointer as argument, so do you mean we should
+refactor all the *_get() things from e.g.:
+
+struct clk *clk_get(struct device *dev, const char *id);
+
+into something like:
+
+int clk_get(struct clk **clk, struct device *dev, const char *id);
+
+across the entire kernel?
+
+Yours,
+Linus Walleij
