@@ -1,55 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757979Ab3BKQev (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 11:34:51 -0500
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:42936 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757698Ab3BKQet (ORCPT
+	id S1758047Ab3BKQe7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 11:34:59 -0500
+Received: from usindpps06.hds.com ([207.126.252.19]:48167 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757698Ab3BKQe4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 11:34:49 -0500
+	Mon, 11 Feb 2013 11:34:56 -0500
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Matt Fleming <matt@console-pimps.org>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "mikew@google.com" <mikew@google.com>,
+        "cbouatmailru@gmail.com" <cbouatmailru@gmail.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: RE: [PATCH v5 -next 1/2]efivars: Disable external interrupt while
+ holding efivars->lock
+Thread-Topic: [PATCH v5 -next 1/2]efivars: Disable external interrupt while
+ holding efivars->lock
+Thread-Index: Ac35y4kVXbvpbEQmTya72C6hOhAdgANXsiMAAFKsUaA=
+Date: Mon, 11 Feb 2013 16:34:33 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D414A8FFF2@USINDEM103.corp.hds.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D414A541B5@USINDEM103.corp.hds.com>
+ <1360440158.7515.321.camel@mfleming-mobl1.ger.corp.intel.com>
+In-Reply-To: <1360440158.7515.321.camel@mfleming-mobl1.ger.corp.intel.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.73.11]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <1360588699.7383.52.camel@shinybook.infradead.org>
-References: <20130208084029.d7d97d6e26580a5512712f91@canb.auug.org.au>
- <20130208145539.GC30334@gmail.com> <CA+55aFz9ERvaFayTy8QCtfi610Bt_r0GcOs68UNggJTHdY4oaQ@mail.gmail.com>
- <CAOJsxLFDa3sLwP2MWdXJMTfZNEopp5imy8nWNViuPnWH747ggQ@mail.gmail.com>
- <CA+55aFzEEbZqBaOKYB8H8+i904nXjNEgH=CUPtVMQU60QTTJaw@mail.gmail.com>
- <CAOJsxLFDbmNitH=N8v3jSno0SFL33s=nPc+hGRAqJfYFZS0RGw@mail.gmail.com>
- <CA+55aFy=SaVjNby=Jy_O9ZRQ_Ofc-6_+bLv=HeMMSzQQHw9vMQ@mail.gmail.com>
- <CAOJsxLFpE=HjkPcX6NsWS8636qnEhDFDJi+49xX2Ge3Xp4MeUg@mail.gmail.com>
- <CA+55aFzXF-4Xwc4HU8vnTin4WqtvYcpXq0TsqTN_vRg=myLH_Q@mail.gmail.com>
- <20130211122654.GA5802@gmail.com> <20130211125627.GA7583@gmail.com> <1360588699.7383.52.camel@shinybook.infradead.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 11 Feb 2013 08:34:28 -0800
-X-Google-Sender-Auth: pUS4C5Tevwaunce9bHL5ftSdrRQ
-Message-ID: <CA+55aFz1pnqdrXCEQThZc3S2r6kQPiDtOKacJQtHpPbjpXkmqg@mail.gmail.com>
-Subject: Re: kvmtool tree (Was: Re: [patch] config: fix make kvmconfig)
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Pekka Enberg <penberg@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Rientjes <rientjes@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
+ definitions=2013-02-11_03:2013-02-11,2013-02-11,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1211240000
+ definitions=main-1302110144
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1BGZ0da017241
 
-On Mon, Feb 11, 2013 at 5:18 AM, David Woodhouse <dwmw2@infradead.org> wrote:
->
-> That's complete nonsense. If you want to use pieces of the kernel
-> infrastructure, then just *take* them. There are loads of projects which
-> use the kernel config tools, for example. There's no need to be *in* the
-> kernel repo.
+Matt,
 
-Exactly. I do *not* want a abstraction layer just because somebody
-wants to use it. It causes idiotic guards in the header files etc. We
-already had that pain with the user-level header inclusions etc.
+> Acked-by: Matt Fleming <matt.fleming@intel.com>
+> 
+> Tony, are you picking this up?
 
-Just copy it.
+Thank you for reviewing and acking my patchset.
 
-            Linus
+Tony,
+
+This patchset can't be applied to a latest next tree due to following commits.
+I will post v6 shortly to fit the latest next tree.
+Then, please apply it.
+
+efi: Make 'efi_enabled' a function to query EFI facilities
+commit 83e68189745ad931c2afd45d8ee3303929233e7f
+
+efivarfs: Delete dentry from dcache in efivarfs_file_write()
+commit  791eb564d218dabe0f9a2212916fe54240b97afb
+
+Seiji
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
