@@ -1,65 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757931Ab3BKQgz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 11:36:55 -0500
-Received: from relay1.sgi.com ([192.48.179.29]:56637 "EHLO relay.sgi.com"
+	id S1758040Ab3BKQhX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 11:37:23 -0500
+Received: from fieldses.org ([174.143.236.118]:58900 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757817Ab3BKQgy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 11:36:54 -0500
-Message-ID: <51191E23.9080500@sgi.com>
-Date: Mon, 11 Feb 2013 08:36:51 -0800
-From: Mike Travis <travis@sgi.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	id S1757660Ab3BKQhV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 11:37:21 -0500
+Date: Mon, 11 Feb 2013 11:37:15 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: akpm@linux-foundation.org, linux-nfs@vger.kernel.org,
+        Trond.Myklebust@netapp.com, linux-kernel@vger.kernel.org,
+        devel@openvz.org
+Subject: Re: [PATCH 0/2] NFSD: fix races in service per-net resources
+ allocation
+Message-ID: <20130211163715.GA19342@fieldses.org>
+References: <20130201111046.24066.72836.stgit@localhost.localdomain>
+ <20130211002558.GD10161@fieldses.org>
+ <51188D2A.4070605@parallels.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Dimitri Sivanich <sivanich@sgi.com>
-Subject: Re: [PATCH 6/7] x86, UV: UV3 Check current gru hub support.
-References: <20130208184305.132404589@gulag1.americas.sgi.com> <20130208184306.212373913@gulag1.americas.sgi.com> <20130211094032.GD23932@gmail.com>
-In-Reply-To: <20130211094032.GD23932@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51188D2A.4070605@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Feb 11, 2013 at 10:18:18AM +0400, Stanislav Kinsbursky wrote:
+> This one looks a bit complicated and confusing to me. Probably because
+> I'm not that familiar with service transports processing logic.  So,
+> as I can see, we now try to run over all per-net pool-assigned
+> transports, remove them from "ready" queue and delete one by one.
+> Then we try to enqueue all temporary sockets. But where in enqueueing
+> of permanent sockets? I.e. how does they be destroyed with this patch?
+> Then we once again try to run over all per-net pool-assigned
+> transports, remove them from "ready" queue and delete one by one.  Why
+> twice? I.e. why not just lose them, then enqueue them and
+> svc_clean_up_xprts()?
 
+I think you missed the first svc_close_list?:
 
-On 2/11/2013 1:40 AM, Ingo Molnar wrote:
->
-> * Mike Travis <travis@sgi.com> wrote:
->
->> This patch checks current hub support to avoid panicing the
->> system until all the GRU changes for UV3+ are in place.
->>
->> Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
->> Signed-off-by: Mike Travis <travis@sgi.com>
+> >  	svc_close_list(serv, &serv->sv_permsocks, net);
+> >+	svc_clean_up_xprts(serv, net);
+> >+	svc_close_list(serv, &serv->sv_tempsocks, net);
+> >+	svc_clean_up_xprts(serv, net);
 
-It was Dimitri's patch, and I put the Author: right after
-the Subject: line but since it was sent from my quilt mail
-command, it was changed.  It was my mistake with the second
-s-o-b: line.
->
-> That's a weird signoff sequence. It should either also include a
-> From: Dimitri tag at the front, or the Signed-off-by should be
-> Acked-by.
->
-> Please also use consistent titles in your patches, standardizing
-> on this pattern would be nice:
->
->     x86/UV/UV3: Check current gru hub support
->
-> while UV patches affecting all UV models would come with a
-> 'x86/UV:' title or so.
+The idea is that before we'd like to close all the listeners first, so
+that they aren't busy creating more tempsocks while we're trying to
+close them.
 
-I can do this.
+I overlooked a race, though: if another thread was already handling an
+accept for one of the listeners then it might not get closed by that
+first svc_clean_up_xprts.
 
-Thanks,
-Mike
+I guess we could do something like:
 
->
-> Thanks,
->
-> 	Ingo
->
+	delay = 0;
+
+    again:
+	numclosed = svc_close_list(serv, &serv->sv_permsocks, net);
+	numclosed += svc_close_list(serv, &serv->sv_tempsocks, net);
+	if (numclosed) {
+		svc_clean_up_xprts(serv, net);
+		msleep(delay++);
+		goto again;
+	}
+
+Seems a little cheesy, but if we don't care much about shutdown
+performance in a rare corner case, maybe it's the simplest way out?
+
+--b
