@@ -1,51 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757874Ab3BKQLu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 11:11:50 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40307 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757840Ab3BKQLt (ORCPT
+	id S1757895Ab3BKQMX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 11:12:23 -0500
+Received: from smtp.eu.citrix.com ([46.33.159.39]:54858 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757840Ab3BKQMW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 11:11:49 -0500
-Date: Mon, 11 Feb 2013 16:11:25 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Len Brown <lenb@kernel.org>, Len Brown <len.brown@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH 06/16] ARM idle: delete pm_idle
-Message-ID: <20130211161125.GM17833@n2100.arm.linux.org.uk>
-References: <2b219d07e0f287c2c713f5465fc8646158fa986e.1360475150.git.len.brown@intel.com> <9838a4aeee256adeaef90efe56df2c9988206982.1360475150.git.len.brown@intel.com> <20130211160229.GB5676@MacBook-Pro.local>
+	Mon, 11 Feb 2013 11:12:22 -0500
+X-IronPort-AV: E=Sophos;i="4.84,643,1355097600"; 
+   d="scan'208";a="1337408"
+From: Roger Pau Monne <roger.pau@citrix.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Roger Pau Monne <roger.pau@citrix.com>, <xen-devel@lists.xen.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH] xen-blkfront: drop the use of llist_for_each_entry_safe
+Date: Mon, 11 Feb 2013 17:10:58 +0100
+Message-ID: <1360599058-1567-1-git-send-email-roger.pau@citrix.com>
+X-Mailer: git-send-email 1.7.7.5 (Apple Git-26)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130211160229.GB5676@MacBook-Pro.local>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 11, 2013 at 04:02:30PM +0000, Catalin Marinas wrote:
-> On Sun, Feb 10, 2013 at 05:58:13AM +0000, Len Brown wrote:
-> > pm_idle() on ARM was a synonym for default_idle(),
-> > so simply invoke default_idle() directly.
-> 
-> The clean-up looks fine as we already have an arm_pm_idle but longer
-> term I was thinking about having a common declaration similar to
-> pm_power_off that code under drivers/power/(reset/) can override (and
-> such driver may be shared by multiple architectures). OTOH, if you get
-> rid of the generic linux/pm.h declaration architectures can use a common
-> pm_idle name and type (though I think having it in the common header
-> would be better). For ARM this would mean s/arm_pm_idle/pm_idle/ on top
-> if your patch.
+Replace llist_for_each_entry_safe with a while loop and
+llist_del_first.
 
-pm_idle() was that common declaration - but it had the side effect that
-it was defined to be called with interrupts disabled, but return with
-interrupts enabled.
+llist_for_each_entry_safe can trigger a bug in GCC 4.1, so it's best
+to remove it and use a while loop and llist_del_first (which is
+already in llist.h).
 
-arm_pm_idle() "fixed" that weirdness such that it's now expected to
-return with IRQs in the same state that it was called.
+Since xen-blkfront is the only user of the llist_for_each_entry_safe
+macro remove it from llist.h.
 
-pm_power_off() is a cross-arch hook already.
+Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
+Reported-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: xen-devel@lists.xen.org
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/block/xen-blkfront.c |    5 ++---
+ include/linux/llist.h        |   25 -------------------------
+ 2 files changed, 2 insertions(+), 28 deletions(-)
+
+diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+index 11043c1..c325062 100644
+--- a/drivers/block/xen-blkfront.c
++++ b/drivers/block/xen-blkfront.c
+@@ -790,7 +790,6 @@ static void blkif_restart_queue(struct work_struct *work)
+ 
+ static void blkif_free(struct blkfront_info *info, int suspend)
+ {
+-	struct llist_node *all_gnts;
+ 	struct grant *persistent_gnt;
+ 	struct llist_node *n;
+ 
+@@ -804,8 +803,8 @@ static void blkif_free(struct blkfront_info *info, int suspend)
+ 
+ 	/* Remove all persistent grants */
+ 	if (info->persistent_gnts_c) {
+-		all_gnts = llist_del_all(&info->persistent_gnts);
+-		llist_for_each_entry_safe(persistent_gnt, n, all_gnts, node) {
++		while ((n = llist_del_first(&info->persistent_gnts)) != NULL) {
++			persistent_gnt = llist_entry(n, struct grant, node);
+ 			gnttab_end_foreign_access(persistent_gnt->gref, 0, 0UL);
+ 			__free_page(pfn_to_page(persistent_gnt->pfn));
+ 			kfree(persistent_gnt);
+diff --git a/include/linux/llist.h b/include/linux/llist.h
+index d0ab98f..a5199f6 100644
+--- a/include/linux/llist.h
++++ b/include/linux/llist.h
+@@ -125,31 +125,6 @@ static inline void init_llist_head(struct llist_head *list)
+ 	     (pos) = llist_entry((pos)->member.next, typeof(*(pos)), member))
+ 
+ /**
+- * llist_for_each_entry_safe - iterate safely against remove over some entries
+- * of lock-less list of given type.
+- * @pos:	the type * to use as a loop cursor.
+- * @n:		another type * to use as a temporary storage.
+- * @node:	the fist entry of deleted list entries.
+- * @member:	the name of the llist_node with the struct.
+- *
+- * In general, some entries of the lock-less list can be traversed
+- * safely only after being removed from list, so start with an entry
+- * instead of list head. This variant allows removal of entries
+- * as we iterate.
+- *
+- * If being used on entries deleted from lock-less list directly, the
+- * traverse order is from the newest to the oldest added entry.  If
+- * you want to traverse from the oldest to the newest, you must
+- * reverse the order by yourself before traversing.
+- */
+-#define llist_for_each_entry_safe(pos, n, node, member)		\
+-	for ((pos) = llist_entry((node), typeof(*(pos)), member),	\
+-	     (n) = (pos)->member.next;					\
+-	     &(pos)->member != NULL;					\
+-	     (pos) = llist_entry(n, typeof(*(pos)), member),		\
+-	     (n) = (&(pos)->member != NULL) ? (pos)->member.next : NULL)
+-
+-/**
+  * llist_empty - tests whether a lock-less list is empty
+  * @head:	the list to test
+  *
+-- 
+1.7.7.5 (Apple Git-26)
+
