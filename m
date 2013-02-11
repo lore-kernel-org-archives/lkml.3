@@ -1,141 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757488Ab3BKPYu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 10:24:50 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:40795 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756758Ab3BKPYs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 10:24:48 -0500
-Message-ID: <51190D2F.70306@ti.com>
-Date: Mon, 11 Feb 2013 17:24:31 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1757536Ab3BKP0v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 10:26:51 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:61813 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756758Ab3BKP0t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 10:26:49 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Michal Simek <monstr@monstr.eu>
+Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16 with generic iowrite(read)8/16(be)
+Date: Mon, 11 Feb 2013 15:26:37 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-5-generic; KDE/4.3.2; x86_64; ; )
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, dahinds@users.sourceforge.net
+References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com> <201302072312.45988.arnd@arndb.de> <CAHTX3dK1Buz3Yh8NTrpsB2X6_17EYT5augOsaLy8_OZQHAOUyw@mail.gmail.com>
+In-Reply-To: <CAHTX3dK1Buz3Yh8NTrpsB2X6_17EYT5augOsaLy8_OZQHAOUyw@mail.gmail.com>
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: "tony@atomide.com" <tony@atomide.com>,
-        "b-cousson@ti.com" <b-cousson@ti.com>, "balbi@ti.com" <balbi@ti.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "kishon@ti.com" <kishon@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH v2 09/14] mfd: omap-usb-host: Add device tree support
- and binding information
-References: <1360252974-7912-1-git-send-email-rogerq@ti.com> <1360252974-7912-10-git-send-email-rogerq@ti.com> <20130211120026.GD2726@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20130211120026.GD2726@e106331-lin.cambridge.arm.com>
-Content-Type: text/plain; charset="windows-1252"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201302111526.37892.arnd@arndb.de>
+X-Provags-ID: V02:K0:r/LkcEQHbJQ+TH1NSK21oi0KjiyNJcutdp/LCIF0J0/
+ KfRXTfnGNXLtrTXK1Szz++hqG0g8dryT+ylxqcTUjL06m/2JP3
+ 7K4dAXmVAOxgpq5V67AjPNW0NQ3Yt4JZn1kBVOJ8y8wnZWg8/c
+ PdRLMNg+W0U1nTJwKbT4/sfBu0O8klsiPnntN0YFxf0Ng7fBxa
+ qcnM1j3dY5udvm046kNJy5UqCSS75wIabOmwD5oe3VnQ4Nf8MS
+ ha0B2ndcfODCLSkABXlpvisJ5ZvP8vFBZj5ZXic/RMe4BUnwI8
+ NixepZXBDdeEMrL4I7lhVT3i3TvluWndbEo0W7RnKQ3ETjhVft
+ MDj4uFapPPvtCTKMF7dI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2013 02:00 PM, Mark Rutland wrote:
-> On Thu, Feb 07, 2013 at 04:02:49PM +0000, Roger Quadros wrote:
->> Allows the OMAP HS USB host controller to be specified
->> via device tree.
->>
->> CC: Samuel Ortiz <sameo@linux.intel.com>
->> Signed-off-by: Roger Quadros <rogerq@ti.com>
->> ---
->>  .../devicetree/bindings/mfd/omap-usb-host.txt      |   80 ++++++++++
->>  drivers/mfd/omap-usb-host.c                        |  160 +++++++++++++++++++-
->>  2 files changed, 234 insertions(+), 6 deletions(-)
->>  create mode 100644 Documentation/devicetree/bindings/mfd/omap-usb-host.txt
->>
->> diff --git a/Documentation/devicetree/bindings/mfd/omap-usb-host.txt b/Documentation/devicetree/bindings/mfd/omap-usb-host.txt
->> new file mode 100644
->> index 0000000..b381fa6
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/mfd/omap-usb-host.txt
->> @@ -0,0 +1,80 @@
->> +OMAP HS USB Host
->> +
->> +Required properties:
->> +
->> +- compatible: should be "ti,usbhs-host"
->> +- reg: should contain one register range i.e. start and length
->> +- ti,hwmods: must contain "usb_host_hs"
->> +
->> +Optional properties:
->> +
->> +- num-ports: number of USB ports. Usually this is automatically detected
->> +  from the IP's revision register but can be overridden by specifying
->> +  this property. A maximum of 3 ports are supported at the moment.
->> +
->> +- portN-mode: String specifying the port mode for port N, where N can be
->> +  from 1 to 3. If the port mode is not specified, that port is treated
->> +  as unused. When specified, it must be one of the following.
->> +	"ehci-phy",
->> +        "ehci-tll",
->> +        "ehci-hsic",
->> +        "ohci-phy-6pin-datse0",
->> +        "ohci-phy-6pin-dpdm",
->> +        "ohci-phy-3pin-datse0",
->> +        "ohci-phy-4pin-dpdm",
->> +        "ohci-tll-6pin-datse0",
->> +        "ohci-tll-6pin-dpdm",
->> +        "ohci-tll-3pin-datse0",
->> +        "ohci-tll-4pin-dpdm",
->> +        "ohci-tll-2pin-datse0",
->> +        "ohci-tll-2pin-dpdm",
->> +
+On Monday 11 February 2013, Michal Simek wrote:
 > 
-> [...]
+> 2013/2/8 Arnd Bergmann <arnd@arndb.de>:
+> > On Thursday 07 February 2013, Michal Simek wrote:
+> >> Subject: "asm-generic: io: Fix ioread16/32be and iowrite16/32be"
+> >
+> > Ok, thanks. If you don't mind, I think this can just go with the other patches
+> > for xsysace that come out of this discussion.
 > 
->> +/**
->> + * Map 'enum usbhs_omap_port_mode' found in <linux/platform_data/usb-omap.h>
->> + * to the device tree binding portN-mode found in
->> + * 'Documentation/devicetree/bindings/mfd/omap-usb-host.txt'
->> + */
->> +static const char *port_modes[] = {
->> +	[OMAP_USBHS_PORT_MODE_UNUSED]	= "",
->> +	[OMAP_EHCI_PORT_MODE_PHY]	= "ehci-phy",
->> +	[OMAP_EHCI_PORT_MODE_TLL]	= "ehci-tll",
->> +	[OMAP_EHCI_PORT_MODE_HSIC]	= "ehci-hsic",
->> +	[OMAP_OHCI_PORT_MODE_PHY_6PIN_DATSE0]	= "ohci-phy-6pin-datse0",
->> +	[OMAP_OHCI_PORT_MODE_PHY_6PIN_DPDM]	= "ohci-phy-6pin-dpdm",
->> +	[OMAP_OHCI_PORT_MODE_PHY_3PIN_DATSE0]	= "ohci-phy-3pin-datse0",
->> +	[OMAP_OHCI_PORT_MODE_PHY_4PIN_DPDM]	= "ohci-phy-4pin-dpdm",
->> +	[OMAP_OHCI_PORT_MODE_TLL_6PIN_DATSE0]	= "ohci-tll-6pin-datse0",
->> +	[OMAP_OHCI_PORT_MODE_TLL_6PIN_DPDM]	= "ohci-tll-6pin-dpdm",
->> +	[OMAP_OHCI_PORT_MODE_TLL_3PIN_DATSE0]	= "ohci-tll-3pin-datse0",
->> +	[OMAP_OHCI_PORT_MODE_TLL_4PIN_DPDM]	= "ohci-tll-4pin-dpdm",
->> +	[OMAP_OHCI_PORT_MODE_TLL_2PIN_DATSE0]	= "ohci-tll-2pin-datse0",
->> +	[OMAP_OHCI_PORT_MODE_TLL_2PIN_DPDM]	= "ohci-tll-2pin-dpdm",
->> +};
->> +
->> +/**
->> + * omap_usbhs_get_dt_port_mode - Get the 'enum usbhs_omap_port_mode'
->> + * from the port mode string.
->> + * @mode: The port mode string, usually obtained from device tree.
->> + *
->> + * The function returns the 'enum usbhs_omap_port_mode' that matches the
->> + * provided port mode string as per the port_modes table.
->> + * If no match is found it returns -ENODEV
->> + */
->> +static const int omap_usbhs_get_dt_port_mode(const char *mode)
->> +{
->> +	int i;
->> +
->> +	for (i = 0; i < ARRAY_SIZE(port_modes); i++) {
->> +		if (!strcasecmp(mode, port_modes[i]))
->> +			return i;
->> +	}
+> I want to move microblaze to use this asm-generic/io.h that's why I
+> prefer to send
+> this with microblaze patch directly to Linus. For me this make more sense that
+> with sending block device driver changes.
 > 
-> Any reason for using strcasecmp rather than strcmp? The binding only specified
-> lower case versions, and this allows people to write "oHcI-PhY-6PiN-DaTsE0"
-> with impunity.
+> What do you think?
 
-:). No specific reason. I'll change it to strcmp.
-> 
-> Otherwise, this looks fine to me.
+Sure, please do it that way. My policy for asm-generic patches is that they
+I prefer to have them go through whatever tree needs them, I was just confused
+about which one that would be in this case.
 
-Thanks.
-
-cheers,
--roger
-
+	Arnd
