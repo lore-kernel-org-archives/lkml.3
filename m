@@ -1,85 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756676Ab3BKMEe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 07:04:34 -0500
-Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:40127 "HELO
-	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756609Ab3BKMEc (ORCPT
+	id S1756609Ab3BKMMF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 07:12:05 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:47676 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756256Ab3BKMMD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 07:04:32 -0500
-Message-ID: <5118DE42.7040902@mellanox.com>
-Date: Mon, 11 Feb 2013 14:04:18 +0200
-From: Amir Vadai <amirv@mellanox.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Mon, 11 Feb 2013 07:12:03 -0500
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Andrew Morton <akpm@linux-foundation.org>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Yan Burman <yanb@mellanox.com>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: Re: linux-next: build failure after merge of the akpm tree
-References: <20130211181332.ecf1cad33b04b3872b685620@canb.auug.org.au>
-In-Reply-To: <20130211181332.ecf1cad33b04b3872b685620@canb.auug.org.au>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.222.66.109]
-X-TM-AS-Product-Ver: SMEX-10.0.0.4211-7.000.1014-19628.002
-X-TM-AS-Result: No--2.505700-8.000000-31
-X-TM-AS-User-Approved-Sender: No
-X-TM-AS-User-Blocked-Sender: No
+In-Reply-To: <5118D478.3010205@synopsys.com>
+References: <1359024639-21915-1-git-send-email-vgupta@synopsys.com>
+	<1359024639-21915-9-git-send-email-vgupta@synopsys.com>
+	<51189D2F.4030000@synopsys.com>
+	<CACM3HyGNZxfOXpw01POBVT-YcVKQsnPkO6Kgg+epfZS-x-BRCg@mail.gmail.com>
+	<5118C458.2070205@synopsys.com>
+	<5118C7B6.6040807@imgtec.com>
+	<CACM3HyG+4Pzx02iL9atxG+FOLiCcTeXR+ivzRO78bqDHNp5rGQ@mail.gmail.com>
+	<5118D478.3010205@synopsys.com>
+Date: Mon, 11 Feb 2013 13:12:00 +0100
+Message-ID: <CACM3HyG7B=iMb4cHYP2cb8np55t8WefWTh4x3SYkGK4Lc=RXbA@mail.gmail.com>
+Subject: Re: pt_regs leak into userspace (was Re: [PATCH v3 20/71] ARC: Signal handling)
+From: Jonas Bonn <jonas.bonn@gmail.com>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: James Hogan <james.hogan@imgtec.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/02/2013 09:13, Stephen Rothwell wrote:
-> Hi Andrew,
-> 
-> After merging the akpm tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
-> 
-> drivers/net/ethernet/mellanox/mlx4/en_rx.c: In function 'mlx4_en_process_rx_cq':
-> drivers/net/ethernet/mellanox/mlx4/en_rx.c:628:53: error: macro "hlist_for_each_entry_rcu" passed 4 arguments, but takes just 3
-> drivers/net/ethernet/mellanox/mlx4/en_rx.c:628:5: error: 'hlist_for_each_entry_rcu' undeclared (first use in this function)
-> drivers/net/ethernet/mellanox/mlx4/en_rx.c:628:55: error: expected ';' before '{' token
-> 
-> Caused by commit c07cb4b0ab78 ("net/mlx4_en: Manage hash of MAC addresses
-> per port") from the net-next tree interacting with commit "hlist: drop
-> the node parameter from iterators" from the akpm tree.
-> 
-> I applied the following merge fix patch for today:
-> 
-> From 7a10f5e7e8d1232d618307d568ea9a78dc4680bb Mon Sep 17 00:00:00 2001
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Mon, 11 Feb 2013 18:01:23 +1100
-> Subject: [PATCH] net/mlx4_en: fix up for hlist_for_each_entry_rcu API change
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  drivers/net/ethernet/mellanox/mlx4/en_rx.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/drivers/net/ethernet/mellanox/mlx4/en_rx.c b/drivers/net/ethernet/mellanox/mlx4/en_rx.c
-> index ce38654..19a9c05 100644
-> --- a/drivers/net/ethernet/mellanox/mlx4/en_rx.c
-> +++ b/drivers/net/ethernet/mellanox/mlx4/en_rx.c
-> @@ -617,7 +617,6 @@ int mlx4_en_process_rx_cq(struct net_device *dev, struct mlx4_en_cq *cq, int bud
->  
->  			if (is_multicast_ether_addr(ethh->h_dest)) {
->  				struct mlx4_mac_entry *entry;
-> -				struct hlist_node *n;
->  				struct hlist_head *bucket;
->  				unsigned int mac_hash;
->  
-> @@ -625,7 +624,7 @@ int mlx4_en_process_rx_cq(struct net_device *dev, struct mlx4_en_cq *cq, int bud
->  				mac_hash = ethh->h_source[MLX4_EN_MAC_HASH_IDX];
->  				bucket = &priv->mac_hash[mac_hash];
->  				rcu_read_lock();
-> -				hlist_for_each_entry_rcu(entry, n, bucket, hlist) {
-> +				hlist_for_each_entry_rcu(entry, bucket, hlist) {
->  					if (ether_addr_equal_64bits(entry->mac,
->  								    ethh->h_source)) {
->  						rcu_read_unlock();
-> 
+On 11 February 2013 12:22, Vineet Gupta <Vineet.Gupta1@synopsys.com> wrote:
+> On Monday 11 February 2013 04:23 PM, Jonas Bonn wrote:
+>> On 11 February 2013 11:28, James Hogan <james.hogan@imgtec.com> wrote:
+>>> On 11/02/13 10:13, Vineet Gupta wrote:
+>>>> On Monday 11 February 2013 03:06 PM, Jonas Bonn wrote:
+>>>>> On 11 February 2013 08:26, Vineet Gupta <Vineet.Gupta1@synopsys.com> wrote:
+>>>>>
+>>>>>> The only downside of this patch is that userspace signal stack grows in size,
+>>>>>> since signal frame only cares about scratch regs (pt_regs), but has to accommodate
+>>>>>> unused placeholder for callee regs too by virtue of using user_regs_struct.
+>>>>> Is this really true?  Don't setcontext and friends require that _all_
+>>>>> the registers be part of sigcontext?
+>>>>
+>>>> But for an ABI - callee saved regs will anyhow be saved/restored even in
+>>>> setcontext case ! So collecting it for that purpose seems useless, or am I missing
+>>>> something here.
+>>>
+>>> I think Jonas' point was that signals are asynchronous, i.e. you could
+>>> get interrupted by a signal at virtually any time during the program's
+>>> execution.
+>>
+>> No, I agree that the callee-saved regs don't need to be saved across a
+>> signal handler invocation.  It's really just the setcontext case that
+>> wants to be able to swap out the callee-saved regs.
+>
+> I don't think that's needed either - and if thats mandated somewhere, it would
+> seem a unnecessary mis-optimization IMHO.
+>
+> See, even a setcontext enabled control flow needs to be ABI compliant so that it
+> plays nicely with other normal flows of execution. Thus e.g. it can't fudge a
+> callee reg - it needs to save orig callee reg(s) and restore them in the end. And
+> if we agree to those semantics - I don't see any value in swapping the callee reg
+> context around usage of setcontext as it would be a wasted effort.
 
-Acked-By: Amir Vadai <amirv@mellanox.com>
+Yeah, that makes sense.  I can see where you're coming from... and the
+fact that you switch the stack, as James pointed out, means that you
+end up restoring whatever callee-saved registers you need in the new
+control flow on the way out of your setcontext wrapper.
 
+BUT... a successful call to setcontext() does not return and whatever
+code you end up jumping to as a result of the call has its own
+expectations about the state of the registers.  Somebody has to set up
+the registers to meet these expectations and, as far as I can see,
+this means:
+
+i) sigreturn fixes up the internal pt_regs with the new userspace state
+ii) the syscall return path restores _all_ the regs, as though there
+had been a context switch
+
+What am I missing?  I'm totally open to the idea that I'm the one
+who's confused here...
+
+...and perhaps this is all moot since it seems that
+getcontext/setcontext are obsolete anyway(???).
+
+/Jonas
