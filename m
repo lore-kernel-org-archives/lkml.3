@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757880Ab3BKQIh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 11:08:37 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:51370 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757651Ab3BKQIg (ORCPT
+	id S1757874Ab3BKQLu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 11:11:50 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40307 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757840Ab3BKQLt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 11:08:36 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Michal Simek <monstr@monstr.eu>
-Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16 with generic iowrite(read)8/16(be)
-Date: Mon, 11 Feb 2013 16:08:29 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-5-generic; KDE/4.3.2; x86_64; ; )
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, dahinds@users.sourceforge.net
-References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com> <201302111543.46196.arnd@arndb.de> <CAHTX3dJ6pZWyGB=6T22wA_wR-Tqty+4Nywm84g_n4djTv-cT=g@mail.gmail.com>
-In-Reply-To: <CAHTX3dJ6pZWyGB=6T22wA_wR-Tqty+4Nywm84g_n4djTv-cT=g@mail.gmail.com>
+	Mon, 11 Feb 2013 11:11:49 -0500
+Date: Mon, 11 Feb 2013 16:11:25 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Len Brown <lenb@kernel.org>, Len Brown <len.brown@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH 06/16] ARM idle: delete pm_idle
+Message-ID: <20130211161125.GM17833@n2100.arm.linux.org.uk>
+References: <2b219d07e0f287c2c713f5465fc8646158fa986e.1360475150.git.len.brown@intel.com> <9838a4aeee256adeaef90efe56df2c9988206982.1360475150.git.len.brown@intel.com> <20130211160229.GB5676@MacBook-Pro.local>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302111608.29304.arnd@arndb.de>
-X-Provags-ID: V02:K0:g/FZssOwNksQ6yEhoNuHrIcPZMBtBTHECe43ezeFLAM
- TPWXiVeLLkyU99E51bWliVJr7NNjZAIWZXMTjPQRmM4xxaqzIG
- 1GfOASuBEJZF08Ri09U8GnwpvqBWjccJLnAYvLYlc+wJiREdHg
- zNCl73DLw6TI4cMX3+vLc/uzCZHcNaoebAwTo916bJ+85WSmOp
- eiZwJqE8qfKlv+yf3G1Ev+9kVKBuS/Oq/MgeB8Z1cHAfxDWNV7
- j3ET7Tnc6ZTnh+Sv+v4ARmw9VZxoAn3fkqd9V18f/Yaw5Gwhom
- mj4G9fBUJfiNyD5BeD3XtHG3Z/XoA/iOMJjRxQUmnA3pzxeeMI
- vMxTM2TXc1QLcSwdsrBo=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130211160229.GB5676@MacBook-Pro.local>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 11 February 2013, Michal Simek wrote:
-> Unfortunately no. Another is spi/i2c (sysace as we discuss in this
-> thread), probably icap
-> network drivers are ok because they are not shared.
-> Timer when it is moved to clocksource(not important right now)
-> xilinx gpio is using __raw IO functions which is incorrect on arm in
-> connection to barriers.
+On Mon, Feb 11, 2013 at 04:02:30PM +0000, Catalin Marinas wrote:
+> On Sun, Feb 10, 2013 at 05:58:13AM +0000, Len Brown wrote:
+> > pm_idle() on ARM was a synonym for default_idle(),
+> > so simply invoke default_idle() directly.
 > 
-> But it reminds me that maybe the easiest solution is not to use endian
-> accessors just use two simple macros which should work on all systems.
-> 
-> #define <name>_readreg(offset)          ({__raw_readl(offset); rmb(); })
-> #define <name>_writereg(offset, val)    ({wmb(); __raw_writel(val, offset); })
-> 
-> which is probably the faster solution which add minimum additional code
-> to driver and can also remove endian detection code.
+> The clean-up looks fine as we already have an arm_pm_idle but longer
+> term I was thinking about having a common declaration similar to
+> pm_power_off that code under drivers/power/(reset/) can override (and
+> such driver may be shared by multiple architectures). OTOH, if you get
+> rid of the generic linux/pm.h declaration architectures can use a common
+> pm_idle name and type (though I think having it in the common header
+> would be better). For ARM this would mean s/arm_pm_idle/pm_idle/ on top
+> if your patch.
 
-I tend to disagree. You should never assume that a device is the same
-endianess as the the CPU, and you should try not to use the __raw_*
-accessors in device drivers either.
+pm_idle() was that common declaration - but it had the side effect that
+it was defined to be called with interrupts disabled, but return with
+interrupts enabled.
 
-In particular, ARM can run both big- and little-endian even though
-big-endian is rarely used, so you need to know the endianess for
-the device you are talking to rather than assume that it knows
-what the CPU does at the time.
+arm_pm_idle() "fixed" that weirdness such that it's now expected to
+return with IRQs in the same state that it was called.
 
-	Arnd
+pm_power_off() is a cross-arch hook already.
