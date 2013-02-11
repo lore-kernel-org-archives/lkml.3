@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757244Ab3BKOmn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 09:42:43 -0500
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:52509 "EHLO
-	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756758Ab3BKOmm (ORCPT
+	id S1757453Ab3BKOrQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 09:47:16 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:47066 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756758Ab3BKOrP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 09:42:42 -0500
-Message-ID: <1360593750.25941.13.camel@thor.lan>
-Subject: Re: WARNING: at drivers/tty/tty_buffer.c:476  (tty is NULL)
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Michael Ellerman <michael@ellerman.id.au>
-Cc: Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Date: Mon, 11 Feb 2013 09:42:30 -0500
-In-Reply-To: <20130211024412.GA7623@concordia>
-References: <20130102153744.GC25940@redhat.com>
-	 <20130118205358.GA6854@redhat.com> <20130118210728.GA16742@kroah.com>
-	 <50FB0957.2000400@suse.cz> <1359570837.3325.30.camel@thor.lan>
-	 <20130211024412.GA7623@concordia>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-0pjh1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Mon, 11 Feb 2013 09:47:15 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130211105941.GA26717@paralelels.com>
+References: <1358849741-9611-4-git-send-email-avagin@openvz.org>
+ <20130208191056.GA13674@redhat.com> <CAKgNAki0xt_wwixp7kdv04fKOCtCh-ObQjkFE9PiX6FapkO34A@mail.gmail.com>
+ <201302111029.50998.vda.linux@googlemail.com> <20130211105941.GA26717@paralelels.com>
+From: Denys Vlasenko <vda.linux@googlemail.com>
+Date: Mon, 11 Feb 2013 15:46:52 +0100
+Message-ID: <CAK1hOcMepaOD80GOvUv1xz3xibTG_iKMK-w7698K6KfRmcKGeA@mail.gmail.com>
+Subject: Re: [CRIU] [PATCH 3/3] signalfd: add ability to read siginfo-s
+ without dequeuing signals (v2)
+To: Andrew Vagin <avagin@parallels.com>
+Cc: mtk.manpages@gmail.com, David Howells <dhowells@redhat.com>,
+        Pavel Emelyanov <xemul@parallels.com>, linux-api@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        criu@openvz.org, Cyrill Gorcunov <gorcunov@openvz.org>,
+        Andrey Wagin <avagin@gmail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, Dave Jones <davej@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michael,
+On Mon, Feb 11, 2013 at 11:59 AM, Andrew Vagin <avagin@parallels.com> wrote:
+>> > I suppose I had wondered along similar lines, but in a slightly
+>> > different direction: would the use of a /proc interface to get the
+>> > queued signals make some sense?
+>>
+>> I think that /proc interface beats adding magic flags and magic semantic
+>> to [p]read.
+>>
+>> It also has the benefit of being human-readable. You don't need
+>> to write a special C program to "cat /proc/$$/foo".
+>>
+>> Andrey, I know that it is hard to let go of the code you invested time
+>> and efforts in creating. But this isn't the last patch, is it?
+>> You will need to retrieve yet more data for process checkpointing.
+>> When you start working on the next patch for it, consider trying
+>> /proc approach.
+>
+> I don't think that we need to convert siginfo into a human readable format
+> in kernel.
 
-On Mon, 2013-02-11 at 13:44 +1100, Michael Ellerman wrote:
-> On Wed, Jan 30, 2013 at 01:33:57PM -0500, Peter Hurley wrote:
-> > On Sat, 2013-01-19 at 22:00 +0100, Jiri Slaby wrote:
-> > > On 01/18/2013 10:07 PM, Greg Kroah-Hartman wrote:
-> > > > Jiri, was there anything on the mailing list that I missed that should
-> > > > have resolved this issue?  I thought it was being worked on, but I can't
-> > > > seem to find any resolution at the moment.
-> > > 
-> > > Somebody had a patchset and promised to repost IIRC. I forgot his name
-> > > though.
-> > > 
-> > > /me back from digging in the mail history.
-> > > 
-> > > Peter Hurley is the name.
-> > > 
-> > > Peter, what happened with your patches in the end, please?
-> > 
-> > The tty subsystem is very resilient to fixing :)
-> > 
-> > The thing I'm working on right now -- which hopefully is the last issue
-> > with the line discipline logic -- occurs with parallel __tty_hangup()
-> > and tty_release().
-> > 
-> > At the moment, I'm trying to narrow the conditions when this happens.
-> 
-> If it helps I seem to be able to reproduce this in just a few seconds by
-                                   ^^^^^^^^^^^^^^
-                 you get this WARNING from a parallel __tty_hangup?
+My point is that bolting hacks onto various bits of kernel API
+in order to support process checkpointing makes those APIs
+(their in-kernel implementation) ridden with special cases
+and harder to support in the future.
 
-Or do you mean simply that you get this WARNING?
+Process checkpointing needs to bite the bullet and
+create its own API instead.
 
-> running trinity and hitting Ctrl-C to quit the watchdog.
+Whether it would be a /proc/PID/checkpoint or a
+ptrace(PTRACE_GET_CHKPOINT_DATA) is another question.
 
-Can you reproduce after using the following patch series?
-[PATCH v3 00/23] ldisc fixes
-
-Regards,
-Peter Hurley
-
+-- 
+vda
