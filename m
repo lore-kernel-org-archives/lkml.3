@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757453Ab3BKOrQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 09:47:16 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:47066 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756758Ab3BKOrP (ORCPT
+	id S1757376Ab3BKOsG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 09:48:06 -0500
+Received: from mail-we0-f181.google.com ([74.125.82.181]:54528 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756510Ab3BKOsE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 09:47:15 -0500
+	Mon, 11 Feb 2013 09:48:04 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130211105941.GA26717@paralelels.com>
-References: <1358849741-9611-4-git-send-email-avagin@openvz.org>
- <20130208191056.GA13674@redhat.com> <CAKgNAki0xt_wwixp7kdv04fKOCtCh-ObQjkFE9PiX6FapkO34A@mail.gmail.com>
- <201302111029.50998.vda.linux@googlemail.com> <20130211105941.GA26717@paralelels.com>
-From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Mon, 11 Feb 2013 15:46:52 +0100
-Message-ID: <CAK1hOcMepaOD80GOvUv1xz3xibTG_iKMK-w7698K6KfRmcKGeA@mail.gmail.com>
-Subject: Re: [CRIU] [PATCH 3/3] signalfd: add ability to read siginfo-s
- without dequeuing signals (v2)
-To: Andrew Vagin <avagin@parallels.com>
-Cc: mtk.manpages@gmail.com, David Howells <dhowells@redhat.com>,
-        Pavel Emelyanov <xemul@parallels.com>, linux-api@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        criu@openvz.org, Cyrill Gorcunov <gorcunov@openvz.org>,
-        Andrey Wagin <avagin@gmail.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, Dave Jones <davej@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20130211122654.GA5802@gmail.com>
+References: <20130206214646.GA28135@gmail.com>
+	<20130208084029.d7d97d6e26580a5512712f91@canb.auug.org.au>
+	<20130208145539.GC30334@gmail.com>
+	<CA+55aFz9ERvaFayTy8QCtfi610Bt_r0GcOs68UNggJTHdY4oaQ@mail.gmail.com>
+	<CAOJsxLFDa3sLwP2MWdXJMTfZNEopp5imy8nWNViuPnWH747ggQ@mail.gmail.com>
+	<CA+55aFzEEbZqBaOKYB8H8+i904nXjNEgH=CUPtVMQU60QTTJaw@mail.gmail.com>
+	<CAOJsxLFDbmNitH=N8v3jSno0SFL33s=nPc+hGRAqJfYFZS0RGw@mail.gmail.com>
+	<CA+55aFy=SaVjNby=Jy_O9ZRQ_Ofc-6_+bLv=HeMMSzQQHw9vMQ@mail.gmail.com>
+	<CAOJsxLFpE=HjkPcX6NsWS8636qnEhDFDJi+49xX2Ge3Xp4MeUg@mail.gmail.com>
+	<CA+55aFzXF-4Xwc4HU8vnTin4WqtvYcpXq0TsqTN_vRg=myLH_Q@mail.gmail.com>
+	<20130211122654.GA5802@gmail.com>
+Date: Mon, 11 Feb 2013 16:47:52 +0200
+X-Google-Sender-Auth: qm-QES6hLv149WL2HuFhSLbaVoc
+Message-ID: <CAOJsxLFzc_39tuQazCKe+vO0evWhWwW9QasFiEqCgjKye9iNDg@mail.gmail.com>
+Subject: Re: kvmtool tree (Was: Re: [patch] config: fix make kvmconfig)
+From: Pekka Enberg <penberg@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        David Rientjes <rientjes@google.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 11, 2013 at 11:59 AM, Andrew Vagin <avagin@parallels.com> wrote:
->> > I suppose I had wondered along similar lines, but in a slightly
->> > different direction: would the use of a /proc interface to get the
->> > queued signals make some sense?
->>
->> I think that /proc interface beats adding magic flags and magic semantic
->> to [p]read.
->>
->> It also has the benefit of being human-readable. You don't need
->> to write a special C program to "cat /proc/$$/foo".
->>
->> Andrey, I know that it is hard to let go of the code you invested time
->> and efforts in creating. But this isn't the last patch, is it?
->> You will need to retrieve yet more data for process checkpointing.
->> When you start working on the next patch for it, consider trying
->> /proc approach.
+On Mon, Feb 11, 2013 at 2:26 PM, Ingo Molnar <mingo@kernel.org> wrote:
+> IIRC Windows support for kmvtool is work in progress - some
+> patches already got applied.
+
+People are working on SeaBIOS support which is just one part of
+running Windows. But yeah, we'll hopefully support non-Linux guest at
+some point.
+
+On Mon, Feb 11, 2013 at 2:26 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>> What if somebody tells you that they are really tired of Xen,
+>> and actually want to turn kvmtool into *replacement* for Xen
+>> instead? [...]
 >
-> I don't think that we need to convert siginfo into a human readable format
-> in kernel.
+> Actually, this was raised by some people - and I think some
+> generalization patches were applied already but Pekka might know
+> more about that ...
 
-My point is that bolting hacks onto various bits of kernel API
-in order to support process checkpointing makes those APIs
-(their in-kernel implementation) ridden with special cases
-and harder to support in the future.
+There was some interest but I don't think anybody sent patches for
+that. There's no fundamental reason why we couldn't support Xen if
+people are interested in working on that.
 
-Process checkpointing needs to bite the bullet and
-create its own API instead.
-
-Whether it would be a /proc/PID/checkpoint or a
-ptrace(PTRACE_GET_CHKPOINT_DATA) is another question.
-
--- 
-vda
+                        Pekka
