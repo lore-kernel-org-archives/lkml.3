@@ -1,79 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752564Ab3BKGy3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 01:54:29 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:50560 "EHLO bear.ext.ti.com"
+	id S1752615Ab3BKG5v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 01:57:51 -0500
+Received: from ozlabs.org ([203.10.76.45]:43429 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752245Ab3BKGy2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 01:54:28 -0500
-From: J Keerthy <j-keerthy@ti.com>
-To: <linux-kernel@vger.kernel.org>, <lgirdwood@gmail.com>,
-        <broonie@opensource.wolfsonmicro.com>
-CC: <j-keerthy@ti.com>
-Subject: [PATCH V2] Regulator: Reorder the min max assignment in the sequence of regulator_set_voltage function
-Date: Mon, 11 Feb 2013 12:19:34 +0530
-Message-ID: <1360565374-1553-1-git-send-email-j-keerthy@ti.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1751926Ab3BKG5u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 01:57:50 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: sjur.brandeland@stericsson.com, "David S. Miller" <davem@davemloft.net>,
+        Ohad Ben-Cohen <ohad@wizery.com>
+Cc: sjur@brendeland.net, netdev@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        Dmitry Tarnyagin <dmitry.tarnyagin@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Erwan Yvin <erwan.yvin@stericsson.com>,
+        Vikram ARV <vikram.arv@stericsson.com>,
+        Sjur =?utf-8?Q?Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>,
+        Ido Yariv <ido@wizery.com>
+Subject: Re: [PATCH vringh 2/2] caif_virtio: Introduce caif over virtio
+In-Reply-To: <1360494273-27889-3-git-send-email-sjur.brandeland@stericsson.com>
+References: <1360494273-27889-1-git-send-email-sjur.brandeland@stericsson.com> <1360494273-27889-3-git-send-email-sjur.brandeland@stericsson.com>
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Mon, 11 Feb 2013 17:27:43 +1030
+Message-ID: <87vc9zfic8.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The min and max values for regulators are getting assigned before actually
-the voltage is set. So making sure that min and max values are assigned
-only if the voltage is successfully set else keeping the last successfully
-set voltage's min and max values.
+sjur.brandeland@stericsson.com writes:
+> From: Vikram ARV <vikram.arv@stericsson.com>
+>
+> Add the the Virtio shared memory driver for STE Modems.
+> caif_virtio is implemented utilizing the virtio framework
+> for data transport and is managed with the remoteproc frameworks.
+>
+> The Virtio queue is used for transmitting data to the modem, and
+> the new vringh implementation is receiving data over the vring.
 
-This is boot tested on OMAP4430 and OMAP4460 boards.
+OK, let's refine vringh now we can see another user:
 
-V2: Fixed comment from Mark. Introduced local variables to hold current
-min and max values.
- 
-Signed-off-by: J Keerthy <j-keerthy@ti.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/regulator/core.c |   12 ++++++++++--
- 1 files changed, 10 insertions(+), 2 deletions(-)
+> + * @head: Last descriptor ID we received from vringh_getdesc_kern.
+> + *	  We use this to put descriptor back on the used ring. USHRT_MAX is
+> + *	  used to indicate invalid head-id.
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 2785843..44a9b84 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -2293,7 +2293,7 @@ static int _regulator_do_set_voltage(struct regulator_dev *rdev,
- int regulator_set_voltage(struct regulator *regulator, int min_uV, int max_uV)
- {
- 	struct regulator_dev *rdev = regulator->rdev;
--	int ret = 0;
-+	int ret = 0, curr_min, curr_max;
- 
- 	mutex_lock(&rdev->mutex);
- 
-@@ -2315,15 +2315,23 @@ int regulator_set_voltage(struct regulator *regulator, int min_uV, int max_uV)
- 	ret = regulator_check_voltage(rdev, &min_uV, &max_uV);
- 	if (ret < 0)
- 		goto out;
-+	curr_min = regulator->min_uV;
-+	curr_max = regulator->max_uV;
- 	regulator->min_uV = min_uV;
- 	regulator->max_uV = max_uV;
- 
- 	ret = regulator_check_consumers(rdev, &min_uV, &max_uV);
- 	if (ret < 0)
--		goto out;
-+		goto err;
- 
- 	ret = _regulator_do_set_voltage(rdev, min_uV, max_uV);
- 
-+err:
-+	if (ret) {
-+		regulator->min_uV = curr_min;
-+		regulator->max_uV = curr_max;
-+	}
-+
- out:
- 	mutex_unlock(&rdev->mutex);
- 	return ret;
--- 
-1.7.5.4
+> + */
+> +struct cfv_napi_context {
+> +	struct vringh_kiov riov;
+> +	unsigned short head;
+> +};
 
+Usually we use an int, and -1.  I imagine it'll take no more space,
+due to padding.
+
+> +static inline void ctx_prep_iov(struct cfv_napi_context *ctx)
+> +{
+> +	if (ctx->riov.allocated) {
+> +		kfree(ctx->riov.iov);
+> +		ctx->riov.iov = NULL;
+> +		ctx->riov.allocated = false;
+> +	}
+> +	ctx->riov.iov = NULL;
+> +	ctx->riov.i = 0;
+> +	ctx->riov.max = 0;
+> +}
+
+Hmm, we should probably make sure you don't have to do this: that if
+allocated once, you can simply reuse it by setting i = 0.
+
+(This requires some care in the error handling paths, so we don't
+free it from under you)...
+
+And you probably want to free this up in cfv_remove() instead?
+
+I'll create and test a patch now.
+
+> +		if (riov->i == riov->max) {
+> +			if (cfv->ctx.head != USHRT_MAX) {
+> +				vringh_complete_kern(cfv->vr_rx,
+> +						     cfv->ctx.head,
+> +						     0);
+> +				cfv->ctx.head = USHRT_MAX;
+> +			}
+> +
+> +			ctx_prep_iov(&cfv->ctx);
+> +			err = vringh_getdesc_kern(
+> +				cfv->vr_rx,
+> +				riov,
+> +				&wiov,
+> +				&cfv->ctx.head,
+> +				GFP_ATOMIC);
+> +
+> +			if (err <= 0)
+> +				goto out;
+> +
+> +			if (wiov.max != 0) {
+> +				/* CAIF does not use write descriptors */
+> +				err = -EPROTO;
+> +				goto out;
+> +			}
+
+This is probably a common case, so we should generate this error inside
+vringh_getdesc (if wiov is NULL).
+
+I'll do that too...
+
+> +module_driver(caif_virtio_driver, register_virtio_driver,
+> +	      unregister_virtio_driver);
+> +MODULE_DEVICE_TABLE(virtio, id_table);
+
+The comment on module_driver says:
+
+ * Use this macro to construct bus specific macros for registering
+ * drivers, and do not use it on its own.
+
+Want to send me a patch to define module_virtio_driver?
+
+Thanks!
+Rusty.
