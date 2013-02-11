@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757596Ab3BKPlG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 10:41:06 -0500
-Received: from linux-sh.org ([111.68.239.195]:60032 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754209Ab3BKPlE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 10:41:04 -0500
-Date: Tue, 12 Feb 2013 00:40:29 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Alexandre Courbot <acourbot@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	id S1757585Ab3BKPoF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 10:44:05 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:62041 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757255Ab3BKPoD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 10:44:03 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Michal Simek <monstr@monstr.eu>
+Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16 with generic iowrite(read)8/16(be)
+Date: Mon, 11 Feb 2013 15:43:46 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-5-generic; KDE/4.3.2; x86_64; ; )
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: Re: [PATCH 6/9] gpiolib: use descriptors internally
-Message-ID: <20130211154028.GB6088@linux-sh.org>
-References: <1359822572-26009-1-git-send-email-acourbot@nvidia.com>
- <1359822572-26009-8-git-send-email-acourbot@nvidia.com>
- <CACRpkdbib-+pvMiLQN=f6d-1dhK2OK3znJeGoL7rDxDQYuJRuA@mail.gmail.com>
- <CAAVeFu+phNtzzj7rw96g9iH8sj9gGqd5SfAqtkDHvu3PeL_oQA@mail.gmail.com>
- <20130209091729.978C73E1A18@localhost>
- <CACRpkdagLssOG3FW8Qr1zqFabGMgdupADwg1=c0eQ7e76_XM5A@mail.gmail.com>
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, dahinds@users.sourceforge.net
+References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com> <201302111526.37892.arnd@arndb.de> <CAHTX3dJxevq3v-o1E6SEM-hFQ4aYi-hkgefX5+-hOmtqy6JgWg@mail.gmail.com>
+In-Reply-To: <CAHTX3dJxevq3v-o1E6SEM-hFQ4aYi-hkgefX5+-hOmtqy6JgWg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdagLssOG3FW8Qr1zqFabGMgdupADwg1=c0eQ7e76_XM5A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302111543.46196.arnd@arndb.de>
+X-Provags-ID: V02:K0:8R1lm+JtLWTwwdhLSWEMweTm4NJk0sxJjmTX5t5+w/K
+ 82auOJIB2ogWyQGOlV8nYVIaRoIS4bhDz8AZQmvZud0ARW5O7n
+ CBIpzQrYs3OKCTm87cfGcbDsyc23IBGhynBJMneObdeNHRr/yE
+ lG9gR6ZwL1zIMXXvLOSqmKY6vzxdaZX/O+ENvWLFCgb1G1eHii
+ Uv806mTHCp+S0Wu1Z9ufkARGAA0dBUCOhLpebQP6qmlxt0x7xX
+ 6jxpt24Yg91+8PwliwDj8uJM6T9h0aXjN4JoYizInG7TUYkz3f
+ QHppx/HmrVnNg1aKpG/suTUBxji3QYznmPnEwUo22oJvnRFlBW
+ J16BGHUFO+wMgZFhtIiI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 11, 2013 at 03:09:21PM +0100, Linus Walleij wrote:
-> On Sat, Feb 9, 2013 at 10:17 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
+On Monday 11 February 2013, Michal Simek wrote:
+> I have just found that it won't be so easy as I thought because I have found
+> that microblaze wrong implementation was done because of others device drivers.
+> It means that I have to fix all device drivers to support big and
+> little endian accessors
+> first before I can switch microblaze to asm-generic/io.h. :-(
 > 
-> > The ERR_PTR()/IS_ERR() is a horrible pattern for code
-> > readability because it breaks the expectations that programmers have for
-> > what is and is not a bad pointer. There are decades of history where the
-> > test for a bad pointer is 'if (!ptr)'. Not only does ERR_PTR make make
-> > that test not work, but the compiler won't tell you when you get it
-> > wrong.
-> >
-> > There are places where ERR_PTR makes sense. Particularly when
-> > communicating with userspace where error codes have very specific
-> > meanings, but I don't want it in the GPIO subsystem.
-> 
-> OK I disagree but you get to decide.
-> 
-> However if you take this all the way to the descriptor API
-> it will make the consumer (driver) API for GPIO descriptors deviate
-> from what is today used for clocks, regulators and pins.
-> 
-> With all the resulting confusion for users.
-> I've seen worse subsystem deviations though.
-> 
-I've always considered it to be more of a complexity issue. If an
-interface can fail for half a dozen different reasons, it's useful to be
-able to encapsulate this and pass it down the line to the consumer
-(particularly in cases where no useful debug output is provided, and the
-first thing someone is going to do is go and instrument the registration
-path with printks to figure out where things went wrong). In the case
-where the work to do is relatively straightforward and there's not much
-complexity, NULL is clearly the way to go.
+> BTW: If you want to take this patch though your tree then ok, or it
+> can go through my
+> microblaze tree. Both ways should just work.
 
-There are already quite a few cases today converting NULLs over to
-arbitrary ERR_PTR values or IS_ERR cases wrapping back to NULL, so it's
-clear that both have to be supported interacting with one another
-regardless. Then there's that whole IS_ERR_OR_NULL case which everyone
-seems to get wrong, but that's another issue entirely.
+Please use your tree then. I don't have any asm-generic patches
+lined up for 3.9 myself, so we can save me and Linus a little work
+with a trivial pull request that way.
+ 
+> I will send the patch for uarlite when I finish my testing on
+> microblaze, ppc and arm.
+
+Ok. Is that the only one that you found to require the "wrong-endian" mode
+in microblaze.
+
+	Arnd
