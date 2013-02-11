@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757536Ab3BKP0v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 10:26:51 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:61813 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756758Ab3BKP0t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 10:26:49 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Michal Simek <monstr@monstr.eu>
-Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16 with generic iowrite(read)8/16(be)
-Date: Mon, 11 Feb 2013 15:26:37 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-5-generic; KDE/4.3.2; x86_64; ; )
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, dahinds@users.sourceforge.net
-References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com> <201302072312.45988.arnd@arndb.de> <CAHTX3dK1Buz3Yh8NTrpsB2X6_17EYT5augOsaLy8_OZQHAOUyw@mail.gmail.com>
-In-Reply-To: <CAHTX3dK1Buz3Yh8NTrpsB2X6_17EYT5augOsaLy8_OZQHAOUyw@mail.gmail.com>
+	id S1757562Ab3BKP3d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 10:29:33 -0500
+Received: from mga14.intel.com ([143.182.124.37]:7313 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756758Ab3BKP3c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 10:29:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,643,1355126400"; 
+   d="scan'208";a="201105864"
+Date: Mon, 11 Feb 2013 16:29:29 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Tomas Winkler <tomas.winkler@intel.com>, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [char-misc-next 07/11] mei: bus: Implement bus driver data
+ setter/getter
+Message-ID: <20130211152929.GS20996@sortiz-mobl>
+References: <1360270997-7639-1-git-send-email-tomas.winkler@intel.com>
+ <20130207225809.GG5072@sortiz-mobl>
+ <20130207235724.GA14612@sortiz-mobl>
+ <201302111458.37452.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302111526.37892.arnd@arndb.de>
-X-Provags-ID: V02:K0:r/LkcEQHbJQ+TH1NSK21oi0KjiyNJcutdp/LCIF0J0/
- KfRXTfnGNXLtrTXK1Szz++hqG0g8dryT+ylxqcTUjL06m/2JP3
- 7K4dAXmVAOxgpq5V67AjPNW0NQ3Yt4JZn1kBVOJ8y8wnZWg8/c
- PdRLMNg+W0U1nTJwKbT4/sfBu0O8klsiPnntN0YFxf0Ng7fBxa
- qcnM1j3dY5udvm046kNJy5UqCSS75wIabOmwD5oe3VnQ4Nf8MS
- ha0B2ndcfODCLSkABXlpvisJ5ZvP8vFBZj5ZXic/RMe4BUnwI8
- NixepZXBDdeEMrL4I7lhVT3i3TvluWndbEo0W7RnKQ3ETjhVft
- MDj4uFapPPvtCTKMF7dI=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201302111458.37452.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 11 February 2013, Michal Simek wrote:
-> 
-> 2013/2/8 Arnd Bergmann <arnd@arndb.de>:
-> > On Thursday 07 February 2013, Michal Simek wrote:
-> >> Subject: "asm-generic: io: Fix ioread16/32be and iowrite16/32be"
-> >
-> > Ok, thanks. If you don't mind, I think this can just go with the other patches
-> > for xsysace that come out of this discussion.
-> 
-> I want to move microblaze to use this asm-generic/io.h that's why I
-> prefer to send
-> this with microblaze patch directly to Linus. For me this make more sense that
-> with sending block device driver changes.
-> 
-> What do you think?
+Hi Arnd,
 
-Sure, please do it that way. My policy for asm-generic patches is that they
-I prefer to have them go through whatever tree needs them, I was just confused
-about which one that would be in this case.
+On Mon, Feb 11, 2013 at 02:58:37PM +0000, Arnd Bergmann wrote:
+> On Thursday 07 February 2013, Samuel Ortiz wrote:
+> > 
+> > On Thu, Feb 07, 2013 at 11:58:09PM +0100, Samuel Ortiz wrote:
+> > > On Thu, Feb 07, 2013 at 10:38:44PM +0000, Arnd Bergmann wrote:
+> > > > On Thursday 07 February 2013, Tomas Winkler wrote:
+> > > > > 
+> > > > > +inline void *mei_bus_get_clientdata(const struct mei_bus_client *client)
+> > > > > +{
+> > > > > +       return dev_get_drvdata(&client->dev);
+> > > > > +}
+> > > > > +EXPORT_SYMBOL(mei_bus_get_clientdata);
+> > > > > +
+> > > > 
+> > > > Did you really mean to export an inline function?
+> > > > 
+> > > > Can you make this a static inline function in a header file instead?
+> > > Sure, will do.
+> > Actually, I'd like to keep the mei_bus_client structure opaque to the MEI bus
+> > drivers. So I'll still export those symbols without inlining them.
+> 
+> Ok, makes sense. I assume when you say "bus driver" you mean what other
+> subsystems call a "device driver".
+That's correct, yes.
 
-	Arnd
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
