@@ -1,65 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757562Ab3BKP3d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 10:29:33 -0500
-Received: from mga14.intel.com ([143.182.124.37]:7313 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756758Ab3BKP3c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 10:29:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,643,1355126400"; 
-   d="scan'208";a="201105864"
-Date: Mon, 11 Feb 2013 16:29:29 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Tomas Winkler <tomas.winkler@intel.com>, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [char-misc-next 07/11] mei: bus: Implement bus driver data
- setter/getter
-Message-ID: <20130211152929.GS20996@sortiz-mobl>
-References: <1360270997-7639-1-git-send-email-tomas.winkler@intel.com>
- <20130207225809.GG5072@sortiz-mobl>
- <20130207235724.GA14612@sortiz-mobl>
- <201302111458.37452.arnd@arndb.de>
+	id S1757581Ab3BKPbX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 10:31:23 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:48408 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756758Ab3BKPbW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 10:31:22 -0500
+Date: Mon, 11 Feb 2013 15:31:13 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: "tony@atomide.com" <tony@atomide.com>,
+        "b-cousson@ti.com" <b-cousson@ti.com>, "balbi@ti.com" <balbi@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "kishon@ti.com" <kishon@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 01/14] usb: phy: nop: Add device tree support and
+ binding information
+Message-ID: <20130211153112.GA15013@e106331-lin.cambridge.arm.com>
+References: <1360252974-7912-1-git-send-email-rogerq@ti.com>
+ <1360252974-7912-2-git-send-email-rogerq@ti.com>
+ <20130211114040.GA2726@e106331-lin.cambridge.arm.com>
+ <51190AD2.3030006@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <51190AD2.3030006@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 11 Feb 2013 15:31:17.0055 (UTC) FILETIME=[D56DB4F0:01CE086C]
+X-MC-Unique: 113021115312000301
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <201302111458.37452.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+Hi Roger,
 
-On Mon, Feb 11, 2013 at 02:58:37PM +0000, Arnd Bergmann wrote:
-> On Thursday 07 February 2013, Samuel Ortiz wrote:
+On Mon, Feb 11, 2013 at 03:14:26PM +0000, Roger Quadros wrote:
+> On 02/11/2013 01:40 PM, Mark Rutland wrote:
+> > Hello,
 > > 
-> > On Thu, Feb 07, 2013 at 11:58:09PM +0100, Samuel Ortiz wrote:
-> > > On Thu, Feb 07, 2013 at 10:38:44PM +0000, Arnd Bergmann wrote:
-> > > > On Thursday 07 February 2013, Tomas Winkler wrote:
-> > > > > 
-> > > > > +inline void *mei_bus_get_clientdata(const struct mei_bus_client *client)
-> > > > > +{
-> > > > > +       return dev_get_drvdata(&client->dev);
-> > > > > +}
-> > > > > +EXPORT_SYMBOL(mei_bus_get_clientdata);
-> > > > > +
-> > > > 
-> > > > Did you really mean to export an inline function?
-> > > > 
-> > > > Can you make this a static inline function in a header file instead?
-> > > Sure, will do.
-> > Actually, I'd like to keep the mei_bus_client structure opaque to the MEI bus
-> > drivers. So I'll still export those symbols without inlining them.
+> > On Thu, Feb 07, 2013 at 04:02:41PM +0000, Roger Quadros wrote:
+> >> The PHY clock, clock rate, VCC regulator and RESET regulator
+> >> can now be provided via device tree.
+> >>
+> >> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> >> Acked-by: Felipe Balbi <balbi@ti.com>
+> >> ---
+> >>  .../devicetree/bindings/usb/usb-nop-xceiv.txt      |   34 ++++++++++++++++++
+> >>  drivers/usb/otg/nop-usb-xceiv.c                    |   36 +++++++++++++++----
+> >>  2 files changed, 62 insertions(+), 8 deletions(-)
+> >>  create mode 100644 Documentation/devicetree/bindings/usb/usb-nop-xceiv.txt
+> >>
+> >> diff --git a/Documentation/devicetree/bindings/usb/usb-nop-xceiv.txt b/Documentation/devicetree/bindings/usb/usb-nop-xceiv.txt
+> >> new file mode 100644
+> >> index 0000000..d7e2726
+> >> --- /dev/null
+> >> +++ b/Documentation/devicetree/bindings/usb/usb-nop-xceiv.txt
+> >> @@ -0,0 +1,34 @@
+> >> +USB NOP PHY
+> >> +
+> >> +Required properties:
+> >> +- compatible: should be usb-nop-xceiv
+> > 
+> > This might be better as "linux,usb-no-xceiv", given this is a Linux-specific
+> > 'device'.
+> > 
+> > Saying that, I'm not sure I understand why this device needs to be instantiated
+> > from devicetree. As I understand it from looking at the driver, it's purely a
+> > Linux implementation detail used in the case of autonomous PHYs, and not an
+> > actual piece of hardware or firmware system. I must admit to being unfamiliar
+> > with this area of hardware, have I misunderstood somethign here?
 > 
-> Ok, makes sense. I assume when you say "bus driver" you mean what other
-> subsystems call a "device driver".
-That's correct, yes.
+> The PHY is a physical device and may need resources like power and clock to be functional.
+> The only reason that driver is named NOP is that many USB controllers know how to talk to
+> the standard PHYs and don't need any interface/management software.
 
-Cheers,
-Samuel.
+Ok. That makes sense. Apologies for the noise.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+> 
+> The PHY driver you are looking at most likely doesn't have the recent changes I wrote to
+> manage the PHY clock/reset/power. i.e. patches 3, 4 and 5 in the series
+>  https://lkml.org/lkml/2013/1/28/275
+> 
+> Before this, the ehci-omap driver was trying to manage the PHY power and reset, which was
+> wrong.
+
+Yes. That makes a lot more sense now.
+
+Thanks for the info!
+
+Thanks,
+Mark.
+
