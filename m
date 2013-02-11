@@ -1,133 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752066Ab3BKCeD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Feb 2013 21:34:03 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:33477 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751367Ab3BKCeB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Feb 2013 21:34:01 -0500
-Date: Mon, 11 Feb 2013 13:33:50 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        Joe Perches <joe@perches.com>, Luciano Coelho <coelho@ti.com>
-Subject: linux-next: manual merge of the wireless-next tree with the
- net-next tree
-Message-Id: <20130211133350.5f510bbb28759960a19a98af@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__11_Feb_2013_13_33_50_+1100_+V/rPl72J2L7N9fL"
+	id S1751160Ab3BKCoO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Feb 2013 21:44:14 -0500
+Received: from ozlabs.org ([203.10.76.45]:36210 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750716Ab3BKCoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Feb 2013 21:44:13 -0500
+Date: Mon, 11 Feb 2013 13:44:12 +1100
+From: Michael Ellerman <michael@ellerman.id.au>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Jiri Slaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: WARNING: at drivers/tty/tty_buffer.c:476  (tty is NULL)
+Message-ID: <20130211024412.GA7623@concordia>
+References: <20130102153744.GC25940@redhat.com>
+ <20130118205358.GA6854@redhat.com>
+ <20130118210728.GA16742@kroah.com>
+ <50FB0957.2000400@suse.cz>
+ <1359570837.3325.30.camel@thor.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1359570837.3325.30.camel@thor.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__11_Feb_2013_13_33_50_+1100_+V/rPl72J2L7N9fL
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Jan 30, 2013 at 01:33:57PM -0500, Peter Hurley wrote:
+> On Sat, 2013-01-19 at 22:00 +0100, Jiri Slaby wrote:
+> > On 01/18/2013 10:07 PM, Greg Kroah-Hartman wrote:
+> > > Jiri, was there anything on the mailing list that I missed that should
+> > > have resolved this issue?  I thought it was being worked on, but I can't
+> > > seem to find any resolution at the moment.
+> > 
+> > Somebody had a patchset and promised to repost IIRC. I forgot his name
+> > though.
+> > 
+> > /me back from digging in the mail history.
+> > 
+> > Peter Hurley is the name.
+> > 
+> > Peter, what happened with your patches in the end, please?
+> 
+> The tty subsystem is very resilient to fixing :)
+> 
+> The thing I'm working on right now -- which hopefully is the last issue
+> with the line discipline logic -- occurs with parallel __tty_hangup()
+> and tty_release().
+> 
+> At the moment, I'm trying to narrow the conditions when this happens.
 
-Hi John,
+If it helps I seem to be able to reproduce this in just a few seconds by
+running trinity and hitting Ctrl-C to quit the watchdog.
 
-Today's linux-next merge of the wireless-next tree got conflicts in
-drivers/net/wireless/ti/wlcore/sdio.c and
-drivers/net/wireless/ti/wlcore/spi.c between commit 0d2e7a5c6080
-("wireless: Remove unnecessary alloc/OOM messages, alloc cleanups") from
-the net-next tree and commit afb43e6d88e5 ("wlcore: remove if_ops from
-platform_data") from the wireless-next tree.
-
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-diff --cc drivers/net/wireless/ti/wlcore/sdio.c
-index 75622f6,198028d..0000000
---- a/drivers/net/wireless/ti/wlcore/sdio.c
-+++ b/drivers/net/wireless/ti/wlcore/sdio.c
-@@@ -228,9 -228,19 +228,17 @@@ static int wl1271_probe(struct sdio_fun
-  	if (func->num !=3D 0x02)
-  		return -ENODEV;
- =20
-+ 	pdev_data =3D kzalloc(sizeof(*pdev_data), GFP_KERNEL);
-+ 	if (!pdev_data) {
-+ 		dev_err(&func->dev, "can't allocate platdev_data\n");
-+ 		goto out;
-+ 	}
-+=20
-+ 	pdev_data->if_ops =3D &sdio_ops;
-+=20
-  	glue =3D kzalloc(sizeof(*glue), GFP_KERNEL);
- -	if (!glue) {
- -		dev_err(&func->dev, "can't allocate glue\n");
- +	if (!glue)
-- 		goto out;
-+ 		goto out_free_pdev_data;
- -	}
- =20
-  	glue->dev =3D &func->dev;
- =20
-diff --cc drivers/net/wireless/ti/wlcore/spi.c
-index 53790d1,5ad2e10..0000000
---- a/drivers/net/wireless/ti/wlcore/spi.c
-+++ b/drivers/net/wireless/ti/wlcore/spi.c
-@@@ -325,17 -331,26 +325,24 @@@ static int wl1271_probe(struct spi_devi
-  	struct resource res[1];
-  	int ret =3D -ENOMEM;
- =20
-- 	pdata =3D spi->dev.platform_data;
-- 	if (!pdata) {
-+ 	pdev_data =3D kzalloc(sizeof(*pdev_data), GFP_KERNEL);
-+ 	if (!pdev_data) {
-+ 		dev_err(&spi->dev, "can't allocate platdev_data\n");
-+ 		goto out;
-+ 	}
-+=20
-+ 	pdev_data->pdata =3D spi->dev.platform_data;
-+ 	if (!pdev_data->pdata) {
-  		dev_err(&spi->dev, "no platform data\n");
-- 		return -ENODEV;
-+ 		ret =3D -ENODEV;
-+ 		goto out_free_pdev_data;
-  	}
- =20
-- 	pdata->ops =3D &spi_ops;
-+ 	pdev_data->if_ops =3D &spi_ops;
- =20
-  	glue =3D kzalloc(sizeof(*glue), GFP_KERNEL);
- -	if (!glue) {
- -		dev_err(&spi->dev, "can't allocate glue\n");
- +	if (!glue)
-- 		goto out;
-+ 		goto out_free_pdev_data;
- -	}
- =20
-  	glue->dev =3D &spi->dev;
- =20
-
---Signature=_Mon__11_Feb_2013_13_33_50_+1100_+V/rPl72J2L7N9fL
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRGFiOAAoJEECxmPOUX5FENrIP/0V0ySPeeW4i6C8ZA0uTvrew
-fyccgOriJfmv5KhC+N/tPfJLOtKtqAl2m18YLCTEk4B6la11eCMI7ZvQamY8xJkZ
-gKbcPkzqPSMUE3qycvEFR2eOxzoNKI8nm2oVnGxM8hIza7ZGbW4o0ilHufZuSRSY
-U+dnx+0r1ZE9Qa1HjvdHO+jXcya0VT3Qm1M+3M9JNUDPOi6xbwXf6Bxew9vSXbxG
-64mGfLzUEwrUw3d+pZ08As3kwSdRfXHPX/qv7EhFNNKGIX/sTgB/wDJpie3qsRwo
-V8PGToq1zK4HoIbGwnfqFRoi89bGrbuL9UXYCtWbdhxywFD7e09aKIxt8Qb8rPOy
-852QPkyfXN9P0BHCbHSY5Y8BWxRNhV2adODCKyzSB9rEw0H7W+uC2tFsQD2S+Zx1
-JLFPef5PiHoHRXDpgYYR5IzE4XjyZAsL2Ulqq7PhCJ3Lh+aTZhDFBzIWCrgoZ8dk
-ZagpTt2UxC8VCHJRZE2Q65si/VlcTcyGVs7Xb2F7op6JFnYbs4RkxchiYvhy20Fg
-9pQ4vevOUX4P6D6QJSau4SxuNttBcyxu4RYQDlz039w6lqKVw7Hu12IRwN/3n0PR
-z+moy+j4iSMGXTEgBGc9h6Uz12RLEqfkK5O3VnUi9qoSpqyB7Yoqbcodt9bsyu/v
-pOhBDpORG2c2Drgt86B1
-=ELL8
------END PGP SIGNATURE-----
-
---Signature=_Mon__11_Feb_2013_13_33_50_+1100_+V/rPl72J2L7N9fL--
+cheers
