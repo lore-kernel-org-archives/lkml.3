@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932518Ab3BKUyc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 15:54:32 -0500
-Received: from mail-yh0-f45.google.com ([209.85.213.45]:34801 "EHLO
-	mail-yh0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932257Ab3BKUyb (ORCPT
+	id S932394Ab3BKUzl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 15:55:41 -0500
+Received: from mail-ye0-f172.google.com ([209.85.213.172]:59689 "EHLO
+	mail-ye0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932184Ab3BKUzk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 15:54:31 -0500
+	Mon, 11 Feb 2013 15:55:40 -0500
 From: Fabio Estevam <festevam@gmail.com>
 To: sameo@linux.intel.com
 Cc: linux-kernel@vger.kernel.org, Fabio Estevam <fabio.estevam@freescale.com>,
-        Dong Aisheng <dong.aisheng@linaro.org>
-Subject: [PATCH 1/2] mfd: syscon: Fix sparse warning
-Date: Mon, 11 Feb 2013 18:48:00 -0200
-Message-Id: <1360615681-19909-1-git-send-email-festevam@gmail.com>
+        Ashish Jangam <ashish.jangam@kpitcummins.com>
+Subject: [PATCH 2/2] mfd: da9052-i2c: Staticize da9052_i2c_fix()
+Date: Mon, 11 Feb 2013 18:48:01 -0200
+Message-Id: <1360615681-19909-2-git-send-email-festevam@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1360615681-19909-1-git-send-email-festevam@gmail.com>
+References: <1360615681-19909-1-git-send-email-festevam@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Fabio Estevam <fabio.estevam@freescale.com>
 
-Fix the following sparse warnings:
+da9052_i2c_fix() is only used locally, so let it be static.
 
-drivers/mfd/syscon.c:40:15: warning: symbol 'syscon_node_to_regmap' was not declared. Should it be static?
-drivers/mfd/syscon.c:56:15: warning: symbol 'syscon_regmap_lookup_by_compatible' was not declared. Should it be static?
-drivers/mfd/syscon.c:72:15: warning: symbol 'syscon_regmap_lookup_by_phandle' was not declared. Should it be static?
+Fix the following sparse warning:
 
-Cc: Dong Aisheng <dong.aisheng@linaro.org>
+drivers/mfd/da9052-i2c.c:63:5: warning: symbol 'da9052_i2c_fix' was not declared. Should it be static?
+
+Cc: Ashish Jangam <ashish.jangam@kpitcummins.com>
 Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
 ---
- drivers/mfd/syscon.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/mfd/da9052-i2c.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
-index 3f10591..61aea63 100644
---- a/drivers/mfd/syscon.c
-+++ b/drivers/mfd/syscon.c
-@@ -20,6 +20,7 @@
- #include <linux/of_platform.h>
- #include <linux/platform_device.h>
- #include <linux/regmap.h>
-+#include <linux/mfd/syscon.h>
+diff --git a/drivers/mfd/da9052-i2c.c b/drivers/mfd/da9052-i2c.c
+index 885e567..6a9fec4 100644
+--- a/drivers/mfd/da9052-i2c.c
++++ b/drivers/mfd/da9052-i2c.c
+@@ -60,7 +60,7 @@ static inline bool i2c_safe_reg(unsigned char reg)
+  * This fix is to follow any read or write with a dummy read to a safe
+  * register.
+  */
+-int da9052_i2c_fix(struct da9052 *da9052, unsigned char reg)
++static int da9052_i2c_fix(struct da9052 *da9052, unsigned char reg)
+ {
+ 	int val;
  
- static struct platform_driver syscon_driver;
+@@ -85,7 +85,6 @@ int da9052_i2c_fix(struct da9052 *da9052, unsigned char reg)
  
+ 	return 0;
+ }
+-EXPORT_SYMBOL(da9052_i2c_fix);
+ 
+ static int da9052_i2c_enable_multiwrite(struct da9052 *da9052)
+ {
 -- 
 1.7.9.5
 
