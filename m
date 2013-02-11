@@ -1,87 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954Ab3BKIWf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 03:22:35 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:38734 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753865Ab3BKIWc (ORCPT
+	id S1754141Ab3BKIW4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 03:22:56 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:61414 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753879Ab3BKIWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 03:22:32 -0500
-From: Luciano Coelho <coelho@ti.com>
-To: <linville@tuxdriver.com>, <sfr@canb.auug.org.au>
-CC: <joe@perches.com>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <davem@davemloft.net>,
-        <netdev@vger.kernel.org>
-Subject: [PATCH v2] wlcore: remove newly introduced alloc/OOM messages
-Date: Mon, 11 Feb 2013 10:21:18 +0200
-Message-ID: <1360570878-23107-1-git-send-email-coelho@ti.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1360569218.12803.50.camel@cumari.coelho.fi>
-References: <1360569218.12803.50.camel@cumari.coelho.fi>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 11 Feb 2013 03:22:34 -0500
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <rob.herring@calxeda.com>,
+        Andrew Murray <andrew.murray@arm.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/4] Various PCI-related device tree helpers
+Date: Mon, 11 Feb 2013 09:22:16 +0100
+Message-Id: <1360570940-17086-1-git-send-email-thierry.reding@avionic-design.de>
+X-Mailer: git-send-email 1.8.1.2
+X-Provags-ID: V02:K0:1TlqmnomG7nMubDKUJSTyHNVxnmcHV8cC8CS5nwoS9h
+ mndUc0JJ3naaaUlRA2/1dFUPGY9c0TLaWo3SQlT+ZqNI4eHeUL
+ yVvdkiS6EZ2y4rN3Omd9gVr7wKDbz9ZPEg7v3lVSLspV5R/fFA
+ sjc3c78X4J5qM0Wr/G6ov+yFFrQ2WvhXxYmTGfoTQVrgyF04xd
+ 5t8xGzW774yuRr4M1qbHWkWeUW2FcDr46/ToB/zFMAaOYfKm3x
+ 5WgVYfFL1HMghAXi+jLMQMNK+3O4Q9AZDGCYUp5yksFSPcDXgw
+ A3SNzHApyevahJmEoHK3EWNlLfswGCbDzotimebTgwpUbQPruM
+ g58E0kiYLhK3npUOWpiWdJqafspDLhXgJsf0Jg8vOtvdTOmToA
+ gHKju2utcIb/Uz61/e0KMPzsF2xnH0rf+WDI0sDrwWArVb0EEe
+ 0bulY
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In commit 0d2e7a5c (wireless: Remove unnecessary alloc/OOM messages,
-alloc cleanups) OOM messages after alloc were removed from the wlcore
-modules.
+Hi,
 
-Commit afb43e6d (wlcore: remove if_ops from platform_data)
-reintroduced a couple of those.  This patch removes them.
+These patches add a few device tree helpers that are used are partially
+shared by Thomas' Marvell PCIe controller and my Tegra PCIe controller
+series. In an attempt to decrease the number of dependencies between
+trees, it would be nice to get these in for 3.9. There are a few ARM
+specific patches that the series depend on which have also been
+submitted and will hopefully make it into 3.9 so we can use the 3.9
+cycle to focus on getting the driver patches merged.
 
-Signed-off-by: Luciano Coelho <coelho@ti.com>
----
+Thierry
 
-John,
+Andrew Murray (1):
+  of/pci: Provide support for parsing PCI DT ranges property
 
-Please ignore my previous patch.  Now this should be right. ;)
+Thierry Reding (3):
+  of/pci: Add of_pci_get_devfn() function
+  of/pci: Add of_pci_get_bus() function
+  of/pci: Add of_pci_parse_bus_range() function
 
-Can you apply this directly on wireless-next after you process my
-latest pull-request?
+ drivers/of/address.c       | 63 ++++++++++++++++++++++++++++++++++++
+ drivers/of/of_pci.c        | 80 +++++++++++++++++++++++++++++++++++++++++++---
+ include/linux/of_address.h |  9 ++++++
+ include/linux/of_pci.h     |  3 ++
+ 4 files changed, 150 insertions(+), 5 deletions(-)
 
-Thanks!
-
-Sorry for my monday-morning-with-too-little-caffeinne-in-the-blood
-screw up. ;)
-
- drivers/net/wireless/ti/wlcore/sdio.c |    4 +---
- drivers/net/wireless/ti/wlcore/spi.c  |    4 +---
- 2 files changed, 2 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/net/wireless/ti/wlcore/sdio.c b/drivers/net/wireless/ti/wlcore/sdio.c
-index 198028d..29ef249 100644
---- a/drivers/net/wireless/ti/wlcore/sdio.c
-+++ b/drivers/net/wireless/ti/wlcore/sdio.c
-@@ -229,10 +229,8 @@ static int wl1271_probe(struct sdio_func *func,
- 		return -ENODEV;
- 
- 	pdev_data = kzalloc(sizeof(*pdev_data), GFP_KERNEL);
--	if (!pdev_data) {
--		dev_err(&func->dev, "can't allocate platdev_data\n");
-+	if (!pdev_data)
- 		goto out;
--	}
- 
- 	pdev_data->if_ops = &sdio_ops;
- 
-diff --git a/drivers/net/wireless/ti/wlcore/spi.c b/drivers/net/wireless/ti/wlcore/spi.c
-index 5ad2e10..e264478 100644
---- a/drivers/net/wireless/ti/wlcore/spi.c
-+++ b/drivers/net/wireless/ti/wlcore/spi.c
-@@ -332,10 +332,8 @@ static int wl1271_probe(struct spi_device *spi)
- 	int ret = -ENOMEM;
- 
- 	pdev_data = kzalloc(sizeof(*pdev_data), GFP_KERNEL);
--	if (!pdev_data) {
--		dev_err(&spi->dev, "can't allocate platdev_data\n");
-+	if (!pdev_data)
- 		goto out;
--	}
- 
- 	pdev_data->pdata = spi->dev.platform_data;
- 	if (!pdev_data->pdata) {
 -- 
-1.7.10.4
+1.8.1.2
 
