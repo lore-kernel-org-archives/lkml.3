@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760045Ab3BKUTH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 15:19:07 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:49937 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759936Ab3BKUSx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 15:18:53 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Michal Simek <michal.simek@xilinx.com>
-Subject: Re: [PATCH 2/2] tty: serial: uartlite: Support uartlite on big and little endian systems
-Date: Mon, 11 Feb 2013 20:18:35 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-5-generic; KDE/4.3.2; x86_64; ; )
-Cc: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        linux-serial@vger.kernel.org, monstr@monstr.eu,
-        Peter Korsgaard <jacmet@sunsite.dk>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org
-References: <1360605874-18310-1-git-send-email-michal.simek@xilinx.com> <1360605874-18310-2-git-send-email-michal.simek@xilinx.com>
-In-Reply-To: <1360605874-18310-2-git-send-email-michal.simek@xilinx.com>
+	id S932279Ab3BKUWa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 15:22:30 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:56072 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759797Ab3BKUW2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 15:22:28 -0500
+Message-ID: <51195301.8000606@ti.com>
+Date: Mon, 11 Feb 2013 14:22:25 -0600
+From: Jon Hunter <jon-hunter@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+CC: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, Tero Kristo <t-kristo@ti.com>
+Subject: Re: [PATCH v2 09/11] mfd: twl-core: Collect global variables behind
+ one private structure (global)
+References: <1358344439-23017-1-git-send-email-peter.ujfalusi@ti.com> <1358344439-23017-10-git-send-email-peter.ujfalusi@ti.com> <51154A7A.2010709@ti.com> <5115E3B9.6090100@ti.com>
+In-Reply-To: <5115E3B9.6090100@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201302112018.35706.arnd@arndb.de>
-X-Provags-ID: V02:K0:t7qg52oIJmDyQUpxc8b2EfMOMHhcRV2nXgzvgvuCXhw
- V2is85rD3cs+dimZ5n+naV5Ow5whHGt7Oenv5xIgak4l47fFXB
- +/bdB1X1EWJtVGoaGSLQ5fr9VhkB14AT1mUm0AK30JfhPJOSVR
- IChOYOX/n0AgkX/8WBZSk5po4JVEMwXdWuP9ntk20JS89xpXq0
- KTLFJ4rKYwh+b5C/uXg3XvfbNW61XGWSdAF454RgTaswktfb6T
- 10ihYlwnDUdlvzRAfSZSmyzmT8Wjx9gmyzI/a/2/b8Oforu8Vt
- c1C+msGnvDQ8ws/oPz/9EpzjGP0BYv8zleHvVtnsc9qt3zUsr8
- Qw0KrIu2QZX0Oa27IIRM=
+X-Originating-IP: [192.157.144.139]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 11 February 2013, Michal Simek wrote:
-> 
-> Use big and little endian accessors function to reflect system configuration.
-> Detection is done via control register in ulite_request_port.
-> 
-> Tested on Microblaze LE, BE, PPC440 and Arm zynq.
-> 
-> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+On 02/08/2013 11:50 PM, Peter Ujfalusi wrote:
+> On 02/08/2013 07:56 PM, Jon Hunter wrote:
+>>>  /**
+>>>   * twl_i2c_write - Writes a n bit register in TWL4030/TWL5030/TWL60X0
+>>>   * @mod_no: module number
+>>> @@ -322,16 +323,17 @@ int twl_i2c_write(u8 mod_no, u8 *value, u8 reg, unsigned num_bytes)
+>>>  		pr_err("%s: invalid module number %d\n", DRIVER_NAME, mod_no);
+>>>  		return -EPERM;
+>>>  	}
+>>> -	if (unlikely(!inuse)) {
+>>> +	if (unlikely(!twl_priv->ready)) {
+>>
+>> This is causing the kernel to panic on all my omap2 boards when booting linux-next
+>> because twl_priv is not initialised yet.
+> 
+> Good catch.
+> I just wonder from where the twl_* call is coming on OMAP2. AFAIK the twl code
+> is for OMAP3/4, for OMAP2 Menelaus is the one which is used.
+> I'm currently working on to remove all those twl_* calls from random places in
+> the kernel so we will only access twl via the MFD stack.
+
+Good point. I just noticed that none of my omap2+ board were booting and
+on omap3/4 I was the panic in the twl code. I can't say that I checked
+the panic on omap2, so may be that was another problem?
+
+I will update the changelog and re-send the patch.
+
+Cheers
+Jon
