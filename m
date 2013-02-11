@@ -1,192 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932741Ab3BKWHt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 17:07:49 -0500
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:33550 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932253Ab3BKWHr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 17:07:47 -0500
-Date: Mon, 11 Feb 2013 23:07:42 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ying Han <yinghan@google.com>, Tejun Heo <htejun@gmail.com>,
-        Glauber Costa <glommer@parallels.com>, Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH v3 4/7] memcg: remove memcg from the reclaim iterators
-Message-ID: <20130211220742.GD29000@dhcp22.suse.cz>
-References: <1357235661-29564-1-git-send-email-mhocko@suse.cz>
- <1357235661-29564-5-git-send-email-mhocko@suse.cz>
- <20130208193318.GA15951@cmpxchg.org>
- <20130211151649.GD19922@dhcp22.suse.cz>
- <20130211175619.GC13218@cmpxchg.org>
- <20130211192929.GB29000@dhcp22.suse.cz>
- <20130211195824.GB15951@cmpxchg.org>
- <20130211212756.GC29000@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130211212756.GC29000@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932700Ab3BKWKW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 17:10:22 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:35411 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932253Ab3BKWKU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 17:10:20 -0500
+Message-ID: <1360620614.3524.223.camel@falcor1.watson.ibm.com>
+Subject: Re: [PATCH 2/2] ima: Support appraise_type=imasig_optional
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 11 Feb 2013 17:10:14 -0500
+In-Reply-To: <1360613493-11969-3-git-send-email-vgoyal@redhat.com>
+References: <1360613493-11969-1-git-send-email-vgoyal@redhat.com>
+	 <1360613493-11969-3-git-send-email-vgoyal@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13021122-5806-0000-0000-00001F7D064A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 11-02-13 22:27:56, Michal Hocko wrote:
-[...]
-> I will get back to this tomorrow.
+On Mon, 2013-02-11 at 15:11 -0500, Vivek Goyal wrote:
+> appraise_type=imasig_optional will allow appraisal to pass even if no
+> signatures are present on the file. If signatures are present, then it
+> has to be valid digital signature, otherwise appraisal will fail.
+> 
+> This can allow to selectively sign executables in the system and based
+> on appraisal results, signed executables with valid signatures can be
+> given extra capability to perform priviliged operations in secureboot
+> mode.
+> 
+> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 
-Maybe not a great idea as it is getting late here and brain turns into
-cabbage but there we go:
----
->From f927358fe620837081d7a7ec6bf27af378deb35d Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Mon, 11 Feb 2013 23:02:00 +0100
-Subject: [PATCH] memcg: relax memcg iter caching
+Thanks, Vivek, the patch looks a lot better.  Here are a couple of
+suggestions:  
+- the patch description needs to start with the problem description, not
+the solution.
+- the patch name should reflect the problem.
 
-Now that per-node-zone-priority iterator caches memory cgroups rather
-than their css ids we have to be careful and remove them from the
-iterator when they are on the way out otherwise they might hang for
-unbounded amount of time (until the global/targeted reclaim triggers the
-zone under priority to find out the group is dead and let it to find the
-final rest).
+A few comments are inline below.
 
-We can fix this issue by relaxing rules for the last_visited memcg as
-well.
-Instead of taking reference to css before it is stored into
-iter->last_visited we can just store its pointer and track the number of
-removed groups for each memcg. This number would be stored into iterator
-everytime when a memcg is cached. If the iter count doesn't match the
-curent walker root's one we will start over from the root again. The
-group counter is incremented upwards the hierarchy every time a group is
-removed.
+thanks,
 
-Locking rules got a bit complicated. We primarily rely on rcu read
-lock which makes sure that once we see an up-to-date dead_count then
-iter->last_visited is valid for RCU walk. smp_rmb makes sure that
-dead_count is read before last_visited and last_dead_count while smp_wmb
-makes sure that last_visited is updated before last_dead_count so the
-up-to-date last_dead_count cannot point to an outdated last_visited.
-Which also means that css reference counting is no longer needed because
-RCU will keep last_visited alive.
+Mimi
 
-Spotted-by: Ying Han <yinghan@google.com>
-Original-idea-by: Johannes Weiner <hannes@cmpxchg.org>
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- mm/memcontrol.c |   53 ++++++++++++++++++++++++++++++++++++++++++++---------
- 1 file changed, 44 insertions(+), 9 deletions(-)
+> ---
+>  Documentation/ABI/testing/ima_policy  |    2 +-
+>  security/integrity/ima/ima_appraise.c |   24 +++++++++++++++++++-----
+>  security/integrity/ima/ima_policy.c   |    2 ++
+>  security/integrity/integrity.h        |    1 +
+>  4 files changed, 23 insertions(+), 6 deletions(-)
+> 
+> diff --git a/Documentation/ABI/testing/ima_policy b/Documentation/ABI/testing/ima_policy
+> index de16de3..5ca0c23 100644
+> --- a/Documentation/ABI/testing/ima_policy
+> +++ b/Documentation/ABI/testing/ima_policy
+> @@ -30,7 +30,7 @@ Description:
+>  			uid:= decimal value
+>  			fowner:=decimal value
+>  		lsm:  	are LSM specific
+> -		option:	appraise_type:= [imasig]
+> +		option:	appraise_type:= [imasig] | [imasig_optional]
+> 
+>  		default policy:
+>  			# PROC_SUPER_MAGIC
+> diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+> index 3710f44..222ade0 100644
+> --- a/security/integrity/ima/ima_appraise.c
+> +++ b/security/integrity/ima/ima_appraise.c
+> @@ -124,19 +124,26 @@ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
+>  	enum integrity_status status = INTEGRITY_UNKNOWN;
+>  	const char *op = "appraise_data";
+>  	char *cause = "unknown";
+> -	int rc;
+> +	int rc, audit_info = 0;
+> 
+>  	if (!ima_appraise)
+>  		return 0;
+> -	if (!inode->i_op->getxattr)
+> +	if (!inode->i_op->getxattr) {
+> +		/* getxattr not supported. file couldn't have been signed */
+> +		if (iint->flags & IMA_DIGSIG_OPTIONAL)
+> +			return INTEGRITY_PASS;
+>  		return INTEGRITY_UNKNOWN;
+> +	}
+> 
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index e9f5c47..42f9d94 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -144,8 +144,13 @@ struct mem_cgroup_stat_cpu {
- };
- 
- struct mem_cgroup_reclaim_iter {
--	/* last scanned hierarchy member with elevated css ref count */
-+	/*
-+	 * last scanned hierarchy member. Valid only if last_dead_count
-+	 * matches memcg->dead_count of the hierarchy root group.
-+	 */
- 	struct mem_cgroup *last_visited;
-+	unsigned int last_dead_count;
-+
- 	/* scan generation, increased every round-trip */
- 	unsigned int generation;
- 	/* lock to protect the position and generation */
-@@ -357,6 +362,7 @@ struct mem_cgroup {
- 	struct mem_cgroup_stat_cpu nocpu_base;
- 	spinlock_t pcp_counter_lock;
- 
-+	atomic_t	dead_count;
- #if defined(CONFIG_MEMCG_KMEM) && defined(CONFIG_INET)
- 	struct tcp_memcontrol tcp_mem;
- #endif
-@@ -1158,19 +1164,30 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
- 			int nid = zone_to_nid(reclaim->zone);
- 			int zid = zone_idx(reclaim->zone);
- 			struct mem_cgroup_per_zone *mz;
-+			unsigned int dead_count;
- 
- 			mz = mem_cgroup_zoneinfo(root, nid, zid);
- 			iter = &mz->reclaim_iter[reclaim->priority];
- 			spin_lock(&iter->iter_lock);
--			last_visited = iter->last_visited;
- 			if (prev && reclaim->generation != iter->generation) {
--				if (last_visited) {
--					css_put(&last_visited->css);
--					iter->last_visited = NULL;
--				}
-+				iter->last_visited = NULL;
- 				spin_unlock(&iter->iter_lock);
- 				goto out_unlock;
- 			}
-+
-+			/*
-+			 * last_visited might be invalid if some of the group
-+			 * downwards was removed. As we do not know which one
-+			 * disappeared we have to start all over again from the
-+			 * root.
-+			 */
-+			dead_count = atomic_read(&root->dead_count);
-+			smp_rmb();
-+			last_visited = iter->last_visited;
-+			if (last_visited &&
-+					((dead_count != iter->last_dead_count))) {
-+				last_visited = NULL;
-+			}
- 		}
- 
- 		/*
-@@ -1210,10 +1227,9 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
- 			if (css && !memcg)
- 				curr = mem_cgroup_from_css(css);
- 
--			/* make sure that the cached memcg is not removed */
--			if (curr)
--				css_get(&curr->css);
- 			iter->last_visited = curr;
-+			smp_wmb();
-+			iter->last_dead_count = atomic_read(&root->dead_count);
- 
- 			if (!css)
- 				iter->generation++;
-@@ -6375,10 +6391,29 @@ free_out:
- 	return ERR_PTR(error);
- }
- 
-+/*
-+ * Announce all parents that a group from their hierarchy is gone.
-+ */
-+static void mem_cgroup_invalidate_reclaim_iterators(struct mem_cgroup *memcg)
-+{
-+	struct mem_cgroup *parent = memcg;
-+
-+	while ((parent = parent_mem_cgroup(parent)))
-+		atomic_inc(&parent->dead_count);
-+
-+	/*
-+	 * if the root memcg is not hierarchical we have to check it
-+	 * explicitely.
-+	 */
-+	if (!root_mem_cgroup->use_hierarchy)
-+		atomic_inc(&root_mem_cgroup->dead_count);
-+}
-+
- static void mem_cgroup_css_offline(struct cgroup *cont)
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
- 
-+	mem_cgroup_invalidate_reclaim_iterators(memcg);
- 	mem_cgroup_reparent_charges(memcg);
- 	mem_cgroup_destroy_all_caches(memcg);
- }
--- 
-1.7.10.4
+Please don't change the result of the appraisal like this.  A single
+change can be made towards the bottom of process_measurement().
 
--- 
-Michal Hocko
-SUSE Labs
+>  	rc = vfs_getxattr_alloc(dentry, XATTR_NAME_IMA, (char **)&xattr_value,
+>  				0, GFP_NOFS);
+>  	if (rc <= 0) {
+>  		/* File system does not support security xattr */
+> -		if (rc == -EOPNOTSUPP)
+> +		if (rc == -EOPNOTSUPP) {
+> +			if (iint->flags & IMA_DIGSIG_OPTIONAL)
+> +				return INTEGRITY_PASS;
+>  			return INTEGRITY_UNKNOWN;
+> +		}
+
+ditto 
+
+> 
+>  		if (rc && rc != -ENODATA)
+>  			goto out;
+> @@ -158,7 +165,8 @@ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
+>  	}
+>  	switch (xattr_value->type) {
+>  	case IMA_XATTR_DIGEST:
+> -		if (iint->flags & IMA_DIGSIG_REQUIRED) {
+> +		if (iint->flags & IMA_DIGSIG_REQUIRED ||
+> +		    iint->flags & IMA_DIGSIG_OPTIONAL) {
+>  			cause = "IMA signature required";
+>  			status = INTEGRITY_FAIL;
+>  			break;
+> @@ -201,8 +209,14 @@ out:
+>  			if (!ima_fix_xattr(dentry, iint))
+>  				status = INTEGRITY_PASS;
+>  		}
+> +		if (status == INTEGRITY_NOLABEL &&
+> +		    iint->flags & IMA_DIGSIG_OPTIONAL) {
+> +			status = INTEGRITY_PASS;
+> +			/* Don't flood audit logs with skipped appraise */
+> +			audit_info = 1;
+> +		}
+>  		integrity_audit_msg(AUDIT_INTEGRITY_DATA, inode, filename,
+> -				    op, cause, rc, 0);
+> +				    op, cause, rc, audit_info);
+>  	} else {
+>  		ima_cache_flags(iint, func);
+>  	}
+> diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+> index 4adcd0f..8b8cd5f 100644
+> --- a/security/integrity/ima/ima_policy.c
+> +++ b/security/integrity/ima/ima_policy.c
+> @@ -598,6 +598,8 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
+>  			ima_log_string(ab, "appraise_type", args[0].from);
+>  			if ((strcmp(args[0].from, "imasig")) == 0)
+>  				entry->flags |= IMA_DIGSIG_REQUIRED;
+> +			else if ((strcmp(args[0].from, "imasig_optional")) == 0)
+> +				entry->flags |= IMA_DIGSIG_OPTIONAL;
+
+By setting IMA_DIGSIG_REQUIRED, here, as well, you'll be able to clean
+up the code a bit more.
+
+>  			else
+>  				result = -EINVAL;
+>  			break;
+> diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+> index 84c37c4..2ba736b 100644
+> --- a/security/integrity/integrity.h
+> +++ b/security/integrity/integrity.h
+> @@ -30,6 +30,7 @@
+>  #define IMA_ACTION_FLAGS	0xff000000
+>  #define IMA_DIGSIG		0x01000000
+>  #define IMA_DIGSIG_REQUIRED	0x02000000
+> +#define IMA_DIGSIG_OPTIONAL	0x04000000
+> 
+>  #define IMA_DO_MASK		(IMA_MEASURE | IMA_APPRAISE | IMA_AUDIT | \
+>  				 IMA_APPRAISE_SUBMASK)
+
+
+
