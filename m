@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758047Ab3BKQe7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 11:34:59 -0500
-Received: from usindpps06.hds.com ([207.126.252.19]:48167 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757698Ab3BKQe4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 11:34:56 -0500
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Matt Fleming <matt@console-pimps.org>,
-        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "mikew@google.com" <mikew@google.com>,
-        "cbouatmailru@gmail.com" <cbouatmailru@gmail.com>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: RE: [PATCH v5 -next 1/2]efivars: Disable external interrupt while
- holding efivars->lock
-Thread-Topic: [PATCH v5 -next 1/2]efivars: Disable external interrupt while
- holding efivars->lock
-Thread-Index: Ac35y4kVXbvpbEQmTya72C6hOhAdgANXsiMAAFKsUaA=
-Date: Mon, 11 Feb 2013 16:34:33 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D414A8FFF2@USINDEM103.corp.hds.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D414A541B5@USINDEM103.corp.hds.com>
- <1360440158.7515.321.camel@mfleming-mobl1.ger.corp.intel.com>
-In-Reply-To: <1360440158.7515.321.camel@mfleming-mobl1.ger.corp.intel.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.73.11]
-Content-Type: text/plain; charset="utf-8"
+	id S1757931Ab3BKQgz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 11:36:55 -0500
+Received: from relay1.sgi.com ([192.48.179.29]:56637 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757817Ab3BKQgy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 11:36:54 -0500
+Message-ID: <51191E23.9080500@sgi.com>
+Date: Mon, 11 Feb 2013 08:36:51 -0800
+From: Mike Travis <travis@sgi.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
- definitions=2013-02-11_03:2013-02-11,2013-02-11,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1211240000
- definitions=main-1302110144
+To: Ingo Molnar <mingo@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Dimitri Sivanich <sivanich@sgi.com>
+Subject: Re: [PATCH 6/7] x86, UV: UV3 Check current gru hub support.
+References: <20130208184305.132404589@gulag1.americas.sgi.com> <20130208184306.212373913@gulag1.americas.sgi.com> <20130211094032.GD23932@gmail.com>
+In-Reply-To: <20130211094032.GD23932@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1BGZ0da017241
 
-Matt,
 
-> Acked-by: Matt Fleming <matt.fleming@intel.com>
-> 
-> Tony, are you picking this up?
 
-Thank you for reviewing and acking my patchset.
+On 2/11/2013 1:40 AM, Ingo Molnar wrote:
+>
+> * Mike Travis <travis@sgi.com> wrote:
+>
+>> This patch checks current hub support to avoid panicing the
+>> system until all the GRU changes for UV3+ are in place.
+>>
+>> Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
+>> Signed-off-by: Mike Travis <travis@sgi.com>
 
-Tony,
+It was Dimitri's patch, and I put the Author: right after
+the Subject: line but since it was sent from my quilt mail
+command, it was changed.  It was my mistake with the second
+s-o-b: line.
+>
+> That's a weird signoff sequence. It should either also include a
+> From: Dimitri tag at the front, or the Signed-off-by should be
+> Acked-by.
+>
+> Please also use consistent titles in your patches, standardizing
+> on this pattern would be nice:
+>
+>     x86/UV/UV3: Check current gru hub support
+>
+> while UV patches affecting all UV models would come with a
+> 'x86/UV:' title or so.
 
-This patchset can't be applied to a latest next tree due to following commits.
-I will post v6 shortly to fit the latest next tree.
-Then, please apply it.
+I can do this.
 
-efi: Make 'efi_enabled' a function to query EFI facilities
-commit 83e68189745ad931c2afd45d8ee3303929233e7f
+Thanks,
+Mike
 
-efivarfs: Delete dentry from dcache in efivarfs_file_write()
-commit  791eb564d218dabe0f9a2212916fe54240b97afb
-
-Seiji
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+>
+> Thanks,
+>
+> 	Ingo
+>
