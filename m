@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756041Ab3BKL1J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 06:27:09 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60907 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755092Ab3BKL1G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 06:27:06 -0500
-Date: Mon, 11 Feb 2013 11:27:04 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH] regmap: debugfs: Factor out debugfs_tot_len calc into a
- function
-Message-ID: <20130211112704.GE4607@opensource.wolfsonmicro.com>
-References: <1360579859-26684-1-git-send-email-dp@opensource.wolfsonmicro.com>
+	id S1755528Ab3BKL3l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 06:29:41 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:35237 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755447Ab3BKL3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 06:29:39 -0500
+Message-ID: <5118D61D.7010302@imgtec.com>
+Date: Mon, 11 Feb 2013 11:29:33 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Oiv9uiLrevHtW1RS"
-Content-Disposition: inline
-In-Reply-To: <1360579859-26684-1-git-send-email-dp@opensource.wolfsonmicro.com>
-X-Cookie: It's all in the mind, ya know.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <arnd@arndb.de>, Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: [PATCH v3 02/71] ARC: Build system: Makefiles, Kconfig, Linker
+ script
+References: <1359024639-21915-1-git-send-email-vgupta@synopsys.com> <1359024639-21915-3-git-send-email-vgupta@synopsys.com>
+In-Reply-To: <1359024639-21915-3-git-send-email-vgupta@synopsys.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2013_02_11_11_29_36
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Vineet,
 
---Oiv9uiLrevHtW1RS
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 24/01/13 10:50, Vineet Gupta wrote:
+> diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
+> new file mode 100644
+> index 0000000..b0b09ae
+> --- /dev/null
+> +++ b/arch/arc/Kconfig
+> @@ -0,0 +1,328 @@
+> +#
+> +# Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
+> +#
+> +# This program is free software; you can redistribute it and/or modify
+> +# it under the terms of the GNU General Public License version 2 as
+> +# published by the Free Software Foundation.
+> +#
+> +
+> +config ARC
+> +	def_bool y
+> +	select ARCH_NO_VIRT_TO_BUS
 
-On Mon, Feb 11, 2013 at 10:50:59AM +0000, Dimitris Papastamos wrote:
-> In preparation to support the regmap debugfs ranges functionality
-> factor this code out to a separate function.  We'll need to ensure
-> that the value has been correctly calculated from two separate places
-> in the code.
+I noticed this in linux-next. ARCH_NO_VIRT_TO_BUS was defined
+generically in the past in linux-next but the patch seems to have gone.
+Therefore with an arc defconfig I see CONFIG_VIRT_TO_BUS=y defined which
+I'm guessing it shouldn't be.
 
-Applied, thanks.
+Cheers
+James
 
---Oiv9uiLrevHtW1RS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRGNWBAAoJELSic+t+oim9bZEP/1C6NlGPMBj0htvP+cAtOedP
-npb/ZiHFuTVIE5EL9KJ034X2zt/kW3NnYTz7F6Mh6Am57JyotgCKobdCy1g19HPm
-Ixr0oOYnvvWKpC6PeFzOQSf8CW0Oc95tjYSdKs+IY0Fh7Uw6JutboMFwqHG1zAJw
-fITGFXcu5dwCkzs93xDW/6RaeMiiSDhiSsBzWcT0wGxI+9dFC1kMc0Q1Ie7mmkcp
-Le7NAbu8/pTDhSv0pCDxzQzc1lBx3PxMiF/eIwWhZMIT/VtQ29D6KuGpesNWS5pL
-5/ie57402ZqXNyQ6gYJNg/ssTn9bEhpTiqgqZOTKDqF7RG3zUnKYnrqcL3xOgwzt
-p4Pk5+/gqsCWoCq30+ifNzsEOlgS0mjcNdVTdN5rp+W+8d00yUinrShYYMBayaju
-vU5h9dQrkNxIfAsCgDh3PBNf5mG3oTu/t7dTavIxeMkkeVUSOMvkVEUdSERl2G+k
-dNAGrS84paE0gedhxR86M1ZEXTlnbgcW/1baBYZNLD8SfltqJY6FQtjhrpEKnSID
-WdiG4ZrtqlmRvyzKmQPXZvHuHoVlKhg22g/YZIt4PgJesHWulaAnxen6Xe1Aul7z
-qwMwwQVNvizJbQt3wqH3HnOSSFi6i74Kd0io29VbAjeLC8B+DNCerEQN4oJ+YWQ/
-6dMecoFSAUuWXKaZHPEC
-=4Wi4
------END PGP SIGNATURE-----
-
---Oiv9uiLrevHtW1RS--
