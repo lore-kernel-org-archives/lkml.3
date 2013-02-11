@@ -1,78 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757272Ab3BKNOQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 08:14:16 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:44832 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757086Ab3BKNOP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 08:14:15 -0500
-Message-ID: <5118EA3B.9010904@imgtec.com>
-Date: Mon, 11 Feb 2013 12:55:23 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1757303Ab3BKNQp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 08:16:45 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49027 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757157Ab3BKNQn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 08:16:43 -0500
+Date: Mon, 11 Feb 2013 13:16:41 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Subject: Re: [PATCH] regmap: debugfs: Add a registers `range' file
+Message-ID: <20130211131641.GG4607@opensource.wolfsonmicro.com>
+References: <1360579943-29938-1-git-send-email-dp@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [RESEND PATCH] scsi: make struct scsi_varlen_cdb_hdr packed
-References: <1349946933-30314-1-git-send-email-james.hogan@imgtec.com>  <1349951069.2425.44.camel@dabdike.int.hansenpartnership.com>  <5076AE3B.5040509@imgtec.com> <1349960296.2425.53.camel@dabdike.int.hansenpartnership.com> <5076D360.2010804@imgtec.com>
-In-Reply-To: <5076D360.2010804@imgtec.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2013_02_11_12_55_24
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="RDS4xtyBfx+7DiaI"
+Content-Disposition: inline
+In-Reply-To: <1360579943-29938-1-git-send-email-dp@opensource.wolfsonmicro.com>
+X-Cookie: It's all in the mind, ya know.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James,
 
-On 11/10/12 15:10, James Hogan wrote:
-> On 11/10/12 13:58, James Bottomley wrote:
->> On Thu, 2012-10-11 at 12:32 +0100, James Hogan wrote:
->>> On 11/10/12 11:24, James Bottomley wrote:
->>>> On Thu, 2012-10-11 at 10:15 +0100, James Hogan wrote:
->>>>> The struct scsi_varlen_cdb_hdr is expected to be exactly 10 bytes when
->>>>> used in struct osd_cdb_head, but it isn't marked as packed. Some
->>>>> architectures will round the struct size up which triggers BUILD_BUG_ON
->>>>> compile errors in osd_initiator.c when the outer structs are unexpected
->>>>> sizes. This is fixed by marking struct scsi_varlen_cdb_hdr as __packed.
->>>>
->>>> What actual problem have you encountered? The structure is {u8[8], u16}
->>>> which is naturally packed on every architecture I know about.  I've even
->>>> built osd_initiator without problem on parisc, which has some of the
->>>> most rigid alignment rules I've seen.
->>>
->>> Hi James,
->>>
->>> The alignment is fine (the offset of the u16 is 8 bytes), but
->>> unfortunately with the metag port of gcc, sizeof(struct
->>> scsi_varlen_cdb_hdr) is rounded up to a 4 byte boundary (even though the
->>> largest data member alignment is only 2 bytes), which is 12 bytes
->>> instead of 10.
->>
->> That sounds to be a bug in your compiler ... it shouldn't be rounding up
->> structure sizes if the structure can fit in 10 bytes.  This isn't
->> happening in any other architecture that I know of (otherwise we'd have
->> had a reported build break).
-> 
-> This was my initial thought, and I share your feeling that this isn't
-> ideal compiler behaviour, however it's pretty much set in stone as part
-> of our ABI now. Having talked to one of our compiler folk about it
-> here's what he had to say:
->> In GCC 4.2 the following backends have STRUCTURE_SIZE_BOUNDARY set to >=32 which will trigger this behaviour:
->>
->> Alpha+unicos
->> Arm prior to AAPCS
->> Mt
->>
->> This is within standards to my knowledge.
+--RDS4xtyBfx+7DiaI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-What are the chances of getting this patch accepted? I believe it is
-correct and the compiler behaviour is within standards, and hopefully
-arch/metag will be merged for v3.9 so without this patch the build of
-osd_initiator.c will be broken on an in-tree architecture.
+On Mon, Feb 11, 2013 at 10:52:23AM +0000, Dimitris Papastamos wrote:
 
-Thanks
-James
+> +struct regmap_reg_range  {
+> +	unsigned int start;
+> +	unsigned int end;
+> +	unsigned int attr;
+> +};
 
+All we ever do with this struct is
+
+> +		r.start = c->base_reg;
+> +		r.end = c->max_reg;
+> +		r.attr = c->reg_attr;
+
+pack it with the contents of a cache entry.  Why not just use the cache
+entry directly?
+
+--RDS4xtyBfx+7DiaI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRGO7zAAoJELSic+t+oim9bTcP/jsC0wt4SRKGaD4ioZO6yhmI
+Ujwkrl31J4Tx1kMEKGp8AGMj1jmgAJEXLF2awP17V93D+vsF5KWhGcuEDZADwiBY
+SSqyVPzVgAZQJJrjzNG7i8J2R5KMNRFK/Iq7m+ZhOs57zLqMSaQZa1A93faGtFIn
+MNwK4Ap1h2WZiwB+L1FoyqMmzrsbwWKwAkh04neicLsDAQ35SJcBeGuAcsfmPBCI
+UMOMM6zxbM8FK/OOrsWeEIXyHpegx0Rm5i0AZFDZ/ERNcWbJfg/c642lJrNXfXqN
+YE2zyB+a/mLdlG0AvCoKEII3bA405bYaTHZnpXDUmi/Noeh+fyYAMhRDsybw1k4z
+GZBRvWjqFr3LD8piAUjtMX0QHOvpfeU79X0W3FwHEqb/5vq0bxQ8nfWJpD+HLm4l
+J8vlx0UzgZDE3x043aoChA5Uv8OwBfu34ss0OCgkuPbPsVKZ/19DUxhDs2GY2r1u
+i/IcNTFZLDJbX4A8L4efJuDB/Qhp+xkBRNovrjUGSda4Z2SQRnSKU8YPZFwRhLhA
+OEfZfbHdPwIroJCXsfT2+PEE0b2TjN0CDDHBH/vNHe43ZMSJuciVLfhTIcVLtP9K
+5ema1S3mn3YBKz1RK2f8OGPJG4WBn2Dwd1SpGoFZXBGKgncgtrdAlmqWc5yE15xY
+bXFZyy2bRSna1im5AYke
+=lBs8
+-----END PGP SIGNATURE-----
+
+--RDS4xtyBfx+7DiaI--
