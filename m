@@ -1,102 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757202Ab3BKNDA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 08:03:00 -0500
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:49979 "EHLO
-	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757080Ab3BKNC6 (ORCPT
+	id S1757233Ab3BKNDX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 08:03:23 -0500
+Received: from mail-we0-f176.google.com ([74.125.82.176]:55346 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757112Ab3BKNDV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 08:02:58 -0500
-Message-ID: <1360587768.3454.2.camel@thor.lan>
-Subject: Re: [Bisected] [-next-20130204] usb/hcd: irq 18: nobody cared
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
-Date: Mon, 11 Feb 2013 08:02:48 -0500
-In-Reply-To: <CAE9FiQX5wQ8zFzPfgmvm0BESyLVxzDRQ33XPgj+QjBZ0kxuHXg@mail.gmail.com>
-References: <Pine.LNX.4.44L0.1302051520220.2245-100000@iolanthe.rowland.org>
-	 <1360466060.3703.15.camel@thor.lan> <1360506199.3461.5.camel@thor.lan>
-	 <CAE9FiQX0Jzqi=Dy=r3MoU9vK7HgAf+919LvbgLygW7VH3O4=bg@mail.gmail.com>
-	 <CAE9FiQX5wQ8zFzPfgmvm0BESyLVxzDRQ33XPgj+QjBZ0kxuHXg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-0pjh1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Mon, 11 Feb 2013 08:03:21 -0500
+From: syrine.tl@gmail.com
+To: matt.fleming@intel.com, sage@inktank.com, isdn@linux-pingi.de,
+        megaraidlinux@lsi.com
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Syrine Tlili <syrine.tl@gmail.com>
+Subject: [PATCH] Fixes missing Null Check
+Date: Mon, 11 Feb 2013 14:02:40 +0100
+Message-Id: <1360587760-6211-1-git-send-email-syrine.tlili@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-02-10 at 22:40 -0800, Yinghai Lu wrote:
-> On Sun, Feb 10, 2013 at 12:33 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> > On Sun, Feb 10, 2013 at 6:23 AM, Peter Hurley <peter@hurleysoftware.com> wrote:
-> >> On Sat, 2013-02-09 at 22:14 -0500, Peter Hurley wrote:
-> >>> On Tue, 2013-02-05 at 15:26 -0500, Alan Stern wrote:
-> >>> > On Tue, 5 Feb 2013, Peter Hurley wrote:
-> >>> >
-> >>> > > With -next-20130204:
-> >>> > >
-> >>> > > [   33.855570] irq 18: nobody cared (try booting with the "irqpoll" option)
-> >>> > > [   33.855580] Pid: 0, comm: swapper/4 Not tainted 3.8.0-next-20130204-xeon #20130204
-> >>> > > [   33.855582] Call Trace:
-> >>> > > [   33.855585]  <IRQ>  [<ffffffff810f1076>] __report_bad_irq+0x36/0xe0
-> >>> > > [   33.855600]  [<ffffffff810f152a>] note_interrupt+0x1aa/0x200
-> >>> > > [   33.855606]  [<ffffffff8101edf2>] ? mwait_idle+0x82/0x1b0
-> >>> > > [   33.855610]  [<ffffffff810eed89>] handle_irq_event_percpu+0xc9/0x260
-> >>> > > [   33.855614]  [<ffffffff810eef68>] handle_irq_event+0x48/0x70
-> >>> > > [   33.855618]  [<ffffffff810f20ba>] handle_fasteoi_irq+0x5a/0x100
-> >>> > > [   33.855624]  [<ffffffff810182f2>] handle_irq+0x22/0x40
-> >>> > > [   33.855630]  [<ffffffff816e2a9a>] do_IRQ+0x5a/0xd0
-> >>> > > [   33.855636]  [<ffffffff816d97ad>] common_interrupt+0x6d/0x6d
-> >>> > > [   33.855638]  <EOI>  [<ffffffff810f8e2a>] ? rcu_eqs_enter_common+0x4a/0x320
-> >>> > > [   33.855646]  [<ffffffff8101edf2>] ? mwait_idle+0x82/0x1b0
-> >>> > > [   33.855649]  [<ffffffff8101ed99>] ? mwait_idle+0x29/0x1b0
-> >>> > > [   33.855653]  [<ffffffff8101f8a6>] cpu_idle+0x116/0x130
-> >>> > > [   33.855658]  [<ffffffff816c0c0f>] start_secondary+0x251/0x258
-> >>> > > [   33.855660] handlers:
-> >>> > > [   33.855664] [<ffffffff814f98a0>] usb_hcd_irq
-> >>> > > [   33.855667] Disabling IRQ #18
-> >>> > >
-> >> https://bugzilla.kernel.org/show_bug.cgi?id=53561
-> >>
-> >> Maybe this is some interaction with all the new ACPI code and fixes
-> >> written in those 8 days.
-> >
-> > interrupt routing seems get changed:
-> > next:
-> >    5:          0          0          0          0          0
-> > 0          0          0   IO-APIC-fasteoi   snd_ctxfi
-> >   18:      99970         13         16         20      99940
-> > 13         13         16   IO-APIC-fasteoi   uhci_hcd:usb4
-> > v3.8-rc7:
-> >   18:        424         15         11        112        420
-> > 16         18        105   IO-APIC-fasteoi   uhci_hcd:usb4, snd_ctxfi
-> >
-> > These messages in the bad dmesg log are interesting since PCI INT A is routed
-> > on
-> > irq 18 with the kernels that work.
-> > [    8.983246] pci 0000:00:1e.0: can't derive routing for PCI INT A
-> > [    8.983600] snd_ctxfi 0000:09:02.0: PCI INT A: no GSI - using ISA IRQ 5
-> > ...
-> >
-> > acpi_pci_irq_add_prt() add wrong bus for that bridge, because that
-> > that bridge is not scanned.
-> >
-> > Will check if I can produce one patch for it.
-> 
-> Hi Peter,
-> 
-> Can you try attached debug patch?
+From: Syrine Tlili <syrine.tl@gmail.com>
 
-Fixed, thanks.
+This patch fixes missing null check of memory allocation functions return values.
 
-Regards,
-Peter Hurley
+Signed-off-by: Syrine Tlili <syrine.tl@gmail.com>
+---
+ arch/x86/platform/efi/efi.c | 2 ++
+ drivers/isdn/mISDN/fsm.c    | 2 ++
+ drivers/scsi/megaraid.c     | 7 +++++++
+ fs/ceph/mdsmap.c            | 2 ++
+ 4 files changed, 13 insertions(+)
 
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 77cf009..88b60e0 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -924,6 +924,8 @@ void __init efi_enter_virtual_mode(void)
+ 		new_memmap = krealloc(new_memmap,
+ 				      (count + 1) * memmap.desc_size,
+ 				      GFP_KERNEL);
++		if (!new_memmap)
++			return -ENOMEM;
+ 		memcpy(new_memmap + (count * memmap.desc_size), md,
+ 		       memmap.desc_size);
+ 		count++;
+diff --git a/drivers/isdn/mISDN/fsm.c b/drivers/isdn/mISDN/fsm.c
+index 26477d4..09000dd 100644
+--- a/drivers/isdn/mISDN/fsm.c
++++ b/drivers/isdn/mISDN/fsm.c
+@@ -34,6 +34,8 @@ mISDN_FsmNew(struct Fsm *fsm,
+ 
+ 	fsm->jumpmatrix = kzalloc(sizeof(FSMFNPTR) * fsm->state_count *
+ 				  fsm->event_count, GFP_KERNEL);
++	if (!fsm->jumpmatrix)
++		return -ENOMEM;
+ 
+ 	for (i = 0; i < fncount; i++)
+ 		if ((fnlist[i].state >= fsm->state_count) ||
+diff --git a/drivers/scsi/megaraid.c b/drivers/scsi/megaraid.c
+index 9504ec0..e6d1822 100644
+--- a/drivers/scsi/megaraid.c
++++ b/drivers/scsi/megaraid.c
+@@ -4437,6 +4437,8 @@ mega_internal_command(adapter_t *adapter, megacmd_t *mc, mega_passthru *pthru)
+ 	memset(scb, 0, sizeof(scb_t));
+ 
+ 	sdev = kzalloc(sizeof(struct scsi_device), GFP_KERNEL);
++	if (!sdev)
++		goto err_out;
+ 	scmd->device = sdev;
+ 
+ 	memset(adapter->int_cdb, 0, sizeof(adapter->int_cdb));
+@@ -4482,6 +4484,11 @@ mega_internal_command(adapter_t *adapter, megacmd_t *mc, mega_passthru *pthru)
+ 	scsi_free_command(GFP_KERNEL, scmd);
+ 
+ 	return rval;
++
++err_out:
++	mutex_unlock(&adapter->int_mtx);
++	scsi_free_command(GFP_KERNEL, scmd);
++	return -ENOMEM;
+ }
+ 
+ 
+diff --git a/fs/ceph/mdsmap.c b/fs/ceph/mdsmap.c
+index 73b7d44..d04ab8b 100644
+--- a/fs/ceph/mdsmap.c
++++ b/fs/ceph/mdsmap.c
+@@ -132,6 +132,8 @@ struct ceph_mdsmap *ceph_mdsmap_decode(void **p, void *end)
+ 				m->m_info[mds].export_targets =
+ 					kcalloc(num_export_targets, sizeof(u32),
+ 						GFP_NOFS);
++				if (m->m_info[mds].export_targets == NULL)
++					goto badmem;
+ 				for (j = 0; j < num_export_targets; j++)
+ 					m->m_info[mds].export_targets[j] =
+ 					       ceph_decode_32(&pexport_targets);
+-- 
+1.7.11.7
 
