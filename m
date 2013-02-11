@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758762Ab3BKTIm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 14:08:42 -0500
-Received: from mail-we0-f169.google.com ([74.125.82.169]:33602 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758530Ab3BKTIk (ORCPT
+	id S1758822Ab3BKTLh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 14:11:37 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:43266 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757820Ab3BKTLf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 14:08:40 -0500
+	Mon, 11 Feb 2013 14:11:35 -0500
+Message-ID: <5119425A.1090802@wwwdotorg.org>
+Date: Mon, 11 Feb 2013 12:11:22 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:ae16:2dff:fe07:4e83]
-In-Reply-To: <20130211185221.GR4801@atomide.com>
-References: <20130211170616.73fd9fd30bb10c27a698ad4d@canb.auug.org.au>
-	<20130211185221.GR4801@atomide.com>
-Date: Mon, 11 Feb 2013 11:08:38 -0800
-Message-ID: <CAOesGMi5xCahJ=5emwxiXeKEZkK4yhctcTddPZNQXO5wzcdQwQ@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the mfd tree
-From: Olof Johansson <olof@lixom.net>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Roger Quadros <rogerq@ti.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Paul Walmsley <paul@pwsan.com>,
-        Felipe Balbi <balbi@ti.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: Michal Marek <mmarek@suse.cz>, Grant Likely <glikely@secretlab.ca>,
+        Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
+        devicetree-discuss@lists.ozlabs.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, Scott Wood <scottwood@freescale.com>,
+        Stephen Warren <swarren@nvidia.com>, Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: [PATCH V8] kbuild: create a rule to run the pre-processor on
+ *.dts files
+References: <1360091188-24063-1-git-send-email-swarren@wwwdotorg.org> <20130208144527.0D8DD3E2C01@localhost> <51156D09.7060401@gmail.com> <20130208220448.EDA773E2C27@localhost> <51157F65.2050309@wwwdotorg.org>
+In-Reply-To: <51157F65.2050309@wwwdotorg.org>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 11, 2013 at 10:52 AM, Tony Lindgren <tony@atomide.com> wrote:
-> * Stephen Rothwell <sfr@canb.auug.org.au> [130210 22:11]:
->> Hi all,
->>
->> Today's linux-next merge of the arm-soc tree got a conflict in
->> arch/arm/mach-omap2/usb-host.c between commit 8a89e93237e1 ("mfd:
->> omap-usb-host: Consolidate OMAP USB-HS platform data") from the mfd tree
->> and commit c1d1cd597fc7 ("ARM: OMAP2+: omap_device: remove obsolete
->> pm_lats and early_device code") from the arm-soc tree.
->>
->> I fixed it up (see below) and can carry the fix as necessary (no action
->> is required).
->
-> Thanks again.
->
-> Samuel, up to you, but I suggest you just drop these patches for
-> now if still possible unless other patches are based on these.
+On 02/08/2013 08:45 AM, Grant Likely wrote:
+> On Tue,  5 Feb 2013 12:06:28 -0700, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> Create cmd_dtc_cpp to run the C pre-processor on *.dts file before
+>> passing them to dtc for final compilation. This allows the use of #define
+>> and #include within the .dts file.
+...
+> I've applied this and was going to push it out, but I've just thought of
+> a problem that could be a show stopper. ...
 
-Yes, as I replied on the original patch series last night, please sort
-this out so we can avoid these nagging merge conflicts. Tony's steps
-in the previous email is the right way to handle these kind of things.
+Grant, I notice this showed up in next-20130211 as:
 
+22435f3 kbuild: create a rule to run the pre-processor on *.dts files
 
--Olof
+Was that intentional? I assumed you wanted me to rework this before
+you'd apply it, rather than sending an incremental patch.
