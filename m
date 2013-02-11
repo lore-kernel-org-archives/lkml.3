@@ -1,80 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757656Ab3BKP5N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 10:57:13 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:57291 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751988Ab3BKP5M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 10:57:12 -0500
+	id S1757719Ab3BKP54 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 10:57:56 -0500
+Received: from mail1.sysgo.com ([176.9.26.183]:36634 "EHLO mail1.sysgo.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751988Ab3BKP5z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 10:57:55 -0500
+X-Greylist: delayed 582 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Feb 2013 10:57:55 EST
+Message-ID: <511912BB.2060602@sysgo.com>
+Date: Mon, 11 Feb 2013 16:48:11 +0100
+From: David Engraf <david.engraf@sysgo.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <201302111543.46196.arnd@arndb.de>
-References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com>
-	<201302111526.37892.arnd@arndb.de>
-	<CAHTX3dJxevq3v-o1E6SEM-hFQ4aYi-hkgefX5+-hOmtqy6JgWg@mail.gmail.com>
-	<201302111543.46196.arnd@arndb.de>
-Date: Mon, 11 Feb 2013 16:57:04 +0100
-Message-ID: <CAHTX3dJ6pZWyGB=6T22wA_wR-Tqty+4Nywm84g_n4djTv-cT=g@mail.gmail.com>
-Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16
- with generic iowrite(read)8/16(be)
-From: Michal Simek <monstr@monstr.eu>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, dahinds@users.sourceforge.net
-Content-Type: text/plain; charset=ISO-8859-1
+To: John Stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>
+CC: linux-kernel@vger.kernel.org
+Subject: timekeeping_adjust may set mult to 0
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/2/11 Arnd Bergmann <arnd@arndb.de>:
-> On Monday 11 February 2013, Michal Simek wrote:
->> I have just found that it won't be so easy as I thought because I have found
->> that microblaze wrong implementation was done because of others device drivers.
->> It means that I have to fix all device drivers to support big and
->> little endian accessors
->> first before I can switch microblaze to asm-generic/io.h. :-(
->>
->> BTW: If you want to take this patch though your tree then ok, or it
->> can go through my
->> microblaze tree. Both ways should just work.
->
-> Please use your tree then. I don't have any asm-generic patches
-> lined up for 3.9 myself, so we can save me and Linus a little work
-> with a trivial pull request that way.
->
->> I will send the patch for uarlite when I finish my testing on
->> microblaze, ppc and arm.
->
-> Ok. Is that the only one that you found to require the "wrong-endian" mode
-> in microblaze.
+Hi,
 
-Unfortunately no. Another is spi/i2c (sysace as we discuss in this
-thread), probably icap
-network drivers are ok because they are not shared.
-Timer when it is moved to clocksource(not important right now)
-xilinx gpio is using __raw IO functions which is incorrect on arm in
-connection to barriers.
+I have encountered a problem when a linux system uses a clocksource with 
+mult = 1 and shift = 0 (clocksource cycle = nanoseconds). It may happen 
+that the function timekeeping_adjust reduces the value of mult to 0 when 
+error is lower than the interval [1].
+As soon as timekeeper.mult is 0, ktime_get will no longer work because 
+it uses timekeeping_get_ns which converts the cycle to nanoseconds with 
+mult as 0 and the system clocksource returns always 0.
 
-But it reminds me that maybe the easiest solution is not to use endian
-accessors just use two simple macros which should work on all systems.
+Best regards
+David Engraf
 
-#define <name>_readreg(offset)		({__raw_readl(offset); rmb(); })
-#define <name>_writereg(offset, val)	({wmb(); __raw_writel(val, offset); })
 
-which is probably the faster solution which add minimum additional code
-to driver and can also remove endian detection code.
-
-Thanks,
-Michal
-
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+[1] http://lxr.linux.no/linux+v3.0.62/kernel/time/timekeeping.c#L821
