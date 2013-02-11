@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758320Ab3BKRoo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 12:44:44 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:53450 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757873Ab3BKRom (ORCPT
+	id S1758398Ab3BKRo6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 12:44:58 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:50420 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758366Ab3BKRo5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 12:44:42 -0500
-Date: Mon, 11 Feb 2013 09:44:39 -0800
+	Mon, 11 Feb 2013 12:44:57 -0500
+Date: Mon, 11 Feb 2013 09:44:54 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Linux 3.7.6
-Message-ID: <20130211174439.GA11640@kroah.com>
+Subject: Linux 3.7.7
+Message-ID: <20130211174454.GB11640@kroah.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NzB8fVQJ5HfG6fxh"
+	protocol="application/pgp-signature"; boundary="i0/AhcQY5QxfSsSZ"
 Content-Disposition: inline
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -24,7 +24,7 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---NzB8fVQJ5HfG6fxh
+--i0/AhcQY5QxfSsSZ
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
@@ -171,26 +171,26 @@ liu chuansheng (1):
       drm/radeon: Calling object_unrefer() when creating fb failure
 
 
---NzB8fVQJ5HfG6fxh
+--i0/AhcQY5QxfSsSZ
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.19 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRGS4GAAoJEDjbvchgkmk+QBsQAJgOIdBNRyjweJXn79WF6g5E
-GqS55u5sc4PgIpPZQ0kRfft/YCe2RMbtELZVtdeGpcL1JA4IL9q/wfcbWEvIMlHe
-JGwNw8hA2DVWlo5sjYE96ETGwSA0U511zgHXr/1qj8uJUwtXeArkgNt55/MSI4wk
-X7LSUbBYwM3cHCVXF9uLZNgoiYZ0dhcSCgKM0fFQRIJ/YioWN+ypPIBwgNBptp8E
-TdAsMYY1WZeGr03+X/RwD/M9JktDj7eX1cbP4P6duK8a7JZCCEFI2Q+oFmjrcOsY
-M9K/27pgjfhxMPaNJrEnvZNuXfSFNQ1T1cOjMqikjH4d7WIN7JCc+jSzdgfA/re8
-AcTaKupyujwirf8uFFeMEgnA5XdXSZTnm4Pzksmv1HkWIhKvcTGCRIYHEa5qMfT/
-u1ShkwG1rYy1i8xZsCiWcn1rQ4yV0Tj4Ly04nVwVqmtWBs9uth0Xwy5buP5Qqt7j
-7/abYF8om7J6im3M9rT/E6Tzc1uQZqRf3uTYIlPT4J3Wye7wI0mRC5r4g9D2aQVC
-k0H/TqbQiLYNzIwI1GvPMIluzHBK6728msPiu6khmJGo4OQlpqoxtZHXq1PKhX9r
-mnMkz9gxb9ETEC9UQ4+DJcXYs9Xz/03em4AIYlkPdOBMmuJF5J8vdQ3SmFfiEF1c
-lY8zjjREsYQulY8Sa13V
-=uqIC
+iQIcBAEBAgAGBQJRGS4WAAoJEDjbvchgkmk+ojkQAKNiA3twaYJQFY+6o27I2iik
+vydtf2EW51RStvNOnfRp52PCg/6Ke/96EKXJq68JI4xpnENU4CnVf+rteGCuHitx
+725rO/U9sAjG+KfXDylvQEqLNEbIRQ34DhVrM8i4c4mmgnCknJ1WXOKI8QXI7Dq6
+mGIId8QeLJO/QLvZgwEPrFVfQXKFr/c5W5F1MjW6+MNro2cIq5ooyg1346+6sYCq
+hPFcLvchG/0hx+kBOptZGEdLVINwHJtk5F71q1Fe0mbgE+ScFF+hXwcf5lCszLnf
+Xy7k9aR+Yzo8lkBWsMHQzCW5TugHFjPK8PA70TA7eTstJED0kH55BszpIycdOFyC
+1mRhFPLO7vbddfFMWQh1fWd3COtgQrw5KPZIXJiPJG7Q/AAmaEp/RPoCcemptYrw
+WWauvnZiqjhj+PMx7IehHTu0xRlGpNCTq0nf3sjdgIqKecuzm8XxMQ9EYhJVVVi9
+Dpc6acCAtZf+yrRv7c8G/xQrXh+1h0L0f3JH6W3z6VH31X18qc9hKi/9m03X5u+v
+45yZr3bdw5jhWigUxnsFS4neB8/DgOEco94dRuacbB+IAl9BfgxxW3CEPlTBP5il
+57TgCuEA4jobRiouIEvba7rV7RYuj9HKTwrhK3GpPz7rXfTGMS0oAR/yLFMX7zEX
+g4PnjFXoPhcNJQ8U5FHU
+=ELM9
 -----END PGP SIGNATURE-----
 
---NzB8fVQJ5HfG6fxh--
+--i0/AhcQY5QxfSsSZ--
