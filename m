@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756351Ab3BKMCd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 07:02:33 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:37119 "EHLO hydra.sisk.pl"
+	id S1756561Ab3BKMEG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 07:04:06 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:37125 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755967Ab3BKMCb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 07:02:31 -0500
+	id S1756148Ab3BKMEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 07:04:05 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Pavel Machek <pavel@ucw.cz>, Goswin von Brederlow <goswin-v-b@web.de>,
-        Li Fei <fei.li@intel.com>, len.brown@intel.com, mingo@redhat.com,
-        peterz@infradead.org, biao.wang@intel.com, linux-pm@vger.kernel.org,
-        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        chuansheng.liu@intel.com
-Subject: Re: Getting rid of freezer for suspend [was Re: [fuse-devel] [PATCH] fuse: make fuse daemon frozen along with kernel threads]
-Date: Mon, 11 Feb 2013 13:08:56 +0100
-Message-ID: <1660768.prnx6s70rD@vostro.rjw.lan>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>
+Subject: Re: linux-next: manual merge of the driver-core tree with the pm tree
+Date: Mon, 11 Feb 2013 13:10:29 +0100
+Message-ID: <2288610.IGA9461Y6F@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.8.0-rc7; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAJfpegtNUr+AJXZcKmLEGBYqu20DVFwzg-OvOk_nS3fBS3wd=Q@mail.gmail.com>
-References: <1360113112.17267.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC> <2964781.rPUOipNRNb@vostro.rjw.lan> <CAJfpegtNUr+AJXZcKmLEGBYqu20DVFwzg-OvOk_nS3fBS3wd=Q@mail.gmail.com>
+In-Reply-To: <20130211154255.62c1326a5f4a52b4cc057713@canb.auug.org.au>
+References: <20130211154255.62c1326a5f4a52b4cc057713@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -26,55 +23,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, February 11, 2013 11:11:40 AM Miklos Szeredi wrote:
-> On Mon, Feb 11, 2013 at 12:31 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Sunday, February 10, 2013 07:55:05 PM Pavel Machek wrote:
+On Monday, February 11, 2013 03:42:55 PM Stephen Rothwell wrote:
+> Hi Greg,
 > 
-> >> Well, from freezer you need:
-> >>
-> >> 1) user process frozen.
-> >>
-> >> 2) essential locks _not_ held so that block devices are still functional.
-> >>
-> >> > > > mmap... what is problem with mmap? For suspend, memory is powered, so
-> >> > > > you can permit people changing it.
-> >> > >
-> >> > > Suppose mmap is used to make the registers of some device available to user
-> >> > > space.  Yes, that can happen.
-> >>
-> >> "Don't do it, then". Yes, can happen, but hopefully is not too common
-> >> these days. [And... freezer doing 1) but not 2) would be enough to
-> >> handle that. Freezer doing 1) but not 2) would also be simpler...]
-> >
-> > Again, I'm not sure what you mean.
-> >
-> > Are you trying to say that it would be OK to freeze user space tasks in
-> > the D state?
+> Today's linux-next merge of the driver-core tree got a conflict in
+> drivers/acpi/Kconfig between commit cb2b212bc7ff ("ACPI / scan: Make
+> container driver use struct acpi_scan_handler") from the pm tree and
+> commit f756f28b84af ("drivers/acpi: remove depends on CONFIG_EXPERIMENTAL")
+> from the driver-core tree.
 > 
-> I think that's what Pavel is saying.   Processes in D state sleeping
-> on non-device mutexes _are_ actually OK to freeze.  And that would
-> nicely solve the fuse freeze problem.
+> I fixed it up and can carry the fix as necessary (no action is required).
 
-That's potentially deeadlock-prone, because a task waiting for mutex X may
-very well be holding mutex Y, so if there's another task waiting for mutex Y,
-it needs to be frozen at the same time.
-
-> The only little detail is how do we implement that...
-
-This means the only way I can see would be to hack the mutex code so that the
-try_to_freeze() was called for user space tasks after the
-sched_preempt_enable_no_resched() before schedule().
-
-That shouldn't be a big deal performance-wise, because we are in the slow
-path anyway then.  I'm not sure if Peter Z will like it, though.
-
-Moreover, a task waiting for a mutex may be holding a semaphore or be
-participating in some other mutual-exclusion mechanism, so we'd need to
-address them all.  Plus, as noted by Pavel, freezing those things would make
-it difficult to save hibernation images to us.
-
-What about having a "freeze me after all of my children" flag that will be
-inherited from parents?  Would that help the fuse case?
+Thanks for the notice and for fixing this!
 
 Rafael
 
