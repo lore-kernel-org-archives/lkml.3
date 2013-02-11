@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760826Ab3BKXk1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 18:40:27 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:55885 "EHLO
+	id S1760856Ab3BKXkm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 18:40:42 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:59429 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760749Ab3BKXkZ (ORCPT
+	with ESMTP id S1760761Ab3BKXk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 18:40:25 -0500
+	Mon, 11 Feb 2013 18:40:26 -0500
 From: Stephen Warren <swarren@wwwdotorg.org>
 To: arm@kernel.org
 Cc: linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
         Julian Andres Klode <jak@jak-linux.org>,
         Marc Dietrich <marvin24@gmx.de>, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH V3 1/2] get_maintainer: allow keywords to match filenames
-Date: Mon, 11 Feb 2013 16:40:15 -0700
-Message-Id: <1360626016-23332-1-git-send-email-swarren@wwwdotorg.org>
+Subject: [PATCH V3 2/2] MAINTAINERS: update Tegra section to capture all Tegra files
+Date: Mon, 11 Feb 2013 16:40:16 -0700
+Message-Id: <1360626016-23332-2-git-send-email-swarren@wwwdotorg.org>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1360626016-23332-1-git-send-email-swarren@wwwdotorg.org>
+References: <1360626016-23332-1-git-send-email-swarren@wwwdotorg.org>
 X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,50 +26,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stephen Warren <swarren@nvidia.com>
 
-Allow K: entries in MAINTAINERS to match directly against filenames;
-either those extracted from patch +++ or --- lines, or those specified
-on the command-line using the -f option.
+The intent is to ensure that all Tegra-related patches are sent to the
+linux-tegra@ mailing list, so people can keep up-to-date on all misc
+driver changes.
 
-This potentially allows fewer lines in a MAINTAINERS entry, if all the
-relevant files are scattered throughout the whole kernel tree, yet
-contain some common keyword. An example would be using an ARM SoC name
-as the keyword to catch all related drivers.
+Doing this with a keyword is far simpler and more compact than listing
+all Tegra-related drivers, even if wildcards were used.
 
-I don't think setting exact_pattern_match_hash would be appropriate here;
-at least for intended Tegra use case, this feature is to ensure that all
-Tegra-related driver changes get Cc'd to the Tegra mailing list. Setting
-exact_pattern_match_hash would prevent git history parsing for e.g. S-o-b
-tags, which still seems like it would be useful. Hence, this flag isn't
-set.
+Words such as integrate or integrator are common. Ensure the character
+right before "tegra" isn't a-z (case-insensitive), to make sure the
+keyword doesn't match those.
 
-The value in $hash{$tvi} doesn't seem relevant, so I just assign 0.
+The only files that the keyword doesn't match are the NVEC driver. Add
+the linux-tegra mailing list to the NVEC entry to solve this.
 
 Signed-off-by: Stephen Warren <swarren@nvidia.com>
 ---
-V3: New patch.
+V2: Edit NVEC entry too.
 
-Joe, I'm not sure if you care where this gets merged; could it go through
-arm-soc together with patch 2/2? A quick look at git history of the
-script in linux-next indicates there won't be conflicts doing that.
+ MAINTAINERS |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
- scripts/get_maintainer.pl |    4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
-index 18d4ab5..96cf92a 100755
---- a/scripts/get_maintainer.pl
-+++ b/scripts/get_maintainer.pl
-@@ -611,6 +611,10 @@ sub get_maintainers {
- 				    $hash{$tvi} = $value_pd;
- 				}
- 			    }
-+			} elsif ($type eq "K") {
-+			    if ($file =~ m/$value/x) {
-+				$hash{$tvi} = 0;
-+			    }
- 			}
- 		    }
- 		}
+diff --git a/MAINTAINERS b/MAINTAINERS
+index b98c89b..0cfb670 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -7531,6 +7531,7 @@ STAGING - NVIDIA COMPLIANT EMBEDDED CONTROLLER INTERFACE (nvec)
+ M:	Julian Andres Klode <jak@jak-linux.org>
+ M:	Marc Dietrich <marvin24@gmx.de>
+ L:	ac100@lists.launchpad.net (moderated for non-subscribers)
++L:	linux-tegra@vger.kernel.org
+ S:	Maintained
+ F:	drivers/staging/nvec/
+ 
+@@ -7829,9 +7830,7 @@ L:	linux-tegra@vger.kernel.org
+ Q:	http://patchwork.ozlabs.org/project/linux-tegra/list/
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/swarren/linux-tegra.git
+ S:	Supported
+-F:	arch/arm/mach-tegra
+-F:	arch/arm/boot/dts/tegra*
+-F:	arch/arm/configs/tegra_defconfig
++K:	(?i)[^a-z]tegra
+ 
+ TEHUTI ETHERNET DRIVER
+ M:	Andy Gospodarek <andy@greyhouse.net>
 -- 
 1.7.10.4
 
