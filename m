@@ -1,62 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757585Ab3BKPoF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 10:44:05 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:62041 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757255Ab3BKPoD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 10:44:03 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Michal Simek <monstr@monstr.eu>
-Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16 with generic iowrite(read)8/16(be)
-Date: Mon, 11 Feb 2013 15:43:46 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-5-generic; KDE/4.3.2; x86_64; ; )
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, dahinds@users.sourceforge.net
-References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com> <201302111526.37892.arnd@arndb.de> <CAHTX3dJxevq3v-o1E6SEM-hFQ4aYi-hkgefX5+-hOmtqy6JgWg@mail.gmail.com>
-In-Reply-To: <CAHTX3dJxevq3v-o1E6SEM-hFQ4aYi-hkgefX5+-hOmtqy6JgWg@mail.gmail.com>
+	id S1757616Ab3BKPom (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 10:44:42 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:41936 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754209Ab3BKPol (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 10:44:41 -0500
+From: Roger Quadros <rogerq@ti.com>
+To: <tony@atomide.com>
+CC: <b-cousson@ti.com>, <balbi@ti.com>, <rogerq@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        Russell King <linux@arm.linux.org.uk>, Rajendra Nayak <rnayak@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: [PATCH 1/2] ARM: OMAP2+: Allow clock alias provision from device tree
+Date: Mon, 11 Feb 2013 17:44:23 +0200
+Message-ID: <1360597464-8491-1-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302111543.46196.arnd@arndb.de>
-X-Provags-ID: V02:K0:8R1lm+JtLWTwwdhLSWEMweTm4NJk0sxJjmTX5t5+w/K
- 82auOJIB2ogWyQGOlV8nYVIaRoIS4bhDz8AZQmvZud0ARW5O7n
- CBIpzQrYs3OKCTm87cfGcbDsyc23IBGhynBJMneObdeNHRr/yE
- lG9gR6ZwL1zIMXXvLOSqmKY6vzxdaZX/O+ENvWLFCgb1G1eHii
- Uv806mTHCp+S0Wu1Z9ufkARGAA0dBUCOhLpebQP6qmlxt0x7xX
- 6jxpt24Yg91+8PwliwDj8uJM6T9h0aXjN4JoYizInG7TUYkz3f
- QHppx/HmrVnNg1aKpG/suTUBxji3QYznmPnEwUo22oJvnRFlBW
- J16BGHUFO+wMgZFhtIiI=
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 11 February 2013, Michal Simek wrote:
-> I have just found that it won't be so easy as I thought because I have found
-> that microblaze wrong implementation was done because of others device drivers.
-> It means that I have to fix all device drivers to support big and
-> little endian accessors
-> first before I can switch microblaze to asm-generic/io.h. :-(
-> 
-> BTW: If you want to take this patch though your tree then ok, or it
-> can go through my
-> microblaze tree. Both ways should just work.
+Currently on OMAP, it is not possible to specify a clock consumer
+to any of the OMAP generated clocks using the device tree. This can pose
+a problem for external devices that run off an OMAP clock as we
+can't reliably provide a reference to the clock in the device tree.
 
-Please use your tree then. I don't have any asm-generic patches
-lined up for 3.9 myself, so we can save me and Linus a little work
-with a trivial pull request that way.
+This patch allows device trees to provide a node that contains the
+clock identifier, clock alias and the device phandle. The board
+initialization code then creates a clock alias to this clock id,
+and associates it with the device whose phandle was supplied.
+
+Discussion
+http://www.spinics.net/lists/linux-omap/msg86241.html
+
+CC: Russell King <linux@arm.linux.org.uk>
+CC: Rajendra Nayak <rnayak@ti.com>
+CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
+
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+---
+ .../devicetree/bindings/clock/ti-clock-alias.txt   |   26 ++++++++
+ arch/arm/mach-omap2/board-generic.c                |   67 ++++++++++++++++++++
+ 2 files changed, 93 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/clock/ti-clock-alias.txt
+
+diff --git a/Documentation/devicetree/bindings/clock/ti-clock-alias.txt b/Documentation/devicetree/bindings/clock/ti-clock-alias.txt
+new file mode 100644
+index 0000000..87ef4c3
+--- /dev/null
++++ b/Documentation/devicetree/bindings/clock/ti-clock-alias.txt
+@@ -0,0 +1,26 @@
++* Clock alias provision for TI OMAP2+ boards
++
++This binding allows the board's device tree file to specify a clock name,
++device phandle and clock alias so that that clock can be associated
++to the device with the alias.
++
++This is required in cases where an external device is clocked by an
++OMAP generated clock and needs to be assocated to it.
++
++NOTE: The node's name should be clock_alias
++
++Required properties
++- clock-name: The clock identifier string. Should be one of the
++  clock ids defined in OMAP common clock data.
++- clock-alias: A string specifying the alias that must be created to the clock.
++- device: A phandle to the device this clock should be associated to.
++
++e.g. On the OMAP4 Panda board, the USB PHY device is clocked by the
++FREF_CLK3 (auxclk3_ck) from the OMAP. The PHY driver expexts the clock to
++be named "main_clk". This binding can be provided like so
++
++clock_alias {
++	clock-name = "auxclk3_ck";
++	clock-alias = "main_clk";
++	device = <&hsusb1_phy>;
++};
+diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
+index 53cb380b..a4b8813 100644
+--- a/arch/arm/mach-omap2/board-generic.c
++++ b/arch/arm/mach-omap2/board-generic.c
+@@ -15,6 +15,9 @@
+ #include <linux/of_irq.h>
+ #include <linux/of_platform.h>
+ #include <linux/irqdomain.h>
++#include <linux/clk.h>
++#include <linux/string.h>
++#include <linux/slab.h>
  
-> I will send the patch for uarlite when I finish my testing on
-> microblaze, ppc and arm.
+ #include <asm/hardware/gic.h>
+ #include <asm/mach/arch.h>
+@@ -36,12 +39,76 @@ static struct of_device_id omap_dt_match_table[] __initdata = {
+ 	{ }
+ };
+ 
++static int __init omap_create_clk_alias(struct device_node *np)
++{
++	int ret = 0;
++	const char *s, *alias;
++	char *clk_id;
++	struct device_node *dev_np;
++	struct platform_device *pdev;
++
++	of_property_read_string(np, "clock-name", &s);
++	if (!s) {
++		pr_err("%s: couldn't find clock-name property in node %s\n",
++				__func__, np->name);
++		return -ENODEV;
++	}
++
++	clk_id = kstrdup(s, GFP_KERNEL);
++	if (!clk_id)
++		return -ENOMEM;
++
++	dev_np = of_parse_phandle(np, "device", 0);
++	if (!dev_np) {
++		pr_err("%s: couldn't find device phandle for \'%s\'\n",
++				__func__, clk_id);
++		ret = -ENODEV;
++		goto exit;
++	}
++
++	pdev = of_find_device_by_node(dev_np);
++	if (!pdev) {
++		pr_err("%s: couldn't find device for clock \'%s\'\n",
++				__func__, clk_id);
++		ret = -ENODEV;
++		goto exit;
++	}
++
++	ret = of_property_read_string(np, "clock-alias", &alias);
++	if (ret) {
++		pr_err("%s: couldn't find alias for clock \'%s\'\n",
++				__func__, clk_id);
++		ret = -ENODEV;
++		goto exit;
++	}
++
++	ret = clk_add_alias(alias, dev_name(&pdev->dev), clk_id, NULL);
++	if (ret) {
++		pr_err("%s: couldn't add alias \'%s\' to clock \'%s\'\n",
++				__func__, alias, clk_id);
++		ret = -ENODEV;
++		goto exit;
++	}
++
++exit:
++	kfree(clk_id);
++	return ret;
++}
++
+ static void __init omap_generic_init(void)
+ {
++	struct device_node *np;
++
+ 	omap_sdrc_init(NULL, NULL);
+ 
+ 	of_platform_populate(NULL, omap_dt_match_table, NULL, NULL);
+ 
++	/* create clock aliases based on 'clock_alias' nodes */
++	for_each_node_by_name(np, "clock_alias") {
++		omap_create_clk_alias(np);
++		of_node_put(np);
++	}
++
+ 	/*
+ 	 * HACK: call display setup code for selected boards to enable omapdss.
+ 	 * This will be removed when omapdss supports DT.
+-- 
+1.7.4.1
 
-Ok. Is that the only one that you found to require the "wrong-endian" mode
-in microblaze.
-
-	Arnd
