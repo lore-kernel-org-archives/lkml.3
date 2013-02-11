@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757462Ab3BKOzs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 09:55:48 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:51992 "EHLO
+	id S1757502Ab3BKO6o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 09:58:44 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:64266 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757006Ab3BKOzr (ORCPT
+	with ESMTP id S1757006Ab3BKO6n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 09:55:47 -0500
-Message-ID: <5119066B.2050103@efe-gmbh.de>
-Date: Mon, 11 Feb 2013 15:55:39 +0100
-From: "Jens Renner (EFE)" <renner@efe-gmbh.de>
-Organization: EFE GmbH
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Mon, 11 Feb 2013 09:58:43 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [char-misc-next 07/11] mei: bus: Implement bus driver data setter/getter
+Date: Mon, 11 Feb 2013 14:58:37 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-5-generic; KDE/4.3.2; x86_64; ; )
+Cc: Tomas Winkler <tomas.winkler@intel.com>, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org
+References: <1360270997-7639-1-git-send-email-tomas.winkler@intel.com> <20130207225809.GG5072@sortiz-mobl> <20130207235724.GA14612@sortiz-mobl>
+In-Reply-To: <20130207235724.GA14612@sortiz-mobl>
 MIME-Version: 1.0
-To: spi-devel-general@lists.sourceforge.net
-CC: linux-kernel@vger.kernel.org
-Subject: [PATCH] spi: spi-xilinx: Use DT information for bits_per_word value
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=ISO-8859-15
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:oqV98VrwOO/NwYeLVCTP/fr+QYaKKjofs/KzJbMyx+Z
- qR+esTxZDnVI7z8lwZKsz7viSjVu6gtyNGsCMTQ6q7W24K6oKQ
- d1PVfLHislaXiIGhhNXYHEw+8TjZWJLcFrvJ/IsUUoH1f5j+1Y
- +VxYwgTxpICUz77yMjpIRljoAp/hZN/zq4OU2qEpRejySXOLsm
- hQgGzthMG5QkIX0OBa7GQW9UJNunzwYTCbrwhT+RywqqjfN9L1
- hfcuo42eaJvQK1dNK6Zsp/ARmfxlzERTSnKlKfqF6yulioJzeN
- 8nk3dG7wP0OIZxkY2CoJAIbeL+kP7lDXzYrkq0qExsOHnvcXx5
- l7c4UaX8dNtK+IgBxza0=
+Message-Id: <201302111458.37452.arnd@arndb.de>
+X-Provags-ID: V02:K0:rasNUA5q9tj15j4g+RWSom1KZKokbvGXmM4ynnwsA5N
+ w4SrlsR7irYPeRRldBDCnDv/+R9wYgeeGBesmFC//ay+HPisZA
+ jMnGYFx1d8slYhMs+qg7rR1DF63NlzdcqtK+VRhiyWjg9etIIM
+ e9hhFrt5djjgwwQlakvu/itRwgMUaU/TRl2QKuIuBdyHtjjO61
+ XFpRXLgeit6Q3PutQdVUQEz7dbeag2SJ79D9OL5OPbfI0eMGYf
+ W2aD9vU5v/CMC0VqBOW4JOExqrN5DebbKgTRr3KrhV3kXJJvZp
+ sXJCq1vsC0rqE5/KwkMF9EldbB1IXxIibaNOELybUgYmKZMkD+
+ NuVk8/+dqxyFUMpWBbZA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jens Renner <renner@efe-gmbh.de>
+On Thursday 07 February 2013, Samuel Ortiz wrote:
+> 
+> On Thu, Feb 07, 2013 at 11:58:09PM +0100, Samuel Ortiz wrote:
+> > On Thu, Feb 07, 2013 at 10:38:44PM +0000, Arnd Bergmann wrote:
+> > > On Thursday 07 February 2013, Tomas Winkler wrote:
+> > > > 
+> > > > +inline void *mei_bus_get_clientdata(const struct mei_bus_client *client)
+> > > > +{
+> > > > +       return dev_get_drvdata(&client->dev);
+> > > > +}
+> > > > +EXPORT_SYMBOL(mei_bus_get_clientdata);
+> > > > +
+> > > 
+> > > Did you really mean to export an inline function?
+> > > 
+> > > Can you make this a static inline function in a header file instead?
+> > Sure, will do.
+> Actually, I'd like to keep the mei_bus_client structure opaque to the MEI bus
+> drivers. So I'll still export those symbols without inlining them.
 
-This patch overrides the default value of bits_per_word with the actual value of "xlnx,num-transfer-bits" from the DTS file to allow for 16 and 32 bit word lengths.
+Ok, makes sense. I assume when you say "bus driver" you mean what other
+subsystems call a "device driver".
 
-Signed-off-by: Jens Renner <renner@efe-gmbh.de>
----
-diff --git a/drivers/spi/spi-xilinx.c b/drivers/spi/spi-xilinx.c
-index e1d7696..03abdfa 100644
---- a/drivers/spi/spi-xilinx.c
-+++ b/drivers/spi/spi-xilinx.c
-@@ -487,6 +487,12 @@ static int xilinx_spi_probe(struct platform_device *dev)
-				       &len);
-		if (prop && len >= sizeof(*prop))
-			num_cs = __be32_to_cpup(prop);
-+
-+		/* override default number of bits per word */
-+		prop = of_get_property(dev->dev.of_node,
-+				       "xlnx,num-transfer-bits", &len);
-+		if (prop && len >= sizeof(*prop))
-+			bits_per_word = __be32_to_cpup(prop);
-	}
- #endif
+	Arnd
