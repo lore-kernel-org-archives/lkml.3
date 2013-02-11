@@ -1,85 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754747Ab3BKJaA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 04:30:00 -0500
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:40656 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754185Ab3BKJ35 (ORCPT
+	id S1754283Ab3BKJeY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 04:34:24 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:43328 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750864Ab3BKJeW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 04:29:57 -0500
-From: Denys Vlasenko <vda.linux@googlemail.com>
-To: mtk.manpages@gmail.com
-Subject: Re: [PATCH 3/3] signalfd: add ability to read siginfo-s without dequeuing signals (v2)
-Date: Mon, 11 Feb 2013 10:29:50 +0100
-User-Agent: KMail/1.8.2
-Cc: Oleg Nesterov <oleg@redhat.com>, Andrey Wagin <avagin@gmail.com>,
-        linux-kernel@vger.kernel.org, criu@openvz.org,
-        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-References: <1358849741-9611-4-git-send-email-avagin@openvz.org> <20130208191056.GA13674@redhat.com> <CAKgNAki0xt_wwixp7kdv04fKOCtCh-ObQjkFE9PiX6FapkO34A@mail.gmail.com>
-In-Reply-To: <CAKgNAki0xt_wwixp7kdv04fKOCtCh-ObQjkFE9PiX6FapkO34A@mail.gmail.com>
+	Mon, 11 Feb 2013 04:34:22 -0500
+Date: Mon, 11 Feb 2013 10:34:17 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 00/26] x86, irq: support ioapic device hotplug
+Message-ID: <20130211093417.GC23932@gmail.com>
+References: <1360351703-20571-1-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201302111029.50998.vda.linux@googlemail.com>
+In-Reply-To: <1360351703-20571-1-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 08 February 2013 21:15, Michael Kerrisk (man-pages) wrote:
-> >> >Damn. But after I wrote this email I realized that llseek() probably can't
-> >> > work. Because peek_offset/f_pos/whatever has to be shared with all processes
-> >> > which have this file opened.
-> >
-> > Yes. but I thought you decided to ignore this oddity ;)
-> >
-> >> So I want to suggest a way how to forbid read() for SIGNALFD_PEEK.
-> >> file->f_pos can be initialized to -1. read() returns EINVAL in this
-> >> case. In a man page we will write that signals can be dumped only with
-> >> help pread(). Is it overload or too ugly?
-> >
-> > Well. I do not know. Up to you and Michael.
-> >
-> > But honestly, I can't say this all looks really nice. And why do we
-> > need SIGNALFD_PEEK then?
+
+* Yinghai Lu <yinghai@kernel.org> wrote:
+
+> Hi,
 > 
-> It surely is no beauty. The hope is at least to make it less ugly than it was.
-> 
-> > Seriously, perhaps we should simply add signalfd_fops->ioctl() for PEEK.
-> > Or add PTRACE_{PEEK,POKE}_SIGNAL which looks even logical and useful...
-> > And much simpler/straightforward.
-> >
-> > But I am not going to argue.
+> Current x86 code does not support iapic hotplug yet.
 
-ptrace interface might find some use in debuggers.
-Not that any of them expressed such desires so far,
-but just maybe.
+Please give a better high-level description: outline how an 
+IO-APIC will be hotplugged physically and what changes the 
+user will experience.
 
-However, it needs coding in C to read it,
-which brings me to:
+That needs at least 2 paragraphs, not one cursory sentence. Then 
+should come technical descriptions - but even those need 
+improvements, please first explain the current status quo, then 
+explain how that is inadequate for IO-APIC hot-plugging, *then* 
+only explain what you are doing in the patch ...
 
+Thanks,
 
-> I suppose I had wondered along similar lines, but in a slightly
-> different direction: would the use of a /proc interface to get the
-> queued signals make some sense?
-
-I think that /proc interface beats adding magic flags and magic semantic
-to [p]read.
-
-It also has the benefit of being human-readable. You don't need
-to write a special C program to "cat /proc/$$/foo".
-
-Andrey, I know that it is hard to let go of the code you invested time
-and efforts in creating. But this isn't the last patch, is it?
-You will need to retrieve yet more data for process checkpointing.
-When you start working on the next patch for it, consider trying
-/proc approach.
-
--- 
-vda
+	Ingo
