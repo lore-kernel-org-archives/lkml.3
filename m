@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757472Ab3BKOxu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 09:53:50 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:47713 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757131Ab3BKOxq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 09:53:46 -0500
-Message-ID: <511905D7.3040209@parallels.com>
-Date: Mon, 11 Feb 2013 18:53:11 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1757462Ab3BKOzs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 09:55:48 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:51992 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757006Ab3BKOzr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 09:55:47 -0500
+Message-ID: <5119066B.2050103@efe-gmbh.de>
+Date: Mon, 11 Feb 2013 15:55:39 +0100
+From: "Jens Renner (EFE)" <renner@efe-gmbh.de>
+Organization: EFE GmbH
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Denys Vlasenko <vda.linux@googlemail.com>
-CC: Andrew Vagin <avagin@parallels.com>, mtk.manpages@gmail.com,
-        David Howells <dhowells@redhat.com>, linux-api@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        criu@openvz.org, Cyrill Gorcunov <gorcunov@openvz.org>,
-        Andrey Wagin <avagin@gmail.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, Dave Jones <davej@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [CRIU] [PATCH 3/3] signalfd: add ability to read siginfo-s without
- dequeuing signals (v2)
-References: <1358849741-9611-4-git-send-email-avagin@openvz.org> <20130208191056.GA13674@redhat.com> <CAKgNAki0xt_wwixp7kdv04fKOCtCh-ObQjkFE9PiX6FapkO34A@mail.gmail.com> <201302111029.50998.vda.linux@googlemail.com> <20130211105941.GA26717@paralelels.com> <CAK1hOcMepaOD80GOvUv1xz3xibTG_iKMK-w7698K6KfRmcKGeA@mail.gmail.com>
-In-Reply-To: <CAK1hOcMepaOD80GOvUv1xz3xibTG_iKMK-w7698K6KfRmcKGeA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: spi-devel-general@lists.sourceforge.net
+CC: linux-kernel@vger.kernel.org
+Subject: [PATCH] spi: spi-xilinx: Use DT information for bits_per_word value
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:oqV98VrwOO/NwYeLVCTP/fr+QYaKKjofs/KzJbMyx+Z
+ qR+esTxZDnVI7z8lwZKsz7viSjVu6gtyNGsCMTQ6q7W24K6oKQ
+ d1PVfLHislaXiIGhhNXYHEw+8TjZWJLcFrvJ/IsUUoH1f5j+1Y
+ +VxYwgTxpICUz77yMjpIRljoAp/hZN/zq4OU2qEpRejySXOLsm
+ hQgGzthMG5QkIX0OBa7GQW9UJNunzwYTCbrwhT+RywqqjfN9L1
+ hfcuo42eaJvQK1dNK6Zsp/ARmfxlzERTSnKlKfqF6yulioJzeN
+ 8nk3dG7wP0OIZxkY2CoJAIbeL+kP7lDXzYrkq0qExsOHnvcXx5
+ l7c4UaX8dNtK+IgBxza0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2013 06:46 PM, Denys Vlasenko wrote:
-> On Mon, Feb 11, 2013 at 11:59 AM, Andrew Vagin <avagin@parallels.com> wrote:
->>>> I suppose I had wondered along similar lines, but in a slightly
->>>> different direction: would the use of a /proc interface to get the
->>>> queued signals make some sense?
->>>
->>> I think that /proc interface beats adding magic flags and magic semantic
->>> to [p]read.
->>>
->>> It also has the benefit of being human-readable. You don't need
->>> to write a special C program to "cat /proc/$$/foo".
->>>
->>> Andrey, I know that it is hard to let go of the code you invested time
->>> and efforts in creating. But this isn't the last patch, is it?
->>> You will need to retrieve yet more data for process checkpointing.
->>> When you start working on the next patch for it, consider trying
->>> /proc approach.
->>
->> I don't think that we need to convert siginfo into a human readable format
->> in kernel.
-> 
-> My point is that bolting hacks onto various bits of kernel API
-> in order to support process checkpointing makes those APIs
-> (their in-kernel implementation) ridden with special cases
-> and harder to support in the future.
-> 
-> Process checkpointing needs to bite the bullet and
-> create its own API instead.
+From: Jens Renner <renner@efe-gmbh.de>
 
-This is bad approach as well. What we should do is come up with a sane
-API that makes sense without the checkpoint-restore project _when_ _possible_.
+This patch overrides the default value of bits_per_word with the actual value of "xlnx,num-transfer-bits" from the DTS file to allow for 16 and 32 bit word lengths.
 
-> Whether it would be a /proc/PID/checkpoint or a
-> ptrace(PTRACE_GET_CHKPOINT_DATA) is another question.
-
-Thanks,
-Pavel
+Signed-off-by: Jens Renner <renner@efe-gmbh.de>
+---
+diff --git a/drivers/spi/spi-xilinx.c b/drivers/spi/spi-xilinx.c
+index e1d7696..03abdfa 100644
+--- a/drivers/spi/spi-xilinx.c
++++ b/drivers/spi/spi-xilinx.c
+@@ -487,6 +487,12 @@ static int xilinx_spi_probe(struct platform_device *dev)
+				       &len);
+		if (prop && len >= sizeof(*prop))
+			num_cs = __be32_to_cpup(prop);
++
++		/* override default number of bits per word */
++		prop = of_get_property(dev->dev.of_node,
++				       "xlnx,num-transfer-bits", &len);
++		if (prop && len >= sizeof(*prop))
++			bits_per_word = __be32_to_cpup(prop);
+	}
+ #endif
