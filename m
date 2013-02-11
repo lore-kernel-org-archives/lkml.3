@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757241Ab3BKNIe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 08:08:34 -0500
-Received: from mga01.intel.com ([192.55.52.88]:10294 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757156Ab3BKNId (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 08:08:33 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,643,1355126400"; 
-   d="scan'208";a="285683572"
-Date: Mon, 11 Feb 2013 21:08:00 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [cpufreq] WARNING: at kernel/lockdep.c:2739 lockdep_trace_alloc()
-Message-ID: <20130211130800.GA16039@localhost>
-References: <20130211085220.GA10857@localhost>
- <CAKohpo=WRgdBUfzKrs7yeNDCgT6w+j7GPFr8QfbPOShdGgEd1w@mail.gmail.com>
+	id S1757263Ab3BKNJQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 08:09:16 -0500
+Received: from us02smtp1.synopsys.com ([198.182.60.75]:50833 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757146Ab3BKNJN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 08:09:13 -0500
+Message-ID: <5118ED6A.3050809@synopsys.com>
+Date: Mon, 11 Feb 2013 18:38:58 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKohpo=WRgdBUfzKrs7yeNDCgT6w+j7GPFr8QfbPOShdGgEd1w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jonas Bonn <jonas.bonn@gmail.com>
+CC: James Hogan <james.hogan@imgtec.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: pt_regs leak into userspace (was Re: [PATCH v3 20/71] ARC: Signal
+ handling)
+References: <1359024639-21915-1-git-send-email-vgupta@synopsys.com> <1359024639-21915-9-git-send-email-vgupta@synopsys.com> <51189D2F.4030000@synopsys.com> <CACM3HyGNZxfOXpw01POBVT-YcVKQsnPkO6Kgg+epfZS-x-BRCg@mail.gmail.com> <5118C458.2070205@synopsys.com> <5118C7B6.6040807@imgtec.com> <CACM3HyG+4Pzx02iL9atxG+FOLiCcTeXR+ivzRO78bqDHNp5rGQ@mail.gmail.com> <5118D478.3010205@synopsys.com> <CACM3HyG7B=iMb4cHYP2cb8np55t8WefWTh4x3SYkGK4Lc=RXbA@mail.gmail.com> <5118E60E.5060606@synopsys.com> <CACM3HyF8VhGo9zaAFiX8z97nz-fLeyCSZOCwAN=py5NfxhCfGw@mail.gmail.com>
+In-Reply-To: <CACM3HyF8VhGo9zaAFiX8z97nz-fLeyCSZOCwAN=py5NfxhCfGw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.43]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 11, 2013 at 02:40:39PM +0530, Viresh Kumar wrote:
-> On 11 February 2013 14:22, Fengguang Wu <fengguang.wu@intel.com> wrote:
-> > Greetings,
-> 
-> Hi Fengguang,
-> 
-> > I got the below oops and the first bad commit is
-> >
-> > commit 50f6802f8dccb7bbad29010e57973d46b7e7a07e
-> > Author: Viresh Kumar <viresh.kumar@linaro.org>
-> > Date:   Thu Feb 7 10:55:00 2013 +0530
-> 
-> There is something really wrong. This problem was earlier reported
-> and was fixed immediately. And shouldn't be there with linux-next
-> branch of Rafael.
-> 
-> What tree are you working on ?
-> 
-> Even in linux-next/master i see above commit as:
-> 
-> commit 2eaa3e2df185997e92596ab14a2a67dde3876d2e
-> Author: Viresh Kumar <viresh.kumar@linaro.org>
-> Date:   Thu Feb 7 10:55:00 2013 +0530
-> 
->     cpufreq: Fix locking issues
+On Monday 11 February 2013 06:32 PM, Jonas Bonn wrote:
+> On 11 February 2013 13:37, Vineet Gupta <Vineet.Gupta1@synopsys.com> wrote:
+>> Anyhow going back to my orig patch - if we park the
+>> callee-regs-in-sigcontext-or-not, other bits look OK ?
+>>
+> Aside from the callee-regs question (which I hope somebody more
+> knowledgeable can chime in on):  Acked-by: Jonas Bonn
+> <jonas@southpole.se>
 
-Viresh, I confirmed that the updated commit is fine. Sorry for the noise!
+Thx. As I mentioned, this patch will needed to be chopped and squashed into
+several existing commits.
+I presume I'll add the Ack to "ARC: Fundamental ARCH data-types/defines" which
+contains the initial def of ptrace.h
 
-Fengguang
+-Vineet
+
+
