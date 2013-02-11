@@ -1,39 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932703Ab3BKVpm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 16:45:42 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:60759 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932219Ab3BKVpl (ORCPT
+	id S932701Ab3BKVsr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 16:48:47 -0500
+Received: from mail-da0-f51.google.com ([209.85.210.51]:39392 "EHLO
+	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932674Ab3BKVsq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 16:45:41 -0500
-Date: Mon, 11 Feb 2013 13:45:31 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH 00/11] extcon-arizona updates
-Message-ID: <20130211214531.GA12745@kroah.com>
-References: <20130211162614.GH4607@opensource.wolfsonmicro.com>
+	Mon, 11 Feb 2013 16:48:46 -0500
+Date: Mon, 11 Feb 2013 13:48:43 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Christine Caulfield <ccaulfie@redhat.com>,
+        David Teigland <teigland@redhat.com>
+cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
+Subject: [patch for-3.8] fs, dlm: fix build error when EXPERIMENTAL is
+ disabled
+Message-ID: <alpine.DEB.2.02.1302111344140.14071@chino.kir.corp.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130211162614.GH4607@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 11, 2013 at 04:26:14PM +0000, Mark Brown wrote:
-> The following changes since commit 689557d3c7045320958d5bc4141088f7b4dff7ba:
-> 
->   mfd: wm5102: Add microphone clamp control registers (2013-01-15 15:42:18 +0900)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/broonie/misc.git tags/extcon-arizona-3.9
+CONFIG_IP_SCTP relies on being able to select things like CONFIG_CRC32C to 
+build.  Thus, nothing should be selecting CONFIG_IP_SCTP that does not 
+meet its requirements.
 
-Pulled and pushed out, thanks.
+For example, if CONFIG_EXPERIMENTAL is disabled and CONFIG_DLM is enabled, 
+the build fails at link time:
 
-greg k-h
+	net/built-in.o: In function `sctp_crc32c':
+	include/net/sctp/checksum.h:51: undefined reference to `crc32c'
+	include/net/sctp/checksum.h:51: undefined reference to `crc32c'
+	include/net/sctp/checksum.h:51: undefined reference to `crc32c'
+	include/net/sctp/checksum.h:51: undefined reference to `crc32c'
+	include/net/sctp/checksum.h:51: undefined reference to `crc32c'
+	net/built-in.o:include/net/sctp/checksum.h:51: more undefined references to `crc32c' follow
+
+Fix this by making CONFIG_DLM depend on CONFIG_EXPERIMENTAL so that 
+CONFIG_IP_SCTP properly builds.
+
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ fs/dlm/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/fs/dlm/Kconfig b/fs/dlm/Kconfig
+--- a/fs/dlm/Kconfig
++++ b/fs/dlm/Kconfig
+@@ -2,6 +2,7 @@ menuconfig DLM
+ 	tristate "Distributed Lock Manager (DLM)"
+ 	depends on INET
+ 	depends on SYSFS && CONFIGFS_FS && (IPV6 || IPV6=n)
++	depends on EXPERIMENTAL
+ 	select IP_SCTP
+ 	help
+ 	A general purpose distributed lock manager for kernel or userspace
