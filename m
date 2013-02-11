@@ -1,84 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758933Ab3BKTCW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 14:02:22 -0500
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:10359 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758524Ab3BKTCT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 14:02:19 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19zMCxf9S4Qx4Nq1D2C50Ti
-Date: Mon, 11 Feb 2013 11:02:06 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Roger Quadros <rogerq@ti.com>
-Cc: Olof Johansson <olof@lixom.net>, Alan Stern <stern@rowland.harvard.edu>,
-        balbi@ti.com, sameo@linux.intel.com, kishon@ti.com,
-        sshtylyov@mvista.com, bjorn@mork.no, linux@arm.linux.org.uk,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v7 01/22] mfd: omap-usb-host: Consolidate OMAP USB-HS
- platform data
-Message-ID: <20130211190205.GT4801@atomide.com>
-References: <1358422231-24736-2-git-send-email-rogerq@ti.com>
- <Pine.LNX.4.44L0.1301171016090.1339-100000@iolanthe.rowland.org>
- <20130117165943.GI14149@atomide.com>
- <CAOesGMhVeSPX2qWb+3Efo14Qbqmhrqpg1XRDnAfznHfAis-Fsg@mail.gmail.com>
- <5118A4BC.2020003@ti.com>
+	id S1758567Ab3BKTC5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 14:02:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4825 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758187Ab3BKTCz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 14:02:55 -0500
+Date: Mon, 11 Feb 2013 14:02:51 -0500
+From: Aristeu Rozanski <aris@redhat.com>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Serge Hallyn <serge.hallyn@canonical.com>
+Subject: Re: [PATCH v6 9/9] devcg: propagate local changes down the hierarchy
+Message-ID: <20130211190251.GH30962@redhat.com>
+References: <20130130171101.060853036@napanee.usersys.redhat.com>
+ <20130130171102.390708521@napanee.usersys.redhat.com>
+ <20130131043839.GA14726@mail.hallyn.com>
+ <20130205183646.GT17632@redhat.com>
+ <20130209040402.GA31942@mail.hallyn.com>
+ <20130211143241.GF30962@redhat.com>
+ <20130211174259.GA18179@mail.hallyn.com>
+ <20130211183847.GG30962@redhat.com>
+ <20130211185239.GA18779@mail.hallyn.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5118A4BC.2020003@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130211185239.GA18779@mail.hallyn.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Roger Quadros <rogerq@ti.com> [130211 00:02]:
-> On 02/11/2013 08:46 AM, Olof Johansson wrote:
-> > On Thu, Jan 17, 2013 at 8:59 AM, Tony Lindgren <tony@atomide.com> wrote:
-> >> * Alan Stern <stern@rowland.harvard.edu> [130117 07:19]:
-> >>> On Thu, 17 Jan 2013, Roger Quadros wrote:
-> >>>
-> >>>> Let's have a single platform data structure for the OMAP's High-Speed
-> >>>> USB host subsystem instead of having 3 separate ones i.e. one for
-> >>>> board data, one for USB Host (UHH) module and one for USB-TLL module.
-> >>>>
-> >>>> This makes the code much simpler and avoids creating multiple copies of
-> >>>> platform data.
-> >>>>
-> >>>> CC: Alan Stern <stern@rowland.harvard.edu>
-> >>>>
-> >>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> >>>
-> >>> For the ehci-omap.c part:
-> >>>
-> >>> Acked-by: Alan Stern <stern@rowland.harvard.edu>
-> >>
-> >> If Samuel acks this patch, I can apply just this patch alone on v3.8-rc3
-> >> into an immutable branch omap-for-v3.9/board-usb so we all merge it in
-> >> as needed.
-> > 
-> > So, that didn't happen; Samuel applied it from the mailing list and
-> > sfr just hit merge conflicts due to it.
-> > 
-> > Sigh.
-> > 
-> > This patch (touching arch/arm/mach-omap2) didn't have acks from Tony either.
+On Mon, Feb 11, 2013 at 06:52:39PM +0000, Serge E. Hallyn wrote:
+> > getting rid of local settings would buy more simplicity
 > 
-> Oops, this is my bad :(. Should have flagged Samuel about it. Will be more careful
-> next time.
-> 
-> > 
-> > Samuel, Tony, can you sort this out with a stable short topic branch
-> > as Tony suggested? It'd be nice to avoid the merge conflict by a
-> > little coordination here. :(
+> (Not sure which you mean here by 'getting rid of local settings')
 
-Let's see if Samuel can still drop these like I suggested in the
-merge conflict mail from Stephen.
+no local.{behavior,exceptions}, which still would allow behavior
+propagation, but simply wouldn't keep local behavior or exceptions.
+a change in behavior on parent would simply reset the child to parent's
+state. exception propagation would mean inserting/removing the new
+exception and making sure the others are still valid.
 
-Regards,
+-- 
+Aristeu
 
-Tony
