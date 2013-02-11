@@ -1,42 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932892Ab3BKXqU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 18:46:20 -0500
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:36829 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932675Ab3BKXqR (ORCPT
+	id S932874Ab3BKXrx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 18:47:53 -0500
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:48746 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932675Ab3BKXrw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 18:46:17 -0500
-Message-ID: <511982C6.7080505@kernel.org>
-Date: Mon, 11 Feb 2013 18:46:14 -0500
-From: Len Brown <lenb@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Mon, 11 Feb 2013 18:47:52 -0500
 MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Len Brown <len.brown@intel.com>
-Subject: Re: [PATCH 14/16] intel_idle: remove use and definition of MWAIT_MAX_NUM_CSTATES
-References: <1360372100-28482-1-git-send-email-lenb@kernel.org> <137ecc779c80138723677209730738d76262e810.1360371180.git.len.brown@intel.com> <5118B16E.6010709@linaro.org>
-In-Reply-To: <5118B16E.6010709@linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAG=jzgDxD5ZB683bieoCHQFTehRmOMwnzgefmeSenRPFudY4RA@mail.gmail.com>
+References: <CAG=jzgDxD5ZB683bieoCHQFTehRmOMwnzgefmeSenRPFudY4RA@mail.gmail.com>
+Date: Mon, 11 Feb 2013 23:47:51 +0000
+Message-ID: <CAG=jzgD6JQ1AiSy0e4iurydi5z9BAMmNqat=9P6xu+rBjYOVpQ@mail.gmail.com>
+Subject: Fwd: Xonar DG pci sound card driver incomplete
+From: kernel kernel <kernel@kenobrien.org>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2013 03:53 AM, Daniel Lezcano wrote:
-> On 02/09/2013 02:08 AM, Len Brown wrote:
+Requesting guidance on how to implement the missing mic input support
+for this Asus Xonar card. I've downloaded the relevant datasheets but
+am unsure how to proceed. I have physical access to this hardware. I
+would appreciate a description of a workflow towards finishing this
+driver or any other comments.
 
->> The reason to change is that intel_idle will soon be able
->> to export more than the 8 "major" states supported by MWAIT.
->> When we hit that limit, it is important to know
->> where the limit comes from.
-> 
-> Does it mean CPUIDLE_STATE_MAX may increase in a near future ?
+I believe the audio processor in question is the C-Media CMI8786 and
+the existing driver is located in   sound/pci/oxygen.
 
-Yes, perhaps to 10.
-Let me know if you anticipate issues with doing that.
+Regards,
 
-thanks,
-Len Brown, Intel Open Source Technology Center
+Ken
 
+--
+Ken O'Brien
+PhD Researcher
+Simulation Science and Extreme Events Cluster,
+3B1, UCD CASL,
+8 Belfield Business Park,
+Dublin 4,
+Ireland.
