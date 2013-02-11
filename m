@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757364Ab3BKNt4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 08:49:56 -0500
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:55007 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757215Ab3BKNtz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 08:49:55 -0500
-Date: Mon, 11 Feb 2013 14:49:43 +0100
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [GIT PULL] s390 regression patch for 3.8-rc8
-Message-ID: <20130211144943.69c83140@mschwide>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-x-cbid: 13021113-1948-0000-0000-000004456D07
+	id S1757390Ab3BKNvS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 08:51:18 -0500
+Received: from mga01.intel.com ([192.55.52.88]:23685 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757282Ab3BKNvR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 08:51:17 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,643,1355126400"; 
+   d="scan'208";a="285695155"
+Date: Mon, 11 Feb 2013 21:51:09 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: netdev@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org
+Subject: Re: WARNING: at net/core/neighbour.c:1545 neigh_table_init()
+Message-ID: <20130211135109.GA17277@localhost>
+References: <20130209123937.GA23420@localhost>
+ <20130211092600.GB23932@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130211092600.GB23932@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, Feb 11, 2013 at 10:26:00AM +0100, Ingo Molnar wrote:
+> 
+> * Fengguang Wu <fengguang.wu@intel.com> wrote:
+> 
+> > Greetings,
+> > 
+> > I got the below oops in linux-next and the first bad commit is
+> > 
+> > commit 455e987c0c2eb2c9045dc854559474cf41509965
+> > Merge: 7c17e48 fd6da69
+> > Author: Linus Torvalds <torvalds@linux-foundation.org>
+> > Date:   Sat Dec 1 13:07:48 2012 -0800
+> > 
+> >     Merge branch 'perf-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
+> 
+> This bisection result is probably spurious?
 
-please pull from the 'for-linus' branch of
+You are right. Sorry! I just fixed a recently introduced bug in the
+test script and it probably lead to the wrong bisect.
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux.git for-linus
+I've restarted the bisect and the initial steps till now are already
+different from that of the previous bisect.
 
-to receive the following updates:
-The recent fix for the s390 sched_clock() function uncovered yet
-another bug in s390_next_ktime which causes an endless loop in KVM.
-This regression should be fixed before v3.8.
-
-I keep the fingers crossed that this is the last one for v3.8.
-
-Heiko Carstens (1):
-      s390/timer: avoid overflow when programming clock comparator
-
- arch/s390/kernel/time.c |    3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/arch/s390/kernel/time.c b/arch/s390/kernel/time.c
-index a5f4f5a..0aa98db 100644
---- a/arch/s390/kernel/time.c
-+++ b/arch/s390/kernel/time.c
-@@ -120,6 +120,9 @@ static int s390_next_ktime(ktime_t expires,
- 	nsecs = ktime_to_ns(ktime_add(timespec_to_ktime(ts), expires));
- 	do_div(nsecs, 125);
- 	S390_lowcore.clock_comparator = sched_clock_base_cc + (nsecs << 9);
-+	/* Program the maximum value if we have an overflow (== year 2042) */
-+	if (unlikely(S390_lowcore.clock_comparator < sched_clock_base_cc))
-+		S390_lowcore.clock_comparator = -1ULL;
- 	set_clock_comparator(S390_lowcore.clock_comparator);
- 	return 0;
- }
-
+Thanks,
+Fengguang
