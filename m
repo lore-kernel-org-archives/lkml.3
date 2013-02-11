@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759957Ab3BKUBU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 15:01:20 -0500
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:15201 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759704Ab3BKUBT (ORCPT
+	id S932229Ab3BKUFp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 15:05:45 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:60120 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932087Ab3BKUFo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 15:01:19 -0500
-From: T Makphaibulchoke <tmac@hp.com>
-To: matt.fleming@intel.com, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: T Makphaibulchoke <tmac@hp.com>
-Subject: [PATCH v2] x86/platform/efi/efi_64.c: fix a possible hang in efi_ioremap when init_memory_mapping fails.
-Date: Mon, 11 Feb 2013 13:01:15 -0700
-Message-Id: <1360612875-16952-1-git-send-email-tmac@hp.com>
-X-Mailer: git-send-email 1.7.1
+	Mon, 11 Feb 2013 15:05:44 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alexander Shiyan <shc_work@mail.ru>
+Subject: Re: [PATCH v2 1/3] mfd: syscon: Removed support for unloading
+Date: Mon, 11 Feb 2013 20:05:34 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-5-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Dong Aisheng <dong.aisheng@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+References: <1360608173-12907-1-git-send-email-shc_work@mail.ru>
+In-Reply-To: <1360608173-12907-1-git-send-email-shc_work@mail.ru>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302112005.35034.arnd@arndb.de>
+X-Provags-ID: V02:K0:4dEjkb1r+pIKaRi2D9jwvXjp/Wlcn8EzzAckMbvX2Vh
+ ZNqAS8wBoOfRfmOvOMDrEr19oytMGkbWgM8XgnANb1mT3chJ5z
+ 6PaSSD2PhP8q127FnEhtiTxY7o4PkV8FbUXpTdZDgNBDSEFnUn
+ 0wDaPARa4mI7DgfVE5sxwUu0dPSxSP39iWgcVk9iA/Tt6WHX0Y
+ 8nOd3bmO8io9dmvYmu/zE0acpTE7vwWlloBiiiXVTNsGJTPcxI
+ ECGYT5PUE028t241pOQBPv6TFh+xy0SU6i08nnrkFjv0BPWA5I
+ Ti9XJAeSh59gvwb/3lfrcqRpKNCv5mg0PhO3wBEie3mZ3b05EV
+ Q3IywtLXIZkzmg+C6vjo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An attempt to recursively invoke efi_ioremap may cause the kernel to get stuck in an infinite recursive loop.
-Calling efi_ioremap with non-page aligned size will eventually, due to
-its recursive implementation, call itself with size smaller than a page.
-In this case, init_memory_mapping will fail, returning a NULL.
-An attempt to recursively invoke efi_ioremap, without checking for a failure,
-results in a recursive mapping of an invalid physical address range, 0 to size +
-physaddr, causing the kernel to get stuck in an infinite recursive loop.
+On Monday 11 February 2013, Alexander Shiyan wrote:
+> The driver can be used in various subsystems and therefore should not
+> be unloaded when it is defined in the kernel configuration, so remove
+> support for unloading it.
+> 
+> Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
 
-Here is an example of a hang in the efi_ioremap recursive loop with
-efi_ioremap(0x3ff000, 0xfff) call,
+Can you describe a scenario where that would happen? Normally the
+module should stay pinned as long as any other module refers
+to its exported symbols.
 
-[   69.266517] init_memory_mapping: [mem 0x003ff000-0x003ffffe]
-[   69.267787] init_memory_mapping: [mem 0x00000000-0x003ffffe]
-[   69.268222]  [mem 0x00000000-0x001fffff] page 2M
-[   69.268580]  [mem 0x00200000-0x003fefff] page 4k
-[   69.268953] init_memory_mapping: [mem 0x003ff000-0x003ffffe]
-[   69.270216] init_memory_mapping: [mem 0x00000000-0x003ffffe]
-[   69.270651]  [mem 0x00000000-0x001fffff] page 2M
-[   69.271016]  [mem 0x00200000-0x003fefff] page 4k
-
-Signed-off-by: T Makphaibulchoke <tmac@hp.com>
----
- arch/x86/platform/efi/efi_64.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/platform/efi/efi_64.c b/arch/x86/platform/efi/efi_64.c
-index 2b20038..4b3e2b0 100644
---- a/arch/x86/platform/efi/efi_64.c
-+++ b/arch/x86/platform/efi/efi_64.c
-@@ -102,6 +102,12 @@ void __iomem *__init efi_ioremap(unsigned long phys_addr, unsigned long size,
- 		return ioremap(phys_addr, size);
- 
- 	last_map_pfn = init_memory_mapping(phys_addr, phys_addr + size);
-+
-+	if (!last_map_pfn) {
-+		/* Do not try to rmmap again in case of a failure */
-+		return NULL;
-+	}
-+
- 	if ((last_map_pfn << PAGE_SHIFT) < phys_addr + size) {
- 		unsigned long top = last_map_pfn << PAGE_SHIFT;
- 		efi_ioremap(top, size - (top - phys_addr), type, attribute);
--- 
-1.7.1
-
+	Arnd
