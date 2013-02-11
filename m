@@ -1,68 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754736Ab3BKK5k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 05:57:40 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:30800 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753839Ab3BKK5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 05:57:39 -0500
-Message-ID: <5118CE98.5040509@imgtec.com>
-Date: Mon, 11 Feb 2013 10:57:28 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1755171Ab3BKLBJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 06:01:09 -0500
+Received: from relay.parallels.com ([195.214.232.42]:55152 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754366Ab3BKLBH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 06:01:07 -0500
+Date: Mon, 11 Feb 2013 14:59:41 +0400
+From: Andrew Vagin <avagin@parallels.com>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+CC: <mtk.manpages@gmail.com>, David Howells <dhowells@redhat.com>,
+        "Pavel Emelyanov" <xemul@parallels.com>, <linux-api@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, <linux-kernel@vger.kernel.org>,
+        <criu@openvz.org>, "Cyrill Gorcunov" <gorcunov@openvz.org>,
+        Andrey Wagin <avagin@gmail.com>,
+        "Alexander Viro" <viro@zeniv.linux.org.uk>,
+        <linux-fsdevel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [CRIU] [PATCH 3/3] signalfd: add ability to read siginfo-s
+ without dequeuing signals (v2)
+Message-ID: <20130211105941.GA26717@paralelels.com>
+References: <1358849741-9611-4-git-send-email-avagin@openvz.org>
+ <20130208191056.GA13674@redhat.com>
+ <CAKgNAki0xt_wwixp7kdv04fKOCtCh-ObQjkFE9PiX6FapkO34A@mail.gmail.com>
+ <201302111029.50998.vda.linux@googlemail.com>
 MIME-Version: 1.0
-To: Jonas Bonn <jonas.bonn@gmail.com>
-CC: Vineet Gupta <Vineet.Gupta1@synopsys.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: pt_regs leak into userspace (was Re: [PATCH v3 20/71] ARC: Signal
- handling)
-References: <1359024639-21915-1-git-send-email-vgupta@synopsys.com> <1359024639-21915-9-git-send-email-vgupta@synopsys.com> <51189D2F.4030000@synopsys.com> <CACM3HyGNZxfOXpw01POBVT-YcVKQsnPkO6Kgg+epfZS-x-BRCg@mail.gmail.com> <5118C458.2070205@synopsys.com> <5118C7B6.6040807@imgtec.com> <CACM3HyG+4Pzx02iL9atxG+FOLiCcTeXR+ivzRO78bqDHNp5rGQ@mail.gmail.com>
-In-Reply-To: <CACM3HyG+4Pzx02iL9atxG+FOLiCcTeXR+ivzRO78bqDHNp5rGQ@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2013_02_11_10_57_36
+Content-Type: text/plain; charset="koi8-r"
+Content-Disposition: inline
+In-Reply-To: <201302111029.50998.vda.linux@googlemail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [10.30.16.48]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/02/13 10:53, Jonas Bonn wrote:
-> On 11 February 2013 11:28, James Hogan <james.hogan@imgtec.com> wrote:
->> On 11/02/13 10:13, Vineet Gupta wrote:
->>> On Monday 11 February 2013 03:06 PM, Jonas Bonn wrote:
->>>> On 11 February 2013 08:26, Vineet Gupta <Vineet.Gupta1@synopsys.com> wrote:
->>>>
->>>>> The only downside of this patch is that userspace signal stack grows in size,
->>>>> since signal frame only cares about scratch regs (pt_regs), but has to accommodate
->>>>> unused placeholder for callee regs too by virtue of using user_regs_struct.
->>>> Is this really true?  Don't setcontext and friends require that _all_
->>>> the registers be part of sigcontext?
->>>
->>> But for an ABI - callee saved regs will anyhow be saved/restored even in
->>> setcontext case ! So collecting it for that purpose seems useless, or am I missing
->>> something here.
->>
->> I think Jonas' point was that signals are asynchronous, i.e. you could
->> get interrupted by a signal at virtually any time during the program's
->> execution.
+On Mon, Feb 11, 2013 at 10:29:50AM +0100, Denys Vlasenko wrote:
+> On Friday 08 February 2013 21:15, Michael Kerrisk (man-pages) wrote:
+> > >> >Damn. But after I wrote this email I realized that llseek() probably can't
+> > >> > work. Because peek_offset/f_pos/whatever has to be shared with all processes
+> > >> > which have this file opened.
+> > >
+> > > Yes. but I thought you decided to ignore this oddity ;)
+> > >
+> > >> So I want to suggest a way how to forbid read() for SIGNALFD_PEEK.
+> > >> file->f_pos can be initialized to -1. read() returns EINVAL in this
+> > >> case. In a man page we will write that signals can be dumped only with
+> > >> help pread(). Is it overload or too ugly?
+> > >
+> > > Well. I do not know. Up to you and Michael.
+> > >
+> > > But honestly, I can't say this all looks really nice. And why do we
+> > > need SIGNALFD_PEEK then?
+> > 
+> > It surely is no beauty. The hope is at least to make it less ugly than it was.
+> > 
+> > > Seriously, perhaps we should simply add signalfd_fops->ioctl() for PEEK.
+> > > Or add PTRACE_{PEEK,POKE}_SIGNAL which looks even logical and useful...
+> > > And much simpler/straightforward.
+> > >
+> > > But I am not going to argue.
 > 
-> No, I agree that the callee-saved regs don't need to be saved across a
-> signal handler invocation.  It's really just the setcontext case that
-> wants to be able to swap out the callee-saved regs.
+> ptrace interface might find some use in debuggers.
+> Not that any of them expressed such desires so far,
+> but just maybe.
+> 
+> However, it needs coding in C to read it,
+> which brings me to:
+> 
+> 
+> > I suppose I had wondered along similar lines, but in a slightly
+> > different direction: would the use of a /proc interface to get the
+> > queued signals make some sense?
+> 
+> I think that /proc interface beats adding magic flags and magic semantic
+> to [p]read.
+> 
+> It also has the benefit of being human-readable. You don't need
+> to write a special C program to "cat /proc/$$/foo".
+> 
+> Andrey, I know that it is hard to let go of the code you invested time
+> and efforts in creating. But this isn't the last patch, is it?
+> You will need to retrieve yet more data for process checkpointing.
+> When you start working on the next patch for it, consider trying
+> /proc approach.
 
-Yes, I was getting muddled, sorry!
+I don't think that we need to convert siginfo into a human readable format
+in kernel. For example siginfo with a negative si_code contains binary data.
+A kernel already has got signalfd_siginfo and we can see, that it's not
+good.
+I think would be better to print siginfo in a human readable format from
+userspace (e.g. gdb) and implement a generic interface in kernel (e.g.
+ptrace).
 
-> And now that I think about it some more, I think this is done
-> incorrectly in the openrisc arch, too, as the fast-path for
-> rt_sigreturn probably only restores the call-clobbered regs.
-> sigreturn probably needs to be special-cased to _always_ restore all
-> the regs on its way back to userspace.  Not for the "signal" case, but
-> for the "setcontext" case; but these two are pretty-much
-> indistinguishable.
-
-Cheers
-James
-
+> > -- 
+> vda
+> _______________________________________________
+> CRIU mailing list
+> CRIU@openvz.org
+> https://lists.openvz.org/mailman/listinfo/criu
