@@ -1,144 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932284Ab3BKUyA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 15:54:00 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:47588 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759671Ab3BKUx7 (ORCPT
+	id S932470Ab3BKUyZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 15:54:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40785 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932309Ab3BKUyY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 15:53:59 -0500
-Message-ID: <51195A63.7080706@wwwdotorg.org>
-Date: Mon, 11 Feb 2013 13:53:55 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@stericsson.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Anmar Oueja <anmar.oueja@linaro.org>,
-        Laurent Meunier <laurent.meunier@st.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH] pinctrl/pinconfig: add debug interface
-References: <1360527070-18430-1-git-send-email-linus.walleij@stericsson.com>
-In-Reply-To: <1360527070-18430-1-git-send-email-linus.walleij@stericsson.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 11 Feb 2013 15:54:24 -0500
+Date: Mon, 11 Feb 2013 12:54:22 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Imre Deak <imre.deak@intel.com>
+Cc: linux-kernel@vger.kernel.org, Maxim Levitsky <maximlevitsky@gmail.com>,
+        Tejun Heo <tj@kernel.org>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        linaro-mm-sig@lists.linaro.org
+Subject: Re: [PATCH v2] lib/scatterlist: add simple page iterator
+Message-Id: <20130211125422.978c1e99.akpm@linux-foundation.org>
+In-Reply-To: <1360608604-3520-1-git-send-email-imre.deak@intel.com>
+References: <1353590706-1366-5-git-send-email-imre.deak@intel.com>
+	<1360608604-3520-1-git-send-email-imre.deak@intel.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/10/2013 01:11 PM, Linus Walleij wrote:
-> From: Laurent Meunier <laurent.meunier@st.com>
+On Mon, 11 Feb 2013 20:50:04 +0200
+Imre Deak <imre.deak@intel.com> wrote:
+
+> Add an iterator to walk through a scatter list a page at a time starting
+> at a specific page offset. As opposed to the mapping iterator this is
+
+What is "the mapping iterator"?
+
+> meant to be small, performing well even in simple loops like collecting
+> all pages on the scatterlist into an array or setting up an iommu table
+> based on the pages' DMA address.
+
+Where will this new macro be used?  What is driving this effort?
+
+> v2:
+> - In each iteration sg_pgoffset pointed incorrectly at the next page not
+>   the current one.
 > 
-> This update adds a debugfs interface to modify a pin configuration
-> for a given state in the pinctrl map. This allows to modify the
-> configuration for a non-active state, typically sleep state.
-> This configuration is not applied right away, but only when the state
-> will be entered.
+> Signed-off-by: Imre Deak <imre.deak@intel.com>
+> ---
+>  include/linux/scatterlist.h |   50 +++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 50 insertions(+)
 > 
-> This solution is mandated for us by HW validation: in order
-> to test and verify several pin configurations during sleep without
-> recompiling the software.
+> diff --git a/include/linux/scatterlist.h b/include/linux/scatterlist.h
+> index 4bd6c06..72578b5 100644
+> --- a/include/linux/scatterlist.h
+> +++ b/include/linux/scatterlist.h
+> @@ -231,6 +231,56 @@ size_t sg_copy_to_buffer(struct scatterlist *sgl, unsigned int nents,
+>   */
+>  #define SG_MAX_SINGLE_ALLOC		(PAGE_SIZE / sizeof(struct scatterlist))
+>  
+> +struct sg_page_iter {
+> +	struct scatterlist *sg;
+> +	int sg_pgoffset;
+> +	struct page *page;
+> +};
 
-I never understood why HW engineers can't just recompile the kernel.
-Besides, it's just a device tree change these days - no recompile even
-required, right?
+Some documentation wouldn't hurt.   What it's used for, why it exists.
 
-> diff --git a/drivers/pinctrl/pinconf.c b/drivers/pinctrl/pinconf.c
+> +static inline int
+> +sg_page_cnt(struct scatterlist *sg)
 
-To be worth including, hadn't this feature also better also allow
-editing of pin mux settings too, and even addition/removal of entries,
-so some more core file would be a better place?
+unneeded newline here.
 
-> +/* 32bit read/write ressources */
-> +#define MAX_NAME_LEN 16
-> +char dbg_pinname[MAX_NAME_LEN]; /* shared: name of the state of the pin*/
-> +char dbg_state_name[MAX_NAME_LEN]; /* shared: state of the pin*/
-> +static u32 dbg_config; /* shared: config to be read/set for the pin & state*/
+A more typical name would be "sg_page_count".  Stripping words of their
+vowels makes the symbols harder to remember.
 
-Rather than setting pin name, state name, and config separately,
-wouldn't it be better to accept a single write() with all those
-parameters contained in it at once, so no persistent state was required.
-Say something like:
-
-modify configs_pin devicename state pinname newvalue
-
-That would allow "add", "delete" to be implemented in addition to modify
-later if desired.
-
-> +static int pinconf_dbg_pinname_write(struct file *file,
-> +	const char __user *user_buf, size_t count, loff_t *ppos)
 > +{
-> +	int err;
+> +	BUG_ON(sg->offset || sg->length & ~PAGE_MASK);
 > +
-> +	if (count > MAX_NAME_LEN)
-> +		return -EINVAL;
+> +	return sg->length >> PAGE_SHIFT;
+> +}
 > +
-> +	err = sscanf(user_buf, "%15s", dbg_pinname);
+> +static inline struct page *
+> +sg_page_iter_get_page(struct sg_page_iter *iter)
+> +{
+> +	while (iter->sg && iter->sg_pgoffset >= sg_page_cnt(iter->sg)) {
+> +		iter->sg_pgoffset -= sg_page_cnt(iter->sg);
+> +		iter->sg = sg_next(iter->sg);
+> +	}
+> +
+> +	return iter->sg ? nth_page(sg_page(iter->sg), iter->sg_pgoffset) : NULL;
+> +}
+> +
+> +static inline void
+> +sg_page_iter_next(struct sg_page_iter *iter)
+> +{
+> +	iter->sg_pgoffset++;
+> +	iter->page = sg_page_iter_get_page(iter);
+> +}
+> +
+> +static inline void
+> +sg_page_iter_start(struct sg_page_iter *iter, struct scatterlist *sglist,
+> +		   unsigned long pgoffset)
+> +{
+> +	iter->sg = sglist;
+> +	iter->sg_pgoffset = pgoffset;
+> +	iter->page = sg_page_iter_get_page(iter);
+> +}
 
-That %15 had better somehow be related to MAX_NAME_LEN.
+All the above are undocumented also.  I guess that's acceptable if they
+are only ever to be used by for_each_sg_page().  Although if that's the
+case then perhaps the identifiers should be a bit more obscure-looking.
+Usually we prefix them with "__" to say "this is in internal thing".
 
-I'd suggest making MAX_NAME_LEN 15, and the variable declarations above
-use MAX_NAME_LEN + 1, so that MAX_NAME_LEN can be used as part of the
-scanf parameter here.
-
-> +/**
-> + * pinconf_dbg_config_write() - overwrite the pinctrl config in thepinctrl
-> + * map, of a pin/state pair based on pinname and state that have been
-> + * selected with the debugfs entries pinconf-name and pinconf-state
+> +/*
+> + * Simple sg page iterator, starting off at the given page offset. Each entry
+> + * on the sglist must start at offset 0 and can contain only full pages.
+> + * iter->page will point to the current page, iter->sg_pgoffset to the page
+> + * offset within the sg holding that page.
 > + */
-> +static int pinconf_dbg_config_write(struct file *file,
-> +	const char __user *user_buf, size_t count, loff_t *ppos)
-> +{
-> +	int err;
-> +	unsigned long config;
-> +	struct pinctrl_maps *maps_node;
-> +	struct pinctrl_map const *map;
-> +	int i, j;
-> +
-> +	err = kstrtoul_from_user(user_buf, count, 0, &config);
-> +
-> +	if (err)
-> +		return err;
-> +
-> +	dbg_config = config;
+> +#define for_each_sg_page(sglist, iter, pgoffset)				\
+> +	for (sg_page_iter_start((iter), (sglist), (pgoffset));		\
+> +	     (iter)->page; sg_page_iter_next(iter))
 
-That assumes that pin config values are a plain u32. While this is
-commonly true in existing pinctrl drivers, it certainly isn't something
-that the pinctrl core mandates; that's the whole point of
-dt_node_to_map() for example, to allow the individual pinctrl drivers to
-use whatever type (scalar, pointer-to-struct, ...) they want to
-represent their config values.
+Because all the helper functions are inlined, this will expand to a
+quite large amount of code.  And large code can be slow code due to
+I-cache eviction.
 
-> +
-> +	mutex_lock(&pinctrl_mutex);
-> +
-> +	/* Parse the pinctrl map and look for the selected pin/state */
-> +	for_each_maps(maps_node, i, map) {
-> +		if (map->type != PIN_MAP_TYPE_CONFIGS_PIN)
-> +			continue;
-> +
-> +		if (strncmp(map->name, dbg_state_name, MAX_NAME_LEN) > 0)
-> +			continue;
+I don't know *how* big this thing will be because the patch didn't
+include a caller and I can't be bothered writing my own.  (And the lack
+of any caller means that the code will not be tested).
 
-What about the device name; this changes that state in every device's
-map table entry.
+So, exactly how big is this thing, and how do we know it's better this
+way than if we were to uninline some/all of the helpers?
 
-> +
-> +		/*  we found the right pin / state, so overwrite config */
-> +		for (j = 0; j < map->data.configs.num_configs; j++) {
-> +			if (strncmp(map->data.configs.group_or_pin, dbg_pinname,
-> +						MAX_NAME_LEN) == 0)
-
-Why compare this inside the per-config loop;
-map->data.configs.group_or_pin is something "global" to the entire
-struct, and not specific to each configs[] entry.
-
-> +				map->data.configs.configs[j] = dbg_config;
-
-Given that dbg_config is written to by this function, then used by this
-function, why even make it a global? The only other use is
-pinconf_dbg_config_print(), which can also make it a local variable.
-
-Overall, I'm not convinced of the utility of this patch upstream. Sorry.
