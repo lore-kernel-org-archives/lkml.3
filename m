@@ -1,105 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758576Ab3BKR4f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 12:56:35 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:39580 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758464Ab3BKR4e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 12:56:34 -0500
-Date: Mon, 11 Feb 2013 12:56:19 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ying Han <yinghan@google.com>, Tejun Heo <htejun@gmail.com>,
-        Glauber Costa <glommer@parallels.com>, Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH v3 4/7] memcg: remove memcg from the reclaim iterators
-Message-ID: <20130211175619.GC13218@cmpxchg.org>
-References: <1357235661-29564-1-git-send-email-mhocko@suse.cz>
- <1357235661-29564-5-git-send-email-mhocko@suse.cz>
- <20130208193318.GA15951@cmpxchg.org>
- <20130211151649.GD19922@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130211151649.GD19922@dhcp22.suse.cz>
+	id S1758608Ab3BKR4i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 12:56:38 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:52518 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758464Ab3BKR4g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 12:56:36 -0500
+Message-ID: <1360605395.2028.28.camel@joe-AO722>
+Subject: Re: [PATCH V2] MAINTAINERS: add keyword "tegra" to Tegra section
+From: Joe Perches <joe@perches.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: arm@kernel.org, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>
+Date: Mon, 11 Feb 2013 09:56:35 -0800
+In-Reply-To: <1360605099-7088-1-git-send-email-swarren@wwwdotorg.org>
+References: <1360605099-7088-1-git-send-email-swarren@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 11, 2013 at 04:16:49PM +0100, Michal Hocko wrote:
-> On Fri 08-02-13 14:33:18, Johannes Weiner wrote:
-> [...]
-> > for each in hierarchy:
-> >   for each node:
-> >     for each zone:
-> >       for each reclaim priority:
-> > 
-> > every time a cgroup is destroyed.  I don't think such a hammer is
-> > justified in general, let alone for consolidating code a little.
-> > 
-> > Can we invalidate the position cache lazily?  Have a global "cgroup
-> > destruction" counter and store a snapshot of that counter whenever we
-> > put a cgroup pointer in the position cache.  We only use the cached
-> > pointer if that counter has not changed in the meantime, so we know
-> > that the cgroup still exists.
+On Mon, 2013-02-11 at 10:51 -0700, Stephen Warren wrote:
+> From: Stephen Warren <swarren@nvidia.com>
 > 
-> Currently we have:
-> rcu_read_lock()	// keeps cgroup links safe
-> 	iter->iter_lock	// keeps selection exclusive for a specific iterator
-> 	1) global_counter == iter_counter
-> 	2) css_tryget(cached_memcg)  // check it is still alive
-> rcu_read_unlock()
+> The intent is to ensure that all Tegra-related patches are sent to the
+> linux-tegra@ mailing list, so people can keep up-to-date on all misc
+> driver changes.
 > 
-> What would protect us from races when css would disappear between 1 and
-> 2?
-
-rcu
-
-> css is invalidated from worker context scheduled from __css_put and it
-> is using dentry locking which we surely do not want to pull here. We
-> could hook into css_offline which is called with cgroup_mutex but we
-> cannot use this one here because it is no longer exported and Tejun
-> would kill us for that.
-> So we can add a new global memcg internal lock to do this atomically.
-> Ohh, this is getting uglier...
-
-A racing final css_put() means that the tryget fails, but our RCU read
-lock keeps the CSS allocated.  If the dead_count is uptodate, it means
-that the rcu read lock was acquired before the synchronize_rcu()
-before the css is freed.
-
-> > It is pretty pretty imprecise and we invalidate the whole cache every
-> > time a cgroup is destroyed, but I think that should be okay. 
+> Doing this with a keyword is far simpler and more compact than listing
+> all Tegra-related drivers, even if wildcards were used.
 > 
-> I am not sure this is OK because this gives an indirect way of
-> influencing reclaim in one hierarchy by another one which opens a door
-> for regressions (or malicious over-reclaim in the extreme case).
-> So I do not like this very much.
+> Words such as integrate or integrator are common. Ensure the character
+> right before "tegra" isn't a-z (case-insensitive), to make sure the
+> keyword doesn't match those.
 > 
-> > If not, better ideas are welcome.
+> Cc: Joe Perches <joe@perches.com>
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> ---
+>  MAINTAINERS |    4 +---
+>  1 file changed, 1 insertion(+), 3 deletions(-)
 > 
-> Maybe we could keep the counter per memcg but that would mean that we
-> would need to go up the hierarchy as well. We wouldn't have to go over
-> node-zone-priority cleanup so it would be much more lightweight.
-> 
-> I am not sure this is necessarily better than explicit cleanup because
-> it brings yet another kind of generation number to the game but I guess
-> I can live with it if people really thing the relaxed way is much
-> better.
-> What do you think about the patch below (untested yet)?
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index b98c89b..10e9b31 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -7829,9 +7829,7 @@ L:	linux-tegra@vger.kernel.org
+>  Q:	http://patchwork.ozlabs.org/project/linux-tegra/list/
+>  T:	git git://git.kernel.org/pub/scm/linux/kernel/git/swarren/linux-tegra.git
+>  S:	Supported
+> -F:	arch/arm/mach-tegra
+> -F:	arch/arm/boot/dts/tegra*
+> -F:	arch/arm/configs/tegra_defconfig
+> +K:	(?i)[^a-z]tegra
+>  
+>  TEHUTI ETHERNET DRIVER
+>  M:	Andy Gospodarek <andy@greyhouse.net>
 
-Better, but I think you can get rid of both locks:
+It's probably not a good idea to remove
+any of the F: lines as there are files
+that could get modified in those paths
+without any tegra word in the patch.
 
-mem_cgroup_iter:
-rcu_read_lock()
-if atomic_read(&root->dead_count) == iter->dead_count:
-  smp_rmb()
-  if tryget(iter->position):
-    position = iter->position
-memcg = find_next(postion)
-css_put(position)
-iter->position = memcg
-smp_wmb() /* Write position cache BEFORE marking it uptodate */
-iter->dead_count = atomic_read(&root->dead_count)
-rcu_read_unlock()
