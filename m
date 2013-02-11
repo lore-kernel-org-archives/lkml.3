@@ -1,103 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756870Ab3BKOAA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 09:00:00 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:54588 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756487Ab3BKN76 (ORCPT
+	id S1756959Ab3BKOHK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 09:07:10 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:44081 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756466Ab3BKOHH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 08:59:58 -0500
+	Mon, 11 Feb 2013 09:07:07 -0500
+Date: Mon, 11 Feb 2013 14:07:05 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Jonas Bonn <jonas.bonn@gmail.com>
+Cc: Vineet Gupta <Vineet.Gupta1@synopsys.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: pt_regs leak into userspace (was Re: [PATCH v3 20/71] ARC:
+ Signal handling)
+Message-ID: <20130211140704.GI4503@ZenIV.linux.org.uk>
+References: <1359024639-21915-1-git-send-email-vgupta@synopsys.com>
+ <1359024639-21915-9-git-send-email-vgupta@synopsys.com>
+ <51189D2F.4030000@synopsys.com>
+ <CACM3HyGNZxfOXpw01POBVT-YcVKQsnPkO6Kgg+epfZS-x-BRCg@mail.gmail.com>
+ <5118C458.2070205@synopsys.com>
+ <CACM3HyF2GHz5PKuurYG2Hg+UEKeto+zme5gcv2fxQDC=tpZYRw@mail.gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [188.6.195.195]
-In-Reply-To: <1660768.prnx6s70rD@vostro.rjw.lan>
-References: <1360113112.17267.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
-	<2964781.rPUOipNRNb@vostro.rjw.lan>
-	<CAJfpegtNUr+AJXZcKmLEGBYqu20DVFwzg-OvOk_nS3fBS3wd=Q@mail.gmail.com>
-	<1660768.prnx6s70rD@vostro.rjw.lan>
-Date: Mon, 11 Feb 2013 14:59:56 +0100
-Message-ID: <CAJfpegt2B3n-QNK_W7O2H0JVfS=4jcUOzV_+w8ELPq19RJPewQ@mail.gmail.com>
-Subject: Re: Getting rid of freezer for suspend [was Re: [fuse-devel] [PATCH]
- fuse: make fuse daemon frozen along with kernel threads]
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Pavel Machek <pavel@ucw.cz>, Goswin von Brederlow <goswin-v-b@web.de>,
-        Li Fei <fei.li@intel.com>, len.brown@intel.com, mingo@redhat.com,
-        peterz@infradead.org, biao.wang@intel.com, linux-pm@vger.kernel.org,
-        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        chuansheng.liu@intel.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACM3HyF2GHz5PKuurYG2Hg+UEKeto+zme5gcv2fxQDC=tpZYRw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 11, 2013 at 1:08 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Monday, February 11, 2013 11:11:40 AM Miklos Szeredi wrote:
->> On Mon, Feb 11, 2013 at 12:31 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> > On Sunday, February 10, 2013 07:55:05 PM Pavel Machek wrote:
->>
->> >> Well, from freezer you need:
->> >>
->> >> 1) user process frozen.
->> >>
->> >> 2) essential locks _not_ held so that block devices are still functional.
->> >>
->> >> > > > mmap... what is problem with mmap? For suspend, memory is powered, so
->> >> > > > you can permit people changing it.
->> >> > >
->> >> > > Suppose mmap is used to make the registers of some device available to user
->> >> > > space.  Yes, that can happen.
->> >>
->> >> "Don't do it, then". Yes, can happen, but hopefully is not too common
->> >> these days. [And... freezer doing 1) but not 2) would be enough to
->> >> handle that. Freezer doing 1) but not 2) would also be simpler...]
->> >
->> > Again, I'm not sure what you mean.
->> >
->> > Are you trying to say that it would be OK to freeze user space tasks in
->> > the D state?
->>
->> I think that's what Pavel is saying.   Processes in D state sleeping
->> on non-device mutexes _are_ actually OK to freeze.  And that would
->> nicely solve the fuse freeze problem.
->
-> That's potentially deeadlock-prone, because a task waiting for mutex X may
-> very well be holding mutex Y, so if there's another task waiting for mutex Y,
-> it needs to be frozen at the same time.
->
->> The only little detail is how do we implement that...
->
-> This means the only way I can see would be to hack the mutex code so that the
-> try_to_freeze() was called for user space tasks after the
-> sched_preempt_enable_no_resched() before schedule().
->
-> That shouldn't be a big deal performance-wise, because we are in the slow
-> path anyway then.  I'm not sure if Peter Z will like it, though.
->
-> Moreover, a task waiting for a mutex may be holding a semaphore or be
-> participating in some other mutual-exclusion mechanism, so we'd need to
-> address them all.  Plus, as noted by Pavel, freezing those things would make
-> it difficult to save hibernation images to us.
+On Mon, Feb 11, 2013 at 11:30:50AM +0100, Jonas Bonn wrote:
 
-Well, as a first step I could cook up a patch that adds a flag to the
-mutex indicating that it's freezable.  Fuse would mark its mutexes
-(and the mutexes that VFS uses on its behalf) as freezable.  That way
-we don't interfere with hibernation, except if hibernation uses fuse
-but that's a very special case.
+> >> Is this really true?  Don't setcontext and friends require that _all_
+> >> the registers be part of sigcontext?
+> >
+> > But for an ABI - callee saved regs will anyhow be saved/restored even in
+> > setcontext case ! So collecting it for that purpose seems useless, or am I missing
+> > something here.
+> 
+> Yes, I agree with you on the ABI bit... but set/get/swapcontext are
+> special in that they use rt_sigreturn to "trick" the kernel into
+> swapping out _all_ registers; it's a light-weight (userspace) context
+> switch.
+> 
+> (I really don't know this area very well, though, so I'm hoping
+> somebody more knowledgable jumps in here... Al?)
 
->
-> What about having a "freeze me after all of my children" flag that will be
-> inherited from parents?  Would that help the fuse case?
-
-
-With kernel filesystems there's a clear distinction between tasks that
-may originate filesystem requests (userspace processes) and those that
-serve these requests (kernel threads).  So its possible to freeze the
-originators first and the servers afterwards.
-
-With fuse there's no such difference.  Even if it were known which
-processes are servers and which are originators (it is not known in
-the general case) then there would be a problem that some processes
-are servers AND originators at the same time.
-
-Thanks,
-Miklos
+I'd suggest asking itanic folks; they do *not* put callee-saved stuff into
+sigcontext.  AFAICS, they don't have setcontext() implemented as a syscall
+at all - it's done as sigprocmask() + doing to callee-saved registers what
+longjmp() does.
