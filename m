@@ -1,142 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932713Ab3BKVts (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 16:49:48 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:60097 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932674Ab3BKVtr (ORCPT
+	id S932725Ab3BKVwJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 16:52:09 -0500
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:33610 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932522Ab3BKVwI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 16:49:47 -0500
-Date: Mon, 11 Feb 2013 13:49:44 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: sjenning@linux.vnet.ibm.com, minchan@kernel.org,
-        Konrad Wilk <konrad.wilk@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, devel@linuxdriverproject.org, ngupta@vflare.org
-Subject: Re: [PATCH] staging/zcache: Fix/improve zcache writeback code, tie
- to a config option
-Message-ID: <20130211214944.GA22090@kroah.com>
-References: <1360175261-13287-1-git-send-email-dan.magenheimer@oracle.com>
- <20130206190924.GB32275@kroah.com>
- <761b5c6e-df13-49ff-b322-97a737def114@default>
- <20130206214316.GA21148@kroah.com>
- <abbc2f75-2982-470c-a3ca-675933d112c3@default>
- <20130207000338.GB18984@kroah.com>
- <7393d8c5-fb02-4087-93d1-0f999fb3cafd@default>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <7393d8c5-fb02-4087-93d1-0f999fb3cafd@default>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 11 Feb 2013 16:52:08 -0500
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>
+Subject: [PATCH] MIPS: early_printk: drop __init annotations
+Date: Mon, 11 Feb 2013 23:51:49 +0200
+Message-Id: <1360619509-6576-1-git-send-email-aaro.koskinen@iki.fi>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 11, 2013 at 01:43:58PM -0800, Dan Magenheimer wrote:
-> > From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> 
-> > So, how about this, please draw up a specific plan for how you are going
-> > to get this code out of drivers/staging/  I want to see the steps
-> > involved, who is going to be doing the work, and who you are going to
-> > have to get to agree with your changes to make it happen.
-> >  :
-> > Yeah, a plan, I know it goes against normal kernel development
-> > procedures, but hey, we're in our early 20's now, it's about time we
-> > started getting responsible.
-> 
-> Hi Greg --
-> 
-> I'm a big fan of planning, though a wise boss once told me:
-> "Plans fail... planning succeeds".
-> 
-> So here's the plan I've been basically trying to pursue since about
-> ten months ago, ignoring the diversion due to "zcache1 vs zcache2"
-> from last summer.  There is no new functionality on this plan
-> other than as necessary from feedback obtained at or prior to
-> LSF/MM in April 2012.
-> 
-> Hope this meets your needs, and feedback welcome!
-> Dan
-> 
-> =======
-> 
-> ** ZCACHE PLAN FOR PROMOTION FROM STAGING **
-> 
-> PLAN STEPS
-> 
-> 1. merge zcache and ramster to eliminate horrible code duplication
-> 2. converge on a predictable, writeback-capable allocator
-> 3. use debugfs instead of sysfs (per akpm feedback in 2011)
-> 4. zcache side of cleancache/mm WasActive patch
-> 5. zcache side of frontswap exclusive gets
-> 6. zcache must be able to writeback to physical swap disk
->     (per Andrea Arcangeli feedback in 2011)
-> 7. implement adequate policy for writeback
-> 8. frontswap/cleancache work to allow zcache to be loaded
->     as a module
-> 9. get core mm developer to review
-> 10. incorporate feedback from review
-> 11. get review/acks from 1-2 additional mm developers
-> 12. incorporate any feedback from additional mm reviews
-> 13. propose location/file-naming in mm tree
-> 14. repeat 9-13 as necessary until akpm is happy and merges
-> 
-> STATUS/OWNERSHIP
-> 
-> 1. DONE as part of "new" zcache; now in staging/zcache
-> 2. DONE as part of "new" zcache (cf zbud.[ch]); now in staging/zcache
->     (this was the core of the zcache1 vs zcache2 flail)
-> 3. DONE as part of "new" zcache; now in staging/zcache
-> 4. DONE as part of "new" zcache; per cleancache performance
->     feedback see https://lkml.org/lkml/2011/8/17/351, now
->     in staging/zcache; dependent on proposed mm patch, see
->     https://lkml.org/lkml/2012/1/25/300 
-> 5. DONE as part of "new" zcache; performance tuning only,
->     now in staging/zcache; dependent on frontswap patch
->     merged in 3.7 (33c2a174)
-> 6. PROTOTYPED as part of "new" zcache; protoype is now
->     in staging/zcache but has bad memory leak; reimplemented
->     to use sjennings clever tricks and proposed mm patches
->     with new version posted https://lkml.org/lkml/2013/2/6/437;
->     rejected by GregKH as it smells like new functionality
-> 
->     (******** YOU ARE HERE *********)
-> 
-> 7. PROTOTYPED as part of "new" zcache; now in staging/zcache;
->     needs more review (plan to discuss at LSF/MM 2013)
-> 8. IN PROGRESS; owned by Konrad Wilk; v2 recently posted
->    http://lkml.org/lkml/2013/2/1/542
-> 9. IN PROGRESS; owned by Konrad Wilk; Mel Gorman provided
->    great feedback in August 2012 (unfortunately of "old"
->    zcache)
-> 10. Konrad posted series of fixes (that now need rebasing)
->     https://lkml.org/lkml/2013/2/1/566 
-> 11. NOT DONE; owned by Konrad Wilk
-> 12. TBD (depends on quantity of feedback)
-> 13. PROPOSED; one suggestion proposed by Dan; needs
->     more ideas/feedback
-> 14. TBD (depends on feedback)
-> 
-> WHO NEEDS TO AGREE
-> 
-> Not sure I can answer that.  Seth seems to now be pursuing
-> a separate but semi-parallel track.  Akpm clearly has to
-> approve for any mm merge to happen.  Minchan has interest
-> but may be happy if/when zram is merged into mm.  Konrad
-> may be maintainer if akpm decides compression is maintainable
-> separately from the rest of mm.  (More LSF/MM 2013 discussion.)
+We cannot use __init for earlyprintk code or data, since the kernel
+parameter "keep_bootcon" allows leaving the boot console enabled.
 
-Thanks so much for this, this looks great.
+Currently MIPS will crash/hang/die if you use keep_bootcon. The patch
+fixes it at least on Lemote FuLoong mini-PC. Changes for other boards
+were done based on what I could find with grep...
 
-So, according to your plan, I shouldn't have rejected those patches,
-right?  :)
+Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+---
+ arch/mips/bcm63xx/early_printk.c  |    4 ++--
+ arch/mips/kernel/early_printk.c   |    5 ++---
+ arch/mips/loongson1/common/prom.c |    2 +-
+ arch/mips/sgi-ip27/ip27-console.c |    2 +-
+ arch/mips/txx9/generic/setup.c    |    8 ++++----
+ 5 files changed, 10 insertions(+), 11 deletions(-)
 
-If so, please resend them in the next day or so, so that they can get
-into 3.9, and then you can move on to the next steps of what you need to
-do here.
+diff --git a/arch/mips/bcm63xx/early_printk.c b/arch/mips/bcm63xx/early_printk.c
+index bf353c9..aa8f7f9 100644
+--- a/arch/mips/bcm63xx/early_printk.c
++++ b/arch/mips/bcm63xx/early_printk.c
+@@ -10,7 +10,7 @@
+ #include <bcm63xx_io.h>
+ #include <bcm63xx_regs.h>
+ 
+-static void __init wait_xfered(void)
++static void wait_xfered(void)
+ {
+ 	unsigned int val;
+ 
+@@ -22,7 +22,7 @@ static void __init wait_xfered(void)
+ 	} while (1);
+ }
+ 
+-void __init prom_putchar(char c)
++void prom_putchar(char c)
+ {
+ 	wait_xfered();
+ 	bcm_uart0_writel(c, UART_FIFO_REG);
+diff --git a/arch/mips/kernel/early_printk.c b/arch/mips/kernel/early_printk.c
+index 9ae813e..9e6440e 100644
+--- a/arch/mips/kernel/early_printk.c
++++ b/arch/mips/kernel/early_printk.c
+@@ -14,8 +14,7 @@
+ 
+ extern void prom_putchar(char);
+ 
+-static void __init
+-early_console_write(struct console *con, const char *s, unsigned n)
++static void early_console_write(struct console *con, const char *s, unsigned n)
+ {
+ 	while (n-- && *s) {
+ 		if (*s == '\n')
+@@ -25,7 +24,7 @@ early_console_write(struct console *con, const char *s, unsigned n)
+ 	}
+ }
+ 
+-static struct console early_console __initdata = {
++static struct console early_console = {
+ 	.name	= "early",
+ 	.write	= early_console_write,
+ 	.flags	= CON_PRINTBUFFER | CON_BOOT,
+diff --git a/arch/mips/loongson1/common/prom.c b/arch/mips/loongson1/common/prom.c
+index 1f8e49f..54dee09 100644
+--- a/arch/mips/loongson1/common/prom.c
++++ b/arch/mips/loongson1/common/prom.c
+@@ -73,7 +73,7 @@ void __init prom_free_prom_memory(void)
+ 
+ #define PORT(offset)	(u8 *)(KSEG1ADDR(LS1X_UART0_BASE + offset))
+ 
+-void __init prom_putchar(char c)
++void prom_putchar(char c)
+ {
+ 	int timeout;
+ 
+diff --git a/arch/mips/sgi-ip27/ip27-console.c b/arch/mips/sgi-ip27/ip27-console.c
+index 984e561..b952d5b 100644
+--- a/arch/mips/sgi-ip27/ip27-console.c
++++ b/arch/mips/sgi-ip27/ip27-console.c
+@@ -31,7 +31,7 @@ static inline struct ioc3_uartregs *console_uart(void)
+ 	return &ioc3->sregs.uarta;
+ }
+ 
+-void __init prom_putchar(char c)
++void prom_putchar(char c)
+ {
+ 	struct ioc3_uartregs *uart = console_uart();
+ 
+diff --git a/arch/mips/txx9/generic/setup.c b/arch/mips/txx9/generic/setup.c
+index 560fe89..5524f2c 100644
+--- a/arch/mips/txx9/generic/setup.c
++++ b/arch/mips/txx9/generic/setup.c
+@@ -513,19 +513,19 @@ void __init txx9_sio_init(unsigned long baseaddr, int irq,
+ }
+ 
+ #ifdef CONFIG_EARLY_PRINTK
+-static void __init null_prom_putchar(char c)
++static void null_prom_putchar(char c)
+ {
+ }
+-void (*txx9_prom_putchar)(char c) __initdata = null_prom_putchar;
++void (*txx9_prom_putchar)(char c) = null_prom_putchar;
+ 
+-void __init prom_putchar(char c)
++void prom_putchar(char c)
+ {
+ 	txx9_prom_putchar(c);
+ }
+ 
+ static void __iomem *early_txx9_sio_port;
+ 
+-static void __init early_txx9_sio_putchar(char c)
++static void early_txx9_sio_putchar(char c)
+ {
+ #define TXX9_SICISR	0x0c
+ #define TXX9_SITFIFO	0x1c
+-- 
+1.7.10.4
 
-Sound good?
-
-thanks,
-
-greg k-h
