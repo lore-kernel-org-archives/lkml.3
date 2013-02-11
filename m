@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756144Ab3BKLuf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 06:50:35 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:50459 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755883Ab3BKLue (ORCPT
+	id S1756264Ab3BKLw0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 06:52:26 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:50950 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755967Ab3BKLwY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 06:50:34 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [char-misc-next 01/11 V2] mei: bus: Initial MEI bus type implementation
-Date: Mon, 11 Feb 2013 11:50:26 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-5-generic; KDE/4.3.2; x86_64; ; )
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Tomas Winkler <tomas.winkler@intel.com>, linux-kernel@vger.kernel.org
-References: <1360326504-17041-1-git-send-email-tomas.winkler@intel.com> <20130208235341.GA24127@kroah.com> <20130210032555.GG20996@sortiz-mobl>
-In-Reply-To: <20130210032555.GG20996@sortiz-mobl>
+	Mon, 11 Feb 2013 06:52:24 -0500
+Date: Mon, 11 Feb 2013 11:52:19 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: "tony@atomide.com" <tony@atomide.com>,
+        "b-cousson@ti.com" <b-cousson@ti.com>, "balbi@ti.com" <balbi@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "kishon@ti.com" <kishon@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 08/14] USB: ehci-omap: Add device tree support and
+ binding information
+Message-ID: <20130211115219.GC2726@e106331-lin.cambridge.arm.com>
+References: <1360252974-7912-1-git-send-email-rogerq@ti.com>
+ <1360252974-7912-9-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302111150.26785.arnd@arndb.de>
-X-Provags-ID: V02:K0:BBuKSYaFbTZS5UITAJLeCLQWM1lSKIaJe1Ccc7N7k9k
- DxNI8FwnhCoPFpTEI8ms5ftrw2j7hLaoY/jMRoZs7rYXDvl/5O
- D6K7tah6thu3od+wO0Fsk2XN1N4xGAeL5dzr3ax2Rhcn1uUk10
- yXJxwStUN9HBUrEKK7GP6G0+9YDQkNDxdakwvEehYl2iN0jpmW
- fvUccG53E7ETElXbYltcNrZQT+a/R0iaZ6ysFQBiPmKzP5kMNi
- ZnTPJKy9C/Kx0vy88EcqNkHKb9Ug5lng+sS7vshhhWyzHZEfrq
- i7eM8dhTY1IrDagmORKOH+HecxuGhn4PeMS5groL7m6zqhIWVI
- yQ53xBpZhHmebWNfUjnM=
+In-Reply-To: <1360252974-7912-9-git-send-email-rogerq@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 11 Feb 2013 11:52:19.0939 (UTC) FILETIME=[3F18E330:01CE084E]
+X-MC-Unique: 113021111522221301
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 10 February 2013, Samuel Ortiz wrote:
-> > >  
-> > >  /**
-> > > + * mei_bus_client
-> > 
-> > I don't really understand this structure, please explain it better.
-> This is a structure that links the MEI bus client pointer passed to the driver
-> with the actual ME client. It also allows the ME driver to implement
-> technology specific ME protocol through the send/recv hooks.
+On Thu, Feb 07, 2013 at 04:02:48PM +0000, Roger Quadros wrote:
+> Allows the OMAP EHCI controller to be specified via device tree.
+> 
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> Acked-by: Alan Stern <stern@rowland.harvard.edu>
+> ---
+>  .../devicetree/bindings/usb/omap-ehci.txt          |   34 ++++++++++++++++++
+>  drivers/usb/host/ehci-omap.c                       |   36 +++++++++++++++++++-
+>  2 files changed, 69 insertions(+), 1 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/usb/omap-ehci.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/usb/omap-ehci.txt b/Documentation/devicetree/bindings/usb/omap-ehci.txt
+> new file mode 100644
+> index 0000000..b00a654
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/usb/omap-ehci.txt
+> @@ -0,0 +1,34 @@
+> +OMAP HS USB EHCI controller
+> +
+> +This device is usually the child of the omap-usb-host
+> +Documentation/devicetree/bindings/mfd/omap-usb-host.txt
+> +
+> +Required properties:
+> +
+> +- compatible: should be "ti,ehci-omap"
+> +- reg: should contain one register range i.e. start and length
+> +- interrupt-parent: phandle to the interrupt controller
 
-I think part of the confusion is that this is what in other subsystems
-is called a device, not a client. I believe I'm still confused in the
-same way that Greg is.
+Same comment as for ohci-omap3 here; I don't think it's necessary to document
+this as a required property.
 
-You already have a 'struct mei_device', which refers to the PCI device
-that owns the bus, and has clients attached to it. While it may be
-a little confusing to people that already worked with the current
-mei code, I think it would help to rename the existing 'mei_device'
-to 'mei_host' or something else that feels appropriate, and introduce
-the new structure as 'mei_device' derived from 'struct device', again
-matching what most other subsystems do.
+Otherwise, looks good.
 
-Similarly, you can then rename 'mei_bus_driver' to 'mei_driver' to fit
-that logic, since I would consider a 'bus_driver' to be something
-that is responsible for the entire bus, not just for one device.
+Thanks,
+Mark.
 
-	Arnd
