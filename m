@@ -1,61 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758124Ab3BKQtT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 11:49:19 -0500
-Received: from void.printf.net ([89.145.121.20]:53031 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757764Ab3BKQtQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 11:49:16 -0500
-From: Chris Ball <cjb@laptop.org>
-To: Roland Stigge <stigge@antcom.de>
-Cc: plagnioj@jcrosoft.com, grant.likely@secretlab.ca,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] mmc: mmc_spi: Fix return value evaluation of irq_of_parse_and_map()
-References: <1359565508-13362-1-git-send-email-stigge@antcom.de>
-Date: Mon, 11 Feb 2013 11:49:11 -0500
-In-Reply-To: <1359565508-13362-1-git-send-email-stigge@antcom.de> (Roland
-	Stigge's message of "Wed, 30 Jan 2013 18:05:08 +0100")
-Message-ID: <878v6ussmw.fsf@octavius.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
+	id S1758097Ab3BKQu2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 11:50:28 -0500
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:34859 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757887Ab3BKQu1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 11:50:27 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CACRpkdbT2eAZR2Ud5f9h0TFsA5M0RpysE9SqMgoL-hcB8fS+Ew@mail.gmail.com>
+References: <20130118140346.3f9b182aa7daa175b4f136bf@canb.auug.org.au>
+	<1358495866-9329-1-git-send-email-shawn.guo@linaro.org>
+	<CACRpkdZA9O6N7hmtU-6R1Ff6hW5vjD_ar9RLG1dbkd+MWyoKiw@mail.gmail.com>
+	<CAMo8BfJ=6WbAHoCpftRHW1iMtG8robyYUEqqCG2SecixDTgC+g@mail.gmail.com>
+	<CACRpkdbT2eAZR2Ud5f9h0TFsA5M0RpysE9SqMgoL-hcB8fS+Ew@mail.gmail.com>
+Date: Mon, 11 Feb 2013 19:50:25 +0300
+Message-ID: <CAMo8BfKo=N_O=O0y74zy+orAn3nNb-OuS9fC92ebbN7bN_CQPg@mail.gmail.com>
+Subject: Re: [PATCH v2] gpio: devm_gpio_* support should not depend on GPIOLIB
+From: Max Filippov <jcmvbkbc@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Shawn Guo <shawn.guo@linaro.org>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Feb 11, 2013 at 6:13 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Sun, Feb 10, 2013 at 5:46 AM, Max Filippov <jcmvbkbc@gmail.com> wrote:
+>> On Sat, Jan 19, 2013 at 2:33 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+>>> On Fri, Jan 18, 2013 at 8:57 AM, Shawn Guo <shawn.guo@linaro.org> wrote:
+>>>
+>>>> Some architectures (e.g. blackfin) provide gpio API without requiring
+>>>> GPIOLIB support (ARCH_WANT_OPTIONAL_GPIOLIB).  devm_gpio_* functions
+>>>> should also work for these architectures, since they do not really
+>>>> depend on GPIOLIB.
+>>>>
+>>>> Add a new option GPIO_DEVRES (enabled by default) to control the build
+>>>> of devres.c.  It also removes the empty version of devm_gpio_*
+>>>> functions for !GENERIC_GPIO build from linux/gpio.h, and moves the
+>>>> function declarations from asm-generic/gpio.h into linux/gpio.h.
+>>>>
+>>>> Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+>>>
+>>> OK I removed the old version of the patch and pushed this instead.
+>>
+>> Hi,
+>>
+>> this patch causes the following errors for xtensa defconfig build:
+>
+> Max, can you point us to an xtensa cross-compiler so we can
+> figure out where the problem is?
 
-On Wed, Jan 30 2013, Roland Stigge wrote:
-> When irq_of_parse_and_map() returns an error, it does as zero. But in
-> mmc_spi_get_pdata(), the error return case is compared against NO_IRQ. This
-> might work where NO_IRQ is zero (defaults to zero when undefined, as on MIPS)
-> but not where NO_IRQ is sth. different, e.g. on ARM, where it is -1.
->
-> This patch changes to comparison with 0 which is the error return value of
-> irq_of_parse_and_map(). 
->
-> Tested on ARM that mmc_spi is working now.
->
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
->
-> diff --git a/drivers/mmc/host/of_mmc_spi.c b/drivers/mmc/host/of_mmc_spi.c
-> index 1534b58..d720b5e 100644
-> --- a/drivers/mmc/host/of_mmc_spi.c
-> +++ b/drivers/mmc/host/of_mmc_spi.c
-> @@ -146,7 +146,7 @@ struct mmc_spi_platform_data *mmc_spi_get_pdata(struct spi_device *spi)
->  		oms->pdata.get_ro = of_mmc_spi_get_ro;
->  
->  	oms->detect_irq = irq_of_parse_and_map(np, 0);
-> -	if (oms->detect_irq != NO_IRQ) {
-> +	if (oms->detect_irq != 0) {
->  		oms->pdata.init = of_mmc_spi_init;
->  		oms->pdata.exit = of_mmc_spi_exit;
->  	} else {
+Hi Linus,
 
-Thanks, pushed to mmc-next for 3.9.
+I use the following scripts to build cross-compiler for xtensa:
+https://github.com/jcmvbkbc/xtensa-toolchain-build
 
-- Chris.
+You'd need to download binutils/gcc/gdb source tarballs with versions
+specified in config and then run
+
+$ ./prepare.sh fsf && ./fixup-gdb.sh && ./build.sh fsf
+
+
+FWIW I see that the issue is caused by building drivers/gpio/devres.c
+with CONFIG_GPIOLIB=n. Should I just turn GPIO_DEVRES off too?
+
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+Thanks.
+-- Max
