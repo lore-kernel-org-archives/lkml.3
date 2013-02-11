@@ -1,43 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932853Ab3BKWoN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 17:44:13 -0500
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:38493 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932779Ab3BKWoM (ORCPT
+	id S932858Ab3BKWrB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 17:47:01 -0500
+Received: from cmexedge2.ext.emulex.com ([138.239.224.100]:21403 "EHLO
+	CMEXEDGE2.ext.emulex.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932776Ab3BKWq7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 17:44:12 -0500
-From: Toshi Kani <toshi.kani@hp.com>
-To: rjw@sisk.pl, linux-acpi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH] ACPI: Remove the use of CONFIG_ACPI_CONTAINER_MODULE
-Date: Mon, 11 Feb 2013 15:33:20 -0700
-Message-Id: <1360622000-22140-1-git-send-email-toshi.kani@hp.com>
-X-Mailer: git-send-email 1.7.11.7
+	Mon, 11 Feb 2013 17:46:59 -0500
+Message-ID: <511974E0.4040703@emulex.com>
+Date: Mon, 11 Feb 2013 17:46:56 -0500
+From: James Smart <James.Smart@emulex.com>
+Reply-To: <James.Smart@emulex.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <rusty@rustcorp.com.au>, <bfields@fieldses.org>,
+        <skinsbursky@parallels.com>, <ebiederm@xmission.com>,
+        <jmorris@namei.org>, <axboe@kernel.dk>, <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH 47/62] scsi/lpfc: convert to idr_alloc()
+References: <1359854463-2538-1-git-send-email-tj@kernel.org> <1359854463-2538-48-git-send-email-tj@kernel.org>
+In-Reply-To: <1359854463-2538-48-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-config ACPI_CONTAINER has been changed to bool (y/n), and its
-module option is no longer valid.  So, remove the use of
-CONFIG_ACPI_CONTAINER_MODULE.
+Acked-by: James Smart <james.smart@emulex.com>
 
-Signed-off-by: Toshi Kani <toshi.kani@hp.com>
----
- include/linux/acpi.h |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+-- james s
 
-diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index c6ccd9f..bcbdd74 100644
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -363,8 +363,7 @@ extern acpi_status acpi_pci_osc_control_set(acpi_handle handle,
- #if defined(CONFIG_ACPI_HOTPLUG_CPU) &&			\
- 	(defined(CONFIG_ACPI_HOTPLUG_MEMORY) ||		\
- 	 defined(CONFIG_ACPI_HOTPLUG_MEMORY_MODULE)) &&	\
--	(defined(CONFIG_ACPI_CONTAINER) ||		\
--	 defined(CONFIG_ACPI_CONTAINER_MODULE))
-+	defined(CONFIG_ACPI_CONTAINER)
- #define ACPI_HOTPLUG_OST
- #endif
- 
+
+On 2/2/2013 8:20 PM, Tejun Heo wrote:
+> Convert to the much saner new idr interface.
+>
+> Only compile tested.
+>
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: James Smart <james.smart@emulex.com>
+> Cc: linux-scsi@vger.kernel.org
+> ---
+> This patch depends on an earlier idr changes and I think it would be
+> best to route these together through -mm.  Please holler if there's
+> any objection.  Thanks.
+>
+>   drivers/scsi/lpfc/lpfc_init.c | 12 ++++--------
+>   1 file changed, 4 insertions(+), 8 deletions(-)
+>
+> diff --git a/drivers/scsi/lpfc/lpfc_init.c b/drivers/scsi/lpfc/lpfc_init.c
+> index 89ad558..7de4ef14 100644
+> --- a/drivers/scsi/lpfc/lpfc_init.c
+> +++ b/drivers/scsi/lpfc/lpfc_init.c
+> @@ -3165,14 +3165,10 @@ destroy_port(struct lpfc_vport *vport)
+>   int
+>   lpfc_get_instance(void)
+>   {
+> -	int instance = 0;
+> -
+> -	/* Assign an unused number */
+> -	if (!idr_pre_get(&lpfc_hba_index, GFP_KERNEL))
+> -		return -1;
+> -	if (idr_get_new(&lpfc_hba_index, NULL, &instance))
+> -		return -1;
+> -	return instance;
+> +	int ret;
+> +
+> +	ret = idr_alloc(&lpfc_hba_index, NULL, 0, 0, GFP_KERNEL);
+> +	return ret < 0 ? -1 : ret;
+>   }
+>   
+>   /**
+
