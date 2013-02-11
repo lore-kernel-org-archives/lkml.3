@@ -1,166 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751588Ab3BKFh2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 00:37:28 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:48837 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751100Ab3BKFh0 (ORCPT
+	id S1751787Ab3BKFiv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 00:38:51 -0500
+Received: from guitar.tcltek.co.il ([192.115.133.116]:57789 "EHLO
+	sivan.tkos.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184Ab3BKFit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 00:37:26 -0500
-Date: Mon, 11 Feb 2013 16:37:14 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>, Arnd Bergmann <arnd@arndb.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Jiri Slaby <jslaby@suse.cz>, Joe Perches <joe@perches.com>
-Subject: linux-next: manual merge of the char-misc tree with the tty tree
-Message-Id: <20130211163714.289cb3288ed5098c7b493af3@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__11_Feb_2013_16_37_14_+1100_I0eiv6YlZJPsro4y"
+	Mon, 11 Feb 2013 00:38:49 -0500
+X-Greylist: delayed 465 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Feb 2013 00:38:49 EST
+Date: Mon, 11 Feb 2013 07:31:00 +0200
+From: Baruch Siach <baruch@tkos.co.il>
+To: linux-kernel@vger.kernel.org
+Cc: linuxppc-dev@lists.ozlabs.org
+Subject: [BUG] irq_dispose_mapping after irq request failure
+Message-ID: <20130211053100.GB18462@sapphire.tkos.co.il>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__11_Feb_2013_16_37_14_+1100_I0eiv6YlZJPsro4y
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi lkml,
 
-Hi all,
+The drivers/edac/mpc85xx_edac.c driver contains the following (abbreviated)
+code snippet it its .probe:
 
-Today's linux-next merge of the char-misc tree got a conflict in
-drivers/char/pcmcia/synclink_cs.c between commits 2e124b4a390c ("TTY:
-switch tty_flip_buffer_push") and 9fe8074b82ed ("TTY: synclink: Convert + to
-| for bit operations") from the tty tree and commit 3d55399391c8 ("pcmcia: =
-synclink_cs: cleanup checkpatch warnings") from the char-misc tree.
+		res = devm_request_irq(&op->dev, pdata->irq,
+				       mpc85xx_pci_isr, IRQF_DISABLED,
+				       "[EDAC] PCI err", pci);
+		if (res < 0) {
+			irq_dispose_mapping(pdata->irq);
+			goto err2;
+		}
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Now, since the requested irq is already in use, and IRQF_SHARED is not set,
+devm_request_irq errors() out, which is OK. Less OK is the
+irq_dispose_mapping() call, which gives me this:
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+EDAC PCI1: Giving out device to module 'MPC85xx_edac' controller 'mpc85xx_pci_err': DEV 'ffe0a000.pcie' (INTERRUPT)
+genirq: Flags mismatch irq 16. 00000020 ([EDAC] PCI err) vs. 00000020 ([EDAC] PCI err)
+mpc85xx_pci_err_probe: Unable to requiest irq 16 for MPC85xx PCI err
+remove_proc_entry: removing non-empty directory 'irq/16', leaking at least '[EDAC] PCI err'
+------------[ cut here ]------------
+WARNING: at fs/proc/generic.c:842
+NIP: c00cd00c LR: c00cd00c CTR: c000c5e4
+REGS: cf039b80 TRAP: 0700   Not tainted  (3.8.0-rc7-00002-g37ddebf)
+MSR: 00029000 <CE,EE,ME>  CR: 42042422  XER: 00000000
+TASK = cf034000[1] 'swapper' THREAD: cf038000
+GPR00: c00cd00c cf039c30 cf034000 0000005b 0000005c 0000005c c04b7dde 435d2050 
+GPR08: 43492065 c04a9a44 00000000 cf039bf0 22042424 00000000 c00025d0 00000000 
+GPR16: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 c042fe78 
+GPR24: 00000000 00000000 c04c3f90 cf05294c 00100100 00200200 cf039c78 cf052900 
+NIP [c00cd00c] remove_proc_entry+0x190/0x1bc
+LR [c00cd00c] remove_proc_entry+0x190/0x1bc
+Call Trace:
+[cf039c30] [c00cd00c] remove_proc_entry+0x190/0x1bc (unreliable)
+[cf039c70] [c0058c64] unregister_irq_proc+0x6c/0x74
+[cf039c90] [c0054530] free_desc+0x34/0x68
+[cf039cb0] [c00545f0] irq_free_descs+0x44/0x88
+[cf039cd0] [c00585c8] irq_dispose_mapping+0x68/0x70
+[cf039ce0] [c0222650] mpc85xx_pci_err_probe+0x2a8/0x308
+[cf039d20] [c0014f8c] fsl_pci_probe+0x74/0x80
+[cf039d30] [c01a9c48] platform_drv_probe+0x20/0x30
+[cf039d40] [c01a88c4] driver_probe_device+0xcc/0x1f4
+[cf039d60] [c01a7288] bus_for_each_drv+0x60/0x9c
+[cf039d90] [c01a85ac] device_attach+0x78/0x90
+[cf039db0] [c01a7430] bus_probe_device+0x34/0x9c
+[cf039dd0] [c01a55c4] device_add+0x410/0x580
+[cf039e10] [c022eef4] of_device_add+0x40/0x50
+[cf039e20] [c022f550] of_platform_device_create_pdata+0x6c/0x8c
+[cf039e40] [c022f658] of_platform_bus_create+0xe8/0x178
+[cf039e90] [c022f7a0] of_platform_bus_probe+0xac/0xdc
+[cf039eb0] [c0415488] mpc85xx_common_publish_devices+0x20/0x30
+[cf039ec0] [c0415578] __machine_initcall_p1020_rdb_mpc85xx_common_publish_devices+0x2c/0x3c
+[cf039ed0] [c040e83c] do_one_initcall+0xdc/0x1b4
+[cf039f00] [c040ea24] kernel_init_freeable+0x110/0x1a8
+[cf039f30] [c00025e8] kernel_init+0x18/0xf8
+[cf039f40] [c000b868] ret_from_kernel_thread+0x64/0x6c
+Instruction dump:
+2f870000 41be0030 80bf002c 3c80c033 3c60c03e 38846be0 38840260 38a50055 
+38df0055 38e70055 38631770 48260331 <0fe00000> 7fe3fb78 4bfffb41 48000018 
+---[ end trace 9af370ce0e147530 ]---
 
-diff --cc drivers/char/pcmcia/synclink_cs.c
-index d0c9852,29f6bec..0000000
---- a/drivers/char/pcmcia/synclink_cs.c
-+++ b/drivers/char/pcmcia/synclink_cs.c
-@@@ -765,8 -771,11 +771,8 @@@ static void bh_handler(struct work_stru
-  	struct tty_struct *tty;
-  	int action;
- =20
- -	if (!info)
- -		return;
- -
-  	if (debug_level >=3D DEBUG_LEVEL_BH)
-- 		printk( "%s(%d):bh_handler(%s) entry\n",
-+ 		printk("%s(%d):bh_handler(%s) entry\n",
-  			__FILE__,__LINE__,info->device_name);
- =20
-  	info->bh_running =3D true;
-@@@ -889,8 -898,16 +896,8 @@@ static void rx_ready_async(MGSLPC_INFO=20
-  	unsigned char data, status, flag;
-  	int fifo_count;
-  	int work =3D 0;
--  	struct mgsl_icount *icount =3D &info->icount;
-+ 	struct mgsl_icount *icount =3D &info->icount;
- =20
- -	if (!tty) {
- -		/* tty is not available anymore */
- -		issue_command(info, CHA, CMD_RXRESET);
- -		if (debug_level >=3D DEBUG_LEVEL_ISR)
- -			printk("%s(%d):rx_ready_async(tty=3DNULL)\n", __FILE__, __LINE__);
- -		return;
- -	}
- -
-  	if (tcd) {
-  		/* early termination, get FIFO count from RBCL register */
-  		fifo_count =3D (unsigned char)(read_reg(info, CHA+RBCL) & 0x1f);
-@@@ -1342,8 -1359,8 +1349,8 @@@ static void shutdown(MGSLPC_INFO * info
-  	/* TODO:disable interrupts instead of reset to preserve signal states */
-  	reset_device(info);
- =20
--  	if (!tty || tty->termios.c_cflag & HUPCL) {
-+ 	if (!tty || tty->termios.c_cflag & HUPCL) {
- -		info->serial_signals &=3D ~(SerialSignal_DTR + SerialSignal_RTS);
- +		info->serial_signals &=3D ~(SerialSignal_RTS | SerialSignal_DTR);
-  		set_signals(info);
-  	}
- =20
-@@@ -1405,12 -1422,12 +1412,12 @@@ static void mgslpc_change_params(MGSLPC
- =20
-  	cflag =3D tty->termios.c_cflag;
- =20
- -	/* if B0 rate (hangup) specified then negate DTR and RTS */
- -	/* otherwise assert DTR and RTS */
- +	/* if B0 rate (hangup) specified then negate RTS and DTR */
- +	/* otherwise assert RTS and DTR */
--  	if (cflag & CBAUD)
-+ 	if (cflag & CBAUD)
- -		info->serial_signals |=3D SerialSignal_RTS + SerialSignal_DTR;
- +		info->serial_signals |=3D SerialSignal_RTS | SerialSignal_DTR;
-  	else
- -		info->serial_signals &=3D ~(SerialSignal_RTS + SerialSignal_DTR);
- +		info->serial_signals &=3D ~(SerialSignal_RTS | SerialSignal_DTR);
- =20
-  	/* byte size and parity */
- =20
-@@@ -2301,10 -2318,10 +2308,10 @@@ static void mgslpc_set_termios(struct t
-  	/* Handle transition to B0 status */
-  	if (old_termios->c_cflag & CBAUD &&
-  	    !(tty->termios.c_cflag & CBAUD)) {
- -		info->serial_signals &=3D ~(SerialSignal_RTS + SerialSignal_DTR);
- +		info->serial_signals &=3D ~(SerialSignal_RTS | SerialSignal_DTR);
-- 		spin_lock_irqsave(&info->lock,flags);
-- 	 	set_signals(info);
-- 		spin_unlock_irqrestore(&info->lock,flags);
-+ 		spin_lock_irqsave(&info->lock, flags);
-+ 		set_signals(info);
-+ 		spin_unlock_irqrestore(&info->lock, flags);
-  	}
- =20
-  	/* Handle transition away from B0 status */
-@@@ -2462,13 -2479,13 +2469,13 @@@ static void dtr_rts(struct tty_port *po
-  	MGSLPC_INFO *info =3D container_of(port, MGSLPC_INFO, port);
-  	unsigned long flags;
- =20
-- 	spin_lock_irqsave(&info->lock,flags);
-+ 	spin_lock_irqsave(&info->lock, flags);
-  	if (onoff)
- -		info->serial_signals |=3D SerialSignal_RTS + SerialSignal_DTR;
- +		info->serial_signals |=3D SerialSignal_RTS | SerialSignal_DTR;
-  	else
- -		info->serial_signals &=3D ~SerialSignal_RTS + SerialSignal_DTR;
- +		info->serial_signals &=3D ~(SerialSignal_RTS | SerialSignal_DTR);
-  	set_signals(info);
-- 	spin_unlock_irqrestore(&info->lock,flags);
-+ 	spin_unlock_irqrestore(&info->lock, flags);
-  }
- =20
- =20
+So, is irq_dispose_mapping() the right thing to do when irq request fails?
 
---Signature=_Mon__11_Feb_2013_16_37_14_+1100_I0eiv6YlZJPsro4y
-Content-Type: application/pgp-signature
+A simple grep shows that irq_dispose_mapping() calls are mostly limited to
+powerpc code. Is there a reason for that?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+baruch
 
-iQIcBAEBCAAGBQJRGIOKAAoJEECxmPOUX5FEzFYP+gMvZm+oCnZlARsk+TX3WGmI
-/OPXXFb6zZuHsXzbO1R5R9qYXBwsudovlPMn5VElsAeowzyA6/BEI0d3GRiEeAQH
-WbbwXjYCsM/YILVu2KoDG8LY+48bTuvkh5ilG2HCR1SU23e0/U6b61qvQtc0XXsK
-dAxEK9PVIEf+y3fGfOXxoI+Tfm24yqMOeZxeKnjQTBtMVZ4OHy6ruUKFGcG0Eq9o
-Y3hKmRNHea9gYxgrAJsGWhrEd23gbNYU80wOd1GqKfV5wI+acrXUYfpA37JTzQoO
-zu930EBFe2sA03Vy1/04RVA3GqCk7pQ+jI0+J1XyTo5YoWM8G3U8KcqCo4HhY3y9
-lCDN+EGY/y/BJhV7sjYOA5hj0GA1xmoQ1zSECZS6i1Pn1bZRJfpCmy0rGSe3D2aC
-RAuW4o3YAbQAUYeytTG6mOfRw6M3RQlqQiznphn1pCjTht1w8ztgeQDKG6SjDCto
-7LXkjzXMhI5bi6rnayqEhu798qESErt4EPJFfq0eVxy4d7sGW4ZfgtfnrsplV4a+
-tPCBSG9JdowCywl/rszZjIJEHy8xPqR2+1lj/UeeuleThsVIJIuLNCLg6+WgZJjM
-f9vfNh8g5luUqBuqgd0xInfq8YeMfWq3WvY0ZAU5tqZ64bmewQP+Zd3Lv6EH86cU
-BY7BLta5/X3ciRrsCMOz
-=iCFb
------END PGP SIGNATURE-----
-
---Signature=_Mon__11_Feb_2013_16_37_14_+1100_I0eiv6YlZJPsro4y--
+-- 
+     http://baruch.siach.name/blog/                  ~. .~   Tk Open Systems
+=}------------------------------------------------ooO--U--Ooo------------{=
+   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
