@@ -1,44 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758883Ab3BKSiy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 13:38:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63087 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758777Ab3BKSiw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 13:38:52 -0500
-Date: Mon, 11 Feb 2013 13:38:48 -0500
-From: Aristeu Rozanski <aris@redhat.com>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Serge Hallyn <serge.hallyn@canonical.com>
-Subject: Re: [PATCH v6 9/9] devcg: propagate local changes down the hierarchy
-Message-ID: <20130211183847.GG30962@redhat.com>
-References: <20130130171101.060853036@napanee.usersys.redhat.com>
- <20130130171102.390708521@napanee.usersys.redhat.com>
- <20130131043839.GA14726@mail.hallyn.com>
- <20130205183646.GT17632@redhat.com>
- <20130209040402.GA31942@mail.hallyn.com>
- <20130211143241.GF30962@redhat.com>
- <20130211174259.GA18179@mail.hallyn.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130211174259.GA18179@mail.hallyn.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758915Ab3BKSm3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 13:42:29 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:40896 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758777Ab3BKSm1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 13:42:27 -0500
+Date: Mon, 11 Feb 2013 13:42:23 -0500 (EST)
+Message-Id: <20130211.134223.2241630910894535013.davem@davemloft.net>
+To: lists@nerdbynature.de
+Cc: grant.likely@secretlab.ca, akpm@linux-foundation.org,
+        linux-doc@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sun.com documentation fixes
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.DEB.2.01.1302110332340.13050@trent.utfs.org>
+References: <alpine.DEB.2.01.1302110332340.13050@trent.utfs.org>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 11, 2013 at 05:42:59PM +0000, Serge E. Hallyn wrote:
-> Note I said only forbid behavior changes - not exception changes - to
-> cgroups with children.
+From: Christian Kujau <lists@nerdbynature.de>
+Date: Mon, 11 Feb 2013 03:52:49 -0800 (PST)
 
-that won't do much. behavior change is the simplest: if you change a
-behavior, you wipe the local exceptions unless the special (deny, deny)
--> (allow, deny) case.
-exception propagation is harder
-getting rid of local settings would buy more simplicity
+> 
+> After I came across a help text for SUNGEM mentioning a broken sun.com 
+> URL, I felt like fixing those up, as they are now pointing to oracle.com
+> URLs.
+> 
+> Signed-off-by: Christian Kujau <lists@nerdbynature.de>
 
--- 
-Aristeu
-
+Acked-by: David S. Miller <davem@davemloft.net>
