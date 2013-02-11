@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759901Ab3BKUrj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 15:47:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46256 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758813Ab3BKUrh (ORCPT
+	id S1759967Ab3BKUw7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 15:52:59 -0500
+Received: from mail-we0-f176.google.com ([74.125.82.176]:45188 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759659Ab3BKUw6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 15:47:37 -0500
-Date: Mon, 11 Feb 2013 14:47:29 -0600
-From: Serge Hallyn <serge.hallyn@ubuntu.com>
-To: Aristeu Rozanski <aris@redhat.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>
-Subject: Re: [PATCH v6 9/9] devcg: propagate local changes down the hierarchy
-Message-ID: <20130211204729.GA12224@sergelap>
-References: <20130130171101.060853036@napanee.usersys.redhat.com>
- <20130130171102.390708521@napanee.usersys.redhat.com>
- <20130131043839.GA14726@mail.hallyn.com>
- <20130205183646.GT17632@redhat.com>
- <20130209040402.GA31942@mail.hallyn.com>
- <20130211143241.GF30962@redhat.com>
- <20130211174259.GA18179@mail.hallyn.com>
- <20130211183847.GG30962@redhat.com>
- <20130211185239.GA18779@mail.hallyn.com>
- <20130211190251.GH30962@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130211190251.GH30962@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 11 Feb 2013 15:52:58 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [BUG] irq_dispose_mapping after irq request failure
+To: Michael Ellerman <michael@ellerman.id.au>,
+        Baruch Siach <baruch@tkos.co.il>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+In-Reply-To: <20130211061949.GA5561@concordia>
+References: <20130211053100.GB18462@sapphire.tkos.co.il> <20130211061949.GA5561@concordia>
+Date: Mon, 11 Feb 2013 20:52:55 +0000
+Message-Id: <20130211205255.72B513E3530@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Aristeu Rozanski (aris@redhat.com):
-> On Mon, Feb 11, 2013 at 06:52:39PM +0000, Serge E. Hallyn wrote:
-> > > getting rid of local settings would buy more simplicity
+On Mon, 11 Feb 2013 17:19:49 +1100, Michael Ellerman <michael@ellerman.id.au> wrote:
+> On Mon, Feb 11, 2013 at 07:31:00AM +0200, Baruch Siach wrote:
+> > Hi lkml,
+> 
+> Hi Baruch,
+> 
+> > The drivers/edac/mpc85xx_edac.c driver contains the following (abbreviated)
+> > code snippet it its .probe:
+> 
+> You dropped an important detail which is the preceeding line:
+> 
+> 	pdata->irq = irq_of_parse_and_map(op->dev.of_node, 0);
+> 
+> > 		res = devm_request_irq(&op->dev, pdata->irq,
+> > 				       mpc85xx_pci_isr, IRQF_DISABLED,
+> > 				       "[EDAC] PCI err", pci);
+> > 		if (res < 0) {
+> > 			irq_dispose_mapping(pdata->irq);
+> > 			goto err2;
+> > 		}
 > > 
-> > (Not sure which you mean here by 'getting rid of local settings')
+> > Now, since the requested irq is already in use, and IRQF_SHARED is not set,
+> > devm_request_irq errors() out, which is OK. Less OK is the
+> > irq_dispose_mapping() call, which gives me this:
+> > 
+> > EDAC PCI1: Giving out device to module 'MPC85xx_edac' controller 'mpc85xx_pci_err': DEV 'ffe0a000.pcie' (INTERRUPT)
+> > genirq: Flags mismatch irq 16. 00000020 ([EDAC] PCI err) vs. 00000020 ([EDAC] PCI err)
 > 
-> no local.{behavior,exceptions}, which still would allow behavior
-> propagation, but simply wouldn't keep local behavior or exceptions.
-> a change in behavior on parent would simply reset the child to parent's
-
-Why would that be necessary?  If I add permission to the parent, I just
-don't propagate it.  If I remove permission from the parent, I make sure
-all children don't have that permission, but keep everything else.
-The child's permission is never allowed to exceed its parent's.
-
-We don't need to reset the child's to the parent's.
-
-> state. exception propagation would mean inserting/removing the new
-> exception and making sure the others are still valid.
+> The hint here is to notice which other irq you're clashing with          ^^
+> ie. yourself. Which is odd, that is the root of the problem.
 > 
-> -- 
-> Aristeu
+> The badness you're getting from irq_dispose_mapping() is caused because you're
+> disposing of that mapping which is currently still in use, by the same interrupt.
 > 
+> That is caused by a "feature" in the irq mapping code, where if you ask to map an
+> already mapped hwirq, it will give you back the same virq. So in your case when
+> you called irq_of_parse_and_map() it noticed that someone had already mapped
+> that hwirq, and gave you back an existing (in use) virq.
+
+Really the irq mappings should be using reference counting. The existing
+code is naive on this count and just releases the irq on the first call
+to irq_dispose_mapping().  I've not gotten around to fixing that. Anyone
+want to take that task on?
+
+g.
+
