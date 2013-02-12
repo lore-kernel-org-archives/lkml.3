@@ -1,76 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978Ab3BLV23 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 16:28:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54486 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751341Ab3BLV22 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 16:28:28 -0500
-Date: Tue, 12 Feb 2013 13:28:26 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Imre Deak <imre.deak@intel.com>
-Cc: linux-kernel@vger.kernel.org, Maxim Levitsky <maximlevitsky@gmail.com>,
-        Tejun Heo <tj@kernel.org>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        linaro-mm-sig@lists.linaro.org
-Subject: Re: [PATCH v2] lib/scatterlist: add simple page iterator
-Message-Id: <20130212132826.a35d6f1d.akpm@linux-foundation.org>
-In-Reply-To: <1360688840.5578.75.camel@localhost>
-References: <1353590706-1366-5-git-send-email-imre.deak@intel.com>
-	<1360608604-3520-1-git-send-email-imre.deak@intel.com>
-	<20130211125422.978c1e99.akpm@linux-foundation.org>
-	<1360688840.5578.75.camel@localhost>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753905Ab3BLV3j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 16:29:39 -0500
+Received: from mga11.intel.com ([192.55.52.93]:14245 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751786Ab3BLV3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 16:29:38 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,652,1355126400"; 
+   d="scan'208";a="286358715"
+Date: Tue, 12 Feb 2013 22:29:35 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: "Winkler, Tomas" <tomas.winkler@intel.com>
+Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [char-misc-next 01/12 v3] mei: Rename mei_device to mei_host
+Message-ID: <20130212212935.GJ20996@sortiz-mobl>
+References: <1360694222-27632-1-git-send-email-sameo@linux.intel.com>
+ <1360694222-27632-2-git-send-email-sameo@linux.intel.com>
+ <5B8DA87D05A7694D9FA63FD143655C1B01ECF4E9@HASMSX106.ger.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5B8DA87D05A7694D9FA63FD143655C1B01ECF4E9@HASMSX106.ger.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Feb 2013 19:07:20 +0200
-Imre Deak <imre.deak@intel.com> wrote:
+Hi Tomas,
 
-> > So, exactly how big is this thing, and how do we know it's better this
-> > way than if we were to uninline some/all of the helpers?
+On Tue, Feb 12, 2013 at 09:17:21PM +0000, Winkler, Tomas wrote:
 > 
-> I admit I only hoped compiler optimization would keep the inlined parts
-> at a minimum, but now I actually checked (on Intel CPU). I applied the
-> patchset from [1] and uninlined sg_page_iter_start as it's not
-> significant for speed:
 > 
->  size drivers/gpu/drm/i915/i915.ko
->  514855	  15996	    272	 531123	  81ab3	drivers/gpu/drm/i915/i915.ko
+> > In preparation for the MEI bus code merge, we rename the mei_device
+> > structure to mei_host.
+> > struct mei_device will be used for devices on the MEI bus in order to follow
+> > exisiting driver model implementations practices.
+> > 
+> I'd like to NACK this name, we use  'host' for the host part of the MEI protocol, 
 > 
-> Then uninlined all helpers:
->  size drivers/gpu/drm/i915/i915.ko
->  513447	  15996	    272	 529715	  81533	drivers/gpu/drm/i915/i915.ko
-> 
-> Since there are 8 invocations of the macro, the overhead for a single
-> invocation is about (531123 - 529715) / 8 = 191 bytes.
-> 
-> For speed, I benchmarked a simple loop which was basically:
-> 
-> page = vmalloc(sizeof(*page) * 1000, GFP_KERNEL);
-> for_each_sg_page(sglist, iter, 0)
-> 	*page++ = iter.page;
-> 
-> where each entry on the sglist contained 16 consecutive pages. This
-> takes ~10% more time for the uninlined version to run. This is a rather
-> artificial test and I couldn't come up with something more real-life
-> using only the i915 driver's ioctl interface that would show a
-> significant change in speed.
+> You can use the mei_controller, mei_adapter, and  I'm not sure what else can come into mind.
+mei_controller sounds good to me.
 
-10% for the function call overhead sounds reasonable.  Of course, that
-test is biased in one direction.  A test which was biased in the other
-direction would exercise all eight of the macro's callsites and would
-investigate the performance impact of a 1kbyte increase in L1 cache
-utilisation.
 
-And I must say, it would need to be a pretty damn carefully crafted
-test case to be able to trigger enough cache thrashing to cause a 10%
-hit.
+> I prefer not to break the HW spec language.  I prefer to leave it mei_device as after all it's a device on pci bus it's not a pure host controller.
+> And call what is on the mei  bus mei_cl_dev or mei_app_dev . From the HW perspective it actually 
+> talks to a client/application residing inside MEI device, it is not always a physical device like NFC.
+> 
+The bus is not physical neither. It's really items that we add to this bus,
+watchdog could be the next candidate for example.
 
-> So at least for now I'm ok with just uninlining all the helpers.
+> Please let's find something that makes both hw and Linux happy
+I still believe it makes sense to use mei_device for what we add to the MEI
+bus. I'd be fine with mei_bus_device as well, but that would somehow look
+a bit awkward. Greg, Arnd, any preference ?
 
-OK.
+>From the MEI core code readers perspective, this will mostly be transparent
+as only the technology specific parts of the MEI driver (e.g. nfc.c) will use
+that mei_device structure.
+
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
