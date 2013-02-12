@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758510Ab3BLUlr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:41:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53941 "EHLO
+	id S1759082Ab3BLUsW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 15:48:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53965 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757458Ab3BLUlp (ORCPT
+	with ESMTP id S1758507Ab3BLUlr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:41:45 -0500
+	Tue, 12 Feb 2013 15:41:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Tilman Schmidt <tilman@imap.cc>,
+        Ben Greear <greearb@candelatech.com>,
+        Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 15/36] isdn/gigaset: fix zero size border case in debug dump
-Date: Tue, 12 Feb 2013 12:41:09 -0800
-Message-Id: <20130212203859.111143418@linuxfoundation.org>
+Subject: [ 18/36] net: loopback: fix a dst refcounting issue
+Date: Tue, 12 Feb 2013 12:41:12 -0800
+Message-Id: <20130212203859.457340717@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203857.305594226@linuxfoundation.org>
 References: <20130212203857.305594226@linuxfoundation.org>
@@ -29,31 +29,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Tilman Schmidt <tilman@imap.cc>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit d721a1752ba544df8d7d36959038b26bc92bdf80 ]
+[ Upstream commit 794ed393b707f01858f5ebe2ae5eabaf89d00022 ]
 
-If subtracting 12 from l leaves zero we'd do a zero size allocation,
-leading to an oops later when we try to set the NUL terminator.
+Ben Greear reported crashes in ip_rcv_finish() on a stress
+test involving many macvlans.
 
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Tilman Schmidt <tilman@imap.cc>
+We tracked the bug to a dst use after free. ip_rcv_finish()
+was calling dst->input() and got garbage for dst->input value.
+
+It appears the bug is in loopback driver, lacking
+a skb_dst_force() before calling netif_rx().
+
+As a result, a non refcounted dst, normally protected by a
+RCU read_lock section, was escaping this section and could
+be freed before the packet being processed.
+
+  [<ffffffff813a3c4d>] loopback_xmit+0x64/0x83
+  [<ffffffff81477364>] dev_hard_start_xmit+0x26c/0x35e
+  [<ffffffff8147771a>] dev_queue_xmit+0x2c4/0x37c
+  [<ffffffff81477456>] ? dev_hard_start_xmit+0x35e/0x35e
+  [<ffffffff8148cfa6>] ? eth_header+0x28/0xb6
+  [<ffffffff81480f09>] neigh_resolve_output+0x176/0x1a7
+  [<ffffffff814ad835>] ip_finish_output2+0x297/0x30d
+  [<ffffffff814ad6d5>] ? ip_finish_output2+0x137/0x30d
+  [<ffffffff814ad90e>] ip_finish_output+0x63/0x68
+  [<ffffffff814ae412>] ip_output+0x61/0x67
+  [<ffffffff814ab904>] dst_output+0x17/0x1b
+  [<ffffffff814adb6d>] ip_local_out+0x1e/0x23
+  [<ffffffff814ae1c4>] ip_queue_xmit+0x315/0x353
+  [<ffffffff814adeaf>] ? ip_send_unicast_reply+0x2cc/0x2cc
+  [<ffffffff814c018f>] tcp_transmit_skb+0x7ca/0x80b
+  [<ffffffff814c3571>] tcp_connect+0x53c/0x587
+  [<ffffffff810c2f0c>] ? getnstimeofday+0x44/0x7d
+  [<ffffffff810c2f56>] ? ktime_get_real+0x11/0x3e
+  [<ffffffff814c6f9b>] tcp_v4_connect+0x3c2/0x431
+  [<ffffffff814d6913>] __inet_stream_connect+0x84/0x287
+  [<ffffffff814d6b38>] ? inet_stream_connect+0x22/0x49
+  [<ffffffff8108d695>] ? _local_bh_enable_ip+0x84/0x9f
+  [<ffffffff8108d6c8>] ? local_bh_enable+0xd/0x11
+  [<ffffffff8146763c>] ? lock_sock_nested+0x6e/0x79
+  [<ffffffff814d6b38>] ? inet_stream_connect+0x22/0x49
+  [<ffffffff814d6b49>] inet_stream_connect+0x33/0x49
+  [<ffffffff814632c6>] sys_connect+0x75/0x98
+
+This bug was introduced in linux-2.6.35, in commit
+7fee226ad2397b (net: add a noref bit on skb dst)
+
+skb_dst_force() is enforced in dev_queue_xmit() for devices having a
+qdisc.
+
+Reported-by: Ben Greear <greearb@candelatech.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Tested-by: Ben Greear <greearb@candelatech.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/isdn/gigaset/capi.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/loopback.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/isdn/gigaset/capi.c
-+++ b/drivers/isdn/gigaset/capi.c
-@@ -264,6 +264,8 @@ static inline void dump_rawmsg(enum debu
- 		CAPIMSG_APPID(data), CAPIMSG_MSGID(data), l,
- 		CAPIMSG_CONTROL(data));
- 	l -= 12;
-+	if (l <= 0)
-+		return;
- 	dbgline = kmalloc(3 * l, GFP_ATOMIC);
- 	if (!dbgline)
- 		return;
+--- a/drivers/net/loopback.c
++++ b/drivers/net/loopback.c
+@@ -77,6 +77,11 @@ static netdev_tx_t loopback_xmit(struct
+ 
+ 	skb_orphan(skb);
+ 
++	/* Before queueing this packet to netif_rx(),
++	 * make sure dst is refcounted.
++	 */
++	skb_dst_force(skb);
++
+ 	skb->protocol = eth_type_trans(skb, dev);
+ 
+ 	/* it's OK to use per_cpu_ptr() because BHs are off */
 
 
