@@ -1,81 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752036Ab3BLVWt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 16:22:49 -0500
-Received: from fieldses.org ([174.143.236.118]:55714 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751077Ab3BLVWs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 16:22:48 -0500
-Date: Tue, 12 Feb 2013 16:22:46 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Tim Gardner <tim.gardner@canonical.com>
-Cc: linux-kernel@vger.kernel.org, Trond Myklebust <Trond.Myklebust@netapp.com>,
-        linux-nfs@vger.kernel.org
-Subject: Re: [PATCH linux-next] lockd: nlmsvc_mark_resources(): avoid stack
- overflow
-Message-ID: <20130212212246.GH10267@fieldses.org>
-References: <1360698538-63040-1-git-send-email-tim.gardner@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360698538-63040-1-git-send-email-tim.gardner@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752764Ab3BLVXm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 16:23:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54479 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751287Ab3BLVXk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 16:23:40 -0500
+Date: Tue, 12 Feb 2013 13:23:38 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 1/6] idr: fix top layer handling
+Message-Id: <20130212132338.585b5dd5.akpm@linux-foundation.org>
+In-Reply-To: <20130212171049.GA7348@htj.dyndns.org>
+References: <20130208210050.GA26660@mtj.dyndns.org>
+	<20130211153955.0b6e1f1e.akpm@linux-foundation.org>
+	<20130212171049.GA7348@htj.dyndns.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 12, 2013 at 12:48:58PM -0700, Tim Gardner wrote:
-> Dynamically allocate the NLM host structure in order to avoid stack overflow.
-> nlmsvc_mark_resources() is several call levels deep in a stack
-> that has a number of large variables. 512 bytes seems like a lot
-> on the stack at this point.
-> 
-> smatch analysis:
-> 
-> fs/lockd/svcsubs.c:366 nlmsvc_mark_resources() warn: 'hint' puts
->  512 bytes on stack
-> 
-> Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
-> Cc: "J. Bruce Fields" <bfields@fieldses.org>
-> Cc: linux-nfs@vger.kernel.org
-> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
-> ---
->  fs/lockd/svcsubs.c |   12 ++++++++----
->  1 file changed, 8 insertions(+), 4 deletions(-)
-> 
-> diff --git a/fs/lockd/svcsubs.c b/fs/lockd/svcsubs.c
-> index b904f41..f3abb7f 100644
-> --- a/fs/lockd/svcsubs.c
-> +++ b/fs/lockd/svcsubs.c
-> @@ -363,11 +363,15 @@ nlmsvc_is_client(void *data, struct nlm_host *dummy)
->  void
->  nlmsvc_mark_resources(struct net *net)
->  {
-> -	struct nlm_host hint;
-> +	struct nlm_host *hint = kzalloc(sizeof(*hint), GFP_KERNEL);
->  
-> -	dprintk("lockd: nlmsvc_mark_resources for net %p\n", net);
-> -	hint.net = net;
-> -	nlm_traverse_files(&hint, nlmsvc_mark_host, NULL);
-> +	if (hint) {
-> +		dprintk("lockd: nlmsvc_mark_resources for net %p\n", net);
-> +		hint->net = net;
-> +		nlm_traverse_files(hint, nlmsvc_mark_host, NULL);
-> +	}
+On Tue, 12 Feb 2013 09:10:49 -0800
+Tejun Heo <tj@kernel.org> wrote:
 
-Silently neglecting to do this looks like a bad idea.
-
-It's strange that we're passing in an nlm_host when all we actually use
-is the struct net*.  Why not just change this to pass in the net
-instead?
-
---b.
-
-> +
-> +	kfree(hint);
->  }
->  
->  /*
-> -- 
-> 1.7.9.5
+> Hey, Andrew.
 > 
+> On Mon, Feb 11, 2013 at 03:39:55PM -0800, Andrew Morton wrote:
+> > This doesn't apply happily to 3.7, so Greg will be needing a redone
+> > version when the time arrives.
+> > 
+> > But does it really need backporting?  Is anyone likely to hit this in
+> > practice?
+> 
+> For most cases, probably not.  IDR_BITS being 5 and 6 on 32 and 64bit
+> respectively, the only misbehaving bit is bit 30, so unless ID goes
+> over 1G, which should be close to non-existent if the IDs are being
+> allocated from zero, it shouldn't be a problem; however, we do have
+> users where IDR is used to allocate cyclic IDs.  They maintain and
+> progress the last allocated ID so that IDs don't get recycled without
+> wrapping around.  I have no idea whether any of them would be
+> allocating IDs fast enough to go over 1G limit in any reasonable
+> amount of time or whether there are such ID allocations which can be
+> exploited from userland without root priviliedges, in which case it
+> would probably directly lead to oops.
+> 
+> So, to sum up, at least I can't rule out the issue happening or being
+> exploited in the wild with older kernels.  It isn't too likely to
+> happen naturally but if there's a userland exploitable cyclic
+> alloction, going over 1G wouldn't be too difficult.
+
+OK.  The changelog has the cc:stable tag so I'll let you and Greg duke
+it out ;)
+
+> > Also, I assume you have some sort of IDR test harness over there.  Is
+> > it something we can get into the tree in some fashion to help with
+> > ongoing maintenance?
+> 
+> Right now, it's just a messy test module with ad-hoc loops and manual
+> alloc/frees with a lot of printks sprinkled everywhere, so I'm afraid
+> it wouldn't be suitable for any form of automated test.  It sure would
+> be great to have a testing harness for this tho.
+
+I slapped together a userspace test harness for lib/radix-tree.c many
+years ago.  It's at http://ozlabs.org/~akpm/rtth.tar.gz.  Whenever
+anyone does any significant radix-tree work, they download that, update
+it to test their new stuff then send me an rtth diff.
+
+I suppose we could move that code into the kernel tree and use/maintain
+it there.  That would create a framework and precedent for new things
+like the idr test harness.  iirc the test harness uses the kernel's
+radix-tree.c and radix-tree.h unaltered - it provides a pile of hacky
+header files sufficient to make the kernel code compilable into the
+userspace test app.
+
+
