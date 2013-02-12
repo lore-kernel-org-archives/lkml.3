@@ -1,64 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932937Ab3BLBmy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 20:42:54 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:33962 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932808Ab3BLBmx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 20:42:53 -0500
-Date: Mon, 11 Feb 2013 17:42:54 -0800
-From: Olof Johansson <olof@lixom.net>
-To: David Brown <davidb@codeaurora.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Bryan Huntsman <bryanh@codeaurora.org>,
-        Daniel Walker <c_dwalke@quicinc.com>, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH 03/19] ARM: msm: proc_comm_boot_wait should not be __init
-Message-ID: <20130212014254.GA6952@quad.lixom.net>
-References: <1359123276-15833-1-git-send-email-arnd@arndb.de>
- <1359123276-15833-4-git-send-email-arnd@arndb.de>
- <8yak3r15ds0.fsf@huya.qualcomm.com>
+	id S1751951Ab3BLCAn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 21:00:43 -0500
+Received: from ozlabs.org ([203.10.76.45]:47716 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751004Ab3BLCAm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 21:00:42 -0500
+Date: Tue, 12 Feb 2013 13:00:39 +1100
+From: Michael Ellerman <michael@ellerman.id.au>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Jiri Slaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: WARNING: at drivers/tty/tty_buffer.c:476  (tty is NULL)
+Message-ID: <20130212020039.GA8979@concordia>
+References: <20130102153744.GC25940@redhat.com>
+ <20130118205358.GA6854@redhat.com>
+ <20130118210728.GA16742@kroah.com>
+ <50FB0957.2000400@suse.cz>
+ <1359570837.3325.30.camel@thor.lan>
+ <20130211024412.GA7623@concordia>
+ <1360593750.25941.13.camel@thor.lan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <8yak3r15ds0.fsf@huya.qualcomm.com>
+In-Reply-To: <1360593750.25941.13.camel@thor.lan>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 10:16:31AM -0800, David Brown wrote:
-> Arnd Bergmann <arnd@arndb.de> writes:
+On Mon, Feb 11, 2013 at 09:42:30AM -0500, Peter Hurley wrote:
+> Hi Michael,
 > 
-> > msm_smd_probe is a driver probe function and may get
-> > called after the __init time, so it must not call
-> > any __init function, as the link-time warning reports.
-> > Take away the __init annotation on proc_comm_boot_wait
-> > to fix this.
-> >
-> > Without this patch, building msm_defconfig results in:
-> >
-> > WARNING: vmlinux.o(.text+0xb048): Section mismatch in reference from the function msm_smd_probe() to the function .init.text:proc_comm_boot_wait()
-> > The function msm_smd_probe() references
-> > the function __init proc_comm_boot_wait().
-> > This is often because msm_smd_probe lacks a __init
-> > annotation or the annotation of proc_comm_boot_wait is wrong.
-> >
-> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> > Cc: David Brown <davidb@codeaurora.org>
-> > Cc: Bryan Huntsman <bryanh@codeaurora.org>
-> > Cc: Daniel Walker <c_dwalke@quicinc.com>
-> > Cc: linux-arm-msm@vger.kernel.org
-> > ---
-> >  arch/arm/mach-msm/proc_comm.h | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> On Mon, 2013-02-11 at 13:44 +1100, Michael Ellerman wrote:
+> > On Wed, Jan 30, 2013 at 01:33:57PM -0500, Peter Hurley wrote:
+> > > On Sat, 2013-01-19 at 22:00 +0100, Jiri Slaby wrote:
+> > > > On 01/18/2013 10:07 PM, Greg Kroah-Hartman wrote:
+> > > > > Jiri, was there anything on the mailing list that I missed that should
+> > > > > have resolved this issue?  I thought it was being worked on, but I can't
+> > > > > seem to find any resolution at the moment.
+> > > > 
+> > > > Somebody had a patchset and promised to repost IIRC. I forgot his name
+> > > > though.
+> > > > 
+> > > > /me back from digging in the mail history.
+> > > > 
+> > > > Peter Hurley is the name.
+> > > > 
+> > > > Peter, what happened with your patches in the end, please?
+> > > 
+> > > The tty subsystem is very resilient to fixing :)
+> > > 
+> > > The thing I'm working on right now -- which hopefully is the last issue
+> > > with the line discipline logic -- occurs with parallel __tty_hangup()
+> > > and tty_release().
+> > > 
+> > > At the moment, I'm trying to narrow the conditions when this happens.
+> > 
+> > If it helps I seem to be able to reproduce this in just a few seconds by
+>                                    ^^^^^^^^^^^^^^
+>                  you get this WARNING from a parallel __tty_hangup?
 > 
-> Arnd, you're welcome to pull this into your tree:
-> Acked-by: David Brown <davidb@codeaurora.org>
+> Or do you mean simply that you get this WARNING?
+
+Sorry I just mean I'm seeing the warning, I have no idea how.
+
+> > running trinity and hitting Ctrl-C to quit the watchdog.
 > 
-> I don't forsee any conflicts with upcoming patches.
+> Can you reproduce after using the following patch series?
+> [PATCH v3 00/23] ldisc fixes
 
-Applied.
+What are they against? I tried Linus' tree and linux-next but they
+didn't apply cleanly against either.
 
-
--Olof
+cheers
