@@ -1,106 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933440Ab3BLQ5e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 11:57:34 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:42009 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932246Ab3BLQ5c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 11:57:32 -0500
-Message-ID: <511A7478.8040506@wwwdotorg.org>
-Date: Tue, 12 Feb 2013 09:57:28 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S933444Ab3BLQ6K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 11:58:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:6418 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932246Ab3BLQ6I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 11:58:08 -0500
+Message-ID: <511A7493.50901@redhat.com>
+Date: Tue, 12 Feb 2013 17:57:55 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Laurent Meunier <laurent.meunier@st.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Anmar Oueja <anmar.oueja@linaro.org>
-Subject: Re: [PATCH] pinctrl/pinconfig: add debug interface
-References: <1360527070-18430-1-git-send-email-linus.walleij@stericsson.com> <51195A63.7080706@wwwdotorg.org> <CACRpkdZu0+maCE2GjuZcQPZPZbw=Fz0DUHYY8FXPdZEH0PeViQ@mail.gmail.com>
-In-Reply-To: <CACRpkdZu0+maCE2GjuZcQPZPZbw=Fz0DUHYY8FXPdZEH0PeViQ@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: linux-kernel@vger.kernel.org, Wanlong Gao <gaowanlong@cn.fujitsu.com>,
+        asias@redhat.com, Rusty Russell <rusty@rustcorp.com.au>,
+        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH 1/9] virtio: add functions for piecewise addition of buffers
+References: <1360671815-2135-1-git-send-email-pbonzini@redhat.com> <1360671815-2135-2-git-send-email-pbonzini@redhat.com> <20130212145620.GA3392@redhat.com> <511A608B.5080007@redhat.com> <20130212154338.GA4083@redhat.com> <511A6457.80609@redhat.com> <20130212161326.GB4373@redhat.com> <511A6B2B.50700@redhat.com> <20130212163524.GB4555@redhat.com>
+In-Reply-To: <20130212163524.GB4555@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/12/2013 05:54 AM, Linus Walleij wrote:
-> On Mon, Feb 11, 2013 at 9:53 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
->> On 02/10/2013 01:11 PM, Linus Walleij wrote:
->>> From: Laurent Meunier <laurent.meunier@st.com>
+Il 12/02/2013 17:35, Michael S. Tsirkin ha scritto:
+> On Tue, Feb 12, 2013 at 05:17:47PM +0100, Paolo Bonzini wrote:
+>> Il 12/02/2013 17:13, Michael S. Tsirkin ha scritto:
+>>>>>>>>> + * @nsg: the number of sg lists that will be added
+>>>>>>> This means number of calls to add_sg ? Not sure why this matters.
+>>>>>>> How about we pass in in_num/out_num - that is total # of sg,
+>>>>>>> same as add_buf?
+>>>>>>
+>>>>>> It is used to choose between direct and indirect.
+>>>>>
+>>>>> total number of in and out should be enough for this, no?
+>>>>
+>>>> Originally, I used nsg/nents because I wanted to use mixed direct and
+>>>> indirect buffers.  nsg/nents let me choose between full direct (nsg ==
+>>>> nents), mixed (num_free >= nsg), full indirect (num_free < nsg).  Then I
+>>>> had to give up because QEMU does not support it, but I still would like
+>>>> to keep that open in the API.
 >>>
->>> This update adds a debugfs interface to modify a pin configuration
->>> for a given state in the pinctrl map. This allows to modify the
->>> configuration for a non-active state, typically sleep state.
->>> This configuration is not applied right away, but only when the state
->>> will be entered.
->>>
->>> This solution is mandated for us by HW validation: in order
->>> to test and verify several pin configurations during sleep without
->>> recompiling the software.
-...
->>> +/**
->>> + * pinconf_dbg_config_write() - overwrite the pinctrl config in thepinctrl
->>> + * map, of a pin/state pair based on pinname and state that have been
->>> + * selected with the debugfs entries pinconf-name and pinconf-state
->>> + */
->>> +static int pinconf_dbg_config_write(struct file *file,
->>> +     const char __user *user_buf, size_t count, loff_t *ppos)
->>> +{
->>> +     int err;
->>> +     unsigned long config;
->>> +     struct pinctrl_maps *maps_node;
->>> +     struct pinctrl_map const *map;
->>> +     int i, j;
->>> +
->>> +     err = kstrtoul_from_user(user_buf, count, 0, &config);
->>> +
->>> +     if (err)
->>> +             return err;
->>> +
->>> +     dbg_config = config;
+>>> Problem is it does not seem to make sense in the API.
 >>
->> That assumes that pin config values are a plain u32. While this is
->> commonly true in existing pinctrl drivers, it certainly isn't something
->> that the pinctrl core mandates;
+>> Why not?  Perhaps in the idea you have of the implementation, but in the
+>> API it definitely makes sense.  It's a fast-path API, it makes sense to
+>> provide as much information as possible upfront.
 > 
-> So there is this unsigned long and it has a value.
+> If we are ignoring some information, I think we are better off
+> without asking for it.
+
+We're not ignoring it.  virtqueue_start_buf uses both nents and nsg:
+
+        if (vq->indirect && (nents > nsg || vq->vq.num_free < nents)) {
+		/* indirect */
+	}
+
+>>>> In this series, however, I am still using nsg to choose between direct
+>>>> and indirect.  I would like to use dirtect for small scatterlists, even
+>>>> if they are surrounded by a request/response headers/footers.
+>>>
+>>> Shouldn't we base this on total number of s/g entries?
+>>> I don't see why does it matter how many calls you use
+>>> to build up the list.
+>>
+>> The idea is that in general the headers/footers are few (so their number
+>> doesn't really matter) and are in singleton scatterlists.  Hence, the
+>> heuristic checks at the data part of the request, and chooses
+>> direct/indirect depending on the size of that part.
 > 
-> The interface should support altering that unsigned long not
-> really caring for what it contains. It seems pretty straight-forward
-> to me.
+> Why? Why not the total size as we did before?
 
-But it's not an unsigned long - it's an opaque value that just happens
-to be stored in an unsigned long.
+"More than one buffer" is not a great heuristic.  In particular, it
+causes all virtio-blk and virtio-scsi requests to go indirect.
 
-> Of course, if this unsigned long is a pointer, this is just a
-> fantastic recipe for shooting oneself in the foot, but again
-> debugfs is just one big gun aimed at ones foot anyway, that's
-> the whole point of debugfs.
+More than three buffers, or more than five buffers, is just an ad-hoc
+hack, and similarly not great.
 
-But it'd be possible to handle this if the code to modify the map called
-into the individual pinctrl driver to convert the data the user wrote
-into the value to store in the map, just like it does for DT.
-
-Then, it'd work in all cases.
-
-Plus, it could convert e.g. "pull up" to 0x10001 rather than requiring
-the user to manually encode the 0x10001 themselves; much more useful.
-
->> that's the whole point of
->> dt_node_to_map() for example, to allow the individual pinctrl drivers to
->> use whatever type (scalar, pointer-to-struct, ...) they want to
->> represent their config values.
+>>>>>>>>> +/**
+>>>>>>>>> + * virtqueue_add_sg - add sglist to buffer being built
+>>>>>>>>> + * @_vq: the virtqueue for which the buffer is being built
+>>>>>>>>> + * @sgl: the description of the buffer(s).
+>>>>>>>>> + * @nents: the number of items to process in sgl
+>>>>>>>>> + * @dir: whether the sgl is read or written (DMA_TO_DEVICE/DMA_FROM_DEVICE only)
+>>>>>>>>> + *
+>>>>>>>>> + * Note that, unlike virtqueue_add_buf, this function follows chained
+>>>>>>>>> + * scatterlists, and stops before the @nents-th item if a scatterlist item
+>>>>>>>>> + * has a marker.
+>>>>>>>>> + *
+>>>>>>>>> + * Caller must ensure we don't call this with other virtqueue operations
+>>>>>>>>> + * at the same time (except where noted).
+>>>>>>> Hmm so if you want to add in and out, need separate calls?
+>>>>>>> in_num/out_num would be nicer?
+>>>>>>
+>>>>>> If you want to add in and out just use virtqueue_add_buf...
+>>>>>
+>>>>> I thought the point of this one is maximum flexibility.
+>>>>
+>>>> Maximum flexibility does not include doing everything in one call (the
+>>>> other way round in fact: you already need to wrap with start/end, hence
+>>>> doing one or two extra add_sg calls is not important).
+>>>
+>>> My point is, we have exactly same number of parameters:
+>>> in + out instead of nsg + direction, and we get more
+>>> functionality.
+>>
+>> And we also have more complex (and slower) code, that would never be
+>> used.
 > 
-> Yes. But it is an unsigned long, and we support altering it.
+> Instead of 
+> 	flags = (directon == from_device) ? out : in;
 > 
-> And the whole point of debugfs is to do crazy stuff like that.
+> you would do
+> 
+> 	flags = idx > in ? out : in;
+> 
+> why is this slower?
 
-Well to some extent, but there's little point in creating a debugfs file
-that makes different assumptions about what its doing than any other
-code that uses the same data structures.
+You said "in + out instead of nsg + direction", but now instead you're
+talking about specifying in/out upfront in virtqueue_start_buf.
 
+Specifying in/out in virtqueue_add_sg would have two loops instead of
+one, one of them (you don't know which) unused on every call, and
+wouldn't fix the problem of possibly misusing the API.
+
+Specifying in/out upfront would look something like
+
+	flags = vq->idx > vq->in ? VRING_DESC_F_WRITE : 0;
+
+or with some optimization
+
+	flags = vq->something > 0 ? VRING_DESC_F_WRITE : 0;
+
+It is not clear for me whether you'd allow a single virtqueue_add_sg to
+cover both out and in elements.  If so, the function would become much
+more complex because the flags could change in the middle, and that's
+what I was referring to.  If not, you traded one possible misuse with
+another.
+
+>> You would never save more than one call, because you cannot
+>> alternate out and in buffers arbitrarily.
+> 
+> That's the problem with the API, it apparently let you do this, and
+> if you do it will fail at run time.  If we specify in/out upfront in
+> start, there's no way to misuse the API.
+
+Perhaps, but 3 or 4 arguments (in/out/nsg or in/out/nsg_in/nsg_out) just
+for this are definitely too many and make the API harder to use.
+
+You have to find a balance.  Having actually used the API, the
+possibility of mixing in/out buffers by mistake never even occurred to
+me, much less happened in practice, so I didn't consider it a problem.
+Mixing in/out buffers in a single call wasn't a necessity, either.
+
+Paolo
