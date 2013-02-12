@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758613Ab3BLUlt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:41:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53933 "EHLO
+	id S1759005Ab3BLUrX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 15:47:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53982 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758419Ab3BLUlp (ORCPT
+	with ESMTP id S1757403Ab3BLUlt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:41:45 -0500
+	Tue, 12 Feb 2013 15:41:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Or Gerlitz <ogerlitz@mellanox.com>, Yan Burman <yanb@mellanox.com>,
-        Amir Vadai <amirv@mellanox.com>,
+        Jamie Gloudon <jamie.gloudon@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 13/36] net/mlx4_en: Fix bridged vSwitch configuration for non SRIOV mode
-Date: Tue, 12 Feb 2013 12:41:07 -0800
-Message-Id: <20130212203858.866113791@linuxfoundation.org>
+Subject: [ 21/36] via-rhine: Fix bugs in NAPI support.
+Date: Tue, 12 Feb 2013 12:41:15 -0800
+Message-Id: <20130212203859.806824122@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203857.305594226@linuxfoundation.org>
 References: <20130212203857.305594226@linuxfoundation.org>
@@ -29,50 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Yan Burman <yanb@mellanox.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit 213815a1e6ae70b9648483b110bc5081795f99e8 ]
+[ Upstream commit 559bcac35facfed49ab4f408e162971612dcfdf3 ]
 
-Commit 5b4c4d36860e "mlx4_en: Allow communication between functions on
-same host" introduced a regression under which a bridge acting as vSwitch
-whose uplink is an mlx4 Ethernet device become non-operative in native
-(non sriov) mode. This happens since broadcast ARP requests sent by VMs
-were loopback-ed by the HW and hence the bridge learned VM source MACs
-on both the VM and the uplink ports.
+1) rhine_tx() should use dev_kfree_skb() not dev_kfree_skb_irq()
 
-The fix is to place the DMAC in the send WQE only under SRIOV/eSwitch
-configuration or when the device is in selftest.
+2) rhine_slow_event_task's NAPI triggering logic is racey, it
+   should just hit the interrupt mask register.  This is the
+   same as commit 7dbb491878a2c51d372a8890fa45a8ff80358af1
+   ("r8169: avoid NAPI scheduling delay.") made to fix the same
+   problem in the r8169 driver.  From Francois Romieu.
 
-Reviewed-by: Or Gerlitz <ogerlitz@mellanox.com>
-Signed-off-by: Yan Burman <yanb@mellanox.com>
-Signed-off-by: Amir Vadai <amirv@mellanox.com>
+Reported-by: Jamie Gloudon <jamie.gloudon@gmail.com>
+Tested-by: Jamie Gloudon <jamie.gloudon@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/mellanox/mlx4/en_tx.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/via/via-rhine.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
---- a/drivers/net/ethernet/mellanox/mlx4/en_tx.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/en_tx.c
-@@ -683,10 +683,15 @@ netdev_tx_t mlx4_en_xmit(struct sk_buff
- 		ring->tx_csum++;
+--- a/drivers/net/ethernet/via/via-rhine.c
++++ b/drivers/net/ethernet/via/via-rhine.c
+@@ -1802,7 +1802,7 @@ static void rhine_tx(struct net_device *
+ 					 rp->tx_skbuff[entry]->len,
+ 					 PCI_DMA_TODEVICE);
+ 		}
+-		dev_kfree_skb_irq(rp->tx_skbuff[entry]);
++		dev_kfree_skb(rp->tx_skbuff[entry]);
+ 		rp->tx_skbuff[entry] = NULL;
+ 		entry = (++rp->dirty_tx) % TX_RING_SIZE;
  	}
+@@ -2011,11 +2011,7 @@ static void rhine_slow_event_task(struct
+ 	if (intr_status & IntrPCIErr)
+ 		netif_warn(rp, hw, dev, "PCI error\n");
  
--	/* Copy dst mac address to wqe */
--	ethh = (struct ethhdr *)skb->data;
--	tx_desc->ctrl.srcrb_flags16[0] = get_unaligned((__be16 *)ethh->h_dest);
--	tx_desc->ctrl.imm = get_unaligned((__be32 *)(ethh->h_dest + 2));
-+	if (mlx4_is_mfunc(mdev->dev) || priv->validate_loopback) {
-+		/* Copy dst mac address to wqe. This allows loopback in eSwitch,
-+		 * so that VFs and PF can communicate with each other
-+		 */
-+		ethh = (struct ethhdr *)skb->data;
-+		tx_desc->ctrl.srcrb_flags16[0] = get_unaligned((__be16 *)ethh->h_dest);
-+		tx_desc->ctrl.imm = get_unaligned((__be32 *)(ethh->h_dest + 2));
-+	}
-+
- 	/* Handle LSO (TSO) packets */
- 	if (lso_header_size) {
- 		/* Mark opcode as LSO */
+-	napi_disable(&rp->napi);
+-	rhine_irq_disable(rp);
+-	/* Slow and safe. Consider __napi_schedule as a replacement ? */
+-	napi_enable(&rp->napi);
+-	napi_schedule(&rp->napi);
++	iowrite16(RHINE_EVENT & 0xffff, rp->base + IntrEnable);
+ 
+ out_unlock:
+ 	mutex_unlock(&rp->task_lock);
 
 
