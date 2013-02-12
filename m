@@ -1,55 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933587Ab3BLRt5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 12:49:57 -0500
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:51579 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932151Ab3BLRt4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 12:49:56 -0500
+	id S933611Ab3BLR4w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 12:56:52 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:38216 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932342Ab3BLR4v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 12:56:51 -0500
+Date: Tue, 12 Feb 2013 08:10:51 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ying Han <yinghan@google.com>, Tejun Heo <htejun@gmail.com>,
+        Glauber Costa <glommer@parallels.com>, Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH v3 4/7] memcg: remove memcg from the reclaim iterators
+Message-ID: <20130212161051.GQ2666@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130208193318.GA15951@cmpxchg.org>
+ <20130211151649.GD19922@dhcp22.suse.cz>
+ <20130211175619.GC13218@cmpxchg.org>
+ <20130211192929.GB29000@dhcp22.suse.cz>
+ <20130211195824.GB15951@cmpxchg.org>
+ <20130211212756.GC29000@dhcp22.suse.cz>
+ <20130211223943.GC15951@cmpxchg.org>
+ <20130212095419.GB4863@dhcp22.suse.cz>
+ <20130212151002.GD15951@cmpxchg.org>
+ <20130212154330.GG4863@dhcp22.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <511A7D50.9090804@zytor.com>
-References: <20130209110031.GA17833@n2100.arm.linux.org.uk>
- <tip-b390784dc1649f6e6c5e66e5f53c21e715ccf39b@git.kernel.org>
- <CA+55aFxaUUMQuw3bgLbZLARp05eM19E_qTXBYePPk9mvEsSp=g@mail.gmail.com>
- <5119C34B.70207@zytor.com> <CAMe9rOrTLGJvO+Z8kCG3gmOuW-Yq2Ex9WMfJZ5wmZcbz+zm94Q@mail.gmail.com>
- <CA+55aFwMr8pDfj+wuv=-tUFqZQOhnqkwC7tVq-S=4MGGWiqz1A@mail.gmail.com>
- <511A7892.4020407@zytor.com> <CA+55aFz=OnntmRvi6geuL7ccC6ncwQ7NvURDcwu87BkpS3H0TQ@mail.gmail.com>
- <511A7D50.9090804@zytor.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 12 Feb 2013 09:49:30 -0800
-X-Google-Sender-Auth: 3iGz2ke4Wu-ijyv5J22w3gOSKf8
-Message-ID: <CA+55aFxTnLbT7yjxzP8_eAXV-YDFMgSu-6Op-Hr3aDhAw_S=BQ@mail.gmail.com>
-Subject: Re: [tip:x86/mm] x86, mm: Use a bitfield to mask nuisance get_user() warnings
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "H.J. Lu" <hjl.tools@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jamie Lokier <jamie@shareable.org>, ville.syrjala@linux.intel.com,
-        Borislav Petkov <bp@alien8.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-tip-commits@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130212154330.GG4863@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13021217-7182-0000-0000-000005279644
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 12, 2013 at 9:35 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->
-> On the other hand, it still uses two gcc extensions: long long bitfields and
-> typeof.
->
-> I'll see what kind of code we get with the macro.
+On Tue, Feb 12, 2013 at 04:43:30PM +0100, Michal Hocko wrote:
+> On Tue 12-02-13 10:10:02, Johannes Weiner wrote:
+> > On Tue, Feb 12, 2013 at 10:54:19AM +0100, Michal Hocko wrote:
+> > > On Mon 11-02-13 17:39:43, Johannes Weiner wrote:
+> > > > On Mon, Feb 11, 2013 at 10:27:56PM +0100, Michal Hocko wrote:
+> > > > > On Mon 11-02-13 14:58:24, Johannes Weiner wrote:
+> > > > > > That way, if the dead count gives the go-ahead, you KNOW that the
+> > > > > > position cache is valid, because it has been updated first.
+> > > > > 
+> > > > > OK, you are right. We can live without css_tryget because dead_count is
+> > > > > either OK which means that css would be alive at least this rcu period
+> > > > > (and RCU walk would be safe as well) or it is incremented which means
+> > > > > that we have started css_offline already and then css is dead already.
+> > > > > So css_tryget can be dropped.
+> > > > 
+> > > > Not quite :)
+> > > > 
+> > > > The dead_count check is for completed destructions,
+> > > 
+> > > Not quite :P. dead_count is incremented in css_offline callback which is
+> > > called before the cgroup core releases its last reference and unlinks
+> > > the group from the siblinks. css_tryget would already fail at this stage
+> > > because CSS_DEACT_BIAS is in place at that time but this doesn't break
+> > > RCU walk. So I think we are safe even without css_get.
+> > 
+> > But you drop the RCU lock before you return.
+> >
+> > dead_count IS incremented for every destruction, but it's not reliable
+> > for concurrent ones, is what I meant.  Again, if there is a dead_count
+> > mismatch, your pointer might be dangling, easy case.  However, even if
+> > there is no mismatch, you could still race with a destruction that has
+> > marked the object dead, and then frees it once you drop the RCU lock,
+> > so you need try_get() to check if the object is dead, or you could
+> > return a pointer to freed or soon to be freed memory.
+> 
+> Wait a moment. But what prevents from the following race?
+> 
+> rcu_read_lock()
+> 						mem_cgroup_css_offline(memcg)
+> 						root->dead_count++
+> iter->last_dead_count = root->dead_count
+> iter->last_visited = memcg
+> 						// final
+> 						css_put(memcg);
+> // last_visited is still valid
+> rcu_read_unlock()
+> [...]
+> // next iteration
+> rcu_read_lock()
+> iter->last_dead_count == root->dead_count
+> // KABOOM
+> 
+> The race window between dead_count++ and css_put is quite big but that
+> is not important because that css_put can happen anytime before we start
+> the next iteration and take rcu_read_lock.
 
-At least one thing to look out for is the poor LLVM people who are
-trying to make the kernel compile with that compiler.. We shouldn't
-make it arbitrarily harder for them, so *some* level of portability is
-a good idea.
+The usual approach is to make sure that there is a grace period (either
+synchronize_rcu() or call_rcu()) between the time that the data is
+made inaccessible to readers (this would be mem_cgroup_css_offline()?)
+and the time it is freed (css_put(), correct?).
 
-Then there is icc, but I don't know how relevant that would ever be.
-At least LLVM has the potential to be widely available.
+							Thanx, Paul
 
-Of course, they may both already support even the odd gcc builtins -
-we already use a lot of the more straightforward ones...
-
-            Linus
