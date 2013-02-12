@@ -1,94 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758645Ab3BLWhn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 17:37:43 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:55600 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754434Ab3BLWhl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 17:37:41 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: Re: [PATCH 05/32] lib: devres: don't enclose pcim_*() functions in CONFIG_HAS_IOPORT
-Date: Tue, 12 Feb 2013 22:36:37 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-5-generic; KDE/4.3.2; x86_64; ; )
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
-        Andrew Lunn <andrew@lunn.ch>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        "Eran Ben-Avi" <benavi@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        Maen Suleiman <maen@marvell.com>, Shadi Ammouri <shadi@marvell.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Tawfik Bayouk <tawfik@marvell.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org
-References: <1360686546-24277-1-git-send-email-thomas.petazzoni@free-electrons.com> <201302121800.48723.arnd@arndb.de> <20130212195816.6e34b3ce@skate>
-In-Reply-To: <20130212195816.6e34b3ce@skate>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302122236.37491.arnd@arndb.de>
-X-Provags-ID: V02:K0:aslKurT/qRFQNCS7W5z4e5AhVribPkbDd8tw1jkijWQ
- eSTj0egBz/c/aDw15FEJKxr9WuFIBAJuv+uPB6VYDtxUiyEsos
- 3W3BorZP9AlYXdkZkz3l5I2qLOJJ65Txsq0xm6IyyDZnGtGlV0
- zRHeK8GY3cVBE1kUdL+EndJEz/0yOD9Nv5RHiJDBdoCxza8YQT
- YVW+xJxa9Fs4HUeqyeM9sMTMrKLp5xen/UuS8KSJrglsLG4grQ
- ojRcVz3yHjvtA4gCkYfVe4ZdRCNfczetsCIQnWaVNQPcHSstU5
- rGNX5HFRN1EyPvokpp9UwGlJgxiNdU2NbW8lcOwQ0bprM5feFY
- 9rQiD27FeD6NCIHVP4fY=
+	id S1758509Ab3BLWlP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 17:41:15 -0500
+Received: from mail.df.lth.se ([194.47.250.12]:18852 "EHLO mail.df.lth.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750757Ab3BLWlO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 17:41:14 -0500
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 0/9] revive the XD driver a bit
+Date: Tue, 12 Feb 2013 23:40:50 +0100
+Message-Id: <1360708860-23466-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 12 February 2013, Thomas Petazzoni wrote:
-> > Any driver that requires a
-> > linear mapping of I/O ports to __iomem pointers must depend
-> > CONFIG_HAS_IOPORT with the current definition of that symbol (as
-> > mentioned before, we should really rename that to
-> > CONFIG_HAS_IOPORT_MAP). Having these functions not defined is a
-> > compile time check that is necessary to ensure that all drivers have
-> > the correct annotation.
-> 
-> I have the feeling that the problem is more complex than that. My
-> understanding is that the pcim_iomap_regions() function used by
-> drivers/ata/libata-sff.c can perfectly be used to map memory BARs, and
-> not necessarily I/O BARs. Therefore, this driver can perfectly be used
-> in an architecture where CONFIG_NO_IOPORT is selected.
+Yes, I use this driver. I have an old PC XT 8088, and the fact
+that it was in the kernel tree SAVED MY DATA.
 
-That is correct.
+Of course I couldn't boot Linux on that old machine. But I
+removed the disk and the controller card and put it into
+a Pentium MMX. The ROM on the card has to be removed or it
+will kill the boot by trying to patchextends the BIOS. Then
+you have to configure out the IRQ and DMA manually in the
+BIOS menu.
 
-> The thing is that pcim_iomap_regions() transparently allows to remap an
-> I/O BAR is such a BAR is passed as argument, or a memory BAR if such a
-> BAR is passed as argument.
-> 
-> Therefore, I continue to believe that the pcim_*() functions are useful
-> even if the platform doesn't have CONFIG_HAS_IOPORT.
+But then you pass the controller type to the driver with
+xd=3 and it *WORKS*, well after the first two patches in
+this series. I proceeded to do some rough cleanups to get
+it more maintainable.
 
-Yes, the pcim_ functions are useful in principle, but it falls back
-to the __pci_ioport_map() for IORESOURCE_IO, and that needs to
-return an error if CONFIG_HAS_IOPORT is not set.
-I think it would be correct if you add this hunk:
+Linus Walleij (9):
+  block: xd: introduce a delay before every outb operation
+  block: xd: fix up request handler loop
+  block: xd: raise timeouts
+  block: xd: some whitespace and #if 0 removal
+  block: xd: avoid using typedefs
+  block: xd: avoid some forward declarations
+  block: xd: merge header file into driver
+  block: xd: remove custom DEBUG print system
+  block: xd: replace all printks with pr_*
 
-diff --git a/lib/pci_iomap.c b/lib/pci_iomap.c
-index 0d83ea8..f9b6387 100644
---- a/lib/pci_iomap.c
-+++ b/lib/pci_iomap.c
-@@ -33,7 +33,7 @@ void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long maxlen)
-                return NULL;
-        if (maxlen && len > maxlen)
-                len = maxlen;
--       if (flags & IORESOURCE_IO)
-+       if (IS_ENABLED(CONFIG_HAS_IOPORT) && (flags & IORESOURCE_IO))
-                return __pci_ioport_map(dev, start, len);
-        if (flags & IORESOURCE_MEM) {
-                if (flags & IORESOURCE_CACHEABLE)
+ drivers/block/xd.c | 1202 ++++++++++++++++++++++++++++++----------------------
+ drivers/block/xd.h |  134 ------
+ 2 files changed, 686 insertions(+), 650 deletions(-)
+ delete mode 100644 drivers/block/xd.h
 
-in order to prevent a link error when CONFIG_HAS_IOPORT is unset.
+-- 
+1.8.1.2
 
-	Arnd
