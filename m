@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933284Ab3BLTWQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 14:22:16 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:36992 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932165Ab3BLTWP (ORCPT
+	id S933336Ab3BLT2D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 14:28:03 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:59523 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932293Ab3BLT2B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 14:22:15 -0500
-Date: Tue, 12 Feb 2013 11:22:17 -0800
-From: Olof Johansson <olof@lixom.net>
-To: torvalds@linux-foundation.org
-Cc: olof@lixom.net, linux-arm-kernel@lists.infradead.org, arm@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] ARM: arm-soc fixes for 3.8
-Message-ID: <20130212192217.GA18964@quad.lixom.net>
+	Tue, 12 Feb 2013 14:28:01 -0500
+Message-ID: <511A97BD.9010707@wwwdotorg.org>
+Date: Tue, 12 Feb 2013 12:27:57 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: Michal Marek <mmarek@suse.cz>, Grant Likely <glikely@secretlab.ca>,
+        Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
+        devicetree-discuss@lists.ozlabs.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, Scott Wood <scottwood@freescale.com>,
+        Stephen Warren <swarren@nvidia.com>, Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: [PATCH V8] kbuild: create a rule to run the pre-processor on
+ *.dts files
+References: <1360091188-24063-1-git-send-email-swarren@wwwdotorg.org> <20130208144527.0D8DD3E2C01@localhost> <51156D09.7060401@gmail.com> <20130208220448.EDA773E2C27@localhost> <51157F65.2050309@wwwdotorg.org> <5119425A.1090802@wwwdotorg.org> <20130212180805.556C93E1202@localhost>
+In-Reply-To: <20130212180805.556C93E1202@localhost>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 02/12/2013 11:08 AM, Grant Likely wrote:
+> On Mon, 11 Feb 2013 12:11:22 -0700, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> On 02/08/2013 08:45 AM, Grant Likely wrote:
+>>> On Tue,  5 Feb 2013 12:06:28 -0700, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>>>> Create cmd_dtc_cpp to run the C pre-processor on *.dts file before
+>>>> passing them to dtc for final compilation. This allows the use of #define
+>>>> and #include within the .dts file.
+>> ...
+>>> I've applied this and was going to push it out, but I've just thought of
+>>> a problem that could be a show stopper. ...
+>>
+>> Grant, I notice this showed up in next-20130211 as:
+>>
+>> 22435f3 kbuild: create a rule to run the pre-processor on *.dts files
+>>
+>> Was that intentional? I assumed you wanted me to rework this before
+>> you'd apply it, rather than sending an incremental patch.
+> 
+> Yes it was intentional. I sat on my hands w.r.t. this patch for long
+> enough that I didn't want to delay it any longer. However, I still want
+> a solution to the problem discussed above before it becomes a
+> maintenance disaster.
 
-
-The following changes since commit 836dc9e3fbbab0c30aa6e664417225f5c1fb1c39:
-
-  Linux 3.8-rc7 (2013-02-09 08:20:39 +1100)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes-for-linus
-
-for you to fetch changes up to 893db07f50596bd42248dcffbe8157abc7204bdd:
-
-  Merge tag 'highbank-fixes-for-3.8' of git://sources.calxeda.com/kernel/linux into fixes (2013-02-09 20:55:03 -0800)
-
-----------------------------------------------------------------
-
-ARM: arm-soc fixes for 3.8
-
-We had a number of fixes queued up, but taking a strict pass-through
-and weeding out any that either have been broken for a while, or are
-for platforms that need out-of-tree code to be useful anyway, or other
-fixes for problems that few users are likely to see in real life, only
-this short branch of patches remains.
-
-The three patches here are to make SMP boot work on the Calxeda
-platforms again. Some of the rework for cpuids on 3.8 broke it (and it
-was discovered late, unfortunately).
-
-----------------------------------------------------------------
-Olof Johansson (1):
-      Merge tag 'highbank-fixes-for-3.8' of git://sources.calxeda.com/kernel/linux into fixes
-
-Rob Herring (3):
-      ARM: scu: add empty scu_enable for !CONFIG_SMP
-      ARM: scu: mask cluster id from cpu_logical_map
-      ARM: highbank: mask cluster id from cpu_logical_map
-
- arch/arm/include/asm/smp_scu.h    | 8 +++++++-
- arch/arm/kernel/smp_scu.c         | 2 +-
- arch/arm/mach-highbank/highbank.c | 3 ++-
- arch/arm/mach-highbank/sysregs.h  | 4 ++--
- 4 files changed, 12 insertions(+), 5 deletions(-)
-
+OK, I'll send an incremental patch to adjust the include paths. It
+should be soon; I think I have it written, but am distracted fixing up
+Tegra clock driver issues etc.:-(
