@@ -1,83 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933667Ab3BLSBm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 13:01:42 -0500
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:46759 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933589Ab3BLSBg (ORCPT
+	id S933675Ab3BLSB4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 13:01:56 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:61798 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933589Ab3BLSBy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 13:01:36 -0500
-Message-ID: <511A837B.8020804@kernel.org>
-Date: Tue, 12 Feb 2013 13:01:31 -0500
-From: Len Brown <lenb@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 12 Feb 2013 13:01:54 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: [PATCH 05/32] lib: devres: don't enclose pcim_*() functions in CONFIG_HAS_IOPORT
+Date: Tue, 12 Feb 2013 18:00:48 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-5-generic; KDE/4.3.2; x86_64; ; )
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Andrew Lunn <andrew@lunn.ch>,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        "Eran Ben-Avi" <benavi@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Maen Suleiman <maen@marvell.com>, Shadi Ammouri <shadi@marvell.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Tawfik Bayouk <tawfik@marvell.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org
+References: <1360686546-24277-1-git-send-email-thomas.petazzoni@free-electrons.com> <1360686546-24277-6-git-send-email-thomas.petazzoni@free-electrons.com>
+In-Reply-To: <1360686546-24277-6-git-send-email-thomas.petazzoni@free-electrons.com>
 MIME-Version: 1.0
-To: Sam Ravnborg <sam@ravnborg.org>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, Len Brown <len.brown@intel.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Should SPARC use cpuidle? (was: linux-next: build failure after merge
- of the final tree (acpi tree related))
-References: <20130211183409.7519b73ca320baeac5ec886f@canb.auug.org.au> <51197D8B.6010407@kernel.org> <20130212173505.GA2155@merkur.ravnborg.org>
-In-Reply-To: <20130212173505.GA2155@merkur.ravnborg.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201302121800.48723.arnd@arndb.de>
+X-Provags-ID: V02:K0:OMtpggWRMqS6dJ/qSz/b7t7iUgCMnpKVCUVu2wRI1g8
+ RkgjTvxJzqrML76HDT6pcMQPnfM+7u8UU5jolfhHqLgfWpI/UX
+ CMhGKrIic1XZwEPYnUeoDEWgpL9SQwFPrmrcCaZ3Rqb0tKivXO
+ NAKHU6dXOmd9ZbZB9fwraZnyz2a/rf15AK+jf3aG60NB7PVFZN
+ SYx78q2OOlNfNRlxT/E6dYdteC5WoUZggpjSv6m1iSNVGHa4cT
+ Qb/iOrR6hOAAVoDaw21pzTPldQe+oPprf+o82SeLZ9iSv3Cy3g
+ OcmBlhgnQrTeNNUFHS47j0KXmk3CLrWTgyGAAnfnMXcGHpGYWo
+ R5Hw3ef5oAXU7KhZAoz8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/12/2013 12:35 PM, Sam Ravnborg wrote:
->>> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
->>> ---
->>>  arch/sparc/include/asm/processor.h | 2 ++
->>>  1 file changed, 2 insertions(+)
->>>
->>> diff --git a/arch/sparc/include/asm/processor.h b/arch/sparc/include/asm/processor.h
->>> index 34baa35..622cfa5 100644
->>> --- a/arch/sparc/include/asm/processor.h
->>> +++ b/arch/sparc/include/asm/processor.h
->>> @@ -7,6 +7,8 @@
->>>  #endif
->>>  
->>>  #define nop() 		__asm__ __volatile__ ("nop")
->>> +#ifndef __ASSEMBLY__
->>>  extern void (*sparc_idle)(void);
->>> +#endif
->>>  
->>>  #endif
->>>
->>
->> Thank you Stephen!
->>
->> The last time I compiled a sparc kernel was in 1993:-)
->>
->> I've added your fix and Dave's Ack to this patch,
->> and updated it in my next branch.
+On Tuesday 12 February 2013, Thomas Petazzoni wrote:
+> The pcim_*() functions are used by the libata-sff subsystem, and this
+> subsystem is used for many SATA drivers on ARM platforms that do not
+> necessarily have I/O ports.
 > 
-> Hi Len.
-> 
-> Can you please move the definition of sparc_idle to processor_32.h
-> It is sparc32 specific - and then we do not need the __ASSEMBLY__ guards
-> as the sparc32 variant are not used from assembler.
+> Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+> Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+> Cc: Yinghai Lu <yinghai@kernel.org>
+> Cc: linux-kernel@vger.kernel.org
 
-sure, let me know if attached works.
+Sorry, but this patch is still incorrect. Any driver that requires a linear
+mapping of I/O ports to __iomem pointers must depend CONFIG_HAS_IOPORT
+with the current definition of that symbol (as mentioned before, we
+should really rename that to CONFIG_HAS_IOPORT_MAP). Having these
+functions not defined is a compile time check that is necessary to
+ensure that all drivers have the correct annotation.
 
-> Do you btw. have any hints how I can convert to the cpu_idle thing you hinted?
+If a platform has no support for I/O ports at all, it should
+probably not set CONFIG_NO_IOPORT at this point.
 
-If you have exactly 1 idle state, then cpuidle isn't that interesting,
-except, perhaps the standard residency counters.  If you have multiple
-states to choose from, cpuidle becomes more valuable.
-
-There are lots of cpuidle users now, including x86's intel_idle,
-processor_idle, and the entire ARM tree.
-
-In my tree right now is a patch to convert APM to cpuidle --
-though as nobody has tested it yet I can't guarantee it is correct.
-
-patches/issues related to idle should to to linux-pm@vger.kernel.org (on cc)
-
-thanks,
--Len
-
-
+	Arnd
