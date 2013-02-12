@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759591Ab3BLVGD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 16:06:03 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53482 "EHLO
+	id S1759113Ab3BLVGA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 16:06:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53489 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753347Ab3BLUfv (ORCPT
+	with ESMTP id S1752968Ab3BLUfw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:35:51 -0500
+	Tue, 12 Feb 2013 15:35:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Romain Kuntz <r.kuntz@ipflavors.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
+        Eric Dumazet <edumazet@google.com>,
+        John Fastabend <john.r.fastabend@intel.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 22/61] ipv6: fix header length calculation in ip6_append_data()
-Date: Tue, 12 Feb 2013 12:34:42 -0800
-Message-Id: <20130212203421.410400416@linuxfoundation.org>
+Subject: [ 23/61] macvlan: fix macvlan_get_size()
+Date: Tue, 12 Feb 2013 12:34:43 -0800
+Message-Id: <20130212203421.527870315@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203417.890993903@linuxfoundation.org>
 References: <20130212203417.890993903@linuxfoundation.org>
@@ -29,46 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Romain KUNTZ <r.kuntz@ipflavors.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 7efdba5bd9a2f3e2059beeb45c9fa55eefe1bced ]
+[ Upstream commit 01fe944f1024bd4e5c327ddbe8d657656b66af2f ]
 
-Commit 299b0767 (ipv6: Fix IPsec slowpath fragmentation problem)
-has introduced a error in the header length calculation that
-provokes corrupted packets when non-fragmentable extensions
-headers (Destination Option or Routing Header Type 2) are used.
+commit df8ef8f3aaa (macvlan: add FDB bridge ops and macvlan flags)
+forgot to update macvlan_get_size() after the addition of
+IFLA_MACVLAN_FLAGS
 
-rt->rt6i_nfheader_len is the length of the non-fragmentable
-extension header, and it should be substracted to
-rt->dst.header_len, and not to exthdrlen, as it was done before
-commit 299b0767.
-
-This patch reverts to the original and correct behavior. It has
-been successfully tested with and without IPsec on packets
-that include non-fragmentable extensions headers.
-
-Signed-off-by: Romain Kuntz <r.kuntz@ipflavors.com>
-Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: John Fastabend <john.r.fastabend@intel.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/ip6_output.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/macvlan.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -1279,10 +1279,10 @@ int ip6_append_data(struct sock *sk, int
- 		if (dst_allfrag(rt->dst.path))
- 			cork->flags |= IPCORK_ALLFRAG;
- 		cork->length = 0;
--		exthdrlen = (opt ? opt->opt_flen : 0) - rt->rt6i_nfheader_len;
-+		exthdrlen = (opt ? opt->opt_flen : 0);
- 		length += exthdrlen;
- 		transhdrlen += exthdrlen;
--		dst_exthdrlen = rt->dst.header_len;
-+		dst_exthdrlen = rt->dst.header_len - rt->rt6i_nfheader_len;
- 	} else {
- 		rt = (struct rt6_info *)cork->dst;
- 		fl6 = &inet->cork.fl.u.ip6;
+--- a/drivers/net/macvlan.c
++++ b/drivers/net/macvlan.c
+@@ -822,7 +822,10 @@ static int macvlan_changelink(struct net
+ 
+ static size_t macvlan_get_size(const struct net_device *dev)
+ {
+-	return nla_total_size(4);
++	return (0
++		+ nla_total_size(4) /* IFLA_MACVLAN_MODE */
++		+ nla_total_size(2) /* IFLA_MACVLAN_FLAGS */
++		);
+ }
+ 
+ static int macvlan_fill_info(struct sk_buff *skb,
 
 
