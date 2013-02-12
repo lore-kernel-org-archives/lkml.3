@@ -1,45 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933558Ab3BLTmf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 14:42:35 -0500
-Received: from smtp.snhosting.dk ([87.238.248.203]:55234 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933161Ab3BLTmd (ORCPT
+	id S933548Ab3BLToV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 14:44:21 -0500
+Received: from atl4mhob14.myregisteredsite.com ([209.17.115.52]:40627 "EHLO
+	atl4mhob14.myregisteredsite.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933161Ab3BLToU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 14:42:33 -0500
-Date: Tue, 12 Feb 2013 20:42:32 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Len Brown <lenb@kernel.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Len Brown <len.brown@intel.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: Should SPARC use cpuidle? (was: linux-next: build failure
-	after merge of the final tree (acpi tree related))
-Message-ID: <20130212194232.GA15705@merkur.ravnborg.org>
-References: <20130211183409.7519b73ca320baeac5ec886f@canb.auug.org.au> <51197D8B.6010407@kernel.org> <20130212173505.GA2155@merkur.ravnborg.org> <511A837B.8020804@kernel.org>
+	Tue, 12 Feb 2013 14:44:20 -0500
+X-Greylist: delayed 1297 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Feb 2013 14:44:20 EST
+Date: Tue, 12 Feb 2013 14:44:14 -0500 (EST)
+From: "nyc@holomorphy.com" <nyc@holomorphy.com>
+Reply-To: "nyc@holomorphy.com" <nyc@holomorphy.com>
+To: Tim Gardner <tim.gardner@canonical.com>, linux-kernel@vger.kernel.org
+Message-ID: <107362051.218193.1360698254858.JavaMail.vpopmail@mail.holomorphy.com>
+In-Reply-To: <1360693071-61227-1-git-send-email-tim.gardner@canonical.com>
+References: <1360693071-61227-1-git-send-email-tim.gardner@canonical.com>
+Subject: Re: [PATCH linux-next] hugetlbfs: hugetlbfs_fill_super(): remove
+ kfree() redundant null check
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <511A837B.8020804@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+Importance: Medium
+X-Mailer: Open-Xchange Mailer v6.20.5-Rev1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> > Do you btw. have any hints how I can convert to the cpu_idle thing you hinted?
-> 
-> If you have exactly 1 idle state, then cpuidle isn't that interesting,
-> except, perhaps the standard residency counters.  If you have multiple
-> states to choose from, cpuidle becomes more valuable.
-> 
-> There are lots of cpuidle users now, including x86's intel_idle,
-> processor_idle, and the entire ARM tree.
+Acked-by: Nadia Yvette Chambers <nyc@holomorphy.com>
 
-I think LEON has only a single power-down state.
-The APC stuff I know nothing about :-(
 
-So for now I think I will let it be as it is then.
+On February 12, 2013 at 1:17 PM Tim Gardner <tim.gardner@canonical.com> wrote:
 
-	Sam
+> smatch analysis:
+>
+> fs/hugetlbfs/inode.c:883 hugetlbfs_fill_super() info: redundant null check on
+> sbinfo->spool calling kfree()
+>
+> Cc: Nadia Yvette Chambers <nyc@holomorphy.com>
+> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+> ---
+>  fs/hugetlbfs/inode.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+>
+> diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
+> index 78bde32..e2e36ef 100644
+> --- a/fs/hugetlbfs/inode.c
+> +++ b/fs/hugetlbfs/inode.c
+> @@ -879,8 +879,7 @@ hugetlbfs_fill_super(struct super_block *sb, void *data,
+> int silent)
+>                  goto out_free;
+>          return 0;
+>  out_free:
+> -        if (sbinfo->spool)
+> -                kfree(sbinfo->spool);
+> +        kfree(sbinfo->spool);
+>          kfree(sbinfo);
+>          return -ENOMEM;
+>  }
+> --
+> 1.7.9.5
+>
