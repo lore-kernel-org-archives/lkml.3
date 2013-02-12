@@ -1,59 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761346Ab3BLQii (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 11:38:38 -0500
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:34795 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758698Ab3BLQih (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 11:38:37 -0500
+	id S933430Ab3BLQka (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 11:40:30 -0500
+Received: from mga03.intel.com ([143.182.124.21]:56857 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933389Ab3BLQk3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 11:40:29 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,650,1355126400"; 
+   d="scan'208";a="201524843"
+Date: Tue, 12 Feb 2013 18:43:51 +0200
+From: Mika Westerberg <mika.westerberg@intel.com>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
+        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>,
+        Mika Westerberg <mika.westerberg@linux.jf.intel.com>
+Subject: Re: [PATCH] dw_dmac: adjust slave_id accordingly to request line base
+Message-ID: <20130212164351.GA20771@intel.com>
+References: <1359371060-9044-1-git-send-email-andriy.shevchenko@linux.intel.com>
+ <CAOh2x==psH4fYmr_MxwO8vjYb=sWk=V7Vs8fs_-6U00gmiko_w@mail.gmail.com>
+ <20130212155334.GK3789@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <5119C34B.70207@zytor.com>
-References: <20130209110031.GA17833@n2100.arm.linux.org.uk>
-	<tip-b390784dc1649f6e6c5e66e5f53c21e715ccf39b@git.kernel.org>
-	<CA+55aFxaUUMQuw3bgLbZLARp05eM19E_qTXBYePPk9mvEsSp=g@mail.gmail.com>
-	<5119C34B.70207@zytor.com>
-Date: Tue, 12 Feb 2013 08:38:36 -0800
-Message-ID: <CAMe9rOrTLGJvO+Z8kCG3gmOuW-Yq2Ex9WMfJZ5wmZcbz+zm94Q@mail.gmail.com>
-Subject: Re: [tip:x86/mm] x86, mm: Use a bitfield to mask nuisance get_user() warnings
-From: "H.J. Lu" <hjl.tools@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jamie Lokier <jamie@shareable.org>, ville.syrjala@linux.intel.com,
-        Borislav Petkov <bp@alien8.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-tip-commits@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130212155334.GK3789@intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 11, 2013 at 8:21 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 02/11/2013 07:33 PM, Linus Torvalds wrote:
->> On Mon, Feb 11, 2013 at 5:37 PM, tip-bot for H. Peter Anvin
->> <hpa@zytor.com> wrote:
->>>
->>> However, we can declare a bitfield using sizeof(), which is legal
->>> because sizeof() is a constant expression.  This quiets the warning,
->>> although the code generated isn't 100% identical from the baseline
->>> before 96477b4 x86-32: Add support for 64bit get_user():
->>
->> Christ. This is so ugly that it's almost a work of art.
->
-> :)
->
->> Has anybody run this past any gcc developers? And if so, did they run
->> away screaming?
->
-> I haven't no... H.J., any comments on this patch?
->
+On Tue, Feb 12, 2013 at 07:53:34AM -0800, Vinod Koul wrote:
+> On Tue, Jan 29, 2013 at 10:29:43AM +0530, Viresh Kumar wrote:
+> > Next time, please direct these mails to my Linaro id :)
+> > 
+> > On Mon, Jan 28, 2013 at 4:34 PM, Andy Shevchenko
+> > <andriy.shevchenko@linux.intel.com> wrote:
+> > > On some hardware configurations we have got the request line with the offset.
+> > > The patch introduces convert_slave_id() helper for that cases. The request line
+> > > base is got from the platform device resources provided by the IORESOURCE_DMA
+> > > type.
+> > 
+> > @Vinod: Is IORESOURCE_DMA suitable for this purpose?
+> Looks unlikely...
+> 
+> But why do we need this in first place?
+> 
+> I know this is due to common platform probe. Clearly one size not fitting all.
+> If you had dedicated PCI probe you wouldnt worrry right?
 
-Can you do something similar to what we did in glibc:
+This is all related to new ACPI 5.0 features for devices enumerated from
+ACPI namespace, such as SPI controller.
 
-http://sourceware.org/git/?p=glibc.git;a=patch;h=c515fb5148f1d81d5f7736825e14c7502c15432a
+ACPI 5.0 allows BIOS to specify DMA request lines and channels used by a
+slave device with FixedDMA() descriptors, such as:
 
--- 
-H.J.
+	FixedDMA (0x0010, 0x0000, Width32bit,) // TX
+	FixedDMA (0x0011, 0x0001, Width32bit,) // RX
+
+The first field (0x10, 0x11) is the request line assigned to the device. In
+this particular case it is the SPI controller.
+
+Now there is only one DMA controller in this platform but the request lines
+still start from 0x10 (16).
+
+Then there is another ACPI table called CSRT (Core System Resources Table)
+that assings request line range to the DMA controller itself. This range
+starts from 0x10 (16) for this platform.
+
+So what we do is that we parse this CSRT table, create platform device for
+the DMA controller of found and pass the request line range as
+IORESOURCE_DMA resource with the platform device.
+
+In this patch then Andy uses that resource to map the FixedDMA() request
+line to the actual hardware request line, which is for the SPI case:
+
+	0x10 -> 0
+	0x11 -> 1
+
+Unfortunately we didn't find any better way to pass this information than
+IORESOURCE_DMA. However, if you have better solution we certainly can
+change that :)
