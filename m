@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759875Ab3BLOKL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 09:10:11 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56285 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753067Ab3BLOKK (ORCPT
+	id S1760079Ab3BLOKe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 09:10:34 -0500
+Received: from mail-we0-f182.google.com ([74.125.82.182]:59283 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759917Ab3BLOKc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 09:10:10 -0500
-Date: Tue, 12 Feb 2013 14:09:51 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: =?iso-8859-1?Q?Andr=E9?= Hentschel <nerv@dawncrow.de>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] arm: Preserve TPIDRURW on context switch
-Message-ID: <20130212140950.GC4123@mudshark.cambridge.arm.com>
-References: <5112DC7E.4020108@dawncrow.de>
- <20130206225150.GL17833@n2100.arm.linux.org.uk>
- <5112E0C3.1080706@dawncrow.de>
- <20130208154809.GF3495@mudshark.cambridge.arm.com>
- <511A4B93.1000700@dawncrow.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <511A4B93.1000700@dawncrow.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 12 Feb 2013 09:10:32 -0500
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
+        jolsa@redhat.com, namhyung.kim@lge.com
+Subject: [PATCH 0/2] perf stat: add per-core count aggregation
+Date: Tue, 12 Feb 2013 15:09:26 +0100
+Message-Id: <1360678168-6974-1-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andre,
+This patch series contains improvement to the aggregation support
+in perf stat.
 
-On Tue, Feb 12, 2013 at 02:02:59PM +0000, André Hentschel wrote:
-> Am 08.02.2013 16:48, schrieb Will Deacon:
-> > On Wed, Feb 06, 2013 at 11:01:23PM +0000, André Hentschel wrote:
-> >> No, i'm not sure how to improve this. How does the process can continue, can you or someone else fix that and add his Signed-off-by?
-> > 
-> > How about something like the (completely untested) diff below?
-> > 
-> > Andre: if this works for you, I'm happy to write a commit message etc.
-> 
-> Thx for your effort, but it doesn't work, at least not with my 3.4.6 suse kernel.
-> Be free to have another try, i'll be happy to test it.
+First, the aggregation code is refactored and a aggr_mode enum
+is defined. There is also an important bug fix for the existing
+per-socket aggregation.
 
-Well, cheers for testing. Can you be more specific about what goes wrong
-please? What do you see in TPIDRURW?
+Second, the patch adds a new --aggr-core option to perf stat.
+It aggregates counts per physical core and becomes useful on
+systems with hyper-threading. The cores are presented per
+socket: S0-C1, means socket 0 core 1. Note that the core number
+represents its physical core id. As such, numbers may not always
+be contiguous. All of this is based on topology information available
+in sysfs.
 
-Will
+Per-core aggregation can be combined with interval printing:
+
+ # perf stat -a --aggr-core -I 1000 -e cycles sleep 100
+ #           time core         cpus             counts events
+      1.000101160 S0-C0           2      6,051,254,899 cycles                   
+      1.000101160 S0-C1           2      6,379,230,776 cycles                   
+      1.000101160 S0-C2           2      6,480,268,471 cycles                   
+      1.000101160 S0-C3           2      6,110,514,321 cycles                   
+      2.000663750 S0-C0           2      6,572,533,016 cycles                   
+      2.000663750 S0-C1           2      6,378,623,674 cycles                   
+      2.000663750 S0-C2           2      6,264,127,589 cycles                   
+      2.000663750 S0-C3           2      6,305,346,613 cycles                   
+
+For instance here on this SNB machine, we can see that the load
+is evenly balanced across all 4 physical core (HT is on).
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+
+-
+Stephane Eranian (2):
+  perf stat: refactor aggregation code
+  perf stat: add per-core aggregation
+
+ tools/perf/Documentation/perf-stat.txt |    6 +
+ tools/perf/builtin-stat.c              |  237 ++++++++++++++++++++------------
+ tools/perf/util/cpumap.c               |   86 ++++++++++--
+ tools/perf/util/cpumap.h               |   12 ++
+ 4 files changed, 239 insertions(+), 102 deletions(-)
+
+-- 
+1.7.9.5
+
