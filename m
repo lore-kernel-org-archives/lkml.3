@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758997Ab3BLUq7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:46:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53989 "EHLO
+	id S1758613Ab3BLUlt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 15:41:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53933 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758643Ab3BLUlu (ORCPT
+	with ESMTP id S1758419Ab3BLUlp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:41:50 -0500
+	Tue, 12 Feb 2013 15:41:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Phil Sutter <phil.sutter@viprinet.com>,
-        Johann Baudy <johann.baudy@gnu-log.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
+        Or Gerlitz <ogerlitz@mellanox.com>, Yan Burman <yanb@mellanox.com>,
+        Amir Vadai <amirv@mellanox.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 22/36] packet: fix leakage of tx_ring memory
-Date: Tue, 12 Feb 2013 12:41:16 -0800
-Message-Id: <20130212203859.920992226@linuxfoundation.org>
+Subject: [ 13/36] net/mlx4_en: Fix bridged vSwitch configuration for non SRIOV mode
+Date: Tue, 12 Feb 2013 12:41:07 -0800
+Message-Id: <20130212203858.866113791@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203857.305594226@linuxfoundation.org>
 References: <20130212203857.305594226@linuxfoundation.org>
@@ -30,55 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Phil Sutter <phil.sutter@viprinet.com>
+From: Yan Burman <yanb@mellanox.com>
 
-[ Upstream commit 9665d5d62487e8e7b1f546c00e11107155384b9a ]
+[ Upstream commit 213815a1e6ae70b9648483b110bc5081795f99e8 ]
 
-When releasing a packet socket, the routine packet_set_ring() is reused
-to free rings instead of allocating them. But when calling it for the
-first time, it fills req->tp_block_nr with the value of rb->pg_vec_len
-which in the second invocation makes it bail out since req->tp_block_nr
-is greater zero but req->tp_block_size is zero.
+Commit 5b4c4d36860e "mlx4_en: Allow communication between functions on
+same host" introduced a regression under which a bridge acting as vSwitch
+whose uplink is an mlx4 Ethernet device become non-operative in native
+(non sriov) mode. This happens since broadcast ARP requests sent by VMs
+were loopback-ed by the HW and hence the bridge learned VM source MACs
+on both the VM and the uplink ports.
 
-This patch solves the problem by passing a zeroed auto-variable to
-packet_set_ring() upon each invocation from packet_release().
+The fix is to place the DMAC in the send WQE only under SRIOV/eSwitch
+configuration or when the device is in selftest.
 
-As far as I can tell, this issue exists even since 69e3c75 (net: TX_RING
-and packet mmap), i.e. the original inclusion of TX ring support into
-af_packet, but applies only to sockets with both RX and TX ring
-allocated, which is probably why this was unnoticed all the time.
-
-Signed-off-by: Phil Sutter <phil.sutter@viprinet.com>
-Cc: Johann Baudy <johann.baudy@gnu-log.net>
-Cc: Daniel Borkmann <dborkman@redhat.com>
-Acked-by: Daniel Borkmann <dborkman@redhat.com>
+Reviewed-by: Or Gerlitz <ogerlitz@mellanox.com>
+Signed-off-by: Yan Burman <yanb@mellanox.com>
+Signed-off-by: Amir Vadai <amirv@mellanox.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/packet/af_packet.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/mellanox/mlx4/en_tx.c |   13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -2450,13 +2450,15 @@ static int packet_release(struct socket
+--- a/drivers/net/ethernet/mellanox/mlx4/en_tx.c
++++ b/drivers/net/ethernet/mellanox/mlx4/en_tx.c
+@@ -683,10 +683,15 @@ netdev_tx_t mlx4_en_xmit(struct sk_buff
+ 		ring->tx_csum++;
+ 	}
  
- 	packet_flush_mclist(sk);
- 
--	memset(&req_u, 0, sizeof(req_u));
--
--	if (po->rx_ring.pg_vec)
-+	if (po->rx_ring.pg_vec) {
-+		memset(&req_u, 0, sizeof(req_u));
- 		packet_set_ring(sk, &req_u, 1, 0);
+-	/* Copy dst mac address to wqe */
+-	ethh = (struct ethhdr *)skb->data;
+-	tx_desc->ctrl.srcrb_flags16[0] = get_unaligned((__be16 *)ethh->h_dest);
+-	tx_desc->ctrl.imm = get_unaligned((__be32 *)(ethh->h_dest + 2));
++	if (mlx4_is_mfunc(mdev->dev) || priv->validate_loopback) {
++		/* Copy dst mac address to wqe. This allows loopback in eSwitch,
++		 * so that VFs and PF can communicate with each other
++		 */
++		ethh = (struct ethhdr *)skb->data;
++		tx_desc->ctrl.srcrb_flags16[0] = get_unaligned((__be16 *)ethh->h_dest);
++		tx_desc->ctrl.imm = get_unaligned((__be32 *)(ethh->h_dest + 2));
 +	}
- 
--	if (po->tx_ring.pg_vec)
-+	if (po->tx_ring.pg_vec) {
-+		memset(&req_u, 0, sizeof(req_u));
- 		packet_set_ring(sk, &req_u, 1, 1);
-+	}
- 
- 	fanout_release(sk);
- 
++
+ 	/* Handle LSO (TSO) packets */
+ 	if (lso_header_size) {
+ 		/* Mark opcode as LSO */
 
 
