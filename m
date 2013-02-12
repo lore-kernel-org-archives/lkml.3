@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753352Ab3BLGKr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 01:10:47 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:46429 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751267Ab3BLGKq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 01:10:46 -0500
-Message-ID: <5119DCCD.70709@zytor.com>
-Date: Mon, 11 Feb 2013 22:10:21 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 00/26] x86, irq: support ioapic device hotplug
-References: <1360351703-20571-1-git-send-email-yinghai@kernel.org> <20130211093417.GC23932@gmail.com>
-In-Reply-To: <20130211093417.GC23932@gmail.com>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753812Ab3BLGR7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 01:17:59 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:58414 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751267Ab3BLGR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 01:17:57 -0500
+Message-ID: <1360649875.5128.18.camel@joe-AO722>
+Subject: Re: [PATCH V4 1/2] get_maintainer: allow keywords to match filenames
+From: Joe Perches <joe@perches.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: arm@kernel.org, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Julian Andres Klode <jak@jak-linux.org>,
+        Marc Dietrich <marvin24@gmx.de>, Stephen Warren <swarren@nvidia.com>
+Date: Mon, 11 Feb 2013 22:17:55 -0800
+In-Reply-To: <1360629574-23989-1-git-send-email-swarren@wwwdotorg.org>
+References: <1360629574-23989-1-git-send-email-swarren@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2013 01:34 AM, Ingo Molnar wrote:
+On Mon, 2013-02-11 at 17:39 -0700, Stephen Warren wrote:
+> From: Stephen Warren <swarren@nvidia.com>
 > 
-> * Yinghai Lu <yinghai@kernel.org> wrote:
-> 
->> Hi,
->>
->> Current x86 code does not support iapic hotplug yet.
-> 
-> Please give a better high-level description: outline how an 
-> IO-APIC will be hotplugged physically and what changes the 
-> user will experience.
-> 
-> That needs at least 2 paragraphs, not one cursory sentence. Then 
-> should come technical descriptions - but even those need 
-> improvements, please first explain the current status quo, then 
-> explain how that is inadequate for IO-APIC hot-plugging, *then* 
-> only explain what you are doing in the patch ...
-> 
+> Allow K: entries in MAINTAINERS to match directly against filenames;
+> either those extracted from patch +++ or --- lines, or those specified
+> on the command-line using the -f option.
+[]
+> diff --git a/MAINTAINERS b/MAINTAINERS
+[]
+> @@ -97,12 +97,12 @@ Descriptions of section entries:
+>  	   X:	net/ipv6/
+>  	   matches all files in and below net excluding net/ipv6/
+>  	K: Keyword perl extended regex pattern to match content in a
+> -	   patch or file.  For instance:
+> +	   patch, or an affected filename.  For instance:
 
-A few more notes:
+The removal of file isn't correct.
 
-Please explain what you mean with pre-reserve IRQ blocks, and in
-particular, how do you know what to reserve and for what?
+This should read "patch, file or filename".
 
-Second, some of the things in this patchset seems to overlap with what
-we would need to support MSI (as opposed to MSI-X), and you have several
-patches related to MSI vs MSI-X.  Are you also supporting multivector
-MSI (I believe the answer is no) or could some of this work make
-multivector MSI practical (possible)?
+If the -f pattern is a single file,
+get_maintainer reads that file content and then
+matches any K: patterns.
 
-	-hpa
+When the -f pattern is a directory, it doesn't.
 
+>  	   K: of_get_profile
+> -	      matches patches or files that contain "of_get_profile"
+> +	      matches patches or filenames that contain "of_get_profile"
+
+here too.
+
+>  	   K: \b(printk|pr_(info|err))\b
+> -	      matches patches or files that contain one or more of the words
+> -	      printk, pr_info or pr_err
+> +	      matches patches or filenames that contain one or more of
+> +	      the words printk, pr_info or pr_err
+
+three.
+
+cheers, Joe
 
