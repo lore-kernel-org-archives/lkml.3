@@ -1,65 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758950Ab3BLXwz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 18:52:55 -0500
-Received: from mga14.intel.com ([143.182.124.37]:13652 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753642Ab3BLXwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 18:52:54 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,652,1355126400"; 
-   d="scan'208";a="201666287"
-Message-ID: <511AD5D4.8000309@linux.intel.com>
-Date: Tue, 12 Feb 2013 15:52:52 -0800
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jamie Lokier <jamie@shareable.org>, ville.syrjala@linux.intel.com,
-        Borislav Petkov <bp@alien8.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, "H.J. Lu" <hjl.tools@gmail.com>,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/mm] x86, mm: Redesign get_user with a __builtin_choose_expr
- hack
-References: <511A8922.6050908@zytor.com> <tip-3578baaed4613a9fc09bab9f79f6ce2ac682e8a3@git.kernel.org> <CA+55aFzVSY6G3ZDy7YhwGd2k+OBtpDZaobw8awCeyZsaAqHDVw@mail.gmail.com> <511ACDFB.1050707@zytor.com> <CA+55aFzU=zvjBPRSKCYHdf3ET-oq6s66e_PHHGcDwf3sJx+j+A@mail.gmail.com>
-In-Reply-To: <CA+55aFzU=zvjBPRSKCYHdf3ET-oq6s66e_PHHGcDwf3sJx+j+A@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1758835Ab3BLX5A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 18:57:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55189 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752075Ab3BLX47 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 18:56:59 -0500
+Date: Tue, 12 Feb 2013 15:56:57 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jeremy Kerr <jk@ozlabs.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Documentation: Add a simple doc for selftests
+Message-Id: <20130212155657.86443c7c.akpm@linux-foundation.org>
+In-Reply-To: <1360317764.684151.590003024082.1.gpush@pecola>
+References: <20130207151333.f01d415c.akpm@linux-foundation.org>
+	<1360317764.684151.590003024082.1.gpush@pecola>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/12/2013 03:49 PM, Linus Torvalds wrote:
-> On Tue, Feb 12, 2013 at 3:19 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->>
->> Yes, but there doesn't seem to be any other way to do this.  gcc won't
->> even allow "=cd" even if we know the variable is 64 bits, even though
->> "=A" is documented to be equivalent to "=da".
+On Fri, 08 Feb 2013 18:02:44 +0800
+Jeremy Kerr <jk@ozlabs.org> wrote:
+
+> On 08/02/13 07:13, Andrew Morton wrote:
 > 
-> No, "=da" means value "in edx _or_ %eax". Not the same as "A".
+> > The general ruleset for selftests is: do as much as you can if you're not
+> > root and don't take too long and don't break the build on any
+> > architecture and don't cause the top-level "make run_tests" to fail if
+> > your feature is unconfigured.
 > 
+> This change adds a little documentation to the tests under
+> tools/testing/selftests/, based on akpm's explanation.
 
-Actually, if you look at how gcc implements them, they are the same, and
-if you are luckless enough to try to use a 32-bit value with an "A"
-constraint you have it end up in either %eax or %edx.
+Looks nice, thanks ;)
 
-However, they seem to have added some additional linting which prohibits
-the compound form.  I'm not sure it would have worked anyway since we
-need the two-register bit to be conditional.
-
-> But you're right, there's nothing similar for %ebx:%ecx. I thought
-> there was. I was really sure we did something special for 64-bit adc
-> etc.
-> 
->> Let me know what you think.
-> 
-> I guess we don't have any choice. And the other cleanups certainly look good.
-
-OK, will commit the comment.  We can add the additional copy if we need it.
-
-	-hpa
+I'm thinking we move it from Documentation/selftests.txt to
+tools/testing/selftests/README.txt, where people are more likely to
+notice it?
 
 
