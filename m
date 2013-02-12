@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933002Ab3BLJY0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 04:24:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40502 "EHLO mx2.suse.de"
+	id S933003Ab3BLJ1O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 04:27:14 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40611 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758445Ab3BLJYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 04:24:24 -0500
-Date: Tue, 12 Feb 2013 10:24:23 +0100
-Message-ID: <s5hbobpopfc.wl%tiwai@suse.de>
+	id S1758445Ab3BLJ1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 04:27:11 -0500
+Date: Tue, 12 Feb 2013 10:27:10 +0100
+Message-ID: <s5ha9r9opap.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Fernando Luis =?UTF-8?B?VsOhenF1ZXo=?= Cao 
 	<fernando_b1@lab.ntt.co.jp>
 Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] ALSA: hda - update documentation for no-primary-hp fixup
-In-Reply-To: <1360655386.13766.4.camel@nexus.lab.ntt.co.jp>
+Subject: Re: [PATCH 2/3] ALSA: hda - no-primary-hp is a quirk for model ALC889 not ALC882
+In-Reply-To: <1360655656.13766.6.camel@nexus.lab.ntt.co.jp>
 References: <1360655264.13766.2.camel@nexus.lab.ntt.co.jp>
-	<1360655386.13766.4.camel@nexus.lab.ntt.co.jp>
+	<1360655656.13766.6.camel@nexus.lab.ntt.co.jp>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.2
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -26,52 +26,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Tue, 12 Feb 2013 16:49:46 +0900,
+At Tue, 12 Feb 2013 16:54:16 +0900,
 Fernando Luis Vázquez Cao wrote:
 > 
-> The problem addressed by this fixup is not specific to Vaio Z, affecting
-> some Vaio all-in-one desktop PCs too. Update the code comments accordingly.
+> Substitute ALC889 for ALC882 in macro and function names.
 > 
 > Cc: stable@vger.kernel.org
 > Cc: alsa-devel@alsa-project.org
 > Signed-off-by: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
 
-I applied this now to sound git tree but dropped Cc to stable because
-the patch is no longer cleanly applicable due to the recent code
-change.  And this is just some minor documentation update, thus we can
-still live peacefully without this fix.
+This fixup can work generically to all ALC882 variants, including
+ALC889.  Unless you are really sure that this must be used exclusively
+only for ALC889, no reason to change the prefix.
 
 
 thanks,
 
 Takashi
 
+
 > ---
 > 
-> diff -urNp linux-3.7.6-orig/Documentation/sound/alsa/HD-Audio-Models.txt linux-3.7.6/Documentation/sound/alsa/HD-Audio-Models.txt
-> --- linux-3.7.6-orig/Documentation/sound/alsa/HD-Audio-Models.txt	2012-12-11 12:30:57.000000000 +0900
-> +++ linux-3.7.6/Documentation/sound/alsa/HD-Audio-Models.txt	2013-02-09 22:44:28.614772054 +0900
-> @@ -53,7 +53,7 @@ ALC882/883/885/888/889
->    acer-aspire-8930g	Acer Aspire 8330G/6935G
->    acer-aspire		Acer Aspire others
->    inv-dmic	Inverted internal mic workaround
-> -  no-primary-hp		VAIO Z workaround (for fixed speaker DAC)
-> +  no-primary-hp		VAIO Z/VGC-LN51JGB workaround (for fixed speaker DAC)
->  
->  ALC861/660
->  ==========
 > diff -urNp linux-3.7.6-orig/sound/pci/hda/patch_realtek.c linux-3.7.6/sound/pci/hda/patch_realtek.c
-> --- linux-3.7.6-orig/sound/pci/hda/patch_realtek.c	2013-02-09 22:39:11.745202168 +0900
-> +++ linux-3.7.6/sound/pci/hda/patch_realtek.c	2013-02-09 22:50:10.924470402 +0900
-> @@ -5153,7 +5153,8 @@ static void alc889_fixup_imac91_vref(str
->  }
+> --- linux-3.7.6-orig/sound/pci/hda/patch_realtek.c	2013-02-09 22:52:40.301209823 +0900
+> +++ linux-3.7.6/sound/pci/hda/patch_realtek.c	2013-02-09 22:58:54.695063675 +0900
+> @@ -5030,7 +5030,7 @@ enum {
+>  	ALC889_FIXUP_MBP_VREF,
+>  	ALC889_FIXUP_IMAC91_VREF,
+>  	ALC882_FIXUP_INV_DMIC,
+> -	ALC882_FIXUP_NO_PRIMARY_HP,
+> +	ALC889_FIXUP_NO_PRIMARY_HP,
+>  };
 >  
->  /* Don't take HP output as primary
-> - * strangely, the speaker output doesn't work on VAIO Z through DAC 0x05
-> + * Strangely, the speaker output doesn't work on Vaio Z and some Vaio
-> + * all-in-one desktop PCs (for example VGC-LN51JGB) through DAC 0x05
+>  static void alc889_fixup_coef(struct hda_codec *codec,
+> @@ -5156,7 +5156,7 @@ static void alc889_fixup_imac91_vref(str
+>   * Strangely, the speaker output doesn't work on Vaio Z and some Vaio
+>   * all-in-one desktop PCs (for example VGC-LN51JGB) through DAC 0x05
 >   */
->  static void alc882_fixup_no_primary_hp(struct hda_codec *codec,
+> -static void alc882_fixup_no_primary_hp(struct hda_codec *codec,
+> +static void alc889_fixup_no_primary_hp(struct hda_codec *codec,
 >  				       const struct alc_fixup *fix, int action)
+>  {
+>  	struct alc_spec *spec = codec->spec;
+> @@ -5350,9 +5350,9 @@ static const struct alc_fixup alc882_fix
+>  		.type = ALC_FIXUP_FUNC,
+>  		.v.func = alc_fixup_inv_dmic_0x12,
+>  	},
+> -	[ALC882_FIXUP_NO_PRIMARY_HP] = {
+> +	[ALC889_FIXUP_NO_PRIMARY_HP] = {
+>  		.type = ALC_FIXUP_FUNC,
+> -		.v.func = alc882_fixup_no_primary_hp,
+> +		.v.func = alc889_fixup_no_primary_hp,
+>  	},
+>  };
+>  
+> @@ -5388,8 +5388,8 @@ static const struct snd_pci_quirk alc882
+>  	SND_PCI_QUIRK(0x1043, 0x1971, "Asus W2JC", ALC882_FIXUP_ASUS_W2JC),
+>  	SND_PCI_QUIRK(0x1043, 0x835f, "Asus Eee 1601", ALC888_FIXUP_EEE1601),
+>  	SND_PCI_QUIRK(0x104d, 0x9047, "Sony Vaio TT", ALC889_FIXUP_VAIO_TT),
+> -	SND_PCI_QUIRK(0x104d, 0x905a, "Sony Vaio Z", ALC882_FIXUP_NO_PRIMARY_HP),
+> -	SND_PCI_QUIRK(0x104d, 0x9043, "Sony Vaio VGC-LN51JGB", ALC882_FIXUP_NO_PRIMARY_HP),
+> +	SND_PCI_QUIRK(0x104d, 0x905a, "Sony Vaio Z", ALC889_FIXUP_NO_PRIMARY_HP),
+> +	SND_PCI_QUIRK(0x104d, 0x9043, "Sony Vaio VGC-LN51JGB", ALC889_FIXUP_NO_PRIMARY_HP),
+>  
+>  	/* All Apple entries are in codec SSIDs */
+>  	SND_PCI_QUIRK(0x106b, 0x00a0, "MacBookPro 3,1", ALC889_FIXUP_MBP_VREF),
+> @@ -5432,7 +5432,7 @@ static const struct alc_model_fixup alc8
+>  	{.id = ALC882_FIXUP_ACER_ASPIRE_8930G, .name = "acer-aspire-8930g"},
+>  	{.id = ALC883_FIXUP_ACER_EAPD, .name = "acer-aspire"},
+>  	{.id = ALC882_FIXUP_INV_DMIC, .name = "inv-dmic"},
+> -	{.id = ALC882_FIXUP_NO_PRIMARY_HP, .name = "no-primary-hp"},
+> +	{.id = ALC889_FIXUP_NO_PRIMARY_HP, .name = "no-primary-hp"},
+>  	{}
+>  };
+>  
 > 
 > 
