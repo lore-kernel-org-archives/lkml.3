@@ -1,61 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933132Ab3BLMbz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 07:31:55 -0500
-Received: from gate.crashing.org ([63.228.1.57]:50624 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932927Ab3BLMbw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 07:31:52 -0500
-Message-ID: <1360672254.2035.8.camel@pasglop>
-Subject: Re: [PATCH] drivers/block/xsysace - replace
- in(out)_8/in(out)_be16/in(out)_le16 with generic iowrite(read)8/16(be)
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Michal Simek <monstr@monstr.eu>
-Cc: Arnd Bergmann <arnd@arndb.de>, Geert Uytterhoeven <geert@linux-m68k.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, dahinds@users.sourceforge.net
-Date: Tue, 12 Feb 2013 23:30:54 +1100
-In-Reply-To: <CAHTX3dJUduUj1a5_xCfjVc0y3J4-zUKZrBpQTvSj=SVVz=gvsg@mail.gmail.com>
-References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com>
-	 <201302111543.46196.arnd@arndb.de>
-	 <CAHTX3dJ6pZWyGB=6T22wA_wR-Tqty+4Nywm84g_n4djTv-cT=g@mail.gmail.com>
-	 <201302111608.29304.arnd@arndb.de>
-	 <CAHTX3dJUduUj1a5_xCfjVc0y3J4-zUKZrBpQTvSj=SVVz=gvsg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S933156Ab3BLMfc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 07:35:32 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:64067 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933108Ab3BLMfa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 07:35:30 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAMo8BfKo=N_O=O0y74zy+orAn3nNb-OuS9fC92ebbN7bN_CQPg@mail.gmail.com>
+References: <20130118140346.3f9b182aa7daa175b4f136bf@canb.auug.org.au>
+	<1358495866-9329-1-git-send-email-shawn.guo@linaro.org>
+	<CACRpkdZA9O6N7hmtU-6R1Ff6hW5vjD_ar9RLG1dbkd+MWyoKiw@mail.gmail.com>
+	<CAMo8BfJ=6WbAHoCpftRHW1iMtG8robyYUEqqCG2SecixDTgC+g@mail.gmail.com>
+	<CACRpkdbT2eAZR2Ud5f9h0TFsA5M0RpysE9SqMgoL-hcB8fS+Ew@mail.gmail.com>
+	<CAMo8BfKo=N_O=O0y74zy+orAn3nNb-OuS9fC92ebbN7bN_CQPg@mail.gmail.com>
+Date: Tue, 12 Feb 2013 13:35:29 +0100
+Message-ID: <CACRpkdYpAqXQY-K9euyiBaEei2+=2VbNeCaD0-ThJWbWX3MN-Q@mail.gmail.com>
+Subject: Re: [PATCH v2] gpio: devm_gpio_* support should not depend on GPIOLIB
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Max Filippov <jcmvbkbc@gmail.com>
+Cc: Shawn Guo <shawn.guo@linaro.org>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-02-12 at 11:11 +0100, Michal Simek wrote:
-> For high performance IPs using accessors functions is still
-> problematic
-> because there will be performance regression it means that
-> from my point of view there still should be any option to "setup"
-> proper endians for the driver and it can't be setup at run-time.
-> 
-> Sure the question is if drivers like this should be in the mainline.
-> But if yes, there should be an option to do it in acceptable way.
+On Mon, Feb 11, 2013 at 5:50 PM, Max Filippov <jcmvbkbc@gmail.com> wrote:
 
-No. High performance IP should rely on DMA essentially and be less
-affected if not at all. Endianess should affect the control path, not
-the data path (unless you got your wiring wrong again :-)
+> FWIW I see that the issue is caused by building drivers/gpio/devres.c
+> with CONFIG_GPIOLIB=n. Should I just turn GPIO_DEVRES off too?
 
-If you want an Kconfig option for an "optimal" version, put the ifdef
-trickery in the accessors and make them inline.
+Hm. Shawn just added:
 
-We do something like that iirc with OHCI where the type of endianness
-needed is a pair of select's and the conditional only happens when both
-are set. You can probably do better with feature bits & a mask of
-"possible" features relying on the compiler optimisations rather than
-the preprocessor.
++config GPIO_DEVRES
++       def_bool y
++       depends on HAS_IOMEM
 
-Cheers,
-Ben.
+Can you please patch the last line like so:
 
+        depends on (HAS_IOMEM && GPIOLIB)
 
+I think that's the actual problem... Maybe also move this
+config option below the GPIOLIB entry. Or move it under
+the #if GPIOLIB even.
+
+Can you send a patch that works for you?
+
+Yours,
+Linus Walleij
