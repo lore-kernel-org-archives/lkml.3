@@ -1,305 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933422Ab3BLQeJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 11:34:09 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:49796 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932330Ab3BLQeF (ORCPT
+	id S933436Ab3BLQee (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 11:34:34 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:64885 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932330Ab3BLQeb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 11:34:05 -0500
-Date: Tue, 12 Feb 2013 07:50:19 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Arjan van de Veen <arjan@infradead.org>, Paul Turner <pjt@google.com>,
-        Richard Weinberger <rw@linutronix.de>,
-        Magnus Damm <magnus.damm@gmail.com>
-Subject: Re: [patch 32/40] rcu: Convert rcutree to hotplug state machine
-Message-ID: <20130212155019.GO2666@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130131120348.372374706@linutronix.de>
- <20130131120743.656655375@linutronix.de>
- <20130212000100.GB2666@linux.vnet.ibm.com>
+	Tue, 12 Feb 2013 11:34:31 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130212000100.GB2666@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13021216-4834-0000-0000-000003961E06
+In-Reply-To: <20130212155641.GL3789@intel.com>
+References: <1359371060-9044-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<CAOh2x==psH4fYmr_MxwO8vjYb=sWk=V7Vs8fs_-6U00gmiko_w@mail.gmail.com>
+	<20130129052247.GH2239@intel.com>
+	<CAOh2x=nTJ1iz9aoR8VrkE5A+iaLMMbvFeebGPsO8KWRpDLw7=A@mail.gmail.com>
+	<1359531176.31148.46.camel@smile>
+	<20130212155641.GL3789@intel.com>
+Date: Tue, 12 Feb 2013 18:34:28 +0200
+Message-ID: <CAHp75VeTa6hASxan2F_G=6CZhLQew0KVF24EKGfpOH17BRGFeg@mail.gmail.com>
+Subject: Re: [PATCH] dw_dmac: adjust slave_id accordingly to request line base
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Mika Westerberg <mika.westerberg@linux.jf.intel.com>,
+        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 11, 2013 at 04:01:01PM -0800, Paul E. McKenney wrote:
-> On Thu, Jan 31, 2013 at 12:11:38PM -0000, Thomas Gleixner wrote:
-> > Do we really need so many states here ?
-> 
-> Well, all that RCU does for CPU_DYING is to do tracing, which could be
-> ditched.  Required changes called out inline below.
-> 
-> All that the CPU_ONLINE and CPU_DOWN_PREPARE notifiers do is set
-> up affinity for the RCU-boost kthreads.  These are unfortunately not
-> per-CPU kthreads, but perhaps something similar could be set up.  This is
-> strictly a performance optimization, so the CPU_ONLINE notifier could
-> be replaced by having the kthread check which of its CPUs was online.
-> Unfortunately, the same is not true of CPU_DOWN_PREPARE because if the
-> kthread was too slow about it, the scheduler would get annoyed about a
-> kthread being runnable only on offlined CPUs.
-> 
-> It is not clear that this is worthwhile.  Thoughts on other ways to
-> get this done?
+On Tue, Feb 12, 2013 at 5:56 PM, Vinod Koul <vinod.koul@intel.com> wrote:
+> On Wed, Jan 30, 2013 at 09:32:56AM +0200, Andy Shevchenko wrote:
+>> On Tue, 2013-01-29 at 20:57 +0530, Viresh Kumar wrote:
+>> > On Tue, Jan 29, 2013 at 10:52 AM, Mika Westerberg
+>> > <mika.westerberg@linux.intel.com> wrote:
+>> > > We had a discusssion about this with Andy as well. The thing is that there
+>> > > is no way in current resource to pass DMA request line numbers supported by
+>> > > the controller to the driver in a generic way. We on the other hand have to
+>> > > deal this somehow as we have a shared DMA controller on Lynxpoint where the
+>> > > offset will start from 16 (but it might be something else as well).
+>> > >
+>> > > Is there something which limits the usage of IORESOUCE_DMA to be only
+>> > > usable for ISA DMA channels?
+>> >
+>> > Andy,
+>> >
+>> > Why do we need this request_line_base? Why not program the actual value
+>> > directly into the slave structure (base + offset)?
+>>
+>> Slave device exactly has knowledge about this number slave_id = (base
+>> +offset). However...
+> Btw request line needs to be programmed by client in slave_id field.
+> So why exactly is this required for dma driver?
 
-Actually, would there be a problem with having a tag on these tasks
-so that the scheduler avoids the splat?  The idea would be to have the
-scheduler break affinity if there are no longer any online CPUs in
-the task's set, but just not splat.  The task could then periodically
-check to see if it is running on the wrong CPU, and if there is at
-least one online CPU in its set, re-affinity itself.
+The slave device driver doesn't know the DMAC limitations and won't
+know them. So, it gets request line from the ACPI resource and passes
+it to the DMAC. However, the request line is actualy base + offset.
+Slave driver has no clue about this and especially about base. The
+base is a property of the DMAC.
 
-Seems pretty simple, so I must be missing something.  ;-)
+>> > In case it is required, add it in platform data field or can add DT
+>> > binding for it.
+>>
+>> We get a device from the ACPI CSRT table. During enumeration we don't
+>> know what kind of the device it is. From the enumeration point of view
+>> each device enumerated from CSRT is a platform device (see
+>> drivers/acpi/csrt.c for the details).
+>>
+>> That's why we have to pass this info somehow to the DMAC driver. And
+>> like Mika already mentioned we have no other generic way except
+>> IORESOURCE_DMA. If you have something better in mind, please share. We
+>> could adopt our code then.
 
-							Thanx, Paul
-
-> > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> > ---
-> >  include/linux/cpuhotplug.h |   18 ++++++++
-> >  kernel/cpu.c               |   12 +++++
-> >  kernel/rcutree.c           |   95 ++++++++++++++++++++-------------------------
-> >  3 files changed, 73 insertions(+), 52 deletions(-)
-> > 
-> > Index: linux-2.6/include/linux/cpuhotplug.h
-> > ===================================================================
-> > --- linux-2.6.orig/include/linux/cpuhotplug.h
-> > +++ linux-2.6/include/linux/cpuhotplug.h
-> > @@ -12,6 +12,7 @@ enum cpuhp_states {
-> >  	CPUHP_PERF_PREPARE,
-> >  	CPUHP_SCHED_MIGRATE_PREP,
-> >  	CPUHP_WORKQUEUE_PREP,
-> > +	CPUHP_RCUTREE_PREPARE,
-> >  	CPUHP_NOTIFY_PREPARE,
-> >  	CPUHP_NOTIFY_DEAD,
-> >  	CPUHP_CPUFREQ_DEAD,
-> > @@ -27,6 +28,7 @@ enum cpuhp_states {
-> >  	CPUHP_AP_ARM64_TIMER_STARTING,
-> >  	CPUHP_AP_KVM_STARTING,
-> >  	CPUHP_AP_NOTIFY_DYING,
-> > +	CPUHP_AP_RCUTREE_DYING,
-> 
-> Drop this.
-> 
-> >  	CPUHP_AP_X86_TBOOT_DYING,
-> >  	CPUHP_AP_S390_VTIME_DYING,
-> >  	CPUHP_AP_SCHED_NOHZ_DYING,
-> > @@ -39,6 +41,7 @@ enum cpuhp_states {
-> >  	CPUHP_SCHED_MIGRATE_ONLINE,
-> >  	CPUHP_WORKQUEUE_ONLINE,
-> >  	CPUHP_CPUFREQ_ONLINE,
-> > +	CPUHP_RCUTREE_ONLINE,
-> >  	CPUHP_NOTIFY_ONLINE,
-> >  	CPUHP_NOTIFY_DOWN_PREPARE,
-> >  	CPUHP_PERF_X86_UNCORE_ONLINE,
-> > @@ -147,4 +150,19 @@ int workqueue_prepare_cpu(unsigned int c
-> >  int workqueue_online_cpu(unsigned int cpu);
-> >  int workqueue_offline_cpu(unsigned int cpu);
-> > 
-> > +/* RCUtree hotplug events */
-> > +#if defined(CONFIG_TREE_RCU) || defined(CONFIG_TREE_PREEMPT_RCU)
-> > +int rcutree_prepare_cpu(unsigned int cpu);
-> > +int rcutree_online_cpu(unsigned int cpu);
-> > +int rcutree_offline_cpu(unsigned int cpu);
-> > +int rcutree_dead_cpu(unsigned int cpu);
-> > +int rcutree_dying_cpu(unsigned int cpu);
-> 
-> And this...
-> 
-> > +#else
-> > +#define rcutree_prepare_cpu	NULL
-> > +#define rcutree_online_cpu	NULL
-> > +#define rcutree_offline_cpu	NULL
-> > +#define rcutree_dead_cpu	NULL
-> > +#define rcutree_dying_cpu	NULL
-> 
-> And of course this.
-> 
-> > +#endif
-> > +
-> >  #endif
-> > Index: linux-2.6/kernel/cpu.c
-> > ===================================================================
-> > --- linux-2.6.orig/kernel/cpu.c
-> > +++ linux-2.6/kernel/cpu.c
-> > @@ -755,6 +755,10 @@ static struct cpuhp_step cpuhp_bp_states
-> >  		.startup = workqueue_prepare_cpu,
-> >  		.teardown = NULL,
-> >  	},
-> > +	[CPUHP_RCUTREE_PREPARE] = {
-> > +		.startup = rcutree_prepare_cpu,
-> > +		.teardown = rcutree_dead_cpu,
-> > +	},
-> >  	[CPUHP_NOTIFY_PREPARE] = {
-> >  		.startup = notify_prepare,
-> >  		.teardown = NULL,
-> > @@ -787,6 +791,10 @@ static struct cpuhp_step cpuhp_bp_states
-> >  		.startup = workqueue_online_cpu,
-> >  		.teardown = workqueue_offline_cpu,
-> >  	},
-> > +	[CPUHP_RCUTREE_ONLINE] = {
-> > +		.startup = rcutree_online_cpu,
-> > +		.teardown = rcutree_offline_cpu,
-> > +	},
-> >  	[CPUHP_NOTIFY_ONLINE] = {
-> >  		.startup = notify_online,
-> >  		.teardown = NULL,
-> > @@ -813,6 +821,10 @@ static struct cpuhp_step cpuhp_ap_states
-> >  		.startup = NULL,
-> >  		.teardown = notify_dying,
-> >  	},
-> > +	[CPUHP_AP_RCUTREE_DYING] = {
-> > +		.startup = NULL,
-> > +		.teardown = rcutree_dying_cpu,
-> > +	},
-> >  	[CPUHP_AP_SCHED_NOHZ_DYING] = {
-> >  		.startup = NULL,
-> >  		.teardown = nohz_balance_exit_idle,
-> > Index: linux-2.6/kernel/rcutree.c
-> > ===================================================================
-> > --- linux-2.6.orig/kernel/rcutree.c
-> > +++ linux-2.6/kernel/rcutree.c
-> > @@ -2787,67 +2787,59 @@ rcu_init_percpu_data(int cpu, struct rcu
-> >  	mutex_unlock(&rsp->onoff_mutex);
-> >  }
-> > 
-> > -static void __cpuinit rcu_prepare_cpu(int cpu)
-> > +int __cpuinit rcutree_prepare_cpu(unsigned int cpu)
-> >  {
-> >  	struct rcu_state *rsp;
-> > 
-> >  	for_each_rcu_flavor(rsp)
-> >  		rcu_init_percpu_data(cpu, rsp,
-> >  				     strcmp(rsp->name, "rcu_preempt") == 0);
-> > +	rcu_prepare_kthreads(cpu);
-> > +	return 0;
-> >  }
-> > 
-> > -/*
-> > - * Handle CPU online/offline notification events.
-> > - */
-> > -static int __cpuinit rcu_cpu_notify(struct notifier_block *self,
-> > -				    unsigned long action, void *hcpu)
-> > +int __cpuinit rcutree_dead_cpu(unsigned int cpu)
-> >  {
-> > -	long cpu = (long)hcpu;
-> > -	struct rcu_data *rdp = per_cpu_ptr(rcu_state->rda, cpu);
-> > -	struct rcu_node *rnp = rdp->mynode;
-> >  	struct rcu_state *rsp;
-> > -	int ret = NOTIFY_OK;
-> > 
-> > -	trace_rcu_utilization("Start CPU hotplug");
-> > -	switch (action) {
-> > -	case CPU_UP_PREPARE:
-> > -	case CPU_UP_PREPARE_FROZEN:
-> > -		rcu_prepare_cpu(cpu);
-> > -		rcu_prepare_kthreads(cpu);
-> > -		break;
-> > -	case CPU_ONLINE:
-> > -	case CPU_DOWN_FAILED:
-> > -		rcu_boost_kthread_setaffinity(rnp, -1);
-> > -		break;
-> > -	case CPU_DOWN_PREPARE:
-> > -		if (nocb_cpu_expendable(cpu))
-> > -			rcu_boost_kthread_setaffinity(rnp, cpu);
-> > -		else
-> > -			ret = NOTIFY_BAD;
-> > -		break;
-> > -	case CPU_DYING:
-> > -	case CPU_DYING_FROZEN:
-> > -		/*
-> > -		 * The whole machine is "stopped" except this CPU, so we can
-> > -		 * touch any data without introducing corruption. We send the
-> > -		 * dying CPU's callbacks to an arbitrarily chosen online CPU.
-> > -		 */
-> > -		for_each_rcu_flavor(rsp)
-> > -			rcu_cleanup_dying_cpu(rsp);
-> > -		rcu_cleanup_after_idle(cpu);
-> > -		break;
-> > -	case CPU_DEAD:
-> > -	case CPU_DEAD_FROZEN:
-> > -	case CPU_UP_CANCELED:
-> > -	case CPU_UP_CANCELED_FROZEN:
-> > -		for_each_rcu_flavor(rsp)
-> > -			rcu_cleanup_dead_cpu(cpu, rsp);
-> > -		break;
-> > -	default:
-> > -		break;
-> > -	}
-> > -	trace_rcu_utilization("End CPU hotplug");
-> > -	return ret;
-> > +	for_each_rcu_flavor(rsp)
-> > +		rcu_cleanup_dead_cpu(cpu, rsp);
-> > +	return 0;
-> > +}
-> > +
-> > +static void __cpuinit rcutree_affinity_setting(unsigned int cpu, int outgoing)
-> > +{
-> > +	struct rcu_data *rdp = per_cpu_ptr(rcu_state->rda, cpu);
-> > +
-> > +	rcu_boost_kthread_setaffinity(rdp->mynode, outgoing);
-> > +}
-> > +
-> > +int __cpuinit rcutree_online_cpu(unsigned int cpu)
-> > +{
-> > +	rcutree_affinity_setting(cpu, -1);
-> > +	return 0;
-> > +}
-> > +
-> > +int __cpuinit rcutree_offline_cpu(unsigned int cpu)
-> > +{
-> > +	if (!nocb_cpu_expendable(cpu))
-> > +		return -EINVAL;
-> > +	rcutree_affinity_setting(cpu, cpu);
-> > +	return 0;
-> > +}
-> > +
-> > +int __cpuinit rcutree_dying_cpu(unsigned int cpu)
-> > +{
-> > +	struct rcu_state *rsp;
-> > +	/*
-> > +	 * The whole machine is "stopped" except this CPU, so we can
-> > +	 * touch any data without introducing corruption. We send the
-> > +	 * dying CPU's callbacks to an arbitrarily chosen online CPU.
-> > +	 */
-> > +	for_each_rcu_flavor(rsp)
-> > +		rcu_cleanup_dying_cpu(rsp);
-> > +	rcu_cleanup_after_idle(cpu);
-> > +	return 0;
-> >  }
-> 
-> And rcu_dying_cpu() above, along with both definitions of
-> rcu_cleanup_dying_cpu().
-> 
-> >  /*
-> > @@ -3071,9 +3063,8 @@ void __init rcu_init(void)
-> >  	 * this is called early in boot, before either interrupts
-> >  	 * or the scheduler are operational.
-> >  	 */
-> > -	cpu_notifier(rcu_cpu_notify, 0);
-> >  	for_each_online_cpu(cpu)
-> > -		rcu_cpu_notify(NULL, CPU_UP_PREPARE, (void *)(long)cpu);
-> > +		rcutree_prepare_cpu(cpu);
-> >  	check_cpu_stall_init();
-> >  }
-> > 
-> > 
-> > 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+-- 
+With Best Regards,
+Andy Shevchenko
