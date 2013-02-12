@@ -1,133 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933040Ab3BLKkD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 05:40:03 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:44341 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932920Ab3BLKj5 convert rfc822-to-8bit (ORCPT
+	id S1759038Ab3BLKqN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 05:46:13 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:49294 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756291Ab3BLKqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 05:39:57 -0500
-Date: Tue, 12 Feb 2013 10:39:49 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Suman Anna <s-anna@ti.com>
-Cc: Greg Kroah-Hartman <greg@linuxfoundation.org>,
-        Ohad Ben-Cohen <ohad@wizery.com>, Paul Walmsley <paul@pwsan.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Benoit Cousson <b-cousson@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
-        Tony Lindgren <tony@atomide.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Felipe Contreras <felipe.contreras@nokia.com>,
-        Dom Cobley <popcornmix@gmail.com>, Wim Van Sebroeck <wim@iguana.be>,
-        Omar Ramirez Luna <omar.ramirez@copitl.com>, Tejun Heo <tj@kernel.org>,
-        Omar Ramirez Luna <omar.luna@linaro.org>,
-        Loic Pallardy <loic.pallardy@st.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 10/13] mailbox: create dbx500 mailbox driver
-Message-ID: <20130212103949.GA826@e106331-lin.cambridge.arm.com>
-References: <1360645032-9668-1-git-send-email-s-anna@ti.com>
- <1360645032-9668-11-git-send-email-s-anna@ti.com>
+	Tue, 12 Feb 2013 05:46:11 -0500
+Date: Tue, 12 Feb 2013 11:46:08 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Goswin von Brederlow <goswin-v-b@web.de>, Li Fei <fei.li@intel.com>,
+        len.brown@intel.com, mingo@redhat.com, peterz@infradead.org,
+        biao.wang@intel.com, linux-pm@vger.kernel.org,
+        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        chuansheng.liu@intel.com
+Subject: Re: Getting rid of freezer for suspend [was Re: [fuse-devel]
+ [PATCH] fuse: make fuse daemon frozen along with kernel threads]
+Message-ID: <20130212104608.GA24042@amd.pavel.ucw.cz>
+References: <1360113112.17267.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+ <2964781.rPUOipNRNb@vostro.rjw.lan>
+ <CAJfpegtNUr+AJXZcKmLEGBYqu20DVFwzg-OvOk_nS3fBS3wd=Q@mail.gmail.com>
+ <1660768.prnx6s70rD@vostro.rjw.lan>
+ <CAJfpegt2B3n-QNK_W7O2H0JVfS=4jcUOzV_+w8ELPq19RJPewQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1360645032-9668-11-git-send-email-s-anna@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 12 Feb 2013 10:39:52.0788 (UTC) FILETIME=[4A680940:01CE090D]
-X-MC-Unique: 113021210395501501
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <CAJfpegt2B3n-QNK_W7O2H0JVfS=4jcUOzV_+w8ELPq19RJPewQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi!
 
-I have a few comments on the devicetree binding and the way it's parsed.
+> > That's potentially deeadlock-prone, because a task waiting for mutex X may
+> > very well be holding mutex Y, so if there's another task waiting for mutex Y,
+> > it needs to be frozen at the same time.
+> >
+> >> The only little detail is how do we implement that...
+> >
+> > This means the only way I can see would be to hack the mutex code so that the
+> > try_to_freeze() was called for user space tasks after the
+> > sched_preempt_enable_no_resched() before schedule().
+> >
+> > That shouldn't be a big deal performance-wise, because we are in the slow
+> > path anyway then.  I'm not sure if Peter Z will like it, though.
+> >
+> > Moreover, a task waiting for a mutex may be holding a semaphore or be
+> > participating in some other mutual-exclusion mechanism, so we'd need to
+> > address them all.  Plus, as noted by Pavel, freezing those things would make
+> > it difficult to save hibernation images to us.
+> 
+> Well, as a first step I could cook up a patch that adds a flag to the
+> mutex indicating that it's freezable.  Fuse would mark its mutexes
+> (and the mutexes that VFS uses on its behalf) as freezable.  That way
+> we don't interfere with hibernation, except if hibernation uses fuse
+> but that's a very special case.
 
-> +static const struct of_device_id dbx500_mailbox_match[] = {
-> +       { .compatible = "stericsson,db8500-mailbox",
-> +               .data = (void *)db8500_mboxes,
-> +       },
-> +       { .compatible = "stericsson,db9540-mailbox",
-> +               .data = (void *)dbx540_mboxes,
-> +       },
-> +       { /* sentinel */}
-> +};
-> +
+Yes please. If that is doable, that's the right solution.
 
-The binding for the compatible strings above and property parsing below should
-be documented.
-
-> +static int dbx500_mbox_probe(struct platform_device *pdev)
-> +{
-> +       const struct platform_device_id *platid = platform_get_device_id(pdev);
-> +       struct resource *mem;
-> +       int ret, i, legacy_offset = 0, upap_offset;
-> +       struct mailbox **list;
-> +       int irq;
-> +       struct dbx500_plat_data *pdata = dev_get_platdata(&pdev->dev);
-> +       struct device_node *np = pdev->dev.of_node;
-> +
-> +       if (!pdata) {
-> +               if (np) {
-> +                       of_property_read_u32(np, "legacy-offset",
-> +                                                       &legacy_offset);
-
-I see that legacy_offset is initialised to 0, and there's no check on the
-return value of of_property_read_u32. Does that mean this is an optional
-property? This needs to be documented.
-
-> +                       of_property_read_u32(np, "upap-offset", &upap_offset);
-
-However, upap_offset isn't initialised, but there's no check on the return
-value. If "upap-offset" isn't defined in the dt, upap_offset won't have been
-initialised. 
-
-Is there no basic sanity checking that could be done here? I assume there's a
-maximum offset we expect that's less than 4GB?
-
-Additionally, of_property_read_u32 takes a *u32, not *int. It would be nice to
-be consistent with the interface.
-
-I'm not familiar with the hardware. What's the difference between the legacy
-and upap cases?
-
-> +                       list = (struct mailbox **)of_match_device(
-> +                                       dbx500_mailbox_match, &pdev->dev)->data;
-> +                       if (!list) {
-> +                               /* No mailbox configuration */
-> +                               dev_err(&pdev->dev, "No configuration found\n");
-> +                               return -ENODEV;
-> +                       }
-> +               } else {
-> +                       /* No mailbox configuration */
-> +                       dev_err(&pdev->dev, "No configuration found\n");
-> +                       return -ENODEV;
-> +               }
-> +       } else {
-> +               list = (struct mailbox **)platid->driver_data;
-> +               legacy_offset = pdata->legacy_offset;
-> +               upap_offset = pdata->upap_offset;
-> +       }
-> +
-> +       mem = platform_get_resource_byname(pdev, IORESOURCE_MEM, "prcm_reg");
-
-Does this work for dt? I wasn't aware we got anything more than anonymous
-memory and interrupts.
-
-> +       mbox_base = devm_ioremap(&pdev->dev, mem->start, resource_size(mem));
-> +       if (!mbox_base) {
-> +               ret = -ENOMEM;
-> +               goto out;
-> +       }
-> +
-> +       mem = platform_get_resource_byname(pdev, IORESOURCE_MEM, "prcmu_tcdm");
-
-Same here.
-
-Thanks,
-Mark.
-
+(After all, with FUSE, filesystem clients are just doing IPC. In ideal
+world, that would be freezeable and killable with -9).
+ 
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
