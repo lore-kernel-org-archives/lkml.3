@@ -1,83 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756064Ab3BLGtn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 01:49:43 -0500
-Received: from relay.parallels.com ([195.214.232.42]:44191 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755627Ab3BLGtm (ORCPT
+	id S1756174Ab3BLG4d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 01:56:33 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:40186 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753508Ab3BLG4b convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 01:49:42 -0500
-Message-ID: <5119E5E8.9030803@parallels.com>
-Date: Tue, 12 Feb 2013 10:49:12 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Tue, 12 Feb 2013 01:56:31 -0500
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: Paul Walmsley <paul@pwsan.com>
+CC: "tony@atomide.com" <tony@atomide.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "Cousson, Benoit" <b-cousson@ti.com>,
+        "Hiremath, Vaibhav" <hvaibhav@ti.com>,
+        "AnilKumar, Chimata" <anilkumar@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
+        "Bedia, Vaibhav" <vaibhav.bedia@ti.com>
+Subject: RE: [PATCH 4/7] ARM: AM33XX: clk: Add clock node for EHRPWM TBCLK
+Thread-Topic: [PATCH 4/7] ARM: AM33XX: clk: Add clock node for EHRPWM TBCLK
+Thread-Index: AQHN6Oyyn3+GFX+8KkiOyfpfoYOW65hv7c6AgAYbjEA=
+Date: Tue, 12 Feb 2013 06:55:18 +0000
+Deferred-Delivery: Tue, 12 Feb 2013 06:55:00 +0000
+Message-ID: <518397C60809E147AF5323E0420B992E3EA73534@DBDE01.ent.ti.com>
+References: <1357133094-30806-1-git-send-email-avinashphilip@ti.com>
+ <1357133094-30806-5-git-send-email-avinashphilip@ti.com>
+ <alpine.DEB.2.00.1302081505350.28008@utopia.booyaka.com>
+In-Reply-To: <alpine.DEB.2.00.1302081505350.28008@utopia.booyaka.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.162.25]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: <akpm@linux-foundation.org>, <linux-nfs@vger.kernel.org>,
-        <Trond.Myklebust@netapp.com>, <linux-kernel@vger.kernel.org>,
-        <devel@openvz.org>
-Subject: Re: [PATCH 0/2] NFSD: fix races in service per-net resources allocation
-References: <20130201111046.24066.72836.stgit@localhost.localdomain> <20130211002558.GD10161@fieldses.org> <51188D2A.4070605@parallels.com> <20130211163715.GA19342@fieldses.org>
-In-Reply-To: <20130211163715.GA19342@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.29.37]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-11.02.2013 20:37, J. Bruce Fields пишет:
-> On Mon, Feb 11, 2013 at 10:18:18AM +0400, Stanislav Kinsbursky wrote:
->> This one looks a bit complicated and confusing to me. Probably because
->> I'm not that familiar with service transports processing logic.  So,
->> as I can see, we now try to run over all per-net pool-assigned
->> transports, remove them from "ready" queue and delete one by one.
->> Then we try to enqueue all temporary sockets. But where in enqueueing
->> of permanent sockets? I.e. how does they be destroyed with this patch?
->> Then we once again try to run over all per-net pool-assigned
->> transports, remove them from "ready" queue and delete one by one.  Why
->> twice? I.e. why not just lose them, then enqueue them and
->> svc_clean_up_xprts()?
->
-> I think you missed the first svc_close_list?:
->
+On Fri, Feb 08, 2013 at 20:36:53, Paul Walmsley wrote:
+> Hi,
+> 
+> On Wed, 2 Jan 2013, Philip Avinash wrote:
+> 
+> > EHRPWM module requires explicit clock gating of TBCLK from control
+> > module. Hence add TBCLK clock node in clock tree for EHRPWM modules.
+> > 
+> > Signed-off-by: Philip Avinash <avinashphilip@ti.com>
+> 
+> This patch adds some sparse[1] warnings:
+> 
+> > arch/arm/mach-omap2/cclock33xx_data.c:844:1: warning: Using plain 
+> integer as NULL pointer
+> > arch/arm/mach-omap2/cclock33xx_data.c:850:1: warning: Using plain 
+> integer as NULL pointer
+> > arch/arm/mach-omap2/cclock33xx_data.c:856:1: warning: Using plain 
+> integer as NULL pointer
+> 
+> Could you fix these, please?
 
-Yeah, thanks! To many deleted lines confused me.
+Sorry for late response. I will send an updated version with fix for
+sparse warnings.
 
->>>   	svc_close_list(serv, &serv->sv_permsocks, net);
->>> +	svc_clean_up_xprts(serv, net);
->>> +	svc_close_list(serv, &serv->sv_tempsocks, net);
->>> +	svc_clean_up_xprts(serv, net);
->
-> The idea is that before we'd like to close all the listeners first, so
-> that they aren't busy creating more tempsocks while we're trying to
-> close them.
->
-> I overlooked a race, though: if another thread was already handling an
-> accept for one of the listeners then it might not get closed by that
-> first svc_clean_up_xprts.
->
-> I guess we could do something like:
->
-> 	delay = 0;
->
->      again:
-> 	numclosed = svc_close_list(serv, &serv->sv_permsocks, net);
-> 	numclosed += svc_close_list(serv, &serv->sv_tempsocks, net);
-> 	if (numclosed) {
-> 		svc_clean_up_xprts(serv, net);
-> 		msleep(delay++);
-> 		goto again;
-> 	}
->
-> Seems a little cheesy, but if we don't care much about shutdown
-> performance in a rare corner case, maybe it's the simplest way out?
->
+Thanks
+Avinash
 
-Agreed. This part (per-net shutdown) has enough logical complexity already and would be great to not
-increase it.
+> 
+> 
+> - Paul
+> 
+> 1. Sparse: https://sparse.wiki.kernel.org/index.php/Main_Page
+> 
+> 
 
-
--- 
-Best regards,
-Stanislav Kinsbursky
