@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759226Ab3BLUuN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:50:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53922 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758321Ab3BLUln (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758316Ab3BLUln (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 12 Feb 2013 15:41:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53865 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758156Ab3BLUli (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 15:41:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Romain Kuntz <r.kuntz@ipflavors.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 11/36] ipv6: fix header length calculation in ip6_append_data()
-Date: Tue, 12 Feb 2013 12:41:05 -0800
-Message-Id: <20130212203858.645941949@linuxfoundation.org>
+        nitin padalia <padalia.nitin@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        Eric Dumazet <edumazet@google.com>
+Subject: [ 08/36] net: prevent setting ttl=0 via IP_TTL
+Date: Tue, 12 Feb 2013 12:41:02 -0800
+Message-Id: <20130212203858.304834661@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203857.305594226@linuxfoundation.org>
 References: <20130212203857.305594226@linuxfoundation.org>
@@ -29,46 +31,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Romain KUNTZ <r.kuntz@ipflavors.com>
+From: Cong Wang <xiyou.wangcong@gmail.com>
 
-[ Upstream commit 7efdba5bd9a2f3e2059beeb45c9fa55eefe1bced ]
+[ Upstream commit c9be4a5c49cf51cc70a993f004c5bb30067a65ce ]
 
-Commit 299b0767 (ipv6: Fix IPsec slowpath fragmentation problem)
-has introduced a error in the header length calculation that
-provokes corrupted packets when non-fragmentable extensions
-headers (Destination Option or Routing Header Type 2) are used.
+A regression is introduced by the following commit:
 
-rt->rt6i_nfheader_len is the length of the non-fragmentable
-extension header, and it should be substracted to
-rt->dst.header_len, and not to exthdrlen, as it was done before
-commit 299b0767.
+	commit 4d52cfbef6266092d535237ba5a4b981458ab171
+	Author: Eric Dumazet <eric.dumazet@gmail.com>
+	Date:   Tue Jun 2 00:42:16 2009 -0700
 
-This patch reverts to the original and correct behavior. It has
-been successfully tested with and without IPsec on packets
-that include non-fragmentable extensions headers.
+	    net: ipv4/ip_sockglue.c cleanups
 
-Signed-off-by: Romain Kuntz <r.kuntz@ipflavors.com>
-Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
+	    Pure cleanups
+
+but it is not a pure cleanup...
+
+	-               if (val != -1 && (val < 1 || val>255))
+	+               if (val != -1 && (val < 0 || val > 255))
+
+Since there is no reason provided to allow ttl=0, change it back.
+
+Reported-by: nitin padalia <padalia.nitin@gmail.com>
+Cc: nitin padalia <padalia.nitin@gmail.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David S. Miller <davem@davemloft.net>
+Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/ip6_output.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/ipv4/ip_sockglue.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -1287,10 +1287,10 @@ int ip6_append_data(struct sock *sk, int
- 		cork->length = 0;
- 		sk->sk_sndmsg_page = NULL;
- 		sk->sk_sndmsg_off = 0;
--		exthdrlen = (opt ? opt->opt_flen : 0) - rt->rt6i_nfheader_len;
-+		exthdrlen = (opt ? opt->opt_flen : 0);
- 		length += exthdrlen;
- 		transhdrlen += exthdrlen;
--		dst_exthdrlen = rt->dst.header_len;
-+		dst_exthdrlen = rt->dst.header_len - rt->rt6i_nfheader_len;
- 	} else {
- 		rt = (struct rt6_info *)cork->dst;
- 		fl6 = &inet->cork.fl.u.ip6;
+--- a/net/ipv4/ip_sockglue.c
++++ b/net/ipv4/ip_sockglue.c
+@@ -589,7 +589,7 @@ static int do_ip_setsockopt(struct sock
+ 	case IP_TTL:
+ 		if (optlen < 1)
+ 			goto e_inval;
+-		if (val != -1 && (val < 0 || val > 255))
++		if (val != -1 && (val < 1 || val > 255))
+ 			goto e_inval;
+ 		inet->uc_ttl = val;
+ 		break;
 
 
