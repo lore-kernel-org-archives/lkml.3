@@ -1,65 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759469Ab3BLMOS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 07:14:18 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:39645 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758941Ab3BLMOQ (ORCPT
+	id S1759600Ab3BLMPV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 07:15:21 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:58211 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759190Ab3BLMPT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 07:14:16 -0500
-MIME-Version: 1.0
-In-Reply-To: <201302121126.10288.arnd@arndb.de>
-References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com>
-	<201302111608.29304.arnd@arndb.de>
-	<CAHTX3dJUduUj1a5_xCfjVc0y3J4-zUKZrBpQTvSj=SVVz=gvsg@mail.gmail.com>
-	<201302121126.10288.arnd@arndb.de>
-Date: Tue, 12 Feb 2013 13:14:15 +0100
-Message-ID: <CAHTX3dKn7iwbHyOnpJ4XiNbK766oqrJW06kH7XrAW2TJtOhehA@mail.gmail.com>
-Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16
- with generic iowrite(read)8/16(be)
-From: Michal Simek <monstr@monstr.eu>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, dahinds@users.sourceforge.net
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 12 Feb 2013 07:15:19 -0500
+Message-ID: <1360671314.4657.234.camel@marge.simpson.net>
+Subject: Re: [PATCH] sched/rt: Unthrottle the highest RT task of the rq if
+ there are no another available tasks to be picked
+From: Mike Galbraith <bitbucket@online.de>
+To: Stanislav Meduna <stano@meduna.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Date: Tue, 12 Feb 2013 13:15:14 +0100
+In-Reply-To: <5119F967.3040302@meduna.org>
+References: <2260671360618316@web22h.yandex.ru>
+	 <1360652809.4657.87.camel@marge.simpson.net> <5119F967.3040302@meduna.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:jkIN87xgKZVAOE6LUT4POikBddBK2q7x+oi4csZ6+Aw
+ DeIO5JIbudbJUNLt0VDaVTDX7D4ZP2u7/gmQ6D05bRbhS191ll
+ EoefETU13itECRVqVCCWiXVdPpddBDuYXyLifYF79qnIRi26BL
+ M9kQSaDWKQWqRjymAIShxrBCFu41xhq1J8pCkDRGCkQMqbHl9s
+ dp4/cSNvkWF5G6HCvD751gwZtsH6Yvp9M8DcUCpU/HPpcEEd4D
+ zHTsl+Jt7kzFXaOeh2bxAW8oZOcGJb9mjhuaSoP1rj+xGcUIh2
+ bJkdCYpeOAsxwO2Nv452rg/7zMbp/0+G6ZUo5QWOHjqaWeLK2x
+ cGVV5T/VVHx9L7K64GopfyyMEcWe7vBMe0mMuoAeGRXA+KjC8T
+ UgrHx6Q9ARbkA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/2/12 Arnd Bergmann <arnd@arndb.de>:
-> On Tuesday 12 February 2013, Michal Simek wrote:
->> > In particular, ARM can run both big- and little-endian even though
->> > big-endian is rarely used, so you need to know the endianess for
->> > the device you are talking to rather than assume that it knows
->> > what the CPU does at the time.
->>
->> For high performance IPs using accessors functions is still problematic
->> because there will be performance regression it means that
->> from my point of view there still should be any option to "setup"
->> proper endians for the driver and it can't be setup at run-time.
->
-> I did not mean you have to use a run-time detection here, although
-> that is often the easiest solution. If you know the endianess of
-> a device for a specific architecture or platform, it is totally
-> fine to pick that endianess at compile-time and use e.g. the
-> readl_relaxed() accessors on ARM to give you the lowest access
-> latency.
+On Tue, 2013-02-12 at 09:12 +0100, Stanislav Meduna wrote: 
+> On 12.02.2013 08:06, Mike Galbraith wrote:
+> 
+> >> In this case pick_next_task takes idle tasks and idle wastes cpu
+> >> time.
+> 
+> > That's not a waste of CPU time, that's utilization enforcement the thing
+> > it is designed to do.
+> 
+> Well this is a philosophical question and the opinions will IMHO
+> vary strongly. If the throttling kicks in, the system already
+> is in the out-of-spec state.
 
-ok but still there should be well defined how to do it. Let's say
-generic Kconfig option.
-Or maybe there is also third option to modified code to use proper writes.
+Exactly, please don't feed the wild eyed psychopaths ;-)
 
-Thanks,
-Michal
+> Is the goal now just to allow
+> e.g. the ssh login to be able to kill the task and still try
+> to do the best if otherwise (possibly masking the problem for
+> months), or is it to enforce the utilization?
 
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+Both.  It has two modes of enforcement, sane mode is I WILL constrain
+this thing you turned loose should it acts up, and not so sane mode,
+where borrowing a cup of CPU from the neighbors is ok.  Workqueues.
+
+> For example we have a PLC software where the end-user develops
+> an application that will be executed in our realtime task.
+> The application usually has a longer initialization part where
+> the excess utilization can happen and should be tolerated
+> and the running part where it is a bug if it happens. Here
+> I would prefer the throttling to alert the user, but not
+> to actually throttle if there is no non-RT task actually
+> wanting to run. In other cases I would maybe prefer even
+> killing the task, alerting the user to the fact.
+
+That's not in the throttles job description.  It's not a monitor and
+report system, it's a constraint system for very dangerous beasts.
+
+> I have a related question: is the information that the throttling
+> happened available somewhere except the log (where it gets only
+> written once)? If not, would a patch exporting the count
+> of throttlings via /sys be accepted?
+
+I'm not the maintainer, so can't say.  Seems to me a trace point would
+be better though.
+
+-Mike
+
