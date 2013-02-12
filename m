@@ -1,29 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759502Ab3BLVE7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 16:04:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53504 "EHLO
+	id S1759557Ab3BLVF1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 16:05:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53492 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753875Ab3BLUfy (ORCPT
+	with ESMTP id S1753517Ab3BLUfw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:35:54 -0500
+	Tue, 12 Feb 2013 15:35:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Maciej=20=AFenczykowski?= <maze@google.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Neal Cardwell <ncardwell@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 27/61] tcp: fix incorrect LOCKDROPPEDICMPS counter
-Date: Tue, 12 Feb 2013 12:34:47 -0800
-Message-Id: <20130212203421.994548599@linuxfoundation.org>
+        Rob Herring <rob.herring@calxeda.com>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Subject: [ 24/61] net: calxedaxgmac: throw away overrun frames
+Date: Tue, 12 Feb 2013 12:34:44 -0800
+Message-Id: <20130212203421.644811246@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203417.890993903@linuxfoundation.org>
 References: <20130212203417.890993903@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,46 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Eric Dumazet <edumazet@google.com>
+From: Rob Herring <rob.herring@calxeda.com>
 
-[ Upstream commit b74aa930ef49a3c0d8e4c1987f89decac768fb2c ]
+[ Upstream commit d6fb3be544b46a7611a3373fcaa62b5b0be01888 ]
 
-commit 563d34d057 (tcp: dont drop MTU reduction indications)
-added an error leading to incorrect accounting of
-LINUX_MIB_LOCKDROPPEDICMPS
+The xgmac driver assumes 1 frame per descriptor. If a frame larger than
+the descriptor's buffer size is received, the frame will spill over into
+the next descriptor. So check for received frames that span more than one
+descriptor and discard them. This prevents a crash if we receive erroneous
+large packets.
 
-If socket is owned by the user, we want to increment
-this SNMP counter, unless the message is a
-(ICMP_DEST_UNREACH,ICMP_FRAG_NEEDED) one.
-
-Reported-by: Maciej ¯enczykowski <maze@google.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Neal Cardwell <ncardwell@google.com>
-Signed-off-by: Maciej ¯enczykowski <maze@google.com>
-Acked-by: Neal Cardwell <ncardwell@google.com>
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_ipv4.c |    9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+ drivers/net/ethernet/calxeda/xgmac.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -380,11 +380,10 @@ void tcp_v4_err(struct sk_buff *icmp_skb
- 	 * We do take care of PMTU discovery (RFC1191) special case :
- 	 * we can receive locally generated ICMP messages while socket is held.
- 	 */
--	if (sock_owned_by_user(sk) &&
--	    type != ICMP_DEST_UNREACH &&
--	    code != ICMP_FRAG_NEEDED)
--		NET_INC_STATS_BH(net, LINUX_MIB_LOCKDROPPEDICMPS);
--
-+	if (sock_owned_by_user(sk)) {
-+		if (!(type == ICMP_DEST_UNREACH && code == ICMP_FRAG_NEEDED))
-+			NET_INC_STATS_BH(net, LINUX_MIB_LOCKDROPPEDICMPS);
-+	}
- 	if (sk->sk_state == TCP_CLOSE)
- 		goto out;
+--- a/drivers/net/ethernet/calxeda/xgmac.c
++++ b/drivers/net/ethernet/calxeda/xgmac.c
+@@ -546,6 +546,10 @@ static int desc_get_rx_status(struct xgm
+ 		return -1;
+ 	}
  
++	/* All frames should fit into a single buffer */
++	if (!(status & RXDESC_FIRST_SEG) || !(status & RXDESC_LAST_SEG))
++		return -1;
++
+ 	/* Check if packet has checksum already */
+ 	if ((status & RXDESC_FRAME_TYPE) && (status & RXDESC_EXT_STATUS) &&
+ 		!(ext_status & RXDESC_IP_PAYLOAD_MASK))
 
 
