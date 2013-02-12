@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759005Ab3BLUrX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:47:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53982 "EHLO
+	id S1758652Ab3BLUrl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 15:47:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53978 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757403Ab3BLUlt (ORCPT
+	with ESMTP id S1758589Ab3BLUlt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Feb 2013 15:41:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jamie Gloudon <jamie.gloudon@gmail.com>,
+        Jiri Pirko <jiri@resnulli.us>,
+        Marcelo Ricardo Leitner <mleitner@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 21/36] via-rhine: Fix bugs in NAPI support.
-Date: Tue, 12 Feb 2013 12:41:15 -0800
-Message-Id: <20130212203859.806824122@linuxfoundation.org>
+Subject: [ 20/36] ipv6: do not create neighbor entries for local delivery
+Date: Tue, 12 Feb 2013 12:41:14 -0800
+Message-Id: <20130212203859.694204198@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203857.305594226@linuxfoundation.org>
 References: <20130212203857.305594226@linuxfoundation.org>
@@ -28,49 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Marcelo Ricardo Leitner <mleitner@redhat.com>
 
-[ Upstream commit 559bcac35facfed49ab4f408e162971612dcfdf3 ]
+[ Upstream commit bd30e947207e2ea0ff2c08f5b4a03025ddce48d3 ]
 
-1) rhine_tx() should use dev_kfree_skb() not dev_kfree_skb_irq()
+They will be created at output, if ever needed. This avoids creating
+empty neighbor entries when TPROXYing/Forwarding packets for addresses
+that are not even directly reachable.
 
-2) rhine_slow_event_task's NAPI triggering logic is racey, it
-   should just hit the interrupt mask register.  This is the
-   same as commit 7dbb491878a2c51d372a8890fa45a8ff80358af1
-   ("r8169: avoid NAPI scheduling delay.") made to fix the same
-   problem in the r8169 driver.  From Francois Romieu.
+Note that IPv4 already handles it this way. No neighbor entries are
+created for local input.
 
-Reported-by: Jamie Gloudon <jamie.gloudon@gmail.com>
-Tested-by: Jamie Gloudon <jamie.gloudon@gmail.com>
+Tested by myself and customer.
+
+Signed-off-by: Jiri Pirko <jiri@resnulli.us>
+Signed-off-by: Marcelo Ricardo Leitner <mleitner@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/via/via-rhine.c |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ net/ipv6/route.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/via/via-rhine.c
-+++ b/drivers/net/ethernet/via/via-rhine.c
-@@ -1802,7 +1802,7 @@ static void rhine_tx(struct net_device *
- 					 rp->tx_skbuff[entry]->len,
- 					 PCI_DMA_TODEVICE);
- 		}
--		dev_kfree_skb_irq(rp->tx_skbuff[entry]);
-+		dev_kfree_skb(rp->tx_skbuff[entry]);
- 		rp->tx_skbuff[entry] = NULL;
- 		entry = (++rp->dirty_tx) % TX_RING_SIZE;
- 	}
-@@ -2011,11 +2011,7 @@ static void rhine_slow_event_task(struct
- 	if (intr_status & IntrPCIErr)
- 		netif_warn(rp, hw, dev, "PCI error\n");
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -846,7 +846,8 @@ restart:
+ 	dst_hold(&rt->dst);
+ 	read_unlock_bh(&table->tb6_lock);
  
--	napi_disable(&rp->napi);
--	rhine_irq_disable(rp);
--	/* Slow and safe. Consider __napi_schedule as a replacement ? */
--	napi_enable(&rp->napi);
--	napi_schedule(&rp->napi);
-+	iowrite16(RHINE_EVENT & 0xffff, rp->base + IntrEnable);
- 
- out_unlock:
- 	mutex_unlock(&rp->task_lock);
+-	if (!dst_get_neighbour_noref_raw(&rt->dst) && !(rt->rt6i_flags & RTF_NONEXTHOP))
++	if (!dst_get_neighbour_noref_raw(&rt->dst) &&
++	    !(rt->rt6i_flags & (RTF_NONEXTHOP | RTF_LOCAL)))
+ 		nrt = rt6_alloc_cow(rt, &fl6->daddr, &fl6->saddr);
+ 	else if (!(rt->dst.flags & DST_HOST))
+ 		nrt = rt6_alloc_clone(rt, &fl6->daddr);
 
 
