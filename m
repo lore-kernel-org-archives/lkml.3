@@ -1,57 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756402Ab3BLCyM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 21:54:12 -0500
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:42834 "EHLO
-	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751456Ab3BLCyK (ORCPT
+	id S932884Ab3BLC7L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 21:59:11 -0500
+Received: from mail-da0-f44.google.com ([209.85.210.44]:40650 "EHLO
+	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751456Ab3BLC7J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 21:54:10 -0500
-Message-ID: <1360637638.4415.13.camel@thor.lan>
-Subject: Re: WARNING: at drivers/tty/tty_buffer.c:476  (tty is NULL)
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Michael Ellerman <michael@ellerman.id.au>
-Cc: Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Date: Mon, 11 Feb 2013 21:53:58 -0500
-In-Reply-To: <20130212020039.GA8979@concordia>
-References: <20130102153744.GC25940@redhat.com>
-	 <20130118205358.GA6854@redhat.com> <20130118210728.GA16742@kroah.com>
-	 <50FB0957.2000400@suse.cz> <1359570837.3325.30.camel@thor.lan>
-	 <20130211024412.GA7623@concordia> <1360593750.25941.13.camel@thor.lan>
-	 <20130212020039.GA8979@concordia>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-0pjh1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Mon, 11 Feb 2013 21:59:09 -0500
+From: Haojian Zhuang <haojian.zhuang@linaro.org>
+To: gregkh@linuxfoundation.org, viro@zeniv.linux.org.uk, rusty@rustcorp.com.au,
+        hpa@linux.intel.com, jim.cromie@gmail.com,
+        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
+        linus.walleij@linaro.org, grant.likely@secretlab.ca, arnd@arndb.de,
+        broonie@opensource.wolfsonmicro.com, akpm@linux-foundation.org
+Cc: patches@linaro.org, Haojian Zhuang <haojian.zhuang@linaro.org>
+Subject: [PATCH v2] driver core: add wait event for deferred probe
+Date: Tue, 12 Feb 2013 10:58:35 +0800
+Message-Id: <1360637915-11212-1-git-send-email-haojian.zhuang@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-02-12 at 13:00 +1100, Michael Ellerman wrote:
-> Sorry I just mean I'm seeing the warning, I have no idea how.
+do_initcalls() could call all driver initialization code in kernel_init
+thread. It means that probe() function will be also called from that
+time. After this, kernel could access console & release __init section
+in the same thread.
 
-Ok, no problem. I just got a little excited because that area of code
-was hard to test adequately.
+But if device probe fails and moves into deferred probe list, a new
+thread is created to reinvoke probe. If the device is serial console,
+kernel has to open console failure & release __init section before
+reinvoking failure. Because there's no synchronization mechanism.
+Now add wait event to synchronize after do_initcalls().
 
-> > Can you reproduce after using the following patch series?
-> > [PATCH v3 00/23] ldisc fixes
-> 
-> What are they against? I tried Linus' tree and linux-next but they
-> didn't apply cleanly against either.
+Changelog:
+v2: add comments on wait_for_device_probe().
 
-The series was generated against next-20130204. 13/23 doesn't apply
-cleanly at next-20130211 because of changes since. Rebases fine
-though :)
+Signed-off-by: Haojian Zhuang <haojian.zhuang@linaro.org>
+---
+ drivers/base/dd.c |    8 +++++---
+ init/main.c       |    2 ++
+ 2 files changed, 7 insertions(+), 3 deletions(-)
 
-The series is currently in mid-review, so a new series won't be out
-until that completes.  (Besides, next-20130211 doesn't even boot for
-me.)
-
-Regards,
-Peter Hurley
+diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+index 65631015..23db672 100644
+--- a/drivers/base/dd.c
++++ b/drivers/base/dd.c
+@@ -53,6 +53,9 @@ static LIST_HEAD(deferred_probe_pending_list);
+ static LIST_HEAD(deferred_probe_active_list);
+ static struct workqueue_struct *deferred_wq;
+ 
++static atomic_t probe_count = ATOMIC_INIT(0);
++static DECLARE_WAIT_QUEUE_HEAD(probe_waitqueue);
++
+ /**
+  * deferred_probe_work_func() - Retry probing devices in the active list.
+  */
+@@ -77,6 +80,7 @@ static void deferred_probe_work_func(struct work_struct *work)
+ 		private = list_first_entry(&deferred_probe_active_list,
+ 					typeof(*dev->p), deferred_probe);
+ 		dev = private->device;
++		atomic_dec(&probe_count);
+ 		list_del_init(&private->deferred_probe);
+ 
+ 		get_device(dev);
+@@ -257,9 +261,6 @@ int device_bind_driver(struct device *dev)
+ }
+ EXPORT_SYMBOL_GPL(device_bind_driver);
+ 
+-static atomic_t probe_count = ATOMIC_INIT(0);
+-static DECLARE_WAIT_QUEUE_HEAD(probe_waitqueue);
+-
+ static int really_probe(struct device *dev, struct device_driver *drv)
+ {
+ 	int ret = 0;
+@@ -308,6 +309,7 @@ probe_failed:
+ 		/* Driver requested deferred probing */
+ 		dev_info(dev, "Driver %s requests probe deferral\n", drv->name);
+ 		driver_deferred_probe_add(dev);
++		atomic_inc(&probe_count);
+ 	} else if (ret != -ENODEV && ret != -ENXIO) {
+ 		/* driver matched but the probe failed */
+ 		printk(KERN_WARNING
+diff --git a/init/main.c b/init/main.c
+index 63534a1..141a6a4 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -786,6 +786,8 @@ static void __init do_basic_setup(void)
+ 	do_ctors();
+ 	usermodehelper_enable();
+ 	do_initcalls();
++	/* wait all deferred probe finished & prepare to drop __init section */
++	wait_for_device_probe();
+ }
+ 
+ static void __init do_pre_smp_initcalls(void)
+-- 
+1.7.10.4
 
