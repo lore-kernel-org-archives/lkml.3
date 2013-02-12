@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933336Ab3BLT2D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 14:28:03 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:59523 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932293Ab3BLT2B (ORCPT
+	id S933346Ab3BLTc4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 14:32:56 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:49400 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933170Ab3BLTcy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 14:28:01 -0500
-Message-ID: <511A97BD.9010707@wwwdotorg.org>
-Date: Tue, 12 Feb 2013 12:27:57 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Tue, 12 Feb 2013 14:32:54 -0500
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Michal Marek <mmarek@suse.cz>, Grant Likely <glikely@secretlab.ca>,
-        Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
-        devicetree-discuss@lists.ozlabs.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, Scott Wood <scottwood@freescale.com>,
-        Stephen Warren <swarren@nvidia.com>, Sam Ravnborg <sam@ravnborg.org>
-Subject: Re: [PATCH V8] kbuild: create a rule to run the pre-processor on
- *.dts files
-References: <1360091188-24063-1-git-send-email-swarren@wwwdotorg.org> <20130208144527.0D8DD3E2C01@localhost> <51156D09.7060401@gmail.com> <20130208220448.EDA773E2C27@localhost> <51157F65.2050309@wwwdotorg.org> <5119425A.1090802@wwwdotorg.org> <20130212180805.556C93E1202@localhost>
-In-Reply-To: <20130212180805.556C93E1202@localhost>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1362466310.40337.1360693775935.JavaMail.mail@webmail03>
+References: <587312497.6453.1360650312498.JavaMail.mail@webmail01>
+ <CA+55aFyscOeZUPaYj_-QYgjADPD59+=c5aMvtpPEnd1tmpUGiA@mail.gmail.com> <1362466310.40337.1360693775935.JavaMail.mail@webmail03>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 12 Feb 2013 11:32:31 -0800
+X-Google-Sender-Auth: eAlIggPVaufU5g5h2K0XIefvKTU
+Message-ID: <CA+55aFyK1zhNerWHkd=FMMeTH_sfiL4sBFq00y4n5eAJ88Z_cA@mail.gmail.com>
+Subject: Re: Abysmal HDD/USB write speed after sleep on a UEFI system
+To: "Artem S. Tashkinov" <t.artem@lycos.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/12/2013 11:08 AM, Grant Likely wrote:
-> On Mon, 11 Feb 2013 12:11:22 -0700, Stephen Warren <swarren@wwwdotorg.org> wrote:
->> On 02/08/2013 08:45 AM, Grant Likely wrote:
->>> On Tue,  5 Feb 2013 12:06:28 -0700, Stephen Warren <swarren@wwwdotorg.org> wrote:
->>>> Create cmd_dtc_cpp to run the C pre-processor on *.dts file before
->>>> passing them to dtc for final compilation. This allows the use of #define
->>>> and #include within the .dts file.
->> ...
->>> I've applied this and was going to push it out, but I've just thought of
->>> a problem that could be a show stopper. ...
+On Tue, Feb 12, 2013 at 10:29 AM, Artem S. Tashkinov <t.artem@lycos.com> wrote:
+> Feb 12, 2013 11:30:20 PM, Linus Torvalds wrote:
 >>
->> Grant, I notice this showed up in next-20130211 as:
+>>A few things to try to pinpoint:
 >>
->> 22435f3 kbuild: create a rule to run the pre-processor on *.dts files
->>
->> Was that intentional? I assumed you wanted me to rework this before
->> you'd apply it, rather than sending an incremental patch.
-> 
-> Yes it was intentional. I sat on my hands w.r.t. this patch for long
-> enough that I didn't want to delay it any longer. However, I still want
-> a solution to the problem discussed above before it becomes a
-> maintenance disaster.
+>> (a) Is it *only* write performance that suffers, or is it other
+>>performance too? Networking (DMA? Perhaps only writing *to* the
+>>network?)? CPU?
+>
+> I've tested hdpard -tT --direct and the output on boot and after suspend
+> is quite similar.
+>
+> I've also checked my network read/write speed, and it's the same
+> ~ 100MBit/sec (I have no 1Gbit computers on my network
+> unfortunately).
 
-OK, I'll send an incremental patch to adjust the include paths. It
-should be soon; I think I have it written, but am distracted fixing up
-Tegra clock driver issues etc.:-(
+Ok. So it really sounds like just USB and HD writes. Which is quite
+odd, since they have basically nothing in common I can think of
+(except the obvious block layer issues).
+
+>> (b) the fact that it apparently happens with both SATA and USB
+>>implies that it  's neither, and is more likely something core like
+>>memory speed (mtrr, caching) or PCI (DMA, burst sizes, whatever).
+>
+> I've no idea, please, check my bug report where I've just added lots of
+> information including a diff between on boot and after suspend.
+
+I'm not seeing anything particularly interesting there.
+
+Except why/how did the MSI address/data change for the SATA
+controller? The irq itself hasn't changed.. There's probably some sane
+reason for that too (it's an odd encoding, maybe they code for the
+same thing), and there's nothing like that for USB, so...
+
+And if it was irq problems, I'd expect you to see it more for reads
+than for writes anyway. Along with a few messages about missed irqs
+and whatever.
+
+I'm stumped, and have no ideas. I can't even begin to guess how this
+would happen. One thing to try is if it happens for all USB ports (you
+have multiple controllers) and I assume performance doesn't come back
+if you unplug and replug the USB disk..
+
+                 Linus
