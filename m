@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933547Ab3BLReW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 12:34:22 -0500
-Received: from mail-da0-f49.google.com ([209.85.210.49]:35252 "EHLO
-	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933329Ab3BLReT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 12:34:19 -0500
-Date: Tue, 12 Feb 2013 09:34:14 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Wolfram Sang <w.sang@pengutronix.de>, akpm@linux-foundation.org
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, Jean Delvare <khali@linux-fr.org>,
-        linux-i2c@vger.kernel.org
-Subject: [PATCH -mm] i2c: style cleanups after idr_alloc() conversion
-Message-ID: <20130212173414.GD7348@htj.dyndns.org>
-References: <1360179649-22465-1-git-send-email-tj@kernel.org>
- <1360179649-22465-38-git-send-email-tj@kernel.org>
- <20130207152831.GA14797@sirena.org.uk>
- <20130207163247.GL2875@htj.dyndns.org>
- <20130207163958.GY4720@opensource.wolfsonmicro.com>
- <20130207165547.GO2875@htj.dyndns.org>
- <20130210114729.GB5472@nekote.pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130210114729.GB5472@nekote.pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933582Ab3BLRfM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 12:35:12 -0500
+Received: from mail.tpi.com ([70.99.223.143]:4427 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933428Ab3BLRfI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 12:35:08 -0500
+From: Tim Gardner <tim.gardner@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: Tim Gardner <tim.gardner@canonical.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCH linux-next] befs: befs_fill_super(): remove unreachable code
+Date: Tue, 12 Feb 2013 10:34:47 -0700
+Message-Id: <1360690488-60060-1-git-send-email-tim.gardner@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Style cleanups suggested by Wolfram.
+befs_sb->num_blocks is of base type u64 which is the same as sector_t.
+Therefore, num_blocks can never be larger then the maximum
+value of sector_t.
 
-* s/res/id/ in i2c_add_numbered_adapter() so that it matches
-  i2c_add_adapter().
+smatch analysis:
 
-* Add a blank line before return in i2c_add_numbered_adapter().
+fs/befs/linuxvfs.c:851 befs_fill_super() warn: impossible
+ condition '(befs_sb->num_blocks > ~(0)) => (0-u64max > u64max)'
 
-This patch is purely cosmetic.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
 ---
- drivers/i2c/i2c-core.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ fs/befs/linuxvfs.c |    7 -------
+ 1 file changed, 7 deletions(-)
 
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -935,16 +935,17 @@ out_list:
-  */
- int i2c_add_adapter(struct i2c_adapter *adapter)
- {
--	int res;
-+	int id;
+diff --git a/fs/befs/linuxvfs.c b/fs/befs/linuxvfs.c
+index 2b3bda8..2ce5705 100644
+--- a/fs/befs/linuxvfs.c
++++ b/fs/befs/linuxvfs.c
+@@ -848,13 +848,6 @@ befs_fill_super(struct super_block *sb, void *data, int silent)
+ 	if (befs_check_sb(sb) != BEFS_OK)
+ 		goto unacquire_priv_sbp;
  
- 	mutex_lock(&core_lock);
--	res = idr_alloc(&i2c_adapter_idr, adapter,
--			__i2c_first_dynamic_bus_num, 0, GFP_KERNEL);
-+	id = idr_alloc(&i2c_adapter_idr, adapter,
-+		       __i2c_first_dynamic_bus_num, 0, GFP_KERNEL);
- 	mutex_unlock(&core_lock);
--	if (res < 0)
--		return res;
-+	if (id < 0)
-+		return id;
-+
-+	adapter->nr = id;
- 
--	adapter->nr = res;
- 	return i2c_register_adapter(adapter);
- }
- EXPORT_SYMBOL(i2c_add_adapter);
+-	if( befs_sb->num_blocks > ~((sector_t)0) ) {
+-		befs_error(sb, "blocks count: %Lu "
+-			"is larger than the host can use",
+-			befs_sb->num_blocks);
+-		goto unacquire_priv_sbp;
+-	}
+-
+ 	/*
+ 	 * set up enough so that it can read an inode
+ 	 * Fill in kernel superblock fields from private sb
+-- 
+1.7.9.5
+
