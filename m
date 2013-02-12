@@ -1,60 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758244Ab3BLIKg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 03:10:36 -0500
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:64966 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757989Ab3BLIKf (ORCPT
+	id S1758284Ab3BLIcx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 03:32:53 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:50706 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756565Ab3BLIcw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 03:10:35 -0500
-Date: Tue, 12 Feb 2013 09:10:28 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jamie Lokier <jamie@shareable.org>, ville.syrjala@linux.intel.com,
-        Borislav Petkov <bp@alien8.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-tip-commits@vger.kernel.org, "H.J. Lu" <hjl.tools@gmail.com>
-Subject: Re: [tip:x86/mm] x86, mm: Use a bitfield to mask nuisance get_user()
- warnings
-Message-ID: <20130212081028.GA19250@gmail.com>
-References: <20130209110031.GA17833@n2100.arm.linux.org.uk>
- <tip-b390784dc1649f6e6c5e66e5f53c21e715ccf39b@git.kernel.org>
- <CA+55aFxaUUMQuw3bgLbZLARp05eM19E_qTXBYePPk9mvEsSp=g@mail.gmail.com>
- <5119C34B.70207@zytor.com>
+	Tue, 12 Feb 2013 03:32:52 -0500
+Message-ID: <5119FE2A.5040108@atmel.com>
+Date: Tue, 12 Feb 2013 09:32:42 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5119C34B.70207@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
+CC: Robert Nelson <Robert.Nelson@digikey.com>,
+        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Douglas Gilbert <dgilbert@interlog.com>
+Subject: Re: [GIT PULL] at91: fixes for 3.9-rc1
+References: <5110DCDE.1080403@atmel.com>
+In-Reply-To: <5110DCDE.1080403@atmel.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* H. Peter Anvin <hpa@zytor.com> wrote:
-
-> On 02/11/2013 07:33 PM, Linus Torvalds wrote:
-> > On Mon, Feb 11, 2013 at 5:37 PM, tip-bot for H. Peter Anvin
-> > <hpa@zytor.com> wrote:
-> >>
-> >> However, we can declare a bitfield using sizeof(), which is legal
-> >> because sizeof() is a constant expression.  This quiets the warning,
-> >> although the code generated isn't 100% identical from the baseline
-> >> before 96477b4 x86-32: Add support for 64bit get_user():
-> > 
-> > Christ. This is so ugly that it's almost a work of art.
+On 02/05/2013 11:20 AM, Nicolas Ferre :
+> Arnd, Olof,
 > 
-> :)
+> As I realized reading Linus' email that it was not possible to queue more
+> fixes for 3.8, I took my time to send this tiny pull request. But now that
+> the merge window is approaching, I prefer not to wait for more material.
+> So, here is a "fixes" pull-request embedding a single patch. I have placed this
+> one on top of material that you already have from me in your "fixes" and
+> "for-next" branches.
 
-A real possibility would be that if this ever breaks in a GCC 
-version, or generates some really crappy code, we might get a 
-"you got what you asked for" shrug from GCC developers?
+Olof,
 
-It's not like we could start a revolution over that.
+Ping?
 
-Thanks,
+As the other AT91 related branches have been pulled in, I suspect this
+little pull-request had been forgotten.
 
-	Ingo
+Best regards,
+
+
+> The following changes since commit 7d4cfece23f535b60496d88a717a3d7bfca50187:
+> 
+>   ARM: at91/at91sam9x5.dtsi: fix usart3 TXD (2013-01-30 10:09:17 +0100)
+> 
+> are available in the git repository at:
+> 
+>   git://github.com/at91linux/linux-at91.git tags/at91-fixes
+> 
+> for you to fetch changes up to c3f0f282d950a1e87496a2633ed9e924e275ff8c:
+> 
+>   ARM: at91/DT: remove atmel,use-dma-* from 9x5 and 9n12 USART nodes (2013-02-05 10:55:11 +0100)
+> 
+> ----------------------------------------------------------------
+> Correction of 9x5 and 9n12 USART nodes
+> 
+> ----------------------------------------------------------------
+> Nicolas Ferre (1):
+>       ARM: at91/DT: remove atmel,use-dma-* from 9x5 and 9n12 USART nodes
+> 
+>  arch/arm/boot/dts/at91sam9n12.dtsi | 8 --------
+>  arch/arm/boot/dts/at91sam9x5.dtsi  | 6 ------
+>  2 files changed, 14 deletions(-)
+> 
+> 
+> Thanks, bye,
+> 
+
+
+-- 
+Nicolas Ferre
