@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758416Ab3BLUlo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:41:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53871 "EHLO
+	id S1758864Ab3BLUmA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 15:42:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54032 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757458Ab3BLUlj (ORCPT
+	with ESMTP id S1757177Ab3BLUlz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:41:39 -0500
+	Tue, 12 Feb 2013 15:41:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Romain Kuntz <r.kuntz@ipflavors.com>,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 09/36] ipv6: fix the noflags test in addrconf_get_prefix_route
-Date: Tue, 12 Feb 2013 12:41:03 -0800
-Message-Id: <20130212203858.427624308@linuxfoundation.org>
+Subject: [ 29/36] xen/netback: free already allocated memory on failure in xen_netbk_get_requests
+Date: Tue, 12 Feb 2013 12:41:23 -0800
+Message-Id: <20130212203900.707831898@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203857.305594226@linuxfoundation.org>
 References: <20130212203857.305594226@linuxfoundation.org>
@@ -29,33 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Romain Kuntz <r.kuntz@ipflavors.com>
+From: Ian Campbell <Ian.Campbell@citrix.com>
 
-[ Upstream commit 85da53bf1c336bb07ac038fb951403ab0478d2c5 ]
+[ Upstream commit 4cc7c1cb7b11b6f3515bd9075527576a1eecc4aa ]
 
-The tests on the flags in addrconf_get_prefix_route() does no make
-much sense: the 'noflags' parameter contains the set of flags that
-must not match with the route flags, so the test must be done
-against 'noflags', and not against 'flags'.
-
-Signed-off-by: Romain Kuntz <r.kuntz@ipflavors.com>
-Acked-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/addrconf.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/xen-netback/netback.c |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -1736,7 +1736,7 @@ static struct rt6_info *addrconf_get_pre
- 			continue;
- 		if ((rt->rt6i_flags & flags) != flags)
- 			continue;
--		if ((noflags != 0) && ((rt->rt6i_flags & flags) != 0))
-+		if ((rt->rt6i_flags & noflags) != 0)
- 			continue;
- 		dst_hold(&rt->dst);
- 		break;
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -950,7 +950,7 @@ static struct gnttab_copy *xen_netbk_get
+ 		pending_idx = netbk->pending_ring[index];
+ 		page = xen_netbk_alloc_page(netbk, skb, pending_idx);
+ 		if (!page)
+-			return NULL;
++			goto err;
+ 
+ 		gop->source.u.ref = txp->gref;
+ 		gop->source.domid = vif->domid;
+@@ -972,6 +972,17 @@ static struct gnttab_copy *xen_netbk_get
+ 	}
+ 
+ 	return gop;
++err:
++	/* Unwind, freeing all pages and sending error responses. */
++	while (i-- > start) {
++		xen_netbk_idx_release(netbk, frag_get_pending_idx(&frags[i]),
++				      XEN_NETIF_RSP_ERROR);
++	}
++	/* The head too, if necessary. */
++	if (start)
++		xen_netbk_idx_release(netbk, pending_idx, XEN_NETIF_RSP_ERROR);
++
++	return NULL;
+ }
+ 
+ static int xen_netbk_tx_check_gop(struct xen_netbk *netbk,
 
 
