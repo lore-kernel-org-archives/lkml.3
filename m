@@ -1,76 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933340Ab3BLQxZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 11:53:25 -0500
-Received: from mail-la0-f42.google.com ([209.85.215.42]:40688 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932173Ab3BLQxY (ORCPT
+	id S933414Ab3BLQxe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 11:53:34 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:60002 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932147Ab3BLQxc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 11:53:24 -0500
+	Tue, 12 Feb 2013 11:53:32 -0500
+X-Sasl-enc: DiAFSX1DSdSsnhWVBH9zfKNeDcpjw/xLRZWveONh+rxa 1360688011
+Message-ID: <511A7389.7090403@ladisch.de>
+Date: Tue, 12 Feb 2013 17:53:29 +0100
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130212161604.GO3789@intel.com>
-References: <1359471984-26336-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<20130212161604.GO3789@intel.com>
-Date: Tue, 12 Feb 2013 18:53:22 +0200
-Message-ID: <CAHp75VdST2ik2Bj3EC0dk_Xmv+=DNdUBOM3KoXvF3iJoWp7t_Q@mail.gmail.com>
-Subject: Re: [PATCH] dw_dmac: apply default dma_mask if needed
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
-        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+To: kernel kernel <kernel@kenobrien.org>
+CC: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
+Subject: Re: [alsa-devel] Xonar DG pci sound card driver incomplete
+References: <CAG=jzgDxD5ZB683bieoCHQFTehRmOMwnzgefmeSenRPFudY4RA@mail.gmail.com>
+In-Reply-To: <CAG=jzgDxD5ZB683bieoCHQFTehRmOMwnzgefmeSenRPFudY4RA@mail.gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 12, 2013 at 6:16 PM, Vinod Koul <vinod.koul@intel.com> wrote:
-> On Tue, Jan 29, 2013 at 05:06:24PM +0200, Andy Shevchenko wrote:
->> In some cases we got the device without dma_mask configured. We have to apply
->> the default value to avoid crashes during memory mapping.
->>
-> what was this generated against, it fails to apply for me.
+kernel kernel wrote:
+> Requesting guidance on how to implement the missing mic input support
+> for this Asus Xonar card. I've downloaded the relevant datasheets but
+> am unsure how to proceed.
 
-I've tested this against linux-next. The problem apparently in the
-patch which Greg submits earlier:
-7331205a "dma: Convert to devm_ioremap_resource()". If you want I
-could rebase it against your next branch. I thought you'd seen that
-patch already.
+Rip out the card, and look (or eletrically trace) how the CMI8788's
+GPIOs and the CS4245's inputs/outputs are connected.
 
->
->> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
->> ---
->>  drivers/dma/dw_dmac.c |    6 ++++++
->>  1 file changed, 6 insertions(+)
->>
->> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
->> index e8d0679..a572a1e 100644
->> --- a/drivers/dma/dw_dmac.c
->> +++ b/drivers/dma/dw_dmac.c
->> @@ -1673,6 +1673,12 @@ static int dw_probe(struct platform_device *pdev)
->>       if (IS_ERR(regs))
->>               return PTR_ERR(regs);
->>
->> +     /* Apply default dma_mask if needed */
->> +     if (!pdev->dev.dma_mask) {
->> +             pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
->> +             pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
->> +     }
->> +
->>       dw_params = dma_read_byaddr(regs, DW_PARAMS);
->>       autocfg = dw_params >> DW_PARAMS_EN & 0x1;
->>
->> --
->> 1.7.10.4
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Test how to configure and set the GPIOs so that the mic works.
+Also check the register configuration of the CS4245.
 
 
-
--- 
-With Best Regards,
-Andy Shevchenko
+Regards,
+Clemens
