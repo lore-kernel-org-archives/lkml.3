@@ -1,77 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932820Ab3BLKL4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 05:11:56 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:63217 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932672Ab3BLKLy (ORCPT
+	id S1758609Ab3BLKOx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 05:14:53 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:34347
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756062Ab3BLKOw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 05:11:54 -0500
-MIME-Version: 1.0
-In-Reply-To: <201302111608.29304.arnd@arndb.de>
-References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com>
-	<201302111543.46196.arnd@arndb.de>
-	<CAHTX3dJ6pZWyGB=6T22wA_wR-Tqty+4Nywm84g_n4djTv-cT=g@mail.gmail.com>
-	<201302111608.29304.arnd@arndb.de>
-Date: Tue, 12 Feb 2013 11:11:53 +0100
-Message-ID: <CAHTX3dJUduUj1a5_xCfjVc0y3J4-zUKZrBpQTvSj=SVVz=gvsg@mail.gmail.com>
-Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16
- with generic iowrite(read)8/16(be)
-From: Michal Simek <monstr@monstr.eu>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, dahinds@users.sourceforge.net
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 12 Feb 2013 05:14:52 -0500
+Message-ID: <1360664089.4485.6.camel@laptop>
+Subject: Re: [patch v4 02/18] sched: select_task_rq_fair clean up
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alex Shi <alex.shi@intel.com>
+Cc: torvalds@linux-foundation.org, mingo@redhat.com, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 12 Feb 2013 11:14:49 +0100
+In-Reply-To: <1358996820-23036-3-git-send-email-alex.shi@intel.com>
+References: <1358996820-23036-1-git-send-email-alex.shi@intel.com>
+	 <1358996820-23036-3-git-send-email-alex.shi@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/2/11 Arnd Bergmann <arnd@arndb.de>:
-> On Monday 11 February 2013, Michal Simek wrote:
->> Unfortunately no. Another is spi/i2c (sysace as we discuss in this
->> thread), probably icap
->> network drivers are ok because they are not shared.
->> Timer when it is moved to clocksource(not important right now)
->> xilinx gpio is using __raw IO functions which is incorrect on arm in
->> connection to barriers.
->>
->> But it reminds me that maybe the easiest solution is not to use endian
->> accessors just use two simple macros which should work on all systems.
->>
->> #define <name>_readreg(offset)          ({__raw_readl(offset); rmb(); })
->> #define <name>_writereg(offset, val)    ({wmb(); __raw_writel(val, offset); })
->>
->> which is probably the faster solution which add minimum additional code
->> to driver and can also remove endian detection code.
->
-> I tend to disagree. You should never assume that a device is the same
-> endianess as the the CPU, and you should try not to use the __raw_*
-> accessors in device drivers either.
->
-> In particular, ARM can run both big- and little-endian even though
-> big-endian is rarely used, so you need to know the endianess for
-> the device you are talking to rather than assume that it knows
-> what the CPU does at the time.
+On Thu, 2013-01-24 at 11:06 +0800, Alex Shi wrote:
+> It is impossible to miss a task allowed cpu in a eligible group.
 
-For high performance IPs using accessors functions is still problematic
-because there will be performance regression it means that
-from my point of view there still should be any option to "setup"
-proper endians for the driver and it can't be setup at run-time.
+I suppose your reasoning goes like: tsk->cpus_allowed is protected by
+->pi_lock, we hold this, therefore it cannot change and
+find_idlest_group() dtrt?
 
-Sure the question is if drivers like this should be in the mainline.
-But if yes, there should be an option to do it in acceptable way.
+We can then state that this is due to adding proper serialization to
+tsk->cpus_allowed.
 
-Thanks,
-Michal
+> And since find_idlest_group only return a different group which
+> excludes old cpu, it's also impossible to find a new cpu same as old
+> cpu.
 
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+Sounds plausible, but I'm not convinced, do we have hard serialization
+against hotplug?
+
+
+
