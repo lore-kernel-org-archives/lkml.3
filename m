@@ -1,76 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756229Ab3BLEDq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 23:03:46 -0500
-Received: from relay3.sgi.com ([192.48.152.1]:44351 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754771Ab3BLEDo convert rfc822-to-8bit (ORCPT
+	id S1756143Ab3BLEHA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 23:07:00 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:49851 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753020Ab3BLEG7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 23:03:44 -0500
-From: Nathan Zimmer <nzimmer@sgi.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: "viresh.kumar@linaro.org" <viresh.kumar@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>
-Subject: RE: [PATCH v2 linux-next 2/2] cpufreq: Convert the
- cpufreq_driver_lock to use the rcu
-Thread-Topic: [PATCH v2 linux-next 2/2] cpufreq: Convert the
- cpufreq_driver_lock to use the rcu
-Thread-Index: AQHOBA5rBQ8ceIvOaEijZLr8F17MgphvcnMAgAVr1KaAAJxPgIAAJE91
-Date: Tue, 12 Feb 2013 04:03:42 +0000
-Message-ID: <74F10842A85F514CA8D8C487E74474BB2D30DF27@P-EXMB1-DC21.corp.sgi.com>
-References: <74F10842A85F514CA8D8C487E74474BB2D2F925E@P-EXMB1-DC21.corp.sgi.com>
- <16615226.2vj4EkkIZJ@vostro.rjw.lan>
- <74F10842A85F514CA8D8C487E74474BB2D30DC9E@P-EXMB1-DC21.corp.sgi.com>,<1953281.cgEiiBGo0f@vostro.rjw.lan>
-In-Reply-To: <1953281.cgEiiBGo0f@vostro.rjw.lan>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [198.149.23.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 11 Feb 2013 23:06:59 -0500
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: Alexey Kardashevskiy <aik@ozlabs.ru>, Joerg Roedel <joerg.roedel@amd.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org,
+        David Gibson <david@gibson.dropbear.id.au>
+Subject: [PATCH] iommu: making IOMMU sysfs nodes API public
+Date: Tue, 12 Feb 2013 15:06:44 +1100
+Message-Id: <1360642004-7419-1-git-send-email-aik@ozlabs.ru>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1360628713.3248.8.camel@bling.home>
+References: <1360628713.3248.8.camel@bling.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Argh, your right.  I completely misread that section.
-It'll take me a few days to respin and retest properly.
+Having this patch in a tree, adding new nodes in sysfs
+for IOMMU groups is going to be easier.
 
-Thanks, 
-Nate
+The first candidate for this change is a "dma-window-size"
+property which tells a size of a DMA window of the specific
+IOMMU group which can be used later for locked pages accounting.
 
-________________________________________
-From: Rafael J. Wysocki [rjw@sisk.pl]
-Sent: Monday, February 11, 2013 1:36 PM
-To: Nathan Zimmer
-Cc: viresh.kumar@linaro.org; linux-kernel@vger.kernel.org; linux-pm@vger.kernel.org; cpufreq@vger.kernel.org
-Subject: Re: [PATCH v2 linux-next 2/2] cpufreq: Convert the cpufreq_driver_lock to use the rcu
+Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+---
+ drivers/iommu/iommu.c |   19 ++-----------------
+ include/linux/iommu.h |   20 ++++++++++++++++++++
+ 2 files changed, 22 insertions(+), 17 deletions(-)
 
-On Monday, February 11, 2013 05:13:30 PM Nathan Zimmer wrote:
-> There are some spots that I need to give a much deeper review, cpufreq_register_driver for example.
->
-> But I believe
-> > @@ -196,7 +195,7 @@ static void __cpufreq_cpu_put(struct cpufreq_policy *data, bool sysfs)
-> >  {
-> >       if (!sysfs)
-> >               kobject_put(&data->kobj);
-> > -     module_put(cpufreq_driver->owner);
-> > +     module_put(rcu_dereference(cpufreq_driver)->owner);
-> >  }
-> would be ok.  In the documentation whatisRCU.txt they give a very similar example.
+diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
+index b0afd3d..58cc298 100644
+--- a/drivers/iommu/iommu.c
++++ b/drivers/iommu/iommu.c
+@@ -52,22 +52,6 @@ struct iommu_device {
+ 	char *name;
+ };
+ 
+-struct iommu_group_attribute {
+-	struct attribute attr;
+-	ssize_t (*show)(struct iommu_group *group, char *buf);
+-	ssize_t (*store)(struct iommu_group *group,
+-			 const char *buf, size_t count);
+-};
+-
+-#define IOMMU_GROUP_ATTR(_name, _mode, _show, _store)		\
+-struct iommu_group_attribute iommu_group_attr_##_name =		\
+-	__ATTR(_name, _mode, _show, _store)
+-
+-#define to_iommu_group_attr(_attr)	\
+-	container_of(_attr, struct iommu_group_attribute, attr)
+-#define to_iommu_group(_kobj)		\
+-	container_of(_kobj, struct iommu_group, kobj)
+-
+ static ssize_t iommu_group_attr_show(struct kobject *kobj,
+ 				     struct attribute *__attr, char *buf)
+ {
+@@ -98,11 +82,12 @@ static const struct sysfs_ops iommu_group_sysfs_ops = {
+ 	.store = iommu_group_attr_store,
+ };
+ 
+-static int iommu_group_create_file(struct iommu_group *group,
++int iommu_group_create_file(struct iommu_group *group,
+ 				   struct iommu_group_attribute *attr)
+ {
+ 	return sysfs_create_file(&group->kobj, &attr->attr);
+ }
++EXPORT_SYMBOL_GPL(iommu_group_create_file);
+ 
+ static void iommu_group_remove_file(struct iommu_group *group,
+ 				    struct iommu_group_attribute *attr)
+diff --git a/include/linux/iommu.h b/include/linux/iommu.h
+index f3b99e1..6d24ba7 100644
+--- a/include/linux/iommu.h
++++ b/include/linux/iommu.h
+@@ -21,6 +21,7 @@
+ 
+ #include <linux/errno.h>
+ #include <linux/types.h>
++#include <linux/stat.h>
+ 
+ #define IOMMU_READ	(1)
+ #define IOMMU_WRITE	(2)
+@@ -197,6 +198,25 @@ static inline int report_iommu_fault(struct iommu_domain *domain,
+ 	return ret;
+ }
+ 
++struct iommu_group_attribute {
++	struct attribute attr;
++	ssize_t (*show)(struct iommu_group *group, char *buf);
++	ssize_t (*store)(struct iommu_group *group,
++			 const char *buf, size_t count);
++};
++
++#define IOMMU_GROUP_ATTR(_name, _mode, _show, _store)		\
++struct iommu_group_attribute iommu_group_attr_##_name =		\
++	__ATTR(_name, _mode, _show, _store)
++
++#define to_iommu_group_attr(_attr)	\
++	container_of(_attr, struct iommu_group_attribute, attr)
++#define to_iommu_group(_kobj)		\
++	container_of(_kobj, struct iommu_group, kobj)
++
++extern int iommu_group_create_file(struct iommu_group *group,
++				   struct iommu_group_attribute *attr);
++
+ #else /* CONFIG_IOMMU_API */
+ 
+ struct iommu_ops {};
+-- 
+1.7.10.4
 
-Well, the very same document states the following:
-
-        Note that the value returned by rcu_dereference() is valid
-        only within the enclosing RCU read-side critical section.
-
-Thanks,
-Rafael
-
-
---
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
