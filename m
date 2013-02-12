@@ -1,73 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761324Ab3BLO6k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 09:58:40 -0500
-Received: from juliette.telenet-ops.be ([195.130.137.74]:43588 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760056Ab3BLOxH (ORCPT
+	id S1760970Ab3BLPAT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 10:00:19 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:46785 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760171Ab3BLPAP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 09:53:07 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: linux-cris-kernel@axis.com, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH 04/10] cris/kgdb: Use #ifdef PROCESS_SUPPORT where needed
-Date: Tue, 12 Feb 2013 15:52:51 +0100
-Message-Id: <1360680777-12622-5-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1360680777-12622-1-git-send-email-geert@linux-m68k.org>
-References: <1360680777-12622-1-git-send-email-geert@linux-m68k.org>
+	Tue, 12 Feb 2013 10:00:15 -0500
+Message-ID: <511A5900.4040607@linaro.org>
+Date: Tue, 12 Feb 2013 16:00:16 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Len Brown <lenb@kernel.org>
+CC: linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [PATCH v2] APM idle: register apm_cpu_idle via cpuidle
+References: <5118B776.6090604@linaro.org> <1360623789-12247-1-git-send-email-lenb@kernel.org> <17242de27db147c4f828d6089016e1f485c038fb.1360623445.git.len.brown@intel.com>
+In-Reply-To: <17242de27db147c4f828d6089016e1f485c038fb.1360623445.git.len.brown@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-arch/cris/arch-v10/kernel/kgdb.c:354:12: warning: 'current_thread_c' defined but not used [-Wunused-variable]
-arch/cris/arch-v10/kernel/kgdb.c:355:12: warning: 'current_thread_g' defined but not used [-Wunused-variable]
-arch/cris/arch-v10/kernel/kgdb.c:359:18: warning: 'reg_g' defined but not used [-Wunused-variable]
-arch/cris/arch-v10/kernel/kgdb.c:622:1: warning: 'copy_registers' defined but not used [-Wunused-function]
+On 02/12/2013 12:03 AM, Len Brown wrote:
+> From: Len Brown <len.brown@intel.com>
+> 
+> Update APM to register its local idle routine with cpuidle.
+> 
+> This allows us to stop exporting pm_idle to modules on x86.
+> 
+> The Kconfig sub-option, APM_CPU_IDLE, now depends on on CPU_IDLE.
+> 
+> Compile-tested only.
+> 
+> Signed-off-by: Len Brown <len.brown@intel.com>
+> Cc: Jiri Kosina <jkosina@suse.cz>
+> ---
+> v2: updates from Daniel Lezcano's review
+> ---
+>  arch/x86/Kconfig          |  1 +
+>  arch/x86/kernel/apm_32.c  | 60 +++++++++++++++++++++++++++++------------------
+>  arch/x86/kernel/process.c |  3 ---
+>  3 files changed, 38 insertions(+), 26 deletions(-)
+> 
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index 225543b..1b63586 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -1912,6 +1912,7 @@ config APM_DO_ENABLE
+>  	  this feature.
+>  
+>  config APM_CPU_IDLE
+> +	depends on CPU_IDLE
+>  	bool "Make CPU Idle calls when idle"
+>  	---help---
+>  	  Enable calls to APM CPU Idle/CPU Busy inside the kernel's idle loop.
+> diff --git a/arch/x86/kernel/apm_32.c b/arch/x86/kernel/apm_32.c
+> index d65464e..f9f8afc 100644
+> --- a/arch/x86/kernel/apm_32.c
+> +++ b/arch/x86/kernel/apm_32.c
+> @@ -232,6 +232,7 @@
+>  #include <linux/acpi.h>
+>  #include <linux/syscore_ops.h>
+>  #include <linux/i8253.h>
+> +#include <linux/cpuidle.h>
+>  
+>  #include <asm/uaccess.h>
+>  #include <asm/desc.h>
+> @@ -360,13 +361,38 @@ struct apm_user {
+>   * idle percentage above which bios idle calls are done
+>   */
+>  #ifdef CONFIG_APM_CPU_IDLE
+> -#warning deprecated CONFIG_APM_CPU_IDLE will be deleted in 2012
+>  #define DEFAULT_IDLE_THRESHOLD	95
+>  #else
+>  #define DEFAULT_IDLE_THRESHOLD	100
+>  #endif
+>  #define DEFAULT_IDLE_PERIOD	(100 / 3)
+>  
+> +static int apm_cpu_idle(struct cpuidle_device *dev,
+> +			struct cpuidle_driver *drv, int index);
+> +
+> +static struct cpuidle_driver apm_idle_driver = {
+> +	.name = "apm_idle",
+> +	.owner = THIS_MODULE,
+> +	.en_core_tk_irqen = 1,
+> +	.states = {
+> +		{ /* entry 0 is for polling */ },
+> +		{ /* entry 1 is for APM idle */
+> +			.name = "APM",
+> +			.desc = "APM idle",
+> +			.flags = CPUIDLE_FLAG_TIME_VALID,
+> +			.exit_latency = 250,	/* WAG */
+> +			.target_residency = 500,	/* WAG */
+> +			.enter = &apm_cpu_idle
+> +		},
+> +	},
+> +	.state_count = 2,
+> +};
+> +
+> +static struct cpuidle_device apm_cpuidle_device = {
+> +	.state_count = 2,
+> +};
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- arch/cris/arch-v10/kernel/kgdb.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+Actually this initialization is not needed because when it is set to
+zero, the cpuidle_enable_device function will set it for us from the
+driver's state_count.
 
-diff --git a/arch/cris/arch-v10/kernel/kgdb.c b/arch/cris/arch-v10/kernel/kgdb.c
-index 3c852b3..e02d2df 100644
---- a/arch/cris/arch-v10/kernel/kgdb.c
-+++ b/arch/cris/arch-v10/kernel/kgdb.c
-@@ -345,6 +345,7 @@ static int consistency_status = SUCCESS;
-    in order to provide access mainly for 'g', 'G' and 'P'.
- */
- 
-+#ifdef PROCESS_SUPPORT
- /* Need two task id pointers in order to handle Hct and Hgt commands. */
- static int current_thread_c = 0;
- static int current_thread_g = 0;
-@@ -352,6 +353,7 @@ static int current_thread_g = 0;
- /* Need two register images in order to handle Hct and Hgt commands. The
-    variable reg_g is in addition to reg above. */
- static registers reg_g;
-+#endif /* PROCESS_SUPPORT */
- 
- /********************************** Breakpoint *******************************/
- /* Use an internal stack in the breakpoint and interrupt response routines */
-@@ -610,6 +612,7 @@ putDebugString (const unsigned char *str, int length)
- }
- 
- /********************************* Register image ****************************/
-+#ifdef PROCESS_SUPPORT
- /* Copy the content of a register image into another. The size n is
-    the size of the register image. Due to struct assignment generation of
-    memcpy in libc. */
-@@ -623,7 +626,6 @@ copy_registers (registers *dptr, registers *sptr, int n)
- 		*dreg++ = *sreg++;
- }
- 
--#ifdef PROCESS_SUPPORT
- /* Copy the stored registers from the stack. Put the register contents
-    of thread thread_id in the struct reg. */
- static void
+int cpuidle_enable_device(struct cpuidle_device *dev)
+{
+	...
+	if (!dev->state_count)
+                dev->state_count = drv->state_count;
+}
+
+It is useful to set a value when it differs from the driver's one.
+
+Otherwise :
+
+Reviewed-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+
+
+>  /*
+>   * Local variables
+>   */
+> @@ -377,7 +403,6 @@ static struct {
+>  static int clock_slowed;
+>  static int idle_threshold __read_mostly = DEFAULT_IDLE_THRESHOLD;
+>  static int idle_period __read_mostly = DEFAULT_IDLE_PERIOD;
+> -static int set_pm_idle;
+>  static int suspends_pending;
+>  static int standbys_pending;
+>  static int ignore_sys_suspend;
+> @@ -884,8 +909,6 @@ static void apm_do_busy(void)
+>  #define IDLE_CALC_LIMIT	(HZ * 100)
+>  #define IDLE_LEAKY_MAX	16
+>  
+> -static void (*original_pm_idle)(void) __read_mostly;
+> -
+>  /**
+>   * apm_cpu_idle		-	cpu idling for APM capable Linux
+>   *
+> @@ -894,7 +917,8 @@ static void (*original_pm_idle)(void) __read_mostly;
+>   * Furthermore it calls the system default idle routine.
+>   */
+>  
+> -static void apm_cpu_idle(void)
+> +static int apm_cpu_idle(struct cpuidle_device *dev,
+> +	struct cpuidle_driver *drv, int index)
+>  {
+>  	static int use_apm_idle; /* = 0 */
+>  	static unsigned int last_jiffies; /* = 0 */
+> @@ -904,7 +928,6 @@ static void apm_cpu_idle(void)
+>  	unsigned int jiffies_since_last_check = jiffies - last_jiffies;
+>  	unsigned int bucket;
+>  
+> -	WARN_ONCE(1, "deprecated apm_cpu_idle will be deleted in 2012");
+>  recalc:
+>  	if (jiffies_since_last_check > IDLE_CALC_LIMIT) {
+>  		use_apm_idle = 0;
+> @@ -950,10 +973,7 @@ recalc:
+>  				break;
+>  			}
+>  		}
+> -		if (original_pm_idle)
+> -			original_pm_idle();
+> -		else
+> -			default_idle();
+> +		default_idle();
+>  		local_irq_disable();
+>  		jiffies_since_last_check = jiffies - last_jiffies;
+>  		if (jiffies_since_last_check > idle_period)
+> @@ -963,7 +983,7 @@ recalc:
+>  	if (apm_idle_done)
+>  		apm_do_busy();
+>  
+> -	local_irq_enable();
+> +	return index;
+>  }
+>  
+>  /**
+> @@ -2381,9 +2401,9 @@ static int __init apm_init(void)
+>  	if (HZ != 100)
+>  		idle_period = (idle_period * HZ) / 100;
+>  	if (idle_threshold < 100) {
+> -		original_pm_idle = pm_idle;
+> -		pm_idle  = apm_cpu_idle;
+> -		set_pm_idle = 1;
+> +		if (!cpuidle_register_driver(&apm_idle_driver))
+> +			if (cpuidle_register_device(&apm_cpuidle_device))
+> +				cpuidle_unregister_driver(&apm_idle_driver);
+>  	}
+>  
+>  	return 0;
+> @@ -2393,15 +2413,9 @@ static void __exit apm_exit(void)
+>  {
+>  	int error;
+>  
+> -	if (set_pm_idle) {
+> -		pm_idle = original_pm_idle;
+> -		/*
+> -		 * We are about to unload the current idle thread pm callback
+> -		 * (pm_idle), Wait for all processors to update cached/local
+> -		 * copies of pm_idle before proceeding.
+> -		 */
+> -		kick_all_cpus_sync();
+> -	}
+> +	cpuidle_unregister_device(&apm_cpuidle_device);
+> +	cpuidle_unregister_driver(&apm_idle_driver);
+> +
+>  	if (((apm_info.bios.flags & APM_BIOS_DISENGAGED) == 0)
+>  	    && (apm_info.connection_version > 0x0100)) {
+>  		error = apm_engage_power_management(APM_DEVICE_ALL, 0);
+> diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+> index 2ed787f..f571a6e 100644
+> --- a/arch/x86/kernel/process.c
+> +++ b/arch/x86/kernel/process.c
+> @@ -272,9 +272,6 @@ EXPORT_SYMBOL(boot_option_idle_override);
+>   * Powermanagement idle function, if any..
+>   */
+>  void (*pm_idle)(void);
+> -#ifdef CONFIG_APM_MODULE
+> -EXPORT_SYMBOL(pm_idle);
+> -#endif
+>  
+>  #ifndef CONFIG_SMP
+>  static inline void play_dead(void)
+> 
+
+
 -- 
-1.7.0.4
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
