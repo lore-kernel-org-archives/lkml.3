@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932900Ab3BLAsS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 19:48:18 -0500
-Received: from mail-gg0-f201.google.com ([209.85.161.201]:57914 "EHLO
-	mail-gg0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932675Ab3BLAsQ (ORCPT
+	id S932914Ab3BLAsU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 19:48:20 -0500
+Received: from mail-vc0-f202.google.com ([209.85.220.202]:53658 "EHLO
+	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932883Ab3BLAsS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 19:48:16 -0500
+	Mon, 11 Feb 2013 19:48:18 -0500
 From: Doug Anderson <dianders@chromium.org>
 To: linux-i2c@vger.kernel.org, Wolfram Sang <w.sang@pengutronix.de>
 Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
@@ -18,10 +18,14 @@ Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Haojian Zhuang <haojian.zhuang@gmail.com>,
         Arnd Bergmann <arnd@arndb.de>,
         Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Doug Anderson <dianders@chromium.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 1/2] i2c-core: dt: Pick i2c bus number from i2c alias if present
-Date: Mon, 11 Feb 2013 16:48:04 -0800
-Message-Id: <1360630085-26874-2-git-send-email-dianders@chromium.org>
+        Doug Anderson <dianders@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Karol Lewandowski <k.lewandowsk@samsung.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v3 2/2] i2c: pxa: Use i2c-core to get bus number now
+Date: Mon, 11 Feb 2013 16:48:05 -0800
+Message-Id: <1360630085-26874-3-git-send-email-dianders@chromium.org>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1360630085-26874-1-git-send-email-dianders@chromium.org>
 References: <1360630085-26874-1-git-send-email-dianders@chromium.org>
@@ -29,117 +33,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows you to get the equivalent functionality of
-i2c_add_numbered_adapter() with all data in the device tree and no
-special case code in your driver.  This is a common device tree
-technique.
-
-For quick reference, the FDT syntax for using an alias to provide an
-ID looks like:
-  aliases {
-    i2c0 = &i2c_0;
-    i2c1 = &i2c_1;
-  };
+The commit: "i2c-core: dt: Pick i2c bus number from i2c alias if
+present" adds support for automatically picking the bus number based
+on the alias ID.  Remove the now unnecessary code from i2c-pxa that
+did the same thing.
 
 Signed-off-by: Doug Anderson <dianders@chromium.org>
-
 ---
-Changes in v3:
-- Addressed Wolfram's feedback; rebased atop idr-cleanup series.
+Changes in v3: None
+Changes in v2:
+- No longer tweak pdev->id as per Sylwester Nawrocki.
+- No longer add the dev ID to the adap.name.  Other drivers don't
+  include the device ID here and it doesn't make sense with
+  dynamically (or automatically) allocated IDs.
+- Use dev_name(&dev->dev) to register for the IRQ; this matches what
+  the i2c-s3c2410.c does and handles dynamically allocated IDs.
+- This change was only compile-tested (corgi_defconfig), since I don't
+  have access to a board that uses this driver.
 
-Changes in v2: None
+ drivers/i2c/busses/i2c-pxa.c | 20 +++++++++-----------
+ 1 file changed, 9 insertions(+), 11 deletions(-)
 
- drivers/i2c/i2c-core.c | 54 +++++++++++++++++++++++++++++++++++++-------------
- 1 file changed, 40 insertions(+), 14 deletions(-)
-
-diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index 0b599f2..5204818 100644
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -921,13 +921,41 @@ out_list:
- }
+diff --git a/drivers/i2c/busses/i2c-pxa.c b/drivers/i2c/busses/i2c-pxa.c
+index 1034d93..705cc9f 100644
+--- a/drivers/i2c/busses/i2c-pxa.c
++++ b/drivers/i2c/busses/i2c-pxa.c
+@@ -1053,16 +1053,13 @@ static int i2c_pxa_probe_dt(struct platform_device *pdev, struct pxa_i2c *i2c,
+ 	struct device_node *np = pdev->dev.of_node;
+ 	const struct of_device_id *of_id =
+ 			of_match_device(i2c_pxa_dt_ids, &pdev->dev);
+-	int ret;
  
- /**
-+ * __i2c_add_numbered_adapter - i2c_add_numbered_adapter where nr is never -1
-+ * @adap: the adapter to register (with adap->nr initialized)
-+ * Context: can sleep
-+ *
-+ * See i2c_add_numbered_adapter() for details.
-+ */
-+static int __i2c_add_numbered_adapter(struct i2c_adapter *adap)
-+{
-+	int	id;
+ 	if (!of_id)
+ 		return 1;
+-	ret = of_alias_get_id(np, "i2c");
+-	if (ret < 0) {
+-		dev_err(&pdev->dev, "failed to get alias id, errno %d\n", ret);
+-		return ret;
+-	}
+-	pdev->id = ret;
 +
-+	/* Handled by wrappers */
-+	if (WARN_ON(adap->nr == -1))
-+		return -EINVAL;
++	/* For device tree we always use the dynamic or alias-assigned ID */
++	i2c->adap.nr = -1;
 +
-+	if (adap->nr & ~MAX_IDR_MASK)
-+		return -EINVAL;
-+
-+	mutex_lock(&core_lock);
-+	id = idr_alloc(&i2c_adapter_idr, adap, adap->nr, adap->nr + 1,
-+		       GFP_KERNEL);
-+	mutex_unlock(&core_lock);
-+	if (id < 0)
-+		return id == -ENOSPC ? -EBUSY : id;
-+	return i2c_register_adapter(adap);
-+}
-+
-+/**
-  * i2c_add_adapter - declare i2c adapter, use dynamic bus number
-  * @adapter: the adapter to add
-  * Context: can sleep
-  *
-  * This routine is used to declare an I2C adapter when its bus number
-- * doesn't matter.  Examples: for I2C adapters dynamically added by
-- * USB links or PCI plugin cards.
-+ * doesn't matter or when its bus number is specified by an dt alias.
-+ * Examples of bases when the bus number doesn't matter: I2C adapters
-+ * dynamically added by USB links or PCI plugin cards.
-  *
-  * When this returns zero, a new bus number was allocated and stored
-  * in adap->nr, and the specified adapter became available for clients.
-@@ -935,8 +963,17 @@ out_list:
-  */
- int i2c_add_adapter(struct i2c_adapter *adapter)
- {
-+	struct device *dev = &adapter->dev;
- 	int res;
+ 	if (of_get_property(np, "mrvl,i2c-polling", NULL))
+ 		i2c->use_pio = 1;
+ 	if (of_get_property(np, "mrvl,i2c-fast-mode", NULL))
+@@ -1100,6 +1097,9 @@ static int i2c_pxa_probe(struct platform_device *dev)
+ 		goto emalloc;
+ 	}
  
-+	if (dev->of_node) {
-+		res = of_alias_get_id(dev->of_node, "i2c");
-+		if (res >= 0) {
-+			adapter->nr = res;
-+			return __i2c_add_numbered_adapter(adapter);
-+		}
-+	}
++	/* Default adapter num to device id; i2c_pxa_probe_dt can override. */
++	i2c->adap.nr = dev->id;
 +
- 	mutex_lock(&core_lock);
- 	res = idr_alloc(&i2c_adapter_idr, adapter,
- 			__i2c_first_dynamic_bus_num, 0, GFP_KERNEL);
-@@ -974,20 +1011,9 @@ EXPORT_SYMBOL(i2c_add_adapter);
-  */
- int i2c_add_numbered_adapter(struct i2c_adapter *adap)
- {
--	int	id;
--
- 	if (adap->nr == -1) /* -1 means dynamically assign bus id */
- 		return i2c_add_adapter(adap);
--	if (adap->nr & ~MAX_IDR_MASK)
--		return -EINVAL;
--
--	mutex_lock(&core_lock);
--	id = idr_alloc(&i2c_adapter_idr, adap, adap->nr, adap->nr + 1,
--		       GFP_KERNEL);
--	mutex_unlock(&core_lock);
--	if (id < 0)
--		return id == -ENOSPC ? -EBUSY : id;
--	return i2c_register_adapter(adap);
-+	return __i2c_add_numbered_adapter(adap);
- }
- EXPORT_SYMBOL_GPL(i2c_add_numbered_adapter);
+ 	ret = i2c_pxa_probe_dt(dev, i2c, &i2c_type);
+ 	if (ret > 0)
+ 		ret = i2c_pxa_probe_pdata(dev, i2c, &i2c_type);
+@@ -1124,9 +1124,7 @@ static int i2c_pxa_probe(struct platform_device *dev)
+ 	spin_lock_init(&i2c->lock);
+ 	init_waitqueue_head(&i2c->wait);
  
+-	i2c->adap.nr = dev->id;
+-	snprintf(i2c->adap.name, sizeof(i2c->adap.name), "pxa_i2c-i2c.%u",
+-		 i2c->adap.nr);
++	strlcpy(i2c->adap.name, "pxa_i2c-i2c", sizeof(i2c->adap.name));
+ 
+ 	i2c->clk = clk_get(&dev->dev, NULL);
+ 	if (IS_ERR(i2c->clk)) {
+@@ -1169,7 +1167,7 @@ static int i2c_pxa_probe(struct platform_device *dev)
+ 	} else {
+ 		i2c->adap.algo = &i2c_pxa_algorithm;
+ 		ret = request_irq(irq, i2c_pxa_handler, IRQF_SHARED,
+-				  i2c->adap.name, i2c);
++				  dev_name(&dev->dev), i2c);
+ 		if (ret)
+ 			goto ereqirq;
+ 	}
 -- 
 1.8.1
 
