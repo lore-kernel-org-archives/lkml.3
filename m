@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758000Ab3BLUiy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:38:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53789 "EHLO
+	id S1757814Ab3BLUjM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 15:39:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53785 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757707Ab3BLUhY (ORCPT
+	with ESMTP id S1757687Ab3BLUhX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:37:24 -0500
+	Tue, 12 Feb 2013 15:37:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sarveshwar Bandi <sarveshwar.bandi@emulex.com>,
+        Willy Tarreau <w@1wt.eu>, Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 20/22] bridge: Pull ip header into skb->data before looking into ip header.
-Date: Tue, 12 Feb 2013 12:37:03 -0800
-Message-Id: <20130212203417.361927585@linuxfoundation.org>
+Subject: [ 19/22] tcp: fix MSG_SENDPAGE_NOTLAST logic
+Date: Tue, 12 Feb 2013 12:37:02 -0800
+Message-Id: <20130212203417.170463752@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203413.459836020@linuxfoundation.org>
 References: <20130212203413.459836020@linuxfoundation.org>
@@ -28,32 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Sarveshwar Bandi <sarveshwar.bandi@emulex.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 6caab7b0544e83e6c160b5e80f5a4a7dd69545c7 ]
+[ Upstream commit ae62ca7b03217be5e74759dc6d7698c95df498b3 ]
 
-If lower layer driver leaves the ip header in the skb fragment, it needs to
-be first pulled into skb->data before inspecting ip header length or ip version
-number.
+commit 35f9c09fe9c72e (tcp: tcp_sendpages() should call tcp_push() once)
+added an internal flag : MSG_SENDPAGE_NOTLAST meant to be set on all
+frags but the last one for a splice() call.
 
-Signed-off-by: Sarveshwar Bandi <sarveshwar.bandi@emulex.com>
+The condition used to set the flag in pipe_to_sendpage() relied on
+splice() user passing the exact number of bytes present in the pipe,
+or a smaller one.
+
+But some programs pass an arbitrary high value, and the test fails.
+
+The effect of this bug is a lack of tcp_push() at the end of a
+splice(pipe -> socket) call, and possibly very slow or erratic TCP
+sessions.
+
+We should both test sd->total_len and fact that another fragment
+is in the pipe (pipe->nrbufs > 1)
+
+Many thanks to Willy for providing very clear bug report, bisection
+and test programs.
+
+Reported-by: Willy Tarreau <w@1wt.eu>
+Bisected-by: Willy Tarreau <w@1wt.eu>
+Tested-by: Willy Tarreau <w@1wt.eu>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/bridge/br_netfilter.c |    3 +++
- 1 file changed, 3 insertions(+)
+ fs/splice.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/net/bridge/br_netfilter.c
-+++ b/net/bridge/br_netfilter.c
-@@ -233,6 +233,9 @@ static int br_parse_ip_options(struct sk
- 	struct net_device *dev = skb->dev;
- 	u32 len;
+--- a/fs/splice.c
++++ b/fs/splice.c
+@@ -693,8 +693,10 @@ static int pipe_to_sendpage(struct pipe_
+ 		return -EINVAL;
  
-+	if (!pskb_may_pull(skb, sizeof(struct iphdr)))
-+		goto inhdr_error;
+ 	more = (sd->flags & SPLICE_F_MORE) ? MSG_MORE : 0;
+-	if (sd->len < sd->total_len)
 +
- 	iph = ip_hdr(skb);
- 	opt = &(IPCB(skb)->opt);
- 
++	if (sd->len < sd->total_len && pipe->nrbufs > 1)
+ 		more |= MSG_SENDPAGE_NOTLAST;
++
+ 	return file->f_op->sendpage(file, buf->page, buf->offset,
+ 				    sd->len, &pos, more);
+ }
 
 
