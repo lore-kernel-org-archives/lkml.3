@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759040Ab3BLUyq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:54:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53717 "EHLO
+	id S1759092Ab3BLUzH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 15:55:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53712 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757277Ab3BLUhL (ORCPT
+	with ESMTP id S1757232Ab3BLUhK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:37:11 -0500
+	Tue, 12 Feb 2013 15:37:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 06/22] MAINTAINERS: Stephen Hemminger email change
-Date: Tue, 12 Feb 2013 12:36:49 -0800
-Message-Id: <20130212203414.749976588@linuxfoundation.org>
+        nitin padalia <padalia.nitin@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        Eric Dumazet <edumazet@google.com>
+Subject: [ 05/22] net: prevent setting ttl=0 via IP_TTL
+Date: Tue, 12 Feb 2013 12:36:48 -0800
+Message-Id: <20130212203414.563136507@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203413.459836020@linuxfoundation.org>
 References: <20130212203413.459836020@linuxfoundation.org>
@@ -28,49 +31,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Stephen Hemminger <stephen.hemminger@vyatta.com>
+From: Cong Wang <xiyou.wangcong@gmail.com>
 
-[ Upstream commit adbbf69d1a54abf424e91875746a610dcc80017d ]
+[ Upstream commit c9be4a5c49cf51cc70a993f004c5bb30067a65ce ]
 
-I changed my email because the vyatta.com mail server is now
-redirected to brocade.com; and the Brocade mail system
-is not friendly to Linux desktop users.
+A regression is introduced by the following commit:
 
-Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
+	commit 4d52cfbef6266092d535237ba5a4b981458ab171
+	Author: Eric Dumazet <eric.dumazet@gmail.com>
+	Date:   Tue Jun 2 00:42:16 2009 -0700
+
+	    net: ipv4/ip_sockglue.c cleanups
+
+	    Pure cleanups
+
+but it is not a pure cleanup...
+
+	-               if (val != -1 && (val < 1 || val>255))
+	+               if (val != -1 && (val < 0 || val > 255))
+
+Since there is no reason provided to allow ttl=0, change it back.
+
+Reported-by: nitin padalia <padalia.nitin@gmail.com>
+Cc: nitin padalia <padalia.nitin@gmail.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David S. Miller <davem@davemloft.net>
+Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- MAINTAINERS |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ net/ipv4/ip_sockglue.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -2491,7 +2491,7 @@ S:	Maintained
- F:	drivers/net/eexpress.*
- 
- ETHERNET BRIDGE
--M:	Stephen Hemminger <shemminger@linux-foundation.org>
-+M:	Stephen Hemminger <stephen@networkplumber.org>
- L:	bridge@lists.linux-foundation.org
- L:	netdev@vger.kernel.org
- W:	http://www.linuxfoundation.org/en/Net:Bridge
-@@ -4327,7 +4327,7 @@ S:	Supported
- F:	drivers/infiniband/hw/nes/
- 
- NETEM NETWORK EMULATOR
--M:	Stephen Hemminger <shemminger@linux-foundation.org>
-+M:	Stephen Hemminger <stephen@networkplumber.org>
- L:	netem@lists.linux-foundation.org
- S:	Maintained
- F:	net/sched/sch_netem.c
-@@ -5779,7 +5779,7 @@ S:	Maintained
- F:	drivers/usb/misc/sisusbvga/
- 
- SKGE, SKY2 10/100/1000 GIGABIT ETHERNET DRIVERS
--M:	Stephen Hemminger <shemminger@linux-foundation.org>
-+M:	Stephen Hemminger <stephen@networkplumber.org>
- L:	netdev@vger.kernel.org
- S:	Maintained
- F:	drivers/net/skge.*
+--- a/net/ipv4/ip_sockglue.c
++++ b/net/ipv4/ip_sockglue.c
+@@ -599,7 +599,7 @@ static int do_ip_setsockopt(struct sock
+ 	case IP_TTL:
+ 		if (optlen < 1)
+ 			goto e_inval;
+-		if (val != -1 && (val < 0 || val > 255))
++		if (val != -1 && (val < 1 || val > 255))
+ 			goto e_inval;
+ 		inet->uc_ttl = val;
+ 		break;
 
 
