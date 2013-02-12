@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759283Ab3BLUwM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:52:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53833 "EHLO
+	id S1759089Ab3BLUxZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 15:53:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53825 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757966Ab3BLUlg (ORCPT
+	with ESMTP id S1757902Ab3BLUlf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:41:36 -0500
+	Tue, 12 Feb 2013 15:41:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hedberg <johan.hedberg@intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 05/36] Bluetooth: Fix handling of unexpected SMP PDUs
-Date: Tue, 12 Feb 2013 12:40:59 -0800
-Message-Id: <20130212203857.958240877@linuxfoundation.org>
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Nathaniel Doherty <ntdoherty@gmail.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 02/36] rtlwifi: Fix scheduling while atomic bug
+Date: Tue, 12 Feb 2013 12:40:56 -0800
+Message-Id: <20130212203857.595778754@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203857.305594226@linuxfoundation.org>
 References: <20130212203857.305594226@linuxfoundation.org>
@@ -28,47 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hedberg <johan.hedberg@intel.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 8cf9fa1240229cbdd888236c0c43fcbad680cf00 upstream.
+commit a5ffbe0a1993a27072742ef7db6cf9839956fce9 upstream.
 
-The conn->smp_chan pointer can be NULL if SMP PDUs arrive at unexpected
-moments. To avoid NULL pointer dereferences the code should be checking
-for this and disconnect if an unexpected SMP PDU arrives. This patch
-fixes the issue by adding a check for conn->smp_chan for all other PDUs
-except pairing request and security request (which are are the first
-PDUs to come to initialize the SMP context).
+Kernel commits 41affd5 and 6539306 changed the locking in rtl_lps_leave()
+from a spinlock to a mutex by doing the calls indirectly from a work queue
+to reduce the time that interrupts were disabled. This change was fine for
+most systems; however a scheduling while atomic bug was reported in
+https://bugzilla.redhat.com/show_bug.cgi?id=903881. The backtrace indicates
+that routine rtl_is_special(), which calls rtl_lps_leave() in three places
+was entered in atomic context. These direct calls are replaced by putting a
+request on the appropriate work queue.
 
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
-Acked-by: Marcel Holtmann <marcel@holtmann.org>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Reported-and-tested-by: Nathaniel Doherty <ntdoherty@gmail.com>
+Cc: Nathaniel Doherty <ntdoherty@gmail.com>
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/smp.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ drivers/net/wireless/rtlwifi/base.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/net/bluetooth/smp.c
-+++ b/net/bluetooth/smp.c
-@@ -852,6 +852,19 @@ int smp_sig_channel(struct l2cap_conn *c
+--- a/drivers/net/wireless/rtlwifi/base.c
++++ b/drivers/net/wireless/rtlwifi/base.c
+@@ -980,7 +980,8 @@ u8 rtl_is_special_data(struct ieee80211_
+ 					 is_tx ? "Tx" : "Rx");
  
- 	skb_pull(skb, sizeof(code));
+ 				if (is_tx) {
+-					rtl_lps_leave(hw);
++					schedule_work(&rtlpriv->
++						      works.lps_leave_work);
+ 					ppsc->last_delaylps_stamp_jiffies =
+ 					    jiffies;
+ 				}
+@@ -990,7 +991,7 @@ u8 rtl_is_special_data(struct ieee80211_
+ 		}
+ 	} else if (ETH_P_ARP == ether_type) {
+ 		if (is_tx) {
+-			rtl_lps_leave(hw);
++			schedule_work(&rtlpriv->works.lps_leave_work);
+ 			ppsc->last_delaylps_stamp_jiffies = jiffies;
+ 		}
  
-+	/*
-+	 * The SMP context must be initialized for all other PDUs except
-+	 * pairing and security requests. If we get any other PDU when
-+	 * not initialized simply disconnect (done if this function
-+	 * returns an error).
-+	 */
-+	if (code != SMP_CMD_PAIRING_REQ && code != SMP_CMD_SECURITY_REQ &&
-+	    !conn->smp_chan) {
-+		BT_ERR("Unexpected SMP command 0x%02x. Disconnecting.", code);
-+		kfree_skb(skb);
-+		return -ENOTSUPP;
-+	}
-+
- 	switch (code) {
- 	case SMP_CMD_PAIRING_REQ:
- 		reason = smp_cmd_pairing_req(conn, skb);
+@@ -1000,7 +1001,7 @@ u8 rtl_is_special_data(struct ieee80211_
+ 			 "802.1X %s EAPOL pkt!!\n", is_tx ? "Tx" : "Rx");
+ 
+ 		if (is_tx) {
+-			rtl_lps_leave(hw);
++			schedule_work(&rtlpriv->works.lps_leave_work);
+ 			ppsc->last_delaylps_stamp_jiffies = jiffies;
+ 		}
+ 
 
 
