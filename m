@@ -1,45 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933701Ab3BLSFQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 13:05:16 -0500
-Received: from mga11.intel.com ([192.55.52.93]:12523 "EHLO mga11.intel.com"
+	id S933680Ab3BLSG2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 13:06:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13788 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933631Ab3BLSFO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 13:05:14 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,650,1355126400"; 
-   d="scan'208";a="290180386"
-Date: Tue, 12 Feb 2013 09:40:25 -0800
-From: Vinod Koul <vinod.koul@intel.com>
-To: Cong Ding <dinggnu@gmail.com>
-Cc: Rob Herring <robherring2@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] of: dma.c: fix memory leakage
-Message-ID: <20130212174025.GB17659@intel.com>
-References: <1358600805-20193-1-git-send-email-dinggnu@gmail.com>
- <50FC6EB1.4050704@gmail.com>
- <20130122101053.GA2427@gmail.com>
+	id S933475Ab3BLSG1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 13:06:27 -0500
+Message-ID: <511A8491.5030407@redhat.com>
+Date: Tue, 12 Feb 2013 19:06:09 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130122101053.GA2427@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Alex Bligh <alex@alex.org.uk>
+CC: linux-kernel@vger.kernel.org, nbd-general@lists.sf.net,
+        Paul Clements <Paul.Clements@steeleye.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/3] nbd: support FLUSH requests
+References: <1360685171-3792-1-git-send-email-pbonzini@redhat.com> <1360685171-3792-2-git-send-email-pbonzini@redhat.com> <115932E2-48BE-406E-9E75-61D12EB5937A@alex.org.uk>
+In-Reply-To: <115932E2-48BE-406E-9E75-61D12EB5937A@alex.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 10:10:53AM +0000, Cong Ding wrote:
-> On Sun, Jan 20, 2013 at 04:24:49PM -0600, Rob Herring wrote:
-> > On 01/19/2013 07:06 AM, Cong Ding wrote:
-> > > The memory allocated to ofdma might be a leakage when error occurs.
-> > > 
-> > > Signed-off-by: Cong Ding <dinggnu@gmail.com>
-> > 
-> > You need to send this to whomever is working on DMA bindings.
-> Thank you bob, I added Vinod the the receiver list.
-I have moved the of/dma.c to dma/of-dma.c, can you regenerate this patch and
-resend to me
+Il 12/02/2013 18:37, Alex Bligh ha scritto:
+> For my education, why remove the FUA stuff?
 
---
-~Vinod
+Because I had no way to test it.
+
+>>> > > Hmmm... the underlying storage could be md/dm RAIDs in which case FUA
+>>> > > should be cheaper than FLUSH.
+>> > 
+>> > If someone ever wrote a virtio-blk backend that sits directly ontop
+>> > of the Linux block layer that would be true.
+> In this case we don't know what the backend is sitting on top of
+> a-priori. It might be the current nbd server code, but it might
+> not be.
+
+Do you know of any other NBD server than the "official" one and qemu-nbd?
+
+Paolo
