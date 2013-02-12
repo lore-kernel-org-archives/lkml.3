@@ -1,68 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756751Ab3BLVif (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 16:38:35 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:59511 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755365Ab3BLVi1 (ORCPT
+	id S1756829Ab3BLVl6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 16:41:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54527 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751915Ab3BLVl5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 16:38:27 -0500
-Date: Tue, 12 Feb 2013 13:38:23 -0800
-From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: "Winkler, Tomas" <tomas.winkler@intel.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [char-misc-next 01/12 v3] mei: Rename mei_device to mei_host
-Message-ID: <20130212213823.GA20745@kroah.com>
-References: <1360694222-27632-1-git-send-email-sameo@linux.intel.com>
- <1360694222-27632-2-git-send-email-sameo@linux.intel.com>
- <5B8DA87D05A7694D9FA63FD143655C1B01ECF4E9@HASMSX106.ger.corp.intel.com>
- <20130212212935.GJ20996@sortiz-mobl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130212212935.GJ20996@sortiz-mobl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 12 Feb 2013 16:41:57 -0500
+Date: Tue, 12 Feb 2013 13:41:55 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, <stable@vger.kernel.org>,
+        <nbd-general@lists.sf.net>, Paul Clements <Paul.Clements@steeleye.com>
+Subject: Re: [PATCH 2/3] nbd: fsync and kill block device on shutdown
+Message-Id: <20130212134155.f23f2223.akpm@linux-foundation.org>
+In-Reply-To: <1360685171-3792-3-git-send-email-pbonzini@redhat.com>
+References: <1360685171-3792-1-git-send-email-pbonzini@redhat.com>
+	<1360685171-3792-3-git-send-email-pbonzini@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 12, 2013 at 10:29:35PM +0100, Samuel Ortiz wrote:
-> Hi Tomas,
-> 
-> On Tue, Feb 12, 2013 at 09:17:21PM +0000, Winkler, Tomas wrote:
-> > 
-> > 
-> > > In preparation for the MEI bus code merge, we rename the mei_device
-> > > structure to mei_host.
-> > > struct mei_device will be used for devices on the MEI bus in order to follow
-> > > exisiting driver model implementations practices.
-> > > 
-> > I'd like to NACK this name, we use  'host' for the host part of the MEI protocol, 
-> > 
-> > You can use the mei_controller, mei_adapter, and  I'm not sure what else can come into mind.
-> mei_controller sounds good to me.
-> 
-> 
-> > I prefer not to break the HW spec language.  I prefer to leave it mei_device as after all it's a device on pci bus it's not a pure host controller.
-> > And call what is on the mei  bus mei_cl_dev or mei_app_dev . From the HW perspective it actually 
-> > talks to a client/application residing inside MEI device, it is not always a physical device like NFC.
-> > 
-> The bus is not physical neither. It's really items that we add to this bus,
-> watchdog could be the next candidate for example.
-> 
-> > Please let's find something that makes both hw and Linux happy
-> I still believe it makes sense to use mei_device for what we add to the MEI
-> bus. I'd be fine with mei_bus_device as well, but that would somehow look
-> a bit awkward. Greg, Arnd, any preference ?
+On Tue, 12 Feb 2013 17:06:10 +0100
+Paolo Bonzini <pbonzini@redhat.com> wrote:
 
-"mei_device" works the best for me.  Tomas, what you think of as a "MEI
-Device" really is a "MEI Controller", it bridges the difference between
-the PCI bus and your new MEI bus, so you will need to start thinking of
-these things a bit differently now that you have created your own little
-virtual bus.
+> There are two problems with shutdown in the NBD driver.  The first is
+> that receiving the NBD_DISCONNECT ioctl does not sync the filesystem;
+> this is useful because BLKFLSBUF is restricted to processes that have
+> CAP_SYS_ADMIN, and the NBD client may not possess it (fsync of the
+> block device does not sync the filesystem, either).
 
-thanks,
+hm, this says that the lack of a sync is "useful".  I think you mean
+that the patch-which-adds-the-sync is the thing which is useful, yes?
 
-greg k-h
+> The second is that once we clear the socket we have no guarantee that
+> later reads will come from the same backing storage.  Thus the page cache
+> must be cleaned, lest reads that hit on the page cache will return stale
+> data from the previously-accessible disk.
+
+That sounds like a problem.
+
+> Example:
+> 
+>     # qemu-nbd -r -c/dev/nbd0 /dev/sr0
+>     # file -s /dev/nbd0
+>     /dev/stdin: # UDF filesystem data (version 1.5) etc.
+>     # qemu-nbd -d /dev/nbd0
+>     # qemu-nbd -r -c/dev/nbd0 /dev/sda
+>     # file -s /dev/nbd0
+>     /dev/stdin: # UDF filesystem data (version 1.5) etc.
+> 
+> While /dev/sda has:
+> 
+>     # file -s /dev/sda
+>     /dev/sda: x86 boot sector; etc.
+
+OK, we've described the problems but there's no description here of how
+the patch addresses those problems.
+
+
+How does this look?
+
+
+: There are two problems with shutdown in the NBD driver.
+: 
+: 1: Receiving the NBD_DISCONNECT ioctl does not sync the filesystem. 
+: 
+:    This patch adds the sync operation into __nbd_ioctl()'s
+:    NBD_DISCONNECT handler.  This is useful because BLKFLSBUF is restricted
+:    to processes that have CAP_SYS_ADMIN, and the NBD client may not
+:    possess it (fsync of the block device does not sync the filesystem,
+:    either).
+: 
+: 2: Once we clear the socket we have no guarantee that later reads will
+:    come from the same backing storage.
+: 
+:    The patch adds calls to kill_bdev() in __nbd_ioctl()'s socket
+:    clearing code so the page cache is cleaned, lest reads that hit on the
+:    page cache will return stale data from the previously-accessible disk.
+: 
+: Example:
+: 
+:     # qemu-nbd -r -c/dev/nbd0 /dev/sr0
+:     # file -s /dev/nbd0
+:     /dev/stdin: # UDF filesystem data (version 1.5) etc.
+:     # qemu-nbd -d /dev/nbd0
+:     # qemu-nbd -r -c/dev/nbd0 /dev/sda
+:     # file -s /dev/nbd0
+:     /dev/stdin: # UDF filesystem data (version 1.5) etc.
+: 
+: While /dev/sda has:
+: 
+:     # file -s /dev/sda
+:     /dev/sda: x86 boot sector; etc.
+
