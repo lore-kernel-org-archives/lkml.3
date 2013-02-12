@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751989Ab3BLUfh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:35:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53392 "EHLO
+	id S1759626Ab3BLVLh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 16:11:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53419 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751781Ab3BLUfd (ORCPT
+	with ESMTP id S1752051Ab3BLUfk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:35:33 -0500
+	Tue, 12 Feb 2013 15:35:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 01/61] rtlwifi: Fix the usage of the wrong variable in usb.c
-Date: Tue, 12 Feb 2013 12:34:21 -0800
-Message-Id: <20130212203418.133788056@linuxfoundation.org>
+        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [ 07/61] virtio_console: Dont access uninitialized data.
+Date: Tue, 12 Feb 2013 12:34:27 -0800
+Message-Id: <20130212203419.086361026@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203417.890993903@linuxfoundation.org>
 References: <20130212203417.890993903@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,35 +30,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Sjur Brændeland <sjur.brandeland@stericsson.com>
 
-commit 0a06ad8e3a1cb5311b7dbafde45410aa1bce9d40 upstream.
+commit aded024a12b32fc1ed9a80639681daae2d07ec25 upstream.
 
-In routine _rtl_rx_pre_process(), skb_dequeue() is called to get an skb;
-however, the wrong variable name is used in subsequent calls.
+Don't access uninitialized work-queue when removing device.
+The work queue is initialized only if the device multi-queue.
+So don't call cancel_work unless this is a multi-queue device.
 
-Reported-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This fixes the following panic:
+
+Kernel panic - not syncing: BUG!
+Call Trace:
+62031b28:  [<6026085d>] panic+0x16b/0x2d3
+62031b30:  [<6004ef5e>] flush_work+0x0/0x1d7
+62031b60:  [<602606f2>] panic+0x0/0x2d3
+62031b68:  [<600333b0>] memcpy+0x0/0x140
+62031b80:  [<6002d58a>] unblock_signals+0x0/0x84
+62031ba0:  [<602609c5>] printk+0x0/0xa0
+62031bd8:  [<60264e51>] __mutex_unlock_slowpath+0x13d/0x148
+62031c10:  [<6004ef5e>] flush_work+0x0/0x1d7
+62031c18:  [<60050234>] try_to_grab_pending+0x0/0x17e
+62031c38:  [<6004e984>] get_work_gcwq+0x71/0x8f
+62031c48:  [<60050539>] __cancel_work_timer+0x5b/0x115
+62031c78:  [<628acc85>] unplug_port+0x0/0x191 [virtio_console]
+62031c98:  [<6005061c>] cancel_work_sync+0x12/0x14
+62031ca8:  [<628ace96>] virtcons_remove+0x80/0x15c [virtio_console]
+62031ce8:  [<628191de>] virtio_dev_remove+0x1e/0x7e [virtio]
+62031d08:  [<601cf242>] __device_release_driver+0x75/0xe4
+62031d28:  [<601cf2dd>] device_release_driver+0x2c/0x40
+62031d48:  [<601ce0dd>] driver_unbind+0x7d/0xc6
+62031d88:  [<601cd5d9>] drv_attr_store+0x27/0x29
+62031d98:  [<60115f61>] sysfs_write_file+0x100/0x14d
+62031df8:  [<600b737d>] vfs_write+0xcb/0x184
+62031e08:  [<600b58b8>] filp_close+0x88/0x94
+62031e38:  [<600b7686>] sys_write+0x59/0x88
+62031e88:  [<6001ced1>] handle_syscall+0x5d/0x80
+62031ea8:  [<60030a74>] userspace+0x405/0x531
+62031f08:  [<600d32cc>] sys_dup+0x0/0x5e
+62031f28:  [<601b11d6>] strcpy+0x0/0x18
+62031f38:  [<600be46c>] do_execve+0x10/0x12
+62031f48:  [<600184c7>] run_init_process+0x43/0x45
+62031fd8:  [<60019a91>] new_thread_handler+0xba/0xbc
+
+Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/usb.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/char/virtio_console.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/rtlwifi/usb.c
-+++ b/drivers/net/wireless/rtlwifi/usb.c
-@@ -542,8 +542,8 @@ static void _rtl_rx_pre_process(struct i
- 	WARN_ON(skb_queue_empty(&rx_queue));
- 	while (!skb_queue_empty(&rx_queue)) {
- 		_skb = skb_dequeue(&rx_queue);
--		_rtl_usb_rx_process_agg(hw, skb);
--		ieee80211_rx_irqsafe(hw, skb);
-+		_rtl_usb_rx_process_agg(hw, _skb);
-+		ieee80211_rx_irqsafe(hw, _skb);
- 	}
- }
+--- a/drivers/char/virtio_console.c
++++ b/drivers/char/virtio_console.c
+@@ -1966,7 +1966,8 @@ static void virtcons_remove(struct virti
+ 	/* Disable interrupts for vqs */
+ 	vdev->config->reset(vdev);
+ 	/* Finish up work that's lined up */
+-	cancel_work_sync(&portdev->control_work);
++	if (use_multiport(portdev))
++		cancel_work_sync(&portdev->control_work);
  
+ 	list_for_each_entry_safe(port, port2, &portdev->ports, list)
+ 		unplug_port(port);
 
 
