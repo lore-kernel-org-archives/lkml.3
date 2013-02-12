@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759506Ab3BLVDl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 16:03:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53520 "EHLO
+	id S1755002Ab3BLVEP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 16:04:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53518 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754150Ab3BLUf4 (ORCPT
+	with ESMTP id S1754132Ab3BLUf4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Feb 2013 15:35:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Timo=20Ter=E4s?= <timo.teras@iki.fi>,
-        Francois Romieu <romieu@fr.zoreil.com>,
+        Christoph Paasch <christoph.paasch@uclouvain.be>,
+        Eric Dumazet <edumazet@google.com>,
+        Sony Chacko <sony.chacko@qlogic.com>,
+        Rajesh Borundia <rajesh.borundia@qlogic.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 30/61] r8169: remove the obsolete and incorrect AMD workaround
-Date: Tue, 12 Feb 2013 12:34:50 -0800
-Message-Id: <20130212203422.358226227@linuxfoundation.org>
+Subject: [ 29/61] netxen: fix off by one bug in netxen_release_tx_buffer()
+Date: Tue, 12 Feb 2013 12:34:49 -0800
+Message-Id: <20130212203422.235762643@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203417.890993903@linuxfoundation.org>
 References: <20130212203417.890993903@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,57 +31,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: =?UTF-8?q?Timo=20Ter=C3=A4s?= <timo.teras@iki.fi>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 5d0feaff230c0abfe4a112e6f09f096ed99e0b2d ]
+[ Upstream commit a05948f296ce103989b28a2606e47d2e287c3c89 ]
 
-This was introduced in commit 6dccd16 "r8169: merge with version
-6.001.00 of Realtek's r8169 driver". I did not find the version
-6.001.00 online, but in 6.002.00 or any later r8169 from Realtek
-this hunk is no longer present.
+Christoph Paasch found netxen could trigger a BUG in its dismantle
+phase, in netxen_release_tx_buffer(), using full size TSO packets.
 
-Also commit 05af214 "r8169: fix Ethernet Hangup for RTL8110SC
-rev d" claims to have fixed this issue otherwise.
+cmd_buf->frag_count includes the skb->data part, so the loop must
+start at index 1 instead of 0, or else we can make an out
+of bound access to cmd_buff->frag_array[MAX_SKB_FRAGS + 2]
 
-The magic compare mask of 0xfffe000 is dubious as it masks
-parts of the Reserved part, and parts of the VLAN tag. But this
-does not make much sense as the VLAN tag parts are perfectly
-valid there. In matter of fact this seems to be triggered with
-any VLAN tagged packet as RxVlanTag bit is matched. I would
-suspect 0xfffe0000 was intended to test reserved part only.
+Christoph provided the fixes in netxen_map_tx_skb() function.
+In case of a dma mapping error, its better to clear the dma fields
+so that we don't try to unmap them again in netxen_release_tx_buffer()
 
-Finally, this hunk is evil as it can cause more packets to be
-handled than what was NAPI quota causing net/core/dev.c:
-net_rx_action(): WARN_ON_ONCE(work > weight) to trigger, and
-mess up the NAPI state causing device to hang.
-
-As result, any system using VLANs and having high receive
-traffic (so that NAPI poll budget limits rtl_rx) would result
-in device hang.
-
-Signed-off-by: Timo Teräs <timo.teras@iki.fi>
-Acked-by: Francois Romieu <romieu@fr.zoreil.com>
+Reported-by: Christoph Paasch <christoph.paasch@uclouvain.be>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Tested-by: Christoph Paasch <christoph.paasch@uclouvain.be>
+Cc: Sony Chacko <sony.chacko@qlogic.com>
+Cc: Rajesh Borundia <rajesh.borundia@qlogic.com>
+Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/realtek/r8169.c |    7 -------
- 1 file changed, 7 deletions(-)
+ drivers/net/ethernet/qlogic/netxen/netxen_nic_init.c |    2 +-
+ drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c |    2 ++
+ 2 files changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -6064,13 +6064,6 @@ process_pkt:
- 			tp->rx_stats.bytes += pkt_size;
- 			u64_stats_update_end(&tp->rx_stats.syncp);
+--- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_init.c
++++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_init.c
+@@ -144,7 +144,7 @@ void netxen_release_tx_buffers(struct ne
+ 					 buffrag->length, PCI_DMA_TODEVICE);
+ 			buffrag->dma = 0ULL;
  		}
--
--		/* Work around for AMD plateform. */
--		if ((desc->opts2 & cpu_to_le32(0xfffe000)) &&
--		    (tp->mac_version == RTL_GIGA_MAC_VER_05)) {
--			desc->opts2 = 0;
--			cur_rx++;
--		}
+-		for (j = 0; j < cmd_buf->frag_count; j++) {
++		for (j = 1; j < cmd_buf->frag_count; j++) {
+ 			buffrag++;
+ 			if (buffrag->dma) {
+ 				pci_unmap_page(adapter->pdev, buffrag->dma,
+--- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
++++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
+@@ -1963,10 +1963,12 @@ unwind:
+ 	while (--i >= 0) {
+ 		nf = &pbuf->frag_array[i+1];
+ 		pci_unmap_page(pdev, nf->dma, nf->length, PCI_DMA_TODEVICE);
++		nf->dma = 0ULL;
  	}
  
- 	count = cur_rx - tp->cur_rx;
+ 	nf = &pbuf->frag_array[0];
+ 	pci_unmap_single(pdev, nf->dma, skb_headlen(skb), PCI_DMA_TODEVICE);
++	nf->dma = 0ULL;
+ 
+ out_err:
+ 	return -ENOMEM;
 
 
