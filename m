@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759788Ab3BLVK6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 16:10:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53426 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752190Ab3BLUfm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752210Ab3BLUfm (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 12 Feb 2013 15:35:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53408 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751781Ab3BLUfi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 15:35:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 09/61] Revert "iwlwifi: fix the reclaimed packet tracking upon flush queue"
-Date: Tue, 12 Feb 2013 12:34:29 -0800
-Message-Id: <20130212203419.357872976@linuxfoundation.org>
+        Stephen Warren <swarren@nvidia.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 04/61] regulator: clear state each invocation of of_regulator_match
+Date: Tue, 12 Feb 2013 12:34:24 -0800
+Message-Id: <20130212203418.622561422@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203417.890993903@linuxfoundation.org>
 References: <20130212203417.890993903@linuxfoundation.org>
@@ -27,67 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Stephen Warren <swarren@nvidia.com>
 
-commit ae023b2795d36f0f077e157428eb7eafa29ee412 upstream.
+commit a2f95c363701deba2205f81929b40222ea6f4f80 upstream.
 
-This reverts commit f590dcec944552f9a4a61155810f3abd17d6465d
-which has been reported to cause issues.
+of_regulator_match() saves some dynamcially allocated state into the
+match table that's passed to it. By implementation and not contract, for
+each match table entry, if non-NULL state is already present,
+of_regulator_match() will not overwrite it. of_regulator_match() is
+typically called each time a regulator is probe()d. This means it is
+called with the same match table over and over again if a regulator
+triggers deferred probe. This results in stale, kfree()d data being left
+in the match table from probe to probe, which causes a variety of crashes
+or use of invalid data.
 
-See https://lkml.org/lkml/2013/1/20/4 for further details.
+Explicitly free all output state from of_regulator_match() before
+generating new results in order to avoid this.
 
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/dvm/tx.c |   24 +++++++-----------------
- 1 file changed, 7 insertions(+), 17 deletions(-)
+ drivers/regulator/of_regulator.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/net/wireless/iwlwifi/dvm/tx.c
-+++ b/drivers/net/wireless/iwlwifi/dvm/tx.c
-@@ -1154,6 +1154,13 @@ int iwlagn_rx_reply_tx(struct iwl_priv *
- 			next_reclaimed = ssn;
- 		}
+--- a/drivers/regulator/of_regulator.c
++++ b/drivers/regulator/of_regulator.c
+@@ -120,6 +120,12 @@ int of_regulator_match(struct device *de
+ 	if (!dev || !node)
+ 		return -EINVAL;
  
-+		if (tid != IWL_TID_NON_QOS) {
-+			priv->tid_data[sta_id][tid].next_reclaimed =
-+				next_reclaimed;
-+			IWL_DEBUG_TX_REPLY(priv, "Next reclaimed packet:%d\n",
-+						  next_reclaimed);
-+		}
++	for (i = 0; i < num_matches; i++) {
++		struct of_regulator_match *match = &matches[i];
++		match->init_data = NULL;
++		match->of_node = NULL;
++	}
 +
- 		iwl_trans_reclaim(priv->trans, txq_id, ssn, &skbs);
- 
- 		iwlagn_check_ratid_empty(priv, sta_id, tid);
-@@ -1204,28 +1211,11 @@ int iwlagn_rx_reply_tx(struct iwl_priv *
- 			if (!is_agg)
- 				iwlagn_non_agg_tx_status(priv, ctx, hdr->addr1);
- 
--			/*
--			 * W/A for FW bug - the seq_ctl isn't updated when the
--			 * queues are flushed. Fetch it from the packet itself
--			 */
--			if (!is_agg && status == TX_STATUS_FAIL_FIFO_FLUSHED) {
--				next_reclaimed = le16_to_cpu(hdr->seq_ctrl);
--				next_reclaimed =
--					SEQ_TO_SN(next_reclaimed + 0x10);
--			}
--
- 			is_offchannel_skb =
- 				(info->flags & IEEE80211_TX_CTL_TX_OFFCHAN);
- 			freed++;
- 		}
- 
--		if (tid != IWL_TID_NON_QOS) {
--			priv->tid_data[sta_id][tid].next_reclaimed =
--				next_reclaimed;
--			IWL_DEBUG_TX_REPLY(priv, "Next reclaimed packet:%d\n",
--					   next_reclaimed);
--		}
--
- 		WARN_ON(!is_agg && freed != 1);
- 
- 		/*
+ 	for_each_child_of_node(node, child) {
+ 		name = of_get_property(child,
+ 					"regulator-compatible", NULL);
 
 
