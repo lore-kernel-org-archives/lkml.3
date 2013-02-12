@@ -1,191 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758410Ab3BLUzg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:55:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53708 "EHLO
+	id S1756816Ab3BLUg1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 15:36:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53684 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757212Ab3BLUhK (ORCPT
+	with ESMTP id S1756515Ab3BLUgT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:37:10 -0500
+	Tue, 12 Feb 2013 15:36:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Johannes Berg <johannes.berg@intel.com>, CAI Qian <caiqian@redhat.com>
-Subject: [ 04/22] mac80211: synchronize scan off/on-channel and PS states
-Date: Tue, 12 Feb 2013 12:36:47 -0800
-Message-Id: <20130212203414.355143109@linuxfoundation.org>
+        =?UTF-8?q?Pasi=20K=E4rkk=E4inen?= <pasik@iki.fi>,
+        Eric Dumazet <edumazet@google.com>,
+        Neal Cardwell <ncardwell@google.com>,
+        Yuchung Cheng <ycheng@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 53/61] tcp: fix an infinite loop in tcp_slow_start()
+Date: Tue, 12 Feb 2013 12:35:13 -0800
+Message-Id: <20130212203425.027018012@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130212203413.459836020@linuxfoundation.org>
-References: <20130212203413.459836020@linuxfoundation.org>
+In-Reply-To: <20130212203417.890993903@linuxfoundation.org>
+References: <20130212203417.890993903@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit aacde9ee45225f7e0b90960f479aef83c66bfdc0 upstream.
+From: Eric Dumazet <edumazet@google.com>
 
-Since:
+[ Upstream commit 973ec449bb4f2b8c514bacbcb4d9506fc31c8ce3 ]
 
-commit b23b025fe246f3acc2988eb6d400df34c27cb8ae
-Author: Ben Greear <greearb@candelatech.com>
-Date:   Fri Feb 4 11:54:17 2011 -0800
+Since commit 9dc274151a548 (tcp: fix ABC in tcp_slow_start()),
+a nul snd_cwnd triggers an infinite loop in tcp_slow_start()
 
-    mac80211: Optimize scans on current operating channel.
+Avoid this infinite loop and log a one time error for further
+analysis. FRTO code is suspected to cause this bug.
 
-we do not disable PS while going back to operational channel (on
-ieee80211_scan_state_suspend) and deffer that until scan finish.
-But since we are allowed to send frames, we can send a frame to AP
-without PM bit set, so disable PS on AP side. Then when we switch
-to off-channel (in ieee80211_scan_state_resume) we do not enable PS.
-Hence we are off-channel with PS disabled, frames are not buffered
-by AP.
-
-To fix remove offchannel_ps_disable argument and always enable PS when
-going off-channel and disable it when going on-channel, like it was
-before.
-
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Tested-by: Seth Forshee <seth.forshee@canonical.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: CAI Qian <caiqian@redhat.com>
+Reported-by: Pasi Kärkkäinen <pasik@iki.fi>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Neal Cardwell <ncardwell@google.com>
+Cc: Yuchung Cheng <ycheng@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- net/mac80211/ieee80211_i.h |    6 ++----
- net/mac80211/offchannel.c  |   17 ++++++-----------
- net/mac80211/scan.c        |    6 +++---
- net/mac80211/work.c        |    8 +++-----
- 4 files changed, 14 insertions(+), 23 deletions(-)
+ net/ipv4/tcp_cong.c |   14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
---- a/net/mac80211/ieee80211_i.h
-+++ b/net/mac80211/ieee80211_i.h
-@@ -1169,11 +1169,9 @@ void ieee80211_sched_scan_stopped_work(s
- bool ieee80211_cfg_on_oper_channel(struct ieee80211_local *local);
- void ieee80211_offchannel_enable_all_ps(struct ieee80211_local *local,
- 					bool tell_ap);
--void ieee80211_offchannel_stop_vifs(struct ieee80211_local *local,
--				    bool offchannel_ps_enable);
-+void ieee80211_offchannel_stop_vifs(struct ieee80211_local *local);
- void ieee80211_offchannel_return(struct ieee80211_local *local,
--				 bool enable_beaconing,
--				 bool offchannel_ps_disable);
-+				 bool enable_beaconing);
- void ieee80211_hw_roc_setup(struct ieee80211_local *local);
- 
- /* interface handling */
---- a/net/mac80211/offchannel.c
-+++ b/net/mac80211/offchannel.c
-@@ -102,8 +102,7 @@ static void ieee80211_offchannel_ps_disa
- 	ieee80211_sta_reset_conn_monitor(sdata);
- }
- 
--void ieee80211_offchannel_stop_vifs(struct ieee80211_local *local,
--				    bool offchannel_ps_enable)
-+void ieee80211_offchannel_stop_vifs(struct ieee80211_local *local)
+--- a/net/ipv4/tcp_cong.c
++++ b/net/ipv4/tcp_cong.c
+@@ -309,6 +309,12 @@ void tcp_slow_start(struct tcp_sock *tp)
  {
- 	struct ieee80211_sub_if_data *sdata;
+ 	int cnt; /* increase in packets */
+ 	unsigned int delta = 0;
++	u32 snd_cwnd = tp->snd_cwnd;
++
++	if (unlikely(!snd_cwnd)) {
++		pr_err_once("snd_cwnd is nul, please report this bug.\n");
++		snd_cwnd = 1U;
++	}
  
-@@ -128,8 +127,7 @@ void ieee80211_offchannel_stop_vifs(stru
+ 	/* RFC3465: ABC Slow start
+ 	 * Increase only after a full MSS of bytes is acked
+@@ -323,7 +329,7 @@ void tcp_slow_start(struct tcp_sock *tp)
+ 	if (sysctl_tcp_max_ssthresh > 0 && tp->snd_cwnd > sysctl_tcp_max_ssthresh)
+ 		cnt = sysctl_tcp_max_ssthresh >> 1;	/* limited slow start */
+ 	else
+-		cnt = tp->snd_cwnd;			/* exponential increase */
++		cnt = snd_cwnd;				/* exponential increase */
  
- 		if (sdata->vif.type != NL80211_IFTYPE_MONITOR) {
- 			netif_tx_stop_all_queues(sdata->dev);
--			if (offchannel_ps_enable &&
--			    (sdata->vif.type == NL80211_IFTYPE_STATION) &&
-+			if (sdata->vif.type == NL80211_IFTYPE_STATION &&
- 			    sdata->u.mgd.associated)
- 				ieee80211_offchannel_ps_enable(sdata, true);
- 		}
-@@ -155,8 +153,7 @@ void ieee80211_offchannel_enable_all_ps(
- }
+ 	/* RFC3465: ABC
+ 	 * We MAY increase by 2 if discovered delayed ack
+@@ -333,11 +339,11 @@ void tcp_slow_start(struct tcp_sock *tp)
+ 	tp->bytes_acked = 0;
  
- void ieee80211_offchannel_return(struct ieee80211_local *local,
--				 bool enable_beaconing,
--				 bool offchannel_ps_disable)
-+				 bool enable_beaconing)
- {
- 	struct ieee80211_sub_if_data *sdata;
- 
-@@ -166,11 +163,9 @@ void ieee80211_offchannel_return(struct
- 			continue;
- 
- 		/* Tell AP we're back */
--		if (offchannel_ps_disable &&
--		    sdata->vif.type == NL80211_IFTYPE_STATION) {
--			if (sdata->u.mgd.associated)
--				ieee80211_offchannel_ps_disable(sdata);
--		}
-+		if (sdata->vif.type == NL80211_IFTYPE_STATION &&
-+		    sdata->u.mgd.associated)
-+			ieee80211_offchannel_ps_disable(sdata);
- 
- 		if (sdata->vif.type != NL80211_IFTYPE_MONITOR) {
- 			clear_bit(SDATA_STATE_OFFCHANNEL, &sdata->state);
---- a/net/mac80211/scan.c
-+++ b/net/mac80211/scan.c
-@@ -314,7 +314,7 @@ static void __ieee80211_scan_completed(s
- 		if (on_oper_chan2 && (on_oper_chan != on_oper_chan2))
- 			enable_beacons = true;
- 
--		ieee80211_offchannel_return(local, enable_beacons, true);
-+		ieee80211_offchannel_return(local, enable_beacons);
+ 	tp->snd_cwnd_cnt += cnt;
+-	while (tp->snd_cwnd_cnt >= tp->snd_cwnd) {
+-		tp->snd_cwnd_cnt -= tp->snd_cwnd;
++	while (tp->snd_cwnd_cnt >= snd_cwnd) {
++		tp->snd_cwnd_cnt -= snd_cwnd;
+ 		delta++;
  	}
+-	tp->snd_cwnd = min(tp->snd_cwnd + delta, tp->snd_cwnd_clamp);
++	tp->snd_cwnd = min(snd_cwnd + delta, tp->snd_cwnd_clamp);
+ }
+ EXPORT_SYMBOL_GPL(tcp_slow_start);
  
- 	ieee80211_recalc_idle(local);
-@@ -563,7 +563,7 @@ static void ieee80211_scan_state_leave_o
- 	/* PS will already be in off-channel mode,
- 	 * we do that once at the beginning of scanning.
- 	 */
--	ieee80211_offchannel_stop_vifs(local, false);
-+	ieee80211_offchannel_stop_vifs(local);
- 
- 	/*
- 	 * What if the nullfunc frames didn't arrive?
-@@ -594,7 +594,7 @@ static void ieee80211_scan_state_enter_o
- 	 * in off-channel state..will put that back
- 	 * on-channel at the end of scanning.
- 	 */
--	ieee80211_offchannel_return(local, true, false);
-+	ieee80211_offchannel_return(local, true);
- 
- 	*next_delay = HZ / 5;
- 	local->next_scan_state = SCAN_DECISION;
---- a/net/mac80211/work.c
-+++ b/net/mac80211/work.c
-@@ -973,16 +973,14 @@ static void ieee80211_work_work(struct w
- 			if (on_oper_chan != on_oper_chan2) {
- 				if (on_oper_chan2) {
- 					/* going off oper channel, PS too */
--					ieee80211_offchannel_stop_vifs(local,
--								       true);
-+					ieee80211_offchannel_stop_vifs(local);
- 					ieee80211_hw_config(local, 0);
- 				} else {
- 					/* going on channel, but leave PS
- 					 * off-channel. */
- 					ieee80211_hw_config(local, 0);
- 					ieee80211_offchannel_return(local,
--								    true,
--								    false);
-+								    true);
- 				}
- 			} else if (tmp_chan_changed)
- 				/* Still off-channel, but on some other
-@@ -1085,7 +1083,7 @@ static void ieee80211_work_work(struct w
- 		 * beaconing if we were already on-oper-channel
- 		 * as a future optimization.
- 		 */
--		ieee80211_offchannel_return(local, true, true);
-+		ieee80211_offchannel_return(local, true);
- 
- 		/* give connection some time to breathe */
- 		run_again(local, jiffies + HZ/2);
 
 
