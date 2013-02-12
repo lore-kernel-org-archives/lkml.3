@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755877Ab3BLUgM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:36:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53614 "EHLO
+	id S1759341Ab3BLU6m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 15:58:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53631 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751512Ab3BLUgJ (ORCPT
+	with ESMTP id S1755617Ab3BLUgM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:36:09 -0500
+	Tue, 12 Feb 2013 15:36:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steffen Klassert <steffen.klassert@secunet.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 47/61] ipv4: Add a socket release callback for datagram sockets
-Date: Tue, 12 Feb 2013 12:35:07 -0800
-Message-Id: <20130212203424.349883982@linuxfoundation.org>
+Subject: [ 50/61] net: sctp: sctp_setsockopt_auth_key: use kzfree instead of kfree
+Date: Tue, 12 Feb 2013 12:35:10 -0800
+Message-Id: <20130212203424.676542580@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203417.890993903@linuxfoundation.org>
 References: <20130212203417.890993903@linuxfoundation.org>
@@ -28,97 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Steffen Klassert <steffen.klassert@secunet.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-[ Upstream commit 8141ed9fcedb278f4a3a78680591bef1e55f75fb ]
+[ Upstream commit 6ba542a291a5e558603ac51cda9bded347ce7627 ]
 
-This implements a socket release callback function to check
-if the socket cached route got invalid during the time
-we owned the socket. The function is used from udp, raw
-and ping sockets.
+In sctp_setsockopt_auth_key, we create a temporary copy of the user
+passed shared auth key for the endpoint or association and after
+internal setup, we free it right away. Since it's sensitive data, we
+should zero out the key before returning the memory back to the
+allocator. Thus, use kzfree instead of kfree, just as we do in
+sctp_auth_key_put().
 
-Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/net/ip.h    |    2 ++
- net/ipv4/datagram.c |   25 +++++++++++++++++++++++++
- net/ipv4/ping.c     |    1 +
- net/ipv4/raw.c      |    1 +
- net/ipv4/udp.c      |    1 +
- 5 files changed, 30 insertions(+)
+ net/sctp/socket.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/net/ip.h
-+++ b/include/net/ip.h
-@@ -143,6 +143,8 @@ static inline struct sk_buff *ip_finish_
- extern int		ip4_datagram_connect(struct sock *sk, 
- 					     struct sockaddr *uaddr, int addr_len);
+--- a/net/sctp/socket.c
++++ b/net/sctp/socket.c
+@@ -3388,7 +3388,7 @@ static int sctp_setsockopt_auth_key(stru
  
-+extern void ip4_datagram_release_cb(struct sock *sk);
-+
- struct ip_reply_arg {
- 	struct kvec iov[1];   
- 	int	    flags;
---- a/net/ipv4/datagram.c
-+++ b/net/ipv4/datagram.c
-@@ -85,3 +85,28 @@ out:
- 	return err;
+ 	ret = sctp_auth_set_key(sctp_sk(sk)->ep, asoc, authkey);
+ out:
+-	kfree(authkey);
++	kzfree(authkey);
+ 	return ret;
  }
- EXPORT_SYMBOL(ip4_datagram_connect);
-+
-+void ip4_datagram_release_cb(struct sock *sk)
-+{
-+	const struct inet_sock *inet = inet_sk(sk);
-+	const struct ip_options_rcu *inet_opt;
-+	__be32 daddr = inet->inet_daddr;
-+	struct flowi4 fl4;
-+	struct rtable *rt;
-+
-+	if (! __sk_dst_get(sk) || __sk_dst_check(sk, 0))
-+		return;
-+
-+	rcu_read_lock();
-+	inet_opt = rcu_dereference(inet->inet_opt);
-+	if (inet_opt && inet_opt->opt.srr)
-+		daddr = inet_opt->opt.faddr;
-+	rt = ip_route_output_ports(sock_net(sk), &fl4, sk, daddr,
-+				   inet->inet_saddr, inet->inet_dport,
-+				   inet->inet_sport, sk->sk_protocol,
-+				   RT_CONN_FLAGS(sk), sk->sk_bound_dev_if);
-+	if (!IS_ERR(rt))
-+		__sk_dst_set(sk, &rt->dst);
-+	rcu_read_unlock();
-+}
-+EXPORT_SYMBOL_GPL(ip4_datagram_release_cb);
---- a/net/ipv4/ping.c
-+++ b/net/ipv4/ping.c
-@@ -738,6 +738,7 @@ struct proto ping_prot = {
- 	.recvmsg =	ping_recvmsg,
- 	.bind =		ping_bind,
- 	.backlog_rcv =	ping_queue_rcv_skb,
-+	.release_cb =	ip4_datagram_release_cb,
- 	.hash =		ping_v4_hash,
- 	.unhash =	ping_v4_unhash,
- 	.get_port =	ping_v4_get_port,
---- a/net/ipv4/raw.c
-+++ b/net/ipv4/raw.c
-@@ -894,6 +894,7 @@ struct proto raw_prot = {
- 	.recvmsg	   = raw_recvmsg,
- 	.bind		   = raw_bind,
- 	.backlog_rcv	   = raw_rcv_skb,
-+	.release_cb	   = ip4_datagram_release_cb,
- 	.hash		   = raw_hash_sk,
- 	.unhash		   = raw_unhash_sk,
- 	.obj_size	   = sizeof(struct raw_sock),
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -1952,6 +1952,7 @@ struct proto udp_prot = {
- 	.recvmsg	   = udp_recvmsg,
- 	.sendpage	   = udp_sendpage,
- 	.backlog_rcv	   = __udp_queue_rcv_skb,
-+	.release_cb	   = ip4_datagram_release_cb,
- 	.hash		   = udp_lib_hash,
- 	.unhash		   = udp_lib_unhash,
- 	.rehash		   = udp_v4_rehash,
+ 
 
 
