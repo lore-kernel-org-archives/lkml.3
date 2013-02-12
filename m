@@ -1,31 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757794Ab3BLUjy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:39:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53773 "EHLO
+	id S1758030Ab3BLUkP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 15:40:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53768 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757640Ab3BLUhV (ORCPT
+	with ESMTP id S1757631Ab3BLUhV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Feb 2013 15:37:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Pasi=20K=E4rkk=E4inen?= <pasik@iki.fi>,
-        Neal Cardwell <ncardwell@google.com>,
-        Eric Dumazet <edumazet@google.com>,
-        =?UTF-8?q?Ilpo=20J=E4rvinen?= <ilpo.jarvinen@helsinki.fi>,
-        Yuchung Cheng <ycheng@google.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Vlad Yasevich <vyasevic@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 17/22] tcp: frto should not set snd_cwnd to 0
-Date: Tue, 12 Feb 2013 12:37:00 -0800
-Message-Id: <20130212203416.776145370@linuxfoundation.org>
+Subject: [ 16/22] net: sctp: sctp_endpoint_free: zero out secret key data
+Date: Tue, 12 Feb 2013 12:36:59 -0800
+Message-Id: <20130212203416.600791519@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203413.459836020@linuxfoundation.org>
 References: <20130212203413.459836020@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -35,42 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Eric Dumazet <edumazet@google.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-[ Upstream commit 2e5f421211ff76c17130b4597bc06df4eeead24f ]
+[ Upstream commit b5c37fe6e24eec194bb29d22fdd55d73bcc709bf ]
 
-Commit 9dc274151a548 (tcp: fix ABC in tcp_slow_start())
-uncovered a bug in FRTO code :
-tcp_process_frto() is setting snd_cwnd to 0 if the number
-of in flight packets is 0.
+On sctp_endpoint_destroy, previously used sensitive keying material
+should be zeroed out before the memory is returned, as we already do
+with e.g. auth keys when released.
 
-As Neal pointed out, if no packet is in flight we lost our
-chance to disambiguate whether a loss timeout was spurious.
-
-We should assume it was a proper loss.
-
-Reported-by: Pasi Kärkkäinen <pasik@iki.fi>
-Signed-off-by: Neal Cardwell <ncardwell@google.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Ilpo Järvinen <ilpo.jarvinen@helsinki.fi>
-Cc: Yuchung Cheng <ycheng@google.com>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Vlad Yasevich <vyasevic@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_input.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/sctp/endpointola.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -3568,7 +3568,8 @@ static int tcp_process_frto(struct sock
- 	    ((tp->frto_counter >= 2) && (flag & FLAG_RETRANS_DATA_ACKED)))
- 		tp->undo_marker = 0;
+--- a/net/sctp/endpointola.c
++++ b/net/sctp/endpointola.c
+@@ -248,6 +248,8 @@ void sctp_endpoint_free(struct sctp_endp
+ /* Final destructor for endpoint.  */
+ static void sctp_endpoint_destroy(struct sctp_endpoint *ep)
+ {
++	int i;
++
+ 	SCTP_ASSERT(ep->base.dead, "Endpoint is not dead", return);
  
--	if (!before(tp->snd_una, tp->frto_highmark)) {
-+	if (!before(tp->snd_una, tp->frto_highmark) ||
-+	    !tcp_packets_in_flight(tp)) {
- 		tcp_enter_frto_loss(sk, (tp->frto_counter == 1 ? 2 : 3), flag);
- 		return 1;
- 	}
+ 	/* Free up the HMAC transform. */
+@@ -270,6 +272,9 @@ static void sctp_endpoint_destroy(struct
+ 	sctp_inq_free(&ep->base.inqueue);
+ 	sctp_bind_addr_free(&ep->base.bind_addr);
+ 
++	for (i = 0; i < SCTP_HOW_MANY_SECRETS; ++i)
++		memset(&ep->secret_key[i], 0, SCTP_SECRET_SIZE);
++
+ 	/* Remove and free the port */
+ 	if (sctp_sk(ep->base.sk)->bind_hash)
+ 		sctp_put_port(ep->base.sk);
 
 
