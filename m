@@ -1,24 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758843Ab3BLUns (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:43:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54052 "EHLO
+	id S1758804Ab3BLUoH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 15:44:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54046 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758804Ab3BLUl6 (ORCPT
+	with ESMTP id S1752588Ab3BLUl5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:41:58 -0500
+	Tue, 12 Feb 2013 15:41:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sarveshwar Bandi <sarveshwar.bandi@emulex.com>,
+        =?UTF-8?q?Ilpo=20J=E4rvinen?= <ilpo.jarvinen@helsinki.fi>,
+        Eric Dumazet <edumazet@google.com>,
+        Neal Cardwell <ncardwell@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 33/36] bridge: Pull ip header into skb->data before looking into ip header.
-Date: Tue, 12 Feb 2013 12:41:27 -0800
-Message-Id: <20130212203901.148569211@linuxfoundation.org>
+Subject: [ 32/36] tcp: fix for zero packets_in_flight was too broad
+Date: Tue, 12 Feb 2013 12:41:26 -0800
+Message-Id: <20130212203901.047384408@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203857.305594226@linuxfoundation.org>
 References: <20130212203857.305594226@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,32 +33,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Sarveshwar Bandi <sarveshwar.bandi@emulex.com>
+From: =?UTF-8?q?Ilpo=20J=C3=A4rvinen?= <ilpo.jarvinen@helsinki.fi>
 
-[ Upstream commit 6caab7b0544e83e6c160b5e80f5a4a7dd69545c7 ]
+[ Upstream commit 6731d2095bd4aef18027c72ef845ab1087c3ba63 ]
 
-If lower layer driver leaves the ip header in the skb fragment, it needs to
-be first pulled into skb->data before inspecting ip header length or ip version
-number.
+There are transients during normal FRTO procedure during which
+the packets_in_flight can go to zero between write_queue state
+updates and firing the resulting segments out. As FRTO processing
+occurs during that window the check must be more precise to
+not match "spuriously" :-). More specificly, e.g., when
+packets_in_flight is zero but FLAG_DATA_ACKED is true the problematic
+branch that set cwnd into zero would not be taken and new segments
+might be sent out later.
 
-Signed-off-by: Sarveshwar Bandi <sarveshwar.bandi@emulex.com>
+Signed-off-by: Ilpo Järvinen <ilpo.jarvinen@helsinki.fi>
+Tested-by: Eric Dumazet <edumazet@google.com>
+Acked-by: Neal Cardwell <ncardwell@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/bridge/br_netfilter.c |    3 +++
- 1 file changed, 3 insertions(+)
+ net/ipv4/tcp_input.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/net/bridge/br_netfilter.c
-+++ b/net/bridge/br_netfilter.c
-@@ -254,6 +254,9 @@ static int br_parse_ip_options(struct sk
- 	struct net_device *dev = skb->dev;
- 	u32 len;
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -3619,8 +3619,7 @@ static int tcp_process_frto(struct sock
+ 	    ((tp->frto_counter >= 2) && (flag & FLAG_RETRANS_DATA_ACKED)))
+ 		tp->undo_marker = 0;
  
-+	if (!pskb_may_pull(skb, sizeof(struct iphdr)))
-+		goto inhdr_error;
+-	if (!before(tp->snd_una, tp->frto_highmark) ||
+-	    !tcp_packets_in_flight(tp)) {
++	if (!before(tp->snd_una, tp->frto_highmark)) {
+ 		tcp_enter_frto_loss(sk, (tp->frto_counter == 1 ? 2 : 3), flag);
+ 		return 1;
+ 	}
+@@ -3640,6 +3639,11 @@ static int tcp_process_frto(struct sock
+ 		}
+ 	} else {
+ 		if (!(flag & FLAG_DATA_ACKED) && (tp->frto_counter == 1)) {
++			if (!tcp_packets_in_flight(tp)) {
++				tcp_enter_frto_loss(sk, 2, flag);
++				return true;
++			}
 +
- 	iph = ip_hdr(skb);
- 	opt = &(IPCB(skb)->opt);
- 
+ 			/* Prevent sending of new data. */
+ 			tp->snd_cwnd = min(tp->snd_cwnd,
+ 					   tcp_packets_in_flight(tp));
 
 
