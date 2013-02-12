@@ -1,120 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933538Ab3BLTl1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 14:41:27 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:49272 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933404Ab3BLTl0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 14:41:26 -0500
-Date: Tue, 12 Feb 2013 10:31:48 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ying Han <yinghan@google.com>, Tejun Heo <htejun@gmail.com>,
-        Glauber Costa <glommer@parallels.com>, Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH v3 4/7] memcg: remove memcg from the reclaim iterators
-Message-ID: <20130212183148.GW2666@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130211175619.GC13218@cmpxchg.org>
- <20130211192929.GB29000@dhcp22.suse.cz>
- <20130211195824.GB15951@cmpxchg.org>
- <20130211212756.GC29000@dhcp22.suse.cz>
- <20130211223943.GC15951@cmpxchg.org>
- <20130212095419.GB4863@dhcp22.suse.cz>
- <20130212151002.GD15951@cmpxchg.org>
- <20130212154330.GG4863@dhcp22.suse.cz>
- <20130212161051.GQ2666@linux.vnet.ibm.com>
- <20130212172526.GC25235@cmpxchg.org>
+	id S933586Ab3BLTlb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 14:41:31 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:46411 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933404Ab3BLTl2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 14:41:28 -0500
+Date: Tue, 12 Feb 2013 14:40:40 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, sjenning@linux.vnet.ibm.com,
+        minchan@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        devel@linuxdriverproject.org, ngupta@vflare.org
+Subject: Re: [PATCH] staging/zcache: Fix/improve zcache writeback code, tie
+ to a config option
+Message-ID: <20130212194040.GO3016@phenom.dumpdata.com>
+References: <1360175261-13287-1-git-send-email-dan.magenheimer@oracle.com>
+ <20130206190924.GB32275@kroah.com>
+ <761b5c6e-df13-49ff-b322-97a737def114@default>
+ <20130206214316.GA21148@kroah.com>
+ <abbc2f75-2982-470c-a3ca-675933d112c3@default>
+ <20130207000338.GB18984@kroah.com>
+ <7393d8c5-fb02-4087-93d1-0f999fb3cafd@default>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130212172526.GC25235@cmpxchg.org>
+In-Reply-To: <7393d8c5-fb02-4087-93d1-0f999fb3cafd@default>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13021219-7182-0000-0000-000005280904
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 12, 2013 at 12:25:26PM -0500, Johannes Weiner wrote:
-> On Tue, Feb 12, 2013 at 08:10:51AM -0800, Paul E. McKenney wrote:
-> > On Tue, Feb 12, 2013 at 04:43:30PM +0100, Michal Hocko wrote:
-> > > On Tue 12-02-13 10:10:02, Johannes Weiner wrote:
-> > > > On Tue, Feb 12, 2013 at 10:54:19AM +0100, Michal Hocko wrote:
-> > > > > On Mon 11-02-13 17:39:43, Johannes Weiner wrote:
-> > > > > > On Mon, Feb 11, 2013 at 10:27:56PM +0100, Michal Hocko wrote:
-> > > > > > > On Mon 11-02-13 14:58:24, Johannes Weiner wrote:
-> > > > > > > > That way, if the dead count gives the go-ahead, you KNOW that the
-> > > > > > > > position cache is valid, because it has been updated first.
-> > > > > > > 
-> > > > > > > OK, you are right. We can live without css_tryget because dead_count is
-> > > > > > > either OK which means that css would be alive at least this rcu period
-> > > > > > > (and RCU walk would be safe as well) or it is incremented which means
-> > > > > > > that we have started css_offline already and then css is dead already.
-> > > > > > > So css_tryget can be dropped.
-> > > > > > 
-> > > > > > Not quite :)
-> > > > > > 
-> > > > > > The dead_count check is for completed destructions,
-> > > > > 
-> > > > > Not quite :P. dead_count is incremented in css_offline callback which is
-> > > > > called before the cgroup core releases its last reference and unlinks
-> > > > > the group from the siblinks. css_tryget would already fail at this stage
-> > > > > because CSS_DEACT_BIAS is in place at that time but this doesn't break
-> > > > > RCU walk. So I think we are safe even without css_get.
-> > > > 
-> > > > But you drop the RCU lock before you return.
-> > > >
-> > > > dead_count IS incremented for every destruction, but it's not reliable
-> > > > for concurrent ones, is what I meant.  Again, if there is a dead_count
-> > > > mismatch, your pointer might be dangling, easy case.  However, even if
-> > > > there is no mismatch, you could still race with a destruction that has
-> > > > marked the object dead, and then frees it once you drop the RCU lock,
-> > > > so you need try_get() to check if the object is dead, or you could
-> > > > return a pointer to freed or soon to be freed memory.
-> > > 
-> > > Wait a moment. But what prevents from the following race?
-> > > 
-> > > rcu_read_lock()
-> > > 						mem_cgroup_css_offline(memcg)
-> > > 						root->dead_count++
-> > > iter->last_dead_count = root->dead_count
-> > > iter->last_visited = memcg
-> > > 						// final
-> > > 						css_put(memcg);
-> > > // last_visited is still valid
-> > > rcu_read_unlock()
-> > > [...]
-> > > // next iteration
-> > > rcu_read_lock()
-> > > iter->last_dead_count == root->dead_count
-> > > // KABOOM
-> > > 
-> > > The race window between dead_count++ and css_put is quite big but that
-> > > is not important because that css_put can happen anytime before we start
-> > > the next iteration and take rcu_read_lock.
-> > 
-> > The usual approach is to make sure that there is a grace period (either
-> > synchronize_rcu() or call_rcu()) between the time that the data is
-> > made inaccessible to readers (this would be mem_cgroup_css_offline()?)
-> > and the time it is freed (css_put(), correct?).
+On Mon, Feb 11, 2013 at 01:43:58PM -0800, Dan Magenheimer wrote:
+> > From: Greg KH [mailto:gregkh@linuxfoundation.org]
 > 
-> Absolutely!  And there is a synchronize_rcu() in between those two
-> operations.
+> > So, how about this, please draw up a specific plan for how you are going
+> > to get this code out of drivers/staging/  I want to see the steps
+> > involved, who is going to be doing the work, and who you are going to
+> > have to get to agree with your changes to make it happen.
+> >  :
+> > Yeah, a plan, I know it goes against normal kernel development
+> > procedures, but hey, we're in our early 20's now, it's about time we
+> > started getting responsible.
 > 
-> However, we want to keep a weak reference to the cgroup after we drop
-> the rcu read-side lock, so rcu alone is not enough for us to guarantee
-> object life time.  We still have to carefully detect any concurrent
-> offlinings in order to validate the weak reference next time around.
+> Hi Greg --
+> 
+> I'm a big fan of planning, though a wise boss once told me:
+> "Plans fail... planning succeeds".
+> 
+> So here's the plan I've been basically trying to pursue since about
+> ten months ago, ignoring the diversion due to "zcache1 vs zcache2"
+> from last summer.  There is no new functionality on this plan
+> other than as necessary from feedback obtained at or prior to
+> LSF/MM in April 2012.
+> 
+> Hope this meets your needs, and feedback welcome!
+> Dan
+> 
+> =======
+> 
+> ** ZCACHE PLAN FOR PROMOTION FROM STAGING **
+> 
+> PLAN STEPS
+> 
+> 1. merge zcache and ramster to eliminate horrible code duplication
+> 2. converge on a predictable, writeback-capable allocator
+> 3. use debugfs instead of sysfs (per akpm feedback in 2011)
+> 4. zcache side of cleancache/mm WasActive patch
+> 5. zcache side of frontswap exclusive gets
+> 6. zcache must be able to writeback to physical swap disk
+>     (per Andrea Arcangeli feedback in 2011)
+> 7. implement adequate policy for writeback
+> 8. frontswap/cleancache work to allow zcache to be loaded
+>     as a module
+> 9. get core mm developer to review
+> 10. incorporate feedback from review
+> 11. get review/acks from 1-2 additional mm developers
+> 12. incorporate any feedback from additional mm reviews
+> 13. propose location/file-naming in mm tree
+> 14. repeat 9-13 as necessary until akpm is happy and merges
+> 
+> STATUS/OWNERSHIP
+> 
+> 1. DONE as part of "new" zcache; now in staging/zcache
+> 2. DONE as part of "new" zcache (cf zbud.[ch]); now in staging/zcache
+>     (this was the core of the zcache1 vs zcache2 flail)
+> 3. DONE as part of "new" zcache; now in staging/zcache
+> 4. DONE as part of "new" zcache; per cleancache performance
+>     feedback see https://lkml.org/lkml/2011/8/17/351, now
+>     in staging/zcache; dependent on proposed mm patch, see
+>     https://lkml.org/lkml/2012/1/25/300 
+> 5. DONE as part of "new" zcache; performance tuning only,
+>     now in staging/zcache; dependent on frontswap patch
+>     merged in 3.7 (33c2a174)
+> 6. PROTOTYPED as part of "new" zcache; protoype is now
+>     in staging/zcache but has bad memory leak; reimplemented
+>     to use sjennings clever tricks and proposed mm patches
+>     with new version posted https://lkml.org/lkml/2013/2/6/437;
+>     rejected by GregKH as it smells like new functionality
+> 
+>     (******** YOU ARE HERE *********)
+> 
+> 7. PROTOTYPED as part of "new" zcache; now in staging/zcache;
+>     needs more review (plan to discuss at LSF/MM 2013)
+> 8. IN PROGRESS; owned by Konrad Wilk; v2 recently posted
+>    http://lkml.org/lkml/2013/2/1/542
 
-That would make things more interesting.  ;-)
+<nods> This is the frontswap/cleancache being able to use
+modularized backends.
 
-Exactly who or what holds the weak reference?  And the idea is that if
-you attempt to use the weak reference beforehand, the css_put() does not
-actually free it, but if you attempt to use it afterwards, you get some
-sort of failure indication?
+> 9. IN PROGRESS; owned by Konrad Wilk; Mel Gorman provided
+>    great feedback in August 2012 (unfortunately of "old"
+>    zcache)
+> 10. Konrad posted series of fixes (that now need rebasing)
+>     https://lkml.org/lkml/2013/2/1/566 
 
-							Thanx, Paul
-
+<nods> That way we can run those and the frontswap in parallel.
