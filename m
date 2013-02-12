@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754294Ab3BLUf5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:35:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53496 "EHLO
+	id S1759494Ab3BLVCz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 16:02:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53537 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753769Ab3BLUfx (ORCPT
+	with ESMTP id S1754322Ab3BLUf7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:35:53 -0500
+	Tue, 12 Feb 2013 15:35:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        nitin padalia <padalia.nitin@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        Eric Dumazet <edumazet@google.com>
-Subject: [ 17/61] net: prevent setting ttl=0 via IP_TTL
-Date: Tue, 12 Feb 2013 12:34:37 -0800
-Message-Id: <20130212203420.642102909@linuxfoundation.org>
+        "David S. Miller" <davem@davemloft.net>, Cong Wang <amwang@redhat.com>
+Subject: [ 33/61] pktgen: correctly handle failures when adding a device
+Date: Tue, 12 Feb 2013 12:34:53 -0800
+Message-Id: <20130212203422.687530645@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203417.890993903@linuxfoundation.org>
 References: <20130212203417.890993903@linuxfoundation.org>
@@ -31,49 +27,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Cong Wang <xiyou.wangcong@gmail.com>
+From: Cong Wang <amwang@redhat.com>
 
-[ Upstream commit c9be4a5c49cf51cc70a993f004c5bb30067a65ce ]
+[ Upstream commit 604dfd6efc9b79bce432f2394791708d8e8f6efc ]
 
-A regression is introduced by the following commit:
+The return value of pktgen_add_device() is not checked, so
+even if we fail to add some device, for example, non-exist one,
+we still see "OK:...". This patch fixes it.
 
-	commit 4d52cfbef6266092d535237ba5a4b981458ab171
-	Author: Eric Dumazet <eric.dumazet@gmail.com>
-	Date:   Tue Jun 2 00:42:16 2009 -0700
+After this patch, I got:
 
-	    net: ipv4/ip_sockglue.c cleanups
+	# echo "add_device non-exist" > /proc/net/pktgen/kpktgend_0
+	-bash: echo: write error: No such device
+	# cat /proc/net/pktgen/kpktgend_0
+	Running:
+	Stopped:
+	Result: ERROR: can not add device non-exist
+	# echo "add_device eth0" > /proc/net/pktgen/kpktgend_0
+	# cat /proc/net/pktgen/kpktgend_0
+	Running:
+	Stopped: eth0
+	Result: OK: add_device=eth0
 
-	    Pure cleanups
+(Candidate for -stable)
 
-but it is not a pure cleanup...
-
-	-               if (val != -1 && (val < 1 || val>255))
-	+               if (val != -1 && (val < 0 || val > 255))
-
-Since there is no reason provided to allow ttl=0, change it back.
-
-Reported-by: nitin padalia <padalia.nitin@gmail.com>
-Cc: nitin padalia <padalia.nitin@gmail.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
 Cc: David S. Miller <davem@davemloft.net>
-Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Cong Wang <amwang@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/ip_sockglue.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/core/pktgen.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/net/ipv4/ip_sockglue.c
-+++ b/net/ipv4/ip_sockglue.c
-@@ -590,7 +590,7 @@ static int do_ip_setsockopt(struct sock
- 	case IP_TTL:
- 		if (optlen < 1)
- 			goto e_inval;
--		if (val != -1 && (val < 0 || val > 255))
-+		if (val != -1 && (val < 1 || val > 255))
- 			goto e_inval;
- 		inet->uc_ttl = val;
- 		break;
+--- a/net/core/pktgen.c
++++ b/net/core/pktgen.c
+@@ -1795,10 +1795,13 @@ static ssize_t pktgen_thread_write(struc
+ 			return -EFAULT;
+ 		i += len;
+ 		mutex_lock(&pktgen_thread_lock);
+-		pktgen_add_device(t, f);
++		ret = pktgen_add_device(t, f);
+ 		mutex_unlock(&pktgen_thread_lock);
+-		ret = count;
+-		sprintf(pg_result, "OK: add_device=%s", f);
++		if (!ret) {
++			ret = count;
++			sprintf(pg_result, "OK: add_device=%s", f);
++		} else
++			sprintf(pg_result, "ERROR: can not add device %s", f);
+ 		goto out;
+ 	}
+ 
 
 
