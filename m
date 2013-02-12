@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758900Ab3BLUm6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:42:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54063 "EHLO
+	id S1758938Ab3BLUnY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 15:43:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54057 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758845Ab3BLUl7 (ORCPT
+	with ESMTP id S1757398Ab3BLUl7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Feb 2013 15:41:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nithin Nayak Sujir <nsujir@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 35/36] tg3: Fix crc errors on jumbo frame receive
-Date: Tue, 12 Feb 2013 12:41:29 -0800
-Message-Id: <20130212203901.378719006@linuxfoundation.org>
+        Neil Horman <nhorman@tuxdriver.com>,
+        Jamie Parsons <Jamie.Parsons@metaswitch.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Subject: [ 24/36] sctp: refactor sctp_outq_teardown to insure proper re-initalization
+Date: Tue, 12 Feb 2013 12:41:18 -0800
+Message-Id: <20130212203900.138871064@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203857.305594226@linuxfoundation.org>
 References: <20130212203857.305594226@linuxfoundation.org>
@@ -29,179 +30,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Nithin Nayak Sujir <nsujir@broadcom.com>
+From: Neil Horman <nhorman@tuxdriver.com>
 
-[ Upstream commit daf3ec688e057f6060fb9bb0819feac7a8bbf45c ]
+[ Upstream commit 2f94aabd9f6c925d77aecb3ff020f1cc12ed8f86 ]
 
-TG3_PHY_AUXCTL_SMDSP_ENABLE/DISABLE macros do a blind write to the phy
-auxiliary control register and overwrite the EXT_PKT_LEN (bit 14) resulting
-in intermittent crc errors on jumbo frames with some link partners. Change
-the code to do a read/modify/write.
+Jamie Parsons reported a problem recently, in which the re-initalization of an
+association (The duplicate init case), resulted in a loss of receive window
+space.  He tracked down the root cause to sctp_outq_teardown, which discarded
+all the data on an outq during a re-initalization of the corresponding
+association, but never reset the outq->outstanding_data field to zero.  I wrote,
+and he tested this fix, which does a proper full re-initalization of the outq,
+fixing this problem, and hopefully future proofing us from simmilar issues down
+the road.
 
-Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
-Signed-off-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+Reported-by: Jamie Parsons <Jamie.Parsons@metaswitch.com>
+Tested-by: Jamie Parsons <Jamie.Parsons@metaswitch.com>
+CC: Jamie Parsons <Jamie.Parsons@metaswitch.com>
+CC: Vlad Yasevich <vyasevich@gmail.com>
+CC: "David S. Miller" <davem@davemloft.net>
+CC: netdev@vger.kernel.org
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/broadcom/tg3.c |   60 +++++++++++++++++++++---------------
- 1 file changed, 36 insertions(+), 24 deletions(-)
+ net/sctp/outqueue.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -1136,14 +1136,26 @@ static int tg3_phy_auxctl_write(struct t
- 	return tg3_writephy(tp, MII_TG3_AUX_CTRL, set | reg);
- }
+--- a/net/sctp/outqueue.c
++++ b/net/sctp/outqueue.c
+@@ -223,7 +223,7 @@ void sctp_outq_init(struct sctp_associat
  
--#define TG3_PHY_AUXCTL_SMDSP_ENABLE(tp) \
--	tg3_phy_auxctl_write((tp), MII_TG3_AUXCTL_SHDWSEL_AUXCTL, \
--			     MII_TG3_AUXCTL_ACTL_SMDSP_ENA | \
--			     MII_TG3_AUXCTL_ACTL_TX_6DB)
--
--#define TG3_PHY_AUXCTL_SMDSP_DISABLE(tp) \
--	tg3_phy_auxctl_write((tp), MII_TG3_AUXCTL_SHDWSEL_AUXCTL, \
--			     MII_TG3_AUXCTL_ACTL_TX_6DB);
-+static int tg3_phy_toggle_auxctl_smdsp(struct tg3 *tp, bool enable)
-+{
-+	u32 val;
-+	int err;
-+
-+	err = tg3_phy_auxctl_read(tp, MII_TG3_AUXCTL_SHDWSEL_AUXCTL, &val);
-+
-+	if (err)
-+		return err;
-+	if (enable)
-+
-+		val |= MII_TG3_AUXCTL_ACTL_SMDSP_ENA;
-+	else
-+		val &= ~MII_TG3_AUXCTL_ACTL_SMDSP_ENA;
-+
-+	err = tg3_phy_auxctl_write((tp), MII_TG3_AUXCTL_SHDWSEL_AUXCTL,
-+				   val | MII_TG3_AUXCTL_ACTL_TX_6DB);
-+
-+	return err;
-+}
- 
- static int tg3_bmcr_reset(struct tg3 *tp)
+ /* Free the outqueue structure and any related pending chunks.
+  */
+-void sctp_outq_teardown(struct sctp_outq *q)
++static void __sctp_outq_teardown(struct sctp_outq *q)
  {
-@@ -2076,7 +2088,7 @@ static void tg3_phy_apply_otp(struct tg3
+ 	struct sctp_transport *transport;
+ 	struct list_head *lchunk, *temp;
+@@ -276,8 +276,6 @@ void sctp_outq_teardown(struct sctp_outq
+ 		sctp_chunk_free(chunk);
+ 	}
  
- 	otp = tp->phy_otp;
- 
--	if (TG3_PHY_AUXCTL_SMDSP_ENABLE(tp))
-+	if (tg3_phy_toggle_auxctl_smdsp(tp, true))
- 		return;
- 
- 	phy = ((otp & TG3_OTP_AGCTGT_MASK) >> TG3_OTP_AGCTGT_SHIFT);
-@@ -2101,7 +2113,7 @@ static void tg3_phy_apply_otp(struct tg3
- 	      ((otp & TG3_OTP_RCOFF_MASK) >> TG3_OTP_RCOFF_SHIFT);
- 	tg3_phydsp_write(tp, MII_TG3_DSP_EXP97, phy);
- 
--	TG3_PHY_AUXCTL_SMDSP_DISABLE(tp);
-+	tg3_phy_toggle_auxctl_smdsp(tp, false);
+-	q->error = 0;
+-
+ 	/* Throw away any leftover control chunks. */
+ 	list_for_each_entry_safe(chunk, tmp, &q->control_chunk_list, list) {
+ 		list_del_init(&chunk->list);
+@@ -285,11 +283,17 @@ void sctp_outq_teardown(struct sctp_outq
+ 	}
  }
  
- static void tg3_phy_eee_adjust(struct tg3 *tp, u32 current_link_up)
-@@ -2137,9 +2149,9 @@ static void tg3_phy_eee_adjust(struct tg
++void sctp_outq_teardown(struct sctp_outq *q)
++{
++	__sctp_outq_teardown(q);
++	sctp_outq_init(q->asoc, q);
++}
++
+ /* Free the outqueue structure and any related pending chunks.  */
+ void sctp_outq_free(struct sctp_outq *q)
+ {
+ 	/* Throw away leftover chunks. */
+-	sctp_outq_teardown(q);
++	__sctp_outq_teardown(q);
  
- 	if (!tp->setlpicnt) {
- 		if (current_link_up == 1 &&
--		   !TG3_PHY_AUXCTL_SMDSP_ENABLE(tp)) {
-+		   !tg3_phy_toggle_auxctl_smdsp(tp, true)) {
- 			tg3_phydsp_write(tp, MII_TG3_DSP_TAP26, 0x0000);
--			TG3_PHY_AUXCTL_SMDSP_DISABLE(tp);
-+			tg3_phy_toggle_auxctl_smdsp(tp, false);
- 		}
- 
- 		val = tr32(TG3_CPMU_EEE_MODE);
-@@ -2155,11 +2167,11 @@ static void tg3_phy_eee_enable(struct tg
- 	    (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5717 ||
- 	     GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5719 ||
- 	     tg3_flag(tp, 57765_CLASS)) &&
--	    !TG3_PHY_AUXCTL_SMDSP_ENABLE(tp)) {
-+	    !tg3_phy_toggle_auxctl_smdsp(tp, true)) {
- 		val = MII_TG3_DSP_TAP26_ALNOKO |
- 		      MII_TG3_DSP_TAP26_RMRXSTO;
- 		tg3_phydsp_write(tp, MII_TG3_DSP_TAP26, val);
--		TG3_PHY_AUXCTL_SMDSP_DISABLE(tp);
-+		tg3_phy_toggle_auxctl_smdsp(tp, false);
- 	}
- 
- 	val = tr32(TG3_CPMU_EEE_MODE);
-@@ -2303,7 +2315,7 @@ static int tg3_phy_reset_5703_4_5(struct
- 		tg3_writephy(tp, MII_CTRL1000,
- 			     CTL1000_AS_MASTER | CTL1000_ENABLE_MASTER);
- 
--		err = TG3_PHY_AUXCTL_SMDSP_ENABLE(tp);
-+		err = tg3_phy_toggle_auxctl_smdsp(tp, true);
- 		if (err)
- 			return err;
- 
-@@ -2324,7 +2336,7 @@ static int tg3_phy_reset_5703_4_5(struct
- 	tg3_writephy(tp, MII_TG3_DSP_ADDRESS, 0x8200);
- 	tg3_writephy(tp, MII_TG3_DSP_CONTROL, 0x0000);
- 
--	TG3_PHY_AUXCTL_SMDSP_DISABLE(tp);
-+	tg3_phy_toggle_auxctl_smdsp(tp, false);
- 
- 	tg3_writephy(tp, MII_CTRL1000, phy9_orig);
- 
-@@ -2413,10 +2425,10 @@ static int tg3_phy_reset(struct tg3 *tp)
- 
- out:
- 	if ((tp->phy_flags & TG3_PHYFLG_ADC_BUG) &&
--	    !TG3_PHY_AUXCTL_SMDSP_ENABLE(tp)) {
-+	    !tg3_phy_toggle_auxctl_smdsp(tp, true)) {
- 		tg3_phydsp_write(tp, 0x201f, 0x2aaa);
- 		tg3_phydsp_write(tp, 0x000a, 0x0323);
--		TG3_PHY_AUXCTL_SMDSP_DISABLE(tp);
-+		tg3_phy_toggle_auxctl_smdsp(tp, false);
- 	}
- 
- 	if (tp->phy_flags & TG3_PHYFLG_5704_A0_BUG) {
-@@ -2425,14 +2437,14 @@ out:
- 	}
- 
- 	if (tp->phy_flags & TG3_PHYFLG_BER_BUG) {
--		if (!TG3_PHY_AUXCTL_SMDSP_ENABLE(tp)) {
-+		if (!tg3_phy_toggle_auxctl_smdsp(tp, true)) {
- 			tg3_phydsp_write(tp, 0x000a, 0x310b);
- 			tg3_phydsp_write(tp, 0x201f, 0x9506);
- 			tg3_phydsp_write(tp, 0x401f, 0x14e2);
--			TG3_PHY_AUXCTL_SMDSP_DISABLE(tp);
-+			tg3_phy_toggle_auxctl_smdsp(tp, false);
- 		}
- 	} else if (tp->phy_flags & TG3_PHYFLG_JITTER_BUG) {
--		if (!TG3_PHY_AUXCTL_SMDSP_ENABLE(tp)) {
-+		if (!tg3_phy_toggle_auxctl_smdsp(tp, true)) {
- 			tg3_writephy(tp, MII_TG3_DSP_ADDRESS, 0x000a);
- 			if (tp->phy_flags & TG3_PHYFLG_ADJUST_TRIM) {
- 				tg3_writephy(tp, MII_TG3_DSP_RW_PORT, 0x110b);
-@@ -2441,7 +2453,7 @@ out:
- 			} else
- 				tg3_writephy(tp, MII_TG3_DSP_RW_PORT, 0x010b);
- 
--			TG3_PHY_AUXCTL_SMDSP_DISABLE(tp);
-+			tg3_phy_toggle_auxctl_smdsp(tp, false);
- 		}
- 	}
- 
-@@ -3858,7 +3870,7 @@ static int tg3_phy_autoneg_cfg(struct tg
- 	tw32(TG3_CPMU_EEE_MODE,
- 	     tr32(TG3_CPMU_EEE_MODE) & ~TG3_CPMU_EEEMD_LPI_ENABLE);
- 
--	err = TG3_PHY_AUXCTL_SMDSP_ENABLE(tp);
-+	err = tg3_phy_toggle_auxctl_smdsp(tp, true);
- 	if (!err) {
- 		u32 err2;
- 
-@@ -3891,7 +3903,7 @@ static int tg3_phy_autoneg_cfg(struct tg
- 						 MII_TG3_DSP_CH34TP2_HIBW01);
- 		}
- 
--		err2 = TG3_PHY_AUXCTL_SMDSP_DISABLE(tp);
-+		err2 = tg3_phy_toggle_auxctl_smdsp(tp, false);
- 		if (!err)
- 			err = err2;
- 	}
+ 	/* If we were kmalloc()'d, free the memory.  */
+ 	if (q->malloced)
 
 
