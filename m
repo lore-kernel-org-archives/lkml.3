@@ -1,176 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933654Ab3BLTyZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 14:54:25 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:39704 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933153Ab3BLTyU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 14:54:20 -0500
-Date: Tue, 12 Feb 2013 14:53:58 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ying Han <yinghan@google.com>, Tejun Heo <htejun@gmail.com>,
-        Glauber Costa <glommer@parallels.com>, Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH v3 4/7] memcg: remove memcg from the reclaim iterators
-Message-ID: <20130212195358.GE25235@cmpxchg.org>
-References: <20130211192929.GB29000@dhcp22.suse.cz>
- <20130211195824.GB15951@cmpxchg.org>
- <20130211212756.GC29000@dhcp22.suse.cz>
- <20130211223943.GC15951@cmpxchg.org>
- <20130212095419.GB4863@dhcp22.suse.cz>
- <20130212151002.GD15951@cmpxchg.org>
- <20130212154330.GG4863@dhcp22.suse.cz>
- <20130212161051.GQ2666@linux.vnet.ibm.com>
- <20130212172526.GC25235@cmpxchg.org>
- <20130212183148.GW2666@linux.vnet.ibm.com>
+	id S933612Ab3BLUCi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 15:02:38 -0500
+Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:43878 "EHLO
+	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932369Ab3BLUCh convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 15:02:37 -0500
+From: Loic PALLARDY <loic.pallardy@st.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Suman Anna <s-anna@ti.com>, Greg Kroah-Hartman <greg@linuxfoundation.org>,
+        Ohad Ben-Cohen <ohad@wizery.com>, Paul Walmsley <paul@pwsan.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Benoit Cousson <b-cousson@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
+        Tony Lindgren <tony@atomide.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Felipe Contreras <felipe.contreras@nokia.com>,
+        Dom Cobley <popcornmix@gmail.com>, Wim Van Sebroeck <wim@iguana.be>,
+        Omar Ramirez Luna <omar.ramirez@copitl.com>, Tejun Heo <tj@kernel.org>,
+        Omar Ramirez Luna <omar.luna@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Tue, 12 Feb 2013 21:01:05 +0100
+Subject: Re: [PATCH v2 10/13] mailbox: create dbx500 mailbox driver
+Thread-Topic: [PATCH v2 10/13] mailbox: create dbx500 mailbox driver
+Thread-Index: Ac4JW7Ko7wBE32FwQqGWtDfuuQ2Jvw==
+Message-ID: <511A9F81.1040608@st.com>
+References: <1360645032-9668-1-git-send-email-s-anna@ti.com>
+ <1360645032-9668-11-git-send-email-s-anna@ti.com>
+ <20130212103949.GA826@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20130212103949.GA826@e106331-lin.cambridge.arm.com>
+Accept-Language: fr-FR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120412
+ Thunderbird/11.0.1
+acceptlanguage: fr-FR, en-US
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130212183148.GW2666@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 12, 2013 at 10:31:48AM -0800, Paul E. McKenney wrote:
-> On Tue, Feb 12, 2013 at 12:25:26PM -0500, Johannes Weiner wrote:
-> > On Tue, Feb 12, 2013 at 08:10:51AM -0800, Paul E. McKenney wrote:
-> > > On Tue, Feb 12, 2013 at 04:43:30PM +0100, Michal Hocko wrote:
-> > > > On Tue 12-02-13 10:10:02, Johannes Weiner wrote:
-> > > > > On Tue, Feb 12, 2013 at 10:54:19AM +0100, Michal Hocko wrote:
-> > > > > > On Mon 11-02-13 17:39:43, Johannes Weiner wrote:
-> > > > > > > On Mon, Feb 11, 2013 at 10:27:56PM +0100, Michal Hocko wrote:
-> > > > > > > > On Mon 11-02-13 14:58:24, Johannes Weiner wrote:
-> > > > > > > > > That way, if the dead count gives the go-ahead, you KNOW that the
-> > > > > > > > > position cache is valid, because it has been updated first.
-> > > > > > > > 
-> > > > > > > > OK, you are right. We can live without css_tryget because dead_count is
-> > > > > > > > either OK which means that css would be alive at least this rcu period
-> > > > > > > > (and RCU walk would be safe as well) or it is incremented which means
-> > > > > > > > that we have started css_offline already and then css is dead already.
-> > > > > > > > So css_tryget can be dropped.
-> > > > > > > 
-> > > > > > > Not quite :)
-> > > > > > > 
-> > > > > > > The dead_count check is for completed destructions,
-> > > > > > 
-> > > > > > Not quite :P. dead_count is incremented in css_offline callback which is
-> > > > > > called before the cgroup core releases its last reference and unlinks
-> > > > > > the group from the siblinks. css_tryget would already fail at this stage
-> > > > > > because CSS_DEACT_BIAS is in place at that time but this doesn't break
-> > > > > > RCU walk. So I think we are safe even without css_get.
-> > > > > 
-> > > > > But you drop the RCU lock before you return.
-> > > > >
-> > > > > dead_count IS incremented for every destruction, but it's not reliable
-> > > > > for concurrent ones, is what I meant.  Again, if there is a dead_count
-> > > > > mismatch, your pointer might be dangling, easy case.  However, even if
-> > > > > there is no mismatch, you could still race with a destruction that has
-> > > > > marked the object dead, and then frees it once you drop the RCU lock,
-> > > > > so you need try_get() to check if the object is dead, or you could
-> > > > > return a pointer to freed or soon to be freed memory.
-> > > > 
-> > > > Wait a moment. But what prevents from the following race?
-> > > > 
-> > > > rcu_read_lock()
-> > > > 						mem_cgroup_css_offline(memcg)
-> > > > 						root->dead_count++
-> > > > iter->last_dead_count = root->dead_count
-> > > > iter->last_visited = memcg
-> > > > 						// final
-> > > > 						css_put(memcg);
-> > > > // last_visited is still valid
-> > > > rcu_read_unlock()
-> > > > [...]
-> > > > // next iteration
-> > > > rcu_read_lock()
-> > > > iter->last_dead_count == root->dead_count
-> > > > // KABOOM
-> > > > 
-> > > > The race window between dead_count++ and css_put is quite big but that
-> > > > is not important because that css_put can happen anytime before we start
-> > > > the next iteration and take rcu_read_lock.
-> > > 
-> > > The usual approach is to make sure that there is a grace period (either
-> > > synchronize_rcu() or call_rcu()) between the time that the data is
-> > > made inaccessible to readers (this would be mem_cgroup_css_offline()?)
-> > > and the time it is freed (css_put(), correct?).
-> > 
-> > Absolutely!  And there is a synchronize_rcu() in between those two
-> > operations.
-> > 
-> > However, we want to keep a weak reference to the cgroup after we drop
-> > the rcu read-side lock, so rcu alone is not enough for us to guarantee
-> > object life time.  We still have to carefully detect any concurrent
-> > offlinings in order to validate the weak reference next time around.
-> 
-> That would make things more interesting.  ;-)
-> 
-> Exactly who or what holds the weak reference?  And the idea is that if
-> you attempt to use the weak reference beforehand, the css_put() does not
-> actually free it, but if you attempt to use it afterwards, you get some
-> sort of failure indication?
+Hi Mark,
 
-Yes, exactly.  We are using a seqlock-style cookie comparison to see
-if any objects in the pool of objects that we may point to was
-destroyed.  We are having trouble to agree on how to safely read the
-counter :-)
+Thanks for your comments.
 
-Long version:
+On 02/12/2013 11:39 AM, Mark Rutland wrote:
+> Hello,
+>
+> I have a few comments on the devicetree binding and the way it's parsed.
+>
+>> +static const struct of_device_id dbx500_mailbox_match[] = {
+>> +       { .compatible = "stericsson,db8500-mailbox",
+>> +               .data = (void *)db8500_mboxes,
+>> +       },
+>> +       { .compatible = "stericsson,db9540-mailbox",
+>> +               .data = (void *)dbx540_mboxes,
+>> +       },
+>> +       { /* sentinel */}
+>> +};
+>> +
+>
+> The binding for the compatible strings above and property parsing below should
+> be documented.
+>
+Yes you're right. I will add a description in 
+Documentation/devicetree/bindings/mailbox/...
 
-It's an iterator over a hierarchy of cgroups, but page reclaim may
-stop iteration at will and might not come back for an indefinite
-amount of time (until memory pressure triggers reclaim again).  So we
-want to allow cgroups to be destroyed while one of the iterators may
-still pointing at it (we have iterators per-node, per-zone, per
-reclaim priority level, that's why it's not feasible to invalidate
-them pro-actively upon cgroup destruction).
+>> +static int dbx500_mbox_probe(struct platform_device *pdev)
+>> +{
+>> +       const struct platform_device_id *platid = platform_get_device_id(pdev);
+>> +       struct resource *mem;
+>> +       int ret, i, legacy_offset = 0, upap_offset;
+>> +       struct mailbox **list;
+>> +       int irq;
+>> +       struct dbx500_plat_data *pdata = dev_get_platdata(&pdev->dev);
+>> +       struct device_node *np = pdev->dev.of_node;
+>> +
+>> +       if (!pdata) {
+>> +               if (np) {
+>> +                       of_property_read_u32(np, "legacy-offset",
+>> +&legacy_offset);
+>
+> I see that legacy_offset is initialised to 0, and there's no check on the
+> return value of of_property_read_u32. Does that mean this is an optional
+> property? This needs to be documented.
+>
+Correct, I'll add a check. This offset must be compared to shared memory 
+size.
 
-The idea is that we have a counter that counts cgroup destructions in
-each cgroup hierarchy and we remember a snapshot of that counter at
-the time we remember the iterator position.  If any group in that
-group's hierarchy gets killed before we come back to the iterator, the
-counter mismatches.  Easy.  If any group is getting killed
-concurrently, the counter might match our cookie, but the object could
-be marked dead already, while rcu prevents it from being freed.  The
-remaining worry is/was that we have two reads of the destruction
-counter: one when validating the weak reference, another one when
-updating the iterator.  If a destruction starts in between those two,
-and modifies the counter, we would miss that destruction and the
-object that is now weakly referenced could get freed while the
-corresponding snapshot matches the latest value of the destruction
-counter.  Michal's idea was to hold off the destruction counter inc
-between those reads with synchronize_rcu().  My idea was to simply
-read the counter only once and use that same value to both check and
-update the iterator with.  That should catch this type of race
-condition and save the atomic & the extra synchronize_rcu().  At least
-I fail to see the downside of reading it only once:
+>> +                       of_property_read_u32(np, "upap-offset",&upap_offset);
+>
+> However, upap_offset isn't initialised, but there's no check on the return
+> value. If "upap-offset" isn't defined in the dt, upap_offset won't have been
+> initialised.
+Should be documented too. upap_offset is optional since not supported by 
+all STE platforms.
+Anyway, value must be checked when used.
+>
+> Is there no basic sanity checking that could be done here? I assume there's a
+> maximum offset we expect that's less than 4GB?
+>
+> Additionally, of_property_read_u32 takes a *u32, not *int. It would be nice to
+> be consistent with the interface.
+OK
+>
+> I'm not familiar with the hardware. What's the difference between the legacy
+> and upap cases?
+Same HW, but different way to access and manage shared memory.
+Link to coprocessor firmware version.
+>
+>> +                       list = (struct mailbox **)of_match_device(
+>> +                                       dbx500_mailbox_match,&pdev->dev)->data;
+>> +                       if (!list) {
+>> +                               /* No mailbox configuration */
+>> +                               dev_err(&pdev->dev, "No configuration found\n");
+>> +                               return -ENODEV;
+>> +                       }
+>> +               } else {
+>> +                       /* No mailbox configuration */
+>> +                       dev_err(&pdev->dev, "No configuration found\n");
+>> +                       return -ENODEV;
+>> +               }
+>> +       } else {
+>> +               list = (struct mailbox **)platid->driver_data;
+>> +               legacy_offset = pdata->legacy_offset;
+>> +               upap_offset = pdata->upap_offset;
+>> +       }
+>> +
+>> +       mem = platform_get_resource_byname(pdev, IORESOURCE_MEM, "prcm_reg");
+>
+> Does this work for dt? I wasn't aware we got anything more than anonymous
+> memory and interrupts.
+>
+Yes this is working with and without dt.
+dt declaration will be the following
+mailbox {
+	compatible = "stericsson,db8500-mailbox";
+	reg = <0x80157000 0x1000>, <0x801B8000 0x2000>;
+	reg-names = "prcm-reg", "prcmu-tcdm";
+	interrupts = <0 47 0x4>;
+	interrupt-names = "irq";
+	legacy-offset = <0xdd4>;
+};
 
-iteration:
-rcu_read_lock()
-dead_count = atomic_read(&hierarchy->dead_count)
-smp_rmb()
-previous = iterator->position
-if (iterator->dead_count != dead_count)
-   /* A cgroup in our hierarchy was killed, pointer might be dangling */
-   don't use iterator
-if (!tryget(&previous))
-   /* The cgroup is marked dead, don't use it */
-   don't use iterator
-next = find_next_and_tryget(hierarchy, &previous)
-/* what happens if destruction of next starts NOW? */
-css_put(previous)
-iterator->position = next
-smp_wmb()
-iterator->dead_count = dead_count /* my suggestion, instead of a second atomic_read() */
-rcu_read_unlock()
-return next /* caller drops ref eventually, iterator->cgroup becomes weak */
-
-destruction:
-bias(cgroup->refcount) /* disables future tryget */
-//synchronize_rcu() /* Michal's suggestion */
-atomic_inc(&cgroup->hierarchy->dead_count)
-synchronize_rcu()
-free(cgroup)
+>> +       mbox_base = devm_ioremap(&pdev->dev, mem->start, resource_size(mem));
+>> +       if (!mbox_base) {
+>> +               ret = -ENOMEM;
+>> +               goto out;
+>> +       }
+>> +
+>> +       mem = platform_get_resource_byname(pdev, IORESOURCE_MEM, "prcmu_tcdm");
+>
+> Same here.
+>
+> Thanks,
+> Mark.
+>
+Regards,
+Loic
