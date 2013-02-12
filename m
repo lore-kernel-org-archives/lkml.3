@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760005Ab3BLONN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 09:13:13 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:63242 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759093Ab3BLONM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 09:13:12 -0500
-Message-ID: <511A4DF2.6070208@imgtec.com>
-Date: Tue, 12 Feb 2013 14:13:06 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1760231Ab3BLOOy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 09:14:54 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:56289 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759661Ab3BLOOw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 09:14:52 -0500
+Message-ID: <511A4E52.4070909@dawncrow.de>
+Date: Tue, 12 Feb 2013 15:14:42 +0100
+From: =?ISO-8859-1?Q?Andr=E9_Hentschel?= <nerv@dawncrow.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: <linux-kernel@vger.kernel.org>
-CC: James Hogan <james.hogan@imgtec.com>, Arnd <arnd@arndb.de>
-Subject: Re: [PATCH 1/1] genksyms: fix metag symbol prefix on crc symbols
-References: <1360598235-11188-1-git-send-email-james.hogan@imgtec.com>
-In-Reply-To: <1360598235-11188-1-git-send-email-james.hogan@imgtec.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2013_02_12_14_13_11
+To: Will Deacon <will.deacon@arm.com>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] arm: Preserve TPIDRURW on context switch
+References: <5112DC7E.4020108@dawncrow.de> <20130206225150.GL17833@n2100.arm.linux.org.uk> <5112E0C3.1080706@dawncrow.de> <20130208154809.GF3495@mudshark.cambridge.arm.com> <511A4B93.1000700@dawncrow.de> <20130212140950.GC4123@mudshark.cambridge.arm.com>
+In-Reply-To: <20130212140950.GC4123@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V02:K0:chIbJytKB5EhKJpgcmbF3xlrsnhBrqV6urQzbxPUFHG
+ sY5t5ftPiDlRJMqV73sxgszwCeDoh6izp7Bhx/+5w7ja3GUBOc
+ myJJed4uVnNDKqQPCu9+RGtysQH3ZQNYGSSXL8urG4qXtzU8ML
+ vh44WLpRw8YNFw60vpXxRrz0gJeIR+vQRPW5gYla97aG6h8qlD
+ pj04RUDArZU0jxpsh4hGSmbbe948e5DyS05hpZhfHt6AmecBM9
+ FzyHgVqfMiSPljGiAFMaAZ+O3MsHqspuUBN5unuojTl5JOAOi0
+ bLNtDthM72vSrqMujtUtMif1Hl7hn3sVUN2nBWHw8Ow8QrXnWl
+ ZyilGIxUjVNAfvdjgH+g=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/02/13 15:57, James Hogan wrote:
-> Meta uses symbol prefixes, so add "metag" to the list of architectures
-> to set the mod_prefix to "_" for. This fixes __crc_* symbols to add the
-> extra underscore to match _CRC_SYMBOL macro in <linux/export.h> and so
-> that modpost finds them.
+Am 12.02.2013 15:09, schrieb Will Deacon:
+> Hi Andre,
 > 
-> Signed-off-by: James Hogan <james.hogan@imgtec.com>
-
-Unless anybody raises any objections I'll add this to the metag tree as
-it's pretty trivial.
-
-Cheers
-James
-
-> ---
->  scripts/genksyms/genksyms.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
+> On Tue, Feb 12, 2013 at 02:02:59PM +0000, André Hentschel wrote:
+>> Am 08.02.2013 16:48, schrieb Will Deacon:
+>>> On Wed, Feb 06, 2013 at 11:01:23PM +0000, André Hentschel wrote:
+>>>> No, i'm not sure how to improve this. How does the process can continue, can you or someone else fix that and add his Signed-off-by?
+>>>
+>>> How about something like the (completely untested) diff below?
+>>>
+>>> Andre: if this works for you, I'm happy to write a commit message etc.
+>>
+>> Thx for your effort, but it doesn't work, at least not with my 3.4.6 suse kernel.
+>> Be free to have another try, i'll be happy to test it.
 > 
-> diff --git a/scripts/genksyms/genksyms.c b/scripts/genksyms/genksyms.c
-> index 8a10649..d25e4a1 100644
-> --- a/scripts/genksyms/genksyms.c
-> +++ b/scripts/genksyms/genksyms.c
-> @@ -826,7 +826,8 @@ int main(int argc, char **argv)
->  			genksyms_usage();
->  			return 1;
->  		}
-> -	if ((strcmp(arch, "h8300") == 0) || (strcmp(arch, "blackfin") == 0))
-> +	if ((strcmp(arch, "h8300") == 0) || (strcmp(arch, "blackfin") == 0) ||
-> +	    (strcmp(arch, "metag") == 0))
->  		mod_prefix = "_";
->  	{
->  		extern int yydebug;
+> Well, cheers for testing. Can you be more specific about what goes wrong
+> please? What do you see in TPIDRURW?
+> 
+> Will
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-arch" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
 
+Hi Will,
+
+it's 0x00000000 again.
+
+-- 
+
+Best Regards, André Hentschel
