@@ -1,121 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933481Ab3BLTdi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 14:33:38 -0500
-Received: from mail.tpi.com ([70.99.223.143]:4904 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933153Ab3BLTdg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 14:33:36 -0500
-From: Tim Gardner <tim.gardner@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Tim Gardner <tim.gardner@canonical.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org
-Subject: [PATCH linux-next] lockd: nlmclnt_reclaim(): avoid stack overflow
-Date: Tue, 12 Feb 2013 12:33:15 -0700
-Message-Id: <1360697595-62460-1-git-send-email-tim.gardner@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S933384Ab3BLTfE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 14:35:04 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:63971 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932293Ab3BLTfB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 14:35:01 -0500
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <511A7FF1.1030009@wwwdotorg.org>
+Cc: swarren@nvidia.com, pgaikwad@nvidia.com, pdeschrijver@nvidia.com,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
+References: <1360682279-23051-1-git-send-email-ldewangan@nvidia.com>
+ <511A7FF1.1030009@wwwdotorg.org>
+Message-ID: <20130212193455.11471.39288@quantum>
+User-Agent: alot/0.3.3+
+Subject: Re: [PATCH V2] clk: tegra: initialise parent of uart clocks
+Date: Tue, 12 Feb 2013 11:34:55 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Even though nlmclnt_reclaim() is only one call into the stack frame,
-928 bytes on the stack seems like a lot. Recode to dynamically
-allocate the request structure once from within the reclaimer task,
-then pass this pointer into nlmclnt_reclaim() for reuse on
-subsequent calls.
+Quoting Stephen Warren (2013-02-12 09:46:25)
+> On 02/12/2013 08:17 AM, Laxman Dewangan wrote:
+> > Initialise the parent of UARTs to PLLP and disabling clock by
+> > default.
+> 
+> This patch wasn't tested, was it? Without the patch I just sent titled
+> "ARM: tegra: remove clock-frequency properties from serial nodes", the
+> UART clocks get turned off and the console breaks.
+> 
+> Anyway, I've applied this patch to Tegra's for-3.9/soc-ccf-fixes branch
+> along with that other patch, although I'll hold off on pushing them out
+> while I wait for an ack from Mike on this patch, and give the other one
+> time to get reviews.
 
-smatch analysis:
-
-fs/lockd/clntproc.c:620 nlmclnt_reclaim() warn: 'reqst' puts
- 928 bytes on stack
-
-Also remove redundant assignment of 0 after memset.
-
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: linux-nfs@vger.kernel.org
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
----
- fs/lockd/clntlock.c         |    8 +++++++-
- fs/lockd/clntproc.c         |    6 ++----
- include/linux/lockd/lockd.h |    3 ++-
- 3 files changed, 11 insertions(+), 6 deletions(-)
-
-diff --git a/fs/lockd/clntlock.c b/fs/lockd/clntlock.c
-index 4885b53..5dd23ef 100644
---- a/fs/lockd/clntlock.c
-+++ b/fs/lockd/clntlock.c
-@@ -220,10 +220,15 @@ reclaimer(void *ptr)
- {
- 	struct nlm_host	  *host = (struct nlm_host *) ptr;
- 	struct nlm_wait	  *block;
-+	struct nlm_rqst   *req;
- 	struct file_lock *fl, *next;
- 	u32 nsmstate;
- 	struct net *net = host->net;
- 
-+	req = kmalloc(sizeof(*req), GFP_KERNEL);
-+	if (!req)
-+		return -ENOMEM;
-+
- 	allow_signal(SIGKILL);
- 
- 	down_write(&host->h_rwsem);
-@@ -253,7 +258,7 @@ restart:
- 		 */
- 		if (signalled())
- 			continue;
--		if (nlmclnt_reclaim(host, fl) != 0)
-+		if (nlmclnt_reclaim(host, fl, req) != 0)
- 			continue;
- 		list_add_tail(&fl->fl_u.nfs_fl.list, &host->h_granted);
- 		if (host->h_nsmstate != nsmstate) {
-@@ -279,5 +284,6 @@ restart:
- 	/* Release host handle after use */
- 	nlmclnt_release_host(host);
- 	lockd_down(net);
-+	kfree(req);
- 	return 0;
- }
-diff --git a/fs/lockd/clntproc.c b/fs/lockd/clntproc.c
-index 54f9e6c..b43114c 100644
---- a/fs/lockd/clntproc.c
-+++ b/fs/lockd/clntproc.c
-@@ -615,17 +615,15 @@ out_unlock:
-  * RECLAIM: Try to reclaim a lock
-  */
- int
--nlmclnt_reclaim(struct nlm_host *host, struct file_lock *fl)
-+nlmclnt_reclaim(struct nlm_host *host, struct file_lock *fl,
-+		struct nlm_rqst *req)
- {
--	struct nlm_rqst reqst, *req;
- 	int		status;
- 
--	req = &reqst;
- 	memset(req, 0, sizeof(*req));
- 	locks_init_lock(&req->a_args.lock.fl);
- 	locks_init_lock(&req->a_res.lock.fl);
- 	req->a_host  = host;
--	req->a_flags = 0;
- 
- 	/* Set up the argument struct */
- 	nlmclnt_setlockargs(req, fl);
-diff --git a/include/linux/lockd/lockd.h b/include/linux/lockd/lockd.h
-index f5a051a..a395f1e 100644
---- a/include/linux/lockd/lockd.h
-+++ b/include/linux/lockd/lockd.h
-@@ -212,7 +212,8 @@ int		  nlmclnt_block(struct nlm_wait *block, struct nlm_rqst *req, long timeout)
- __be32		  nlmclnt_grant(const struct sockaddr *addr,
- 				const struct nlm_lock *lock);
- void		  nlmclnt_recovery(struct nlm_host *);
--int		  nlmclnt_reclaim(struct nlm_host *, struct file_lock *);
-+int		  nlmclnt_reclaim(struct nlm_host *, struct file_lock *,
-+				  struct nlm_rqst *);
- void		  nlmclnt_next_cookie(struct nlm_cookie *);
- 
- /*
--- 
-1.7.9.5
-
+Acked-by: Mike Turquette <mturquette@linaro.org>
