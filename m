@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755002Ab3BLVEP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 16:04:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53518 "EHLO
+	id S1754099Ab3BLUfz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 15:35:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53501 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754132Ab3BLUf4 (ORCPT
+	with ESMTP id S1753800Ab3BLUfy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:35:56 -0500
+	Tue, 12 Feb 2013 15:35:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christoph Paasch <christoph.paasch@uclouvain.be>,
-        Eric Dumazet <edumazet@google.com>,
-        Sony Chacko <sony.chacko@qlogic.com>,
-        Rajesh Borundia <rajesh.borundia@qlogic.com>,
+        Jack Morgenstein <jackm@dev.mellanox.co.il>,
+        Amir Vadai <amirv@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 29/61] netxen: fix off by one bug in netxen_release_tx_buffer()
-Date: Tue, 12 Feb 2013 12:34:49 -0800
-Message-Id: <20130212203422.235762643@linuxfoundation.org>
+Subject: [ 26/61] net/mlx4_core: Set number of msix vectors under SRIOV mode to firmware defaults
+Date: Tue, 12 Feb 2013 12:34:46 -0800
+Message-Id: <20130212203421.886313790@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203417.890993903@linuxfoundation.org>
 References: <20130212203417.890993903@linuxfoundation.org>
@@ -31,59 +29,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Eric Dumazet <edumazet@google.com>
+From: Or Gerlitz <ogerlitz@mellanox.com>
 
-[ Upstream commit a05948f296ce103989b28a2606e47d2e287c3c89 ]
+[ Upstream commit ca4c7b35f75492de7fbf5ee95be07481c348caee ]
 
-Christoph Paasch found netxen could trigger a BUG in its dismantle
-phase, in netxen_release_tx_buffer(), using full size TSO packets.
+The lines
 
-cmd_buf->frag_count includes the skb->data part, so the loop must
-start at index 1 instead of 0, or else we can make an out
-of bound access to cmd_buff->frag_array[MAX_SKB_FRAGS + 2]
+	if (mlx4_is_mfunc(dev)) {
+		nreq = 2;
+	} else {
 
-Christoph provided the fixes in netxen_map_tx_skb() function.
-In case of a dma mapping error, its better to clear the dma fields
-so that we don't try to unmap them again in netxen_release_tx_buffer()
+which hard code the number of requested msi-x vectors under multi-function
+mode to two can be removed completely, since the firmware sets num_eqs and
+reserved_eqs appropriately Thus, the code line:
 
-Reported-by: Christoph Paasch <christoph.paasch@uclouvain.be>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Tested-by: Christoph Paasch <christoph.paasch@uclouvain.be>
-Cc: Sony Chacko <sony.chacko@qlogic.com>
-Cc: Rajesh Borundia <rajesh.borundia@qlogic.com>
-Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
+	nreq = min_t(int, dev->caps.num_eqs - dev->caps.reserved_eqs, nreq);
+
+is by itself sufficient and correct for all cases. Currently, for mfunc
+mode num_eqs = 32 and reserved_eqs = 28, hence four vectors will be enabled.
+
+This triples (one vector is used for the async events and commands EQ) the
+horse power provided for processing of incoming packets on netdev RSS scheme,
+IO initiators/targets commands processing flows, etc.
+
+Reviewed-by: Jack Morgenstein <jackm@dev.mellanox.co.il>
+Signed-off-by: Amir Vadai <amirv@mellanox.com>
+Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/qlogic/netxen/netxen_nic_init.c |    2 +-
- drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c |    2 ++
- 2 files changed, 3 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/mellanox/mlx4/main.c |   11 ++---------
+ 1 file changed, 2 insertions(+), 9 deletions(-)
 
---- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_init.c
-+++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_init.c
-@@ -144,7 +144,7 @@ void netxen_release_tx_buffers(struct ne
- 					 buffrag->length, PCI_DMA_TODEVICE);
- 			buffrag->dma = 0ULL;
- 		}
--		for (j = 0; j < cmd_buf->frag_count; j++) {
-+		for (j = 1; j < cmd_buf->frag_count; j++) {
- 			buffrag++;
- 			if (buffrag->dma) {
- 				pci_unmap_page(adapter->pdev, buffrag->dma,
---- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
-+++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
-@@ -1963,10 +1963,12 @@ unwind:
- 	while (--i >= 0) {
- 		nf = &pbuf->frag_array[i+1];
- 		pci_unmap_page(pdev, nf->dma, nf->length, PCI_DMA_TODEVICE);
-+		nf->dma = 0ULL;
- 	}
+--- a/drivers/net/ethernet/mellanox/mlx4/main.c
++++ b/drivers/net/ethernet/mellanox/mlx4/main.c
+@@ -1702,15 +1702,8 @@ static void mlx4_enable_msi_x(struct mlx
+ 	int i;
  
- 	nf = &pbuf->frag_array[0];
- 	pci_unmap_single(pdev, nf->dma, skb_headlen(skb), PCI_DMA_TODEVICE);
-+	nf->dma = 0ULL;
+ 	if (msi_x) {
+-		/* In multifunction mode each function gets 2 msi-X vectors
+-		 * one for data path completions anf the other for asynch events
+-		 * or command completions */
+-		if (mlx4_is_mfunc(dev)) {
+-			nreq = 2;
+-		} else {
+-			nreq = min_t(int, dev->caps.num_eqs -
+-				     dev->caps.reserved_eqs, nreq);
+-		}
++		nreq = min_t(int, dev->caps.num_eqs - dev->caps.reserved_eqs,
++			     nreq);
  
- out_err:
- 	return -ENOMEM;
+ 		entries = kcalloc(nreq, sizeof *entries, GFP_KERNEL);
+ 		if (!entries)
 
 
