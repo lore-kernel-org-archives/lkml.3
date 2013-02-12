@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759635Ab3BLVIV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 16:08:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53456 "EHLO
+	id S1752783Ab3BLUfq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 15:35:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53414 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752035Ab3BLUfr (ORCPT
+	with ESMTP id S1752035Ab3BLUfk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:35:47 -0500
+	Tue, 12 Feb 2013 15:35:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Browning <db@kavod.com>, Mike Snitzer <snitzer@redhat.com>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: [ 16/61] dm thin: fix queue limits stacking
-Date: Tue, 12 Feb 2013 12:34:36 -0800
-Message-Id: <20130212203420.469918899@linuxfoundation.org>
+        Gary Leshner <gary.s.leshner@intel.com>,
+        Mike Marciniszyn <mike.marciniszyn@intel.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [ 06/61] IB/qib: Fix for broken sparse warning fix
+Date: Tue, 12 Feb 2013 12:34:26 -0800
+Message-Id: <20130212203418.895990053@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203417.890993903@linuxfoundation.org>
 References: <20130212203417.890993903@linuxfoundation.org>
@@ -27,94 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Snitzer <snitzer@redhat.com>
+From: Mike Marciniszyn <mike.marciniszyn@intel.com>
 
-commit 0f640dca08330dfc7820d610578e5935b5e654b2 upstream.
+commit d359f35430c4ea4dd4e24d809aeaeff1fa54c314 upstream.
 
-thin_io_hints() is blindly copying the queue limits from the thin-pool
-which can lead to incorrect limits being set.  The fix here simply
-deletes the thin_io_hints() hook which leaves the existing stacking
-infrastructure to set the limits correctly.
+Commit 1fb9fed6d489 ("IB/qib: Fix QP RCU sparse warning") broke QP
+hash list deletion in qp_remove() badly.
 
-When a thin-pool uses an MD device for the data device a thin device
-from the thin-pool must respect MD's constraints about disallowing a bio
-from spanning multiple chunks.  Otherwise we can see problems.  If the raid0
-chunksize is 1152K and thin-pool chunksize is 256K I see the following
-md/raid0 error (with extra debug tracing added to thin_endio) when
-mkfs.xfs is executed against the thin device:
+This patch restores the former for loop behavior, while still fixing
+the sparse warnings.
 
-md/raid0:md99: make_request bug: can't convert block across chunks or bigger than 1152k 6688 127
-device-mapper: thin: bio sector=2080 err=-5 bi_size=130560 bi_rw=17 bi_vcnt=32 bi_idx=0
-
-This extra DM debugging shows that the failing bio is spanning across
-the first and second logical 1152K chunk (sector 2080 + 255 takes the
-bio beyond the first chunk's boundary of sector 2304).  So the bio
-splitting that DM is doing clearly isn't respecting the MD limits.
-
-max_hw_sectors_kb is 127 for both the thin-pool and thin device
-(queue_max_hw_sectors returns 255 so we'll excuse sysfs's lack of
-precision).  So this explains why bi_size is 130560.
-
-But the thin device's max_hw_sectors_kb should be 4 (PAGE_SIZE) given
-that it doesn't have a .merge function (for bio_add_page to consult
-indirectly via dm_merge_bvec) yet the thin-pool does sit above an MD
-device that has a compulsory merge_bvec_fn.  This scenario is exactly
-why DM must resort to sending single PAGE_SIZE bios to the underlying
-layer. Some additional context for this is available in the header for
-commit 8cbeb67a ("dm: avoid unsupported spanning of md stripe boundaries").
-
-Long story short, the reason a thin device doesn't properly get
-configured to have a max_hw_sectors_kb of 4 (PAGE_SIZE) is that
-thin_io_hints() is blindly copying the queue limits from the thin-pool
-device directly to the thin device's queue limits.
-
-Fix this by eliminating thin_io_hints.  Doing so is safe because the
-block layer's queue limits stacking already enables the upper level thin
-device to inherit the thin-pool device's discard and minimum_io_size and
-optimal_io_size limits that get set in pool_io_hints.  But avoiding the
-queue limits copy allows the thin and thin-pool limits to be different
-where it is important, namely max_hw_sectors_kb.
-
-Reported-by: Daniel Browning <db@kavod.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+Reviewed-by: Gary Leshner <gary.s.leshner@intel.com>
+Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-thin.c |   13 +------------
- 1 file changed, 1 insertion(+), 12 deletions(-)
+ drivers/infiniband/hw/qib/qib_qp.c |   11 +++--------
+ 1 file changed, 3 insertions(+), 8 deletions(-)
 
---- a/drivers/md/dm-thin.c
-+++ b/drivers/md/dm-thin.c
-@@ -2766,19 +2766,9 @@ static int thin_iterate_devices(struct d
- 	return 0;
- }
+--- a/drivers/infiniband/hw/qib/qib_qp.c
++++ b/drivers/infiniband/hw/qib/qib_qp.c
+@@ -263,20 +263,15 @@ static void remove_qp(struct qib_ibdev *
+ 		struct qib_qp __rcu **qpp;
  
--/*
-- * A thin device always inherits its queue limits from its pool.
-- */
--static void thin_io_hints(struct dm_target *ti, struct queue_limits *limits)
--{
--	struct thin_c *tc = ti->private;
--
--	*limits = bdev_get_queue(tc->pool_dev->bdev)->limits;
--}
--
- static struct target_type thin_target = {
- 	.name = "thin",
--	.version = {1, 5, 0},
-+	.version = {1, 5, 1},
- 	.module	= THIS_MODULE,
- 	.ctr = thin_ctr,
- 	.dtr = thin_dtr,
-@@ -2787,7 +2777,6 @@ static struct target_type thin_target =
- 	.postsuspend = thin_postsuspend,
- 	.status = thin_status,
- 	.iterate_devices = thin_iterate_devices,
--	.io_hints = thin_io_hints,
- };
+ 		qpp = &dev->qp_table[n];
+-		q = rcu_dereference_protected(*qpp,
+-			lockdep_is_held(&dev->qpt_lock));
+-		for (; q; qpp = &q->next) {
++		for (; (q = rcu_dereference_protected(*qpp,
++				lockdep_is_held(&dev->qpt_lock))) != NULL;
++				qpp = &q->next)
+ 			if (q == qp) {
+ 				atomic_dec(&qp->refcount);
+ 				*qpp = qp->next;
+ 				rcu_assign_pointer(qp->next, NULL);
+-				q = rcu_dereference_protected(*qpp,
+-					lockdep_is_held(&dev->qpt_lock));
+ 				break;
+ 			}
+-			q = rcu_dereference_protected(*qpp,
+-				lockdep_is_held(&dev->qpt_lock));
+-		}
+ 	}
  
- /*----------------------------------------------------------------*/
+ 	spin_unlock_irqrestore(&dev->qpt_lock, flags);
 
 
