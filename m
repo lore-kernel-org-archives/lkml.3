@@ -1,104 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754523Ab3BLDJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 22:09:29 -0500
-Received: from mailxx.hitachi.co.jp ([133.145.228.50]:47957 "EHLO
-	mailxx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752481Ab3BLDJ1 (ORCPT
+	id S1754096Ab3BLDUf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 22:20:35 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:58880 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425Ab3BLDUe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 22:09:27 -0500
-Message-ID: <5119B1E1.4010405@hitachi.com>
-Date: Tue, 12 Feb 2013 12:07:13 +0900
-From: Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Mon, 11 Feb 2013 22:20:34 -0500
 MIME-Version: 1.0
-To: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>, ebiederm@xmission.com
-Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org, vgoyal@redhat.com
-Subject: Re: [PATCH 2/2 v2] kexec: Export PG_hwpoison flag into vmcoreinfo
-References: <508FDEF3.8030601@hitachi.com> <20121030143750.GF2290@redhat.com> <50913011.2030900@hitachi.com> <20130208174944.96a3b50952e45e1219a94819@mxc.nes.nec.co.jp>
-In-Reply-To: <20130208174944.96a3b50952e45e1219a94819@mxc.nes.nec.co.jp>
+In-Reply-To: <511934ED.2020104@ti.com>
+References: <CABYxbz5ECxoWZtkfL3UbZ=R4LVoNeMVxjYbPdZoarstCod-gQw@mail.gmail.com>
+	<5118EF75.30107@ti.com>
+	<CABYxbz7HcZTK+y20mtDR+1coRUbUMgNHNDdJ3O7Ln7U7d0LEzA@mail.gmail.com>
+	<511934ED.2020104@ti.com>
+Date: Tue, 12 Feb 2013 08:50:33 +0530
+Message-ID: <CABYxbz7FjutV3zgGYEszzUXMn=Vuk4Vpd3-cP+aVATx5k2yxBQ@mail.gmail.com>
+Subject: Re: Sound record on Devkit8000 with DT boot issue
+From: Anil Kumar <anilk4.v@gmail.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        alsa-devel@alsa-project.org, tony@atomide.com, thomas@tomweber.eu,
+        perex@perex.cz, tiwai@suse.de,
+        Liam Girdwood <liam.r.girdwood@linux.intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Re: [Patch 0/2] Exclude hwpoison page from vmcore dump
-(2012/11/01 19:40), Eric W. Biederman wrote:
-> Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com> writes:
-> I agree.  If we are performing filtering filtering out of poisoned pages
-> seems very reasonable.  So ack on the basic concept.
-> 
-> Eric
+Hi Peter,
 
-Hello, Eric,
-
-Could you please push the patch to export PG_hwpoison flag into 3.9 during
-next merge window?
-
-Kumagai-san acked the patch which provides the feature to exclude hwpoison
-page and he will push the fix of makedumpfile side into makedumpfile-1.5.2.
-This kernel patch is also required to enable this feature.
-
-Regards,
-Mitsuhiro Tanino
-
-
-(2013/02/08 17:49), Atsushi Kumagai wrote:
-> Hello,
-> 
-> On Wed, 31 Oct 2012 23:05:05 +0900
-> Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com> wrote:
-> 
->> This patch exports a PG_hwpoison into vmcoreinfo when
->> CONFIG_MEMORY_FAILURE is defined.
->> "makedumpfile" needs to read information of memory, such as
->> 'mem_section', 'zone', 'pageflags' from vmcore.
+On Mon, Feb 11, 2013 at 11:44 PM, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
+> Hi,
+>
+> On 02/11/2013 06:58 PM, Anil Kumar wrote:
+>>> Here you should have something like:
+>>> ti,audio-routing =
+>>>         "Ext Spk", "PREDRIVEL",
+>>>         "Ext Spk", "PREDRIVER",
+>>>         "MAINMIC", "Main Mic",
+>>>         "Main Mic", "Mic Bias 1";
+>>>
+>>> So you connect the MicBias1 to Main Mic. When you start playback MicBias1 will
+>>> be turned on for you.
 >>
->> We introduce a function into "makedumpfile" to exclude
->> hwpoison page from vmcore dump.
->> In order to introduce this function, PG_hwpoison flag have
->> to export into vmcoreinfo.
+>> I tried with this routing (next-20130211 tag kernel). But it is not
+>> working for me.
+>> So i have gone through other board and found snd_soc_dapm_route for
 >>
->> Signed-off-by: Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com>
-> 
-> I'm curious to know the status of this patch because I'll release
-> makedumpfile-1.5.2 with the feature to exclude hwpoison page soon.
-> 
-> 
-> Thanks
-> Atsushi Kumagai
-> 
->> ---
->>  kernel/kexec.c |    3 +++
->>  1 file changed, 3 insertions(+)
->>
->> diff --git a/kernel/kexec.c b/kernel/kexec.c
->> index 0668d58..0d5d6bc 100644
->> --- a/kernel/kexec.c
->> +++ b/kernel/kexec.c
->> @@ -1513,6 +1513,9 @@ static int __init crash_save_vmcoreinfo_init(void)
->>         VMCOREINFO_NUMBER(PG_lru);
->>         VMCOREINFO_NUMBER(PG_private);
->>         VMCOREINFO_NUMBER(PG_swapcache);
->> +#ifdef CONFIG_MEMORY_FAILURE
->> +       VMCOREINFO_NUMBER(PG_hwpoison);
->> +#endif
->>
->>         arch_crash_save_vmcoreinfo();
->>         update_vmcoreinfo_note();
->> --
->> 1.7.10.1
->>
->> _______________________________________________
->> kexec mailing list
->> kexec@lists.infradead.org
->> http://lists.infradead.org/mailman/listinfo/kexec
-> 
-> _______________________________________________
-> kexec mailing list
-> kexec@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/kexec
-> .
-> 
+>> 1) zoom2.c
+>>        {"MAINMIC", NULL, "Mic Bias 1"},
+>>        {"Mic Bias 1", NULL, "Ext Mic"},
 
+I was giving zoom2 reference from kernel 3.8-rc5.
+
+>>
+>> 2) omap3pandora.c
+>>         {"MAINMIC", NULL, "Mic Bias 1"},
+>>         {"Mic Bias 1", NULL, "Mic (internal)"},
+
+same as above comment.
+
+>>
+>> But for omap-twl4030.c it is
+>>         {"MAINMIC", NULL, "Main Mic"},
+>>         {"Main Mic", NULL, "Mic Bias 1"},
+>>
+>>  It Should will be as ?
+>>         {"MAINMIC", NULL, "Mic Bias 1"},
+>>         {"Mic Bias 1", NULL, "Main Mic"},
+>>
+>> Because with this i am able to get audio on Devkit8000 as
+>>              ti,audio-routing =
+>>                         "Ext Spk", "PREDRIVEL",
+>>                         "Ext Spk", "PREDRIVER",
+>>                         "MAINMIC", "Mic Bias 1",
+>>                         "Mic Bias 1", "Main Mic";
+>
+> In 3.9 this should not work...
+>
+> linux-next should not have zoom2 at least and I converted the machine drivers
+> as well in regards to micbias handling:
+> e04d6e5 ASoC: twl4030: Convert MICBIAS to SUPPLY widget
+> 57d61b9 ASoC: OMAP: Remove obsolete machine drivers for Zoom2 and SDP3430
+
+My board is not botting with linux-next ((next-20130211). So i have
+taken omap-twl4030.c changes from next-20130211
+and merged into 3.8-rc5 as it does have. But missed changes for
+twl4030.c. With these all changes it is working for me now .
+Sorry for noise.
+
+I am really thanks for this.
+Anil
+[...]
