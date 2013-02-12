@@ -1,47 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933641Ab3BLSTZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 13:19:25 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:35610 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933580Ab3BLSTW (ORCPT
+	id S933712Ab3BLSUA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 13:20:00 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:61317 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933597Ab3BLSTX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 13:19:22 -0500
+	Tue, 12 Feb 2013 13:19:23 -0500
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] of: Create function for counting number of phandles in a property
-To: Andreas Larsson <andreas@gaisler.com>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-In-Reply-To: <511A08D2.6010104@gaisler.com>
-References: <1360540701-23439-1-git-send-email-grant.likely@secretlab.ca> <511A08D2.6010104@gaisler.com>
-Date: Tue, 12 Feb 2013 17:28:07 +0000
-Message-Id: <20130212172807.AAF993E0B53@localhost>
+Subject: Re: [PATCH v8 2/4] misc: Generic on-chip SRAM allocation driver
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Richard Zhao <richard.zhao@freescale.com>,
+        Huang Shijie <shijie8@gmail.com>,
+        Dong Aisheng <dong.aisheng@linaro.org>, Matt Porter <mporter@ti.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Javier Martin <javier.martin@vista-silicon.com>, kernel@pengutronix.de,
+        devicetree-discuss@lists.ozlabs.org
+In-Reply-To: <1360606524.4954.46.camel@pizza.hi.pengutronix.de>
+References: <1359977538-5859-1-git-send-email-p.zabel@pengutronix.de> <1359977538-5859-3-git-send-email-p.zabel@pengutronix.de> <20130208201634.B94C83E2C02@localhost> <1360606524.4954.46.camel@pizza.hi.pengutronix.de>
+Date: Tue, 12 Feb 2013 18:09:39 +0000
+Message-Id: <20130212180939.715743E1209@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Feb 2013 10:18:10 +0100, Andreas Larsson <andreas@gaisler.com> wrote:
-> On 2013-02-11 00:58, Grant Likely wrote:
-> > This patch creates of_count_phandle_with_args(), a new function for
-> > counting the number of phandle+argument tuples in a given property. This
-> > is better than the existing method of parsing each phandle individually
-> > until parsing fails which is a horribly slow way to do the count.
-> >
-> > It also converts of_gpio_named_count() to use the new function instead
-> > of using the above described horrible method.
-> >
-> > This also requires the return value of of_gpio_count() &
-> > of_gpio_named_count() from 'unsigned int' to 'int' so that it can return
-> > an error code. All the users of that function are fixed up to correctly
-> > handle a negative return value.
+On Mon, 11 Feb 2013 19:15:24 +0100, Philipp Zabel <p.zabel@pengutronix.de> wrote:
+> Hi Grant,
 > 
-> One more thing: In of_spi_register_master() in drivers/spi.c the error 
-> code is put in the unsigned variable nb, leading to a huge nb and 
-> master->num_chipselect with following problems when of_gpio_named_count 
-> returns an error code.
+> Am Freitag, den 08.02.2013, 20:16 +0000 schrieb Grant Likely:
+> > On Mon,  4 Feb 2013 12:32:16 +0100, Philipp Zabel <p.zabel@pengutronix.de> wrote:
+> > > This driver requests and remaps a memory region as configured in the
+> > > device tree. It serves memory from this region via the genalloc API.
+> > > It optionally enables the SRAM clock.
+> > > 
+> > > Other drivers can retrieve the genalloc pool from a phandle pointing
+> > > to this drivers' device node in the device tree.
+> > > 
+> > > The allocation granularity is hard-coded to 32 bytes for now,
+> > > to make the SRAM driver useful for the 6502 remoteproc driver.
+> > > There is overhead for bigger SRAMs, where only a much coarser
+> > > allocation granularity is needed: At 32 bytes minimum allocation
+> > > size, a 256 KiB SRAM needs a 1 KiB bitmap to track allocations.
+> > > 
+> > > Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> > > Reviewed-by: Shawn Guo <shawn.guo@linaro.org>
+> > > ---
+> > > Changes since v7:
+> > >  - Removed obsolete __devinit/__devexit/__devexit_p
+> > > ---
+> > >  Documentation/devicetree/bindings/misc/sram.txt |   17 ++++
+> > >  drivers/misc/Kconfig                            |    9 ++
+> > >  drivers/misc/Makefile                           |    1 +
+> > >  drivers/misc/sram.c                             |  121 +++++++++++++++++++++++
+> > >  4 files changed, 148 insertions(+)
+> > >  create mode 100644 Documentation/devicetree/bindings/misc/sram.txt
+> > >  create mode 100644 drivers/misc/sram.c
+> > > 
+> > > diff --git a/Documentation/devicetree/bindings/misc/sram.txt b/Documentation/devicetree/bindings/misc/sram.txt
+> > > new file mode 100644
+> > > index 0000000..b64136c
+> > > --- /dev/null
+> > > +++ b/Documentation/devicetree/bindings/misc/sram.txt
+> > > @@ -0,0 +1,17 @@
+> > > +Generic on-chip SRAM
+> > > +
+> > > +Simple IO memory regions to be managed by the genalloc API.
+> > > +
+> > > +Required properties:
+> > > +
+> > > +- compatible : sram
+> > 
+> > I'm a little concerned that 'sram' is just too generic for a compatible
+> > value and we may end up needing a blacklist of systems where the sram
+> > device should not be driven with this driver. If you can think of
+> > a more descriptive name here then I would use it.
+> 
+> various SoC vendors call this (variations of) "on-chip" or "internal"
+> SRAM/memory. "on-chip-sram" or "internal-sram" are still plenty generic,
+> though. How about "mmio-sram", as opposed to an SRAM that needs more
+> than the simple mmio region handled by this driver?
+> 
+> An alternative would be to use the vendor specific names and grow a
+> compatible list in the driver ("fsl,ocram", "ti,ocm", ...).
 
-Also a good catch. Fixed.
+I'd prefer a hybrid. Be specific with the part that it is on
+("fsl,ocram"), but also include "mmio-sram":
+
+compatible = "fsl,ocram", "mmio-sram";
+
+That gives drivers the option of overriding the generic mmio-sram
+driver.
 
 g.
 
