@@ -1,83 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755619Ab3BLD7X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 22:59:23 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:59252 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752817Ab3BLD7V (ORCPT
+	id S1756260Ab3BLEBK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 23:01:10 -0500
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:37359 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754854Ab3BLEBG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 22:59:21 -0500
-Date: Tue, 12 Feb 2013 14:59:19 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg KH <greg@kroah.com>, Kishon Vijay Abraham I <kishon@ti.com>,
-        "Peter Ujfalusi" <peter.ujfalusi@ti.com>
-Subject: linux-next: manual merge of the arm-soc tree with the usb tree
-Message-Id: <20130212145919.e1f7ba0e693b69f40f5724dd@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__12_Feb_2013_14_59_19_+1100_ECmjO9gGfK061g2/"
+	Mon, 11 Feb 2013 23:01:06 -0500
+Message-ID: <5119BDFD.1000909@linux.vnet.ibm.com>
+Date: Tue, 12 Feb 2013 09:28:53 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com
+CC: Vincent Guittot <vincent.guittot@linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-doc@vger.kernel.org, peterz@infradead.org, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, walken@google.com, mingo@kernel.org,
+        linux-arch@vger.kernel.org, xiaoguangrong@linux.vnet.ibm.com,
+        wangyun@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        rostedt@goodmis.org, rjw@sisk.pl, namhyung@kernel.org,
+        tglx@linutronix.de, linux-arm-kernel@lists.infradead.org,
+        netdev@vger.kernel.org, oleg@redhat.com, sbw@mit.edu, tj@kernel.org,
+        akpm@linux-foundation.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v5 00/45] CPU hotplug: stop_machine()-free CPU hotplug
+References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com> <510FBC01.2030405@linux.vnet.ibm.com> <87haloiwv0.fsf@rustcorp.com.au> <51134596.4080106@linux.vnet.ibm.com> <20130208154113.GV17833@n2100.arm.linux.org.uk> <51152B81.2050501@linux.vnet.ibm.com> <51153F72.1060005@linux.vnet.ibm.com> <CAKfTPtCe+cD7LLkb+D6pqG1SwG2V08ws=4XO3ttHEHV2qgmqPg@mail.gmail.com> <5118E2CD.90401@linux.vnet.ibm.com> <20130211190852.GA5695@linux.vnet.ibm.com>
+In-Reply-To: <20130211190852.GA5695@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13021203-3568-0000-0000-00000323D2B0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__12_Feb_2013_14_59_19_+1100_ECmjO9gGfK061g2/
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 02/12/2013 12:38 AM, Paul E. McKenney wrote:
+> On Mon, Feb 11, 2013 at 05:53:41PM +0530, Srivatsa S. Bhat wrote:
+>> On 02/11/2013 05:28 PM, Vincent Guittot wrote:
+>>> On 8 February 2013 19:09, Srivatsa S. Bhat
+>>> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> 
+> [ . . . ]
+> 
+>>>> Adding Vincent to CC, who had previously evaluated the performance and
+>>>> latency implications of CPU hotplug on ARM platforms, IIRC.
+>>>>
+>>>
+>>> Hi Srivatsa,
+>>>
+>>> I can try to run some of our stress tests on your patches.
+>>
+>> Great!
+>>
+>>> Have you
+>>> got a git tree that i can pull ?
+>>>
+>>
+>> Unfortunately, no, none at the moment..  :-(
+> 
+> You do need to create an externally visible git tree.
 
-Hi all,
+Ok, I'll do that soon.
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-arch/arm/mach-omap2/board-zoom-peripherals.c between commit 51482be9dcfd
-("ARM: OMAP: USB: Add phy binding information") from the usb tree and
-commit c5913935657f ("ARM: OMAP: zoom: Audio support via the common
-omap-twl4030 machine driver") from the arm-soc tree.
+>  In the meantime,
+> I have added your series at rcu/bhat.2013.01.21a on -rcu:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
+> 
+> This should appear soon on a kernel.org mirror near you.  ;-)
+>
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Thank you very much, Paul! :-)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Regards,
+Srivatsa S. Bhat
 
-diff --cc arch/arm/mach-omap2/board-zoom-peripherals.c
-index dc5498b,0745bd9..0000000
---- a/arch/arm/mach-omap2/board-zoom-peripherals.c
-+++ b/arch/arm/mach-omap2/board-zoom-peripherals.c
-@@@ -20,7 -20,7 +20,8 @@@
-  #include <linux/wl12xx.h>
-  #include <linux/mmc/host.h>
-  #include <linux/platform_data/gpio-omap.h>
-+ #include <linux/platform_data/omap-twl4030.h>
- +#include <linux/usb/phy.h>
- =20
-  #include <asm/mach-types.h>
-  #include <asm/mach/arch.h>
-
---Signature=_Tue__12_Feb_2013_14_59_19_+1100_ECmjO9gGfK061g2/
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRGb4XAAoJEECxmPOUX5FE+X4QAKCRj8Xqe697UtvZwRNrEUlm
-qKOQ74u/tkLknt82IkFaQrqhCQiaDBV4NN4DyuvL8dQjdy2KR9ab0huwnkjs3kcx
-whh+L8ZDvGvvhlmpMJx/eMQDQEiT++Z2UhnzshJS3TOxqeUkiiI6aXVfmToSLIsn
-0tvUfnVOdw0d+MlJM3BgP6xSBUaZKYw6b9Zphw7VrPZNPXmG7b0KvS1gz4hPOXGI
-wP7J/4jfq5uUM/gVu/HrDcJe6MnHK84kGcPmBlxpqU+bjj+xYh22Ko96vi4R3RLw
-zGNH26OtZmlyzcLP/ntD1m3mWduo2sc5qiqXe2Z+2yeC7hulywZn9DzU4hrytiwZ
-2omCqycQ1N8XlJsyii0PVTPA955cDWvKjx//76PhYYI8zZEsfNcMf9nrc9aLeRys
-vzjLUWa1TEJTefs3kMQKNbiQXqxiaBpWbyxTho+vaa5Qt0uvIj/3Zpx9D1NdqjL7
-HM6a35YqGQmusGKFjT7Z2YcAiwaa+rSrbgE9G/qc8QuxWrl0AxYiTx8cYTIENc8n
-MqKk8nyY1je1zMsWf3tZG5bYf4eKKzVZRHU36FTadXiV7fJWVtVw9sjRIEE29QGC
-7wirZUSvUu6Z2BWiwzfxR6//52MJRLFm6fJ0rJAi7WIH1XEeLfN2IDWHfoGGTJ5Z
-9Zi4ioX8FMpgxCNRmTx7
-=s7U7
------END PGP SIGNATURE-----
-
---Signature=_Tue__12_Feb_2013_14_59_19_+1100_ECmjO9gGfK061g2/--
