@@ -1,105 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933507Ab3BLRZx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 12:25:53 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:39683 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932336Ab3BLRZw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 12:25:52 -0500
-Date: Tue, 12 Feb 2013 12:25:26 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ying Han <yinghan@google.com>, Tejun Heo <htejun@gmail.com>,
-        Glauber Costa <glommer@parallels.com>, Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH v3 4/7] memcg: remove memcg from the reclaim iterators
-Message-ID: <20130212172526.GC25235@cmpxchg.org>
-References: <20130211151649.GD19922@dhcp22.suse.cz>
- <20130211175619.GC13218@cmpxchg.org>
- <20130211192929.GB29000@dhcp22.suse.cz>
- <20130211195824.GB15951@cmpxchg.org>
- <20130211212756.GC29000@dhcp22.suse.cz>
- <20130211223943.GC15951@cmpxchg.org>
- <20130212095419.GB4863@dhcp22.suse.cz>
- <20130212151002.GD15951@cmpxchg.org>
- <20130212154330.GG4863@dhcp22.suse.cz>
- <20130212161051.GQ2666@linux.vnet.ibm.com>
+	id S933515Ab3BLR0Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 12:26:16 -0500
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:62964 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932336Ab3BLR0O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 12:26:14 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130212161051.GQ2666@linux.vnet.ibm.com>
+In-Reply-To: <20130212172319.GB30387@tassilo.jf.intel.com>
+References: <1360678168-6974-1-git-send-email-eranian@google.com>
+	<20130212172319.GB30387@tassilo.jf.intel.com>
+Date: Tue, 12 Feb 2013 18:26:12 +0100
+Message-ID: <CABPqkBTZ+ooWHFvagR=YFDUdnnW9az0LXg1-etNfgC2Af8yA-w@mail.gmail.com>
+Subject: Re: [PATCH 0/2] perf stat: add per-core count aggregation
+From: Stephane Eranian <eranian@google.com>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 12, 2013 at 08:10:51AM -0800, Paul E. McKenney wrote:
-> On Tue, Feb 12, 2013 at 04:43:30PM +0100, Michal Hocko wrote:
-> > On Tue 12-02-13 10:10:02, Johannes Weiner wrote:
-> > > On Tue, Feb 12, 2013 at 10:54:19AM +0100, Michal Hocko wrote:
-> > > > On Mon 11-02-13 17:39:43, Johannes Weiner wrote:
-> > > > > On Mon, Feb 11, 2013 at 10:27:56PM +0100, Michal Hocko wrote:
-> > > > > > On Mon 11-02-13 14:58:24, Johannes Weiner wrote:
-> > > > > > > That way, if the dead count gives the go-ahead, you KNOW that the
-> > > > > > > position cache is valid, because it has been updated first.
-> > > > > > 
-> > > > > > OK, you are right. We can live without css_tryget because dead_count is
-> > > > > > either OK which means that css would be alive at least this rcu period
-> > > > > > (and RCU walk would be safe as well) or it is incremented which means
-> > > > > > that we have started css_offline already and then css is dead already.
-> > > > > > So css_tryget can be dropped.
-> > > > > 
-> > > > > Not quite :)
-> > > > > 
-> > > > > The dead_count check is for completed destructions,
-> > > > 
-> > > > Not quite :P. dead_count is incremented in css_offline callback which is
-> > > > called before the cgroup core releases its last reference and unlinks
-> > > > the group from the siblinks. css_tryget would already fail at this stage
-> > > > because CSS_DEACT_BIAS is in place at that time but this doesn't break
-> > > > RCU walk. So I think we are safe even without css_get.
-> > > 
-> > > But you drop the RCU lock before you return.
-> > >
-> > > dead_count IS incremented for every destruction, but it's not reliable
-> > > for concurrent ones, is what I meant.  Again, if there is a dead_count
-> > > mismatch, your pointer might be dangling, easy case.  However, even if
-> > > there is no mismatch, you could still race with a destruction that has
-> > > marked the object dead, and then frees it once you drop the RCU lock,
-> > > so you need try_get() to check if the object is dead, or you could
-> > > return a pointer to freed or soon to be freed memory.
-> > 
-> > Wait a moment. But what prevents from the following race?
-> > 
-> > rcu_read_lock()
-> > 						mem_cgroup_css_offline(memcg)
-> > 						root->dead_count++
-> > iter->last_dead_count = root->dead_count
-> > iter->last_visited = memcg
-> > 						// final
-> > 						css_put(memcg);
-> > // last_visited is still valid
-> > rcu_read_unlock()
-> > [...]
-> > // next iteration
-> > rcu_read_lock()
-> > iter->last_dead_count == root->dead_count
-> > // KABOOM
-> > 
-> > The race window between dead_count++ and css_put is quite big but that
-> > is not important because that css_put can happen anytime before we start
-> > the next iteration and take rcu_read_lock.
-> 
-> The usual approach is to make sure that there is a grace period (either
-> synchronize_rcu() or call_rcu()) between the time that the data is
-> made inaccessible to readers (this would be mem_cgroup_css_offline()?)
-> and the time it is freed (css_put(), correct?).
+On Tue, Feb 12, 2013 at 6:23 PM, Andi Kleen <ak@linux.intel.com> wrote:
+> On Tue, Feb 12, 2013 at 03:09:26PM +0100, Stephane Eranian wrote:
+>> This patch series contains improvement to the aggregation support
+>> in perf stat.
+>>
+>> First, the aggregation code is refactored and a aggr_mode enum
+>> is defined. There is also an important bug fix for the existing
+>> per-socket aggregation.
+>>
+>> Second, the patch adds a new --aggr-core option to perf stat.
+>
+> Perhaps it's just me, but the option name is ugly (and sounds
+> aggressive)
+>
+> --per-core perhaps?
+>
+I chose that name to be similar to ---aggr-socket.
+But we could change both at this point.
 
-Absolutely!  And there is a synchronize_rcu() in between those two
-operations.
 
-However, we want to keep a weak reference to the cgroup after we drop
-the rcu read-side lock, so rcu alone is not enough for us to guarantee
-object life time.  We still have to carefully detect any concurrent
-offlinings in order to validate the weak reference next time around.
+> The idea itself is useful.
+>
+Yes, it is.
+
+>> It aggregates counts per physical core and becomes useful on
+>> systems with hyper-threading. The cores are presented per
+>> socket: S0-C1, means socket 0 core 1. Note that the core number
+>> represents its physical core id. As such, numbers may not always
+>> be contiguous. All of this is based on topology information available
+>> in sysfs.
+>>
+>> Per-core aggregation can be combined with interval printing:
+>
+> FWIW this would be much nicer if stat had a Kevents or Mevents mode.
+> Usually we don't need all the digits.  But that could be added separately
+>
+> Does it work for multiple events in parallel?
+
+Yes, it does. It's all regular perf stat.
+
+
+>>
+>>  # perf stat -a --aggr-core -I 1000 -e cycles sleep 100
+>>  #           time core         cpus             counts events
+>>       1.000101160 S0-C0           2      6,051,254,899 cycles
+>>       1.000101160 S0-C1           2      6,379,230,776 cycles
+>>       1.000101160 S0-C2           2      6,480,268,471 cycles
+>>       1.000101160 S0-C3           2      6,110,514,321 cycles
+>>       2.000663750 S0-C0           2      6,572,533,016 cycles
+>>       2.000663750 S0-C1           2      6,378,623,674 cycles
+>>       2.000663750 S0-C2           2      6,264,127,589 cycles
+>>       2.000663750 S0-C3           2      6,305,346,613 cycles
+>
+> -Andi
