@@ -1,44 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758719Ab3BLPrJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 10:47:09 -0500
-Received: from mga09.intel.com ([134.134.136.24]:56682 "EHLO mga09.intel.com"
+	id S1760519Ab3BLPsu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 10:48:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60890 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758224Ab3BLPrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 10:47:08 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,650,1355126400"; 
-   d="scan'208";a="261557760"
-Message-ID: <1360684037.12703.117.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH V3 1/3] mtd: add new fields to nand_flash_dev{}
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Huang Shijie <b32955@freescale.com>
-Cc: dwmw2@infradead.org, computersforpeace@gmail.com,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Tue, 12 Feb 2013 17:47:17 +0200
-In-Reply-To: <1359349039-11510-2-git-send-email-b32955@freescale.com>
-References: <1359349039-11510-1-git-send-email-b32955@freescale.com>
-	 <1359349039-11510-2-git-send-email-b32955@freescale.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3 (3.6.3-2.fc18) 
-Mime-Version: 1.0
+	id S1758258Ab3BLPst (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 10:48:49 -0500
+Message-ID: <511A6457.80609@redhat.com>
+Date: Tue, 12 Feb 2013 16:48:39 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: linux-kernel@vger.kernel.org, Wanlong Gao <gaowanlong@cn.fujitsu.com>,
+        asias@redhat.com, Rusty Russell <rusty@rustcorp.com.au>,
+        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH 1/9] virtio: add functions for piecewise addition of buffers
+References: <1360671815-2135-1-git-send-email-pbonzini@redhat.com> <1360671815-2135-2-git-send-email-pbonzini@redhat.com> <20130212145620.GA3392@redhat.com> <511A608B.5080007@redhat.com> <20130212154338.GA4083@redhat.com>
+In-Reply-To: <20130212154338.GA4083@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-01-28 at 12:57 +0800, Huang Shijie wrote:
-> +       {"SmartMedia 256MiB 3,3V",      {0, 0x71}, 512, 256, 0x4000 },
-> +       {"SmartMedia 256MiB 3,3V ROM",  {0, 0x5b}, 512, 256, 0x4000,
-> NAND_ROM},
+Il 12/02/2013 16:43, Michael S. Tsirkin ha scritto:
+> On Tue, Feb 12, 2013 at 04:32:27PM +0100, Paolo Bonzini wrote:
+>> Il 12/02/2013 15:56, Michael S. Tsirkin ha scritto:
+>>>>> +/**
+>>>>> + * virtqueue_start_buf - start building buffer for the other end
+>>>>> + * @vq: the struct virtqueue we're talking about.
+>>>>> + * @data: the token identifying the buffer.
+>>>>> + * @nents: the number of buffers that will be added
+>>> This function starts building one buffer, number of buffers
+>>> is a bit weird here.
+>>
+>> Ok.
+>>
+>>>>> + * @nsg: the number of sg lists that will be added
+>>> This means number of calls to add_sg ? Not sure why this matters.
+>>> How about we pass in in_num/out_num - that is total # of sg,
+>>> same as add_buf?
+>>
+>> It is used to choose between direct and indirect.
+> 
+> total number of in and out should be enough for this, no?
 
-Sorry for a possibly stupid question, but what does it buy you adding
-another "0" to all the entries? I see you add another table, which you
-look up if the "traditional" table does not work. Why you need to add
-these zeroes?
+Originally, I used nsg/nents because I wanted to use mixed direct and
+indirect buffers.  nsg/nents let me choose between full direct (nsg ==
+nents), mixed (num_free >= nsg), full indirect (num_free < nsg).  Then I
+had to give up because QEMU does not support it, but I still would like
+to keep that open in the API.
 
--- 
-Best Regards,
-Artem Bityutskiy
+In this series, however, I am still using nsg to choose between direct
+and indirect.  I would like to use dirtect for small scatterlists, even
+if they are surrounded by a request/response headers/footers.
+
+>>>>> +/**
+>>>>> + * virtqueue_add_sg - add sglist to buffer being built
+>>>>> + * @_vq: the virtqueue for which the buffer is being built
+>>>>> + * @sgl: the description of the buffer(s).
+>>>>> + * @nents: the number of items to process in sgl
+>>>>> + * @dir: whether the sgl is read or written (DMA_TO_DEVICE/DMA_FROM_DEVICE only)
+>>>>> + *
+>>>>> + * Note that, unlike virtqueue_add_buf, this function follows chained
+>>>>> + * scatterlists, and stops before the @nents-th item if a scatterlist item
+>>>>> + * has a marker.
+>>>>> + *
+>>>>> + * Caller must ensure we don't call this with other virtqueue operations
+>>>>> + * at the same time (except where noted).
+>>> Hmm so if you want to add in and out, need separate calls?
+>>> in_num/out_num would be nicer?
+>>
+>> If you want to add in and out just use virtqueue_add_buf...
+> 
+> I thought the point of this one is maximum flexibility.
+
+Maximum flexibility does not include doing everything in one call (the
+other way round in fact: you already need to wrap with start/end, hence
+doing one or two extra add_sg calls is not important).
+
+Paolo
 
