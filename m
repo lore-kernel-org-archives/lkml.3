@@ -1,156 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933328Ab3BLRDF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 12:03:05 -0500
-Received: from mail-we0-f169.google.com ([74.125.82.169]:41987 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932294Ab3BLRDD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 12:03:03 -0500
-MIME-Version: 1.0
-In-Reply-To: <CACxGe6uHx4KdZRgAyL-wQ2GurojAH0eTa6YRCoSuCg89BAvBTA@mail.gmail.com>
-References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com>
-	<1781360.cmQWHCW5SC@wuerfel>
-	<CAHTX3dJpuTRa4Ff29k95quPMVDO2mBiayPoocnw5R15=5ovOHQ@mail.gmail.com>
-	<201302041724.47331.arnd@arndb.de>
-	<1360031367.14701.47.camel@pasglop>
-	<CAHTX3dL4dScmzgGyqbvPH-7UQvFrjQhHu2zh0iZyzWB=spZS+Q@mail.gmail.com>
-	<1360066756.4529.6.camel@pasglop>
-	<CAHTX3dLJy314mv39hprkmZ5XdzYiYGz1ngTERp7w6aAYud+Riw@mail.gmail.com>
-	<51111133.7000105@synopsys.com>
-	<1360098004.4529.13.camel@pasglop>
-	<511178AC.7080304@synopsys.com>
-	<1360105635.2707.7.camel@pasglop>
-	<CACxGe6u=zhGXm0AO_h354g8OOkAQgdczdw_gCCRxL+=r8hM+-g@mail.gmail.com>
-	<1360186550.2650.4.camel@pasglop>
-	<CACxGe6uaVsng79Kni=0O_YK330vuqMuPO6=y9Bj=UZpZ0ozaDg@mail.gmail.com>
-	<CACxGe6v3ZUEQhi764ivQqE9i2wGzJGcoC0sTVohb_6MQ9sE+hQ@mail.gmail.com>
-	<5113C459.8000602@synopsys.com>
-	<CACxGe6uHx4KdZRgAyL-wQ2GurojAH0eTa6YRCoSuCg89BAvBTA@mail.gmail.com>
-Date: Tue, 12 Feb 2013 18:02:58 +0100
-Message-ID: <CAHTX3dKPWg35Az8eE45AGriPZh2G6LLaQMynhFPKSZ+7UvM=9g@mail.gmail.com>
-Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16
- with generic iowrite(read)8/16(be)
-From: Michal Simek <monstr@monstr.eu>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+	id S933374Ab3BLRDf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 12:03:35 -0500
+Received: from mga09.intel.com ([134.134.136.24]:24718 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932294Ab3BLRDd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 12:03:33 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,650,1355126400"; 
+   d="scan'208";a="261593666"
+Date: Tue, 12 Feb 2013 08:38:38 -0800
+From: Vinod Koul <vinod.koul@intel.com>
+To: Matt Porter <mporter@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
+        Chris Ball <cjb@laptop.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        dahinds@users.sourceforge.net
-Content-Type: text/plain; charset=ISO-8859-1
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH v7 07/10] dmaengine: add
+ dma_request_slave_channel_compat()
+Message-ID: <20130212163838.GR3789@intel.com>
+References: <1359742975-10421-1-git-send-email-mporter@ti.com>
+ <1359742975-10421-8-git-send-email-mporter@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1359742975-10421-8-git-send-email-mporter@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/2/7 Grant Likely <grant.likely@secretlab.ca>:
-> On Thu, Feb 7, 2013 at 3:12 PM, Alexey Brodkin
-> <Alexey.Brodkin@synopsys.com> wrote:
->> On 02/07/2013 06:51 PM, Grant Likely wrote:
->>>
->>> On Thu, Feb 7, 2013 at 2:39 PM, Grant Likely <grant.likely@secretlab.ca>
->>> wrote:
->>>>
->>>> On Wed, Feb 6, 2013 at 9:35 PM, Benjamin Herrenschmidt
->>>> <benh@kernel.crashing.org> wrote:
->>>>>>
->>>>>>   In fact, the driver already knows about this and figures
->>>>>> out at runtime how the device is wired up to the bus. This is not the
->>>>>> problem.
->>>>>
->>>>>
->>>>> Except that this is very gross, especially when you observe that in the
->>>>> busted "big endian" case, it has to byteswap the bloody data port.
->>>>>
->>>>> So you end up having to do that gross hack with separate accessors for
->>>>> registers vs. data and not able to use the _rep variants, which also
->>>>> means that on platforms like ppc, you end up with a memory barrier on
->>>>> every access (or more), which is going to slow things down enormously.
->>>>
->>>>
->>>> I don't see why the _rep variants aren't usable here. The only reason
->>>> I didn't use them when I wrote the driver in the first place was I was
->>>> a n00b kernel hacker and I didn't know they were there.
->>>
->>>
->>> The 8-bit variant is different though because the hardware requires
->>> pingponging between odd and even byte addresses to flush the fifo.
->>> Reading a data port even address (0x40) gives the least significant
->>> byte. Reading from an odd address (0x41) give the MSB and pops the
->>> data off the FIFO. So, yes, the _rep variant can't be used in 8-bit
->>> mode. It should still be fine in 16-bit.
->>>
->>> page 45: http://www.xilinx.com/support/documentation/data_sheets/ds080.pdf
->>>
->>
->> Ok, so may I do a re-spin with these changes:
->
-> There are two things here. 1) changing the accessors used. 2)
-> switching the endianess as a bug fix. Any changes to the endian access
-> should be a separate patch which a description of what is needed.
->
->> 1. In "ace_in_be16" use "ioread16be"
->> 2. In "ace_out_be16" use "iowrite16be"
->> 3. In "ace_in_le16" use "ioread16"
->> 4. In "ace_out_le16" use "iowrite16"
->
-> Yes
->
->> 5. In "ace_datain_le16" use "ioread16_rep"
->> 6. In "ace_dataout_le16" use "iowrite16_rep"
->
-> Maybe. In a separate patch. Hmmm... I guess there isn't an
-> ioread16be_rep variant. Oh well. Check first with Michal on LE
-> microblaze before making the change. If it doesn't work for him the
-> more understanding is needed. I was pretty sure the LE variant already
-> worked.
+On Fri, Feb 01, 2013 at 01:22:52PM -0500, Matt Porter wrote:
+> Adds a dma_request_slave_channel_compat() wrapper which accepts
+> both the arguments from dma_request_channel() and
+> dma_request_slave_channel(). Based on whether the driver is
+> instantiated via DT, the appropriate channel request call will be
+> made.
+> 
+> This allows for a much cleaner migration of drivers to the
+> dmaengine DT API as platforms continue to be mixed between those
+> that boot using DT and those that do not.
+> 
+> Suggested-by: Tony Lindgren <tony@atomide.com>
+> Signed-off-by: Matt Porter <mporter@ti.com>
+> Acked-by: Tony Lindgren <tony@atomide.com>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Vinod Koul <vinod.koul@intel.com>
 
-Sorry it took me some time to get 16bit LE to work for test but here
-are test results.
-
-I have tested it on ppc BE, Microblaze BE and Microblaze LE systems
-and surprisingly on all of them only ace_reg_le16_ops are used.
-
-But on Microblaze LE is necessary to use different datain/out_le16
-functions as below
-which are also not compatible with Microblaze and PPC BE.
-
-diff --git a/drivers/block/xsysace.c b/drivers/block/xsysace.c
-index bbad046..8dd192c 100644
---- a/drivers/block/xsysace.c
-+++ b/drivers/block/xsysace.c
-@@ -314,7 +314,7 @@ static void ace_datain_le16(struct ace_device *ace)
-        int i = ACE_FIFO_SIZE / 2;
-        u16 *dst = ace->data_ptr;
-        while (i--)
--               *dst++ = ioread16be(ace->baseaddr + 0x40);
-+               *dst++ = ioread16(ace->baseaddr + 0x40);
-        ace->data_ptr = dst;
- }
-
-@@ -323,7 +323,7 @@ static void ace_dataout_le16(struct ace_device *ace)
-        int i = ACE_FIFO_SIZE / 2;
-        u16 *src = ace->data_ptr;
-        while (i--)
--               iowrite16be(*src++, ace->baseaddr + 0x40);
-+               iowrite16(*src++, ace->baseaddr + 0x40);
-        ace->data_ptr = src;
- }
-
-Grant: How did you tested BE mode? It is fpga it means you can switch
-some connections
-and it could work.
-
-Thanks,
-Michal
-
-
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+> ---
+>  include/linux/dmaengine.h |   16 ++++++++++++++++
+>  1 file changed, 16 insertions(+)
+> 
+> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+> index bfcdecb..17d8ffd 100644
+> --- a/include/linux/dmaengine.h
+> +++ b/include/linux/dmaengine.h
+> @@ -1001,6 +1001,22 @@ void dma_run_dependencies(struct dma_async_tx_descriptor *tx);
+>  struct dma_chan *dma_find_channel(enum dma_transaction_type tx_type);
+>  struct dma_chan *net_dma_find_channel(void);
+>  #define dma_request_channel(mask, x, y) __dma_request_channel(&(mask), x, y)
+> +#define dma_request_slave_channel_compat(mask, x, y, dev, name) \
+> +	__dma_request_slave_channel_compat(&(mask), x, y, dev, name)
+> +
+> +static inline struct dma_chan
+> +*__dma_request_slave_channel_compat(dma_cap_mask_t *mask, dma_filter_fn fn,
+> +				  void *fn_param, struct device *dev,
+> +				  char *name)
+> +{
+> +	struct dma_chan *chan;
+> +
+> +	chan = dma_request_slave_channel(dev, name);
+> +	if (chan)
+> +		return chan;
+> +
+> +	return __dma_request_channel(mask, fn, fn_param);
+> +}
+>  
+>  /* --- Helper iov-locking functions --- */
+>  
+> -- 
+> 1.7.9.5
+> 
