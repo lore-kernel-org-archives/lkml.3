@@ -1,54 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932635Ab3BLJC6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 04:02:58 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:41654 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932131Ab3BLJCz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 04:02:55 -0500
-Date: Tue, 12 Feb 2013 10:02:50 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/5] perf, x86: Add PEBSv2 record support v2
-Message-ID: <20130212090250.GC19475@gmail.com>
-References: <1360265019-23865-1-git-send-email-andi@firstfloor.org>
- <1360265019-23865-2-git-send-email-andi@firstfloor.org>
+	id S932866Ab3BLJIS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 04:08:18 -0500
+Received: from mga03.intel.com ([143.182.124.21]:33179 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932131Ab3BLJIO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 04:08:14 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,648,1355126400"; 
+   d="scan'208";a="201397740"
+Date: Tue, 12 Feb 2013 11:12:05 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Pandruvada, Srinivas" <srinivas.pandruvada@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiri Kosina <jkosina@suse.cz>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
+Subject: Re: [PATCH 3/3] HID: sensor-hub: don't limit the driver only to USB
+ bus
+Message-ID: <20130212091205.GO20771@intel.com>
+References: <1360578679-7029-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1360578679-7029-3-git-send-email-mika.westerberg@linux.intel.com>
+ <4FA419E87744DF4DAECD5BCE1214B7A91E00FB81@ORSMSX108.amr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1360265019-23865-2-git-send-email-andi@firstfloor.org>
+In-Reply-To: <4FA419E87744DF4DAECD5BCE1214B7A91E00FB81@ORSMSX108.amr.corp.intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Feb 11, 2013 at 03:54:05PM +0000, Pandruvada, Srinivas wrote:
+> So finally we can use HID sensor hub over I2C.
+> Did you try with any I2C sensor hub?
 
-* Andi Kleen <andi@firstfloor.org> wrote:
-
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> Add support for the v2 PEBS format. It has a superset of the v1 PEBS
-> fields, but has a longer record so we need to adjust the code paths.
-
-The changelog talks about a 'v2' PEBS format - the code talks 
-about 'fmt2':
-
-> +/*
-> + * Same as pebs_record_nhm, with two additional fields.
-> + */
-> +struct pebs_record_fmt2 {
-
-In light of the existing pebs_record_core and pebs_record_nhm 
-naming a new perf_record_hsw would be more natural.
-
-Or if numbered versions are used, all PEBS record hardware 
-versions should be numbered.
-
-Right now your extension makes it all look pretty inconsistent.
-
-Thanks,
-
-	Ingo
+Yes, we have I2C HID sensor hub here and I tested with it. However, I'm not
+that familiar how it should be used except that I can see the sensors under
+/sys/bus/platform/devices/HID-SENSOR* and there are iio devices under each
+platform device.
