@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757965Ab3BLUjf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:39:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53779 "EHLO
+	id S1757794Ab3BLUjy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 15:39:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53773 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757676Ab3BLUhW (ORCPT
+	with ESMTP id S1757640Ab3BLUhV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:37:22 -0500
+	Tue, 12 Feb 2013 15:37:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Ilpo=20J=E4rvinen?= <ilpo.jarvinen@helsinki.fi>,
-        Eric Dumazet <edumazet@google.com>,
+        =?UTF-8?q?Pasi=20K=E4rkk=E4inen?= <pasik@iki.fi>,
         Neal Cardwell <ncardwell@google.com>,
+        Eric Dumazet <edumazet@google.com>,
+        =?UTF-8?q?Ilpo=20J=E4rvinen?= <ilpo.jarvinen@helsinki.fi>,
+        Yuchung Cheng <ycheng@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 18/22] tcp: fix for zero packets_in_flight was too broad
-Date: Tue, 12 Feb 2013 12:37:01 -0800
-Message-Id: <20130212203416.994086828@linuxfoundation.org>
+Subject: [ 17/22] tcp: frto should not set snd_cwnd to 0
+Date: Tue, 12 Feb 2013 12:37:00 -0800
+Message-Id: <20130212203416.776145370@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203413.459836020@linuxfoundation.org>
 References: <20130212203413.459836020@linuxfoundation.org>
@@ -33,51 +35,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: =?UTF-8?q?Ilpo=20J=C3=A4rvinen?= <ilpo.jarvinen@helsinki.fi>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 6731d2095bd4aef18027c72ef845ab1087c3ba63 ]
+[ Upstream commit 2e5f421211ff76c17130b4597bc06df4eeead24f ]
 
-There are transients during normal FRTO procedure during which
-the packets_in_flight can go to zero between write_queue state
-updates and firing the resulting segments out. As FRTO processing
-occurs during that window the check must be more precise to
-not match "spuriously" :-). More specificly, e.g., when
-packets_in_flight is zero but FLAG_DATA_ACKED is true the problematic
-branch that set cwnd into zero would not be taken and new segments
-might be sent out later.
+Commit 9dc274151a548 (tcp: fix ABC in tcp_slow_start())
+uncovered a bug in FRTO code :
+tcp_process_frto() is setting snd_cwnd to 0 if the number
+of in flight packets is 0.
 
-Signed-off-by: Ilpo Järvinen <ilpo.jarvinen@helsinki.fi>
-Tested-by: Eric Dumazet <edumazet@google.com>
-Acked-by: Neal Cardwell <ncardwell@google.com>
+As Neal pointed out, if no packet is in flight we lost our
+chance to disambiguate whether a loss timeout was spurious.
+
+We should assume it was a proper loss.
+
+Reported-by: Pasi Kärkkäinen <pasik@iki.fi>
+Signed-off-by: Neal Cardwell <ncardwell@google.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Ilpo Järvinen <ilpo.jarvinen@helsinki.fi>
+Cc: Yuchung Cheng <ycheng@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_input.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ net/ipv4/tcp_input.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
 --- a/net/ipv4/tcp_input.c
 +++ b/net/ipv4/tcp_input.c
-@@ -3568,8 +3568,7 @@ static int tcp_process_frto(struct sock
+@@ -3568,7 +3568,8 @@ static int tcp_process_frto(struct sock
  	    ((tp->frto_counter >= 2) && (flag & FLAG_RETRANS_DATA_ACKED)))
  		tp->undo_marker = 0;
  
--	if (!before(tp->snd_una, tp->frto_highmark) ||
--	    !tcp_packets_in_flight(tp)) {
-+	if (!before(tp->snd_una, tp->frto_highmark)) {
+-	if (!before(tp->snd_una, tp->frto_highmark)) {
++	if (!before(tp->snd_una, tp->frto_highmark) ||
++	    !tcp_packets_in_flight(tp)) {
  		tcp_enter_frto_loss(sk, (tp->frto_counter == 1 ? 2 : 3), flag);
  		return 1;
  	}
-@@ -3589,6 +3588,11 @@ static int tcp_process_frto(struct sock
- 		}
- 	} else {
- 		if (!(flag & FLAG_DATA_ACKED) && (tp->frto_counter == 1)) {
-+			if (!tcp_packets_in_flight(tp)) {
-+				tcp_enter_frto_loss(sk, 2, flag);
-+				return true;
-+			}
-+
- 			/* Prevent sending of new data. */
- 			tp->snd_cwnd = min(tp->snd_cwnd,
- 					   tcp_packets_in_flight(tp));
 
 
