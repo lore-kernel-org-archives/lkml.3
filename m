@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933346Ab3BLTc4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 14:32:56 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:49400 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933170Ab3BLTcy (ORCPT
+	id S933450Ab3BLTdD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 14:33:03 -0500
+Received: from ns1.siteground186.com ([184.154.229.6]:35200 "EHLO
+	serv01.siteground186.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933170Ab3BLTdA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 14:32:54 -0500
+	Tue, 12 Feb 2013 14:33:00 -0500
+X-Greylist: delayed 6573 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Feb 2013 14:32:59 EST
+Message-ID: <511A7F2B.20308@reliableembeddedsystems.com>
+Date: Tue, 12 Feb 2013 19:43:07 +0200
+From: Robert Berger <gmane@reliableembeddedsystems.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <1362466310.40337.1360693775935.JavaMail.mail@webmail03>
-References: <587312497.6453.1360650312498.JavaMail.mail@webmail01>
- <CA+55aFyscOeZUPaYj_-QYgjADPD59+=c5aMvtpPEnd1tmpUGiA@mail.gmail.com> <1362466310.40337.1360693775935.JavaMail.mail@webmail03>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 12 Feb 2013 11:32:31 -0800
-X-Google-Sender-Auth: eAlIggPVaufU5g5h2K0XIefvKTU
-Message-ID: <CA+55aFyK1zhNerWHkd=FMMeTH_sfiL4sBFq00y4n5eAJ88Z_cA@mail.gmail.com>
-Subject: Re: Abysmal HDD/USB write speed after sleep on a UEFI system
-To: "Artem S. Tashkinov" <t.artem@lycos.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Newsgroups: gmane.linux.kernel,gmane.linux.kernel.arm
+To: linux-kernel <linux-kernel@vger.kernel.org>, linux-arm@vger.kernel.org
+Subject: gcov/lkm/arm-eabi/gcc 4.7.2 issue
+References: <1338334286.2658.536.camel@shawn-ssd> <CAJfuBxweY7sG2KZDPHsrOP6iu8sQxw8EvCKA1QtGnDFKA92zag@mail.gmail.com> <1338342203.2658.544.camel@shawn-ssd> <CAJfuBxwP_p4Y4pp50qfEts4zoOkJ16Hj_Yu68q3qd7=5UMLeiw@mail.gmail.com> <1338387021.23168.18.camel@shawn-ssd> <CAJfuBxxkMJbmvQMCZx=6GUqJ8c6VnT8jaRTKA-OWZLa0gG7kUw@mail.gmail.com> <1338406801.23168.74.camel@shawn-ssd> <20120530203428.GB16686@redhat.com>
+In-Reply-To: <20120530203428.GB16686@redhat.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - serv01.siteground186.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - reliableembeddedsystems.com
+X-Get-Message-Sender-Via: serv01.siteground186.com: none
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 12, 2013 at 10:29 AM, Artem S. Tashkinov <t.artem@lycos.com> wrote:
-> Feb 12, 2013 11:30:20 PM, Linus Torvalds wrote:
->>
->>A few things to try to pinpoint:
->>
->> (a) Is it *only* write performance that suffers, or is it other
->>performance too? Networking (DMA? Perhaps only writing *to* the
->>network?)? CPU?
->
-> I've tested hdpard -tT --direct and the output on boot and after suspend
-> is quite similar.
->
-> I've also checked my network read/write speed, and it's the same
-> ~ 100MBit/sec (I have no 1Gbit computers on my network
-> unfortunately).
+Hi,
 
-Ok. So it really sounds like just USB and HD writes. Which is quite
-odd, since they have basically nothing in common I can think of
-(except the obvious block layer issues).
+There seems to be an issue with gcov on kernel modules if you have an
+arm-eabi gcc on Linux 3.8-rc6 and previous versions.
 
->> (b) the fact that it apparently happens with both SATA and USB
->>implies that it  's neither, and is more likely something core like
->>memory speed (mtrr, caching) or PCI (DMA, burst sizes, whatever).
->
-> I've no idea, please, check my bug report where I've just added lots of
-> information including a diff between on boot and after suspend.
+./arm-linux-gnueabi-gcc --version
+arm-linux-gnueabi-gcc (GCC) 4.7.2
 
-I'm not seeing anything particularly interesting there.
+I followed these instructions [1], but without much success.
 
-Except why/how did the MSI address/data change for the SATA
-controller? The irq itself hasn't changed.. There's probably some sane
-reason for that too (it's an odd encoding, maybe they code for the
-same thing), and there's nothing like that for USB, so...
+In case I compile an out of tree kernel module with gcov enabled it can
+not be loaded and issues the following error: "unknown relocation: 38"
 
-And if it was irq problems, I'd expect you to see it more for reads
-than for writes anyway. Along with a few messages about missed irqs
-and whatever.
+I tried this patch [2] as well without success. It loads now, but still
+nothing useful in /sys/kernel/debug/gcov
 
-I'm stumped, and have no ideas. I can't even begin to guess how this
-would happen. One thing to try is if it happens for all USB ports (you
-have multiple controllers) and I assume performance doesn't come back
-if you unplug and replug the USB disk..
+Please advise,
 
-                 Linus
+Regards,
+
+Robert
+
+[1]
+http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=blob;f=Documentation/gcov.txt;h=e7ca6478cd93d4e6422d1ae92455b347dbdf7ccb;hb=HEAD
+
+[2]
+http://us.generation-nt.com/answer/add-gcov-support-arm-help-207630451.html
+
+My public pgp key is available,at:
+http://pgp.mit.edu:11371/pks/lookup?op=get&search=0x90320BF1
+
+
+..."C treats you like a consenting adult. Pascal treats you like a
+naughty child. Ada treats you like a criminal." -- (Bruce Powel Douglass)
+
+My public pgp key is available,at:
+http://pgp.mit.edu:11371/pks/lookup?op=get&search=0x90320BF1
+
