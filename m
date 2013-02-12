@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759395Ab3BLVAy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 16:00:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53579 "EHLO
+	id S1754885Ab3BLUgD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 15:36:03 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53544 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754908Ab3BLUgE (ORCPT
+	with ESMTP id S1754548Ab3BLUgA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:36:04 -0500
+	Tue, 12 Feb 2013 15:36:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ian Campbell <ian.campbell@citrix.com>,
+        Or Gerlitz <ogerlitz@mellanox.com>, Yan Burman <yanb@mellanox.com>,
+        Amir Vadai <amirv@mellanox.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 41/61] xen/netback: free already allocated memory on failure in xen_netbk_get_requests
-Date: Tue, 12 Feb 2013 12:35:01 -0800
-Message-Id: <20130212203423.655566370@linuxfoundation.org>
+Subject: [ 25/61] net/mlx4_en: Fix bridged vSwitch configuration for non SRIOV mode
+Date: Tue, 12 Feb 2013 12:34:45 -0800
+Message-Id: <20130212203421.770224578@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203417.890993903@linuxfoundation.org>
 References: <20130212203417.890993903@linuxfoundation.org>
@@ -28,45 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Ian Campbell <Ian.Campbell@citrix.com>
+From: Yan Burman <yanb@mellanox.com>
 
-[ Upstream commit 4cc7c1cb7b11b6f3515bd9075527576a1eecc4aa ]
+[ Upstream commit 213815a1e6ae70b9648483b110bc5081795f99e8 ]
 
-Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Commit 5b4c4d36860e "mlx4_en: Allow communication between functions on
+same host" introduced a regression under which a bridge acting as vSwitch
+whose uplink is an mlx4 Ethernet device become non-operative in native
+(non sriov) mode. This happens since broadcast ARP requests sent by VMs
+were loopback-ed by the HW and hence the bridge learned VM source MACs
+on both the VM and the uplink ports.
+
+The fix is to place the DMAC in the send WQE only under SRIOV/eSwitch
+configuration or when the device is in selftest.
+
+Reviewed-by: Or Gerlitz <ogerlitz@mellanox.com>
+Signed-off-by: Yan Burman <yanb@mellanox.com>
+Signed-off-by: Amir Vadai <amirv@mellanox.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/xen-netback/netback.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/mellanox/mlx4/en_tx.c |   13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -978,7 +978,7 @@ static struct gnttab_copy *xen_netbk_get
- 		pending_idx = netbk->pending_ring[index];
- 		page = xen_netbk_alloc_page(netbk, skb, pending_idx);
- 		if (!page)
--			return NULL;
-+			goto err;
- 
- 		gop->source.u.ref = txp->gref;
- 		gop->source.domid = vif->domid;
-@@ -1000,6 +1000,17 @@ static struct gnttab_copy *xen_netbk_get
+--- a/drivers/net/ethernet/mellanox/mlx4/en_tx.c
++++ b/drivers/net/ethernet/mellanox/mlx4/en_tx.c
+@@ -629,10 +629,15 @@ netdev_tx_t mlx4_en_xmit(struct sk_buff
+ 		ring->tx_csum++;
  	}
  
- 	return gop;
-+err:
-+	/* Unwind, freeing all pages and sending error responses. */
-+	while (i-- > start) {
-+		xen_netbk_idx_release(netbk, frag_get_pending_idx(&frags[i]),
-+				      XEN_NETIF_RSP_ERROR);
+-	/* Copy dst mac address to wqe */
+-	ethh = (struct ethhdr *)skb->data;
+-	tx_desc->ctrl.srcrb_flags16[0] = get_unaligned((__be16 *)ethh->h_dest);
+-	tx_desc->ctrl.imm = get_unaligned((__be32 *)(ethh->h_dest + 2));
++	if (mlx4_is_mfunc(mdev->dev) || priv->validate_loopback) {
++		/* Copy dst mac address to wqe. This allows loopback in eSwitch,
++		 * so that VFs and PF can communicate with each other
++		 */
++		ethh = (struct ethhdr *)skb->data;
++		tx_desc->ctrl.srcrb_flags16[0] = get_unaligned((__be16 *)ethh->h_dest);
++		tx_desc->ctrl.imm = get_unaligned((__be32 *)(ethh->h_dest + 2));
 +	}
-+	/* The head too, if necessary. */
-+	if (start)
-+		xen_netbk_idx_release(netbk, pending_idx, XEN_NETIF_RSP_ERROR);
 +
-+	return NULL;
- }
- 
- static int xen_netbk_tx_check_gop(struct xen_netbk *netbk,
+ 	/* Handle LSO (TSO) packets */
+ 	if (lso_header_size) {
+ 		/* Mark opcode as LSO */
 
 
