@@ -1,156 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760355Ab3BLOmq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 09:42:46 -0500
-Received: from mail-ia0-f177.google.com ([209.85.210.177]:62211 "EHLO
-	mail-ia0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759841Ab3BLOmp (ORCPT
+	id S1760437Ab3BLOqW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 09:46:22 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25994 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759743Ab3BLOqU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 09:42:45 -0500
-Message-ID: <511A54DC.9030908@ozlabs.ru>
-Date: Wed, 13 Feb 2013 01:42:36 +1100
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: Joerg Roedel <joerg.roedel@amd.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org,
-        David Gibson <david@gibson.dropbear.id.au>
-Subject: Re: [PATCH] iommu: making IOMMU sysfs nodes API public
-References: <1360628713.3248.8.camel@bling.home>  <1360642004-7419-1-git-send-email-aik@ozlabs.ru> <1360645643.3248.91.camel@bling.home>
-In-Reply-To: <1360645643.3248.91.camel@bling.home>
-Content-Type: text/plain; charset=KOI8-R; format=flowed
+	Tue, 12 Feb 2013 09:46:20 -0500
+X-Authority-Analysis: v=2.0 cv=f8jK9ZOM c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=rOv3JLMg7xwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=BPVqIK5J9eQA:10 a=5-8zOE42ewE3rZXYn4MA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1360680378.21867.8.camel@gandalf.local.home>
+Subject: Re: [PATCH] sched/rt: Unthrottle the highest RT task of the rq if
+ there are no another available tasks to be picked
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mike Galbraith <bitbucket@online.de>
+Cc: Kirill Tkhai <tkhai@yandex.ru>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Date: Tue, 12 Feb 2013 09:46:18 -0500
+In-Reply-To: <1360652809.4657.87.camel@marge.simpson.net>
+References: <2260671360618316@web22h.yandex.ru>
+	 <1360652809.4657.87.camel@marge.simpson.net>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/13 16:07, Alex Williamson wrote:
-> On Tue, 2013-02-12 at 15:06 +1100, Alexey Kardashevskiy wrote:
->> Having this patch in a tree, adding new nodes in sysfs
->> for IOMMU groups is going to be easier.
->>
->> The first candidate for this change is a "dma-window-size"
->> property which tells a size of a DMA window of the specific
->> IOMMU group which can be used later for locked pages accounting.
->
-> I'm still churning on this one; I'm nervous this would basically creat
-> a /proc free-for-all under /sys/kernel/iommu_group/$GROUP/ where any
-> iommu driver can add random attributes.  That can get ugly for
-> userspace.
+On Tue, 2013-02-12 at 08:06 +0100, Mike Galbraith wrote:
+> On Tue, 2013-02-12 at 01:31 +0400, Kirill Tkhai wrote: 
+> > It's possible a situation when rq->rt is throttled or
+> > it has no child entities and there are RT tasks ready
+> > for execution in the rq which are the only tasks
+> > of TASK_RUNNING state. In this case pick_next_task
+> > takes idle tasks and idle wastes cpu time.
+> 
+> That's not a waste of CPU time, that's utilization enforcement the thing
+> it is designed to do.  I'd rather see borrowing go away, bodyguard being
+> either a ruthless thug who may save your bacon, or unemployed.  AFAIKT,
+> the throttle is useless in any other role, just having it standing
+> around glaring across the room occasionally can turn sensitive realtime
+> into a quaking heap of jello.
 
-Is not it exactly what sysfs is for (unlike /proc)? :)
+I guess what Mike is saying is, you can do a bunch of tests, and if it
+happens to throttle, you wont notice because the system happened to be
+idle.
 
+Now if you are running in production, and hit the throttle, where
+there's tasks to run, you're production system just went *THUNK*.
 
-> On the other hand, for the application of userspace knowing how much
-> memory to lock for vfio use of a group, it's an appealing location to
-> get that information.  Something like libvirt would already be poking
-> around here to figure out which devices to bind.  Page limits need to be
-> setup prior to use through vfio, so sysfs is more convenient than
-> through vfio ioctls.
+Now in argument for the "borrowing" of idle, I do believe that the
+throttle does still occur, and you get a nasty output on the console.
+But not everyone reads those.
 
-True. DMA window properties do not change since boot so sysfs is the right 
-place to expose them.
+-- Steve
 
-> But then is dma-window-size just a vfio requirement leaking over into
-> iommu groups?  Can we allow iommu driver based attributes without giving
-> up control of the namespace?  Thanks,
-
-Who are you asking these questions? :)
-
-
-> Alex
->
->> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
->> ---
->>   drivers/iommu/iommu.c |   19 ++-----------------
->>   include/linux/iommu.h |   20 ++++++++++++++++++++
->>   2 files changed, 22 insertions(+), 17 deletions(-)
->>
->> diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
->> index b0afd3d..58cc298 100644
->> --- a/drivers/iommu/iommu.c
->> +++ b/drivers/iommu/iommu.c
->> @@ -52,22 +52,6 @@ struct iommu_device {
->>   	char *name;
->>   };
->>
->> -struct iommu_group_attribute {
->> -	struct attribute attr;
->> -	ssize_t (*show)(struct iommu_group *group, char *buf);
->> -	ssize_t (*store)(struct iommu_group *group,
->> -			 const char *buf, size_t count);
->> -};
->> -
->> -#define IOMMU_GROUP_ATTR(_name, _mode, _show, _store)		\
->> -struct iommu_group_attribute iommu_group_attr_##_name =		\
->> -	__ATTR(_name, _mode, _show, _store)
->> -
->> -#define to_iommu_group_attr(_attr)	\
->> -	container_of(_attr, struct iommu_group_attribute, attr)
->> -#define to_iommu_group(_kobj)		\
->> -	container_of(_kobj, struct iommu_group, kobj)
->> -
->>   static ssize_t iommu_group_attr_show(struct kobject *kobj,
->>   				     struct attribute *__attr, char *buf)
->>   {
->> @@ -98,11 +82,12 @@ static const struct sysfs_ops iommu_group_sysfs_ops = {
->>   	.store = iommu_group_attr_store,
->>   };
->>
->> -static int iommu_group_create_file(struct iommu_group *group,
->> +int iommu_group_create_file(struct iommu_group *group,
->>   				   struct iommu_group_attribute *attr)
->>   {
->>   	return sysfs_create_file(&group->kobj, &attr->attr);
->>   }
->> +EXPORT_SYMBOL_GPL(iommu_group_create_file);
->>
->>   static void iommu_group_remove_file(struct iommu_group *group,
->>   				    struct iommu_group_attribute *attr)
->> diff --git a/include/linux/iommu.h b/include/linux/iommu.h
->> index f3b99e1..6d24ba7 100644
->> --- a/include/linux/iommu.h
->> +++ b/include/linux/iommu.h
->> @@ -21,6 +21,7 @@
->>
->>   #include <linux/errno.h>
->>   #include <linux/types.h>
->> +#include <linux/stat.h>
->>
->>   #define IOMMU_READ	(1)
->>   #define IOMMU_WRITE	(2)
->> @@ -197,6 +198,25 @@ static inline int report_iommu_fault(struct iommu_domain *domain,
->>   	return ret;
->>   }
->>
->> +struct iommu_group_attribute {
->> +	struct attribute attr;
->> +	ssize_t (*show)(struct iommu_group *group, char *buf);
->> +	ssize_t (*store)(struct iommu_group *group,
->> +			 const char *buf, size_t count);
->> +};
->> +
->> +#define IOMMU_GROUP_ATTR(_name, _mode, _show, _store)		\
->> +struct iommu_group_attribute iommu_group_attr_##_name =		\
->> +	__ATTR(_name, _mode, _show, _store)
->> +
->> +#define to_iommu_group_attr(_attr)	\
->> +	container_of(_attr, struct iommu_group_attribute, attr)
->> +#define to_iommu_group(_kobj)		\
->> +	container_of(_kobj, struct iommu_group, kobj)
->> +
->> +extern int iommu_group_create_file(struct iommu_group *group,
->> +				   struct iommu_group_attribute *attr);
->> +
->>   #else /* CONFIG_IOMMU_API */
->>
->>   struct iommu_ops {};
->
->
->
-
-
--- 
-Alexey
