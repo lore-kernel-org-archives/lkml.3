@@ -1,107 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758966Ab3BLVDR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 16:03:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53525 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754241Ab3BLUf5 (ORCPT
+	id S1759541Ab3BLVDm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 16:03:42 -0500
+Received: from mail-da0-f41.google.com ([209.85.210.41]:45797 "EHLO
+	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751389Ab3BLVDj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:35:57 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Greear <greearb@candelatech.com>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 31/61] net: loopback: fix a dst refcounting issue
-Date: Tue, 12 Feb 2013 12:34:51 -0800
-Message-Id: <20130212203422.474651048@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130212203417.890993903@linuxfoundation.org>
-References: <20130212203417.890993903@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Tue, 12 Feb 2013 16:03:39 -0500
+From: Kevin Hilman <khilman@linaro.org>
+To: NeilBrown <neilb@suse.de>
+Cc: Igor Grinberg <grinberg@compulab.co.il>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH] usb: musb: fix context save over suspend.
+References: <20130121202831.40a09bbc@notabene.brown>
+	<50FD28D3.5070107@compulab.co.il>
+	<20130122083832.7a3026c9@notabene.brown>
+Date: Tue, 12 Feb 2013 13:03:36 -0800
+In-Reply-To: <20130122083832.7a3026c9@notabene.brown> (NeilBrown's message of
+	"Tue, 22 Jan 2013 08:38:32 +1100")
+Message-ID: <87zjz9i6s7.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+NeilBrown <neilb@suse.de> writes:
 
-------------------
+> On Mon, 21 Jan 2013 13:38:59 +0200 Igor Grinberg <grinberg@compulab.co.il>
+> wrote:
+>
+>> -----BEGIN PGP SIGNED MESSAGE-----
+>> Hash: SHA1
+>> 
+>> Hi Neil,
+>> 
+>> On 01/21/13 11:28, NeilBrown wrote:
+>> > 
+>> > 
+>> > The standard suspend sequence involves runtime_resuming
+>> > devices before suspending the system.
+>> > So just saving context in runtime_suspend and restoring it
+>> > in runtime resume isn't enough.  We  must also save in "suspend"
+>> > and restore in "resume".
+>> > 
+>> > Without this patch, and OMAP3 system with off_mode enabled will find
+>> > the musb port non-functional after suspend/resume.  With the patch it
+>> > works perfectly.
+>> 
+>> Hmmm... Some time ago, this has been removed in
+>> 5d193ce8 (usb: musb: PM: fix context save/restore in suspend/resume path)
+>> 
+>> Am I missing something? Or things changed and now this patch is correct?
+>
+> Hi Igor,
+>  thanks for alerting me to that patch .... does anyone else get the feeling
+>  that power management to too complex to be understood by a mere human?
 
+Yes.  ;)
 
-From: Eric Dumazet <edumazet@google.com>
+>  That commit (5d193ce8) suggests that the musb-hdrc device is an
+>  'omap_device', or maybe has a PM domain set to something else.
+>  However it isn't/doesn't.  dev->pm_domain is NULL.  So no PM domain layer
+>  will ever call the musb_core musb_runtime_suspend/resume.
+>
+>  The parent device - musb-omap2430 - is an omap device, does have pm_domain
+>  set, and does have its omap2430_runtime_suspend/resume called for system
+>  suspend and so the context for that device is saved and restored.
+>  However that doesn't help the context for musb-hdrc.
+>
+>  Whether musb ever was an omap_device is beyond my archaeological skills to
+>  determine.
+>
+>  Kevin:  Was musb-hdrc ever a device with a pm_domain? or was it only ever
+>      the various possible parents that had domains?
+>      Are you able to defend your earlier patch in today's kernel?  It
+>      certainly causes my device not to work properly.
 
-[ Upstream commit 794ed393b707f01858f5ebe2ae5eabaf89d00022 ]
+Sorry for the delay here, I'm back to a place where I can test this on
+real hardware.
 
-Ben Greear reported crashes in ip_rcv_finish() on a stress
-test involving many macvlans.
+My patch was fixing a real hang when musb was built-in (or loaded), in
+host-mode (mini-A cable attached) but no devices attached.  I just tried
+to reproduce this, and with your patch, the system hangs during suspend.
 
-We tracked the bug to a dst use after free. ip_rcv_finish()
-was calling dst->input() and got garbage for dst->input value.
+That being said, your description makes sense why this context
+save/restore is needed.  Perhaps your patch needs to add a check whether
+the device is runtime suspended (I gather this is what Ruslan's patch is
+doing.)
 
-It appears the bug is in loopback driver, lacking
-a skb_dst_force() before calling netif_rx().
-
-As a result, a non refcounted dst, normally protected by a
-RCU read_lock section, was escaping this section and could
-be freed before the packet being processed.
-
-  [<ffffffff813a3c4d>] loopback_xmit+0x64/0x83
-  [<ffffffff81477364>] dev_hard_start_xmit+0x26c/0x35e
-  [<ffffffff8147771a>] dev_queue_xmit+0x2c4/0x37c
-  [<ffffffff81477456>] ? dev_hard_start_xmit+0x35e/0x35e
-  [<ffffffff8148cfa6>] ? eth_header+0x28/0xb6
-  [<ffffffff81480f09>] neigh_resolve_output+0x176/0x1a7
-  [<ffffffff814ad835>] ip_finish_output2+0x297/0x30d
-  [<ffffffff814ad6d5>] ? ip_finish_output2+0x137/0x30d
-  [<ffffffff814ad90e>] ip_finish_output+0x63/0x68
-  [<ffffffff814ae412>] ip_output+0x61/0x67
-  [<ffffffff814ab904>] dst_output+0x17/0x1b
-  [<ffffffff814adb6d>] ip_local_out+0x1e/0x23
-  [<ffffffff814ae1c4>] ip_queue_xmit+0x315/0x353
-  [<ffffffff814adeaf>] ? ip_send_unicast_reply+0x2cc/0x2cc
-  [<ffffffff814c018f>] tcp_transmit_skb+0x7ca/0x80b
-  [<ffffffff814c3571>] tcp_connect+0x53c/0x587
-  [<ffffffff810c2f0c>] ? getnstimeofday+0x44/0x7d
-  [<ffffffff810c2f56>] ? ktime_get_real+0x11/0x3e
-  [<ffffffff814c6f9b>] tcp_v4_connect+0x3c2/0x431
-  [<ffffffff814d6913>] __inet_stream_connect+0x84/0x287
-  [<ffffffff814d6b38>] ? inet_stream_connect+0x22/0x49
-  [<ffffffff8108d695>] ? _local_bh_enable_ip+0x84/0x9f
-  [<ffffffff8108d6c8>] ? local_bh_enable+0xd/0x11
-  [<ffffffff8146763c>] ? lock_sock_nested+0x6e/0x79
-  [<ffffffff814d6b38>] ? inet_stream_connect+0x22/0x49
-  [<ffffffff814d6b49>] inet_stream_connect+0x33/0x49
-  [<ffffffff814632c6>] sys_connect+0x75/0x98
-
-This bug was introduced in linux-2.6.35, in commit
-7fee226ad2397b (net: add a noref bit on skb dst)
-
-skb_dst_force() is enforced in dev_queue_xmit() for devices having a
-qdisc.
-
-Reported-by: Ben Greear <greearb@candelatech.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Tested-by: Ben Greear <greearb@candelatech.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/loopback.c |    5 +++++
- 1 file changed, 5 insertions(+)
-
---- a/drivers/net/loopback.c
-+++ b/drivers/net/loopback.c
-@@ -77,6 +77,11 @@ static netdev_tx_t loopback_xmit(struct
- 
- 	skb_orphan(skb);
- 
-+	/* Before queueing this packet to netif_rx(),
-+	 * make sure dst is refcounted.
-+	 */
-+	skb_dst_force(skb);
-+
- 	skb->protocol = eth_type_trans(skb, dev);
- 
- 	/* it's OK to use per_cpu_ptr() because BHs are off */
-
-
+Kevin
