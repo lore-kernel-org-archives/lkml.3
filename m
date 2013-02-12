@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759113Ab3BLVGA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 16:06:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53489 "EHLO
+	id S1753294Ab3BLUfv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 15:35:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53468 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752968Ab3BLUfw (ORCPT
+	with ESMTP id S1752968Ab3BLUft (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:35:52 -0500
+	Tue, 12 Feb 2013 15:35:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        John Fastabend <john.r.fastabend@intel.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Ben Hutchings <bhutchings@solarflare.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 23/61] macvlan: fix macvlan_get_size()
-Date: Tue, 12 Feb 2013 12:34:43 -0800
-Message-Id: <20130212203421.527870315@linuxfoundation.org>
+Subject: [ 19/61] net, wireless: overwrite default_ethtool_ops
+Date: Tue, 12 Feb 2013 12:34:39 -0800
+Message-Id: <20130212203420.957757920@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203417.890993903@linuxfoundation.org>
 References: <20130212203417.890993903@linuxfoundation.org>
@@ -29,35 +30,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Eric Dumazet <edumazet@google.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-[ Upstream commit 01fe944f1024bd4e5c327ddbe8d657656b66af2f ]
+[ Upstream commit d07d7507bfb4e23735c9b83e397c43e1e8a173e8 ]
 
-commit df8ef8f3aaa (macvlan: add FDB bridge ops and macvlan flags)
-forgot to update macvlan_get_size() after the addition of
-IFLA_MACVLAN_FLAGS
+Since:
 
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: John Fastabend <john.r.fastabend@intel.com>
+commit 2c60db037034d27f8c636403355d52872da92f81
+Author: Eric Dumazet <edumazet@google.com>
+Date:   Sun Sep 16 09:17:26 2012 +0000
+
+    net: provide a default dev->ethtool_ops
+
+wireless core does not correctly assign ethtool_ops.
+
+After alloc_netdev*() call, some cfg80211 drivers provide they own
+ethtool_ops, but some do not. For them, wireless core provide generic
+cfg80211_ethtool_ops, which is assigned in NETDEV_REGISTER notify call:
+
+        if (!dev->ethtool_ops)
+                dev->ethtool_ops = &cfg80211_ethtool_ops;
+
+But after Eric's commit, dev->ethtool_ops is no longer NULL (on cfg80211
+drivers without custom ethtool_ops), but points to &default_ethtool_ops.
+
+In order to fix the problem, provide function which will overwrite
+default_ethtool_ops and use it by wireless core.
+
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Acked-by: Johannes Berg <johannes@sipsolutions.net>
+Acked-by: Ben Hutchings <bhutchings@solarflare.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/macvlan.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ include/linux/netdevice.h |    3 +++
+ net/core/dev.c            |    8 ++++++++
+ net/wireless/core.c       |    3 +--
+ 3 files changed, 12 insertions(+), 2 deletions(-)
 
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -822,7 +822,10 @@ static int macvlan_changelink(struct net
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -60,6 +60,9 @@ struct wireless_dev;
+ #define SET_ETHTOOL_OPS(netdev,ops) \
+ 	( (netdev)->ethtool_ops = (ops) )
  
- static size_t macvlan_get_size(const struct net_device *dev)
- {
--	return nla_total_size(4);
-+	return (0
-+		+ nla_total_size(4) /* IFLA_MACVLAN_MODE */
-+		+ nla_total_size(2) /* IFLA_MACVLAN_FLAGS */
-+		);
- }
++extern void netdev_set_default_ethtool_ops(struct net_device *dev,
++					   const struct ethtool_ops *ops);
++
+ /* hardware address assignment types */
+ #define NET_ADDR_PERM		0	/* address is permanent (default) */
+ #define NET_ADDR_RANDOM		1	/* address is generated randomly */
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -6012,6 +6012,14 @@ struct netdev_queue *dev_ingress_queue_c
  
- static int macvlan_fill_info(struct sk_buff *skb,
+ static const struct ethtool_ops default_ethtool_ops;
+ 
++void netdev_set_default_ethtool_ops(struct net_device *dev,
++				    const struct ethtool_ops *ops)
++{
++	if (dev->ethtool_ops == &default_ethtool_ops)
++		dev->ethtool_ops = ops;
++}
++EXPORT_SYMBOL_GPL(netdev_set_default_ethtool_ops);
++
+ /**
+  *	alloc_netdev_mqs - allocate network device
+  *	@sizeof_priv:	size of private data to allocate space for
+--- a/net/wireless/core.c
++++ b/net/wireless/core.c
+@@ -856,8 +856,7 @@ static int cfg80211_netdev_notifier_call
+ 		/* allow mac80211 to determine the timeout */
+ 		wdev->ps_timeout = -1;
+ 
+-		if (!dev->ethtool_ops)
+-			dev->ethtool_ops = &cfg80211_ethtool_ops;
++		netdev_set_default_ethtool_ops(dev, &cfg80211_ethtool_ops);
+ 
+ 		if ((wdev->iftype == NL80211_IFTYPE_STATION ||
+ 		     wdev->iftype == NL80211_IFTYPE_P2P_CLIENT ||
 
 
