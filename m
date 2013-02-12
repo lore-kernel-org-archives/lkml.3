@@ -1,183 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932875Ab3BLApN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 19:45:13 -0500
-Received: from sabertooth01.qualcomm.com ([65.197.215.72]:37663 "EHLO
-	sabertooth01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760962Ab3BLApL (ORCPT
+	id S932900Ab3BLAsS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 19:48:18 -0500
+Received: from mail-gg0-f201.google.com ([209.85.161.201]:57914 "EHLO
+	mail-gg0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932675Ab3BLAsQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 19:45:11 -0500
-X-IronPort-AV: E=Sophos;i="4.84,646,1355126400"; 
-   d="scan'208";a="22061152"
-From: xiong <xiong@qca.qualcomm.com>
-To: <davem@davemloft.net>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <qca-linux-team@qca.qualcomm.com>, <nic-devel@qca.qualcomm.com>,
-        <jwboyer@redhat.com>, xiong <xiong@qca.qualcomm.com>
-Subject: [PATCH] atl1c: add error checking for pci_map_single functions
-Date: Tue, 12 Feb 2013 08:44:40 +0800
-Message-ID: <1360629880-9920-1-git-send-email-xiong@qca.qualcomm.com>
-X-Mailer: git-send-email 1.8.0.msysgit.0
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.30.39.5]
+	Mon, 11 Feb 2013 19:48:16 -0500
+From: Doug Anderson <dianders@chromium.org>
+To: linux-i2c@vger.kernel.org, Wolfram Sang <w.sang@pengutronix.de>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Padmavathi Venna <padma.v@samsung.com>,
+        Ben Dooks <ben-linux@fluff.org>, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Doug Anderson <dianders@chromium.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH v3 1/2] i2c-core: dt: Pick i2c bus number from i2c alias if present
+Date: Mon, 11 Feb 2013 16:48:04 -0800
+Message-Id: <1360630085-26874-2-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.8.1
+In-Reply-To: <1360630085-26874-1-git-send-email-dianders@chromium.org>
+References: <1360630085-26874-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-it is reported that code hit DMA-API errors on 3.8-rc6+,
-(see https://bugzilla.redhat.com/show_bug.cgi?id=908436, and
-     https://bugzilla.redhat.com/show_bug.cgi?id=908550)
+This allows you to get the equivalent functionality of
+i2c_add_numbered_adapter() with all data in the device tree and no
+special case code in your driver.  This is a common device tree
+technique.
 
-this patch just adds error handler for
-    pci_map_single and skb_frag_dma_map.
+For quick reference, the FDT syntax for using an alias to provide an
+ID looks like:
+  aliases {
+    i2c0 = &i2c_0;
+    i2c1 = &i2c_1;
+  };
 
-Signed-off-by: xiong <xiong@qca.qualcomm.com>
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+
 ---
- drivers/net/ethernet/atheros/atl1c/atl1c_main.c | 71 ++++++++++++++++++++++---
- 1 file changed, 64 insertions(+), 7 deletions(-)
+Changes in v3:
+- Addressed Wolfram's feedback; rebased atop idr-cleanup series.
 
-diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-index 571b514..8f33315 100644
---- a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-+++ b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-@@ -21,7 +21,7 @@
- 
- #include "atl1c.h"
- 
--#define ATL1C_DRV_VERSION "1.0.1.0-NAPI"
-+#define ATL1C_DRV_VERSION "1.0.1.1-NAPI"
- char atl1c_driver_name[] = "atl1c";
- char atl1c_driver_version[] = ATL1C_DRV_VERSION;
- 
-@@ -1649,6 +1649,7 @@ static int atl1c_alloc_rx_buffer(struct atl1c_adapter *adapter)
- 	u16 num_alloc = 0;
- 	u16 rfd_next_to_use, next_next;
- 	struct atl1c_rx_free_desc *rfd_desc;
-+	dma_addr_t mapping;
- 
- 	next_next = rfd_next_to_use = rfd_ring->next_to_use;
- 	if (++next_next == rfd_ring->count)
-@@ -1675,9 +1676,18 @@ static int atl1c_alloc_rx_buffer(struct atl1c_adapter *adapter)
- 		ATL1C_SET_BUFFER_STATE(buffer_info, ATL1C_BUFFER_BUSY);
- 		buffer_info->skb = skb;
- 		buffer_info->length = adapter->rx_buffer_len;
--		buffer_info->dma = pci_map_single(pdev, vir_addr,
-+		mapping = pci_map_single(pdev, vir_addr,
- 						buffer_info->length,
- 						PCI_DMA_FROMDEVICE);
-+		if (unlikely(pci_dma_mapping_error(pdev, mapping))) {
-+			dev_kfree_skb(skb);
-+			buffer_info->skb = NULL;
-+			buffer_info->length = 0;
-+			ATL1C_SET_BUFFER_STATE(buffer_info, ATL1C_BUFFER_FREE);
-+			netif_warn(adapter, rx_err, adapter->netdev, "RX pci_map_single failed");
-+			break;
-+		}
-+		buffer_info->dma = mapping;
- 		ATL1C_SET_PCIMAP_TYPE(buffer_info, ATL1C_PCIMAP_SINGLE,
- 			ATL1C_PCIMAP_FROMDEVICE);
- 		rfd_desc->buffer_addr = cpu_to_le64(buffer_info->dma);
-@@ -2012,7 +2022,29 @@ check_sum:
- 	return 0;
+Changes in v2: None
+
+ drivers/i2c/i2c-core.c | 54 +++++++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 40 insertions(+), 14 deletions(-)
+
+diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+index 0b599f2..5204818 100644
+--- a/drivers/i2c/i2c-core.c
++++ b/drivers/i2c/i2c-core.c
+@@ -921,13 +921,41 @@ out_list:
  }
  
--static void atl1c_tx_map(struct atl1c_adapter *adapter,
-+static void atl1c_tx_rollback(struct atl1c_adapter *adpt,
-+			      struct atl1c_tpd_desc *first_tpd,
-+			      enum atl1c_trans_queue type)
+ /**
++ * __i2c_add_numbered_adapter - i2c_add_numbered_adapter where nr is never -1
++ * @adap: the adapter to register (with adap->nr initialized)
++ * Context: can sleep
++ *
++ * See i2c_add_numbered_adapter() for details.
++ */
++static int __i2c_add_numbered_adapter(struct i2c_adapter *adap)
 +{
-+	struct atl1c_tpd_ring *tpd_ring = &adpt->tpd_ring[type];
-+	struct atl1c_buffer *buffer_info;
-+	struct atl1c_tpd_desc *tpd;
-+	u16 first_index, index;
++	int	id;
 +
-+	first_index = first_tpd - (struct atl1c_tpd_desc *)tpd_ring->desc;
-+	index = first_index;
-+	while (index != tpd_ring->next_to_use) {
-+		tpd = ATL1C_TPD_DESC(tpd_ring, index);
-+		buffer_info = &tpd_ring->buffer_info[index];
-+		atl1c_clean_buffer(adpt->pdev, buffer_info, 0);
-+		memset(tpd, 0, sizeof(struct atl1c_tpd_desc));
-+		if (++index == tpd_ring->count)
-+			index = 0;
-+	}
-+	tpd_ring->next_to_use = first_index;
++	/* Handled by wrappers */
++	if (WARN_ON(adap->nr == -1))
++		return -EINVAL;
++
++	if (adap->nr & ~MAX_IDR_MASK)
++		return -EINVAL;
++
++	mutex_lock(&core_lock);
++	id = idr_alloc(&i2c_adapter_idr, adap, adap->nr, adap->nr + 1,
++		       GFP_KERNEL);
++	mutex_unlock(&core_lock);
++	if (id < 0)
++		return id == -ENOSPC ? -EBUSY : id;
++	return i2c_register_adapter(adap);
 +}
 +
-+static int atl1c_tx_map(struct atl1c_adapter *adapter,
- 		      struct sk_buff *skb, struct atl1c_tpd_desc *tpd,
- 			enum atl1c_trans_queue type)
++/**
+  * i2c_add_adapter - declare i2c adapter, use dynamic bus number
+  * @adapter: the adapter to add
+  * Context: can sleep
+  *
+  * This routine is used to declare an I2C adapter when its bus number
+- * doesn't matter.  Examples: for I2C adapters dynamically added by
+- * USB links or PCI plugin cards.
++ * doesn't matter or when its bus number is specified by an dt alias.
++ * Examples of bases when the bus number doesn't matter: I2C adapters
++ * dynamically added by USB links or PCI plugin cards.
+  *
+  * When this returns zero, a new bus number was allocated and stored
+  * in adap->nr, and the specified adapter became available for clients.
+@@ -935,8 +963,17 @@ out_list:
+  */
+ int i2c_add_adapter(struct i2c_adapter *adapter)
  {
-@@ -2037,7 +2069,10 @@ static void atl1c_tx_map(struct atl1c_adapter *adapter,
- 		buffer_info->length = map_len;
- 		buffer_info->dma = pci_map_single(adapter->pdev,
- 					skb->data, hdr_len, PCI_DMA_TODEVICE);
--		ATL1C_SET_BUFFER_STATE(buffer_info, ATL1C_BUFFER_BUSY);
-+		if (unlikely(pci_dma_mapping_error(adapter->pdev,
-+						   buffer_info->dma)))
-+			goto err_dma;
-+
- 		ATL1C_SET_PCIMAP_TYPE(buffer_info, ATL1C_PCIMAP_SINGLE,
- 			ATL1C_PCIMAP_TODEVICE);
- 		mapped_len += map_len;
-@@ -2059,6 +2094,10 @@ static void atl1c_tx_map(struct atl1c_adapter *adapter,
- 		buffer_info->dma =
- 			pci_map_single(adapter->pdev, skb->data + mapped_len,
- 					buffer_info->length, PCI_DMA_TODEVICE);
-+		if (unlikely(pci_dma_mapping_error(adapter->pdev,
-+						   buffer_info->dma)))
-+			goto err_dma;
-+
- 		ATL1C_SET_BUFFER_STATE(buffer_info, ATL1C_BUFFER_BUSY);
- 		ATL1C_SET_PCIMAP_TYPE(buffer_info, ATL1C_PCIMAP_SINGLE,
- 			ATL1C_PCIMAP_TODEVICE);
-@@ -2080,6 +2119,9 @@ static void atl1c_tx_map(struct atl1c_adapter *adapter,
- 						    frag, 0,
- 						    buffer_info->length,
- 						    DMA_TO_DEVICE);
-+		if (dma_mapping_error(&adapter->pdev->dev, buffer_info->dma))
-+			goto err_dma;
-+
- 		ATL1C_SET_BUFFER_STATE(buffer_info, ATL1C_BUFFER_BUSY);
- 		ATL1C_SET_PCIMAP_TYPE(buffer_info, ATL1C_PCIMAP_PAGE,
- 			ATL1C_PCIMAP_TODEVICE);
-@@ -2092,6 +2134,13 @@ static void atl1c_tx_map(struct atl1c_adapter *adapter,
- 	/* The last buffer info contain the skb address,
- 	   so it will be free after unmap */
- 	buffer_info->skb = skb;
-+
-+	return 0;
-+
-+err_dma:
-+	buffer_info->dma = 0;
-+	buffer_info->length = 0;
-+	return -1;
- }
++	struct device *dev = &adapter->dev;
+ 	int res;
  
- static void atl1c_tx_queue(struct atl1c_adapter *adapter, struct sk_buff *skb,
-@@ -2154,10 +2203,18 @@ static netdev_tx_t atl1c_xmit_frame(struct sk_buff *skb,
- 	if (skb_network_offset(skb) != ETH_HLEN)
- 		tpd->word1 |= 1 << TPD_ETH_TYPE_SHIFT; /* Ethernet frame */
- 
--	atl1c_tx_map(adapter, skb, tpd, type);
--	atl1c_tx_queue(adapter, skb, tpd, type);
-+	if (atl1c_tx_map(adapter, skb, tpd, type) < 0) {
-+		netif_info(adapter, tx_done, adapter->netdev,
-+			   "tx-skb droppted due to dma error\n");
-+		/* roll back tpd/buffer */
-+		atl1c_tx_rollback(adapter, tpd, type);
-+		spin_unlock_irqrestore(&adapter->tx_lock, flags);
-+		dev_kfree_skb(skb);
-+	} else {
-+		atl1c_tx_queue(adapter, skb, tpd, type);
-+		spin_unlock_irqrestore(&adapter->tx_lock, flags);
++	if (dev->of_node) {
++		res = of_alias_get_id(dev->of_node, "i2c");
++		if (res >= 0) {
++			adapter->nr = res;
++			return __i2c_add_numbered_adapter(adapter);
++		}
 +	}
- 
--	spin_unlock_irqrestore(&adapter->tx_lock, flags);
- 	return NETDEV_TX_OK;
++
+ 	mutex_lock(&core_lock);
+ 	res = idr_alloc(&i2c_adapter_idr, adapter,
+ 			__i2c_first_dynamic_bus_num, 0, GFP_KERNEL);
+@@ -974,20 +1011,9 @@ EXPORT_SYMBOL(i2c_add_adapter);
+  */
+ int i2c_add_numbered_adapter(struct i2c_adapter *adap)
+ {
+-	int	id;
+-
+ 	if (adap->nr == -1) /* -1 means dynamically assign bus id */
+ 		return i2c_add_adapter(adap);
+-	if (adap->nr & ~MAX_IDR_MASK)
+-		return -EINVAL;
+-
+-	mutex_lock(&core_lock);
+-	id = idr_alloc(&i2c_adapter_idr, adap, adap->nr, adap->nr + 1,
+-		       GFP_KERNEL);
+-	mutex_unlock(&core_lock);
+-	if (id < 0)
+-		return id == -ENOSPC ? -EBUSY : id;
+-	return i2c_register_adapter(adap);
++	return __i2c_add_numbered_adapter(adap);
  }
+ EXPORT_SYMBOL_GPL(i2c_add_numbered_adapter);
  
 -- 
-1.7.11.7
+1.8.1
 
