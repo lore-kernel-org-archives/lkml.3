@@ -1,83 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761368Ab3BLPUn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 10:20:43 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:60173 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758429Ab3BLPUl (ORCPT
+	id S1761386Ab3BLPVK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 10:21:10 -0500
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:38740 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758258Ab3BLPVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 10:20:41 -0500
-Date: Tue, 12 Feb 2013 16:20:37 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] of: Fix locking when calling
- of_get_next_available_child()
-Message-ID: <20130212152037.GA21685@avionic-0098.mockup.avionic-design.de>
-References: <1360621157-23570-1-git-send-email-grant.likely@secretlab.ca>
- <51197E36.8080704@wwwdotorg.org>
+	Tue, 12 Feb 2013 10:21:08 -0500
+Date: Tue, 12 Feb 2013 07:21:07 -0800 (PST)
+From: Andy King <acking@vmware.com>
+To: Gerd Hoffmann <kraxel@redhat.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, gregkh@linuxfoundation.org,
+        davem@davemloft.net, pv-drivers@vmware.com
+Message-ID: <1675407061.963254.1360682467627.JavaMail.root@vmware.com>
+In-Reply-To: <5118FEA9.2080201@redhat.com>
+References: <1360196636-9357-1-git-send-email-acking@vmware.com> <1360196636-9357-2-git-send-email-acking@vmware.com> <5118FEA9.2080201@redhat.com>
+Subject: Re: [PATCH 1/1] VSOCK: Introduce VM Sockets
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2oS5YaxWCcQjTEyO"
-Content-Disposition: inline
-In-Reply-To: <51197E36.8080704@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:IXXw3WS7u2SM+9pJN78Cd2U81IwhfL4MKPMoC5Y+cwC
- WGeWfaNOf+uj4REoX0KIaruxTvI6326wpU+wnqheMCVbxZ2SAI
- OxNJXpyY+OCRGQgV3zFXeOvRX0TbevIe+2i2wTKuYYHTF2EfHD
- HDq9reUOz0BDxpNbXkm7btgPvqpUyhcpdaba/jPIGSwLM5Osoi
- zn4dRKigOJdMhqLdVPKPr2zlLgbGkP65F7qgxGGjbDUJ3Gzc7f
- ygTMCgZh7sQ3FApLnub58+SQ1HqOViCq1eVO8XIKLR1V5wouDu
- +apD6IEOwP/efQmpP3BWITQF0qHQnXnR7eLE2Kdw323R+uyUOc
- 2QTTETVE+P3XTICoyuO6Qvbk+qObgQ0QxWofzfSnkbPzv7m5+E
- 5enzEkkV2dvOEm5B0K+7OM5r3FiNWmrCMyck59cZSULsWqQ7+a
- E7OVM
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.113.163.68]
+X-Mailer: Zimbra 8.0.2_GA_5569 (ZimbraWebClient - GC24 (Mac)/8.0.2_GA_5569)
+Thread-Topic: VSOCK: Introduce VM Sockets
+Thread-Index: fbcLzOd8oom6Dq4OLGpObN+q9DlUgw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Gerd,
 
---2oS5YaxWCcQjTEyO
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> > +struct vsock_transport {
+...
+> Whoa.  This has grown *alot*.  Care to explain this please?  Patch
+> creating a Documentation/virtual/vsock.txt would be cool.
 
-On Mon, Feb 11, 2013 at 04:26:46PM -0700, Stephen Warren wrote:
-> On 02/11/2013 03:19 PM, Grant Likely wrote:
-> > of_get_next_available_child() obtains the devtree_lock and then calls
-> > of_device_is_available() which also attempts to claim the lock. This is
-> > obviously incorrect and causes a deadlock on boot. Fix issue by adding
-> > an variant of of_device_is_available() which doesn't obtain the lock.
->=20
-> This patch forgets to update __of_device_is_available() to call
-> __of_get_property() rather than of_get_property() and hence doesn't
-> actually solve the problem.
+Yes, it grew because of the notification stuff, which I'd forgotten
+about until I removed the vmci header from the core code.  You are
+free to use empty functions for these if they don't make any sense
+for virtio.  The alternative is for us to move the entire body of
+vsock_stream_recv/send into the transport, where we can hide the
+notification stuff, but it seems like folks will just end up
+duplicating a lot of code then.
 
-Yes, please. of_get_property() called from __of_device_is_available()
-pretty much defeats the purpose of having the non-locked version.
+> stream_has_data + stream_has_space + stream_rcvhiwat look like they
+> are needed for buffer management.  Details please (especially for
+> stream_rcvhiwat).
 
-Thierry
+stream_has_data: Returns amount of data available (in bytes) in the
+socket's receive buffer, or -1 if empty.
 
---2oS5YaxWCcQjTEyO
-Content-Type: application/pgp-signature
+stream_has_space: Returns amount of space available (in bytes) in the
+socket's send buffer, or -1 if full.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+stream_rcvhiwat: The upper bound on the socket's receive buffer.
+Which technically is the same as the value returned by
+get_buffer_size(), so perhaps we could substitute that here and
+drop this one.
 
-iQIcBAEBAgAGBQJRGl3FAAoJEN0jrNd/PrOh3l0QAL8VKB0tJtgB5Cfzm7ogl5VK
-TYTI3xZWUXLu6f7Oo0tbR1dHuDE+NDy7f3BRARQxd+gTBWg/bleHqLIEBVPp7K4n
-5A0UAjUdbyCJEkf5ywi2NEsuMkmOOyxJLJOzNTnHzxu+vOoOyiprvUbR6z1OS1DR
-CND1PzDGAoqOpbw7ONzYPTQ/RWD/48ggpIx2BDkNH2OfvLsXs0JlPRilppGUklh4
-rBO4isQFaFhlXWc00g/1DqrOtywcGx3wfuST1MuOHDqf7HmC8IHcHFMNB3ZIy88h
-HFXzQRH+AEKObnDkOtKVk6EmVKwij+XkFTa0wrwvh5u6UMP13dZq2NOgPDjSutVL
-LRYsHZ4HjxPtxW6SdwqAWr+yf62mpFZRn7hocYgPzp/Ff/9rejGsf6F9mM8EgCP7
-yLC85cAWyj306qOIru7Hf2BXloSMvJ8PqsRemk9/XcgTbeLnzOOQ6TkkEveeRWeB
-fiEw/jI3uKPF9fYEC8IgveyR9uLUYrhL/vCYQ3pHalzqPW9esXDt10ZXvGqjbak2
-GogM5XcK+werjD5kfKDdBHZnyV10u7r3brU8FAGtCRmc85Y8EYDzWgGuXf0QmJwi
-NZ6saScboyTdD3/ehyab11/ZCM3QYKBVY89yjr7AJEdtX6A06bNiQwNQoMWSpoSE
-kcazQ9jO6bi1M/fDqkNT
-=3rVv
------END PGP SIGNATURE-----
+> What is stream_is_active?
 
---2oS5YaxWCcQjTEyO--
+For the VMCI transport, it indicates if the underlying queuepair is
+still around (i.e., make sure we haven't torn it down while sleeping
+in a blocking send or receive).  Perhaps it's not the best name?
+
+> What is *_allow?
+
+It's very basic filtering.  We have specific addresses that we don't
+allow, and we look for them in the allow() functions.  You can just
+return true if you like.
+
+> What are all those notify_* calls?
+
+They're to do with signaling and flow-control.  Again, they might
+not make any sense at all, but it's hard to know without having
+written another transport :)
+
+> Why do you need vsock_transport_{send,recv}_notify_data structs?
+> Can't this live in vsock_sock->trans?
+
+Those have to be setup on a per-call basis (per-thread), so it's
+just easier to have them on the stack of the send/recv calls.  If
+you think there's a better name, or a better way to allocate them,
+I'm all ears.
+
+Thanks!
+- Andy
