@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933317Ab3BLQGi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 11:06:38 -0500
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:54564 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933270Ab3BLQGf (ORCPT
+	id S933301Ab3BLQGd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 11:06:33 -0500
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:59679 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933270Ab3BLQGb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 11:06:35 -0500
+	Tue, 12 Feb 2013 11:06:31 -0500
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: <stable@vger.kernel.org>, <nbd-general@lists.sf.net>,
-        Paul Clements <Paul.Clements@steeleye.com>,
+Cc: <nbd-general@lists.sf.net>, Paul Clements <Paul.Clements@steeleye.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 2/3] nbd: fsync and kill block device on shutdown
-Date: Tue, 12 Feb 2013 17:06:10 +0100
-Message-Id: <1360685171-3792-3-git-send-email-pbonzini@redhat.com>
+Subject: [PATCH 3/3] nbd: show read-only state in sysfs
+Date: Tue, 12 Feb 2013 17:06:11 +0100
+Message-Id: <1360685171-3792-4-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1360685171-3792-1-git-send-email-pbonzini@redhat.com>
 References: <1360685171-3792-1-git-send-email-pbonzini@redhat.com>
@@ -22,83 +21,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are two problems with shutdown in the NBD driver.  The first is
-that receiving the NBD_DISCONNECT ioctl does not sync the filesystem;
-this is useful because BLKFLSBUF is restricted to processes that have
-CAP_SYS_ADMIN, and the NBD client may not possess it (fsync of the
-block device does not sync the filesystem, either).
+Pass the read-only flag to set_device_ro, so that it will be
+visible to the block layer and in sysfs.
 
-The second is that once we clear the socket we have no guarantee that
-later reads will come from the same backing storage.  Thus the page cache
-must be cleaned, lest reads that hit on the page cache will return stale
-data from the previously-accessible disk.
-
-Example:
-
-    # qemu-nbd -r -c/dev/nbd0 /dev/sr0
-    # file -s /dev/nbd0
-    /dev/stdin: # UDF filesystem data (version 1.5) etc.
-    # qemu-nbd -d /dev/nbd0
-    # qemu-nbd -r -c/dev/nbd0 /dev/sda
-    # file -s /dev/nbd0
-    /dev/stdin: # UDF filesystem data (version 1.5) etc.
-
-While /dev/sda has:
-
-    # file -s /dev/sda
-    /dev/sda: x86 boot sector; etc.
-
-Cc: <stable@vger.kernel.org>
 Cc: <nbd-general@lists.sf.net>
 Cc: Paul Clements <Paul.Clements@steeleye.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- drivers/block/nbd.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+ drivers/block/nbd.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
-index 5603765..a9c5c7a 100644
+index a9c5c7a..ef17c2e 100644
 --- a/drivers/block/nbd.c
 +++ b/drivers/block/nbd.c
-@@ -608,12 +608,20 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *nbd,
- 		struct request sreq;
+@@ -703,6 +703,8 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *nbd,
  
- 		dev_info(disk_to_dev(nbd->disk), "NBD_DISCONNECT\n");
-+		if (!nbd->sock)
-+			return -EINVAL;
+ 		mutex_unlock(&nbd->tx_lock);
  
-+		mutex_unlock(&nbd->tx_lock);
-+		fsync_bdev(bdev);
-+		mutex_lock(&nbd->tx_lock);
- 		blk_rq_init(NULL, &sreq);
- 		sreq.cmd_type = REQ_TYPE_SPECIAL;
- 		nbd_cmd(&sreq) = NBD_CMD_DISC;
-+
-+		/* Check again after getting mutex back.  */
- 		if (!nbd->sock)
- 			return -EINVAL;
-+
- 		nbd_send_req(nbd, &sreq);
-                 return 0;
- 	}
-@@ -627,6 +635,7 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *nbd,
- 		nbd_clear_que(nbd);
- 		BUG_ON(!list_empty(&nbd->queue_head));
- 		BUG_ON(!list_empty(&nbd->waiting_queue));
-+		kill_bdev(bdev);
- 		if (file)
- 			fput(file);
- 		return 0;
-@@ -719,6 +728,7 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *nbd,
- 		nbd->file = NULL;
- 		nbd_clear_que(nbd);
++		if (nbd->flags & NBD_FLAG_READ_ONLY)
++			set_device_ro(bdev, true);
+ 		if (nbd->flags & NBD_FLAG_SEND_TRIM)
+ 			queue_flag_set_unlocked(QUEUE_FLAG_DISCARD,
+ 				nbd->disk->queue);
+@@ -730,6 +732,7 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *nbd,
  		dev_warn(disk_to_dev(nbd->disk), "queue cleared\n");
-+		kill_bdev(bdev);
+ 		kill_bdev(bdev);
  		queue_flag_clear_unlocked(QUEUE_FLAG_DISCARD, nbd->disk->queue);
++		set_device_ro(bdev, false);
  		if (file)
  			fput(file);
+ 		nbd->flags = 0;
 -- 
 1.7.1
-
 
