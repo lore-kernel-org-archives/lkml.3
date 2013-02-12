@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760877Ab3BLACv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 19:02:51 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:56700 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1760679Ab3BLACu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 19:02:50 -0500
-Message-ID: <1360627368.4707.8.camel@joe-AO722>
-Subject: Re: [PATCH V3 2/2] MAINTAINERS: update Tegra section to capture all
- Tegra files
-From: Joe Perches <joe@perches.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: arm@kernel.org, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Julian Andres Klode <jak@jak-linux.org>,
-        Marc Dietrich <marvin24@gmx.de>, Stephen Warren <swarren@nvidia.com>
-Date: Mon, 11 Feb 2013 16:02:48 -0800
-In-Reply-To: <1360626016-23332-2-git-send-email-swarren@wwwdotorg.org>
-References: <1360626016-23332-1-git-send-email-swarren@wwwdotorg.org>
-	 <1360626016-23332-2-git-send-email-swarren@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1760919Ab3BLAIl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 19:08:41 -0500
+Received: from mail-ia0-f170.google.com ([209.85.210.170]:48464 "EHLO
+	mail-ia0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760679Ab3BLAIj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 19:08:39 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130211224142.GA9782@google.com>
+References: <Pine.LNX.4.44L0.1302051520220.2245-100000@iolanthe.rowland.org>
+	<1360466060.3703.15.camel@thor.lan>
+	<1360506199.3461.5.camel@thor.lan>
+	<CAE9FiQX0Jzqi=Dy=r3MoU9vK7HgAf+919LvbgLygW7VH3O4=bg@mail.gmail.com>
+	<CAE9FiQX5wQ8zFzPfgmvm0BESyLVxzDRQ33XPgj+QjBZ0kxuHXg@mail.gmail.com>
+	<1360587768.3454.2.camel@thor.lan>
+	<CAE9FiQWUZ3BgLOtcGePppLzWBv-uR8L+7abditH2MNA7zZW-WA@mail.gmail.com>
+	<CAE9FiQXcgxY_vW6gjqU7Jtxc71J=sKt_2SPsN8x1O9EfDRN_0g@mail.gmail.com>
+	<CAE9FiQXnb-op9vsQJroMisDQt_-X2UpBB1R_WJ1Lifnk5pPpGg@mail.gmail.com>
+	<20130211224142.GA9782@google.com>
+Date: Mon, 11 Feb 2013 16:08:38 -0800
+X-Google-Sender-Auth: 28EICY7jGc9YMg4IhoOFeIcsR1k
+Message-ID: <CAE9FiQUnrc1NxL-X9Ddj-Y6jv_+EdDLKaLzY_eo3VNsSq5XpDA@mail.gmail.com>
+Subject: Re: [Bisected] [-next-20130204] usb/hcd: irq 18: nobody cared
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Lan Tianyu <tianyu.lan@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-02-11 at 16:40 -0700, Stephen Warren wrote:
-> From: Stephen Warren <swarren@nvidia.com>
-> 
-> The intent is to ensure that all Tegra-related patches are sent to the
-> linux-tegra@ mailing list, so people can keep up-to-date on all misc
-> driver changes.
-> 
-> Doing this with a keyword is far simpler and more compact than listing
-> all Tegra-related drivers, even if wildcards were used.
-> 
-> Words such as integrate or integrator are common. Ensure the character
-> right before "tegra" isn't a-z (case-insensitive), to make sure the
-> keyword doesn't match those.
-> 
-> The only files that the keyword doesn't match are the NVEC driver. Add
-> the linux-tegra mailing list to the NVEC entry to solve this.
+On Mon, Feb 11, 2013 at 2:41 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> [+cc linux-acpi, linux-pci]
+>
+> The _PRT describes motherboard interrupt wiring, which has nothing to
+> do with PCI bus numbers.  Our current drivers/acpi/pci_irq.c caches
+> the PCI bus number along with the _PRT, and I think that's a mistake.
+>
+> The bus number binding means acpi_pci_irq_add_prt() has to happen
+> after enumerating everything below a bridge, and it will prevent us
+> from doing any bus number reassignment for hotplug.
+>
+> I think we should remove the bus numbers from the cached _PRT (or
+> maybe even remove the _PRT caching completely).  When we enable a PCI
+> device's IRQ, we should search up the PCI device tree looking for a
+> _PRT associated with each node, and applying normal PCI bridge
+> swizzling when we don't find a _PRT.  I think this can be done without
+> using PCI bus numbers at all.
+>
 
-You should probably add some commentary/documentation
-to the K: section description of MAINTAINERS in patch 1/2.
+Agreed, will give it try to remove the _PRT caching completely.
 
-Something about K: patterns also matching filenames.
+Thanks
 
-	K: Keyword perl extended regex pattern to match content in a
-	   patch or file.  For instance:
-	   K: of_get_profile
-	      matches patches or files that contain "of_get_profile"
-	   K: \b(printk|pr_(info|err))\b
-	      matches patches or files that contain one or more of the words
-	      printk, pr_info or pr_err
-	   One regex pattern per line.  Multiple K: lines acceptable.
-
-
+Yinghai
