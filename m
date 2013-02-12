@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757902Ab3BLVA3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 16:00:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53584 "EHLO
+	id S1759395Ab3BLVAy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 16:00:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53579 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755030Ab3BLUgF (ORCPT
+	with ESMTP id S1754908Ab3BLUgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:36:05 -0500
+	Tue, 12 Feb 2013 15:36:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Ian Campbell <ian.campbell@citrix.com>,
-        Jan Beulich <JBeulich@suse.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 42/61] netback: correct netbk_tx_err to handle wrap around.
-Date: Tue, 12 Feb 2013 12:35:02 -0800
-Message-Id: <20130212203423.762980310@linuxfoundation.org>
+Subject: [ 41/61] xen/netback: free already allocated memory on failure in xen_netbk_get_requests
+Date: Tue, 12 Feb 2013 12:35:01 -0800
+Message-Id: <20130212203423.655566370@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203417.890993903@linuxfoundation.org>
 References: <20130212203417.890993903@linuxfoundation.org>
@@ -31,26 +30,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ian Campbell <Ian.Campbell@citrix.com>
 
-[ Upstream commit b9149729ebdcfce63f853aa54a404c6a8f6ebbf3 ]
+[ Upstream commit 4cc7c1cb7b11b6f3515bd9075527576a1eecc4aa ]
 
 Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Acked-by: Jan Beulich <JBeulich@suse.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/xen-netback/netback.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/xen-netback/netback.c |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
 --- a/drivers/net/xen-netback/netback.c
 +++ b/drivers/net/xen-netback/netback.c
-@@ -880,7 +880,7 @@ static void netbk_tx_err(struct xenvif *
+@@ -978,7 +978,7 @@ static struct gnttab_copy *xen_netbk_get
+ 		pending_idx = netbk->pending_ring[index];
+ 		page = xen_netbk_alloc_page(netbk, skb, pending_idx);
+ 		if (!page)
+-			return NULL;
++			goto err;
  
- 	do {
- 		make_tx_response(vif, txp, XEN_NETIF_RSP_ERROR);
--		if (cons >= end)
-+		if (cons == end)
- 			break;
- 		txp = RING_GET_REQUEST(&vif->tx, cons++);
- 	} while (1);
+ 		gop->source.u.ref = txp->gref;
+ 		gop->source.domid = vif->domid;
+@@ -1000,6 +1000,17 @@ static struct gnttab_copy *xen_netbk_get
+ 	}
+ 
+ 	return gop;
++err:
++	/* Unwind, freeing all pages and sending error responses. */
++	while (i-- > start) {
++		xen_netbk_idx_release(netbk, frag_get_pending_idx(&frags[i]),
++				      XEN_NETIF_RSP_ERROR);
++	}
++	/* The head too, if necessary. */
++	if (start)
++		xen_netbk_idx_release(netbk, pending_idx, XEN_NETIF_RSP_ERROR);
++
++	return NULL;
+ }
+ 
+ static int xen_netbk_tx_check_gop(struct xen_netbk *netbk,
 
 
