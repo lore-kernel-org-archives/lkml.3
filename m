@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758507Ab3BLXta (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 18:49:30 -0500
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:47465 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752677Ab3BLXt2 (ORCPT
+	id S1759104Ab3BLXuI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 18:50:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55180 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755117Ab3BLXuG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 18:49:28 -0500
-MIME-Version: 1.0
-In-Reply-To: <511ACDFB.1050707@zytor.com>
-References: <511A8922.6050908@zytor.com> <tip-3578baaed4613a9fc09bab9f79f6ce2ac682e8a3@git.kernel.org>
- <CA+55aFzVSY6G3ZDy7YhwGd2k+OBtpDZaobw8awCeyZsaAqHDVw@mail.gmail.com> <511ACDFB.1050707@zytor.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 12 Feb 2013 15:49:07 -0800
-X-Google-Sender-Auth: UYWaiz-G4Yw8oVSC_pEFjk_Ed0A
-Message-ID: <CA+55aFzU=zvjBPRSKCYHdf3ET-oq6s66e_PHHGcDwf3sJx+j+A@mail.gmail.com>
-Subject: Re: [tip:x86/mm] x86, mm: Redesign get_user with a
- __builtin_choose_expr hack
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jamie Lokier <jamie@shareable.org>, ville.syrjala@linux.intel.com,
-        Borislav Petkov <bp@alien8.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "H.J. Lu" <hjl.tools@gmail.com>, linux-tip-commits@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Tue, 12 Feb 2013 18:50:06 -0500
+Date: Tue, 12 Feb 2013 15:50:05 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Matt Fleming <matt.fleming@intel.com>
+Cc: Jeremy Kerr <jk@ozlabs.org>, linux-kernel@vger.kernel.org,
+        linux-efi@vger.kernel.org, Lingzhu Xiang <lxiang@redhat.com>,
+        Dave Young <dyoung@redhat.com>
+Subject: Re: [PATCH 1/3 v3] selftests: Add tests for efivarfs
+Message-Id: <20130212155005.36f9a718.akpm@linux-foundation.org>
+In-Reply-To: <1360318129.7515.278.camel@mfleming-mobl1.ger.corp.intel.com>
+References: <1360162088.142733.191120808822.0.gpush@pecola>
+	<1360162088.143076.913706486688.1.gpush@pecola>
+	<20130207151333.f01d415c.akpm@linux-foundation.org>
+	<5114CE00.6050307@ozlabs.org>
+	<1360318129.7515.278.camel@mfleming-mobl1.ger.corp.intel.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 12, 2013 at 3:19 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->
-> Yes, but there doesn't seem to be any other way to do this.  gcc won't
-> even allow "=cd" even if we know the variable is 64 bits, even though
-> "=A" is documented to be equivalent to "=da".
+On Fri, 08 Feb 2013 10:08:49 +0000
+Matt Fleming <matt.fleming@intel.com> wrote:
 
-No, "=da" means value "in edx _or_ %eax". Not the same as "A".
+> On Fri, 2013-02-08 at 18:05 +0800, Jeremy Kerr wrote:
+> > However, the tests expose a bug at the moment, so run_tests will fail. 
+> > Matt will have that fixed soon though :)
+> 
+> In which case, would it make more sense for me to take these tests
+> through the efi tree? I'm fine either way, I'm just looking for the
+> least surprising option.
 
-But you're right, there's nothing similar for %ebx:%ecx. I thought
-there was. I was really sure we did something special for 64-bit adc
-etc.
-
-> Let me know what you think.
-
-I guess we don't have any choice. And the other cleanups certainly look good.
-
-              Linus
+I don't think it matters much at this stage.  selftests is new and is
+used by approximately zero people so if the tests fail, few will
+notice.  Let's just get it in there and get it settled down.
