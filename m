@@ -1,318 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754241Ab3BLWmd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 17:42:33 -0500
-Received: from mail.df.lth.se ([194.47.250.12]:18890 "EHLO mail.df.lth.se"
+	id S1759096Ab3BLWle (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 17:41:34 -0500
+Received: from mail.df.lth.se ([194.47.250.12]:18877 "EHLO mail.df.lth.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759148Ab3BLWlg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 17:41:36 -0500
+	id S1759017Ab3BLWla (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 17:41:30 -0500
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Jens Axboe <axboe@kernel.dk>
 Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 9/9] block: xd: replace all printks with pr_*
-Date: Tue, 12 Feb 2013 23:41:00 +0100
-Message-Id: <1360708860-23466-11-git-send-email-linus.walleij@linaro.org>
+Subject: [PATCH 5/9] block: xd: avoid using typedefs
+Date: Tue, 12 Feb 2013 23:40:56 +0100
+Message-Id: <1360708860-23466-7-git-send-email-linus.walleij@linaro.org>
 X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1360708860-23466-10-git-send-email-linus.walleij@linaro.org>
+In-Reply-To: <1360708860-23466-6-git-send-email-linus.walleij@linaro.org>
 References: <1360708860-23466-1-git-send-email-linus.walleij@linaro.org>
  <1360708860-23466-2-git-send-email-linus.walleij@linaro.org>
  <1360708860-23466-3-git-send-email-linus.walleij@linaro.org>
  <1360708860-23466-4-git-send-email-linus.walleij@linaro.org>
  <1360708860-23466-5-git-send-email-linus.walleij@linaro.org>
  <1360708860-23466-6-git-send-email-linus.walleij@linaro.org>
- <1360708860-23466-7-git-send-email-linus.walleij@linaro.org>
- <1360708860-23466-8-git-send-email-linus.walleij@linaro.org>
- <1360708860-23466-9-git-send-email-linus.walleij@linaro.org>
- <1360708860-23466-10-git-send-email-linus.walleij@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This replaces all the printk() statements with pr_* messages
-tagged with the apropriate log level. Errors are printed as
-pr_err() etc.
+Two of the structs in the driver were using typedef, which we
+avoid since ages in the kernel.
 
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/block/xd.c | 97 ++++++++++++++++++++++++++++++++++--------------------
- 1 file changed, 62 insertions(+), 35 deletions(-)
+ drivers/block/xd.c | 12 ++++++------
+ drivers/block/xd.h | 10 +++++-----
+ 2 files changed, 11 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/block/xd.c b/drivers/block/xd.c
-index 7ecebd4..8ee500f 100644
+index 18f51e9..9e00753 100644
 --- a/drivers/block/xd.c
 +++ b/drivers/block/xd.c
-@@ -331,7 +331,7 @@ static inline u_int xd_wait_for_IRQ(void)
- 	release_dma_lock(flags);
+@@ -77,7 +77,7 @@ static int xd[5] = { -1,-1,-1,-1, };
+  * (ST11M controller) or resetting a controller (WD) appears
+  */
  
- 	if (xd_error) {
--		printk("xd: missed IRQ - command aborted\n");
-+		pr_err("xd: missed IRQ - command aborted\n");
- 		xd_error = 0;
- 		return (1);
- 	}
-@@ -397,7 +397,7 @@ static u_int xd_command(u_char *command, u_char mode, u_char *indata,
- 	if (csb & CSB_ERROR) {									/* read sense data if error */
- 		xd_build(cmdblk,CMD_SENSE,(csb & CSB_LUN) >> 5,0,0,0,0,0);
- 		if (xd_command(cmdblk,0,sense,NULL,NULL,XD_TIMEOUT))
--			printk("xd: warning! sense command failed!\n");
-+			pr_warning("xd: warning! sense command failed!\n");
- 	}
+-static XD_INFO xd_info[XD_MAXDRIVES];
++static struct xd_info xd_info[XD_MAXDRIVES];
  
- 	pr_debug("%s: completed with csb = 0x%X\n", __func__, csb);
-@@ -426,7 +426,8 @@ static void __init xd_setparam (u_char command, u_char drive, u_char heads,
+ /*
+  * If you try this driver and find that your card is not detected by the
+@@ -121,7 +121,7 @@ static XD_INFO xd_info[XD_MAXDRIVES];
+ #define xd_dma_mem_free(addr, size) free_pages(addr, get_order(size))
+ static char *xd_dma_buffer;
  
- 	/* Some controllers require geometry info as data, not command */
- 	if (xd_command(cmdblk,PIO_MODE,NULL,&cmdblk[6],NULL,XD_TIMEOUT * 2))
--		printk("xd: error setting characteristics for xd%c\n", 'a'+drive);
-+		pr_err("xd: error setting characteristics for xd%c\n",
-+		       'a' + drive);
+-static XD_SIGNATURE xd_sigs[] __initdata = {
++static struct xd_signature xd_sigs[] __initdata = {
+ 	{ 0x0000,"Override geometry handler",NULL,xd_override_init_drive,"n unknown" }, /* Pat Mackinlay, pat@it.com.au */
+ 	{ 0x0008,"[BXD06 (C) DTC 17-MAY-1985]",xd_dtc_init_controller,xd_dtc5150cx_init_drive," DTC 5150CX" }, /* Andrzej Krzysztofowicz, ankry@mif.pg.gda.pl */
+ 	{ 0x000B,"CRD18A   Not an IBM rom. (C) Copyright Data Technology Corp. 05/31/88",xd_dtc_init_controller,xd_dtc_init_drive," DTC 5150X" }, /* Todd Fries, tfries@umr.edu */
+@@ -235,7 +235,7 @@ static int __init xd_init(void)
+ 		goto out3;
+ 
+ 	for (i = 0; i < xd_drives; i++) {
+-		XD_INFO *p = &xd_info[i];
++		struct xd_info *p = &xd_info[i];
+ 		struct gendisk *disk = alloc_disk(64);
+ 		if (!disk)
+ 			goto Enomem;
+@@ -339,7 +339,7 @@ static void do_xd_request(struct request_queue * q)
+ 	while (req) {
+ 		unsigned block = blk_rq_pos(req);
+ 		unsigned count = blk_rq_cur_sectors(req);
+-		XD_INFO *disk = req->rq_disk->private_data;
++		struct xd_info *disk = req->rq_disk->private_data;
+ 		int res = 0;
+ 		int retry;
+ 
+@@ -365,7 +365,7 @@ static void do_xd_request(struct request_queue * q)
+ 
+ static int xd_getgeo(struct block_device *bdev, struct hd_geometry *geo)
+ {
+-	XD_INFO *p = bdev->bd_disk->private_data;
++	struct xd_info *p = bdev->bd_disk->private_data;
+ 
+ 	geo->heads = p->heads;
+ 	geo->sectors = p->sectors;
+@@ -416,7 +416,7 @@ static int xd_ioctl(struct block_device *bdev, fmode_t mode,
  }
  
- /**
-@@ -439,7 +440,8 @@ static void xd_recalibrate(u_char drive)
+ /* xd_readwrite: handle a read/write request */
+-static int xd_readwrite(u_char operation, XD_INFO *p, char *buffer,
++static int xd_readwrite(u_char operation, struct xd_info *p, char *buffer,
+ 			u_int block, u_int count)
+ {
+ 	int drive = p->unit;
+diff --git a/drivers/block/xd.h b/drivers/block/xd.h
+index 489e1ce..40630db 100644
+--- a/drivers/block/xd.h
++++ b/drivers/block/xd.h
+@@ -81,22 +81,22 @@
+ #endif /* DEBUG */
  
- 	xd_build(cmdblk,CMD_RECALIBRATE,drive,0,0,0,0,0);
- 	if (xd_command(cmdblk,PIO_MODE,NULL,NULL,NULL,XD_TIMEOUT * 8))
--		printk("xd%c: warning! error recalibrating, controller may be unstable\n", 'a'+drive);
-+		pr_warning("xd%c: warning! error recalibrating, controller may be unstable\n",
-+			   'a' + drive);
- }
+ /* this structure defines the XT drives and their types */
+-typedef struct {
++struct xd_info {
+ 	u_char heads;
+ 	u_short cylinders;
+ 	u_char sectors;
+ 	u_char control;
+ 	int unit;
+-} XD_INFO;
++};
  
- /**
-@@ -488,29 +490,40 @@ static int xd_readwrite(u_char operation, struct xd_info *p, char *buffer,
+ /* this structure defines a ROM BIOS signature */
+-typedef struct {
++struct xd_signature {
+ 	unsigned int offset;
+ 	const char *string;
+ 	void (*init_controller)(unsigned int address);
+ 	void (*init_drive)(u_char drive);
+ 	const char *name;
+-} XD_SIGNATURE;
++};
  
- 		switch (xd_command(cmdblk,mode,(u_char *)(*real_buffer),(u_char *)(*real_buffer),sense,XD_TIMEOUT)) {
- 			case 1:
--				printk("xd%c: %s timeout, recalibrating drive\n",'a'+drive,(operation == READ ? "read" : "write"));
-+				pr_err("xd%c: %s timeout, recalibrating drive\n",
-+				       'a' + drive,
-+				       (operation == READ ? "read" : "write"));
- 				xd_recalibrate(drive);
- 				spin_lock_irq(&xd_lock);
- 				return -EIO;
- 			case 2:
- 				if (sense[0] & 0x30) {
--					printk("xd%c: %s - ",'a'+drive,(operation == READ ? "reading" : "writing"));
-+					pr_err("xd%c: %s - ", 'a' + drive,
-+					       (operation == READ ? "reading" : "writing"));
- 					switch ((sense[0] & 0x30) >> 4) {
--					case 0: printk("drive error, code = 0x%X",sense[0] & 0x0F);
-+					case 0:
-+						pr_cont("drive error, code = 0x%X",
-+						       sense[0] & 0x0F);
- 						break;
--					case 1: printk("controller error, code = 0x%X",sense[0] & 0x0F);
-+					case 1:
-+						pr_cont("controller error, code = 0x%X",
-+						       sense[0] & 0x0F);
- 						break;
--					case 2: printk("command error, code = 0x%X",sense[0] & 0x0F);
-+					case 2:
-+						pr_cont("command error, code = 0x%X",
-+						       sense[0] & 0x0F);
- 						break;
--					case 3: printk("miscellaneous error, code = 0x%X",sense[0] & 0x0F);
-+					case 3:
-+						pr_cont("miscellaneous error, code = 0x%X",
-+						       sense[0] & 0x0F);
- 						break;
- 					}
- 				}
- 				if (sense[0] & 0x80)
--					printk(" - CHS = %d/%d/%d\n",((sense[2] & 0xC0) << 2) | sense[3],sense[1] & 0x1F,sense[2] & 0x3F);
-+					pr_cont(" - CHS = %d/%d/%d\n",((sense[2] & 0xC0) << 2) | sense[3],sense[1] & 0x1F,sense[2] & 0x3F);
- 				/*	reported drive number = (sense[1] & 0xE0) >> 5 */
- 				else
--					printk(" - no valid disk address\n");
-+					pr_cont(" - no valid disk address\n");
- 				spin_lock_irq(&xd_lock);
- 				return -EIO;
- 		}
-@@ -664,7 +677,7 @@ static irqreturn_t xd_interrupt_handler(int irq, void *dev_id)
- 		return IRQ_HANDLED;
- 	}
- 	else
--		printk("xd: unexpected interrupt\n");
-+		pr_err("xd: unexpected interrupt\n");
- 	return IRQ_NONE;
- }
+ #ifndef MODULE
+ static int xd_manual_geo_init (char *command);
+@@ -106,7 +106,7 @@ static u_char xd_initdrives (void (*init_drive)(u_char drive));
  
-@@ -707,8 +720,10 @@ static void __init xd_dtc_init_controller(unsigned int address)
- 		case 0xCA000:	xd_iobase = 0x324;
- 		case 0xD0000:				/*5150CX*/
- 		case 0xD8000:	break;			/*5150CX & 5150XL*/
--		default:        printk("xd_dtc_init_controller: unsupported BIOS address %06x\n",address);
--				break;
-+		default:
-+			pr_err("%s: unsupported BIOS address %06x\n",
-+			       __func__, address);
-+			break;
- 	}
- 	xd_maxsectors = 0x01;		/* my card seems to have trouble doing multi-block transfers? */
+ static void do_xd_request (struct request_queue * q);
+ static int xd_ioctl (struct block_device *bdev,fmode_t mode,unsigned int cmd,unsigned long arg);
+-static int xd_readwrite (u_char operation,XD_INFO *disk,char *buffer,u_int block,u_int count);
++static int xd_readwrite (u_char operation, struct xd_info *disk,char *buffer,u_int block,u_int count);
+ static void xd_recalibrate (u_char drive);
  
-@@ -756,7 +771,8 @@ static void __init xd_dtc5150cx_init_drive(u_char drive)
- #endif /* 0 */
- 		}
- 		else {
--			printk("xd%c: undetermined drive geometry\n",'a'+drive);
-+			pr_err("xd%c: undetermined drive geometry\n",
-+			       'a' + drive);
- 			return;
- 		}
- 	xd_info[drive].control = 5;				/* control byte */
-@@ -785,10 +801,12 @@ static void __init xd_dtc_init_drive(u_char drive)
- 		xd_setparam(CMD_DTCSETPARAM,drive,xd_info[drive].heads,xd_info[drive].cylinders,((u_short *) (buf + 1))[0x05],((u_short *) (buf + 1))[0x06],buf[0x0F]);
- 		xd_build(cmdblk,CMD_DTCSETSTEP,drive,0,0,0,0,7);
- 		if (xd_command(cmdblk,PIO_MODE,NULL,NULL,NULL,XD_TIMEOUT * 2))
--			printk("xd_dtc_init_drive: error setting step rate for xd%c\n", 'a'+drive);
-+			pr_err("%s: error setting step rate for xd%c\n",
-+			       __func__, 'a'+drive);
- 	}
- 	else
--		printk("xd_dtc_init_drive: error reading geometry for xd%c\n", 'a'+drive);
-+		pr_err("%s: error reading geometry for xd%c\n",
-+		       __func__, 'a'+drive);
- }
- 
- static void __init xd_wd_init_controller(unsigned int address)
-@@ -801,7 +819,9 @@ static void __init xd_wd_init_controller(unsigned int address)
- 		case 0xCE000:   xd_iobase = 0x32C; break;
- 		case 0xD0000:	xd_iobase = 0x328; break; /* ? */
- 		case 0xD8000:	xd_iobase = 0x32C; break; /* ? */
--		default:        printk("xd_wd_init_controller: unsupported BIOS address %06x\n",address);
-+		default:
-+			pr_err("%s: unsupported BIOS address %06x\n",
-+			       __func__, address);
- 				break;
- 	}
- 	/* this one doesn't wrap properly either... */
-@@ -880,7 +900,8 @@ static void __init xd_wd_init_drive(u_char drive)
- 		}
- 	}
- 	else
--		printk("xd_wd_init_drive: error reading geometry for xd%c\n",'a'+drive);
-+		pr_err("%s: error reading geometry for xd%c\n",
-+		       __func__, 'a' + drive);
- }
- 
- static void __init xd_seagate_init_controller (unsigned int address)
-@@ -891,8 +912,10 @@ static void __init xd_seagate_init_controller (unsigned int address)
- 		case 0xD0000:	xd_iobase = 0x324; break;
- 		case 0xD8000:	xd_iobase = 0x328; break;
- 		case 0xE0000:	xd_iobase = 0x32C; break;
--		default:	printk("xd_seagate_init_controller: unsupported BIOS address %06x\n",address);
--				break;
-+		default:
-+			pr_err("%s: unsupported BIOS address %06x\n",
-+			       __func__, address);
-+			break;
- 	}
- 	xd_maxsectors = 0x40;
- 
-@@ -912,7 +935,8 @@ static void __init xd_seagate_init_drive(u_char drive)
- 		xd_info[drive].control = 0;
- 	}
- 	else
--		printk("xd_seagate_init_drive: error reading geometry from xd%c\n", 'a'+drive);
-+		pr_err("%s: error reading geometry from xd%c\n",
-+		       __func__, 'a' + drive);
- }
- 
- /* Omti support courtesy Dirk Melchers */
-@@ -932,7 +956,8 @@ static void __init xd_omti_init_controller(unsigned int address)
- 			xd_iobase = 0x32C;
- 			break;
- 		default:
--			printk("xd_omti_init_controller: unsupported BIOS address %06x\n",address);
-+			pr_err("%s: unsupported BIOS address %06x\n",
-+			       __func__, address);
- 			break;
- 	}
- 
-@@ -976,7 +1001,8 @@ static void __init xd_xebec_init_controller(unsigned int address)
- 		case 0xE0000:
- 			break;
- 		default:
--			printk("xd_xebec_init_controller: unsupported BIOS address %06x\n",address);
-+			pr_err("%s: unsupported BIOS address %06x\n",
-+			       __func__, address);
- 			break;
- 		}
- 
-@@ -1073,7 +1099,8 @@ static void __init do_xd_setup(int *integers)
- 			if ((integers[1] >= 0) && (integers[1] < ARRAY_SIZE(xd_sigs)))
- 				xd_type = integers[1];
- 		case 0: break;
--		default:printk("xd: too many parameters for xd\n");
-+		default:
-+			pr_err("xd: too many parameters for xd\n");
- 	}
- 	xd_maxsectors = 0x01;
- }
-@@ -1109,18 +1136,18 @@ static int __init xd_init(void)
- 
- 	if (xd_detect(&controller,&address)) {
- 
--		printk("Detected a%s controller (type %d) at address %06x\n",
-+		pr_info("Detected a%s controller (type %d) at address %06x\n",
- 			xd_sigs[controller].name,controller,address);
- 		if (!request_region(xd_iobase,4,"xd")) {
--			printk("xd: Ports at 0x%x are not available\n",
--				xd_iobase);
-+			pr_err("xd: Ports at 0x%x are not available\n",
-+			       xd_iobase);
- 			goto out2;
- 		}
- 		if (controller)
- 			xd_sigs[controller].init_controller(address);
- 		xd_drives = xd_initdrives(xd_sigs[controller].init_drive);
- 
--		printk("Detected %d hard drive%s (using IRQ%d & DMA%d)\n",
-+		pr_info("Detected %d hard drive%s (using IRQ%d & DMA%d)\n",
- 			xd_drives,xd_drives == 1 ? "" : "s",xd_irq,xd_dma);
- 	}
- 
-@@ -1132,7 +1159,7 @@ static int __init xd_init(void)
- 	if (!xd_dma_buffer && xd_maxsectors) {
- 		xd_dma_buffer = (char *)xd_dma_mem_alloc(xd_maxsectors * 0x200);
- 		if (!xd_dma_buffer) {
--			printk(KERN_ERR "xd: Out of memory.\n");
-+			pr_err("xd: Out of memory.\n");
- 			goto out3;
- 		}
- 	}
-@@ -1154,19 +1181,19 @@ static int __init xd_init(void)
- 		disk->private_data = p;
- 		disk->queue = xd_queue;
- 		set_capacity(disk, p->heads * p->cylinders * p->sectors);
--		printk(" %s: CHS=%d/%d/%d\n", disk->disk_name,
-+		pr_info(" %s: CHS=%d/%d/%d\n", disk->disk_name,
- 			p->cylinders, p->heads, p->sectors);
- 		xd_gendisk[i] = disk;
- 	}
- 
- 	err = -EBUSY;
- 	if (request_irq(xd_irq,xd_interrupt_handler, 0, "XT hard disk", NULL)) {
--		printk("xd: unable to get IRQ%d\n",xd_irq);
-+		pr_err("xd: unable to get IRQ%d\n", xd_irq);
- 		goto out4;
- 	}
- 
- 	if (request_dma(xd_dma,"xd")) {
--		printk("xd: unable to get DMA%d\n",xd_dma);
-+		pr_err("xd: unable to get DMA%d\n", xd_dma);
- 		goto out5;
- 	}
- 
-@@ -1249,7 +1276,7 @@ static int __init xd_manual_geo_init (char *str)
- 
- 	get_options (str, ARRAY_SIZE(integers), integers);
- 	if (integers[0]%3 != 0) {
--		printk("xd: incorrect number of parameters for xd_geo\n");
-+		pr_err("xd: incorrect number of parameters for xd_geo\n");
- 		return 1;
- 	}
- 	for (i = 0; (i < integers[0]) && (i < 3*XD_MAXDRIVES); i++)
+ static irqreturn_t xd_interrupt_handler(int irq, void *dev_id);
 -- 
 1.8.1.2
 
