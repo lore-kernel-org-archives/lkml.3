@@ -1,95 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759541Ab3BLVDm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 16:03:42 -0500
-Received: from mail-da0-f41.google.com ([209.85.210.41]:45797 "EHLO
-	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751389Ab3BLVDj (ORCPT
+	id S1759506Ab3BLVDl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 16:03:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53520 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754150Ab3BLUf4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 16:03:39 -0500
-From: Kevin Hilman <khilman@linaro.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Igor Grinberg <grinberg@compulab.co.il>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH] usb: musb: fix context save over suspend.
-References: <20130121202831.40a09bbc@notabene.brown>
-	<50FD28D3.5070107@compulab.co.il>
-	<20130122083832.7a3026c9@notabene.brown>
-Date: Tue, 12 Feb 2013 13:03:36 -0800
-In-Reply-To: <20130122083832.7a3026c9@notabene.brown> (NeilBrown's message of
-	"Tue, 22 Jan 2013 08:38:32 +1100")
-Message-ID: <87zjz9i6s7.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 12 Feb 2013 15:35:56 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        =?UTF-8?q?Timo=20Ter=E4s?= <timo.teras@iki.fi>,
+        Francois Romieu <romieu@fr.zoreil.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 30/61] r8169: remove the obsolete and incorrect AMD workaround
+Date: Tue, 12 Feb 2013 12:34:50 -0800
+Message-Id: <20130212203422.358226227@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130212203417.890993903@linuxfoundation.org>
+References: <20130212203417.890993903@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NeilBrown <neilb@suse.de> writes:
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
-> On Mon, 21 Jan 2013 13:38:59 +0200 Igor Grinberg <grinberg@compulab.co.il>
-> wrote:
->
->> -----BEGIN PGP SIGNED MESSAGE-----
->> Hash: SHA1
->> 
->> Hi Neil,
->> 
->> On 01/21/13 11:28, NeilBrown wrote:
->> > 
->> > 
->> > The standard suspend sequence involves runtime_resuming
->> > devices before suspending the system.
->> > So just saving context in runtime_suspend and restoring it
->> > in runtime resume isn't enough.  We  must also save in "suspend"
->> > and restore in "resume".
->> > 
->> > Without this patch, and OMAP3 system with off_mode enabled will find
->> > the musb port non-functional after suspend/resume.  With the patch it
->> > works perfectly.
->> 
->> Hmmm... Some time ago, this has been removed in
->> 5d193ce8 (usb: musb: PM: fix context save/restore in suspend/resume path)
->> 
->> Am I missing something? Or things changed and now this patch is correct?
->
-> Hi Igor,
->  thanks for alerting me to that patch .... does anyone else get the feeling
->  that power management to too complex to be understood by a mere human?
+------------------
 
-Yes.  ;)
 
->  That commit (5d193ce8) suggests that the musb-hdrc device is an
->  'omap_device', or maybe has a PM domain set to something else.
->  However it isn't/doesn't.  dev->pm_domain is NULL.  So no PM domain layer
->  will ever call the musb_core musb_runtime_suspend/resume.
->
->  The parent device - musb-omap2430 - is an omap device, does have pm_domain
->  set, and does have its omap2430_runtime_suspend/resume called for system
->  suspend and so the context for that device is saved and restored.
->  However that doesn't help the context for musb-hdrc.
->
->  Whether musb ever was an omap_device is beyond my archaeological skills to
->  determine.
->
->  Kevin:  Was musb-hdrc ever a device with a pm_domain? or was it only ever
->      the various possible parents that had domains?
->      Are you able to defend your earlier patch in today's kernel?  It
->      certainly causes my device not to work properly.
+From: =?UTF-8?q?Timo=20Ter=C3=A4s?= <timo.teras@iki.fi>
 
-Sorry for the delay here, I'm back to a place where I can test this on
-real hardware.
+[ Upstream commit 5d0feaff230c0abfe4a112e6f09f096ed99e0b2d ]
 
-My patch was fixing a real hang when musb was built-in (or loaded), in
-host-mode (mini-A cable attached) but no devices attached.  I just tried
-to reproduce this, and with your patch, the system hangs during suspend.
+This was introduced in commit 6dccd16 "r8169: merge with version
+6.001.00 of Realtek's r8169 driver". I did not find the version
+6.001.00 online, but in 6.002.00 or any later r8169 from Realtek
+this hunk is no longer present.
 
-That being said, your description makes sense why this context
-save/restore is needed.  Perhaps your patch needs to add a check whether
-the device is runtime suspended (I gather this is what Ruslan's patch is
-doing.)
+Also commit 05af214 "r8169: fix Ethernet Hangup for RTL8110SC
+rev d" claims to have fixed this issue otherwise.
 
-Kevin
+The magic compare mask of 0xfffe000 is dubious as it masks
+parts of the Reserved part, and parts of the VLAN tag. But this
+does not make much sense as the VLAN tag parts are perfectly
+valid there. In matter of fact this seems to be triggered with
+any VLAN tagged packet as RxVlanTag bit is matched. I would
+suspect 0xfffe0000 was intended to test reserved part only.
+
+Finally, this hunk is evil as it can cause more packets to be
+handled than what was NAPI quota causing net/core/dev.c:
+net_rx_action(): WARN_ON_ONCE(work > weight) to trigger, and
+mess up the NAPI state causing device to hang.
+
+As result, any system using VLANs and having high receive
+traffic (so that NAPI poll budget limits rtl_rx) would result
+in device hang.
+
+Signed-off-by: Timo Teräs <timo.teras@iki.fi>
+Acked-by: Francois Romieu <romieu@fr.zoreil.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/net/ethernet/realtek/r8169.c |    7 -------
+ 1 file changed, 7 deletions(-)
+
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -6064,13 +6064,6 @@ process_pkt:
+ 			tp->rx_stats.bytes += pkt_size;
+ 			u64_stats_update_end(&tp->rx_stats.syncp);
+ 		}
+-
+-		/* Work around for AMD plateform. */
+-		if ((desc->opts2 & cpu_to_le32(0xfffe000)) &&
+-		    (tp->mac_version == RTL_GIGA_MAC_VER_05)) {
+-			desc->opts2 = 0;
+-			cur_rx++;
+-		}
+ 	}
+ 
+ 	count = cur_rx - tp->cur_rx;
+
+
