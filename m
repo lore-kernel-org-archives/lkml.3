@@ -1,115 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757107Ab3BLHbo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 02:31:44 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:53431 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755266Ab3BLHbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 02:31:43 -0500
-From: Philip Avinash <avinashphilip@ti.com>
-To: <paul@pwsan.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>
-CC: <hvaibhav@ti.com>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <nsekhar@ti.com>, <gururaja.hebbar@ti.com>,
-        "Philip, Avinash" <avinashphilip@ti.com>
-Subject: [PATCH v2] ARM: AM33XX: clk: Add clock node for EHRPWM TBCLK
-Date: Tue, 12 Feb 2013 13:02:56 +0530
-Message-ID: <1360654376-27057-1-git-send-email-avinashphilip@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S932193Ab3BLHgf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 02:36:35 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:47113 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757279Ab3BLHgd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 02:36:33 -0500
+Date: Tue, 12 Feb 2013 02:36:29 -0500 (EST)
+Message-Id: <20130212.023629.1135481101302114772.davem@davemloft.net>
+To: ben@decadent.org.uk
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com, edumazet@google.com,
+        herton.krzesinski@canonical.com, gregkh@linuxfoundation.org
+Subject: Re: [PATCH 185/222] tcp: fix MSG_SENDPAGE_NOTLAST logic
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1359740457.31386.74.camel@deadeye.wl.decadent.org.uk>
+References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
+	<1358351822-7675-186-git-send-email-herton.krzesinski@canonical.com>
+	<1359740457.31386.74.camel@deadeye.wl.decadent.org.uk>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Philip, Avinash" <avinashphilip@ti.com>
+From: Ben Hutchings <ben@decadent.org.uk>
+Date: Fri, 01 Feb 2013 18:40:57 +0100
 
-EHRPWM module requires explicit clock gating of TBCLK from control
-module. Hence add TBCLK clock node in clock tree for EHRPWM modules.
+> On Wed, 2013-01-16 at 13:56 -0200, Herton Ronaldo Krzesinski wrote:
+>> 3.5.7.3 -stable review patch.  If anyone has any objections, please let me know.
+>> 
+>> ------------------
+>> 
+>> From: Eric Dumazet <edumazet@google.com>
+>> 
+>> commit ae62ca7b03217be5e74759dc6d7698c95df498b3 upstream.
+>> 
+>> commit 35f9c09fe9c72e (tcp: tcp_sendpages() should call tcp_push() once)
+>> added an internal flag : MSG_SENDPAGE_NOTLAST meant to be set on all
+>> frags but the last one for a splice() call.
+> [...]
+> 
+> David, I think this is needed for 3.0 and 3.2 as well since
+> 35f9c09fe9c72e was backported to them.  You previously included it in
+> updates for 3.4 and 3.7.
 
-Signed-off-by: Philip Avinash <avinashphilip@ti.com>
----
-Changes since v1:
-	- Remove sparse warnings
-	arch/arm/mach-omap2/cclock33xx_data.c:844:1: warning: Using plain
-	integer as NULL pointer
-	arch/arm/mach-omap2/cclock33xx_data.c:850:1: warning: Using plain 
-	integer as NULL pointer
-	arch/arm/mach-omap2/cclock33xx_data.c:856:1: warning: Using plain 
-	integer as NULL pointer
-
-
- arch/arm/mach-omap2/cclock33xx_data.c |   30 ++++++++++++++++++++++++++++++
- arch/arm/mach-omap2/control.h         |    8 ++++++++
- 2 files changed, 38 insertions(+)
-
-diff --git a/arch/arm/mach-omap2/cclock33xx_data.c b/arch/arm/mach-omap2/cclock33xx_data.c
-index ea64ad6..22387fa 100644
---- a/arch/arm/mach-omap2/cclock33xx_data.c
-+++ b/arch/arm/mach-omap2/cclock33xx_data.c
-@@ -832,6 +832,33 @@ static struct clk_hw_omap wdt1_fck_hw = {
- 
- DEFINE_STRUCT_CLK(wdt1_fck, wdt_ck_parents, gpio_fck_ops);
- 
-+static const char *pwmss_clk_parents[] = {
-+	"dpll_per_m2_ck",
-+};
-+
-+static const struct clk_ops ehrpwm_tbclk_ops = {
-+	.enable		= &omap2_dflt_clk_enable,
-+	.disable	= &omap2_dflt_clk_disable,
-+};
-+
-+DEFINE_CLK_OMAP_MUX_GATE(ehrpwm0_tbclk, "l4ls_clkdm",
-+			 NULL, NULL, 0,
-+			 AM33XX_CTRL_REGADDR(AM33XX_PWMSS_TBCLK_CLKCTRL),
-+			 AM33XX_PWMSS0_TBCLKEN_SHIFT,
-+			 NULL, pwmss_clk_parents, ehrpwm_tbclk_ops);
-+
-+DEFINE_CLK_OMAP_MUX_GATE(ehrpwm1_tbclk, "l4ls_clkdm",
-+			 NULL, NULL, 0,
-+			 AM33XX_CTRL_REGADDR(AM33XX_PWMSS_TBCLK_CLKCTRL),
-+			 AM33XX_PWMSS1_TBCLKEN_SHIFT,
-+			 NULL, pwmss_clk_parents, ehrpwm_tbclk_ops);
-+
-+DEFINE_CLK_OMAP_MUX_GATE(ehrpwm2_tbclk, "l4ls_clkdm",
-+			 NULL, NULL, 0,
-+			 AM33XX_CTRL_REGADDR(AM33XX_PWMSS_TBCLK_CLKCTRL),
-+			 AM33XX_PWMSS2_TBCLKEN_SHIFT,
-+			 NULL, pwmss_clk_parents, ehrpwm_tbclk_ops);
-+
- /*
-  * clkdev
-  */
-@@ -910,6 +937,9 @@ static struct omap_clk am33xx_clks[] = {
- 	CLK(NULL,	"clkout2_div_ck",	&clkout2_div_ck,	CK_AM33XX),
- 	CLK(NULL,	"timer_32k_ck",		&clkdiv32k_ick,	CK_AM33XX),
- 	CLK(NULL,	"timer_sys_ck",		&sys_clkin_ck,	CK_AM33XX),
-+	CLK("48300200.ehrpwm",	"tbclk",	&ehrpwm0_tbclk,	CK_AM33XX),
-+	CLK("48302200.ehrpwm",	"tbclk",	&ehrpwm1_tbclk,	CK_AM33XX),
-+	CLK("48304200.ehrpwm",	"tbclk",	&ehrpwm2_tbclk,	CK_AM33XX),
- };
- 
- 
-diff --git a/arch/arm/mach-omap2/control.h b/arch/arm/mach-omap2/control.h
-index 4b05eb9..2fe2812 100644
---- a/arch/arm/mach-omap2/control.h
-+++ b/arch/arm/mach-omap2/control.h
-@@ -389,6 +389,14 @@
- #define AM33XX_DDR_DATA0_IOCTRL		0x1440
- #define AM33XX_DDR_DATA1_IOCTRL		0x1444
- 
-+/* AM33XX PWMSS Control register */
-+#define AM33XX_PWMSS_TBCLK_CLKCTRL			0x664
-+
-+/* AM33XX  PWMSS Control bitfields */
-+#define AM33XX_PWMSS0_TBCLKEN_SHIFT			0
-+#define AM33XX_PWMSS1_TBCLKEN_SHIFT			1
-+#define AM33XX_PWMSS2_TBCLKEN_SHIFT			2
-+
- /* CONTROL OMAP STATUS register to identify OMAP3 features */
- #define OMAP3_CONTROL_OMAP_STATUS	0x044c
- 
--- 
-1.7.9.5
-
+Ok, queued up, thanks.
