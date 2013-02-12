@@ -1,107 +1,305 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933403Ab3BLQeD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 11:34:03 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:39664 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932330Ab3BLQeB convert rfc822-to-8bit (ORCPT
+	id S933422Ab3BLQeJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 11:34:09 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:49796 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932330Ab3BLQeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 11:34:01 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20130212154330.GG4863@dhcp22.suse.cz>
-References: <1357235661-29564-5-git-send-email-mhocko@suse.cz> <20130208193318.GA15951@cmpxchg.org> <20130211151649.GD19922@dhcp22.suse.cz> <20130211175619.GC13218@cmpxchg.org> <20130211192929.GB29000@dhcp22.suse.cz> <20130211195824.GB15951@cmpxchg.org> <20130211212756.GC29000@dhcp22.suse.cz> <20130211223943.GC15951@cmpxchg.org> <20130212095419.GB4863@dhcp22.suse.cz> <20130212151002.GD15951@cmpxchg.org> <20130212154330.GG4863@dhcp22.suse.cz>
+	Tue, 12 Feb 2013 11:34:05 -0500
+Date: Tue, 12 Feb 2013 07:50:19 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Arjan van de Veen <arjan@infradead.org>, Paul Turner <pjt@google.com>,
+        Richard Weinberger <rw@linutronix.de>,
+        Magnus Damm <magnus.damm@gmail.com>
+Subject: Re: [patch 32/40] rcu: Convert rcutree to hotplug state machine
+Message-ID: <20130212155019.GO2666@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130131120348.372374706@linutronix.de>
+ <20130131120743.656655375@linutronix.de>
+ <20130212000100.GB2666@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [PATCH v3 4/7] memcg: remove memcg from the reclaim iterators
-From: Johannes Weiner <hannes@cmpxchg.org>
-Date: Tue, 12 Feb 2013 11:33:39 -0500
-To: Michal Hocko <mhocko@suse.cz>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ying Han <yinghan@google.com>, Tejun Heo <htejun@gmail.com>,
-        Glauber Costa <glommer@parallels.com>, Li Zefan <lizefan@huawei.com>
-Message-ID: <ab1c94b1-b50d-4acd-b23f-b1fbaed292f7@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130212000100.GB2666@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13021216-4834-0000-0000-000003961E06
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Feb 11, 2013 at 04:01:01PM -0800, Paul E. McKenney wrote:
+> On Thu, Jan 31, 2013 at 12:11:38PM -0000, Thomas Gleixner wrote:
+> > Do we really need so many states here ?
+> 
+> Well, all that RCU does for CPU_DYING is to do tracing, which could be
+> ditched.  Required changes called out inline below.
+> 
+> All that the CPU_ONLINE and CPU_DOWN_PREPARE notifiers do is set
+> up affinity for the RCU-boost kthreads.  These are unfortunately not
+> per-CPU kthreads, but perhaps something similar could be set up.  This is
+> strictly a performance optimization, so the CPU_ONLINE notifier could
+> be replaced by having the kthread check which of its CPUs was online.
+> Unfortunately, the same is not true of CPU_DOWN_PREPARE because if the
+> kthread was too slow about it, the scheduler would get annoyed about a
+> kthread being runnable only on offlined CPUs.
+> 
+> It is not clear that this is worthwhile.  Thoughts on other ways to
+> get this done?
 
+Actually, would there be a problem with having a tag on these tasks
+so that the scheduler avoids the splat?  The idea would be to have the
+scheduler break affinity if there are no longer any online CPUs in
+the task's set, but just not splat.  The task could then periodically
+check to see if it is running on the wrong CPU, and if there is at
+least one online CPU in its set, re-affinity itself.
 
-Michal Hocko <mhocko@suse.cz> wrote:
+Seems pretty simple, so I must be missing something.  ;-)
 
->On Tue 12-02-13 10:10:02, Johannes Weiner wrote:
->> On Tue, Feb 12, 2013 at 10:54:19AM +0100, Michal Hocko wrote:
->> > On Mon 11-02-13 17:39:43, Johannes Weiner wrote:
->> > > On Mon, Feb 11, 2013 at 10:27:56PM +0100, Michal Hocko wrote:
->> > > > On Mon 11-02-13 14:58:24, Johannes Weiner wrote:
->> > > > > That way, if the dead count gives the go-ahead, you KNOW that
->the
->> > > > > position cache is valid, because it has been updated first.
->> > > > 
->> > > > OK, you are right. We can live without css_tryget because
->dead_count is
->> > > > either OK which means that css would be alive at least this rcu
->period
->> > > > (and RCU walk would be safe as well) or it is incremented which
->means
->> > > > that we have started css_offline already and then css is dead
->already.
->> > > > So css_tryget can be dropped.
->> > > 
->> > > Not quite :)
->> > > 
->> > > The dead_count check is for completed destructions,
->> > 
->> > Not quite :P. dead_count is incremented in css_offline callback
->which is
->> > called before the cgroup core releases its last reference and
->unlinks
->> > the group from the siblinks. css_tryget would already fail at this
->stage
->> > because CSS_DEACT_BIAS is in place at that time but this doesn't
->break
->> > RCU walk. So I think we are safe even without css_get.
->> 
->> But you drop the RCU lock before you return.
->>
->> dead_count IS incremented for every destruction, but it's not
->reliable
->> for concurrent ones, is what I meant.  Again, if there is a
->dead_count
->> mismatch, your pointer might be dangling, easy case.  However, even
->if
->> there is no mismatch, you could still race with a destruction that
->has
->> marked the object dead, and then frees it once you drop the RCU lock,
->> so you need try_get() to check if the object is dead, or you could
->> return a pointer to freed or soon to be freed memory.
->
->Wait a moment. But what prevents from the following race?
->
->rcu_read_lock()
->						mem_cgroup_css_offline(memcg)
->						root->dead_count++
->iter->last_dead_count = root->dead_count
+							Thanx, Paul
 
-use the dead count read the first time for comparison, i.e. only one atomic read in that function.  you are right, we would miss to account for that concurrent destruction otherwise.
+> > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> > ---
+> >  include/linux/cpuhotplug.h |   18 ++++++++
+> >  kernel/cpu.c               |   12 +++++
+> >  kernel/rcutree.c           |   95 ++++++++++++++++++++-------------------------
+> >  3 files changed, 73 insertions(+), 52 deletions(-)
+> > 
+> > Index: linux-2.6/include/linux/cpuhotplug.h
+> > ===================================================================
+> > --- linux-2.6.orig/include/linux/cpuhotplug.h
+> > +++ linux-2.6/include/linux/cpuhotplug.h
+> > @@ -12,6 +12,7 @@ enum cpuhp_states {
+> >  	CPUHP_PERF_PREPARE,
+> >  	CPUHP_SCHED_MIGRATE_PREP,
+> >  	CPUHP_WORKQUEUE_PREP,
+> > +	CPUHP_RCUTREE_PREPARE,
+> >  	CPUHP_NOTIFY_PREPARE,
+> >  	CPUHP_NOTIFY_DEAD,
+> >  	CPUHP_CPUFREQ_DEAD,
+> > @@ -27,6 +28,7 @@ enum cpuhp_states {
+> >  	CPUHP_AP_ARM64_TIMER_STARTING,
+> >  	CPUHP_AP_KVM_STARTING,
+> >  	CPUHP_AP_NOTIFY_DYING,
+> > +	CPUHP_AP_RCUTREE_DYING,
+> 
+> Drop this.
+> 
+> >  	CPUHP_AP_X86_TBOOT_DYING,
+> >  	CPUHP_AP_S390_VTIME_DYING,
+> >  	CPUHP_AP_SCHED_NOHZ_DYING,
+> > @@ -39,6 +41,7 @@ enum cpuhp_states {
+> >  	CPUHP_SCHED_MIGRATE_ONLINE,
+> >  	CPUHP_WORKQUEUE_ONLINE,
+> >  	CPUHP_CPUFREQ_ONLINE,
+> > +	CPUHP_RCUTREE_ONLINE,
+> >  	CPUHP_NOTIFY_ONLINE,
+> >  	CPUHP_NOTIFY_DOWN_PREPARE,
+> >  	CPUHP_PERF_X86_UNCORE_ONLINE,
+> > @@ -147,4 +150,19 @@ int workqueue_prepare_cpu(unsigned int c
+> >  int workqueue_online_cpu(unsigned int cpu);
+> >  int workqueue_offline_cpu(unsigned int cpu);
+> > 
+> > +/* RCUtree hotplug events */
+> > +#if defined(CONFIG_TREE_RCU) || defined(CONFIG_TREE_PREEMPT_RCU)
+> > +int rcutree_prepare_cpu(unsigned int cpu);
+> > +int rcutree_online_cpu(unsigned int cpu);
+> > +int rcutree_offline_cpu(unsigned int cpu);
+> > +int rcutree_dead_cpu(unsigned int cpu);
+> > +int rcutree_dying_cpu(unsigned int cpu);
+> 
+> And this...
+> 
+> > +#else
+> > +#define rcutree_prepare_cpu	NULL
+> > +#define rcutree_online_cpu	NULL
+> > +#define rcutree_offline_cpu	NULL
+> > +#define rcutree_dead_cpu	NULL
+> > +#define rcutree_dying_cpu	NULL
+> 
+> And of course this.
+> 
+> > +#endif
+> > +
+> >  #endif
+> > Index: linux-2.6/kernel/cpu.c
+> > ===================================================================
+> > --- linux-2.6.orig/kernel/cpu.c
+> > +++ linux-2.6/kernel/cpu.c
+> > @@ -755,6 +755,10 @@ static struct cpuhp_step cpuhp_bp_states
+> >  		.startup = workqueue_prepare_cpu,
+> >  		.teardown = NULL,
+> >  	},
+> > +	[CPUHP_RCUTREE_PREPARE] = {
+> > +		.startup = rcutree_prepare_cpu,
+> > +		.teardown = rcutree_dead_cpu,
+> > +	},
+> >  	[CPUHP_NOTIFY_PREPARE] = {
+> >  		.startup = notify_prepare,
+> >  		.teardown = NULL,
+> > @@ -787,6 +791,10 @@ static struct cpuhp_step cpuhp_bp_states
+> >  		.startup = workqueue_online_cpu,
+> >  		.teardown = workqueue_offline_cpu,
+> >  	},
+> > +	[CPUHP_RCUTREE_ONLINE] = {
+> > +		.startup = rcutree_online_cpu,
+> > +		.teardown = rcutree_offline_cpu,
+> > +	},
+> >  	[CPUHP_NOTIFY_ONLINE] = {
+> >  		.startup = notify_online,
+> >  		.teardown = NULL,
+> > @@ -813,6 +821,10 @@ static struct cpuhp_step cpuhp_ap_states
+> >  		.startup = NULL,
+> >  		.teardown = notify_dying,
+> >  	},
+> > +	[CPUHP_AP_RCUTREE_DYING] = {
+> > +		.startup = NULL,
+> > +		.teardown = rcutree_dying_cpu,
+> > +	},
+> >  	[CPUHP_AP_SCHED_NOHZ_DYING] = {
+> >  		.startup = NULL,
+> >  		.teardown = nohz_balance_exit_idle,
+> > Index: linux-2.6/kernel/rcutree.c
+> > ===================================================================
+> > --- linux-2.6.orig/kernel/rcutree.c
+> > +++ linux-2.6/kernel/rcutree.c
+> > @@ -2787,67 +2787,59 @@ rcu_init_percpu_data(int cpu, struct rcu
+> >  	mutex_unlock(&rsp->onoff_mutex);
+> >  }
+> > 
+> > -static void __cpuinit rcu_prepare_cpu(int cpu)
+> > +int __cpuinit rcutree_prepare_cpu(unsigned int cpu)
+> >  {
+> >  	struct rcu_state *rsp;
+> > 
+> >  	for_each_rcu_flavor(rsp)
+> >  		rcu_init_percpu_data(cpu, rsp,
+> >  				     strcmp(rsp->name, "rcu_preempt") == 0);
+> > +	rcu_prepare_kthreads(cpu);
+> > +	return 0;
+> >  }
+> > 
+> > -/*
+> > - * Handle CPU online/offline notification events.
+> > - */
+> > -static int __cpuinit rcu_cpu_notify(struct notifier_block *self,
+> > -				    unsigned long action, void *hcpu)
+> > +int __cpuinit rcutree_dead_cpu(unsigned int cpu)
+> >  {
+> > -	long cpu = (long)hcpu;
+> > -	struct rcu_data *rdp = per_cpu_ptr(rcu_state->rda, cpu);
+> > -	struct rcu_node *rnp = rdp->mynode;
+> >  	struct rcu_state *rsp;
+> > -	int ret = NOTIFY_OK;
+> > 
+> > -	trace_rcu_utilization("Start CPU hotplug");
+> > -	switch (action) {
+> > -	case CPU_UP_PREPARE:
+> > -	case CPU_UP_PREPARE_FROZEN:
+> > -		rcu_prepare_cpu(cpu);
+> > -		rcu_prepare_kthreads(cpu);
+> > -		break;
+> > -	case CPU_ONLINE:
+> > -	case CPU_DOWN_FAILED:
+> > -		rcu_boost_kthread_setaffinity(rnp, -1);
+> > -		break;
+> > -	case CPU_DOWN_PREPARE:
+> > -		if (nocb_cpu_expendable(cpu))
+> > -			rcu_boost_kthread_setaffinity(rnp, cpu);
+> > -		else
+> > -			ret = NOTIFY_BAD;
+> > -		break;
+> > -	case CPU_DYING:
+> > -	case CPU_DYING_FROZEN:
+> > -		/*
+> > -		 * The whole machine is "stopped" except this CPU, so we can
+> > -		 * touch any data without introducing corruption. We send the
+> > -		 * dying CPU's callbacks to an arbitrarily chosen online CPU.
+> > -		 */
+> > -		for_each_rcu_flavor(rsp)
+> > -			rcu_cleanup_dying_cpu(rsp);
+> > -		rcu_cleanup_after_idle(cpu);
+> > -		break;
+> > -	case CPU_DEAD:
+> > -	case CPU_DEAD_FROZEN:
+> > -	case CPU_UP_CANCELED:
+> > -	case CPU_UP_CANCELED_FROZEN:
+> > -		for_each_rcu_flavor(rsp)
+> > -			rcu_cleanup_dead_cpu(cpu, rsp);
+> > -		break;
+> > -	default:
+> > -		break;
+> > -	}
+> > -	trace_rcu_utilization("End CPU hotplug");
+> > -	return ret;
+> > +	for_each_rcu_flavor(rsp)
+> > +		rcu_cleanup_dead_cpu(cpu, rsp);
+> > +	return 0;
+> > +}
+> > +
+> > +static void __cpuinit rcutree_affinity_setting(unsigned int cpu, int outgoing)
+> > +{
+> > +	struct rcu_data *rdp = per_cpu_ptr(rcu_state->rda, cpu);
+> > +
+> > +	rcu_boost_kthread_setaffinity(rdp->mynode, outgoing);
+> > +}
+> > +
+> > +int __cpuinit rcutree_online_cpu(unsigned int cpu)
+> > +{
+> > +	rcutree_affinity_setting(cpu, -1);
+> > +	return 0;
+> > +}
+> > +
+> > +int __cpuinit rcutree_offline_cpu(unsigned int cpu)
+> > +{
+> > +	if (!nocb_cpu_expendable(cpu))
+> > +		return -EINVAL;
+> > +	rcutree_affinity_setting(cpu, cpu);
+> > +	return 0;
+> > +}
+> > +
+> > +int __cpuinit rcutree_dying_cpu(unsigned int cpu)
+> > +{
+> > +	struct rcu_state *rsp;
+> > +	/*
+> > +	 * The whole machine is "stopped" except this CPU, so we can
+> > +	 * touch any data without introducing corruption. We send the
+> > +	 * dying CPU's callbacks to an arbitrarily chosen online CPU.
+> > +	 */
+> > +	for_each_rcu_flavor(rsp)
+> > +		rcu_cleanup_dying_cpu(rsp);
+> > +	rcu_cleanup_after_idle(cpu);
+> > +	return 0;
+> >  }
+> 
+> And rcu_dying_cpu() above, along with both definitions of
+> rcu_cleanup_dying_cpu().
+> 
+> >  /*
+> > @@ -3071,9 +3063,8 @@ void __init rcu_init(void)
+> >  	 * this is called early in boot, before either interrupts
+> >  	 * or the scheduler are operational.
+> >  	 */
+> > -	cpu_notifier(rcu_cpu_notify, 0);
+> >  	for_each_online_cpu(cpu)
+> > -		rcu_cpu_notify(NULL, CPU_UP_PREPARE, (void *)(long)cpu);
+> > +		rcutree_prepare_cpu(cpu);
+> >  	check_cpu_stall_init();
+> >  }
+> > 
+> > 
+> > 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
->iter->last_visited = memcg
->						// final
->						css_put(memcg);
->// last_visited is still valid
->rcu_read_unlock()
->[...]
->// next iteration
->rcu_read_lock()
->iter->last_dead_count == root->dead_count
->// KABOOM
->
->The race window between dead_count++ and css_put is quite big but that
->is not important because that css_put can happen anytime before we
->start
->the next iteration and take rcu_read_lock.
-
--- 
-Sent from my Android phone with K-9 Mail. Please excuse my brevity.
