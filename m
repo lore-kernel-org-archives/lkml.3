@@ -1,46 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933343Ab3BLQQU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 11:16:20 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:62005 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932223Ab3BLQQR (ORCPT
+	id S1758928Ab3BLQQs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 11:16:48 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:48872 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758824Ab3BLQQq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 11:16:17 -0500
-Date: Tue, 12 Feb 2013 08:16:17 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Andreas Mohr <andi@lisas.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-usb@vger.kernel.org
-Subject: Re: [REGRESSION] -rc7/-rc4+: unable to USB boot - enumeration
- partially broken (was: Linux v3.8-rc7)
-Message-ID: <20130212161617.GA3887@kroah.com>
-References: <CA+55aFz50VvnMjoDCbg01N+rMu5vscu88kr0SV3tWLjaiL0TeA@mail.gmail.com>
- <20130210001442.GA5744@rhlx01.hs-esslingen.de>
- <20130210140554.GA5299@rhlx01.hs-esslingen.de>
- <20130212160727.GA15857@rhlx01.hs-esslingen.de>
+	Tue, 12 Feb 2013 11:16:46 -0500
+Date: Tue, 12 Feb 2013 08:15:30 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, tglx@linutronix.de,
+        peterz@infradead.org, tj@kernel.org, rusty@rustcorp.com.au,
+        mingo@kernel.org, akpm@linux-foundation.org, namhyung@kernel.org,
+        rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
+        xiaoguangrong@linux.vnet.ibm.com, rjw@sisk.pl, sbw@mit.edu,
+        fweisbec@gmail.com, linux@arm.linux.org.uk, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
+        netdev@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 04/45] percpu_rwlock: Implement the core design of
+ Per-CPU Reader-Writer Locks
+Message-ID: <20130212161530.GA9929@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com>
+ <20130122073347.13822.85876.stgit@srivatsabhat.in.ibm.com>
+ <20130208231017.GK2666@linux.vnet.ibm.com>
+ <20130210180607.GA1375@redhat.com>
+ <20130210195417.GK2666@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130212160727.GA15857@rhlx01.hs-esslingen.de>
+In-Reply-To: <20130210195417.GK2666@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13021216-7282-0000-0000-00001413129A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 12, 2013 at 05:07:27PM +0100, Andreas Mohr wrote:
-> On Sun, Feb 10, 2013 at 03:05:54PM +0100, Andreas Mohr wrote:
-> > Regression sorta confirmed now. -rc3 with a fully suitable .config does
-> > not boot either. Will start bisection. Will take ages.
+On Sun, Feb 10, 2013 at 11:54:17AM -0800, Paul E. McKenney wrote:
+> On Sun, Feb 10, 2013 at 07:06:07PM +0100, Oleg Nesterov wrote:
+> > On 02/08, Paul E. McKenney wrote:
 > 
-> Down to 91 commits (all in USB land!), around 7 steps left.
-> Pretty certain of a valid regression now. Things did properly do the
-> good/good/bad/bad/good... dance.
+> [ . . . ]
 > 
-> Oh so lovely if you're constrained to >= 5 hour build times,
+> > > > +static inline void sync_reader(struct percpu_rwlock *pcpu_rwlock,
+> > > > +			       unsigned int cpu)
+> > > > +{
+> > > > +	smp_rmb(); /* Paired with smp_[w]mb() in percpu_read_[un]lock() */
+> > >
+> > > As I understand it, the purpose of this memory barrier is to ensure
+> > > that the stores in drop_writer_signal() happen before the reads from
+> > > ->reader_refcnt in reader_uses_percpu_refcnt(), thus preventing the
+> > > race between a new reader attempting to use the fastpath and this writer
+> > > acquiring the lock.  Unless I am confused, this must be smp_mb() rather
+> > > than smp_rmb().
+> > 
+> > And note that before sync_reader() we call announce_writer_active() which
+> > already adds mb() before sync_all_readers/sync_reader, so this rmb() looks
+> > unneeded.
+> > 
+> > But, at the same time, could you confirm that we do not need another mb()
+> > after sync_all_readers() in percpu_write_lock() ? I mean, without mb(),
+> > can't this reader_uses_percpu_refcnt() LOAD leak into the critical section
+> > protected by ->global_rwlock? Then this LOAD can be re-ordered with other
+> > memory operations done by the writer.
+> 
+> As soon as I get the rest of the way through Thomas's patchset.  ;-)
 
-You do know about 'make localmodconfig', right?  That should cut your
-build time down a large amount.
+There is a memory barrier associated with write_lock(), but it is
+only required to keep the critical section inside the lock -- and is
+permitted to allow stuff outside of the lock to be reordered into the
+critical section.  So I believe we do indeed need an smp_mb() between
+sync_all_readers() and write_lock() in percpu_write_lock().
 
-greg k-h
+Good eyes, Oleg!
+
+							Thanx, Paul
+
