@@ -1,82 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758879Ab3BLU4R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:56:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53661 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756398Ab3BLUgQ (ORCPT
+	id S1759336Ab3BLU4c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 15:56:32 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:55358 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756630Ab3BLU43 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:36:16 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>, Willy Tarreau <w@1wt.eu>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 57/61] tcp: splice: fix an infinite loop in tcp_read_sock()
-Date: Tue, 12 Feb 2013 12:35:17 -0800
-Message-Id: <20130212203425.550625917@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130212203417.890993903@linuxfoundation.org>
-References: <20130212203417.890993903@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Tue, 12 Feb 2013 15:56:29 -0500
+Date: Tue, 12 Feb 2013 12:55:54 -0800
+From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
+Message-ID: <tip-3578baaed4613a9fc09bab9f79f6ce2ac682e8a3@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, jamie@shareable.org,
+        ville.syrjala@linux.intel.com, bp@alien8.de, linux@arm.linux.org.uk,
+        tglx@linutronix.de, hpa@linux.intel.com, hjl.tools@gmail.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        jamie@shareable.org, torvalds@linux-foundation.org,
+        ville.syrjala@linux.intel.com, bp@alien8.de, linux@arm.linux.org.uk,
+        tglx@linutronix.de, hpa@linux.intel.com, hjl.tools@gmail.com
+In-Reply-To: <511A8922.6050908@zytor.com>
+References: <511A8922.6050908@zytor.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm] x86, mm:
+  Redesign get_user with a __builtin_choose_expr hack
+Git-Commit-ID: 3578baaed4613a9fc09bab9f79f6ce2ac682e8a3
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 12 Feb 2013 12:56:00 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+Commit-ID:  3578baaed4613a9fc09bab9f79f6ce2ac682e8a3
+Gitweb:     http://git.kernel.org/tip/3578baaed4613a9fc09bab9f79f6ce2ac682e8a3
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Tue, 12 Feb 2013 11:47:31 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Tue, 12 Feb 2013 12:46:40 -0800
 
-------------------
+x86, mm: Redesign get_user with a __builtin_choose_expr hack
 
+Instead of using a bitfield, use an odd little trick using typeof,
+__builtin_choose_expr, and sizeof.  __builtin_choose_expr is
+explicitly defined to not convert its type (its argument is required
+to be a constant expression) so this should be well-defined.
 
-From: Eric Dumazet <edumazet@google.com>
+The code is still not 100% preturbation-free versus the baseline
+before 64-bit get_user(), but the differences seem to be very small,
+mostly related to padding and to gcc deciding when to spill registers.
 
-[ Upstream commit ff905b1e4aad8ccbbb0d42f7137f19482742ff07 ]
-
-commit 02275a2ee7c0 (tcp: don't abort splice() after small transfers)
-added a regression.
-
-[   83.843570] INFO: rcu_sched self-detected stall on CPU
-[   83.844575] INFO: rcu_sched detected stalls on CPUs/tasks: { 6} (detected by 0, t=21002 jiffies, g=4457, c=4456, q=13132)
-[   83.844582] Task dump for CPU 6:
-[   83.844584] netperf         R  running task        0  8966   8952 0x0000000c
-[   83.844587]  0000000000000000 0000000000000006 0000000000006c6c 0000000000000000
-[   83.844589]  000000000000006c 0000000000000096 ffffffff819ce2bc ffffffffffffff10
-[   83.844592]  ffffffff81088679 0000000000000010 0000000000000246 ffff880c4b9ddcd8
-[   83.844594] Call Trace:
-[   83.844596]  [<ffffffff81088679>] ? vprintk_emit+0x1c9/0x4c0
-[   83.844601]  [<ffffffff815ad449>] ? schedule+0x29/0x70
-[   83.844606]  [<ffffffff81537bd2>] ? tcp_splice_data_recv+0x42/0x50
-[   83.844610]  [<ffffffff8153beaa>] ? tcp_read_sock+0xda/0x260
-[   83.844613]  [<ffffffff81537b90>] ? tcp_prequeue_process+0xb0/0xb0
-[   83.844615]  [<ffffffff8153c0f0>] ? tcp_splice_read+0xc0/0x250
-[   83.844618]  [<ffffffff814dc0c2>] ? sock_splice_read+0x22/0x30
-[   83.844622]  [<ffffffff811b820b>] ? do_splice_to+0x7b/0xa0
-[   83.844627]  [<ffffffff811ba4bc>] ? sys_splice+0x59c/0x5d0
-[   83.844630]  [<ffffffff8119745b>] ? putname+0x2b/0x40
-[   83.844633]  [<ffffffff8118bcb4>] ? do_sys_open+0x174/0x1e0
-[   83.844636]  [<ffffffff815b6202>] ? system_call_fastpath+0x16/0x1b
-
-if recv_actor() returns 0, we should stop immediately,
-because looping wont give a chance to drain the pipe.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Willy Tarreau <w@1wt.eu>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jamie Lokier <jamie@shareable.org>
+Cc: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: H. J. Lu <hjl.tools@gmail.com>
+Link: http://lkml.kernel.org/r/511A8922.6050908@zytor.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- net/ipv4/tcp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/include/asm/uaccess.h | 57 +++++++++++-------------------------------
+ 1 file changed, 14 insertions(+), 43 deletions(-)
 
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -1481,7 +1481,7 @@ int tcp_read_sock(struct sock *sk, read_
- 					break;
- 			}
- 			used = recv_actor(desc, skb, offset, len);
--			if (used < 0) {
-+			if (used <= 0) {
- 				if (!copied)
- 					copied = used;
- 				break;
-
-
+diff --git a/arch/x86/include/asm/uaccess.h b/arch/x86/include/asm/uaccess.h
+index a8d1265..d710a25 100644
+--- a/arch/x86/include/asm/uaccess.h
++++ b/arch/x86/include/asm/uaccess.h
+@@ -125,13 +125,12 @@ extern int __get_user_4(void);
+ extern int __get_user_8(void);
+ extern int __get_user_bad(void);
+ 
+-#define __get_user_x(size, ret, x, ptr)		      \
+-	asm volatile("call __get_user_" #size	      \
+-		     : "=a" (ret), "=d" (x)	      \
+-		     : "0" (ptr))		      \
+-
+-/* Careful: we have to cast the result to the type of the pointer
+- * for sign reasons */
++/*
++ * This is a type: either unsigned long, if the argument fits into
++ * that type, or otherwise unsigned long long.
++ */
++#define __inttype(x) \
++__typeof__(__builtin_choose_expr(sizeof(x) > sizeof(0UL), 0ULL, 0UL))
+ 
+ /**
+  * get_user: - Get a simple variable from user space.
+@@ -149,48 +148,20 @@ extern int __get_user_bad(void);
+  *
+  * Returns zero on success, or -EFAULT on error.
+  * On error, the variable @x is set to zero.
++ *
++ * Careful: we have to cast the result to the type of the pointer
++ * for sign reasons.
+  */
+-#ifdef CONFIG_X86_32
+-#define __get_user_8(ret, x, ptr)		      \
+-do {						      \
+-	register unsigned long long __xx asm("%edx"); \
+-	asm volatile("call __get_user_8"	      \
+-		     : "=a" (ret), "=r" (__xx)	      \
+-		     : "0" (ptr));		      \
+-	(x) = __xx;				      \
+-} while (0)
+-
+-#else
+-#define __get_user_8(__ret_gu, __val_gu, ptr)				\
+-		__get_user_x(8, __ret_gu, __val_gu, ptr)
+-#endif
+-
+ #define get_user(x, ptr)						\
+ ({									\
+ 	int __ret_gu;							\
+-	struct {							\
+-		unsigned long long __val_n : 8*sizeof(*(ptr));		\
+-	} __val_gu;							\
++	register __inttype(*(ptr)) __val_gu asm("%edx");		\
+ 	__chk_user_ptr(ptr);						\
+ 	might_fault();							\
+-	switch (sizeof(*(ptr))) {					\
+-	case 1:								\
+-		__get_user_x(1, __ret_gu, __val_gu.__val_n, ptr);	\
+-		break;							\
+-	case 2:								\
+-		__get_user_x(2, __ret_gu, __val_gu.__val_n, ptr);	\
+-		break;							\
+-	case 4:								\
+-		__get_user_x(4, __ret_gu, __val_gu.__val_n, ptr);	\
+-		break;							\
+-	case 8:								\
+-		__get_user_8(__ret_gu, __val_gu.__val_n, ptr);		\
+-		break;							\
+-	default:							\
+-		__get_user_x(X, __ret_gu, __val_gu.__val_n, ptr);	\
+-		break;							\
+-	}								\
+-	(x) = (__typeof__(*(ptr)))__val_gu.__val_n;			\
++	asm volatile("call __get_user_%P3"				\
++		     : "=a" (__ret_gu), "=r" (__val_gu)			\
++		     : "0" (ptr), "i" (sizeof(*(ptr))));		\
++	(x) = (__typeof__(*(ptr))) __val_gu;				\
+ 	__ret_gu;							\
+ })
+ 
