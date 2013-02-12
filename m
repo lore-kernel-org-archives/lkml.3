@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758821Ab3BLUl6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:41:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54011 "EHLO
+	id S1758843Ab3BLUns (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 15:43:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54052 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757398Ab3BLUlw (ORCPT
+	with ESMTP id S1758804Ab3BLUl6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:41:52 -0500
+	Tue, 12 Feb 2013 15:41:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Borkmann <dborkman@redhat.com>,
+        Sarveshwar Bandi <sarveshwar.bandi@emulex.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 25/36] net: sctp: sctp_setsockopt_auth_key: use kzfree instead of kfree
-Date: Tue, 12 Feb 2013 12:41:19 -0800
-Message-Id: <20130212203900.253908648@linuxfoundation.org>
+Subject: [ 33/36] bridge: Pull ip header into skb->data before looking into ip header.
+Date: Tue, 12 Feb 2013 12:41:27 -0800
+Message-Id: <20130212203901.148569211@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203857.305594226@linuxfoundation.org>
 References: <20130212203857.305594226@linuxfoundation.org>
@@ -28,34 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Sarveshwar Bandi <sarveshwar.bandi@emulex.com>
 
-[ Upstream commit 6ba542a291a5e558603ac51cda9bded347ce7627 ]
+[ Upstream commit 6caab7b0544e83e6c160b5e80f5a4a7dd69545c7 ]
 
-In sctp_setsockopt_auth_key, we create a temporary copy of the user
-passed shared auth key for the endpoint or association and after
-internal setup, we free it right away. Since it's sensitive data, we
-should zero out the key before returning the memory back to the
-allocator. Thus, use kzfree instead of kfree, just as we do in
-sctp_auth_key_put().
+If lower layer driver leaves the ip header in the skb fragment, it needs to
+be first pulled into skb->data before inspecting ip header length or ip version
+number.
 
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: Sarveshwar Bandi <sarveshwar.bandi@emulex.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/sctp/socket.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/bridge/br_netfilter.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/net/sctp/socket.c
-+++ b/net/sctp/socket.c
-@@ -3375,7 +3375,7 @@ static int sctp_setsockopt_auth_key(stru
+--- a/net/bridge/br_netfilter.c
++++ b/net/bridge/br_netfilter.c
+@@ -254,6 +254,9 @@ static int br_parse_ip_options(struct sk
+ 	struct net_device *dev = skb->dev;
+ 	u32 len;
  
- 	ret = sctp_auth_set_key(sctp_sk(sk)->ep, asoc, authkey);
- out:
--	kfree(authkey);
-+	kzfree(authkey);
- 	return ret;
- }
++	if (!pskb_may_pull(skb, sizeof(struct iphdr)))
++		goto inhdr_error;
++
+ 	iph = ip_hdr(skb);
+ 	opt = &(IPCB(skb)->opt);
  
 
 
