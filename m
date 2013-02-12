@@ -1,42 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933682Ab3BLUCv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:02:51 -0500
-Received: from gate.crashing.org ([63.228.1.57]:60974 "EHLO gate.crashing.org"
+	id S1751141Ab3BLUDy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 15:03:54 -0500
+Received: from mail.tpi.com ([70.99.223.143]:1221 "EHLO mail.tpi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932369Ab3BLUCt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:02:49 -0500
-Subject: Re: [PATCH -next] powerpc/85xx: use for_each_compatible_node() macro
-Mime-Version: 1.0 (Apple Message framework v1278)
-Content-Type: text/plain; charset=iso-8859-1
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <CAPgLHd_esknTwVv4EeehwSJz6ee5eFJ+zf6xntH-vaNwdxkrvg@mail.gmail.com>
-Date: Tue, 12 Feb 2013 14:02:01 -0600
-Cc: benh@kernel.crashing.org, paulus@samba.org, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, yongjun_wei@trendmicro.com.cn,
-        linuxppc-dev@lists.ozlabs.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 7bit
-Message-Id: <1C757F9C-FD71-44C5-B018-DF0F38571BC8@kernel.crashing.org>
-References: <CAPgLHd_esknTwVv4EeehwSJz6ee5eFJ+zf6xntH-vaNwdxkrvg@mail.gmail.com>
-To: Wei Yongjun <weiyj.lk@gmail.com>
-X-Mailer: Apple Mail (2.1278)
+	id S1750734Ab3BLUDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 15:03:52 -0500
+From: Tim Gardner <tim.gardner@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: Tim Gardner <tim.gardner@canonical.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        linux-nfs@vger.kernel.org
+Subject: [PATCH linux-next] nfs: remove kfree() redundant null checks
+Date: Tue, 12 Feb 2013 13:03:42 -0700
+Message-Id: <1360699422-64416-1-git-send-email-tim.gardner@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+smatch analysis:
 
-On Dec 3, 2012, at 7:36 AM, Wei Yongjun wrote:
+fs/nfs/getroot.c:130 nfs_get_root() info: redundant null
+ check on name calling kfree()
 
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> 
-> Use for_each_compatible_node() macro instead of open coding it.
-> 
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> ---
-> arch/powerpc/platforms/85xx/mpc85xx_mds.c | 4 +---
-> 1 file changed, 1 insertion(+), 3 deletions(-)
+fs/nfs/unlink.c:272 nfs_async_unlink() info: redundant null
+ check on devname_garbage calling kfree()
 
-applied to next
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: linux-nfs@vger.kernel.org
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+---
+ fs/nfs/getroot.c |    3 +--
+ fs/nfs/unlink.c  |    3 +--
+ 2 files changed, 2 insertions(+), 4 deletions(-)
 
-- k
+diff --git a/fs/nfs/getroot.c b/fs/nfs/getroot.c
+index 033803c..44efaa8 100644
+--- a/fs/nfs/getroot.c
++++ b/fs/nfs/getroot.c
+@@ -126,8 +126,7 @@ struct dentry *nfs_get_root(struct super_block *sb, struct nfs_fh *mntfh,
+ 	}
+ 	spin_unlock(&ret->d_lock);
+ out:
+-	if (name)
+-		kfree(name);
++	kfree(name);
+ 	nfs_free_fattr(fsinfo.fattr);
+ 	return ret;
+ }
+diff --git a/fs/nfs/unlink.c b/fs/nfs/unlink.c
+index 13cea63..d26a32f 100644
+--- a/fs/nfs/unlink.c
++++ b/fs/nfs/unlink.c
+@@ -268,8 +268,7 @@ nfs_async_unlink(struct inode *dir, struct dentry *dentry)
+ 	 * point dentry is definitely not a root, so we won't need
+ 	 * that anymore.
+ 	 */
+-	if (devname_garbage)
+-		kfree(devname_garbage);
++	kfree(devname_garbage);
+ 	return 0;
+ out_unlock:
+ 	spin_unlock(&dentry->d_lock);
+-- 
+1.7.9.5
+
