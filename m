@@ -1,80 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933248Ab3BLN3o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 08:29:44 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:42955 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933044Ab3BLN3n (ORCPT
+	id S933243Ab3BLNbP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 08:31:15 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:63420 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933044Ab3BLNbO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 08:29:43 -0500
-X-Greylist: delayed 37347 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Feb 2013 08:29:43 EST
-Message-ID: <511A43C4.1040204@hitachi.com>
-Date: Tue, 12 Feb 2013 22:29:40 +0900
-From: Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Tue, 12 Feb 2013 08:31:14 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the metag tree
+Date: Tue, 12 Feb 2013 13:31:10 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-5-generic; KDE/4.3.2; x86_64; ; )
+Cc: Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        James Hogan <james.hogan@imgtec.com>,
+        Mark Rutland <mark.rutland@arm.com>
+References: <20130212145601.09b536bef18ae4f3c8d3b3cc@canb.auug.org.au>
+In-Reply-To: <20130212145601.09b536bef18ae4f3c8d3b3cc@canb.auug.org.au>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, kexec@lists.infradead.org,
-        Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>,
-        linux-kernel@vger.kernel.org, vgoyal@redhat.com
-Subject: Re: [PATCH 2/2 v2] kexec: Export PG_hwpoison flag into vmcoreinfo
-References: <508FDEF3.8030601@hitachi.com> <20121030143750.GF2290@redhat.com> <50913011.2030900@hitachi.com> <20130208174944.96a3b50952e45e1219a94819@mxc.nes.nec.co.jp> <5119B1E1.4010405@hitachi.com> <8738x1hk7p.fsf@xmission.com>
-In-Reply-To: <8738x1hk7p.fsf@xmission.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201302121331.10646.arnd@arndb.de>
+X-Provags-ID: V02:K0:ONHpF3vwyRDdBaoQPys7u+dyDytOAqWE9bQWhRDzvE1
+ 7iCeWidV4JRhaQCpuN8bzre8//CTamzVmjWgGr72x17Ky19TiI
+ OLfAVPN9Si1xy/IMmBQTrsf+dDPRomET6SwFA9ph2D/5poGqFp
+ sdE07YporgPl+C4BSnsj57jvQhrJnNKrM6vALhPktlIkGKh4gY
+ 0VrkKPibwFPw7k1FkDEtEQLL5n/oMm1GgHDAp+0+H6/3dBl+ux
+ MqF/qM1Of3d6oEeNMvlXA9gdPAa3JW80P/ZGikfN32ZBTXUSgn
+ 0ZRazOi8y0TnK+YECXTc/ys+wf8ndJo1niRE8TYMNI3sDS82oK
+ 5abPiS4tCEpdRHh+GfCw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Andrew,
+On Tuesday 12 February 2013, Stephen Rothwell wrote:
+> Today's linux-next merge of the arm-soc tree got conflicts in
+> drivers/clocksource/Makefile and drivers/clocksource/Kconfig between
+> commit 3fedb0674fbc ("metag: Time keeping") from the metag tree and
+> commits 8a4da6e36c58 ("arm: arch_timer: move core to
+> drivers/clocksource") and  ("arm64: move from arm_generic to
+> arm_arch_timer") from the arm-soc tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
+> 
 
-I proposed following patch set to support hwpoison flag at kdump second kernel.
-These patch set includes fixes of both kernel side and makedumpfile side, and
-both pathes have been acked by maintainers who are Eric and Kumagai-san.
+Thanks, looks good.
 
-  [PATCH 0/2 v2] Exclude hwpoison page from vmcore dump
-  https://lkml.org/lkml/2012/10/31/805
-
-  [PATCH 1/2 v2] makedumpfile: Add a default action to exclude hwpoison page from vmcore
-  https://lkml.org/lkml/2012/10/31/376
-
-  [PATCH 2/2 v2] kexec: Export PG_hwpoison flag into vmcoreinfo
-  https://lkml.org/lkml/2012/10/31/359
-
-Could you please push the kernel side patch to export PG_hwpoison flag into 3.9 during
-next merge window?
-
-
-
-This patch exports a PG_hwpoison into vmcoreinfo when
-CONFIG_MEMORY_FAILURE is defined.
-"makedumpfile" needs to read information of memory, such as
-'mem_section', 'zone', 'pageflags' from vmcore.
-
-We introduce a function into "makedumpfile" to exclude
-hwpoison page from vmcore dump.
-In order to introduce this function, PG_hwpoison flag have
-to export into vmcoreinfo.
-
-Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Signed-off-by: Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com>
----
- kernel/kexec.c |    3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/kernel/kexec.c b/kernel/kexec.c
-index 0668d58..0d5d6bc 100644
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@ -1513,6 +1513,9 @@ static int __init crash_save_vmcoreinfo_init(void)
-        VMCOREINFO_NUMBER(PG_lru);
-        VMCOREINFO_NUMBER(PG_private);
-        VMCOREINFO_NUMBER(PG_swapcache);
-+#ifdef CONFIG_MEMORY_FAILURE
-+       VMCOREINFO_NUMBER(PG_hwpoison);
-+#endif
-
-        arch_crash_save_vmcoreinfo();
-        update_vmcoreinfo_note();
---
-1.7.10.1
+	Arnd
