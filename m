@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933275Ab3BLNIn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 08:08:43 -0500
-Received: from h1446028.stratoserver.net ([85.214.92.142]:35963 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933154Ab3BLNIk (ORCPT
+	id S933189Ab3BLNNb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 08:13:31 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:50529 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933048Ab3BLNNa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 08:08:40 -0500
-Message-ID: <511A3D08.20605@ahsoftware.de>
-Date: Tue, 12 Feb 2013 14:00:56 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 12 Feb 2013 08:13:30 -0500
 MIME-Version: 1.0
-To: Olaf Titz <olaf@bigred.inka.de>
-CC: linux-kernel@vger.kernel.org, Herbert Xu <herbert@gondor.hengli.com.au>,
-        David Miller <davem@davemloft.net>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: MODSIGN without RTC?
-References: <5112EA69.6010100@ahsoftware.de> <5112FE21.4020404@ahsoftware.de> <E1U3WSI-00023L-QG@bigred.inka.de> <51194A1F.4060900@ahsoftware.de>
-In-Reply-To: <51194A1F.4060900@ahsoftware.de>
-Content-Type: text/plain; charset=US-ASCII; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [188.6.195.195]
+In-Reply-To: <20130212104608.GA24042@amd.pavel.ucw.cz>
+References: <1360113112.17267.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+	<2964781.rPUOipNRNb@vostro.rjw.lan>
+	<CAJfpegtNUr+AJXZcKmLEGBYqu20DVFwzg-OvOk_nS3fBS3wd=Q@mail.gmail.com>
+	<1660768.prnx6s70rD@vostro.rjw.lan>
+	<CAJfpegt2B3n-QNK_W7O2H0JVfS=4jcUOzV_+w8ELPq19RJPewQ@mail.gmail.com>
+	<20130212104608.GA24042@amd.pavel.ucw.cz>
+Date: Tue, 12 Feb 2013 14:13:27 +0100
+Message-ID: <CAJfpegvdVfEFTU5haMMi94PD1iZ1XyCRjg0O9vDjDg1yyaM-yA@mail.gmail.com>
+Subject: Re: Getting rid of freezer for suspend [was Re: [fuse-devel] [PATCH]
+ fuse: make fuse daemon frozen along with kernel threads]
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Goswin von Brederlow <goswin-v-b@web.de>, Li Fei <fei.li@intel.com>,
+        len.brown@intel.com, mingo@redhat.com, peterz@infradead.org,
+        biao.wang@intel.com, linux-pm@vger.kernel.org,
+        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        chuansheng.liu@intel.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 11.02.2013 20:44, schrieb Alexander Holler:
-> Am 07.02.2013 19:44, schrieb Olaf Titz:
->>> Another option would be to make a configure option to just ignore the
->>> date. I'm not sure if I would like to use MODSIGN when I have to fear
->>> that the machine wouldn't start when the RTC fails or got set to a wrong
->>> date.
->>
->> Or just ignore the date unconditionally. After all, when a certificate
->> check fails due to out-of-validity-period, then you can always "fix"
->> that by appropriately setting the clock. So for security, in this
->> application, the date check is outright useless.
+On Tue, Feb 12, 2013 at 11:46 AM, Pavel Machek <pavel@ucw.cz> wrote:
+
+> (After all, with FUSE, filesystem clients are just doing IPC. In ideal
+> world, that would be freezeable and killable with -9).
+
+Exactly.
+
+Attaching a patch
+
 >
-> I don't think that is an option, because the date check is part of the
-> crypto-api and not a part of the modsign-stuff.
->
-> So it's necessary that the crypto-api offers a flag to ignore the dates
-> and another flag to mark such keys as invalid because of the date. The
-> first flag is necessary to load and use the keys, the second flag for
-> (maybe) other users of the crypto-api which might not use such invalid
-> keys.
-
-Another option would be, to just load every key, regardless of the dates 
-of the keys, and let the user of the keys (e.g. modsign) decide if they 
-accept the dates in the keys.
-
-But I'm missing the big picture about the crypto-api and their users, 
-therefor I better don't touch that part of the kernel myself. ;)
-
-Regards,
-
-Alexander
+>                                                                         Pavel
+> --
+> (english) http://www.livejournal.com/~pavelmachek
+> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
