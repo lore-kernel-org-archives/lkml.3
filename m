@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753644Ab3BLUfw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:35:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53473 "EHLO
+	id S1755486Ab3BLUgJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 15:36:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53594 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752827Ab3BLUft (ORCPT
+	with ESMTP id S1753268Ab3BLUgH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:35:49 -0500
+	Tue, 12 Feb 2013 15:36:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ketan Kulkarni <ketkulka@gmail.com>,
-        Eric Dumazet <edumazet@google.com>, Jerry Chu <hkchu@google.com>,
-        Yuchung Cheng <ycheng@google.com>, Dave Taht <dave.taht@gmail.com>,
+        Julian Anastasov <ja@ssi.bg>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 20/61] tcp: fix a panic on UP machines in reqsk_fastopen_remove
-Date: Tue, 12 Feb 2013 12:34:40 -0800
-Message-Id: <20130212203421.130195025@linuxfoundation.org>
+Subject: [ 44/61] ipv4: Dont update the pmtu on mtu locked routes
+Date: Tue, 12 Feb 2013 12:35:04 -0800
+Message-Id: <20130212203424.003632032@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203417.890993903@linuxfoundation.org>
 References: <20130212203417.890993903@linuxfoundation.org>
@@ -30,39 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Eric Dumazet <edumazet@google.com>
+From: Steffen Klassert <steffen.klassert@secunet.com>
 
-[ Upstream commit cce894bb824429fd312706c7012acae43e725865 ]
+[ Upstream commit fa1e492aa3cbafba9f8fc6d05e5b08a3091daf4a ]
 
-spin_is_locked() on a non !SMP build is kind of useless.
+Routes with locked mtu should not use learned pmtu informations,
+so do not update the pmtu on these routes.
 
-BUG_ON(!spin_is_locked(xx)) is guaranteed to crash.
-
-Just remove this check in reqsk_fastopen_remove() as
-the callers do hold the socket lock.
-
-Reported-by: Ketan Kulkarni <ketkulka@gmail.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Jerry Chu <hkchu@google.com>
-Cc: Yuchung Cheng <ycheng@google.com>
-Cc: Dave Taht <dave.taht@gmail.com>
-Acked-by: H.K. Jerry Chu <hkchu@google.com>
+Reported-by: Julian Anastasov <ja@ssi.bg>
+Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/request_sock.c |    2 --
- 1 file changed, 2 deletions(-)
+ net/ipv4/route.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/net/core/request_sock.c
-+++ b/net/core/request_sock.c
-@@ -186,8 +186,6 @@ void reqsk_fastopen_remove(struct sock *
- 	struct fastopen_queue *fastopenq =
- 	    inet_csk(lsk)->icsk_accept_queue.fastopenq;
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -912,6 +912,9 @@ static void __ip_rt_update_pmtu(struct r
+ 	struct dst_entry *dst = &rt->dst;
+ 	struct fib_result res;
  
--	BUG_ON(!spin_is_locked(&sk->sk_lock.slock) && !sock_owned_by_user(sk));
--
- 	tcp_sk(sk)->fastopen_rsk = NULL;
- 	spin_lock_bh(&fastopenq->lock);
- 	fastopenq->qlen--;
++	if (dst_metric_locked(dst, RTAX_MTU))
++		return;
++
+ 	if (dst->dev->mtu < mtu)
+ 		return;
+ 
 
 
