@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756730Ab3BLUgY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:36:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53692 "EHLO
+	id S1758879Ab3BLU4R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 15:56:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53661 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756564Ab3BLUgU (ORCPT
+	with ESMTP id S1756398Ab3BLUgQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:36:20 -0500
+	Tue, 12 Feb 2013 15:36:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arend van Spriel <arend@broadcom.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Daniel J Blueman <daniel@quora.org>,
-        Marcin Slusarz <marcin.slusarz@gmail.com>,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: [ 61/61] drm/nouveau: add lockdep annotations
-Date: Tue, 12 Feb 2013 12:35:21 -0800
-Message-Id: <20130212203426.021116247@linuxfoundation.org>
+        Eric Dumazet <edumazet@google.com>, Willy Tarreau <w@1wt.eu>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 57/61] tcp: splice: fix an infinite loop in tcp_read_sock()
+Date: Tue, 12 Feb 2013 12:35:17 -0800
+Message-Id: <20130212203425.550625917@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203417.890993903@linuxfoundation.org>
 References: <20130212203417.890993903@linuxfoundation.org>
@@ -31,77 +27,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
 
-commit 5f97ab913cf0fbc378ea8ffc3ee66f4890d11c55 upstream.
+From: Eric Dumazet <edumazet@google.com>
 
-1) Lockdep thinks all nouveau subdevs belong to the same class and can be
-locked in arbitrary order, which is not true (at least in general case).
-Tell it to distinguish subdevs by (o)class type.
-2) DRM client can be locked under user client lock - tell lockdep to put
-DRM client lock in a separate class.
+[ Upstream commit ff905b1e4aad8ccbbb0d42f7137f19482742ff07 ]
 
-Reported-by: Arend van Spriel <arend@broadcom.com>
-Reported-by: Peter Hurley <peter@hurleysoftware.com>
-Reported-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Reported-by: Daniel J Blueman <daniel@quora.org>
-Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+commit 02275a2ee7c0 (tcp: don't abort splice() after small transfers)
+added a regression.
+
+[   83.843570] INFO: rcu_sched self-detected stall on CPU
+[   83.844575] INFO: rcu_sched detected stalls on CPUs/tasks: { 6} (detected by 0, t=21002 jiffies, g=4457, c=4456, q=13132)
+[   83.844582] Task dump for CPU 6:
+[   83.844584] netperf         R  running task        0  8966   8952 0x0000000c
+[   83.844587]  0000000000000000 0000000000000006 0000000000006c6c 0000000000000000
+[   83.844589]  000000000000006c 0000000000000096 ffffffff819ce2bc ffffffffffffff10
+[   83.844592]  ffffffff81088679 0000000000000010 0000000000000246 ffff880c4b9ddcd8
+[   83.844594] Call Trace:
+[   83.844596]  [<ffffffff81088679>] ? vprintk_emit+0x1c9/0x4c0
+[   83.844601]  [<ffffffff815ad449>] ? schedule+0x29/0x70
+[   83.844606]  [<ffffffff81537bd2>] ? tcp_splice_data_recv+0x42/0x50
+[   83.844610]  [<ffffffff8153beaa>] ? tcp_read_sock+0xda/0x260
+[   83.844613]  [<ffffffff81537b90>] ? tcp_prequeue_process+0xb0/0xb0
+[   83.844615]  [<ffffffff8153c0f0>] ? tcp_splice_read+0xc0/0x250
+[   83.844618]  [<ffffffff814dc0c2>] ? sock_splice_read+0x22/0x30
+[   83.844622]  [<ffffffff811b820b>] ? do_splice_to+0x7b/0xa0
+[   83.844627]  [<ffffffff811ba4bc>] ? sys_splice+0x59c/0x5d0
+[   83.844630]  [<ffffffff8119745b>] ? putname+0x2b/0x40
+[   83.844633]  [<ffffffff8118bcb4>] ? do_sys_open+0x174/0x1e0
+[   83.844636]  [<ffffffff815b6202>] ? system_call_fastpath+0x16/0x1b
+
+if recv_actor() returns 0, we should stop immediately,
+because looping wont give a chance to drain the pipe.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Willy Tarreau <w@1wt.eu>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/gpu/drm/nouveau/core/core/subdev.c         |    2 +-
- drivers/gpu/drm/nouveau/core/include/core/object.h |    7 +++++--
- drivers/gpu/drm/nouveau/nouveau_drm.c              |    3 +++
- 3 files changed, 9 insertions(+), 3 deletions(-)
+ net/ipv4/tcp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/nouveau/core/core/subdev.c
-+++ b/drivers/gpu/drm/nouveau/core/core/subdev.c
-@@ -99,7 +99,7 @@ nouveau_subdev_create_(struct nouveau_ob
- 	if (ret)
- 		return ret;
- 
--	mutex_init(&subdev->mutex);
-+	__mutex_init(&subdev->mutex, subname, &oclass->lock_class_key);
- 	subdev->name = subname;
- 
- 	if (parent) {
---- a/drivers/gpu/drm/nouveau/core/include/core/object.h
-+++ b/drivers/gpu/drm/nouveau/core/include/core/object.h
-@@ -50,10 +50,13 @@ int  nouveau_object_fini(struct nouveau_
- 
- extern struct nouveau_ofuncs nouveau_object_ofuncs;
- 
-+/* Don't allocate dynamically, because lockdep needs lock_class_keys to be in
-+ * ".data". */
- struct nouveau_oclass {
- 	u32 handle;
--	struct nouveau_ofuncs *ofuncs;
--	struct nouveau_omthds *omthds;
-+	struct nouveau_ofuncs * ofuncs;
-+	struct nouveau_omthds * const omthds;
-+	struct lock_class_key lock_class_key;
- };
- 
- #define nv_oclass(o)    nv_object(o)->oclass
---- a/drivers/gpu/drm/nouveau/nouveau_drm.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_drm.c
-@@ -241,6 +241,8 @@ nouveau_drm_probe(struct pci_dev *pdev,
- 	return 0;
- }
- 
-+static struct lock_class_key drm_client_lock_class_key;
-+
- static int
- nouveau_drm_load(struct drm_device *dev, unsigned long flags)
- {
-@@ -252,6 +254,7 @@ nouveau_drm_load(struct drm_device *dev,
- 	ret = nouveau_cli_create(pdev, "DRM", sizeof(*drm), (void**)&drm);
- 	if (ret)
- 		return ret;
-+	lockdep_set_class(&drm->client.mutex, &drm_client_lock_class_key);
- 
- 	dev->dev_private = drm;
- 	drm->dev = dev;
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -1481,7 +1481,7 @@ int tcp_read_sock(struct sock *sk, read_
+ 					break;
+ 			}
+ 			used = recv_actor(desc, skb, offset, len);
+-			if (used < 0) {
++			if (used <= 0) {
+ 				if (!copied)
+ 					copied = used;
+ 				break;
 
 
