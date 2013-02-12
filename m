@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759759Ab3BLVKD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 16:10:03 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53433 "EHLO
+	id S1752305Ab3BLUfn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 15:35:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53413 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752319Ab3BLUfo (ORCPT
+	with ESMTP id S1752030Ab3BLUfj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:35:44 -0500
+	Tue, 12 Feb 2013 15:35:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bing Zhao <bzhao@marvell.com>, Amitkumar Karwar <akarwar@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 11/61] mwifiex: fix incomplete scan in case of IE parsing error
-Date: Tue, 12 Feb 2013 12:34:31 -0800
-Message-Id: <20130212203419.666100951@linuxfoundation.org>
+        Alim Akhtar <alim.akhtar@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 05/61] regulator: s2mps11: fix incorrect register for buck10
+Date: Tue, 12 Feb 2013 12:34:25 -0800
+Message-Id: <20130212203418.789942388@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203417.890993903@linuxfoundation.org>
 References: <20130212203417.890993903@linuxfoundation.org>
@@ -27,75 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bing Zhao <bzhao@marvell.com>
+From: Alim Akhtar <alim.akhtar@samsung.com>
 
-commit 8a7d7cbf7b5ff9912ef50b3e94c9ad9f37b1c75f upstream.
+commit c76edd52bf19c9d01da7edc4ff04d3707c299779 upstream.
 
-A scan request is split into multiple scan commands queued in
-scan_pending_q. Each scan command will be sent to firmware and
-its response is handlded one after another.
+For BUCK10 the control registers are wrongly set as buck9 control register
+This patch corrects the control registers for buck10
 
-If any error is detected while parsing IE in command response
-buffer the remaining data will be ignored and error is returned.
-
-We should check if there is any more scan commands pending in
-the queue before returning error. This ensures that we will call
-cfg80211_scan_done if this is the last scan command, or send
-next scan command in scan_pending_q to firmware.
-
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Alim Akhtar <alim.akhtar@samsung.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/scan.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ drivers/regulator/s2mps11.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/mwifiex/scan.c
-+++ b/drivers/net/wireless/mwifiex/scan.c
-@@ -1555,7 +1555,7 @@ int mwifiex_ret_802_11_scan(struct mwifi
- 		dev_err(adapter->dev, "SCAN_RESP: too many AP returned (%d)\n",
- 			scan_rsp->number_of_sets);
- 		ret = -1;
--		goto done;
-+		goto check_next_scan;
- 	}
- 
- 	bytes_left = le16_to_cpu(scan_rsp->bss_descript_size);
-@@ -1626,7 +1626,8 @@ int mwifiex_ret_802_11_scan(struct mwifi
- 		if (!beacon_size || beacon_size > bytes_left) {
- 			bss_info += bytes_left;
- 			bytes_left = 0;
--			return -1;
-+			ret = -1;
-+			goto check_next_scan;
- 		}
- 
- 		/* Initialize the current working beacon pointer for this BSS
-@@ -1682,7 +1683,7 @@ int mwifiex_ret_802_11_scan(struct mwifi
- 				dev_err(priv->adapter->dev,
- 					"%s: bytes left < IE length\n",
- 					__func__);
--				goto done;
-+				goto check_next_scan;
- 			}
- 			if (element_id == WLAN_EID_DS_PARAMS) {
- 				channel = *(current_ptr + sizeof(struct ieee_types_header));
-@@ -1745,6 +1746,7 @@ int mwifiex_ret_802_11_scan(struct mwifi
- 		}
- 	}
- 
-+check_next_scan:
- 	spin_lock_irqsave(&adapter->scan_pending_q_lock, flags);
- 	if (list_empty(&adapter->scan_pending_q)) {
- 		spin_unlock_irqrestore(&adapter->scan_pending_q_lock, flags);
-@@ -1792,7 +1794,6 @@ int mwifiex_ret_802_11_scan(struct mwifi
- 		}
- 	}
- 
--done:
- 	return ret;
+--- a/drivers/regulator/s2mps11.c
++++ b/drivers/regulator/s2mps11.c
+@@ -174,9 +174,9 @@ static struct regulator_ops s2mps11_buck
+ 	.min_uV		= S2MPS11_BUCK_MIN2,			\
+ 	.uV_step	= S2MPS11_BUCK_STEP2,			\
+ 	.n_voltages	= S2MPS11_BUCK_N_VOLTAGES,		\
+-	.vsel_reg	= S2MPS11_REG_B9CTRL2,			\
++	.vsel_reg	= S2MPS11_REG_B10CTRL2,			\
+ 	.vsel_mask	= S2MPS11_BUCK_VSEL_MASK,		\
+-	.enable_reg	= S2MPS11_REG_B9CTRL1,			\
++	.enable_reg	= S2MPS11_REG_B10CTRL1,			\
+ 	.enable_mask	= S2MPS11_ENABLE_MASK			\
  }
  
 
