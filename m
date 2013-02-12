@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933000Ab3BLLaF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 06:30:05 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:59668 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932303Ab3BLLaD (ORCPT
+	id S933037Ab3BLLbM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 06:31:12 -0500
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:50245 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932839Ab3BLLbK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 06:30:03 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16 with generic iowrite(read)8/16(be)
-Date: Tue, 12 Feb 2013 11:29:54 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-5-generic; KDE/4.3.2; x86_64; ; )
-Cc: Michal Simek <monstr@monstr.eu>, Geert Uytterhoeven <geert@linux-m68k.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, dahinds@users.sourceforge.net
-References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com> <201302111608.29304.arnd@arndb.de> <1360628974.17442.23.camel@pasglop>
-In-Reply-To: <1360628974.17442.23.camel@pasglop>
+	Tue, 12 Feb 2013 06:31:10 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302121129.54654.arnd@arndb.de>
-X-Provags-ID: V02:K0:Y0wBjVfjOAwJuXfzoayE0XZNJ/AbYd3TZEi0I/pIVhf
- rd5EIYKHC/BwMcS5i8i5OC8FRoab3It4m/bqcEJq9qa3Q8ZX6g
- wNoEi/vFCbinF2K5mVetW8BtHNYf25u3Asnm0emYKrBnVpjFs8
- yHX5CI4h+N5MFOAzwIZ/A5JA3KJDR15czcvv91Gz2TalUoH+29
- /qSZA/onBNmHNY+xl4WvvAWNcHFS9qKb1iIE9ONsTikvw/dnw6
- 3MVLZMlqVnH0TIwDsq4g1kXPmE5UDctwQwH6KUdElfYiaHajIm
- cVqqRnOpJnx3LIYj0QRNXOEr4k3j9oos0+YOuuYlzxgkxgNMpZ
- /uSuwu/OfX3CvDaDM3dM=
+In-Reply-To: <alpine.DEB.2.00.1302102344160.28198@skynet.skynet.ie>
+References: <alpine.DEB.2.00.1302102344160.28198@skynet.skynet.ie>
+Date: Tue, 12 Feb 2013 21:31:08 +1000
+Message-ID: <CAPM=9txsMWT4MiJna34q8Fg0wPWL3GhtspTmVko=pvYL9Fvikg@mail.gmail.com>
+Subject: Re: [git pull] drm nouveau fixes.
+From: Dave Airlie <airlied@gmail.com>
+To: Dave Airlie <airlied@linux.ie>
+Cc: torvalds@linux-foundation.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 12 February 2013, Benjamin Herrenschmidt wrote:
-> It depends how the ARM core operates vs. IO when switched between BE and
-> LE, does it keep the same lines doing byte 0 or does it keep the MSB/LSB
-> in the same place (and thus changes which lanes contain byte 0) ?
+>
+> just 3 nouveau fixes, all user visible issues, I have one radeon
+> regression fix I'm hoping to send tomorrow once I'm happy with it.
 
-IIRC it changed between older and more recent ARM, at least we have
-separate configuration options for "BE-8" big-endian mode on ARMv6
-and above, and "BE-32" on older ones.
+Okay I've added the radeon regression fix on top as well
 
-Currently we don't support platforms upstream that get configured
-as BE-32, but the code is there and I know of people using it.
+The following changes since commit ff7c60c580d9722f820d85c9c58ca55ecc1ee7c4:
 
-	Arnd
+  drm/ttm: fix fence locking in ttm_buffer_object_transfer, 2nd try
+(2013-02-08 10:44:31 +1000)
+
+are available in the git repository at:
+
+  git://people.freedesktop.org/~airlied/linux drm-fixes
+
+for you to fetch changes up to de0babd60d8d43b58fd06a7803151d32cb589af0:
+
+  drm/radeon: enforce use of radeon_get_ib_value when reading user cmd
+(2013-02-12 16:56:25 +1000)
+
+----------------------------------------------------------------
+Dave Airlie (1):
+      Merge branch 'drm-nouveau-fixes-3.8' of
+git://anongit.freedesktop.org/git/nouveau/linux-2.6 into drm-next
+
+Jerome Glisse (1):
+      drm/radeon: enforce use of radeon_get_ib_value when reading user cmd
+
+Maarten Lankhorst (1):
+      drm/nouveau: use different register to wait for secret scrubber
+
+Marcin Slusarz (1):
+      drm/nouveau: add lockdep annotations
+
+Roy Spliet (1):
+      drm/nv50/fb: Fix nullptr-deref on IGPs
+
+ drivers/gpu/drm/nouveau/core/core/falcon.c         |  7 +-
+ drivers/gpu/drm/nouveau/core/core/subdev.c         |  2 +-
+ drivers/gpu/drm/nouveau/core/include/core/object.h |  7 +-
+ drivers/gpu/drm/nouveau/core/subdev/fb/base.c      |  4 +-
+ drivers/gpu/drm/nouveau/core/subdev/fb/nv50.c      |  5 +-
+ drivers/gpu/drm/nouveau/nouveau_drm.c              |  3 +
+ drivers/gpu/drm/radeon/evergreen_cs.c              | 86 +++++++++++-----------
+ drivers/gpu/drm/radeon/r600_cs.c                   | 38 +++++-----
+ 8 files changed, 81 insertions(+), 71 deletions(-)
