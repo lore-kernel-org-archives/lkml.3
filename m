@@ -1,31 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758855Ab3BLUo3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:44:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54041 "EHLO
+	id S1758910Ab3BLUov (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 15:44:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54036 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758784Ab3BLUl5 (ORCPT
+	with ESMTP id S1758752Ab3BLUl4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:41:57 -0500
+	Tue, 12 Feb 2013 15:41:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Pasi=20K=E4rkk=E4inen?= <pasik@iki.fi>,
-        Neal Cardwell <ncardwell@google.com>,
-        Eric Dumazet <edumazet@google.com>,
-        =?UTF-8?q?Ilpo=20J=E4rvinen?= <ilpo.jarvinen@helsinki.fi>,
-        Yuchung Cheng <ycheng@google.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Jan Beulich <JBeulich@suse.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 31/36] tcp: frto should not set snd_cwnd to 0
-Date: Tue, 12 Feb 2013 12:41:25 -0800
-Message-Id: <20130212203900.934029203@linuxfoundation.org>
+Subject: [ 30/36] netback: correct netbk_tx_err to handle wrap around.
+Date: Tue, 12 Feb 2013 12:41:24 -0800
+Message-Id: <20130212203900.813634541@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203857.305594226@linuxfoundation.org>
 References: <20130212203857.305594226@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -35,42 +29,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Eric Dumazet <edumazet@google.com>
+From: Ian Campbell <Ian.Campbell@citrix.com>
 
-[ Upstream commit 2e5f421211ff76c17130b4597bc06df4eeead24f ]
+[ Upstream commit b9149729ebdcfce63f853aa54a404c6a8f6ebbf3 ]
 
-Commit 9dc274151a548 (tcp: fix ABC in tcp_slow_start())
-uncovered a bug in FRTO code :
-tcp_process_frto() is setting snd_cwnd to 0 if the number
-of in flight packets is 0.
-
-As Neal pointed out, if no packet is in flight we lost our
-chance to disambiguate whether a loss timeout was spurious.
-
-We should assume it was a proper loss.
-
-Reported-by: Pasi Kärkkäinen <pasik@iki.fi>
-Signed-off-by: Neal Cardwell <ncardwell@google.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Ilpo Järvinen <ilpo.jarvinen@helsinki.fi>
-Cc: Yuchung Cheng <ycheng@google.com>
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Acked-by: Jan Beulich <JBeulich@suse.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_input.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/xen-netback/netback.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -3619,7 +3619,8 @@ static int tcp_process_frto(struct sock
- 	    ((tp->frto_counter >= 2) && (flag & FLAG_RETRANS_DATA_ACKED)))
- 		tp->undo_marker = 0;
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -852,7 +852,7 @@ static void netbk_tx_err(struct xenvif *
  
--	if (!before(tp->snd_una, tp->frto_highmark)) {
-+	if (!before(tp->snd_una, tp->frto_highmark) ||
-+	    !tcp_packets_in_flight(tp)) {
- 		tcp_enter_frto_loss(sk, (tp->frto_counter == 1 ? 2 : 3), flag);
- 		return 1;
- 	}
+ 	do {
+ 		make_tx_response(vif, txp, XEN_NETIF_RSP_ERROR);
+-		if (cons >= end)
++		if (cons == end)
+ 			break;
+ 		txp = RING_GET_REQUEST(&vif->tx, cons++);
+ 	} while (1);
 
 
