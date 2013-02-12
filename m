@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933475Ab3BLSW0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 13:22:26 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:38998 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933470Ab3BLSWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 13:22:25 -0500
-Message-ID: <1360693342.5128.39.camel@joe-AO722>
-Subject: Re: [PATCH V4 1/2] get_maintainer: allow keywords to match filenames
-From: Joe Perches <joe@perches.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: arm@kernel.org, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Julian Andres Klode <jak@jak-linux.org>,
-        Marc Dietrich <marvin24@gmx.de>, Stephen Warren <swarren@nvidia.com>
-Date: Tue, 12 Feb 2013 10:22:22 -0800
-In-Reply-To: <511A8743.9010408@wwwdotorg.org>
-References: <1360629574-23989-1-git-send-email-swarren@wwwdotorg.org>
-	 <1360649875.5128.18.camel@joe-AO722> <511A8743.9010408@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S933657Ab3BLSXj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 13:23:39 -0500
+Received: from mail.tpi.com ([70.99.223.143]:3395 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933551Ab3BLSXh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 13:23:37 -0500
+From: Tim Gardner <tim.gardner@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: Tim Gardner <tim.gardner@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        linux-ext4@vger.kernel.org
+Subject: [PATCH linux-next] jbd: start_this_handle(): remove kfree() redundant null check
+Date: Tue, 12 Feb 2013 11:23:24 -0700
+Message-Id: <1360693404-61617-1-git-send-email-tim.gardner@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-02-12 at 11:17 -0700, Stephen Warren wrote:
-> On 02/11/2013 11:17 PM, Joe Perches wrote:
-> > If the -f pattern is a single file,
-> > get_maintainer reads that file content and then
-> > matches any K: patterns.
-> > 
-> > When the -f pattern is a directory, it doesn't.
-> 
-> Yes, I guess that's true; I had convinced myself that "file" wasn't
-> accurate since "-f directory/" didn't scan the files within that
-> directory tree, but as you say "-f file" does scan the file content.
-> 
-> BTW, given I'm adding "filename" to the list, I intend to change the
-> existing "file" to "file content" to be clear. Are you OK with that?
+smatch analysis:
 
-Sure.
+fs/jbd/transaction.c:236 start_this_handle() info: redundant null
+ check on new_transaction calling kfree()
+
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>
+Cc: linux-ext4@vger.kernel.org
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+---
+ fs/jbd/transaction.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/fs/jbd/transaction.c b/fs/jbd/transaction.c
+index 071d690..ee40b4e 100644
+--- a/fs/jbd/transaction.c
++++ b/fs/jbd/transaction.c
+@@ -232,8 +232,7 @@ repeat_locked:
+ 
+ 	lock_map_acquire(&handle->h_lockdep_map);
+ out:
+-	if (unlikely(new_transaction))		/* It's usually NULL */
+-		kfree(new_transaction);
++	kfree(new_transaction);
+ 	return ret;
+ }
+ 
+-- 
+1.7.9.5
 
