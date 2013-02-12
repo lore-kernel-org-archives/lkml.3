@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758652Ab3BLUrl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:47:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53978 "EHLO
+	id S1759060Ab3BLUsA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 15:48:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53970 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758589Ab3BLUlt (ORCPT
+	with ESMTP id S1757458Ab3BLUls (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:41:49 -0500
+	Tue, 12 Feb 2013 15:41:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Pirko <jiri@resnulli.us>,
-        Marcelo Ricardo Leitner <mleitner@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 20/36] ipv6: do not create neighbor entries for local delivery
-Date: Tue, 12 Feb 2013 12:41:14 -0800
-Message-Id: <20130212203859.694204198@linuxfoundation.org>
+        "David S. Miller" <davem@davemloft.net>, Cong Wang <amwang@redhat.com>
+Subject: [ 19/36] pktgen: correctly handle failures when adding a device
+Date: Tue, 12 Feb 2013 12:41:13 -0800
+Message-Id: <20130212203859.574763810@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203857.305594226@linuxfoundation.org>
 References: <20130212203857.305594226@linuxfoundation.org>
@@ -29,38 +27,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Marcelo Ricardo Leitner <mleitner@redhat.com>
+From: Cong Wang <amwang@redhat.com>
 
-[ Upstream commit bd30e947207e2ea0ff2c08f5b4a03025ddce48d3 ]
+[ Upstream commit 604dfd6efc9b79bce432f2394791708d8e8f6efc ]
 
-They will be created at output, if ever needed. This avoids creating
-empty neighbor entries when TPROXYing/Forwarding packets for addresses
-that are not even directly reachable.
+The return value of pktgen_add_device() is not checked, so
+even if we fail to add some device, for example, non-exist one,
+we still see "OK:...". This patch fixes it.
 
-Note that IPv4 already handles it this way. No neighbor entries are
-created for local input.
+After this patch, I got:
 
-Tested by myself and customer.
+	# echo "add_device non-exist" > /proc/net/pktgen/kpktgend_0
+	-bash: echo: write error: No such device
+	# cat /proc/net/pktgen/kpktgend_0
+	Running:
+	Stopped:
+	Result: ERROR: can not add device non-exist
+	# echo "add_device eth0" > /proc/net/pktgen/kpktgend_0
+	# cat /proc/net/pktgen/kpktgend_0
+	Running:
+	Stopped: eth0
+	Result: OK: add_device=eth0
 
-Signed-off-by: Jiri Pirko <jiri@resnulli.us>
-Signed-off-by: Marcelo Ricardo Leitner <mleitner@redhat.com>
+(Candidate for -stable)
+
+Cc: David S. Miller <davem@davemloft.net>
+Signed-off-by: Cong Wang <amwang@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/route.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/core/pktgen.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -846,7 +846,8 @@ restart:
- 	dst_hold(&rt->dst);
- 	read_unlock_bh(&table->tb6_lock);
+--- a/net/core/pktgen.c
++++ b/net/core/pktgen.c
+@@ -1802,10 +1802,13 @@ static ssize_t pktgen_thread_write(struc
+ 			return -EFAULT;
+ 		i += len;
+ 		mutex_lock(&pktgen_thread_lock);
+-		pktgen_add_device(t, f);
++		ret = pktgen_add_device(t, f);
+ 		mutex_unlock(&pktgen_thread_lock);
+-		ret = count;
+-		sprintf(pg_result, "OK: add_device=%s", f);
++		if (!ret) {
++			ret = count;
++			sprintf(pg_result, "OK: add_device=%s", f);
++		} else
++			sprintf(pg_result, "ERROR: can not add device %s", f);
+ 		goto out;
+ 	}
  
--	if (!dst_get_neighbour_noref_raw(&rt->dst) && !(rt->rt6i_flags & RTF_NONEXTHOP))
-+	if (!dst_get_neighbour_noref_raw(&rt->dst) &&
-+	    !(rt->rt6i_flags & (RTF_NONEXTHOP | RTF_LOCAL)))
- 		nrt = rt6_alloc_cow(rt, &fl6->daddr, &fl6->saddr);
- 	else if (!(rt->dst.flags & DST_HOST))
- 		nrt = rt6_alloc_clone(rt, &fl6->daddr);
 
 
