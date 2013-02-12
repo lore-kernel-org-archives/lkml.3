@@ -1,359 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933382Ab3BLRKr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 12:10:47 -0500
-Received: from pegase1.c-s.fr ([93.17.236.30]:36393 "EHLO mailhub1.si.c-s.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932327Ab3BLRKp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 12:10:45 -0500
-Date: Tue, 12 Feb 2013 18:10:32 +0100
-Message-Id: <201302121710.r1CHAWES027406@localhost.localdomain>
-From: Christophe Leroy <christophe.leroy@c-s.fr>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        patrick.vasseur@c-s.fr
-Subject: [PATCH v2] IIO ADC support for AD7923
+	id S933466Ab3BLRK6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 12:10:58 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:49909 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932327Ab3BLRKz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 12:10:55 -0500
+Date: Tue, 12 Feb 2013 09:10:49 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 1/6] idr: fix top layer handling
+Message-ID: <20130212171049.GA7348@htj.dyndns.org>
+References: <20130208210050.GA26660@mtj.dyndns.org>
+ <20130211153955.0b6e1f1e.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130211153955.0b6e1f1e.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for Analog Devices AD7923 ADC in the IIO Subsystem.
+Hey, Andrew.
 
-Signed-off-by: Patrick Vasseur <patrick.vasseur@c-s.fr>
-Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+On Mon, Feb 11, 2013 at 03:39:55PM -0800, Andrew Morton wrote:
+> This doesn't apply happily to 3.7, so Greg will be needing a redone
+> version when the time arrives.
+> 
+> But does it really need backporting?  Is anyone likely to hit this in
+> practice?
 
-diff -urN linux-next-e347c98/drivers/iio/adc/Kconfig linux-next-e347c98.new/drivers/iio/adc/Kconfig
---- linux-next-e347c98/drivers/iio/adc/Kconfig	2013-02-08 05:22:35.000000000 +0100
-+++ linux-next-e347c98.new/drivers/iio/adc/Kconfig	2013-02-12 13:02:52.000000000 +0100
-@@ -30,6 +30,18 @@
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called ad7298.
- 
-+config AD7923
-+	tristate "Analog Devices AD7923 ADC driver"
-+	depends on SPI
-+	select IIO_BUFFER
-+	select IIO_TRIGGERED_BUFFER
-+	help
-+	  Say yes here to build support for Analog Devices AD7923
-+	  4 Channel ADC with temperature sensor.
-+
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called ad7923.
-+
- config AD7791
- 	tristate "Analog Devices AD7791 ADC driver"
- 	depends on SPI
-diff -urN linux-next-e347c98/drivers/iio/adc/Makefile linux-next-e347c98.new/drivers/iio/adc/Makefile
---- linux-next-e347c98/drivers/iio/adc/Makefile	2013-02-08 05:22:35.000000000 +0100
-+++ linux-next-e347c98.new/drivers/iio/adc/Makefile	2013-02-12 13:03:02.000000000 +0100
-@@ -5,6 +5,7 @@
- obj-$(CONFIG_AD_SIGMA_DELTA) += ad_sigma_delta.o
- obj-$(CONFIG_AD7266) += ad7266.o
- obj-$(CONFIG_AD7298) += ad7298.o
-+obj-$(CONFIG_AD7923) += ad7923.o
- obj-$(CONFIG_AD7476) += ad7476.o
- obj-$(CONFIG_AD7791) += ad7791.o
- obj-$(CONFIG_AD7793) += ad7793.o
-diff -urN linux-next-e347c98/drivers/iio/adc/ad7923.c linux-next-e347c98.new/drivers/iio/adc/ad7923.c
---- linux-next-e347c98/drivers/iio/adc/ad7923.c	1970-01-01 01:00:00.000000000 +0100
-+++ linux-next-e347c98.new/drivers/iio/adc/ad7923.c	2013-02-12 15:16:29.000000000 +0100
-@@ -0,0 +1,298 @@
-+/*
-+ * AD7923 SPI ADC driver
-+ *
-+ * Copyright 2011 Analog Devices Inc (from AD7923 Driver)
-+ * Copyright 2012 CS Systemes d'Information
-+ *
-+ * Licensed under the GPL-2.
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/kernel.h>
-+#include <linux/slab.h>
-+#include <linux/sysfs.h>
-+#include <linux/spi/spi.h>
-+#include <linux/err.h>
-+#include <linux/delay.h>
-+#include <linux/module.h>
-+#include <linux/interrupt.h>
-+
-+#include <linux/iio/iio.h>
-+#include <linux/iio/sysfs.h>
-+#include <linux/iio/buffer.h>
-+#include <linux/iio/trigger_consumer.h>
-+#include <linux/iio/triggered_buffer.h>
-+
-+#define AD7923_WRITE_CR		(1 << 11)	/* write control register */
-+#define AD7923_RANGE		(1 << 1)	/* range to REFin */
-+#define AD7923_CODING		(1 << 0)	/* coding is straight binary */
-+#define AD7923_PM_MODE_AS	(1)		/* auto shutdown */
-+#define AD7923_PM_MODE_FS	(2)		/* full shutdown */
-+#define AD7923_PM_MODE_OPS	(3)		/* normal operation */
-+#define AD7923_CHANNEL_0	(0)		/* analog input 0 */
-+#define AD7923_CHANNEL_1	(1)		/* analog input 1 */
-+#define AD7923_CHANNEL_2	(2)		/* analog input 2 */
-+#define AD7923_CHANNEL_3	(3)		/* analog input 3 */
-+#define AD7923_SEQUENCE_OFF	(0)		/* no sequence fonction */
-+#define AD7923_SEQUENCE_PROTECT	(2)		/* no interrupt write cycle */
-+#define AD7923_SEQUENCE_ON	(3)		/* continuous sequence */
-+
-+#define AD7923_MAX_CHAN		4
-+
-+#define AD7923_PM_MODE_WRITE(mode)	(mode << 4)	/* write mode */
-+#define AD7923_CHANNEL_WRITE(channel)	(channel << 6)	/* write channel */
-+#define AD7923_SEQUENCE_WRITE(sequence)	(((sequence & 1) << 3) \
-+					+ ((sequence & 2) << 9))
-+						/* write sequence fonction */
-+/* left shift for CR : bit 11 transmit in first */
-+#define AD7923_SHIFT_REGISTER	4
-+
-+/* val = value, dec = left shift, bits = number of bits of the mask */
-+#define EXTRACT(val, dec, bits)		((val >> dec) & ((1 << bits) - 1))
-+
-+struct ad7923_state {
-+	struct spi_device		*spi;
-+	struct spi_transfer		ring_xfer[6];
-+	struct spi_transfer		scan_single_xfer[2];
-+	struct spi_message		ring_msg;
-+	struct spi_message		scan_single_msg;
-+	/*
-+	 * DMA (thus cache coherency maintenance) requires the
-+	 * transfer buffers to live in their own cache lines.
-+	 */
-+	__be16				rx_buf[4] ____cacheline_aligned;
-+	__be16				tx_buf[2];
-+};
-+
-+#define AD7923_V_CHAN(index)						\
-+	{								\
-+		.type = IIO_VOLTAGE,					\
-+		.indexed = 1,						\
-+		.channel = index,					\
-+		.info_mask = IIO_CHAN_INFO_RAW_SEPARATE_BIT |		\
-+		IIO_CHAN_INFO_SCALE_SHARED_BIT,				\
-+		.address = index,					\
-+		.scan_index = index,					\
-+		.scan_type = {						\
-+			.sign = 'u',					\
-+			.realbits = 12,					\
-+			.storagebits = 16,				\
-+			.endianness = IIO_BE,				\
-+		},							\
-+	}
-+
-+static const struct iio_chan_spec ad7923_channels[] = {
-+	AD7923_V_CHAN(0),
-+	AD7923_V_CHAN(1),
-+	AD7923_V_CHAN(2),
-+	AD7923_V_CHAN(3),
-+	IIO_CHAN_SOFT_TIMESTAMP(4),
-+};
-+
-+/**
-+ * ad7923_update_scan_mode() setup the spi transfer buffer for the new scan mask
-+ **/
-+static int ad7923_update_scan_mode(struct iio_dev *indio_dev,
-+	const unsigned long *active_scan_mask)
-+{
-+	struct ad7923_state *st = iio_priv(indio_dev);
-+	int i, cmd, len;
-+
-+	len = 0;
-+	for_each_set_bit(i, active_scan_mask, AD7923_MAX_CHAN) {
-+		cmd = AD7923_WRITE_CR | AD7923_CODING | AD7923_RANGE |
-+			AD7923_PM_MODE_WRITE(AD7923_PM_MODE_OPS) |
-+			AD7923_SEQUENCE_WRITE(AD7923_SEQUENCE_OFF) |
-+			AD7923_CHANNEL_WRITE(i);
-+		cmd <<= AD7923_SHIFT_REGISTER;
-+		st->tx_buf[len++] = cpu_to_be16(cmd);
-+	}
-+	/* build spi ring message */
-+	st->ring_xfer[0].tx_buf = &st->tx_buf[0];
-+	st->ring_xfer[0].len = len;
-+	st->ring_xfer[0].cs_change = 1;
-+
-+	spi_message_init(&st->ring_msg);
-+	spi_message_add_tail(&st->ring_xfer[0], &st->ring_msg);
-+
-+	for (i = 0; i < len; i++) {
-+		st->ring_xfer[i + 1].rx_buf = &st->rx_buf[i];
-+		st->ring_xfer[i + 1].len = 2;
-+		st->ring_xfer[i + 1].cs_change = 1;
-+		spi_message_add_tail(&st->ring_xfer[i + 1], &st->ring_msg);
-+	}
-+	/* make sure last transfer cs_change is not set */
-+	st->ring_xfer[i + 1].cs_change = 0;
-+
-+	return 0;
-+}
-+
-+/**
-+ * ad7923_trigger_handler() bh of trigger launched polling to ring buffer
-+ *
-+ * Currently there is no option in this driver to disable the saving of
-+ * timestamps within the ring.
-+ **/
-+static irqreturn_t ad7923_trigger_handler(int irq, void *p)
-+{
-+	struct iio_poll_func *pf = p;
-+	struct iio_dev *indio_dev = pf->indio_dev;
-+	struct ad7923_state *st = iio_priv(indio_dev);
-+	s64 time_ns = 0;
-+	int b_sent;
-+
-+	b_sent = spi_sync(st->spi, &st->ring_msg);
-+	if (b_sent)
-+		goto done;
-+
-+	if (indio_dev->scan_timestamp) {
-+		time_ns = iio_get_time_ns();
-+		memcpy((u8 *)st->rx_buf + indio_dev->scan_bytes - sizeof(s64),
-+			&time_ns, sizeof(time_ns));
-+	}
-+
-+	iio_push_to_buffers(indio_dev, (u8 *)st->rx_buf);
-+
-+done:
-+	iio_trigger_notify_done(indio_dev->trig);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static int ad7923_scan_direct(struct ad7923_state *st, unsigned ch)
-+{
-+	int ret, cmd;
-+
-+	cmd = AD7923_WRITE_CR | AD7923_PM_MODE_WRITE(AD7923_PM_MODE_OPS) |
-+		AD7923_SEQUENCE_WRITE(AD7923_SEQUENCE_OFF) | AD7923_CODING |
-+		AD7923_CHANNEL_WRITE(ch) | AD7923_RANGE;
-+	cmd <<= AD7923_SHIFT_REGISTER;
-+	st->tx_buf[0] = cpu_to_be16(cmd);
-+
-+	ret = spi_sync(st->spi, &st->scan_single_msg);
-+	if (ret)
-+		return ret;
-+
-+	return be16_to_cpu(st->rx_buf[0]);
-+}
-+
-+static int ad7923_read_raw(struct iio_dev *indio_dev,
-+			   struct iio_chan_spec const *chan,
-+			   int *val,
-+			   int *val2,
-+			   long m)
-+{
-+	int ret;
-+	struct ad7923_state *st = iio_priv(indio_dev);
-+
-+	switch (m) {
-+	case IIO_CHAN_INFO_RAW:
-+		mutex_lock(&indio_dev->mlock);
-+		if (iio_buffer_enabled(indio_dev))
-+			ret = -EBUSY;
-+		else
-+			ret = ad7923_scan_direct(st, chan->address);
-+		mutex_unlock(&indio_dev->mlock);
-+
-+		if (ret < 0)
-+			return ret;
-+
-+		if (chan->address == EXTRACT(ret, 12, 4))
-+			*val = EXTRACT(ret, 0, 12);
-+
-+		return IIO_VAL_INT;
-+	}
-+	return -EINVAL;
-+}
-+
-+static const struct iio_info ad7923_info = {
-+	.read_raw = &ad7923_read_raw,
-+	.update_scan_mode = ad7923_update_scan_mode,
-+	.driver_module = THIS_MODULE,
-+};
-+
-+static int ad7923_probe(struct spi_device *spi)
-+{
-+	struct ad7923_state *st;
-+	struct iio_dev *indio_dev = iio_device_alloc(sizeof(*st));
-+	int ret;
-+
-+	if (indio_dev == NULL)
-+		return -ENOMEM;
-+
-+	st = iio_priv(indio_dev);
-+
-+	spi_set_drvdata(spi, indio_dev);
-+
-+	st->spi = spi;
-+
-+	indio_dev->name = spi_get_device_id(spi)->name;
-+	indio_dev->dev.parent = &spi->dev;
-+	indio_dev->modes = INDIO_DIRECT_MODE;
-+	indio_dev->channels = ad7923_channels;
-+	indio_dev->num_channels = ARRAY_SIZE(ad7923_channels);
-+	indio_dev->info = &ad7923_info;
-+
-+	/* Setup default message */
-+
-+	st->scan_single_xfer[0].tx_buf = &st->tx_buf[0];
-+	st->scan_single_xfer[0].len = 2;
-+	st->scan_single_xfer[0].cs_change = 1;
-+	st->scan_single_xfer[1].rx_buf = &st->rx_buf[0];
-+	st->scan_single_xfer[1].len = 2;
-+
-+	spi_message_init(&st->scan_single_msg);
-+	spi_message_add_tail(&st->scan_single_xfer[0], &st->scan_single_msg);
-+	spi_message_add_tail(&st->scan_single_xfer[1], &st->scan_single_msg);
-+
-+	ret = iio_triggered_buffer_setup(indio_dev, NULL,
-+			&ad7923_trigger_handler, NULL);
-+	if (ret)
-+		goto error_free;
-+
-+	ret = iio_device_register(indio_dev);
-+	if (ret)
-+		goto error_cleanup_ring;
-+
-+	return 0;
-+
-+error_cleanup_ring:
-+	iio_triggered_buffer_cleanup(indio_dev);
-+error_free:
-+	iio_device_free(indio_dev);
-+
-+	return ret;
-+}
-+
-+static int ad7923_remove(struct spi_device *spi)
-+{
-+	struct iio_dev *indio_dev = spi_get_drvdata(spi);
-+
-+	iio_device_unregister(indio_dev);
-+	iio_triggered_buffer_cleanup(indio_dev);
-+	iio_device_free(indio_dev);
-+
-+	return 0;
-+}
-+
-+static const struct spi_device_id ad7923_id[] = {
-+	{"ad7923", 0},
-+	{}
-+};
-+MODULE_DEVICE_TABLE(spi, ad7923_id);
-+
-+static struct spi_driver ad7923_driver = {
-+	.driver = {
-+		.name	= "ad7923",
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe		= ad7923_probe,
-+	.remove		= ad7923_remove,
-+	.id_table	= ad7923_id,
-+};
-+module_spi_driver(ad7923_driver);
-+
-+MODULE_AUTHOR("Michael Hennerich <hennerich@blackfin.uclinux.org>");
-+MODULE_AUTHOR("Patrick Vasseur <patrick.vasseur@c-s.fr>");
-+MODULE_DESCRIPTION("Analog Devices AD7923 ADC");
-+MODULE_LICENSE("GPL v2");
+For most cases, probably not.  IDR_BITS being 5 and 6 on 32 and 64bit
+respectively, the only misbehaving bit is bit 30, so unless ID goes
+over 1G, which should be close to non-existent if the IDs are being
+allocated from zero, it shouldn't be a problem; however, we do have
+users where IDR is used to allocate cyclic IDs.  They maintain and
+progress the last allocated ID so that IDs don't get recycled without
+wrapping around.  I have no idea whether any of them would be
+allocating IDs fast enough to go over 1G limit in any reasonable
+amount of time or whether there are such ID allocations which can be
+exploited from userland without root priviliedges, in which case it
+would probably directly lead to oops.
+
+So, to sum up, at least I can't rule out the issue happening or being
+exploited in the wild with older kernels.  It isn't too likely to
+happen naturally but if there's a userland exploitable cyclic
+alloction, going over 1G wouldn't be too difficult.
+
+> Also, I assume you have some sort of IDR test harness over there.  Is
+> it something we can get into the tree in some fashion to help with
+> ongoing maintenance?
+
+Right now, it's just a messy test module with ad-hoc loops and manual
+alloc/frees with a lot of printks sprinkled everywhere, so I'm afraid
+it wouldn't be suitable for any form of automated test.  It sure would
+be great to have a testing harness for this tho.
+
+Thanks.
+
+-- 
+tejun
