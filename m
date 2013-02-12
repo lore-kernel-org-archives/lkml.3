@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757804Ab3BLUh1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:37:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53740 "EHLO
+	id S1757840Ab3BLUiC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 15:38:02 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53800 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757526Ab3BLUhQ (ORCPT
+	with ESMTP id S1757385Ab3BLUh0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:37:16 -0500
+	Tue, 12 Feb 2013 15:37:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Greear <greearb@candelatech.com>,
-        Eric Dumazet <edumazet@google.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 09/22] net: loopback: fix a dst refcounting issue
-Date: Tue, 12 Feb 2013 12:36:52 -0800
-Message-Id: <20130212203415.248247223@linuxfoundation.org>
+Subject: [ 13/22] atm/iphase: rename fregt_t -> ffreg_t
+Date: Tue, 12 Feb 2013 12:36:56 -0800
+Message-Id: <20130212203416.033991384@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203413.459836020@linuxfoundation.org>
 References: <20130212203413.459836020@linuxfoundation.org>
@@ -29,79 +29,197 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Eric Dumazet <edumazet@google.com>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-[ Upstream commit 794ed393b707f01858f5ebe2ae5eabaf89d00022 ]
+[ Upstream commit ab54ee80aa7585f9666ff4dd665441d7ce41f1e8 ]
 
-Ben Greear reported crashes in ip_rcv_finish() on a stress
-test involving many macvlans.
+We have conflicting type qualifiers for "freg_t" in s390's ptrace.h and the
+iphase atm device driver, which causes the compile error below.
+Unfortunately the s390 typedef can't be renamed, since it's a user visible api,
+nor can I change the include order in s390 code to avoid the conflict.
 
-We tracked the bug to a dst use after free. ip_rcv_finish()
-was calling dst->input() and got garbage for dst->input value.
+So simply rename the iphase typedef to a new name. Fixes this compile error:
 
-It appears the bug is in loopback driver, lacking
-a skb_dst_force() before calling netif_rx().
+In file included from drivers/atm/iphase.c:66:0:
+drivers/atm/iphase.h:639:25: error: conflicting type qualifiers for 'freg_t'
+In file included from next/arch/s390/include/asm/ptrace.h:9:0,
+                 from next/arch/s390/include/asm/lowcore.h:12,
+                 from next/arch/s390/include/asm/thread_info.h:30,
+                 from include/linux/thread_info.h:54,
+                 from include/linux/preempt.h:9,
+                 from include/linux/spinlock.h:50,
+                 from include/linux/seqlock.h:29,
+                 from include/linux/time.h:5,
+                 from include/linux/stat.h:18,
+                 from include/linux/module.h:10,
+                 from drivers/atm/iphase.c:43:
+next/arch/s390/include/uapi/asm/ptrace.h:197:3: note: previous declaration of 'freg_t' was here
 
-As a result, a non refcounted dst, normally protected by a
-RCU read_lock section, was escaping this section and could
-be freed before the packet being processed.
-
-  [<ffffffff813a3c4d>] loopback_xmit+0x64/0x83
-  [<ffffffff81477364>] dev_hard_start_xmit+0x26c/0x35e
-  [<ffffffff8147771a>] dev_queue_xmit+0x2c4/0x37c
-  [<ffffffff81477456>] ? dev_hard_start_xmit+0x35e/0x35e
-  [<ffffffff8148cfa6>] ? eth_header+0x28/0xb6
-  [<ffffffff81480f09>] neigh_resolve_output+0x176/0x1a7
-  [<ffffffff814ad835>] ip_finish_output2+0x297/0x30d
-  [<ffffffff814ad6d5>] ? ip_finish_output2+0x137/0x30d
-  [<ffffffff814ad90e>] ip_finish_output+0x63/0x68
-  [<ffffffff814ae412>] ip_output+0x61/0x67
-  [<ffffffff814ab904>] dst_output+0x17/0x1b
-  [<ffffffff814adb6d>] ip_local_out+0x1e/0x23
-  [<ffffffff814ae1c4>] ip_queue_xmit+0x315/0x353
-  [<ffffffff814adeaf>] ? ip_send_unicast_reply+0x2cc/0x2cc
-  [<ffffffff814c018f>] tcp_transmit_skb+0x7ca/0x80b
-  [<ffffffff814c3571>] tcp_connect+0x53c/0x587
-  [<ffffffff810c2f0c>] ? getnstimeofday+0x44/0x7d
-  [<ffffffff810c2f56>] ? ktime_get_real+0x11/0x3e
-  [<ffffffff814c6f9b>] tcp_v4_connect+0x3c2/0x431
-  [<ffffffff814d6913>] __inet_stream_connect+0x84/0x287
-  [<ffffffff814d6b38>] ? inet_stream_connect+0x22/0x49
-  [<ffffffff8108d695>] ? _local_bh_enable_ip+0x84/0x9f
-  [<ffffffff8108d6c8>] ? local_bh_enable+0xd/0x11
-  [<ffffffff8146763c>] ? lock_sock_nested+0x6e/0x79
-  [<ffffffff814d6b38>] ? inet_stream_connect+0x22/0x49
-  [<ffffffff814d6b49>] inet_stream_connect+0x33/0x49
-  [<ffffffff814632c6>] sys_connect+0x75/0x98
-
-This bug was introduced in linux-2.6.35, in commit
-7fee226ad2397b (net: add a noref bit on skb dst)
-
-skb_dst_force() is enforced in dev_queue_xmit() for devices having a
-qdisc.
-
-Reported-by: Ben Greear <greearb@candelatech.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Tested-by: Ben Greear <greearb@candelatech.com>
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Acked-by: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/loopback.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/atm/iphase.h |  146 +++++++++++++++++++++++++--------------------------
+ 1 file changed, 73 insertions(+), 73 deletions(-)
 
---- a/drivers/net/loopback.c
-+++ b/drivers/net/loopback.c
-@@ -78,6 +78,11 @@ static netdev_tx_t loopback_xmit(struct
+--- a/drivers/atm/iphase.h
++++ b/drivers/atm/iphase.h
+@@ -636,82 +636,82 @@ struct rx_buf_desc {
+ #define SEG_BASE IPHASE5575_FRAG_CONTROL_REG_BASE  
+ #define REASS_BASE IPHASE5575_REASS_CONTROL_REG_BASE  
  
- 	skb_orphan(skb);
+-typedef volatile u_int  freg_t;
++typedef volatile u_int	ffreg_t;
+ typedef u_int   rreg_t;
  
-+	/* Before queueing this packet to netif_rx(),
-+	 * make sure dst is refcounted.
-+	 */
-+	skb_dst_force(skb);
-+
- 	skb->protocol = eth_type_trans(skb, dev);
+ typedef struct _ffredn_t {
+-        freg_t  idlehead_high;  /* Idle cell header (high)              */
+-        freg_t  idlehead_low;   /* Idle cell header (low)               */
+-        freg_t  maxrate;        /* Maximum rate                         */
+-        freg_t  stparms;        /* Traffic Management Parameters        */
+-        freg_t  abrubr_abr;     /* ABRUBR Priority Byte 1, TCR Byte 0   */
+-        freg_t  rm_type;        /*                                      */
+-        u_int   filler5[0x17 - 0x06];
+-        freg_t  cmd_reg;        /* Command register                     */
+-        u_int   filler18[0x20 - 0x18];
+-        freg_t  cbr_base;       /* CBR Pointer Base                     */
+-        freg_t  vbr_base;       /* VBR Pointer Base                     */
+-        freg_t  abr_base;       /* ABR Pointer Base                     */
+-        freg_t  ubr_base;       /* UBR Pointer Base                     */
+-        u_int   filler24;
+-        freg_t  vbrwq_base;     /* VBR Wait Queue Base                  */
+-        freg_t  abrwq_base;     /* ABR Wait Queue Base                  */
+-        freg_t  ubrwq_base;     /* UBR Wait Queue Base                  */
+-        freg_t  vct_base;       /* Main VC Table Base                   */
+-        freg_t  vcte_base;      /* Extended Main VC Table Base          */
+-        u_int   filler2a[0x2C - 0x2A];
+-        freg_t  cbr_tab_beg;    /* CBR Table Begin                      */
+-        freg_t  cbr_tab_end;    /* CBR Table End                        */
+-        freg_t  cbr_pointer;    /* CBR Pointer                          */
+-        u_int   filler2f[0x30 - 0x2F];
+-        freg_t  prq_st_adr;     /* Packet Ready Queue Start Address     */
+-        freg_t  prq_ed_adr;     /* Packet Ready Queue End Address       */
+-        freg_t  prq_rd_ptr;     /* Packet Ready Queue read pointer      */
+-        freg_t  prq_wr_ptr;     /* Packet Ready Queue write pointer     */
+-        freg_t  tcq_st_adr;     /* Transmit Complete Queue Start Address*/
+-        freg_t  tcq_ed_adr;     /* Transmit Complete Queue End Address  */
+-        freg_t  tcq_rd_ptr;     /* Transmit Complete Queue read pointer */
+-        freg_t  tcq_wr_ptr;     /* Transmit Complete Queue write pointer*/
+-        u_int   filler38[0x40 - 0x38];
+-        freg_t  queue_base;     /* Base address for PRQ and TCQ         */
+-        freg_t  desc_base;      /* Base address of descriptor table     */
+-        u_int   filler42[0x45 - 0x42];
+-        freg_t  mode_reg_0;     /* Mode register 0                      */
+-        freg_t  mode_reg_1;     /* Mode register 1                      */
+-        freg_t  intr_status_reg;/* Interrupt Status register            */
+-        freg_t  mask_reg;       /* Mask Register                        */
+-        freg_t  cell_ctr_high1; /* Total cell transfer count (high)     */
+-        freg_t  cell_ctr_lo1;   /* Total cell transfer count (low)      */
+-        freg_t  state_reg;      /* Status register                      */
+-        u_int   filler4c[0x58 - 0x4c];
+-        freg_t  curr_desc_num;  /* Contains the current descriptor num  */
+-        freg_t  next_desc;      /* Next descriptor                      */
+-        freg_t  next_vc;        /* Next VC                              */
+-        u_int   filler5b[0x5d - 0x5b];
+-        freg_t  present_slot_cnt;/* Present slot count                  */
+-        u_int   filler5e[0x6a - 0x5e];
+-        freg_t  new_desc_num;   /* New descriptor number                */
+-        freg_t  new_vc;         /* New VC                               */
+-        freg_t  sched_tbl_ptr;  /* Schedule table pointer               */
+-        freg_t  vbrwq_wptr;     /* VBR wait queue write pointer         */
+-        freg_t  vbrwq_rptr;     /* VBR wait queue read pointer          */
+-        freg_t  abrwq_wptr;     /* ABR wait queue write pointer         */
+-        freg_t  abrwq_rptr;     /* ABR wait queue read pointer          */
+-        freg_t  ubrwq_wptr;     /* UBR wait queue write pointer         */
+-        freg_t  ubrwq_rptr;     /* UBR wait queue read pointer          */
+-        freg_t  cbr_vc;         /* CBR VC                               */
+-        freg_t  vbr_sb_vc;      /* VBR SB VC                            */
+-        freg_t  abr_sb_vc;      /* ABR SB VC                            */
+-        freg_t  ubr_sb_vc;      /* UBR SB VC                            */
+-        freg_t  vbr_next_link;  /* VBR next link                        */
+-        freg_t  abr_next_link;  /* ABR next link                        */
+-        freg_t  ubr_next_link;  /* UBR next link                        */
+-        u_int   filler7a[0x7c-0x7a];
+-        freg_t  out_rate_head;  /* Out of rate head                     */
+-        u_int   filler7d[0xca-0x7d]; /* pad out to full address space   */
+-        freg_t  cell_ctr_high1_nc;/* Total cell transfer count (high)   */
+-        freg_t  cell_ctr_lo1_nc;/* Total cell transfer count (low)      */
+-        u_int   fillercc[0x100-0xcc]; /* pad out to full address space   */
++	ffreg_t	idlehead_high;	/* Idle cell header (high)		*/
++	ffreg_t	idlehead_low;	/* Idle cell header (low)		*/
++	ffreg_t	maxrate;	/* Maximum rate				*/
++	ffreg_t	stparms;	/* Traffic Management Parameters	*/
++	ffreg_t	abrubr_abr;	/* ABRUBR Priority Byte 1, TCR Byte 0	*/
++	ffreg_t	rm_type;	/*					*/
++	u_int	filler5[0x17 - 0x06];
++	ffreg_t	cmd_reg;	/* Command register			*/
++	u_int	filler18[0x20 - 0x18];
++	ffreg_t	cbr_base;	/* CBR Pointer Base			*/
++	ffreg_t	vbr_base;	/* VBR Pointer Base			*/
++	ffreg_t	abr_base;	/* ABR Pointer Base			*/
++	ffreg_t	ubr_base;	/* UBR Pointer Base			*/
++	u_int	filler24;
++	ffreg_t	vbrwq_base;	/* VBR Wait Queue Base			*/
++	ffreg_t	abrwq_base;	/* ABR Wait Queue Base			*/
++	ffreg_t	ubrwq_base;	/* UBR Wait Queue Base			*/
++	ffreg_t	vct_base;	/* Main VC Table Base			*/
++	ffreg_t	vcte_base;	/* Extended Main VC Table Base		*/
++	u_int	filler2a[0x2C - 0x2A];
++	ffreg_t	cbr_tab_beg;	/* CBR Table Begin			*/
++	ffreg_t	cbr_tab_end;	/* CBR Table End			*/
++	ffreg_t	cbr_pointer;	/* CBR Pointer				*/
++	u_int	filler2f[0x30 - 0x2F];
++	ffreg_t	prq_st_adr;	/* Packet Ready Queue Start Address	*/
++	ffreg_t	prq_ed_adr;	/* Packet Ready Queue End Address	*/
++	ffreg_t	prq_rd_ptr;	/* Packet Ready Queue read pointer	*/
++	ffreg_t	prq_wr_ptr;	/* Packet Ready Queue write pointer	*/
++	ffreg_t	tcq_st_adr;	/* Transmit Complete Queue Start Address*/
++	ffreg_t	tcq_ed_adr;	/* Transmit Complete Queue End Address	*/
++	ffreg_t	tcq_rd_ptr;	/* Transmit Complete Queue read pointer */
++	ffreg_t	tcq_wr_ptr;	/* Transmit Complete Queue write pointer*/
++	u_int	filler38[0x40 - 0x38];
++	ffreg_t	queue_base;	/* Base address for PRQ and TCQ		*/
++	ffreg_t	desc_base;	/* Base address of descriptor table	*/
++	u_int	filler42[0x45 - 0x42];
++	ffreg_t	mode_reg_0;	/* Mode register 0			*/
++	ffreg_t	mode_reg_1;	/* Mode register 1			*/
++	ffreg_t	intr_status_reg;/* Interrupt Status register		*/
++	ffreg_t	mask_reg;	/* Mask Register			*/
++	ffreg_t	cell_ctr_high1; /* Total cell transfer count (high)	*/
++	ffreg_t	cell_ctr_lo1;	/* Total cell transfer count (low)	*/
++	ffreg_t	state_reg;	/* Status register			*/
++	u_int	filler4c[0x58 - 0x4c];
++	ffreg_t	curr_desc_num;	/* Contains the current descriptor num	*/
++	ffreg_t	next_desc;	/* Next descriptor			*/
++	ffreg_t	next_vc;	/* Next VC				*/
++	u_int	filler5b[0x5d - 0x5b];
++	ffreg_t	present_slot_cnt;/* Present slot count			*/
++	u_int	filler5e[0x6a - 0x5e];
++	ffreg_t	new_desc_num;	/* New descriptor number		*/
++	ffreg_t	new_vc;		/* New VC				*/
++	ffreg_t	sched_tbl_ptr;	/* Schedule table pointer		*/
++	ffreg_t	vbrwq_wptr;	/* VBR wait queue write pointer		*/
++	ffreg_t	vbrwq_rptr;	/* VBR wait queue read pointer		*/
++	ffreg_t	abrwq_wptr;	/* ABR wait queue write pointer		*/
++	ffreg_t	abrwq_rptr;	/* ABR wait queue read pointer		*/
++	ffreg_t	ubrwq_wptr;	/* UBR wait queue write pointer		*/
++	ffreg_t	ubrwq_rptr;	/* UBR wait queue read pointer		*/
++	ffreg_t	cbr_vc;		/* CBR VC				*/
++	ffreg_t	vbr_sb_vc;	/* VBR SB VC				*/
++	ffreg_t	abr_sb_vc;	/* ABR SB VC				*/
++	ffreg_t	ubr_sb_vc;	/* UBR SB VC				*/
++	ffreg_t	vbr_next_link;	/* VBR next link			*/
++	ffreg_t	abr_next_link;	/* ABR next link			*/
++	ffreg_t	ubr_next_link;	/* UBR next link			*/
++	u_int	filler7a[0x7c-0x7a];
++	ffreg_t	out_rate_head;	/* Out of rate head			*/
++	u_int	filler7d[0xca-0x7d]; /* pad out to full address space	*/
++	ffreg_t	cell_ctr_high1_nc;/* Total cell transfer count (high)	*/
++	ffreg_t	cell_ctr_lo1_nc;/* Total cell transfer count (low)	*/
++	u_int	fillercc[0x100-0xcc]; /* pad out to full address space	 */
+ } ffredn_t;
  
- 	/* it's OK to use per_cpu_ptr() because BHs are off */
+ typedef struct _rfredn_t {
 
 
