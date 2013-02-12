@@ -1,95 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758120Ab3BLWFv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 17:05:51 -0500
-Received: from mga09.intel.com ([134.134.136.24]:16312 "EHLO mga09.intel.com"
+	id S1757896Ab3BLWFs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 17:05:48 -0500
+Received: from mga03.intel.com ([143.182.124.21]:31756 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753836Ab3BLWEf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754307Ab3BLWEf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Feb 2013 17:04:35 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,652,1355126400"; 
-   d="scan'208";a="261715655"
+   d="scan'208";a="256096887"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@elte.hu
-Cc: linux-kernel@vger.kernel.org, eranian@google.com,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 4/5] perf, x86: Support full width counting v3
-Date: Tue, 12 Feb 2013 14:04:17 -0800
-Message-Id: <1360706658-13468-5-git-send-email-andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com
+Subject: Basic perf PMU support for Haswell v6
+Date: Tue, 12 Feb 2013 14:04:13 -0800
+Message-Id: <1360706658-13468-1-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1360706658-13468-1-git-send-email-andi@firstfloor.org>
-References: <1360706658-13468-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+This is based on v7 of the full Haswell PMU support, but 
+ported to the latest perf/core and stripped down to the
+bare bones
 
-Recent Intel CPUs like Haswell and IvyBridge have a new alternative MSR
-range for perfctrs that allows writing the full counter width. Enable this
-range if the hardware reports it using a new capability bit.
+Only for very extremly basic usage.
 
-This lowers the overhead of perf stat slightly because it has to do less
-interrupts to accumulate the counter value. On Haswell it also avoids some
-problems with TSX aborting when the end of the counter range is reached.
+Most interesting new features are not in this patchkit
+(full version is git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-misc.git hsw/pmu5)
 
-v2: Print the feature at boot
-v3: Rename field. Add comment.
-Reviewed-by: Stephane Eranian <eranian@google.com>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- arch/x86/include/uapi/asm/msr-index.h  |    3 +++
- arch/x86/kernel/cpu/perf_event.h       |    5 +++++
- arch/x86/kernel/cpu/perf_event_intel.c |    7 +++++++
- 3 files changed, 15 insertions(+), 0 deletions(-)
+Contains support for:
+- Basic Haswell PMU and PEBS support
+- Late unmasking of the PMI
+- Support for wide counters
 
-diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
-index 433a59f..af41a77 100644
---- a/arch/x86/include/uapi/asm/msr-index.h
-+++ b/arch/x86/include/uapi/asm/msr-index.h
-@@ -163,6 +163,9 @@
- #define MSR_KNC_EVNTSEL0               0x00000028
- #define MSR_KNC_EVNTSEL1               0x00000029
- 
-+/* Alternative perfctr range with full access. */
-+#define MSR_IA32_PMC0			0x000004c1
-+
- /* AMD64 MSRs. Not complete. See the architecture manual for a more
-    complete list. */
- 
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index ded4667..ebac06d 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -278,6 +278,11 @@ union perf_capabilities {
- 		u64	pebs_arch_reg:1;
- 		u64	pebs_format:4;
- 		u64	smm_freeze:1;
-+		/*
-+		 * PMU supports separate counter range for writing
-+		 * values > 32bit.
-+		 */
-+		u64	full_width_write:1;
- 	};
- 	u64	capabilities;
- };
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index aa48048..0bf19f3 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -2228,5 +2228,12 @@ __init int intel_pmu_init(void)
- 		}
- 	}
- 
-+	/* Support full width counters using alternative MSR range */
-+	if (x86_pmu.intel_cap.full_width_write) {
-+		x86_pmu.max_period = x86_pmu.cntval_mask;
-+		x86_pmu.perfctr = MSR_IA32_PMC0;
-+		pr_cont("full-width counters, ");
-+	}
-+
- 	return 0;
- }
--- 
-1.7.7.6
+v2: Addressed Stephane's feedback. See individual patches for details.
+v3: now even more bite-sized. Qualifier constraints merged earlier.
+v4: Rename some variables, add some comments and other minor changes.
+Add some Reviewed/Tested-bys.
+v5: Address some minor review feedback. Port to latest perf/core
+v6: Add just some variable names, add comments, edit descriptions, some
+more testing, rebased to latest perf/core
 
+-Andi
