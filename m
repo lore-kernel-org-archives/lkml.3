@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933281Ab3BLNHj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 08:07:39 -0500
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:60317 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933238Ab3BLNHB (ORCPT
+	id S933285Ab3BLNIN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 08:08:13 -0500
+Received: from mail-vb0-f44.google.com ([209.85.212.44]:48170 "EHLO
+	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933230Ab3BLNG6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 08:07:01 -0500
+	Tue, 12 Feb 2013 08:06:58 -0500
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>, asias@redhat.com, mst@redhat.com,
         Rusty Russell <rusty@rustcorp.com.au>, kvm@vger.kernel.org,
         virtualization@lists.linux-foundation.org, JBottomley@parallels.com,
         linux-scsi@vger.kernel.org
-Subject: [PATCH v3 3/5] virtio-scsi: push vq lock/unlock into virtscsi_vq_done
-Date: Tue, 12 Feb 2013 14:06:29 +0100
-Message-Id: <1360674391-2661-4-git-send-email-pbonzini@redhat.com>
+Subject: [PATCH v3 5/5] virtio-scsi: reset virtqueue affinity when doing cpu hotplug
+Date: Tue, 12 Feb 2013 14:06:31 +0100
+Message-Id: <1360674391-2661-6-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1360674391-2661-1-git-send-email-pbonzini@redhat.com>
 References: <1360674391-2661-1-git-send-email-pbonzini@redhat.com>
@@ -23,81 +23,97 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avoid duplicated code in all of the callers.
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+
+Add hot cpu notifier to reset the request virtqueue affinity
+when doing cpu hotplug.
 
 Cc: linux-scsi@vger.kernel.org
+Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+[ The version that doesn't get/put_online_cpus is now called
+  __virtscsi_set_affinity - Paolo ]
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- drivers/scsi/virtio_scsi.c |   22 +++++++++-------------
- 1 files changed, 9 insertions(+), 13 deletions(-)
+ drivers/scsi/virtio_scsi.c |   31 +++++++++++++++++++++++++++++++
+ 1 files changed, 31 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-index 3dd4ec5..3d77210 100644
+index a2bdae1..733307a 100644
 --- a/drivers/scsi/virtio_scsi.c
 +++ b/drivers/scsi/virtio_scsi.c
-@@ -165,28 +165,30 @@ static void virtscsi_complete_cmd(struct virtio_scsi *vscsi, void *buf)
- 	sc->scsi_done(sc);
+@@ -20,6 +20,7 @@
+ #include <linux/virtio_ids.h>
+ #include <linux/virtio_config.h>
+ #include <linux/virtio_scsi.h>
++#include <linux/cpu.h>
+ #include <scsi/scsi_host.h>
+ #include <scsi/scsi_device.h>
+ #include <scsi/scsi_cmnd.h>
+@@ -109,6 +110,9 @@ struct virtio_scsi {
+ 	/* Does the affinity hint is set for virtqueues? */
+ 	bool affinity_hint_set;
+ 
++	/* CPU hotplug notifier */
++	struct notifier_block nb;
++
+ 	struct virtio_scsi_vq ctrl_vq;
+ 	struct virtio_scsi_vq event_vq;
+ 	struct virtio_scsi_vq req_vqs[];
+@@ -734,6 +738,7 @@ static void __virtscsi_set_affinity(struct virtio_scsi *vscsi, bool affinity)
+ 	}
  }
  
--static void virtscsi_vq_done(struct virtio_scsi *vscsi, struct virtqueue *vq,
-+static void virtscsi_vq_done(struct virtio_scsi *vscsi,
-+			     struct virtio_scsi_vq *virtscsi_vq,
- 			     void (*fn)(struct virtio_scsi *vscsi, void *buf))
++
+ static void virtscsi_set_affinity(struct virtio_scsi *vscsi, bool affinity)
  {
- 	void *buf;
- 	unsigned int len;
-+	unsigned long flags;
-+	struct virtqueue *vq = virtscsi_vq->vq;
- 
-+	spin_lock_irqsave(&virtscsi_vq->vq_lock, flags);
- 	do {
- 		virtqueue_disable_cb(vq);
- 		while ((buf = virtqueue_get_buf(vq, &len)) != NULL)
- 			fn(vscsi, buf);
- 	} while (!virtqueue_enable_cb(vq));
-+	spin_unlock_irqrestore(&virtscsi_vq->vq_lock, flags);
+ 	get_online_cpus();
+@@ -741,6 +746,23 @@ static void virtscsi_set_affinity(struct virtio_scsi *vscsi, bool affinity)
+ 	put_online_cpus();
  }
  
- static void virtscsi_req_done(struct virtqueue *vq)
++static int virtscsi_cpu_callback(struct notifier_block *nfb,
++				 unsigned long action, void *hcpu)
++{
++	struct virtio_scsi *vscsi = container_of(nfb, struct virtio_scsi, nb);
++	switch(action) {
++	case CPU_ONLINE:
++	case CPU_ONLINE_FROZEN:
++	case CPU_DEAD:
++	case CPU_DEAD_FROZEN:
++		__virtscsi_set_affinity(vscsi, true);
++		break;
++	default:
++		break;
++	}
++	return NOTIFY_OK;
++}
++
+ static void virtscsi_init_vq(struct virtio_scsi_vq *virtscsi_vq,
+ 			     struct virtqueue *vq)
  {
- 	struct Scsi_Host *sh = virtio_scsi_host(vq->vdev);
- 	struct virtio_scsi *vscsi = shost_priv(sh);
--	unsigned long flags;
+@@ -885,6 +907,13 @@ static int virtscsi_probe(struct virtio_device *vdev)
+ 	if (err)
+ 		goto virtscsi_init_failed;
  
--	spin_lock_irqsave(&vscsi->req_vq.vq_lock, flags);
--	virtscsi_vq_done(vscsi, vq, virtscsi_complete_cmd);
--	spin_unlock_irqrestore(&vscsi->req_vq.vq_lock, flags);
-+	virtscsi_vq_done(vscsi, &vscsi->req_vq, virtscsi_complete_cmd);
- };
++	vscsi->nb.notifier_call = &virtscsi_cpu_callback;
++	err = register_hotcpu_notifier(&vscsi->nb);
++	if (err) {
++		pr_err("virtio_scsi: registering cpu notifier failed\n");
++		goto scsi_add_host_failed;
++	}
++
+ 	cmd_per_lun = virtscsi_config_get(vdev, cmd_per_lun) ?: 1;
+ 	shost->cmd_per_lun = min_t(u32, cmd_per_lun, shost->can_queue);
+ 	shost->max_sectors = virtscsi_config_get(vdev, max_sectors) ?: 0xFFFF;
+@@ -922,6 +951,8 @@ static void virtscsi_remove(struct virtio_device *vdev)
  
- static void virtscsi_complete_free(struct virtio_scsi *vscsi, void *buf)
-@@ -203,11 +205,8 @@ static void virtscsi_ctrl_done(struct virtqueue *vq)
- {
- 	struct Scsi_Host *sh = virtio_scsi_host(vq->vdev);
- 	struct virtio_scsi *vscsi = shost_priv(sh);
--	unsigned long flags;
+ 	scsi_remove_host(shost);
  
--	spin_lock_irqsave(&vscsi->ctrl_vq.vq_lock, flags);
--	virtscsi_vq_done(vscsi, vq, virtscsi_complete_free);
--	spin_unlock_irqrestore(&vscsi->ctrl_vq.vq_lock, flags);
-+	virtscsi_vq_done(vscsi, &vscsi->ctrl_vq, virtscsi_complete_free);
- };
- 
- static int virtscsi_kick_event(struct virtio_scsi *vscsi,
-@@ -342,11 +341,8 @@ static void virtscsi_event_done(struct virtqueue *vq)
- {
- 	struct Scsi_Host *sh = virtio_scsi_host(vq->vdev);
- 	struct virtio_scsi *vscsi = shost_priv(sh);
--	unsigned long flags;
- 
--	spin_lock_irqsave(&vscsi->event_vq.vq_lock, flags);
--	virtscsi_vq_done(vscsi, vq, virtscsi_complete_event);
--	spin_unlock_irqrestore(&vscsi->event_vq.vq_lock, flags);
-+	virtscsi_vq_done(vscsi, &vscsi->event_vq, virtscsi_complete_event);
- };
- 
- /**
++	unregister_hotcpu_notifier(&vscsi->nb);
++
+ 	virtscsi_remove_vqs(vdev);
+ 	scsi_host_put(shost);
+ }
 -- 
 1.7.1
-
 
