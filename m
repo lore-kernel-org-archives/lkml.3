@@ -1,53 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757783Ab3BLXC2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 18:02:28 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:48803 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752140Ab3BLXC1 (ORCPT
+	id S1758683Ab3BLXCx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 18:02:53 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51923 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755616Ab3BLXCv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 18:02:27 -0500
-From: Cyril Roelandt <tipecaml@gmail.com>
-To: davem@davemloft.net
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        mugunthanvnm@ti.com, zonque@gmail.com, hotforest@gmail.com,
-        Julia.Lawall@lip6.fr, netdev@vger.kernel.org,
-        Cyril Roelandt <tipecaml@gmail.com>
-Subject: [PATCH] net: ethernet: ti: remove redundant NULL check.
-Date: Tue, 12 Feb 2013 23:52:30 +0100
-Message-Id: <1360709550-821-1-git-send-email-tipecaml@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <20130212.170650.89534546100043269.davem@davemloft.net>
-References: <20130212.170650.89534546100043269.davem@davemloft.net>
+	Tue, 12 Feb 2013 18:02:51 -0500
+Date: Tue, 12 Feb 2013 21:02:45 -0200
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: Re: [ 109/173] drm/i915: Close race between processing unpin task
+ and queueing the flip
+Message-ID: <20130212230244.GA3111@herton-Z68MA-D2H-B3>
+References: <20121228190330.025298996@decadent.org.uk>
+ <20121228190353.093271782@decadent.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121228190353.093271782@decadent.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cpdma_chan_destroy() on a NULL pointer is a no-op, so the NULL check in
-cpdma_ctlr_destroy() can safely be removed.
+On Fri, Dec 28, 2012 at 08:05:19PM +0100, Ben Hutchings wrote:
+> 3.2-stable review patch.  If anyone has any objections, please let me know.
+> 
+> ------------------
+> 
+> From: Chris Wilson <chris@chris-wilson.co.uk>
+> 
+> commit e7d841ca03b7ab668620045cd7b428eda9f41601 upstream.
+> 
+[...]
+> @@ -7157,6 +7176,10 @@ static int intel_gen4_queue_flip(struct
+>  	pf = 0;
+>  	pipesrc = I915_READ(PIPESRC(intel_crtc->pipe)) & 0x0fff0fff;
+>  	OUT_RING(pf | pipesrc);
+> +
+> +	intel_mark_page_flip_active(intel_crtc);
+> +
+> +	intel_mark_page_flip_active(intel_crtc);
+>  	ADVANCE_LP_RING();
+>  	return 0;
+>  
 
-Signed-off-by: Cyril Roelandt <tipecaml@gmail.com>
----
- drivers/net/ethernet/ti/davinci_cpdma.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+There is a problem with this patch on 3.2. First we have
+intel_mark_page_flip_active duplicated on intel_gen4_queue_flip here
+(harmless), but one missing call for it in intel_gen6_queue_flip
 
-diff --git a/drivers/net/ethernet/ti/davinci_cpdma.c b/drivers/net/ethernet/ti/davinci_cpdma.c
-index f862918..1c4b0aa 100644
---- a/drivers/net/ethernet/ti/davinci_cpdma.c
-+++ b/drivers/net/ethernet/ti/davinci_cpdma.c
-@@ -449,10 +449,8 @@ int cpdma_ctlr_destroy(struct cpdma_ctlr *ctlr)
- 	if (ctlr->state != CPDMA_STATE_IDLE)
- 		cpdma_ctlr_stop(ctlr);
+Reached to this after reproducing which is probably the same
+problem people are reporting here: http://bugs.launchpad.net/bugs/1119809
+A bisect pointed to this change, and the following diff fixed the issue
+on the i915 based machine I used to reproduce:
+
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 4da3c7e..ce23961 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -7155,8 +7155,6 @@ static int intel_gen4_queue_flip(struct drm_device *dev,
+ 	OUT_RING(pf | pipesrc);
  
--	for (i = 0; i < ARRAY_SIZE(ctlr->channels); i++) {
--		if (ctlr->channels[i])
--			cpdma_chan_destroy(ctlr->channels[i]);
--	}
-+	for (i = 0; i < ARRAY_SIZE(ctlr->channels); i++)
-+		cpdma_chan_destroy(ctlr->channels[i]);
+ 	intel_mark_page_flip_active(intel_crtc);
+-
+-	intel_mark_page_flip_active(intel_crtc);
+ 	ADVANCE_LP_RING();
+ 	return 0;
  
- 	cpdma_desc_pool_destroy(ctlr->pool);
- 	spin_unlock_irqrestore(&ctlr->lock, flags);
+@@ -7192,6 +7190,8 @@ static int intel_gen6_queue_flip(struct drm_device *dev,
+ 	pf = I915_READ(PF_CTL(intel_crtc->pipe)) & PF_ENABLE;
+ 	pipesrc = I915_READ(PIPESRC(intel_crtc->pipe)) & 0x0fff0fff;
+ 	OUT_RING(pf | pipesrc);
++
++	intel_mark_page_flip_active(intel_crtc);
+ 	ADVANCE_LP_RING();
+ 	return 0;
+ 
+
 -- 
-1.7.10.4
-
+[]'s
+Herton
