@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758353Ab3BLUqY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:46:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54016 "EHLO
+	id S1758657Ab3BLUlv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 15:41:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53946 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757667Ab3BLUlx (ORCPT
+	with ESMTP id S1758433Ab3BLUlq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:41:53 -0500
+	Tue, 12 Feb 2013 15:41:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Vlad Yasevich <vyasevic@redhat.com>,
+        Christoph Paasch <christoph.paasch@uclouvain.be>,
+        Eric Dumazet <edumazet@google.com>,
+        Sony Chacko <sony.chacko@qlogic.com>,
+        Rajesh Borundia <rajesh.borundia@qlogic.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 26/36] net: sctp: sctp_endpoint_free: zero out secret key data
-Date: Tue, 12 Feb 2013 12:41:20 -0800
-Message-Id: <20130212203900.368797212@linuxfoundation.org>
+Subject: [ 16/36] netxen: fix off by one bug in netxen_release_tx_buffer()
+Date: Tue, 12 Feb 2013 12:41:10 -0800
+Message-Id: <20130212203859.216691975@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203857.305594226@linuxfoundation.org>
 References: <20130212203857.305594226@linuxfoundation.org>
@@ -29,42 +31,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit b5c37fe6e24eec194bb29d22fdd55d73bcc709bf ]
+[ Upstream commit a05948f296ce103989b28a2606e47d2e287c3c89 ]
 
-On sctp_endpoint_destroy, previously used sensitive keying material
-should be zeroed out before the memory is returned, as we already do
-with e.g. auth keys when released.
+Christoph Paasch found netxen could trigger a BUG in its dismantle
+phase, in netxen_release_tx_buffer(), using full size TSO packets.
 
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Acked-by: Vlad Yasevich <vyasevic@redhat.com>
+cmd_buf->frag_count includes the skb->data part, so the loop must
+start at index 1 instead of 0, or else we can make an out
+of bound access to cmd_buff->frag_array[MAX_SKB_FRAGS + 2]
+
+Christoph provided the fixes in netxen_map_tx_skb() function.
+In case of a dma mapping error, its better to clear the dma fields
+so that we don't try to unmap them again in netxen_release_tx_buffer()
+
+Reported-by: Christoph Paasch <christoph.paasch@uclouvain.be>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Tested-by: Christoph Paasch <christoph.paasch@uclouvain.be>
+Cc: Sony Chacko <sony.chacko@qlogic.com>
+Cc: Rajesh Borundia <rajesh.borundia@qlogic.com>
+Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/sctp/endpointola.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/net/ethernet/qlogic/netxen/netxen_nic_init.c |    2 +-
+ drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c |    2 ++
+ 2 files changed, 3 insertions(+), 1 deletion(-)
 
---- a/net/sctp/endpointola.c
-+++ b/net/sctp/endpointola.c
-@@ -248,6 +248,8 @@ void sctp_endpoint_free(struct sctp_endp
- /* Final destructor for endpoint.  */
- static void sctp_endpoint_destroy(struct sctp_endpoint *ep)
- {
-+	int i;
-+
- 	SCTP_ASSERT(ep->base.dead, "Endpoint is not dead", return);
+--- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_init.c
++++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_init.c
+@@ -144,7 +144,7 @@ void netxen_release_tx_buffers(struct ne
+ 					 buffrag->length, PCI_DMA_TODEVICE);
+ 			buffrag->dma = 0ULL;
+ 		}
+-		for (j = 0; j < cmd_buf->frag_count; j++) {
++		for (j = 1; j < cmd_buf->frag_count; j++) {
+ 			buffrag++;
+ 			if (buffrag->dma) {
+ 				pci_unmap_page(adapter->pdev, buffrag->dma,
+--- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
++++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
+@@ -1956,10 +1956,12 @@ unwind:
+ 	while (--i >= 0) {
+ 		nf = &pbuf->frag_array[i+1];
+ 		pci_unmap_page(pdev, nf->dma, nf->length, PCI_DMA_TODEVICE);
++		nf->dma = 0ULL;
+ 	}
  
- 	/* Free up the HMAC transform. */
-@@ -270,6 +272,9 @@ static void sctp_endpoint_destroy(struct
- 	sctp_inq_free(&ep->base.inqueue);
- 	sctp_bind_addr_free(&ep->base.bind_addr);
+ 	nf = &pbuf->frag_array[0];
+ 	pci_unmap_single(pdev, nf->dma, skb_headlen(skb), PCI_DMA_TODEVICE);
++	nf->dma = 0ULL;
  
-+	for (i = 0; i < SCTP_HOW_MANY_SECRETS; ++i)
-+		memset(&ep->secret_key[i], 0, SCTP_SECRET_SIZE);
-+
- 	/* Remove and free the port */
- 	if (sctp_sk(ep->base.sk)->bind_hash)
- 		sctp_put_port(ep->base.sk);
+ out_err:
+ 	return -ENOMEM;
 
 
