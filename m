@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757687Ab3BLXAW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 18:00:22 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18453 "EHLO
+	id S1757154Ab3BLXAU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 18:00:20 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2689 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752221Ab3BLXAS (ORCPT
+	with ESMTP id S1751963Ab3BLXAS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Feb 2013 18:00:18 -0500
-X-Authority-Analysis: v=2.0 cv=NqdTgrhJ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=1BVg16HVlSoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=FQz980Gyr_cA:10 a=JfrnYn6hAAAA:8 a=w160XLPGjJZy46Wmf4cA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=3Rfx1nUSh_UA:10 a=4XWRJ7YoowM90m6mI6MA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=f8jK9ZOM c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=H5_e2PVA0KgA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=M8Ife_2nJ54A:10 a=VwQbUJbxAAAA:8 a=IqcJqnYv90CWoy7n3jYA:9 a=QEXdDO2ut3YA:10 a=IV7YnjFe_i_KqV6KYCMA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130212230017.802122508@goodmis.org>
+Message-Id: <20130212225412.781044738@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Tue, 12 Feb 2013 17:54:15 -0500
+Date: Tue, 12 Feb 2013 17:54:12 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
@@ -21,9 +21,7 @@ Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Vincent Guittot <vincent.guittot@linaro.org>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 3/3] sched: Enable interrupts in idle_balance()
-References: <20130212225412.781044738@goodmis.org>
-Content-Disposition: inline; filename=0003-sched-Enable-interrupts-in-idle_balance.patch
+Subject: [PATCH 0/3] [GIT PULL] sched: clean ups and a minor fix
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -33,56 +31,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Now that the idle_balance is called from the post_schedule of the
-idle task sched class, it is safe to enable interrupts. This allows
-for better interaction of tasks waking up and other interrupts that
-are triggered while the idle balance is in process.
+Ingo,
 
-Preemption is still disabled, but perhaps that can change as well.
-That may need some more investigation.
+The first of the patches is a minor fix to when a woken RT task is about
+to preempt a pinned RT task, push_rt_task() is called to try to
+migrate the woken task if possible (to avoid preempting a pinned RT
+task that may be the second highest priority task in the system).
 
-It may be safe to also enable preemption, but we'll leave that change
-for another time.
+But the issue is that push_rt_task() won't push it if the woken task
+is higher priority even if the task to be preempted is pinned.
 
-Cc: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/sched/fair.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+The second two patches is more of a clean up to remove the idle
+hooks in the scheduler proper, and to use the pre/post schedule
+methods instead.
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index ed18c74..0fcdbff 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -5222,9 +5222,10 @@ void idle_balance(int this_cpu, struct rq *this_rq)
- 	update_rq_runnable_avg(this_rq, 1);
-=20
- 	/*
--	 * Drop the rq->lock, but keep IRQ/preempt disabled.
-+	 * Drop the rq->lock, but keep preempt disabled.
- 	 */
--	raw_spin_unlock(&this_rq->lock);
-+	preempt_disable();
-+	raw_spin_unlock_irq(&this_rq->lock);
-=20
- 	update_blocked_averages(this_cpu);
- 	rcu_read_lock();
-@@ -5251,7 +5252,8 @@ void idle_balance(int this_cpu, struct rq *this_rq)
- 	}
- 	rcu_read_unlock();
-=20
--	raw_spin_lock(&this_rq->lock);
-+	raw_spin_lock_irq(&this_rq->lock);
-+	preempt_enable();
-=20
- 	if (pulled_task || time_after(jiffies, this_rq->next_balance)) {
- 		/*
---=20
-1.7.10.4
+This allows interrupts to be enabled in the idle balance, which slightly
+helps latencies, especially for the -rt kernel. Other patches can be
+added on top. Maybe in the future preemption could be enabled during
+the idle balance as well. But that remains to be seen.
+
+Please pull the latest tip/sched/core tree, which can be found at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+tip/sched/core
+
+Head SHA1: 1db13ecf89054d39922e7b3323d124c7e2921560
 
 
+Steven Rostedt (Red Hat) (3):
+      sched/rt: Fix push_rt_task() to have the same checks as the caller did
+      sched: Move idle_balance() to post_schedule
+      sched: Enable interrupts in idle_balance()
+
+----
+ kernel/sched/core.c      |    3 ---
+ kernel/sched/fair.c      |    8 +++++---
+ kernel/sched/idle_task.c |   10 ++++++++++
+ kernel/sched/rt.c        |   15 ++++++++++-----
+ 4 files changed, 25 insertions(+), 11 deletions(-)
 
 --00GvhwF7k39YY
 Content-Type: application/pgp-signature; name="signature.asc"
@@ -91,13 +78,13 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQEcBAABAgAGBQJRGsmBAAoJEOdOSU1xswtMGNcH/3WaD14uLKVHFC0n+twzK60B
-4T1BEOB5egVKJXiEkHE65rBqtsIDNyzGjBjx5iBbQ12JoM/FVS8V4CfHVNAp6sLw
-ikBvS4eOOE48Y6WPO37zhyrSN+Gu63J/Iy8xh6q5O4kIPdcA6UTMn0snLEQVrrBD
-Mcahgom+NWRxMly4J6tERmHloOh4Zy69GCTF8jhC7eFBCwojXJSH0DlysOgHM5UY
-6mPgHqMfHSwmya4X57NuQILB7nWgOps1HEBGiYtvLVsFSDYX3nMXxZmbSdxVCbus
-4fFXtJNVhpL4ZspkG0dqvNHnHzllgL5M+QPO4UbgqX/yV4OdyTJ1+PXL9unQ5v4=
-=pkvj
+iQEcBAABAgAGBQJRGsl+AAoJEOdOSU1xswtMl9gH/jesTzKjuqw+c0Bgsyy3ixLR
+MKv3H8oiN9WmBO95LGToAr1++yUD6s90cv3nFRH1pVFK3R4JKfGMiYyAux3C4QOg
+fZ0CG3Cgq3A0kFMaDvlhwRM0Bybgq0opjmfC/Jc8uGdR6rs1Wyg8IG6Wnx0BjmvE
+dNH9brUx/coyHMlnMMrokb92F5TVdo/upu1+XN22WxgFimj+F3dm4Y8JURY2XOt4
+2G1ppUSSrigI8j3Pqzxwqqz883D0B/aHDPYzDqvCSbi/k6Wup5n1CYC7c/DZKgEt
+1egfAgLWNtW1zLQLqUZmZ0u9TNSeGKM7niPDSXQiQRERdFkFyBjSjchSHuMJx+U=
+=aQ/T
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
