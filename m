@@ -1,47 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933399Ab3BLRBD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 12:01:03 -0500
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:50806 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932246Ab3BLRBB (ORCPT
+	id S933328Ab3BLRDF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 12:03:05 -0500
+Received: from mail-we0-f169.google.com ([74.125.82.169]:41987 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932294Ab3BLRDD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 12:01:01 -0500
+	Tue, 12 Feb 2013 12:03:03 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAMe9rOrTLGJvO+Z8kCG3gmOuW-Yq2Ex9WMfJZ5wmZcbz+zm94Q@mail.gmail.com>
-References: <20130209110031.GA17833@n2100.arm.linux.org.uk>
- <tip-b390784dc1649f6e6c5e66e5f53c21e715ccf39b@git.kernel.org>
- <CA+55aFxaUUMQuw3bgLbZLARp05eM19E_qTXBYePPk9mvEsSp=g@mail.gmail.com>
- <5119C34B.70207@zytor.com> <CAMe9rOrTLGJvO+Z8kCG3gmOuW-Yq2Ex9WMfJZ5wmZcbz+zm94Q@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 12 Feb 2013 09:00:30 -0800
-X-Google-Sender-Auth: Oblg-JADUha1vdvc7YsswX4XGqg
-Message-ID: <CA+55aFwMr8pDfj+wuv=-tUFqZQOhnqkwC7tVq-S=4MGGWiqz1A@mail.gmail.com>
-Subject: Re: [tip:x86/mm] x86, mm: Use a bitfield to mask nuisance get_user() warnings
-To: "H.J. Lu" <hjl.tools@gmail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+In-Reply-To: <CACxGe6uHx4KdZRgAyL-wQ2GurojAH0eTa6YRCoSuCg89BAvBTA@mail.gmail.com>
+References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com>
+	<1781360.cmQWHCW5SC@wuerfel>
+	<CAHTX3dJpuTRa4Ff29k95quPMVDO2mBiayPoocnw5R15=5ovOHQ@mail.gmail.com>
+	<201302041724.47331.arnd@arndb.de>
+	<1360031367.14701.47.camel@pasglop>
+	<CAHTX3dL4dScmzgGyqbvPH-7UQvFrjQhHu2zh0iZyzWB=spZS+Q@mail.gmail.com>
+	<1360066756.4529.6.camel@pasglop>
+	<CAHTX3dLJy314mv39hprkmZ5XdzYiYGz1ngTERp7w6aAYud+Riw@mail.gmail.com>
+	<51111133.7000105@synopsys.com>
+	<1360098004.4529.13.camel@pasglop>
+	<511178AC.7080304@synopsys.com>
+	<1360105635.2707.7.camel@pasglop>
+	<CACxGe6u=zhGXm0AO_h354g8OOkAQgdczdw_gCCRxL+=r8hM+-g@mail.gmail.com>
+	<1360186550.2650.4.camel@pasglop>
+	<CACxGe6uaVsng79Kni=0O_YK330vuqMuPO6=y9Bj=UZpZ0ozaDg@mail.gmail.com>
+	<CACxGe6v3ZUEQhi764ivQqE9i2wGzJGcoC0sTVohb_6MQ9sE+hQ@mail.gmail.com>
+	<5113C459.8000602@synopsys.com>
+	<CACxGe6uHx4KdZRgAyL-wQ2GurojAH0eTa6YRCoSuCg89BAvBTA@mail.gmail.com>
+Date: Tue, 12 Feb 2013 18:02:58 +0100
+Message-ID: <CAHTX3dKPWg35Az8eE45AGriPZh2G6LLaQMynhFPKSZ+7UvM=9g@mail.gmail.com>
+Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16
+ with generic iowrite(read)8/16(be)
+From: Michal Simek <monstr@monstr.eu>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jamie Lokier <jamie@shareable.org>, ville.syrjala@linux.intel.com,
-        Borislav Petkov <bp@alien8.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-tip-commits@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        dahinds@users.sourceforge.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 12, 2013 at 8:38 AM, H.J. Lu <hjl.tools@gmail.com> wrote:
+2013/2/7 Grant Likely <grant.likely@secretlab.ca>:
+> On Thu, Feb 7, 2013 at 3:12 PM, Alexey Brodkin
+> <Alexey.Brodkin@synopsys.com> wrote:
+>> On 02/07/2013 06:51 PM, Grant Likely wrote:
+>>>
+>>> On Thu, Feb 7, 2013 at 2:39 PM, Grant Likely <grant.likely@secretlab.ca>
+>>> wrote:
+>>>>
+>>>> On Wed, Feb 6, 2013 at 9:35 PM, Benjamin Herrenschmidt
+>>>> <benh@kernel.crashing.org> wrote:
+>>>>>>
+>>>>>>   In fact, the driver already knows about this and figures
+>>>>>> out at runtime how the device is wired up to the bus. This is not the
+>>>>>> problem.
+>>>>>
+>>>>>
+>>>>> Except that this is very gross, especially when you observe that in the
+>>>>> busted "big endian" case, it has to byteswap the bloody data port.
+>>>>>
+>>>>> So you end up having to do that gross hack with separate accessors for
+>>>>> registers vs. data and not able to use the _rep variants, which also
+>>>>> means that on platforms like ppc, you end up with a memory barrier on
+>>>>> every access (or more), which is going to slow things down enormously.
+>>>>
+>>>>
+>>>> I don't see why the _rep variants aren't usable here. The only reason
+>>>> I didn't use them when I wrote the driver in the first place was I was
+>>>> a n00b kernel hacker and I didn't know they were there.
+>>>
+>>>
+>>> The 8-bit variant is different though because the hardware requires
+>>> pingponging between odd and even byte addresses to flush the fifo.
+>>> Reading a data port even address (0x40) gives the least significant
+>>> byte. Reading from an odd address (0x41) give the MSB and pops the
+>>> data off the FIFO. So, yes, the _rep variant can't be used in 8-bit
+>>> mode. It should still be fine in 16-bit.
+>>>
+>>> page 45: http://www.xilinx.com/support/documentation/data_sheets/ds080.pdf
+>>>
+>>
+>> Ok, so may I do a re-spin with these changes:
 >
-> Can you do something similar to what we did in glibc:
+> There are two things here. 1) changing the accessors used. 2)
+> switching the endianess as a bug fix. Any changes to the endian access
+> should be a separate patch which a description of what is needed.
+>
+>> 1. In "ace_in_be16" use "ioread16be"
+>> 2. In "ace_out_be16" use "iowrite16be"
+>> 3. In "ace_in_le16" use "ioread16"
+>> 4. In "ace_out_le16" use "iowrite16"
+>
+> Yes
+>
+>> 5. In "ace_datain_le16" use "ioread16_rep"
+>> 6. In "ace_dataout_le16" use "iowrite16_rep"
+>
+> Maybe. In a separate patch. Hmmm... I guess there isn't an
+> ioread16be_rep variant. Oh well. Check first with Michal on LE
+> microblaze before making the change. If it doesn't work for him the
+> more understanding is needed. I was pretty sure the LE variant already
+> worked.
 
-No. Because we use macros to be type-independent (i e"get_user()"
-works *regardless* of type), so casting to "uintptr_t" doesn't work.
-It throws away the type information, and truncates 64-bit values on
-32-bit architectures.
+Sorry it took me some time to get 16bit LE to work for test but here
+are test results.
 
-The whole point of the bitmask thing is that it doesn't have that
-issue, and gets the size correct automatically. It's not pretty, but
-it allows the rest of the sources to be readable.
+I have tested it on ppc BE, Microblaze BE and Microblaze LE systems
+and surprisingly on all of them only ace_reg_le16_ops are used.
 
-                Linus
+But on Microblaze LE is necessary to use different datain/out_le16
+functions as below
+which are also not compatible with Microblaze and PPC BE.
+
+diff --git a/drivers/block/xsysace.c b/drivers/block/xsysace.c
+index bbad046..8dd192c 100644
+--- a/drivers/block/xsysace.c
++++ b/drivers/block/xsysace.c
+@@ -314,7 +314,7 @@ static void ace_datain_le16(struct ace_device *ace)
+        int i = ACE_FIFO_SIZE / 2;
+        u16 *dst = ace->data_ptr;
+        while (i--)
+-               *dst++ = ioread16be(ace->baseaddr + 0x40);
++               *dst++ = ioread16(ace->baseaddr + 0x40);
+        ace->data_ptr = dst;
+ }
+
+@@ -323,7 +323,7 @@ static void ace_dataout_le16(struct ace_device *ace)
+        int i = ACE_FIFO_SIZE / 2;
+        u16 *src = ace->data_ptr;
+        while (i--)
+-               iowrite16be(*src++, ace->baseaddr + 0x40);
++               iowrite16(*src++, ace->baseaddr + 0x40);
+        ace->data_ptr = src;
+ }
+
+Grant: How did you tested BE mode? It is fpga it means you can switch
+some connections
+and it could work.
+
+Thanks,
+Michal
+
+
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
