@@ -1,58 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758945Ab3BLVUk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 16:20:40 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:50405 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752499Ab3BLVUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 16:20:39 -0500
-Message-ID: <1360704036.22660.5.camel@joe-AO722>
-Subject: [PATCH] MAINTAINERS: Remove Jarod Wilson and orphan LIRC drivers
-From: Joe Perches <joe@perches.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Jarod Wilson <jarod@wilsonet.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        devel <devel@driverdev.osuosl.org>, linux-media@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 12 Feb 2013 13:20:36 -0800
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752036Ab3BLVWt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 16:22:49 -0500
+Received: from fieldses.org ([174.143.236.118]:55714 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751077Ab3BLVWs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 16:22:48 -0500
+Date: Tue, 12 Feb 2013 16:22:46 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Tim Gardner <tim.gardner@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Trond Myklebust <Trond.Myklebust@netapp.com>,
+        linux-nfs@vger.kernel.org
+Subject: Re: [PATCH linux-next] lockd: nlmsvc_mark_resources(): avoid stack
+ overflow
+Message-ID: <20130212212246.GH10267@fieldses.org>
+References: <1360698538-63040-1-git-send-email-tim.gardner@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1360698538-63040-1-git-send-email-tim.gardner@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-His email bounces and he hasn't done work on
-these sections in a couple of years.
+On Tue, Feb 12, 2013 at 12:48:58PM -0700, Tim Gardner wrote:
+> Dynamically allocate the NLM host structure in order to avoid stack overflow.
+> nlmsvc_mark_resources() is several call levels deep in a stack
+> that has a number of large variables. 512 bytes seems like a lot
+> on the stack at this point.
+> 
+> smatch analysis:
+> 
+> fs/lockd/svcsubs.c:366 nlmsvc_mark_resources() warn: 'hint' puts
+>  512 bytes on stack
+> 
+> Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
+> Cc: "J. Bruce Fields" <bfields@fieldses.org>
+> Cc: linux-nfs@vger.kernel.org
+> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+> ---
+>  fs/lockd/svcsubs.c |   12 ++++++++----
+>  1 file changed, 8 insertions(+), 4 deletions(-)
+> 
+> diff --git a/fs/lockd/svcsubs.c b/fs/lockd/svcsubs.c
+> index b904f41..f3abb7f 100644
+> --- a/fs/lockd/svcsubs.c
+> +++ b/fs/lockd/svcsubs.c
+> @@ -363,11 +363,15 @@ nlmsvc_is_client(void *data, struct nlm_host *dummy)
+>  void
+>  nlmsvc_mark_resources(struct net *net)
+>  {
+> -	struct nlm_host hint;
+> +	struct nlm_host *hint = kzalloc(sizeof(*hint), GFP_KERNEL);
+>  
+> -	dprintk("lockd: nlmsvc_mark_resources for net %p\n", net);
+> -	hint.net = net;
+> -	nlm_traverse_files(&hint, nlmsvc_mark_host, NULL);
+> +	if (hint) {
+> +		dprintk("lockd: nlmsvc_mark_resources for net %p\n", net);
+> +		hint->net = net;
+> +		nlm_traverse_files(hint, nlmsvc_mark_host, NULL);
+> +	}
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- MAINTAINERS | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+Silently neglecting to do this looks like a bad idea.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 1d0651e..8d47b3a 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -7523,7 +7523,6 @@ F:	drivers/staging/comedi/
- 
- STAGING - CRYSTAL HD VIDEO DECODER
- M:	Naren Sankar <nsankar@broadcom.com>
--M:	Jarod Wilson <jarod@wilsonet.com>
- M:	Scott Davilla <davilla@4pi.com>
- M:	Manu Abraham <abraham.manu@gmail.com>
- S:	Odd Fixes
-@@ -7557,9 +7556,8 @@ S:	Odd Fixes
- F:	drivers/staging/iio/
- 
- STAGING - LIRC (LINUX INFRARED REMOTE CONTROL) DRIVERS
--M:	Jarod Wilson <jarod@wilsonet.com>
- W:	http://www.lirc.org/
--S:	Odd Fixes
-+S:	Orphan
- F:	drivers/staging/media/lirc/
- 
- STAGING - NVIDIA COMPLIANT EMBEDDED CONTROLLER INTERFACE (nvec)
+It's strange that we're passing in an nlm_host when all we actually use
+is the struct net*.  Why not just change this to pass in the net
+instead?
 
+--b.
 
+> +
+> +	kfree(hint);
+>  }
+>  
+>  /*
+> -- 
+> 1.7.9.5
+> 
