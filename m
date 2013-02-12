@@ -1,81 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933419Ab3BLQlh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 11:41:37 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:39672 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758698Ab3BLQlg convert rfc822-to-8bit (ORCPT
+	id S933247Ab3BLQtm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 11:49:42 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:36212 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758579Ab3BLQtk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 11:41:36 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20130212162442.GJ4863@dhcp22.suse.cz>
-References: <20130211151649.GD19922@dhcp22.suse.cz> <20130211175619.GC13218@cmpxchg.org> <20130211192929.GB29000@dhcp22.suse.cz> <20130211195824.GB15951@cmpxchg.org> <20130211212756.GC29000@dhcp22.suse.cz> <20130211223943.GC15951@cmpxchg.org> <20130212095419.GB4863@dhcp22.suse.cz> <20130212151002.GD15951@cmpxchg.org> <20130212154330.GG4863@dhcp22.suse.cz> <20130212161332.GI4863@dhcp22.suse.cz> <20130212162442.GJ4863@dhcp22.suse.cz>
+	Tue, 12 Feb 2013 11:49:40 -0500
+Date: Tue, 12 Feb 2013 08:29:03 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: mingo@elte.hu
+Cc: laijs@cn.fujitsu.com, linux-kernel@vger.kernel.org
+Subject: [GIT PULL rcu/srcu] SRCU commits for 3.9
+Message-ID: <20130212162903.GA16750@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [PATCH v3 4/7] memcg: remove memcg from the reclaim iterators
-From: Johannes Weiner <hannes@cmpxchg.org>
-Date: Tue, 12 Feb 2013 11:41:03 -0500
-To: Michal Hocko <mhocko@suse.cz>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ying Han <yinghan@google.com>, Tejun Heo <htejun@gmail.com>,
-        Glauber Costa <glommer@parallels.com>, Li Zefan <lizefan@huawei.com>
-Message-ID: <63d3b5fa-dbc6-4bc9-8867-f9961e644305@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13021216-2398-0000-0000-000010FC5411
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello, Ingo,
 
+This series contains SRCU changes for 3.9.  These include debugging aids,
+updates that move towards the goal of permitting srcu_read_lock() and
+srcu_read_unlock() to be used from idle and offline CPUs, and a few small
+fixes.  These commits are available in the git repository at:
 
-Michal Hocko <mhocko@suse.cz> wrote:
+  git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/srcu
 
->On Tue 12-02-13 17:13:32, Michal Hocko wrote:
->> On Tue 12-02-13 16:43:30, Michal Hocko wrote:
->> [...]
->> The example was not complete:
->> 
->> > Wait a moment. But what prevents from the following race?
->> > 
->> > rcu_read_lock()
->> 
->> cgroup_next_descendant_pre
->> css_tryget(css);
->> memcg = mem_cgroup_from_css(css)		atomic_add(CSS_DEACT_BIAS,
->&css->refcnt)
->> 
->> > 						mem_cgroup_css_offline(memcg)
->> 
->> We should be safe if we did synchronize_rcu() before
->root->dead_count++,
->> no?
->> Because then we would have a guarantee that if css_tryget(memcg)
->> suceeded then we wouldn't race with dead_count++ it triggered.
->> 
->> > 						root->dead_count++
->> > iter->last_dead_count = root->dead_count
->> > iter->last_visited = memcg
->> > 						// final
->> > 						css_put(memcg);
->> > // last_visited is still valid
->> > rcu_read_unlock()
->> > [...]
->> > // next iteration
->> > rcu_read_lock()
->> > iter->last_dead_count == root->dead_count
->> > // KABOOM
->
->Ohh I have missed that we took a reference on the current memcg which
->will be stored into last_visited. And then later, during the next
->iteration it will be still alive until we are done because previous
->patch moved css_put to the very end.
->So this race is not possible. I still need to think about parallel
->iteration and a race with removal.
+							Thanx, Paul
 
-I thought the whole point was to not have a reference in last_visited because have the iterator might be unused indefinitely :-)
+-------------->
+Lai Jiangshan (8):
+      srcu: Simplify __srcu_read_unlock() via this_cpu_dec()
+      srcu: Add might_sleep() annotation to synchronize_srcu()
+      srcu: Simple cleanup for cleanup_srcu_struct()
+      srcu: Remove checks preventing offline CPUs from calling srcu_read_lock()
+      srcu: Remove checks preventing idle CPUs from calling srcu_read_lock()
+      srcu: Update synchronize_srcu()'s comments
+      srcu: Update synchronize_srcu_expedited()'s comments
+      srcu: use ACCESS_ONCE() to access sp->completed in srcu_read_lock()
 
-We only store a pointer and validate it before use the next time around.  So I think the race is still possible, but we can deal with it by not losing concurrent dead count changes, i.e. one atomic read in the iterator function.
+ include/linux/srcu.h |   26 +++-----------------------
+ kernel/srcu.c        |   37 ++++++++++++++++---------------------
+ 2 files changed, 19 insertions(+), 44 deletions(-)
 
--- 
-Sent from my Android phone with K-9 Mail. Please excuse my brevity.
