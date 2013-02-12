@@ -1,79 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758922Ab3BLQYp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 11:24:45 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59531 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758297Ab3BLQYo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 11:24:44 -0500
-Date: Tue, 12 Feb 2013 17:24:42 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ying Han <yinghan@google.com>, Tejun Heo <htejun@gmail.com>,
-        Glauber Costa <glommer@parallels.com>, Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH v3 4/7] memcg: remove memcg from the reclaim iterators
-Message-ID: <20130212162442.GJ4863@dhcp22.suse.cz>
-References: <20130211151649.GD19922@dhcp22.suse.cz>
- <20130211175619.GC13218@cmpxchg.org>
- <20130211192929.GB29000@dhcp22.suse.cz>
- <20130211195824.GB15951@cmpxchg.org>
- <20130211212756.GC29000@dhcp22.suse.cz>
- <20130211223943.GC15951@cmpxchg.org>
- <20130212095419.GB4863@dhcp22.suse.cz>
- <20130212151002.GD15951@cmpxchg.org>
- <20130212154330.GG4863@dhcp22.suse.cz>
- <20130212161332.GI4863@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130212161332.GI4863@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933357Ab3BLQ30 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 11:29:26 -0500
+Received: from mail.free-electrons.com ([94.23.35.102]:45770 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933295Ab3BLQ3X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 11:29:23 -0500
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Cc: Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Eran Ben-Avi <benavi@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Maen Suleiman <maen@marvell.com>, Shadi Ammouri <shadi@marvell.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Tawfik Bayouk <tawfik@marvell.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH 05/32] lib: devres: don't enclose pcim_*() functions in CONFIG_HAS_IOPORT
+Date: Tue, 12 Feb 2013 17:28:39 +0100
+Message-Id: <1360686546-24277-6-git-send-email-thomas.petazzoni@free-electrons.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1360686546-24277-1-git-send-email-thomas.petazzoni@free-electrons.com>
+References: <1360686546-24277-1-git-send-email-thomas.petazzoni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 12-02-13 17:13:32, Michal Hocko wrote:
-> On Tue 12-02-13 16:43:30, Michal Hocko wrote:
-> [...]
-> The example was not complete:
-> 
-> > Wait a moment. But what prevents from the following race?
-> > 
-> > rcu_read_lock()
-> 
-> cgroup_next_descendant_pre
-> css_tryget(css);
-> memcg = mem_cgroup_from_css(css)		atomic_add(CSS_DEACT_BIAS, &css->refcnt)
-> 
-> > 						mem_cgroup_css_offline(memcg)
-> 
-> We should be safe if we did synchronize_rcu() before root->dead_count++,
-> no?
-> Because then we would have a guarantee that if css_tryget(memcg)
-> suceeded then we wouldn't race with dead_count++ it triggered.
-> 
-> > 						root->dead_count++
-> > iter->last_dead_count = root->dead_count
-> > iter->last_visited = memcg
-> > 						// final
-> > 						css_put(memcg);
-> > // last_visited is still valid
-> > rcu_read_unlock()
-> > [...]
-> > // next iteration
-> > rcu_read_lock()
-> > iter->last_dead_count == root->dead_count
-> > // KABOOM
+The pcim_*() functions are used by the libata-sff subsystem, and this
+subsystem is used for many SATA drivers on ARM platforms that do not
+necessarily have I/O ports.
 
-Ohh I have missed that we took a reference on the current memcg which
-will be stored into last_visited. And then later, during the next
-iteration it will be still alive until we are done because previous
-patch moved css_put to the very end.
-So this race is not possible. I still need to think about parallel
-iteration and a race with removal.
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+---
+ lib/devres.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/lib/devres.c b/lib/devres.c
+index 80b9c76..5639c3e 100644
+--- a/lib/devres.c
++++ b/lib/devres.c
+@@ -195,6 +195,7 @@ void devm_ioport_unmap(struct device *dev, void __iomem *addr)
+ 			       devm_ioport_map_match, (void *)addr));
+ }
+ EXPORT_SYMBOL(devm_ioport_unmap);
++#endif /* CONFIG_HAS_IOPORT */
+ 
+ #ifdef CONFIG_PCI
+ /*
+@@ -400,4 +401,3 @@ void pcim_iounmap_regions(struct pci_dev *pdev, int mask)
+ }
+ EXPORT_SYMBOL(pcim_iounmap_regions);
+ #endif /* CONFIG_PCI */
+-#endif /* CONFIG_HAS_IOPORT */
 -- 
-Michal Hocko
-SUSE Labs
+1.7.9.5
+
