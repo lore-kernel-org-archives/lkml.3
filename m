@@ -1,146 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757454Ab3BLUhO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:37:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53694 "EHLO
+	id S1758260Ab3BLUlm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 15:41:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53862 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757031Ab3BLUhH (ORCPT
+	with ESMTP id S1758147Ab3BLUli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:37:07 -0500
+	Tue, 12 Feb 2013 15:41:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org
-Subject: [ 00/22] 3.0.64-stable review
-Date: Tue, 12 Feb 2013 12:36:43 -0800
-Message-Id: <20130212203413.459836020@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Matt Fleming <matt.fleming@intel.com>,
+        Corentin Chary <corentincj@iksaif.net>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Colin Ian King <colin.king@canonical.com>,
+        Steve Langasek <steve.langasek@canonical.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 07/36] samsung-laptop: Disable on EFI hardware
+Date: Tue, 12 Feb 2013 12:41:01 -0800
+Message-Id: <20130212203858.192483647@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130212203857.305594226@linuxfoundation.org>
+References: <20130212203857.305594226@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.0.64 release.
-There are 22 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Thu Feb 14 20:31:38 UTC 2013.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.64-rc1.gz
-and the diffstat can be found below.
+From: Matt Fleming <matt.fleming@intel.com>
 
-thanks,
+commit e0094244e41c4d0c7ad69920681972fc45d8ce34 upstream.
 
-greg k-h
+It has been reported that running this driver on some Samsung laptops
+with EFI can cause those machines to become bricked as detailed in the
+following report,
 
--------------
-Pseudo-Shortlog of commits:
+	https://bugs.launchpad.net/ubuntu-cdimage/+bug/1040557
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.0.64-rc1
+There have also been reports of this driver causing Machine Check
+Exceptions on recent EFI-enabled Samsung laptops,
 
-Nithin Nayak Sujir <nsujir@broadcom.com>
-    tg3: Fix crc errors on jumbo frame receive
+	https://bugzilla.kernel.org/show_bug.cgi?id=47121
 
-Nithin Nayak Sujir <nsujir@broadcom.com>
-    tg3: Avoid null pointer dereference in tg3_interrupt in netconsole mode
+So disable it if booting from EFI since this driver relies on
+grovelling around in the BIOS memory map which isn't going to work.
 
-Sarveshwar Bandi <sarveshwar.bandi@emulex.com>
-    bridge: Pull ip header into skb->data before looking into ip header.
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Cc: Corentin Chary <corentincj@iksaif.net>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Colin Ian King <colin.king@canonical.com>
+Cc: Steve Langasek <steve.langasek@canonical.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Eric Dumazet <edumazet@google.com>
-    tcp: fix MSG_SENDPAGE_NOTLAST logic
+---
+ drivers/platform/x86/samsung-laptop.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-Ilpo Järvinen <ilpo.jarvinen@helsinki.fi>
-    tcp: fix for zero packets_in_flight was too broad
-
-Eric Dumazet <edumazet@google.com>
-    tcp: frto should not set snd_cwnd to 0
-
-Daniel Borkmann <dborkman@redhat.com>
-    net: sctp: sctp_endpoint_free: zero out secret key data
-
-Daniel Borkmann <dborkman@redhat.com>
-    net: sctp: sctp_setsockopt_auth_key: use kzfree instead of kfree
-
-Neil Horman <nhorman@tuxdriver.com>
-    sctp: refactor sctp_outq_teardown to insure proper re-initalization
-
-Heiko Carstens <heiko.carstens@de.ibm.com>
-    atm/iphase: rename fregt_t -> ffreg_t
-
-Phil Sutter <phil.sutter@viprinet.com>
-    packet: fix leakage of tx_ring memory
-
-Marcelo Ricardo Leitner <mleitner@redhat.com>
-    ipv6: do not create neighbor entries for local delivery
-
-Cong Wang <amwang@redhat.com>
-    pktgen: correctly handle failures when adding a device
-
-Eric Dumazet <edumazet@google.com>
-    net: loopback: fix a dst refcounting issue
-
-Timo Teräs <timo.teras@iki.fi>
-    r8169: remove the obsolete and incorrect AMD workaround
-
-Tilman Schmidt <tilman@imap.cc>
-    isdn/gigaset: fix zero size border case in debug dump
-
-Stephen Hemminger <stephen.hemminger@vyatta.com>
-    MAINTAINERS: Stephen Hemminger email change
-
-Cong Wang <xiyou.wangcong@gmail.com>
-    net: prevent setting ttl=0 via IP_TTL
-
-Stanislaw Gruszka <sgruszka@redhat.com>
-    mac80211: synchronize scan off/on-channel and PS states
-
-T Makphaibulchoke <tmac@hp.com>
-    kernel/resource.c: fix stack overflow in __reserve_region_with_split()
-
-Sjur Brændeland <sjur.brandeland@stericsson.com>
-    virtio_console: Don't access uninitialized data.
-
-Larry Finger <Larry.Finger@lwfinger.net>
-    rtlwifi: Fix the usage of the wrong variable in usb.c
-
-
--------------
-
-Diffstat:
-
- MAINTAINERS                        |   6 +-
- Makefile                           |   4 +-
- drivers/atm/iphase.h               | 146 ++++++++++++++++++++--------------------
- drivers/char/virtio_console.c      |   3 +-
- drivers/isdn/gigaset/capi.c        |   2 +
- drivers/net/loopback.c             |   5 ++
- drivers/net/r8169.c                |   7 --
- drivers/net/tg3.c                  |  58 ++++++++++------
- drivers/net/wireless/rtlwifi/usb.c |   4 +-
- fs/splice.c                        |   4 +-
- kernel/resource.c                  |  50 ++++++++++----
- net/bridge/br_netfilter.c          |   3 +
- net/core/pktgen.c                  |   9 ++-
- net/ipv4/ip_sockglue.c             |   2 +-
- net/ipv4/tcp_input.c               |   5 ++
- net/ipv6/route.c                   |   3 +-
- net/mac80211/ieee80211_i.h         |   6 +-
- net/mac80211/offchannel.c          |  17 ++---
- net/mac80211/scan.c                |   6 +-
- net/mac80211/work.c                |   8 +--
- net/packet/af_packet.c             |  10 +--
- net/sctp/endpointola.c             |   5 ++
- net/sctp/outqueue.c                |  12 ++--
- net/sctp/socket.c                  |   2 +-
- 24 files changed, 218 insertions(+), 159 deletions(-)
+--- a/drivers/platform/x86/samsung-laptop.c
++++ b/drivers/platform/x86/samsung-laptop.c
+@@ -26,6 +26,7 @@
+ #include <linux/seq_file.h>
+ #include <linux/debugfs.h>
+ #include <linux/ctype.h>
++#include <linux/efi.h>
+ #if (defined CONFIG_ACPI_VIDEO || defined CONFIG_ACPI_VIDEO_MODULE)
+ #include <acpi/video.h>
+ #endif
+@@ -1527,6 +1528,9 @@ static int __init samsung_init(void)
+ 	struct samsung_laptop *samsung;
+ 	int ret;
+ 
++	if (efi_enabled(EFI_BOOT))
++		return -ENODEV;
++
+ 	quirks = &samsung_unknown;
+ 	if (!force && !dmi_check_system(samsung_dmi_table))
+ 		return -ENODEV;
 
 
