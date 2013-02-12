@@ -1,42 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932866Ab3BLJIS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 04:08:18 -0500
-Received: from mga03.intel.com ([143.182.124.21]:33179 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932131Ab3BLJIO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 04:08:14 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,648,1355126400"; 
-   d="scan'208";a="201397740"
-Date: Tue, 12 Feb 2013 11:12:05 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Pandruvada, Srinivas" <srinivas.pandruvada@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
-Subject: Re: [PATCH 3/3] HID: sensor-hub: don't limit the driver only to USB
- bus
-Message-ID: <20130212091205.GO20771@intel.com>
-References: <1360578679-7029-1-git-send-email-mika.westerberg@linux.intel.com>
- <1360578679-7029-3-git-send-email-mika.westerberg@linux.intel.com>
- <4FA419E87744DF4DAECD5BCE1214B7A91E00FB81@ORSMSX108.amr.corp.intel.com>
+	id S932968Ab3BLJST (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 04:18:19 -0500
+Received: from vsp-authed02.binero.net ([195.74.38.226]:40209 "HELO
+	vsp-authed-02-02.binero.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932131Ab3BLJSR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 04:18:17 -0500
+Message-ID: <511A08D2.6010104@gaisler.com>
+Date: Tue, 12 Feb 2013 10:18:10 +0100
+From: Andreas Larsson <andreas@gaisler.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FA419E87744DF4DAECD5BCE1214B7A91E00FB81@ORSMSX108.amr.corp.intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH] of: Create function for counting number of phandles in
+ a property
+References: <1360540701-23439-1-git-send-email-grant.likely@secretlab.ca>
+In-Reply-To: <1360540701-23439-1-git-send-email-grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 11, 2013 at 03:54:05PM +0000, Pandruvada, Srinivas wrote:
-> So finally we can use HID sensor hub over I2C.
-> Did you try with any I2C sensor hub?
+On 2013-02-11 00:58, Grant Likely wrote:
+> This patch creates of_count_phandle_with_args(), a new function for
+> counting the number of phandle+argument tuples in a given property. This
+> is better than the existing method of parsing each phandle individually
+> until parsing fails which is a horribly slow way to do the count.
+>
+> It also converts of_gpio_named_count() to use the new function instead
+> of using the above described horrible method.
+>
+> This also requires the return value of of_gpio_count() &
+> of_gpio_named_count() from 'unsigned int' to 'int' so that it can return
+> an error code. All the users of that function are fixed up to correctly
+> handle a negative return value.
 
-Yes, we have I2C HID sensor hub here and I tested with it. However, I'm not
-that familiar how it should be used except that I can see the sensors under
-/sys/bus/platform/devices/HID-SENSOR* and there are iio devices under each
-platform device.
+One more thing: In of_spi_register_master() in drivers/spi.c the error 
+code is put in the unsigned variable nb, leading to a huge nb and 
+master->num_chipselect with following problems when of_gpio_named_count 
+returns an error code.
+
+Cheers,
+Andreas Larsson
+
