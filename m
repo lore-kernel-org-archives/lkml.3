@@ -1,209 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933543Ab3BLRbA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 12:31:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41038 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932348Ab3BLRa5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 12:30:57 -0500
-Date: Tue, 12 Feb 2013 19:34:54 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Wanlong Gao <gaowanlong@cn.fujitsu.com>,
-        asias@redhat.com, Rusty Russell <rusty@rustcorp.com.au>,
-        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH 1/9] virtio: add functions for piecewise addition of
- buffers
-Message-ID: <20130212173454.GA5028@redhat.com>
-References: <1360671815-2135-1-git-send-email-pbonzini@redhat.com>
- <1360671815-2135-2-git-send-email-pbonzini@redhat.com>
- <20130212145620.GA3392@redhat.com>
- <511A608B.5080007@redhat.com>
- <20130212154338.GA4083@redhat.com>
- <511A6457.80609@redhat.com>
- <20130212161326.GB4373@redhat.com>
- <511A6B2B.50700@redhat.com>
- <20130212163524.GB4555@redhat.com>
- <511A7493.50901@redhat.com>
+	id S933527Ab3BLRcc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 12:32:32 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:57374 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933428Ab3BLRca (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 12:32:30 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [v2 3/3] ARM: tegra: Unify Device tree board files
+Date: Tue, 12 Feb 2013 17:32:14 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-5-generic; KDE/4.3.2; x86_64; ; )
+Cc: Hiroshi Doyu <hdoyu@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "marvin24@gmx.de" <marvin24@gmx.de>, "balbi@ti.com" <balbi@ti.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <5119849B.1070300@wwwdotorg.org> <201302121350.15683.arnd@arndb.de> <511A6F6C.8090205@wwwdotorg.org>
+In-Reply-To: <511A6F6C.8090205@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <511A7493.50901@redhat.com>
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302121732.14960.arnd@arndb.de>
+X-Provags-ID: V02:K0:YSgN0YyyRJfOkltxpLVyNhpDiUxRfrj1Uk5f7do9Qgm
+ M43lGX7FJ1cqYKk1a2PPUG53Ew2hUiZDo9xu2JGhi33b0krp6V
+ T0wC1ijPkkFaWuAYarQ3VFCnrXkWEt5fCrrMnxoKv/E/LNNU8H
+ /b3Q3uadJmW/Auc02C1CefScKszVU6DeZFuhkHNQ3JYViOA16q
+ popgmANZ9GCGAyNfXbbZB7/sRrNSkZ03C+pu7JA/7IeelSZlmt
+ RYZohKuU0s1ARs3UURm+pAGTws2tTL9jIU82O9i7sh5EY8Uhzd
+ xh0AOQsry/O3MLriIoQIKBCyPvfYFMQJpy4CkO8jG9IvScMnDL
+ TlkUubBsTk55AApM6H70=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 12, 2013 at 05:57:55PM +0100, Paolo Bonzini wrote:
-> Il 12/02/2013 17:35, Michael S. Tsirkin ha scritto:
-> > On Tue, Feb 12, 2013 at 05:17:47PM +0100, Paolo Bonzini wrote:
-> >> Il 12/02/2013 17:13, Michael S. Tsirkin ha scritto:
-> >>>>>>>>> + * @nsg: the number of sg lists that will be added
-> >>>>>>> This means number of calls to add_sg ? Not sure why this matters.
-> >>>>>>> How about we pass in in_num/out_num - that is total # of sg,
-> >>>>>>> same as add_buf?
-> >>>>>>
-> >>>>>> It is used to choose between direct and indirect.
-> >>>>>
-> >>>>> total number of in and out should be enough for this, no?
+On Tuesday 12 February 2013, Stephen Warren wrote:
+> >>>>> I don't think that's going to help any link issues, so I'd drop it and
+> >>>>> keep this function simple.
 > >>>>
-> >>>> Originally, I used nsg/nents because I wanted to use mixed direct and
-> >>>> indirect buffers.  nsg/nents let me choose between full direct (nsg ==
-> >>>> nents), mixed (num_free >= nsg), full indirect (num_free < nsg).  Then I
-> >>>> had to give up because QEMU does not support it, but I still would like
-> >>>> to keep that open in the API.
+> >>>> As explained in the above, a complier will drop unnecessary functions
+> >>>> automatically with this IS_ENABLED(), which could save many ifdefs.
 > >>>
-> >>> Problem is it does not seem to make sense in the API.
+> >>> That sounds extremely brittle. Have you validated this on a wide variety
+> >>> of compiler versions?
 > >>
-> >> Why not?  Perhaps in the idea you have of the implementation, but in the
-> >> API it definitely makes sense.  It's a fast-path API, it makes sense to
-> >> provide as much information as possible upfront.
+> >> I verified with gcc-4.6.
+> >> IIRC, that's the point of IS_ENABLED() being introduced. Arnd?
 > > 
-> > If we are ignoring some information, I think we are better off
-> > without asking for it.
+> > It's certainly expected to work with all compilers, yes. If a compiler
+> > cannot remove conditional function calls that depend on a constant
+> > expression, we have a lot of other problems alredy.
 > 
-> We're not ignoring it.  virtqueue_start_buf uses both nents and nsg:
-> 
->         if (vq->indirect && (nents > nsg || vq->vq.num_free < nents)) {
-> 		/* indirect */
-> 	}
-> >>>> In this series, however, I am still using nsg to choose between direct
-> >>>> and indirect.  I would like to use dirtect for small scatterlists, even
-> >>>> if they are surrounded by a request/response headers/footers.
-> >>>
-> >>> Shouldn't we base this on total number of s/g entries?
-> >>> I don't see why does it matter how many calls you use
-> >>> to build up the list.
-> >>
-> >> The idea is that in general the headers/footers are few (so their number
-> >> doesn't really matter) and are in singleton scatterlists.  Hence, the
-> >> heuristic checks at the data part of the request, and chooses
-> >> direct/indirect depending on the size of that part.
+> Removing the function calls isn't guaranteed to remove the body of the
+> functions though. Those functions aren't implemented in some separate
+> file that's optionally included, but rather are implemented in the same
+> object file, now unconditionally, and they in turn reference (with no
+> IS_ENABLED logic) other functions that are implemented in conditionally
+> linked files.
+
+I think gcc should remove all of that in this case, since board_init_funcs
+becomes unused when the only code that references it cannot be reached,
+and when that array is gone, the now unused functions would be removed
+as well.
+
+We have had bugs with prerelease gcc versions that did not handle cases
+like this in the way we want it, but I think all releases get it right.
+I don't think it's mandated anywhere in the C99 standard that this is
+what happens, but we do rely on it anyway AFAIK.
+
+> > static void __init harmony_init(void)
+> > {
+> >         int ret = 0;
 > > 
-> > Why? Why not the total size as we did before?
-> 
-> "More than one buffer" is not a great heuristic.  In particular, it
-> causes all virtio-blk and virtio-scsi requests to go indirect.
-
-If you don't do indirect you get at least 2x less space in the ring.
-For blk there were workloads where we always were out of buffers.
-Similarly for net, switching heuristics degrades some workloads.
-Let's not change these things as part of unrelated API work,
-it should be a separate patch with benchmarking showing this
-is not a problem.
-
-> More than three buffers, or more than five buffers, is just an ad-hoc
-> hack, and similarly not great.
-
-If you want to expose control over indirect buffer to drivers,
-we can do this. There were patches on list. How about doing that
-and posting actual performance results?  In particular maybe this is
-where all the performance wins come from?  This nsgs/nents hack just
-seems to rely on how one specific driver uses the API.
-
-> >>>>>>>>> +/**
-> >>>>>>>>> + * virtqueue_add_sg - add sglist to buffer being built
-> >>>>>>>>> + * @_vq: the virtqueue for which the buffer is being built
-> >>>>>>>>> + * @sgl: the description of the buffer(s).
-> >>>>>>>>> + * @nents: the number of items to process in sgl
-> >>>>>>>>> + * @dir: whether the sgl is read or written (DMA_TO_DEVICE/DMA_FROM_DEVICE only)
-> >>>>>>>>> + *
-> >>>>>>>>> + * Note that, unlike virtqueue_add_buf, this function follows chained
-> >>>>>>>>> + * scatterlists, and stops before the @nents-th item if a scatterlist item
-> >>>>>>>>> + * has a marker.
-> >>>>>>>>> + *
-> >>>>>>>>> + * Caller must ensure we don't call this with other virtqueue operations
-> >>>>>>>>> + * at the same time (except where noted).
-> >>>>>>> Hmm so if you want to add in and out, need separate calls?
-> >>>>>>> in_num/out_num would be nicer?
-> >>>>>>
-> >>>>>> If you want to add in and out just use virtqueue_add_buf...
-> >>>>>
-> >>>>> I thought the point of this one is maximum flexibility.
-> >>>>
-> >>>> Maximum flexibility does not include doing everything in one call (the
-> >>>> other way round in fact: you already need to wrap with start/end, hence
-> >>>> doing one or two extra add_sg calls is not important).
-> >>>
-> >>> My point is, we have exactly same number of parameters:
-> >>> in + out instead of nsg + direction, and we get more
-> >>> functionality.
-> >>
-> >> And we also have more complex (and slower) code, that would never be
-> >> used.
+> >         if (IS_ENABLED(CONFIG_PCI) && IS_ENABLED(CONFIG_ARCH_TEGRA_2x_SOC))
+> >               ret = harmony_pcie_init();
+> >         if (ret)
+> >                 pr_err("harmony_pcie_init() failed: %d\n", ret);
+> > }
 > > 
-> > Instead of 
-> > 	flags = (directon == from_device) ? out : in;
-> > 
-> > you would do
-> > 
-> > 	flags = idx > in ? out : in;
-> > 
-> > why is this slower?
+> > which will turn into an empty function if one of the two is disabled.
 > 
-> You said "in + out instead of nsg + direction", but now instead you're
-> talking about specifying in/out upfront in virtqueue_start_buf.
+> That would work.
 > 
-> Specifying in/out in virtqueue_add_sg would have two loops instead of
-> one, one of them (you don't know which) unused on every call, and
-> wouldn't fix the problem of possibly misusing the API.
+> However I'd like to avoid changing the body of those two functions at
+> all if possible, since I hope the PCIe driver rework will be merged in
+> 3.10, and that will allow the Harmony and TrimSlice init functions to be
+> removed entirely. I'd rather not have conflicts with the removal patch.
 
-One loop, and it also let us avoid setting VRING_DESC_F_NEXT
-instead of set then later clear:
+Yes, makes sense.
 
-+               for_each_sg(sgl, sg, nents, n) {
-
-+       		flags = idx > in_sg ? VRING_DESC_F_WRITE : 0;
-+       		flags |= idx < (in_sg + out_sg - 1) ? VRING_DESC_F_NEXT : 0;
-+                       tail = &vq->indirect_base[i];
-+                       tail->flags = flags;
-+                       tail->addr = sg_phys(sg);
-+                       tail->len = sg->length;
-+                       tail->next = ++i;
-+               }                           
-
-
-
-> Specifying in/_ut upfront would look something like
+> > Since we are not going to add any other board specfic init functions, you
+> > can also unroll the loop and put everything into tegra_dt_init_late:
 > 
-> 	flags = vq->idx > vq->in ? VRING_DESC_F_WRITE : 0;
-> 
-> or with some optimization
-> 
-> 	flags = vq->something > 0 ? VRING_DESC_F_WRITE : 0;
-> 
-> It is not clear for me whether you'd allow a single virtqueue_add_sg to
-> cover both out and in elements.  If so, the function would become much
-> more complex because the flags could change in the middle, and that's
-> what I was referring to.
+> That's not necessarily true. While we certainly don't plan to, I don't
+> think we can rule it out; after all, we don't have rfkill bindings and
+> yet other boards will need them.
 
-You just move the flag assignment within the loop.
-Does not seem more complex at all.
+Ok.
 
->  If not, you traded one possible misuse with another.
-> 
-> >> You would never save more than one call, because you cannot
-> >> alternate out and in buffers arbitrarily.
-> > 
-> > That's the problem with the API, it apparently let you do this, and
-> > if you do it will fail at run time.  If we specify in/out upfront in
-> > start, there's no way to misuse the API.
-> 
-> Perhaps, but 3 or 4 arguments (in/out/nsg or in/out/nsg_in/nsg_out) just
-> for this are definitely too many and make the API harder to use.
-> 
-> You have to find a balance.  Having actually used the API, the
-> possibility of mixing in/out buffers by mistake never even occurred to
-> me, much less happened in practice, so I didn't consider it a problem.
-> Mixing in/out buffers in a single call wasn't a necessity, either.
-> 
-> Paolo
-
-It is useful for virtqueue_add_buf implementation.
-Basically the more consistent the interface is with virtqueue_add_buf,
-the better.
-
-I'm not against changing virtqueue_add_buf if you like but let's keep
-it all consistent.
-
--- 
-MST
+	Arnd
