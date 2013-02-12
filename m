@@ -1,91 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933911Ab3BLS6Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 13:58:25 -0500
-Received: from mail.free-electrons.com ([94.23.35.102]:46998 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933865Ab3BLS6Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 13:58:24 -0500
-Date: Tue, 12 Feb 2013 19:58:16 +0100
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
-        Andrew Lunn <andrew@lunn.ch>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        "Eran Ben-Avi" <benavi@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        Maen Suleiman <maen@marvell.com>, Shadi Ammouri <shadi@marvell.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Tawfik Bayouk <tawfik@marvell.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 05/32] lib: devres: don't enclose pcim_*() functions in
- CONFIG_HAS_IOPORT
-Message-ID: <20130212195816.6e34b3ce@skate>
-In-Reply-To: <201302121800.48723.arnd@arndb.de>
-References: <1360686546-24277-1-git-send-email-thomas.petazzoni@free-electrons.com>
-	<1360686546-24277-6-git-send-email-thomas.petazzoni@free-electrons.com>
-	<201302121800.48723.arnd@arndb.de>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S933939Ab3BLS6x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 13:58:53 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:52655 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933865Ab3BLS6v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 13:58:51 -0500
+Message-ID: <511A90D0.5010708@zytor.com>
+Date: Tue, 12 Feb 2013 10:58:24 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "H.J. Lu" <hjl.tools@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jamie Lokier <jamie@shareable.org>, ville.syrjala@linux.intel.com,
+        Borislav Petkov <bp@alien8.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/mm] x86, mm: Use a bitfield to mask nuisance get_user()
+ warnings
+References: <20130209110031.GA17833@n2100.arm.linux.org.uk> <tip-b390784dc1649f6e6c5e66e5f53c21e715ccf39b@git.kernel.org> <CA+55aFxaUUMQuw3bgLbZLARp05eM19E_qTXBYePPk9mvEsSp=g@mail.gmail.com> <5119C34B.70207@zytor.com> <CAMe9rOrTLGJvO+Z8kCG3gmOuW-Yq2Ex9WMfJZ5wmZcbz+zm94Q@mail.gmail.com> <CA+55aFwMr8pDfj+wuv=-tUFqZQOhnqkwC7tVq-S=4MGGWiqz1A@mail.gmail.com> <511A7892.4020407@zytor.com> <CAMe9rOrqDjBQjLyDRWJqRKdzQf1zMXHwXxFk2DekC+EeCHa8UA@mail.gmail.com> <511A8922.6050908@zytor.com> <CA+55aFympY-ie_SiMCnsE9emu_AS2zYCNJV=yp95Vu4tbPDoXA@mail.gmail.com>
+In-Reply-To: <CA+55aFympY-ie_SiMCnsE9emu_AS2zYCNJV=yp95Vu4tbPDoXA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Arnd Bergmann,
+On 02/12/2013 10:46 AM, Linus Torvalds wrote:
+> On Tue, Feb 12, 2013 at 10:25 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> I just thought up this variant, I'm about to test it, but H.J., do you
+>> see any problems with it?
+>
+> Looks good to me. And we already use __builtin_choose_expr(), so it's
+> "portable". And it should avoid all the potential issues with
+> bitfields (rmk already pointed out how bitfields don't work well with
+> the ARM model, who knows what other pitfalls bitfield code generation
+> could have)
+>
+> I wonder if we could/should eventually do some of the sizeof() in
+> generic code - not have these magic things duplicated in all the
+> architectures, just have the architectures specify the raw typed
+> details (__copy_to_user_4() etc). So cross-platform portability could
+> be a good thing. That's a separate discussion, though, and possibly
+> not worth it.
+>
 
-On Tue, 12 Feb 2013 18:00:48 +0000, Arnd Bergmann wrote:
-> On Tuesday 12 February 2013, Thomas Petazzoni wrote:
-> > The pcim_*() functions are used by the libata-sff subsystem, and
-> > this subsystem is used for many SATA drivers on ARM platforms that
-> > do not necessarily have I/O ports.
-> > 
-> > Signed-off-by: Thomas Petazzoni
-> > <thomas.petazzoni@free-electrons.com> Cc: Paul Gortmaker
-> > <paul.gortmaker@windriver.com> Cc: Jesse Barnes
-> > <jbarnes@virtuousgeek.org> Cc: Yinghai Lu <yinghai@kernel.org>
-> > Cc: linux-kernel@vger.kernel.org
-> 
-> Sorry, but this patch is still incorrect.
+I'm getting rid of the switch statement in the variant that I'm 
+currently testing, so that would probably be undesirable.
 
-I know, but the discussion was so huge on the first posting that it was
-basically impossible to draw a conclusion out of it.
+	-hpa
 
-> Any driver that requires a
-> linear mapping of I/O ports to __iomem pointers must depend
-> CONFIG_HAS_IOPORT with the current definition of that symbol (as
-> mentioned before, we should really rename that to
-> CONFIG_HAS_IOPORT_MAP). Having these functions not defined is a
-> compile time check that is necessary to ensure that all drivers have
-> the correct annotation.
-
-I have the feeling that the problem is more complex than that. My
-understanding is that the pcim_iomap_regions() function used by
-drivers/ata/libata-sff.c can perfectly be used to map memory BARs, and
-not necessarily I/O BARs. Therefore, this driver can perfectly be used
-in an architecture where CONFIG_NO_IOPORT is selected.
-
-The thing is that pcim_iomap_regions() transparently allows to remap an
-I/O BAR is such a BAR is passed as argument, or a memory BAR if such a
-BAR is passed as argument.
-
-Therefore, I continue to believe that the pcim_*() functions are useful
-even if the platform doesn't have CONFIG_HAS_IOPORT.
-
-Best regards,
-
-Thomas
 -- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
