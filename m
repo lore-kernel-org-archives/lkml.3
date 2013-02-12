@@ -1,95 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932099Ab3BLICk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 03:02:40 -0500
-Received: from tama50.ecl.ntt.co.jp ([129.60.39.147]:51081 "EHLO
-	tama50.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757915Ab3BLICj (ORCPT
+	id S1758244Ab3BLIKg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 03:10:36 -0500
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:64966 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757989Ab3BLIKf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 03:02:39 -0500
-Message-ID: <5119F6EC.5090509@lab.ntt.co.jp>
-Date: Tue, 12 Feb 2013 17:01:48 +0900
-From: Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Tue, 12 Feb 2013 03:10:35 -0500
+Date: Tue, 12 Feb 2013 09:10:28 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jamie Lokier <jamie@shareable.org>, ville.syrjala@linux.intel.com,
+        Borislav Petkov <bp@alien8.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-tip-commits@vger.kernel.org, "H.J. Lu" <hjl.tools@gmail.com>
+Subject: Re: [tip:x86/mm] x86, mm: Use a bitfield to mask nuisance get_user()
+ warnings
+Message-ID: <20130212081028.GA19250@gmail.com>
+References: <20130209110031.GA17833@n2100.arm.linux.org.uk>
+ <tip-b390784dc1649f6e6c5e66e5f53c21e715ccf39b@git.kernel.org>
+ <CA+55aFxaUUMQuw3bgLbZLARp05eM19E_qTXBYePPk9mvEsSp=g@mail.gmail.com>
+ <5119C34B.70207@zytor.com>
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] ALSA: hda - no-primary-hp is a quirk for model ALC889
- not ALC882
-References: <1360655264.13766.2.camel@nexus.lab.ntt.co.jp> <1360655656.13766.6.camel@nexus.lab.ntt.co.jp>
-In-Reply-To: <1360655656.13766.6.camel@nexus.lab.ntt.co.jp>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5119C34B.70207@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Iwai,
 
-Ouch, the subject reads "[PATCH 2/3]" but this is patch 3 of the series
-and should be applied last. I am sorry for the noise.
+* H. Peter Anvin <hpa@zytor.com> wrote:
+
+> On 02/11/2013 07:33 PM, Linus Torvalds wrote:
+> > On Mon, Feb 11, 2013 at 5:37 PM, tip-bot for H. Peter Anvin
+> > <hpa@zytor.com> wrote:
+> >>
+> >> However, we can declare a bitfield using sizeof(), which is legal
+> >> because sizeof() is a constant expression.  This quiets the warning,
+> >> although the code generated isn't 100% identical from the baseline
+> >> before 96477b4 x86-32: Add support for 64bit get_user():
+> > 
+> > Christ. This is so ugly that it's almost a work of art.
+> 
+> :)
+
+A real possibility would be that if this ever breaks in a GCC 
+version, or generates some really crappy code, we might get a 
+"you got what you asked for" shrug from GCC developers?
+
+It's not like we could start a revolution over that.
 
 Thanks,
-Fernando
 
-
-On 2013/02/12 16:54, Fernando Luis Vázquez Cao wrote:
-> Substitute ALC889 for ALC882 in macro and function names.
->
-> Cc: stable@vger.kernel.org
-> Cc: alsa-devel@alsa-project.org
-> Signed-off-by: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
-> ---
->
-> diff -urNp linux-3.7.6-orig/sound/pci/hda/patch_realtek.c linux-3.7.6/sound/pci/hda/patch_realtek.c
-> --- linux-3.7.6-orig/sound/pci/hda/patch_realtek.c	2013-02-09 22:52:40.301209823 +0900
-> +++ linux-3.7.6/sound/pci/hda/patch_realtek.c	2013-02-09 22:58:54.695063675 +0900
-> @@ -5030,7 +5030,7 @@ enum {
->   	ALC889_FIXUP_MBP_VREF,
->   	ALC889_FIXUP_IMAC91_VREF,
->   	ALC882_FIXUP_INV_DMIC,
-> -	ALC882_FIXUP_NO_PRIMARY_HP,
-> +	ALC889_FIXUP_NO_PRIMARY_HP,
->   };
->   
->   static void alc889_fixup_coef(struct hda_codec *codec,
-> @@ -5156,7 +5156,7 @@ static void alc889_fixup_imac91_vref(str
->    * Strangely, the speaker output doesn't work on Vaio Z and some Vaio
->    * all-in-one desktop PCs (for example VGC-LN51JGB) through DAC 0x05
->    */
-> -static void alc882_fixup_no_primary_hp(struct hda_codec *codec,
-> +static void alc889_fixup_no_primary_hp(struct hda_codec *codec,
->   				       const struct alc_fixup *fix, int action)
->   {
->   	struct alc_spec *spec = codec->spec;
-> @@ -5350,9 +5350,9 @@ static const struct alc_fixup alc882_fix
->   		.type = ALC_FIXUP_FUNC,
->   		.v.func = alc_fixup_inv_dmic_0x12,
->   	},
-> -	[ALC882_FIXUP_NO_PRIMARY_HP] = {
-> +	[ALC889_FIXUP_NO_PRIMARY_HP] = {
->   		.type = ALC_FIXUP_FUNC,
-> -		.v.func = alc882_fixup_no_primary_hp,
-> +		.v.func = alc889_fixup_no_primary_hp,
->   	},
->   };
->   
-> @@ -5388,8 +5388,8 @@ static const struct snd_pci_quirk alc882
->   	SND_PCI_QUIRK(0x1043, 0x1971, "Asus W2JC", ALC882_FIXUP_ASUS_W2JC),
->   	SND_PCI_QUIRK(0x1043, 0x835f, "Asus Eee 1601", ALC888_FIXUP_EEE1601),
->   	SND_PCI_QUIRK(0x104d, 0x9047, "Sony Vaio TT", ALC889_FIXUP_VAIO_TT),
-> -	SND_PCI_QUIRK(0x104d, 0x905a, "Sony Vaio Z", ALC882_FIXUP_NO_PRIMARY_HP),
-> -	SND_PCI_QUIRK(0x104d, 0x9043, "Sony Vaio VGC-LN51JGB", ALC882_FIXUP_NO_PRIMARY_HP),
-> +	SND_PCI_QUIRK(0x104d, 0x905a, "Sony Vaio Z", ALC889_FIXUP_NO_PRIMARY_HP),
-> +	SND_PCI_QUIRK(0x104d, 0x9043, "Sony Vaio VGC-LN51JGB", ALC889_FIXUP_NO_PRIMARY_HP),
->   
->   	/* All Apple entries are in codec SSIDs */
->   	SND_PCI_QUIRK(0x106b, 0x00a0, "MacBookPro 3,1", ALC889_FIXUP_MBP_VREF),
-> @@ -5432,7 +5432,7 @@ static const struct alc_model_fixup alc8
->   	{.id = ALC882_FIXUP_ACER_ASPIRE_8930G, .name = "acer-aspire-8930g"},
->   	{.id = ALC883_FIXUP_ACER_EAPD, .name = "acer-aspire"},
->   	{.id = ALC882_FIXUP_INV_DMIC, .name = "inv-dmic"},
-> -	{.id = ALC882_FIXUP_NO_PRIMARY_HP, .name = "no-primary-hp"},
-> +	{.id = ALC889_FIXUP_NO_PRIMARY_HP, .name = "no-primary-hp"},
->   	{}
->   };
+	Ingo
