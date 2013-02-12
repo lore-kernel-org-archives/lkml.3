@@ -1,43 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932835Ab3BLK0l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 05:26:41 -0500
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:43818 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758839Ab3BLK0i (ORCPT
+	id S1758878Ab3BLK16 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 05:27:58 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:33948 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756472Ab3BLK14 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 05:26:38 -0500
-MIME-Version: 1.0
-From: Andrey Korolyov <andrey@xdel.ru>
-Date: Tue, 12 Feb 2013 13:26:16 +0300
-Message-ID: <CABYiri-99F++CuaetzS1qUbffqNE-P=4Q-XYW7q8QvJ2jxTaug@mail.gmail.com>
-Subject: Lockups using per-thread cgs and kvm
-To: kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Tue, 12 Feb 2013 05:27:56 -0500
+Message-ID: <1360664874.4485.18.camel@laptop>
+Subject: Re: [patch v4 08/18] Revert "sched: Introduce temporary
+ FAIR_GROUP_SCHED dependency for load-tracking"
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alex Shi <alex.shi@intel.com>
+Cc: torvalds@linux-foundation.org, mingo@redhat.com, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 12 Feb 2013 11:27:54 +0100
+In-Reply-To: <1358996820-23036-9-git-send-email-alex.shi@intel.com>
+References: <1358996820-23036-1-git-send-email-alex.shi@intel.com>
+	 <1358996820-23036-9-git-send-email-alex.shi@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 2013-01-24 at 11:06 +0800, Alex Shi wrote:
+> Remove CONFIG_FAIR_GROUP_SCHED that covers the runnable info, then
+> we can use runnable load variables.
+> 
+It would be nice if we could quantify the performance hit of doing so.
+Haven't yet looked at later patches to see if we remove anything to
+off-set this.
 
-We (a cloud hosting provider) has recently observed a couple of
-strange lockups when physical node runs significant amount of
-Win2008R2 kvm appliances, one may see collection of those lockups at
-the link below. After checking a lot of ideas without any valuable
-result, I have suggested that nested per-thread cgroup placement
-created by libvirt may lead to this problem(libvirt puts emulator and
-each of vcpu threads into separate sub-cgroup). Disabling such
-behavior, e.g. having only one cgroup per kvm process per cgroup type
-solved this problem, at least it didn`t happen on most stressful tests
-we`re able to do. Since it is generally unusual for well-known kernel
-mechanism, such as cgroups, to broke way like this, I hope we`ve found
-a quite rare kind of bug. Just for the record, the bug also may happen
-using linux guest, but much rarely, one or two orders of magnitude. We
-have stayed on default scheduler granularity value at this tests, if
-it matters.
-
-For anyone who wants to see entire timeline of this bug, please see [1].
-
-
-[1]. http://www.spinics.net/lists/kvm/msg85956.html
