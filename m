@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752593Ab3BLC0a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 21:26:30 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:36828 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751367Ab3BLC03 (ORCPT
+	id S1752694Ab3BLC2R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 21:28:17 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:50884 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751489Ab3BLC2P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 21:26:29 -0500
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-To: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>,
-        linux-kernel@vger.kernel.org
-Cc: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Subject: [PATCH] pch_dma: Use GFP_ATOMIC because called from interrupt context
-Date: Tue, 12 Feb 2013 11:25:33 +0900
-Message-Id: <1360635933-5818-1-git-send-email-tomoya.rohm@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	Mon, 11 Feb 2013 21:28:15 -0500
+MIME-Version: 1.0
+In-Reply-To: <CACxGe6sEmcyRveM9630qyGQm21ZUhSMKTThDnO+MMu=ejfdP2w@mail.gmail.com>
+References: <1360406062-14982-1-git-send-email-grant.likely@secretlab.ca>
+ <51187376.2060106@nvidia.com> <CACxGe6sEmcyRveM9630qyGQm21ZUhSMKTThDnO+MMu=ejfdP2w@mail.gmail.com>
+From: Alexandre Courbot <acourbot@nvidia.com>
+Date: Tue, 12 Feb 2013 11:27:54 +0900
+X-Google-Sender-Auth: _pCT6JofiFudtD7Rmw8kYkdRdzs
+Message-ID: <CAAVeFu+vRLSRMDt4tqmyzYu1DPy7RwCt80e5W7issHY_4MCC_g@mail.gmail.com>
+Subject: Re: [PATCH] gpiolib: Fix locking on gpio debugfs files
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pdc_desc_get() is called from pd_prep_slave_sg, and the function is
-called from interrupt context(e.g. Uart driver "pch_uart.c").
-In fact, I saw kernel error message.
-So, GFP_ATOMIC must be used not GFP_NOIO.
+On Mon, Feb 11, 2013 at 8:31 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> On Mon, Feb 11, 2013 at 4:28 AM, Alex Courbot <acourbot@nvidia.com> wrote:
+>> Just wondering: if we manage to change this spinlock into a mutex in the
+>> future, wouldn't it be better to acquire it only once in gpiolib_seq_start()
+>> and release it in gpiolib_seq_stop()?
+>>
+>> Even though the protection introduced by this patch definitely improves the
+>> situation, it seems to me that chips could still be removed while being
+>> displayed by gpiolib_seq_show().
+>
+> Probably, but need to first verify that the mutex won't end up getting
+> held between read() syscalls. Otherwise it would be possible to block
+> addition/removal by holding the file open. I cursory read of seq_file
+> looks like ->stop() is always called, but I would appreciate someone
+> more cluefull to give an opinion here.
 
-Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
----
- drivers/dma/pch_dma.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+While not cluefull in any way, I nonetheless had a quick look at all
+the control paths of seq_read(), and indeed op->stop() seems to be
+called in each of them.
 
-diff --git a/drivers/dma/pch_dma.c b/drivers/dma/pch_dma.c
-index 987ab5c..d5cbd44 100644
---- a/drivers/dma/pch_dma.c
-+++ b/drivers/dma/pch_dma.c
-@@ -476,7 +476,7 @@ static struct pch_dma_desc *pdc_desc_get(struct pch_dma_chan *pd_chan)
- 	dev_dbg(chan2dev(&pd_chan->chan), "scanned %d descriptors\n", i);
- 
- 	if (!ret) {
--		ret = pdc_alloc_desc(&pd_chan->chan, GFP_NOIO);
-+		ret = pdc_alloc_desc(&pd_chan->chan, GFP_ATOMIC);
- 		if (ret) {
- 			spin_lock(&pd_chan->lock);
- 			pd_chan->descs_allocated++;
--- 
-1.7.4.4
+> I've also got a draft patch that turns gpio chips into first-class
+> kobjects which means we can do proper reference counting on them and
+> prevent the structure from actually disappearing while other drivers
+> still hold references.
 
+Oooh. Looking forward to seeing this. :)
+
+Alex.
