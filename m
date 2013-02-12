@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757509Ab3BLUhQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:37:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53727 "EHLO
+	id S1757454Ab3BLUhO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 15:37:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53694 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757385Ab3BLUhM (ORCPT
+	with ESMTP id S1757031Ab3BLUhH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:37:12 -0500
+	Tue, 12 Feb 2013 15:37:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Timo=20Ter=E4s?= <timo.teras@iki.fi>,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 08/22] r8169: remove the obsolete and incorrect AMD workaround
-Date: Tue, 12 Feb 2013 12:36:51 -0800
-Message-Id: <20130212203415.079260572@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org
+Subject: [ 00/22] 3.0.64-stable review
+Date: Tue, 12 Feb 2013 12:36:43 -0800
+Message-Id: <20130212203413.459836020@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130212203413.459836020@linuxfoundation.org>
-References: <20130212203413.459836020@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -27,62 +24,123 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+This is the start of the stable review cycle for the 3.0.64 release.
+There are 22 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-------------------
+Responses should be made by Thu Feb 14 20:31:38 UTC 2013.
+Anything received after that time might be too late.
+
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.64-rc1.gz
+and the diffstat can be found below.
+
+thanks,
+
+greg k-h
+
+-------------
+Pseudo-Shortlog of commits:
+
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.0.64-rc1
+
+Nithin Nayak Sujir <nsujir@broadcom.com>
+    tg3: Fix crc errors on jumbo frame receive
+
+Nithin Nayak Sujir <nsujir@broadcom.com>
+    tg3: Avoid null pointer dereference in tg3_interrupt in netconsole mode
+
+Sarveshwar Bandi <sarveshwar.bandi@emulex.com>
+    bridge: Pull ip header into skb->data before looking into ip header.
+
+Eric Dumazet <edumazet@google.com>
+    tcp: fix MSG_SENDPAGE_NOTLAST logic
+
+Ilpo Järvinen <ilpo.jarvinen@helsinki.fi>
+    tcp: fix for zero packets_in_flight was too broad
+
+Eric Dumazet <edumazet@google.com>
+    tcp: frto should not set snd_cwnd to 0
+
+Daniel Borkmann <dborkman@redhat.com>
+    net: sctp: sctp_endpoint_free: zero out secret key data
+
+Daniel Borkmann <dborkman@redhat.com>
+    net: sctp: sctp_setsockopt_auth_key: use kzfree instead of kfree
+
+Neil Horman <nhorman@tuxdriver.com>
+    sctp: refactor sctp_outq_teardown to insure proper re-initalization
+
+Heiko Carstens <heiko.carstens@de.ibm.com>
+    atm/iphase: rename fregt_t -> ffreg_t
+
+Phil Sutter <phil.sutter@viprinet.com>
+    packet: fix leakage of tx_ring memory
+
+Marcelo Ricardo Leitner <mleitner@redhat.com>
+    ipv6: do not create neighbor entries for local delivery
+
+Cong Wang <amwang@redhat.com>
+    pktgen: correctly handle failures when adding a device
+
+Eric Dumazet <edumazet@google.com>
+    net: loopback: fix a dst refcounting issue
+
+Timo Teräs <timo.teras@iki.fi>
+    r8169: remove the obsolete and incorrect AMD workaround
+
+Tilman Schmidt <tilman@imap.cc>
+    isdn/gigaset: fix zero size border case in debug dump
+
+Stephen Hemminger <stephen.hemminger@vyatta.com>
+    MAINTAINERS: Stephen Hemminger email change
+
+Cong Wang <xiyou.wangcong@gmail.com>
+    net: prevent setting ttl=0 via IP_TTL
+
+Stanislaw Gruszka <sgruszka@redhat.com>
+    mac80211: synchronize scan off/on-channel and PS states
+
+T Makphaibulchoke <tmac@hp.com>
+    kernel/resource.c: fix stack overflow in __reserve_region_with_split()
+
+Sjur Brændeland <sjur.brandeland@stericsson.com>
+    virtio_console: Don't access uninitialized data.
+
+Larry Finger <Larry.Finger@lwfinger.net>
+    rtlwifi: Fix the usage of the wrong variable in usb.c
 
 
-From: =?UTF-8?q?Timo=20Ter=C3=A4s?= <timo.teras@iki.fi>
+-------------
 
-[ Upstream commit 5d0feaff230c0abfe4a112e6f09f096ed99e0b2d ]
+Diffstat:
 
-This was introduced in commit 6dccd16 "r8169: merge with version
-6.001.00 of Realtek's r8169 driver". I did not find the version
-6.001.00 online, but in 6.002.00 or any later r8169 from Realtek
-this hunk is no longer present.
-
-Also commit 05af214 "r8169: fix Ethernet Hangup for RTL8110SC
-rev d" claims to have fixed this issue otherwise.
-
-The magic compare mask of 0xfffe000 is dubious as it masks
-parts of the Reserved part, and parts of the VLAN tag. But this
-does not make much sense as the VLAN tag parts are perfectly
-valid there. In matter of fact this seems to be triggered with
-any VLAN tagged packet as RxVlanTag bit is matched. I would
-suspect 0xfffe0000 was intended to test reserved part only.
-
-Finally, this hunk is evil as it can cause more packets to be
-handled than what was NAPI quota causing net/core/dev.c:
-net_rx_action(): WARN_ON_ONCE(work > weight) to trigger, and
-mess up the NAPI state causing device to hang.
-
-As result, any system using VLANs and having high receive
-traffic (so that NAPI poll budget limits rtl_rx) would result
-in device hang.
-
-Signed-off-by: Timo Ter�s <timo.teras@iki.fi>
-Acked-by: Francois Romieu <romieu@fr.zoreil.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/r8169.c |    7 -------
- 1 file changed, 7 deletions(-)
-
---- a/drivers/net/r8169.c
-+++ b/drivers/net/r8169.c
-@@ -5203,13 +5203,6 @@ static int rtl8169_rx_interrupt(struct n
- 			dev->stats.rx_bytes += pkt_size;
- 			dev->stats.rx_packets++;
- 		}
--
--		/* Work around for AMD plateform. */
--		if ((desc->opts2 & cpu_to_le32(0xfffe000)) &&
--		    (tp->mac_version == RTL_GIGA_MAC_VER_05)) {
--			desc->opts2 = 0;
--			cur_rx++;
--		}
- 	}
- 
- 	count = cur_rx - tp->cur_rx;
+ MAINTAINERS                        |   6 +-
+ Makefile                           |   4 +-
+ drivers/atm/iphase.h               | 146 ++++++++++++++++++++--------------------
+ drivers/char/virtio_console.c      |   3 +-
+ drivers/isdn/gigaset/capi.c        |   2 +
+ drivers/net/loopback.c             |   5 ++
+ drivers/net/r8169.c                |   7 --
+ drivers/net/tg3.c                  |  58 ++++++++++------
+ drivers/net/wireless/rtlwifi/usb.c |   4 +-
+ fs/splice.c                        |   4 +-
+ kernel/resource.c                  |  50 ++++++++++----
+ net/bridge/br_netfilter.c          |   3 +
+ net/core/pktgen.c                  |   9 ++-
+ net/ipv4/ip_sockglue.c             |   2 +-
+ net/ipv4/tcp_input.c               |   5 ++
+ net/ipv6/route.c                   |   3 +-
+ net/mac80211/ieee80211_i.h         |   6 +-
+ net/mac80211/offchannel.c          |  17 ++---
+ net/mac80211/scan.c                |   6 +-
+ net/mac80211/work.c                |   8 +--
+ net/packet/af_packet.c             |  10 +--
+ net/sctp/endpointola.c             |   5 ++
+ net/sctp/outqueue.c                |  12 ++--
+ net/sctp/socket.c                  |   2 +-
+ 24 files changed, 218 insertions(+), 159 deletions(-)
 
 
