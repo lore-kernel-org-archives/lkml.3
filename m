@@ -1,126 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756238Ab3BLWEG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 17:04:06 -0500
-Received: from mout.gmx.net ([212.227.17.20]:56945 "EHLO mout.gmx.net"
+	id S1756831Ab3BLWEg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 17:04:36 -0500
+Received: from mga09.intel.com ([134.134.136.24]:16312 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754572Ab3BLWEE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 17:04:04 -0500
-X-Authenticated: #1045983
-X-Provags-ID: V01U2FsdGVkX1/DeJlWJMnDFLoNLlWlhl6SkMbTMoafOLOVvWPUkr
-	nhb29SHwalV/zr
-Date: Tue, 12 Feb 2013 23:03:55 +0100
-From: Helge Deller <deller@gmx.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ian Kent <raven@themaw.net>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Rolf Eike Beer <eike-kernel@sf-tec.de>
-Subject: [GIT PULL] autofs: automounter fix for 3.8
-Message-ID: <20130212220355.GA1379@p100.box>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Y-GMX-Trusted: 0
+	id S1752190Ab3BLWEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 17:04:34 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,652,1355126400"; 
+   d="scan'208";a="284889320"
+From: Andi Kleen <andi@firstfloor.org>
+To: mingo@elte.hu
+Cc: linux-kernel@vger.kernel.org, eranian@google.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 1/5] perf, x86: Add Haswell PEBS record support v3
+Date: Tue, 12 Feb 2013 14:04:14 -0800
+Message-Id: <1360706658-13468-2-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1360706658-13468-1-git-send-email-andi@firstfloor.org>
+References: <1360706658-13468-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+From: Andi Kleen <ak@linux.intel.com>
 
-please consider pulling this late fix for autofs, which unbreaks
-automounter support for the parisc architecture (and probably aarch64 as
-well).
+Add support for the Haswell extended (fmt2) PEBS format.
 
-Thanks,
-Helge
+It has a superset of the nhm (fmt1) PEBS fields, but has a longer record so
+we need to adjust the code paths.
+
+The main advantage is the new "EventingRip" support which directly
+gives the instruction, not off-by-one instruction. So with precise == 2
+we use that directly and don't try to use LBRs and walking basic blocks.
+This lowers the overhead of using precise significantly.
+
+Some other features are added in later patches.
+
+Reviewed-by: Stephane Eranian <eranian@google.com>
+v2: Rename various identifiers. Add more comments. Get rid of a cast.
+v3: fmt2->hsw rename
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
+ arch/x86/kernel/cpu/perf_event.c          |    2 +-
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |  113 +++++++++++++++++++++++------
+ 2 files changed, 91 insertions(+), 24 deletions(-)
 
-The following changes since commit 124b69b6cc1020fff589312c62fcaf360abd8d12:
-
-  Merge tag 'fixes-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux (2013-02-08 12:22:30 +1100)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/deller/parisc-linux.git autofs-fix
-
-for you to fetch changes up to 4f4ffc3a5398ef9bdbb32db04756d7d34e356fcf:
-
-  unbreak automounter support on 64-bit kernel with 32-bit userspace (v2) (2013-02-08 20:42:18 +0100)
-
-----------------------------------------------------------------
-Helge Deller (1):
-      unbreak automounter support on 64-bit kernel with 32-bit userspace (v2)
-
- include/uapi/linux/auto_fs.h | 25 ++++++++-----------------
- 1 file changed, 8 insertions(+), 17 deletions(-)
-
-
-----------------------------------------------------------------
-
-unbreak automounter support on 64-bit kernel with 32-bit userspace (v2)
-
-automount-support is broken on the parisc architecture, because the existing
-#if list does not include a check for defined(__hppa__). The HPPA (parisc)
-architecture is similiar to other 64bit Linux targets where we have to define
-autofs_wqt_t (which is passed back and forth to user space) as int type which
-has a size of 32bit across 32 and 64bit kernels.
-
-During the discussion on the mailing list, H. Peter Anvin suggested to invert
-the #if list since only specific platforms (specifically those who do not have
-a 32bit userspace, like IA64 and Alpha) should have autofs_wqt_t as unsigned
-long type.
-
-This suggestion is probably the best way to go, since Arm64 (and maybe others?)
-seems to have a non-working automounter. So in the long run even for other new
-upcoming architectures this inverted check seem to be the best solution, since
-it will not require them to change this #if again (unless they are 64bit only).
-
-Signed-off-by: Helge Deller <deller@gmx.de>
-Acked-by: H. Peter Anvin <hpa@zytor.com>
-Acked-by: Ian Kent <raven@themaw.net>
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-CC: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Rolf Eike Beer <eike-kernel@sf-tec.de>
-
-diff --git a/include/uapi/linux/auto_fs.h b/include/uapi/linux/auto_fs.h
-index 77cdba9..bb991df 100644
---- a/include/uapi/linux/auto_fs.h
-+++ b/include/uapi/linux/auto_fs.h
-@@ -28,25 +28,16 @@
- #define AUTOFS_MIN_PROTO_VERSION	AUTOFS_PROTO_VERSION
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index bf0f01a..7d3b9bd 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -397,7 +397,7 @@ int x86_pmu_hw_config(struct perf_event *event)
+ 		 * check that PEBS LBR correction does not conflict with
+ 		 * whatever the user is asking with attr->branch_sample_type
+ 		 */
+-		if (event->attr.precise_ip > 1) {
++		if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format < 2) {
+ 			u64 *br_type = &event->attr.branch_sample_type;
  
- /*
-- * Architectures where both 32- and 64-bit binaries can be executed
-- * on 64-bit kernels need this.  This keeps the structure format
-- * uniform, and makes sure the wait_queue_token isn't too big to be
-- * passed back down to the kernel.
-- *
-- * This assumes that on these architectures:
-- * mode     32 bit    64 bit
-- * -------------------------
-- * int      32 bit    32 bit
-- * long     32 bit    64 bit
-- *
-- * If so, 32-bit user-space code should be backwards compatible.
-+ * The wait_queue_token (autofs_wqt_t) is part of a structure which is passed
-+ * back to the kernel via ioctl from userspace. On architectures where 32- and
-+ * 64-bit userspace binaries can be executed it's important that the size of
-+ * autofs_wqt_t stays constant between 32- and 64-bit Linux kernels so that we
-+ * do not break the binary ABI interface by changing the structure size.
-  */
+ 			if (has_branch_stack(event)) {
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 826054a..78acc78 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -41,6 +41,22 @@ struct pebs_record_nhm {
+ 	u64 status, dla, dse, lat;
+ };
+ 
++/*
++ * Same as pebs_record_nhm, with two additional fields.
++ */
++struct pebs_record_hsw {
++	struct pebs_record_nhm nhm;
++	/* 
++	 * Real IP of the event. In the Intel documentation this
++	 * is called eventingrip.
++	 */
++	u64 ip_of_the_event;
++	/* 
++	 * TSX tuning information field: abort cycles and abort flags.
++	 */
++	u64 tsx_tuning;
++};
++
+ void init_debug_store_on_cpu(int cpu)
+ {
+ 	struct debug_store *ds = per_cpu(cpu_hw_events, cpu).ds;
+@@ -559,11 +575,11 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+ {
+ 	/*
+ 	 * We cast to pebs_record_core since that is a subset of
+-	 * both formats and we don't use the other fields in this
+-	 * routine.
++	 * all formats.
+ 	 */
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 	struct pebs_record_core *pebs = __pebs;
++	struct pebs_record_hsw *pebs_hsw = __pebs;
+ 	struct perf_sample_data data;
+ 	struct pt_regs regs;
+ 
+@@ -588,7 +604,10 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+ 	regs.bp = pebs->bp;
+ 	regs.sp = pebs->sp;
+ 
+-	if (event->attr.precise_ip > 1 && intel_pmu_pebs_fixup_ip(&regs))
++	if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format >= 2) {
++		regs.ip = pebs_hsw->ip_of_the_event;
++		regs.flags |= PERF_EFLAGS_EXACT;
++	} else if (event->attr.precise_ip > 1 && intel_pmu_pebs_fixup_ip(&regs))
+ 		regs.flags |= PERF_EFLAGS_EXACT;
+ 	else
+ 		regs.flags &= ~PERF_EFLAGS_EXACT;
+@@ -641,35 +660,21 @@ static void intel_pmu_drain_pebs_core(struct pt_regs *iregs)
+ 	__intel_pmu_pebs_event(event, iregs, at);
+ }
+ 
+-static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
++static void __intel_pmu_drain_pebs_nhm(struct pt_regs *iregs, void *at,
++					void *top)
+ {
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 	struct debug_store *ds = cpuc->ds;
+-	struct pebs_record_nhm *at, *top;
+ 	struct perf_event *event = NULL;
+ 	u64 status = 0;
+-	int bit, n;
 -
--#if defined(__sparc__) || defined(__mips__) || defined(__x86_64__) \
-- || defined(__powerpc__) || defined(__s390__)
--typedef unsigned int autofs_wqt_t;
--#else
-+#if defined(__ia64__) || defined(__alpha__) /* pure 64bit architectures */
- typedef unsigned long autofs_wqt_t;
-+#else
-+typedef unsigned int autofs_wqt_t;
- #endif
+-	if (!x86_pmu.pebs_active)
+-		return;
+-
+-	at  = (struct pebs_record_nhm *)(unsigned long)ds->pebs_buffer_base;
+-	top = (struct pebs_record_nhm *)(unsigned long)ds->pebs_index;
++	int bit;
  
- /* Packet types */
+ 	ds->pebs_index = ds->pebs_buffer_base;
+ 
+-	n = top - at;
+-	if (n <= 0)
+-		return;
++	for ( ; at < top; at += x86_pmu.pebs_record_size) {
++		struct pebs_record_nhm *p = at;
+ 
+-	/*
+-	 * Should not happen, we program the threshold at 1 and do not
+-	 * set a reset value.
+-	 */
+-	WARN_ONCE(n > x86_pmu.max_pebs_events, "Unexpected number of pebs records %d\n", n);
+-
+-	for ( ; at < top; at++) {
+-		for_each_set_bit(bit, (unsigned long *)&at->status, x86_pmu.max_pebs_events) {
++		for_each_set_bit(bit, (unsigned long *)&p->status, x86_pmu.max_pebs_events) {
+ 			event = cpuc->events[bit];
+ 			if (!test_bit(bit, cpuc->active_mask))
+ 				continue;
+@@ -692,6 +697,61 @@ static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
+ 	}
+ }
+ 
++static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
++{
++	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct debug_store *ds = cpuc->ds;
++	struct pebs_record_nhm *at, *top;
++	int n;
++
++	if (!x86_pmu.pebs_active)
++		return;
++
++	at  = (struct pebs_record_nhm *)(unsigned long)ds->pebs_buffer_base;
++	top = (struct pebs_record_nhm *)(unsigned long)ds->pebs_index;
++
++	ds->pebs_index = ds->pebs_buffer_base;
++
++	n = top - at;
++	if (n <= 0)
++		return;
++
++	/*
++	 * Should not happen, we program the threshold at 1 and do not
++	 * set a reset value.
++	 */
++	WARN_ONCE(n > x86_pmu.max_pebs_events,
++		  "Unexpected number of pebs records %d\n", n);
++
++	return __intel_pmu_drain_pebs_nhm(iregs, at, top);
++}
++
++static void intel_pmu_drain_pebs_hsw(struct pt_regs *iregs)
++{
++	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct debug_store *ds = cpuc->ds;
++	struct pebs_record_hsw *at, *top;
++	int n;
++
++	if (!x86_pmu.pebs_active)
++		return;
++
++	at  = (struct pebs_record_hsw *)(unsigned long)ds->pebs_buffer_base;
++	top = (struct pebs_record_hsw *)(unsigned long)ds->pebs_index;
++
++	n = top - at;
++	if (n <= 0)
++		return;
++	/*
++	 * Should not happen, we program the threshold at 1 and do not
++	 * set a reset value.
++	 */
++	WARN_ONCE(n > x86_pmu.max_pebs_events,
++		  "Unexpected number of pebs records %d\n", n);
++
++	return __intel_pmu_drain_pebs_nhm(iregs, at, top);
++}
++
+ /*
+  * BTS, PEBS probe and setup
+  */
+@@ -723,6 +783,13 @@ void intel_ds_init(void)
+ 			x86_pmu.drain_pebs = intel_pmu_drain_pebs_nhm;
+ 			break;
+ 
++		case 2:
++			printk(KERN_CONT "PEBS fmt2%c, ", pebs_type);
++			x86_pmu.pebs_record_size = 
++				sizeof(struct pebs_record_hsw);
++			x86_pmu.drain_pebs = intel_pmu_drain_pebs_hsw;
++			break;
++
+ 		default:
+ 			printk(KERN_CONT "no PEBS fmt%d%c, ", format, pebs_type);
+ 			x86_pmu.pebs = 0;
+-- 
+1.7.7.6
 
