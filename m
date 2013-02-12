@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933256Ab3BLMZM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 07:25:12 -0500
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:60454 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933186Ab3BLMYC (ORCPT
+	id S933240Ab3BLMZt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 07:25:49 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:38227 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933185Ab3BLMX6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 07:24:02 -0500
+	Tue, 12 Feb 2013 07:23:58 -0500
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>, asias@redhat.com, mst@redhat.com,
         Rusty Russell <rusty@rustcorp.com.au>, kvm@vger.kernel.org,
         virtualization@lists.linux-foundation.org
-Subject: [PATCH 6/9] virtio-net: unmark scatterlist ending after virtqueue_add_buf
-Date: Tue, 12 Feb 2013 13:23:32 +0100
-Message-Id: <1360671815-2135-7-git-send-email-pbonzini@redhat.com>
+Subject: [PATCH 5/9] scatterlist: introduce sg_unmark_end
+Date: Tue, 12 Feb 2013 13:23:31 +0100
+Message-Id: <1360671815-2135-6-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1360671815-2135-1-git-send-email-pbonzini@redhat.com>
 References: <1360671815-2135-1-git-send-email-pbonzini@redhat.com>
@@ -22,75 +22,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prepare for when virtqueue_add_buf will use sg_next instead of
-ignoring ending markers.
+This is useful in places that recycle the same scatterlist multiple
+times, and do not want to incur the cost of sg_init_table every
+time in hot paths.
 
-Note that for_each_sg (and thus virtqueue_add_sg) allows you
-to pass a "truncated" scatterlist that does not have a marker
-on the last item.  We rely on this in add_recvbuf_mergeable.
-
+Acked-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- drivers/net/virtio_net.c |   19 ++++++++++++++-----
- 1 files changed, 14 insertions(+), 5 deletions(-)
+ block/blk-integrity.c       |    2 +-
+ block/blk-merge.c           |    2 +-
+ include/linux/scatterlist.h |   16 ++++++++++++++++
+ 3 files changed, 18 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 35c00c5..78b6f51 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -440,13 +440,16 @@ static int add_recvbuf_small(struct receive_queue *rq, gfp_t gfp)
+diff --git a/block/blk-integrity.c b/block/blk-integrity.c
+index da2a818..0f5004f 100644
+--- a/block/blk-integrity.c
++++ b/block/blk-integrity.c
+@@ -110,7 +110,7 @@ new_segment:
+ 			if (!sg)
+ 				sg = sglist;
+ 			else {
+-				sg->page_link &= ~0x02;
++				sg_unmark_end(sg);
+ 				sg = sg_next(sg);
+ 			}
  
- 	hdr = skb_vnet_hdr(skb);
- 	sg_set_buf(rq->sg, &hdr->hdr, sizeof hdr->hdr);
--
- 	skb_to_sgvec(skb, rq->sg + 1, 0, skb->len);
+diff --git a/block/blk-merge.c b/block/blk-merge.c
+index 936a110..5f24482 100644
+--- a/block/blk-merge.c
++++ b/block/blk-merge.c
+@@ -143,7 +143,7 @@ new_segment:
+ 			 * termination bit to avoid doing a full
+ 			 * sg_init_table() in drivers for each command.
+ 			 */
+-			(*sg)->page_link &= ~0x02;
++			sg_unmark_end(*sg);
+ 			*sg = sg_next(*sg);
+ 		}
  
- 	err = virtqueue_add_buf(rq->vq, rq->sg, 0, 2, skb, gfp);
- 	if (err < 0)
- 		dev_kfree_skb(skb);
- 
-+	/* An optimization: clear the end bit set by skb_to_sgvec, so
-+	 * we can simply re-use rq->sg[] next time.
-+	 */
-+	sg_unmark_end(rq->sg + 1);
- 	return err;
+diff --git a/include/linux/scatterlist.h b/include/linux/scatterlist.h
+index 4bd6c06..9b83784 100644
+--- a/include/linux/scatterlist.h
++++ b/include/linux/scatterlist.h
+@@ -172,6 +172,22 @@ static inline void sg_mark_end(struct scatterlist *sg)
  }
  
-@@ -505,8 +508,7 @@ static int add_recvbuf_mergeable(struct receive_queue *rq, gfp_t gfp)
- 	if (!page)
- 		return -ENOMEM;
- 
--	sg_init_one(rq->sg, page_address(page), PAGE_SIZE);
--
-+	sg_set_page(rq->sg, page, PAGE_SIZE, 0);
- 	err = virtqueue_add_buf(rq->vq, rq->sg, 0, 1, page, gfp);
- 	if (err < 0)
- 		give_pages(rq, page);
-@@ -671,6 +673,7 @@ static int xmit_skb(struct send_queue *sq, struct sk_buff *skb)
- 	const unsigned char *dest = ((struct ethhdr *)skb->data)->h_dest;
- 	struct virtnet_info *vi = sq->vq->vdev->priv;
- 	unsigned num_sg;
-+	int ret;
- 
- 	pr_debug("%s: xmit %p %pM\n", vi->dev->name, skb, dest);
- 
-@@ -710,8 +713,14 @@ static int xmit_skb(struct send_queue *sq, struct sk_buff *skb)
- 		sg_set_buf(sq->sg, &hdr->hdr, sizeof hdr->hdr);
- 
- 	num_sg = skb_to_sgvec(skb, sq->sg + 1, 0, skb->len) + 1;
--	return virtqueue_add_buf(sq->vq, sq->sg, num_sg,
--				 0, skb, GFP_ATOMIC);
-+	ret = virtqueue_add_buf(sq->vq, sq->sg, num_sg,
-+				0, skb, GFP_ATOMIC);
+ /**
++ * sg_unmark_end - Undo setting the end of the scatterlist
++ * @sg:		 SG entryScatterlist
++ *
++ * Description:
++ *   Removes the termination marker from the given entry of the scatterlist.
++ *
++ **/
++static inline void sg_unmark_end(struct scatterlist *sg)
++{
++#ifdef CONFIG_DEBUG_SG
++	BUG_ON(sg->sg_magic != SG_MAGIC);
++#endif
++	sg->page_link &= ~0x02;
++}
 +
-+	/* An optimization: clear the end bit set by skb_to_sgvec, so
-+	 * we can simply re-use sq->sg[] next time.
-+	 */
-+	sg_unmark_end(&sq->sg[num_sg-1]);
-+	return ret;
- }
- 
- static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
++/**
+  * sg_phys - Return physical address of an sg entry
+  * @sg:	     SG entry
+  *
 -- 
 1.7.1
 
