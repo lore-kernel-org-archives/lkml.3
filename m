@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759644Ab3BLVIm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 16:08:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53448 "EHLO
+	id S1759682Ab3BLVJA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 16:09:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53442 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752677Ab3BLUfq (ORCPT
+	with ESMTP id S1752577Ab3BLUfp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:35:46 -0500
+	Tue, 12 Feb 2013 15:35:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        CAI Qian <caiqian@redhat.com>
-Subject: [ 14/61] ath9k_hw: fix calibration issues on chainmask that dont include chain 0
-Date: Tue, 12 Feb 2013 12:34:34 -0800
-Message-Id: <20130212203420.142379376@linuxfoundation.org>
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Paul Bolle <pebolle@tiscali.nl>
+Subject: [ 13/61] media: pwc-if: must check vb2_queue_init() success
+Date: Tue, 12 Feb 2013 12:34:33 -0800
+Message-Id: <20130212203419.986069261@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203417.890993903@linuxfoundation.org>
 References: <20130212203417.890993903@linuxfoundation.org>
@@ -28,52 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-commit 4a8f199508d79ff8a7d1e22f47b912baaf225336 upstream.
+commit eda94710d6502672c5ee7de198fa78a63ddfae3a upstream.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: CAI Qian <caiqian@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+drivers/media/usb/pwc/pwc-if.c: In function 'usb_pwc_probe':
+drivers/media/usb/pwc/pwc-if.c:1003:16: warning: ignoring return value of 'vb2_queue_init', declared with attribute warn_unused_result [-Wunused-result]
+In the past, it used to have a logic there at queue init that would
+BUG() on errors. This logic got removed. Drivers are now required
+to explicitly handle the queue initialization errors, or very bad
+things may happen.
+
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 
 ---
- drivers/net/wireless/ath/ath9k/ar9003_calib.c |    2 ++
- drivers/net/wireless/ath/ath9k/ar9003_phy.c   |    2 +-
- drivers/net/wireless/ath/ath9k/hw.h           |    1 +
- 3 files changed, 4 insertions(+), 1 deletion(-)
+ drivers/media/usb/pwc/pwc-if.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath9k/ar9003_calib.c
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_calib.c
-@@ -903,6 +903,8 @@ static bool ar9003_hw_init_cal(struct at
- 					  AR_PHY_CL_TAB_1,
- 					  AR_PHY_CL_TAB_2 };
+--- a/drivers/media/usb/pwc/pwc-if.c
++++ b/drivers/media/usb/pwc/pwc-if.c
+@@ -1000,7 +1000,11 @@ static int usb_pwc_probe(struct usb_inte
+ 	pdev->vb_queue.buf_struct_size = sizeof(struct pwc_frame_buf);
+ 	pdev->vb_queue.ops = &pwc_vb_queue_ops;
+ 	pdev->vb_queue.mem_ops = &vb2_vmalloc_memops;
+-	vb2_queue_init(&pdev->vb_queue);
++	rc = vb2_queue_init(&pdev->vb_queue);
++	if (rc < 0) {
++		PWC_ERROR("Oops, could not initialize vb2 queue.\n");
++		goto err_free_mem;
++	}
  
-+	ar9003_hw_set_chain_masks(ah, ah->caps.rx_chainmask, ah->caps.tx_chainmask);
-+
- 	if (rtt) {
- 		if (!ar9003_hw_rtt_restore(ah, chan))
- 			run_rtt_cal = true;
---- a/drivers/net/wireless/ath/ath9k/ar9003_phy.c
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_phy.c
-@@ -586,7 +586,7 @@ static void ar9003_hw_init_bb(struct ath
- 	ath9k_hw_synth_delay(ah, chan, synthDelay);
- }
- 
--static void ar9003_hw_set_chain_masks(struct ath_hw *ah, u8 rx, u8 tx)
-+void ar9003_hw_set_chain_masks(struct ath_hw *ah, u8 rx, u8 tx)
- {
- 	if (ah->caps.tx_chainmask == 5 || ah->caps.rx_chainmask == 5)
- 		REG_SET_BIT(ah, AR_PHY_ANALOG_SWAP,
---- a/drivers/net/wireless/ath/ath9k/hw.h
-+++ b/drivers/net/wireless/ath/ath9k/hw.h
-@@ -1063,6 +1063,7 @@ int ar9003_paprd_create_curve(struct ath
- int ar9003_paprd_setup_gain_table(struct ath_hw *ah, int chain);
- int ar9003_paprd_init_table(struct ath_hw *ah);
- bool ar9003_paprd_is_done(struct ath_hw *ah);
-+void ar9003_hw_set_chain_masks(struct ath_hw *ah, u8 rx, u8 tx);
- 
- /* Hardware family op attach helpers */
- void ar5008_hw_attach_phy_ops(struct ath_hw *ah);
+ 	/* Init video_device structure */
+ 	memcpy(&pdev->vdev, &pwc_template, sizeof(pwc_template));
 
 
