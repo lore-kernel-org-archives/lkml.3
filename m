@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932193Ab3BLHgf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 02:36:35 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:47113 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757279Ab3BLHgd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 02:36:33 -0500
-Date: Tue, 12 Feb 2013 02:36:29 -0500 (EST)
-Message-Id: <20130212.023629.1135481101302114772.davem@davemloft.net>
-To: ben@decadent.org.uk
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com, edumazet@google.com,
-        herton.krzesinski@canonical.com, gregkh@linuxfoundation.org
-Subject: Re: [PATCH 185/222] tcp: fix MSG_SENDPAGE_NOTLAST logic
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1359740457.31386.74.camel@deadeye.wl.decadent.org.uk>
-References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
-	<1358351822-7675-186-git-send-email-herton.krzesinski@canonical.com>
-	<1359740457.31386.74.camel@deadeye.wl.decadent.org.uk>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S932247Ab3BLHsA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 02:48:00 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:44101 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932099Ab3BLHr6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 02:47:58 -0500
+Message-ID: <5119F39C.2080206@ti.com>
+Date: Tue, 12 Feb 2013 09:47:40 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Sascha Hauer <s.hauer@pengutronix.de>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Rajendra Nayak <rnayak@ti.com>
+CC: <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <balbi@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/2] ARM: OMAP2+: Allow clock alias provision from device
+ tree
+References: <1360597464-8491-1-git-send-email-rogerq@ti.com> <20130211160752.GG1906@pengutronix.de>
+In-Reply-To: <20130211160752.GG1906@pengutronix.de>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <ben@decadent.org.uk>
-Date: Fri, 01 Feb 2013 18:40:57 +0100
-
-> On Wed, 2013-01-16 at 13:56 -0200, Herton Ronaldo Krzesinski wrote:
->> 3.5.7.3 -stable review patch.  If anyone has any objections, please let me know.
->> 
->> ------------------
->> 
->> From: Eric Dumazet <edumazet@google.com>
->> 
->> commit ae62ca7b03217be5e74759dc6d7698c95df498b3 upstream.
->> 
->> commit 35f9c09fe9c72e (tcp: tcp_sendpages() should call tcp_push() once)
->> added an internal flag : MSG_SENDPAGE_NOTLAST meant to be set on all
->> frags but the last one for a splice() call.
-> [...]
+On 02/11/2013 06:07 PM, Sascha Hauer wrote:
+> On Mon, Feb 11, 2013 at 05:44:23PM +0200, Roger Quadros wrote:
+>> Currently on OMAP, it is not possible to specify a clock consumer
+>> to any of the OMAP generated clocks using the device tree. This can pose
+>> a problem for external devices that run off an OMAP clock as we
+>> can't reliably provide a reference to the clock in the device tree.
 > 
-> David, I think this is needed for 3.0 and 3.2 as well since
-> 35f9c09fe9c72e was backported to them.  You previously included it in
-> updates for 3.4 and 3.7.
+> There is an established way of providing clocks in the devicetree using
+> the clocks/clock-names properties. Wouldn't it be better using this
+> for OMAP aswell?
+> 
+I agree with you, but I'm not sure when this migration will be done.
+Rajendra/Santosh might know better.
 
-Ok, queued up, thanks.
+regards,
+-roger
+
