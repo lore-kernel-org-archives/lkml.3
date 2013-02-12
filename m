@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752503Ab3BLUfp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:35:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53403 "EHLO
+	id S1759728Ab3BLVJb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 16:09:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53438 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752002Ab3BLUfi (ORCPT
+	with ESMTP id S1752366Ab3BLUfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:35:38 -0500
+	Tue, 12 Feb 2013 15:35:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 03/61] regulator: max8998: fix incorrect min_uV value for ldo10
-Date: Tue, 12 Feb 2013 12:34:23 -0800
-Message-Id: <20130212203418.445965026@linuxfoundation.org>
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Jeff Pieper <jeffrey.e.pieper@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 12/61] e1000e: enable ECC on I217/I218 to catch packet buffer memory errors
+Date: Tue, 12 Feb 2013 12:34:32 -0800
+Message-Id: <20130212203419.852886625@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203417.890993903@linuxfoundation.org>
 References: <20130212203417.890993903@linuxfoundation.org>
@@ -27,33 +29,204 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marek Szyprowski <m.szyprowski@samsung.com>
+From: Bruce Allan <bruce.w.allan@intel.com>
 
-commit 36a6f8c035760dcbd0c3acb4c2fd56268588a9cb upstream.
+commit 286003048aaef49b26bb9d93611dc69085e8982e upstream.
 
-Correct value for minimal voltage for ldo10 output is 950000 uV. This
-patch fixes the typo introduced by patch adf6178ad5552a7f2f742a8c85343c50
-("regulator: max8998: Use uV in voltage_map_desc"), what solves broken
-probe of max8998 in v3.8-rc4.
+In rare instances, memory errors have been detected in the internal packet
+buffer memory on I217/I218 when stressed under certain environmental
+conditions.  Enable Error Correcting Code (ECC) in hardware to catch both
+correctable and uncorrectable errors.  Correctable errors will be handled
+by the hardware.  Uncorrectable errors in the packet buffer will cause the
+packet to be received with an error indication in the buffer descriptor
+causing the packet to be discarded.  If the uncorrectable error is in the
+descriptor itself, the hardware will stop and interrupt the driver
+indicating the error.  The driver will then reset the hardware in order to
+clear the error and restart.
 
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Both types of errors will be accounted for in statistics counters.
+
+Signed-off-by: Bruce Allan <bruce.w.allan@intel.com>
+Tested-by: Jeff Pieper <jeffrey.e.pieper@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/regulator/max8998.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/intel/e1000e/defines.h |    9 +++++
+ drivers/net/ethernet/intel/e1000e/e1000.h   |    2 +
+ drivers/net/ethernet/intel/e1000e/ethtool.c |    2 +
+ drivers/net/ethernet/intel/e1000e/hw.h      |    1 
+ drivers/net/ethernet/intel/e1000e/ich8lan.c |   11 ++++++
+ drivers/net/ethernet/intel/e1000e/netdev.c  |   46 ++++++++++++++++++++++++++++
+ 6 files changed, 71 insertions(+)
 
---- a/drivers/regulator/max8998.c
-+++ b/drivers/regulator/max8998.c
-@@ -65,7 +65,7 @@ static const struct voltage_map_desc ldo
- 	.min = 2800000,	.step = 100000,	.max = 3100000,
+--- a/drivers/net/ethernet/intel/e1000e/defines.h
++++ b/drivers/net/ethernet/intel/e1000e/defines.h
+@@ -233,6 +233,7 @@
+ #define E1000_CTRL_FRCDPX   0x00001000  /* Force Duplex */
+ #define E1000_CTRL_LANPHYPC_OVERRIDE 0x00010000 /* SW control of LANPHYPC */
+ #define E1000_CTRL_LANPHYPC_VALUE    0x00020000 /* SW value of LANPHYPC */
++#define E1000_CTRL_MEHE     0x00080000  /* Memory Error Handling Enable */
+ #define E1000_CTRL_SWDPIN0  0x00040000  /* SWDPIN 0 value */
+ #define E1000_CTRL_SWDPIN1  0x00080000  /* SWDPIN 1 value */
+ #define E1000_CTRL_SWDPIO0  0x00400000  /* SWDPIN 0 Input or output */
+@@ -391,6 +392,12 @@
+ 
+ #define E1000_PBS_16K E1000_PBA_16K
+ 
++/* Uncorrectable/correctable ECC Error counts and enable bits */
++#define E1000_PBECCSTS_CORR_ERR_CNT_MASK	0x000000FF
++#define E1000_PBECCSTS_UNCORR_ERR_CNT_MASK	0x0000FF00
++#define E1000_PBECCSTS_UNCORR_ERR_CNT_SHIFT	8
++#define E1000_PBECCSTS_ECC_ENABLE		0x00010000
++
+ #define IFS_MAX       80
+ #define IFS_MIN       40
+ #define IFS_RATIO     4
+@@ -410,6 +417,7 @@
+ #define E1000_ICR_RXSEQ         0x00000008 /* Rx sequence error */
+ #define E1000_ICR_RXDMT0        0x00000010 /* Rx desc min. threshold (0) */
+ #define E1000_ICR_RXT0          0x00000080 /* Rx timer intr (ring 0) */
++#define E1000_ICR_ECCER         0x00400000 /* Uncorrectable ECC Error */
+ #define E1000_ICR_INT_ASSERTED  0x80000000 /* If this bit asserted, the driver should claim the interrupt */
+ #define E1000_ICR_RXQ0          0x00100000 /* Rx Queue 0 Interrupt */
+ #define E1000_ICR_RXQ1          0x00200000 /* Rx Queue 1 Interrupt */
+@@ -446,6 +454,7 @@
+ #define E1000_IMS_RXSEQ     E1000_ICR_RXSEQ     /* Rx sequence error */
+ #define E1000_IMS_RXDMT0    E1000_ICR_RXDMT0    /* Rx desc min. threshold */
+ #define E1000_IMS_RXT0      E1000_ICR_RXT0      /* Rx timer intr */
++#define E1000_IMS_ECCER     E1000_ICR_ECCER     /* Uncorrectable ECC Error */
+ #define E1000_IMS_RXQ0      E1000_ICR_RXQ0      /* Rx Queue 0 Interrupt */
+ #define E1000_IMS_RXQ1      E1000_ICR_RXQ1      /* Rx Queue 1 Interrupt */
+ #define E1000_IMS_TXQ0      E1000_ICR_TXQ0      /* Tx Queue 0 Interrupt */
+--- a/drivers/net/ethernet/intel/e1000e/e1000.h
++++ b/drivers/net/ethernet/intel/e1000e/e1000.h
+@@ -314,6 +314,8 @@ struct e1000_adapter {
+ 
+ 	struct napi_struct napi;
+ 
++	unsigned int uncorr_errors;	/* uncorrectable ECC errors */
++	unsigned int corr_errors;	/* correctable ECC errors */
+ 	unsigned int restart_queue;
+ 	u32 txd_cmd;
+ 
+--- a/drivers/net/ethernet/intel/e1000e/ethtool.c
++++ b/drivers/net/ethernet/intel/e1000e/ethtool.c
+@@ -108,6 +108,8 @@ static const struct e1000_stats e1000_gs
+ 	E1000_STAT("dropped_smbus", stats.mgpdc),
+ 	E1000_STAT("rx_dma_failed", rx_dma_failed),
+ 	E1000_STAT("tx_dma_failed", tx_dma_failed),
++	E1000_STAT("uncorr_ecc_errors", uncorr_errors),
++	E1000_STAT("corr_ecc_errors", corr_errors),
  };
- static const struct voltage_map_desc ldo10_voltage_map_desc = {
--	.min = 95000,	.step = 50000,	.max = 1300000,
-+	.min = 950000,	.step = 50000,	.max = 1300000,
- };
- static const struct voltage_map_desc ldo1213_voltage_map_desc = {
- 	.min = 800000,	.step = 100000,	.max = 3300000,
+ 
+ #define E1000_GLOBAL_STATS_LEN	ARRAY_SIZE(e1000_gstrings_stats)
+--- a/drivers/net/ethernet/intel/e1000e/hw.h
++++ b/drivers/net/ethernet/intel/e1000e/hw.h
+@@ -77,6 +77,7 @@ enum e1e_registers {
+ #define E1000_POEMB	E1000_PHY_CTRL	/* PHY OEM Bits */
+ 	E1000_PBA      = 0x01000, /* Packet Buffer Allocation - RW */
+ 	E1000_PBS      = 0x01008, /* Packet Buffer Size */
++	E1000_PBECCSTS = 0x0100C, /* Packet Buffer ECC Status - RW */
+ 	E1000_EEMNGCTL = 0x01010, /* MNG EEprom Control */
+ 	E1000_EEWR     = 0x0102C, /* EEPROM Write Register - RW */
+ 	E1000_FLOP     = 0x0103C, /* FLASH Opcode Register */
+--- a/drivers/net/ethernet/intel/e1000e/ich8lan.c
++++ b/drivers/net/ethernet/intel/e1000e/ich8lan.c
+@@ -3690,6 +3690,17 @@ static void e1000_initialize_hw_bits_ich
+ 	if (hw->mac.type == e1000_ich8lan)
+ 		reg |= (E1000_RFCTL_IPV6_EX_DIS | E1000_RFCTL_NEW_IPV6_EXT_DIS);
+ 	ew32(RFCTL, reg);
++
++	/* Enable ECC on Lynxpoint */
++	if (hw->mac.type == e1000_pch_lpt) {
++		reg = er32(PBECCSTS);
++		reg |= E1000_PBECCSTS_ECC_ENABLE;
++		ew32(PBECCSTS, reg);
++
++		reg = er32(CTRL);
++		reg |= E1000_CTRL_MEHE;
++		ew32(CTRL, reg);
++	}
+ }
+ 
+ /**
+--- a/drivers/net/ethernet/intel/e1000e/netdev.c
++++ b/drivers/net/ethernet/intel/e1000e/netdev.c
+@@ -1687,6 +1687,23 @@ static irqreturn_t e1000_intr_msi(int ir
+ 			mod_timer(&adapter->watchdog_timer, jiffies + 1);
+ 	}
+ 
++	/* Reset on uncorrectable ECC error */
++	if ((icr & E1000_ICR_ECCER) && (hw->mac.type == e1000_pch_lpt)) {
++		u32 pbeccsts = er32(PBECCSTS);
++
++		adapter->corr_errors +=
++		    pbeccsts & E1000_PBECCSTS_CORR_ERR_CNT_MASK;
++		adapter->uncorr_errors +=
++		    (pbeccsts & E1000_PBECCSTS_UNCORR_ERR_CNT_MASK) >>
++		    E1000_PBECCSTS_UNCORR_ERR_CNT_SHIFT;
++
++		/* Do the reset outside of interrupt context */
++		schedule_work(&adapter->reset_task);
++
++		/* return immediately since reset is imminent */
++		return IRQ_HANDLED;
++	}
++
+ 	if (napi_schedule_prep(&adapter->napi)) {
+ 		adapter->total_tx_bytes = 0;
+ 		adapter->total_tx_packets = 0;
+@@ -1754,6 +1771,23 @@ static irqreturn_t e1000_intr(int irq, v
+ 			mod_timer(&adapter->watchdog_timer, jiffies + 1);
+ 	}
+ 
++	/* Reset on uncorrectable ECC error */
++	if ((icr & E1000_ICR_ECCER) && (hw->mac.type == e1000_pch_lpt)) {
++		u32 pbeccsts = er32(PBECCSTS);
++
++		adapter->corr_errors +=
++		    pbeccsts & E1000_PBECCSTS_CORR_ERR_CNT_MASK;
++		adapter->uncorr_errors +=
++		    (pbeccsts & E1000_PBECCSTS_UNCORR_ERR_CNT_MASK) >>
++		    E1000_PBECCSTS_UNCORR_ERR_CNT_SHIFT;
++
++		/* Do the reset outside of interrupt context */
++		schedule_work(&adapter->reset_task);
++
++		/* return immediately since reset is imminent */
++		return IRQ_HANDLED;
++	}
++
+ 	if (napi_schedule_prep(&adapter->napi)) {
+ 		adapter->total_tx_bytes = 0;
+ 		adapter->total_tx_packets = 0;
+@@ -2117,6 +2151,8 @@ static void e1000_irq_enable(struct e100
+ 	if (adapter->msix_entries) {
+ 		ew32(EIAC_82574, adapter->eiac_mask & E1000_EIAC_MASK_82574);
+ 		ew32(IMS, adapter->eiac_mask | E1000_IMS_OTHER | E1000_IMS_LSC);
++	} else if (hw->mac.type == e1000_pch_lpt) {
++		ew32(IMS, IMS_ENABLE_MASK | E1000_IMS_ECCER);
+ 	} else {
+ 		ew32(IMS, IMS_ENABLE_MASK);
+ 	}
+@@ -4297,6 +4333,16 @@ static void e1000e_update_stats(struct e
+ 	adapter->stats.mgptc += er32(MGTPTC);
+ 	adapter->stats.mgprc += er32(MGTPRC);
+ 	adapter->stats.mgpdc += er32(MGTPDC);
++
++	/* Correctable ECC Errors */
++	if (hw->mac.type == e1000_pch_lpt) {
++		u32 pbeccsts = er32(PBECCSTS);
++		adapter->corr_errors +=
++		    pbeccsts & E1000_PBECCSTS_CORR_ERR_CNT_MASK;
++		adapter->uncorr_errors +=
++		    (pbeccsts & E1000_PBECCSTS_UNCORR_ERR_CNT_MASK) >>
++		    E1000_PBECCSTS_UNCORR_ERR_CNT_SHIFT;
++	}
+ }
+ 
+ /**
 
 
