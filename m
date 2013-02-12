@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754778Ab3BLG0g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 01:26:36 -0500
-Received: from correo.unefa.edu.ve ([150.186.0.20]:18689 "EHLO
-	correo.unefa.edu.ve" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751267Ab3BLG0e (ORCPT
+	id S1755342Ab3BLGhP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 01:37:15 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:38951 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753520Ab3BLGhN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 01:26:34 -0500
-Date: Tue, 12 Feb 2013 00:11:53 -0430 (VET)
-From: "dr.smithabbott" <lquintero1@unefa.edu.ve>
-Reply-To: "dr.smithabbott@yahoo.co.uk" <dr.smithabbott@yahoo.co.uk>
-Subject: Fra Dr. smith Abbott (Business forslaget ber svare)
-Message-ID: <8cfeab49-f38e-4314-a3a7-bad1de3273a3@mail2.unefa.edu.ve>
+	Tue, 12 Feb 2013 01:37:13 -0500
+From: "Manjunathappa, Prakash" <prakash.pm@ti.com>
+To: <linux-mmc@vger.kernel.org>
+CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
+        <linux@arm.linux.org.uk>, <nsekhar@ti.com>, <hs@denx.de>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <cjb@laptop.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        "Manjunathappa, Prakash" <prakash.pm@ti.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3 3/3] ARM: davinci: da850: override mmc DT node device name
+Date: Tue, 12 Feb 2013 12:07:38 +0530
+Message-ID: <1360651058-5255-4-git-send-email-prakash.pm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1360651058-5255-1-git-send-email-prakash.pm@ti.com>
+References: <1360651058-5255-1-git-send-email-prakash.pm@ti.com>
 MIME-Version: 1.0
-X-Originating-IP: [46.23.64.83]
-X-Mailer: Zimbra 7.1.0_GA_3140 (zclient/7.1.0_GA_3140)
-To: undisclosed-recipients:;
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1C6QnmC020619
 
-Fra: Dr. smith Abbott
-Privat Mobil: (+44) 7012961440
+Populate OF_DEV_AUXDATA with desired device name expected by
+davinci_mmc driver. Without this clk_get of davinci_mmc DT driver
+fails.
 
-Hei venn,
+Signed-off-by: Manjunathappa, Prakash <prakash.pm@ti.com>
+Cc: linux-mmc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+Cc: davinci-linux-open-source@linux.davincidsp.com
+Cc: devicetree-discuss@lists.ozlabs.org
+Cc: cjb@laptop.org
+Cc: Sekhar Nori <nsekhar@ti.com>
+---
+Since v2:
+Rebased on top of v3.9/dt-2 branch of linux_davinci and reordered this patch.
+Since v1:
+No Change.
+
+ arch/arm/mach-davinci/da8xx-dt.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-davinci/da8xx-dt.c b/arch/arm/mach-davinci/da8xx-dt.c
+index 5404e92..fc62240 100644
+--- a/arch/arm/mach-davinci/da8xx-dt.c
++++ b/arch/arm/mach-davinci/da8xx-dt.c
+@@ -40,6 +40,8 @@ static void __init da8xx_init_irq(void)
+ struct of_dev_auxdata da850_auxdata_lookup[] __initdata = {
+ 	OF_DEV_AUXDATA("ti,davinci-i2c", 0x01c22000, "i2c_davinci.1", NULL),
+ 	OF_DEV_AUXDATA("ti,davinci-wdt", 0x01c21000, "watchdog", NULL),
++	OF_DEV_AUXDATA("ti,davinci-mmc-da830", 0x01c40000, "davinci_mmc.0",
++			NULL),
+ 	{}
+ };
  
-Jeg er Dr. Smith Abbott manager Regnskap / revisjon av Credit Suisse Bank, One Cabot Square,, England London EC14 4QJ. Jeg kontaktet deg med hensyn til en bedrift forslag som vil vÃ¦re av en enorm fordel for oss begge og de mindre privilegerte de vil ogsÃ¥ nytte. Ã… vÃ¦re leder regnskap / revisjon avdeling Greater London Regional Office, oppdaget jeg en sum av Â£ 16,500,000.00 GBP (seksten millioner Five Hundred Thousand Great British pund) i en konto som tilhÃ¸rer en av vÃ¥re utenlandske kunder Late Mr. Moises Saba Masri. Han var en jÃ¸disk virksomhet mogul fra Mexico som dÃ¸de pÃ¥ et helikopter krasj. Mr. Saba var 47 Ã¥r gammel da bÃ¥de hans kone, hans eneste sÃ¸nn Avraham (Albert) og hans datter svigersÃ¸nn dÃ¸de i en helikopterstyrt.
+-- 
+1.7.4.1
 
-Valget av kontakter du vekket fra den geografiske natur hvor du bor sÃ¦rlig pÃ¥ grunn av sensitiviteten av transaksjonen og konfidensialitet her. NÃ¥ vÃ¥r bank har ventet pÃ¥ noen av de pÃ¥rÃ¸rende til Ã¥ komme opp for kravet av arven fond men dessverre alt arbeid har Ã¥ vÃ¦re ugyldig. Jeg personlig har vÃ¦rt mislykket i finne verken slektninger eller noen pÃ¥rÃ¸rende til Mr. Saba. PÃ¥ denne hilsen, jeg sÃ¸ker ditt samtykke til Ã¥ presentere deg som pÃ¥rÃ¸rende / Will Betalingsmottakers til den avdÃ¸de, slik at utbyttet av denne kontoen verdsatt til Â£ 16,5 millioner britiske pund sterling kan bli utbetalt til deg.
-
-Dette vil bli utbetalt eller delt i disse prosenter 60% til meg og 40% til deg. Jeg vil gi deg all nÃ¸dvendig juridisk informasjon er som kan brukes til Ã¥ sikkerhetskopiere dette kravet vi er i ferd med Ã¥ gjÃ¸re. Alt jeg trenger er Ã¥ laste opp ditt navn til dokumenter og legalisere pÃ¥ den britiske High Court for Ã¥ bevise at du legitim betalingsmottakeren. Alt jeg trenger nÃ¥ er din Ã¦rlige samarbeid, taushetsplikt og tillit til at vi ser denne transaksjonen gjennom. Jeg kan garantere deg 100% suksess, og at denne virksomheten transaksjonen vil bli utfÃ¸rt under virkeomrÃ¥de av loven og vil ogsÃ¥ beskytte deg mot eventuelle brudd pÃ¥ kontrakten.
-
-Vennligst gi meg fÃ¸lgende som vi har 7 virkedager for Ã¥ kjÃ¸re den gjennom:
-
-1. Ditt fulle navn:
-2. Telefonnummer:
-3. Kontakt Adresse:
-4. Alder:
-5. KjÃ¸nn:
-6. Yrke:
-
-Etter Ã¥ ha gÃ¥tt gjennom en metodisk sÃ¸k, bestemte jeg meg for Ã¥ kontakte deg hÃ¥per at du vil finne dette forslaget interessant. VÃ¦r pÃ¥ bekreftelsessiden av denne meldingen og viser din interesse, vil jeg gi deg mer informasjon er som vi fortsette med banken akkurat som jeg tidligere sa.
-
-Ditt samtykke til denne e-post og forretning forslaget vil bli hÃ¸yt verdsatt.
-
-Ring meg pÃ¥ mottak av denne e-posten for flere diskusjoner.
-
-Med vennlig hilsen,
-Dr. Smith Abbott.
-
-
-
-********AVISO LEGAL**********
-Este mensaje es privado y confidencial,  estÃ¡ dirigido exclusivamente al uso del correo institucional. Si usted ha recibido este mensaje por error, debe abstenerse de distribuirlo, copiarlo o usarlo en cualquier sentido. 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
