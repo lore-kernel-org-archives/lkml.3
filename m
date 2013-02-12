@@ -1,50 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758693Ab3BLXKD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 18:10:03 -0500
-Received: from mail-we0-f180.google.com ([74.125.82.180]:41328 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753642Ab3BLXKA (ORCPT
+	id S1758716Ab3BLXNp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 18:13:45 -0500
+Received: from server1.hardtec.srv.br ([201.20.32.91]:54011 "EHLO
+	server1.hardtec.srv.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752916Ab3BLXNo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 18:10:00 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] kbuild: limit dtc+cpp include path
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Cc: devicetree-discuss@lists.ozlabs.org, Michal Marek <mmarek@suse.cz>,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>
-In-Reply-To: <1360706617-20276-1-git-send-email-swarren@wwwdotorg.org>
-References: <1360706617-20276-1-git-send-email-swarren@wwwdotorg.org>
-Date: Tue, 12 Feb 2013 23:09:55 +0000
-Message-Id: <20130212230955.5E5B93E240D@localhost>
+	Tue, 12 Feb 2013 18:13:44 -0500
+Message-ID: <20130212210344.15936a4am8ppq24w@webmail.ventris.com.br>
+Date: Tue, 12 Feb 2013 21:03:44 -0200
+From: =?iso-8859-1?b?c3lzdGVtYWRtaW5pc3RyYXT2cg==?= <info@mail.com>
+To: undisclosed-recipients:;
+Subject: =?iso-8859-1?b?c3lzdGVtYWRtaW5pc3RyYXT2cg==?=
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Feb 2013 15:03:37 -0700, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> From: Stephen Warren <swarren@nvidia.com>
-> 
-> Device tree source files may now include header files. The intent is
-> that those header files define/name constants used as part of the DT
-> bindings. Currently this feature is open to abuse, since any kernel
-> header file at all can be included, This could allow device tree files
-> to become dependant on kernel headers files, and thus make them no
-> longer OS-independent. This would also prevent separating the device
-> tree source files from the kernel repository.
-> 
-> Solve this by limiting the cpp include path for device tree files to
-> separate directories.
-> 
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> ---
-> Here, I allow header files in the .dts source directory, or in a per-arch
-> include directory. Perhaps rather than:
-> 
-> -I$(srctree)/arch/$(SRCARCH)/include/dts
+Din postlåda har överskridit lagring gräns som administratören 2.GB nu  
+2.30GB, kanske inte kan skicka eller ta emot ny e-post förrän du  
+validera din brevlåda.
 
-That seems reasonable for now.
 
-Applied, thanks.
-g.
+För att åter bekräfta din brevlåda. klicka på länken nedan:
+https://docs.google.com/forms/d/1cyPlH3UgryNlCfaO7AaKyP43TGhNThFMWItqvvTujtY/viewform
 
+
+Tack
+systemadministratör
