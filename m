@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757977Ab3BLXAX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 18:00:23 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2689 "EHLO
+	id S1757687Ab3BLXAW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 18:00:22 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18453 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752649Ab3BLXAT (ORCPT
+	with ESMTP id S1752221Ab3BLXAS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 18:00:19 -0500
-X-Authority-Analysis: v=2.0 cv=f8jK9ZOM c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=1e2jXibFBfAA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=TMThcRnKKdAA:10 a=JfrnYn6hAAAA:8 a=Duj7teEOjNXlbOJIJ4QA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=3Rfx1nUSh_UA:10 a=Zh68SRI7RUMA:10 a=qp24slXe02aenkxc8BIA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Tue, 12 Feb 2013 18:00:18 -0500
+X-Authority-Analysis: v=2.0 cv=NqdTgrhJ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=1BVg16HVlSoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=FQz980Gyr_cA:10 a=JfrnYn6hAAAA:8 a=w160XLPGjJZy46Wmf4cA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=3Rfx1nUSh_UA:10 a=4XWRJ7YoowM90m6mI6MA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130212230017.443502875@goodmis.org>
+Message-Id: <20130212230017.802122508@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Tue, 12 Feb 2013 17:54:13 -0500
+Date: Tue, 12 Feb 2013 17:54:15 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
@@ -21,10 +21,9 @@ Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Vincent Guittot <vincent.guittot@linaro.org>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 1/3] sched/rt: Fix push_rt_task() to have the same checks as the caller
- did
+Subject: [PATCH 3/3] sched: Enable interrupts in idle_balance()
 References: <20130212225412.781044738@goodmis.org>
-Content-Disposition: inline; filename=0001-sched-rt-Fix-push_rt_task-to-have-the-same-checks-as.patch
+Content-Disposition: inline; filename=0003-sched-Enable-interrupts-in-idle_balance.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -36,77 +35,50 @@ Content-Transfer-Encoding: quoted-printable
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Currently, push_rt_task() only pushes the task if it is lower
-priority than the currently running task.
+Now that the idle_balance is called from the post_schedule of the
+idle task sched class, it is safe to enable interrupts. This allows
+for better interaction of tasks waking up and other interrupts that
+are triggered while the idle balance is in process.
 
-But it can be called for other reasons. Namely, if the current process
-that is about to be preempted, is a real time task and is also pinned
-to the CPU. This happens on wake up of high priority task. A check
-is made in wake_up_rt() to see if the woken task can preempt the
-task on its CPU, and the running task is not a pinned RT task. If
-the task is pinned, and the woken task can migrate, it will try to
-migrate it by calling push_rt_task().
+Preemption is still disabled, but perhaps that can change as well.
+That may need some more investigation.
 
-Now in push_rt_task(), it will check if it can preempt the current
-task but does not check if that task is pinned. If the woken task
-is of higher priority, it wont try to migrate the woken task, even
-if the other task is pinned. It will simply not push the task, which
-is not consistent with the reason that push_rt_task() was called for
-in the first place. Even for other callers of push_rt_task(), the task
-should try to avoid preempting pinned RT tasks.
-
-A helper routine is created call "ok_to_push_task()" that is now
-used by both the wake_up_rt() and push_rt_task() code.
+It may be safe to also enable preemption, but we'll leave that change
+for another time.
 
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/sched/rt.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ kernel/sched/fair.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index c25de14..6f3108e 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -1613,6 +1613,14 @@ static struct task_struct *pick_next_pushable_task(s=
-truct rq *rq)
- 	return p;
- }
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index ed18c74..0fcdbff 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5222,9 +5222,10 @@ void idle_balance(int this_cpu, struct rq *this_rq)
+ 	update_rq_runnable_avg(this_rq, 1);
 =20
-+static int ok_to_push_task(struct task_struct *p, struct task_struct *curr)
-+{
-+	return p->nr_cpus_allowed > 1 &&
-+		rt_task(curr) &&
-+		(curr->nr_cpus_allowed < 2 ||
-+		 curr->prio <=3D p->prio);
-+}
-+
- /*
-  * If the current CPU has more than one RT task, see if the non
-  * running task can migrate over to a CPU that is running a task
-@@ -1642,7 +1650,7 @@ retry:
- 	 * higher priority than current. If that's the case
- 	 * just reschedule current.
+ 	/*
+-	 * Drop the rq->lock, but keep IRQ/preempt disabled.
++	 * Drop the rq->lock, but keep preempt disabled.
  	 */
--	if (unlikely(next_task->prio < rq->curr->prio)) {
-+	if (!ok_to_push_task(next_task, rq->curr)) {
- 		resched_task(rq->curr);
- 		return 0;
- 	}
-@@ -1807,10 +1815,7 @@ static void task_woken_rt(struct rq *rq, struct task=
-_struct *p)
- 	if (!task_running(rq, p) &&
- 	    !test_tsk_need_resched(rq->curr) &&
- 	    has_pushable_tasks(rq) &&
--	    p->nr_cpus_allowed > 1 &&
--	    rt_task(rq->curr) &&
--	    (rq->curr->nr_cpus_allowed < 2 ||
--	     rq->curr->prio <=3D p->prio))
-+	    ok_to_push_task(p, rq->curr))
- 		push_rt_tasks(rq);
- }
+-	raw_spin_unlock(&this_rq->lock);
++	preempt_disable();
++	raw_spin_unlock_irq(&this_rq->lock);
 =20
+ 	update_blocked_averages(this_cpu);
+ 	rcu_read_lock();
+@@ -5251,7 +5252,8 @@ void idle_balance(int this_cpu, struct rq *this_rq)
+ 	}
+ 	rcu_read_unlock();
+=20
+-	raw_spin_lock(&this_rq->lock);
++	raw_spin_lock_irq(&this_rq->lock);
++	preempt_enable();
+=20
+ 	if (pulled_task || time_after(jiffies, this_rq->next_balance)) {
+ 		/*
 --=20
 1.7.10.4
 
@@ -119,13 +91,13 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQEcBAABAgAGBQJRGsmBAAoJEOdOSU1xswtM4VEIAMXXZ7OySM9xUmNYCLZPoRvT
-SxrcXeMKO1+UHRFuMYrXsys2xKq07eD0pzjy0FUEa3TSx035X8J0Pifm4wJ+4wUu
-8jA4UxPvDrMMkhfCXw4yUCZPlXtd2alYh95JfMKwj2RkL6IJ/LpK+hFtrKnIt4Kw
-fFa1grTgD90ly3yBFKKGAPmBLcHdpFKQLn8fXYrmZGHFruGiDxkqQODJbrwmpSVc
-/3Y60HLvmXai5ku+/RVNEsAhnNU46lWqexoHyV70hmhyPudgadNOjrVybot92Rhk
-blka1fD+UvTyqqMKdZP2LN0zAvVsCyjJzkdFctmwKoRyb2mOzGc9R/j4dQNJCgU=
-=0RBa
+iQEcBAABAgAGBQJRGsmBAAoJEOdOSU1xswtMGNcH/3WaD14uLKVHFC0n+twzK60B
+4T1BEOB5egVKJXiEkHE65rBqtsIDNyzGjBjx5iBbQ12JoM/FVS8V4CfHVNAp6sLw
+ikBvS4eOOE48Y6WPO37zhyrSN+Gu63J/Iy8xh6q5O4kIPdcA6UTMn0snLEQVrrBD
+Mcahgom+NWRxMly4J6tERmHloOh4Zy69GCTF8jhC7eFBCwojXJSH0DlysOgHM5UY
+6mPgHqMfHSwmya4X57NuQILB7nWgOps1HEBGiYtvLVsFSDYX3nMXxZmbSdxVCbus
+4fFXtJNVhpL4ZspkG0dqvNHnHzllgL5M+QPO4UbgqX/yV4OdyTJ1+PXL9unQ5v4=
+=pkvj
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
