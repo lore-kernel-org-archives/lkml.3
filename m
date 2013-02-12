@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757131Ab3BLUgc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:36:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53666 "EHLO
+	id S1757060Ab3BLUgb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 15:36:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53677 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751445Ab3BLUgR (ORCPT
+	with ESMTP id S1756488Ab3BLUgS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:36:17 -0500
+	Tue, 12 Feb 2013 15:36:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christian Becker <c.becker@traviangames.com>, Willy Tarreau <w@1wt.eu>,
-        Eric Dumazet <edumazet@google.com>,
+        Eric Dumazet <edumazet@google.com>, Willy Tarreau <w@1wt.eu>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 58/61] tcp: fix splice() and tcp collapsing interaction
-Date: Tue, 12 Feb 2013 12:35:18 -0800
-Message-Id: <20130212203425.669992398@linuxfoundation.org>
+Subject: [ 60/61] net: splice: fix __splice_segment()
+Date: Tue, 12 Feb 2013 12:35:20 -0800
+Message-Id: <20130212203425.906692142@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203417.890993903@linuxfoundation.org>
 References: <20130212203417.890993903@linuxfoundation.org>
@@ -31,73 +30,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit f26845b43c75d3f32f98d194c1327b5b1e6b3fb0 ]
+[ Upstream commit bc9540c637c3d8712ccbf9dcf28621f380ed5e64 ]
 
-Under unusual circumstances, TCP collapse can split a big GRO TCP packet
-while its being used in a splice(socket->pipe) operation.
+commit 9ca1b22d6d2 (net: splice: avoid high order page splitting)
+forgot that skb->head could need a copy into several page frags.
 
-skb_splice_bits() releases the socket lock before calling
-splice_to_pipe().
+This could be the case for loopback traffic mostly.
 
-[ 1081.353685] WARNING: at net/ipv4/tcp.c:1330 tcp_cleanup_rbuf+0x4d/0xfc()
-[ 1081.371956] Hardware name: System x3690 X5 -[7148Z68]-
-[ 1081.391820] cleanup rbuf bug: copied AD3BCF1 seq AD370AF rcvnxt AD3CF13
+Also remove now useless skb argument from linear_to_page()
+and __splice_segment() prototypes.
 
-To fix this problem, we must eat skbs in tcp_recv_skb().
-
-Remove the inline keyword from tcp_recv_skb() definition since
-it has three call sites.
-
-Reported-by: Christian Becker <c.becker@traviangames.com>
-Cc: Willy Tarreau <w@1wt.eu>
 Signed-off-by: Eric Dumazet <edumazet@google.com>
-Tested-by: Willy Tarreau <w@1wt.eu>
+Cc: Willy Tarreau <w@1wt.eu>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp.c |   13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+ net/core/skbuff.c |   28 +++++++++++++++-------------
+ 1 file changed, 15 insertions(+), 13 deletions(-)
 
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -1427,12 +1427,12 @@ static void tcp_service_net_dma(struct s
- }
- #endif
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -1620,7 +1620,7 @@ static void sock_spd_release(struct spli
  
--static inline struct sk_buff *tcp_recv_skb(struct sock *sk, u32 seq, u32 *off)
-+static struct sk_buff *tcp_recv_skb(struct sock *sk, u32 seq, u32 *off)
+ static struct page *linear_to_page(struct page *page, unsigned int *len,
+ 				   unsigned int *offset,
+-				   struct sk_buff *skb, struct sock *sk)
++				   struct sock *sk)
  {
- 	struct sk_buff *skb;
- 	u32 offset;
+ 	struct page_frag *pfrag = sk_page_frag(sk);
  
--	skb_queue_walk(&sk->sk_receive_queue, skb) {
-+	while ((skb = skb_peek(&sk->sk_receive_queue)) != NULL) {
- 		offset = seq - TCP_SKB_CB(skb)->seq;
- 		if (tcp_hdr(skb)->syn)
- 			offset--;
-@@ -1440,6 +1440,11 @@ static inline struct sk_buff *tcp_recv_s
- 			*off = offset;
- 			return skb;
- 		}
-+		/* This looks weird, but this can happen if TCP collapsing
-+		 * splitted a fat GRO packet, while we released socket lock
-+		 * in skb_splice_bits()
-+		 */
-+		sk_eat_skb(sk, skb, false);
+@@ -1653,14 +1653,14 @@ static bool spd_can_coalesce(const struc
+ static bool spd_fill_page(struct splice_pipe_desc *spd,
+ 			  struct pipe_inode_info *pipe, struct page *page,
+ 			  unsigned int *len, unsigned int offset,
+-			  struct sk_buff *skb, bool linear,
++			  bool linear,
+ 			  struct sock *sk)
+ {
+ 	if (unlikely(spd->nr_pages == MAX_SKB_FRAGS))
+ 		return true;
+ 
+ 	if (linear) {
+-		page = linear_to_page(page, len, &offset, skb, sk);
++		page = linear_to_page(page, len, &offset, sk);
+ 		if (!page)
+ 			return true;
  	}
- 	return NULL;
- }
-@@ -1519,8 +1524,10 @@ int tcp_read_sock(struct sock *sk, read_
- 	tcp_rcv_space_adjust(sk);
+@@ -1679,13 +1679,11 @@ static bool spd_fill_page(struct splice_
  
- 	/* Clean up data we have read: This will do ACK frames. */
--	if (copied > 0)
-+	if (copied > 0) {
-+		tcp_recv_skb(sk, seq, &offset);
- 		tcp_cleanup_rbuf(sk, copied);
-+	}
- 	return copied;
+ static bool __splice_segment(struct page *page, unsigned int poff,
+ 			     unsigned int plen, unsigned int *off,
+-			     unsigned int *len, struct sk_buff *skb,
++			     unsigned int *len,
+ 			     struct splice_pipe_desc *spd, bool linear,
+ 			     struct sock *sk,
+ 			     struct pipe_inode_info *pipe)
+ {
+-	unsigned int flen;
+-
+ 	if (!*len)
+ 		return true;
+ 
+@@ -1700,12 +1698,16 @@ static bool __splice_segment(struct page
+ 	plen -= *off;
+ 	*off = 0;
+ 
+-	flen = min(*len, plen);
+-
+-	if (spd_fill_page(spd, pipe, page, &flen, poff, skb, linear, sk))
+-		return true;
++	do {
++		unsigned int flen = min(*len, plen);
+ 
+-	*len -= flen;
++		if (spd_fill_page(spd, pipe, page, &flen, poff,
++				  linear, sk))
++			return true;
++		poff += flen;
++		plen -= flen;
++		*len -= flen;
++	} while (*len && plen);
+ 
+ 	return false;
  }
- EXPORT_SYMBOL(tcp_read_sock);
+@@ -1728,7 +1730,7 @@ static bool __skb_splice_bits(struct sk_
+ 	if (__splice_segment(virt_to_page(skb->data),
+ 			     (unsigned long) skb->data & (PAGE_SIZE - 1),
+ 			     skb_headlen(skb),
+-			     offset, len, skb, spd,
++			     offset, len, spd,
+ 			     skb_head_is_locked(skb),
+ 			     sk, pipe))
+ 		return true;
+@@ -1741,7 +1743,7 @@ static bool __skb_splice_bits(struct sk_
+ 
+ 		if (__splice_segment(skb_frag_page(f),
+ 				     f->page_offset, skb_frag_size(f),
+-				     offset, len, skb, spd, false, sk, pipe))
++				     offset, len, spd, false, sk, pipe))
+ 			return true;
+ 	}
+ 
 
 
