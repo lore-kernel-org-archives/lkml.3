@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757814Ab3BLUjM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:39:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53785 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757687Ab3BLUhX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757686Ab3BLUhX (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 12 Feb 2013 15:37:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53749 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757533Ab3BLUhS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 15:37:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Willy Tarreau <w@1wt.eu>, Eric Dumazet <edumazet@google.com>,
+        Jiri Pirko <jiri@resnulli.us>,
+        Marcelo Ricardo Leitner <mleitner@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 19/22] tcp: fix MSG_SENDPAGE_NOTLAST logic
-Date: Tue, 12 Feb 2013 12:37:02 -0800
-Message-Id: <20130212203417.170463752@linuxfoundation.org>
+Subject: [ 11/22] ipv6: do not create neighbor entries for local delivery
+Date: Tue, 12 Feb 2013 12:36:54 -0800
+Message-Id: <20130212203415.608370918@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203413.459836020@linuxfoundation.org>
 References: <20130212203413.459836020@linuxfoundation.org>
@@ -28,53 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Eric Dumazet <edumazet@google.com>
+From: Marcelo Ricardo Leitner <mleitner@redhat.com>
 
-[ Upstream commit ae62ca7b03217be5e74759dc6d7698c95df498b3 ]
+[ Upstream commit bd30e947207e2ea0ff2c08f5b4a03025ddce48d3 ]
 
-commit 35f9c09fe9c72e (tcp: tcp_sendpages() should call tcp_push() once)
-added an internal flag : MSG_SENDPAGE_NOTLAST meant to be set on all
-frags but the last one for a splice() call.
+They will be created at output, if ever needed. This avoids creating
+empty neighbor entries when TPROXYing/Forwarding packets for addresses
+that are not even directly reachable.
 
-The condition used to set the flag in pipe_to_sendpage() relied on
-splice() user passing the exact number of bytes present in the pipe,
-or a smaller one.
+Note that IPv4 already handles it this way. No neighbor entries are
+created for local input.
 
-But some programs pass an arbitrary high value, and the test fails.
+Tested by myself and customer.
 
-The effect of this bug is a lack of tcp_push() at the end of a
-splice(pipe -> socket) call, and possibly very slow or erratic TCP
-sessions.
-
-We should both test sd->total_len and fact that another fragment
-is in the pipe (pipe->nrbufs > 1)
-
-Many thanks to Willy for providing very clear bug report, bisection
-and test programs.
-
-Reported-by: Willy Tarreau <w@1wt.eu>
-Bisected-by: Willy Tarreau <w@1wt.eu>
-Tested-by: Willy Tarreau <w@1wt.eu>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Jiri Pirko <jiri@resnulli.us>
+Signed-off-by: Marcelo Ricardo Leitner <mleitner@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- fs/splice.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ net/ipv6/route.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/splice.c
-+++ b/fs/splice.c
-@@ -693,8 +693,10 @@ static int pipe_to_sendpage(struct pipe_
- 		return -EINVAL;
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -802,7 +802,8 @@ restart:
+ 	dst_hold(&rt->dst);
+ 	read_unlock_bh(&table->tb6_lock);
  
- 	more = (sd->flags & SPLICE_F_MORE) ? MSG_MORE : 0;
--	if (sd->len < sd->total_len)
-+
-+	if (sd->len < sd->total_len && pipe->nrbufs > 1)
- 		more |= MSG_SENDPAGE_NOTLAST;
-+
- 	return file->f_op->sendpage(file, buf->page, buf->offset,
- 				    sd->len, &pos, more);
- }
+-	if (!dst_get_neighbour_raw(&rt->dst) && !(rt->rt6i_flags & RTF_NONEXTHOP))
++	if (!dst_get_neighbour_raw(&rt->dst) &&
++	    !(rt->rt6i_flags & (RTF_NONEXTHOP | RTF_LOCAL)))
+ 		nrt = rt6_alloc_cow(rt, &fl6->daddr, &fl6->saddr);
+ 	else if (!(rt->dst.flags & DST_HOST))
+ 		nrt = rt6_alloc_clone(rt, &fl6->daddr);
 
 
