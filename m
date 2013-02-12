@@ -1,73 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933908Ab3BLS53 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 13:57:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4169 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933865Ab3BLS51 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 13:57:27 -0500
-Date: Tue, 12 Feb 2013 13:57:25 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] ima: Support appraise_type=imasig_optional
-Message-ID: <20130212185725.GC23410@redhat.com>
-References: <1360613493-11969-1-git-send-email-vgoyal@redhat.com>
- <1360613493-11969-3-git-send-email-vgoyal@redhat.com>
- <1360620614.3524.223.camel@falcor1.watson.ibm.com>
- <20130212142636.GA23410@redhat.com>
- <1360689247.3524.275.camel@falcor1.watson.ibm.com>
- <20130212185203.GA29958@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130212185203.GA29958@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933911Ab3BLS6Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 13:58:25 -0500
+Received: from mail.free-electrons.com ([94.23.35.102]:46998 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933865Ab3BLS6Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 13:58:24 -0500
+Date: Tue, 12 Feb 2013 19:58:16 +0100
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Andrew Lunn <andrew@lunn.ch>,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        "Eran Ben-Avi" <benavi@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Maen Suleiman <maen@marvell.com>, Shadi Ammouri <shadi@marvell.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Tawfik Bayouk <tawfik@marvell.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 05/32] lib: devres: don't enclose pcim_*() functions in
+ CONFIG_HAS_IOPORT
+Message-ID: <20130212195816.6e34b3ce@skate>
+In-Reply-To: <201302121800.48723.arnd@arndb.de>
+References: <1360686546-24277-1-git-send-email-thomas.petazzoni@free-electrons.com>
+	<1360686546-24277-6-git-send-email-thomas.petazzoni@free-electrons.com>
+	<201302121800.48723.arnd@arndb.de>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 12, 2013 at 01:52:03PM -0500, Vivek Goyal wrote:
-> On Tue, Feb 12, 2013 at 12:14:07PM -0500, Mimi Zohar wrote:
-> 
-> [..]
-> > > > > --- a/security/integrity/ima/ima_appraise.c
-> > > > > +++ b/security/integrity/ima/ima_appraise.c
-> > > > > @@ -124,19 +124,26 @@ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
-> > > > >  	enum integrity_status status = INTEGRITY_UNKNOWN;
-> > > > >  	const char *op = "appraise_data";
-> > > > >  	char *cause = "unknown";
-> > > > > -	int rc;
-> > > > > +	int rc, audit_info = 0;
-> > > > > 
-> > > > >  	if (!ima_appraise)
-> > > > >  		return 0;
-> > > > > -	if (!inode->i_op->getxattr)
-> > > > > +	if (!inode->i_op->getxattr) {
-> > > > > +		/* getxattr not supported. file couldn't have been signed */
-> > > > > +		if (iint->flags & IMA_DIGSIG_OPTIONAL)
-> > > > > +			return INTEGRITY_PASS;
-> > > > >  		return INTEGRITY_UNKNOWN;
-> > > > > +	}
-> > > > > 
-> > > > 
-> > > > Please don't change the result of the appraisal like this.  A single
-> > > > change can be made towards the bottom of process_measurement().
-> > > 
-> > > I don't want to pass integrity in all cases of INTEGRITY_UNKNOWN. So
-> > > I can probably maintain a bool variable, say pass_appraisal, and set
-> > > that here and at the end of function, parse that variable and change
-> > > the status accordingly.
+Dear Arnd Bergmann,
+
+On Tue, 12 Feb 2013 18:00:48 +0000, Arnd Bergmann wrote:
+> On Tuesday 12 February 2013, Thomas Petazzoni wrote:
+> > The pcim_*() functions are used by the libata-sff subsystem, and
+> > this subsystem is used for many SATA drivers on ARM platforms that
+> > do not necessarily have I/O ports.
 > > 
-> > process_measurement() is the only caller of ima_appraise_measurement().
-> > Leave the results of ima_appraise_measurement() alone.  There's already
-> > code at the end of process_measurement() which decides what to return.
-> > Just modify it based on the appraisal results.
+> > Signed-off-by: Thomas Petazzoni
+> > <thomas.petazzoni@free-electrons.com> Cc: Paul Gortmaker
+> > <paul.gortmaker@windriver.com> Cc: Jesse Barnes
+> > <jbarnes@virtuousgeek.org> Cc: Yinghai Lu <yinghai@kernel.org>
+> > Cc: linux-kernel@vger.kernel.org
 > 
+> Sorry, but this patch is still incorrect.
 
-If we do this, audit logs will be filled with integrity unknown failures.
-As each unsigned executable file will fail appraisal with INTEGRITY_UNKNOWN
-and an audit message will be logged.
+I know, but the discussion was so huge on the first posting that it was
+basically impossible to draw a conclusion out of it.
 
-Thanks
-Vivek
+> Any driver that requires a
+> linear mapping of I/O ports to __iomem pointers must depend
+> CONFIG_HAS_IOPORT with the current definition of that symbol (as
+> mentioned before, we should really rename that to
+> CONFIG_HAS_IOPORT_MAP). Having these functions not defined is a
+> compile time check that is necessary to ensure that all drivers have
+> the correct annotation.
+
+I have the feeling that the problem is more complex than that. My
+understanding is that the pcim_iomap_regions() function used by
+drivers/ata/libata-sff.c can perfectly be used to map memory BARs, and
+not necessarily I/O BARs. Therefore, this driver can perfectly be used
+in an architecture where CONFIG_NO_IOPORT is selected.
+
+The thing is that pcim_iomap_regions() transparently allows to remap an
+I/O BAR is such a BAR is passed as argument, or a memory BAR if such a
+BAR is passed as argument.
+
+Therefore, I continue to believe that the pcim_*() functions are useful
+even if the platform doesn't have CONFIG_HAS_IOPORT.
+
+Best regards,
+
+Thomas
+-- 
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
