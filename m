@@ -1,77 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757143Ab3BLWEj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 17:04:39 -0500
-Received: from mga09.intel.com ([134.134.136.24]:16312 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755365Ab3BLWEg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 17:04:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,652,1355126400"; 
-   d="scan'208";a="284889322"
-From: Andi Kleen <andi@firstfloor.org>
-To: mingo@elte.hu
-Cc: linux-kernel@vger.kernel.org, eranian@google.com,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 5/5] perf, x86: Move NMI clearing to end of PMI handler after the counter registers are reset
-Date: Tue, 12 Feb 2013 14:04:18 -0800
-Message-Id: <1360706658-13468-6-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1360706658-13468-1-git-send-email-andi@firstfloor.org>
-References: <1360706658-13468-1-git-send-email-andi@firstfloor.org>
+	id S1757477Ab3BLWEo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 17:04:44 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:61651 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757259Ab3BLWEl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 17:04:41 -0500
+From: Kevin Hilman <khilman@linaro.org>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-pm@vger.kernel.org, Len Brown <len.brown@intel.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 06/16] ARM idle: delete pm_idle
+References: <1360475903-30007-1-git-send-email-lenb@kernel.org>
+	<2b219d07e0f287c2c713f5465fc8646158fa986e.1360475150.git.len.brown@intel.com>
+	<9838a4aeee256adeaef90efe56df2c9988206982.1360475150.git.len.brown@intel.com>
+Date: Tue, 12 Feb 2013 14:04:37 -0800
+In-Reply-To: <9838a4aeee256adeaef90efe56df2c9988206982.1360475150.git.len.brown@intel.com>
+	(Len Brown's message of "Sun, 10 Feb 2013 00:58:13 -0500")
+Message-ID: <87pq05i3yi.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+Len Brown <lenb@kernel.org> writes:
 
-This avoids some problems with spurious PMIs on Haswell.
-Haswell seems to behave more like P4 in this regard. Do
-the same thing as the P4 perf handler by unmasking
-the NMI only at the end. Shouldn't make any difference
-for earlier family 6 cores.
+> From: Len Brown <len.brown@intel.com>
+>
+> pm_idle() on ARM was a synonym for default_idle(),
+> so simply invoke default_idle() directly.
+>
+> Signed-off-by: Len Brown <len.brown@intel.com>
+> Cc: linux-arm-kernel@lists.infradead.org
 
-Tested on Haswell, IvyBridge, Westmere, Saltwell (Atom)
+Looks good to me.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- arch/x86/kernel/cpu/perf_event_intel.c |   16 ++++++----------
- 1 files changed, 6 insertions(+), 10 deletions(-)
+Tested this patch along with 15/16 (removes global declaration) on an
+ARM platform (TI OMAP3) with and without CPUidle, and things continue to
+work as expected:
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 0bf19f3..e989775 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1122,16 +1122,6 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
- 
- 	cpuc = &__get_cpu_var(cpu_hw_events);
- 
--	/*
--	 * Some chipsets need to unmask the LVTPC in a particular spot
--	 * inside the nmi handler.  As a result, the unmasking was pushed
--	 * into all the nmi handlers.
--	 *
--	 * This handler doesn't seem to have any issues with the unmasking
--	 * so it was left at the top.
--	 */
--	apic_write(APIC_LVTPC, APIC_DM_NMI);
--
- 	intel_pmu_disable_all();
- 	handled = intel_pmu_drain_bts_buffer();
- 	status = intel_pmu_get_status();
-@@ -1191,6 +1181,12 @@ again:
- 
- done:
- 	intel_pmu_enable_all(0);
-+	/*
-+	 * Only unmask the NMI after the overflow counters
-+	 * have been reset. This avoids spurious NMIs on
-+	 * Haswell CPUs.
-+	 */
-+	apic_write(APIC_LVTPC, APIC_DM_NMI);
- 	return handled;
- }
- 
--- 
-1.7.7.6
+Reviewed-by: Kevin Hilman <khilman@linaro.org>
+Tested-by: Kevin Hilman <khilman@linaro.org>
 
+Kevin
