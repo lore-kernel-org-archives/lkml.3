@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932247Ab3BLHsA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 02:48:00 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:44101 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932099Ab3BLHr6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 02:47:58 -0500
-Message-ID: <5119F39C.2080206@ti.com>
-Date: Tue, 12 Feb 2013 09:47:40 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Sascha Hauer <s.hauer@pengutronix.de>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Rajendra Nayak <rnayak@ti.com>
-CC: <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <balbi@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/2] ARM: OMAP2+: Allow clock alias provision from device
- tree
-References: <1360597464-8491-1-git-send-email-rogerq@ti.com> <20130211160752.GG1906@pengutronix.de>
-In-Reply-To: <20130211160752.GG1906@pengutronix.de>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S932396Ab3BLHsj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 02:48:39 -0500
+Received: from tama500.ecl.ntt.co.jp ([129.60.39.148]:58917 "EHLO
+	tama500.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756513Ab3BLHsh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 02:48:37 -0500
+Message-ID: <1360655264.13766.2.camel@nexus.lab.ntt.co.jp>
+Subject: [PATCH 1/3] ALSA: hda - Workaround for silent output on Sony Vaio
+ VGC-LN51JGB with ALC889
+From: Fernando Luis =?ISO-8859-1?Q?V=E1zquez?= Cao 
+	<fernando_b1@lab.ntt.co.jp>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Date: Tue, 12 Feb 2013 16:47:44 +0900
+Organization: NTT Open Source Software Center
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2013 06:07 PM, Sascha Hauer wrote:
-> On Mon, Feb 11, 2013 at 05:44:23PM +0200, Roger Quadros wrote:
->> Currently on OMAP, it is not possible to specify a clock consumer
->> to any of the OMAP generated clocks using the device tree. This can pose
->> a problem for external devices that run off an OMAP clock as we
->> can't reliably provide a reference to the clock in the device tree.
-> 
-> There is an established way of providing clocks in the devicetree using
-> the clocks/clock-names properties. Wouldn't it be better using this
-> for OMAP aswell?
-> 
-I agree with you, but I'm not sure when this migration will be done.
-Rajendra/Santosh might know better.
+Some Vaio all-in-one desktop PCs (for example VGC-LN51JGB) are affected by
+the same issue that caused Vaio Z laptops to become silent: the speaker pin
+must be connected to the first DAC even though the codec itself advertises
+flexible routing through any of the DACs.
 
-regards,
--roger
+Use the no-primary-hp fixup for choosing the speaker pin as the primary so
+that the right DAC is assigned on this device.
+
+Cc: stable@vger.kernel.org
+Cc: alsa-devel@alsa-project.org
+Signed-off-by: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
+---
+
+diff -urNp linux-3.7.6-orig/sound/pci/hda/patch_realtek.c linux-3.7.6/sound/pci/hda/patch_realtek.c
+--- linux-3.7.6-orig/sound/pci/hda/patch_realtek.c	2013-02-08 23:27:05.949484427 +0900
++++ linux-3.7.6/sound/pci/hda/patch_realtek.c	2013-02-08 23:41:04.897644545 +0900
+@@ -5388,6 +5388,7 @@ static const struct snd_pci_quirk alc882
+ 	SND_PCI_QUIRK(0x1043, 0x835f, "Asus Eee 1601", ALC888_FIXUP_EEE1601),
+ 	SND_PCI_QUIRK(0x104d, 0x9047, "Sony Vaio TT", ALC889_FIXUP_VAIO_TT),
+ 	SND_PCI_QUIRK(0x104d, 0x905a, "Sony Vaio Z", ALC882_FIXUP_NO_PRIMARY_HP),
++	SND_PCI_QUIRK(0x104d, 0x9043, "Sony Vaio VGC-LN51JGB", ALC882_FIXUP_NO_PRIMARY_HP),
+ 
+ 	/* All Apple entries are in codec SSIDs */
+ 	SND_PCI_QUIRK(0x106b, 0x00a0, "MacBookPro 3,1", ALC889_FIXUP_MBP_VREF),
+
 
