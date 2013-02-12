@@ -1,45 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761341Ab3BLQFM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 11:05:12 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:35790
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758579Ab3BLQFK (ORCPT
+	id S1761357Ab3BLQGX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 11:06:23 -0500
+Received: from mail-vb0-f51.google.com ([209.85.212.51]:54656 "EHLO
+	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760313Ab3BLQGW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 11:05:10 -0500
-Message-ID: <511A6868.5010605@infradead.org>
-Date: Tue, 12 Feb 2013 08:06:00 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: linux-next: Tree for Feb 12 (drm_pci.c)
-References: <20130212160953.b80a57fec99e4bd9afb4b601@canb.auug.org.au>
-In-Reply-To: <20130212160953.b80a57fec99e4bd9afb4b601@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 12 Feb 2013 11:06:22 -0500
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: nbd-general@lists.sf.net, Paul Clements <Paul.Clements@steeleye.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 0/3] NBD fixes for caching and block device flags
+Date: Tue, 12 Feb 2013 17:06:08 +0100
+Message-Id: <1360685171-3792-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/13 21:09, Stephen Rothwell wrote:
-> Hi all,
-> 
-> Changes since 20130211:
-> 
+The first two patches improve the behavior of NBD with respect to the host
+cache---respectively the server's cache and the client's.  The first adds
+support for flushing the backing storage, so that NBD is safe against
+power losses.  The second properly syncs and cleans the client's page
+cache when an NBD device is disconnected from the server.
 
+The third reports read-only devices properly in sysfs.
 
-when CONFIG_PCI is not enabled (on x86_64):
+Ok for 3.9?  I saw the last NBD patches were applied by Andrew Morton,
+so I'm CCing him; Paul, please ack them if they are okay.
 
-  CC [M]  drivers/gpu/drm/drm_pci.o
-drivers/gpu/drm/drm_pci.c: In function 'drm_pcie_get_speed_cap_mask':
-drivers/gpu/drm/drm_pci.c:485:2: error: implicit declaration of function 'pcie_capability_read_dword' [-Werror=implicit-function-declaration]
-cc1: some warnings being treated as errors
-make[4]: *** [drivers/gpu/drm/drm_pci.o] Error 1
+Paolo
 
+Alex Bligh (1):
+  nbd: support FLUSH requests
 
+Paolo Bonzini (2):
+  nbd: fsync and kill block device on shutdown
+  nbd: show read-only state in sysfs
 
--- 
-~Randy
+ drivers/block/nbd.c      |   35 +++++++++++++++++++++++++++++++++--
+ include/uapi/linux/nbd.h |    3 ++-
+ 2 files changed, 35 insertions(+), 3 deletions(-)
+
