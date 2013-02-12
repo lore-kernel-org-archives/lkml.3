@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754851Ab3BLJkX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 04:40:23 -0500
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:54086 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750962Ab3BLJkU (ORCPT
+	id S1754605Ab3BLJnx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 04:43:53 -0500
+Received: from tama500.ecl.ntt.co.jp ([129.60.39.148]:60387 "EHLO
+	tama500.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027Ab3BLJnw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 04:40:20 -0500
-Date: Tue, 12 Feb 2013 10:40:11 +0100
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>, linux-s390@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] s390: Add missing PAGE_SHARED as an alias for PAGE_RW
-Message-ID: <20130212094011.GB4232@osiris>
-References: <1360432485-25726-1-git-send-email-geert@linux-m68k.org>
- <20130211091109.GA3890@osiris>
- <CAMuHMdWm+VfBFN8fqL+Nkt7h5-+xv5EeeknhtkroAk4FhiRMnA@mail.gmail.com>
+	Tue, 12 Feb 2013 04:43:52 -0500
+Message-ID: <511A0EA3.2080506@lab.ntt.co.jp>
+Date: Tue, 12 Feb 2013 18:42:59 +0900
+From: Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdWm+VfBFN8fqL+Nkt7h5-+xv5EeeknhtkroAk4FhiRMnA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 13021209-3548-0000-0000-00000486DAAA
+To: Takashi Iwai <tiwai@suse.de>
+CC: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] ALSA: hda - no-primary-hp is a quirk for model ALC889
+ not ALC882
+References: <1360655264.13766.2.camel@nexus.lab.ntt.co.jp> <1360655656.13766.6.camel@nexus.lab.ntt.co.jp> <s5ha9r9opap.wl%tiwai@suse.de>
+In-Reply-To: <s5ha9r9opap.wl%tiwai@suse.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 12, 2013 at 10:20:22AM +0100, Geert Uytterhoeven wrote:
-> Hi Heiko,
-> 
-> On Mon, Feb 11, 2013 at 10:11 AM, Heiko Carstens
-> <heiko.carstens@de.ibm.com> wrote:
-> > Thanks Geert. A similar patch however is already in linux-next, together
-> > with a whole bunch of other patches which try to make s390's allmodconfig
-> > compile again after PCI, HAS_DMA and HAS_IOMEM got enabled by our new PCI
-> > code.
-> 
-> Cool!
-> 
-> Will you select HAVE_GENERIC_HARDIRQS soon, too?
+On 2013/02/12 18:27, Takashi Iwai wrote:
+> At Tue, 12 Feb 2013 16:54:16 +0900,
+> Fernando Luis Vázquez Cao wrote:
+>> Substitute ALC889 for ALC882 in macro and function names.
+>>
+>> Cc: stable@vger.kernel.org
+>> Cc: alsa-devel@alsa-project.org
+>> Signed-off-by: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
+> This fixup can work generically to all ALC882 variants, including
+> ALC889.  Unless you are really sure that this must be used exclusively
+> only for ALC889, no reason to change the prefix.
 
-I discussed that just with Martin, and looking at the code it doesn't look
-like we want to have GENERIC_HARDIRQS.
-If we would select that option it looks like we need to special case the
-common generic hardirqs code quite a lot, which is something we certainly
-do not want.
-However that's our result after looking 5 minutes into the code ;)
-So, if at all, it's not going to happen soon.
+Thank you for applying patches 1 and 2 (I agree that
+the second patch is not needed for stable).
 
+Regarding this patch, I am not completely sure whether
+this issue is ALC889 specific so we probably shouldn't
+apply it as you say.
+
+Regards,
+Fernando
