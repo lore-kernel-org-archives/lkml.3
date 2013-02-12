@@ -1,44 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756977Ab3BLWHo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 17:07:44 -0500
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:62042 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752309Ab3BLWHn (ORCPT
+	id S1757866Ab3BLWIr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 17:08:47 -0500
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:49315 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752245Ab3BLWIq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 17:07:43 -0500
+	Tue, 12 Feb 2013 17:08:46 -0500
+Message-ID: <511ABD69.3060201@suse.cz>
+Date: Tue, 12 Feb 2013 23:08:41 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
 MIME-Version: 1.0
-In-Reply-To: <1360685171-3792-2-git-send-email-pbonzini@redhat.com>
-References: <1360685171-3792-1-git-send-email-pbonzini@redhat.com>
-	<1360685171-3792-2-git-send-email-pbonzini@redhat.com>
-Date: Tue, 12 Feb 2013 17:07:41 -0500
-Message-ID: <CAECXXi48FL94m=hUZYRWgS=5Z3R1J5oZsOjX65X6utfZdBafnA@mail.gmail.com>
-Subject: Re: [PATCH 1/3] nbd: support FLUSH requests
-From: Paul Clements <paul.clements@us.sios.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Alex Bligh <alex@alex.org.uk>,
-        nbd-general@lists.sf.net, Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tejun Heo <tj@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: compositing broken in -next (idr bug)
+References: <511ABA59.9050604@suse.cz> <511ABC32.3050706@suse.cz>
+In-Reply-To: <511ABC32.3050706@suse.cz>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 12, 2013 at 11:06 AM, Paolo Bonzini <pbonzini@redhat.com> wrote:
-> From: Alex Bligh <alex@alex.org.uk>
->
-> The NBD device does not support writeback caching, thus it is not safe
-> against power losses unless the client opens the target with O_DSYNC or
-> O_SYNC.
->
-> Add support for a new flag that the server can pass.  If the flag is
-> enabled, we translate REQ_FLUSH requests into the NBD_CMD_FLUSH
-> command.
->
-> Cc: <nbd-general@lists.sf.net>
-> Cc: Paul Clements <Paul.Clements@steeleye.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Alex Bligh <alex@alex.org.uk>
+On 02/12/2013 11:03 PM, Jiri Slaby wrote:
+> On 02/12/2013 10:55 PM, Jiri Slaby wrote:
+>> --- a/drivers/gpu/drm/drm_gem.c
+>> +++ b/drivers/gpu/drm/drm_gem.c
+>> @@ -453,7 +453,8 @@ drm_gem_flink_ioctl(struct drm_device *dev, void *data,
+>>         spin_lock(&dev->object_name_lock);
+>>         if (!obj->name) {
+>>                 ret = idr_alloc(&dev->object_name_idr, obj, 1, 0,
+>> GFP_NOWAIT);
+>> -               obj->name = ret;
+>> +               if (ret >= 0)
+>> +                       obj->name = ret;
+>>                 args->name = (uint64_t) obj->name;
+>>                 spin_unlock(&dev->object_name_lock);
+>>
+>> @@ -469,6 +470,7 @@ drm_gem_flink_ioctl(struct drm_device *dev, void *data,
+>>         }
+>>
+>>  err:
+>> +       idr_preload_end();
+>>         drm_gem_object_unreference_unlocked(obj);
+>>         return ret;
+> 
+> Oh my, maybe: return ret < 0 ? ret : 0... Let's try.
 
-Looks good.
+Bull's eye.
 
-Acked-by: Paul.Clements@steeleye.com
+--- a/drivers/gpu/drm/drm_gem.c
++++ b/drivers/gpu/drm/drm_gem.c
+@@ -459,6 +459,7 @@ drm_gem_flink_ioctl(struct drm_device *dev, void *data,
+
+                if (ret < 0)
+                        goto err;
++               ret = 0;
+
+                /* Allocate a reference for the name table.  */
+                drm_gem_object_reference(obj);
+
+-- 
+js
+suse labs
