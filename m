@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758910Ab3BLUov (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:44:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54036 "EHLO
+	id S1758717Ab3BLUlz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 15:41:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54004 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758752Ab3BLUl4 (ORCPT
+	with ESMTP id S1757490Ab3BLUlv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:41:56 -0500
+	Tue, 12 Feb 2013 15:41:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Jan Beulich <JBeulich@suse.com>,
+        Jack Morgenstein <jackm@dev.mellanox.co.il>,
+        Amir Vadai <amirv@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 30/36] netback: correct netbk_tx_err to handle wrap around.
-Date: Tue, 12 Feb 2013 12:41:24 -0800
-Message-Id: <20130212203900.813634541@linuxfoundation.org>
+Subject: [ 14/36] net/mlx4_core: Set number of msix vectors under SRIOV mode to firmware defaults
+Date: Tue, 12 Feb 2013 12:41:08 -0800
+Message-Id: <20130212203858.992468597@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203857.305594226@linuxfoundation.org>
 References: <20130212203857.305594226@linuxfoundation.org>
@@ -29,28 +29,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Ian Campbell <Ian.Campbell@citrix.com>
+From: Or Gerlitz <ogerlitz@mellanox.com>
 
-[ Upstream commit b9149729ebdcfce63f853aa54a404c6a8f6ebbf3 ]
+[ Upstream commit ca4c7b35f75492de7fbf5ee95be07481c348caee ]
 
-Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Acked-by: Jan Beulich <JBeulich@suse.com>
+The lines
+
+	if (mlx4_is_mfunc(dev)) {
+		nreq = 2;
+	} else {
+
+which hard code the number of requested msi-x vectors under multi-function
+mode to two can be removed completely, since the firmware sets num_eqs and
+reserved_eqs appropriately Thus, the code line:
+
+	nreq = min_t(int, dev->caps.num_eqs - dev->caps.reserved_eqs, nreq);
+
+is by itself sufficient and correct for all cases. Currently, for mfunc
+mode num_eqs = 32 and reserved_eqs = 28, hence four vectors will be enabled.
+
+This triples (one vector is used for the async events and commands EQ) the
+horse power provided for processing of incoming packets on netdev RSS scheme,
+IO initiators/targets commands processing flows, etc.
+
+Reviewed-by: Jack Morgenstein <jackm@dev.mellanox.co.il>
+Signed-off-by: Amir Vadai <amirv@mellanox.com>
+Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/xen-netback/netback.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/mellanox/mlx4/main.c |   11 ++---------
+ 1 file changed, 2 insertions(+), 9 deletions(-)
 
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -852,7 +852,7 @@ static void netbk_tx_err(struct xenvif *
+--- a/drivers/net/ethernet/mellanox/mlx4/main.c
++++ b/drivers/net/ethernet/mellanox/mlx4/main.c
+@@ -1526,15 +1526,8 @@ static void mlx4_enable_msi_x(struct mlx
+ 	int i;
  
- 	do {
- 		make_tx_response(vif, txp, XEN_NETIF_RSP_ERROR);
--		if (cons >= end)
-+		if (cons == end)
- 			break;
- 		txp = RING_GET_REQUEST(&vif->tx, cons++);
- 	} while (1);
+ 	if (msi_x) {
+-		/* In multifunction mode each function gets 2 msi-X vectors
+-		 * one for data path completions anf the other for asynch events
+-		 * or command completions */
+-		if (mlx4_is_mfunc(dev)) {
+-			nreq = 2;
+-		} else {
+-			nreq = min_t(int, dev->caps.num_eqs -
+-				     dev->caps.reserved_eqs, nreq);
+-		}
++		nreq = min_t(int, dev->caps.num_eqs - dev->caps.reserved_eqs,
++			     nreq);
+ 
+ 		entries = kcalloc(nreq, sizeof *entries, GFP_KERNEL);
+ 		if (!entries)
 
 
