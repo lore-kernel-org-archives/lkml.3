@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756260Ab3BLEBK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 23:01:10 -0500
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:37359 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754854Ab3BLEBG (ORCPT
+	id S1756229Ab3BLEDq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 23:03:46 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:44351 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754771Ab3BLEDo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 23:01:06 -0500
-Message-ID: <5119BDFD.1000909@linux.vnet.ibm.com>
-Date: Tue, 12 Feb 2013 09:28:53 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Mon, 11 Feb 2013 23:03:44 -0500
+From: Nathan Zimmer <nzimmer@sgi.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: "viresh.kumar@linaro.org" <viresh.kumar@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>
+Subject: RE: [PATCH v2 linux-next 2/2] cpufreq: Convert the
+ cpufreq_driver_lock to use the rcu
+Thread-Topic: [PATCH v2 linux-next 2/2] cpufreq: Convert the
+ cpufreq_driver_lock to use the rcu
+Thread-Index: AQHOBA5rBQ8ceIvOaEijZLr8F17MgphvcnMAgAVr1KaAAJxPgIAAJE91
+Date: Tue, 12 Feb 2013 04:03:42 +0000
+Message-ID: <74F10842A85F514CA8D8C487E74474BB2D30DF27@P-EXMB1-DC21.corp.sgi.com>
+References: <74F10842A85F514CA8D8C487E74474BB2D2F925E@P-EXMB1-DC21.corp.sgi.com>
+ <16615226.2vj4EkkIZJ@vostro.rjw.lan>
+ <74F10842A85F514CA8D8C487E74474BB2D30DC9E@P-EXMB1-DC21.corp.sgi.com>,<1953281.cgEiiBGo0f@vostro.rjw.lan>
+In-Reply-To: <1953281.cgEiiBGo0f@vostro.rjw.lan>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [198.149.23.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Vincent Guittot <vincent.guittot@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-doc@vger.kernel.org, peterz@infradead.org, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org, walken@google.com, mingo@kernel.org,
-        linux-arch@vger.kernel.org, xiaoguangrong@linux.vnet.ibm.com,
-        wangyun@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        rostedt@goodmis.org, rjw@sisk.pl, namhyung@kernel.org,
-        tglx@linutronix.de, linux-arm-kernel@lists.infradead.org,
-        netdev@vger.kernel.org, oleg@redhat.com, sbw@mit.edu, tj@kernel.org,
-        akpm@linux-foundation.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v5 00/45] CPU hotplug: stop_machine()-free CPU hotplug
-References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com> <510FBC01.2030405@linux.vnet.ibm.com> <87haloiwv0.fsf@rustcorp.com.au> <51134596.4080106@linux.vnet.ibm.com> <20130208154113.GV17833@n2100.arm.linux.org.uk> <51152B81.2050501@linux.vnet.ibm.com> <51153F72.1060005@linux.vnet.ibm.com> <CAKfTPtCe+cD7LLkb+D6pqG1SwG2V08ws=4XO3ttHEHV2qgmqPg@mail.gmail.com> <5118E2CD.90401@linux.vnet.ibm.com> <20130211190852.GA5695@linux.vnet.ibm.com>
-In-Reply-To: <20130211190852.GA5695@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13021203-3568-0000-0000-00000323D2B0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/12/2013 12:38 AM, Paul E. McKenney wrote:
-> On Mon, Feb 11, 2013 at 05:53:41PM +0530, Srivatsa S. Bhat wrote:
->> On 02/11/2013 05:28 PM, Vincent Guittot wrote:
->>> On 8 February 2013 19:09, Srivatsa S. Bhat
->>> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> 
-> [ . . . ]
-> 
->>>> Adding Vincent to CC, who had previously evaluated the performance and
->>>> latency implications of CPU hotplug on ARM platforms, IIRC.
->>>>
->>>
->>> Hi Srivatsa,
->>>
->>> I can try to run some of our stress tests on your patches.
->>
->> Great!
->>
->>> Have you
->>> got a git tree that i can pull ?
->>>
->>
->> Unfortunately, no, none at the moment..  :-(
-> 
-> You do need to create an externally visible git tree.
+Argh, your right.  I completely misread that section.
+It'll take me a few days to respin and retest properly.
 
-Ok, I'll do that soon.
+Thanks, 
+Nate
 
->  In the meantime,
-> I have added your series at rcu/bhat.2013.01.21a on -rcu:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
-> 
-> This should appear soon on a kernel.org mirror near you.  ;-)
+________________________________________
+From: Rafael J. Wysocki [rjw@sisk.pl]
+Sent: Monday, February 11, 2013 1:36 PM
+To: Nathan Zimmer
+Cc: viresh.kumar@linaro.org; linux-kernel@vger.kernel.org; linux-pm@vger.kernel.org; cpufreq@vger.kernel.org
+Subject: Re: [PATCH v2 linux-next 2/2] cpufreq: Convert the cpufreq_driver_lock to use the rcu
+
+On Monday, February 11, 2013 05:13:30 PM Nathan Zimmer wrote:
+> There are some spots that I need to give a much deeper review, cpufreq_register_driver for example.
 >
+> But I believe
+> > @@ -196,7 +195,7 @@ static void __cpufreq_cpu_put(struct cpufreq_policy *data, bool sysfs)
+> >  {
+> >       if (!sysfs)
+> >               kobject_put(&data->kobj);
+> > -     module_put(cpufreq_driver->owner);
+> > +     module_put(rcu_dereference(cpufreq_driver)->owner);
+> >  }
+> would be ok.  In the documentation whatisRCU.txt they give a very similar example.
 
-Thank you very much, Paul! :-)
+Well, the very same document states the following:
 
-Regards,
-Srivatsa S. Bhat
+        Note that the value returned by rcu_dereference() is valid
+        only within the enclosing RCU read-side critical section.
 
+Thanks,
+Rafael
+
+
+--
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
