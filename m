@@ -1,25 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758787Ab3BLUl5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:41:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53992 "EHLO
+	id S1758855Ab3BLUo3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 15:44:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54041 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752588Ab3BLUlv (ORCPT
+	with ESMTP id S1758784Ab3BLUl5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:41:51 -0500
+	Tue, 12 Feb 2013 15:41:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>,
+        =?UTF-8?q?Pasi=20K=E4rkk=E4inen?= <pasik@iki.fi>,
+        Neal Cardwell <ncardwell@google.com>,
+        Eric Dumazet <edumazet@google.com>,
+        =?UTF-8?q?Ilpo=20J=E4rvinen?= <ilpo.jarvinen@helsinki.fi>,
+        Yuchung Cheng <ycheng@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 23/36] atm/iphase: rename fregt_t -> ffreg_t
-Date: Tue, 12 Feb 2013 12:41:17 -0800
-Message-Id: <20130212203900.035353933@linuxfoundation.org>
+Subject: [ 31/36] tcp: frto should not set snd_cwnd to 0
+Date: Tue, 12 Feb 2013 12:41:25 -0800
+Message-Id: <20130212203900.934029203@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203857.305594226@linuxfoundation.org>
 References: <20130212203857.305594226@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,197 +35,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit ab54ee80aa7585f9666ff4dd665441d7ce41f1e8 ]
+[ Upstream commit 2e5f421211ff76c17130b4597bc06df4eeead24f ]
 
-We have conflicting type qualifiers for "freg_t" in s390's ptrace.h and the
-iphase atm device driver, which causes the compile error below.
-Unfortunately the s390 typedef can't be renamed, since it's a user visible api,
-nor can I change the include order in s390 code to avoid the conflict.
+Commit 9dc274151a548 (tcp: fix ABC in tcp_slow_start())
+uncovered a bug in FRTO code :
+tcp_process_frto() is setting snd_cwnd to 0 if the number
+of in flight packets is 0.
 
-So simply rename the iphase typedef to a new name. Fixes this compile error:
+As Neal pointed out, if no packet is in flight we lost our
+chance to disambiguate whether a loss timeout was spurious.
 
-In file included from drivers/atm/iphase.c:66:0:
-drivers/atm/iphase.h:639:25: error: conflicting type qualifiers for 'freg_t'
-In file included from next/arch/s390/include/asm/ptrace.h:9:0,
-                 from next/arch/s390/include/asm/lowcore.h:12,
-                 from next/arch/s390/include/asm/thread_info.h:30,
-                 from include/linux/thread_info.h:54,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:5,
-                 from include/linux/stat.h:18,
-                 from include/linux/module.h:10,
-                 from drivers/atm/iphase.c:43:
-next/arch/s390/include/uapi/asm/ptrace.h:197:3: note: previous declaration of 'freg_t' was here
+We should assume it was a proper loss.
 
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Acked-by: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
+Reported-by: Pasi Kärkkäinen <pasik@iki.fi>
+Signed-off-by: Neal Cardwell <ncardwell@google.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Ilpo Järvinen <ilpo.jarvinen@helsinki.fi>
+Cc: Yuchung Cheng <ycheng@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/atm/iphase.h |  146 +++++++++++++++++++++++++--------------------------
- 1 file changed, 73 insertions(+), 73 deletions(-)
+ net/ipv4/tcp_input.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/atm/iphase.h
-+++ b/drivers/atm/iphase.h
-@@ -636,82 +636,82 @@ struct rx_buf_desc {
- #define SEG_BASE IPHASE5575_FRAG_CONTROL_REG_BASE  
- #define REASS_BASE IPHASE5575_REASS_CONTROL_REG_BASE  
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -3619,7 +3619,8 @@ static int tcp_process_frto(struct sock
+ 	    ((tp->frto_counter >= 2) && (flag & FLAG_RETRANS_DATA_ACKED)))
+ 		tp->undo_marker = 0;
  
--typedef volatile u_int  freg_t;
-+typedef volatile u_int	ffreg_t;
- typedef u_int   rreg_t;
- 
- typedef struct _ffredn_t {
--        freg_t  idlehead_high;  /* Idle cell header (high)              */
--        freg_t  idlehead_low;   /* Idle cell header (low)               */
--        freg_t  maxrate;        /* Maximum rate                         */
--        freg_t  stparms;        /* Traffic Management Parameters        */
--        freg_t  abrubr_abr;     /* ABRUBR Priority Byte 1, TCR Byte 0   */
--        freg_t  rm_type;        /*                                      */
--        u_int   filler5[0x17 - 0x06];
--        freg_t  cmd_reg;        /* Command register                     */
--        u_int   filler18[0x20 - 0x18];
--        freg_t  cbr_base;       /* CBR Pointer Base                     */
--        freg_t  vbr_base;       /* VBR Pointer Base                     */
--        freg_t  abr_base;       /* ABR Pointer Base                     */
--        freg_t  ubr_base;       /* UBR Pointer Base                     */
--        u_int   filler24;
--        freg_t  vbrwq_base;     /* VBR Wait Queue Base                  */
--        freg_t  abrwq_base;     /* ABR Wait Queue Base                  */
--        freg_t  ubrwq_base;     /* UBR Wait Queue Base                  */
--        freg_t  vct_base;       /* Main VC Table Base                   */
--        freg_t  vcte_base;      /* Extended Main VC Table Base          */
--        u_int   filler2a[0x2C - 0x2A];
--        freg_t  cbr_tab_beg;    /* CBR Table Begin                      */
--        freg_t  cbr_tab_end;    /* CBR Table End                        */
--        freg_t  cbr_pointer;    /* CBR Pointer                          */
--        u_int   filler2f[0x30 - 0x2F];
--        freg_t  prq_st_adr;     /* Packet Ready Queue Start Address     */
--        freg_t  prq_ed_adr;     /* Packet Ready Queue End Address       */
--        freg_t  prq_rd_ptr;     /* Packet Ready Queue read pointer      */
--        freg_t  prq_wr_ptr;     /* Packet Ready Queue write pointer     */
--        freg_t  tcq_st_adr;     /* Transmit Complete Queue Start Address*/
--        freg_t  tcq_ed_adr;     /* Transmit Complete Queue End Address  */
--        freg_t  tcq_rd_ptr;     /* Transmit Complete Queue read pointer */
--        freg_t  tcq_wr_ptr;     /* Transmit Complete Queue write pointer*/
--        u_int   filler38[0x40 - 0x38];
--        freg_t  queue_base;     /* Base address for PRQ and TCQ         */
--        freg_t  desc_base;      /* Base address of descriptor table     */
--        u_int   filler42[0x45 - 0x42];
--        freg_t  mode_reg_0;     /* Mode register 0                      */
--        freg_t  mode_reg_1;     /* Mode register 1                      */
--        freg_t  intr_status_reg;/* Interrupt Status register            */
--        freg_t  mask_reg;       /* Mask Register                        */
--        freg_t  cell_ctr_high1; /* Total cell transfer count (high)     */
--        freg_t  cell_ctr_lo1;   /* Total cell transfer count (low)      */
--        freg_t  state_reg;      /* Status register                      */
--        u_int   filler4c[0x58 - 0x4c];
--        freg_t  curr_desc_num;  /* Contains the current descriptor num  */
--        freg_t  next_desc;      /* Next descriptor                      */
--        freg_t  next_vc;        /* Next VC                              */
--        u_int   filler5b[0x5d - 0x5b];
--        freg_t  present_slot_cnt;/* Present slot count                  */
--        u_int   filler5e[0x6a - 0x5e];
--        freg_t  new_desc_num;   /* New descriptor number                */
--        freg_t  new_vc;         /* New VC                               */
--        freg_t  sched_tbl_ptr;  /* Schedule table pointer               */
--        freg_t  vbrwq_wptr;     /* VBR wait queue write pointer         */
--        freg_t  vbrwq_rptr;     /* VBR wait queue read pointer          */
--        freg_t  abrwq_wptr;     /* ABR wait queue write pointer         */
--        freg_t  abrwq_rptr;     /* ABR wait queue read pointer          */
--        freg_t  ubrwq_wptr;     /* UBR wait queue write pointer         */
--        freg_t  ubrwq_rptr;     /* UBR wait queue read pointer          */
--        freg_t  cbr_vc;         /* CBR VC                               */
--        freg_t  vbr_sb_vc;      /* VBR SB VC                            */
--        freg_t  abr_sb_vc;      /* ABR SB VC                            */
--        freg_t  ubr_sb_vc;      /* UBR SB VC                            */
--        freg_t  vbr_next_link;  /* VBR next link                        */
--        freg_t  abr_next_link;  /* ABR next link                        */
--        freg_t  ubr_next_link;  /* UBR next link                        */
--        u_int   filler7a[0x7c-0x7a];
--        freg_t  out_rate_head;  /* Out of rate head                     */
--        u_int   filler7d[0xca-0x7d]; /* pad out to full address space   */
--        freg_t  cell_ctr_high1_nc;/* Total cell transfer count (high)   */
--        freg_t  cell_ctr_lo1_nc;/* Total cell transfer count (low)      */
--        u_int   fillercc[0x100-0xcc]; /* pad out to full address space   */
-+	ffreg_t	idlehead_high;	/* Idle cell header (high)		*/
-+	ffreg_t	idlehead_low;	/* Idle cell header (low)		*/
-+	ffreg_t	maxrate;	/* Maximum rate				*/
-+	ffreg_t	stparms;	/* Traffic Management Parameters	*/
-+	ffreg_t	abrubr_abr;	/* ABRUBR Priority Byte 1, TCR Byte 0	*/
-+	ffreg_t	rm_type;	/*					*/
-+	u_int	filler5[0x17 - 0x06];
-+	ffreg_t	cmd_reg;	/* Command register			*/
-+	u_int	filler18[0x20 - 0x18];
-+	ffreg_t	cbr_base;	/* CBR Pointer Base			*/
-+	ffreg_t	vbr_base;	/* VBR Pointer Base			*/
-+	ffreg_t	abr_base;	/* ABR Pointer Base			*/
-+	ffreg_t	ubr_base;	/* UBR Pointer Base			*/
-+	u_int	filler24;
-+	ffreg_t	vbrwq_base;	/* VBR Wait Queue Base			*/
-+	ffreg_t	abrwq_base;	/* ABR Wait Queue Base			*/
-+	ffreg_t	ubrwq_base;	/* UBR Wait Queue Base			*/
-+	ffreg_t	vct_base;	/* Main VC Table Base			*/
-+	ffreg_t	vcte_base;	/* Extended Main VC Table Base		*/
-+	u_int	filler2a[0x2C - 0x2A];
-+	ffreg_t	cbr_tab_beg;	/* CBR Table Begin			*/
-+	ffreg_t	cbr_tab_end;	/* CBR Table End			*/
-+	ffreg_t	cbr_pointer;	/* CBR Pointer				*/
-+	u_int	filler2f[0x30 - 0x2F];
-+	ffreg_t	prq_st_adr;	/* Packet Ready Queue Start Address	*/
-+	ffreg_t	prq_ed_adr;	/* Packet Ready Queue End Address	*/
-+	ffreg_t	prq_rd_ptr;	/* Packet Ready Queue read pointer	*/
-+	ffreg_t	prq_wr_ptr;	/* Packet Ready Queue write pointer	*/
-+	ffreg_t	tcq_st_adr;	/* Transmit Complete Queue Start Address*/
-+	ffreg_t	tcq_ed_adr;	/* Transmit Complete Queue End Address	*/
-+	ffreg_t	tcq_rd_ptr;	/* Transmit Complete Queue read pointer */
-+	ffreg_t	tcq_wr_ptr;	/* Transmit Complete Queue write pointer*/
-+	u_int	filler38[0x40 - 0x38];
-+	ffreg_t	queue_base;	/* Base address for PRQ and TCQ		*/
-+	ffreg_t	desc_base;	/* Base address of descriptor table	*/
-+	u_int	filler42[0x45 - 0x42];
-+	ffreg_t	mode_reg_0;	/* Mode register 0			*/
-+	ffreg_t	mode_reg_1;	/* Mode register 1			*/
-+	ffreg_t	intr_status_reg;/* Interrupt Status register		*/
-+	ffreg_t	mask_reg;	/* Mask Register			*/
-+	ffreg_t	cell_ctr_high1; /* Total cell transfer count (high)	*/
-+	ffreg_t	cell_ctr_lo1;	/* Total cell transfer count (low)	*/
-+	ffreg_t	state_reg;	/* Status register			*/
-+	u_int	filler4c[0x58 - 0x4c];
-+	ffreg_t	curr_desc_num;	/* Contains the current descriptor num	*/
-+	ffreg_t	next_desc;	/* Next descriptor			*/
-+	ffreg_t	next_vc;	/* Next VC				*/
-+	u_int	filler5b[0x5d - 0x5b];
-+	ffreg_t	present_slot_cnt;/* Present slot count			*/
-+	u_int	filler5e[0x6a - 0x5e];
-+	ffreg_t	new_desc_num;	/* New descriptor number		*/
-+	ffreg_t	new_vc;		/* New VC				*/
-+	ffreg_t	sched_tbl_ptr;	/* Schedule table pointer		*/
-+	ffreg_t	vbrwq_wptr;	/* VBR wait queue write pointer		*/
-+	ffreg_t	vbrwq_rptr;	/* VBR wait queue read pointer		*/
-+	ffreg_t	abrwq_wptr;	/* ABR wait queue write pointer		*/
-+	ffreg_t	abrwq_rptr;	/* ABR wait queue read pointer		*/
-+	ffreg_t	ubrwq_wptr;	/* UBR wait queue write pointer		*/
-+	ffreg_t	ubrwq_rptr;	/* UBR wait queue read pointer		*/
-+	ffreg_t	cbr_vc;		/* CBR VC				*/
-+	ffreg_t	vbr_sb_vc;	/* VBR SB VC				*/
-+	ffreg_t	abr_sb_vc;	/* ABR SB VC				*/
-+	ffreg_t	ubr_sb_vc;	/* UBR SB VC				*/
-+	ffreg_t	vbr_next_link;	/* VBR next link			*/
-+	ffreg_t	abr_next_link;	/* ABR next link			*/
-+	ffreg_t	ubr_next_link;	/* UBR next link			*/
-+	u_int	filler7a[0x7c-0x7a];
-+	ffreg_t	out_rate_head;	/* Out of rate head			*/
-+	u_int	filler7d[0xca-0x7d]; /* pad out to full address space	*/
-+	ffreg_t	cell_ctr_high1_nc;/* Total cell transfer count (high)	*/
-+	ffreg_t	cell_ctr_lo1_nc;/* Total cell transfer count (low)	*/
-+	u_int	fillercc[0x100-0xcc]; /* pad out to full address space	 */
- } ffredn_t;
- 
- typedef struct _rfredn_t {
+-	if (!before(tp->snd_una, tp->frto_highmark)) {
++	if (!before(tp->snd_una, tp->frto_highmark) ||
++	    !tcp_packets_in_flight(tp)) {
+ 		tcp_enter_frto_loss(sk, (tp->frto_counter == 1 ? 2 : 3), flag);
+ 		return 1;
+ 	}
 
 
