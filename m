@@ -1,337 +1,385 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760829Ab3BLOwA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 09:52:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34456 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760265Ab3BLOv7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 09:51:59 -0500
-Date: Tue, 12 Feb 2013 16:56:20 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Wanlong Gao <gaowanlong@cn.fujitsu.com>,
-        asias@redhat.com, Rusty Russell <rusty@rustcorp.com.au>,
-        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH 1/9] virtio: add functions for piecewise addition of
- buffers
-Message-ID: <20130212145620.GA3392@redhat.com>
-References: <1360671815-2135-1-git-send-email-pbonzini@redhat.com>
- <1360671815-2135-2-git-send-email-pbonzini@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360671815-2135-2-git-send-email-pbonzini@redhat.com>
+	id S1761243Ab3BLOxO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 09:53:14 -0500
+Received: from juliette.telenet-ops.be ([195.130.137.74]:43601 "EHLO
+	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760265Ab3BLOxI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 09:53:08 -0500
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>
+Cc: linux-cris-kernel@axis.com, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH 08/10] [RFC] cris/kgdb: Remove sections protected by #ifdef PROCESS_SUPPORT
+Date: Tue, 12 Feb 2013 15:52:55 +0100
+Message-Id: <1360680777-12622-9-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1360680777-12622-1-git-send-email-geert@linux-m68k.org>
+References: <1360680777-12622-1-git-send-email-geert@linux-m68k.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 12, 2013 at 01:23:27PM +0100, Paolo Bonzini wrote:
-> virtio device drivers translate requests from higher layer in two steps:
-> a device-specific step in the device driver, and generic preparation
-> of virtio direct or indirect buffers in virtqueue_add_buf.  Because
-> virtqueue_add_buf also accepts the outcome of the first step as a single
-> struct scatterlist, drivers may need to put additional items at the
-> front or back of the data scatterlists before handing it to virtqueue_add_buf.
-> Because of this, virtio-scsi has to copy each request into a scatterlist
-> internal to the driver.  It cannot just use the one that was prepared
-> by the upper SCSI layers. 
-> 
-> On top of this, virtqueue_add_buf also has the limitation of not
-> supporting chained scatterlists: the buffers must be provided as an
-> array of struct scatterlist.  Chained scatterlist, though not supported
-> on all architectures, would help for virtio-scsi where all additional
-> items are placed at the front.
-> 
-> This patch adds a different set of APIs for adding a buffer to a virtqueue.
-> The new API lets you pass the buffers piecewise, wrapping multiple calls
-> to virtqueue_add_sg between virtqueue_start_buf and virtqueue_end_buf.
-> virtio-scsi can then call virtqueue_add_sg 3/4 times: for the request
-> header, for the write buffer (if present), for the response header, and
-> finally for the read buffer (again if present).  It saves the copying
-> and the related locking.
-> 
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> ---
->  drivers/virtio/virtio_ring.c |  211 ++++++++++++++++++++++++++++++++++++++++++
->  include/linux/virtio.h       |   14 +++
->  2 files changed, 225 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
-> index ffd7e7d..64184e5 100644
-> --- a/drivers/virtio/virtio_ring.c
-> +++ b/drivers/virtio/virtio_ring.c
-> @@ -101,6 +101,10 @@ struct vring_virtqueue
->  	/* Last used index we've seen. */
->  	u16 last_used_idx;
->  
-> +	/* State between virtqueue_start_buf and virtqueue_end_buf.  */
-> +	int head;
-> +	struct vring_desc *indirect_base, *tail;
-> +
->  	/* How to notify other side. FIXME: commonalize hcalls! */
->  	void (*notify)(struct virtqueue *vq);
->  
-> @@ -394,6 +398,213 @@ static void detach_buf(struct vring_virtqueue *vq, unsigned int head)
->  	vq->vq.num_free++;
->  }
->  
-> +/**
-> + * virtqueue_start_buf - start building buffer for the other end
-> + * @vq: the struct virtqueue we're talking about.
-> + * @data: the token identifying the buffer.
-> + * @nents: the number of buffers that will be added
+When enabled, it doesn't build anyway:
 
-This function starts building one buffer, number of buffers
-is a bit weird here.
+arch/cris/arch-v10/kernel/kgdb.c: In function 'copy_registers_from_stack':
+arch/cris/arch-v10/kernel/kgdb.c:631:2: error: unknown type name 'stack_registers'
+arch/cris/arch-v10/kernel/kgdb.c:631:24: error: 'stack_registers' undeclared (first use in this function)
+arch/cris/arch-v10/kernel/kgdb.c:631:24: note: each undeclared identifier is reported only once for each function it appears in
+arch/cris/arch-v10/kernel/kgdb.c:631:41: error: expected expression before ')' token
+arch/cris/arch-v10/kernel/kgdb.c:635:11: error: request for member 'r' in something not a structure or union
+arch/cris/arch-v10/kernel/kgdb.c:636:29: error: 'stack_list' undeclared (first use in this function)
+arch/cris/arch-v10/kernel/kgdb.c:637:16: error: request for member 'pc' in something not a structure or union
+arch/cris/arch-v10/kernel/kgdb.c:638:18: error: request for member 'dccr' in something not a structure or union
+arch/cris/arch-v10/kernel/kgdb.c:639:17: error: request for member 'srp' in something not a structure or union
+arch/cris/arch-v10/kernel/kgdb.c: In function 'copy_registers_to_stack':
+arch/cris/arch-v10/kernel/kgdb.c:648:2: error: unknown type name 'stack_registers'
+arch/cris/arch-v10/kernel/kgdb.c:648:24: error: 'stack_registers' undeclared (first use in this function)
+arch/cris/arch-v10/kernel/kgdb.c:648:41: error: expected expression before ')' token
+arch/cris/arch-v10/kernel/kgdb.c:652:4: error: request for member 'r' in something not a structure or union
+arch/cris/arch-v10/kernel/kgdb.c:654:3: error: request for member 'pc' in something not a structure or union
+arch/cris/arch-v10/kernel/kgdb.c:655:3: error: request for member 'dccr' in something not a structure or union
+arch/cris/arch-v10/kernel/kgdb.c:656:3: error: request for member 'srp' in something not a structure or union
+arch/cris/arch-v10/kernel/kgdb.c: In function 'write_stack_register':
+arch/cris/arch-v10/kernel/kgdb.c:702:2: error: unknown type name 'stack_registers'
+arch/cris/arch-v10/kernel/kgdb.c:702:24: error: 'stack_registers' undeclared (first use in this function)
+arch/cris/arch-v10/kernel/kgdb.c:702:41: error: expected expression before ')' token
+arch/cris/arch-v10/kernel/kgdb.c:707:4: error: request for member 'r' in something not a structure or union
+arch/cris/arch-v10/kernel/kgdb.c:710:3: error: 'stack_list' undeclared (first use in this function)
+arch/cris/arch-v10/kernel/kgdb.c:713:4: error: request for member 'pc' in something not a structure or union
+arch/cris/arch-v10/kernel/kgdb.c:716:4: error: request for member 'srp' in something not a structure or union
+arch/cris/arch-v10/kernel/kgdb.c:719:4: error: request for member 'dccr' in something not a structure or union
+arch/cris/arch-v10/kernel/kgdb.c: In function 'stub_is_stopped':
+arch/cris/arch-v10/kernel/kgdb.c:827:36: error: 'pos' undeclared (first use in this function)
+arch/cris/arch-v10/kernel/kgdb.c: In function 'handle_exception':
+arch/cris/arch-v10/kernel/kgdb.c:1064:40: error: 'number_of_tasks' undeclared (first use in this function)
+arch/cris/arch-v10/kernel/kgdb.c:1125:8: error: implicit declaration of function 'os_is_started' [-Werror=implicit-function-declaration]
 
-> + * @nsg: the number of sg lists that will be added
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ arch/cris/arch-v10/kernel/kgdb.c |  257 +-------------------------------------
+ 1 files changed, 2 insertions(+), 255 deletions(-)
 
-This means number of calls to add_sg ? Not sure why this matters.
-How about we pass in in_num/out_num - that is total # of sg,
-same as add_buf?
+diff --git a/arch/cris/arch-v10/kernel/kgdb.c b/arch/cris/arch-v10/kernel/kgdb.c
+index 0e79907..22d846b 100644
+--- a/arch/cris/arch-v10/kernel/kgdb.c
++++ b/arch/cris/arch-v10/kernel/kgdb.c
+@@ -341,16 +341,6 @@ static int consistency_status = SUCCESS;
+    in order to provide access mainly for 'g', 'G' and 'P'.
+ */
+ 
+-#ifdef PROCESS_SUPPORT
+-/* Need two task id pointers in order to handle Hct and Hgt commands. */
+-static int current_thread_c = 0;
+-static int current_thread_g = 0;
+-
+-/* Need two register images in order to handle Hct and Hgt commands. The
+-   variable reg_g is in addition to cris_reg above. */
+-static registers reg_g;
+-#endif /* PROCESS_SUPPORT */
+-
+ /********************************** Breakpoint *******************************/
+ /* Use an internal stack in the breakpoint and interrupt response routines */
+ #define INTERNAL_STACK_SIZE 1024
+@@ -608,55 +598,6 @@ putDebugString (const unsigned char *str, int length)
+ }
+ 
+ /********************************* Register image ****************************/
+-#ifdef PROCESS_SUPPORT
+-/* Copy the content of a register image into another. The size n is
+-   the size of the register image. Due to struct assignment generation of
+-   memcpy in libc. */
+-static void
+-copy_registers (registers *dptr, registers *sptr, int n)
+-{
+-	unsigned char *dreg;
+-	unsigned char *sreg;
+-	
+-	for (dreg = (unsigned char*)dptr, sreg = (unsigned char*)sptr; n > 0; n--)
+-		*dreg++ = *sreg++;
+-}
+-
+-/* Copy the stored registers from the stack. Put the register contents
+-   of thread thread_id in the struct reg. */
+-static void
+-copy_registers_from_stack (int thread_id, registers *regptr)
+-{
+-	int j;
+-	stack_registers *s = (stack_registers *)stack_list[thread_id];
+-	unsigned int *d = (unsigned int *)regptr;
+-	
+-	for (j = 13; j >= 0; j--)
+-		*d++ = s->r[j];
+-	regptr->sp = (unsigned int)stack_list[thread_id];
+-	regptr->pc = s->pc;
+-	regptr->dccr = s->dccr;
+-	regptr->srp = s->srp;
+-}
+-
+-/* Copy the registers to the stack. Put the register contents of thread
+-   thread_id from struct reg to the stack. */
+-static void
+-copy_registers_to_stack (int thread_id, registers *regptr)
+-{
+-	int i;
+-	stack_registers *d = (stack_registers *)stack_list[thread_id];
+-	unsigned int *s = (unsigned int *)regptr;
+-	
+-	for (i = 0; i < 14; i++) {
+-		d->r[i] = *s++;
+-	}
+-	d->pc = regptr->pc;
+-	d->dccr = regptr->dccr;
+-	d->srp = regptr->srp;
+-}
+-#endif
+-
+ /* Write a value to a specified register in the register image of the current
+    thread. Returns status code SUCCESS, E02 or E05. */
+ static int
+@@ -692,40 +633,6 @@ write_register (int regno, char *val)
+ 	return status;
+ }
+ 
+-#ifdef PROCESS_SUPPORT
+-/* Write a value to a specified register in the stack of a thread other
+-   than the current thread. Returns status code SUCCESS or E07. */
+-static int
+-write_stack_register (int thread_id, int regno, char *valptr)
+-{
+-	int status = SUCCESS;
+-	stack_registers *d = (stack_registers *)stack_list[thread_id];
+-	unsigned int val;
+-	
+-	hex2mem ((unsigned char *)&val, valptr, sizeof(unsigned int));
+-	if (regno >= R0 && regno < SP) {
+-		d->r[regno] = val;
+-	}
+-	else if (regno == SP) {
+-		stack_list[thread_id] = val;
+-	}
+-	else if (regno == PC) {
+-		d->pc = val;
+-	}
+-	else if (regno == SRP) {
+-		d->srp = val;
+-	}
+-	else if (regno == DCCR) {
+-		d->dccr = val;
+-	}
+-	else {
+-		/* Do not support registers in the current thread. */
+-		status = E07;
+-	}
+-	return status;
+-}
+-#endif
+-
+ /* Read a value from a specified register in the register image. Returns the
+    value in the register or -1 for non-implemented registers.
+    Should check consistency_status after a call which may be E05 after changes
+@@ -811,26 +718,6 @@ stub_is_stopped(int sigval)
+                 
+ 	}
+ 
+-#ifdef PROCESS_SUPPORT
+-	/* Store the registers of the executing thread. Assume that both step,
+-	   continue, and register content requests are with respect to this
+-	   thread. The executing task is from the operating system scheduler. */
+-
+-	current_thread_c = executing_task;
+-	current_thread_g = executing_task;
+-
+-	/* A struct assignment translates into a libc memcpy call. Avoid
+-	   all libc functions in order to prevent recursive break points. */
+-	copy_registers (&reg_g, &cris_reg, sizeof(registers));
+-
+-	/* Store thread:r...; with the executing task TID. */
+-	gdb_cris_strcpy (&remcomOutBuffer[pos], "thread:");
+-	pos += gdb_cris_strlen ("thread:");
+-	remcomOutBuffer[pos++] = hex_asc_hi(executing_task);
+-	remcomOutBuffer[pos++] = hex_asc_lo(executing_task);
+-	gdb_cris_strcpy (&remcomOutBuffer[pos], ";");
+-#endif
+-
+ 	/* null-terminate and send it off */
+ 
+ 	*ptr = 0;
+@@ -865,19 +752,7 @@ handle_exception (int sigval)
+ 				   in a register  are in the same order the machine uses.
+ 				   Failure: void. */
+ 				
+-				{
+-#ifdef PROCESS_SUPPORT
+-					/* Use the special register content in the executing thread. */
+-					copy_registers (&reg_g, &cris_reg, sizeof(registers));
+-					/* Replace the content available on the stack. */
+-					if (current_thread_g != executing_task) {
+-						copy_registers_from_stack (current_thread_g, &reg_g);
+-					}
+-					mem2hex ((unsigned char *)remcomOutBuffer, (unsigned char *)&reg_g, sizeof(registers));
+-#else
+-					mem2hex(remcomOutBuffer, (char *)&cris_reg, sizeof(registers));
+-#endif
+-				}
++				mem2hex(remcomOutBuffer, (char *)&cris_reg, sizeof(registers));
+ 				break;
+ 				
+ 			case 'G':
+@@ -885,17 +760,7 @@ handle_exception (int sigval)
+ 				   Each byte of register data  is described by two hex digits.
+ 				   Success: OK
+ 				   Failure: void. */
+-#ifdef PROCESS_SUPPORT
+-				hex2mem ((unsigned char *)&reg_g, &remcomInBuffer[1], sizeof(registers));
+-				if (current_thread_g == executing_task) {
+-					copy_registers (&cris_reg, &reg_g, sizeof(registers));
+-				}
+-				else {
+-					copy_registers_to_stack(current_thread_g, &reg_g);
+-				}
+-#else
+ 				hex2mem((char *)&cris_reg, &remcomInBuffer[1], sizeof(registers));
+-#endif
+ 				gdb_cris_strcpy (remcomOutBuffer, "OK");
+ 				break;
+ 				
+@@ -911,12 +776,7 @@ handle_exception (int sigval)
+ 					char *suffix;
+ 					int regno = gdb_cris_strtol (&remcomInBuffer[1], &suffix, 16);
+ 					int status;
+-#ifdef PROCESS_SUPPORT
+-					if (current_thread_g != executing_task)
+-						status = write_stack_register (current_thread_g, regno, suffix+1);
+-					else
+-#endif
+-						status = write_register (regno, suffix+1);
++					status = write_register (regno, suffix+1);
+ 
+ 					switch (status) {
+ 						case E02:
+@@ -1051,119 +911,6 @@ handle_exception (int sigval)
+ 				   Not supported: E04 */
+ 				gdb_cris_strcpy (remcomOutBuffer, error_message[E04]);
+ 				break;
+-#ifdef PROCESS_SUPPORT
+-
+-			case 'T':
+-				/* Thread alive. TXX
+-				   Is thread XX alive?
+-				   Success: OK, thread XX is alive.
+-				   Failure: E03, thread XX is dead. */
+-				{
+-					int thread_id = (int)gdb_cris_strtol (&remcomInBuffer[1], 0, 16);
+-					/* Cannot tell whether it is alive or not. */
+-					if (thread_id >= 0 && thread_id < number_of_tasks)
+-						gdb_cris_strcpy (remcomOutBuffer, "OK");
+-				}
+-				break;
+-								
+-			case 'H':
+-				/* Set thread for subsequent operations: Hct
+-				   c = 'c' for thread used in step and continue;
+-				   t can be -1 for all threads.
+-				   c = 'g' for thread used in other  operations.
+-				   t = 0 means pick any thread.
+-				   Success: OK
+-				   Failure: E01 */
+-				{
+-					int thread_id = gdb_cris_strtol (&remcomInBuffer[2], 0, 16);
+-					if (remcomInBuffer[1] == 'c') {
+-						/* c = 'c' for thread used in step and continue */
+-						/* Do not change current_thread_c here. It would create a mess in
+-						   the scheduler. */
+-						gdb_cris_strcpy (remcomOutBuffer, "OK");
+-					}
+-					else if (remcomInBuffer[1] == 'g') {
+-						/* c = 'g' for thread used in other  operations.
+-						   t = 0 means pick any thread. Impossible since the scheduler does
+-						   not allow that. */
+-						if (thread_id >= 0 && thread_id < number_of_tasks) {
+-							current_thread_g = thread_id;
+-							gdb_cris_strcpy (remcomOutBuffer, "OK");
+-						}
+-						else {
+-							/* Not expected - send an error message. */
+-							gdb_cris_strcpy (remcomOutBuffer, error_message[E01]);
+-						}
+-					}
+-					else {
+-						/* Not expected - send an error message. */
+-						gdb_cris_strcpy (remcomOutBuffer, error_message[E01]);
+-					}
+-				}
+-				break;
+-				
+-			case 'q':
+-			case 'Q':
+-				/* Query of general interest. qXXXX
+-				   Set general value XXXX. QXXXX=yyyy */
+-				{
+-					int pos;
+-					int nextpos;
+-					int thread_id;
+-					
+-					switch (remcomInBuffer[1]) {
+-						case 'C':
+-							/* Identify the remote current thread. */
+-							gdb_cris_strcpy (&remcomOutBuffer[0], "QC");
+-							remcomOutBuffer[2] = hex_asc_hi(current_thread_c);
+-							remcomOutBuffer[3] = hex_asc_lo(current_thread_c);
+-							remcomOutBuffer[4] = '\0';
+-							break;
+-						case 'L':
+-							gdb_cris_strcpy (&remcomOutBuffer[0], "QM");
+-							/* Reply with number of threads. */
+-							if (os_is_started()) {
+-								remcomOutBuffer[2] = hex_asc_hi(number_of_tasks);
+-								remcomOutBuffer[3] = hex_asc_lo(number_of_tasks);
+-							}
+-							else {
+-								remcomOutBuffer[2] = hex_asc_hi(0);
+-								remcomOutBuffer[3] = hex_asc_lo(1);
+-							}
+-							/* Done with the reply. */
+-							remcomOutBuffer[4] = hex_asc_lo(1);
+-							pos = 5;
+-							/* Expects the argument thread id. */
+-							for (; pos < (5 + HEXCHARS_IN_THREAD_ID); pos++)
+-								remcomOutBuffer[pos] = remcomInBuffer[pos];
+-							/* Reply with the thread identifiers. */
+-							if (os_is_started()) {
+-								/* Store the thread identifiers of all tasks. */
+-								for (thread_id = 0; thread_id < number_of_tasks; thread_id++) {
+-									nextpos = pos + HEXCHARS_IN_THREAD_ID - 1;
+-									for (; pos < nextpos; pos ++)
+-										remcomOutBuffer[pos] = hex_asc_lo(0);
+-									remcomOutBuffer[pos++] = hex_asc_lo(thread_id);
+-								}
+-							}
+-							else {
+-								/* Store the thread identifier of the boot task. */
+-								nextpos = pos + HEXCHARS_IN_THREAD_ID - 1;
+-								for (; pos < nextpos; pos ++)
+-									remcomOutBuffer[pos] = hex_asc_lo(0);
+-								remcomOutBuffer[pos++] = hex_asc_lo(current_thread_c);
+-							}
+-							remcomOutBuffer[pos] = '\0';
+-							break;
+-						default:
+-							/* Not supported: "" */
+-							/* Request information about section offsets: qOffsets. */
+-							remcomOutBuffer[0] = 0;
+-							break;
+-					}
+-				}
+-				break;
+-#endif /* PROCESS_SUPPORT */
+ 				
+ 			default:
+ 				/* The stub should ignore other request and send an empty
+-- 
+1.7.0.4
 
-
-> + * @gfp: how to do memory allocations (if necessary).
-> + *
-> + * Caller must ensure we don't call this with other virtqueue operations
-> + * at the same time (except where noted), and that a successful call is
-> + * followed by one or more calls to virtqueue_add_sg, and finally a call
-> + * to virtqueue_end_buf.
-> + *
-> + * Returns zero or a negative error (ie. ENOSPC).
-> + */
-> +int virtqueue_start_buf(struct virtqueue *_vq,
-> +			void *data,
-> +			unsigned int nents,
-> +			unsigned int nsg,
-> +			gfp_t gfp)
-> +{
-> +	struct vring_virtqueue *vq = to_vvq(_vq);
-> +	struct vring_desc *desc = NULL;
-> +	int head;
-> +	int ret = -ENOMEM;
-> +
-> +	START_USE(vq);
-> +
-> +	BUG_ON(data == NULL);
-> +
-> +#ifdef DEBUG
-> +	{
-> +		ktime_t now = ktime_get();
-> +
-> +		/* No kick or get, with .1 second between?  Warn. */
-> +		if (vq->last_add_time_valid)
-> +			WARN_ON(ktime_to_ms(ktime_sub(now, vq->last_add_time))
-> +					    > 100);
-> +		vq->last_add_time = now;
-> +		vq->last_add_time_valid = true;
-> +	}
-> +#endif
-> +
-> +	BUG_ON(nents < nsg);
-> +	BUG_ON(nsg == 0);
-> +
-> +	/*
-> +	 * If the host supports indirect descriptor tables, and there is
-> +	 * no space for direct buffers or there are multi-item scatterlists,
-> +	 * go indirect.
-> +	 */
-> +	head = vq->free_head;
-> +	if (vq->indirect && (nents > nsg || vq->vq.num_free < nents)) {
-> +		if (vq->vq.num_free == 0)
-> +			goto no_space;
-> +
-> +		desc = kmalloc(nents * sizeof(struct vring_desc), gfp);
-> +		if (!desc)
-> +			goto error;
-> +
-> +		/* We're about to use a buffer */
-> +		vq->vq.num_free--;
-> +
-> +		/* Use a single buffer which doesn't continue */
-> +		vq->vring.desc[head].flags = VRING_DESC_F_INDIRECT;
-> +		vq->vring.desc[head].addr = virt_to_phys(desc);
-> +		vq->vring.desc[head].len = nents * sizeof(struct vring_desc);
-> +
-> +		/* Update free pointer */
-> +		vq->free_head = vq->vring.desc[head].next;
-> +	}
-> +
-> +	/* Set token. */
-> +	vq->data[head] = data;
-> +
-> +	pr_debug("Started buffer head %i for %p\n", head, vq);
-> +
-> +	vq->indirect_base = desc;
-> +	vq->tail = NULL;
-> +	vq->head = head;
-> +	return 0;
-> +
-> +no_space:
-> +	ret = -ENOSPC;
-> +error:
-> +	pr_debug("Can't add buf (%d) - nents = %i, avail = %i\n",
-> +		 ret, nents, vq->vq.num_free);
-> +	END_USE(vq);
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(virtqueue_start_buf);
-> +
-> +/**
-> + * virtqueue_add_sg - add sglist to buffer being built
-> + * @_vq: the virtqueue for which the buffer is being built
-> + * @sgl: the description of the buffer(s).
-> + * @nents: the number of items to process in sgl
-> + * @dir: whether the sgl is read or written (DMA_TO_DEVICE/DMA_FROM_DEVICE only)
-> + *
-> + * Note that, unlike virtqueue_add_buf, this function follows chained
-> + * scatterlists, and stops before the @nents-th item if a scatterlist item
-> + * has a marker.
-> + *
-> + * Caller must ensure we don't call this with other virtqueue operations
-> + * at the same time (except where noted).
-
-Hmm so if you want to add in and out, need separate calls?
-in_num/out_num would be nicer?
-
-
-> + */
-> +void virtqueue_add_sg(struct virtqueue *_vq,
-> +		      struct scatterlist sgl[],
-> +		      unsigned int nents,
-> +		      enum dma_data_direction dir)
-> +{
-> +	struct vring_virtqueue *vq = to_vvq(_vq);
-> +	unsigned int i, n;
-> +	struct scatterlist *sg;
-> +	struct vring_desc *tail;
-> +	u32 flags;
-> +
-> +#ifdef DEBUG
-> +	BUG_ON(!vq->in_use);
-> +#endif
-> +
-> +	BUG_ON(dir != DMA_FROM_DEVICE && dir != DMA_TO_DEVICE);
-> +	BUG_ON(nents == 0);
-> +
-> +	flags = dir == DMA_FROM_DEVICE ? VRING_DESC_F_WRITE : 0;
-> +	flags |= VRING_DESC_F_NEXT;
-> +
-> +	/*
-> +	 * If using indirect descriptor tables, fill in the buffers
-> +	 * at vq->indirect_base.
-> +	 */
-> +	if (vq->indirect_base) {
-> +		i = 0;
-> +		if (likely(vq->tail))
-> +			i = vq->tail - vq->indirect_base + 1;
-> +
-> +		for_each_sg(sgl, sg, nents, n) {
-> +			tail = &vq->indirect_base[i];
-> +			tail->flags = flags;
-> +			tail->addr = sg_phys(sg);
-> +			tail->len = sg->length;
-> +			tail->next = ++i;
-> +		}
-> +	} else {
-> +		BUG_ON(vq->vq.num_free < nents);
-> +
-> +		i = vq->free_head;
-> +		for_each_sg(sgl, sg, nents, n) {
-> +			tail = &vq->vring.desc[i];
-> +			tail->flags = flags;
-> +			tail->addr = sg_phys(sg);
-> +			tail->len = sg->length;
-> +			i = tail->next;
-> +			vq->vq.num_free--;
-> +		}
-> +
-> +		vq->free_head = i;
-> +	}
-> +	vq->tail = tail;
-> +}
-> +EXPORT_SYMBOL_GPL(virtqueue_add_sg);
-> +
-> +/**
-> + * virtqueue_end_buf - expose buffer to other end
-> + * @_vq: the virtqueue for which the buffer was built
-> + *
-> + * Caller must ensure we don't call this with other virtqueue operations
-> + * at the same time (except where noted).
-> + */
-> +void virtqueue_end_buf(struct virtqueue *_vq)
-> +{
-> +	struct vring_virtqueue *vq = to_vvq(_vq);
-> +	unsigned int avail;
-> +	int head = vq->head;
-> +	struct vring_desc *tail = vq->tail;
-> +
-> +#ifdef DEBUG
-> +	BUG_ON(!vq->in_use);
-> +#endif
-> +	BUG_ON(tail == NULL);
-> +
-> +	/* The last one does not have the next flag set.  */
-> +	tail->flags &= ~VRING_DESC_F_NEXT;
-> +
-> +	/*
-> +	 * Put entry in available array.  Descriptors and available array
-> +	 * need to be set before we expose the new available array entries.
-> +	 */
-> +	avail = vq->vring.avail->idx & (vq->vring.num-1);
-> +	vq->vring.avail->ring[avail] = head;
-> +	virtio_wmb(vq);
-> +
-> +	vq->vring.avail->idx++;
-> +	vq->num_added++;
-> +
-> +	/*
-> +	 * This is very unlikely, but theoretically possible.  Kick
-> +	 * just in case.
-> +	 */
-> +	if (unlikely(vq->num_added == (1 << 16) - 1))
-> +		virtqueue_kick(&vq->vq);
-> +
-> +	pr_debug("Added buffer head %i to %p\n", head, vq);
-> +	END_USE(vq);
-> +}
-> +EXPORT_SYMBOL_GPL(virtqueue_end_buf);
-> +
->  static inline bool more_used(const struct vring_virtqueue *vq)
->  {
->  	return vq->last_used_idx != vq->vring.used->idx;
-> diff --git a/include/linux/virtio.h b/include/linux/virtio.h
-> index cf8adb1..43d6bc3 100644
-> --- a/include/linux/virtio.h
-> +++ b/include/linux/virtio.h
-> @@ -7,6 +7,7 @@
->  #include <linux/spinlock.h>
->  #include <linux/device.h>
->  #include <linux/mod_devicetable.h>
-> +#include <linux/dma-direction.h>
->  #include <linux/gfp.h>
->  
->  /**
-> @@ -40,6 +41,19 @@ int virtqueue_add_buf(struct virtqueue *vq,
->  		      void *data,
->  		      gfp_t gfp);
->  
-> +int virtqueue_start_buf(struct virtqueue *_vq,
-> +			void *data,
-> +			unsigned int nents,
-> +			unsigned int nsg,
-> +			gfp_t gfp);
-> +
-> +void virtqueue_add_sg(struct virtqueue *_vq,
-> +		      struct scatterlist sgl[],
-> +		      unsigned int nents,
-> +		      enum dma_data_direction dir);
-> +
-> +void virtqueue_end_buf(struct virtqueue *_vq);
-> +
->  void virtqueue_kick(struct virtqueue *vq);
->  
->  bool virtqueue_kick_prepare(struct virtqueue *vq);
-> -- 
-> 1.7.1
-> 
