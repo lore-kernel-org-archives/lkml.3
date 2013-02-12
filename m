@@ -1,70 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933599Ab3BLTyE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 14:54:04 -0500
-Received: from mga11.intel.com ([192.55.52.93]:46146 "EHLO mga11.intel.com"
+	id S933654Ab3BLTyZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 14:54:25 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:39704 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933153Ab3BLTyC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 14:54:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,652,1355126400"; 
-   d="scan'208";a="290227366"
-Message-ID: <511A9DD9.7090805@linux.intel.com>
-Date: Tue, 12 Feb 2013 11:54:01 -0800
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S933153Ab3BLTyU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 14:54:20 -0500
+Date: Tue, 12 Feb 2013 14:53:58 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ying Han <yinghan@google.com>, Tejun Heo <htejun@gmail.com>,
+        Glauber Costa <glommer@parallels.com>, Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH v3 4/7] memcg: remove memcg from the reclaim iterators
+Message-ID: <20130212195358.GE25235@cmpxchg.org>
+References: <20130211192929.GB29000@dhcp22.suse.cz>
+ <20130211195824.GB15951@cmpxchg.org>
+ <20130211212756.GC29000@dhcp22.suse.cz>
+ <20130211223943.GC15951@cmpxchg.org>
+ <20130212095419.GB4863@dhcp22.suse.cz>
+ <20130212151002.GD15951@cmpxchg.org>
+ <20130212154330.GG4863@dhcp22.suse.cz>
+ <20130212161051.GQ2666@linux.vnet.ibm.com>
+ <20130212172526.GC25235@cmpxchg.org>
+ <20130212183148.GW2666@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Josh Poimboeuf <jpoimboe@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>
-Subject: Re: [RFC][PATCH] tracing/syscalls: Have ia32 compat syscalls show
- raw format
-References: <1360692087.21867.42.camel@gandalf.local.home>  <511A85E8.7030303@linux.intel.com> <1360694555.21867.69.camel@gandalf.local.home> <511A9A64.3040108@linux.intel.com>
-In-Reply-To: <511A9A64.3040108@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130212183148.GW2666@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/12/2013 11:39 AM, H. Peter Anvin wrote:
-> On 02/12/2013 10:42 AM, Steven Rostedt wrote:
->>
->> And currently the output is just plain broken. This isn't a hack. You
->> should have seen my first attempt. Now THAT was a hack! My first attempt
->> was extremely intrusive, and required a lot of arch changes. But then I
->> realized it was too much, and found that I could do the same thing
->> pretty much completely contained within just the tracing code itself.
->>
->> I know you feel that the syscall tracing is broken/hack/whatever. But it
->> exists as of today, and yes, there's lots of users out there depending
->> on it.
->>
+On Tue, Feb 12, 2013 at 10:31:48AM -0800, Paul E. McKenney wrote:
+> On Tue, Feb 12, 2013 at 12:25:26PM -0500, Johannes Weiner wrote:
+> > On Tue, Feb 12, 2013 at 08:10:51AM -0800, Paul E. McKenney wrote:
+> > > On Tue, Feb 12, 2013 at 04:43:30PM +0100, Michal Hocko wrote:
+> > > > On Tue 12-02-13 10:10:02, Johannes Weiner wrote:
+> > > > > On Tue, Feb 12, 2013 at 10:54:19AM +0100, Michal Hocko wrote:
+> > > > > > On Mon 11-02-13 17:39:43, Johannes Weiner wrote:
+> > > > > > > On Mon, Feb 11, 2013 at 10:27:56PM +0100, Michal Hocko wrote:
+> > > > > > > > On Mon 11-02-13 14:58:24, Johannes Weiner wrote:
+> > > > > > > > > That way, if the dead count gives the go-ahead, you KNOW that the
+> > > > > > > > > position cache is valid, because it has been updated first.
+> > > > > > > > 
+> > > > > > > > OK, you are right. We can live without css_tryget because dead_count is
+> > > > > > > > either OK which means that css would be alive at least this rcu period
+> > > > > > > > (and RCU walk would be safe as well) or it is incremented which means
+> > > > > > > > that we have started css_offline already and then css is dead already.
+> > > > > > > > So css_tryget can be dropped.
+> > > > > > > 
+> > > > > > > Not quite :)
+> > > > > > > 
+> > > > > > > The dead_count check is for completed destructions,
+> > > > > > 
+> > > > > > Not quite :P. dead_count is incremented in css_offline callback which is
+> > > > > > called before the cgroup core releases its last reference and unlinks
+> > > > > > the group from the siblinks. css_tryget would already fail at this stage
+> > > > > > because CSS_DEACT_BIAS is in place at that time but this doesn't break
+> > > > > > RCU walk. So I think we are safe even without css_get.
+> > > > > 
+> > > > > But you drop the RCU lock before you return.
+> > > > >
+> > > > > dead_count IS incremented for every destruction, but it's not reliable
+> > > > > for concurrent ones, is what I meant.  Again, if there is a dead_count
+> > > > > mismatch, your pointer might be dangling, easy case.  However, even if
+> > > > > there is no mismatch, you could still race with a destruction that has
+> > > > > marked the object dead, and then frees it once you drop the RCU lock,
+> > > > > so you need try_get() to check if the object is dead, or you could
+> > > > > return a pointer to freed or soon to be freed memory.
+> > > > 
+> > > > Wait a moment. But what prevents from the following race?
+> > > > 
+> > > > rcu_read_lock()
+> > > > 						mem_cgroup_css_offline(memcg)
+> > > > 						root->dead_count++
+> > > > iter->last_dead_count = root->dead_count
+> > > > iter->last_visited = memcg
+> > > > 						// final
+> > > > 						css_put(memcg);
+> > > > // last_visited is still valid
+> > > > rcu_read_unlock()
+> > > > [...]
+> > > > // next iteration
+> > > > rcu_read_lock()
+> > > > iter->last_dead_count == root->dead_count
+> > > > // KABOOM
+> > > > 
+> > > > The race window between dead_count++ and css_put is quite big but that
+> > > > is not important because that css_put can happen anytime before we start
+> > > > the next iteration and take rcu_read_lock.
+> > > 
+> > > The usual approach is to make sure that there is a grace period (either
+> > > synchronize_rcu() or call_rcu()) between the time that the data is
+> > > made inaccessible to readers (this would be mem_cgroup_css_offline()?)
+> > > and the time it is freed (css_put(), correct?).
+> > 
+> > Absolutely!  And there is a synchronize_rcu() in between those two
+> > operations.
+> > 
+> > However, we want to keep a weak reference to the cgroup after we drop
+> > the rcu read-side lock, so rcu alone is not enough for us to guarantee
+> > object life time.  We still have to carefully detect any concurrent
+> > offlinings in order to validate the weak reference next time around.
 > 
-> I am getting extremely frustrated with this cycle:
+> That would make things more interesting.  ;-)
 > 
-> 1. "We should have done <X> but we did <Y> because <X> was too
->     hard/required arch changes/..."
-> 2. "Well, <Y> is broken, but people rely on it.  We should have done
->     <X> but now it is too hard/breaks legacy/... so let's do <Z>..."
-> 3. Lather, rinse, repeat.
-> 
-> The whole system with trace metadata seems to be broken at the core,
-> *exactly* because it intercepts at a different place than the one which
-> has a well-defined ABI and every hack, kluge and patch which doesn't fix
-> that fundamental design error will just make it worse and just kicks the
-> can further down the road.
-> 
+> Exactly who or what holds the weak reference?  And the idea is that if
+> you attempt to use the weak reference beforehand, the css_put() does not
+> actually free it, but if you attempt to use it afterwards, you get some
+> sort of failure indication?
 
-As to why I care: I care about the number of ways we present ABIs to
-userspace.  The current tracing code takes the kernel internal
-implementation and makes it an ABI -- that ties the hands of kernel
-developers forever, because we can't know what we break if we redesign it.
+Yes, exactly.  We are using a seqlock-style cookie comparison to see
+if any objects in the pool of objects that we may point to was
+destroyed.  We are having trouble to agree on how to safely read the
+counter :-)
 
-	-hpa
+Long version:
 
+It's an iterator over a hierarchy of cgroups, but page reclaim may
+stop iteration at will and might not come back for an indefinite
+amount of time (until memory pressure triggers reclaim again).  So we
+want to allow cgroups to be destroyed while one of the iterators may
+still pointing at it (we have iterators per-node, per-zone, per
+reclaim priority level, that's why it's not feasible to invalidate
+them pro-actively upon cgroup destruction).
 
+The idea is that we have a counter that counts cgroup destructions in
+each cgroup hierarchy and we remember a snapshot of that counter at
+the time we remember the iterator position.  If any group in that
+group's hierarchy gets killed before we come back to the iterator, the
+counter mismatches.  Easy.  If any group is getting killed
+concurrently, the counter might match our cookie, but the object could
+be marked dead already, while rcu prevents it from being freed.  The
+remaining worry is/was that we have two reads of the destruction
+counter: one when validating the weak reference, another one when
+updating the iterator.  If a destruction starts in between those two,
+and modifies the counter, we would miss that destruction and the
+object that is now weakly referenced could get freed while the
+corresponding snapshot matches the latest value of the destruction
+counter.  Michal's idea was to hold off the destruction counter inc
+between those reads with synchronize_rcu().  My idea was to simply
+read the counter only once and use that same value to both check and
+update the iterator with.  That should catch this type of race
+condition and save the atomic & the extra synchronize_rcu().  At least
+I fail to see the downside of reading it only once:
+
+iteration:
+rcu_read_lock()
+dead_count = atomic_read(&hierarchy->dead_count)
+smp_rmb()
+previous = iterator->position
+if (iterator->dead_count != dead_count)
+   /* A cgroup in our hierarchy was killed, pointer might be dangling */
+   don't use iterator
+if (!tryget(&previous))
+   /* The cgroup is marked dead, don't use it */
+   don't use iterator
+next = find_next_and_tryget(hierarchy, &previous)
+/* what happens if destruction of next starts NOW? */
+css_put(previous)
+iterator->position = next
+smp_wmb()
+iterator->dead_count = dead_count /* my suggestion, instead of a second atomic_read() */
+rcu_read_unlock()
+return next /* caller drops ref eventually, iterator->cgroup becomes weak */
+
+destruction:
+bias(cgroup->refcount) /* disables future tryget */
+//synchronize_rcu() /* Michal's suggestion */
+atomic_inc(&cgroup->hierarchy->dead_count)
+synchronize_rcu()
+free(cgroup)
