@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759060Ab3BLUsA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:48:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53970 "EHLO
+	id S1758510Ab3BLUlr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 15:41:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53941 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757458Ab3BLUls (ORCPT
+	with ESMTP id S1757458Ab3BLUlp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:41:48 -0500
+	Tue, 12 Feb 2013 15:41:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, Cong Wang <amwang@redhat.com>
-Subject: [ 19/36] pktgen: correctly handle failures when adding a device
-Date: Tue, 12 Feb 2013 12:41:13 -0800
-Message-Id: <20130212203859.574763810@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Tilman Schmidt <tilman@imap.cc>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 15/36] isdn/gigaset: fix zero size border case in debug dump
+Date: Tue, 12 Feb 2013 12:41:09 -0800
+Message-Id: <20130212203859.111143418@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203857.305594226@linuxfoundation.org>
 References: <20130212203857.305594226@linuxfoundation.org>
@@ -27,56 +29,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Cong Wang <amwang@redhat.com>
+From: Tilman Schmidt <tilman@imap.cc>
 
-[ Upstream commit 604dfd6efc9b79bce432f2394791708d8e8f6efc ]
+[ Upstream commit d721a1752ba544df8d7d36959038b26bc92bdf80 ]
 
-The return value of pktgen_add_device() is not checked, so
-even if we fail to add some device, for example, non-exist one,
-we still see "OK:...". This patch fixes it.
+If subtracting 12 from l leaves zero we'd do a zero size allocation,
+leading to an oops later when we try to set the NUL terminator.
 
-After this patch, I got:
-
-	# echo "add_device non-exist" > /proc/net/pktgen/kpktgend_0
-	-bash: echo: write error: No such device
-	# cat /proc/net/pktgen/kpktgend_0
-	Running:
-	Stopped:
-	Result: ERROR: can not add device non-exist
-	# echo "add_device eth0" > /proc/net/pktgen/kpktgend_0
-	# cat /proc/net/pktgen/kpktgend_0
-	Running:
-	Stopped: eth0
-	Result: OK: add_device=eth0
-
-(Candidate for -stable)
-
-Cc: David S. Miller <davem@davemloft.net>
-Signed-off-by: Cong Wang <amwang@redhat.com>
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Tilman Schmidt <tilman@imap.cc>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/pktgen.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/isdn/gigaset/capi.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/net/core/pktgen.c
-+++ b/net/core/pktgen.c
-@@ -1802,10 +1802,13 @@ static ssize_t pktgen_thread_write(struc
- 			return -EFAULT;
- 		i += len;
- 		mutex_lock(&pktgen_thread_lock);
--		pktgen_add_device(t, f);
-+		ret = pktgen_add_device(t, f);
- 		mutex_unlock(&pktgen_thread_lock);
--		ret = count;
--		sprintf(pg_result, "OK: add_device=%s", f);
-+		if (!ret) {
-+			ret = count;
-+			sprintf(pg_result, "OK: add_device=%s", f);
-+		} else
-+			sprintf(pg_result, "ERROR: can not add device %s", f);
- 		goto out;
- 	}
- 
+--- a/drivers/isdn/gigaset/capi.c
++++ b/drivers/isdn/gigaset/capi.c
+@@ -264,6 +264,8 @@ static inline void dump_rawmsg(enum debu
+ 		CAPIMSG_APPID(data), CAPIMSG_MSGID(data), l,
+ 		CAPIMSG_CONTROL(data));
+ 	l -= 12;
++	if (l <= 0)
++		return;
+ 	dbgline = kmalloc(3 * l, GFP_ATOMIC);
+ 	if (!dbgline)
+ 		return;
 
 
