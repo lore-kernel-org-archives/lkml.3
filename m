@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754885Ab3BLUgD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:36:03 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53544 "EHLO
+	id S1759447Ab3BLVBP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 16:01:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53565 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754548Ab3BLUgA (ORCPT
+	with ESMTP id S1754802Ab3BLUgD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:36:00 -0500
+	Tue, 12 Feb 2013 15:36:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Or Gerlitz <ogerlitz@mellanox.com>, Yan Burman <yanb@mellanox.com>,
-        Amir Vadai <amirv@mellanox.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jan Beulich <JBeulich@suse.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 25/61] net/mlx4_en: Fix bridged vSwitch configuration for non SRIOV mode
-Date: Tue, 12 Feb 2013 12:34:45 -0800
-Message-Id: <20130212203421.770224578@linuxfoundation.org>
+Subject: [ 39/61] xen/netback: shutdown the ring if it contains garbage.
+Date: Tue, 12 Feb 2013 12:34:59 -0800
+Message-Id: <20130212203423.355187191@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203417.890993903@linuxfoundation.org>
 References: <20130212203417.890993903@linuxfoundation.org>
@@ -29,50 +30,249 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Yan Burman <yanb@mellanox.com>
+From: Ian Campbell <Ian.Campbell@citrix.com>
 
-[ Upstream commit 213815a1e6ae70b9648483b110bc5081795f99e8 ]
+[ Upstream commit 48856286b64e4b66ec62b94e504d0b29c1ade664 ]
 
-Commit 5b4c4d36860e "mlx4_en: Allow communication between functions on
-same host" introduced a regression under which a bridge acting as vSwitch
-whose uplink is an mlx4 Ethernet device become non-operative in native
-(non sriov) mode. This happens since broadcast ARP requests sent by VMs
-were loopback-ed by the HW and hence the bridge learned VM source MACs
-on both the VM and the uplink ports.
+A buggy or malicious frontend should not be able to confuse netback.
+If we spot anything which is not as it should be then shutdown the
+device and don't try to continue with the ring in a potentially
+hostile state. Well behaved and non-hostile frontends will not be
+penalised.
 
-The fix is to place the DMAC in the send WQE only under SRIOV/eSwitch
-configuration or when the device is in selftest.
+As well as making the existing checks for such errors fatal also add a
+new check that ensures that there isn't an insane number of requests
+on the ring (i.e. more than would fit in the ring). If the ring
+contains garbage then previously is was possible to loop over this
+insane number, getting an error each time and therefore not generating
+any more pending requests and therefore not exiting the loop in
+xen_netbk_tx_build_gops for an externded period.
 
-Reviewed-by: Or Gerlitz <ogerlitz@mellanox.com>
-Signed-off-by: Yan Burman <yanb@mellanox.com>
-Signed-off-by: Amir Vadai <amirv@mellanox.com>
+Also turn various netdev_dbg calls which no precipitate a fatal error
+into netdev_err, they are rate limited because the device is shutdown
+afterwards.
+
+This fixes at least one known DoS/softlockup of the backend domain.
+
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Acked-by: Jan Beulich <JBeulich@suse.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/mellanox/mlx4/en_tx.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ drivers/net/xen-netback/common.h    |    3 +
+ drivers/net/xen-netback/interface.c |   23 ++++++++-----
+ drivers/net/xen-netback/netback.c   |   62 ++++++++++++++++++++++++++----------
+ 3 files changed, 62 insertions(+), 26 deletions(-)
 
---- a/drivers/net/ethernet/mellanox/mlx4/en_tx.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/en_tx.c
-@@ -629,10 +629,15 @@ netdev_tx_t mlx4_en_xmit(struct sk_buff
- 		ring->tx_csum++;
+--- a/drivers/net/xen-netback/common.h
++++ b/drivers/net/xen-netback/common.h
+@@ -151,6 +151,9 @@ void xen_netbk_queue_tx_skb(struct xenvi
+ /* Notify xenvif that ring now has space to send an skb to the frontend */
+ void xenvif_notify_tx_completion(struct xenvif *vif);
+ 
++/* Prevent the device from generating any further traffic. */
++void xenvif_carrier_off(struct xenvif *vif);
++
+ /* Returns number of ring slots required to send an skb to the frontend */
+ unsigned int xen_netbk_count_skb_slots(struct xenvif *vif, struct sk_buff *skb);
+ 
+--- a/drivers/net/xen-netback/interface.c
++++ b/drivers/net/xen-netback/interface.c
+@@ -343,17 +343,22 @@ err:
+ 	return err;
+ }
+ 
+-void xenvif_disconnect(struct xenvif *vif)
++void xenvif_carrier_off(struct xenvif *vif)
+ {
+ 	struct net_device *dev = vif->dev;
+-	if (netif_carrier_ok(dev)) {
+-		rtnl_lock();
+-		netif_carrier_off(dev); /* discard queued packets */
+-		if (netif_running(dev))
+-			xenvif_down(vif);
+-		rtnl_unlock();
+-		xenvif_put(vif);
+-	}
++
++	rtnl_lock();
++	netif_carrier_off(dev); /* discard queued packets */
++	if (netif_running(dev))
++		xenvif_down(vif);
++	rtnl_unlock();
++	xenvif_put(vif);
++}
++
++void xenvif_disconnect(struct xenvif *vif)
++{
++	if (netif_carrier_ok(vif->dev))
++		xenvif_carrier_off(vif);
+ 
+ 	atomic_dec(&vif->refcnt);
+ 	wait_event(vif->waiting_to_free, atomic_read(&vif->refcnt) == 0);
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -888,6 +888,13 @@ static void netbk_tx_err(struct xenvif *
+ 	xenvif_put(vif);
+ }
+ 
++static void netbk_fatal_tx_err(struct xenvif *vif)
++{
++	netdev_err(vif->dev, "fatal error; disabling device\n");
++	xenvif_carrier_off(vif);
++	xenvif_put(vif);
++}
++
+ static int netbk_count_requests(struct xenvif *vif,
+ 				struct xen_netif_tx_request *first,
+ 				struct xen_netif_tx_request *txp,
+@@ -901,19 +908,22 @@ static int netbk_count_requests(struct x
+ 
+ 	do {
+ 		if (frags >= work_to_do) {
+-			netdev_dbg(vif->dev, "Need more frags\n");
++			netdev_err(vif->dev, "Need more frags\n");
++			netbk_fatal_tx_err(vif);
+ 			return -frags;
+ 		}
+ 
+ 		if (unlikely(frags >= MAX_SKB_FRAGS)) {
+-			netdev_dbg(vif->dev, "Too many frags\n");
++			netdev_err(vif->dev, "Too many frags\n");
++			netbk_fatal_tx_err(vif);
+ 			return -frags;
+ 		}
+ 
+ 		memcpy(txp, RING_GET_REQUEST(&vif->tx, cons + frags),
+ 		       sizeof(*txp));
+ 		if (txp->size > first->size) {
+-			netdev_dbg(vif->dev, "Frags galore\n");
++			netdev_err(vif->dev, "Frag is bigger than frame.\n");
++			netbk_fatal_tx_err(vif);
+ 			return -frags;
+ 		}
+ 
+@@ -921,8 +931,9 @@ static int netbk_count_requests(struct x
+ 		frags++;
+ 
+ 		if (unlikely((txp->offset + txp->size) > PAGE_SIZE)) {
+-			netdev_dbg(vif->dev, "txp->offset: %x, size: %u\n",
++			netdev_err(vif->dev, "txp->offset: %x, size: %u\n",
+ 				 txp->offset, txp->size);
++			netbk_fatal_tx_err(vif);
+ 			return -frags;
+ 		}
+ 	} while ((txp++)->flags & XEN_NETTXF_more_data);
+@@ -1095,7 +1106,8 @@ static int xen_netbk_get_extras(struct x
+ 
+ 	do {
+ 		if (unlikely(work_to_do-- <= 0)) {
+-			netdev_dbg(vif->dev, "Missing extra info\n");
++			netdev_err(vif->dev, "Missing extra info\n");
++			netbk_fatal_tx_err(vif);
+ 			return -EBADR;
+ 		}
+ 
+@@ -1104,8 +1116,9 @@ static int xen_netbk_get_extras(struct x
+ 		if (unlikely(!extra.type ||
+ 			     extra.type >= XEN_NETIF_EXTRA_TYPE_MAX)) {
+ 			vif->tx.req_cons = ++cons;
+-			netdev_dbg(vif->dev,
++			netdev_err(vif->dev,
+ 				   "Invalid extra type: %d\n", extra.type);
++			netbk_fatal_tx_err(vif);
+ 			return -EINVAL;
+ 		}
+ 
+@@ -1121,13 +1134,15 @@ static int netbk_set_skb_gso(struct xenv
+ 			     struct xen_netif_extra_info *gso)
+ {
+ 	if (!gso->u.gso.size) {
+-		netdev_dbg(vif->dev, "GSO size must not be zero.\n");
++		netdev_err(vif->dev, "GSO size must not be zero.\n");
++		netbk_fatal_tx_err(vif);
+ 		return -EINVAL;
  	}
  
--	/* Copy dst mac address to wqe */
--	ethh = (struct ethhdr *)skb->data;
--	tx_desc->ctrl.srcrb_flags16[0] = get_unaligned((__be16 *)ethh->h_dest);
--	tx_desc->ctrl.imm = get_unaligned((__be32 *)(ethh->h_dest + 2));
-+	if (mlx4_is_mfunc(mdev->dev) || priv->validate_loopback) {
-+		/* Copy dst mac address to wqe. This allows loopback in eSwitch,
-+		 * so that VFs and PF can communicate with each other
+ 	/* Currently only TCPv4 S.O. is supported. */
+ 	if (gso->u.gso.type != XEN_NETIF_GSO_TYPE_TCPV4) {
+-		netdev_dbg(vif->dev, "Bad GSO type %d.\n", gso->u.gso.type);
++		netdev_err(vif->dev, "Bad GSO type %d.\n", gso->u.gso.type);
++		netbk_fatal_tx_err(vif);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -1264,9 +1279,25 @@ static unsigned xen_netbk_tx_build_gops(
+ 
+ 		/* Get a netif from the list with work to do. */
+ 		vif = poll_net_schedule_list(netbk);
++		/* This can sometimes happen because the test of
++		 * list_empty(net_schedule_list) at the top of the
++		 * loop is unlocked.  Just go back and have another
++		 * look.
 +		 */
-+		ethh = (struct ethhdr *)skb->data;
-+		tx_desc->ctrl.srcrb_flags16[0] = get_unaligned((__be16 *)ethh->h_dest);
-+		tx_desc->ctrl.imm = get_unaligned((__be32 *)(ethh->h_dest + 2));
-+	}
+ 		if (!vif)
+ 			continue;
+ 
++		if (vif->tx.sring->req_prod - vif->tx.req_cons >
++		    XEN_NETIF_TX_RING_SIZE) {
++			netdev_err(vif->dev,
++				   "Impossible number of requests. "
++				   "req_prod %d, req_cons %d, size %ld\n",
++				   vif->tx.sring->req_prod, vif->tx.req_cons,
++				   XEN_NETIF_TX_RING_SIZE);
++			netbk_fatal_tx_err(vif);
++			continue;
++		}
 +
- 	/* Handle LSO (TSO) packets */
- 	if (lso_header_size) {
- 		/* Mark opcode as LSO */
+ 		RING_FINAL_CHECK_FOR_REQUESTS(&vif->tx, work_to_do);
+ 		if (!work_to_do) {
+ 			xenvif_put(vif);
+@@ -1294,17 +1325,14 @@ static unsigned xen_netbk_tx_build_gops(
+ 			work_to_do = xen_netbk_get_extras(vif, extras,
+ 							  work_to_do);
+ 			idx = vif->tx.req_cons;
+-			if (unlikely(work_to_do < 0)) {
+-				netbk_tx_err(vif, &txreq, idx);
++			if (unlikely(work_to_do < 0))
+ 				continue;
+-			}
+ 		}
+ 
+ 		ret = netbk_count_requests(vif, &txreq, txfrags, work_to_do);
+-		if (unlikely(ret < 0)) {
+-			netbk_tx_err(vif, &txreq, idx - ret);
++		if (unlikely(ret < 0))
+ 			continue;
+-		}
++
+ 		idx += ret;
+ 
+ 		if (unlikely(txreq.size < ETH_HLEN)) {
+@@ -1316,11 +1344,11 @@ static unsigned xen_netbk_tx_build_gops(
+ 
+ 		/* No crossing a page as the payload mustn't fragment. */
+ 		if (unlikely((txreq.offset + txreq.size) > PAGE_SIZE)) {
+-			netdev_dbg(vif->dev,
++			netdev_err(vif->dev,
+ 				   "txreq.offset: %x, size: %u, end: %lu\n",
+ 				   txreq.offset, txreq.size,
+ 				   (txreq.offset&~PAGE_MASK) + txreq.size);
+-			netbk_tx_err(vif, &txreq, idx);
++			netbk_fatal_tx_err(vif);
+ 			continue;
+ 		}
+ 
+@@ -1348,8 +1376,8 @@ static unsigned xen_netbk_tx_build_gops(
+ 			gso = &extras[XEN_NETIF_EXTRA_TYPE_GSO - 1];
+ 
+ 			if (netbk_set_skb_gso(vif, skb, gso)) {
++				/* Failure in netbk_set_skb_gso is fatal. */
+ 				kfree_skb(skb);
+-				netbk_tx_err(vif, &txreq, idx);
+ 				continue;
+ 			}
+ 		}
 
 
