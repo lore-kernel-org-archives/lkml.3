@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759418Ab3BLVCN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 16:02:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53549 "EHLO
+	id S1759323Ab3BLVCg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 16:02:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53542 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753769Ab3BLUgB (ORCPT
+	with ESMTP id S1754477Ab3BLUf7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:36:01 -0500
+	Tue, 12 Feb 2013 15:35:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Phil Sutter <phil.sutter@viprinet.com>,
-        Johann Baudy <johann.baudy@gnu-log.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
+        Jiri Pirko <jiri@resnulli.us>,
+        Marcelo Ricardo Leitner <mleitner@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 36/61] packet: fix leakage of tx_ring memory
-Date: Tue, 12 Feb 2013 12:34:56 -0800
-Message-Id: <20130212203423.026242027@linuxfoundation.org>
+Subject: [ 34/61] ipv6: do not create neighbor entries for local delivery
+Date: Tue, 12 Feb 2013 12:34:54 -0800
+Message-Id: <20130212203422.814059001@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203417.890993903@linuxfoundation.org>
 References: <20130212203417.890993903@linuxfoundation.org>
@@ -30,55 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Phil Sutter <phil.sutter@viprinet.com>
+From: Marcelo Ricardo Leitner <mleitner@redhat.com>
 
-[ Upstream commit 9665d5d62487e8e7b1f546c00e11107155384b9a ]
+[ Upstream commit bd30e947207e2ea0ff2c08f5b4a03025ddce48d3 ]
 
-When releasing a packet socket, the routine packet_set_ring() is reused
-to free rings instead of allocating them. But when calling it for the
-first time, it fills req->tp_block_nr with the value of rb->pg_vec_len
-which in the second invocation makes it bail out since req->tp_block_nr
-is greater zero but req->tp_block_size is zero.
+They will be created at output, if ever needed. This avoids creating
+empty neighbor entries when TPROXYing/Forwarding packets for addresses
+that are not even directly reachable.
 
-This patch solves the problem by passing a zeroed auto-variable to
-packet_set_ring() upon each invocation from packet_release().
+Note that IPv4 already handles it this way. No neighbor entries are
+created for local input.
 
-As far as I can tell, this issue exists even since 69e3c75 (net: TX_RING
-and packet mmap), i.e. the original inclusion of TX ring support into
-af_packet, but applies only to sockets with both RX and TX ring
-allocated, which is probably why this was unnoticed all the time.
+Tested by myself and customer.
 
-Signed-off-by: Phil Sutter <phil.sutter@viprinet.com>
-Cc: Johann Baudy <johann.baudy@gnu-log.net>
-Cc: Daniel Borkmann <dborkman@redhat.com>
-Acked-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: Jiri Pirko <jiri@resnulli.us>
+Signed-off-by: Marcelo Ricardo Leitner <mleitner@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/packet/af_packet.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ net/ipv6/route.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -2335,13 +2335,15 @@ static int packet_release(struct socket
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -872,7 +872,7 @@ restart:
+ 	dst_hold(&rt->dst);
+ 	read_unlock_bh(&table->tb6_lock);
  
- 	packet_flush_mclist(sk);
- 
--	memset(&req_u, 0, sizeof(req_u));
--
--	if (po->rx_ring.pg_vec)
-+	if (po->rx_ring.pg_vec) {
-+		memset(&req_u, 0, sizeof(req_u));
- 		packet_set_ring(sk, &req_u, 1, 0);
-+	}
- 
--	if (po->tx_ring.pg_vec)
-+	if (po->tx_ring.pg_vec) {
-+		memset(&req_u, 0, sizeof(req_u));
- 		packet_set_ring(sk, &req_u, 1, 1);
-+	}
- 
- 	fanout_release(sk);
- 
+-	if (!rt->n && !(rt->rt6i_flags & RTF_NONEXTHOP))
++	if (!rt->n && !(rt->rt6i_flags & (RTF_NONEXTHOP | RTF_LOCAL)))
+ 		nrt = rt6_alloc_cow(rt, &fl6->daddr, &fl6->saddr);
+ 	else if (!(rt->dst.flags & DST_HOST))
+ 		nrt = rt6_alloc_clone(rt, &fl6->daddr);
 
 
