@@ -1,122 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758817Ab3BLXQD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 18:16:03 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:40697 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756813Ab3BLXQB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 18:16:01 -0500
-Message-ID: <1360699536.3524.302.camel@falcor1.watson.ibm.com>
-Subject: Re: [PATCH 2/2] ima: Support appraise_type=imasig_optional
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 12 Feb 2013 15:05:36 -0500
-In-Reply-To: <20130212185203.GA29958@redhat.com>
-References: <1360613493-11969-1-git-send-email-vgoyal@redhat.com>
-	 <1360613493-11969-3-git-send-email-vgoyal@redhat.com>
-	 <1360620614.3524.223.camel@falcor1.watson.ibm.com>
-	 <20130212142636.GA23410@redhat.com>
-	 <1360689247.3524.275.camel@falcor1.watson.ibm.com>
-	 <20130212185203.GA29958@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+	id S1758908Ab3BLXU7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 18:20:59 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58182 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750895Ab3BLXU6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 18:20:58 -0500
+Message-ID: <511ACDFB.1050707@zytor.com>
+Date: Tue, 12 Feb 2013 15:19:23 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jamie Lokier <jamie@shareable.org>, ville.syrjala@linux.intel.com,
+        Borislav Petkov <bp@alien8.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "H.J. Lu" <hjl.tools@gmail.com>, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/mm] x86, mm: Redesign get_user with a __builtin_choose_expr
+ hack
+References: <511A8922.6050908@zytor.com> <tip-3578baaed4613a9fc09bab9f79f6ce2ac682e8a3@git.kernel.org> <CA+55aFzVSY6G3ZDy7YhwGd2k+OBtpDZaobw8awCeyZsaAqHDVw@mail.gmail.com>
+In-Reply-To: <CA+55aFzVSY6G3ZDy7YhwGd2k+OBtpDZaobw8awCeyZsaAqHDVw@mail.gmail.com>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13021223-2876-0000-0000-00000538706B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-02-12 at 13:52 -0500, Vivek Goyal wrote:
-> On Tue, Feb 12, 2013 at 12:14:07PM -0500, Mimi Zohar wrote:
+On 02/12/2013 03:06 PM, Linus Torvalds wrote:
+> So this looks clean, but I noticed something (that was true even of
+> the old 64-bit accesses)
 > 
-> [..]
-> > > > > --- a/security/integrity/ima/ima_appraise.c
-> > > > > +++ b/security/integrity/ima/ima_appraise.c
-> > > > > @@ -124,19 +124,26 @@ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
-> > > > >  	enum integrity_status status = INTEGRITY_UNKNOWN;
-> > > > >  	const char *op = "appraise_data";
-> > > > >  	char *cause = "unknown";
-> > > > > -	int rc;
-> > > > > +	int rc, audit_info = 0;
-> > > > > 
-> > > > >  	if (!ima_appraise)
-> > > > >  		return 0;
-> > > > > -	if (!inode->i_op->getxattr)
-> > > > > +	if (!inode->i_op->getxattr) {
-> > > > > +		/* getxattr not supported. file couldn't have been signed */
-> > > > > +		if (iint->flags & IMA_DIGSIG_OPTIONAL)
-> > > > > +			return INTEGRITY_PASS;
-> > > > >  		return INTEGRITY_UNKNOWN;
-> > > > > +	}
-> > > > > 
-> > > > 
-> > > > Please don't change the result of the appraisal like this.  A single
-> > > > change can be made towards the bottom of process_measurement().
-> > > 
-> > > I don't want to pass integrity in all cases of INTEGRITY_UNKNOWN. So
-> > > I can probably maintain a bool variable, say pass_appraisal, and set
-> > > that here and at the end of function, parse that variable and change
-> > > the status accordingly.
-> > 
-> > process_measurement() is the only caller of ima_appraise_measurement().
-> > Leave the results of ima_appraise_measurement() alone.  There's already
-> > code at the end of process_measurement() which decides what to return.
-> > Just modify it based on the appraisal results.
+> On Tue, Feb 12, 2013 at 12:55 PM, tip-bot for H. Peter Anvin
+> <hpa@linux.intel.com> wrote:
+>> +       register __inttype(*(ptr)) __val_gu asm("%edx");                \
 > 
-> Ok, I can do that. There is a small concern though. That is what to do
-> when rc = INTEGRITY_UKNOWN and IMA_DIGSIG_OPTIONAL flag is set.
+> How does gcc even alllow this?
 > 
-> ima_appraise_measurement() returns INTEGRITY_UKNOWN when file system
-> does not support xattrs or if security xattr is not enabled. In this
-> case it is desirable to allow access if IMA_DIGSIG_OPTIONAL flag is
-> set.
-
-Right, 'INTEGRITY_UNKNOWN' means that we can't reason, for whatever
-reason, about the integrity of the file.
-
-> But INTEGRITY_UNKNOWN is also also returned when integrity_digsig_verify()
-> fails and returns -EOPNOTSUPP. 
-
-In this case, it is Kconfig based. 
-
-> I feel that in this case it is not very appropriate to pass appraisal and
-> let executable run. If digital signatures are present but we can't verify
-> those (Say some algorithm is not supported in kernel). In that case I
-> think it makes sense to fail the signature. 
+> On x86-32, you cannot put a 64-bit value in %edx.
 > 
->                rc = integrity_digsig_verify(INTEGRITY_KEYRING_IMA,
->                                              xattr_value->digest, rc - 1,
->                                              iint->ima_xattr.digest,
->                                              IMA_DIGEST_SIZE);
->                 if (rc == -EOPNOTSUPP) {
->                         status = INTEGRITY_UNKNOWN;
+> Where do the upper bits go? It clearly cannot be %edx:%eax, since we
+> put the error value in %eax.
 > 
-> 
-> So how to handle this case.
-> 
-> I am wondering why do we reutrn INTEGRITY_UNKNOWN above and not
-> INTEGRITY_FAIL.
-
-We still can't reason about the integrity of the file.  For all we know,
-it could be a validly signed file, just verification wasn't enabled.
-
-> Will it make sense to fail signature in case of -EOPNOTSUPP.
->                rc = integrity_digsig_verify(INTEGRITY_KEYRING_IMA,
->                                              xattr_value->digest, rc - 1,
->                                              iint->ima_xattr.digest,
->                                              IMA_DIGEST_SIZE);
-> 		if (rc)
-> 			status = INTEGRITY_FAIL;
-> 		else
-> 			status = INTEGRITY_PASS;
-> 
+> So is the rule for x86-32 that naming "long long" register values
+> names the first register, and the high bits go into the next one (I
+> forget the crazy register numbering, I assume it's %ecx). Or what?
+> This should have a comment.
 > 
 
-Please don't.
+Yes, it goes into the next register in gcc's register numbering, which
+is %ecx.  This works with the register variable because the named
+register is treated as a starting point, whereas using "=d" is treated
+as a singleton register set.
 
-Mimi
+I'll add a comment.
+
+gcc's register numbering isn't all that crazy, incidentally: the only
+difference from the standard x86 register numbering is that %ecx and
+%edx is swapped, so that the standard %edx:%eax and %ebx:%ecx register
+pairs end up consecutive.  It isn't really gcc's fault that the x86
+register numbering doesn't match its (hard-coded!) register conventions...
+
+> Also, come to think of it, we have tried the "named register
+> variables" thing before, and it has resulted in problems with scope.
+> In particular, two variables within the same scope and the same
+> register have been problematic. And it *does* happen, when you have
+> things like
+> 
+>    /* copy_user */
+>    put_user(get_user(.., addr), addr2);
+> 
+> and then things go downhill.
+> 
+> Maybe we do not have these issues, but there are good reasons why
+> we've tried very hard on x86 to avoid named register variables.
+
+Yes, but there doesn't seem to be any other way to do this.  gcc won't
+even allow "=cd" even if we know the variable is 64 bits, even though
+"=A" is documented to be equivalent to "=da".
+
+I don't think we have any additional problem here,though.  If we are
+inside a scope with "%edx" as a named register variable *and* that
+variable is live at the point get_user() happens, then yes, we can and
+will have a problem, regardless if we use "=d" or a named register
+variable.  The only solution to that is to keep the named register
+variable live for as short time as possible.
+
+If we do run into trouble, we could introduce a second copy, thus
+reducing the lifespan of the named variable to the absolute minimum:
+
+	register __inttype(*(ptr)) __val_gu asm("%edx");
+	__inttype(*(ptr)) __val_gv;
+
+	asm volatile(...);
+
+	__val_gv = __val_gu;
+	(x) = (__typeof__(*(ptr))) __val_gv;
+
+That way if the evaluation of (x) as an lvalue somehow requires specific
+registers they don't collide.
+
+I would prefer if we could worry about that when we actually need to,
+though.  It will trigger a compile error if relevant, so it shouldn't
+cause any risk of silent corruption.
+
+> (I realize that they happen, and some other architectures don't even
+> have good support for naming registers any other way so they are way
+> more common there, so I probably worry needlessly, but it does worry
+> me).
+
+Let me know what you think.
+
+	-hpa
 
