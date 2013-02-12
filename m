@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759341Ab3BLU6m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:58:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53631 "EHLO
+	id S1759391Ab3BLU7A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 15:59:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53627 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755617Ab3BLUgM (ORCPT
+	with ESMTP id S1754164Ab3BLUgL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:36:12 -0500
+	Tue, 12 Feb 2013 15:36:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Borkmann <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 50/61] net: sctp: sctp_setsockopt_auth_key: use kzfree instead of kfree
-Date: Tue, 12 Feb 2013 12:35:10 -0800
-Message-Id: <20130212203424.676542580@linuxfoundation.org>
+        Neil Horman <nhorman@tuxdriver.com>,
+        Jamie Parsons <Jamie.Parsons@metaswitch.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Subject: [ 49/61] sctp: refactor sctp_outq_teardown to insure proper re-initalization
+Date: Tue, 12 Feb 2013 12:35:09 -0800
+Message-Id: <20130212203424.564075474@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203417.890993903@linuxfoundation.org>
 References: <20130212203417.890993903@linuxfoundation.org>
@@ -28,34 +30,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Neil Horman <nhorman@tuxdriver.com>
 
-[ Upstream commit 6ba542a291a5e558603ac51cda9bded347ce7627 ]
+[ Upstream commit 2f94aabd9f6c925d77aecb3ff020f1cc12ed8f86 ]
 
-In sctp_setsockopt_auth_key, we create a temporary copy of the user
-passed shared auth key for the endpoint or association and after
-internal setup, we free it right away. Since it's sensitive data, we
-should zero out the key before returning the memory back to the
-allocator. Thus, use kzfree instead of kfree, just as we do in
-sctp_auth_key_put().
+Jamie Parsons reported a problem recently, in which the re-initalization of an
+association (The duplicate init case), resulted in a loss of receive window
+space.  He tracked down the root cause to sctp_outq_teardown, which discarded
+all the data on an outq during a re-initalization of the corresponding
+association, but never reset the outq->outstanding_data field to zero.  I wrote,
+and he tested this fix, which does a proper full re-initalization of the outq,
+fixing this problem, and hopefully future proofing us from simmilar issues down
+the road.
 
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+Reported-by: Jamie Parsons <Jamie.Parsons@metaswitch.com>
+Tested-by: Jamie Parsons <Jamie.Parsons@metaswitch.com>
+CC: Jamie Parsons <Jamie.Parsons@metaswitch.com>
+CC: Vlad Yasevich <vyasevich@gmail.com>
+CC: "David S. Miller" <davem@davemloft.net>
+CC: netdev@vger.kernel.org
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/sctp/socket.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/sctp/outqueue.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
---- a/net/sctp/socket.c
-+++ b/net/sctp/socket.c
-@@ -3388,7 +3388,7 @@ static int sctp_setsockopt_auth_key(stru
+--- a/net/sctp/outqueue.c
++++ b/net/sctp/outqueue.c
+@@ -224,7 +224,7 @@ void sctp_outq_init(struct sctp_associat
  
- 	ret = sctp_auth_set_key(sctp_sk(sk)->ep, asoc, authkey);
- out:
--	kfree(authkey);
-+	kzfree(authkey);
- 	return ret;
+ /* Free the outqueue structure and any related pending chunks.
+  */
+-void sctp_outq_teardown(struct sctp_outq *q)
++static void __sctp_outq_teardown(struct sctp_outq *q)
+ {
+ 	struct sctp_transport *transport;
+ 	struct list_head *lchunk, *temp;
+@@ -277,8 +277,6 @@ void sctp_outq_teardown(struct sctp_outq
+ 		sctp_chunk_free(chunk);
+ 	}
+ 
+-	q->error = 0;
+-
+ 	/* Throw away any leftover control chunks. */
+ 	list_for_each_entry_safe(chunk, tmp, &q->control_chunk_list, list) {
+ 		list_del_init(&chunk->list);
+@@ -286,11 +284,17 @@ void sctp_outq_teardown(struct sctp_outq
+ 	}
  }
  
++void sctp_outq_teardown(struct sctp_outq *q)
++{
++	__sctp_outq_teardown(q);
++	sctp_outq_init(q->asoc, q);
++}
++
+ /* Free the outqueue structure and any related pending chunks.  */
+ void sctp_outq_free(struct sctp_outq *q)
+ {
+ 	/* Throw away leftover chunks. */
+-	sctp_outq_teardown(q);
++	__sctp_outq_teardown(q);
+ 
+ 	/* If we were kmalloc()'d, free the memory.  */
+ 	if (q->malloced)
 
 
