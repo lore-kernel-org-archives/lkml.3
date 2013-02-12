@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752783Ab3BLUfq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 15:35:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53414 "EHLO
+	id S1759644Ab3BLVIm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 16:08:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53448 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752035Ab3BLUfk (ORCPT
+	with ESMTP id S1752677Ab3BLUfq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 15:35:40 -0500
+	Tue, 12 Feb 2013 15:35:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gary Leshner <gary.s.leshner@intel.com>,
-        Mike Marciniszyn <mike.marciniszyn@intel.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [ 06/61] IB/qib: Fix for broken sparse warning fix
-Date: Tue, 12 Feb 2013 12:34:26 -0800
-Message-Id: <20130212203418.895990053@linuxfoundation.org>
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        CAI Qian <caiqian@redhat.com>
+Subject: [ 14/61] ath9k_hw: fix calibration issues on chainmask that dont include chain 0
+Date: Tue, 12 Feb 2013 12:34:34 -0800
+Message-Id: <20130212203420.142379376@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130212203417.890993903@linuxfoundation.org>
 References: <20130212203417.890993903@linuxfoundation.org>
@@ -28,50 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Marciniszyn <mike.marciniszyn@intel.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit d359f35430c4ea4dd4e24d809aeaeff1fa54c314 upstream.
+commit 4a8f199508d79ff8a7d1e22f47b912baaf225336 upstream.
 
-Commit 1fb9fed6d489 ("IB/qib: Fix QP RCU sparse warning") broke QP
-hash list deletion in qp_remove() badly.
-
-This patch restores the former for loop behavior, while still fixing
-the sparse warnings.
-
-Reviewed-by: Gary Leshner <gary.s.leshner@intel.com>
-Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: CAI Qian <caiqian@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/hw/qib/qib_qp.c |   11 +++--------
- 1 file changed, 3 insertions(+), 8 deletions(-)
+ drivers/net/wireless/ath/ath9k/ar9003_calib.c |    2 ++
+ drivers/net/wireless/ath/ath9k/ar9003_phy.c   |    2 +-
+ drivers/net/wireless/ath/ath9k/hw.h           |    1 +
+ 3 files changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/infiniband/hw/qib/qib_qp.c
-+++ b/drivers/infiniband/hw/qib/qib_qp.c
-@@ -263,20 +263,15 @@ static void remove_qp(struct qib_ibdev *
- 		struct qib_qp __rcu **qpp;
+--- a/drivers/net/wireless/ath/ath9k/ar9003_calib.c
++++ b/drivers/net/wireless/ath/ath9k/ar9003_calib.c
+@@ -903,6 +903,8 @@ static bool ar9003_hw_init_cal(struct at
+ 					  AR_PHY_CL_TAB_1,
+ 					  AR_PHY_CL_TAB_2 };
  
- 		qpp = &dev->qp_table[n];
--		q = rcu_dereference_protected(*qpp,
--			lockdep_is_held(&dev->qpt_lock));
--		for (; q; qpp = &q->next) {
-+		for (; (q = rcu_dereference_protected(*qpp,
-+				lockdep_is_held(&dev->qpt_lock))) != NULL;
-+				qpp = &q->next)
- 			if (q == qp) {
- 				atomic_dec(&qp->refcount);
- 				*qpp = qp->next;
- 				rcu_assign_pointer(qp->next, NULL);
--				q = rcu_dereference_protected(*qpp,
--					lockdep_is_held(&dev->qpt_lock));
- 				break;
- 			}
--			q = rcu_dereference_protected(*qpp,
--				lockdep_is_held(&dev->qpt_lock));
--		}
- 	}
++	ar9003_hw_set_chain_masks(ah, ah->caps.rx_chainmask, ah->caps.tx_chainmask);
++
+ 	if (rtt) {
+ 		if (!ar9003_hw_rtt_restore(ah, chan))
+ 			run_rtt_cal = true;
+--- a/drivers/net/wireless/ath/ath9k/ar9003_phy.c
++++ b/drivers/net/wireless/ath/ath9k/ar9003_phy.c
+@@ -586,7 +586,7 @@ static void ar9003_hw_init_bb(struct ath
+ 	ath9k_hw_synth_delay(ah, chan, synthDelay);
+ }
  
- 	spin_unlock_irqrestore(&dev->qpt_lock, flags);
+-static void ar9003_hw_set_chain_masks(struct ath_hw *ah, u8 rx, u8 tx)
++void ar9003_hw_set_chain_masks(struct ath_hw *ah, u8 rx, u8 tx)
+ {
+ 	if (ah->caps.tx_chainmask == 5 || ah->caps.rx_chainmask == 5)
+ 		REG_SET_BIT(ah, AR_PHY_ANALOG_SWAP,
+--- a/drivers/net/wireless/ath/ath9k/hw.h
++++ b/drivers/net/wireless/ath/ath9k/hw.h
+@@ -1063,6 +1063,7 @@ int ar9003_paprd_create_curve(struct ath
+ int ar9003_paprd_setup_gain_table(struct ath_hw *ah, int chain);
+ int ar9003_paprd_init_table(struct ath_hw *ah);
+ bool ar9003_paprd_is_done(struct ath_hw *ah);
++void ar9003_hw_set_chain_masks(struct ath_hw *ah, u8 rx, u8 tx);
+ 
+ /* Hardware family op attach helpers */
+ void ar5008_hw_attach_phy_ops(struct ath_hw *ah);
 
 
