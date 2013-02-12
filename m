@@ -1,46 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759372Ab3BLVJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 16:09:29 -0500
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:64722 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757688Ab3BLVJ0 (ORCPT
+	id S1759759Ab3BLVKD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 16:10:03 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53433 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752319Ab3BLUfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 16:09:26 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAPPqfY2hrd54viFHKErWk_8uRLHP9WK54G0inJtyUFJKKunDOg@mail.gmail.com>
-References: <CAPPqfY1-sYT8rcPoJ6BD0axq=oczq+xbGFSQj=uth4wc_cvkGw@mail.gmail.com>
-	<18379918.sbmR7uiKVn@vostro.rjw.lan>
-	<CAPPqfY2umN2Fab=APyt4=LM32x2av7nPruADX3dddTxdWG2Umg@mail.gmail.com>
-	<2048745.M7CAe2g1gj@vostro.rjw.lan>
-	<CAPPqfY2hrd54viFHKErWk_8uRLHP9WK54G0inJtyUFJKKunDOg@mail.gmail.com>
-Date: Tue, 12 Feb 2013 22:09:24 +0100
-Message-ID: <CAPPqfY3+e3tVQA_RKn0DhwModLienrgtFzsUrCCsUndbJfnHOg@mail.gmail.com>
-Subject: Re: Performance issue since 3.2.6
-From: Olivier Doucet <webmaster@ajeux.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 12 Feb 2013 15:35:44 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Bing Zhao <bzhao@marvell.com>, Amitkumar Karwar <akarwar@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 11/61] mwifiex: fix incomplete scan in case of IE parsing error
+Date: Tue, 12 Feb 2013 12:34:31 -0800
+Message-Id: <20130212203419.666100951@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130212203417.890993903@linuxfoundation.org>
+References: <20130212203417.890993903@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
-A quick update on my latest tests :
-I was able to compile a working 3.7.1 kernel (by 'working', I mean
-with no performance penalty). I'm sure 3.7.7 will be OK also (do you
-want me to test latest RC of 3.8 ?)
+------------------
 
-I had to disable CONFIG_ACPI_PROCESSOR to disable power management.
-So now these two options are unset :
-CONFIG_CPU_IDLE
-CONFIG_ACPI_PROCESSOR
+From: Bing Zhao <bzhao@marvell.com>
 
-I've posted the whole .config file here :
-https://gist.github.com/odoucet/4773390
+commit 8a7d7cbf7b5ff9912ef50b3e94c9ad9f37b1c75f upstream.
 
-I'll be glad to test any patch that may help reactivate PM on my
-system (CPU Intel Xeon L5630)
+A scan request is split into multiple scan commands queued in
+scan_pending_q. Each scan command will be sent to firmware and
+its response is handlded one after another.
 
-Olivier
+If any error is detected while parsing IE in command response
+buffer the remaining data will be ignored and error is returned.
+
+We should check if there is any more scan commands pending in
+the queue before returning error. This ensures that we will call
+cfg80211_scan_done if this is the last scan command, or send
+next scan command in scan_pending_q to firmware.
+
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/net/wireless/mwifiex/scan.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+--- a/drivers/net/wireless/mwifiex/scan.c
++++ b/drivers/net/wireless/mwifiex/scan.c
+@@ -1555,7 +1555,7 @@ int mwifiex_ret_802_11_scan(struct mwifi
+ 		dev_err(adapter->dev, "SCAN_RESP: too many AP returned (%d)\n",
+ 			scan_rsp->number_of_sets);
+ 		ret = -1;
+-		goto done;
++		goto check_next_scan;
+ 	}
+ 
+ 	bytes_left = le16_to_cpu(scan_rsp->bss_descript_size);
+@@ -1626,7 +1626,8 @@ int mwifiex_ret_802_11_scan(struct mwifi
+ 		if (!beacon_size || beacon_size > bytes_left) {
+ 			bss_info += bytes_left;
+ 			bytes_left = 0;
+-			return -1;
++			ret = -1;
++			goto check_next_scan;
+ 		}
+ 
+ 		/* Initialize the current working beacon pointer for this BSS
+@@ -1682,7 +1683,7 @@ int mwifiex_ret_802_11_scan(struct mwifi
+ 				dev_err(priv->adapter->dev,
+ 					"%s: bytes left < IE length\n",
+ 					__func__);
+-				goto done;
++				goto check_next_scan;
+ 			}
+ 			if (element_id == WLAN_EID_DS_PARAMS) {
+ 				channel = *(current_ptr + sizeof(struct ieee_types_header));
+@@ -1745,6 +1746,7 @@ int mwifiex_ret_802_11_scan(struct mwifi
+ 		}
+ 	}
+ 
++check_next_scan:
+ 	spin_lock_irqsave(&adapter->scan_pending_q_lock, flags);
+ 	if (list_empty(&adapter->scan_pending_q)) {
+ 		spin_unlock_irqrestore(&adapter->scan_pending_q_lock, flags);
+@@ -1792,7 +1794,6 @@ int mwifiex_ret_802_11_scan(struct mwifi
+ 		}
+ 	}
+ 
+-done:
+ 	return ret;
+ }
+ 
+
+
