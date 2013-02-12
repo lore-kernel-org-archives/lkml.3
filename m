@@ -1,79 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751951Ab3BLCAn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Feb 2013 21:00:43 -0500
-Received: from ozlabs.org ([203.10.76.45]:47716 "EHLO ozlabs.org"
+	id S1751921Ab3BLCHp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Feb 2013 21:07:45 -0500
+Received: from rydia.net ([69.46.88.68]:36146 "EHLO mail.rydia.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751004Ab3BLCAm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Feb 2013 21:00:42 -0500
-Date: Tue, 12 Feb 2013 13:00:39 +1100
-From: Michael Ellerman <michael@ellerman.id.au>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: WARNING: at drivers/tty/tty_buffer.c:476  (tty is NULL)
-Message-ID: <20130212020039.GA8979@concordia>
-References: <20130102153744.GC25940@redhat.com>
- <20130118205358.GA6854@redhat.com>
- <20130118210728.GA16742@kroah.com>
- <50FB0957.2000400@suse.cz>
- <1359570837.3325.30.camel@thor.lan>
- <20130211024412.GA7623@concordia>
- <1360593750.25941.13.camel@thor.lan>
+	id S1750798Ab3BLCHo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Feb 2013 21:07:44 -0500
+X-Greylist: delayed 375 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Feb 2013 21:07:44 EST
+Date: Mon, 11 Feb 2013 18:01:26 -0800 (PST)
+From: dormando <dormando@rydia.net>
+X-X-Sender: dormando@dflat
+To: Rik van Riel <riel@redhat.com>
+cc: Randy Dunlap <rdunlap@xenotime.net>, Satoru Moriya <smoriya@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, lwoodman@redhat.com,
+        Seiji Aguchi <saguchi@redhat.com>, akpm@linux-foundation.org,
+        hughd@google.com
+Subject: extra free kbytes tunable
+Message-ID: <alpine.DEB.2.02.1302111734090.13090@dflat>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360593750.25941.13.camel@thor.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 11, 2013 at 09:42:30AM -0500, Peter Hurley wrote:
-> Hi Michael,
-> 
-> On Mon, 2013-02-11 at 13:44 +1100, Michael Ellerman wrote:
-> > On Wed, Jan 30, 2013 at 01:33:57PM -0500, Peter Hurley wrote:
-> > > On Sat, 2013-01-19 at 22:00 +0100, Jiri Slaby wrote:
-> > > > On 01/18/2013 10:07 PM, Greg Kroah-Hartman wrote:
-> > > > > Jiri, was there anything on the mailing list that I missed that should
-> > > > > have resolved this issue?  I thought it was being worked on, but I can't
-> > > > > seem to find any resolution at the moment.
-> > > > 
-> > > > Somebody had a patchset and promised to repost IIRC. I forgot his name
-> > > > though.
-> > > > 
-> > > > /me back from digging in the mail history.
-> > > > 
-> > > > Peter Hurley is the name.
-> > > > 
-> > > > Peter, what happened with your patches in the end, please?
-> > > 
-> > > The tty subsystem is very resilient to fixing :)
-> > > 
-> > > The thing I'm working on right now -- which hopefully is the last issue
-> > > with the line discipline logic -- occurs with parallel __tty_hangup()
-> > > and tty_release().
-> > > 
-> > > At the moment, I'm trying to narrow the conditions when this happens.
-> > 
-> > If it helps I seem to be able to reproduce this in just a few seconds by
->                                    ^^^^^^^^^^^^^^
->                  you get this WARNING from a parallel __tty_hangup?
-> 
-> Or do you mean simply that you get this WARNING?
+Hi,
 
-Sorry I just mean I'm seeing the warning, I have no idea how.
+As discussed in this thread:
+http://marc.info/?l=linux-mm&m=131490523222031&w=2
+(with this cleanup as well: https://lkml.org/lkml/2011/9/2/225)
 
-> > running trinity and hitting Ctrl-C to quit the watchdog.
-> 
-> Can you reproduce after using the following patch series?
-> [PATCH v3 00/23] ldisc fixes
+A tunable was proposed to allow specifying the distance between pages_min
+and the low watermark before kswapd is kicked in to free up pages. I'd
+like to re-open this thread since the patch did not appear to go anywhere.
 
-What are they against? I tried Linus' tree and linux-next but they
-didn't apply cleanly against either.
+We have a server workload wherein machines with 100G+ of "free" memory
+(used by page cache), scattered but frequent random io reads from 12+
+SSD's, and 5gbps+ of internet traffic, will frequently hit direct reclaim
+in a few different ways.
 
-cheers
+1) It'll run into small amounts of reclaim randomly (a few hundred
+thousand).
+
+2) A burst of reads or traffic can cause extra pressure, which kswapd
+occasionally responds to by freeing up 40g+ of the pagecache all at once
+(!) while pausing the system (Argh).
+
+3) A blip in an upstream provider or failover from a peer causes the
+kernel to allocate massive amounts of memory for retransmission
+queues/etc, potentially along with buffered IO reads and (some, but not
+often a ton) of new allocations from an application. This paired with 2)
+can cause the box to stall for 15+ seconds.
+
+We're seeing this more in 3.4/3.5/3.6, saw it less in 2.6.38. Mass
+reclaims are more common in newer kernels, but reclaims still happen in
+all kernels without raising min_free_kbytes dramatically.
+
+I've found that setting "lowmem_reserve_ratio" to something like "1 1 32"
+(thus protecting the DMA32 zone) causes 2) to happen less often, and is
+generally less violent with 1).
+
+Setting min_free_kbytes to 15G or more, paired with the above, has been
+the best at mitigating the issue. This is simply trying to raise the
+distance between the min and low watermarks. With min_free_kbytes set to
+15000000, that gives us a whopping 1.8G (!!!) of leeway before slamming
+into direct reclaim.
+
+So, this patch is unfortunate but wonderful at letting us reclaim 10G+ of
+otherwise lost memory. Could we please revisit it?
+
+I saw a lot of discussion on doing this automatically, or making kswapd
+more efficient to it, and I'd love to do that. Beyond making kswapd
+psychic I haven't seen any better options yet.
+
+The issue is more complex than simply having an application warn of an
+impending allocation, since this can happen via read load on disk or from
+kernel page allocations for the network, or a combination of the two (or
+three, if you add the app back in).
+
+It's going to get worse as we push machines with faster SSD's and bigger
+networks. I'm open to any ideas on how to make kswapd more efficient in
+our case, or really anything at all that works.
+
+I have more details, but cut it down as much as I could for this mail.
+
+Thanks,
+-Dormando
