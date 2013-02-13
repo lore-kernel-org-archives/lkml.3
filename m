@@ -1,204 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758831Ab3BMJif (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 04:38:35 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:62592 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756519Ab3BMJia (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 04:38:30 -0500
-From: Manjunath Goudar <manjunath.goudar@linaro.org>
-To: linux-usb@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        stern@rowland.harvard.edu, gregkh@linuxfoundation.org,
-        Manjunath Goudar <manjunath.goudar@linaro.org>,
-        Greg KH <greg@kroah.com>, Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH] USB: EHCI: make ehci-mv a separate driver
-Date: Wed, 13 Feb 2013 15:08:05 +0530
-Message-Id: <1360748285-31710-2-git-send-email-manjunath.goudar@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1360748285-31710-1-git-send-email-manjunath.goudar@linaro.org>
-References: <1360748285-31710-1-git-send-email-manjunath.goudar@linaro.org>
+	id S932585Ab3BMJjL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 04:39:11 -0500
+Received: from mga01.intel.com ([192.55.52.88]:25341 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932281Ab3BMJjJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 04:39:09 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,655,1355126400"; 
+   d="scan'208";a="290504801"
+Date: Wed, 13 Feb 2013 10:39:07 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Arnd Bergmann <arnd@arndb.de>, "Winkler, Tomas" <tomas.winkler@intel.com>
+Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [char-misc-next 01/12 v3] mei: Rename mei_device to mei_host
+Message-ID: <20130213093907.GM20996@sortiz-mobl>
+References: <1360694222-27632-1-git-send-email-sameo@linux.intel.com>
+ <20130212212935.GJ20996@sortiz-mobl>
+ <20130212213823.GA20745@kroah.com>
+ <201302122309.01176.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201302122309.01176.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Separate the mv host controller driver from ehci-hcd host code
-into its own driver module.
+On Tue, Feb 12, 2013 at 11:09:00PM +0000, Arnd Bergmann wrote:
+> On Tuesday 12 February 2013, gregkh@linuxfoundation.org wrote:
+> > > 
+> > > > Please let's find something that makes both hw and Linux happy
+> > > I still believe it makes sense to use mei_device for what we add to the MEI
+> > > bus. I'd be fine with mei_bus_device as well, but that would somehow look
+> > > a bit awkward. Greg, Arnd, any preference ?
+> > 
+> > "mei_device" works the best for me.  Tomas, what you think of as a "MEI
+> > Device" really is a "MEI Controller", it bridges the difference between
+> > the PCI bus and your new MEI bus, so you will need to start thinking of
+> > these things a bit differently now that you have created your own little
+> > virtual bus.
+> 
+> Yes, I agree. mei_bus_device would also work as the name for the controller,
+> but not for the devices attached to it IMO.
+Tomas, I propose to switch to mei_controller instead of mei_host and keep the
+mei_device name for the devices we attach to the MEI bus.
+Does that work for you ?
 
-Signed-off-by: Manjunath Goudar <manjunath.goudar@linaro.org>
-Cc: Greg KH <greg@kroah.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: Eric Miao <eric.y.miao@gmail.com>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: linux-usb@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/usb/host/Kconfig    |    2 +-
- drivers/usb/host/Makefile   |    1 +
- drivers/usb/host/ehci-hcd.c |    6 +---
- drivers/usb/host/ehci-mv.c  |   80 ++++++++++++++++++++-----------------------
- 4 files changed, 40 insertions(+), 49 deletions(-)
+Cheers,
+Samuel.
 
-diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index 8ffbafa..2aa4ece 100644
---- a/drivers/usb/host/Kconfig
-+++ b/drivers/usb/host/Kconfig
-@@ -221,7 +221,7 @@ config USB_EHCI_S5P
- 	 Enable support for the S5P SOC's on-chip EHCI controller.
- 
- config USB_EHCI_MV
--	bool "EHCI support for Marvell on-chip controller"
-+	tristate "EHCI support for Marvell on-chip controller"
- 	depends on USB_EHCI_HCD && (ARCH_PXA || ARCH_MMP)
- 	select USB_EHCI_ROOT_HUB_TT
- 	---help---
-diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
-index 77e0331..d593017 100644
---- a/drivers/usb/host/Makefile
-+++ b/drivers/usb/host/Makefile
-@@ -31,6 +31,7 @@ obj-$(CONFIG_USB_EHCI_HCD_SPEAR)+= ehci-spear.o
- obj-$(CONFIG_USB_OXU210HP_HCD)	+= oxu210hp-hcd.o
- obj-$(CONFIG_USB_EHCI_HCD_AT91) += ehci-atmel.o
- obj-$(CONFIG_USB_EHCI_S5P)      += ehci-s5p.o
-+obj-$(CONFIG_USB_EHCI_MV)       += ehci-mv.o
- obj-$(CONFIG_USB_ISP116X_HCD)	+= isp116x-hcd.o
- obj-$(CONFIG_USB_ISP1362_HCD)	+= isp1362-hcd.o
- obj-$(CONFIG_USB_OHCI_HCD)	+= ohci-hcd.o
-diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
-index fa0e665..9cf4d73 100644
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -1317,11 +1317,6 @@ MODULE_LICENSE ("GPL");
- #define PLATFORM_DRIVER		ehci_grlib_driver
- #endif
- 
--#ifdef CONFIG_USB_EHCI_MV
--#include "ehci-mv.c"
--#define        PLATFORM_DRIVER         ehci_mv_driver
--#endif
--
- #ifdef CONFIG_MIPS_SEAD3
- #include "ehci-sead3.c"
- #define	PLATFORM_DRIVER		ehci_hcd_sead3_driver
-@@ -1335,6 +1330,7 @@ MODULE_LICENSE ("GPL");
- 	!defined(PLATFORM_DRIVER) && \
- 	!IS_ENABLED(CONFIG_ARCH_AT91) && \
- 	!IS_ENABLED(CONFIG_USB_EHCI_S5P) && \
-+	!IS_ENABLED(CONFIG_USB_EHCI_MV) && \
- 	!defined(PS3_SYSTEM_BUS_DRIVER) && \
- 	!defined(OF_PLATFORM_DRIVER) && \
- 	!defined(XILINX_OF_PLATFORM_DRIVER)
-diff --git a/drivers/usb/host/ehci-mv.c b/drivers/usb/host/ehci-mv.c
-index 3065809..67de419 100644
---- a/drivers/usb/host/ehci-mv.c
-+++ b/drivers/usb/host/ehci-mv.c
-@@ -17,7 +17,18 @@
- #include <linux/usb/otg.h>
- #include <linux/platform_data/mv_usb.h>
- 
-+#include <linux/usb.h>
-+#include <linux/usb/hcd.h>
-+#include <linux/io.h>
-+#include <linux/dma-mapping.h>
-+
-+#include "ehci.h"
-+
-+#define DRIVER_DESC "EHCI mv driver"
-+
- #define CAPLENGTH_MASK         (0xff)
-+static const char hcd_name[] = "ehci-mv";
-+static struct hc_driver __read_mostly mv_ehci_hc_driver;
- 
- struct ehci_hcd_mv {
- 	struct usb_hcd *hcd;
-@@ -95,48 +106,6 @@ static int mv_ehci_reset(struct usb_hcd *hcd)
- 	return retval;
- }
- 
--static const struct hc_driver mv_ehci_hc_driver = {
--	.description = hcd_name,
--	.product_desc = "Marvell EHCI",
--	.hcd_priv_size = sizeof(struct ehci_hcd),
--
--	/*
--	 * generic hardware linkage
--	 */
--	.irq = ehci_irq,
--	.flags = HCD_MEMORY | HCD_USB2,
--
--	/*
--	 * basic lifecycle operations
--	 */
--	.reset = mv_ehci_reset,
--	.start = ehci_run,
--	.stop = ehci_stop,
--	.shutdown = ehci_shutdown,
--
--	/*
--	 * managing i/o requests and associated device resources
--	 */
--	.urb_enqueue = ehci_urb_enqueue,
--	.urb_dequeue = ehci_urb_dequeue,
--	.endpoint_disable = ehci_endpoint_disable,
--	.endpoint_reset = ehci_endpoint_reset,
--	.clear_tt_buffer_complete = ehci_clear_tt_buffer_complete,
--
--	/*
--	 * scheduling support
--	 */
--	.get_frame_number = ehci_get_frame,
--
--	/*
--	 * root hub support
--	 */
--	.hub_status_data = ehci_hub_status_data,
--	.hub_control = ehci_hub_control,
--	.bus_suspend = ehci_bus_suspend,
--	.bus_resume = ehci_bus_resume,
--};
--
- static int mv_ehci_probe(struct platform_device *pdev)
- {
- 	struct mv_usb_platform_data *pdata = pdev->dev.platform_data;
-@@ -350,8 +319,33 @@ static struct platform_driver ehci_mv_driver = {
- 	.remove = mv_ehci_remove,
- 	.shutdown = mv_ehci_shutdown,
- 	.driver = {
--		   .name = "mv-ehci",
-+		   .name = hcd_name,
- 		   .bus = &platform_bus_type,
- 		   },
- 	.id_table = ehci_id_table,
- };
-+static const struct ehci_driver_overrides mv_overrides __initdata = {
-+	.reset = mv_ehci_reset,
-+};
-+
-+static int __init ehci_mv_init(void)
-+{
-+	if (usb_disabled())
-+		return -ENODEV;
-+
-+	pr_info("%s: " DRIVER_DESC "\n", hcd_name);
-+	ehci_init_driver(&mv_ehci_hc_driver, &mv_overrides);
-+	return platform_driver_register(&ehci_mv_driver);
-+}
-+module_init(ehci_mv_init);
-+
-+static void __exit ehci_mv_cleanup(void)
-+{
-+	platform_driver_unregister(&ehci_mv_driver);
-+}
-+module_exit(ehci_mv_cleanup);
-+
-+MODULE_DESCRIPTION(DRIVER_DESC);
-+MODULE_ALIAS("platform:ehci-mv");
-+MODULE_AUTHOR("Marvell");
-+MODULE_LICENSE("GPL");
 -- 
-1.7.9.5
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
