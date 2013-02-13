@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754454Ab3BMHCT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 02:02:19 -0500
-Received: from mail-da0-f41.google.com ([209.85.210.41]:57167 "EHLO
-	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754006Ab3BMHCQ (ORCPT
+	id S1754904Ab3BMHC3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 02:02:29 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:39952 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754236Ab3BMHCS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 02:02:16 -0500
+	Wed, 13 Feb 2013 02:02:18 -0500
 From: Alexandre Courbot <gnurou@gmail.com>
 To: Grant Likely <grant.likely@secretlab.ca>,
         Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org, gnurou@gmail.com,
-        Alexandre Courbot <acourbot@nvidia.com>
+Cc: linux-kernel@vger.kernel.org, gnurou@gmail.com
 Subject: [PATCH 4/4] gpiolib: rename local offset variables to "hwgpio"
-Date: Wed, 13 Feb 2013 16:03:02 +0900
-Message-Id: <1360738983-22436-5-git-send-email-gnurou@gmail.com>
+Date: Wed, 13 Feb 2013 16:03:03 +0900
+Message-Id: <1360738983-22436-6-git-send-email-gnurou@gmail.com>
 X-Mailer: git-send-email 1.8.1.3
 In-Reply-To: <1360738983-22436-1-git-send-email-gnurou@gmail.com>
 References: <1360738983-22436-1-git-send-email-gnurou@gmail.com>
@@ -22,250 +21,113 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexandre Courbot <acourbot@nvidia.com>
+Delivered-To: gnurou@gmail.com
+Received: by 10.64.96.232 with SMTP id dv8csp15271ieb;
+        Sun, 10 Feb 2013 05:48:07 -0800 (PST)
+X-Received: by 10.68.0.39 with SMTP id 7mr11102539pbb.124.1360504086445;
+        Sun, 10 Feb 2013 05:48:06 -0800 (PST)
+Return-Path: <acourbot@nvidia.com>
+Received: from hqemgate04.nvidia.com (hqemgate04.nvidia.com. [216.228.121.35])
+        by mx.google.com with ESMTPS id qj7si3931281pbb.322.2013.02.10.05.48.06
+        (version=TLSv1 cipher=RC4-SHA bits=128/128);
+        Sun, 10 Feb 2013 05:48:06 -0800 (PST)
+Received-SPF: pass (google.com: best guess record for domain of acourbot@nvidia.com designates 216.228.121.35 as permitted sender) client-ip=216.228.121.35;
+Authentication-Results: mx.google.com;
+       spf=pass (google.com: best guess record for domain of acourbot@nvidia.com designates 216.228.121.35 as permitted sender) smtp.mail=acourbot@nvidia.com
+Received: from hqnvupgp05.nvidia.com (Not Verified[216.228.121.13]) by hqemgate04.nvidia.com
+	id <B5117a50b0000>; Sun, 10 Feb 2013 05:47:56 -0800
+Received: from hqemhub01.nvidia.com ([172.17.108.22])
+  by hqnvupgp05.nvidia.com (PGP Universal service);
+  Sun, 10 Feb 2013 05:48:05 -0800
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Sun, 10 Feb 2013 05:48:05 -0800
+Received: from [10.18.131.155] (172.20.144.16) by hqemhub01.nvidia.com
+ (172.20.150.30) with Microsoft SMTP Server id 8.3.297.1; Sun, 10 Feb 2013
+ 05:48:05 -0800
+Message-ID: <5117A5AB.5090702@nvidia.com>
+Date: Sun, 10 Feb 2013 22:50:35 +0900
+From: Alex Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130109 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: <gnurou@gmail.com>
+Subject: Re: [grant:gpio/next 10/16] gpiolib.c:undefined reference to `gpiod_unexport'
+References: <51166e1c.NRfQN8VgI14zuNwf%fengguang.wu@intel.com> <CACxGe6tAEX7o9dxNTXtwKwzZHmEteKAS+7uy4j-DTX_2V583tg@mail.gmail.com>
+In-Reply-To: <CACxGe6tAEX7o9dxNTXtwKwzZHmEteKAS+7uy4j-DTX_2V583tg@mail.gmail.com>
+Return-Path: acourbot@nvidia.com
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Their value being obtained by gpio_chip_hwgpio(), this better reflects
-their use.
+On 02/10/2013 01:34 AM, Grant Likely wrote:
+> Alex, this is broken when the sysfs interface isn't enabled. Can you
+> send a fixup patch?
+>
+> g.
+>
+> On Sat, Feb 9, 2013 at 3:41 PM, kbuild test robot
+> <fengguang.wu@intel.com> wrote:
+>> tree:   git://git.secretlab.ca/git/linux-2.6.git gpio/next
+>> head:   8a307b35962e42de0f998c6029e8851c61eadb4e
+>> commit: 5bb47609e8167d733786cb781ada29536385635c [10/16] gpiolib: use descriptors internally
+>> config: i386-randconfig-b040 (attached as .config)
+>>
+>> All error/warnings:
+>>
+>>     drivers/built-in.o: In function `gpiod_free':
+>>>> gpiolib.c:(.text+0xda3): undefined reference to `gpiod_unexport'
+>>     drivers/built-in.o: In function `gpio_request_one':
+>>>> (.text+0x147f): undefined reference to `gpiod_export'
 
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+Oops, apologies. Here follows the fix. Please meld it into the culprit 
+patch to fix all warnings and errors when sysfs is not compiled in.
+
+Thanks,
+Alex.
+
 ---
- drivers/gpio/gpiolib.c | 70 +++++++++++++++++++++++++-------------------------
- 1 file changed, 35 insertions(+), 35 deletions(-)
+  drivers/gpio/gpiolib.c | 21 +++++++++++++++++++++
+  1 file changed, 21 insertions(+)
 
 diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index d8aa1a0..42838c2 100644
+index e6e597c..b5a71c5 100644
 --- a/drivers/gpio/gpiolib.c
 +++ b/drivers/gpio/gpiolib.c
-@@ -72,7 +72,7 @@ struct gpio_desc {
- };
- static struct gpio_desc gpio_desc[ARCH_NR_GPIOS];
- 
--#define GPIO_OFFSET_VALID(chip, offset) (offset >= 0 && offset < chip->ngpio)
-+#define GPIO_HWNUM_VALID(chip, hwgpio) (hwgpio >= 0 && hwgpio < chip->ngpio)
- 
- static LIST_HEAD(gpio_chips);
- 
-@@ -211,16 +211,16 @@ static int gpiochip_find_base(int ngpio)
- static int gpiod_get_direction(const struct gpio_desc *desc)
- {
- 	struct gpio_chip	*chip;
--	unsigned		offset;
-+	unsigned		hwgpio;
- 	int			status = -EINVAL;
- 
- 	chip = gpiod_to_chip(desc);
--	offset = gpio_chip_hwgpio(desc);
-+	hwgpio = gpio_chip_hwgpio(desc);
- 
- 	if (!chip->get_direction)
- 		return status;
- 
--	status = chip->get_direction(chip, offset);
-+	status = chip->get_direction(chip, hwgpio);
- 	if (status > 0) {
- 		/* GPIOF_DIR_IN, or other positive */
- 		status = 1;
-@@ -754,7 +754,7 @@ static int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
- 	int			status;
- 	const char		*ioname = NULL;
- 	struct device		*dev;
--	int			offset;
-+	int			hwgpio;
- 
- 	/* can't export until sysfs is available ... */
- 	if (!gpio_class.p) {
-@@ -785,9 +785,9 @@ static int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
- 		direction_may_change = false;
- 	spin_unlock_irqrestore(&gpio_lock, flags);
- 
--	offset = gpio_chip_hwgpio(desc);
--	if (desc->chip->names && desc->chip->names[offset])
--		ioname = desc->chip->names[offset];
-+	hwgpio = gpio_chip_hwgpio(desc);
-+	if (desc->chip->names && desc->chip->names[hwgpio])
-+		ioname = desc->chip->names[hwgpio];
- 
- 	dev = device_create(&gpio_class, desc->chip->dev, MKDEV(0, 0),
- 			    desc, ioname ? ioname : "gpio%u",
-@@ -1591,7 +1591,7 @@ const char *gpiochip_is_requested(struct gpio_chip *chip, unsigned offset)
- {
- 	struct gpio_desc *desc;
- 
--	if (!GPIO_OFFSET_VALID(chip, offset))
-+	if (!GPIO_HWNUM_VALID(chip, offset))
- 		return NULL;
- 
- 	desc = &chip->desc[offset];
-@@ -1621,7 +1621,7 @@ static int gpiod_direction_input(struct gpio_desc *desc)
- 	unsigned long		flags;
- 	struct gpio_chip	*chip;
- 	int			status = -EINVAL;
--	int			offset;
-+	int			hwgpio;
- 
- 	spin_lock_irqsave(&gpio_lock, flags);
- 
-@@ -1640,9 +1640,9 @@ static int gpiod_direction_input(struct gpio_desc *desc)
- 
- 	might_sleep_if(chip->can_sleep);
- 
--	offset = gpio_chip_hwgpio(desc);
-+	hwgpio = gpio_chip_hwgpio(desc);
- 	if (status) {
--		status = chip->request(chip, offset);
-+		status = chip->request(chip, hwgpio);
- 		if (status < 0) {
- 			pr_debug("GPIO-%d: chip request fail, %d\n",
- 				desc_to_gpio(desc), status);
-@@ -1653,7 +1653,7 @@ static int gpiod_direction_input(struct gpio_desc *desc)
- 		}
- 	}
- 
--	status = chip->direction_input(chip, offset);
-+	status = chip->direction_input(chip, hwgpio);
- 	if (status == 0)
- 		clear_bit(FLAG_IS_OUT, &desc->flags);
- 
-@@ -1679,7 +1679,7 @@ static int gpiod_direction_output(struct gpio_desc *desc, int value)
- 	unsigned long		flags;
- 	struct gpio_chip	*chip;
- 	int			status = -EINVAL;
--	int offset;
-+	int			hwgpio;
- 
- 	if (!desc)
- 		goto fail_unlocked;
-@@ -1707,9 +1707,9 @@ static int gpiod_direction_output(struct gpio_desc *desc, int value)
- 
- 	might_sleep_if(chip->can_sleep);
- 
--	offset = gpio_chip_hwgpio(desc);
-+	hwgpio = gpio_chip_hwgpio(desc);
- 	if (status) {
--		status = chip->request(chip, offset);
-+		status = chip->request(chip, hwgpio);
- 		if (status < 0) {
- 			pr_debug("GPIO-%d: chip request fail, %d\n",
- 				desc_to_gpio(desc), status);
-@@ -1720,7 +1720,7 @@ static int gpiod_direction_output(struct gpio_desc *desc, int value)
- 		}
- 	}
- 
--	status = chip->direction_output(chip, offset, value);
-+	status = chip->direction_output(chip, hwgpio, value);
- 	if (status == 0)
- 		set_bit(FLAG_IS_OUT, &desc->flags);
- 	trace_gpio_value(desc_to_gpio(desc), 0, value);
-@@ -1752,7 +1752,7 @@ static int gpiod_set_debounce(struct gpio_desc *desc, unsigned debounce)
- 	unsigned long		flags;
- 	struct gpio_chip	*chip;
- 	int			status = -EINVAL;
--	int			offset;
-+	int			hwgpio;
- 
- 	spin_lock_irqsave(&gpio_lock, flags);
- 
-@@ -1772,8 +1772,8 @@ static int gpiod_set_debounce(struct gpio_desc *desc, unsigned debounce)
- 
- 	might_sleep_if(chip->can_sleep);
- 
--	offset = gpio_chip_hwgpio(desc);
--	return chip->set_debounce(chip, offset, debounce);
-+	hwgpio = gpio_chip_hwgpio(desc);
-+	return chip->set_debounce(chip, hwgpio, debounce);
- 
- fail:
- 	spin_unlock_irqrestore(&gpio_lock, flags);
-@@ -1825,15 +1825,15 @@ static int gpiod_get_value(const struct gpio_desc *desc)
- {
- 	struct gpio_chip	*chip;
- 	int value;
--	int offset;
-+	int hwgpio;
- 
- 	if (!desc)
- 		return 0;
- 	chip = desc->chip;
--	offset = gpio_chip_hwgpio(desc);
-+	hwgpio = gpio_chip_hwgpio(desc);
- 	/* Should be using gpio_get_value_cansleep() */
- 	WARN_ON(chip->can_sleep);
--	value = chip->get ? chip->get(chip, offset) : 0;
-+	value = chip->get ? chip->get(chip, hwgpio) : 0;
- 	trace_gpio_value(desc_to_gpio(desc), 1, value);
- 	return value;
- }
-@@ -1854,14 +1854,14 @@ static void _gpio_set_open_drain_value(struct gpio_desc *desc, int value)
- {
- 	int err = 0;
- 	struct gpio_chip *chip = desc->chip;
--	int offset = gpio_chip_hwgpio(desc);
-+	int hwgpio = gpio_chip_hwgpio(desc);
- 
- 	if (value) {
--		err = chip->direction_input(chip, offset);
-+		err = chip->direction_input(chip, hwgpio);
- 		if (!err)
- 			clear_bit(FLAG_IS_OUT, &desc->flags);
- 	} else {
--		err = chip->direction_output(chip, offset, 0);
-+		err = chip->direction_output(chip, hwgpio, 0);
- 		if (!err)
- 			set_bit(FLAG_IS_OUT, &desc->flags);
- 	}
-@@ -1881,14 +1881,14 @@ static void _gpio_set_open_source_value(struct gpio_desc *desc, int value)
- {
- 	int err = 0;
- 	struct gpio_chip *chip = desc->chip;
--	int offset = gpio_chip_hwgpio(desc);
-+	int hwgpio = gpio_chip_hwgpio(desc);
- 
- 	if (value) {
--		err = chip->direction_output(chip, offset, 1);
-+		err = chip->direction_output(chip, hwgpio, 1);
- 		if (!err)
- 			set_bit(FLAG_IS_OUT, &desc->flags);
- 	} else {
--		err = chip->direction_input(chip, offset);
-+		err = chip->direction_input(chip, hwgpio);
- 		if (!err)
- 			clear_bit(FLAG_IS_OUT, &desc->flags);
- 	}
-@@ -1965,13 +1965,13 @@ EXPORT_SYMBOL_GPL(__gpio_cansleep);
- static int gpiod_to_irq(const struct gpio_desc *desc)
- {
- 	struct gpio_chip	*chip;
--	int			offset;
-+	int			hwgpio;
- 
- 	if (!desc)
- 		return -EINVAL;
- 	chip = desc->chip;
--	offset = gpio_chip_hwgpio(desc);
--	return chip->to_irq ? chip->to_irq(chip, offset) : -ENXIO;
-+	hwgpio = gpio_chip_hwgpio(desc);
-+	return chip->to_irq ? chip->to_irq(chip, hwgpio) : -ENXIO;
- }
- 
- int __gpio_to_irq(unsigned gpio)
-@@ -1989,14 +1989,14 @@ static int gpiod_get_value_cansleep(const struct gpio_desc *desc)
- {
- 	struct gpio_chip	*chip;
- 	int value;
--	int offset;
-+	int hwgpio;
- 
- 	might_sleep_if(extra_checks);
- 	if (!desc)
- 		return 0;
- 	chip = desc->chip;
--	offset = gpio_chip_hwgpio(desc);
--	value = chip->get ? chip->get(chip, offset) : 0;
-+	hwgpio = gpio_chip_hwgpio(desc);
-+	value = chip->get ? chip->get(chip, hwgpio) : 0;
- 	trace_gpio_value(desc_to_gpio(desc), 1, value);
- 	return value;
- }
+@@ -1085,6 +1085,27 @@ static inline void gpiochip_unexport(struct 
+gpio_chip *chip)
+  {
+  }
+
++static inline int gpiod_export(struct gpio_desc *desc,
++                              bool direction_may_change)
++{
++       return -ENOSYS;
++}
++
++static inline int gpiod_export_link(struct device *dev, const char *name,
++                                   struct gpio_desc *desc)
++{
++       return -ENOSYS;
++}
++
++static inline int gpiod_sysfs_set_active_low(struct gpio_desc *desc, 
+int value)
++{
++       return -ENOSYS;
++}
++
++static inline void gpiod_unexport(struct gpio_desc *desc)
++{
++}
++
+  #endif /* CONFIG_GPIO_SYSFS */
+
+  /*
 -- 
 1.8.1.3
 
+-----------------------------------------------------------------------------------
+This email message is for the sole use of the intended recipient(s) and may contain
+confidential information.  Any unauthorized review, use, disclosure or distribution
+is prohibited.  If you are not the intended recipient, please contact the sender by
+reply email and destroy all copies of the original message.
+-----------------------------------------------------------------------------------
