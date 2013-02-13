@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934522Ab3BMQl0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 11:41:26 -0500
-Received: from www.linutronix.de ([62.245.132.108]:60049 "EHLO
+	id S964795Ab3BMQlq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 11:41:46 -0500
+Received: from www.linutronix.de ([62.245.132.108]:60067 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934313Ab3BMQlX (ORCPT
+	with ESMTP id S934410Ab3BMQll (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 11:41:23 -0500
+	Wed, 13 Feb 2013 11:41:41 -0500
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
-        Carsten Emde <C.Emde@osadl.org>, Christoph Lameter <cl@linux.com>,
+        Carsten Emde <C.Emde@osadl.org>, Thomas Gleixner <tglx@linutronix.de>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 11/16] slub: Use correct cpu_slab on dead cpu
-Date: Wed, 13 Feb 2013 17:12:06 +0100
-Message-Id: <1360771932-27150-12-git-send-email-bigeasy@linutronix.de>
+Subject: [PATCH 15/16] mm: Enable SLUB for RT
+Date: Wed, 13 Feb 2013 17:12:10 +0100
+Message-Id: <1360771932-27150-16-git-send-email-bigeasy@linutronix.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1360771932-27150-1-git-send-email-bigeasy@linutronix.de>
 References: <1360771932-27150-1-git-send-email-bigeasy@linutronix.de>
@@ -25,60 +25,396 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Christoph Lameter <cl@linux.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-Pass a kmem_cache_cpu pointer into unfreeze partials so that a different
-kmem_cache_cpu structure than the local one can be specified.
+Make SLUB RT aware and remove the restriction in Kconfig.
 
-Reported-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Christoph Lameter <cl@linux.com>
-[bigeasy@linutronix: remove unused n2]
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+[bigeasy@linutronix: fix a few conflicts]
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- mm/slub.c |   14 +++++++++-----
- 1 file changed, 9 insertions(+), 5 deletions(-)
+ include/linux/slub_def.h |    2 +-
+ init/Kconfig             |    1 -
+ mm/slub.c                |  115 +++++++++++++++++++++++++++++++++++-----------
+ 3 files changed, 90 insertions(+), 28 deletions(-)
 
+diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
+index a32bcfd..0c674f6 100644
+--- a/include/linux/slub_def.h
++++ b/include/linux/slub_def.h
+@@ -52,7 +52,7 @@ struct kmem_cache_cpu {
+ };
+ 
+ struct kmem_cache_node {
+-	spinlock_t list_lock;	/* Protect partial list and nr_partial */
++	raw_spinlock_t list_lock;	/* Protect partial list and nr_partial */
+ 	unsigned long nr_partial;
+ 	struct list_head partial;
+ #ifdef CONFIG_SLUB_DEBUG
+diff --git a/init/Kconfig b/init/Kconfig
+index aa6545f..cfb1668 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1240,7 +1240,6 @@ config SLAB
+ 
+ config SLUB
+ 	bool "SLUB (Unqueued Allocator)"
+-	depends on !PREEMPT_RT_FULL
+ 	help
+ 	   SLUB is a slab allocator that minimizes cache line usage
+ 	   instead of managing queues of cached objects (SLAB approach).
 diff --git a/mm/slub.c b/mm/slub.c
-index 78d2756..d9ba33d 100644
+index 2a250f4..8475580 100644
 --- a/mm/slub.c
 +++ b/mm/slub.c
-@@ -1870,11 +1870,15 @@ static void deactivate_slab(struct kmem_cache *s, struct kmem_cache_cpu *c)
+@@ -1258,6 +1258,12 @@ static inline void slab_free_hook(struct kmem_cache *s, void *x) {}
+ 
+ #endif /* CONFIG_SLUB_DEBUG */
+ 
++struct slub_free_list {
++	raw_spinlock_t		lock;
++	struct list_head	list;
++};
++static DEFINE_PER_CPU(struct slub_free_list, slub_free_list);
++
+ /*
+  * Slab allocation and freeing
+  */
+@@ -1282,7 +1288,11 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
+ 
+ 	flags &= gfp_allowed_mask;
+ 
++#ifdef CONFIG_PREEMPT_RT_FULL
++	if (system_state == SYSTEM_RUNNING)
++#else
+ 	if (flags & __GFP_WAIT)
++#endif
+ 		local_irq_enable();
+ 
+ 	flags |= s->allocflags;
+@@ -1306,7 +1316,11 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
+ 			stat(s, ORDER_FALLBACK);
  	}
+ 
++#ifdef CONFIG_PREEMPT_RT_FULL
++	if (system_state == SYSTEM_RUNNING)
++#else
+ 	if (flags & __GFP_WAIT)
++#endif
+ 		local_irq_disable();
+ 
+ 	if (!page)
+@@ -1412,6 +1426,16 @@ static void __free_slab(struct kmem_cache *s, struct page *page)
+ 	__free_pages(page, order);
  }
  
--/* Unfreeze all the cpu partial slabs */
--static void unfreeze_partials(struct kmem_cache *s)
-+/*
-+ * Unfreeze all the cpu partial slabs.
-+ *
-+ * This function must be called with interrupt disabled.
-+ */
-+static void unfreeze_partials(struct kmem_cache *s,
-+		struct kmem_cache_cpu *c)
- {
- 	struct kmem_cache_node *n = NULL;
--	struct kmem_cache_cpu *c = this_cpu_ptr(s->cpu_slab);
- 	struct page *page, *discard_page = NULL;
++static void free_delayed(struct kmem_cache *s, struct list_head *h)
++{
++	while(!list_empty(h)) {
++		struct page *page = list_first_entry(h, struct page, lru);
++
++		list_del(&page->lru);
++		__free_slab(s, page);
++	}
++}
++
+ #define need_reserve_slab_rcu						\
+ 	(sizeof(((struct page *)NULL)->lru) < sizeof(struct rcu_head))
  
- 	while ((page = c->partial)) {
-@@ -1977,7 +1981,7 @@ int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
- 				 * set to the per node partial list.
+@@ -1446,6 +1470,12 @@ static void free_slab(struct kmem_cache *s, struct page *page)
+ 		}
+ 
+ 		call_rcu(head, rcu_free_slab);
++	} else if (irqs_disabled()) {
++		struct slub_free_list *f = &__get_cpu_var(slub_free_list);
++
++		raw_spin_lock(&f->lock);
++		list_add(&page->lru, &f->list);
++		raw_spin_unlock(&f->lock);
+ 	} else
+ 		__free_slab(s, page);
+ }
+@@ -1545,7 +1575,7 @@ static void *get_partial_node(struct kmem_cache *s,
+ 	if (!n || !n->nr_partial)
+ 		return NULL;
+ 
+-	spin_lock(&n->list_lock);
++	raw_spin_lock(&n->list_lock);
+ 	list_for_each_entry_safe(page, page2, &n->partial, lru) {
+ 		void *t = acquire_slab(s, n, page, object == NULL);
+ 		int available;
+@@ -1566,7 +1596,7 @@ static void *get_partial_node(struct kmem_cache *s,
+ 			break;
+ 
+ 	}
+-	spin_unlock(&n->list_lock);
++	raw_spin_unlock(&n->list_lock);
+ 	return object;
+ }
+ 
+@@ -1815,7 +1845,7 @@ static void deactivate_slab(struct kmem_cache *s, struct kmem_cache_cpu *c)
+ 			 * that acquire_slab() will see a slab page that
+ 			 * is frozen
+ 			 */
+-			spin_lock(&n->list_lock);
++			raw_spin_lock(&n->list_lock);
+ 		}
+ 	} else {
+ 		m = M_FULL;
+@@ -1826,7 +1856,7 @@ static void deactivate_slab(struct kmem_cache *s, struct kmem_cache_cpu *c)
+ 			 * slabs from diagnostic functions will not see
+ 			 * any frozen slabs.
+ 			 */
+-			spin_lock(&n->list_lock);
++			raw_spin_lock(&n->list_lock);
+ 		}
+ 	}
+ 
+@@ -1861,7 +1891,7 @@ static void deactivate_slab(struct kmem_cache *s, struct kmem_cache_cpu *c)
+ 		goto redo;
+ 
+ 	if (lock)
+-		spin_unlock(&n->list_lock);
++		raw_spin_unlock(&n->list_lock);
+ 
+ 	if (m == M_FREE) {
+ 		stat(s, DEACTIVATE_EMPTY);
+@@ -1910,10 +1940,10 @@ static void unfreeze_partials(struct kmem_cache *s,
+ 				m = M_PARTIAL;
+ 				if (n != n2) {
+ 					if (n)
+-						spin_unlock(&n->list_lock);
++						raw_spin_unlock(&n->list_lock);
+ 
+ 					n = n2;
+-					spin_lock(&n->list_lock);
++					raw_spin_lock(&n->list_lock);
+ 				}
+ 			}
+ 
+@@ -1939,7 +1969,7 @@ static void unfreeze_partials(struct kmem_cache *s,
+ 	}
+ 
+ 	if (n)
+-		spin_unlock(&n->list_lock);
++		raw_spin_unlock(&n->list_lock);
+ 
+ 	while (discard_page) {
+ 		page = discard_page;
+@@ -1960,7 +1990,7 @@ static void unfreeze_partials(struct kmem_cache *s,
+  * If we did not find a slot then simply move all the partials to the
+  * per node partial list.
+  */
+-int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
++static int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
+ {
+ 	struct page *oldpage;
+ 	int pages;
+@@ -1975,6 +2005,8 @@ int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
+ 			pobjects = oldpage->pobjects;
+ 			pages = oldpage->pages;
+ 			if (drain && pobjects > s->cpu_partial) {
++				LIST_HEAD(tofree);
++				struct slub_free_list *f;
+ 				unsigned long flags;
+ 				/*
+ 				 * partial array is full. Move the existing
+@@ -1982,7 +2014,12 @@ int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
  				 */
  				local_irq_save(flags);
--				unfreeze_partials(s);
-+				unfreeze_partials(s, this_cpu_ptr(s->cpu_slab));
+ 				unfreeze_partials(s, this_cpu_ptr(s->cpu_slab));
++				f = &__get_cpu_var(slub_free_list);
++				raw_spin_lock(&f->lock);
++				list_splice_init(&f->list, &tofree);
++				raw_spin_unlock(&f->lock);
  				local_irq_restore(flags);
++				free_delayed(s, &tofree);
  				pobjects = 0;
  				pages = 0;
-@@ -2015,7 +2019,7 @@ static inline void __flush_cpu_slab(struct kmem_cache *s, int cpu)
- 		if (c->page)
- 			flush_slab(s, c);
+ 			}
+@@ -2040,7 +2077,22 @@ static bool has_cpu_slab(int cpu, void *info)
  
--		unfreeze_partials(s);
-+		unfreeze_partials(s, c);
- 	}
+ static void flush_all(struct kmem_cache *s)
+ {
++	LIST_HEAD(tofree);
++	int cpu;
++
+ 	on_each_cpu_cond(has_cpu_slab, flush_cpu_slab, s, 1, GFP_ATOMIC);
++	for_each_online_cpu(cpu) {
++		struct slub_free_list *f;
++
++		if (!has_cpu_slab(cpu, s))
++			continue;
++
++		f = &per_cpu(slub_free_list, cpu);
++		raw_spin_lock_irq(&f->lock);
++		list_splice_init(&f->list, &tofree);
++		raw_spin_unlock_irq(&f->lock);
++		free_delayed(s, &tofree);
++	}
  }
  
+ /*
+@@ -2068,10 +2120,10 @@ static unsigned long count_partial(struct kmem_cache_node *n,
+ 	unsigned long x = 0;
+ 	struct page *page;
+ 
+-	spin_lock_irqsave(&n->list_lock, flags);
++	raw_spin_lock_irqsave(&n->list_lock, flags);
+ 	list_for_each_entry(page, &n->partial, lru)
+ 		x += get_count(page);
+-	spin_unlock_irqrestore(&n->list_lock, flags);
++	raw_spin_unlock_irqrestore(&n->list_lock, flags);
+ 	return x;
+ }
+ 
+@@ -2167,6 +2219,8 @@ static inline void *new_slab_objects(struct kmem_cache *s, gfp_t flags,
+ static void *__slab_alloc(struct kmem_cache *s, gfp_t gfpflags, int node,
+ 			  unsigned long addr, struct kmem_cache_cpu *c)
+ {
++	struct slub_free_list *f;
++	LIST_HEAD(tofree);
+ 	void **object;
+ 	unsigned long flags;
+ 	struct page new;
+@@ -2233,7 +2287,13 @@ static void *__slab_alloc(struct kmem_cache *s, gfp_t gfpflags, int node,
+ load_freelist:
+ 	c->freelist = get_freepointer(s, object);
+ 	c->tid = next_tid(c->tid);
++out:
++	f = &__get_cpu_var(slub_free_list);
++	raw_spin_lock(&f->lock);
++	list_splice_init(&f->list, &tofree);
++	raw_spin_unlock(&f->lock);
+ 	local_irq_restore(flags);
++	free_delayed(s, &tofree);
+ 	return object;
+ 
+ new_slab:
+@@ -2258,8 +2318,7 @@ static void *__slab_alloc(struct kmem_cache *s, gfp_t gfpflags, int node,
+ 			if (!(gfpflags & __GFP_NOWARN) && printk_ratelimit())
+ 				slab_out_of_memory(s, gfpflags, node);
+ 
+-			local_irq_restore(flags);
+-			return NULL;
++			goto out;
+ 		}
+ 	}
+ 
+@@ -2273,8 +2332,7 @@ static void *__slab_alloc(struct kmem_cache *s, gfp_t gfpflags, int node,
+ 	c->freelist = get_freepointer(s, object);
+ 	deactivate_slab(s, c);
+ 	c->node = NUMA_NO_NODE;
+-	local_irq_restore(flags);
+-	return object;
++	goto out;
+ }
+ 
+ /*
+@@ -2466,7 +2524,7 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
+ 				 * Otherwise the list_lock will synchronize with
+ 				 * other processors updating the list of slabs.
+ 				 */
+-				spin_lock_irqsave(&n->list_lock, flags);
++				raw_spin_lock_irqsave(&n->list_lock, flags);
+ 
+ 			}
+ 		}
+@@ -2515,7 +2573,7 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
+ 			stat(s, FREE_ADD_PARTIAL);
+ 		}
+ 	}
+-	spin_unlock_irqrestore(&n->list_lock, flags);
++	raw_spin_unlock_irqrestore(&n->list_lock, flags);
+ 	return;
+ 
+ slab_empty:
+@@ -2529,7 +2587,7 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
+ 		/* Slab must be on the full list */
+ 		remove_full(s, page);
+ 
+-	spin_unlock_irqrestore(&n->list_lock, flags);
++	raw_spin_unlock_irqrestore(&n->list_lock, flags);
+ 	stat(s, FREE_SLAB);
+ 	discard_slab(s, page);
+ }
+@@ -2759,7 +2817,7 @@ static void
+ init_kmem_cache_node(struct kmem_cache_node *n, struct kmem_cache *s)
+ {
+ 	n->nr_partial = 0;
+-	spin_lock_init(&n->list_lock);
++	raw_spin_lock_init(&n->list_lock);
+ 	INIT_LIST_HEAD(&n->partial);
+ #ifdef CONFIG_SLUB_DEBUG
+ 	atomic_long_set(&n->nr_slabs, 0);
+@@ -3499,7 +3557,7 @@ int kmem_cache_shrink(struct kmem_cache *s)
+ 		for (i = 0; i < objects; i++)
+ 			INIT_LIST_HEAD(slabs_by_inuse + i);
+ 
+-		spin_lock_irqsave(&n->list_lock, flags);
++		raw_spin_lock_irqsave(&n->list_lock, flags);
+ 
+ 		/*
+ 		 * Build lists indexed by the items in use in each slab.
+@@ -3520,7 +3578,7 @@ int kmem_cache_shrink(struct kmem_cache *s)
+ 		for (i = objects - 1; i > 0; i--)
+ 			list_splice(slabs_by_inuse + i, n->partial.prev);
+ 
+-		spin_unlock_irqrestore(&n->list_lock, flags);
++		raw_spin_unlock_irqrestore(&n->list_lock, flags);
+ 
+ 		/* Release empty slabs */
+ 		list_for_each_entry_safe(page, t, slabs_by_inuse, lru)
+@@ -3686,10 +3744,15 @@ void __init kmem_cache_init(void)
+ 	int i;
+ 	int caches = 0;
+ 	struct kmem_cache *temp_kmem_cache;
+-	int order;
++	int order, cpu;
+ 	struct kmem_cache *temp_kmem_cache_node;
+ 	unsigned long kmalloc_size;
+ 
++	for_each_possible_cpu(cpu) {
++		raw_spin_lock_init(&per_cpu(slub_free_list, cpu).lock);
++		INIT_LIST_HEAD(&per_cpu(slub_free_list, cpu).list);
++	}
++
+ 	kmem_size = offsetof(struct kmem_cache, node) +
+ 				nr_node_ids * sizeof(struct kmem_cache_node *);
+ 
+@@ -4110,7 +4173,7 @@ static int validate_slab_node(struct kmem_cache *s,
+ 	struct page *page;
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&n->list_lock, flags);
++	raw_spin_lock_irqsave(&n->list_lock, flags);
+ 
+ 	list_for_each_entry(page, &n->partial, lru) {
+ 		validate_slab_slab(s, page, map);
+@@ -4133,7 +4196,7 @@ static int validate_slab_node(struct kmem_cache *s,
+ 			atomic_long_read(&n->nr_slabs));
+ 
+ out:
+-	spin_unlock_irqrestore(&n->list_lock, flags);
++	raw_spin_unlock_irqrestore(&n->list_lock, flags);
+ 	return count;
+ }
+ 
+@@ -4323,12 +4386,12 @@ static int list_locations(struct kmem_cache *s, char *buf,
+ 		if (!atomic_long_read(&n->nr_slabs))
+ 			continue;
+ 
+-		spin_lock_irqsave(&n->list_lock, flags);
++		raw_spin_lock_irqsave(&n->list_lock, flags);
+ 		list_for_each_entry(page, &n->partial, lru)
+ 			process_slab(&t, s, page, alloc, map);
+ 		list_for_each_entry(page, &n->full, lru)
+ 			process_slab(&t, s, page, alloc, map);
+-		spin_unlock_irqrestore(&n->list_lock, flags);
++		raw_spin_unlock_irqrestore(&n->list_lock, flags);
+ 	}
+ 
+ 	for (i = 0; i < t.count; i++) {
 -- 
 1.7.10.4
 
