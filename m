@@ -1,112 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758329Ab3BMEdA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 23:33:00 -0500
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:50256 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752035Ab3BMEc7 (ORCPT
+	id S1757078Ab3BMEnA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 23:43:00 -0500
+Received: from mail-ia0-f172.google.com ([209.85.210.172]:47306 "EHLO
+	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752140Ab3BMEm6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 23:32:59 -0500
+	Tue, 12 Feb 2013 23:42:58 -0500
 MIME-Version: 1.0
-In-Reply-To: <1661570408.42886.1360700013207.JavaMail.mail@webmail03>
-References: <587312497.6453.1360650312498.JavaMail.mail@webmail01>
- <CA+55aFyscOeZUPaYj_-QYgjADPD59+=c5aMvtpPEnd1tmpUGiA@mail.gmail.com>
- <1362466310.40337.1360693775935.JavaMail.mail@webmail03> <CA+55aFyK1zhNerWHkd=FMMeTH_sfiL4sBFq00y4n5eAJ88Z_cA@mail.gmail.com>
- <1661570408.42886.1360700013207.JavaMail.mail@webmail03>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 12 Feb 2013 21:26:44 -0700
-Message-ID: <CAErSpo7qj2SNR7BfuBsfF-saZXvgcqqLtgoP5Hyb5u99qR4Ncg@mail.gmail.com>
-Subject: Re: Abysmal HDD/USB write speed after sleep on a UEFI system
-To: "Artem S. Tashkinov" <t.artem@lycos.com>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Alan Stern <stern@rowland.harvard.edu>
+In-Reply-To: <53da10fbf2904c6597568abdf10fe8f0@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <1359940959-32168-3-git-send-email-kys@microsoft.com>
+	<tip-bc2b0331e077f576369a2b6c75d15ed4de4ef91f@git.kernel.org>
+	<CAE9FiQXZRj84-fBwV4Hb0NQxcMxD1JTdsFXfyHMzaK-59TXjAg@mail.gmail.com>
+	<7d06776025df4b788474c9710ed692ca@SN2PR03MB061.namprd03.prod.outlook.com>
+	<511B0C84.5040806@zytor.com>
+	<f6d62df8f3cb4076a2d3fe8a4f054a99@SN2PR03MB061.namprd03.prod.outlook.com>
+	<511B0E79.6030007@zytor.com>
+	<53da10fbf2904c6597568abdf10fe8f0@SN2PR03MB061.namprd03.prod.outlook.com>
+Date: Tue, 12 Feb 2013 20:42:58 -0800
+X-Google-Sender-Auth: AQ1RzLeloYJApqz3NiX0cy4zChc
+Message-ID: <CAE9FiQVBXyF2ry==pnS3N+FrUObGW1HO3fCnKW1BxE7JpmzGcA@mail.gmail.com>
+Subject: Re: [tip:x86/hyperv] X86: Handle Hyper-V vmbus interrupts as special
+ hypervisor interrupts
+From: Yinghai Lu <yinghai@kernel.org>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc linux-pci, Rafael, Alan]
-
-[https://bugzilla.kernel.org/show_bug.cgi?id=53551]
-
-On Tue, Feb 12, 2013 at 1:13 PM, Artem S. Tashkinov <t.artem@lycos.com> wrote:
-> Feb 13, 2013 01:32:53 AM, Linus Torvalds wrote:
-> On Tue, Feb 12, 2013 at 10:29 AM, Artem S. Tashkinov wrote:
->>> Feb 12, 2013 11:30:20 PM, Linus Torvalds wrote:
->>>>
->>>>A few things to try to pinpoint:
->>>>
->>>> (a) Is it *only* write performance that suffers, or is it other
->>>>performance too? Networking (DMA? Perhaps only writing *to* the
->>>>network?)? CPU?
->>>
->>> I  've tested hdpard -tT --direct and the output on boot and after suspend
->>> is quite similar.
->>>
->>> I  've also checked my network read/write speed, and it  's the same
->>> ~ 100MBit/sec (I have no 1Gbit computers on my network
->>> unfortunately).
->>
->>Ok. So it really sounds like just USB and HD writes. Which is quite
->>odd, since they have basically nothing in common I can think of
->>(except the obvious block layer issues).
->>
->>>> (b) the fact that it apparently happens with both SATA and USB
->>>>implies that it    's neither, and is more likely something core like
->>>>memory speed (mtrr, caching) or PCI (DMA, burst sizes, whatever).
->>>
->>> I  've no idea, please, check my bug report where I  've just added lots of
->>> information including a diff between on boot and after suspend.
->>
->>I  'm not seeing anything particularly interesting there.
->>
->>Except why/how did the MSI address/data change for the SATA
->>controller? The irq itself hasn  't changed.. There  's probably some sane
->>reason for that too (it  's an odd encoding, maybe they code for the
->>same thing), and there  's nothing like that for USB, so...
->>
->>And if it was irq problems, I  'd expect you to see it more for reads
->>than for writes anyway. Along with a few messages about missed irqs
->>and whatever.
->>
->>I'm stumped, and have no ideas. I can  't even begin to guess how this
->>would happen. One thing to try is if it happens for all USB ports (you
->>have multiple controllers) and I assume performance doesn  't come back
->>if you unplug and replug the USB disk..
+On Tue, Feb 12, 2013 at 7:58 PM, KY Srinivasan <kys@microsoft.com> wrote:
 >
-> I've just plugged and unplugged my USB stick into all available hubs
-> (including a USB3 one, that is xhci_hcd) and I've got the same write speed
-> on all of them - around 930KB/sec (quite a weird number - as if I'm on USB
-> 1.1) - lsusb says I'm happily running ehci_hcd/2p, 480M and xhci_hcd/2p,
-> 5000M.
 >
-> The only pattern that I see here is that write speed to real devices degrades,
-> tmpfs write speed stays the same:
+>> -----Original Message-----
+>> From: H. Peter Anvin [mailto:hpa@zytor.com]
+>> Sent: Tuesday, February 12, 2013 10:55 PM
+>> To: KY Srinivasan
+>> Cc: Yinghai Lu; mingo@kernel.org; linux-kernel@vger.kernel.org;
+>> tglx@linutronix.de; hpa@linux.intel.com; linux-tip-commits@vger.kernel.org
+>> Subject: Re: [tip:x86/hyperv] X86: Handle Hyper-V vmbus interrupts as special
+>> hypervisor interrupts
+>>
+>> On 02/12/2013 07:49 PM, KY Srinivasan wrote:
+>> >>>
+>> >>> The issue was that you could turn on CONFIG_HYPERV without enabling
+>> >>> CONFIG_X86_LOCAL_APIC. Peter fixed it.
+>> >>>
+>> >>
+>> >> He is asking why you are using IS_ENABLED() instead of #ifdef.  The
+>> >> difference is that IS_ENABLED() works even for modules.
+>> >
+>> > My mistake!
+>> >
+>>
+>> Well, which one do you need?
 >
-> $ dd if=/dev/zero of=test bs=32M count=32
-> 32+0 records indegrade
-> 32+0 records out
-> 1073741824 bytes (1.1 GB) copied, 0.296323 s, 3.6 GB/s
+> I chose the IS_ENABLED() because I wanted to cover the case where HYPERV is configured as a module as well.
+>
 
-I'm sort of stumped here, too.  For the SATA controller, the only
-PCI-related difference I see is the change in the MSI address, which
-should just change the target CPU, which doesn't seem like it should
-make this much difference.  But could you try this after the resume:
+ok, so when HYPERV is built as module, actually it is partially module
+as it put some code built-in already?
+if user never load hyperv, those code will never not be used.
 
-    $ sudo setpci -s00:1f.2 0x84.L=0xfee0400c
+Can those code not be put in module _init function?
 
-to set the MSI address back to the original value to see if it makes a
-difference?
+Thanks
 
-The XHCI controllers both have Unsupported Request errors logged.  I
-assume these are related to the suspend/resume, and it seems like we
-ought to either avoid them or clean them up somehow, but I don't know
-enough about AER, and I don't know whether they would cause the
-performance issue you're seeing.
-
-There should be more AER logging than is decoded by lspci, so can you
-also collect the output of "lspci -vvv -xxxx"?  That will include the
-raw logging registers that lspci doesn't decode.
-
-Bjorn
+Yinghai
