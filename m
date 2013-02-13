@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933683Ab3BMKXk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 05:23:40 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:39162 "EHLO
+	id S933635Ab3BMKXi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 05:23:38 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:39163 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932643Ab3BMKXg (ORCPT
+	with ESMTP id S932667Ab3BMKXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 13 Feb 2013 05:23:36 -0500
 From: Marc Kleine-Budde <mkl@pengutronix.de>
@@ -13,9 +13,9 @@ Cc: kernel@pengutronix.de, artem.bityutskiy@linux.intel.com,
         linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
         Subodh Nijsure <snijsure@grid-net.com>,
         Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [PATCH RFC 2/5] UBIFS: fix couple bugs in UBIFS extended attribute length calculation
-Date: Wed, 13 Feb 2013 11:23:15 +0100
-Message-Id: <1360750998-15191-3-git-send-email-mkl@pengutronix.de>
+Subject: [PATCH RFC 5/5] UBIFS: add ubifs_err() to print error reason
+Date: Wed, 13 Feb 2013 11:23:18 +0100
+Message-Id: <1360750998-15191-6-git-send-email-mkl@pengutronix.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1360750998-15191-1-git-send-email-mkl@pengutronix.de>
 References: <1360750998-15191-1-git-send-email-mkl@pengutronix.de>
@@ -29,40 +29,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Subodh Nijsure <snijsure@grid-net.com>
 
+This patch add ubifs_err() output to some error pathes to tell the user what's
+going on.
+
 Signed-off-by: Subodh Nijsure <snijsure@grid-net.com>
 Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 ---
- fs/ubifs/journal.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ fs/ubifs/dir.c   |   20 ++++++++++++++++----
+ fs/ubifs/xattr.c |   12 ++++++++++--
+ 2 files changed, 26 insertions(+), 6 deletions(-)
 
-diff --git a/fs/ubifs/journal.c b/fs/ubifs/journal.c
-index afaad07..6981d7d 100644
---- a/fs/ubifs/journal.c
-+++ b/fs/ubifs/journal.c
-@@ -572,7 +572,12 @@ int ubifs_jnl_update(struct ubifs_info *c, const struct inode *dir,
+diff --git a/fs/ubifs/dir.c b/fs/ubifs/dir.c
+index 6aa31b5..d0dd7a9 100644
+--- a/fs/ubifs/dir.c
++++ b/fs/ubifs/dir.c
+@@ -282,8 +282,11 @@ static int ubifs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
+ 		goto out_cancel;
  
- 	aligned_dlen = ALIGN(dlen, 8);
- 	aligned_ilen = ALIGN(ilen, 8);
--	len = aligned_dlen + aligned_ilen + UBIFS_INO_NODE_SZ;
-+	/*
-+	 * Make sure to account for dir_ui+data_len in length
-+	 * calculation in case there is extended attribute.
-+	 */
-+	len = aligned_dlen + aligned_ilen +
-+	      UBIFS_INO_NODE_SZ + dir_ui->data_len;
- 	dent = kmalloc(len, GFP_NOFS);
- 	if (!dent)
- 		return -ENOMEM;
-@@ -649,7 +654,8 @@ int ubifs_jnl_update(struct ubifs_info *c, const struct inode *dir,
+ 	err = ubifs_init_security(dir, inode, &dentry->d_name);
+-	if (err)
++	if (err) {
++		ubifs_err("cannot initialize extended attribute, error %d",
++			  err);
+ 		goto out_cancel;
++	}
+ 	mutex_unlock(&dir_ui->ui_mutex);
  
- 	ino_key_init(c, &ino_key, dir->i_ino);
- 	ino_offs += aligned_ilen;
--	err = ubifs_tnc_add(c, &ino_key, lnum, ino_offs, UBIFS_INO_NODE_SZ);
-+	err = ubifs_tnc_add(c, &ino_key, lnum, ino_offs,
-+			    UBIFS_INO_NODE_SZ + dir_ui->data_len);
+ 	ubifs_release_budget(c, &req);
+@@ -748,8 +751,11 @@ static int ubifs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
+ 	}
+ 
+ 	err = ubifs_init_security(dir, inode, &dentry->d_name);
+-	if (err)
++	if (err) {
++		ubifs_err("cannot initialize extended attribute, error %d",
++			  err);
+ 		goto out_cancel;
++	}
+ 	mutex_unlock(&dir_ui->ui_mutex);
+ 
+ 	ubifs_release_budget(c, &req);
+@@ -828,8 +834,11 @@ static int ubifs_mknod(struct inode *dir, struct dentry *dentry,
+ 		goto out_cancel;
+ 
+ 	err = ubifs_init_security(dir, inode, &dentry->d_name);
+-	if (err)
++	if (err) {
++		ubifs_err("cannot initialize extended attribute, error %d",
++			  err);
+ 		goto out_cancel;
++	}
+ 	mutex_unlock(&dir_ui->ui_mutex);
+ 
+ 	ubifs_release_budget(c, &req);
+@@ -908,8 +917,11 @@ static int ubifs_symlink(struct inode *dir, struct dentry *dentry,
+ 		goto out_cancel;
+ 
+ 	err = ubifs_init_security(dir, inode, &dentry->d_name);
+-	if (err)
++	if (err) {
++		ubifs_err("cannot initialize extended attribute, error %d",
++			  err);
+ 		goto out_cancel;
++	}
+ 	mutex_unlock(&dir_ui->ui_mutex);
+ 
+ 	ubifs_release_budget(c, &req);
+diff --git a/fs/ubifs/xattr.c b/fs/ubifs/xattr.c
+index aa81bd3..380fcc9 100644
+--- a/fs/ubifs/xattr.c
++++ b/fs/ubifs/xattr.c
+@@ -107,8 +107,11 @@ static int create_xattr(struct ubifs_info *c, struct inode *host,
+ 				.new_ino_d = ALIGN(size, 8), .dirtied_ino = 1,
+ 				.dirtied_ino_d = ALIGN(host_ui->data_len, 8) };
+ 
+-	if (host_ui->xattr_cnt >= MAX_XATTRS_PER_INODE)
++	if (host_ui->xattr_cnt >= MAX_XATTRS_PER_INODE) {
++		ubifs_err("ubifs xattr_cnt %d exceeds MAX_XATTR_PER_NODE (%d)",
++			  host_ui->xattr_cnt, MAX_XATTRS_PER_INODE);
+ 		return -ENOSPC;
++	}
+ 	/*
+ 	 * Linux limits the maximum size of the extended attribute names list
+ 	 * to %XATTR_LIST_MAX. This means we should not allow creating more
+@@ -116,8 +119,13 @@ static int create_xattr(struct ubifs_info *c, struct inode *host,
+ 	 * is artificial for UBIFS, though.
+ 	 */
+ 	if (host_ui->xattr_names + host_ui->xattr_cnt +
+-					nm->len + 1 > XATTR_LIST_MAX)
++					nm->len + 1 > XATTR_LIST_MAX) {
++		ubifs_err("xattr name list too large %d > %d",
++			  host_ui->xattr_names + host_ui->xattr_cnt +
++			  nm->len + 1,
++			  XATTR_LIST_MAX);
+ 		return -ENOSPC;
++	}
+ 
+ 	err = ubifs_budget_space(c, &req);
  	if (err)
- 		goto out_ro;
- 
 -- 
 1.7.10.4
 
