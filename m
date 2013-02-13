@@ -1,109 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751598Ab3BMFQd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 00:16:33 -0500
-Received: from relay.parallels.com ([195.214.232.42]:50037 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750868Ab3BMFQc (ORCPT
+	id S1751725Ab3BMF0g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 00:26:36 -0500
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:38174 "EHLO
+	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751232Ab3BMF0f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 00:16:32 -0500
-Message-ID: <511B2190.2050006@parallels.com>
-Date: Wed, 13 Feb 2013 09:16:00 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Peter Staubach <pstaubach@exagrid.com>
-CC: "J. Bruce Fields" <bfields@fieldses.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH 0/2] NFSD: fix races in service per-net resources allocation
-References: <20130201111046.24066.72836.stgit@localhost.localdomain> <20130211002558.GD10161@fieldses.org> <51188D2A.4070605@parallels.com> <20130211163715.GA19342@fieldses.org> <20130211205845.GE30117@fieldses.org> <511A10E0.1000604@parallels.com> <20130212204533.GD10267@fieldses.org> <FA8A9A935BFD3A4D8F0CDA1C4F611BCC0C5DF98826@IT-1874.Isys.com>
-In-Reply-To: <FA8A9A935BFD3A4D8F0CDA1C4F611BCC0C5DF98826@IT-1874.Isys.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.29.37]
+	Wed, 13 Feb 2013 00:26:35 -0500
+Message-ID: <1360733189.3634.8.camel@thor.lan>
+Subject: [next-20130204] nouveau: lockdep warning (not the same as the
+ subdev lockdep warning)
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Ben Skeggs <bskeggs@redhat.com>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Date: Wed, 13 Feb 2013 00:26:29 -0500
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3-0pjh1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-13.02.2013 01:18, Peter Staubach пишет:
-> The "+" thing seems a little odd.  Why not use "||" instead?  The sum of the two returns isn't really the important thing, is it?  It is that either call to svc_close_list() returns non-zero.
->
-> 	Thanx...
->
+Got this lockdep warning straightaway during boot:
 
-Yep, thanks for the notice.
-
-> 		ps
->
->
-> -----Original Message-----
-> From: linux-nfs-owner@vger.kernel.org [mailto:linux-nfs-owner@vger.kernel.org] On Behalf Of J. Bruce Fields
-> Sent: Tuesday, February 12, 2013 3:46 PM
-> To: Stanislav Kinsbursky
-> Cc: akpm@linux-foundation.org; linux-nfs@vger.kernel.org; Trond.Myklebust@netapp.com; linux-kernel@vger.kernel.org; devel@openvz.org
-> Subject: Re: [PATCH 0/2] NFSD: fix races in service per-net resources allocation
->
-> On Tue, Feb 12, 2013 at 01:52:32PM +0400, Stanislav Kinsbursky wrote:
->> 12.02.2013 00:58, J. Bruce Fields пишет:
->> <snip>
->>>   void svc_close_net(struct svc_serv *serv, struct net *net)
->>>   {
->>> -	svc_close_list(serv, &serv->sv_tempsocks, net);
->>> -	svc_close_list(serv, &serv->sv_permsocks, net);
->>> -
->>> -	svc_clear_pools(serv, net);
->>> -	/*
->>> -	 * At this point the sp_sockets lists will stay empty, since
->>> -	 * svc_xprt_enqueue will not add new entries without taking the
->>> -	 * sp_lock and checking XPT_BUSY.
->>> -	 */
->>> -	svc_clear_list(serv, &serv->sv_tempsocks, net);
->>> -	svc_clear_list(serv, &serv->sv_permsocks, net);
->>> +	int closed;
->>> +	int delay = 0;
->>> +
->>> +again:
->>> +	closed = svc_close_list(serv, &serv->sv_permsocks, net);
->>> +	closed += svc_close_list(serv, &serv->sv_tempsocks, net);
->>> +	if (closed) {
->>> +		svc_clean_up_xprts(serv, net);
->>> +		msleep(delay++);
->>> +		goto again;
->>> +	}
->>
->> Frankly, this hunk above makes me feel sick... :( But I have no better
->> idea right now...
->> Maybe make this hunk a bit less weird (this is from my POW only, of course), like this:
->>
->>> +	while (svc_close_list(serv, &serv->sv_permsocks, net) +
->>> +	       svc_close_list(serv, &serv->sv_tempsocks, net)) {
->>> +		svc_clean_up_xprts(serv, net);
->>> +		msleep(delay++);
->>> +	}
->>
->> ?
->
-> OK, that's a little more compact at least.
->
-> --b.
->
->>
->> Anyway, thanks!
->>
->> Acked-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
->>
->> --
->> Best regards,
->> Stanislav Kinsbursky
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in the body of a message to majordomo@vger.kernel.org More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+[    7.435890] =============================================
+[    7.435891] [ INFO: possible recursive locking detected ]
+[    7.435893] 3.8.0-next-20130204+pcipatch-xeon+lockdep #20130204+pcipatch Not tainted
+[    7.435893] ---------------------------------------------
+[    7.435895] modprobe/255 is trying to acquire lock:
+[    7.435942]  (&dmac->lock){+.+...}, at: [<ffffffffa01767c3>] evo_wait+0x43/0xf0 [nouveau]
+[    7.435942] 
+[    7.435942] but task is already holding lock:
+[    7.435964]  (&dmac->lock){+.+...}, at: [<ffffffffa01767c3>] evo_wait+0x43/0xf0 [nouveau]
+[    7.435964] 
+[    7.435964] other info that might help us debug this:
+[    7.435965]  Possible unsafe locking scenario:
+[    7.435965] 
+[    7.435966]        CPU0
+[    7.435967]        ----
+[    7.435968]   lock(&dmac->lock);
+[    7.435970]   lock(&dmac->lock);
+[    7.435970] 
+[    7.435970]  *** DEADLOCK ***
+[    7.435970] 
+[    7.435971]  May be due to missing lock nesting notation
+[    7.435971] 
+[    7.435973] 9 locks held by modprobe/255:
+[    7.435979]  #0:  (&__lockdep_no_validate__){......}, at: [<ffffffff814ce26b>] __driver_attach+0x5b/0xb0
+[    7.435982]  #1:  (&__lockdep_no_validate__){......}, at: [<ffffffff814ce279>] __driver_attach+0x69/0xb0
+[    7.436001]  #2:  (drm_global_mutex){+.+.+.}, at: [<ffffffffa0065e6d>] drm_get_pci_dev+0xbd/0x2a0 [drm]
+[    7.436012]  #3:  (registration_lock){+.+.+.}, at: [<ffffffff81402855>] register_framebuffer+0x25/0x2f0
+[    7.436016]  #4:  (&fb_info->lock){+.+.+.}, at: [<ffffffff81401736>] lock_fb_info+0x26/0x60
+[    7.436023]  #5:  ((fb_notifier_list).rwsem){.+.+.+}, at: [<ffffffff81096466>] __blocking_notifier_call_chain+0x56/0xc0
+[    7.436035]  #6:  (&dev->mode_config.mutex){+.+.+.}, at: [<ffffffffa0069d6a>] drm_modeset_lock_all+0x2a/0x70 [drm]
+[    7.436046]  #7:  (&crtc->mutex){+.+.+.}, at: [<ffffffffa0069d94>] drm_modeset_lock_all+0x54/0x70 [drm]
+[    7.436068]  #8:  (&dmac->lock){+.+...}, at: [<ffffffffa01767c3>] evo_wait+0x43/0xf0 [nouveau]
+[    7.436068] 
+[    7.436068] stack backtrace:
+[    7.436070] Pid: 255, comm: modprobe Not tainted 3.8.0-next-20130204+pcipatch-xeon+lockdep #20130204+pcipatch
+[    7.436072] Call Trace:
+[    7.436077]  [<ffffffff810d0e87>] __lock_acquire+0x697/0x1a80
+[    7.436080]  [<ffffffff810d28f1>] lock_acquire+0xa1/0x200
+[    7.436100]  [<ffffffffa01767c3>] ? evo_wait+0x43/0xf0 [nouveau]
+[    7.436121]  [<ffffffffa01767c3>] ? evo_wait+0x43/0xf0 [nouveau]
+[    7.436125]  [<ffffffff817946d3>] mutex_lock_nested+0x63/0x3a0
+[    7.436145]  [<ffffffffa01767c3>] ? evo_wait+0x43/0xf0 [nouveau]
+[    7.436148]  [<ffffffff8179490e>] ? mutex_lock_nested+0x29e/0x3a0
+[    7.436168]  [<ffffffffa01767c3>] ? evo_wait+0x43/0xf0 [nouveau]
+[    7.436170]  [<ffffffff810d32ef>] ? mark_held_locks+0xaf/0x110
+[    7.436190]  [<ffffffffa01767c3>] evo_wait+0x43/0xf0 [nouveau]
+[    7.436212]  [<ffffffffa0176d3c>] evo_sync+0x5c/0xf0 [nouveau]
+[    7.436233]  [<ffffffffa0178e7d>] nv50_display_flip_next+0x5ad/0x5c0 [nouveau]
 
 
--- 
-Best regards,
-Stanislav Kinsbursky
+Regards,
+Peter Hurley
+
