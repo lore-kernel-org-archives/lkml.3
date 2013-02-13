@@ -1,93 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759900Ab3BMQBt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 11:01:49 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:34053 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759412Ab3BMQBs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 11:01:48 -0500
-Message-ID: <511BB8A7.9040305@linux.vnet.ibm.com>
-Date: Wed, 13 Feb 2013 10:00:39 -0600
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1759939Ab3BMQCf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 11:02:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36580 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759412Ab3BMQCe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 11:02:34 -0500
+Message-ID: <511BB902.3080302@redhat.com>
+Date: Wed, 13 Feb 2013 17:02:10 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCHv4 2/7] zsmalloc: promote to lib/
-References: <1359495627-30285-1-git-send-email-sjenning@linux.vnet.ibm.com> <1359495627-30285-3-git-send-email-sjenning@linux.vnet.ibm.com> <20130129145134.813672cf.akpm@linux-foundation.org>
-In-Reply-To: <20130129145134.813672cf.akpm@linux-foundation.org>
+To: Alex Bligh <alex@alex.org.uk>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        nbd-general@lists.sf.net, Paul Clements <Paul.Clements@steeleye.com>
+Subject: Re: [PATCH 1/3] nbd: support FLUSH requests
+References: <1360685171-3792-1-git-send-email-pbonzini@redhat.com> <1360685171-3792-2-git-send-email-pbonzini@redhat.com> <115932E2-48BE-406E-9E75-61D12EB5937A@alex.org.uk> <511A8491.5030407@redhat.com> <20130212133207.ef6b24f5.akpm@linux-foundation.org> <FF1216D8-C4B3-405E-A4F6-82196A796A94@alex.org.uk> <511B8E65.5020507@redhat.com> <3EDEF735-9A67-439E-BA65-089C6AAFD1BF@alex.org.uk>
+In-Reply-To: <3EDEF735-9A67-439E-BA65-089C6AAFD1BF@alex.org.uk>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13021316-3620-0000-0000-000001363350
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/29/2013 04:51 PM, Andrew Morton wrote:
-> On Tue, 29 Jan 2013 15:40:22 -0600
-> Seth Jennings <sjenning@linux.vnet.ibm.com> wrote:
+Il 13/02/2013 16:55, Alex Bligh ha scritto:
+>> > But as far as I can test with free servers, the FUA bits have no
+>> > advantage over flush.  Also, I wasn't sure if SEND_FUA without
+>> > SEND_FLUSH is valid, and if so how to handle this combination (treat it
+>> > as writethrough and add FUA to all requests? warn and do nothing?).
+> On the main opensource nbd client, the following applies:
 > 
->> This patch promotes the slab-based zsmalloc memory allocator
->> from the staging tree to lib/
+> What REQ_FUA does is an fdatasync() after the write. Code extract and
+> comments below from Christoph Hellwig.
 > 
-> Hate to rain on the parade, but...  we haven't reviewed zsmalloc
-> yet.  At least, I haven't, and I haven't seen others do so.
+> What REQ_FLUSH does is to do an fsync().
 > 
-> So how's about we forget that zsmalloc was previously in staging and
-> send the zsmalloc code out for review?  With a very good changelog
-> explaining why it exists, what problems it solves, etc.
+> The way I read Christoph's comment, provided the linux block layer always
+> issues a REQ_FLUSH before a REQ_FUA, there is not performance problem.
 > 
-> 
-> I peeked.
-> 
-> Don't answer any of the below questions - they are examples of
-> concepts which should be accessible to readers of the
-> hopefully-forthcoming very-good-changelog.
+> However, a REQ_FUA is going to do a f(data)?sync AFTER the write, whereas
+> the preceding REQ_FLUSH is going to an fsync() BEFORE the write. It seems
+> to me that either the FUA and FLUSH semantics are therefore different
+> (and we need FUA), or that Christoph's comment is wrong and that you
+> are guaranteed a REQ_FLUSH *after* the write with REQ_FUA.
 
-I know you just said "don't answer", but I wanted to say why certain
-points aren't included in the new patchset I'm about to post later today.
+REQ_FLUSH is indeed a flush before the write.  fdatasync is fine there too.
 
-> 
-> - kmap_atomic() returns a void* - there's no need to cast its return value.
+If you do not have REQ_FUA, as is the case with this patch, the block
+layer converts it to a REQ_FLUSH *after* the write.
 
-In places where we do pointer arithmetic, we do the cast to avoid
-incrementing a void *, which is acceptable for gcc, but not everyone.
+See block/blk-flush.c:
 
-> 
-> - Remove private MAX(), use the (much better implemented) max().
+ * REQ_{FLUSH|FUA} requests are decomposed to sequences consisted of three
+ * optional steps - PREFLUSH, DATA and POSTFLUSH - according to the request
+ * properties and hardware capability.
+ *
+ * If the device doesn't have writeback cache, FLUSH and FUA don't make any
+ * difference.  The requests are either completed immediately if there's no
+ * data or executed as normal requests otherwise.
+ *
+ * If the device has writeback cache and supports FUA, REQ_FLUSH is
+ * translated to PREFLUSH but REQ_FUA is passed down directly with DATA.
+ *
+ * If the device has writeback cache and doesn't support FUA, REQ_FLUSH is
+ * translated to PREFLUSH and REQ_FUA to POSTFLUSH.
 
-We can't use max() or max_t() because ZS_SIZE_CLASSES, which uses
-ZS_MIN_ALLOC_SIZE, is used to define and array size in struct zs_pool.
-So the expression must be able to be fully evaluated by the precompiler.
-
-> 
-> - It says "This was one of the major issues with its predecessor
->   (xvmalloc)", but drivers/staging/ramster/xvmalloc.c is still in the tree.
-
-Yes, this was a little mess.  I think you'll find that isn't the case
-anymore.  Dan has removed those files from zcache/ramster.
-
-> 
-> - USE_PGTABLE_MAPPING should be done via Kconfig.
-
-Minchan did this work and will be included in the next version of the
-patchset.
-
-I've added more documentation/comments in the new patchset.  Hopefully,
-it will help with understanding the more complicated parts of the code.
-
-Thanks,
-Seth
-
+Paolo
