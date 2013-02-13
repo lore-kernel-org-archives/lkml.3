@@ -1,146 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934184Ab3BMP3X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 10:29:23 -0500
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:46551 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759720Ab3BMP3W (ORCPT
+	id S934193Ab3BMP3q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 10:29:46 -0500
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:60132 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759720Ab3BMP3o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 10:29:22 -0500
+	Wed, 13 Feb 2013 10:29:44 -0500
 MIME-Version: 1.0
-In-Reply-To: <1360745669-7996-1-git-send-email-vincent.guittot@linaro.org>
-References: <1360745669-7996-1-git-send-email-vincent.guittot@linaro.org>
-From: Paul Turner <pjt@google.com>
-Date: Wed, 13 Feb 2013 07:28:50 -0800
-Message-ID: <CAPM31RJbcd3Dcm0EK4VqNTgo8AN+=sMoi0aTF=OthxrGBFXoTg@mail.gmail.com>
-Subject: Re: [PATCH v3] sched: fix wrong rq's runnable_avg update with rt task
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        peterz@infradead.org, mingo@kernel.org, fweisbec@gmail.com,
-        rostedt@goodmis.org, efault@gmx.de
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CALLzPKZ=eRWDtW6eSKPX5Qbvs_N37daiULw+T7o+DpoGfw_Z_A@mail.gmail.com>
+References: <1360613493-11969-1-git-send-email-vgoyal@redhat.com>
+	<1360613493-11969-3-git-send-email-vgoyal@redhat.com>
+	<1360620614.3524.223.camel@falcor1.watson.ibm.com>
+	<20130212142636.GA23410@redhat.com>
+	<1360689247.3524.275.camel@falcor1.watson.ibm.com>
+	<20130212185203.GA29958@redhat.com>
+	<20130212185725.GC23410@redhat.com>
+	<CALLzPKaD==fj3GSE3SnaWg5=VVNW7A_+caFzoh=_cBv8+BVKEA@mail.gmail.com>
+	<20130213132920.GA3540@redhat.com>
+	<CALLzPKbj33dQ36tcwip_LKCOXgA6GcBDbSc5s4y4cYyv2=s=nw@mail.gmail.com>
+	<20130213143807.GC3540@redhat.com>
+	<CALLzPKZ=eRWDtW6eSKPX5Qbvs_N37daiULw+T7o+DpoGfw_Z_A@mail.gmail.com>
+Date: Wed, 13 Feb 2013 17:29:43 +0200
+Message-ID: <CALLzPKY-QJmxSUDdRF9V+pjEZhVb_UcGnJsqxiUiJ=YKTr0YWg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] ima: Support appraise_type=imasig_optional
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 13, 2013 at 12:54 AM, Vincent Guittot
-<vincent.guittot@linaro.org> wrote:
-> When a RT task is scheduled on an idle CPU, the update of the rq's load is
-> not done because CFS's functions are not called. Then, the idle_balance,
-> which is called just before entering the idle function, updates the
-> rq's load and makes the assumption that the elapsed time since the last
-> update, was only running time.
+On Wed, Feb 13, 2013 at 5:26 PM, Kasatkin, Dmitry
+<dmitry.kasatkin@intel.com> wrote:
+> On Wed, Feb 13, 2013 at 4:38 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+>> On Wed, Feb 13, 2013 at 03:36:45PM +0200, Kasatkin, Dmitry wrote:
+>>> It should not be the only line in the policy.
+>>> Can you share full policy?
+>>
+>> I verified by putting some printk. There is only single rule in
+>> ima_policy_rules list after I have updated the rules through "policy"
+>> file.
+>>
+>> echo "appraise fowner=0 func=BPRM_CHECK appraise_type=imasig_optional" >
+>> /sys/kernel/security/policy
+>
+> There is a default policy which has several rules.
+>
+> And when you do your "echo" you will replace all rules with that single rule.
+> But ok, you have one rule only and it is fine to have even a single rule...
+>
 
-So an interesting point here is we intrinsically treat RT time
-differently in our discount of the CPU power.  It doesn't affect
-anything in this patch per-say; but it should be kept in mind for
-consistency when you do anything with the rq based numbers.
-
->
-> The rq's load of a CPU that only runs a periodic RT task, is close to
-> LOAD_AVG_MAX whatever the running duration of the RT task is.
->
-> A new idle_exit function is called when the prev task is the idle function
-> so the elapsed time will be accounted as idle time in the rq's load.
->
-> Changes since V2:
-> - remove useless definition for UP platform
-> - rebased on top of Steven Rostedt's patches :
-> https://lkml.org/lkml/2013/2/12/558
->
-> Changes since V1:
-> - move code out of schedule function and create a pre_schedule callback for
->   idle class instead.
->
-> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
-> ---
->  kernel/sched/fair.c      |   10 ++++++++++
->  kernel/sched/idle_task.c |    7 +++++++
->  kernel/sched/sched.h     |    1 +
->  3 files changed, 18 insertions(+)
->
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 0fcdbff..6af5db3 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -1562,6 +1562,16 @@ static inline void dequeue_entity_load_avg(struct cfs_rq *cfs_rq,
->                 se->avg.decay_count = atomic64_read(&cfs_rq->decay_counter);
->         } /* migrations, e.g. sleep=0 leave decay_count == 0 */
->  }
-> +
-> +/*
-> + * Update the rq's load with the elapsed idle time before a task is
-> + * scheduled. if the newly scheduled task is not a CFS task, idle_exit will
-> + * be the only way to update the runnable statistic.
-> + */
-> +void idle_exit(int this_cpu, struct rq *this_rq)
-> +{
-> +       update_rq_runnable_avg(this_rq, 0);
-> +}
-
-This does creates a somewhat sneaky dependency CONFIG_FAIR_GROUP_SCHED
-bits and sched-idle; and it kind of hides the problem by making the
-subsequent update a nop.
-
-Is the root of the problem perhaps that we assume we were previously
-runnable in idle_balance in the first place?  Hmmm; this should
-actually be essentially torn down by the dequeue of the last task in
-the first place.  I'd have to think about it carefully but arguably we
-might be able to just remove the update_rq_runnable_avg from
-idle_balance entirely.
-
-We'd still need to make sure we pushed updates against rq->avg to
-cover RT task time (something you correctly point out is currently not
-accounted, and which entry/exit from idle-task seems a reasonable
-place); but this can then be independent of all the cgroup specific
-bits.
+What I have not said yet it is that in your case, because you use only
+BPRM_CHECK hook,
+you do not need "dont_appraise" and "dont_measure" rules for pseudo filesystems.
 
 
->  #else
->  static inline void update_entity_load_avg(struct sched_entity *se,
->                                           int update_cfs_rq) {}
-> diff --git a/kernel/sched/idle_task.c b/kernel/sched/idle_task.c
-> index 66b5220..6e7e63c 100644
-> --- a/kernel/sched/idle_task.c
-> +++ b/kernel/sched/idle_task.c
-> @@ -14,6 +14,12 @@ select_task_rq_idle(struct task_struct *p, int sd_flag, int flags)
->         return task_cpu(p); /* IDLE tasks as never migrated */
->  }
->
-> +static void pre_schedule_idle(struct rq *rq, struct task_struct *prev)
-> +{
-> +       /* Update rq's load with elapsed idle time */
-> +       idle_exit(smp_processor_id(), rq);
-> +}
-> +
->  static void post_schedule_idle(struct rq *rq)
->  {
->         idle_balance(smp_processor_id(), rq);
-> @@ -95,6 +101,7 @@ const struct sched_class idle_sched_class = {
->
->  #ifdef CONFIG_SMP
->         .select_task_rq         = select_task_rq_idle,
-> +       .pre_schedule           = pre_schedule_idle,
->         .post_schedule          = post_schedule_idle,
->  #endif
->
-> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-> index fc88644..5f26c93f 100644
-> --- a/kernel/sched/sched.h
-> +++ b/kernel/sched/sched.h
-> @@ -877,6 +877,7 @@ extern const struct sched_class idle_sched_class;
->
->  extern void trigger_load_balance(struct rq *rq, int cpu);
->  extern void idle_balance(int this_cpu, struct rq *this_rq);
-> +extern void idle_exit(int this_cpu, struct rq *this_rq);
->
->  #else  /* CONFIG_SMP */
->
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>> Thanks
+>> Vivek
