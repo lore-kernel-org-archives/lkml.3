@@ -1,104 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934175Ab3BMPbG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 10:31:06 -0500
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:62216 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759726Ab3BMPbE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 10:31:04 -0500
-Message-ID: <511BB198.1080609@redhat.com>
-Date: Wed, 13 Feb 2013 16:30:32 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S934181Ab3BMPfY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 10:35:24 -0500
+Received: from smtp.infotech.no ([82.134.31.41]:39989 "EHLO smtp.infotech.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934098Ab3BMPfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 10:35:22 -0500
+Message-ID: <511BB2AD.4000605@interlog.com>
+Date: Wed, 13 Feb 2013 10:35:09 -0500
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Dave Chinner <dchinner@redhat.com>, Brian Foster <bfoster@redhat.com>,
-        Ben Myers <bpm@sgi.com>, CAI Qian <caiqian@redhat.com>
-Subject: Re: [ 68/89] xfs: fix _xfs_buf_find oops on blocks beyond the filesystem
- end
-References: <20130201130207.444989281@linuxfoundation.org> <20130201130212.381996681@linuxfoundation.org>
-In-Reply-To: <20130201130212.381996681@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH v2 00/14] Corrections and customization of the SG_IO command
+ whitelist (CVE-2012-4542)
+References: <1360163761-8541-1-git-send-email-pbonzini@redhat.com> <511B4F95.1050404@redhat.com>
+In-Reply-To: <511B4F95.1050404@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 01/02/2013 14:08, Greg Kroah-Hartman ha scritto:
-> 3.7-stable review patch.  If anyone has any objections, please let me know.
-> 
-> ------------------
-> 
-> From: Dave Chinner <dchinner@redhat.com>
-> 
-> commit eb178619f930fa2ba2348de332a1ff1c66a31424 upstream.
-> 
-> When _xfs_buf_find is passed an out of range address, it will fail
-> to find a relevant struct xfs_perag and oops with a null
-> dereference. This can happen when trying to walk a filesystem with a
-> metadata inode that has a partially corrupted extent map (i.e. the
-> block number returned is corrupt, but is otherwise intact) and we
-> try to read from the corrupted block address.
-> 
-> In this case, just fail the lookup. If it is readahead being issued,
-> it will simply not be done, but if it is real read that fails we
-> will get an error being reported.  Ideally this case should result
-> in an EFSCORRUPTED error being reported, but we cannot return an
-> error through xfs_buf_read() or xfs_buf_get() so this lookup failure
-> may result in ENOMEM or EIO errors being reported instead.
+On 13-02-13 03:32 AM, Paolo Bonzini wrote:
+> Il 06/02/2013 16:15, Paolo Bonzini ha scritto:
+>> This series regards the whitelist that is used for the SG_IO ioctl.  This
+>> whitelist has three problems:
+>>
+>> * the bitmap of allowed commands is designed for MMC devices (roughly,
+>>    "play/burn CDs without requiring root") but some opcodes overlap across SCSI
+>>    device classes and have different meanings for different classes.
+>>
+>> * also because the bitmap of allowed commands is designed for MMC devices
+>>    only, some commands are missing even though they are generally useful and
+>>    not insecure.  At least not more insecure than anything else you can
+>>    do if you have access to /dev/sdX or /dev/stX nodes.
+>>
+>> * the whitelist can be disabled per-process but not per-disk.  In addition,
+>>    the required capability (CAP_SYS_RAWIO) gives access to a range of other
+>>    resources, enough to make it insecure.
+>>
+>> The series corrects these problems.  Patches 1-4 solve the first problem,
+>> which also has an assigned CVE, by using different bitmaps for the various
+>> device classes.  Patches 5-11 solve the second by adding more commands
+>> to the bitmaps.  Patches 12 and 13 solve the third, and were already
+>> posted but ignored by the maintainers despite multiple pings.
+>>
+>> Note: checkpatch hates the formatting of the command table.  I know about this,
+>> and ensured that there are no errors in the rest of the code.  The current
+>> formatting is IMHO quite handy, and roughly based on the files available
+>> from the SCSI standard body.
+>>
+>> Ok for the next merge window?
+>>
+>> Paolo
+>>
+>> v1->v2: remove 2 MMC commands and 6 SBC commands (see patches 6 and 9
+>>          for details).  Added patch 14 and added a few more scanner
+>>          commands based on SANE (scanners are not whitelisted by default,
+>>          also were not in v1, but this makes it possible to opt into the
+>>          whitelist out of paranoia).  Removed C++ comments.  Removed the
+>>          large #if 0'd list of commands that the kernel does not pass
+>>          though.  Marked blk_set_cmd_filter_defaults as __init.
+>>
+>>
+>> Paolo Bonzini (14):
+>>    sg_io: pass request_queue to blk_verify_command
+>>    sg_io: reorganize list of allowed commands
+>>    sg_io: use different default filters for each device class
+>>    sg_io: resolve conflicts between commands assigned to multiple
+>>      classes (CVE-2012-4542)
+>>    sg_io: whitelist a few more commands for rare & obsolete device types
+>>    sg_io: whitelist another command for multimedia devices
+>>    sg_io: whitelist a few more commands for media changers
+>>    sg_io: whitelist a few more commands for tapes
+>>    sg_io: whitelist a few more commands for disks
+>>    sg_io: whitelist a few obsolete commands
+>>    sg_io: mark blk_set_cmd_filter_defaults as __init
+>>    sg_io: remove remnants of sysfs SG_IO filters
+>>    sg_io: introduce unpriv_sgio queue flag
+>>    sg_io: use unpriv_sgio to disable whitelisting for scanners
+>>
+>>   Documentation/block/queue-sysfs.txt |    8 +
+>>   block/blk-sysfs.c                   |   33 +++
+>>   block/bsg.c                         |    2 +-
+>>   block/scsi_ioctl.c                  |  369 ++++++++++++++++++++++++++---------
+>>   drivers/scsi/scsi_scan.c            |   14 ++-
+>>   drivers/scsi/sg.c                   |    6 +-
+>>   include/linux/blkdev.h              |    8 +-
+>>   include/linux/genhd.h               |    9 -
+>>   include/scsi/scsi.h                 |    3 +
+>>   9 files changed, 344 insertions(+), 108 deletions(-)
+>>
+>
+> Ping? I'm not even sure what tree this should host these patches...
 
-It looks like this breaks xfs_growfs.  See
-http://bugzilla.redhat.com/show_bug.cgi?id=909602.
+You are whitelisting SCSI commands so obviously the SCSI tree
+and the patch spills over into the block tree.
+Can't see much point in ack-ing the sg changes since most
+of the action is at higher levels.
 
-Paolo
+The question I have is what existing code will this change
+break (and will I being getting emails from peeved
+developers)?
 
-> Signed-off-by: Dave Chinner <dchinner@redhat.com>
-> Reviewed-by: Brian Foster <bfoster@redhat.com>
-> Reviewed-by: Ben Myers <bpm@sgi.com>
-> Signed-off-by: Ben Myers <bpm@sgi.com>
-> Cc: CAI Qian <caiqian@redhat.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> 
-> ---
->  fs/xfs/xfs_buf.c |   18 ++++++++++++++++++
->  1 file changed, 18 insertions(+)
-> 
-> --- a/fs/xfs/xfs_buf.c
-> +++ b/fs/xfs/xfs_buf.c
-> @@ -487,6 +487,7 @@ _xfs_buf_find(
->  	struct rb_node		*parent;
->  	xfs_buf_t		*bp;
->  	xfs_daddr_t		blkno = map[0].bm_bn;
-> +	xfs_daddr_t		eofs;
->  	int			numblks = 0;
->  	int			i;
->  
-> @@ -498,6 +499,23 @@ _xfs_buf_find(
->  	ASSERT(!(numbytes < (1 << btp->bt_sshift)));
->  	ASSERT(!(BBTOB(blkno) & (xfs_off_t)btp->bt_smask));
->  
-> +	/*
-> +	 * Corrupted block numbers can get through to here, unfortunately, so we
-> +	 * have to check that the buffer falls within the filesystem bounds.
-> +	 */
-> +	eofs = XFS_FSB_TO_BB(btp->bt_mount, btp->bt_mount->m_sb.sb_dblocks);
-> +	if (blkno >= eofs) {
-> +		/*
-> +		 * XXX (dgc): we should really be returning EFSCORRUPTED here,
-> +		 * but none of the higher level infrastructure supports
-> +		 * returning a specific error on buffer lookup failures.
-> +		 */
-> +		xfs_alert(btp->bt_mount,
-> +			  "%s: Block out of range: block 0x%llx, EOFS 0x%llx ",
-> +			  __func__, blkno, eofs);
-> +		return NULL;
-> +	}
-> +
->  	/* get tree root */
->  	pag = xfs_perag_get(btp->bt_mount,
->  				xfs_daddr_to_agno(btp->bt_mount, blkno));
-> 
-> 
+Is 8 lines of documentation changes enough? My guess is
+that SG_IO ioctl pass-through users will be tripped up
+and it won't be obvious to them to look at
+     Documentation/block/queue-sysfs.txt
+for enlightenment; especially if they are using a char
+device node from the bsg, sg or st drivers to issue SG_IO.
+
+Doug Gilbert
 
