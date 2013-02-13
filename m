@@ -1,88 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759543Ab3BMA4v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 19:56:51 -0500
-Received: from mail-da0-f49.google.com ([209.85.210.49]:41189 "EHLO
-	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752751Ab3BMA4t (ORCPT
+	id S1759563Ab3BMA5Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 19:57:24 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:59220 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752751Ab3BMA5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 19:56:49 -0500
-Date: Tue, 12 Feb 2013 16:56:55 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Debugging Thinkpad T430s occasional suspend failure.
-In-Reply-To: <20130213004059.GA14451@redhat.com>
-Message-ID: <alpine.LNX.2.00.1302121652240.1077@eggly.anvils>
-References: <20130212193901.GA18906@redhat.com> <alpine.LNX.2.00.1302121549500.890@eggly.anvils> <20130213004059.GA14451@redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Tue, 12 Feb 2013 19:57:22 -0500
+Date: Tue, 12 Feb 2013 16:56:07 -0800
+From: tip-bot for Olaf Hering <[mailto:olaf@aepfle.de]@vger.kernel.org>
+Message-ID: <tip-32068f6527b8f1822a30671dedaf59c567325026@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        olaf@aepfle.de, kys@microsoft.com, stable@vger.kernel.org,
+        gregkh@linuxfoundation.org, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        olaf@aepfle.de, kys@microsoft.com, stable@vger.kernel.org,
+        gregkh@linuxfoundation.org, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1359940959-32168-1-git-send-email-kys@microsoft.com>
+References: <1359940959-32168-1-git-send-email-kys@microsoft.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/hyperv] x86: Hyper-V:
+  register clocksource only if its advertised
+Git-Commit-ID: 32068f6527b8f1822a30671dedaf59c567325026
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 12 Feb 2013 16:56:13 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Feb 2013, Dave Jones wrote:
-> On Tue, Feb 12, 2013 at 04:26:22PM -0800, Hugh Dickins wrote:
->  > On Tue, 12 Feb 2013, Dave Jones wrote:
->  > 
->  > > My Thinkpad T430s suspend/resumes fine most of the time. But every so often
->  > > (like one in ten times or so), as soon as I suspend, I get a black screen,
->  > > and a blinking power button.
->  > > 
->  > > (Note: Not the capslock lights like when we panic, this laptop 'conveniently
->  > >  doesn't have those. This is the light surrounding the power button, which afaik
->  > >  isn't even OS controlled, so maybe we're dying somewhere in SMI/BIOS land?)
->  > 
->  > Me too on T420s, except that is blessed with a blinking CapsLk.
->  > 
->  > It's so erratic (though I think I see more failures than you do: I'd say
->  > a quick resume never fails, but an overnight resume fails half the time):
->  > I'm afraid I didn't have the patience to embark on pm_trace at all.
-> 
-> Sounds like yours successfully suspends all the time though ?
+Commit-ID:  32068f6527b8f1822a30671dedaf59c567325026
+Gitweb:     http://git.kernel.org/tip/32068f6527b8f1822a30671dedaf59c567325026
+Author:     Olaf Hering <[mailto:olaf@aepfle.de]>
+AuthorDate: Sun, 3 Feb 2013 17:22:37 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Tue, 12 Feb 2013 16:25:48 -0800
 
-So far as I can tell.
+x86: Hyper-V: register clocksource only if its advertised
 
-> For me, as soon as I shut the lid, the moon light starts flashing indicating failure.
+Enable hyperv_clocksource only if its advertised as a feature.
+XenServer 6 returns the signature which is checked in
+ms_hyperv_platform(), but it does not offer all features. Currently the
+clocksource is enabled unconditionally in ms_hyperv_init_platform(), and
+the result is a hanging guest.
 
-My moon light shines steadily.
+Hyper-V spec Bit 1 indicates the availability of Partition Reference
+Counter.  Register the clocksource only if this bit is set.
 
-> 
-> That said, we saw that I was failing on the resume path after a failed suspend,
-> so it could still be the same problem.
-> 
->  > I did try to bisect it during the -rc5 week.  I'm not sure, but I have
->  > no record of seeing it on -rc1 or -rc2, but definitely saw it on -rc3.
->  > So I tried bisecting between -rc2 and -rc3, persisting for a day if it
->  > looked good; but the bisection didn't seem to be converging anywhere
->  > likely when -rc6 came out, and I switched to see if -rc6 solved it.
->  > 
->  > I had no problem with -rc6; but with -rc7 it happens more than ever.
->  > Though still not on "quick" resumes, the kind you want to do when
->  > bisecting.
-> 
-> so I can hit this pretty quickly with this..
-> 
-> while [ 1 ];
-> do
->  rtcwake -s 5 -m no ; pm-suspend
-> done
-> 
-> Which should make it bisectable at least..
+The guest in question prints this in dmesg:
+ [    0.000000] Hypervisor detected: Microsoft HyperV
+ [    0.000000] HyperV: features 0x70, hints 0x0
 
-Thanks, I'll give that a try this evening.
+This bug can be reproduced easily be setting 'viridian=1' in a HVM domU
+.cfg file. A workaround without this patch is to boot the HVM guest with
+'clocksource=jiffies'.
 
-> 
->  > Sharing these anecdotes in case they match or diverge from your
->  > experience and others, and might help towards finding the cause.
->  > Not-to-be-trusted bisection log appended: of course the bads are
->  > reliable, but perhaps none of the goods.
-> 
-> I didn't have this laptop pre 3.8rc, so I've not had a 'good' reference,
-> pretty sure I saw it during rc1 though, so I might have to go back further
-> a version or two.
-> 
-> 	Dave
+Signed-off-by: Olaf Hering <olaf@aepfle.de>
+Link: http://lkml.kernel.org/r/1359940959-32168-1-git-send-email-kys@microsoft.com
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Cc: <stable@vger.kernel.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/kernel/cpu/mshyperv.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
+index 0a630dd..646d192 100644
+--- a/arch/x86/kernel/cpu/mshyperv.c
++++ b/arch/x86/kernel/cpu/mshyperv.c
+@@ -68,7 +68,8 @@ static void __init ms_hyperv_init_platform(void)
+ 	printk(KERN_INFO "HyperV: features 0x%x, hints 0x%x\n",
+ 	       ms_hyperv.features, ms_hyperv.hints);
+ 
+-	clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
++	if (ms_hyperv.features & HV_X64_MSR_TIME_REF_COUNT_AVAILABLE)
++		clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
+ }
+ 
+ const __refconst struct hypervisor_x86 x86_hyper_ms_hyperv = {
