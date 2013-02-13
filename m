@@ -1,83 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934344Ab3BMQe6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 11:34:58 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:45764 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759377Ab3BMQe4 (ORCPT
+	id S934377Ab3BMQfW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 11:35:22 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:61456 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934208Ab3BMQfU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 11:34:56 -0500
-Message-ID: <511BC0AC.2010101@wwwdotorg.org>
-Date: Wed, 13 Feb 2013 09:34:52 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Wed, 13 Feb 2013 11:35:20 -0500
+X-Originating-IP: 108.223.40.66
+Date: Wed, 13 Feb 2013 08:35:41 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Wolfram Sang <wolfram@the-dreams.de>,
+        "Mark M. Hoffman" <mhoffman@lightlink.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v2] MAINTAINERS: Remove Mark M. Hoffman
+Message-ID: <20130213163541.GA8700@roeck-us.net>
+References: <20130213114629.21008391@endymion.delvare>
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: "mturquette@linaro.org" <mturquette@linaro.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH V2] clk: tegra: initialise parent of uart clocks
-References: <1360682279-23051-1-git-send-email-ldewangan@nvidia.com> <511A7FF1.1030009@wwwdotorg.org> <511B3AA0.7020403@nvidia.com>
-In-Reply-To: <511B3AA0.7020403@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130213114629.21008391@endymion.delvare>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13/2013 12:02 AM, Laxman Dewangan wrote:
-> On Tuesday 12 February 2013 11:16 PM, Stephen Warren wrote:
->> On 02/12/2013 08:17 AM, Laxman Dewangan wrote:
->>> Initialise the parent of UARTs to PLLP and disabling clock by
->>> default.
->>
->> This patch wasn't tested, was it? Without the patch I just sent titled
->> "ARM: tegra: remove clock-frequency properties from serial nodes", the
->> UART clocks get turned off and the console breaks.
+On Wed, Feb 13, 2013 at 11:46:29AM +0100, Jean Delvare wrote:
+> Mark M. Hoffman stopped working on the Linux kernel several years
+> ago, so he should no longer be listed as a driver maintainer. I'm not
+> even sure if his e-mail address still works.
 > 
-> I tested this in next-20130212 where "clock-frequency" is there in
-> tegra30.dtsi file.
-
-I tested on Cardhu/Tegra30 (I'd previously only tested on
-Harmony/Tegra20), and I see the exact same problem; the clock core turns
-off the UART clock and the system hangs.
-
-Are you sure you don't have any other local patches that somehow keep
-the UART clock on (e.g. disabling clk_disable_unused, calling clk_get()
-on the UART clock somewhere else, have the Tegra HS UART driver enabled
-on the console port for testing which perhaps does an unconditional
-clk_get). Are you sure you're testing with U-Boot rather than our binary
-bootloader; who knows what kind of voodoo that does to clocks.
-
-Note: I tested: a merge of arm-soc/for-next and Tegra's for-next branch,
-with my patch to remove the clock-frequency properties reverted, plus a
-fix for the boot crash ("clockevents: fix generic broadcast for
-FEAT_C3STOP").
-
-> If you remove this from dts file at all then it will not work as there
-> is no execution path to call the clk_prepare_enable().
+> I can take over 3 drivers he was responsible for, the 4th one will
+> fall down to the subsystem maintainer.
 > 
-> of_serial.c file:
->         if (of_property_read_u32(np, "clock-frequency", &clk)) {
-
-That returns 0 if the property is present (so doesn't get/enable the
-clock), and an error code if the property is missing (so does get/enable
-the clock).
-
+> Also give Mark credit for all the good work he did.
 > 
->                 /* Get clk rate through clk driver if present */
->                 info->clk = clk_get(&ofdev->dev, NULL);
->                 if (IS_ERR(info->clk)) {
->                         dev_warn(&ofdev->dev,
->                                 "clk or clock-frequency not defined\n");
->                         return PTR_ERR(info->clk);
->                 }
-> 
->                 clk_prepare_enable(info->clk);
->                 clk = clk_get_rate(info->clk);
->         }
+> Signed-off-by: Jean Delvare <khali@linux-fr.org>
+> Cc: "Mark M. Hoffman" <mhoffman@lightlink.com>
+> Cc: Guenter Roeck <linux@roeck-us.net>
+> Cc: Wolfram Sang <wolfram@the-dreams.de>
 
+Acked-by: Guenter Roeck <linux@roeck-us.net>
+
+> ---
+> Changes since v1:
+> * Add a section to file CREDIT, as advised by Andrew Morton.
+> 
+>  CREDITS     |    8 ++++++++
+>  MAINTAINERS |   17 ++---------------
+>  2 files changed, 10 insertions(+), 15 deletions(-)
+> 
+> --- linux-3.8-rc6.orig/MAINTAINERS	2013-02-08 10:55:09.964064131 +0100
+> +++ linux-3.8-rc6/MAINTAINERS	2013-02-08 17:08:20.062587939 +0100
+> @@ -1286,12 +1286,6 @@ S:	Maintained
+>  F:	drivers/platform/x86/asus*.c
+>  F:	drivers/platform/x86/eeepc*.c
+>  
+> -ASUS ASB100 HARDWARE MONITOR DRIVER
+> -M:	"Mark M. Hoffman" <mhoffman@lightlink.com>
+> -L:	lm-sensors@lm-sensors.org
+> -S:	Maintained
+> -F:	drivers/hwmon/asb100.c
+> -
+>  ASYNCHRONOUS TRANSFERS/TRANSFORMS (IOAT) API
+>  M:	Dan Williams <djbw@fb.com>
+>  W:	http://sourceforge.net/projects/xscaleiop
+> @@ -3751,7 +3745,7 @@ F:	drivers/i2c/busses/i2c-via.c
+>  F:	drivers/i2c/busses/i2c-viapro.c
+>  
+>  I2C/SMBUS STUB DRIVER
+> -M:	"Mark M. Hoffman" <mhoffman@lightlink.com>
+> +M:	Jean Delvare <khali@linux-fr.org>
+>  L:	linux-i2c@vger.kernel.org
+>  S:	Maintained
+>  F:	drivers/i2c/i2c-stub.c
+> @@ -6906,13 +6900,6 @@ L:	netdev@vger.kernel.org
+>  S:	Maintained
+>  F:	drivers/net/ethernet/sis/sis900.*
+>  
+> -SIS 96X I2C/SMBUS DRIVER
+> -M:	"Mark M. Hoffman" <mhoffman@lightlink.com>
+> -L:	linux-i2c@vger.kernel.org
+> -S:	Maintained
+> -F:	Documentation/i2c/busses/i2c-sis96x
+> -F:	drivers/i2c/busses/i2c-sis96x.c
+> -
+>  SIS FRAMEBUFFER DRIVER
+>  M:	Thomas Winischhofer <thomas@winischhofer.net>
+>  W:	http://www.winischhofer.net/linuxsisvga.shtml
+> @@ -6990,7 +6977,7 @@ F:	Documentation/hwmon/sch5627
+>  F:	drivers/hwmon/sch5627.c
+>  
+>  SMSC47B397 HARDWARE MONITOR DRIVER
+> -M:	"Mark M. Hoffman" <mhoffman@lightlink.com>
+> +M:	Jean Delvare <khali@linux-fr.org>
+>  L:	lm-sensors@lm-sensors.org
+>  S:	Maintained
+>  F:	Documentation/hwmon/smsc47b397
+> --- linux-3.8-rc6.orig/CREDITS	2012-12-15 14:52:44.923989249 +0100
+> +++ linux-3.8-rc6/CREDITS	2013-02-13 11:42:05.124318745 +0100
+> @@ -1510,6 +1510,14 @@ D: Natsemi ethernet
+>  D: Cobalt Networks (x86) support
+>  D: This-and-That
+>  
+> +N: Mark M. Hoffman
+> +E: mhoffman@lightlink.com
+> +D: asb100, lm93 and smsc47b397 hardware monitoring drivers
+> +D: hwmon subsystem core
+> +D: hwmon subsystem maintainer
+> +D: i2c-sis96x and i2c-stub SMBus drivers
+> +S: USA
+> +
+>  N: Dirk Hohndel
+>  E: hohndel@suse.de
+>  D: The XFree86[tm] Project
+> 
+> 
+> -- 
+> Jean Delvare
+> 
