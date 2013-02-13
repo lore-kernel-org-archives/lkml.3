@@ -1,122 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759876Ab3BMPuk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 10:50:40 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:60319 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759762Ab3BMPui (ORCPT
+	id S1759914Ab3BMPvO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 10:51:14 -0500
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:60491 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759767Ab3BMPvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 10:50:38 -0500
-X-Originating-IP: 108.223.40.66
-Date: Wed, 13 Feb 2013 07:51:00 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        dianders@chromium.org, gregkh@linuxfoundation.org, lars@metafoo.de
-Subject: Re: iio: adc: add exynos5 adc driver under iio framwork
-Message-ID: <20130213155100.GA7198@roeck-us.net>
-References: <1358917086-4148-1-git-send-email-ch.naveen@samsung.com>
- <20130212210732.GA8634@roeck-us.net>
- <CAHfPSqCwqD2gzB9eiTi1hSQvRgwbsjp9NfEb3RKpy+_+DbdhzQ@mail.gmail.com>
- <CAHfPSqAJN8C6d6Oa=1UDpJ+hTXbEOGBio4Ob__ZphsKq=Rvppg@mail.gmail.com>
+	Wed, 13 Feb 2013 10:51:12 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHfPSqAJN8C6d6Oa=1UDpJ+hTXbEOGBio4Ob__ZphsKq=Rvppg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130212203417.890993903@linuxfoundation.org>
+References: <20130212203417.890993903@linuxfoundation.org>
+Date: Wed, 13 Feb 2013 08:51:10 -0700
+Message-ID: <CAKocOOPzipwgMokYxCnaMGx1J3qiDEHJuWX_Bjt1Yk+h46NHMA@mail.gmail.com>
+Subject: Re: [ 00/61] 3.7.8-stable review
+From: Shuah Khan <shuahkhan@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 13, 2013 at 06:46:01PM +0530, Naveen Krishna Ch wrote:
-[ ... ]
-> 
-> Hello Guenter,
-> 
-> I've rebase my adc driver on top of your (OF for IIO patch)
-> 
-> My setup is like the below one. kindly, help me find the right device
-> tree node params
-> 
-> One ADC controller with 8 channels,
->   4 NTC thermistors are connected to channel 3, 4, 5 and 6 of ADC respectively
-> 
-> ADC ch - 0
-> ADC ch - 1
-> ADC ch - 2
-> ADC ch - 3 ------------------NTC
-> ADC ch - 4 ------------------NTC
-> ADC ch - 5 ------------------NTC
-> ADC ch - 6 ------------------NTC
-> ADC ch - 7
-> 
-> I've started off with something like this.
-> 
->         adc0: adc@12D10000 {
->                 compatible = "samsung,exynos5250-adc";
->                 reg = <0x12D10000 0x100>;
->                 interrupts = <0 106 0>;
->                 #io-channel-cells = <1>;
->         };
-> 
->         adc0: adc@12D10000 {
->                 vdd-supply = <&buck5_reg>;
-> 
->                 ncp15wb473@0 {
->                         compatible = "ntc,ncp15wb473";
->                         io-channels = <&adc0 3>;
->                         io-channel-names = "adc3";
->                         pullup-uV = <1800000>;
->                         pullup-ohm = <47000>;
->                         pulldown-ohm = <0>;
->                         id = <3>;
->                 };
-> 
->                 ncp15wb473@1 {
->                         compatible = "ntc,ncp15wb473";
->                         pullup-uV = <1800000>;
->                         pullup-ohm = <47000>;
->                         pulldown-ohm = <0>;
->                         io-channels = <&adc0 4>;
->                         io-channel-names = "adc4";
->                         id = <4>;
->                 };
->                 ncp15wb473@2 {
->                         compatible = "ntc,ncp15wb473";
->                         pullup-uV = <1800000>;
->                         pullup-ohm = <47000>;
->                         pulldown-ohm = <0>;
->                         io-channels = <&adc0 5>;
->                         io-channel-names = "adc5";
->                         id = <5>;
->                 };
->                 ncp15wb473@3 {
->                         compatible = "ntc,ncp15wb473";
->                         pullup-uV = <1800000>;
->                         pullup-ohm = <47000>;
->                         pulldown-ohm = <0>;
->                         io-channels = <&adc0 6>;
->                         io-channel-names = "adc6";
->                         id = <6>;
->                 };
->         };
-> 
-> ADC driver will use of_platform_populate() to populate the child nodes
-> (ntc thermistors in my case)
-> 
-> I've modified the NTC driver to support DT. in probe
-> chan = iio_channel_get(&pdev->dev, "adcX");
-> and using "id" field to use respective ADC channel to do the raw_read()
-> 
-> Issue:
-> 1. I get weird device names for thermistors starting from ncp15wb473.2
-> to ncp15wb473.5
+On Tue, Feb 12, 2013 at 1:34 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> This is the start of the stable review cycle for the 3.7.8 release.
+> There are 61 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Thu Feb 14 20:31:32 UTC 2013.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+>         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.7.8-rc1.gz
+> and the diffstat can be found below.
+>
+> thanks,
+>
+> greg k-h
+>
 
-I noticed that device IDs and names created when OF is active are sometimes
-not as one would expect. I never managed to get the device IDs I tried to
-configure. Ultimately, it did not matter and I never bothered to track it down.
+Patches applied cleanly to 3.0.63, 3.4.30, and 3.7.7.
+Compiled and booted on the following systems:
+HP EliteBook 6930p Intel(R) Core(TM)2 Duo CPU T9400 @ 2.53GHz
+HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
 
-Guenter
+Cross-compile tests results:
+alpha: defconfig passed on all
+arm: defconfig passed on all
+arm64: not applicable to 3.0.y, 3.4.y. defconfig passed on 3.7.y
+c6x: not applicable to 3.0.y, defconfig passed on 3.4.y, and 3.7.y.
+mips: defconfig passed on all
+mipsel: defconfig passed on all
+powerpc: wii_defconfig passed on all
+sh: defconfig passed on all
+sparc: defconfig passed on all
+tile: tilegx_defconfig passed on all
+
+-- Shuah
