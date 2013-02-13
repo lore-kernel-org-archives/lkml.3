@@ -1,205 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752153Ab3BMFdN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 00:33:13 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:49872 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751316Ab3BMFdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 00:33:11 -0500
-Message-ID: <511B2581.2050706@ti.com>
-Date: Wed, 13 Feb 2013 11:02:49 +0530
-From: a0131647 <sourav.poddar@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
-MIME-Version: 1.0
-To: Simon Glass <sjg@chromium.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bill Pemberton <wfp5p@virginia.edu>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Javier Martinez Canillas <javier@dowhile0.org>,
-        Felipe Balbi <balbi@ti.com>,
-        Alban Bedel <alban.bedel@avionic-design.de>,
-        <linux-input@vger.kernel.org>
-Subject: Re: [PATCH v2 5/6] Input: matrix-keymap: Add function to read the
- new DT binding
-References: <1360723347-28701-1-git-send-email-sjg@chromium.org> <1360723347-28701-6-git-send-email-sjg@chromium.org>
-In-Reply-To: <1360723347-28701-6-git-send-email-sjg@chromium.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752408Ab3BMFdm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 00:33:42 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:31105 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751316Ab3BMFdk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 00:33:40 -0500
+X-AuditID: cbfee61a-b7f7d6d000000f4e-2e-511b25a3fa4f
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'KyongHo Cho'" <pullip.cho@samsung.com>,
+        "'Joerg Roedel'" <joro@8bytes.org>
+Cc: "'Linux Samsung SOC'" <linux-samsung-soc@vger.kernel.org>,
+        "'Hyunwoong Kim'" <khw0178.kim@samsung.com>,
+        "'Prathyush'" <prathyush.k@samsung.com>,
+        "'devicetree-discuss'" <devicetree-discuss@lists.ozlabs.org>,
+        "'Subash Patel'" <supash.ramaswamy@linaro.org>,
+        "'Linux Kernel'" <linux-kernel@vger.kernel.org>,
+        "'Linux IOMMU'" <iommu@lists.linux-foundation.org>,
+        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
+        "'Sylwester Nawrocki'" <sylvester.nawrocki@gmail.com>,
+        "'Tomasz Figa'" <t.figa@samsung.com>,
+        "'Linux ARM Kernel'" <linux-arm-kernel@lists.infradead.org>,
+        "'Rahul Sharma'" <rahul.sharma@samsung.com>
+References: <003801cde30b$d9667b90$8c3372b0$%cho@samsung.com>
+ <50E1E62B.3090501@gmail.com>
+ <CAHQjnOMav9A43m4=7=N9kzEHTHE_q_ygu8x6mzY6Cus=q0c06A@mail.gmail.com>
+ <20130201135114.GF25591@8bytes.org>
+ <CAHQjnOP1U=LRU-fe-HuWzp=17s=KG8zPvSO3_zeVrrviEkmyHw@mail.gmail.com>
+In-reply-to: <CAHQjnOP1U=LRU-fe-HuWzp=17s=KG8zPvSO3_zeVrrviEkmyHw@mail.gmail.com>
+Subject: RE: [PATCH v6 05/12] iommu/exynos: support for device tree
+Date: Tue, 12 Feb 2013 21:33:01 -0800
+Message-id: <1e0d01ce09ab$98eed690$cacc83b0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQILZGQOFL5qVrul8iab0XF5eGwNiwGSgecdAoP3+p0BTjPF3AGsUc74l8QFq8A=
+Content-language: en-us
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMIsWRmVeSWpSXmKPExsVy+t8zQ93FqtKBBltWslhc3jWHzWLG+X1M
+	DkwenzfJBTBGcdmkpOZklqUW6dslcGUc2aFcMIejYvalDywNjCvYuhg5OSQETCR+L//LDmGL
+	SVy4tx4ozsUhJLCMUeL1kSdwReePL2SGSExnlDi96AorSEJI4C+jxPF5SiA2m4CGxOH3z8Am
+	iQj4SHQ/ns0K0sAscJtFomPuTFaI7glMEitXt7GAVHEKBEucuNzABGILCzhLXHx4CqybRUBV
+	4uTF50A2BwevgKXEylY7kDCvgKDEj8n3wFqZBbQk1u88zgRhy0tsXvOWGeJSBYkdZ18zQhzh
+	J/H24B2oGnGJSQ8esoPcICGwjl3i3N5DzBC7BCS+TT7EArJLQkBWYtMBqDmSEgdX3GCZwCgx
+	C8nqWUhWz0KyehaSFQsYWVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525ihESZ1A7GlQ0WhxgF
+	OBiVeHgdQqQChVgTy4orcw8xSnAwK4nwTuCQDhTiTUmsrEotyo8vKs1JLT7EmAx07ERmKdHk
+	fGACyCuJNzQ2NjEzMTUxtzQ1NyVNWEmcl/HUkwAhgfTEktTs1NSC1CKYLUwcnFINjGKPebba
+	X4iYdOD3tkUbrhSnJVws3Hl2AyeXz/WfvdVP5rtF+u7xXS+2eeHduNjqbPEZqjZ1Hhf4n//J
+	vXfRzO0F6weZ+zWbOlZaLKyvUNSLzBaxL7mWepEv8eTUafe88t8UH/xVcSffykDR/e9pY6mA
+	TTe0WSoru68HCN3yVVkgL2t+hk1VU4mlOCPRUIu5qDgRABz7TqD2AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEKsWRmVeSWpSXmKPExsVy+t9jQd1FqtKBBlNuWVlc3jWHzWLG+X1M
+	DkwenzfJBTBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
+	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFmHNmhXDCHo2L2
+	pQ8sDYwr2LoYOTkkBEwkzh9fyAxhi0lcuLceKM7FISQwnVHi9KIrrCAJIYG/jBLH5ymB2GwC
+	GhKH3z9jB7FFBHwkuh/PZgVpYBa4zSLRMXcmK0T3BCaJlavbWECqOAWCJU5cbmACsYUFnCUu
+	PjwF1s0ioCpx8uJzIJuDg1fAUmJlqx1ImFdAUOLH5HtgrcwCWhLrdx5ngrDlJTaveQt1qYLE
+	jrOvGSGO8JN4e/AOVI24xKQHD9knMArNQjJqFpJRs5CMmoWkZQEjyypG0dSC5ILipPRcQ73i
+	xNzi0rx0veT83E2M4Bh+JrWDcWWDxSFGAQ5GJR5ehxCpQCHWxLLiytxDjBIczEoivBM4pAOF
+	eFMSK6tSi/Lji0pzUosPMSYDPTqRWUo0OR+YXvJK4g2NTcyMLI3MLIxMzM1JE1YS52U89SRA
+	SCA9sSQ1OzW1ILUIZgsTB6dUA6OYySoZi5kzElU1U5g4J2ueO6jk+Szy99FVAsbXGlXDzJmm
+	W+xh2+rxbpX78pJyrR/X3hW5eUT+Pt18/aRxnMDnIz/rzxjMfPDPT6LazS54sfCmoEe37Xdr
+	cDDtnDDZouC6kNK7/E8LhWdPrNW3svaSMZaK/Bc8Mbkg+oLedQX3KyZzLl1VXaLEUpyRaKjF
+	XFScCAAEqshMJQMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-On Wednesday 13 February 2013 08:12 AM, Simon Glass wrote:
-> We now have a binding which adds two parameters to the matrix keypad DT
-> node. This is separate from the GPIO-driven matrix keypad binding, and
-> unfortunately incompatible, since that uses row-gpios/col-gpios for the
-> row and column counts.
->
-> So the easiest option here is to provide a function for non-GPIO drivers
-> to use to decode the binding.
->
-> Note: We could in fact create an entirely separate structure to hold
-> these two fields, but it does not seem worth it, yet. If we have more
-> parameters then we can add this, and then refactor each driver to hold
-> such a structure.
->
-> Signed-off-by: Simon Glass<sjg@chromium.org>
-> ---
-> Changes in v2:
-> - Add new patch to decode matrix-keypad DT binding
->
->   drivers/input/keyboard/lpc32xx-keys.c   | 11 ++++++-----
->   drivers/input/keyboard/omap4-keypad.c   | 16 +++++-----------
->   drivers/input/keyboard/tca8418_keypad.c | 11 +++++++----
->   drivers/input/matrix-keymap.c           | 20 ++++++++++++++++++++
->   include/linux/input/matrix_keypad.h     | 11 +++++++++++
->   5 files changed, 49 insertions(+), 20 deletions(-)
->
-> diff --git a/drivers/input/keyboard/lpc32xx-keys.c b/drivers/input/keyboard/lpc32xx-keys.c
-> index 1b8add6..4218143 100644
-> --- a/drivers/input/keyboard/lpc32xx-keys.c
-> +++ b/drivers/input/keyboard/lpc32xx-keys.c
-> @@ -144,12 +144,13 @@ static int lpc32xx_parse_dt(struct device *dev,
->   {
->   	struct device_node *np = dev->of_node;
->   	u32 rows = 0, columns = 0;
-> +	int err;
->
-> -	of_property_read_u32(np, "keypad,num-rows",&rows);
-> -	of_property_read_u32(np, "keypad,num-columns",&columns);
-> -	if (!rows || rows != columns) {
-> -		dev_err(dev,
-> -			"rows and columns must be specified and be equal!\n");
-> +	err = matrix_keypad_parse_of_params(dev,&rows,&columns);
-> +	if (err)
-> +		return err;
-> +	if (rows != columns) {
-> +		dev_err(dev, "rows and columns must be equal!\n");
->   		return -EINVAL;
->   	}
->
-> diff --git a/drivers/input/keyboard/omap4-keypad.c b/drivers/input/keyboard/omap4-keypad.c
-> index e25b022..1b28909 100644
-> --- a/drivers/input/keyboard/omap4-keypad.c
-> +++ b/drivers/input/keyboard/omap4-keypad.c
-> @@ -215,18 +215,12 @@ static int omap4_keypad_parse_dt(struct device *dev,
->   				 struct omap4_keypad *keypad_data)
->   {
->   	struct device_node *np = dev->of_node;
-> +	int err;
->
-> -	if (!np) {
-> -		dev_err(dev, "missing DT data");
-> -		return -EINVAL;
-> -	}
-> -
-> -	of_property_read_u32(np, "keypad,num-rows",&keypad_data->rows);
-> -	of_property_read_u32(np, "keypad,num-columns",&keypad_data->cols);
-> -	if (!keypad_data->rows || !keypad_data->cols) {
-> -		dev_err(dev, "number of keypad rows/columns not specified\n");
-> -		return -EINVAL;
-> -	}
-> +	err = matrix_keypad_parse_of_params(dev,&keypad_data->rows,
-> +					&keypad_data->cols);
-> +	if (err)
-> +		return err;
->
->   	if (of_get_property(np, "linux,input-no-autorepeat", NULL))
->   		keypad_data->no_autorepeat = true;
-> diff --git a/drivers/input/keyboard/tca8418_keypad.c b/drivers/input/keyboard/tca8418_keypad.c
-> index a34cc67..4d5a6d5 100644
-> --- a/drivers/input/keyboard/tca8418_keypad.c
-> +++ b/drivers/input/keyboard/tca8418_keypad.c
-> @@ -288,17 +288,20 @@ static int tca8418_keypad_probe(struct i2c_client *client,
->   		irq_is_gpio = pdata->irq_is_gpio;
->   	} else {
->   		struct device_node *np = dev->of_node;
-> -		of_property_read_u32(np, "keypad,num-rows",&rows);
-> -		of_property_read_u32(np, "keypad,num-columns",&cols);
-> +		int err;
-> +
-> +		err = matrix_keypad_parse_of_params(dev,&rows,&cols);
-> +		if (err)
-> +			return err;
->   		rep = of_property_read_bool(np, "keypad,autorepeat");
->   	}
->
-> -	if (!rows || rows>  TCA8418_MAX_ROWS) {
-> +	if (rows>  TCA8418_MAX_ROWS) {
->   		dev_err(dev, "invalid rows\n");
->   		return -EINVAL;
->   	}
->
-> -	if (!cols || cols>  TCA8418_MAX_COLS) {
-> +	if (cols>  TCA8418_MAX_COLS) {
->   		dev_err(dev, "invalid columns\n");
->   		return -EINVAL;
->   	}
-> diff --git a/drivers/input/matrix-keymap.c b/drivers/input/matrix-keymap.c
-> index 3ae496e..64bad81 100644
-> --- a/drivers/input/matrix-keymap.c
-> +++ b/drivers/input/matrix-keymap.c
-> @@ -50,6 +50,25 @@ static bool matrix_keypad_map_key(struct input_dev *input_dev,
->   }
->
->   #ifdef CONFIG_OF
-> +int matrix_keypad_parse_of_params(struct device *dev,
-> +				  unsigned int *rows, unsigned int *cols)
-> +{
-> +	struct device_node *np = dev->of_node;
-> +
-> +	if (!np) {
-> +		dev_err(dev, "missing DT data");
-> +		return -EINVAL;
-> +	}
-> +	of_property_read_u32(np, "keypad,num-rows", rows);
-> +	of_property_read_u32(np, "keypad,num-columns", cols);
-> +	if (!*rows || !*cols) {
-> +		dev_err(dev, "number of keypad rows/columns not specified\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
->   static int matrix_keypad_parse_of_keymap(const char *propname,
->   					 unsigned int rows, unsigned int cols,
->   					 struct input_dev *input_dev)
-> @@ -112,6 +131,7 @@ static int matrix_keypad_parse_of_keymap(const char *propname,
->    *	tree support is enabled).
->    * @rows: number of rows in target keymap array
->    * @cols: number of cols in target keymap array
-> + *   (if either/both is 0 then they will be read from the FDT if available)
->    * @keymap: expanded version of keymap that is suitable for use by
->    * matrix keyboard driver
->    * @input_dev: input devices for which we are setting up the keymap
-> diff --git a/include/linux/input/matrix_keypad.h b/include/linux/input/matrix_keypad.h
-> index 5f3aa6b..01a30cf 100644
-> --- a/include/linux/input/matrix_keypad.h
-> +++ b/include/linux/input/matrix_keypad.h
-> @@ -81,4 +81,15 @@ int matrix_keypad_build_keymap(const struct matrix_keymap_data *keymap_data,
->   			       unsigned short *keymap,
->   			       struct input_dev *input_dev);
->
-> +/**
-> + * matrix_keypad_parse_of_params() - Read parameters from matrix-keypad node
-> + *
-> + * @dev: Device containing of_node
-> + * @rows: Returns number of matrix rows
-> + * @cols: Returns number of matrix columns
-> + * @return 0 if OK,<0 on error
-> + */
-> +int matrix_keypad_parse_of_params(struct device *dev,
-> +				  unsigned int *rows, unsigned int *cols);
-> +
->   #endif /* _MATRIX_KEYPAD_H */
-Looks good to me.You can add
-Reviewed-by: Sourav Poddar <sourav.poddar@ti.com>
+KyongHo Cho wrote:
+> 
+> On Fri, Feb 1, 2013 at 10:51 PM, Joerg Roedel <joro@8bytes.org> wrote:
+> > Cho,
+> >
+> > On Wed, Jan 02, 2013 at 02:53:49PM +0900, KyongHo Cho wrote:
+> >> On Tuesday, January 1, 2013, Sylwester Nawrocki
+> <sylvester.nawrocki@gmail.com>
+> >
+> >> > Cc: devicetree-discuss@lists.ozlabs.org
+> >
+> > Since patch 7 of this set is already merged, do you mind to re-post the
+> > rest of this patch-set with the latest comments addressed? I can have a
+> > look at it again then and consider it for 3.9.
+> >
+> Thank you for your considerations.
+> 
+> I also think that I need to post the patch set again with some fixes that
+are
+> addressed in the comments.
+> 
+> Due to the heavy workload in my business I have hardly had a chance to
+> handle this patch-set.
+> As soon as the business lets me handle other pending issues, I will
+> work on this patchset.
+> I think I can start to it in the next 2 weeks.
+> 
+OK, I see.
 
-Also tested this patch on omap4430 sdp, keypad works fine. You can also 
-add a
-Tested-by: Sourav Poddar <sourav.poddar@ti.com>
+Joerg, please hold this on until KyongHo's re-work, probably 3.10?
 
-~Sourav
+Thanks.
+
+- Kukjin
+
