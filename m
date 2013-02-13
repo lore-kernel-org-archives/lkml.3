@@ -1,146 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934130Ab3BMPKj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 10:10:39 -0500
+	id S934149Ab3BMPKo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 10:10:44 -0500
 Received: from mga02.intel.com ([134.134.136.20]:49422 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934031Ab3BMPKi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 10:10:38 -0500
+	id S934031Ab3BMPKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 10:10:42 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,657,1355126400"; 
-   d="scan'208";a="262128710"
+   d="scan'208";a="285222032"
 From: Imre Deak <imre.deak@intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         Maxim Levitsky <maximlevitsky@gmail.com>, Tejun Heo <tj@kernel.org>,
         Daniel Vetter <daniel.vetter@ffwll.ch>, linaro-mm-sig@lists.linaro.org,
         Imre Deak <imre.deak@intel.com>
-Subject: [PATCH v3 1/2] lib/scatterlist: add simple page iterator
-Date: Wed, 13 Feb 2013 17:10:23 +0200
-Message-Id: <1360768224-18163-1-git-send-email-imre.deak@intel.com>
+Subject: [PATCH v3 2/2] lib/scatterlist: use page iterator in the mapping iterator
+Date: Wed, 13 Feb 2013 17:10:24 +0200
+Message-Id: <1360768224-18163-2-git-send-email-imre.deak@intel.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1360768224-18163-1-git-send-email-imre.deak@intel.com>
+References: <1360768224-18163-1-git-send-email-imre.deak@intel.com>
 In-Reply-To: <1360608604-3520-1-git-send-email-imre.deak@intel.com>
 References: <1360608604-3520-1-git-send-email-imre.deak@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add an iterator to walk through a scatter list a page at a time starting
-at a specific page offset. As opposed to the mapping iterator this is
-meant to be small, performing well even in simple loops like collecting
-all pages on the scatterlist into an array or setting up an iommu table
-based on the pages' DMA address.
-
-v2:
-- sg_pgoffset pointed incorrectly at the next page not the current one.
-
-v3:
-- formatting fixes, documentation (Andrew)
-- uninline helper functions, as they are too big (Andrew)
-- support for terminating the iteration after a maximum number
-  sglist->nents entries, needed by the next patch
+For better code reuse use the newly added page iterator to iterate
+through the pages. The offset, length within the page is still
+calculated by the mapping iterator as well as the actual mapping.
+Idea from Tejun Heo <tj@kernel.org>.
 
 Signed-off-by: Imre Deak <imre.deak@intel.com>
 ---
- include/linux/scatterlist.h |   35 +++++++++++++++++++++++++++++++++++
- lib/scatterlist.c           |   38 ++++++++++++++++++++++++++++++++++++++
- 2 files changed, 73 insertions(+)
+ include/linux/scatterlist.h |    6 +++---
+ lib/scatterlist.c           |   46 ++++++++++++++++++++-----------------------
+ 2 files changed, 24 insertions(+), 28 deletions(-)
 
 diff --git a/include/linux/scatterlist.h b/include/linux/scatterlist.h
-index 4bd6c06..788a853 100644
+index 788a853..a6cd692 100644
 --- a/include/linux/scatterlist.h
 +++ b/include/linux/scatterlist.h
-@@ -231,6 +231,41 @@ size_t sg_copy_to_buffer(struct scatterlist *sgl, unsigned int nents,
-  */
- #define SG_MAX_SINGLE_ALLOC		(PAGE_SIZE / sizeof(struct scatterlist))
+@@ -295,9 +295,9 @@ struct sg_mapping_iter {
+ 	size_t			consumed;	/* number of consumed bytes */
  
-+/*
-+ * sg page iterator
-+ *
-+ * Iterates over sg entries page-by-page.  On each successful iteration,
-+ * @piter->page points to the current page, @piter->sg to the sg holding this
-+ * page and @piter->sg_pgoffset to the page's page offset within the sg. The
-+ * iteration will stop either when a maximum number of sg entries was reached
-+ * or a terminating sg (sg_last(sg) == true) was reached.
-+ */
-+struct sg_page_iter {
-+	struct page		*page;		/* current page */
-+	struct scatterlist	*sg;		/* sg holding the page */
-+	unsigned int		sg_pgoffset;	/* page offset within the sg */
-+
-+	/* these are internal states, keep away */
-+	unsigned int		__nents;	/* remaining sg entries */
-+	int			__pg_advance;	/* nr pages to advance at the
-+						 * next step */
-+};
-+
-+bool __sg_page_iter_next(struct sg_page_iter *piter);
-+void __sg_page_iter_start(struct sg_page_iter *piter,
-+			  struct scatterlist *sglist, unsigned int nents,
-+			  unsigned long pgoffset);
-+
-+/**
-+ * for_each_sg_page - iterate over the pages of the given sg list
-+ * @sglist:	sglist to iterate over
-+ * @piter:	page iterator to hold current page, sg, sg_pgoffset
-+ * @nents:	maximum number of sg entries to iterate over
-+ * @pgoffset:	starting page offset
-+ */
-+#define for_each_sg_page(sglist, piter, nents, pgoffset)		   \
-+	for (__sg_page_iter_start((piter), (sglist), (nents), (pgoffset)); \
-+	     __sg_page_iter_next(piter);)
+ 	/* these are internal states, keep away */
+-	struct scatterlist	*__sg;		/* current entry */
+-	unsigned int		__nents;	/* nr of remaining entries */
+-	unsigned int		__offset;	/* offset within sg */
++	unsigned int		__offset;	/* offset within page */
++	struct sg_page_iter	__piter;	/* page iterator */
++	unsigned int		__remaining;	/* remaining bytes on page */
+ 	unsigned int		__flags;
+ };
  
- /*
-  * Mapping sg iterator
 diff --git a/lib/scatterlist.c b/lib/scatterlist.c
-index 7874b01..a1d1564 100644
+index a1d1564..4e4974a 100644
 --- a/lib/scatterlist.c
 +++ b/lib/scatterlist.c
-@@ -394,6 +394,44 @@ int sg_alloc_table_from_pages(struct sg_table *sgt,
- }
- EXPORT_SYMBOL(sg_alloc_table_from_pages);
+@@ -449,9 +449,7 @@ void sg_miter_start(struct sg_mapping_iter *miter, struct scatterlist *sgl,
+ {
+ 	memset(miter, 0, sizeof(struct sg_mapping_iter));
  
-+void __sg_page_iter_start(struct sg_page_iter *piter,
-+			  struct scatterlist *sglist, unsigned int nents,
-+			  unsigned long pgoffset)
-+{
-+	piter->__pg_advance = 0;
-+	piter->__nents = nents;
+-	miter->__sg = sgl;
+-	miter->__nents = nents;
+-	miter->__offset = 0;
++	__sg_page_iter_start(&miter->__piter, sgl, nents, 0);
+ 	WARN_ON(!(flags & (SG_MITER_TO_SG | SG_MITER_FROM_SG)));
+ 	miter->__flags = flags;
+ }
+@@ -476,36 +474,33 @@ EXPORT_SYMBOL(sg_miter_start);
+  */
+ bool sg_miter_next(struct sg_mapping_iter *miter)
+ {
+-	unsigned int off, len;
+-
+-	/* check for end and drop resources from the last iteration */
+-	if (!miter->__nents)
+-		return false;
+-
+ 	sg_miter_stop(miter);
+ 
+-	/* get to the next sg if necessary.  __offset is adjusted by stop */
+-	while (miter->__offset == miter->__sg->length) {
+-		if (--miter->__nents) {
+-			miter->__sg = sg_next(miter->__sg);
+-			miter->__offset = 0;
+-		} else
++	/*
++	 * Get to the next page if necessary.
++	 * __remaining, __offset is adjusted by sg_miter_stop
++	 */
++	if (!miter->__remaining) {
++		struct scatterlist *sg;
++		unsigned long pgoffset;
 +
-+	piter->page = NULL;
-+	piter->sg = sglist;
-+	piter->sg_pgoffset = pgoffset;
-+}
-+EXPORT_SYMBOL(__sg_page_iter_start);
-+
-+static int sg_page_count(struct scatterlist *sg)
-+{
-+	return PAGE_ALIGN(sg->offset + sg->length) >> PAGE_SHIFT;
-+}
-+
-+bool __sg_page_iter_next(struct sg_page_iter *piter)
-+{
-+	if (!piter->__nents || !piter->sg)
-+		return false;
-+
-+	piter->sg_pgoffset += piter->__pg_advance;
-+	piter->__pg_advance = 1;
-+
-+	while (piter->sg_pgoffset >= sg_page_count(piter->sg)) {
-+		piter->sg_pgoffset -= sg_page_count(piter->sg);
-+		piter->sg = sg_next(piter->sg);
-+		if (!--piter->__nents || !piter->sg)
-+			return false;
++		if (!__sg_page_iter_next(&miter->__piter))
+ 			return false;
+-	}
+ 
+-	/* map the next page */
+-	off = miter->__sg->offset + miter->__offset;
+-	len = miter->__sg->length - miter->__offset;
++		sg = miter->__piter.sg;
++		pgoffset = miter->__piter.sg_pgoffset;
+ 
+-	miter->page = nth_page(sg_page(miter->__sg), off >> PAGE_SHIFT);
+-	off &= ~PAGE_MASK;
+-	miter->length = min_t(unsigned int, len, PAGE_SIZE - off);
+-	miter->consumed = miter->length;
++		miter->__offset = pgoffset ? 0 : sg->offset;
++		miter->__remaining = sg->offset + sg->length -
++				(pgoffset << PAGE_SHIFT) - miter->__offset;
 +	}
-+	piter->page = nth_page(sg_page(piter->sg), piter->sg_pgoffset);
-+
-+	return true;
-+}
-+EXPORT_SYMBOL(__sg_page_iter_next);
-+
- /**
-  * sg_miter_start - start mapping iteration over a sg list
-  * @miter: sg mapping iter to be started
++	miter->page = miter->__piter.page;
++	miter->consumed = miter->length = miter->__remaining;
+ 
+ 	if (miter->__flags & SG_MITER_ATOMIC)
+-		miter->addr = kmap_atomic(miter->page) + off;
++		miter->addr = kmap_atomic(miter->page) + miter->__offset;
+ 	else
+-		miter->addr = kmap(miter->page) + off;
++		miter->addr = kmap(miter->page) + miter->__offset;
+ 
+ 	return true;
+ }
+@@ -532,6 +527,7 @@ void sg_miter_stop(struct sg_mapping_iter *miter)
+ 	/* drop resources from the last iteration */
+ 	if (miter->addr) {
+ 		miter->__offset += miter->consumed;
++		miter->__remaining -= miter->consumed;
+ 
+ 		if (miter->__flags & SG_MITER_TO_SG)
+ 			flush_kernel_dcache_page(miter->page);
 -- 
 1.7.10.4
 
