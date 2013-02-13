@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932Ab3BMHcL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 02:32:11 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:42087 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752555Ab3BMHcJ (ORCPT
+	id S1755867Ab3BMHcU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 02:32:20 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:44306 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753848Ab3BMHcR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 02:32:09 -0500
-Message-ID: <1360740725.24917.25.camel@mfleming-mobl1.ger.corp.intel.com>
-Subject: Re: [PATCH 1/3 v3] selftests: Add tests for efivarfs
-From: Matt Fleming <matt.fleming@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jeremy Kerr <jk@ozlabs.org>, linux-kernel@vger.kernel.org,
-        linux-efi@vger.kernel.org, Lingzhu Xiang <lxiang@redhat.com>,
-        Dave Young <dyoung@redhat.com>
-Date: Wed, 13 Feb 2013 07:32:05 +0000
-In-Reply-To: <20130212155005.36f9a718.akpm@linux-foundation.org>
-References: <1360162088.142733.191120808822.0.gpush@pecola>
-	 <1360162088.143076.913706486688.1.gpush@pecola>
-	 <20130207151333.f01d415c.akpm@linux-foundation.org>
-	 <5114CE00.6050307@ozlabs.org>
-	 <1360318129.7515.278.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <20130212155005.36f9a718.akpm@linux-foundation.org>
-Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
- Way, Swindon SN3 1RJ
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 13 Feb 2013 02:32:17 -0500
+Date: Wed, 13 Feb 2013 10:32:14 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Peter Huewe <peterhuewe@gmx.de>
+Cc: Ian Abbott <abbotti@mev.co.uk>, devel@driverdev.osuosl.org,
+        Mori Hess <fmhess@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging/comedi: Fix undefined array subscript
+Message-ID: <20130213073214.GR4937@mwanda>
+References: <1360726254-7895-1-git-send-email-peterhuewe@gmx.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1360726254-7895-1-git-send-email-peterhuewe@gmx.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-02-12 at 15:50 -0800, Andrew Morton wrote:
-> On Fri, 08 Feb 2013 10:08:49 +0000
-> Matt Fleming <matt.fleming@intel.com> wrote:
-> 
-> > On Fri, 2013-02-08 at 18:05 +0800, Jeremy Kerr wrote:
-> > > However, the tests expose a bug at the moment, so run_tests will fail. 
-> > > Matt will have that fixed soon though :)
-> > 
-> > In which case, would it make more sense for me to take these tests
-> > through the efi tree? I'm fine either way, I'm just looking for the
-> > least surprising option.
-> 
-> I don't think it matters much at this stage.  selftests is new and is
-> used by approximately zero people so if the tests fail, few will
-> notice.  Let's just get it in there and get it settled down.
+On Wed, Feb 13, 2013 at 04:30:54AM +0100, Peter Huewe wrote:
+> In vmk80xx_do_insn_bits the local variable reg, which is used as an
+> index to the tx_buf array, can be used uninitialized if
+> - data[0] == 0
+> and
+> - devpriv->model != VMK8061_MODEL
+> -> we get into the else branch without having reg initialized.
 
-Fine by me. Thanks Andrew.
+It's weird that GCC doesn't warn about this...
+
+This patch works, or at least it doesn't break anything that wasn't
+already broken, but it doesn't feel like the right thing.  Probably
+we could move the reg setting outside the if statement.
+
+	if (devpriv->model == VMK8055_MODEL) {
+		reg = VMK8055_DO_REG;
+		cmd = VMK8055_CMD_WRT_AD;
+	} else { /* VMK8061_MODEL */
+		reg = VMK8061_DO_REG;
+		cmd = VMK8061_CMD_DO;
+	}
+
+	if (data[0]) {
+		tx_buf[reg] &= ~data[0];
+
+Or maybe data[0] == 0 needs to be handled differently.
+
+Ian would know for sure.
+
+regards,
+dan carpenter
 
