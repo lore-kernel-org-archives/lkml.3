@@ -1,232 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760259Ab3BMRQt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 12:16:49 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:1931 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760192Ab3BMRQg (ORCPT
+	id S934534Ab3BMRSX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 12:18:23 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:52944 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934187Ab3BMRSW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 12:16:36 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 13 Feb 2013 09:16:34 -0800
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: <linux-tegra@vger.kernel.org>
-CC: <arnd@arndb.de>, <marvin24@gmx.de>, <balbi@ti.com>,
-        Hiroshi Doyu <hdoyu@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [v3 3/3] ARM: tegra: Unify Device tree board files
-Date: Wed, 13 Feb 2013 19:15:50 +0200
-Message-ID: <1360775751-23850-4-git-send-email-hdoyu@nvidia.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1360775751-23850-1-git-send-email-hdoyu@nvidia.com>
-References: <1360775751-23850-1-git-send-email-hdoyu@nvidia.com>
+	Wed, 13 Feb 2013 12:18:22 -0500
+Date: Wed, 13 Feb 2013 09:18:17 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: sjenning@linux.vnet.ibm.com, Konrad Wilk <konrad.wilk@oracle.com>,
+        minchan@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        devel@linuxdriverproject.org, ngupta@vflare.org
+Subject: Re: [PATCH] staging/zcache: Fix/improve zcache writeback code, tie
+ to a config option
+Message-ID: <20130213171817.GA14694@kroah.com>
+References: <1360175261-13287-1-git-send-email-dan.magenheimer@oracle.com>
+ <20130206190924.GB32275@kroah.com>
+ <761b5c6e-df13-49ff-b322-97a737def114@default>
+ <20130206214316.GA21148@kroah.com>
+ <abbc2f75-2982-470c-a3ca-675933d112c3@default>
+ <20130207000338.GB18984@kroah.com>
+ <7393d8c5-fb02-4087-93d1-0f999fb3cafd@default>
+ <20130211214944.GA22090@kroah.com>
+ <694a9284-7d41-48c6-a55b-634fb2912f43@default>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <694a9284-7d41-48c6-a55b-634fb2912f43@default>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unify board-dt-tegra{30,114} to the Tegra20 DT board file, "tegra.c".
+On Wed, Feb 13, 2013 at 08:55:29AM -0800, Dan Magenheimer wrote:
+> For completeness, I thought I should add some planning items
+> that ARE new functionality.  In my opinion, these can wait
+> until after promotion, but mm developers may have different
+> opinions:
+> 
+> ZCACHE FUTURE NEW FUNCTIONALITY
+> 
+> A. Support zsmalloc as an alternative high-density allocator
+> B. Support zero-filled pages more efficiently
+> C. Possibly support three zbuds per pageframe when space allows
 
-Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
----
- arch/arm/mach-tegra/Makefile            |    4 +--
- arch/arm/mach-tegra/board-dt-tegra114.c |   46 ------------------------
- arch/arm/mach-tegra/board-dt-tegra30.c  |   60 -------------------------------
- arch/arm/mach-tegra/tegra.c             |   14 +++++---
- 4 files changed, 10 insertions(+), 114 deletions(-)
- delete mode 100644 arch/arm/mach-tegra/board-dt-tegra114.c
- delete mode 100644 arch/arm/mach-tegra/board-dt-tegra30.c
+Care to send a patch adding all of this "TODO" information to the TODO
+file in the kernel so that we don't have to go through all of this again
+in 3 months when I forget why I'm now rejecting your patches again?  :)
 
-diff --git a/arch/arm/mach-tegra/Makefile b/arch/arm/mach-tegra/Makefile
-index c6d6be2..92703f9 100644
---- a/arch/arm/mach-tegra/Makefile
-+++ b/arch/arm/mach-tegra/Makefile
-@@ -10,6 +10,7 @@ obj-y					+= pm.o
- obj-y					+= reset.o
- obj-y					+= reset-handler.o
- obj-y					+= sleep.o
-+obj-y					+= tegra.o
- obj-$(CONFIG_CPU_IDLE)			+= cpuidle.o
- obj-$(CONFIG_ARCH_TEGRA_2x_SOC)		+= tegra20_speedo.o
- obj-$(CONFIG_ARCH_TEGRA_2x_SOC)		+= tegra2_emc.o
-@@ -27,9 +28,6 @@ obj-$(CONFIG_HOTPLUG_CPU)               += hotplug.o
- obj-$(CONFIG_CPU_FREQ)                  += cpu-tegra.o
- obj-$(CONFIG_TEGRA_PCI)			+= pcie.o
- 
--obj-$(CONFIG_ARCH_TEGRA_2x_SOC)		+= tegra.o
--obj-$(CONFIG_ARCH_TEGRA_3x_SOC)		+= board-dt-tegra30.o
--obj-$(CONFIG_ARCH_TEGRA_114_SOC)	+= board-dt-tegra114.o
- ifeq ($(CONFIG_CPU_IDLE),y)
- obj-$(CONFIG_ARCH_TEGRA_114_SOC)	+= cpuidle-tegra114.o
- endif
-diff --git a/arch/arm/mach-tegra/board-dt-tegra114.c b/arch/arm/mach-tegra/board-dt-tegra114.c
-deleted file mode 100644
-index 08e8294..0000000
---- a/arch/arm/mach-tegra/board-dt-tegra114.c
-+++ /dev/null
-@@ -1,46 +0,0 @@
--/*
-- * NVIDIA Tegra114 device tree board support
-- *
-- * Copyright (C) 2013 NVIDIA Corporation
-- *
-- * This software is licensed under the terms of the GNU General Public
-- * License version 2, as published by the Free Software Foundation, and
-- * may be copied, distributed, and modified under those terms.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- */
--
--#include <linux/of.h>
--#include <linux/of_platform.h>
--#include <linux/clocksource.h>
--
--#include <asm/mach/arch.h>
--
--#include "board.h"
--#include "common.h"
--
--static void __init tegra114_dt_init(void)
--{
--	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
--}
--
--static const char * const tegra114_dt_board_compat[] = {
--	"nvidia,tegra114",
--	NULL,
--};
--
--DT_MACHINE_START(TEGRA114_DT, "NVIDIA Tegra114 (Flattened Device Tree)")
--	.smp		= smp_ops(tegra_smp_ops),
--	.map_io		= tegra_map_common_io,
--	.init_early	= tegra_init_early,
--	.init_irq	= tegra_dt_init_irq,
--	.init_time	= clocksource_of_init,
--	.init_machine	= tegra114_dt_init,
--	.init_late	= tegra_init_late,
--	.restart	= tegra_assert_system_reset,
--	.dt_compat	= tegra114_dt_board_compat,
--MACHINE_END
-diff --git a/arch/arm/mach-tegra/board-dt-tegra30.c b/arch/arm/mach-tegra/board-dt-tegra30.c
-deleted file mode 100644
-index 63f8139..0000000
---- a/arch/arm/mach-tegra/board-dt-tegra30.c
-+++ /dev/null
-@@ -1,60 +0,0 @@
--/*
-- * arch/arm/mach-tegra/board-dt-tegra30.c
-- *
-- * NVIDIA Tegra30 device tree board support
-- *
-- * Copyright (C) 2011, 2013, NVIDIA Corporation
-- *
-- * Derived from:
-- *
-- * arch/arm/mach-tegra/board-dt-tegra20.c
-- *
-- * Copyright (C) 2010 Secret Lab Technologies, Ltd.
-- * Copyright (C) 2010 Google, Inc.
-- *
-- * This software is licensed under the terms of the GNU General Public
-- * License version 2, as published by the Free Software Foundation, and
-- * may be copied, distributed, and modified under those terms.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- */
--
--#include <linux/clocksource.h>
--#include <linux/kernel.h>
--#include <linux/of.h>
--#include <linux/of_address.h>
--#include <linux/of_fdt.h>
--#include <linux/of_irq.h>
--#include <linux/of_platform.h>
--
--#include <asm/mach/arch.h>
--
--#include "board.h"
--#include "common.h"
--#include "iomap.h"
--
--static void __init tegra30_dt_init(void)
--{
--	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
--}
--
--static const char *tegra30_dt_board_compat[] = {
--	"nvidia,tegra30",
--	NULL
--};
--
--DT_MACHINE_START(TEGRA30_DT, "NVIDIA Tegra30 (Flattened Device Tree)")
--	.smp		= smp_ops(tegra_smp_ops),
--	.map_io		= tegra_map_common_io,
--	.init_early	= tegra_init_early,
--	.init_irq	= tegra_dt_init_irq,
--	.init_time	= clocksource_of_init,
--	.init_machine	= tegra30_dt_init,
--	.init_late	= tegra_init_late,
--	.restart	= tegra_assert_system_reset,
--	.dt_compat	= tegra30_dt_board_compat,
--MACHINE_END
-diff --git a/arch/arm/mach-tegra/tegra.c b/arch/arm/mach-tegra/tegra.c
-index fca18e9..27232c9 100644
---- a/arch/arm/mach-tegra/tegra.c
-+++ b/arch/arm/mach-tegra/tegra.c
-@@ -1,6 +1,7 @@
- /*
-- * nVidia Tegra device tree board support
-+ * NVIDIA Tegra SoC device tree board support
-  *
-+ * Copyright (C) 2011, 2013, NVIDIA Corporation
-  * Copyright (C) 2010 Secret Lab Technologies, Ltd.
-  * Copyright (C) 2010 Google, Inc.
-  *
-@@ -111,7 +112,8 @@ static void __init harmony_init(void)
- 
- static void __init paz00_init(void)
- {
--	tegra_paz00_wifikill_init();
-+	if (IS_ENABLED(CONFIG_ARCH_TEGRA_2x_SOC))
-+		tegra_paz00_wifikill_init();
- }
- 
- static struct {
-@@ -137,12 +139,14 @@ static void __init tegra_dt_init_late(void)
- 	}
- }
- 
--static const char *tegra20_dt_board_compat[] = {
-+static const char * const tegra_dt_board_compat[] = {
-+	"nvidia,tegra114",
-+	"nvidia,tegra30",
- 	"nvidia,tegra20",
- 	NULL
- };
- 
--DT_MACHINE_START(TEGRA_DT, "nVidia Tegra20 (Flattened Device Tree)")
-+DT_MACHINE_START(TEGRA_DT, "NVIDIA Tegra SoC (Flattened Device Tree)")
- 	.map_io		= tegra_map_common_io,
- 	.smp		= smp_ops(tegra_smp_ops),
- 	.init_early	= tegra_init_early,
-@@ -151,5 +155,5 @@ DT_MACHINE_START(TEGRA_DT, "nVidia Tegra20 (Flattened Device Tree)")
- 	.init_machine	= tegra_dt_init,
- 	.init_late	= tegra_dt_init_late,
- 	.restart	= tegra_assert_system_reset,
--	.dt_compat	= tegra20_dt_board_compat,
-+	.dt_compat	= tegra_dt_board_compat,
- MACHINE_END
--- 
-1.7.9.5
+thanks,
 
+greg k-h
