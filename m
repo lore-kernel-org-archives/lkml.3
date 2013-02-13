@@ -1,79 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760184Ab3BMTpG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 14:45:06 -0500
-Received: from mail.tpi.com ([70.99.223.143]:1648 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757438Ab3BMTo7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 14:44:59 -0500
-From: Tim Gardner <tim.gardner@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Tim Gardner <tim.gardner@canonical.com>, Mark Fasheh <mfasheh@suse.com>,
-        Joel Becker <jlbec@evilplan.org>, ocfs2-devel@oss.oracle.com
-Subject: [PATCH 2/2 linux-next] ocfs2: ocfs2_begin_truncate_log_recovery(): consolidate status error logging
-Date: Wed, 13 Feb 2013 12:44:36 -0700
-Message-Id: <1360784676-74994-2-git-send-email-tim.gardner@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1360784676-74994-1-git-send-email-tim.gardner@canonical.com>
-References: <1360784676-74994-1-git-send-email-tim.gardner@canonical.com>
+	id S1759577Ab3BMTuA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 14:50:00 -0500
+Received: from slan-550-85.anhosting.com ([174.127.110.175]:10997 "EHLO
+	slan-550-85.anhosting.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756093Ab3BMTt7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 14:49:59 -0500
+Date: Wed, 13 Feb 2013 20:49:47 +0100
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Michal Kubecek <mkubecek@suse.cz>
+Cc: Patrick McHardy <kaber@trash.net>, netfilter-devel@vger.kernel.org,
+        coreteam@netfilter.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Amerigo Wang <amwang@redhat.com>
+Subject: Re: [PATCH nf-next] netfilter: nf_ct_reasm: fix per-netns sysctl
+ initialization
+Message-ID: <20130213194947.GA3805@localhost>
+References: <20130213094810.64691C3A4E@unicorn.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130213094810.64691C3A4E@unicorn.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - slan-550-85.anhosting.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - 60rpm.tv
+X-Get-Message-Sender-Via: slan-550-85.anhosting.com: authenticated_id: p@60rpm.tv
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Mark Fasheh <mfasheh@suse.com>
-Cc: Joel Becker <jlbec@evilplan.org>
-Cc: ocfs2-devel@oss.oracle.com
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
----
- fs/ocfs2/alloc.c |   12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
+On Wed, Feb 13, 2013 at 10:46:09AM +0100, Michal Kubecek wrote:
+> Adjusting of data pointers in net/netfilter/nf_conntrack_frag6_*
+> sysctl table for other namespaces points to wrong netns_frags
+> structure and has reversed order of entries.
+> 
+> Problem introduced by commit c038a767cd69 in 3.7-rc1
 
-diff --git a/fs/ocfs2/alloc.c b/fs/ocfs2/alloc.c
-index 42c0e49..1689ca1 100644
---- a/fs/ocfs2/alloc.c
-+++ b/fs/ocfs2/alloc.c
-@@ -6090,10 +6090,8 @@ int ocfs2_begin_truncate_log_recovery(struct ocfs2_super *osb,
- 	trace_ocfs2_begin_truncate_log_recovery(slot_num);
- 
- 	status = ocfs2_get_truncate_log_info(osb, slot_num, &tl_inode, &tl_bh);
--	if (status < 0) {
--		mlog_errno(status);
-+	if (status < 0)
- 		goto bail;
--	}
- 
- 	di = (struct ocfs2_dinode *) tl_bh->b_data;
- 
-@@ -6109,7 +6107,6 @@ int ocfs2_begin_truncate_log_recovery(struct ocfs2_super *osb,
- 		*tl_copy = kmalloc(tl_bh->b_size, GFP_KERNEL);
- 		if (!(*tl_copy)) {
- 			status = -ENOMEM;
--			mlog_errno(status);
- 			goto bail;
- 		}
- 
-@@ -6123,10 +6120,8 @@ int ocfs2_begin_truncate_log_recovery(struct ocfs2_super *osb,
- 
- 		ocfs2_compute_meta_ecc(osb->sb, tl_bh->b_data, &di->i_check);
- 		status = ocfs2_write_block(osb, tl_bh, INODE_CACHE(tl_inode));
--		if (status < 0) {
--			mlog_errno(status);
-+		if (status < 0)
- 			goto bail;
--		}
- 	}
- 
- bail:
-@@ -6134,6 +6129,9 @@ bail:
- 		iput(tl_inode);
- 	brelse(tl_bh);
- 
-+	if (status < 0)
-+		mlog_errno(status);
-+
- 	kfree(*tl_copy);
- 	*tl_copy = NULL;
- 
--- 
-1.7.9.5
-
+Applied, thanks Michal.
