@@ -1,81 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934228Ab3BMPlP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 10:41:15 -0500
-Received: from mga14.intel.com ([143.182.124.37]:25261 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934215Ab3BMPlN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 10:41:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,658,1355126400"; 
-   d="scan'208";a="256432413"
-Message-ID: <511BB413.4000601@intel.com>
-Date: Wed, 13 Feb 2013 23:41:07 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S934231Ab3BMPmI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 10:42:08 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:44284 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934176Ab3BMPmF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 10:42:05 -0500
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: torvalds@linux-foundation.org, mingo@redhat.com, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
-        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+In-Reply-To: <511BADE3.4050009@intel.com>
+References: <1358996820-23036-1-git-send-email-alex.shi@intel.com>
+ <1358996820-23036-8-git-send-email-alex.shi@intel.com> <1360664784.4485.17.camel@laptop>
+ <511BADE3.4050009@intel.com>
+From: Paul Turner <pjt@google.com>
+Date: Wed, 13 Feb 2013 07:41:32 -0800
+Message-ID: <CAPM31RJw7a-+QNRwwukg3h3bHCQs++cnT3DgCyHaJTZY7qDsXA@mail.gmail.com>
+Subject: Re: [patch v4 07/18] sched: set initial load avg of new forked task
+To: Alex Shi <alex.shi@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, torvalds@linux-foundation.org,
+        mingo@redhat.com, tglx@linutronix.de, akpm@linux-foundation.org,
+        arjan@linux.intel.com, bp@alien8.de, namhyung@kernel.org,
+        efault@gmx.de, vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
         preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [patch v4 09/18] sched: add sched_policies in kernel
-References: <1358996820-23036-1-git-send-email-alex.shi@intel.com>  <1358996820-23036-10-git-send-email-alex.shi@intel.com> <1360665361.4485.24.camel@laptop>
-In-Reply-To: <1360665361.4485.24.camel@laptop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/12/2013 06:36 PM, Peter Zijlstra wrote:
-> On Thu, 2013-01-24 at 11:06 +0800, Alex Shi wrote:
->> Current scheduler behavior is just consider the for larger performance
->> of system. So it try to spread tasks on more cpu sockets and cpu cores
+On Wed, Feb 13, 2013 at 7:14 AM, Alex Shi <alex.shi@intel.com> wrote:
+> On 02/12/2013 06:26 PM, Peter Zijlstra wrote:
+>> On Thu, 2013-01-24 at 11:06 +0800, Alex Shi wrote:
+>>> +       /*
+>>> +        * set the initial load avg of new task same as its load
+>>> +        * in order to avoid brust fork make few cpu too heavier
+>>> +        */
+>>> +       if (flags & ENQUEUE_NEWTASK)
+>>> +               se->avg.load_avg_contrib = se->load.weight;
 >>
->> To adding the consideration of power awareness, the patchset adds
->> 2 kinds of scheduler policy: powersaving and balance. They will use
->> runnable load util in scheduler balancing. The current scheduling is taken
->> as performance policy.
+>> I seem to have vague recollections of a discussion with pjt where we
+>> talk about the initial behaviour of tasks; from this haze I had the
+>> impression that new tasks should behave like full weight..
 >>
->> performance: the current scheduling behaviour, try to spread tasks
->>                 on more CPU sockets or cores. performance oriented.
->> powersaving: will pack tasks into few sched group until all LCPU in the
->>                 group is full, power oriented.
->> balance    : will pack tasks into few sched group until group_capacity
->>                 numbers CPU is full, balance between performance and
->> 		powersaving.
-> 
-> _WHY_ do you start out with so much choice?
-> 
-> If your power policy is so abysmally poor on performance that you
-> already know you need a 3rd policy to keep people happy, maybe you're
-> doing something wrong?
+>
+> Here just make the new task has full weight..
+>
+>> PJT is something more fundamental screwy?
+>>
 
-Nope, no much performance yield for both of powersaving and balance policy.
-Much of testing results in replaying Ingo's email on '0/18' thread --
-the cover letter email threads.
-https://lkml.org/lkml/2013/2/3/353
-https://lkml.org/lkml/2013/2/4/735
+So tasks get the quotient of their runnability over the period.  Given
+the period initially is equivalent to runnability it's definitely the
+*intent* to start at full-weight and ramp-down.
 
-I introduce a 'balance' policy just because HT thread LCPU in Intel CPU
-is less then 1 usual cpu power. It is used when someone want to save
-power but still want tasks have a whole cpu core...
-> 
->> +#define SCHED_POLICY_PERFORMANCE	(0x1)
->> +#define SCHED_POLICY_POWERSAVING	(0x2)
->> +#define SCHED_POLICY_BALANCE		(0x4)
->> +
->> +extern int __read_mostly sched_policy;
-> 
-> I'd much prefer: sched_balance_policy. Scheduler policy is a concept
-> already well defined by posix and we don't need it to mean two
-> completely different things.
-> 
+Thinking on it, perhaps this is running a-foul of amortization -- in
+that we only recompute this quotient on each 1024ns boundary; perhaps
+in the fork-bomb case we're too slow to accumulate these.
 
-Got it.
--- 
-Thanks
-    Alex
+Alex, does something like the following help?  This would force an
+initial __update_entity_load_avg_contrib() update the first time we
+see the task.
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 1dff78a..9d1c193 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1557,8 +1557,8 @@ static void __sched_fork(struct task_struct *p)
+  * load-balance).
+  */
+ #if defined(CONFIG_SMP) && defined(CONFIG_FAIR_GROUP_SCHED)
+-       p->se.avg.runnable_avg_period = 0;
+-       p->se.avg.runnable_avg_sum = 0;
++       p->se.avg.runnable_avg_period = 1024;
++       p->se.avg.runnable_avg_sum = 1024;
+ #endif
+ #ifdef CONFIG_SCHEDSTATS
+        memset(&p->se.statistics, 0, sizeof(p->se.statistics));
+
+
+
+>
+>
+> --
+> Thanks
+>     Alex
