@@ -1,40 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965377Ab3BMSJz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 13:09:55 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:60111 "EHLO
+	id S965309Ab3BMSJx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 13:09:53 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:60125 "EHLO
 	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965189Ab3BMSCs (ORCPT
+	with ESMTP id S965153Ab3BMSCu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 13:02:48 -0500
+	Wed, 13 Feb 2013 13:02:50 -0500
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 To: <linux-fsdevel@vger.kernel.org>
 Cc: Linux Containers <containers@lists.linux-foundation.org>,
         <linux-kernel@vger.kernel.org>, "Serge E. Hallyn" <serge@hallyn.com>,
         "Eric W. Biederman" <ebiederm@xmission.com>,
         Steve French <smfrench@gmail.com>
-Date: Wed, 13 Feb 2013 09:52:04 -0800
-Message-Id: <1360777934-5663-75-git-send-email-ebiederm@xmission.com>
+Date: Wed, 13 Feb 2013 09:52:09 -0800
+Message-Id: <1360777934-5663-80-git-send-email-ebiederm@xmission.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1360777934-5663-1-git-send-email-ebiederm@xmission.com>
 References: <87621w14vs.fsf@xmission.com>
  <1360777934-5663-1-git-send-email-ebiederm@xmission.com>
-X-XM-AID: U2FsdGVkX1+mGAsi4pkxdw47U+PmT/ejK1h5uXDlMk4=
+X-XM-AID: U2FsdGVkX1/UWJN7RApbN6NJQHSCR4QicJEdRkM2X4c=
 X-SA-Exim-Connect-IP: 98.207.153.68
 X-SA-Exim-Mail-From: ebiederm@xmission.com
 X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  3.0 XMDrug1234561 Drug references
 	*  0.1 XMSubLong Long Subject
 	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
-	*      [score: 0.0105]
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0001]
 	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*      [sa03 1397; Body=1 Fuz1=1]
 	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *;<linux-fsdevel@vger.kernel.org>
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 
+X-Spam-Combo: ;<linux-fsdevel@vger.kernel.org>
 X-Spam-Relay-Country: 
-Subject: [PATCH review 75/85] cifs: Pass GLOBAL_ROOT_UID and GLOBAL_ROOT_GID to keyring_alloc
+Subject: [PATCH review 80/85] cifs: Convert struct cifs_fattr to use kuid and kgids
 X-Spam-Flag: No
 X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
 X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
@@ -44,30 +43,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-keyring_alloc has been updated to take a kuid_t and kgid_t so
-pass GLOBAL_ROOT_UID instead of 0 for the uid and GLOBAL_ROOT_GID
-instead of 0 for the gid.
+In cifs_unix_to_basic_fattr only update the cifs_fattr with an id if
+it is valid after conversion.
 
 Cc: Steve French <smfrench@gmail.com>
 Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 ---
- fs/cifs/cifsacl.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ fs/cifs/cifsglob.h |    4 ++--
+ fs/cifs/inode.c    |   14 ++++++++++----
+ 2 files changed, 12 insertions(+), 6 deletions(-)
 
-diff --git a/fs/cifs/cifsacl.c b/fs/cifs/cifsacl.c
-index 2e811f4..aaaf5ce 100644
---- a/fs/cifs/cifsacl.c
-+++ b/fs/cifs/cifsacl.c
-@@ -347,7 +347,8 @@ init_cifs_idmap(void)
- 	if (!cred)
- 		return -ENOMEM;
+diff --git a/fs/cifs/cifsglob.h b/fs/cifs/cifsglob.h
+index 7993a7a..98312fd 100644
+--- a/fs/cifs/cifsglob.h
++++ b/fs/cifs/cifsglob.h
+@@ -1245,8 +1245,8 @@ struct cifs_fattr {
+ 	u64		cf_eof;
+ 	u64		cf_bytes;
+ 	u64		cf_createtime;
+-	uid_t		cf_uid;
+-	gid_t		cf_gid;
++	kuid_t		cf_uid;
++	kgid_t		cf_gid;
+ 	umode_t		cf_mode;
+ 	dev_t		cf_rdev;
+ 	unsigned int	cf_nlink;
+diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
+index 7376439..9638233 100644
+--- a/fs/cifs/inode.c
++++ b/fs/cifs/inode.c
+@@ -247,15 +247,21 @@ cifs_unix_basic_to_fattr(struct cifs_fattr *fattr, FILE_UNIX_BASIC_INFO *info,
+ 	fattr->cf_uid = cifs_sb->mnt_uid;
+ 	if (!(cifs_sb->mnt_cifs_flags & CIFS_MOUNT_OVERR_UID)) {
+ 		u64 id = le64_to_cpu(info->Uid);
+-		if (id < ((uid_t)-1))
+-			fattr->cf_uid = id;
++		if (id < ((uid_t)-1)) {
++			kuid_t uid = make_kuid(&init_user_ns, id);
++			if (uid_valid(uid))
++				fattr->cf_uid = uid;
++		}
+ 	}
+ 	
+ 	fattr->cf_gid = cifs_sb->mnt_gid;
+ 	if (!(cifs_sb->mnt_cifs_flags & CIFS_MOUNT_OVERR_GID)) {
+ 		u64 id = le64_to_cpu(info->Gid);
+-		if (id < ((gid_t)-1))
+-			fattr->cf_gid = id;
++		if (id < ((gid_t)-1)) {
++			kgid_t gid = make_kgid(&init_user_ns, id);
++			if (gid_valid(gid))
++				fattr->cf_gid = gid;
++		}
+ 	}
  
--	keyring = keyring_alloc(".cifs_idmap", 0, 0, cred,
-+	keyring = keyring_alloc(".cifs_idmap",
-+				GLOBAL_ROOT_UID, GLOBAL_ROOT_GID, cred,
- 				(KEY_POS_ALL & ~KEY_POS_SETATTR) |
- 				KEY_USR_VIEW | KEY_USR_READ,
- 				KEY_ALLOC_NOT_IN_QUOTA, NULL);
+ 	fattr->cf_nlink = le64_to_cpu(info->Nlinks);
 -- 
 1.7.5.4
 
