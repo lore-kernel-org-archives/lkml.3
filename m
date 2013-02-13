@@ -1,122 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757680Ab3BMHuy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 02:50:54 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:65090 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755950Ab3BMHux (ORCPT
+	id S932075Ab3BMHyy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 02:54:54 -0500
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:61292 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757219Ab3BMHyw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 02:50:53 -0500
-X-AuditID: 9c930179-b7c24ae00000119c-bb-511b45daeb0b
-From: Namhyung Kim <namhyung@kernel.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        ak@linux.intel.com, acme@redhat.com, jolsa@redhat.com,
-        namhyung.kim@lge.com
-Subject: Re: [PATCH 1/2] perf stat: refactor aggregation code
-References: <1360678168-6974-1-git-send-email-eranian@google.com>
-	<1360678168-6974-2-git-send-email-eranian@google.com>
-Date: Wed, 13 Feb 2013 16:50:50 +0900
-In-Reply-To: <1360678168-6974-2-git-send-email-eranian@google.com> (Stephane
-	Eranian's message of "Tue, 12 Feb 2013 15:09:27 +0100")
-Message-ID: <874nhgps85.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 13 Feb 2013 02:54:52 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <20130213061853.GA4043@brouette>
+References: <1360675195-4017-1-git-send-email-vincent.guittot@linaro.org>
+	<20130213061853.GA4043@brouette>
+Date: Wed, 13 Feb 2013 08:54:50 +0100
+Message-ID: <CAKfTPtDCPKeQpcS4mQc7Jp7+wK2EuvnCUqAzL7SOELVVL3jztw@mail.gmail.com>
+Subject: Re: [PATCH] sched: fix env->src_cpu for active migration
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Damien Wyart <damien.wyart@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        peterz@infradead.org, mingo@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephane,
+Hi Damien,
 
-On Tue, 12 Feb 2013 15:09:27 +0100, Stephane Eranian wrote:
-> Refactor aggregation code by introducing
-> a single aggr_mode variable and an enum
-> for aggregation.
+Thanks for the test and the feedback.
+Could you send me the sched_domain configuration of your machine with
+the kernel that boots on your machine ?
+It's available in /proc/sys/kernel/sched_domain/cpu*/
+
+This should not have any impact on your machine but it looks like it have one.
+
+Regards,
+Vincent
+
+
+On 13 February 2013 07:18, Damien Wyart <damien.wyart@gmail.com> wrote:
+> Hi,
 >
-> Also refactor cpumap code having to do
-> with cpu to socket mappings. All in preparation
-> for extended modes, such as cpu -> core.
+> I tested this on top of 3.8-rc7 and this made the machine (x86_64, Core
+> i7 920) unable to boot (very early as nothing at all is displayed on
+> screen). Nothing in the kernel log (after booting with a working
+> kernel).
 >
-> Also fix socket aggregation and ensure
-> that sockets are printed in increasing order.
-[snip]
-> -static void print_aggr_socket(char *prefix)
-> +static void print_aggr(char *prefix)
->  {
->  	struct perf_evsel *counter;
-> +	int cpu, s, s2, id, nr;
->  	u64 ena, run, val;
-> -	int cpu, s, s2, sock, nr;
->  
-> -	if (!sock_map)
-> +	if (!(aggr_map || aggr_get_id))
->  		return;
->  
-> -	for (s = 0; s < sock_map->nr; s++) {
-> -		sock = cpu_map__socket(sock_map, s);
-> +	for (s = 0; s < aggr_map->nr; s++) {
-> +		id = aggr_map->map[s];
->  		list_for_each_entry(counter, &evsel_list->entries, node) {
->  			val = ena = run = 0;
->  			nr = 0;
-...
-> @@ -1073,14 +1081,20 @@ static void print_stat(int argc, const char **argv)
->  		fprintf(output, ":\n\n");
->  	}
->  
-> -	if (aggr_socket)
-> -		print_aggr_socket(NULL);
-> -	else if (no_aggr) {
-> -		list_for_each_entry(counter, &evsel_list->entries, node)
-> -			print_counter(counter, NULL);
-> -	} else {
-> +	switch (aggr_mode) {
-> +	case AGGR_SOCKET:
-> +		print_aggr(NULL);
-> +		break;
-
-This line should look like this IMHO:
-
-		list_for_each_entry(counter, &evsel_list->entries, node)
-			print_aggr(counter, NULL);
-
-and the equivalent loop in the print_aggr() should be removed.  This is
-for consistency with other formats if multiple events counted.
-
-For instance, it'd sorting on events first and then sockets like:
-
-  #      time socket cpus     counts events
-           t0 S0     4        XXXXXX cycles
-           t0 S1     4        XXXXXX cycles
-           t0 S0     4          YYYY cache-misses
-           t0 S1     4          YYYY cache-misses
-           t1 S0     4        ZZZZZZ cycles
-  ...
-
-But current code looks like sorting on sockets first instead.
-
-  #      time socket cpus     counts events
-           t0 S0     4        XXXXXX cycles
-           t0 S0     4          YYYY cache-misses
-           t0 S1     4        XXXXXX cycles
-           t0 S1     4          YYYY cache-misses
-           t1 S0     4        ZZZZZZ cycles
-  ...
-
-Thanks,
-Namhyung
-
-
-> +	case AGGR_GLOBAL:
->  		list_for_each_entry(counter, &evsel_list->entries, node)
->  			print_counter_aggr(counter, NULL);
-> +		break;
-> +	case AGGR_NONE:
-> +		list_for_each_entry(counter, &evsel_list->entries, node)
-> +			print_counter(counter, NULL);
-> +		break;
-> +	default:
-> +		break;
->  	}
+> Double-checked by just backing out only this patch and this made the
+> machine boot again.
+>
+> Damien
+>
+>> need_active_balance uses env->src_cpu which is set only if there is more
+>> than 1 task on the run queue. We must set the src_cpu field unconditionnally
+>> otherwise the test "env->src_cpu > env->dst_cpu" will always fail if there is
+>> only 1 task on the run queue
+>>
+>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+>> ---
+>>  kernel/sched/fair.c |    6 ++++--
+>>  1 file changed, 4 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> index 81fa536..32938ea 100644
+>> --- a/kernel/sched/fair.c
+>> +++ b/kernel/sched/fair.c
+>> @@ -5044,6 +5044,10 @@ redo:
+>>
+>>       ld_moved = 0;
+>>       lb_iterations = 1;
+>> +
+>> +     env.src_cpu   = busiest->cpu;
+>> +     env.src_rq    = busiest;
+>> +
+>>       if (busiest->nr_running > 1) {
+>>               /*
+>>                * Attempt to move tasks. If find_busiest_group has found
+>> @@ -5052,8 +5056,6 @@ redo:
+>>                * correctly treated as an imbalance.
+>>                */
+>>               env.flags |= LBF_ALL_PINNED;
+>> -             env.src_cpu   = busiest->cpu;
+>> -             env.src_rq    = busiest;
+>>               env.loop_max  = min(sysctl_sched_nr_migrate, busiest->nr_running);
+>>
+>>               update_h_load(env.src_cpu);
