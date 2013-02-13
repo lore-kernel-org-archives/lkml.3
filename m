@@ -1,115 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759604Ab3BMBkV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 20:40:21 -0500
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:51178 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758761Ab3BMBkS (ORCPT
+	id S1759198Ab3BMByL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 20:54:11 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:42237 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750734Ab3BMByJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 20:40:18 -0500
+	Tue, 12 Feb 2013 20:54:09 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAPnjgZ3OKUSxZLgu976RD3tRaMDzscL31TMx_tyzm22GmqnznQ@mail.gmail.com>
-References: <1355348028-19017-1-git-send-email-sjg@chromium.org>
-	<CAPnjgZ3OKUSxZLgu976RD3tRaMDzscL31TMx_tyzm22GmqnznQ@mail.gmail.com>
-Date: Tue, 12 Feb 2013 17:40:17 -0800
-X-Google-Sender-Auth: JWBHDelIeEedYu1AadkloreusWk
-Message-ID: <CAPnjgZ0r3y-U6UyGOkPZaWMHQ8yNCcaT0YiFf+tjnPX5a10Eig@mail.gmail.com>
-Subject: Re: [PATCH 0/5] Add ChromeOS Embedded Controller support
-From: Simon Glass <sjg@chromium.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Simon Glass <sjg@chromium.org>,
-        linux-input@vger.kernel.org, Vincent Palatin <vpalatin@chromium.org>,
-        Roland Stigge <stigge@antcom.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Che-Liang Chiou <clchiou@chromium.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        Jonathan Kliegman <kliegs@chromium.org>, linux-doc@vger.kernel.org,
-        Rob Landley <rob@landley.net>, Wolfram Sang <w.sang@pengutronix.de>,
-        Felipe Balbi <balbi@ti.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Sourav Poddar <sourav.poddar@ti.com>,
-        Luigi Semenzato <semenzato@chromium.org>,
-        Olof Johansson <olof@lixom.net>, Rob Herring <rob.herring@calxeda.com>
+In-Reply-To: <1882094.fnYp8pBVVX@vostro.rjw.lan>
+References: <1882094.fnYp8pBVVX@vostro.rjw.lan>
+Date: Tue, 12 Feb 2013 17:54:08 -0800
+X-Google-Sender-Auth: LsbFtcIRabBk9i_BIvPs1YxINbg
+Message-ID: <CAE9FiQXk1VhA2+qAcp8jL=TG28acePyX4SOYALiAQ0bGnLaFOA@mail.gmail.com>
+Subject: Re: [PATCH] ACPI / PCI: Initialize PCI root drivers after PCI bus enumeration
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiang Liu <liuj97@gmail.com>,
+        Toshi Kani <toshi.kani@hp.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Myron Stowe <mstowe@redhat.com>, linux-pci@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel,
-
-On Tue, Feb 12, 2013 at 4:37 PM, Simon Glass <sjg@chromium.org> wrote:
-> Hi Samuel,
+On Tue, Feb 12, 2013 at 4:16 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 >
-> On Wed, Dec 12, 2012 at 1:33 PM, Simon Glass <sjg@chromium.org> wrote:
->> (get_maintainer.pl has produced an enormous list - I hope you are all
->> interested.)
->>
->> The ChromeOS Embedded Controller (EC) is an Open Source EC implementation
->> used on ARM and Intel Chromebooks. Current implementations use a Cortex-M3
->> connected on a bus (such as I2C, SPI, LPC) to the AP. A separate interrupt
->> line is used to indicate when the EC needs service.
->>
->> Functions performed by the EC vary by platform, but typically include
->> battery charging, keyboard scanning and power sequencing.
->>
->> This series includes support for the EC message protocol, and implements
->> a matrix keyboard handler for Linux using the protocol. The EC performs
->> key scanning and passes scan data in response to AP requests. This is
->> used on the Samsung ARM Chromebook. No driver is available for LPC at
->> present.
->>
->> This series can in principle operate on any hardware, but for it to actually
->> work on the Samsung ARM Chromebook, it needs patches which are currently in
->> progress to mainline: Exynos FDT interrupt support and I2C bus arbitration.
->>
->> The driver is device-tree-enabled and a suitable binding is included in
->> this series. Example device tree nodes are included in the examples,
->> but no device tree patch for exynos5250-snow is provided at this stage, since
->> we must wait for the above-mentioned patches to land to avoid errors from
->> dtc. This can be added with a follow-on patch when that work is complete.
->>
->>
->> Simon Glass (5):
->>   mfd: Add ChromeOS EC messages header
->>   mfd: Add ChromeOS EC implementation
->>   mfd: Add ChromeOS EC I2C driver
->>   mfd: Add ChromeOS EC SPI driver
->>   Input: Add ChromeOS EC keyboard driver
+> After commit 1aeae82 (ACPI / PCI: avoid building pci_slot as module)
+> the pci_slot driver's .add() callback routine, acpi_pci_slot_add(),
+> is executed from within acpi_pci_root_add() before the PCI devices on
+> the bus are enumerated and that triggers the WARN_ON() in
+> kobject_get():
 >
-> Are you planning to pick the mfd part of this series please? I am
-> going to send a new version of the input patch on its own now that the
-> DT binding is agreed.
+> WARNING: at /scratch/rafael/work/test/include/linux/kref.h:42 kobject_get+0x33/0x40()
+> Hardware name: PORTEGE R500
+> Modules linked in:
+> Pid: 1, comm: swapper/0 Not tainted 3.8.0-rc7+ #160
+> Call Trace:
+>  [<ffffffff8103d38a>] warn_slowpath_common+0x7a/0xb0
+>  [<ffffffff8103d3d5>] warn_slowpath_null+0x15/0x20
+>  [<ffffffff812f99b3>] kobject_get+0x33/0x40
+>  [<ffffffff81452b82>] get_device+0x12/0x30
+>  [<ffffffff8138df7b>] register_slot+0x243/0x295
+>  [<ffffffff810a7b6d>] ? trace_hardirqs_on+0xd/0x10
+>  [<ffffffff8137b7b9>] acpi_ns_walk_namespace+0x10f/0x24a
+>  [<ffffffff8138dd38>] ? walk_p2p_bridge+0x13b/0x13b
+>  [<ffffffff8138dd38>] ? walk_p2p_bridge+0x13b/0x13b
+>  [<ffffffff8137bdc3>] acpi_walk_namespace+0xe9/0x132
+>  [<ffffffff8138dd38>] ? walk_p2p_bridge+0x13b/0x13b
+>  [<ffffffff8138dcf5>] walk_p2p_bridge+0xf8/0x13b
+>  [<ffffffff8134d606>] ? acpi_os_signal_semaphore+0x76/0x87
+>  [<ffffffff8138dd38>] ? walk_p2p_bridge+0x13b/0x13b
+>  [<ffffffff8137b7b9>] acpi_ns_walk_namespace+0x10f/0x24a
+>  [<ffffffff8138dbfd>] ? do_sta_before_sun+0x2b/0x2b
+>  [<ffffffff8138dbfd>] ? do_sta_before_sun+0x2b/0x2b
+>  [<ffffffff8137bdc3>] acpi_walk_namespace+0xe9/0x132
+>  [<ffffffff81356071>] ? acpi_pci_root_add+0x3e7/0x49a
+>  [<ffffffff8138e07f>] acpi_pci_slot_add+0xb2/0x103
+>  [<ffffffff8138dd38>] ? walk_p2p_bridge+0x13b/0x13b
+>  [<ffffffff81356089>] acpi_pci_root_add+0x3ff/0x49a
+>
+> which means that pci_bus->dev used in register_slot() has not been
+> registered yet at that point.
+>
+> To fix this use the observation that before commit 1aeae82
+> acpi_pci_slot_add() was always run after pci_bus_add_devices()
+> and that happened to the acpiphp's .add() callback routine too.
+> Thus it is safe to reorder acpi_pci_root_add() to make the PCI root
+> drivers' .add() callbacks be run after pci_bus_add_devices(), so do
+> that.
+>
+> This approach was previously proposed by Myron Stowe.
+>
+> References: https://patchwork.kernel.org/patch/1848781/
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+>
+> The commit mentioned in the changelog above is in linux-pm.git/linux-next.
+>
+> Thanks,
+> Rafael
+>
+> ---
+>  drivers/acpi/pci_root.c |   13 ++++++++-----
+>  1 file changed, 8 insertions(+), 5 deletions(-)
+>
+> Index: test/drivers/acpi/pci_root.c
+> ===================================================================
+> --- test.orig/drivers/acpi/pci_root.c
+> +++ test/drivers/acpi/pci_root.c
+> @@ -600,17 +600,20 @@ static int acpi_pci_root_add(struct acpi
+>         if (system_state != SYSTEM_BOOTING)
+>                 pci_assign_unassigned_bus_resources(root->bus);
+>
+> +       /* need to after hot-added ioapic is registered */
+> +       if (system_state != SYSTEM_BOOTING)
+> +               pci_enable_bridges(root->bus);
+> +
+> +       pci_bus_add_devices(root->bus);
+> +
+>         mutex_lock(&acpi_pci_root_lock);
+> +
+>         list_for_each_entry(driver, &acpi_pci_drivers, node)
+>                 if (driver->add)
+>                         driver->add(root);
+> -       mutex_unlock(&acpi_pci_root_lock);
+>
+> -       /* need to after hot-added ioapic is registered */
+> -       if (system_state != SYSTEM_BOOTING)
+> -               pci_enable_bridges(root->bus);
+> +       mutex_unlock(&acpi_pci_root_lock);
+>
+> -       pci_bus_add_devices(root->bus);
+>         return 1;
+>
+>  out_del_root:
+>
 
-Actually I see that __devinit/__devexit are gone in next/master. I
-will resend the whole series again as v2. The first four patches are
-for mfd and there will be two more for input.
+No, we don't need this after
 
-Regards,
-Simon
+| commit 4f535093cf8f6da8cfda7c36c2c1ecd2e9586ee4
+|     PCI: Put pci_dev in device tree as early as possible
 
->>
->>  .../devicetree/bindings/input/cros-ec-keyb.txt     |   77 ++
->>  Documentation/devicetree/bindings/mfd/cros-ec.txt  |   56 +
->>  drivers/input/keyboard/Kconfig                     |   10 +
->>  drivers/input/keyboard/Makefile                    |    1 +
->>  drivers/input/keyboard/cros_ec_keyb.c              |  413 ++++++
->>  drivers/mfd/Kconfig                                |   28 +
->>  drivers/mfd/Makefile                               |    3 +
->>  drivers/mfd/cros_ec.c                              |  219 ++++
->>  drivers/mfd/cros_ec_i2c.c                          |  262 ++++
->>  drivers/mfd/cros_ec_spi.c                          |  412 ++++++
->>  include/linux/mfd/cros_ec.h                        |  190 +++
->>  include/linux/mfd/cros_ec_commands.h               | 1369 ++++++++++++++++++++
->>  12 files changed, 3040 insertions(+), 0 deletions(-)
->>  create mode 100644 Documentation/devicetree/bindings/input/cros-ec-keyb.txt
->>  create mode 100644 Documentation/devicetree/bindings/mfd/cros-ec.txt
->>  create mode 100644 drivers/input/keyboard/cros_ec_keyb.c
->>  create mode 100644 drivers/mfd/cros_ec.c
->>  create mode 100644 drivers/mfd/cros_ec_i2c.c
->>  create mode 100644 drivers/mfd/cros_ec_spi.c
->>  create mode 100644 include/linux/mfd/cros_ec.h
->>  create mode 100644 include/linux/mfd/cros_ec_commands.h
->>
->> --
->> 1.7.7.3
->>
+in pci/next.
+
+So we can move that Jiang's patch from your tree to Bjorn's tree?
+
+Thanks
+
+Yinghai
