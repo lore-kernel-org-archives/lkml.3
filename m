@@ -1,102 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757641Ab3BMHqH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 02:46:07 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:57265 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754588Ab3BMHqF (ORCPT
+	id S1757680Ab3BMHuy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 02:50:54 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:65090 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755950Ab3BMHux (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 02:46:05 -0500
-Date: Wed, 13 Feb 2013 08:45:56 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Chris Ball <cjb@laptop.org>,
-        Kevin Liu <keyuan.liu@gmail.com>
-Subject: Re: [PATCH 3/3 RESEND] mmc: sdhci: check voltage range only on
- regulators aware of voltage value
-In-Reply-To: <511B41B8.3060506@samsung.com>
-Message-ID: <Pine.LNX.4.64.1302130844530.18535@axis700.grange>
-References: <87bobqrcb4.fsf@octavius.laptop.org>
- <1360656096-1671-1-git-send-email-m.szyprowski@samsung.com>
- <Pine.LNX.4.64.1302122309470.14434@axis700.grange> <511B41B8.3060506@samsung.com>
+	Wed, 13 Feb 2013 02:50:53 -0500
+X-AuditID: 9c930179-b7c24ae00000119c-bb-511b45daeb0b
+From: Namhyung Kim <namhyung@kernel.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        ak@linux.intel.com, acme@redhat.com, jolsa@redhat.com,
+        namhyung.kim@lge.com
+Subject: Re: [PATCH 1/2] perf stat: refactor aggregation code
+References: <1360678168-6974-1-git-send-email-eranian@google.com>
+	<1360678168-6974-2-git-send-email-eranian@google.com>
+Date: Wed, 13 Feb 2013 16:50:50 +0900
+In-Reply-To: <1360678168-6974-2-git-send-email-eranian@google.com> (Stephane
+	Eranian's message of "Tue, 12 Feb 2013 15:09:27 +0100")
+Message-ID: <874nhgps85.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:H1iYgoPB0DtINyqbIDG/HTrudNkwzvcBP3QNeML5M/L
- VjeoZ+sTeai6DtNu4Eaq/WPtH7vVqhcqnQAG3tkU6cAOZ2XHsz
- pzt2o6JwOlicfuip6To0dB00J1FG7yO4QUL08njh0EbCQuh6ed
- IMdsSTTvTlwi+lEmbz+4ORApuGsISn6A2XVFe4NO9QZJJCLGjI
- SuBKJC5NadPEiZV/1eQojJsPyJHohHX78qn3hcqHySGYpLQyWK
- 4kqzM3/7K63XwUh8y+qc/vNxmsZQE8GwP0z2sdPqe1TW7/z3Fz
- QAubEtw6+/O5zCL7WuyNOGn4VRi/3JowuPQwKS7TORr0+nOKFk
- vI1wv48TTI8CgI8PlmQoCjn37IFeVGPzZOSKwVydo5zNQJX1a7
- ix1us4kiapRJA==
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Feb 2013, Marek Szyprowski wrote:
+Hi Stephane,
 
-> Hello,
-> 
-> On 2/12/2013 11:10 PM, Guennadi Liakhovetski wrote:
-> > Hi Marek
-> > 
-> > On Tue, 12 Feb 2013, Marek Szyprowski wrote:
-> > 
-> > > Some regulators don't report any voltage values, so checking supported
-> > > voltage range results in disabling all SDHCI_CAN_VDD_* flags and
-> > > registration failure. This patch finally provides a correct fix for the
-> > > registration of SDHCI driver with all possible voltage regulators:
-> > > dummy, fixed and regulated without using regulator_count_voltages()
-> > > hacks.
-> > >
-> > > Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> > > ---
-> > >  drivers/mmc/host/sdhci.c |    6 +++++-
-> > >  1 file changed, 5 insertions(+), 1 deletion(-)
-> > >
-> > > diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-> > > index ba586ae..735526b 100644
-> > > --- a/drivers/mmc/host/sdhci.c
-> > > +++ b/drivers/mmc/host/sdhci.c
-> > > @@ -2976,7 +2976,11 @@ int sdhci_add_host(struct sdhci_host *host)
-> > >  	}
-> > >
-> > >  #ifdef CONFIG_REGULATOR
-> > > -	if (host->vmmc) {
-> > > +	/*
-> > > +	 * Voltage range check makes sense only if regulator reports
-> > > +	 * any voltage value.
-> > > +	 */
-> > > +	if (host->vmmc && regulator_get_voltage(host->vmmc) > 0) {
-> > >  		ret = regulator_is_supported_voltage(host->vmmc, 2700000,
-> > >  			3600000);
-> > 
-> > Wouldn't using mmc_regulator_get_ocrmask() be a better option?
-> 
-> The idea behind this patch it to avoid messing ocr mask and voltage
-> regulators when voltage regulator is a simple on/off switch, which doesn't
-> report any value.
+On Tue, 12 Feb 2013 15:09:27 +0100, Stephane Eranian wrote:
+> Refactor aggregation code by introducing
+> a single aggr_mode variable and an enum
+> for aggregation.
+>
+> Also refactor cpumap code having to do
+> with cpu to socket mappings. All in preparation
+> for extended modes, such as cpu -> core.
+>
+> Also fix socket aggregation and ensure
+> that sockets are printed in increasing order.
+[snip]
+> -static void print_aggr_socket(char *prefix)
+> +static void print_aggr(char *prefix)
+>  {
+>  	struct perf_evsel *counter;
+> +	int cpu, s, s2, id, nr;
+>  	u64 ena, run, val;
+> -	int cpu, s, s2, sock, nr;
+>  
+> -	if (!sock_map)
+> +	if (!(aggr_map || aggr_get_id))
+>  		return;
+>  
+> -	for (s = 0; s < sock_map->nr; s++) {
+> -		sock = cpu_map__socket(sock_map, s);
+> +	for (s = 0; s < aggr_map->nr; s++) {
+> +		id = aggr_map->map[s];
+>  		list_for_each_entry(counter, &evsel_list->entries, node) {
+>  			val = ena = run = 0;
+>  			nr = 0;
+...
+> @@ -1073,14 +1081,20 @@ static void print_stat(int argc, const char **argv)
+>  		fprintf(output, ":\n\n");
+>  	}
+>  
+> -	if (aggr_socket)
+> -		print_aggr_socket(NULL);
+> -	else if (no_aggr) {
+> -		list_for_each_entry(counter, &evsel_list->entries, node)
+> -			print_counter(counter, NULL);
+> -	} else {
+> +	switch (aggr_mode) {
+> +	case AGGR_SOCKET:
+> +		print_aggr(NULL);
+> +		break;
 
-Wouldn't mmc_regulator_get_ocrmask() also report an error back in this 
-case?
+This line should look like this IMHO:
 
-> This solves the serious problems with sdhci driver when
-> dummy regulator is enabled in kconfig, otherwise the sdhci driver
-> concludes that no supported voltage is available and fails to initialize.
-> Using mmc_regulator_get_ocrmask() won't solve this problem.
-> 
-> BTW, mmc_regulator_get_ocrmask() won't work with continuous range regulators.
+		list_for_each_entry(counter, &evsel_list->entries, node)
+			print_aggr(counter, NULL);
 
-This seems like a problem, that has to be fixed...
+and the equivalent loop in the print_aggr() should be removed.  This is
+for consistency with other formats if multiple events counted.
 
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+For instance, it'd sorting on events first and then sockets like:
+
+  #      time socket cpus     counts events
+           t0 S0     4        XXXXXX cycles
+           t0 S1     4        XXXXXX cycles
+           t0 S0     4          YYYY cache-misses
+           t0 S1     4          YYYY cache-misses
+           t1 S0     4        ZZZZZZ cycles
+  ...
+
+But current code looks like sorting on sockets first instead.
+
+  #      time socket cpus     counts events
+           t0 S0     4        XXXXXX cycles
+           t0 S0     4          YYYY cache-misses
+           t0 S1     4        XXXXXX cycles
+           t0 S1     4          YYYY cache-misses
+           t1 S0     4        ZZZZZZ cycles
+  ...
+
+Thanks,
+Namhyung
+
+
+> +	case AGGR_GLOBAL:
+>  		list_for_each_entry(counter, &evsel_list->entries, node)
+>  			print_counter_aggr(counter, NULL);
+> +		break;
+> +	case AGGR_NONE:
+> +		list_for_each_entry(counter, &evsel_list->entries, node)
+> +			print_counter(counter, NULL);
+> +		break;
+> +	default:
+> +		break;
+>  	}
