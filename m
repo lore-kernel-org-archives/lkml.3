@@ -1,119 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760582Ab3BMUfm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 15:35:42 -0500
-Received: from fieldses.org ([174.143.236.118]:40622 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751803Ab3BMUfl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 15:35:41 -0500
-Date: Wed, 13 Feb 2013 15:35:28 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-fsdevel@vger.kernel.org,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: Re: [PATCH review 48/85] sunrpc: Update gss uid to security context
- mapping.
-Message-ID: <20130213203528.GN14195@fieldses.org>
-References: <87621w14vs.fsf@xmission.com>
- <1360777934-5663-1-git-send-email-ebiederm@xmission.com>
- <1360777934-5663-48-git-send-email-ebiederm@xmission.com>
+	id S934327Ab3BMUiZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 15:38:25 -0500
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:42335 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934006Ab3BMUiW convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 15:38:22 -0500
+From: Loic PALLARDY <loic.pallardy@st.com>
+To: "Anna, Suman" <s-anna@ti.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Tony Lindgren <tony@atomide.com>, Arnd Bergmann <arnd@arndb.de>,
+        Ohad Ben-Cohen <ohad@wizery.com>, Paul Walmsley <paul@pwsan.com>,
+        "Cousson, Benoit" <b-cousson@ti.com>,
+        Omar Ramirez Luna <omar.ramirez@copitl.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
+        Dom Cobley <popcornmix@gmail.com>, Wim Van Sebroeck <wim@iguana.be>,
+        Tejun Heo <tj@kernel.org>, Omar Ramirez Luna <omar.luna@linaro.org>
+Date: Wed, 13 Feb 2013 21:36:39 +0100
+Subject: Re: [PATCH v2 00/13] drivers: mailbox: framework creation
+Thread-Topic: [PATCH v2 00/13] drivers: mailbox: framework creation
+Thread-Index: Ac4KKdO/yUHXCgROS4mU7OXPLtfQ3w==
+Message-ID: <511BF957.4010501@st.com>
+References: <1360645032-9668-1-git-send-email-s-anna@ti.com>
+ <CACRpkdZayg-X11ZRnh2Z0i+egBn8Fhwya-6_Yr8wcv+6s0CVqQ@mail.gmail.com>
+ <20130213134207.GN17852@n2100.arm.linux.org.uk>
+ <37C860A02101E749A747FA2D3C1E3C50476638@DLEE12.ent.ti.com>
+In-Reply-To: <37C860A02101E749A747FA2D3C1E3C50476638@DLEE12.ent.ti.com>
+Accept-Language: fr-FR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120412
+ Thunderbird/11.0.1
+acceptlanguage: fr-FR, en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360777934-5663-48-git-send-email-ebiederm@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 13, 2013 at 09:51:37AM -0800, Eric W. Biederman wrote:
-> From: "Eric W. Biederman" <ebiederm@xmission.com>
-> 
-> - Use from_kuid when generating the on the wire uid values.
-> - Use make_kuid when reading on the wire values.
-> 
-> In gss_encode_v0_msg, since the uid in gss_upcall_msg is now a kuid_t
-> generate the necessary uid_t value on the stack copy it into
-> gss_msg->databuf where it can safely live until the message is no
-> longer needed.
+Hi Suman,
 
-Apologies, I haven't been following the user namespace work.
+I'll send new version of patch 11 taking into account Mark Rutland's 
+comments.
 
-If I understand correctly, you're expecting the id's seen in nfs
-protocol messages to be the same as the id's seen in the initial user
-namespace.
+Regards,
+Loic
 
-Why is that right, and not, say, the user namespace in which the mount
-was originally performed?  (Just asking, I honestly haven't thought
-about it before.)
-
-Also:
-
-> diff --git a/net/sunrpc/auth_gss/auth_gss.c b/net/sunrpc/auth_gss/auth_gss.c
-> index afbbcfb..a360067 100644
-> --- a/net/sunrpc/auth_gss/auth_gss.c
-> +++ b/net/sunrpc/auth_gss/auth_gss.c
-> @@ -395,8 +395,11 @@ gss_upcall_callback(struct rpc_task *task)
->  
->  static void gss_encode_v0_msg(struct gss_upcall_msg *gss_msg)
->  {
-> -	gss_msg->msg.data = &gss_msg->uid;
-> -	gss_msg->msg.len = sizeof(gss_msg->uid);
-> +	uid_t uid = from_kuid(&init_user_ns, gss_msg->uid);
-> +	memcpy(gss_msg->databuf, &uid, sizeof(uid));
-> +	gss_msg->msg.data = gss_msg->databuf;
-> +	gss_msg->msg.len = sizeof(uid);
-> +	BUG_ON(sizeof(uid) > UPCALL_BUF_LEN);
-
-This message is going to gssd, not to the server.  Should it be encoded
-for whatever namespace gssd lives in?
-
---b.
-
->  }
->  
->  static void gss_encode_v1_msg(struct gss_upcall_msg *gss_msg,
-> @@ -409,7 +412,7 @@ static void gss_encode_v1_msg(struct gss_upcall_msg *gss_msg,
->  
->  	gss_msg->msg.len = sprintf(gss_msg->databuf, "mech=%s uid=%d ",
->  				   mech->gm_name,
-> -				   gss_msg->uid);
-> +				   from_kuid(&init_user_ns, gss_msg->uid));
->  	p += gss_msg->msg.len;
->  	if (clnt->cl_principal) {
->  		len = sprintf(p, "target=%s ", clnt->cl_principal);
-> @@ -620,7 +623,8 @@ gss_pipe_downcall(struct file *filp, const char __user *src, size_t mlen)
->  	struct gss_upcall_msg *gss_msg;
->  	struct rpc_pipe *pipe = RPC_I(filp->f_dentry->d_inode)->pipe;
->  	struct gss_cl_ctx *ctx;
-> -	uid_t uid;
-> +	uid_t id;
-> +	kuid_t uid;
->  	ssize_t err = -EFBIG;
->  
->  	if (mlen > MSG_BUF_MAXSIZE)
-> @@ -635,12 +639,18 @@ gss_pipe_downcall(struct file *filp, const char __user *src, size_t mlen)
->  		goto err;
->  
->  	end = (const void *)((char *)buf + mlen);
-> -	p = simple_get_bytes(buf, end, &uid, sizeof(uid));
-> +	p = simple_get_bytes(buf, end, &id, sizeof(id));
->  	if (IS_ERR(p)) {
->  		err = PTR_ERR(p);
->  		goto err;
->  	}
->  
-> +	uid = make_kuid(&init_user_ns, id);
-> +	if (!uid_valid(uid)) {
-> +		err = -EINVAL;
-> +		goto err;
-> +	}
-> +
->  	err = -ENOMEM;
->  	ctx = gss_alloc_context();
->  	if (ctx == NULL)
-> -- 
-> 1.7.5.4
-> 
+On 02/13/2013 05:41 PM, Anna, Suman wrote:
+>> On Wed, Feb 13, 2013 at 02:36:32PM +0100, Linus Walleij wrote:
+>>> On Tue, Feb 12, 2013 at 5:56 AM, Suman Anna<s-anna@ti.com>  wrote:
+>>>
+>>>> I have hosted the series at [3].
+>>>> [3]
+>>>> https://github.com/sumananna/mailbox/commits/dbx500-prcmu-mailbox
+>>>
+>>> Suman, I suggest you ask Stepgen Rothwell to include this branch into
+>>> the linux-next tree, so we can get some rotation of this stuff in
+>>> preparation for the v3.10 merge window. (It's not going in now
+>>> anyway.)
+>>
+>> Best wait until after v3.9-rc1 - remember that linux-next is supposed to be a
+>> staging tree for the _next_ merge window only.
+>
+> Yes, will do. Anyway, we need a new revision of one patch (so far) to address Mark Rutland's comments.
+>
+> Thanks
+> Suman
