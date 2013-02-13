@@ -1,56 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757894Ab3BMSrK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 13:47:10 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:58363 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752892Ab3BMSrH (ORCPT
+	id S932694Ab3BMSra (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 13:47:30 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:20245 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756776Ab3BMSr0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 13:47:07 -0500
-Date: Wed, 13 Feb 2013 10:47:00 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: George Spelvin <linux@horizon.com>
-Cc: giometti@linux.it, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, peter@hurleysoftware.com
-Subject: Re: [PATCH v2 8/9] pps: Use a single cdev
-Message-ID: <20130213184700.GA15633@kroah.com>
-References: <20130213182026.GA3996@kroah.com>
- <20130213183529.27043.qmail@science.horizon.com>
+	Wed, 13 Feb 2013 13:47:26 -0500
+Date: Wed, 13 Feb 2013 13:47:02 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, linux-mm@kvack.org, ngupta@vflare.org,
+        sjenning@linux.vnet.ibm.com, minchan@kernel.org
+Subject: Re: [PATCH] staging: zcache: add TODO file
+Message-ID: <20130213184702.GD20042@phenom.dumpdata.com>
+References: <1360779186-17189-1-git-send-email-dan.magenheimer@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130213183529.27043.qmail@science.horizon.com>
+In-Reply-To: <1360779186-17189-1-git-send-email-dan.magenheimer@oracle.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 13, 2013 at 01:35:29PM -0500, George Spelvin wrote:
-> > You forgot a Signed-off-by: line for this patch, so I can't apply it, or
-> > the 9/9 patch :(
+On Wed, Feb 13, 2013 at 10:13:06AM -0800, Dan Magenheimer wrote:
+> Add zcache TODO file
 > 
-> Oops, fixed.  I don't see why the 9/9 patch depends on it,
-> though.  They're not related or interdependent in any way.
-> 
-> If you want to check the logic, I'd appreciate it.  I'm not
-> really sure about the RCU stuff.  My understanding is that:
-> - the idr code does the appropriate write locking when
->   modifying itself, so I don't need to do any.
-> - The pps_device returned from idr_find is itself refcounted,
->   so it can't go away, and the accesses don't have bo be
->   inside the RCU read "lock".  It's only the IDR's internal
->   index nodes that might get reallocated by modificaitons of
->   a different part of the tree.
-> 
-> > Care to resend just these two after fixing this up?
-> 
-> I can, but if you think you need 9/9 resent (which *did* have a S-o-b),
-> I'm confused and wonder why...
+Greg,
 
-I stopped at that point in the series, that's the only reason why, I
-didn't "check" to see if there was a dependancy, I just assumed there
-was...
+Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-So please resend, thanks.
-
-greg k-h
+> Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+> ---
+>  drivers/staging/zcache/TODO |   69 +++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 69 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/staging/zcache/TODO
+> 
+> diff --git a/drivers/staging/zcache/TODO b/drivers/staging/zcache/TODO
+> new file mode 100644
+> index 0000000..c1e26d4
+> --- /dev/null
+> +++ b/drivers/staging/zcache/TODO
+> @@ -0,0 +1,69 @@
+> +
+> +** ZCACHE PLAN FOR PROMOTION FROM STAGING **
+> +
+> +Last updated: Feb 13, 2013
+> +
+> +PLAN STEPS
+> +
+> +1. merge zcache and ramster to eliminate horrible code duplication
+> +2. converge on a predictable, writeback-capable allocator
+> +3. use debugfs instead of sysfs (per akpm feedback in 2011)
+> +4. zcache side of cleancache/mm WasActive patch
+> +5. zcache side of frontswap exclusive gets
+> +6. zcache must be able to writeback to physical swap disk
+> +    (per Andrea Arcangeli feedback in 2011)
+> +7. implement adequate policy for writeback
+> +8. frontswap/cleancache work to allow zcache to be loaded
+> +    as a module
+> +9. get core mm developer to review
+> +10. incorporate feedback from review
+> +11. get review/acks from 1-2 additional mm developers
+> +12. incorporate any feedback from additional mm reviews
+> +13. propose location/file-naming in mm tree
+> +14. repeat 9-13 as necessary until akpm is happy and merges
+> +
+> +STATUS/OWNERSHIP
+> +
+> +1. DONE as part of "new" zcache; in staging/zcache for 3.9
+> +2. DONE as part of "new" zcache (cf zbud.[ch]); in staging/zcache for 3.9
+> +    (this was the core of the zcache1 vs zcache2 flail)
+> +3. DONE as part of "new" zcache; in staging/zcache for 3.9
+> +4. DONE (w/caveats) as part of "new" zcache; per cleancache performance
+> +    feedback see https://lkml.org/lkml/2011/8/17/351, in
+> +    staging/zcache for 3.9; dependent on proposed mm patch, see
+> +    https://lkml.org/lkml/2012/1/25/300 
+> +5. DONE as part of "new" zcache; performance tuning only,
+> +    in staging/zcache for 3.9; dependent on frontswap patch
+> +    merged in 3.7 (33c2a174)
+> +6. DONE (w/caveats), prototyped as part of "new" zcache, had
+> +    bad memory leak; reimplemented to use sjennings clever tricks
+> +    and proposed mm patches with new version in staging/zcache
+> +    for 3.9, see https://lkml.org/lkml/2013/2/6/437;
+> +7. PROTOTYPED as part of "new" zcache; in staging/zcache for 3.9;
+> +    needs more review (plan to discuss at LSF/MM 2013)
+> +8. IN PROGRESS; owned by Konrad Wilk; v2 recently posted
+> +   http://lkml.org/lkml/2013/2/1/542
+> +9. IN PROGRESS; owned by Konrad Wilk; Mel Gorman provided
+> +   great feedback in August 2012 (unfortunately of "old"
+> +   zcache)
+> +10. Konrad posted series of fixes (that now need rebasing)
+> +    https://lkml.org/lkml/2013/2/1/566 
+> +11. NOT DONE; owned by Konrad Wilk
+> +12. TBD (depends on quantity of feedback)
+> +13. PROPOSED; one suggestion proposed by Dan; needs more ideas/feedback
+> +14. TBD (depends on feedback)
+> +
+> +WHO NEEDS TO AGREE
+> +
+> +Not sure.  Seth Jennings is now pursuing a separate but semi-parallel
+> +track.  Akpm clearly has to approve for any mm merge to happen.  Minchan
+> +Kim has interest but may be happy if/when zram is merged into mm.  Konrad
+> +Wilk may be maintainer if akpm decides compression is maintainable
+> +separately from the rest of mm.  (More LSF/MM 2013 discussion.)
+> +
+> +ZCACHE FUTURE NEW FUNCTIONALITY
+> +
+> +A. Support zsmalloc as an alternative high-density allocator
+> +    (See https://lkml.org/lkml/2013/1/23/511)
+> +B. Support zero-filled pages more efficiently
+> +C. Possibly support three zbuds per pageframe when space allows
+> -- 
+> 1.7.1
+> 
