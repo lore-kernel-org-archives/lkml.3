@@ -1,186 +1,327 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933901Ab3BMTWE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 14:22:04 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:43347 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757167Ab3BMTWB (ORCPT
+	id S1759709Ab3BMTXz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 14:23:55 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:34564 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756093Ab3BMTXx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 14:22:01 -0500
-Date: Wed, 13 Feb 2013 14:21:55 -0500 (EST)
-Message-Id: <20130213.142155.203725388752600954.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=utf-8
+	Wed, 13 Feb 2013 14:23:53 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130210235125.GA8098@jack.whiskey>
+References: <1360338220-12753-1-git-send-email-ruslan.bilovol@ti.com>
+	<1360338220-12753-2-git-send-email-ruslan.bilovol@ti.com>
+	<20130210235125.GA8098@jack.whiskey>
+Date: Wed, 13 Feb 2013 21:23:51 +0200
+X-Google-Sender-Auth: pU29QDesfEy1YCgMxkbAFQzDoBE
+Message-ID: <CAB=otbSpspZ9Z_fOpBvE1mPtt+JwZydZrgcR2LdkD_4CrGa_eg@mail.gmail.com>
+Subject: Re: [PATCH v2 1/1] OMAP4: DSS: Add panel for Blaze Tablet boards
+From: Ruslan Bilovol <ruslan.bilovol@ti.com>
+To: Andi Shyti <andi@etezian.org>
+Cc: tomi.valkeinen@ti.com, FlorianSchandinat@gmx.de,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1DJM6K1032661
 
+Hi Andi,
 
-This is primarily to get those r8169 reverts sorted, but other
-fixes have accumulated meanwhile.
+Thanks for your review,
 
-1) Revert two r8169 changes to fix suspend/resume for some users,
-   from Francois Romieu.
+On Mon, Feb 11, 2013 at 1:51 AM, Andi Shyti <andi@etezian.org> wrote:
+> Hi Ruslan,
+>
+>> TC358765 is DSI-to-LVDS transmitter from Toshiba, used in
+>> OMAP44XX Blaze Tablet and Blaze Tablet2 boards.
+>
+> I think it's fine, just some nitpicks and checkpatch warnings
+>
+>> +struct {
+>> +     struct device *dev;
+>> +     struct dentry *dir;
+>> +} tc358765_debug;
+>
+> Should this be static?
 
-2) PCI dma mapping errors in atl1c are not checked for and this cause
-   hard crashes for some users, from Xiong Huang.
+Agree.
 
-3) In 3.8.x we merged the removal of the EXPERIMENTAL dependency for
-   'dlm' but the same patch for 'sctp' got lost somewhere, resulting
-   in the potential for build errors since there are cross dependencies.
-   From Kees Cook.
+>
+>> +struct tc358765_reg {
+>> +     const char *name;
+>> +     u16 reg;
+>> +     u8 perm:2;
+>> +} tc358765_regs[] = {
+>
+> Should this be static as well?
 
-4) SCTP's ipv6 socket route validation makes boolean tests incorrectly,
-   fix from Daniel Borkmann.
+Agree.
 
-5) mac80211 does sizeof(ptr) instead of (sizeof(ptr) * nelem), from Cong
-   Ding.
+>
+>> +     { "D1S_ZERO", D1S_ZERO, A_RW },
+>> +     { "D2S_ZERO", D2S_ZERO, A_RW  },
+>> +     { "D3S_ZERO", D3S_ZERO, A_RW },
+>> +     { "PPI_CLRFLG", PPI_CLRFLG, A_RW },
+>> +     { "PPI_CLRSIPO", PPI_CLRSIPO, A_RW },
+>> +     { "PPI_HSTimeout", PPI_HSTimeout, A_RW },
+>
+> WARNING: Avoid CamelCase: <PPI_HSTimeout>
+> #136: FILE: video/omap2/displays/panel-tc358765.c:136:
+> +       { "PPI_HSTimeout", PPI_HSTimeout, A_RW },
+>
+>> +     { "PPI_HSTimeoutEnable", PPI_HSTimeoutEnable, A_RW },
+>
+> WARNING: Avoid CamelCase: <PPI_HSTimeoutEnable>
+> #137: FILE: video/omap2/displays/panel-tc358765.c:137:
+> +       { "PPI_HSTimeoutEnable", PPI_HSTimeoutEnable, A_RW },
 
-6) arp_rcv() can crash on shared non-linear packets, from Eric Dumazet.
+Hmm... I though these registers had such naming in the documentation,
+however, after looking into it I found the names are in upper case there
+so this will be fixed.
 
-7) Avoid crashes in macvtap by setting ->gso_type consistently in ixgbe,
-   qlcnic, and bnx2x drivers.  From Michael S. Tsirkin and Alexander Duyck.
+>
+>
+>> +static int tc358765_read_block(u16 reg, u8 *data, int len)
+>> +{
+>> +     unsigned char wb[2];
+>> +     struct i2c_msg msg[2];
+>> +     int r;
+>> +     mutex_lock(&tc358765_i2c->xfer_lock);
+>> +     wb[0] = (reg & 0xff00) >> 8;
+>> +     wb[1] = reg & 0xff;
+>> +     msg[0].addr = tc358765_i2c->client->addr;
+>> +     msg[0].len = 2;
+>> +     msg[0].flags = 0;
+>> +     msg[0].buf = wb;
+>> +     msg[1].addr = tc358765_i2c->client->addr;
+>> +     msg[1].flags = I2C_M_RD;
+>> +     msg[1].len = len;
+>> +     msg[1].buf = data;
+>> +
+>> +     r = i2c_transfer(tc358765_i2c->client->adapter, msg, ARRAY_SIZE(msg));
+>> +     mutex_unlock(&tc358765_i2c->xfer_lock);
+>> +
+>> +     if (r == ARRAY_SIZE(msg))
+>> +             return len;
+>> +
+>> +     return r;
+>
+> If you like, here you could do
+>
+>         return (r == ARRAY_SIZE(msg)) ? len : r;
+>
+> Usually I like more this notation because keeps the code more
+> compact and immediate to read, but you don't have to
 
-8) Trinity fuzzer spots infinite loop in __skb_recv_datagram(), fix from
-   Eric Dumazet.
+Yes, makes sense for "beautification" :)
+Will change
 
-9) STP protocol frames should use high packet priority, otherwise an
-   overloaded bridge can get stuck.  From Stephen Hemminger.
+>
+>> +     mutex_lock(&tc358765_i2c->xfer_lock);
+>> +     ret = i2c_transfer(tc358765_i2c->client->adapter, &msg, 1);
+>> +     mutex_unlock(&tc358765_i2c->xfer_lock);
+>> +
+>> +     if (ret != 1)
+>> +             return ret;
+>> +     return 0;
+>
+> Also here you could do
+>
+>         return (ret != 1) ? ret : 0;
+>
+> But this is more taste :)
+>
+>> +static ssize_t tc358765_seq_write(struct file *filp, const char __user *ubuf,
+>> +                                             size_t size, loff_t *ppos)
+>> +{
+>> +     struct device *dev = tc358765_debug.dev;
+>> +     unsigned i, reg_count;
+>> +     u32 value = 0;
+>> +     int error = 0;
+>> +     /* kids, don't use register names that long */
+>
+> I won't, promised, but please, drop this comment :)
+>
+>> +     char name[30];
+>> +     char buf[50];
+>> +
+>> +     if (size >= sizeof(buf))
+>> +             size = sizeof(buf);
+>
+> what's the point of this?
 
-10) The HTB packet scheduler was converted some time ago to store
-    internal timestamps in nanoseconds, but we don't convert back into
-    psched ticks for the user during dumps.  Fix from Jiri Pirko.
+This is a way to limit copied from userspace data by available buffer size,
+widely used in current kernel sources. Are you implying there is some
+better (more graceful) way?
 
-11) mwl8k channel table doesn't set the .band field properly, resulting
-    in NULL pointer derefs.  Fix from Jonas Gorski.
+>
+>> +static void tc358765_uninitialize_debugfs(void)
+>> +{
+>> +     if (tc358765_debug.dir)
+>> +             debugfs_remove_recursive(tc358765_debug.dir);
+>
+> WARNING: debugfs_remove_recursive(NULL) is safe this check is probably not required
+> #435: FILE: video/omap2/displays/panel-tc358765.c:435:
+> +       if (tc358765_debug.dir)
+> +               debugfs_remove_recursive(tc358765_debug.dir);
 
-12) mac80211 doesn't accumulate channels properly during a scan so we
-    can downgrade heavily to a much less desirable connection speed.
-    Fix from Johannes Berg.
+Will fix it..
 
-13) PHY probe failure in stmmac can result in resource leaks and
-    double MDIO registery later, from Giuseppe CAVALLARO.
+>
+>
+>> +static struct tc358765_board_data *get_board_data(struct omap_dss_device
+>> +                                                             *dssdev)
+>> +{
+>> +     return (struct tc358765_board_data *)dssdev->data;
+>
+> You shouldn't need for this cast, does it complain?
 
-14) Correct ipv6 checksumming in ip6t_NPT netfilter module, also fix
-    address prefix mangling, from YOSHIFUJI Hideaki.
+yes, we don't need this :)
 
-Please pull, thanks a lot!
+>
+>> +}
+>> +
+>> +static void tc358765_get_timings(struct omap_dss_device *dssdev,
+>> +             struct omap_video_timings *timings)
+>> +{
+>> +     *timings = dssdev->panel.timings;
+>> +}
+>> +
+>> +static void tc358765_set_timings(struct omap_dss_device *dssdev,
+>> +             struct omap_video_timings *timings)
+>> +{
+>> +     dev_info(&dssdev->dev, "set_timings() not implemented\n");
+>
+> ... then drop the function :)
 
-The following changes since commit 836dc9e3fbbab0c30aa6e664417225f5c1fb1c39:
+I need to check if this will have any side effects in places where
+this is used. I mean next:
 
-  Linux 3.8-rc7 (2013-02-09 08:20:39 +1100)
+|  if (blabla->set_timings)
+|            blabla->set_timings();
+|  else
+|            do_another_thing();
 
-are available in the git repository at:
+But it seems this may be safely removed
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+>
+>> +     if ((pins[2] & 1) || (pins[3] & 1)) {
+>> +             lanes |= (1 << 1);
+>> +             ret |= tc358765_write_register(dssdev, PPI_D0S_CLRSIPOCOUNT,
+>> +                                                     board_data->clrsipo);
+>> +     }
+>> +     if ((pins[4] & 1) || (pins[5] & 1)) {
+>> +             lanes |= (1 << 2);
+>> +             ret |= tc358765_write_register(dssdev, PPI_D1S_CLRSIPOCOUNT,
+>> +                                                     board_data->clrsipo);
+>> +     }
+>> +     if ((pins[6] & 1) || (pins[7] & 1)) {
+>> +             lanes |= (1 << 3);
+>> +             ret |= tc358765_write_register(dssdev, PPI_D2S_CLRSIPOCOUNT,
+>> +                                                     board_data->clrsipo);
+>> +     }
+>> +     if ((pins[8] & 1) || (pins[9] & 1)) {
+>> +             lanes |= (1 << 4);
+>> +             ret |= tc358765_write_register(dssdev, PPI_D3S_CLRSIPOCOUNT,
+>> +                                                     board_data->clrsipo);
+>> +     }
+>
+> Can't this be done in one single multiwrighting command since
+> this registers are consecutive?
+>
+> You build once the array to write and you send it at once.
 
-for you to fetch changes up to 3bdb1a443a53a4058b95c8a67c856cc8b8393411:
+In this particular case I disagree. Yes, it will be a little bit
+faster, however:
+1) we write this for panel initialization only (so no impact in other cases)
+2) multiwriting of array will make code reading more difficult
 
-  net, sctp: remove CONFIG_EXPERIMENTAL (2013-02-13 13:57:27 -0500)
+So I would like to leave it as-is
+Same is for next your similar comment.
 
-----------------------------------------------------------------
-Alexander Duyck (1):
-      ixgbe: Only set gso_type to SKB_GSO_TCPV4 as RSC does not support IPv6
+>
+> Moreover it would be nice to have a name for all those nombers
 
-BjÃ¸rn Mork (1):
-      net: qmi_wwan: add Yota / Megafon M100-1 4g modem
+Okay, will replace magic numbers by defined values
 
-Cong Ding (1):
-      mac80211: fix error in sizeof() usage
+>
+>> +     ret |= tc358765_write_register(dssdev, HTIM1,
+>> +             (tc358765_timings.hbp << 16) | tc358765_timings.hsw);
+>> +     ret |= tc358765_write_register(dssdev, HTIM2,
+>> +             ((tc358765_timings.hfp << 16) | tc358765_timings.x_res));
+>> +     ret |= tc358765_write_register(dssdev, VTIM1,
+>> +             ((tc358765_timings.vbp << 16) | tc358765_timings.vsw));
+>> +     ret |= tc358765_write_register(dssdev, VTIM2,
+>> +             ((tc358765_timings.vfp << 16) | tc358765_timings.y_res));
+>
+> also this and all the other cases I haven't checked
+>
+>> +static int tc358765_enable(struct omap_dss_device *dssdev)
+>> +{
+>> +     struct tc358765_data *d2d = dev_get_drvdata(&dssdev->dev);
+>> +     int r = 0;
+>
+> this initialisation is useless
 
-Dan Carpenter (1):
-      ipvs: freeing uninitialized pointer on error
+Agree
 
-Daniel Borkmann (2):
-      ipvs: sctp: fix checksumming on snat and dnat handlers
-      net: sctp: sctp_v6_get_dst: fix boolean test in dst cache
+>
+>> +     if (r) {
+>> +             dev_dbg(&dssdev->dev, "enable failed\n");
+>
+> Here you could choose a different print level, I would have used
+> dev_err instead.
 
-David S. Miller (4):
-      Merge branch 'davem.r8169' of git://violet.fr.zoreil.com/romieu/linux
-      Merge branch 'gso_type'
-      Merge branch 'master' of git://1984.lsi.us.es/nf
-      Merge branch 'for-davem' of git://git.kernel.org/.../linville/wireless
+Agree
 
-Eric Dumazet (2):
-      arp: fix possible crash in arp_rcv()
-      net: fix infinite loop in __skb_recv_datagram()
+>
+>> +static int tc358765_i2c_probe(struct i2c_client *client,
+>> +                                const struct i2c_device_id *id)
+>> +{
+>> +     tc358765_i2c = devm_kzalloc(&client->dev, sizeof(*tc358765_i2c), GFP_KERNEL);
+>
+> WARNING: line over 80 characters
+> #927: FILE: video/omap2/displays/panel-tc358765.c:927:
+> +       tc358765_i2c = devm_kzalloc(&client->dev, sizeof(*tc358765_i2c), GFP_KERNEL);
 
-Francois Romieu (2):
-      Revert "r8169: enable ALDPS for power saving".
-      Revert "r8169: enable internal ASPM and clock request settings".
+Agree :)
 
-Giuseppe CAVALLARO (2):
-      stmmac: fix macro used for debugging the xmit
-      stmmac: mdio register has to fail if the phy is not found
+>
+>
+>> +     /* store i2c_client pointer on private data structure */
+>> +     tc358765_i2c->client = client;
+>> +
+>> +     /* store private data structure pointer on i2c_client structure */
+>> +     i2c_set_clientdata(client, tc358765_i2c);
+>> +
+>> +     /* init mutex */
+>> +     mutex_init(&tc358765_i2c->xfer_lock);
+>> +     dev_err(&client->dev, "D2L i2c initialized\n");
+>
+> while here dev_dbg (or dev_info) are better.
 
-Huang, Xiong (1):
-      atl1c: add error checking for pci_map_single functions
+Agree
 
-Jiri Pirko (1):
-      htb: fix values in opt dump
+>
+>> +static int __init tc358765_init(void)
+>> +{
+>> +     int r;
+>> +     tc358765_i2c = NULL;
+>> +     r = i2c_add_driver(&tc358765_i2c_driver);
+>> +     if (r < 0) {
+>> +             printk(KERN_WARNING "d2l i2c driver registration failed\n");
+>
+> WARNING: Prefer netdev_warn(netdev, ... then dev_warn(dev, ...  then pr_warn(...  to printk(KERN_WARNING ...
+> #981: FILE: video/omap2/displays/panel-tc358765.c:981:
+> +               printk(KERN_WARNING "d2l i2c driver registration failed\n");
 
-Johannes Berg (2):
-      mac80211: fix managed mode channel context use
-      mac80211: fix channel selection bug
+Agree
 
-John W. Linville (2):
-      Merge branch 'for-john' of git://git.kernel.org/.../jberg/mac80211
-      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
+--
+Best regards,
+Ruslan
 
-Jonas Gorski (1):
-      mwl8k: fix band for supported channels
-
-Kees Cook (1):
-      net, sctp: remove CONFIG_EXPERIMENTAL
-
-Michael S. Tsirkin (3):
-      ixgbe: fix gso type
-      qlcnic: set gso_type
-      bnx2x: set gso_type
-
-Nicolas Ferre (1):
-      net/macb: fix race with RX interrupt while doing NAPI
-
-Pau Koning (1):
-      batman-adv: Fix NULL pointer dereference in DAT hash collision avoidance
-
-Stephen Hemminger (1):
-      bridge: set priority of STP packets
-
-YOSHIFUJI Hideaki / å‰è—¤è‹±æ˜Ž (3):
-      netfilter: ip6t_NPT: Fix adjustment calculation
-      netfilter: ip6t_NPT: Fix prefix mangling
-      netfilter: ip6t_NPT: Ensure to check lower part of prefixes are zero
-
- drivers/net/ethernet/atheros/atl1c/atl1c_main.c   | 71 +++++++++++++++++--
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c   | 12 ++--
- drivers/net/ethernet/cadence/macb.c               |  5 ++
- drivers/net/ethernet/intel/ixgbe/ixgbe_main.c     |  1 +
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c    |  7 +-
- drivers/net/ethernet/realtek/r8169.c              | 86 +++++------------------
- drivers/net/ethernet/stmicro/stmmac/stmmac_main.c |  2 +-
- drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c | 10 ++-
- drivers/net/usb/qmi_wwan.c                        |  1 +
- drivers/net/wireless/mwl8k.c                      | 36 +++++-----
- net/batman-adv/distributed-arp-table.c            |  2 +-
- net/bridge/br_stp_bpdu.c                          |  2 +
- net/core/datagram.c                               |  2 +-
- net/ipv4/arp.c                                    | 21 +++---
- net/ipv6/netfilter/ip6t_NPT.c                     | 18 +++--
- net/mac80211/cfg.c                                |  3 +-
- net/mac80211/mlme.c                               | 11 +--
- net/netfilter/ipvs/ip_vs_proto_sctp.c             | 35 +++++----
- net/netfilter/ipvs/ip_vs_sync.c                   |  2 +
- net/sched/sch_htb.c                               |  4 +-
- net/sctp/Kconfig                                  |  4 +-
- net/sctp/ipv6.c                                   |  5 +-
- 22 files changed, 191 insertions(+), 149 deletions(-)
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+>
+>
+> Andi
