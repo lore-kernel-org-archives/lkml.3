@@ -1,67 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760390Ab3BMReU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 12:34:20 -0500
-Received: from mail-la0-f50.google.com ([209.85.215.50]:55871 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760123Ab3BMReT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 12:34:19 -0500
-MIME-Version: 1.0
-X-Originating-IP: [188.6.195.195]
-In-Reply-To: <CAJfpegvV0zQ5Lftx=ELP0MAH1-7oY5HfT-CSYEaFUWJLmXoD7A@mail.gmail.com>
-References: <1360113112.17267.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
-	<2964781.rPUOipNRNb@vostro.rjw.lan>
-	<CAJfpegtNUr+AJXZcKmLEGBYqu20DVFwzg-OvOk_nS3fBS3wd=Q@mail.gmail.com>
-	<1660768.prnx6s70rD@vostro.rjw.lan>
-	<CAJfpegt2B3n-QNK_W7O2H0JVfS=4jcUOzV_+w8ELPq19RJPewQ@mail.gmail.com>
-	<20130212104608.GA24042@amd.pavel.ucw.cz>
-	<CAJfpegvdVfEFTU5haMMi94PD1iZ1XyCRjg0O9vDjDg1yyaM-yA@mail.gmail.com>
-	<CAJfpegvV0zQ5Lftx=ELP0MAH1-7oY5HfT-CSYEaFUWJLmXoD7A@mail.gmail.com>
-Date: Wed, 13 Feb 2013 18:34:16 +0100
-Message-ID: <CAJfpegsFThkzv3uF60AMXO7Y-yEzU_20HeGyPra0O8Vk5OqCGQ@mail.gmail.com>
-Subject: Re: Getting rid of freezer for suspend [was Re: [fuse-devel] [PATCH]
- fuse: make fuse daemon frozen along with kernel threads]
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Goswin von Brederlow <goswin-v-b@web.de>, Li Fei <fei.li@intel.com>,
-        len.brown@intel.com, mingo@redhat.com, peterz@infradead.org,
-        biao.wang@intel.com, linux-pm@vger.kernel.org,
-        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        chuansheng.liu@intel.com
-Content-Type: text/plain; charset=UTF-8
+	id S1760372Ab3BMRf7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 12:35:59 -0500
+Received: from mail.avalus.com ([89.16.176.221]:49233 "EHLO mail.avalus.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759980Ab3BMRf6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 12:35:58 -0500
+Subject: Re: [PATCH 1/3] nbd: support FLUSH requests
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=us-ascii
+From: Alex Bligh <alex@alex.org.uk>
+In-Reply-To: <511BB902.3080302@redhat.com>
+Date: Wed, 13 Feb 2013 17:35:56 +0000
+Cc: Alex Bligh <alex@alex.org.uk>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, nbd-general@lists.sf.net,
+        Paul Clements <Paul.Clements@steeleye.com>
+Content-Transfer-Encoding: 7bit
+Message-Id: <4CB78CEB-E66C-4C88-BF0D-26EECE13CAC6@alex.org.uk>
+References: <1360685171-3792-1-git-send-email-pbonzini@redhat.com> <1360685171-3792-2-git-send-email-pbonzini@redhat.com> <115932E2-48BE-406E-9E75-61D12EB5937A@alex.org.uk> <511A8491.5030407@redhat.com> <20130212133207.ef6b24f5.akpm@linux-foundation.org> <FF1216D8-C4B3-405E-A4F6-82196A796A94@alex.org.uk> <511B8E65.5020507@redhat.com> <3EDEF735-9A67-439E-BA65-089C6AAFD1BF@alex.org.uk> <511BB902.3080302@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 12, 2013 at 2:17 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> On Tue, Feb 12, 2013 at 2:13 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
->> On Tue, Feb 12, 2013 at 11:46 AM, Pavel Machek <pavel@ucw.cz> wrote:
->>
->>> (After all, with FUSE, filesystem clients are just doing IPC. In ideal
->>> world, that would be freezeable and killable with -9).
 
-Well, I thought this can be constrained to locks directly related to
-the fuse filesystem itself, but it can't...  The reason is page
-faults.  Pretty much everyone and their brother uses get_user_pages*,
-holding various locks (mmap_sem for sure but others as well).  A fuse
-filesystem frozen during a page read will block those.
+On 13 Feb 2013, at 16:02, Paolo Bonzini wrote:
 
-Separating those parts of the kernel that can be frozen from those
-that can't looks increasingly difficult.
+> If you do not have REQ_FUA, as is the case with this patch, the block
+> layer converts it to a REQ_FLUSH *after* the write.
 
-So I think the PF_FREEZE_DAEMON idea (the patch from Li Fei that
-started this thread) may still be our best bet at handling this
-situation.  The idea being that pure "originator" processes (ones that
-take no part in serving filesystem syscalls) can be frozen up-front.
-Then the "fuse daemon" (or "server") processes are hopefully in a
-quiescent state and can be frozen without difficulty.
+OK. Well +/- it converting an fdatasync() into a full fsync(), that
+should be be ok.
 
-Unfortunately it needs help from userspace: the kernel can't easily
-guess which processes are part of a "fuse daemon" and which aren't.
-Fortunately we have a standard library (libfuse) that can tell it to
-the kernel for the vast majority of cases.
+-- 
+Alex Bligh
 
-Thanks,
-Miklos
+
+
+
