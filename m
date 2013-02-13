@@ -1,44 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933624Ab3BMKI6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 05:08:58 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:47695 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754033Ab3BMKI4 (ORCPT
+	id S1759091Ab3BMKM5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 05:12:57 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:57462 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758375Ab3BMKMz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 05:08:56 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] of: Fix locking when calling of_get_next_available_child()
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Rob Herring <robherring2@gmail.com>
-In-Reply-To: <51197E36.8080704@wwwdotorg.org>
-References: <1360621157-23570-1-git-send-email-grant.likely@secretlab.ca> <51197E36.8080704@wwwdotorg.org>
-Date: Wed, 13 Feb 2013 10:08:51 +0000
-Message-Id: <20130213100851.7620A3E23F1@localhost>
+	Wed, 13 Feb 2013 05:12:55 -0500
+Message-ID: <1360750028.24917.28.camel@mfleming-mobl1.ger.corp.intel.com>
+Subject: Re: [PATCH V3] ia64/mm: fix a bad_page bug when crash kernel booting
+From: Matt Fleming <matt.fleming@intel.com>
+To: Xishi Qiu <qiuxishi@huawei.com>
+Cc: "Luck, Tony" <tony.luck@intel.com>, fenghua.yu@intel.com,
+        Liujiang <jiang.liu@huawei.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-ia64@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
+        linux-mm@kvack.org, Hanjun Guo <guohanjun@huawei.com>,
+        WuJianguo <wujianguo@huawei.com>
+Date: Wed, 13 Feb 2013 10:07:08 +0000
+In-Reply-To: <5113450C.1080109@huawei.com>
+References: <51074786.5030007@huawei.com>
+	 <1359995565.7515.178.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <51131248.3080203@huawei.com> <5113450C.1080109@huawei.com>
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Feb 2013 16:26:46 -0700, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 02/11/2013 03:19 PM, Grant Likely wrote:
-> > of_get_next_available_child() obtains the devtree_lock and then calls
-> > of_device_is_available() which also attempts to claim the lock. This is
-> > obviously incorrect and causes a deadlock on boot. Fix issue by adding
-> > an variant of of_device_is_available() which doesn't obtain the lock.
+On Thu, 2013-02-07 at 14:09 +0800, Xishi Qiu wrote:
+> > Sorry, this bug will be happen when use Sparse-Memory(section is valid, but last
 > 
-> This patch forgets to update __of_device_is_available() to call
-> __of_get_property() rather than of_get_property() and hence doesn't
-> actually solve the problem.
+> > several pages are invalid). If use Flat-Memory, crash kernel will boot successfully.
+> > I think the following patch would be better.
+> > 
+> > Hi Andrew, will you just ignore the earlier patch and consider the following one? :>
+> > 
+> > Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+> > ---
+> >  arch/ia64/mm/init.c |    2 ++
+> >  1 files changed, 2 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/arch/ia64/mm/init.c b/arch/ia64/mm/init.c
+> > index 082e383..23f2ee3 100644
+> > --- a/arch/ia64/mm/init.c
+> > +++ b/arch/ia64/mm/init.c
+> > @@ -213,6 +213,8 @@ free_initrd_mem (unsigned long start, unsigned long end)
+> >  	for (; start < end; start += PAGE_SIZE) {
+> >  		if (!virt_addr_valid(start))
+> >  			continue;
+> > +		if ((start >> PAGE_SHIFT) >= max_low_pfn)
 > 
-> You might want to make __of_device_is_available() static too.
+> I confused the vaddr and paddr, really sorry for it.
+> 
+> In efi_init() memory aligns in IA64_GRANULE_SIZE(16M). If set "crashkernel=1024M-:600M"
+> and use sparse memory model, when crash kernel booting it changes [128M-728M] to [128M-720M].
+> But initrd memory is in [709M-727M], and virt_addr_valid() *can not* check the invalid pages
+> when freeing initrd memory. There are some pages missed at the end of the seciton.
+> 
+> ChangeLog V3:
+> 	fixed vaddr mistake
+> ChangeLog V2:
+> 	add invalid pages check when freeing initrd memory
+> 
+> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+> ---
+>  arch/ia64/mm/init.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/ia64/mm/init.c b/arch/ia64/mm/init.c
+> index 082e383..8a269f8 100644
+> --- a/arch/ia64/mm/init.c
+> +++ b/arch/ia64/mm/init.c
+> @@ -173,6 +173,7 @@ void __init
+>  free_initrd_mem (unsigned long start, unsigned long end)
+>  {
+>  	struct page *page;
+> +	unsigned long pfn;
+>  	/*
+>  	 * EFI uses 4KB pages while the kernel can use 4KB or bigger.
+>  	 * Thus EFI and the kernel may have different page sizes. It is
+> @@ -213,6 +214,9 @@ free_initrd_mem (unsigned long start, unsigned long end)
+>  	for (; start < end; start += PAGE_SIZE) {
+>  		if (!virt_addr_valid(start))
+>  			continue;
+> +		pfn = __pa(start) >> PAGE_SHIFT;
+> +		if (pfn >= max_low_pfn)
+> +			continue;
+>  		page = virt_to_page(start);
+>  		ClearPageReserved(page);
+>  		init_page_count(page);
 
-Okay, I've dropped this patch and replaced it with your version since
-you're actually doing better testing that I it would appear. I had to
-respin my tree anyway because I messed up a merge of Rob's branch. :-(
-Sorry for the noise.
+I would have presumed that fixing this bug would involve modifying the
+ia64-specific kexec code?
 
-New version of the tree is pushed out.
-
-g.
+Tony, Fenghua? Any thoughts?
 
