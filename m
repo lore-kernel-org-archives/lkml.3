@@ -1,251 +1,673 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933797Ab3BMTQO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 14:16:14 -0500
-Received: from nat-pool-14-rdu.redhat.com ([66.187.233.208]:50253 "EHLO
-	voip-10-15-18-81.yyz.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757196Ab3BMTQN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 14:16:13 -0500
-From: Serguei Makarov <smakarov@voip-10-15-18-81.yyz.redhat.com>
-Message-Id: <201302131836.r1DIa4iv010988@voip-10-15-18-81.yyz.redhat.com>
-Date: Wed, 13 Feb 2013 13:36:04 -0500
-To: systemtap@sourceware.org
-Cc: lwn@lwn.net, linux-kernel@vger.kernel.org
-User-Agent: Heirloom mailx 12.5 7/5/10
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+	id S933830Ab3BMTSG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 14:18:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3162 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932817Ab3BMTSD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 14:18:03 -0500
+Date: Wed, 13 Feb 2013 17:17:53 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Prabhakar lad <prabhakar.csengg@gmail.com>
+Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Martin Bugge <marbugge@cisco.com>, Chaithrika U S <chaithrika@ti.com>
+Subject: Re: [PATCH v3] media: ths7353: add support for ths7353 video
+ amplifier
+Message-ID: <20130213171753.4f394b71@redhat.com>
+In-Reply-To: <1360215628-25303-1-git-send-email-prabhakar.lad@ti.com>
+References: <1360215628-25303-1-git-send-email-prabhakar.lad@ti.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The systemtap team announces release 2.1!
+Em Thu,  7 Feb 2013 11:10:28 +0530
+Prabhakar lad <prabhakar.csengg@gmail.com> escreveu:
 
-perf event probe improvements, dyninst backend improvements,
-error:: and warning:: man pages, bundled emacs/vim editor modes,
-customizable aggregate array sorting, optional time limit suppression,
-experimental compiled regex support
+> From: Lad, Prabhakar <prabhakar.lad@ti.com>
+> 
+> The patch adds support for THS7353 video amplifier.
+> The the THS7353 amplifier is very much similar to the
+> existing THS7303 video amplifier driver.
+> This patch appropriately makes changes to the existing
+> ths7303 driver and adds support for the THS7353.
+> This patch also adds V4L2_IDENT_THS7353 for the THS7353
+> chip and appropriate changes to Kconfig file for building.
+> 
+> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+> Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+> Signed-off-by: Martin Bugge <marbugge@cisco.com>
+> Cc: Chaithrika U S <chaithrika@ti.com>
+> ---
+>  Changes for v3:
+>  1: Fixed review comments pointed out by Hans.
+> 
+>  Changes for v2:
+>  1: Merged the driver in existing ths7303 driver.
+>  2: Merged the patch which adds the chip indent in same patch.
+> 
+>  drivers/media/i2c/Kconfig       |    6 +-
+>  drivers/media/i2c/ths7303.c     |  353 ++++++++++++++++++++++++++++++++-------
+>  include/media/ths7303.h         |   42 +++++
+>  include/media/v4l2-chip-ident.h |    3 +
+>  4 files changed, 343 insertions(+), 61 deletions(-)
+>  create mode 100644 include/media/ths7303.h
+> 
+> diff --git a/drivers/media/i2c/Kconfig b/drivers/media/i2c/Kconfig
+> index ecdf7e3..bd08541 100644
+> --- a/drivers/media/i2c/Kconfig
+> +++ b/drivers/media/i2c/Kconfig
+> @@ -576,10 +576,10 @@ config VIDEO_UPD64083
+>  comment "Miscelaneous helper chips"
+>  
+>  config VIDEO_THS7303
+> -	tristate "THS7303 Video Amplifier"
+> -	depends on I2C
+> +	tristate "THS7303/53 Video Amplifier"
+> +	depends on VIDEO_V4L2 && I2C
+>  	help
+> -	  Support for TI THS7303 video amplifier
+> +	  Support for TI THS7303/53 video amplifier
+>  
+>  	  To compile this driver as a module, choose M here: the
+>  	  module will be called ths7303.
+> diff --git a/drivers/media/i2c/ths7303.c b/drivers/media/i2c/ths7303.c
+> index e747524..7300abc 100644
+> --- a/drivers/media/i2c/ths7303.c
+> +++ b/drivers/media/i2c/ths7303.c
+> @@ -1,7 +1,15 @@
+>  /*
+> - * ths7303- THS7303 Video Amplifier driver
+> + * ths7303/53- THS7303/53 Video Amplifier driver
+>   *
+>   * Copyright (C) 2009 Texas Instruments Incorporated - http://www.ti.com/
+> + * Copyright 2013 Cisco Systems, Inc. and/or its affiliates.
+> + *
+> + * Author: Chaithrika U S <chaithrika@ti.com>
+> + *
+> + * Contributors:
+> + *     Lad, Prabhakar <prabhakar.lad@ti.com>
+> + *     Hans Verkuil <hans.verkuil@cisco.com>
+> + *     Martin Bugge <marbugge@cisco.com>
+>   *
+>   * This program is free software; you can redistribute it and/or
+>   * modify it under the terms of the GNU General Public License as
+> @@ -13,25 +21,27 @@
+>   * GNU General Public License for more details.
+>   */
+>  
+> -#include <linux/kernel.h>
+> -#include <linux/init.h>
+> -#include <linux/ctype.h>
+> -#include <linux/slab.h>
+>  #include <linux/i2c.h>
+> -#include <linux/device.h>
+> -#include <linux/delay.h>
+>  #include <linux/module.h>
+> -#include <linux/uaccess.h>
+> -#include <linux/videodev2.h>
+> +#include <linux/slab.h>
+>  
+> -#include <media/v4l2-device.h>
+> -#include <media/v4l2-subdev.h>
+> +#include <media/ths7303.h>
+>  #include <media/v4l2-chip-ident.h>
+> +#include <media/v4l2-device.h>
+>  
+>  #define THS7303_CHANNEL_1	1
+>  #define THS7303_CHANNEL_2	2
+>  #define THS7303_CHANNEL_3	3
+>  
+> +struct ths7303_state {
+> +	struct v4l2_subdev		sd;
+> +	struct ths7303_platform_data	pdata;
+> +	struct v4l2_bt_timings		bt;
+> +	int std_id;
+> +	int stream_on;
+> +	int driver_data;
+> +};
+> +
+>  enum ths7303_filter_mode {
+>  	THS7303_FILTER_MODE_480I_576I,
+>  	THS7303_FILTER_MODE_480P_576P,
+> @@ -48,64 +58,84 @@ static int debug;
+>  module_param(debug, int, 0644);
+>  MODULE_PARM_DESC(debug, "Debug level 0-1");
+>  
+> +static inline struct ths7303_state *to_state(struct v4l2_subdev *sd)
+> +{
+> +	return container_of(sd, struct ths7303_state, sd);
+> +}
+> +
+> +static int ths7303_read(struct v4l2_subdev *sd, u8 reg)
+> +{
+> +	struct i2c_client *client = v4l2_get_subdevdata(sd);
+> +
+> +	return i2c_smbus_read_byte_data(client, reg);
+> +}
+> +
+> +static int ths7303_write(struct v4l2_subdev *sd, u8 reg, u8 val)
+> +{
+> +	struct i2c_client *client = v4l2_get_subdevdata(sd);
+> +	int ret;
+> +	int i;
+> +
+> +	for (i = 0; i < 3; i++) {
+> +		ret = i2c_smbus_write_byte_data(client, reg, val);
+> +		if (ret == 0)
+> +			return 0;
+> +	}
+> +	return ret;
+> +}
+> +
+>  /* following function is used to set ths7303 */
+>  int ths7303_setval(struct v4l2_subdev *sd, enum ths7303_filter_mode mode)
+>  {
+> -	u8 input_bias_chroma = 3;
+> -	u8 input_bias_luma = 3;
+> -	int disable = 0;
+> -	int err = 0;
+> -	u8 val = 0;
+> -	u8 temp;
+> -
+>  	struct i2c_client *client = v4l2_get_subdevdata(sd);
+> +	struct ths7303_state *state = to_state(sd);
+> +	struct ths7303_platform_data *pdata = &state->pdata;
+> +	u8 val, sel = 0;
+> +	int err, disable = 0;
+>  
+>  	if (!client)
+>  		return -EINVAL;
+>  
+>  	switch (mode) {
+>  	case THS7303_FILTER_MODE_1080P:
+> -		val = (3 << 6);
+> -		val |= (3 << 3);
+> +		sel = 0x3;	/*1080p and SXGA/UXGA */
+>  		break;
+>  	case THS7303_FILTER_MODE_720P_1080I:
+> -		val = (2 << 6);
+> -		val |= (2 << 3);
+> +		sel = 0x2;	/*720p, 1080i and SVGA/XGA */
+>  		break;
+>  	case THS7303_FILTER_MODE_480P_576P:
+> -		val = (1 << 6);
+> -		val |= (1 << 3);
+> +		sel = 0x1;	/* EDTV 480p/576p and VGA */
+>  		break;
+>  	case THS7303_FILTER_MODE_480I_576I:
+> +		sel = 0x0;	/* SDTV, S-Video, 480i/576i */
+>  		break;
+> -	case THS7303_FILTER_MODE_DISABLE:
+> -		pr_info("mode disabled\n");
+> -		/* disable all channels */
+> -		disable = 1;
+>  	default:
+>  		/* disable all channels */
+>  		disable = 1;
+>  	}
+> -	/* Setup channel 2 - Luma - Green */
+> -	temp = val;
+> +
+> +	val = (sel << 6) | (sel << 3);
+>  	if (!disable)
+> -		val |= input_bias_luma;
+> -	err = i2c_smbus_write_byte_data(client, THS7303_CHANNEL_2, val);
+> +		val |= (pdata->ch_1 & 0x27);
+> +	err = ths7303_write(sd, 0x01, val);
+
+Hmm... Why did you replaced HS7303_CHANNEL_x by 0x01 here?
+
+>  	if (err)
+>  		goto out;
+>  
+> -	/* setup two chroma channels */
+> +	val = (sel << 6) | (sel << 3);
+>  	if (!disable)
+> -		temp |= input_bias_chroma;
+> -
+> -	err = i2c_smbus_write_byte_data(client, THS7303_CHANNEL_1, temp);
+> +		val |= (pdata->ch_2 & 0x27);
+> +	err = ths7303_write(sd, 0x02, val);
+
+Same comment here.
+
+>  	if (err)
+>  		goto out;
+>  
+> -	err = i2c_smbus_write_byte_data(client, THS7303_CHANNEL_3, temp);
+> +	val = (sel << 6) | (sel << 3);
+> +	if (!disable)
+> +		val |= (pdata->ch_3 & 0x27);
+> +	err = ths7303_write(sd, 0x03, val);
+
+Same comment here.
+
+Basically, please use the macro values on all the above to make it coherent.
+
+>  	if (err)
+>  		goto out;
+> -	return err;
+> +
+> +	return 0;
+>  out:
+>  	pr_info("write byte data failed\n");
+>  	return err;
+> @@ -113,49 +143,213 @@ out:
+>  
+>  static int ths7303_s_std_output(struct v4l2_subdev *sd, v4l2_std_id norm)
+>  {
+> -	if (norm & (V4L2_STD_ALL & ~V4L2_STD_SECAM))
+> +	struct ths7303_state *state = to_state(sd);
+> +
+> +	if (norm & (V4L2_STD_ALL & ~V4L2_STD_SECAM)) {
+> +		state->std_id = 1;
+> +		state->bt.pixelclock = 0;
+>  		return ths7303_setval(sd, THS7303_FILTER_MODE_480I_576I);
+> -	else
+> -		return ths7303_setval(sd, THS7303_FILTER_MODE_DISABLE);
+> +	}
+> +
+> +	return ths7303_setval(sd, THS7303_FILTER_MODE_DISABLE);
+>  }
+>  
+> -/* for setting filter for HD output */
+> -static int ths7303_s_dv_timings(struct v4l2_subdev *sd,
+> -			       struct v4l2_dv_timings *dv_timings)
+> +static int ths7303_config(struct v4l2_subdev *sd)
+>  {
+> -	u32 height = dv_timings->bt.height;
+> -	int interlaced = dv_timings->bt.interlaced;
+> -	int res = 0;
+> +	struct ths7303_state *state = to_state(sd);
+> +	int res;
+> +
+> +	if (!state->stream_on) {
+> +		ths7303_write(sd, THS7303_CHANNEL_1,
+> +			      (ths7303_read(sd, THS7303_CHANNEL_1) & 0xf8) |
+> +			      0x00);
+> +		ths7303_write(sd, THS7303_CHANNEL_2,
+> +			      (ths7303_read(sd, THS7303_CHANNEL_2) & 0xf8) |
+> +			      0x00);
+> +		ths7303_write(sd, THS7303_CHANNEL_3,
+> +			      (ths7303_read(sd, THS7303_CHANNEL_3) & 0xf8) |
+> +			      0x00);
+> +		return 0;
+> +	}
+>  
+> -	if (height == 1080 && !interlaced)
+> +	if (state->bt.pixelclock > 120000000)
+>  		res = ths7303_setval(sd, THS7303_FILTER_MODE_1080P);
+> -	else if ((height == 720 && !interlaced) ||
+> -			(height == 1080 && interlaced))
+> +	else if (state->bt.pixelclock > 70000000)
+>  		res = ths7303_setval(sd, THS7303_FILTER_MODE_720P_1080I);
+> -	else if ((height == 480 || height == 576) && !interlaced)
+> +	else if (state->bt.pixelclock > 20000000)
+>  		res = ths7303_setval(sd, THS7303_FILTER_MODE_480P_576P);
+> +	else if (state->std_id)
+> +		res = ths7303_setval(sd, THS7303_FILTER_MODE_480I_576I);
+
+The above replacement is not obvious. Hard to say if it won't cause
+regressions on exisiting devices. Please split those non-obvious changes
+into separate patches and properly explain why it is needed and what's
+the impact on the existing support.
+
+>  	else
+>  		/* disable all channels */
+>  		res = ths7303_setval(sd, THS7303_FILTER_MODE_DISABLE);
+>  
+>  	return res;
+> +
+> +}
+> +
+> +static int ths7303_s_stream(struct v4l2_subdev *sd, int enable)
+> +{
+> +	struct ths7303_state *state = to_state(sd);
+> +
+> +	state->stream_on = enable;
+> +
+> +	return ths7303_config(sd);
+> +}
+> +
+> +/* for setting filter for HD output */
+> +static int ths7303_s_dv_timings(struct v4l2_subdev *sd,
+> +			       struct v4l2_dv_timings *dv_timings)
+> +{
+> +	struct ths7303_state *state = to_state(sd);
+> +
+> +	if (!dv_timings || dv_timings->type != V4L2_DV_BT_656_1120)
+> +		return -EINVAL;
+> +
+> +	state->bt = dv_timings->bt;
+> +	state->std_id = 0;
+> +
+> +	return ths7303_config(sd);
+>  }
+>  
+>  static int ths7303_g_chip_ident(struct v4l2_subdev *sd,
+>  				struct v4l2_dbg_chip_ident *chip)
+>  {
+>  	struct i2c_client *client = v4l2_get_subdevdata(sd);
+> +	u32 indent = V4L2_IDENT_THS7303;
+> +	struct ths7303_state *state = to_state(sd);
+>  
+> -	return v4l2_chip_ident_i2c_client(client, chip, V4L2_IDENT_THS7303, 0);
+> +	if (state->driver_data)
+> +		indent = V4L2_IDENT_THS7353;
+
+Instead of doing that, you should instead do:
+
+	indent = state->driver_data;
+
+and initialize the table below as:
+
+static const struct i2c_device_id ths7303_id[] = {
+        {"ths7303", V4L2_IDENT_THS7303},
+        {"ths7353", V4L2_IDENT_THS7353},
+        {},
+};
+
+That makes the code cleaner to read, as this is the way most drivers do.
+
+That would also help to make it easier to support other variants of this
+chip family if later needed.
+
+> +
+> +	return v4l2_chip_ident_i2c_client(client, chip, indent, 0);
+>  }
+>  
+>  static const struct v4l2_subdev_video_ops ths7303_video_ops = {
+> +	.s_stream	= ths7303_s_stream,
+>  	.s_std_output	= ths7303_s_std_output,
+> -	.s_dv_timings    = ths7303_s_dv_timings,
+> +	.s_dv_timings   = ths7303_s_dv_timings,
+> +};
+> +
+> +#ifdef CONFIG_VIDEO_ADV_DEBUG
+> +
+> +static int ths7303_g_register(struct v4l2_subdev *sd,
+> +			      struct v4l2_dbg_register *reg)
+> +{
+> +	struct i2c_client *client = v4l2_get_subdevdata(sd);
+> +
+> +	if (!v4l2_chip_match_i2c_client(client, &reg->match))
+> +		return -EINVAL;
+> +	if (!capable(CAP_SYS_ADMIN))
+> +		return -EPERM;
+> +
+> +	reg->size = 1;
+> +	reg->val = ths7303_read(sd, reg->reg);
+> +	return 0;
+> +}
+> +
+> +static int ths7303_s_register(struct v4l2_subdev *sd,
+> +			      struct v4l2_dbg_register *reg)
+> +{
+> +	struct i2c_client *client = v4l2_get_subdevdata(sd);
+> +
+> +	if (!v4l2_chip_match_i2c_client(client, &reg->match))
+> +		return -EINVAL;
+> +	if (!capable(CAP_SYS_ADMIN))
+> +		return -EPERM;
+> +
+> +	ths7303_write(sd, reg->reg, reg->val);
+> +	return 0;
+> +}
+> +#endif
+> +
+> +static const char * const stc_lpf_sel_txt[4] = {
+> +	"500-kHz Filter",
+> +	"2.5-MHz Filter",
+> +	"5-MHz Filter",
+> +	"5-MHz Filter",
+> +};
+> +
+> +static const char * const in_mux_sel_txt[2] = {
+> +	"Input A Select",
+> +	"Input B Select",
+> +};
+> +
+> +static const char * const lpf_freq_sel_txt[4] = {
+> +	"9-MHz LPF",
+> +	"16-MHz LPF",
+> +	"35-MHz LPF",
+> +	"Bypass LPF",
+>  };
+>  
+> +static const char * const in_bias_sel_dis_cont_txt[8] = {
+> +	"Disable Channel",
+> +	"Mute Function - No Output",
+> +	"DC Bias Select",
+> +	"DC Bias + 250 mV Offset Select",
+> +	"AC Bias Select",
+> +	"Sync Tip Clamp with low bias",
+> +	"Sync Tip Clamp with mid bias",
+> +	"Sync Tip Clamp with high bias",
+> +};
+> +
+> +static void ths7303_log_channel_status(struct v4l2_subdev *sd, u8 reg)
+> +{
+> +	u8 val = ths7303_read(sd, reg);
+> +
+> +	if ((val & 0x7) == 0) {
+> +		v4l2_info(sd, "Channel %d Off\n", reg);
+> +		return;
+> +	}
+> +
+> +	v4l2_info(sd, "Channel %d On\n", reg);
+> +	v4l2_info(sd, "  value 0x%x\n", val);
+> +	v4l2_info(sd, "  %s\n", stc_lpf_sel_txt[(val >> 6) & 0x3]);
+> +	v4l2_info(sd, "  %s\n", in_mux_sel_txt[(val >> 5) & 0x1]);
+> +	v4l2_info(sd, "  %s\n", lpf_freq_sel_txt[(val >> 3) & 0x3]);
+> +	v4l2_info(sd, "  %s\n", in_bias_sel_dis_cont_txt[(val >> 0) & 0x7]);
+> +}
+> +
+> +static int ths7303_log_status(struct v4l2_subdev *sd)
+> +{
+> +	struct ths7303_state *state = to_state(sd);
+> +
+> +	v4l2_info(sd, "stream %s\n", state->stream_on ? "On" : "Off");
+> +
+> +	if (state->bt.pixelclock) {
+> +		struct v4l2_bt_timings *bt = bt = &state->bt;
+> +		u32 frame_width, frame_height;
+> +
+> +		frame_width = bt->width + bt->hfrontporch +
+> +			      bt->hsync + bt->hbackporch;
+> +		frame_height = bt->height + bt->vfrontporch +
+> +			       bt->vsync + bt->vbackporch;
+> +		v4l2_info(sd,
+> +			  "timings: %dx%d%s%d (%dx%d). Pix freq. = %d Hz. Polarities = 0x%x\n",
+> +			  bt->width, bt->height, bt->interlaced ? "i" : "p",
+> +			  (frame_height * frame_width) > 0 ?
+> +			  (int)bt->pixelclock /
+> +			  (frame_height * frame_width) : 0,
+> +			  frame_width, frame_height,
+> +			  (int)bt->pixelclock, bt->polarities);
+> +	} else {
+> +		v4l2_info(sd, "no timings set\n");
+> +	}
+> +
+> +	ths7303_log_channel_status(sd, THS7303_CHANNEL_1);
+> +	ths7303_log_channel_status(sd, THS7303_CHANNEL_2);
+> +	ths7303_log_channel_status(sd, THS7303_CHANNEL_3);
+> +
+> +	return 0;
+> +}
+> +
+>  static const struct v4l2_subdev_core_ops ths7303_core_ops = {
+>  	.g_chip_ident = ths7303_g_chip_ident,
+> +	.log_status = ths7303_log_status,
+> +#ifdef CONFIG_VIDEO_ADV_DEBUG
+> +	.g_register = ths7303_g_register,
+> +	.s_register = ths7303_s_register,
+> +#endif
+>  };
+>  
+>  static const struct v4l2_subdev_ops ths7303_ops = {
+> @@ -163,11 +357,38 @@ static const struct v4l2_subdev_ops ths7303_ops = {
+>  	.video 	= &ths7303_video_ops,
+>  };
+>  
+> +static int ths7303_setup(struct v4l2_subdev *sd)
+> +{
+> +	struct ths7303_state *state = to_state(sd);
+> +	struct ths7303_platform_data *pdata = &state->pdata;
+> +	int ret;
+> +	u8 mask;
+> +
+> +	state->stream_on = pdata->init_enable;
+> +
+> +	mask = state->stream_on ? 0xff : 0xf8;
+> +
+> +	ret = ths7303_write(sd, 0x01, pdata->ch_1 & mask);
+> +	if (ret)
+> +		return ret;
+> +
+> +	ret = ths7303_write(sd, 0x02, pdata->ch_2 & mask);
+> +	if (ret)
+> +		return ret;
+> +
+> +	ret = ths7303_write(sd, 0x03, pdata->ch_3 & mask);
+> +	if (ret)
+> +		return ret;
+
+Again, please use the defined macros for the channels.
+
+> +
+> +	return 0;
+> +}
+> +
+>  static int ths7303_probe(struct i2c_client *client,
+>  			const struct i2c_device_id *id)
+>  {
+> +	struct ths7303_platform_data *pdata = client->dev.platform_data;
+> +	struct ths7303_state *state;
+>  	struct v4l2_subdev *sd;
+> -	v4l2_std_id std_id = V4L2_STD_NTSC;
+>  
+>  	if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE_DATA))
+>  		return -ENODEV;
+> @@ -175,13 +396,28 @@ static int ths7303_probe(struct i2c_client *client,
+>  	v4l_info(client, "chip found @ 0x%x (%s)\n",
+>  			client->addr << 1, client->adapter->name);
+>  
+> -	sd = devm_kzalloc(&client->dev, sizeof(struct v4l2_subdev), GFP_KERNEL);
+> -	if (sd == NULL)
+> +	state = devm_kzalloc(&client->dev, sizeof(struct ths7303_state),
+> +			     GFP_KERNEL);
+> +	if (!state)
+>  		return -ENOMEM;
+>  
+> +	if (!pdata)
+> +		v4l_warn(client, "No platform data, using default data!\n");
+> +	else
+> +		state->pdata = *pdata;
+> +
+> +	sd = &state->sd;
+>  	v4l2_i2c_subdev_init(sd, client, &ths7303_ops);
+>  
+> -	return ths7303_s_std_output(sd, std_id);
+> +	/* store the driver data to differntiate the chip */
+> +	state->driver_data = (int)id->driver_data;
+> +
+> +	if (ths7303_setup(sd) < 0) {
+> +		v4l_err(client, "init failed\n");
+> +		return -EIO;
+> +	}
+> +
+> +	return 0;
+>  }
+>  
+>  static int ths7303_remove(struct i2c_client *client)
+> @@ -195,6 +431,7 @@ static int ths7303_remove(struct i2c_client *client)
+>  
+>  static const struct i2c_device_id ths7303_id[] = {
+>  	{"ths7303", 0},
+> +	{"ths7353", 1},
+>  	{},
+>  };
+>  
+> @@ -203,7 +440,7 @@ MODULE_DEVICE_TABLE(i2c, ths7303_id);
+>  static struct i2c_driver ths7303_driver = {
+>  	.driver = {
+>  		.owner	= THIS_MODULE,
+> -		.name	= "ths7303",
+> +		.name	= "ths73x3",
+>  	},
+>  	.probe		= ths7303_probe,
+>  	.remove		= ths7303_remove,
+> diff --git a/include/media/ths7303.h b/include/media/ths7303.h
+> new file mode 100644
+> index 0000000..fa58ae0
+> --- /dev/null
+> +++ b/include/media/ths7303.h
+> @@ -0,0 +1,42 @@
+> +/*
+> + * Copyright (C) 2013 Texas Instruments Inc
+> + *
+> + * Copyright 2013 Cisco Systems, Inc. and/or its affiliates.
+> + *
+> + * Contributors:
+> + *     Lad, Prabhakar <prabhakar.lad@ti.com>
+> + *     Hans Verkuil <hans.verkuil@cisco.com>
+> + *     Martin Bugge <marbugge@cisco.com>
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License as
+> + * published by the Free Software Foundation version 2.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+> + */
+> +
+> +#ifndef THS7353_H
+> +#define THS7353_H
+> +
+> +/**
+> + * struct ths7303_platform_data - Platform dependent data
+> + * @ch_1: Bias value for channel one.
+> + * @ch_2: Bias value for channel two.
+> + * @ch_3: Bias value for channel three.
+> + * @init_enable: initalize on init.
+> + */
+> +struct ths7303_platform_data {
+> +	u8 ch_1;
+> +	u8 ch_2;
+> +	u8 ch_3;
+> +	u8 init_enable;
+> +};
+> +
+> +#endif
+> diff --git a/include/media/v4l2-chip-ident.h b/include/media/v4l2-chip-ident.h
+> index 4ee125b..f9f687e 100644
+> --- a/include/media/v4l2-chip-ident.h
+> +++ b/include/media/v4l2-chip-ident.h
+> @@ -180,6 +180,9 @@ enum {
+>  	/* module adv7343: just ident 7343 */
+>  	V4L2_IDENT_ADV7343 = 7343,
+>  
+> +	/* module ths7353: just ident 7353 */
+> +	V4L2_IDENT_THS7353 = 7353,
+> +
+>  	/* module adv7393: just ident 7393 */
+>  	V4L2_IDENT_ADV7393 = 7393,
+>  
 
 
-= Where to get it
+-- 
 
-  http://sourceware.org/systemtap/ - our project page
-  http://sourceware.org/systemtap/ftp/releases/systemtap-2.1.tar.gz
-  http://koji.fedoraproject.org/koji/packageinfo?packageID=615
-  git tag release-2.1 (commit addec81)
-
-  There have been over 400 commits since the last release.
-  There have been over 40 bugs/features fixed since the last release.
-
-
-= How to build it
-
-  See the README and NEWS files at
-  http://sourceware.org/git/?p=systemtap.git;a=tree
-  Further information at http://sourceware.org/systemtap/wiki/
-
-
-= Systemtap frontend (stap) changes
-
-- EMACS and VIM editor modes for systemtap source files are included / updated.
-
-- The translator now eliminates duplicate tapset files between its
-  preferred directory (as configured during the build with --prefix=/
-  or specified with the -I /path option), and files it may find under
-  $XDG_DATA_DIRS.  This should eliminate a class of conflicts between
-  parallel system- and hand-built systemtap installations.
-
-- The translator accepts a --suppress-time-limits option, which defeats
-  time-related constraints, to allows probe handlers to run for indefinite
-  periods.  It requires the guru mode (-g) flag to work.  Add the earlier
-  --suppress-handler-errors flag for a gung-ho "just-keep-going" attitude.
-
-- Some error messages and warnings now refer to additional information
-  that is found in man pages.  These are generally named
-  error::FOO or warning::BAR (in the 7stap man page section)
-  and may be read via
-     % man error::FOO
-     % man warning::BAR
-
-
-= Systemtap script language changes
-
-- Perf event probes may now be read on demand. The counter probe is
-  defined using the counter-name part: 
-  probe perf.type(0).config(0).counter("NAME").  The counter is
-  read in a user space probe using @perf("NAME"), e.g.
-   process("PROCESS").statement("func@file") {stat <<< @perf("NAME")} 
-
-- Perf event probes may now be bound to a specific task using the
-  process-name part:  probe perf.type(0).config(0).process("NAME") { }
-  If the probed process name is not specified, then it is inferred
-  from the -c CMD argument.  
-
-- The foreach looping construct can now sort aggregate arrays by the user's
-  choice of aggregating function.  Previously, @count was implied.  e.g.:
-     foreach ([x,y] in array @sum +) { println(@sum(array[x,y])) } 
-
-- Proof of concept support for regular expression matching has been added:
-     if ("aqqqqqb" =~ "q*b") { ... }
-     if ("abc" !~ "q*b") { ... }
-
-  The eventual aim is to support roughly the same functionality as
-  the POSIX Extended Regular Expressions implemented by glibc.
-  Currently missing features include extraction of the matched string
-  and subexpressions, and named character classes ([:alpha:], [:digit:], &c).
-
-  Special thanks go to the re2c project, whose public domain code this
-  functionality has been based on. For more info on re2c, see:
-     http://sourceforge.net/projects/re2c/
-
-
-= Systemtap runtime changes
-
-- The dyninst backend has improved in several aspects:
-  - The runtime now allows much more concurrency when probing multithreaded
-    processes, and will also follow probes across forks.
-  - Several new probe types are now supported, including timers, function
-    return, and process.begin/end and process.thread.begin/end.
-  - Semaphores for SDT probes are now set properly.
-  - Attaching to existing processes with -x PID now works.
-
-
-= Systemtap tapset changes
-
-- New tapsets:
-  choose_defined.stpm  add @choose_defined() macro
-
-- Added/changed tapsets for dyninst:
-  ctime.stp            ctime() returns "<invalid time>" when an error occurs
-  context.stp          add support for print_regs()
-
-- Changed tapsets:
-  nfs_proc.stp         account for separate nfsv2/3/4 kernel modules
-  context.stp          add ppfunc() to parse the function name from pp()
-  netfilter.stp        fix error in decoding of ar_tha and ar_tpa fields
-    
-- The folowing tapset variables are deprecated in release 2.1 and may
-  be removed in a future version:
-  - The 'send2queue' variable in the 'signal.send' probe.
-  - The 'oldset_addr' and 'regs' variables in the 'signal.handle' probe.
-
-- The following tapset probes are deprecated in release 2.1 and may
-  be removed in a future version:
-  - signal.send.return
-  - signal.handle.return
-
-
-= Systemtap sample scripts
-
-- Tracing examples were updated to use ppfunc() instead of probefunc().
-
-- New samples:
-  perf.stp              use perf.counter to access performance counters
-  regex.stp             report opened files whose names match a given regex
-  threadstacks.stp      override default new-pthread stack sizes
-  mutex_contention.stp  pthread mutex contention analysis
-  ltrace.stp            uprobes-based ltrace demo
-  block.stp             stapgames Breakout demo using input/output devices
-  eater.stp             stapgames Snake demo using input/output devices
-  lifegame.stp          stapgames Game of Life demo using input/output devices
-  pingpong.stp          stapgames Pong demo using input/output devices
-
-- Changed samples:
-  deviceseeks.stp   switch to using ioblock_trace.request probe point
-
-
-= Examples of tested kernel versions
-
-3.8.0-rc (x86_64)
-3.7.0 (x86_64, i686)
-3.6.2 (x86_64)
-3.4.0 (armv7l)
-2.6.32 (x86_64, i686, ppc64, s390x)
-2.6.18 (x86_64, i686, ia64)
-2.6.9 (i686, ppc64)
-
-
-= Known issues with this release
-
-- The regular expression support is still experimental and incomplete; in particular:
-  + Support for named character classes is missing. (PR15064)
-  + Support for extracting matched strings and substrings is missing. (PR15065)
-
-- Some kernel crashes continue to be reported when a script probes
-  broad kernel function wildcards.  (PR2725)
-
-- The dyninst backend is still a work in progress. Current issues:
-  + lack of support for multiarch/cross-instrumentation
-  + tapset functions are still incomplete relative to what is supported
-    when the kernel backend is active
-  + exception handling becomes completely broken in programs
-    instrumented by the current version of dyninst (PR14702)
-  + command line interrupts are slightly mishandled (PR15049)
-  + not all registers are made available on 32-bit x86 (PR15136)
-
-  See dyninst/README and the systemtap/dyninst Bugzilla component
-  (http://tinyurl.com/stapdyn-PR-list) if you want all the gory
-  details about the state of the feature.
-
-
-= Contributors for this release
-
-Alexander Lochmann, Daniel Tschan*, Dave Brolley, David Smith,
-Frank Ch. Eigler, Jiri Horky*, Josh Stone, Jóhann B. Guðmundsson*,
-Lukas Berk, Lukáš Hejtmánek*, Mark Wielaard, Masami Hiramatsu,
-Nathan Scott, Rich Megginson*, Rüdiger Sonderfeld*, Serguei Makarov,
-Stan Cox, Tom Tromey, Tomoki Sekiyama*, William Cohen
-
-Special thanks to new contributors, marked with '*' above.
-Special thanks to the authors of the re2c project (http://re2c.sourceforge.net).
-
-
-= Bugs fixed for this release <http://sourceware.org/PR#####>
-
- 1887  write emacs/vim editor mode for script language
- 6697  need more access_ok() checks in runtime/tapsets
-11334  regular expression string matching
-11576  per-process perf events
-11955  signal tapsets don't match 
-12022  Allow foreach to order iterations for aggregates on @min @max and @avg operators
-12231  reading perfctr events
-12443  XDG_DATA_DIRS conflict between preinstalled and hand-built stap
-12642  utrace: taskfinder misses events when main thread does not go through at least one quiesce
-13022  probe module("*").function("*") does not work on arm
-14178  Add a pure-userspace runtime mode
-14245  Support debugfs mounted 0700
-14390  separate process.**.return tests and mark UNSUPPORTED 
-14555  tolerate /proc/sys/kernel/kptr_restrict=2
-14571  Make stapdyn multithreaded
-14659  task_finder2 breaks ptrace apps
-14701  stapdyn needs timer probe support
-14705  stapdyn needs to set SDT semaphores
-14707  Support stapdyn -x PID
-14709  Support process.function.return in stapdyn
-14712  VM_EXECUTABLE went to heaven
-14714  stap flag for bigger --suppress-handler-errors hammer
-14731  regression in buildok/thirty.stp
-14735  stapdyn needs timing ('-t') support
-14742  more complete dwz / DW_TAG_partial_unit support
-14774  process.statement("*@file:*") probes don't match all functions
-14781  kmem_cache conflict leads to panic & badness
-14794  autoconf auto-enable dyninst if possible
-14795  add stapgames
-14804  Kernel panic when running hello world stap script
-14820  hang when running semok/nodwf01.stp
-14842  Old "-kelf" and "--ignore-dwarf" command line options should be removed
-14883  let probefunc() not fail - or fail more informatively, on non-uprobes kernels
-14900  collision between tapset locals and user globals: contexts
-14929  staperrors man page
-14949  cannot use systemtap on linux 3.7 intel x86_64
-14957  foreach_aggrsort.exp test hangs on i686 rhel5 system
-14997  DW_OP_rot mistranslation
-15031  stapdyn needs a _stp_print_binary() runtime function
-15059  session.print_error called frequently from listing_mode
-15074  pthread_stacks.exp problems
-15080  The kernel function 'signal_wake_up' is gone
-15087  netfilter.arp tapset probes duplicate source/target addresses 
-15101  [PATCH] Stap sefaults when calling NSS_shutdown() which was not previously initialized
-15112  Can't connect to stap-server via IPv6 raw hex addresses
-15123  workaround for bad debuginfo for -mfentry
+Cheers,
+Mauro
