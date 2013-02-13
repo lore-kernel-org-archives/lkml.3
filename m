@@ -1,135 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964971Ab3BMVpb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 16:45:31 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:40073 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752080Ab3BMVp3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 16:45:29 -0500
-Message-ID: <1360791923.3524.466.camel@falcor1.watson.ibm.com>
-Subject: Re: [PATCH 2/2] ima: Support appraise_type=imasig_optional
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 13 Feb 2013 16:45:23 -0500
-In-Reply-To: <CALLzPKbdrvsPuH9t19rvQqGZ=0+abPuWPNke4FLsadj0ORieJg@mail.gmail.com>
-References: <1360613493-11969-1-git-send-email-vgoyal@redhat.com>
-	 <1360613493-11969-3-git-send-email-vgoyal@redhat.com>
-	 <CALLzPKZA92MxJYjC+OR-KDv4rHQRgKSBHSAY2fOZsEDxiO11yA@mail.gmail.com>
-	 <1360760195.3524.355.camel@falcor1.watson.ibm.com>
-	 <CALLzPKaHLSg0TromnTvpEVroBUtPJE3TwF4RmcA2dtkuB5H4hQ@mail.gmail.com>
-	 <1360763044.3524.367.camel@falcor1.watson.ibm.com>
-	 <CALLzPKbdrvsPuH9t19rvQqGZ=0+abPuWPNke4FLsadj0ORieJg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13021321-5806-0000-0000-00001F99DBC6
+	id S1760916Ab3BMVqs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 16:46:48 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:60789 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752080Ab3BMVqq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 16:46:46 -0500
+Date: Wed, 13 Feb 2013 13:46:42 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Daniel Kurtz <djkurtz@chromium.org>
+Cc: Henrik Rydberg <rydberg@euromail.se>, Benson Leung <bleung@chromium.org>,
+        Yufeng Shen <miletus@chromium.org>, Nick Dyer <nick.dyer@itdev.co.uk>,
+        Joonyoung Shim <jy0922.shim@samsung.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, olofj@chromium.org
+Subject: Re: [PATCH 04/10] Input: atmel_mxt_ts - handle bootloader mode at
+ probe
+Message-ID: <20130213214642.GC23390@core.coreip.homeip.net>
+References: <1359706312-24642-1-git-send-email-djkurtz@chromium.org>
+ <1359706312-24642-5-git-send-email-djkurtz@chromium.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1359706312-24642-5-git-send-email-djkurtz@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-02-13 at 19:33 +0200, Kasatkin, Dmitry wrote:
-> On Wed, Feb 13, 2013 at 3:44 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> > On Wed, 2013-02-13 at 15:13 +0200, Kasatkin, Dmitry wrote:
-> >> On Wed, Feb 13, 2013 at 2:56 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> >> > On Wed, 2013-02-13 at 14:31 +0200, Kasatkin, Dmitry wrote:
-> >> >> On Mon, Feb 11, 2013 at 10:11 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> >> >
-> >> >> > @@ -158,7 +165,8 @@ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
-> >> >> >         }
-> >> >> >         switch (xattr_value->type) {
-> >> >> >         case IMA_XATTR_DIGEST:
-> >> >> > -               if (iint->flags & IMA_DIGSIG_REQUIRED) {
-> >> >> > +               if (iint->flags & IMA_DIGSIG_REQUIRED ||
-> >> >> > +                   iint->flags & IMA_DIGSIG_OPTIONAL) {
-> >> >> >                         cause = "IMA signature required";
-> >> >> >                         status = INTEGRITY_FAIL;
-> >> >> >                         break;
-> >> >>
-> >> >> This looks a bit odd... If "optional" signature is missing  - we fail..
-> >> >> It is optional... Why we should fail?
-> >> >
-> >> > 'imasig_optional' does not only mean that the signature is optional, but
-> >> > also implies that it has to be a digital signature, not a hash.  This
-> >> > latter part is what IMA_DIGSIG_REQUIRED means.
-> >> >
-> >> > If 'imasig_optional' set both 'IMA_DIGSIG_OPTIONAL' and
-> >> > 'IMA_DIGSIG_REQUIRED', then this change wouldn't be necessary.
-> >> >
-> >> > IMA_DIGSIG_REQUIRED would enforce that it is a signature.
-> >> > IMA_DIGSIG_OPTIONAL would fail only for files with invalid signatures.
-> >> >
-> >>
-> >> It sounds odd that optional signature is actually required.
-> >> Optional for me means that it may be there or may be not.
-> >> If it is not there, then it may be hash or nothing.
-> >>
-> >> I see it is more logical if it is "appraise_type=optional",
-> >> which means that we might have no xattr value, hash or signature.
-> >> It if happens to be a signature, then IMA_DIGSIG flag will be set.
-> >
-> > Right, 'appraise_type=' could have been defined either as a comma
-> > separated list of options (eg. appraise_type=imassig,optional) or, as
-> > Vivek implemented, a new option.  Eventually, we will need to extend
-> > 'appraise_type=' (eg. required algorithm), but for now I don't have a
-> > problem with the new option.
-> >
+On Fri, Feb 01, 2013 at 04:11:46PM +0800, Daniel Kurtz wrote:
+> In some cases it is possible for a device to be in its bootloader at
+> driver probe time.  This is detected by the driver when probe() is called
+> with an i2c_client which has one of the Atmel Bootloader i2c addresses.
 > 
-> It is not exactly what I meant. IOW, I do not want
-> appraise_type=imasig,optional.
+> In this case, we should load enough driver functionality to still loading
+> new firmware using:
+>   echo 1 > update_fw
 > 
-> Optional for me is that xattr value is optional. It might be nothing,
-> hash or imasig...
+> However, we must be very careful not to follow any code paths that would try
+> to access the as-yet uninitialized object table or input device.
+> In particular:
+>  1) mxt_remove calls input_unregister_device on input_dev.
+>  2) mxt_suspend/resume reads and writes from the object table.
+>  3) Spurious or bootloader induced interrupts
+> 
+> Signed-off-by: Benson Leung <bleung@chromium.org>
+> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+> ---
+>  drivers/input/touchscreen/atmel_mxt_ts.c | 51 +++++++++++++++++++++++++-------
+>  1 file changed, 40 insertions(+), 11 deletions(-)
+> 
+> diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
+> index 9afc26e..6c2c712 100644
+> --- a/drivers/input/touchscreen/atmel_mxt_ts.c
+> +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
+> @@ -324,6 +324,12 @@ static void mxt_dump_message(struct device *dev,
+>  		message->reportid, 7, message->message);
+>  }
+>  
+> +static bool mxt_in_bootloader(struct mxt_data *data)
+> +{
+> +	struct i2c_client *client = data->client;
+> +	return (client->addr == MXT_BOOT_LOW || client->addr == MXT_BOOT_HIGH);
+> +}
+> +
+>  static int mxt_i2c_recv(struct i2c_client *client, u8 *buf, size_t count)
+>  {
+>  	int ret;
+> @@ -584,6 +590,9 @@ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
+>  	u8 reportid;
+>  	bool update_input = false;
+>  
+> +	if (mxt_in_bootloader(data))
+> +		goto end;
+> +
+>  	do {
+>  		if (mxt_read_message(data, &message)) {
+>  			dev_err(dev, "Failed to read message\n");
+> @@ -975,6 +984,9 @@ static int mxt_load_fw(struct device *dev, const char *fn)
+>  		return ret;
+>  	}
+>  
+> +	if (mxt_in_bootloader(data))
+> +		goto bootloader_ready;
+> +
+>  	/* Change to the bootloader mode */
+>  	mxt_write_object(data, MXT_GEN_COMMAND_T6,
+>  			MXT_COMMAND_RESET, MXT_BOOT_VALUE);
+> @@ -986,6 +998,7 @@ static int mxt_load_fw(struct device *dev, const char *fn)
+>  	else
+>  		client->addr = MXT_BOOT_HIGH;
+>  
+> +bootloader_ready:
+>  	ret = mxt_check_bootloader(client, MXT_WAITING_BOOTLOAD_CMD);
+>  	if (ret)
+>  		goto out;
+> @@ -1196,25 +1209,34 @@ static int __devinit mxt_probe(struct i2c_client *client,
+>  
+>  	mxt_calc_resolution(data);
+>  
+> -	error = mxt_initialize(data);
+> -	if (error)
+> -		goto err_free_mem;
+> +	if (mxt_in_bootloader(data)) {
+> +		dev_info(&client->dev, "Device in bootloader at probe\n");
+> +	} else {
+> +		error = mxt_initialize(data);
+> +		if (error)
+> +			goto err_free_mem;
+>  
+> -	error = mxt_input_dev_create(data);
+> -	if (error)
+> -		goto err_free_object;
+> +		error = mxt_input_dev_create(data);
+> +		if (error)
+> +			goto err_free_object;
+> +	}
+>  
+>  	error = request_threaded_irq(client->irq, NULL, mxt_interrupt,
+>  				     pdata->irqflags | IRQF_ONESHOT,
+>  				     client->name, data);
+>  	if (error) {
+>  		dev_err(&client->dev, "Failed to register interrupt\n");
+> -		goto err_unregister_device;
+> +		if (mxt_in_bootloader(data))
+> +			goto err_free_mem;
+> +		else
+> +			goto err_unregister_device;
+>  	}
+>  
+> -	error = mxt_make_highchg(data);
+> -	if (error)
+> -		goto err_free_irq;
+> +	if (!mxt_in_bootloader(data)) {
+> +		error = mxt_make_highchg(data);
+> +		if (error)
+> +			goto err_free_irq;
+> +	}
+>  
+>  	error = sysfs_create_group(&client->dev.kobj, &mxt_attr_group);
+>  	if (error)
+> @@ -1239,7 +1261,8 @@ static int mxt_remove(struct i2c_client *client)
+>  
+>  	sysfs_remove_group(&client->dev.kobj, &mxt_attr_group);
+>  	free_irq(data->irq, data);
+> -	input_unregister_device(data->input_dev);
+> +	if (data->input_dev)
+> +		input_unregister_device(data->input_dev);
+>  	kfree(data->object_table);
+>  	kfree(data);
+>  
+> @@ -1253,6 +1276,9 @@ static int mxt_suspend(struct device *dev)
+>  	struct mxt_data *data = i2c_get_clientdata(client);
+>  	struct input_dev *input_dev = data->input_dev;
+>  
+> +	if (mxt_in_bootloader(data))
+> +		return 0;
+> +
 
-To summarize:
+Hmm, so what happens if we suspend while in bootloader and maybe even
+trying to flash the device? Maybe we should refuse suspend instead?
 
-Option 1: appraise_type:= [[imasig] | [imahash]]  [optional]
+>  	mutex_lock(&input_dev->mutex);
+>  
+>  	if (input_dev->users)
+> @@ -1269,6 +1295,9 @@ static int mxt_resume(struct device *dev)
+>  	struct mxt_data *data = i2c_get_clientdata(client);
+>  	struct input_dev *input_dev = data->input_dev;
+>  
+> +	if (mxt_in_bootloader(data))
+> +		return 0;
+> +
+>  	/* Soft reset */
+>  	mxt_write_object(data, MXT_GEN_COMMAND_T6,
+>  			MXT_COMMAND_RESET, 1);
+> -- 
+> 1.8.1
+> 
 
-sample rules:
-# require either hash or signature
-func=bprm
- 
-# require signature
-func=bprm appraise_type=imasig
-
-# permit nothing, hash, or signature
-func=bprm appraise_type=optional
-
-# permit nothing or hash
-func=bprm appraise_type=imahash, optional
-
-# permit nothing or signature
-func=bprm appraise_type=imasig, optional
-
-
-Option 2: appraise_type:= [imasig] | [imasig_optional]
-
-As I don't see a use case for either just 'optional' or 'imahash,
-optional', this leaves 'imasig,optional', which could be expressed as
-'imasig_optional'.
-
-
-Option 3: appraise_type:= [imasig] | [imahash] | [optional]
-
-Dmitry is recommending this syntax, as IMA_DIGSIG will be set in the
-iint flags.
-
-
-Any of these options should work.
-
-> If it would happen that it contains signature, then IMA_DIGSIG flag
-> would be set,
-> and process could get needed capability as Vivek wants.
-
-With the 'optional' condition, both unsigned and validly signed files
-will succeed.  One way of making this information accessible to an LSM,
-would be to define a new integrity capability and set it here.  The new
-integrity capability would indicate the file was validly signed. 
-
-thanks,
-
-Mimi
-
+-- 
+Dmitry
