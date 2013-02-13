@@ -1,63 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753204Ab3BMS1k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 13:27:40 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:51800 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751670Ab3BMS1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 13:27:39 -0500
-Date: Wed, 13 Feb 2013 19:27:30 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Du Jiulun <dujiulun@gmail.com>
-Cc: "Luck, Tony" <tony.luck@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hillf Danton <dhillf@gmail.com>, Mike Galbraith <bitbucket@online.de>
-Subject: Re: Fwd: PROBLEM: Random kernel panic & system freeze when watching
- video
-Message-ID: <20130213182730.GB18013@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Du Jiulun <dujiulun@gmail.com>, "Luck, Tony" <tony.luck@intel.com>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	Hillf Danton <dhillf@gmail.com>,
-	Mike Galbraith <bitbucket@online.de>
-References: <CAHfmSg3ug=64vXtsA4EA6xdKaqWRtT7qZW9AG8n92Q+pbDgQEQ@mail.gmail.com>
- <20121230094008.GA28308@x1.alien8.de>
- <CAHfmSg0O90nC3rnkZHAjO_MNjOoU1v8h-LN+jxx=0U+pz7NasQ@mail.gmail.com>
- <20121231102300.GA1701@x1.alien8.de>
- <3908561D78D1C84285E8C5FCA982C28F1C973871@ORSMSX108.amr.corp.intel.com>
- <CAHfmSg14itHxTUinrmmTq2zoFuQAVwhPCo-Mt7tTLJEiJ4B0Sw@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F1C973F99@ORSMSX108.amr.corp.intel.com>
- <CAHfmSg3-YthwNUTCmbEQox5ihjYHw9TT=WaH_fbjHHyJ+ew7eA@mail.gmail.com>
- <CAHfmSg0sxOEvLd9ASHA7uS+W2TiZ-NRR+w8snPu85iYrMFCuVA@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F1E0628AD@ORSMSX108.amr.corp.intel.com>
+	id S1752755Ab3BMSaX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 13:30:23 -0500
+Received: from mail-vb0-f42.google.com ([209.85.212.42]:56904 "EHLO
+	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751066Ab3BMSaV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 13:30:21 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F1E0628AD@ORSMSX108.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFx6N6SaRN+w=CTXJ=ZSsOE6KeS2R9sT_uhAx9h2j+hjKg@mail.gmail.com>
+References: <20130206150403.006e5294@cuia.bos.redhat.com> <tip-4aef331850b637169ff036ed231f0d236874f310@git.kernel.org>
+ <CA+55aFx6N6SaRN+w=CTXJ=ZSsOE6KeS2R9sT_uhAx9h2j+hjKg@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 13 Feb 2013 10:30:00 -0800
+X-Google-Sender-Auth: cRr7r9VIv5hvkkcc70rw3fN2Pso
+Message-ID: <CA+55aFwZ2wN=9qTNNmqjPfK=ZwS=kx6HAAFj_cWLnJDbK1M0_Q@mail.gmail.com>
+Subject: Re: [tip:core/locking] x86/smp: Move waiting on contended ticket lock
+ out of line
+To: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, rostedt@goodmiss.org,
+        aquini@redhat.com, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Michel Lespinasse <walken@google.com>
+Cc: linux-tip-commits@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 13, 2013 at 06:11:30PM +0000, Luck, Tony wrote:
-> > -- Panic DON'T happen when the laptop is running on battery. I've
-> > tried over 20 battery cycles (~40 hours) doing video playbacks and the
-> > computer never shut down.
-> 
-> So my best guess is that you have a h/w problem aggravated by high temperatures.
-> When you are on battery the system will be saving power - which means less heat
-> dissipated by many components inside your laptop case.
+On Wed, Feb 13, 2013 at 8:20 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> Adding an external function call is *horrible*, and you might almost
+> as well just uninline the spinlock entirely if you do this. It means
+> that all the small callers now have their registers trashed, whether
+> the unlikely function call is taken or not, and now leaf functions
+> aren't leaves any more.
 
-One thing we haven't asked is whether you still have the warranty on
-your hardware, and, if so, why not send it to the manufacturer so that
-they can take a look at it - they should be much better than us software
-guys and have the right tools for hardware inspection.
+Btw, we've had things like this before, and I wonder if we could
+perhaps introduce the notion of a "light-weight call" for fastpath
+code that calls unlikely slow-path code..
 
-Thanks.
+In particular, see the out-of-line code used by the rwlocks etc (see
+"arch_read_lock()" for an example in arch/x86/include/asm/spinlock.h
+and arch/x86/lib/rwlock.S), where we end up calling things from inline
+asm, with one big reason being exactly the fact that a "normal" C call
+has such horribly detrimental effects on the caller.
 
--- 
-Regards/Gruss,
-    Boris.
+Sadly, gcc doesn't seem to allow specifying which registers are
+clobbered any easy way, which means that both the caller and the
+callee *both* tend to need to have some asm interface. So we bothered
+to do this for __read_lock_failed, but we have *not* bothered to do
+the same for the otherwise very similar __mutex_fastpath_lock() case,
+for example.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+So for rwlocks, we actually get very nice code generation with small
+leaf functions not necessarily needing stack frames, but for mutexes
+we mark a lot of registers "unnecessarily" clobbered in the caller,
+exactly because we do *not* do that asm interface for the callee. So
+we have to clobber all the standard callee-clobbered registers, which
+is really sad, and callers almost always need a stack frame, because
+if they have any data live at all across the mutex, they have to save
+it in some register that is callee-saved - which basically means that
+the function has to have that stack frame in order to save its *own*
+callee-saved registers.
+
+So it means that we penalize the fastpath because the slow-path can't
+be bothered to do the extra register saving, unless we go to the
+lengths we went to for the rwlocks, and build a wrapper in asm to save
+the extra registers in the cold path.
+
+Maybe we could introduce some helpers to create these kinds of asm
+wrappers to do this? Something that would allow us to say: "this
+function only clobbers a minimal set of registers and you can call it
+from asm and only mark %rax/rcx/rdx clobbered" and that allows leaf
+functions to look like leaf functions for the fastpath?
+
+Hmm? That would make my dislike of uninlining the slow case largely go
+away. I still think that back-off tends to be a mistake (and is often
+horrible for virtualization etc), but as long as the fastpath stays
+close to optimal, I don't care *too* much.
+
+                     Linus
