@@ -1,108 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755245Ab3BMHSy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 02:18:54 -0500
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:37813 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754752Ab3BMHSv (ORCPT
+	id S1754752Ab3BMHUP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 02:20:15 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:39492 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753811Ab3BMHUN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 02:18:51 -0500
-Date: Tue, 12 Feb 2013 23:15:03 -0800
-From: Anton Vorontsov <anton@enomsg.org>
-To: Greg Thelen <gthelen@google.com>
-Cc: cgroups@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Glauber Costa <glommer@parallels.com>, Michal Hocko <mhocko@suse.cz>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: Re: [PATCH] memcg: Add memory.pressure_level events
-Message-ID: <20130213071503.GA20543@lizard.gateway.2wire.net>
-References: <20130211000220.GA28247@lizard.gateway.2wire.net>
- <xr9338x01zpw.fsf@gthelen.mtv.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <xr9338x01zpw.fsf@gthelen.mtv.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 13 Feb 2013 02:20:13 -0500
+X-Sasl-enc: 9oUYRhdzZZRKcAMrf+8VfodHgoEv402/vIXqnsxIOPoH 1360740011
+Message-ID: <1360740008.2288.3.camel@perseus.themaw.net>
+Subject: Re: [PATCH linux-next] autofs4: autofs4_catatonic_mode(): remove
+ redundant null check on kfree()
+From: Ian Kent <raven@themaw.net>
+To: Tim Gardner <tim.gardner@canonical.com>
+Cc: linux-kernel@vger.kernel.org, autofs@vger.kernel.org
+Date: Wed, 13 Feb 2013 15:20:08 +0800
+In-Reply-To: <1360689138-59191-1-git-send-email-tim.gardner@canonical.com>
+References: <1360689138-59191-1-git-send-email-tim.gardner@canonical.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
-
-Thanks for taking a look!
-
-On Tue, Feb 12, 2013 at 10:42:51PM -0800, Greg Thelen wrote:
-[...]
-> > +static unsigned long vmpressure_calc_level(unsigned int win,
-> > +					   unsigned int s, unsigned int r)
+On Tue, 2013-02-12 at 10:12 -0700, Tim Gardner wrote:
+> smatch analysis:
 > 
-> Should seems like the return type of this function should be enum
-> vmpressure_levels?  If yes, then the 'return 0' below should be
-> VMPRESSURE_LOW.  And it would be nice if there was a little comment
-> describing the meaning of the win, s, and r parameters.  The "We
-> calculate ..." comment below makes me think that win is the number of
-> pages scanned, which makes me wonder what the s param is.
+> fs/autofs4/waitq.c:46 autofs4_catatonic_mode() info: redundant null
+>  check on wq->name.name calling kfree()
 
-Got it, will make it clearer.
+I'm not sure about this change.
 
-[...]
-> > +static bool vmpressure_event(struct vmpressure *vmpr,
-> > +			     unsigned long s, unsigned long r)
-> > +{
-> > +	struct vmpressure_event *ev;
-> > +	int level = vmpressure_calc_level(vmpressure_win, s, r);
-> > +	bool signalled = 0;
-> s/bool/int/
+autofs4_catatonic_mode() could be called when there are remaining
+entries in the wait queue, which is nulled, so autofs4_wait_release()
+won't see the the discarded waits if it is called.
 
-Um... I surely can do this, but why do you think it is a good idea?
-
-> > +
-> > +	mutex_lock(&vmpr->events_lock);
-> > +
-> > +	list_for_each_entry(ev, &vmpr->events, node) {
-> > +		if (level >= ev->level) {
-> > +			eventfd_signal(ev->efd, 1);
-> > +			signalled++;
-> > +		}
-> > +	}
-> > +
-> > +	mutex_unlock(&vmpr->events_lock);
-> > +
-> > +	return signalled;
-
-[...]
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -1982,6 +1982,10 @@ static void shrink_zone(struct zone *zone, struct scan_control *sc)
-> >  			}
-> >  			memcg = mem_cgroup_iter(root, memcg, &reclaim);
-> >  		} while (memcg);
-> > +
-> > +		vmpressure(sc->gfp_mask, sc->target_mem_cgroup,
-> > +			   sc->nr_scanned - nr_scanned, nr_reclaimed);
 > 
-> (sc->nr_scanned - nr_scanned) is the number of pages scanned in above
-> while loop but nr_reclaimed is the starting position of the reclaim
-> counter before the loop.  It seems like you want:
-> 	vmpressure(sc->gfp_mask, sc->target_mem_cgroup,
-> 		   sc->nr_scanned - nr_scanned, 
-> 		   sc->nr_reclaimed - nr_reclaimed);
+> Cc: Ian Kent <raven@themaw.net>
+> Cc: autofs@vger.kernel.org
+> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+> ---
+>  fs/autofs4/waitq.c |    6 ++----
+>  1 file changed, 2 insertions(+), 4 deletions(-)
+> 
+> diff --git a/fs/autofs4/waitq.c b/fs/autofs4/waitq.c
+> index 03bc1d3..3db70da 100644
+> --- a/fs/autofs4/waitq.c
+> +++ b/fs/autofs4/waitq.c
+> @@ -42,10 +42,8 @@ void autofs4_catatonic_mode(struct autofs_sb_info *sbi)
+>  	while (wq) {
+>  		nwq = wq->next;
+>  		wq->status = -ENOENT; /* Magic is gone - report failure */
+> -		if (wq->name.name) {
+> -			kfree(wq->name.name);
+> -			wq->name.name = NULL;
+> -		}
+> +		kfree(wq->name.name);
+> +		wq->name.name = NULL;
+>  		wq->wait_ctr--;
+>  		wake_up_interruptible(&wq->queue);
+>  		wq = nwq;
 
-Yeah, right you are. There actually was a merge conflict when I rebased my
-patch onto linux-next, and it seems that I overlooked that the logic has
-changed. So we might get a bit distorted pressure because of that.
 
-Thanks for catching this!
-
-Anton
