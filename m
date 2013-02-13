@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934081Ab3BMOuk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 09:50:40 -0500
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:47111 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759024Ab3BMOui (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 09:50:38 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAHfmSg3-YthwNUTCmbEQox5ihjYHw9TT=WaH_fbjHHyJ+ew7eA@mail.gmail.com>
-References: <CAHfmSg2akcYUwDW38g520Fwyr17E5dFDpuUMKejQCfLpQ4pnhQ@mail.gmail.com>
-	<CAHfmSg3ug=64vXtsA4EA6xdKaqWRtT7qZW9AG8n92Q+pbDgQEQ@mail.gmail.com>
-	<20121230094008.GA28308@x1.alien8.de>
-	<CAHfmSg0O90nC3rnkZHAjO_MNjOoU1v8h-LN+jxx=0U+pz7NasQ@mail.gmail.com>
-	<20121231102300.GA1701@x1.alien8.de>
-	<3908561D78D1C84285E8C5FCA982C28F1C973871@ORSMSX108.amr.corp.intel.com>
-	<CAHfmSg14itHxTUinrmmTq2zoFuQAVwhPCo-Mt7tTLJEiJ4B0Sw@mail.gmail.com>
-	<3908561D78D1C84285E8C5FCA982C28F1C973F99@ORSMSX108.amr.corp.intel.com>
-	<CAHfmSg3-YthwNUTCmbEQox5ihjYHw9TT=WaH_fbjHHyJ+ew7eA@mail.gmail.com>
-Date: Wed, 13 Feb 2013 22:50:37 +0800
-Message-ID: <CAHfmSg0sxOEvLd9ASHA7uS+W2TiZ-NRR+w8snPu85iYrMFCuVA@mail.gmail.com>
-Subject: Re: Fwd: PROBLEM: Random kernel panic & system freeze when watching video
-From: Du Jiulun <dujiulun@gmail.com>
-To: linux-kernel@vger.kernel.org, Hillf Danton <dhillf@gmail.com>,
-        Mike Galbraith <bitbucket@online.de>, Borislav Petkov <bp@alien8.de>,
-        Tony Luck <tony.luck@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S934128Ab3BMOv1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 09:51:27 -0500
+Received: from mga14.intel.com ([143.182.124.37]:38476 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754957Ab3BMOvZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 09:51:25 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,657,1355126400"; 
+   d="scan'208";a="201923686"
+Message-ID: <1360767081.4784.6.camel@ideak-mobl>
+Subject: Re: [PATCH v2] lib/scatterlist: add simple page iterator
+From: Imre Deak <imre.deak@intel.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Maxim Levitsky <maximlevitsky@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, linaro-mm-sig@lists.linaro.org
+Date: Wed, 13 Feb 2013 16:51:21 +0200
+In-Reply-To: <20130212171305.GB7348@htj.dyndns.org>
+References: <1353590706-1366-5-git-send-email-imre.deak@intel.com>
+	 <1360608604-3520-1-git-send-email-imre.deak@intel.com>
+	 <20130211125422.978c1e99.akpm@linux-foundation.org>
+	 <1360688840.5578.75.camel@localhost> <20130212171305.GB7348@htj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear kernel developers, Hillf, Mike, Boris and Tony,
+On Tue, 2013-02-12 at 09:13 -0800, Tejun Heo wrote:
+> Hello,
+> 
+> On Tue, Feb 12, 2013 at 07:07:20PM +0200, Imre Deak wrote:
+> > It's the one implemented by sg_miter_{start,stop} in scatterlist.c. It
+> > also iterates through a scatterlist a page at a time, but it also kmaps
+> > these pages. Since in our use case we don't need to map the pages we
+> > needed a solution without this overhead.
+> 
+> I'm not against having non-mapping iterator but please consider that
+> kmaps are no-ops on many configurations.  It matters only for archs w/
+> high memory.
 
-Hello. It's been a long time since I last replied this email, and I
-don't know if it's appropriate to reply all of you in one letter.
+Ok, I haven't thought about that. But in any case we care about those
+archs too and would like to avoid the mapping there as well.
 
-I've tried out most of the suspects you told me, and here's the results:
+> > where each entry on the sglist contained 16 consecutive pages. This
+> > takes ~10% more time for the uninlined version to run. This is a rather
+> > artificial test and I couldn't come up with something more real-life
+> > using only the i915 driver's ioctl interface that would show a
+> > significant change in speed.
+> > 
+> > So at least for now I'm ok with just uninlining all the helpers.
+> 
+> Can we reimplement mapping iters using the new ones?
 
--- Panic DON'T happen when the laptop is running on battery. I've
-tried over 20 battery cycles (~40 hours) doing video playbacks and the
-computer never shut down.
--- Panic DO happen when: (1) I removed the secondary SSD and the tray,
-or when (2) bbswitch module isn't functioning (i.e. the nVidia card is
-on), or when (3) the laptop runs on AC without battery.
--- I don't know anyone with exactly same model or hardware with me.
-But I asked some friends with similar hardware and they don't have
-similar problem.
--- I ran memtest86+ for a whole night (over 10 passes) and nothing goes wrong.
--- There is something wrong with my hard drive (one sector redirect
-reported by SMART 0x05, failure reported with value 1 in 0xB8, and
-another old failure in 0xBE; it's a little old), and sometimes it
-halts and panics between fscking rootfs and fscking /home (I don't
-know why and don't have the logs), but I did a long test with
-Seagate's SeaTool and it passed.
--- The panics happen when using Google Chrome's Flash plugin to play
-videos and *audios* and when using mplayer to play videos, but don't
-happen when playing local audios (mp3/flac).
+Yes I think it's a good idea, I will follow up with a new patchset
+addressing this and Andrew's comments.
 
-I start to think that it's only me that have this problem, and may
-never be able to get fixed. But I'll still be a Linux desktop user no
-matter what.
+Thanks,
+Imre
 
-Big thanks to all of you and all of the kernel developers for your
-help and great job.
+
