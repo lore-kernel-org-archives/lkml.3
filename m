@@ -1,131 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934203Ab3BMPky (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 10:40:54 -0500
-Received: from mail.tpi.com ([70.99.223.143]:4937 "EHLO mail.tpi.com"
+	id S1759800Ab3BMPlE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 10:41:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13523 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757615Ab3BMPkx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 10:40:53 -0500
-From: Tim Gardner <tim.gardner@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Tim Gardner <tim.gardner@canonical.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org
-Subject: [PATCH linux-next v2] lockd: nlmclnt_reclaim(): avoid stack overflow
-Date: Wed, 13 Feb 2013 08:40:16 -0700
-Message-Id: <1360770016-69586-1-git-send-email-tim.gardner@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <20130212211800.GG10267@fieldses.org>
-References: <20130212211800.GG10267@fieldses.org>
+	id S1759328Ab3BMPlB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 10:41:01 -0500
+Date: Wed, 13 Feb 2013 17:39:55 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: kvm@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Borislav Petkov <bp@suse.de>,
+        Boris Ostrovsky <boris.ostrovsky@amd.com>,
+        Andre Przywara <andre@andrep.de>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH] x86, kvm: Add MSR_AMD64_BU_CFG2 to the list of ignored
+ MSRs
+Message-ID: <20130213153955.GF9817@redhat.com>
+References: <1360755761-725-1-git-send-email-bp@alien8.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1360755761-725-1-git-send-email-bp@alien8.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Even though nlmclnt_reclaim() is only one call into the stack frame,
-928 bytes on the stack seems like a lot. Recode to dynamically
-allocate the request structure once from within the reclaimer task,
-then pass this pointer into nlmclnt_reclaim() for reuse on
-subsequent calls.
+On Wed, Feb 13, 2013 at 12:42:41PM +0100, Borislav Petkov wrote:
+> From: Borislav Petkov <bp@suse.de>
+> 
+> The "x86, AMD: Enable WC+ memory type on family 10 processors" patch
+> currently in -tip added a workaround for AMD F10h CPUs which #GPs my
+> guest when booted in kvm. This is because it accesses MSR_AMD64_BU_CFG2
+> which is not currently ignored by kvm. Do that because this MSR is only
+> baremetal-relevant anyway. While at it, move the ignored MSRs at the
+> beginning of kvm_set_msr_common so that we exit then and there.
+> 
+> Signed-off-by: Borislav Petkov <bp@suse.de>
+> Cc: Boris Ostrovsky <boris.ostrovsky@amd.com>
+> Cc: Andre Przywara <andre@andrep.de>
+> Cc: Marcelo Tosatti <mtosatti@redhat.com>
+> Cc: Gleb Natapov <gleb@redhat.com>
 
-smatch analysis:
+Acked-by: Gleb Natapov <gleb@redhat.com>
 
-fs/lockd/clntproc.c:620 nlmclnt_reclaim() warn: 'reqst' puts
- 928 bytes on stack
+Ingo, MSR_AMD64_BU_CFG2 exists only on tip. Can you get this through the
+tip too?
 
-Also remove redundant assignment of 0 after memset.
+> ---
+>  arch/x86/kvm/x86.c | 16 +++++++++-------
+>  1 file changed, 9 insertions(+), 7 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index c243b81e3c74..37040079cd6b 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -1881,6 +1881,14 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
+>  	u64 data = msr_info->data;
+>  
+>  	switch (msr) {
+> +	case MSR_AMD64_NB_CFG:
+> +	case MSR_IA32_UCODE_REV:
+> +	case MSR_IA32_UCODE_WRITE:
+> +	case MSR_VM_HSAVE_PA:
+> +	case MSR_AMD64_PATCH_LOADER:
+> +	case MSR_AMD64_BU_CFG2:
+> +		break;
+> +
+>  	case MSR_EFER:
+>  		return set_efer(vcpu, data);
+>  	case MSR_K7_HWCR:
+> @@ -1900,8 +1908,6 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
+>  			return 1;
+>  		}
+>  		break;
+> -	case MSR_AMD64_NB_CFG:
+> -		break;
+>  	case MSR_IA32_DEBUGCTLMSR:
+>  		if (!data) {
+>  			/* We support the non-activated case already */
+> @@ -1914,11 +1920,6 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
+>  		vcpu_unimpl(vcpu, "%s: MSR_IA32_DEBUGCTLMSR 0x%llx, nop\n",
+>  			    __func__, data);
+>  		break;
+> -	case MSR_IA32_UCODE_REV:
+> -	case MSR_IA32_UCODE_WRITE:
+> -	case MSR_VM_HSAVE_PA:
+> -	case MSR_AMD64_PATCH_LOADER:
+> -		break;
+>  	case 0x200 ... 0x2ff:
+>  		return set_msr_mtrr(vcpu, msr, data);
+>  	case MSR_IA32_APICBASE:
+> @@ -2253,6 +2254,7 @@ int kvm_get_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 *pdata)
+>  	case MSR_K8_INT_PENDING_MSG:
+>  	case MSR_AMD64_NB_CFG:
+>  	case MSR_FAM10H_MMIO_CONF_BASE:
+> +	case MSR_AMD64_BU_CFG2:
+>  		data = 0;
+>  		break;
+>  	case MSR_P6_PERFCTR0:
+> -- 
+> 1.8.1.3.535.ga923c31
 
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: linux-nfs@vger.kernel.org
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
----
-
-Changes from v1 -- don't return -ENOMEM from a task thread because it is
-not propagated to the task creator. Instead print an error message and return.
-
- fs/lockd/clntlock.c         |   12 +++++++++++-
- fs/lockd/clntproc.c         |    6 ++----
- include/linux/lockd/lockd.h |    3 ++-
- 3 files changed, 15 insertions(+), 6 deletions(-)
-
-diff --git a/fs/lockd/clntlock.c b/fs/lockd/clntlock.c
-index 4885b53..6cd673d 100644
---- a/fs/lockd/clntlock.c
-+++ b/fs/lockd/clntlock.c
-@@ -220,10 +220,19 @@ reclaimer(void *ptr)
- {
- 	struct nlm_host	  *host = (struct nlm_host *) ptr;
- 	struct nlm_wait	  *block;
-+	struct nlm_rqst   *req;
- 	struct file_lock *fl, *next;
- 	u32 nsmstate;
- 	struct net *net = host->net;
- 
-+	req = kmalloc(sizeof(*req), GFP_KERNEL);
-+	if (!req) {
-+		printk(KERN_ERR "lockd: reclaimer unable to alloc memory."
-+				" Locks for %s won't be reclaimed!\n",
-+				host->h_name);
-+		return 0;
-+	}
-+
- 	allow_signal(SIGKILL);
- 
- 	down_write(&host->h_rwsem);
-@@ -253,7 +262,7 @@ restart:
- 		 */
- 		if (signalled())
- 			continue;
--		if (nlmclnt_reclaim(host, fl) != 0)
-+		if (nlmclnt_reclaim(host, fl, req) != 0)
- 			continue;
- 		list_add_tail(&fl->fl_u.nfs_fl.list, &host->h_granted);
- 		if (host->h_nsmstate != nsmstate) {
-@@ -279,5 +288,6 @@ restart:
- 	/* Release host handle after use */
- 	nlmclnt_release_host(host);
- 	lockd_down(net);
-+	kfree(req);
- 	return 0;
- }
-diff --git a/fs/lockd/clntproc.c b/fs/lockd/clntproc.c
-index 54f9e6c..b43114c 100644
---- a/fs/lockd/clntproc.c
-+++ b/fs/lockd/clntproc.c
-@@ -615,17 +615,15 @@ out_unlock:
-  * RECLAIM: Try to reclaim a lock
-  */
- int
--nlmclnt_reclaim(struct nlm_host *host, struct file_lock *fl)
-+nlmclnt_reclaim(struct nlm_host *host, struct file_lock *fl,
-+		struct nlm_rqst *req)
- {
--	struct nlm_rqst reqst, *req;
- 	int		status;
- 
--	req = &reqst;
- 	memset(req, 0, sizeof(*req));
- 	locks_init_lock(&req->a_args.lock.fl);
- 	locks_init_lock(&req->a_res.lock.fl);
- 	req->a_host  = host;
--	req->a_flags = 0;
- 
- 	/* Set up the argument struct */
- 	nlmclnt_setlockargs(req, fl);
-diff --git a/include/linux/lockd/lockd.h b/include/linux/lockd/lockd.h
-index f5a051a..a395f1e 100644
---- a/include/linux/lockd/lockd.h
-+++ b/include/linux/lockd/lockd.h
-@@ -212,7 +212,8 @@ int		  nlmclnt_block(struct nlm_wait *block, struct nlm_rqst *req, long timeout)
- __be32		  nlmclnt_grant(const struct sockaddr *addr,
- 				const struct nlm_lock *lock);
- void		  nlmclnt_recovery(struct nlm_host *);
--int		  nlmclnt_reclaim(struct nlm_host *, struct file_lock *);
-+int		  nlmclnt_reclaim(struct nlm_host *, struct file_lock *,
-+				  struct nlm_rqst *);
- void		  nlmclnt_next_cookie(struct nlm_cookie *);
- 
- /*
--- 
-1.7.9.5
-
+--
+			Gleb.
