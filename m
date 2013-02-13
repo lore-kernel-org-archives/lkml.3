@@ -1,119 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932694Ab3BMSra (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 13:47:30 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:20245 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756776Ab3BMSr0 (ORCPT
+	id S1757588Ab3BMStQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 13:49:16 -0500
+Received: from mail-we0-f179.google.com ([74.125.82.179]:41219 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753863Ab3BMStN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 13:47:26 -0500
-Date: Wed, 13 Feb 2013 13:47:02 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, linux-mm@kvack.org, ngupta@vflare.org,
-        sjenning@linux.vnet.ibm.com, minchan@kernel.org
-Subject: Re: [PATCH] staging: zcache: add TODO file
-Message-ID: <20130213184702.GD20042@phenom.dumpdata.com>
-References: <1360779186-17189-1-git-send-email-dan.magenheimer@oracle.com>
+	Wed, 13 Feb 2013 13:49:13 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360779186-17189-1-git-send-email-dan.magenheimer@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Originating-IP: [2620:0:1000:1b02:ae16:2dff:fe07:4e83]
+In-Reply-To: <20130213184559.GA29145@quad.lixom.net>
+References: <1360778532-7480-1-git-send-email-dianders@chromium.org>
+	<20130213184559.GA29145@quad.lixom.net>
+Date: Wed, 13 Feb 2013 10:49:11 -0800
+Message-ID: <CAOesGMjjwiAB2PVDvK-ci05rqYbmrgMUDDZ8GWAetsVhDCQwpQ@mail.gmail.com>
+Subject: Re: [PATCH v1 1/4] i2c: mux: Add i2c-arbitrator 'mux' driver
+From: Olof Johansson <olof@lixom.net>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Wolfram Sang <w.sang@pengutronix.de>, Simon Glass <sjg@chromium.org>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Yuvaraj Kumar <yuvaraj.cd@gmail.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>, u.kleine-koenig@pengutronix.de,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Girish Shivananjappa <girish.shivananjappa@linaro.org>,
+        bhushan.r@samsung.com, sreekumar.c@samsung.com,
+        Prashanth G <prashanth.g@samsung.com>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Grant Grundler <grundler@chromium.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        Jean Delvare <khali@linux-fr.org>,
+        Peter Korsgaard <peter.korsgaard@barco.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 13, 2013 at 10:13:06AM -0800, Dan Magenheimer wrote:
-> Add zcache TODO file
-> 
-Greg,
+On Wed, Feb 13, 2013 at 10:45 AM, Olof Johansson <olof@lixom.net> wrote:
 
-Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>> +             i2c-parent = <&{/i2c@12CA0000}>;
+>
+> Why use this custom i2c-parent property? The arbitrator should just be
+> under the i2c controller in the device tree, and thus parent would be
+> derived from the topology there.
 
-> Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-> ---
->  drivers/staging/zcache/TODO |   69 +++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 69 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/staging/zcache/TODO
-> 
-> diff --git a/drivers/staging/zcache/TODO b/drivers/staging/zcache/TODO
-> new file mode 100644
-> index 0000000..c1e26d4
-> --- /dev/null
-> +++ b/drivers/staging/zcache/TODO
-> @@ -0,0 +1,69 @@
-> +
-> +** ZCACHE PLAN FOR PROMOTION FROM STAGING **
-> +
-> +Last updated: Feb 13, 2013
-> +
-> +PLAN STEPS
-> +
-> +1. merge zcache and ramster to eliminate horrible code duplication
-> +2. converge on a predictable, writeback-capable allocator
-> +3. use debugfs instead of sysfs (per akpm feedback in 2011)
-> +4. zcache side of cleancache/mm WasActive patch
-> +5. zcache side of frontswap exclusive gets
-> +6. zcache must be able to writeback to physical swap disk
-> +    (per Andrea Arcangeli feedback in 2011)
-> +7. implement adequate policy for writeback
-> +8. frontswap/cleancache work to allow zcache to be loaded
-> +    as a module
-> +9. get core mm developer to review
-> +10. incorporate feedback from review
-> +11. get review/acks from 1-2 additional mm developers
-> +12. incorporate any feedback from additional mm reviews
-> +13. propose location/file-naming in mm tree
-> +14. repeat 9-13 as necessary until akpm is happy and merges
-> +
-> +STATUS/OWNERSHIP
-> +
-> +1. DONE as part of "new" zcache; in staging/zcache for 3.9
-> +2. DONE as part of "new" zcache (cf zbud.[ch]); in staging/zcache for 3.9
-> +    (this was the core of the zcache1 vs zcache2 flail)
-> +3. DONE as part of "new" zcache; in staging/zcache for 3.9
-> +4. DONE (w/caveats) as part of "new" zcache; per cleancache performance
-> +    feedback see https://lkml.org/lkml/2011/8/17/351, in
-> +    staging/zcache for 3.9; dependent on proposed mm patch, see
-> +    https://lkml.org/lkml/2012/1/25/300 
-> +5. DONE as part of "new" zcache; performance tuning only,
-> +    in staging/zcache for 3.9; dependent on frontswap patch
-> +    merged in 3.7 (33c2a174)
-> +6. DONE (w/caveats), prototyped as part of "new" zcache, had
-> +    bad memory leak; reimplemented to use sjennings clever tricks
-> +    and proposed mm patches with new version in staging/zcache
-> +    for 3.9, see https://lkml.org/lkml/2013/2/6/437;
-> +7. PROTOTYPED as part of "new" zcache; in staging/zcache for 3.9;
-> +    needs more review (plan to discuss at LSF/MM 2013)
-> +8. IN PROGRESS; owned by Konrad Wilk; v2 recently posted
-> +   http://lkml.org/lkml/2013/2/1/542
-> +9. IN PROGRESS; owned by Konrad Wilk; Mel Gorman provided
-> +   great feedback in August 2012 (unfortunately of "old"
-> +   zcache)
-> +10. Konrad posted series of fixes (that now need rebasing)
-> +    https://lkml.org/lkml/2013/2/1/566 
-> +11. NOT DONE; owned by Konrad Wilk
-> +12. TBD (depends on quantity of feedback)
-> +13. PROPOSED; one suggestion proposed by Dan; needs more ideas/feedback
-> +14. TBD (depends on feedback)
-> +
-> +WHO NEEDS TO AGREE
-> +
-> +Not sure.  Seth Jennings is now pursuing a separate but semi-parallel
-> +track.  Akpm clearly has to approve for any mm merge to happen.  Minchan
-> +Kim has interest but may be happy if/when zram is merged into mm.  Konrad
-> +Wilk may be maintainer if akpm decides compression is maintainable
-> +separately from the rest of mm.  (More LSF/MM 2013 discussion.)
-> +
-> +ZCACHE FUTURE NEW FUNCTIONALITY
-> +
-> +A. Support zsmalloc as an alternative high-density allocator
-> +    (See https://lkml.org/lkml/2013/1/23/511)
-> +B. Support zero-filled pages more efficiently
-> +C. Possibly support three zbuds per pageframe when space allows
-> -- 
-> 1.7.1
-> 
+Ah. Reading up on the discussions for the other mux bindings, there's
+the issue of the arbitrator not being addressable/accessible via i2c.
+
+Sigh, awkward and annoying, since it breaks the topography for the
+hardware apart due to the arbitrator. But I guess there's no good
+alternative. :(
+
+
+-Olof
