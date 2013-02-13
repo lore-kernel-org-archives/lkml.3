@@ -1,51 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760092Ab3BMQj6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 11:39:58 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:48703 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759377Ab3BMQj4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 11:39:56 -0500
-Date: Wed, 13 Feb 2013 17:39:48 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH] fix 32-bit compile warning from printk()
-Message-ID: <20130213163948.GB26948@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Randy Dunlap <rdunlap@xenotime.net>,
-	Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-	"H. Peter Anvin" <hpa@zytor.com>, KVM <kvm@vger.kernel.org>
-References: <20130128191939.7F67966B@kernel.stglabs.ibm.com>
- <511BBFC4.7090601@xenotime.net>
+	id S934436Ab3BMQkM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 11:40:12 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:44785 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759377Ab3BMQkJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 11:40:09 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19nvnkAOsFoojtZPitC0FU/
+Date: Wed, 13 Feb 2013 08:40:05 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Jon Hunter <jon-hunter@ti.com>
+Cc: Sourav Poddar <sourav.poddar@ti.com>, balbi@ti.com,
+        santosh.shilimkar@ti.com, b-cousson@ti.com, linux-omap@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/5] arm: dts: omap4-panda: Add I2c pinctrl data
+Message-ID: <20130213164004.GE7144@atomide.com>
+References: <1360747710-1532-1-git-send-email-sourav.poddar@ti.com>
+ <511BB7CE.1020505@ti.com>
+ <511BBA1B.9050501@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <511BBFC4.7090601@xenotime.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <511BBA1B.9050501@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 13, 2013 at 08:31:00AM -0800, Randy Dunlap wrote:
-> This warning is still present in linux-next (20130213).
+* Jon Hunter <jon-hunter@ti.com> [130213 08:10]:
+> On 02/13/2013 09:57 AM, Jon Hunter wrote:
+> > On 02/13/2013 03:28 AM, Sourav Poddar wrote:
+> > 
+> > A quick look at the data manual shows that omap4430 and omap4460 has the
+> > same pin mux options for i2c. Furthermore, the data manual shows only
+> > one mux option for i2c1-4. Therefore, should these mux options be placed
+> > in omap4.dtsi? Boards not using specific i2c controllers can disabled
+> > them in there board dts file (same way we do for mmc).
 > 
-> Acked-by: Randy Dunlap <rdunlap@infradead.org>
-> 
-> Thanks.
-> 
-> Someone please merge...  (kvm@ cc added)
+> I guess for i2c, a given omap4 board may use external pull-ups and not
+> use the internal ones and so putting this in the omap4.dtsi may not be
+> desirable. However, it seems that a common omap4-panda.dtsi could be
+> used here.
 
-There's a fix already in tip for this:
+Yes the mux options need to be board specific. If something is complex
+and  common, it's best to put it into omap4-i2c1.dts file that can be
+included from the board specific .dts files as needed.
 
-http://git.kernel.org/tip/136867f517cbc3f8a91f035677911a6b503c3323
+Regards,
 
-which needs to change again once the %pa printk stuff get merged.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Tony
