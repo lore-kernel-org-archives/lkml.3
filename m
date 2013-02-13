@@ -1,78 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760012Ab3BMQaa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 11:30:30 -0500
-Received: from oproxy11-pub.bluehost.com ([173.254.64.10]:37481 "HELO
-	oproxy11-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759377Ab3BMQa3 (ORCPT
+	id S934309Ab3BMQdM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 11:33:12 -0500
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:51610 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759377Ab3BMQdK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 11:30:29 -0500
-Message-ID: <511BBFC4.7090601@xenotime.net>
-Date: Wed, 13 Feb 2013 08:31:00 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
+	Wed, 13 Feb 2013 11:33:10 -0500
+Message-ID: <511BC043.4030506@gmail.com>
+Date: Wed, 13 Feb 2013 10:33:07 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH] fix 32-bit compile warning from printk()
-References: <20130128191939.7F67966B@kernel.stglabs.ibm.com>
-In-Reply-To: <20130128191939.7F67966B@kernel.stglabs.ibm.com>
+To: Michal Simek <monstr@monstr.eu>
+CC: arm@kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        John Stultz <johnstul@us.ibm.com>
+Subject: Re: [PATCH 1/4] clocksource: pass DT node pointer to init functions
+References: <1360264144-20714-1-git-send-email-robherring2@gmail.com> <1360264144-20714-2-git-send-email-robherring2@gmail.com> <CAHTX3dKLCbfhBaHKBE=fVTcRReVL6yotA9e_8S70bH+_gajL5Q@mail.gmail.com>
+In-Reply-To: <CAHTX3dKLCbfhBaHKBE=fVTcRReVL6yotA9e_8S70bH+_gajL5Q@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/13 11:19, Dave Hansen wrote:
-> My patch "Fix kvm's use of __pa() on percpu areas" introduced a
-> compile warning:
+On 02/13/2013 10:21 AM, Michal Simek wrote:
+> 2013/2/7 Rob Herring <robherring2@gmail.com>:
+>> From: Rob Herring <rob.herring@calxeda.com>
+>>
+>> In cases where we have multiple nodes of the same type, we may need the
+>> node pointer to know which node was matched. Passing the node pointer
+>> also keeps the init function from having to match the node a 2nd time.
+>>
+>> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+>> Cc: John Stultz <johnstul@us.ibm.com>
+>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>> ---
+>>  drivers/clocksource/clksrc-of.c |    4 ++--
+>>  1 file changed, 2 insertions(+), 2 deletions(-)
 > 
-> arch/x86/kernel/kvm.c: In function 'kvm_register_steal_time':
-> arch/x86/kernel/kvm.c:302:3: warning: format '%lx' expects argument of type 'long unsigned int', but argument 3 has type 'phys_addr_t' [-Wformat]
+> Tested-by: Michal Simek <michal.simek@xilinx.com>
 > 
-> According to: Documentation/printk-formats.txt
-> 
-> 	If <type> is dependent on a config option for its size
-> 	(e.g., phys_addr_t) ... use a format specifier of its
-> 	largest possible type and explicitly cast to it.
-> 
-> So, we'll do just that.  We will consider it an unsigned long
-> long, and cast to it explicitly.
-> 
-> Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+> The rest is just the same as I have done. Any option to add these
+> patches to v3.9?
 
-This warning is still present in linux-next (20130213).
+I would like to before we have more users to fix, but it will have to be
+post rc1. If not, Arnd/Olof should be be able to provide a stable branch
+for 3.10.
 
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
+> Because I need these patches for zynq timer because we have two in the soc.
+> Is it OK to register several clock source and clockevent devices?
 
-Thanks.
+If it is 1 DT node, then that should be fine.
 
-Someone please merge...  (kvm@ cc added)
+> btw: there is still one issue because you can just setup only one
+> compatibility string.
 
-> ---
-> 
->  linux-2.6.git-dave/arch/x86/kernel/kvm.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff -puN arch/x86/kernel/kvm.c~fix-32-bit-compile-warning arch/x86/kernel/kvm.c
-> --- linux-2.6.git/arch/x86/kernel/kvm.c~fix-32-bit-compile-warning	2013-01-28 11:16:39.786938232 -0800
-> +++ linux-2.6.git-dave/arch/x86/kernel/kvm.c	2013-01-28 11:16:39.790938273 -0800
-> @@ -298,8 +298,8 @@ static void kvm_register_steal_time(void
->  	memset(st, 0, sizeof(*st));
->  
->  	wrmsrl(MSR_KVM_STEAL_TIME, (slow_virt_to_phys(st) | KVM_MSR_ENABLED));
-> -	printk(KERN_INFO "kvm-stealtime: cpu %d, msr %lx\n",
-> -		cpu, slow_virt_to_phys(st));
-> +	printk(KERN_INFO "kvm-stealtime: cpu %d, msr %llx\n",
-> +		cpu, (unsigned long long)slow_virt_to_phys(st));
->  }
->  
->  static DEFINE_PER_CPU(unsigned long, kvm_apic_eoi) = KVM_PV_EOI_DISABLED;
-> _
+You can have multiple CLOCKSOURCE_OF_DECLARE statements. The gic code
+does this for irqchips.
 
+Rob
 
-
--- 
-~Randy
