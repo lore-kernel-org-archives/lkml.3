@@ -1,86 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759419Ab3BMMPD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 07:15:03 -0500
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:46075 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754310Ab3BMMO6 (ORCPT
+	id S933998Ab3BMMby (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 07:31:54 -0500
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:56694 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933922Ab3BMMbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 07:14:58 -0500
+	Wed, 13 Feb 2013 07:31:52 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130212185725.GC23410@redhat.com>
+In-Reply-To: <1360613493-11969-3-git-send-email-vgoyal@redhat.com>
 References: <1360613493-11969-1-git-send-email-vgoyal@redhat.com>
 	<1360613493-11969-3-git-send-email-vgoyal@redhat.com>
-	<1360620614.3524.223.camel@falcor1.watson.ibm.com>
-	<20130212142636.GA23410@redhat.com>
-	<1360689247.3524.275.camel@falcor1.watson.ibm.com>
-	<20130212185203.GA29958@redhat.com>
-	<20130212185725.GC23410@redhat.com>
-Date: Wed, 13 Feb 2013 14:14:55 +0200
-Message-ID: <CALLzPKaD==fj3GSE3SnaWg5=VVNW7A_+caFzoh=_cBv8+BVKEA@mail.gmail.com>
+Date: Wed, 13 Feb 2013 14:31:51 +0200
+Message-ID: <CALLzPKZA92MxJYjC+OR-KDv4rHQRgKSBHSAY2fOZsEDxiO11yA@mail.gmail.com>
 Subject: Re: [PATCH 2/2] ima: Support appraise_type=imasig_optional
 From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
 To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: zohar@linux.vnet.ibm.com, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Vivek,
-
-Can you please send to us how your IMA policy looks like.
-
-Thanks,
-Dmitry
-
-On Tue, Feb 12, 2013 at 8:57 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Tue, Feb 12, 2013 at 01:52:03PM -0500, Vivek Goyal wrote:
->> On Tue, Feb 12, 2013 at 12:14:07PM -0500, Mimi Zohar wrote:
->>
->> [..]
->> > > > > --- a/security/integrity/ima/ima_appraise.c
->> > > > > +++ b/security/integrity/ima/ima_appraise.c
->> > > > > @@ -124,19 +124,26 @@ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
->> > > > >       enum integrity_status status = INTEGRITY_UNKNOWN;
->> > > > >       const char *op = "appraise_data";
->> > > > >       char *cause = "unknown";
->> > > > > -     int rc;
->> > > > > +     int rc, audit_info = 0;
->> > > > >
->> > > > >       if (!ima_appraise)
->> > > > >               return 0;
->> > > > > -     if (!inode->i_op->getxattr)
->> > > > > +     if (!inode->i_op->getxattr) {
->> > > > > +             /* getxattr not supported. file couldn't have been signed */
->> > > > > +             if (iint->flags & IMA_DIGSIG_OPTIONAL)
->> > > > > +                     return INTEGRITY_PASS;
->> > > > >               return INTEGRITY_UNKNOWN;
->> > > > > +     }
->> > > > >
->> > > >
->> > > > Please don't change the result of the appraisal like this.  A single
->> > > > change can be made towards the bottom of process_measurement().
->> > >
->> > > I don't want to pass integrity in all cases of INTEGRITY_UNKNOWN. So
->> > > I can probably maintain a bool variable, say pass_appraisal, and set
->> > > that here and at the end of function, parse that variable and change
->> > > the status accordingly.
->> >
->> > process_measurement() is the only caller of ima_appraise_measurement().
->> > Leave the results of ima_appraise_measurement() alone.  There's already
->> > code at the end of process_measurement() which decides what to return.
->> > Just modify it based on the appraisal results.
->>
+On Mon, Feb 11, 2013 at 10:11 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> appraise_type=imasig_optional will allow appraisal to pass even if no
+> signatures are present on the file. If signatures are present, then it
+> has to be valid digital signature, otherwise appraisal will fail.
 >
-> If we do this, audit logs will be filled with integrity unknown failures.
-> As each unsigned executable file will fail appraisal with INTEGRITY_UNKNOWN
-> and an audit message will be logged.
+> This can allow to selectively sign executables in the system and based
+> on appraisal results, signed executables with valid signatures can be
+> given extra capability to perform priviliged operations in secureboot
+> mode.
 >
-> Thanks
-> Vivek
+> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+> ---
+>  Documentation/ABI/testing/ima_policy  |    2 +-
+>  security/integrity/ima/ima_appraise.c |   24 +++++++++++++++++++-----
+>  security/integrity/ima/ima_policy.c   |    2 ++
+>  security/integrity/integrity.h        |    1 +
+>  4 files changed, 23 insertions(+), 6 deletions(-)
+>
+> diff --git a/Documentation/ABI/testing/ima_policy b/Documentation/ABI/testing/ima_policy
+> index de16de3..5ca0c23 100644
+> --- a/Documentation/ABI/testing/ima_policy
+> +++ b/Documentation/ABI/testing/ima_policy
+> @@ -30,7 +30,7 @@ Description:
+>                         uid:= decimal value
+>                         fowner:=decimal value
+>                 lsm:    are LSM specific
+> -               option: appraise_type:= [imasig]
+> +               option: appraise_type:= [imasig] | [imasig_optional]
+>
+>                 default policy:
+>                         # PROC_SUPER_MAGIC
+> diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+> index 3710f44..222ade0 100644
+> --- a/security/integrity/ima/ima_appraise.c
+> +++ b/security/integrity/ima/ima_appraise.c
+> @@ -124,19 +124,26 @@ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
+>         enum integrity_status status = INTEGRITY_UNKNOWN;
+>         const char *op = "appraise_data";
+>         char *cause = "unknown";
+> -       int rc;
+> +       int rc, audit_info = 0;
+>
+>         if (!ima_appraise)
+>                 return 0;
+> -       if (!inode->i_op->getxattr)
+> +       if (!inode->i_op->getxattr) {
+> +               /* getxattr not supported. file couldn't have been signed */
+> +               if (iint->flags & IMA_DIGSIG_OPTIONAL)
+> +                       return INTEGRITY_PASS;
+>                 return INTEGRITY_UNKNOWN;
+> +       }
+>
+>         rc = vfs_getxattr_alloc(dentry, XATTR_NAME_IMA, (char **)&xattr_value,
+>                                 0, GFP_NOFS);
+>         if (rc <= 0) {
+>                 /* File system does not support security xattr */
+> -               if (rc == -EOPNOTSUPP)
+> +               if (rc == -EOPNOTSUPP) {
+> +                       if (iint->flags & IMA_DIGSIG_OPTIONAL)
+> +                               return INTEGRITY_PASS;
+>                         return INTEGRITY_UNKNOWN;
+> +               }
+>
+>                 if (rc && rc != -ENODATA)
+>                         goto out;
+> @@ -158,7 +165,8 @@ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
+>         }
+>         switch (xattr_value->type) {
+>         case IMA_XATTR_DIGEST:
+> -               if (iint->flags & IMA_DIGSIG_REQUIRED) {
+> +               if (iint->flags & IMA_DIGSIG_REQUIRED ||
+> +                   iint->flags & IMA_DIGSIG_OPTIONAL) {
+>                         cause = "IMA signature required";
+>                         status = INTEGRITY_FAIL;
+>                         break;
+
+This looks a bit odd... If "optional" signature is missing  - we fail..
+It is optional... Why we should fail?
+
+Mimi?
+
+> @@ -201,8 +209,14 @@ out:
+>                         if (!ima_fix_xattr(dentry, iint))
+>                                 status = INTEGRITY_PASS;
+>                 }
+> +               if (status == INTEGRITY_NOLABEL &&
+> +                   iint->flags & IMA_DIGSIG_OPTIONAL) {
+> +                       status = INTEGRITY_PASS;
+> +                       /* Don't flood audit logs with skipped appraise */
+> +                       audit_info = 1;
+> +               }
+>                 integrity_audit_msg(AUDIT_INTEGRITY_DATA, inode, filename,
+> -                                   op, cause, rc, 0);
+> +                                   op, cause, rc, audit_info);
+>         } else {
+>                 ima_cache_flags(iint, func);
+>         }
+> diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+> index 4adcd0f..8b8cd5f 100644
+> --- a/security/integrity/ima/ima_policy.c
+> +++ b/security/integrity/ima/ima_policy.c
+> @@ -598,6 +598,8 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
+>                         ima_log_string(ab, "appraise_type", args[0].from);
+>                         if ((strcmp(args[0].from, "imasig")) == 0)
+>                                 entry->flags |= IMA_DIGSIG_REQUIRED;
+> +                       else if ((strcmp(args[0].from, "imasig_optional")) == 0)
+> +                               entry->flags |= IMA_DIGSIG_OPTIONAL;
+>                         else
+>                                 result = -EINVAL;
+>                         break;
+> diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+> index 84c37c4..2ba736b 100644
+> --- a/security/integrity/integrity.h
+> +++ b/security/integrity/integrity.h
+> @@ -30,6 +30,7 @@
+>  #define IMA_ACTION_FLAGS       0xff000000
+>  #define IMA_DIGSIG             0x01000000
+>  #define IMA_DIGSIG_REQUIRED    0x02000000
+> +#define IMA_DIGSIG_OPTIONAL    0x04000000
+>
+>  #define IMA_DO_MASK            (IMA_MEASURE | IMA_APPRAISE | IMA_AUDIT | \
+>                                  IMA_APPRAISE_SUBMASK)
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> 1.7.7.6
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
