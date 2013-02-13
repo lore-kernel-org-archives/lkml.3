@@ -1,184 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964857Ab3BMRvh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 12:51:37 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23349 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934405Ab3BMRve (ORCPT
+	id S1760449Ab3BMRwe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 12:52:34 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:53410 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760178Ab3BMRwd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 12:51:34 -0500
-X-Authority-Analysis: v=2.0 cv=UN5f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=RxdSD2jLC48A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=sjSJRsSX_X4A:10 a=chPeDEukWiW1B2cojqwA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1360777892.23152.9.camel@gandalf.local.home>
-Subject: Re: [RFC][PATCH RT] acpi/rt: Convert acpi lock back to a
- raw_spinlock_t
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: John Kacur <jkacur@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        RT <linux-rt-users@vger.kernel.org>, John Kacur <jkacur@gmail.com>,
-        Clark Williams <clark@redhat.com>
-Date: Wed, 13 Feb 2013 12:51:32 -0500
-In-Reply-To: <alpine.LFD.2.02.1302131755230.11905@ionos>
-References: <1360765565.23152.5.camel@gandalf.local.home>
-	 <alpine.LFD.2.03.1302131744590.13701@tycho>
-	 <alpine.LFD.2.02.1302131755230.11905@ionos>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 13 Feb 2013 12:52:33 -0500
+From: "Eric W. Biederman" <ebiederm@xmission.com>
+To: <linux-fsdevel@vger.kernel.org>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, "Serge E. Hallyn" <serge@hallyn.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Sage Weil <sage@inktank.com>
+Date: Wed, 13 Feb 2013 09:50:50 -0800
+Message-Id: <1360777934-5663-1-git-send-email-ebiederm@xmission.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <87621w14vs.fsf@xmission.com>
+References: <87621w14vs.fsf@xmission.com>
+X-XM-AID: U2FsdGVkX1+CeHPpcJWpNmLpxhLRMQLl9M1jlhNlcGE=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0081]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;<linux-fsdevel@vger.kernel.org>
+X-Spam-Relay-Country: 
+Subject: [PATCH review 01/85] ceph: Only allow mounts in the initial network namespace
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-02-13 at 18:21 +0100, Thomas Gleixner wrote:
-> On Wed, 13 Feb 2013, John Kacur wrote:
-> > 
-> > Thanks Steven. That looks way better than the previous revert.
-> 
-> I can't tell as I haven't seen the previous revert. And looks good is
-> not really a good review criteria.
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-I agreed, and warned John on IRC about that. This is why the patch had
-RFC in the subject.
+Today ceph opens tcp sockets from a delayed work callback.  Delayed
+work happens from kernel threads which are always in the initial
+network namespace.   Therefore fail early if someone attempts
+to mount a ceph filesystem from something other than the initial
+network namespace.
 
-> 
-> The patch is converting _all_ the spin_locks in acpi to raw spinlocks,
-> which will give you a nice bunch of "BUG: sleeping function called
-> from invalid context" splats depending on the ACPI functionality of
-> your machine.
+Cc: Sage Weil <sage@inktank.com>
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+---
+ net/ceph/ceph_common.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-Yep, I asked to have this tested on a wide range of boxes with the debug
-options enabled. Hoping to see if splats do happen.
-
-> 
-> The lock which is related to this splat is: acpi_gbl_hardware_lock and
-> that's the only lock which can be safely converted to a raw spinlock.
-> 
-> Untested patch below.
-
-I'll try this patch instead, and see what breaks ;-)
-
-Thanks,
-
--- Steve
-
-> 
-> Thanks,
-> 
-> 	tglx
-> 
-> 
-> Index: linux-stable/drivers/acpi/acpica/acglobal.h
-> ===================================================================
-> --- linux-stable.orig/drivers/acpi/acpica/acglobal.h
-> +++ linux-stable/drivers/acpi/acpica/acglobal.h
-> @@ -251,7 +251,7 @@ ACPI_EXTERN u8 acpi_gbl_global_lock_pend
->   * interrupt level
->   */
->  ACPI_EXTERN acpi_spinlock acpi_gbl_gpe_lock;	/* For GPE data structs and registers */
-> -ACPI_EXTERN acpi_spinlock acpi_gbl_hardware_lock;	/* For ACPI H/W except GPE registers */
-> +ACPI_EXTERN acpi_raw_spinlock acpi_gbl_hardware_lock;	/* For ACPI H/W except GPE registers */
->  
->  /*****************************************************************************
->   *
-> Index: linux-stable/drivers/acpi/acpica/hwregs.c
-> ===================================================================
-> --- linux-stable.orig/drivers/acpi/acpica/hwregs.c
-> +++ linux-stable/drivers/acpi/acpica/hwregs.c
-> @@ -271,14 +271,14 @@ acpi_status acpi_hw_clear_acpi_status(vo
->  			  ACPI_BITMASK_ALL_FIXED_STATUS,
->  			  ACPI_FORMAT_UINT64(acpi_gbl_xpm1a_status.address)));
->  
-> -	lock_flags = acpi_os_acquire_lock(acpi_gbl_hardware_lock);
-> +	raw_spin_lock_irqsave(acpi_gbl_hardware_lock, lock_flags);
->  
->  	/* Clear the fixed events in PM1 A/B */
->  
->  	status = acpi_hw_register_write(ACPI_REGISTER_PM1_STATUS,
->  					ACPI_BITMASK_ALL_FIXED_STATUS);
->  
-> -	acpi_os_release_lock(acpi_gbl_hardware_lock, lock_flags);
-> +	raw_spin_unlock_irqrestore(acpi_gbl_hardware_lock, lock_flags);
->  
->  	if (ACPI_FAILURE(status))
->  		goto exit;
-> Index: linux-stable/drivers/acpi/acpica/hwxface.c
-> ===================================================================
-> --- linux-stable.orig/drivers/acpi/acpica/hwxface.c
-> +++ linux-stable/drivers/acpi/acpica/hwxface.c
-> @@ -366,7 +366,7 @@ acpi_status acpi_write_bit_register(u32 
->  		return_ACPI_STATUS(AE_BAD_PARAMETER);
->  	}
->  
-> -	lock_flags = acpi_os_acquire_lock(acpi_gbl_hardware_lock);
-> +	raw_spin_lock_irqsave(acpi_gbl_hardware_lock, lock_flags);
->  
->  	/*
->  	 * At this point, we know that the parent register is one of the
-> @@ -427,7 +427,7 @@ acpi_status acpi_write_bit_register(u32 
->  
->  unlock_and_exit:
->  
-> -	acpi_os_release_lock(acpi_gbl_hardware_lock, lock_flags);
-> +	raw_spin_unlock_irqrestore(acpi_gbl_hardware_lock, lock_flags);
->  	return_ACPI_STATUS(status);
->  }
->  
-> Index: linux-stable/drivers/acpi/acpica/utmutex.c
-> ===================================================================
-> --- linux-stable.orig/drivers/acpi/acpica/utmutex.c
-> +++ linux-stable/drivers/acpi/acpica/utmutex.c
-> @@ -88,7 +88,7 @@ acpi_status acpi_ut_mutex_initialize(voi
->  		return_ACPI_STATUS (status);
->  	}
->  
-> -	status = acpi_os_create_lock (&acpi_gbl_hardware_lock);
-> +	status = acpi_os_create_raw_lock (&acpi_gbl_hardware_lock);
->  	if (ACPI_FAILURE (status)) {
->  		return_ACPI_STATUS (status);
->  	}
-> @@ -135,7 +135,7 @@ void acpi_ut_mutex_terminate(void)
->  	/* Delete the spinlocks */
->  
->  	acpi_os_delete_lock(acpi_gbl_gpe_lock);
-> -	acpi_os_delete_lock(acpi_gbl_hardware_lock);
-> +	acpi_os_delete_raw_lock(acpi_gbl_hardware_lock);
->  
->  	/* Delete the reader/writer lock */
->  
-> Index: linux-stable/include/acpi/platform/aclinux.h
-> ===================================================================
-> --- linux-stable.orig/include/acpi/platform/aclinux.h
-> +++ linux-stable/include/acpi/platform/aclinux.h
-> @@ -72,6 +72,7 @@
->  
->  #define acpi_cache_t                        struct kmem_cache
->  #define acpi_spinlock                       spinlock_t *
-> +#define acpi_raw_spinlock                   raw_spinlock_t *
->  #define acpi_cpu_flags                      unsigned long
->  
->  #else /* !__KERNEL__ */
-> @@ -175,6 +176,19 @@ static inline void *acpi_os_acquire_obje
->  	lock ? AE_OK : AE_NO_MEMORY;				\
->  })
->  
-> +#define acpi_os_create_raw_lock(__handle)			\
-> +({								\
-> +	raw_spinlock_t *lock = ACPI_ALLOCATE(sizeof(*lock));	\
-> +								\
-> +	if (lock) {						\
-> +		*(__handle) = lock;				\
-> +		raw_spin_lock_init(*(__handle));		\
-> +	}							\
-> +	lock ? AE_OK : AE_NO_MEMORY;				\
-> +})
-> +
-> +#define acpi_os_delete_raw_lock(__handle)	kfree(__handle)
-> +
->  #endif /* __KERNEL__ */
->  
->  #endif /* __ACLINUX_H__ */
-
+diff --git a/net/ceph/ceph_common.c b/net/ceph/ceph_common.c
+index ee71ea2..1deb29a 100644
+--- a/net/ceph/ceph_common.c
++++ b/net/ceph/ceph_common.c
+@@ -15,6 +15,8 @@
+ #include <linux/slab.h>
+ #include <linux/statfs.h>
+ #include <linux/string.h>
++#include <linux/nsproxy.h>
++#include <net/net_namespace.h>
+ 
+ 
+ #include <linux/ceph/ceph_features.h>
+@@ -292,6 +294,9 @@ ceph_parse_options(char *options, const char *dev_name,
+ 	int err = -ENOMEM;
+ 	substring_t argstr[MAX_OPT_ARGS];
+ 
++	if (current->nsproxy->net_ns != &init_net)
++		return ERR_PTR(-EINVAL);
++
+ 	opt = kzalloc(sizeof(*opt), GFP_KERNEL);
+ 	if (!opt)
+ 		return ERR_PTR(-ENOMEM);
+-- 
+1.7.5.4
 
