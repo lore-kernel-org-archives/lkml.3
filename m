@@ -1,70 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934046Ab3BMT1m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 14:27:42 -0500
-Received: from mail-da0-f48.google.com ([209.85.210.48]:56979 "EHLO
-	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756720Ab3BMT0x (ORCPT
+	id S1759821Ab3BMTaX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 14:30:23 -0500
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:61813 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752619Ab3BMTaV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 14:26:53 -0500
-From: Girish K S <girishks2000@gmail.com>
-To: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, grant.likely@secretlab.ca,
-        t.figa@samsung.com, broonie@opensource.wolfsonmicro.com
-Subject: [PATCH V2 3/5] spi: s3c64xx: Added provision for non-gpio i/o's
-Date: Wed, 13 Feb 2013 11:25:29 -0800
-Message-Id: <1360783531-32654-4-git-send-email-ks.giri@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1360783531-32654-1-git-send-email-ks.giri@samsung.com>
-References: <1360783531-32654-1-git-send-email-ks.giri@samsung.com>
+	Wed, 13 Feb 2013 14:30:21 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAMVG2ssOMMVBcD0kLX=Wo9x2cMfdi+3FYNEP-MiDRK4fs24auw@mail.gmail.com>
+References: <CAMVG2svG21yiM1wkH4_2pen2n+cr2-Zv7TbH3Gj+8MwevZjDbw@mail.gmail.com>
+ <CAErSpo6rGYLQeP8Myu=octSPY_0R+B7ptBLhLawd_A2E3NRsAw@mail.gmail.com>
+ <6086479.ycKj2j8yeP@vostro.rjw.lan> <1843565.7Y1sC8j6FG@vostro.rjw.lan> <CAMVG2ssOMMVBcD0kLX=Wo9x2cMfdi+3FYNEP-MiDRK4fs24auw@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 13 Feb 2013 12:29:59 -0700
+Message-ID: <CAErSpo6ghLnuYTnMevGAH0uQg2O7X4Vr3-PhoKX5QNxJqu40NQ@mail.gmail.com>
+Subject: Re: [3.8-rc7] PCI hotplug wakeup oops
+To: Daniel J Blueman <daniel@quora.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        Yijing Wang <wangyijing@huawei.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the drivers supports only the GPIO based i/o pins.
-But there are Exynos SoC's that use the same controller with
-dedicated i/o pins.
+On Wed, Feb 13, 2013 at 7:32 AM, Daniel J Blueman <daniel@quora.org> wrote:
+> On 12 February 2013 03:49, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> On Monday, February 11, 2013 08:27:49 PM Rafael J. Wysocki wrote:
+>>> On Monday, February 11, 2013 12:01:37 PM Bjorn Helgaas wrote:
+>>> > [+cc Rafael]
+>>> >
+>>> > On Mon, Feb 11, 2013 at 10:08 AM, Daniel J Blueman <daniel@quora.org> wrote:
+>>> > > On 11 February 2013 21:03, Daniel J Blueman <daniel@quora.org> wrote:
+>>> > >> With 3.8-rc7, when unplugging the Thunderbolt ethernet adapter (bus 0a
+>>> > >> [1]) on a Macbook Pro 10,1, we see the PCIe port correctly released:
+>>> > >>
+>>> > >> pciehp 0000:06:03.0:pcie24: Card not present on Slot(3)
+>>> > >> tg3 0000:0a:00.0: tg3_abort_hw timed out, TX_MODE_ENABLE will not
+>>> > >> clear MAC_TX_MODE=ffffffff
+>>> > >> tg3 0000:0a:00.0 eth0: No firmware running
+>>> > >> tg3 0000:0a:00.0 eth0: Link is down
+>>> > >> [sched_delayed] sched: RT throttling activated
+>>> > >> pcieport 0000:00:01.1: System wakeup enabled by ACPI
+>>> > >> pciehp 0000:09:00.0:pcie24: unloading service driver pciehp
+>>> > >> pci_bus 0000:0a: busn_res: [bus 0a] is released
+>>> > >> pci_bus 0000:09: busn_res: [bus 09-0a] is released
+>>> > >>
+>>> > >> After some activity later (eg I can reproduce this by switching to a
+>>> > >> text console and back), often we'll see an oops:
+>>> > >>
+>>> > >> Unable to handle kernel paging request at 0000000000001070
+>>> > >> pci_pme_list_scan+0x3d/0xe0
+>>> > >> Call Trace:
+>>> > >> process_one_work+0x193
+>>> > >> ? process_one_work+0x131
+>>> > >> ? pci_pme_wakeup+0x60
+>>> > >> worker_thread+0x15d
+>>> > >>
+>>> > >> (gdb) list *(pci_pme_list_scan+0x3d)
+>>> > >> 0xffffffff8123f6dd is in pci_pme_list_scan (drivers/pci/pci.c:1556).
+>>> > >> 1551                                    /*
+>>> > >> 1552                                     * If bridge is in low power state, the
+>>> > >> 1553                                     * configuration space of subordinate devices
+>>> > >> 1554                                     * may be not accessible
+>>> > >> 1555                                     */
+>>> > >> 1556                                    if (bridge && bridge->current_state != PCI_D0)
+>>> > >> 1557                                            continue;
+>>> > >> 1558                                    pci_pme_wakeup(pme_dev->dev, NULL);
+>>> > >> 1559                            } else {
+>>> > >> 1560                                    list_del(&pme_dev->list);
+>>> > >>
+>>> > >> Since a panic in vsnprintf happens after the oops (hence I can't catch
+>>> > >> it with EFI pstore), it is almost certainly significant heap
+>>> > >> corruption; this would explain why pme_dev became null (the load has
+>>> > >> been ordered ahead).
+>>> > >>
+>>> > >> I'll see what I can find out with memory poisoning and list debugging.
+>>> > >
+>>> > > Enabling a bunch of related debugging, we see pme_dev is non-null and:
+>>> > >
+>>> > > BUG: Unable to handle NULL pointer dereference at
+>>> > > pci_bus_read_config_word+0x6c
+>>> > > PGD 26314c067 PUD 2633f9067 PMD 0
+>>> > > Oops: 0000 [#1] SMP
+>>> > > pci_check_pme_status+0x4f
+>>> > > pci_pme_wakeup+0x21
+>>> > > pci_pme_list_scan+0xd5
+>>> > > process_one_work+0x1ca
+>>> > > ? process_one_work+0x160
+>>> > > ? pci_pme_wakeup+0x60
+>>> > > worker_thread+0x14e
+>>> > >
+>>> > > Anyway, it looks like the device being unplugged wasn't removed from
+>>> > > pci_pme_list as pci_pme_active(dev, false) wasn't called.
+>>> > >
+>>> > > From a quick review, I wasn't able to find the right place in the
+>>> > > call-chain which I only see releases the child busses and PCIe port
+>>> > > drivers. Anyone?
+>>> >
+>>> > It looks like drivers *add* devices to pci_pme_list when they use
+>>> > pci_enable_wake() or pci_wake_from_d3().  But many drivers never
+>>> > remove their devices, and I don't see any place where the core does it
+>>> > either.  My guess is we need to remove it in pci_stop_dev() (we
+>>> > already do pcie_aspm_exit_link_state() there) or somewhere similar.
+>>>
+>>> Yes, we should call pci_pme_active(dev, false) somewhere in there I think.
+>>> It's fine to call that even if PME was not "active" before.
+>>
+>> Daniel, I wonder if the patch below helps?
+>>
+>> Rafael
+>>
+>>
+>> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>> ---
+>>  drivers/pci/remove.c |    2 ++
+>>  1 file changed, 2 insertions(+)
+>>
+>> Index: test/drivers/pci/remove.c
+>> ===================================================================
+>> --- test.orig/drivers/pci/remove.c
+>> +++ test/drivers/pci/remove.c
+>> @@ -19,6 +19,8 @@ static void pci_free_resources(struct pc
+>>
+>>  static void pci_stop_dev(struct pci_dev *dev)
+>>  {
+>> +       pci_pme_active(dev, false);
+>> +
+>>         if (dev->is_added) {
+>>                 pci_proc_detach_device(dev);
+>>                 pci_remove_sysfs_dev_files(dev);
+>
+> Indeed, the oops would prevent hitting the lockdep warning, which is a
+> secondary matter.
+>
+> As it stands, this fix prevents the fatal oops, so IMHO is urgent
+> material for 3.8-final. I can't prove that is_added will always be
+> true, so let's stick with your patch.
+>
+> Tested-by: Daniel J Blueman <daniel@quora.org>
 
-This patch  provides provision to support gpio/dedicated pins.
-The decision is made by parsing the "gpios" property in the spi
-node.
+I wrote a changelog and applied this to my for-linus branch.  Please
+take a look and confirm that it makes sense before I ask Linus to pull
+it.
 
-Signed-off-by: Girish K S <ks.giri@samsung.com>
----
-changes in v2:
-		Removed the gpio quirk. Parse the "gpios" property
-		to decide whether  gpio / dedicated i/o lines should
-		be used.
-
- drivers/spi/spi-s3c64xx.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
-
-diff --git a/drivers/spi/spi-s3c64xx.c b/drivers/spi/spi-s3c64xx.c
-index 45bad5d..a8fe876 100644
---- a/drivers/spi/spi-s3c64xx.c
-+++ b/drivers/spi/spi-s3c64xx.c
-@@ -1157,6 +1157,9 @@ static int s3c64xx_spi_parse_dt_gpio(struct s3c64xx_spi_driver_data *sdd)
- 	struct device *dev = &sdd->pdev->dev;
- 	int idx, gpio, ret;
- 
-+	if (!of_find_property(dev->of_node, "gpios", NULL))
-+		return 0;
-+
- 	/* find gpios for mosi, miso and clock lines */
- 	for (idx = 0; idx < 3; idx++) {
- 		gpio = of_get_gpio(dev->of_node, idx);
-@@ -1183,6 +1186,11 @@ free_gpio:
- static void s3c64xx_spi_dt_gpio_free(struct s3c64xx_spi_driver_data *sdd)
- {
- 	unsigned int idx;
-+	struct device *dev = &sdd->pdev->dev;
-+
-+	if (!of_find_property(dev->of_node, "gpios", NULL))
-+		return;
-+
- 	for (idx = 0; idx < 3; idx++)
- 		gpio_free(sdd->gpios[idx]);
- }
--- 
-1.7.10.4
-
+http://git.kernel.org/?p=linux/kernel/git/helgaas/pci.git;a=commitdiff;h=249bfb83cf8ba658955f0245ac3981d941f746ee
