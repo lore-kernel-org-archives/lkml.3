@@ -1,72 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933885Ab3BMLf3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 06:35:29 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53918 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933818Ab3BMLf2 (ORCPT
+	id S933873Ab3BMLj7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 06:39:59 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:55630 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754611Ab3BMLj4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 06:35:28 -0500
-Date: Wed, 13 Feb 2013 11:35:25 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        Liam Girdwood <lrg@ti.com>, Chris Ball <cjb@laptop.org>,
-        Kevin Liu <keyuan.liu@gmail.com>
-Subject: Re: [PATCH 3/3 RESEND] mmc: sdhci: check voltage range only on
- regulators aware of voltage value
-Message-ID: <20130213113525.GB5062@opensource.wolfsonmicro.com>
-References: <87bobqrcb4.fsf@octavius.laptop.org>
- <1360656096-1671-1-git-send-email-m.szyprowski@samsung.com>
- <Pine.LNX.4.64.1302122309470.14434@axis700.grange>
- <511B41B8.3060506@samsung.com>
- <Pine.LNX.4.64.1302130844530.18535@axis700.grange>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xgyAXRrhYN0wYx8y"
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1302130844530.18535@axis700.grange>
-X-Cookie: You will get what you deserve.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 13 Feb 2013 06:39:56 -0500
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org, Andrea Arcangeli <aarcange@redhat.com>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: [PATCH] mm: Limit pgd range freeing to mm->task_size
+Date: Wed, 13 Feb 2013 11:39:29 +0000
+Message-Id: <1360755569-27282-1-git-send-email-catalin.marinas@arm.com>
+X-Mailer: git-send-email 1.7.12.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+ARM processors with LPAE enabled use 3 levels of page tables, with an
+entry in the top level (pgd) covering 1GB of virtual space. Because of
+the branch relocation limitations on ARM, the loadable modules are
+mapped 16MB below PAGE_OFFSET, making the corresponding 1GB pgd shared
+between kernel modules and user space.
 
---xgyAXRrhYN0wYx8y
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Since free_pgtables() is called with ceiling == 0, free_pgd_range() (and
+subsequently called functions) also frees the page table
+shared between user space and kernel modules (which is normally handled
+by the ARM-specific pgd_free() function).
 
-On Wed, Feb 13, 2013 at 08:45:56AM +0100, Guennadi Liakhovetski wrote:
-> On Wed, 13 Feb 2013, Marek Szyprowski wrote:
+This patch changes the ceiling argument to mm->task_size for the
+free_pgtables() and free_pgd_range() function calls. We cannot use
+TASK_SIZE since this macro may not be a run-time constant on 64-bit
+systems supporting compat applications.
 
-> > BTW, mmc_regulator_get_ocrmask() won't work with continuous range regulators.
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+---
 
-> This seems like a problem, that has to be fixed...
+Hi Andrew,
 
-Indeed, what's the issue?
+I posted this patch a couple of times in the past. The latest
+incarnation (using mm->task_size instead of TASK_SIZE) is a result of
+discussions I had with Andrea and benh at the last KS.
 
---xgyAXRrhYN0wYx8y
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Do you have any comments on it? It fixes a problem on ARM (32-bit) with
+LPAE.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Thanks.
 
-iQIcBAEBAgAGBQJRG3p2AAoJELSic+t+oim90HUP/3JVw/VgCaEP0EOPS2JeLDZu
-mYKG9DA5W3t7kVCScEZiDl3OepF3Q5NAyAwXxbE7dXZqzHD+PVJQV4T262IwMMIC
-5/leGCmU932LKBUSlmOsXaasiJdaMKBEsr81z/sfo/a99wnhSX776JcmwmF9t1F2
-BKHIoUJk/OH5S8gBS9tFQOTNIsom0LVElco5TbQt5bqFM89+MXb3ksGS3Cz08nqh
-S+ZuDXv84gaw2cRFbUJgAEVG8Acn5zc+nJNJ1yCjglnlO5m44AZ/sNTgmZBdjUZ8
-JwNxwpCPGV7Y9ALELOK75ScMZkFh4Wsl0CLGecxC6h2UfIKFFhpw3xX5xszAC/TM
-srKTX3EmdJ1SLbb+nh+RrOzyiYscVlSaZqiqu96wbUOSmAtH3ytQFXEmP84aEtf4
-hvx/LMjBPpiXsQvwOHAL8WTUgVkrdyaqcDrmAYhmfq4E04nV2w+cnMzKrZK0h5wO
-gURVxq/f5QcWPaX0fZJzhi9f0m5+lOt7/qCfKd/+iYR5XL/B8TZgzr6MyvW2+5y1
-HTYEUE+AUdqMo1ZDqUu5CmM9y5GhfI/oPYUMflFfz8oGl00yqqs0y735tYL5vTOt
-EpTT9KG75/DppaSWYjliFPTrWNHjHz50Vdp71cAEWcsJprY+PWE6TzizB3T0HD8D
-AW3JqqGQee6cSTSc1laL
-=K1Hr
------END PGP SIGNATURE-----
+ fs/exec.c | 4 ++--
+ mm/mmap.c | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
---xgyAXRrhYN0wYx8y--
+diff --git a/fs/exec.c b/fs/exec.c
+index 20df02c..04c1534 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -613,7 +613,7 @@ static int shift_arg_pages(struct vm_area_struct *vma, unsigned long shift)
+ 		 * when the old and new regions overlap clear from new_end.
+ 		 */
+ 		free_pgd_range(&tlb, new_end, old_end, new_end,
+-			vma->vm_next ? vma->vm_next->vm_start : 0);
++			vma->vm_next ? vma->vm_next->vm_start : mm->task_size);
+ 	} else {
+ 		/*
+ 		 * otherwise, clean from old_start; this is done to not touch
+@@ -622,7 +622,7 @@ static int shift_arg_pages(struct vm_area_struct *vma, unsigned long shift)
+ 		 * for the others its just a little faster.
+ 		 */
+ 		free_pgd_range(&tlb, old_start, old_end, new_end,
+-			vma->vm_next ? vma->vm_next->vm_start : 0);
++			vma->vm_next ? vma->vm_next->vm_start : mm->task_size);
+ 	}
+ 	tlb_finish_mmu(&tlb, new_end, old_end);
+ 
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 35730ee..e15d294 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -2262,7 +2262,7 @@ static void unmap_region(struct mm_struct *mm,
+ 	update_hiwater_rss(mm);
+ 	unmap_vmas(&tlb, vma, start, end);
+ 	free_pgtables(&tlb, vma, prev ? prev->vm_end : FIRST_USER_ADDRESS,
+-				 next ? next->vm_start : 0);
++				 next ? next->vm_start : mm->task_size);
+ 	tlb_finish_mmu(&tlb, start, end);
+ }
+ 
+@@ -2640,7 +2640,7 @@ void exit_mmap(struct mm_struct *mm)
+ 	/* Use -1 here to ensure all VMAs in the mm are unmapped */
+ 	unmap_vmas(&tlb, vma, 0, -1);
+ 
+-	free_pgtables(&tlb, vma, FIRST_USER_ADDRESS, 0);
++	free_pgtables(&tlb, vma, FIRST_USER_ADDRESS, mm->task_size);
+ 	tlb_finish_mmu(&tlb, 0, -1);
+ 
+ 	/*
