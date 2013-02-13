@@ -1,673 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933830Ab3BMTSG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 14:18:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3162 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932817Ab3BMTSD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 14:18:03 -0500
-Date: Wed, 13 Feb 2013 17:17:53 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: Prabhakar lad <prabhakar.csengg@gmail.com>
-Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Martin Bugge <marbugge@cisco.com>, Chaithrika U S <chaithrika@ti.com>
-Subject: Re: [PATCH v3] media: ths7353: add support for ths7353 video
- amplifier
-Message-ID: <20130213171753.4f394b71@redhat.com>
-In-Reply-To: <1360215628-25303-1-git-send-email-prabhakar.lad@ti.com>
-References: <1360215628-25303-1-git-send-email-prabhakar.lad@ti.com>
+	id S933901Ab3BMTWE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 14:22:04 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:43347 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757167Ab3BMTWB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 14:22:01 -0500
+Date: Wed, 13 Feb 2013 14:21:55 -0500 (EST)
+Message-Id: <20130213.142155.203725388752600954.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain; charset=utf-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-Em Thu,  7 Feb 2013 11:10:28 +0530
-Prabhakar lad <prabhakar.csengg@gmail.com> escreveu:
-
-> From: Lad, Prabhakar <prabhakar.lad@ti.com>
-> 
-> The patch adds support for THS7353 video amplifier.
-> The the THS7353 amplifier is very much similar to the
-> existing THS7303 video amplifier driver.
-> This patch appropriately makes changes to the existing
-> ths7303 driver and adds support for the THS7353.
-> This patch also adds V4L2_IDENT_THS7353 for the THS7353
-> chip and appropriate changes to Kconfig file for building.
-> 
-> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-> Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-> Signed-off-by: Martin Bugge <marbugge@cisco.com>
-> Cc: Chaithrika U S <chaithrika@ti.com>
-> ---
->  Changes for v3:
->  1: Fixed review comments pointed out by Hans.
-> 
->  Changes for v2:
->  1: Merged the driver in existing ths7303 driver.
->  2: Merged the patch which adds the chip indent in same patch.
-> 
->  drivers/media/i2c/Kconfig       |    6 +-
->  drivers/media/i2c/ths7303.c     |  353 ++++++++++++++++++++++++++++++++-------
->  include/media/ths7303.h         |   42 +++++
->  include/media/v4l2-chip-ident.h |    3 +
->  4 files changed, 343 insertions(+), 61 deletions(-)
->  create mode 100644 include/media/ths7303.h
-> 
-> diff --git a/drivers/media/i2c/Kconfig b/drivers/media/i2c/Kconfig
-> index ecdf7e3..bd08541 100644
-> --- a/drivers/media/i2c/Kconfig
-> +++ b/drivers/media/i2c/Kconfig
-> @@ -576,10 +576,10 @@ config VIDEO_UPD64083
->  comment "Miscelaneous helper chips"
->  
->  config VIDEO_THS7303
-> -	tristate "THS7303 Video Amplifier"
-> -	depends on I2C
-> +	tristate "THS7303/53 Video Amplifier"
-> +	depends on VIDEO_V4L2 && I2C
->  	help
-> -	  Support for TI THS7303 video amplifier
-> +	  Support for TI THS7303/53 video amplifier
->  
->  	  To compile this driver as a module, choose M here: the
->  	  module will be called ths7303.
-> diff --git a/drivers/media/i2c/ths7303.c b/drivers/media/i2c/ths7303.c
-> index e747524..7300abc 100644
-> --- a/drivers/media/i2c/ths7303.c
-> +++ b/drivers/media/i2c/ths7303.c
-> @@ -1,7 +1,15 @@
->  /*
-> - * ths7303- THS7303 Video Amplifier driver
-> + * ths7303/53- THS7303/53 Video Amplifier driver
->   *
->   * Copyright (C) 2009 Texas Instruments Incorporated - http://www.ti.com/
-> + * Copyright 2013 Cisco Systems, Inc. and/or its affiliates.
-> + *
-> + * Author: Chaithrika U S <chaithrika@ti.com>
-> + *
-> + * Contributors:
-> + *     Lad, Prabhakar <prabhakar.lad@ti.com>
-> + *     Hans Verkuil <hans.verkuil@cisco.com>
-> + *     Martin Bugge <marbugge@cisco.com>
->   *
->   * This program is free software; you can redistribute it and/or
->   * modify it under the terms of the GNU General Public License as
-> @@ -13,25 +21,27 @@
->   * GNU General Public License for more details.
->   */
->  
-> -#include <linux/kernel.h>
-> -#include <linux/init.h>
-> -#include <linux/ctype.h>
-> -#include <linux/slab.h>
->  #include <linux/i2c.h>
-> -#include <linux/device.h>
-> -#include <linux/delay.h>
->  #include <linux/module.h>
-> -#include <linux/uaccess.h>
-> -#include <linux/videodev2.h>
-> +#include <linux/slab.h>
->  
-> -#include <media/v4l2-device.h>
-> -#include <media/v4l2-subdev.h>
-> +#include <media/ths7303.h>
->  #include <media/v4l2-chip-ident.h>
-> +#include <media/v4l2-device.h>
->  
->  #define THS7303_CHANNEL_1	1
->  #define THS7303_CHANNEL_2	2
->  #define THS7303_CHANNEL_3	3
->  
-> +struct ths7303_state {
-> +	struct v4l2_subdev		sd;
-> +	struct ths7303_platform_data	pdata;
-> +	struct v4l2_bt_timings		bt;
-> +	int std_id;
-> +	int stream_on;
-> +	int driver_data;
-> +};
-> +
->  enum ths7303_filter_mode {
->  	THS7303_FILTER_MODE_480I_576I,
->  	THS7303_FILTER_MODE_480P_576P,
-> @@ -48,64 +58,84 @@ static int debug;
->  module_param(debug, int, 0644);
->  MODULE_PARM_DESC(debug, "Debug level 0-1");
->  
-> +static inline struct ths7303_state *to_state(struct v4l2_subdev *sd)
-> +{
-> +	return container_of(sd, struct ths7303_state, sd);
-> +}
-> +
-> +static int ths7303_read(struct v4l2_subdev *sd, u8 reg)
-> +{
-> +	struct i2c_client *client = v4l2_get_subdevdata(sd);
-> +
-> +	return i2c_smbus_read_byte_data(client, reg);
-> +}
-> +
-> +static int ths7303_write(struct v4l2_subdev *sd, u8 reg, u8 val)
-> +{
-> +	struct i2c_client *client = v4l2_get_subdevdata(sd);
-> +	int ret;
-> +	int i;
-> +
-> +	for (i = 0; i < 3; i++) {
-> +		ret = i2c_smbus_write_byte_data(client, reg, val);
-> +		if (ret == 0)
-> +			return 0;
-> +	}
-> +	return ret;
-> +}
-> +
->  /* following function is used to set ths7303 */
->  int ths7303_setval(struct v4l2_subdev *sd, enum ths7303_filter_mode mode)
->  {
-> -	u8 input_bias_chroma = 3;
-> -	u8 input_bias_luma = 3;
-> -	int disable = 0;
-> -	int err = 0;
-> -	u8 val = 0;
-> -	u8 temp;
-> -
->  	struct i2c_client *client = v4l2_get_subdevdata(sd);
-> +	struct ths7303_state *state = to_state(sd);
-> +	struct ths7303_platform_data *pdata = &state->pdata;
-> +	u8 val, sel = 0;
-> +	int err, disable = 0;
->  
->  	if (!client)
->  		return -EINVAL;
->  
->  	switch (mode) {
->  	case THS7303_FILTER_MODE_1080P:
-> -		val = (3 << 6);
-> -		val |= (3 << 3);
-> +		sel = 0x3;	/*1080p and SXGA/UXGA */
->  		break;
->  	case THS7303_FILTER_MODE_720P_1080I:
-> -		val = (2 << 6);
-> -		val |= (2 << 3);
-> +		sel = 0x2;	/*720p, 1080i and SVGA/XGA */
->  		break;
->  	case THS7303_FILTER_MODE_480P_576P:
-> -		val = (1 << 6);
-> -		val |= (1 << 3);
-> +		sel = 0x1;	/* EDTV 480p/576p and VGA */
->  		break;
->  	case THS7303_FILTER_MODE_480I_576I:
-> +		sel = 0x0;	/* SDTV, S-Video, 480i/576i */
->  		break;
-> -	case THS7303_FILTER_MODE_DISABLE:
-> -		pr_info("mode disabled\n");
-> -		/* disable all channels */
-> -		disable = 1;
->  	default:
->  		/* disable all channels */
->  		disable = 1;
->  	}
-> -	/* Setup channel 2 - Luma - Green */
-> -	temp = val;
-> +
-> +	val = (sel << 6) | (sel << 3);
->  	if (!disable)
-> -		val |= input_bias_luma;
-> -	err = i2c_smbus_write_byte_data(client, THS7303_CHANNEL_2, val);
-> +		val |= (pdata->ch_1 & 0x27);
-> +	err = ths7303_write(sd, 0x01, val);
-
-Hmm... Why did you replaced HS7303_CHANNEL_x by 0x01 here?
-
->  	if (err)
->  		goto out;
->  
-> -	/* setup two chroma channels */
-> +	val = (sel << 6) | (sel << 3);
->  	if (!disable)
-> -		temp |= input_bias_chroma;
-> -
-> -	err = i2c_smbus_write_byte_data(client, THS7303_CHANNEL_1, temp);
-> +		val |= (pdata->ch_2 & 0x27);
-> +	err = ths7303_write(sd, 0x02, val);
-
-Same comment here.
-
->  	if (err)
->  		goto out;
->  
-> -	err = i2c_smbus_write_byte_data(client, THS7303_CHANNEL_3, temp);
-> +	val = (sel << 6) | (sel << 3);
-> +	if (!disable)
-> +		val |= (pdata->ch_3 & 0x27);
-> +	err = ths7303_write(sd, 0x03, val);
-
-Same comment here.
-
-Basically, please use the macro values on all the above to make it coherent.
-
->  	if (err)
->  		goto out;
-> -	return err;
-> +
-> +	return 0;
->  out:
->  	pr_info("write byte data failed\n");
->  	return err;
-> @@ -113,49 +143,213 @@ out:
->  
->  static int ths7303_s_std_output(struct v4l2_subdev *sd, v4l2_std_id norm)
->  {
-> -	if (norm & (V4L2_STD_ALL & ~V4L2_STD_SECAM))
-> +	struct ths7303_state *state = to_state(sd);
-> +
-> +	if (norm & (V4L2_STD_ALL & ~V4L2_STD_SECAM)) {
-> +		state->std_id = 1;
-> +		state->bt.pixelclock = 0;
->  		return ths7303_setval(sd, THS7303_FILTER_MODE_480I_576I);
-> -	else
-> -		return ths7303_setval(sd, THS7303_FILTER_MODE_DISABLE);
-> +	}
-> +
-> +	return ths7303_setval(sd, THS7303_FILTER_MODE_DISABLE);
->  }
->  
-> -/* for setting filter for HD output */
-> -static int ths7303_s_dv_timings(struct v4l2_subdev *sd,
-> -			       struct v4l2_dv_timings *dv_timings)
-> +static int ths7303_config(struct v4l2_subdev *sd)
->  {
-> -	u32 height = dv_timings->bt.height;
-> -	int interlaced = dv_timings->bt.interlaced;
-> -	int res = 0;
-> +	struct ths7303_state *state = to_state(sd);
-> +	int res;
-> +
-> +	if (!state->stream_on) {
-> +		ths7303_write(sd, THS7303_CHANNEL_1,
-> +			      (ths7303_read(sd, THS7303_CHANNEL_1) & 0xf8) |
-> +			      0x00);
-> +		ths7303_write(sd, THS7303_CHANNEL_2,
-> +			      (ths7303_read(sd, THS7303_CHANNEL_2) & 0xf8) |
-> +			      0x00);
-> +		ths7303_write(sd, THS7303_CHANNEL_3,
-> +			      (ths7303_read(sd, THS7303_CHANNEL_3) & 0xf8) |
-> +			      0x00);
-> +		return 0;
-> +	}
->  
-> -	if (height == 1080 && !interlaced)
-> +	if (state->bt.pixelclock > 120000000)
->  		res = ths7303_setval(sd, THS7303_FILTER_MODE_1080P);
-> -	else if ((height == 720 && !interlaced) ||
-> -			(height == 1080 && interlaced))
-> +	else if (state->bt.pixelclock > 70000000)
->  		res = ths7303_setval(sd, THS7303_FILTER_MODE_720P_1080I);
-> -	else if ((height == 480 || height == 576) && !interlaced)
-> +	else if (state->bt.pixelclock > 20000000)
->  		res = ths7303_setval(sd, THS7303_FILTER_MODE_480P_576P);
-> +	else if (state->std_id)
-> +		res = ths7303_setval(sd, THS7303_FILTER_MODE_480I_576I);
-
-The above replacement is not obvious. Hard to say if it won't cause
-regressions on exisiting devices. Please split those non-obvious changes
-into separate patches and properly explain why it is needed and what's
-the impact on the existing support.
-
->  	else
->  		/* disable all channels */
->  		res = ths7303_setval(sd, THS7303_FILTER_MODE_DISABLE);
->  
->  	return res;
-> +
-> +}
-> +
-> +static int ths7303_s_stream(struct v4l2_subdev *sd, int enable)
-> +{
-> +	struct ths7303_state *state = to_state(sd);
-> +
-> +	state->stream_on = enable;
-> +
-> +	return ths7303_config(sd);
-> +}
-> +
-> +/* for setting filter for HD output */
-> +static int ths7303_s_dv_timings(struct v4l2_subdev *sd,
-> +			       struct v4l2_dv_timings *dv_timings)
-> +{
-> +	struct ths7303_state *state = to_state(sd);
-> +
-> +	if (!dv_timings || dv_timings->type != V4L2_DV_BT_656_1120)
-> +		return -EINVAL;
-> +
-> +	state->bt = dv_timings->bt;
-> +	state->std_id = 0;
-> +
-> +	return ths7303_config(sd);
->  }
->  
->  static int ths7303_g_chip_ident(struct v4l2_subdev *sd,
->  				struct v4l2_dbg_chip_ident *chip)
->  {
->  	struct i2c_client *client = v4l2_get_subdevdata(sd);
-> +	u32 indent = V4L2_IDENT_THS7303;
-> +	struct ths7303_state *state = to_state(sd);
->  
-> -	return v4l2_chip_ident_i2c_client(client, chip, V4L2_IDENT_THS7303, 0);
-> +	if (state->driver_data)
-> +		indent = V4L2_IDENT_THS7353;
-
-Instead of doing that, you should instead do:
-
-	indent = state->driver_data;
-
-and initialize the table below as:
-
-static const struct i2c_device_id ths7303_id[] = {
-        {"ths7303", V4L2_IDENT_THS7303},
-        {"ths7353", V4L2_IDENT_THS7353},
-        {},
-};
-
-That makes the code cleaner to read, as this is the way most drivers do.
-
-That would also help to make it easier to support other variants of this
-chip family if later needed.
-
-> +
-> +	return v4l2_chip_ident_i2c_client(client, chip, indent, 0);
->  }
->  
->  static const struct v4l2_subdev_video_ops ths7303_video_ops = {
-> +	.s_stream	= ths7303_s_stream,
->  	.s_std_output	= ths7303_s_std_output,
-> -	.s_dv_timings    = ths7303_s_dv_timings,
-> +	.s_dv_timings   = ths7303_s_dv_timings,
-> +};
-> +
-> +#ifdef CONFIG_VIDEO_ADV_DEBUG
-> +
-> +static int ths7303_g_register(struct v4l2_subdev *sd,
-> +			      struct v4l2_dbg_register *reg)
-> +{
-> +	struct i2c_client *client = v4l2_get_subdevdata(sd);
-> +
-> +	if (!v4l2_chip_match_i2c_client(client, &reg->match))
-> +		return -EINVAL;
-> +	if (!capable(CAP_SYS_ADMIN))
-> +		return -EPERM;
-> +
-> +	reg->size = 1;
-> +	reg->val = ths7303_read(sd, reg->reg);
-> +	return 0;
-> +}
-> +
-> +static int ths7303_s_register(struct v4l2_subdev *sd,
-> +			      struct v4l2_dbg_register *reg)
-> +{
-> +	struct i2c_client *client = v4l2_get_subdevdata(sd);
-> +
-> +	if (!v4l2_chip_match_i2c_client(client, &reg->match))
-> +		return -EINVAL;
-> +	if (!capable(CAP_SYS_ADMIN))
-> +		return -EPERM;
-> +
-> +	ths7303_write(sd, reg->reg, reg->val);
-> +	return 0;
-> +}
-> +#endif
-> +
-> +static const char * const stc_lpf_sel_txt[4] = {
-> +	"500-kHz Filter",
-> +	"2.5-MHz Filter",
-> +	"5-MHz Filter",
-> +	"5-MHz Filter",
-> +};
-> +
-> +static const char * const in_mux_sel_txt[2] = {
-> +	"Input A Select",
-> +	"Input B Select",
-> +};
-> +
-> +static const char * const lpf_freq_sel_txt[4] = {
-> +	"9-MHz LPF",
-> +	"16-MHz LPF",
-> +	"35-MHz LPF",
-> +	"Bypass LPF",
->  };
->  
-> +static const char * const in_bias_sel_dis_cont_txt[8] = {
-> +	"Disable Channel",
-> +	"Mute Function - No Output",
-> +	"DC Bias Select",
-> +	"DC Bias + 250 mV Offset Select",
-> +	"AC Bias Select",
-> +	"Sync Tip Clamp with low bias",
-> +	"Sync Tip Clamp with mid bias",
-> +	"Sync Tip Clamp with high bias",
-> +};
-> +
-> +static void ths7303_log_channel_status(struct v4l2_subdev *sd, u8 reg)
-> +{
-> +	u8 val = ths7303_read(sd, reg);
-> +
-> +	if ((val & 0x7) == 0) {
-> +		v4l2_info(sd, "Channel %d Off\n", reg);
-> +		return;
-> +	}
-> +
-> +	v4l2_info(sd, "Channel %d On\n", reg);
-> +	v4l2_info(sd, "  value 0x%x\n", val);
-> +	v4l2_info(sd, "  %s\n", stc_lpf_sel_txt[(val >> 6) & 0x3]);
-> +	v4l2_info(sd, "  %s\n", in_mux_sel_txt[(val >> 5) & 0x1]);
-> +	v4l2_info(sd, "  %s\n", lpf_freq_sel_txt[(val >> 3) & 0x3]);
-> +	v4l2_info(sd, "  %s\n", in_bias_sel_dis_cont_txt[(val >> 0) & 0x7]);
-> +}
-> +
-> +static int ths7303_log_status(struct v4l2_subdev *sd)
-> +{
-> +	struct ths7303_state *state = to_state(sd);
-> +
-> +	v4l2_info(sd, "stream %s\n", state->stream_on ? "On" : "Off");
-> +
-> +	if (state->bt.pixelclock) {
-> +		struct v4l2_bt_timings *bt = bt = &state->bt;
-> +		u32 frame_width, frame_height;
-> +
-> +		frame_width = bt->width + bt->hfrontporch +
-> +			      bt->hsync + bt->hbackporch;
-> +		frame_height = bt->height + bt->vfrontporch +
-> +			       bt->vsync + bt->vbackporch;
-> +		v4l2_info(sd,
-> +			  "timings: %dx%d%s%d (%dx%d). Pix freq. = %d Hz. Polarities = 0x%x\n",
-> +			  bt->width, bt->height, bt->interlaced ? "i" : "p",
-> +			  (frame_height * frame_width) > 0 ?
-> +			  (int)bt->pixelclock /
-> +			  (frame_height * frame_width) : 0,
-> +			  frame_width, frame_height,
-> +			  (int)bt->pixelclock, bt->polarities);
-> +	} else {
-> +		v4l2_info(sd, "no timings set\n");
-> +	}
-> +
-> +	ths7303_log_channel_status(sd, THS7303_CHANNEL_1);
-> +	ths7303_log_channel_status(sd, THS7303_CHANNEL_2);
-> +	ths7303_log_channel_status(sd, THS7303_CHANNEL_3);
-> +
-> +	return 0;
-> +}
-> +
->  static const struct v4l2_subdev_core_ops ths7303_core_ops = {
->  	.g_chip_ident = ths7303_g_chip_ident,
-> +	.log_status = ths7303_log_status,
-> +#ifdef CONFIG_VIDEO_ADV_DEBUG
-> +	.g_register = ths7303_g_register,
-> +	.s_register = ths7303_s_register,
-> +#endif
->  };
->  
->  static const struct v4l2_subdev_ops ths7303_ops = {
-> @@ -163,11 +357,38 @@ static const struct v4l2_subdev_ops ths7303_ops = {
->  	.video 	= &ths7303_video_ops,
->  };
->  
-> +static int ths7303_setup(struct v4l2_subdev *sd)
-> +{
-> +	struct ths7303_state *state = to_state(sd);
-> +	struct ths7303_platform_data *pdata = &state->pdata;
-> +	int ret;
-> +	u8 mask;
-> +
-> +	state->stream_on = pdata->init_enable;
-> +
-> +	mask = state->stream_on ? 0xff : 0xf8;
-> +
-> +	ret = ths7303_write(sd, 0x01, pdata->ch_1 & mask);
-> +	if (ret)
-> +		return ret;
-> +
-> +	ret = ths7303_write(sd, 0x02, pdata->ch_2 & mask);
-> +	if (ret)
-> +		return ret;
-> +
-> +	ret = ths7303_write(sd, 0x03, pdata->ch_3 & mask);
-> +	if (ret)
-> +		return ret;
-
-Again, please use the defined macros for the channels.
-
-> +
-> +	return 0;
-> +}
-> +
->  static int ths7303_probe(struct i2c_client *client,
->  			const struct i2c_device_id *id)
->  {
-> +	struct ths7303_platform_data *pdata = client->dev.platform_data;
-> +	struct ths7303_state *state;
->  	struct v4l2_subdev *sd;
-> -	v4l2_std_id std_id = V4L2_STD_NTSC;
->  
->  	if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE_DATA))
->  		return -ENODEV;
-> @@ -175,13 +396,28 @@ static int ths7303_probe(struct i2c_client *client,
->  	v4l_info(client, "chip found @ 0x%x (%s)\n",
->  			client->addr << 1, client->adapter->name);
->  
-> -	sd = devm_kzalloc(&client->dev, sizeof(struct v4l2_subdev), GFP_KERNEL);
-> -	if (sd == NULL)
-> +	state = devm_kzalloc(&client->dev, sizeof(struct ths7303_state),
-> +			     GFP_KERNEL);
-> +	if (!state)
->  		return -ENOMEM;
->  
-> +	if (!pdata)
-> +		v4l_warn(client, "No platform data, using default data!\n");
-> +	else
-> +		state->pdata = *pdata;
-> +
-> +	sd = &state->sd;
->  	v4l2_i2c_subdev_init(sd, client, &ths7303_ops);
->  
-> -	return ths7303_s_std_output(sd, std_id);
-> +	/* store the driver data to differntiate the chip */
-> +	state->driver_data = (int)id->driver_data;
-> +
-> +	if (ths7303_setup(sd) < 0) {
-> +		v4l_err(client, "init failed\n");
-> +		return -EIO;
-> +	}
-> +
-> +	return 0;
->  }
->  
->  static int ths7303_remove(struct i2c_client *client)
-> @@ -195,6 +431,7 @@ static int ths7303_remove(struct i2c_client *client)
->  
->  static const struct i2c_device_id ths7303_id[] = {
->  	{"ths7303", 0},
-> +	{"ths7353", 1},
->  	{},
->  };
->  
-> @@ -203,7 +440,7 @@ MODULE_DEVICE_TABLE(i2c, ths7303_id);
->  static struct i2c_driver ths7303_driver = {
->  	.driver = {
->  		.owner	= THIS_MODULE,
-> -		.name	= "ths7303",
-> +		.name	= "ths73x3",
->  	},
->  	.probe		= ths7303_probe,
->  	.remove		= ths7303_remove,
-> diff --git a/include/media/ths7303.h b/include/media/ths7303.h
-> new file mode 100644
-> index 0000000..fa58ae0
-> --- /dev/null
-> +++ b/include/media/ths7303.h
-> @@ -0,0 +1,42 @@
-> +/*
-> + * Copyright (C) 2013 Texas Instruments Inc
-> + *
-> + * Copyright 2013 Cisco Systems, Inc. and/or its affiliates.
-> + *
-> + * Contributors:
-> + *     Lad, Prabhakar <prabhakar.lad@ti.com>
-> + *     Hans Verkuil <hans.verkuil@cisco.com>
-> + *     Martin Bugge <marbugge@cisco.com>
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License as
-> + * published by the Free Software Foundation version 2.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
-> + */
-> +
-> +#ifndef THS7353_H
-> +#define THS7353_H
-> +
-> +/**
-> + * struct ths7303_platform_data - Platform dependent data
-> + * @ch_1: Bias value for channel one.
-> + * @ch_2: Bias value for channel two.
-> + * @ch_3: Bias value for channel three.
-> + * @init_enable: initalize on init.
-> + */
-> +struct ths7303_platform_data {
-> +	u8 ch_1;
-> +	u8 ch_2;
-> +	u8 ch_3;
-> +	u8 init_enable;
-> +};
-> +
-> +#endif
-> diff --git a/include/media/v4l2-chip-ident.h b/include/media/v4l2-chip-ident.h
-> index 4ee125b..f9f687e 100644
-> --- a/include/media/v4l2-chip-ident.h
-> +++ b/include/media/v4l2-chip-ident.h
-> @@ -180,6 +180,9 @@ enum {
->  	/* module adv7343: just ident 7343 */
->  	V4L2_IDENT_ADV7343 = 7343,
->  
-> +	/* module ths7353: just ident 7353 */
-> +	V4L2_IDENT_THS7353 = 7353,
-> +
->  	/* module adv7393: just ident 7393 */
->  	V4L2_IDENT_ADV7393 = 7393,
->  
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1DJM6K1032661
 
 
--- 
+This is primarily to get those r8169 reverts sorted, but other
+fixes have accumulated meanwhile.
 
-Cheers,
-Mauro
+1) Revert two r8169 changes to fix suspend/resume for some users,
+   from Francois Romieu.
+
+2) PCI dma mapping errors in atl1c are not checked for and this cause
+   hard crashes for some users, from Xiong Huang.
+
+3) In 3.8.x we merged the removal of the EXPERIMENTAL dependency for
+   'dlm' but the same patch for 'sctp' got lost somewhere, resulting
+   in the potential for build errors since there are cross dependencies.
+   From Kees Cook.
+
+4) SCTP's ipv6 socket route validation makes boolean tests incorrectly,
+   fix from Daniel Borkmann.
+
+5) mac80211 does sizeof(ptr) instead of (sizeof(ptr) * nelem), from Cong
+   Ding.
+
+6) arp_rcv() can crash on shared non-linear packets, from Eric Dumazet.
+
+7) Avoid crashes in macvtap by setting ->gso_type consistently in ixgbe,
+   qlcnic, and bnx2x drivers.  From Michael S. Tsirkin and Alexander Duyck.
+
+8) Trinity fuzzer spots infinite loop in __skb_recv_datagram(), fix from
+   Eric Dumazet.
+
+9) STP protocol frames should use high packet priority, otherwise an
+   overloaded bridge can get stuck.  From Stephen Hemminger.
+
+10) The HTB packet scheduler was converted some time ago to store
+    internal timestamps in nanoseconds, but we don't convert back into
+    psched ticks for the user during dumps.  Fix from Jiri Pirko.
+
+11) mwl8k channel table doesn't set the .band field properly, resulting
+    in NULL pointer derefs.  Fix from Jonas Gorski.
+
+12) mac80211 doesn't accumulate channels properly during a scan so we
+    can downgrade heavily to a much less desirable connection speed.
+    Fix from Johannes Berg.
+
+13) PHY probe failure in stmmac can result in resource leaks and
+    double MDIO registery later, from Giuseppe CAVALLARO.
+
+14) Correct ipv6 checksumming in ip6t_NPT netfilter module, also fix
+    address prefix mangling, from YOSHIFUJI Hideaki.
+
+Please pull, thanks a lot!
+
+The following changes since commit 836dc9e3fbbab0c30aa6e664417225f5c1fb1c39:
+
+  Linux 3.8-rc7 (2013-02-09 08:20:39 +1100)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+
+for you to fetch changes up to 3bdb1a443a53a4058b95c8a67c856cc8b8393411:
+
+  net, sctp: remove CONFIG_EXPERIMENTAL (2013-02-13 13:57:27 -0500)
+
+----------------------------------------------------------------
+Alexander Duyck (1):
+      ixgbe: Only set gso_type to SKB_GSO_TCPV4 as RSC does not support IPv6
+
+Bj√∏rn Mork (1):
+      net: qmi_wwan: add Yota / Megafon M100-1 4g modem
+
+Cong Ding (1):
+      mac80211: fix error in sizeof() usage
+
+Dan Carpenter (1):
+      ipvs: freeing uninitialized pointer on error
+
+Daniel Borkmann (2):
+      ipvs: sctp: fix checksumming on snat and dnat handlers
+      net: sctp: sctp_v6_get_dst: fix boolean test in dst cache
+
+David S. Miller (4):
+      Merge branch 'davem.r8169' of git://violet.fr.zoreil.com/romieu/linux
+      Merge branch 'gso_type'
+      Merge branch 'master' of git://1984.lsi.us.es/nf
+      Merge branch 'for-davem' of git://git.kernel.org/.../linville/wireless
+
+Eric Dumazet (2):
+      arp: fix possible crash in arp_rcv()
+      net: fix infinite loop in __skb_recv_datagram()
+
+Francois Romieu (2):
+      Revert "r8169: enable ALDPS for power saving".
+      Revert "r8169: enable internal ASPM and clock request settings".
+
+Giuseppe CAVALLARO (2):
+      stmmac: fix macro used for debugging the xmit
+      stmmac: mdio register has to fail if the phy is not found
+
+Huang, Xiong (1):
+      atl1c: add error checking for pci_map_single functions
+
+Jiri Pirko (1):
+      htb: fix values in opt dump
+
+Johannes Berg (2):
+      mac80211: fix managed mode channel context use
+      mac80211: fix channel selection bug
+
+John W. Linville (2):
+      Merge branch 'for-john' of git://git.kernel.org/.../jberg/mac80211
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
+
+Jonas Gorski (1):
+      mwl8k: fix band for supported channels
+
+Kees Cook (1):
+      net, sctp: remove CONFIG_EXPERIMENTAL
+
+Michael S. Tsirkin (3):
+      ixgbe: fix gso type
+      qlcnic: set gso_type
+      bnx2x: set gso_type
+
+Nicolas Ferre (1):
+      net/macb: fix race with RX interrupt while doing NAPI
+
+Pau Koning (1):
+      batman-adv: Fix NULL pointer dereference in DAT hash collision avoidance
+
+Stephen Hemminger (1):
+      bridge: set priority of STP packets
+
+YOSHIFUJI Hideaki / ÂêâËó§Ëã±Êòé (3):
+      netfilter: ip6t_NPT: Fix adjustment calculation
+      netfilter: ip6t_NPT: Fix prefix mangling
+      netfilter: ip6t_NPT: Ensure to check lower part of prefixes are zero
+
+ drivers/net/ethernet/atheros/atl1c/atl1c_main.c   | 71 +++++++++++++++++--
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c   | 12 ++--
+ drivers/net/ethernet/cadence/macb.c               |  5 ++
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c     |  1 +
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c    |  7 +-
+ drivers/net/ethernet/realtek/r8169.c              | 86 +++++------------------
+ drivers/net/ethernet/stmicro/stmmac/stmmac_main.c |  2 +-
+ drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c | 10 ++-
+ drivers/net/usb/qmi_wwan.c                        |  1 +
+ drivers/net/wireless/mwl8k.c                      | 36 +++++-----
+ net/batman-adv/distributed-arp-table.c            |  2 +-
+ net/bridge/br_stp_bpdu.c                          |  2 +
+ net/core/datagram.c                               |  2 +-
+ net/ipv4/arp.c                                    | 21 +++---
+ net/ipv6/netfilter/ip6t_NPT.c                     | 18 +++--
+ net/mac80211/cfg.c                                |  3 +-
+ net/mac80211/mlme.c                               | 11 +--
+ net/netfilter/ipvs/ip_vs_proto_sctp.c             | 35 +++++----
+ net/netfilter/ipvs/ip_vs_sync.c                   |  2 +
+ net/sched/sch_htb.c                               |  4 +-
+ net/sctp/Kconfig                                  |  4 +-
+ net/sctp/ipv6.c                                   |  5 +-
+ 22 files changed, 191 insertions(+), 149 deletions(-)
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
