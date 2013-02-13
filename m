@@ -1,57 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759100Ab3BMI4h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 03:56:37 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:58993 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752226Ab3BMI4g (ORCPT
+	id S1759143Ab3BMJBY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 04:01:24 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:37902 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752226Ab3BMJBW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 03:56:36 -0500
-MIME-Version: 1.0
-In-Reply-To: <511B4D76.50504@redhat.com>
-References: <CAOJsxLFDbmNitH=N8v3jSno0SFL33s=nPc+hGRAqJfYFZS0RGw@mail.gmail.com>
-	<CA+55aFy=SaVjNby=Jy_O9ZRQ_Ofc-6_+bLv=HeMMSzQQHw9vMQ@mail.gmail.com>
-	<CAOJsxLFpE=HjkPcX6NsWS8636qnEhDFDJi+49xX2Ge3Xp4MeUg@mail.gmail.com>
-	<CA+55aFzXF-4Xwc4HU8vnTin4WqtvYcpXq0TsqTN_vRg=myLH_Q@mail.gmail.com>
-	<20130211122654.GA5802@gmail.com>
-	<CA+55aFwq+_TvOZNEPO-eFPjYuPuMFL0bgR0x=nLq_tvfATqaTA@mail.gmail.com>
-	<20130211172807.GA9716@gmail.com>
-	<CA+55aFx-0-qcYMqH2wnJJ7iAPhoEvD_EQ0xqVW3VGS3G9=_1_w@mail.gmail.com>
-	<20130211175856.GC9716@gmail.com>
-	<CA+55aFxpH2A5pTkeAt-bapN6Erac7SSEUhS9qaZ6jUhm_0EAtA@mail.gmail.com>
-	<20130212095249.GC20039@gmail.com>
-	<511B4D76.50504@redhat.com>
-Date: Wed, 13 Feb 2013 10:56:34 +0200
-X-Google-Sender-Auth: lrH488THq0NMwO8k0iVeFlMewWI
-Message-ID: <CAOJsxLEn2c2cDTeeF5ONDe1cA22Cwj-EjE8mUtC3KH9-UQgP9A@mail.gmail.com>
-Subject: Re: kvmtool tree (Was: Re: [patch] config: fix make kvmconfig)
-From: Pekka Enberg <penberg@kernel.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Rientjes <rientjes@google.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 13 Feb 2013 04:01:22 -0500
+Message-ID: <1360746069.8799.2.camel@phoenix>
+Subject: [PATCH] regulator: tps51632: Use
+ regulator_[get|set]_voltage_sel_regmap
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Date: Wed, 13 Feb 2013 17:01:09 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 13, 2013 at 10:23 AM, Paolo Bonzini <pbonzini@redhat.com> wrote:
-> Il 12/02/2013 10:52, Ingo Molnar ha scritto:
->> Check the list I gave (unmodified):
->>
->> "- Pekka listed new virtio drivers that were done via tools/kvm.
->
-> vhost-scsi got in first in tools/kvm, but out-of-tree patches had
-> existed for QEMU for more than a year.  It was developed with QEMU.
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/tps51632-regulator.c |   52 +++++---------------------------
+ 1 file changed, 8 insertions(+), 44 deletions(-)
 
-I think Ingo confused virtio and vhost. IIRC, Asias developed
-vhost-blk using tools/kvm.
+diff --git a/drivers/regulator/tps51632-regulator.c b/drivers/regulator/tps51632-regulator.c
+index 7560d07..6e67be7 100644
+--- a/drivers/regulator/tps51632-regulator.c
++++ b/drivers/regulator/tps51632-regulator.c
+@@ -88,49 +88,8 @@ struct tps51632_chip {
+ 	struct regulator_desc desc;
+ 	struct regulator_dev *rdev;
+ 	struct regmap *regmap;
+-	bool enable_pwm_dvfs;
+ };
+ 
+-static int tps51632_dcdc_get_voltage_sel(struct regulator_dev *rdev)
+-{
+-	struct tps51632_chip *tps = rdev_get_drvdata(rdev);
+-	unsigned int data;
+-	int ret;
+-	unsigned int reg = TPS51632_VOLTAGE_SELECT_REG;
+-	int vsel;
+-
+-	if (tps->enable_pwm_dvfs)
+-		reg = TPS51632_VOLTAGE_BASE_REG;
+-
+-	ret = regmap_read(tps->regmap, reg, &data);
+-	if (ret < 0) {
+-		dev_err(tps->dev, "reg read failed, err %d\n", ret);
+-		return ret;
+-	}
+-
+-	vsel = data & TPS51632_VOUT_MASK;
+-	return vsel;
+-}
+-
+-static int tps51632_dcdc_set_voltage_sel(struct regulator_dev *rdev,
+-		unsigned selector)
+-{
+-	struct tps51632_chip *tps = rdev_get_drvdata(rdev);
+-	int ret;
+-	unsigned int reg = TPS51632_VOLTAGE_SELECT_REG;
+-
+-	if (tps->enable_pwm_dvfs)
+-		reg = TPS51632_VOLTAGE_BASE_REG;
+-
+-	if (selector > TPS51632_MAX_VSEL)
+-		return -EINVAL;
+-
+-	ret = regmap_write(tps->regmap, reg, selector);
+-	if (ret < 0)
+-		dev_err(tps->dev, "reg write failed, err %d\n", ret);
+-	return ret;
+-}
+-
+ static int tps51632_dcdc_set_ramp_delay(struct regulator_dev *rdev,
+ 		int ramp_delay)
+ {
+@@ -147,8 +106,8 @@ static int tps51632_dcdc_set_ramp_delay(struct regulator_dev *rdev,
+ }
+ 
+ static struct regulator_ops tps51632_dcdc_ops = {
+-	.get_voltage_sel	= tps51632_dcdc_get_voltage_sel,
+-	.set_voltage_sel	= tps51632_dcdc_set_voltage_sel,
++	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
++	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
+ 	.list_voltage		= regulator_list_voltage_linear,
+ 	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
+ 	.set_ramp_delay		= tps51632_dcdc_set_ramp_delay,
+@@ -165,7 +124,6 @@ static int tps51632_init_dcdc(struct tps51632_chip *tps,
+ 		goto skip_pwm_config;
+ 
+ 	control |= TPS51632_DVFS_PWMEN;
+-	tps->enable_pwm_dvfs = pdata->enable_pwm_dvfs;
+ 	vsel = TPS51632_VOLT_VSEL(pdata->base_voltage_uV);
+ 	ret = regmap_write(tps->regmap, TPS51632_VOLTAGE_BASE_REG, vsel);
+ 	if (ret < 0) {
+@@ -358,6 +316,12 @@ static int tps51632_probe(struct i2c_client *client,
+ 	tps->desc.type = REGULATOR_VOLTAGE;
+ 	tps->desc.owner = THIS_MODULE;
+ 
++	if (pdata->enable_pwm_dvfs)
++		tps->desc.vsel_reg = TPS51632_VOLTAGE_BASE_REG;
++	else
++		tps->desc.vsel_reg = TPS51632_VOLTAGE_SELECT_REG;
++	tps->desc.vsel_mask = TPS51632_VOUT_MASK;
++
+ 	tps->regmap = devm_regmap_init_i2c(client, &tps51632_regmap_config);
+ 	if (IS_ERR(tps->regmap)) {
+ 		ret = PTR_ERR(tps->regmap);
+-- 
+1.7.9.5
+
+
+
