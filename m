@@ -1,101 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932308Ab3BMIc1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 03:32:27 -0500
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:34923 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752790Ab3BMIc0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 03:32:26 -0500
-Message-ID: <511B4F95.1050404@redhat.com>
-Date: Wed, 13 Feb 2013 09:32:21 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S932385Ab3BMIch (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 03:32:37 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:48204 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932314Ab3BMIcf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 03:32:35 -0500
+Date: Wed, 13 Feb 2013 10:32:18 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: <kgene@kernel.org>
+CC: "'Vivek Gautam'" <gautam.vivek@samsung.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <gregkh@linuxfoundation.org>,
+        <balbi@ti.com>, <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
+        <sylvester.nawrocki@gmail.com>, <tomasz.figa@gmail.com>,
+        <av.tikhomirov@samsung.com>, <dianders@chromium.org>,
+        <p.paneri@samsung.com>
+Subject: Re: [PATCH v5 0/2] Adding USB 3.0 DRD-phy support for exynos5250
+Message-ID: <20130213083218.GA2426@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1360068256-19602-1-git-send-email-gautam.vivek@samsung.com>
+ <1e3101ce09b3$b2e178c0$18a46a40$@kernel.org>
 MIME-Version: 1.0
-CC: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH v2 00/14] Corrections and customization of the SG_IO command
- whitelist (CVE-2012-4542)
-References: <1360163761-8541-1-git-send-email-pbonzini@redhat.com>
-In-Reply-To: <1360163761-8541-1-git-send-email-pbonzini@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="45Z9DzgjV8m4Oswq"
+Content-Disposition: inline
+In-Reply-To: <1e3101ce09b3$b2e178c0$18a46a40$@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 06/02/2013 16:15, Paolo Bonzini ha scritto:
-> This series regards the whitelist that is used for the SG_IO ioctl.  This
-> whitelist has three problems:
-> 
-> * the bitmap of allowed commands is designed for MMC devices (roughly,
->   "play/burn CDs without requiring root") but some opcodes overlap across SCSI
->   device classes and have different meanings for different classes.
-> 
-> * also because the bitmap of allowed commands is designed for MMC devices
->   only, some commands are missing even though they are generally useful and
->   not insecure.  At least not more insecure than anything else you can
->   do if you have access to /dev/sdX or /dev/stX nodes.
-> 
-> * the whitelist can be disabled per-process but not per-disk.  In addition,
->   the required capability (CAP_SYS_RAWIO) gives access to a range of other 
->   resources, enough to make it insecure.
-> 
-> The series corrects these problems.  Patches 1-4 solve the first problem,
-> which also has an assigned CVE, by using different bitmaps for the various
-> device classes.  Patches 5-11 solve the second by adding more commands
-> to the bitmaps.  Patches 12 and 13 solve the third, and were already
-> posted but ignored by the maintainers despite multiple pings.
-> 
-> Note: checkpatch hates the formatting of the command table.  I know about this,
-> and ensured that there are no errors in the rest of the code.  The current
-> formatting is IMHO quite handy, and roughly based on the files available
-> from the SCSI standard body.
-> 
-> Ok for the next merge window?
-> 
-> Paolo
-> 
-> v1->v2: remove 2 MMC commands and 6 SBC commands (see patches 6 and 9
->         for details).  Added patch 14 and added a few more scanner
->         commands based on SANE (scanners are not whitelisted by default,
->         also were not in v1, but this makes it possible to opt into the
->         whitelist out of paranoia).  Removed C++ comments.  Removed the
->         large #if 0'd list of commands that the kernel does not pass
->         though.  Marked blk_set_cmd_filter_defaults as __init.
-> 
-> 
-> Paolo Bonzini (14):
->   sg_io: pass request_queue to blk_verify_command
->   sg_io: reorganize list of allowed commands
->   sg_io: use different default filters for each device class
->   sg_io: resolve conflicts between commands assigned to multiple
->     classes (CVE-2012-4542)
->   sg_io: whitelist a few more commands for rare & obsolete device types
->   sg_io: whitelist another command for multimedia devices
->   sg_io: whitelist a few more commands for media changers
->   sg_io: whitelist a few more commands for tapes
->   sg_io: whitelist a few more commands for disks
->   sg_io: whitelist a few obsolete commands
->   sg_io: mark blk_set_cmd_filter_defaults as __init
->   sg_io: remove remnants of sysfs SG_IO filters
->   sg_io: introduce unpriv_sgio queue flag
->   sg_io: use unpriv_sgio to disable whitelisting for scanners
-> 
->  Documentation/block/queue-sysfs.txt |    8 +
->  block/blk-sysfs.c                   |   33 +++
->  block/bsg.c                         |    2 +-
->  block/scsi_ioctl.c                  |  369 ++++++++++++++++++++++++++---------
->  drivers/scsi/scsi_scan.c            |   14 ++-
->  drivers/scsi/sg.c                   |    6 +-
->  include/linux/blkdev.h              |    8 +-
->  include/linux/genhd.h               |    9 -
->  include/scsi/scsi.h                 |    3 +
->  9 files changed, 344 insertions(+), 108 deletions(-)
-> 
+--45Z9DzgjV8m4Oswq
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Ping? I'm not even sure what tree this should host these patches...
+On Tue, Feb 12, 2013 at 10:31:00PM -0800, kgene@kernel.org wrote:
+> Vivek Gautam wrote:
+> >=20
+> > Based on 'usb-next'
+> >=20
+> > Changes from v4:
+> >  - Modifying function names and driver names to follow a common
+> >    naming convention.
+> >         "usb2phy" for samsung-usb2phy driver
+> >         "usb3phy" for samsung-usb3phy driver
+> >  - Changing file names "samsung-usb2.c" to "samsung-usb2phy.c" and,
+> >    "samsung-usb3.c" to "samsung-usb3phy.c"
+> >  - Removing dependencies for SAMSUNG_USB2PHY and
+> > SAMSUNG_USB3PHY.
+> >  - Arranging SAMSUNG_USB2PHY and SAMSUNG_USB3PHY to select
+> > SAMSUNG_USBPHY,
+> >    which is the usb-phy helper driver.
+> >=20
+> > Vivek Gautam (2):
+> >   usb: phy: samsung: Common out the generic stuff
+> >   usb: phy: samsung: Add PHY support for USB 3.0 controller
+> >=20
+> >  drivers/usb/phy/Kconfig           |   25 +-
+> >  drivers/usb/phy/Makefile          |    2 +
+> >  drivers/usb/phy/samsung-usb2phy.c |  511
+> > ++++++++++++++++++++++++++
+> >  drivers/usb/phy/samsung-usb3phy.c |  349 ++++++++++++++++++
+> >  drivers/usb/phy/samsung-usbphy.c  |  717
+> +------------------------------------
+> >  drivers/usb/phy/samsung-usbphy.h  |  328 +++++++++++++++++
+> >  6 files changed, 1219 insertions(+), 713 deletions(-)
+> >  create mode 100644 drivers/usb/phy/samsung-usb2phy.c
+> >  create mode 100644 drivers/usb/phy/samsung-usb3phy.c
+> >  create mode 100644 drivers/usb/phy/samsung-usbphy.h
+> >=20
+> > --
+> > 1.7.6.5
+>=20
+> For now, looks good to me, and if any enhancement is required, it can be
+> done next time.
+>=20
+> Felipe, please go ahead with my ack :-)
+> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
 
-Paolo
+Thank you, but it's too late for v3.9, this will have to wait until
+v3.10. You will get an email once I apply these to my branch.
+
+Cheers
+
+--=20
+balbi
+
+--45Z9DzgjV8m4Oswq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRG0+SAAoJEIaOsuA1yqREEbkP/jnl/UsvIWGiTpDgYB1vQzOq
+86g1zVpzvVY6kXFJaaZc4l+XdRNLMlLcUyXE295aFzLr+0AJ04s8u815Nhp6qOZH
+duX2nkb3KVex9aZMCl1/G1vMP+baxEhiVnuFNfeRkU5EKwKblg//TK9h1g5ZLw45
+92a9HIdHSpFRMLIDJYErQ3I7lysKtsyOeZtNYfzQ6b3mytu0gXXi2C93sj3UFvv7
+qmIztDN5UVdhcPv5WkT9HVrRw3K1C8PHHkBPjLWBRe5gulXtLWtKGAt3WNbj5CFK
+CZeYqd7S1ruMPkQ+l/w0k4iGdMkF7hsXr875rm4uRp5yBuzsBPaeisW+KUncMs8P
+htevKGjdCGq+wHJos+lBqh22pNrj6OziHrgPEUZKcki1srEoJ0AvhARBZjTWC6RG
+FgU0Y4UWcwv87qJQILvBsnUSq8jkm0SeKYKnGJsL4Z3zbE9qFdybNpDCp4GYE93V
+AtvIvRIqzY/iDpDKve92kMuMGNpVAEKhcNYfebNTAk47Hs1HMsF8JExVcvdtvZqM
+UIJHmbHkT8bZhDnAtI8HAvOp+mU047RS+li0X1xaLN0BHIxqa8RBcokYZ+d3tA1Z
+Kg7VPYfyO5Er9gb+vwFpvsC8OaOrudnpUULWHwHnM0y5Tu6qQsqjdi1SqQHfK6R7
+Vq59U/h7qrLKyUjLt4Bn
+=Wecv
+-----END PGP SIGNATURE-----
+
+--45Z9DzgjV8m4Oswq--
