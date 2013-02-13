@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759918Ab3BMTnv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 14:43:51 -0500
-Received: from mail-da0-f47.google.com ([209.85.210.47]:40315 "EHLO
-	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753887Ab3BMTnt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 14:43:49 -0500
-Date: Wed, 13 Feb 2013 12:43:07 -0700
-From: Jean Sacren <sakiwit@gmail.com>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org, Jiri Pirko <jiri@resnulli.us>
-Subject: Re: [PATCH -next 1/1] net: skbuff: fix compile error in skb_panic()
-Message-ID: <20130213194307.GE13159@mail.gmail.com>
-References: <1360754427-9051-1-git-send-email-james.hogan@imgtec.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360754427-9051-1-git-send-email-james.hogan@imgtec.com>
+	id S1758376Ab3BMTo5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 14:44:57 -0500
+Received: from mail.tpi.com ([70.99.223.143]:1645 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755691Ab3BMTo4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 14:44:56 -0500
+From: Tim Gardner <tim.gardner@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: Tim Gardner <tim.gardner@canonical.com>, Mark Fasheh <mfasheh@suse.com>,
+        Joel Becker <jlbec@evilplan.org>, ocfs2-devel@oss.oracle.com
+Subject: [PATCH 1/2 linux-next] ocfs2: remove kfree() redundant null checks
+Date: Wed, 13 Feb 2013 12:44:35 -0700
+Message-Id: <1360784676-74994-1-git-send-email-tim.gardner@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: James Hogan <james.hogan@imgtec.com>
-Date: Wed, 13 Feb 2013 11:20:27 +0000
->
-> I get the following build error on next-20130213 due to the following
-> commit:
-> 
-> commit f05de73bf82fbbc00265c06d12efb7273f7dc54a ("skbuff: create
-> skb_panic() function and its wrappers").
-> 
-> It adds an argument called panic to a function that uses the BUG() macro
-> which tries to call panic, but the argument masks the panic() function
-> declaration, resulting in the following error (gcc 4.2.4):
-> 
-> net/core/skbuff.c In function 'skb_panic':
-> net/core/skbuff.c +126 : error: called object 'panic' is not a function
-> 
-> This is fixed by renaming the argument to msg.
-> 
-> Signed-off-by: James Hogan <james.hogan@imgtec.com>
+smatch analysis:
 
-Thanks, James.
+fs/ocfs2/alloc.c:6138 ocfs2_begin_truncate_log_recovery() info:
+ redundant null check on *tl_copy calling kfree()
 
-I'm sorry I introduced this bug. Shame on me.
+fs/ocfs2/alloc.c:6755 ocfs2_zero_range_for_truncate() info:
+ redundant null check on pages calling kfree()
 
+Cc: Mark Fasheh <mfasheh@suse.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: ocfs2-devel@oss.oracle.com
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+---
+ fs/ocfs2/alloc.c |   10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
+
+diff --git a/fs/ocfs2/alloc.c b/fs/ocfs2/alloc.c
+index 31b9463..42c0e49 100644
+--- a/fs/ocfs2/alloc.c
++++ b/fs/ocfs2/alloc.c
+@@ -6134,11 +6134,8 @@ bail:
+ 		iput(tl_inode);
+ 	brelse(tl_bh);
+ 
+-	if (status < 0 && (*tl_copy)) {
+-		kfree(*tl_copy);
+-		*tl_copy = NULL;
+-		mlog_errno(status);
+-	}
++	kfree(*tl_copy);
++	*tl_copy = NULL;
+ 
+ 	return status;
+ }
+@@ -6751,8 +6748,7 @@ int ocfs2_zero_range_for_truncate(struct inode *inode, handle_t *handle,
+ 		mlog_errno(ret);
+ 
+ out:
+-	if (pages)
+-		kfree(pages);
++	kfree(pages);
+ 
+ 	return ret;
+ }
 -- 
-Jean Sacren
+1.7.9.5
+
