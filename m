@@ -1,39 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759434Ab3BMMlR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 07:41:17 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:6077 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933922Ab3BMMlP (ORCPT
+	id S934022Ab3BMMla (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 07:41:30 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:62390 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933983Ab3BMMl2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 07:41:15 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 13 Feb 2013 04:41:15 -0800
-Message-ID: <511B89D6.7010000@nvidia.com>
-Date: Wed, 13 Feb 2013 18:10:54 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Wed, 13 Feb 2013 07:41:28 -0500
 MIME-Version: 1.0
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-CC: Vinod Koul <vinod.koul@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 6/6] dma: tegra20-apb-dma: remove unnecessary assignment
-References: <1360666720-19006-1-git-send-email-andriy.shevchenko@linux.intel.com> <1360666720-19006-7-git-send-email-andriy.shevchenko@linux.intel.com>
-In-Reply-To: <1360666720-19006-7-git-send-email-andriy.shevchenko@linux.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <1360754427-9051-1-git-send-email-james.hogan@imgtec.com>
+References: <1360754427-9051-1-git-send-email-james.hogan@imgtec.com>
+Date: Wed, 13 Feb 2013 13:41:21 +0100
+Message-ID: <CA+icZUVB9QaZfnKGSz_Dr=EADBtYULOHqEHDDocdXO5-Dy=uYA@mail.gmail.com>
+Subject: Re: [PATCH -next 1/1] net: skbuff: fix compile error in skb_panic()
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: Jean Sacren <sakiwit@gmail.com>, "David S. Miller" <davem@davemloft.net>,
+        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        Jiri Pirko <jiri@resnulli.us>, netdev@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 12 February 2013 04:28 PM, Andy Shevchenko wrote:
-> There is no need to assign 0 to residue, because dma_cookie_status() does this
-> for us.
+On Wed, Feb 13, 2013 at 12:20 PM, James Hogan <james.hogan@imgtec.com> wrote:
+> I get the following build error on next-20130213 due to the following
+> commit:
 >
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> commit f05de73bf82fbbc00265c06d12efb7273f7dc54a ("skbuff: create
+> skb_panic() function and its wrappers").
+>
+> It adds an argument called panic to a function that uses the BUG() macro
+> which tries to call panic, but the argument masks the panic() function
+> declaration, resulting in the following error (gcc 4.2.4):
+>
+> net/core/skbuff.c In function 'skb_panic':
+> net/core/skbuff.c +126 : error: called object 'panic' is not a function
+>
+
+[ CC linux-netdev ]
+
+Hmm, with gcc-4.6.3 on Ubuntu/precise I don't see this... compiler-specific?
+
+$ grep skbuff build-log_3.8.0-rc7-next20130213-2-iniza-small.txt
+  CC      net/core/skbuff.o
+
+- Sedat -
+
+
+> This is fixed by renaming the argument to msg.
+>
+> Signed-off-by: James Hogan <james.hogan@imgtec.com>
+> Cc: Jean Sacren <sakiwit@gmail.com>
+> Cc: Jiri Pirko <jiri@resnulli.us>
+> Cc: David S. Miller <davem@davemloft.net>
 > ---
-
-For this change(6/6), Acked-by: Laxman Dewangan <ldewangan@nvidia.com>
-
-
+>
+> Feel free to rename panic to something else or squash this into the
+> offending commit.
+>
+>  net/core/skbuff.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+> index 8731c39..21a22cc 100644
+> --- a/net/core/skbuff.c
+> +++ b/net/core/skbuff.c
+> @@ -109,7 +109,7 @@ static const struct pipe_buf_operations sock_pipe_buf_ops = {
+>   *     @skb:   buffer
+>   *     @sz:    size
+>   *     @addr:  address
+> - *     @panic: skb_over_panic or skb_under_panic
+> + *     @msg:   skb_over_panic or skb_under_panic
+>   *
+>   *     Out-of-line support for skb_put() and skb_push().
+>   *     Called via the wrapper skb_over_panic() or skb_under_panic().
+> @@ -117,10 +117,10 @@ static const struct pipe_buf_operations sock_pipe_buf_ops = {
+>   *     __builtin_return_address is not used because it is not always reliable.
+>   */
+>  static void skb_panic(struct sk_buff *skb, unsigned int sz, void *addr,
+> -                     const char panic[])
+> +                     const char msg[])
+>  {
+>         pr_emerg("%s: text:%p len:%d put:%d head:%p data:%p tail:%#lx end:%#lx dev:%s\n",
+> -                panic, addr, skb->len, sz, skb->head, skb->data,
+> +                msg, addr, skb->len, sz, skb->head, skb->data,
+>                  (unsigned long)skb->tail, (unsigned long)skb->end,
+>                  skb->dev ? skb->dev->name : "<NULL>");
+>         BUG();
+> --
+> 1.8.1.2
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-next" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
