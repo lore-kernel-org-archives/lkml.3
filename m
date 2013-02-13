@@ -1,44 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932435Ab3BMJfT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 04:35:19 -0500
+	id S932534Ab3BMJh4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 04:37:56 -0500
 Received: from mailout3.samsung.com ([203.254.224.33]:43568 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932180Ab3BMJfN (ORCPT
+	with ESMTP id S932263Ab3BMJfP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 04:35:13 -0500
-X-AuditID: cbfee61a-b7f7d6d000000f4e-a6-511b5e4da992
+	Wed, 13 Feb 2013 04:35:15 -0500
+X-AuditID: cbfee61a-b7f7d6d000000f4e-c4-511b5e4f824a
 From: Chanwoo Choi <cw00.choi@samsung.com>
-To: gregkh@linuxfoundation.org
+To: gregkh@linuxfoundation.org, sameo@linux.intel.com
 Cc: linux-kernel@vger.kernel.org, myungjoo.ham@samsung.com,
         kyungmin.park@samsung.com, Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCH 3/9] extcon: max77693: Remove unnecessary goto statement to
- improve readability
-Date: Wed, 13 Feb 2013 18:35:08 +0900
-Message-id: <1360748108-21875-1-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCH 4/9] extcon: max8997: Move defined constant to header file
+Date: Wed, 13 Feb 2013 18:35:10 +0900
+Message-id: <1360748110-21909-1-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFLMWRmVeSWpSXmKPExsVy+t8zTV3fOOlAg+9npS0u75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfGvrlH2Qqum1fMfbCWpYFxoU4XIyeHhICJxL73G5khbDGJC/fW
-	s3UxcnEICSxjlHjffY0dpmjj7b9MEIlFjBJ/tr5lhHAWMEms/3aBBaSKTUBLYv+LG2wgtoiA
-	nMST23/AxjIL1EqcvnwXzBYWSJRYfOkbWD2LgKrEhvXXGUFsXgFXiav71rNBbJOT+LDnEdTm
-	HWwSh9fyQNQLSHybfAiolwMoLiux6QDU1ZISB1fcYJnAKLiAkWEVo2hqQXJBcVJ6rqFecWJu
-	cWleul5yfu4mRkhISe1gXNlgcYhRgINRiYfXIUQqUIg1say4MvcQowQHs5IIr6O/dKAQb0pi
-	ZVVqUX58UWlOavEhxmSg5ROZpUST84HhnlcSb2hsYGxoaGloZmppakCasJI4L+OpJwFCAumJ
-	JanZqakFqUUwW5g4OKUaGDuULONfxZjOXp3zJXRf2l9LvdQ93OwhgTffJ0o1G5041df9XLgn
-	0M9wMtvVv4pTj3ZNmnptq97f/3L8bfKrvjRyxl72uF86c6757HerZPUkN1T65hlJzNmmvW53
-	SEFr9slbZULn53XFpk3aWPff3aH+21u7FW0arz44PVOcoilZIHH5NlNWmRJLcUaioRZzUXEi
-	ABrCSB1tAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupikeLIzCtJLcpLzFFi42I5/e+xgK5vnHSgwYFOXovLu+awOTB6fN4k
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFLMWRmVeSWpSXmKPExsVy+t8zTV3/OOlAg7vfNSwu75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfG5HlvWQuOWVS8utrG0sC4QL+LkZNDQsBEYs/FaYwQtpjEhXvr
+	2boYuTiEBJYxSkzoPs8CU3T+4DZ2iMR0Rond3+8wQzgLmCSm9+1hA6liE9CS2P/iBpgtImAq
+	cerpdXYQm1mgVuL05bvMILawgJfE7JnXwGpYBFQlDl7/CBTn4OAVcJVY1KEKsUxO4sOeR2DL
+	JAR2sEnsn7mWEaJeQOLb5EMsIPUSArISmw4wQ9RLShxccYNlAqPgAkaGVYyiqQXJBcVJ6bmG
+	esWJucWleel6yfm5mxghISW1g3Flg8UhRgEORiUeXocQqUAh1sSy4srcQ4wSHMxKIryO/tKB
+	QrwpiZVVqUX58UWlOanFhxiTgZZPZJYSTc4HhnteSbyhsYGxoaGloZmppakBacJK4ryMp54E
+	CAmkJ5akZqemFqQWwWxh4uCUamBMWuB40se7+NLz/+yfciZyx7jdOPbug/2HDy8mTO/TaxJ0
+	2GtremTeMa0rVsfvXzJIc9+sp3dgZ0bf5RyBn+uvhjzZLsYrc+P6H9lb3Hm3G3bNVuiWUvWu
+	tuV9m3vljP6ti9snrxOJsfl8ZafNj7lvsy+cDg5la05Yc1tNmo3zQM33fTuKhP6dVGIpzkg0
+	1GIuKk4EAPMvF+BtAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkkeLIzCtJLcpLzFFi42I5/e+xoK5/nHSgwesGGYvLu+awOTB6fN4k
 	F8AY1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQM0
-	VUmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeYsW/uUbaC6+YVcx+sZWlg
-	XKjTxcjJISFgIrHx9l8mCFtM4sK99WxdjFwcQgKLGCX+bH3LCOEsYJJY/+0CC0gVm4CWxP4X
-	N9hAbBEBOYknt/8wg9jMArUSpy/fBbOFBRIlFl/6BlbPIqAqsWH9dUYQm1fAVeLqvvVsENvk
-	JD7secQ+gZF7ASPDKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzgkH0mtYNxZYPFIUYBDkYl
-	Hl6HEKlAIdbEsuLK3EOMEhzMSiK8jv7SgUK8KYmVValF+fFFpTmpxYcYk4G2T2SWEk3OB8ZT
-	Xkm8obGJmZGlkZmxibmxMWnCSuK8jKeeBAgJpCeWpGanphakFsFsYeLglGpgNIhZs3XPbI11
-	ai+fTeyvLLNsOKSem1jvN8f7PHtFc+ZuBcHajE1vv5uo1juETfqy6/Mu33Ot1l6ejy6uqC7q
-	PHso/eDdiIsWh57UJMpequkTjJ6zQfL7T/H+0K2HMtZeULCpfHeIb+GCi9b9JWZ2SoeKJ315
-	eb148mODrx/TLX0Oy3j5M8cEKbEUZyQaajEXFScCAOJmU7ydAgAA
+	VUmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeYMXneW9aCYxYVr662sTQw
+	LtDvYuTkkBAwkTh/cBs7hC0mceHeerYuRi4OIYHpjBK7v99hhnAWMElM79vDBlLFJqAlsf/F
+	DTBbRMBU4tTT62DdzAK1Eqcv32UGsYUFvCRmz7wGVsMioCpx8PpHoDgHB6+Aq8SiDlWIZXIS
+	H/Y8Yp/AyL2AkWEVo2hqQXJBcVJ6rqFecWJucWleul5yfu4mRnDAPpPawbiyweIQowAHoxIP
+	r0OIVKAQa2JZcWXuIUYJDmYlEV5Hf+lAId6UxMqq1KL8+KLSnNTiQ4zJQMsnMkuJJucDoymv
+	JN7Q2MTMyNLIzNjE3NiYNGElcV7GU08ChATSE0tSs1NTC1KLYLYwcXBKNTCa339fwJtqvsCT
+	YfKOK2XHVnwUNZK7wb50yyIOxUWtV/O+T7N867k332Xf889anS2K15yDOmT+q2/49Hh2EmNj
+	7gmTB3qSBo9v1+uc/KkaaG1+U07b52dCX9G3Y02y99ZUNQktmG0WLPj+0//Myxv/PnkYEbzb
+	1WyJy7dlitOvrn/y+0iv1dwuJZbijERDLeai4kQArR6qTJwCAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -46,247 +45,209 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch move defined constants to header file(max77693-private.h)
+because of mask/unmask selectively interrupt of MUIC device according
+to attribute of H/W board.
+
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
 ---
- drivers/extcon/extcon-max77693.c | 77 ++++++++++++++++++++++------------------
- 1 file changed, 43 insertions(+), 34 deletions(-)
+ drivers/extcon/extcon-max8997.c     | 92 +++++++++++++------------------------
+ include/linux/mfd/max8997-private.h | 49 ++++++++++++++++++++
+ 2 files changed, 80 insertions(+), 61 deletions(-)
 
-diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
-index 3b1f238..b70e381 100644
---- a/drivers/extcon/extcon-max77693.c
-+++ b/drivers/extcon/extcon-max77693.c
-@@ -224,16 +224,17 @@ static int max77693_muic_set_debounce_time(struct max77693_muic_info *info,
- 					  MAX77693_MUIC_REG_CTRL3,
- 					  time << CONTROL3_ADCDBSET_SHIFT,
- 					  CONTROL3_ADCDBSET_MASK);
--		if (ret)
-+		if (ret) {
- 			dev_err(info->dev, "failed to set ADC debounce time\n");
-+			return -EAGAIN;
-+		}
- 		break;
- 	default:
- 		dev_err(info->dev, "invalid ADC debounce time\n");
--		ret = -EINVAL;
--		break;
-+		return -EINVAL;
- 	}
+diff --git a/drivers/extcon/extcon-max8997.c b/drivers/extcon/extcon-max8997.c
+index d16090d..0fb1d48 100644
+--- a/drivers/extcon/extcon-max8997.c
++++ b/drivers/extcon/extcon-max8997.c
+@@ -30,51 +30,6 @@
  
--	return ret;
-+	return 0;
+ #define	DEV_NAME			"max8997-muic"
+ 
+-/* MAX8997-MUIC STATUS1 register */
+-#define STATUS1_ADC_SHIFT		0
+-#define STATUS1_ADCLOW_SHIFT		5
+-#define STATUS1_ADCERR_SHIFT		6
+-#define STATUS1_ADC_MASK		(0x1f << STATUS1_ADC_SHIFT)
+-#define STATUS1_ADCLOW_MASK		(0x1 << STATUS1_ADCLOW_SHIFT)
+-#define STATUS1_ADCERR_MASK		(0x1 << STATUS1_ADCERR_SHIFT)
+-
+-/* MAX8997-MUIC STATUS2 register */
+-#define STATUS2_CHGTYP_SHIFT		0
+-#define STATUS2_CHGDETRUN_SHIFT		3
+-#define STATUS2_DCDTMR_SHIFT		4
+-#define STATUS2_DBCHG_SHIFT		5
+-#define STATUS2_VBVOLT_SHIFT		6
+-#define STATUS2_CHGTYP_MASK		(0x7 << STATUS2_CHGTYP_SHIFT)
+-#define STATUS2_CHGDETRUN_MASK		(0x1 << STATUS2_CHGDETRUN_SHIFT)
+-#define STATUS2_DCDTMR_MASK		(0x1 << STATUS2_DCDTMR_SHIFT)
+-#define STATUS2_DBCHG_MASK		(0x1 << STATUS2_DBCHG_SHIFT)
+-#define STATUS2_VBVOLT_MASK		(0x1 << STATUS2_VBVOLT_SHIFT)
+-
+-/* MAX8997-MUIC STATUS3 register */
+-#define STATUS3_OVP_SHIFT		2
+-#define STATUS3_OVP_MASK		(0x1 << STATUS3_OVP_SHIFT)
+-
+-/* MAX8997-MUIC CONTROL1 register */
+-#define COMN1SW_SHIFT			0
+-#define COMP2SW_SHIFT			3
+-#define COMN1SW_MASK			(0x7 << COMN1SW_SHIFT)
+-#define COMP2SW_MASK			(0x7 << COMP2SW_SHIFT)
+-#define SW_MASK				(COMP2SW_MASK | COMN1SW_MASK)
+-
+-#define MAX8997_SW_USB		((1 << COMP2SW_SHIFT) | (1 << COMN1SW_SHIFT))
+-#define MAX8997_SW_AUDIO	((2 << COMP2SW_SHIFT) | (2 << COMN1SW_SHIFT))
+-#define MAX8997_SW_UART		((3 << COMP2SW_SHIFT) | (3 << COMN1SW_SHIFT))
+-#define MAX8997_SW_OPEN		((0 << COMP2SW_SHIFT) | (0 << COMN1SW_SHIFT))
+-
+-#define	MAX8997_ADC_GROUND		0x00
+-#define	MAX8997_ADC_MHL			0x01
+-#define	MAX8997_ADC_JIG_USB_1		0x18
+-#define	MAX8997_ADC_JIG_USB_2		0x19
+-#define	MAX8997_ADC_DESKDOCK		0x1a
+-#define	MAX8997_ADC_JIG_UART		0x1c
+-#define	MAX8997_ADC_CARDOCK		0x1d
+-#define	MAX8997_ADC_OPEN		0x1f
+-
+ struct max8997_muic_irq {
+ 	unsigned int irq;
+ 	const char *name;
+@@ -109,17 +64,32 @@ struct max8997_muic_info {
+ 	struct extcon_dev	*edev;
  };
  
- /*
-@@ -261,7 +262,7 @@ static int max77693_muic_set_path(struct max77693_muic_info *info,
- 			MAX77693_MUIC_REG_CTRL1, ctrl1, COMP_SW_MASK);
- 	if (ret < 0) {
- 		dev_err(info->dev, "failed to update MUIC register\n");
--		goto out;
-+		return -EAGAIN;
- 	}
- 
- 	if (attached)
-@@ -274,14 +275,14 @@ static int max77693_muic_set_path(struct max77693_muic_info *info,
- 			CONTROL2_LOWPWR_MASK | CONTROL2_CPEN_MASK);
- 	if (ret < 0) {
- 		dev_err(info->dev, "failed to update MUIC register\n");
--		goto out;
-+		return -EAGAIN;
- 	}
- 
- 	dev_info(info->dev,
- 		"CONTROL1 : 0x%02x, CONTROL2 : 0x%02x, state : %s\n",
- 		ctrl1, ctrl2, attached ? "attached" : "detached");
--out:
--	return ret;
++enum {
++	EXTCON_CABLE_USB = 0,
++	EXTCON_CABLE_USB_HOST,
++	EXTCON_CABLE_TA,
++	EXTCON_CABLE_FAST_CHARGER,
++	EXTCON_CABLE_SLOW_CHARGER,
++	EXTCON_CABLE_CHARGE_DOWNSTREAM,
++	EXTCON_CABLE_MHL,
++	EXTCON_CABLE_DOCK_DESK,
++	EXTCON_CABLE_DOCK_CARD,
++	EXTCON_CABLE_JIG,
 +
-+	return 0;
- }
- 
- /*
-@@ -503,6 +504,10 @@ static int max77693_muic_dock_handler(struct max77693_muic_info *info,
- 		if (!attached)
- 			extcon_set_cable_state(info->edev, "USB", false);
- 		break;
-+	default:
-+		dev_err(info->dev, "failed to detect %s dock device\n",
-+			attached ? "attached" : "detached");
-+		return -EINVAL;
- 	}
- 
- 	/* Dock-Car/Desk/Audio, PATH:AUDIO */
-@@ -520,7 +525,6 @@ static int max77693_muic_dock_button_handler(struct max77693_muic_info *info,
- {
- 	struct input_dev *dock = info->dock;
- 	unsigned int code;
--	int ret = 0;
- 
- 	switch (button_type) {
- 	case MAX77693_MUIC_ADC_REMOTE_S3_BUTTON-1
-@@ -550,14 +554,12 @@ static int max77693_muic_dock_button_handler(struct max77693_muic_info *info,
- 		dev_err(info->dev,
- 			"failed to detect %s key (adc:0x%x)\n",
- 			attached ? "pressed" : "released", button_type);
--		ret = -EINVAL;
--		goto out;
-+		return -EINVAL;
- 	}
- 
- 	input_event(dock, EV_KEY, code, attached);
- 	input_sync(dock);
- 
--out:
- 	return 0;
- }
- 
-@@ -576,14 +578,14 @@ static int max77693_muic_adc_ground_handler(struct max77693_muic_info *info)
- 		/* USB_OTG, PATH: AP_USB */
- 		ret = max77693_muic_set_path(info, CONTROL1_SW_USB, attached);
- 		if (ret < 0)
--			goto out;
-+			return ret;
- 		extcon_set_cable_state(info->edev, "USB-Host", attached);
- 		break;
- 	case MAX77693_MUIC_GND_AV_CABLE_LOAD:
- 		/* Audio Video Cable with load, PATH:AUDIO */
- 		ret = max77693_muic_set_path(info, CONTROL1_SW_AUDIO, attached);
- 		if (ret < 0)
--			goto out;
-+			return ret;
- 		extcon_set_cable_state(info->edev,
- 				"Audio-video-load", attached);
- 		break;
-@@ -593,14 +595,12 @@ static int max77693_muic_adc_ground_handler(struct max77693_muic_info *info)
- 		extcon_set_cable_state(info->edev, "MHL", attached);
- 		break;
- 	default:
--		dev_err(info->dev, "failed to detect %s accessory\n",
-+		dev_err(info->dev, "failed to detect %s cable of gnd type\n",
- 			attached ? "attached" : "detached");
--		ret = -EINVAL;
--		break;
-+		return -EINVAL;
- 	}
- 
--out:
--	return ret;
-+	return 0;
- }
- 
- static int max77693_muic_jig_handler(struct max77693_muic_info *info,
-@@ -630,15 +630,19 @@ static int max77693_muic_jig_handler(struct max77693_muic_info *info,
- 		strcpy(cable_name, "JIG-UART-OFF");
- 		path = CONTROL1_SW_UART;
- 		break;
-+	default:
-+		dev_err(info->dev, "failed to detect %s jig cable\n",
-+			attached ? "attached" : "detached");
-+		return -EINVAL;
- 	}
- 
- 	ret = max77693_muic_set_path(info, path, attached);
- 	if (ret < 0)
--		goto out;
-+		return ret;
- 
- 	extcon_set_cable_state(info->edev, cable_name, attached);
--out:
--	return ret;
++	_EXTCON_CABLE_NUM,
++};
 +
-+	return 0;
- }
+ static const char *max8997_extcon_cable[] = {
+-	[0] = "USB",
+-	[1] = "USB-Host",
+-	[2] = "TA",
+-	[3] = "Fast-charger",
+-	[4] = "Slow-charger",
+-	[5] = "Charge-downstream",
+-	[6] = "MHL",
+-	[7] = "Dock-desk",
+-	[8] = "Dock-card",
+-	[9] = "JIG",
++	[EXTCON_CABLE_USB]			= "USB",
++	[EXTCON_CABLE_USB_HOST]			= "USB-Host",
++	[EXTCON_CABLE_TA]			= "TA",
++	[EXTCON_CABLE_FAST_CHARGER]		= "Fast-charger",
++	[EXTCON_CABLE_SLOW_CHARGER]		= "Slow-charger",
++	[EXTCON_CABLE_CHARGE_DOWNSTREAM]	= "Charge-downstream",
++	[EXTCON_CABLE_MHL]			= "MHL",
++	[EXTCON_CABLE_DOCK_DESK]		= "Dock-Desk",
++	[EXTCON_CABLE_DOCK_CARD]		= "Dock-Card",
++	[EXTCON_CABLE_JIG]			= "JIG",
  
- static int max77693_muic_adc_handler(struct max77693_muic_info *info)
-@@ -668,7 +672,7 @@ static int max77693_muic_adc_handler(struct max77693_muic_info *info)
- 		/* JIG */
- 		ret = max77693_muic_jig_handler(info, cable_type, attached);
- 		if (ret < 0)
--			goto out;
-+			return ret;
- 		break;
- 	case MAX77693_MUIC_ADC_RESERVED_ACC_3:		/* Dock-Smart */
- 	case MAX77693_MUIC_ADC_FACTORY_MODE_UART_ON:	/* Dock-Car */
-@@ -685,7 +689,7 @@ static int max77693_muic_adc_handler(struct max77693_muic_info *info)
- 		 */
- 		ret = max77693_muic_dock_handler(info, cable_type, attached);
- 		if (ret < 0)
--			goto out;
-+			return ret;
- 		break;
- 	case MAX77693_MUIC_ADC_REMOTE_S3_BUTTON:	/* DOCK_KEY_PREV */
- 	case MAX77693_MUIC_ADC_REMOTE_S7_BUTTON:	/* DOCK_KEY_NEXT */
-@@ -710,7 +714,7 @@ static int max77693_muic_adc_handler(struct max77693_muic_info *info)
- 		ret = max77693_muic_dock_button_handler(info, button_type,
- 							attached);
- 		if (ret < 0)
--			goto out;
-+			return ret;
- 		break;
- 	case MAX77693_MUIC_ADC_SEND_END_BUTTON:
- 	case MAX77693_MUIC_ADC_REMOTE_S1_BUTTON:
-@@ -738,17 +742,15 @@ static int max77693_muic_adc_handler(struct max77693_muic_info *info)
- 		dev_info(info->dev,
- 			"accessory is %s but it isn't used (adc:0x%x)\n",
- 			attached ? "attached" : "detached", cable_type);
--		goto out;
-+		return -EAGAIN;
- 	default:
- 		dev_err(info->dev,
- 			"failed to detect %s accessory (adc:0x%x)\n",
- 			attached ? "attached" : "detached", cable_type);
--		ret = -EINVAL;
--		goto out;
-+		return -EINVAL;
- 	}
+ 	NULL,
+ };
+@@ -132,8 +102,8 @@ static int max8997_muic_handle_usb(struct max8997_muic_info *info,
+ 	if (usb_type == MAX8997_USB_HOST) {
+ 		/* switch to USB */
+ 		ret = max8997_update_reg(info->muic, MAX8997_MUIC_REG_CONTROL1,
+-				attached ? MAX8997_SW_USB : MAX8997_SW_OPEN,
+-				SW_MASK);
++				attached ? CONTROL1_SW_USB : CONTROL1_SW_OPEN,
++				CONTROL1_SW_MASK);
+ 		if (ret) {
+ 			dev_err(info->dev, "failed to update muic register\n");
+ 			goto out;
+@@ -163,8 +133,8 @@ static int max8997_muic_handle_dock(struct max8997_muic_info *info,
  
--out:
--	return ret;
-+	return 0;
- }
+ 	/* switch to AUDIO */
+ 	ret = max8997_update_reg(info->muic, MAX8997_MUIC_REG_CONTROL1,
+-				attached ? MAX8997_SW_AUDIO : MAX8997_SW_OPEN,
+-				SW_MASK);
++				attached ? CONTROL1_SW_AUDIO : CONTROL1_SW_OPEN,
++				CONTROL1_SW_MASK);
+ 	if (ret) {
+ 		dev_err(info->dev, "failed to update muic register\n");
+ 		goto out;
+@@ -192,8 +162,8 @@ static int max8997_muic_handle_jig_uart(struct max8997_muic_info *info,
  
- static int max77693_muic_chg_handler(struct max77693_muic_info *info)
-@@ -959,7 +961,8 @@ static void max77693_muic_irq_work(struct work_struct *work)
- 	default:
- 		dev_err(info->dev, "muic interrupt: irq %d occurred\n",
- 				irq_type);
--		break;
-+		mutex_unlock(&info->mutex);
-+		return;
- 	}
+ 	/* switch to UART */
+ 	ret = max8997_update_reg(info->muic, MAX8997_MUIC_REG_CONTROL1,
+-				attached ? MAX8997_SW_UART : MAX8997_SW_OPEN,
+-				SW_MASK);
++				attached ? CONTROL1_SW_UART : CONTROL1_SW_OPEN,
++				CONTROL1_SW_MASK);
+ 	if (ret) {
+ 		dev_err(info->dev, "failed to update muic register\n");
+ 		goto out;
+diff --git a/include/linux/mfd/max8997-private.h b/include/linux/mfd/max8997-private.h
+index 6ae21bf..acf42e9 100644
+--- a/include/linux/mfd/max8997-private.h
++++ b/include/linux/mfd/max8997-private.h
+@@ -194,6 +194,55 @@ enum max8997_muic_reg {
+ 	MAX8997_MUIC_REG_END		= 0xf,
+ };
  
- 	if (ret < 0)
-@@ -1007,21 +1010,27 @@ static int max77693_muic_detect_accessory(struct max77693_muic_info *info)
- 					&attached);
- 	if (attached && adc != MAX77693_MUIC_ADC_OPEN) {
- 		ret = max77693_muic_adc_handler(info);
--		if (ret < 0)
-+		if (ret < 0) {
- 			dev_err(info->dev, "Cannot detect accessory\n");
-+			mutex_unlock(&info->mutex);
-+			return ret;
-+		}
- 	}
- 
- 	chg_type = max77693_muic_get_cable_type(info, MAX77693_CABLE_GROUP_CHG,
- 					&attached);
- 	if (attached && chg_type != MAX77693_CHARGER_TYPE_NONE) {
- 		ret = max77693_muic_chg_handler(info);
--		if (ret < 0)
-+		if (ret < 0) {
- 			dev_err(info->dev, "Cannot detect charger accessory\n");
-+			mutex_unlock(&info->mutex);
-+			return ret;
-+		}
- 	}
- 
- 	mutex_unlock(&info->mutex);
- 
--	return ret;
-+	return 0;
- }
- 
- static void max77693_muic_detect_cable_wq(struct work_struct *work)
++/* MAX8997-MUIC STATUS1 register */
++#define STATUS1_ADC_SHIFT		0
++#define STATUS1_ADCLOW_SHIFT		5
++#define STATUS1_ADCERR_SHIFT		6
++#define STATUS1_ADC_MASK		(0x1f << STATUS1_ADC_SHIFT)
++#define STATUS1_ADCLOW_MASK		(0x1 << STATUS1_ADCLOW_SHIFT)
++#define STATUS1_ADCERR_MASK		(0x1 << STATUS1_ADCERR_SHIFT)
++
++/* MAX8997-MUIC STATUS2 register */
++#define STATUS2_CHGTYP_SHIFT		0
++#define STATUS2_CHGDETRUN_SHIFT		3
++#define STATUS2_DCDTMR_SHIFT		4
++#define STATUS2_DBCHG_SHIFT		5
++#define STATUS2_VBVOLT_SHIFT		6
++#define STATUS2_CHGTYP_MASK		(0x7 << STATUS2_CHGTYP_SHIFT)
++#define STATUS2_CHGDETRUN_MASK		(0x1 << STATUS2_CHGDETRUN_SHIFT)
++#define STATUS2_DCDTMR_MASK		(0x1 << STATUS2_DCDTMR_SHIFT)
++#define STATUS2_DBCHG_MASK		(0x1 << STATUS2_DBCHG_SHIFT)
++#define STATUS2_VBVOLT_MASK		(0x1 << STATUS2_VBVOLT_SHIFT)
++
++/* MAX8997-MUIC STATUS3 register */
++#define STATUS3_OVP_SHIFT		2
++#define STATUS3_OVP_MASK		(0x1 << STATUS3_OVP_SHIFT)
++
++/* MAX8997-MUIC CONTROL1 register */
++#define COMN1SW_SHIFT			0
++#define COMP2SW_SHIFT			3
++#define COMN1SW_MASK			(0x7 << COMN1SW_SHIFT)
++#define COMP2SW_MASK			(0x7 << COMP2SW_SHIFT)
++#define CONTROL1_SW_MASK		(COMP2SW_MASK | COMN1SW_MASK)
++
++#define CONTROL1_SW_USB			((1 << COMP2SW_SHIFT) \
++						| (1 << COMN1SW_SHIFT))
++#define CONTROL1_SW_AUDIO		((2 << COMP2SW_SHIFT) \
++						| (2 << COMN1SW_SHIFT))
++#define CONTROL1_SW_UART		((3 << COMP2SW_SHIFT) \
++						| (3 << COMN1SW_SHIFT))
++#define CONTROL1_SW_OPEN		((0 << COMP2SW_SHIFT) \
++						| (0 << COMN1SW_SHIFT))
++
++#define	MAX8997_ADC_GROUND		0x00
++#define	MAX8997_ADC_MHL			0x01
++#define	MAX8997_ADC_JIG_USB_1		0x18
++#define	MAX8997_ADC_JIG_USB_2		0x19
++#define	MAX8997_ADC_DESKDOCK		0x1a
++#define	MAX8997_ADC_JIG_UART		0x1c
++#define	MAX8997_ADC_CARDOCK		0x1d
++#define	MAX8997_ADC_OPEN		0x1f
++
+ enum max8997_haptic_reg {
+ 	MAX8997_HAPTIC_REG_GENERAL	= 0x00,
+ 	MAX8997_HAPTIC_REG_CONF1	= 0x01,
 -- 
 1.8.0
 
