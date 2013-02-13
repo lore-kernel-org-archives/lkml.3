@@ -1,85 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934569Ab3BMVIt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 16:08:49 -0500
-Received: from mga02.intel.com ([134.134.136.20]:7113 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752010Ab3BMVIs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 16:08:48 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,658,1355126400"; 
-   d="scan'208";a="285364692"
-Date: Wed, 13 Feb 2013 13:08:46 -0800
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Matthias Schniedermeyer <ms@citd.de>, Greg KH <gregkh@linuxfoundation.org>
-Cc: Holger =?iso-8859-1?Q?Hoffst=E4tte?= 
-	<holger.hoffstaette@googlemail.com>,
-        Jonathan Nieder <jrnieder@gmail.com>, stable@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Tilman Schmidt <tilman@imap.cc>, kernel-team@lists.ubuntu.com,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: Re: [regression] external HDD in USB3 enclosure cannot be
- dynamically removed (Re: Linux 3.7.5)
-Message-ID: <20130213210846.GI8427@xanatos>
-References: <20130128143907.GA2940@kroah.com>
- <pan.2013.01.28.20.33.44.918987@googlemail.com>
- <20130128204639.GB7759@google.com>
- <20130212004023.GA8427@xanatos>
- <511A1AF1.9080107@googlemail.com>
- <20130212204224.GC8427@xanatos>
- <511B4EB1.9010708@googlemail.com>
- <20130213171656.GA9318@citd.de>
- <20130213193303.GH8427@xanatos>
- <20130213200413.GA17648@citd.de>
+	id S1760704Ab3BMVJR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 16:09:17 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:53486 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752010Ab3BMVJO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 16:09:14 -0500
+Message-ID: <511C00F4.4080708@wwwdotorg.org>
+Date: Wed, 13 Feb 2013 14:09:08 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130213200413.GA17648@citd.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Doug Anderson <dianders@chromium.org>
+CC: Wolfram Sang <w.sang@pengutronix.de>, Simon Glass <sjg@chromium.org>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Yuvaraj Kumar <yuvaraj.cd@gmail.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>, u.kleine-koenig@pengutronix.de,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Girish Shivananjappa <girish.shivananjappa@linaro.org>,
+        bhushan.r@samsung.com, sreekumar.c@samsung.com,
+        Prashanth G <prashanth.g@samsung.com>, Olof Johansson <olof@lixom.net>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Grant Grundler <grundler@chromium.org>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        Peter Korsgaard <peter.korsgaard@barco.com>,
+        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <khali@linux-fr.org>,
+        David Daney <david.daney@cavium.com>, Axel Lin <axel.lin@gmail.com>,
+        Stephen Warren <swarren@nvidia.com>, Barry Song <baohua.song@csr.com>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1 4/4] i2c-mux: i2c_add_mux_adapter() should use -1 for
+ auto bus num
+References: <1360778532-7480-1-git-send-email-dianders@chromium.org> <1360778532-7480-4-git-send-email-dianders@chromium.org>
+In-Reply-To: <1360778532-7480-4-git-send-email-dianders@chromium.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 13, 2013 at 09:04:13PM +0100, Matthias Schniedermeyer wrote:
-> On 13.02.2013 11:33, Sarah Sharp wrote:
-> > On Wed, Feb 13, 2013 at 06:16:56PM +0100, Matthias Schniedermeyer wrote:
-> > > On 13.02.2013 09:28, Holger Hoffstätte wrote:
-> > > > On 12.02.2013 21:42, Sarah Sharp wrote:
-> > > > > [..]
-> > > > > There was a further set of patches queued for 3.9 to deal with connected
-> > > > > devices going to the Inactive state, but they looked like they were too
-> > > > > big for stable:
-> > > > > 
-> > > > > d3b9d7a USB: Fix connected device switch to Inactive state.
-> > > > > a24a607 USB: Rip out recursive call on warm port reset.
-> > > > > 2d4fa94 USB: Prepare for refactoring by adding extra udev checks.
-> > > > > 0fe51aa USB: Don't use EHCI port sempahore for USB 3.0 hubs.
-> > 
-> > Holger and Matthias, can you double check that cherry picking just those
-> > four patches on top of 3.7.7 or 3.8 works as well?
+On 02/13/2013 11:02 AM, Doug Anderson wrote:
+> The force_nr parameter to i2c_add_mux_adapter() uses 0 to signify that
+> we don't want to force the bus number of the adapter.  This is
+> non-ideal because:
+> * 0 is actually a valid bus number to request
+> * i2c_add_numbered_adapter() (which i2c_add_mux_adapter() calls) uses
+>   -1 to mean the same thing.  That means extra logic in
+>   i2c_add_mux_adapter().
 > 
-> 3.7.7 + those 4 patches workes for me.
+> Fix i2c_add_mux_adapter() to use -1 and update all mux drivers
+> accordingly.
 > 
-> As i'm not very firm in git i generated separate diffs for each commit 
-> and applying them in the order 2d4fa94 0fe51aa d3b9d7a a24a607 worked 
-> without hunks dropped.
-> 
-> I have attached `git diff` against vanilla 3.7.7, so you can check that 
-> i got it right.
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> ---
+> Notes:
+> - If there's a good reason that force_nr uses 0 for auto then feel
+>   free to drop this patch.  I've place it at the end of the series to
+>   make it easy to just drop it.
 
-Yep, that diff looks fine compared to the git diff of those four patches.
+IIRC (and I only vaguely do...) it's because:
 
-Greg,
+> diff --git a/drivers/i2c/muxes/i2c-mux-gpio.c b/drivers/i2c/muxes/i2c-mux-gpio.c
+> index 9f50ef0..301ed0b 100644
+> --- a/drivers/i2c/muxes/i2c-mux-gpio.c
+> +++ b/drivers/i2c/muxes/i2c-mux-gpio.c
+> @@ -208,7 +208,7 @@ static int i2c_mux_gpio_probe(struct platform_device *pdev)
+>  	}
+>  
+>  	for (i = 0; i < mux->data.n_values; i++) {
+> -		u32 nr = mux->data.base_nr ? (mux->data.base_nr + i) : 0;
+> +		int nr = mux->data.base_nr ? (mux->data.base_nr + i) : -1;
 
-How do you want to handle this?  The above four patches should go into
-3.8 and stable, but they're not currently in Linus' tree and it's
-probably too late in the cycle to merge them this week.  Should we just
-wait until 3.9 is out and put the patches into the stable trees then?
-
-My email shows that the bad commit
-f7965c0846d74b270e246c1470ca955d5078eb07 has been added to the 3.2, 3.4,
-and 3.7 stable trees, as well as Canonical's 3.7 stable tree.  I'm also
-fine with just reverting that commit from 3.8 and stable.
-
-Sarah Sharp
+Here, mux->data.base_nr is platform data (or copied directly from it),
+and any field in a platform data struct stored in a global variable not
+explicitly initialized would be 0, hence 0 would typically mean "no
+explicit bus number desired". Since a mux can't exist without a parent
+I2C bus, it's unlikely anyone would want a mux to be I2C bus 0, but
+rather the parent to have that number.
