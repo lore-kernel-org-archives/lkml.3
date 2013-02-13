@@ -1,93 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760158Ab3BMRN6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 12:13:58 -0500
-Received: from mx2.promwad.com ([91.149.128.90]:18380 "EHLO mx2.promwad.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756024Ab3BMRN5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 12:13:57 -0500
-X-Greylist: delayed 326 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Feb 2013 12:13:57 EST
-Date: Wed, 13 Feb 2013 20:08:26 +0300
-From: Michail Kurachkin <michail.kurachkin@promwad.com>
-X-Mailer: The Bat! (v3.64.01 Christmas Edition) Professional
-Reply-To: promwad_imap <michail.kurachkin@promwad.com>
-Organization: promwad
-X-Priority: 3 (Normal)
-Message-ID: <1634686041.20130213200826@promwad.com>
-To: Oliver Neukum <oneukum@suse.de>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kuten Ivan <Ivan.Kuten@promwad.com>,
-        "benavi@marvell.com" <benavi@marvell.com>,
-        Palstsiuk Viktar <Viktar.Palstsiuk@promwad.com>
-Subject: Re[2]: TDM bus support in Linux Kernel [PATCH]
-In-Reply-To: <5007545.bVNiTjB1se@linux-5eaq.site>
-References: <F7F628C32E67B04DAECC5CA53521253E5FAB15CE@sv-exmb01-lo1.promwad.corp> <1445550.3M3gD8CvZe@linux-5eaq.site> <6757302.20130204160858@promwad.com> <5007545.bVNiTjB1se@linux-5eaq.site>
+	id S1760186Ab3BMRQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 12:16:28 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:1917 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759944Ab3BMRQ0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 12:16:26 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Wed, 13 Feb 2013 09:16:18 -0800
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: <linux-tegra@vger.kernel.org>
+CC: <arnd@arndb.de>, <marvin24@gmx.de>, <balbi@ti.com>,
+        Hiroshi Doyu <hdoyu@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: [v3 1/3] ARM: tegra: Unify tegra{20,30,114}_init_early()
+Date: Wed, 13 Feb 2013 19:15:48 +0200
+Message-ID: <1360775751-23850-2-git-send-email-hdoyu@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1360775751-23850-1-git-send-email-hdoyu@nvidia.com>
+References: <1360775751-23850-1-git-send-email-hdoyu@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Refactored tegra{20,30,114}_init_early() so that we have the unified
+tegra_init_early().
 
-I just sent reworked version of the code. I am looking forward for comments.
-Sorry, I have no time to fix your next requests:
+Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+---
+ arch/arm/mach-tegra/board-dt-tegra114.c |    2 +-
+ arch/arm/mach-tegra/board-dt-tegra20.c  |    2 +-
+ arch/arm/mach-tegra/board-dt-tegra30.c  |    4 ++--
+ arch/arm/mach-tegra/board.h             |    4 +---
+ arch/arm/mach-tegra/common.c            |   26 ++------------------------
+ arch/arm/mach-tegra/hotplug.c           |   23 +++++++++--------------
+ arch/arm/mach-tegra/sleep.h             |   10 +++++-----
+ 7 files changed, 21 insertions(+), 50 deletions(-)
 
-1) It's a bit clunky having two device types on the same character device. Is there a better way to do this?
-
-2) + mutex_lock(&slic_chr_dev_lock);
-This locking is very heavy handed. You are holding it across the entire open, close, read, write, ioctl, and it is protecting a bunch of different things. Can you make the locking a bit more fine grained?
-
-3) + rc = add_to_slic_devices_list(&tdm_dev->dev, TDM_DEVICE);
-This function is the same as probe_spi_slic, except for the device type. A single function would prevent the code duplication.
-
-Will do it later.
-
-
-Thanks,
-Michail
-
-
-> On Monday 04 February 2013 16:08:58 Michail Kurachkin wrote:
->> Hi Oliver,
->> 
->> Thank you for the code review. I am working on the sources and soon
->> will send you the update.
->> 
->> By the way, I did not find suitable implementation of software circular buffer management. src/include/linux/circ_buf.h seems to be very limited solution. 
->> What do you think about adding the following functions/macros to the global namespace?
-
-> Additions to the global namespace needs to be done very carefully.
-
->> int cb_init(struct circ_buf *cb, int item_size, int count);
->> void cb_free(struct circ_buf *cb);
->> int cb_push(struct circ_buf *cb, void *item);
->> int cb_pop(struct circ_buf *cb, void *item);
-
-> void pointers here may be suboptimal
-
->> int cb_is_full(struct circ_buf *cb);
->> int cb_is_empty(struct circ_buf *cb);
-
-> I suggest you implement them in private and if they serve you well,
-> we can discuss making them global. The important point is that you
-> don't duplicate code.
-
->         Regards
->                 Oliver
-
-
-
---
-Kurochkin Michail
-Software engineer
-Promwad Innovation Company
-22, Olshevskogo St.,
-220073, Minsk, BELARUS
-phone: +375 17 312-1246 ext. 801
-mobile: +375 29 609-1024
-mail: Michail.Kurachkin@promwad.com
-www: www.promwad.com
+diff --git a/arch/arm/mach-tegra/board-dt-tegra114.c b/arch/arm/mach-tegra/board-dt-tegra114.c
+index 085d636..08e8294 100644
+--- a/arch/arm/mach-tegra/board-dt-tegra114.c
++++ b/arch/arm/mach-tegra/board-dt-tegra114.c
+@@ -36,7 +36,7 @@ static const char * const tegra114_dt_board_compat[] = {
+ DT_MACHINE_START(TEGRA114_DT, "NVIDIA Tegra114 (Flattened Device Tree)")
+ 	.smp		= smp_ops(tegra_smp_ops),
+ 	.map_io		= tegra_map_common_io,
+-	.init_early	= tegra114_init_early,
++	.init_early	= tegra_init_early,
+ 	.init_irq	= tegra_dt_init_irq,
+ 	.init_time	= clocksource_of_init,
+ 	.init_machine	= tegra114_dt_init,
+diff --git a/arch/arm/mach-tegra/board-dt-tegra20.c b/arch/arm/mach-tegra/board-dt-tegra20.c
+index a0edf25..fca18e9 100644
+--- a/arch/arm/mach-tegra/board-dt-tegra20.c
++++ b/arch/arm/mach-tegra/board-dt-tegra20.c
+@@ -145,7 +145,7 @@ static const char *tegra20_dt_board_compat[] = {
+ DT_MACHINE_START(TEGRA_DT, "nVidia Tegra20 (Flattened Device Tree)")
+ 	.map_io		= tegra_map_common_io,
+ 	.smp		= smp_ops(tegra_smp_ops),
+-	.init_early	= tegra20_init_early,
++	.init_early	= tegra_init_early,
+ 	.init_irq	= tegra_dt_init_irq,
+ 	.init_time	= clocksource_of_init,
+ 	.init_machine	= tegra_dt_init,
+diff --git a/arch/arm/mach-tegra/board-dt-tegra30.c b/arch/arm/mach-tegra/board-dt-tegra30.c
+index bf68567..63f8139 100644
+--- a/arch/arm/mach-tegra/board-dt-tegra30.c
++++ b/arch/arm/mach-tegra/board-dt-tegra30.c
+@@ -3,7 +3,7 @@
+  *
+  * NVIDIA Tegra30 device tree board support
+  *
+- * Copyright (C) 2011 NVIDIA Corporation
++ * Copyright (C) 2011, 2013, NVIDIA Corporation
+  *
+  * Derived from:
+  *
+@@ -50,7 +50,7 @@ static const char *tegra30_dt_board_compat[] = {
+ DT_MACHINE_START(TEGRA30_DT, "NVIDIA Tegra30 (Flattened Device Tree)")
+ 	.smp		= smp_ops(tegra_smp_ops),
+ 	.map_io		= tegra_map_common_io,
+-	.init_early	= tegra30_init_early,
++	.init_early	= tegra_init_early,
+ 	.init_irq	= tegra_dt_init_irq,
+ 	.init_time	= clocksource_of_init,
+ 	.init_machine	= tegra30_dt_init,
+diff --git a/arch/arm/mach-tegra/board.h b/arch/arm/mach-tegra/board.h
+index 86851c8..60431de 100644
+--- a/arch/arm/mach-tegra/board.h
++++ b/arch/arm/mach-tegra/board.h
+@@ -26,9 +26,7 @@
+ 
+ void tegra_assert_system_reset(char mode, const char *cmd);
+ 
+-void __init tegra20_init_early(void);
+-void __init tegra30_init_early(void);
+-void __init tegra114_init_early(void);
++void __init tegra_init_early(void);
+ void __init tegra_map_common_io(void);
+ void __init tegra_init_irq(void);
+ void __init tegra_dt_init_irq(void);
+diff --git a/arch/arm/mach-tegra/common.c b/arch/arm/mach-tegra/common.c
+index 5449a3f..f0315c9 100644
+--- a/arch/arm/mach-tegra/common.c
++++ b/arch/arm/mach-tegra/common.c
+@@ -94,7 +94,7 @@ static void __init tegra_init_cache(void)
+ 
+ }
+ 
+-static void __init tegra_init_early(void)
++void __init tegra_init_early(void)
+ {
+ 	tegra_cpu_reset_handler_init();
+ 	tegra_apb_io_init();
+@@ -102,31 +102,9 @@ static void __init tegra_init_early(void)
+ 	tegra_init_cache();
+ 	tegra_pmc_init();
+ 	tegra_powergate_init();
++	tegra_hotplug_init();
+ }
+ 
+-#ifdef CONFIG_ARCH_TEGRA_2x_SOC
+-void __init tegra20_init_early(void)
+-{
+-	tegra_init_early();
+-	tegra20_hotplug_init();
+-}
+-#endif
+-
+-#ifdef CONFIG_ARCH_TEGRA_3x_SOC
+-void __init tegra30_init_early(void)
+-{
+-	tegra_init_early();
+-	tegra30_hotplug_init();
+-}
+-#endif
+-
+-#ifdef CONFIG_ARCH_TEGRA_114_SOC
+-void __init tegra114_init_early(void)
+-{
+-	tegra_init_early();
+-}
+-#endif
+-
+ void __init tegra_init_late(void)
+ {
+ 	tegra_powergate_debugfs_init();
+diff --git a/arch/arm/mach-tegra/hotplug.c b/arch/arm/mach-tegra/hotplug.c
+index a599f6e..8da9f78 100644
+--- a/arch/arm/mach-tegra/hotplug.c
++++ b/arch/arm/mach-tegra/hotplug.c
+@@ -1,8 +1,7 @@
+ /*
+- *
+  *  Copyright (C) 2002 ARM Ltd.
+  *  All Rights Reserved
+- *  Copyright (c) 2010, 2012 NVIDIA Corporation. All rights reserved.
++ *  Copyright (c) 2010, 2012-2013, NVIDIA Corporation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 as
+@@ -15,6 +14,7 @@
+ #include <asm/cacheflush.h>
+ #include <asm/smp_plat.h>
+ 
++#include "fuse.h"
+ #include "sleep.h"
+ 
+ static void (*tegra_hotplug_shutdown)(void);
+@@ -56,18 +56,13 @@ int tegra_cpu_disable(unsigned int cpu)
+ 	return cpu == 0 ? -EPERM : 0;
+ }
+ 
+-#ifdef CONFIG_ARCH_TEGRA_2x_SOC
+-extern void tegra20_hotplug_shutdown(void);
+-void __init tegra20_hotplug_init(void)
++void __init tegra_hotplug_init(void)
+ {
+-	tegra_hotplug_shutdown = tegra20_hotplug_shutdown;
+-}
+-#endif
++	if (!IS_ENABLED(CONFIG_HOTPLUG_CPU))
++		return;
+ 
+-#ifdef CONFIG_ARCH_TEGRA_3x_SOC
+-extern void tegra30_hotplug_shutdown(void);
+-void __init tegra30_hotplug_init(void)
+-{
+-	tegra_hotplug_shutdown = tegra30_hotplug_shutdown;
++	if (IS_ENABLED(CONFIG_ARCH_TEGRA_2x_SOC) && tegra_chip_id == TEGRA20)
++		tegra_hotplug_shutdown = tegra20_hotplug_shutdown;
++	if (IS_ENABLED(CONFIG_ARCH_TEGRA_3x_SOC) && tegra_chip_id == TEGRA30)
++		tegra_hotplug_shutdown = tegra30_hotplug_shutdown;
+ }
+-#endif
+diff --git a/arch/arm/mach-tegra/sleep.h b/arch/arm/mach-tegra/sleep.h
+index 4ffae54..970ebd5 100644
+--- a/arch/arm/mach-tegra/sleep.h
++++ b/arch/arm/mach-tegra/sleep.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 2010-2012, NVIDIA Corporation. All rights reserved.
++ * Copyright (c) 2010-2013, NVIDIA Corporation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify it
+  * under the terms and conditions of the GNU General Public License,
+@@ -124,11 +124,11 @@ int tegra_sleep_cpu_finish(unsigned long);
+ void tegra_disable_clean_inv_dcache(void);
+ 
+ #ifdef CONFIG_HOTPLUG_CPU
+-void tegra20_hotplug_init(void);
+-void tegra30_hotplug_init(void);
++void tegra20_hotplug_shutdown(void);
++void tegra30_hotplug_shutdown(void);
++void tegra_hotplug_init(void);
+ #else
+-static inline void tegra20_hotplug_init(void) {}
+-static inline void tegra30_hotplug_init(void) {}
++static inline void tegra_hotplug_init(void) {}
+ #endif
+ 
+ void tegra20_cpu_shutdown(int cpu);
+-- 
+1.7.9.5
 
