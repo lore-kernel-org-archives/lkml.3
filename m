@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932593Ab3BMSoK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 13:44:10 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:57337 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753848Ab3BMSoI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 13:44:08 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: linux-fsdevel@vger.kernel.org
-Cc: Linux Containers <containers@lists.linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>
-References: <87621w14vs.fsf@xmission.com>
-	<1360777934-5663-1-git-send-email-ebiederm@xmission.com>
-	<1360777934-5663-18-git-send-email-ebiederm@xmission.com>
-	<20130213181450.GJ30800@cs.cmu.edu>
-Date: Wed, 13 Feb 2013 10:44:01 -0800
-In-Reply-To: <20130213181450.GJ30800@cs.cmu.edu> (Jan Harkes's message of
-	"Wed, 13 Feb 2013 13:14:51 -0500")
-Message-ID: <87ip5wvytq.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S932549Ab3BMSqD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 13:46:03 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43030 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757122Ab3BMSp7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 13:45:59 -0500
+Message-ID: <511BDF0F.2000005@zytor.com>
+Date: Wed, 13 Feb 2013 10:44:31 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/XsZct1CrKOkKS/hpGO5sz0iy9fymp92s=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  3.0 XMDrug1234561 Drug references
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
-	*      [score: 0.0133]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *;linux-fsdevel@vger.kernel.org
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH review 18/85] coda: Restrict coda messages to the initial user namespace
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+To: Matthew Garrett <matthew.garrett@nebula.com>
+CC: Casey Schaufler <casey@schaufler-ca.com>, Borislav Petkov <bp@alien8.de>,
+        Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH] x86: Lock down MSR writing in secure boot
+References: <dee64752-850c-4d78-b703-f47a985bc13e@email.android.com>       <CAGXu5jLAufTRm=sDST0br_WEkn4o0Hpjv2jDP2Na=cCvuM+MGg@mail.gmail.com>       <1360355671.18083.18.camel@x230.lan>       <CAGXu5jKo2PfMBO4A0ZgQcrPuj8OHNaff+CjAesOAWkZc0vB9+Q@mail.gmail.com>       <51157C9C.6030501@zytor.com> <20130208230655.GB28990@pd.tnic>       <1360366012.18083.21.camel@x230.lan> <5115A4CC.3080102@zytor.com>       <1360373383.18083.23.camel@x230.lan>       <CAGXu5j+xvJ3L5ejxtZ-Jw3F6rV7OsrE0_HZCGu_er0rH2_PwKA@mail.gmail.com>       <20130209092925.GA17728@pd.tnic> <1360422712.18083.24.camel@x230.lan>      <511AE2CC.5040705@zytor.com> <1360733962.18083.30.camel@x230.lan>     <511B2EB9.5070406@zytor.com> <1360736860.18083.33.camel@x230.lan>    <511B33BC.9080307@zytor.com> <1360737709.18083.36.camel@x230.lan>   <511BCB6E.8080102@zytor.com> <1360776399.18083.39.camel@x230.lan>  <511BD291.1040003@schaufler-ca.com> <1360778179.18083.42.camel@x230.lan>
+In-Reply-To: <1360778179.18083.42.camel@x230.lan>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jan Harkes <jaharkes@cs.cmu.edu> writes:
-
-> On Wed, Feb 13, 2013 at 09:51:07AM -0800, Eric W. Biederman wrote:
->> From: "Eric W. Biederman" <ebiederm@xmission.com>
->> 
->> Remove the slight chance that uids and gids in coda messages will be
->> interpreted in the wrong user namespace.
+On 02/13/2013 09:56 AM, Matthew Garrett wrote:
+> On Wed, 2013-02-13 at 09:51 -0800, Casey Schaufler wrote:
+>> On 2/13/2013 9:26 AM, Matthew Garrett wrote:
+>>> Admit that CAP_SYS_RAWIO is fucked up beyond rescue. Add a new
+>>> capability with well-defined semantics.
+>>
+>> You can't add a new capability where there is an existing capability
+>> that can be remotely argued to be appropriate.
 >
-> Awesome, I was wondering how to handle uid's from different namespaces
-> cleanly in Coda's userspace daemon without resorting to exporting kuids
-> to userspace.
+> CAP_SYS_RAWIO can't be argued to be appropriate. It covers a range of
+> functionality that doesn't permit the running kernel to be modified and
+> which is required to provide a functional Linux system. Using it would
+> require redefining its existing usage, which would break existing
+> userspace.
 >
-> But this is a much more elegant solution, every namespace that cares
-> about Coda should just run their own mountpoint and userspace daemon.
 
-Do you know if people care enough about coda that they will want to
-export run coda multiple mountpoint and userspace daemons?
+So people have piggybacked complete inappropriate junk onto 
+CAP_SYS_RAWIO.  Great.  What the hell do we do now?  We can't break 
+apart CAP_SYS_RAWIO because we don't have hierarchical capabilities.
 
-I have never seen anyone running coda so I was suspecting that coda was
-a filesystem that was gradually fading away.
+We thus have a bunch of unpalatable choices, **all of which are wrong**.
 
-Eric
+This, incidentally, is *exactly* the reason I object to 
+CAP_COMPROMISE_KERNEL as well... it describes a usage model, not a resource.
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
