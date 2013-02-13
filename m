@@ -1,38 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761199Ab3BMXPc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 18:15:32 -0500
-Received: from ns1.pc-advies.be ([83.149.101.17]:34952 "EHLO
-	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752342Ab3BMXPb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 18:15:31 -0500
-Date: Thu, 14 Feb 2013 00:15:22 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Wenyou Yang <wenyou.yang@atmel.com>
-Cc: linux-arm-kernel@lists.infradead.org, nicolas.ferre@atmel.com,
-        plagnioj@jcrosoft.com, fabio.porcedda@gmail.com, JM.Lin@atmel.com,
-        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 4/8] watchdog/at91sam9_wdt: Adjust the options of watchdog_info
-Message-ID: <20130213231522.GH7867@spo001.leaseweb.com>
-References: <1359702386-21284-1-git-send-email-wenyou.yang@atmel.com> <1359702386-21284-5-git-send-email-wenyou.yang@atmel.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1359702386-21284-5-git-send-email-wenyou.yang@atmel.com>
-User-Agent: Mutt/1.4.1i
+	id S965230Ab3BMXQH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 18:16:07 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45874 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761077Ab3BMXQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 18:16:05 -0500
+Message-ID: <511C1E8E.5040106@zytor.com>
+Date: Wed, 13 Feb 2013 15:15:26 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>,
+        Scan Subscription <scan-subscription@coverity.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: New Defect(s) reported by Coverity Scan
+References: <C0A4ACBB26D853488EA0C68388B70268172CCF11@BLUPRD0512MB628.namprd05.prod.outlook.com> <20130213183842.GC26948@pd.tnic> <C0A4ACBB26D853488EA0C68388B70268172CD159@BLUPRD0512MB628.namprd05.prod.outlook.com> <20130213191352.GC18013@pd.tnic>
+In-Reply-To: <20130213191352.GC18013@pd.tnic>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wenyou,
+On 02/13/2013 11:13 AM, Borislav Petkov wrote:
+> 
+> and it might really need fclose() there for correctness' sake.
+> 
 
-> Since the Watchdog Timer Mode Register can be only written only once,
-> so the watchdog_info shall not support WDIOF_SETTIMEOUT
-> and WDIOF_MAGICCLOSE options, remove them.
+Not really, since exit() does that.  We might want it for clarity's
+sake, though.
 
-Ik you keep using the timer, then you don't have to remove this.
-
-Kind regards,
-Wim.
+	-hpa
 
