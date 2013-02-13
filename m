@@ -1,61 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758563Ab3BMSwp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 13:52:45 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:62413 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756845Ab3BMSwo (ORCPT
+	id S1758970Ab3BMSyr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 13:54:47 -0500
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:42972 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756988Ab3BMSyq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 13:52:44 -0500
-Date: Wed, 13 Feb 2013 10:52:39 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: KY Srinivasan <kys@microsoft.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "JBeulich@suse.com" <JBeulich@suse.com>, "bp@alien8.de" <bp@alien8.de>
-Subject: Re: [PATCH 1/1] Drivers: hv: vmbus: Use the new infrastructure for
- delivering VMBUS interrupts
-Message-ID: <20130213185239.GB16645@kroah.com>
-References: <1360164359-12273-1-git-send-email-kys@microsoft.com>
- <20130206191313.GA1470@kroah.com>
- <511ADEB7.6080909@zytor.com>
- <ae14ef66af2d4206baf4ccb382fc4205@SN2PR03MB061.namprd03.prod.outlook.com>
- <20130213162211.GA21253@kroah.com>
- <c31482583b394bfcaa16b76a63c413fe@SN2PR03MB061.namprd03.prod.outlook.com>
- <511BD923.7000500@zytor.com>
- <20130213182349.GA4959@kroah.com>
- <511BDD2A.8020002@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <511BDD2A.8020002@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 13 Feb 2013 13:54:46 -0500
+From: Maksim Pikhenko <pikhenko@gmail.com>
+To: hirofumi@mail.parknet.co.jp
+Cc: linux-kernel@vger.kernel.org, Maksim Pikhenko <pikhenko@gmail.com>
+Subject: [PATCH] :fs :fat Delete unnecessary blank line.
+Date: Wed, 13 Feb 2013 22:53:47 +0400
+Message-Id: <1360781627-9710-1-git-send-email-pikhenko@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 13, 2013 at 10:36:26AM -0800, H. Peter Anvin wrote:
-> On 02/13/2013 10:23 AM, Greg KH wrote:
-> > On Wed, Feb 13, 2013 at 10:19:15AM -0800, H. Peter Anvin wrote:
-> >> Sounds like we have the joy of a cross-tree dependency...
-> > 
-> > Yeah, a mess.
-> > 
-> > KY, how about I just wait until all of this gets merged with Linus for
-> > 3.9-rc1, and then you resend me the patches you have to take advantage
-> > of these new bits?  That makes it easy for everyone involved.
-> > 
-> 
-> The other option is you can pull tip:x86/hyperv from me... it has *only*
-> these changes.  I can then let you push them to Linus or I can push them
-> to Linus before you push your tree.
+Fixing a code style issue.
 
-Nah, I'll just wait, it's not that big of a deal here, it will all make
-it into 3.9-final eventually.
+Signed-off-by: Maksim Pikhenko <pikhenko@gmail.com>
+---
+ fs/fat/inode.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-greg k-h
+diff --git a/fs/fat/inode.c b/fs/fat/inode.c
+index f8f4916..1af574b 100644
+--- a/fs/fat/inode.c
++++ b/fs/fat/inode.c
+@@ -1476,7 +1476,6 @@ out_fail:
+ 	kfree(sbi);
+ 	return error;
+ }
+-
+ EXPORT_SYMBOL_GPL(fat_fill_super);
+ 
+ /*
+-- 
+1.7.10.4
+
