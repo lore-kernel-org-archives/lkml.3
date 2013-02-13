@@ -1,47 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965412Ab3BMSUf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 13:20:35 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:49390 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934548Ab3BMSUa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 13:20:30 -0500
-Date: Wed, 13 Feb 2013 10:20:26 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: George Spelvin <linux@horizon.com>
-Cc: linux-serial@vger.kernel.org, peter@hurleysoftware.com,
-        linux-kernel@vger.kernel.org, giometti@linux.it
-Subject: Re: [PATCH v2 8/9] pps: Use a single cdev
-Message-ID: <20130213182026.GA3996@kroah.com>
-References: <cover.1360677367.git.linux@horizon.com>
- <e2550575ba1568393ddd435180bc4d0341d8cae3.1360677367.git.linux@horizon.com>
+	id S965472Ab3BMSU4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 13:20:56 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:42061 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934572Ab3BMSUu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 13:20:50 -0500
+Message-ID: <511BD923.7000500@zytor.com>
+Date: Wed, 13 Feb 2013 10:19:15 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <e2550575ba1568393ddd435180bc4d0341d8cae3.1360677367.git.linux@horizon.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: KY Srinivasan <kys@microsoft.com>
+CC: Greg KH <gregkh@linuxfoundation.org>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "JBeulich@suse.com" <JBeulich@suse.com>, "bp@alien8.de" <bp@alien8.de>
+Subject: Re: [PATCH 1/1] Drivers: hv: vmbus: Use the new infrastructure for
+ delivering VMBUS interrupts
+References: <1360164359-12273-1-git-send-email-kys@microsoft.com> <20130206191313.GA1470@kroah.com> <511ADEB7.6080909@zytor.com> <ae14ef66af2d4206baf4ccb382fc4205@SN2PR03MB061.namprd03.prod.outlook.com> <20130213162211.GA21253@kroah.com> <c31482583b394bfcaa16b76a63c413fe@SN2PR03MB061.namprd03.prod.outlook.com>
+In-Reply-To: <c31482583b394bfcaa16b76a63c413fe@SN2PR03MB061.namprd03.prod.outlook.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 12, 2013 at 02:02:42AM -0500, George Spelvin wrote:
-> One per device just seems wasteful, when we already manintain a
-> data structure to map minor numbers to devices, and we already have
-> a PPS_MAX_SOURCES #define.
-> 
-> This is also a more comprehensive fix to the use-after-free bug
-> that has already received a minimal patch.
-> ---
->  drivers/pps/pps.c          | 66 ++++++++++++++++++++++++----------------------
->  include/linux/pps_kernel.h |  1 -
->  2 files changed, 34 insertions(+), 33 deletions(-)
+Sounds like we have the joy of a cross-tree dependency...
 
-You forgot a Signed-off-by: line for this patch, so I can't apply it, or
-the 9/9 patch :(
+	-hpa
 
-Care to resend just these two after fixing this up?
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-thanks,
-
-greg k-h
