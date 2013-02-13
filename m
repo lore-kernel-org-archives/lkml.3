@@ -1,207 +1,653 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932272Ab3BMDBx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 22:01:53 -0500
-Received: from mout.gmx.net ([212.227.15.18]:49766 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759784Ab3BMDBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 22:01:20 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1+Zefc4dRiZzWyC0VaEF8VO6iyB9O6DaDIzvl3wWJ
-	6UwXRXQjk8jgdE
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Peter Huewe <peterhuewe@gmx.de>, Andrew Miller <amiller@amilx.com>,
-        Maxim Mikityanskiy <maxtram95@gmail.com>,
-        YAMANE Toshiaki <yamanetoshi@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 9/9] staging/rtl8187se: Mark functions as static to silence sparse
-Date: Wed, 13 Feb 2013 04:05:26 +0100
-Message-Id: <1360724726-2997-9-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1360724302-2794-4-git-send-email-peterhuewe@gmx.de>
-References: <1360724302-2794-4-git-send-email-peterhuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+	id S932178Ab3BMDI7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 22:08:59 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35105 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752309Ab3BMDI5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 22:08:57 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <511B0392.6000203@jp.fujitsu.com>
+Date: Wed, 13 Feb 2013 12:08:02 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <liuj97@gmail.com>,
+        Yinghai Lu <yinghai@kernel.org>, Toshi Kani <toshi.kani@hp.com>,
+        Myron Stowe <mstowe@redhat.com>, <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH] ACPI / hotplug: Fix concurrency issues and memory leaks
+References: <1837481.7dT8hTZ4MT@vostro.rjw.lan>
+In-Reply-To: <1837481.7dT8hTZ4MT@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sparse complains that some functions can be declared as static:
-123:6: warning: symbol 'PlatformIOWrite1Byte' was not declared. Should it be static?
-129:6: warning: symbol 'PlatformIOWrite2Byte' was not declared. Should it be static?
-135:6: warning: symbol 'PlatformIOWrite4Byte' was not declared. Should it be static?
-178:6: warning: symbol 'SetOutputEnableOfRfPins' was not declared.  Should it be static?
-354:6: warning: symbol 'ZEBRA_Config_85BASIC_HardCode' was not declared.  Should it be static?
-655:6: warning: symbol 'InitTxPwrTracking87SE' was not declared. Should it be static?
-665:6: warning: symbol 'PhyConfig8185' was not declared. Should it be static?
-692:6: warning: symbol 'HwConfigureRTL8185' was not declared. Should it be static?
-817:4: warning: symbol 'GetSupportedWirelessMode8185' was not declared.  Should it be static?
-822:6: warning: symbol 'ActUpdateChannelAccessSetting' was not declared.  Should it be static?
-857:6: warning: symbol 'ActSetWirelessMode8185' was not declared. Should it be static?
-914:6: warning: symbol 'MgntDisconnectIBSS' was not declared. Should it be static?
-940:6: warning: symbol 'MlmeDisassociateRequest' was not declared.  Should it be static?
-957:6: warning: symbol 'MgntDisconnectAP' was not declared. Should it be static?
-975:6: warning: symbol 'MgntDisconnect' was not declared. Should it be static?
-1011:6: warning: symbol 'SetRFPowerState' was not declared. Should it be static?
-1115:6: warning: symbol 'InactivePowerSave' was not declared. Should it be static?
+Hi Rafael,
 
--> Add the static keyword.
+The patch seems good.
+There is a comment below.
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
- drivers/staging/rtl8187se/r8185b_init.c |   34 +++++++++++++++---------------
- 1 files changed, 17 insertions(+), 17 deletions(-)
+2013/02/13 9:19, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>
+> This changeset is aimed at fixing a few different but related
+> problems in the ACPI hotplug infrastructure.
+>
+> First of all, since notify handlers may be run in parallel with
+> acpi_bus_scan(), acpi_bus_trim() and acpi_bus_hot_remove_device()
+> and some of them are installed for ACPI handles that have no struct
+> acpi_device objects attached (i.e. before those objects are created),
+> those notify handlers have to take acpi_scan_lock to prevent races
+> from taking place (e.g. a struct acpi_device is found to be present
+> for the given ACPI handle, but right after that it is removed by
+> acpi_bus_trim() running in parallel to the given notify handler).
+> Moreover, since some of them call acpi_bus_scan() and
+> acpi_bus_trim(), this leads to the conclusion that acpi_scan_lock
+> should be acquired by the callers of these two funtions rather by
+> these functions themselves.
+>
+> For these reasons, make all notify handlers that can handle device
+> addition and eject events take acpi_scan_lock and remove the
+> acpi_scan_lock locking from acpi_bus_scan() and acpi_bus_trim().
+> Accordingly, update all of their users to make sure that they
+> are always called under acpi_scan_lock.
+>
+> Furthermore, since eject operations are carried out asynchronously
+> with respect to the notify events that trigger them, with the help
+> of acpi_bus_hot_remove_device(), even if notify handlers take the
+> ACPI scan lock, it still is possible that, for example,
+> acpi_bus_trim() will run between acpi_bus_hot_remove_device() and
+> the notify handler that scheduled its execution and that
+> acpi_bus_trim() will remove the device node passed to
+> acpi_bus_hot_remove_device() for ejection.  In that case, the struct
+> acpi_device object obtained by acpi_bus_hot_remove_device() will be
+> invalid and not-so-funny things will ensue.  To protect agaist that,
+> make the users of acpi_bus_hot_remove_device() run get_device() on
+> ACPI device node objects that are about to be passed to it and make
+> acpi_bus_hot_remove_device() run put_device() on them and check if
+> their ACPI handles are not NULL (make acpi_device_unregister() clear
+> the device nodes' ACPI handles for that check to work).
+>
+> Finally, observe that acpi_os_hotplug_execute() actually can fail,
+> in which case its caller ought to free memory allocated for the
+> context object to prevent leaks from happening.  It also needs to
+> run put_device() on the device node that it ran get_device() on
+> previously in that case.  Modify the code accordingly.
+>
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+>
+> On top of linux-pm.git/linux-next.
+>
+> Thanks,
+> Rafael
+>
+> ---
+>   drivers/acpi/acpi_memhotplug.c     |   56 +++++++++++++++++++-----------
+>   drivers/acpi/container.c           |   10 +++--
+>   drivers/acpi/dock.c                |   19 ++++++++--
+>   drivers/acpi/processor_driver.c    |   24 +++++++++---
+>   drivers/acpi/scan.c                |   69 +++++++++++++++++++++++++------------
+>   drivers/pci/hotplug/acpiphp_glue.c |    6 +++
+>   drivers/pci/hotplug/sgi_hotplug.c  |    5 ++
+>   include/acpi/acpi_bus.h            |    3 +
+>   8 files changed, 138 insertions(+), 54 deletions(-)
+>
+> Index: test/drivers/acpi/scan.c
+> ===================================================================
+> --- test.orig/drivers/acpi/scan.c
+> +++ test/drivers/acpi/scan.c
+> @@ -42,6 +42,18 @@ struct acpi_device_bus_id{
+>   	struct list_head node;
+>   };
+>
+> +void acpi_scan_lock_acquire(void)
+> +{
+> +	mutex_lock(&acpi_scan_lock);
+> +}
+> +EXPORT_SYMBOL_GPL(acpi_scan_lock_acquire);
+> +
+> +void acpi_scan_lock_release(void)
+> +{
+> +	mutex_unlock(&acpi_scan_lock);
+> +}
+> +EXPORT_SYMBOL_GPL(acpi_scan_lock_release);
+> +
+>   int acpi_scan_add_handler(struct acpi_scan_handler *handler)
+>   {
+>   	if (!handler || !handler->attach)
+> @@ -95,8 +107,6 @@ acpi_device_modalias_show(struct device
+>   }
+>   static DEVICE_ATTR(modalias, 0444, acpi_device_modalias_show, NULL);
+>
+> -static void __acpi_bus_trim(struct acpi_device *start);
+> -
+>   /**
+>    * acpi_bus_hot_remove_device: hot-remove a device and its children
+>    * @context: struct acpi_eject_event pointer (freed in this func)
+> @@ -107,7 +117,7 @@ static void __acpi_bus_trim(struct acpi_
+>    */
+>   void acpi_bus_hot_remove_device(void *context)
+>   {
+> -	struct acpi_eject_event *ej_event = (struct acpi_eject_event *) context;
+> +	struct acpi_eject_event *ej_event = context;
+>   	struct acpi_device *device = ej_event->device;
+>   	acpi_handle handle = device->handle;
+>   	acpi_handle temp;
+> @@ -118,11 +128,19 @@ void acpi_bus_hot_remove_device(void *co
+>
+>   	mutex_lock(&acpi_scan_lock);
+>
+> +	/* If there is no handle, the device node has been unregistered. */
+> +	if (!device->handle) {
+> +		dev_dbg(&device->dev, "ACPI handle missing\n");
+> +		put_device(&device->dev);
+> +		goto out;
+> +	}
+> +
+>   	ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+>   		"Hot-removing device %s...\n", dev_name(&device->dev)));
+>
+> -	__acpi_bus_trim(device);
+> -	/* Device node has been released. */
+> +	acpi_bus_trim(device);
+> +	/* Device node has been unregistered. */
+> +	put_device(&device->dev);
+>   	device = NULL;
+>
+>   	if (ACPI_SUCCESS(acpi_get_handle(handle, "_LCK", &temp))) {
+> @@ -151,6 +169,7 @@ void acpi_bus_hot_remove_device(void *co
+>   					  ost_code, NULL);
+>   	}
+>
+> + out:
+>   	mutex_unlock(&acpi_scan_lock);
+>   	kfree(context);
+>   	return;
+> @@ -212,6 +231,7 @@ acpi_eject_store(struct device *d, struc
+>   		goto err;
+>   	}
+>
+> +	get_device(&acpi_device->dev);
+>   	ej_event->device = acpi_device;
+>   	if (acpi_device->flags.eject_pending) {
+>   		/* event originated from ACPI eject notification */
+> @@ -224,7 +244,11 @@ acpi_eject_store(struct device *d, struc
+>   			ej_event->event, ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
+>   	}
+>
+> -	acpi_os_hotplug_execute(acpi_bus_hot_remove_device, (void *)ej_event);
+> +	status = acpi_os_hotplug_execute(acpi_bus_hot_remove_device, ej_event);
+> +	if (ACPI_FAILURE(status)) {
+> +		put_device(&acpi_device->dev);
+> +		kfree(ej_event);
+> +	}
+>   err:
+>   	return ret;
+>   }
+> @@ -779,6 +803,7 @@ static void acpi_device_unregister(struc
+>   	 * no more references.
+>   	 */
+>   	acpi_device_set_power(device, ACPI_STATE_D3_COLD);
+> +	device->handle = NULL;
+>   	put_device(&device->dev);
+>   }
+>
+> @@ -1626,14 +1651,14 @@ static acpi_status acpi_bus_device_attac
+>    * there has been a real error.  There just have been no suitable ACPI objects
+>    * in the table trunk from which the kernel could create a device and add an
+>    * appropriate driver.
+> + *
+> + * Must be called under acpi_scan_lock.
+>    */
+>   int acpi_bus_scan(acpi_handle handle)
+>   {
+>   	void *device = NULL;
+>   	int error = 0;
+>
+> -	mutex_lock(&acpi_scan_lock);
+> -
+>   	if (ACPI_SUCCESS(acpi_bus_check_add(handle, 0, NULL, &device)))
+>   		acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
+>   				    acpi_bus_check_add, NULL, NULL, &device);
+> @@ -1644,7 +1669,6 @@ int acpi_bus_scan(acpi_handle handle)
+>   		acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
+>   				    acpi_bus_device_attach, NULL, NULL, NULL);
+>
+> -	mutex_unlock(&acpi_scan_lock);
+>   	return error;
+>   }
+>   EXPORT_SYMBOL(acpi_bus_scan);
+> @@ -1681,7 +1705,13 @@ static acpi_status acpi_bus_remove(acpi_
+>   	return AE_OK;
+>   }
+>
+> -static void __acpi_bus_trim(struct acpi_device *start)
+> +/**
+> + * acpi_bus_trim - Remove ACPI device node and all of its descendants
+> + * @start: Root of the ACPI device nodes subtree to remove.
+> + *
+> + * Must be called under acpi_scan_lock.
+> + */
+> +void acpi_bus_trim(struct acpi_device *start)
+>   {
+>   	/*
+>   	 * Execute acpi_bus_device_detach() as a post-order callback to detach
+> @@ -1698,13 +1728,6 @@ static void __acpi_bus_trim(struct acpi_
+>   			    acpi_bus_remove, NULL, NULL);
+>   	acpi_bus_remove(start->handle, 0, NULL, NULL);
+>   }
+> -
+> -void acpi_bus_trim(struct acpi_device *start)
+> -{
+> -	mutex_lock(&acpi_scan_lock);
+> -	__acpi_bus_trim(start);
+> -	mutex_unlock(&acpi_scan_lock);
+> -}
+>   EXPORT_SYMBOL_GPL(acpi_bus_trim);
+>
+>   static int acpi_bus_scan_fixed(void)
+> @@ -1762,23 +1785,27 @@ int __init acpi_scan_init(void)
+>   	acpi_csrt_init();
+>   	acpi_container_init();
+>
+> +	mutex_lock(&acpi_scan_lock);
+>   	/*
+>   	 * Enumerate devices in the ACPI namespace.
+>   	 */
+>   	result = acpi_bus_scan(ACPI_ROOT_OBJECT);
+>   	if (result)
+> -		return result;
+> +		goto out;
+>
+>   	result = acpi_bus_get_device(ACPI_ROOT_OBJECT, &acpi_root);
+>   	if (result)
+> -		return result;
+> +		goto out;
+>
+>   	result = acpi_bus_scan_fixed();
+>   	if (result) {
+>   		acpi_device_unregister(acpi_root);
+> -		return result;
+> +		goto out;
+>   	}
+>
+>   	acpi_update_all_gpes();
+> -	return 0;
+> +
+> + out:
+> +	mutex_unlock(&acpi_scan_lock);
+> +	return result;
+>   }
+> Index: test/include/acpi/acpi_bus.h
+> ===================================================================
+> --- test.orig/include/acpi/acpi_bus.h
+> +++ test/include/acpi/acpi_bus.h
+> @@ -395,6 +395,9 @@ int acpi_bus_receive_event(struct acpi_b
+>   static inline int acpi_bus_generate_proc_event(struct acpi_device *device, u8 type, int data)
+>   	{ return 0; }
+>   #endif
+> +
+> +void acpi_scan_lock_acquire(void);
+> +void acpi_scan_lock_release(void);
+>   int acpi_scan_add_handler(struct acpi_scan_handler *handler);
+>   int acpi_bus_register_driver(struct acpi_driver *driver);
+>   void acpi_bus_unregister_driver(struct acpi_driver *driver);
+> Index: test/drivers/acpi/acpi_memhotplug.c
+> ===================================================================
+> --- test.orig/drivers/acpi/acpi_memhotplug.c
+> +++ test/drivers/acpi/acpi_memhotplug.c
+> @@ -153,14 +153,16 @@ acpi_memory_get_device_resources(struct
+>   	return 0;
+>   }
+>
+> -static int
+> -acpi_memory_get_device(acpi_handle handle,
+> -		       struct acpi_memory_device **mem_device)
+> +static int acpi_memory_get_device(acpi_handle handle,
+> +				  struct acpi_memory_device **mem_device)
+>   {
+>   	struct acpi_device *device = NULL;
+> -	int result;
+> +	int result = 0;
+> +
+> +	acpi_scan_lock_acquire();
+>
+> -	if (!acpi_bus_get_device(handle, &device) && device)
+> +	acpi_bus_get_device(handle, &device);
+> +	if (device)
+>   		goto end;
+>
+>   	/*
+> @@ -169,23 +171,28 @@ acpi_memory_get_device(acpi_handle handl
+>   	 */
+>   	result = acpi_bus_scan(handle);
+>   	if (result) {
+> -		acpi_handle_warn(handle, "Cannot add acpi bus\n");
+> -		return -EINVAL;
+> +		acpi_handle_warn(handle, "ACPI namespace scan failed\n");
+> +		result = -EINVAL;
+> +		goto out;
+>   	}
+>   	result = acpi_bus_get_device(handle, &device);
+>   	if (result) {
+>   		acpi_handle_warn(handle, "Missing device object\n");
+> -		return -EINVAL;
+> +		result = -EINVAL;
+> +		goto out;
+>   	}
+>
+> -      end:
+> + end:
+>   	*mem_device = acpi_driver_data(device);
+>   	if (!(*mem_device)) {
+>   		dev_err(&device->dev, "driver data not found\n");
+> -		return -ENODEV;
+> +		result = -ENODEV;
+> +		goto out;
+>   	}
+>
+> -	return 0;
+> + out:
+> +	acpi_scan_lock_release();
+> +	return result;
+>   }
+>
+>   static int acpi_memory_check_device(struct acpi_memory_device *mem_device)
+> @@ -305,6 +312,7 @@ static void acpi_memory_device_notify(ac
+>   	struct acpi_device *device;
+>   	struct acpi_eject_event *ej_event = NULL;
+>   	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
+> +	acpi_status status;
+>
+>   	switch (event) {
+>   	case ACPI_NOTIFY_BUS_CHECK:
+> @@ -327,29 +335,40 @@ static void acpi_memory_device_notify(ac
+>   		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+>   				  "\nReceived EJECT REQUEST notification for device\n"));
+>
+> +		status = AE_ERROR;
+> +		acpi_scan_lock_acquire();
+> +
+>   		if (acpi_bus_get_device(handle, &device)) {
+>   			acpi_handle_err(handle, "Device doesn't exist\n");
+> -			break;
+> +			goto unlock;
+>   		}
+>   		mem_device = acpi_driver_data(device);
+>   		if (!mem_device) {
+>   			acpi_handle_err(handle, "Driver Data is NULL\n");
+> -			break;
+> +			goto unlock;
+>   		}
+>
+>   		ej_event = kmalloc(sizeof(*ej_event), GFP_KERNEL);
+>   		if (!ej_event) {
+>   			pr_err(PREFIX "No memory, dropping EJECT\n");
+> -			break;
+> +			goto unlock;
+>   		}
+>
+> +		get_device(&device->dev);
+>   		ej_event->device = device;
+>   		ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
+> -		acpi_os_hotplug_execute(acpi_bus_hot_remove_device,
+> -					(void *)ej_event);
+> +		/* The eject is carried out asynchronously. */
+> +		status = acpi_os_hotplug_execute(acpi_bus_hot_remove_device,
+> +						 ej_event);
+> +		if (ACPI_FAILURE(status)) {
+> +			put_device(&device->dev);
+> +			kfree(ej_event);
+> +		}
+>
+> -		/* eject is performed asynchronously */
+> -		return;
+> + unlock:
+> +		acpi_scan_lock_release();
+> +		if (ACPI_SUCCESS(status))
+> +			return;
+>   	default:
+>   		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+>   				  "Unsupported event [0x%x]\n", event));
+> @@ -360,7 +379,6 @@ static void acpi_memory_device_notify(ac
+>
+>   	/* Inform firmware that the hotplug operation has completed */
+>   	(void) acpi_evaluate_hotplug_ost(handle, event, ost_code, NULL);
+> -	return;
+>   }
+>
+>   static void acpi_memory_device_free(struct acpi_memory_device *mem_device)
+> Index: test/drivers/acpi/processor_driver.c
+> ===================================================================
+> --- test.orig/drivers/acpi/processor_driver.c
+> +++ test/drivers/acpi/processor_driver.c
+> @@ -683,8 +683,11 @@ static void acpi_processor_hotplug_notif
+>   	struct acpi_device *device = NULL;
+>   	struct acpi_eject_event *ej_event = NULL;
+>   	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
+> +	acpi_status status;
+>   	int result;
+>
+> +	acpi_scan_lock_acquire();
+> +
+>   	switch (event) {
+>   	case ACPI_NOTIFY_BUS_CHECK:
+>   	case ACPI_NOTIFY_DEVICE_CHECK:
+> @@ -733,25 +736,32 @@ static void acpi_processor_hotplug_notif
+>   			break;
+>   		}
+>
+> +		get_device(&device->dev);
+>   		ej_event->device = device;
+>   		ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
+> -		acpi_os_hotplug_execute(acpi_bus_hot_remove_device,
+> -					(void *)ej_event);
+> -
+> -		/* eject is performed asynchronously */
+> -		return;
+> +		/* The eject is carried out asynchronously. */
+> +		status = acpi_os_hotplug_execute(acpi_bus_hot_remove_device,
+> +						 ej_event);
+> +		if (ACPI_FAILURE(status)) {
+> +			put_device(&device->dev);
+> +			kfree(ej_event);
+> +			break;
+> +		}
+> +		goto out;
+>
+>   	default:
+>   		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+>   				  "Unsupported event [0x%x]\n", event));
+>
+>   		/* non-hotplug event; possibly handled by other handler */
+> -		return;
+> +		goto out;
+>   	}
+>
+>   	/* Inform firmware that the hotplug operation has completed */
+>   	(void) acpi_evaluate_hotplug_ost(handle, event, ost_code, NULL);
+> -	return;
+> +
+> + out:
 
-diff --git a/drivers/staging/rtl8187se/r8185b_init.c b/drivers/staging/rtl8187se/r8185b_init.c
-index 2ca857d..978dc5f 100644
---- a/drivers/staging/rtl8187se/r8185b_init.c
-+++ b/drivers/staging/rtl8187se/r8185b_init.c
-@@ -120,19 +120,19 @@ static u8 PlatformIORead1Byte(struct net_device *dev, u32 offset)
- 	return read_nic_byte(dev, offset);
- }
- 
--void PlatformIOWrite1Byte(struct net_device *dev, u32 offset, u8 data)
-+static void PlatformIOWrite1Byte(struct net_device *dev, u32 offset, u8 data)
- {
- 	write_nic_byte(dev, offset, data);
- 	read_nic_byte(dev, offset); /* To make sure write operation is completed, 2005.11.09, by rcnjko. */
- }
- 
--void PlatformIOWrite2Byte(struct net_device *dev, u32 offset, u16 data)
-+static void PlatformIOWrite2Byte(struct net_device *dev, u32 offset, u16 data)
- {
- 	write_nic_word(dev, offset, data);
- 	read_nic_word(dev, offset); /* To make sure write operation is completed, 2005.11.09, by rcnjko. */
- }
- 
--void PlatformIOWrite4Byte(struct net_device *dev, u32 offset, u32 data)
-+static void PlatformIOWrite4Byte(struct net_device *dev, u32 offset, u32 data)
- {
- 	if (offset == PhyAddr) {
- 	/* For Base Band configuration. */
-@@ -175,7 +175,7 @@ void PlatformIOWrite4Byte(struct net_device *dev, u32 offset, u32 data)
- 	}
- }
- 
--void SetOutputEnableOfRfPins(struct net_device *dev)
-+static void SetOutputEnableOfRfPins(struct net_device *dev)
- {
- 	write_nic_word(dev, RFPinsEnable, 0x1bff);
- }
-@@ -327,7 +327,7 @@ bool SetAntennaConfig87SE(struct net_device *dev,
-  *--------------------------------------------------------------
-  */
- 
--void ZEBRA_Config_85BASIC_HardCode(struct net_device *dev)
-+static void ZEBRA_Config_85BASIC_HardCode(struct net_device *dev)
- {
- 
- 	struct r8180_priv *priv = (struct r8180_priv *)ieee80211_priv(dev);
-@@ -628,7 +628,7 @@ void UpdateInitialGain(struct net_device *dev)
-  *		Tx Power tracking mechanism routine on 87SE.
-  *	Created by Roger, 2007.12.11.
-  */
--void InitTxPwrTracking87SE(struct net_device *dev)
-+static void InitTxPwrTracking87SE(struct net_device *dev)
- {
- 	u32	u4bRfReg;
- 
-@@ -638,7 +638,7 @@ void InitTxPwrTracking87SE(struct net_device *dev)
- 	RF_WriteReg(dev, 0x02, u4bRfReg|PWR_METER_EN);			mdelay(1);
- }
- 
--void PhyConfig8185(struct net_device *dev)
-+static void PhyConfig8185(struct net_device *dev)
- {
- 	struct r8180_priv *priv = (struct r8180_priv *)ieee80211_priv(dev);
- 		write_nic_dword(dev, RCR, priv->ReceiveConfig);
-@@ -665,7 +665,7 @@ void PhyConfig8185(struct net_device *dev)
- 	return;
- }
- 
--void HwConfigureRTL8185(struct net_device *dev)
-+static void HwConfigureRTL8185(struct net_device *dev)
- {
- 	/* RTL8185_TODO: Determine Retrylimit, TxAGC, AutoRateFallback control. */
- 	u8 bUNIVERSAL_CONTROL_RL = 0;
-@@ -790,12 +790,12 @@ static void MacConfig_85BASIC(struct net_device *dev)
- 	write_nic_byte(dev, 0x24E, 0x01);
- }
- 
--u8 GetSupportedWirelessMode8185(struct net_device *dev)
-+static u8 GetSupportedWirelessMode8185(struct net_device *dev)
- {
- 	return WIRELESS_MODE_B | WIRELESS_MODE_G;
- }
- 
--void ActUpdateChannelAccessSetting(struct net_device *dev,
-+static void ActUpdateChannelAccessSetting(struct net_device *dev,
- 				   WIRELESS_MODE WirelessMode,
- 				   PCHANNEL_ACCESS_SETTING ChnlAccessSetting)
- {
-@@ -830,7 +830,7 @@ void ActUpdateChannelAccessSetting(struct net_device *dev,
- 	}
- }
- 
--void ActSetWirelessMode8185(struct net_device *dev, u8 btWirelessMode)
-+static void ActSetWirelessMode8185(struct net_device *dev, u8 btWirelessMode)
- {
- 	struct  r8180_priv *priv = (struct r8180_priv *)ieee80211_priv(dev);
- 	struct  ieee80211_device *ieee = priv->ieee80211;
-@@ -887,7 +887,7 @@ void rtl8185b_irq_enable(struct net_device *dev)
- 	write_nic_dword(dev, IMR, priv->IntrMask);
- }
- 
--void MgntDisconnectIBSS(struct net_device *dev)
-+static void MgntDisconnectIBSS(struct net_device *dev)
- {
- 	struct r8180_priv *priv = (struct r8180_priv *)ieee80211_priv(dev);
- 	u8 i;
-@@ -913,7 +913,7 @@ void MgntDisconnectIBSS(struct net_device *dev)
- 	notify_wx_assoc_event(priv->ieee80211);
- }
- 
--void MlmeDisassociateRequest(struct net_device *dev, u8 *asSta, u8 asRsn)
-+static void MlmeDisassociateRequest(struct net_device *dev, u8 *asSta, u8 asRsn)
- {
- 	struct r8180_priv *priv = (struct r8180_priv *)ieee80211_priv(dev);
- 	u8 i;
-@@ -930,7 +930,7 @@ void MlmeDisassociateRequest(struct net_device *dev, u8 *asSta, u8 asRsn)
- 	}
- }
- 
--void MgntDisconnectAP(struct net_device *dev, u8 asRsn)
-+static void MgntDisconnectAP(struct net_device *dev, u8 asRsn)
- {
- 	struct r8180_priv *priv = (struct r8180_priv *)ieee80211_priv(dev);
- 
-@@ -948,7 +948,7 @@ void MgntDisconnectAP(struct net_device *dev, u8 asRsn)
- 	priv->ieee80211->state = IEEE80211_NOLINK;
- }
- 
--bool MgntDisconnect(struct net_device *dev, u8 asRsn)
-+static bool MgntDisconnect(struct net_device *dev, u8 asRsn)
- {
- 	struct r8180_priv *priv = (struct r8180_priv *)ieee80211_priv(dev);
- 	/*
-@@ -984,7 +984,7 @@ bool MgntDisconnect(struct net_device *dev, u8 asRsn)
-  *	Assumption:
-  *		PASSIVE LEVEL.
-  */
--bool SetRFPowerState(struct net_device *dev, RT_RF_POWER_STATE eRFPowerState)
-+static bool SetRFPowerState(struct net_device *dev, RT_RF_POWER_STATE eRFPowerState)
- {
- 	struct	r8180_priv *priv = (struct r8180_priv *)ieee80211_priv(dev);
- 	bool	bResult = false;
-@@ -1088,7 +1088,7 @@ bool MgntActSet_RF_State(struct net_device *dev, RT_RF_POWER_STATE StateToSet, u
- 	return bActionAllowed;
- }
- 
--void InactivePowerSave(struct net_device *dev)
-+static void InactivePowerSave(struct net_device *dev)
- {
- 	struct r8180_priv *priv = (struct r8180_priv *)ieee80211_priv(dev);
- 	/*
--- 
-1.7.8.6
+> +	acpi_scan_lock_release();;
+
+extra ";"
+
+Thanks,
+Yasuaki Ishimatsu
+
+>   }
+>
+>   static acpi_status is_processor_device(acpi_handle handle)
+> Index: test/drivers/acpi/container.c
+> ===================================================================
+> --- test.orig/drivers/acpi/container.c
+> +++ test/drivers/acpi/container.c
+> @@ -88,6 +88,8 @@ static void container_notify_cb(acpi_han
+>   	acpi_status status;
+>   	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
+>
+> +	acpi_scan_lock_acquire();
+> +
+>   	switch (type) {
+>   	case ACPI_NOTIFY_BUS_CHECK:
+>   		/* Fall through */
+> @@ -130,18 +132,20 @@ static void container_notify_cb(acpi_han
+>   		if (!acpi_bus_get_device(handle, &device) && device) {
+>   			device->flags.eject_pending = 1;
+>   			kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
+> -			return;
+> +			goto out;
+>   		}
+>   		break;
+>
+>   	default:
+>   		/* non-hotplug event; possibly handled by other handler */
+> -		return;
+> +		goto out;
+>   	}
+>
+>   	/* Inform firmware that the hotplug operation has completed */
+>   	(void) acpi_evaluate_hotplug_ost(handle, type, ost_code, NULL);
+> -	return;
+> +
+> + out:
+> +	acpi_scan_lock_release();
+>   }
+>
+>   static bool is_container(acpi_handle handle)
+> Index: test/drivers/acpi/dock.c
+> ===================================================================
+> --- test.orig/drivers/acpi/dock.c
+> +++ test/drivers/acpi/dock.c
+> @@ -744,7 +744,9 @@ static void acpi_dock_deferred_cb(void *
+>   {
+>   	struct dock_data *data = context;
+>
+> +	acpi_scan_lock_acquire();
+>   	dock_notify(data->handle, data->event, data->ds);
+> +	acpi_scan_lock_release();
+>   	kfree(data);
+>   }
+>
+> @@ -757,20 +759,31 @@ static int acpi_dock_notifier_call(struc
+>   	if (event != ACPI_NOTIFY_BUS_CHECK && event != ACPI_NOTIFY_DEVICE_CHECK
+>   	   && event != ACPI_NOTIFY_EJECT_REQUEST)
+>   		return 0;
+> +
+> +	acpi_scan_lock_acquire();
+> +
+>   	list_for_each_entry(dock_station, &dock_stations, sibling) {
+>   		if (dock_station->handle == handle) {
+>   			struct dock_data *dd;
+> +			acpi_status status;
+>
+>   			dd = kmalloc(sizeof(*dd), GFP_KERNEL);
+>   			if (!dd)
+> -				return 0;
+> +				break;
+> +
+>   			dd->handle = handle;
+>   			dd->event = event;
+>   			dd->ds = dock_station;
+> -			acpi_os_hotplug_execute(acpi_dock_deferred_cb, dd);
+> -			return 0 ;
+> +			status = acpi_os_hotplug_execute(acpi_dock_deferred_cb,
+> +							 dd);
+> +			if (ACPI_FAILURE(status))
+> +				kfree(dd);
+> +
+> +			break;
+>   		}
+>   	}
+> +
+> +	acpi_scan_lock_release();
+>   	return 0;
+>   }
+>
+> Index: test/drivers/pci/hotplug/acpiphp_glue.c
+> ===================================================================
+> --- test.orig/drivers/pci/hotplug/acpiphp_glue.c
+> +++ test/drivers/pci/hotplug/acpiphp_glue.c
+> @@ -1218,6 +1218,8 @@ static void _handle_hotplug_event_bridge
+>   	handle = hp_work->handle;
+>   	type = hp_work->type;
+>
+> +	acpi_scan_lock_acquire();
+> +
+>   	if (acpi_bus_get_device(handle, &device)) {
+>   		/* This bridge must have just been physically inserted */
+>   		handle_bridge_insertion(handle, type);
+> @@ -1295,6 +1297,7 @@ static void _handle_hotplug_event_bridge
+>   	}
+>
+>   out:
+> +	acpi_scan_lock_release();
+>   	kfree(hp_work); /* allocated in handle_hotplug_event_bridge */
+>   }
+>
+> @@ -1341,6 +1344,8 @@ static void _handle_hotplug_event_func(s
+>
+>   	func = (struct acpiphp_func *)context;
+>
+> +	acpi_scan_lock_acquire();
+> +
+>   	switch (type) {
+>   	case ACPI_NOTIFY_BUS_CHECK:
+>   		/* bus re-enumerate */
+> @@ -1371,6 +1376,7 @@ static void _handle_hotplug_event_func(s
+>   		break;
+>   	}
+>
+> +	acpi_scan_lock_release();
+>   	kfree(hp_work); /* allocated in handle_hotplug_event_func */
+>   }
+>
+> Index: test/drivers/pci/hotplug/sgi_hotplug.c
+> ===================================================================
+> --- test.orig/drivers/pci/hotplug/sgi_hotplug.c
+> +++ test/drivers/pci/hotplug/sgi_hotplug.c
+> @@ -425,6 +425,7 @@ static int enable_slot(struct hotplug_sl
+>   			pdevice = NULL;
+>   		}
+>
+> +		acpi_scan_lock_acquire();
+>   		/*
+>   		 * Walk the rootbus node's immediate children looking for
+>   		 * the slot's device node(s). There can be more than
+> @@ -458,6 +459,7 @@ static int enable_slot(struct hotplug_sl
+>   				}
+>   			}
+>   		}
+> +		acpi_scan_lock_release();
+>   	}
+>
+>   	/* Call the driver for the new device */
+> @@ -508,6 +510,7 @@ static int disable_slot(struct hotplug_s
+>   		/* Get the rootbus node pointer */
+>   		phandle = PCI_CONTROLLER(slot->pci_bus)->acpi_handle;
+>
+> +		acpi_scan_lock_acquire();
+>   		/*
+>   		 * Walk the rootbus node's immediate children looking for
+>   		 * the slot's device node(s). There can be more than
+> @@ -538,7 +541,7 @@ static int disable_slot(struct hotplug_s
+>   					acpi_bus_trim(device);
+>   			}
+>   		}
+> -
+> +		acpi_scan_lock_release();
+>   	}
+>
+>   	/* Free the SN resources assigned to the Linux device.*/
+>
+
 
