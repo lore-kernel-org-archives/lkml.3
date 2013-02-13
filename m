@@ -1,42 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934142Ab3BMPXJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 10:23:09 -0500
-Received: from mouse.start.ca ([64.140.120.56]:56592 "EHLO mouse.start.ca"
+	id S934165Ab3BMPXZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 10:23:25 -0500
+Received: from mga14.intel.com ([143.182.124.37]:28035 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759703Ab3BMPXH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 10:23:07 -0500
-X-Greylist: delayed 1261 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Feb 2013 10:23:06 EST
-Message-ID: <511BAAAA.9040804@start.ca>
-Date: Wed, 13 Feb 2013 10:00:58 -0500
-From: Mark Lord <kernel@start.ca>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	id S934117Ab3BMPXY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 10:23:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,658,1355126400"; 
+   d="scan'208";a="201935263"
+Message-ID: <511BAFDB.6050908@intel.com>
+Date: Wed, 13 Feb 2013 23:23:07 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: Mark Lord <kernel@teksavvy.com>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        linux-nfs@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
-        =?UTF-8?B?UGF3ZcWCIFNpa29yYQ==?= <pawel.sikora@agmk.net>,
-        Tom Horsley <horsley1953@gmail.com>
-Subject: Re: BUG at net/sunrpc/svc_xprt.c:921 (another one)
-References: <50F4D800.5040703@teksavvy.com> <20130115205625.GH4940@fieldses.org> <50F63882.8000607@parallels.com> <50F72F03.5070806@teksavvy.com> <50F786AF.4070107@parallels.com> <20130117130335.GD6598@fieldses.org> <50F7FB7E.2020503@parallels.com> <50F88C14.7030903@teksavvy.com> <50F8DF7E.8080107@parallels.com> <50FC74E0.20305@teksavvy.com> <20130212205216.GE10267@fieldses.org>
-In-Reply-To: <20130212205216.GE10267@fieldses.org>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: torvalds@linux-foundation.org, mingo@redhat.com, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch v4 08/18] Revert "sched: Introduce temporary FAIR_GROUP_SCHED
+ dependency for load-tracking"
+References: <1358996820-23036-1-git-send-email-alex.shi@intel.com>  <1358996820-23036-9-git-send-email-alex.shi@intel.com> <1360664874.4485.18.camel@laptop>
+In-Reply-To: <1360664874.4485.18.camel@laptop>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-02-12 03:52 PM, J. Bruce Fields wrote:
-> On Sun, Jan 20, 2013 at 05:51:12PM -0500, Mark Lord wrote:
->> Got it again, this time on a different system
->> running mostly the same software.
+On 02/12/2013 06:27 PM, Peter Zijlstra wrote:
+> On Thu, 2013-01-24 at 11:06 +0800, Alex Shi wrote:
+>> Remove CONFIG_FAIR_GROUP_SCHED that covers the runnable info, then
+>> we can use runnable load variables.
+>>
+> It would be nice if we could quantify the performance hit of doing so.
+> Haven't yet looked at later patches to see if we remove anything to
+> off-set this.
 > 
-> Mark, Paweł, Tom, could any of you confirm whether this helps?
-..
 
-No, I cannot confirm one way or the other,
-because I haven't noticed it again since the most recent
-couple of occurrences I posted earlier here.
+In our rough testing, no much clear performance changes.
 
-Cheers
+-- 
+Thanks
+    Alex
