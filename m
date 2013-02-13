@@ -1,76 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934242Ab3BMPlS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 10:41:18 -0500
-Received: from mail-qa0-f73.google.com ([209.85.216.73]:36578 "EHLO
-	mail-qa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934214Ab3BMPlH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 10:41:07 -0500
-From: Greg Thelen <gthelen@google.com>
-To: Anton Vorontsov <anton@enomsg.org>
-Cc: cgroups@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Glauber Costa <glommer@parallels.com>, Michal Hocko <mhocko@suse.cz>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: Re: [PATCH] memcg: Add memory.pressure_level events
-References: <20130211000220.GA28247@lizard.gateway.2wire.net>
-	<xr9338x01zpw.fsf@gthelen.mtv.corp.google.com>
-	<20130213071503.GA20543@lizard.gateway.2wire.net>
-Date: Wed, 13 Feb 2013 07:41:04 -0800
-In-Reply-To: <20130213071503.GA20543@lizard.gateway.2wire.net> (Anton
-	Vorontsov's message of "Tue, 12 Feb 2013 23:15:03 -0800")
-Message-ID: <xr93sj50z0fj.fsf@gthelen.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S934228Ab3BMPlP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 10:41:15 -0500
+Received: from mga14.intel.com ([143.182.124.37]:25261 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934215Ab3BMPlN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 10:41:13 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,658,1355126400"; 
+   d="scan'208";a="256432413"
+Message-ID: <511BB413.4000601@intel.com>
+Date: Wed, 13 Feb 2013 23:41:07 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Peter Zijlstra <peterz@infradead.org>
+CC: torvalds@linux-foundation.org, mingo@redhat.com, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch v4 09/18] sched: add sched_policies in kernel
+References: <1358996820-23036-1-git-send-email-alex.shi@intel.com>  <1358996820-23036-10-git-send-email-alex.shi@intel.com> <1360665361.4485.24.camel@laptop>
+In-Reply-To: <1360665361.4485.24.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 12 2013, Anton Vorontsov wrote:
+On 02/12/2013 06:36 PM, Peter Zijlstra wrote:
+> On Thu, 2013-01-24 at 11:06 +0800, Alex Shi wrote:
+>> Current scheduler behavior is just consider the for larger performance
+>> of system. So it try to spread tasks on more cpu sockets and cpu cores
+>>
+>> To adding the consideration of power awareness, the patchset adds
+>> 2 kinds of scheduler policy: powersaving and balance. They will use
+>> runnable load util in scheduler balancing. The current scheduling is taken
+>> as performance policy.
+>>
+>> performance: the current scheduling behaviour, try to spread tasks
+>>                 on more CPU sockets or cores. performance oriented.
+>> powersaving: will pack tasks into few sched group until all LCPU in the
+>>                 group is full, power oriented.
+>> balance    : will pack tasks into few sched group until group_capacity
+>>                 numbers CPU is full, balance between performance and
+>> 		powersaving.
+> 
+> _WHY_ do you start out with so much choice?
+> 
+> If your power policy is so abysmally poor on performance that you
+> already know you need a 3rd policy to keep people happy, maybe you're
+> doing something wrong?
 
-> Hi Greg,
->
-> Thanks for taking a look!
->
-> On Tue, Feb 12, 2013 at 10:42:51PM -0800, Greg Thelen wrote:
-> [...]
->> > +static bool vmpressure_event(struct vmpressure *vmpr,
->> > +			     unsigned long s, unsigned long r)
->> > +{
->> > +	struct vmpressure_event *ev;
->> > +	int level = vmpressure_calc_level(vmpressure_win, s, r);
->> > +	bool signalled = 0;
->> s/bool/int/
->
-> Um... I surely can do this, but why do you think it is a good idea?
+Nope, no much performance yield for both of powersaving and balance policy.
+Much of testing results in replaying Ingo's email on '0/18' thread --
+the cover letter email threads.
+https://lkml.org/lkml/2013/2/3/353
+https://lkml.org/lkml/2013/2/4/735
 
-Because you incremented signalled below.  Incrementing a bool seems
-strange.  A better fix would be to leave this a bool and
-s/signaled++/signaled = true/ below.
+I introduce a 'balance' policy just because HT thread LCPU in Intel CPU
+is less then 1 usual cpu power. It is used when someone want to save
+power but still want tasks have a whole cpu core...
+> 
+>> +#define SCHED_POLICY_PERFORMANCE	(0x1)
+>> +#define SCHED_POLICY_POWERSAVING	(0x2)
+>> +#define SCHED_POLICY_BALANCE		(0x4)
+>> +
+>> +extern int __read_mostly sched_policy;
+> 
+> I'd much prefer: sched_balance_policy. Scheduler policy is a concept
+> already well defined by posix and we don't need it to mean two
+> completely different things.
+> 
 
->> > +
->> > +	mutex_lock(&vmpr->events_lock);
->> > +
->> > +	list_for_each_entry(ev, &vmpr->events, node) {
->> > +		if (level >= ev->level) {
->> > +			eventfd_signal(ev->efd, 1);
->> > +			signalled++;
->> > +		}
->> > +	}
->> > +
->> > +	mutex_unlock(&vmpr->events_lock);
->> > +
->> > +	return signalled;
+Got it.
+-- 
+Thanks
+    Alex
