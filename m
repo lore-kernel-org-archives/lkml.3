@@ -1,149 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759821Ab3BMTaX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 14:30:23 -0500
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:61813 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752619Ab3BMTaV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 14:30:21 -0500
+	id S933928Ab3BMTdM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 14:33:12 -0500
+Received: from mga01.intel.com ([192.55.52.88]:16431 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754606Ab3BMTdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 14:33:08 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,658,1355126400"; 
+   d="scan'208";a="290734063"
+Date: Wed, 13 Feb 2013 11:33:03 -0800
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Matthias Schniedermeyer <ms@citd.de>
+Cc: Holger =?iso-8859-1?Q?Hoffst=E4tte?= 
+	<holger.hoffstaette@googlemail.com>,
+        Jonathan Nieder <jrnieder@gmail.com>, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Greg KH <gregkh@linuxfoundation.org>, Tilman Schmidt <tilman@imap.cc>
+Subject: Re: [regression] external HDD in USB3 enclosure cannot be
+ dynamically removed (Re: Linux 3.7.5)
+Message-ID: <20130213193303.GH8427@xanatos>
+References: <20130128045658.GA3488@kroah.com>
+ <pan.2013.01.28.11.42.16.556318@googlemail.com>
+ <20130128143907.GA2940@kroah.com>
+ <pan.2013.01.28.20.33.44.918987@googlemail.com>
+ <20130128204639.GB7759@google.com>
+ <20130212004023.GA8427@xanatos>
+ <511A1AF1.9080107@googlemail.com>
+ <20130212204224.GC8427@xanatos>
+ <511B4EB1.9010708@googlemail.com>
+ <20130213171656.GA9318@citd.de>
 MIME-Version: 1.0
-In-Reply-To: <CAMVG2ssOMMVBcD0kLX=Wo9x2cMfdi+3FYNEP-MiDRK4fs24auw@mail.gmail.com>
-References: <CAMVG2svG21yiM1wkH4_2pen2n+cr2-Zv7TbH3Gj+8MwevZjDbw@mail.gmail.com>
- <CAErSpo6rGYLQeP8Myu=octSPY_0R+B7ptBLhLawd_A2E3NRsAw@mail.gmail.com>
- <6086479.ycKj2j8yeP@vostro.rjw.lan> <1843565.7Y1sC8j6FG@vostro.rjw.lan> <CAMVG2ssOMMVBcD0kLX=Wo9x2cMfdi+3FYNEP-MiDRK4fs24auw@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 13 Feb 2013 12:29:59 -0700
-Message-ID: <CAErSpo6ghLnuYTnMevGAH0uQg2O7X4Vr3-PhoKX5QNxJqu40NQ@mail.gmail.com>
-Subject: Re: [3.8-rc7] PCI hotplug wakeup oops
-To: Daniel J Blueman <daniel@quora.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Yijing Wang <wangyijing@huawei.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130213171656.GA9318@citd.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 13, 2013 at 7:32 AM, Daniel J Blueman <daniel@quora.org> wrote:
-> On 12 February 2013 03:49, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> On Monday, February 11, 2013 08:27:49 PM Rafael J. Wysocki wrote:
->>> On Monday, February 11, 2013 12:01:37 PM Bjorn Helgaas wrote:
->>> > [+cc Rafael]
->>> >
->>> > On Mon, Feb 11, 2013 at 10:08 AM, Daniel J Blueman <daniel@quora.org> wrote:
->>> > > On 11 February 2013 21:03, Daniel J Blueman <daniel@quora.org> wrote:
->>> > >> With 3.8-rc7, when unplugging the Thunderbolt ethernet adapter (bus 0a
->>> > >> [1]) on a Macbook Pro 10,1, we see the PCIe port correctly released:
->>> > >>
->>> > >> pciehp 0000:06:03.0:pcie24: Card not present on Slot(3)
->>> > >> tg3 0000:0a:00.0: tg3_abort_hw timed out, TX_MODE_ENABLE will not
->>> > >> clear MAC_TX_MODE=ffffffff
->>> > >> tg3 0000:0a:00.0 eth0: No firmware running
->>> > >> tg3 0000:0a:00.0 eth0: Link is down
->>> > >> [sched_delayed] sched: RT throttling activated
->>> > >> pcieport 0000:00:01.1: System wakeup enabled by ACPI
->>> > >> pciehp 0000:09:00.0:pcie24: unloading service driver pciehp
->>> > >> pci_bus 0000:0a: busn_res: [bus 0a] is released
->>> > >> pci_bus 0000:09: busn_res: [bus 09-0a] is released
->>> > >>
->>> > >> After some activity later (eg I can reproduce this by switching to a
->>> > >> text console and back), often we'll see an oops:
->>> > >>
->>> > >> Unable to handle kernel paging request at 0000000000001070
->>> > >> pci_pme_list_scan+0x3d/0xe0
->>> > >> Call Trace:
->>> > >> process_one_work+0x193
->>> > >> ? process_one_work+0x131
->>> > >> ? pci_pme_wakeup+0x60
->>> > >> worker_thread+0x15d
->>> > >>
->>> > >> (gdb) list *(pci_pme_list_scan+0x3d)
->>> > >> 0xffffffff8123f6dd is in pci_pme_list_scan (drivers/pci/pci.c:1556).
->>> > >> 1551                                    /*
->>> > >> 1552                                     * If bridge is in low power state, the
->>> > >> 1553                                     * configuration space of subordinate devices
->>> > >> 1554                                     * may be not accessible
->>> > >> 1555                                     */
->>> > >> 1556                                    if (bridge && bridge->current_state != PCI_D0)
->>> > >> 1557                                            continue;
->>> > >> 1558                                    pci_pme_wakeup(pme_dev->dev, NULL);
->>> > >> 1559                            } else {
->>> > >> 1560                                    list_del(&pme_dev->list);
->>> > >>
->>> > >> Since a panic in vsnprintf happens after the oops (hence I can't catch
->>> > >> it with EFI pstore), it is almost certainly significant heap
->>> > >> corruption; this would explain why pme_dev became null (the load has
->>> > >> been ordered ahead).
->>> > >>
->>> > >> I'll see what I can find out with memory poisoning and list debugging.
->>> > >
->>> > > Enabling a bunch of related debugging, we see pme_dev is non-null and:
->>> > >
->>> > > BUG: Unable to handle NULL pointer dereference at
->>> > > pci_bus_read_config_word+0x6c
->>> > > PGD 26314c067 PUD 2633f9067 PMD 0
->>> > > Oops: 0000 [#1] SMP
->>> > > pci_check_pme_status+0x4f
->>> > > pci_pme_wakeup+0x21
->>> > > pci_pme_list_scan+0xd5
->>> > > process_one_work+0x1ca
->>> > > ? process_one_work+0x160
->>> > > ? pci_pme_wakeup+0x60
->>> > > worker_thread+0x14e
->>> > >
->>> > > Anyway, it looks like the device being unplugged wasn't removed from
->>> > > pci_pme_list as pci_pme_active(dev, false) wasn't called.
->>> > >
->>> > > From a quick review, I wasn't able to find the right place in the
->>> > > call-chain which I only see releases the child busses and PCIe port
->>> > > drivers. Anyone?
->>> >
->>> > It looks like drivers *add* devices to pci_pme_list when they use
->>> > pci_enable_wake() or pci_wake_from_d3().  But many drivers never
->>> > remove their devices, and I don't see any place where the core does it
->>> > either.  My guess is we need to remove it in pci_stop_dev() (we
->>> > already do pcie_aspm_exit_link_state() there) or somewhere similar.
->>>
->>> Yes, we should call pci_pme_active(dev, false) somewhere in there I think.
->>> It's fine to call that even if PME was not "active" before.
->>
->> Daniel, I wonder if the patch below helps?
->>
->> Rafael
->>
->>
->> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->> ---
->>  drivers/pci/remove.c |    2 ++
->>  1 file changed, 2 insertions(+)
->>
->> Index: test/drivers/pci/remove.c
->> ===================================================================
->> --- test.orig/drivers/pci/remove.c
->> +++ test/drivers/pci/remove.c
->> @@ -19,6 +19,8 @@ static void pci_free_resources(struct pc
->>
->>  static void pci_stop_dev(struct pci_dev *dev)
->>  {
->> +       pci_pme_active(dev, false);
->> +
->>         if (dev->is_added) {
->>                 pci_proc_detach_device(dev);
->>                 pci_remove_sysfs_dev_files(dev);
->
-> Indeed, the oops would prevent hitting the lockdep warning, which is a
-> secondary matter.
->
-> As it stands, this fix prevents the fatal oops, so IMHO is urgent
-> material for 3.8-final. I can't prove that is_added will always be
-> true, so let's stick with your patch.
->
-> Tested-by: Daniel J Blueman <daniel@quora.org>
+On Wed, Feb 13, 2013 at 06:16:56PM +0100, Matthias Schniedermeyer wrote:
+> On 13.02.2013 09:28, Holger Hoffstätte wrote:
+> > On 12.02.2013 21:42, Sarah Sharp wrote:
+> > > [..]
+> > > There was a further set of patches queued for 3.9 to deal with connected
+> > > devices going to the Inactive state, but they looked like they were too
+> > > big for stable:
+> > > 
+> > > d3b9d7a USB: Fix connected device switch to Inactive state.
+> > > a24a607 USB: Rip out recursive call on warm port reset.
+> > > 2d4fa94 USB: Prepare for refactoring by adding extra udev checks.
+> > > 0fe51aa USB: Don't use EHCI port sempahore for USB 3.0 hubs.
+> > > 
+> > > Can you retry with Greg's usb-next branch?
+> > > 
+> > > git clone git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git -b usb-next
+> > > 
+> > > If that fixes your problem, we should either get those additional
+> > > patches into 3.8 and the stable trees, or do a revert of the whole
+> > > series and just let 3.9 carry the full patchset.
+> > 
+> > Good news! This one does indeed work as expected - the device can be
+> > removed and is gone for good. Upstream & Stable plz :)
+> 
+> That kernel fixes the problem for me too.
 
-I wrote a changelog and applied this to my for-linus branch.  Please
-take a look and confirm that it makes sense before I ask Linus to pull
-it.
+Great!
 
-http://git.kernel.org/?p=linux/kernel/git/helgaas/pci.git;a=commitdiff;h=249bfb83cf8ba658955f0245ac3981d941f746ee
+Holger and Matthias, can you double check that cherry picking just those
+four patches on top of 3.7.7 or 3.8 works as well?
+
+Sarah Sharp
