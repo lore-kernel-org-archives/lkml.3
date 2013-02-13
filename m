@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758564Ab3BMDBM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 22:01:12 -0500
-Received: from mout.gmx.net ([212.227.17.20]:51865 "EHLO mout.gmx.net"
+	id S1759750Ab3BMDBO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 22:01:14 -0500
+Received: from mout.gmx.net ([212.227.17.21]:55437 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751263Ab3BMDBK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 22:01:10 -0500
+	id S1759597Ab3BMDBN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 22:01:13 -0500
 X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX18tnWg5GHYtSaCbGPWp2QtsWb3iX2vaKuEqSfJYyl
-	qiEq5lyhtH60JL
+X-Provags-ID: V01U2FsdGVkX18osj1ygu8oSpWMpWsACF54k5Yd0CJlIwkWpaLDfW
+	JpzxD9swnvq5k4
 From: Peter Huewe <peterhuewe@gmx.de>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Peter Huewe <peterhuewe@gmx.de>, Andrew Miller <amiller@amilx.com>,
         Maxim Mikityanskiy <maxtram95@gmail.com>,
         YAMANE Toshiaki <yamanetoshi@gmail.com>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 5/9] staging/rtl8187se: Reuse ReadBBPortUchar to avoid duplicated code
-Date: Wed, 13 Feb 2013 04:05:22 +0100
-Message-Id: <1360724726-2997-5-git-send-email-peterhuewe@gmx.de>
+Subject: [PATCH 6/9] staging/rtl8187se: Remove temporary variable for return value
+Date: Wed, 13 Feb 2013 04:05:23 +0100
+Message-Id: <1360724726-2997-6-git-send-email-peterhuewe@gmx.de>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1360724302-2794-4-git-send-email-peterhuewe@gmx.de>
 References: <1360724302-2794-4-git-send-email-peterhuewe@gmx.de>
@@ -26,69 +26,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-WriteBBPortUchar reimplements ReadBBPortUchar in its body, so we can
-remove the duplicated code by calling ReadBBPortUchar directly.
+The simple PlatformIORead1Byte function doesn't need to store its return
+value in a temporary variable; rather simply return the value directly.
 
-Unfortunately we have to move ReadBBPortUchar around; while at it we can
-also get rid of the temporary variable for the return value.
+By moving the function to the top we can also get rid of the forward
+declaration.
 
-Also we can remove the local variables UCharData and RegisterContent in
-WriteBBPortUchar as they are not used / without effect.
+The wrapper functions could be easily replaced by direct calls to
+read_nic_byte but is kept for readability.
 
-Both functions are only 'local' so we can mark them as static.
+Since this functions is local only we can mark it as static.
 
 Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 ---
- drivers/staging/rtl8187se/r8185b_init.c |   30 +++++++-----------------------
- 1 files changed, 7 insertions(+), 23 deletions(-)
+ drivers/staging/rtl8187se/r8185b_init.c |   17 +++++------------
+ 1 files changed, 5 insertions(+), 12 deletions(-)
 
 diff --git a/drivers/staging/rtl8187se/r8185b_init.c b/drivers/staging/rtl8187se/r8185b_init.c
-index 1e54ead..a3b836c 100644
+index a3b836c..1dfa78e 100644
 --- a/drivers/staging/rtl8187se/r8185b_init.c
 +++ b/drivers/staging/rtl8187se/r8185b_init.c
-@@ -287,35 +287,19 @@ u16 RF_ReadReg(struct net_device *dev, u8 offset)
- 	return reg;
- }
+@@ -115,6 +115,11 @@ static u8 OFDM_CONFIG[]	= {
+ 	 *---------------------------------------------------------------
+ 	 */
  
-+static u8 ReadBBPortUchar(struct net_device *dev, u32 addr)
++static u8 PlatformIORead1Byte(struct net_device *dev, u32 offset)
 +{
-+	PlatformIOWrite4Byte(dev, PhyAddr, addr & 0xffffff7f);
-+	return PlatformIORead1Byte(dev, PhyDataR);
++	return read_nic_byte(dev, offset);
 +}
- 
- /* by Owen on 04/07/14 for writing BB register successfully */
--void WriteBBPortUchar(struct net_device *dev, u32 Data)
-+static void WriteBBPortUchar(struct net_device *dev, u32 Data)
++
+ void PlatformIOWrite1Byte(struct net_device *dev, u32 offset, u8 data)
  {
--	/* u8	TimeoutCounter; */
--	u8	RegisterContent;
--	u8	UCharData;
--
--	UCharData = (u8)((Data & 0x0000ff00) >> 8);
- 	PlatformIOWrite4Byte(dev, PhyAddr, Data);
--	/* for(TimeoutCounter = 10; TimeoutCounter > 0; TimeoutCounter--) */
--	{
--		PlatformIOWrite4Byte(dev, PhyAddr, Data & 0xffffff7f);
--		RegisterContent = PlatformIORead1Byte(dev, PhyDataR);
--		/*if(UCharData == RegisterContent)	*/
--		/*	break;	*/
--	}
-+	ReadBBPortUchar(dev, Data);
+ 	write_nic_byte(dev, offset, data);
+@@ -127,8 +132,6 @@ void PlatformIOWrite2Byte(struct net_device *dev, u32 offset, u16 data)
+ 	read_nic_word(dev, offset); /* To make sure write operation is completed, 2005.11.09, by rcnjko. */
  }
  
--u8 ReadBBPortUchar(struct net_device *dev, u32 addr)
+-u8 PlatformIORead1Byte(struct net_device *dev, u32 offset);
+-
+ void PlatformIOWrite4Byte(struct net_device *dev, u32 offset, u32 data)
+ {
+ 	if (offset == PhyAddr) {
+@@ -172,16 +175,6 @@ void PlatformIOWrite4Byte(struct net_device *dev, u32 offset, u32 data)
+ 	}
+ }
+ 
+-u8 PlatformIORead1Byte(struct net_device *dev, u32 offset)
 -{
--	/*u8	TimeoutCounter; */
--	u8	RegisterContent;
+-	u8	data = 0;
 -
--	PlatformIOWrite4Byte(dev, PhyAddr, addr & 0xffffff7f);
--	RegisterContent = PlatformIORead1Byte(dev, PhyDataR);
+-	data = read_nic_byte(dev, offset);
 -
--	return RegisterContent;
+-
+-	return data;
 -}
- /*
-  *	Description:
-  *	Perform Antenna settings with antenna diversity on 87SE.
+-
+ u16 PlatformIORead2Byte(struct net_device *dev, u32 offset)
+ {
+ 	u16	data = 0;
 -- 
 1.7.8.6
 
