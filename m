@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755030Ab3BMSib (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 13:38:31 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:42951 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752788Ab3BMSia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 13:38:30 -0500
-Message-ID: <511BDD2A.8020002@zytor.com>
-Date: Wed, 13 Feb 2013 10:36:26 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S932269Ab3BMSil (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 13:38:41 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:41489 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755330Ab3BMSii (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 13:38:38 -0500
+Date: Wed, 13 Feb 2013 19:38:44 +0100
+From: Marcin Slusarz <marcin.slusarz@gmail.com>
+To: Ben Skeggs <bskeggs@redhat.com>
+Cc: Arend van Spriel <arend@broadcom.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Daniel J Blueman <daniel@quora.org>
+Subject: Re: [ 61/61] drm/nouveau: add lockdep annotations
+Message-ID: <20130213183844.GB3127@joi.lan>
+References: <20130212203417.890993903@linuxfoundation.org>
+ <20130212203426.021116247@linuxfoundation.org>
+ <1360726523.3642.4.camel@thor.lan>
+ <511B5DD0.1040103@broadcom.com>
+ <1360748621.10139.0.camel@localhost>
+ <20130213174620.GA3127@joi.lan>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: KY Srinivasan <kys@microsoft.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "JBeulich@suse.com" <JBeulich@suse.com>, "bp@alien8.de" <bp@alien8.de>
-Subject: Re: [PATCH 1/1] Drivers: hv: vmbus: Use the new infrastructure for
- delivering VMBUS interrupts
-References: <1360164359-12273-1-git-send-email-kys@microsoft.com> <20130206191313.GA1470@kroah.com> <511ADEB7.6080909@zytor.com> <ae14ef66af2d4206baf4ccb382fc4205@SN2PR03MB061.namprd03.prod.outlook.com> <20130213162211.GA21253@kroah.com> <c31482583b394bfcaa16b76a63c413fe@SN2PR03MB061.namprd03.prod.outlook.com> <511BD923.7000500@zytor.com> <20130213182349.GA4959@kroah.com>
-In-Reply-To: <20130213182349.GA4959@kroah.com>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130213174620.GA3127@joi.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13/2013 10:23 AM, Greg KH wrote:
-> On Wed, Feb 13, 2013 at 10:19:15AM -0800, H. Peter Anvin wrote:
->> Sounds like we have the joy of a cross-tree dependency...
+On Wed, Feb 13, 2013 at 06:46:20PM +0100, Marcin Slusarz wrote:
+> On Wed, Feb 13, 2013 at 07:43:41PM +1000, Ben Skeggs wrote:
+> > On Wed, 2013-02-13 at 10:33 +0100, Arend van Spriel wrote:
+> > > On 02/13/2013 04:35 AM, Peter Hurley wrote:
+> > > > On Tue, 2013-02-12 at 12:35 -0800, Greg Kroah-Hartman wrote:
+> > > >> 3.7-stable review patch.  If anyone has any objections, please let me know.
+> > > > 
+> > > > FWIW, I never saw this on 3.7 but it happened 1st time on 3.8-rcX
+> > > > I haven't tested this fix either.
+> > > 
+> > > Dito.
+> > > 
+> > > Gr. AvS
+> > Yeah, I don't believe anything could trigger it in 3.7.  It doesn't hurt
+> > anyway.
 > 
-> Yeah, a mess.
+> Client locking splat is definitely triggerable on 3.7:
+> https://lkml.org/lkml/2012/10/16/251
 > 
-> KY, how about I just wait until all of this gets merged with Linus for
-> 3.9-rc1, and then you resend me the patches you have to take advantage
-> of these new bits?  That makes it easy for everyone involved.
+> Subdev locking splat is triggerable since 3.7 has "drm/nouveau: add locking
+s/is/should be/
+
+> around instobj list operations" and "drm/nvc0/fb: fix crash when different
+> mutex is used to protect same list" (both applied for 3.7.3).
 > 
-
-The other option is you can pull tip:x86/hyperv from me... it has *only*
-these changes.  I can then let you push them to Linus or I can push them
-to Linus before you push your tree.
-
-	-hpa
-
-
+> Marcin
