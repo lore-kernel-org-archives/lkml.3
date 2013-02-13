@@ -1,431 +1,415 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965138Ab3BMSCf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 13:02:35 -0500
-Received: from mail-qc0-f201.google.com ([209.85.216.201]:37517 "EHLO
-	mail-qc0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965100Ab3BMSCb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 13:02:31 -0500
-From: Doug Anderson <dianders@chromium.org>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Simon Glass <sjg@chromium.org>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Yuvaraj Kumar <yuvaraj.cd@gmail.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>, u.kleine-koenig@pengutronix.de,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Girish Shivananjappa <girish.shivananjappa@linaro.org>,
-        bhushan.r@samsung.com, sreekumar.c@samsung.com,
-        Prashanth G <prashanth.g@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        Grant Grundler <grundler@chromium.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        Jean Delvare <khali@linux-fr.org>,
-        Peter Korsgaard <peter.korsgaard@barco.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
-Subject: [PATCH v1 1/4] i2c: mux: Add i2c-arbitrator 'mux' driver
-Date: Wed, 13 Feb 2013 10:02:09 -0800
-Message-Id: <1360778532-7480-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.8.1
+	id S965193Ab3BMSMy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 13:12:54 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41844 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965064Ab3BMSMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 13:12:49 -0500
+Date: Wed, 13 Feb 2013 10:09:04 -0800
+Message-Id: <201302131809.r1DI94tc015462@tazenda.hos.anvin.org>
+From: "H. Peter Anvin" <hpa@zytor.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] Final x86 fixes for 3.8
+Cc: Andrew Morton <akpm@linux-foundation.org>, Borislav Petkov <bp@suse.de>,
+        Brad Spengler <spender@grsecurity.net>,
+        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Ingo Molnar <mingo@kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.coM>, Stoney Wang <song-bo.wang@hp.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>,
+        linux-mm@kvack.org, stable@kernel.org, stable@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The i2c-arbitrator driver implements the arbitration scheme that the
-Embedded Controller (EC) on the ARM Chromebook expects to use for bus
-multimastering.  This i2c-arbitrator driver could also be used in
-other places where standard i2c bus arbitration can't be used and two
-extra GPIOs are available for arbitration.
+Hi Linus,
 
-This driver is based on code that Simon Glass added to the i2c-s3c2410
-driver in the Chrome OS kernel 3.4 tree.  The current incarnation as a
-mux driver is as suggested by Grant Likely.  See
-<https://patchwork.kernel.org/patch/1877311/> for some history.
+One (hopefully) last batch of x86 fixes.  You asked for the patch by
+patch justifications, so here they are:
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-Signed-off-by: Simon Glass <sjg@chromium.org>
-Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
----
-Changes in v1: None
+      x86, MCE: Retract most UAPI exports
 
- .../devicetree/bindings/i2c/i2c-arbitrator.txt     |  76 +++++++
- drivers/i2c/muxes/Kconfig                          |  11 +
- drivers/i2c/muxes/Makefile                         |   1 +
- drivers/i2c/muxes/i2c-arbitrator.c                 | 242 +++++++++++++++++++++
- 4 files changed, 330 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/i2c/i2c-arbitrator.txt
- create mode 100644 drivers/i2c/muxes/i2c-arbitrator.c
+   This one unexports from userspace a bunch of definitions which
+   should never have been exported.  We really want to create an
+   accidental legacy here.
 
-diff --git a/Documentation/devicetree/bindings/i2c/i2c-arbitrator.txt b/Documentation/devicetree/bindings/i2c/i2c-arbitrator.txt
-new file mode 100644
-index 0000000..bb9cca7
---- /dev/null
-+++ b/Documentation/devicetree/bindings/i2c/i2c-arbitrator.txt
-@@ -0,0 +1,76 @@
-+GPIO-based Arbitration
-+======================
-+This uses GPIO lines between the AP (Application Processor) and an attached
-+EC (Embedded Controller) which both want to talk on the same I2C bus as master.
-+
-+The AP and EC each have a 'bus claim' line, which is an output that the
-+other can see. These are both active low, with pull-ups enabled.
-+
-+- AP_CLAIM: output from AP, signalling to the EC that the AP wants the bus
-+- EC_CLAIM: output from EC, signalling to the AP that the EC wants the bus
-+
-+
-+This mechanism is used instead of standard i2c multimaster to avoid some of the
-+subtle driver and silicon bugs that are often present with i2c multimaster.
-+
-+
-+Algorithm:
-+
-+The basic algorithm is to assert your line when you want the bus, then make
-+sure that the other side doesn't want it also. A detailed explanation is best
-+done with an example.
-+
-+Let's say the AP wants to claim the bus. It:
-+1. Asserts AP_CLAIM.
-+2. Waits a little bit for the other side to notice (slew time, say 10
-+   microseconds).
-+3. Checks EC_CLAIM. If this is not asserted then the AP has the bus and we are
-+   done.
-+4. Otherwise, wait for a few milliseconds and see if EC_CLAIM is released.
-+5. If not, back off, release the claim and wait for a few more milliseconds.
-+6. Go back to 1 (until retry time has expired).
-+
-+
-+Required properties:
-+- compatible: i2c-arbitrator
-+- bus-arbitration-gpios: Two GPIOs to use with the GPIO-based bus
-+    arbitration protocol.  The first should be an output, and is used to
-+    claim the I2C bus for us (AP_CLAIM).  The second should be an input and
-+    signals that the other side wants to claim the bus (EC_CLAIM).
-+- bus-arbitration-slew-delay-us: microseconds to wait for a GPIO to go high.
-+- bus-arbitration-wait-retry-us: we'll attempt another claim after this many
-+    microseconds.
-+- bus-arbitration-wait-free-us: we'll give up after this many microseconds.
-+- Standard I2C mux properties. See mux.txt in this directory.
-+- Single I2C child bus node at reg 0. See mux.txt in this directory.
-+
-+
-+Example:
-+	i2c@12CA0000 {
-+		compatible = "acme,some-i2c-device";
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+	};
-+
-+	i2c-arbitrator {
-+		compatible = "i2c-arbitrator";
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		i2c-parent = <&{/i2c@12CA0000}>;
-+
-+		bus-arbitration-gpios = <&gpf0 3 1 0 0>, <&gpe0 4 0 3 0>;
-+		bus-arbitration-slew-delay-us = <10>;
-+		bus-arbitration-wait-retry-us = <3000>;
-+		bus-arbitration-wait-free-us = <50000>;
-+
-+		i2c@0 {
-+			reg = <0>;
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+
-+			i2c@52 {
-+				// Normal i2c device
-+			};
-+		};
-+	};
-diff --git a/drivers/i2c/muxes/Kconfig b/drivers/i2c/muxes/Kconfig
-index 0be5b83..714bf16 100644
---- a/drivers/i2c/muxes/Kconfig
-+++ b/drivers/i2c/muxes/Kconfig
-@@ -5,6 +5,17 @@
- menu "Multiplexer I2C Chip support"
- 	depends on I2C_MUX
+      x86, doc: Add a bootloader ID for OVMF
+
+   This is a documentation-only patch, just recording the official
+   assignment of a boot loader ID.
+
+      x86: Do not leak kernel page mapping locations
+
+   Security: avoid making it needlessly easy for user space to probe
+   the kernel memory layout.
+
+      x86/mm: Check if PUD is large when validating a kernel address
+
+   Prevent failures using /proc/kcore when using 1G pages.
+
+      x86/apic: Work around boot failure on HP ProLiant DL980 G7 Server systems
+
+   Works around a BIOS problem causing boot failures on affected hardware.
+
+
+----------------------------------------------------------------
+
+The following changes since commit fe547d7714783ff77719f05a6712554cb4eeecc0:
+
+  Merge branch 'fix-max-write' of git://git.kernel.org/pub/scm/linux/kernel/git/teigland/linux-dlm (2013-02-05 20:50:11 +1100)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
+
+The head of this tree is 0ee364eb316348ddf3e0dfcd986f5f13f528f821.
+
+  x86/mm: Check if PUD is large when validating a kernel address (2013-02-13 10:02:55 +0100)
+
+----------------------------------------------------------------
+
+Borislav Petkov (1):
+      x86, MCE: Retract most UAPI exports
+
+H. Peter Anvin (2):
+      Merge tag 'ras_for_3.8' into x86/urgent
+      x86, doc: Add a bootloader ID for OVMF
+
+Kees Cook (1):
+      x86: Do not leak kernel page mapping locations
+
+Mel Gorman (1):
+      x86/mm: Check if PUD is large when validating a kernel address
+
+Stoney Wang (1):
+      x86/apic: Work around boot failure on HP ProLiant DL980 G7 Server systems
+
+ Documentation/x86/boot.txt         |  1 +
+ arch/x86/include/asm/mce.h         | 84 ++++++++++++++++++++++++++++++++++++
+ arch/x86/include/asm/pgtable.h     |  5 +++
+ arch/x86/include/uapi/asm/mce.h    | 87 --------------------------------------
+ arch/x86/kernel/apic/x2apic_phys.c | 21 ++++-----
+ arch/x86/mm/fault.c                |  8 ++--
+ arch/x86/mm/init_64.c              |  3 ++
+ 7 files changed, 109 insertions(+), 100 deletions(-)
+
+diff --git a/Documentation/x86/boot.txt b/Documentation/x86/boot.txt
+index e540fd6..b443f1d 100644
+--- a/Documentation/x86/boot.txt
++++ b/Documentation/x86/boot.txt
+@@ -390,6 +390,7 @@ Protocol:	2.00+
+ 	F  Special		(0xFF = undefined)
+        10  Reserved
+        11  Minimal Linux Bootloader <http://sebastian-plotz.blogspot.de>
++       12  OVMF UEFI virtualization stack
  
-+config I2C_ARBITRATOR
-+	tristate "GPIO-based I2C arbitrator"
-+	depends on GENERIC_GPIO && OF
-+	help
-+	  If you say yes to this option, support will be included for an
-+	  i2c multimaster arbitration scheme using GPIOs (as opposed to
-+	  using standard i2c multimaster mode).
-+
-+	  This driver can also be built as a module.  If so, the module
-+	  will be called i2c-arbitrator.
-+
- config I2C_MUX_GPIO
- 	tristate "GPIO-based I2C multiplexer"
- 	depends on GENERIC_GPIO
-diff --git a/drivers/i2c/muxes/Makefile b/drivers/i2c/muxes/Makefile
-index 76da869..adfe147 100644
---- a/drivers/i2c/muxes/Makefile
-+++ b/drivers/i2c/muxes/Makefile
-@@ -1,6 +1,7 @@
- #
- # Makefile for multiplexer I2C chip drivers.
+   Please contact <hpa@zytor.com> if you need a bootloader ID
+   value assigned.
+diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
+index ecdfee6..f4076af 100644
+--- a/arch/x86/include/asm/mce.h
++++ b/arch/x86/include/asm/mce.h
+@@ -3,6 +3,90 @@
  
-+obj-$(CONFIG_I2C_ARBITRATOR)	+= i2c-arbitrator.o
- obj-$(CONFIG_I2C_MUX_GPIO)	+= i2c-mux-gpio.o
- obj-$(CONFIG_I2C_MUX_PCA9541)	+= i2c-mux-pca9541.o
- obj-$(CONFIG_I2C_MUX_PCA954x)	+= i2c-mux-pca954x.o
-diff --git a/drivers/i2c/muxes/i2c-arbitrator.c b/drivers/i2c/muxes/i2c-arbitrator.c
-new file mode 100644
-index 0000000..c3bbdf7
---- /dev/null
-+++ b/drivers/i2c/muxes/i2c-arbitrator.c
-@@ -0,0 +1,242 @@
+ #include <uapi/asm/mce.h>
+ 
 +/*
-+ * I2C arbitrator using GPIO API
-+ *
-+ * Copyright (C) 2012 Google, Inc
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
++ * Machine Check support for x86
 + */
 +
-+#include <linux/delay.h>
-+#include <linux/gpio.h>
-+#include <linux/kernel.h>
-+#include <linux/i2c.h>
-+#include <linux/i2c-mux.h>
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/of_i2c.h>
-+#include <linux/of_gpio.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
++/* MCG_CAP register defines */
++#define MCG_BANKCNT_MASK	0xff         /* Number of Banks */
++#define MCG_CTL_P		(1ULL<<8)    /* MCG_CTL register available */
++#define MCG_EXT_P		(1ULL<<9)    /* Extended registers available */
++#define MCG_CMCI_P		(1ULL<<10)   /* CMCI supported */
++#define MCG_EXT_CNT_MASK	0xff0000     /* Number of Extended registers */
++#define MCG_EXT_CNT_SHIFT	16
++#define MCG_EXT_CNT(c)		(((c) & MCG_EXT_CNT_MASK) >> MCG_EXT_CNT_SHIFT)
++#define MCG_SER_P		(1ULL<<24)   /* MCA recovery/new status bits */
 +
++/* MCG_STATUS register defines */
++#define MCG_STATUS_RIPV  (1ULL<<0)   /* restart ip valid */
++#define MCG_STATUS_EIPV  (1ULL<<1)   /* ip points to correct instruction */
++#define MCG_STATUS_MCIP  (1ULL<<2)   /* machine check in progress */
 +
-+enum {
-+	I2C_ARB_GPIO_AP,		/* AP claims i2c bus */
-+	I2C_ARB_GPIO_EC,		/* EC claims i2c bus */
++/* MCi_STATUS register defines */
++#define MCI_STATUS_VAL   (1ULL<<63)  /* valid error */
++#define MCI_STATUS_OVER  (1ULL<<62)  /* previous errors lost */
++#define MCI_STATUS_UC    (1ULL<<61)  /* uncorrected error */
++#define MCI_STATUS_EN    (1ULL<<60)  /* error enabled */
++#define MCI_STATUS_MISCV (1ULL<<59)  /* misc error reg. valid */
++#define MCI_STATUS_ADDRV (1ULL<<58)  /* addr reg. valid */
++#define MCI_STATUS_PCC   (1ULL<<57)  /* processor context corrupt */
++#define MCI_STATUS_S	 (1ULL<<56)  /* Signaled machine check */
++#define MCI_STATUS_AR	 (1ULL<<55)  /* Action required */
++#define MCACOD		  0xffff     /* MCA Error Code */
 +
-+	I2C_ARB_GPIO_COUNT,
-+};
++/* Architecturally defined codes from SDM Vol. 3B Chapter 15 */
++#define MCACOD_SCRUB	0x00C0	/* 0xC0-0xCF Memory Scrubbing */
++#define MCACOD_SCRUBMSK	0xfff0
++#define MCACOD_L3WB	0x017A	/* L3 Explicit Writeback */
++#define MCACOD_DATA	0x0134	/* Data Load */
++#define MCACOD_INSTR	0x0150	/* Instruction Fetch */
 +
-+/**
-+ * struct i2c_arbitrator_data - Driver data for i2c arbitrator
-+ *
-+ * @parent: Parent adapter
-+ * @child: Child bus
-+ * @ap_gpio: GPIO we'll use to claim.
-+ * @ec_gpio: GPIO that the other side will use to claim.
-+ * @slew_delay_us: microseconds to wait for a GPIO to go high.
-+ * @wait_retry_us: we'll attempt another claim after this many microseconds.
-+ * @wait_free_us: we'll give up after this many microseconds.
++/* MCi_MISC register defines */
++#define MCI_MISC_ADDR_LSB(m)	((m) & 0x3f)
++#define MCI_MISC_ADDR_MODE(m)	(((m) >> 6) & 7)
++#define  MCI_MISC_ADDR_SEGOFF	0	/* segment offset */
++#define  MCI_MISC_ADDR_LINEAR	1	/* linear address */
++#define  MCI_MISC_ADDR_PHYS	2	/* physical address */
++#define  MCI_MISC_ADDR_MEM	3	/* memory address */
++#define  MCI_MISC_ADDR_GENERIC	7	/* generic */
++
++/* CTL2 register defines */
++#define MCI_CTL2_CMCI_EN		(1ULL << 30)
++#define MCI_CTL2_CMCI_THRESHOLD_MASK	0x7fffULL
++
++#define MCJ_CTX_MASK		3
++#define MCJ_CTX(flags)		((flags) & MCJ_CTX_MASK)
++#define MCJ_CTX_RANDOM		0    /* inject context: random */
++#define MCJ_CTX_PROCESS		0x1  /* inject context: process */
++#define MCJ_CTX_IRQ		0x2  /* inject context: IRQ */
++#define MCJ_NMI_BROADCAST	0x4  /* do NMI broadcasting */
++#define MCJ_EXCEPTION		0x8  /* raise as exception */
++#define MCJ_IRQ_BRAODCAST	0x10 /* do IRQ broadcasting */
++
++#define MCE_OVERFLOW 0		/* bit 0 in flags means overflow */
++
++/* Software defined banks */
++#define MCE_EXTENDED_BANK	128
++#define MCE_THERMAL_BANK	(MCE_EXTENDED_BANK + 0)
++#define K8_MCE_THRESHOLD_BASE   (MCE_EXTENDED_BANK + 1)
++
++#define MCE_LOG_LEN 32
++#define MCE_LOG_SIGNATURE	"MACHINECHECK"
++
++/*
++ * This structure contains all data related to the MCE log.  Also
++ * carries a signature to make it easier to find from external
++ * debugging tools.  Each entry is only valid when its finished flag
++ * is set.
 + */
-+
-+struct i2c_arbitrator_data {
-+	struct i2c_adapter *parent;
-+	struct i2c_adapter *child;
-+
-+	int		ap_gpio;
-+	int		ec_gpio;
-+	unsigned int	slew_delay_us;
-+	unsigned int	wait_retry_us;
-+	unsigned int	wait_free_us;
++struct mce_log {
++	char signature[12]; /* "MACHINECHECK" */
++	unsigned len;	    /* = MCE_LOG_LEN */
++	unsigned next;
++	unsigned flags;
++	unsigned recordlen;	/* length of struct mce */
++	struct mce entry[MCE_LOG_LEN];
 +};
-+
-+
-+/**
-+ * i2c_arbitrator_select - claim the i2c bus
-+ *
-+ * Use the GPIO-based signalling protocol; return -EBUSY if we fail.
-+ */
-+static int i2c_arbitrator_select(struct i2c_adapter *adap, void *data, u32 chan)
+ 
+ struct mca_config {
+ 	bool dont_log_ce;
+diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+index 5199db2..1c1a955 100644
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -142,6 +142,11 @@ static inline unsigned long pmd_pfn(pmd_t pmd)
+ 	return (pmd_val(pmd) & PTE_PFN_MASK) >> PAGE_SHIFT;
+ }
+ 
++static inline unsigned long pud_pfn(pud_t pud)
 +{
-+	const struct i2c_arbitrator_data *arb = data;
-+	unsigned long stop_retry, stop_time;
-+
-+	/* Start a round of trying to claim the bus */
-+	stop_time = jiffies + usecs_to_jiffies(arb->wait_free_us) + 1;
-+	do {
-+		/* Indicate that we want to claim the bus */
-+		gpio_set_value(arb->ap_gpio, 0);
-+		udelay(arb->slew_delay_us);
-+
-+		/* Wait for the EC to release it */
-+		stop_retry = jiffies + usecs_to_jiffies(arb->wait_retry_us) + 1;
-+		while (time_before(jiffies, stop_retry)) {
-+			if (gpio_get_value(arb->ec_gpio)) {
-+				/* We got it, so return */
-+				return 0;
-+			}
-+
-+			usleep_range(50, 200);
-+		}
-+
-+		/* It didn't release, so give up, wait, and try again */
-+		gpio_set_value(arb->ap_gpio, 1);
-+
-+		usleep_range(arb->wait_retry_us, arb->wait_retry_us * 2);
-+	} while (time_before(jiffies, stop_time));
-+
-+	/* Give up, release our claim */
-+	gpio_set_value(arb->ap_gpio, 1);
-+	udelay(arb->slew_delay_us);
-+	dev_err(&adap->dev, "Could not claim bus, timeout\n");
-+	return -EBUSY;
++	return (pud_val(pud) & PTE_PFN_MASK) >> PAGE_SHIFT;
 +}
 +
-+/**
-+ * i2c_arbitrator_deselect - release the i2c bus
-+ *
-+ * Release the i2c bus using the GPIO-based signalling protocol.
-+ */
-+static int i2c_arbitrator_deselect(struct i2c_adapter *adap, void *data,
-+				   u32 chan)
-+{
-+	const struct i2c_arbitrator_data *arb = data;
-+
-+	/* Release the bus and wait for the EC to notice */
-+	gpio_set_value(arb->ap_gpio, 1);
-+	udelay(arb->slew_delay_us);
-+
-+	return 0;
+ #define pte_page(pte)	pfn_to_page(pte_pfn(pte))
+ 
+ static inline int pmd_large(pmd_t pte)
+diff --git a/arch/x86/include/uapi/asm/mce.h b/arch/x86/include/uapi/asm/mce.h
+index 58c8298..a0eab85 100644
+--- a/arch/x86/include/uapi/asm/mce.h
++++ b/arch/x86/include/uapi/asm/mce.h
+@@ -4,66 +4,6 @@
+ #include <linux/types.h>
+ #include <asm/ioctls.h>
+ 
+-/*
+- * Machine Check support for x86
+- */
+-
+-/* MCG_CAP register defines */
+-#define MCG_BANKCNT_MASK	0xff         /* Number of Banks */
+-#define MCG_CTL_P		(1ULL<<8)    /* MCG_CTL register available */
+-#define MCG_EXT_P		(1ULL<<9)    /* Extended registers available */
+-#define MCG_CMCI_P		(1ULL<<10)   /* CMCI supported */
+-#define MCG_EXT_CNT_MASK	0xff0000     /* Number of Extended registers */
+-#define MCG_EXT_CNT_SHIFT	16
+-#define MCG_EXT_CNT(c)		(((c) & MCG_EXT_CNT_MASK) >> MCG_EXT_CNT_SHIFT)
+-#define MCG_SER_P	 	(1ULL<<24)   /* MCA recovery/new status bits */
+-
+-/* MCG_STATUS register defines */
+-#define MCG_STATUS_RIPV  (1ULL<<0)   /* restart ip valid */
+-#define MCG_STATUS_EIPV  (1ULL<<1)   /* ip points to correct instruction */
+-#define MCG_STATUS_MCIP  (1ULL<<2)   /* machine check in progress */
+-
+-/* MCi_STATUS register defines */
+-#define MCI_STATUS_VAL   (1ULL<<63)  /* valid error */
+-#define MCI_STATUS_OVER  (1ULL<<62)  /* previous errors lost */
+-#define MCI_STATUS_UC    (1ULL<<61)  /* uncorrected error */
+-#define MCI_STATUS_EN    (1ULL<<60)  /* error enabled */
+-#define MCI_STATUS_MISCV (1ULL<<59)  /* misc error reg. valid */
+-#define MCI_STATUS_ADDRV (1ULL<<58)  /* addr reg. valid */
+-#define MCI_STATUS_PCC   (1ULL<<57)  /* processor context corrupt */
+-#define MCI_STATUS_S	 (1ULL<<56)  /* Signaled machine check */
+-#define MCI_STATUS_AR	 (1ULL<<55)  /* Action required */
+-#define MCACOD		  0xffff     /* MCA Error Code */
+-
+-/* Architecturally defined codes from SDM Vol. 3B Chapter 15 */
+-#define MCACOD_SCRUB	0x00C0	/* 0xC0-0xCF Memory Scrubbing */
+-#define MCACOD_SCRUBMSK	0xfff0
+-#define MCACOD_L3WB	0x017A	/* L3 Explicit Writeback */
+-#define MCACOD_DATA	0x0134	/* Data Load */
+-#define MCACOD_INSTR	0x0150	/* Instruction Fetch */
+-
+-/* MCi_MISC register defines */
+-#define MCI_MISC_ADDR_LSB(m)	((m) & 0x3f)
+-#define MCI_MISC_ADDR_MODE(m)	(((m) >> 6) & 7)
+-#define  MCI_MISC_ADDR_SEGOFF	0	/* segment offset */
+-#define  MCI_MISC_ADDR_LINEAR	1	/* linear address */
+-#define  MCI_MISC_ADDR_PHYS	2	/* physical address */
+-#define  MCI_MISC_ADDR_MEM	3	/* memory address */
+-#define  MCI_MISC_ADDR_GENERIC	7	/* generic */
+-
+-/* CTL2 register defines */
+-#define MCI_CTL2_CMCI_EN		(1ULL << 30)
+-#define MCI_CTL2_CMCI_THRESHOLD_MASK	0x7fffULL
+-
+-#define MCJ_CTX_MASK		3
+-#define MCJ_CTX(flags)		((flags) & MCJ_CTX_MASK)
+-#define MCJ_CTX_RANDOM		0    /* inject context: random */
+-#define MCJ_CTX_PROCESS		0x1  /* inject context: process */
+-#define MCJ_CTX_IRQ		0x2  /* inject context: IRQ */
+-#define MCJ_NMI_BROADCAST	0x4  /* do NMI broadcasting */
+-#define MCJ_EXCEPTION		0x8  /* raise as exception */
+-#define MCJ_IRQ_BRAODCAST	0x10 /* do IRQ broadcasting */
+-
+ /* Fields are zero when not available */
+ struct mce {
+ 	__u64 status;
+@@ -87,35 +27,8 @@ struct mce {
+ 	__u64 mcgcap;	/* MCGCAP MSR: machine check capabilities of CPU */
+ };
+ 
+-/*
+- * This structure contains all data related to the MCE log.  Also
+- * carries a signature to make it easier to find from external
+- * debugging tools.  Each entry is only valid when its finished flag
+- * is set.
+- */
+-
+-#define MCE_LOG_LEN 32
+-
+-struct mce_log {
+-	char signature[12]; /* "MACHINECHECK" */
+-	unsigned len;	    /* = MCE_LOG_LEN */
+-	unsigned next;
+-	unsigned flags;
+-	unsigned recordlen;	/* length of struct mce */
+-	struct mce entry[MCE_LOG_LEN];
+-};
+-
+-#define MCE_OVERFLOW 0		/* bit 0 in flags means overflow */
+-
+-#define MCE_LOG_SIGNATURE	"MACHINECHECK"
+-
+ #define MCE_GET_RECORD_LEN   _IOR('M', 1, int)
+ #define MCE_GET_LOG_LEN      _IOR('M', 2, int)
+ #define MCE_GETCLEAR_FLAGS   _IOR('M', 3, int)
+ 
+-/* Software defined banks */
+-#define MCE_EXTENDED_BANK	128
+-#define MCE_THERMAL_BANK	MCE_EXTENDED_BANK + 0
+-#define K8_MCE_THRESHOLD_BASE      (MCE_EXTENDED_BANK + 1)
+-
+ #endif /* _UAPI_ASM_X86_MCE_H */
+diff --git a/arch/x86/kernel/apic/x2apic_phys.c b/arch/x86/kernel/apic/x2apic_phys.c
+index e03a1e1..562a76d 100644
+--- a/arch/x86/kernel/apic/x2apic_phys.c
++++ b/arch/x86/kernel/apic/x2apic_phys.c
+@@ -20,18 +20,19 @@ static int set_x2apic_phys_mode(char *arg)
+ }
+ early_param("x2apic_phys", set_x2apic_phys_mode);
+ 
+-static int x2apic_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
++static bool x2apic_fadt_phys(void)
+ {
+-	if (x2apic_phys)
+-		return x2apic_enabled();
+-	else if ((acpi_gbl_FADT.header.revision >= FADT2_REVISION_ID) &&
+-		(acpi_gbl_FADT.flags & ACPI_FADT_APIC_PHYSICAL) &&
+-		x2apic_enabled()) {
++	if ((acpi_gbl_FADT.header.revision >= FADT2_REVISION_ID) &&
++		(acpi_gbl_FADT.flags & ACPI_FADT_APIC_PHYSICAL)) {
+ 		printk(KERN_DEBUG "System requires x2apic physical mode\n");
+-		return 1;
++		return true;
+ 	}
+-	else
+-		return 0;
++	return false;
 +}
 +
-+static int i2c_arbitrator_probe(struct platform_device *pdev)
++static int x2apic_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
 +{
-+	struct device_node *np = pdev->dev.of_node;
-+	struct device_node *parent_np;
-+	struct i2c_arbitrator_data *arb;
-+	int ret;
++	return x2apic_enabled() && (x2apic_phys || x2apic_fadt_phys());
+ }
+ 
+ static void
+@@ -82,7 +83,7 @@ static void init_x2apic_ldr(void)
+ 
+ static int x2apic_phys_probe(void)
+ {
+-	if (x2apic_mode && x2apic_phys)
++	if (x2apic_mode && (x2apic_phys || x2apic_fadt_phys()))
+ 		return 1;
+ 
+ 	return apic == &apic_x2apic_phys;
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 027088f..fb674fd 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -748,13 +748,15 @@ __bad_area_nosemaphore(struct pt_regs *regs, unsigned long error_code,
+ 				return;
+ 		}
+ #endif
++		/* Kernel addresses are always protection faults: */
++		if (address >= TASK_SIZE)
++			error_code |= PF_PROT;
+ 
+-		if (unlikely(show_unhandled_signals))
++		if (likely(show_unhandled_signals))
+ 			show_signal_msg(regs, error_code, address, tsk);
+ 
+-		/* Kernel addresses are always protection faults: */
+ 		tsk->thread.cr2		= address;
+-		tsk->thread.error_code	= error_code | (address >= TASK_SIZE);
++		tsk->thread.error_code	= error_code;
+ 		tsk->thread.trap_nr	= X86_TRAP_PF;
+ 
+ 		force_sig_info_fault(SIGSEGV, si_code, address, tsk, 0);
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 2ead3c8..75c9a6a 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -831,6 +831,9 @@ int kern_addr_valid(unsigned long addr)
+ 	if (pud_none(*pud))
+ 		return 0;
+ 
++	if (pud_large(*pud))
++		return pfn_valid(pud_pfn(*pud));
 +
-+	/* We only support probing from device tree; no platform_data */
-+	if (WARN_ON(!np))
-+		return -ENODEV;
-+	if (WARN_ON(pdev->dev.platform_data))
-+		return -EINVAL;
-+
-+	arb = devm_kzalloc(&pdev->dev, sizeof(*arb), GFP_KERNEL);
-+	if (WARN_ON(!arb))
-+		return -ENOMEM;
-+	platform_set_drvdata(pdev, arb);
-+
-+	/* Find our parent */
-+	parent_np = of_parse_phandle(np, "i2c-parent", 0);
-+	if (WARN_ON(!parent_np))
-+		return -EINVAL;
-+	arb->parent = of_find_i2c_adapter_by_node(parent_np);
-+	if (WARN_ON(!arb->parent))
-+		return -EINVAL;
-+
-+	/* Request GPIOs */
-+	ret = of_get_named_gpio(np, "bus-arbitration-gpios", I2C_ARB_GPIO_AP);
-+	if (gpio_is_valid(ret)) {
-+		arb->ap_gpio = ret;
-+		ret = gpio_request_one(arb->ap_gpio, GPIOF_OUT_INIT_HIGH,
-+				       "bus-arbitration-ap");
-+	}
-+	if (WARN_ON(ret))
-+		goto ap_request_failed;
-+
-+	ret = of_get_named_gpio(np, "bus-arbitration-gpios", I2C_ARB_GPIO_EC);
-+	if (gpio_is_valid(ret)) {
-+		arb->ec_gpio = ret;
-+		ret = gpio_request_one(arb->ec_gpio, GPIOF_IN,
-+				       "bus-arbitration-ec");
-+	}
-+	if (WARN_ON(ret))
-+		goto ec_request_failed;
-+
-+	/* Arbitration parameters */
-+	if (of_property_read_u32(np, "bus-arbitration-slew-delay-us",
-+				 &arb->slew_delay_us))
-+		arb->slew_delay_us = 10;
-+	if (of_property_read_u32(np, "bus-arbitration-wait-retry-us",
-+				 &arb->wait_retry_us))
-+		arb->wait_retry_us = 3000;
-+	if (of_property_read_u32(np, "bus-arbitration-wait-free-us",
-+				 &arb->wait_free_us))
-+		arb->wait_free_us = 50000;
-+
-+	/* Actually add the mux adapter */
-+	arb->child = i2c_add_mux_adapter(arb->parent, &pdev->dev, arb, 0, 0, 0,
-+					 i2c_arbitrator_select,
-+					 i2c_arbitrator_deselect);
-+	if (WARN_ON(!arb->child)) {
-+		ret = -ENODEV;
-+		goto add_adapter_failed;
-+	}
-+
-+	return 0;
-+
-+add_adapter_failed:
-+	gpio_free(arb->ec_gpio);
-+ec_request_failed:
-+	gpio_free(arb->ap_gpio);
-+ap_request_failed:
-+	i2c_put_adapter(arb->parent);
-+
-+	return ret;
-+}
-+
-+static int i2c_arbitrator_remove(struct platform_device *pdev)
-+{
-+	struct i2c_arbitrator_data *arb = platform_get_drvdata(pdev);
-+
-+	i2c_del_mux_adapter(arb->child);
-+
-+	gpio_free(arb->ec_gpio);
-+	gpio_free(arb->ap_gpio);
-+
-+	platform_set_drvdata(pdev, NULL);
-+	i2c_put_adapter(arb->parent);
-+
-+	return 0;
-+}
-+
-+static const struct of_device_id i2c_arbitrator_of_match[] = {
-+	{ .compatible = "i2c-arbitrator", },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, i2c_arbitrator_of_match);
-+
-+static struct platform_driver i2c_arbitrator_driver = {
-+	.probe	= i2c_arbitrator_probe,
-+	.remove	= i2c_arbitrator_remove,
-+	.driver	= {
-+		.owner	= THIS_MODULE,
-+		.name	= "i2c-arbitrator",
-+		.of_match_table = of_match_ptr(i2c_arbitrator_of_match),
-+	},
-+};
-+
-+static int __init i2c_arbitrator_init(void)
-+{
-+	return platform_driver_register(&i2c_arbitrator_driver);
-+}
-+subsys_initcall(i2c_arbitrator_init);
-+
-+static void __exit i2c_arbitrator_exit(void)
-+{
-+	platform_driver_unregister(&i2c_arbitrator_driver);
-+}
-+module_exit(i2c_arbitrator_exit);
-+
-+MODULE_DESCRIPTION("GPIO-based I2C arbitrator driver");
-+MODULE_AUTHOR("Doug Anderson <dianders@chromium.org>");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:i2c-arbitrator");
--- 
-1.8.1
-
+ 	pmd = pmd_offset(pud, addr);
+ 	if (pmd_none(*pmd))
+ 		return 0;
