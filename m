@@ -1,82 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755251Ab3BMHXK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 02:23:10 -0500
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:59641 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753811Ab3BMHXH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 02:23:07 -0500
-Date: Tue, 12 Feb 2013 23:19:22 -0800
-From: Anton Vorontsov <anton@enomsg.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: cgroups@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: Re: [PATCH] memcg: Add memory.pressure_level events
-Message-ID: <20130213071922.GB20543@lizard.gateway.2wire.net>
-References: <20130211000220.GA28247@lizard.gateway.2wire.net>
- <5118C522.3070905@parallels.com>
+	id S1755878Ab3BMHXW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 02:23:22 -0500
+Received: from isrv.corpit.ru ([86.62.121.231]:37120 "EHLO isrv.corpit.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754540Ab3BMHXJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 02:23:09 -0500
+Message-ID: <511B3F5B.4050803@msgid.tls.msk.ru>
+Date: Wed, 13 Feb 2013 11:23:07 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/17.0 Icedove/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <5118C522.3070905@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ian Kent <raven@themaw.net>
+CC: Tim Gardner <tim.gardner@canonical.com>, linux-kernel@vger.kernel.org,
+        autofs@vger.kernel.org
+Subject: Re: [PATCH linux-next] autofs4: autofs4_catatonic_mode(): remove
+ redundant null check on kfree()
+References: <1360689138-59191-1-git-send-email-tim.gardner@canonical.com> <1360740008.2288.3.camel@perseus.themaw.net>
+In-Reply-To: <1360740008.2288.3.camel@perseus.themaw.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Glauber,
+13.02.2013 11:20, Ian Kent wrote:
+> On Tue, 2013-02-12 at 10:12 -0700, Tim Gardner wrote:
+>> smatch analysis:
+>>
+>> fs/autofs4/waitq.c:46 autofs4_catatonic_mode() info: redundant null
+>>   check on wq->name.name calling kfree()
+>
+> I'm not sure about this change.
+>
+> autofs4_catatonic_mode() could be called when there are remaining
+> entries in the wait queue, which is nulled, so autofs4_wait_release()
+> won't see the the discarded waits if it is called.
 
-On Mon, Feb 11, 2013 at 02:17:06PM +0400, Glauber Costa wrote:
-[...]
-> > +static struct vmpressure *vmpressure_parent(struct vmpressure *vmpr)
-> > +{
-> > +	struct cgroup *cg = vmpr_to_css(vmpr)->cgroup->parent;
-> > +
-> > +	if (!cg)
-> > +		return NULL;
-> > +	return cg_to_vmpr(cg);
-> > +}
-> 
-> Unfortunately, "parent" in memcg have different meanings for information
-> propagation purposes depending on the value of the flag "use_hierarchy".
-> That is set for deprecation, but still...
-> 
-> I suggest you use the helper mem_cgroup_parent, that will already give
-> you the right parent (either immediate parent or root) with all that
-> taken into account.
+Ian, this is about something else really.  The patch is about the
+NULL check before calling kfree() -- it does the NULL check internally.
+It is nothing about code flow or anything else, it is about calling
+kfree() unconditionally regardless whenever the argument is actually
+NULL or non-NULL.  It makes the code shorter and easier to read.
 
-Got it, will change.
+You can add my
 
-[...]
-> > +void __init enable_pressure_cgroup(void)
-> > +{
-> > +	WARN_ON(cgroup_add_cftypes(&mem_cgroup_subsys,
-> > +				   vmpressure_cgroup_files));
-> > +}
-> 
-> There is no functionality discovery going on here, and this is
-> conditional on nothing. Isn't it better then to just add the register +
-> read functions to memcontrol.c and add the files in the memcontrol cftype ?
+Signed-off-by: Michael Tokarev <mjt@tls.msk.ru>
 
-I was trying to make the stuff similar to the existing CONFIG_MEMCG_SWAP
-code, which does this kind of adding files to the cgroup. But I can surely
-place files into memcontrol cftype as you suggest.
+if you want.
 
-Thanks a lot for the comments!
+>> Cc: Ian Kent <raven@themaw.net>
+>> Cc: autofs@vger.kernel.org
+>> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+>> ---
+>>   fs/autofs4/waitq.c |    6 ++----
+>>   1 file changed, 2 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/fs/autofs4/waitq.c b/fs/autofs4/waitq.c
+>> index 03bc1d3..3db70da 100644
+>> --- a/fs/autofs4/waitq.c
+>> +++ b/fs/autofs4/waitq.c
+>> @@ -42,10 +42,8 @@ void autofs4_catatonic_mode(struct autofs_sb_info *sbi)
+>>   	while (wq) {
+>>   		nwq = wq->next;
+>>   		wq->status = -ENOENT; /* Magic is gone - report failure */
+>> -		if (wq->name.name) {
+>> -			kfree(wq->name.name);
+>> -			wq->name.name = NULL;
+>> -		}
+>> +		kfree(wq->name.name);
+>> +		wq->name.name = NULL;
+>>   		wq->wait_ctr--;
+>>   		wake_up_interruptible(&wq->queue);
+>>   		wq = nwq;
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe autofs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-Anton
