@@ -1,82 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760704Ab3BMVJR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 16:09:17 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:53486 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752010Ab3BMVJO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 16:09:14 -0500
-Message-ID: <511C00F4.4080708@wwwdotorg.org>
-Date: Wed, 13 Feb 2013 14:09:08 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1760714Ab3BMVLb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 16:11:31 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:38006 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752010Ab3BMVLa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 16:11:30 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Dirk Brandewie <dirk.brandewie@gmail.com>
+Cc: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org
+Subject: Re: [PATCH 0/5] Add P state driver for Intel Core Processors
+Date: Wed, 13 Feb 2013 22:17:58 +0100
+Message-ID: <6075901.uWCJMxDDFf@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc7; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <511BC16C.7040807@gmail.com>
+References: <1360170133-5066-1-git-send-email-dirk.brandewie@gmail.com> <20130212214949.GA1003@redhat.com> <511BC16C.7040807@gmail.com>
 MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>
-CC: Wolfram Sang <w.sang@pengutronix.de>, Simon Glass <sjg@chromium.org>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Yuvaraj Kumar <yuvaraj.cd@gmail.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>, u.kleine-koenig@pengutronix.de,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Girish Shivananjappa <girish.shivananjappa@linaro.org>,
-        bhushan.r@samsung.com, sreekumar.c@samsung.com,
-        Prashanth G <prashanth.g@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        Grant Grundler <grundler@chromium.org>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        Peter Korsgaard <peter.korsgaard@barco.com>,
-        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <khali@linux-fr.org>,
-        David Daney <david.daney@cavium.com>, Axel Lin <axel.lin@gmail.com>,
-        Stephen Warren <swarren@nvidia.com>, Barry Song <baohua.song@csr.com>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1 4/4] i2c-mux: i2c_add_mux_adapter() should use -1 for
- auto bus num
-References: <1360778532-7480-1-git-send-email-dianders@chromium.org> <1360778532-7480-4-git-send-email-dianders@chromium.org>
-In-Reply-To: <1360778532-7480-4-git-send-email-dianders@chromium.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13/2013 11:02 AM, Doug Anderson wrote:
-> The force_nr parameter to i2c_add_mux_adapter() uses 0 to signify that
-> we don't want to force the bus number of the adapter.  This is
-> non-ideal because:
-> * 0 is actually a valid bus number to request
-> * i2c_add_numbered_adapter() (which i2c_add_mux_adapter() calls) uses
->   -1 to mean the same thing.  That means extra logic in
->   i2c_add_mux_adapter().
+On Wednesday, February 13, 2013 08:38:04 AM Dirk Brandewie wrote:
+> Hi Dave,
 > 
-> Fix i2c_add_mux_adapter() to use -1 and update all mux drivers
-> accordingly.
+> On 02/12/2013 01:49 PM, Dave Jones wrote:
+> > On Wed, Feb 06, 2013 at 09:02:07AM -0800, dirk.brandewie@gmail.com wrote:
+> >
+> > Won't you also need to patch drivers/cpufreq/acpi-cpufreq.c to not load
+> > on the processors that you want this driver to run on ?
+> >
+> > 	Dave
+> >
 > 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> ---
-> Notes:
-> - If there's a good reason that force_nr uses 0 for auto then feel
->   free to drop this patch.  I've place it at the end of the series to
->   make it easy to just drop it.
+> For the case where both are built-in the load order works my driver uses
+> device_initcall() and acpi_cpufreq uses late_initcall().
+> 
+> For the case where both are a module (which I was sure I tested) you are right
+> I will have to do something.
+> 
+> For now I propose to make my driver built-in only while I sort out the right
+> solution for the module build.  Does this seem reasonable to everyone?
 
-IIRC (and I only vaguely do...) it's because:
+Well, I've been saying I think your driver should be non-modular from the
+start. :-)
 
-> diff --git a/drivers/i2c/muxes/i2c-mux-gpio.c b/drivers/i2c/muxes/i2c-mux-gpio.c
-> index 9f50ef0..301ed0b 100644
-> --- a/drivers/i2c/muxes/i2c-mux-gpio.c
-> +++ b/drivers/i2c/muxes/i2c-mux-gpio.c
-> @@ -208,7 +208,7 @@ static int i2c_mux_gpio_probe(struct platform_device *pdev)
->  	}
->  
->  	for (i = 0; i < mux->data.n_values; i++) {
-> -		u32 nr = mux->data.base_nr ? (mux->data.base_nr + i) : 0;
-> +		int nr = mux->data.base_nr ? (mux->data.base_nr + i) : -1;
+May I ask for a kernel command line switch to prevent it from registering if
+the user doesn't actually want it, though, if it's going to be non-modular?
 
-Here, mux->data.base_nr is platform data (or copied directly from it),
-and any field in a platform data struct stored in a global variable not
-explicitly initialized would be 0, hence 0 would typically mean "no
-explicit bus number desired". Since a mux can't exist without a parent
-I2C bus, it's unlikely anyone would want a mux to be I2C bus 0, but
-rather the parent to have that number.
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
