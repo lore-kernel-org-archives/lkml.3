@@ -1,23 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934447Ab3BMQqy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 11:46:54 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:43357 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760019Ab3BMQqx (ORCPT
+	id S934412Ab3BMQti (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 11:49:38 -0500
+Received: from mail-we0-f171.google.com ([74.125.82.171]:60632 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756619Ab3BMQtg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 11:46:53 -0500
-Date: Wed, 13 Feb 2013 17:46:42 +0100 (CET)
+	Wed, 13 Feb 2013 11:49:36 -0500
+Date: Wed, 13 Feb 2013 17:49:30 +0100 (CET)
 From: John Kacur <jkacur@redhat.com>
 To: Steven Rostedt <rostedt@goodmis.org>
-cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@gmail.com>,
-        Clark Williams <clark@redhat.com>
-Subject: Re: [RFC][PATCH RT] acpi/rt: Convert acpi lock back to a
- raw_spinlock_t
-In-Reply-To: <1360765565.23152.5.camel@gandalf.local.home>
-Message-ID: <alpine.LFD.2.03.1302131744590.13701@tycho>
-References: <1360765565.23152.5.camel@gandalf.local.home>
+cc: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Clark Williams <clark.williams@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Frank Rowand <frank.rowand@am.sony.com>,
+        Mike Galbraith <bitbucket@online.de>
+Subject: Re: [RFC][PATCH RT 4/4 v2] sched/rt: Use IPI to trigger RT task push
+ migration instead of pulling
+In-Reply-To: <1355428396.17101.382.camel@gandalf.local.home>
+Message-ID: <alpine.LFD.2.03.1302131748480.13701@tycho>
+References: <20121212192733.221810086@goodmis.org> <20121212193920.803917953@goodmis.org> <1355428396.17101.382.camel@gandalf.local.home>
 User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -27,112 +32,237 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
-On Wed, 13 Feb 2013, Steven Rostedt wrote:
+On Thu, 13 Dec 2012, Steven Rostedt wrote:
 
-> We hit the following bug with 3.6-rt:
+> I didn't get a chance to test the latest IPI patch series on the 40 core
+> box, and only had my 4 way box to test on. But I was able to test it
+> last night and found some issues.
 > 
-> [    5.898990] BUG: scheduling while atomic: swapper/3/0/0x00000002 
-> [    5.898991] no locks held by swapper/3/0. 
-> [    5.898993] Modules linked in: 
-> [    5.898996] Pid: 0, comm: swapper/3 Not tainted 3.6.11-rt28.19.el6rt.x86_64.debug #1 
-> [    5.898997] Call Trace: 
-> [    5.899011]  [<ffffffff810804e7>] __schedule_bug+0x67/0x90 
-> [    5.899028]  [<ffffffff81577923>] __schedule+0x793/0x7a0 
-> [    5.899032]  [<ffffffff810b4e40>] ? debug_rt_mutex_print_deadlock+0x50/0x200 
-> [    5.899034]  [<ffffffff81577b89>] schedule+0x29/0x70 
-> [    5.899036] BUG: scheduling while atomic: swapper/7/0/0x00000002 
-> [    5.899037] no locks held by swapper/7/0. 
-> [    5.899039]  [<ffffffff81578525>] rt_spin_lock_slowlock+0xe5/0x2f0 
-> [    5.899040] Modules linked in: 
-> [    5.899041]  
-> [    5.899045]  [<ffffffff81579a58>] ? _raw_spin_unlock_irqrestore+0x38/0x90 
-> [    5.899046] Pid: 0, comm: swapper/7 Not tainted 3.6.11-rt28.19.el6rt.x86_64.debug #1 
-> [    5.899047] Call Trace: 
-> [    5.899049]  [<ffffffff81578bc6>] rt_spin_lock+0x16/0x40 
-> [    5.899052]  [<ffffffff810804e7>] __schedule_bug+0x67/0x90 
-> [    5.899054]  [<ffffffff8157d3f0>] ? notifier_call_chain+0x80/0x80 
-> [    5.899056]  [<ffffffff81577923>] __schedule+0x793/0x7a0 
-> [    5.899059]  [<ffffffff812f2034>] acpi_os_acquire_lock+0x1f/0x23 
-> [    5.899062]  [<ffffffff810b4e40>] ? debug_rt_mutex_print_deadlock+0x50/0x200 
-> [    5.899068]  [<ffffffff8130be64>] acpi_write_bit_register+0x33/0xb0 
-> [    5.899071]  [<ffffffff81577b89>] schedule+0x29/0x70 
-> [    5.899072]  [<ffffffff8130be13>] ? acpi_read_bit_register+0x33/0x51 
-> [    5.899074]  [<ffffffff81578525>] rt_spin_lock_slowlock+0xe5/0x2f0 
-> [    5.899077]  [<ffffffff8131d1fc>] acpi_idle_enter_bm+0x8a/0x28e 
-> [    5.899079]  [<ffffffff81579a58>] ? _raw_spin_unlock_irqrestore+0x38/0x90 
-> [    5.899081]  [<ffffffff8107e5da>] ? this_cpu_load+0x1a/0x30 
-> [    5.899083]  [<ffffffff81578bc6>] rt_spin_lock+0x16/0x40 
-> [    5.899087]  [<ffffffff8144c759>] cpuidle_enter+0x19/0x20 
-> [    5.899088]  [<ffffffff8157d3f0>] ? notifier_call_chain+0x80/0x80 
-> [    5.899090]  [<ffffffff8144c777>] cpuidle_enter_state+0x17/0x50 
-> [    5.899092]  [<ffffffff812f2034>] acpi_os_acquire_lock+0x1f/0x23 
-> [    5.899094]  [<ffffffff8144d1a1>] cpuidle899101]  [<ffffffff8130be13>] ? 
+> The RT_PUSH_IPI doesn't get automatically set because just doing the
+> sched_feat_enable() wasn't enough. Below is the corrected patch.
 > 
-> As the acpi code disables interrupts in acpi_idle_enter_bm, and calls
-> code that grabs the acpi lock, it causes issues as the lock is currently
-> in RT a sleeping lock.
+> Also, for some reason patch 3 caused the box to hang. Perhaps it
+> required the RT_PUSH_IPI set, because it worked with the original patch
+> series. But that series only did the push ipi. I removed it on the 40
+> core before noticing that the RT_PUSH_IPI wasn't being automatically
+> enabled.
 > 
-> The lock was converted from a raw to a sleeping lock due to some
-> previous issues, and tests that showed it didn't seem to matter.
-> Unfortunately, it did matter for one of our boxes.
+> Here's an update of patch 4:
 > 
-> This patch converts the lock back to a raw lock. I've run this code on a
-> few of my own machines, one being my laptop that uses the acpi quite
-> extensively. I've been able to suspend and resume without issues.
+> sched/rt: Use IPI to trigger RT task push migration instead of pulling
 > 
-> But as it may have issues still with other hardware, I'm posting this as
-> an RFC.
+> When debugging the latencies on a 40 core box, where we hit 300 to
+> 500 microsecond latencies, I found there was a huge contention on the
+> runqueue locks.
+> 
+> Investigating it further, running ftrace, I found that it was due to
+> the pulling of RT tasks.
+> 
+> The test that was run was the following:
+> 
+>  cyclictest --numa -p95 -m -d0 -i100
+> 
+> This created a thread on each CPU, that would set its wakeup in interations
+> of 100 microseconds. The -d0 means that all the threads had the same
+> interval (100us). Each thread sleeps for 100us and wakes up and measures
+> its latencies.
+> 
+> What happened was another RT task would be scheduled on one of the CPUs
+> that was running our test, when the other CPUS test went to sleep and
+> scheduled idle. This cause the "pull" operation to execute on all
+> these CPUs. Each one of these saw the RT task that was overloaded on
+> the CPU of the test that was still running, and each one tried
+> to grab that task in a thundering herd way.
+> 
+> To grab the task, each thread would do a double rq lock grab, grabbing
+> its own lock as well as the rq of the overloaded CPU. As the sched
+> domains on this box was rather flat for its size, I saw up to 12 CPUs
+> block on this lock at once. This caused a ripple affect with the
+> rq locks. As these locks were blocked, any wakeups or load balanceing
+> on these CPUs would also block on these locks, and the wait time escalated.
+> 
+> I've tried various methods to lesson the load, but things like an
+> atomic counter to only let one CPU grab the task wont work, because
+> the task may have a limited affinity, and we may pick the wrong
+> CPU to take that lock and do the pull, to only find out that the
+> CPU we picked isn't in the task's affinity.
+> 
+> Instead of doing the PULL, I now have the CPUs that want the pull to
+> send over an IPI to the overloaded CPU, and let that CPU pick what
+> CPU to push the task to. No more need to grab the rq lock, and the
+> push/pull algorithm still works fine.
+> 
+> With this patch, the latency dropped to just 150us over a 20 hour run.
+> Without the patch, the huge latencies would trigger in seconds.
+> 
+> Now, this issue only seems to apply to boxes with greater than 16 CPUs.
+> We noticed this on a 24 CPU box, and things got much worse on 40 (and
+> presumably more CPUs would get even worse yet). But running with 16
+> CPUs and below, the lock contention caused by the pulling of RT tasks
+> is not noticable.
+> 
+> I've created a new sched feature called RT_PUSH_IPI, which by default
+> on 16 and less core CPUs is disabled, and on 17 or more CPUs it is
+> enabled. That seems to be heuristic limit where the pulling logic
+> causes higher latencies than IPIs. Of course with all heuristics, things
+> could be different with different architectures.
+> 
+> When RT_PUSH_IPI is not enabled, the old method of grabbing the rq locks
+> and having the pulling CPU do the work is implemented. When RT_PUSH_IPI
+> is enabled, the IPI is sent to the overloaded CPU to do a push.
+> 
+> To enabled or disable this at run time:
+> 
+>  # mount -t debugfs nodev /sys/kernel/debug
+>  # echo RT_PUSH_IPI > /sys/kernel/debug/sched_features
+> or
+>  # echo NO_RT_PUSH_IPI > /sys/kernel/debug/sched_features
 > 
 > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 > 
-> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-> index 9eaf708..83d38ed 100644
-> --- a/drivers/acpi/osl.c
-> +++ b/drivers/acpi/osl.c
-> @@ -1432,7 +1432,7 @@ void acpi_os_delete_lock(acpi_spinlock handle)
->  acpi_cpu_flags acpi_os_acquire_lock(acpi_spinlock lockp)
+> Index: rt-linux.git/kernel/sched/core.c
+> ===================================================================
+> --- rt-linux.git.orig/kernel/sched/core.c
+> +++ rt-linux.git/kernel/sched/core.c
+> @@ -1538,6 +1538,9 @@ static void sched_ttwu_pending(void)
+>  
+>  void scheduler_ipi(void)
 >  {
->  	acpi_cpu_flags flags;
-> -	spin_lock_irqsave(lockp, flags);
-> +	raw_spin_lock_irqsave(lockp, flags);
->  	return flags;
+> +	if (sched_feat(RT_PUSH_IPI))
+> +		sched_rt_push_check();
+> +
+>  	if (llist_empty(&this_rq()->wake_list) && !got_nohz_idle_kick())
+>  		return;
+>  
+> @@ -7541,6 +7544,21 @@ void __init sched_init_smp(void)
+>  	free_cpumask_var(non_isolated_cpus);
+>  
+>  	init_sched_rt_class();
+> +
+> +	/*
+> +	 * To avoid heavy contention on large CPU boxes,
+> +	 * when there is an RT overloaded CPU (two or more RT tasks
+> +	 * queued to run on a CPU and one of the waiting RT tasks
+> +	 * can migrate) and another CPU lowers its priority, instead
+> +	 * of grabbing both rq locks of the CPUS (as many CPUs lowering
+> +	 * their priority at the same time may create large latencies)
+> +	 * send an IPI to the CPU that is overloaded so that it can
+> +	 * do an efficent push.
+> +	 */
+> +	if (num_possible_cpus() > 16) {
+> +		sched_feat_enable(__SCHED_FEAT_RT_PUSH_IPI);
+> +		sysctl_sched_features |= (1UL << __SCHED_FEAT_RT_PUSH_IPI);
+> +	}
+>  }
+>  #else
+>  void __init sched_init_smp(void)
+> Index: rt-linux.git/kernel/sched/rt.c
+> ===================================================================
+> --- rt-linux.git.orig/kernel/sched/rt.c
+> +++ rt-linux.git/kernel/sched/rt.c
+> @@ -1723,6 +1723,31 @@ static void push_rt_tasks(struct rq *rq)
+>  		;
 >  }
 >  
-> @@ -1442,7 +1442,7 @@ acpi_cpu_flags acpi_os_acquire_lock(acpi_spinlock lockp)
->  
->  void acpi_os_release_lock(acpi_spinlock lockp, acpi_cpu_flags flags)
+> +/**
+> + * sched_rt_push_check - check if we can push waiting RT tasks
+> + *
+> + * Called from sched IPI when sched feature RT_PUSH_IPI is enabled.
+> + *
+> + * Checks if there is an RT task that can migrate and there exists
+> + * a CPU in its affinity that only has tasks lower in priority than
+> + * the waiting RT task. If so, then it will push the task off to that
+> + * CPU.
+> + */
+> +void sched_rt_push_check(void)
+> +{
+> +	struct rq *rq = cpu_rq(smp_processor_id());
+> +
+> +	if (WARN_ON_ONCE(!irqs_disabled()))
+> +		return;
+> +
+> +	if (!has_pushable_tasks(rq))
+> +		return;
+> +
+> +	raw_spin_lock(&rq->lock);
+> +	push_rt_tasks(rq);
+> +	raw_spin_unlock(&rq->lock);
+> +}
+> +
+>  static int pull_rt_task(struct rq *this_rq)
 >  {
-> -	spin_unlock_irqrestore(lockp, flags);
-> +	raw_spin_unlock_irqrestore(lockp, flags);
+>  	int this_cpu = this_rq->cpu, ret = 0, cpu;
+> @@ -1750,6 +1775,18 @@ static int pull_rt_task(struct rq *this_
+>  			continue;
+>  
+>  		/*
+> +		 * When the RT_PUSH_IPI sched feature is enabled, instead
+> +		 * of trying to grab the rq lock of the RT overloaded CPU
+> +		 * send an IPI to that CPU instead. This prevents heavy
+> +		 * contention from several CPUs lowering its priority
+> +		 * and all trying to grab the rq lock of that overloaded CPU.
+> +		 */
+> +		if (sched_feat(RT_PUSH_IPI)) {
+> +			smp_send_reschedule(cpu);
+> +			continue;
+> +		}
+> +
+> +		/*
+>  		 * We can potentially drop this_rq's lock in
+>  		 * double_lock_balance, and another CPU could
+>  		 * alter this_rq
+> Index: rt-linux.git/kernel/sched/sched.h
+> ===================================================================
+> --- rt-linux.git.orig/kernel/sched/sched.h
+> +++ rt-linux.git/kernel/sched/sched.h
+> @@ -1111,6 +1111,8 @@ static inline void double_rq_unlock(stru
+>  		__release(rq2->lock);
 >  }
 >  
->  #ifndef ACPI_USE_LOCAL_CACHE
-> diff --git a/include/acpi/platform/aclinux.h b/include/acpi/platform/aclinux.h
-> index 7509be3..484cf8c 100644
-> --- a/include/acpi/platform/aclinux.h
-> +++ b/include/acpi/platform/aclinux.h
-> @@ -71,7 +71,7 @@
->  #define strtoul                     simple_strtoul
+> +void sched_rt_push_check(void);
+> +
+>  #else /* CONFIG_SMP */
 >  
->  #define acpi_cache_t                        struct kmem_cache
-> -#define acpi_spinlock                       spinlock_t *
-> +#define acpi_spinlock                       raw_spinlock_t *
->  #define acpi_cpu_flags                      unsigned long
+>  /*
+> @@ -1144,6 +1146,9 @@ static inline void double_rq_unlock(stru
+>  	__release(rq2->lock);
+>  }
 >  
->  #else /* !__KERNEL__ */
-> @@ -170,7 +170,7 @@ static inline void *acpi_os_acquire_object(acpi_cache_t * cache)
->  								\
->  	if (lock) {						\
->  		*(__handle) = lock;				\
-> -		spin_lock_init(*(__handle));			\
-> +		raw_spin_lock_init(*(__handle));		\
->  	}							\
->  	lock ? AE_OK : AE_NO_MEMORY;				\
->  })
-> 
+> +void sched_rt_push_check(void)
+> +{
+> +}
+>  #endif
+>  
+>  extern struct sched_entity *__pick_first_entity(struct cfs_rq *cfs_rq);
+> Index: rt-linux.git/kernel/sched/features.h
+> ===================================================================
+> --- rt-linux.git.orig/kernel/sched/features.h
+> +++ rt-linux.git/kernel/sched/features.h
+> @@ -73,6 +73,20 @@ SCHED_FEAT(PREEMPT_LAZY, true)
+>  # endif
+>  #endif
+>  
+> +/*
+> + * In order to avoid a thundering herd attack of CPUS that are
+> + * lowering their priorities at the same time, and there being
+> + * a single CPU that has an RT task that can migrate and is waiting
+> + * to run, where the other CPUs will try to take that CPUs
+> + * rq lock and possibly create a large contention, sending an
+> + * IPI to that CPU and let that CPU push the RT task to where
+> + * it should go may be a better scenario.
+> + *
+> + * This is default off for machines with <= 16 CPUs, and will
+> + * be turned on at boot up for machines with > 16 CPUs.
+> + */
+> +SCHED_FEAT(RT_PUSH_IPI, false)
+> +
+>  SCHED_FEAT(FORCE_SD_OVERLAP, false)
+>  SCHED_FEAT(RT_RUNTIME_SHARE, true)
+>  SCHED_FEAT(LB_MIN, false)
 > 
 
-Thanks Steven. That looks way better than the previous revert.
-Applying to the latest RH testing queue, will let you know.
+FWIW: Applying this to our latest test queue.
+
+Thanks
 
 John
