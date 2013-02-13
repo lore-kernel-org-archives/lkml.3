@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933930Ab3BMMDW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 07:03:22 -0500
-Received: from 8bytes.org ([85.214.48.195]:45934 "EHLO mail.8bytes.org"
+	id S1759308Ab3BMMEr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 07:04:47 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:55503 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933889Ab3BMMDU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 07:03:20 -0500
-Date: Wed, 13 Feb 2013 13:03:15 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: bhelgaas@google.com
-Cc: Shuah Khan <shuah.khan@hp.com>, jiang.liu@huawei.com,
-        shemminger@vyatta.com, paulmck@linux.vnet.ibm.com,
-        linasvepstas@gmail.com, dhowells@redhat.com, davej@redhat.com,
-        tglx@linutronix.de, mtk.manpages@gmail.com,
-        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
-        wangyijing@huawei.com, LKML <linux-kernel@vger.kernel.org>,
-        shuahkhan@gmail.com
-Subject: Re: [PATCH 0/4] pci: Add PCI_BUS() and PCI_DEVID() interfaces to
- return bus number and device id
-Message-ID: <20130213120315.GE25591@8bytes.org>
-References: <1360623614.2950.60.camel@lorien2>
+	id S1754441Ab3BMMEq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 07:04:46 -0500
+From: James Hogan <james.hogan@imgtec.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Arnd Bergmann <arnd@arndb.de>, James Hogan <james.hogan@imgtec.com>
+Subject: [PATCH 0/5] metag: second set of misc patches for v3.9
+Date: Wed, 13 Feb 2013 12:03:44 +0000
+Message-ID: <1360757029-28868-1-git-send-email-james.hogan@imgtec.com>
+X-Mailer: git-send-email 1.7.7.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360623614.2950.60.camel@lorien2>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Wed Feb 13 13:03:18 2013
-X-DSPAM-Confidence: 0.9991
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 511b810622977635712096
+Content-Type: text/plain
+X-SEF-Processed: 7_3_0_01181__2013_02_13_12_04_44
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bjorn,
+Here is the second set of miscellaneous metag patches that I'll be
+adding to the tip of the metag tree for v3.9.
 
-On Mon, Feb 11, 2013 at 04:00:14PM -0700, Shuah Khan wrote:
-> pci defines PCI_DEVFN(), PCI_SLOT(), and PCI_FUNC() interfaces, however,
-> it doesn't have interfaces to return PCI bus and PCI device id. Drivers
-> (AMD IOMMU, and AER) have module specific definitions for PCI_BUS() and
-> AMD_IOMMU driver also has a module specific interface to calculate PCI
-> device id from bus number and devfn.
-> 
-> This patch set adds PCI_BUS(), and PCI_DEVID() to pci.h, changes are to
-> use PCI_BUS() from pci. Changes AMD_IOMMU driver to use PCI_BUS() and
-> PCI_DEVID() from pci.
+James Hogan (5):
+  metag: export metag_code_cache_flush_all
+  metag: export clear_page and copy_page
+  metag: hugetlb: convert to vm_unmapped_area()
+  genksyms: fix metag symbol prefix on crc symbols
+  metag: move irq enable out of irqflags.h on SMP
 
-Not sure who is going to merge this, it touches PCI and IOMMU code.
-Personally I don't care :-) If you want to take it via your tree feel
-free to add my
+ arch/metag/include/asm/irqflags.h |   11 +++----
+ arch/metag/kernel/metag_ksyms.c   |    2 +
+ arch/metag/kernel/traps.c         |   15 ++++++++++-
+ arch/metag/mm/cache.c             |    1 +
+ arch/metag/mm/hugetlbpage.c       |   52 +++++++-----------------------------
+ scripts/genksyms/genksyms.c       |    3 +-
+ 6 files changed, 34 insertions(+), 50 deletions(-)
 
-Reviewed-by: Joerg Roedel <joro@8bytes.org>
-Tested-by: Joerg Roedel <joro@8bytes.org>
-Acked-by: Joerg Roedel <joro@8bytes.org>
-
-Otherwise please Ack the PCI parts and I will add it to my tree then.
-
-
-Thanks,
-
-	Joerg
+-- 
+1.7.7.6
 
 
