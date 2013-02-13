@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754026Ab3BMHQa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 02:16:30 -0500
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:47783 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753584Ab3BMHQ3 (ORCPT
+	id S1754709Ab3BMHRP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 02:17:15 -0500
+Received: from mail-we0-f172.google.com ([74.125.82.172]:40068 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753811Ab3BMHRN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 02:16:29 -0500
-Date: Wed, 13 Feb 2013 08:16:28 +0100
-From: Andreas Mohr <andi@lisas.de>
-To: Andreas Mohr <andi@lisas.de>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-usb@vger.kernel.org
-Subject: Re: [REGRESSION] [nailed] USB boot failure: USB: EHCI: make ehci-pci
- a separate driver
-Message-ID: <20130213071628.GA4211@rhlx01.hs-esslingen.de>
-References: <CA+55aFz50VvnMjoDCbg01N+rMu5vscu88kr0SV3tWLjaiL0TeA@mail.gmail.com>
- <20130210001442.GA5744@rhlx01.hs-esslingen.de>
- <20130210140554.GA5299@rhlx01.hs-esslingen.de>
- <20130212160727.GA15857@rhlx01.hs-esslingen.de>
- <20130212161617.GA3887@kroah.com>
- <20130213064436.GA22583@rhlx01.hs-esslingen.de>
+	Wed, 13 Feb 2013 02:17:13 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130213064436.GA22583@rhlx01.hs-esslingen.de>
-X-Priority: none
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1359907275-15410-1-git-send-email-anish198519851985@gmail.com>
+References: <1359907275-15410-1-git-send-email-anish198519851985@gmail.com>
+Date: Wed, 13 Feb 2013 12:47:12 +0530
+Message-ID: <CAK7N6vpT_X7s7Vid0-EYenb0w7k=nL8d-ov=fExFMuSYcV47Wg@mail.gmail.com>
+Subject: Re: [PATCH] [Watchdog][Trivial] Added comments to explain
+ watchdog_disabled variable
+From: anish singh <anish198519851985@gmail.com>
+To: akpm@linux-foundation.org, dzickus@redhat.com, tglx@linutronix.de,
+        mingo@kernel.org, chuansheng.liu@intel.com,
+        linux-kernel@vger.kernel.org
+Cc: anish kumar <anish198519851985@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Is the below patch picked up?
 
-On Wed, Feb 13, 2013 at 07:44:36AM +0100, Andreas Mohr wrote:
-> So, what to do? I'm now going to do some experimentation with git revert
-> on some revision, and I'm trying to establish the USB port dependency
-> (BIOS-owned handoff root hub invisible!?, as discussed in initial mail).
-
-
-After some bingo moment, seems the solution is easier than expected:
-
-andi@andinet:~$ ls /tmp/initrd_extracted/lib/modules/3.7.0-rc5+/kernel/drivers/usb/host/
-ehci-hcd.ko  ohci-hcd.ko  uhci-hcd.ko  xhci-hcd.ko
-andi@andinet:~$ ls /lib/modules/3.7.0-rc5+/kernel/drivers/usb/host/
-ehci-hcd.ko  isp116x-hcd.ko   sl811_cs.ko   uhci-hcd.ko
-ehci-pci.ko  ohci-hcd.ko      sl811-hcd.ko  whci
-hwa-hc.ko    r8a66597-hcd.ko  u132-hcd.ko   xhci-hcd.ko
-
-So it's probably only that the initrd simply fails to ship
-the ehci-pci.ko module (I could verify this by extending initrd content, BTW).
-Now the question would be:
-are modules listed in a static list on initramfs package/config side,
-or does the kernel fail to signal the list of required modules properly?
-(e.g. did some config-side files fail to get upgraded for this dependency??)
-
-
-So maybe it's not a "regression" per se, but it's at least a grave
-usability issue on kernel upgrade which should be handled as benignly as
-possible (i.e., without any disruption).
-
-Thanks,
-
-Andreas Mohr
+On Sun, Feb 3, 2013 at 9:31 PM, anish kumar <anish198519851985@gmail.com> wrote:
+> From: anish kumar <anish198519851985@gmail.com>
+>
+> This watchdog_disabled flag is bit of cryptic.Howerver it's usefullnes is multifold.
+> Uses are:
+> 1. Check if smpboot_register_percpu_thread function passed.
+> 2. Makes sure that user enables and disables the watchdog in sequence
+>    i.e. enable watchdog->disable watchdog->enable watchdog
+>    Unlike enable watchdog->enable watchdog which is wrong.
+>
+> Signed-off-by: anish kumar <anish198519851985@gmail.com>
+> ---
+>  kernel/watchdog.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
+>
+> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+> index 75a2ab3..87a19aa 100644
+> --- a/kernel/watchdog.c
+> +++ b/kernel/watchdog.c
+> @@ -518,6 +518,11 @@ int proc_dowatchdog(struct ctl_table *table, int write,
+>                 return ret;
+>
+>         set_sample_period();
+> +       /*
+> +        * We shouldn't enable watchdog threads if it is
+> +        * disabled.This is done by watchdog_disabled
+> +        * variable check in watchdog_*_all_cpus function.
+> +        */
+>         if (watchdog_enabled && watchdog_thresh)
+>                 watchdog_enable_all_cpus();
+>         else
+> --
+> 1.7.1
+>
