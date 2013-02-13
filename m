@@ -1,96 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761164Ab3BMW6M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 17:58:12 -0500
-Received: from nm6-vm0.access.bullet.mail.mud.yahoo.com ([66.94.237.158]:40929
-	"EHLO nm6-vm0.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760432Ab3BMW6K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 17:58:10 -0500
-X-Yahoo-Newman-Id: 134876.46929.bm@smtp106.biz.mail.bf1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: lvyp8pwVM1nEPSMIwHqYgmOaVRm.qOQRg7DAUJqQ6v5_C6.
- HfRAQ0wC7QpK4QxJppA9lVLeptZgYD6FxR1ny14lhnqtG_ZxW.krE0C94Ez7
- j9QzUQkGBh8BmwSIkJqwOan8sp3uDiNvJj43XKCaq2Y6awbSIAqGNE2AHv0y
- mQzKD8u_i7ZX1Pz5.jJa9.EmJDF44_rd9N0d1sF4r7y7cIfbNP2DQbM7D5GJ
- 3.Jfl599l5AClMwFGslyiHR5iGxyHvgjIOg66gC02tWrwR3ufo_La258qxQ0
- GoLsmu.gT2sqxFewG_rqh2szV9U_JessBSaKOyHl0lKf4SHRThdKjUSwsiMc
- z8mt3UOnxRpK14y1lfjZH5b6uRKDKsFnrL8CuzPCXIKHLBwrQkaFoFVjWw62
- MznY4qR8FDY7iBLvCbeIGiN_2JkC19Hi0BJwKtAQz.lIJpMIxyEpGrKoZOZI
- nyvfI
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-Message-ID: <511C1A94.8020804@schaufler-ca.com>
-Date: Wed, 13 Feb 2013 14:58:28 -0800
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	id S965218Ab3BMW6p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 17:58:45 -0500
+Received: from fieldses.org ([174.143.236.118]:51505 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965005Ab3BMW6o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 17:58:44 -0500
+Date: Wed, 13 Feb 2013 17:58:40 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-fsdevel@vger.kernel.org,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        linux-kernel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>
+Subject: Re: [PATCH review 52/85] sunrpc: Properly encode kuids and kgids in
+ auth.unix.gid rpc pipe upcalls.
+Message-ID: <20130213225840.GV14195@fieldses.org>
+References: <87621w14vs.fsf@xmission.com>
+ <1360777934-5663-1-git-send-email-ebiederm@xmission.com>
+ <1360777934-5663-52-git-send-email-ebiederm@xmission.com>
+ <20130213210545.GO14195@fieldses.org>
+ <874nhfrjgg.fsf@xmission.com>
+ <20130213215047.GR14195@fieldses.org>
+ <8738wzq1z6.fsf@xmission.com>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Matthew Garrett <matthew.garrett@nebula.com>,
-        Borislav Petkov <bp@alien8.de>, Kees Cook <keescook@chromium.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [PATCH] x86: Lock down MSR writing in secure boot
-References: <dee64752-850c-4d78-b703-f47a985bc13e@email.android.com>      <CAGXu5jLAufTRm=sDST0br_WEkn4o0Hpjv2jDP2Na=cCvuM+MGg@mail.gmail.com>      <1360355671.18083.18.camel@x230.lan>      <CAGXu5jKo2PfMBO4A0ZgQcrPuj8OHNaff+CjAesOAWkZc0vB9+Q@mail.gmail.com>      <51157C9C.6030501@zytor.com> <20130208230655.GB28990@pd.tnic>      <1360366012.18083.21.camel@x230.lan> <5115A4CC.3080102@zytor.com>      <1360373383.18083.23.camel@x230.lan>      <CAGXu5j+xvJ3L5ejxtZ-Jw3F6rV7OsrE0_HZCGu_er0rH2_PwKA@mail.gmail.com>      <20130209092925.GA17728@pd.tnic> <1360422712.18083.24.camel@x230.lan>     <511AE2CC.5040705@zytor.com> <1360733962.18083.30.camel@x230.lan>    <511B2EB9.5070406@zytor.com> <1360736860.18083.33.camel@x230.lan>   <511B33BC.9080307@zytor.com> <1360737709.18083.36.camel@x230.lan>  <511BCB6E.8080102@zytor.com> <1360776399.18083.39.camel@x230.lan> <511BD291.1040003@schaufler-ca.com> <511C1325.5060601@zytor.com>
-In-Reply-To: <511C1325.5060601@zytor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8738wzq1z6.fsf@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/13/2013 2:26 PM, H. Peter Anvin wrote:
-> On 02/13/2013 09:51 AM, Casey Schaufler wrote:
->>
->> You can't add a new capability where there is an existing capability
->> that can be remotely argued to be appropriate.
->>
->> If you tried to "fix" CAP_SYS_RAWIO and/or CAP_SYS_ADMIN you'd end
->> up with hundreds of capabilities.
->>
->> Your particular problem is *not* so important that you get a
->> capability all to yourself.
->>
->
-> {facepalm}
->
-> This is exactly the kind of thinking which has led to the capability
-> system being so bloody useless.
+On Wed, Feb 13, 2013 at 02:32:29PM -0800, Eric W. Biederman wrote:
+> "J. Bruce Fields" <bfields@fieldses.org> writes:
+> 
+> > On Wed, Feb 13, 2013 at 01:29:35PM -0800, Eric W. Biederman wrote:
+> >> "J. Bruce Fields" <bfields@fieldses.org> writes:
+> >> 
+> >> > On Wed, Feb 13, 2013 at 09:51:41AM -0800, Eric W. Biederman wrote:
+> >> >> From: "Eric W. Biederman" <ebiederm@xmission.com>
+> >> >> 
+> >> >> When a new rpc connection is established with an in-kernel server, the
+> >> >> traffic passes through svc_process_common, and svc_set_client and down
+> >> >> into svcauth_unix_set_client if it is of type RPC_AUTH_NULL or
+> >> >> RPC_AUTH_UNIX.
+> >> >> 
+> >> >> svcauth_unix_set_client then looks at the uid of the credential we
+> >> >> have assigned to the incomming client and if we don't have the groups
+> >> >> already cached makes an upcall to get a list of groups that the client
+> >> >> can use.
+> >> >> 
+> >> >> The upcall encodes send a rpc message to user space encoding the uid
+> >> >> of the user whose groups we want to know.  Encode the kuid of the user
+> >> >> in the initial user namespace as nfs mounts can only happen today in
+> >> >> the initial user namespace.
+> >> >
+> >> > OK, I didn't know that.
+> >> >
+> >> > (Though I'm unclear how it should matter to the server what user
+> >> > namespace the client is in?)
+> >> 
+> >> Perhaps I have the description a little scrambled.  The short version
+> >> is that to start I only support the initial network namespace.
+> >> 
+> >> If I haven't succeeded it is my intent to initially limit the servers
+> >> to the initial user namespace as well.  I should see if I can figure
+> >> that out.
+> >> 
+> >> >> When a reply to an upcall comes in convert interpret the uid and gid values
+> >> >> from the rpc pipe as uids and gids in the initial user namespace and convert
+> >> >> them into kuids and kgids before processing them further.
+> >> >> 
+> >> >> When reading proc files listing the uid to gid list cache convert the
+> >> >> kuids and kgids from into uids and gids the initial user namespace.  As we are
+> >> >> displaying server internal details it makes sense to display these values
+> >> >> from the servers perspective.
+> >> >
+> >> > All of these caches are already per-network-namespace.  Ideally wouldn't
+> >> > we also like to associate a user namespace with each cache somehow?
+> >> 
+> >> Ideally yes.  I read through the caches enough to figure out where there
+> >> user space interfaces were, and to make certain we had conversions
+> >> to/from kuids and kgids.
+> >> 
+> >> I haven't looked at what user namespace makes sense for these
+> >> caches.  For this cache my first guess is that net->user_ns
+> >> is what we want as it will be shared by all users in network namespace I
+> >> presume.
+> >
+> > Oh, I didn't know about net->user_ns--so each network namespace is
+> > associated with a single user namespace, great, that simplifies life.
+> > Yes, that sounds exactly right.
+> 
+> Yes. net->user_ns is the user namespace the network namespace was
+> created in.  And it is the user namespace that is used in test
+> like ns_capable(net->user_ns, CAP_NET_ADMIN) to see if you are allowed
+> to manipulate the network namespace.  So looks like exactly what we
+> want for that cache.
+> 
+> Could you double check my understanding of the code?
+> 
+> I want to be certain that I can't _yet_ start an sunrpc server process
+> outside of the initial user namespace.  While writing an earlier reply I
+> realized that I hadn't thought about where sunrpc server processes come
+> from.
+> 
+> Reading through the code it looks like we can have nfs mounts outside of
+> the initial network namespace.
 
-The reason the capability system is "bloody useless" is
-that no one wants to update the core system applications to
-use it in favor of good old fashioned worked for dad and
-works for me too superuser.
+We're talking about the server side here, not the client, so I'm not
+sure what you mean by "nfs mounts".  The nfs server does use various
+pseudofilesystems ("proc", "nfsd"), and those can be mounted outside the
+initial network namespace.
 
->
-> Capabilities need to be associated with resources, not use cases.
+The server can receive rpc requests over network interfaces outside the
+initial network namespace, sure.  The server doesn't perform mounts on
+behalf of clients, though, it just accesses previously mounted
+filesystems on clients' behalf.
 
-There is no such thing as a "resource" in the Linux security
-policy model. The Linux security policy model is based on
-subjects (tasks) accessing objects (e.g. files). Capabilities
-provide a granular mechanism for granting privilege to
-violate the Linux security policy.
+> But because they are mounts they are
+> still limited to the initial user namespace.
 
-Because in the Bad Old days of Unix "superuser privilege"
-also granted rights to preform configuration activities it
-was not possible to eliminate the superuser without extending
-the capability mechanism to include these. Thus, there are two
-sorts of capabilities, those controlling privileged access and
-those controlling restricted activities.
+OK, so that's just a limitation on any mount whatsoever for now.  I'm
+catching on, slowly, thanks!
 
-In both cases what you are controlling is an activity. Sorry,
-but that is the way it is defined.
+> Now looking at the nfs server, seems to be hard coded to only start
+> in the initial network namespace despite almost having support for
+> starting in more.
 
-I understand that you want capabilities to be associated with
-resources. That is *not* what we have, and arguing that its
-what we should have is pointless because Linux does not even
-have a concept of resources.
+Right, Stanislav's got 4 more patches that should finish the job; see
+http://mid.gmane.org/<20130201125210.3257.46454.stgit@localhost.localdomain>
+and followups.  That should make it for 3.9, I just need to review
+them....
 
->
->     -hpa
->
->
+> Even more the nfs server is controlled and started through the "nfsd"
+> filesystem.  Which has to be mounted before you can start the server.
+> So you can only start the server through a mount in the initial user
+> namespace.
 
+Yes.
+
+> lockd is started by either the nfs server or the nfs client.
+> 
+> There are no other sunrpc servers in the kernel.
+
+There are a couple callback services on the NFS client--those should be
+associated with nfs mounts in some obvious way.  There's a confusing ACL
+service that's really just an appendage of NFSv2/v3 service.
+
+I think we're fine.
+
+> I think all of that is enough to reasonably claim that you can't have
+> any sunrpc server processes outside of the initial user namespace.  But
+> if I am wrong I would to find an appropriate spot to put in a line
+> that says:
+> 	 if (current_user_ns() != &init_user)
+>          	return -ESORRY_CHARLEY;
+
+I think you're right.
+
+So for now it's safely confined to one user namespace, and I think we
+understand approximately what to do if we want to support nfsd's in user
+namespace in the future.  (Mainly, make sure nfsd and proc can be
+mounted in them and then most things will be determined by the user_ns
+of the network namespace associated with a given rpc.)
+
+--b.
