@@ -1,63 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934197Ab3BMPjv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 10:39:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14399 "EHLO mx1.redhat.com"
+	id S934203Ab3BMPky (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 10:40:54 -0500
+Received: from mail.tpi.com ([70.99.223.143]:4937 "EHLO mail.tpi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757615Ab3BMPjs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 10:39:48 -0500
-Date: Wed, 13 Feb 2013 10:39:05 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] ima: Support appraise_type=imasig_optional
-Message-ID: <20130213153905.GC6750@redhat.com>
-References: <20130212142636.GA23410@redhat.com>
- <1360689247.3524.275.camel@falcor1.watson.ibm.com>
- <20130212185203.GA29958@redhat.com>
- <20130212185725.GC23410@redhat.com>
- <CALLzPKaD==fj3GSE3SnaWg5=VVNW7A_+caFzoh=_cBv8+BVKEA@mail.gmail.com>
- <20130213132920.GA3540@redhat.com>
- <CALLzPKbj33dQ36tcwip_LKCOXgA6GcBDbSc5s4y4cYyv2=s=nw@mail.gmail.com>
- <20130213143807.GC3540@redhat.com>
- <CALLzPKZ=eRWDtW6eSKPX5Qbvs_N37daiULw+T7o+DpoGfw_Z_A@mail.gmail.com>
- <CALLzPKY-QJmxSUDdRF9V+pjEZhVb_UcGnJsqxiUiJ=YKTr0YWg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALLzPKY-QJmxSUDdRF9V+pjEZhVb_UcGnJsqxiUiJ=YKTr0YWg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757615Ab3BMPkx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 10:40:53 -0500
+From: Tim Gardner <tim.gardner@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: Tim Gardner <tim.gardner@canonical.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org
+Subject: [PATCH linux-next v2] lockd: nlmclnt_reclaim(): avoid stack overflow
+Date: Wed, 13 Feb 2013 08:40:16 -0700
+Message-Id: <1360770016-69586-1-git-send-email-tim.gardner@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <20130212211800.GG10267@fieldses.org>
+References: <20130212211800.GG10267@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 13, 2013 at 05:29:43PM +0200, Kasatkin, Dmitry wrote:
-> On Wed, Feb 13, 2013 at 5:26 PM, Kasatkin, Dmitry
-> <dmitry.kasatkin@intel.com> wrote:
-> > On Wed, Feb 13, 2013 at 4:38 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> >> On Wed, Feb 13, 2013 at 03:36:45PM +0200, Kasatkin, Dmitry wrote:
-> >>> It should not be the only line in the policy.
-> >>> Can you share full policy?
-> >>
-> >> I verified by putting some printk. There is only single rule in
-> >> ima_policy_rules list after I have updated the rules through "policy"
-> >> file.
-> >>
-> >> echo "appraise fowner=0 func=BPRM_CHECK appraise_type=imasig_optional" >
-> >> /sys/kernel/security/policy
-> >
-> > There is a default policy which has several rules.
-> >
-> > And when you do your "echo" you will replace all rules with that single rule.
-> > But ok, you have one rule only and it is fine to have even a single rule...
-> >
-> 
-> What I have not said yet it is that in your case, because you use only
-> BPRM_CHECK hook,
-> you do not need "dont_appraise" and "dont_measure" rules for pseudo filesystems.
+Even though nlmclnt_reclaim() is only one call into the stack frame,
+928 bytes on the stack seems like a lot. Recode to dynamically
+allocate the request structure once from within the reclaimer task,
+then pass this pointer into nlmclnt_reclaim() for reuse on
+subsequent calls.
 
-Agreed.
+smatch analysis:
 
-Thanks
-Vivek
+fs/lockd/clntproc.c:620 nlmclnt_reclaim() warn: 'reqst' puts
+ 928 bytes on stack
+
+Also remove redundant assignment of 0 after memset.
+
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: linux-nfs@vger.kernel.org
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+---
+
+Changes from v1 -- don't return -ENOMEM from a task thread because it is
+not propagated to the task creator. Instead print an error message and return.
+
+ fs/lockd/clntlock.c         |   12 +++++++++++-
+ fs/lockd/clntproc.c         |    6 ++----
+ include/linux/lockd/lockd.h |    3 ++-
+ 3 files changed, 15 insertions(+), 6 deletions(-)
+
+diff --git a/fs/lockd/clntlock.c b/fs/lockd/clntlock.c
+index 4885b53..6cd673d 100644
+--- a/fs/lockd/clntlock.c
++++ b/fs/lockd/clntlock.c
+@@ -220,10 +220,19 @@ reclaimer(void *ptr)
+ {
+ 	struct nlm_host	  *host = (struct nlm_host *) ptr;
+ 	struct nlm_wait	  *block;
++	struct nlm_rqst   *req;
+ 	struct file_lock *fl, *next;
+ 	u32 nsmstate;
+ 	struct net *net = host->net;
+ 
++	req = kmalloc(sizeof(*req), GFP_KERNEL);
++	if (!req) {
++		printk(KERN_ERR "lockd: reclaimer unable to alloc memory."
++				" Locks for %s won't be reclaimed!\n",
++				host->h_name);
++		return 0;
++	}
++
+ 	allow_signal(SIGKILL);
+ 
+ 	down_write(&host->h_rwsem);
+@@ -253,7 +262,7 @@ restart:
+ 		 */
+ 		if (signalled())
+ 			continue;
+-		if (nlmclnt_reclaim(host, fl) != 0)
++		if (nlmclnt_reclaim(host, fl, req) != 0)
+ 			continue;
+ 		list_add_tail(&fl->fl_u.nfs_fl.list, &host->h_granted);
+ 		if (host->h_nsmstate != nsmstate) {
+@@ -279,5 +288,6 @@ restart:
+ 	/* Release host handle after use */
+ 	nlmclnt_release_host(host);
+ 	lockd_down(net);
++	kfree(req);
+ 	return 0;
+ }
+diff --git a/fs/lockd/clntproc.c b/fs/lockd/clntproc.c
+index 54f9e6c..b43114c 100644
+--- a/fs/lockd/clntproc.c
++++ b/fs/lockd/clntproc.c
+@@ -615,17 +615,15 @@ out_unlock:
+  * RECLAIM: Try to reclaim a lock
+  */
+ int
+-nlmclnt_reclaim(struct nlm_host *host, struct file_lock *fl)
++nlmclnt_reclaim(struct nlm_host *host, struct file_lock *fl,
++		struct nlm_rqst *req)
+ {
+-	struct nlm_rqst reqst, *req;
+ 	int		status;
+ 
+-	req = &reqst;
+ 	memset(req, 0, sizeof(*req));
+ 	locks_init_lock(&req->a_args.lock.fl);
+ 	locks_init_lock(&req->a_res.lock.fl);
+ 	req->a_host  = host;
+-	req->a_flags = 0;
+ 
+ 	/* Set up the argument struct */
+ 	nlmclnt_setlockargs(req, fl);
+diff --git a/include/linux/lockd/lockd.h b/include/linux/lockd/lockd.h
+index f5a051a..a395f1e 100644
+--- a/include/linux/lockd/lockd.h
++++ b/include/linux/lockd/lockd.h
+@@ -212,7 +212,8 @@ int		  nlmclnt_block(struct nlm_wait *block, struct nlm_rqst *req, long timeout)
+ __be32		  nlmclnt_grant(const struct sockaddr *addr,
+ 				const struct nlm_lock *lock);
+ void		  nlmclnt_recovery(struct nlm_host *);
+-int		  nlmclnt_reclaim(struct nlm_host *, struct file_lock *);
++int		  nlmclnt_reclaim(struct nlm_host *, struct file_lock *,
++				  struct nlm_rqst *);
+ void		  nlmclnt_next_cookie(struct nlm_cookie *);
+ 
+ /*
+-- 
+1.7.9.5
+
