@@ -1,109 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934029Ab3BMNgu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 08:36:50 -0500
-Received: from mail-vb0-f44.google.com ([209.85.212.44]:41272 "EHLO
-	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756950Ab3BMNgr (ORCPT
+	id S1756948Ab3BMNiJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 08:38:09 -0500
+Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:29750
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755759Ab3BMNiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 08:36:47 -0500
+	Wed, 13 Feb 2013 08:38:07 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VS-3(zz98dI9371I1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahz8dhz8275dhz2dh87h2a8h668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Wed, 13 Feb 2013 21:37:52 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Max Filippov <jcmvbkbc@gmail.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] gpio: devm_gpio_* support should not depend on GPIOLIB
+Message-ID: <20130213133749.GA13464@r65073-Latitude-E6420>
+References: <20130118140346.3f9b182aa7daa175b4f136bf@canb.auug.org.au>
+ <1358495866-9329-1-git-send-email-shawn.guo@linaro.org>
+ <CACRpkdZA9O6N7hmtU-6R1Ff6hW5vjD_ar9RLG1dbkd+MWyoKiw@mail.gmail.com>
+ <CAMo8BfJ=6WbAHoCpftRHW1iMtG8robyYUEqqCG2SecixDTgC+g@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20130213132920.GA3540@redhat.com>
-References: <1360613493-11969-1-git-send-email-vgoyal@redhat.com>
-	<1360613493-11969-3-git-send-email-vgoyal@redhat.com>
-	<1360620614.3524.223.camel@falcor1.watson.ibm.com>
-	<20130212142636.GA23410@redhat.com>
-	<1360689247.3524.275.camel@falcor1.watson.ibm.com>
-	<20130212185203.GA29958@redhat.com>
-	<20130212185725.GC23410@redhat.com>
-	<CALLzPKaD==fj3GSE3SnaWg5=VVNW7A_+caFzoh=_cBv8+BVKEA@mail.gmail.com>
-	<20130213132920.GA3540@redhat.com>
-Date: Wed, 13 Feb 2013 15:36:45 +0200
-Message-ID: <CALLzPKbj33dQ36tcwip_LKCOXgA6GcBDbSc5s4y4cYyv2=s=nw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] ima: Support appraise_type=imasig_optional
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CAMo8BfJ=6WbAHoCpftRHW1iMtG8robyYUEqqCG2SecixDTgC+g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It should not be the only line in the policy.
-Can you share full policy?
+Sorry for the late response due to Chinese New Year Holidays here.
 
-Thanks,
-Dmitry
+On Sun, Feb 10, 2013 at 07:46:30AM +0300, Max Filippov wrote:
+> On Sat, Jan 19, 2013 at 2:33 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> > On Fri, Jan 18, 2013 at 8:57 AM, Shawn Guo <shawn.guo@linaro.org> wrote:
+> >
+> >> Some architectures (e.g. blackfin) provide gpio API without requiring
+> >> GPIOLIB support (ARCH_WANT_OPTIONAL_GPIOLIB).  devm_gpio_* functions
+> >> should also work for these architectures, since they do not really
+> >> depend on GPIOLIB.
+> >>
+> >> Add a new option GPIO_DEVRES (enabled by default) to control the build
+> >> of devres.c.  It also removes the empty version of devm_gpio_*
+> >> functions for !GENERIC_GPIO build from linux/gpio.h, and moves the
+> >> function declarations from asm-generic/gpio.h into linux/gpio.h.
+> >>
+> >> Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+> >
+> > OK I removed the old version of the patch and pushed this instead.
+> 
+> Hi,
+> 
+> this patch causes the following errors for xtensa defconfig build:
+> 
+I assume this is a build of arch/xtensa/common_defconfig.
+
+> include/asm-generic/gpio.h:265:2: error: implicit declaration of
+> function '__gpio_get_value' [-Werror=implicit-function-declaration]
+> include/asm-generic/gpio.h:271:2: error: implicit declaration of
+> function '__gpio_set_value' [-Werror=implicit-function-declaration]
+> include/linux/gpio.h:60:90: error: redefinition of 'gpio_cansleep'
+> include/linux/gpio.h:62:2: error: implicit declaration of function
+> '__gpio_cansleep' [-Werror=implicit-function-declaration]
+> include/linux/gpio.h:67:2: error: implicit declaration of function
+> '__gpio_to_irq' [-Werror=implicit-function-declaration]
+> drivers/gpio/devres.c:26:2: error: implicit declaration of function
+> 'gpio_free' [-Werror=implicit-function-declaration]
+> drivers/gpio/devres.c:60:2: error: implicit declaration of function
+> 'gpio_request' [-Werror=implicit-function-declaration]
+> drivers/gpio/devres.c:90:2: error: implicit declaration of function
+> 'gpio_request_one' [-Werror=implicit-function-declaration]
+> 
+I'm not sure why GENERIC_GPIO is needed for this build at all.  At
+least, with the change below, everything seems building fine with
+common_defconfig.
+
+Shawn
+
+diff --git a/arch/xtensa/Kconfig b/arch/xtensa/Kconfig
+index 13358e1..cfc41f3 100644
+--- a/arch/xtensa/Kconfig
++++ b/arch/xtensa/Kconfig
+@@ -31,9 +31,6 @@ config RWSEM_XCHGADD_ALGORITHM
+ config GENERIC_HWEIGHT
+        def_bool y
+ 
+-config GENERIC_GPIO
+-       def_bool y
+-
+ config ARCH_HAS_ILOG2_U32
+        def_bool n
+ 
 
 
-On Wed, Feb 13, 2013 at 3:29 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Wed, Feb 13, 2013 at 02:14:55PM +0200, Kasatkin, Dmitry wrote:
->> Hello Vivek,
->>
->> Can you please send to us how your IMA policy looks like.
->
-> Hi Dmitry,
->
-> For testing purposes, I am using following.
->
-> appraise fowner=0 func=BPRM_CHECK appraise_type=imasig_optional
->
-> I set this using /sys/kernel/security/policy interface after boot.
->
-> Thanks
-> Vivek
->
->>
->> Thanks,
->> Dmitry
->>
->> On Tue, Feb 12, 2013 at 8:57 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
->> > On Tue, Feb 12, 2013 at 01:52:03PM -0500, Vivek Goyal wrote:
->> >> On Tue, Feb 12, 2013 at 12:14:07PM -0500, Mimi Zohar wrote:
->> >>
->> >> [..]
->> >> > > > > --- a/security/integrity/ima/ima_appraise.c
->> >> > > > > +++ b/security/integrity/ima/ima_appraise.c
->> >> > > > > @@ -124,19 +124,26 @@ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
->> >> > > > >       enum integrity_status status = INTEGRITY_UNKNOWN;
->> >> > > > >       const char *op = "appraise_data";
->> >> > > > >       char *cause = "unknown";
->> >> > > > > -     int rc;
->> >> > > > > +     int rc, audit_info = 0;
->> >> > > > >
->> >> > > > >       if (!ima_appraise)
->> >> > > > >               return 0;
->> >> > > > > -     if (!inode->i_op->getxattr)
->> >> > > > > +     if (!inode->i_op->getxattr) {
->> >> > > > > +             /* getxattr not supported. file couldn't have been signed */
->> >> > > > > +             if (iint->flags & IMA_DIGSIG_OPTIONAL)
->> >> > > > > +                     return INTEGRITY_PASS;
->> >> > > > >               return INTEGRITY_UNKNOWN;
->> >> > > > > +     }
->> >> > > > >
->> >> > > >
->> >> > > > Please don't change the result of the appraisal like this.  A single
->> >> > > > change can be made towards the bottom of process_measurement().
->> >> > >
->> >> > > I don't want to pass integrity in all cases of INTEGRITY_UNKNOWN. So
->> >> > > I can probably maintain a bool variable, say pass_appraisal, and set
->> >> > > that here and at the end of function, parse that variable and change
->> >> > > the status accordingly.
->> >> >
->> >> > process_measurement() is the only caller of ima_appraise_measurement().
->> >> > Leave the results of ima_appraise_measurement() alone.  There's already
->> >> > code at the end of process_measurement() which decides what to return.
->> >> > Just modify it based on the appraisal results.
->> >>
->> >
->> > If we do this, audit logs will be filled with integrity unknown failures.
->> > As each unsigned executable file will fail appraisal with INTEGRITY_UNKNOWN
->> > and an audit message will be logged.
->> >
->> > Thanks
->> > Vivek
->> > --
->> > To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
->> > the body of a message to majordomo@vger.kernel.org
->> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
