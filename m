@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760417Ab3BMUFJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 15:05:09 -0500
-Received: from leased-line-91-149-128-89.telecom.by ([91.149.128.89]:44083
+	id S934106Ab3BMUFW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 15:05:22 -0500
+Received: from leased-line-91-149-128-89.telecom.by ([91.149.128.89]:44085
 	"EHLO sp-git01-lo1.promwad.corp" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1760242Ab3BMUFF (ORCPT
+	by vger.kernel.org with ESMTP id S1760248Ab3BMUFI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 15:05:05 -0500
+	Wed, 13 Feb 2013 15:05:08 -0500
 From: Michail Kurochkin <michail.kurachkin@promwad.com>
-Date: Wed, 13 Feb 2013 19:09:11 +0300
-Subject: [PATCH] Initial commit of TDM core
-Message-Id: <20130213195851.D737134C6296@sp-git01-lo1.promwad.corp>
+Date: Wed, 13 Feb 2013 19:09:58 +0300
+Subject: [PATCH] Initial commit of Kirkwood TDM driver
+Message-Id: <20130213195830.AE37634C6295@sp-git01-lo1.promwad.corp>
 To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -18,127 +18,18 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Michail Kurochkin <michail.kurachkin@promwad.com>
 ---
- drivers/staging/Kconfig        |    4 +
- drivers/staging/Makefile       |    4 +-
- drivers/staging/tdm/Kconfig    |   38 ++
- drivers/staging/tdm/Makefile   |   19 +
- drivers/staging/tdm/tdm_core.c |  826 ++++++++++++++++++++++++++++++++++++++++
- include/linux/tdm/tdm.h        |  292 ++++++++++++++
- 6 files changed, 1182 insertions(+), 1 deletions(-)
- create mode 100644 drivers/staging/tdm/Kconfig
- create mode 100644 drivers/staging/tdm/Makefile
- create mode 100644 drivers/staging/tdm/tdm_core.c
- create mode 100644 include/linux/tdm/tdm.h
+ drivers/staging/tdm/kirkwood_tdm.c |  933 ++++++++++++++++++++++++++++++++++++
+ drivers/staging/tdm/kirkwood_tdm.h |  110 +++++
+ 2 files changed, 1043 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/staging/tdm/kirkwood_tdm.c
+ create mode 100644 drivers/staging/tdm/kirkwood_tdm.h
 
-diff --git a/drivers/staging/Kconfig b/drivers/staging/Kconfig
-index 329bdb4..9bba991 100644
---- a/drivers/staging/Kconfig
-+++ b/drivers/staging/Kconfig
-@@ -26,6 +26,10 @@ if STAGING
- 
- source "drivers/staging/et131x/Kconfig"
- 
-+source "drivers/staging/si3226x/Kconfig"
-+
-+source "drivers/staging/tdm/Kconfig"
-+
- source "drivers/staging/slicoss/Kconfig"
- 
- source "drivers/staging/usbip/Kconfig"
-diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
-index c7ec486..a7f3699 100644
---- a/drivers/staging/Makefile
-+++ b/drivers/staging/Makefile
-@@ -1,4 +1,4 @@
--# Makefile for staging directory
-+    # Makefile for staging directory
- 
- # fix for build system bug...
- obj-$(CONFIG_STAGING)		+= staging.o
-@@ -7,6 +7,8 @@ obj-y				+= media/
- obj-y				+= net/
- obj-$(CONFIG_ET131X)		+= et131x/
- obj-$(CONFIG_SLICOSS)		+= slicoss/
-+obj-$(CONFIG_SI3226X)		+= si3226x/
-+obj-$(CONFIG_TDM)		+= tdm/
- obj-$(CONFIG_USBIP_CORE)	+= usbip/
- obj-$(CONFIG_W35UND)		+= winbond/
- obj-$(CONFIG_PRISM2_USB)	+= wlan-ng/
-diff --git a/drivers/staging/tdm/Kconfig b/drivers/staging/tdm/Kconfig
+diff --git a/drivers/staging/tdm/kirkwood_tdm.c b/drivers/staging/tdm/kirkwood_tdm.c
 new file mode 100644
-index 0000000..77b08fb4
+index 0000000..a8a95bd
 --- /dev/null
-+++ b/drivers/staging/tdm/Kconfig
-@@ -0,0 +1,38 @@
-+#
-+# TDM driver configuration
-+#
-+menuconfig TDM
-+	bool "TDM support"
-+	depends on HAS_IOMEM
-+	help
-+	  Time-division multiplexing (TDM) is a type of digital (or rarely analog)
-+	  multiplexing in which two or more bit streams or signals are
-+	  transferred apparently simultaneously as sub-channels in one
-+	  communication channel, but are physically taking turns on the
-+	  channel. The time domain is divided into several recurrent
-+	  timeslots of fixed length, one for each sub-channel. A sample
-+	  byte or data block of sub-channel 1 is transmitted during timeslot 1,
-+	  sub-channel 2 during timeslot 2, etc. One TDM frame consists of one
-+	  timeslot per sub-channel plus a synchronization channel and
-+	  sometimes error correction channel before the synchronization.
-+
-+if TDM
-+
-+config TDM_DEBUG
-+	bool "Debug support for TDM drivers"
-+	depends on DEBUG_KERNEL
-+	help
-+	  Say "yes" to enable debug messaging (like dev_dbg and pr_debug),
-+	  sysfs, and debugfs support in TDM controller and protocol drivers.
-+
-+
-+comment "TDM controllers"
-+
-+config TDM_KIRKWOOD
-+#  TODO: add depend on kirkwood architecture
-+#	depends on ARCH_KIRKWOOD
-+	tristate "Marvel Kirkwood TDM Controller"
-+	help
-+	  This selects a driver for the Marvel Kirkwood TDM Controller.
-+		  
-+endif # TDM
-diff --git a/drivers/staging/tdm/Makefile b/drivers/staging/tdm/Makefile
-new file mode 100644
-index 0000000..f99ab5a
---- /dev/null
-+++ b/drivers/staging/tdm/Makefile
-@@ -0,0 +1,19 @@
-+#
-+# Makefile for kernel TDM drivers.
-+#
-+
-+ccflags-$(CONFIG_TDM_DEBUG) := -DDEBUG
-+
-+# small core, mostly translating board-specific
-+# config declarations into driver model code
-+obj-$(CONFIG_TDM)		+= tdm_core.o
-+
-+# TDM controller drivers (bus)
-+obj-$(CONFIG_TDM_KIRKWOOD)			+= kirkwood_tdm.o
-+
-+# 	... add above this line ...
-+
-+# TDM protocol drivers (device/link on bus)
-+#obj-$(CONFIG_TDM_TDMDEV)	+= tdmdev.o
-+# 	... add above this line ...
-+
-diff --git a/drivers/staging/tdm/tdm_core.c b/drivers/staging/tdm/tdm_core.c
-new file mode 100644
-index 0000000..678a61a
---- /dev/null
-+++ b/drivers/staging/tdm/tdm_core.c
-@@ -0,0 +1,826 @@
++++ b/drivers/staging/tdm/kirkwood_tdm.c
+@@ -0,0 +1,933 @@
 +/**********************************************************************
 + * Author: Michail Kurachkin
 + *
@@ -162,705 +53,371 @@ index 0000000..678a61a
 + * or visit http://www.gnu.org/licenses/.
 +**********************************************************************/
 +
-+#include <linux/kernel.h>
 +#include <linux/module.h>
 +#include <linux/slab.h>
 +#include <linux/init.h>
 +#include <linux/io.h>
 +#include <linux/sched.h>
 +#include <linux/interrupt.h>
-+#include <linux/types.h>
-+#include <linux/device.h>
-+#include <linux/spinlock.h>
-+#include <linux/platform_device.h>
 +#include <linux/tdm/tdm.h>
-+
-+#include <linux/cache.h>
-+#include <linux/mutex.h>
-+#include <linux/mod_devicetable.h>
-+
-+static void tdmdev_release(struct device *dev)
-+{
-+        struct tdm_device *tdm_dev = to_tdm_device(dev);
-+
-+        /* tdm controllers may cleanup for released devices */
-+        if (tdm_dev->controller->cleanup)
-+                tdm_dev->controller->cleanup(tdm_dev);
-+
-+        put_device(&tdm_dev->controller->dev);
-+        kfree(tdm_dev);
-+}
-+
-+static ssize_t
-+modalias_show(struct device *dev, struct device_attribute *a, char *buf)
-+{
-+        const struct tdm_device *tdm_dev = to_tdm_device(dev);
-+
-+        return sprintf(buf, "%s\n", tdm_dev->modalias);
-+}
-+
-+static struct device_attribute tdm_dev_attrs[] = {
-+        __ATTR_RO(modalias),
-+        __ATTR_NULL,
-+};
-+
-+
-+static int tdm_match_device(struct device *dev, struct device_driver *drv)
-+{
-+        const struct tdm_device *tdm_dev = to_tdm_device(dev);
-+
-+        return strcmp(tdm_dev->modalias, drv->name) == 0;
-+}
++#include <linux/types.h>
++#include <linux/gpio.h>
++#include <linux/init.h>
++#include <linux/dma-mapping.h>
++#include <linux/in.h>
++#include <linux/ip.h>
++#include <linux/tcp.h>
++#include <linux/udp.h>
++#include <linux/etherdevice.h>
++#include <linux/delay.h>
++#include <linux/ethtool.h>
++#include <linux/platform_device.h>
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/spinlock.h>
++#include <linux/workqueue.h>
++#include <linux/phy.h>
++#include <linux/io.h>
++#include <linux/types.h>
++#include <linux/inet_lro.h>
++#include <linux/slab.h>
++#include <asm/system.h>
++#include <linux/io.h>
++#include <asm/uaccess.h>
++#include <asm/mach-types.h>
++#include <asm/mach/arch.h>
++#include <linux/mbus.h>
++#include <linux/miscdevice.h>
 +
 +
-+static int tdm_uevent(struct device *dev, struct kobj_uevent_env *env)
-+{
-+        const struct tdm_device *tdm_dev = to_tdm_device(dev);
-+
-+        add_uevent_var(env, "MODALIAS=%s%s", "tdm:", tdm_dev->modalias);
-+        return 0;
-+}
-+
-+
-+static void tdm_release(struct device *dev)
-+{
-+        struct tdm_device *tdm_dev;
-+
-+        tdm_dev = to_tdm_device(dev);
-+
-+        kfree(tdm_dev);
-+}
-+
-+
-+static struct class tdm_class = {
-+                .name           = "tdm",
-+                .owner          = THIS_MODULE,
-+                .dev_release    = tdm_release,
-+        };
-+
++#include <linux/platform_device.h>
++#include "kirkwood_tdm.h"
 +
 +
 +/**
-+ * Struct for TDM bus
++ * Init hardware tdm controller
++ * @param tdm - tdm_controller descriptor
++ * @return
 + */
-+struct bus_type tdm_bus_type = {
-+        .name           = "tdm",
-+        .dev_attrs      = tdm_dev_attrs,
-+        .match          = tdm_match_device,
-+        .uevent         = tdm_uevent,
-+        .suspend        = NULL,
-+        .resume         = NULL,
-+};
-+EXPORT_SYMBOL_GPL(tdm_bus_type);
-+
-+
-+
-+static int tdm_drv_probe(struct device *dev)
++static int kirkwood_tdm_hw_init(struct tdm_controller *tdm)
 +{
-+        const struct tdm_driver *tdm_drv = to_tdm_driver(dev->driver);
-+
-+        return tdm_drv->probe(to_tdm_device(dev));
-+}
-+
-+static int tdm_drv_remove(struct device *dev)
-+{
-+        const struct tdm_driver *tdm_drv = to_tdm_driver(dev->driver);
-+
-+        return tdm_drv->remove(to_tdm_device(dev));
-+}
-+
-+static void tdm_drv_shutdown(struct device *dev)
-+{
-+        const struct tdm_driver *tdm_drv = to_tdm_driver(dev->driver);
-+
-+        tdm_drv->shutdown(to_tdm_device(dev));
-+}
++	struct kirkwood_tdm *onchip_tdm =
++	    (struct kirkwood_tdm *)dev_get_drvdata(&tdm->dev);
++	struct kirkwood_tdm_regs *regs = onchip_tdm->regs;
++	struct tdm_controller_hw_settings *hw = tdm->settings;
++	u32 control_val = 0;
++	u32 pclk_freq;
++	unsigned long flags;
++	spinlock_t lock;
++	spin_lock_init(&lock);
 +
 +
-+/**
-+ * tdm_register_driver - register a TDM driver
-+ * @sdrv: the driver to register
-+ * Context: can sleep
-+ */
-+int tdm_register_driver(struct tdm_driver *tdm_drv)
-+{
-+        tdm_drv->driver.bus = &tdm_bus_type;
-+
-+        if (tdm_drv->probe)
-+                tdm_drv->driver.probe = tdm_drv_probe;
-+
-+        if (tdm_drv->remove)
-+                tdm_drv->driver.remove = tdm_drv_remove;
-+
-+        if (tdm_drv->shutdown)
-+                tdm_drv->driver.shutdown = tdm_drv_shutdown;
-+
-+        return driver_register(&tdm_drv->driver);
-+}
-+EXPORT_SYMBOL_GPL(tdm_register_driver);
++	// Errata GL-CODEC-10: resolve problem witch FS
++	spin_lock_irqsave(&lock, flags);
++	writel(0x03ffff00, &regs->pcm_ctrl_reg + 0x1000);
++	writel(5, &regs->pcm_ctrl_reg + 0x101C);
++	spin_unlock_irqrestore(&lock, flags);
 +
 +
-+/**
-+ * tdm_unregister_driver - reverse effect of tdm_register_driver
-+ * @sdrv: the driver to unregister
-+ * Context: can sleep
-+ */
-+void tdm_unregister_driver(struct tdm_driver *tdm_dev)
-+{
-+        if (tdm_dev)
-+                driver_unregister(&tdm_dev->driver);
-+}
-+EXPORT_SYMBOL_GPL(tdm_unregister_driver);
++	writel(0, &regs->int_reset_sel);
++	writel(0x3ffff, &regs->int_event_mask);
++	writel(0, &regs->int_status_mask);
++	writel(0, &regs->int_status);
++
++	writeb(0x41, &regs->pcm_ctrl_reg + 0xC41);
++	writeb(0x10, &regs->pcm_ctrl_reg + 0xC40);
++
++	// Configuring PCLK and FS frequency
++	pclk_freq = hw->count_time_slots * 8 * hw->fs_freq;
++	switch(pclk_freq) {
++	case 256:
++		writel(0x1, &regs->tdm_pcm_clock_div);
++		writel(0x0, &regs->dummy_rx_write);
++		writel(0x4, &regs->num_time_slot);
++		break;
++
++	case 512:
++		writel(0x2, &regs->tdm_pcm_clock_div);
++		writel(0x0, &regs->dummy_rx_write);
++		writel(0x8, &regs->num_time_slot);
++		break;
++
++	case 1024:
++		writel(0x4, &regs->tdm_pcm_clock_div);
++		writel(0x0, &regs->dummy_rx_write);
++		writel(0x10, &regs->num_time_slot);
++		break;
++
++	case 2048:
++		writel(0x8, &regs->tdm_pcm_clock_div);
++		writel(0x0, &regs->dummy_rx_write);
++		writel(0x20, &regs->num_time_slot);
++		break;
++
++	case 4096:
++		writel(0x10, &regs->tdm_pcm_clock_div);
++		writel(0x0, &regs->dummy_rx_write);
++		writel(0x40, &regs->num_time_slot);
++		break;
++
++	case 8192:
++		writel(0x20, &regs->tdm_pcm_clock_div);
++		writel(0x0, &regs->dummy_rx_write);
++		writel(0x80, &regs->num_time_slot);
++		break;
++
++	default:
++		dev_err(&tdm->dev, "Incorrect count of time slots parameter\n");
++		return -EINVAL;
++	}
++
++	control_val = readl(&regs->pcm_ctrl_reg);
++
++	if(hw->clock_direction == TDM_CLOCK_OUTPUT)
++		control_val &= (u32)~(1 << 0);
++	else
++		control_val |= (1 << 0);
 +
 +
-+
-+/**
-+ * Request unused voice channel
-+ * @param tdm_dev - TDM device requested voice channel
-+ * @return pointer to voice channel
-+ */
-+struct tdm_voice_channel *request_voice_channel(struct tdm_device *tdm_dev) {
-+        struct tdm_controller *tdm = tdm_dev->controller;
-+        struct tdm_voice_channel *ch;
-+        unsigned long flags;
-+
-+        spin_lock_irqsave(&tdm->lock, flags);
-+
-+	list_for_each_entry(ch, &tdm->voice_channels, list)
-+                if (ch->dev == NULL) {
-+                        ch->dev = &tdm_dev->dev;
-+                        tdm_dev->ch = ch;
-+                        spin_unlock_irqrestore(&tdm->lock, flags);
-+                        return ch;
-+                }
-+
-+        spin_unlock_irqrestore(&tdm->lock, flags);
-+        return NULL;
-+}
-+
-+/**
-+ * Release requested voice channel
-+ * @param TDM device requested early voice channel
-+ * @return 0 - OK
-+ */
-+int release_voice_channel(struct tdm_device *tdm_dev)
-+{
-+        struct tdm_controller *tdm = tdm_dev->controller;
-+        struct tdm_voice_channel *ch;
-+        unsigned long flags;
-+
-+        spin_lock_irqsave(&tdm->lock, flags);
-+
-+        tdm_dev->ch = NULL;
-+	list_for_each_entry(ch, &tdm->voice_channels, list)
-+                if (ch->dev == &tdm_dev->dev) {
-+                        ch->dev = NULL;
-+                        spin_unlock_irqrestore(&tdm->lock, flags);
-+                        return 0;
-+                }
-+
-+        spin_unlock_irqrestore(&tdm->lock, flags);
-+
-+        return -ENODEV;
-+}
++	if(hw->fs_clock_direction == TDM_CLOCK_OUTPUT)
++		control_val &= (u32) ~(1 << 1);
++	else
++		control_val |= (1 << 1);
 +
 +
-+
-+/*
-+ * Container for union board info of all TDM devices
-+ */
-+struct tdm_board_devices {
-+        struct list_head        list;
-+        struct tdm_board_info   bi; /* Board specific info */
-+};
-+
-+/* List of all board specific TDM devices */
-+static LIST_HEAD(tdm_devices_list);
-+
-+/* List of all registred TDM controllers */
-+static LIST_HEAD(tdm_controller_list);
++	if(hw->fs_polarity == TDM_POLAR_POSITIV)
++		control_val &= (u32) ~(1 << 4);
++	else
++		control_val |= (1 << 4);
 +
 +
-+/*
-+ * Used to protect add/del opertion for board_info list and
-+ * tdm_controller list, and their matching process
-+ */
-+static DEFINE_MUTEX(board_lock);
++	if(hw->data_polarity == TDM_POLAR_POSITIV)
++		control_val &= (u32) ~(1 << 2);
++	else
++		control_val |= (1 << 2);
 +
 +
-+static void tdm_match_controller_to_boardinfo(struct tdm_controller *tdm,
-+        struct tdm_board_info *bi)
-+{
-+        struct tdm_device *tdm_dev;
++	if(hw->channel_size == 1)
++		control_val &= (u32) ~(1 << 6);
++	else
++		control_val |= (1 << 6);
 +
-+        if (tdm->bus_num != bi->bus_num)
-+                return;
-+
-+        tdm_dev = tdm_new_device(tdm, bi);
-+        if (!tdm_dev)
-+                dev_err(tdm->dev.parent, "can't create new device for %s\n",
-+                        bi->modalias);
-+}
-+
-+
-+
-+/**
-+ * Allocate memory for TDM controller device
-+ * @dev: the controller, possibly using the platform_bus
-+ * @size: how much zeroed driver-private data to allocate; the pointer to this
-+ *      memory is in the driver_data field of the returned device,
-+ *      accessible with tdm_controller_get_devdata().
-+ * Context: can sleep
-+ */
-+struct tdm_controller *tdm_alloc_controller(struct device *dev, unsigned size) {
-+        struct tdm_controller   *tdm;
-+
-+        if (!dev)
-+                return NULL;
-+
-+        tdm = kzalloc(sizeof *tdm + size, GFP_KERNEL);
-+        if (!tdm)
-+                return NULL;
-+
-+        device_initialize(&tdm->dev);
-+        tdm->dev.class = &tdm_class;
-+        tdm->dev.parent = get_device(dev);
-+        spin_lock_init(&tdm->lock);
-+        INIT_LIST_HEAD(&tdm->list);
-+        INIT_LIST_HEAD(&tdm->voice_channels);
-+
-+        dev_set_drvdata(&tdm->dev, tdm + 1);
-+
-+        return tdm;
-+}
-+EXPORT_SYMBOL_GPL(tdm_alloc_controller);
-+
-+
-+/**
-+ * Free memory for TDM controller device, allocated by tdm_alloc_controller
-+ * @dev: the controller, possibly using the platform_bus
-+ * Context: can sleep
-+ */
-+int tdm_free_controller(struct tdm_controller *tdm)
-+{
-+        if (!tdm)
-+                return -EINVAL;
-+
-+        dev_set_drvdata(&tdm->dev, NULL);
-+        put_device(&tdm->dev);
-+        kzfree(tdm);
-+
-+        return 0;
-+}
-+EXPORT_SYMBOL_GPL(tdm_free_controller);
-+
-+
-+/**
-+ * Allocate memory for voice channel
-+ * @return object voice_channel or NULL if error
-+ */
-+struct tdm_voice_channel *tdm_alloc_voice_channel(void)
-+{
-+        struct tdm_voice_channel *ch;
-+
-+        ch = kzalloc(sizeof *ch, GFP_KERNEL);
-+        if (!ch)
-+                return NULL;
-+
-+        memset(ch, 0, sizeof *ch);
-+        init_waitqueue_head(&ch->tx_queue);
-+        init_waitqueue_head(&ch->rx_queue);
-+
-+        return ch;
-+}
-+EXPORT_SYMBOL_GPL(tdm_alloc_voice_channel);
-+
-+
-+
-+/**
-+ * Add allocated voice channel in tdm controller
-+ * @param tdm - tdm controller
-+ * @param ch - allocated voice channel
-+ * @param driver_private - private driver structure
-+ * @return 0 - ok
-+ */
-+int
-+tdm_register_new_voice_channel(struct tdm_controller *tdm,
-+    struct tdm_voice_channel *ch,
-+    void *driver_private)
-+{
-+	struct tdm_voice_channel *c;
-+	int last_num;
-+
-+	last_num = -1;
-+	list_for_each_entry(c, &tdm->voice_channels, list)
-+		if (c->channel_num > last_num)
-+			last_num = c->channel_num;
-+
-+	ch->channel_num = last_num + 1;
-+	ch->private_data = driver_private;
-+	list_add_tail(&ch->list, &tdm->voice_channels);
++	writel(control_val, &regs->pcm_ctrl_reg);
++	writel(0, &regs->chan_time_slot_ctrl);
++	writel(0, &regs->chan0_enable_disable);
++	writel(0, &regs->chan0_enable_disable + 4);
 +
 +	return 0;
 +}
-+EXPORT_SYMBOL_GPL(tdm_register_new_voice_channel);
 +
 +/**
-+ * free memory for voice channels allocated by tdm_alloc_voice_channels
-+ * @param tdm - TDM controller
-+ * @param count_channels - count supported voice channels
-+ * @return
++ * deInitialization hardware tdm controller
++ * @param tdm - tdm_controller descriptor
 + */
-+int tdm_free_voice_channels(struct tdm_controller *tdm)
++static void kirkwood_tdm_hw_deinit(struct tdm_controller *tdm)
 +{
-+	struct tdm_voice_channel *ch, *ch_tmp;
-+        if (!tdm)
-+        	return -EINVAL;
++	struct kirkwood_tdm *onchip_tdm =
++	    (struct kirkwood_tdm *)dev_get_drvdata(&tdm->dev);
++	struct kirkwood_tdm_regs *regs = onchip_tdm->regs;
 +
-+	list_for_each_entry_safe(ch, ch_tmp, &tdm->voice_channels, list)
-+        {
-+        	list_del(&ch->list);
-+        	kzfree(ch);
-+        }
-+
-+        return 0;
++	writel(0, &regs->pcm_ctrl_reg);
++	writel(0, &regs->chan_time_slot_ctrl);
 +}
-+EXPORT_SYMBOL_GPL(tdm_free_voice_channels);
-+
 +
 +/**
-+ * get voice_channel object by voice number
-+ * @param tdm - tdm_controller contained voice channels
-+ * @param num - voice channel number
-+ * @return voice_channel object or NULL
++ * Setup hardware voice channel
++ * @param ch - voice hardware channel
++ * @return 0 - OK
 + */
-+struct tdm_voice_channel *
-+get_voice_channel_by_num(struct tdm_controller *tdm, int num)
++int kirkwood_setup_voice_channel(struct tdm_voice_channel* ch)
 +{
-+	struct tdm_voice_channel *ch;
-+	list_for_each_entry(ch, &tdm->voice_channels, list)
-+		if (ch->channel_num == num)
-+			return ch;
++	struct tdm_device *tdm_dev = to_tdm_device(ch->dev);
++	struct tdm_controller *tdm = tdm_dev->controller;
++	struct tdm_controller_hw_settings *hw = tdm->settings;
++	struct kirkwood_tdm *onchip_tdm =
++	    (struct kirkwood_tdm *)dev_get_drvdata(&tdm->dev);
++	struct kirkwood_tdm_voice *onchip_ch = ch->private_data;
++	struct kirkwood_tdm_regs *regs = onchip_tdm->regs;
++	unsigned long timeout;
++	u32 state;
++	int i;
 +
-+	return NULL;
++	u8 voice_num = ch->channel_num;
++
++	/* calculate buffer size */
++	ch->buffer_len = tdm_dev->buffer_sample_count * hw->channel_size;
++
++	/* Request timeslot for voice channel */
++	writeb(ch->tdm_channel, (u8*)&regs->chan_time_slot_ctrl + 2 * voice_num);
++	writeb(ch->tdm_channel, (u8*)&regs->chan_time_slot_ctrl + 1 + 2 * voice_num);
++
++	/* FIXME: move coherent_dma_mask to board specific */
++	tdm_dev->dev.coherent_dma_mask = 0xffffffff;
++
++	/* Allocate rx and tx buffers */
++	for(i = 0; i < COUNT_DMA_BUFFERS_PER_CHANNEL; i++) {
++		/* allocate memory for DMA receiver */
++		onchip_ch->rx_buf[i] =
++		        dma_alloc_coherent(&tdm_dev->dev,
++		        ch->buffer_len, onchip_ch->rx_buff_phy + i, GFP_DMA);
++
++		if (onchip_ch->rx_buf == NULL) {
++			dev_err(ch->dev, "Can't allocate memory for TDM receiver DMA buffer\n");
++			return -ENOMEM;
++		}
++		memset(onchip_ch->rx_buf[i], 0, ch->buffer_len);
++
++
++		/* allocate memory for DMA transmitter */
++		onchip_ch->tx_buf[i] =
++		        dma_alloc_coherent(&tdm_dev->dev,
++		        ch->buffer_len, onchip_ch->tx_buff_phy + i, GFP_DMA);
++
++		if (onchip_ch->tx_buf == NULL) {
++			dev_err(ch->dev, "Can't allocate memory for TDM transmitter DMA buffer\n");
++			return -ENOMEM;
++		}
++		memset(onchip_ch->tx_buf[i], 0, ch->buffer_len);
++	}
++
++	atomic_set(&onchip_ch->write_rx_buf_num, 0);
++	atomic_set(&onchip_ch->write_tx_buf_num, 0);
++	atomic_set(&onchip_ch->read_rx_buf_num, 0);
++	atomic_set(&onchip_ch->read_tx_buf_num, 0);
++
++	/* Set length for DMA */
++	writel(((tdm_dev->buffer_sample_count - 32) << 8) | tdm_dev->buffer_sample_count,
++	       &regs->chan0_total_sample + voice_num);
++
++	/* Waiting for program transmit DMA */
++	timeout = jiffies + HZ;
++	do {
++		state = readl(&regs->chan0_buff_ownership + 4 * voice_num) & 0x100;
++		if(time_after(jiffies, timeout)) {
++			dev_err(ch->dev, "Can`t program DMA tx buffer\n");
++			return -EBUSY;
++		}
++	} while(state);
++
++	/* Set DMA buffers fo transmitter */
++	writel((u32)onchip_ch->tx_buff_phy[0],
++	    &regs->chan0_transmit_start_addr + 4 * voice_num);
++	writeb(0x1, (u8*)(&regs->chan0_buff_ownership + 4 * voice_num) + 1);
++
++	/* Waiting for program received DMA */
++	timeout = jiffies + HZ;
++	do {
++		state = readl(&regs->chan0_buff_ownership + 4 * voice_num) & 1;
++		if(time_after(jiffies, timeout)) {
++			dev_err(ch->dev, "Can`t program DMA rx buffer\n");
++			return -EBUSY;
++		}
++	} while(state);
++
++	/* Set DMA buffers for receiver */
++	writel((u32)onchip_ch->rx_buff_phy[0],
++	    &regs->chan0_receive_start_addr + 4 * voice_num);
++	writeb(0x1, (u8*)(&regs->chan0_buff_ownership + 4 * voice_num) );
++
++	return 0;
 +}
-+EXPORT_SYMBOL_GPL(get_voice_channel_by_num);
-+
-+
-+/**
-+ * tdm_controller_register - register TDM controller
-+ * @master: initialized master, originally from spi_alloc_master()
-+ * Context: can sleep
-+ *
-+ * This must be called from context that can sleep.  It returns zero on
-+ * success, else a negative error code (dropping the master's refcount).
-+ * After a successful return, the caller is responsible for calling
-+ * tdm_controller_unregister().
-+ */
-+int tdm_controller_register(struct tdm_controller *tdm)
-+{
-+        static atomic_t         dyn_bus_id = ATOMIC_INIT((1<<15) - 1);
-+        struct device           *dev = tdm->dev.parent;
-+        struct tdm_board_devices        *bi;
-+        int                     status = -ENODEV;
-+        int                     dynamic = 0;
-+
-+        if (!dev) {
-+                dev_err(dev, "parent device not exist\n");
-+                return -ENODEV;
-+        }
-+
-+        /* convention:  dynamically assigned bus IDs count down from the max */
-+        if (tdm->bus_num < 0) {
-+                tdm->bus_num = atomic_dec_return(&dyn_bus_id);
-+                dynamic = 1;
-+        }
-+
-+        /* register the device, then userspace will see it.
-+         * registration fails if the bus ID is in use.
-+         */
-+        dev_set_name(&tdm->dev, "tdm%u", tdm->bus_num);
-+        status = device_add(&tdm->dev);
-+        if (status < 0) {
-+                dev_err(dev, "cannot added controller device, %d\n", status);
-+                goto done;
-+        }
-+        dev_dbg(dev, "registered controller %s%s\n", dev_name(&tdm->dev),
-+                dynamic ? " (dynamic)" : "");
-+
-+        mutex_lock(&board_lock);
-+        list_add_tail(&tdm->list, &tdm_controller_list);
-+        list_for_each_entry(bi, &tdm_devices_list, list)
-+                tdm_match_controller_to_boardinfo(tdm, &bi->bi);
-+
-+        mutex_unlock(&board_lock);
-+
-+        status = 0;
-+
-+done:
-+        return status;
-+}
-+EXPORT_SYMBOL_GPL(tdm_controller_register);
-+
-+
-+static int __unregister(struct device *dev, void *null)
-+{
-+        device_unregister(dev);
-+        return 0;
-+}
-+
-+
-+/**
-+ * tdm_controller_unregister - unregister TDM controller
-+ * @tdm: the controller being unregistered
-+ * Context: can sleep
-+ *
-+ * This call is used only by TDM controller drivers, which are the
-+ * only ones directly touching chip registers.
-+ *
-+ * This must be called from context that can sleep.
-+ */
-+void tdm_controller_unregister(struct tdm_controller *tdm)
-+{
-+        int dummy;
-+
-+        mutex_lock(&board_lock);
-+        list_del(&tdm->list);
-+        mutex_unlock(&board_lock);
-+
-+        dummy = device_for_each_child(&tdm->dev, NULL, __unregister);
-+        device_unregister(&tdm->dev);
-+}
-+EXPORT_SYMBOL_GPL(tdm_controller_unregister);
 +
 +
 +/**
-+ * tdm_new_device - instantiate one new TDM device
-+ * @tdm: TDM Controller to which device is connected
-+ * @chip: Describes the TDM device
-+ * Context: can sleep
-+ *
-+ * Returns the new device, or NULL.
++ * Run tdm transmitter and receiver
++ * @param tdm_dev - tdm device
++ * @return 0 - ok
 + */
-+struct tdm_device *tdm_new_device(struct tdm_controller *tdm,
-+                                  struct tdm_board_info *chip) {
-+        struct tdm_device       *tdm_dev;
-+        int                     status;
++int kirkwood_tdm_run_audio(struct tdm_device *tdm_dev)
++{
++	struct tdm_controller *tdm = tdm_dev->controller;
++	struct kirkwood_tdm *onchip_tdm =
++	        (struct kirkwood_tdm *)dev_get_drvdata(&tdm->dev);
++	struct kirkwood_tdm_regs *regs = onchip_tdm->regs;
++	struct tdm_voice_channel *ch = tdm_dev->ch;
++	struct kirkwood_tdm_voice *onchip_ch = ch->private_data;
 +
-+        if (!tdm_controller_get(tdm))
-+                return NULL;
++	memset(onchip_ch->tx_buf[0], 0, ch->buffer_len);
++	memset(onchip_ch->tx_buf[1], 0, ch->buffer_len);
 +
-+        tdm_dev = kzalloc(sizeof *tdm_dev, GFP_KERNEL);
-+        if (!tdm_dev) {
-+                dev_err(tdm->dev.parent, "cannot alloc for TDM device\n");
-+                tdm_controller_put(tdm);
-+                return NULL;
-+        }
++	writeb(0x1, (u8 *)(&regs->chan0_enable_disable + 4 * ch->channel_num) + 1);
++	writeb(0x1, (u8 *)(&regs->chan0_enable_disable + 4 * ch->channel_num) );
 +
-+        tdm_dev->controller = tdm;
-+        tdm_dev->dev.parent = tdm->dev.parent;
-+        tdm_dev->dev.bus = &tdm_bus_type;
-+        tdm_dev->dev.release = tdmdev_release;
-+        device_initialize(&tdm_dev->dev);
++	/* enable Tx interrupts */
++	writel(0, &regs->int_status);
++	writel((readl(&regs->int_status_mask) | TDM_INT_TX(ch->channel_num)),
++	        &regs->int_status_mask);
 +
-+        WARN_ON(strlen(chip->modalias) >= sizeof(tdm_dev->modalias));
++	/* enable Rx interrupts */
++	writel(0, &regs->int_status);
++	writel((readl(&regs->int_status_mask) | TDM_INT_RX(ch->channel_num)),
++	        &regs->int_status_mask);
 +
-+        tdm_dev->tdm_channel_num = chip->tdm_channel_num;
-+        tdm_dev->mode_wideband = chip->mode_wideband;
-+        tdm_dev->buffer_sample_count = chip->buffer_sample_count;
-+        strlcpy(tdm_dev->modalias, chip->modalias, sizeof(tdm_dev->modalias));
++	writeb(0x1, (u8*)(&regs->chan0_buff_ownership + 4 * ch->channel_num));
++	writeb(0x1, (u8*)(&regs->chan0_buff_ownership + 4 * ch->channel_num) + 1);
 +
-+        status = tdm_add_device(tdm_dev);
-+        if (status < 0) {
-+                put_device(&tdm_dev->dev);
-+                return NULL;
-+        }
-+
-+        return tdm_dev;
++	return 0;
 +}
-+EXPORT_SYMBOL_GPL(tdm_new_device);
-+
 +
 +
 +/**
-+ * tdm_add_device - Add tdm_device on TDM bus
-+ * @tdm_dev: TDM device to register
-+ *
-+ * Returns 0 on success; negative errno on failure
++ * Stop tdm transmitter and receiver
++ * @param tdm_dev - tdm device
++ * @return 0 - ok
 + */
-+int tdm_add_device(struct tdm_device *tdm_dev)
++int kirkwood_tdm_stop_audio(struct tdm_device *tdm_dev)
 +{
-+        static DEFINE_MUTEX(tdm_add_lock);
-+        struct tdm_controller *tdm = tdm_dev->controller;
-+        struct tdm_controller_hw_settings *hw = tdm->settings;
-+        struct device *dev = tdm->dev.parent;
-+        struct device *d;
-+        struct tdm_voice_channel *ch;
-+        int status;
-+        u8 count_tdm_channels;
++	struct tdm_controller *tdm = tdm_dev->controller;
++	struct kirkwood_tdm *onchip_tdm =
++			(struct kirkwood_tdm *)dev_get_drvdata(&tdm->dev);
++	struct kirkwood_tdm_regs *regs = onchip_tdm->regs;
++	struct tdm_voice_channel *ch = tdm_dev->ch;
 +
++	/* disable Tx interrupts */
++	writel((readl(&regs->int_status_mask) & (~TDM_INT_TX(ch->channel_num))),
++	    &regs->int_status_mask);
++	writel(0, &regs->int_status);
 +
-+        if (tdm_dev->mode_wideband) {
-+                dev_err(dev, "mode_wideband is not supported by this driver\n");
-+                status = -EINVAL;
-+                goto done;
-+        }
++	/* disable Rx interrupts */
++	writel((readl(&regs->int_status_mask) & (~TDM_INT_RX(ch->channel_num))),
++	    &regs->int_status_mask);
++	writel(0, &regs->int_status);
 +
-+        count_tdm_channels = hw->count_time_slots / hw->channel_size;
++	writeb(0x0, (u8 *)(&regs->chan0_enable_disable + 4 * ch->channel_num) + 1);
++	writeb(0x0, (u8 *)(&regs->chan0_enable_disable + 4 * ch->channel_num) );
 +
-+        if (tdm_dev->tdm_channel_num >= count_tdm_channels) {
-+                dev_err(dev, "Incorrect requested TDM channel.\n"
-+                        "Requested %d TDM channel, %d TDM channels available.\n",
-+                        tdm_dev->tdm_channel_num, count_tdm_channels);
-+
-+                status = -EINVAL;
-+                goto done;
-+        }
-+
-+        if (tdm_dev->mode_wideband &&
-+            (tdm_dev->tdm_channel_num > count_tdm_channels / 2)) {
-+                dev_err(dev, "Incorrect requested TDM channel in wideband mode.\n"
-+                        "Requested %d TDM channel, %d TDM channels available\n"
-+                        "in wideband mode\n",
-+                        tdm_dev->tdm_channel_num, count_tdm_channels / 2);
-+
-+                status = -EINVAL;
-+                goto done;
-+        }
-+
-+
-+        /* Set the bus ID string */
-+        dev_set_name(&tdm_dev->dev, "%s.%u", dev_name(&tdm_dev->controller->dev),
-+                     tdm_dev->tdm_channel_num);
-+
-+        /* We need to make sure there's no other device with this
-+         * chipselect **BEFORE** we call setup(), else we'll trash
-+         * its configuration.  Lock against concurrent add() calls.
-+         */
-+        mutex_lock(&tdm_add_lock);
-+
-+        d = bus_find_device_by_name(&tdm_bus_type, NULL, dev_name(&tdm_dev->dev));
-+        if (d != NULL) {
-+                dev_err(dev, "TDM channel %d already in use\n",
-+                        tdm_dev->tdm_channel_num);
-+                put_device(d);
-+                status = -EBUSY;
-+                goto done;
-+        }
-+
-+        ch = request_voice_channel(tdm_dev);
-+        if (ch == NULL) {
-+                dev_err(dev, "Can't request TDM voice channel. All voice channels is busy\n");
-+                status = -EBUSY;
-+                goto done;
-+        }
-+
-+        printk("ch = %s\n", dev_name(ch->dev));
-+
-+        /* Configuring voice channel */
-+        ch->mode_wideband = tdm_dev->mode_wideband;
-+        ch->tdm_channel = tdm_dev->tdm_channel_num;
-+
-+        /* Run setup voice channel */
-+        status = tdm_dev->controller->setup_voice_channel(ch);
-+        if (status < 0) {
-+                dev_err(dev, "can't setup voice channel, status %d\n", status);
-+                goto done;
-+        }
-+
-+        /* Device may be bound to an active driver when this returns */
-+        status = device_add(&tdm_dev->dev);
-+        if (status < 0)
-+                dev_err(dev, "can't add %s, status %d\n",
-+                        dev_name(&tdm_dev->dev), status);
-+        else
-+                dev_dbg(dev, "registered child %s\n", dev_name(&tdm_dev->dev));
-+
-+done:
-+        mutex_unlock(&tdm_add_lock);
-+        return status;
++	return 0;
 +}
-+EXPORT_SYMBOL_GPL(tdm_add_device);
-+
 +
 +
 +/**
-+ * Receive audio-data from tdm device.
-+ * @param tdm_dev - tdm device registered on TDM bus
-+ * @param data - pointer to receive block data.
-+ *              Allocated data size must be equal value
-+ *              returned by tdm_get_voice_block_size();
-+ * @return 0 - success
++ * Get DMA tx buffers latency
++ * @param onchip_ch - kirkwood based voice channel
++ * @return latency in buffers
 + */
-+int tdm_recv(struct tdm_device *tdm_dev, u8 *data)
++int get_tx_latency(struct kirkwood_tdm_voice *onchip_ch)
 +{
-+        struct tdm_controller *tdm = tdm_dev->controller;
-+
-+        if (tdm_dev->ch == NULL)
-+                return -ENODEV;
-+
-+        return tdm->recv(tdm_dev->ch, data);
++	if (atomic_read(&onchip_ch->read_tx_buf_num) <= atomic_read(&onchip_ch->write_tx_buf_num))
++		return atomic_read(&onchip_ch->write_tx_buf_num) - atomic_read(&onchip_ch->read_tx_buf_num);
++	else
++		return COUNT_DMA_BUFFERS_PER_CHANNEL - atomic_read(&onchip_ch->read_tx_buf_num)
++		       + atomic_read(&onchip_ch->write_tx_buf_num);
 +}
-+EXPORT_SYMBOL_GPL(tdm_recv);
 +
 +
 +/**
-+ * Transmit audio-data from tdm device.
-+ * @param tdm_dev - tdm device registered on TDM bus
-+ * @param data - pointer to transmit block data.
-+ *              Transmit data size must be equal value
-+ *              returned by tdm_get_voice_block_size();
-+ * @return 0 - success
++ * Get DMA rx buffers latency
++ * @param onchip_ch - kirkwood based voice channel
++ * @return latency in buffers
 + */
-+int tdm_send(struct tdm_device *tdm_dev, u8 *data)
++int get_rx_latency(struct kirkwood_tdm_voice *onchip_ch)
 +{
-+        struct tdm_controller *tdm = tdm_dev->controller;
-+
-+        if (tdm_dev->ch == NULL)
-+                return -ENODEV;
-+
-+        return tdm->send(tdm_dev->ch, data);
++	if (atomic_read(&onchip_ch->read_rx_buf_num) <= atomic_read(&onchip_ch->write_rx_buf_num))
++		return atomic_read(&onchip_ch->write_rx_buf_num) - atomic_read(&onchip_ch->read_rx_buf_num);
++	else
++		return COUNT_DMA_BUFFERS_PER_CHANNEL - atomic_read(&onchip_ch->read_rx_buf_num)
++		       + atomic_read(&onchip_ch->write_rx_buf_num);
 +}
-+EXPORT_SYMBOL_GPL(tdm_send);
-+
-+
-+/**
-+ * Enable audio transport
-+ * @param tdm_dev - tdm device registered on TDM bus
-+ * @return 0 - success
-+ */
-+int tdm_run_audio(struct tdm_device *tdm_dev)
-+{
-+        struct tdm_controller *tdm = tdm_dev->controller;
-+
-+        if (!tdm_dev->ch) {
-+                dev_err(&tdm_dev->dev, "Can't run audio because not allocated tdm voice channel\n");
-+                return -ENODEV;
-+        }
-+
-+        return tdm->run_audio(tdm_dev);
-+}
-+EXPORT_SYMBOL_GPL(tdm_run_audio);
-+
-+
-+/**
-+ * Disable audio transport
-+ * @param tdm_dev - tdm device registered on TDM bus
-+ * @return 0 - success
-+ */
-+int tdm_stop_audio(struct tdm_device *tdm_dev)
-+{
-+        struct tdm_controller *tdm = tdm_dev->controller;
-+
-+        if (!tdm_dev->ch) {
-+                dev_err(&tdm_dev->dev, "Can't stop audio because not allocated tdm voice channel\n");
-+                return -ENODEV;
-+        }
-+
-+        return tdm->stop_audio(tdm_dev);
-+}
-+EXPORT_SYMBOL_GPL(tdm_stop_audio);
-+
 +
 +
 +/**
@@ -868,13 +425,13 @@ index 0000000..678a61a
 + * @param tdm_dev - tdm device registered on TDM bus
 + * @return 0 - not enought data, 1 - data exist
 + */
-+int tdm_poll_rx(struct tdm_device *tdm_dev)
++int kirkwood_poll_rx(struct tdm_device *tdm_dev)
 +{
-+        struct tdm_controller *tdm = tdm_dev->controller;
++	struct tdm_voice_channel *ch = tdm_dev->ch;
++	struct kirkwood_tdm_voice *onchip_ch = ch->private_data;
 +
-+        return tdm->poll_rx(tdm_dev);
++	return get_rx_latency(onchip_ch) > 1;
 +}
-+EXPORT_SYMBOL_GPL(tdm_poll_rx);
 +
 +
 +/**
@@ -882,387 +439,646 @@ index 0000000..678a61a
 + * @param tdm_dev - tdm device registered on TDM bus
 + * @return 0 - not enought free space, 1 - exist free space
 + */
-+int tdm_poll_tx(struct tdm_device *tdm_dev)
++int kirkwood_poll_tx(struct tdm_device *tdm_dev)
 +{
-+        struct tdm_controller *tdm = tdm_dev->controller;
++	struct tdm_voice_channel *ch = tdm_dev->ch;
++	struct kirkwood_tdm_voice *onchip_ch = ch->private_data;
 +
-+        return tdm->poll_tx(tdm_dev);
++	return get_tx_latency(onchip_ch) > 1;
 +}
-+EXPORT_SYMBOL_GPL(tdm_poll_tx);
-+
-+
-+/**
-+ * Get voice block size for transmit or receive operations
-+ * @param tdm_dev - tdm device registered on TDM bus
-+ * @return voice block size, or error if returned value less 0
-+ */
-+int tdm_get_voice_block_size(struct tdm_device *tdm_dev)
-+{
-+        struct tdm_voice_channel *ch;
-+
-+        ch = tdm_dev->ch;
-+        if (ch == NULL)
-+                return -ENODEV;
-+
-+        return ch->buffer_len;
-+}
-+EXPORT_SYMBOL_GPL(tdm_get_voice_block_size);
 +
 +
 +
 +/**
-+ * tdm_register_board_info - register TDM devices for a given board
-+ * @info: array of chip descriptors
-+ * @n: how many descriptors are provided
-+ * Context: can sleep
++ * Get next dma buffer number
++ * @param num - current buffer number
++ * @return next buffer number
 + */
-+int __init
-+tdm_register_board_info(struct tdm_board_info const *info, unsigned n)
++static int inc_next_dma_buf_num(int num)
 +{
-+        struct tdm_board_devices *bi;
-+        int i;
++	num ++;
++	if (num >= COUNT_DMA_BUFFERS_PER_CHANNEL)
++		num = 0;
 +
-+        bi = kzalloc(n * sizeof(*bi), GFP_KERNEL);
-+        if (!bi)
-+                return -ENOMEM;
-+
-+        for (i = 0; i < n; i++, bi++, info++) {
-+                struct tdm_controller *tdm;
-+
-+                memcpy(&bi->bi, info, sizeof(*info));
-+                mutex_lock(&board_lock);
-+
-+                list_add_tail(&bi->list, &tdm_devices_list);
-+                list_for_each_entry(tdm, &tdm_controller_list, list)
-+                        tdm_match_controller_to_boardinfo(tdm, &bi->bi);
-+
-+                mutex_unlock(&board_lock);
-+        }
-+
-+        return 0;
++	return num;
 +}
 +
 +
 +
-+static int __init tdm_core_init(void)
-+{
-+        int status;
-+
-+        status = bus_register(&tdm_bus_type);
-+        if (status < 0)
-+                goto err0;
-+
-+        status = class_register(&tdm_class);
-+        if (status < 0)
-+                goto err1;
-+        return 0;
-+
-+err1:
-+        bus_unregister(&tdm_bus_type);
-+err0:
-+        return status;
-+}
-+
-+postcore_initcall(tdm_core_init);
-+
-diff --git a/include/linux/tdm/tdm.h b/include/linux/tdm/tdm.h
-new file mode 100644
-index 0000000..ee7b5bf
---- /dev/null
-+++ b/include/linux/tdm/tdm.h
-@@ -0,0 +1,292 @@
-+/*
-+ * tdm_base.h
++/**
++ * Send voice data block to tdm voice channel controller.
++ * @param ch - voice channel attendant to transmit data in TDM frame
++ * @param data - data to be transmit. Length of data must be equal to
++ * 		value returned by get_voice_block_size()
 + *
-+ *  Created on: 20.01.2012
++ * Context: can sleep
++ * @return 0 on success; negative errno on failure
++ */
++static int kirkwood_send(struct tdm_voice_channel *ch, u8 *data)
++{
++	struct kirkwood_tdm_voice *onchip_ch = ch->private_data;
++	int rc = 0;
++
++	rc = wait_event_interruptible(ch->tx_queue,
++	                         get_tx_latency(onchip_ch) > 1);
++
++	if (rc)
++		return rc;
++
++	memcpy(onchip_ch->tx_buf[atomic_read(&onchip_ch->read_tx_buf_num)], data,
++	       ch->buffer_len);
++	atomic_set(&onchip_ch->read_tx_buf_num,
++		inc_next_dma_buf_num(atomic_read(&onchip_ch->read_tx_buf_num)));
++	return rc;
++}
++
++
++/**
++ * Receive voice data block from TDM voice channel controller.
++ * @param ch - voice channel attendant to transmit data in TDM frame
++ * @param data - pointer to read data received by DMA.
++                 Length data for read equal to value returned by get_tdm_voice_block_size()
++ *
++ * Context: can sleep
++ * @return 0 on success; negative errno on failure
++ */
++static int kirkwood_recv(struct tdm_voice_channel *ch, u8 *data)
++{
++	struct kirkwood_tdm_voice *onchip_ch = ch->private_data;
++	int rc = 0;
++
++	rc = wait_event_interruptible(ch->rx_queue,
++	                         get_rx_latency(onchip_ch) > 1);
++
++	if (rc)
++		return rc;
++
++	memcpy(data, onchip_ch->rx_buf[atomic_read(&onchip_ch->read_rx_buf_num)],
++	       ch->buffer_len);
++	atomic_set(&onchip_ch->read_rx_buf_num,
++		   inc_next_dma_buf_num(atomic_read(&onchip_ch->read_rx_buf_num)));
++	return rc;
++}
++
++
++
++/**
++ * kirkwood_tdm_irq - IRQ handler for Kirkwood TDM
++ * @irq: IRQ number for this TDM controller
++ * @context_data: structure for TDM controller kirkwood_tdm
++ * Context: can not sleep
++ */
++static irqreturn_t kirkwood_tdm_irq(s32 irq, void *context_data)
++{
++	struct kirkwood_tdm *onchip_tdm = context_data;
++	struct kirkwood_tdm_regs *regs = onchip_tdm->regs;
++	struct tdm_controller *tdm = to_tdm_controller(onchip_tdm->controller_dev);
++	struct tdm_voice_channel *ch;
++	struct kirkwood_tdm_voice *onchip_ch;
++	struct tdm_device *tdm_dev;
++
++	irqreturn_t ret = IRQ_NONE;
++	u32 status;
++	u8 i;
++
++	int voice_num; /* current voice channel */
++	int next_buf_num; /* number of next buffer */
++	int mode; /* irq event mode: */
++	int overflow = 0;
++	int full = 0;
++
++	enum irq_event_mode {
++		IRQ_RECEIVE,
++		IRQ_TRANSMIT,
++	};
++
++	status = readl(&regs->int_status);
++
++	if ((status & 0xFF) == 0)
++		return ret;
++
++	/*  Check first 8 bit in status mask register for detect event type */
++	for(i = 0; i < 8; i++) {
++		if((status & (1 << i)) == 0)
++			continue;
++
++		writel(status & ~(1 << i), &regs->int_status);
++
++		switch(i) {
++		case 0:
++			mode = IRQ_RECEIVE;
++			voice_num = 0;
++			overflow = 1;
++			break;
++
++		case 1:
++			mode = IRQ_TRANSMIT;
++			voice_num = 0;
++			overflow = 1;
++			break;
++
++		case 2:
++			mode = IRQ_RECEIVE;
++			voice_num = 1;
++			overflow = 1;
++			break;
++
++		case 3:
++			mode = IRQ_TRANSMIT;
++			voice_num = 1;
++			overflow = 1;
++			break;
++
++		case 4:
++			mode = IRQ_RECEIVE;
++			voice_num = 0;
++			overflow = 0;
++			full = 0;
++			break;
++
++		case 5:
++			mode = IRQ_TRANSMIT;
++			voice_num = 0;
++			overflow = 0;
++			full = 0;
++			break;
++
++		case 6:
++			mode = IRQ_RECEIVE;
++			voice_num = 1;
++			overflow = 0;
++			full = 0;
++			break;
++
++		case 7:
++			mode = IRQ_TRANSMIT;
++			voice_num = 1;
++			overflow = 0;
++			full = 0;
++			break;
++		}
++
++		/* ñurrent voice channel struct */
++		ch = get_voice_channel_by_num(tdm, voice_num);
++		onchip_ch = ch->private_data;
++
++		/* TDM device attached to current voice channel */
++		tdm_dev = to_tdm_device(ch->dev);
++
++		switch(mode) {
++		case IRQ_RECEIVE: {
++			/* get next buffer number, and move write/read pointer */
++			next_buf_num = inc_next_dma_buf_num(atomic_read(&onchip_ch->write_rx_buf_num));
++			atomic_set(&onchip_ch->write_rx_buf_num, next_buf_num);
++			if(next_buf_num == atomic_read(&onchip_ch->read_rx_buf_num))
++				atomic_set(&onchip_ch->read_rx_buf_num,
++				           inc_next_dma_buf_num(atomic_read(&onchip_ch->read_rx_buf_num)));
++
++			/* if receive overflow event */
++			if (overflow) {
++				/* set next buffer address */
++				writel((u32)onchip_ch->rx_buff_phy[next_buf_num],
++				       &regs->chan0_receive_start_addr + 4 * voice_num);
++				writeb(0x1, (u8*)(&regs->chan0_buff_ownership + 4 * voice_num));
++
++				/* enable receiver */
++				writeb(0x1, (u8 *)(&regs->chan0_enable_disable + 4 * voice_num));
++
++				ret = IRQ_HANDLED;
++				break;
++			}
++
++			/* waiting while dma providing access to buffer */
++			while(readl(&regs->chan0_buff_ownership + 4 * voice_num) & 1);
++
++			/* set next buffer address */
++			writel((u32)onchip_ch->rx_buff_phy[next_buf_num],
++			       &regs->chan0_receive_start_addr + 4 * voice_num);
++			writeb(0x1, (u8*)(&regs->chan0_buff_ownership + 4 * voice_num));
++
++			wake_up_interruptible(&ch->rx_queue);
++
++			ret = IRQ_HANDLED;
++		}
++		break;
++
++		case IRQ_TRANSMIT: {
++			/* get next buffer number, and move write/read pointer */
++			next_buf_num = inc_next_dma_buf_num(atomic_read(&onchip_ch->write_tx_buf_num));
++			atomic_set(&onchip_ch->write_tx_buf_num, next_buf_num);
++			if(next_buf_num == atomic_read(&onchip_ch->read_tx_buf_num))
++				atomic_set(&onchip_ch->read_tx_buf_num,
++				           inc_next_dma_buf_num(atomic_read(&onchip_ch->read_tx_buf_num)));
++
++			/* if transmit overflow event */
++			if (overflow) {
++				/* set next buffer address */
++				writel((u32)onchip_ch->tx_buff_phy[next_buf_num],
++				       &regs->chan0_transmit_start_addr + 4 * voice_num);
++				writeb(0x1, (u8*)(&regs->chan0_buff_ownership + 4 * voice_num) + 1);
++
++				/* enable transmitter */
++				writeb(0x1, (u8 *)(&regs->chan0_enable_disable + 4 * voice_num) + 1);
++
++				ret = IRQ_HANDLED;
++				break;
++			}
++
++			/* waiting while dma providing access to buffer */
++			while(readl(&regs->chan0_buff_ownership + 4 * voice_num) & 0x100);
++
++			/* set next buffer address */
++			writel((u32)onchip_ch->tx_buff_phy[next_buf_num],
++			       &regs->chan0_transmit_start_addr + 4 * voice_num);
++			writeb(0x1, (u8*)(&regs->chan0_buff_ownership + 4 * voice_num) + 1);
++
++			wake_up_interruptible(&ch->tx_queue);
++
++			ret = IRQ_HANDLED;
++		}
++		break;
++		}
++	}
++
++	return ret;
++}
++
++
++/**
++ * Configuring mbus windows for correct access to DMA memory
++ * @param base_regs - base address for tdm registers
++ * @param dram - dram settings
++ */
++static void kirkwood_tdm_mbus_windows(void *base_regs,
++                                      struct mbus_dram_target_info *dram)
++{
++	int i;
++
++	for (i = 0; i < 4; i++) {
++		writel(0, (u8 *)base_regs + TDM_WINDOW_CTRL(i));
++		writel(0, (u8 *)base_regs + TDM_WINDOW_BASE(i));
++	}
++
++	for (i = 0; i < dram->num_cs; i++) {
++		struct mbus_dram_window *cs = dram->cs + i;
++
++		writel(((cs->size - 1) & 0xffff0000) | (cs->mbus_attr << 8) |
++		       (dram->mbus_dram_target_id << 4) | 1,
++		       (u8 *)base_regs + TDM_WINDOW_CTRL(i));
++
++		writel(cs->base, (u8 *)base_regs + TDM_WINDOW_BASE(i));
++	}
++}
++
++
++
++static int __init kirkwood_tdm_probe(struct platform_device *pdev)
++{
++	int err = 0;
++	struct tdm_controller *tdm;
++	struct kirkwood_tdm *onchip_tdm = NULL;
++	struct resource *res;
++	struct tdm_controller_hw_settings *hw = pdev->dev.platform_data;
++	struct tdm_voice_channel *ch;
++	int i;
++
++	tdm = tdm_alloc_controller(&pdev->dev, sizeof(struct kirkwood_tdm));
++	if (tdm == NULL) {
++		dev_err(&pdev->dev, "Can`t alloc memory\n");
++		err = -ENOMEM;
++		goto out0;
++	}
++
++	platform_set_drvdata(pdev, tdm);
++	onchip_tdm = tdm_controller_get_devdata(tdm);
++
++	if (pdev->id != -1)
++		tdm->bus_num = pdev->id;
++
++	/* Check hardware settings */
++	if (hw->fs_freq != 8 && hw->fs_freq != 16) {
++		dev_err(&pdev->dev, "Fs frequency may be 8kHz o 16kHz. "
++		    "Frequency %d is not incorrect\n", hw->fs_freq);
++		err = -EINVAL;
++		goto out1;
++	}
++
++	if (hw->count_time_slots > 64) {
++		dev_err(&pdev->dev, "Incorrect count time slots. "
++		    "No more than 64 timeslots per one FS. "
++		    "Current set %d\n", hw->count_time_slots);
++		err = -EINVAL;
++		goto out1;
++	}
++
++	if (hw->channel_size > 2 || hw->channel_size == 0) {
++		dev_err(&pdev->dev, "Incorrect count time slots. "
++		    "No more than 64 timeslots per one FS. "
++		    "Current set %d\n", hw->count_time_slots);
++		err = -EINVAL;
++		goto out1;
++	}
++
++	if (hw->clock_direction != TDM_CLOCK_INPUT &&
++	    hw->clock_direction != TDM_CLOCK_OUTPUT) {
++		dev_err(&pdev->dev, "Incorrect PCLK clock direction value\n");
++		err = -EINVAL;
++		goto out1;
++	}
++
++	if (hw->fs_clock_direction != TDM_CLOCK_INPUT &&
++	    hw->fs_clock_direction != TDM_CLOCK_OUTPUT) {
++		dev_err(&pdev->dev, "Incorrect FS clock direction value\n");
++		err = -EINVAL;
++		goto out1;
++	}
++
++	if (hw->fs_polarity != TDM_POLAR_NEGATIVE &&
++	    hw->fs_polarity != TDM_POLAR_POSITIV) {
++		dev_err(&pdev->dev, "Incorrect FS polarity value\n");
++		err = -EINVAL;
++		goto out1;
++	}
++
++	if (hw->data_polarity != TDM_POLAR_NEGATIVE &&
++	    hw->data_polarity != TDM_POLAR_POSITIV) {
++		dev_err(&pdev->dev, "Incorrect data polarity value\n");
++		err = -EINVAL;
++		goto out1;
++	}
++
++	/* Set controller data */
++	tdm->bus_num = pdev->id;
++	tdm->settings = hw;
++	tdm->setup_voice_channel = kirkwood_setup_voice_channel;
++	tdm->recv = kirkwood_recv;
++	tdm->send = kirkwood_send;
++	tdm->run_audio = kirkwood_tdm_run_audio;
++	tdm->stop_audio = kirkwood_tdm_stop_audio;
++	tdm->poll_rx = kirkwood_poll_rx;
++	tdm->poll_tx = kirkwood_poll_tx;
++
++	for (i = 0; i < KIRKWOOD_MAX_VOICE_CHANNELS; i++)
++	{
++	        ch = tdm_alloc_voice_channel();
++	        if (ch == NULL) {
++	                dev_err(&pdev->dev, "Can`t alloc voice channel %d\n", i);
++	                goto out1;
++	        }
++
++            tdm_register_new_voice_channel(tdm, ch, (void *)(onchip_tdm->voice_channels + i));
++	}
++
++
++	/* Get resources(memory, IRQ) associated with the device */
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (res == NULL) {
++		dev_err(&pdev->dev, "Can`t request registers memory\n");
++		err = -ENODEV;
++		goto out2;
++	}
++
++	onchip_tdm->regs = ioremap(res->start, resource_size(res));
++	if (!onchip_tdm->regs) {
++		dev_err(&pdev->dev, "Incorrect setup registers memory area\n");
++		err = -EINVAL;
++		goto out2;
++	}
++
++	/* If need remap mbus windows */
++	if (hw->dram != NULL)
++		kirkwood_tdm_mbus_windows(onchip_tdm->regs, hw->dram);
++
++	/* Get IRQ number for all controllers events */
++	onchip_tdm->irq = platform_get_irq(pdev, 0);
++	if (onchip_tdm->irq < 0) {
++		dev_err(&pdev->dev, "Can`t request IRQ\n");
++		err = onchip_tdm->irq;
++		goto out3;
++	}
++
++	/* Set interrupt callback kirkwood_tdm_irq */
++	err = request_irq(onchip_tdm->irq, kirkwood_tdm_irq, IRQF_DISABLED,
++	                  dev_name(&pdev->dev), onchip_tdm);
++	if (err) {
++		dev_err(&pdev->dev, "Can`t setup IRQ callback\n");
++		err = -EINVAL;
++		goto out4;
++	}
++
++	onchip_tdm->controller_dev = &tdm->dev;
++
++	/* Initialization TDM controller */
++	err = kirkwood_tdm_hw_init(tdm);
++	if (err < 0) {
++		dev_err(&pdev->dev, "Can't initialization tdm controller, %d\n",
++		        err);
++		goto out4;
++	}
++
++	err = tdm_controller_register(tdm);
++	if(err) {
++		dev_err(&pdev->dev, "cannot register tdm controller, %d\n", err);
++		goto out5;
++	}
++
++	printk("Init ok");
++
++	dev_dbg(&tdm->dev, "tdm controller registred sucessfully\n");
++	return 0;
++
++
++out5:
++	kirkwood_tdm_hw_deinit(tdm);
++
++out4:
++	free_irq(onchip_tdm->irq, onchip_tdm);
++
++out3:
++	if (onchip_tdm->regs)
++		iounmap(onchip_tdm->regs);
++
++out2:
++	tdm_free_voice_channels(tdm);
++
++out1:
++	tdm_free_controller(tdm);
++
++out0:
++	return err;
++}
++
++
++static int __exit kirkwood_tdm_remove(struct platform_device *pdev)
++{
++	struct tdm_controller *tdm = NULL;
++	struct kirkwood_tdm *onchip_tdm = NULL;
++
++	tdm = platform_get_drvdata(pdev);
++	if (tdm == NULL)
++		goto out0;
++
++	onchip_tdm = tdm_controller_get_devdata(tdm);
++
++	kirkwood_tdm_hw_deinit(tdm);
++	free_irq(onchip_tdm->irq, onchip_tdm);
++
++	tdm_free_voice_channels(tdm);
++	tdm_controller_unregister(tdm);
++	if (onchip_tdm->regs)
++		iounmap(onchip_tdm->regs);
++
++	tdm_free_controller(tdm);
++out0:
++	return 0;
++}
++
++
++static struct platform_driver kirkwood_tdm_driver = {
++	.probe	= kirkwood_tdm_probe,
++	.remove	= __exit_p(kirkwood_tdm_remove),
++	.driver = {
++		.name = "kirkwood_tdm",
++		.owner = THIS_MODULE,
++	},
++	.suspend = NULL,
++	.resume  = NULL,
++};
++
++
++static int __init kirkwood_init_tdm(void)
++{
++	return platform_driver_register(&kirkwood_tdm_driver);
++}
++
++static void __exit kirkwood_exit_tdm(void)
++{
++	platform_driver_unregister(&kirkwood_tdm_driver);
++}
++
++module_init(kirkwood_init_tdm);
++module_exit(kirkwood_exit_tdm);
++MODULE_AUTHOR("Michail Kurochkin <stelhs@yandex.ru>");
++MODULE_DESCRIPTION("TDM controller driver for Marvel kirkwood arch.");
++MODULE_LICENSE("GPL");
++
++
+diff --git a/drivers/staging/tdm/kirkwood_tdm.h b/drivers/staging/tdm/kirkwood_tdm.h
+new file mode 100644
+index 0000000..6c7f34d
+--- /dev/null
++++ b/drivers/staging/tdm/kirkwood_tdm.h
+@@ -0,0 +1,110 @@
++/*
++ * kirkwood_tdm.h
++ *
++ *  Created on: 25.01.2012
 + *      Author: Michail Kurochkin
 + */
 +
-+#ifndef TDM_BASE_H_
-+#define TDM_BASE_H_
++#ifndef KIRKWOOD_TDM_H_
++#define KIRKWOOD_TDM_H_
 +
-+#include <linux/device.h>
++#include <linux/module.h>
++#include <linux/kernel.h>
 +
-+extern struct bus_type tdm_bus_type;
++struct kirkwood_tdm_regs {
++	u32 pcm_ctrl_reg; /*  0x0 PCM control register */
++	u32 chan_time_slot_ctrl; /*  0x4 Channel Time Slot Control Register */
++	u32 chan0_delay_ctrl; /*  0x8 Channel 0 Delay Control Register */
++	u32 chan1_delay_ctrl; /*  0xC Channel 1 Delay Control Register */
++	u32 chan0_enable_disable; /*  0x10 Channel 0 Enable and Disable Register */
++	u32 chan0_buff_ownership; /*  0x14 Channel 0 Buffer Ownership Register */
++	u32 chan0_transmit_start_addr; /*  0x18 Channel 0 Transmit Data Start Address Register */
++	u32 chan0_receive_start_addr; /*  0x1C Channel 0 Receive Data Start Address Register */
++	u32 chan1_enable_disable; /*  0x20 Channel 1 Enable and Disable Register */
++	u32 chan1_buff_ownership; /*  0x24 Channel 1 Buffer Ownership Register */
++	u32 chan1_transmit_start_addr; /*  0x28 Channel 1 Transmit Data Start Address Register */
++	u32 chan1_receive_start_addr; /*  0x2C Channel 1 Receive Data Start Address Register */
++	u32 chan0_total_sample; /*  0x30 Channel 0 Total Sample Count Register */
++	u32 chan1_total_sample; /*  0x34 Channel 1 Total Sample Count Register */
++	u32 num_time_slot; /*  0x38 Number of Time Slot Register */
++	u32 tdm_pcm_clock_div; /*  0x3C TDM PCM Clock Rate Divisor Register */
++	u32 int_event_mask; /*  0x40 Interrupt Event Mask Register */
++	u32 reserved_44h; /*  0x44 */
++	u32 int_status_mask; /*  0x48 Interrupt Status Mask Register */
++	u32 int_reset_sel; /*  0x4C Interrupt Reset Selection Register */
++	u32 int_status; /*  0x50 Interrupt Status Register */
++	u32 dummy_rx_write;/*  0x54 Dummy Data for Dummy RX Write Register */
++	u32 misc_control; /*  0x58 Miscellaneous Control Register */
++	u32 reserved_5Ch; /*  0x5C */
++	u32 chan0_current_tx_addr; /*  0x60 Channel 0 Transmit Data Current Address Register (for DMA) */
++	u32 chan0_current_rx_addr;  /*  0x64 Channel 0 Receive Data Current Address Register (for DMA) */
++	u32 chan1_current_tx_addr; /*  0x68 Channel 1 Transmit Data Current Address Register (for DMA) */
++	u32 chan1_current_rx_addr; /*  0x6C Channel 1 Receive Data Current Address Register (for DMA) */
++	u32 curr_time_slot; /*  0x70 Current Time Slot Register */
++	u32 revision; /*  0x74 TDM Revision Register */
++	u32 chan0_debug; /*  0x78 TDM Channel 0 Debug Register */
++	u32 chan1_debug; /*  0x7C TDM Channel 1 Debug Register */
++	u32 tdm_dma_abort_1; /*  0x80 TDM DMA Abort Register 1 */
++	u32 tdm_dma_abort_2; /*  0x84 TDM DMA Abort Register 2 */
++	u32 chan0_wideband_delay_ctrl; /*  0x88 TDM Channel 0 Wideband Delay Control Register */
++	u32 chan1_wideband_delay_ctrl; /*  0x8C TDM Channel 1 Wideband Delay Control Register */
++};
 +
 +
++#define KIRKWOOD_MAX_VOICE_CHANNELS 2 /*  Max count hardware channels */
++#define COUNT_DMA_BUFFERS_PER_CHANNEL 6 /*  Count of dma buffers for tx or rx path by one channel */
 +
-+/**
-+ * General hardware TDM settings
++/*
++ * Data specified for kirkwood hardware voice channel
 + */
-+struct tdm_controller_hw_settings {
-+	u8 fs_freq; /*  Frequency of discretization for audio transport. Normally 8KHz. */
-+	u8 count_time_slots; /*  Total count of time slots in frame. One time slot = 8bit */
-+	u8 channel_size; /*  Sample size (in time slots). 1 or 2 time slots. */
++struct kirkwood_tdm_voice {
++	/* Transmitter and receiver buffers split to half.
++	 * While first half buffer is filling by DMA controller,
++	 * second half buffer is used by consumer and etc.
++	*/
++	u8 *tx_buf[COUNT_DMA_BUFFERS_PER_CHANNEL]; /*  transmitter voice buffers */
++	u8 *rx_buf[COUNT_DMA_BUFFERS_PER_CHANNEL]; /*  receiver voice buffers pointer */
 +
-+	/*  Controller generate PCLK clock - TDM_CLOCK_OUTPUT, */
-+	/*  or clock generate remote device - TDM_CLOCK_INPUT */
-+#define TDM_CLOCK_INPUT 0
-+#define TDM_CLOCK_OUTPUT 1
-+	u8 clock_direction; /*  Drirection for PCLK */
-+	u8 fs_clock_direction;  /*  Drirection for FS */
-+
-+	/*  FS and data polarity. Detection on rise or fall */
-+#define TDM_POLAR_NEGATIVE 0
-+#define TDM_POLAR_POSITIV 1
-+	u8 fs_polarity;
-+	u8 data_polarity;
-+
-+	struct mbus_dram_target_info	*dram;
++	dma_addr_t tx_buff_phy[COUNT_DMA_BUFFERS_PER_CHANNEL]; /*  two physical pointers to tx_buf */
++	dma_addr_t rx_buff_phy[COUNT_DMA_BUFFERS_PER_CHANNEL]; /*  two physical pointers to rx_buf */
++	atomic_t write_tx_buf_num; /*  current writing transmit buffer number */
++	atomic_t read_tx_buf_num; /*  current reading transmit buffer number */
++	atomic_t write_rx_buf_num; /*  current writing receive buffer number */
++	atomic_t read_rx_buf_num; /*  current reading receive buffer number */
 +};
 +
 +
 +/*
-+ * Voice channel
++ * Data specified for kirkwood tdm controller
 + */
-+struct tdm_voice_channel {
-+	u8 channel_num; /*  Hardware channel number */
-+	u8 mode_wideband; /*  1 - support wideband mode for current voice channel */
-+	u8 tdm_channel; /*  TDM channel on registered voice channel */
-+	u8 buffer_len; /*  Length of transmit and receive buffers */
-+	void *private_data; /*  hardware dependency channel private data */
++struct kirkwood_tdm {
++	struct kirkwood_tdm_regs *regs; /*  Registers for hardware TDM */
++	u32			irq; /*  Irq number for all TDM operations */
 +
-+	/*  wait queue for transmit and receive operations */
-+	wait_queue_head_t tx_queue;
-+	wait_queue_head_t rx_queue;
-+
-+        struct list_head list; /*  Union all tdm voice channels by one controller */
-+
-+	struct device *dev; /*  device requested voice channel */
++	struct kirkwood_tdm_voice voice_channels[KIRKWOOD_MAX_VOICE_CHANNELS];
++	struct device *controller_dev;
 +};
 +
 +
-+/**
-+ * Remote device connected to TDM bus
-+ */
-+struct tdm_device {
-+	struct device dev; /*  device connected to TDM bus */
-+	struct tdm_controller *controller; /*  controller attendant TDM bus */
-+	u8 tdm_channel_num; /*  requested TDM channel number on TDM frame */
-+	u16 buffer_sample_count; /*  count samples for tx and rx buffers */
-+	u8 mode_wideband; /*  quality mode 1 or 0. Wideband mode demand is 16bit tdm channel size */
-+	struct tdm_voice_channel *ch; /*  requested voice channel */
-+	char modalias[32];
-+};
++#define TDM_WINDOW_CTRL(i)		(0x4030 + ((i) << 4))
++#define TDM_WINDOW_BASE(i)	(0x4034 + ((i) << 4))
 +
 +
-+/**
-+ * Driver remote device connected to TDM bus
-+ */
-+struct tdm_driver {
-+	int			(*probe)(struct tdm_device *tdm_dev);
-+	int			(*remove)(struct tdm_device *tdm_dev);
-+	void			(*shutdown)(struct tdm_device *tdm_dev);
-+	int			(*suspend)(struct tdm_device *tdm_dev, pm_message_t mesg);
-+	int			(*resume)(struct tdm_device *tdm_dev);
-+	struct device_driver	driver;
-+};
++/* INT_STATUS_REG bits */
++#define RX_OVERFLOW_BIT(ch)	(1<<(0+(ch)*2))
++#define TX_UNDERFLOW_BIT(ch)	(1<<(1+((ch)*2)))
++#define RX_BIT(ch)		(1<<(4+((ch)*2)))
++#define TX_BIT(ch)		(1<<(5+((ch)*2)))
++#define RX_IDLE_BIT(ch)		(1<<(8+((ch)*2)))
++#define TX_IDLE_BIT(ch)		(1<<(9+((ch)*2)))
++#define RX_FIFO_FULL(ch)	(1<<(12+((ch)*2)))
++#define TX_FIFO_EMPTY(ch)	(1<<(13+((ch)*2)))
++#define DMA_ABORT_BIT		(1<<16)
++#define SLIC_INT_BIT		(1<<17)
++#define TDM_INT_TX(ch)	(TX_UNDERFLOW_BIT(ch) | TX_BIT(ch))
++#define TDM_INT_RX(ch)	(RX_OVERFLOW_BIT(ch) | RX_BIT(ch))
 +
 +
-+/**
-+ * TDM controller device
-+ */
-+struct tdm_controller {
-+	struct device	dev;
-+	spinlock_t		lock;
-+
-+	struct list_head list; /*  Union all TDM controllers */
-+
-+	s16 bus_num; /*  Number of controller, use -1 for auto numeration */
-+
-+/* 	struct tdm_voice_channel *voice_channels; // Hardware or software voice channels transport */
-+/* 	u8 count_voice_channels; // count voice channels supported by current TDM controller */
-+
-+	/* List of voice channels */
-+	struct list_head voice_channels;
-+
-+	/*  TDM hardware settings */
-+	struct tdm_controller_hw_settings *settings;
-+
-+	int (*setup_voice_channel)(struct tdm_voice_channel *ch);
-+	int (*send)(struct tdm_voice_channel *ch, u8 *data);
-+	int (*recv)(struct tdm_voice_channel *ch, u8 *data);
-+	int (*run_audio)(struct tdm_device *tdm_dev);
-+	int (*stop_audio)(struct tdm_device *tdm_dev);
-+	int (*poll_rx)(struct tdm_device *tdm_dev);
-+	int (*poll_tx)(struct tdm_device *tdm_dev);
-+
-+	/*  called on release() for TDM device to free memory provided by tdm_controller */
-+	void	(*cleanup)(struct tdm_device *tdm);
-+};
++#endif /* KIRKWOOD_TDM_H_ */
 +
 +
-+
-+/*
-+ * Board specific information for requested TDM channel
-+ */
-+struct tdm_board_info {
-+	/* the device name and module name are coupled, like platform_bus;
-+	 * "modalias" is normally the driver name.
-+	 *
-+	 * platform_data goes to tdm_controller.dev.platform_data,
-+	 * controller_data goes to tdm_device.controller_data,
-+	 * irq is copied too
-+	 */
-+	char		modalias[32];
-+
-+	/* bus_num is board specific and matches the bus_num of some
-+	 * tdm_controller that will probably be registered later.
-+	 */
-+	u16		bus_num;
-+
-+	const void	*platform_data;
-+	void		*controller_data;
-+
-+	u8		tdm_channel_num; /*  Number TDM channel for connected device */
-+	u8 		buffer_sample_count; /*  Size for transmit and receive buffer */
-+	u8		mode_wideband; /*  1 - Enable wideband mode for requested TDM */
-+
-+	struct list_head	list; /*  Entry for union all board info */
-+};
-+
-+
-+
-+
-+/**
-+ * Search address tdm_controller structure contained device stucture
-+ * @param dev - device
-+ * @return pointer to tdm_device
-+ */
-+static inline struct tdm_controller *to_tdm_controller(struct device *dev) {
-+	return dev ? container_of(dev, struct tdm_controller, dev) : NULL;
-+}
-+
-+
-+/**
-+ * Search address tdm_device structure contained device stucture
-+ * @param dev - device
-+ * @return pointer to tdm_device
-+ */
-+static inline struct tdm_device *to_tdm_device(struct device *dev) {
-+	return dev ? container_of(dev, struct tdm_device, dev) : NULL;
-+}
-+
-+/**
-+ * Search address tdm_driver structure contained device stucture
-+ * @param dev - device
-+ * @return pointer to tdm_driver
-+ */
-+static inline struct tdm_driver *to_tdm_driver(struct device_driver *drv) {
-+	return drv ? container_of(drv, struct tdm_driver, driver) : NULL;
-+}
-+
-+
-+/**
-+ * Get private driver tdm controller data
-+ * @param tdm
-+ */
-+static inline void *tdm_controller_get_devdata(struct tdm_controller *tdm)
-+{
-+	return dev_get_drvdata(&tdm->dev);
-+}
-+
-+
-+/**
-+ * decrement pointer counter to tdm_controller
-+ * @param tdm - tdm_controller
-+ */
-+static inline void tdm_controller_put(struct tdm_controller *tdm)
-+{
-+	if (tdm)
-+		put_device(&tdm->dev);
-+}
-+
-+
-+/**
-+ * Increment pointer counter to tdm_controller
-+ * @param tdm - tdm_controller
-+ */
-+static inline struct tdm_controller *tdm_controller_get(struct tdm_controller *tdm) {
-+	if (!tdm || !get_device(&tdm->dev))
-+		return NULL;
-+	return tdm;
-+}
-+
-+
-+/**
-+ * Store private data for tdm device
-+ * @param tdm_dev - tdm device
-+ * @param data - private data
-+ */
-+static inline void tdm_set_drvdata(struct tdm_device *tdm_dev, void *data)
-+{
-+	dev_set_drvdata(&tdm_dev->dev, data);
-+}
-+
-+
-+/**
-+ * Get stored early private data for tdm device
-+ * @param tdm_dev - tdm device
-+ */
-+static inline void *tdm_get_drvdata(struct tdm_device *tdm_dev)
-+{
-+	return dev_get_drvdata(&tdm_dev->dev);
-+}
-+
-+
-+int tdm_register_driver(struct tdm_driver *tdm_drv);
-+
-+void tdm_unregister_driver(struct tdm_driver *tdm_dev);
-+
-+struct tdm_controller *tdm_alloc_controller(struct device *dev, unsigned size);
-+
-+struct tdm_voice_channel *tdm_alloc_voice_channel(void);
-+
-+int tdm_free_controller(struct tdm_controller *tdm);
-+
-+int tdm_controller_register(struct tdm_controller *tdm);
-+
-+void tdm_controller_unregister(struct tdm_controller *tdm);
-+
-+struct tdm_device *tdm_new_device(struct tdm_controller *tdm,
-+                                  struct tdm_board_info *chip);
-+
-+int tdm_add_device(struct tdm_device *tdm_dev);
-+
-+int tdm_recv(struct tdm_device *tdm_dev, u8 *data);
-+
-+int tdm_send(struct tdm_device *tdm_dev, u8 *data);
-+
-+int tdm_run_audio(struct tdm_device *tdm_dev);
-+
-+int tdm_stop_audio(struct tdm_device *tdm_dev);
-+
-+int tdm_poll_rx(struct tdm_device *tdm_dev);
-+
-+int tdm_poll_tx(struct tdm_device *tdm_dev);
-+
-+int tdm_get_voice_block_size(struct tdm_device *tdm_dev);
-+
-+int
-+tdm_register_new_voice_channel(struct tdm_controller *tdm,
-+    struct tdm_voice_channel *ch,
-+    void *driver_private);
-+
-+int tdm_free_voice_channels(struct tdm_controller *tdm);
-+
-+struct tdm_voice_channel *
-+get_voice_channel_by_num(struct tdm_controller *tdm, int num);
-+
-+
-+#ifdef CONFIG_TDM
-+int __init
-+tdm_register_board_info(struct tdm_board_info const *info, unsigned n);
-+#else
-+/* board init code may ignore whether TDM is configured or not */
-+static inline int __init
-+tdm_register_board_info(struct tdm_board_info const *info, unsigned n)
-+{
-+	return 0;
-+}
-+#endif
-+
-+#endif /* TDM_BASE_H_ */
 -- 
 1.7.5.4
 
