@@ -1,72 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759522Ab3BMO2Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 09:28:24 -0500
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:33140 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756602Ab3BMO2W (ORCPT
+	id S934050Ab3BMOcU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 09:32:20 -0500
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:55768 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756877Ab3BMOcS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 09:28:22 -0500
+	Wed, 13 Feb 2013 09:32:18 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130213140843.GA21308@brouette>
-References: <1360675195-4017-1-git-send-email-vincent.guittot@linaro.org>
-	<20130213061853.GA4043@brouette>
-	<CAKfTPtDCPKeQpcS4mQc7Jp7+wK2EuvnCUqAzL7SOELVVL3jztw@mail.gmail.com>
-	<20130213092154.GA4481@brouette>
-	<CAKfTPtDprVAA0o6sTugYk8RiaUkGXUmSvd4RJbTEhNkKj7B-5A@mail.gmail.com>
-	<20130213140843.GA21308@brouette>
-Date: Wed, 13 Feb 2013 15:28:19 +0100
-Message-ID: <CAKfTPtCuj4xZi2mBZP_Vz-zzySwBLKPn2aNkdqf6g8sVJoyS+A@mail.gmail.com>
-Subject: Re: [PATCH] sched: fix env->src_cpu for active migration
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Damien Wyart <damien.wyart@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        peterz@infradead.org, mingo@kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>
+X-Originating-IP: [111.65.28.56]
+In-Reply-To: <1843565.7Y1sC8j6FG@vostro.rjw.lan>
+References: <CAMVG2svG21yiM1wkH4_2pen2n+cr2-Zv7TbH3Gj+8MwevZjDbw@mail.gmail.com>
+	<CAErSpo6rGYLQeP8Myu=octSPY_0R+B7ptBLhLawd_A2E3NRsAw@mail.gmail.com>
+	<6086479.ycKj2j8yeP@vostro.rjw.lan>
+	<1843565.7Y1sC8j6FG@vostro.rjw.lan>
+Date: Wed, 13 Feb 2013 22:32:17 +0800
+Message-ID: <CAMVG2ssOMMVBcD0kLX=Wo9x2cMfdi+3FYNEP-MiDRK4fs24auw@mail.gmail.com>
+Subject: Re: [3.8-rc7] PCI hotplug wakeup oops
+From: Daniel J Blueman <daniel@quora.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        Yijing Wang <wangyijing@huawei.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 February 2013 15:08, Damien Wyart <damien.wyart@gmail.com> wrote:
-> * Vincent Guittot <vincent.guittot@linaro.org> [2013-02-13 13:08]:
->> Damien,
->> Regarding your sched_domain config and especially the flags field, you
->> should not be impacted by my patch because
->> - need_active_balance is the only new place that use env->src_cpu in
->> the load_balance function
->> - and your machine will never test the condition: "env->src_cpu >
->> env->dst_cpu" in need_active_balance because  SD_ASYM_PACKING is not
->> set in your config
+On 12 February 2013 03:49, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Monday, February 11, 2013 08:27:49 PM Rafael J. Wysocki wrote:
+>> On Monday, February 11, 2013 12:01:37 PM Bjorn Helgaas wrote:
+>> > [+cc Rafael]
+>> >
+>> > On Mon, Feb 11, 2013 at 10:08 AM, Daniel J Blueman <daniel@quora.org> wrote:
+>> > > On 11 February 2013 21:03, Daniel J Blueman <daniel@quora.org> wrote:
+>> > >> With 3.8-rc7, when unplugging the Thunderbolt ethernet adapter (bus 0a
+>> > >> [1]) on a Macbook Pro 10,1, we see the PCIe port correctly released:
+>> > >>
+>> > >> pciehp 0000:06:03.0:pcie24: Card not present on Slot(3)
+>> > >> tg3 0000:0a:00.0: tg3_abort_hw timed out, TX_MODE_ENABLE will not
+>> > >> clear MAC_TX_MODE=ffffffff
+>> > >> tg3 0000:0a:00.0 eth0: No firmware running
+>> > >> tg3 0000:0a:00.0 eth0: Link is down
+>> > >> [sched_delayed] sched: RT throttling activated
+>> > >> pcieport 0000:00:01.1: System wakeup enabled by ACPI
+>> > >> pciehp 0000:09:00.0:pcie24: unloading service driver pciehp
+>> > >> pci_bus 0000:0a: busn_res: [bus 0a] is released
+>> > >> pci_bus 0000:09: busn_res: [bus 09-0a] is released
+>> > >>
+>> > >> After some activity later (eg I can reproduce this by switching to a
+>> > >> text console and back), often we'll see an oops:
+>> > >>
+>> > >> Unable to handle kernel paging request at 0000000000001070
+>> > >> pci_pme_list_scan+0x3d/0xe0
+>> > >> Call Trace:
+>> > >> process_one_work+0x193
+>> > >> ? process_one_work+0x131
+>> > >> ? pci_pme_wakeup+0x60
+>> > >> worker_thread+0x15d
+>> > >>
+>> > >> (gdb) list *(pci_pme_list_scan+0x3d)
+>> > >> 0xffffffff8123f6dd is in pci_pme_list_scan (drivers/pci/pci.c:1556).
+>> > >> 1551                                    /*
+>> > >> 1552                                     * If bridge is in low power state, the
+>> > >> 1553                                     * configuration space of subordinate devices
+>> > >> 1554                                     * may be not accessible
+>> > >> 1555                                     */
+>> > >> 1556                                    if (bridge && bridge->current_state != PCI_D0)
+>> > >> 1557                                            continue;
+>> > >> 1558                                    pci_pme_wakeup(pme_dev->dev, NULL);
+>> > >> 1559                            } else {
+>> > >> 1560                                    list_del(&pme_dev->list);
+>> > >>
+>> > >> Since a panic in vsnprintf happens after the oops (hence I can't catch
+>> > >> it with EFI pstore), it is almost certainly significant heap
+>> > >> corruption; this would explain why pme_dev became null (the load has
+>> > >> been ordered ahead).
+>> > >>
+>> > >> I'll see what I can find out with memory poisoning and list debugging.
+>> > >
+>> > > Enabling a bunch of related debugging, we see pme_dev is non-null and:
+>> > >
+>> > > BUG: Unable to handle NULL pointer dereference at
+>> > > pci_bus_read_config_word+0x6c
+>> > > PGD 26314c067 PUD 2633f9067 PMD 0
+>> > > Oops: 0000 [#1] SMP
+>> > > pci_check_pme_status+0x4f
+>> > > pci_pme_wakeup+0x21
+>> > > pci_pme_list_scan+0xd5
+>> > > process_one_work+0x1ca
+>> > > ? process_one_work+0x160
+>> > > ? pci_pme_wakeup+0x60
+>> > > worker_thread+0x14e
+>> > >
+>> > > Anyway, it looks like the device being unplugged wasn't removed from
+>> > > pci_pme_list as pci_pme_active(dev, false) wasn't called.
+>> > >
+>> > > From a quick review, I wasn't able to find the right place in the
+>> > > call-chain which I only see releases the child busses and PCIe port
+>> > > drivers. Anyone?
+>> >
+>> > It looks like drivers *add* devices to pci_pme_list when they use
+>> > pci_enable_wake() or pci_wake_from_d3().  But many drivers never
+>> > remove their devices, and I don't see any place where the core does it
+>> > either.  My guess is we need to remove it in pci_stop_dev() (we
+>> > already do pcie_aspm_exit_link_state() there) or somewhere similar.
+>>
+>> Yes, we should call pci_pme_active(dev, false) somewhere in there I think.
+>> It's fine to call that even if PME was not "active" before.
 >
->> Have you tested the patch with others that could have modified the
->> load_balance function ?
+> Daniel, I wonder if the patch below helps?
 >
-> Yes, sorry, I should have been more precise in my initial report: your
-> patch was not applied on top of vanilla 3.8-rc7, but a few other patches
-> were also present. Seems the ones impacting load_balance are from
-> Frederic's nohz work
-> (http://git.kernel.org/?p=linux/kernel/git/frederic/linux-dynticks.git;a=shortlog;h=refs/heads/3.8-rc6-nohz4)
+> Rafael
 >
+>
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+>  drivers/pci/remove.c |    2 ++
+>  1 file changed, 2 insertions(+)
+>
+> Index: test/drivers/pci/remove.c
+> ===================================================================
+> --- test.orig/drivers/pci/remove.c
+> +++ test/drivers/pci/remove.c
+> @@ -19,6 +19,8 @@ static void pci_free_resources(struct pc
+>
+>  static void pci_stop_dev(struct pci_dev *dev)
+>  {
+> +       pci_pme_active(dev, false);
+> +
+>         if (dev->is_added) {
+>                 pci_proc_detach_device(dev);
+>                 pci_remove_sysfs_dev_files(dev);
 
-ok
-thanks for the pointer. i'm going to have a look
+Indeed, the oops would prevent hitting the lockdep warning, which is a
+secondary matter.
 
+As it stands, this fix prevents the fatal oops, so IMHO is urgent
+material for 3.8-final. I can't prove that is_added will always be
+true, so let's stick with your patch.
 
-> The patches from there modifying load_balance are:
-> - "sched: Update nohz rq clock before searching busiest group on load balancing"
-> - "sched: Update clock of nohz busiest rq before balancing"
->
-> In this test, I did not use any kernel parameter related to this
-> patchset (full_nohz, etc.).
->
-> I am adding Frederic in Cc, not sure if the breakage is to be
-> investigated on your side or his...
-
-probably both
-
->
->
-> Thanks for your explanations,
-> --
-> Damien
+Tested-by: Daniel J Blueman <daniel@quora.org>
+-- 
+Daniel J Blueman
