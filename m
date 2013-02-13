@@ -1,50 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756952Ab3BMNn3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 08:43:29 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42072 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755811Ab3BMNn2 (ORCPT
+	id S1757172Ab3BMNoU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 08:44:20 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:57450 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755904Ab3BMNoS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 08:43:28 -0500
-Date: Wed, 13 Feb 2013 13:42:07 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Suman Anna <s-anna@ti.com>, Greg Kroah-Hartman <greg@linuxfoundation.org>,
-        Tony Lindgren <tony@atomide.com>, Arnd Bergmann <arnd@arndb.de>,
-        Ohad Ben-Cohen <ohad@wizery.com>, Paul Walmsley <paul@pwsan.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Loic Pallardy <loic.pallardy@st.com>,
-        Omar Ramirez Luna <omar.ramirez@copitl.com>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
-        Dom Cobley <popcornmix@gmail.com>, Wim Van Sebroeck <wim@iguana.be>,
-        Felipe Contreras <felipe.contreras@nokia.com>,
-        Tejun Heo <tj@kernel.org>, Omar Ramirez Luna <omar.luna@linaro.org>
-Subject: Re: [PATCH v2 00/13] drivers: mailbox: framework creation
-Message-ID: <20130213134207.GN17852@n2100.arm.linux.org.uk>
-References: <1360645032-9668-1-git-send-email-s-anna@ti.com> <CACRpkdZayg-X11ZRnh2Z0i+egBn8Fhwya-6_Yr8wcv+6s0CVqQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdZayg-X11ZRnh2Z0i+egBn8Fhwya-6_Yr8wcv+6s0CVqQ@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Wed, 13 Feb 2013 08:44:18 -0500
+Message-ID: <1360763044.3524.367.camel@falcor1.watson.ibm.com>
+Subject: Re: [PATCH 2/2] ima: Support appraise_type=imasig_optional
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 13 Feb 2013 08:44:04 -0500
+In-Reply-To: <CALLzPKaHLSg0TromnTvpEVroBUtPJE3TwF4RmcA2dtkuB5H4hQ@mail.gmail.com>
+References: <1360613493-11969-1-git-send-email-vgoyal@redhat.com>
+	 <1360613493-11969-3-git-send-email-vgoyal@redhat.com>
+	 <CALLzPKZA92MxJYjC+OR-KDv4rHQRgKSBHSAY2fOZsEDxiO11yA@mail.gmail.com>
+	 <1360760195.3524.355.camel@falcor1.watson.ibm.com>
+	 <CALLzPKaHLSg0TromnTvpEVroBUtPJE3TwF4RmcA2dtkuB5H4hQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13021313-2876-0000-0000-0000053CD441
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 13, 2013 at 02:36:32PM +0100, Linus Walleij wrote:
-> On Tue, Feb 12, 2013 at 5:56 AM, Suman Anna <s-anna@ti.com> wrote:
+On Wed, 2013-02-13 at 15:13 +0200, Kasatkin, Dmitry wrote:
+> On Wed, Feb 13, 2013 at 2:56 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> > On Wed, 2013-02-13 at 14:31 +0200, Kasatkin, Dmitry wrote:
+> >> On Mon, Feb 11, 2013 at 10:11 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> >
+> >> > @@ -158,7 +165,8 @@ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
+> >> >         }
+> >> >         switch (xattr_value->type) {
+> >> >         case IMA_XATTR_DIGEST:
+> >> > -               if (iint->flags & IMA_DIGSIG_REQUIRED) {
+> >> > +               if (iint->flags & IMA_DIGSIG_REQUIRED ||
+> >> > +                   iint->flags & IMA_DIGSIG_OPTIONAL) {
+> >> >                         cause = "IMA signature required";
+> >> >                         status = INTEGRITY_FAIL;
+> >> >                         break;
+> >>
+> >> This looks a bit odd... If "optional" signature is missing  - we fail..
+> >> It is optional... Why we should fail?
+> >
+> > 'imasig_optional' does not only mean that the signature is optional, but
+> > also implies that it has to be a digital signature, not a hash.  This
+> > latter part is what IMA_DIGSIG_REQUIRED means.
+> >
+> > If 'imasig_optional' set both 'IMA_DIGSIG_OPTIONAL' and
+> > 'IMA_DIGSIG_REQUIRED', then this change wouldn't be necessary.
+> >
+> > IMA_DIGSIG_REQUIRED would enforce that it is a signature.
+> > IMA_DIGSIG_OPTIONAL would fail only for files with invalid signatures.
+> >
 > 
-> > I have hosted the series at [3].
-> > [3] https://github.com/sumananna/mailbox/commits/dbx500-prcmu-mailbox
+> It sounds odd that optional signature is actually required.
+> Optional for me means that it may be there or may be not.
+> If it is not there, then it may be hash or nothing.
 > 
-> Suman, I suggest you ask Stepgen Rothwell to include this
-> branch into the linux-next tree, so we can get some
-> rotation of this stuff in preparation for the v3.10 merge
-> window. (It's not going in now anyway.)
+> I see it is more logical if it is "appraise_type=optional",
+> which means that we might have no xattr value, hash or signature.
+> It if happens to be a signature, then IMA_DIGSIG flag will be set.
 
-Best wait until after v3.9-rc1 - remember that linux-next is supposed to
-be a staging tree for the _next_ merge window only.
+Right, 'appraise_type=' could have been defined either as a comma
+separated list of options (eg. appraise_type=imassig,optional) or, as
+Vivek implemented, a new option.  Eventually, we will need to extend
+'appraise_type=' (eg. required algorithm), but for now I don't have a
+problem with the new option.
+
+thanks,
+
+Mimi
+
+> I asked Vivek to send a policy file he uses in his system.
+> I would like to see how system configured as a whole...
+> 
+> - Dmitry
+
+
