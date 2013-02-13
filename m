@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760421Ab3BMRpy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 12:45:54 -0500
-Received: from kanga.kvack.org ([205.233.56.17]:51648 "EHLO kanga.kvack.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760176Ab3BMRpx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 12:45:53 -0500
-Date: Wed, 13 Feb 2013 12:45:52 -0500
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Kent Overstreet <koverstreet@google.com>
-Cc: linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/2] aio: correct calculation of available events
-Message-ID: <20130213174551.GA19958@kvack.org>
-Mime-Version: 1.0
+	id S964844Ab3BMRqU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 12:46:20 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:47594 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934405Ab3BMRqS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 12:46:18 -0500
+Date: Wed, 13 Feb 2013 18:46:20 +0100
+From: Marcin Slusarz <marcin.slusarz@gmail.com>
+To: Ben Skeggs <bskeggs@redhat.com>
+Cc: Arend van Spriel <arend@broadcom.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Daniel J Blueman <daniel@quora.org>
+Subject: Re: [ 61/61] drm/nouveau: add lockdep annotations
+Message-ID: <20130213174620.GA3127@joi.lan>
+References: <20130212203417.890993903@linuxfoundation.org>
+ <20130212203426.021116247@linuxfoundation.org>
+ <1360726523.3642.4.camel@thor.lan>
+ <511B5DD0.1040103@broadcom.com>
+ <1360748621.10139.0.camel@localhost>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <1360748621.10139.0.camel@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the number of available events in the ring buffer is calculated,
-the avail calculation is incorrect when head == tail.  This is harmless
-in aio_read_events_ring(), but in free_ioctx() leads to the subsequent
-WARN_ON(atomic_read(&ctx->reqs_available) > ctx->nr).  Correct this.
+On Wed, Feb 13, 2013 at 07:43:41PM +1000, Ben Skeggs wrote:
+> On Wed, 2013-02-13 at 10:33 +0100, Arend van Spriel wrote:
+> > On 02/13/2013 04:35 AM, Peter Hurley wrote:
+> > > On Tue, 2013-02-12 at 12:35 -0800, Greg Kroah-Hartman wrote:
+> > >> 3.7-stable review patch.  If anyone has any objections, please let me know.
+> > > 
+> > > FWIW, I never saw this on 3.7 but it happened 1st time on 3.8-rcX
+> > > I haven't tested this fix either.
+> > 
+> > Dito.
+> > 
+> > Gr. AvS
+> Yeah, I don't believe anything could trigger it in 3.7.  It doesn't hurt
+> anyway.
 
-Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
----
- fs/aio.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+Client locking splat is definitely triggerable on 3.7:
+https://lkml.org/lkml/2012/10/16/251
 
-diff --git a/fs/aio.c b/fs/aio.c
-index 24ba228..dc52b0c 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -337,7 +337,8 @@ static void free_ioctx(struct kioctx *ctx)
- 	while (atomic_read(&ctx->reqs_available) < ctx->nr) {
- 		wait_event(ctx->wait, head != ctx->shadow_tail);
- 
--		avail = (head < ctx->shadow_tail ? ctx->shadow_tail : ctx->nr) - head;
-+		avail = (head <= ctx->shadow_tail ?
-+			 ctx->shadow_tail : ctx->nr) - head;
- 
- 		atomic_add(avail, &ctx->reqs_available);
- 		head += avail;
-@@ -884,7 +885,7 @@ static long aio_read_events_ring(struct kioctx *ctx,
- 		goto out;
- 
- 	while (ret < nr) {
--		long avail = (head < ctx->shadow_tail
-+		long avail = (head <= ctx->shadow_tail
- 			      ? ctx->shadow_tail : ctx->nr) - head;
- 		struct io_event *ev;
- 		struct page *page;
--- 
-1.7.4.1
+Subdev locking splat is triggerable since 3.7 has "drm/nouveau: add locking
+around instobj list operations" and "drm/nvc0/fb: fix crash when different
+mutex is used to protect same list" (both applied for 3.7.3).
 
-
--- 
-"Thought is the essence of where you are now."
+Marcin
