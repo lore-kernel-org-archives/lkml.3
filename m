@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759589Ab3BMORG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 09:17:06 -0500
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:63524 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759384Ab3BMORE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 09:17:04 -0500
+	id S1759645Ab3BMOR4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 09:17:56 -0500
+Received: from mga11.intel.com ([192.55.52.93]:20072 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756042Ab3BMORz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 09:17:55 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,657,1355126400"; 
+   d="scan'208";a="286717061"
+Message-ID: <511BA08E.9050707@intel.com>
+Date: Wed, 13 Feb 2013 22:17:50 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <20130211175653.GQ4801@atomide.com>
-References: <1360191049-24017-1-git-send-email-ruslan.bilovol@ti.com>
-	<1360191049-24017-3-git-send-email-ruslan.bilovol@ti.com>
-	<20130211175653.GQ4801@atomide.com>
-Date: Wed, 13 Feb 2013 16:17:03 +0200
-X-Google-Sender-Auth: j2bWCiMxC8PQA9rj0VngFiS-gCw
-Message-ID: <CAB=otbS6NfHYZc3B__octSM_Jc6g-hZAtcYnnrb43Pc4cx3OAw@mail.gmail.com>
-Subject: Re: [PATCH v3 2/2] ARM: OMAP2+: Export SoC information to userspace
-From: Ruslan Bilovol <ruslan.bilovol@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Peter Zijlstra <peterz@infradead.org>
+CC: torvalds@linux-foundation.org, mingo@redhat.com, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch v4 01/18] sched: set SD_PREFER_SIBLING on MC domain to
+ reduce a domain level
+References: <1358996820-23036-1-git-send-email-alex.shi@intel.com>  <1358996820-23036-2-git-send-email-alex.shi@intel.com> <1360663879.4485.2.camel@laptop>
+In-Reply-To: <1360663879.4485.2.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 11, 2013 at 7:56 PM, Tony Lindgren <tony@atomide.com> wrote:
-> * Ruslan Bilovol <ruslan.bilovol@ti.com> [130206 14:54]:
->> --- a/arch/arm/mach-omap2/io.c
->> +++ b/arch/arm/mach-omap2/io.c
->> @@ -602,6 +602,7 @@ void __init omap4430_init_late(void)
->>       omap2_common_pm_late_init();
->>       omap4_pm_init();
->>       omap2_clk_enable_autoidle_all();
->> +     omap_soc_device_init();
->>  }
->>  #endif
->
-> Looks like this should be called for all omaps instead
-> of just omap4430?
->
-> I suggest you create omap_common_init_late() that
-> calls all the common init_late functions:
->
-> static void __init omap_common_init_late(void)
-> {
->         omap_mux_late_init();
->         omap2_common_pm_late_init();
->         omap_soc_device_init();
-> }
->
-> Needs to be verified that these really are common to
-> all omap2+ though :)
+On 02/12/2013 06:11 PM, Peter Zijlstra wrote:
+> On Thu, 2013-01-24 at 11:06 +0800, Alex Shi wrote:
+>> The domain flag SD_PREFER_SIBLING was set both on MC and CPU domain at
+>> frist commit b5d978e0c7e79a, and was removed uncarefully when clear up
+>> obsolete power scheduler. Then commit 6956dc568 recover the flag on CPU
+>> domain only. It works, but it introduces a extra domain level since this
+>> cause MC/CPU different.
+>>
+>> So, recover the the flag in MC domain too to remove a domain level in
+>> x86 platform.
 
-Yes, you are right, currently these functions are common to all
-init_late callbacks that we have right now in io.c
-I will prepare additional patch soon...
+May I still miss the points of this patch:
+Without this patch, the domain levels on my machines are:
+SMT, MC, CPU, NUMA
 
->
-> Regards,
->
-> Tony
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+with this patch, the domain levels are:
+SMT, MC, NUMA
+
+-- 
+Thanks
+    Alex
