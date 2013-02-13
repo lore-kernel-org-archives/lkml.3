@@ -1,56 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934436Ab3BMQkM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 11:40:12 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:44785 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1759377Ab3BMQkJ (ORCPT
+	id S934443Ab3BMQkm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 11:40:42 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:36164 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934262Ab3BMQkk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 11:40:09 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19nvnkAOsFoojtZPitC0FU/
-Date: Wed, 13 Feb 2013 08:40:05 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Jon Hunter <jon-hunter@ti.com>
-Cc: Sourav Poddar <sourav.poddar@ti.com>, balbi@ti.com,
-        santosh.shilimkar@ti.com, b-cousson@ti.com, linux-omap@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/5] arm: dts: omap4-panda: Add I2c pinctrl data
-Message-ID: <20130213164004.GE7144@atomide.com>
-References: <1360747710-1532-1-git-send-email-sourav.poddar@ti.com>
- <511BB7CE.1020505@ti.com>
- <511BBA1B.9050501@ti.com>
+	Wed, 13 Feb 2013 11:40:40 -0500
+Message-ID: <511BC204.7060006@arm.com>
+Date: Wed, 13 Feb 2013 16:40:36 +0000
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <511BBA1B.9050501@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Pawel Moll <Pawel.Moll@arm.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>
+Subject: Re: [RFC PATCH] virt_mmio: fix signature checking for BE guests
+References: <1360765538-18097-1-git-send-email-marc.zyngier@arm.com>  <1360768102.4045.107.camel@hornet> <511BB134.30003@arm.com> <1360770379.4045.115.camel@hornet>
+In-Reply-To: <1360770379.4045.115.camel@hornet>
+X-Enigmail-Version: 1.4.6
+X-OriginalArrivalTime: 13 Feb 2013 16:40:37.0664 (UTC) FILETIME=[DA2BC200:01CE0A08]
+X-MC-Unique: 113021316403802301
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Jon Hunter <jon-hunter@ti.com> [130213 08:10]:
-> On 02/13/2013 09:57 AM, Jon Hunter wrote:
-> > On 02/13/2013 03:28 AM, Sourav Poddar wrote:
-> > 
-> > A quick look at the data manual shows that omap4430 and omap4460 has the
-> > same pin mux options for i2c. Furthermore, the data manual shows only
-> > one mux option for i2c1-4. Therefore, should these mux options be placed
-> > in omap4.dtsi? Boards not using specific i2c controllers can disabled
-> > them in there board dts file (same way we do for mmc).
+On 13/02/13 15:46, Pawel Moll wrote:
+> On Wed, 2013-02-13 at 15:28 +0000, Marc Zyngier wrote:
+>>>> Fix it by encoding the magic as an integer instead of a string.
+>>>> So I'm not completely sure this is the right fix, 
+>>>
+>>> It seems right, however...
+>>>
+>>>> - Using __raw_readl() instead. Is that a generic enough API?
+>>>>
+>>> ... this implies that either the spec is wrong (as it should say: the
+>>> device registers are always LE, in the PCI spirit) or all readl()s & co.
+>>> should be replaced with __raw equivalents.
+>>
+>> Well, the spec clearly says that the registers reflect the endianess of
+>> the guest, and it makes sense: when performing the MMIO access, KVM
+>> needs to convert between host and guest endianess.
 > 
-> I guess for i2c, a given omap4 board may use external pull-ups and not
-> use the internal ones and so putting this in the omap4.dtsi may not be
-> desirable. However, it seems that a common omap4-panda.dtsi could be
-> used here.
+> The virtio-mmio spec says so because it seemed like a good idea at the
+> time ;-) after reading the PCI device spec. But - as I said - I missed
+> the fact that the readl()-like accessors will always do le32_to_cpu().
+> Apparently ioread32() does the same (there's a separate ioread32be()).
 
-Yes the mux options need to be board specific. If something is complex
-and  common, it's best to put it into omap4-i2c1.dts file that can be
-included from the board specific .dts files as needed.
+Maybe. There's so much byte swapping at every possible level that my
+head spins... ;-)
 
-Regards,
+> So I'm not sure that the spec is correct in this aspect any more. Maybe
+> it should specify the registers as LE always, similarly to PCI? This
+> problem is already covered by "2.3.1 A Note on Virtqueue Endianness" in
+> the spec...
 
-Tony
+This section basically covers shared memory, and there is not much we
+can do about it. When it comes to the registers (that actually trap into
+the hypervisor), it probably makes sense to declare them as LE indeed.
+
+>>> Having said that, does the change make everything else work with a BE
+>>> guest? (I assume we're talking about the guest being BE, right? ;-) If
+>>> so it means that the host is not following the current spec and it
+>>> treats all the registers as LE.
+>>
+>> Yes, I only care about a BE guest. And no, not much is actually working
+>> (kvmtool is not happy about the guest addresses it finds in the
+>> virtio-ring). Need to dive into it and understand what needs to be fixed...
+> 
+> Do the other registers like queuenum make sense? Could it be that the
+> page number of the ring you're getting has wrong endianness?
+
+The addresses are definitely wrong. kvmtool is spitting things like:
+Warning: unable to translate guest address 0xe8fd828f00000000 to host
+
+which tends to indicate that yes, page numbers are the other way around.
+Cross-endianness shared memory fun.
+
+	M.
+-- 
+Jazz is not dead. It just smells funny...
+
