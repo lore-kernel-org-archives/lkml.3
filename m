@@ -1,80 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751725Ab3BMF0g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 00:26:36 -0500
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:38174 "EHLO
-	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751232Ab3BMF0f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 00:26:35 -0500
-Message-ID: <1360733189.3634.8.camel@thor.lan>
-Subject: [next-20130204] nouveau: lockdep warning (not the same as the
- subdev lockdep warning)
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Ben Skeggs <bskeggs@redhat.com>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Date: Wed, 13 Feb 2013 00:26:29 -0500
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-0pjh1 
-Mime-Version: 1.0
+	id S1752153Ab3BMFdN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 00:33:13 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:49872 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751316Ab3BMFdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 00:33:11 -0500
+Message-ID: <511B2581.2050706@ti.com>
+Date: Wed, 13 Feb 2013 11:02:49 +0530
+From: a0131647 <sourav.poddar@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+MIME-Version: 1.0
+To: Simon Glass <sjg@chromium.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bill Pemberton <wfp5p@virginia.edu>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Javier Martinez Canillas <javier@dowhile0.org>,
+        Felipe Balbi <balbi@ti.com>,
+        Alban Bedel <alban.bedel@avionic-design.de>,
+        <linux-input@vger.kernel.org>
+Subject: Re: [PATCH v2 5/6] Input: matrix-keymap: Add function to read the
+ new DT binding
+References: <1360723347-28701-1-git-send-email-sjg@chromium.org> <1360723347-28701-6-git-send-email-sjg@chromium.org>
+In-Reply-To: <1360723347-28701-6-git-send-email-sjg@chromium.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Got this lockdep warning straightaway during boot:
+Hi,
+On Wednesday 13 February 2013 08:12 AM, Simon Glass wrote:
+> We now have a binding which adds two parameters to the matrix keypad DT
+> node. This is separate from the GPIO-driven matrix keypad binding, and
+> unfortunately incompatible, since that uses row-gpios/col-gpios for the
+> row and column counts.
+>
+> So the easiest option here is to provide a function for non-GPIO drivers
+> to use to decode the binding.
+>
+> Note: We could in fact create an entirely separate structure to hold
+> these two fields, but it does not seem worth it, yet. If we have more
+> parameters then we can add this, and then refactor each driver to hold
+> such a structure.
+>
+> Signed-off-by: Simon Glass<sjg@chromium.org>
+> ---
+> Changes in v2:
+> - Add new patch to decode matrix-keypad DT binding
+>
+>   drivers/input/keyboard/lpc32xx-keys.c   | 11 ++++++-----
+>   drivers/input/keyboard/omap4-keypad.c   | 16 +++++-----------
+>   drivers/input/keyboard/tca8418_keypad.c | 11 +++++++----
+>   drivers/input/matrix-keymap.c           | 20 ++++++++++++++++++++
+>   include/linux/input/matrix_keypad.h     | 11 +++++++++++
+>   5 files changed, 49 insertions(+), 20 deletions(-)
+>
+> diff --git a/drivers/input/keyboard/lpc32xx-keys.c b/drivers/input/keyboard/lpc32xx-keys.c
+> index 1b8add6..4218143 100644
+> --- a/drivers/input/keyboard/lpc32xx-keys.c
+> +++ b/drivers/input/keyboard/lpc32xx-keys.c
+> @@ -144,12 +144,13 @@ static int lpc32xx_parse_dt(struct device *dev,
+>   {
+>   	struct device_node *np = dev->of_node;
+>   	u32 rows = 0, columns = 0;
+> +	int err;
+>
+> -	of_property_read_u32(np, "keypad,num-rows",&rows);
+> -	of_property_read_u32(np, "keypad,num-columns",&columns);
+> -	if (!rows || rows != columns) {
+> -		dev_err(dev,
+> -			"rows and columns must be specified and be equal!\n");
+> +	err = matrix_keypad_parse_of_params(dev,&rows,&columns);
+> +	if (err)
+> +		return err;
+> +	if (rows != columns) {
+> +		dev_err(dev, "rows and columns must be equal!\n");
+>   		return -EINVAL;
+>   	}
+>
+> diff --git a/drivers/input/keyboard/omap4-keypad.c b/drivers/input/keyboard/omap4-keypad.c
+> index e25b022..1b28909 100644
+> --- a/drivers/input/keyboard/omap4-keypad.c
+> +++ b/drivers/input/keyboard/omap4-keypad.c
+> @@ -215,18 +215,12 @@ static int omap4_keypad_parse_dt(struct device *dev,
+>   				 struct omap4_keypad *keypad_data)
+>   {
+>   	struct device_node *np = dev->of_node;
+> +	int err;
+>
+> -	if (!np) {
+> -		dev_err(dev, "missing DT data");
+> -		return -EINVAL;
+> -	}
+> -
+> -	of_property_read_u32(np, "keypad,num-rows",&keypad_data->rows);
+> -	of_property_read_u32(np, "keypad,num-columns",&keypad_data->cols);
+> -	if (!keypad_data->rows || !keypad_data->cols) {
+> -		dev_err(dev, "number of keypad rows/columns not specified\n");
+> -		return -EINVAL;
+> -	}
+> +	err = matrix_keypad_parse_of_params(dev,&keypad_data->rows,
+> +					&keypad_data->cols);
+> +	if (err)
+> +		return err;
+>
+>   	if (of_get_property(np, "linux,input-no-autorepeat", NULL))
+>   		keypad_data->no_autorepeat = true;
+> diff --git a/drivers/input/keyboard/tca8418_keypad.c b/drivers/input/keyboard/tca8418_keypad.c
+> index a34cc67..4d5a6d5 100644
+> --- a/drivers/input/keyboard/tca8418_keypad.c
+> +++ b/drivers/input/keyboard/tca8418_keypad.c
+> @@ -288,17 +288,20 @@ static int tca8418_keypad_probe(struct i2c_client *client,
+>   		irq_is_gpio = pdata->irq_is_gpio;
+>   	} else {
+>   		struct device_node *np = dev->of_node;
+> -		of_property_read_u32(np, "keypad,num-rows",&rows);
+> -		of_property_read_u32(np, "keypad,num-columns",&cols);
+> +		int err;
+> +
+> +		err = matrix_keypad_parse_of_params(dev,&rows,&cols);
+> +		if (err)
+> +			return err;
+>   		rep = of_property_read_bool(np, "keypad,autorepeat");
+>   	}
+>
+> -	if (!rows || rows>  TCA8418_MAX_ROWS) {
+> +	if (rows>  TCA8418_MAX_ROWS) {
+>   		dev_err(dev, "invalid rows\n");
+>   		return -EINVAL;
+>   	}
+>
+> -	if (!cols || cols>  TCA8418_MAX_COLS) {
+> +	if (cols>  TCA8418_MAX_COLS) {
+>   		dev_err(dev, "invalid columns\n");
+>   		return -EINVAL;
+>   	}
+> diff --git a/drivers/input/matrix-keymap.c b/drivers/input/matrix-keymap.c
+> index 3ae496e..64bad81 100644
+> --- a/drivers/input/matrix-keymap.c
+> +++ b/drivers/input/matrix-keymap.c
+> @@ -50,6 +50,25 @@ static bool matrix_keypad_map_key(struct input_dev *input_dev,
+>   }
+>
+>   #ifdef CONFIG_OF
+> +int matrix_keypad_parse_of_params(struct device *dev,
+> +				  unsigned int *rows, unsigned int *cols)
+> +{
+> +	struct device_node *np = dev->of_node;
+> +
+> +	if (!np) {
+> +		dev_err(dev, "missing DT data");
+> +		return -EINVAL;
+> +	}
+> +	of_property_read_u32(np, "keypad,num-rows", rows);
+> +	of_property_read_u32(np, "keypad,num-columns", cols);
+> +	if (!*rows || !*cols) {
+> +		dev_err(dev, "number of keypad rows/columns not specified\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+>   static int matrix_keypad_parse_of_keymap(const char *propname,
+>   					 unsigned int rows, unsigned int cols,
+>   					 struct input_dev *input_dev)
+> @@ -112,6 +131,7 @@ static int matrix_keypad_parse_of_keymap(const char *propname,
+>    *	tree support is enabled).
+>    * @rows: number of rows in target keymap array
+>    * @cols: number of cols in target keymap array
+> + *   (if either/both is 0 then they will be read from the FDT if available)
+>    * @keymap: expanded version of keymap that is suitable for use by
+>    * matrix keyboard driver
+>    * @input_dev: input devices for which we are setting up the keymap
+> diff --git a/include/linux/input/matrix_keypad.h b/include/linux/input/matrix_keypad.h
+> index 5f3aa6b..01a30cf 100644
+> --- a/include/linux/input/matrix_keypad.h
+> +++ b/include/linux/input/matrix_keypad.h
+> @@ -81,4 +81,15 @@ int matrix_keypad_build_keymap(const struct matrix_keymap_data *keymap_data,
+>   			       unsigned short *keymap,
+>   			       struct input_dev *input_dev);
+>
+> +/**
+> + * matrix_keypad_parse_of_params() - Read parameters from matrix-keypad node
+> + *
+> + * @dev: Device containing of_node
+> + * @rows: Returns number of matrix rows
+> + * @cols: Returns number of matrix columns
+> + * @return 0 if OK,<0 on error
+> + */
+> +int matrix_keypad_parse_of_params(struct device *dev,
+> +				  unsigned int *rows, unsigned int *cols);
+> +
+>   #endif /* _MATRIX_KEYPAD_H */
+Looks good to me.You can add
+Reviewed-by: Sourav Poddar <sourav.poddar@ti.com>
 
-[    7.435890] =============================================
-[    7.435891] [ INFO: possible recursive locking detected ]
-[    7.435893] 3.8.0-next-20130204+pcipatch-xeon+lockdep #20130204+pcipatch Not tainted
-[    7.435893] ---------------------------------------------
-[    7.435895] modprobe/255 is trying to acquire lock:
-[    7.435942]  (&dmac->lock){+.+...}, at: [<ffffffffa01767c3>] evo_wait+0x43/0xf0 [nouveau]
-[    7.435942] 
-[    7.435942] but task is already holding lock:
-[    7.435964]  (&dmac->lock){+.+...}, at: [<ffffffffa01767c3>] evo_wait+0x43/0xf0 [nouveau]
-[    7.435964] 
-[    7.435964] other info that might help us debug this:
-[    7.435965]  Possible unsafe locking scenario:
-[    7.435965] 
-[    7.435966]        CPU0
-[    7.435967]        ----
-[    7.435968]   lock(&dmac->lock);
-[    7.435970]   lock(&dmac->lock);
-[    7.435970] 
-[    7.435970]  *** DEADLOCK ***
-[    7.435970] 
-[    7.435971]  May be due to missing lock nesting notation
-[    7.435971] 
-[    7.435973] 9 locks held by modprobe/255:
-[    7.435979]  #0:  (&__lockdep_no_validate__){......}, at: [<ffffffff814ce26b>] __driver_attach+0x5b/0xb0
-[    7.435982]  #1:  (&__lockdep_no_validate__){......}, at: [<ffffffff814ce279>] __driver_attach+0x69/0xb0
-[    7.436001]  #2:  (drm_global_mutex){+.+.+.}, at: [<ffffffffa0065e6d>] drm_get_pci_dev+0xbd/0x2a0 [drm]
-[    7.436012]  #3:  (registration_lock){+.+.+.}, at: [<ffffffff81402855>] register_framebuffer+0x25/0x2f0
-[    7.436016]  #4:  (&fb_info->lock){+.+.+.}, at: [<ffffffff81401736>] lock_fb_info+0x26/0x60
-[    7.436023]  #5:  ((fb_notifier_list).rwsem){.+.+.+}, at: [<ffffffff81096466>] __blocking_notifier_call_chain+0x56/0xc0
-[    7.436035]  #6:  (&dev->mode_config.mutex){+.+.+.}, at: [<ffffffffa0069d6a>] drm_modeset_lock_all+0x2a/0x70 [drm]
-[    7.436046]  #7:  (&crtc->mutex){+.+.+.}, at: [<ffffffffa0069d94>] drm_modeset_lock_all+0x54/0x70 [drm]
-[    7.436068]  #8:  (&dmac->lock){+.+...}, at: [<ffffffffa01767c3>] evo_wait+0x43/0xf0 [nouveau]
-[    7.436068] 
-[    7.436068] stack backtrace:
-[    7.436070] Pid: 255, comm: modprobe Not tainted 3.8.0-next-20130204+pcipatch-xeon+lockdep #20130204+pcipatch
-[    7.436072] Call Trace:
-[    7.436077]  [<ffffffff810d0e87>] __lock_acquire+0x697/0x1a80
-[    7.436080]  [<ffffffff810d28f1>] lock_acquire+0xa1/0x200
-[    7.436100]  [<ffffffffa01767c3>] ? evo_wait+0x43/0xf0 [nouveau]
-[    7.436121]  [<ffffffffa01767c3>] ? evo_wait+0x43/0xf0 [nouveau]
-[    7.436125]  [<ffffffff817946d3>] mutex_lock_nested+0x63/0x3a0
-[    7.436145]  [<ffffffffa01767c3>] ? evo_wait+0x43/0xf0 [nouveau]
-[    7.436148]  [<ffffffff8179490e>] ? mutex_lock_nested+0x29e/0x3a0
-[    7.436168]  [<ffffffffa01767c3>] ? evo_wait+0x43/0xf0 [nouveau]
-[    7.436170]  [<ffffffff810d32ef>] ? mark_held_locks+0xaf/0x110
-[    7.436190]  [<ffffffffa01767c3>] evo_wait+0x43/0xf0 [nouveau]
-[    7.436212]  [<ffffffffa0176d3c>] evo_sync+0x5c/0xf0 [nouveau]
-[    7.436233]  [<ffffffffa0178e7d>] nv50_display_flip_next+0x5ad/0x5c0 [nouveau]
+Also tested this patch on omap4430 sdp, keypad works fine. You can also 
+add a
+Tested-by: Sourav Poddar <sourav.poddar@ti.com>
 
-
-Regards,
-Peter Hurley
-
+~Sourav
