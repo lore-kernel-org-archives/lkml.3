@@ -1,80 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760440Ab3BMRuz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 12:50:55 -0500
-Received: from nm25.access.bullet.mail.sp2.yahoo.com ([98.139.44.152]:45878
-	"EHLO nm25.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760179Ab3BMRuy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 12:50:54 -0500
-X-Yahoo-Newman-Id: 618144.32703.bm@smtp107.biz.mail.ne1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: ZJ11omkVM1nWo8TqLAvJcW6_xwq8rl5hgR.W6FP2EAcyLoH
- REjrJW_Sxx9oHY0Of.F1OsBVAGXPX0UnY3ZhZ0A7RPWwUutZw7P8vsyF1d76
- R6DuTC1H1deIG9UROi94YTh5n2S0U3cSIdIMrbpYzlLcEtq1NxISVly4js.p
- kTqNHTKsRRiAlqIGeiBOvw7d8asXN1NjOIK7qqofzz84zuAHXQxAMVulU.vQ
- bTCJ2699prUcZxNEyyqBNK6VZ0EnS5S_5UtdR7H8DenMl9avuFOqwIn_lpBc
- AbxxmtI6d6AspF6B9NrW1G38goPRveUspfHA67cLgpnayGJt4JSNxT1ee.Ne
- XEqX8ytM4jW3QnsPQs7pspvIBS3.YioC_ub6QvUD.hxg8_Hg1KbhILa1p3zq
- nb0tRNc_o84LdV.8CD5uuN2b.gczF1rMZn8nHAcXVP9JHqkGG7rV4kWMbYjd
- AF6qG
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-Message-ID: <511BD291.1040003@schaufler-ca.com>
-Date: Wed, 13 Feb 2013 09:51:13 -0800
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	id S934579Ab3BMRvb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 12:51:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49161 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934405Ab3BMRv3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 12:51:29 -0500
+Date: Wed, 13 Feb 2013 12:51:15 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ima: Support appraise_type=imasig_optional
+Message-ID: <20130213175115.GF6750@redhat.com>
+References: <1360613493-11969-1-git-send-email-vgoyal@redhat.com>
+ <1360613493-11969-3-git-send-email-vgoyal@redhat.com>
+ <CALLzPKZA92MxJYjC+OR-KDv4rHQRgKSBHSAY2fOZsEDxiO11yA@mail.gmail.com>
+ <1360760195.3524.355.camel@falcor1.watson.ibm.com>
+ <CALLzPKaHLSg0TromnTvpEVroBUtPJE3TwF4RmcA2dtkuB5H4hQ@mail.gmail.com>
+ <1360763044.3524.367.camel@falcor1.watson.ibm.com>
+ <CALLzPKbdrvsPuH9t19rvQqGZ=0+abPuWPNke4FLsadj0ORieJg@mail.gmail.com>
 MIME-Version: 1.0
-To: Matthew Garrett <matthew.garrett@nebula.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
-        Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH] x86: Lock down MSR writing in secure boot
-References: <dee64752-850c-4d78-b703-f47a985bc13e@email.android.com>      <CAGXu5jLAufTRm=sDST0br_WEkn4o0Hpjv2jDP2Na=cCvuM+MGg@mail.gmail.com>      <1360355671.18083.18.camel@x230.lan>      <CAGXu5jKo2PfMBO4A0ZgQcrPuj8OHNaff+CjAesOAWkZc0vB9+Q@mail.gmail.com>      <51157C9C.6030501@zytor.com> <20130208230655.GB28990@pd.tnic>      <1360366012.18083.21.camel@x230.lan> <5115A4CC.3080102@zytor.com>      <1360373383.18083.23.camel@x230.lan>      <CAGXu5j+xvJ3L5ejxtZ-Jw3F6rV7OsrE0_HZCGu_er0rH2_PwKA@mail.gmail.com>      <20130209092925.GA17728@pd.tnic> <1360422712.18083.24.camel@x230.lan>     <511AE2CC.5040705@zytor.com> <1360733962.18083.30.camel@x230.lan>    <511B2EB9.5070406@zytor.com> <1360736860.18083.33.camel@x230.lan>   <511B33BC.9080307@zytor.com> <1360737709.18083.36.camel@x230.lan>  <511BCB6E.8080102@zytor.com> <1360776399.18083.39.camel@x230.lan>
-In-Reply-To: <1360776399.18083.39.camel@x230.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALLzPKbdrvsPuH9t19rvQqGZ=0+abPuWPNke4FLsadj0ORieJg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/13/2013 9:26 AM, Matthew Garrett wrote:
-> On Wed, 2013-02-13 at 09:20 -0800, H. Peter Anvin wrote:
->
->> Problem:
->>
->> Someone adds SYS_CAP_RAWIO to some places it definitely does not
->> belong.
->>
->> Solution:
->>
->> Break all the *appropriate* (as defined)uses of SYS_CAP_RAWIO?
-> Problem:
->
-> CAP_SYS_RAWIO has been used in a bunch of arguably inappropriate places.
-> Removing CAP_SYS_RAWIO from the set of possible capabilities on a system
-> will prevent userspace from doing things that userspace should be
-> permitted to do. Removing CAP_SYS_RAWIO from the places that it
-> currently exists will allow userspace to do too much. Replacing
-> CAP_SYS_RAWIO with CAP_SYS_ADMIN will prevent userspace from doing
-> things that it can currently do.
->
-> Solution:
->
-> Admit that CAP_SYS_RAWIO is fucked up beyond rescue. Add a new
-> capability with well-defined semantics.
+On Wed, Feb 13, 2013 at 07:33:13PM +0200, Kasatkin, Dmitry wrote:
+> On Wed, Feb 13, 2013 at 3:44 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> > On Wed, 2013-02-13 at 15:13 +0200, Kasatkin, Dmitry wrote:
+> >> On Wed, Feb 13, 2013 at 2:56 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> >> > On Wed, 2013-02-13 at 14:31 +0200, Kasatkin, Dmitry wrote:
+> >> >> On Mon, Feb 11, 2013 at 10:11 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> >> >
+> >> >> > @@ -158,7 +165,8 @@ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
+> >> >> >         }
+> >> >> >         switch (xattr_value->type) {
+> >> >> >         case IMA_XATTR_DIGEST:
+> >> >> > -               if (iint->flags & IMA_DIGSIG_REQUIRED) {
+> >> >> > +               if (iint->flags & IMA_DIGSIG_REQUIRED ||
+> >> >> > +                   iint->flags & IMA_DIGSIG_OPTIONAL) {
+> >> >> >                         cause = "IMA signature required";
+> >> >> >                         status = INTEGRITY_FAIL;
+> >> >> >                         break;
+> >> >>
+> >> >> This looks a bit odd... If "optional" signature is missing  - we fail..
+> >> >> It is optional... Why we should fail?
+> >> >
+> >> > 'imasig_optional' does not only mean that the signature is optional, but
+> >> > also implies that it has to be a digital signature, not a hash.  This
+> >> > latter part is what IMA_DIGSIG_REQUIRED means.
+> >> >
+> >> > If 'imasig_optional' set both 'IMA_DIGSIG_OPTIONAL' and
+> >> > 'IMA_DIGSIG_REQUIRED', then this change wouldn't be necessary.
+> >> >
+> >> > IMA_DIGSIG_REQUIRED would enforce that it is a signature.
+> >> > IMA_DIGSIG_OPTIONAL would fail only for files with invalid signatures.
+> >> >
+> >>
+> >> It sounds odd that optional signature is actually required.
+> >> Optional for me means that it may be there or may be not.
+> >> If it is not there, then it may be hash or nothing.
+> >>
+> >> I see it is more logical if it is "appraise_type=optional",
+> >> which means that we might have no xattr value, hash or signature.
+> >> It if happens to be a signature, then IMA_DIGSIG flag will be set.
+> >
+> > Right, 'appraise_type=' could have been defined either as a comma
+> > separated list of options (eg. appraise_type=imassig,optional) or, as
+> > Vivek implemented, a new option.  Eventually, we will need to extend
+> > 'appraise_type=' (eg. required algorithm), but for now I don't have a
+> > problem with the new option.
+> >
+> 
+> It is not exactly what I meant. IOW, I do not want
+> appraise_type=imasig,optional.
+> 
+> Optional for me is that xattr value is optional. It might be nothing,
+> hash or imasig...
+> 
+> If it would happen that it contains signature, then IMA_DIGSIG flag
+> would be set,
+> and process could get needed capability as Vivek wants.
 
-You can't add a new capability where there is an existing capability
-that can be remotely argued to be appropriate.
+Hi Dmitry,
 
-If you tried to "fix" CAP_SYS_RAWIO and/or CAP_SYS_ADMIN you'd end
-up with hundreds of capabilities.
+While we are at it, I thought I will mention what else is going in my
+mind w.r.t next step.
 
-Your particular problem is *not* so important that you get a
-capability all to yourself.
+I looked at your patch. That patch looks at IMG_DIGSIG
+flag and sets bprm->unsafe with appropriate flag. It works well if 
+signature verification before loading executable alone is sufficient.
 
+But this leaves a small window open where somebody could write to the
+disk block directly (bypass filesystem) after IMA signature verification.
+Then modified image will be loaded by the binary handler.
 
-> N�����r��y���b�X��ǧv�^�)޺{.n�+����{���.�+r��n�觶��ܨ}���Ơz�&j:+v�������zZ+��+zf���h���~����i���z��w���?����&�)ߢfl===
+To avoid that, I think I will need to do appraisal after loading the file
+(with VM_LOCKED flag).
 
+I guess I will need to introduce another hook say bprm_post_load() to
+verify integrity of file.
+
+So this raises few questions.
+
+- Are two appraisals really necessary. From my use case perspective
+  initially I just need to know whether digital signature are present
+  or not and appraisal of file is not required. I guess it is one
+  optimization area to keep appraisal overhead minimum in exec() path.
+
+- When I go for second appraisal after loading file, current IMA code
+  will have success result in iint->flags. I need to figure a way out
+  to reset cache result and force reappraisal.
+
+Thanks
+Vivek
