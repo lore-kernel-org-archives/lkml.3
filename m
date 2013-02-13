@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964819Ab3BMRYi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 12:24:38 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5848 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934457Ab3BMRYg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 12:24:36 -0500
-X-Authority-Analysis: v=2.0 cv=bJmU0YCZ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=btn4o-XVpwEA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=5m8K6IL_vW8A:10 a=9fWZkWeYtoac_3kBRgwA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1360776274.23152.7.camel@gandalf.local.home>
-Subject: Re: [PREEMPT RT] SLUB and split softirq lock for v3.2-rt
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
-        Carsten Emde <C.Emde@osadl.org>
-Date: Wed, 13 Feb 2013 12:24:34 -0500
-In-Reply-To: <1360771932-27150-1-git-send-email-bigeasy@linutronix.de>
-References: <1360771932-27150-1-git-send-email-bigeasy@linutronix.de>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S934567Ab3BMRYp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 12:24:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20643 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934457Ab3BMRYm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 12:24:42 -0500
+Date: Wed, 13 Feb 2013 10:30:14 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ima: Support appraise_type=imasig_optional
+Message-ID: <20130213153013.GB6750@redhat.com>
+References: <1360620614.3524.223.camel@falcor1.watson.ibm.com>
+ <20130212142636.GA23410@redhat.com>
+ <1360689247.3524.275.camel@falcor1.watson.ibm.com>
+ <20130212185203.GA29958@redhat.com>
+ <20130212185725.GC23410@redhat.com>
+ <CALLzPKaD==fj3GSE3SnaWg5=VVNW7A_+caFzoh=_cBv8+BVKEA@mail.gmail.com>
+ <20130213132920.GA3540@redhat.com>
+ <CALLzPKbj33dQ36tcwip_LKCOXgA6GcBDbSc5s4y4cYyv2=s=nw@mail.gmail.com>
+ <20130213143807.GC3540@redhat.com>
+ <CALLzPKZ=eRWDtW6eSKPX5Qbvs_N37daiULw+T7o+DpoGfw_Z_A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALLzPKZ=eRWDtW6eSKPX5Qbvs_N37daiULw+T7o+DpoGfw_Z_A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-02-13 at 17:11 +0100, Sebastian Andrzej Siewior wrote:
-> 3.2-rt is a long term supported kernel, which lacks two RT features
-> from 3.6: SLUB support and the split softirq lock implementation.
+On Wed, Feb 13, 2013 at 05:26:27PM +0200, Kasatkin, Dmitry wrote:
+> On Wed, Feb 13, 2013 at 4:38 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > On Wed, Feb 13, 2013 at 03:36:45PM +0200, Kasatkin, Dmitry wrote:
+> >> It should not be the only line in the policy.
+> >> Can you share full policy?
+> >
+> > I verified by putting some printk. There is only single rule in
+> > ima_policy_rules list after I have updated the rules through "policy"
+> > file.
+> >
+> > echo "appraise fowner=0 func=BPRM_CHECK appraise_type=imasig_optional" >
+> > /sys/kernel/security/policy
 > 
-> SLUB has a way better performance than SLAB on RT and the split
-> softirq lock implementation is necessary especially for realtime
-> networking applications.
+> There is a default policy which has several rules.
 > 
-> The following patch series backports these features to 3.2-rt.
-> 
-> Steven, could you please apply these patches to a separate
-> 3.2-rt-features branch?
+> And when you do your "echo" you will replace all rules with that single rule.
+> But ok, you have one rule only and it is fine to have even a single rule...
 
-Is it possible to separate these two features into two different patch
-sets. I would like to apply the softirq changes first, and then apply
-the slub changes.
+Yep, I got that. Default policy gets overruled when a new policy is
+loaded.
 
-Although it looks as though the first half is softirq only 1-8, and the
-second half is slub related 9-16. If that's the case, I'll just pull in
-1-8 first, play with them, and then do 9-16.
+In secureboot mode, somehow above rule needs to take effect by default.
+One option would be that kernel can enforce above rule.
+(I guess by adding it to both default_list as well as policy list).
 
-Thanks,
-
--- Steve
-
-
+Thanks
+Vivek
