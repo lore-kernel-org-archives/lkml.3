@@ -1,94 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965242Ab3BMSN3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 13:13:29 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:39715 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964942Ab3BMSNY (ORCPT
+	id S965354Ab3BMSNj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 13:13:39 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:36280 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965125Ab3BMSNh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 13:13:24 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>,
-        Ben Myers <bpm@sgi.com>, Alex Elder <elder@kernel.org>
-References: <87pq38wimv.fsf@xmission.com>
-	<1353415420-5457-1-git-send-email-ebiederm@xmission.com>
-	<1353415420-5457-10-git-send-email-ebiederm@xmission.com>
-	<20121120235524.GK2591@dastard> <20121121195246.GN2822@localhost>
-Date: Wed, 13 Feb 2013 10:13:16 -0800
-In-Reply-To: <20121121195246.GN2822@localhost> (Joel Becker's message of "Wed,
-	21 Nov 2012 11:52:47 -0800")
-Message-ID: <87obfoxetf.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/Is/axwCqbO4gYUKZzaNXnEB6Rab7cg/E=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
-	*      [score: 0.0835]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
-	*  1.6 XMSubMetaSx_00 1+ Sexy Words
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ****;Dave Chinner <david@fromorbit.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH RFC 10/12] userns: Convert xfs to use kuid/kgid/kprojid where appropriate
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Wed, 13 Feb 2013 13:13:37 -0500
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, linux-mm@kvack.org, ngupta@vflare.org,
+        konrad.wilk@oracle.com, sjenning@linux.vnet.ibm.com,
+        minchan@kernel.org, dan.magenheimer@oracle.com
+Subject: [PATCH] staging: zcache: add TODO file
+Date: Wed, 13 Feb 2013 10:13:06 -0800
+Message-Id: <1360779186-17189-1-git-send-email-dan.magenheimer@oracle.com>
+X-Mailer: git-send-email 1.7.5.1
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joel Becker <jlbec@evilplan.org> writes:
+Add zcache TODO file
 
-> On Wed, Nov 21, 2012 at 10:55:24AM +1100, Dave Chinner wrote:
->> > diff --git a/fs/xfs/xfs_inode.c b/fs/xfs/xfs_inode.c
->> > index 2778258..3656b88 100644
->> > --- a/fs/xfs/xfs_inode.c
->> > +++ b/fs/xfs/xfs_inode.c
->> > @@ -570,11 +570,12 @@ xfs_dinode_from_disk(
->> >  	to->di_version = from ->di_version;
->> >  	to->di_format = from->di_format;
->> >  	to->di_onlink = be16_to_cpu(from->di_onlink);
->> > -	to->di_uid = be32_to_cpu(from->di_uid);
->> > -	to->di_gid = be32_to_cpu(from->di_gid);
->> > +	to->di_uid = make_kuid(&init_user_ns, be32_to_cpu(from->di_uid));
->> > +	to->di_gid = make_kgid(&init_user_ns, be32_to_cpu(from->di_gid));
->> 
->> You can't do this, because the incore inode structure is written
->> directly to the log. This is effectively an on-disk format change.
->
-> 	Yeah, I don't get this either.  Over in ocfs2, you do the
-> correct thing, translating at the boundary from ocfs2_dinode to struct
-> inode.
+Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+---
+ drivers/staging/zcache/TODO |   69 +++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 69 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/staging/zcache/TODO
 
-This is the boundary.  The crazy thing is that is that xfs appears to
-directly write their incore inode structure into their journal.  I had
-missed the journal reference the first time through and simply assumed
-since this is where the disk inode to the incore inode coversion
-happened that the weird scary comment in the xfs header file was wrong.
+diff --git a/drivers/staging/zcache/TODO b/drivers/staging/zcache/TODO
+new file mode 100644
+index 0000000..c1e26d4
+--- /dev/null
++++ b/drivers/staging/zcache/TODO
+@@ -0,0 +1,69 @@
++
++** ZCACHE PLAN FOR PROMOTION FROM STAGING **
++
++Last updated: Feb 13, 2013
++
++PLAN STEPS
++
++1. merge zcache and ramster to eliminate horrible code duplication
++2. converge on a predictable, writeback-capable allocator
++3. use debugfs instead of sysfs (per akpm feedback in 2011)
++4. zcache side of cleancache/mm WasActive patch
++5. zcache side of frontswap exclusive gets
++6. zcache must be able to writeback to physical swap disk
++    (per Andrea Arcangeli feedback in 2011)
++7. implement adequate policy for writeback
++8. frontswap/cleancache work to allow zcache to be loaded
++    as a module
++9. get core mm developer to review
++10. incorporate feedback from review
++11. get review/acks from 1-2 additional mm developers
++12. incorporate any feedback from additional mm reviews
++13. propose location/file-naming in mm tree
++14. repeat 9-13 as necessary until akpm is happy and merges
++
++STATUS/OWNERSHIP
++
++1. DONE as part of "new" zcache; in staging/zcache for 3.9
++2. DONE as part of "new" zcache (cf zbud.[ch]); in staging/zcache for 3.9
++    (this was the core of the zcache1 vs zcache2 flail)
++3. DONE as part of "new" zcache; in staging/zcache for 3.9
++4. DONE (w/caveats) as part of "new" zcache; per cleancache performance
++    feedback see https://lkml.org/lkml/2011/8/17/351, in
++    staging/zcache for 3.9; dependent on proposed mm patch, see
++    https://lkml.org/lkml/2012/1/25/300 
++5. DONE as part of "new" zcache; performance tuning only,
++    in staging/zcache for 3.9; dependent on frontswap patch
++    merged in 3.7 (33c2a174)
++6. DONE (w/caveats), prototyped as part of "new" zcache, had
++    bad memory leak; reimplemented to use sjennings clever tricks
++    and proposed mm patches with new version in staging/zcache
++    for 3.9, see https://lkml.org/lkml/2013/2/6/437;
++7. PROTOTYPED as part of "new" zcache; in staging/zcache for 3.9;
++    needs more review (plan to discuss at LSF/MM 2013)
++8. IN PROGRESS; owned by Konrad Wilk; v2 recently posted
++   http://lkml.org/lkml/2013/2/1/542
++9. IN PROGRESS; owned by Konrad Wilk; Mel Gorman provided
++   great feedback in August 2012 (unfortunately of "old"
++   zcache)
++10. Konrad posted series of fixes (that now need rebasing)
++    https://lkml.org/lkml/2013/2/1/566 
++11. NOT DONE; owned by Konrad Wilk
++12. TBD (depends on quantity of feedback)
++13. PROPOSED; one suggestion proposed by Dan; needs more ideas/feedback
++14. TBD (depends on feedback)
++
++WHO NEEDS TO AGREE
++
++Not sure.  Seth Jennings is now pursuing a separate but semi-parallel
++track.  Akpm clearly has to approve for any mm merge to happen.  Minchan
++Kim has interest but may be happy if/when zram is merged into mm.  Konrad
++Wilk may be maintainer if akpm decides compression is maintainable
++separately from the rest of mm.  (More LSF/MM 2013 discussion.)
++
++ZCACHE FUTURE NEW FUNCTIONALITY
++
++A. Support zsmalloc as an alternative high-density allocator
++    (See https://lkml.org/lkml/2013/1/23/511)
++B. Support zero-filled pages more efficiently
++C. Possibly support three zbuds per pageframe when space allows
+-- 
+1.7.1
 
-I would have no problems with not converting those uids and gids except
-they are used directly in comparisons against current_fsuid so it really
-isn't ok to not convert those values.
-
-I wish that incore structure was managed more like the lvb in ocfs2.
-Even though it is cached in core it is first converted into a specific
-byte order and then shoved into a character array.  Keeping anyone from
-getting any funny ideas about using those values directly.
-
-I have sent my xfs changes back to the drawing board and am
-concentrating on getting my conversions for the rest of the filesystems
-merged.  When I get the time I will come back to xfs.  xfs is a very
-peculiar filesystem.
-
-Eric
