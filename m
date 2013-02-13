@@ -1,66 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754752Ab3BMHUP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 02:20:15 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:39492 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753811Ab3BMHUN (ORCPT
+	id S1755251Ab3BMHXK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 02:23:10 -0500
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:59641 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753811Ab3BMHXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 02:20:13 -0500
-X-Sasl-enc: 9oUYRhdzZZRKcAMrf+8VfodHgoEv402/vIXqnsxIOPoH 1360740011
-Message-ID: <1360740008.2288.3.camel@perseus.themaw.net>
-Subject: Re: [PATCH linux-next] autofs4: autofs4_catatonic_mode(): remove
- redundant null check on kfree()
-From: Ian Kent <raven@themaw.net>
-To: Tim Gardner <tim.gardner@canonical.com>
-Cc: linux-kernel@vger.kernel.org, autofs@vger.kernel.org
-Date: Wed, 13 Feb 2013 15:20:08 +0800
-In-Reply-To: <1360689138-59191-1-git-send-email-tim.gardner@canonical.com>
-References: <1360689138-59191-1-git-send-email-tim.gardner@canonical.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 13 Feb 2013 02:23:07 -0500
+Date: Tue, 12 Feb 2013 23:19:22 -0800
+From: Anton Vorontsov <anton@enomsg.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: cgroups@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: Re: [PATCH] memcg: Add memory.pressure_level events
+Message-ID: <20130213071922.GB20543@lizard.gateway.2wire.net>
+References: <20130211000220.GA28247@lizard.gateway.2wire.net>
+ <5118C522.3070905@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <5118C522.3070905@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-02-12 at 10:12 -0700, Tim Gardner wrote:
-> smatch analysis:
+Hi Glauber,
+
+On Mon, Feb 11, 2013 at 02:17:06PM +0400, Glauber Costa wrote:
+[...]
+> > +static struct vmpressure *vmpressure_parent(struct vmpressure *vmpr)
+> > +{
+> > +	struct cgroup *cg = vmpr_to_css(vmpr)->cgroup->parent;
+> > +
+> > +	if (!cg)
+> > +		return NULL;
+> > +	return cg_to_vmpr(cg);
+> > +}
 > 
-> fs/autofs4/waitq.c:46 autofs4_catatonic_mode() info: redundant null
->  check on wq->name.name calling kfree()
-
-I'm not sure about this change.
-
-autofs4_catatonic_mode() could be called when there are remaining
-entries in the wait queue, which is nulled, so autofs4_wait_release()
-won't see the the discarded waits if it is called.
-
+> Unfortunately, "parent" in memcg have different meanings for information
+> propagation purposes depending on the value of the flag "use_hierarchy".
+> That is set for deprecation, but still...
 > 
-> Cc: Ian Kent <raven@themaw.net>
-> Cc: autofs@vger.kernel.org
-> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
-> ---
->  fs/autofs4/waitq.c |    6 ++----
->  1 file changed, 2 insertions(+), 4 deletions(-)
+> I suggest you use the helper mem_cgroup_parent, that will already give
+> you the right parent (either immediate parent or root) with all that
+> taken into account.
+
+Got it, will change.
+
+[...]
+> > +void __init enable_pressure_cgroup(void)
+> > +{
+> > +	WARN_ON(cgroup_add_cftypes(&mem_cgroup_subsys,
+> > +				   vmpressure_cgroup_files));
+> > +}
 > 
-> diff --git a/fs/autofs4/waitq.c b/fs/autofs4/waitq.c
-> index 03bc1d3..3db70da 100644
-> --- a/fs/autofs4/waitq.c
-> +++ b/fs/autofs4/waitq.c
-> @@ -42,10 +42,8 @@ void autofs4_catatonic_mode(struct autofs_sb_info *sbi)
->  	while (wq) {
->  		nwq = wq->next;
->  		wq->status = -ENOENT; /* Magic is gone - report failure */
-> -		if (wq->name.name) {
-> -			kfree(wq->name.name);
-> -			wq->name.name = NULL;
-> -		}
-> +		kfree(wq->name.name);
-> +		wq->name.name = NULL;
->  		wq->wait_ctr--;
->  		wake_up_interruptible(&wq->queue);
->  		wq = nwq;
+> There is no functionality discovery going on here, and this is
+> conditional on nothing. Isn't it better then to just add the register +
+> read functions to memcontrol.c and add the files in the memcontrol cftype ?
 
+I was trying to make the stuff similar to the existing CONFIG_MEMCG_SWAP
+code, which does this kind of adding files to the cgroup. But I can surely
+place files into memcontrol cftype as you suggest.
 
+Thanks a lot for the comments!
+
+Anton
