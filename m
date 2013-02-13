@@ -1,61 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932269Ab3BMSil (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 13:38:41 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:41489 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755330Ab3BMSii (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 13:38:38 -0500
-Date: Wed, 13 Feb 2013 19:38:44 +0100
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
-To: Ben Skeggs <bskeggs@redhat.com>
-Cc: Arend van Spriel <arend@broadcom.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Daniel J Blueman <daniel@quora.org>
-Subject: Re: [ 61/61] drm/nouveau: add lockdep annotations
-Message-ID: <20130213183844.GB3127@joi.lan>
-References: <20130212203417.890993903@linuxfoundation.org>
- <20130212203426.021116247@linuxfoundation.org>
- <1360726523.3642.4.camel@thor.lan>
- <511B5DD0.1040103@broadcom.com>
- <1360748621.10139.0.camel@localhost>
- <20130213174620.GA3127@joi.lan>
+	id S932530Ab3BMSiz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 13:38:55 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:43549 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755330Ab3BMSiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 13:38:54 -0500
+Date: Wed, 13 Feb 2013 19:38:42 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Scan Subscription <scan-subscription@coverity.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>
+Subject: Re: New Defect(s) reported by Coverity Scan
+Message-ID: <20130213183842.GC26948@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Scan Subscription <scan-subscription@coverity.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"hpa@zytor.com" <hpa@zytor.com>
+References: <C0A4ACBB26D853488EA0C68388B70268172CCF11@BLUPRD0512MB628.namprd05.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130213174620.GA3127@joi.lan>
+In-Reply-To: <C0A4ACBB26D853488EA0C68388B70268172CCF11@BLUPRD0512MB628.namprd05.prod.outlook.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 13, 2013 at 06:46:20PM +0100, Marcin Slusarz wrote:
-> On Wed, Feb 13, 2013 at 07:43:41PM +1000, Ben Skeggs wrote:
-> > On Wed, 2013-02-13 at 10:33 +0100, Arend van Spriel wrote:
-> > > On 02/13/2013 04:35 AM, Peter Hurley wrote:
-> > > > On Tue, 2013-02-12 at 12:35 -0800, Greg Kroah-Hartman wrote:
-> > > >> 3.7-stable review patch.  If anyone has any objections, please let me know.
-> > > > 
-> > > > FWIW, I never saw this on 3.7 but it happened 1st time on 3.8-rcX
-> > > > I haven't tested this fix either.
-> > > 
-> > > Dito.
-> > > 
-> > > Gr. AvS
-> > Yeah, I don't believe anything could trigger it in 3.7.  It doesn't hurt
-> > anyway.
+On Wed, Feb 13, 2013 at 05:40:11PM +0000, Scan Subscription wrote:
+> Hi,
 > 
-> Client locking splat is definitely triggerable on 3.7:
-> https://lkml.org/lkml/2012/10/16/251
+> Please find the latest report on new defect(s) that have been introduced to the Linux Kernel found with Coverity SCAN. 
 > 
-> Subdev locking splat is triggerable since 3.7 has "drm/nouveau: add locking
-s/is/should be/
+> 
+> Defect(s) Reported-by: Coverity Scan:
+> ___________________________________________________________________________
+> ** CID 971353: Resource leak (RESOURCE_LEAK)
+> /arch/x86/boot/tools/build.c: 259
+> http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=971353
+> 
+> 
+> ###########################################################################
+> Defect Details:
+> ___________________________________________________________________________
+> CID 971353: Resource leak (RESOURCE_LEAK)
+> http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=971353
+> 
+> /arch/x86/boot/tools/build.c: 240 ( alloc_fn)
+> 
+>    234 static void parse_zoffset(char *fname)
+>    235 {
+>    236        FILE *file;
+>    237    	char *p;
+>    238    	int c;
+>    239    
+> >>> Storage is returned from allocation function "fopen(char const * restrict, char const * restrict)".
+> >>> Assigning: "file" = storage returned from "fopen(fname, "r")".
+>    240    	file = fopen(fname, "r");
+>    241    	if (!file)
+>    242    		die("Unable to open `%s': %m", fname);
+> >>> Resource "file" is not freed or pointed-to in function "fread(void * restrict, size_t, size_t, FILE * restrict)".
+>    243    	c = fread(buf, 1, sizeof(buf) - 1, file);
+> >>> Resource "file" is not freed or pointed-to in function "ferror(FILE *)".
+>    244    	if (ferror(file))
+>    245    		die("read-error on `zoffset.h'");
+>    246    	buf[c] = 0;
+>    247    
+>   
+> 
+> /arch/x86/boot/tools/build.c: 259 ( leaked_storage)
+>    256    		while (p && (*p == '\r' || *p == '\n'))
+>    257    			p++;
+>    258    	}
+> >>> CID 971353: Resource leak (RESOURCE_LEAK) Variable "file" going out 
+> >>> of scope leaks the storage it points to.
 
-> around instobj list operations" and "drm/nvc0/fb: fix crash when different
-> mutex is used to protect same list" (both applied for 3.7.3).
-> 
-> Marcin
+Well, we do
+
+	fclose(file)
+
+a couple of lines later in the same function.
+
+The only problem I can see is that we don't fclose the file when ferror
+returns non-NULL but that shouldn't matter because we die() then and all
+resources are automatically freed.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
