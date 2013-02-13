@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934190Ab3BMPit (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 10:38:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7769 "EHLO mx1.redhat.com"
+	id S934197Ab3BMPjv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 10:39:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14399 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934098Ab3BMPis (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 10:38:48 -0500
-Date: Wed, 13 Feb 2013 17:37:41 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Borislav Petkov <bp@alien8.de>, kvm@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, X86 ML <x86@kernel.org>,
-        Borislav Petkov <bp@suse.de>,
-        Boris Ostrovsky <boris.ostrovsky@amd.com>,
-        Andre Przywara <andre@andrep.de>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Subject: Re: [PATCH] x86, kvm: Add MSR_AMD64_BU_CFG2 to the list of ignored
- MSRs
-Message-ID: <20130213153741.GE9817@redhat.com>
-References: <1360755761-725-1-git-send-email-bp@alien8.de>
- <20130213114747.GC9817@redhat.com>
- <20130213115526.GA15210@pd.tnic>
- <20130213121002.GD9817@redhat.com>
- <20130213133549.GB15210@pd.tnic>
+	id S1757615Ab3BMPjs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 10:39:48 -0500
+Date: Wed, 13 Feb 2013 10:39:05 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ima: Support appraise_type=imasig_optional
+Message-ID: <20130213153905.GC6750@redhat.com>
+References: <20130212142636.GA23410@redhat.com>
+ <1360689247.3524.275.camel@falcor1.watson.ibm.com>
+ <20130212185203.GA29958@redhat.com>
+ <20130212185725.GC23410@redhat.com>
+ <CALLzPKaD==fj3GSE3SnaWg5=VVNW7A_+caFzoh=_cBv8+BVKEA@mail.gmail.com>
+ <20130213132920.GA3540@redhat.com>
+ <CALLzPKbj33dQ36tcwip_LKCOXgA6GcBDbSc5s4y4cYyv2=s=nw@mail.gmail.com>
+ <20130213143807.GC3540@redhat.com>
+ <CALLzPKZ=eRWDtW6eSKPX5Qbvs_N37daiULw+T7o+DpoGfw_Z_A@mail.gmail.com>
+ <CALLzPKY-QJmxSUDdRF9V+pjEZhVb_UcGnJsqxiUiJ=YKTr0YWg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130213133549.GB15210@pd.tnic>
+In-Reply-To: <CALLzPKY-QJmxSUDdRF9V+pjEZhVb_UcGnJsqxiUiJ=YKTr0YWg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 13, 2013 at 02:35:49PM +0100, Borislav Petkov wrote:
-> On Wed, Feb 13, 2013 at 02:10:02PM +0200, Gleb Natapov wrote:
-> > > > Is your guest compiled without PV support? With PV Linux traps #GP for
-> > > > all MSRs and it saves us in more than one places.
-> > > 
-> > > Yes, CONFIG_PARAVIRT_GUEST is not set on the guest kernel.
-> > > 
-> > Thanks. It does not mean that the patch should not be applied though.
+On Wed, Feb 13, 2013 at 05:29:43PM +0200, Kasatkin, Dmitry wrote:
+> On Wed, Feb 13, 2013 at 5:26 PM, Kasatkin, Dmitry
+> <dmitry.kasatkin@intel.com> wrote:
+> > On Wed, Feb 13, 2013 at 4:38 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> >> On Wed, Feb 13, 2013 at 03:36:45PM +0200, Kasatkin, Dmitry wrote:
+> >>> It should not be the only line in the policy.
+> >>> Can you share full policy?
+> >>
+> >> I verified by putting some printk. There is only single rule in
+> >> ima_policy_rules list after I have updated the rules through "policy"
+> >> file.
+> >>
+> >> echo "appraise fowner=0 func=BPRM_CHECK appraise_type=imasig_optional" >
+> >> /sys/kernel/security/policy
+> >
+> > There is a default policy which has several rules.
+> >
+> > And when you do your "echo" you will replace all rules with that single rule.
+> > But ok, you have one rule only and it is fine to have even a single rule...
+> >
 > 
-> Right,
-> 
-> but, come to think of it, adding an MSR each time to those functions
-> could turn out to be a PITA. The PV solution with trapping on the MSR
-> accesses might be better so maybe CONFIG_KVM should do
-> 
-PV solution does not exists for some other guests.
+> What I have not said yet it is that in your case, because you use only
+> BPRM_CHECK hook,
+> you do not need "dont_appraise" and "dont_measure" rules for pseudo filesystems.
 
-> select KVM_GUEST
-> 
-> ?
-I can easily imaging the situation where one whats to build different
-kernels for host and guest and do not have PV in the host one.
+Agreed.
 
-> 
-> This is even a good forward-looking solution.
-> 
-> > I cannot seems to find the documentation for the MSR anywhere, do you
-> > have a pointer?
-> 
-> http://support.amd.com/us/Processor_TechDocs/31116.pdf, p.438
-> 
-Thanks,
-
---
-			Gleb.
+Thanks
+Vivek
