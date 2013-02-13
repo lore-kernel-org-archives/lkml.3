@@ -1,90 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964832Ab3BMRdm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 12:33:42 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:36534 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934405Ab3BMRdl (ORCPT
+	id S1760390Ab3BMReU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 12:34:20 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:55871 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760123Ab3BMReT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 12:33:41 -0500
+	Wed, 13 Feb 2013 12:34:19 -0500
 MIME-Version: 1.0
-In-Reply-To: <511BC043.4030506@gmail.com>
-References: <1360264144-20714-1-git-send-email-robherring2@gmail.com>
-	<1360264144-20714-2-git-send-email-robherring2@gmail.com>
-	<CAHTX3dKLCbfhBaHKBE=fVTcRReVL6yotA9e_8S70bH+_gajL5Q@mail.gmail.com>
-	<511BC043.4030506@gmail.com>
-Date: Wed, 13 Feb 2013 18:33:39 +0100
-Message-ID: <CAHTX3d+2rGBE3ZBwiHbq7tOi+OE+5KGPh34APzp0NhRP=mBv+w@mail.gmail.com>
-Subject: Re: [PATCH 1/4] clocksource: pass DT node pointer to init functions
-From: Michal Simek <monstr@monstr.eu>
-To: Rob Herring <robherring2@gmail.com>
-Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        John Stultz <johnstul@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+X-Originating-IP: [188.6.195.195]
+In-Reply-To: <CAJfpegvV0zQ5Lftx=ELP0MAH1-7oY5HfT-CSYEaFUWJLmXoD7A@mail.gmail.com>
+References: <1360113112.17267.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+	<2964781.rPUOipNRNb@vostro.rjw.lan>
+	<CAJfpegtNUr+AJXZcKmLEGBYqu20DVFwzg-OvOk_nS3fBS3wd=Q@mail.gmail.com>
+	<1660768.prnx6s70rD@vostro.rjw.lan>
+	<CAJfpegt2B3n-QNK_W7O2H0JVfS=4jcUOzV_+w8ELPq19RJPewQ@mail.gmail.com>
+	<20130212104608.GA24042@amd.pavel.ucw.cz>
+	<CAJfpegvdVfEFTU5haMMi94PD1iZ1XyCRjg0O9vDjDg1yyaM-yA@mail.gmail.com>
+	<CAJfpegvV0zQ5Lftx=ELP0MAH1-7oY5HfT-CSYEaFUWJLmXoD7A@mail.gmail.com>
+Date: Wed, 13 Feb 2013 18:34:16 +0100
+Message-ID: <CAJfpegsFThkzv3uF60AMXO7Y-yEzU_20HeGyPra0O8Vk5OqCGQ@mail.gmail.com>
+Subject: Re: Getting rid of freezer for suspend [was Re: [fuse-devel] [PATCH]
+ fuse: make fuse daemon frozen along with kernel threads]
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Goswin von Brederlow <goswin-v-b@web.de>, Li Fei <fei.li@intel.com>,
+        len.brown@intel.com, mingo@redhat.com, peterz@infradead.org,
+        biao.wang@intel.com, linux-pm@vger.kernel.org,
+        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        chuansheng.liu@intel.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/2/13 Rob Herring <robherring2@gmail.com>:
-> On 02/13/2013 10:21 AM, Michal Simek wrote:
->> 2013/2/7 Rob Herring <robherring2@gmail.com>:
->>> From: Rob Herring <rob.herring@calxeda.com>
->>>
->>> In cases where we have multiple nodes of the same type, we may need the
->>> node pointer to know which node was matched. Passing the node pointer
->>> also keeps the init function from having to match the node a 2nd time.
->>>
->>> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
->>> Cc: John Stultz <johnstul@us.ibm.com>
->>> Cc: Thomas Gleixner <tglx@linutronix.de>
->>> ---
->>>  drivers/clocksource/clksrc-of.c |    4 ++--
->>>  1 file changed, 2 insertions(+), 2 deletions(-)
+On Tue, Feb 12, 2013 at 2:17 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> On Tue, Feb 12, 2013 at 2:13 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+>> On Tue, Feb 12, 2013 at 11:46 AM, Pavel Machek <pavel@ucw.cz> wrote:
 >>
->> Tested-by: Michal Simek <michal.simek@xilinx.com>
->>
->> The rest is just the same as I have done. Any option to add these
->> patches to v3.9?
->
-> I would like to before we have more users to fix, but it will have to be
-> post rc1. If not, Arnd/Olof should be be able to provide a stable branch
-> for 3.10.
+>>> (After all, with FUSE, filesystem clients are just doing IPC. In ideal
+>>> world, that would be freezeable and killable with -9).
 
-ok
+Well, I thought this can be constrained to locks directly related to
+the fuse filesystem itself, but it can't...  The reason is page
+faults.  Pretty much everyone and their brother uses get_user_pages*,
+holding various locks (mmap_sem for sure but others as well).  A fuse
+filesystem frozen during a page read will block those.
 
->> Because I need these patches for zynq timer because we have two in the soc.
->> Is it OK to register several clock source and clockevent devices?
->
-> If it is 1 DT node, then that should be fine.
+Separating those parts of the kernel that can be frozen from those
+that can't looks increasingly difficult.
 
-zynq is using two triple timer counter IP . There are also described by two
-different DT nodes because there are separated and uses different baseaddresses.
+So I think the PF_FREEZE_DAEMON idea (the patch from Li Fei that
+started this thread) may still be our best bet at handling this
+situation.  The idea being that pure "originator" processes (ones that
+take no part in serving filesystem syscalls) can be frozen up-front.
+Then the "fuse daemon" (or "server") processes are hopefully in a
+quiescent state and can be frozen without difficulty.
 
-Does it mean that if there are 2 DT nodes that it won't work?
-
-
-One more thing. Is there any rule which should describe which timer should be
-used for clockevent and for clocksource?
-
-
->> btw: there is still one issue because you can just setup only one
->> compatibility string.
->
-> You can have multiple CLOCKSOURCE_OF_DECLARE statements. The gic code
-> does this for irqchips.
-
-Ok. Will look at it.
+Unfortunately it needs help from userspace: the kernel can't easily
+guess which processes are part of a "fuse daemon" and which aren't.
+Fortunately we have a standard library (libfuse) that can tell it to
+the kernel for the vast majority of cases.
 
 Thanks,
-Michal
-
-
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+Miklos
