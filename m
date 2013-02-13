@@ -1,90 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759427Ab3BMNOL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 08:14:11 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:37904 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757373Ab3BMNOJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 08:14:09 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: paulmck@linux.vnet.ibm.com
-Cc: Nathan Zimmer <nzimmer@sgi.com>,
-        "viresh.kumar@linaro.org" <viresh.kumar@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>
-Subject: Re: [PATCH v2 linux-next 2/2] cpufreq: Convert the cpufreq_driver_lock to use the rcu
-Date: Wed, 13 Feb 2013 14:20:35 +0100
-Message-ID: <1651157.ApO0q9O4LF@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc7; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130212155954.GP2666@linux.vnet.ibm.com>
-References: <74F10842A85F514CA8D8C487E74474BB2D2F925E@P-EXMB1-DC21.corp.sgi.com> <1953281.cgEiiBGo0f@vostro.rjw.lan> <20130212155954.GP2666@linux.vnet.ibm.com>
+	id S1758421Ab3BMNPO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 08:15:14 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:8649 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755391Ab3BMNPM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 08:15:12 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Wed, 13 Feb 2013 05:15:12 -0800
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <broonie@opensource.wolfsonmicro.com>, <gregkh@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH 1/2] regmap: irq: Add support for interrupt type
+Date: Wed, 13 Feb 2013 18:44:49 +0530
+Message-ID: <1360761290-15976-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, February 12, 2013 07:59:54 AM Paul E. McKenney wrote:
-> On Mon, Feb 11, 2013 at 08:36:17PM +0100, Rafael J. Wysocki wrote:
-> > On Monday, February 11, 2013 05:13:30 PM Nathan Zimmer wrote:
-> > > There are some spots that I need to give a much deeper review, cpufreq_register_driver for example.
-> > > 
-> > > But I believe 
-> > > > @@ -196,7 +195,7 @@ static void __cpufreq_cpu_put(struct cpufreq_policy *data, bool sysfs)
-> > > >  {
-> > > >       if (!sysfs)
-> > > >               kobject_put(&data->kobj);
-> > > > -     module_put(cpufreq_driver->owner);
-> > > > +     module_put(rcu_dereference(cpufreq_driver)->owner);
-> > > >  }
-> > > would be ok.  In the documentation whatisRCU.txt they give a very similar example.
-> > 
-> > Well, the very same document states the following:
-> > 
-> >         Note that the value returned by rcu_dereference() is valid
-> >         only within the enclosing RCU read-side critical section.
-> 
-> Ah, there is a code sample in that document showing a bug.  I added
-> comments to the code sample making it clear even to someone skimming
-> the document that the code is buggy.
-> 
-> 							Thanx, Paul
-> ------------------------------------------------------------------------
-> 
-> rcu: Make bugginess of code sample more evident
-> 
-> One of the code samples in whatisRCU.txt shows a bug, but someone scanning
-> the document quickly might mistake it for a valid use of RCU.  Add some
-> screaming comments to help keep speed-readers on track.
-> 
-> Reported-by: Nathan Zimmer <nzimmer@sgi.com>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Most of the MFD module have the GPIO and gpio interrupt is
+enabled/disabled through the rising/falling edge type. There
+is no specific mask enable/disable registers for GPIO submodules.
 
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Extend the regmap irq to support the irq_set_type() so that
+gpio submodule of MFD devices can use the regmap-irq framework
+for their interrupt registration.
 
-> diff --git a/Documentation/RCU/whatisRCU.txt b/Documentation/RCU/whatisRCU.txt
-> index 0cc7820..10df0b8 100644
-> --- a/Documentation/RCU/whatisRCU.txt
-> +++ b/Documentation/RCU/whatisRCU.txt
-> @@ -265,9 +265,9 @@ rcu_dereference()
->  		rcu_read_lock();
->  		p = rcu_dereference(head.next);
->  		rcu_read_unlock();
-> -		x = p->address;
-> +		x = p->address;	/* BUG!!! */
->  		rcu_read_lock();
-> -		y = p->data;
-> +		y = p->data;	/* BUG!!! */
->  		rcu_read_unlock();
->  
->  	Holding a reference from one RCU read-side critical section
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe cpufreq" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ drivers/base/regmap/regmap-irq.c |   97 ++++++++++++++++++++++++++++++++++++++
+ include/linux/regmap.h           |   15 ++++++
+ 2 files changed, 112 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/base/regmap/regmap-irq.c b/drivers/base/regmap/regmap-irq.c
+index 4706c63..e7a1a26 100644
+--- a/drivers/base/regmap/regmap-irq.c
++++ b/drivers/base/regmap/regmap-irq.c
+@@ -39,8 +39,11 @@ struct regmap_irq_chip_data {
+ 	unsigned int *mask_buf;
+ 	unsigned int *mask_buf_def;
+ 	unsigned int *wake_buf;
++	unsigned int *type_buf;
++	unsigned int *type_buf_def;
+ 
+ 	unsigned int irq_reg_stride;
++	unsigned int type_reg_stride;
+ };
+ 
+ static inline const
+@@ -107,6 +110,22 @@ static void regmap_irq_sync_unlock(struct irq_data *data)
+ 		}
+ 	}
+ 
++	for (i = 0; i < d->chip->num_type_reg; i++) {
++		if (!d->type_buf_def[i])
++			continue;
++		reg = d->chip->type_base +
++			(i * map->reg_stride * d->type_reg_stride);
++		if (d->chip->type_invert)
++			ret = regmap_update_bits(d->map, reg,
++				d->type_buf_def[i], ~d->type_buf[i]);
++		else
++			ret = regmap_update_bits(d->map, reg,
++				d->type_buf_def[i], d->type_buf[i]);
++		if (ret != 0)
++			dev_err(d->map->dev, "Failed to sync type in %x\n",
++				reg);
++	}
++
+ 	if (d->chip->runtime_pm)
+ 		pm_runtime_put(map->dev);
+ 
+@@ -141,6 +160,38 @@ static void regmap_irq_disable(struct irq_data *data)
+ 	d->mask_buf[irq_data->reg_offset / map->reg_stride] |= irq_data->mask;
+ }
+ 
++static int regmap_irq_set_type(struct irq_data *data, unsigned int type)
++{
++	struct regmap_irq_chip_data *d = irq_data_get_irq_chip_data(data);
++	struct regmap *map = d->map;
++	const struct regmap_irq *irq_data = irq_to_regmap_irq(d, data->hwirq);
++	int reg = irq_data->type_reg_offset / map->reg_stride;
++
++	if (!(irq_data->type_rising_mask | irq_data->type_falling_mask))
++		return 0;
++
++	d->type_buf[reg] &= ~(irq_data->type_falling_mask |
++					irq_data->type_rising_mask);
++	switch (type) {
++	case IRQ_TYPE_EDGE_FALLING:
++		d->type_buf[reg] |= irq_data->type_falling_mask;
++		break;
++
++	case IRQ_TYPE_EDGE_RISING:
++		d->type_buf[reg] |= irq_data->type_rising_mask;
++		break;
++
++	case IRQ_TYPE_EDGE_BOTH:
++		d->type_buf[reg] |= (irq_data->type_falling_mask |
++					irq_data->type_rising_mask);
++		break;
++
++	default:
++		return -EINVAL;
++	}
++	return 0;
++}
++
+ static int regmap_irq_set_wake(struct irq_data *data, unsigned int on)
+ {
+ 	struct regmap_irq_chip_data *d = irq_data_get_irq_chip_data(data);
+@@ -167,6 +218,7 @@ static const struct irq_chip regmap_irq_chip = {
+ 	.irq_bus_sync_unlock	= regmap_irq_sync_unlock,
+ 	.irq_disable		= regmap_irq_disable,
+ 	.irq_enable		= regmap_irq_enable,
++	.irq_set_type		= regmap_irq_set_type,
+ 	.irq_set_wake		= regmap_irq_set_wake,
+ };
+ 
+@@ -375,6 +427,18 @@ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
+ 			goto err_alloc;
+ 	}
+ 
++	if (chip->num_type_reg) {
++		d->type_buf_def = kzalloc(sizeof(unsigned int) *
++					chip->num_type_reg, GFP_KERNEL);
++		if (!d->type_buf_def)
++			goto err_alloc;
++
++		d->type_buf = kzalloc(sizeof(unsigned int) * chip->num_type_reg,
++				      GFP_KERNEL);
++		if (!d->type_buf)
++			goto err_alloc;
++	}
++
+ 	d->irq_chip = regmap_irq_chip;
+ 	d->irq_chip.name = chip->name;
+ 	d->irq = irq;
+@@ -387,6 +451,8 @@ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
+ 	else
+ 		d->irq_reg_stride = 1;
+ 
++	d->type_reg_stride = chip->type_reg_stride ? : 1;
++
+ 	if (!map->use_single_rw && map->reg_stride == 1 &&
+ 	    d->irq_reg_stride == 1) {
+ 		d->status_reg_buf = kmalloc(map->format.val_bytes *
+@@ -442,6 +508,33 @@ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
+ 		}
+ 	}
+ 
++	if (chip->num_type_reg) {
++		for (i = 0; i < chip->num_irqs; i++) {
++			reg = chip->irqs[i].type_reg_offset / map->reg_stride;
++			d->type_buf_def[reg] |= chip->irqs[i].type_rising_mask |
++					chip->irqs[i].type_falling_mask;
++		}
++		for (i = 0; i < chip->num_type_reg; ++i) {
++			if (!d->type_buf_def[i])
++				continue;
++
++			reg = chip->type_base +
++				(i * map->reg_stride * d->type_reg_stride);
++			if (chip->type_invert)
++				ret = regmap_update_bits(map, reg,
++					d->type_buf_def[i], ~d->type_buf[i]);
++			else
++				ret = regmap_update_bits(map, reg,
++					d->type_buf_def[i], d->type_buf[i]);
++			if (ret != 0) {
++				dev_err(map->dev,
++					"Failed to set type in 0x%x: %x\n",
++					reg, ret);
++				goto err_alloc;
++			}
++		}
++	}
++
+ 	if (irq_base)
+ 		d->domain = irq_domain_add_legacy(map->dev->of_node,
+ 						  chip->num_irqs, irq_base, 0,
+@@ -468,6 +561,8 @@ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
+ err_domain:
+ 	/* Should really dispose of the domain but... */
+ err_alloc:
++	kfree(d->type_buf);
++	kfree(d->type_buf_def);
+ 	kfree(d->wake_buf);
+ 	kfree(d->mask_buf_def);
+ 	kfree(d->mask_buf);
+@@ -491,6 +586,8 @@ void regmap_del_irq_chip(int irq, struct regmap_irq_chip_data *d)
+ 
+ 	free_irq(irq, d);
+ 	/* We should unmap the domain but... */
++	kfree(d->type_buf);
++	kfree(d->type_buf_def);
+ 	kfree(d->wake_buf);
+ 	kfree(d->mask_buf_def);
+ 	kfree(d->mask_buf);
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index 5e81abf..c98db7d 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -348,10 +348,16 @@ bool regmap_reg_in_ranges(unsigned int reg,
+  *
+  * @reg_offset: Offset of the status/mask register within the bank
+  * @mask:       Mask used to flag/control the register.
++ * @type_reg_offset: Offset register for the irq type setting.
++ * @type_rising_mask: Mask bit to configure RISING type irq.
++ * @type_falling_mask: Mask bit to configure FALLING type irq.
+  */
+ struct regmap_irq {
+ 	unsigned int reg_offset;
+ 	unsigned int mask;
++	unsigned int type_reg_offset;
++	unsigned int type_rising_mask;
++	unsigned int type_falling_mask;
+ };
+ 
+ /**
+@@ -365,6 +371,7 @@ struct regmap_irq {
+  * @mask_base:   Base mask register address.
+  * @ack_base:    Base ack address.  If zero then the chip is clear on read.
+  * @wake_base:   Base address for wake enables.  If zero unsupported.
++ * @type_base:   Base address for irq type.  If zero unsupported.
+  * @irq_reg_stride:  Stride to use for chips where registers are not contiguous.
+  * @runtime_pm:  Hold a runtime PM lock on the device when accessing it.
+  *
+@@ -372,6 +379,9 @@ struct regmap_irq {
+  * @irqs:        Descriptors for individual IRQs.  Interrupt numbers are
+  *               assigned based on the index in the array of the interrupt.
+  * @num_irqs:    Number of descriptors.
++ * @num_type_reg:    Number of type registers.
++ * @type_reg_stride: Stride to use for chips where type registers are not
++ *			contiguous.
+  */
+ struct regmap_irq_chip {
+ 	const char *name;
+@@ -380,15 +390,20 @@ struct regmap_irq_chip {
+ 	unsigned int mask_base;
+ 	unsigned int ack_base;
+ 	unsigned int wake_base;
++	unsigned int type_base;
+ 	unsigned int irq_reg_stride;
+ 	unsigned int mask_invert;
+ 	unsigned int wake_invert;
++	unsigned int type_invert;
+ 	bool runtime_pm;
+ 
+ 	int num_regs;
+ 
+ 	const struct regmap_irq *irqs;
+ 	int num_irqs;
++
++	int num_type_reg;
++	unsigned int type_reg_stride;
+ };
+ 
+ struct regmap_irq_chip_data;
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.1.1
+
