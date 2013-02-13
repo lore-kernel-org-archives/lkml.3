@@ -1,72 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934424Ab3BMQRu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 11:17:50 -0500
-Received: from www.linutronix.de ([62.245.132.108]:59718 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934265Ab3BMQNP (ORCPT
+	id S1759973Ab3BMQSv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 11:18:51 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:60756 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759377Ab3BMQSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 11:13:15 -0500
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
-        Carsten Emde <C.Emde@osadl.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 04/16] rcu: rcutiny: Prevent RCU stall
-Date: Wed, 13 Feb 2013 17:11:59 +0100
-Message-Id: <1360771932-27150-5-git-send-email-bigeasy@linutronix.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1360771932-27150-1-git-send-email-bigeasy@linutronix.de>
-References: <1360771932-27150-1-git-send-email-bigeasy@linutronix.de>
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Wed, 13 Feb 2013 11:18:49 -0500
+Date: Wed, 13 Feb 2013 08:18:45 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Dave Chinner <dchinner@redhat.com>, Brian Foster <bfoster@redhat.com>,
+        Ben Myers <bpm@sgi.com>, CAI Qian <caiqian@redhat.com>
+Subject: Re: [ 68/89] xfs: fix _xfs_buf_find oops on blocks beyond the
+ filesystem end
+Message-ID: <20130213161845.GA20916@kroah.com>
+References: <20130201130207.444989281@linuxfoundation.org>
+ <20130201130212.381996681@linuxfoundation.org>
+ <511BB198.1080609@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <511BB198.1080609@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+On Wed, Feb 13, 2013 at 04:30:32PM +0100, Paolo Bonzini wrote:
+> Il 01/02/2013 14:08, Greg Kroah-Hartman ha scritto:
+> > 3.7-stable review patch.  If anyone has any objections, please let me know.
+> > 
+> > ------------------
+> > 
+> > From: Dave Chinner <dchinner@redhat.com>
+> > 
+> > commit eb178619f930fa2ba2348de332a1ff1c66a31424 upstream.
+> > 
+> > When _xfs_buf_find is passed an out of range address, it will fail
+> > to find a relevant struct xfs_perag and oops with a null
+> > dereference. This can happen when trying to walk a filesystem with a
+> > metadata inode that has a partially corrupted extent map (i.e. the
+> > block number returned is corrupt, but is otherwise intact) and we
+> > try to read from the corrupted block address.
+> > 
+> > In this case, just fail the lookup. If it is readahead being issued,
+> > it will simply not be done, but if it is real read that fails we
+> > will get an error being reported.  Ideally this case should result
+> > in an EFSCORRUPTED error being reported, but we cannot return an
+> > error through xfs_buf_read() or xfs_buf_get() so this lookup failure
+> > may result in ENOMEM or EIO errors being reported instead.
+> 
+> It looks like this breaks xfs_growfs.  See
+> http://bugzilla.redhat.com/show_bug.cgi?id=909602.
 
-rcu_read_unlock_special() checks in_serving_softirq() and leaves early
-when true. On RT this is obviously wrong as softirq processing context
-can be preempted and therefor such a task can be on the gp_tasks
-list. Leaving early here will leave the task on the list and therefor
-block RCU processing forever.
+Ick, not good.
 
-This cannot happen on mainline because softirq processing context
-cannot be preempted and therefor this can never happen at all.
+Dave, any thoughts here?  Should I drop this from the 3.7-stable queue?
 
-In fact this check looks quite questionable in general. Neither irq
-context nor softirq processing context in mainline can ever be
-preempted in mainline so the special unlock case should not ever be
-invoked in such context. Now the only explanation might be a
-rcu_read_unlock() being interrupted and therefor leave the rcu nest
-count at 0 before the special unlock bit has been cleared. That looks
-fragile. At least it's missing a big fat comment. Paul ????
-
-See mainline commits: ec433f0c5 and 8762705a for further enlightment.
-
-Reported-by: Kristian Lehmann <krleit00@hs-esslingen.de>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-[bigeasy@linutronix: different in-irq check]
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- kernel/rcutiny_plugin.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/kernel/rcutiny_plugin.h b/kernel/rcutiny_plugin.h
-index 2b0484a..bac1906 100644
---- a/kernel/rcutiny_plugin.h
-+++ b/kernel/rcutiny_plugin.h
-@@ -552,7 +552,7 @@ static void rcu_read_unlock_special(struct task_struct *t)
- 		rcu_preempt_cpu_qs();
- 
- 	/* Hardware IRQ handlers cannot block. */
--	if (in_irq()) {
-+	if (preempt_count() & (HARDIRQ_MASK | SOFTIRQ_OFFSET)) {
- 		local_irq_restore(flags);
- 		return;
- 	}
--- 
-1.7.10.4
-
+greg k-h
