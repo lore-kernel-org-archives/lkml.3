@@ -1,95 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759989Ab3BMQWQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 11:22:16 -0500
-Received: from mail-da0-f42.google.com ([209.85.210.42]:34512 "EHLO
-	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759944Ab3BMQWO (ORCPT
+	id S1760012Ab3BMQaa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 11:30:30 -0500
+Received: from oproxy11-pub.bluehost.com ([173.254.64.10]:37481 "HELO
+	oproxy11-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1759377Ab3BMQa3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 11:22:14 -0500
-Date: Wed, 13 Feb 2013 08:22:11 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "JBeulich@suse.com" <JBeulich@suse.com>, "bp@alien8.de" <bp@alien8.de>
-Subject: Re: [PATCH 1/1] Drivers: hv: vmbus: Use the new infrastructure for
- delivering VMBUS interrupts
-Message-ID: <20130213162211.GA21253@kroah.com>
-References: <1360164359-12273-1-git-send-email-kys@microsoft.com>
- <20130206191313.GA1470@kroah.com>
- <511ADEB7.6080909@zytor.com>
- <ae14ef66af2d4206baf4ccb382fc4205@SN2PR03MB061.namprd03.prod.outlook.com>
+	Wed, 13 Feb 2013 11:30:29 -0500
+Message-ID: <511BBFC4.7090601@xenotime.net>
+Date: Wed, 13 Feb 2013 08:31:00 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ae14ef66af2d4206baf4ccb382fc4205@SN2PR03MB061.namprd03.prod.outlook.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH] fix 32-bit compile warning from printk()
+References: <20130128191939.7F67966B@kernel.stglabs.ibm.com>
+In-Reply-To: <20130128191939.7F67966B@kernel.stglabs.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 13, 2013 at 02:07:52PM +0000, KY Srinivasan wrote:
+On 01/28/13 11:19, Dave Hansen wrote:
+> My patch "Fix kvm's use of __pa() on percpu areas" introduced a
+> compile warning:
 > 
+> arch/x86/kernel/kvm.c: In function 'kvm_register_steal_time':
+> arch/x86/kernel/kvm.c:302:3: warning: format '%lx' expects argument of type 'long unsigned int', but argument 3 has type 'phys_addr_t' [-Wformat]
 > 
-> > -----Original Message-----
-> > From: H. Peter Anvin [mailto:hpa@zytor.com]
-> > Sent: Tuesday, February 12, 2013 7:31 PM
-> > To: Greg KH
-> > Cc: KY Srinivasan; x86@kernel.org; linux-kernel@vger.kernel.org;
-> > devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
-> > jasowang@redhat.com; tglx@linutronix.de; JBeulich@suse.com; bp@alien8.de
-> > Subject: Re: [PATCH 1/1] Drivers: hv: vmbus: Use the new infrastructure for
-> > delivering VMBUS interrupts
-> > 
-> > On 02/06/2013 11:13 AM, Greg KH wrote:
-> > > On Wed, Feb 06, 2013 at 07:25:59AM -0800, K. Y. Srinivasan wrote:
-> > >> Use the infrastructure for delivering VMBUS interrupts using a
-> > >> special vector. With this patch, we can now properly handle
-> > >> the VMBUS interrupts that can be delivered on any CPU. Also,
-> > >> turn on interrupt load balancing as well.
-> > >>
-> > >> This patch requires the infrastructure that was implemented in the patch:
-> > >> X86: Handle Hyper-V vmbus interrupts as special hypervisor interrupts
-> > >>
-> > >
-> > > Because of the dependancy, this should go through the x86 tree as well:
-> > > 	Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > >
-> > 
-> > This does not apply to v3.8-rc7 + the set of three vmbus patches for
-> > x86.  I take it there are additional dependencies -- K.Y., what do I
-> > need here?
+> According to: Documentation/printk-formats.txt
 > 
-> Greg,
+> 	If <type> is dependent on a config option for its size
+> 	(e.g., phys_addr_t) ... use a format specifier of its
+> 	largest possible type and explicitly cast to it.
 > 
-> Peter has checked in the infrastructural patches into v3.8-rc7. This version
-> does not have the patches that upgraded the VMBUS protocol version to the
-> win8 levels.
+> So, we'll do just that.  We will consider it an unsigned long
+> long, and cast to it explicitly.
+> 
+> Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
 
-What is "this version"?
+This warning is still present in linux-next (20130213).
 
-> How will the infrastructural patches get moved forward to the version
-> where you have checked-in all the vmbus protocol updates:
-> [PATCH 00/28] Drivers: hv: Update the Vmbus protocol.
+Acked-by: Randy Dunlap <rdunlap@infradead.org>
 
-Those are in the char-misc git tree and will to go Linus for 3.9-rc1.
+Thanks.
 
-> Now that Peter has checked in the needed patches, could you take this
-> patch through your tree.
+Someone please merge...  (kvm@ cc added)
 
-What again is "this"?
+> ---
+> 
+>  linux-2.6.git-dave/arch/x86/kernel/kvm.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff -puN arch/x86/kernel/kvm.c~fix-32-bit-compile-warning arch/x86/kernel/kvm.c
+> --- linux-2.6.git/arch/x86/kernel/kvm.c~fix-32-bit-compile-warning	2013-01-28 11:16:39.786938232 -0800
+> +++ linux-2.6.git-dave/arch/x86/kernel/kvm.c	2013-01-28 11:16:39.790938273 -0800
+> @@ -298,8 +298,8 @@ static void kvm_register_steal_time(void
+>  	memset(st, 0, sizeof(*st));
+>  
+>  	wrmsrl(MSR_KVM_STEAL_TIME, (slow_virt_to_phys(st) | KVM_MSR_ENABLED));
+> -	printk(KERN_INFO "kvm-stealtime: cpu %d, msr %lx\n",
+> -		cpu, slow_virt_to_phys(st));
+> +	printk(KERN_INFO "kvm-stealtime: cpu %d, msr %llx\n",
+> +		cpu, (unsigned long long)slow_virt_to_phys(st));
+>  }
+>  
+>  static DEFINE_PER_CPU(unsigned long, kvm_apic_eoi) = KVM_PV_EOI_DISABLED;
+> _
 
-> Let me know, if you need, I can re-send this patch to you.
 
-Will it cause build problems if I take this patch in my tree, without
-the changes in the -tip tree?
 
-thanks,
-
-greg k-h
+-- 
+~Randy
