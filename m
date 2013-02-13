@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934165Ab3BMPXZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 10:23:25 -0500
-Received: from mga14.intel.com ([143.182.124.37]:28035 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934117Ab3BMPXY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 10:23:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,658,1355126400"; 
-   d="scan'208";a="201935263"
-Message-ID: <511BAFDB.6050908@intel.com>
-Date: Wed, 13 Feb 2013 23:23:07 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S934160Ab3BMP0a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 10:26:30 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:57353 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934077Ab3BMP02 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 10:26:28 -0500
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: torvalds@linux-foundation.org, mingo@redhat.com, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
-        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch v4 08/18] Revert "sched: Introduce temporary FAIR_GROUP_SCHED
- dependency for load-tracking"
-References: <1358996820-23036-1-git-send-email-alex.shi@intel.com>  <1358996820-23036-9-git-send-email-alex.shi@intel.com> <1360664874.4485.18.camel@laptop>
-In-Reply-To: <1360664874.4485.18.camel@laptop>
+In-Reply-To: <20130213143807.GC3540@redhat.com>
+References: <1360613493-11969-1-git-send-email-vgoyal@redhat.com>
+	<1360613493-11969-3-git-send-email-vgoyal@redhat.com>
+	<1360620614.3524.223.camel@falcor1.watson.ibm.com>
+	<20130212142636.GA23410@redhat.com>
+	<1360689247.3524.275.camel@falcor1.watson.ibm.com>
+	<20130212185203.GA29958@redhat.com>
+	<20130212185725.GC23410@redhat.com>
+	<CALLzPKaD==fj3GSE3SnaWg5=VVNW7A_+caFzoh=_cBv8+BVKEA@mail.gmail.com>
+	<20130213132920.GA3540@redhat.com>
+	<CALLzPKbj33dQ36tcwip_LKCOXgA6GcBDbSc5s4y4cYyv2=s=nw@mail.gmail.com>
+	<20130213143807.GC3540@redhat.com>
+Date: Wed, 13 Feb 2013 17:26:27 +0200
+Message-ID: <CALLzPKZ=eRWDtW6eSKPX5Qbvs_N37daiULw+T7o+DpoGfw_Z_A@mail.gmail.com>
+Subject: Re: [PATCH 2/2] ima: Support appraise_type=imasig_optional
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/12/2013 06:27 PM, Peter Zijlstra wrote:
-> On Thu, 2013-01-24 at 11:06 +0800, Alex Shi wrote:
->> Remove CONFIG_FAIR_GROUP_SCHED that covers the runnable info, then
->> we can use runnable load variables.
->>
-> It would be nice if we could quantify the performance hit of doing so.
-> Haven't yet looked at later patches to see if we remove anything to
-> off-set this.
-> 
+On Wed, Feb 13, 2013 at 4:38 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Wed, Feb 13, 2013 at 03:36:45PM +0200, Kasatkin, Dmitry wrote:
+>> It should not be the only line in the policy.
+>> Can you share full policy?
+>
+> I verified by putting some printk. There is only single rule in
+> ima_policy_rules list after I have updated the rules through "policy"
+> file.
+>
+> echo "appraise fowner=0 func=BPRM_CHECK appraise_type=imasig_optional" >
+> /sys/kernel/security/policy
 
-In our rough testing, no much clear performance changes.
+There is a default policy which has several rules.
 
--- 
-Thanks
-    Alex
+And when you do your "echo" you will replace all rules with that single rule.
+But ok, you have one rule only and it is fine to have even a single rule...
+
+>
+> Thanks
+> Vivek
