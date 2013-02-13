@@ -1,86 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932254Ab3BMIXa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 03:23:30 -0500
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:38698 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755433Ab3BMIX3 (ORCPT
+	id S1759067Ab3BMI1V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 03:27:21 -0500
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:33217 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753894Ab3BMI1T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 03:23:29 -0500
-Message-ID: <511B4D76.50504@redhat.com>
-Date: Wed, 13 Feb 2013 09:23:18 +0100
+	Wed, 13 Feb 2013 03:27:19 -0500
+Message-ID: <511B4E61.1040604@redhat.com>
+Date: Wed, 13 Feb 2013 09:27:13 +0100
 From: Paolo Bonzini <pbonzini@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Rientjes <rientjes@google.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Pekka Enberg <penberg@kernel.org>,
-        Michal Marek <mmarek@suse.cz>, Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: kvmtool tree (Was: Re: [patch] config: fix make kvmconfig)
-References: <CAOJsxLFDbmNitH=N8v3jSno0SFL33s=nPc+hGRAqJfYFZS0RGw@mail.gmail.com> <CA+55aFy=SaVjNby=Jy_O9ZRQ_Ofc-6_+bLv=HeMMSzQQHw9vMQ@mail.gmail.com> <CAOJsxLFpE=HjkPcX6NsWS8636qnEhDFDJi+49xX2Ge3Xp4MeUg@mail.gmail.com> <CA+55aFzXF-4Xwc4HU8vnTin4WqtvYcpXq0TsqTN_vRg=myLH_Q@mail.gmail.com> <20130211122654.GA5802@gmail.com> <CA+55aFwq+_TvOZNEPO-eFPjYuPuMFL0bgR0x=nLq_tvfATqaTA@mail.gmail.com> <20130211172807.GA9716@gmail.com> <CA+55aFx-0-qcYMqH2wnJJ7iAPhoEvD_EQ0xqVW3VGS3G9=_1_w@mail.gmail.com> <20130211175856.GC9716@gmail.com> <CA+55aFxpH2A5pTkeAt-bapN6Erac7SSEUhS9qaZ6jUhm_0EAtA@mail.gmail.com> <20130212095249.GC20039@gmail.com>
-In-Reply-To: <20130212095249.GC20039@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Matthew Garrett <matthew.garrett@nebula.com>,
+        Borislav Petkov <bp@alien8.de>, Kees Cook <keescook@chromium.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH] x86: Lock down MSR writing in secure boot
+References: <dee64752-850c-4d78-b703-f47a985bc13e@email.android.com>    <CAGXu5jLAufTRm=sDST0br_WEkn4o0Hpjv2jDP2Na=cCvuM+MGg@mail.gmail.com>    <1360355671.18083.18.camel@x230.lan>    <CAGXu5jKo2PfMBO4A0ZgQcrPuj8OHNaff+CjAesOAWkZc0vB9+Q@mail.gmail.com>    <51157C9C.6030501@zytor.com> <20130208230655.GB28990@pd.tnic>    <1360366012.18083.21.camel@x230.lan> <5115A4CC.3080102@zytor.com>    <1360373383.18083.23.camel@x230.lan>    <CAGXu5j+xvJ3L5ejxtZ-Jw3F6rV7OsrE0_HZCGu_er0rH2_PwKA@mail.gmail.com>    <20130209092925.GA17728@pd.tnic> <1360422712.18083.24.camel@x230.lan>   <511AE2CC.5040705@zytor.com> <1360733962.18083.30.camel@x230.lan>  <511B2EB9.5070406@zytor.com> <1360736860.18083.33.camel@x230.lan> <511B33BC.9080307@zytor.com>
+In-Reply-To: <511B33BC.9080307@zytor.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 12/02/2013 10:52, Ingo Molnar ha scritto:
-> Check the list I gave (unmodified):
+Il 13/02/2013 07:33, H. Peter Anvin ha scritto:
+>>
+>>> Sounds like you are thinking of CAP_SYS_ADMIN, but I don't really see a
+>>> huge difference between MSRs and I/O control registers... just different
+>>> address spaces.
+>>
+>> Not having CAP_SYS_RAWIO blocks various SCSI commands, for instance.
+>> These might result in the ability to write individual blocks or destroy
+>> the device firmware, but do any of them permit modifying the running
+>> kernel?
+
+No, they cannot.
+
+> That is just batshit crazy.  If you have CAP_SYS_RAWIO you can do iopl()
+> which means you can reprogram your northbridge, at which point you most
+> definitely *can* modify the running kernel.
 > 
-> "- Pekka listed new virtio drivers that were done via tools/kvm. 
+> And some SCSI driver requires this??!
 
-vhost-scsi got in first in tools/kvm, but out-of-tree patches had
-existed for QEMU for more than a year.  It was developed with QEMU.
+No, and that's why there is a patchset floating that lets you toggle
+this ability with a sysfs control.  This way you do not need
+CAP_SYS_RAWIO anymore.
 
->  - Pekka listed ARM KVM support which was written/prototyped
->    using tools/kvm.
-
-Again, I think both QEMU and tools/kvm were used, with QEMU probably
-coming first.  However, I'm not 100% sure.
-
->  - There's over a dozen bugfixes in your kernel which were found
->    via syscall fuzzing built into tools/kvm. (I can dig them all
->    out if you want.)
-
-This sounds like something that runs in a guest, not in the host.  As
-such it need not be tied to tools/kvm.  If there is a host component
-(host C code), I'd be interested.  I know that Fujitsu guys have patches
-for panic notification from the guest kernel, for example.
-
-But if there is a host component to it, then please go back to the
-original purpose of tools/kvm.  Drop all the QCOW, VNC, SeaBIOS
-nonsense.  Drop the userspace networking stack (tap is enough).  Make
-the tool into a library that supports nothing but virtio-{blk,net,9p}
-and VFIO.  Build _many_ narrow-focused tools around that library.
-
->> "sparse" is useful for kernel development. "git" is useful for 
->> kernel development. "xterm" is useful for kernel development.
-> 
-> That argument is silly beyond belief. Read this list:
-> 
->   - tools/kvm
->   - sparse
->   - git
->   - xterm
->   - perf
-> 
-> Which two tools in this list:
-> 
->  - Use and focus on Linux specific system calls to provide Linux
->    specific functionality?
-> 
->  - Are never - and will conceivably never - run on any kernel
->    which is not extremely Linux compatible?
-
-QEMU runs KVM on Solaris, FWIW.
+On non-x86 machines CAP_SYS_RAWIO is much less dangerous, especially
+when coupled with file DAC.
 
 Paolo
