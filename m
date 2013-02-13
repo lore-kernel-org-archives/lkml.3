@@ -1,118 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759327Ab3BMAJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 19:09:58 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:37662 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759276Ab3BMAJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 19:09:55 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        Jiang Liu <liuj97@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
-        Toshi Kani <toshi.kani@hp.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Myron Stowe <mstowe@redhat.com>, linux-pci@vger.kernel.org
-Subject: [PATCH] ACPI / PCI: Initialize PCI root drivers after PCI bus enumeration
-Date: Wed, 13 Feb 2013 01:16:20 +0100
-Message-ID: <1882094.fnYp8pBVVX@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc7; KDE/4.9.5; x86_64; ; )
+	id S1759369Ab3BMAKU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 19:10:20 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58545 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758451Ab3BMAKS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 19:10:18 -0500
+Date: Tue, 12 Feb 2013 16:09:04 -0800
+From: tip-bot for Borislav Petkov <bp@suse.de>
+Message-ID: <tip-9efb58de919efa8312861d454be014094f6f0ffc@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com, bp@suse.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, bp@suse.de, hpa@linux.intel.com
+In-Reply-To: <1360592538-10643-3-git-send-email-bp@alien8.de>
+References: <1360592538-10643-3-git-send-email-bp@alien8.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/asm] x86: Detect CPUID support early at boot
+Git-Commit-ID: 9efb58de919efa8312861d454be014094f6f0ffc
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 12 Feb 2013 16:09:10 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Commit-ID:  9efb58de919efa8312861d454be014094f6f0ffc
+Gitweb:     http://git.kernel.org/tip/9efb58de919efa8312861d454be014094f6f0ffc
+Author:     Borislav Petkov <bp@suse.de>
+AuthorDate: Mon, 11 Feb 2013 15:22:16 +0100
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Tue, 12 Feb 2013 15:48:41 -0800
 
-After commit 1aeae82 (ACPI / PCI: avoid building pci_slot as module)
-the pci_slot driver's .add() callback routine, acpi_pci_slot_add(),
-is executed from within acpi_pci_root_add() before the PCI devices on
-the bus are enumerated and that triggers the WARN_ON() in
-kobject_get():
+x86: Detect CPUID support early at boot
 
-WARNING: at /scratch/rafael/work/test/include/linux/kref.h:42 kobject_get+0x33/0x40()
-Hardware name: PORTEGE R500
-Modules linked in:
-Pid: 1, comm: swapper/0 Not tainted 3.8.0-rc7+ #160
-Call Trace:
- [<ffffffff8103d38a>] warn_slowpath_common+0x7a/0xb0
- [<ffffffff8103d3d5>] warn_slowpath_null+0x15/0x20
- [<ffffffff812f99b3>] kobject_get+0x33/0x40
- [<ffffffff81452b82>] get_device+0x12/0x30
- [<ffffffff8138df7b>] register_slot+0x243/0x295
- [<ffffffff810a7b6d>] ? trace_hardirqs_on+0xd/0x10
- [<ffffffff8137b7b9>] acpi_ns_walk_namespace+0x10f/0x24a
- [<ffffffff8138dd38>] ? walk_p2p_bridge+0x13b/0x13b
- [<ffffffff8138dd38>] ? walk_p2p_bridge+0x13b/0x13b
- [<ffffffff8137bdc3>] acpi_walk_namespace+0xe9/0x132
- [<ffffffff8138dd38>] ? walk_p2p_bridge+0x13b/0x13b
- [<ffffffff8138dcf5>] walk_p2p_bridge+0xf8/0x13b
- [<ffffffff8134d606>] ? acpi_os_signal_semaphore+0x76/0x87
- [<ffffffff8138dd38>] ? walk_p2p_bridge+0x13b/0x13b
- [<ffffffff8137b7b9>] acpi_ns_walk_namespace+0x10f/0x24a
- [<ffffffff8138dbfd>] ? do_sta_before_sun+0x2b/0x2b
- [<ffffffff8138dbfd>] ? do_sta_before_sun+0x2b/0x2b
- [<ffffffff8137bdc3>] acpi_walk_namespace+0xe9/0x132
- [<ffffffff81356071>] ? acpi_pci_root_add+0x3e7/0x49a
- [<ffffffff8138e07f>] acpi_pci_slot_add+0xb2/0x103
- [<ffffffff8138dd38>] ? walk_p2p_bridge+0x13b/0x13b
- [<ffffffff81356089>] acpi_pci_root_add+0x3ff/0x49a
+We detect CPUID function support on each CPU and save it for later use,
+obviating the need to play the toggle EFLAGS.ID game every time. C code
+is looking at ->cpuid_level anyway.
 
-which means that pci_bus->dev used in register_slot() has not been
-registered yet at that point.
-
-To fix this use the observation that before commit 1aeae82
-acpi_pci_slot_add() was always run after pci_bus_add_devices()
-and that happened to the acpiphp's .add() callback routine too.
-Thus it is safe to reorder acpi_pci_root_add() to make the PCI root
-drivers' .add() callbacks be run after pci_bus_add_devices(), so do
-that.
-
-This approach was previously proposed by Myron Stowe.
-
-References: https://patchwork.kernel.org/patch/1848781/
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Link: http://lkml.kernel.org/r/1360592538-10643-3-git-send-email-bp@alien8.de
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
+ arch/x86/kernel/head_32.S | 50 +++++++++++++++++++++++------------------------
+ 1 file changed, 25 insertions(+), 25 deletions(-)
 
-The commit mentioned in the changelog above is in linux-pm.git/linux-next.
-
-Thanks,
-Rafael
-
----
- drivers/acpi/pci_root.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
-
-Index: test/drivers/acpi/pci_root.c
-===================================================================
---- test.orig/drivers/acpi/pci_root.c
-+++ test/drivers/acpi/pci_root.c
-@@ -600,17 +600,20 @@ static int acpi_pci_root_add(struct acpi
- 	if (system_state != SYSTEM_BOOTING)
- 		pci_assign_unassigned_bus_resources(root->bus);
+diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
+index a9c5cc8..e3725a0 100644
+--- a/arch/x86/kernel/head_32.S
++++ b/arch/x86/kernel/head_32.S
+@@ -307,30 +307,39 @@ default_entry:
+ 	movl %eax,%cr0
  
-+	/* need to after hot-added ioapic is registered */
-+	if (system_state != SYSTEM_BOOTING)
-+		pci_enable_bridges(root->bus);
+ /*
+- *	New page tables may be in 4Mbyte page mode and may
+- *	be using the global pages. 
++ * We want to start out with EFLAGS unambiguously cleared. Some BIOSes leave
++ * bits like NT set. This would confuse the debugger if this code is traced. So
++ * initialize them properly now before switching to protected mode. That means
++ * DF in particular (even though we have cleared it earlier after copying the
++ * command line) because GCC expects it.
++ */
++	pushl $0
++	popfl
 +
-+	pci_bus_add_devices(root->bus);
++/*
++ * New page tables may be in 4Mbyte page mode and may be using the global pages.
+  *
+- *	NOTE! If we are on a 486 we may have no cr4 at all!
+- *	Specifically, cr4 exists if and only if CPUID exists
+- *	and has flags other than the FPU flag set.
++ * NOTE! If we are on a 486 we may have no cr4 at all! Specifically, cr4 exists
++ * if and only if CPUID exists and has flags other than the FPU flag set.
+  */
++	movl $-1,pa(X86_CPUID)		# preset CPUID level
+ 	movl $X86_EFLAGS_ID,%ecx
+ 	pushl %ecx
+-	popfl
+-	pushfl
+-	popl %eax
+-	pushl $0
+-	popfl
++	popfl				# set EFLAGS=ID
+ 	pushfl
+-	popl %edx
+-	xorl %edx,%eax
+-	testl %ecx,%eax
+-	jz 6f			# No ID flag = no CPUID = no CR4
++	popl %eax			# get EFLAGS
++	testl $X86_EFLAGS_ID,%eax	# did EFLAGS.ID remained set?
++	jz 6f				# hw disallowed setting of ID bit
++					# which means no CPUID and no CR4
 +
- 	mutex_lock(&acpi_pci_root_lock);
-+
- 	list_for_each_entry(driver, &acpi_pci_drivers, node)
- 		if (driver->add)
- 			driver->add(root);
--	mutex_unlock(&acpi_pci_root_lock);
++	xorl %eax,%eax
++	cpuid
++	movl %eax,pa(X86_CPUID)		# save largest std CPUID function
  
--	/* need to after hot-added ioapic is registered */
--	if (system_state != SYSTEM_BOOTING)
--		pci_enable_bridges(root->bus);
-+	mutex_unlock(&acpi_pci_root_lock);
+ 	movl $1,%eax
+ 	cpuid
+-	andl $~1,%edx		# Ignore CPUID.FPU
+-	jz 6f			# No flags or only CPUID.FPU = no CR4
++	andl $~1,%edx			# Ignore CPUID.FPU
++	jz 6f				# No flags or only CPUID.FPU = no CR4
  
--	pci_bus_add_devices(root->bus);
- 	return 1;
+ 	movl pa(mmu_cr4_features),%eax
+ 	movl %eax,%cr4
+@@ -378,14 +387,6 @@ default_entry:
+ 	addl $__PAGE_OFFSET, %esp
  
- out_del_root:
-
+ /*
+- * Initialize eflags.  Some BIOS's leave bits like NT set.  This would
+- * confuse the debugger if this code is traced.
+- * XXX - best to initialize before switching to protected mode.
+- */
+-	pushl $0
+-	popfl
+-
+-/*
+  * start system 32-bit setup. We need to re-do some of the things done
+  * in 16-bit mode for the "real" operations.
+  */
+@@ -461,7 +462,6 @@ is486:	movl $0x50022,%ecx	# set AM, WP, NE and MP
+ 	xorl %eax,%eax			# Clear LDT
+ 	lldt %ax
+ 
+-	cld			# gcc2 wants the direction flag cleared at all times
+ 	pushl $0		# fake return address for unwinder
+ 	jmp *(initial_code)
+ 
