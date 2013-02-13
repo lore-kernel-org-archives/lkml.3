@@ -1,48 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933500Ab3BMKAV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 05:00:21 -0500
-Received: from vsp-authed02.binero.net ([195.74.38.226]:24441 "HELO
-	vsp-authed-03-02.binero.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932643Ab3BMKAT (ORCPT
+	id S933583Ab3BMKAo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 05:00:44 -0500
+Received: from medicina.udea.edu.co ([200.24.17.109]:60660 "EHLO
+	medicina.udea.edu.co" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933396Ab3BMKAn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 05:00:19 -0500
-Message-ID: <511B642A.9000004@gaisler.com>
-Date: Wed, 13 Feb 2013 11:00:10 +0100
-From: Andreas Larsson <andreas@gaisler.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Wed, 13 Feb 2013 05:00:43 -0500
+X-Greylist: delayed 3550 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Feb 2013 05:00:42 EST
+Message-Id: <201302130950.r1D9N7PO024261@medicina.udea.edu.co>
+Content-Type: text/plain; charset="iso-8859-1"
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH v3 5/5] gpio: Make of_count_named_gpios() use new of_count_phandle_with_args()
-References: <1360710401-16757-1-git-send-email-grant.likely@secretlab.ca> <1360710401-16757-6-git-send-email-grant.likely@secretlab.ca>
-In-Reply-To: <1360710401-16757-6-git-send-email-grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: WARNING VIRUS DETECTED
+To: Recipients <landerso@kidsroe.org>
+From: "Webmail Helpdesk Support Centre" <landerso@kidsroe.org>
+Date: Wed, 13 Feb 2013 01:48:56 -0800
+Reply-To: landerso@kidsroe.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-02-13 00:06, Grant Likely wrote:
-> This patch replaces the horribly coded of_count_named_gpios() with a
-> call to of_count_phandle_with_args() which is far more efficient. This
-> also changes the return value of of_gpio_count() & of_gpio_named_count()
-> from 'unsigned int' to 'int' so that it can return an error code. All
-> the users of that function are fixed up to correctly handle a negative
-> return value.
->
-> v2: Split GPIO portion into a separate patch
->
-> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: Andreas Larsson <andreas@gaisler.com>
+Strong virus has been detected in your email account, which might make you lose your email account if not deleted. Use the below web link to Delete the virus in your email account:
 
-For gpiolib-of.c, of_gpio.h and spi.c:
-Tested-by: Andreas Larsson <andreas@gaisler.com>
+Click link below:
+https://docs.google.com/forms/d/1AuwnzGFTB5mTL47G7J8Psid34XfBtJp-eEp0T9nYp1w/viewform
 
-Cheers,
-Andreas Larsson
-
+Thank you for using our email.
+Copyright ©2013 Email Helpdesk Centre
