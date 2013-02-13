@@ -1,37 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756693Ab3BMSl5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 13:41:57 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:42963 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752892Ab3BMSl4 (ORCPT
+	id S932418Ab3BMSnQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 13:43:16 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:39567 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754236Ab3BMSnP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 13:41:56 -0500
-Date: Wed, 13 Feb 2013 13:41:53 -0500 (EST)
-Message-Id: <20130213.134153.631152881474627822.davem@davemloft.net>
-To: tipecaml@gmail.com
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        mugunthanvnm@ti.com, zonque@gmail.com, hotforest@gmail.com,
-        Julia.Lawall@lip6.fr, netdev@vger.kernel.org
-Subject: Re: [PATCH] net: ethernet: ti: remove redundant NULL check.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1360709550-821-1-git-send-email-tipecaml@gmail.com>
-References: <20130212.170650.89534546100043269.davem@davemloft.net>
-	<1360709550-821-1-git-send-email-tipecaml@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Wed, 13 Feb 2013 13:43:15 -0500
+Message-ID: <1360780981.8957.3.camel@laptop>
+Subject: Re: [PATCH 2/3] sched: Move idle_balance() to post_schedule
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>
+Date: Wed, 13 Feb 2013 19:43:01 +0100
+In-Reply-To: <20130212230017.625583020@goodmis.org>
+References: <20130212225412.781044738@goodmis.org>
+	 <20130212230017.625583020@goodmis.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cyril Roelandt <tipecaml@gmail.com>
-Date: Tue, 12 Feb 2013 23:52:30 +0100
+On Tue, 2013-02-12 at 17:54 -0500, Steven Rostedt wrote:
+> There's no real reason that the idle_balance() needs to be called in
+> the
+> middle of schedule anyway. The only benefit is that if a task is
+> pulled
+> to this CPU, it can be scheduled without the need to schedule the idle
+> task. 
 
-> cpdma_chan_destroy() on a NULL pointer is a no-op, so the NULL check in
-> cpdma_ctlr_destroy() can safely be removed.
-> 
-> Signed-off-by: Cyril Roelandt <tipecaml@gmail.com>
+Uhm, istr that extra schedule being an issue somewhere.. Make very sure
+you don't regress anything silly like sysbench or hackbench. Maybe ask
+Mike, he seems to have a better retention for benchmark weirdness than
+me.
 
-Applied, thanks.
+> But load balancing and migrating the task makes a switch to idle
+> and back negligible.
+
+How does that follow? We can have to-idle switches _far_ more often than
+we balance.
+
