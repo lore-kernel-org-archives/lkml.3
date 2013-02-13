@@ -1,146 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934050Ab3BMOcU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 09:32:20 -0500
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:55768 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756877Ab3BMOcS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 09:32:18 -0500
+	id S934070Ab3BMOfO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 09:35:14 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:44272 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755586Ab3BMOfL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 09:35:11 -0500
+Date: Wed, 13 Feb 2013 15:35:04 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        dave@linux.vnet.ibm.com, gleb@redhat.com, riel@redhat.com,
+        shuah.khan@hp.com, mtosatti@redhat.com, tglx@linutronix.de
+Cc: linux-tip-commits@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [tip:x86/mm] x86/kvm: Fix compile warning in
+ kvm_register_steal_time()
+Message-ID: <20130213143503.GA26948@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>, mingo@kernel.org,
+	hpa@zytor.com, linux-kernel@vger.kernel.org,
+	dave@linux.vnet.ibm.com, gleb@redhat.com, riel@redhat.com,
+	shuah.khan@hp.com, mtosatti@redhat.com, tglx@linutronix.de,
+	linux-tip-commits@vger.kernel.org,
+	Andrew Morton <akpm@linux-foundation.org>
+References: <1360119442.8356.8.camel@lorien2>
+ <tip-136867f517cbc3f8a91f035677911a6b503c3323@git.kernel.org>
 MIME-Version: 1.0
-X-Originating-IP: [111.65.28.56]
-In-Reply-To: <1843565.7Y1sC8j6FG@vostro.rjw.lan>
-References: <CAMVG2svG21yiM1wkH4_2pen2n+cr2-Zv7TbH3Gj+8MwevZjDbw@mail.gmail.com>
-	<CAErSpo6rGYLQeP8Myu=octSPY_0R+B7ptBLhLawd_A2E3NRsAw@mail.gmail.com>
-	<6086479.ycKj2j8yeP@vostro.rjw.lan>
-	<1843565.7Y1sC8j6FG@vostro.rjw.lan>
-Date: Wed, 13 Feb 2013 22:32:17 +0800
-Message-ID: <CAMVG2ssOMMVBcD0kLX=Wo9x2cMfdi+3FYNEP-MiDRK4fs24auw@mail.gmail.com>
-Subject: Re: [3.8-rc7] PCI hotplug wakeup oops
-From: Daniel J Blueman <daniel@quora.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Yijing Wang <wangyijing@huawei.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <tip-136867f517cbc3f8a91f035677911a6b503c3323@git.kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 February 2013 03:49, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Monday, February 11, 2013 08:27:49 PM Rafael J. Wysocki wrote:
->> On Monday, February 11, 2013 12:01:37 PM Bjorn Helgaas wrote:
->> > [+cc Rafael]
->> >
->> > On Mon, Feb 11, 2013 at 10:08 AM, Daniel J Blueman <daniel@quora.org> wrote:
->> > > On 11 February 2013 21:03, Daniel J Blueman <daniel@quora.org> wrote:
->> > >> With 3.8-rc7, when unplugging the Thunderbolt ethernet adapter (bus 0a
->> > >> [1]) on a Macbook Pro 10,1, we see the PCIe port correctly released:
->> > >>
->> > >> pciehp 0000:06:03.0:pcie24: Card not present on Slot(3)
->> > >> tg3 0000:0a:00.0: tg3_abort_hw timed out, TX_MODE_ENABLE will not
->> > >> clear MAC_TX_MODE=ffffffff
->> > >> tg3 0000:0a:00.0 eth0: No firmware running
->> > >> tg3 0000:0a:00.0 eth0: Link is down
->> > >> [sched_delayed] sched: RT throttling activated
->> > >> pcieport 0000:00:01.1: System wakeup enabled by ACPI
->> > >> pciehp 0000:09:00.0:pcie24: unloading service driver pciehp
->> > >> pci_bus 0000:0a: busn_res: [bus 0a] is released
->> > >> pci_bus 0000:09: busn_res: [bus 09-0a] is released
->> > >>
->> > >> After some activity later (eg I can reproduce this by switching to a
->> > >> text console and back), often we'll see an oops:
->> > >>
->> > >> Unable to handle kernel paging request at 0000000000001070
->> > >> pci_pme_list_scan+0x3d/0xe0
->> > >> Call Trace:
->> > >> process_one_work+0x193
->> > >> ? process_one_work+0x131
->> > >> ? pci_pme_wakeup+0x60
->> > >> worker_thread+0x15d
->> > >>
->> > >> (gdb) list *(pci_pme_list_scan+0x3d)
->> > >> 0xffffffff8123f6dd is in pci_pme_list_scan (drivers/pci/pci.c:1556).
->> > >> 1551                                    /*
->> > >> 1552                                     * If bridge is in low power state, the
->> > >> 1553                                     * configuration space of subordinate devices
->> > >> 1554                                     * may be not accessible
->> > >> 1555                                     */
->> > >> 1556                                    if (bridge && bridge->current_state != PCI_D0)
->> > >> 1557                                            continue;
->> > >> 1558                                    pci_pme_wakeup(pme_dev->dev, NULL);
->> > >> 1559                            } else {
->> > >> 1560                                    list_del(&pme_dev->list);
->> > >>
->> > >> Since a panic in vsnprintf happens after the oops (hence I can't catch
->> > >> it with EFI pstore), it is almost certainly significant heap
->> > >> corruption; this would explain why pme_dev became null (the load has
->> > >> been ordered ahead).
->> > >>
->> > >> I'll see what I can find out with memory poisoning and list debugging.
->> > >
->> > > Enabling a bunch of related debugging, we see pme_dev is non-null and:
->> > >
->> > > BUG: Unable to handle NULL pointer dereference at
->> > > pci_bus_read_config_word+0x6c
->> > > PGD 26314c067 PUD 2633f9067 PMD 0
->> > > Oops: 0000 [#1] SMP
->> > > pci_check_pme_status+0x4f
->> > > pci_pme_wakeup+0x21
->> > > pci_pme_list_scan+0xd5
->> > > process_one_work+0x1ca
->> > > ? process_one_work+0x160
->> > > ? pci_pme_wakeup+0x60
->> > > worker_thread+0x14e
->> > >
->> > > Anyway, it looks like the device being unplugged wasn't removed from
->> > > pci_pme_list as pci_pme_active(dev, false) wasn't called.
->> > >
->> > > From a quick review, I wasn't able to find the right place in the
->> > > call-chain which I only see releases the child busses and PCIe port
->> > > drivers. Anyone?
->> >
->> > It looks like drivers *add* devices to pci_pme_list when they use
->> > pci_enable_wake() or pci_wake_from_d3().  But many drivers never
->> > remove their devices, and I don't see any place where the core does it
->> > either.  My guess is we need to remove it in pci_stop_dev() (we
->> > already do pcie_aspm_exit_link_state() there) or somewhere similar.
->>
->> Yes, we should call pci_pme_active(dev, false) somewhere in there I think.
->> It's fine to call that even if PME was not "active" before.
->
-> Daniel, I wonder if the patch below helps?
->
-> Rafael
->
->
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Mon, Feb 11, 2013 at 04:36:02AM -0800, tip-bot for Shuah Khan wrote:
+> Commit-ID:  136867f517cbc3f8a91f035677911a6b503c3323
+> Gitweb:     http://git.kernel.org/tip/136867f517cbc3f8a91f035677911a6b503c3323
+> Author:     Shuah Khan <shuah.khan@hp.com>
+> AuthorDate: Tue, 5 Feb 2013 19:57:22 -0700
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Mon, 11 Feb 2013 11:04:31 +0100
+> 
+> x86/kvm: Fix compile warning in kvm_register_steal_time()
+> 
+> Fix the following compile warning in kvm_register_steal_time():
+> 
+>   CC      arch/x86/kernel/kvm.o
+>   arch/x86/kernel/kvm.c: In function ‘kvm_register_steal_time’: arch/x86/kernel/kvm.c:302:3:
+>   warning: format ‘%lx’ expects argument of type ‘long unsigned int’, but argument 3 has type ‘phys_addr_t’ [-Wformat]
+> 
+> Introduced via:
+> 
+>   5dfd486c4750 x86, kvm: Fix kvm's use of __pa() on percpu areas
+>   d76565344512 x86, mm: Create slow_virt_to_phys()
+>   f3c4fbb68e93 x86, mm: Use new pagetable helpers in try_preserve_large_page()
+>   4cbeb51b860c x86, mm: Pagetable level size/shift/mask helpers
+>   a25b9316841c x86, mm: Make DEBUG_VIRTUAL work earlier in boot
+> 
+> Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+> Acked-by: Gleb Natapov <gleb@redhat.com>
+> Cc: Marcelo Tosatti <mtosatti@redhat.com>
+> Cc: Dave Hansen <dave@linux.vnet.ibm.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: shuahkhan@gmail.com
+> Cc: avi@redhat.com
+> Cc: gleb@redhat.com
+> Cc: mst@redhat.com
+> Link: http://lkml.kernel.org/r/1360119442.8356.8.camel@lorien2
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
 > ---
->  drivers/pci/remove.c |    2 ++
->  1 file changed, 2 insertions(+)
->
-> Index: test/drivers/pci/remove.c
-> ===================================================================
-> --- test.orig/drivers/pci/remove.c
-> +++ test/drivers/pci/remove.c
-> @@ -19,6 +19,8 @@ static void pci_free_resources(struct pc
->
->  static void pci_stop_dev(struct pci_dev *dev)
->  {
-> +       pci_pme_active(dev, false);
-> +
->         if (dev->is_added) {
->                 pci_proc_detach_device(dev);
->                 pci_remove_sysfs_dev_files(dev);
+>  arch/x86/kernel/kvm.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+> index aa7e58b..9cec202 100644
+> --- a/arch/x86/kernel/kvm.c
+> +++ b/arch/x86/kernel/kvm.c
+> @@ -298,8 +298,8 @@ static void kvm_register_steal_time(void)
+>  	memset(st, 0, sizeof(*st));
+>  
+>  	wrmsrl(MSR_KVM_STEAL_TIME, (slow_virt_to_phys(st) | KVM_MSR_ENABLED));
+> -	printk(KERN_INFO "kvm-stealtime: cpu %d, msr %lx\n",
+> -		cpu, slow_virt_to_phys(st));
+> +	pr_info("kvm-stealtime: cpu %d, msr %llx\n",
+> +		cpu, (unsigned long long) slow_virt_to_phys(st));
 
-Indeed, the oops would prevent hitting the lockdep warning, which is a
-secondary matter.
+I'm guessing this - like a bunch of other places in the kernel - should
+be converted to the new %pa printk format once the last has been merged:
 
-As it stands, this fix prevents the fatal oops, so IMHO is urgent
-material for 3.8-final. I can't prove that is_added will always be
-true, so let's stick with your patch.
+http://marc.info/?l=linux-kernel&m=135883371328510&w=2
 
-Tested-by: Daniel J Blueman <daniel@quora.org>
 -- 
-Daniel J Blueman
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
