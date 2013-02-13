@@ -1,86 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757172Ab3BMNoU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 08:44:20 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:57450 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755904Ab3BMNoS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 08:44:18 -0500
-Message-ID: <1360763044.3524.367.camel@falcor1.watson.ibm.com>
-Subject: Re: [PATCH 2/2] ima: Support appraise_type=imasig_optional
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 13 Feb 2013 08:44:04 -0500
-In-Reply-To: <CALLzPKaHLSg0TromnTvpEVroBUtPJE3TwF4RmcA2dtkuB5H4hQ@mail.gmail.com>
-References: <1360613493-11969-1-git-send-email-vgoyal@redhat.com>
-	 <1360613493-11969-3-git-send-email-vgoyal@redhat.com>
-	 <CALLzPKZA92MxJYjC+OR-KDv4rHQRgKSBHSAY2fOZsEDxiO11yA@mail.gmail.com>
-	 <1360760195.3524.355.camel@falcor1.watson.ibm.com>
-	 <CALLzPKaHLSg0TromnTvpEVroBUtPJE3TwF4RmcA2dtkuB5H4hQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+	id S1757077Ab3BMNrR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 08:47:17 -0500
+Received: from mail.mev.co.uk ([62.49.15.74]:43503 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755811Ab3BMNrQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 08:47:16 -0500
+Message-ID: <511B995E.3030905@mev.co.uk>
+Date: Wed, 13 Feb 2013 13:47:10 +0000
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130115 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Ian Abbott <ian.abbott@mev.co.uk>
+CC: Dan Carpenter <dan.carpenter@oracle.com>, Peter Huewe <peterhuewe@gmx.de>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Mori Hess <fmhess@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging/comedi: Fix undefined array subscript
+References: <1360726254-7895-1-git-send-email-peterhuewe@gmx.de> <20130213073214.GR4937@mwanda> <511B7F58.4000909@mev.co.uk>
+In-Reply-To: <511B7F58.4000909@mev.co.uk>
+Content-Type: text/plain; charset="us-ascii"; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13021313-2876-0000-0000-0000053CD441
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-02-13 at 15:13 +0200, Kasatkin, Dmitry wrote:
-> On Wed, Feb 13, 2013 at 2:56 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> > On Wed, 2013-02-13 at 14:31 +0200, Kasatkin, Dmitry wrote:
-> >> On Mon, Feb 11, 2013 at 10:11 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> >
-> >> > @@ -158,7 +165,8 @@ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
-> >> >         }
-> >> >         switch (xattr_value->type) {
-> >> >         case IMA_XATTR_DIGEST:
-> >> > -               if (iint->flags & IMA_DIGSIG_REQUIRED) {
-> >> > +               if (iint->flags & IMA_DIGSIG_REQUIRED ||
-> >> > +                   iint->flags & IMA_DIGSIG_OPTIONAL) {
-> >> >                         cause = "IMA signature required";
-> >> >                         status = INTEGRITY_FAIL;
-> >> >                         break;
-> >>
-> >> This looks a bit odd... If "optional" signature is missing  - we fail..
-> >> It is optional... Why we should fail?
-> >
-> > 'imasig_optional' does not only mean that the signature is optional, but
-> > also implies that it has to be a digital signature, not a hash.  This
-> > latter part is what IMA_DIGSIG_REQUIRED means.
-> >
-> > If 'imasig_optional' set both 'IMA_DIGSIG_OPTIONAL' and
-> > 'IMA_DIGSIG_REQUIRED', then this change wouldn't be necessary.
-> >
-> > IMA_DIGSIG_REQUIRED would enforce that it is a signature.
-> > IMA_DIGSIG_OPTIONAL would fail only for files with invalid signatures.
-> >
-> 
-> It sounds odd that optional signature is actually required.
-> Optional for me means that it may be there or may be not.
-> If it is not there, then it may be hash or nothing.
-> 
-> I see it is more logical if it is "appraise_type=optional",
-> which means that we might have no xattr value, hash or signature.
-> It if happens to be a signature, then IMA_DIGSIG flag will be set.
+On 2013-02-13 11:56, Ian Abbott wrote:
+> For a digital output subdevice, you could either read back the current
+> values directly from the hardware or just use the value previously
+> written.  The Velleman K8055 doesn't have a command to read back the
+> digital outputs from the hardware, so the last written value has to be
+> used.  But what if the digital outputs have never been written (or the
+> analog outputs have never been written, since the same command updates
+> all analog and digital channels)?  A "reset" command is sent to the
+> hardware on initialization by vmk80xx_reset_device() (only called for
+> the K8055), but I don't know what effect this has on the actual digital
+> (and analog) outputs (though I could find out easily enough as we appear
+> to have one of these kits (assembled) lying around in the office).  If
+> necessary, we may have to also send a "write" command on initialization
+> to make the hardware outputs match the initial software state.
 
-Right, 'appraise_type=' could have been defined either as a comma
-separated list of options (eg. appraise_type=imassig,optional) or, as
-Vivek implemented, a new option.  Eventually, we will need to extend
-'appraise_type=' (eg. required algorithm), but for now I don't have a
-problem with the new option.
+I've had a quick play with a K8055 and it seems the "reset" command 
+issued during hardware initialization has no effect on the digital 
+outputs.  (I tested this by setting some digital outputs with comedi 
+instructions - there are some handy LEDs on the board that light up or 
+not according to the state of the digital outputs - then rmmod'ing and 
+modprobe'ing the vmk80xx module - the LEDs remained in the same state.)
 
-thanks,
+Since we can't read back the outputs on this board we should initialize 
+them to a known state.  I'll submit some patches later.
 
-Mimi
+Nothing to do with the patch in this thread, which has my Ack.
 
-> I asked Vivek to send a policy file he uses in his system.
-> I would like to see how system configured as a whole...
-> 
-> - Dmitry
+Acked-by: Ian Abbott <abbotti@mev.co.uk>
 
-
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
