@@ -1,109 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758457Ab3BMCGK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 21:06:10 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:46596 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753153Ab3BMCGI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 21:06:08 -0500
-Date: Wed, 13 Feb 2013 13:05:59 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matt Fleming <matt.fleming@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Seiji Aguchi <seiji.aguchi@hds.com>
-Subject: linux-next: manual merge of the ia64 tree with Linus' tree
-Message-Id: <20130213130559.dd6b2ac2c59093cc1794f41b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__13_Feb_2013_13_05_59_+1100_Q_j8Ovl9dXuJuf4l"
+	id S1759641Ab3BMCGW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 21:06:22 -0500
+Received: from na01-bl2-obe.ptr.protection.outlook.com ([65.55.169.30]:5070
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759370Ab3BMCGT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 21:06:19 -0500
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT001.namprd03.prod.outlook.com;R:internal;EFV:INT
+X-SpamScore: -1
+X-BigFish: PS-1(zz9371I542I1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahz97hz17326ah8275bh8275dhz31h2a8h668h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh9a9j1155h)
+X-Forefront-Antispam-Report-Untrusted: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:SN2PR03MB061;H:SN2PR03MB061.namprd03.prod.outlook.com;LANG:en;
+From: KY Srinivasan <kys@microsoft.com>
+To: "mingo@kernel.org" <mingo@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KY Srinivasan <kys@microsoft.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Subject: RE: [tip:x86/hyperv] x86, hyperv: HYPERV depends on X86_LOCAL_APIC
+Thread-Topic: [tip:x86/hyperv] x86, hyperv: HYPERV depends on X86_LOCAL_APIC
+Thread-Index: AQHOCY3pxY3utlsluUCTO1jjg95ZS5h3CgDw
+Date: Wed, 13 Feb 2013 02:05:31 +0000
+Message-ID: <b7a851463f4c4846a553307b81bf7b6c@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <tip-bc2b0331e077f576369a2b6c75d15ed4de4ef91f@git.kernel.org>
+ <tip-cb20e5f2c8d6ba7440a32f4d70c0755bceb36e78@git.kernel.org>
+In-Reply-To: <tip-cb20e5f2c8d6ba7440a32f4d70c0755bceb36e78@git.kernel.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [98.110.61.163]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-OrganizationHeadersPreserved: SN2PR03MB061.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUTRONIX.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUX.INTEL.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%ZYTOR.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14HUBC103.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14HUBC103.redmond.corp.microsoft.com
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(199002)(51704002)(377454001)(189002)(13464002)(15202345001)(4396001)(74502001)(1511001)(50986001)(49866001)(47736001)(59766001)(20776003)(47976001)(63696002)(74662001)(77982001)(50466001)(47776003)(33646001)(23676001)(46102001)(54316002)(56776001)(53806001)(51856001)(44976002)(31966008)(47446002)(54356001)(79102001)(5343635001)(56816002)(5343655001)(16676001)(65816001)(6806001)(66066001)(80022001)(76482001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2FFO11HUB020;H:TK5EX14HUBC103.redmond.corp.microsoft.com;RD:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-OriginatorOrg: microsoft.onmicrosoft.com
+X-Forefront-PRVS: 07562C22DA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1D26PwX027238
 
---Signature=_Wed__13_Feb_2013_13_05_59_+1100_Q_j8Ovl9dXuJuf4l
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi all,
 
-Today's linux-next merge of the ia64 tree got a conflict in
-drivers/firmware/efivars.c between commit 83e68189745a ("efi: Make
-'efi_enabled' a function to query EFI facilities") from the  tree and
-commit a93bc0c6e07e ("efi_pstore: Introducing workqueue updating sysfs")
-from the ia64 tree.
+> -----Original Message-----
+> From: tip tree robot [mailto:tipbot@zytor.com] On Behalf Of tip-bot for H. Peter
+> Anvin
+> Sent: Tuesday, February 12, 2013 8:59 PM
+> To: linux-tip-commits@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org; hpa@zytor.com; mingo@kernel.org; KY
+> Srinivasan; tglx@linutronix.de; hpa@linux.intel.com
+> Subject: [tip:x86/hyperv] x86, hyperv: HYPERV depends on X86_LOCAL_APIC
+> 
+> Commit-ID:  cb20e5f2c8d6ba7440a32f4d70c0755bceb36e78
+> Gitweb:
+> http://git.kernel.org/tip/cb20e5f2c8d6ba7440a32f4d70c0755bceb36e78
+> Author:     H. Peter Anvin <hpa@linux.intel.com>
+> AuthorDate: Tue, 12 Feb 2013 17:46:23 -0800
+> Committer:  H. Peter Anvin <hpa@linux.intel.com>
+> CommitDate: Tue, 12 Feb 2013 17:46:23 -0800
+> 
+> x86, hyperv: HYPERV depends on X86_LOCAL_APIC
+> 
+> In order to compile in the special Hyper-V interrupt vector, we need
+> infrastructure in arch/x86/apic/apic.c.  At least for now, simply
+> require CONFIG_X86_LOCAL_APIC in order to enable CONFIG_HYPERV.
+> 
+> Link: http://lkml.kernel.org/r/tip-
+> bc2b0331e077f576369a2b6c75d15ed4de4ef91f@git.kernel.org
+> Cc: K. Y. Srinivasan <kys@microsoft.com>
+> Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+> ---
+>  drivers/hv/Kconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/hv/Kconfig b/drivers/hv/Kconfig
+> index b38ef6d..64630f1 100644
+> --- a/drivers/hv/Kconfig
+> +++ b/drivers/hv/Kconfig
+> @@ -2,7 +2,7 @@ menu "Microsoft Hyper-V guest support"
+> 
+>  config HYPERV
+>  	tristate "Microsoft Hyper-V client drivers"
+> -	depends on X86 && ACPI && PCI
+> +	depends on X86 && ACPI && PCI && X86_LOCAL_APIC
+>  	help
+>  	  Select this option to run Linux as a Hyper-V client operating
+>  	  system.
+> 
+Thank you.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/firmware/efivars.c
-index f5596db,6922511..0000000
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@@ -790,10 -798,9 +798,10 @@@ static ssize_t efivarfs_file_write(stru
- =20
-  	} else if (status =3D=3D EFI_NOT_FOUND) {
-  		list_del(&var->list);
-- 		spin_unlock(&efivars->lock);
-+ 		spin_unlock_irq(&efivars->lock);
-  		efivar_unregister(var);
-  		drop_nlink(inode);
- +		d_delete(file->f_dentry);
-  		dput(file->f_dentry);
- =20
-  	} else {
-@@@ -993,9 -1000,9 +1001,9 @@@ static int efivarfs_unlink(struct inod
- =20
-  	if (status =3D=3D EFI_SUCCESS || status =3D=3D EFI_NOT_FOUND) {
-  		list_del(&var->list);
-- 		spin_unlock(&efivars->lock);
-+ 		spin_unlock_irq(&efivars->lock);
-  		efivar_unregister(var);
- -		drop_nlink(dir);
- +		drop_nlink(dentry->d_inode);
-  		dput(dentry);
-  		return 0;
-  	}
-@@@ -1823,7 -1906,9 +1907,9 @@@ err_put
-  static void __exit
-  efivars_exit(void)
-  {
-+ 	cancel_work_sync(&efivar_work);
-+=20
- -	if (efi_enabled) {
- +	if (efi_enabled(EFI_RUNTIME_SERVICES)) {
-  		unregister_efivars(&__efivars);
-  		kobject_put(efi_kobj);
-  	}
-
---Signature=_Wed__13_Feb_2013_13_05_59_+1100_Q_j8Ovl9dXuJuf4l
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRGvUHAAoJEECxmPOUX5FEbO0P/3SexI9LcvZm4zRxiCWscJK2
-NzS2MB2RIGkeWS3eKiIZ30gCM0cVHl14Ixur9QT43XkaYMOzNRF/7zePzWms//7s
-OOykxawT5zJet2wpM3c13VyxWysV+kn6230VKdfWNH9PR9xTm+Hq3j+t+lL+QqI3
-CfdmN0GRqxYhAcm6ZyYlSToXKbpMpeiCDY2gJ8VzLopvzKR5B5U7El2o3TzGGrzY
-mv74eJI4/9JxmEZwjq0TjdNoQPhwgtLfZ4n3/OFMNOKCMXXkVvFlfHNSnI15hkxF
-L6dt1ksJGpeQYvfSGjrPPwY/Bk+5UWncwVs4D4YVhuN4jI/YyFw7VxZCFAFns/YV
-sqv6K3ARnu0m0tTT58DmYX+DOhFeZs6NbcDQAOFFY2mYFKIt2nJAe5ZFmT4NRLkv
-9wFE93isA/EVp2uhYW9L7vzcoa04NDwptQ6mO/eGZZCVb8VOE70kKSjQubfNMXD6
-YXkrcx5OY/k+ILTbN+q9eoonjb21YVGxfrtNLJGRfHDzdTOEFc75nrsOa/4CcG9x
-2UqEFoj+vnUd16ZyzIpoR+gAC+q3ZR/SmBFL+ieFfZolqAAhXXAb04HDYlvhM6mX
-u3zqRVKnDi7o5D/BPD1xeeKMXdyYn6Iaw3AEo2vtUr9Gqfg7U/L7Ty39n0Vq9K70
-8ucX5nc1/3PjRWR1Ll2Q
-=fEwd
------END PGP SIGNATURE-----
-
---Signature=_Wed__13_Feb_2013_13_05_59_+1100_Q_j8Ovl9dXuJuf4l--
+K. Y
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
