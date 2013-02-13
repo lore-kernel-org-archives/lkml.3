@@ -1,94 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965213Ab3BMS1J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 13:27:09 -0500
-Received: from emea01-db8-lr-184-154-199-213.outbound.messaging.microsoft.com ([213.199.154.184]:6292 "EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934488Ab3BMS1G convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 13:27:06 -0500
-X-Greylist: delayed 1805 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Feb 2013 13:27:06 EST
-X-Forefront-Antispam-Report: CIP:132.245.1.149;KIP:(null);UIP:(null);IPV:NLI;H:BLUPRD0512HT001.namprd05.prod.outlook.com;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: PS1(zzzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz17326ah8275bh1954cbhz32i2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h19ceh1155h)
-From: Scan Subscription <scan-subscription@coverity.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "hpa@zytor.com" <hpa@zytor.com>
-Subject: New Defect(s) reported by Coverity Scan 
-Thread-Topic: New Defect(s) reported by Coverity Scan 
-Thread-Index: Ac4KEOUU2DGb0mqpS8enkfMaRvsyag==
-Date: Wed, 13 Feb 2013 17:40:11 +0000
-Message-ID: <C0A4ACBB26D853488EA0C68388B70268172CCF11@BLUPRD0512MB628.namprd05.prod.outlook.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [64.125.71.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753204Ab3BMS1k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 13:27:40 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:51800 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751670Ab3BMS1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 13:27:39 -0500
+Date: Wed, 13 Feb 2013 19:27:30 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Du Jiulun <dujiulun@gmail.com>
+Cc: "Luck, Tony" <tony.luck@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hillf Danton <dhillf@gmail.com>, Mike Galbraith <bitbucket@online.de>
+Subject: Re: Fwd: PROBLEM: Random kernel panic & system freeze when watching
+ video
+Message-ID: <20130213182730.GB18013@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Du Jiulun <dujiulun@gmail.com>, "Luck, Tony" <tony.luck@intel.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Hillf Danton <dhillf@gmail.com>,
+	Mike Galbraith <bitbucket@online.de>
+References: <CAHfmSg3ug=64vXtsA4EA6xdKaqWRtT7qZW9AG8n92Q+pbDgQEQ@mail.gmail.com>
+ <20121230094008.GA28308@x1.alien8.de>
+ <CAHfmSg0O90nC3rnkZHAjO_MNjOoU1v8h-LN+jxx=0U+pz7NasQ@mail.gmail.com>
+ <20121231102300.GA1701@x1.alien8.de>
+ <3908561D78D1C84285E8C5FCA982C28F1C973871@ORSMSX108.amr.corp.intel.com>
+ <CAHfmSg14itHxTUinrmmTq2zoFuQAVwhPCo-Mt7tTLJEiJ4B0Sw@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F1C973F99@ORSMSX108.amr.corp.intel.com>
+ <CAHfmSg3-YthwNUTCmbEQox5ihjYHw9TT=WaH_fbjHHyJ+ew7eA@mail.gmail.com>
+ <CAHfmSg0sxOEvLd9ASHA7uS+W2TiZ-NRR+w8snPu85iYrMFCuVA@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F1E0628AD@ORSMSX108.amr.corp.intel.com>
 MIME-Version: 1.0
-X-OriginatorOrg: coverity.com
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F1E0628AD@ORSMSX108.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Feb 13, 2013 at 06:11:30PM +0000, Luck, Tony wrote:
+> > -- Panic DON'T happen when the laptop is running on battery. I've
+> > tried over 20 battery cycles (~40 hours) doing video playbacks and the
+> > computer never shut down.
+> 
+> So my best guess is that you have a h/w problem aggravated by high temperatures.
+> When you are on battery the system will be saving power - which means less heat
+> dissipated by many components inside your laptop case.
 
-Please find the latest report on new defect(s) that have been introduced to the Linux Kernel found with Coverity SCAN. 
+One thing we haven't asked is whether you still have the warranty on
+your hardware, and, if so, why not send it to the manufacturer so that
+they can take a look at it - they should be much better than us software
+guys and have the right tools for hardware inspection.
 
+Thanks.
 
-Defect(s) Reported-by: Coverity Scan:
-___________________________________________________________________________
-** CID 971353: Resource leak (RESOURCE_LEAK)
-/arch/x86/boot/tools/build.c: 259
-http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=971353
+-- 
+Regards/Gruss,
+    Boris.
 
-
-###########################################################################
-Defect Details:
-___________________________________________________________________________
-CID 971353: Resource leak (RESOURCE_LEAK)
-http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=971353
-
-/arch/x86/boot/tools/build.c: 240 ( alloc_fn)
-
-   234 static void parse_zoffset(char *fname)
-   235 {
-   236        FILE *file;
-   237    	char *p;
-   238    	int c;
-   239    
->>> Storage is returned from allocation function "fopen(char const * restrict, char const * restrict)".
->>> Assigning: "file" = storage returned from "fopen(fname, "r")".
-   240    	file = fopen(fname, "r");
-   241    	if (!file)
-   242    		die("Unable to open `%s': %m", fname);
->>> Resource "file" is not freed or pointed-to in function "fread(void * restrict, size_t, size_t, FILE * restrict)".
-   243    	c = fread(buf, 1, sizeof(buf) - 1, file);
->>> Resource "file" is not freed or pointed-to in function "ferror(FILE *)".
-   244    	if (ferror(file))
-   245    		die("read-error on `zoffset.h'");
-   246    	buf[c] = 0;
-   247    
-  
-
-/arch/x86/boot/tools/build.c: 259 ( leaked_storage)
-   256    		while (p && (*p == '\r' || *p == '\n'))
-   257    			p++;
-   258    	}
->>> CID 971353: Resource leak (RESOURCE_LEAK) Variable "file" going out 
->>> of scope leaks the storage it points to.
-   259    }
-   260    
-
-________________________________________________________________________
-
-
-To view the defects in Coverity Scan visit, http://scan5.coverity.com:8080.  
-Your username should be the first part of your email address. If you don't have a username, you can request one by emailing: scan-admin at coverity.com
-	
-Thank you,
-Dakshesh Vyas
-Coverity SCAN-ADMIN
-scan-admin at coverity.com
-http://scan.coverity.com
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
