@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965403Ab3BMSOw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 13:14:52 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:59334 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965015Ab3BMR54 (ORCPT
+	id S965135Ab3BMSOu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 13:14:50 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:49152 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965016Ab3BMR54 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 13 Feb 2013 12:57:56 -0500
 From: "Eric W. Biederman" <ebiederm@xmission.com>
@@ -12,28 +12,32 @@ To: <linux-fsdevel@vger.kernel.org>
 Cc: Linux Containers <containers@lists.linux-foundation.org>,
         <linux-kernel@vger.kernel.org>, "Serge E. Hallyn" <serge@hallyn.com>,
         "Eric W. Biederman" <ebiederm@xmission.com>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>
-Date: Wed, 13 Feb 2013 09:51:14 -0800
-Message-Id: <1360777934-5663-25-git-send-email-ebiederm@xmission.com>
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Date: Wed, 13 Feb 2013 09:51:36 -0800
+Message-Id: <1360777934-5663-47-git-send-email-ebiederm@xmission.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1360777934-5663-1-git-send-email-ebiederm@xmission.com>
 References: <87621w14vs.fsf@xmission.com>
  <1360777934-5663-1-git-send-email-ebiederm@xmission.com>
-X-XM-AID: U2FsdGVkX19sxc2YBugJTarBhaqqkOjKdDfX6Ta1V/4=
+X-XM-AID: U2FsdGVkX1+m47Zq4dtGDVIbsTI8pEwTNkHkmVuBUnk=
 X-SA-Exim-Connect-IP: 98.207.153.68
 X-SA-Exim-Mail-From: ebiederm@xmission.com
 X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
 	*  0.1 XMSubLong Long Subject
 	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
-	*      [score: 0.0622]
 	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
 	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;<linux-fsdevel@vger.kernel.org>
+	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  1.6 XMSubMetaSx_00 1+ Sexy Words
+	*  0.0 T_TooManySym_03 6+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ***;<linux-fsdevel@vger.kernel.org>
 X-Spam-Relay-Country: 
-Subject: [PATCH review 25/85] ocfs2: Compare kuids and kgids using uid_eq and gid_eq
+Subject: [PATCH review 47/85] sunrpc: Use gid_valid to test for gid != INVALID_GID
 X-Spam-Flag: No
 X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
 X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
@@ -43,58 +47,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-Cc: Mark Fasheh <mfasheh@suse.com>
-Cc: Joel Becker <jlbec@evilplan.org>
+In auth unix there are a couple of places INVALID_GID is used a
+sentinel to mark the end of uc_gids array.  Use gid_valid
+as a type safe way to verify we have not hit the end of
+valid data in the array.
+
+Cc: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 ---
- fs/ocfs2/file.c         |    8 ++++----
- fs/ocfs2/refcounttree.c |    2 +-
- 2 files changed, 5 insertions(+), 5 deletions(-)
+ net/sunrpc/auth_unix.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
-index 8ee9332..0a2924a 100644
---- a/fs/ocfs2/file.c
-+++ b/fs/ocfs2/file.c
-@@ -1175,14 +1175,14 @@ int ocfs2_setattr(struct dentry *dentry, struct iattr *attr)
- 		}
- 	}
- 
--	if ((attr->ia_valid & ATTR_UID && attr->ia_uid != inode->i_uid) ||
--	    (attr->ia_valid & ATTR_GID && attr->ia_gid != inode->i_gid)) {
-+	if ((attr->ia_valid & ATTR_UID && !uid_eq(attr->ia_uid, inode->i_uid)) ||
-+	    (attr->ia_valid & ATTR_GID && !gid_eq(attr->ia_gid, inode->i_gid))) {
- 		/*
- 		 * Gather pointers to quota structures so that allocation /
- 		 * freeing of quota structures happens here and not inside
- 		 * dquot_transfer() where we have problems with lock ordering
- 		 */
--		if (attr->ia_valid & ATTR_UID && attr->ia_uid != inode->i_uid
-+		if (attr->ia_valid & ATTR_UID && !uid_eq(attr->ia_uid, inode->i_uid)
- 		    && OCFS2_HAS_RO_COMPAT_FEATURE(sb,
- 		    OCFS2_FEATURE_RO_COMPAT_USRQUOTA)) {
- 			transfer_to[USRQUOTA] = dqget(sb, make_kqid_uid(attr->ia_uid));
-@@ -1191,7 +1191,7 @@ int ocfs2_setattr(struct dentry *dentry, struct iattr *attr)
- 				goto bail_unlock;
- 			}
- 		}
--		if (attr->ia_valid & ATTR_GID && attr->ia_gid != inode->i_gid
-+		if (attr->ia_valid & ATTR_GID && !gid_eq(attr->ia_gid, inode->i_gid)
- 		    && OCFS2_HAS_RO_COMPAT_FEATURE(sb,
- 		    OCFS2_FEATURE_RO_COMPAT_GRPQUOTA)) {
- 			transfer_to[GRPQUOTA] = dqget(sb, make_kqid_gid(attr->ia_gid));
-diff --git a/fs/ocfs2/refcounttree.c b/fs/ocfs2/refcounttree.c
-index 30a0550..934a4ac 100644
---- a/fs/ocfs2/refcounttree.c
-+++ b/fs/ocfs2/refcounttree.c
-@@ -4407,7 +4407,7 @@ static int ocfs2_vfs_reflink(struct dentry *old_dentry, struct inode *dir,
- 	 * rights to do so.
- 	 */
- 	if (preserve) {
--		if ((current_fsuid() != inode->i_uid) && !capable(CAP_CHOWN))
-+		if (!uid_eq(current_fsuid(), inode->i_uid) && !capable(CAP_CHOWN))
- 			return -EPERM;
- 		if (!in_group_p(inode->i_gid) && !capable(CAP_CHOWN))
- 			return -EPERM;
+diff --git a/net/sunrpc/auth_unix.c b/net/sunrpc/auth_unix.c
+index 55b6ca6..c434fde 100644
+--- a/net/sunrpc/auth_unix.c
++++ b/net/sunrpc/auth_unix.c
+@@ -131,8 +131,7 @@ unx_match(struct auth_cred *acred, struct rpc_cred *rcred, int flags)
+ 	for (i = 0; i < groups ; i++)
+ 		if (!gid_eq(cred->uc_gids[i], GROUP_AT(acred->group_info, i)))
+ 			return 0;
+-	if (groups < NFS_NGROUPS &&
+-	    cred->uc_gids[groups] != INVALID_GID)
++	if (groups < NFS_NGROUPS && gid_valid(cred->uc_gids[groups]))
+ 		return 0;
+ 	return 1;
+ }
+@@ -161,7 +160,7 @@ unx_marshal(struct rpc_task *task, __be32 *p)
+ 	*p++ = htonl((u32) cred->uc_uid);
+ 	*p++ = htonl((u32) cred->uc_gid);
+ 	hold = p++;
+-	for (i = 0; i < 16 && cred->uc_gids[i] != INVALID_GID; i++)
++	for (i = 0; i < 16 && gid_valid(cred->uc_gids[i]); i++)
+ 		*p++ = htonl((u32) cred->uc_gids[i]);
+ 	*hold = htonl(p - hold - 1);		/* gid array length */
+ 	*base = htonl((p - base - 1) << 2);	/* cred length */
 -- 
 1.7.5.4
 
