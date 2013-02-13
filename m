@@ -1,29 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933960Ab3BMMJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 07:09:58 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:36569 "EHLO
+	id S933959Ab3BMMLJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 07:11:09 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:36596 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933821Ab3BMMJ5 (ORCPT
+	with ESMTP id S933821Ab3BMMLG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 07:09:57 -0500
-Date: Wed, 13 Feb 2013 04:08:34 -0800
-From: tip-bot for Rik van Riel <riel@redhat.com>
-Message-ID: <tip-4cf780c77b5ef7e3170f68820bc239a689c16d5b@git.kernel.org>
+	Wed, 13 Feb 2013 07:11:06 -0500
+Date: Wed, 13 Feb 2013 04:09:44 -0800
+From: tip-bot for Eric Dumazet <eric.dumazet@gmail.com>
+Message-ID: <tip-e3c94ba97ac742a4c03713629da131fef53b2237@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org, riel@redhat.com,
-        aquini@redhat.com, akpm@linux-foundation.org, tglx@linutronix.de,
+        eric.dumazet@gmail.com, a.p.zijlstra@chello.nl,
+        torvalds@linux-foundation.org, riel@redhat.com,
+        akpm@linux-foundation.org, aquini@redhat.com, tglx@linutronix.de,
         walken@google.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl, riel@redhat.com,
-        aquini@redhat.com, akpm@linux-foundation.org, tglx@linutronix.de,
-        walken@google.com
-In-Reply-To: <20130206150529.43150afa@cuia.bos.redhat.com>
-References: <20130206150529.43150afa@cuia.bos.redhat.com>
+        eric.dumazet@gmail.com, torvalds@linux-foundation.org,
+        a.p.zijlstra@chello.nl, riel@redhat.com, aquini@redhat.com,
+        akpm@linux-foundation.org, tglx@linutronix.de, walken@google.com
+In-Reply-To: <20130206150647.633f7b1c@cuia.bos.redhat.com>
+References: <20130206150647.633f7b1c@cuia.bos.redhat.com>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:core/locking] x86/smp:
-  Auto tune spinlock backoff delay factor
-Git-Commit-ID: 4cf780c77b5ef7e3170f68820bc239a689c16d5b
+  Keep spinlock delay values per hashed spinlock address
+Git-Commit-ID: e3c94ba97ac742a4c03713629da131fef53b2237
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,61 +33,61 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 13 Feb 2013 04:08:40 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 13 Feb 2013 04:09:50 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4cf780c77b5ef7e3170f68820bc239a689c16d5b
-Gitweb:     http://git.kernel.org/tip/4cf780c77b5ef7e3170f68820bc239a689c16d5b
-Author:     Rik van Riel <riel@redhat.com>
-AuthorDate: Wed, 6 Feb 2013 15:05:29 -0500
+Commit-ID:  e3c94ba97ac742a4c03713629da131fef53b2237
+Gitweb:     http://git.kernel.org/tip/e3c94ba97ac742a4c03713629da131fef53b2237
+Author:     Eric Dumazet <eric.dumazet@gmail.com>
+AuthorDate: Wed, 6 Feb 2013 15:06:47 -0500
 Committer:  Ingo Molnar <mingo@kernel.org>
 CommitDate: Wed, 13 Feb 2013 09:06:30 +0100
 
-x86/smp: Auto tune spinlock backoff delay factor
+x86/smp: Keep spinlock delay values per hashed spinlock address
 
-Many spinlocks are embedded in data structures; having many CPUs
-pounce on the cache line the lock is in will slow down the lock
-holder, and can cause system performance to fall off a cliff.
+Eric Dumazet found a regression with the first version of the
+spinlock backoff code, in a workload where multiple spinlocks
+were contended, each having a different wait time.
 
-The paper "Non-scalable locks are dangerous" is a good
-reference:
+This patch has multiple delay values per cpu, indexed on a hash
+of the lock address, to avoid that problem.
 
-	http://pdos.csail.mit.edu/papers/linux:lock.pdf
+Eric Dumazet wrote:
 
-In the Linux kernel, spinlocks are optimized for the case of
-there not being contention. After all, if there is contention,
-the data structure can be improved to reduce or eliminate
-lock contention.
+  I did some tests with your patches with following configuration:
 
-Likewise, the spinlock API should remain simple, and the
-common case of the lock not being contended should remain
-as fast as ever.
+  tc qdisc add dev eth0 root htb r2q 1000 default 3
+  (to force a contention on qdisc lock, even with a multi queue
+  net device)
 
-However, since spinlock contention should be fairly uncommon,
-we can add functionality into the spinlock slow path that keeps
-system performance from falling off a cliff when there is lock
-contention.
+  and 24 concurrent "netperf -t UDP_STREAM -H other_machine -- -m
+  128"
 
-Proportional delay in ticket locks is delaying the time between
-checking the ticket based on a delay factor, and the number of
-CPUs ahead of us in the queue for this lock. Checking the lock
-less often allows the lock holder to continue running, resulting
-in better throughput and preventing performance from dropping
-off a cliff.
+  Machine : 2 Intel(R) Xeon(R) CPU X5660  @ 2.80GHz
+  (24 threads), and a fast NIC (10Gbps)
 
-Proportional spinlock delay with a high delay factor works well
-when there is lots contention on a lock. Likewise, a smaller
-delay factor works well when a lock is lightly contended.
+  Resulting in a 13 % regression (676 Mbits -> 595 Mbits)
 
-Making the code auto-tune the delay factor results in a system
-that performs well with both light and heavy lock contention.
+  In this workload we have at least two contended spinlocks, with
+  different delays. (spinlocks are not held for the same duration)
 
+  It clearly defeats your assumption of a single per cpu delay
+  being OK : Some cpus are spinning too long while the lock was
+  released.
+
+  We might try to use a hash on lock address, and an array of 16
+  different delays so that different spinlocks have a chance of
+  not sharing the same delay.
+
+  With following patch, I get 982 Mbits/s with same bench, so an
+  increase of 45 % instead of a 13 % regression.
+
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: Rik van Riel <riel@redhat.com>
 Acked-by: Rafael Aquini <aquini@redhat.com>
 Reviewed-by: Michel Lespinasse <walken@google.com>
-Cc: eric.dumazet@gmail.com
 Cc: lwoodman@redhat.com
 Cc: knoel@redhat.com
 Cc: chegu_vinod@hp.com
@@ -95,80 +96,72 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/20130206150529.43150afa@cuia.bos.redhat.com
+Link: http://lkml.kernel.org/r/20130206150647.633f7b1c@cuia.bos.redhat.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/smp.c | 41 ++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 38 insertions(+), 3 deletions(-)
+ arch/x86/kernel/smp.c | 24 ++++++++++++++++++++----
+ 1 file changed, 20 insertions(+), 4 deletions(-)
 
 diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
-index aa743e9..c1fce41 100644
+index c1fce41..8e94469 100644
 --- a/arch/x86/kernel/smp.c
 +++ b/arch/x86/kernel/smp.c
-@@ -112,13 +112,34 @@
- static atomic_t stopping_cpu = ATOMIC_INIT(-1);
- static bool smp_no_nmi_ipi = false;
+@@ -23,6 +23,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/cpu.h>
+ #include <linux/gfp.h>
++#include <linux/hash.h>
  
-+#define DELAY_SHIFT			8
-+#define DELAY_FIXED_1			(1<<DELAY_SHIFT)
-+#define MIN_SPINLOCK_DELAY		(1 * DELAY_FIXED_1)
-+#define MAX_SPINLOCK_DELAY		(16000 * DELAY_FIXED_1)
+ #include <asm/mtrr.h>
+ #include <asm/tlbflush.h>
+@@ -116,6 +117,18 @@ static bool smp_no_nmi_ipi = false;
+ #define DELAY_FIXED_1			(1<<DELAY_SHIFT)
+ #define MIN_SPINLOCK_DELAY		(1 * DELAY_FIXED_1)
+ #define MAX_SPINLOCK_DELAY		(16000 * DELAY_FIXED_1)
++#define DELAY_HASH_SHIFT		6
++struct delay_entry {
++	u32 hash;
++	u32 delay;
++};
++static DEFINE_PER_CPU(struct delay_entry [1 << DELAY_HASH_SHIFT], spinlock_delay) = {
++	[0 ... (1 << DELAY_HASH_SHIFT) - 1] = {
++		.hash = 0,
++		.delay = MIN_SPINLOCK_DELAY,
++	},
++};
++
  /*
-- * Wait on a congested ticket spinlock.
-+ * Wait on a congested ticket spinlock. Many spinlocks are embedded in
-+ * data structures; having many CPUs pounce on the cache line with the
-+ * spinlock simultaneously can slow down the lock holder, and the system
-+ * as a whole.
-+ *
-+ * To prevent total performance collapse in case of bad spinlock contention,
-+ * perform proportional backoff. The per-cpu value of delay is automatically
-+ * tuned to limit the number of times spinning CPUs poll the lock before
-+ * obtaining it. This limits the amount of cross-CPU traffic required to obtain
-+ * a spinlock, and keeps system performance from dropping off a cliff.
-+ *
-+ * There is a tradeoff. If we poll too often, the whole system is slowed
-+ * down. If we sleep too long, the lock will go unused for a period of
-+ * time. The solution is to go for a fast spin if we are at the head of
-+ * the queue, to slowly increase the delay if we sleep for too short a
-+ * time, and to decrease the delay if we slept for too long.
+  * Wait on a congested ticket spinlock. Many spinlocks are embedded in
+  * data structures; having many CPUs pounce on the cache line with the
+@@ -134,12 +147,14 @@ static bool smp_no_nmi_ipi = false;
+  * the queue, to slowly increase the delay if we sleep for too short a
+  * time, and to decrease the delay if we slept for too long.
   */
-+DEFINE_PER_CPU(unsigned, spinlock_delay) = { MIN_SPINLOCK_DELAY };
+-DEFINE_PER_CPU(unsigned, spinlock_delay) = { MIN_SPINLOCK_DELAY };
  void ticket_spin_lock_wait(arch_spinlock_t *lock, struct __raw_tickets inc)
  {
  	__ticket_t head = inc.head, ticket = inc.tail;
  	__ticket_t waiters_ahead;
-+	unsigned delay = __this_cpu_read(spinlock_delay);
+-	unsigned delay = __this_cpu_read(spinlock_delay);
++	u32 hash = hash32_ptr(lock);
++	u32 slot = hash_32(hash, DELAY_HASH_SHIFT);
++	struct delay_entry *ent = &__get_cpu_var(spinlock_delay[slot]);
++	u32 delay = (ent->hash == hash) ? ent->delay : MIN_SPINLOCK_DELAY;
  	unsigned loops;
  
  	for (;;) {
-@@ -133,14 +154,28 @@ void ticket_spin_lock_wait(arch_spinlock_t *lock, struct __raw_tickets inc)
- 			} while (ACCESS_ONCE(lock->tickets.head) != ticket);
+@@ -171,11 +186,12 @@ void ticket_spin_lock_wait(arch_spinlock_t *lock, struct __raw_tickets inc)
+ 			 * to get it back to a good value quickly.
+ 			 */
+ 			if (delay >= 2 * DELAY_FIXED_1)
+-				delay -= max(delay/32, DELAY_FIXED_1);
++				delay -= max_t(u32, delay/32, DELAY_FIXED_1);
  			break;
  		}
--		loops = 50 * waiters_ahead;
-+
-+		/* Aggressively increase delay, to minimize lock accesses. */
-+		if (delay < MAX_SPINLOCK_DELAY)
-+			delay += DELAY_FIXED_1 / 7;
-+
-+		loops = (delay * waiters_ahead) >> DELAY_SHIFT;
- 		while (loops--)
- 			cpu_relax();
- 
- 		head = ACCESS_ONCE(lock->tickets.head);
--		if (head == ticket)
-+		if (head == ticket) {
-+			/*
-+			 * We overslept, and do not know by how much.
-+			 * Exponentially decay the value of delay,
-+			 * to get it back to a good value quickly.
-+			 */
-+			if (delay >= 2 * DELAY_FIXED_1)
-+				delay -= max(delay/32, DELAY_FIXED_1);
- 			break;
-+		}
  	}
-+	__this_cpu_write(spinlock_delay, delay);
+-	__this_cpu_write(spinlock_delay, delay);
++	ent->hash = hash;
++	ent->delay = delay;
  }
  
  /*
