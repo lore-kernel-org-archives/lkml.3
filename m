@@ -1,97 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964919Ab3BMVbg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 16:31:36 -0500
-Received: from mail-da0-f51.google.com ([209.85.210.51]:52471 "EHLO
-	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751861Ab3BMVbe (ORCPT
+	id S964937Ab3BMVcX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 16:32:23 -0500
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:40803 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934131Ab3BMVcW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 16:31:34 -0500
-Date: Wed, 13 Feb 2013 13:31:29 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Matthias Schniedermeyer <ms@citd.de>,
-        Holger =?iso-8859-1?Q?Hoffst=E4tte?= 
-	<holger.hoffstaette@googlemail.com>,
-        Jonathan Nieder <jrnieder@gmail.com>, stable@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Tilman Schmidt <tilman@imap.cc>, kernel-team@lists.ubuntu.com,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: Re: [regression] external HDD in USB3 enclosure cannot be
- dynamically removed (Re: Linux 3.7.5)
-Message-ID: <20130213213129.GA10288@kroah.com>
-References: <pan.2013.01.28.20.33.44.918987@googlemail.com>
- <20130128204639.GB7759@google.com>
- <20130212004023.GA8427@xanatos>
- <511A1AF1.9080107@googlemail.com>
- <20130212204224.GC8427@xanatos>
- <511B4EB1.9010708@googlemail.com>
- <20130213171656.GA9318@citd.de>
- <20130213193303.GH8427@xanatos>
- <20130213200413.GA17648@citd.de>
- <20130213210846.GI8427@xanatos>
+	Wed, 13 Feb 2013 16:32:22 -0500
+Message-ID: <511C0662.8010309@gmail.com>
+Date: Wed, 13 Feb 2013 22:32:18 +0100
+From: Mircea Gherzan <mgherzan@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130213210846.GI8427@xanatos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Nicolas Schichan <nschichan@freebox.fr>
+CC: Russell King <linux@arm.linux.org.uk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <daniel.borkmann@tik.ee.ethz.ch>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: net: bpf_jit: fix emit_swap16() for non ARMv6+.
+References: <1360776125-14542-1-git-send-email-nschichan@freebox.fr> <1360776645-14726-1-git-send-email-nschichan@freebox.fr>
+In-Reply-To: <1360776645-14726-1-git-send-email-nschichan@freebox.fr>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 13, 2013 at 01:08:46PM -0800, Sarah Sharp wrote:
-> On Wed, Feb 13, 2013 at 09:04:13PM +0100, Matthias Schniedermeyer wrote:
-> > On 13.02.2013 11:33, Sarah Sharp wrote:
-> > > On Wed, Feb 13, 2013 at 06:16:56PM +0100, Matthias Schniedermeyer wrote:
-> > > > On 13.02.2013 09:28, Holger Hoffstätte wrote:
-> > > > > On 12.02.2013 21:42, Sarah Sharp wrote:
-> > > > > > [..]
-> > > > > > There was a further set of patches queued for 3.9 to deal with connected
-> > > > > > devices going to the Inactive state, but they looked like they were too
-> > > > > > big for stable:
-> > > > > > 
-> > > > > > d3b9d7a USB: Fix connected device switch to Inactive state.
-> > > > > > a24a607 USB: Rip out recursive call on warm port reset.
-> > > > > > 2d4fa94 USB: Prepare for refactoring by adding extra udev checks.
-> > > > > > 0fe51aa USB: Don't use EHCI port sempahore for USB 3.0 hubs.
-> > > 
-> > > Holger and Matthias, can you double check that cherry picking just those
-> > > four patches on top of 3.7.7 or 3.8 works as well?
-> > 
-> > 3.7.7 + those 4 patches workes for me.
-> > 
-> > As i'm not very firm in git i generated separate diffs for each commit 
-> > and applying them in the order 2d4fa94 0fe51aa d3b9d7a a24a607 worked 
-> > without hunks dropped.
-> > 
-> > I have attached `git diff` against vanilla 3.7.7, so you can check that 
-> > i got it right.
+Am 13.02.2013 18:30, schrieb Nicolas Schichan:
+> The original code was generating an lsl instructions using the value
+> of ARM_R8 (skb_headlen, possibly uninitialized if no skb_headlen
+> access was required) as a shift amount.
 > 
-> Yep, that diff looks fine compared to the git diff of those four patches.
+> Signed-off-by: Nicolas Schichan <nschichan@freebox.fr>
+> ---
+> Resent due to missing Signed-off-by
 > 
-> Greg,
+>  arch/arm/net/bpf_jit_32.c |   15 +++++++++++----
+>  1 file changed, 11 insertions(+), 4 deletions(-)
 > 
-> How do you want to handle this?  The above four patches should go into
-> 3.8 and stable, but they're not currently in Linus' tree and it's
-> probably too late in the cycle to merge them this week.  Should we just
-> wait until 3.9 is out and put the patches into the stable trees then?
+> diff --git a/arch/arm/net/bpf_jit_32.c b/arch/arm/net/bpf_jit_32.c
+> index a34f1e2..6828ef6 100644
+> --- a/arch/arm/net/bpf_jit_32.c
+> +++ b/arch/arm/net/bpf_jit_32.c
+> @@ -341,10 +341,17 @@ static void emit_load_be16(u8 cond, u8 r_res, u8 r_addr, struct jit_ctx *ctx)
+>  
+>  static inline void emit_swap16(u8 r_dst, u8 r_src, struct jit_ctx *ctx)
+>  {
+> -	emit(ARM_LSL_R(ARM_R1, r_src, 8), ctx);
+> -	emit(ARM_ORR_S(r_dst, ARM_R1, r_src, SRTYPE_LSL, 8), ctx);
+> -	emit(ARM_LSL_I(r_dst, r_dst, 8), ctx);
+> -	emit(ARM_LSL_R(r_dst, r_dst, 8), ctx);
+> +	/* r_dst = (r_src << 8) | (r_src >> 8) */
+> +	emit(ARM_LSL_I(ARM_R1, r_src, 8), ctx);
+> +	emit(ARM_ORR_S(r_dst, ARM_R1, r_src, SRTYPE_LSR, 8), ctx);
+> +
+> +	/*
+> +	 * we need to mask out the bits set in r_dst[23:16] due to
+> +	 * the first shift instruction.
+> +	 *
+> +	 * note that 0x8ff is the encoded immediate 0x00ff0000.
+> +	 */
+> +	emit(ARM_BIC_I(r_dst, r_dst, 0x8ff), ctx);
+>  }
+>  
+>  #else  /* ARMv6+ */
 
-> My email shows that the bad commit
-> f7965c0846d74b270e246c1470ca955d5078eb07 has been added to the 3.2, 3.4,
-> and 3.7 stable trees, as well as Canonical's 3.7 stable tree.  I'm also
-> fine with just reverting that commit from 3.8 and stable.
-
-It's probably easier at this point in time to just revert that commit,
-leave the stable kernels alone, and then everything will be fixed in
-3.9.  When the commits go into Linus's tree, we can backport everything
-to the stable releases (including 3.8.1) at that point.
-
-As long as someone remembers to send the needed information to
-stable@vger.kernel.org, I know I'll forget :)
-
-Sound ok?
-
-thanks,
-
-greg k-h
+Acked-by: Mircea Gherzan <mgherzan@gmail.com>
