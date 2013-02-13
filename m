@@ -1,111 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965026Ab3BMWKD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 17:10:03 -0500
-Received: from mail-we0-f170.google.com ([74.125.82.170]:52546 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752235Ab3BMWKA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 17:10:00 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 1/4] of/pci: Provide support for parsing PCI DT ranges property
-To: Thierry Reding <thierry.reding@avionic-design.de>,
-        Rob Herring <robherring2@gmail.com>
-Cc: Andrew Murray <andrew.murray@arm.com>, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20130213212951.GA27849@avionic-0098.mockup.avionic-design.de>
-References: <1360570940-17086-1-git-send-email-thierry.reding@avionic-design.de> <1360570940-17086-2-git-send-email-thierry.reding@avionic-design.de> <511949C7.7070604@gmail.com> <20130212064523.GA28850@avionic-0098.mockup.avionic-design.de> <511BA1E0.9000404@gmail.com> <20130213142521.GA6223@avionic-0098.mockup.avionic-design.de> <511BEF8D.7060506@gmail.com> <20130213212951.GA27849@avionic-0098.mockup.avionic-design.de>
-Date: Wed, 13 Feb 2013 22:09:56 +0000
-Message-Id: <20130213220956.DDEB43E3557@localhost>
+	id S1761109Ab3BMWMx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 17:12:53 -0500
+Received: from mga02.intel.com ([134.134.136.20]:51852 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760376Ab3BMWMw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 17:12:52 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,658,1355126400"; 
+   d="scan'208";a="285390493"
+Date: Wed, 13 Feb 2013 14:12:50 -0800
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Matthias Schniedermeyer <ms@citd.de>,
+        Holger =?iso-8859-1?Q?Hoffst=E4tte?= 
+	<holger.hoffstaette@googlemail.com>,
+        Jonathan Nieder <jrnieder@gmail.com>, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Tilman Schmidt <tilman@imap.cc>, kernel-team@lists.ubuntu.com,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: Re: [regression] external HDD in USB3 enclosure cannot be
+ dynamically removed (Re: Linux 3.7.5)
+Message-ID: <20130213221250.GJ8427@xanatos>
+References: <20130128204639.GB7759@google.com>
+ <20130212004023.GA8427@xanatos>
+ <511A1AF1.9080107@googlemail.com>
+ <20130212204224.GC8427@xanatos>
+ <511B4EB1.9010708@googlemail.com>
+ <20130213171656.GA9318@citd.de>
+ <20130213193303.GH8427@xanatos>
+ <20130213200413.GA17648@citd.de>
+ <20130213210846.GI8427@xanatos>
+ <20130213213129.GA10288@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130213213129.GA10288@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Feb 2013 22:29:51 +0100, Thierry Reding <thierry.reding@avionic-design.de> wrote:
-> On Wed, Feb 13, 2013 at 01:54:53PM -0600, Rob Herring wrote:
-> > On 02/13/2013 08:25 AM, Thierry Reding wrote:
-> > > On Wed, Feb 13, 2013 at 08:23:28AM -0600, Rob Herring wrote:
-> > >> On 02/12/2013 12:45 AM, Thierry Reding wrote:
-> > >>> On Mon, Feb 11, 2013 at 01:43:03PM -0600, Rob Herring wrote:
-> > >>>> On 02/11/2013 02:22 AM, Thierry Reding wrote:
-> > >>>>> From: Andrew Murray <andrew.murray@arm.com>
-> > >>
-> > >>>>> @@ -13,6 +13,7 @@
-> > >>>>>  #define OF_CHECK_COUNTS(na, ns)	(OF_CHECK_ADDR_COUNT(na) && (ns) > 0)
-> > >>>>>  
-> > >>>>>  static struct of_bus *of_match_bus(struct device_node *np);
-> > >>>>> +static struct of_bus *of_find_bus(const char *name);
-> > >>>>
-> > >>>> Can you move this function up to avoid the forward declaration.
-> > >>>
-> > >>> It needs to be defined after the of_busses structure, which is defined
-> > >>> below the CONFIG_PCI block where of_pci_process_ranges() is defined. I'd
-> > >>> have to move that one as well and add another #ifdef CONFIG_PCI section.
-> > >>> If you prefer that I can do that.
-> > >>
-> > >> Okay, it's fine as is.
-> > >>
-> > >>>>> +static struct of_bus *of_find_bus(const char *name)
-> > >>>>> +{
-> > >>>>> +	unsigned int i;
-> > >>>>> +
-> > >>>>> +	for (i = 0; i < ARRAY_SIZE(of_busses); i++)
-> > >>>>> +		if (strcmp(name, of_busses[i].name) == 0)
-> > >>>>                                               ^
-> > >>>> space needed.
-> > >>>
-> > >>> I don't understand. Do you want the space to go between '.' and "name"?
-> > >>
-> > >> Must have been some dirt on my screen... Never mind.
-> > >>
-> > >> I'll apply these for 3.9.
+On Wed, Feb 13, 2013 at 01:31:29PM -0800, Greg KH wrote:
+> On Wed, Feb 13, 2013 at 01:08:46PM -0800, Sarah Sharp wrote:
+> > On Wed, Feb 13, 2013 at 09:04:13PM +0100, Matthias Schniedermeyer wrote:
+> > > On 13.02.2013 11:33, Sarah Sharp wrote:
+> > > > On Wed, Feb 13, 2013 at 06:16:56PM +0100, Matthias Schniedermeyer wrote:
+> > > > > On 13.02.2013 09:28, Holger Hoffstätte wrote:
+> > > > > > On 12.02.2013 21:42, Sarah Sharp wrote:
+> > > > > > > [..]
+> > > > > > > There was a further set of patches queued for 3.9 to deal with connected
+> > > > > > > devices going to the Inactive state, but they looked like they were too
+> > > > > > > big for stable:
+> > > > > > > 
+> > > > > > > d3b9d7a USB: Fix connected device switch to Inactive state.
+> > > > > > > a24a607 USB: Rip out recursive call on warm port reset.
+> > > > > > > 2d4fa94 USB: Prepare for refactoring by adding extra udev checks.
+> > > > > > > 0fe51aa USB: Don't use EHCI port sempahore for USB 3.0 hubs.
+> > > > 
+> > > > Holger and Matthias, can you double check that cherry picking just those
+> > > > four patches on top of 3.7.7 or 3.8 works as well?
 > > > 
-> > > Great, thanks!
+> > > 3.7.7 + those 4 patches workes for me.
+> > > 
+> > > As i'm not very firm in git i generated separate diffs for each commit 
+> > > and applying them in the order 2d4fa94 0fe51aa d3b9d7a a24a607 worked 
+> > > without hunks dropped.
+> > > 
+> > > I have attached `git diff` against vanilla 3.7.7, so you can check that 
+> > > i got it right.
 > > 
-> > Grant vetoed merging. We need to see the other architectures using these
-> > functions rather than add yet another copy.
+> > Yep, that diff looks fine compared to the git diff of those four patches.
+> > 
+> > Greg,
+> > 
+> > How do you want to handle this?  The above four patches should go into
+> > 3.8 and stable, but they're not currently in Linus' tree and it's
+> > probably too late in the cycle to merge them this week.  Should we just
+> > wait until 3.9 is out and put the patches into the stable trees then?
 > 
-> I think I've said this before, but converting the other architectures
-> isn't very trivial, mostly because each has a specific way of storing
-> the values read from these properties.
-
-Sorry to be harsh, but this isn't new information. I've had to deal with
-the pain more than once before of copied infrastructure that at some
-time in the future needs to be merged again. Just looking at your patch
-I can tell that it is directly derived from the powerpc
-pci_process_bridge_OF_ranges() and which microblaze has already has a
-verbatum copy of.
-
-So, no, I'm not okay with it for v3.9. I don't want more copies of the
-same code. This doesn't block your v3.10 drivers. When a better patch is
-ready we can set up a separate branch with just the new functions in it
-and the various subsystems can merge that in if needed to resolve
-dependencies.
-
-Instead, here is what you do; you've got the bones of a good approach,
-but you need to show how it is derived from the powerpc approach. I'll
-reply in specifics to the patches themselves, but I can definitely see
-large blocks of code that can be moved out of powerpc & microblaze and
-into drivers/of/address.c without getting into the platform-specific
-PCI representations that you're concerned about.
-
-Now, to be clear here, I'm asking you to change powerpc/microblaze code,
-but I am *not asking you to test it*. This is a code move exercises, and
-I will help you with it if you need.
-
+> > My email shows that the bad commit
+> > f7965c0846d74b270e246c1470ca955d5078eb07 has been added to the 3.2, 3.4,
+> > and 3.7 stable trees, as well as Canonical's 3.7 stable tree.  I'm also
+> > fine with just reverting that commit from 3.8 and stable.
 > 
-> So unless we want to block any new drivers from being merged, the only
-> alternatives are to either merge these patches or include a copy of the
-> same code in each new driver that needs the functionality (or open-code
-> the functions in each driver).
+> It's probably easier at this point in time to just revert that commit,
+> leave the stable kernels alone, and then everything will be fixed in
+> 3.9.  When the commits go into Linus's tree, we can backport everything
+> to the stable releases (including 3.8.1) at that point.
 > 
-> There is quite a bit of rework required to unify the architecture
-> specific PCI frameworks and I think Bjorn and others have been making
-> quite a bit of progress in that direction. I think that these patches
-> can help refactor some of those parts.
+> As long as someone remembers to send the needed information to
+> stable@vger.kernel.org, I know I'll forget :)
 > 
-> Thierry
+> Sound ok?
 
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies, Ltd.
+Yep, sounds fine.  I'll attempt to remember to send email to stable once
+3.9 is out.
+
+Sarah Sharp
