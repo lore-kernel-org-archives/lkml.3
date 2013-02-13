@@ -1,116 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933781Ab3BMLCL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 06:02:11 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37219 "EHLO mx2.suse.de"
+	id S933799Ab3BMLGM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 06:06:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17388 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932451Ab3BMLCI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 06:02:08 -0500
-Date: Wed, 13 Feb 2013 11:02:02 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, riel@redhat.com,
-        mhocko@suse.cz, hannes@cmpxchg.org
-Subject: [PATCH] x86: mm: Check if PUD is large when validating a kernel
- address v2
-Message-ID: <20130213110202.GI4100@suse.de>
-References: <20130211145236.GX21389@suse.de>
+	id S932451Ab3BMLGL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 06:06:11 -0500
+Message-ID: <511B739C.8000204@redhat.com>
+Date: Wed, 13 Feb 2013 12:06:04 +0100
+From: Gerd Hoffmann <kraxel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130108 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130211145236.GX21389@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andy King <acking@vmware.com>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, gregkh@linuxfoundation.org,
+        davem@davemloft.net, pv-drivers@vmware.com
+Subject: Re: [PATCH 1/1] VSOCK: Introduce VM Sockets
+References: <1360196636-9357-1-git-send-email-acking@vmware.com> <1360196636-9357-2-git-send-email-acking@vmware.com> <5118FEA9.2080201@redhat.com> <1675407061.963254.1360682467627.JavaMail.root@vmware.com>
+In-Reply-To: <1675407061.963254.1360682467627.JavaMail.root@vmware.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew or Ingo, please pick up.
+On 02/12/13 16:21, Andy King wrote:
+> Hi Gerd,
+> 
+>>> +struct vsock_transport {
+> ...
+>> Whoa.  This has grown *alot*.  Care to explain this please?  Patch
+>> creating a Documentation/virtual/vsock.txt would be cool.
+> 
+> Yes, it grew because of the notification stuff, which I'd forgotten
+> about until I removed the vmci header from the core code.  You are
+> free to use empty functions for these if they don't make any sense
+> for virtio.
 
-Changelog since v1
-  o Add reviewed-bys and acked-bys
+I've seen you have a notify_ops in the vmci bits.  Do you have different
+notify ops depending on socket type or something?  Does it make sense to
+move the notify ops ptr into "struct vsock_sock" maybe?
 
-A user reported a bug whereby a backup process accessing /proc/kcore
-caused an oops.
+And can we make it optional please (i.e. allow the function pointers to
+be NULL)?
 
- BUG: unable to handle kernel paging request at ffffbb00ff33b000
- IP: [<ffffffff8103157e>] kern_addr_valid+0xbe/0x110
- PGD 0
- Oops: 0000 [#1] SMP
- CPU 6
- Modules linked in: af_packet nfs lockd fscache auth_rpcgss nfs_acl sunrpc 8021q garp stp llc cpufreq_conservative cpufreq_userspace cpufreq_powersave acpi_cpufreq mperf microcode fuse nls_iso8859_1 nls_cp437 vfat fat loop dm_mod ioatdma ipv6 ipv6_lib igb dca i7core_edac edac_core i2c_i801 i2c_core cdc_ether usbnet bnx2 mii iTCO_wdt iTCO_vendor_support shpchp rtc_cmos pci_hotplug tpm_tis sg tpm pcspkr tpm_bios serio_raw button ext3 jbd mbcache uhci_hcd ehci_hcd usbcore sd_mod crc_t10dif usb_common processor thermal_sys hwmon scsi_dh_emc scsi_dh_rdac scsi_dh_alua scsi_dh_hp_sw scsi_dh ata_generic ata_piix libata megaraid_sas scsi_mod
+> The alternative is for us to move the entire body of
+> vsock_stream_recv/send into the transport, where we can hide the
+> notification stuff, but it seems like folks will just end up
+> duplicating a lot of code then.
 
- Pid: 16196, comm: Hibackp Not tainted 3.0.13-0.27-default #1 IBM System x3550 M3 -[7944 K3G]-/94Y7614
- RIP: 0010:[<ffffffff8103157e>]  [<ffffffff8103157e>] kern_addr_valid+0xbe/0x110
- RSP: 0018:ffff88094165fe80  EFLAGS: 00010246
- RAX: 00003300ff33b000 RBX: ffff880100000000 RCX: 0000000000000000
- RDX: 0000000100000000 RSI: ffff880000000000 RDI: ff32b300ff33b400
- RBP: 0000000000001000 R08: 00003ffffffff000 R09: 0000000000000000
- R10: 22302e31223d6e6f R11: 0000000000000246 R12: 0000000000001000
- R13: 0000000000003000 R14: 0000000000571be0 R15: ffff88094165ff50
- FS:  00007ff152d33700(0000) GS:ffff88097f2c0000(0000) knlGS:0000000000000000
- CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
- CR2: ffffbb00ff33b000 CR3: 00000009405a3000 CR4: 00000000000006e0
- DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
- DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
- Process Hibackp (pid: 16196, threadinfo ffff88094165e000, task ffff8808eb9ba600)
- Stack:
-  ffffffff811b8aaa 0000000000004000 ffff880943fea480 ffff8808ef2bae50
-  ffff880943d32980 fffffffffffffffb ffff8808ef2bae40 ffff88094165ff50
-  0000000000004000 000000000056ebe0 ffffffff811ad847 000000000056ebe0
- Call Trace:
-  [<ffffffff811b8aaa>] read_kcore+0x17a/0x370
-  [<ffffffff811ad847>] proc_reg_read+0x77/0xc0
-  [<ffffffff81151687>] vfs_read+0xc7/0x130
-  [<ffffffff811517f3>] sys_read+0x53/0xa0
-  [<ffffffff81449692>] system_call_fastpath+0x16/0x1b
+Sounds not so good.  However, it is still not very clear what this
+notification stuff is all about.  And it's not just notification, the
+calls can return errors too.
 
-Investigation determined that the bug triggered when reading system RAM
-at the 4G mark. On this system, that was the first address using 1G pages
-for the virt->phys direct mapping so the PUD is pointing to a physical
-address, not a PMD page.  The problem is that the page table walker in
-kern_addr_valid() is not checking pud_large() and treats the physical
-address as if it was a PMD.  If it happens to look like pmd_none then it'll
-silently fail, probably returning zeros instead of real data. If the data
-happens to look like a present PMD though, it will be walked resulting in
-the oops above. This patch adds the necessary pud_large() check.
+Which problem you are trying to tackle with the notifications?
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
----
- arch/x86/include/asm/pgtable.h |    5 +++++
- arch/x86/mm/init_64.c          |    3 +++
- 2 files changed, 8 insertions(+)
+>> stream_has_data + stream_has_space + stream_rcvhiwat look like they
+>> are needed for buffer management.  Details please (especially for
+>> stream_rcvhiwat).
+> 
+> stream_has_data: Returns amount of data available (in bytes) in the
+> socket's receive buffer, or -1 if empty.
+> 
+> stream_has_space: Returns amount of space available (in bytes) in the
+> socket's send buffer, or -1 if full.
 
-diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index 5199db2..1c1a955 100644
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -142,6 +142,11 @@ static inline unsigned long pmd_pfn(pmd_t pmd)
- 	return (pmd_val(pmd) & PTE_PFN_MASK) >> PAGE_SHIFT;
- }
- 
-+static inline unsigned long pud_pfn(pud_t pud)
-+{
-+	return (pud_val(pud) & PTE_PFN_MASK) >> PAGE_SHIFT;
-+}
-+
- #define pte_page(pte)	pfn_to_page(pte_pfn(pte))
- 
- static inline int pmd_large(pmd_t pte)
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 2ead3c8..75c9a6a 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -831,6 +831,9 @@ int kern_addr_valid(unsigned long addr)
- 	if (pud_none(*pud))
- 		return 0;
- 
-+	if (pud_large(*pud))
-+		return pfn_valid(pud_pfn(*pud));
-+
- 	pmd = pmd_offset(pud, addr);
- 	if (pmd_none(*pmd))
- 		return 0;
+As one would expect from the names, good.
+
+> stream_rcvhiwat: The upper bound on the socket's receive buffer.
+> Which technically is the same as the value returned by
+> get_buffer_size(), so perhaps we could substitute that here and
+> drop this one.
+
+Yes, please.
+
+>> What is stream_is_active?
+> 
+> For the VMCI transport, it indicates if the underlying queuepair is
+> still around (i.e., make sure we haven't torn it down while sleeping
+> in a blocking send or receive).  Perhaps it's not the best name?
+
+How you'd hit that?  Peer closing the socket while sleeping?  Other
+thread closing the socket wile sleeping?  Both?
+
+I think a state field in struct vsock_sock would be a better solution here.
+
+>> What is *_allow?
+> 
+> It's very basic filtering.  We have specific addresses that we don't
+> allow, and we look for them in the allow() functions.  You can just
+> return true if you like.
+
+Can we make those calls optional too please?
+
+>> What are all those notify_* calls?
+> 
+> They're to do with signaling and flow-control.  Again, they might
+> not make any sense at all, but it's hard to know without having
+> written another transport :)
+
+I don't see a immediate need for them in the virto transport, but it's
+hard to say without knowing what exactly they are doing.
+
+>> Why do you need vsock_transport_{send,recv}_notify_data structs?
+>> Can't this live in vsock_sock->trans?
+> 
+> Those have to be setup on a per-call basis (per-thread), so it's
+> just easier to have them on the stack of the send/recv calls.  If
+> you think there's a better name, or a better way to allocate them,
+> I'm all ears.
+
+Hmm.  The struct content seems to be vmci-specific and it is in generic
+code, which isn't that nice.
+
+The notify_*_init could return a opaque pointer instead.  But then
+you'll need a notify_*_free too.  And you can't place it on the stack
+and thus have a allocation in the hot path, which I guess you are trying
+to avoid in the first place.
+
+No good idea offhand, but maybe that changes if the purpose of all those
+notify_* calls is more clear.
+
+cheers,
+  Gerd
+
