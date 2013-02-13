@@ -1,58 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932789Ab3BMJwa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 04:52:30 -0500
-Received: from mms1.broadcom.com ([216.31.210.17]:1725 "EHLO mms1.broadcom.com"
+	id S933279Ab3BMJzw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 04:55:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41650 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932451Ab3BMJw2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 04:52:28 -0500
-X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
-Message-ID: <511B6248.3020506@broadcom.com>
-Date: Wed, 13 Feb 2013 10:52:08 +0100
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-Version: 1.0
-To: bskeggs@redhat.com
-cc: "Peter Hurley" <peter@hurleysoftware.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        "Maarten Lankhorst" <maarten.lankhorst@canonical.com>,
-        "Daniel J Blueman" <daniel@quora.org>,
-        "Marcin Slusarz" <marcin.slusarz@gmail.com>
-Subject: Re: [ 61/61] drm/nouveau: add lockdep annotations
-References: <20130212203417.890993903@linuxfoundation.org>
- <20130212203426.021116247@linuxfoundation.org>
- <1360726523.3642.4.camel@thor.lan> <511B5DD0.1040103@broadcom.com>
- <1360748621.10139.0.camel@localhost>
-In-Reply-To: <1360748621.10139.0.camel@localhost>
-X-Enigmail-Version: 1.4.6
-X-WSS-ID: 7D05BE5E1Z0442253-01-01
-Content-Type: text/plain;
- charset=utf-8
+	id S932636Ab3BMJzu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 04:55:50 -0500
+Subject: Re: [patch for-3.8] net, sctp: remove CONFIG_EXPERIMENTAL
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Christine Caulfield <ccaulfie@redhat.com>,
+        David Teigland <teigland@redhat.com>, cluster-devel@redhat.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michal Marek <mmarek@suse.cz>, Kees Cook <keescook@chromium.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Vlad Yasevich <vyasevich@gmail.com>
+In-Reply-To: <alpine.DEB.2.02.1302121619340.3805@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1302111344140.14071@chino.kir.corp.google.com>
+	 <1360662605.2719.13.camel@menhir>
+	 <CA+55aFzCRLy5AN24rJUvbLf5HNeumn=qtS0dA9f9+2CKOLgu7A@mail.gmail.com>
+	 <alpine.DEB.2.02.1302121207250.25566@chino.kir.corp.google.com>
+	 <alpine.DEB.2.02.1302121619340.3805@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Wed, 13 Feb 2013 09:53:34 +0000
+Message-ID: <1360749214.2762.9.camel@menhir>
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13/2013 10:43 AM, Ben Skeggs wrote:
-> On Wed, 2013-02-13 at 10:33 +0100, Arend van Spriel wrote:
->> On 02/13/2013 04:35 AM, Peter Hurley wrote:
->>> On Tue, 2013-02-12 at 12:35 -0800, Greg Kroah-Hartman wrote:
->>>> 3.7-stable review patch.  If anyone has any objections, please let me know.
->>>
->>> FWIW, I never saw this on 3.7 but it happened 1st time on 3.8-rcX
->>> I haven't tested this fix either.
->>
->> Dito.
->>
->> Gr. AvS
-> Yeah, I don't believe anything could trigger it in 3.7.  It doesn't hurt
-> anyway.
+Hi,
 
-You are right. There could be other stable patches introducing a similar
-issue in 3.7 later on. Better be prepared.
+On Tue, 2013-02-12 at 16:24 -0800, David Rientjes wrote:
+> From: Kees Cook <keescook@chromium.org>
+> 
+> This config item has not carried much meaning for a while now and is
+> almost always enabled by default. As agreed during the Linux kernel
+> summit, remove it.
+> 
+> Acked-by: David S. Miller <davem@davemloft.net>
+> Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> Signed-off-by: David Rientjes <rientjes@google.com>
+> ---
+>  Ah, look what I found in my mailbox from October 23.  The patch for dlm
+>  was merged, but this wasn't for some reason.  It's acked by the 
+>  maintainer so it should be good to go and fixes the reported build error:
+> 
+>         net/built-in.o: In function `sctp_crc32c':
+>         include/net/sctp/checksum.h:51: undefined reference to `crc32c'
+>         include/net/sctp/checksum.h:51: undefined reference to `crc32c'
+>         include/net/sctp/checksum.h:51: undefined reference to `crc32c'
+>         include/net/sctp/checksum.h:51: undefined reference to `crc32c'
+>         include/net/sctp/checksum.h:51: undefined reference to `crc32c'
+>         net/built-in.o:include/net/sctp/checksum.h:51: more undefined references to `crc32c' follow
+> 
+>  And I guess "dlm not being marked experimental for a long time" meant
+>  three months.
+> 
+Yes, I was surprised about that. We removed that tag from GFS2 back in
+2010 it seems and I'm surprised that it didn't get removed from DLM at
+around the same time. Either way though, it is a long time since either
+have been experimental in reality, as both are stable and have many
+users.
 
-Gr. AvS
+Also SCTP is only a (run time) option for DLM, and few users will
+actually use it, since most people will use the TCP transport instead.
+
+Anyway, this patch looks ok to me, so:
+Acked-by: Steven Whitehouse <swhiteho@redhat.com>
+
+Steve.
+
+
+>  net/sctp/Kconfig | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/net/sctp/Kconfig b/net/sctp/Kconfig
+> --- a/net/sctp/Kconfig
+> +++ b/net/sctp/Kconfig
+> @@ -3,8 +3,8 @@
+>  #
+>  
+>  menuconfig IP_SCTP
+> -	tristate "The SCTP Protocol (EXPERIMENTAL)"
+> -	depends on INET && EXPERIMENTAL
+> +	tristate "The SCTP Protocol"
+> +	depends on INET
+>  	depends on IPV6 || IPV6=n
+>  	select CRYPTO
+>  	select CRYPTO_HMAC
 
 
