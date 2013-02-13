@@ -1,34 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759225Ab3BMMk4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 07:40:56 -0500
-Received: from [190.152.215.222] ([190.152.215.222]:60493 "EHLO
-	mail.man.cnel.ec" rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751279Ab3BMMkz (ORCPT
+	id S1759434Ab3BMMlR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 07:41:17 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:6077 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933922Ab3BMMlP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 07:40:55 -0500
-X-Greylist: delayed 536 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Feb 2013 07:40:55 EST
-Date: Wed, 13 Feb 2013 07:30:57 -0500 (ECT)
-From: Mr Subhash Deshpande <vloor@man.cnel.gob.ec>
-Reply-To: liu.w@shqiptar.eu
-Message-ID: <1127551.27293.1360758657944.JavaMail.javamailuser@localhost>
-Subject: I Need Your Help
+	Wed, 13 Feb 2013 07:41:15 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Wed, 13 Feb 2013 04:41:15 -0800
+Message-ID: <511B89D6.7010000@nvidia.com>
+Date: Wed, 13 Feb 2013 18:10:54 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+CC: Vinod Koul <vinod.koul@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH 6/6] dma: tegra20-apb-dma: remove unnecessary assignment
+References: <1360666720-19006-1-git-send-email-andriy.shevchenko@linux.intel.com> <1360666720-19006-7-git-send-email-andriy.shevchenko@linux.intel.com>
+In-Reply-To: <1360666720-19006-7-git-send-email-andriy.shevchenko@linux.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [41.73.225.12]
-X-Mailer: Zimbra 6.0.5_GA_2213.RHEL5 (zclient/6.0.5_GA_2213.RHEL5)
-To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear friend,
- 
+On Tuesday 12 February 2013 04:28 PM, Andy Shevchenko wrote:
+> There is no need to assign 0 to residue, because dma_cookie_status() does this
+> for us.
+>
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> ---
 
-I am Mr.Subhash Deshpande, an official with the International bank of Taipei, Taiwan.I have a very sensitive and confidential brief for you from the International Bank of Taipei, Taiwan. I ask for your partnership in re-profiling funds. I will give you the details but in summary, the funds are coming via Bank of Taipei in Taiwan.please get back for more informations:(liu.w@shqiptar.eu).
+For this change(6/6), Acked-by: Laxman Dewangan <ldewangan@nvidia.com>
 
-I'm looking forward to it.
 
-Sincerely,
-SUBHASH DESHPANDE
