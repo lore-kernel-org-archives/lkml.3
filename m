@@ -1,70 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934001Ab3BMM4Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 07:56:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41539 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933921Ab3BMM4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 07:56:22 -0500
-Date: Wed, 13 Feb 2013 13:56:17 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ying Han <yinghan@google.com>, Tejun Heo <htejun@gmail.com>,
-        Glauber Costa <glommer@parallels.com>, Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH v3 4/7] memcg: remove memcg from the reclaim iterators
-Message-ID: <20130213125617.GD23562@dhcp22.suse.cz>
-References: <20130211223943.GC15951@cmpxchg.org>
- <20130212095419.GB4863@dhcp22.suse.cz>
- <20130212151002.GD15951@cmpxchg.org>
- <20130212154330.GG4863@dhcp22.suse.cz>
- <20130212161332.GI4863@dhcp22.suse.cz>
- <20130212162442.GJ4863@dhcp22.suse.cz>
- <63d3b5fa-dbc6-4bc9-8867-f9961e644305@email.android.com>
- <20130212171216.GA17663@dhcp22.suse.cz>
- <20130212173741.GD25235@cmpxchg.org>
- <20130213103459.GB23562@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130213103459.GB23562@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933935Ab3BMM4n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 07:56:43 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:57978 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932599Ab3BMM4l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 07:56:41 -0500
+Message-ID: <1360760195.3524.355.camel@falcor1.watson.ibm.com>
+Subject: Re: [PATCH 2/2] ima: Support appraise_type=imasig_optional
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 13 Feb 2013 07:56:35 -0500
+In-Reply-To: <CALLzPKZA92MxJYjC+OR-KDv4rHQRgKSBHSAY2fOZsEDxiO11yA@mail.gmail.com>
+References: <1360613493-11969-1-git-send-email-vgoyal@redhat.com>
+	 <1360613493-11969-3-git-send-email-vgoyal@redhat.com>
+	 <CALLzPKZA92MxJYjC+OR-KDv4rHQRgKSBHSAY2fOZsEDxiO11yA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13021312-4834-0000-0000-000003A011E6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 13-02-13 11:34:59, Michal Hocko wrote:
-> On Tue 12-02-13 12:37:41, Johannes Weiner wrote:
-> > On Tue, Feb 12, 2013 at 06:12:16PM +0100, Michal Hocko wrote:
-> [...]
-> > > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > > index 727ec39..31bb9b0 100644
-> > > --- a/mm/memcontrol.c
-> > > +++ b/mm/memcontrol.c
-> > > @@ -144,8 +144,13 @@ struct mem_cgroup_stat_cpu {
-> > >  };
-> > >  
-> > >  struct mem_cgroup_reclaim_iter {
-> > > -	/* last scanned hierarchy member with elevated css ref count */
-> > > +	/*
-> > > +	 * last scanned hierarchy member. Valid only if last_dead_count
-> > > +	 * matches memcg->dead_count of the hierarchy root group.
-> > > +	 */
-> > >  	struct mem_cgroup *last_visited;
-> > > +	unsigned int last_dead_count;
-> > 
-> > Since we read and write this without a lock, I would feel more
-> > comfortable if this were a full word, i.e. unsigned long.  That
-> > guarantees we don't see any partial states.
+On Wed, 2013-02-13 at 14:31 +0200, Kasatkin, Dmitry wrote:
+> On Mon, Feb 11, 2013 at 10:11 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+
+> > @@ -158,7 +165,8 @@ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
+> >         }
+> >         switch (xattr_value->type) {
+> >         case IMA_XATTR_DIGEST:
+> > -               if (iint->flags & IMA_DIGSIG_REQUIRED) {
+> > +               if (iint->flags & IMA_DIGSIG_REQUIRED ||
+> > +                   iint->flags & IMA_DIGSIG_OPTIONAL) {
+> >                         cause = "IMA signature required";
+> >                         status = INTEGRITY_FAIL;
+> >                         break;
 > 
-> OK. Changed. Although I though that int is read/modified atomically as
-> well if it is aligned to its size.
+> This looks a bit odd... If "optional" signature is missing  - we fail..
+> It is optional... Why we should fail?
 
-Ohh, I guess what was your concern. If last_dead_count was int then it
-would fit into the same full word slot with generation and so the
-parallel read-modify-update cycle could be an issue.
+'imasig_optional' does not only mean that the signature is optional, but
+also implies that it has to be a digital signature, not a hash.  This
+latter part is what IMA_DIGSIG_REQUIRED means.
 
--- 
-Michal Hocko
-SUSE Labs
+If 'imasig_optional' set both 'IMA_DIGSIG_OPTIONAL' and
+'IMA_DIGSIG_REQUIRED', then this change wouldn't be necessary.
+
+IMA_DIGSIG_REQUIRED would enforce that it is a signature.
+IMA_DIGSIG_OPTIONAL would fail only for files with invalid signatures.
+
+thanks,
+
+Mimi
+
