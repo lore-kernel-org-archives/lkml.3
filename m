@@ -1,105 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759257Ab3BMAJx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 19:09:53 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58524 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758071Ab3BMAJw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 19:09:52 -0500
-Date: Tue, 12 Feb 2013 16:07:55 -0800
-From: tip-bot for Borislav Petkov <bp@suse.de>
-Message-ID: <tip-166df91daf38f619d4ca90b58ff90983de6e40d2@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com, bp@suse.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, bp@suse.de, hpa@linux.intel.com
-In-Reply-To: <1360592538-10643-2-git-send-email-bp@alien8.de>
-References: <1360592538-10643-2-git-send-email-bp@alien8.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/asm] x86, head_32: Remove i386 pieces
-Git-Commit-ID: 166df91daf38f619d4ca90b58ff90983de6e40d2
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1759327Ab3BMAJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 19:09:58 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:37662 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759276Ab3BMAJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 19:09:55 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        Jiang Liu <liuj97@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
+        Toshi Kani <toshi.kani@hp.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Myron Stowe <mstowe@redhat.com>, linux-pci@vger.kernel.org
+Subject: [PATCH] ACPI / PCI: Initialize PCI root drivers after PCI bus enumeration
+Date: Wed, 13 Feb 2013 01:16:20 +0100
+Message-ID: <1882094.fnYp8pBVVX@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc7; KDE/4.9.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 12 Feb 2013 16:08:01 -0800 (PST)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  166df91daf38f619d4ca90b58ff90983de6e40d2
-Gitweb:     http://git.kernel.org/tip/166df91daf38f619d4ca90b58ff90983de6e40d2
-Author:     Borislav Petkov <bp@suse.de>
-AuthorDate: Mon, 11 Feb 2013 15:22:15 +0100
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 12 Feb 2013 15:48:40 -0800
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-x86, head_32: Remove i386 pieces
+After commit 1aeae82 (ACPI / PCI: avoid building pci_slot as module)
+the pci_slot driver's .add() callback routine, acpi_pci_slot_add(),
+is executed from within acpi_pci_root_add() before the PCI devices on
+the bus are enumerated and that triggers the WARN_ON() in
+kobject_get():
 
-Remove code fragments detecting a 386 CPU since we don't support those
-anymore. Also, do not do alignment checks because they're done only at
-CPL3. Also, no need to preserve EFLAGS.
+WARNING: at /scratch/rafael/work/test/include/linux/kref.h:42 kobject_get+0x33/0x40()
+Hardware name: PORTEGE R500
+Modules linked in:
+Pid: 1, comm: swapper/0 Not tainted 3.8.0-rc7+ #160
+Call Trace:
+ [<ffffffff8103d38a>] warn_slowpath_common+0x7a/0xb0
+ [<ffffffff8103d3d5>] warn_slowpath_null+0x15/0x20
+ [<ffffffff812f99b3>] kobject_get+0x33/0x40
+ [<ffffffff81452b82>] get_device+0x12/0x30
+ [<ffffffff8138df7b>] register_slot+0x243/0x295
+ [<ffffffff810a7b6d>] ? trace_hardirqs_on+0xd/0x10
+ [<ffffffff8137b7b9>] acpi_ns_walk_namespace+0x10f/0x24a
+ [<ffffffff8138dd38>] ? walk_p2p_bridge+0x13b/0x13b
+ [<ffffffff8138dd38>] ? walk_p2p_bridge+0x13b/0x13b
+ [<ffffffff8137bdc3>] acpi_walk_namespace+0xe9/0x132
+ [<ffffffff8138dd38>] ? walk_p2p_bridge+0x13b/0x13b
+ [<ffffffff8138dcf5>] walk_p2p_bridge+0xf8/0x13b
+ [<ffffffff8134d606>] ? acpi_os_signal_semaphore+0x76/0x87
+ [<ffffffff8138dd38>] ? walk_p2p_bridge+0x13b/0x13b
+ [<ffffffff8137b7b9>] acpi_ns_walk_namespace+0x10f/0x24a
+ [<ffffffff8138dbfd>] ? do_sta_before_sun+0x2b/0x2b
+ [<ffffffff8138dbfd>] ? do_sta_before_sun+0x2b/0x2b
+ [<ffffffff8137bdc3>] acpi_walk_namespace+0xe9/0x132
+ [<ffffffff81356071>] ? acpi_pci_root_add+0x3e7/0x49a
+ [<ffffffff8138e07f>] acpi_pci_slot_add+0xb2/0x103
+ [<ffffffff8138dd38>] ? walk_p2p_bridge+0x13b/0x13b
+ [<ffffffff81356089>] acpi_pci_root_add+0x3ff/0x49a
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Link: http://lkml.kernel.org/r/1360592538-10643-2-git-send-email-bp@alien8.de
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+which means that pci_bus->dev used in register_slot() has not been
+registered yet at that point.
+
+To fix this use the observation that before commit 1aeae82
+acpi_pci_slot_add() was always run after pci_bus_add_devices()
+and that happened to the acpiphp's .add() callback routine too.
+Thus it is safe to reorder acpi_pci_root_add() to make the PCI root
+drivers' .add() callbacks be run after pci_bus_add_devices(), so do
+that.
+
+This approach was previously proposed by Myron Stowe.
+
+References: https://patchwork.kernel.org/patch/1848781/
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- arch/x86/kernel/head_32.S | 22 +++++-----------------
- 1 file changed, 5 insertions(+), 17 deletions(-)
 
-diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
-index c8932c7..a9c5cc8 100644
---- a/arch/x86/kernel/head_32.S
-+++ b/arch/x86/kernel/head_32.S
-@@ -394,30 +394,21 @@ default_entry:
- 	jz 1f				# Did we do this already?
- 	call *%eax
- 1:
--	
--/* check if it is 486 or 386. */
+The commit mentioned in the changelog above is in linux-pm.git/linux-next.
+
+Thanks,
+Rafael
+
+---
+ drivers/acpi/pci_root.c |   13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
+
+Index: test/drivers/acpi/pci_root.c
+===================================================================
+--- test.orig/drivers/acpi/pci_root.c
++++ test/drivers/acpi/pci_root.c
+@@ -600,17 +600,20 @@ static int acpi_pci_root_add(struct acpi
+ 	if (system_state != SYSTEM_BOOTING)
+ 		pci_assign_unassigned_bus_resources(root->bus);
+ 
++	/* need to after hot-added ioapic is registered */
++	if (system_state != SYSTEM_BOOTING)
++		pci_enable_bridges(root->bus);
 +
- /*
-- * XXX - this does a lot of unnecessary setup.  Alignment checks don't
-- * apply at our cpl of 0 and the stack ought to be aligned already, and
-- * we don't need to preserve eflags.
-+ * Check if it is 486
-  */
- 	movl $-1,X86_CPUID	# -1 for no CPUID initially
--	movb $3,X86		# at least 386
-+	movb $4,X86		# at least 486
- 	pushfl			# push EFLAGS
- 	popl %eax		# get EFLAGS
- 	movl %eax,%ecx		# save original EFLAGS
--	xorl $0x240000,%eax	# flip AC and ID bits in EFLAGS
-+	xorl $0x200000,%eax	# flip ID bit in EFLAGS
- 	pushl %eax		# copy to EFLAGS
- 	popfl			# set EFLAGS
- 	pushfl			# get new EFLAGS
- 	popl %eax		# put it in eax
- 	xorl %ecx,%eax		# change in flags
--	pushl %ecx		# restore original EFLAGS
--	popfl
--	testl $0x40000,%eax	# check if AC bit changed
--	je is386
--
--	movb $4,X86		# at least 486
- 	testl $0x200000,%eax	# check if ID bit changed
- 	je is486
++	pci_bus_add_devices(root->bus);
++
+ 	mutex_lock(&acpi_pci_root_lock);
++
+ 	list_for_each_entry(driver, &acpi_pci_drivers, node)
+ 		if (driver->add)
+ 			driver->add(root);
+-	mutex_unlock(&acpi_pci_root_lock);
  
-@@ -445,10 +436,7 @@ default_entry:
- 	movl %edx,X86_CAPABILITY
+-	/* need to after hot-added ioapic is registered */
+-	if (system_state != SYSTEM_BOOTING)
+-		pci_enable_bridges(root->bus);
++	mutex_unlock(&acpi_pci_root_lock);
  
- is486:	movl $0x50022,%ecx	# set AM, WP, NE and MP
--	jmp 2f
--
--is386:	movl $2,%ecx		# set MP
--2:	movl %cr0,%eax
-+	movl %cr0,%eax
- 	andl $0x80000011,%eax	# Save PG,PE,ET
- 	orl %ecx,%eax
- 	movl %eax,%cr0
+-	pci_bus_add_devices(root->bus);
+ 	return 1;
+ 
+ out_del_root:
+
