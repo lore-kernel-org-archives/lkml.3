@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934380Ab3BMQNS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 11:13:18 -0500
-Received: from www.linutronix.de ([62.245.132.108]:59729 "EHLO
+	id S934396Ab3BMQNY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 11:13:24 -0500
+Received: from www.linutronix.de ([62.245.132.108]:59743 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934364Ab3BMQNQ (ORCPT
+	with ESMTP id S934383Ab3BMQNU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 11:13:16 -0500
+	Wed, 13 Feb 2013 11:13:20 -0500
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
-        Carsten Emde <C.Emde@osadl.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Carsten Emde <C.Emde@osadl.org>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 07/16] softirq: Fix nohz pending issue for real
-Date: Wed, 13 Feb 2013 17:12:02 +0100
-Message-Id: <1360771932-27150-8-git-send-email-bigeasy@linutronix.de>
+Subject: [PATCH 09/16] FIX [1/2] slub: Do not dereference NULL pointer in node_match
+Date: Wed, 13 Feb 2013 17:12:04 +0100
+Message-Id: <1360771932-27150-10-git-send-email-bigeasy@linutronix.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1360771932-27150-1-git-send-email-bigeasy@linutronix.de>
 References: <1360771932-27150-1-git-send-email-bigeasy@linutronix.de>
@@ -25,59 +27,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Christoph Lameter <cl@linux.com>
 
-We really need to iterate through all softirqs to find a potentially
-blocked runner.
+The variables accessed in slab_alloc are volatile and therefore
+the page pointer passed to node_match can be NULL. The processing
+of data in slab_alloc is tentative until either the cmpxhchg
+succeeds or the __slab_alloc slowpath is invoked. Both are
+able to perform the same allocation from the freelist.
 
-T1 runs softirq X (that cleared pending bit for X)
+Check for the NULL pointer in node_match.
 
-Interrupt raises softirq Y
+A false positive will lead to a retry of the loop in __slab_alloc.
 
-T1 gets blocked on a lock and lock owner is not runnable
-
-T1 schedules out
-
-CPU goes idle and complains about pending softirq Y.
-
-Now iterating over all softirqs lets us find the runner for X and
-eliminate Y from the to warn about list as well.
-
+Signed-off-by: Christoph Lameter <cl@linux.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+[bigeasy@linutronix: replace page with c->page]
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- kernel/softirq.c |   13 ++++---------
- 1 file changed, 4 insertions(+), 9 deletions(-)
+ mm/slub.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 385fcea..1a0145a 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -100,20 +100,15 @@ void softirq_check_pending_idle(void)
+diff --git a/mm/slub.c b/mm/slub.c
+index 5710788..08eb4c1 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -2038,7 +2038,7 @@ static void flush_all(struct kmem_cache *s)
+ static inline int node_match(struct kmem_cache_cpu *c, int node)
  {
- 	static int rate_limit;
- 	struct softirq_runner *sr = &__get_cpu_var(softirq_runners);
--	u32 warnpending, pending = local_softirq_pending();
-+	u32 warnpending = local_softirq_pending();
-+	int i;
- 
- 	if (rate_limit >= 10)
- 		return;
- 
--	warnpending = pending;
--
--	while (pending) {
--		struct task_struct *tsk;
--		int i = __ffs(pending);
--
--		pending &= ~(1 << i);
-+	for (i = 0; i < NR_SOFTIRQS; i++) {
-+		struct task_struct *tsk = sr->runner[i];
- 
--		tsk = sr->runner[i];
- 		/*
- 		 * The wakeup code in rtmutex.c wakes up the task
- 		 * _before_ it sets pi_blocked_on to NULL under
+ #ifdef CONFIG_NUMA
+-	if (node != NUMA_NO_NODE && c->node != node)
++	if (!c->page || (node != NUMA_NO_NODE && c->node != node))
+ 		return 0;
+ #endif
+ 	return 1;
 -- 
 1.7.10.4
 
