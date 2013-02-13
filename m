@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965091Ab3BMWZg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 17:25:36 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:45487 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761069Ab3BMWZe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 17:25:34 -0500
-Message-ID: <511C1284.6080304@zytor.com>
-Date: Wed, 13 Feb 2013 14:24:04 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>
-CC: Matthew Garrett <matthew.garrett@nebula.com>,
-        Borislav Petkov <bp@alien8.de>, Kees Cook <keescook@chromium.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH] x86: Lock down MSR writing in secure boot
-References: <dee64752-850c-4d78-b703-f47a985bc13e@email.android.com>    <CAGXu5jLAufTRm=sDST0br_WEkn4o0Hpjv2jDP2Na=cCvuM+MGg@mail.gmail.com>    <1360355671.18083.18.camel@x230.lan>    <CAGXu5jKo2PfMBO4A0ZgQcrPuj8OHNaff+CjAesOAWkZc0vB9+Q@mail.gmail.com>    <51157C9C.6030501@zytor.com> <20130208230655.GB28990@pd.tnic>    <1360366012.18083.21.camel@x230.lan> <5115A4CC.3080102@zytor.com>    <1360373383.18083.23.camel@x230.lan>    <CAGXu5j+xvJ3L5ejxtZ-Jw3F6rV7OsrE0_HZCGu_er0rH2_PwKA@mail.gmail.com>    <20130209092925.GA17728@pd.tnic> <1360422712.18083.24.camel@x230.lan>   <511AE2CC.5040705@zytor.com> <1360733962.18083.30.camel@x230.lan>  <511B2EB9.5070406@zytor.com> <1360736860.18083.33.camel@x230.lan> <511B33BC.9080307@zytor.com> <511B4E61.1040604@redhat.com> <511BCBD6.6020907@zytor.com> <511BEFAD.1050206@redhat.com>
-In-Reply-To: <511BEFAD.1050206@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S965097Ab3BMW1T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 17:27:19 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:42735 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751302Ab3BMW1S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 17:27:18 -0500
+Message-ID: <1360794421.3524.495.camel@falcor1.watson.ibm.com>
+Subject: Re: [PATCH 2/2] ima: Support appraise_type=imasig_optional
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 13 Feb 2013 17:27:01 -0500
+In-Reply-To: <20130213153013.GB6750@redhat.com>
+References: <1360620614.3524.223.camel@falcor1.watson.ibm.com>
+	 <20130212142636.GA23410@redhat.com>
+	 <1360689247.3524.275.camel@falcor1.watson.ibm.com>
+	 <20130212185203.GA29958@redhat.com> <20130212185725.GC23410@redhat.com>
+	 <CALLzPKaD==fj3GSE3SnaWg5=VVNW7A_+caFzoh=_cBv8+BVKEA@mail.gmail.com>
+	 <20130213132920.GA3540@redhat.com>
+	 <CALLzPKbj33dQ36tcwip_LKCOXgA6GcBDbSc5s4y4cYyv2=s=nw@mail.gmail.com>
+	 <20130213143807.GC3540@redhat.com>
+	 <CALLzPKZ=eRWDtW6eSKPX5Qbvs_N37daiULw+T7o+DpoGfw_Z_A@mail.gmail.com>
+	 <20130213153013.GB6750@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 13021322-2876-0000-0000-000005428727
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13/2013 11:55 AM, Paolo Bonzini wrote:
-> Il 13/02/2013 18:22, H. Peter Anvin ha scritto:
->>>
->>> On non-x86 machines CAP_SYS_RAWIO is much less dangerous, especially
->>> when coupled with file DAC.
->
-> Discretionary Access Control.
->
->> Either way, I think you are at best deluded and more like you just
->> completely wrong about CAP_SYS_RAWIO being "less dangerous on non-x86
->> machines".  With the possible exception of s390 I suspect it is, in
->> fact, more dangerous.
->
-> I may well be wrong, but as a quick data point CAP_SYS_RAWIO has no
-> occurrences in arch/ except arch/x86.  Of course a lot of driver
-> functionality will be limited to CAP_SYS_RAWIO, but usually this
-> requires having a file descriptor for some file.
->
+On Wed, 2013-02-13 at 10:30 -0500, Vivek Goyal wrote:
+> On Wed, Feb 13, 2013 at 05:26:27PM +0200, Kasatkin, Dmitry wrote:
+> > On Wed, Feb 13, 2013 at 4:38 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > > On Wed, Feb 13, 2013 at 03:36:45PM +0200, Kasatkin, Dmitry wrote:
+> > >> It should not be the only line in the policy.
+> > >> Can you share full policy?
+> > >
+> > > I verified by putting some printk. There is only single rule in
+> > > ima_policy_rules list after I have updated the rules through "policy"
+> > > file.
+> > >
+> > > echo "appraise fowner=0 func=BPRM_CHECK appraise_type=imasig_optional" >
+> > > /sys/kernel/security/policy
+> > 
+> > There is a default policy which has several rules.
+> > 
+> > And when you do your "echo" you will replace all rules with that single rule.
+> > But ok, you have one rule only and it is fine to have even a single rule...
+> 
+> Yep, I got that. Default policy gets overruled when a new policy is
+> loaded.
+> 
+> In secureboot mode, somehow above rule needs to take effect by default.
+> One option would be that kernel can enforce above rule.
+> (I guess by adding it to both default_list as well as policy list).
 
-Well, yes, although that could include /dev/mem.
+The default policy is empty, but can be replaced with boot command line
+options.  The existing options are ima_tcb and/ ima_appraise_tcb.
+Please feel free to define an additional policy.
 
-	-hpa
+thanks,
 
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Mimi
 
