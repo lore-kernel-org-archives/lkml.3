@@ -1,47 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934078Ab3BMOiV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 09:38:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20819 "EHLO mx1.redhat.com"
+	id S934055Ab3BMOkc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 09:40:32 -0500
+Received: from mail.tpi.com ([70.99.223.143]:3612 "EHLO mail.tpi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757353Ab3BMOiU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 09:38:20 -0500
-Date: Wed, 13 Feb 2013 09:38:07 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] ima: Support appraise_type=imasig_optional
-Message-ID: <20130213143807.GC3540@redhat.com>
-References: <1360613493-11969-1-git-send-email-vgoyal@redhat.com>
- <1360613493-11969-3-git-send-email-vgoyal@redhat.com>
- <1360620614.3524.223.camel@falcor1.watson.ibm.com>
- <20130212142636.GA23410@redhat.com>
- <1360689247.3524.275.camel@falcor1.watson.ibm.com>
- <20130212185203.GA29958@redhat.com>
- <20130212185725.GC23410@redhat.com>
- <CALLzPKaD==fj3GSE3SnaWg5=VVNW7A_+caFzoh=_cBv8+BVKEA@mail.gmail.com>
- <20130213132920.GA3540@redhat.com>
- <CALLzPKbj33dQ36tcwip_LKCOXgA6GcBDbSc5s4y4cYyv2=s=nw@mail.gmail.com>
+	id S1756016Ab3BMOkb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 09:40:31 -0500
+Message-ID: <511BA5D5.6050902@canonical.com>
+Date: Wed, 13 Feb 2013 07:40:21 -0700
+From: Tim Gardner <tim.gardner@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALLzPKbj33dQ36tcwip_LKCOXgA6GcBDbSc5s4y4cYyv2=s=nw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: linux-kernel@vger.kernel.org, Trond Myklebust <Trond.Myklebust@netapp.com>,
+        linux-nfs@vger.kernel.org
+Subject: Re: [PATCH linux-next] lockd: nlmsvc_mark_resources(): avoid stack
+ overflow
+References: <1360698538-63040-1-git-send-email-tim.gardner@canonical.com> <20130212212246.GH10267@fieldses.org>
+In-Reply-To: <20130212212246.GH10267@fieldses.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 13, 2013 at 03:36:45PM +0200, Kasatkin, Dmitry wrote:
-> It should not be the only line in the policy.
-> Can you share full policy?
+On 02/12/2013 02:22 PM, J. Bruce Fields wrote:
+> On Tue, Feb 12, 2013 at 12:48:58PM -0700, Tim Gardner wrote:
+>> Dynamically allocate the NLM host structure in order to avoid stack overflow.
+>> nlmsvc_mark_resources() is several call levels deep in a stack
+>> that has a number of large variables. 512 bytes seems like a lot
+>> on the stack at this point.
+>>
+>> smatch analysis:
+>>
+>> fs/lockd/svcsubs.c:366 nlmsvc_mark_resources() warn: 'hint' puts
+>>  512 bytes on stack
+>>
+>> Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
+>> Cc: "J. Bruce Fields" <bfields@fieldses.org>
+>> Cc: linux-nfs@vger.kernel.org
+>> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+>> ---
+>>  fs/lockd/svcsubs.c |   12 ++++++++----
+>>  1 file changed, 8 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/fs/lockd/svcsubs.c b/fs/lockd/svcsubs.c
+>> index b904f41..f3abb7f 100644
+>> --- a/fs/lockd/svcsubs.c
+>> +++ b/fs/lockd/svcsubs.c
+>> @@ -363,11 +363,15 @@ nlmsvc_is_client(void *data, struct nlm_host *dummy)
+>>  void
+>>  nlmsvc_mark_resources(struct net *net)
+>>  {
+>> -	struct nlm_host hint;
+>> +	struct nlm_host *hint = kzalloc(sizeof(*hint), GFP_KERNEL);
+>>  
+>> -	dprintk("lockd: nlmsvc_mark_resources for net %p\n", net);
+>> -	hint.net = net;
+>> -	nlm_traverse_files(&hint, nlmsvc_mark_host, NULL);
+>> +	if (hint) {
+>> +		dprintk("lockd: nlmsvc_mark_resources for net %p\n", net);
+>> +		hint->net = net;
+>> +		nlm_traverse_files(hint, nlmsvc_mark_host, NULL);
+>> +	}
+> 
+> Silently neglecting to do this looks like a bad idea.
+> 
+> It's strange that we're passing in an nlm_host when all we actually use
+> is the struct net*.  Why not just change this to pass in the net
+> instead?
+> 
+> --b.
+> 
 
-I verified by putting some printk. There is only single rule in
-ima_policy_rules list after I have updated the rules through "policy"
-file.
+It won't really be silent. k[zm]alloc() dumps a stack trace on failure
+to allocate unless GFP_NOWARN is set in the flags. I think this is a bit
+better then possibly corrupting the stack.
 
-echo "appraise fowner=0 func=BPRM_CHECK appraise_type=imasig_optional" >
-/sys/kernel/security/policy
+Changing the prototype to just pass in 'net' has knock on effects that
+make this patch a whole lot bigger. You'd have to change the code within
+a bunch of functions which are difficult to verify at compile time
+because of the use of 'void *data' as the first parameter. Is there
+still a good reason for that parameter to be opaque ?
 
-Thanks
-Vivek
+rtg
+-- 
+Tim Gardner tim.gardner@canonical.com
