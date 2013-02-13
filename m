@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758778Ab3BMILq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 03:11:46 -0500
-Received: from mx0.parallels.com ([199.115.104.20]:55385 "EHLO
-	mx0.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751981Ab3BMILp (ORCPT
+	id S1758902Ab3BMIQd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 03:16:33 -0500
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:37516 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754588Ab3BMIQc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 03:11:45 -0500
-Message-ID: <511B4ACF.90209@parallels.com>
-Date: Wed, 13 Feb 2013 12:11:59 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Wed, 13 Feb 2013 03:16:32 -0500
+Date: Wed, 13 Feb 2013 12:16:27 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
+        mingo@kernel.org, linux-kernel@vger.kernel.org,
+        boris.ostrovsky@amd.com, tglx@linutronix.de, hpa@linux.intel.com,
+        linux-tip-commits@vger.kernel.org,
+        Sasha Levin <sasha.levin@oracle.com>, Asias He <asias@redhat.com>
+Subject: Re: [tip:x86/cpu] x86, AMD: Enable WC+ memory type on family 10
+ processors
+Message-ID: <20130213081627.GL22249@moon>
+References: <1359495169-23278-1-git-send-email-ostr@amd64.org>
+ <tip-f0322bd341fd63261527bf84afd3272bcc2e8dd3@git.kernel.org>
+ <20130213001626.GA30512@pd.tnic>
+ <511ADC79.6040007@zytor.com>
+ <CAOJsxLH71KTFbkm5h9AuquC04cJ0NmtCiUjSevkxqLYRBPPi8g@mail.gmail.com>
 MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Michal Hocko <mhocko@suse.cz>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ying Han <yinghan@google.com>, Tejun Heo <htejun@gmail.com>,
-        Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH v3 4/7] memcg: remove memcg from the reclaim iterators
-References: <20130211195824.GB15951@cmpxchg.org> <20130211212756.GC29000@dhcp22.suse.cz> <20130211223943.GC15951@cmpxchg.org> <20130212095419.GB4863@dhcp22.suse.cz> <20130212151002.GD15951@cmpxchg.org> <20130212154330.GG4863@dhcp22.suse.cz> <20130212161332.GI4863@dhcp22.suse.cz> <20130212162442.GJ4863@dhcp22.suse.cz> <63d3b5fa-dbc6-4bc9-8867-f9961e644305@email.android.com> <20130212171216.GA17663@dhcp22.suse.cz> <20130212173741.GD25235@cmpxchg.org>
-In-Reply-To: <20130212173741.GD25235@cmpxchg.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOJsxLH71KTFbkm5h9AuquC04cJ0NmtCiUjSevkxqLYRBPPi8g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/12/2013 09:37 PM, Johannes Weiner wrote:
->> > All reads from root->dead_count are atomic already, so I am not sure
->> > what you mean here. Anyway, I hope I won't make this even more confusing
->> > if I post what I have right now:
-> Yes, but we are doing two reads.  Can't the memcg that we'll store in
-> last_visited be offlined during this and be freed after we drop the
-> rcu read lock?  If we had just one read, we would detect this
-> properly.
+On Wed, Feb 13, 2013 at 10:06:25AM +0200, Pekka Enberg wrote:
+> On Wed, Feb 13, 2013 at 2:21 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> >>> +                       rdmsrl(MSR_AMD64_BU_CFG2, value);
+> >>> +                       value &= ~(1ULL << 24);
+> >>> +                       wrmsrl(MSR_AMD64_BU_CFG2, value);
+> >>> +               }
+> >>>         }
+> >>>
+> >>>         rdmsr_safe(MSR_AMD64_PATCH_LEVEL, &c->microcode, &dummy);
+> >>
+> >>
+> >> However, the more serious issue is that that same kernel #GPs when
+> >> booted in kvm. It seems it cannot stomach that specific MSR, see the
+> >> second "<-- trapping instruction" below and that BU_CFG2 MSR landing in
+> >> %ecx in the line before that.
+> >>
+> >> Oh, and this happens only with the kvm executable (/usr/bin/kvm) in
+> >> debian testing. If I use qemu from git, it passes over init_amd just
+> >> fine.
+> >>
+> >> Hmmm..
+> >
+> > It #GPs on an MSR, which tends to be a bug in the VMM; RDMSR/WRMSR generally
+> > kick out to the VMM.  There isn't a huge lot of work we can do about that...
+> >
+> > I think Qemu defaults to ignoring unknown-to-it MSRs whereas maybe kvmtool
+> > croaks?  Pekka?
 > 
+> I think we should also be fine. Cyrill?
 
-I don't want to add any more confusion to an already fun discussion, but
-IIUC, you are trying to avoid triggering a second round of reclaim in an
-already dead memcg, right?
-
-Can't you generalize the mechanism I use for kmemcg, where a very
-similar problem exists ? This is how it looks like:
-
-
-  /* this atomically sets a bit in the memcg. It does so
-   * unconditionally, and it is (so far) okay if it is set
-   * twice
-   */
-  memcg_kmem_mark_dead(memcg);
-
-  /*
-   * Then if kmem charges is not zero, we don't actually destroy the
-   * memcg. The function where it lives will always be called when usage
-   * reaches 0, so we guarantee that we will never miss the chance to
-   * call the destruction function at least once.
-   *
-   * I suspect you could use a mechanism like this, or extend
-   * this very same, to prevent the second reclaim to be even called
-   */
-  if (res_counter_read_u64(&memcg->kmem, RES_USAGE) != 0)
-          return;
-
-  /*
-   * this is how we guarantee that the destruction fuction is called at
-   * most once. The second caller would see the bit unset.
-   */
-  if (memcg_kmem_test_and_clear_dead(memcg))
-          mem_cgroup_put(memcg);
-
+Never was #gp on unknown msr register access, so I think
+we're safe. But maybe Borislav may give lkvm a shot just
+to be sure?
