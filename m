@@ -1,61 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934567Ab3BMRYp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 12:24:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20643 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934457Ab3BMRYm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 12:24:42 -0500
-Date: Wed, 13 Feb 2013 10:30:14 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] ima: Support appraise_type=imasig_optional
-Message-ID: <20130213153013.GB6750@redhat.com>
-References: <1360620614.3524.223.camel@falcor1.watson.ibm.com>
- <20130212142636.GA23410@redhat.com>
- <1360689247.3524.275.camel@falcor1.watson.ibm.com>
- <20130212185203.GA29958@redhat.com>
- <20130212185725.GC23410@redhat.com>
- <CALLzPKaD==fj3GSE3SnaWg5=VVNW7A_+caFzoh=_cBv8+BVKEA@mail.gmail.com>
- <20130213132920.GA3540@redhat.com>
- <CALLzPKbj33dQ36tcwip_LKCOXgA6GcBDbSc5s4y4cYyv2=s=nw@mail.gmail.com>
- <20130213143807.GC3540@redhat.com>
- <CALLzPKZ=eRWDtW6eSKPX5Qbvs_N37daiULw+T7o+DpoGfw_Z_A@mail.gmail.com>
+	id S1760220Ab3BMR0x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 12:26:53 -0500
+Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:55191
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759726Ab3BMR0u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 12:26:50 -0500
+X-Forefront-Antispam-Report: CIP:157.56.236.101;KIP:(null);UIP:(null);IPV:NLI;H:BY2PRD0510HT003.namprd05.prod.outlook.com;RD:none;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: PS3(zz98dI936eI1432Ic74nzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2fh2a8h668h839h93fhd24he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1155h)
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Borislav Petkov <bp@alien8.de>, Kees Cook <keescook@chromium.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH] x86: Lock down MSR writing in secure boot
+Thread-Topic: [PATCH] x86: Lock down MSR writing in secure boot
+Thread-Index: AQHOBjA7mQsIMlqU/k+EElzc7Yz1iZhwVXgAgAAAbACAAAawAIAACLcAgAABPICAAAKrAIAAAdKAgAAHwICAABjCAIAAChOAgAAFkwCAACBDAIAAAhCAgABYQICAAC3GgIAAX64AgAVYBQCAAFFaAIAACSmAgAAEVgCAAAGkAIAAAlCAgACyhQCAAAGlgA==
+Date: Wed, 13 Feb 2013 17:26:39 +0000
+Message-ID: <1360776399.18083.39.camel@x230.lan>
+References: <dee64752-850c-4d78-b703-f47a985bc13e@email.android.com>
+	     <CAGXu5jLAufTRm=sDST0br_WEkn4o0Hpjv2jDP2Na=cCvuM+MGg@mail.gmail.com>
+	     <1360355671.18083.18.camel@x230.lan>
+	     <CAGXu5jKo2PfMBO4A0ZgQcrPuj8OHNaff+CjAesOAWkZc0vB9+Q@mail.gmail.com>
+	     <51157C9C.6030501@zytor.com> <20130208230655.GB28990@pd.tnic>
+	     <1360366012.18083.21.camel@x230.lan> <5115A4CC.3080102@zytor.com>
+	     <1360373383.18083.23.camel@x230.lan>
+	     <CAGXu5j+xvJ3L5ejxtZ-Jw3F6rV7OsrE0_HZCGu_er0rH2_PwKA@mail.gmail.com>
+	     <20130209092925.GA17728@pd.tnic> <1360422712.18083.24.camel@x230.lan>
+	    <511AE2CC.5040705@zytor.com> <1360733962.18083.30.camel@x230.lan>
+	   <511B2EB9.5070406@zytor.com> <1360736860.18083.33.camel@x230.lan>
+	  <511B33BC.9080307@zytor.com> <1360737709.18083.36.camel@x230.lan>
+	 <511BCB6E.8080102@zytor.com>
+In-Reply-To: <511BCB6E.8080102@zytor.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.255.84.4]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <218534E4FFAC3A4E931CB5AB88AF53CA@namprd05.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALLzPKZ=eRWDtW6eSKPX5Qbvs_N37daiULw+T7o+DpoGfw_Z_A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1DHQpCe031631
 
-On Wed, Feb 13, 2013 at 05:26:27PM +0200, Kasatkin, Dmitry wrote:
-> On Wed, Feb 13, 2013 at 4:38 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> > On Wed, Feb 13, 2013 at 03:36:45PM +0200, Kasatkin, Dmitry wrote:
-> >> It should not be the only line in the policy.
-> >> Can you share full policy?
-> >
-> > I verified by putting some printk. There is only single rule in
-> > ima_policy_rules list after I have updated the rules through "policy"
-> > file.
-> >
-> > echo "appraise fowner=0 func=BPRM_CHECK appraise_type=imasig_optional" >
-> > /sys/kernel/security/policy
+On Wed, 2013-02-13 at 09:20 -0800, H. Peter Anvin wrote:
+
+> Problem:
 > 
-> There is a default policy which has several rules.
+> Someone adds SYS_CAP_RAWIO to some places it definitely does not
+> belong.
 > 
-> And when you do your "echo" you will replace all rules with that single rule.
-> But ok, you have one rule only and it is fine to have even a single rule...
+> Solution:
+> 
+> Break all the *appropriate* (as defined)uses of SYS_CAP_RAWIO?
 
-Yep, I got that. Default policy gets overruled when a new policy is
-loaded.
+Problem:
 
-In secureboot mode, somehow above rule needs to take effect by default.
-One option would be that kernel can enforce above rule.
-(I guess by adding it to both default_list as well as policy list).
+CAP_SYS_RAWIO has been used in a bunch of arguably inappropriate places.
+Removing CAP_SYS_RAWIO from the set of possible capabilities on a system
+will prevent userspace from doing things that userspace should be
+permitted to do. Removing CAP_SYS_RAWIO from the places that it
+currently exists will allow userspace to do too much. Replacing
+CAP_SYS_RAWIO with CAP_SYS_ADMIN will prevent userspace from doing
+things that it can currently do.
 
-Thanks
-Vivek
+Solution:
+
+Admit that CAP_SYS_RAWIO is fucked up beyond rescue. Add a new
+capability with well-defined semantics.
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
