@@ -1,40 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964804Ab3BMQmi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 11:42:38 -0500
-Received: from www.linutronix.de ([62.245.132.108]:60084 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759463Ab3BMQmg (ORCPT
+	id S934547Ab3BMQmr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 11:42:47 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:47506 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758775Ab3BMQmn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 11:42:36 -0500
-Date: Wed, 13 Feb 2013 17:42:34 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
-        John Kacur <jkacur@gmail.com>, Clark Williams <clark@redhat.com>
-Subject: Re: [RFC][PATCH RT] acpi/rt: Convert acpi lock back to a
- raw_spinlock_t
-In-Reply-To: <1360765565.23152.5.camel@gandalf.local.home>
-Message-ID: <alpine.LFD.2.02.1302131741220.11905@ionos>
-References: <1360765565.23152.5.camel@gandalf.local.home>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 13 Feb 2013 11:42:43 -0500
+From: "Anna, Suman" <s-anna@ti.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Tony Lindgren <tony@atomide.com>, Arnd Bergmann <arnd@arndb.de>,
+        Ohad Ben-Cohen <ohad@wizery.com>, Paul Walmsley <paul@pwsan.com>,
+        "Cousson, Benoit" <b-cousson@ti.com>,
+        Loic Pallardy <loic.pallardy@st.com>,
+        Omar Ramirez Luna <omar.ramirez@copitl.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
+        Dom Cobley <popcornmix@gmail.com>, Wim Van Sebroeck <wim@iguana.be>,
+        Tejun Heo <tj@kernel.org>, Omar Ramirez Luna <omar.luna@linaro.org>
+Subject: RE: [PATCH v2 00/13] drivers: mailbox: framework creation
+Thread-Topic: [PATCH v2 00/13] drivers: mailbox: framework creation
+Thread-Index: AQHOCN4g9GGzQKOQDkGhWHRVoYbj7ph4MR0AgAABkID//8xYQA==
+Date: Wed, 13 Feb 2013 16:41:37 +0000
+Message-ID: <37C860A02101E749A747FA2D3C1E3C50476638@DLEE12.ent.ti.com>
+References: <1360645032-9668-1-git-send-email-s-anna@ti.com>
+ <CACRpkdZayg-X11ZRnh2Z0i+egBn8Fhwya-6_Yr8wcv+6s0CVqQ@mail.gmail.com>
+ <20130213134207.GN17852@n2100.arm.linux.org.uk>
+In-Reply-To: <20130213134207.GN17852@n2100.arm.linux.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [128.247.5.50]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Feb 2013, Steven Rostedt wrote:
-> The lock was converted from a raw to a sleeping lock due to some
-> previous issues, and tests that showed it didn't seem to matter.
-> Unfortunately, it did matter for one of our boxes.
+> On Wed, Feb 13, 2013 at 02:36:32PM +0100, Linus Walleij wrote:
+> > On Tue, Feb 12, 2013 at 5:56 AM, Suman Anna <s-anna@ti.com> wrote:
+> >
+> > > I have hosted the series at [3].
+> > > [3]
+> > > https://github.com/sumananna/mailbox/commits/dbx500-prcmu-mailbox
+> >
+> > Suman, I suggest you ask Stepgen Rothwell to include this branch into
+> > the linux-next tree, so we can get some rotation of this stuff in
+> > preparation for the v3.10 merge window. (It's not going in now
+> > anyway.)
+> 
+> Best wait until after v3.9-rc1 - remember that linux-next is supposed to be a
+> staging tree for the _next_ merge window only.
 
-Yep. The other issues are functions like kfree() called under that
-lock. I'm auditing all callsites to see what needs to be done.
+Yes, will do. Anyway, we need a new revision of one patch (so far) to address Mark Rutland's comments.
 
-Thanks,
-
-	tglx
+Thanks
+Suman
