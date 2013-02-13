@@ -1,44 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933838Ab3BMLOF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 06:14:05 -0500
-Received: from 8bytes.org ([85.214.48.195]:45863 "EHLO mail.8bytes.org"
+	id S933846Ab3BMLOq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 06:14:46 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37783 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933708Ab3BMLOD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 06:14:03 -0500
-Date: Wed, 13 Feb 2013 12:13:57 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Cyril Roelandt <tipecaml@gmail.com>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        iommu@lists.linux-foundation.org
-Subject: Re: [PATCH 2/5] iommu: remove redundant NULL check before
- dma_ops_domain_free().
-Message-ID: <20130213111357.GD25591@8bytes.org>
-References: <1360641713-24895-1-git-send-email-tipecaml@gmail.com>
- <1360641713-24895-3-git-send-email-tipecaml@gmail.com>
+	id S932536Ab3BMLOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 06:14:45 -0500
+Date: Wed, 13 Feb 2013 11:14:40 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, riel@redhat.com, mhocko@suse.cz,
+        hannes@cmpxchg.org
+Subject: Re: [PATCH] x86: mm: Check if PUD is large when validating a kernel
+ address v2
+Message-ID: <20130213111440.GJ4100@suse.de>
+References: <20130211145236.GX21389@suse.de>
+ <20130213110202.GI4100@suse.de>
+ <20130213111031.GA11320@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1360641713-24895-3-git-send-email-tipecaml@gmail.com>
+In-Reply-To: <20130213111031.GA11320@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Wed Feb 13 12:13:58 2013
-X-DSPAM-Confidence: 0.9996
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 511b757622973015415003
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 12, 2013 at 05:01:50AM +0100, Cyril Roelandt wrote:
-> dma_ops_domain_free on a NULL pointer is a no-op, so the NULL check in
-> amd_iommu_init_dma_ops() can be removed.
+On Wed, Feb 13, 2013 at 12:10:31PM +0100, Ingo Molnar wrote:
 > 
-> Signed-off-by: Cyril Roelandt <tipecaml@gmail.com>
-> ---
->  drivers/iommu/amd_iommu.c |    3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
+> * Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > Andrew or Ingo, please pick up.
+> 
+> Already did - will push it out later today.
+> 
 
-Applied to x86/amd, Thanks.
+Whoops, thanks. Sorry for the noise.
 
-
+-- 
+Mel Gorman
+SUSE Labs
