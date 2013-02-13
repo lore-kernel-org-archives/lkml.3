@@ -1,65 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760315Ab3BMRbA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 12:31:00 -0500
-Received: from smtp4-g21.free.fr ([212.27.42.4]:41738 "EHLO smtp4-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759980Ab3BMRa7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 12:30:59 -0500
-X-Greylist: delayed 503 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Feb 2013 12:30:58 EST
-From: Nicolas Schichan <nschichan@freebox.fr>
-To: Mircea Gherzan <mgherzan@gmail.com>, Russell King <linux@arm.linux.org.uk>
-Cc: Nicolas Schichan <nschichan@freebox.fr>,
-        "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <daniel.borkmann@tik.ee.ethz.ch>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: net: bpf_jit: fix emit_swap16() for non ARMv6+.
-Date: Wed, 13 Feb 2013 18:30:39 +0100
-Message-Id: <1360776645-14726-1-git-send-email-nschichan@freebox.fr>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1360776125-14542-1-git-send-email-nschichan@freebox.fr>
-References: <1360776125-14542-1-git-send-email-nschichan@freebox.fr>
+	id S964821Ab3BMRdQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 12:33:16 -0500
+Received: from mail-vb0-f54.google.com ([209.85.212.54]:46576 "EHLO
+	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760180Ab3BMRdO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 12:33:14 -0500
+MIME-Version: 1.0
+In-Reply-To: <1360763044.3524.367.camel@falcor1.watson.ibm.com>
+References: <1360613493-11969-1-git-send-email-vgoyal@redhat.com>
+	<1360613493-11969-3-git-send-email-vgoyal@redhat.com>
+	<CALLzPKZA92MxJYjC+OR-KDv4rHQRgKSBHSAY2fOZsEDxiO11yA@mail.gmail.com>
+	<1360760195.3524.355.camel@falcor1.watson.ibm.com>
+	<CALLzPKaHLSg0TromnTvpEVroBUtPJE3TwF4RmcA2dtkuB5H4hQ@mail.gmail.com>
+	<1360763044.3524.367.camel@falcor1.watson.ibm.com>
+Date: Wed, 13 Feb 2013 19:33:13 +0200
+Message-ID: <CALLzPKbdrvsPuH9t19rvQqGZ=0+abPuWPNke4FLsadj0ORieJg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] ima: Support appraise_type=imasig_optional
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The original code was generating an lsl instructions using the value
-of ARM_R8 (skb_headlen, possibly uninitialized if no skb_headlen
-access was required) as a shift amount.
+On Wed, Feb 13, 2013 at 3:44 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> On Wed, 2013-02-13 at 15:13 +0200, Kasatkin, Dmitry wrote:
+>> On Wed, Feb 13, 2013 at 2:56 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+>> > On Wed, 2013-02-13 at 14:31 +0200, Kasatkin, Dmitry wrote:
+>> >> On Mon, Feb 11, 2013 at 10:11 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+>> >
+>> >> > @@ -158,7 +165,8 @@ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
+>> >> >         }
+>> >> >         switch (xattr_value->type) {
+>> >> >         case IMA_XATTR_DIGEST:
+>> >> > -               if (iint->flags & IMA_DIGSIG_REQUIRED) {
+>> >> > +               if (iint->flags & IMA_DIGSIG_REQUIRED ||
+>> >> > +                   iint->flags & IMA_DIGSIG_OPTIONAL) {
+>> >> >                         cause = "IMA signature required";
+>> >> >                         status = INTEGRITY_FAIL;
+>> >> >                         break;
+>> >>
+>> >> This looks a bit odd... If "optional" signature is missing  - we fail..
+>> >> It is optional... Why we should fail?
+>> >
+>> > 'imasig_optional' does not only mean that the signature is optional, but
+>> > also implies that it has to be a digital signature, not a hash.  This
+>> > latter part is what IMA_DIGSIG_REQUIRED means.
+>> >
+>> > If 'imasig_optional' set both 'IMA_DIGSIG_OPTIONAL' and
+>> > 'IMA_DIGSIG_REQUIRED', then this change wouldn't be necessary.
+>> >
+>> > IMA_DIGSIG_REQUIRED would enforce that it is a signature.
+>> > IMA_DIGSIG_OPTIONAL would fail only for files with invalid signatures.
+>> >
+>>
+>> It sounds odd that optional signature is actually required.
+>> Optional for me means that it may be there or may be not.
+>> If it is not there, then it may be hash or nothing.
+>>
+>> I see it is more logical if it is "appraise_type=optional",
+>> which means that we might have no xattr value, hash or signature.
+>> It if happens to be a signature, then IMA_DIGSIG flag will be set.
+>
+> Right, 'appraise_type=' could have been defined either as a comma
+> separated list of options (eg. appraise_type=imassig,optional) or, as
+> Vivek implemented, a new option.  Eventually, we will need to extend
+> 'appraise_type=' (eg. required algorithm), but for now I don't have a
+> problem with the new option.
+>
 
-Signed-off-by: Nicolas Schichan <nschichan@freebox.fr>
----
-Resent due to missing Signed-off-by
+It is not exactly what I meant. IOW, I do not want
+appraise_type=imasig,optional.
 
- arch/arm/net/bpf_jit_32.c |   15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+Optional for me is that xattr value is optional. It might be nothing,
+hash or imasig...
 
-diff --git a/arch/arm/net/bpf_jit_32.c b/arch/arm/net/bpf_jit_32.c
-index a34f1e2..6828ef6 100644
---- a/arch/arm/net/bpf_jit_32.c
-+++ b/arch/arm/net/bpf_jit_32.c
-@@ -341,10 +341,17 @@ static void emit_load_be16(u8 cond, u8 r_res, u8 r_addr, struct jit_ctx *ctx)
- 
- static inline void emit_swap16(u8 r_dst, u8 r_src, struct jit_ctx *ctx)
- {
--	emit(ARM_LSL_R(ARM_R1, r_src, 8), ctx);
--	emit(ARM_ORR_S(r_dst, ARM_R1, r_src, SRTYPE_LSL, 8), ctx);
--	emit(ARM_LSL_I(r_dst, r_dst, 8), ctx);
--	emit(ARM_LSL_R(r_dst, r_dst, 8), ctx);
-+	/* r_dst = (r_src << 8) | (r_src >> 8) */
-+	emit(ARM_LSL_I(ARM_R1, r_src, 8), ctx);
-+	emit(ARM_ORR_S(r_dst, ARM_R1, r_src, SRTYPE_LSR, 8), ctx);
-+
-+	/*
-+	 * we need to mask out the bits set in r_dst[23:16] due to
-+	 * the first shift instruction.
-+	 *
-+	 * note that 0x8ff is the encoded immediate 0x00ff0000.
-+	 */
-+	emit(ARM_BIC_I(r_dst, r_dst, 0x8ff), ctx);
- }
- 
- #else  /* ARMv6+ */
--- 
-1.7.10.4
+If it would happen that it contains signature, then IMA_DIGSIG flag
+would be set,
+and process could get needed capability as Vivek wants.
 
+- Dmitry
+
+
+> thanks,
+>
+> Mimi
+>
+>> I asked Vivek to send a policy file he uses in his system.
+>> I would like to see how system configured as a whole...
+>>
+>> - Dmitry
+>
+>
