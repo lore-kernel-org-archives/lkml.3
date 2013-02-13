@@ -1,39 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965298Ab3BMSHb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 13:07:31 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:52193 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965195Ab3BMSC5 (ORCPT
+	id S965222Ab3BMSC4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 13:02:56 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:34225 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965195Ab3BMSCv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 13:02:57 -0500
+	Wed, 13 Feb 2013 13:02:51 -0500
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 To: <linux-fsdevel@vger.kernel.org>
 Cc: Linux Containers <containers@lists.linux-foundation.org>,
         <linux-kernel@vger.kernel.org>, "Serge E. Hallyn" <serge@hallyn.com>,
         "Eric W. Biederman" <ebiederm@xmission.com>,
         Steve French <smfrench@gmail.com>
-Date: Wed, 13 Feb 2013 09:52:13 -0800
-Message-Id: <1360777934-5663-84-git-send-email-ebiederm@xmission.com>
+Date: Wed, 13 Feb 2013 09:52:05 -0800
+Message-Id: <1360777934-5663-76-git-send-email-ebiederm@xmission.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1360777934-5663-1-git-send-email-ebiederm@xmission.com>
 References: <87621w14vs.fsf@xmission.com>
  <1360777934-5663-1-git-send-email-ebiederm@xmission.com>
-X-XM-AID: U2FsdGVkX1/nbYsP2q1NTY6o6NP6rRikNOLyFIkeAUs=
+X-XM-AID: U2FsdGVkX19zuos3GoAeQnqeP7BG1nezTTcwK+NFzag=
 X-SA-Exim-Connect-IP: 98.207.153.68
 X-SA-Exim-Mail-From: ebiederm@xmission.com
 X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
 	*  0.1 XMSubLong Long Subject
 	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
 	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0002]
+	*      [score: 0.0000]
 	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
 	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
+	*  1.6 XMSubMetaSx_00 1+ Sexy Words
 X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
 X-Spam-Combo: ;<linux-fsdevel@vger.kernel.org>
 X-Spam-Relay-Country: 
-Subject: [PATCH review 84/85] cifs: Convert struct cifs_ses to use a kuid_t and a kgid_t
+Subject: [PATCH review 76/85] cifs: Use kuids and kgids SID to uid/gid mapping
 X-Spam-Flag: No
 X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
 X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
@@ -43,61 +44,188 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 
+Update id_mode_to_cifs_acl to take a kuid_t and a kgid_t.
+
+Replace NO_CHANGE_32 with INVALID_UID and INVALID_GID, and tests for
+NO_CHANGE_32 with uid_valid and gid_valid.
+
+Carefully unpack the value returned from request_key.  memcpy the
+value into the expected type.  The convert the uid/gid into a
+kuid/kgid.  And then only if the result is a valid kuid or kgid update
+fuid/fgid.
+
 Cc: Steve French <smfrench@gmail.com>
 Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 ---
- fs/cifs/cifs_spnego.c |    6 ++++--
- fs/cifs/cifsglob.h    |    4 ++--
- fs/cifs/connect.c     |    2 +-
- 3 files changed, 7 insertions(+), 5 deletions(-)
+ fs/cifs/cifsacl.c   |   43 +++++++++++++++++++++++++++++--------------
+ fs/cifs/cifspdu.h   |    1 -
+ fs/cifs/cifsproto.h |    2 +-
+ fs/cifs/inode.c     |    8 ++++----
+ 4 files changed, 34 insertions(+), 20 deletions(-)
 
-diff --git a/fs/cifs/cifs_spnego.c b/fs/cifs/cifs_spnego.c
-index 086f381..10e7747 100644
---- a/fs/cifs/cifs_spnego.c
-+++ b/fs/cifs/cifs_spnego.c
-@@ -149,10 +149,12 @@ cifs_get_spnego_key(struct cifs_ses *sesInfo)
- 		goto out;
+diff --git a/fs/cifs/cifsacl.c b/fs/cifs/cifsacl.c
+index aaaf5ce..f1e3f25 100644
+--- a/fs/cifs/cifsacl.c
++++ b/fs/cifs/cifsacl.c
+@@ -266,8 +266,8 @@ sid_to_id(struct cifs_sb_info *cifs_sb, struct cifs_sid *psid,
+ 	struct key *sidkey;
+ 	char *sidstr;
+ 	const struct cred *saved_cred;
+-	uid_t fuid = cifs_sb->mnt_uid;
+-	gid_t fgid = cifs_sb->mnt_gid;
++	kuid_t fuid = cifs_sb->mnt_uid;
++	kgid_t fgid = cifs_sb->mnt_gid;
  
- 	dp = description + strlen(description);
--	sprintf(dp, ";uid=0x%x", sesInfo->linux_uid);
-+	sprintf(dp, ";uid=0x%x",
-+		from_kuid_munged(&init_user_ns, sesInfo->linux_uid));
+ 	/*
+ 	 * If we have too many subauthorities, then something is really wrong.
+@@ -306,10 +306,21 @@ sid_to_id(struct cifs_sb_info *cifs_sb, struct cifs_sid *psid,
+ 		goto out_key_put;
+ 	}
  
- 	dp = description + strlen(description);
--	sprintf(dp, ";creduid=0x%x", sesInfo->cred_uid);
-+	sprintf(dp, ";creduid=0x%x",
-+		from_kuid_munged(&init_user_ns, sesInfo->cred_uid));
+-	if (sidtype == SIDOWNER)
+-		memcpy(&fuid, &sidkey->payload.value, sizeof(uid_t));
+-	else
+-		memcpy(&fgid, &sidkey->payload.value, sizeof(gid_t));
++	if (sidtype == SIDOWNER) {
++		kuid_t uid;
++		uid_t id;
++		memcpy(&id, &sidkey->payload.value, sizeof(uid_t));
++		uid = make_kuid(&init_user_ns, id);
++		if (uid_valid(uid))
++			fuid = uid;
++	} else {
++		kgid_t gid;
++		gid_t id;
++		memcpy(&id, &sidkey->payload.value, sizeof(gid_t));
++		gid = make_kgid(&init_user_ns, id);
++		if (gid_valid(gid))
++			fgid = gid;
++	}
  
- 	if (sesInfo->user_name) {
- 		dp = description + strlen(description);
-diff --git a/fs/cifs/cifsglob.h b/fs/cifs/cifsglob.h
-index e308e8b..aaef57b 100644
---- a/fs/cifs/cifsglob.h
-+++ b/fs/cifs/cifsglob.h
-@@ -702,8 +702,8 @@ struct cifs_ses {
- 	char *serverNOS;	/* name of network operating system of server */
- 	char *serverDomain;	/* security realm of server */
- 	__u64 Suid;		/* remote smb uid  */
--	uid_t linux_uid;        /* overriding owner of files on the mount */
--	uid_t cred_uid;		/* owner of credentials */
-+	kuid_t linux_uid;	/* overriding owner of files on the mount */
-+	kuid_t cred_uid;	/* owner of credentials */
- 	unsigned int capabilities;
- 	char serverName[SERVER_NAME_LEN_WITH_NULL * 2];	/* BB make bigger for
- 				TCP names - will ipv6 and sctp addresses fit? */
-diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
-index 01279b8..067b0e1 100644
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -2271,7 +2271,7 @@ static int match_session(struct cifs_ses *ses, struct smb_vol *vol)
+ out_key_put:
+ 	key_put(sidkey);
+@@ -776,7 +787,7 @@ static int parse_sec_desc(struct cifs_sb_info *cifs_sb,
+ 
+ /* Convert permission bits from mode to equivalent CIFS ACL */
+ static int build_sec_desc(struct cifs_ntsd *pntsd, struct cifs_ntsd *pnntsd,
+-	__u32 secdesclen, __u64 nmode, uid_t uid, gid_t gid, int *aclflag)
++	__u32 secdesclen, __u64 nmode, kuid_t uid, kgid_t gid, int *aclflag)
  {
- 	switch (ses->server->secType) {
- 	case Kerberos:
--		if (vol->cred_uid != ses->cred_uid)
-+		if (!uid_eq(vol->cred_uid, ses->cred_uid))
- 			return 0;
- 		break;
- 	default:
+ 	int rc = 0;
+ 	__u32 dacloffset;
+@@ -808,17 +819,19 @@ static int build_sec_desc(struct cifs_ntsd *pntsd, struct cifs_ntsd *pnntsd,
+ 		*aclflag = CIFS_ACL_DACL;
+ 	} else {
+ 		memcpy(pnntsd, pntsd, secdesclen);
+-		if (uid != NO_CHANGE_32) { /* chown */
++		if (uid_valid(uid)) { /* chown */
++			uid_t id;
+ 			owner_sid_ptr = (struct cifs_sid *)((char *)pnntsd +
+ 					le32_to_cpu(pnntsd->osidoffset));
+ 			nowner_sid_ptr = kmalloc(sizeof(struct cifs_sid),
+ 								GFP_KERNEL);
+ 			if (!nowner_sid_ptr)
+ 				return -ENOMEM;
+-			rc = id_to_sid(uid, SIDOWNER, nowner_sid_ptr);
++			id = from_kuid(&init_user_ns, uid);
++			rc = id_to_sid(id, SIDOWNER, nowner_sid_ptr);
+ 			if (rc) {
+ 				cFYI(1, "%s: Mapping error %d for owner id %d",
+-						__func__, rc, uid);
++						__func__, rc, id);
+ 				kfree(nowner_sid_ptr);
+ 				return rc;
+ 			}
+@@ -826,17 +839,19 @@ static int build_sec_desc(struct cifs_ntsd *pntsd, struct cifs_ntsd *pnntsd,
+ 			kfree(nowner_sid_ptr);
+ 			*aclflag = CIFS_ACL_OWNER;
+ 		}
+-		if (gid != NO_CHANGE_32) { /* chgrp */
++		if (gid_valid(gid)) { /* chgrp */
++			gid_t id;
+ 			group_sid_ptr = (struct cifs_sid *)((char *)pnntsd +
+ 					le32_to_cpu(pnntsd->gsidoffset));
+ 			ngroup_sid_ptr = kmalloc(sizeof(struct cifs_sid),
+ 								GFP_KERNEL);
+ 			if (!ngroup_sid_ptr)
+ 				return -ENOMEM;
+-			rc = id_to_sid(gid, SIDGROUP, ngroup_sid_ptr);
++			id = from_kgid(&init_user_ns, gid);
++			rc = id_to_sid(id, SIDGROUP, ngroup_sid_ptr);
+ 			if (rc) {
+ 				cFYI(1, "%s: Mapping error %d for group id %d",
+-						__func__, rc, gid);
++						__func__, rc, id);
+ 				kfree(ngroup_sid_ptr);
+ 				return rc;
+ 			}
+@@ -1004,7 +1019,7 @@ cifs_acl_to_fattr(struct cifs_sb_info *cifs_sb, struct cifs_fattr *fattr,
+ /* Convert mode bits to an ACL so we can update the ACL on the server */
+ int
+ id_mode_to_cifs_acl(struct inode *inode, const char *path, __u64 nmode,
+-			uid_t uid, gid_t gid)
++			kuid_t uid, kgid_t gid)
+ {
+ 	int rc = 0;
+ 	int aclflag = CIFS_ACL_DACL; /* default flag to set */
+diff --git a/fs/cifs/cifspdu.h b/fs/cifs/cifspdu.h
+index b9d59a9..e996ff6 100644
+--- a/fs/cifs/cifspdu.h
++++ b/fs/cifs/cifspdu.h
+@@ -277,7 +277,6 @@
+ #define CIFS_NO_HANDLE        0xFFFF
+ 
+ #define NO_CHANGE_64          0xFFFFFFFFFFFFFFFFULL
+-#define NO_CHANGE_32          0xFFFFFFFFUL
+ 
+ /* IPC$ in ASCII */
+ #define CIFS_IPC_RESOURCE "\x49\x50\x43\x24"
+diff --git a/fs/cifs/cifsproto.h b/fs/cifs/cifsproto.h
+index 1988c1b..0060ec2 100644
+--- a/fs/cifs/cifsproto.h
++++ b/fs/cifs/cifsproto.h
+@@ -161,7 +161,7 @@ extern int cifs_acl_to_fattr(struct cifs_sb_info *cifs_sb,
+ 			      struct cifs_fattr *fattr, struct inode *inode,
+ 			      const char *path, const __u16 *pfid);
+ extern int id_mode_to_cifs_acl(struct inode *inode, const char *path, __u64,
+-					uid_t, gid_t);
++					kuid_t, kgid_t);
+ extern struct cifs_ntsd *get_cifs_acl(struct cifs_sb_info *, struct inode *,
+ 					const char *, u32 *);
+ extern int set_cifs_acl(struct cifs_ntsd *, __u32, struct inode *,
+diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
+index d7ea2a6..d4cf750 100644
+--- a/fs/cifs/inode.c
++++ b/fs/cifs/inode.c
+@@ -2090,8 +2090,8 @@ static int
+ cifs_setattr_nounix(struct dentry *direntry, struct iattr *attrs)
+ {
+ 	unsigned int xid;
+-	uid_t uid = NO_CHANGE_32;
+-	gid_t gid = NO_CHANGE_32;
++	kuid_t uid = INVALID_UID;
++	kgid_t gid = INVALID_GID;
+ 	struct inode *inode = direntry->d_inode;
+ 	struct cifs_sb_info *cifs_sb = CIFS_SB(inode->i_sb);
+ 	struct cifsInodeInfo *cifsInode = CIFS_I(inode);
+@@ -2150,7 +2150,7 @@ cifs_setattr_nounix(struct dentry *direntry, struct iattr *attrs)
+ 
+ #ifdef CONFIG_CIFS_ACL
+ 	if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_CIFS_ACL) {
+-		if (uid != NO_CHANGE_32 || gid != NO_CHANGE_32) {
++		if (uid_valid(uid) || gid_valid(gid)) {
+ 			rc = id_mode_to_cifs_acl(inode, full_path, NO_CHANGE_64,
+ 							uid, gid);
+ 			if (rc) {
+@@ -2174,7 +2174,7 @@ cifs_setattr_nounix(struct dentry *direntry, struct iattr *attrs)
+ #ifdef CONFIG_CIFS_ACL
+ 		if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_CIFS_ACL) {
+ 			rc = id_mode_to_cifs_acl(inode, full_path, mode,
+-						NO_CHANGE_32, NO_CHANGE_32);
++						INVALID_UID, INVALID_GID);
+ 			if (rc) {
+ 				cFYI(1, "%s: Setting ACL failed with error: %d",
+ 					__func__, rc);
 -- 
 1.7.5.4
 
