@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759617Ab3BMDXF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 22:23:05 -0500
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:35326 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752309Ab3BMDXC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 22:23:02 -0500
-Date: Tue, 12 Feb 2013 19:23:02 -0800 (PST)
-From: Andy King <acking@vmware.com>
-To: Gerd Hoffmann <kraxel@redhat.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, gregkh@linuxfoundation.org,
-        davem@davemloft.net, pv-drivers@vmware.com
-Message-ID: <89189590.1119233.1360725782323.JavaMail.root@vmware.com>
-In-Reply-To: <511A2043.6040805@redhat.com>
-References: <1360196636-9357-1-git-send-email-acking@vmware.com> <1360196636-9357-2-git-send-email-acking@vmware.com> <511A2043.6040805@redhat.com>
-Subject: Re: [PATCH 1/1] VSOCK: Introduce VM Sockets
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.113.62.221]
-X-Mailer: Zimbra 8.0.2_GA_5569 (ZimbraWebClient - GC24 (Mac)/8.0.2_GA_5569)
-Thread-Topic: VSOCK: Introduce VM Sockets
-Thread-Index: Xe77zVVaIBKPN5Tl9QoZ7E/PxFH0RQ==
+	id S1759559Ab3BMD0f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 22:26:35 -0500
+Received: from mout.gmx.net ([212.227.17.21]:51583 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752309Ab3BMD0e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 22:26:34 -0500
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX183Db4l5x43tQ51eWFO+b5Istv0vh8SuVzJG9lfz7
+	ltk7sf75MjseA5
+From: Peter Huewe <peterhuewe@gmx.de>
+To: Ian Abbott <abbotti@mev.co.uk>
+Cc: Mori Hess <fmhess@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Peter Huewe <peterhuewe@gmx.de>
+Subject: [PATCH] staging/comedi: Fix undefined array subscript
+Date: Wed, 13 Feb 2013 04:30:54 +0100
+Message-Id: <1360726254-7895-1-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.7.8.6
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gerd,
+In vmk80xx_do_insn_bits the local variable reg, which is used as an
+index to the tx_buf array, can be used uninitialized if
+- data[0] == 0
+and
+- devpriv->model != VMK8061_MODEL
+-> we get into the else branch without having reg initialized.
 
-> > +/* Option name for socket's service label.  Use as the option name in
-> > + * setsockopt(3) or getsockopt(3) to set or get the service label for a
-> > socket.
-> > + * The service label is a C-style NUL-terminated string.  Only available
-> > for
-> > + * hypervisor endpoints.
-> > + */
-> > +
-> > +#define SO_VM_SOCKETS_SERVICE_LABEL 4
-> > +
-> 
-> What is this and how does it work?
+Since the driver usually differentiates between VMK8061_MODEL and
+VMK8055_MODEL it's safe to assume that VMK8055_DO_REG was meant as an
+initial value.
 
-Oops, that's specific to ESX.  Thankfully it's only in the header and not
-in anything under net/vmw_vsock, so removing it is easy.  I'll send out a
-patch in the morning.
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+ drivers/staging/comedi/drivers/vmk80xx.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Thanks!
-- Andy
+diff --git a/drivers/staging/comedi/drivers/vmk80xx.c b/drivers/staging/comedi/drivers/vmk80xx.c
+index ebf2d48..4ced56a 100644
+--- a/drivers/staging/comedi/drivers/vmk80xx.c
++++ b/drivers/staging/comedi/drivers/vmk80xx.c
+@@ -716,6 +716,7 @@ static int vmk80xx_do_insn_bits(struct comedi_device *dev,
+ 			retval = 2;
+ 		}
+ 	} else {
++		reg = VMK8055_DO_REG;
+ 		data[1] = tx_buf[reg];
+ 		retval = 2;
+ 	}
+-- 
+1.7.8.6
+
