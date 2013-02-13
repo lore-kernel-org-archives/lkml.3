@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763Ab3BMGNp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 01:13:45 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33150 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751896Ab3BMGNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 01:13:43 -0500
-Message-ID: <511B2EB9.5070406@zytor.com>
-Date: Tue, 12 Feb 2013 22:12:09 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1752796Ab3BMGPv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 01:15:51 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:48277 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751896Ab3BMGPu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 01:15:50 -0500
+X-AuditID: 9c930179-b7c24ae00000119c-7d-511b2f93e9b2
+From: Namhyung Kim <namhyung@kernel.org>
+To: Kirill Tkhai <tkhai@yandex.ru>
+Cc: "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Subject: Re: [PATCH]sched/stop_task: Do not account zero delta_exec in put_prev_task_stop
+References: <180751360618804@web6d.yandex.ru>
+Date: Wed, 13 Feb 2013 15:15:47 +0900
+In-Reply-To: <180751360618804@web6d.yandex.ru> (Kirill Tkhai's message of
+	"Tue, 12 Feb 2013 01:40:04 +0400")
+Message-ID: <878v6spwmk.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Matthew Garrett <matthew.garrett@nebula.com>
-CC: Borislav Petkov <bp@alien8.de>, Kees Cook <keescook@chromium.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH] x86: Lock down MSR writing in secure boot
-References: <dee64752-850c-4d78-b703-f47a985bc13e@email.android.com>   <CAGXu5jLAufTRm=sDST0br_WEkn4o0Hpjv2jDP2Na=cCvuM+MGg@mail.gmail.com>   <1360355671.18083.18.camel@x230.lan>   <CAGXu5jKo2PfMBO4A0ZgQcrPuj8OHNaff+CjAesOAWkZc0vB9+Q@mail.gmail.com>   <51157C9C.6030501@zytor.com> <20130208230655.GB28990@pd.tnic>   <1360366012.18083.21.camel@x230.lan> <5115A4CC.3080102@zytor.com>   <1360373383.18083.23.camel@x230.lan>   <CAGXu5j+xvJ3L5ejxtZ-Jw3F6rV7OsrE0_HZCGu_er0rH2_PwKA@mail.gmail.com>   <20130209092925.GA17728@pd.tnic> <1360422712.18083.24.camel@x230.lan>  <511AE2CC.5040705@zytor.com> <1360733962.18083.30.camel@x230.lan>
-In-Reply-To: <1360733962.18083.30.camel@x230.lan>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/12/2013 09:39 PM, Matthew Garrett wrote:
-> On Tue, 2013-02-12 at 16:48 -0800, H. Peter Anvin wrote:
+Hi Kirill,
+
+On Tue, 12 Feb 2013 01:40:04 +0400, Kirill Tkhai wrote:
+> Simple return
 >
->> OK... what none of this gets into:
->>
->> Why should CAP_RAWIO be allowed on a secure boot system, when there are
->> 2^n known ways of compromise a system with CAP_RAWIO?
->
-> CAP_SYS_RAWIO seems to have ended up being a catchall of "Maybe someone
-> who isn't entirely root should be able to do this", and not everything
-> it covers is equivalent to being able to compromise the running kernel.
-> I wouldn't argue with the idea that maybe we should just reappraise most
-> of the current uses of CAP_SYS_RAWIO, but removing capability checks
-> from places that currently have them seems like an invitation for
-> userspace breakage.
->
+> Signed-off-by: Kirill V Tkhai <tkhai@yandex.ru>
+> CC: Steven Rostedt <rostedt@goodmis.org>
+> CC: Ingo Molnar <mingo@kernel.org>
+> CC: Peter Zijlstra <peterz@infradead.org>
+> CC: linux-rt-users <linux-rt-users@vger.kernel.org>
+> ---
+>  kernel/sched/stop_task.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> diff --git a/kernel/sched/stop_task.c b/kernel/sched/stop_task.c
+> index da5eb5b..78d0458 100644
+> --- a/kernel/sched/stop_task.c
+> +++ b/kernel/sched/stop_task.c
+> @@ -58,8 +58,8 @@ static void put_prev_task_stop(struct rq *rq, struct task_struct *prev)
+>  	u64 delta_exec;
+>  
+>  	delta_exec = rq->clock_task - curr->se.exec_start;
+> -	if (unlikely((s64)delta_exec < 0))
+> -		delta_exec = 0;
+> +	if (unlikely((s64)delta_exec <= 0))
+> +		return;
 
-Sounds like you are thinking of CAP_SYS_ADMIN, but I don't really see a 
-huge difference between MSRs and I/O control registers... just different 
-address spaces.
+It seems it needs to update curr->se.exec_start then.
 
-	-hpa
+Thanks,
+Namhyung
 
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+>  
+>  	schedstat_set(curr->se.statistics.exec_max,
+>  			max(curr->se.statistics.exec_max, delta_exec));
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
