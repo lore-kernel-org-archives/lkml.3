@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934547Ab3BMQmr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 11:42:47 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:47506 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758775Ab3BMQmn convert rfc822-to-8bit (ORCPT
+	id S1760069Ab3BMQpw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 11:45:52 -0500
+Received: from mail-da0-f51.google.com ([209.85.210.51]:33298 "EHLO
+	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758775Ab3BMQpu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 11:42:43 -0500
-From: "Anna, Suman" <s-anna@ti.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tony Lindgren <tony@atomide.com>, Arnd Bergmann <arnd@arndb.de>,
-        Ohad Ben-Cohen <ohad@wizery.com>, Paul Walmsley <paul@pwsan.com>,
-        "Cousson, Benoit" <b-cousson@ti.com>,
-        Loic Pallardy <loic.pallardy@st.com>,
-        Omar Ramirez Luna <omar.ramirez@copitl.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
-        Dom Cobley <popcornmix@gmail.com>, Wim Van Sebroeck <wim@iguana.be>,
-        Tejun Heo <tj@kernel.org>, Omar Ramirez Luna <omar.luna@linaro.org>
-Subject: RE: [PATCH v2 00/13] drivers: mailbox: framework creation
-Thread-Topic: [PATCH v2 00/13] drivers: mailbox: framework creation
-Thread-Index: AQHOCN4g9GGzQKOQDkGhWHRVoYbj7ph4MR0AgAABkID//8xYQA==
-Date: Wed, 13 Feb 2013 16:41:37 +0000
-Message-ID: <37C860A02101E749A747FA2D3C1E3C50476638@DLEE12.ent.ti.com>
-References: <1360645032-9668-1-git-send-email-s-anna@ti.com>
- <CACRpkdZayg-X11ZRnh2Z0i+egBn8Fhwya-6_Yr8wcv+6s0CVqQ@mail.gmail.com>
- <20130213134207.GN17852@n2100.arm.linux.org.uk>
-In-Reply-To: <20130213134207.GN17852@n2100.arm.linux.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [128.247.5.50]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 13 Feb 2013 11:45:50 -0500
+Date: Wed, 13 Feb 2013 08:45:47 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: George Spelvin <linux@horizon.com>,
+        Rodolfo Giometti <giometti@enneenne.com>
+Cc: linux-serial@vger.kernel.org, peter@hurleysoftware.com,
+        linux-kernel@vger.kernel.org, giometti@linux.it
+Subject: Re: [PATCH v2 0/9] 3.8-rc regression with pps-ldisc due to 70ece7a731
+Message-ID: <20130213164547.GA8520@kroah.com>
+References: <cover.1360677367.git.linux@horizon.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1360677367.git.linux@horizon.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Wed, Feb 13, 2013 at 02:36:32PM +0100, Linus Walleij wrote:
-> > On Tue, Feb 12, 2013 at 5:56 AM, Suman Anna <s-anna@ti.com> wrote:
-> >
-> > > I have hosted the series at [3].
-> > > [3]
-> > > https://github.com/sumananna/mailbox/commits/dbx500-prcmu-mailbox
-> >
-> > Suman, I suggest you ask Stepgen Rothwell to include this branch into
-> > the linux-next tree, so we can get some rotation of this stuff in
-> > preparation for the v3.10 merge window. (It's not going in now
-> > anyway.)
+On Tue, Feb 12, 2013 at 08:56:07AM -0500, George Spelvin wrote:
+> The standard N_TTY line discipline used to not use the tty->disc_data
+> field, so N_PPS felt free to use it.  That has now changed, requiring
+> that N_PPS use a different method to find its private data.
 > 
-> Best wait until after v3.9-rc1 - remember that linux-next is supposed to be a
-> staging tree for the _next_ merge window only.
+> (In the current, buggy, state, N_PPS follows a wild pointer and explodes
+> in an interrupt hander as soon as a pulse actually arrives.)
+> 
+> Compared to v1, this has been rearranges to the first three patches are
+> the minimial bugfixes:
+> 
+> * 1/9 "Add pps_lookup_dev() function"
+>   This adds the infrastructure necessary to bypass disc_data use.
+> 
+> * 2/9 "Use pps_lookup_dev to reduce ldisc coupling"
+>   This actually fixes the bug.
+> 
+> * 3/9 "Fix a use-after free bug when unregistering a source."
+>   This is actually an old bug, present before 3.7.  I'd like to solicit
+>   feedback from folks who know device drivers better to ask if I did
+>   things right.  I'd also appreciate a look at patch 8/9 which is a more
+>   aggressive cleanup of the same bug.
 
-Yes, will do. Anyway, we need a new revision of one patch (so far) to address Mark Rutland's comments.
+I can take these through my tty tree, but it would be very good if I
+actually had the ack from the PPS maintainer...
 
-Thanks
-Suman
+Rodolfo, any objection for me taking these?
+
+thanks,
+
+greg k-h
