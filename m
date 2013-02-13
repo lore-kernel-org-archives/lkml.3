@@ -1,101 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759839Ab3BMD7I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 22:59:08 -0500
-Received: from na01-by2-obe.ptr.protection.outlook.com ([207.46.100.32]:6223
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	id S1758588Ab3BMEQh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 23:16:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41559 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758064Ab3BMD7G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 22:59:06 -0500
-X-Greylist: delayed 1543 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Feb 2013 22:59:06 EST
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT002.namprd03.prod.outlook.com;R:internal;EFV:INT
-X-SpamScore: -3
-X-BigFish: PS-3(zzbb2dI98dI9371I542I1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275dhz31h2a8h668h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh9a9j1155h)
-X-Forefront-Antispam-Report-Untrusted: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:SN2PR03MB061;H:SN2PR03MB061.namprd03.prod.outlook.com;LANG:en;
-From: KY Srinivasan <kys@microsoft.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Yinghai Lu <yinghai@kernel.org>, "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "hpa@linux.intel.com" <hpa@linux.intel.com>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Subject: RE: [tip:x86/hyperv] X86: Handle Hyper-V vmbus interrupts as
- special hypervisor interrupts
-Thread-Topic: [tip:x86/hyperv] X86: Handle Hyper-V vmbus interrupts as
- special hypervisor interrupts
-Thread-Index: AQHOCZW/ATaUhT0+bEODP3cDxaZ/B5h3IYSggAAEpQCAAACw4IAAAaWAgAAAiyA=
-Date: Wed, 13 Feb 2013 03:58:46 +0000
-Message-ID: <53da10fbf2904c6597568abdf10fe8f0@SN2PR03MB061.namprd03.prod.outlook.com>
-References: <1359940959-32168-3-git-send-email-kys@microsoft.com>
- <tip-bc2b0331e077f576369a2b6c75d15ed4de4ef91f@git.kernel.org>
- <CAE9FiQXZRj84-fBwV4Hb0NQxcMxD1JTdsFXfyHMzaK-59TXjAg@mail.gmail.com>
- <7d06776025df4b788474c9710ed692ca@SN2PR03MB061.namprd03.prod.outlook.com>
- <511B0C84.5040806@zytor.com>
- <f6d62df8f3cb4076a2d3fe8a4f054a99@SN2PR03MB061.namprd03.prod.outlook.com>
- <511B0E79.6030007@zytor.com>
-In-Reply-To: <511B0E79.6030007@zytor.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [98.110.61.163]
-Content-Type: text/plain; charset="utf-8"
+	id S1751539Ab3BMEQf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 23:16:35 -0500
+Date: Tue, 12 Feb 2013 23:16:29 -0500
+From: Dave Jones <davej@redhat.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Debugging Thinkpad T430s occasional suspend failure.
+Message-ID: <20130213041629.GA28622@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Hugh Dickins <hughd@google.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	linux-kernel@vger.kernel.org
+References: <20130212193901.GA18906@redhat.com>
+ <alpine.LNX.2.00.1302121549500.890@eggly.anvils>
+ <20130213004059.GA14451@redhat.com>
+ <alpine.LNX.2.00.1302121652240.1077@eggly.anvils>
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PR03MB061.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUTRONIX.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUX.INTEL.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%ZYTOR.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14MLTC103.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14MLTC103.redmond.corp.microsoft.com
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(377454001)(479174001)(24454001)(13464002)(199002)(189002)(51704002)(56776001)(53806001)(31966008)(33646001)(44976002)(56816002)(65816001)(79102001)(76482001)(63696002)(20776003)(47776003)(54356001)(23676001)(54316002)(74662001)(74502001)(5343655001)(47446002)(49866001)(46102001)(50466001)(59766001)(47736001)(51856001)(6806001)(50986001)(47976001)(77982001)(66066001)(80022001)(16676001)(4396001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2FFO11HUB031;H:TK5EX14MLTC103.redmond.corp.microsoft.com;RD:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-OriginatorOrg: microsoft.onmicrosoft.com
-X-Forefront-PRVS: 07562C22DA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1302121652240.1077@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1D3xBB8027692
 
+On Tue, Feb 12, 2013 at 04:56:55PM -0800, Hugh Dickins wrote:
+ 
+ > > so I can hit this pretty quickly with this..
+ > > 
+ > > while [ 1 ];
+ > > do
+ > >  rtcwake -s 5 -m no ; pm-suspend
+ > > done
+ > > 
+ > > Which should make it bisectable at least..
+ > 
+ > Thanks, I'll give that a try this evening.
+ 
+So uh, put a 'sleep 5' in that loop.
 
+Turns out that the firmware on my Thinkpad craps itself when it tries to suspend while
+the cpu fan is still spinning back up, and eventually it gets in a state (on a 'good' boot)
+where the fan is stuck in the 'off' state.
 
-> -----Original Message-----
-> From: H. Peter Anvin [mailto:hpa@zytor.com]
-> Sent: Tuesday, February 12, 2013 10:55 PM
-> To: KY Srinivasan
-> Cc: Yinghai Lu; mingo@kernel.org; linux-kernel@vger.kernel.org;
-> tglx@linutronix.de; hpa@linux.intel.com; linux-tip-commits@vger.kernel.org
-> Subject: Re: [tip:x86/hyperv] X86: Handle Hyper-V vmbus interrupts as special
-> hypervisor interrupts
-> 
-> On 02/12/2013 07:49 PM, KY Srinivasan wrote:
-> >>>
-> >>> The issue was that you could turn on CONFIG_HYPERV without enabling
-> >>> CONFIG_X86_LOCAL_APIC. Peter fixed it.
-> >>>
-> >>
-> >> He is asking why you are using IS_ENABLED() instead of #ifdef.  The
-> >> difference is that IS_ENABLED() works even for modules.
-> >
-> > My mistake!
-> >
-> 
-> Well, which one do you need?
+Result: hot laptop, machine check exceptions, and then a nice
+"CPU FAN ERROR" message from the BIOS on next reboot.
 
-I chose the IS_ENABLED() because I wanted to cover the case where HYPERV is configured as a module as well.
+Full marks Lenovo.
 
-K. Y
-> 
-> 	-hpa
-> 
-> 
-> --
-> H. Peter Anvin, Intel Open Source Technology Center
-> I work for Intel.  I don't speak on their behalf.
-> 
-> 
-
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+	Dave
