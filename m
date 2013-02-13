@@ -1,133 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752725Ab3BMGM6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 01:12:58 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:10006 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751896Ab3BMGM4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 01:12:56 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Tue, 12 Feb 2013 22:12:45 -0800
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>
-CC: "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "marvin24@gmx.de" <marvin24@gmx.de>, "balbi@ti.com" <balbi@ti.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 13 Feb 2013 07:12:40 +0100
-Subject: Re: [v2 3/3] ARM: tegra: Unify Device tree board files
-Thread-Topic: [v2 3/3] ARM: tegra: Unify Device tree board files
-Thread-Index: Ac4JsSIpDZs4WPVVQTeuOL1vTFW61w==
-Message-ID: <20130213.081240.1605796167151164030.hdoyu@nvidia.com>
-References: <20130212.070456.532657136988541923.hdoyu@nvidia.com><201302121350.15683.arnd@arndb.de><511A6F6C.8090205@wwwdotorg.org>
-In-Reply-To: <511A6F6C.8090205@wwwdotorg.org>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-nvconfidentiality: public
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1752763Ab3BMGNp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 01:13:45 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33150 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751896Ab3BMGNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 01:13:43 -0500
+Message-ID: <511B2EB9.5070406@zytor.com>
+Date: Tue, 12 Feb 2013 22:12:09 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
+To: Matthew Garrett <matthew.garrett@nebula.com>
+CC: Borislav Petkov <bp@alien8.de>, Kees Cook <keescook@chromium.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH] x86: Lock down MSR writing in secure boot
+References: <dee64752-850c-4d78-b703-f47a985bc13e@email.android.com>   <CAGXu5jLAufTRm=sDST0br_WEkn4o0Hpjv2jDP2Na=cCvuM+MGg@mail.gmail.com>   <1360355671.18083.18.camel@x230.lan>   <CAGXu5jKo2PfMBO4A0ZgQcrPuj8OHNaff+CjAesOAWkZc0vB9+Q@mail.gmail.com>   <51157C9C.6030501@zytor.com> <20130208230655.GB28990@pd.tnic>   <1360366012.18083.21.camel@x230.lan> <5115A4CC.3080102@zytor.com>   <1360373383.18083.23.camel@x230.lan>   <CAGXu5j+xvJ3L5ejxtZ-Jw3F6rV7OsrE0_HZCGu_er0rH2_PwKA@mail.gmail.com>   <20130209092925.GA17728@pd.tnic> <1360422712.18083.24.camel@x230.lan>  <511AE2CC.5040705@zytor.com> <1360733962.18083.30.camel@x230.lan>
+In-Reply-To: <1360733962.18083.30.camel@x230.lan>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Warren <swarren@wwwdotorg.org> wrote @ Tue, 12 Feb 2013 17:35:56 +0100:
+On 02/12/2013 09:39 PM, Matthew Garrett wrote:
+> On Tue, 2013-02-12 at 16:48 -0800, H. Peter Anvin wrote:
+>
+>> OK... what none of this gets into:
+>>
+>> Why should CAP_RAWIO be allowed on a secure boot system, when there are
+>> 2^n known ways of compromise a system with CAP_RAWIO?
+>
+> CAP_SYS_RAWIO seems to have ended up being a catchall of "Maybe someone
+> who isn't entirely root should be able to do this", and not everything
+> it covers is equivalent to being able to compromise the running kernel.
+> I wouldn't argue with the idea that maybe we should just reappraise most
+> of the current uses of CAP_SYS_RAWIO, but removing capability checks
+> from places that currently have them seems like an invitation for
+> userspace breakage.
+>
 
-> However I'd like to avoid changing the body of those two functions at
-> all if possible, since I hope the PCIe driver rework will be merged in
-> 3.10, and that will allow the Harmony and TrimSlice init functions to be
-> removed entirely. I'd rather not have conflicts with the removal patch.
-> 
-> > Since we are not going to add any other board specfic init functions, you
-> > can also unroll the loop and put everything into tegra_dt_init_late:
-> 
-> That's not necessarily true. While we certainly don't plan to, I don't
-> think we can rule it out; after all, we don't have rfkill bindings and
-> yet other boards will need them.
+Sounds like you are thinking of CAP_SYS_ADMIN, but I don't really see a 
+huge difference between MSRs and I/O control registers... just different 
+address spaces.
 
-Considering the above points,
+	-hpa
 
-- The Harmony and TrimSlice init functions will be removed entirely
-  so soon that we want to avoid those merge conflicts as much as
-  possible.
-- We may still need board specific init, especially for rfkill.
-- We want to build any combination of Tegra{20,30,114}, 2^3 - 1 == 7.
 
-The patch for "tegra.c" would be as below.
-
-Should I still keep the name, "tegra20_auxdata_lookup" to avoid
-any conflicts or "tegra_auxdata_lookup" would be ok for merge?
-
-diff --git a/arch/arm/mach-tegra/tegra.c b/arch/arm/mach-tegra/tegra.c
-index fca18e9..fd4412d 100644
---- a/arch/arm/mach-tegra/tegra.c
-+++ b/arch/arm/mach-tegra/tegra.c
-@@ -1,6 +1,7 @@
- /*
-- * nVidia Tegra device tree board support
-+ * NVIDIA Tegra SoC device tree board support
-  *
-+ * Copyright (C) 2011, 2013, NVIDIA Corporation
-  * Copyright (C) 2010 Secret Lab Technologies, Ltd.
-  * Copyright (C) 2010 Google, Inc.
-  *
-@@ -67,7 +68,7 @@ static struct tegra_ehci_platform_data tegra_ehci3_pdata = {
- 	.vbus_gpio = -1,
- };
- 
--static struct of_dev_auxdata tegra20_auxdata_lookup[] __initdata = {
-+static struct of_dev_auxdata tegra_auxdata_lookup[] __initdata = {
- 	OF_DEV_AUXDATA("nvidia,tegra20-ehci", 0xC5000000, "tegra-ehci.0",
- 		       &tegra_ehci1_pdata),
- 	OF_DEV_AUXDATA("nvidia,tegra20-ehci", 0xC5004000, "tegra-ehci.1",
-@@ -84,7 +85,7 @@ static void __init tegra_dt_init(void)
- 	 * devices
- 	 */
- 	of_platform_populate(NULL, of_default_bus_match_table,
--				tegra20_auxdata_lookup, NULL);
-+				tegra_auxdata_lookup, NULL);
- }
- 
- static void __init trimslice_init(void)
-@@ -111,7 +112,8 @@ static void __init harmony_init(void)
- 
- static void __init paz00_init(void)
- {
--	tegra_paz00_wifikill_init();
-+	if (IS_ENABLED(CONFIG_ARCH_TEGRA_2x_SOC))
-+		tegra_paz00_wifikill_init();
- }
- 
- static struct {
-@@ -137,12 +139,14 @@ static void __init tegra_dt_init_late(void)
- 	}
- }
- 
--static const char *tegra20_dt_board_compat[] = {
-+static const char * const tegra_dt_board_compat[] = {
-+	"nvidia,tegra114",
-+	"nvidia,tegra30",
- 	"nvidia,tegra20",
- 	NULL
- };
- 
--DT_MACHINE_START(TEGRA_DT, "nVidia Tegra20 (Flattened Device Tree)")
-+DT_MACHINE_START(TEGRA_DT, "NVIDIA Tegra SoC (Flattened Device Tree)")
- 	.map_io		= tegra_map_common_io,
- 	.smp		= smp_ops(tegra_smp_ops),
- 	.init_early	= tegra_init_early,
-@@ -151,5 +155,5 @@ DT_MACHINE_START(TEGRA_DT, "nVidia Tegra20 (Flattened Device Tree)")
- 	.init_machine	= tegra_dt_init,
- 	.init_late	= tegra_dt_init_late,
- 	.restart	= tegra_assert_system_reset,
--	.dt_compat	= tegra20_dt_board_compat,
-+	.dt_compat	= tegra_dt_board_compat,
- MACHINE_END
 -- 
-1.7.9.5
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
