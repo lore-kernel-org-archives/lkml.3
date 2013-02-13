@@ -1,66 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757205Ab3BMHj4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 02:39:56 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:58615 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754588Ab3BMHjy (ORCPT
+	id S1757401Ab3BMHoO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 02:44:14 -0500
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:45948 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754588Ab3BMHoL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 02:39:54 -0500
-Date: Wed, 13 Feb 2013 18:39:47 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: linux-next: manual merge of the samsung tree with the arm-soc tree
-Message-Id: <20130213183947.8f2a946f84d156272db38e8b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__13_Feb_2013_18_39_47_+1100_d54X5hpZtwrB5Vsd"
+	Wed, 13 Feb 2013 02:44:11 -0500
+Date: Wed, 13 Feb 2013 08:44:09 +0100
+From: Andreas Mohr <andi@lisas.de>
+To: Andreas Mohr <andi@lisas.de>
+Cc: initramfs@vger.kernel.org, Maximilian Attems <maks@debian.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-usb@vger.kernel.org
+Subject: Re: [REGRESSION] [nailed] USB boot failure: USB: EHCI: make ehci-pci
+ a separate driver
+Message-ID: <20130213074409.GA16043@rhlx01.hs-esslingen.de>
+References: <CA+55aFz50VvnMjoDCbg01N+rMu5vscu88kr0SV3tWLjaiL0TeA@mail.gmail.com>
+ <20130210001442.GA5744@rhlx01.hs-esslingen.de>
+ <20130210140554.GA5299@rhlx01.hs-esslingen.de>
+ <20130212160727.GA15857@rhlx01.hs-esslingen.de>
+ <20130212161617.GA3887@kroah.com>
+ <20130213064436.GA22583@rhlx01.hs-esslingen.de>
+ <20130213071628.GA4211@rhlx01.hs-esslingen.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130213071628.GA4211@rhlx01.hs-esslingen.de>
+X-Priority: none
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__13_Feb_2013_18_39_47_+1100_d54X5hpZtwrB5Vsd
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+[CC initramfs-tools]
 
-Hi Kukjin,
+On Wed, Feb 13, 2013 at 08:16:28AM +0100, Andreas Mohr wrote:
+> Hi,
+> 
+> On Wed, Feb 13, 2013 at 07:44:36AM +0100, Andreas Mohr wrote:
+> > So, what to do? I'm now going to do some experimentation with git revert
+> > on some revision, and I'm trying to establish the USB port dependency
+> > (BIOS-owned handoff root hub invisible!?, as discussed in initial mail).
+> 
+> 
+> After some bingo moment, seems the solution is easier than expected:
+> 
+> andi@andinet:~$ ls /tmp/initrd_extracted/lib/modules/3.7.0-rc5+/kernel/drivers/usb/host/
+> ehci-hcd.ko  ohci-hcd.ko  uhci-hcd.ko  xhci-hcd.ko
+> andi@andinet:~$ ls /lib/modules/3.7.0-rc5+/kernel/drivers/usb/host/
+> ehci-hcd.ko  isp116x-hcd.ko   sl811_cs.ko   uhci-hcd.ko
+> ehci-pci.ko  ohci-hcd.ko      sl811-hcd.ko  whci
+> hwa-hc.ko    r8a66597-hcd.ko  u132-hcd.ko   xhci-hcd.ko
+> 
+> So it's probably only that the initrd simply fails to ship
+> the ehci-pci.ko module (I could verify this by extending initrd content, BTW).
+> Now the question would be:
+> are modules listed in a static list on initramfs package/config side,
+> or does the kernel fail to signal the list of required modules properly?
+> (e.g. did some config-side files fail to get upgraded for this dependency??)
+> 
+> 
+> So maybe it's not a "regression" per se, but it's at least a grave
+> usability issue on kernel upgrade which should be handled as benignly as
+> possible (i.e., without any disruption).
 
-Today's linux-next merge of the samsung tree got conflicts in quite a few
-files between commits from the arm-soc tree and commits from the samsung
-tree.
+OK, initramfs-tools hook-functions file contains (even in git master):
 
-I took Olof's advice and just dropped the samsung tree for today.
+        for arg in "$@" ; do
+                case "$arg" in
+                base)
+                        modules="$modules ehci-hcd ohci-hcd uhci-hcd
+usbhid"
+                        modules="$modules xhci xhci-hcd"
+                        modules="$modules hid-apple hid-cherry
+hid-generic"
+                        modules="$modules hid-logitech hid-logitech-dj"
+                        modules="$modules hid-microsoft hid-sunplus"
+                        modules="$modules btrfs ext2 ext3 ext4 ext4dev "
+                        modules="$modules isofs jfs nfs reiserfs udf
+xfs"
+                        modules="$modules af_packet atkbd i8042
+virtio_pci"
+                ;;
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Wed__13_Feb_2013_18_39_47_+1100_d54X5hpZtwrB5Vsd
-Content-Type: application/pgp-signature
+So it seems it actually *is* the user side (initramfs-tools) which has
+to maintain knowledge of all dependencies in a painfully maintained
+hard-coded list, and it seems this change is now making it croak,
+due to not knowing about the newly split extra ehci-pci.ko.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Questions:
+- is this mechanism how one would want things to be?
+  (is there a way to cleanly provide the accurately updated list
+  from the kernel side? Or is there a scripted mechanism to at least extract
+  all required *dependee* modules from the list of the ones that we
+  already know of? That would have saved our a** here...)
+- was this module change properly communicated sufficiently in advance,
+  to (all/most of) some affected parties?
+  If not, might want to do better next time if that's possible...
+- should ehci-pci be added to the literal list now (and does this work
+  properly on kernels which don't have it??), to get back to a working
+  state ASAP?
 
-iQIcBAEBCAAGBQJRG0NDAAoJEECxmPOUX5FE2HMP/i/p4qQFjJ3dswHTlytghxfZ
-7svjT4QBIFNPz0yMn3DQGXe9lRL10ytNPBXPy1ICcUn2/uFFqwuLWSJoVcEfWtWT
-5xdoWkgFzV/xIm6OoTzxIXWqijFo77Eys34SvtlzGOv9e4L6HEWwWgkow+oaneqf
-Wu2YdUOKP/v8pRL0nTj5vZnTi6bnz9BzNdfXlJ0dp5JZsBpqcJGTG59DM52+4W7G
-0h3VgwFOqcXi0k2cIbpobS7ry2BwBoxCz4UKvuEc65QvBb/dWgAfOVqQqLK9yEjw
-AGsN+BoRdMW3iT6qg0YpM8AyeNfo/aRzbJdLAOs6hqhdjnKNcyyVarlkXuGRi/sN
-SJZo2lYGBKpWHm0ByLVFKTYMsdoD10sAS/TUSNfeP0Oi+U1lY1azo8Qzk0QrFcF+
-QjkAePfDbupQkkXrzXuVEe1+rVv5rcGDYop87DEWVUqw+vyeLAzH0xRUzeF21aVq
-cZ5UodNPv4Kko5JoiA45Kw5hsPUwlKeGuB0BFVc6EdF5FB9zAyGcyNMRM0C26jbE
-EgTcpKsBaX6G6cJFECOftM0a2XbjvfH6PYyvhnRHMFe58uS2sYdncERe3BXnqMIe
-EorOV3f3wcsIrIQ02rVfpkVOrN18PFth8JSQVn828RALyHFgaxowszN1dU1orqzy
-AjlSIzlLqxkiro4PcZuK
-=lenK
------END PGP SIGNATURE-----
+Thanks,
 
---Signature=_Wed__13_Feb_2013_18_39_47_+1100_d54X5hpZtwrB5Vsd--
+Andreas Mohr
