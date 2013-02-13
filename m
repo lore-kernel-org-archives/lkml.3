@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760855Ab3BMVkE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 16:40:04 -0500
-Received: from mail-we0-f178.google.com ([74.125.82.178]:35252 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751972Ab3BMVkD (ORCPT
+	id S964967Ab3BMVmV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 16:42:21 -0500
+Received: from mail-da0-f52.google.com ([209.85.210.52]:33220 "EHLO
+	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934131Ab3BMVmT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 16:40:03 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v2] driver core: add wait event for deferred probe
-To: Haojian Zhuang <haojian.zhuang@linaro.org>, gregkh@linuxfoundation.org,
-        viro@zeniv.linux.org.uk, rusty@rustcorp.com.au, hpa@linux.intel.com,
-        jim.cromie@gmail.com, linux-kernel@vger.kernel.org,
-        linux@arm.linux.org.uk, linus.walleij@linaro.org, arnd@arndb.de,
-        broonie@opensource.wolfsonmicro.com, akpm@linux-foundation.org
-Cc: patches@linaro.org, Haojian Zhuang <haojian.zhuang@linaro.org>
-In-Reply-To: <1360637915-11212-1-git-send-email-haojian.zhuang@linaro.org>
-References: <1360637915-11212-1-git-send-email-haojian.zhuang@linaro.org>
-Date: Wed, 13 Feb 2013 21:39:59 +0000
-Message-Id: <20130213213959.BE1D53E3557@localhost>
+	Wed, 13 Feb 2013 16:42:19 -0500
+Date: Wed, 13 Feb 2013 13:42:15 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Daniel Kurtz <djkurtz@chromium.org>
+Cc: Henrik Rydberg <rydberg@euromail.se>, Benson Leung <bleung@chromium.org>,
+        Yufeng Shen <miletus@chromium.org>, Nick Dyer <nick.dyer@itdev.co.uk>,
+        Joonyoung Shim <jy0922.shim@samsung.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, olofj@chromium.org
+Subject: Re: [PATCH 02/10] Input: atmel_mxt_ts - register input device before
+ request_irq
+Message-ID: <20130213214214.GB23390@core.coreip.homeip.net>
+References: <1359706312-24642-1-git-send-email-djkurtz@chromium.org>
+ <1359706312-24642-3-git-send-email-djkurtz@chromium.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1359706312-24642-3-git-send-email-djkurtz@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Feb 2013 10:58:35 +0800, Haojian Zhuang <haojian.zhuang@linaro.org> wrote:
-> do_initcalls() could call all driver initialization code in kernel_init
-> thread. It means that probe() function will be also called from that
-> time. After this, kernel could access console & release __init section
-> in the same thread.
+Hi Daniel,
+
+On Fri, Feb 01, 2013 at 04:11:44PM +0800, Daniel Kurtz wrote:
+> As soon as the irq is request, input event interrupts could occur that
+> the isr should handle.  Similarly, if there are input events queued up
+> in the device output buffer, it will send them immediately when we
+> drain the message buffer with mxt_handle_messages.
 > 
-> But if device probe fails and moves into deferred probe list, a new
-> thread is created to reinvoke probe. If the device is serial console,
-> kernel has to open console failure & release __init section before
-> reinvoking failure. Because there's no synchronization mechanism.
-> Now add wait event to synchronize after do_initcalls().
-> 
-> Changelog:
-> v2: add comments on wait_for_device_probe().
-> 
-> Signed-off-by: Haojian Zhuang <haojian.zhuang@linaro.org>
+> Therefore, register the input device before enabling the irq (or handling
+> messages).
 
-As replied to on v1 of your patch, this change will cause a deadlock.
-The following change would do the same without the deadlock issue:
+I do not see the point. The allocated device can withstand
+input_events() calls even without being registered and I am not sure why
+anyone would be particularly interested in events that happened before
+or during device registration, espceially for a touchscreen device.
 
- static int deferred_probe_initcall(void)
- {
- 	deferred_wq = create_singlethread_workqueue("deferwq");
- 	if (WARN_ON(!deferred_wq))
- 		return -ENOMEM;
+Thanks.
 
- 	driver_deferred_probe_enable = true;
-+	deferred_probe_work_func(NULL);
--	driver_deferred_probe_trigger();
- 	return 0;
- }
- late_initcall(deferred_probe_initcall);
-
-g.
+-- 
+Dmitry
