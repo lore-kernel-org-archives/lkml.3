@@ -1,70 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759277Ab3BMLYz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 06:24:55 -0500
-Received: from plane.gmane.org ([80.91.229.3]:40575 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754716Ab3BMLYy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 06:24:54 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Colin Guthrie <gmane@colin.guthr.ie>
-Subject: Re: [REGRESSION] [nailed] USB boot failure: USB: EHCI: make ehci-pci
- a separate driver
-Date: Wed, 13 Feb 2013 10:50:49 +0000
-Message-ID: <511B7009.6030501@colin.guthr.ie>
-References: <CA+55aFz50VvnMjoDCbg01N+rMu5vscu88kr0SV3tWLjaiL0TeA@mail.gmail.com> <20130210001442.GA5744@rhlx01.hs-esslingen.de> <20130210140554.GA5299@rhlx01.hs-esslingen.de> <20130212160727.GA15857@rhlx01.hs-esslingen.de> <20130212161617.GA3887@kroah.com> <20130213064436.GA22583@rhlx01.hs-esslingen.de> <20130213071628.GA4211@rhlx01.hs-esslingen.de> <20130213074409.GA16043@rhlx01.hs-esslingen.de> <20130213100543.GA20222@rhlx01.hs-esslingen.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@ger.gmane.org
-Cc: initramfs@vger.kernel.org, linux-usb@vger.kernel.org
-X-Gmane-NNTP-Posting-Host: brent.tribalogic.net
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130114 Thunderbird/17.0.2
-In-Reply-To: <20130213100543.GA20222@rhlx01.hs-esslingen.de>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+	id S933835Ab3BML0P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 06:26:15 -0500
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:60742 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933765Ab3BML0O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 06:26:14 -0500
+Date: Wed, 13 Feb 2013 12:26:23 +0100
+From: Cong Ding <dinggnu@gmail.com>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Rob Herring <robherring2@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] of: dma.c: fix memory leakage
+Message-ID: <20130213112623.GA23860@gmail.com>
+References: <1358600805-20193-1-git-send-email-dinggnu@gmail.com>
+ <50FC6EB1.4050704@gmail.com>
+ <20130122101053.GA2427@gmail.com>
+ <20130212174025.GB17659@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130212174025.GB17659@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'Twas brillig, and Andreas Mohr at 13/02/13 10:05 did gyre and gimble:
-> Indeed,
-> adding
-> 
-> ehci_pci
-> 
-> to /etc/initramfs-tools/modules and running
-> 
-> update-initramfs -u -k 3.7.0-rc5+
-> 
-> to get /boot/initrd.img-3.7.0-rc5+
-> of the formerly broken -rc5+ build corrected
-> manages to fix boot.
-
-I think you actually want both: ehci-pci and ehci-platform (tho' perhaps
-the module deps mean only the -pci one is needed)
-
-
-Either way I already posted a patch about this a while back:
-
-See: "[PATCH 6/6] kernel-modules: Add ehci support for kernel 3.8+"
-
-(admittedly perhaps that should have been 3.7 rather than 3.8)!
-
-Col
-
-
-
--- 
-
-Colin Guthrie
-gmane(at)colin.guthr.ie
-http://colin.guthr.ie/
-
-Day Job:
-  Tribalogic Limited http://www.tribalogic.net/
-Open Source:
-  Mageia Contributor http://www.mageia.org/
-  PulseAudio Hacker http://www.pulseaudio.org/
-  Trac Hacker http://trac.edgewall.org/
+On Tue, Feb 12, 2013 at 09:40:25AM -0800, Vinod Koul wrote:
+> On Tue, Jan 22, 2013 at 10:10:53AM +0000, Cong Ding wrote:
+> > On Sun, Jan 20, 2013 at 04:24:49PM -0600, Rob Herring wrote:
+> > > On 01/19/2013 07:06 AM, Cong Ding wrote:
+> > > > The memory allocated to ofdma might be a leakage when error occurs.
+> > > > 
+> > > > Signed-off-by: Cong Ding <dinggnu@gmail.com>
+> > > 
+> > > You need to send this to whomever is working on DMA bindings.
+> > Thank you bob, I added Vinod the the receiver list.
+> I have moved the of/dma.c to dma/of-dma.c, can you regenerate this patch and
+> resend to me
+Sorry Vinod, I didn't manage to get this commit from either linux-next tree or
+slave-dma tree, and the last commit by you for of/dma.c file is on Jan 7. Did
+you have any hints for me to get the latest version dma/of-dma.c?
+ - cong
 
