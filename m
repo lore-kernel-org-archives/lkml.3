@@ -1,91 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933979Ab3BMNBI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 08:01:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37581 "EHLO mx1.redhat.com"
+	id S933953Ab3BMNCM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 08:02:12 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:37883 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933816Ab3BMNBF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 08:01:05 -0500
-Message-ID: <511B8E65.5020507@redhat.com>
-Date: Wed, 13 Feb 2013 14:00:21 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1755285Ab3BMNCI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 08:02:08 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <liuj97@gmail.com>,
+        Toshi Kani <toshi.kani@hp.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Myron Stowe <mstowe@redhat.com>, linux-pci@vger.kernel.org
+Subject: Re: [PATCH] ACPI / hotplug: Fix concurrency issues and memory leaks
+Date: Wed, 13 Feb 2013 14:08:36 +0100
+Message-ID: <1851921.aO94Yr1JVP@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc7; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAE9FiQVR+0iXtYF4AcLZs5_SsOtUJp5dF5fpk0XZKTcVanoL6A@mail.gmail.com>
+References: <1837481.7dT8hTZ4MT@vostro.rjw.lan> <CAE9FiQVR+0iXtYF4AcLZs5_SsOtUJp5dF5fpk0XZKTcVanoL6A@mail.gmail.com>
 MIME-Version: 1.0
-To: Alex Bligh <alex@alex.org.uk>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        nbd-general@lists.sf.net, Paul Clements <Paul.Clements@steeleye.com>
-Subject: Re: [PATCH 1/3] nbd: support FLUSH requests
-References: <1360685171-3792-1-git-send-email-pbonzini@redhat.com> <1360685171-3792-2-git-send-email-pbonzini@redhat.com> <115932E2-48BE-406E-9E75-61D12EB5937A@alex.org.uk> <511A8491.5030407@redhat.com> <20130212133207.ef6b24f5.akpm@linux-foundation.org> <FF1216D8-C4B3-405E-A4F6-82196A796A94@alex.org.uk>
-In-Reply-To: <FF1216D8-C4B3-405E-A4F6-82196A796A94@alex.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 13/02/2013 01:03, Alex Bligh ha scritto:
->> > Obviously the changelog was inadequate.  Please send along a new one
->> > which fully describes the reasons for this change.
-> To be clear I have no complaints about the rest of the patch being
-> merged. Supporting FLUSH but not FUA is far better than supporting
-> neither. I just didn't understand dropping FUA given the semantics
-> of nbd is in essence 'linux bios over tcp'.
+On Tuesday, February 12, 2013 05:55:26 PM Yinghai Lu wrote:
+> On Tue, Feb 12, 2013 at 4:19 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >
+> > This changeset is aimed at fixing a few different but related
+> > problems in the ACPI hotplug infrastructure.
+> >
+> > First of all, since notify handlers may be run in parallel with
+> > acpi_bus_scan(), acpi_bus_trim() and acpi_bus_hot_remove_device()
+> > and some of them are installed for ACPI handles that have no struct
+> > acpi_device objects attached (i.e. before those objects are created),
+> > those notify handlers have to take acpi_scan_lock to prevent races
+> > from taking place (e.g. a struct acpi_device is found to be present
+> > for the given ACPI handle, but right after that it is removed by
+> > acpi_bus_trim() running in parallel to the given notify handler).
+> > Moreover, since some of them call acpi_bus_scan() and
+> > acpi_bus_trim(), this leads to the conclusion that acpi_scan_lock
+> > should be acquired by the callers of these two funtions rather by
+> > these functions themselves.
+> >
+> > For these reasons, make all notify handlers that can handle device
+> > addition and eject events take acpi_scan_lock and remove the
+> > acpi_scan_lock locking from acpi_bus_scan() and acpi_bus_trim().
+> > Accordingly, update all of their users to make sure that they
+> > are always called under acpi_scan_lock.
+> >
+> > Furthermore, since eject operations are carried out asynchronously
+> > with respect to the notify events that trigger them, with the help
+> > of acpi_bus_hot_remove_device(), even if notify handlers take the
+> > ACPI scan lock, it still is possible that, for example,
+> > acpi_bus_trim() will run between acpi_bus_hot_remove_device() and
+> > the notify handler that scheduled its execution and that
+> > acpi_bus_trim() will remove the device node passed to
+> > acpi_bus_hot_remove_device() for ejection.  In that case, the struct
+> > acpi_device object obtained by acpi_bus_hot_remove_device() will be
+> > invalid and not-so-funny things will ensue.  To protect agaist that,
+> > make the users of acpi_bus_hot_remove_device() run get_device() on
+> > ACPI device node objects that are about to be passed to it and make
+> > acpi_bus_hot_remove_device() run put_device() on them and check if
+> > their ACPI handles are not NULL (make acpi_device_unregister() clear
+> > the device nodes' ACPI handles for that check to work).
+> >
+> > Finally, observe that acpi_os_hotplug_execute() actually can fail,
+> > in which case its caller ought to free memory allocated for the
+> > context object to prevent leaks from happening.  It also needs to
+> > run put_device() on the device node that it ran get_device() on
+> > previously in that case.  Modify the code accordingly.
+> >
+> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> Acked-by: Yinghai Lu <yinghai@kernel.org>
 
-Not really bios, since it expects FLUSH requests to include no I/O, but
-yes the semantics of NBD (and virtio-blk) are quite close to those of
-the Linux block layer.
+Thanks!
 
-But as far as I can test with free servers, the FUA bits have no
-advantage over flush.  Also, I wasn't sure if SEND_FUA without
-SEND_FLUSH is valid, and if so how to handle this combination (treat it
-as writethrough and add FUA to all requests? warn and do nothing?).
-
-Andrew, here is a better commit message:
-
------------- 8< ---------------
-From: Alex Bligh <alex@alex.org.uk>
-Subject: nbd: support FLUSH requests
-
-Currently, the NBD device does not accept flush requests from the Linux
-block layer.  If the NBD server opened the target with neither O_SYNC
-nor O_DSYNC, however, the device will be effectively backed by a
-writeback cache.  Without issuing flushes properly, operation of the NBD
-device will not be safe against power losses.
-
-The NBD protocol has support for both a cache flush command and a FUA
-command flag; the server will also pass a flag to note its support for
-these features.  This patch adds support for the cache flush command and
-flag.  In the kernel, we receive the flags via the NBD_SET_FLAGS ioctl,
-and map NBD_FLAG_SEND_FLUSH to the argument of blk_queue_flush.  When
-the flag is active the block layer will send REQ_FLUSH requests, which
-we translate to NBD_CMD_FLUSH commands.
-
-FUA support is not included in this patch because all free software
-servers implement it with a full fdatasync; thus it has no advantage
-over supporting flush only.  Because I [Paolo] cannot really benchmark
-it in a realistic scenario, I cannot tell if it is a good idea or not.
-It is also not clear if it is valid for an NBD server to support FUA but
-not flush.  The Linux block layer gives a warning for this combination,
-the NBD protocol documentation says nothing about it.
-
-The patch also fixes a small problem in the handling of flags:
-nbd->flags must be cleared at the end of NBD_DO_IT, but the driver was
-not doing that.  The bug manifests itself as follows.  Suppose you two
-different client/server pairs to start the NBD device.  Suppose also
-that the first client supports NBD_SET_FLAGS, and the first server sends
-NBD_FLAG_SEND_FLUSH; the second pair instead does neither of these two
-things.  Before this patch, the second invocation of NBD_DO_IT will use
-a stale value of nbd->flags, and the second server will issue an error
-every time it receives an NBD_CMD_FLUSH command.
-
-This bug is pre-existing, but it becomes much more important after this
-patch; flush failures make the device pretty much unusable, unlike
-discard failures.
-
-Signed-off-by: Alex Bligh <alex@alex.org.uk>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Paul Clements <Paul.Clements@steeleye.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
-Paolo
