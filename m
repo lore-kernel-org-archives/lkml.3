@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965417Ab3BMSXA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 13:23:00 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:42745 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964882Ab3BMSW5 (ORCPT
+	id S964897Ab3BMSXy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 13:23:54 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:62808 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964817Ab3BMSXx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 13:22:57 -0500
-Date: Wed, 13 Feb 2013 13:22:54 -0500 (EST)
-Message-Id: <20130213.132254.1534641136664469265.davem@davemloft.net>
-To: avagin@openvz.org
-Cc: netdev@vger.kernel.org, criu@openvz.org, linux-kernel@vger.kernel.org,
-        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, edumazet@google.com, xemul@parallels.com
-Subject: Re: [PATCH net-next] tcp: add ability to set a timestamp offset
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1360597819-23783-1-git-send-email-avagin@openvz.org>
-References: <1360597819-23783-1-git-send-email-avagin@openvz.org>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 13 Feb 2013 13:23:53 -0500
+Date: Wed, 13 Feb 2013 10:23:49 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: KY Srinivasan <kys@microsoft.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "JBeulich@suse.com" <JBeulich@suse.com>, "bp@alien8.de" <bp@alien8.de>
+Subject: Re: [PATCH 1/1] Drivers: hv: vmbus: Use the new infrastructure for
+ delivering VMBUS interrupts
+Message-ID: <20130213182349.GA4959@kroah.com>
+References: <1360164359-12273-1-git-send-email-kys@microsoft.com>
+ <20130206191313.GA1470@kroah.com>
+ <511ADEB7.6080909@zytor.com>
+ <ae14ef66af2d4206baf4ccb382fc4205@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130213162211.GA21253@kroah.com>
+ <c31482583b394bfcaa16b76a63c413fe@SN2PR03MB061.namprd03.prod.outlook.com>
+ <511BD923.7000500@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <511BD923.7000500@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrey Vagin <avagin@openvz.org>
-Date: Mon, 11 Feb 2013 19:50:16 +0400
+On Wed, Feb 13, 2013 at 10:19:15AM -0800, H. Peter Anvin wrote:
+> Sounds like we have the joy of a cross-tree dependency...
 
-> If a TCP socket will get live-migrated from one box to another the
-> timestamps (which are typically ON) will get screwed up -- the new
-> kernel will generate TS values that has nothing to do with what they
-> were on dump. The solution is to yet again fix the kernel and put a
-> "timestamp offset" on a socket.
-> 
-> A socket offset is added in places where externally visible tcp
-> timestamp option is parsed/initialized.
-> 
-> Connections in the SYN_RECV state are not supported, global
-> tcp_time_stamp is used for them, because repair mode doesn't support
-> this state. In a future it can be implemented by the similar way as for
-> TIME_WAIT sockets.
-> 
-> For time-wait sockets offset is inhereted by a proper tcp_sock.
-> 
-> A per-socket offset can be set only for sockets in repair mode.
+Yeah, a mess.
 
-Series applied, thanks.
+KY, how about I just wait until all of this gets merged with Linus for
+3.9-rc1, and then you resend me the patches you have to take advantage
+of these new bits?  That makes it easy for everyone involved.
+
+thanks,
+
+greg k-h
