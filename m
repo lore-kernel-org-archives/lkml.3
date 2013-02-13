@@ -1,79 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759583Ab3BMBz2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 20:55:28 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:52840 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750734Ab3BMBz1 (ORCPT
+	id S1759593Ab3BMCAN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 21:00:13 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60025 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753949Ab3BMCAL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 20:55:27 -0500
+	Tue, 12 Feb 2013 21:00:11 -0500
+Date: Tue, 12 Feb 2013 17:58:54 -0800
+From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
+Message-ID: <tip-cb20e5f2c8d6ba7440a32f4d70c0755bceb36e78@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        kys@microsoft.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        kys@microsoft.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <tip-bc2b0331e077f576369a2b6c75d15ed4de4ef91f@git.kernel.org>
+References: <tip-bc2b0331e077f576369a2b6c75d15ed4de4ef91f@git.kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/hyperv] x86, hyperv: HYPERV depends on X86_LOCAL_APIC
+Git-Commit-ID: cb20e5f2c8d6ba7440a32f4d70c0755bceb36e78
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <1837481.7dT8hTZ4MT@vostro.rjw.lan>
-References: <1837481.7dT8hTZ4MT@vostro.rjw.lan>
-Date: Tue, 12 Feb 2013 17:55:26 -0800
-X-Google-Sender-Auth: _m1eOoL_Pj1FKnuXPl_WjaOSPuI
-Message-ID: <CAE9FiQVR+0iXtYF4AcLZs5_SsOtUJp5dF5fpk0XZKTcVanoL6A@mail.gmail.com>
-Subject: Re: [PATCH] ACPI / hotplug: Fix concurrency issues and memory leaks
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <liuj97@gmail.com>,
-        Toshi Kani <toshi.kani@hp.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Myron Stowe <mstowe@redhat.com>, linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 12 Feb 2013 17:59:01 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 12, 2013 at 4:19 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->
-> This changeset is aimed at fixing a few different but related
-> problems in the ACPI hotplug infrastructure.
->
-> First of all, since notify handlers may be run in parallel with
-> acpi_bus_scan(), acpi_bus_trim() and acpi_bus_hot_remove_device()
-> and some of them are installed for ACPI handles that have no struct
-> acpi_device objects attached (i.e. before those objects are created),
-> those notify handlers have to take acpi_scan_lock to prevent races
-> from taking place (e.g. a struct acpi_device is found to be present
-> for the given ACPI handle, but right after that it is removed by
-> acpi_bus_trim() running in parallel to the given notify handler).
-> Moreover, since some of them call acpi_bus_scan() and
-> acpi_bus_trim(), this leads to the conclusion that acpi_scan_lock
-> should be acquired by the callers of these two funtions rather by
-> these functions themselves.
->
-> For these reasons, make all notify handlers that can handle device
-> addition and eject events take acpi_scan_lock and remove the
-> acpi_scan_lock locking from acpi_bus_scan() and acpi_bus_trim().
-> Accordingly, update all of their users to make sure that they
-> are always called under acpi_scan_lock.
->
-> Furthermore, since eject operations are carried out asynchronously
-> with respect to the notify events that trigger them, with the help
-> of acpi_bus_hot_remove_device(), even if notify handlers take the
-> ACPI scan lock, it still is possible that, for example,
-> acpi_bus_trim() will run between acpi_bus_hot_remove_device() and
-> the notify handler that scheduled its execution and that
-> acpi_bus_trim() will remove the device node passed to
-> acpi_bus_hot_remove_device() for ejection.  In that case, the struct
-> acpi_device object obtained by acpi_bus_hot_remove_device() will be
-> invalid and not-so-funny things will ensue.  To protect agaist that,
-> make the users of acpi_bus_hot_remove_device() run get_device() on
-> ACPI device node objects that are about to be passed to it and make
-> acpi_bus_hot_remove_device() run put_device() on them and check if
-> their ACPI handles are not NULL (make acpi_device_unregister() clear
-> the device nodes' ACPI handles for that check to work).
->
-> Finally, observe that acpi_os_hotplug_execute() actually can fail,
-> in which case its caller ought to free memory allocated for the
-> context object to prevent leaks from happening.  It also needs to
-> run put_device() on the device node that it ran get_device() on
-> previously in that case.  Modify the code accordingly.
->
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Commit-ID:  cb20e5f2c8d6ba7440a32f4d70c0755bceb36e78
+Gitweb:     http://git.kernel.org/tip/cb20e5f2c8d6ba7440a32f4d70c0755bceb36e78
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Tue, 12 Feb 2013 17:46:23 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Tue, 12 Feb 2013 17:46:23 -0800
 
-Acked-by: Yinghai Lu <yinghai@kernel.org>
+x86, hyperv: HYPERV depends on X86_LOCAL_APIC
+
+In order to compile in the special Hyper-V interrupt vector, we need
+infrastructure in arch/x86/apic/apic.c.  At least for now, simply
+require CONFIG_X86_LOCAL_APIC in order to enable CONFIG_HYPERV.
+
+Link: http://lkml.kernel.org/r/tip-bc2b0331e077f576369a2b6c75d15ed4de4ef91f@git.kernel.org
+Cc: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ drivers/hv/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/hv/Kconfig b/drivers/hv/Kconfig
+index b38ef6d..64630f1 100644
+--- a/drivers/hv/Kconfig
++++ b/drivers/hv/Kconfig
+@@ -2,7 +2,7 @@ menu "Microsoft Hyper-V guest support"
+ 
+ config HYPERV
+ 	tristate "Microsoft Hyper-V client drivers"
+-	depends on X86 && ACPI && PCI
++	depends on X86 && ACPI && PCI && X86_LOCAL_APIC
+ 	help
+ 	  Select this option to run Linux as a Hyper-V client operating
+ 	  system.
