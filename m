@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752392Ab3BMFhX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 00:37:23 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:34504 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751634Ab3BMFhW (ORCPT
+	id S1752646Ab3BMFjd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 00:39:33 -0500
+Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:20596
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751634Ab3BMFj3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 00:37:22 -0500
-Date: Tue, 12 Feb 2013 21:37:27 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Dave Jones <davej@redhat.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Debugging Thinkpad T430s occasional suspend failure.
-In-Reply-To: <20130213041629.GA28622@redhat.com>
-Message-ID: <alpine.LNX.2.00.1302122121170.15020@eggly.anvils>
-References: <20130212193901.GA18906@redhat.com> <alpine.LNX.2.00.1302121549500.890@eggly.anvils> <20130213004059.GA14451@redhat.com> <alpine.LNX.2.00.1302121652240.1077@eggly.anvils> <20130213041629.GA28622@redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Wed, 13 Feb 2013 00:39:29 -0500
+X-Forefront-Antispam-Report: CIP:157.56.236.101;KIP:(null);UIP:(null);IPV:NLI;H:BY2PRD0510HT003.namprd05.prod.outlook.com;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: PS-3(zz98dI936eI1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2fh2a8h668h839h93fhd24he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1155h)
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Borislav Petkov <bp@alien8.de>, Kees Cook <keescook@chromium.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH] x86: Lock down MSR writing in secure boot
+Thread-Topic: [PATCH] x86: Lock down MSR writing in secure boot
+Thread-Index: AQHOBjA7mQsIMlqU/k+EElzc7Yz1iZhwVXgAgAAAbACAAAawAIAACLcAgAABPICAAAKrAIAAAdKAgAAHwICAABjCAIAAChOAgAAFkwCAACBDAIAAAhCAgABYQICAAC3GgIAAX64AgAVYBQCAAFFaAA==
+Date: Wed, 13 Feb 2013 05:39:22 +0000
+Message-ID: <1360733962.18083.30.camel@x230.lan>
+References: <dee64752-850c-4d78-b703-f47a985bc13e@email.android.com>
+	  <CAGXu5jLAufTRm=sDST0br_WEkn4o0Hpjv2jDP2Na=cCvuM+MGg@mail.gmail.com>
+	  <1360355671.18083.18.camel@x230.lan>
+	  <CAGXu5jKo2PfMBO4A0ZgQcrPuj8OHNaff+CjAesOAWkZc0vB9+Q@mail.gmail.com>
+	  <51157C9C.6030501@zytor.com> <20130208230655.GB28990@pd.tnic>
+	  <1360366012.18083.21.camel@x230.lan> <5115A4CC.3080102@zytor.com>
+	  <1360373383.18083.23.camel@x230.lan>
+	  <CAGXu5j+xvJ3L5ejxtZ-Jw3F6rV7OsrE0_HZCGu_er0rH2_PwKA@mail.gmail.com>
+	  <20130209092925.GA17728@pd.tnic> <1360422712.18083.24.camel@x230.lan>
+	 <511AE2CC.5040705@zytor.com>
+In-Reply-To: <511AE2CC.5040705@zytor.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.255.84.4]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <FE9E32B54B1E104786F2C25E4A42492B@namprd05.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1D5dYPf028019
 
-On Tue, 12 Feb 2013, Dave Jones wrote:
-> On Tue, Feb 12, 2013 at 04:56:55PM -0800, Hugh Dickins wrote:
->  
->  > > so I can hit this pretty quickly with this..
->  > > 
->  > > while [ 1 ];
->  > > do
->  > >  rtcwake -s 5 -m no ; pm-suspend
->  > > done
->  > > 
->  > > Which should make it bisectable at least..
->  > 
->  > Thanks, I'll give that a try this evening.
->  
-> So uh, put a 'sleep 5' in that loop.
+On Tue, 2013-02-12 at 16:48 -0800, H. Peter Anvin wrote:
 
-I had already put exactly that, to help break out when I got bored.
-
-I'm afraid it just confirms that we have different problems: that
-script gives me no trouble.  Perhaps it would give me trouble if the
-timeout went up from 5 seconds to 10 hours (it does not at 10 minutes),
-but that doesn't feel like a very useful line of enquiry.
-
-I think for the moment I'm going to hope that under the surface our
-problems are related, and when your bisection points a finger, look
-around to see if it suggests anything for my case.  Lazy, but...
-
-Hugh
-
+> OK... what none of this gets into:
 > 
-> Turns out that the firmware on my Thinkpad craps itself when it tries to suspend while
-> the cpu fan is still spinning back up, and eventually it gets in a state (on a 'good' boot)
-> where the fan is stuck in the 'off' state.
-> 
-> Result: hot laptop, machine check exceptions, and then a nice
-> "CPU FAN ERROR" message from the BIOS on next reboot.
-> 
-> Full marks Lenovo.
-> 
-> 	Dave
+> Why should CAP_RAWIO be allowed on a secure boot system, when there are
+> 2^n known ways of compromise a system with CAP_RAWIO?
+
+CAP_SYS_RAWIO seems to have ended up being a catchall of "Maybe someone
+who isn't entirely root should be able to do this", and not everything
+it covers is equivalent to being able to compromise the running kernel.
+I wouldn't argue with the idea that maybe we should just reappraise most
+of the current uses of CAP_SYS_RAWIO, but removing capability checks
+from places that currently have them seems like an invitation for
+userspace breakage.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
