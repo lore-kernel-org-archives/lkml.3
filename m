@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934273Ab3BMUPD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 15:15:03 -0500
-Received: from mail-da0-f48.google.com ([209.85.210.48]:57173 "EHLO
-	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934138Ab3BMUPA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S934157Ab3BMUPA (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 13 Feb 2013 15:15:00 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:57490 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932599Ab3BMUO7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 15:14:59 -0500
 From: dirk.brandewie@gmail.com
 To: davej@redhat.com, rjw@sisk.pl
 Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
         Dirk Brandewie <dirk.brandewie@gmail.com>
 Subject: [PATCH] cpufreq/intel_pstate: Change to disallow module build
-Date: Wed, 13 Feb 2013 12:14:42 -0800
-Message-Id: <1360786482-881-2-git-send-email-dirk.brandewie@gmail.com>
+Date: Wed, 13 Feb 2013 12:14:41 -0800
+Message-Id: <1360786482-881-1-git-send-email-dirk.brandewie@gmail.com>
 X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1360786482-881-1-git-send-email-dirk.brandewie@gmail.com>
+In-Reply-To: <20130212214949.GA1003@redhat.com>
 References: <20130212214949.GA1003@redhat.com>
- <1360786482-881-1-git-send-email-dirk.brandewie@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -37,6 +36,9 @@ first option to become the scaling driver.
 
 Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
 ---
+
+based on linux-pm/linux-next fe9e0a66
+
  drivers/cpufreq/Kconfig.x86 |    7 +------
  1 files changed, 1 insertions(+), 6 deletions(-)
 
