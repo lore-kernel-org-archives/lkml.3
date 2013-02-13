@@ -1,43 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757682Ab3BMJaw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 04:30:52 -0500
-Received: from h1446028.stratoserver.net ([85.214.92.142]:53199 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753548Ab3BMJau (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 04:30:50 -0500
-Message-ID: <511B5D22.7090100@ahsoftware.de>
-Date: Wed, 13 Feb 2013 10:30:10 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1758057Ab3BMJdV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 04:33:21 -0500
+Received: from mms1.broadcom.com ([216.31.210.17]:3988 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752843Ab3BMJdR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 04:33:17 -0500
+X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
+Message-ID: <511B5DD0.1040103@broadcom.com>
+Date: Wed, 13 Feb 2013 10:33:04 +0100
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: linux-kernel@vger.kernel.org, Herbert Xu <herbert@gondor.hengli.com.au>,
-        David Miller <davem@davemloft.net>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: MODSIGN without RTC?
-References: <5112EA69.6010100@ahsoftware.de> <5112FE21.4020404@ahsoftware.de> <CAMuHMdXu0-9=wHevviG=4s5fC=wxkT9XbXhP6ztOyGkkeb6+8Q@mail.gmail.com> <51135137.4010003@ahsoftware.de>
-In-Reply-To: <51135137.4010003@ahsoftware.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: "Peter Hurley" <peter@hurleysoftware.com>
+cc: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        "Maarten Lankhorst" <maarten.lankhorst@canonical.com>,
+        "Daniel J Blueman" <daniel@quora.org>,
+        "Marcin Slusarz" <marcin.slusarz@gmail.com>,
+        "Ben Skeggs" <bskeggs@redhat.com>
+Subject: Re: [ 61/61] drm/nouveau: add lockdep annotations
+References: <20130212203417.890993903@linuxfoundation.org>
+ <20130212203426.021116247@linuxfoundation.org>
+ <1360726523.3642.4.camel@thor.lan>
+In-Reply-To: <1360726523.3642.4.camel@thor.lan>
+X-Enigmail-Version: 1.4.6
+X-WSS-ID: 7D0582DE1Z0433017-01-01
+Content-Type: text/plain;
+ charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 07.02.2013 08:01, schrieb Alexander Holler:
+On 02/13/2013 04:35 AM, Peter Hurley wrote:
+> On Tue, 2013-02-12 at 12:35 -0800, Greg Kroah-Hartman wrote:
+>> 3.7-stable review patch.  If anyone has any objections, please let me know.
+> 
+> FWIW, I never saw this on 3.7 but it happened 1st time on 3.8-rcX
+> I haven't tested this fix either.
 
-> And the dream of every vendor, finally a working expiration date. And a
-> nice TV-B-Gone, just feed a wrong date once. ;)
+Dito.
 
-Just in case someone missed what I wanted to hint: That date problem has 
-implications for devices with a RTC too. If they need too load a kernel 
-and signed modules to enable the user to modify the date (of the RTC), 
-setting a date outside the range specified in the certificate and 
-rebooting will brick such devices.
+Gr. AvS
 
-Regards,
-
-Alexander
 
