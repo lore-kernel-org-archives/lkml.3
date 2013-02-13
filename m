@@ -1,99 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965189Ab3BMW4A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 17:56:00 -0500
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:42484 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751859Ab3BMWz7 (ORCPT
+	id S965251Ab3BMW4X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 17:56:23 -0500
+Received: from mail-we0-f171.google.com ([74.125.82.171]:37250 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760432Ab3BMW4V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 17:55:59 -0500
-Message-ID: <1360796155.2735.16.camel@lorien2>
-Subject: [PATCH] scsi/hpsa: fix to check dma mapping error
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: scameron@beardog.cce.hp.com, JBottomley@parallels.com
-Cc: iss_storagedev@hp.com, linux-scsi@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, shuahkhan@gmail.com
-Date: Wed, 13 Feb 2013 15:55:55 -0700
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 13 Feb 2013 17:56:21 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 3/4] of/pci: Add of_pci_get_bus() function
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Rob Herring <rob.herring@calxeda.com>,
+        Andrew Murray <andrew.murray@arm.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1360570940-17086-4-git-send-email-thierry.reding@avionic-design.de>
+References: <1360570940-17086-1-git-send-email-thierry.reding@avionic-design.de> <1360570940-17086-4-git-send-email-thierry.reding@avionic-design.de>
+Date: Wed, 13 Feb 2013 22:56:07 +0000
+Message-Id: <20130213225607.B31223E3557@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add missing dma mapping error check to fix the following warning from
-dma-debug.
+On Mon, 11 Feb 2013 09:22:19 +0100, Thierry Reding <thierry.reding@avionic-design.de> wrote:
+> This function can be used to parse the number of a device's parent PCI
+> bus from a standard 5-cell PCI resource.
+> 
+> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
 
-[   16.614739] hpsa 0000:03:00.0: DMA-API: device driver failed to check map error[device address=0x00000000001c2ec0] [size=64 bytes] [mapped as single]
-[   16.614833] Modules linked in: pata_atiixp tg3(+) ptp pps_core hpsa(+)
-[   16.615381] Pid: 324, comm: modprobe Not tainted 3.8.0-rc7+ #6
-[   16.615466] Call Trace:
-[   16.615552]  [<ffffffff810581ef>] warn_slowpath_common+0x7f/0xc0
-[   16.615639]  [<ffffffff810582e6>] warn_slowpath_fmt+0x46/0x50
-[   16.615747]  [<ffffffff8134c129>] check_unmap+0x459/0x8a0
-[   16.615832]  [<ffffffff81698aad>] ? schedule_timeout+0x1ed/0x250
-[   16.615918]  [<ffffffff8134c70c>] debug_dma_unmap_page+0x5c/0x60
-[   16.616008]  [<ffffffffa0002776>] hpsa_pci_unmap+0x86/0xd0 [hpsa]
-[   16.616094]  [<ffffffffa00028c0>] hpsa_scsi_do_simple_cmd_with_retry+0x100/0x2a0 [hpsa]
-[   16.616195]  [<ffffffffa0004863>] hpsa_scsi_do_inquiry+0x83/0x100 [hpsa]
-[   16.616282]  [<ffffffffa0006ce9>] hpsa_init_one+0x1839/0x1ce0 [hpsa]
-[   16.616369]  [<ffffffff811fc2d8>] ? sysfs_new_dirent+0x58/0x140
-[   16.616456]  [<ffffffff8135db9b>] local_pci_probe+0x4b/0x80
-[   16.616542]  [<ffffffff8135f471>] pci_device_probe+0x101/0x120
-[   16.616629]  [<ffffffff814328db>] driver_probe_device+0x7b/0x240
-[   16.616715]  [<ffffffff81432b4b>] __driver_attach+0xab/0xb0
-[   16.616801]  [<ffffffff81432aa0>] ? driver_probe_device+0x240/0x240
-[   16.616888]  [<ffffffff81430cf6>] bus_for_each_dev+0x56/0x90
-[   16.617001]  [<ffffffff8143240e>] driver_attach+0x1e/0x20
-[   16.617087]  [<ffffffff81431f80>] bus_add_driver+0x190/0x290
-[   16.617173]  [<ffffffffa0011000>] ? 0xffffffffa0010fff
-[   16.617259]  [<ffffffff814330aa>] driver_register+0x7a/0x160
-[   16.617345]  [<ffffffffa0011000>] ? 0xffffffffa0010fff
-[   16.617431]  [<ffffffff8135e42c>] __pci_register_driver+0x4c/0x50
-[   16.617519]  [<ffffffffa001101e>] hpsa_init+0x1e/0x1000 [hpsa]
-[   16.617605]  [<ffffffff8100206f>] do_one_initcall+0x3f/0x170
-[   16.617692]  [<ffffffff810bef7e>] load_module+0x16ae/0x1c40
-[   16.617777]  [<ffffffff810bbb70>] ? show_initstate+0x50/0x50
-[   16.617863]  [<ffffffff8169f71e>] ? do_page_fault+0xe/0x10
-[   16.617949]  [<ffffffff810bf5de>] sys_init_module+0xce/0x100
-[   16.618035]  [<ffffffff816a3d99>] system_call_fastpath+0x16/0x1b
-[   16.618157] ---[ end trace 260311c4be71d0dc ]---
-[   16.618228] Mapped at:
-[   16.618311]  [<ffffffff8134b189>] debug_dma_map_page+0xb9/0x160
-[   16.618451]  [<ffffffffa0004132>] fill_cmd.isra.31+0x252/0x400 [hpsa]
-[   16.618613]  [<ffffffffa0004853>] hpsa_scsi_do_inquiry+0x73/0x100 [hpsa]
-[   16.618766]  [<ffffffffa0006ce9>] hpsa_init_one+0x1839/0x1ce0 [hpsa]
-[   16.618919]  [<ffffffff8135db9b>] local_pci_probe+0x4b/0x80
-[   16.619286] scsi3 : hpsa
+This patch should be deferred until there is another patch in the same
+series that actually uses it.
 
+g.
 
-Signed-off-by: Shuah Khan <shuah.khan@hp.com>
-CC: stable@vger.kernel.org
----
- drivers/scsi/hpsa.c |    5 +++++
- 1 file changed, 5 insertions(+)
+> ---
+>  drivers/of/of_pci.c    | 21 +++++++++++++++++++++
+>  include/linux/of_pci.h |  1 +
+>  2 files changed, 22 insertions(+)
+> 
+> diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
+> index 4dd7b9b..d6e6de5 100644
+> --- a/drivers/of/of_pci.c
+> +++ b/drivers/of/of_pci.c
+> @@ -43,6 +43,27 @@ struct device_node *of_pci_find_child_device(struct device_node *parent,
+>  EXPORT_SYMBOL_GPL(of_pci_find_child_device);
+>  
+>  /**
+> + * of_pci_get_bus() - Get bus number for a device node
+> + * @np: device node
+> + *
+> + * Parses a standard 5-cell PCI resource and returns the 8-bit bus number of
+> + * the device's parent PCI bus. On error a negative error code is returned.
+> + */
+> +int of_pci_get_bus(struct device_node *np)
+> +{
+> +	unsigned int size;
+> +	const __be32 *reg;
+> +
+> +	reg = of_get_property(np, "reg", &size);
+> +
+> +	if (!reg || size < 5 * sizeof(__be32))
+> +		return -EINVAL;
+> +
+> +	return (be32_to_cpup(reg) >> 16) & 0xff;
+> +}
+> +EXPORT_SYMBOL_GPL(of_pci_get_bus);
+> +
+> +/**
+>   * of_pci_get_devfn() - Get device and function numbers for a device node
+>   * @np: device node
+>   *
+> diff --git a/include/linux/of_pci.h b/include/linux/of_pci.h
+> index 91ec484..9118321 100644
+> --- a/include/linux/of_pci.h
+> +++ b/include/linux/of_pci.h
+> @@ -10,6 +10,7 @@ int of_irq_map_pci(const struct pci_dev *pdev, struct of_irq *out_irq);
+>  struct device_node;
+>  struct device_node *of_pci_find_child_device(struct device_node *parent,
+>  					     unsigned int devfn);
+> +int of_pci_get_bus(struct device_node *np);
+>  int of_pci_get_devfn(struct device_node *np);
+>  
+>  #endif
+> -- 
+> 1.8.1.2
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index 4f33806..3b4d195 100644
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -1405,6 +1405,11 @@ static void hpsa_map_one(struct pci_dev *pdev,
- 	}
- 
- 	addr64 = (u64) pci_map_single(pdev, buf, buflen, data_direction);
-+	if (dma_mapping_error(&pdev->dev, addr64)) {
-+		cp->Header.SGList = 0;
-+		cp->Header.SGTotal = 0;
-+		return;
-+	}
- 	cp->SG[0].Addr.lower =
- 	  (u32) (addr64 & (u64) 0x00000000FFFFFFFF);
- 	cp->SG[0].Addr.upper =
 -- 
-1.7.9.5
-
-
-
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies, Ltd.
