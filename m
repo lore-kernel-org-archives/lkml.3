@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759744Ab3BMCuX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 21:50:23 -0500
-Received: from mout.gmx.net ([212.227.17.20]:62361 "EHLO mout.gmx.net"
+	id S1759911Ab3BMCud (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 21:50:33 -0500
+Received: from mout.gmx.net ([212.227.17.21]:49164 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759666Ab3BMCuT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 21:50:19 -0500
+	id S1759858Ab3BMCuc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 21:50:32 -0500
 X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1/wGGBoHNnwCJ7NsgmLBhd8G3Eo/d8MK1dGZJtUPa
-	1PZEQ3LxwZCmkg
+X-Provags-ID: V01U2FsdGVkX19TH4lZTW5Tj7+CSnDR/NUYNZjUO5hMFkvaP6F2Hg
+	pgGvwl+qC4p8+0
 From: Peter Huewe <peterhuewe@gmx.de>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Yunhong Jiang <yunhong.jiang@intel.com>,
@@ -16,9 +16,9 @@ Cc: Yunhong Jiang <yunhong.jiang@intel.com>,
         "Mike A. Chan" <mikechan@google.com>,
         Xiaohui Xin <xiaohui.xin@intel.com>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH 2/9] staging/rtl8187se: Remove code without effect
-Date: Wed, 13 Feb 2013 03:54:27 +0100
-Message-Id: <1360724074-2445-2-git-send-email-peterhuewe@gmx.de>
+Subject: [PATCH 8/9] staging/rtl8187se: Remove duplicated code by using an offset
+Date: Wed, 13 Feb 2013 03:54:33 +0100
+Message-Id: <1360724074-2445-8-git-send-email-peterhuewe@gmx.de>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1360724074-2445-1-git-send-email-peterhuewe@gmx.de>
 References: <1360724074-2445-1-git-send-email-peterhuewe@gmx.de>
@@ -27,66 +27,110 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The local variable u4bAcParam is never read/used after assignment,
-thus we can remove the declaration, assignment and any related code.
+In SetAntennaConfig87SE both branches of if (bAntDiversity) do exactly
+the same, except that there is an offset of 0x80 for the register values
+if bAntDiversity is true.
 
--> the local variables u1bAIFS, eACI and pAcParam can also be removed.
+-> Consolidate both branches and assign the offset if necessary.
 
 Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 ---
- drivers/staging/rtl8187se/r8185b_init.c |   39 +------------------------------
- 1 files changed, 1 insertions(+), 38 deletions(-)
+ drivers/staging/rtl8187se/r8185b_init.c |   76 +++++++++++--------------------
+ 1 files changed, 26 insertions(+), 50 deletions(-)
 
 diff --git a/drivers/staging/rtl8187se/r8185b_init.c b/drivers/staging/rtl8187se/r8185b_init.c
-index 41419f0..5495d1e 100644
+index 005fb0b..2ca857d 100644
 --- a/drivers/staging/rtl8187se/r8185b_init.c
 +++ b/drivers/staging/rtl8187se/r8185b_init.c
-@@ -928,44 +928,7 @@ void ActUpdateChannelAccessSetting(struct net_device *dev,
+@@ -284,62 +284,38 @@ bool SetAntennaConfig87SE(struct net_device *dev,
+ {
+ 	struct r8180_priv *priv = (struct r8180_priv *)ieee80211_priv(dev);
+ 	bool   bAntennaSwitched = true;
++	u8	ant_diversity_offset = 0x00; /* 0x00 = disabled, 0x80 = enabled */
  
- 		for (eACI = 0; eACI < AC_MAX; eACI++) {
- 			AcParam.f.AciAifsn.f.ACI = (u8)eACI;
--			{
--				PAC_PARAM	pAcParam = (PAC_PARAM)(&AcParam);
--				AC_CODING	eACI;
--				u8		u1bAIFS;
--				u32		u4bAcParam;
+ 	/* printk("SetAntennaConfig87SE(): DefaultAnt(%d), bAntDiversity(%d)\n", DefaultAnt, bAntDiversity); */
+ 
+ 	/* Threshold for antenna diversity. */
+ 	write_phy_cck(dev, 0x0c, 0x09); /* Reg0c : 09 */
+ 
+-	if (bAntDiversity) {	/*	Enable Antenna Diversity. */
+-		if (DefaultAnt == 1) {	/* aux antenna */
 -
--				/*  Retrieve parameters to update. */
--				eACI = pAcParam->f.AciAifsn.f.ACI;
--				u1bAIFS = pAcParam->f.AciAifsn.f.AIFSN * ChnlAccessSetting->SlotTimeTimer + aSifsTime;
--				u4bAcParam = ((((u32)(pAcParam->f.TXOPLimit)) << AC_PARAM_TXOP_LIMIT_OFFSET)	|
--						(((u32)(pAcParam->f.Ecw.f.ECWmax)) << AC_PARAM_ECW_MAX_OFFSET)	|
--						(((u32)(pAcParam->f.Ecw.f.ECWmin)) << AC_PARAM_ECW_MIN_OFFSET)	|
--						(((u32)u1bAIFS) << AC_PARAM_AIFS_OFFSET));
+-			/* Mac register, aux antenna */
+-			write_nic_byte(dev, ANTSEL, 0x00);
 -
--				switch (eACI) {
--				case AC1_BK:
--					/* write_nic_dword(dev, AC_BK_PARAM, u4bAcParam); */
--					break;
+-			/* Config CCK RX antenna. */
+-			write_phy_cck(dev, 0x11, 0xbb); /* Reg11 : bb */
+-			write_phy_cck(dev, 0x01, 0xc7); /* Reg01 : c7 */
 -
--				case AC0_BE:
--					/* write_nic_dword(dev, AC_BK_PARAM, u4bAcParam); */
--					break;
+-			/* Config OFDM RX antenna. */
+-			write_phy_ofdm(dev, 0x0D, 0x54);	/* Reg0d : 54 */
+-			write_phy_ofdm(dev, 0x18, 0xb2);	/* Reg18 : b2 */
+-		} else { /*  use main antenna */
+-			/* Mac register, main antenna */
+-			write_nic_byte(dev, ANTSEL, 0x03);
+-			/* base band */
+-			/*  Config CCK RX antenna. */
+-			write_phy_cck(dev, 0x11, 0x9b); /* Reg11 : 9b */
+-			write_phy_cck(dev, 0x01, 0xc7); /* Reg01 : c7 */
 -
--				case AC2_VI:
--					/* write_nic_dword(dev, AC_BK_PARAM, u4bAcParam); */
--					break;
+-			/* Config OFDM RX antenna. */
+-			write_phy_ofdm(dev, 0x0d, 0x5c);  /* Reg0d : 5c	*/
+-			write_phy_ofdm(dev, 0x18, 0xb2);  /* Reg18 : b2	*/
+-		}
+-	} else {
+-		/* Disable Antenna Diversity. */
+-		if (DefaultAnt == 1) { /* aux Antenna */
+-			/* Mac register, aux antenna */
+-			write_nic_byte(dev, ANTSEL, 0x00);
 -
--				case AC3_VO:
--					/* write_nic_dword(dev, AC_BK_PARAM, u4bAcParam); */
--					break;
+-			/* Config CCK RX antenna. */
+-			write_phy_cck(dev, 0x11, 0xbb); /* Reg11 : bb */
+-			write_phy_cck(dev, 0x01, 0x47); /* Reg01 : 47 */
 -
--				default:
--					DMESGW("SetHwReg8185(): invalid ACI: %d !\n", eACI);
--					break;
--				}
+-			/* Config OFDM RX antenna. */
+-			write_phy_ofdm(dev, 0x0D, 0x54);	/* Reg0d : 54 */
+-			write_phy_ofdm(dev, 0x18, 0x32);	/* Reg18 : 32 */
+-		} else { /* main Antenna */
+-			/* Mac register, main antenna */
+-			write_nic_byte(dev, ANTSEL, 0x03);
 -
--				write_nic_byte(dev, ACM_CONTROL, 0);
--			}
-+			write_nic_byte(dev, ACM_CONTROL, 0);
- 		}
+-			/* Config CCK RX antenna.	*/
+-			write_phy_cck(dev, 0x11, 0x9b); /* Reg11 : 9b */
+-			write_phy_cck(dev, 0x01, 0x47); /* Reg01 : 47 */
+-
+-			/* Config OFDM RX antenna. */
+-			write_phy_ofdm(dev, 0x0D, 0x5c); /* Reg0d : 5c */
+-			write_phy_ofdm(dev, 0x18, 0x32); /*Reg18 : 32 */
+-		}
++	if (bAntDiversity)	/*	Enable Antenna Diversity. */
++		ant_diversity_offset = 0x80;
++
++	if (DefaultAnt == 1) { /* aux Antenna */
++		/* Mac register, aux antenna */
++		write_nic_byte(dev, ANTSEL, 0x00);
++
++		/* Config CCK RX antenna. */
++		write_phy_cck(dev, 0x11, 0xbb); /* Reg11 : bb */
++		write_phy_cck(dev, 0x01, 0x47|ant_diversity_offset); /* Reg01 : 47 | ant_diversity_offset */
++
++		/* Config OFDM RX antenna. */
++		write_phy_ofdm(dev, 0x0D, 0x54);	/* Reg0d : 54 */
++		write_phy_ofdm(dev, 0x18, 0x32|ant_diversity_offset);	/* Reg18 : 32 */
++	} else { /* main Antenna */
++		/* Mac register, main antenna */
++		write_nic_byte(dev, ANTSEL, 0x03);
++
++		/* Config CCK RX antenna.	*/
++		write_phy_cck(dev, 0x11, 0x9b); /* Reg11 : 9b */
++		write_phy_cck(dev, 0x01, 0x47|ant_diversity_offset); /* Reg01 : 47 */
++
++		/* Config OFDM RX antenna. */
++		write_phy_ofdm(dev, 0x0D, 0x5c); /* Reg0d : 5c */
++		write_phy_ofdm(dev, 0x18, 0x32|ant_diversity_offset); /*Reg18 : 32 */
  	}
- }
+ 	priv->CurrAntennaIndex = DefaultAnt; /* Update default settings. */
+ 	return	bAntennaSwitched;
 -- 
 1.7.8.6
 
