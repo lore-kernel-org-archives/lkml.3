@@ -1,96 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760016Ab3BMCwS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 21:52:18 -0500
-Received: from mout.gmx.net ([212.227.15.19]:55008 "EHLO mout.gmx.net"
+	id S1759692Ab3BMCyF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 21:54:05 -0500
+Received: from mout.gmx.net ([212.227.15.18]:51281 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759674Ab3BMCuV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 21:50:21 -0500
+	id S1755241Ab3BMCyD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 21:54:03 -0500
 X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1/sLTUhhlLsCWKAM33EDoa0RMZsZuFpq1o/vAErph
-	SPS1Ht2/iCVqhu
+X-Provags-ID: V01U2FsdGVkX1/1NrlAfPf1dpQT3tFifyyvF76wzv1X5Ymx0i/D1t
+	Qu2J7LKoBDMFj/
 From: Peter Huewe <peterhuewe@gmx.de>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Yunhong Jiang <yunhong.jiang@intel.com>,
-        Sheng Yang <sheng@linux.intel.com>,
-        "Mike A. Chan" <mikechan@google.com>,
-        Xiaohui Xin <xiaohui.xin@intel.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH 3/9] staging/rtl8187se: Remove code without effect
-Date: Wed, 13 Feb 2013 03:54:28 +0100
-Message-Id: <1360724074-2445-3-git-send-email-peterhuewe@gmx.de>
+Cc: Peter Huewe <peterhuewe@gmx.de>, Andrew Miller <amiller@amilx.com>,
+        Maxim Mikityanskiy <maxtram95@gmail.com>,
+        YAMANE Toshiaki <yamanetoshi@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/9] staging/rtl8187se: Remove code without effect
+Date: Wed, 13 Feb 2013 03:58:14 +0100
+Message-Id: <1360724302-2794-1-git-send-email-peterhuewe@gmx.de>
 X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1360724074-2445-1-git-send-email-peterhuewe@gmx.de>
-References: <1360724074-2445-1-git-send-email-peterhuewe@gmx.de>
 X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The local variable AcParam is only assigned to but not read/used
-afterwards, thus it and all related code can be removed.
-
-The bFollowLegacySetting variable and check can also be removed as it is
-always true.
+Local variable AcmCtrl is never read/used after assignment so we can remove
+all assignments to it and the related code around the assignments.
 
 Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 ---
- drivers/staging/rtl8187se/r8185b_init.c |   35 +-----------------------------
- 1 files changed, 2 insertions(+), 33 deletions(-)
+ drivers/staging/rtl8187se/r8185b_init.c |   49 +------------------------------
+ 1 files changed, 1 insertions(+), 48 deletions(-)
 
 diff --git a/drivers/staging/rtl8187se/r8185b_init.c b/drivers/staging/rtl8187se/r8185b_init.c
-index 5495d1e..4aca954 100644
+index f1db9e4..41419f0 100644
 --- a/drivers/staging/rtl8187se/r8185b_init.c
 +++ b/drivers/staging/rtl8187se/r8185b_init.c
-@@ -869,8 +869,6 @@ void ActUpdateChannelAccessSetting(struct net_device *dev,
- 	struct		r8180_priv *priv = ieee80211_priv(dev);
- 	struct		ieee80211_device *ieee = priv->ieee80211;
- 	AC_CODING	eACI;
--	AC_PARAM	AcParam;
--	u8		bFollowLegacySetting = 0;
- 	u8		u1bAIFS;
+@@ -964,54 +964,7 @@ void ActUpdateChannelAccessSetting(struct net_device *dev,
+ 					break;
+ 				}
  
- 	/*
-@@ -899,37 +897,8 @@ void ActUpdateChannelAccessSetting(struct net_device *dev,
- 
- 	write_nic_byte(dev, AckTimeOutReg, 0x5B); /* <RJ_EXPR_QOS> Suggested by wcchu, it is the default value of EIFS register, 2005.12.08. */
- 
--	{ /* Legacy 802.11. */
--		bFollowLegacySetting = 1;
+-				/* Cehck ACM bit. */
+-				/* If it is set, immediately set ACM control bit to downgrading AC for passing WMM testplan. Annie, 2005-12-13.	*/
+-				{
+-					PACI_AIFSN	pAciAifsn = (PACI_AIFSN)(&pAcParam->f.AciAifsn);
+-					AC_CODING	eACI = pAciAifsn->f.ACI;
 -
--	}
+-					/*for 8187B AsynIORead issue */
+-					u8	AcmCtrl = 0;
+-					if (pAciAifsn->f.ACM) {
+-						/* ACM bit is 1. */
+-						switch (eACI) {
+-						case AC0_BE:
+-							AcmCtrl |= (BEQ_ACM_EN|BEQ_ACM_CTL|ACM_HW_EN); /* or 0x21 */
+-							break;
 -
--	/* this setting is copied from rtl8187B.  xiong-2006-11-13 */
--	if (bFollowLegacySetting) {
+-						case AC2_VI:
+-							AcmCtrl |= (VIQ_ACM_EN|VIQ_ACM_CTL|ACM_HW_EN); /* or 0x42 */
+-							break;
 -
--		/*
--		 *	Follow 802.11 seeting to AC parameter, all AC shall use the same parameter.
--		 *	2005.12.01, by rcnjko.
--		 */
--		AcParam.longData = 0;
--		AcParam.f.AciAifsn.f.AIFSN = 2; /* Follow 802.11 DIFS.	*/
--		AcParam.f.AciAifsn.f.ACM = 0;
--		AcParam.f.Ecw.f.ECWmin = ChnlAccessSetting->CWminIndex; /* Follow 802.11 CWmin. */
--		AcParam.f.Ecw.f.ECWmax = ChnlAccessSetting->CWmaxIndex; /* Follow 802.11 CWmax. */
--		AcParam.f.TXOPLimit = 0;
+-						case AC3_VO:
+-							AcmCtrl |= (VOQ_ACM_EN|VOQ_ACM_CTL|ACM_HW_EN); /* or 0x84 */
+-							break;
 -
--		/* lzm reserved 080826 */
--		/* For turbo mode setting. port from 87B by Isaiah 2008-08-01 */
--		if (ieee->current_network.Turbo_Enable == 1)
--			AcParam.f.TXOPLimit = 0x01FF;
--		/* For 87SE with Intel 4965  Ad-Hoc mode have poor throughput (19MB) */
--		if (ieee->iw_mode == IW_MODE_ADHOC)
--			AcParam.f.TXOPLimit = 0x0020;
+-						default:
+-							DMESGW("SetHwReg8185(): [HW_VAR_ACM_CTRL] ACM set failed: eACI is %d\n", eACI);
+-							break;
+-						}
+-					} else {
+-						/* ACM bit is 0. */
+-						switch (eACI) {
+-						case AC0_BE:
+-							AcmCtrl &= ((~BEQ_ACM_EN) & (~BEQ_ACM_CTL) & (~ACM_HW_EN)); /* and 0xDE */
+-							break;
 -
--		for (eACI = 0; eACI < AC_MAX; eACI++) {
--			AcParam.f.AciAifsn.f.ACI = (u8)eACI;
--			write_nic_byte(dev, ACM_CONTROL, 0);
--		}
-+	for (eACI = 0; eACI < AC_MAX; eACI++) {
-+		write_nic_byte(dev, ACM_CONTROL, 0);
+-						case AC2_VI:
+-							AcmCtrl &= ((~VIQ_ACM_EN) & (~VIQ_ACM_CTL) & (~ACM_HW_EN)); /* and 0xBD */
+-							break;
+-
+-						case AC3_VO:
+-							AcmCtrl &= ((~VOQ_ACM_EN) & (~VOQ_ACM_CTL) & (~ACM_HW_EN)); /* and 0x7B */
+-							break;
+-
+-						default:
+-							break;
+-						}
+-					}
+-					write_nic_byte(dev, ACM_CONTROL, 0);
+-				}
++				write_nic_byte(dev, ACM_CONTROL, 0);
+ 			}
+ 		}
  	}
- }
- 
 -- 
 1.7.8.6
 
