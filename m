@@ -1,134 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965060Ab3BMWWA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 17:22:00 -0500
-Received: from mail.windriver.com ([147.11.1.11]:48398 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964934Ab3BMWV7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 17:21:59 -0500
-Date: Wed, 13 Feb 2013 17:22:22 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Ondrej Zary <linux@rainbow-software.org>
-CC: Jens Axboe <axboe@kernel.dk>, <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [GIT PULL] removal of 1980s PC-XT MFM 8bit ISA disk driver
-Message-ID: <20130213222221.GA11235@windriver.com>
-References: <20130213200432.GA11018@windriver.com>
- <201302132154.38477.linux@rainbow-software.org>
+	id S965124Ab3BMWWP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 17:22:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57721 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965072Ab3BMWWL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 17:22:11 -0500
+Message-ID: <511C1204.9040608@redhat.com>
+Date: Wed, 13 Feb 2013 17:21:56 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <201302132154.38477.linux@rainbow-software.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, rostedt@goodmiss.org,
+        aquini@redhat.com, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Michel Lespinasse <walken@google.com>,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:core/locking] x86/smp: Move waiting on contended ticket
+ lock out of line
+References: <20130206150403.006e5294@cuia.bos.redhat.com> <tip-4aef331850b637169ff036ed231f0d236874f310@git.kernel.org> <CA+55aFx6N6SaRN+w=CTXJ=ZSsOE6KeS2R9sT_uhAx9h2j+hjKg@mail.gmail.com> <511BE4A3.8050607@redhat.com> <CA+55aFycMB7OZGQ54ueQ74C42beDBSdQE_fKJDV=TbjTjr_emg@mail.gmail.com>
+In-Reply-To: <CA+55aFycMB7OZGQ54ueQ74C42beDBSdQE_fKJDV=TbjTjr_emg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Re: [GIT PULL] removal of 1980s PC-XT MFM 8bit ISA disk driver] On 13/02/2013 (Wed 21:54) Ondrej Zary wrote:
+On 02/13/2013 02:36 PM, Linus Torvalds wrote:
+> On Wed, Feb 13, 2013 at 11:08 AM, Rik van Riel <riel@redhat.com> wrote:
+>> The spinlock backoff code prevents these last cases from
+>> experiencing large performance regressions when the hardware
+>> is upgraded.
+>
+> I still want *numbers*.
+>
+> There are real cases where backoff does exactly the reverse, and makes
+> things much much worse. The tuning of the backoff delays are often
+> *very* hardware sensitive, and upgrading hardware can turn out to do
+> exactly what you say - but for the backoff, not the regular spinning
+> code.
 
-> On Wednesday 13 February 2013 21:04:32 Paul Gortmaker wrote:
-> > Jens,
-> >
-> > Please pull the following to get the removal of the original IBM PC-XT
-> > hard disk driver from the block layer (drivers/block/xd.c).
-> >
-> > As near as I can tell, it hasn't seen a run time fix in over a dozen
-> > years, and with drive sizes of 10-20MB, and performance of about 128kB/s
-> > maximum, it is no surprise that it has been completely unused for well
-> > over a decade.
-> 
-> It was fixed just yesterday by Linus Walleij: 
-> http://lkml.org/lkml/2013/2/12/541
+What kind of numbers would you like?
 
-Ondrej,
+Numbers showing that the common case is not affected by this
+code?
 
-Since you consistently try to interject into these cleanups and never
-address the logical points of reason given, let me repeat them once
-more, in the hope that you will read and consider their merit.
+Or numbers showing that performance of something is improved
+with this code?
 
-But before doing that though, lets look at this rather contrived "fix"
-that coincidentally happened to appear after the deletion was suggested.
+Of course, the latter would point out a scalability issue,
+that may be fixable by changing the data structures and code
+involved :)
 
-1) it claims the following: "...the fact that it was in the kernel tree
-SAVED MY DATA." [caps exactly as in original].  This is patently false,
-as any kernel from 2.0, 2.2, 2.4, 2.6, 3.x would have done the job.  In
-fact, using an older kernel would have better odds of success, based on
-simple bitrot rules and the bathtub curve.  The above hype tries to FUD
-people into thinking drivers permanently "disappear" just because they
-get removed from master on mainline - totally untrue.
+> And we have hardware that actually autodetects some cacheline bouncing
+> patterns and may actually do a better job than software. It's *hard*
+> for software to know whether it's bouncing within the L1 cache between
+> threads, or across fabric in a large machine.
 
-2) it "works" but only after you are required to physically pry parts
-off of the hardware, and yet this is considered reasonable?
+If we have just a few CPUs bouncing the cache line around, we
+have no real performance issues and the loop with cpu_relax
+seems to be doing fine.
 
-3) we are asked to believe that it is completely reasonable to require
-this to be in the bleeding edge tree, yet at the same time, the platform
-needed to achieve is is chosen as a Pentium-MMX -- i.e. a system from 1996
-running at ~200MHz -- as far from bleeding edge as physically possible.
+Real issues arise when we have a larger number of CPUs contending
+on the same lock. At that point we know we are no longer bouncing
+between sibling cores.
 
-4) the "fix" adds a udelay after each outb (vs simply redefining outb,
-I might add) -- which only proves that this has been unused for a long
-time -- i.e. since the whole SLOW_DOWN_IO/outb/0x80 cleanup.
+>> As a car analogy, think of this not as an accelerator, but
+>> as an airbag. Spinlock backoff (or other scalable locking
+>> code) exists to keep things from going horribly wrong when
+>> we hit a scalability wall.
+>>
+>> Does that make more sense?
+>
+> Not without tons of numbers from many different platforms, it doesn't.
 
-But in the end, those points are not as important as what is below.
-These general justification points you can find in the pending 3.9
-commit 930d52c012b8e69ea87efd7562ded977ee9c9df9 (via the net-next tree).
-I hope you can consider these points with an open mind.
+That makes sense, especially if you are looking to make sure these
+patches do not introduce regressions.
 
-Thanks,
-Paul.
+> And not without explaining which spinlock it is that is so contended
+> in the first place.
 
- -------
-    Allow me a preemptive justification against the inevitable comments from
-    well meaning bystanders who suggest "why not just leave all this alone?".
-    Dead drivers cost us all if they are left in tree.  If you think that
-    is false, then please first consider:
-    
-    -every time you type "git status", you are checking to see if modifications
-     have been made by you to all that dead code.
-    
-    -every time you type "git grep <regex>" you are searching through files
-     which contain that dead code that simply does not interest you.
-    
-    -every time you build a "allyesconfig" and an "allmodconfig" (don't tell
-     me you skip this step before submitting your changes to a maintainer),
-     you waste CPU cycles building this dead code.
-    
-    -every time there is a tree wide API change, or cleanup, or file relocation,
-     we pay the cost of updating dead code, or moving dead code.
-    
-    -daily regression tests (take linux-next as the most transparent
-     example) spend time building (and possibly running) this dead code.
-    
-    -hard working people who regularly run auditing tools looking for lurking
-     bugs (sparse/coverity/smatch/coccinelle) are wasting time checking for,
-     and fixing bugs in this dead code.
-    
-    This last one is key.  Please take a look at the git history for the
-    files that are proposed for removal here.  Look at the git history for
-    any one of them ("git whatchanged --follow drivers/net/.../driver.c")
-    Mentally sort the changes into two bins -- (1) the robotic tree-wide
-    changes, and (2) the "look I found a real run-time bug while using this"
-    category.  You will see that category #2 is essentially empty.
-    
-    Further to that, realize that drivers don't simply disappear.  We are
-    not operating in the binary-only distribution space like other OS.  All
-    these drivers remain in the git history forever.  If a person is an
-    enthusiast for extreme legacy hardware, they are probably already
-    customizing their kernel source and building it themselves to support
-    such systems.  Also keep in mind that they could still build the 3.8
-    kernel exactly as-is, and run it (or a 3.8.x stable variant of it) for
-    several more years if they were really determined to cling to these old
-    experimental ISA drivers for some reason.
-    
-    In summary, I hope that folks can be pragmatic about this, and not
-    get swept up in nostalgia.  Ask yourself whether it is realistic to
-    expect a person would have a genuine use case where they would
-    need to build a 3.9+ modern kernel and install it on some legacy hardware
-    that has no option but to absolutely _require_ one of the drivers
-    that are deleted here.
- -------
+This patch series is not as much for the spinlocks we know about
+(we can probably fix those), but to prevent catastrophic
+performance degradation when users run into contention on spinlocks
+we do NOT know about.
 
-> 
-> -- 
-> Ondrej Zary
+> So I claim:
+>
+>   - it's *really* hard to trigger in real loads on common hardware.
+
+This is definitely true.  However, with many millions of Linux
+users out there, there will always be users who encounter a
+performance problem, upgrade their hardware, and then run into
+an even worse performance problem because they run into a
+scalability issue.
+
+The object of these patches is to go from:
+
+"We doubled the number of CPUs, and now things go even slower.", to
+
+"We doubled the number of CPUs, but things aren't going any faster."
+
+The first is a real disaster for Linux users. Especially when the
+workload consists of multiple things, some of which run faster on
+the upgraded hardware, and others which run slower. What makes it
+worse is that these kinds of issues always seem to happen on the
+users' most expensive servers, running their most important
+workloads...
+
+The second case is something users can temporarily tolerate, while
+we fix the underlying issue.
+
+>   - if it does trigger in any half-way reasonably common setup
+> (hardware/software), we most likely should work really hard at fixing
+> the underlying problem, not the symptoms.
+
+Agreed.
+
+>   - we absolutely should *not* pessimize the common case for this
+
+Agreed. Are there any preferred benchmarks you would absolutely like
+to see, to show that these patches do not introduce regressions?
+
+> Hurting the 99.99% even a tiny amount should be something we should
+> never ever do. This is why I think the fast case is so important (and
+> I had another email about possibly making it acceptable), but I think
+> the *slow* case should be looked at a lot too. Because "back-off" is
+> absolutely *not* necessarily hugely better than plain spinning, and it
+> needs numbers. How many times do you spin before even looking at
+> back-off? How much do you back off?
+
+Whether or not we go into back-off at all depends on a number
+of factors, including how many waiters there are ahead of us
+waiting for the same ticket spinlock, and whether we have spun
+a lot of time on this lock in the past.
+
+> Btw, the "notice busy loops and turn it into mwait" is not some
+> theoretical magic thing. And it's exactly the kind of thing that
+> back-off *breaks* by making the loop too complex for hardware to
+> understand. Even just adding counters with conditionals that are *not*
+> about just he value loaded from memory suddently means that hardware
+> has a lot harder time doing things like that.
+
+> I don't know if you perhaps had some future plans of looking at using
+> mwait in the backoff code itself,
+
+I looked at mwait, but the documentation suggests it only ever
+works at cache line granularity (or larger). That means every
+time another CPU adds itself to the queue for the ticket lock,
+or every time the lock holder writes to something else in the
+cache line the lock is in, mwait'ing cpus get woken up.
+
+It looks like mwait is designed for the case of a lock being
+on its own cache line, with nothing else. However, Linux does
+not seem to have many of those locks left, and the contention
+issues I see the most seem to involve locks embedded in data
+structures, sharing the cache line with data that the lock
+holder modifies.
+
+In fact, it looks like going to mwait has the potential to
+increase, rather than decrease, memory traffic.
+
+> but the patch I did see looked like
+> it might be absolutely horrible. How long does a "cpu_relax()" wait?
+> Do you know? How does "cpu_relax()" interface with the rest of the
+> CPU? Do you know? Because I've heard noises about cpu_relax() actually
+> affecting the memory pipe behavior of cache accesses of the CPU, and
+> thus the "cpu_relax()" in a busy loop that does *not* look at the
+> value (your "backoff delay loop") may actually work very very
+> differently from the cpu_relax() in the actual "wait for the value to
+> change" loop.
+>
+> And how does that account for two different microarchitectures doing
+> totally different things? Maybe one uarch makes cpu_relax() just shut
+> down the front-end for a while, while another does something much
+> fancier and gives hints to in-flight memory accesses etc?
+
+You summed up all the reasons for doing auto-tuning, aggressively
+collapsing the back-off if we overslept, and starting out from 1
+if we do not find a cached value.
+
+> When do you start doing mwait vs just busy-looping with cpu_relax? How
+> do you tune it to do the right thing for different architectures?
+
+Mwait seems like the wrong thing to do, because the spinlocks where
+we tend to see contention, tend to be the ones embedded in data
+structures, with other things sharing the same cache line.
+
+> So I think this is complex. At many different levels. And it's *all*
+> about the details. No handwaving about how "back-off is like a air
+> bag". Because the big picture is entirely and totally irrelevant, when
+> the details are almost all that actually matter.
+
+The details can vary a lot from CPU to CPU. I would argue that we
+need code that does not break down, regardless of those details.
+
+I agree that the code could use more regression testing, and will
+get you test results. Please let me know if there are any particular
+scenarios you would like to see tested.
+
+That will also let us determine whether or not the call overhead (in
+case we are waiting for a contended lock anyway) is an issue that
+needs fixing.
+
+-- 
+All rights reversed
