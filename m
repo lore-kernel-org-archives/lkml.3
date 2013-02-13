@@ -1,41 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760372Ab3BMRf7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 12:35:59 -0500
-Received: from mail.avalus.com ([89.16.176.221]:49233 "EHLO mail.avalus.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759980Ab3BMRf6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 12:35:58 -0500
-Subject: Re: [PATCH 1/3] nbd: support FLUSH requests
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: Alex Bligh <alex@alex.org.uk>
-In-Reply-To: <511BB902.3080302@redhat.com>
-Date: Wed, 13 Feb 2013 17:35:56 +0000
-Cc: Alex Bligh <alex@alex.org.uk>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, nbd-general@lists.sf.net,
-        Paul Clements <Paul.Clements@steeleye.com>
-Content-Transfer-Encoding: 7bit
-Message-Id: <4CB78CEB-E66C-4C88-BF0D-26EECE13CAC6@alex.org.uk>
-References: <1360685171-3792-1-git-send-email-pbonzini@redhat.com> <1360685171-3792-2-git-send-email-pbonzini@redhat.com> <115932E2-48BE-406E-9E75-61D12EB5937A@alex.org.uk> <511A8491.5030407@redhat.com> <20130212133207.ef6b24f5.akpm@linux-foundation.org> <FF1216D8-C4B3-405E-A4F6-82196A796A94@alex.org.uk> <511B8E65.5020507@redhat.com> <3EDEF735-9A67-439E-BA65-089C6AAFD1BF@alex.org.uk> <511BB902.3080302@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-X-Mailer: Apple Mail (2.1085)
+	id S1760397Ab3BMRlw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 12:41:52 -0500
+Received: from www.linutronix.de ([62.245.132.108]:60477 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759980Ab3BMRlu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 12:41:50 -0500
+Date: Wed, 13 Feb 2013 18:41:48 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
+        Carsten Emde <C.Emde@osadl.org>
+Subject: Re: [PREEMPT RT] SLUB and split softirq lock for v3.2-rt
+In-Reply-To: <1360776274.23152.7.camel@gandalf.local.home>
+Message-ID: <alpine.LFD.2.02.1302131841340.22263@ionos>
+References: <1360771932-27150-1-git-send-email-bigeasy@linutronix.de> <1360776274.23152.7.camel@gandalf.local.home>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 13 Feb 2013, Steven Rostedt wrote:
 
-On 13 Feb 2013, at 16:02, Paolo Bonzini wrote:
+> On Wed, 2013-02-13 at 17:11 +0100, Sebastian Andrzej Siewior wrote:
+> > 3.2-rt is a long term supported kernel, which lacks two RT features
+> > from 3.6: SLUB support and the split softirq lock implementation.
+> > 
+> > SLUB has a way better performance than SLAB on RT and the split
+> > softirq lock implementation is necessary especially for realtime
+> > networking applications.
+> > 
+> > The following patch series backports these features to 3.2-rt.
+> > 
+> > Steven, could you please apply these patches to a separate
+> > 3.2-rt-features branch?
+> 
+> Is it possible to separate these two features into two different patch
+> sets. I would like to apply the softirq changes first, and then apply
+> the slub changes.
+> 
+> Although it looks as though the first half is softirq only 1-8, and the
+> second half is slub related 9-16. If that's the case, I'll just pull in
+> 1-8 first, play with them, and then do 9-16.
 
-> If you do not have REQ_FUA, as is the case with this patch, the block
-> layer converts it to a REQ_FLUSH *after* the write.
-
-OK. Well +/- it converting an fdatasync() into a full fsync(), that
-should be be ok.
-
--- 
-Alex Bligh
-
-
-
-
+That's correct.
