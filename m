@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965333Ab3BMXYI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 18:24:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64771 "EHLO mx1.redhat.com"
+	id S1761240Ab3BMXYp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 18:24:45 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45947 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752462Ab3BMXYG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 18:24:06 -0500
-From: Peter Jones <pjones@redhat.com>
-To: Matt Fleming <matt.fleming@intel.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Warren <swarren@nvidia.com>, Peter Jones <pjones@redhat.com>
-Subject: [PATCH] Ensure that the GPT header is at least the size of the structure.
-Date: Wed, 13 Feb 2013 18:09:50 -0500
-Message-Id: <1360796990-14148-1-git-send-email-pjones@redhat.com>
+	id S1752462Ab3BMXYo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 18:24:44 -0500
+Message-ID: <511C207E.9030008@zytor.com>
+Date: Wed, 13 Feb 2013 15:23:42 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>
+CC: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>
+Subject: Re: [RFC PATCH 1/4] x86, cpu: Expand cpufeature facility to include
+ cpu bugs
+References: <1360581521-4712-1-git-send-email-bp@alien8.de> <1360581521-4712-2-git-send-email-bp@alien8.de>
+In-Reply-To: <1360581521-4712-2-git-send-email-bp@alien8.de>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-UEFI 2.3.1D will include a change to the spec language mandating that a
-GPT header must be greater than *or equal to* the size of the defined
-structure.  While verifying that this would work on Linux, I discovered
-that we're not actually checking the minimum bound at all.
+On 02/11/2013 03:18 AM, Borislav Petkov wrote:
+>  
+> +#define __BUG_CHECK_BIT(bit)					\
+> +({								\
+> +	WARN_ON(bit >> 5 < NCAPINTS);				\
+> +	bit;							\
+> +})
+> +
 
-The result of this is that when we verify the checksum, it's possible
-that on a malformed header (with header_size of 0), we won't actually
-verify any data.
+Do we need this?  Either way, if we do, I would suggest doing something
+like:
 
-Signed-off-by: Peter Jones <pjones@redhat.com>
----
- block/partitions/efi.c | 12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+	if (__builtin_constant_p(bit))
+		bad_bug_number();
 
-diff --git a/block/partitions/efi.c b/block/partitions/efi.c
-index b62fb88..5ad168c 100644
---- a/block/partitions/efi.c
-+++ b/block/partitions/efi.c
-@@ -310,15 +310,23 @@ static int is_gpt_valid(struct parsed_partitions *state, u64 lba,
- 		goto fail;
- 	}
- 
--	/* Check the GUID Partition Table header size */
-+	/* Check the GUID Partition Table header size is too big */
- 	if (le32_to_cpu((*gpt)->header_size) >
- 			bdev_logical_block_size(state->bdev)) {
--		pr_debug("GUID Partition Table Header size is wrong: %u > %u\n",
-+		pr_debug("GUID Partition Table Header size is too large: %u > %u\n",
- 			le32_to_cpu((*gpt)->header_size),
- 			bdev_logical_block_size(state->bdev));
- 		goto fail;
- 	}
- 
-+	/* Check the GUID Partition Table header size is too small */
-+	if (le32_to_cpu((*gpt)->header_size) < sizeof(gpt_header)) {
-+		pr_debug("GUID Partition Table Header size is too small: %u < %u\n",
-+			le32_to_cpu((*gpt)->header_size),
-+			sizeof(gpt_header));
-+		goto fail;
-+	}
-+
- 	/* Check the GUID Partition Table CRC */
- 	origcrc = le32_to_cpu((*gpt)->header_crc32);
- 	(*gpt)->header_crc32 = 0;
--- 
-1.8.1.2
+... and flag bad_bug_number as a compile time error, since the vast
+majority of the time the bit number will be constant.
+
+However, I don't think it is necessary.  In order for this to ever
+trigger someone must have known they were testing for a bug, and yet not
+used the X86_BUG_ macros, which seems very unlikely.
+
+>  #define X86_BUG_F00F		(NCAPINTS*32+ 0) /* Intel F00F bug */
+>  #define X86_BUG_FDIV		(NCAPINTS*32+ 1) /* FPU FDIV bug */
+> +#define X86_BUG_COMA		(NCAPINTS*32+ 2) /* Cyrix 6x86 coma */
+
+Just to make it a bit cleaner once we have more than one word of bug
+tests, I would suggest macroizing this:
+
+#define X86_BUG(x) (NCAPINTS*32 + (x))
+
+... and then just ...
+
+#define X86_BUG_F00F	X86_BUG(0)
+#define X86_BUG_FDIV	X86_BUG(1)
+
+... and so on.
+
+The only reason we *don't* do that with the features is that they tend
+to come chunkwise in the form of CPUID words.
+
+	-hpa
 
