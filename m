@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934466Ab3BMQO5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 11:14:57 -0500
-Received: from www.linutronix.de ([62.245.132.108]:59788 "EHLO
+	id S934495Ab3BMQPZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 11:15:25 -0500
+Received: from www.linutronix.de ([62.245.132.108]:59782 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934455Ab3BMQOK (ORCPT
+	with ESMTP id S934451Ab3BMQOK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 13 Feb 2013 11:14:10 -0500
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
@@ -12,9 +12,9 @@ To: Steven Rostedt <rostedt@goodmis.org>
 Cc: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
         Carsten Emde <C.Emde@osadl.org>, Thomas Gleixner <tglx@linutronix.de>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 07/12] net: Use local_bh_disable in netif_rx_ni()
-Date: Wed, 13 Feb 2013 17:13:46 +0100
-Message-Id: <1360772031-27186-8-git-send-email-bigeasy@linutronix.de>
+Subject: [PATCH 06/12] softirq: Fix nohz pending issue for real
+Date: Wed, 13 Feb 2013 17:13:45 +0100
+Message-Id: <1360772031-27186-7-git-send-email-bigeasy@linutronix.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1360772031-27186-1-git-send-email-bigeasy@linutronix.de>
 References: <1360772031-27186-1-git-send-email-bigeasy@linutronix.de>
@@ -27,36 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Thomas Gleixner <tglx@linutronix.de>
 
-This code triggers the new WARN in __raise_softirq_irqsoff() though it
-actually looks at the softirq pending bit and calls into the softirq
-code, but that fits not well with the context related softirq model of
-RT. It's correct on mainline though, but going through
-local_bh_disable/enable here is not going to hurt badly.
+We really need to iterate through all softirqs to find a potentially
+blocked runner.
+
+T1 runs softirq X (that cleared pending bit for X)
+
+Interrupt raises softirq Y
+
+T1 gets blocked on a lock and lock owner is not runnable
+
+T1 schedules out
+
+CPU goes idle and complains about pending softirq Y.
+
+Now iterating over all softirqs lets us find the runner for X and
+eliminate Y from the to warn about list as well.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- net/core/dev.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ kernel/softirq.c |   13 ++++---------
+ 1 file changed, 4 insertions(+), 9 deletions(-)
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 5a40075..c0a6400 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2965,11 +2965,9 @@ int netif_rx_ni(struct sk_buff *skb)
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 499329d..3f67aff 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -100,20 +100,15 @@ void softirq_check_pending_idle(void)
  {
- 	int err;
+ 	static int rate_limit;
+ 	struct softirq_runner *sr = &__get_cpu_var(softirq_runners);
+-	u32 warnpending, pending = local_softirq_pending();
++	u32 warnpending = local_softirq_pending();
++	int i;
  
--	migrate_disable();
-+	local_bh_disable();
- 	err = netif_rx(skb);
--	if (local_softirq_pending())
--		thread_do_softirq();
--	migrate_enable();
-+	local_bh_enable();
+ 	if (rate_limit >= 10)
+ 		return;
  
- 	return err;
- }
+-	warnpending = pending;
+-
+-	while (pending) {
+-		struct task_struct *tsk;
+-		int i = __ffs(pending);
+-
+-		pending &= ~(1 << i);
++	for (i = 0; i < NR_SOFTIRQS; i++) {
++		struct task_struct *tsk = sr->runner[i];
+ 
+-		tsk = sr->runner[i];
+ 		/*
+ 		 * The wakeup code in rtmutex.c wakes up the task
+ 		 * _before_ it sets pi_blocked_on to NULL under
 -- 
 1.7.10.4
 
