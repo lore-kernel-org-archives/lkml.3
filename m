@@ -1,72 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760471Ab3BMR42 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 12:56:28 -0500
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:18996
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760189Ab3BMR4Z (ORCPT
+	id S1760490Ab3BMR5p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 12:57:45 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:56451 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760393Ab3BMR5l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 12:56:25 -0500
-X-Forefront-Antispam-Report: CIP:157.56.236.101;KIP:(null);UIP:(null);IPV:NLI;H:BY2PRD0510HT004.namprd05.prod.outlook.com;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: PS1(zzbb2dI98dI9371I936eI1432Ic74nzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275dhz2fh2a8h668h839h93fhd24he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1155h)
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: Casey Schaufler <casey@schaufler-ca.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
-        Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH] x86: Lock down MSR writing in secure boot
-Thread-Topic: [PATCH] x86: Lock down MSR writing in secure boot
-Thread-Index: AQHOBjA7mQsIMlqU/k+EElzc7Yz1iZhwVXgAgAAAbACAAAawAIAACLcAgAABPICAAAKrAIAAAdKAgAAHwICAABjCAIAAChOAgAAFkwCAACBDAIAAAhCAgABYQICAAC3GgIAAX64AgAVYBQCAAFFaAIAACSmAgAAEVgCAAAGkAIAAAlCAgACyhQCAAAGlgIAABt2AgAABbYA=
-Date: Wed, 13 Feb 2013 17:56:19 +0000
-Message-ID: <1360778179.18083.42.camel@x230.lan>
-References: <dee64752-850c-4d78-b703-f47a985bc13e@email.android.com>
-	      <CAGXu5jLAufTRm=sDST0br_WEkn4o0Hpjv2jDP2Na=cCvuM+MGg@mail.gmail.com>
-	      <1360355671.18083.18.camel@x230.lan>
-	      <CAGXu5jKo2PfMBO4A0ZgQcrPuj8OHNaff+CjAesOAWkZc0vB9+Q@mail.gmail.com>
-	      <51157C9C.6030501@zytor.com> <20130208230655.GB28990@pd.tnic>
-	      <1360366012.18083.21.camel@x230.lan> <5115A4CC.3080102@zytor.com>
-	      <1360373383.18083.23.camel@x230.lan>
-	      <CAGXu5j+xvJ3L5ejxtZ-Jw3F6rV7OsrE0_HZCGu_er0rH2_PwKA@mail.gmail.com>
-	      <20130209092925.GA17728@pd.tnic> <1360422712.18083.24.camel@x230.lan>
-	     <511AE2CC.5040705@zytor.com> <1360733962.18083.30.camel@x230.lan>
-	    <511B2EB9.5070406@zytor.com> <1360736860.18083.33.camel@x230.lan>
-	   <511B33BC.9080307@zytor.com> <1360737709.18083.36.camel@x230.lan>
-	  <511BCB6E.8080102@zytor.com> <1360776399.18083.39.camel@x230.lan>
-	 <511BD291.1040003@schaufler-ca.com>
-In-Reply-To: <511BD291.1040003@schaufler-ca.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.255.84.4]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <8CF6D62F07333E4CA65E009AE2BDD1E6@namprd05.prod.outlook.com>
-MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+	Wed, 13 Feb 2013 12:57:41 -0500
+From: "Eric W. Biederman" <ebiederm@xmission.com>
+To: <linux-fsdevel@vger.kernel.org>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, "Serge E. Hallyn" <serge@hallyn.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Steven Whitehouse <swhiteho@redhat.com>
+Date: Wed, 13 Feb 2013 09:51:21 -0800
+Message-Id: <1360777934-5663-32-git-send-email-ebiederm@xmission.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1360777934-5663-1-git-send-email-ebiederm@xmission.com>
+References: <87621w14vs.fsf@xmission.com>
+ <1360777934-5663-1-git-send-email-ebiederm@xmission.com>
+X-XM-AID: U2FsdGVkX188RCjzQ/lRL17juSYabuBDvaN6ipdCWRE=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
+	*      [score: 0.0520]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 FVGT_m_MULTI_ODD Contains multiple odd letter combinations
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;<linux-fsdevel@vger.kernel.org>
+X-Spam-Relay-Country: 
+Subject: [PATCH review 32/85] gfs2: Modify qdsb_get to take a struct kqid
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1DHuU4q031899
 
-On Wed, 2013-02-13 at 09:51 -0800, Casey Schaufler wrote:
-> On 2/13/2013 9:26 AM, Matthew Garrett wrote:
-> > Admit that CAP_SYS_RAWIO is fucked up beyond rescue. Add a new
-> > capability with well-defined semantics.
-> 
-> You can't add a new capability where there is an existing capability
-> that can be remotely argued to be appropriate.
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-CAP_SYS_RAWIO can't be argued to be appropriate. It covers a range of
-functionality that doesn't permit the running kernel to be modified and
-which is required to provide a functional Linux system. Using it would
-require redefining its existing usage, which would break existing
-userspace.
+Cc: Steven Whitehouse <swhiteho@redhat.com>
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+---
+ fs/gfs2/quota.c |   13 +++++++------
+ 1 files changed, 7 insertions(+), 6 deletions(-)
 
+diff --git a/fs/gfs2/quota.c b/fs/gfs2/quota.c
+index 02913e9..20762ae 100644
+--- a/fs/gfs2/quota.c
++++ b/fs/gfs2/quota.c
+@@ -464,12 +464,13 @@ static void qd_unlock(struct gfs2_quota_data *qd)
+ 	qd_put(qd);
+ }
+ 
+-static int qdsb_get(struct gfs2_sbd *sdp, int user, u32 id,
++static int qdsb_get(struct gfs2_sbd *sdp, struct kqid qid,
+ 		    struct gfs2_quota_data **qdp)
+ {
+ 	int error;
+ 
+-	error = qd_get(sdp, user, id, qdp);
++	error = qd_get(sdp, qid.type == USRQUOTA ? QUOTA_USER : QUOTA_GROUP,
++		       from_kqid(&init_user_ns, qid), qdp);
+ 	if (error)
+ 		return error;
+ 
+@@ -518,20 +519,20 @@ int gfs2_quota_hold(struct gfs2_inode *ip, u32 uid, u32 gid)
+ 	if (sdp->sd_args.ar_quota == GFS2_QUOTA_OFF)
+ 		return 0;
+ 
+-	error = qdsb_get(sdp, QUOTA_USER, ip->i_inode.i_uid, qd);
++	error = qdsb_get(sdp, make_kqid_uid(ip->i_inode.i_uid), qd);
+ 	if (error)
+ 		goto out;
+ 	ip->i_res->rs_qa_qd_num++;
+ 	qd++;
+ 
+-	error = qdsb_get(sdp, QUOTA_GROUP, ip->i_inode.i_gid, qd);
++	error = qdsb_get(sdp, make_kqid_gid(ip->i_inode.i_gid), qd);
+ 	if (error)
+ 		goto out;
+ 	ip->i_res->rs_qa_qd_num++;
+ 	qd++;
+ 
+ 	if (uid != NO_UID_QUOTA_CHANGE && uid != ip->i_inode.i_uid) {
+-		error = qdsb_get(sdp, QUOTA_USER, uid, qd);
++		error = qdsb_get(sdp, make_kqid_uid(uid), qd);
+ 		if (error)
+ 			goto out;
+ 		ip->i_res->rs_qa_qd_num++;
+@@ -539,7 +540,7 @@ int gfs2_quota_hold(struct gfs2_inode *ip, u32 uid, u32 gid)
+ 	}
+ 
+ 	if (gid != NO_GID_QUOTA_CHANGE && gid != ip->i_inode.i_gid) {
+-		error = qdsb_get(sdp, QUOTA_GROUP, gid, qd);
++		error = qdsb_get(sdp, make_kqid_gid(gid), qd);
+ 		if (error)
+ 			goto out;
+ 		ip->i_res->rs_qa_qd_num++;
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+1.7.5.4
+
