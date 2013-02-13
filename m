@@ -1,98 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964821Ab3BMRdQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 12:33:16 -0500
-Received: from mail-vb0-f54.google.com ([209.85.212.54]:46576 "EHLO
-	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760180Ab3BMRdO (ORCPT
+	id S1760363Ab3BMRdg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 12:33:36 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:49311 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760180Ab3BMRde convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 12:33:14 -0500
+	Wed, 13 Feb 2013 12:33:34 -0500
+Date: Wed, 13 Feb 2013 12:33:12 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Roger Pau Monne <roger.pau@citrix.com>
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xen.org
+Subject: Re: [PATCH] xen-blkfront: drop the use of llist_for_each_entry_safe
+Message-ID: <20130213173312.GA20866@phenom.dumpdata.com>
+References: <1360599058-1567-1-git-send-email-roger.pau@citrix.com>
 MIME-Version: 1.0
-In-Reply-To: <1360763044.3524.367.camel@falcor1.watson.ibm.com>
-References: <1360613493-11969-1-git-send-email-vgoyal@redhat.com>
-	<1360613493-11969-3-git-send-email-vgoyal@redhat.com>
-	<CALLzPKZA92MxJYjC+OR-KDv4rHQRgKSBHSAY2fOZsEDxiO11yA@mail.gmail.com>
-	<1360760195.3524.355.camel@falcor1.watson.ibm.com>
-	<CALLzPKaHLSg0TromnTvpEVroBUtPJE3TwF4RmcA2dtkuB5H4hQ@mail.gmail.com>
-	<1360763044.3524.367.camel@falcor1.watson.ibm.com>
-Date: Wed, 13 Feb 2013 19:33:13 +0200
-Message-ID: <CALLzPKbdrvsPuH9t19rvQqGZ=0+abPuWPNke4FLsadj0ORieJg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] ima: Support appraise_type=imasig_optional
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1360599058-1567-1-git-send-email-roger.pau@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 13, 2013 at 3:44 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> On Wed, 2013-02-13 at 15:13 +0200, Kasatkin, Dmitry wrote:
->> On Wed, Feb 13, 2013 at 2:56 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
->> > On Wed, 2013-02-13 at 14:31 +0200, Kasatkin, Dmitry wrote:
->> >> On Mon, Feb 11, 2013 at 10:11 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
->> >
->> >> > @@ -158,7 +165,8 @@ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
->> >> >         }
->> >> >         switch (xattr_value->type) {
->> >> >         case IMA_XATTR_DIGEST:
->> >> > -               if (iint->flags & IMA_DIGSIG_REQUIRED) {
->> >> > +               if (iint->flags & IMA_DIGSIG_REQUIRED ||
->> >> > +                   iint->flags & IMA_DIGSIG_OPTIONAL) {
->> >> >                         cause = "IMA signature required";
->> >> >                         status = INTEGRITY_FAIL;
->> >> >                         break;
->> >>
->> >> This looks a bit odd... If "optional" signature is missing  - we fail..
->> >> It is optional... Why we should fail?
->> >
->> > 'imasig_optional' does not only mean that the signature is optional, but
->> > also implies that it has to be a digital signature, not a hash.  This
->> > latter part is what IMA_DIGSIG_REQUIRED means.
->> >
->> > If 'imasig_optional' set both 'IMA_DIGSIG_OPTIONAL' and
->> > 'IMA_DIGSIG_REQUIRED', then this change wouldn't be necessary.
->> >
->> > IMA_DIGSIG_REQUIRED would enforce that it is a signature.
->> > IMA_DIGSIG_OPTIONAL would fail only for files with invalid signatures.
->> >
->>
->> It sounds odd that optional signature is actually required.
->> Optional for me means that it may be there or may be not.
->> If it is not there, then it may be hash or nothing.
->>
->> I see it is more logical if it is "appraise_type=optional",
->> which means that we might have no xattr value, hash or signature.
->> It if happens to be a signature, then IMA_DIGSIG flag will be set.
->
-> Right, 'appraise_type=' could have been defined either as a comma
-> separated list of options (eg. appraise_type=imassig,optional) or, as
-> Vivek implemented, a new option.  Eventually, we will need to extend
-> 'appraise_type=' (eg. required algorithm), but for now I don't have a
-> problem with the new option.
->
+On Mon, Feb 11, 2013 at 05:10:58PM +0100, Roger Pau Monne wrote:
+> Replace llist_for_each_entry_safe with a while loop and
+> llist_del_first.
+> 
+> llist_for_each_entry_safe can trigger a bug in GCC 4.1, so it's best
+> to remove it and use a while loop and llist_del_first (which is
+> already in llist.h).
 
-It is not exactly what I meant. IOW, I do not want
-appraise_type=imasig,optional.
+I spruced this up a bit:
 
-Optional for me is that xattr value is optional. It might be nothing,
-hash or imasig...
+commit f73be4e09510cda1457ab96abf356e664ba96d4a
+Author: Roger Pau Monne <roger.pau@citrix.com>
+Date:   Mon Feb 11 17:10:58 2013 +0100
 
-If it would happen that it contains signature, then IMA_DIGSIG flag
-would be set,
-and process could get needed capability as Vivek wants.
+    xen-blkfront: drop the use of llist_for_each_entry_safe
+    
+    Replace llist_for_each_entry_safe with a while loop and
+    llist_del_first.
+    
+    llist_for_each_entry_safe can trigger a bug in GCC 4.1, so it's best
+    to remove it and use a while loop and llist_del_first (which is
+    already in llist.h).
+    
+    Specifically this bug can be triggered by hot-unplugging a disk, either
+    by doing xm block-detach or by save/restore cycle.
+    
+    BUG: unable to handle kernel paging request at fffffffffffffff0
+    IP: [<ffffffffa0047223>] blkif_free+0x63/0x130 [xen_blkfront]
+    The crash call trace is:
+    	...
+    bad_area_nosemaphore+0x13/0x20
+    do_page_fault+0x25e/0x4b0
+    page_fault+0x25/0x30
+    ? blkif_free+0x63/0x130 [xen_blkfront]
+    blkfront_resume+0x46/0xa0 [xen_blkfront]
+    xenbus_dev_resume+0x6c/0x140
+    pm_op+0x192/0x1b0
+    device_resume+0x82/0x1e0
+    dpm_resume+0xc9/0x1a0
+    dpm_resume_end+0x15/0x30
+    do_suspend+0x117/0x1e0
+    
+    When drilling down to the assembler code, on newer GCC it does
+    .L29:
+            cmpq    $-16, %r12      #, persistent_gnt check
+            je      .L30    	#, out of the loop
+    .L25:
+    	... code in the loop
+            testq   %r13, %r13      # n
+            je      .L29    	#, back to the top of the loop
+            cmpq    $-16, %r12      #, persistent_gnt check
+            movq    16(%r12), %r13  # <variable>.node.next, n
+            jne     .L25    	#,	back to the top of the loop
+    .L30:
+    
+    While on GCC 4.1, it is:
+    L78:
+    	... code in the loop
+    	testq   %r13, %r13      # n
+            je      .L78    #,	back to the top of the loop
+            movq    16(%rbx), %r13  # <variable>.node.next, n
+            jmp     .L78    #,	back to the top of the loop
+    
+    Which basically means that the exit loop condition instead of
+    being:
+    
+    	&(pos)->member != NULL;
+    
+    is:
+    	;
+    
+    which makes the loop unbound.
+    
+    Since xen-blkfront is the only user of the llist_for_each_entry_safe
+    macro remove it from llist.h.
+    
+    Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
+    Reported-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+    Cc: xen-devel@lists.xen.org
+    [v1: Spruced the description]
+    Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-- Dmitry
-
-
-> thanks,
->
-> Mimi
->
->> I asked Vivek to send a policy file he uses in his system.
->> I would like to see how system configured as a whole...
->>
->> - Dmitry
->
->
+diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+index 11043c1..c325062 100644
+--- a/drivers/block/xen-blkfront.c
++++ b/drivers/block/xen-blkfront.c
+@@ -790,7 +790,6 @@ static void blkif_restart_queue(struct work_struct *work)
+ 
+ static void blkif_free(struct blkfront_info *info, int suspend)
+ {
+-	struct llist_node *all_gnts;
+ 	struct grant *persistent_gnt;
+ 	struct llist_node *n;
+ 
+@@ -804,8 +803,8 @@ static void blkif_free(struct blkfront_info *info, int suspend)
+ 
+ 	/* Remove all persistent grants */
+ 	if (info->persistent_gnts_c) {
+-		all_gnts = llist_del_all(&info->persistent_gnts);
+-		llist_for_each_entry_safe(persistent_gnt, n, all_gnts, node) {
++		while ((n = llist_del_first(&info->persistent_gnts)) != NULL) {
++			persistent_gnt = llist_entry(n, struct grant, node);
+ 			gnttab_end_foreign_access(persistent_gnt->gref, 0, 0UL);
+ 			__free_page(pfn_to_page(persistent_gnt->pfn));
+ 			kfree(persistent_gnt);
+diff --git a/include/linux/llist.h b/include/linux/llist.h
+index d0ab98f..a5199f6 100644
+--- a/include/linux/llist.h
++++ b/include/linux/llist.h
+@@ -125,31 +125,6 @@ static inline void init_llist_head(struct llist_head *list)
+ 	     (pos) = llist_entry((pos)->member.next, typeof(*(pos)), member))
+ 
+ /**
+- * llist_for_each_entry_safe - iterate safely against remove over some entries
+- * of lock-less list of given type.
+- * @pos:	the type * to use as a loop cursor.
+- * @n:		another type * to use as a temporary storage.
+- * @node:	the fist entry of deleted list entries.
+- * @member:	the name of the llist_node with the struct.
+- *
+- * In general, some entries of the lock-less list can be traversed
+- * safely only after being removed from list, so start with an entry
+- * instead of list head. This variant allows removal of entries
+- * as we iterate.
+- *
+- * If being used on entries deleted from lock-less list directly, the
+- * traverse order is from the newest to the oldest added entry.  If
+- * you want to traverse from the oldest to the newest, you must
+- * reverse the order by yourself before traversing.
+- */
+-#define llist_for_each_entry_safe(pos, n, node, member)		\
+-	for ((pos) = llist_entry((node), typeof(*(pos)), member),	\
+-	     (n) = (pos)->member.next;					\
+-	     &(pos)->member != NULL;					\
+-	     (pos) = llist_entry(n, typeof(*(pos)), member),		\
+-	     (n) = (&(pos)->member != NULL) ? (pos)->member.next : NULL)
+-
+-/**
+  * llist_empty - tests whether a lock-less list is empty
+  * @head:	the list to test
+  *
