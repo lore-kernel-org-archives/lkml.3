@@ -1,92 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934207Ab3BMPf3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 10:35:29 -0500
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:47553 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934188Ab3BMPf0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 10:35:26 -0500
-From: Christian Gmeiner <christian.gmeiner@gmail.com>
-To: cooloney@gmail.com, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org
-Cc: Christian Gmeiner <christian.gmeiner@gmail.com>
-Subject: [PATCH] leds-ot200: Fix misbehavior caused by wrong bit masks
-Date: Wed, 13 Feb 2013 16:58:30 +0100
-Message-Id: <1360771110-9490-1-git-send-email-christian.gmeiner@gmail.com>
-X-Mailer: git-send-email 1.7.12.2.421.g261b511
+	id S934190Ab3BMPit (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 10:38:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7769 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934098Ab3BMPis (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 10:38:48 -0500
+Date: Wed, 13 Feb 2013 17:37:41 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Borislav Petkov <bp@alien8.de>, kvm@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, X86 ML <x86@kernel.org>,
+        Borislav Petkov <bp@suse.de>,
+        Boris Ostrovsky <boris.ostrovsky@amd.com>,
+        Andre Przywara <andre@andrep.de>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+Subject: Re: [PATCH] x86, kvm: Add MSR_AMD64_BU_CFG2 to the list of ignored
+ MSRs
+Message-ID: <20130213153741.GE9817@redhat.com>
+References: <1360755761-725-1-git-send-email-bp@alien8.de>
+ <20130213114747.GC9817@redhat.com>
+ <20130213115526.GA15210@pd.tnic>
+ <20130213121002.GD9817@redhat.com>
+ <20130213133549.GB15210@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130213133549.GB15210@pd.tnic>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During the development of this driver an in-house register
-documentation was used. The last weeks some integration tests
-were done and this problem was found. It turned out that
-the released register documentation is wrong.
+On Wed, Feb 13, 2013 at 02:35:49PM +0100, Borislav Petkov wrote:
+> On Wed, Feb 13, 2013 at 02:10:02PM +0200, Gleb Natapov wrote:
+> > > > Is your guest compiled without PV support? With PV Linux traps #GP for
+> > > > all MSRs and it saves us in more than one places.
+> > > 
+> > > Yes, CONFIG_PARAVIRT_GUEST is not set on the guest kernel.
+> > > 
+> > Thanks. It does not mean that the patch should not be applied though.
+> 
+> Right,
+> 
+> but, come to think of it, adding an MSR each time to those functions
+> could turn out to be a PITA. The PV solution with trapping on the MSR
+> accesses might be better so maybe CONFIG_KVM should do
+> 
+PV solution does not exists for some other guests.
 
-The fix is very simple: shift all masks by one.
+> select KVM_GUEST
+> 
+> ?
+I can easily imaging the situation where one whats to build different
+kernels for host and guest and do not have PV in the host one.
 
-Our customers can control LEDs from userspace via Java,
-C++ or what every. They have running/working applications where
-they want to control led_3 but led_2 get's used.
-I got a bug report in our in-house bug tracker so it would be
-great to fix this upstream.
+> 
+> This is even a good forward-looking solution.
+> 
+> > I cannot seems to find the documentation for the MSR anywhere, do you
+> > have a pointer?
+> 
+> http://support.amd.com/us/Processor_TechDocs/31116.pdf, p.438
+> 
+Thanks,
 
-Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com>
----
- drivers/leds/leds-ot200.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/leds/leds-ot200.c b/drivers/leds/leds-ot200.c
-index ee14662..98cae52 100644
---- a/drivers/leds/leds-ot200.c
-+++ b/drivers/leds/leds-ot200.c
-@@ -47,37 +47,37 @@ static struct ot200_led leds[] = {
- 	{
- 		.name = "led_1",
- 		.port = 0x49,
--		.mask = BIT(7),
-+		.mask = BIT(6),
- 	},
- 	{
- 		.name = "led_2",
- 		.port = 0x49,
--		.mask = BIT(6),
-+		.mask = BIT(5),
- 	},
- 	{
- 		.name = "led_3",
- 		.port = 0x49,
--		.mask = BIT(5),
-+		.mask = BIT(4),
- 	},
- 	{
- 		.name = "led_4",
- 		.port = 0x49,
--		.mask = BIT(4),
-+		.mask = BIT(3),
- 	},
- 	{
- 		.name = "led_5",
- 		.port = 0x49,
--		.mask = BIT(3),
-+		.mask = BIT(2),
- 	},
- 	{
- 		.name = "led_6",
- 		.port = 0x49,
--		.mask = BIT(2),
-+		.mask = BIT(1),
- 	},
- 	{
- 		.name = "led_7",
- 		.port = 0x49,
--		.mask = BIT(1),
-+		.mask = BIT(0),
- 	}
- };
- 
--- 
-1.7.12.2.421.g261b511
-
+--
+			Gleb.
