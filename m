@@ -1,63 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934355Ab3BMQVV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 11:21:21 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:59736 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934335Ab3BMQVQ (ORCPT
+	id S1759989Ab3BMQWQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 11:22:16 -0500
+Received: from mail-da0-f42.google.com ([209.85.210.42]:34512 "EHLO
+	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759944Ab3BMQWO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 11:21:16 -0500
+	Wed, 13 Feb 2013 11:22:14 -0500
+Date: Wed, 13 Feb 2013 08:22:11 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "JBeulich@suse.com" <JBeulich@suse.com>, "bp@alien8.de" <bp@alien8.de>
+Subject: Re: [PATCH 1/1] Drivers: hv: vmbus: Use the new infrastructure for
+ delivering VMBUS interrupts
+Message-ID: <20130213162211.GA21253@kroah.com>
+References: <1360164359-12273-1-git-send-email-kys@microsoft.com>
+ <20130206191313.GA1470@kroah.com>
+ <511ADEB7.6080909@zytor.com>
+ <ae14ef66af2d4206baf4ccb382fc4205@SN2PR03MB061.namprd03.prod.outlook.com>
 MIME-Version: 1.0
-In-Reply-To: <1360264144-20714-2-git-send-email-robherring2@gmail.com>
-References: <1360264144-20714-1-git-send-email-robherring2@gmail.com>
-	<1360264144-20714-2-git-send-email-robherring2@gmail.com>
-Date: Wed, 13 Feb 2013 17:21:10 +0100
-Message-ID: <CAHTX3dKLCbfhBaHKBE=fVTcRReVL6yotA9e_8S70bH+_gajL5Q@mail.gmail.com>
-Subject: Re: [PATCH 1/4] clocksource: pass DT node pointer to init functions
-From: Michal Simek <monstr@monstr.eu>
-To: Rob Herring <robherring2@gmail.com>
-Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        John Stultz <johnstul@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ae14ef66af2d4206baf4ccb382fc4205@SN2PR03MB061.namprd03.prod.outlook.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/2/7 Rob Herring <robherring2@gmail.com>:
-> From: Rob Herring <rob.herring@calxeda.com>
->
-> In cases where we have multiple nodes of the same type, we may need the
-> node pointer to know which node was matched. Passing the node pointer
-> also keeps the init function from having to match the node a 2nd time.
->
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> Cc: John Stultz <johnstul@us.ibm.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> ---
->  drivers/clocksource/clksrc-of.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+On Wed, Feb 13, 2013 at 02:07:52PM +0000, KY Srinivasan wrote:
+> 
+> 
+> > -----Original Message-----
+> > From: H. Peter Anvin [mailto:hpa@zytor.com]
+> > Sent: Tuesday, February 12, 2013 7:31 PM
+> > To: Greg KH
+> > Cc: KY Srinivasan; x86@kernel.org; linux-kernel@vger.kernel.org;
+> > devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+> > jasowang@redhat.com; tglx@linutronix.de; JBeulich@suse.com; bp@alien8.de
+> > Subject: Re: [PATCH 1/1] Drivers: hv: vmbus: Use the new infrastructure for
+> > delivering VMBUS interrupts
+> > 
+> > On 02/06/2013 11:13 AM, Greg KH wrote:
+> > > On Wed, Feb 06, 2013 at 07:25:59AM -0800, K. Y. Srinivasan wrote:
+> > >> Use the infrastructure for delivering VMBUS interrupts using a
+> > >> special vector. With this patch, we can now properly handle
+> > >> the VMBUS interrupts that can be delivered on any CPU. Also,
+> > >> turn on interrupt load balancing as well.
+> > >>
+> > >> This patch requires the infrastructure that was implemented in the patch:
+> > >> X86: Handle Hyper-V vmbus interrupts as special hypervisor interrupts
+> > >>
+> > >
+> > > Because of the dependancy, this should go through the x86 tree as well:
+> > > 	Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > >
+> > 
+> > This does not apply to v3.8-rc7 + the set of three vmbus patches for
+> > x86.  I take it there are additional dependencies -- K.Y., what do I
+> > need here?
+> 
+> Greg,
+> 
+> Peter has checked in the infrastructural patches into v3.8-rc7. This version
+> does not have the patches that upgraded the VMBUS protocol version to the
+> win8 levels.
 
-Tested-by: Michal Simek <michal.simek@xilinx.com>
+What is "this version"?
 
-The rest is just the same as I have done. Any option to add these
-patches to v3.9?
-Because I need these patches for zynq timer because we have two in the soc.
-Is it OK to register several clock source and clockevent devices?
+> How will the infrastructural patches get moved forward to the version
+> where you have checked-in all the vmbus protocol updates:
+> [PATCH 00/28] Drivers: hv: Update the Vmbus protocol.
 
-btw: there is still one issue because you can just setup only one
-compatibility string.
+Those are in the char-misc git tree and will to go Linus for 3.9-rc1.
 
-Thanks,
-Michal
+> Now that Peter has checked in the needed patches, could you take this
+> patch through your tree.
 
+What again is "this"?
 
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+> Let me know, if you need, I can re-send this patch to you.
+
+Will it cause build problems if I take this patch in my tree, without
+the changes in the -tip tree?
+
+thanks,
+
+greg k-h
