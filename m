@@ -1,35 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933805Ab3BMUBi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 15:01:38 -0500
-Received: from mail.tpi.com ([70.99.223.143]:2973 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756093Ab3BMUBh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 15:01:37 -0500
-Message-ID: <511BF11C.6070100@canonical.com>
-Date: Wed, 13 Feb 2013 13:01:32 -0700
-From: Tim Gardner <tim.gardner@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1760361Ab3BMUC3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 15:02:29 -0500
+Received: from smtp-103-wednesday.noc.nerim.net ([178.132.17.103]:18653 "EHLO
+	mallaury.nerim.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755936Ab3BMUC2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 15:02:28 -0500
+X-Greylist: delayed 21223 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Feb 2013 15:02:28 EST
+Date: Wed, 13 Feb 2013 21:02:26 +0100
+From: Damien Wyart <damien.wyart@gmail.com>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        peterz@infradead.org, mingo@kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH] sched: fix env->src_cpu for active migration
+Message-ID: <20130213200226.GA14465@brouette>
+References: <1360675195-4017-1-git-send-email-vincent.guittot@linaro.org>
+ <20130213061853.GA4043@brouette>
+ <CAKfTPtDCPKeQpcS4mQc7Jp7+wK2EuvnCUqAzL7SOELVVL3jztw@mail.gmail.com>
+ <20130213092154.GA4481@brouette>
+ <CAKfTPtDprVAA0o6sTugYk8RiaUkGXUmSvd4RJbTEhNkKj7B-5A@mail.gmail.com>
+ <20130213140843.GA21308@brouette>
+ <CAKfTPtCuj4xZi2mBZP_Vz-zzySwBLKPn2aNkdqf6g8sVJoyS+A@mail.gmail.com>
+ <CAKfTPtDrTyof40Lk7MzdqEon2dkN=RZNEvP5BQSJVKP-EYsCXw@mail.gmail.com>
+ <20130213184706.GA23803@brouette>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: Tim Gardner <tim.gardner@canonical.com>, Mark Fasheh <mfasheh@suse.com>,
-        Joel Becker <jlbec@evilplan.org>, ocfs2-devel@oss.oracle.com
-Subject: Re: [PATCH 1/2 linux-next] ocfs2: remove kfree() redundant null checks
-References: <1360784676-74994-1-git-send-email-tim.gardner@canonical.com>
-In-Reply-To: <1360784676-74994-1-git-send-email-tim.gardner@canonical.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/mixed; boundary="h31gzZEtNLTqOjlF"
+Content-Disposition: inline
+In-Reply-To: <20130213184706.GA23803@brouette>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13/2013 12:44 PM, Tim Gardner wrote:
-> fs/ocfs2/alloc.c:6138 ocfs2_begin_truncate_log_recovery() info:
->  redundant null check on *tl_copy calling kfree()
 
-Ignore this series. I'll resend.
+--h31gzZEtNLTqOjlF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-rtg
+> Bingo, that was the problem in my setup: as the patch was applied
+> through a script with others, I had missed the error message about the
+> conflict (I have also another conflict which can be safely ignored so
+> the new one did not catch my eye)... So the patch was only
+> half-applied, and the final code is broken.
+
+> How did you solve the conflict (I am not a scheduler expert)? I can
+> retry running the patched kernel with your resolution, to check if
+> everything is ok.
+
+After looking a bit more, the conflict resolution seemed straighforward,
+so I gave it a go. The attached version booted fine, so the initial
+problem was purely PEBCAK... Sorry for the noise!
+
 -- 
-Tim Gardner tim.gardner@canonical.com
+Damien
+
+--h31gzZEtNLTqOjlF
+Content-Type: text/x-diff; charset=us-ascii
+Content-Disposition: attachment; filename="patch-sched.patch"
+
+--- a/kernel/sched/fair.c	2013-02-06 20:49:17.447613049 +0100
++++ b/kernel/sched/fair.c	2013-02-13 20:52:37.409507417 +0100
+@@ -5060,6 +5060,10 @@
+ 	ld_moved = 0;
+ 	lb_iterations = 1;
+ 	clock_updated = 0;
++
++	env.src_cpu   = busiest->cpu;
++	env.src_rq    = busiest;
++	
+ 	if (busiest->nr_running > 1) {
+ 		/*
+ 		 * Attempt to move tasks. If find_busiest_group has found
+@@ -5068,8 +5072,6 @@
+ 		 * correctly treated as an imbalance.
+ 		 */
+ 		env.flags |= LBF_ALL_PINNED;
+-		env.src_cpu   = busiest->cpu;
+-		env.src_rq    = busiest;
+ 		env.loop_max  = min(sysctl_sched_nr_migrate, busiest->nr_running);
+ 
+ 		update_h_load(env.src_cpu);
+
+--h31gzZEtNLTqOjlF--
