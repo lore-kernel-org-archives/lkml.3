@@ -1,111 +1,578 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759491Ab3BMOKn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 09:10:43 -0500
-Received: from na01-bl2-obe.ptr.protection.outlook.com ([65.55.169.30]:19606
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755842Ab3BMOKl convert rfc822-to-8bit (ORCPT
+	id S1759521Ab3BMONr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 09:13:47 -0500
+Received: from www.linutronix.de ([62.245.132.108]:59099 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755960Ab3BMONq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 09:10:41 -0500
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT004.namprd03.prod.outlook.com;R:internal;EFV:INT
-X-SpamScore: -3
-X-BigFish: PS-3(zzbb2dI98dI9371I542I1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275dhz31h2a8h668h839h944hd24hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh9a9j1155h)
-X-Forefront-Antispam-Report-Untrusted: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:SN2PR03MB063;H:SN2PR03MB061.namprd03.prod.outlook.com;LANG:en;
-From: KY Srinivasan <kys@microsoft.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Greg KH <gregkh@linuxfoundation.org>
-CC: "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "JBeulich@suse.com" <JBeulich@suse.com>, "bp@alien8.de" <bp@alien8.de>
-Subject: RE: [PATCH 1/1] Drivers: hv: vmbus: Use the new infrastructure for
- delivering VMBUS interrupts
-Thread-Topic: [PATCH 1/1] Drivers: hv: vmbus: Use the new infrastructure for
- delivering VMBUS interrupts
-Thread-Index: AQHOBHqGdmZWmCfA3EOMQRE9yVbBN5htMw+AgAnGt4CAADNcoA==
-Date: Wed, 13 Feb 2013 14:07:52 +0000
-Message-ID: <ae14ef66af2d4206baf4ccb382fc4205@SN2PR03MB061.namprd03.prod.outlook.com>
-References: <1360164359-12273-1-git-send-email-kys@microsoft.com>
- <20130206191313.GA1470@kroah.com> <511ADEB7.6080909@zytor.com>
-In-Reply-To: <511ADEB7.6080909@zytor.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [98.110.61.163]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 13 Feb 2013 09:13:46 -0500
+Date: Wed, 13 Feb 2013 15:13:44 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+cc: linux-rt-users <linux-rt-users@vger.kernel.org>
+Subject: [ANNOUNCE] 3.6.11-rt29
+Message-ID: <alpine.LFD.2.02.1302131506020.11905@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PR03MB063.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUTRONIX.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%ALIEN8.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%SUSE.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%ZYTOR.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14MLTC104.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14MLTC104.redmond.corp.microsoft.com
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(377454001)(13464002)(189002)(199002)(24454001)(479174001)(51704002)(16676001)(5343655001)(80022001)(77982001)(50466001)(49866001)(54316002)(53806001)(54356001)(46102001)(56776001)(74662001)(50986001)(47736001)(65816001)(59766001)(76482001)(4396001)(6806001)(33646001)(47976001)(20776003)(63696002)(51856001)(44976002)(74502001)(31966008)(79102001)(66066001)(47446002)(47776003)(46406002)(23726001)(56816002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2FFO11HUB008;H:TK5EX14MLTC104.redmond.corp.microsoft.com;RD:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-OriginatorOrg: microsoft.onmicrosoft.com
-X-Forefront-PRVS: 07562C22DA
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dear RT Folks,
 
+I'm pleased to announce the 3.6.11-rt29 release.
 
-> -----Original Message-----
-> From: H. Peter Anvin [mailto:hpa@zytor.com]
-> Sent: Tuesday, February 12, 2013 7:31 PM
-> To: Greg KH
-> Cc: KY Srinivasan; x86@kernel.org; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
-> jasowang@redhat.com; tglx@linutronix.de; JBeulich@suse.com; bp@alien8.de
-> Subject: Re: [PATCH 1/1] Drivers: hv: vmbus: Use the new infrastructure for
-> delivering VMBUS interrupts
-> 
-> On 02/06/2013 11:13 AM, Greg KH wrote:
-> > On Wed, Feb 06, 2013 at 07:25:59AM -0800, K. Y. Srinivasan wrote:
-> >> Use the infrastructure for delivering VMBUS interrupts using a
-> >> special vector. With this patch, we can now properly handle
-> >> the VMBUS interrupts that can be delivered on any CPU. Also,
-> >> turn on interrupt load balancing as well.
-> >>
-> >> This patch requires the infrastructure that was implemented in the patch:
-> >> X86: Handle Hyper-V vmbus interrupts as special hypervisor interrupts
-> >>
-> >
-> > Because of the dependancy, this should go through the x86 tree as well:
-> > 	Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> >
-> 
-> This does not apply to v3.8-rc7 + the set of three vmbus patches for
-> x86.  I take it there are additional dependencies -- K.Y., what do I
-> need here?
+Changes since 3.6.11-rt26:
 
-Greg,
+   1) Fix the RT highmem implementation on x86 this time really. The
+      issue I was seeing with kmap_atomic and friends was actually
+      when CONFIG_HIGHMEM was disabled. x8632 uses the atomic maps for
+      io_mapping_map_atomic_wc() even when CONFIG_HIGHMEM is off.
 
-Peter has checked in the infrastructural patches into v3.8-rc7. This version
-does not have the patches that upgraded the VMBUS protocol version to the
-win8 levels. How will the infrastructural patches get moved forward to the version where you
-have checked-in all the vmbus protocol updates:
-[PATCH 00/28] Drivers: hv: Update the Vmbus protocol.
+   2) Modify the kmap_atomic per thread storage mechanism to reduce
+      code in switch_to
+      
+   3) Rewrite RT highmem support for ARM with the kmap_atomic switch
+      mechanism like x86_32 uses it.
 
-Now that Peter has checked in the needed patches, could you take this patch through your tree.
-Let me know, if you need, I can re-send this patch to you.
+This is probably the last release for 3.6 from my side. Steven might
+keep it maintained until the 3.8-rt stabilizes, but that's not yet
+decided.
 
-Regards,
+The delta patch against 3.6.11-rt28 is appended below and can be found
+here:
 
-K. Y
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/incr/patch-3.6.11-rt28-rt29.patch.xz
 
+The RT patch against 3.6.11 can be found here:
 
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/patch-3.6.11-rt29.patch.xz
+
+The split quilt queue is available at:
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/patches-3.6.11-rt29.tar.xz
+
+Enjoy,
+
+	tglx
+
+------------->
+Index: linux-stable/arch/arm/include/asm/highmem.h
+===================================================================
+--- linux-stable.orig/arch/arm/include/asm/highmem.h
++++ linux-stable/arch/arm/include/asm/highmem.h
+@@ -57,25 +57,10 @@ static inline void *kmap_high_get(struct
+ #ifdef CONFIG_HIGHMEM
+ extern void *kmap(struct page *page);
+ extern void kunmap(struct page *page);
+-# ifndef CONFIG_PREEMPT_RT_FULL
+ extern void *kmap_atomic(struct page *page);
+ extern void __kunmap_atomic(void *kvaddr);
+ extern void *kmap_atomic_pfn(unsigned long pfn);
+ extern struct page *kmap_atomic_to_page(const void *ptr);
+-# else
+-#  define kmap_atomic(page)	\
+-	({ pagefault_disable(); kmap(page); })
+-
+-#  define kmap_atomic_pfn(pfn)	\
+-	({ pagefault_disable(); kmap(pfn_to_page(pfn)) })
+-
+-#  define __kunmap_atomic(kvaddr)	\
+-	do { kunmap(kmap_to_page(kvaddr)); pagefault_enable(); } while(0)
+-
+-#  define kmap_atomic_to_page(kvaddr)	\
+-	kmap_to_page(kvaddr)
+-
+-# endif
+ #endif
+ 
+ #endif
+Index: linux-stable/arch/arm/mm/highmem.c
+===================================================================
+--- linux-stable.orig/arch/arm/mm/highmem.c
++++ linux-stable/arch/arm/mm/highmem.c
+@@ -36,9 +36,9 @@ void kunmap(struct page *page)
+ }
+ EXPORT_SYMBOL(kunmap);
+ 
+-#ifndef CONFIG_PREEMPT_RT_FULL
+ void *kmap_atomic(struct page *page)
+ {
++	pte_t pte = mk_pte(page, kmap_prot);
+ 	unsigned int idx;
+ 	unsigned long vaddr;
+ 	void *kmap;
+@@ -77,7 +77,10 @@ void *kmap_atomic(struct page *page)
+ 	 * in place, so the contained TLB flush ensures the TLB is updated
+ 	 * with the new mapping.
+ 	 */
+-	set_top_pte(vaddr, mk_pte(page, kmap_prot));
++#ifdef CONFIG_PREEMPT_RT_FULL
++	current->kmap_pte[type] = pte;
++#endif
++	set_top_pte(vaddr, pte);
+ 
+ 	return (void *)vaddr;
+ }
+@@ -111,6 +114,7 @@ EXPORT_SYMBOL(__kunmap_atomic);
+ 
+ void *kmap_atomic_pfn(unsigned long pfn)
+ {
++	pte_t pte = pfn_pte(pfn, kmap_prot);
+ 	unsigned long vaddr;
+ 	int idx, type;
+ 
+@@ -122,7 +126,10 @@ void *kmap_atomic_pfn(unsigned long pfn)
+ #ifdef CONFIG_DEBUG_HIGHMEM
+ 	BUG_ON(!pte_none(get_top_pte(vaddr)));
+ #endif
+-	set_top_pte(vaddr, pfn_pte(pfn, kmap_prot));
++#ifdef CONFIG_PREEMPT_RT_FULL
++	current->kmap_pte[type] = pte;
++#endif
++	set_top_pte(vaddr, pte);
+ 
+ 	return (void *)vaddr;
+ }
+@@ -136,4 +143,28 @@ struct page *kmap_atomic_to_page(const v
+ 
+ 	return pte_page(get_top_pte(vaddr));
+ }
++
++#if defined CONFIG_PREEMPT_RT_FULL
++void switch_kmaps(struct task_struct *prev_p, struct task_struct *next_p)
++{
++	int i;
++
++	/*
++	 * Clear @prev's kmap_atomic mappings
++	 */
++	for (i = 0; i < prev_p->kmap_idx; i++) {
++		int idx = i + KM_TYPE_NR * smp_processor_id();
++
++		set_top_pte(__fix_to_virt(FIX_KMAP_BEGIN + idx), __pte(0));
++	}
++	/*
++	 * Restore @next_p's kmap_atomic mappings
++	 */
++	for (i = 0; i < next_p->kmap_idx; i++) {
++		int idx = i + KM_TYPE_NR * smp_processor_id();
++
++		set_top_pte(__fix_to_virt(FIX_KMAP_BEGIN + idx),
++			    next_p->kmap_pte[i]);
++	}
++}
+ #endif
+Index: linux-stable/arch/x86/include/asm/highmem.h
+===================================================================
+--- linux-stable.orig/arch/x86/include/asm/highmem.h
++++ linux-stable/arch/x86/include/asm/highmem.h
+@@ -56,39 +56,16 @@ extern unsigned long highstart_pfn, high
+ 
+ extern void *kmap_high(struct page *page);
+ extern void kunmap_high(struct page *page);
+-extern void *kmap_high_prot(struct page *page, pgprot_t prot);
+ 
+ void *kmap(struct page *page);
+ void kunmap(struct page *page);
+ 
+-#ifndef CONFIG_PREEMPT_RT_FULL
+ void *kmap_atomic_prot(struct page *page, pgprot_t prot);
+ void *kmap_atomic(struct page *page);
+ void __kunmap_atomic(void *kvaddr);
+ void *kmap_atomic_pfn(unsigned long pfn);
+ void *kmap_atomic_prot_pfn(unsigned long pfn, pgprot_t prot);
+ struct page *kmap_atomic_to_page(void *ptr);
+-#else
+-void *__kmap_prot(struct page *page, pgprot_t prot);
+-# define kmap_atomic(page)			\
+-	({ pagefault_disable(); kmap(page); })
+-
+-# define kmap_atomic_pfn(pfn)			\
+-	({ pagefault_disable(); kmap(pfn_to_page(pfn)) })
+-
+-# define __kunmap_atomic(kvaddr)		\
+-	do { kunmap(kmap_to_page(kvaddr)); pagefault_enable(); } while(0)
+-
+-# define kmap_atomic_prot(page, prot)		\
+-	({ pagefault_disable(); __kmap_prot(page, prot); })
+-
+-# define kmap_atomic_prot_pfn(pfn, prot)	\
+-	({ pagefault_disable(); __kmap_prot(pfn_to_page(pfn), prot); })
+-
+-# define kmap_atomic_to_page(kvaddr)		\
+-	kmap_to_page(kvaddr)
+-
+-#endif
+ 
+ #define flush_cache_kmaps()	do { } while (0)
+ 
+Index: linux-stable/arch/x86/kernel/process_32.c
+===================================================================
+--- linux-stable.orig/arch/x86/kernel/process_32.c
++++ linux-stable/arch/x86/kernel/process_32.c
+@@ -198,6 +198,34 @@ start_thread(struct pt_regs *regs, unsig
+ }
+ EXPORT_SYMBOL_GPL(start_thread);
+ 
++#ifdef CONFIG_PREEMPT_RT_FULL
++static void switch_kmaps(struct task_struct *prev_p, struct task_struct *next_p)
++{
++	int i;
++
++	/*
++	 * Clear @prev's kmap_atomic mappings
++	 */
++	for (i = 0; i < prev_p->kmap_idx; i++) {
++		int idx = i + KM_TYPE_NR * smp_processor_id();
++		pte_t *ptep = kmap_pte - idx;
++
++		kpte_clear_flush(ptep, __fix_to_virt(FIX_KMAP_BEGIN + idx));
++	}
++	/*
++	 * Restore @next_p's kmap_atomic mappings
++	 */
++	for (i = 0; i < next_p->kmap_idx; i++) {
++		int idx = i + KM_TYPE_NR * smp_processor_id();
++
++		set_pte(kmap_pte - idx, next_p->kmap_pte[i]);
++	}
++}
++#else
++static inline void
++switch_kmaps(struct task_struct *prev_p, struct task_struct *next_p) { }
++#endif
++
+ 
+ /*
+  *	switch_to(x,y) should switch tasks from x to y.
+@@ -277,40 +305,7 @@ __switch_to(struct task_struct *prev_p, 
+ 		     task_thread_info(next_p)->flags & _TIF_WORK_CTXSW_NEXT))
+ 		__switch_to_xtra(prev_p, next_p, tss);
+ 
+-#if defined CONFIG_PREEMPT_RT_FULL && defined CONFIG_HIGHMEM
+-	/*
+-	 * Save @prev's kmap_atomic stack
+-	 */
+-	prev_p->kmap_idx = __this_cpu_read(__kmap_atomic_idx);
+-	if (unlikely(prev_p->kmap_idx)) {
+-		int i;
+-
+-		for (i = 0; i < prev_p->kmap_idx; i++) {
+-			int idx = i + KM_TYPE_NR * smp_processor_id();
+-
+-			pte_t *ptep = kmap_pte - idx;
+-			prev_p->kmap_pte[i] = *ptep;
+-			kpte_clear_flush(ptep, __fix_to_virt(FIX_KMAP_BEGIN + idx));
+-		}
+-
+-		__this_cpu_write(__kmap_atomic_idx, 0);
+-	}
+-
+-	/*
+-	 * Restore @next_p's kmap_atomic stack
+-	 */
+-	if (unlikely(next_p->kmap_idx)) {
+-		int i;
+-
+-		__this_cpu_write(__kmap_atomic_idx, next_p->kmap_idx);
+-
+-		for (i = 0; i < next_p->kmap_idx; i++) {
+-			int idx = i + KM_TYPE_NR * smp_processor_id();
+-
+-			set_pte(kmap_pte - idx, next_p->kmap_pte[i]);
+-		}
+-	}
+-#endif
++	switch_kmaps(prev_p, next_p);
+ 
+ 	/*
+ 	 * Leave lazy mode, flushing any hypercalls made here.
+Index: linux-stable/arch/x86/mm/highmem_32.c
+===================================================================
+--- linux-stable.orig/arch/x86/mm/highmem_32.c
++++ linux-stable/arch/x86/mm/highmem_32.c
+@@ -21,17 +21,6 @@ void kunmap(struct page *page)
+ }
+ EXPORT_SYMBOL(kunmap);
+ 
+-#ifdef CONFIF_PREEMPT_RT_FULL
+-void *__kmap_prot(struct page *page, pgprot_t prot)
+-{
+-	might_sleep();
+-	if (!PageHighMem(page))
+-		return page_address(page);
+-	return kmap_high_prot(page, prot);
+-}
+-#endif
+-
+-#ifndef CONFIG_PREEMPT_RT_FULL
+ /*
+  * kmap_atomic/kunmap_atomic is significantly faster than kmap/kunmap because
+  * no global lock is needed and because the kmap code must perform a global TLB
+@@ -42,6 +31,7 @@ void *__kmap_prot(struct page *page, pgp
+  */
+ void *kmap_atomic_prot(struct page *page, pgprot_t prot)
+ {
++	pte_t pte = mk_pte(page, prot);
+ 	unsigned long vaddr;
+ 	int idx, type;
+ 
+@@ -55,7 +45,10 @@ void *kmap_atomic_prot(struct page *page
+ 	idx = type + KM_TYPE_NR*smp_processor_id();
+ 	vaddr = __fix_to_virt(FIX_KMAP_BEGIN + idx);
+ 	WARN_ON(!pte_none(*(kmap_pte-idx)));
+-	set_pte(kmap_pte-idx, mk_pte(page, prot));
++#ifdef CONFIG_PREEMPT_RT_FULL
++	current->kmap_pte[type] = pte;
++#endif
++	set_pte(kmap_pte-idx, pte);
+ 	arch_flush_lazy_mmu_mode();
+ 
+ 	return (void *)vaddr;
+@@ -126,7 +119,6 @@ struct page *kmap_atomic_to_page(void *p
+ 	return pte_page(*pte);
+ }
+ EXPORT_SYMBOL(kmap_atomic_to_page);
+-#endif
+ 
+ void __init set_highmem_pages_init(void)
+ {
+Index: linux-stable/include/linux/highmem.h
+===================================================================
+--- linux-stable.orig/include/linux/highmem.h
++++ linux-stable/include/linux/highmem.h
+@@ -7,6 +7,7 @@
+ #include <linux/mm.h>
+ #include <linux/uaccess.h>
+ #include <linux/hardirq.h>
++#include <linux/sched.h>
+ 
+ #include <asm/cacheflush.h>
+ 
+@@ -59,8 +60,6 @@ static inline void *kmap(struct page *pa
+ 	return page_address(page);
+ }
+ 
+-#define __kmap_prot(page, prot)	kmap(page)
+-
+ static inline void kunmap(struct page *page)
+ {
+ }
+@@ -87,32 +86,49 @@ static inline void __kunmap_atomic(void 
+ 
+ #if defined(CONFIG_HIGHMEM) || defined(CONFIG_X86_32)
+ 
++#ifndef CONFIG_PREEMPT_RT_FULL
+ DECLARE_PER_CPU(int, __kmap_atomic_idx);
++#endif
+ 
+ static inline int kmap_atomic_idx_push(void)
+ {
++#ifndef CONFIG_PREEMPT_RT_FULL
+ 	int idx = __this_cpu_inc_return(__kmap_atomic_idx) - 1;
+ 
+-#ifdef CONFIG_DEBUG_HIGHMEM
++# ifdef CONFIG_DEBUG_HIGHMEM
+ 	WARN_ON_ONCE(in_irq() && !irqs_disabled());
+ 	BUG_ON(idx > KM_TYPE_NR);
+-#endif
++# endif
+ 	return idx;
++#else
++	return current->kmap_idx++;
++#endif
+ }
+ 
+ static inline int kmap_atomic_idx(void)
+ {
++#ifndef CONFIG_PREEMPT_RT_FULL
+ 	return __this_cpu_read(__kmap_atomic_idx) - 1;
++#else
++	return current->kmap_idx - 1;
++#endif
+ }
+ 
+ static inline void kmap_atomic_idx_pop(void)
+ {
+-#ifdef CONFIG_DEBUG_HIGHMEM
++#ifndef CONFIG_PREEMPT_RT_FULL
++# ifdef CONFIG_DEBUG_HIGHMEM
+ 	int idx = __this_cpu_dec_return(__kmap_atomic_idx);
+ 
+ 	BUG_ON(idx < 0);
+-#else
++# else
+ 	__this_cpu_dec(__kmap_atomic_idx);
++# endif
++#else
++	current->kmap_idx--;
++# ifdef CONFIG_DEBUG_HIGHMEM
++	BUG_ON(current->kmap_idx < 0);
++# endif
+ #endif
+ }
+ 
+Index: linux-stable/include/linux/sched.h
+===================================================================
+--- linux-stable.orig/include/linux/sched.h
++++ linux-stable/include/linux/sched.h
+@@ -1621,9 +1621,11 @@ struct task_struct {
+ 	int softirq_nestcnt;
+ 	unsigned int softirqs_raised;
+ #endif
+-#if defined CONFIG_PREEMPT_RT_FULL && defined CONFIG_HIGHMEM
++#ifdef CONFIG_PREEMPT_RT_FULL
++# if defined CONFIG_HIGHMEM || defined CONFIG_X86_32
+ 	int kmap_idx;
+ 	pte_t kmap_pte[KM_TYPE_NR];
++# endif
+ #endif
+ 
+ #ifdef CONFIG_DEBUG_PREEMPT
+Index: linux-stable/localversion-rt
+===================================================================
+--- linux-stable.orig/localversion-rt
++++ linux-stable/localversion-rt
+@@ -1 +1 @@
+--rt28
++-rt29
+Index: linux-stable/mm/highmem.c
+===================================================================
+--- linux-stable.orig/mm/highmem.c
++++ linux-stable/mm/highmem.c
+@@ -29,10 +29,11 @@
+ #include <linux/kgdb.h>
+ #include <asm/tlbflush.h>
+ 
+-
++#ifndef CONFIG_PREEMPT_RT_FULL
+ #if defined(CONFIG_HIGHMEM) || defined(CONFIG_X86_32)
+ DEFINE_PER_CPU(int, __kmap_atomic_idx);
+ #endif
++#endif
+ 
+ /*
+  * Virtual_count is not a pure "count".
+@@ -47,8 +48,9 @@ DEFINE_PER_CPU(int, __kmap_atomic_idx);
+ unsigned long totalhigh_pages __read_mostly;
+ EXPORT_SYMBOL(totalhigh_pages);
+ 
+-
++#ifndef CONFIG_PREEMPT_RT_FULL
+ EXPORT_PER_CPU_SYMBOL(__kmap_atomic_idx);
++#endif
+ 
+ unsigned int nr_free_highpages (void)
+ {
+@@ -157,7 +159,7 @@ void kmap_flush_unused(void)
+ 	unlock_kmap();
+ }
+ 
+-static inline unsigned long map_new_virtual(struct page *page, pgprot_t prot)
++static inline unsigned long map_new_virtual(struct page *page)
+ {
+ 	unsigned long vaddr;
+ 	int count;
+@@ -199,7 +201,7 @@ start:
+ 	}
+ 	vaddr = PKMAP_ADDR(last_pkmap_nr);
+ 	set_pte_at(&init_mm, vaddr,
+-		   &(pkmap_page_table[last_pkmap_nr]), mk_pte(page, prot));
++		   &(pkmap_page_table[last_pkmap_nr]), mk_pte(page, kmap_prot));
+ 
+ 	pkmap_count[last_pkmap_nr] = 1;
+ 	set_page_address(page, (void *)vaddr);
+@@ -215,7 +217,7 @@ start:
+  *
+  * We cannot call this from interrupts, as it may block.
+  */
+-void *kmap_high_prot(struct page *page, pgprot_t prot)
++void *kmap_high(struct page *page)
+ {
+ 	unsigned long vaddr;
+ 
+@@ -226,26 +228,13 @@ void *kmap_high_prot(struct page *page, 
+ 	lock_kmap();
+ 	vaddr = (unsigned long)page_address(page);
+ 	if (!vaddr)
+-		vaddr = map_new_virtual(page, prot);
++		vaddr = map_new_virtual(page);
+ 	pkmap_count[PKMAP_NR(vaddr)]++;
+ 	BUG_ON(pkmap_count[PKMAP_NR(vaddr)] < 2);
+ 	unlock_kmap();
+ 	return (void*) vaddr;
+ }
+-EXPORT_SYMBOL(kmap_high_prot);
+ 
+-/**
+- * kmap_high - map a highmem page into memory
+- * @page: &struct page to map
+- *
+- * Returns the page's virtual memory address.
+- *
+- * We cannot call this from interrupts, as it may block.
+- */
+-void *kmap_high(struct page *page)
+-{
+-	return kmap_high_prot(page, kmap_prot);
+-}
+ EXPORT_SYMBOL(kmap_high);
+ 
+ #ifdef ARCH_NEEDS_KMAP_HIGH_GET
+Index: linux-stable/arch/x86/mm/iomap_32.c
+===================================================================
+--- linux-stable.orig/arch/x86/mm/iomap_32.c
++++ linux-stable/arch/x86/mm/iomap_32.c
+@@ -56,6 +56,7 @@ EXPORT_SYMBOL_GPL(iomap_free);
+ 
+ void *kmap_atomic_prot_pfn(unsigned long pfn, pgprot_t prot)
+ {
++	pte_t pte = pfn_pte(pfn, prot);
+ 	unsigned long vaddr;
+ 	int idx, type;
+ 
+@@ -64,7 +65,10 @@ void *kmap_atomic_prot_pfn(unsigned long
+ 	type = kmap_atomic_idx_push();
+ 	idx = type + KM_TYPE_NR * smp_processor_id();
+ 	vaddr = __fix_to_virt(FIX_KMAP_BEGIN + idx);
+-	set_pte(kmap_pte - idx, pfn_pte(pfn, prot));
++#ifdef CONFIG_PREEMPT_RT_FULL
++	current->kmap_pte[type] = pte;
++#endif
++	set_pte(kmap_pte - idx, pte);
+ 	arch_flush_lazy_mmu_mode();
+ 
+ 	return (void *)vaddr;
+Index: linux-stable/arch/arm/include/asm/switch_to.h
+===================================================================
+--- linux-stable.orig/arch/arm/include/asm/switch_to.h
++++ linux-stable/arch/arm/include/asm/switch_to.h
+@@ -3,6 +3,14 @@
+ 
+ #include <linux/thread_info.h>
+ 
++#if defined CONFIG_PREEMPT_RT_FULL && defined CONFIG_HIGHMEM
++void switch_kmaps(struct task_struct *prev_p, struct task_struct *next_p);
++#else
++static inline void
++switch_kmaps(struct task_struct *prev_p, struct task_struct *next_p) { }
++#endif
++
++
+ /*
+  * switch_to(prev, next) should switch from task `prev' to `next'
+  * `prev' will never be the same as `next'.  schedule() itself
+@@ -12,6 +20,7 @@ extern struct task_struct *__switch_to(s
+ 
+ #define switch_to(prev,next,last)					\
+ do {									\
++	switch_kmaps(prev, next);					\
+ 	last = __switch_to(prev,task_thread_info(prev), task_thread_info(next));	\
+ } while (0)
+ 
