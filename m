@@ -1,44 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932546Ab3BMJf0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 04:35:26 -0500
+	id S932505Ab3BMJfW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 04:35:22 -0500
 Received: from mailout3.samsung.com ([203.254.224.33]:43568 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932427Ab3BMJfT (ORCPT
+	with ESMTP id S1752843Ab3BMJfL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 04:35:19 -0500
-X-AuditID: cbfee61a-b7f7d6d000000f4e-f4-511b5e565aa5
+	Wed, 13 Feb 2013 04:35:11 -0500
+X-AuditID: cbfee61a-b7f7d6d000000f4e-a5-511b5e4dd34d
 From: Chanwoo Choi <cw00.choi@samsung.com>
-To: gregkh@linuxfoundation.org, sameo@linux.intel.com
+To: gregkh@linuxfoundation.org
 Cc: linux-kernel@vger.kernel.org, myungjoo.ham@samsung.com,
         kyungmin.park@samsung.com, Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCH 5/9] extcon: max8997: Remove duplicate code related to set H/W
- line path
-Date: Wed, 13 Feb 2013 18:35:16 +0900
-Message-id: <1360748116-21943-1-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCH 2/9] extcon: max77693: Convert to devm_input_allocate_device()
+Date: Wed, 13 Feb 2013 18:35:05 +0900
+Message-id: <1360748105-21841-1-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFLMWRmVeSWpSXmKPExsVy+t8zTd2wOOlAg/3f+S0u75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfGzaMfWQu61Stm3/vG1sC4UqGLkZNDQsBE4vTBPywQtpjEhXvr
-	2boYuTiEBJYxSpxbfYYZpqjtSAMTRGI6o8TrlT+hqhYwSVw7Np0VpIpNQEti/4sbbCC2iICp
-	xKmn19lBbGaBWonTl++CTRIWiJJYuno3mM0ioCqx7NZ2sNW8Aq4Sy64fZ4XYJifxYc8jdgh7
-	B5vElxWqEPUCEt8mHwKq5wCKy0psOgB1nKTEwRU3WCYwCi5gZFjFKJpakFxQnJSea6hXnJhb
-	XJqXrpecn7uJERJSUjsYVzZYHGIU4GBU4uF1CJEKFGJNLCuuzD3EKMHBrCTC6+gvHSjEm5JY
-	WZValB9fVJqTWnyIMRlo+URmKdHkfGC455XEGxobGBsaWhqamVqaGpAmrCTOy3jqSYCQQHpi
-	SWp2ampBahHMFiYOTqkGRnvpN7kZIfunVS6uri2VddzyOeaJ5wPp6QKvb7tv80hVYTwWV8W+
-	L3vr16m/xWWeiK5evUO2sJB3dpfw3DznoxZvX5uf/MrgbeRe1PTLK3ayyb++V9rLPhhMWfuE
-	6eeDSfslt3AKSxtqvH7HmspVmrH5+cSv0QfsJ4g4bhIM+J/pUs367InMfCWW4oxEQy3mouJE
-	AFeGywFtAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupikeLIzCtJLcpLzFFi42I5/e+xoG5YnHSgQcsURovLu+awOTB6fN4k
-	F8AY1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQM0
-	VUmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeYcfPoR9aCbvWK2fe+sTUw
-	rlToYuTkkBAwkWg70sAEYYtJXLi3nq2LkYtDSGA6o8TrlT+hnAVMEteOTWcFqWIT0JLY/+IG
-	G4gtImAqcerpdXYQm1mgVuL05bvMILawQJTE0tW7wWwWAVWJZbe2s4DYvAKuEsuuH2eF2CYn
-	8WHPI/YJjNwLGBlWMYqmFiQXFCel5xrqFSfmFpfmpesl5+duYgSH7DOpHYwrGywOMQpwMCrx
-	8DqESAUKsSaWFVfmHmKU4GBWEuF19JcOFOJNSaysSi3Kjy8qzUktPsSYDLR9IrOUaHI+MJ7y
-	SuINjU3MjCyNzIxNzI2NSRNWEudlPPUkQEggPbEkNTs1tSC1CGYLEwenVAPjac/rEnd+LGdd
-	p/6JqSK+Zj17tP3EeTPqz4YH/Vj6896T5gsb2lXuv/IJuOzsJ5WpV+50oeuW8PLb8qsy/gZ5
-	RM06yrr15UaZBhf//tLVui9aTsocnrajO+jxthOqW9NvcrppSXTaVLdzvor9e3yDduPLaWIi
-	jSfsji/Md558/BXf8ue8m7t/K7EUZyQaajEXFScCAPthLLKdAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFLMWRmVeSWpSXmKPExsVy+t8zTV3fOOlAg8OzxC0u75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGwbWbWQua2CpW/r7P1MA4gbWLkZNDQsBE4t+GXjYIW0ziwr31
+	QDYXh5DAMkaJKd0LmWGK3jZcZQGxhQQWMUoc2OgJUbSASWLm4uNgCTYBLYn9L26ATRIRkJN4
+	cvsPWDOzQK3E6ct3wWxhAT+J9lnb2UFsFgFVibW3PoPFeQVcJdY1TYG6Qk7iw55H7CALJAR2
+	sEnMeQgxlEVAQOLb5ENAyziAErISmw5AHScpcXDFDZYJjIILGBlWMYqmFiQXFCel5xrqFSfm
+	Fpfmpesl5+duYoSElNQOxpUNFocYBTgYlXh4HUKkAoVYE8uKK3MPMUpwMCuJ8Dr6SwcK8aYk
+	VlalFuXHF5XmpBYfYkwGWj6RWUo0OR8Y7nkl8YbGBsaGhpaGZqaWpgakCSuJ8zKeehIgJJCe
+	WJKanZpakFoEs4WJg1OqgXE1x+TUt/x+uYk87PH1al+e3nae5TrLxSy15c6rxX2TlQS/FLtP
+	Pe0pt/aI48t79yffrX/iwLSd75VbbF6sQgAnO6v7a/vr6ZqGP7av+bavKaDOvrYkwzjyB8ei
+	LyfWbWp8ztl24VfM5tVzT3Avvnmi4+KS2Y6bMrimJvOnPfu58NQqw52/PnMrsRRnJBpqMRcV
+	JwIAzgTZiW0CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkkeLIzCtJLcpLzFFi42I5/e+xgK5XnHSgwd+zxhaXd81hc2D0+LxJ
+	LoAxqoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwdo
+	qpJCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsI4x4+DazawFTWwVK3/fZ2pg
+	nMDaxcjJISFgIvG24SoLhC0mceHeejYQW0hgEaPEgY2eXYxcQPYCJomZi4+DFbEJaEnsf3ED
+	rEhEQE7iye0/zCA2s0CtxOnLd8FsYQE/ifZZ29lBbBYBVYm1tz6DxXkFXCXWNU1hg1gmJ/Fh
+	zyP2CYzcCxgZVjGKphYkFxQnpeca6hUn5haX5qXrJefnbmIEB+wzqR2MKxssDjEKcDAq8fA6
+	hEgFCrEmlhVX5h5ilOBgVhLhdfSXDhTiTUmsrEotyo8vKs1JLT7EmAy0fSKzlGhyPjCa8kri
+	DY1NzIwsjcyMTcyNjUkTVhLnZTz1JEBIID2xJDU7NbUgtQhmCxMHp1QDY/Te6zs9Y/REu7IY
+	XkU9+3DYvv71ow1+IR8OmXLtlOEtsL7yf3/tXd8EIa/Gd+9MZ+xv/JxZu0yUNaWPzVYnfZLL
+	cslly6bfff9g8t7TM7MPBtp0nnhTKLPrbJrzOuNn1t+jCmdy3PzyfNWUsod3j7LvWK6yfdpU
+	7cSm4DCDWxXv6z5477+nd1KJpTgj0VCLuag4EQDZsJEHnAIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -49,140 +48,22 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
 ---
- drivers/extcon/extcon-max8997.c     | 62 ++++++++++++++++++++++++++++++-------
- include/linux/mfd/max8997-private.h | 19 +++++++++++-
- 2 files changed, 69 insertions(+), 12 deletions(-)
+ drivers/extcon/extcon-max77693.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/extcon/extcon-max8997.c b/drivers/extcon/extcon-max8997.c
-index 0fb1d48..8739b50 100644
---- a/drivers/extcon/extcon-max8997.c
-+++ b/drivers/extcon/extcon-max8997.c
-@@ -94,16 +94,61 @@ static const char *max8997_extcon_cable[] = {
- 	NULL,
- };
+diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
+index a645268..3b1f238 100644
+--- a/drivers/extcon/extcon-max77693.c
++++ b/drivers/extcon/extcon-max77693.c
+@@ -1066,7 +1066,7 @@ static int max77693_muic_probe(struct platform_device *pdev)
+ 	}
  
-+/*
-+ * max8997_muic_set_path - Set hardware line according to attached cable
-+ * @info: the instance including private data of max8997 MUIC
-+ * @value: the path according to attached cable
-+ * @attached: the state of cable (true:attached, false:detached)
-+ *
-+ * The max8997 MUIC device share outside H/W line among a varity of cables,
-+ * so this function set internal path of H/W line according to the type of
-+ * attached cable.
-+ */
-+static int max8997_muic_set_path(struct max8997_muic_info *info,
-+		u8 val, bool attached)
-+{
-+	int ret = 0;
-+	u8 ctrl1, ctrl2 = 0;
-+
-+	if (attached)
-+		ctrl1 = val;
-+	else
-+		ctrl1 = CONTROL1_SW_OPEN;
-+
-+	ret = max8997_update_reg(info->muic,
-+			MAX8997_MUIC_REG_CONTROL1, ctrl1, COMP_SW_MASK);
-+	if (ret < 0) {
-+		dev_err(info->dev, "failed to update MUIC register\n");
-+		return -EAGAIN;
-+	}
-+
-+	if (attached)
-+		ctrl2 |= CONTROL2_CPEN_MASK;	/* LowPwr=0, CPEn=1 */
-+	else
-+		ctrl2 |= CONTROL2_LOWPWR_MASK;	/* LowPwr=1, CPEn=0 */
-+
-+	ret = max8997_update_reg(info->muic,
-+			MAX8997_MUIC_REG_CONTROL2, ctrl2,
-+			CONTROL2_LOWPWR_MASK | CONTROL2_CPEN_MASK);
-+	if (ret < 0) {
-+		dev_err(info->dev, "failed to update MUIC register\n");
-+		return -EAGAIN;
-+	}
-+
-+	dev_info(info->dev,
-+		"CONTROL1 : 0x%02x, CONTROL2 : 0x%02x, state : %s\n",
-+		ctrl1, ctrl2, attached ? "attached" : "detached");
-+
-+	return 0;
-+}
-+
- static int max8997_muic_handle_usb(struct max8997_muic_info *info,
- 			enum max8997_muic_usb_type usb_type, bool attached)
- {
- 	int ret = 0;
- 
- 	if (usb_type == MAX8997_USB_HOST) {
--		/* switch to USB */
--		ret = max8997_update_reg(info->muic, MAX8997_MUIC_REG_CONTROL1,
--				attached ? CONTROL1_SW_USB : CONTROL1_SW_OPEN,
--				CONTROL1_SW_MASK);
-+		ret = max8997_muic_set_path(info, CONTROL1_SW_USB, attached);
- 		if (ret) {
- 			dev_err(info->dev, "failed to update muic register\n");
- 			goto out;
-@@ -131,10 +176,7 @@ static int max8997_muic_handle_dock(struct max8997_muic_info *info,
- {
- 	int ret = 0;
- 
--	/* switch to AUDIO */
--	ret = max8997_update_reg(info->muic, MAX8997_MUIC_REG_CONTROL1,
--				attached ? CONTROL1_SW_AUDIO : CONTROL1_SW_OPEN,
--				CONTROL1_SW_MASK);
-+	ret = max8997_muic_set_path(info, CONTROL1_SW_AUDIO, attached);
- 	if (ret) {
- 		dev_err(info->dev, "failed to update muic register\n");
- 		goto out;
-@@ -161,9 +203,7 @@ static int max8997_muic_handle_jig_uart(struct max8997_muic_info *info,
- 	int ret = 0;
- 
- 	/* switch to UART */
--	ret = max8997_update_reg(info->muic, MAX8997_MUIC_REG_CONTROL1,
--				attached ? CONTROL1_SW_UART : CONTROL1_SW_OPEN,
--				CONTROL1_SW_MASK);
-+	ret = max8997_muic_set_path(info, CONTROL1_SW_UART, attached);
- 	if (ret) {
- 		dev_err(info->dev, "failed to update muic register\n");
- 		goto out;
-diff --git a/include/linux/mfd/max8997-private.h b/include/linux/mfd/max8997-private.h
-index acf42e9..010173a 100644
---- a/include/linux/mfd/max8997-private.h
-+++ b/include/linux/mfd/max8997-private.h
-@@ -223,7 +223,7 @@ enum max8997_muic_reg {
- #define COMP2SW_SHIFT			3
- #define COMN1SW_MASK			(0x7 << COMN1SW_SHIFT)
- #define COMP2SW_MASK			(0x7 << COMP2SW_SHIFT)
--#define CONTROL1_SW_MASK		(COMP2SW_MASK | COMN1SW_MASK)
-+#define COMP_SW_MASK		(COMP2SW_MASK | COMN1SW_MASK)
- 
- #define CONTROL1_SW_USB			((1 << COMP2SW_SHIFT) \
- 						| (1 << COMN1SW_SHIFT))
-@@ -234,6 +234,23 @@ enum max8997_muic_reg {
- #define CONTROL1_SW_OPEN		((0 << COMP2SW_SHIFT) \
- 						| (0 << COMN1SW_SHIFT))
- 
-+#define CONTROL2_LOWPWR_SHIFT		(0)
-+#define CONTROL2_ADCEN_SHIFT		(1)
-+#define CONTROL2_CPEN_SHIFT		(2)
-+#define CONTROL2_SFOUTASRT_SHIFT	(3)
-+#define CONTROL2_SFOUTORD_SHIFT		(4)
-+#define CONTROL2_ACCDET_SHIFT		(5)
-+#define CONTROL2_USBCPINT_SHIFT		(6)
-+#define CONTROL2_RCPS_SHIFT		(7)
-+#define CONTROL2_LOWPWR_MASK		(0x1 << CONTROL2_LOWPWR_SHIFT)
-+#define CONTROL2_ADCEN_MASK		(0x1 << CONTROL2_ADCEN_SHIFT)
-+#define CONTROL2_CPEN_MASK		(0x1 << CONTROL2_CPEN_SHIFT)
-+#define CONTROL2_SFOUTASRT_MASK		(0x1 << CONTROL2_SFOUTASRT_SHIFT)
-+#define CONTROL2_SFOUTORD_MASK		(0x1 << CONTROL2_SFOUTORD_SHIFT)
-+#define CONTROL2_ACCDET_MASK		(0x1 << CONTROL2_ACCDET_SHIFT)
-+#define CONTROL2_USBCPINT_MASK		(0x1 << CONTROL2_USBCPINT_SHIFT)
-+#define CONTROL2_RCPS_MASK		(0x1 << CONTROL2_RCPS_SHIFT)
-+
- #define	MAX8997_ADC_GROUND		0x00
- #define	MAX8997_ADC_MHL			0x01
- #define	MAX8997_ADC_JIG_USB_1		0x18
+ 	/* Register input device for button of dock device */
+-	info->dock = input_allocate_device();
++	info->dock = devm_input_allocate_device(&pdev->dev);
+ 	if (!info->dock) {
+ 		dev_err(&pdev->dev, "%s: failed to allocate input\n", __func__);
+ 		return -ENOMEM;
 -- 
 1.8.0
 
