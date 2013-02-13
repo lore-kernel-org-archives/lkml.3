@@ -1,111 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964788Ab3BMRWi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 12:22:38 -0500
-Received: from barbershop.grep.be ([89.106.240.122]:40398 "EHLO
-	barbershop.grep.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934457Ab3BMRWf (ORCPT
+	id S964807Ab3BMRXO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 12:23:14 -0500
+Received: from smtpfb1-g21.free.fr ([212.27.42.9]:50344 "EHLO
+	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934457Ab3BMRXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 12:22:35 -0500
-X-Greylist: delayed 459 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Feb 2013 12:22:35 EST
-From: Wouter Verhelst <w@uter.be>
-To: linux-kernel@vger.kernel.org
-Cc: Wouter Verhelst <w@uter.be>, <nbd-general@lists.sf.net>,
-        Paul Clements <Paul.Clements@steeleye.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] Update documentation for nbd, and link to mailinglist
-Date: Wed, 13 Feb 2013 18:21:50 +0100
-Message-Id: <1360776110-6022-1-git-send-email-w@uter.be>
+	Wed, 13 Feb 2013 12:23:12 -0500
+From: Nicolas Schichan <nschichan@freebox.fr>
+To: Mircea Gherzan <mgherzan@gmail.com>, Russell King <linux@arm.linux.org.uk>
+Cc: Nicolas Schichan <nschichan@freebox.fr>,
+        "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <daniel.borkmann@tik.ee.ethz.ch>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: net: bpf_jit: fix emit_swap16() for non ARMv6+.
+Date: Wed, 13 Feb 2013 18:22:00 +0100
+Message-Id: <1360776125-14542-1-git-send-email-nschichan@freebox.fr>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Documentation/blockdev/nbd.txt contained some documentation which was
-horribly outdated and probably still dates from the original patch that
-added NBD support to the kernel.
-
-This patch removes the useless and outdated bits. The tools on
-nbd.sf.net are fully documented in manpages, which is where
-documentation for the non-kernel bits should live.
-
-Additionally, add a reference to the MAINTAINERS file for the
-nbd-general mailinglist that is used for discussion of the userland
-tools and the kernel module already.
-
-Cc: <nbd-general@lists.sf.net>
-Cc: Paul Clements <Paul.Clements@steeleye.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Wouter Verhelst <w@uter.be>
+The original code was generating an lsl instructions using the value
+of ARM_R8 (skb_headlen, possibly uninitialized if no skb_headlen
+access was required) as a shift amount.
 ---
- Documentation/blockdev/nbd.txt |   38 ++++----------------------------------
- MAINTAINERS                    |    1 +
- 2 files changed, 5 insertions(+), 34 deletions(-)
+ arch/arm/net/bpf_jit_32.c |   15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
-diff --git a/Documentation/blockdev/nbd.txt b/Documentation/blockdev/nbd.txt
-index aeb93ff..271e607 100644
---- a/Documentation/blockdev/nbd.txt
-+++ b/Documentation/blockdev/nbd.txt
-@@ -4,43 +4,13 @@
-    can use a remote server as one of its block devices. So every time
-    the client computer wants to read, e.g., /dev/nb0, it sends a
-    request over TCP to the server, which will reply with the data read.
--   This can be used for stations with low disk space (or even diskless -
--   if you boot from floppy) to borrow disk space from another computer.
--   Unlike NFS, it is possible to put any filesystem on it, etc. It should
--   even be possible to use NBD as a root filesystem (I've never tried),
--   but it requires a user-level program to be in the initrd to start.
--   It also allows you to run block-device in user land (making server
--   and client physically the same computer, communicating using loopback).
--   
--   Current state: It currently works. Network block device is stable.
--   I originally thought that it was impossible to swap over TCP. It
--   turned out not to be true - swapping over TCP now works and seems
--   to be deadlock-free, but it requires heavy patches into Linux's
--   network layer.
--   
-+   This can be used for stations with low disk space (or even diskless)
-+   to borrow disk space from another computer.
-+   Unlike NFS, it is possible to put any filesystem on it, etc.
-+
-    For more information, or to download the nbd-client and nbd-server
-    tools, go to http://nbd.sf.net/.
+diff --git a/arch/arm/net/bpf_jit_32.c b/arch/arm/net/bpf_jit_32.c
+index a34f1e2..6828ef6 100644
+--- a/arch/arm/net/bpf_jit_32.c
++++ b/arch/arm/net/bpf_jit_32.c
+@@ -341,10 +341,17 @@ static void emit_load_be16(u8 cond, u8 r_res, u8 r_addr, struct jit_ctx *ctx)
  
--   Howto: To setup nbd, you can simply do the following:
--
--   First, serve a device or file from a remote server:
--
--   nbd-server <port-number> <device-or-file-to-serve-to-client>
--
--   e.g.,
--	root@server1 # nbd-server 1234 /dev/sdb1
--
--	(serves sdb1 partition on TCP port 1234)
--
--   Then, on the local (client) system:
--
--   nbd-client <server-name-or-IP> <server-port-number> /dev/nb[0-n]
--
--   e.g.,
--	root@client1 # nbd-client server1 1234 /dev/nb0
--
--	(creates the nb0 device on client1)
--
-    The nbd kernel module need only be installed on the client
-    system, as the nbd-server is completely in userspace. In fact,
-    the nbd-server has been successfully ported to other operating
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 35a56bc..028d719 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -5236,6 +5236,7 @@ F:	net/netrom/
- NETWORK BLOCK DEVICE (NBD)
- M:	Paul Clements <Paul.Clements@steeleye.com>
- S:	Maintained
-+L:	nbd-general@lists.sourceforge.net
- F:	Documentation/blockdev/nbd.txt
- F:	drivers/block/nbd.c
- F:	include/linux/nbd.h
+ static inline void emit_swap16(u8 r_dst, u8 r_src, struct jit_ctx *ctx)
+ {
+-	emit(ARM_LSL_R(ARM_R1, r_src, 8), ctx);
+-	emit(ARM_ORR_S(r_dst, ARM_R1, r_src, SRTYPE_LSL, 8), ctx);
+-	emit(ARM_LSL_I(r_dst, r_dst, 8), ctx);
+-	emit(ARM_LSL_R(r_dst, r_dst, 8), ctx);
++	/* r_dst = (r_src << 8) | (r_src >> 8) */
++	emit(ARM_LSL_I(ARM_R1, r_src, 8), ctx);
++	emit(ARM_ORR_S(r_dst, ARM_R1, r_src, SRTYPE_LSR, 8), ctx);
++
++	/*
++	 * we need to mask out the bits set in r_dst[23:16] due to
++	 * the first shift instruction.
++	 *
++	 * note that 0x8ff is the encoded immediate 0x00ff0000.
++	 */
++	emit(ARM_BIC_I(r_dst, r_dst, 0x8ff), ctx);
+ }
+ 
+ #else  /* ARMv6+ */
 -- 
 1.7.10.4
 
