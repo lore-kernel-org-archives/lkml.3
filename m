@@ -1,110 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934059Ab3BMOZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 09:25:29 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:57591 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756005Ab3BMOZ2 (ORCPT
+	id S934068Ab3BMO0K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 09:26:10 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28414 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755963Ab3BMO0I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 09:25:28 -0500
-Date: Wed, 13 Feb 2013 15:25:22 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Andrew Murray <andrew.murray@arm.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] of/pci: Provide support for parsing PCI DT ranges
- property
-Message-ID: <20130213142521.GA6223@avionic-0098.mockup.avionic-design.de>
-References: <1360570940-17086-1-git-send-email-thierry.reding@avionic-design.de>
- <1360570940-17086-2-git-send-email-thierry.reding@avionic-design.de>
- <511949C7.7070604@gmail.com>
- <20130212064523.GA28850@avionic-0098.mockup.avionic-design.de>
- <511BA1E0.9000404@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jI8keyz6grp/JLjh"
-Content-Disposition: inline
-In-Reply-To: <511BA1E0.9000404@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:t1Ur/Ic95WBkLImwXGpXlH7TyrOZvETh3h4WYew7nNp
- DgAXRkHsgEIJfPlEvon3FxlP7aYm47f3zwAMfFPIM+QaRBWOqo
- 4RVJ7iipIbUIxZ0Y+CsZyxStrR76oyc3j+ylqSSChRkve1nmxY
- 70x1xEECPmwLUXE19UO9BHWzj/OWd5XnHZHXHfvpXpCTy3ycAi
- kKh+d+YS9e85HvyUfqEXfYY4pbYTjBPel0VIUsObpO2LkJ5CG0
- s2kekTdVsxW4yklzLf+uwQj68EwJQode1tIm/DdGlqiDq/IDtT
- ev0dhbxBAufwm8OK0xEH+Mv3/Rm+InrLj6l0pLSZwM5eQfjbg8
- AUzL8oEpD4irHz8vB1YT/OMfom6tpF4RYCPQ5QjjKGoNPPyXHQ
- zL+rjJSk9oCBTnAFJNZZNLYCruEQ8/mxKE=
+	Wed, 13 Feb 2013 09:26:08 -0500
+X-Authority-Analysis: v=2.0 cv=NqdTgrhJ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=CUY9tu7_gSIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=hAmzjiCDmqAA:10 a=CX-xcFdQVJGMRqQBx8oA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1360765565.23152.5.camel@gandalf.local.home>
+Subject: [RFC][PATCH RT] acpi/rt: Convert acpi lock back to a raw_spinlock_t
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@gmail.com>,
+        Clark Williams <clark@redhat.com>
+Date: Wed, 13 Feb 2013 09:26:05 -0500
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We hit the following bug with 3.6-rt:
 
---jI8keyz6grp/JLjh
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+[    5.898990] BUG: scheduling while atomic: swapper/3/0/0x00000002 
+[    5.898991] no locks held by swapper/3/0. 
+[    5.898993] Modules linked in: 
+[    5.898996] Pid: 0, comm: swapper/3 Not tainted 3.6.11-rt28.19.el6rt.x86_64.debug #1 
+[    5.898997] Call Trace: 
+[    5.899011]  [<ffffffff810804e7>] __schedule_bug+0x67/0x90 
+[    5.899028]  [<ffffffff81577923>] __schedule+0x793/0x7a0 
+[    5.899032]  [<ffffffff810b4e40>] ? debug_rt_mutex_print_deadlock+0x50/0x200 
+[    5.899034]  [<ffffffff81577b89>] schedule+0x29/0x70 
+[    5.899036] BUG: scheduling while atomic: swapper/7/0/0x00000002 
+[    5.899037] no locks held by swapper/7/0. 
+[    5.899039]  [<ffffffff81578525>] rt_spin_lock_slowlock+0xe5/0x2f0 
+[    5.899040] Modules linked in: 
+[    5.899041]  
+[    5.899045]  [<ffffffff81579a58>] ? _raw_spin_unlock_irqrestore+0x38/0x90 
+[    5.899046] Pid: 0, comm: swapper/7 Not tainted 3.6.11-rt28.19.el6rt.x86_64.debug #1 
+[    5.899047] Call Trace: 
+[    5.899049]  [<ffffffff81578bc6>] rt_spin_lock+0x16/0x40 
+[    5.899052]  [<ffffffff810804e7>] __schedule_bug+0x67/0x90 
+[    5.899054]  [<ffffffff8157d3f0>] ? notifier_call_chain+0x80/0x80 
+[    5.899056]  [<ffffffff81577923>] __schedule+0x793/0x7a0 
+[    5.899059]  [<ffffffff812f2034>] acpi_os_acquire_lock+0x1f/0x23 
+[    5.899062]  [<ffffffff810b4e40>] ? debug_rt_mutex_print_deadlock+0x50/0x200 
+[    5.899068]  [<ffffffff8130be64>] acpi_write_bit_register+0x33/0xb0 
+[    5.899071]  [<ffffffff81577b89>] schedule+0x29/0x70 
+[    5.899072]  [<ffffffff8130be13>] ? acpi_read_bit_register+0x33/0x51 
+[    5.899074]  [<ffffffff81578525>] rt_spin_lock_slowlock+0xe5/0x2f0 
+[    5.899077]  [<ffffffff8131d1fc>] acpi_idle_enter_bm+0x8a/0x28e 
+[    5.899079]  [<ffffffff81579a58>] ? _raw_spin_unlock_irqrestore+0x38/0x90 
+[    5.899081]  [<ffffffff8107e5da>] ? this_cpu_load+0x1a/0x30 
+[    5.899083]  [<ffffffff81578bc6>] rt_spin_lock+0x16/0x40 
+[    5.899087]  [<ffffffff8144c759>] cpuidle_enter+0x19/0x20 
+[    5.899088]  [<ffffffff8157d3f0>] ? notifier_call_chain+0x80/0x80 
+[    5.899090]  [<ffffffff8144c777>] cpuidle_enter_state+0x17/0x50 
+[    5.899092]  [<ffffffff812f2034>] acpi_os_acquire_lock+0x1f/0x23 
+[    5.899094]  [<ffffffff8144d1a1>] cpuidle899101]  [<ffffffff8130be13>] ? 
 
-On Wed, Feb 13, 2013 at 08:23:28AM -0600, Rob Herring wrote:
-> On 02/12/2013 12:45 AM, Thierry Reding wrote:
-> > On Mon, Feb 11, 2013 at 01:43:03PM -0600, Rob Herring wrote:
-> >> On 02/11/2013 02:22 AM, Thierry Reding wrote:
-> >>> From: Andrew Murray <andrew.murray@arm.com>
->=20
-> >>> @@ -13,6 +13,7 @@
-> >>>  #define OF_CHECK_COUNTS(na, ns)	(OF_CHECK_ADDR_COUNT(na) && (ns) > 0)
-> >>> =20
-> >>>  static struct of_bus *of_match_bus(struct device_node *np);
-> >>> +static struct of_bus *of_find_bus(const char *name);
-> >>
-> >> Can you move this function up to avoid the forward declaration.
-> >=20
-> > It needs to be defined after the of_busses structure, which is defined
-> > below the CONFIG_PCI block where of_pci_process_ranges() is defined. I'd
-> > have to move that one as well and add another #ifdef CONFIG_PCI section.
-> > If you prefer that I can do that.
->=20
-> Okay, it's fine as is.
->=20
-> >>> +static struct of_bus *of_find_bus(const char *name)
-> >>> +{
-> >>> +	unsigned int i;
-> >>> +
-> >>> +	for (i =3D 0; i < ARRAY_SIZE(of_busses); i++)
-> >>> +		if (strcmp(name, of_busses[i].name) =3D=3D 0)
-> >>                                               ^
-> >> space needed.
-> >=20
-> > I don't understand. Do you want the space to go between '.' and "name"?
->=20
-> Must have been some dirt on my screen... Never mind.
->=20
-> I'll apply these for 3.9.
+As the acpi code disables interrupts in acpi_idle_enter_bm, and calls
+code that grabs the acpi lock, it causes issues as the lock is currently
+in RT a sleeping lock.
 
-Great, thanks!
+The lock was converted from a raw to a sleeping lock due to some
+previous issues, and tests that showed it didn't seem to matter.
+Unfortunately, it did matter for one of our boxes.
 
-Thierry
+This patch converts the lock back to a raw lock. I've run this code on a
+few of my own machines, one being my laptop that uses the acpi quite
+extensively. I've been able to suspend and resume without issues.
 
---jI8keyz6grp/JLjh
-Content-Type: application/pgp-signature
+But as it may have issues still with other hardware, I'm posting this as
+an RFC.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-iQIcBAEBAgAGBQJRG6JRAAoJEN0jrNd/PrOhJYsQALAVVLz+8rPIJ79Ncz9y4hKj
-lKG4wpOc+CAVCoiZ+XCOm/zZojDD05Ly9J8seCnP/ssOkgSv2G0c/Kf8MqieB1kK
-mHn5x5lLWlCYJ31k1s9r39KnWYxptLzvd0mrvTi9ntD1ekA7bATsDBU/QUS0LUEY
-8TmwNrOLPxCuEvHh6gandYObEkofCe9CSpunTjnxhn+J69UD9n7ycXn3zGBDyxBZ
-2zVq2xKE0SG6HPpg6+NGWcRNxR/hLrbWHVZN1txDQp5TJBfyeXwsjonmh0s8iv77
-4aae7guvqoN6OgUjlvpI2SDQOhH1iizD0cHXBm6VC5EGQ1X83mtjBB+dEbFA4eoK
-CF6KrXPrYp9SvFnXfbrLna4/54UfJW/qQvMwn0jGMMqetKdy1SwsdBB7IpH5ue+m
-qU2rflXqnjGeu1f7bet1/tJz3F2ODs9CR+rD8K0yrRxDOL/jUfPFLFe8ryy03L8c
-K8QjziE4Vd7XxGIr23datbsSIRjoIFsJbvg63LsI7jG+Y8JAI2jjke3BndglXg+5
-MhPpGi14McQf3B6tePThXdxQW9v4tfjI6V/BNiHSK2hpG+BWW5b0rc38YA2XSDoh
-SRNetvVKcpcvVymXp7mAvTkWz6Wjwj0KkFIyKF81DQYkE0lOEJW3dEOtotFyjRds
-EyWmvsh/X5kUbjRFEH5k
-=7xLs
------END PGP SIGNATURE-----
+diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+index 9eaf708..83d38ed 100644
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -1432,7 +1432,7 @@ void acpi_os_delete_lock(acpi_spinlock handle)
+ acpi_cpu_flags acpi_os_acquire_lock(acpi_spinlock lockp)
+ {
+ 	acpi_cpu_flags flags;
+-	spin_lock_irqsave(lockp, flags);
++	raw_spin_lock_irqsave(lockp, flags);
+ 	return flags;
+ }
+ 
+@@ -1442,7 +1442,7 @@ acpi_cpu_flags acpi_os_acquire_lock(acpi_spinlock lockp)
+ 
+ void acpi_os_release_lock(acpi_spinlock lockp, acpi_cpu_flags flags)
+ {
+-	spin_unlock_irqrestore(lockp, flags);
++	raw_spin_unlock_irqrestore(lockp, flags);
+ }
+ 
+ #ifndef ACPI_USE_LOCAL_CACHE
+diff --git a/include/acpi/platform/aclinux.h b/include/acpi/platform/aclinux.h
+index 7509be3..484cf8c 100644
+--- a/include/acpi/platform/aclinux.h
++++ b/include/acpi/platform/aclinux.h
+@@ -71,7 +71,7 @@
+ #define strtoul                     simple_strtoul
+ 
+ #define acpi_cache_t                        struct kmem_cache
+-#define acpi_spinlock                       spinlock_t *
++#define acpi_spinlock                       raw_spinlock_t *
+ #define acpi_cpu_flags                      unsigned long
+ 
+ #else /* !__KERNEL__ */
+@@ -170,7 +170,7 @@ static inline void *acpi_os_acquire_object(acpi_cache_t * cache)
+ 								\
+ 	if (lock) {						\
+ 		*(__handle) = lock;				\
+-		spin_lock_init(*(__handle));			\
++		raw_spin_lock_init(*(__handle));		\
+ 	}							\
+ 	lock ? AE_OK : AE_NO_MEMORY;				\
+ })
 
---jI8keyz6grp/JLjh--
+
