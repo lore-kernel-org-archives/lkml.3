@@ -1,97 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932500Ab3BMJ25 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 04:28:57 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:57981 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932453Ab3BMJ2y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 04:28:54 -0500
-From: Sourav Poddar <sourav.poddar@ti.com>
-To: <balbi@ti.com>, <santosh.shilimkar@ti.com>, <b-cousson@ti.com>,
-        <tony@atomide.com>, <linux-omap@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-CC: Sourav Poddar <sourav.poddar@ti.com>
-Subject: [PATCH 5/5] arm: dts: omap5-evm: Add mcspi data
-Date: Wed, 13 Feb 2013 14:58:44 +0530
-Message-ID: <1360747724-1601-1-git-send-email-sourav.poddar@ti.com>
-X-Mailer: git-send-email 1.7.1
+	id S1757682Ab3BMJaw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 04:30:52 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:53199 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753548Ab3BMJau (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 04:30:50 -0500
+Message-ID: <511B5D22.7090100@ahsoftware.de>
+Date: Wed, 13 Feb 2013 10:30:10 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: linux-kernel@vger.kernel.org, Herbert Xu <herbert@gondor.hengli.com.au>,
+        David Miller <davem@davemloft.net>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: MODSIGN without RTC?
+References: <5112EA69.6010100@ahsoftware.de> <5112FE21.4020404@ahsoftware.de> <CAMuHMdXu0-9=wHevviG=4s5fC=wxkT9XbXhP6ztOyGkkeb6+8Q@mail.gmail.com> <51135137.4010003@ahsoftware.de>
+In-Reply-To: <51135137.4010003@ahsoftware.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add mcspi node and pinmux data for omap5 mcspi controller.
+Am 07.02.2013 08:01, schrieb Alexander Holler:
 
-Tested on omap5430 evm with 3.8-rc6 custom kernel.
+> And the dream of every vendor, finally a working expiration date. And a
+> nice TV-B-Gone, just feed a wrong date once. ;)
 
-Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
----
- arch/arm/boot/dts/omap5-evm.dts |   46 +++++++++++++++++++++++++++++++++++++++
- 1 files changed, 46 insertions(+), 0 deletions(-)
+Just in case someone missed what I wanted to hint: That date problem has 
+implications for devices with a RTC too. If they need too load a kernel 
+and signed modules to enable the user to modify the date (of the RTC), 
+setting a date outside the range specified in the certificate and 
+rebooting will brick such devices.
 
-diff --git a/arch/arm/boot/dts/omap5-evm.dts b/arch/arm/boot/dts/omap5-evm.dts
-index a4784be..64edd51 100644
---- a/arch/arm/boot/dts/omap5-evm.dts
-+++ b/arch/arm/boot/dts/omap5-evm.dts
-@@ -115,6 +115,33 @@
- 			0x186 0x100     /* i2c5_sda INPUTENABLE | MODE0 */
- 		>;
- 	};
-+
-+	mcspi2_pins: pinmux_mcspi2_pins {
-+		pinctrl-single,pins = <
-+			0xbc 0x100	/*  MCSPI2_CLK INPUTENABLE | MODE0 */
-+			0xbe 0x100	/*  MCSPI2_SIMO INPUTENABLE | MODE0 */
-+			0xc0 0x118	/*  MCSPI2_SOMI PULLUP | INPUTENABLE | MODE0*/
-+			0xc2 0x0	/*  MCSPI2_CS MODE0*/
-+		>;
-+	};
-+
-+	mcspi3_pins: pinmux_mcspi3_pins {
-+		pinctrl-single,pins = <
-+			0x78 0x101	/*  MCSPI2_SOMI INPUTENABLE | MODE1 */
-+			0x7a 0x101	/*  MCSPI2_CS INPUTENABLE | MODE1 */
-+			0x7c 0x101	/*  MCSPI2_SIMO INPUTENABLE | MODE1 */
-+			0x7e 0x101	/*  MCSPI2_CLK INPUTENABLE | MODE1 */
-+		>;
-+	};
-+
-+	mcspi4_pins: pinmux_mcspi4_pins {
-+		pinctrl-single,pins = <
-+			0x164 0x101	/*  MCSPI2_CLK INPUTENABLE | MODE1 */
-+			0x168 0x101	/*  MCSPI2_SIMO INPUTENABLE | MODE1 */
-+			0x16a 0x101	/*  MCSPI2_SOMI INPUTENABLE | MODE1 */
-+			0x16c 0x101	/*  MCSPI2_CS INPUTENABLE | MODE1 */
-+		>;
-+	};
- };
- 
- &mmc1 {
-@@ -213,3 +240,22 @@
- 	cs1-used;
- 	device-handle = <&samsung_K3PE0E000B>;
- };
-+
-+&mcspi1 {
-+
-+};
-+
-+&mcspi2 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&mcspi2_pins>;
-+};
-+
-+&mcspi3 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&mcspi3_pins>;
-+};
-+
-+&mcspi4 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&mcspi4_pins>;
-+};
--- 
-1.7.1
+Regards,
+
+Alexander
 
