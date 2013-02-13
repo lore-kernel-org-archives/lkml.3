@@ -1,70 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932299Ab3BMI2l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 03:28:41 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:45903 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758952Ab3BMI2j (ORCPT
+	id S932308Ab3BMIc1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 03:32:27 -0500
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:34923 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752790Ab3BMIc0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 03:28:39 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 80.134.164.145
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+xC8scqPe+yh719b31W2NIqBmcoCCeiuU=
-Message-ID: <511B4EB1.9010708@googlemail.com>
-Date: Wed, 13 Feb 2013 09:28:33 +0100
-From: =?ISO-8859-1?Q?Holger_Hoffst=E4tte?= 
-	<holger.hoffstaette@googlemail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Wed, 13 Feb 2013 03:32:26 -0500
+Message-ID: <511B4F95.1050404@redhat.com>
+Date: Wed, 13 Feb 2013 09:32:21 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-CC: Jonathan Nieder <jrnieder@gmail.com>, stable@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Greg KH <gregkh@linuxfoundation.org>, Tilman Schmidt <tilman@imap.cc>,
-        Matthias Schniedermeyer <ms@citd.de>
-Subject: Re: [regression] external HDD in USB3 enclosure cannot be dynamically
- removed (Re: Linux 3.7.5)
-References: <20130128045658.GA3488@kroah.com> <pan.2013.01.28.11.42.16.556318@googlemail.com> <20130128143907.GA2940@kroah.com> <pan.2013.01.28.20.33.44.918987@googlemail.com> <20130128204639.GB7759@google.com> <20130212004023.GA8427@xanatos> <511A1AF1.9080107@googlemail.com> <20130212204224.GC8427@xanatos>
-In-Reply-To: <20130212204224.GC8427@xanatos>
-X-Enigmail-Version: 1.5
+CC: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH v2 00/14] Corrections and customization of the SG_IO command
+ whitelist (CVE-2012-4542)
+References: <1360163761-8541-1-git-send-email-pbonzini@redhat.com>
+In-Reply-To: <1360163761-8541-1-git-send-email-pbonzini@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12.02.2013 21:42, Sarah Sharp wrote:
-> [..]
-> I think I see the issue.  Your host controller reports the Inactive
-> state after a USB disconnect.  My host controllers go to the RxDetect
-> state on a disconnect.
+Il 06/02/2013 16:15, Paolo Bonzini ha scritto:
+> This series regards the whitelist that is used for the SG_IO ioctl.  This
+> whitelist has three problems:
 > 
-> The patches that went into 3.8 and the stable kernels to better handle
-> the Inactive state were not designed to handle a connected device going
-> to the Inactive state.  I thought that would be a rare case, but
-> apparently it's not.
+> * the bitmap of allowed commands is designed for MMC devices (roughly,
+>   "play/burn CDs without requiring root") but some opcodes overlap across SCSI
+>   device classes and have different meanings for different classes.
 > 
-> There was a further set of patches queued for 3.9 to deal with connected
-> devices going to the Inactive state, but they looked like they were too
-> big for stable:
+> * also because the bitmap of allowed commands is designed for MMC devices
+>   only, some commands are missing even though they are generally useful and
+>   not insecure.  At least not more insecure than anything else you can
+>   do if you have access to /dev/sdX or /dev/stX nodes.
 > 
-> d3b9d7a USB: Fix connected device switch to Inactive state.
-> a24a607 USB: Rip out recursive call on warm port reset.
-> 2d4fa94 USB: Prepare for refactoring by adding extra udev checks.
-> 0fe51aa USB: Don't use EHCI port sempahore for USB 3.0 hubs.
+> * the whitelist can be disabled per-process but not per-disk.  In addition,
+>   the required capability (CAP_SYS_RAWIO) gives access to a range of other 
+>   resources, enough to make it insecure.
 > 
-> Can you retry with Greg's usb-next branch?
+> The series corrects these problems.  Patches 1-4 solve the first problem,
+> which also has an assigned CVE, by using different bitmaps for the various
+> device classes.  Patches 5-11 solve the second by adding more commands
+> to the bitmaps.  Patches 12 and 13 solve the third, and were already
+> posted but ignored by the maintainers despite multiple pings.
 > 
-> git clone git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git -b usb-next
+> Note: checkpatch hates the formatting of the command table.  I know about this,
+> and ensured that there are no errors in the rest of the code.  The current
+> formatting is IMHO quite handy, and roughly based on the files available
+> from the SCSI standard body.
 > 
-> If that fixes your problem, we should either get those additional
-> patches into 3.8 and the stable trees, or do a revert of the whole
-> series and just let 3.9 carry the full patchset.
+> Ok for the next merge window?
+> 
+> Paolo
+> 
+> v1->v2: remove 2 MMC commands and 6 SBC commands (see patches 6 and 9
+>         for details).  Added patch 14 and added a few more scanner
+>         commands based on SANE (scanners are not whitelisted by default,
+>         also were not in v1, but this makes it possible to opt into the
+>         whitelist out of paranoia).  Removed C++ comments.  Removed the
+>         large #if 0'd list of commands that the kernel does not pass
+>         though.  Marked blk_set_cmd_filter_defaults as __init.
+> 
+> 
+> Paolo Bonzini (14):
+>   sg_io: pass request_queue to blk_verify_command
+>   sg_io: reorganize list of allowed commands
+>   sg_io: use different default filters for each device class
+>   sg_io: resolve conflicts between commands assigned to multiple
+>     classes (CVE-2012-4542)
+>   sg_io: whitelist a few more commands for rare & obsolete device types
+>   sg_io: whitelist another command for multimedia devices
+>   sg_io: whitelist a few more commands for media changers
+>   sg_io: whitelist a few more commands for tapes
+>   sg_io: whitelist a few more commands for disks
+>   sg_io: whitelist a few obsolete commands
+>   sg_io: mark blk_set_cmd_filter_defaults as __init
+>   sg_io: remove remnants of sysfs SG_IO filters
+>   sg_io: introduce unpriv_sgio queue flag
+>   sg_io: use unpriv_sgio to disable whitelisting for scanners
+> 
+>  Documentation/block/queue-sysfs.txt |    8 +
+>  block/blk-sysfs.c                   |   33 +++
+>  block/bsg.c                         |    2 +-
+>  block/scsi_ioctl.c                  |  369 ++++++++++++++++++++++++++---------
+>  drivers/scsi/scsi_scan.c            |   14 ++-
+>  drivers/scsi/sg.c                   |    6 +-
+>  include/linux/blkdev.h              |    8 +-
+>  include/linux/genhd.h               |    9 -
+>  include/scsi/scsi.h                 |    3 +
+>  9 files changed, 344 insertions(+), 108 deletions(-)
+> 
 
-Good news! This one does indeed work as expected - the device can be
-removed and is gone for good. Upstream & Stable plz :)
+Ping? I'm not even sure what tree this should host these patches...
 
-thanks all!
-
-Holger
-
+Paolo
