@@ -1,44 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760329Ab3BMRWc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 12:22:32 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40427 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759964Ab3BMRW3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 12:22:29 -0500
-Message-ID: <511BCB81.1010907@zytor.com>
-Date: Wed, 13 Feb 2013 09:21:05 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>
-CC: Matthew Garrett <matthew.garrett@nebula.com>,
-        Borislav Petkov <bp@alien8.de>, Kees Cook <keescook@chromium.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH] x86: Lock down MSR writing in secure boot
-References: <dee64752-850c-4d78-b703-f47a985bc13e@email.android.com>    <CAGXu5jLAufTRm=sDST0br_WEkn4o0Hpjv2jDP2Na=cCvuM+MGg@mail.gmail.com>    <1360355671.18083.18.camel@x230.lan>    <CAGXu5jKo2PfMBO4A0ZgQcrPuj8OHNaff+CjAesOAWkZc0vB9+Q@mail.gmail.com>    <51157C9C.6030501@zytor.com> <20130208230655.GB28990@pd.tnic>    <1360366012.18083.21.camel@x230.lan> <5115A4CC.3080102@zytor.com>    <1360373383.18083.23.camel@x230.lan>    <CAGXu5j+xvJ3L5ejxtZ-Jw3F6rV7OsrE0_HZCGu_er0rH2_PwKA@mail.gmail.com>    <20130209092925.GA17728@pd.tnic> <1360422712.18083.24.camel@x230.lan>   <511AE2CC.5040705@zytor.com> <1360733962.18083.30.camel@x230.lan>  <511B2EB9.5070406@zytor.com> <1360736860.18083.33.camel@x230.lan> <511B33BC.9080307@zytor.com> <511B4E61.1040604@redhat.com>
-In-Reply-To: <511B4E61.1040604@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S964788Ab3BMRWi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 12:22:38 -0500
+Received: from barbershop.grep.be ([89.106.240.122]:40398 "EHLO
+	barbershop.grep.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934457Ab3BMRWf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 12:22:35 -0500
+X-Greylist: delayed 459 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Feb 2013 12:22:35 EST
+From: Wouter Verhelst <w@uter.be>
+To: linux-kernel@vger.kernel.org
+Cc: Wouter Verhelst <w@uter.be>, <nbd-general@lists.sf.net>,
+        Paul Clements <Paul.Clements@steeleye.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] Update documentation for nbd, and link to mailinglist
+Date: Wed, 13 Feb 2013 18:21:50 +0100
+Message-Id: <1360776110-6022-1-git-send-email-w@uter.be>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13/2013 12:27 AM, Paolo Bonzini wrote:
->
-> On non-x86 machines CAP_SYS_RAWIO is much less dangerous, especially
-> when coupled with file DAC.
->
+Documentation/blockdev/nbd.txt contained some documentation which was
+horribly outdated and probably still dates from the original patch that
+added NBD support to the kernel.
 
-"File DAC"?
+This patch removes the useless and outdated bits. The tools on
+nbd.sf.net are fully documented in manpages, which is where
+documentation for the non-kernel bits should live.
 
-	-hpa
+Additionally, add a reference to the MAINTAINERS file for the
+nbd-general mailinglist that is used for discussion of the userland
+tools and the kernel module already.
 
+Cc: <nbd-general@lists.sf.net>
+Cc: Paul Clements <Paul.Clements@steeleye.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Wouter Verhelst <w@uter.be>
+---
+ Documentation/blockdev/nbd.txt |   38 ++++----------------------------------
+ MAINTAINERS                    |    1 +
+ 2 files changed, 5 insertions(+), 34 deletions(-)
+
+diff --git a/Documentation/blockdev/nbd.txt b/Documentation/blockdev/nbd.txt
+index aeb93ff..271e607 100644
+--- a/Documentation/blockdev/nbd.txt
++++ b/Documentation/blockdev/nbd.txt
+@@ -4,43 +4,13 @@
+    can use a remote server as one of its block devices. So every time
+    the client computer wants to read, e.g., /dev/nb0, it sends a
+    request over TCP to the server, which will reply with the data read.
+-   This can be used for stations with low disk space (or even diskless -
+-   if you boot from floppy) to borrow disk space from another computer.
+-   Unlike NFS, it is possible to put any filesystem on it, etc. It should
+-   even be possible to use NBD as a root filesystem (I've never tried),
+-   but it requires a user-level program to be in the initrd to start.
+-   It also allows you to run block-device in user land (making server
+-   and client physically the same computer, communicating using loopback).
+-   
+-   Current state: It currently works. Network block device is stable.
+-   I originally thought that it was impossible to swap over TCP. It
+-   turned out not to be true - swapping over TCP now works and seems
+-   to be deadlock-free, but it requires heavy patches into Linux's
+-   network layer.
+-   
++   This can be used for stations with low disk space (or even diskless)
++   to borrow disk space from another computer.
++   Unlike NFS, it is possible to put any filesystem on it, etc.
++
+    For more information, or to download the nbd-client and nbd-server
+    tools, go to http://nbd.sf.net/.
+ 
+-   Howto: To setup nbd, you can simply do the following:
+-
+-   First, serve a device or file from a remote server:
+-
+-   nbd-server <port-number> <device-or-file-to-serve-to-client>
+-
+-   e.g.,
+-	root@server1 # nbd-server 1234 /dev/sdb1
+-
+-	(serves sdb1 partition on TCP port 1234)
+-
+-   Then, on the local (client) system:
+-
+-   nbd-client <server-name-or-IP> <server-port-number> /dev/nb[0-n]
+-
+-   e.g.,
+-	root@client1 # nbd-client server1 1234 /dev/nb0
+-
+-	(creates the nb0 device on client1)
+-
+    The nbd kernel module need only be installed on the client
+    system, as the nbd-server is completely in userspace. In fact,
+    the nbd-server has been successfully ported to other operating
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 35a56bc..028d719 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -5236,6 +5236,7 @@ F:	net/netrom/
+ NETWORK BLOCK DEVICE (NBD)
+ M:	Paul Clements <Paul.Clements@steeleye.com>
+ S:	Maintained
++L:	nbd-general@lists.sourceforge.net
+ F:	Documentation/blockdev/nbd.txt
+ F:	drivers/block/nbd.c
+ F:	include/linux/nbd.h
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+1.7.10.4
 
