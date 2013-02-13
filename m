@@ -1,253 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932534Ab3BMJh4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 04:37:56 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:43568 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932263Ab3BMJfP (ORCPT
+	id S932559Ab3BMJiO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 04:38:14 -0500
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:55977 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932180Ab3BMJiK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 04:35:15 -0500
-X-AuditID: cbfee61a-b7f7d6d000000f4e-c4-511b5e4f824a
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: gregkh@linuxfoundation.org, sameo@linux.intel.com
-Cc: linux-kernel@vger.kernel.org, myungjoo.ham@samsung.com,
-        kyungmin.park@samsung.com, Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCH 4/9] extcon: max8997: Move defined constant to header file
-Date: Wed, 13 Feb 2013 18:35:10 +0900
-Message-id: <1360748110-21909-1-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.8.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFLMWRmVeSWpSXmKPExsVy+t8zTV3/OOlAg7vfNSwu75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfG5HlvWQuOWVS8utrG0sC4QL+LkZNDQsBEYs/FaYwQtpjEhXvr
-	2boYuTiEBJYxSkzoPs8CU3T+4DZ2iMR0Rond3+8wQzgLmCSm9+1hA6liE9CS2P/iBpgtImAq
-	cerpdXYQm1mgVuL05bvMILawgJfE7JnXwGpYBFQlDl7/CBTn4OAVcJVY1KEKsUxO4sOeR2DL
-	JAR2sEnsn7mWEaJeQOLb5EMsIPUSArISmw4wQ9RLShxccYNlAqPgAkaGVYyiqQXJBcVJ6bmG
-	esWJucWleel6yfm5mxghISW1g3Flg8UhRgEORiUeXocQqUAh1sSy4srcQ4wSHMxKIryO/tKB
-	QrwpiZVVqUX58UWlOanFhxiTgZZPZJYSTc4HhnteSbyhsYGxoaGloZmppakBacJK4ryMp54E
-	CAmkJ5akZqemFqQWwWxh4uCUamBMWuB40se7+NLz/+yfciZyx7jdOPbug/2HDy8mTO/TaxJ0
-	2GtremTeMa0rVsfvXzJIc9+sp3dgZ0bf5RyBn+uvhjzZLsYrc+P6H9lb3Hm3G3bNVuiWUvWu
-	tuV9m3vljP6ti9snrxOJsfl8ZafNj7lvsy+cDg5la05Yc1tNmo3zQM33fTuKhP6dVGIpzkg0
-	1GIuKk4EAPMvF+BtAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkkeLIzCtJLcpLzFFi42I5/e+xoK5/nHSgwesGGYvLu+awOTB6fN4k
-	F8AY1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQM0
-	VUmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeYMXneW9aCYxYVr662sTQw
-	LtDvYuTkkBAwkTh/cBs7hC0mceHeerYuRi4OIYHpjBK7v99hhnAWMElM79vDBlLFJqAlsf/F
-	DTBbRMBU4tTT62DdzAK1Eqcv32UGsYUFvCRmz7wGVsMioCpx8PpHoDgHB6+Aq8SiDlWIZXIS
-	H/Y8Yp/AyL2AkWEVo2hqQXJBcVJ6rqFecWJucWleul5yfu4mRnDAPpPawbiyweIQowAHoxIP
-	r0OIVKAQa2JZcWXuIUYJDmYlEV5Hf+lAId6UxMqq1KL8+KLSnNTiQ4zJQMsnMkuJJucDoymv
-	JN7Q2MTMyNLIzNjE3NiYNGElcV7GU08ChATSE0tSs1NTC1KLYLYwcXBKNTCa339fwJtqvsCT
-	YfKOK2XHVnwUNZK7wb50yyIOxUWtV/O+T7N867k332Xf889anS2K15yDOmT+q2/49Hh2EmNj
-	7gmTB3qSBo9v1+uc/KkaaG1+U07b52dCX9G3Y02y99ZUNQktmG0WLPj+0//Myxv/PnkYEbzb
-	1WyJy7dlitOvrn/y+0iv1dwuJZbijERDLeai4kQArR6qTJwCAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 13 Feb 2013 04:38:10 -0500
+MIME-Version: 1.0
+In-Reply-To: <874nhgps85.fsf@sejong.aot.lge.com>
+References: <1360678168-6974-1-git-send-email-eranian@google.com>
+	<1360678168-6974-2-git-send-email-eranian@google.com>
+	<874nhgps85.fsf@sejong.aot.lge.com>
+Date: Wed, 13 Feb 2013 10:38:09 +0100
+Message-ID: <CABPqkBR=H5NOTjjEXRzC-tU3K+tbkYHYTzBvjyZyn3-Xu68UVw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] perf stat: refactor aggregation code
+From: Stephane Eranian <eranian@google.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch move defined constants to header file(max77693-private.h)
-because of mask/unmask selectively interrupt of MUIC device according
-to attribute of H/W board.
+On Wed, Feb 13, 2013 at 8:50 AM, Namhyung Kim <namhyung@kernel.org> wrote:
+> Hi Stephane,
+>
+> On Tue, 12 Feb 2013 15:09:27 +0100, Stephane Eranian wrote:
+>> Refactor aggregation code by introducing
+>> a single aggr_mode variable and an enum
+>> for aggregation.
+>>
+>> Also refactor cpumap code having to do
+>> with cpu to socket mappings. All in preparation
+>> for extended modes, such as cpu -> core.
+>>
+>> Also fix socket aggregation and ensure
+>> that sockets are printed in increasing order.
+> [snip]
+>> -static void print_aggr_socket(char *prefix)
+>> +static void print_aggr(char *prefix)
+>>  {
+>>       struct perf_evsel *counter;
+>> +     int cpu, s, s2, id, nr;
+>>       u64 ena, run, val;
+>> -     int cpu, s, s2, sock, nr;
+>>
+>> -     if (!sock_map)
+>> +     if (!(aggr_map || aggr_get_id))
+>>               return;
+>>
+>> -     for (s = 0; s < sock_map->nr; s++) {
+>> -             sock = cpu_map__socket(sock_map, s);
+>> +     for (s = 0; s < aggr_map->nr; s++) {
+>> +             id = aggr_map->map[s];
+>>               list_for_each_entry(counter, &evsel_list->entries, node) {
+>>                       val = ena = run = 0;
+>>                       nr = 0;
+> ...
+>> @@ -1073,14 +1081,20 @@ static void print_stat(int argc, const char **argv)
+>>               fprintf(output, ":\n\n");
+>>       }
+>>
+>> -     if (aggr_socket)
+>> -             print_aggr_socket(NULL);
+>> -     else if (no_aggr) {
+>> -             list_for_each_entry(counter, &evsel_list->entries, node)
+>> -                     print_counter(counter, NULL);
+>> -     } else {
+>> +     switch (aggr_mode) {
+>> +     case AGGR_SOCKET:
+>> +             print_aggr(NULL);
+>> +             break;
+>
+> This line should look like this IMHO:
+>
+>                 list_for_each_entry(counter, &evsel_list->entries, node)
+>                         print_aggr(counter, NULL);
+>
+> and the equivalent loop in the print_aggr() should be removed.  This is
+> for consistency with other formats if multiple events counted.
+>
+Sounds good. I will make the change.
 
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
----
- drivers/extcon/extcon-max8997.c     | 92 +++++++++++++------------------------
- include/linux/mfd/max8997-private.h | 49 ++++++++++++++++++++
- 2 files changed, 80 insertions(+), 61 deletions(-)
-
-diff --git a/drivers/extcon/extcon-max8997.c b/drivers/extcon/extcon-max8997.c
-index d16090d..0fb1d48 100644
---- a/drivers/extcon/extcon-max8997.c
-+++ b/drivers/extcon/extcon-max8997.c
-@@ -30,51 +30,6 @@
- 
- #define	DEV_NAME			"max8997-muic"
- 
--/* MAX8997-MUIC STATUS1 register */
--#define STATUS1_ADC_SHIFT		0
--#define STATUS1_ADCLOW_SHIFT		5
--#define STATUS1_ADCERR_SHIFT		6
--#define STATUS1_ADC_MASK		(0x1f << STATUS1_ADC_SHIFT)
--#define STATUS1_ADCLOW_MASK		(0x1 << STATUS1_ADCLOW_SHIFT)
--#define STATUS1_ADCERR_MASK		(0x1 << STATUS1_ADCERR_SHIFT)
--
--/* MAX8997-MUIC STATUS2 register */
--#define STATUS2_CHGTYP_SHIFT		0
--#define STATUS2_CHGDETRUN_SHIFT		3
--#define STATUS2_DCDTMR_SHIFT		4
--#define STATUS2_DBCHG_SHIFT		5
--#define STATUS2_VBVOLT_SHIFT		6
--#define STATUS2_CHGTYP_MASK		(0x7 << STATUS2_CHGTYP_SHIFT)
--#define STATUS2_CHGDETRUN_MASK		(0x1 << STATUS2_CHGDETRUN_SHIFT)
--#define STATUS2_DCDTMR_MASK		(0x1 << STATUS2_DCDTMR_SHIFT)
--#define STATUS2_DBCHG_MASK		(0x1 << STATUS2_DBCHG_SHIFT)
--#define STATUS2_VBVOLT_MASK		(0x1 << STATUS2_VBVOLT_SHIFT)
--
--/* MAX8997-MUIC STATUS3 register */
--#define STATUS3_OVP_SHIFT		2
--#define STATUS3_OVP_MASK		(0x1 << STATUS3_OVP_SHIFT)
--
--/* MAX8997-MUIC CONTROL1 register */
--#define COMN1SW_SHIFT			0
--#define COMP2SW_SHIFT			3
--#define COMN1SW_MASK			(0x7 << COMN1SW_SHIFT)
--#define COMP2SW_MASK			(0x7 << COMP2SW_SHIFT)
--#define SW_MASK				(COMP2SW_MASK | COMN1SW_MASK)
--
--#define MAX8997_SW_USB		((1 << COMP2SW_SHIFT) | (1 << COMN1SW_SHIFT))
--#define MAX8997_SW_AUDIO	((2 << COMP2SW_SHIFT) | (2 << COMN1SW_SHIFT))
--#define MAX8997_SW_UART		((3 << COMP2SW_SHIFT) | (3 << COMN1SW_SHIFT))
--#define MAX8997_SW_OPEN		((0 << COMP2SW_SHIFT) | (0 << COMN1SW_SHIFT))
--
--#define	MAX8997_ADC_GROUND		0x00
--#define	MAX8997_ADC_MHL			0x01
--#define	MAX8997_ADC_JIG_USB_1		0x18
--#define	MAX8997_ADC_JIG_USB_2		0x19
--#define	MAX8997_ADC_DESKDOCK		0x1a
--#define	MAX8997_ADC_JIG_UART		0x1c
--#define	MAX8997_ADC_CARDOCK		0x1d
--#define	MAX8997_ADC_OPEN		0x1f
--
- struct max8997_muic_irq {
- 	unsigned int irq;
- 	const char *name;
-@@ -109,17 +64,32 @@ struct max8997_muic_info {
- 	struct extcon_dev	*edev;
- };
- 
-+enum {
-+	EXTCON_CABLE_USB = 0,
-+	EXTCON_CABLE_USB_HOST,
-+	EXTCON_CABLE_TA,
-+	EXTCON_CABLE_FAST_CHARGER,
-+	EXTCON_CABLE_SLOW_CHARGER,
-+	EXTCON_CABLE_CHARGE_DOWNSTREAM,
-+	EXTCON_CABLE_MHL,
-+	EXTCON_CABLE_DOCK_DESK,
-+	EXTCON_CABLE_DOCK_CARD,
-+	EXTCON_CABLE_JIG,
-+
-+	_EXTCON_CABLE_NUM,
-+};
-+
- static const char *max8997_extcon_cable[] = {
--	[0] = "USB",
--	[1] = "USB-Host",
--	[2] = "TA",
--	[3] = "Fast-charger",
--	[4] = "Slow-charger",
--	[5] = "Charge-downstream",
--	[6] = "MHL",
--	[7] = "Dock-desk",
--	[8] = "Dock-card",
--	[9] = "JIG",
-+	[EXTCON_CABLE_USB]			= "USB",
-+	[EXTCON_CABLE_USB_HOST]			= "USB-Host",
-+	[EXTCON_CABLE_TA]			= "TA",
-+	[EXTCON_CABLE_FAST_CHARGER]		= "Fast-charger",
-+	[EXTCON_CABLE_SLOW_CHARGER]		= "Slow-charger",
-+	[EXTCON_CABLE_CHARGE_DOWNSTREAM]	= "Charge-downstream",
-+	[EXTCON_CABLE_MHL]			= "MHL",
-+	[EXTCON_CABLE_DOCK_DESK]		= "Dock-Desk",
-+	[EXTCON_CABLE_DOCK_CARD]		= "Dock-Card",
-+	[EXTCON_CABLE_JIG]			= "JIG",
- 
- 	NULL,
- };
-@@ -132,8 +102,8 @@ static int max8997_muic_handle_usb(struct max8997_muic_info *info,
- 	if (usb_type == MAX8997_USB_HOST) {
- 		/* switch to USB */
- 		ret = max8997_update_reg(info->muic, MAX8997_MUIC_REG_CONTROL1,
--				attached ? MAX8997_SW_USB : MAX8997_SW_OPEN,
--				SW_MASK);
-+				attached ? CONTROL1_SW_USB : CONTROL1_SW_OPEN,
-+				CONTROL1_SW_MASK);
- 		if (ret) {
- 			dev_err(info->dev, "failed to update muic register\n");
- 			goto out;
-@@ -163,8 +133,8 @@ static int max8997_muic_handle_dock(struct max8997_muic_info *info,
- 
- 	/* switch to AUDIO */
- 	ret = max8997_update_reg(info->muic, MAX8997_MUIC_REG_CONTROL1,
--				attached ? MAX8997_SW_AUDIO : MAX8997_SW_OPEN,
--				SW_MASK);
-+				attached ? CONTROL1_SW_AUDIO : CONTROL1_SW_OPEN,
-+				CONTROL1_SW_MASK);
- 	if (ret) {
- 		dev_err(info->dev, "failed to update muic register\n");
- 		goto out;
-@@ -192,8 +162,8 @@ static int max8997_muic_handle_jig_uart(struct max8997_muic_info *info,
- 
- 	/* switch to UART */
- 	ret = max8997_update_reg(info->muic, MAX8997_MUIC_REG_CONTROL1,
--				attached ? MAX8997_SW_UART : MAX8997_SW_OPEN,
--				SW_MASK);
-+				attached ? CONTROL1_SW_UART : CONTROL1_SW_OPEN,
-+				CONTROL1_SW_MASK);
- 	if (ret) {
- 		dev_err(info->dev, "failed to update muic register\n");
- 		goto out;
-diff --git a/include/linux/mfd/max8997-private.h b/include/linux/mfd/max8997-private.h
-index 6ae21bf..acf42e9 100644
---- a/include/linux/mfd/max8997-private.h
-+++ b/include/linux/mfd/max8997-private.h
-@@ -194,6 +194,55 @@ enum max8997_muic_reg {
- 	MAX8997_MUIC_REG_END		= 0xf,
- };
- 
-+/* MAX8997-MUIC STATUS1 register */
-+#define STATUS1_ADC_SHIFT		0
-+#define STATUS1_ADCLOW_SHIFT		5
-+#define STATUS1_ADCERR_SHIFT		6
-+#define STATUS1_ADC_MASK		(0x1f << STATUS1_ADC_SHIFT)
-+#define STATUS1_ADCLOW_MASK		(0x1 << STATUS1_ADCLOW_SHIFT)
-+#define STATUS1_ADCERR_MASK		(0x1 << STATUS1_ADCERR_SHIFT)
-+
-+/* MAX8997-MUIC STATUS2 register */
-+#define STATUS2_CHGTYP_SHIFT		0
-+#define STATUS2_CHGDETRUN_SHIFT		3
-+#define STATUS2_DCDTMR_SHIFT		4
-+#define STATUS2_DBCHG_SHIFT		5
-+#define STATUS2_VBVOLT_SHIFT		6
-+#define STATUS2_CHGTYP_MASK		(0x7 << STATUS2_CHGTYP_SHIFT)
-+#define STATUS2_CHGDETRUN_MASK		(0x1 << STATUS2_CHGDETRUN_SHIFT)
-+#define STATUS2_DCDTMR_MASK		(0x1 << STATUS2_DCDTMR_SHIFT)
-+#define STATUS2_DBCHG_MASK		(0x1 << STATUS2_DBCHG_SHIFT)
-+#define STATUS2_VBVOLT_MASK		(0x1 << STATUS2_VBVOLT_SHIFT)
-+
-+/* MAX8997-MUIC STATUS3 register */
-+#define STATUS3_OVP_SHIFT		2
-+#define STATUS3_OVP_MASK		(0x1 << STATUS3_OVP_SHIFT)
-+
-+/* MAX8997-MUIC CONTROL1 register */
-+#define COMN1SW_SHIFT			0
-+#define COMP2SW_SHIFT			3
-+#define COMN1SW_MASK			(0x7 << COMN1SW_SHIFT)
-+#define COMP2SW_MASK			(0x7 << COMP2SW_SHIFT)
-+#define CONTROL1_SW_MASK		(COMP2SW_MASK | COMN1SW_MASK)
-+
-+#define CONTROL1_SW_USB			((1 << COMP2SW_SHIFT) \
-+						| (1 << COMN1SW_SHIFT))
-+#define CONTROL1_SW_AUDIO		((2 << COMP2SW_SHIFT) \
-+						| (2 << COMN1SW_SHIFT))
-+#define CONTROL1_SW_UART		((3 << COMP2SW_SHIFT) \
-+						| (3 << COMN1SW_SHIFT))
-+#define CONTROL1_SW_OPEN		((0 << COMP2SW_SHIFT) \
-+						| (0 << COMN1SW_SHIFT))
-+
-+#define	MAX8997_ADC_GROUND		0x00
-+#define	MAX8997_ADC_MHL			0x01
-+#define	MAX8997_ADC_JIG_USB_1		0x18
-+#define	MAX8997_ADC_JIG_USB_2		0x19
-+#define	MAX8997_ADC_DESKDOCK		0x1a
-+#define	MAX8997_ADC_JIG_UART		0x1c
-+#define	MAX8997_ADC_CARDOCK		0x1d
-+#define	MAX8997_ADC_OPEN		0x1f
-+
- enum max8997_haptic_reg {
- 	MAX8997_HAPTIC_REG_GENERAL	= 0x00,
- 	MAX8997_HAPTIC_REG_CONF1	= 0x01,
--- 
-1.8.0
-
+> For instance, it'd sorting on events first and then sockets like:
+>
+>   #      time socket cpus     counts events
+>            t0 S0     4        XXXXXX cycles
+>            t0 S1     4        XXXXXX cycles
+>            t0 S0     4          YYYY cache-misses
+>            t0 S1     4          YYYY cache-misses
+>            t1 S0     4        ZZZZZZ cycles
+>   ...
+>
+> But current code looks like sorting on sockets first instead.
+>
+>   #      time socket cpus     counts events
+>            t0 S0     4        XXXXXX cycles
+>            t0 S0     4          YYYY cache-misses
+>            t0 S1     4        XXXXXX cycles
+>            t0 S1     4          YYYY cache-misses
+>            t1 S0     4        ZZZZZZ cycles
+>   ...
+>
+> Thanks,
+> Namhyung
+>
+>
+>> +     case AGGR_GLOBAL:
+>>               list_for_each_entry(counter, &evsel_list->entries, node)
+>>                       print_counter_aggr(counter, NULL);
+>> +             break;
+>> +     case AGGR_NONE:
+>> +             list_for_each_entry(counter, &evsel_list->entries, node)
+>> +                     print_counter(counter, NULL);
+>> +             break;
+>> +     default:
+>> +             break;
+>>       }
