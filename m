@@ -1,72 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934157Ab3BMUPA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 15:15:00 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:57490 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932599Ab3BMUO7 (ORCPT
+	id S1760469Ab3BMUQO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 15:16:14 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:37820 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751821Ab3BMUQM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 15:14:59 -0500
-From: dirk.brandewie@gmail.com
-To: davej@redhat.com, rjw@sisk.pl
-Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        Dirk Brandewie <dirk.brandewie@gmail.com>
-Subject: [PATCH] cpufreq/intel_pstate: Change to disallow module build
-Date: Wed, 13 Feb 2013 12:14:41 -0800
-Message-Id: <1360786482-881-1-git-send-email-dirk.brandewie@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <20130212214949.GA1003@redhat.com>
-References: <20130212214949.GA1003@redhat.com>
+	Wed, 13 Feb 2013 15:16:12 -0500
+Date: Wed, 13 Feb 2013 21:16:09 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Goswin von Brederlow <goswin-v-b@web.de>, Li Fei <fei.li@intel.com>,
+        len.brown@intel.com, mingo@redhat.com, peterz@infradead.org,
+        biao.wang@intel.com, linux-pm@vger.kernel.org,
+        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        chuansheng.liu@intel.com
+Subject: Re: Getting rid of freezer for suspend [was Re: [fuse-devel]
+ [PATCH] fuse: make fuse daemon frozen along with kernel threads]
+Message-ID: <20130213201609.GA4296@amd.pavel.ucw.cz>
+References: <1360113112.17267.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+ <2964781.rPUOipNRNb@vostro.rjw.lan>
+ <CAJfpegtNUr+AJXZcKmLEGBYqu20DVFwzg-OvOk_nS3fBS3wd=Q@mail.gmail.com>
+ <1660768.prnx6s70rD@vostro.rjw.lan>
+ <CAJfpegt2B3n-QNK_W7O2H0JVfS=4jcUOzV_+w8ELPq19RJPewQ@mail.gmail.com>
+ <20130212104608.GA24042@amd.pavel.ucw.cz>
+ <CAJfpegvdVfEFTU5haMMi94PD1iZ1XyCRjg0O9vDjDg1yyaM-yA@mail.gmail.com>
+ <CAJfpegvV0zQ5Lftx=ELP0MAH1-7oY5HfT-CSYEaFUWJLmXoD7A@mail.gmail.com>
+ <CAJfpegsFThkzv3uF60AMXO7Y-yEzU_20HeGyPra0O8Vk5OqCGQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJfpegsFThkzv3uF60AMXO7Y-yEzU_20HeGyPra0O8Vk5OqCGQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dirk Brandewie <dirk.brandewie@gmail.com>
+On Wed 2013-02-13 18:34:16, Miklos Szeredi wrote:
+> On Tue, Feb 12, 2013 at 2:17 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> > On Tue, Feb 12, 2013 at 2:13 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> >> On Tue, Feb 12, 2013 at 11:46 AM, Pavel Machek <pavel@ucw.cz> wrote:
+> >>
+> >>> (After all, with FUSE, filesystem clients are just doing IPC. In ideal
+> >>> world, that would be freezeable and killable with -9).
+> 
+> Well, I thought this can be constrained to locks directly related to
+> the fuse filesystem itself, but it can't...  The reason is page
 
-Load order is important in order for intel_pstate to take over as the
-default scaling driver from acpi-cpufreq.
+And it looked so easy and nice...
 
-If both are built-in acpi-cpufreq uses late_initcall() and
-intel_pstate uses device_initcall() so it will be able to register as
-the scaling before acpi-cpufreq for the processors supported by
-intel_pstate.
+> faults.  Pretty much everyone and their brother uses get_user_pages*,
+> holding various locks (mmap_sem for sure but others as well).  A fuse
+> filesystem frozen during a page read will block those.
 
-If acpi-cpufreq is built as a module then intel_pstate still gets
-first option to become the scaling driver.
+Is it even valid for get_user_pages to be used on FUSE?
 
-Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
----
+What happens if fused tries to do some operation (it is userspace, it
+can do lot of operations) that needs one of those locks?
 
-based on linux-pm/linux-next fe9e0a66
+It seems to me that fused will want to do operations hibernation would
+want to do, at the very least (reading/writing block devices). Thus,
+if it does not deadlock with fused, it should not deadlock with
+hibernation, either...
 
- drivers/cpufreq/Kconfig.x86 |    7 +------
- 1 files changed, 1 insertions(+), 6 deletions(-)
+[Or am i mistaken and FUSE's get_user_pages* needs FUSE locks but does
+not wait for fused to finish the operation?]
 
-diff --git a/drivers/cpufreq/Kconfig.x86 b/drivers/cpufreq/Kconfig.x86
-index 6aa7053..98e5abb 100644
---- a/drivers/cpufreq/Kconfig.x86
-+++ b/drivers/cpufreq/Kconfig.x86
-@@ -3,7 +3,7 @@
- #
- 
- config X86_INTEL_PSTATE
--       tristate "Intel P state control"
-+       bool "Intel P state control"
-        depends on X86
-        help
-           This driver provides a P state for Intel core processors.
-@@ -13,11 +13,6 @@ config X86_INTEL_PSTATE
- 	  When this driver is enabled it will become the perferred
-           scaling driver for Sandy bridge processors.
- 
--	  Note: This driver should be built with the same settings as
--	  the other scaling drivers configured into the system
--	  (module/built-in) in order for the driver to register itself
--	  as the scaling driver on the system.
--
- 	  If in doubt, say N.
- 
- config X86_PCC_CPUFREQ
+> Separating those parts of the kernel that can be frozen from those
+> that can't looks increasingly difficult.
+
+:-(.
+
+									Pavel
 -- 
-1.7.7.6
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
