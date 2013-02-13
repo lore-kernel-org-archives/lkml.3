@@ -1,74 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933449Ab3BMJ6G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 04:58:06 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:58912 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932667Ab3BMJ6D (ORCPT
+	id S933546Ab3BMJ6V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 04:58:21 -0500
+Received: from vsp-authed02.binero.net ([195.74.38.226]:23779 "HELO
+	vsp-authed-03-02.binero.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932815Ab3BMJ6F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 04:58:03 -0500
+	Wed, 13 Feb 2013 04:58:05 -0500
+Message-ID: <511B63A6.1080208@gaisler.com>
+Date: Wed, 13 Feb 2013 10:57:58 +0100
+From: Andreas Larsson <andreas@gaisler.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130213092101.GD7630@gmail.com>
-References: <1359907275-15410-1-git-send-email-anish198519851985@gmail.com>
-	<CAK7N6vpT_X7s7Vid0-EYenb0w7k=nL8d-ov=fExFMuSYcV47Wg@mail.gmail.com>
-	<20130213092101.GD7630@gmail.com>
-Date: Wed, 13 Feb 2013 15:28:00 +0530
-Message-ID: <CAK7N6vqh_c31bWiHgVgJLLckya7mykshMKYiqLTdkScMCoXcsg@mail.gmail.com>
-Subject: Re: [PATCH] [Watchdog][Trivial] Added comments to explain
- watchdog_disabled variable
-From: anish singh <anish198519851985@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: akpm@linux-foundation.org, dzickus@redhat.com, tglx@linutronix.de,
-        chuansheng.liu@intel.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH v3 4/5] of: Create function for counting number of phandles
+ in a property
+References: <1360710401-16757-1-git-send-email-grant.likely@secretlab.ca> <1360710401-16757-5-git-send-email-grant.likely@secretlab.ca>
+In-Reply-To: <1360710401-16757-5-git-send-email-grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 13, 2013 at 2:51 PM, Ingo Molnar <mingo@kernel.org> wrote:
+On 2013-02-13 00:06, Grant Likely wrote:
+> This patch creates of_count_phandle_with_args(), a new function for
+> counting the number of phandle+argument tuples in a given property. This
+> is better than the existing method of parsing each phandle individually
+> until parsing fails which is a horribly slow way to do the count.
 >
-> * anish singh <anish198519851985@gmail.com> wrote:
+> Tested on ARM using the selftest code.
 >
->> Is the below patch picked up?
->>
->> On Sun, Feb 3, 2013 at 9:31 PM, anish kumar <anish198519851985@gmail.com> wrote:
->> > From: anish kumar <anish198519851985@gmail.com>
->> >
->> > This watchdog_disabled flag is bit of cryptic.Howerver it's usefullnes is multifold.
->> > Uses are:
->> > 1. Check if smpboot_register_percpu_thread function passed.
->> > 2. Makes sure that user enables and disables the watchdog in sequence
->> >    i.e. enable watchdog->disable watchdog->enable watchdog
->> >    Unlike enable watchdog->enable watchdog which is wrong.
->> >
->> > Signed-off-by: anish kumar <anish198519851985@gmail.com>
->> > ---
->> >  kernel/watchdog.c |    5 +++++
->> >  1 files changed, 5 insertions(+), 0 deletions(-)
->> >
->> > diff --git a/kernel/watchdog.c b/kernel/watchdog.c
->> > index 75a2ab3..87a19aa 100644
->> > --- a/kernel/watchdog.c
->> > +++ b/kernel/watchdog.c
->> > @@ -518,6 +518,11 @@ int proc_dowatchdog(struct ctl_table *table, int write,
->> >                 return ret;
->> >
->> >         set_sample_period();
->> > +       /*
->> > +        * We shouldn't enable watchdog threads if it is
->> > +        * disabled.This is done by watchdog_disabled
->> > +        * variable check in watchdog_*_all_cpus function.
+> v3: - Rebased on top of selftest code cleanup patch
+> v2: - fix bug where of_parse_phandle_with_args() could behave like _count_.
+>      - made of_gpio_named_count() into a static inline regardless of CONFIG_OF_GPIO
 >
-> It has two grammatic and a stylistic error in it, plus misses
-Would you mind pointing it out to me the grammatical mistakes
-as I am not that good with grammar.
-I thought I followed the conventions as below:
-/*
- *
- *
- */
-> the convention that function names are mentioned with a '()'.
->
-> Thanks,
->
->         Ingo
+> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: Andreas Larsson <andreas@gaisler.com>
+
+Tested-by: Andreas Larsson <andreas@gaisler.com>
+
+Cheers,
+Andreas Larsson
+
