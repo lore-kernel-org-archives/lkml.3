@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934272Ab3BMPq7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 10:46:59 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:37573 "EHLO
+	id S934284Ab3BMPrI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 10:47:08 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37600 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934166Ab3BMPq4 (ORCPT
+	with ESMTP id S934166Ab3BMPrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 10:46:56 -0500
+	Wed, 13 Feb 2013 10:47:04 -0500
 From: Philipp Zabel <p.zabel@pengutronix.de>
 To: linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>,
@@ -22,9 +22,9 @@ Cc: Arnd Bergmann <arnd@arndb.de>,
         Javier Martin <javier.martin@vista-silicon.com>, kernel@pengutronix.de,
         devicetree-discuss@lists.ozlabs.org,
         Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH v9 2/4] misc: Generic on-chip SRAM allocation driver
-Date: Wed, 13 Feb 2013 16:46:40 +0100
-Message-Id: <1360770402-23091-3-git-send-email-p.zabel@pengutronix.de>
+Subject: [PATCH v9 1/4] genalloc: add devres support, allow to find a managed pool by device
+Date: Wed, 13 Feb 2013 16:46:39 +0100
+Message-Id: <1360770402-23091-2-git-send-email-p.zabel@pengutronix.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1360770402-23091-1-git-send-email-p.zabel@pengutronix.de>
 References: <1360770402-23091-1-git-send-email-p.zabel@pengutronix.de>
@@ -36,212 +36,148 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver requests and remaps a memory region as configured in the
-device tree. It serves memory from this region via the genalloc API.
-It optionally enables the SRAM clock.
+This patch adds three exported functions to lib/genalloc.c:
+devm_gen_pool_create, dev_get_gen_pool, and of_get_named_gen_pool.
 
-Other drivers can retrieve the genalloc pool from a phandle pointing
-to this drivers' device node in the device tree.
+devm_gen_pool_create is a managed version of gen_pool_create that keeps
+track of the pool via devres and allows the management code to automatically
+destroy it after device removal.
 
-The allocation granularity is hard-coded to 32 bytes for now,
-to make the SRAM driver useful for the 6502 remoteproc driver.
-There is overhead for bigger SRAMs, where only a much coarser
-allocation granularity is needed: At 32 bytes minimum allocation
-size, a 256 KiB SRAM needs a 1 KiB bitmap to track allocations.
+dev_get_gen_pool retrieves the gen_pool for a given device, if it was
+created with devm_gen_pool_create, using devres_find.
+
+of_get_named_gen_pool retrieves the gen_pool for a given device node and
+property name, where the property must contain a phandle pointing to a
+platform device node. The corresponding platform device is then fed into
+dev_get_gen_pool and the resulting gen_pool is returned.
 
 Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-Reviewed-by: Shawn Guo <shawn.guo@linaro.org>
 Acked-by: Grant Likely <grant.likely@secretlab.ca>
 ---
-Changes since v8:
- - Changed device tree compatible string to "mmio-sram"
----
- Documentation/devicetree/bindings/misc/sram.txt |   16 +++
- drivers/misc/Kconfig                            |    9 ++
- drivers/misc/Makefile                           |    1 +
- drivers/misc/sram.c                             |  121 +++++++++++++++++++++++
- 4 files changed, 147 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/misc/sram.txt
- create mode 100644 drivers/misc/sram.c
+ include/linux/genalloc.h |   15 +++++++++
+ lib/genalloc.c           |   81 ++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 96 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/misc/sram.txt b/Documentation/devicetree/bindings/misc/sram.txt
-new file mode 100644
-index 0000000..4d0a00e
---- /dev/null
-+++ b/Documentation/devicetree/bindings/misc/sram.txt
-@@ -0,0 +1,16 @@
-+Generic on-chip SRAM
-+
-+Simple IO memory regions to be managed by the genalloc API.
-+
-+Required properties:
-+
-+- compatible : mmio-sram
-+
-+- reg : SRAM iomem address range
-+
-+Example:
-+
-+sram: sram@5c000000 {
-+	compatible = "mmio-sram";
-+	reg = <0x5c000000 0x40000>; /* 256 KiB SRAM at address 0x5c000000 */
-+};
-diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index e83fdfe..4878507 100644
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -510,6 +510,15 @@ config LATTICE_ECP3_CONFIG
+diff --git a/include/linux/genalloc.h b/include/linux/genalloc.h
+index dd7c569..383e8f4 100644
+--- a/include/linux/genalloc.h
++++ b/include/linux/genalloc.h
+@@ -105,4 +105,19 @@ extern unsigned long gen_pool_first_fit(unsigned long *map, unsigned long size,
+ extern unsigned long gen_pool_best_fit(unsigned long *map, unsigned long size,
+ 		unsigned long start, unsigned int nr, void *data);
  
- 	  If unsure, say N.
- 
-+config SRAM
-+	bool "Generic on-chip SRAM driver"
-+	depends on HAS_IOMEM
-+	select GENERIC_ALLOCATOR
-+	help
-+	  This driver allows to declare a memory region to be managed
-+	  by the genalloc API. It is supposed to be used for small
-+	  on-chip SRAM areas found on many SoCs.
++extern struct gen_pool *devm_gen_pool_create(struct device *dev,
++		int min_alloc_order, int nid);
++extern struct gen_pool *dev_get_gen_pool(struct device *dev);
 +
- source "drivers/misc/c2port/Kconfig"
- source "drivers/misc/eeprom/Kconfig"
- source "drivers/misc/cb710/Kconfig"
-diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-index 35a1463..08e2007 100644
---- a/drivers/misc/Makefile
-+++ b/drivers/misc/Makefile
-@@ -52,3 +52,4 @@ obj-$(CONFIG_INTEL_MEI)		+= mei/
- obj-$(CONFIG_MAX8997_MUIC)	+= max8997-muic.o
- obj-$(CONFIG_VMWARE_VMCI)	+= vmw_vmci/
- obj-$(CONFIG_LATTICE_ECP3_CONFIG)	+= lattice-ecp3-config.o
-+obj-$(CONFIG_SRAM)		+= sram.o
-diff --git a/drivers/misc/sram.c b/drivers/misc/sram.c
-new file mode 100644
-index 0000000..7858c62
---- /dev/null
-+++ b/drivers/misc/sram.c
-@@ -0,0 +1,121 @@
-+/*
-+ * Generic on-chip SRAM allocation driver
-+ *
-+ * Copyright (C) 2012 Philipp Zabel, Pengutronix
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version 2
-+ * of the License, or (at your option) any later version.
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-+ * MA 02110-1301, USA.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/clk.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+#include <linux/spinlock.h>
-+#include <linux/genalloc.h>
-+
-+#define SRAM_GRANULARITY	32
-+
-+struct sram_dev {
-+	struct gen_pool *pool;
-+	struct clk *clk;
-+};
-+
-+static int sram_probe(struct platform_device *pdev)
++struct device_node;
++#ifdef CONFIG_OF
++extern struct gen_pool *of_get_named_gen_pool(struct device_node *np,
++	const char *propname, int index);
++#else
++inline struct gen_pool *of_get_named_gen_pool(struct device_node *np,
++	const char *propname, int index)
 +{
-+	void __iomem *virt_base;
-+	struct sram_dev *sram;
-+	struct resource *res;
-+	unsigned long size;
-+	int ret;
++	return NULL;
++}
++#endif
+ #endif /* __GENALLOC_H__ */
+diff --git a/lib/genalloc.c b/lib/genalloc.c
+index 5492043..b35cfa9 100644
+--- a/lib/genalloc.c
++++ b/lib/genalloc.c
+@@ -34,6 +34,8 @@
+ #include <linux/rculist.h>
+ #include <linux/interrupt.h>
+ #include <linux/genalloc.h>
++#include <linux/of_address.h>
++#include <linux/of_device.h>
+ 
+ static int set_bits_ll(unsigned long *addr, unsigned long mask_to_set)
+ {
+@@ -480,3 +482,82 @@ unsigned long gen_pool_best_fit(unsigned long *map, unsigned long size,
+ 	return start_bit;
+ }
+ EXPORT_SYMBOL(gen_pool_best_fit);
 +
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res)
-+		return -EINVAL;
++static void devm_gen_pool_release(struct device *dev, void *res)
++{
++	gen_pool_destroy(*(struct gen_pool **)res);
++}
 +
-+	size = resource_size(res);
++/**
++ * devm_gen_pool_create - managed gen_pool_create
++ * @dev: device that provides the gen_pool
++ * @min_alloc_order: log base 2 of number of bytes each bitmap bit represents
++ * @nid: node id of the node the pool structure should be allocated on, or -1
++ *
++ * Create a new special memory pool that can be used to manage special purpose
++ * memory not managed by the regular kmalloc/kfree interface. The pool will be
++ * automatically destroyed by the device management code.
++ */
++struct gen_pool *devm_gen_pool_create(struct device *dev, int min_alloc_order,
++		int nid)
++{
++	struct gen_pool **ptr, *pool;
 +
-+	virt_base = devm_request_and_ioremap(&pdev->dev, res);
-+	if (!virt_base)
-+		return -EADDRNOTAVAIL;
++	ptr = devres_alloc(devm_gen_pool_release, sizeof(*ptr), GFP_KERNEL);
 +
-+	sram = devm_kzalloc(&pdev->dev, sizeof(*sram), GFP_KERNEL);
-+	if (!sram)
-+		return -ENOMEM;
-+
-+	sram->clk = devm_clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(sram->clk))
-+		sram->clk = NULL;
-+	else
-+		clk_prepare_enable(sram->clk);
-+
-+	sram->pool = devm_gen_pool_create(&pdev->dev, ilog2(SRAM_GRANULARITY), -1);
-+	if (!sram->pool)
-+		return -ENOMEM;
-+
-+	ret = gen_pool_add_virt(sram->pool, (unsigned long)virt_base,
-+				res->start, size, -1);
-+	if (ret < 0) {
-+		gen_pool_destroy(sram->pool);
-+		return ret;
++	pool = gen_pool_create(min_alloc_order, nid);
++	if (pool) {
++		*ptr = pool;
++		devres_add(dev, ptr);
++	} else {
++		devres_free(ptr);
 +	}
 +
-+	platform_set_drvdata(pdev, sram);
-+
-+	dev_dbg(&pdev->dev, "SRAM pool: %ld KiB @ 0x%p\n", size / 1024, virt_base);
-+
-+	return 0;
++	return pool;
 +}
 +
-+static int sram_remove(struct platform_device *pdev)
++/**
++ * dev_get_gen_pool - Obtain the gen_pool (if any) for a device
++ * @dev: device to retrieve the gen_pool from
++ * @name: Optional name for the gen_pool, usually NULL
++ *
++ * Returns the gen_pool for the device if one is present, or NULL.
++ */
++struct gen_pool *dev_get_gen_pool(struct device *dev)
 +{
-+	struct sram_dev *sram = platform_get_drvdata(pdev);
++	struct gen_pool **p = devres_find(dev, devm_gen_pool_release, NULL,
++					NULL);
 +
-+	if (gen_pool_avail(sram->pool) < gen_pool_size(sram->pool))
-+		dev_dbg(&pdev->dev, "removed while SRAM allocated\n");
-+
-+	gen_pool_destroy(sram->pool);
-+
-+	if (sram->clk)
-+		clk_disable_unprepare(sram->clk);
-+
-+	return 0;
++	if (!p)
++		return NULL;
++	return *p;
 +}
++EXPORT_SYMBOL_GPL(dev_get_gen_pool);
 +
 +#ifdef CONFIG_OF
-+static struct of_device_id sram_dt_ids[] = {
-+	{ .compatible = "mmio-sram" },
-+	{}
-+};
-+#endif
-+
-+static struct platform_driver sram_driver = {
-+	.driver = {
-+		.name = "sram",
-+		.of_match_table = of_match_ptr(sram_dt_ids),
-+	},
-+	.probe = sram_probe,
-+	.remove = sram_remove,
-+};
-+
-+int __init sram_init(void)
++/**
++ * of_get_named_gen_pool - find a pool by phandle property
++ * @np: device node
++ * @propname: property name containing phandle(s)
++ * @index: index into the phandle array
++ *
++ * Returns the pool that contains the chunk starting at the physical
++ * address of the device tree node pointed at by the phandle property,
++ * or NULL if not found.
++ */
++struct gen_pool *of_get_named_gen_pool(struct device_node *np,
++	const char *propname, int index)
 +{
-+	return platform_driver_register(&sram_driver);
-+}
++	struct platform_device *pdev;
++	struct device_node *np_pool;
 +
-+postcore_initcall(sram_init);
++	np_pool = of_parse_phandle(np, propname, index);
++	if (!np_pool)
++		return NULL;
++	pdev = of_find_device_by_node(np_pool);
++	if (!pdev)
++		return NULL;
++	return dev_get_gen_pool(&pdev->dev);
++}
++EXPORT_SYMBOL_GPL(of_get_named_gen_pool);
++#endif /* CONFIG_OF */
 -- 
 1.7.10.4
 
