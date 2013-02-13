@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933935Ab3BMM4n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 07:56:43 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:57978 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932599Ab3BMM4l (ORCPT
+	id S934009Ab3BMM4z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 07:56:55 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40307 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932599Ab3BMM4y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 07:56:41 -0500
-Message-ID: <1360760195.3524.355.camel@falcor1.watson.ibm.com>
-Subject: Re: [PATCH 2/2] ima: Support appraise_type=imasig_optional
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 13 Feb 2013 07:56:35 -0500
-In-Reply-To: <CALLzPKZA92MxJYjC+OR-KDv4rHQRgKSBHSAY2fOZsEDxiO11yA@mail.gmail.com>
-References: <1360613493-11969-1-git-send-email-vgoyal@redhat.com>
-	 <1360613493-11969-3-git-send-email-vgoyal@redhat.com>
-	 <CALLzPKZA92MxJYjC+OR-KDv4rHQRgKSBHSAY2fOZsEDxiO11yA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13021312-4834-0000-0000-000003A011E6
+	Wed, 13 Feb 2013 07:56:54 -0500
+Date: Wed, 13 Feb 2013 12:56:53 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: as3711: Fix checking if no platform
+ initialization data
+Message-ID: <20130213125652.GD5062@opensource.wolfsonmicro.com>
+References: <1360719288.14930.5.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="IDYEmSnFhs3mNXr+"
+Content-Disposition: inline
+In-Reply-To: <1360719288.14930.5.camel@phoenix>
+X-Cookie: You will get what you deserve.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-02-13 at 14:31 +0200, Kasatkin, Dmitry wrote:
-> On Mon, Feb 11, 2013 at 10:11 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
 
-> > @@ -158,7 +165,8 @@ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
-> >         }
-> >         switch (xattr_value->type) {
-> >         case IMA_XATTR_DIGEST:
-> > -               if (iint->flags & IMA_DIGSIG_REQUIRED) {
-> > +               if (iint->flags & IMA_DIGSIG_REQUIRED ||
-> > +                   iint->flags & IMA_DIGSIG_OPTIONAL) {
-> >                         cause = "IMA signature required";
-> >                         status = INTEGRITY_FAIL;
-> >                         break;
-> 
-> This looks a bit odd... If "optional" signature is missing  - we fail..
-> It is optional... Why we should fail?
+--IDYEmSnFhs3mNXr+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-'imasig_optional' does not only mean that the signature is optional, but
-also implies that it has to be a digital signature, not a hash.  This
-latter part is what IMA_DIGSIG_REQUIRED means.
+On Wed, Feb 13, 2013 at 09:34:48AM +0800, Axel Lin wrote:
+> To skip registering regulator if no platform initialization data,
+> we should check reg_data rather than ri->desc.name.
 
-If 'imasig_optional' set both 'IMA_DIGSIG_OPTIONAL' and
-'IMA_DIGSIG_REQUIRED', then this change wouldn't be necessary.
+Applied, thanks.
 
-IMA_DIGSIG_REQUIRED would enforce that it is a signature.
-IMA_DIGSIG_OPTIONAL would fail only for files with invalid signatures.
+--IDYEmSnFhs3mNXr+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-thanks,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Mimi
+iQIcBAEBAgAGBQJRG42MAAoJELSic+t+oim9wikP+wfC+1PdjLDZKpZY85eSSG/0
+q8/rOuWgMA9c1FKVpoirP8k5FwDsEbEYW/G20kagDtbVhhzJ9coXVc98C94WqShL
+n6h3fMZquU0W8Pq6ypob13KFyfvwPtnMi7N2eh5c1DidR9FeENGrSujfhvDo6IRu
+7frFyLyGC8l+Blfw5DcVo1cDZazPNo2B5ZOe3Ern341sfBsUtqq6cEioIn+bxofh
+ZmaaC7vW1pgbZcpeJ2ts+E20ohlQbHr1IPo13D5TOwnOwyeOO8n5eXHHsJ/2U148
+0zH/wkkLayyNr1DPqFyEFGPxSgL9PdeUGBvQvLcVzEAqR9xX35Mlt9+7sVhmOeKV
+bWFgb8aTgRTTv/muY6MoYJfgWn0/M1px4a9xMMAEfr33KygiqtVmq3JCumsvQupD
+I9eXcwrT5Zv6IaRLJCzB5apWF7Y/2UdxWykdAecNczohTGyp3LLXHRMu0JRUCGBq
+/tOlb3eRpWMRKxboVpJPRmBYeCCLTTdtmrD61pRXK0NFOZo+FsD0G3x54m14vxHx
+0e4kcp4SHWE8EIO9wktr+qIAaIwnQkV7e7HVsKY06mJ0/N3vYYuWmVqKme5J66BE
+mdky0YwkuYHOqdeGd8V1nUvjIg3hfPYVLWyCAvfJw71fiuwyIHqB7cUb9y2ODnr/
+6SH/4CoUct3J8vpK5Zyn
+=Gcf0
+-----END PGP SIGNATURE-----
 
+--IDYEmSnFhs3mNXr+--
