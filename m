@@ -1,235 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759588Ab3BMA7j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Feb 2013 19:59:39 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:59266 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756714Ab3BMA7i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Feb 2013 19:59:38 -0500
-Date: Tue, 12 Feb 2013 16:58:25 -0800
-From: "tip-bot for K. Y. Srinivasan" <kys@microsoft.com>
-Message-ID: <tip-bc2b0331e077f576369a2b6c75d15ed4de4ef91f@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        kys@microsoft.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        kys@microsoft.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1359940959-32168-3-git-send-email-kys@microsoft.com>
-References: <1359940959-32168-3-git-send-email-kys@microsoft.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/hyperv] X86:
-  Handle Hyper-V vmbus interrupts as special hypervisor interrupts
-Git-Commit-ID: bc2b0331e077f576369a2b6c75d15ed4de4ef91f
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S932130Ab3BMBBa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Feb 2013 20:01:30 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:59299 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757219Ab3BMBB3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Feb 2013 20:01:29 -0500
+Message-ID: <511AE583.5060002@zytor.com>
+Date: Tue, 12 Feb 2013 16:59:47 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 12 Feb 2013 16:58:31 -0800 (PST)
+To: KY Srinivasan <kys@microsoft.com>
+CC: Greg KH <gregkh@linuxfoundation.org>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "JBeulich@suse.com" <JBeulich@suse.com>, "bp@alien8.de" <bp@alien8.de>
+Subject: Re: [PATCH 1/1] Drivers: hv: vmbus: Use the new infrastructure for
+ delivering VMBUS interrupts
+References: <1360164359-12273-1-git-send-email-kys@microsoft.com> <20130206191313.GA1470@kroah.com> <511ADEB7.6080909@zytor.com> <23a161dbb5ce4a2b889a837a3cacfdca@SN2PR03MB061.namprd03.prod.outlook.com> <511AE253.7070209@zytor.com> <508f13bedcb4478486c751a91ef8154b@SN2PR03MB061.namprd03.prod.outlook.com>
+In-Reply-To: <508f13bedcb4478486c751a91ef8154b@SN2PR03MB061.namprd03.prod.outlook.com>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  bc2b0331e077f576369a2b6c75d15ed4de4ef91f
-Gitweb:     http://git.kernel.org/tip/bc2b0331e077f576369a2b6c75d15ed4de4ef91f
-Author:     K. Y. Srinivasan <kys@microsoft.com>
-AuthorDate: Sun, 3 Feb 2013 17:22:39 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 12 Feb 2013 16:27:15 -0800
+On 02/12/2013 04:50 PM, KY Srinivasan wrote:
+> 
+> Apply them and I will rebase this patch and send it out.
+> 
 
-X86: Handle Hyper-V vmbus interrupts as special hypervisor interrupts
+Pull the -tip tree and you can base it on the x86/hyperv branch.
 
-Starting with win8, vmbus interrupts can be delivered on any VCPU in the guest
-and furthermore can be concurrently active on multiple VCPUs. Support this
-interrupt delivery model by setting up a separate IDT entry for Hyper-V vmbus.
-interrupts. I would like to thank Jan Beulich <JBeulich@suse.com> and
-Thomas Gleixner <tglx@linutronix.de>, for their help.
+	-hpa
 
-In this version of the patch, based on the feedback, I have merged the IDT
-vector for Xen and Hyper-V and made the necessary adjustments. Furhermore,
-based on Jan's feedback I have added the necessary compilation switches.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Link: http://lkml.kernel.org/r/1359940959-32168-3-git-send-email-kys@microsoft.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/include/asm/irq_vectors.h |  4 ++--
- arch/x86/include/asm/mshyperv.h    |  4 ++++
- arch/x86/kernel/cpu/mshyperv.c     | 44 ++++++++++++++++++++++++++++++++++++++
- arch/x86/kernel/entry_32.S         |  9 +++++++-
- arch/x86/kernel/entry_64.S         |  7 +++++-
- drivers/xen/events.c               |  7 +++---
- 6 files changed, 68 insertions(+), 7 deletions(-)
-
-diff --git a/arch/x86/include/asm/irq_vectors.h b/arch/x86/include/asm/irq_vectors.h
-index 1508e51..aac5fa6 100644
---- a/arch/x86/include/asm/irq_vectors.h
-+++ b/arch/x86/include/asm/irq_vectors.h
-@@ -109,8 +109,8 @@
- 
- #define UV_BAU_MESSAGE			0xf5
- 
--/* Xen vector callback to receive events in a HVM domain */
--#define XEN_HVM_EVTCHN_CALLBACK		0xf3
-+/* Vector on which hypervisor callbacks will be delivered */
-+#define HYPERVISOR_CALLBACK_VECTOR	0xf3
- 
- /*
-  * Local APIC timer IRQ vector is on a different priority level,
-diff --git a/arch/x86/include/asm/mshyperv.h b/arch/x86/include/asm/mshyperv.h
-index 79ce568..c2934be 100644
---- a/arch/x86/include/asm/mshyperv.h
-+++ b/arch/x86/include/asm/mshyperv.h
-@@ -11,4 +11,8 @@ struct ms_hyperv_info {
- 
- extern struct ms_hyperv_info ms_hyperv;
- 
-+void hyperv_callback_vector(void);
-+void hyperv_vector_handler(struct pt_regs *regs);
-+void hv_register_vmbus_handler(int irq, irq_handler_t handler);
-+
- #endif
-diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
-index 4dab317..a7d26d8 100644
---- a/arch/x86/kernel/cpu/mshyperv.c
-+++ b/arch/x86/kernel/cpu/mshyperv.c
-@@ -14,10 +14,15 @@
- #include <linux/time.h>
- #include <linux/clocksource.h>
- #include <linux/module.h>
-+#include <linux/hardirq.h>
-+#include <linux/interrupt.h>
- #include <asm/processor.h>
- #include <asm/hypervisor.h>
- #include <asm/hyperv.h>
- #include <asm/mshyperv.h>
-+#include <asm/desc.h>
-+#include <asm/idle.h>
-+#include <asm/irq_regs.h>
- 
- struct ms_hyperv_info ms_hyperv;
- EXPORT_SYMBOL_GPL(ms_hyperv);
-@@ -77,6 +82,12 @@ static void __init ms_hyperv_init_platform(void)
- 
- 	if (ms_hyperv.features & HV_X64_MSR_TIME_REF_COUNT_AVAILABLE)
- 		clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
-+#if IS_ENABLED(CONFIG_HYPERV)
-+	/*
-+	 * Setup the IDT for hypervisor callback.
-+	 */
-+	alloc_intr_gate(HYPERVISOR_CALLBACK_VECTOR, hyperv_callback_vector);
-+#endif
- }
- 
- const __refconst struct hypervisor_x86 x86_hyper_ms_hyperv = {
-@@ -85,3 +96,36 @@ const __refconst struct hypervisor_x86 x86_hyper_ms_hyperv = {
- 	.init_platform		= ms_hyperv_init_platform,
- };
- EXPORT_SYMBOL(x86_hyper_ms_hyperv);
-+
-+#if IS_ENABLED(CONFIG_HYPERV)
-+static int vmbus_irq = -1;
-+static irq_handler_t vmbus_isr;
-+
-+void hv_register_vmbus_handler(int irq, irq_handler_t handler)
-+{
-+	vmbus_irq = irq;
-+	vmbus_isr = handler;
-+}
-+
-+void hyperv_vector_handler(struct pt_regs *regs)
-+{
-+	struct pt_regs *old_regs = set_irq_regs(regs);
-+	struct irq_desc *desc;
-+
-+	irq_enter();
-+	exit_idle();
-+
-+	desc = irq_to_desc(vmbus_irq);
-+
-+	if (desc)
-+		generic_handle_irq_desc(vmbus_irq, desc);
-+
-+	irq_exit();
-+	set_irq_regs(old_regs);
-+}
-+#else
-+void hv_register_vmbus_handler(int irq, irq_handler_t handler)
-+{
-+}
-+#endif
-+EXPORT_SYMBOL_GPL(hv_register_vmbus_handler);
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index 6ed91d9..8831176 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -1091,11 +1091,18 @@ ENTRY(xen_failsafe_callback)
- 	_ASM_EXTABLE(4b,9b)
- ENDPROC(xen_failsafe_callback)
- 
--BUILD_INTERRUPT3(xen_hvm_callback_vector, XEN_HVM_EVTCHN_CALLBACK,
-+BUILD_INTERRUPT3(xen_hvm_callback_vector, HYPERVISOR_CALLBACK_VECTOR,
- 		xen_evtchn_do_upcall)
- 
- #endif	/* CONFIG_XEN */
- 
-+#if IS_ENABLED(CONFIG_HYPERV)
-+
-+BUILD_INTERRUPT3(hyperv_callback_vector, HYPERVISOR_CALLBACK_VECTOR,
-+	hyperv_vector_handler)
-+
-+#endif /* CONFIG_HYPERV */
-+
- #ifdef CONFIG_FUNCTION_TRACER
- #ifdef CONFIG_DYNAMIC_FTRACE
- 
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index cb3c591..048f224 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1454,11 +1454,16 @@ ENTRY(xen_failsafe_callback)
- 	CFI_ENDPROC
- END(xen_failsafe_callback)
- 
--apicinterrupt XEN_HVM_EVTCHN_CALLBACK \
-+apicinterrupt HYPERVISOR_CALLBACK_VECTOR \
- 	xen_hvm_callback_vector xen_evtchn_do_upcall
- 
- #endif /* CONFIG_XEN */
- 
-+#if IS_ENABLED(CONFIG_HYPERV)
-+apicinterrupt HYPERVISOR_CALLBACK_VECTOR \
-+	hyperv_callback_vector hyperv_vector_handler
-+#endif /* CONFIG_HYPERV */
-+
- /*
-  * Some functions should be protected against kprobes
-  */
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 74d77df..22f77c5 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -1787,7 +1787,7 @@ void xen_callback_vector(void)
- 	int rc;
- 	uint64_t callback_via;
- 	if (xen_have_vector_callback) {
--		callback_via = HVM_CALLBACK_VECTOR(XEN_HVM_EVTCHN_CALLBACK);
-+		callback_via = HVM_CALLBACK_VECTOR(HYPERVISOR_CALLBACK_VECTOR);
- 		rc = xen_set_callback_via(callback_via);
- 		if (rc) {
- 			printk(KERN_ERR "Request for Xen HVM callback vector"
-@@ -1798,8 +1798,9 @@ void xen_callback_vector(void)
- 		printk(KERN_INFO "Xen HVM callback vector for event delivery is "
- 				"enabled\n");
- 		/* in the restore case the vector has already been allocated */
--		if (!test_bit(XEN_HVM_EVTCHN_CALLBACK, used_vectors))
--			alloc_intr_gate(XEN_HVM_EVTCHN_CALLBACK, xen_hvm_callback_vector);
-+		if (!test_bit(HYPERVISOR_CALLBACK_VECTOR, used_vectors))
-+			alloc_intr_gate(HYPERVISOR_CALLBACK_VECTOR,
-+					xen_hvm_callback_vector);
- 	}
- }
- #else
