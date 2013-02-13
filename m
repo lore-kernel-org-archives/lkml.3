@@ -1,50 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933742Ab3BMKy0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 05:54:26 -0500
-Received: from kirsty.vergenet.net ([202.4.237.240]:48359 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932476Ab3BMKyZ (ORCPT
+	id S933755Ab3BMKze (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 05:55:34 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41931 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932451Ab3BMKzd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 05:54:25 -0500
-Date: Wed, 13 Feb 2013 19:54:22 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-sh@vger.kernel.org, johnstul@us.ibm.com,
-        shinya.kuribayashi.px@renesas.com, tglx@linutronix.de
-Subject: Re: [PATCH 00/08] clocksource: sh_cmt: CMT driver update
-Message-ID: <20130213105422.GA22623@verge.net.au>
-References: <20121214055323.10081.12056.sendpatchset@w520>
- <Pine.LNX.4.64.1302130927280.18535@axis700.grange>
+	Wed, 13 Feb 2013 05:55:33 -0500
+Date: Wed, 13 Feb 2013 10:55:28 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] Remove obsolete email address for Zwane Mwaikambo
+Message-ID: <20130213105527.GZ17833@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1302130927280.18535@axis700.grange>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 13, 2013 at 10:45:13AM +0100, Guennadi Liakhovetski wrote:
-> Hi Magnus
-> 
-> On Fri, 14 Dec 2012, Magnus Damm wrote:
-> 
-> > clocksource: sh_cmt: CMT driver update
-> > 
-> > [PATCH 01/08] clocksource: sh_cmt: Take care of clk_put() when setup_irq() fails
-> > [PATCH 02/08] clocksource: sh_cmt: Initialize 'max_match_value' and 'lock' in sh_cmt_setup()
-> > [PATCH 03/08] clocksource: sh_cmt: Consolidate platform_set_drvdata() call
-> > [PATCH 04/08] clocksource: sh_cmt: Introduce per-register functions
-> > [PATCH 05/08] clocksource: sh_cmt: CMSTR and CMCSR register access update
-> > [PATCH 06/08] clocksource: sh_cmt: CMCNT and CMCOR register access update
-> > [PATCH 07/08] clocksource: sh_cmt: Add control register callbacks
-> > [PATCH 08/08] clocksource: sh_cmt: Add CMT register layout comment
-> 
-> On a kzm9g board with -reference DT configuration and on armadillo800eva:
-> 
-> Tested-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Zwane's arm.linux.org.uk email address has not been functional for
+a number of years now.  It's time that all references to it were
+removed.  I no longer have a forwarding address for Zwane, as I had
+assumed that my repeated requests over a number of years to Zwane to
+avoid use of this address had been actioned.
 
-Thanks, I have applied these to the clocksource branch.
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+---
+ CREDITS                       |    1 -
+ Documentation/cpu-hotplug.txt |    2 +-
+ MAINTAINERS                   |    2 +-
+ 3 files changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/CREDITS b/CREDITS
+index 2346b09..463f0d8 100644
+--- a/CREDITS
++++ b/CREDITS
+@@ -2564,7 +2564,6 @@ S: Toronto, Ontario
+ S: Canada
+ 
+ N: Zwane Mwaikambo
+-E: zwane@arm.linux.org.uk
+ D: Various driver hacking
+ D: Lowlevel x86 kernel hacking
+ D: General debugging
+diff --git a/Documentation/cpu-hotplug.txt b/Documentation/cpu-hotplug.txt
+index 9f40135..d03263a 100644
+--- a/Documentation/cpu-hotplug.txt
++++ b/Documentation/cpu-hotplug.txt
+@@ -5,7 +5,7 @@
+ 			Rusty Russell <rusty@rustcorp.com.au>
+ 			Srivatsa Vaddagiri <vatsa@in.ibm.com>
+ 		i386:
+-			Zwane Mwaikambo <zwane@arm.linux.org.uk>
++			Zwane Mwaikambo
+ 		ppc64:
+ 			Nathan Lynch <nathanl@austin.ibm.com>
+ 			Joel Schopp <jschopp@austin.ibm.com>
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 8c068f7..4089db6 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6637,7 +6637,7 @@ S:	Supported
+ F:	drivers/media/usb/tlg2300
+ 
+ SC1200 WDT DRIVER
+-M:	Zwane Mwaikambo <zwane@arm.linux.org.uk>
++M:	Zwane Mwaikambo
+ S:	Maintained
+ F:	drivers/watchdog/sc1200wdt.c
+ 
+
