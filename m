@@ -1,187 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756121Ab3BNHqw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 02:46:52 -0500
-Received: from mail-ye0-f202.google.com ([209.85.213.202]:45539 "EHLO
-	mail-ye0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751976Ab3BNHqv (ORCPT
+	id S1756188Ab3BNHsg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 02:48:36 -0500
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:60517 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752250Ab3BNHsd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 02:46:51 -0500
-From: Simon Glass <sjg@chromium.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Simon Glass <sjg@chromium.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bill Pemberton <wfp5p@virginia.edu>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Javier Martinez Canillas <javier@dowhile0.org>,
-        Sourav Poddar <sourav.poddar@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Alban Bedel <alban.bedel@avionic-design.de>,
-        linux-input@vger.kernel.org
-Subject: [PATCH v3 5/6] Input: matrix-keymap: Add function to read the new DT binding
-Date: Wed, 13 Feb 2013 22:50:14 -0800
-Message-Id: <1360824615-10962-6-git-send-email-sjg@chromium.org>
-X-Mailer: git-send-email 1.8.1
+	Thu, 14 Feb 2013 02:48:33 -0500
+MIME-Version: 1.0
+In-Reply-To: <959cfd74266e82f72e5879c6c8b798d76f6cad31.1360746454.git.dmitry.kasatkin@intel.com>
+References: <959cfd74266e82f72e5879c6c8b798d76f6cad31.1360746454.git.dmitry.kasatkin@intel.com>
+Date: Thu, 14 Feb 2013 09:48:32 +0200
+Message-ID: <CALLzPKZEnrYoz8mVCsdnQPbdM2Ni2bT+XXz7-ogtBP6quTFv5Q@mail.gmail.com>
+Subject: Re: [RFC 1/1] xattr: provide integrity. namespace to read real values
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: linux-security-module@vger.kernel.org, James Morris <jmorris@namei.org>
+Cc: linux-kernel@vger.kernel.org, casey@schaufler-ca.com,
+        zohar@linux.vnet.ibm.com, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We now have a binding which adds two parameters to the matrix keypad DT
-node. This is separate from the GPIO-driven matrix keypad binding, and
-unfortunately incompatible, since that uses row-gpios/col-gpios for the
-row and column counts.
+Hello,
 
-So the easiest option here is to provide a function for non-GPIO drivers
-to use to decode the binding.
+Any comments about this patch and functionality?
 
-Note: We could in fact create an entirely separate structure to hold
-these two fields, but it does not seem worth it, yet. If we have more
-parameters then we can add this, and then refactor each driver to hold
-such a structure.
+Thanks,
+Dmitry
 
-Signed-off-by: Simon Glass <sjg@chromium.org>
-Tested-by: Sourav Poddar <sourav.poddar@ti.com> (v2)
----
-Changes in v3:
-- Add stub for matrix_keypad_parse_of_params() when no CONFIG_OF
-- Put back full DT range checking in tca8418 driver
-
-Changes in v2:
-- Add new patch to decode matrix-keypad DT binding
-
- drivers/input/keyboard/lpc32xx-keys.c   | 11 ++++++-----
- drivers/input/keyboard/omap4-keypad.c   | 16 +++++-----------
- drivers/input/keyboard/tca8418_keypad.c |  7 +++++--
- drivers/input/matrix-keymap.c           | 19 +++++++++++++++++++
- include/linux/input/matrix_keypad.h     | 19 +++++++++++++++++++
- 5 files changed, 54 insertions(+), 18 deletions(-)
-
-diff --git a/drivers/input/keyboard/lpc32xx-keys.c b/drivers/input/keyboard/lpc32xx-keys.c
-index 1b8add6..4218143 100644
---- a/drivers/input/keyboard/lpc32xx-keys.c
-+++ b/drivers/input/keyboard/lpc32xx-keys.c
-@@ -144,12 +144,13 @@ static int lpc32xx_parse_dt(struct device *dev,
- {
- 	struct device_node *np = dev->of_node;
- 	u32 rows = 0, columns = 0;
-+	int err;
- 
--	of_property_read_u32(np, "keypad,num-rows", &rows);
--	of_property_read_u32(np, "keypad,num-columns", &columns);
--	if (!rows || rows != columns) {
--		dev_err(dev,
--			"rows and columns must be specified and be equal!\n");
-+	err = matrix_keypad_parse_of_params(dev, &rows, &columns);
-+	if (err)
-+		return err;
-+	if (rows != columns) {
-+		dev_err(dev, "rows and columns must be equal!\n");
- 		return -EINVAL;
- 	}
- 
-diff --git a/drivers/input/keyboard/omap4-keypad.c b/drivers/input/keyboard/omap4-keypad.c
-index e25b022..1b28909 100644
---- a/drivers/input/keyboard/omap4-keypad.c
-+++ b/drivers/input/keyboard/omap4-keypad.c
-@@ -215,18 +215,12 @@ static int omap4_keypad_parse_dt(struct device *dev,
- 				 struct omap4_keypad *keypad_data)
- {
- 	struct device_node *np = dev->of_node;
-+	int err;
- 
--	if (!np) {
--		dev_err(dev, "missing DT data");
--		return -EINVAL;
--	}
--
--	of_property_read_u32(np, "keypad,num-rows", &keypad_data->rows);
--	of_property_read_u32(np, "keypad,num-columns", &keypad_data->cols);
--	if (!keypad_data->rows || !keypad_data->cols) {
--		dev_err(dev, "number of keypad rows/columns not specified\n");
--		return -EINVAL;
--	}
-+	err = matrix_keypad_parse_of_params(dev, &keypad_data->rows,
-+					    &keypad_data->cols);
-+	if (err)
-+		return err;
- 
- 	if (of_get_property(np, "linux,input-no-autorepeat", NULL))
- 		keypad_data->no_autorepeat = true;
-diff --git a/drivers/input/keyboard/tca8418_keypad.c b/drivers/input/keyboard/tca8418_keypad.c
-index a34cc67..55c1530 100644
---- a/drivers/input/keyboard/tca8418_keypad.c
-+++ b/drivers/input/keyboard/tca8418_keypad.c
-@@ -288,8 +288,11 @@ static int tca8418_keypad_probe(struct i2c_client *client,
- 		irq_is_gpio = pdata->irq_is_gpio;
- 	} else {
- 		struct device_node *np = dev->of_node;
--		of_property_read_u32(np, "keypad,num-rows", &rows);
--		of_property_read_u32(np, "keypad,num-columns", &cols);
-+		int err;
-+
-+		err = matrix_keypad_parse_of_params(dev, &rows, &cols);
-+		if (err)
-+			return err;
- 		rep = of_property_read_bool(np, "keypad,autorepeat");
- 	}
- 
-diff --git a/drivers/input/matrix-keymap.c b/drivers/input/matrix-keymap.c
-index 3ae496e..619b382 100644
---- a/drivers/input/matrix-keymap.c
-+++ b/drivers/input/matrix-keymap.c
-@@ -50,6 +50,25 @@ static bool matrix_keypad_map_key(struct input_dev *input_dev,
- }
- 
- #ifdef CONFIG_OF
-+int matrix_keypad_parse_of_params(struct device *dev,
-+				  unsigned int *rows, unsigned int *cols)
-+{
-+	struct device_node *np = dev->of_node;
-+
-+	if (!np) {
-+		dev_err(dev, "missing DT data");
-+		return -EINVAL;
-+	}
-+	of_property_read_u32(np, "keypad,num-rows", rows);
-+	of_property_read_u32(np, "keypad,num-columns", cols);
-+	if (!*rows || !*cols) {
-+		dev_err(dev, "number of keypad rows/columns not specified\n");
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
- static int matrix_keypad_parse_of_keymap(const char *propname,
- 					 unsigned int rows, unsigned int cols,
- 					 struct input_dev *input_dev)
-diff --git a/include/linux/input/matrix_keypad.h b/include/linux/input/matrix_keypad.h
-index 5f3aa6b..27e06ac 100644
---- a/include/linux/input/matrix_keypad.h
-+++ b/include/linux/input/matrix_keypad.h
-@@ -81,4 +81,23 @@ int matrix_keypad_build_keymap(const struct matrix_keymap_data *keymap_data,
- 			       unsigned short *keymap,
- 			       struct input_dev *input_dev);
- 
-+#ifdef CONFIG_OF
-+/**
-+ * matrix_keypad_parse_of_params() - Read parameters from matrix-keypad node
-+ *
-+ * @dev: Device containing of_node
-+ * @rows: Returns number of matrix rows
-+ * @cols: Returns number of matrix columns
-+ * @return 0 if OK, <0 on error
-+ */
-+int matrix_keypad_parse_of_params(struct device *dev,
-+				  unsigned int *rows, unsigned int *cols);
-+#else
-+static inline int matrix_keypad_parse_of_params(struct device *dev,
-+				  unsigned int *rows, unsigned int *cols)
-+{
-+	return -ENOSYS;
-+}
-+#endif /* CONFIG_OF */
-+
- #endif /* _MATRIX_KEYPAD_H */
--- 
-1.8.1
-
+On Wed, Feb 13, 2013 at 11:07 AM, Dmitry Kasatkin
+<dmitry.kasatkin@intel.com> wrote:
+> User space tools use getxattr() system call to read values of extended
+> attributes. getxattr() system call uses vfs_getattr(), which for "security."
+> namespace might get a value of the xattr indirectly from LSM via calling
+> xattr_getsecurity(). For that reason value set by setxattr and read by getxattr
+> might differ.
+>
+> Here is an example of SMACK label, which shows that set and read values are
+> different:
+>
+>   setfattr -n security.SMACK64 -v "hello world" foo
+>   getfattr -n security.SMACK64 foo
+>   # file: foo
+>   security.SMACK64="hello"
+>
+> EVM uses vfs_getxattr_alloc(), which directly reads xattr values from the file
+> system. When performing the file system labeling with digital signatures, it is
+> necessary to read real xattr values in order to generate the correct signatures.
+>
+> This patch adds the virtual "integrity." name space, which allows to bypass
+> calling LSM and read real extended attribute values.
+>
+>   getfattr -e text -n integrity.SMACK64 foo
+>   # file: foo
+>   integrity.SMACK64="hello world"
+>
+> Suggested-by: Casey Schaufler <casey@schaufler-ca.com>
+> Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+> ---
+>  fs/xattr.c                 |   22 +++++++++++++++++++---
+>  include/uapi/linux/xattr.h |    4 ++++
+>  2 files changed, 23 insertions(+), 3 deletions(-)
+>
+> diff --git a/fs/xattr.c b/fs/xattr.c
+> index 3377dff..76c2620 100644
+> --- a/fs/xattr.c
+> +++ b/fs/xattr.c
+> @@ -232,12 +232,28 @@ vfs_getxattr(struct dentry *dentry, const char *name, void *value, size_t size)
+>  {
+>         struct inode *inode = dentry->d_inode;
+>         int error;
+> +       char *usename = (char *)name, name_buf[XATTR_NAME_MAX];
+> +
+> +       /* because this function calls LSM for "security." namespace,
+> +        * it may be impossible to get real value stored in xattr.
+> +        * An LSM may mangle the attribute value to its own ends.
+> +        * Smack is known to do this.
+> +        * virtual namespace "integrity." is used to fetch real
+> +        * security attributes without talking to LSM
+> +        */
+> +       if (!strncmp(name, XATTR_INTEGRITY_PREFIX,
+> +                               XATTR_INTEGRITY_PREFIX_LEN)) {
+> +               /* replace "integrity. with security. */
+> +               snprintf(name_buf, sizeof(name_buf), "security.%s",
+> +                        name + XATTR_INTEGRITY_PREFIX_LEN);
+> +               usename = name_buf;
+> +       }
+>
+> -       error = xattr_permission(inode, name, MAY_READ);
+> +       error = xattr_permission(inode, usename, MAY_READ);
+>         if (error)
+>                 return error;
+>
+> -       error = security_inode_getxattr(dentry, name);
+> +       error = security_inode_getxattr(dentry, usename);
+>         if (error)
+>                 return error;
+>
+> @@ -255,7 +271,7 @@ vfs_getxattr(struct dentry *dentry, const char *name, void *value, size_t size)
+>         }
+>  nolsm:
+>         if (inode->i_op->getxattr)
+> -               error = inode->i_op->getxattr(dentry, name, value, size);
+> +               error = inode->i_op->getxattr(dentry, usename, value, size);
+>         else
+>                 error = -EOPNOTSUPP;
+>
+> diff --git a/include/uapi/linux/xattr.h b/include/uapi/linux/xattr.h
+> index 26607bd..133998b 100644
+> --- a/include/uapi/linux/xattr.h
+> +++ b/include/uapi/linux/xattr.h
+> @@ -20,6 +20,10 @@
+>  #define XATTR_SECURITY_PREFIX  "security."
+>  #define XATTR_SECURITY_PREFIX_LEN (sizeof (XATTR_SECURITY_PREFIX) - 1)
+>
+> +/* integrity - security mirror namespace for integrity purpose */
+> +#define XATTR_INTEGRITY_PREFIX "integrity."
+> +#define XATTR_INTEGRITY_PREFIX_LEN (sizeof (XATTR_INTEGRITY_PREFIX) - 1)
+> +
+>  #define XATTR_SYSTEM_PREFIX "system."
+>  #define XATTR_SYSTEM_PREFIX_LEN (sizeof (XATTR_SYSTEM_PREFIX) - 1)
+>
+> --
+> 1.7.10.4
+>
