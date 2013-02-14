@@ -1,143 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934989Ab3BNUxb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 15:53:31 -0500
-Received: from kanga.kvack.org ([205.233.56.17]:56980 "EHLO kanga.kvack.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760003Ab3BNUx3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 15:53:29 -0500
-Date: Thu, 14 Feb 2013 15:53:28 -0500
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Zach Brown <zab@redhat.com>
-Cc: Kent Overstreet <koverstreet@google.com>, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH][WIP v1] aio: experimental use of threads, demonstration of cancel method
-Message-ID: <20130214205328.GB25505@kvack.org>
-References: <20130213221632.GA25312@kvack.org> <20130214193333.GG22221@lenny.home.zabbo.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130214193333.GG22221@lenny.home.zabbo.net>
-User-Agent: Mutt/1.4.2.2i
+	id S934998Ab3BNUyT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 15:54:19 -0500
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:33680 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758339Ab3BNUyR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 15:54:17 -0500
+Message-ID: <511D4F5F.6010200@metafoo.de>
+Date: Thu, 14 Feb 2013 21:55:59 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Icedove/3.0.11
+MIME-Version: 1.0
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, dianders@chromium.org,
+        gregkh@linuxfoundation.org, naveenkrishna.ch@gmail.com
+Subject: Re: [PATCH v6] iio: adc: add exynos adc driver under iio framwork
+References: <1358775470-21278-1-git-send-email-ch.naveen@samsung.com> <1360843890-28466-1-git-send-email-ch.naveen@samsung.com>
+In-Reply-To: <1360843890-28466-1-git-send-email-ch.naveen@samsung.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 14, 2013 at 11:33:33AM -0800, Zach Brown wrote:
-> On Wed, Feb 13, 2013 at 05:16:32PM -0500, Benjamin LaHaise wrote:
-> > This patch is purely for experimentation purposes, and is by no means
-> > complete or cleaned up for submission yet.  It is, however, useful for
-> > demonstrating the cancellation of a kiocb when the kiocb is being
-> > processed by using a kernel thread.
+On 02/14/2013 01:11 PM, Naveen Krishna Chatradhi wrote:
+> This patch adds New driver to support:
+> 1. Supports ADC IF found on EXYNOS4412/EXYNOS5250
+>    and future SoCs from Samsung
+> 2. Add ADC driver under iio/adc framework
+> 3. Also adds the Documentation for device tree bindings
 > 
-> I'll raise the high level design questions:
+> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+
+Looks good to me. There is one bug left in debugfs_reg_access function though,
+which should be fixed before the driver is merged.
+
+> ---
+> Changes since v1:
 > 
-> 1) The patch handles the processing thread's current->mm needing to
->    match the submitting thread's.  What's the plan for the rest of the
->    task_struct state that a processing thread might need to read from and
->    write to the submitting thread?
-
-The plan is to handle that with submit time helpers that get references to 
-the state that is required for the operation in question.  For example, 
-network operations would not need to get a reference on current->io_context, 
-while block based filesystem operations would.  Helpers like this would be 
-far simpler than writing fully asynchronous read/write ops.  Likely a 
-bitmask of state to clone would make this easier to implement.
-
-> 2) Why do we want to put aio between userspace and a pool of threads
->    that call syscalls?  Put another way: whatever the benefit is here,
->    can't the kernel offer that benefit as some "thread pool
->    coordination" interface and not force users to pass their work through
->    aio contexts and iocbs and the ring?
-
-I don't see any need to introduce a new API at this point in time, plus 
-the existing hooks allow for operations to do the submit in the caller's 
-thread (which things like DIO will likely continue to need), which in turn 
-will allow for only passing the state needed around.  There are problems 
-with a generic thread pool management facility that supports arbitrary 
-asynchronous syscalls: some syscalls assume particular thread-local state.  
-Any generic facility would need to cope with the state problem as much as 
-limited read/write operations do.  I don't see the complexity being much 
-different.
-
-If you can demonstrate a new API that has enough value to make the addition 
-worthwhile, please show me the proof in the pudding.  I suspect most users 
-just want something that works and don't care one way or another what the 
-API is if it works.
-
-> > way had any performance tuning done on it.  A subsequent demonstration
-> > patch will be written to make use of queue_work() for the purpose of
-> > examining and comparing the overhead of various APIs.
+> 1. Fixed comments from Lars
+> 2. Added support for ADC on EXYNOS5410
 > 
-> Hopefully cmwq could help, yeah.  You could also use a wake queue func
-> to pass iocbs around under the wait queue lock and get rid of all the
-> manual waking, locking, task state, and scheduling code.
-...
-> wait_queue_head_t waitq;
-
-That's a good idea.  I'll give it a spin in the next version.
-
-> An on-stack iocb pointer and wait queue in a container struct would let
-> the wait queue's wakeup func set the iocb from the wake up's key and
-> then call default_wake_func().
-
-*nod*
-
-> > +	cancel = cmpxchg(&iocb->ki_cancel, aio_thread_cancel_fn, NULL);
-> > +	if (cancel == KIOCB_CANCELLED) {
-> > +		set_current_state(TASK_INTERRUPTIBLE);
-> > +		while (!signal_pending(current)) {
-> > +			schedule();
-> > +			if (signal_pending(current))
-> > +				break;
-> > +			set_current_state(TASK_INTERRUPTIBLE);
-> > +		}
-> > +	} else
-> > +		BUG_ON(cancel != aio_thread_cancel_fn);
+> Changes since v2:
 > 
-> It took me a while to guess what this was doing.  Is it trying to make
-> sure that the cancel's force_signal() has finished before exiting? 
-
-If the kiocb has been cancelled, this code ensures that the helper thread 
-has received the SIGSEGV.  This ensures that the signal can then be flushed 
-by flush_signals().  If the kiocb has not been cancelled, it can no longer 
-be cancelled after the cmpxchg() has executed.
-
-> Are we sure that no paths that could be called from an f_op have their
-> own flush_signals() that would lose the cancel's signal?  Or that a call
-> couldn't already have pending signals before the cancel's signal has
-> been sent?
-
-Looking around the tree, the only places that use flush_signals() tend to 
-be kernel thread related code (mostly drbd, iscsi, md, some scsi bits and 
-a few other places).  By definition, any read/write operation that flushes 
-a SEGV signal in-kernel would be a bug (doing so would prevent a process 
-from being killed by a kill -9), so I don't have any worries about this.  
-Furthermore, neither users nor root can send a SEGV to these helper 
-processes, as they are kernel threads with signals otherwise blocked.
-
-> It seems fragile.
-
-How so?  Nothing else in the kernel can generate these signals, and any 
-other parts of the kernel flushing these signals would be a bug.  The only 
-real concern would likely be in the signalfd code, which needs special 
-handling.
-
-...
-> Scary stuff.  It'll be nice to see it go :).
-
-Yup, that's vastly simplified by using wait queues.
-
-> > +	void *aio_data;
+> 1. Changed the instance name for (struct iio_dev *) to indio_dev
+> 2. Changed devm_request_irq to request_irq
 > 
-> A task_struct for a submitter and an iocb for the processing thread?  Is
-> that just a quick hack for the prototype?  A few more bytes spent on
-> separate members with proper types would be appreciated.  My brain is
-> old.
+> Few doubts regarding the mappings and child device handling.
+> Kindly, suggest me better methods.
+> 
+> Changes since v3:
+> 
+> 1. Added clk_prepare_disable and regulator_disable calls in _remove()
+> 2. Moved init_completion before irq_request
+> 3. Added NULL pointer check for devm_request_and_ioremap() return value.
+> 4. Use number of channels as per the ADC version
+> 5. Change the define ADC_V1_CHANNEL to ADC_CHANNEL
+> 6. Update the Documentation to include EXYNOS5410 compatible
+> 
+> Changes since v4:
+> 
+> 1. if devm_request_and_ioremap() failes, free iio_device before returning
+> 
+> Changes since v5:
+> 
+> 1. Fixed comments from Olof (ADC hardware version handling)
+> 2. Rebased on top of comming OF framework for IIO by "Guenter Roeck".
+> 
+>  .../bindings/arm/samsung/exynos5-adc.txt           |   42 ++
+>  drivers/iio/adc/Kconfig                            |    7 +
+>  drivers/iio/adc/Makefile                           |    1 +
+>  drivers/iio/adc/exynos_adc.c                       |  438 ++++++++++++++++++++
+>  4 files changed, 488 insertions(+)
+>  .../devicetree/bindings/arm/samsung/exynos-adc.txt |   52 +++
+>  drivers/iio/adc/Kconfig                            |    7 +
+>  drivers/iio/adc/Makefile                           |    1 +
+>  drivers/iio/adc/exynos_adc.c                       |  437 ++++++++++++++++++++
+>  4 files changed, 497 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
+>  create mode 100644 drivers/iio/adc/exynos_adc.c
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt b/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
+> new file mode 100644
+> index 0000000..f686378
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
+> @@ -0,0 +1,52 @@
+[...]
+> diff --git a/drivers/iio/adc/Makefile b/drivers/iio/adc/Makefile
+> index 2d5f100..fabac2c 100644
+> --- a/drivers/iio/adc/Makefile
+> +++ b/drivers/iio/adc/Makefile
+> @@ -10,6 +10,7 @@ obj-$(CONFIG_AD7791) += ad7791.o
+>  obj-$(CONFIG_AD7793) += ad7793.o
+>  obj-$(CONFIG_AD7887) += ad7887.o
+>  obj-$(CONFIG_AT91_ADC) += at91_adc.o
+> +obj-$(CONFIG_EXYNOS_ADC) += exynos_adc.o
+>  obj-$(CONFIG_LP8788_ADC) += lp8788_adc.o
+>  obj-$(CONFIG_MAX1363) += max1363.o
+>  obj-$(CONFIG_TI_ADC081C) += ti-adc081c.o
+> diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
+> new file mode 100644
+> index 0000000..144a9e2
+> --- /dev/null
+> +++ b/drivers/iio/adc/exynos_adc.c
+> @@ -0,0 +1,437 @@
+> [...]
+> +static int exynos_read_raw(struct iio_dev *indio_dev,
+> +				struct iio_chan_spec const *chan,
+> +				int *val,
+> +				int *val2,
+> +				long mask)
+> +{
+> +	struct exynos_adc *info = iio_priv(indio_dev);
+> +	u32 con1, con2;
+> +
+> +	if (mask == IIO_CHAN_INFO_RAW) {
 
-I said this was an ugly first attempt. =)
+How about rewriting this as:
 
-		-ben
--- 
-"Thought is the essence of where you are now."
+	if (mask != IIO_CHAN_INFO_RAW)
+		return -EINVAL;
+
+	mutex_lock(...);
+	...
+
+keeps the indention level low.
+
+> +		mutex_lock(&indio_dev->mlock);
+> +
+> +		/* Select the channel to be used and Trigger conversion */
+> +		if (info->version == ADC_V2) {
+> +			con2 = readl(ADC_V2_CON2(info->regs));
+> +			con2 &= ~ADC_V2_CON2_ACH_MASK;
+> +			con2 |= ADC_V2_CON2_ACH_SEL(chan->address);
+> +			writel(con2, ADC_V2_CON2(info->regs));
+> +
+> +			con1 = readl(ADC_V2_CON1(info->regs));
+> +			writel(con1 | ADC_CON_EN_START,
+> +					ADC_V2_CON1(info->regs));
+> +		} else {
+> +			writel(chan->address, ADC_V1_MUX(info->regs));
+> +
+> +			con1 = readl(ADC_V1_CON(info->regs));
+> +			writel(con1 | ADC_CON_EN_START,
+> +					ADC_V1_CON(info->regs));
+> +		}
+> +
+> +		wait_for_completion(&info->completion);
+
+I'd add at least a timeout so you don't get stuck here forever if something
+goes wrong.
+
+> +		*val = info->value;
+> +
+> +		mutex_unlock(&indio_dev->mlock);
+> +
+> +		return IIO_VAL_INT;
+> +	}
+> +
+> +	return -EINVAL;
+> +}
+> +
+[...]
+> +static int exynos_adc_reg_access(struct iio_dev *indio_dev,
+> +			      unsigned reg, unsigned writeval,
+> +			      unsigned *readval)
+> +{
+> +	struct exynos_adc *info = iio_priv(indio_dev);
+> +	u32 ret;
+> +
+> +	mutex_lock(&indio_dev->mlock);
+
+I don't think the locking here is necessary.
+
+> +
+> +	if (readval != NULL) {
+> +		ret = readl(info->regs + reg);
+> +		*readval = ret;
+
+At the end of the function you return the read value, you should return 0 on
+success though.
+
+> +	} else
+> +		ret = -EINVAL;
+> +
+> +	mutex_unlock(&indio_dev->mlock);
+
+
+How about rewriting the function as:
+
+	if (readval == NULL)
+		return -EINVAL;
+
+	*readval = readl(info->regs + reg)
+
+	return 0;
+
+> +
+> +	return ret;
+> +}
+[...]
+> +
+> +static int exynos_adc_remove(struct platform_device *pdev)
+> +{
+> +	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
+> +	struct exynos_adc *info = iio_priv(indio_dev);
+> +
+
+Do you need to remove the child devices here as well?
+
+> +	regulator_disable(info->vdd);
+> +	clk_disable_unprepare(info->clk);
+> +	iio_device_unregister(indio_dev);
+> +	free_irq(info->irq, info);
+> +	iio_device_free(indio_dev);
+> +
+> +	return 0;
+> +}
+
