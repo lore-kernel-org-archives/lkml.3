@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965051Ab3BNN0u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 08:26:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36220 "EHLO mx2.suse.de"
+	id S965212Ab3BNN1B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 08:27:01 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36255 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934595Ab3BNN0s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 08:26:48 -0500
+	id S964958Ab3BNN0y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 08:26:54 -0500
 From: Michal Hocko <mhocko@suse.cz>
 To: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org,
         Tejun Heo <htejun@gmail.com>, Glauber Costa <glommer@parallels.com>,
         Li Zefan <lizefan@huawei.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH v4 1/6] memcg: keep prev's css alive for the whole mem_cgroup_iter
-Date: Thu, 14 Feb 2013 14:26:31 +0100
-Message-Id: <1360848396-16564-2-git-send-email-mhocko@suse.cz>
+Subject: [PATCH v4 5/6] memcg: further simplify mem_cgroup_iter
+Date: Thu, 14 Feb 2013 14:26:35 +0100
+Message-Id: <1360848396-16564-6-git-send-email-mhocko@suse.cz>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1360848396-16564-1-git-send-email-mhocko@suse.cz>
 References: <1360848396-16564-1-git-send-email-mhocko@suse.cz>
@@ -24,64 +24,117 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-css reference counting keeps the cgroup alive even though it has been
-already removed. mem_cgroup_iter relies on this fact and takes a
-reference to the returned group. The reference is then released on the
-next iteration or mem_cgroup_iter_break.
-mem_cgroup_iter currently releases the reference right after it gets the
-last css_id.
-This is correct because neither prev's memcg nor cgroup are accessed
-after then. This will change in the next patch so we need to hold the
-group alive a bit longer so let's move the css_put at the end of the
-function.
+mem_cgroup_iter basically does two things currently. It takes care of
+the house keeping (reference counting, raclaim cookie) and it iterates
+through a hierarchy tree (by using cgroup generic tree walk).
+The code would be much more easier to follow if we move the iteration
+outside of the function (to __mem_cgrou_iter_next) so the distinction
+is more clear.
+This patch doesn't introduce any functional changes.
 
 Signed-off-by: Michal Hocko <mhocko@suse.cz>
 Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- mm/memcontrol.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ mm/memcontrol.c |   79 ++++++++++++++++++++++++++++++++-----------------------
+ 1 file changed, 46 insertions(+), 33 deletions(-)
 
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 1ea8951..f3d1bfe 100644
+index 36938f6..0d7357b 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -1141,12 +1141,9 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
- 	if (prev && !reclaim)
- 		id = css_id(&prev->css);
- 
--	if (prev && prev != root)
--		css_put(&prev->css);
--
- 	if (!root->use_hierarchy && root != root_mem_cgroup) {
- 		if (prev)
--			return NULL;
-+			goto out_css_put;
- 		return root;
- 	}
- 
-@@ -1162,7 +1159,7 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
- 			mz = mem_cgroup_zoneinfo(root, nid, zid);
- 			iter = &mz->reclaim_iter[reclaim->priority];
- 			if (prev && reclaim->generation != iter->generation)
--				return NULL;
-+				goto out_css_put;
- 			id = iter->position;
- 		}
- 
-@@ -1184,8 +1181,12 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
- 		}
- 
- 		if (prev && !css)
--			return NULL;
-+			goto out_css_put;
- 	}
-+out_css_put:
-+	if (prev && prev != root)
-+		css_put(&prev->css);
-+
+@@ -1114,6 +1114,51 @@ struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm)
  	return memcg;
  }
  
++/*
++ * Returns a next (in a pre-order walk) alive memcg (with elevated css
++ * ref. count) or NULL if the whole root's subtree has been visited.
++ *
++ * helper function to be used by mem_cgroup_iter
++ */
++static struct mem_cgroup *__mem_cgroup_iter_next(struct mem_cgroup *root,
++		struct mem_cgroup *last_visited)
++{
++	struct cgroup *prev_cgroup, *next_cgroup;
++
++	/*
++	 * Root is not visited by cgroup iterators so it needs an
++	 * explicit visit.
++	 */
++	if (!last_visited)
++		return root;
++
++	prev_cgroup = (last_visited == root) ? NULL
++		: last_visited->css.cgroup;
++skip_node:
++	next_cgroup = cgroup_next_descendant_pre(
++			prev_cgroup, root->css.cgroup);
++
++	/*
++	 * Even if we found a group we have to make sure it is
++	 * alive. css && !memcg means that the groups should be
++	 * skipped and we should continue the tree walk.
++	 * last_visited css is safe to use because it is
++	 * protected by css_get and the tree walk is rcu safe.
++	 */
++	if (next_cgroup) {
++		struct mem_cgroup *mem = mem_cgroup_from_cont(
++				next_cgroup);
++		if (css_tryget(&mem->css))
++			return mem;
++		else {
++			prev_cgroup = next_cgroup;
++			goto skip_node;
++		}
++	}
++
++	return NULL;
++}
++
+ /**
+  * mem_cgroup_iter - iterate over memory cgroup hierarchy
+  * @root: hierarchy root
+@@ -1194,39 +1239,7 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+ 			}
+ 		}
+ 
+-		/*
+-		 * Root is not visited by cgroup iterators so it needs an
+-		 * explicit visit.
+-		 */
+-		if (!last_visited) {
+-			memcg = root;
+-		} else {
+-			struct cgroup *prev_cgroup, *next_cgroup;
+-
+-			prev_cgroup = (last_visited == root) ? NULL
+-				: last_visited->css.cgroup;
+-skip_node:
+-			next_cgroup = cgroup_next_descendant_pre(
+-					prev_cgroup, root->css.cgroup);
+-
+-			/*
+-			 * Even if we found a group we have to make sure it is
+-			 * alive. css && !memcg means that the groups should be
+-			 * skipped and we should continue the tree walk.
+-			 * last_visited css is safe to use because it is
+-			 * protected by css_get and the tree walk is rcu safe.
+-			 */
+-			if (next_cgroup) {
+-				struct mem_cgroup *mem = mem_cgroup_from_cont(
+-						next_cgroup);
+-				if (css_tryget(&mem->css))
+-					memcg = mem;
+-				else {
+-					prev_cgroup = next_cgroup;
+-					goto skip_node;
+-				}
+-			}
+-		}
++		memcg = __mem_cgroup_iter_next(root, last_visited);
+ 
+ 		if (reclaim) {
+ 			if (last_visited)
 -- 
 1.7.10.4
 
