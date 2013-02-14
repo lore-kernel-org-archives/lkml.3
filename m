@@ -1,90 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759547Ab3BNL2K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 06:28:10 -0500
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:58851 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759063Ab3BNL2J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 06:28:09 -0500
-Date: Thu, 14 Feb 2013 12:28:18 +0100
-From: Cong Ding <dinggnu@gmail.com>
-To: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: Kyungmin Park <kmpark@infradead.org>, Wolfram Sang <w.sang@pengutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Karol Lewandowski <k.lewandowsk@samsung.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>, linux-i2c@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3] i2c: busses/i2c-pxa.c: fix potential null pointer
- dereference error
-Message-ID: <20130214112818.GA18774@gmail.com>
-References: <1360015899-13706-1-git-send-email-dinggnu@gmail.com>
- <CAH9JG2XSpFJeUvv7cw-JWadmi=X0-4EsN5FFKuDkwo=-mmzHSQ@mail.gmail.com>
- <20130205000517.GB9969@gmail.com>
- <CAN1soZwM6qNTJn3vvMdc6TR1eJHc=K+_c0WuWOBBuFYMWB_oCA@mail.gmail.com>
- <20130205102540.GC9969@gmail.com>
- <CAN1soZyDLtdjyOFWyVVXN-_ABrChcCR=QbifAo7cz9pYV-nHww@mail.gmail.com>
+	id S934147Ab3BNLaL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 06:30:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59314 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759063Ab3BNLaK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 06:30:10 -0500
+Date: Thu, 14 Feb 2013 11:30:05 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Petr Holasek <pholasek@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 4/11] ksm: reorganize ksm_check_stable_tree
+Message-ID: <20130214113005.GA7367@suse.de>
+References: <alpine.LNX.2.00.1301251747590.29196@eggly.anvils>
+ <alpine.LNX.2.00.1301251758190.29196@eggly.anvils>
+ <20130205164823.GJ21389@suse.de>
+ <alpine.LNX.2.00.1302071558100.2133@eggly.anvils>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <CAN1soZyDLtdjyOFWyVVXN-_ABrChcCR=QbifAo7cz9pYV-nHww@mail.gmail.com>
+In-Reply-To: <alpine.LNX.2.00.1302071558100.2133@eggly.anvils>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If it goes to eclk through line 1107, the variable res would be NULL. It will
-cause a null pointer dereference error if we call release_mem_region. The
-correct way should be using devm_kzalloc rather than kzalloc to allocate
-memory.
+On Thu, Feb 07, 2013 at 04:07:17PM -0800, Hugh Dickins wrote:
+> On Tue, 5 Feb 2013, Mel Gorman wrote:
+> > On Fri, Jan 25, 2013 at 05:59:35PM -0800, Hugh Dickins wrote:
+> > > Memory hotremove's ksm_check_stable_tree() is pitifully inefficient
+> > > (restarting whenever it finds a stale node to remove), but rearrange
+> > > so that at least it does not needlessly restart from nid 0 each time.
+> > > And add a couple of comments: here is why we keep pfn instead of page.
+> > > 
+> > > Signed-off-by: Hugh Dickins <hughd@google.com>
+> > > ---
+> > >  mm/ksm.c |   38 ++++++++++++++++++++++----------------
+> > >  1 file changed, 22 insertions(+), 16 deletions(-)
+> > > 
+> > > --- mmotm.orig/mm/ksm.c	2013-01-25 14:36:52.152205940 -0800
+> > > +++ mmotm/mm/ksm.c	2013-01-25 14:36:53.244205966 -0800
+> > > @@ -1830,31 +1830,36 @@ void ksm_migrate_page(struct page *newpa
+> > >  #endif /* CONFIG_MIGRATION */
+> > >  
+> > >  #ifdef CONFIG_MEMORY_HOTREMOVE
+> > > -static struct stable_node *ksm_check_stable_tree(unsigned long start_pfn,
+> > > -						 unsigned long end_pfn)
+> > > +static void ksm_check_stable_tree(unsigned long start_pfn,
+> > > +				  unsigned long end_pfn)
+> > >  {
+> > > +	struct stable_node *stable_node;
+> > >  	struct rb_node *node;
+> > >  	int nid;
+> > >  
+> > > -	for (nid = 0; nid < nr_node_ids; nid++)
+> > > -		for (node = rb_first(&root_stable_tree[nid]); node;
+> > > -				node = rb_next(node)) {
+> > > -			struct stable_node *stable_node;
+> > > -
+> > > +	for (nid = 0; nid < nr_node_ids; nid++) {
+> > > +		node = rb_first(&root_stable_tree[nid]);
+> > > +		while (node) {
+> > 
+> > This is not your fault, the old code is wrong too. It is assuming that all
+> > nodes are populated in numeric orders with no holes. It won't work if just
+> > two nodes 0 and 4 are online. It should be using for_each_online_node().
+> 
+> If the old code is wrong, it probably would be my fault!  But I believe
+> this is okay: these rb_roots we're looking at, they are in memory which
+> is not being offlined, and the trees for offline nodes will simply be
+> empty, won't they?  Something's badly wrong if otherwise.
+> 
 
-Signed-off-by: Cong Ding <dinggnu@gmail.com>
----
- drivers/i2c/busses/i2c-pxa.c |   22 ++++++++--------------
- 1 file changed, 8 insertions(+), 14 deletions(-)
+I would expect them to be empty but that was not the problem I had in
+mind. Unfortunately I mixed up nr_online_ids and nr_node_ids and read
+the loop incorrectly. What you have is fine.
 
-diff --git a/drivers/i2c/busses/i2c-pxa.c b/drivers/i2c/busses/i2c-pxa.c
-index 1034d93..dd2d640 100644
---- a/drivers/i2c/busses/i2c-pxa.c
-+++ b/drivers/i2c/busses/i2c-pxa.c
-@@ -1094,29 +1094,23 @@ static int i2c_pxa_probe(struct platform_device *dev)
- 	struct resource *res = NULL;
- 	int ret, irq;
- 
--	i2c = kzalloc(sizeof(struct pxa_i2c), GFP_KERNEL);
--	if (!i2c) {
--		ret = -ENOMEM;
--		goto emalloc;
--	}
-+	i2c = devm_kzalloc(sizeof(struct pxa_i2c), GFP_KERNEL);
-+	if (!i2c)
-+		return -ENOMEM;
- 
- 	ret = i2c_pxa_probe_dt(dev, i2c, &i2c_type);
- 	if (ret > 0)
- 		ret = i2c_pxa_probe_pdata(dev, i2c, &i2c_type);
- 	if (ret < 0)
--		goto eclk;
-+		return ret;
- 
- 	res = platform_get_resource(dev, IORESOURCE_MEM, 0);
- 	irq = platform_get_irq(dev, 0);
--	if (res == NULL || irq < 0) {
--		ret = -ENODEV;
--		goto eclk;
--	}
-+	if (res == NULL || irq < 0)
-+		return -ENODEV;
- 
--	if (!request_mem_region(res->start, resource_size(res), res->name)) {
--		ret = -ENOMEM;
--		goto eclk;
--	}
-+	if (!request_mem_region(res->start, resource_size(res), res->name))
-+		return -ENOMEM;
- 
- 	i2c->adap.owner   = THIS_MODULE;
- 	i2c->adap.retries = 5;
 -- 
-1.7.9.5
-
+Mel Gorman
+SUSE Labs
