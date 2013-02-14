@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932543Ab3BNJD1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 04:03:27 -0500
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:33578 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756446Ab3BNJDY (ORCPT
+	id S932759Ab3BNJGw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 04:06:52 -0500
+Received: from mail-ia0-f171.google.com ([209.85.210.171]:59481 "EHLO
+	mail-ia0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756446Ab3BNJGs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 04:03:24 -0500
-From: Fabio Baltieri <fabio.baltieri@linaro.org>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Dan Williams <djbw@fb.com>, linux-kernel@vger.kernel.org,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Fabio Baltieri <fabio.baltieri@linaro.org>
-Subject: [PATCH] dmaengine: ste_dma40: do not remove descriptors for cyclic transfers
-Date: Thu, 14 Feb 2013 10:03:10 +0100
-Message-Id: <1360832590-26562-1-git-send-email-fabio.baltieri@linaro.org>
-X-Mailer: git-send-email 1.7.12.1
+	Thu, 14 Feb 2013 04:06:48 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130213222221.GA11235@windriver.com>
+References: <20130213200432.GA11018@windriver.com>
+	<201302132154.38477.linux@rainbow-software.org>
+	<20130213222221.GA11235@windriver.com>
+Date: Thu, 14 Feb 2013 10:06:48 +0100
+Message-ID: <CACRpkdY23SsZ6nh5Gsi5VAds2OVgryNunu7azDJXQ+jCYa1jrw@mail.gmail.com>
+Subject: Re: [GIT PULL] removal of 1980s PC-XT MFM 8bit ISA disk driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Ondrej Zary <linux@rainbow-software.org>, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix dma_tc_handle() to call d40_desc_remove() and d40_desc_done() only
-for non-cyclic transfers, as this was breaking ux500_pcm since
-introduced in:
+On Wed, Feb 13, 2013 at 11:22 PM, Paul Gortmaker
+<paul.gortmaker@windriver.com> wrote:
 
-d49278e dmaengine: dma40: Add support to split up large elements
+> But before doing that though, lets look at this rather contrived "fix"
+> that coincidentally happened to appear after the deletion was suggested.
 
-Reported-by: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
----
+Hm. Haha, I had no idea that this driver was simultaneously being
+considered for removal.
 
-Hello Vinod,
+> 1) it claims the following: "...the fact that it was in the kernel tree
+> SAVED MY DATA." [caps exactly as in original].  This is patently false,
 
-the bug fixed by this patch was around for some time, but the affected
-driver (ux500_pcm) will be enabled in next release cycle for other
-reasons so this patch can safely go on -next.
+I don't know what kind of debate you guys are having or what kind
+of background there is in this discussion, but it's not like you're using
+a welcoming tone to new contributors here.
 
-Would you take it your tree?
+Are you guys in the middle of some flamefest of the same type
+as the inclusionist vs deletionist power-struggle they have over
+at the Wikipedia every now and then?
+http://en.wikipedia.org/wiki/Deletionism_and_inclusionism_in_Wikipedia
 
-Thanks,
-Fabio
+All I was doing was hacking some old hardware, and I was having fun,
+while retrieveing some old pascal programs.
 
- drivers/dma/ste_dma40.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Compare the title of a book put out by some kernel developer a while
+back.
 
-diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-index ad860a2..1734fee 100644
---- a/drivers/dma/ste_dma40.c
-+++ b/drivers/dma/ste_dma40.c
-@@ -1570,10 +1570,10 @@ static void dma_tc_handle(struct d40_chan *d40c)
- 			d40c->busy = false;
- 		pm_runtime_mark_last_busy(d40c->base->dev);
- 		pm_runtime_put_autosuspend(d40c->base->dev);
--	}
- 
--	d40_desc_remove(d40d);
--	d40_desc_done(d40c, d40d);
-+		d40_desc_remove(d40d);
-+		d40_desc_done(d40c, d40d);
-+	}
- 
- 	d40c->pending_tx++;
- 	tasklet_schedule(&d40c->tasklet);
--- 
-1.7.12.1
+Part of this mail seems to be something like review comments,
+I recommend you send these as replies to the individual patches?
 
+As for whether to delete or maintain the driver I do not really
+care, what I know is that having it around was helpful and fun
+for this one hacker here.
+
+Yours,
+Linus Walleij
