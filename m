@@ -1,103 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935022Ab3BNVrW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 16:47:22 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:57434 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934953Ab3BNVoh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 16:44:37 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Vinson Lee <vlee@twitter.com>,
-        stable@vger.kernel.org, #@infradead.org, 3.4+@infradead.org,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Li Zefan <lizefan@huawei.com>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 09/10] perf tools: Fix build with bison 2.3 and older.
-Date: Thu, 14 Feb 2013 18:44:22 -0300
-Message-Id: <1360878263-12694-10-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
-In-Reply-To: <1360878263-12694-1-git-send-email-acme@infradead.org>
-References: <1360878263-12694-1-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S935005Ab3BNVvg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 16:51:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42779 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934909Ab3BNVvd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 16:51:33 -0500
+Date: Thu, 14 Feb 2013 13:51:29 -0800
+From: Zach Brown <zab@redhat.com>
+To: Benjamin LaHaise <bcrl@kvack.org>
+Cc: Kent Overstreet <koverstreet@google.com>, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH][WIP v1] aio: experimental use of threads, demonstration
+ of cancel method
+Message-ID: <20130214215129.GH22221@lenny.home.zabbo.net>
+References: <20130213221632.GA25312@kvack.org>
+ <20130214193333.GG22221@lenny.home.zabbo.net>
+ <20130214205328.GB25505@kvack.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130214205328.GB25505@kvack.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vinson Lee <vlee@twitter.com>
+On Thu, Feb 14, 2013 at 03:53:28PM -0500, Benjamin LaHaise wrote:
+> On Thu, Feb 14, 2013 at 11:33:33AM -0800, Zach Brown wrote:
+> > 1) The patch handles the processing thread's current->mm needing to
+> >    match the submitting thread's.  What's the plan for the rest of the
+> >    task_struct state that a processing thread might need to read from and
+> >    write to the submitting thread?
+> 
+> The plan is to handle that with submit time helpers that get references to 
+> the state that is required for the operation in question.  For example, 
+> network operations would not need to get a reference on current->io_context, 
+> while block based filesystem operations would.  Helpers like this would be 
+> far simpler than writing fully asynchronous read/write ops.  Likely a 
+> bitmask of state to clone would make this easier to implement.
 
-The %name-prefix "prefix" syntax is not available on bison 2.3 and
-older. Substitute with the -p "prefix" command-line option for
-compatibility with older versions of bison.
+Understood.
 
-This patch fixes this build error with older versions of bison.
+As you know, I'm worried about the uses of the state by aio threads
+getting out of sync with the helpers.
 
-    CC util/sysfs.o
-    BISON util/pmu-bison.c
-util/pmu.y:2.14-24: syntax error, unexpected string, expecting =
-make: *** [util/pmu-bison.c] Error 1
+Maybe this is the right thing to do.  I just want the patch to make it
+very clear what it's asking of task_struct changes in the future. 
 
-Signed-off-by: Vinson Lee <vlee@twitter.com>
-Tested-by: Li Zefan <lizefan@huawei.com>
-Cc: stable@vger.kernel.org # 3.4+
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Link: http://lkml.kernel.org/r/1360792138-29186-1-git-send-email-vlee@twitter.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Makefile            | 4 ++--
- tools/perf/util/parse-events.y | 1 -
- tools/perf/util/pmu.y          | 1 -
- 3 files changed, 2 insertions(+), 4 deletions(-)
+> > 2) Why do we want to put aio between userspace and a pool of threads
+> >    that call syscalls?  Put another way: whatever the benefit is here,
+> >    can't the kernel offer that benefit as some "thread pool
+> >    coordination" interface and not force users to pass their work through
+> >    aio contexts and iocbs and the ring?
+> 
+> I don't see any need to introduce a new API at this point in time, plus 
+> the existing hooks allow for operations to do the submit in the caller's 
+> thread (which things like DIO will likely continue to need), which in turn 
+> will allow for only passing the state needed around.  There are problems 
+> with a generic thread pool management facility that supports arbitrary 
+> asynchronous syscalls: some syscalls assume particular thread-local state.  
+> Any generic facility would need to cope with the state problem as much as 
+> limited read/write operations do.  I don't see the complexity being much 
+> different.
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index b90528d..a2108ca 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -296,13 +296,13 @@ $(OUTPUT)util/parse-events-flex.c: util/parse-events.l $(OUTPUT)util/parse-event
- 	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/parse-events-flex.h $(PARSER_DEBUG_FLEX) -t util/parse-events.l > $(OUTPUT)util/parse-events-flex.c
- 
- $(OUTPUT)util/parse-events-bison.c: util/parse-events.y
--	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d $(PARSER_DEBUG_BISON) -o $(OUTPUT)util/parse-events-bison.c
-+	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d $(PARSER_DEBUG_BISON) -o $(OUTPUT)util/parse-events-bison.c -p parse_events_
- 
- $(OUTPUT)util/pmu-flex.c: util/pmu.l $(OUTPUT)util/pmu-bison.c
- 	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/pmu-flex.h -t util/pmu.l > $(OUTPUT)util/pmu-flex.c
- 
- $(OUTPUT)util/pmu-bison.c: util/pmu.y
--	$(QUIET_BISON)$(BISON) -v util/pmu.y -d -o $(OUTPUT)util/pmu-bison.c
-+	$(QUIET_BISON)$(BISON) -v util/pmu.y -d -o $(OUTPUT)util/pmu-bison.c -p perf_pmu_
- 
- $(OUTPUT)util/parse-events.o: $(OUTPUT)util/parse-events-flex.c $(OUTPUT)util/parse-events-bison.c
- $(OUTPUT)util/pmu.o: $(OUTPUT)util/pmu-flex.c $(OUTPUT)util/pmu-bison.c
-diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
-index 4de2fdc..afc44c1 100644
---- a/tools/perf/util/parse-events.y
-+++ b/tools/perf/util/parse-events.y
-@@ -1,5 +1,4 @@
- %pure-parser
--%name-prefix "parse_events_"
- %parse-param {void *_data}
- %parse-param {void *scanner}
- %lex-param {void* scanner}
-diff --git a/tools/perf/util/pmu.y b/tools/perf/util/pmu.y
-index ec89804..bfd7e85 100644
---- a/tools/perf/util/pmu.y
-+++ b/tools/perf/util/pmu.y
-@@ -1,5 +1,4 @@
- 
--%name-prefix "perf_pmu_"
- %parse-param {struct list_head *format}
- %parse-param {char *name}
- 
--- 
-1.8.1.1.361.gec3ae6e
+It would be really nice to see the hard numbers on how poorly a simple
+pile of userspace threads does this same work.  If it's a skazillion
+times slower it'd help put the benefit of maintaining this stuff in the
+kernel in context.
 
+> I said this was an ugly first attempt. =)
+
+I'm excited to see how it turns out :).
+
+- z
