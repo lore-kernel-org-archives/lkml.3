@@ -1,84 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756807Ab3BND1M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 22:27:12 -0500
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:56950 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753055Ab3BND1K (ORCPT
+	id S1757427Ab3BND1V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 22:27:21 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:37314 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754699Ab3BND1T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 22:27:10 -0500
-Date: Wed, 13 Feb 2013 19:27:05 -0800
-From: Tejun Heo <tj@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH 2/2 wq/for-3.9] workqueue: reimplement is_chained_work()
- using current_wq_worker()
-Message-ID: <20130214032705.GG9057@htj.dyndns.org>
-References: <20130214032633.GF9057@htj.dyndns.org>
+	Wed, 13 Feb 2013 22:27:19 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130214032633.GF9057@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130213213624.079BA3E3557@localhost>
+References: <1360429077-14616-1-git-send-email-haojian.zhuang@linaro.org>
+	<20130211151038.8421aa54.akpm@linux-foundation.org>
+	<CAD6h2NRGiD=hDOjF8CBDrKuBZm-ALOdcj8mT=h6Cde4PuU=AHw@mail.gmail.com>
+	<20130213213624.079BA3E3557@localhost>
+Date: Thu, 14 Feb 2013 08:57:17 +0530
+Message-ID: <CAK7N6voJJ_g_LLmKdd=95fQOQPaTvQbs3HJsKJoPcrDUyUWxaA@mail.gmail.com>
+Subject: Re: [PATCH] driver core: add wait event for deferred probe
+From: anish singh <anish198519851985@gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        viro@zeniv.linux.org.uk, rusty@rustcorp.com.au, hpa@linux.intel.com,
+        jim.cromie@gmail.com, linux-kernel@vger.kernel.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>, arnd@arndb.de,
+        broonie@opensource.wolfsonmicro.com,
+        Patch Tracking <patches@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-is_chained_work() was added before current_wq_worker() and implemented
-its own ham-fisted way of finding out whether %current is a workqueue
-worker - it iterates through all possible workers.
+On Thu, Feb 14, 2013 at 3:06 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> On Tue, 12 Feb 2013 10:52:10 +0800, Haojian Zhuang <haojian.zhuang@linaro.org> wrote:
+>> On 12 February 2013 07:10, Andrew Morton <akpm@linux-foundation.org> wrote:
+>> > On Sun, 10 Feb 2013 00:57:57 +0800
+>> > Haojian Zhuang <haojian.zhuang@linaro.org> wrote:
+>> >
+>> >> do_initcalls() could call all driver initialization code in kernel_init
+>> >> thread. It means that probe() function will be also called from that
+>> >> time. After this, kernel could access console & release __init section
+>> >> in the same thread.
+>> >>
+>> >> But if device probe fails and moves into deferred probe list, a new
+>> >> thread is created to reinvoke probe. If the device is serial console,
+>> >> kernel has to open console failure & release __init section before
+>> >> reinvoking failure. Because there's no synchronization mechanism.
+>> >> Now add wait event to synchronize after do_initcalls().
+>> >
+>> > It sounds like this:
+>> >
+>> > static int __ref kernel_init(void *unused)
+>> > {
+>> >         kernel_init_freeable();
+>> >         /* need to finish all async __init code before freeing the memory */
+>> >         async_synchronize_full();
+>> >
+>> > is designed to prevent the problem you describe?
+>> >
+>> It can't prevent the problem that I described. Because deferred_probe()
+>> is introduced recently.
+>>
+>> All synchronization should be finished just after do_initcalls(). Since
+>> load_default_modules() is also called in the end of kernel_init_freeable(),
+>> I'm not sure that whether I could remove async_synchronize_full()
+>> here. So I didn't touch it.
+>>
+>> >> --- a/init/main.c
+>> >> +++ b/init/main.c
+>> >> @@ -786,6 +786,7 @@ static void __init do_basic_setup(void)
+>> >>       do_ctors();
+>> >>       usermodehelper_enable();
+>> >>       do_initcalls();
+>> >> +     wait_for_device_probe();
+>> >>  }
+>> >
+>> > Needs a nice comment here explaining what's going on.
+>>
+>> No problem. I'll add comment here.
+>
+> Actually, this approach will create new problems. There is no guarantee
+> that a given device will be able to initialize before exiting
+> do_basic_setup(). If, for instance, a device depends on a resource
+> provided by a module, then it will just keep deferring. In that case
+> you've got a hung kernel.
+>
+> I think what you really want is the following:
+>
+>  static int deferred_probe_initcall(void)
+>  {
+>         deferred_wq = create_singlethread_workqueue("deferwq");
+>         if (WARN_ON(!deferred_wq))
+>                 return -ENOMEM;
+>
+>         driver_deferred_probe_enable = true;
+> +       deferred_probe_work_func(NULL);
+> -       driver_deferred_probe_trigger();
+>         return 0;
+>  }
+>  late_initcall(deferred_probe_initcall);
+>
+> Or something similar. That would guarantee that as many passes as are needed
+> (which in practical terms only means a couple) for device probing to
+> settle down before exiting the initcall processing. That should achieve
+> the effect you desire.
+>
+> It still masks the __init section issue by making it a lot less likely,
+Grant, Can you please explain me this problem?My understanding is below:
+If all the detection of devices with there respective driver is done before
+__init section is freed then we will not have the problem mentioned.
+However if the driver requests the probing to be deferred then __init section
+of the deferred driver will not be freed right?
 
-Drop the custom implementation and reimplement using
-current_wq_worker().
+I am afraid but the patch description is bit cryptic for me specially
+this line "kernel has to open console failure & release __init section before
+reinvoking failure".
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- kernel/workqueue.c |   33 ++++++++-------------------------
- 1 file changed, 8 insertions(+), 25 deletions(-)
-
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1159,35 +1159,18 @@ static void insert_work(struct cpu_workq
- 
- /*
-  * Test whether @work is being queued from another work executing on the
-- * same workqueue.  This is rather expensive and should only be used from
-- * cold paths.
-+ * same workqueue.
-  */
- static bool is_chained_work(struct workqueue_struct *wq)
- {
--	unsigned long flags;
--	unsigned int cpu;
-+	struct worker *worker;
- 
--	for_each_cwq_cpu(cpu, wq) {
--		struct cpu_workqueue_struct *cwq = get_cwq(cpu, wq);
--		struct worker_pool *pool = cwq->pool;
--		struct worker *worker;
--		struct hlist_node *pos;
--		int i;
--
--		spin_lock_irqsave(&pool->lock, flags);
--		for_each_busy_worker(worker, i, pos, pool) {
--			if (worker->task != current)
--				continue;
--			spin_unlock_irqrestore(&pool->lock, flags);
--			/*
--			 * I'm @worker, no locking necessary.  See if @work
--			 * is headed to the same workqueue.
--			 */
--			return worker->current_cwq->wq == wq;
--		}
--		spin_unlock_irqrestore(&pool->lock, flags);
--	}
--	return false;
-+	worker = current_wq_worker();
-+	/*
-+	 * Return %true iff I'm a worker execuing a work item on @wq.  If
-+	 * I'm @worker, it's safe to dereference it without locking.
-+	 */
-+	return worker && worker->current_cwq->wq == wq;
- }
- 
- static void __queue_work(unsigned int cpu, struct workqueue_struct *wq,
+> but it does ensure that all of the built-in driver dependency order
+> issues are processed before continuing on to userspace.
+>
+> g.
+>
+> --
+> Grant Likely, B.Sc, P.Eng.
+> Secret Lab Technologies, Ltd.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
