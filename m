@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760643Ab3BNPAi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 10:00:38 -0500
-Received: from mail-da0-f51.google.com ([209.85.210.51]:46815 "EHLO
-	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757793Ab3BNPAS (ORCPT
+	id S1760732Ab3BNPAy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 10:00:54 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55608 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757239Ab3BNPAw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 10:00:18 -0500
-Date: Thu, 14 Feb 2013 07:00:25 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Roger Quadros <rogerq@ti.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>, "Balbi, Felipe" <balbi@ti.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "tony@atomide.com" <tony@atomide.com>, stable@vger.kernel.org,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] usb: bug fixes for ehci-omap for 3.9
-Message-ID: <20130214150025.GC2033@kroah.com>
-References: <511CD513.5030100@ti.com>
+	Thu, 14 Feb 2013 10:00:52 -0500
+Date: Thu, 14 Feb 2013 15:00:50 +0000
+From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Subject: Re: [PATCH 1/2] regmap: debugfs: Add a registers `range' file
+Message-ID: <20130214150050.GA24369@opensource.wolfsonmicro.com>
+References: <1360845104-30392-1-git-send-email-dp@opensource.wolfsonmicro.com> <20130214144305.GP13249@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <511CD513.5030100@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130214144305.GP13249@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 14, 2013 at 02:14:11PM +0200, Roger Quadros wrote:
-> Hi Greg,
+On Thu, Feb 14, 2013 at 02:43:06PM +0000, Mark Brown wrote:
+> On Thu, Feb 14, 2013 at 12:31:44PM +0000, Dimitris Papastamos wrote:
 > 
-> This pull request contains 2 bug fixes for ehci-omap for 3.9 as well
-> as older kernels. It is based on 3.8-rc6.
+> > @@ -96,6 +116,7 @@ static unsigned int regmap_debugfs_get_dump_start(struct regmap *map,
+> >  				if (c) {
+> >  					c->max = p - 1;
+> >  					c->max_reg = i - 1;
+> > +					c->reg_attr = regmap_attr_bitmap(map, c->max_reg);
+> >  					list_add_tail(&c->list,
+> >  						      &map->debugfs_off_cache);
+> >  					c = NULL;
 > 
-> Please pull. Thanks.
+> What happens if we have three registers like below?
 > 
-> The following changes since commit 88b62b915b0b7e25870eb0604ed9a92ba4bfc9f7:
+>    X:   read, write
+>    X+1: read, write, volatile
+>    X+2: read, write
 > 
->   Linux 3.8-rc6 (2013-02-01 12:08:14 +1100)
-> 
-> are available in the git repository at:
->   git://github.com/rogerq/linux.git usbhost17-for-usb
+> It looks like we'll not flag X+1 as volatile, we'll just take the last
+> value we saw.
 
-Sorry, I don't take git pulls, please just send these to me as patches
-in email.
+Hm yes, right.  So the problem here is that we split on the condition that
+is something is printable or not.  We do not actually split on any of the
+possible changes of the register attributes.  Any of the blocks of registers
+should have registers that have exactly the same set of attributes.
 
-thanks,
+I will look into this to fix.
 
-greg k-h
+Thanks,
+Dimitris
