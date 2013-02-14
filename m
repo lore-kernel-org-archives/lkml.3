@@ -1,45 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756110Ab3BNHXU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 02:23:20 -0500
-Received: from mga01.intel.com ([192.55.52.88]:5783 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755857Ab3BNHXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 02:23:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,662,1355126400"; 
-   d="scan'208";a="290962997"
-Message-ID: <1360826613.12703.156.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH RFC 1/5] UBIFS: xattr: protect ui_size and data_len by
- ui_mutex
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Reply-To: artem.bityutskiy@linux.intel.com
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-Cc: linux-mtd@lists.infradead.org, kernel@pengutronix.de,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Date: Thu, 14 Feb 2013 09:23:33 +0200
-In-Reply-To: <1360750998-15191-2-git-send-email-mkl@pengutronix.de>
-References: <1360750998-15191-1-git-send-email-mkl@pengutronix.de>
-	 <1360750998-15191-2-git-send-email-mkl@pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3 (3.6.3-2.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756129Ab3BNH1I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 02:27:08 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:51611 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752176Ab3BNH1G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 02:27:06 -0500
+Date: Thu, 14 Feb 2013 10:26:43 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Anton Vorontsov <cbou@mail.ru>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch] generic-adc-battery: forever loop in gab_remove()
+Message-ID: <20130214072643.GA4690@elgon.mountain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-02-13 at 11:23 +0100, Marc Kleine-Budde wrote:
-> This patch moves the modification of ui->ui_size and ui->data_len in the
-> create_xattr() and change_xattr() functions, so that they are protected by the
-> ui_mutex as stated in the documenation of the the struct ubifs_inode.
-> 
-> Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+There is a forever loop calling iio_channel_release() because the
+"chan < " part of the "chan < ARRAY_SIZE()" is missing.  This is in both
+the error handling on probe and also in the remove function.
 
-I guess this one and 2/5 should have 'Cc: stable@vger.kernel.org',
-right?
+The other thing is that it's possible for some of the elements of the
+adc_bat->channel[chan] array to be an ERR_PTR().  I've changed them to
+be NULL instead.  We're still not allowed to pass NULLs to
+iio_channel_release() so I've added a check.
 
--- 
-Best Regards,
-Artem Bityutskiy
+Finally, I removed an unused "chan = ARRAY_SIZE(gab_chan_name);"
+statement as a small cleanup.
 
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+
+diff --git a/drivers/power/generic-adc-battery.c b/drivers/power/generic-adc-battery.c
+index 42733c4..8cb5d7f 100644
+--- a/drivers/power/generic-adc-battery.c
++++ b/drivers/power/generic-adc-battery.c
+@@ -263,9 +263,6 @@ static int gab_probe(struct platform_device *pdev)
+ 	psy->external_power_changed = gab_ext_power_changed;
+ 	adc_bat->pdata = pdata;
+ 
+-	/* calculate the total number of channels */
+-	chan = ARRAY_SIZE(gab_chan_name);
+-
+ 	/*
+ 	 * copying the static properties and allocating extra memory for holding
+ 	 * the extra configurable properties received from platform data.
+@@ -291,6 +288,7 @@ static int gab_probe(struct platform_device *pdev)
+ 							 gab_chan_name[chan]);
+ 		if (IS_ERR(adc_bat->channel[chan])) {
+ 			ret = PTR_ERR(adc_bat->channel[chan]);
++			adc_bat->channel[chan] = NULL;
+ 		} else {
+ 			/* copying properties for supported channels only */
+ 			memcpy(properties + sizeof(*(psy->properties)) * index,
+@@ -344,8 +342,10 @@ err_gpio:
+ gpio_req_fail:
+ 	power_supply_unregister(psy);
+ err_reg_fail:
+-	for (chan = 0; ARRAY_SIZE(gab_chan_name); chan++)
+-		iio_channel_release(adc_bat->channel[chan]);
++	for (chan = 0; chan < ARRAY_SIZE(gab_chan_name); chan++) {
++		if (adc_bat->channel[chan])
++			iio_channel_release(adc_bat->channel[chan]);
++	}
+ second_mem_fail:
+ 	kfree(psy->properties);
+ first_mem_fail:
+@@ -365,8 +365,10 @@ static int gab_remove(struct platform_device *pdev)
+ 		gpio_free(pdata->gpio_charge_finished);
+ 	}
+ 
+-	for (chan = 0; ARRAY_SIZE(gab_chan_name); chan++)
+-		iio_channel_release(adc_bat->channel[chan]);
++	for (chan = 0; chan < ARRAY_SIZE(gab_chan_name); chan++) {
++		if (adc_bat->channel[chan])
++			iio_channel_release(adc_bat->channel[chan]);
++	}
+ 
+ 	kfree(adc_bat->psy.properties);
+ 	cancel_delayed_work(&adc_bat->bat_work);
