@@ -1,100 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965391Ab3BNBMV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 20:12:21 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:20323 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761381Ab3BNBMT (ORCPT
+	id S1761434Ab3BNBVb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 20:21:31 -0500
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:61417 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753483Ab3BNBVa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 20:12:19 -0500
-X-AuditID: cbfee61b-b7fb06d000000f28-8e-511c39f2a8f3
-Message-id: <511C39F2.6050802@samsung.com>
-Date: Thu, 14 Feb 2013 10:12:18 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org,
-        MyungJoo Ham <myungjoo.ham@samsung.com>, kyungmin.park@samsung.com
-Subject: Re: [GIT PULL] extcon for 3.9
-References: <511C24B7.4000802@samsung.com> <20130213235254.GB19813@kroah.com>
-In-reply-to: <20130213235254.GB19813@kroah.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJIsWRmVeSWpSXmKPExsVy+t8zTd1PljKBBjP2cFlc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6MDXu2sBb84arob9rI3MDYyNnFyMkhIWAi8fzZVTYIW0ziwr31
-	QDYXh5DAMkaJ/9eb2WCKVl48xgyRWMQo8XrZaiYIp5NJor9hLjtIFa+AlsTpGwvBOlgEVCX2
-	zd4OZrMBxfe/uAFmiwqESaycfoUFol5Q4sfke2C2iICGxMujt8BsZoFaiftPQbZxcAgLqEnc
-	mFwDEhYS8JWY1PWBESTMKaAvceNUNkS1tcTKSdsYIWx5ic1r3oLdKSHwn02i5+dTZohzBCS+
-	TT7EAtIrISArsekAM8RfkhIHV9xgmcAoNgvJQbOQjJ2FZOwCRuZVjKKpBckFxUnpuUZ6xYm5
-	xaV56XrJ+bmbGCERIb2DcVWDxSFGAQ5GJR5ehV/SgUKsiWXFlbmHGCU4mJVEeB8oyQQK8aYk
-	VlalFuXHF5XmpBYfYkwGOnAis5Rocj4wWvNK4g2NDYwNDS0NzUwtTQ1IE1YS52U89SRASCA9
-	sSQ1OzW1ILUIZgsTB6dUA6PbkhW/jYIesi8Lfv0yQy4sKfvAvMPTVl94yFQ9rV0q5vCeLyIB
-	6c+mfsufbp13aKJLu/2vTJf/FqXXJhU7fN7x+OLq529ENu1MPn2P3bV0/YSV6jNiv0fNlpne
-	OG9rkXP0GpaY0Nk/Za9em282/WOK7wn53/Mkbk719JBstHHhmv/w1AWfo+7cSizFGYmGWsxF
-	xYkAsBozGswCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBIsWRmVeSWpSXmKPExsVy+t9jAd1PljKBBoemM1lc3jWHzYHR4/Mm
-	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
-	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjA17trAW/OGq6G/ayNzA
-	2MjZxcjJISFgIrHy4jFmCFtM4sK99WxdjFwcQgKLGCVeL1vNBOF0Mkn0N8xlB6niFdCSOH1j
-	IRuIzSKgKrFv9nYwmw0ovv/FDTBbVCBMYuX0KywQ9YISPybfA7NFBDQkXh69BWYzC9RK3H8K
-	spmDQ1hATeLG5BqQsJCAr8Skrg+MIGFOAX2JG6eyIaqtJVZO2sYIYctLbF7zlnkCo8AsJAtm
-	ISmbhaRsASPzKkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYzgeHsmvYNxVYPFIUYBDkYlHl6F
-	X9KBQqyJZcWVuYcYJTiYlUR4HyjJBArxpiRWVqUW5ccXleakFh9iTAb6fyKzlGhyPjAV5JXE
-	GxqbmBlZGpkZm5gbG5MmrCTOy3jqSYCQQHpiSWp2ampBahHMFiYOTqkGxkCRLxvtkuWYtMu3
-	/dx4qvRLm5hZe1zyiZ+5Vx6fqtSZea/E4+7xW4deXN9h7V/YNu/7xBcL9vP/7/C/Hnqm54tz
-	XInHyvWC529x/JonIy/i6xiuZ1nZ9ko43DPcZbaRw8Tfxn/XB21b8ejpq206KYaRLSXHFjJa
-	LdO3F+xpnzVVJOeLFEvJFSWW4oxEQy3mouJEAAS92x37AgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 13 Feb 2013 20:21:30 -0500
+MIME-Version: 1.0
+In-Reply-To: <511C24A6.8020409@redhat.com>
+References: <20130206150403.006e5294@cuia.bos.redhat.com> <tip-4aef331850b637169ff036ed231f0d236874f310@git.kernel.org>
+ <CA+55aFx6N6SaRN+w=CTXJ=ZSsOE6KeS2R9sT_uhAx9h2j+hjKg@mail.gmail.com>
+ <511BE4A3.8050607@redhat.com> <CA+55aFycMB7OZGQ54ueQ74C42beDBSdQE_fKJDV=TbjTjr_emg@mail.gmail.com>
+ <511C1204.9040608@redhat.com> <CA+55aFwxYK-BLH0crhySHaQvAYHOH-VGUi7WTd1aq-24+WTDYw@mail.gmail.com>
+ <511C24A6.8020409@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 13 Feb 2013 17:21:08 -0800
+X-Google-Sender-Auth: aWBJHb5gIODE8O_2G5vEeRhFASo
+Message-ID: <CA+55aFws80EEJQskqiP+a5J-HOGu=M1Fe=uCs50ifedVxPxT1Q@mail.gmail.com>
+Subject: Re: [tip:core/locking] x86/smp: Move waiting on contended ticket lock
+ out of line
+To: Rik van Riel <riel@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, aquini@redhat.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Michel Lespinasse <walken@google.com>,
+        linux-tip-commits@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14/2013 08:52 AM, Greg KH wrote:
-> On Thu, Feb 14, 2013 at 08:41:43AM +0900, Chanwoo Choi wrote:
->> Hi Greg,
->>
->> This pull-reqeust patchset is based on char-misc-next branch(char-misc.git).
->> Please pull extcon with following updates.
->>
->> Best regards,
->> Chanwoo Choi
->>
->> The following changes since commit 19d3243e797c2abc02a214d3cec9fefa5dc048ff:
->>
->>    extcon: max77693: Remove unnecessary goto statement to improve
->> readability (2013-02-13 08:35:44 -0800)
->>
->> are available in the git repository at:
->>
->>    git://git.kernel.org:/pub/scm/linux/kernel/git/chanwoo/extcon.git
->> tags/extcon-for-3.9
-> $ git pull git://git.kernel.org:/pub/scm/linux/kernel/git/chanwoo/extcon.git tags/extcon-for-3.9
-> fatal: Unable to look up git.kernel.org (port <none>) (Servname not supported for ai_socktype)
+On Wed, Feb 13, 2013 at 3:41 PM, Rik van Riel <riel@redhat.com> wrote:
 >
-> You added an extra ':' in that url, how did you generate it?  Please be
-> more careful in the future.
+> I have an example of the second case. It is a test case
+> from a customer issue, where an application is contending on
+> semaphores, doing semaphore lock and unlock operations. The
+> test case simply has N threads, trying to lock and unlock the
+> same semaphore.
 >
-> I fixed it by hand...
+> The attached graph (which I sent out with the intro email to
+> my patches) shows how reducing the memory accesses from the
+> spinlock wait path prevents the large performance degradation
+> seen with the vanilla kernel. This is on a 24 CPU system with
+> 4 6-core AMD CPUs.
 >
-> thanks,
->
-> greg k-h
->
-Sorry, It is my mistask
+> The "prop-N" series are with a fixed delay proportional back-off.
+> You can see that a small value of N does not help much for large
+> numbers of cpus, and a large value hurts with a small number of
+> CPUs. The automatic tuning appears to be quite robust.
 
-When I execute 'git request-pull' command, I use following git 
-repository url instead of 'git.kernel.org'.
-because firewall policy of company. So, I modify git repository url in 
-reqeust-pull text directly.
-- gitolite.kernel.org:/pub/scm/linux/kernel/git/chanwoo/extcon.git
+Ok, good, so there are some numbers. I didn't see any in the commit
+messages anywhere, and since the threads I've looked at are from
+tip-bot, I never saw the intro email.
 
-I'll be careful and I don't make the same mistake.
+That said, it's interesting that this happens with the semaphore path.
+We've had other cases where the spinlock in the *sleeping* locks have
+caused problems, and I wonder if we should look at that path in
+particular.
 
-Best Regards,
-Chanwoo Choi
+> If we have only a few CPUs contending on the lock, the delays
+> will be short.
 
+Yes. I'm more worried about the overhead, especially on I$ (and to a
+lesser degree on D$ when loading hashed delay values etc). I don't
+believe it would ever loop very long, it's the other overhead I'd be
+worried about.
 
+>From looking at profiles of the kernel loads I've cared about (ie
+largely VFS code), the I$ footprint seems to be a big deal, and
+function entry (and the instruction *after* a call instruction)
+actually tend to be hotspots. Which is why I care about things like
+function prologues for leaf functions etc.
+
+> Furthermore, the CPU at the head of the queue
+> will run the old spinlock code with just cpu_relax() and checking
+> the lock each iteration.
+
+That's not AT ALL TRUE.
+
+Look at the code you wrote. It does all the spinlock delay etc crap
+unconditionally. Only the loop itself is conditional.
+
+IOW, exactly all the overhead that I worry about. The function call,
+the pointless turning of leaf functions into non-leaf functions, the
+loading (and storing) of delay information etc etc.
+
+The non-leaf-function thing is done even if you never hit the
+slow-path, and affects the non-contention path. And the delay
+information thing is done even if there is only one waiter on the
+spinlock.
+
+Did I miss anything?
+
+> Eric got a 45% increase in network throughput, and I saw a factor 4x
+> or so improvement with the semaphore test. I realize these are not
+> "real workloads", and I will give you numbers with those once I have
+> gathered some, on different systems.
+
+Good. This is what I want to see.
+
+> Are there significant cases where "perf -g" is not easily available,
+> or harmful to tracking down the performance issue?
+
+Yes. There are lots of machines where you cannot get call chain
+information with CPU event buffers (pebs). And without the CPU event
+buffers, you cannot get good profile data at all.
+
+Now, on other machines you get the call chain even with pebs because
+you can get the whole
+
+> The cause of that was identified (with pause loop exiting, the  host
+> effectively does the back-off for us), and the problem is avoided
+> by limiting the maximum back-off value to something small on
+> virtual guests.
+
+And what if the hardware does something equivalent even when not
+virtualized (ie power optimizations I already mentioned)?  That whole
+maximum back-off limit seems to be just for known virtualization
+issues. This is the kind of thing that makes me worry..
+
+                   Linus
