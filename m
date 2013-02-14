@@ -1,99 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932533Ab3BNIe1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 03:34:27 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:46645 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932311Ab3BNIeZ (ORCPT
+	id S1756452Ab3BNIfi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 03:35:38 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:43843 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756220Ab3BNIfh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 03:34:25 -0500
-Date: Thu, 14 Feb 2013 00:34:17 -0800
-From: Joel Becker <jlbec@evilplan.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-fsdevel@vger.kernel.org,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>,
-        Mark Fasheh <mfasheh@suse.com>
-Subject: Re: [PATCH review 22/85] ocfs2: convert between kuids and kgids and
- DLM locks
-Message-ID: <20130214083416.GD18408@localhost>
-Mail-Followup-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-	linux-fsdevel@vger.kernel.org,
-	Linux Containers <containers@lists.linux-foundation.org>,
-	linux-kernel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>,
-	Mark Fasheh <mfasheh@suse.com>
-References: <87621w14vs.fsf@xmission.com>
- <1360777934-5663-1-git-send-email-ebiederm@xmission.com>
- <1360777934-5663-22-git-send-email-ebiederm@xmission.com>
+	Thu, 14 Feb 2013 03:35:37 -0500
+Date: Thu, 14 Feb 2013 09:35:34 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Christian Gmeiner <christian.gmeiner@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, x86@kernel.org,
+        linux-i2c@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] Congatec CGEB base, i2c and watchdog driver support
+Message-ID: <20130214083534.GC25672@pengutronix.de>
+References: <1360663374-30951-1-git-send-email-s.hauer@pengutronix.de>
+ <CAH9NwWfSQKW2c1LvLQkojPiKA_r7+_6OmgoVHrBNRHUEFNYvJg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1360777934-5663-22-git-send-email-ebiederm@xmission.com>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
+In-Reply-To: <CAH9NwWfSQKW2c1LvLQkojPiKA_r7+_6OmgoVHrBNRHUEFNYvJg@mail.gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 09:34:05 up 235 days, 23:45, 86 users,  load average: 17.82, 9.57,
+ 6.27
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 13, 2013 at 09:51:11AM -0800, Eric W. Biederman wrote:
-> From: "Eric W. Biederman" <ebiederm@xmission.com>
+On Wed, Feb 13, 2013 at 03:57:02PM +0100, Christian Gmeiner wrote:
+> 2013/2/12 Sascha Hauer <s.hauer@pengutronix.de>:
+> > I'd like to come back to this topic. I have sent patches last year
+> > already, changes to the last time I posted this is mainly that
+> > I moved the CGEB base support from drivers/mfd/ to arch/x86/platform/
+> > like suggested by Samuel Ortiz back then.
+> >
+> > The following series adds support for the Congatec CGEB interface
+> > found on some Congatec x86 boards. The CGEB interface is a BIOS
+> > interface which provides access to onboard peripherals like I2C
+> > busses and watchdogs. It works by mapping BIOS code and searching
+> > for magic values which specify the entry points to the CGEB call.
+> > The CGEB call is an API provided by the BIOS which provides access
+> > to the functions in an ioctl like fashion.
+> >
+> > For more information about the CGEB API have a look at:
+> >
+> > http://www.congatec.com/single_news+M5d58c9cd155.html
+> >
+> > This document only describes the C API, unfortunately not the
+> > underlying BIOS interface.
+> >
+> > Also added are two users of this interface, a i2c master driver
+> > and a watchdog driver.
+> >
+> > Comments very appreciated.
 > 
-> Convert between uid and gids stored in the on the wire format of dlm
-> locks aka struct ocfs2_meta_lvb and kuids and kgids stored in
-> inode->i_uid and inode->i_gid.
+> Hi Sascha,
 > 
-> Cc: Mark Fasheh <mfasheh@suse.com>
-> Cc: Joel Becker <jlbec@evilplan.org>
-> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-> ---
->  fs/ocfs2/dlmglue.c |    8 ++++----
->  1 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/fs/ocfs2/dlmglue.c b/fs/ocfs2/dlmglue.c
-> index 4f7795f..f99af1c 100644
-> --- a/fs/ocfs2/dlmglue.c
-> +++ b/fs/ocfs2/dlmglue.c
-> @@ -2045,8 +2045,8 @@ static void __ocfs2_stuff_meta_lvb(struct inode *inode)
->  	lvb->lvb_version   = OCFS2_LVB_VERSION;
->  	lvb->lvb_isize	   = cpu_to_be64(i_size_read(inode));
->  	lvb->lvb_iclusters = cpu_to_be32(oi->ip_clusters);
-> -	lvb->lvb_iuid      = cpu_to_be32(inode->i_uid);
-> -	lvb->lvb_igid      = cpu_to_be32(inode->i_gid);
-> +	lvb->lvb_iuid      = cpu_to_be32(i_uid_read(inode));
-> +	lvb->lvb_igid      = cpu_to_be32(i_gid_read(inode));
->  	lvb->lvb_imode     = cpu_to_be16(inode->i_mode);
->  	lvb->lvb_inlink    = cpu_to_be16(inode->i_nlink);
->  	lvb->lvb_iatime_packed  =
-> @@ -2095,8 +2095,8 @@ static void ocfs2_refresh_inode_from_lvb(struct inode *inode)
->  	else
->  		inode->i_blocks = ocfs2_inode_sector_count(inode);
->  
-> -	inode->i_uid     = be32_to_cpu(lvb->lvb_iuid);
-> -	inode->i_gid     = be32_to_cpu(lvb->lvb_igid);
-> +	i_uid_write(inode, be32_to_cpu(lvb->lvb_iuid));
-> +	i_gid_write(inode, be32_to_cpu(lvb->lvb_igid));
->  	inode->i_mode    = be16_to_cpu(lvb->lvb_imode);
->  	set_nlink(inode, be16_to_cpu(lvb->lvb_inlink));
->  	ocfs2_unpack_timespec(&inode->i_atime,
+> against what version is this patch set? Would like to try it out but it fails
+> to apply to 3.8-rc7.
 
-What does this do if two machines with different user namespaces
-communicate.  I think that things go very wrong.  Perhaps right now,
-when ocfs2 is tied to init_user_namespace, we're OK.  But as soon as two
-systems can be in different namespaces, we are broken.
+I made it against 3.8-rc6, but I just checked the patches apply to
+3.8-rc7 aswell
 
-Joel
-
-> -- 
-> 1.7.5.4
-> 
+Sascha
 
 -- 
-
-"I think it would be a good idea."  
-        - Mahatma Ghandi, when asked what he thought of Western
-          civilization
-
-			http://www.jlbec.org/
-			jlbec@evilplan.org
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
