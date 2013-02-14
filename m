@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760608Ab3BNPTn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 10:19:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36994 "EHLO mx1.redhat.com"
+	id S934613Ab3BNPUt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 10:20:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32736 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758115Ab3BNPTl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 10:19:41 -0500
-Date: Thu, 14 Feb 2013 10:19:37 -0500
+	id S1758188Ab3BNPUr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 10:20:47 -0500
+Date: Thu, 14 Feb 2013 10:20:38 -0500
 From: Jeff Layton <jlayton@redhat.com>
 To: Tim Gardner <tim.gardner@canonical.com>
 Cc: linux-kernel@vger.kernel.org, Trond Myklebust <Trond.Myklebust@netapp.com>,
         "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org
-Subject: Re: [PATCH linux-next] lockd: nlmclnt_reclaim(): avoid stack
+Subject: Re: [PATCH linux-next v2] lockd: nlmclnt_reclaim(): avoid stack
  overflow
-Message-ID: <20130214101937.1bbc1b61@tlielax.poochiereds.net>
-In-Reply-To: <1360697595-62460-1-git-send-email-tim.gardner@canonical.com>
-References: <1360697595-62460-1-git-send-email-tim.gardner@canonical.com>
+Message-ID: <20130214102038.52b1d292@tlielax.poochiereds.net>
+In-Reply-To: <1360770016-69586-1-git-send-email-tim.gardner@canonical.com>
+References: <20130212211800.GG10267@fieldses.org>
+	<1360770016-69586-1-git-send-email-tim.gardner@canonical.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -23,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Feb 2013 12:33:15 -0700
+On Wed, 13 Feb 2013 08:40:16 -0700
 Tim Gardner <tim.gardner@canonical.com> wrote:
 
 > Even though nlmclnt_reclaim() is only one call into the stack frame,
@@ -44,16 +45,20 @@ Tim Gardner <tim.gardner@canonical.com> wrote:
 > Cc: linux-nfs@vger.kernel.org
 > Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
 > ---
->  fs/lockd/clntlock.c         |    8 +++++++-
+> 
+> Changes from v1 -- don't return -ENOMEM from a task thread because it is
+> not propagated to the task creator. Instead print an error message and return.
+> 
+>  fs/lockd/clntlock.c         |   12 +++++++++++-
 >  fs/lockd/clntproc.c         |    6 ++----
 >  include/linux/lockd/lockd.h |    3 ++-
->  3 files changed, 11 insertions(+), 6 deletions(-)
+>  3 files changed, 15 insertions(+), 6 deletions(-)
 > 
 > diff --git a/fs/lockd/clntlock.c b/fs/lockd/clntlock.c
-> index 4885b53..5dd23ef 100644
+> index 4885b53..6cd673d 100644
 > --- a/fs/lockd/clntlock.c
 > +++ b/fs/lockd/clntlock.c
-> @@ -220,10 +220,15 @@ reclaimer(void *ptr)
+> @@ -220,10 +220,19 @@ reclaimer(void *ptr)
 >  {
 >  	struct nlm_host	  *host = (struct nlm_host *) ptr;
 >  	struct nlm_wait	  *block;
@@ -63,19 +68,17 @@ Tim Gardner <tim.gardner@canonical.com> wrote:
 >  	struct net *net = host->net;
 >  
 > +	req = kmalloc(sizeof(*req), GFP_KERNEL);
-> +	if (!req)
-> +		return -ENOMEM;
+> +	if (!req) {
+> +		printk(KERN_ERR "lockd: reclaimer unable to alloc memory."
+> +				" Locks for %s won't be reclaimed!\n",
+> +				host->h_name);
+> +		return 0;
+> +	}
 > +
-
-The basic idea here seems sound, but if this allocation fails then the
-user will have no indication that lock reclaim didn't work. Might it
-make sense to emit a printk like the one in nlmclnt_recovery() in this
-case?
-
 >  	allow_signal(SIGKILL);
 >  
 >  	down_write(&host->h_rwsem);
-> @@ -253,7 +258,7 @@ restart:
+> @@ -253,7 +262,7 @@ restart:
 >  		 */
 >  		if (signalled())
 >  			continue;
@@ -84,7 +87,7 @@ case?
 >  			continue;
 >  		list_add_tail(&fl->fl_u.nfs_fl.list, &host->h_granted);
 >  		if (host->h_nsmstate != nsmstate) {
-> @@ -279,5 +284,6 @@ restart:
+> @@ -279,5 +288,6 @@ restart:
 >  	/* Release host handle after use */
 >  	nlmclnt_release_host(host);
 >  	lockd_down(net);
@@ -129,3 +132,8 @@ case?
 >  void		  nlmclnt_next_cookie(struct nlm_cookie *);
 >  
 >  /*
+
+Oops, just noticed there was a later version of this patch. Please
+disregard my earlier mail...
+
+Reviewed-by: Jeff Layton <jlayton@redhat.com>
