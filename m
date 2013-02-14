@@ -1,143 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761404Ab3BNAHi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 19:07:38 -0500
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:49317 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752771Ab3BNAHe (ORCPT
+	id S1761390Ab3BNANk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 19:13:40 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47823 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761189Ab3BNANi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 19:07:34 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AiEbAKgpHFF5LPNV/2dsb2JhbABFulqFEQECgQMXc4IfAQEEATocIwULCAMUAQMJJQ8FJQMhE4gMBQ2/WhWNGguBAA+DOwOWI4EeiDmGfYMagV4
-Date: Thu, 14 Feb 2013 11:07:30 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, Dave Chinner <dchinner@redhat.com>,
-        Brian Foster <bfoster@redhat.com>, Ben Myers <bpm@sgi.com>,
-        CAI Qian <caiqian@redhat.com>, xfs@oss.sgi.com
-Subject: Re: [ 68/89] xfs: fix _xfs_buf_find oops on blocks beyond the
- filesystem end
-Message-ID: <20130214000730.GI26694@dastard>
-References: <20130201130207.444989281@linuxfoundation.org>
- <20130201130212.381996681@linuxfoundation.org>
- <511BB198.1080609@redhat.com>
- <20130213161845.GA20916@kroah.com>
+	Wed, 13 Feb 2013 19:13:38 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <511C2C04.2070108@jp.fujitsu.com>
+Date: Thu, 14 Feb 2013 09:12:52 +0900
+From: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130213161845.GA20916@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: lkml <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        linux EFI ml <linux-efi@vger.kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-stable ml <stable@vger.kernel.org>,
+        linux x86 ml <x86@kernel.org>, David Airlie <airlied@linux.ie>,
+        Corentin Chary <corentincj@iksaif.net>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Dave Jiang <dave.jiang@intel.com>, Olof Johansson <olof@lixom.net>,
+        Peter Jones <pjones@redhat.com>,
+        Colin Ian King <colin.king@canonical.com>,
+        Steve Langasek <steve.langasek@canonical.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [PATCH] efi: Clear EFI_RUNTIME_SERVICES rather than EFI_BOOT by "noefi"
+ boot parameter
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[cc xfs@oss.sgi.com]
+From: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
 
-On Wed, Feb 13, 2013 at 08:18:45AM -0800, Greg Kroah-Hartman wrote:
-> On Wed, Feb 13, 2013 at 04:30:32PM +0100, Paolo Bonzini wrote:
-> > Il 01/02/2013 14:08, Greg Kroah-Hartman ha scritto:
-> > > 3.7-stable review patch.  If anyone has any objections, please let me know.
-> > > 
-> > > ------------------
-> > > 
-> > > From: Dave Chinner <dchinner@redhat.com>
-> > > 
-> > > commit eb178619f930fa2ba2348de332a1ff1c66a31424 upstream.
-> > > 
-> > > When _xfs_buf_find is passed an out of range address, it will fail
-> > > to find a relevant struct xfs_perag and oops with a null
-> > > dereference. This can happen when trying to walk a filesystem with a
-> > > metadata inode that has a partially corrupted extent map (i.e. the
-> > > block number returned is corrupt, but is otherwise intact) and we
-> > > try to read from the corrupted block address.
-> > > 
-> > > In this case, just fail the lookup. If it is readahead being issued,
-> > > it will simply not be done, but if it is real read that fails we
-> > > will get an error being reported.  Ideally this case should result
-> > > in an EFSCORRUPTED error being reported, but we cannot return an
-> > > error through xfs_buf_read() or xfs_buf_get() so this lookup failure
-> > > may result in ENOMEM or EIO errors being reported instead.
-> > 
-> > It looks like this breaks xfs_growfs.  See
-> > http://bugzilla.redhat.com/show_bug.cgi?id=909602.
+There was a serious problem in samsung-laptop that its platform driver is
+designed to run under BIOS and running under EFI can cause the machine to
+become bricked or can cause Machine Check Exceptions.
 
-Entirely possible, as the filesystem size is not updated until after
-all the new metadata is written to disk. in 3.8, there's this commit:
+    Discussion about this problem:
+    https://bugs.launchpad.net/ubuntu-cdimage/+bug/1040557
+    https://bugzilla.kernel.org/show_bug.cgi?id=47121
 
-commit fd23683c3b1ab905cba61ea2981c156f4bf52845
-Author: Dave Chinner <dchinner@redhat.com>
-Date:   Mon Nov 12 22:53:59 2012 +1100
+    The patches to fix this problem:
+    efi: Make 'efi_enabled' a function to query EFI facilities
+    83e68189745ad931c2afd45d8ee3303929233e7f
 
-    xfs: growfs: use uncached buffers for new headers
-    
-    When writing the new AG headers to disk, we can't attach write
-    verifiers because they have a dependency on the struct xfs-perag
-    being attached to the buffer to be fully initialised and growfs
-    can't fully initialise them until later in the process.
-    
-    The simplest way to avoid this problem is to use uncached buffers
-    for writing the new headers. These buffers don't have the xfs-perag
-    attached to them, so it's simple to detect in the write verifier and
-    be able to skip the checks that need the xfs-perag.
-    
-    This enables us to attach the appropriate buffer ops to the buffer
-    and henc calculate CRCs on the way to disk. IT also means that the
-    buffer is torn down immediately, and so the first access to the AG
-    headers will re-read the header from disk and perform full
-    verification of the buffer. This way we also can catch corruptions
-    due to problems that went undetected in growfs.
-    
-    Signed-off-by: Dave Chinner <dchinner@redhat.com>
-    Reviewed-by Rich Johnston <rjohnston@sgi.com>
-    Signed-off-by: Ben Myers <bpm@sgi.com>
+    samsung-laptop: Disable on EFI hardware
+    e0094244e41c4d0c7ad69920681972fc45d8ce34
 
-As part of the metadata verifier feature. It means that growfs no
-longer uses cached buffers, and hence does not pass through
-_xfs_buf_find() and hence will not trigger the beyond-EOFS that the
-above commit adds.
+Unfortunately this problem comes back again if users specify "noefi" option.
+This parameter clears EFI_BOOT and that driver continues to run even if running
+under EFI. Refer to the document, this parameter should clear
+EFI_RUNTIME_SERVICES instead.
 
-> Ick, not good.
-> 
-> Dave, any thoughts here?  Should I drop this from the 3.7-stable queue?
+Documentation/kernel-parameters.txt:
+===============================================================================
+...
+	noefi		[X86] Disable EFI runtime services support.
+...
+===============================================================================
 
-Yeah, drop it.
+Documentation/x86/x86_64/uefi.txt:
+===============================================================================
+...
+- If some or all EFI runtime services don't work, you can try following
+  kernel command line parameters to turn off some or all EFI runtime
+  services.
+	noefi		turn off all EFI runtime services
+...
+===============================================================================
 
-But what I'm now wondering is how this patch got proposed for
-3.7-stable. I don't recall seeing anything about this being
-proposed.
+Signed-off-by: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
+Cc: Matt Fleming <matt.fleming@intel.com>
+Cc: David Airlie <airlied@linux.ie>
+Cc: Corentin Chary <corentincj@iksaif.net>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Dave Jiang <dave.jiang@intel.com>
+Cc: Olof Johansson <olof@lixom.net>
+Cc: Peter Jones <pjones@redhat.com>
+Cc: Colin Ian King <colin.king@canonical.com>
+Cc: Steve Langasek <steve.langasek@canonical.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: stable@vger.kernel.org
+---
+ arch/x86/platform/efi/efi.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-<trolls email archives>
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 77cf009..928bf83 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -87,7 +87,7 @@ EXPORT_SYMBOL(efi_enabled);
+ 
+ static int __init setup_noefi(char *arg)
+ {
+-	clear_bit(EFI_BOOT, &x86_efi_facility);
++	clear_bit(EFI_RUNTIME_SERVICES, &x86_efi_facility);
+ 	return 0;
+ }
+ early_param("noefi", setup_noefi);
+-- 1.7.10.4 
 
-Oh, it happened while I was at LCA and didn't have any access to Red
-Hat email and there was a private thread about it. By the time I
-read it the stable kernel was already released and so it immediately
-dropped from my attention.
-
-XFS Maintainers: Major process fail. Patches that are being proposed
-for backports need to be posted to the XFS list, reviewed and tested
-before saying they are OK to go.  We have several growfs tests in
-xfstests would have failed if this was actually tested.
-
-Stable folk: This is the reason why I, quite frankly, don't want to
-support stable kernels *at all*. The overhead of backporting and
-testing a patch to a single kernel target to ensure there are no
-unintended regressions is significant, and there are so many stable
-kernels no it's just a waste of developer time to try to support
-them. And in this case, the process simply wasn't executed and an
-unintended regression that is >this close< to causing filesystem
-corruption slipped through to the stable series.....
-
-Red Hat/Fedora folk: please report upstream XFS
-bugs/regressions to xfs@oss.sgi.com or #xfs on freednode so we know
-about them immediately and can triage problems quickly via email.
-Sure, point us to the BZ you've raised, but tell us about the
-problem ASAP. That way when users ask us about a problem, we are not
-completely clueless...
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
