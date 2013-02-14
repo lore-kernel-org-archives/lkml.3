@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760067Ab3BNMoE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 07:44:04 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:4367 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757597Ab3BNMoB (ORCPT
+	id S1760312Ab3BNMqk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 07:46:40 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:44214 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760106Ab3BNMqj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 07:44:01 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 14 Feb 2013 04:42:58 -0800
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <wsa@the-dreams.de>
-CC: <swarren@nvidia.com>, <khali@linux-fr.org>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH] i2c: tegra: remove warning dump if timeout happen in transfer
-Date: Thu, 14 Feb 2013 18:13:33 +0530
-Message-ID: <1360845813-11334-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 14 Feb 2013 07:46:39 -0500
+From: Russ Dill <Russ.Dill@ti.com>
+To: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Russ Dill <Russ.Dill@ti.com>
+Subject: [PATCH] regulator: Fix memory garbage dev_err printout.
+Date: Thu, 14 Feb 2013 04:46:33 -0800
+Message-Id: <1360845993-693-1-git-send-email-Russ.Dill@ti.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If timeout error occurs in the i2c transfer then it was dumping warning
-of call stack.
+commit dd8004af: 'regulator: core: Log when a device causes a voltage
+constraint fail', tried to print out some information about the
+check consumer min/max uV fixup, however, it uses a garbage pointer
+left over from list_for_each_entry leading to boot messages in the
+form:
 
-Remove the warning dump as there is may be possibility that some slave
-devices are busy and not responding the i2c communication.
+'[    2.079890] <RANDOM ASCII>: Restricting voltage, 3735899821-4294967295uV'
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+Because it references regulator->dev, it could potentially read memory from
+anywhere causing a panic.
+
+This patch instead uses rdev and the updated min/max uV values.
+
+Signed-off-by: Russ Dill <Russ.Dill@ti.com>
 ---
-The patch is generated based on discussion happen between Stephena and
-Wolfram on the patch:
- i2c: add bcm2835 driver
+ drivers/regulator/core.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-resending patch as Wolfram's email id has been changed.
-
- drivers/i2c/busses/i2c-tegra.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
-index ae2e027..36704e3 100644
---- a/drivers/i2c/busses/i2c-tegra.c
-+++ b/drivers/i2c/busses/i2c-tegra.c
-@@ -587,7 +587,7 @@ static int tegra_i2c_xfer_msg(struct tegra_i2c_dev *i2c_dev,
- 	ret = wait_for_completion_timeout(&i2c_dev->msg_complete, TEGRA_I2C_TIMEOUT);
- 	tegra_i2c_mask_irq(i2c_dev, int_mask);
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 2785843..5a0f54a 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -200,8 +200,8 @@ static int regulator_check_consumers(struct regulator_dev *rdev,
+ 	}
  
--	if (WARN_ON(ret == 0)) {
-+	if (ret == 0) {
- 		dev_err(i2c_dev->dev, "i2c transfer timed out\n");
+ 	if (*min_uV > *max_uV) {
+-		dev_err(regulator->dev, "Restricting voltage, %u-%uuV\n",
+-			regulator->min_uV, regulator->max_uV);
++		rdev_err(rdev, "Restricting voltage, %u-%uuV\n",
++			*min_uV, *max_uV);
+ 		return -EINVAL;
+ 	}
  
- 		tegra_i2c_init(i2c_dev);
 -- 
-1.7.1.1
+1.8.1.2
 
