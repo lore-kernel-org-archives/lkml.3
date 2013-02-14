@@ -1,91 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757000Ab3BNJY5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 04:24:57 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:57935 "EHLO arroyo.ext.ti.com"
+	id S1756994Ab3BNJ2b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 04:28:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50651 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756741Ab3BNJYy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 04:24:54 -0500
-Message-ID: <511CAD5D.2050502@ti.com>
-Date: Thu, 14 Feb 2013 11:24:45 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1756741Ab3BNJ22 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 04:28:28 -0500
+Message-ID: <511CAE34.3050800@redhat.com>
+Date: Thu, 14 Feb 2013 10:28:20 +0100
+From: Gerd Hoffmann <kraxel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130108 Thunderbird/10.0.12
 MIME-Version: 1.0
-To: Ruslan Bilovol <ruslan.bilovol@ti.com>
-CC: <andi@etezian.org>, <FlorianSchandinat@gmx.de>,
-        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH v2 0/1] OMAP4: DSS: Add panel for Blaze Tablet boards
-References: <1360338220-12753-1-git-send-email-ruslan.bilovol@ti.com> <511B4C60.50404@ti.com> <CAB=otbSX_O-zbHZuPWPSEU0D1s3uKfZfeatoguoRiwogS5tVHQ@mail.gmail.com>
-In-Reply-To: <CAB=otbSX_O-zbHZuPWPSEU0D1s3uKfZfeatoguoRiwogS5tVHQ@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="------------enig1C80B7BA41BCEDB035534D44"
+To: Andy King <acking@vmware.com>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, gregkh@linuxfoundation.org,
+        davem@davemloft.net, pv-drivers@vmware.com
+Subject: Re: [PATCH 1/1] VSOCK: Introduce VM Sockets
+References: <1360196636-9357-1-git-send-email-acking@vmware.com> <1360196636-9357-2-git-send-email-acking@vmware.com> <5118FEA9.2080201@redhat.com> <1675407061.963254.1360682467627.JavaMail.root@vmware.com> <511B739C.8000204@redhat.com> <1218897172.1425846.1360812023655.JavaMail.root@vmware.com>
+In-Reply-To: <1218897172.1425846.1360812023655.JavaMail.root@vmware.com>
+X-Enigmail-Version: 1.4
+Content-Type: multipart/mixed;
+ boundary="------------020502040802090601000703"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------------enig1C80B7BA41BCEDB035534D44
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+This is a multi-part message in MIME format.
+--------------020502040802090601000703
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 
-On 2013-02-14 02:07, Ruslan Bilovol wrote:
+  Hi,
 
-> This patch is exactly a part of mainlining of the BlazeTablet board sup=
-port :)
-> The goal is to have as much as possible support of this board in the
-> 'vanilla' kernel.
-> The BlazeTablet mainlining is already ongoing (
-> https://patchwork.kernel.org/patch/2118281/ )
-> and I hope we will have some support of this board in near future.
-> The BlazeTablet's LCD panel support is very important thing for us to
-> have it in mainline because
-> without it the BlazeTablet becomes a 'black brick' and it is painful
-> for us to port this
-> driver against each new version of kernel.
+>> I've seen you have a notify_ops in the vmci bits.  Do you have different
+>> notify ops depending on socket type or something?  Does it make sense to
+>> move the notify ops ptr into "struct vsock_sock" maybe?
+> 
+> The notify stuff only applies to STREAMs.  However, we have two different
+> notify impls, one for legacy ESX and one for newer, and we figure out at
+> runtime which protocol we're using with the hypervisor and set the
+> callbacks appropriately.
 
-Ok, good to hear you're pushing it to mainline. However, you should
-mentally prepare for it being a black brick =3D(.
+Ok.
 
-Tony said he's not adding new board files, only DT from now on. The
-display subsystem driver and the panel drivers do not work with DT yet,
-and it will still take some time for that to realize.
+> The difference between the two is that the
+> newer one is much smarter and knows not to signal (the peer) quite so much,
+> i.e., it has some basic but sensible flow-control, which improves
+> performance quite a bit.
 
-Thus adding this driver would help nothing, as it couldn't be used. And
-after the DSS and the panel drivers are made to work with DT (which is a
-big job, needing large rewrites of the drivers), there's a rework that
-has to be done with this driver to make it compatible with the new DSS
-model.
+Yea, with that background it makes more sense.  I think we can reduce
+number of hooks though.
 
-So, I'm still inclined to say that we shouldn't merge this.
+Looking at vsock_stream_sendmsg:
+  * notify_send_init -- needed I guess.
+  * notify_send_pre_block -- needed too, I guess you'll force signaling
+    the peer here (buffers full and there is more data).
+  * notify_send_pre_enqueue + notify_send_post_enqueue look like they
+    could easily be folded into stream_enqueue.
 
- Tomi
+> Again, that might not make any sense at all
+> for virtio.  Do you need to signal when you enqueue to a ring?  And is
+> there coalescing?
 
+Sure virtio signals, we have to if we don't want poll ;)
 
+Usually virtio only signals in case it finds the ring empty, if there
+are requests not yet processed by the peer there is no need to signal.
+The ring lives in guest memory and to figure whenever the peer has seen
+the requests in there we only need a memory barrier, not a vmexit.
 
---------------enig1C80B7BA41BCEDB035534D44
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+In the end it is up to the driver when he signals the peer.  The virtio
+net driver goes beyond the simple "signal-when-the-ring-is-empty" and
+has some logic for coalescing things when there is a high network load,
+while trying to not trade that for high latencies when the virtual nic
+is almost idle.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with undefined - http://www.enigmail.net/
+I guess you try archiving something simliar with vsock/vmci using the
+notifications, and yes, we might want use them with virtio too some day.
+ Most likely not for the first revision though, there are more important
+issues to tackle first.
 
-iQIcBAEBAgAGBQJRHK1dAAoJEPo9qoy8lh71iz8P/3Nw6J0iDl/Shfynnwr6kG0i
-F/x7PbGAvQ4IkvU5+gHle+vd9Wzsmmjv51MfTHu9uWKRtB2gCEsTS40PkPqa5Kn0
-2y5+sTXPmzVmvRLMRVBsaDaIolC48lz9IWsd4bUeP0KIcTjUi5BfkfmJhNiTT20h
-mnr3cWQSznf0wucY3HDcv7TI2QcpZmsQvQ1jKMuilhBgA62INbt2e9fkRIk1xNXJ
-UBfmbbYV12Svv8eprV/TnVZ0QwDY67DN31ZutGRwCo7N4DXs3ZHoi0+EOltfl0Ut
-4psmCSUrIaZQmQPoaVrUcdwwxYbdZZVNiV0CQHYPvoNEWbwfGu9JmcBgZtcxaUsR
-IxzWkrEj/JUw+NC2Z/gw9Cs18eoS76qSvqDdIqk7Ru0wmO2AxYg6iz6DXIEPJPhH
-I04IlNBURgT5/zWZKc51WOX4n83mGaeyJPIJ7tio3TEmFQ04zDfpD+d+dQViCBZ4
-eVdnsneGPgW9KQfMOtuRb+ViSHgaNI1+BKFO40AaqTx5W9L3pHs2sD3F0/ajjJld
-SFMwh/4GqWGs6y5DDQINY7p/OG6yfssMC8e8Z6WSiZblBeJk1R3n6p+7VIvtW6qf
-T7lUiSw+u75Vhf8A85+qbZPHBN3G0e/QHuHSYfEErP/PkRvQNt82A3YuhNecWZ67
-YeDkQXh+sYbGYrKIykFx
-=eTse
------END PGP SIGNATURE-----
+>> And can we make it optional please (i.e. allow the function pointers to
+>> be NULL)?
+> 
+> They were originally allowed to be NULL, but I changed it in the last
+> round of patches while moving them into the transport, since I disliked
+> the NULL checks so much.  I can put them back, but that's a bigger
+> change, and I'm not sure we want to push large patches to Dave right
+> now :)
 
---------------enig1C80B7BA41BCEDB035534D44--
+Yea, it's probably better to discuss+collect the refinements and send
+them batched.
+
+>> Which problem you are trying to tackle with the notifications?
+> 
+> It's to do with signaling the peer, or more appropriately, trying to
+> avoid signaling the peer when possible.  The naive impl. is to signal
+> every time we enqueue or dequeue data (into our VMCI queuepairs).
+> But signaling is slow, since it involves a world exit, so we prefer
+> not to.  Which means we need to keep track of rate of flow and figure
+> out when we should and should not, and that's what all the notification
+> stuff does.  It's...ugly...
+
+But makes sense even if it isn't that pretty.
+
+But /me wonders why you maintain the notify state per-call and not
+per-socket/queuepair.  For the data flow it shouldn't make a difference
+whenever the application does a few send(big-buffer) or many
+send(small-buffer) calls.
+
+>>> For the VMCI transport, it indicates if the underlying queuepair is
+>>> still around (i.e., make sure we haven't torn it down while sleeping
+>>> in a blocking send or receive).  Perhaps it's not the best name?
+>>
+>> How you'd hit that?  Peer closing the socket while sleeping?  Other
+>> thread closing the socket wile sleeping?  Both?
+>>
+>> I think a state field in struct vsock_sock would be a better solution here.
+> 
+> Hrm, lemme think about this one.
+
+There is already vsock->sk.sk_state ...
+
+cheers,
+  Gerd
+
+--------------020502040802090601000703
+Content-Type: text/plain;
+ name="0002-af_vsock-don-t-overwrite-sock-state.patch"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="0002-af_vsock-don-t-overwrite-sock-state.patch"
+
+RnJvbSBlMDg1YzgxZDNmYzk1YTdlMmU5MzhkZWVjNjU4NDNiYTdjMDBhZmUzIE1vbiBTZXAg
+MTcgMDA6MDA6MDAgMjAwMQpGcm9tOiBHZXJkIEhvZmZtYW5uIDxrcmF4ZWxAcmVkaGF0LmNv
+bT4KRGF0ZTogV2VkLCAxMyBGZWIgMjAxMyAxODowMDoxOSArMDEwMApTdWJqZWN0OiBbUEFU
+Q0ggMi80XSBhZl92c29jazogZG9uJ3Qgb3ZlcndyaXRlIHNvY2stPnN0YXRlCgpXZSBzZXQg
+c29jay0+c3RhdGUgdG8gU1NfQ09OTkVDVElORyBiZWZvcmUgY2FsbGluZyB0aGUgdHJhbnNw
+b3J0LApubyBuZWVkIHRvIGRvIHRoYXQgYWdhaW4gYWZ0ZXJ3YXJkcywgdGhlcmVieSBvdmVy
+d3JpdGluZyBhbnkKdXBkYXRlcyB0aGUgdHJhbnNwb3J0J3MgY29ubmVjdCBmdW5jdGlvbiBt
+aWdodCBoYXZlIGRvbmUuCgpTaWduZWQtb2ZmLWJ5OiBHZXJkIEhvZmZtYW5uIDxrcmF4ZWxA
+cmVkaGF0LmNvbT4KLS0tCiBuZXQvdm13X3Zzb2NrL2FmX3Zzb2NrLmMgfCAgICA2ICsrKy0t
+LQogMSBmaWxlIGNoYW5nZWQsIDMgaW5zZXJ0aW9ucygrKSwgMyBkZWxldGlvbnMoLSkKCmRp
+ZmYgLS1naXQgYS9uZXQvdm13X3Zzb2NrL2FmX3Zzb2NrLmMgYi9uZXQvdm13X3Zzb2NrL2Fm
+X3Zzb2NrLmMKaW5kZXggNTRiYjdiZC4uZTVkMTQ2NyAxMDA2NDQKLS0tIGEvbmV0L3Ztd192
+c29jay9hZl92c29jay5jCisrKyBiL25ldC92bXdfdnNvY2svYWZfdnNvY2suYwpAQCAtMTE4
+NCwxMSArMTE4NCwxMSBAQCBzdGF0aWMgaW50IHZzb2NrX3N0cmVhbV9jb25uZWN0KHN0cnVj
+dCBzb2NrZXQgKnNvY2ssIHN0cnVjdCBzb2NrYWRkciAqYWRkciwKIAkJaWYgKGVyciA8IDAp
+CiAJCQlnb3RvIG91dDsKIAotCQkvKiBNYXJrIHNvY2sgYXMgY29ubmVjdGluZyBhbmQgc2V0
+IHRoZSBlcnJvciBjb2RlIHRvIGluCisJCS8qIFdoZW4gc3RpbGwgY29ubmVjdGluZyBzZXQg
+dGhlIGVycm9yIGNvZGUgdG8gaW4KIAkJICogcHJvZ3Jlc3MgaW4gY2FzZSB0aGlzIGlzIGEg
+bm9uLWJsb2NraW5nIGNvbm5lY3QuCiAJCSAqLwotCQlzb2NrLT5zdGF0ZSA9IFNTX0NPTk5F
+Q1RJTkc7Ci0JCWVyciA9IC1FSU5QUk9HUkVTUzsKKwkJaWYgKHNvY2stPnN0YXRlID09IFNT
+X0NPTk5FQ1RJTkcpCisJCQllcnIgPSAtRUlOUFJPR1JFU1M7CiAJfQogCiAJLyogVGhlIHJl
+Y2VpdmUgcGF0aCB3aWxsIGhhbmRsZSBhbGwgY29tbXVuaWNhdGlvbiB1bnRpbCB3ZSBhcmUg
+YWJsZSB0bwotLSAKMS43LjkuNwoK
+--------------020502040802090601000703--
