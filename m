@@ -1,75 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965279Ab3BNBbZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 20:31:25 -0500
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:45756 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753469Ab3BNBbY (ORCPT
+	id S1761459Ab3BNBbe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 20:31:34 -0500
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:54516 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754067Ab3BNBbc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 20:31:24 -0500
+	Wed, 13 Feb 2013 20:31:32 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130213144932.GA14260@gmail.com>
-References: <1360377937-16297-1-git-send-email-walken@google.com>
-	<511B9B4F.3060404@intel.com>
-	<20130213144932.GA14260@gmail.com>
-Date: Wed, 13 Feb 2013 17:31:23 -0800
-Message-ID: <CANN689FJcUZq1wcVZXO+jLOHOeCPnOf5kfYgYVykG6-YLSjj7g@mail.gmail.com>
-Subject: Re: [PATCH 0/4] rwsem: Implement writer lock-stealing
-From: Michel Lespinasse <walken@google.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Alex Shi <alex.shi@intel.com>, linux-kernel@vger.kernel.org,
-        anton@samba.org, hpa@zytor.com, arjan@linux.intel.com,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
-        yuanhan.liu@linux.intel.com, dhowells@redhat.com,
-        akpm@linux-foundation.org, tglx@linutronix.de
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <511C35CB.2010103@zytor.com>
+References: <20130206150403.006e5294@cuia.bos.redhat.com> <tip-4aef331850b637169ff036ed231f0d236874f310@git.kernel.org>
+ <CA+55aFx6N6SaRN+w=CTXJ=ZSsOE6KeS2R9sT_uhAx9h2j+hjKg@mail.gmail.com>
+ <CA+55aFwZ2wN=9qTNNmqjPfK=ZwS=kx6HAAFj_cWLnJDbK1M0_Q@mail.gmail.com> <511C35CB.2010103@zytor.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 13 Feb 2013 17:31:09 -0800
+X-Google-Sender-Auth: wnaHLSb82vPh3ETomjV2xRNEBFI
+Message-ID: <CA+55aFz6qr_9sjG0Z3Cku3ahHX5zYOMiroryh2rL-HLJ=w0=_g@mail.gmail.com>
+Subject: Re: [tip:core/locking] x86/smp: Move waiting on contended ticket lock
+ out of line
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, rostedt@goodmiss.org,
+        aquini@redhat.com, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Michel Lespinasse <walken@google.com>,
+        linux-tip-commits@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 13, 2013 at 6:49 AM, Ingo Molnar <mingo@kernel.org> wrote:
+On Wed, Feb 13, 2013 at 4:54 PM, H. Peter Anvin <hpa@zytor.com> wrote:
 >
-> * Alex Shi <alex.shi@intel.com> wrote:
->
->> On 02/09/2013 10:45 AM, Michel Lespinasse wrote:
->> > This proposal implements writer lock stealing in lib/rwsem.c, just as
->> > Alex Shi's earlier proposal did for the simpler lib/rwsem-spinlock.c
->>
->> Ops, my patch in tip/urgent is for rwsem. Yuanhan's patch is
->> for rwsem-spinlock.
+> It does for the callee, but only on a whole-file basis.  It would be a
+> lot nicer if we could do it with function attributes.
 
-Sorry, my bad. Looks like an email snafu on my side - when I wanted to
-save your patch to look through it with more context, I ended up
-saving Yuanhan's instead.
+A way to just set the callee-clobbered list on a per-function basis
+would be lovely. Gcc has limited support for this on some
+architectures, where you can specify "save every register for this
+function" in order to do things like interrupt handlers etc without
+even resorting to asm. But there is no generic (or even just x86)
+support for anything like it :-(
 
-> Your rwsem patch is queued up for v3.9, in the tip:core/locking
-> tree:
->
->   3a15e0e0cdda rwsem: Implement writer lock-stealing for better scalability
->
-> Michel, mind having a look at that and possibly generate a delta
-> patch, if your patch has changes we should apply?
+There are other calling-convention attributes that make me suspect gcc
+could easily do this (it already supports per-function ABI
+specification, so presumably it already has some concept of
+callee-saved registers being different for different attributes), but
+from my reading you currently have to generate asm wrappers by hand
+(and call them by hand with inline asm) if you want to do something
+like this.
 
-The main difference I can see is that my approach makes it possible to
-steal the rwsem in a fast path, without going through the lib/rwsem.c
-slow path. A few things fall out from that; most notably I had to
-change the readers_only side of __rwsem_do_wake() to account with the
-possibility of write lock stealing on the fast path, while Alex
-doesn't since he forces write lock stealing to use the slow path.
-Overall, my changes are more extensive but they also reduce the total
-line count, while Alex's proposal goes the other way.
+And the straightforward "just wrap it in asm" approach sadly then
+causes double "call" instructions etc. So that slows down the slow
+case unnecessarily much ;(
 
-For these reasons, I think I still prefer my approach. However as
-mentioned, this is not the best time for me to push it as I'll be away
-for a little while. I should be able to get back to this in a couple
-weeks, though.
-
-Alex, could you go through my patch and see if there is anything you
-find objectionable ? (if not about the details, at least about the
-general approach of enabling writer lock stealing on the fast path)
-
-Thanks,
-
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+                 Linus
