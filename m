@@ -1,65 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760821Ab3BNPpm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 10:45:42 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:35540 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757979Ab3BNPpj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 10:45:39 -0500
-Message-ID: <1360856159.3524.619.camel@falcor1.watson.ibm.com>
-Subject: Re: [PATCH 2/2] ima: Support appraise_type=imasig_optional
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 14 Feb 2013 10:35:59 -0500
-In-Reply-To: <20130214152339.GB16671@redhat.com>
-References: <1360613493-11969-1-git-send-email-vgoyal@redhat.com>
-	 <1360613493-11969-3-git-send-email-vgoyal@redhat.com>
-	 <CALLzPKZA92MxJYjC+OR-KDv4rHQRgKSBHSAY2fOZsEDxiO11yA@mail.gmail.com>
-	 <1360760195.3524.355.camel@falcor1.watson.ibm.com>
-	 <CALLzPKaHLSg0TromnTvpEVroBUtPJE3TwF4RmcA2dtkuB5H4hQ@mail.gmail.com>
-	 <1360763044.3524.367.camel@falcor1.watson.ibm.com>
-	 <20130213165922.GD6750@redhat.com>
-	 <1360846636.3524.589.camel@falcor1.watson.ibm.com>
-	 <20130214152339.GB16671@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+	id S934724Ab3BNPtG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 10:49:06 -0500
+Received: from david.siemens.de ([192.35.17.14]:25728 "EHLO david.siemens.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757931Ab3BNPtF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 10:49:05 -0500
+Message-ID: <511D074B.7040608@siemens.com>
+Date: Thu, 14 Feb 2013 16:48:27 +0100
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+MIME-Version: 1.0
+To: Tom Tromey <tromey@redhat.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        "kgdb-bugreport@lists.sourceforge.net" 
+	<kgdb-bugreport@lists.sourceforge.net>,
+        Andi Kleen <andi@firstfloor.org>, Ben Widawsky <ben@bwidawsk.net>,
+        Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH v5 05/20] scripts/gdb: Add lx-symbols command
+References: <cover.1359463075.git.jan.kiszka@siemens.com> <cover.1359463075.git.jan.kiszka@siemens.com> <9fd8d68344bdc125a0345f04d2f7484f262459a8.1359463075.git.jan.kiszka@siemens.com> <877gmakinx.fsf@fleche.redhat.com>
+In-Reply-To: <877gmakinx.fsf@fleche.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-x-cbid: 13021415-4834-0000-0000-000003AEB121
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-02-14 at 10:23 -0500, Vivek Goyal wrote:
-> On Thu, Feb 14, 2013 at 07:57:16AM -0500, Mimi Zohar wrote:
+On 2013-02-14 16:40, Tom Tromey wrote:
+>>>>>> "Jan" == Jan Kiszka <jan.kiszka@siemens.com> writes:
 > 
-> [..]
-> > > Ok, I will cleanup the code to do above. Just wanted to clear up one
-> > > point. 
-> > > 
-> > > Above option will not have any effect on evm behavior? This only impacts
-> > > IMA appraisal behavior. For example, if security.ima is not present it
-> > > is fine and file access is allowed. But if EVM is enabled and initialized
-> > > and EVM does not find security.evm label (INTEGRITY_NOLABEL) or returns
-> > > INTEGRITY_NOXATTRS, file access should still be denied?
-> > 
-> > Can't happen.  evm_verifyxattr() is called from
-> > ima_appraise_measurement(), only if 'security.ima' exists.
+> Jan> In addition, the command installs a silent breakpoint in the load_module
+> Jan> function at the point where the module was loaded but not yet
+> Jan> initialized. The breakpoint handler will try to load symbols from the
+> Jan> module files found during lx-symbols execution. This way, breakpoints
+> Jan> can be set to module initialization functions, and there is usually no
+> Jan> need to explicitly call lx-symbols after (re-)loading a module.
 > 
-> Actually what I meant is following.
+> It is a nice approach, but I wonder whether the kernel's gdb stub could
+> use the existing qXfer:libraries remote protocol packet.  And, if not,
+> could we extend gdb to make it work.
+
+That would help kgdb, but not QEMU or hardware debuggers. They have no
+"Linux awareness" built in.
+
 > 
-> Currently in process_measurement(), I will allow access if
-> ima_appraise_measurement() returns INTEGRITY_NOLABEL.
+> Jan> +		def _find_breakpoint_location(self):
+> Jan> +			breakpoint_match = "^[0-9]*[\t]*err = parse_args\(.*"
+> Jan> +
+> Jan> +			src = gdb.execute("list kernel/module.c:load_module",
+> Jan> +					  to_string = True)
+> 
+> Whatever works -- but I think there are better ways.
+> 
+> The simplest is introducing a function that is called at the right spot
+> with the right arguments.  It doesn't need to do anything, just be a
+> name where you can put a breakpoint.
 
-I think you're making this more complicated than it needs to be.  Allow
-the execution unless the file failed signature verification.  The
-additional capability is given only if the signature verification
-succeeds.
+Yes, I have this on my todo list. I already have a local config here
+where the current heuristic broke - once again. We likely just need to
+enforce un-inlining of do_init_module.
 
-thanks,
+> 
+> Jan> +	import symbols
+> 
+> I think it's better to put everything into its own package, e.g. 'import
+> linux.symbols', to try to avoid conflicts with other python modules that
+> may get loaded.
 
-Mimi
+OK.
 
+Jan
+
+-- 
+Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
+Corporate Competence Center Embedded Linux
