@@ -1,118 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934765Ab3BNRbe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 12:31:34 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:39347 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759068Ab3BNRbc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 12:31:32 -0500
-Date: Thu, 14 Feb 2013 09:31:28 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Simon Glass <sjg@chromium.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Luigi Semenzato <semenzato@chromium.org>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Felipe Balbi <balbi@ti.com>, Sourav Poddar <sourav.poddar@ti.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Mike A. Chan" <mikechan@google.com>,
-        Jun Nakajima <jun.nakajima@intel.com>,
-        Tom Keel <thomas.keel@intel.com>, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [PATCH v2 6/6] Input: Add ChromeOS EC keyboard driver
-Message-ID: <20130214173127.GC4007@core.coreip.homeip.net>
-References: <1360723347-28701-1-git-send-email-sjg@chromium.org>
- <1360723347-28701-7-git-send-email-sjg@chromium.org>
- <20130213200232.GB22031@core.coreip.homeip.net>
- <CAPnjgZ2-QV36Ro_G32kcHStpj0SCC_gDoeCPqjN-h6bsBTSGvQ@mail.gmail.com>
+	id S934791Ab3BNRbr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 12:31:47 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:38157 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932434Ab3BNRbd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 12:31:33 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Pavel Machek <pavel@ucw.cz>, Goswin von Brederlow <goswin-v-b@web.de>,
+        Li Fei <fei.li@intel.com>, len.brown@intel.com, mingo@redhat.com,
+        peterz@infradead.org, biao.wang@intel.com, linux-pm@vger.kernel.org,
+        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        chuansheng.liu@intel.com
+Subject: Re: Getting rid of freezer for suspend [was Re: [fuse-devel] [PATCH] fuse: make fuse daemon frozen along with kernel threads]
+Date: Thu, 14 Feb 2013 18:38:02 +0100
+Message-ID: <6332427.iqPUMjtDaQ@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc7; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAJfpeguV5X1pwb-E7vzVtK4n0Q6Mu6A4XKnS5-tWn4Q7MtzgZg@mail.gmail.com>
+References: <1360113112.17267.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC> <2891124.QXsiBPuYKW@vostro.rjw.lan> <CAJfpeguV5X1pwb-E7vzVtK4n0Q6Mu6A4XKnS5-tWn4Q7MtzgZg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPnjgZ2-QV36Ro_G32kcHStpj0SCC_gDoeCPqjN-h6bsBTSGvQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 13, 2013 at 10:45:07PM -0800, Simon Glass wrote:
+On Thursday, February 14, 2013 02:09:50 PM Miklos Szeredi wrote:
+> On Thu, Feb 14, 2013 at 1:11 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Thursday, February 14, 2013 11:41:16 AM Miklos Szeredi wrote:
+> 
 > >>
-> >> +config KEYBOARD_CROS_EC
-> >> +     tristate "ChromeOS EC keyboard"
-> >> +     select INPUT_MATRIXKMAP
-> >> +     select MFD_CROS_EC
+> >> It is essentially the same mechanism that is used to delay the
+> >> freezing of kernel threads after userspace tasks have been frozen.
+> >> Except it's a lot more difficult to determine which userspace tasks
+> >> need to be suspended late and which aren't.
 > >
-> > Is this select safe? I.e. does MFD_CROS_EC depend on anything else?
-> 
-> I'll remove it, since it isn't required, and it's true that it does
-> need other things.
-
-Instead of droppign the dependency completely I think it should "depens
-on MFD_CROS_EC"
-
-> >> +
-> >> +static void cros_ec_keyb_close(struct input_dev *dev)
-> >> +{
-> >> +     struct cros_ec_keyb *ckdev = input_get_drvdata(dev);
-> >> +
-> >> +     blocking_notifier_chain_unregister(&ckdev->ec->event_notifier,
-> >> +                                        &ckdev->notifier);
-> >> +     blocking_notifier_chain_unregister(&ckdev->ec->wake_notifier,
-> >> +                                        &ckdev->wake_notifier);
+> > Well, I suppose that information is available to user space.
 > >
-> > Why is this done via a notifier instead of regular resume method?
+> > Do we need an interface for a process to mark itself as PF_FREEZE_LATE or
+> > do we need an interface for one process to mark another process as
+> > PF_FREEZE_LATE, or both?
 > 
-> Because we only call the notifer in resume when we were not waking on
-> a keyboard event. We use it to flush the keyboard. It was a late
-> change so there might be a better way, but this driver does not have a
-> resume handler.
+> As a first step marking self with PF_FREEZE_LATE and inheriting this
+> flag across fork/clone would work for most cases, I think.
 
-Right and the question is why does not it have resume handler and why
-you inventing your own resume infrastructure instead of using the
-standard one.
+OK, so we can just have a switch for that in /proc I suppose.
 
-> >> +
-> >> +static int cros_ec_keyb_probe(struct platform_device *pdev)
-> >> +{
-> >> +     struct cros_ec_device *ec = dev_get_drvdata(pdev->dev.parent);
-> >> +     struct device *dev = ec->dev;
-> >> +     struct cros_ec_keyb *ckdev = NULL;
-> >> +     struct input_dev *idev = NULL;
-> >> +     struct device_node *np;
-> >> +     int err;
-> >> +
-> >> +     np = of_find_matching_node(NULL, cros_ec_kbc_of_match);
-> >
-> > And if we don't find it?
-> 
-> Added error checking.
-> 
-> >
-> >> +
-> >> +     ckdev = kzalloc(sizeof(*ckdev), GFP_KERNEL);
-> >> +     if (!ckdev) {
-> >> +             dev_err(dev, "cannot allocate memory for ckdev\n");
-> >> +             return -ENOMEM;
-> >> +     }
-> >> +     pdev->dev.of_node = np;
-> >
-> > Huh? I'd expect the platform device be fully set up (including DT data)
-> > before the driver is called.
-> 
-> This is a child of the mfd driver cros_ec, so I don't think that
-> works. Or maybe I'm just not sure how to plumb it in so it is
-> automatic. Or maybe I just need to add the id to the device info
-> below?
+> Marking an unrelated process would have all sorts of issues: Who has
+> permission to do this?  Won't it be misused to "fix" random freezer
+> issues.
 
-Who creates this device? Whoever does this should set up the
-pdev->dev.of_node. This is not this driver's responsibility.
+Yes, that's why I was asking.
 
-And then you add the id to the table below and matching is done
-automatically.
+Thanks,
+Rafael
 
-Thanks.
 
 -- 
-Dmitry
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
