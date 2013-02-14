@@ -1,73 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933969Ab3BNKPj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 05:15:39 -0500
-Received: from smtp.eu.citrix.com ([46.33.159.39]:46896 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757216Ab3BNKPh (ORCPT
+	id S934028Ab3BNKQD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 05:16:03 -0500
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:57809 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933496Ab3BNKQA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 05:15:37 -0500
-X-IronPort-AV: E=Sophos;i="4.84,664,1355097600"; 
-   d="scan'208";a="1452298"
-From: Roger Pau Monne <roger.pau@citrix.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Roger Pau Monne <roger.pau@citrix.com>, <xen-devel@lists.xen.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH] xen-blkback: use balloon pages for persistent grants
-Date: Thu, 14 Feb 2013 11:12:09 +0100
-Message-ID: <1360836729-17874-1-git-send-email-roger.pau@citrix.com>
-X-Mailer: git-send-email 1.7.7.5 (Apple Git-26)
+	Thu, 14 Feb 2013 05:16:00 -0500
+Date: Thu, 14 Feb 2013 11:16:10 +0100
+From: Cong Ding <dinggnu@gmail.com>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Rob Herring <robherring2@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] dma: of-dma.c: fix memory leakage
+Message-ID: <20130214101610.GA29017@gmail.com>
+References: <1358600805-20193-1-git-send-email-dinggnu@gmail.com>
+ <50FC6EB1.4050704@gmail.com>
+ <20130122101053.GA2427@gmail.com>
+ <20130212174025.GB17659@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130212174025.GB17659@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With current persistent grants implementation we are not freeing the
-persistent grants after we disconnect the device. Since grant map
-operations change the mfn of the allocated page, and we can no longer
-pass it to __free_page without setting the mfn to a sane value, use
-balloon grant pages instead, as the gntdev device does.
+The memory allocated to ofdma might be a leakage when error occurs.
 
-Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
-Cc: xen-devel@lists.xen.org
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Cong Ding <dinggnu@gmail.com>
 ---
- drivers/block/xen-blkback/blkback.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+ drivers/dma/of-dma.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
-index c46824f..e6c2f6a 100644
---- a/drivers/block/xen-blkback/blkback.c
-+++ b/drivers/block/xen-blkback/blkback.c
-@@ -46,6 +46,7 @@
- #include <xen/xen.h>
- #include <asm/xen/hypervisor.h>
- #include <asm/xen/hypercall.h>
-+#include <xen/balloon.h>
- #include "common.h"
+diff --git a/drivers/dma/of-dma.c b/drivers/dma/of-dma.c
+index 59631b2..583e50e3 100644
+--- a/drivers/dma/of-dma.c
++++ b/drivers/dma/of-dma.c
+@@ -107,6 +107,7 @@ int of_dma_controller_register(struct device_node *np,
+ 	if (!nbcells) {
+ 		pr_err("%s: #dma-cells property is missing or invalid\n",
+ 		       __func__);
++		kfree(ofdma);
+ 		return -EINVAL;
+ 	}
  
- /*
-@@ -239,6 +240,7 @@ static void free_persistent_gnts(struct rb_root *root, unsigned int num)
- 			ret = gnttab_unmap_refs(unmap, NULL, pages,
- 				segs_to_unmap);
- 			BUG_ON(ret);
-+			free_xenballooned_pages(segs_to_unmap, pages);
- 			segs_to_unmap = 0;
- 		}
- 
-@@ -527,8 +529,8 @@ static int xen_blkbk_map(struct blkif_request *req,
- 				GFP_KERNEL);
- 			if (!persistent_gnt)
- 				return -ENOMEM;
--			persistent_gnt->page = alloc_page(GFP_KERNEL);
--			if (!persistent_gnt->page) {
-+			if (alloc_xenballooned_pages(1, &persistent_gnt->page,
-+			    false)) {
- 				kfree(persistent_gnt);
- 				return -ENOMEM;
- 			}
 -- 
-1.7.7.5 (Apple Git-26)
+1.7.9.5
 
