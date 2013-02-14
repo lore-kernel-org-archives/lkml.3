@@ -1,108 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933880Ab3BNOU3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 09:20:29 -0500
-Received: from relay.parallels.com ([195.214.232.42]:52308 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932278Ab3BNOU1 (ORCPT
+	id S933778Ab3BNOW5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 09:22:57 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:40964 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753604Ab3BNOW4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 09:20:27 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Jens Axboe <axboe@kernel.dk>, Ingo Molnar <mingo@redhat.com>,
-        "Peter Zijlstra" <peterz@infradead.org>
-CC: <devel@openvz.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] block: account iowait time when waiting for completion of IO request
-Date: Thu, 14 Feb 2013 18:19:59 +0400
-Message-ID: <d1fdb105fe23f979871b92c4b4d3dd374146e337.1360851174.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <d5e5c32b045e448072b3a4b77cd6557408b77103.1360851174.git.vdavydov@parallels.com>
-References: <d5e5c32b045e448072b3a4b77cd6557408b77103.1360851174.git.vdavydov@parallels.com>
+	Thu, 14 Feb 2013 09:22:56 -0500
+Message-ID: <511CF33C.3020402@gmail.com>
+Date: Thu, 14 Feb 2013 08:22:52 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.30.22.158]
+To: Michal Simek <monstr@monstr.eu>
+CC: arm@kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        John Stultz <johnstul@us.ibm.com>,
+        Josh Cartwright <josh.cartwright@ni.com>
+Subject: Re: [PATCH 1/4] clocksource: pass DT node pointer to init functions
+References: <1360264144-20714-1-git-send-email-robherring2@gmail.com> <1360264144-20714-2-git-send-email-robherring2@gmail.com> <CAHTX3dKLCbfhBaHKBE=fVTcRReVL6yotA9e_8S70bH+_gajL5Q@mail.gmail.com> <511BC043.4030506@gmail.com> <CAHTX3d+2rGBE3ZBwiHbq7tOi+OE+5KGPh34APzp0NhRP=mBv+w@mail.gmail.com> <511C3E32.9010709@gmail.com> <CAHTX3dKcnkjOTY5yyBSwcUH0Rxz+L9ZROeaemMYLexW50Z7Eng@mail.gmail.com>
+In-Reply-To: <CAHTX3dKcnkjOTY5yyBSwcUH0Rxz+L9ZROeaemMYLexW50Z7Eng@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using wait_for_completion() for waiting for a IO request to be executed
-results in wrong iowait time accounting. For example, a system having
-the only task doing write() and fdatasync() on a block device can be
-reported being idle instead of iowaiting as it should because
-blkdev_issue_flush() calls wait_for_completion() which in turn calls
-schedule() that does not increment the iowait proc counter and thus does
-not turn on iowait time accounting.
+On 02/14/2013 12:45 AM, Michal Simek wrote:
+> 2013/2/14 Rob Herring <robherring2@gmail.com>:
+>> On 02/13/2013 11:33 AM, Michal Simek wrote:
+>>> 2013/2/13 Rob Herring <robherring2@gmail.com>:
+>>>> On 02/13/2013 10:21 AM, Michal Simek wrote:
+>>>>> 2013/2/7 Rob Herring <robherring2@gmail.com>:
+>>>>>> From: Rob Herring <rob.herring@calxeda.com>
+>>>>>>
 
-The patch makes block layer use wait_for_completion_io() instead of
-wait_for_completion() where appropriate to account iowait time
-correctly.
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
----
- block/blk-exec.c  |    4 ++--
- block/blk-flush.c |    2 +-
- block/blk-lib.c   |    6 +++---
- 3 files changed, 6 insertions(+), 6 deletions(-)
+>>> One more thing. Is there any rule which should describe which timer should be
+>>> used for clockevent and for clocksource?
+>>
+>> No. This is a common problem. A simple solution is a "linux,clockevent"
+>> property, but I want to avoid that.
+> 
+> Let me describe it a little bit more. I am going to change current
+> mainline implementation
+> for zynq timer which uses special compatible string to define
+> clocksource and clockevent
+> device. I don't think this is right way to go because compatible
+> string shouldn't point
+> to device usage. Which is exact case you wanted to avoid.
+> 
+>> Ultimately it is some feature of the
+>> h/w that makes you choose. This could be it has an interrupt or not,
+>> higher frequency, has timer compare pins, gets power gated, etc. So you
+>> should describe enough of the h/w properties to make this decision.
+> 
+> For different timer type, kernel should decide which timer should be
+> used. It should be easy to test
+> because I can add some timers to the programmable logic (as is done
+> for Microblaze) and check
+> how kernel decide which clocksource/clockevent device will use. I
+> believe there is any logic around.
+> 
+> 
+> For solution with two instances of the same triple timer counters it
+> is impossible
+> to specify additional h/w property because all of 6 timers are the same.
+> And also adding special parameter to IP goes against rule
+> that device-tree should describe hw not Linux usage.
+> Maybe enough to save information to driver that clocksource and
+> clockevent device is registered
+> and do not try to register another timer (and also another timer from
+> another instance).
 
-diff --git a/block/blk-exec.c b/block/blk-exec.c
-index 74638ec..f634de7 100644
---- a/block/blk-exec.c
-+++ b/block/blk-exec.c
-@@ -120,9 +120,9 @@ int blk_execute_rq(struct request_queue *q, struct gendisk *bd_disk,
- 	/* Prevent hang_check timer from firing at us during very long I/O */
- 	hang_check = sysctl_hung_task_timeout_secs;
- 	if (hang_check)
--		while (!wait_for_completion_timeout(&wait, hang_check * (HZ/2)));
-+		while (!wait_for_completion_io_timeout(&wait, hang_check * (HZ/2)));
- 	else
--		wait_for_completion(&wait);
-+		wait_for_completion_io(&wait);
- 
- 	if (rq->errors)
- 		err = -EIO;
-diff --git a/block/blk-flush.c b/block/blk-flush.c
-index 720ad60..db8f1b5 100644
---- a/block/blk-flush.c
-+++ b/block/blk-flush.c
-@@ -436,7 +436,7 @@ int blkdev_issue_flush(struct block_device *bdev, gfp_t gfp_mask,
- 
- 	bio_get(bio);
- 	submit_bio(WRITE_FLUSH, bio);
--	wait_for_completion(&wait);
-+	wait_for_completion_io(&wait);
- 
- 	/*
- 	 * The driver must store the error location in ->bi_sector, if
-diff --git a/block/blk-lib.c b/block/blk-lib.c
-index b3a1f2b..d6f50d5 100644
---- a/block/blk-lib.c
-+++ b/block/blk-lib.c
-@@ -126,7 +126,7 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
- 
- 	/* Wait for bios in-flight */
- 	if (!atomic_dec_and_test(&bb.done))
--		wait_for_completion(&wait);
-+		wait_for_completion_io(&wait);
- 
- 	if (!test_bit(BIO_UPTODATE, &bb.flags))
- 		ret = -EIO;
-@@ -200,7 +200,7 @@ int blkdev_issue_write_same(struct block_device *bdev, sector_t sector,
- 
- 	/* Wait for bios in-flight */
- 	if (!atomic_dec_and_test(&bb.done))
--		wait_for_completion(&wait);
-+		wait_for_completion_io(&wait);
- 
- 	if (!test_bit(BIO_UPTODATE, &bb.flags))
- 		ret = -ENOTSUPP;
-@@ -262,7 +262,7 @@ int __blkdev_issue_zeroout(struct block_device *bdev, sector_t sector,
- 
- 	/* Wait for bios in-flight */
- 	if (!atomic_dec_and_test(&bb.done))
--		wait_for_completion(&wait);
-+		wait_for_completion_io(&wait);
- 
- 	if (!test_bit(BIO_UPTODATE, &bb.flags))
- 		/* One of bios in the batch was completed with error.*/
--- 
-1.7.1
+So if you don't care which one is used, then use the first one found and
+be done with it. You will have to make your init function just return on
+subsequent calls.
+
+> 
+> Or maybe it can be done via chosen property or via aliases property where
+> timer0 alias is that one who should be used for clocksource and
+> clockevent device.
+> (for my case alias to one instance of triple timer counter).
+> 
+> I saw some dtses which have aliases timer.
+> 
+> How good/bad is this option?
+
+It's best if you can avoid aliases IMO.
+
+> 
+> 
+>> OMAP
+>> is an example doing this with lots of timers with varying integration
+>> level differences.
+> 
+> Can you point me that that omap drivers you are talking about?
+
+arch/arm/mach-omap2/timer.c. They have properties such as always on and
+secure mode.
+
+Rob
 
