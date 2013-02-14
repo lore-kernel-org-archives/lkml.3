@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965056Ab3BNR3q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 12:29:46 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:38151 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964885Ab3BNR3o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 12:29:44 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Dirk Brandewie <dirk.brandewie@gmail.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, Dave Jones <davej@redhat.com>,
-        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org
-Subject: Re: [PATCH 0/5] Add P state driver for Intel Core Processors
-Date: Thu, 14 Feb 2013 18:36:13 +0100
-Message-ID: <1732008.aLNltyhYYo@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc7; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <511D0420.8080608@gmail.com>
-References: <1360170133-5066-1-git-send-email-dirk.brandewie@gmail.com> <1540905.Sh9giL2bZe@vostro.rjw.lan> <511D0420.8080608@gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1761478Ab3BNRaP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 12:30:15 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:39458 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756752Ab3BNRaN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 12:30:13 -0500
+From: Justin Maggard <jmaggard10@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: eparis@redhat.com, LinoSanfilippo@gmx.de, tzvetanc@commtouch.com,
+        Justin Maggard <jmaggard10@gmail.com>
+Subject: [PATCH] fanotify: fix support of large files
+Date: Thu, 14 Feb 2013 09:29:26 -0800
+Message-Id: <1360862966-6376-1-git-send-email-jmaggard10@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, February 14, 2013 07:34:56 AM Dirk Brandewie wrote:
-> On 02/14/2013 04:21 AM, Rafael J. Wysocki wrote:
-> > On Thursday, February 14, 2013 09:38:21 AM Viresh Kumar wrote:
-> >> On Wed, Feb 13, 2013 at 10:08 PM, Dirk Brandewie
-> >> <dirk.brandewie@gmail.com> wrote:
-> >>> For the case where both are built-in the load order works my driver uses
-> >>> device_initcall() and acpi_cpufreq uses late_initcall().
-> >>>
-> >>> For the case where both are a module (which I was sure I tested) you are
-> >>> right
-> >>> I will have to do something.
-> >>>
-> >>> For now I propose to make my driver built-in only while I sort out the right
-> >>> solution for the module build.  Does this seem reasonable to everyone?
-> >>
-> >> Of-course i am missing something here. Why would anybody want to insert
-> >> acpi-cpufreq module when the system supports the pstate driver.
-> >>
-> >> In case they are mutually exclusive, then we can have something like
-> >> depends on !ACPI-DRIVER in the kconfig option of pstate driver.
-> >
-> > Yes.  Or the other way around (i.e. make acpi_cpufreq depend on
-> > !X86_INTEL_PSTATE).
-> >
-> 
-> The issue is that acpi-cpufreq still needs to be available for Intel processors 
-> before SandyBridge and for other x86 compatible processors we can't make
-> intel_pstate and acpi-cpufreq mutually exclusive.
+Opening a file of >2GB in an area of the filesystem that has been marked for
+fanotify events currently results in an EOVERFLOW error.  This is particularly
+problematic if you are using fanotify permissions checking, because it prevents
+large files from being opened at all.  Fix this by setting the O_LARGEFILE flag
+on the new file handle.
 
-Right, I forgot about that and recalled it just a minute after sending that
-message.
+Signed-off-by: Justin Maggard <jmaggard10@gmail.com> 
+---
+ fs/notify/fanotify/fanotify_user.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+index 9ff4a5e..ef02b3d 100644
+--- a/fs/notify/fanotify/fanotify_user.c
++++ b/fs/notify/fanotify/fanotify_user.c
+@@ -64,6 +64,7 @@ static int create_fd(struct fsnotify_group *group,
+ 			struct file **file)
+ {
+ 	int client_fd;
++	int f_flags;
+ 	struct file *new_file;
  
-> Having intel_pstate built-in solves the issue without the need to patch
-> acpi-cpufreq.  I believe that most distros build the scaling drivers in
-> so the distro/user will make the explicit decision to use intel_pstate.
-
-But then we need to allow the user to choose acpi_cpufreq anyway if it's
-preferred whatever the reason.
-
-Thanks,
-Rafael
-
-
+ 	pr_debug("%s: group=%p event=%p\n", __func__, group, event);
+@@ -82,12 +83,11 @@ static int create_fd(struct fsnotify_group *group,
+ 	 * we need a new file handle for the userspace program so it can read even if it was
+ 	 * originally opened O_WRONLY.
+ 	 */
++	f_flags = group->fanotify_data.f_flags | FMODE_NONOTIFY | O_LARGEFILE;
+ 	/* it's possible this event was an overflow event.  in that case dentry and mnt
+ 	 * are NULL;  That's fine, just don't call dentry open */
+ 	if (event->path.dentry && event->path.mnt)
+-		new_file = dentry_open(&event->path,
+-				       group->fanotify_data.f_flags | FMODE_NONOTIFY,
+-				       current_cred());
++		new_file = dentry_open(&event->path, f_flags, current_cred());
+ 	else
+ 		new_file = ERR_PTR(-EOVERFLOW);
+ 	if (IS_ERR(new_file)) {
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.9.5
+
