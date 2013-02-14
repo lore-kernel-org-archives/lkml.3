@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965005Ab3BNRfD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 12:35:03 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43038 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757938Ab3BNRfB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 12:35:01 -0500
-Date: Thu, 14 Feb 2013 17:34:57 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Russ Dill <Russ.Dill@ti.com>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH] regulator: Fix memory garbage dev_err printout.
-Message-ID: <20130214173456.GU13249@opensource.wolfsonmicro.com>
-References: <1360845993-693-1-git-send-email-Russ.Dill@ti.com>
+	id S965148Ab3BNRfR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 12:35:17 -0500
+Received: from xes-mad.com ([216.165.139.218]:17914 "EHLO xes-mad.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759993Ab3BNRfM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 12:35:12 -0500
+Date: Thu, 14 Feb 2013 11:35:04 -0600 (CST)
+From: Aaron Sierra <asierra@xes-inc.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] lpc_ich: use devres API to allocate private data
+Message-ID: <9be5e8ee-d1b9-4509-b147-879281e10efc@zimbra>
+In-Reply-To: <774339a2-e7cc-4204-a935-0a1b59e2ece8@zimbra>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="aZ/0/p6gSDXwzas7"
-Content-Disposition: inline
-In-Reply-To: <1360845993-693-1-git-send-email-Russ.Dill@ti.com>
-X-Cookie: Your domestic life may be harmonious.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [10.52.0.65]
+X-Mailer: Zimbra 7.1.3_GA_3346 (ZimbraWebClient - GC24 (Linux)/7.1.3_GA_3346)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---aZ/0/p6gSDXwzas7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Aaron Sierra <asierra@xes-inc.com>
+---
+ drivers/mfd/lpc_ich.c |    7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
-On Thu, Feb 14, 2013 at 04:46:33AM -0800, Russ Dill wrote:
-> commit dd8004af: 'regulator: core: Log when a device causes a voltage
-> constraint fail', tried to print out some information about the
-> check consumer min/max uV fixup, however, it uses a garbage pointer
-> left over from list_for_each_entry leading to boot messages in the
-> form:
-
-Applied, thanks.
-
---aZ/0/p6gSDXwzas7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRHSA0AAoJELSic+t+oim9vsUP/Rj4a3S89KsOVYXP4DfKqh+W
-OIinQcFqTNyLtZeBtIyxsSO3UWLY3yYXrvbOXw+X0iH1vbTnxiLGVQUp/hmy4x4Z
-ZTxTPziGwrymXPCMlk1rtzrwozhv3HK1Ca+pSmlVH0ea3fx4wULVBggi/63kpAn7
-oZt3djzgxxY+3Fz7amcmPYVYkt9SoyJOXP0nR20WGel4dXPY9TsaqgJxxBPA3CCi
-+OVvEEbRdrI7G966K4UO3jOQiq2qBfDeqC4R8Gplv6jzwlyDWVkM0oH6Ce0WqcoN
-nOkBzpk5xOUKtaU+RdbQorB0zx2dP82pbXZDe9VQtdX/6V3aRMECOwP8KSRaydXl
-nvgdUnCKiVlrk0ZSXdN1L5yrWyz6WmO3xmMr0PiSLpPvp+Yaz2hfQqbk3tjywJVP
-WxXTBiN2hzOzeff+LTgNgG/yiUGHH9neDb/PKD0c3MUoEjGGCzkw1cHCutPEKTzU
-WensLyT/TaXPaNn6rqwt5gPvEtstR5sRyyinGOt9obqW3wRVJcLm8N83/HK8Iszn
-pWzj/gFhCAZ9u9QHvT5m4bTQV1jK/6lyC2Z2SpLJUeJMuwCi++rGOdw5TmjJoPOU
-GGnSNpfATPDoaHVK2S0xXaUXDL86A0lphf9h0rn0Cd/1oQpe+metNrZ7Rm0NqGks
-sP9qIcw3vCNna+u9p4zK
-=9OF0
------END PGP SIGNATURE-----
-
---aZ/0/p6gSDXwzas7--
+diff --git a/drivers/mfd/lpc_ich.c b/drivers/mfd/lpc_ich.c
+index a0cfdf9..1264b68 100644
+--- a/drivers/mfd/lpc_ich.c
++++ b/drivers/mfd/lpc_ich.c
+@@ -878,7 +878,8 @@ static int lpc_ich_probe(struct pci_dev *dev,
+ 	int ret;
+ 	bool cell_added = false;
+ 
+-	priv = kmalloc(GFP_KERNEL, sizeof(struct lpc_ich_priv));
++	priv = devm_kzalloc(&dev->dev,
++			    sizeof(struct lpc_ich_priv), GFP_KERNEL);
+ 	if (!priv)
+ 		return -ENOMEM;
+ 
+@@ -914,7 +915,6 @@ static int lpc_ich_probe(struct pci_dev *dev,
+ 		dev_warn(&dev->dev, "No MFD cells added\n");
+ 		lpc_ich_restore_config_space(dev);
+ 		pci_set_drvdata(dev, NULL);
+-		kfree(priv);
+ 		return -ENODEV;
+ 	}
+ 
+@@ -923,12 +923,9 @@ static int lpc_ich_probe(struct pci_dev *dev,
+ 
+ static void lpc_ich_remove(struct pci_dev *dev)
+ {
+-	void *priv = pci_get_drvdata(dev);
+-
+ 	mfd_remove_devices(&dev->dev);
+ 	lpc_ich_restore_config_space(dev);
+ 	pci_set_drvdata(dev, NULL);
+-	kfree(priv);
+ }
+ 
+ static struct pci_driver lpc_ich_driver = {
+-- 
+1.7.9.5
