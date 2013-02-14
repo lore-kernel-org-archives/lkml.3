@@ -1,56 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756763Ab3BNJMl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 04:12:41 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:44905 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756496Ab3BNJMi (ORCPT
+	id S1756819Ab3BNJNx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 04:13:53 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:39390 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756496Ab3BNJNu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 04:12:38 -0500
-X-AuditID: 9c930179-b7c24ae00000119c-a8-511caa8443ab
-From: Kyungsik Lee <kyungsik.lee@lge.com>
-To: Chris Mason <chris.mason@fusionio.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: hyojun.im@lge.com, chan.jeong@lge.com, raphael.andy.lee@gmail.com,
-        Kyungsik Lee <kyungsik.lee@lge.com>
-Subject: [PATCH] btrfs: fix decompress buffer size
-Date: Thu, 14 Feb 2013 18:12:19 +0900
-Message-Id: <1360833139-5850-1-git-send-email-kyungsik.lee@lge.com>
-X-Mailer: git-send-email 1.8.0.3
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 14 Feb 2013 04:13:50 -0500
+Message-ID: <1360833226.24917.41.camel@mfleming-mobl1.ger.corp.intel.com>
+Subject: Re: [PATCH] Ensure that the GPT header is at least the size of the
+ structure.
+From: Matt Fleming <matt.fleming@intel.com>
+To: Peter Jones <pjones@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Warren <swarren@nvidia.com>
+Date: Thu, 14 Feb 2013 09:13:46 +0000
+In-Reply-To: <1360797349-19308-1-git-send-email-pjones@redhat.com>
+References: <1360796990-14148-1-git-send-email-pjones@redhat.com>
+	 <1360797349-19308-1-git-send-email-pjones@redhat.com>
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-lzo1x_1_compress() is unnecessarily used for allocating decompress buffer.
+On Wed, 2013-02-13 at 18:15 -0500, Peter Jones wrote:
+> UEFI 2.3.1D will include a change to the spec language mandating that a
+> GPT header must be greater than *or equal to* the size of the defined
+> structure.  While verifying that this would work on Linux, I discovered
+> that we're not actually checking the minimum bound at all.
+> 
+> The result of this is that when we verify the checksum, it's possible
+> that on a malformed header (with header_size of 0), we won't actually
+> verify any data.
+> 
+> (ammended to fix type error in pr_debug())
+> 
+> Signed-off-by: Peter Jones <pjones@redhat.com>
+> ---
+>  block/partitions/efi.c | 12 ++++++++++--
+>  1 file changed, 10 insertions(+), 2 deletions(-)
+> 
+> diff --git a/block/partitions/efi.c b/block/partitions/efi.c
+> index b62fb88..a7475e7 100644
+> --- a/block/partitions/efi.c
+> +++ b/block/partitions/efi.c
+> @@ -310,15 +310,23 @@ static int is_gpt_valid(struct parsed_partitions *state, u64 lba,
+>  		goto fail;
+>  	}
+>  
+> -	/* Check the GUID Partition Table header size */
+> +	/* Check the GUID Partition Table header size is too big */
+>  	if (le32_to_cpu((*gpt)->header_size) >
+>  			bdev_logical_block_size(state->bdev)) {
+> -		pr_debug("GUID Partition Table Header size is wrong: %u > %u\n",
+> +		pr_debug("GUID Partition Table Header size is too large: %u > %u\n",
+>  			le32_to_cpu((*gpt)->header_size),
+>  			bdev_logical_block_size(state->bdev));
+>  		goto fail;
+>  	}
+>  
+> +	/* Check the GUID Partition Table header size is too small */
+> +	if (le32_to_cpu((*gpt)->header_size) < sizeof(gpt_header)) {
+> +		pr_debug("GUID Partition Table Header size is too small: %u < %lu\n",
+> +			le32_to_cpu((*gpt)->header_size),
+> +			sizeof(gpt_header));
+> +		goto fail;
+> +	}
+> +
+>  	/* Check the GUID Partition Table CRC */
+>  	origcrc = le32_to_cpu((*gpt)->header_crc32);
+>  	(*gpt)->header_crc32 = 0;
 
-Signed-off-by: Kyungsik Lee <kyungsik.lee@lge.com>
----
- fs/btrfs/lzo.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Seems straight forward.
 
-diff --git a/fs/btrfs/lzo.c b/fs/btrfs/lzo.c
-index 743b86f..223893a 100644
---- a/fs/btrfs/lzo.c
-+++ b/fs/btrfs/lzo.c
-@@ -55,7 +55,7 @@ static struct list_head *lzo_alloc_workspace(void)
- 		return ERR_PTR(-ENOMEM);
- 
- 	workspace->mem = vmalloc(LZO1X_MEM_COMPRESS);
--	workspace->buf = vmalloc(lzo1x_worst_compress(PAGE_CACHE_SIZE));
-+	workspace->buf = vmalloc(PAGE_CACHE_SIZE);
- 	workspace->cbuf = vmalloc(lzo1x_worst_compress(PAGE_CACHE_SIZE));
- 	if (!workspace->mem || !workspace->buf || !workspace->cbuf)
- 		goto fail;
-@@ -349,7 +349,7 @@ cont:
- 			}
- 		}
- 
--		out_len = lzo1x_worst_compress(PAGE_CACHE_SIZE);
-+		out_len = PAGE_CACHE_SIZE;
- 		ret = lzo1x_decompress_safe(buf, in_len, workspace->buf,
- 					    &out_len);
- 		if (need_unmap)
--- 
-1.8.0.3
+Acked-by: Matt Fleming <matt.fleming@intel.com>
 
