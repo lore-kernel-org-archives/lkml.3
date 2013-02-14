@@ -1,87 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934944Ab3BNT42 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 14:56:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59575 "EHLO mx1.redhat.com"
+	id S934937Ab3BNT4t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 14:56:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15029 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934908Ab3BNTzu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 14:55:50 -0500
+	id S934896Ab3BNTzt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 14:55:49 -0500
 From: Vivek Goyal <vgoyal@redhat.com>
 To: zohar@linux.vnet.ibm.com, linux-security-module@vger.kernel.org
 Cc: vgoyal@redhat.com, linux-kernel@vger.kernel.org, dmitry.kasatkin@intel.com
-Subject: [PATCH 3/6] ima/evm: Differentiate between ima/evm nolabel return code
-Date: Thu, 14 Feb 2013 14:55:42 -0500
-Message-Id: <1360871745-20616-4-git-send-email-vgoyal@redhat.com>
+Subject: [PATCH 6/6] ima: With appraise_type=optional, audit log some messages as info
+Date: Thu, 14 Feb 2013 14:55:45 -0500
+Message-Id: <1360871745-20616-7-git-send-email-vgoyal@redhat.com>
 In-Reply-To: <1360871745-20616-1-git-send-email-vgoyal@redhat.com>
 References: <1360871745-20616-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently if no IMA/EVM label was present, both return error code
-INTEGRITY_NOLABEL. This works fine so far as nobody cares to differentiate
-between two error paths.
+Currently, if there integrity status is not INTEGRITY_PASS, it is
+logged in audit log (as non info). This is fine because we always
+deny access to file for anything other than INTEGRITY_PASS.
 
-But with appraise_type=optional, we want to allow file access if IMA
-security label is not present. But still disallow access if EVM
-security label is not present.
+But with appraise_type=optional, we will allow access to file even
+if appraisal status is not INTEGRITY_PASS. For example, in the case
+of INTEGRITY_IMA_NOLABEL. And on this system we don't want to log
+each and every executed file which is not signed.
 
-Hence, start using different error codes for two different paths.
+In a typical system we are anticipating that only 1-2 files will
+be signed.
+
+So don't flood the audit logs if appraise_type=optional and no
+IMA label is present. These messages will still show up if somebody
+chooses to enable audit info messages.
 
 Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 ---
- include/linux/integrity.h             |    3 ++-
- security/integrity/evm/evm_main.c     |    2 +-
- security/integrity/ima/ima_appraise.c |    4 ++--
- 3 files changed, 5 insertions(+), 4 deletions(-)
+ security/integrity/ima/ima_appraise.c |   12 ++++++++++--
+ 1 files changed, 10 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/integrity.h b/include/linux/integrity.h
-index 66c5fe9..9be4a98 100644
---- a/include/linux/integrity.h
-+++ b/include/linux/integrity.h
-@@ -15,7 +15,8 @@
- enum integrity_status {
- 	INTEGRITY_PASS = 0,
- 	INTEGRITY_FAIL,
--	INTEGRITY_NOLABEL,
-+	INTEGRITY_IMA_NOLABEL,
-+	INTEGRITY_EVM_NOLABEL,
- 	INTEGRITY_NOXATTRS,
- 	INTEGRITY_UNKNOWN,
- };
-diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
-index a78a5e2..254eefe 100644
---- a/security/integrity/evm/evm_main.c
-+++ b/security/integrity/evm/evm_main.c
-@@ -111,7 +111,7 @@ static enum integrity_status evm_verify_hmac(struct dentry *dentry,
- 		else if (rc == -ENODATA) {
- 			rc = evm_find_protected_xattrs(dentry);
- 			if (rc > 0)
--				evm_status = INTEGRITY_NOLABEL;
-+				evm_status = INTEGRITY_EVM_NOLABEL;
- 			else if (rc == 0)
- 				evm_status = INTEGRITY_NOXATTRS; /* new file */
- 		}
 diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-index 6f1eeb8..1750556 100644
+index af39a08..ddeadc7 100644
 --- a/security/integrity/ima/ima_appraise.c
 +++ b/security/integrity/ima/ima_appraise.c
-@@ -143,13 +143,13 @@ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
+@@ -124,7 +124,7 @@ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
+ 	enum integrity_status status = INTEGRITY_UNKNOWN;
+ 	const char *op = "appraise_data";
+ 	char *cause = "unknown";
+-	int rc;
++	int rc, audit_info = 0;
  
- 		cause = "missing-hash";
- 		status =
--		    (inode->i_size == 0) ? INTEGRITY_PASS : INTEGRITY_NOLABEL;
-+		    (inode->i_size == 0) ? INTEGRITY_PASS : INTEGRITY_IMA_NOLABEL;
- 		goto out;
+ 	if (!ima_appraise)
+ 		return 0;
+@@ -199,8 +199,16 @@ out:
+ 			if (!ima_fix_xattr(dentry, iint))
+ 				status = INTEGRITY_PASS;
+ 		}
++
++		/*
++		 * If appraisal is optional, and if no label is present,
++		 * log it is info. Don't flood audit logs.
++		 */
++		if ((iint->flags & IMA_APPRAISAL_OPT) &&
++		     status == INTEGRITY_IMA_NOLABEL)
++			audit_info = 1;
+ 		integrity_audit_msg(AUDIT_INTEGRITY_DATA, inode, filename,
+-				    op, cause, rc, 0);
++				    op, cause, rc, audit_info);
+ 	} else {
+ 		ima_cache_flags(iint, func);
  	}
- 
- 	status = evm_verifyxattr(dentry, XATTR_NAME_IMA, xattr_value, rc, iint);
- 	if ((status != INTEGRITY_PASS) && (status != INTEGRITY_UNKNOWN)) {
--		if ((status == INTEGRITY_NOLABEL)
-+		if ((status == INTEGRITY_EVM_NOLABEL)
- 		    || (status == INTEGRITY_NOXATTRS))
- 			cause = "missing-HMAC";
- 		else if (status == INTEGRITY_FAIL)
 -- 
 1.7.7.6
 
