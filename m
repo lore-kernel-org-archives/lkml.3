@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760325Ab3BNM51 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 07:57:27 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:44912 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758994Ab3BNM5Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 07:57:25 -0500
-Message-ID: <1360846636.3524.589.camel@falcor1.watson.ibm.com>
-Subject: Re: [PATCH 2/2] ima: Support appraise_type=imasig_optional
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 14 Feb 2013 07:57:16 -0500
-In-Reply-To: <20130213165922.GD6750@redhat.com>
-References: <1360613493-11969-1-git-send-email-vgoyal@redhat.com>
-	 <1360613493-11969-3-git-send-email-vgoyal@redhat.com>
-	 <CALLzPKZA92MxJYjC+OR-KDv4rHQRgKSBHSAY2fOZsEDxiO11yA@mail.gmail.com>
-	 <1360760195.3524.355.camel@falcor1.watson.ibm.com>
-	 <CALLzPKaHLSg0TromnTvpEVroBUtPJE3TwF4RmcA2dtkuB5H4hQ@mail.gmail.com>
-	 <1360763044.3524.367.camel@falcor1.watson.ibm.com>
-	 <20130213165922.GD6750@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13021412-9360-0000-0000-00001090E419
+	id S934615Ab3BNM5x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 07:57:53 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:54896 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934270Ab3BNM5w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 07:57:52 -0500
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
+        jolsa@redhat.com, namhyung.kim@lge.com
+Subject: [PATCH v2 2/3] perf stat: rename --aggr-socket to --per-socket
+Date: Thu, 14 Feb 2013 13:57:28 +0100
+Message-Id: <1360846649-6411-3-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1360846649-6411-1-git-send-email-eranian@google.com>
+References: <1360846649-6411-1-git-send-email-eranian@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-02-13 at 11:59 -0500, Vivek Goyal wrote:
-> On Wed, Feb 13, 2013 at 08:44:04AM -0500, Mimi Zohar wrote:
-> 
-> [..]
-> > > I see it is more logical if it is "appraise_type=optional",
-> > > which means that we might have no xattr value, hash or signature.
-> > > It if happens to be a signature, then IMA_DIGSIG flag will be set.
-> > 
-> > Right, 'appraise_type=' could have been defined either as a comma
-> > separated list of options (eg. appraise_type=imassig,optional) or, as
-> > Vivek implemented, a new option.  Eventually, we will need to extend
-> > 'appraise_type=' (eg. required algorithm), but for now I don't have a
-> > problem with the new option.
-> 
-> Ok, I will cleanup the code to do above. Just wanted to clear up one
-> point. 
-> 
-> Above option will not have any effect on evm behavior? This only impacts
-> IMA appraisal behavior. For example, if security.ima is not present it
-> is fine and file access is allowed. But if EVM is enabled and initialized
-> and EVM does not find security.evm label (INTEGRITY_NOLABEL) or returns
-> INTEGRITY_NOXATTRS, file access should still be denied?
+To make it more obvious what this option does as
+suggested by Andi on LKML.
 
-Can't happen.  evm_verifyxattr() is called from
-ima_appraise_measurement(), only if 'security.ima' exists.
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+ tools/perf/Documentation/perf-stat.txt |    4 ++--
+ tools/perf/builtin-stat.c              |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-> BTW, what's the difference between INTEGRITY_NOLABEL and
-> INTEGRITY_NOXATTRS (as returned by evm_verifyxattr()).
-
-INTEGRITY_NOLABEL indicates the requested xattr doesn't exist, while
-INTEGRITY_NOXATTRS implies no EVM protected xattrs exist.  The latter
-normally occurs when a file is first created.
-
-Mimi
+diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
+index faf4f4f..01117c5 100644
+--- a/tools/perf/Documentation/perf-stat.txt
++++ b/tools/perf/Documentation/perf-stat.txt
+@@ -119,10 +119,10 @@ perf stat --repeat 10 --null --sync --pre 'make -s O=defconfig-build/clean' -- m
+ 	Print count deltas every N milliseconds (minimum: 100ms)
+ 	example: perf stat -I 1000 -e cycles -a sleep 5
+ 
+---aggr-socket::
++--per-socket::
+ Aggregate counts per processor socket for system-wide mode measurements.  This
+ is a useful mode to detect imbalance between sockets.  To enable this mode,
+-use --aggr-socket in addition to -a. (system-wide).  The output includes the
++use --per-socket in addition to -a. (system-wide).  The output includes the
+ socket number and the number of online processors on that socket. This is
+ useful to gauge the amount of aggregation.
+ 
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index a19f8d5..508d9b4 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -1357,7 +1357,7 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			"command to run after to the measured command"),
+ 	OPT_UINTEGER('I', "interval-print", &interval,
+ 		    "print counts at regular interval in ms (>= 100)"),
+-	OPT_SET_UINT(0, "aggr-socket", &aggr_mode,
++	OPT_SET_UINT(0, "per-socket", &aggr_mode,
+ 		     "aggregate counts per processor socket", AGGR_SOCKET),
+ 	OPT_END()
+ 	};
+-- 
+1.7.9.5
 
