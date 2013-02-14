@@ -1,59 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757241Ab3BNJzv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 04:55:51 -0500
-Received: from gate.crashing.org ([63.228.1.57]:49940 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757109Ab3BNJzt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 04:55:49 -0500
-Message-ID: <1360835542.6646.5.camel@pasglop>
-Subject: Re: [RFC][CFT] what's in signal.git queue
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        David Howells <dhowells@redhat.com>, Tony Luck <tony.luck@intel.com>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Michal Simek <monstr@monstr.eu>, Jonas Bonn <jonas@southpole.se>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Richard Kuo <rkuo@codeaurora.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Lennox Wu <lennox.wu@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Paul Mundt <lethal@linux-sh.org>, Chris Zankel <chris@zankel.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Russell King <linux@arm.linux.org.uk>
-Date: Thu, 14 Feb 2013 20:52:22 +1100
-In-Reply-To: <20130214012539.GQ4503@ZenIV.linux.org.uk>
-References: <20130214012539.GQ4503@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
+	id S933642Ab3BNJ5N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 04:57:13 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:64378 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752576Ab3BNJ5L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 04:57:11 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: anish singh <anish198519851985@gmail.com>
+Subject: Re: [PATCH] driver core: add wait event for deferred probe
+Date: Thu, 14 Feb 2013 09:56:36 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-5-generic; KDE/4.3.2; x86_64; ; )
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        viro@zeniv.linux.org.uk, rusty@rustcorp.com.au, hpa@linux.intel.com,
+        jim.cromie@gmail.com, linux-kernel@vger.kernel.org,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        broonie@opensource.wolfsonmicro.com,
+        Patch Tracking <patches@linaro.org>
+References: <1360429077-14616-1-git-send-email-haojian.zhuang@linaro.org> <20130213213624.079BA3E3557@localhost> <CAK7N6voJJ_g_LLmKdd=95fQOQPaTvQbs3HJsKJoPcrDUyUWxaA@mail.gmail.com>
+In-Reply-To: <CAK7N6voJJ_g_LLmKdd=95fQOQPaTvQbs3HJsKJoPcrDUyUWxaA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201302140956.36843.arnd@arndb.de>
+X-Provags-ID: V02:K0:XUNUpKHEzVzOc0w3Tn59OPFN0Kj6pfTOW17GvTu3Mj6
+ Yno2rlmMMzUb86as2s3Qb6z9XG8TMEMLaxaAjWUuNdifUOkr0Q
+ u8hOcD+PLPZC9tYTqfUub1RujlGz3MCT0goGuIwZcEpAKvRpjW
+ GrEOmW5G907uVafDPdYnfHLGZDxNFp8yuTskJlWM+LSR/KUj69
+ yWzIWqZif+M8R4J53bV0WvSSlxYwQEsz0HX+Aq7qCZrbzryykx
+ Z3mqvDWOSmVYqKogoZudQISxVdHy/hhnjUrwnU/QPqEcDprDYD
+ +/L3tU6nxT34s79iqnbFfCtzIsRARH3Tm2rDJ40UP50DJf/f+z
+ iVCa1edZWkM0NJR0FhFY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-02-14 at 01:25 +0000, Al Viro wrote:
-> Mostly it's a unification of signal-related syscalls, both native and compat
-> ones; by the end of it we shouldn't have syscalls left in normal
-> arch/*/kernel/signal*.c - there are some exceptions due to genuine weirdness
-> of arch-specific calling conventions, but that's rare.  Another (somewhat
-> related) story in there is more compat_sys_something() getting switched to
-> COMPAT_SYSCALL_DEFINE, giving us proper argument validation wrappers.  Not
-> everything got switched, of course, but a lot of those guys has been.
+On Thursday 14 February 2013, anish singh wrote:
+> Grant, Can you please explain me this problem?My understanding is below:
+> If all the detection of devices with there respective driver is done before
+> __init section is freed then we will not have the problem mentioned.
+> However if the driver requests the probing to be deferred then __init section
+> of the deferred driver will not be freed right?
 
-FYI. I'm going to be off to some meeting & bringup work in the US for two weeks
-so expect little responsiveness from me on this until after I'm back (March 1st).
+The kernel has no idea which drivers are deferred at the time when all the
+__init sections are freed.
 
-Cheers,
-Ben.
+> I am afraid but the patch description is bit cryptic for me specially
+> this line "kernel has to open console failure & release __init section before
+> reinvoking failure".
 
+I would put it this way: With the introduction of deferred probing, the
+rules for the use of __init sections have changed slightly for some
+corner cases. While normal device drivers can, as before, not call
+__init functions from their .probe() callbacks, we could do that in
+drivers as long as they were built-in and did not support hotplug,
+and that exception was used in console drivers. This exception has
+now become more specific, and those drivers also must not use
+deferred probing that depends on other loadable modules or hotpluggable
+devices.
 
+Grant's patch fixes the corner case where you have a device whose .probe()
+callback gets deferred and waits for some object that is provided
+by a different built-in driver for a non-hotpluggable device, by making
+sure that this particular deferred probe has completed before the __init
+section is freed. Unlike Haojian's patch, it allows other deferred
+device probe functions that do not need to call __init functions to be
+delayed until much later, when a driver module is loaded or a device
+is hotplugged.
+
+	Arnd
