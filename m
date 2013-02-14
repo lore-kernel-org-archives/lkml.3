@@ -1,86 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761473Ab3BNQqq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 11:46:46 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:44237 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755903Ab3BNQqo (ORCPT
+	id S1761494Ab3BNQq5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 11:46:57 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46154 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755903Ab3BNQqz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 11:46:44 -0500
-From: Jerry Snitselaar <jerry.snitselaar@oracle.com>
-To: linux-kernel@vger.kernel.org
-Cc: cgroups@vger.kernel.org, serge.hallyn@canonical.com, tj@kernel.org,
-        aris@redhat.com
-Subject: [PATCH] device_cgroup: don't grab mutex in rcu callback
-Date: Thu, 14 Feb 2013 09:46:03 -0700
-Message-Id: <1360860363-2879-1-git-send-email-jerry.snitselaar@oracle.com>
-X-Mailer: git-send-email 1.8.1.1.293.gfe73786
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Thu, 14 Feb 2013 11:46:55 -0500
+Date: Thu, 14 Feb 2013 16:46:51 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regmap: mmio: add register clock support
+Message-ID: <20130214164651.GS13249@opensource.wolfsonmicro.com>
+References: <1360859948-22473-1-git-send-email-p.zabel@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="yLfVvEQOBD/VeTNx"
+Content-Disposition: inline
+In-Reply-To: <1360859948-22473-1-git-send-email-p.zabel@pengutronix.de>
+X-Cookie: Your domestic life may be harmonious.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 103a197 "security/device_cgroup: lock assert fails in
-dev_exception_clean()" grabs devcgroup_mutex to fix assert failure,
-but mutex can't be grabbed in rcu callback. Since there shouldn't be
-any other references when css_free is called, mutex isn't needed for
-list cleanup in devcgroup_css_free().
 
-Signed-off-by: Jerry Snitselaar <jerry.snitselaar@oracle.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Acked-by: Aristeu Rozanski <aris@redhat.com>
----
- security/device_cgroup.c | 21 ++++++++++++---------
- 1 file changed, 12 insertions(+), 9 deletions(-)
+--yLfVvEQOBD/VeTNx
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/security/device_cgroup.c b/security/device_cgroup.c
-index d794abc..1c69e38 100644
---- a/security/device_cgroup.c
-+++ b/security/device_cgroup.c
-@@ -159,6 +159,16 @@ static void dev_exception_rm(struct dev_cgroup *dev_cgroup,
- 	}
- }
- 
-+static void __dev_exception_clean(struct dev_cgroup *dev_cgroup)
-+{
-+	struct dev_exception_item *ex, *tmp;
-+
-+	list_for_each_entry_safe(ex, tmp, &dev_cgroup->exceptions, list) {
-+		list_del_rcu(&ex->list);
-+		kfree_rcu(ex, rcu);
-+	}
-+}
-+
- /**
-  * dev_exception_clean - frees all entries of the exception list
-  * @dev_cgroup: dev_cgroup with the exception list to be cleaned
-@@ -167,14 +177,9 @@ static void dev_exception_rm(struct dev_cgroup *dev_cgroup,
-  */
- static void dev_exception_clean(struct dev_cgroup *dev_cgroup)
- {
--	struct dev_exception_item *ex, *tmp;
--
- 	lockdep_assert_held(&devcgroup_mutex);
- 
--	list_for_each_entry_safe(ex, tmp, &dev_cgroup->exceptions, list) {
--		list_del_rcu(&ex->list);
--		kfree_rcu(ex, rcu);
--	}
-+	__dev_exception_clean(dev_cgroup);
- }
- 
- /*
-@@ -215,9 +220,7 @@ static void devcgroup_css_free(struct cgroup *cgroup)
- 	struct dev_cgroup *dev_cgroup;
- 
- 	dev_cgroup = cgroup_to_devcgroup(cgroup);
--	mutex_lock(&devcgroup_mutex);
--	dev_exception_clean(dev_cgroup);
--	mutex_unlock(&devcgroup_mutex);
-+	__dev_exception_clean(dev_cgroup);
- 	kfree(dev_cgroup);
- }
- 
--- 
-1.8.1.1.293.gfe73786
+On Thu, Feb 14, 2013 at 05:39:08PM +0100, Philipp Zabel wrote:
+> Some mmio devices have a dedicated interface clock that needs
+> to be enabled to access their registers. This patch optionally
+> enables a clock before accessing registers in the regmap_bus
+> callbacks.
 
+Applied, thanks.
+
+--yLfVvEQOBD/VeTNx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRHROZAAoJELSic+t+oim9xz8P/1g+Kk1++mYaFk+ihE5O7f+l
++gfOcNf6QSS26HyDi/8drsUh0ukIvCyrirzypeGUS/Wke8x2PnQPHEH49bLECOvU
+FwyJtLhJvrGidVS5gSw144Dt/K6Nnnr0mrLGfBcvpbGzVyDT1geJ9oE+SgBlw3LU
+9aTKNCrj/kIErY04d8eIfGARbqGdFb9bp5bqIYx2oGSPYNtP5qM0ubo0Mx2ykSop
+JbBindDf0ni410JQoDxQ1F2CwVxnFmPYGidpXHMvLYWVF5sF1VrauSNKRU14h3Gq
+M2A8S/UZ6qZn39goKpCbslD50lUVeARuUbWySEBlx8Z95uZMEdOnSuLY/j3hsFvZ
+rscuraT9omfY+Z4HaL+yAj7TVMPpsn6Mdvke/ieD0WjR2a7e2/Lk4Q9kKGF4IL5h
+LQek8xPc0nh1Px0Yp3epzjQsd8zapgCasrf/ySy57dd7Otf3qiUJWUAUmlC4aru+
+Oxde9sNl/A7ch+qODmcZ5zLwxw8VXw4qwnPWQalldbcKhkMRX5oAuM9424/7eePd
+rHcKVD/bjnlhl7AfQihEKhD2OF0zG2gtMCY6HrF1CDEnMPeLs0L6Tf0z+dZ6be00
+dxQNYKssyVcU+4dFaqllbo4kGnhRRB3NQSYMqqA/UMnq1JDPsjEmXuLImeYeFIqW
+J20PrNMdTGnI9YDACGvk
+=kU5m
+-----END PGP SIGNATURE-----
+
+--yLfVvEQOBD/VeTNx--
