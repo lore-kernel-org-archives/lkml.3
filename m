@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761682Ab3BNXFG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 18:05:06 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:52782 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759548Ab3BNXFE (ORCPT
+	id S1030346Ab3BNXFg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 18:05:36 -0500
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:50929 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030254Ab3BNXFf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 18:05:04 -0500
-Date: Thu, 14 Feb 2013 15:05:01 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: Re: [PATCH 7/9] ARM defconfigs: add missing inclusions of
- linux/platform_device.h
-Message-ID: <20130214230501.GA30269@kroah.com>
-References: <1360880818-4071454-1-git-send-email-arnd@arndb.de>
- <1360880818-4071454-8-git-send-email-arnd@arndb.de>
+	Thu, 14 Feb 2013 18:05:35 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360880818-4071454-8-git-send-email-arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130213111007.GA11367@gmail.com>
+References: <CA+55aFz50VvnMjoDCbg01N+rMu5vscu88kr0SV3tWLjaiL0TeA@mail.gmail.com>
+ <20130213111007.GA11367@gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 14 Feb 2013 15:05:14 -0800
+X-Google-Sender-Auth: tzK4ySS5dstjN-q7zpB48tLVK4U
+Message-ID: <CA+55aFwpFFg+Z28aZ=92bGdU+Va00j08BzL-2frtLarKWt=qOQ@mail.gmail.com>
+Subject: Re: [-rc7 regression] Block IO/VFS/ext3/timer spinlock lockup?
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Thomas Gleixner <tglx@linutronix.de>,
+        Alexander Viro <viro@ftp.linux.org.uk>,
+        "Theodore Ts'o" <tytso@mit.edu>, "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 14, 2013 at 11:26:56PM +0100, Arnd Bergmann wrote:
-> Patch 16559ae "kgdb: remove #include <linux/serial_8250.h> from kgdb.h"
-> removed an implicit inclusion of linux/platform_device.h
-> In a number of places. This adds back explicit inclusions in a few
-> more places I found.
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-> ---
->  arch/arm/plat-samsung/include/plat/adc.h | 1 +
->  drivers/video/clps711xfb.c               | 1 +
->  drivers/video/mmp/fb/mmpfb.c             | 1 +
+On Wed, Feb 13, 2013 at 3:10 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> Setting up Logical Volume Management: [   13.140000] BUG: spinlock lockup suspected on CPU#1, lvm.static/139
+> [   13.140000] BUG: spinlock lockup suspected on CPU#1, lvm.static/139
+> [   13.140000]  lock: 0x97fe9fc0, .magic: dead4ead, .owner: <none>/-1, .owner_cpu: -1
 
-This file isn't my tty tree, so I can't apply that part of the patch,
-but I've applied the rest of the patch, and the 2 others you sent me to
-fix this issue.
+Btw, this is an entirely unrelated thing, but it just struck me: you
+have  CONFIG_DEBUG_LOCK_ALLOC in your config, so that spinlock has a
+_name_, and the not-so-helpful "spin_dump()" is too stupid to even
+bother to print it out.
 
-thanks,
+Now, in this case, it doesn't much matter, since the callchain really
+does end up showing pretty unambiguously what the lock is, but
+shouldn't we print that lock name when we dump the lock information?
 
-greg k-h
+I dunno. Maybe the names aren't useful, and the callchain ends up
+always making them redundant. But it seems an oversight in our debug
+output.
+
+                  Linus
