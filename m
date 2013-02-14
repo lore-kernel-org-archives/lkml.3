@@ -1,107 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757049Ab3BNEyT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 23:54:19 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48928 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754196Ab3BNEyS (ORCPT
+	id S1751505Ab3BNFER (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 00:04:17 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48627 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750729Ab3BNFEP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 23:54:18 -0500
-Date: Wed, 13 Feb 2013 20:52:55 -0800
-From: tip-bot for Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
-Message-ID: <tip-1de63d60cd5b0d33a812efa455d5933bf1564a51@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        stable@vger.kernel.org, matt.fleming@intel.com,
-        takeuchi_satoru@jp.fujitsu.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, matt.fleming@intel.com,
-        takeuchi_satoru@jp.fujitsu.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-In-Reply-To: <511C2C04.2070108@jp.fujitsu.com>
-References: <511C2C04.2070108@jp.fujitsu.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] efi:
-  Clear EFI_RUNTIME_SERVICES rather than EFI_BOOT by "noefi" boot parameter
-Git-Commit-ID: 1de63d60cd5b0d33a812efa455d5933bf1564a51
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 13 Feb 2013 20:53:02 -0800 (PST)
+	Thu, 14 Feb 2013 00:04:15 -0500
+Message-ID: <1360818247.5374.300.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: 3.2.38 most of the time has 100% cpu use reported
+From: Ben Hutchings <ben@decadent.org.uk>
+To: tmhikaru@gmail.com
+Cc: linux-kernel@vger.kernel.org
+Date: Thu, 14 Feb 2013 05:04:07 +0000
+In-Reply-To: <20130212050116.GA2146@roll>
+References: <1360160863.32217.30.camel@deadeye.wl.decadent.org.uk>
+	 <20130207173630.GA8355@roll> <20130208190819.GA16894@roll>
+	 <20130210151140.GA2307@roll> <20130212050116.GA2146@roll>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-pzcN6ffP9rHXu9ycrd2T"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1de63d60cd5b0d33a812efa455d5933bf1564a51
-Gitweb:     http://git.kernel.org/tip/1de63d60cd5b0d33a812efa455d5933bf1564a51
-Author:     Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
-AuthorDate: Thu, 14 Feb 2013 09:12:52 +0900
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 13 Feb 2013 17:24:11 -0800
 
-efi: Clear EFI_RUNTIME_SERVICES rather than EFI_BOOT by "noefi" boot parameter
+--=-pzcN6ffP9rHXu9ycrd2T
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-There was a serious problem in samsung-laptop that its platform driver is
-designed to run under BIOS and running under EFI can cause the machine to
-become bricked or can cause Machine Check Exceptions.
+On Tue, 2013-02-12 at 00:01 -0500, tmhikaru@gmail.com wrote:
+> 	Okay, I finally have located the patch causing this bizzare problem
+> for me. Before I discuss it, I'm going to drag out the kernel bug reporti=
+ng
+> guidelines and try to make a proper bug report out of this.
+>=20
+> [1.] One line summary of the problem:
+> 3.2.38 most of the time has 100% cpu use reported
+>=20
+> [2.] Full description of the problem/report:
+> Reverse applying the patch for
+>=20
+> [9a1f08a1a192f9177d7063d903773aed800b840f] drivers/firmware/dmi_scan.c: f=
+etch dmi version from SMBIOS if it exists
+>=20
+> on top of a clean 3.2.38 tree makes the problem go away.
+[...]
+> I have to admit I have no idea what the patch I'm reversing actually does=
+,
 
-    Discussion about this problem:
-    https://bugs.launchpad.net/ubuntu-cdimage/+bug/1040557
-    https://bugzilla.kernel.org/show_bug.cgi?id=47121
+It changes how we look for the version of a BIOS interface (DMI or
+SMBIOS).  All the code that it touches, and the version number variable,
+are discarded after boot and therefore can have very limited effect on
+what happens later!
 
-    The patches to fix this problem:
-    efi: Make 'efi_enabled' a function to query EFI facilities
-    83e68189745ad931c2afd45d8ee3303929233e7f
+> what the cpu is doing when it's stuck at 100%, nor how I would diagnose t=
+his
+> further or whom I should contact.  I'd like to help anyone who wants to f=
+ix
+> whatever went wrong, so please contact me.
 
-    samsung-laptop: Disable on EFI hardware
-    e0094244e41c4d0c7ad69920681972fc45d8ce34
+'perf top' will tell you where the CPU is spending its time.
 
-Unfortunately this problem comes back again if users specify "noefi" option.
-This parameter clears EFI_BOOT and that driver continues to run even if running
-under EFI. Refer to the document, this parameter should clear
-EFI_RUNTIME_SERVICES instead.
+Ben.
 
-Documentation/kernel-parameters.txt:
-===============================================================================
-...
-	noefi		[X86] Disable EFI runtime services support.
-...
-===============================================================================
+--=20
+Ben Hutchings
+We get into the habit of living before acquiring the habit of thinking.
+                                                              - Albert Camu=
+s
 
-Documentation/x86/x86_64/uefi.txt:
-===============================================================================
-...
-- If some or all EFI runtime services don't work, you can try following
-  kernel command line parameters to turn off some or all EFI runtime
-  services.
-	noefi		turn off all EFI runtime services
-...
-===============================================================================
+--=-pzcN6ffP9rHXu9ycrd2T
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-Signed-off-by: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
-Link: http://lkml.kernel.org/r/511C2C04.2070108@jp.fujitsu.com
-Cc: Matt Fleming <matt.fleming@intel.com>
-Cc: <stable@vger.kernel.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/platform/efi/efi.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index 77cf009..928bf83 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -87,7 +87,7 @@ EXPORT_SYMBOL(efi_enabled);
- 
- static int __init setup_noefi(char *arg)
- {
--	clear_bit(EFI_BOOT, &x86_efi_facility);
-+	clear_bit(EFI_RUNTIME_SERVICES, &x86_efi_facility);
- 	return 0;
- }
- early_param("noefi", setup_noefi);
+iQIVAwUAURxwR+e/yOyVhhEJAQo+xxAAvNSCXVmqUR8n2LK1BLj8vgPvFN68iiVq
+0AVRwmc+D0j+M/dhCa/+eyNckTd4gkdTN+7w8k+F9Uc2s77VmtKAqUwWM9O5MN4L
+2yXhd5IEx0Go3VM6FH7PpyBZH8wdgxRNZimTcQg2DbWv+JkngZzGGGcuJxetURTB
+SzkQt+nex/d3Wdy5pBt6QJt6r2St9aEXrUTpe/NLUiSs8I3VEWsQWeAe3P0fQO65
+M7K/L4uIjJ6ujsPnVUh0UPSuo5hg1s0m7DM5ZAmWm9ZAOTW1PuyKWDmirn9yDYCW
+Zcdo+y5umqQAjRJ9EllCcnZJi6XjrHNrhuHAwxxdunVxzWT51VkHEAvzHNCtoWD3
+4kfPsfUBtJfrbVP8OtCCt//FUGQcmEAyTqUq5y5GfElTsKz4AY6EM0P3JobSsVwI
+YkuxxOtn1rTvmFodwWcH/6zoNmw87dtBl/9vHuDxccrHaU/MqaICbioJIot6qFGa
+7a7YUNu5lXzcWFOdbKUTwLYi4gZkgHl1/Q1Fyp0mEaVQgHEP95H2zKyeUtZqVp0+
+093ZoZcB7Vzd18rIZMqpy27oUWG2r7MMubUF2GlS42AGD+Q2c68QzAh94ZV9ZASV
+82n5K8KwqUQ34o9ztlvUQPihS88CCoDQuB2NPtEVCwAgJPDGGKC7qVOLfBRVq2MF
+uv2DRlCqRfo=
+=bcmV
+-----END PGP SIGNATURE-----
+
+--=-pzcN6ffP9rHXu9ycrd2T--
