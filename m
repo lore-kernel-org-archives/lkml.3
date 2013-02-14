@@ -1,107 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934560Ab3BNL6N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 06:58:13 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60499 "EHLO mx2.suse.de"
+	id S934336Ab3BNMAh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 07:00:37 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:38084 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934129Ab3BNL6J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 06:58:09 -0500
-Date: Thu, 14 Feb 2013 11:58:05 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Petr Holasek <pholasek@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 6/11] ksm: remove old stable nodes more thoroughly
-Message-ID: <20130214115805.GC7367@suse.de>
-References: <alpine.LNX.2.00.1301251747590.29196@eggly.anvils>
- <alpine.LNX.2.00.1301251800550.29196@eggly.anvils>
- <20130205175551.GL21389@suse.de>
- <alpine.LNX.2.00.1302081057110.4233@eggly.anvils>
+	id S1757462Ab3BNMAe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 07:00:34 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Andreas Mohr <andi@lisas.de>
+Cc: linux-pci@vger.kernel.org,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] PCI / ACPI: Report _OSC control mask returned on failure to get control
+Date: Thu, 14 Feb 2013 13:07:02 +0100
+Message-ID: <7634687.RmnPKEe4lz@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc7; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130214011027.GA430@rhlx01.hs-esslingen.de>
+References: <20130214011027.GA430@rhlx01.hs-esslingen.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1302081057110.4233@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 08, 2013 at 11:33:40AM -0800, Hugh Dickins wrote:
-> > > <SNIP>
-> > > 
-> > > 2. __ksm_enter() has a nice little optimization, to insert the new mm
-> > > just behind ksmd's cursor, so there's a full pass for it to stabilize
-> > > (or be removed) before ksmd addresses it.  Nice when ksmd is running,
-> > > but not so nice when we're trying to unmerge all mms: we were missing
-> > > those mms forked and inserted behind the unmerge cursor.  Easily fixed
-> > > by inserting at the end when KSM_RUN_UNMERGE.
-> > > 
-> > > 3. It is possible for a KSM page to be faulted back from swapcache into
-> > > an mm, just after unmerge_and_remove_all_rmap_items() scanned past it.
-> > > Fix this by copying on fault when KSM_RUN_UNMERGE: but that is private
-> > > to ksm.c, so dissolve the distinction between ksm_might_need_to_copy()
-> > > and ksm_does_need_to_copy(), doing it all in the one call into ksm.c.
+On Thursday, February 14, 2013 02:10:27 AM Andreas Mohr wrote:
+> Hi,
 > 
-> What I found is that a 4th cause emerges once KSM migration
-> is properly working: that interval during page migration when the old
-> page has been fully unmapped but the new not yet mapped in its place.
+> to provide an example case, on Aspire One AOA110 v0.3310, 3.8-rc7 prints:
 > 
-
-For anyone else watching -- normal page migration expects to be protected
-during that particular window with migration ptes. Any references to the
-PTE mapping a page being migrated faults on a swap-like PTE and waits
-in migration_entry_wait().
-
-> The KSM COW breaking cannot see a page there then, so it ends up with
-> a (newly migrated) KSM page left behind.  Almost certainly has to be
-> fixed in follow_page(), but I've not yet settled on its final form -
-> the fix I have works well, but a different approach might be better.
+> [    0.515599] ACPI Error: [CAPB] Namespace lookup failure,
+> AE_ALREADY_EXISTS (2
+> 0121018/dsfield-211)
+> [    0.515629] ACPI Error: Method parse/execution failed
+> [\_SB_.PCI0._OSC] (Node f5449680), AE_ALREADY_EXISTS
+> (20121018/psparse-537)
+> [    0.515672] ACPI: Marking method _OSC as Serialized because of
+> AE_ALREADY_EXISTS error
+> [    0.516081] ACPI Error: [CAPB] Namespace lookup failure,
+> AE_ALREADY_EXISTS (20121018/dsfield-211)
+> [    0.516107] ACPI Error: Method parse/execution failed
+> [\_SB_.PCI0._OSC] (Node f5449680), AE_ALREADY_EXISTS
+> (20121018/psparse-537)
+> [    0.516168] pci_root PNP0A08:00: ACPI _OSC support notification
+> failed, disabling PCIe ASPM
+> [    0.516179] pci_root PNP0A08:00: Unable to request _OSC control (_OSC
+> support mask: 0x08)
 > 
+> HTH,
 
-follow_page() is one option. My guess is that you're thinking of adding
-a FOLL_ flag that will cause follow_page() to check is_migration_entry()
-and migration_entry_wait() if the flag is present.
+Unfortunately, it doesn't, because I've lost track of the whole thread in the
+meantime.  Care to give a pointer?
 
-Otherwise you would need to check for migration ptes in a number of places
-under page lock and then hold the lock for long periods of time to prevent
-migration starting. I did not check this option in depth because it quickly
-looked like it would be a mess, with long page lock hold times and might
-not even be workable.
+Rafael
 
-> > > +static int remove_all_stable_nodes(void)
-> > > +{
-> > > +	struct stable_node *stable_node;
-> > > +	int nid;
-> > > +	int err = 0;
-> > > +
-> > > +	for (nid = 0; nid < nr_node_ids; nid++) {
-> > > +		while (root_stable_tree[nid].rb_node) {
-> > > +			stable_node = rb_entry(root_stable_tree[nid].rb_node,
-> > > +						struct stable_node, node);
-> > > +			if (remove_stable_node(stable_node)) {
-> > > +				err = -EBUSY;
-> > > +				break;	/* proceed to next nid */
-> > > +			}
-> > 
-> > If remove_stable_node() returns an error then it's quite possible that it'll
-> > go boom when that page is encountered later but it's not guaranteed. It'd
-> > be best effort to continue removing as many of the stable nodes anyway.
-> > We're in trouble either way of course.
-> 
-> If it returns an error, then indeed something we don't yet understand
-> has occurred, and we shall want to debug it.  But unless it's due to
-> corruption somewhere, we shouldn't be in much trouble, shouldn't go boom:
-> remove_all_stable_nodes() error is ignored at the end of unmerging, it
-> will be tried again when changing merge_across_nodes, and an error
-> then will just prevent changing merge_across_nodes at that time.  So
-> the mysteriously unremovable stable nodes remain the same kind of tree.
-> 
-
-Ok.
 
 -- 
-Mel Gorman
-SUSE Labs
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
