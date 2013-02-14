@@ -1,131 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761107Ab3BNPwR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 10:52:17 -0500
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:59967 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757931Ab3BNPwP (ORCPT
+	id S1761306Ab3BNP5i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 10:57:38 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:57719 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757931Ab3BNP5h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 10:52:15 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130213213624.079BA3E3557@localhost>
-References: <1360429077-14616-1-git-send-email-haojian.zhuang@linaro.org>
-	<20130211151038.8421aa54.akpm@linux-foundation.org>
-	<CAD6h2NRGiD=hDOjF8CBDrKuBZm-ALOdcj8mT=h6Cde4PuU=AHw@mail.gmail.com>
-	<20130213213624.079BA3E3557@localhost>
-Date: Thu, 14 Feb 2013 23:52:14 +0800
-Message-ID: <CAD6h2NT73-af1Hgx0hCBkg8z1hQukK0XPESvrEcrUFv_VKGWjA@mail.gmail.com>
+	Thu, 14 Feb 2013 10:57:37 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Haojian Zhuang <haojian.zhuang@linaro.org>
 Subject: Re: [PATCH] driver core: add wait event for deferred probe
-From: Haojian Zhuang <haojian.zhuang@linaro.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Date: Thu, 14 Feb 2013 15:57:18 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-5-generic; KDE/4.3.2; x86_64; ; )
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
         viro@zeniv.linux.org.uk, rusty@rustcorp.com.au, hpa@linux.intel.com,
         jim.cromie@gmail.com, linux-kernel@vger.kernel.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>, arnd@arndb.de,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
         broonie@opensource.wolfsonmicro.com,
         Patch Tracking <patches@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+References: <1360429077-14616-1-git-send-email-haojian.zhuang@linaro.org> <20130213213624.079BA3E3557@localhost> <CAD6h2NT73-af1Hgx0hCBkg8z1hQukK0XPESvrEcrUFv_VKGWjA@mail.gmail.com>
+In-Reply-To: <CAD6h2NT73-af1Hgx0hCBkg8z1hQukK0XPESvrEcrUFv_VKGWjA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302141557.18308.arnd@arndb.de>
+X-Provags-ID: V02:K0:VbvwuumtUT519QthutDiuMFIFGVtjhBqrziq+swuR1m
+ FR8zNPKgF7SsD9lSgw1XzmJ4zEeeIUaKMYPDF/ULPdOTVLEbE+
+ KmcsqNJqae8SzVtQr2Q4cpyMxKezdQ2eKrKDDF8SEaW21Kf99E
+ yEAq6WB6d4Pi08NcJ9GCo4ST6gB66G3OLnjZ/OXW527AulXDCn
+ X7e8N/H1w1oDN7aUabBfjfHJngLT49Y+DxKAtjU/rK8aJGC5/p
+ +8E2AUrnRyhDHt+7dz6EnOm9OzMLZcat+2508xyppm0iZZ9R0b
+ QIjHlQM0L+J/BISsYjPZ365J26GqQbSUQIrTwspX0FVYjTrvix
+ ucmojqXeoVYV9jpsCKe8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 February 2013 05:36, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Tue, 12 Feb 2013 10:52:10 +0800, Haojian Zhuang <haojian.zhuang@linaro.org> wrote:
->> On 12 February 2013 07:10, Andrew Morton <akpm@linux-foundation.org> wrote:
->> > On Sun, 10 Feb 2013 00:57:57 +0800
->> > Haojian Zhuang <haojian.zhuang@linaro.org> wrote:
->> >
->> >> do_initcalls() could call all driver initialization code in kernel_init
->> >> thread. It means that probe() function will be also called from that
->> >> time. After this, kernel could access console & release __init section
->> >> in the same thread.
->> >>
->> >> But if device probe fails and moves into deferred probe list, a new
->> >> thread is created to reinvoke probe. If the device is serial console,
->> >> kernel has to open console failure & release __init section before
->> >> reinvoking failure. Because there's no synchronization mechanism.
->> >> Now add wait event to synchronize after do_initcalls().
->> >
->> > It sounds like this:
->> >
->> > static int __ref kernel_init(void *unused)
->> > {
->> >         kernel_init_freeable();
->> >         /* need to finish all async __init code before freeing the memory */
->> >         async_synchronize_full();
->> >
->> > is designed to prevent the problem you describe?
->> >
->> It can't prevent the problem that I described. Because deferred_probe()
->> is introduced recently.
->>
->> All synchronization should be finished just after do_initcalls(). Since
->> load_default_modules() is also called in the end of kernel_init_freeable(),
->> I'm not sure that whether I could remove async_synchronize_full()
->> here. So I didn't touch it.
->>
->> >> --- a/init/main.c
->> >> +++ b/init/main.c
->> >> @@ -786,6 +786,7 @@ static void __init do_basic_setup(void)
->> >>       do_ctors();
->> >>       usermodehelper_enable();
->> >>       do_initcalls();
->> >> +     wait_for_device_probe();
->> >>  }
->> >
->> > Needs a nice comment here explaining what's going on.
->>
->> No problem. I'll add comment here.
->
-> Actually, this approach will create new problems. There is no guarantee
-> that a given device will be able to initialize before exiting
-> do_basic_setup(). If, for instance, a device depends on a resource
-> provided by a module, then it will just keep deferring. In that case
-> you've got a hung kernel.
->
-> I think what you really want is the following:
->
->  static int deferred_probe_initcall(void)
->  {
->         deferred_wq = create_singlethread_workqueue("deferwq");
->         if (WARN_ON(!deferred_wq))
->                 return -ENOMEM;
->
+On Thursday 14 February 2013, Haojian Zhuang wrote:
+> If you can change it into code in below, it could work. Otherwise, it
+> always fails.
 >         driver_deferred_probe_enable = true;
-> +       deferred_probe_work_func(NULL);
-> -       driver_deferred_probe_trigger();
-
-If you can change it into code in below, it could work. Otherwise, it
-always fails.
-        driver_deferred_probe_enable = true;
-        driver_deferred_probe_trigger();
-+      deferred_probe_work_func(NULL);
-        return 0;
-
-Because deferred_probe_work_func() depends on that deferred_probe is added
-into deferred_probe_active_list. If driver_deferred_probe_trigger() isn't called
-first, the deferred uart probe can't be added into active list. So even you call
-work_func at here, it doesn't help.
-
-Would you send it again? If so, you can add tested-by with my signature.
-
+>         driver_deferred_probe_trigger();
+> +      deferred_probe_work_func(NULL);
 >         return 0;
->  }
->  late_initcall(deferred_probe_initcall);
->
-> Or something similar. That would guarantee that as many passes as are needed
-> (which in practical terms only means a couple) for device probing to
-> settle down before exiting the initcall processing. That should achieve
-> the effect you desire.
->
-> It still masks the __init section issue by making it a lot less likely,
-> but it does ensure that all of the built-in driver dependency order
-> issues are processed before continuing on to userspace.
->
-> g.
->
-> --
-> Grant Likely, B.Sc, P.Eng.
-> Secret Lab Technologies, Ltd.
+> 
+> Because deferred_probe_work_func() depends on that deferred_probe is added
+> into deferred_probe_active_list. If driver_deferred_probe_trigger() isn't called
+> first, the deferred uart probe can't be added into active list. So even you call
+> work_func at here, it doesn't help.
+> 
+
+Would that not cause two instances of the work function to run at the same time?
+That sounds like a source for a lot of problems.
+
+	Arnd
