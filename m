@@ -1,63 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761605Ab3BNT5F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 14:57:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44613 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934895Ab3BNTzt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 14:55:49 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: zohar@linux.vnet.ibm.com, linux-security-module@vger.kernel.org
-Cc: vgoyal@redhat.com, linux-kernel@vger.kernel.org, dmitry.kasatkin@intel.com
-Subject: [PATCH 2/6] ima: Return INTEGRITY_FAIL if digital signature can't be verified
-Date: Thu, 14 Feb 2013 14:55:41 -0500
-Message-Id: <1360871745-20616-3-git-send-email-vgoyal@redhat.com>
-In-Reply-To: <1360871745-20616-1-git-send-email-vgoyal@redhat.com>
-References: <1360871745-20616-1-git-send-email-vgoyal@redhat.com>
+	id S934889Ab3BNUBP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 15:01:15 -0500
+Received: from www.linutronix.de ([62.245.132.108]:39535 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758688Ab3BNUBL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 15:01:11 -0500
+Date: Thu, 14 Feb 2013 21:01:06 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Xinyu Chen <xinyu.chen@freescale.com>,
+        Dirk Behme <dirk.behme@de.bosch.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Tim Sander <tim@krieglstein.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>, stable@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Subject: [PATCH] serial: imx: Fix recursive locking bug
+Message-ID: <alpine.LFD.2.02.1302142006050.22263@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Digital signature verification happens using integrity_digsig_verify().
-Curently we set integrity to FAIL for all error codes except -EOPNOTSUPP.
-This sounds out of line.
+commit 9ec1882df2 (tty: serial: imx: console write routing is unsafe
+on SMP) introduced a recursive locking bug in imx_console_write().
 
-- If appropriate kernel code is not compiled in to verify signature of
-  a file, then prractically it is a failed signature.
+The callchain is:
 
-- For so many other possible errors we are setting the status to fail.
-  For example, -EINVAL, -ENOKEY, -ENOMEM, -EINVAL, -ENOTSUPP etc, it
-  beats me that why -EOPNOTSUPP is special.
+imx_rxint()
+  spin_lock_irqsave(&sport->port.lock,flags);
+  ...
+  uart_handle_sysrq_char();
+    sysrq_function();
+      printk();
+        imx_console_write();
+          spin_lock_irqsave(&sport->port.lock,flags); <--- DEAD
 
-This patch should make the semantics more consistent. That is, if digital
-signature is present in security.ima, then any error happened during
-signature processing leads to status INTEGRITY_FAIL.
+The bad news is that the kernel debugging facilities can dectect the
+problem, but the printks never surface on the serial console for
+obvious reasons.
 
-AFAICS, it should not have any user visible effect on existing
-application. In some cases we will start returning INTEGRITY_FAIL
-instead of INTEGRITY_UNKNOWN. And process_measurement() will deny access
-to file both in case of INTEGRITY_UNKNOWN and INTEGRITY_FAIL.
+There is a similar issue with oops_in_progress. If the kernel crashes
+we really don't want to be stuck on the lock and unable to tell what
+happened.
 
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
----
- security/integrity/ima/ima_appraise.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+In general most UP originated drivers miss these checks and nobody
+ever notices because CONFIG_PROVE_LOCKING seems to be still ignored by
+a large number of developers.
 
-diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-index 3710f44..6f1eeb8 100644
---- a/security/integrity/ima/ima_appraise.c
-+++ b/security/integrity/ima/ima_appraise.c
-@@ -178,9 +178,7 @@ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
- 					     xattr_value->digest, rc - 1,
- 					     iint->ima_xattr.digest,
- 					     IMA_DIGEST_SIZE);
--		if (rc == -EOPNOTSUPP) {
--			status = INTEGRITY_UNKNOWN;
--		} else if (rc) {
-+		if (rc) {
- 			cause = "invalid-signature";
- 			status = INTEGRITY_FAIL;
- 		} else {
--- 
-1.7.7.6
+The solution is to avoid locking in the sysrq case and trylock in the
+oops_in_progress case.
+
+This scheme is used in other drivers as well and it would be nice if
+we could move this to a common place, so the usual copy/paste/modify
+bugs can be avoided.
+
+Now there is another issue with this scheme:
+
+CPU0 	    	     	 CPU1
+printk()
+			 rxint()
+			   sysrq_detection() -> sets port->sysrq
+			 return from interrupt 
+  console_write()
+     if (port->sysrq)
+     	avoid locking
+
+port->sysrq is reset with the next receive character. So as long as
+the port->sysrq is not reset and this can take an endless amount of
+time if after the break no futher receive character follows, all
+console writes happen unlocked.
+
+While the current writer is protected against other console writers by
+the console sem, it's unprotected against open/close or other
+operations which fiddle with the port. That's what the above mentioned
+commit tried to solve.
+
+That's an issue in all drivers which use that scheme and unfortunately
+there is no easy workaround. The only solution is to have a separate
+indicator port->sysrq_cpu. uart_handle_sysrq_char() then sets it to
+smp_processor_id() before calling into handle_sysrq() and resets it to
+-1 after that. Then change the locking check to:
+
+     if (port->sysrq_cpu == smp_processor_id())
+     	 locked = 0;
+     else if (oops_in_progress)
+         locked = spin_trylock_irqsave(port->lock, flags);
+     else
+  	 spin_lock_irqsave(port->lock, flags);
+
+That would force all other cpus into the spin_lock path. Problem
+solved, but that's way beyond the scope of this fix and really wants
+to be implemented in a common function which calls the uart specific
+write function to avoid another gazillion of hard to debug
+copy/paste/modify bugs.
+
+Reported-and-tested-by: Tim Sander <tim@krieglstein.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+
+Index: linux-2.6/drivers/tty/serial/imx.c
+===================================================================
+--- linux-2.6.orig/drivers/tty/serial/imx.c
++++ linux-2.6/drivers/tty/serial/imx.c
+@@ -1213,8 +1213,14 @@ imx_console_write(struct console *co, co
+ 	struct imx_port_ucrs old_ucr;
+ 	unsigned int ucr1;
+ 	unsigned long flags;
++	int locked = 1;
+ 
+-	spin_lock_irqsave(&sport->port.lock, flags);
++	if (sport->port.sysrq)
++		locked = 0;
++	else if (oops_in_progress)
++		locked = spin_trylock_irqsave(&sport->port.lock, flags);
++	else
++		spin_lock_irqsave(&sport->port.lock, flags);
+ 
+ 	/*
+ 	 *	First, save UCR1/2/3 and then disable interrupts
+@@ -1241,7 +1247,8 @@ imx_console_write(struct console *co, co
+ 
+ 	imx_port_ucrs_restore(&sport->port, &old_ucr);
+ 
+-	spin_unlock_irqrestore(&sport->port.lock, flags);
++	if (locked)
++		spin_unlock_irqrestore(&sport->port.lock, flags);
+ }
+ 
+ /*
+
+
+
+
+
 
