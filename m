@@ -1,137 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756427Ab3BNIeA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 03:34:00 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:64481 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756160Ab3BNId7 (ORCPT
+	id S932533Ab3BNIe1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 03:34:27 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:46645 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932311Ab3BNIeZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 03:33:59 -0500
-Date: Thu, 14 Feb 2013 09:36:13 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>, akpm@linux-foundation.org
-Subject: [pull] fb helper cleanups
-Message-ID: <20130214083613.GT5813@phenom.ffwll.local>
-Mail-Followup-To: Dave Airlie <airlied@gmail.com>,
-	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-	DRI Development <dri-devel@lists.freedesktop.org>,
-	LKML <linux-kernel@vger.kernel.org>, akpm@linux-foundation.org
+	Thu, 14 Feb 2013 03:34:25 -0500
+Date: Thu, 14 Feb 2013 00:34:17 -0800
+From: Joel Becker <jlbec@evilplan.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-fsdevel@vger.kernel.org,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        linux-kernel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>,
+        Mark Fasheh <mfasheh@suse.com>
+Subject: Re: [PATCH review 22/85] ocfs2: convert between kuids and kgids and
+ DLM locks
+Message-ID: <20130214083416.GD18408@localhost>
+Mail-Followup-To: "Eric W. Biederman" <ebiederm@xmission.com>,
+	linux-fsdevel@vger.kernel.org,
+	Linux Containers <containers@lists.linux-foundation.org>,
+	linux-kernel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>,
+	Mark Fasheh <mfasheh@suse.com>
+References: <87621w14vs.fsf@xmission.com>
+ <1360777934-5663-1-git-send-email-ebiederm@xmission.com>
+ <1360777934-5663-22-git-send-email-ebiederm@xmission.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Operating-System: Linux phenom 3.7.0-rc4+
+In-Reply-To: <1360777934-5663-22-git-send-email-ebiederm@xmission.com>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+On Wed, Feb 13, 2013 at 09:51:11AM -0800, Eric W. Biederman wrote:
+> From: "Eric W. Biederman" <ebiederm@xmission.com>
+> 
+> Convert between uid and gids stored in the on the wire format of dlm
+> locks aka struct ocfs2_meta_lvb and kuids and kgids stored in
+> inode->i_uid and inode->i_gid.
+> 
+> Cc: Mark Fasheh <mfasheh@suse.com>
+> Cc: Joel Becker <jlbec@evilplan.org>
+> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+> ---
+>  fs/ocfs2/dlmglue.c |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/fs/ocfs2/dlmglue.c b/fs/ocfs2/dlmglue.c
+> index 4f7795f..f99af1c 100644
+> --- a/fs/ocfs2/dlmglue.c
+> +++ b/fs/ocfs2/dlmglue.c
+> @@ -2045,8 +2045,8 @@ static void __ocfs2_stuff_meta_lvb(struct inode *inode)
+>  	lvb->lvb_version   = OCFS2_LVB_VERSION;
+>  	lvb->lvb_isize	   = cpu_to_be64(i_size_read(inode));
+>  	lvb->lvb_iclusters = cpu_to_be32(oi->ip_clusters);
+> -	lvb->lvb_iuid      = cpu_to_be32(inode->i_uid);
+> -	lvb->lvb_igid      = cpu_to_be32(inode->i_gid);
+> +	lvb->lvb_iuid      = cpu_to_be32(i_uid_read(inode));
+> +	lvb->lvb_igid      = cpu_to_be32(i_gid_read(inode));
+>  	lvb->lvb_imode     = cpu_to_be16(inode->i_mode);
+>  	lvb->lvb_inlink    = cpu_to_be16(inode->i_nlink);
+>  	lvb->lvb_iatime_packed  =
+> @@ -2095,8 +2095,8 @@ static void ocfs2_refresh_inode_from_lvb(struct inode *inode)
+>  	else
+>  		inode->i_blocks = ocfs2_inode_sector_count(inode);
+>  
+> -	inode->i_uid     = be32_to_cpu(lvb->lvb_iuid);
+> -	inode->i_gid     = be32_to_cpu(lvb->lvb_igid);
+> +	i_uid_write(inode, be32_to_cpu(lvb->lvb_iuid));
+> +	i_gid_write(inode, be32_to_cpu(lvb->lvb_igid));
+>  	inode->i_mode    = be16_to_cpu(lvb->lvb_imode);
+>  	set_nlink(inode, be16_to_cpu(lvb->lvb_inlink));
+>  	ocfs2_unpack_timespec(&inode->i_atime,
 
-[Andrew: Pull contains the patch "drm/fb-helper: don't sleep for screen
-unblank when an oopps is in progress" which is also in your tree, hence
-the cc.]
+What does this do if two machines with different user namespaces
+communicate.  I think that things go very wrong.  Perhaps right now,
+when ocfs2 is tied to init_user_namespace, we're OK.  But as soon as two
+systems can be in different namespaces, we are broken.
 
-I've figured a pull request is easier to handle ;-)
+Joel
 
-This is the drm fb helper cleanup, mostly motivated by strange things I've
-seen in my locking rework and the i915 modeset revamp. Compared to the
-original submission I've reinstated the setup flexibility you'd like to
-retain, kerneldoc has been reviewed by Laurent Pinchart and Rob Clark
-reviewed the code changes.
+> -- 
+> 1.7.5.4
+> 
 
-Quick overview of the changes:
-- Cleaned-up library interface for drivers using the fb helper, also
-  simplified the fb allocation callback since no driver supported
-  reallocating the fb on-the-fly. And the fbdev/fbcon code keeps pointers
-  to the old mapping around anyway, so reallocating backing storage will
-  be much more work.
-- No longer call the crtc helper "disable everything" function at init
-  time, but allow drivers to do so. Motivated by i915's fastboot effort
-  and allows us to drop a bunch of noop dummy functions just to avoid
-  calling NULL function pointers from i915.ko.
-- Properly clear old state when doing modeset calls, the fb helper left
-  some old modes in there and unconditionally set an fb (even when
-  disabling a crtc). The crtc helpers didn't care, but i915 modeset code
-  can now drop a few special cases.
-- Full kerneldoc for the fb helper. Yay!
-- My version of the "don't sleep in panic ->unblank calls". The patch is
-  already in -mm, I guess Andrew can drop it as soon as this pull lands in
-  drm-next.
-
-Imo the fb helper looks now rather nice, and there's only a few pieces
-left to fix up further:
-- Removing the duplicated gamma handling.
-- Reviewing the locking in the panic/sysrq/kgdb handlers some more.
-- Maybe move some function pointers only used by the fb helper from the
-  crtc helper structs to the fb helper structs. Currently those vtable
-  misplacements are the last thing tying fb/crtc helpers together.
-- Locking around init/teardown still looks a bit fishy. But that ties into
-  the console_lock madness, so I'm not volunteering ;-)
-
-Cheers, Daniel
-
-The following changes since commit b9e5071386007729110e86fd2c55c687085624e3:
-
-  Merge branch 'for-airlied' of git://people.freedesktop.org/~mlankhorst/linux into drm-next (2013-02-08 14:02:32 +1000)
-
-are available in the git repository at:
-
-
-  git://people.freedesktop.org/~danvet/drm drm-fb-helper
-
-for you to fetch changes up to a065b46a01b25d7d364e01e75f7ec2bd9ed5d9cb:
-
-  drm/fb-helper: remove unused members of struct drm_fb_helper (2013-02-14 00:08:41 +0100)
-
-----------------------------------------------------------------
-Daniel Vetter (14):
-      drm: review locking for drm_fb_helper_restore_fbdev_mode
-      drm/fb-helper: kill drm_fb_helper_restore
-      drm/fb-helper: unexport drm_fb_helper_panic
-      drm/fb-helper: unexport drm_fb_helper_single_fb_probe
-      drm/tegra: don't set up initial fbcon config twice
-      drm/fb-helper: don't disable everything in initial_config
-      drm/i915: rip out helper->disable noop functions
-      drm/fb-helper: fixup set_config semantics
-      drm/fb-helper: directly call set_par from the hotplug handler
-      drm/fb-helper: streamline drm_fb_helper_single_fb_probe
-      drm/<drivers>: simplify ->fb_probe callback
-      drm/fb-helper: improve kerneldoc
-      drm/fb-helper: don't sleep for screen unblank when an oopps is in progress
-      drm/fb-helper: remove unused members of struct drm_fb_helper
-
- Documentation/DocBook/drm.tmpl            |    1 +
- drivers/gpu/drm/ast/ast_fb.c              |   26 +--
- drivers/gpu/drm/cirrus/cirrus_fbdev.c     |   26 +--
- drivers/gpu/drm/drm_crtc.c                |   16 +-
- drivers/gpu/drm/drm_fb_cma_helper.c       |   22 +--
- drivers/gpu/drm/drm_fb_helper.c           |  251 +++++++++++++++++++++++------
- drivers/gpu/drm/exynos/exynos_drm_fbdev.c |   35 +---
- drivers/gpu/drm/gma500/framebuffer.c      |   14 +-
- drivers/gpu/drm/i915/intel_crt.c          |    1 -
- drivers/gpu/drm/i915/intel_ddi.c          |    1 -
- drivers/gpu/drm/i915/intel_display.c      |   20 +--
- drivers/gpu/drm/i915/intel_dp.c           |    1 -
- drivers/gpu/drm/i915/intel_drv.h          |    1 -
- drivers/gpu/drm/i915/intel_dvo.c          |    1 -
- drivers/gpu/drm/i915/intel_fb.c           |   21 +--
- drivers/gpu/drm/i915/intel_hdmi.c         |    1 -
- drivers/gpu/drm/i915/intel_lvds.c         |    1 -
- drivers/gpu/drm/i915/intel_sdvo.c         |    1 -
- drivers/gpu/drm/i915/intel_tv.c           |    1 -
- drivers/gpu/drm/mgag200/mgag200_fb.c      |   27 +---
- drivers/gpu/drm/nouveau/nouveau_fbcon.c   |   25 +--
- drivers/gpu/drm/radeon/radeon_fb.c        |   25 +--
- drivers/gpu/drm/tegra/fb.c                |    4 -
- drivers/gpu/drm/udl/udl_fb.c              |   26 +--
- drivers/staging/omapdrm/omap_fbdev.c      |   21 +--
- include/drm/drm_crtc.h                    |    1 +
- include/drm/drm_fb_helper.h               |   18 ++-
- 27 files changed, 298 insertions(+), 290 deletions(-)
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+
+"I think it would be a good idea."  
+        - Mahatma Ghandi, when asked what he thought of Western
+          civilization
+
+			http://www.jlbec.org/
+			jlbec@evilplan.org
