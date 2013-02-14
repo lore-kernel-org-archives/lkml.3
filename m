@@ -1,210 +1,353 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754378Ab3BNDEz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 22:04:55 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20074 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754041Ab3BNDEy (ORCPT
+	id S932179Ab3BNDF2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 22:05:28 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:19978 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754023Ab3BNDFS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 22:04:54 -0500
-X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=YWKdqMyKAAAA:8 a=ZSQUmvvWAAAA:8 a=GwE8C_716FG_syHVI00A:9 a=PUjeQqilurYA:10 a=_WS7f9hlDtoA:10 a=OLNxAiqoKOyVwEeu:21 a=xVF1GwmG0FyB8q8T:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1360811091.23152.25.camel@gandalf.local.home>
-Subject: [ANNOUNCE] 3.4.29-rt42
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Date: Wed, 13 Feb 2013 22:04:51 -0500
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 13 Feb 2013 22:05:18 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        dan.magenheimer@oracle.com, gregkh@linuxfoundation.org
+Cc: sjenning@linux.vnet.ibm.com, rcj@linux.vnet.ibm.com,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 09/16] zcache: Move the last of the debugfs counters out
+Date: Wed, 13 Feb 2013 22:04:59 -0500
+Message-Id: <1360811106-2679-10-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.8.0.2
+In-Reply-To: <1360811106-2679-1-git-send-email-konrad.wilk@oracle.com>
+References: <1360811106-2679-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We now have in zcache-main only the counters that are
+are not debugfs related.
 
-Dear RT Folks,
-
-I'm pleased to announce the 3.4.29-rt42 stable release.
-
-
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  Head SHA1: eab759b5f284bd3c29aaa12f41623ef2cb2ac60d
-
-
-Or to build 3.4.29-rt42 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.29.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patch-3.4.29-rt42.patch.xz
-
-
-You can also build from 3.4.29-rt41 by applying the incremental patch:
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/incr/patch-3.4.29-rt41-rt42.patch.xz
-
-
-
-Enjoy,
-
--- Steve
-
-
-Changes from 3.4.29-rt41:
-
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
+ drivers/staging/zcache/debug.h       | 80 +++++++++++++++++++++++++++---------
+ drivers/staging/zcache/zcache-main.c | 75 +++++++++++++--------------------
+ 2 files changed, 89 insertions(+), 66 deletions(-)
 
-Steven Rostedt (1):
-      Linux 3.4.29-rt42
-
-Thomas Gleixner (5):
-      drivers-tty-pl011-irq-disable-madness.patch
-      mmci: Remove bogus local_irq_save()
-      sched: Init idle->on_rq in init_idle()
-      sched: Check for idle task in might_sleep()
-      mm: swap: Initialize local locks early
-
-----
- drivers/mmc/host/mmci.c         |    5 -----
- drivers/tty/serial/amba-pl011.c |   15 ++++++++++-----
- kernel/sched/core.c             |    4 +++-
- localversion-rt                 |    2 +-
- mm/swap.c                       |   12 +++++++++---
- 5 files changed, 23 insertions(+), 15 deletions(-)
----------------------------
-diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-index 032b847..6f8a1a7 100644
---- a/drivers/mmc/host/mmci.c
-+++ b/drivers/mmc/host/mmci.c
-@@ -910,15 +910,12 @@ static irqreturn_t mmci_pio_irq(int irq, void *dev_id)
- 	struct sg_mapping_iter *sg_miter = &host->sg_miter;
- 	struct variant_data *variant = host->variant;
- 	void __iomem *base = host->base;
--	unsigned long flags;
- 	u32 status;
- 
- 	status = readl(base + MMCISTATUS);
- 
- 	dev_dbg(mmc_dev(host->mmc), "irq1 (pio) %08x\n", status);
- 
--	local_irq_save(flags);
--
- 	do {
- 		unsigned int remain, len;
- 		char *buffer;
-@@ -958,8 +955,6 @@ static irqreturn_t mmci_pio_irq(int irq, void *dev_id)
- 
- 	sg_miter_stop(sg_miter);
- 
--	local_irq_restore(flags);
--
- 	/*
- 	 * If we have less than the fifo 'half-full' threshold to transfer,
- 	 * trigger a PIO interrupt as soon as any data is available.
-diff --git a/drivers/tty/serial/amba-pl011.c b/drivers/tty/serial/amba-pl011.c
-index b69356c..7b29c92 100644
---- a/drivers/tty/serial/amba-pl011.c
-+++ b/drivers/tty/serial/amba-pl011.c
-@@ -1788,13 +1788,19 @@ pl011_console_write(struct console *co, const char *s, unsigned int count)
- 
- 	clk_enable(uap->clk);
- 
--	local_irq_save(flags);
-+	/*
-+	 * local_irq_save(flags);
-+	 *
-+	 * This local_irq_save() is nonsense. If we come in via sysrq
-+	 * handling then interrupts are already disabled. Aside of
-+	 * that the port.sysrq check is racy on SMP regardless.
-+	*/
- 	if (uap->port.sysrq)
- 		locked = 0;
- 	else if (oops_in_progress)
--		locked = spin_trylock(&uap->port.lock);
-+		locked = spin_trylock_irqsave(&uap->port.lock, flags);
- 	else
--		spin_lock(&uap->port.lock);
-+		spin_lock_irqsave(&uap->port.lock, flags);
- 
- 	/*
- 	 *	First save the CR then disable the interrupts
-@@ -1816,8 +1822,7 @@ pl011_console_write(struct console *co, const char *s, unsigned int count)
- 	writew(old_cr, uap->port.membase + UART011_CR);
- 
- 	if (locked)
--		spin_unlock(&uap->port.lock);
--	local_irq_restore(flags);
-+		spin_unlock_irqrestore(&uap->port.lock, flags);
- 
- 	clk_disable(uap->clk);
- }
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index fec5603..751ec60 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5264,6 +5264,7 @@ void __cpuinit init_idle(struct task_struct *idle, int cpu)
- 	rcu_read_unlock();
- 
- 	rq->curr = rq->idle = idle;
-+	idle->on_rq = 1;
- #if defined(CONFIG_SMP)
- 	idle->on_cpu = 1;
- #endif
-@@ -7535,7 +7536,8 @@ void __might_sleep(const char *file, int line, int preempt_offset)
- 	static unsigned long prev_jiffy;	/* ratelimiting */
- 
- 	rcu_sleep_check(); /* WARN_ON_ONCE() by default, no rate limit reqd. */
--	if ((preempt_count_equals(preempt_offset) && !irqs_disabled()) ||
-+	if ((preempt_count_equals(preempt_offset) && !irqs_disabled() &&
-+	     !is_idle_task(current)) ||
- 	    system_state != SYSTEM_RUNNING || oops_in_progress)
- 		return;
- 	if (time_before(jiffies, prev_jiffy + HZ) && prev_jiffy)
-diff --git a/localversion-rt b/localversion-rt
-index 629e0b4..8bdfb9a 100644
---- a/localversion-rt
-+++ b/localversion-rt
-@@ -1 +1 @@
---rt41
-+-rt42
-diff --git a/mm/swap.c b/mm/swap.c
-index 2051da9..62dc70c 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -767,6 +767,15 @@ unsigned pagevec_lookup_tag(struct pagevec *pvec, struct address_space *mapping,
- }
- EXPORT_SYMBOL(pagevec_lookup_tag);
- 
-+/* Early setup for the local locks */
-+static int __init swap_init_locks(void)
-+{
-+	local_irq_lock_init(rotate_lock);
-+	local_irq_lock_init(swap_lock);
-+	return 1;
-+}
-+early_initcall(swap_init_locks);
+diff --git a/drivers/staging/zcache/debug.h b/drivers/staging/zcache/debug.h
+index 98dc491..eef67db 100644
+--- a/drivers/staging/zcache/debug.h
++++ b/drivers/staging/zcache/debug.h
+@@ -128,34 +128,56 @@ static inline unsigned long curr_pageframes_count(void)
+ 		atomic_read(&zcache_pers_pageframes_atomic);
+ };
+ /* but for the rest of these, counting races are ok */
+-extern ssize_t zcache_flush_total;
+-extern ssize_t zcache_flush_found;
+-extern ssize_t zcache_flobj_total;
+-extern ssize_t zcache_flobj_found;
+-extern ssize_t zcache_failed_eph_puts;
+-extern ssize_t zcache_failed_pers_puts;
+-extern ssize_t zcache_failed_getfreepages;
+-extern ssize_t zcache_failed_alloc;
+-extern ssize_t zcache_put_to_flush;
+-extern ssize_t zcache_compress_poor;
+-extern ssize_t zcache_mean_compress_poor;
+-extern ssize_t zcache_eph_ate_tail;
+-extern ssize_t zcache_eph_ate_tail_failed;
+-extern ssize_t zcache_pers_ate_eph;
+-extern ssize_t zcache_pers_ate_eph_failed;
+-extern ssize_t zcache_evicted_eph_zpages;
+-extern ssize_t zcache_evicted_eph_pageframes;
++static ssize_t zcache_flush_total;
++static ssize_t zcache_flush_found;
++static ssize_t zcache_flobj_total;
++static ssize_t zcache_flobj_found;
++static ssize_t zcache_failed_eph_puts;
++static ssize_t zcache_failed_pers_puts;
++static ssize_t zcache_failed_getfreepages;
++static ssize_t zcache_failed_alloc;
++static ssize_t zcache_put_to_flush;
++static ssize_t zcache_compress_poor;
++static ssize_t zcache_mean_compress_poor;
++static ssize_t zcache_eph_ate_tail;
++static ssize_t zcache_eph_ate_tail_failed;
++static ssize_t zcache_pers_ate_eph;
++static ssize_t zcache_pers_ate_eph_failed;
++static ssize_t zcache_evicted_eph_zpages;
++static ssize_t zcache_evicted_eph_pageframes;
 +
- /*
-  * Perform any setup for the swap system
-  */
-@@ -774,9 +783,6 @@ void __init swap_setup(void)
- {
- 	unsigned long megs = totalram_pages >> (20 - PAGE_SHIFT);
- 
--	local_irq_lock_init(rotate_lock);
--	local_irq_lock_init(swap_lock);
--
- #ifdef CONFIG_SWAP
- 	bdi_init(swapper_space.backing_dev_info);
+ extern ssize_t zcache_last_active_file_pageframes;
+ extern ssize_t zcache_last_inactive_file_pageframes;
+ extern ssize_t zcache_last_active_anon_pageframes;
+ extern ssize_t zcache_last_inactive_anon_pageframes;
+-extern ssize_t zcache_eph_nonactive_puts_ignored;
+-extern ssize_t zcache_pers_nonactive_puts_ignored;
++static ssize_t zcache_eph_nonactive_puts_ignored;
++static ssize_t zcache_pers_nonactive_puts_ignored;
+ #ifdef CONFIG_ZCACHE_WRITEBACK
+ extern ssize_t zcache_writtenback_pages;
+ extern ssize_t zcache_outstanding_writeback_pages;
  #endif
-
+ 
++static inline void inc_zcache_flush_total(void) { zcache_flush_total ++; };
++static inline void inc_zcache_flush_found(void) { zcache_flush_found ++; };
++static inline void inc_zcache_flobj_total(void) { zcache_flobj_total ++; };
++static inline void inc_zcache_flobj_found(void) { zcache_flobj_found ++; };
++static inline void inc_zcache_failed_eph_puts(void) { zcache_failed_eph_puts ++; };
++static inline void inc_zcache_failed_pers_puts(void) { zcache_failed_pers_puts ++; };
++static inline void inc_zcache_failed_getfreepages(void) { zcache_failed_getfreepages ++; };
++static inline void inc_zcache_failed_alloc(void) { zcache_failed_alloc ++; };
++static inline void inc_zcache_put_to_flush(void) { zcache_put_to_flush ++; };
++static inline void inc_zcache_compress_poor(void) { zcache_compress_poor ++; };
++static inline void inc_zcache_mean_compress_poor(void) { zcache_mean_compress_poor ++; };
++static inline void inc_zcache_eph_ate_tail(void) { zcache_eph_ate_tail ++; };
++static inline void inc_zcache_eph_ate_tail_failed(void) { zcache_eph_ate_tail_failed ++; };
++static inline void inc_zcache_pers_ate_eph(void) { zcache_pers_ate_eph ++; };
++static inline void inc_zcache_pers_ate_eph_failed(void) { zcache_pers_ate_eph_failed ++; };
++static inline void inc_zcache_evicted_eph_zpages(unsigned zpages) { zcache_evicted_eph_zpages += zpages; };
++static inline void inc_zcache_evicted_eph_pageframes(void) { zcache_evicted_eph_pageframes ++; };
++
++static inline void inc_zcache_eph_nonactive_puts_ignored(void) { zcache_eph_nonactive_puts_ignored ++; };
++static inline void inc_zcache_pers_nonactive_puts_ignored(void) { zcache_pers_nonactive_puts_ignored ++; };
++
+ int zcache_debugfs_init(void);
+ #else
+ static inline void inc_zcache_obj_count(void) { };
+@@ -184,4 +206,24 @@ static inline int zcache_debugfs_init(void)
+ {
+ 	return 0;
+ };
++static inline void inc_zcache_flush_total(void) { };
++static inline void inc_zcache_flush_found(void) { };
++static inline void inc_zcache_flobj_total(void) { };
++static inline void inc_zcache_flobj_found(void) { };
++static inline void inc_zcache_failed_eph_puts(void) { };
++static inline void inc_zcache_failed_pers_puts(void) { };
++static inline void inc_zcache_failed_getfreepages(void) { };
++static inline void inc_zcache_failed_alloc(void) { };
++static inline void inc_zcache_put_to_flush(void) { };
++static inline void inc_zcache_compress_poor(void) { };
++static inline void inc_zcache_mean_compress_poor(void) { };
++static inline void inc_zcache_eph_ate_tail(void) { };
++static inline void inc_zcache_eph_ate_tail_failed(void) { };
++static inline void inc_zcache_pers_ate_eph(void) { };
++static inline void inc_zcache_pers_ate_eph_failed(void) { };
++static inline void inc_zcache_evicted_eph_zpages(unsigned zpages) { };
++static inline void inc_zcache_evicted_eph_pageframes(void) { };
++
++static inline void inc_zcache_eph_nonactive_puts_ignored(void) { };
++static inline void inc_zcache_pers_nonactive_puts_ignored(void) { };
+ #endif
+diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+index 9d6cf96..059c0f2 100644
+--- a/drivers/staging/zcache/zcache-main.c
++++ b/drivers/staging/zcache/zcache-main.c
+@@ -142,32 +142,13 @@ ssize_t zcache_eph_pageframes;
+ ssize_t zcache_pers_pageframes;
+ 
+ /* Used by this code. */
+-static ssize_t zcache_flush_total;
+-static ssize_t zcache_flush_found;
+-static ssize_t zcache_flobj_total;
+-static ssize_t zcache_flobj_found;
+-static ssize_t zcache_failed_eph_puts;
+-static ssize_t zcache_failed_pers_puts;
+-static ssize_t zcache_failed_getfreepages;
+-static ssize_t zcache_failed_alloc;
+-static ssize_t zcache_put_to_flush;
+-static ssize_t zcache_compress_poor;
+-static ssize_t zcache_mean_compress_poor;
+-static ssize_t zcache_eph_ate_tail;
+-static ssize_t zcache_eph_ate_tail_failed;
+-static ssize_t zcache_pers_ate_eph;
+-static ssize_t zcache_pers_ate_eph_failed;
+-static ssize_t zcache_evicted_eph_zpages;
+-static ssize_t zcache_evicted_eph_pageframes;
+-static ssize_t zcache_last_active_file_pageframes;
+-static ssize_t zcache_last_inactive_file_pageframes;
+-static ssize_t zcache_last_active_anon_pageframes;
+-static ssize_t zcache_last_inactive_anon_pageframes;
+-static ssize_t zcache_eph_nonactive_puts_ignored;
+-static ssize_t zcache_pers_nonactive_puts_ignored;
++ssize_t zcache_last_active_file_pageframes;
++ssize_t zcache_last_inactive_file_pageframes;
++ssize_t zcache_last_active_anon_pageframes;
++ssize_t zcache_last_inactive_anon_pageframes;
+ #ifdef CONFIG_ZCACHE_WRITEBACK
+-static ssize_t zcache_writtenback_pages;
+-static ssize_t zcache_outstanding_writeback_pages;
++ssize_t zcache_writtenback_pages;
++ssize_t zcache_outstanding_writeback_pages;
+ #endif
+ /*
+  * zcache core code starts here
+@@ -354,7 +335,7 @@ static void *zcache_pampd_eph_create(char *data, size_t size, bool raw,
+ 	if (!raw) {
+ 		zcache_compress(page, &cdata, &clen);
+ 		if (clen > zbud_max_buddy_size()) {
+-			zcache_compress_poor++;
++			inc_zcache_compress_poor();
+ 			goto out;
+ 		}
+ 	} else {
+@@ -371,14 +352,14 @@ static void *zcache_pampd_eph_create(char *data, size_t size, bool raw,
+ 	if (newpage != NULL)
+ 		goto create_in_new_page;
+ 
+-	zcache_failed_getfreepages++;
++	inc_zcache_failed_getfreepages();
+ 	/* can't allocate a page, evict an ephemeral page via LRU */
+ 	newpage = zcache_evict_eph_pageframe();
+ 	if (newpage == NULL) {
+-		zcache_eph_ate_tail_failed++;
++		inc_zcache_eph_ate_tail_failed();
+ 		goto out;
+ 	}
+-	zcache_eph_ate_tail++;
++	inc_zcache_eph_ate_tail();
+ 
+ create_in_new_page:
+ 	pampd = (void *)zbud_create_prep(th, true, cdata, clen, newpage);
+@@ -413,7 +394,7 @@ static void *zcache_pampd_pers_create(char *data, size_t size, bool raw,
+ 		zcache_compress(page, &cdata, &clen);
+ 	/* reject if compression is too poor */
+ 	if (clen > zbud_max_zsize) {
+-		zcache_compress_poor++;
++		inc_zcache_compress_poor();
+ 		goto out;
+ 	}
+ 	/* reject if mean compression is too poor */
+@@ -424,7 +405,7 @@ static void *zcache_pampd_pers_create(char *data, size_t size, bool raw,
+ 		zbud_mean_zsize = div_u64(total_zsize,
+ 					curr_pers_zpages);
+ 		if (zbud_mean_zsize > zbud_max_mean_zsize) {
+-			zcache_mean_compress_poor++;
++			inc_zcache_mean_compress_poor();
+ 			goto out;
+ 		}
+ 	}
+@@ -445,14 +426,14 @@ create_pampd:
+ 	 * (global_page_state(NR_LRU_BASE + LRU_ACTIVE_FILE) +
+ 	 * global_page_state(NR_LRU_BASE + LRU_INACTIVE_FILE)))
+ 	 */
+-	zcache_failed_getfreepages++;
++	inc_zcache_failed_getfreepages();
+ 	/* can't allocate a page, evict an ephemeral page via LRU */
+ 	newpage = zcache_evict_eph_pageframe();
+ 	if (newpage == NULL) {
+-		zcache_pers_ate_eph_failed++;
++		inc_zcache_pers_ate_eph_failed();
+ 		goto out;
+ 	}
+-	zcache_pers_ate_eph++;
++	inc_zcache_pers_ate_eph();
+ 
+ create_in_new_page:
+ 	pampd = (void *)zbud_create_prep(th, false, cdata, clen, newpage);
+@@ -492,7 +473,7 @@ void *zcache_pampd_create(char *data, unsigned int size, bool raw,
+ 			objnode = kmem_cache_alloc(zcache_objnode_cache,
+ 							ZCACHE_GFP_MASK);
+ 			if (unlikely(objnode == NULL)) {
+-				zcache_failed_alloc++;
++				inc_zcache_failed_alloc();
+ 				goto out;
+ 			}
+ 			kp->objnodes[i] = objnode;
+@@ -503,7 +484,7 @@ void *zcache_pampd_create(char *data, unsigned int size, bool raw,
+ 		kp->obj = obj;
+ 	}
+ 	if (unlikely(kp->obj == NULL)) {
+-		zcache_failed_alloc++;
++		inc_zcache_failed_alloc();
+ 		goto out;
+ 	}
+ 	/*
+@@ -781,9 +762,9 @@ static struct page *zcache_evict_eph_pageframe(void)
+ 		goto out;
+ 	dec_zcache_eph_zbytes(zsize);
+ 	dec_zcache_eph_zpages(zpages);
+-	zcache_evicted_eph_zpages += zpages;
++	inc_zcache_evicted_eph_zpages(zpages);
+ 	dec_zcache_eph_pageframes();
+-	zcache_evicted_eph_pageframes++;
++	inc_zcache_evicted_eph_pageframes();
+ out:
+ 	return page;
+ }
+@@ -1166,9 +1147,9 @@ int zcache_put_page(int cli_id, int pool_id, struct tmem_oid *oidp,
+ 		if (pampd == NULL) {
+ 			ret = -ENOMEM;
+ 			if (ephemeral)
+-				zcache_failed_eph_puts++;
++				inc_zcache_failed_eph_puts();
+ 			else
+-				zcache_failed_pers_puts++;
++				inc_zcache_failed_pers_puts();
+ 		} else {
+ 			if (ramster_enabled)
+ 				ramster_do_preload_flnode(pool);
+@@ -1178,7 +1159,7 @@ int zcache_put_page(int cli_id, int pool_id, struct tmem_oid *oidp,
+ 		}
+ 		zcache_put_pool(pool);
+ 	} else {
+-		zcache_put_to_flush++;
++		inc_zcache_put_to_flush();
+ 		if (ramster_enabled)
+ 			ramster_do_preload_flnode(pool);
+ 		if (atomic_read(&pool->obj_count) > 0)
+@@ -1228,7 +1209,7 @@ int zcache_flush_page(int cli_id, int pool_id,
+ 	unsigned long flags;
+ 
+ 	local_irq_save(flags);
+-	zcache_flush_total++;
++	inc_zcache_flush_total();
+ 	pool = zcache_get_pool_by_id(cli_id, pool_id);
+ 	if (ramster_enabled)
+ 		ramster_do_preload_flnode(pool);
+@@ -1238,7 +1219,7 @@ int zcache_flush_page(int cli_id, int pool_id,
+ 		zcache_put_pool(pool);
+ 	}
+ 	if (ret >= 0)
+-		zcache_flush_found++;
++		inc_zcache_flush_found();
+ 	local_irq_restore(flags);
+ 	return ret;
+ }
+@@ -1251,7 +1232,7 @@ int zcache_flush_object(int cli_id, int pool_id,
+ 	unsigned long flags;
+ 
+ 	local_irq_save(flags);
+-	zcache_flobj_total++;
++	inc_zcache_flobj_total();
+ 	pool = zcache_get_pool_by_id(cli_id, pool_id);
+ 	if (ramster_enabled)
+ 		ramster_do_preload_flnode(pool);
+@@ -1261,7 +1242,7 @@ int zcache_flush_object(int cli_id, int pool_id,
+ 		zcache_put_pool(pool);
+ 	}
+ 	if (ret >= 0)
+-		zcache_flobj_found++;
++		inc_zcache_flobj_found();
+ 	local_irq_restore(flags);
+ 	return ret;
+ }
+@@ -1424,7 +1405,7 @@ static void zcache_cleancache_put_page(int pool_id,
+ 	struct tmem_oid oid = *(struct tmem_oid *)&key;
+ 
+ 	if (!disable_cleancache_ignore_nonactive && !PageWasActive(page)) {
+-		zcache_eph_nonactive_puts_ignored++;
++		inc_zcache_eph_nonactive_puts_ignored();
+ 		return;
+ 	}
+ 	if (likely(ind == index))
+@@ -1553,7 +1534,7 @@ static int zcache_frontswap_put_page(unsigned type, pgoff_t offset,
+ 
+ 	BUG_ON(!PageLocked(page));
+ 	if (!disable_frontswap_ignore_nonactive && !PageWasActive(page)) {
+-		zcache_pers_nonactive_puts_ignored++;
++		inc_zcache_pers_nonactive_puts_ignored();
+ 		ret = -ERANGE;
+ 		goto out;
+ 	}
+-- 
+1.8.0.2
 
