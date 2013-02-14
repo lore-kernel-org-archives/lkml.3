@@ -1,83 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161028Ab3BNWf6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 17:35:58 -0500
-Received: from kanga.kvack.org ([205.233.56.17]:58208 "EHLO kanga.kvack.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759164Ab3BNWf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 17:35:57 -0500
-Date: Thu, 14 Feb 2013 17:35:56 -0500
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Kent Overstreet <koverstreet@google.com>
-Cc: linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] aio: v2: fix kioctx not being freed after cancellation at exit time
-Message-ID: <20130214223556.GA10806@kvack.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+	id S1161099Ab3BNWr5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 17:47:57 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:55623 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161086Ab3BNWrz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 17:47:55 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, arm@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Paul Walmsley <paul@pwsan.com>,
+        Sebastien Guiriec <s-guiriec@ti.com>, Tony Lindgren <tony@atomide.com>
+Subject: [PATCH 3/9] ARM: omap2: include linux/errno.h in hwmod_reset
+Date: Thu, 14 Feb 2013 23:47:45 +0100
+Message-Id: <1360882071-4072668-4-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1360882071-4072668-1-git-send-email-arnd@arndb.de>
+References: <1360882071-4072668-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:VCFIo0BL6NBuyn9zpcVjVUEgBfFXun2fB/uloiae3ZJ
+ 54fEEd/GMU6THEuiAf+c2GHIQm/jYHfvEV4t3ciLc9Qg/ZnbPR
+ sl2zzXdaAV0JxpF1ewHNTScaehY14V2uz3OaYGnZ0T1hqMny0m
+ bktZ8C3zvw5XgDC38kuBte7wgrD+ZvyzP2Qg5LyX/tRZx1iFbA
+ YG65olsm+px/GezsoqmxwiwB7tk/YOvAVCsHunsvywIto8dKLN
+ KLB4TriYBu3NEYf3cgF6MF82dagb7dINrvNwqZvmDYMG5a2Qim
+ sjEwjyhyxikzby017bxK6T+jXWPg5SUdWcGOr+bnFYLSLxI1Ph
+ Tv1TBFVG+OqpsyAomxVqmeYHRjyCsoKq2uvpvxtMW
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This v2 patch replaces both "aio: fix kioctx not being freed after
-cancellation at exit time" and "aio: only suppress events from cancelled
-kiocbs if free_ioctx() is in progress".  Kent's feedback is indeed correct.
+The newly created omap_hwmod_reset.c is missing an
+include of linux/errno.h in commit c02060d8 "ARM:
+OMAP4+: AESS: enable internal auto-gating during
+initial setup". It still works in omap2_defconfig,
+but not in all other combinations.
 
-The recent changes overhauling fs/aio.c introduced a bug that results in the
-kioctx not being freed when outstanding kiocbs are cancelled at exit_aio()
-time.  Specifically, a kiocb that is cancelled has its completion events
-discarded by batch_complete_aio(), which then fails to wake up the process
-stuck in free_ioctx().  Fix this by removing the event suppression in
-batch_complete_aio() and modify the wait_event() condition in free_ioctx()
-appropriately.
+Without this patch, building allmodconfig results in:
 
-This patch was tested with the cancel operation in the thread based code
-posted yesterday.
+arch/arm/mach-omap2/omap_hwmod_reset.c: In function 'omap_hwmod_aess_preprogram':
+arch/arm/mach-omap2/omap_hwmod_reset.c:47:11: error: 'EINVAL' undeclared (first use in this function)
+arch/arm/mach-omap2/omap_hwmod_reset.c:47:11: note: each undeclared identifier is reported only once for each function it appears in
 
-Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Paul Walmsley <paul@pwsan.com>
+Cc: Sebastien Guiriec <s-guiriec@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>
 ---
- fs/aio.c |   15 +++------------
- 1 files changed, 3 insertions(+), 12 deletions(-)
+ arch/arm/mach-omap2/omap_hwmod_reset.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/fs/aio.c b/fs/aio.c
-index dc52b0c..6ea766c 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -335,7 +335,9 @@ static void free_ioctx(struct kioctx *ctx)
- 	kunmap_atomic(ring);
+diff --git a/arch/arm/mach-omap2/omap_hwmod_reset.c b/arch/arm/mach-omap2/omap_hwmod_reset.c
+index bba43fa..65e186c 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_reset.c
++++ b/arch/arm/mach-omap2/omap_hwmod_reset.c
+@@ -24,6 +24,7 @@
+  * 02110-1301 USA
+  */
+ #include <linux/kernel.h>
++#include <linux/errno.h>
  
- 	while (atomic_read(&ctx->reqs_available) < ctx->nr) {
--		wait_event(ctx->wait, head != ctx->shadow_tail);
-+		wait_event(ctx->wait,
-+			   (head != ctx->shadow_tail) ||
-+			   (atomic_read(&ctx->reqs_available) >= ctr->nr));
+ #include <sound/aess.h>
  
- 		avail = (head <= ctx->shadow_tail ?
- 			 ctx->shadow_tail : ctx->nr) - head;
-@@ -747,17 +749,6 @@ void batch_complete_aio(struct batch_complete *batch)
- 			n = rb_parent(n);
- 		}
- 
--		if (unlikely(xchg(&req->ki_cancel,
--				  KIOCB_CANCELLED) == KIOCB_CANCELLED)) {
--			/*
--			 * Can't use the percpu reqs_available here - could race
--			 * with free_ioctx()
--			 */
--			atomic_inc(&req->ki_ctx->reqs_available);
--			aio_put_req(req);
--			continue;
--		}
--
- 		if (unlikely(req->ki_eventfd != eventfd)) {
- 			if (eventfd) {
- 				/* Make event visible */
 -- 
-1.7.4.1
+1.8.1.2
 
-
--- 
-"Thought is the essence of where you are now."
