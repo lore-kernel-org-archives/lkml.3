@@ -1,128 +1,432 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756188Ab3BNHsg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 02:48:36 -0500
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:60517 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752250Ab3BNHsd (ORCPT
+	id S932285Ab3BNH4O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 02:56:14 -0500
+Received: from vsp-authed02.binero.net ([195.74.38.226]:28735 "HELO
+	vsp-authed-03-02.binero.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756142Ab3BNH4M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 02:48:33 -0500
-MIME-Version: 1.0
-In-Reply-To: <959cfd74266e82f72e5879c6c8b798d76f6cad31.1360746454.git.dmitry.kasatkin@intel.com>
-References: <959cfd74266e82f72e5879c6c8b798d76f6cad31.1360746454.git.dmitry.kasatkin@intel.com>
-Date: Thu, 14 Feb 2013 09:48:32 +0200
-Message-ID: <CALLzPKZEnrYoz8mVCsdnQPbdM2Ni2bT+XXz7-ogtBP6quTFv5Q@mail.gmail.com>
-Subject: Re: [RFC 1/1] xattr: provide integrity. namespace to read real values
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: linux-security-module@vger.kernel.org, James Morris <jmorris@namei.org>
-Cc: linux-kernel@vger.kernel.org, casey@schaufler-ca.com,
-        zohar@linux.vnet.ibm.com, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Thu, 14 Feb 2013 02:56:12 -0500
+From: Andreas Larsson <andreas@gaisler.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <rob.herring@calxeda.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        software@gaisler.com
+Subject: [PATCH] gpio: Add device driver for GRGPIO cores and support custom accessors with gpio-generic
+Date: Thu, 14 Feb 2013 08:55:56 +0100
+Message-Id: <1360828556-30161-1-git-send-email-andreas@gaisler.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This driver supports GRGPIO gpio cores available in the GRLIB VHDL IP
+core library from Aeroflex Gaisler.
 
-Any comments about this patch and functionality?
+This also adds support to gpio-generic for using custom accessor
+functions. The grgpio driver uses this to use ioread32be and iowrite32be
+for big endian register accesses.
 
-Thanks,
-Dmitry
+Reviewed-by: Anton Vorontsov <anton@enomsg.org>
+Signed-off-by: Andreas Larsson <andreas@gaisler.com>
+---
 
-On Wed, Feb 13, 2013 at 11:07 AM, Dmitry Kasatkin
-<dmitry.kasatkin@intel.com> wrote:
-> User space tools use getxattr() system call to read values of extended
-> attributes. getxattr() system call uses vfs_getattr(), which for "security."
-> namespace might get a value of the xattr indirectly from LSM via calling
-> xattr_getsecurity(). For that reason value set by setxattr and read by getxattr
-> might differ.
->
-> Here is an example of SMACK label, which shows that set and read values are
-> different:
->
->   setfattr -n security.SMACK64 -v "hello world" foo
->   getfattr -n security.SMACK64 foo
->   # file: foo
->   security.SMACK64="hello"
->
-> EVM uses vfs_getxattr_alloc(), which directly reads xattr values from the file
-> system. When performing the file system labeling with digital signatures, it is
-> necessary to read real xattr values in order to generate the correct signatures.
->
-> This patch adds the virtual "integrity." name space, which allows to bypass
-> calling LSM and read real extended attribute values.
->
->   getfattr -e text -n integrity.SMACK64 foo
->   # file: foo
->   integrity.SMACK64="hello world"
->
-> Suggested-by: Casey Schaufler <casey@schaufler-ca.com>
-> Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-> ---
->  fs/xattr.c                 |   22 +++++++++++++++++++---
->  include/uapi/linux/xattr.h |    4 ++++
->  2 files changed, 23 insertions(+), 3 deletions(-)
->
-> diff --git a/fs/xattr.c b/fs/xattr.c
-> index 3377dff..76c2620 100644
-> --- a/fs/xattr.c
-> +++ b/fs/xattr.c
-> @@ -232,12 +232,28 @@ vfs_getxattr(struct dentry *dentry, const char *name, void *value, size_t size)
->  {
->         struct inode *inode = dentry->d_inode;
->         int error;
-> +       char *usename = (char *)name, name_buf[XATTR_NAME_MAX];
-> +
-> +       /* because this function calls LSM for "security." namespace,
-> +        * it may be impossible to get real value stored in xattr.
-> +        * An LSM may mangle the attribute value to its own ends.
-> +        * Smack is known to do this.
-> +        * virtual namespace "integrity." is used to fetch real
-> +        * security attributes without talking to LSM
-> +        */
-> +       if (!strncmp(name, XATTR_INTEGRITY_PREFIX,
-> +                               XATTR_INTEGRITY_PREFIX_LEN)) {
-> +               /* replace "integrity. with security. */
-> +               snprintf(name_buf, sizeof(name_buf), "security.%s",
-> +                        name + XATTR_INTEGRITY_PREFIX_LEN);
-> +               usename = name_buf;
-> +       }
->
-> -       error = xattr_permission(inode, name, MAY_READ);
-> +       error = xattr_permission(inode, usename, MAY_READ);
->         if (error)
->                 return error;
->
-> -       error = security_inode_getxattr(dentry, name);
-> +       error = security_inode_getxattr(dentry, usename);
->         if (error)
->                 return error;
->
-> @@ -255,7 +271,7 @@ vfs_getxattr(struct dentry *dentry, const char *name, void *value, size_t size)
->         }
->  nolsm:
->         if (inode->i_op->getxattr)
-> -               error = inode->i_op->getxattr(dentry, name, value, size);
-> +               error = inode->i_op->getxattr(dentry, usename, value, size);
->         else
->                 error = -EOPNOTSUPP;
->
-> diff --git a/include/uapi/linux/xattr.h b/include/uapi/linux/xattr.h
-> index 26607bd..133998b 100644
-> --- a/include/uapi/linux/xattr.h
-> +++ b/include/uapi/linux/xattr.h
-> @@ -20,6 +20,10 @@
->  #define XATTR_SECURITY_PREFIX  "security."
->  #define XATTR_SECURITY_PREFIX_LEN (sizeof (XATTR_SECURITY_PREFIX) - 1)
->
-> +/* integrity - security mirror namespace for integrity purpose */
-> +#define XATTR_INTEGRITY_PREFIX "integrity."
-> +#define XATTR_INTEGRITY_PREFIX_LEN (sizeof (XATTR_INTEGRITY_PREFIX) - 1)
-> +
->  #define XATTR_SYSTEM_PREFIX "system."
->  #define XATTR_SYSTEM_PREFIX_LEN (sizeof (XATTR_SYSTEM_PREFIX) - 1)
->
-> --
-> 1.7.10.4
->
+Changes since v3:
+- Add Reveiwed-by
+- Fix pointed out style issues
+- Use np->full_name directly instead of kstrdup'ing it as it is a const char*
+- Call gpiochip_remove in grgpio_remove
+
+ .../devicetree/bindings/gpio/gpio-grgpio.txt       |   29 +++
+ drivers/gpio/Kconfig                               |    8 +
+ drivers/gpio/Makefile                              |    1 +
+ drivers/gpio/gpio-generic.c                        |   26 ++-
+ drivers/gpio/gpio-grgpio.c                         |  253 ++++++++++++++++++++
+ 5 files changed, 308 insertions(+), 9 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/gpio/gpio-grgpio.txt
+ create mode 100644 drivers/gpio/gpio-grgpio.c
+
+diff --git a/Documentation/devicetree/bindings/gpio/gpio-grgpio.txt b/Documentation/devicetree/bindings/gpio/gpio-grgpio.txt
+new file mode 100644
+index 0000000..36f456f
+--- /dev/null
++++ b/Documentation/devicetree/bindings/gpio/gpio-grgpio.txt
+@@ -0,0 +1,29 @@
++Aeroflex Gaisler GRGPIO General Purpose I/O cores.
++
++The GRGPIO GPIO core is available in the GRLIB VHDL IP core library.
++
++Note: In the ordinary ordinary environment for the GRGPIO core, a Leon SPARC
++system, these properties are built from information in the AMBA plug&play.
++
++Required properties:
++
++- name : Should be "GAISLER_GPIO" or "01_01a"
++
++- reg : Address and length of the register set for the device
++
++- interrupts : Interrupt numbers for this device
++
++Optional properties:
++
++- base : The base gpio number for the core. A dynamic base is used if not
++	present
++
++- nbits : The number of gpio lines. If not present driver assumes 32 lines.
++
++- irqmap : An array with an index for each gpio line. An index is either a valid
++	index into the interrupts property array, or 0xffffffff that indicates
++	no irq for that line. Driver provides no interrupt support if not
++	present.
++
++For further information look in the documentation for the GLIB IP core library:
++http://www.gaisler.com/products/grlib/grip.pdf
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index ab97eb8..5472778 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -309,6 +309,14 @@ config GPIO_LYNXPOINT
+ 	  driver for GPIO functionality on Intel Lynxpoint PCH chipset
+ 	  Requires ACPI device enumeration code to set up a platform device.
+ 
++config GPIO_GRGPIO
++	tristate "Aeroflex Gaisler GRGPIO support"
++	depends on OF
++	select GPIO_GENERIC
++	help
++	  Select this to support Aeroflex Gaisler GRGPIO cores from the GRLIB
++	  VHDL IP core library.
++
+ comment "I2C GPIO expanders:"
+ 
+ config GPIO_ARIZONA
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index 4398034..f3b49a2 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -26,6 +26,7 @@ obj-$(CONFIG_ARCH_DAVINCI)	+= gpio-davinci.o
+ obj-$(CONFIG_GPIO_EM)		+= gpio-em.o
+ obj-$(CONFIG_GPIO_EP93XX)	+= gpio-ep93xx.o
+ obj-$(CONFIG_GPIO_GE_FPGA)	+= gpio-ge.o
++obj-$(CONFIG_GPIO_GRGPIO)	+= gpio-grgpio.o
+ obj-$(CONFIG_GPIO_ICH)		+= gpio-ich.o
+ obj-$(CONFIG_GPIO_IT8761E)	+= gpio-it8761e.o
+ obj-$(CONFIG_GPIO_JANZ_TTL)	+= gpio-janz-ttl.o
+diff --git a/drivers/gpio/gpio-generic.c b/drivers/gpio/gpio-generic.c
+index 05fcc0f..f854799 100644
+--- a/drivers/gpio/gpio-generic.c
++++ b/drivers/gpio/gpio-generic.c
+@@ -251,24 +251,25 @@ static int bgpio_setup_accessors(struct device *dev,
+ 				 struct bgpio_chip *bgc,
+ 				 bool be)
+ {
++	struct bgpio_chip def;
+ 
+ 	switch (bgc->bits) {
+ 	case 8:
+-		bgc->read_reg	= bgpio_read8;
+-		bgc->write_reg	= bgpio_write8;
++		def.read_reg	= bgpio_read8;
++		def.write_reg	= bgpio_write8;
+ 		break;
+ 	case 16:
+-		bgc->read_reg	= bgpio_read16;
+-		bgc->write_reg	= bgpio_write16;
++		def.read_reg	= bgpio_read16;
++		def.write_reg	= bgpio_write16;
+ 		break;
+ 	case 32:
+-		bgc->read_reg	= bgpio_read32;
+-		bgc->write_reg	= bgpio_write32;
++		def.read_reg	= bgpio_read32;
++		def.write_reg	= bgpio_write32;
+ 		break;
+ #if BITS_PER_LONG >= 64
+ 	case 64:
+-		bgc->read_reg	= bgpio_read64;
+-		bgc->write_reg	= bgpio_write64;
++		def.read_reg	= bgpio_read64;
++		def.write_reg	= bgpio_write64;
+ 		break;
+ #endif /* BITS_PER_LONG >= 64 */
+ 	default:
+@@ -276,7 +277,14 @@ static int bgpio_setup_accessors(struct device *dev,
+ 		return -EINVAL;
+ 	}
+ 
+-	bgc->pin2mask = be ? bgpio_pin2mask_be : bgpio_pin2mask;
++	def.pin2mask = be ? bgpio_pin2mask_be : bgpio_pin2mask;
++
++	if (!bgc->read_reg)
++		bgc->read_reg = def.read_reg;
++	if (!bgc->write_reg)
++		bgc->write_reg = def.write_reg;
++	if (!bgc->pin2mask)
++		bgc->pin2mask = def.pin2mask;
+ 
+ 	return 0;
+ }
+diff --git a/drivers/gpio/gpio-grgpio.c b/drivers/gpio/gpio-grgpio.c
+new file mode 100644
+index 0000000..b1ec475
+--- /dev/null
++++ b/drivers/gpio/gpio-grgpio.c
+@@ -0,0 +1,253 @@
++/*
++ * Driver for Aeroflex Gaisler GRGPIO General Purpose I/O cores.
++ *
++ * 2013 (c) Aeroflex Gaisler AB
++ *
++ * This driver supports the GRGPIO GPIO core available in the GRLIB VHDL IP core
++ * library.
++ *
++ * Full documentation of the GRGPIO core can be found here:
++ * http://www.gaisler.com/products/grlib/grip.pdf
++ *
++ * See "Documentation/devicetree/bindings/gpio/gpio-grgpio.txt" for information
++ * on open firmware properties.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the
++ * Free Software Foundation; either version 2 of the License, or (at your
++ * option) any later version.
++ *
++ * Contributors: Andreas Larsson <andreas@gaisler.com>
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/spinlock.h>
++#include <linux/io.h>
++#include <linux/of.h>
++#include <linux/of_gpio.h>
++#include <linux/of_platform.h>
++#include <linux/of_irq.h>
++#include <linux/gpio.h>
++#include <linux/slab.h>
++#include <linux/irq.h>
++#include <linux/basic_mmio_gpio.h>
++
++#define GRGPIO_MAX_NGPIO 32
++
++struct grgpio_regs {
++	u32 data;	/* 0x00 */
++	u32 output;	/* 0x04 */
++	u32 dir;	/* 0x08 */
++	u32 imask;	/* 0x0c */
++	u32 ipol;	/* 0x10  */
++	u32 iedge;	/* 0x14 */
++	u32 bypass;	/* 0x18 */
++	u32 __reserved;	/* 0x1c */
++	u32 imap[8];	/* 0x20-0x3c */
++};
++
++struct grgpio_priv {
++	struct bgpio_chip bgc;
++	struct grgpio_regs __iomem *regs;
++
++	u32 imask;	/* irq mask shadow register */
++	s32 *irqmap;	/* maps offset to irq or -1 if no irq */
++};
++
++static unsigned long  grgpio_read_reg(void __iomem *reg)
++{
++	return ioread32be(reg);
++}
++
++static void grgpio_write_reg(void __iomem *reg, unsigned long data)
++{
++	iowrite32be(data, reg);
++}
++
++static inline struct grgpio_priv *grgpio_gc_to_priv(struct gpio_chip *gc)
++{
++	struct bgpio_chip *bgc = to_bgpio_chip(gc);
++
++	return container_of(bgc, struct grgpio_priv, bgc);
++}
++
++static void grgpio_set_imask(struct grgpio_priv *priv, unsigned int offset,
++			     int val)
++{
++	struct bgpio_chip *bgc = &priv->bgc;
++	unsigned long mask = bgc->pin2mask(bgc, offset);
++	unsigned long flags;
++
++	spin_lock_irqsave(&bgc->lock, flags);
++
++	if (val)
++		priv->imask |= mask;
++	else
++		priv->imask &= ~mask;
++	bgc->write_reg(&priv->regs->imask, priv->imask);
++
++	spin_unlock_irqrestore(&bgc->lock, flags);
++}
++
++static int grgpio_to_irq(struct gpio_chip *gc, unsigned offset)
++{
++	struct grgpio_priv *priv = grgpio_gc_to_priv(gc);
++	int index;
++	int irq;
++
++	if (!priv->irqmap || offset > gc->ngpio)
++		return -ENXIO;
++
++	index = priv->irqmap[offset];
++	if (index < 0)
++		return -ENXIO;
++
++	irq = irq_of_parse_and_map(priv->bgc.gc.dev->of_node, index);
++	if (irq) {
++		/* Enable interrupt and return irq */
++		grgpio_set_imask(priv, offset, 1);
++		return irq;
++	}
++
++	return -ENXIO;
++}
++
++static void grgpio_free(struct gpio_chip *gc, unsigned offset)
++{
++	struct grgpio_priv *priv = grgpio_gc_to_priv(gc);
++	struct bgpio_chip *bgc = &priv->bgc;
++	unsigned long mask = bgc->pin2mask(bgc, offset);
++
++	if (unlikely(priv->imask & mask))
++		grgpio_set_imask(priv, offset, 0);
++}
++
++static int grgpio_probe(struct platform_device *ofdev)
++{
++	struct device_node *np = ofdev->dev.of_node;
++	struct grgpio_regs __iomem *regs;
++	struct gpio_chip *gc;
++	struct bgpio_chip *bgc;
++	struct grgpio_priv *priv;
++	struct resource *res;
++	int err;
++	int size;
++	u32 prop;
++	s32 *irqmap;
++
++	priv = devm_kzalloc(&ofdev->dev, sizeof(*priv), GFP_KERNEL);
++	if (!priv)
++		return -ENOMEM;
++
++	res = platform_get_resource(ofdev, IORESOURCE_MEM, 0);
++	regs = devm_request_and_ioremap(&ofdev->dev, res);
++	if (!regs) {
++		dev_err(&ofdev->dev, "Couldn't map registers\n");
++		return -EADDRNOTAVAIL;
++	}
++
++	bgc = &priv->bgc;
++	bgc->read_reg = grgpio_read_reg;
++	bgc->write_reg = grgpio_write_reg;
++	err = bgpio_init(bgc, &ofdev->dev, 4, &regs->data, &regs->output, NULL,
++			 &regs->dir, NULL, 0);
++	if (err) {
++		dev_err(&ofdev->dev, "bgpio_init() failed\n");
++		return err;
++	}
++
++	priv->regs = regs;
++	priv->imask = bgc->read_reg(&regs->imask);
++
++	gc = &bgc->gc;
++	gc->of_node = np;
++	gc->owner = THIS_MODULE;
++	gc->to_irq = grgpio_to_irq;
++	gc->free = grgpio_free;
++	gc->label = np->full_name;
++
++	err = of_property_read_u32(np, "base", &prop);
++	if (err) {
++		dev_dbg(&ofdev->dev, "No base property: use dynamic base\n");
++		gc->base = -1;
++	} else {
++		gc->base = prop;
++	}
++
++	err = of_property_read_u32(np, "nbits", &prop);
++	if (err || prop <= 0 || prop > GRGPIO_MAX_NGPIO) {
++		gc->ngpio = GRGPIO_MAX_NGPIO;
++		dev_dbg(&ofdev->dev,
++			"No or invalid nbits property: assume %d\n", gc->ngpio);
++	} else {
++		gc->ngpio = prop;
++	}
++
++	irqmap = (s32 *)of_get_property(np, "irqmap", &size);
++	if (irqmap) {
++		int i;
++
++		if (size < gc->ngpio) {
++			dev_err(&ofdev->dev,
++				"irqmap shorter than ngpio (%d < %d)\n",
++				size, gc->ngpio);
++			return -EINVAL;
++		}
++
++		priv->irqmap = devm_kzalloc(&ofdev->dev,
++					    gc->ngpio * sizeof(s32),
++					    GFP_KERNEL);
++		if (!priv->irqmap)
++			return -ENOMEM;
++
++		for (i = 0; i < gc->ngpio; i++)
++			priv->irqmap[i] = irqmap[i];
++	} else {
++		dev_dbg(&ofdev->dev, "No irqmap\n");
++	}
++
++	platform_set_drvdata(ofdev, priv);
++
++	err = gpiochip_add(gc);
++	if (err) {
++		dev_err(&ofdev->dev, "Couldn't add gpiochip\n");
++		return err;
++	}
++
++	dev_info(&ofdev->dev, "regs=0x%p, base=%d, npgio=%d\n",
++		 priv->regs, gc->base, gc->ngpio);
++
++	return 0;
++}
++
++static int grgpio_remove(struct platform_device *ofdev)
++{
++	struct grgpio_priv *priv = platform_get_drvdata(ofdev);
++
++	return gpiochip_remove(&priv->bgc.gc);
++}
++
++static struct of_device_id grgpio_match[] = {
++	{.name = "GAISLER_GPIO"},
++	{.name = "01_01a"},
++	{},
++};
++
++MODULE_DEVICE_TABLE(of, grgpio_match);
++
++static struct platform_driver grgpio_driver = {
++	.driver = {
++		.name = "grgpio",
++		.owner = THIS_MODULE,
++		.of_match_table = grgpio_match,
++	},
++	.probe = grgpio_probe,
++	.remove = grgpio_remove,
++};
++module_platform_driver(grgpio_driver);
++
++MODULE_AUTHOR("Aeroflex Gaisler AB.");
++MODULE_DESCRIPTION("Driver for Aeroflex Gaisler GRGPIO");
++MODULE_LICENSE("GPL");
+-- 
+1.7.0.4
+
