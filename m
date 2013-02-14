@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934087Ab3BNLGd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 06:06:33 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:18120 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933839Ab3BNLGc (ORCPT
+	id S934179Ab3BNLGo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 06:06:44 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51152 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933839Ab3BNLGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 06:06:32 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 14 Feb 2013 03:05:29 -0800
-Message-ID: <511CC520.8050104@nvidia.com>
-Date: Thu, 14 Feb 2013 16:36:08 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+	Thu, 14 Feb 2013 06:06:42 -0500
+Date: Thu, 14 Feb 2013 11:06:40 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] regmap: irq: do not write mask register if it is
- not supported
-References: <1360761290-15976-1-git-send-email-ldewangan@nvidia.com> <1360761290-15976-2-git-send-email-ldewangan@nvidia.com> <20130213142036.GJ5062@opensource.wolfsonmicro.com>
-In-Reply-To: <20130213142036.GJ5062@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH 1/2] regmap: irq: Add support for interrupt type
+Message-ID: <20130214110640.GB13249@opensource.wolfsonmicro.com>
+References: <1360761290-15976-1-git-send-email-ldewangan@nvidia.com>
+ <20130213135440.GI5062@opensource.wolfsonmicro.com>
+ <511CC41E.7040608@nvidia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2B/JsCI69OhZNC5r"
+Content-Disposition: inline
+In-Reply-To: <511CC41E.7040608@nvidia.com>
+X-Cookie: Your domestic life may be harmonious.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 13 February 2013 07:50 PM, Mark Brown wrote:
-> *
->
->>   	for (i = 0; i < d->chip->num_regs; i++) {
->> +		if (!d->chip->mask_base)
->> +			goto skip_mask_reg_update;
->> +
-> Why is this inside the loop?
->
-> I'd also expect us to return an error if a caller tries to enable or
-> disable an interrupt, or possibly to give different ops to the IRQ
-> subsystem, rather than just silently claim we did what we were asked.
 
-I tried to use regmap-irq for the gpio submodule and it has two sets of 
-register:
-GPIOx_CNFG: bit[7:6] interrupt rising/falling.
-GPIO_INT_STS where each bit shows the interrupt status whether it 
-occured or not.
-There is no mask register.
+--2B/JsCI69OhZNC5r
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-In regmap-irq_thread() we see the interrupt status and compare against 
-mask enable buffer wther this is enabled or not and accordingly call the 
-handler.
+On Thu, Feb 14, 2013 at 04:31:50PM +0530, Laxman Dewangan wrote:
 
-hence I am still require irq_mask()/irq_unmask() to reflect the mask 
-with interrupt status and type for actually configuring the GPIOx_CNFG.
+> is this mean we should have variable like
+> .supported_iflags which capture what it is supported or not.
+> And then irq_type_val[MAX_REGMAP_IRQ_TYPE] as array and define the
+> REGMAP_IRQ_TYPE_[FALLING/RISING/BOTH] as index and client can fill
+> this info as per the hardware or
 
-if I remove the mask_buf at all then how do we tell the int_sts register 
-is corresponding to which gpio handler?
+I think this option is best; it's going to avoid us having to write
+explicit cases for every single use case.  But perhaps it's going to be
+too painful to work with.
 
+--2B/JsCI69OhZNC5r
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRHMU6AAoJELSic+t+oim9u/IP+gPmwxUKV9XS5/X7wF9gDtfy
+hD29RzxMtsEcnqMai03Inz7485n9MxmR/w6PDf27Wb0hcvctSWT86wqWOd/r46ct
+4szD89wTlrBNGjUb3Dpzy9ocM0xU9vlL97InPQaViBzfiiV8BxZA6qyMQcCMNmXq
+YP8M0GPznxL09JoYLQA3h5iOenPtkB4fN9C5t8DoXQ10Pyra2vU5wlkOHQNn4Eh/
+BZKxLkZ+tNeyuiJwmA5g/OTLimeFZh36sjLd+Jb5W4gAuyKnoVKz8e2Il4PFjWd+
+PQbpfWsjV71E8yGDhe4kAY7YKtlUMRxFSwgS3iZNKHfgeH+umJA1ge4TNFDS8CTn
+Jv/ALMcifEuN7hk98Y8MhjJR7e3bx4rR0Ewa6xxFodhUCVRmiXvZ7x7+RcnULYQ9
+/apK406LjS7U9vGtD0z25lFLmRGYvCakARzE5KVgrMUayQZo+yV1kRcygsBO7zpD
+nK9zZlLvHPw6ARmMc7n1xJXi1KO8Ibc3kh0GUY76iGFO7+puMZgvk4WNWIVAIHUu
+i2+Lj+f0nvX5GKH+aaskLO9wqO7zvE7qXNTI7FjAQrYl/nMVmhuVGGrZs/5XdW6X
+gfMRi9DZSy5HT7SvMC+/pNIIpfH/tTIxbZOmwD1Tl9ojqZmGgtqWUvyXqGpaZ+xe
+oY8YlP/D+KtsXefW0VYo
+=v6G1
+-----END PGP SIGNATURE-----
+
+--2B/JsCI69OhZNC5r--
