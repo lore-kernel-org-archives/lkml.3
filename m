@@ -1,41 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934675Ab3BNOhy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 09:37:54 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57384 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757829Ab3BNOhx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 09:37:53 -0500
-Date: Thu, 14 Feb 2013 14:37:51 +0000
-From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH v2] regmap: debugfs: Simplify calculation of
-	`c->max_reg'
-Message-ID: <20130214143751.GA23599@opensource.wolfsonmicro.com>
-References: <1360850644-15581-1-git-send-email-dp@opensource.wolfsonmicro.com> <20130214141439.GL13249@opensource.wolfsonmicro.com>
+	id S934690Ab3BNOjZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 09:39:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39545 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756281Ab3BNOjY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 09:39:24 -0500
+Date: Thu, 14 Feb 2013 15:39:05 +0100
+From: Borislav Petkov <bp@suse.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Jiri Slaby <jslaby@suse.cz>, Bjorn Helgaas <bhelgaas@google.com>,
+        x86@kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>
+Subject: Re: Uhhuh. NMI received for unknown reason 2c on CPU 0.
+Message-ID: <20130214143905.GC5700@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@suse.de>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>, Jiri Slaby <jslaby@suse.cz>,
+	Bjorn Helgaas <bhelgaas@google.com>, x86@kernel.org,
+	lkml <linux-kernel@vger.kernel.org>,
+	Konstantin Khlebnikov <khlebnikov@openvz.org>
+References: <20130129202848.GE25415@pd.tnic>
+ <3066730.6MVSAfNyye@vostro.rjw.lan>
+ <20130131131034.GF4926@pd.tnic>
+ <2293454.v8QRHr8txR@vostro.rjw.lan>
+ <20130203144656.GB5844@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130214141439.GL13249@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20130203144656.GB5844@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 14, 2013 at 02:14:40PM +0000, Mark Brown wrote:
-> On Thu, Feb 14, 2013 at 02:04:04PM +0000, Dimitris Papastamos wrote:
+On Sun, Feb 03, 2013 at 03:46:56PM +0100, Borislav Petkov wrote:
+> On Sun, Feb 03, 2013 at 12:04:46AM +0100, Rafael J. Wysocki wrote:
+> > The [2/5] is at: https://patchwork.kernel.org/patch/2001211/
+> > 
+> > The other two are attached.  I suppose the ordering doesn't matter.
 > 
-> > -	unsigned int i, ret;
-> > +	unsigned int i = 0, ret;
-> 
-> Coding style and are you sure this is a good default.
+> Ok, the eth link cable hotplugging issue seems fixed, plugging and
+> unplugging the cable works as expected.
 
-Hm, it doesn't really matter.  I guess the proper fix would
-be to set i = base at the start, but that would not change
-anything in terms of the actual code flow, it would only silence
-the gcc flow analysis bug.
+Q: what happened to those, are they going upstream for 3.9 or are you
+sending them now for 3.8?
 
-Thanks,
-Dimitris
+They fix at least the cable hotplugging issue so at least one thing is
+covered.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
