@@ -1,112 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761439Ab3BNQUT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 11:20:19 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:13411 "EHLO relay.sw.ru"
+	id S934741Ab3BNQ0z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 11:26:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51113 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757761Ab3BNQUR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 11:20:17 -0500
-Message-ID: <511D0EA1.9060704@parallels.com>
-Date: Thu, 14 Feb 2013 20:19:45 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1758021Ab3BNQ0y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 11:26:54 -0500
+Message-ID: <511D104A.1040204@redhat.com>
+Date: Thu, 14 Feb 2013 17:26:50 +0100
+From: Denys Vlasenko <dvlasenk@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, linux-api@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/3] posix timers: Add syscall that works on timer sigevent
-References: <511D0E50.7090505@parallels.com>
-In-Reply-To: <511D0E50.7090505@parallels.com>
+To: Oleg Nesterov <oleg@redhat.com>
+CC: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] x86: make PTRACE_GETREGSET return 32-bit regs if 64-bit
+ process entered kernel with int 80
+References: <511CE3D0.8000308@redhat.com> <20130214150046.GA30543@redhat.com>
+In-Reply-To: <20130214150046.GA30543@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The intention is to make a syscall, that works like sigaction
-but on a posix timer. I.e. -- puts (if provided) new sigevent
-on the timer and reports the previous value (if requested).
+On 02/14/2013 04:00 PM, Oleg Nesterov wrote:
+> On 02/14, Denys Vlasenko wrote:
+>> This patch makes it so that in syscall-entry-stop caused by
+>> "int 80" instruction, PTRACE_GETREGSET returns 32-bit regset.
+> 
+> Not sure...
+> 
+> First of all, this is incompatible change. And to me, it doesn't look
+> correct anyway. Say, why the debugger can't modify r15 if a 64bit tracee
+> does int80?
 
-That said, the syscall accepts timer id to work on, a pointer
-to the new sigevent (may be NULL, meaning that the existing
-sigevent remains intact) and pointer to memory buffer where to
-put the existing sigevent (may be NULL as well, sigevent is
-not reported in this case).
+On x86_64, PTRACE_GET/SETREGS can be used for this: they always operate
+on 64-bit registers.
 
-For how I didn't implement the new sigevent assignment, as it
-requires a little bit of trickery with timer. If the proposed
-idea itself is OK useful I will implement this part as well in
-the v2 series.
+> Or think about PTRACE_EVENT_FORK which can be reported with
+> TS_COMPAT set.
 
-Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
----
- arch/x86/syscalls/syscall_64.tbl |    1 +
- include/linux/syscalls.h         |    3 +++
- kernel/posix-timers.c            |   28 ++++++++++++++++++++++++++++
- 3 files changed, 32 insertions(+), 0 deletions(-)
+I don't see a problem. Yes, PTRACE_GETREGSET will return
+32-bit regset in this ptrace-stop, which is a problem... why?
 
-diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
-index 72b6ee6..c2c1743 100644
---- a/arch/x86/syscalls/syscall_64.tbl
-+++ b/arch/x86/syscalls/syscall_64.tbl
-@@ -321,6 +321,7 @@
- 312	common	kcmp			sys_kcmp
- 313	common	finit_module		sys_finit_module
- 314	common	timer_list		sys_timer_list
-+315	64	timer_sigevent		sys_timer_sigevent
- 
- #
- # x32-specific system call numbers start at 512 to avoid cache impact
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index dc951da..7d121c5 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -312,6 +312,9 @@ asmlinkage long sys_setitimer(int which,
- asmlinkage long sys_timer_create(clockid_t which_clock,
- 				 struct sigevent __user *timer_event_spec,
- 				 timer_t __user * created_timer_id);
-+asmlinkage long sys_timer_sigevent(timer_t timer_id,
-+				struct sigevent __user *new_event,
-+				struct sigevent __user *old_event);
- asmlinkage long sys_timer_gettime(timer_t timer_id,
- 				struct itimerspec __user *setting);
- asmlinkage long sys_timer_getoverrun(timer_t timer_id);
-diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
-index 46cee59..29de379 100644
---- a/kernel/posix-timers.c
-+++ b/kernel/posix-timers.c
-@@ -1151,3 +1151,31 @@ try_again:
- out:
- 	return nr;
- }
-+
-+SYSCALL_DEFINE3(timer_sigevent, timer_t, timer_id, struct sigevent __user *, new_event,
-+		struct sigevent __user *, old_event)
-+{
-+	struct k_itimer *timer;
-+	unsigned long flags;
-+	struct sigevent event;
-+	int ret = 0;
-+
-+	if (new_event)
-+		return -EINVAL;
-+
-+	timer = lock_timer(timer_id, &flags);
-+	if (!timer)
-+		return -EINVAL;
-+
-+	event.sigev_notify = timer->it_sigev_notify;
-+	event.sigev_signo = timer->sigq->info.si_signo;
-+	event.sigev_value = timer->sigq->info.si_value;
-+	event.sigev_notify_thread_id = pid_vnr(timer->it_pid);
-+
-+	unlock_timer(timer, flags);
-+
-+	if (old_event && copy_to_user(old_event, &event, sizeof(event)))
-+		ret = -EFAULT;
-+
-+	return ret;
-+}
+> Probably is_ia32_task() should be reported "explicitely" as we already
+> discussed, and afaik you have other ideas.
+
+
+Yes, there are a few ideas. Say, new ptrace op:
+can be introduced to return a vector of longs.
+To make it easily parsable, how about (type,len,data...)
+records? This also may allow tracer to indicate which records
+it wants: for example, not everyone wants to read syscall params.
+Maybe something like
+
+ptrace(PTRACE_GETSYSCALL, pid, list_of_elements_I_want, &iov)
+
+where list_of_elements_I_want is long[], 0-terminated,
+iov points to a buffer, and on return iov.len is updated
+(a-la GETREGSET).
+
+What problems can be solved here?
+
+(1) syscall entry/exit discrimination etc. Say, a record
+can contain bit flags, such as "it's a syscall entry",
+"it's a syscall exit", "it's a group-stop" etc.
+Currently, it is impossible for tracer to distinguish
+syscall entry from syscall exit.
+
+(2) a record can supply arch-specific data, such as the x86-specific
+problem I tried to address: "was it a int 80 syscall?". Variable-length
+record format makes it easy to adapt to different archs' needs.
+Alternatively, we can set aside a few bits in "bit flags record"
+as arch dependent bits. Most arches need just a few bits.
+
+(3) on syscall entry, a record can contain (up to) 7 words: syscall_no
+and 0-6 params, making tracer's code less architecture dependent.
+Today in strace, *every* architecture needs to have arch-dependent
+regs-to-params conversion code. I would like to be able
+to code it in C with the same code for most arches.
+
+(4) We can read structs/data pointed by syscall params, such as
+struct stat returned by fstat, without needing additional
+round-trip to kernel, *and* with kernel-supplied information
+on structure's size. Currently, strace has to know the size correctly.
+There were, and will be, bugs in strace where we mishandle
+structures because we mis-detect process' bitness, and use wrong
+struct stat layouts. If kernel would be able to tell us:
+"I returned 78 byte structure in memory pointed to by arg1",
+it would help a lot. Even if it wouldn't return the result
+structure itself (I imagine it's a lot of work in kernel
+to access it in other process vm), knowing its size
+will still be a big help.
+
+(5) We can read several regsets: gps, SSE regs, etc.
+Maybe someone would find it useful? (strace doesn't need this).
+
+
+How does this look?
+
+I propose to start small, by implementing just 1; 2 in a form of arch bits
+as part of 1; and 3. It will satisfy the needs I tried to address
+in my patch.
+
 -- 
-1.7.6.5
+vda
+
