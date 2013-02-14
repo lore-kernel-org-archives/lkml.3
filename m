@@ -1,74 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030342Ab3BNW5x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 17:57:53 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:10138 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1030250Ab3BNW5w (ORCPT
+	id S1030356Ab3BNW6U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 17:58:20 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:26056 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030250Ab3BNW6S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 17:57:52 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+/cOaHwNCcWCL2nQ7ph7B9
-Date: Thu, 14 Feb 2013 14:57:50 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, Mauro Carvalho Chehab <mchehab@redhat.com>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>
-Subject: Re: [PATCH 9/9] [media] davinci: do not include mach/hardware.h
-Message-ID: <20130214225749.GJ11362@atomide.com>
-References: <1360882071-4072668-1-git-send-email-arnd@arndb.de>
- <1360882071-4072668-10-git-send-email-arnd@arndb.de>
+	Thu, 14 Feb 2013 17:58:18 -0500
+Date: Thu, 14 Feb 2013 17:57:40 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>, devel@linuxdriverproject.org,
+        rcj@linux.vnet.ibm.com, sjenning@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Various cleanups/fixes to zcache (v3).
+Message-ID: <20130214225740.GA8104@phenom.dumpdata.com>
+References: <1360811106-2679-1-git-send-email-konrad.wilk@oracle.com>
+ <56c69426-968a-4d0b-a254-dd03456e30d3@default>
+ <20130214165920.GA26615@kroah.com>
+ <7ad0cf40-61bd-4a1e-a4f0-e27fbc3543fd@default>
+ <20130214172926.GA17343@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1360882071-4072668-10-git-send-email-arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130214172926.GA17343@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Arnd Bergmann <arnd@arndb.de> [130214 14:51]:
-> It is now possible to build the davinci vpss code
-> on multiplatform kernels, which causes a problem
-> since the driver tries to incude the davinci
-> platform specific mach/hardware.h file. Fortunately
-> that file is not required at all in the driver,
-> so we can simply remove the #include statement.
+On Thu, Feb 14, 2013 at 09:29:26AM -0800, Greg KH wrote:
+> On Thu, Feb 14, 2013 at 09:02:47AM -0800, Dan Magenheimer wrote:
+> > > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > > Subject: Re: [PATCH] Various cleanups/fixes to zcache (v3).
+> > > 
+> > > On Thu, Feb 14, 2013 at 08:56:01AM -0800, Dan Magenheimer wrote:
+> > > > > From: Konrad Rzeszutek Wilk [mailto:konrad.wilk@oracle.com]
+> > > > > Subject: [PATCH] Various cleanups/fixes to zcache (v3).
+> > > > >
+> > > > > From Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> # This line is ignored.
+> > > > > From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > > > > Subject: [PATCH] Various cleanups/fixes to zcache (v3).
+> > > > > In-Reply-To:
+> > > > >
+> > > > > Hey Greg,
+> > > > >
+> > > > > These patches do various cleanups of the zcache driver. The majority of the
+> > > > > work is just to move all the different counters out to a debug file. The next
+> > > > > step would be to figure out which ones are actually pertient and which can
+> > > > > go under the knife. Oh, and also fix some of the compiler warnings.
+> > > > >
+> > > > > This is based on top of ommit 76426daf50d5df38893cc189e9ccd026093debc8
+> > > > > ("staging/zcache: Fix/improve zcache writeback code, tie to a config option")
+> > > > > so should apply cleanly to your tree.
+> > > > >
+> > > > > Please apply.
+> > > >
+> > > > Useful cleanups.
+> > > >
+> > > > Hopefully not too late for 3.9-rc0.
+> > > 
+> > > You all did see my "the staging tree is closed except for bugfixes for
+> > > 3.9" message last week, right?
+> > 
+> > Oops, sorry, no I missed that.
+> >  
+> > > Sorry, this will have to wait for 3.10.
+> > 
+> > No problem, no bugs fixed here, though I expect we'll see
+> > the same complaints posted again about the compiler warnings.
 > 
-> Without this patch, building allyesconfig results in:
-> 
-> drivers/media/platform/davinci/vpss.c:28:27: fatal error: mach/hardware.h: No such file or directory
-> compilation terminated.
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-> Cc: "Lad, Prabhakar" <prabhakar.lad@ti.com>
+> Then why not just redo that one patch, and send it to me, and then
+> rebase all of the other patches on top of it?  That way I can accept the
+> "fix the complier warnings" patch now, and the rest can wait.
 
-All mach and plat includes from drivers should be fixed
-and removed as that adds nasty dependencies between core SoC
-code and the drivers.
-
-Acked-by: Tony Lindgren <tony@atomide.com>
-
-> ---
->  drivers/media/platform/davinci/vpss.c | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/drivers/media/platform/davinci/vpss.c b/drivers/media/platform/davinci/vpss.c
-> index 494d322..a19c552 100644
-> --- a/drivers/media/platform/davinci/vpss.c
-> +++ b/drivers/media/platform/davinci/vpss.c
-> @@ -25,7 +25,6 @@
->  #include <linux/spinlock.h>
->  #include <linux/compiler.h>
->  #include <linux/io.h>
-> -#include <mach/hardware.h>
->  #include <media/davinci/vpss.h>
->  
->  MODULE_LICENSE("GPL");
-> -- 
-> 1.8.1.2
-> 
+Aye aye captain. Going to send them tomorrow (zbud/zcache).
