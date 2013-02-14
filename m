@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934109Ab3BNOUb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 09:20:31 -0500
-Received: from relay.parallels.com ([195.214.232.42]:52303 "EHLO
+	id S933880Ab3BNOU3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 09:20:29 -0500
+Received: from relay.parallels.com ([195.214.232.42]:52308 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932252Ab3BNOU0 (ORCPT
+	with ESMTP id S932278Ab3BNOU1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 09:20:26 -0500
+	Thu, 14 Feb 2013 09:20:27 -0500
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: Jens Axboe <axboe@kernel.dk>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
+        "Peter Zijlstra" <peterz@infradead.org>
 CC: <devel@openvz.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/2] sched: add wait_for_completion_io[_timeout]
-Date: Thu, 14 Feb 2013 18:19:58 +0400
-Message-ID: <d5e5c32b045e448072b3a4b77cd6557408b77103.1360851174.git.vdavydov@parallels.com>
+Subject: [PATCH 2/2] block: account iowait time when waiting for completion of IO request
+Date: Thu, 14 Feb 2013 18:19:59 +0400
+Message-ID: <d1fdb105fe23f979871b92c4b4d3dd374146e337.1360851174.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <d5e5c32b045e448072b3a4b77cd6557408b77103.1360851174.git.vdavydov@parallels.com>
+References: <d5e5c32b045e448072b3a4b77cd6557408b77103.1360851174.git.vdavydov@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.30.22.158]
@@ -22,136 +24,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The only difference between wait_for_completion[_timeout]() and
-wait_for_completion_io[_timeout]() is that the latter calls
-io_schedule_timeout() instead of schedule_timeout() so that the caller
-is accounted as waiting for IO, not just sleeping.
+Using wait_for_completion() for waiting for a IO request to be executed
+results in wrong iowait time accounting. For example, a system having
+the only task doing write() and fdatasync() on a block device can be
+reported being idle instead of iowaiting as it should because
+blkdev_issue_flush() calls wait_for_completion() which in turn calls
+schedule() that does not increment the iowait proc counter and thus does
+not turn on iowait time accounting.
 
-These functions can be used for correct iowait time accounting when the
-completion struct is actually used for waiting for IO (e.g. completion
-of a bio request in the block layer).
+The patch makes block layer use wait_for_completion_io() instead of
+wait_for_completion() where appropriate to account iowait time
+correctly.
 
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 ---
- include/linux/completion.h |    3 ++
- kernel/sched/core.c        |   57 ++++++++++++++++++++++++++++++++++++++++----
- 2 files changed, 55 insertions(+), 5 deletions(-)
+ block/blk-exec.c  |    4 ++--
+ block/blk-flush.c |    2 +-
+ block/blk-lib.c   |    6 +++---
+ 3 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/completion.h b/include/linux/completion.h
-index 51494e6..33f0280 100644
---- a/include/linux/completion.h
-+++ b/include/linux/completion.h
-@@ -77,10 +77,13 @@ static inline void init_completion(struct completion *x)
- }
+diff --git a/block/blk-exec.c b/block/blk-exec.c
+index 74638ec..f634de7 100644
+--- a/block/blk-exec.c
++++ b/block/blk-exec.c
+@@ -120,9 +120,9 @@ int blk_execute_rq(struct request_queue *q, struct gendisk *bd_disk,
+ 	/* Prevent hang_check timer from firing at us during very long I/O */
+ 	hang_check = sysctl_hung_task_timeout_secs;
+ 	if (hang_check)
+-		while (!wait_for_completion_timeout(&wait, hang_check * (HZ/2)));
++		while (!wait_for_completion_io_timeout(&wait, hang_check * (HZ/2)));
+ 	else
+-		wait_for_completion(&wait);
++		wait_for_completion_io(&wait);
  
- extern void wait_for_completion(struct completion *);
-+extern void wait_for_completion_io(struct completion *);
- extern int wait_for_completion_interruptible(struct completion *x);
- extern int wait_for_completion_killable(struct completion *x);
- extern unsigned long wait_for_completion_timeout(struct completion *x,
- 						   unsigned long timeout);
-+extern unsigned long wait_for_completion_io_timeout(struct completion *x,
-+						    unsigned long timeout);
- extern long wait_for_completion_interruptible_timeout(
- 	struct completion *x, unsigned long timeout);
- extern long wait_for_completion_killable_timeout(
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 26058d0..e0396dd 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3268,7 +3268,8 @@ void complete_all(struct completion *x)
- EXPORT_SYMBOL(complete_all);
+ 	if (rq->errors)
+ 		err = -EIO;
+diff --git a/block/blk-flush.c b/block/blk-flush.c
+index 720ad60..db8f1b5 100644
+--- a/block/blk-flush.c
++++ b/block/blk-flush.c
+@@ -436,7 +436,7 @@ int blkdev_issue_flush(struct block_device *bdev, gfp_t gfp_mask,
  
- static inline long __sched
--do_wait_for_common(struct completion *x, long timeout, int state)
-+do_wait_for_common(struct completion *x,
-+		   long (*action)(long), long timeout, int state)
- {
- 	if (!x->done) {
- 		DECLARE_WAITQUEUE(wait, current);
-@@ -3281,7 +3282,7 @@ do_wait_for_common(struct completion *x, long timeout, int state)
- 			}
- 			__set_current_state(state);
- 			spin_unlock_irq(&x->wait.lock);
--			timeout = schedule_timeout(timeout);
-+			timeout = action(timeout);
- 			spin_lock_irq(&x->wait.lock);
- 		} while (!x->done && timeout);
- 		__remove_wait_queue(&x->wait, &wait);
-@@ -3292,17 +3293,30 @@ do_wait_for_common(struct completion *x, long timeout, int state)
- 	return timeout ?: 1;
- }
+ 	bio_get(bio);
+ 	submit_bio(WRITE_FLUSH, bio);
+-	wait_for_completion(&wait);
++	wait_for_completion_io(&wait);
  
--static long __sched
--wait_for_common(struct completion *x, long timeout, int state)
-+static inline long __sched
-+__wait_for_common(struct completion *x,
-+		  long (*action)(long), long timeout, int state)
- {
- 	might_sleep();
+ 	/*
+ 	 * The driver must store the error location in ->bi_sector, if
+diff --git a/block/blk-lib.c b/block/blk-lib.c
+index b3a1f2b..d6f50d5 100644
+--- a/block/blk-lib.c
++++ b/block/blk-lib.c
+@@ -126,7 +126,7 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
  
- 	spin_lock_irq(&x->wait.lock);
--	timeout = do_wait_for_common(x, timeout, state);
-+	timeout = do_wait_for_common(x, action, timeout, state);
- 	spin_unlock_irq(&x->wait.lock);
- 	return timeout;
- }
+ 	/* Wait for bios in-flight */
+ 	if (!atomic_dec_and_test(&bb.done))
+-		wait_for_completion(&wait);
++		wait_for_completion_io(&wait);
  
-+static long __sched
-+wait_for_common(struct completion *x, long timeout, int state)
-+{
-+	return __wait_for_common(x, schedule_timeout, timeout, state);
-+}
-+
-+static long __sched
-+wait_for_common_io(struct completion *x, long timeout, int state)
-+{
-+	return __wait_for_common(x, io_schedule_timeout, timeout, state);
-+}
-+
- /**
-  * wait_for_completion: - waits for completion of a task
-  * @x:  holds the state of this particular completion
-@@ -3339,6 +3353,39 @@ wait_for_completion_timeout(struct completion *x, unsigned long timeout)
- EXPORT_SYMBOL(wait_for_completion_timeout);
+ 	if (!test_bit(BIO_UPTODATE, &bb.flags))
+ 		ret = -EIO;
+@@ -200,7 +200,7 @@ int blkdev_issue_write_same(struct block_device *bdev, sector_t sector,
  
- /**
-+ * wait_for_completion_io: - waits for completion of a task
-+ * @x:  holds the state of this particular completion
-+ *
-+ * This waits to be signaled for completion of a specific task. It is NOT
-+ * interruptible and there is no timeout. The caller is accounted as waiting
-+ * for IO.
-+ */
-+void __sched wait_for_completion_io(struct completion *x)
-+{
-+	wait_for_common_io(x, MAX_SCHEDULE_TIMEOUT, TASK_UNINTERRUPTIBLE);
-+}
-+EXPORT_SYMBOL(wait_for_completion_io);
-+
-+/**
-+ * wait_for_completion_io_timeout: - waits for completion of a task (w/timeout)
-+ * @x:  holds the state of this particular completion
-+ * @timeout:  timeout value in jiffies
-+ *
-+ * This waits for either a completion of a specific task to be signaled or for a
-+ * specified timeout to expire. The timeout is in jiffies. It is not
-+ * interruptible. The caller is accounted as waiting for IO.
-+ *
-+ * The return value is 0 if timed out, and positive (at least 1, or number of
-+ * jiffies left till timeout) if completed.
-+ */
-+unsigned long __sched
-+wait_for_completion_io_timeout(struct completion *x, unsigned long timeout)
-+{
-+	return wait_for_common_io(x, timeout, TASK_UNINTERRUPTIBLE);
-+}
-+EXPORT_SYMBOL(wait_for_completion_io_timeout);
-+
-+/**
-  * wait_for_completion_interruptible: - waits for completion of a task (w/intr)
-  * @x:  holds the state of this particular completion
-  *
+ 	/* Wait for bios in-flight */
+ 	if (!atomic_dec_and_test(&bb.done))
+-		wait_for_completion(&wait);
++		wait_for_completion_io(&wait);
+ 
+ 	if (!test_bit(BIO_UPTODATE, &bb.flags))
+ 		ret = -ENOTSUPP;
+@@ -262,7 +262,7 @@ int __blkdev_issue_zeroout(struct block_device *bdev, sector_t sector,
+ 
+ 	/* Wait for bios in-flight */
+ 	if (!atomic_dec_and_test(&bb.done))
+-		wait_for_completion(&wait);
++		wait_for_completion_io(&wait);
+ 
+ 	if (!test_bit(BIO_UPTODATE, &bb.flags))
+ 		/* One of bios in the batch was completed with error.*/
 -- 
 1.7.1
 
