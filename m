@@ -1,79 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759840Ab3BNMFb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 07:05:31 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38972 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757502Ab3BNMFa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 07:05:30 -0500
-Message-ID: <511CD300.7080207@pengutronix.de>
-Date: Thu, 14 Feb 2013 13:05:20 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix e.K.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	id S1759819Ab3BNMJG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 07:09:06 -0500
+Received: from mga11.intel.com ([192.55.52.93]:42787 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759608Ab3BNMJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 07:09:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,665,1355126400"; 
+   d="scan'208";a="287176516"
+Message-ID: <511CD3D6.7080102@intel.com>
+Date: Thu, 14 Feb 2013 20:08:54 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: artem.bityutskiy@linux.intel.com
-CC: linux-mtd@lists.infradead.org, kernel@pengutronix.de,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        Subodh Nijsure <snijsure@grid-net.com>
-Subject: Re: [PATCH RFC 4/5] UBIFS: Add security.* XATTR support for the UBIFS
-References: <1360750998-15191-1-git-send-email-mkl@pengutronix.de>  <1360750998-15191-5-git-send-email-mkl@pengutronix.de> <1360826890.12703.158.camel@sauron.fi.intel.com>
-In-Reply-To: <1360826890.12703.158.camel@sauron.fi.intel.com>
-X-Enigmail-Version: 1.5
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2LJJLALTOKVWQNJUWIOCB"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Michel Lespinasse <walken@google.com>
+CC: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        anton@samba.org, hpa@zytor.com, arjan@linux.intel.com,
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
+        yuanhan.liu@linux.intel.com, dhowells@redhat.com,
+        akpm@linux-foundation.org, tglx@linutronix.de
+Subject: Re: [PATCH 0/4] rwsem: Implement writer lock-stealing
+References: <1360377937-16297-1-git-send-email-walken@google.com> <511B9B4F.3060404@intel.com> <20130213144932.GA14260@gmail.com> <CANN689FJcUZq1wcVZXO+jLOHOeCPnOf5kfYgYVykG6-YLSjj7g@mail.gmail.com>
+In-Reply-To: <CANN689FJcUZq1wcVZXO+jLOHOeCPnOf5kfYgYVykG6-YLSjj7g@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2LJJLALTOKVWQNJUWIOCB
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On 02/14/2013 09:31 AM, Michel Lespinasse wrote:
+> Alex, could you go through my patch and see if there is anything you
+> find objectionable ? (if not about the details, at least about the
+> general approach of enabling writer lock stealing on the fast path)
 
-On 02/14/2013 08:28 AM, Artem Bityutskiy wrote:
-> On Wed, 2013-02-13 at 11:23 +0100, Marc Kleine-Budde wrote:
->> --- a/fs/ubifs/journal.c
->> +++ b/fs/ubifs/journal.c
->> @@ -553,7 +553,8 @@ int ubifs_jnl_update(struct ubifs_info *c, const s=
-truct inode *dir,
->> =20
->>         dbg_jnl("ino %lu, dent '%.*s', data len %d in dir ino %lu",
->>                 inode->i_ino, nm->len, nm->name, ui->data_len, dir->i_=
-ino);
->> -       ubifs_assert(dir_ui->data_len =3D=3D 0);
->> +       if (!xent)
->> +               ubifs_assert(dir_ui->data_len =3D=3D 0);
->=20
-> Shouldn't this snippet be in 2/5 instead?
-will do
+I am still in my lunar new year vacation. I may do a aim7 test for you
+after back to office.
+But as to fast path stealing, I didn't see extra benefit on fast path.
 
-Marc
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
-------enig2LJJLALTOKVWQNJUWIOCB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlEc0wAACgkQjTAFq1RaXHObRACZAa7xadNENbmsVDz5dy4yUtMy
-33wAn22eKpbjiPgud+9AwduwBcpxeF9u
-=wjuM
------END PGP SIGNATURE-----
-
-------enig2LJJLALTOKVWQNJUWIOCB--
+-- 
+Thanks
+    Alex
