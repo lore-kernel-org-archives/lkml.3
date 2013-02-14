@@ -1,131 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935169Ab3BNXpv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 18:45:51 -0500
-Received: from mga01.intel.com ([192.55.52.88]:8699 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932106Ab3BNXpr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 18:45:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,666,1355126400"; 
-   d="scan'208";a="291366340"
-From: "Moore, Robert" <robert.moore@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Toshi Kani <toshi.kani@hp.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <liuj97@gmail.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Myron Stowe <mstowe@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: RE: [Update][PATCH] ACPI / hotplug: Fix concurrency issues and
- memory leaks
-Thread-Topic: [Update][PATCH] ACPI / hotplug: Fix concurrency issues and
- memory leaks
-Thread-Index: AQHOCkL6WO0GND/HtUaZIu27Tc3Y7ph4obWwgAEmnICAAAtGEIAAilaA//+njwA=
-Date: Thu, 14 Feb 2013 23:45:27 +0000
-Message-ID: <94F2FBAB4432B54E8AACC7DFDE6C92E368CB5E39@ORSMSX101.amr.corp.intel.com>
-References: <1837481.7dT8hTZ4MT@vostro.rjw.lan>
- <7010893.9OBeMt5Fzh@vostro.rjw.lan>
- <94F2FBAB4432B54E8AACC7DFDE6C92E368CB5D05@ORSMSX101.amr.corp.intel.com>
- <7482249.JD6lNDApdo@vostro.rjw.lan>
-In-Reply-To: <7482249.JD6lNDApdo@vostro.rjw.lan>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="utf-8"
+	id S935156Ab3BNXrx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 18:47:53 -0500
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:48154 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932106Ab3BNXrv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 18:47:51 -0500
 MIME-Version: 1.0
+In-Reply-To: <20130214183640.16220.33060.stgit@bling.home>
+References: <20130214183640.16220.33060.stgit@bling.home>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 14 Feb 2013 16:47:30 -0700
+Message-ID: <CAErSpo4uopqKwXY-6HrSZ9mk08tgY9L-iUG2ykmKcMK077tDrQ@mail.gmail.com>
+Subject: Re: [PATCH] pci: Disable slot presence detection around bus reset
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Sheng Yang <sheng@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1ENjqLL007392
 
+On Thu, Feb 14, 2013 at 11:37 AM, Alex Williamson
+<alex.williamson@redhat.com> wrote:
+> A bus reset can trigger a presence detection change and result in a
+> suprise hotplug.  This is generally not what we want to happen when
+> trying to reset a device.  Disable the presence detection control on
+> on bridges around bus reset.
 
+This is a really interesting situation, and I'm not quite ready to
+sign up to the idea that this is really a problem and that if it is,
+this is the way we want to fix it.
 
-> -----Original Message-----
-> From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
-> Sent: Thursday, February 14, 2013 12:59 PM
-> To: Moore, Robert
-> Cc: Toshi Kani; ACPI Devel Maling List; LKML; Bjorn Helgaas; Jiang Liu;
-> Yinghai Lu; Yasuaki Ishimatsu; Myron Stowe; linux-pci@vger.kernel.org
-> Subject: Re: [Update][PATCH] ACPI / hotplug: Fix concurrency issues and
-> memory leaks
-> 
-> On Thursday, February 14, 2013 08:45:14 PM Moore, Robert wrote:
-> >
-> > > -----Original Message-----
-> > > From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
-> > > Sent: Thursday, February 14, 2013 4:04 AM
-> > > To: Moore, Robert
-> > > Cc: Toshi Kani; ACPI Devel Maling List; LKML; Bjorn Helgaas; Jiang
-> > > Liu; Yinghai Lu; Yasuaki Ishimatsu; Myron Stowe;
-> > > linux-pci@vger.kernel.org
-> > > Subject: Re: [Update][PATCH] ACPI / hotplug: Fix concurrency issues
-> > > and memory leaks
-> > >
-> > > On Thursday, February 14, 2013 02:31:22 AM Moore, Robert wrote:
-> > > > > > > I thought about that, but actually there's no guarantee that
-> > > > > > > the handle will be valid after _EJ0 as far as I can say.  So
-> > > > > > > the race condition is going to be there anyway and using
-> > > > > > > struct acpi_device just makes it easier to avoid it.
-> > > > > >
-> > > > > > In theory, yes, a stale handle could be a problem, if _EJ0
-> > > > > > performs unload table and if ACPICA frees up its internal data
-> > > > > > structure pointed by the handle as a result.  But we should
-> > > > > > not see such issue now since we do not support dynamic ACPI
-> > > > > > namespace
-> > > yet.
-> > > > >
-> > > > > I'm waiting for information from Bob about that.  If we can
-> > > > > assume ACPI handles to be always valid, that will simplify
-> > > > > things quite a
-> > > bit.
-> > > >
-> > > > If a table is unloaded, all the namespace nodes for that table are
-> > > > removed from the namespace, and thus any ACPI_HANDLE pointers go
-> > > > stale
-> > > and invalid.
-> > >
-> > > OK, thanks!
-> > >
-> > > To me this means that we cannot assume a handle to stay valid
-> > > between a notify handler and acpi_bus_hot_remove_device() run from a
-> workqueue.
-> > >
-> > > Is there a mechanism in ACPICA to ensure that a handle won't become
-> > > stale while a notify handler is running for it or is the OS
-> > > responsible for ensuring that
-> > > _EJ0 won't be run in parallel with notify handlers for device
-> > > objects being ejected?
-> > >
-> >
-> > It is up to the host.
-> 
-> I was afraid that that might be the case. :-)
-> 
-> So far the (Linux) host has been happily ignoring that potential problem,
-> so I guess it can still be ignored for a while, although we'll need to
-> address it eventually at one point.
+What would happen if we *did* handle this as a hotplug event, with a
+removal followed by an add?
 
-I would think it should be fairly simple to setup a mechanism to either tell the driver or for the driver to figure it out -- such that the driver knows that all handles associated with the device are now invalid. Another way to look at it is that when the device is re-installed, the driver should reinitialize such that it obtains new handles for the devices and subobjects in question.
+The scheme where pci_reset_function() does "pci_save_state(dev);
+pci_dev_reset(dev); pci_restore_state(dev);" makes me nervous.
 
-Bob
+We're saving and restoring some of PCI config space around the reset,
+but there's no guarantee that we're preserving *all* the important
+state in config space because I think devices can have non-architected
+device-specific things in config space that we don't know how to
+save/restore.
 
+Devices also have internal state not exposed via config space.  That
+state is lost during the reset but can't be restored by
+pci_restore_state().  So it seems like pci_reset_function() is
+pretending to do something it can't really do reliably.
 
+If we make it so a reset is always handled as a remove+add, then we'll
+use a more generic path, and we'll get all the stuff you expect when
+initializing a new device -- resource assignment, IRQ setup, quirks,
+etc.  Quirks in particular seem like something we want, but don't
+currently get with pci_reset_function().
 
+Oh, and the "disable presence detect" approach below only works for
+things below a PCIe bridge with native hotplug, right?  I wonder what
+happens if we reset devices below a bridge using SHPC or acpiphp.
 
-
-
-> 
-> Thanks,
-> Rafael
-> 
-> 
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> ---
+>  drivers/pci/pci.c |   29 ++++++++++++++++++++++++-----
+>  1 file changed, 24 insertions(+), 5 deletions(-)
+>
+> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> index 5cb5820..c1f7d77 100644
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -3229,8 +3229,8 @@ static int pci_pm_reset(struct pci_dev *dev, int probe)
+>
+>  static int pci_parent_bus_reset(struct pci_dev *dev, int probe)
+>  {
+> -       u16 ctrl;
+> -       struct pci_dev *pdev;
+> +       u16 ctrl, flags, sltctl = 0;
+> +       struct pci_dev *pdev, *bridge;
+>
+>         if (pci_is_root_bus(dev->bus) || dev->subordinate || !dev->bus->self)
+>                 return -ENOTTY;
+> @@ -3242,15 +3242,34 @@ static int pci_parent_bus_reset(struct pci_dev *dev, int probe)
+>         if (probe)
+>                 return 0;
+>
+> -       pci_read_config_word(dev->bus->self, PCI_BRIDGE_CONTROL, &ctrl);
+> +       bridge = dev->bus->self;
+> +
+> +       /*
+> +        * If the parent device supports a slot with presence detection
+> +        * change enabled, holding the bus in reset can trigger that and
+> +        * cause an unwanted surprise removal.  Disable presence detection
+> +        * around the bus reset.
+> +        */
+> +       pcie_capability_read_word(bridge, PCI_EXP_FLAGS, &flags);
+> +       if (flags & PCI_EXP_FLAGS_SLOT) {
+> +               pcie_capability_read_word(bridge, PCI_EXP_SLTCTL, &sltctl);
+> +               if (sltctl & PCI_EXP_SLTCTL_PDCE)
+> +                       pcie_capability_write_word(bridge, PCI_EXP_SLTCTL,
+> +                                               sltctl & ~PCI_EXP_SLTCTL_PDCE);
+> +       }
+> +
+> +       pci_read_config_word(bridge, PCI_BRIDGE_CONTROL, &ctrl);
+>         ctrl |= PCI_BRIDGE_CTL_BUS_RESET;
+> -       pci_write_config_word(dev->bus->self, PCI_BRIDGE_CONTROL, ctrl);
+> +       pci_write_config_word(bridge, PCI_BRIDGE_CONTROL, ctrl);
+>         msleep(100);
+>
+>         ctrl &= ~PCI_BRIDGE_CTL_BUS_RESET;
+> -       pci_write_config_word(dev->bus->self, PCI_BRIDGE_CONTROL, ctrl);
+> +       pci_write_config_word(bridge, PCI_BRIDGE_CONTROL, ctrl);
+>         msleep(100);
+>
+> +       if (sltctl & PCI_EXP_SLTCTL_PDCE)
+> +               pcie_capability_write_word(bridge, PCI_EXP_SLTCTL, sltctl);
+> +
+>         return 0;
+>  }
+>
+>
