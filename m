@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934703Ab3BNPd4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 10:33:56 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:45652
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934562Ab3BNPdz (ORCPT
+	id S934683Ab3BNPfA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 10:35:00 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:49756 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760660Ab3BNPe7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 10:33:55 -0500
-Date: Thu, 14 Feb 2013 16:32:35 +0100
-From: Jens Axboe <axboe@kernel.dk>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] removal of 1980s PC-XT MFM 8bit ISA disk driver
-Message-ID: <20130214153235.GR21269@kernel.dk>
-References: <20130213200432.GA11018@windriver.com>
+	Thu, 14 Feb 2013 10:34:59 -0500
+Message-ID: <511D0420.8080608@gmail.com>
+Date: Thu, 14 Feb 2013 07:34:56 -0800
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130213200432.GA11018@windriver.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: dirk.brandewie@gmail.com, Viresh Kumar <viresh.kumar@linaro.org>,
+        Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org
+Subject: Re: [PATCH 0/5] Add P state driver for Intel Core Processors
+References: <1360170133-5066-1-git-send-email-dirk.brandewie@gmail.com> <511BC16C.7040807@gmail.com> <CAOh2x=nwHbbngQm1PE7SfOLbHs3oMMb74zHXD9721OJzWo1+Tg@mail.gmail.com> <1540905.Sh9giL2bZe@vostro.rjw.lan>
+In-Reply-To: <1540905.Sh9giL2bZe@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 13 2013, Paul Gortmaker wrote:
-> Jens,
-> 
-> Please pull the following to get the removal of the original IBM PC-XT
-> hard disk driver from the block layer (drivers/block/xd.c).
-> 
-> As near as I can tell, it hasn't seen a run time fix in over a dozen
-> years, and with drive sizes of 10-20MB, and performance of about 128kB/s
-> maximum, it is no surprise that it has been completely unused for well
-> over a decade.
-> 
-> The removal was originally posted[1] well over a month ago, and since
-> then, there has been nobody objecting to the removal, aside from someone
-> who had mistakenly confused it with a completely different driver (hd.c)
-> 
-> I've done a test merge followed by an allmodconfig/allyesconfig for
-> x86-64 on the "for-next" branch of:
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/axboe/linux-block.git
-> 
-> to ensure that there was no Makefile/Kconfig fallout since the 3.8-rc2
-> the original commit was created and tested on.
-> 
-> [1] https://patchwork.kernel.org/patch/1935381/
+On 02/14/2013 04:21 AM, Rafael J. Wysocki wrote:
+> On Thursday, February 14, 2013 09:38:21 AM Viresh Kumar wrote:
+>> On Wed, Feb 13, 2013 at 10:08 PM, Dirk Brandewie
+>> <dirk.brandewie@gmail.com> wrote:
+>>> For the case where both are built-in the load order works my driver uses
+>>> device_initcall() and acpi_cpufreq uses late_initcall().
+>>>
+>>> For the case where both are a module (which I was sure I tested) you are
+>>> right
+>>> I will have to do something.
+>>>
+>>> For now I propose to make my driver built-in only while I sort out the right
+>>> solution for the module build.  Does this seem reasonable to everyone?
+>>
+>> Of-course i am missing something here. Why would anybody want to insert
+>> acpi-cpufreq module when the system supports the pstate driver.
+>>
+>> In case they are mutually exclusive, then we can have something like
+>> depends on !ACPI-DRIVER in the kconfig option of pstate driver.
+>
+> Yes.  Or the other way around (i.e. make acpi_cpufreq depend on
+> !X86_INTEL_PSTATE).
+>
 
-Pulled, I'm pretty sure this hasn't been used in a decade at least. In
-any case, it sits there nicely in history if someone wants to resurrect
-it.
+The issue is that acpi-cpufreq still needs to be available for Intel processors 
+before SandyBridge and for other x86 compatible processors we can't make
+intel_pstate and acpi-cpufreq mutually exclusive.
 
--- 
-Jens Axboe
+Having intel_pstate built-in solves the issue without the need to patch
+acpi-cpufreq.  I believe that most distros build the scaling drivers in
+so the distro/user will make the explicit decision to use intel_pstate.
+
+
+> Thanks,
+> Rafael
+>
+>
 
