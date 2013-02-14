@@ -1,86 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761558Ab3BNShR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 13:37:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9933 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758463Ab3BNShP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 13:37:15 -0500
-Subject: [PATCH] pci: Disable slot presence detection around bus reset
-To: bhelgaas@google.com, linux-pci@vger.kernel.org
-From: Alex Williamson <alex.williamson@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Thu, 14 Feb 2013 11:37:13 -0700
-Message-ID: <20130214183640.16220.33060.stgit@bling.home>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S934832Ab3BNSjE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 13:39:04 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:65404 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758460Ab3BNSjD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 13:39:03 -0500
+From: dirk.brandewie@gmail.com
+To: rjw@sisk.pl
+Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        Dirk Brandewie <dirk.brandewie@gmail.com>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>
+Subject: [PATCH] cpufreq/intel_pstate: Add kernel command line option disable intel_pstate.
+Date: Thu, 14 Feb 2013 10:38:52 -0800
+Message-Id: <1360867132-13004-1-git-send-email-dirk.brandewie@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <6075901.uWCJMxDDFf@vostro.rjw.lan>
+References: <6075901.uWCJMxDDFf@vostro.rjw.lan>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A bus reset can trigger a presence detection change and result in a
-suprise hotplug.  This is generally not what we want to happen when
-trying to reset a device.  Disable the presence detection control on
-on bridges around bus reset.
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+When intel_pstate is configured into the kernel it will become the
+perferred scaling driver for processors that is supports.  Allow the
+user to override this by adding:
+   intel_pstate=disable
+on the kernel command line.
+
+Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
 ---
- drivers/pci/pci.c |   29 ++++++++++++++++++++++++-----
- 1 file changed, 24 insertions(+), 5 deletions(-)
+ Documentation/kernel-parameters.txt |    5 +++++
+ drivers/cpufreq/intel_pstate.c      |   16 ++++++++++++++++
+ 2 files changed, 21 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 5cb5820..c1f7d77 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -3229,8 +3229,8 @@ static int pci_pm_reset(struct pci_dev *dev, int probe)
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 6c72381..41c5d9e 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1131,6 +1131,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			0	disables intel_idle and fall back on acpi_idle.
+ 			1 to 6	specify maximum depth of C-state.
  
- static int pci_parent_bus_reset(struct pci_dev *dev, int probe)
- {
--	u16 ctrl;
--	struct pci_dev *pdev;
-+	u16 ctrl, flags, sltctl = 0;
-+	struct pci_dev *pdev, *bridge;
- 
- 	if (pci_is_root_bus(dev->bus) || dev->subordinate || !dev->bus->self)
- 		return -ENOTTY;
-@@ -3242,15 +3242,34 @@ static int pci_parent_bus_reset(struct pci_dev *dev, int probe)
- 	if (probe)
- 		return 0;
- 
--	pci_read_config_word(dev->bus->self, PCI_BRIDGE_CONTROL, &ctrl);
-+	bridge = dev->bus->self;
++	intel_pstate=  [X86]
++		       disable
++		         Do not enable intel_pstate as the default
++		         scaling driver for the supported processors
 +
-+	/*
-+	 * If the parent device supports a slot with presence detection
-+	 * change enabled, holding the bus in reset can trigger that and
-+	 * cause an unwanted surprise removal.  Disable presence detection
-+	 * around the bus reset.
-+	 */
-+	pcie_capability_read_word(bridge, PCI_EXP_FLAGS, &flags);
-+	if (flags & PCI_EXP_FLAGS_SLOT) {
-+		pcie_capability_read_word(bridge, PCI_EXP_SLTCTL, &sltctl);
-+		if (sltctl & PCI_EXP_SLTCTL_PDCE)
-+			pcie_capability_write_word(bridge, PCI_EXP_SLTCTL,
-+						sltctl & ~PCI_EXP_SLTCTL_PDCE);
-+	}
-+
-+	pci_read_config_word(bridge, PCI_BRIDGE_CONTROL, &ctrl);
- 	ctrl |= PCI_BRIDGE_CTL_BUS_RESET;
--	pci_write_config_word(dev->bus->self, PCI_BRIDGE_CONTROL, ctrl);
-+	pci_write_config_word(bridge, PCI_BRIDGE_CONTROL, ctrl);
- 	msleep(100);
- 
- 	ctrl &= ~PCI_BRIDGE_CTL_BUS_RESET;
--	pci_write_config_word(dev->bus->self, PCI_BRIDGE_CONTROL, ctrl);
-+	pci_write_config_word(bridge, PCI_BRIDGE_CONTROL, ctrl);
- 	msleep(100);
- 
-+	if (sltctl & PCI_EXP_SLTCTL_PDCE)
-+		pcie_capability_write_word(bridge, PCI_EXP_SLTCTL, sltctl);
-+
- 	return 0;
+ 	intremap=	[X86-64, Intel-IOMMU]
+ 			on	enable Interrupt Remapping (default)
+ 			off	disable Interrupt Remapping
+diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+index e879963..9cbb733 100644
+--- a/drivers/cpufreq/intel_pstate.c
++++ b/drivers/cpufreq/intel_pstate.c
+@@ -773,11 +773,16 @@ static void intel_pstate_exit(void)
  }
+ module_exit(intel_pstate_exit);
  
++static int no_load;
++
+ static int __init intel_pstate_init(void)
+ {
+ 	int rc = 0;
+ 	const struct x86_cpu_id *id;
+ 
++	if (no_load)
++		return -ENODEV;
++
+ 	id = x86_match_cpu(intel_pstate_cpu_ids);
+ 	if (!id)
+ 		return -ENODEV;
+@@ -802,6 +807,17 @@ out:
+ }
+ device_initcall(intel_pstate_init);
+ 
++static int __init intel_pstate_setup(char *str)
++{
++	if (!str)
++		return -EINVAL;
++
++	if (!strcmp(str, "disable"))
++		no_load = 1;
++	return 0;
++}
++early_param("intel_pstate", intel_pstate_setup);
++
+ MODULE_AUTHOR("Dirk Brandewie <dirk.j.brandewie@intel.com>");
+ MODULE_DESCRIPTION("'intel_pstate' - P state driver Intel Core processors");
+ MODULE_LICENSE("GPL");
+-- 
+1.7.7.6
 
