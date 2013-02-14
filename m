@@ -1,88 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756014Ab3BNHHI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 02:07:08 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:43480 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755737Ab3BNHHF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 02:07:05 -0500
-Date: Thu, 14 Feb 2013 18:06:51 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Randy Dunlap <rdunlap@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Amit Shah <amit.shah@redhat.com>,
-        virtualization@lists.linux-foundation.org,
-        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: linux-next: Tree for Feb 13 (virtio_console)
-Message-Id: <20130214180651.900763c3986c94531bb01ecf@canb.auug.org.au>
-In-Reply-To: <87sj4zk3ai.fsf@rustcorp.com.au>
-References: <20130213193532.162080d7c0557a307ab451ac@canb.auug.org.au>
-	<511BEC55.5090801@infradead.org>
-	<87sj4zk3ai.fsf@rustcorp.com.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	id S1756022Ab3BNHH4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 02:07:56 -0500
+Received: from fn.samba.org ([216.83.154.106]:54675 "EHLO mail.samba.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755737Ab3BNHHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 02:07:54 -0500
+Message-ID: <1360825669.1727.337.camel@jesse>
+Subject: Re: Read support for fat_fallocate()? (was [v2] fat: editions to
+ support fat_fallocate())
+From: Andrew Bartlett <abartlet@samba.org>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: hirofumi@mail.parknet.co.jp, linux-kernel@vger.kernel.org,
+        Ravishankar N <cyberax82@gmail.com>,
+        Amit Sahrawat <amit.sahrawat83@gmail.com>,
+        Nam-Jae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Date: Thu, 14 Feb 2013 18:07:49 +1100
+In-Reply-To: <CAKYAXd9qmDYivsJduT3bFD2vPOc0DQ0f8RQTxQ7MXXTCQMMQQA@mail.gmail.com>
+References: <1350138661-2454-1-git-send-email-linkinjeon@gmail.com>
+	 <1360810114.1727.306.camel@jesse>
+	 <CAKYAXd9qmDYivsJduT3bFD2vPOc0DQ0f8RQTxQ7MXXTCQMMQQA@mail.gmail.com>
+Organization: 
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__14_Feb_2013_18_06_51_+1100_u37bEWmP1NatTBF8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__14_Feb_2013_18_06_51_+1100_u37bEWmP1NatTBF8
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, 2013-02-14 at 15:44 +0900, Namjae Jeon wrote:
+> 2013/2/14, Andrew Bartlett <abartlet@samba.org>:
+> > (apologies for the duplicate mail, I typo-ed the maintainers address)
+> >
+> > G'day,
+> >
+> > I've been looking into the patch "[v2] fat: editions to support
+> > fat_fallocate()" and I wonder if there is a way we can split this issue
+> > in two, so that we get at least some of the patch into the kernel.
+> >
+> > https://lkml.org/lkml/2012/10/13/75
+> > https://patchwork.kernel.org/patch/1589161/
+> >
+> > What I'm wanting to discuss (and perhaps implement, with you if
+> > possible) is splitting this patch into writing to existing pre-allocated
+> > files, and creating a new pre-allocation.
+> >
+> > If Windows does, as you claim, simply read preallocations as zero, and
+> > writes to them normally and without error, then Linux should do the
+> > same.  Here of course I'm assuming that Windows is not preallocating,
+> > but instead simply trying to recover gracefully and safely from a simple
+> > 'file system corruption', where the sectors are allocated but not used.
+> >
+> > The bulk of this patch is implementing this transparent recovery, and it
+> > seem relatively harmless to include this into the kernel.
+> >
+> > Then vendors doing TV streaming, or in my case copies of large files
+> > onto Samba-mounted USB FAT devices, can add only the smaller patch to
+> > implement fallocate, at their own risk and fully knowing that it will be
+> > regarded as corrupt on Linux.
+> >
+> > If accepted read support will, over a period of years, trickle down to
+> > other Linux users, broadening the base that can still read these
+> > 'corrupt' drives, no matter the cause.
+> >
+> > I hope you agree that this is a practical way forward, and I look
+> > forward to working with you on this.
+> >
+> > Thanks,
+> Hi Andrew.
+> 
+> First, Thanks for your interest !
+> A mismatch between inode size and reserved blocks can be either due to
+> pre-allocation (after our changes) or due to corruption (sudden unplug
+> of media etc).
+> We don’t think it is right to include only read only support (i.e.
+> without fallocate support) for such files because if such files are
+> encountered it only means that the file is corrupted, as there is no
+> current method to check if the issue is due to pre-allocation.
+> If it is to be included in the kernel, then the whole patch has to go
+> in. 
 
-Hi Rusty,
+I don't see why that is the case. 
 
-On Thu, 14 Feb 2013 13:30:37 +1030 Rusty Russell <rusty@rustcorp.com.au> wr=
-ote:
->
-> This looks like an impossible config.  CONFIG_VIRTIO_CONSOLE=3Dy, but
-> CONFIG_HVC_DRIVER isn't set.
->=20
-> From drivers/char/Kconfig:
->=20
->         config VIRTIO_CONSOLE
->         	tristate "Virtio console"
->         	depends on VIRTIO
+> But then again, since the FAT specifications do not accommodate
+> for pre-allocation, then it is up to OGAWA to decide if this is
+> acceptable.
+> In any case, the patch will definitely break backward compatibility
+> (on an older fat driver without fallocate support) and also in case
+> for the two variants for the same kernel versions and only one has
+> FALLOCATE enabled, in such cases also, the behavior will assume
+> corruption in one case.
 
-This also has "&& TTY" in -next (not actually relevant)
+I agree that the sudden unplug is a concern, but why not make the
+filesystem more robust against that inevitable occurrence?  If the
+blocks appear to be allocated to the file, why not use them?
 
->         	select HVC_DRIVER
+That is, while it is hard to predict the many different ways a
+filesystem can be corrupted, what would go wrong if we did use these
+clusters?  Do you fear that they might also be allocated to someone
+else? 
 
-Its weird, but since CONFIG_TTY is not set (see the config), the
-HVC_DRIVER symbol is not even visible, so I suspect that the above select
-does nothing :-(  But also, I can't see how VIRTIO_CONSOLE could be set
-in the first place since TTY is not set.
+That would, if I understand correctly just mean that that more broken,
+not quite valid USB thumb drives and other FAT filesystems work equally
+well on Windows and Linux, without administrative privileges.  (Given
+that running fsck requires root, and isn't trivially available to normal
+users in Linux, and I presume is similarly privileged in windows). 
 
-(cc'ing some more people) (this is a randconfig that has TTY=3Dn,
-HVC_DRIVER=3Dn, but VIRTIO_CONSOLE=3Dy)
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+What I'm doing is suggesting re-purposing your patch, from preallocation
+to robustness.  In this light, do you think this worth pushing forward?
 
---Signature=_Thu__14_Feb_2013_18_06_51_+1100_u37bEWmP1NatTBF8
-Content-Type: application/pgp-signature
+We can later address if there is any safe way to preallocate files on
+FAT as a different question, hoping that this means it will 'just work'
+on a broader range of other Linux hosts, just as it is claimed to 'just
+work' on Windows.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Thanks,
 
-iQIcBAEBCAAGBQJRHI0LAAoJEECxmPOUX5FE8+MP/ib5sE7Yvv9ID+XwokXNu5QK
-e+u14VmFjKY/G1VR7mOFsv6fgfegsG03Fsbjo94RESSxfLhcUDKbVecbJmOmusW+
-PdR4kqOXZAOWPZ7y9PvrRLrAQVA198YDfO+xSso/gkEH6v5coTHYS6GLcqic/zHA
-d+r1GvMHMqDL8uwbynuqugR9W5Uc35LigV3aH2YvWywkcBnmTRIaXASURPBUJZfU
-LkSCoqKsPjhoCNOMhdSPmlXY16qPh5gFEYnhBclQbMotY5WqBocY/+NYHvr0y42W
-bsAawM3ze3lyYgevXlnjaKhMuzDo6jPmZRpTe85rLE1hS6MKUPtU8v7nZ694pCaX
-34bDczgmwCYaM4QQnI7Sgp9fhOKzF8nQVlkxyd3Z9C/LgMInuyj1dviD4xVFQ8Hn
-4vLN5cRja3VGJTgNBaa61/eyGkKJovf3cQWfF75g/itYHEbtpqwIXF5AnBkzXkNS
-l5SV5QuWZOYHjZTbsFKpwlHgNWuiRP64Abx7f/cLcQBQ44fBnZyA/Zj8jKo8Egr1
-CqQhUfol9PPxChMtTg/Unio4grKH3/LyB9CBEXAq5xhpCu41933YyE8KGs8Ys44u
-4qzVYv6NNyDOU/NvcsLUyoFWJpZgHQyaYPJ422CiX66d8tBTeDB3JoDoT5/N77Bp
-oO+S6H5ehq7w+GxVG0Cz
-=iKqk
------END PGP SIGNATURE-----
+Andrew Bartlett
 
---Signature=_Thu__14_Feb_2013_18_06_51_+1100_u37bEWmP1NatTBF8--
+-- 
+Andrew Bartlett                                http://samba.org/~abartlet/
+Authentication Developer, Samba Team           http://samba.org
+
+
