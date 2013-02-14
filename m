@@ -1,69 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759747Ab3BNMEf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 07:04:35 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:38090 "EHLO hydra.sisk.pl"
+	id S934546Ab3BNMEj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 07:04:39 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:34864 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757453Ab3BNMEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 07:04:34 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Pavel Machek <pavel@ucw.cz>, Goswin von Brederlow <goswin-v-b@web.de>,
-        Li Fei <fei.li@intel.com>, len.brown@intel.com, mingo@redhat.com,
-        peterz@infradead.org, biao.wang@intel.com, linux-pm@vger.kernel.org,
-        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        chuansheng.liu@intel.com
-Subject: Re: Getting rid of freezer for suspend [was Re: [fuse-devel] [PATCH] fuse: make fuse daemon frozen along with kernel threads]
-Date: Thu, 14 Feb 2013 13:11:01 +0100
-Message-ID: <2891124.QXsiBPuYKW@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc7; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAJfpegtUOCTNR-uzrFBcFY3K8to2+y3hvJx=vuBYS7emzU-SRA@mail.gmail.com>
-References: <1360113112.17267.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC> <24327774.p6haZy6gvA@vostro.rjw.lan> <CAJfpegtUOCTNR-uzrFBcFY3K8to2+y3hvJx=vuBYS7emzU-SRA@mail.gmail.com>
+	id S934196Ab3BNMEg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 07:04:36 -0500
+Message-ID: <511CD2CE.2020802@ti.com>
+Date: Thu, 14 Feb 2013 14:04:30 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: "tony@atomide.com" <tony@atomide.com>
+CC: Roger Quadros <rogerq@ti.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "Balbi, Felipe" <balbi@ti.com>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] arm-soc: OMAP USB Host cleanup for 3.9
+References: <511CD215.8080005@ti.com>
+In-Reply-To: <511CD215.8080005@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, February 14, 2013 11:41:16 AM Miklos Szeredi wrote:
-> On Wed, Feb 13, 2013 at 10:21 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Wednesday, February 13, 2013 06:34:16 PM Miklos Szeredi wrote:
-> 
-> >>
-> >> So I think the PF_FREEZE_DAEMON idea (the patch from Li Fei that
-> >> started this thread) may still be our best bet at handling this
-> >> situation.  The idea being that pure "originator" processes (ones that
-> >> take no part in serving filesystem syscalls) can be frozen up-front.
-> >> Then the "fuse daemon" (or "server") processes are hopefully in a
-> >> quiescent state and can be frozen without difficulty.
-> >>
-> >> Unfortunately it needs help from userspace: the kernel can't easily
-> >> guess which processes are part of a "fuse daemon" and which aren't.
-> >> Fortunately we have a standard library (libfuse) that can tell it to
-> >> the kernel for the vast majority of cases.
-> >
-> > So basically the idea would be to introduce something like PF_FREEZE_LATE
-> > for user space processes that need to be frozen after all of the other
-> > (non-PF_FREEZE_LATE) user space processes have been frozen and hack fuse
-> > to use that flag?
-> 
-> Yes.
-> 
-> It is essentially the same mechanism that is used to delay the
-> freezing of kernel threads after userspace tasks have been frozen.
-> Except it's a lot more difficult to determine which userspace tasks
-> need to be suspended late and which aren't.
+Hi Tony,
 
-Well, I suppose that information is available to user space.
+This is the ARM-soc part of the OMAP USB Host cleanup series for 3.9.
+It is based on 3.8-rc6 + usbhost17-common that I sent earlier.
 
-Do we need an interface for a process to mark itself as PF_FREEZE_LATE or
-do we need an interface for one process to mark another process as
-PF_FREEZE_LATE, or both?
+Please pull. Thanks.
 
-Rafael
+The following changes since commit 7f07863ec60f7d3dbeec5aff881ea074db3925ed:
 
+  ARM: OMAP: Consolidate OMAP USB-HS platform data (part 1/3) (2013-02-13 13:22:34 +0200)
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+are available in the git repository at:
+  git://github.com/rogerq/linux.git usbhost17-for-arm-soc
+
+Roger Quadros (1):
+      ARM: OMAP: Consolidate OMAP USB-HS platform data (part 3/3)
+
+ arch/arm/mach-omap2/board-3430sdp.c        |    2 +-
+ arch/arm/mach-omap2/board-3630sdp.c        |    2 +-
+ arch/arm/mach-omap2/board-am3517crane.c    |    2 +-
+ arch/arm/mach-omap2/board-am3517evm.c      |    2 +-
+ arch/arm/mach-omap2/board-cm-t35.c         |    2 +-
+ arch/arm/mach-omap2/board-cm-t3517.c       |    2 +-
+ arch/arm/mach-omap2/board-devkit8000.c     |    2 +-
+ arch/arm/mach-omap2/board-igep0020.c       |    4 +-
+ arch/arm/mach-omap2/board-omap3beagle.c    |    2 +-
+ arch/arm/mach-omap2/board-omap3evm.c       |    2 +-
+ arch/arm/mach-omap2/board-omap3pandora.c   |    2 +-
+ arch/arm/mach-omap2/board-omap3stalker.c   |    2 +-
+ arch/arm/mach-omap2/board-omap3touchbook.c |    2 +-
+ arch/arm/mach-omap2/board-omap4panda.c     |    2 +-
+ arch/arm/mach-omap2/board-overo.c          |    2 +-
+ arch/arm/mach-omap2/board-zoom.c           |    2 +-
+ arch/arm/mach-omap2/usb-host.c             |   29 ++++-----------------------
+ arch/arm/mach-omap2/usb.h                  |   20 +------------------
+ 18 files changed, 23 insertions(+), 60 deletions(-)
+
+--
+cheers,
+-roger
