@@ -1,103 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761589Ab3BNTMw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 14:12:52 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:44727 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965083Ab3BNTMq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 14:12:46 -0500
-Date: Thu, 14 Feb 2013 20:12:34 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Jiri Slaby <jslaby@suse.cz>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>
-Subject: Re: Uhhuh. NMI received for unknown reason 2c on CPU 0.
-Message-ID: <20130214191234.GH5700@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Bjorn Helgaas <bhelgaas@google.com>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>, Jiri Slaby <jslaby@suse.cz>,
-	x86@kernel.org, lkml <linux-kernel@vger.kernel.org>,
-	Konstantin Khlebnikov <khlebnikov@openvz.org>
-References: <20130129202848.GE25415@pd.tnic>
- <3066730.6MVSAfNyye@vostro.rjw.lan>
- <20130131131034.GF4926@pd.tnic>
- <2293454.v8QRHr8txR@vostro.rjw.lan>
- <20130203144656.GB5844@pd.tnic>
- <20130214143905.GC5700@pd.tnic>
- <CAErSpo6Mi31O1YA5PKnRjQMinB284Ag6PY8LuZpD0NwuZ6QZuw@mail.gmail.com>
+	id S1030235Ab3BNTNa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 14:13:30 -0500
+Received: from mail-da0-f50.google.com ([209.85.210.50]:65398 "EHLO
+	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932474Ab3BNTNZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 14:13:25 -0500
+Date: Thu, 14 Feb 2013 11:13:23 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
+Subject: Linux 3.0.64
+Message-ID: <20130214191323.GA25737@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="VbJkn9YxBvnuCH5J"
 Content-Disposition: inline
-In-Reply-To: <CAErSpo6Mi31O1YA5PKnRjQMinB284Ag6PY8LuZpD0NwuZ6QZuw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 14, 2013 at 10:17:46AM -0700, Bjorn Helgaas wrote:
-> On Thu, Feb 14, 2013 at 7:39 AM, Borislav Petkov <bp@suse.de> wrote:
-> > On Sun, Feb 03, 2013 at 03:46:56PM +0100, Borislav Petkov wrote:
-> >> On Sun, Feb 03, 2013 at 12:04:46AM +0100, Rafael J. Wysocki wrote:
-> >> > The [2/5] is at: https://patchwork.kernel.org/patch/2001211/
-> >> >
-> >> > The other two are attached.  I suppose the ordering doesn't matter.
-> >>
-> >> Ok, the eth link cable hotplugging issue seems fixed, plugging and
-> >> unplugging the cable works as expected.
-> >
-> > Q: what happened to those, are they going upstream for 3.9 or are you
-> > sending them now for 3.8?
-> >
-> > They fix at least the cable hotplugging issue so at least one thing is
-> > covered.
-> 
-> I haven't done anything with the e1000e patches; I assume the e1000e
-> maintainers will take care of those.
-> 
-> I merged the following patches for v3.9:
-> 
->     * pci/konstantin-runtime-pm:
->       PCI/PM: Clear state_saved during suspend
->       PCI: Use atomic_inc_return() rather than atomic_add_return()
->       PCI: Catch attempts to disable already-disabled devices
->       PCI: Disable Bus Master unconditionally in pci_device_shutdown()
-> 
-> You can see the actual patches I merged at:
-> http://git.kernel.org/?p=linux/kernel/git/helgaas/pci.git;a=shortlog;h=refs/heads/next
-> 
-> It's pretty late for v3.8, but let me know if you think they're critical.
 
-Ok, I meant those:
+--VbJkn9YxBvnuCH5J
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-http://marc.info/?l=linux-kernel&m=135984592927219
+I'm announcing the release of the 3.0.64 kernel.
 
-They fix the link detection issue on my x230. So let's see. The first one is:
+All users of the 3.0 kernel series must upgrade.
 
-* https://patchwork.kernel.org/patch/2001211/ (e1000e: fix pci device enable
-counter balance)
+The updated 3.0.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linu=
+x-3.0.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dsu=
+mmary
 
-Rafael said this one is a real bugfix. Looks like e1000e maintainers are
-picking that one?
+thanks,
 
-* pci-pm-fix-e1000e-runtime-suspend.patch
+greg k-h
 
-I don't see that one in your tree.
+------------
 
-* pci-pm-clear-state_saved-during-suspend.patch
+ MAINTAINERS                         |    6 -
+ Makefile                            |    2=20
+ drivers/atm/iphase.h                |  146 ++++++++++++++++++-------------=
+-----
+ drivers/char/virtio_console.c       |    3=20
+ drivers/isdn/gigaset/capi.c         |    2=20
+ drivers/net/loopback.c              |    5 +
+ drivers/net/r8169.c                 |    7 -
+ drivers/net/tg3.c                   |   58 +++++++++-----
+ drivers/net/wireless/rtlwifi/usb.c  |    4=20
+ drivers/net/xen-netback/common.h    |    3=20
+ drivers/net/xen-netback/interface.c |   23 +++--
+ drivers/net/xen-netback/netback.c   |  117 +++++++++++++++++-----------
+ fs/splice.c                         |    4=20
+ kernel/resource.c                   |   50 +++++++++---
+ net/bridge/br_netfilter.c           |    3=20
+ net/core/pktgen.c                   |    9 +-
+ net/ipv4/ip_sockglue.c              |    2=20
+ net/ipv4/tcp_input.c                |    5 +
+ net/ipv6/route.c                    |    3=20
+ net/mac80211/ieee80211_i.h          |    6 -
+ net/mac80211/offchannel.c           |   17 +---
+ net/mac80211/scan.c                 |    6 -
+ net/mac80211/work.c                 |    8 -
+ net/packet/af_packet.c              |   10 +-
+ net/sctp/endpointola.c              |    5 +
+ net/sctp/outqueue.c                 |   12 +-
+ net/sctp/socket.c                   |    2=20
+ 27 files changed, 306 insertions(+), 212 deletions(-)
 
-I can see this one in your tree: http://git.kernel.org/?p=linux/kernel/git/helgaas/pci.git;a=commitdiff;h=82fee4d67ab86d6fe5eb0f9a9e988ca9d654d765
+Cong Wang (2):
+      net: prevent setting ttl=3D0 via IP_TTL
+      pktgen: correctly handle failures when adding a device
 
-With the imminence of the 3.8 release, we probably want to wait for
-after the merge window and retest again, then apply and packport stuff,
-if needed.
+Daniel Borkmann (2):
+      net: sctp: sctp_setsockopt_auth_key: use kzfree instead of kfree
+      net: sctp: sctp_endpoint_free: zero out secret key data
 
-And the NMI issue is still unfixed so this needs more work, AFAICT. Oh
-well, after the merge window.
+Eric Dumazet (3):
+      net: loopback: fix a dst refcounting issue
+      tcp: frto should not set snd_cwnd to 0
+      tcp: fix MSG_SENDPAGE_NOTLAST logic
 
--- 
-Regards/Gruss,
-    Boris.
+Greg Kroah-Hartman (1):
+      Linux 3.0.64
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Heiko Carstens (1):
+      atm/iphase: rename fregt_t -> ffreg_t
+
+Ian Campbell (3):
+      xen/netback: shutdown the ring if it contains garbage.
+      xen/netback: free already allocated memory on failure in xen_netbk_ge=
+t_requests
+      netback: correct netbk_tx_err to handle wrap around.
+
+Ilpo J=E4rvinen (1):
+      tcp: fix for zero packets_in_flight was too broad
+
+Larry Finger (1):
+      rtlwifi: Fix the usage of the wrong variable in usb.c
+
+Marcelo Ricardo Leitner (1):
+      ipv6: do not create neighbor entries for local delivery
+
+Matthew Daley (1):
+      xen/netback: don't leak pages on failure in xen_netbk_tx_check_gop.
+
+Neil Horman (1):
+      sctp: refactor sctp_outq_teardown to insure proper re-initalization
+
+Nithin Nayak Sujir (2):
+      tg3: Avoid null pointer dereference in tg3_interrupt in netconsole mo=
+de
+      tg3: Fix crc errors on jumbo frame receive
+
+Phil Sutter (1):
+      packet: fix leakage of tx_ring memory
+
+Sarveshwar Bandi (1):
+      bridge: Pull ip header into skb->data before looking into ip header.
+
+Sjur Br=E6ndeland (1):
+      virtio_console: Don't access uninitialized data.
+
+Stanislaw Gruszka (1):
+      mac80211: synchronize scan off/on-channel and PS states
+
+Stephen Hemminger (1):
+      MAINTAINERS: Stephen Hemminger email change
+
+T Makphaibulchoke (1):
+      kernel/resource.c: fix stack overflow in __reserve_region_with_split()
+
+Tilman Schmidt (1):
+      isdn/gigaset: fix zero size border case in debug dump
+
+Timo Ter=E4s (1):
+      r8169: remove the obsolete and incorrect AMD workaround
+
+
+--VbJkn9YxBvnuCH5J
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRHTdTAAoJEDjbvchgkmk+e/MP/iHMMIchiqOLyY7uVt19igtj
+RE3NF9aW6ZDLfQ18bMeZptZg8vh3BhV3Mg+4DF+PnEqVjGCPiWxNapz+e8egWiHA
+jXp4qjG7Toc/jM8HZHQ2b81dKFt8OYr50NKdG0fJYH937AzPiCCgNZaOQWGa5+oC
+CbfNOx/Gn0J0aUNppI4WH3p1iHgaNm1G5lJqLcL/LBFk3oxCT9cL+OrJXiQQ8LXb
+1A8xDAvMEB5qDTC9Da/K4tAzk+9AuCW4sgjT0D74llu2OS3PzQA6lWavKZI9T6dF
+cVp/i3dDeKy4ALbonnsm9E8RvZlFnPDI1qVYo5l693AExqlHPF3U4cWhQbnm/uaW
+BbpA1wCMJSOJ5Qkcn1ZEK/EfqRQ0HxTvxYCMZA9rv5BsPXNeOT8mLv3iBIZ/eyqx
+hI9rcz8Kw3tdaLxPpqNdheQQV7V6H0jysTMwf/8xIpNeBjRF0Sk9qoahWvsvhlP3
+IsCgmtca0Us4wNETQ8nGm848L6XJeYyGVf0XOK8Su6oA/iiMUWMuBuDr31xFDzii
+DADcimyjnuAt9LGd4pXKflB2u1vgAr87br5teIAokfH69r62zzJCP8bDyLoxlDQu
+WrnEyIteVpAoDxNZFYyP9FpgPUXczOfDHojeGQXGskPPpyD0PERhJT0v5SnHFs2l
+ty3HY9GCTDjeXz+zdReN
+=Ut3i
+-----END PGP SIGNATURE-----
+
+--VbJkn9YxBvnuCH5J--
