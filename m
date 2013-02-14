@@ -1,51 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935097Ab3BNXVz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 18:21:55 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:40399 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934976Ab3BNXVy (ORCPT
+	id S935093Ab3BNXYb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 18:24:31 -0500
+Received: from kirsty.vergenet.net ([202.4.237.240]:56459 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935058Ab3BNXYa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 18:21:54 -0500
-Date: Thu, 14 Feb 2013 15:21:52 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Josh Boyer <jwboyer@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] (xen) bug-fixes for v3.8-rc7
-Message-ID: <20130214232152.GA3687@kroah.com>
-References: <20130213205026.GA25290@phenom.dumpdata.com>
- <CA+5PVA7fzT7+O-e8ta4rU4=vLfU+DsEzvLN8-vvMm3o=8FThsg@mail.gmail.com>
- <20130214225053.GA7715@phenom.dumpdata.com>
+	Thu, 14 Feb 2013 18:24:30 -0500
+Date: Fri, 15 Feb 2013 08:24:26 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Simon Horman <horms+renesas@verge.net.au>
+Subject: Re: [PATCH 5/9] ARM: shmobile: mark mackerel sh_mmcif_device
+ __maybe_unused
+Message-ID: <20130214232426.GB30667@verge.net.au>
+References: <1360880818-4071454-1-git-send-email-arnd@arndb.de>
+ <1360880818-4071454-6-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130214225053.GA7715@phenom.dumpdata.com>
+In-Reply-To: <1360880818-4071454-6-git-send-email-arnd@arndb.de>
+Organisation: Horms Solutions Ltd.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 14, 2013 at 05:50:53PM -0500, Konrad Rzeszutek Wilk wrote:
-> On Thu, Feb 14, 2013 at 09:18:04AM -0500, Josh Boyer wrote:
-> > On Wed, Feb 13, 2013 at 3:50 PM, Konrad Rzeszutek Wilk
-> > <konrad.wilk@oracle.com> wrote:
-> > >  - CVE-2013-0228/XSA-42: x86/xen: don't assume %ds is usable in xen_iret for 32-bit PVOPS.
-> > 
-> > > Jan Beulich (1):
-> > >       x86/xen: don't assume %ds is usable in xen_iret for 32-bit PVOPS.
-> > 
-> > Should that one be CC'd to stable?
+On Thu, Feb 14, 2013 at 11:26:54PM +0100, Arnd Bergmann wrote:
+> Patch eac036ef9e "ARM: shmobile: streamline mackerel SD and MMC devices"
+> made the use of the sh_mmcif_device variable for mackarel optional,
+> but the definition is always provided, causing a build warning.
 > 
-> Duh. Yes it should be! Thanks for noticing it.
+> arch/arm/mach-shmobile/board-mackerel.c:1120:31: warning: 'sh_mmcif_device'
+> 	defined but not used [-Wunused-variable]
 > 
-> Greg,
-> Please put git commit 13d2b4d11d69a92574a55bfd985cfb0ca77aebdc
-> "x86/xen: don't assume %ds is usable in xen_iret for 32-bit PVOPS."
-> on the stable tree.
+> Marking the variable as __maybe_unused will do the right thing here.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> Cc: Simon Horman <horms+renesas@verge.net.au>
 
-I don't see it in Linus's tree, so there's nothing I can do until that
-happens, sorry.
+No objections here.
 
-greg k-h
+Acked-by: Simon Horman <horms+renesas@verge.net.au>
+
+> ---
+>  arch/arm/mach-shmobile/board-mackerel.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/mach-shmobile/board-mackerel.c b/arch/arm/mach-shmobile/board-mackerel.c
+> index 0c78207..1de898f 100644
+> --- a/arch/arm/mach-shmobile/board-mackerel.c
+> +++ b/arch/arm/mach-shmobile/board-mackerel.c
+> @@ -1117,7 +1117,7 @@ static struct sh_mmcif_plat_data sh_mmcif_plat = {
+>  	.slave_id_rx	= SHDMA_SLAVE_MMCIF_RX,
+>  };
+>  
+> -static struct platform_device sh_mmcif_device = {
+> +static struct platform_device sh_mmcif_device __maybe_unused = {
+>  	.name		= "sh_mmcif",
+>  	.id		= 0,
+>  	.dev		= {
+> -- 
+> 1.8.1.2
+> 
