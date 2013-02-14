@@ -1,79 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760626Ab3BNOko (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 09:40:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55249 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756988Ab3BNOkm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 09:40:42 -0500
-Date: Thu, 14 Feb 2013 09:40:34 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] ima: Support appraise_type=imasig_optional
-Message-ID: <20130214144033.GA13047@redhat.com>
-References: <1360613493-11969-1-git-send-email-vgoyal@redhat.com>
- <1360613493-11969-3-git-send-email-vgoyal@redhat.com>
- <CALLzPKZA92MxJYjC+OR-KDv4rHQRgKSBHSAY2fOZsEDxiO11yA@mail.gmail.com>
- <1360760195.3524.355.camel@falcor1.watson.ibm.com>
- <CALLzPKaHLSg0TromnTvpEVroBUtPJE3TwF4RmcA2dtkuB5H4hQ@mail.gmail.com>
- <1360763044.3524.367.camel@falcor1.watson.ibm.com>
- <CALLzPKbdrvsPuH9t19rvQqGZ=0+abPuWPNke4FLsadj0ORieJg@mail.gmail.com>
- <1360791923.3524.466.camel@falcor1.watson.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360791923.3524.466.camel@falcor1.watson.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S934701Ab3BNOmF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 09:42:05 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35340 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934172Ab3BNOmD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 09:42:03 -0500
+From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Subject: [PATCH v3] regmap: debugfs: Simplify calculation of `c->max_reg'
+Date: Thu, 14 Feb 2013 14:39:43 +0000
+Message-Id: <1360852783-30701-1-git-send-email-dp@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 13, 2013 at 04:45:23PM -0500, Mimi Zohar wrote:
+We don't need to use any of the file position information
+to calculate the base and max register of each block.  Just
+use the counter directly.
 
-[..]
-> Option 3: appraise_type:= [imasig] | [imahash] | [optional]
-> 
-> Dmitry is recommending this syntax, as IMA_DIGSIG will be set in the
-> iint flags.
+The `i = base' at the top to avoid GCC flow analysis bugs.  The
+value of `i' can never be undefined or 0 in the if (c) { ... }.
 
-I like option 3. If there is a use case down the line where definition
-of optional needs to be refined in such a way that we want to force
-signature or hash then we can extend appraise_type to also include
-following.
+Signed-off-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+---
+ drivers/base/regmap/regmap-debugfs.c | 11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
-Option 3: appraise_type:= [imasig] | [imahash] | [optional] |
-				[imasig_optional] | [imahash_optional]
+diff --git a/drivers/base/regmap/regmap-debugfs.c b/drivers/base/regmap/regmap-debugfs.c
+index 78d5f20..e14cb2d 100644
+--- a/drivers/base/regmap/regmap-debugfs.c
++++ b/drivers/base/regmap/regmap-debugfs.c
+@@ -88,16 +88,15 @@ static unsigned int regmap_debugfs_get_dump_start(struct regmap *map,
+ 	 * If we don't have a cache build one so we don't have to do a
+ 	 * linear scan each time.
+ 	 */
++	i = base;
+ 	if (list_empty(&map->debugfs_off_cache)) {
+-		for (i = base; i <= map->max_register; i += map->reg_stride) {
++		for (; i <= map->max_register; i += map->reg_stride) {
+ 			/* Skip unprinted registers, closing off cache entry */
+ 			if (!regmap_readable(map, i) ||
+ 			    regmap_precious(map, i)) {
+ 				if (c) {
+ 					c->max = p - 1;
+-					fpos_offset = c->max - c->min;
+-					reg_offset = fpos_offset / map->debugfs_tot_len;
+-					c->max_reg = c->base_reg + reg_offset;
++					c->max_reg = i - map->reg_stride;
+ 					list_add_tail(&c->list,
+ 						      &map->debugfs_off_cache);
+ 					c = NULL;
+@@ -124,9 +123,7 @@ static unsigned int regmap_debugfs_get_dump_start(struct regmap *map,
+ 	/* Close the last entry off if we didn't scan beyond it */
+ 	if (c) {
+ 		c->max = p - 1;
+-		fpos_offset = c->max - c->min;
+-		reg_offset = fpos_offset / map->debugfs_tot_len;
+-		c->max_reg = c->base_reg + reg_offset;
++		c->max_reg = i - map->reg_stride;
+ 		list_add_tail(&c->list,
+ 			      &map->debugfs_off_cache);
+ 	}
+-- 
+1.8.1.3
 
-> 
-> 
-> Any of these options should work.
-> 
-> > If it would happen that it contains signature, then IMA_DIGSIG flag
-> > would be set,
-> > and process could get needed capability as Vivek wants.
-> 
-> With the 'optional' condition, both unsigned and validly signed files
-> will succeed.  One way of making this information accessible to an LSM,
-> would be to define a new integrity capability and set it here.  The new
-> integrity capability would indicate the file was validly signed. 
-
-Thinking loud.
-
-The problem with integrity capability is that it goes only so far. If
-we provide capability in exec() path, then that capability means much
-more in the sense, we know file is locked to run from memory. An integrity
-capability just means file is validly signed.
-
-So exec() code might have to do another capability on top which will
-also ensure that file is executable is locked in memory and signature
-verification is done after loading in memory so that it is not open
-to writing to disk block attacks.
-
-And based on this capability we probably need to deny write access to file
-till file is open for exec() (I noticed that after load, we seem to be
-allowing access to write access).
-
-Thanks
-Vivek
