@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934354Ab3BNLzl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 06:55:41 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:1426 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759715Ab3BNLzh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 06:55:37 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 14 Feb 2013 03:55:02 -0800
-Message-ID: <511CD0A1.70606@nvidia.com>
-Date: Thu, 14 Feb 2013 17:25:13 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	id S934566Ab3BNL5d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 06:57:33 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:38076 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934419Ab3BNL5b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 06:57:31 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Moore, Robert" <robert.moore@intel.com>
+Cc: Toshi Kani <toshi.kani@hp.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <liuj97@gmail.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Myron Stowe <mstowe@redhat.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [Update][PATCH] ACPI / hotplug: Fix concurrency issues and memory leaks
+Date: Thu, 14 Feb 2013 13:03:57 +0100
+Message-ID: <7010893.9OBeMt5Fzh@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc7; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <94F2FBAB4432B54E8AACC7DFDE6C92E368CB39A9@ORSMSX101.amr.corp.intel.com>
+References: <1837481.7dT8hTZ4MT@vostro.rjw.lan> <5284026.QPQbFciqVT@vostro.rjw.lan> <94F2FBAB4432B54E8AACC7DFDE6C92E368CB39A9@ORSMSX101.amr.corp.intel.com>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] regmap: irq: do not write mask register if it is
- not supported
-References: <1360761290-15976-1-git-send-email-ldewangan@nvidia.com> <1360761290-15976-2-git-send-email-ldewangan@nvidia.com> <20130213142036.GJ5062@opensource.wolfsonmicro.com> <511CC520.8050104@nvidia.com> <20130214113531.GC13249@opensource.wolfsonmicro.com>
-In-Reply-To: <20130214113531.GC13249@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 14 February 2013 05:05 PM, Mark Brown wrote:
-> * PGP Signed by an unknown key
->
-> On Thu, Feb 14, 2013 at 04:36:08PM +0530, Laxman Dewangan wrote:
->> On Wednesday 13 February 2013 07:50 PM, Mark Brown wrote:
->>>>   	for (i = 0; i < d->chip->num_regs; i++) {
->>>> +		if (!d->chip->mask_base)
->>>> +			goto skip_mask_reg_update;
->>> Why is this inside the loop?
-> You appear to have ignored this question.
+On Thursday, February 14, 2013 02:31:22 AM Moore, Robert wrote:
+> > > > I thought about that, but actually there's no guarantee that the
+> > > > handle will be valid after _EJ0 as far as I can say.  So the race
+> > > > condition is going to be there anyway and using struct acpi_device
+> > > > just makes it easier to avoid it.
+> > >
+> > > In theory, yes, a stale handle could be a problem, if _EJ0 performs
+> > > unload table and if ACPICA frees up its internal data structure
+> > > pointed by the handle as a result.  But we should not see such issue
+> > > now since we do not support dynamic ACPI namespace yet.
+> > 
+> > I'm waiting for information from Bob about that.  If we can assume ACPI
+> > handles to be always valid, that will simplify things quite a bit.
+> 
+> If a table is unloaded, all the namespace nodes for that table are removed
+> from the namespace, and thus any ACPI_HANDLE pointers go stale and invalid.
 
-I have accepted this to put out of loop.
-Originally  thought that Inside loop, there is two register update one 
-is mask and other is wakup. If I ignore the loop for mask_base= 0 then 
-probably wake_ register will not get updated and hence it is inside the 
-loop to update the wake register. If there is wake_base is 0 then this 
-register update will be ignored anyhow.
+OK, thanks!
 
+To me this means that we cannot assume a handle to stay valid between
+a notify handler and acpi_bus_hot_remove_device() run from a workqueue.
 
+Is there a mechanism in ACPICA to ensure that a handle won't become stale while
+a notify handler is running for it or is the OS responsible for ensuring that
+_EJ0 won't be run in parallel with notify handlers for device objects being
+ejected?
 
->
->>> I'd also expect us to return an error if a caller tries to enable or
->>> disable an interrupt, or possibly to give different ops to the IRQ
->>> subsystem, rather than just silently claim we did what we were asked.
-> if I remove the mask_buf at all then how do we tell the int_sts
-> register is corresponding to which gpio handler?
-> This doesn't sound like something that should be open coded in
-> individual interrupt controller drivers, obviously it's a bit rubbish
-> that there's no way to enable or disable the interrupt but presumably
-> other hardware has the same "feature" and the IRQ subsystem ought to
-> understand it.
->
-
-To support such case, can we assume that mask is always enabled 
-(interrupt enabled) so that it can be use in irq_thread to mask the 
-interrupt status. So during initialization, if there is no mask_base 
-register then all mask_buf is such that it enabled interrupt.
+Rafael
 
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
