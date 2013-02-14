@@ -1,41 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761523Ab3BNRyd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 12:54:33 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:48140 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758259Ab3BNRyb (ORCPT
+	id S1761536Ab3BNRzA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 12:55:00 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:39311 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758259Ab3BNRy6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 12:54:31 -0500
-Message-ID: <511D24D4.6070805@wwwdotorg.org>
-Date: Thu, 14 Feb 2013 10:54:28 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-CC: linux-tegra@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] ARM: dt: add header to define tegra20 clocks
-References: <1360791198-29462-1-git-send-email-swarren@wwwdotorg.org> <1360823899-17846-1-git-send-email-hdoyu@nvidia.com>
-In-Reply-To: <1360823899-17846-1-git-send-email-hdoyu@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 14 Feb 2013 12:54:58 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] driver core: add wait event for deferred probe
+To: Haojian Zhuang <haojian.zhuang@linaro.org>, Arnd Bergmann <arnd@arndb.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        viro@zeniv.linux.org.uk, Rusty Russell <rusty@rustcorp.com.au>,
+        hpa@linux.intel.com, Jim Cromie <jim.cromie@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        broonie@opensource.wolfsonmicro.com,
+        Patch Tracking <patches@linaro.org>
+In-Reply-To: <CAD6h2NTJ1DdJ4j=UxNqgYQ5T16OAJ1saK9BEaMo_5NduG4c_ng@mail.gmail.com>
+References: <1360429077-14616-1-git-send-email-haojian.zhuang@linaro.org> <201302141557.18308.arnd@arndb.de> <CAD6h2NS_eR7zJjwAuBJPRrCb9=-4r=y-QJt7Lvg5U+yBf-e=kw@mail.gmail.com> <201302141650.21144.arnd@arndb.de> <CAD6h2NTJ1DdJ4j=UxNqgYQ5T16OAJ1saK9BEaMo_5NduG4c_ng@mail.gmail.com>
+Date: Thu, 14 Feb 2013 17:54:56 +0000
+Message-Id: <20130214175456.729453E12FB@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13/2013 11:38 PM, Hiroshi Doyu wrote:
-> To replace magic number in "clocks = <&tegra_car 28>;"
+On Fri, 15 Feb 2013 00:58:23 +0800, Haojian Zhuang <haojian.zhuang@linaro.org> wrote:
+> On 15 February 2013 00:50, Arnd Bergmann <arnd@arndb.de> wrote:
+> > On Thursday 14 February 2013, Haojian Zhuang wrote:
+> >> On 14 February 2013 23:57, Arnd Bergmann <arnd@arndb.de> wrote:
+> >> > On Thursday 14 February 2013, Haojian Zhuang wrote:
+> >> >> If you can change it into code in below, it could work. Otherwise, it
+> >> >> always fails.
+> >> >>         driver_deferred_probe_enable = true;
+> >> >>         driver_deferred_probe_trigger();
+> >> >> +      deferred_probe_work_func(NULL);
+> >> >>         return 0;
+> >> >>
+> >> >> Because deferred_probe_work_func() depends on that deferred_probe is added
+> >> >> into deferred_probe_active_list. If driver_deferred_probe_trigger() isn't called
+> >> >> first, the deferred uart probe can't be added into active list. So even you call
+> >> >> work_func at here, it doesn't help.
+> >> >>
+> >> >
+> >> > Would that not cause two instances of the work function to run at the same time?
+> >> > That sounds like a source for a lot of problems.
+> >> >
+> >> >         Arnd
+> >>
+> >> Two instances of the work function? I'm sorry that I don't
+> >> understanding your meaning.
+> >> Could you help explain your question?
+> >
+> > I mean you end up calling the work function directly, while it gets run as part
+> > of the work queue on a different CPU at the same time. I just noticed that
+> > there is actually locking in place in deferred_probe_work_func that prevents
+> > any actual bugs, but you are still adding extra overhead here.
+> >
+> > Maybe just add
+> >
+> >         flush_workqueue(deferred_wq);
+> >
+> > here?
+> >
+> >         Arnd
+> 
+> It's fine to me. Since both of them are flushing workqueue.
+> 
+> Tested-by: <haojian.zhuang@linaro.org>
 
-I like the concept here; I was thinking about doing this today, but you
-beat me to it:-) Feel free to create the Tegra30 header too, and modify
-all the *.dts* files.
+Hahaha. I just came to the same conclusion. I'll craft a proper patch
+and send it off.
 
-To address other comments in this thread: Yes, I think that we will want
-to modify the clock driver to include this header to avoid
-duplication/errors (that will require adjusting Linux's include path),
-and also remove the list of IDs from the binding document; it can just
-refer the the new header by name and cause the header to *be* part of
-the binding document.
+g.
+
