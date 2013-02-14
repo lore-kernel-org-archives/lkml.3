@@ -1,72 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161082Ab3BNWrz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 17:47:55 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:60692 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030238Ab3BNWrx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1161054Ab3BNWrx (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 14 Feb 2013 17:47:53 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:56005 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759177Ab3BNWrw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 17:47:52 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, arm@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Shawn Guo <shawn.guo@linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>, Axel Lin <axel.lin@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 2/9] ARM: imx: MACH_MX31ADS_WM1133_EV1 needs REGULATOR_WM8350
-Date: Thu, 14 Feb 2013 23:47:44 +0100
-Message-Id: <1360882071-4072668-3-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>
+Subject: [PATCH 4/9] ARM: omap: add include guard for soc.h
+Date: Thu, 14 Feb 2013 23:47:46 +0100
+Message-Id: <1360882071-4072668-5-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1360882071-4072668-1-git-send-email-arnd@arndb.de>
 References: <1360882071-4072668-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:KSCuIC+bDA3HI9ml9YmWgc71EnA0rjgkqtXq93+vs4b
- Rt1mvHGTizofgUQHKyT9Jle0+nbktYXQXshx1O4hQlHWKbcdIt
- 1h00x0paLpLmTWbn41Up+rPoEC1Lv9Tl5o6iQNBMhagzqkHntW
- pE0Qyh0AgLKIkZ6YnvWzQvq6cPcog5b6T+BvYhvzGPOM22oR/n
- 6TSy3SJnzjjF7GfS8Z3UJ6MMxQMm2KN4Y1Qos6E80JHMkd1G5a
- pQ+G/cf7Fu8hhZO2QO9MT1jn/8ncsStYW97IM/k36CNRPJj1cx
- yQa4B2WIl5zUnfv+wpsSNEtinMUFeEAk/HBVVvAaaAkaJIzo2t
- r24YBnnSKEbBiriWqKEaw1iQY81Zz0ExN7szjr8e4
+X-Provags-ID: V02:K0:GB8RVrVpMNgVdpfg0IjuBUoNLOcRFf6HA/cgt7oexdd
+ KYGsAt8O1Blhw4wK5G1wrSMZ1j4VTUhCLuu4j7W8h74+DT1295
+ 5s6VjiKUPD3k5br0EMRq5ueZMPg3ScVQT1+vXu5+xfkhPGa1+a
+ 5WRNKLeUqlEcFpoGnBoHLbA5d7LHGp+CJZs/JBV/UCWWZHsVD7
+ +ruU+j2m6tRsfrBKc95oy0ex0GEwpt3V3vfzkTlxEjl0puprkK
+ vXWcmApWzGEBYD3nDaIeFoXZ1D2iVhqSf/43ejVzUQp7vhBpdQ
+ irxuVvdzLWbdveneGgZpnrfIQyfqQxqKpwuGeEsplUFYo4ndWm
+ Lm98yOLPuO4G41bYZxvlzElFPLU6s8bag0/Odqmrr
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MACH_MX31ADS_WM1133_EV1 already depends on REGULATOR_WM8350,
-but that still allows REGULATOR_WM8350 to be a loadable
-module. Depending on REGULATOR_WM8350 to be built-in
-ensures we cannot create a broken configuration.
+Commit e4c060db "ARM: OMAP: Split plat/cpu.h into local soc.h for
+mach-omap1 and mach-omap2" moved the bulk of "plat/cpu.h" into "cpu.h"
+but did not add an include guard for the new file that was present
+in the old one. There are cases where the file is indeed included
+multiple times, probably by accident, but adding the include
+guard ensures that this has no further consequences.
 
-Without this patch, building allmodconfig results in:
+Without this patch, building allmodconfig results in lots of warnings like:
 
-arch/arm/mach-imx/built-in.o: In function `mx31_wm8350_init':
-arch/arm/mach-imx/mach-mx31ads.c:461: undefined reference to `wm8350_register_regulator'
-arch/arm/mach-imx/mach-mx31ads.c:471: undefined reference to `wm8350_dcdc_set_slot'
-arch/arm/mach-imx/mach-mx31ads.c:473: undefined reference to `wm8350_isink_set_flash'
-arch/arm/mach-imx/mach-mx31ads.c:480: undefined reference to `wm8350_dcdc25_set_mode'
-arch/arm/mach-imx/mach-mx31ads.c:485: undefined reference to `wm8350_register_led'
+In file included from arch/arm/mach-omap2/drm.c:31:0:
+arch/arm/mach-omap2/soc.h:206:0: warning: "cpu_is_omap24xx" redefined [enabled by default]
+In file included from arch/arm/mach-omap2/drm.c:28:0:
+arch/arm/mach-omap2/soc.h:227:0: note: this is the location of the previous definition
+In file included from arch/arm/mach-omap2/drm.c:31:0:
+arch/arm/mach-omap2/soc.h:207:0: warning: "cpu_is_omap242x" redefined [enabled by default]
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Shawn Guo <shawn.guo@linaro.org>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Axel Lin <axel.lin@gmail.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Tony Lindgren <tony@atomide.com>
 ---
- arch/arm/mach-imx/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mach-omap2/soc.h | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
-index 7b11d33..4c9c6f9 100644
---- a/arch/arm/mach-imx/Kconfig
-+++ b/arch/arm/mach-imx/Kconfig
-@@ -480,7 +480,7 @@ config MACH_MX31ADS_WM1133_EV1
- 	bool "Support Wolfson Microelectronics 1133-EV1 module"
- 	depends on MACH_MX31ADS
- 	depends on MFD_WM8350_I2C
--	depends on REGULATOR_WM8350
-+	depends on REGULATOR_WM8350 = y
- 	select MFD_WM8350_CONFIG_MODE_0
- 	select MFD_WM8352_CONFIG_MODE_0
- 	help
+diff --git a/arch/arm/mach-omap2/soc.h b/arch/arm/mach-omap2/soc.h
+index c62116b..97dd373 100644
+--- a/arch/arm/mach-omap2/soc.h
++++ b/arch/arm/mach-omap2/soc.h
+@@ -24,6 +24,8 @@
+  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+  *
+  */
++#ifndef OMAP2_SOC_H
++#define OMAP2_SOC_H
+ 
+ #include "omap24xx.h"
+ #include "omap34xx.h"
+@@ -497,3 +499,4 @@ level(__##fn);
+ 
+ #endif	/* __ASSEMBLY__ */
+ 
++#endif
 -- 
 1.8.1.2
 
