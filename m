@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760312Ab3BNMqk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 07:46:40 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:44214 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760106Ab3BNMqj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 07:46:39 -0500
-From: Russ Dill <Russ.Dill@ti.com>
-To: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Russ Dill <Russ.Dill@ti.com>
-Subject: [PATCH] regulator: Fix memory garbage dev_err printout.
-Date: Thu, 14 Feb 2013 04:46:33 -0800
-Message-Id: <1360845993-693-1-git-send-email-Russ.Dill@ti.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S964776Ab3BNMwF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 07:52:05 -0500
+Received: from mx2.promwad.com ([91.149.128.90]:37694 "EHLO mx2.promwad.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759872Ab3BNMwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 07:52:04 -0500
+X-Greylist: delayed 326 seconds by postgrey-1.27 at vger.kernel.org; Thu, 14 Feb 2013 07:52:04 EST
+Message-ID: <511CDCA8.1010703@promwad.com>
+Date: Thu, 14 Feb 2013 15:46:32 +0300
+From: Ivan Kuten <ivan.kuten@promwad.com>
+Reply-To: <ivan.kuten@promwad.com>
+Organization: Promwad
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: promwad_imap <michail.kurachkin@promwad.com>
+CC: Oliver Neukum <oneukum@suse.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "benavi@marvell.com" <benavi@marvell.com>,
+        Palstsiuk Viktar <Viktar.Palstsiuk@promwad.com>
+Subject: Re: TDM bus support in Linux Kernel [PATCH]
+References: <F7F628C32E67B04DAECC5CA53521253E5FAB15CE@sv-exmb01-lo1.promwad.corp> <1445550.3M3gD8CvZe@linux-5eaq.site> <6757302.20130204160858@promwad.com> <5007545.bVNiTjB1se@linux-5eaq.site> <1634686041.20130213200826@promwad.com>
+In-Reply-To: <1634686041.20130213200826@promwad.com>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit dd8004af: 'regulator: core: Log when a device causes a voltage
-constraint fail', tried to print out some information about the
-check consumer min/max uV fixup, however, it uses a garbage pointer
-left over from list_for_each_entry leading to boot messages in the
-form:
+On 13.02.2013 20:08, Michail Kurachkin wrote:
+> Hi,
+>
+> I just sent reworked version of the code. I am looking forward for comments.
+> Sorry, I have no time to fix your next requests:
 
-'[    2.079890] <RANDOM ASCII>: Restricting voltage, 3735899821-4294967295uV'
+Michail,
+Where is your patch?
 
-Because it references regulator->dev, it could potentially read memory from
-anywhere causing a panic.
-
-This patch instead uses rdev and the updated min/max uV values.
-
-Signed-off-by: Russ Dill <Russ.Dill@ti.com>
----
- drivers/regulator/core.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 2785843..5a0f54a 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -200,8 +200,8 @@ static int regulator_check_consumers(struct regulator_dev *rdev,
- 	}
- 
- 	if (*min_uV > *max_uV) {
--		dev_err(regulator->dev, "Restricting voltage, %u-%uuV\n",
--			regulator->min_uV, regulator->max_uV);
-+		rdev_err(rdev, "Restricting voltage, %u-%uuV\n",
-+			*min_uV, *max_uV);
- 		return -EINVAL;
- 	}
- 
--- 
-1.8.1.2
+Regards,
+Ivan
 
