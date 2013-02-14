@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753209Ab3BNCsE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 21:48:04 -0500
-Received: from fn.samba.org ([216.83.154.106]:38477 "EHLO mail.samba.org"
+	id S1753888Ab3BNCsj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 21:48:39 -0500
+Received: from fn.samba.org ([216.83.154.106]:38486 "EHLO mail.samba.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750712Ab3BNCsC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 21:48:02 -0500
-X-Greylist: delayed 441 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Feb 2013 21:48:02 EST
-Message-ID: <1360809636.1727.304.camel@jesse>
+	id S1752275Ab3BNCsi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 21:48:38 -0500
+Message-ID: <1360810114.1727.306.camel@jesse>
 Subject: Read support for fat_fallocate()?  (was  [v2] fat: editions to
  support fat_fallocate())
 From: Andrew Bartlett <abartlet@samba.org>
 To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: hirofumi@mail.parknet.co.jpm, linux-kernel@vger.kernel.org,
+Cc: hirofumi@mail.parknet.co.jp, linux-kernel@vger.kernel.org,
         Ravishankar N <cyberax82@gmail.com>,
         Amit Sahrawat <amit.sahrawat83@gmail.com>
-Date: Thu, 14 Feb 2013 13:40:36 +1100
+Date: Thu, 14 Feb 2013 13:48:34 +1100
 References: <1350138661-2454-1-git-send-email-linkinjeon@gmail.com>
 Organization: 
 Content-Type: text/plain; charset="UTF-8"
@@ -25,6 +24,8 @@ Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+(apologies for the duplicate mail, I typo-ed the maintainers address)
 
 G'day,
 
@@ -66,5 +67,6 @@ Andrew Bartlett
 -- 
 Andrew Bartlett                                http://samba.org/~abartlet/
 Authentication Developer, Samba Team           http://samba.org
+
 
 
