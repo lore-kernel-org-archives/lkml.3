@@ -1,455 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756101Ab3BNHPI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 02:15:08 -0500
-Received: from mga02.intel.com ([134.134.136.20]:19858 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755884Ab3BNHPF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 02:15:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,662,1355126400"; 
-   d="scan'208,223";a="285589880"
-Message-ID: <1360826119.12703.155.camel@sauron.fi.intel.com>
-Subject: Re: SELinux + ubifs: possible circular locking dependency
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-Cc: linux-mtd@lists.infradead.org, linux-security-module@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>
-Date: Thu, 14 Feb 2013 09:15:19 +0200
-In-Reply-To: <511BA51E.9000606@pengutronix.de>
-References: <51123C80.2050400@pengutronix.de>
-	  <5115076E.3070703@pengutronix.de>
-	 <1360759673.12703.147.camel@sauron.fi.intel.com>
-	 <511BA51E.9000606@pengutronix.de>
-Content-Type: multipart/mixed; boundary="=-hQMSFjCavkNOjEGEHvsx"
-X-Mailer: Evolution 3.6.3 (3.6.3-2.fc18) 
+	id S1756053Ab3BNHRA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 02:17:00 -0500
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:9684 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755884Ab3BNHQ6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 02:16:58 -0500
+Date: Thu, 14 Feb 2013 08:15:58 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Doug Anderson <dianders@chromium.org>,
+        Wolfram Sang <w.sang@pengutronix.de>, Simon Glass <sjg@chromium.org>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Yuvaraj Kumar <yuvaraj.cd@gmail.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>, u.kleine-koenig@pengutronix.de,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Girish Shivananjappa <girish.shivananjappa@linaro.org>,
+        bhushan.r@samsung.com, sreekumar.c@samsung.com,
+        Prashanth G <prashanth.g@samsung.com>, Olof Johansson <olof@lixom.net>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Grant Grundler <grundler@chromium.org>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        Peter Korsgaard <peter.korsgaard@barco.com>,
+        Guenter Roeck <linux@roeck-us.net>,
+        David Daney <david.daney@cavium.com>, Axel Lin <axel.lin@gmail.com>,
+        Stephen Warren <swarren@nvidia.com>, Barry Song <baohua.song@csr.com>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1 4/4] i2c-mux: i2c_add_mux_adapter() should use -1 for
+  auto bus num
+Message-ID: <20130214081558.5e3d636e@endymion.delvare>
+In-Reply-To: <511C00F4.4080708@wwwdotorg.org>
+References: <1360778532-7480-1-git-send-email-dianders@chromium.org>
+	<1360778532-7480-4-git-send-email-dianders@chromium.org>
+	<511C00F4.4080708@wwwdotorg.org>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 13 Feb 2013 14:09:08 -0700, Stephen Warren wrote:
+> On 02/13/2013 11:02 AM, Doug Anderson wrote:
+> > The force_nr parameter to i2c_add_mux_adapter() uses 0 to signify that
+> > we don't want to force the bus number of the adapter.  This is
+> > non-ideal because:
+> > * 0 is actually a valid bus number to request
+> > * i2c_add_numbered_adapter() (which i2c_add_mux_adapter() calls) uses
+> >   -1 to mean the same thing.  That means extra logic in
+> >   i2c_add_mux_adapter().
+> > 
+> > Fix i2c_add_mux_adapter() to use -1 and update all mux drivers
+> > accordingly.
+> > 
+> > Signed-off-by: Doug Anderson <dianders@chromium.org>
+> > ---
+> > Notes:
+> > - If there's a good reason that force_nr uses 0 for auto then feel
+> >   free to drop this patch.  I've place it at the end of the series to
+> >   make it easy to just drop it.
+> 
+> IIRC (and I only vaguely do...) it's because:
+> 
+> > diff --git a/drivers/i2c/muxes/i2c-mux-gpio.c b/drivers/i2c/muxes/i2c-mux-gpio.c
+> > index 9f50ef0..301ed0b 100644
+> > --- a/drivers/i2c/muxes/i2c-mux-gpio.c
+> > +++ b/drivers/i2c/muxes/i2c-mux-gpio.c
+> > @@ -208,7 +208,7 @@ static int i2c_mux_gpio_probe(struct platform_device *pdev)
+> >  	}
+> >  
+> >  	for (i = 0; i < mux->data.n_values; i++) {
+> > -		u32 nr = mux->data.base_nr ? (mux->data.base_nr + i) : 0;
+> > +		int nr = mux->data.base_nr ? (mux->data.base_nr + i) : -1;
+> 
+> Here, mux->data.base_nr is platform data (or copied directly from it),
+> and any field in a platform data struct stored in a global variable not
+> explicitly initialized would be 0, hence 0 would typically mean "no
+> explicit bus number desired". Since a mux can't exist without a parent
+> I2C bus, it's unlikely anyone would want a mux to be I2C bus 0, but
+> rather the parent to have that number.
 
---=-hQMSFjCavkNOjEGEHvsx
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
-Mark, how about this one? I compiled it and ran on my fedora 16 with
-SElinux enabled, no obvious issues.
-
->From a19350097200570571aa522afebb96b34db534f4 Mon Sep 17 00:00:00 2001
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Date: Thu, 14 Feb 2013 09:07:36 +0200
-Subject: [PATCH] selinux: do not confuse lockdep
-
-Selinux has per-inode mutexes called 'isec->lock', and they are initialized in
-the same place, which makes lockdep treat all of the them as if they were
-identical. However, locking rules may be a little bit different depending on
-the file-system, so we should put these locks to separate classes, just like we
-do for 'i_mutex'. Namely, we should put them to per-FS type classes, which is
-exactly what this patch does.
-
-The problem this patch intends to fix is a strange lockdep warning, which I,
-frankly speaking, do not really understand, but I believe the root-cause should
-be fixed by this patch.
-
-Look at the stacktrace #4: here we have 'debugfs_create_dir()'
-
-[    5.390312] ======================================================
-[    5.396500] [ INFO: possible circular locking dependency detected ]
-[    5.402781] 3.8.0-rc6-00005-g4f7e39d #49 Not tainted
-[    5.407750] -------------------------------------------------------
-[    5.414031] systemd/1 is trying to acquire lock:
-[    5.418656]  (&c->tnc_mutex){+.+...}, at: [<c01552d0>] ubifs_tnc_locate+0x30/0x198
-[    5.426343]
-[    5.426343] but task is already holding lock:
-[    5.432218]  (&isec->lock){+.+.+.}, at: [<c018e298>] inode_doinit_with_dentry+0x8c/0x55c
-[    5.440375]
-[    5.440375] which lock already depends on the new lock.
-[    5.440375]
-[    5.448593]
-[    5.448593] the existing dependency chain (in reverse order) is:
-[    5.456093]
--> #4 (&isec->lock){+.+.+.}:
-[    5.460250]        [<c004e8e8>] lock_acquire+0x64/0x78
-[    5.465437]        [<c0355d5c>] mutex_lock_nested+0x5c/0x2ec
-[    5.471125]        [<c018e298>] inode_doinit_with_dentry+0x8c/0x55c
-[    5.477437]        [<c0189bd8>] security_d_instantiate+0x1c/0x34
-[    5.483500]        [<c017a614>] debugfs_mknod.part.15.constprop.18+0x94/0x128
-[    5.490656]        [<c017a858>] __create_file+0x1b0/0x25c
-[    5.496093]        [<c017a98c>] debugfs_create_dir+0x1c/0x28
-[    5.501781]        [<c0491ce8>] pinctrl_init+0x1c/0xd0
-[    5.506968]        [<c0008900>] do_one_initcall+0x108/0x17c
-[    5.512593]        [<c0483858>] kernel_init_freeable+0xec/0x1b4
-[    5.518562]        [<c034f398>] kernel_init+0x8/0xe4
-[    5.523562]        [<c0009448>] ret_from_fork+0x14/0x2c
-[    5.528812]
--> #3 (&sb->s_type->i_mutex_key#2){+.+.+.}:
-[    5.534312]        [<c004e8e8>] lock_acquire+0x64/0x78
-[    5.539468]        [<c0355d5c>] mutex_lock_nested+0x5c/0x2ec
-[    5.545187]        [<c017a6f8>] __create_file+0x50/0x25c
-[    5.550531]        [<c017a98c>] debugfs_create_dir+0x1c/0x28
-[    5.556218]        [<c026cfc4>] clk_debug_create_subtree+0x1c/0x108
-[    5.562500]        [<c0495bfc>] clk_debug_init+0x68/0xc0
-[    5.567875]        [<c0008900>] do_one_initcall+0x108/0x17c
-[    5.573468]        [<c0483858>] kernel_init_freeable+0xec/0x1b4
-[    5.579437]        [<c034f398>] kernel_init+0x8/0xe4
-[    5.584437]        [<c0009448>] ret_from_fork+0x14/0x2c
-[    5.589687]
--> #2 (prepare_lock){+.+.+.}:
-[    5.593937]        [<c004e8e8>] lock_acquire+0x64/0x78
-[    5.599125]        [<c0355d5c>] mutex_lock_nested+0x5c/0x2ec
-[    5.604812]        [<c026d400>] clk_prepare+0x18/0x38
-[    5.609906]        [<c023a2f8>] __gpmi_enable_clk+0x30/0xb0
-[    5.615531]        [<c023a7bc>] gpmi_begin+0x18/0x530
-[    5.620625]        [<c0239244>] gpmi_select_chip+0x3c/0x54
-[    5.626156]        [<c02341ac>] nand_do_read_ops+0x7c/0x3e4
-[    5.631750]        [<c023483c>] nand_read+0x50/0x74
-[    5.636656]        [<c02198e4>] part_read+0x5c/0xa4
-[    5.641593]        [<c0217404>] mtd_read+0x84/0xb8
-[    5.646406]        [<c02450cc>] ubi_io_read+0xa0/0x2c0
-[    5.651593]        [<c0242640>] ubi_eba_read_leb+0x190/0x424
-[    5.657281]        [<c0241b18>] ubi_leb_read+0xac/0x120
-[    5.662562]        [<c01503e4>] ubifs_leb_read+0x28/0x8c
-[    5.667906]        [<c0151f74>] ubifs_read_node+0x98/0x2a0
-[    5.673437]        [<c014e780>] ubifs_read_sb_node+0x54/0x78
-[    5.679125]        [<c014f444>] ubifs_read_superblock+0xc60/0x163c
-[    5.685343]        [<c014d64c>] ubifs_mount+0x800/0x171c
-[    5.690687]        [<c00b5740>] mount_fs+0x44/0x184
-[    5.695593]        [<c00cd7ec>] vfs_kern_mount+0x4c/0xc0
-[    5.700968]        [<c00cf394>] do_mount+0x18c/0x8d0
-[    5.705968]        [<c00cfb5c>] sys_mount+0x84/0xb8
-[    5.710875]        [<c0483bc8>] mount_block_root+0x118/0x258
-[    5.716562]        [<c0483eac>] prepare_namespace+0x8c/0x17c
-[    5.722281]        [<c034f398>] kernel_init+0x8/0xe4
-[    5.727281]        [<c0009448>] ret_from_fork+0x14/0x2c
-[    5.732531]
--> #1 (&le->mutex){++++..}:
-[    5.736625]        [<c004e8e8>] lock_acquire+0x64/0x78
-[    5.741812]        [<c0356468>] down_read+0x40/0x54
-[    5.746718]        [<c02424e4>] ubi_eba_read_leb+0x34/0x424
-[    5.752312]        [<c0241b18>] ubi_leb_read+0xac/0x120
-[    5.757562]        [<c01503e4>] ubifs_leb_read+0x28/0x8c
-[    5.762937]        [<c0151f74>] ubifs_read_node+0x98/0x2a0
-[    5.768437]        [<c016edc0>] ubifs_load_znode+0x88/0x560
-[    5.774062]        [<c0155254>] ubifs_lookup_level0+0x190/0x1dc
-[    5.780031]        [<c01552e4>] ubifs_tnc_locate+0x44/0x198
-[    5.785656]        [<c014c614>] ubifs_iget+0x6c/0x8a4
-[    5.790718]        [<c014da64>] ubifs_mount+0xc18/0x171c
-[    5.796093]        [<c00b5740>] mount_fs+0x44/0x184
-[    5.801000]        [<c00cd7ec>] vfs_kern_mount+0x4c/0xc0
-[    5.806343]        [<c00cf394>] do_mount+0x18c/0x8d0
-[    5.811343]        [<c00cfb5c>] sys_mount+0x84/0xb8
-[    5.816250]        [<c0483bc8>] mount_block_root+0x118/0x258
-[    5.821968]        [<c0483eac>] prepare_namespace+0x8c/0x17c
-[    5.827656]        [<c034f398>] kernel_init+0x8/0xe4
-[    5.832656]        [<c0009448>] ret_from_fork+0x14/0x2c
-[    5.837906]
--> #0 (&c->tnc_mutex){+.+...}:
-[    5.842250]        [<c004de48>] __lock_acquire+0x14ec/0x1b08
-[    5.847968]        [<c004e8e8>] lock_acquire+0x64/0x78
-[    5.853125]        [<c0355d5c>] mutex_lock_nested+0x5c/0x2ec
-[    5.858812]        [<c01552d0>] ubifs_tnc_locate+0x30/0x198
-[    5.864437]        [<c0155a48>] ubifs_tnc_lookup_nm+0x28/0x150
-[    5.870312]        [<c016fc18>] ubifs_getxattr+0xc0/0x254
-[    5.875750]        [<c018e468>] inode_doinit_with_dentry+0x25c/0x55c
-[    5.882125]        [<c018f1a8>] sb_finish_set_opts+0xa4/0x21c
-[    5.887906]        [<c019055c>] selinux_set_mnt_opts+0x2ec/0x4b8
-[    5.893968]        [<c01907dc>] superblock_doinit+0xb4/0xc0
-[    5.899562]        [<c00b51f4>] iterate_supers+0xb4/0xdc
-[    5.904906]        [<c01a02e8>] security_load_policy+0x248/0x3c4
-[    5.910968]        [<c0194994>] sel_write_load+0x9c/0x6a0
-[    5.916406]        [<c00b2148>] vfs_write+0xa0/0x17c
-[    5.921406]        [<c00b2450>] sys_write+0x3c/0x70
-[    5.926343]        [<c00093a0>] ret_fast_syscall+0x0/0x38
-[    5.931781]
-[    5.931781] other info that might help us debug this:
-[    5.931781]
-[    5.939781] Chain exists of:
-  &c->tnc_mutex --> &sb->s_type->i_mutex_key#2 --> &isec->lock
-[    5.948500]  Possible unsafe locking scenario:
-[    5.948500]
-[    5.954437]        CPU0                    CPU1
-[    5.958968]        ----                    ----
-[    5.963500]   lock(&isec->lock);
-[    5.966781]                                lock(&sb->s_type->i_mutex_key#2);
-[    5.973843]                                lock(&isec->lock);
-[    5.979625]   lock(&c->tnc_mutex);
-[    5.983062]
-[    5.983062]  *** DEADLOCK ***
-[    5.983062]
-[    5.989000] 4 locks held by systemd/1:
-[    5.992781]  #0:  (sel_mutex){+.+.+.}, at: [<c0194918>] sel_write_load+0x20/0x6a0
-[    6.000343]  #1:  (&type->s_umount_key#26){.+.+..}, at: [<c00b51d0>] iterate_supers+0x90/0xdc
-[    6.008968]  #2:  (&sbsec->lock){+.+.+.}, at: [<c01902d4>] selinux_set_mnt_opts+0x64/0x4b8
-[    6.017343]  #3:  (&isec->lock){+.+.+.}, at: [<c018e298>] inode_doinit_with_dentry+0x8c/0x55c
-[    6.025937]
-[    6.025937] stack backtrace:
-[    6.030375] [<c000d0f0>] (unwind_backtrace+0x0/0xf0) from [<c0351a2c>] (print_circular_bug+0x25c/0x2a8)
-[    6.039843] [<c0351a2c>] (print_circular_bug+0x25c/0x2a8) from [<c004de48>] (__lock_acquire+0x14ec/0x1b08)
-[    6.049531] [<c004de48>] (__lock_acquire+0x14ec/0x1b08) from [<c004e8e8>] (lock_acquire+0x64/0x78)
-[    6.058531] [<c004e8e8>] (lock_acquire+0x64/0x78) from [<c0355d5c>] (mutex_lock_nested+0x5c/0x2ec)
-[    6.067531] [<c0355d5c>] (mutex_lock_nested+0x5c/0x2ec) from [<c01552d0>] (ubifs_tnc_locate+0x30/0x198)
-[    6.076968] [<c01552d0>] (ubifs_tnc_locate+0x30/0x198) from [<c0155a48>] (ubifs_tnc_lookup_nm+0x28/0x150)
-[    6.086593] [<c0155a48>] (ubifs_tnc_lookup_nm+0x28/0x150) from [<c016fc18>] (ubifs_getxattr+0xc0/0x254)
-[    6.096031] [<c016fc18>] (ubifs_getxattr+0xc0/0x254) from [<c018e468>] (inode_doinit_with_dentry+0x25c/0x55c)
-[    6.105968] [<c018e468>] (inode_doinit_with_dentry+0x25c/0x55c) from [<c018f1a8>] (sb_finish_set_opts+0xa4/0x21c)
-[    6.116281] [<c018f1a8>] (sb_finish_set_opts+0xa4/0x21c) from [<c019055c>] (selinux_set_mnt_opts+0x2ec/0x4b8)
-[    6.126218] [<c019055c>] (selinux_set_mnt_opts+0x2ec/0x4b8) from [<c01907dc>] (superblock_doinit+0xb4/0xc0)
-[    6.136000] [<c01907dc>] (superblock_doinit+0xb4/0xc0) from [<c00b51f4>] (iterate_supers+0xb4/0xdc)
-[    6.145093] [<c00b51f4>] (iterate_supers+0xb4/0xdc) from [<c01a02e8>] (security_load_policy+0x248/0x3c4)
-[    6.154625] [<c01a02e8>] (security_load_policy+0x248/0x3c4) from [<c0194994>] (sel_write_load+0x9c/0x6a0)
-[    6.164218] [<c0194994>] (sel_write_load+0x9c/0x6a0) from [<c00b2148>] (vfs_write+0xa0/0x17c)
-[    6.172781] [<c00b2148>] (vfs_write+0xa0/0x17c) from [<c00b2450>] (sys_write+0x3c/0x70)
-[    6.180843] [<c00b2450>] (sys_write+0x3c/0x70) from [<c00093a0>] (ret_fast_syscall+0x0/0x38)
-
-Reported-by: Marc Kleine-Budde <mkl@pengutronix.de>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
----
- include/linux/fs.h       |    1 +
- security/selinux/hooks.c |    2 ++
- 2 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 7617ee0..ccd49e1 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1824,6 +1824,7 @@ struct file_system_type {
- 	struct lock_class_key i_lock_key;
- 	struct lock_class_key i_mutex_key;
- 	struct lock_class_key i_mutex_dir_key;
-+	struct lock_class_key i_security_lock_key;
- };
- 
- extern struct dentry *mount_ns(struct file_system_type *fs_type, int flags,
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index ef26e96..13ccbb0 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -207,6 +207,8 @@ static int inode_alloc_security(struct inode *inode)
- 		return -ENOMEM;
- 
- 	mutex_init(&isec->lock);
-+	lockdep_set_class(&isec->lock,
-+			  &inode->i_sb->s_type->i_security_lock_key);
- 	INIT_LIST_HEAD(&isec->list);
- 	isec->inode = inode;
- 	isec->sid = SECINITSID_UNLABELED;
--- 
-1.7.7.6
+Yes, as I recall this is exactly the reason why the current code is the
+way it is.
 
 -- 
-Best Regards,
-Artem Bityutskiy
-
---=-hQMSFjCavkNOjEGEHvsx
-Content-Disposition: attachment; filename="0001-selinux-do-not-confuse-lockdep.patch"
-Content-Type: text/x-patch; name="0001-selinux-do-not-confuse-lockdep.patch";
-	charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
->From a19350097200570571aa522afebb96b34db534f4 Mon Sep 17 00:00:00 2001
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Date: Thu, 14 Feb 2013 09:07:36 +0200
-Subject: [PATCH] selinux: do not confuse lockdep
-
-Selinux has per-inode mutexes called 'isec->lock', and they are initialized in
-the same place, which makes lockdep treat all of the them as if they were
-identical. However, locking rules may be a little bit different depending on
-the file-system, so we should put these locks to separate classes, just like we
-do for 'i_mutex'. Namely, we should put them to per-FS type classes, which is
-exactly what this patch does.
-
-The problem this patch intends to fix is a strange lockdep warning, which I,
-frankly speaking, do not really understand, but I believe the root-cause should
-be fixed by this patch.
-
-Look at the stacktrace #4: here we have 'debugfs_create_dir()'
-
-[    5.390312] ======================================================
-[    5.396500] [ INFO: possible circular locking dependency detected ]
-[    5.402781] 3.8.0-rc6-00005-g4f7e39d #49 Not tainted
-[    5.407750] -------------------------------------------------------
-[    5.414031] systemd/1 is trying to acquire lock:
-[    5.418656]  (&c->tnc_mutex){+.+...}, at: [<c01552d0>] ubifs_tnc_locate+0x30/0x198
-[    5.426343]
-[    5.426343] but task is already holding lock:
-[    5.432218]  (&isec->lock){+.+.+.}, at: [<c018e298>] inode_doinit_with_dentry+0x8c/0x55c
-[    5.440375]
-[    5.440375] which lock already depends on the new lock.
-[    5.440375]
-[    5.448593]
-[    5.448593] the existing dependency chain (in reverse order) is:
-[    5.456093]
--> #4 (&isec->lock){+.+.+.}:
-[    5.460250]        [<c004e8e8>] lock_acquire+0x64/0x78
-[    5.465437]        [<c0355d5c>] mutex_lock_nested+0x5c/0x2ec
-[    5.471125]        [<c018e298>] inode_doinit_with_dentry+0x8c/0x55c
-[    5.477437]        [<c0189bd8>] security_d_instantiate+0x1c/0x34
-[    5.483500]        [<c017a614>] debugfs_mknod.part.15.constprop.18+0x94/0x128
-[    5.490656]        [<c017a858>] __create_file+0x1b0/0x25c
-[    5.496093]        [<c017a98c>] debugfs_create_dir+0x1c/0x28
-[    5.501781]        [<c0491ce8>] pinctrl_init+0x1c/0xd0
-[    5.506968]        [<c0008900>] do_one_initcall+0x108/0x17c
-[    5.512593]        [<c0483858>] kernel_init_freeable+0xec/0x1b4
-[    5.518562]        [<c034f398>] kernel_init+0x8/0xe4
-[    5.523562]        [<c0009448>] ret_from_fork+0x14/0x2c
-[    5.528812]
--> #3 (&sb->s_type->i_mutex_key#2){+.+.+.}:
-[    5.534312]        [<c004e8e8>] lock_acquire+0x64/0x78
-[    5.539468]        [<c0355d5c>] mutex_lock_nested+0x5c/0x2ec
-[    5.545187]        [<c017a6f8>] __create_file+0x50/0x25c
-[    5.550531]        [<c017a98c>] debugfs_create_dir+0x1c/0x28
-[    5.556218]        [<c026cfc4>] clk_debug_create_subtree+0x1c/0x108
-[    5.562500]        [<c0495bfc>] clk_debug_init+0x68/0xc0
-[    5.567875]        [<c0008900>] do_one_initcall+0x108/0x17c
-[    5.573468]        [<c0483858>] kernel_init_freeable+0xec/0x1b4
-[    5.579437]        [<c034f398>] kernel_init+0x8/0xe4
-[    5.584437]        [<c0009448>] ret_from_fork+0x14/0x2c
-[    5.589687]
--> #2 (prepare_lock){+.+.+.}:
-[    5.593937]        [<c004e8e8>] lock_acquire+0x64/0x78
-[    5.599125]        [<c0355d5c>] mutex_lock_nested+0x5c/0x2ec
-[    5.604812]        [<c026d400>] clk_prepare+0x18/0x38
-[    5.609906]        [<c023a2f8>] __gpmi_enable_clk+0x30/0xb0
-[    5.615531]        [<c023a7bc>] gpmi_begin+0x18/0x530
-[    5.620625]        [<c0239244>] gpmi_select_chip+0x3c/0x54
-[    5.626156]        [<c02341ac>] nand_do_read_ops+0x7c/0x3e4
-[    5.631750]        [<c023483c>] nand_read+0x50/0x74
-[    5.636656]        [<c02198e4>] part_read+0x5c/0xa4
-[    5.641593]        [<c0217404>] mtd_read+0x84/0xb8
-[    5.646406]        [<c02450cc>] ubi_io_read+0xa0/0x2c0
-[    5.651593]        [<c0242640>] ubi_eba_read_leb+0x190/0x424
-[    5.657281]        [<c0241b18>] ubi_leb_read+0xac/0x120
-[    5.662562]        [<c01503e4>] ubifs_leb_read+0x28/0x8c
-[    5.667906]        [<c0151f74>] ubifs_read_node+0x98/0x2a0
-[    5.673437]        [<c014e780>] ubifs_read_sb_node+0x54/0x78
-[    5.679125]        [<c014f444>] ubifs_read_superblock+0xc60/0x163c
-[    5.685343]        [<c014d64c>] ubifs_mount+0x800/0x171c
-[    5.690687]        [<c00b5740>] mount_fs+0x44/0x184
-[    5.695593]        [<c00cd7ec>] vfs_kern_mount+0x4c/0xc0
-[    5.700968]        [<c00cf394>] do_mount+0x18c/0x8d0
-[    5.705968]        [<c00cfb5c>] sys_mount+0x84/0xb8
-[    5.710875]        [<c0483bc8>] mount_block_root+0x118/0x258
-[    5.716562]        [<c0483eac>] prepare_namespace+0x8c/0x17c
-[    5.722281]        [<c034f398>] kernel_init+0x8/0xe4
-[    5.727281]        [<c0009448>] ret_from_fork+0x14/0x2c
-[    5.732531]
--> #1 (&le->mutex){++++..}:
-[    5.736625]        [<c004e8e8>] lock_acquire+0x64/0x78
-[    5.741812]        [<c0356468>] down_read+0x40/0x54
-[    5.746718]        [<c02424e4>] ubi_eba_read_leb+0x34/0x424
-[    5.752312]        [<c0241b18>] ubi_leb_read+0xac/0x120
-[    5.757562]        [<c01503e4>] ubifs_leb_read+0x28/0x8c
-[    5.762937]        [<c0151f74>] ubifs_read_node+0x98/0x2a0
-[    5.768437]        [<c016edc0>] ubifs_load_znode+0x88/0x560
-[    5.774062]        [<c0155254>] ubifs_lookup_level0+0x190/0x1dc
-[    5.780031]        [<c01552e4>] ubifs_tnc_locate+0x44/0x198
-[    5.785656]        [<c014c614>] ubifs_iget+0x6c/0x8a4
-[    5.790718]        [<c014da64>] ubifs_mount+0xc18/0x171c
-[    5.796093]        [<c00b5740>] mount_fs+0x44/0x184
-[    5.801000]        [<c00cd7ec>] vfs_kern_mount+0x4c/0xc0
-[    5.806343]        [<c00cf394>] do_mount+0x18c/0x8d0
-[    5.811343]        [<c00cfb5c>] sys_mount+0x84/0xb8
-[    5.816250]        [<c0483bc8>] mount_block_root+0x118/0x258
-[    5.821968]        [<c0483eac>] prepare_namespace+0x8c/0x17c
-[    5.827656]        [<c034f398>] kernel_init+0x8/0xe4
-[    5.832656]        [<c0009448>] ret_from_fork+0x14/0x2c
-[    5.837906]
--> #0 (&c->tnc_mutex){+.+...}:
-[    5.842250]        [<c004de48>] __lock_acquire+0x14ec/0x1b08
-[    5.847968]        [<c004e8e8>] lock_acquire+0x64/0x78
-[    5.853125]        [<c0355d5c>] mutex_lock_nested+0x5c/0x2ec
-[    5.858812]        [<c01552d0>] ubifs_tnc_locate+0x30/0x198
-[    5.864437]        [<c0155a48>] ubifs_tnc_lookup_nm+0x28/0x150
-[    5.870312]        [<c016fc18>] ubifs_getxattr+0xc0/0x254
-[    5.875750]        [<c018e468>] inode_doinit_with_dentry+0x25c/0x55c
-[    5.882125]        [<c018f1a8>] sb_finish_set_opts+0xa4/0x21c
-[    5.887906]        [<c019055c>] selinux_set_mnt_opts+0x2ec/0x4b8
-[    5.893968]        [<c01907dc>] superblock_doinit+0xb4/0xc0
-[    5.899562]        [<c00b51f4>] iterate_supers+0xb4/0xdc
-[    5.904906]        [<c01a02e8>] security_load_policy+0x248/0x3c4
-[    5.910968]        [<c0194994>] sel_write_load+0x9c/0x6a0
-[    5.916406]        [<c00b2148>] vfs_write+0xa0/0x17c
-[    5.921406]        [<c00b2450>] sys_write+0x3c/0x70
-[    5.926343]        [<c00093a0>] ret_fast_syscall+0x0/0x38
-[    5.931781]
-[    5.931781] other info that might help us debug this:
-[    5.931781]
-[    5.939781] Chain exists of:
-  &c->tnc_mutex --> &sb->s_type->i_mutex_key#2 --> &isec->lock
-[    5.948500]  Possible unsafe locking scenario:
-[    5.948500]
-[    5.954437]        CPU0                    CPU1
-[    5.958968]        ----                    ----
-[    5.963500]   lock(&isec->lock);
-[    5.966781]                                lock(&sb->s_type->i_mutex_key#2);
-[    5.973843]                                lock(&isec->lock);
-[    5.979625]   lock(&c->tnc_mutex);
-[    5.983062]
-[    5.983062]  *** DEADLOCK ***
-[    5.983062]
-[    5.989000] 4 locks held by systemd/1:
-[    5.992781]  #0:  (sel_mutex){+.+.+.}, at: [<c0194918>] sel_write_load+0x20/0x6a0
-[    6.000343]  #1:  (&type->s_umount_key#26){.+.+..}, at: [<c00b51d0>] iterate_supers+0x90/0xdc
-[    6.008968]  #2:  (&sbsec->lock){+.+.+.}, at: [<c01902d4>] selinux_set_mnt_opts+0x64/0x4b8
-[    6.017343]  #3:  (&isec->lock){+.+.+.}, at: [<c018e298>] inode_doinit_with_dentry+0x8c/0x55c
-[    6.025937]
-[    6.025937] stack backtrace:
-[    6.030375] [<c000d0f0>] (unwind_backtrace+0x0/0xf0) from [<c0351a2c>] (print_circular_bug+0x25c/0x2a8)
-[    6.039843] [<c0351a2c>] (print_circular_bug+0x25c/0x2a8) from [<c004de48>] (__lock_acquire+0x14ec/0x1b08)
-[    6.049531] [<c004de48>] (__lock_acquire+0x14ec/0x1b08) from [<c004e8e8>] (lock_acquire+0x64/0x78)
-[    6.058531] [<c004e8e8>] (lock_acquire+0x64/0x78) from [<c0355d5c>] (mutex_lock_nested+0x5c/0x2ec)
-[    6.067531] [<c0355d5c>] (mutex_lock_nested+0x5c/0x2ec) from [<c01552d0>] (ubifs_tnc_locate+0x30/0x198)
-[    6.076968] [<c01552d0>] (ubifs_tnc_locate+0x30/0x198) from [<c0155a48>] (ubifs_tnc_lookup_nm+0x28/0x150)
-[    6.086593] [<c0155a48>] (ubifs_tnc_lookup_nm+0x28/0x150) from [<c016fc18>] (ubifs_getxattr+0xc0/0x254)
-[    6.096031] [<c016fc18>] (ubifs_getxattr+0xc0/0x254) from [<c018e468>] (inode_doinit_with_dentry+0x25c/0x55c)
-[    6.105968] [<c018e468>] (inode_doinit_with_dentry+0x25c/0x55c) from [<c018f1a8>] (sb_finish_set_opts+0xa4/0x21c)
-[    6.116281] [<c018f1a8>] (sb_finish_set_opts+0xa4/0x21c) from [<c019055c>] (selinux_set_mnt_opts+0x2ec/0x4b8)
-[    6.126218] [<c019055c>] (selinux_set_mnt_opts+0x2ec/0x4b8) from [<c01907dc>] (superblock_doinit+0xb4/0xc0)
-[    6.136000] [<c01907dc>] (superblock_doinit+0xb4/0xc0) from [<c00b51f4>] (iterate_supers+0xb4/0xdc)
-[    6.145093] [<c00b51f4>] (iterate_supers+0xb4/0xdc) from [<c01a02e8>] (security_load_policy+0x248/0x3c4)
-[    6.154625] [<c01a02e8>] (security_load_policy+0x248/0x3c4) from [<c0194994>] (sel_write_load+0x9c/0x6a0)
-[    6.164218] [<c0194994>] (sel_write_load+0x9c/0x6a0) from [<c00b2148>] (vfs_write+0xa0/0x17c)
-[    6.172781] [<c00b2148>] (vfs_write+0xa0/0x17c) from [<c00b2450>] (sys_write+0x3c/0x70)
-[    6.180843] [<c00b2450>] (sys_write+0x3c/0x70) from [<c00093a0>] (ret_fast_syscall+0x0/0x38)
-
-Reported-by: Marc Kleine-Budde <mkl@pengutronix.de>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
----
- include/linux/fs.h       |    1 +
- security/selinux/hooks.c |    2 ++
- 2 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 7617ee0..ccd49e1 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1824,6 +1824,7 @@ struct file_system_type {
- 	struct lock_class_key i_lock_key;
- 	struct lock_class_key i_mutex_key;
- 	struct lock_class_key i_mutex_dir_key;
-+	struct lock_class_key i_security_lock_key;
- };
- 
- extern struct dentry *mount_ns(struct file_system_type *fs_type, int flags,
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index ef26e96..13ccbb0 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -207,6 +207,8 @@ static int inode_alloc_security(struct inode *inode)
- 		return -ENOMEM;
- 
- 	mutex_init(&isec->lock);
-+	lockdep_set_class(&isec->lock,
-+			  &inode->i_sb->s_type->i_security_lock_key);
- 	INIT_LIST_HEAD(&isec->list);
- 	isec->inode = inode;
- 	isec->sid = SECINITSID_UNLABELED;
--- 
-1.7.7.6
-
-
---=-hQMSFjCavkNOjEGEHvsx--
-
+Jean Delvare
