@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934566Ab3BNL5d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 06:57:33 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:38076 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934419Ab3BNL5b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 06:57:31 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Moore, Robert" <robert.moore@intel.com>
-Cc: Toshi Kani <toshi.kani@hp.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <liuj97@gmail.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Myron Stowe <mstowe@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [Update][PATCH] ACPI / hotplug: Fix concurrency issues and memory leaks
-Date: Thu, 14 Feb 2013 13:03:57 +0100
-Message-ID: <7010893.9OBeMt5Fzh@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc7; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <94F2FBAB4432B54E8AACC7DFDE6C92E368CB39A9@ORSMSX101.amr.corp.intel.com>
-References: <1837481.7dT8hTZ4MT@vostro.rjw.lan> <5284026.QPQbFciqVT@vostro.rjw.lan> <94F2FBAB4432B54E8AACC7DFDE6C92E368CB39A9@ORSMSX101.amr.corp.intel.com>
+	id S934597Ab3BNL5o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 06:57:44 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50897 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934057Ab3BNL5l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 06:57:41 -0500
+Message-ID: <511CD12F.40902@pengutronix.de>
+Date: Thu, 14 Feb 2013 12:57:35 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix e.K.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: artem.bityutskiy@linux.intel.com
+CC: linux-mtd@lists.infradead.org, kernel@pengutronix.de,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: Re: [PATCH RFC 1/5] UBIFS: xattr: protect ui_size and data_len by
+ ui_mutex
+References: <1360750998-15191-1-git-send-email-mkl@pengutronix.de>  <1360750998-15191-2-git-send-email-mkl@pengutronix.de> <1360826613.12703.156.camel@sauron.fi.intel.com>
+In-Reply-To: <1360826613.12703.156.camel@sauron.fi.intel.com>
+X-Enigmail-Version: 1.5
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2AJVGFEDVMHJKDCUVFLSC"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, February 14, 2013 02:31:22 AM Moore, Robert wrote:
-> > > > I thought about that, but actually there's no guarantee that the
-> > > > handle will be valid after _EJ0 as far as I can say.  So the race
-> > > > condition is going to be there anyway and using struct acpi_device
-> > > > just makes it easier to avoid it.
-> > >
-> > > In theory, yes, a stale handle could be a problem, if _EJ0 performs
-> > > unload table and if ACPICA frees up its internal data structure
-> > > pointed by the handle as a result.  But we should not see such issue
-> > > now since we do not support dynamic ACPI namespace yet.
-> > 
-> > I'm waiting for information from Bob about that.  If we can assume ACPI
-> > handles to be always valid, that will simplify things quite a bit.
-> 
-> If a table is unloaded, all the namespace nodes for that table are removed
-> from the namespace, and thus any ACPI_HANDLE pointers go stale and invalid.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2AJVGFEDVMHJKDCUVFLSC
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-OK, thanks!
+On 02/14/2013 08:23 AM, Artem Bityutskiy wrote:
+> On Wed, 2013-02-13 at 11:23 +0100, Marc Kleine-Budde wrote:
+>> This patch moves the modification of ui->ui_size and ui->data_len in t=
+he
+>> create_xattr() and change_xattr() functions, so that they are protecte=
+d by the
+>> ui_mutex as stated in the documenation of the the struct ubifs_inode.
+>>
+>> Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+>=20
+> I guess this one and 2/5 should have 'Cc: stable@vger.kernel.org',
+> right?
 
-To me this means that we cannot assume a handle to stay valid between
-a notify handler and acpi_bus_hot_remove_device() run from a workqueue.
+Will do.
 
-Is there a mechanism in ACPICA to ensure that a handle won't become stale while
-a notify handler is running for it or is the OS responsible for ensuring that
-_EJ0 won't be run in parallel with notify handlers for device objects being
-ejected?
-
-Rafael
+Marc
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+------enig2AJVGFEDVMHJKDCUVFLSC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEUEARECAAYFAlEc0S8ACgkQjTAFq1RaXHOQqACfRc6/1bmi4sNXBwgfPuEOVyWR
+ki4AmNWxskeCXVR6lx9RvutWyfhcfFs=
+=I9Nl
+-----END PGP SIGNATURE-----
+
+------enig2AJVGFEDVMHJKDCUVFLSC--
