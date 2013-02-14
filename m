@@ -1,100 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752724Ab3BNCab (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 21:30:31 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:52024 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750712Ab3BNCaa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 21:30:30 -0500
-Date: Thu, 14 Feb 2013 13:30:16 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Zhang Rui <rui.zhang@intel.com>, Clark Williams <williams@redhat.com>
-Subject: linux-next: build failure after merge of the tip tree
-Message-Id: <20130214133016.94f67186e65534b58d81cbc4@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__14_Feb_2013_13_30_16_+1100_+tvQ6.723uTzUf+I"
+	id S1752915Ab3BNCb0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 21:31:26 -0500
+Received: from mga01.intel.com ([192.55.52.88]:42088 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750712Ab3BNCbY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 21:31:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,660,1355126400"; 
+   d="scan'208";a="290877737"
+From: "Moore, Robert" <robert.moore@intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, Toshi Kani <toshi.kani@hp.com>
+CC: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <liuj97@gmail.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Myron Stowe <mstowe@redhat.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: RE: [Update][PATCH] ACPI / hotplug: Fix concurrency issues and
+ memory leaks
+Thread-Topic: [Update][PATCH] ACPI / hotplug: Fix concurrency issues and
+ memory leaks
+Thread-Index: AQHOCkL6WO0GND/HtUaZIu27Tc3Y7ph4obWw
+Date: Thu, 14 Feb 2013 02:31:22 +0000
+Message-ID: <94F2FBAB4432B54E8AACC7DFDE6C92E368CB39A9@ORSMSX101.amr.corp.intel.com>
+References: <1837481.7dT8hTZ4MT@vostro.rjw.lan>
+ <4594350.VXNmDOeCvt@vostro.rjw.lan>
+ <1360796969.3869.146.camel@misato.fc.hp.com>
+ <5284026.QPQbFciqVT@vostro.rjw.lan>
+In-Reply-To: <5284026.QPQbFciqVT@vostro.rjw.lan>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1E2VRDF002148
 
---Signature=_Thu__14_Feb_2013_13_30_16_+1100_+tvQ6.723uTzUf+I
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> > > I thought about that, but actually there's no guarantee that the
+> > > handle will be valid after _EJ0 as far as I can say.  So the race
+> > > condition is going to be there anyway and using struct acpi_device
+> > > just makes it easier to avoid it.
+> >
+> > In theory, yes, a stale handle could be a problem, if _EJ0 performs
+> > unload table and if ACPICA frees up its internal data structure
+> > pointed by the handle as a result.  But we should not see such issue
+> > now since we do not support dynamic ACPI namespace yet.
+> 
+> I'm waiting for information from Bob about that.  If we can assume ACPI
+> handles to be always valid, that will simplify things quite a bit.
 
-Hi all,
+If a table is unloaded, all the namespace nodes for that table are removed from the namespace, and thus any ACPI_HANDLE pointers go stale and invalid.
 
-After merging the tip tree, today's linux-next build (x86_64 allmodconfig)
-failed like this:
+Bob
 
-drivers/thermal/intel_powerclamp.c: In function 'clamp_thread':
-drivers/thermal/intel_powerclamp.c:360:21: error: 'MAX_USER_RT_PRIO' undecl=
-ared (first use in this function)
-
-Caused by commit 8bd75c77b7c6 ("sched/rt: Move rt specific bits into new
-header file") interacting with commit d6d71ee4a14a ("PM: Introduce Intel
-PowerClamp Driver") from the thermal tree.
-
-I applied this merge fix patch and can carry it as necessary:
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Thu, 14 Feb 2013 13:26:22 +1100
-Subject: [PATCH] sched/rt: fix PowerClamp Driver for define move
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/thermal/intel_powerclamp.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/thermal/intel_powerclamp.c b/drivers/thermal/intel_pow=
-erclamp.c
-index ab3ed90..b40b37c 100644
---- a/drivers/thermal/intel_powerclamp.c
-+++ b/drivers/thermal/intel_powerclamp.c
-@@ -50,6 +50,7 @@
- #include <linux/tick.h>
- #include <linux/debugfs.h>
- #include <linux/seq_file.h>
-+#include <linux/sched/rt.h>
-=20
- #include <asm/nmi.h>
- #include <asm/msr.h>
---=20
-1.8.1
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__14_Feb_2013_13_30_16_+1100_+tvQ6.723uTzUf+I
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRHEw4AAoJEECxmPOUX5FETboP/R7bqRGwoGjhcgWG+5/UpbmG
-mYqmlnYVacVwnbfjTzVTL2269aVzOnsiUNPcS1nNYtYO+22KUSTttz5wuke8EhR0
-/ZC1aHrSYVrRRxqOTgTZ/lqBG8PnJwWQ6ArdahrHsfW4k5r9lHlqAgOVCMhlqsxb
-4Jhe37O4aJJq24gBt5v4w44MoYXXQUhVDjw1QYhR0dmIN6Qd5/5g9MBVEeqWRQ+p
-+QxZSI6rRU8ZWaIk1ifvKJHtB+bdjmvvKtFowW0WfhqRCat+M5Gdoge/Q9GFqarO
-Dzh8VRwOchzxvlh/0HhfzWvDQQm+lF8CMn/pgsJveONed+w1rUwTsKyfXwTI1qQm
-u3LboYOSthwAMEDLW/t4RkiOrgEtfK8WGf+CjDbZYguqo4Zj4sh6u2CJbYwxYFfb
-mMikyQwfKNwsHbUkRO7q6eXCAteIPDaWmNR5No/Utoob2FHteaHp6hGwBbLcyINs
-F0hOp8q/MncCsyIzdaDpArNCtBmnbFMQ98PMkD/3TjeW3LIta4QNpLmFz09NsNnO
-blrul3hQR7eeoxNWkCPR1+vMkzexK/mwf/KYga8jkZWvOKzdSi4Ffw2PdqFuMQL/
-Un5kpga7UeBEYjjJpABwagaXei+efbVvRHoy2Sbu0WmZtJxkQSXfR7dazTTInE8J
-ZgZ65buLZgF4uU2w4X8g
-=Dr6a
------END PGP SIGNATURE-----
-
---Signature=_Thu__14_Feb_2013_13_30_16_+1100_+tvQ6.723uTzUf+I--
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
