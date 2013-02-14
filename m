@@ -1,72 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753888Ab3BNCsj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 21:48:39 -0500
-Received: from fn.samba.org ([216.83.154.106]:38486 "EHLO mail.samba.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752275Ab3BNCsi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 21:48:38 -0500
-Message-ID: <1360810114.1727.306.camel@jesse>
-Subject: Read support for fat_fallocate()?  (was  [v2] fat: editions to
- support fat_fallocate())
-From: Andrew Bartlett <abartlet@samba.org>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: hirofumi@mail.parknet.co.jp, linux-kernel@vger.kernel.org,
-        Ravishankar N <cyberax82@gmail.com>,
-        Amit Sahrawat <amit.sahrawat83@gmail.com>
-Date: Thu, 14 Feb 2013 13:48:34 +1100
-References: <1350138661-2454-1-git-send-email-linkinjeon@gmail.com>
-Organization: 
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753745Ab3BNDBQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 22:01:16 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:35462 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752903Ab3BNDBP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 22:01:15 -0500
+MIME-Version: 1.0
+In-Reply-To: <511C187D.7040305@gmail.com>
+References: <1360738983-22436-1-git-send-email-gnurou@gmail.com>
+ <1360738983-22436-2-git-send-email-gnurou@gmail.com> <511C187D.7040305@gmail.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Thu, 14 Feb 2013 12:00:54 +0900
+Message-ID: <CAAVeFuKz5BzqW7QTgmNKM_jFkZBNNbF0D7t6QjSoasre5nih-A@mail.gmail.com>
+Subject: Re: [PATCH 1/4] gpiolib: check descriptors validity before use
+To: Ryan Mallon <rmallon@gmail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(apologies for the duplicate mail, I typo-ed the maintainers address)
+On Thu, Feb 14, 2013 at 7:49 AM, Ryan Mallon <rmallon@gmail.com> wrote:
+> Is it really useful to use the same pr_debug for the error case? Why not do:
+>
+>         desc = gpio_to_desc(gpio);
+>         if (!desc) {
+>                 pr_debug("%s - Invalid gpio %d\n", __func__, gpio);
+>                 return -EINVAL;
+>         }
+>
+>         ...
+>
+> At this point desc is known valid, though you could just use the gpio
+> number that was passed in (assuming that it is always the same as
+> desc_to_gpio).
+>
+>         pr_debug("%s: gpio%d status %d\n", __func__,
+>                  desc_to_gpio(desc), status);
+>         return status;
+>
+> That provides more information (the original gpio number and the reason
+> for the -EINVAL) if the gpio is not valid, and removes the ugly ternary
+> operator from the pr_debug. Same goes for the other functions.
 
-G'day,
+That's mainly a style issue - I tried to preserve the code's behavior
+as much as possible with these patches. But indeed the invalid GPIO
+case is special, and on second thought identifying invalid GPIOs are
+"gpio-1" is confusing. One could also say horrible.
 
-I've been looking into the patch "[v2] fat: editions to support
-fat_fallocate()" and I wonder if there is a way we can split this issue
-in two, so that we get at least some of the patch into the kernel.
+Guess this deserves to be fixed in a v2. Thanks.
 
-https://lkml.org/lkml/2012/10/13/75
-https://patchwork.kernel.org/patch/1589161/
-
-What I'm wanting to discuss (and perhaps implement, with you if
-possible) is splitting this patch into writing to existing pre-allocated
-files, and creating a new pre-allocation.
-
-If Windows does, as you claim, simply read preallocations as zero, and
-writes to them normally and without error, then Linux should do the
-same.  Here of course I'm assuming that Windows is not preallocating,
-but instead simply trying to recover gracefully and safely from a simple
-'file system corruption', where the sectors are allocated but not used. 
-
-The bulk of this patch is implementing this transparent recovery, and it
-seem relatively harmless to include this into the kernel.
-
-Then vendors doing TV streaming, or in my case copies of large files
-onto Samba-mounted USB FAT devices, can add only the smaller patch to
-implement fallocate, at their own risk and fully knowing that it will be
-regarded as corrupt on Linux. 
-
-If accepted read support will, over a period of years, trickle down to
-other Linux users, broadening the base that can still read these
-'corrupt' drives, no matter the cause. 
-
-I hope you agree that this is a practical way forward, and I look
-forward to working with you on this.
-
-Thanks,
-
-Andrew Bartlett
--- 
-Andrew Bartlett                                http://samba.org/~abartlet/
-Authentication Developer, Samba Team           http://samba.org
-
-
-
+Alex.
