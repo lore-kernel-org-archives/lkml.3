@@ -1,77 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964841Ab3BNR3b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 12:29:31 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:65466 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752037Ab3BNR3a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 12:29:30 -0500
-Date: Thu, 14 Feb 2013 09:29:26 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: devel@linuxdriverproject.org, rcj@linux.vnet.ibm.com,
-        sjenning@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        Konrad Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH] Various cleanups/fixes to zcache (v3).
-Message-ID: <20130214172926.GA17343@kroah.com>
-References: <1360811106-2679-1-git-send-email-konrad.wilk@oracle.com>
- <56c69426-968a-4d0b-a254-dd03456e30d3@default>
- <20130214165920.GA26615@kroah.com>
- <7ad0cf40-61bd-4a1e-a4f0-e27fbc3543fd@default>
+	id S965056Ab3BNR3q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 12:29:46 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:38151 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964885Ab3BNR3o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 12:29:44 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Dirk Brandewie <dirk.brandewie@gmail.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, Dave Jones <davej@redhat.com>,
+        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org
+Subject: Re: [PATCH 0/5] Add P state driver for Intel Core Processors
+Date: Thu, 14 Feb 2013 18:36:13 +0100
+Message-ID: <1732008.aLNltyhYYo@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc7; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <511D0420.8080608@gmail.com>
+References: <1360170133-5066-1-git-send-email-dirk.brandewie@gmail.com> <1540905.Sh9giL2bZe@vostro.rjw.lan> <511D0420.8080608@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <7ad0cf40-61bd-4a1e-a4f0-e27fbc3543fd@default>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 14, 2013 at 09:02:47AM -0800, Dan Magenheimer wrote:
-> > From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> > Subject: Re: [PATCH] Various cleanups/fixes to zcache (v3).
-> > 
-> > On Thu, Feb 14, 2013 at 08:56:01AM -0800, Dan Magenheimer wrote:
-> > > > From: Konrad Rzeszutek Wilk [mailto:konrad.wilk@oracle.com]
-> > > > Subject: [PATCH] Various cleanups/fixes to zcache (v3).
-> > > >
-> > > > From Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> # This line is ignored.
-> > > > From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > > > Subject: [PATCH] Various cleanups/fixes to zcache (v3).
-> > > > In-Reply-To:
-> > > >
-> > > > Hey Greg,
-> > > >
-> > > > These patches do various cleanups of the zcache driver. The majority of the
-> > > > work is just to move all the different counters out to a debug file. The next
-> > > > step would be to figure out which ones are actually pertient and which can
-> > > > go under the knife. Oh, and also fix some of the compiler warnings.
-> > > >
-> > > > This is based on top of ommit 76426daf50d5df38893cc189e9ccd026093debc8
-> > > > ("staging/zcache: Fix/improve zcache writeback code, tie to a config option")
-> > > > so should apply cleanly to your tree.
-> > > >
-> > > > Please apply.
-> > >
-> > > Useful cleanups.
-> > >
-> > > Hopefully not too late for 3.9-rc0.
-> > 
-> > You all did see my "the staging tree is closed except for bugfixes for
-> > 3.9" message last week, right?
+On Thursday, February 14, 2013 07:34:56 AM Dirk Brandewie wrote:
+> On 02/14/2013 04:21 AM, Rafael J. Wysocki wrote:
+> > On Thursday, February 14, 2013 09:38:21 AM Viresh Kumar wrote:
+> >> On Wed, Feb 13, 2013 at 10:08 PM, Dirk Brandewie
+> >> <dirk.brandewie@gmail.com> wrote:
+> >>> For the case where both are built-in the load order works my driver uses
+> >>> device_initcall() and acpi_cpufreq uses late_initcall().
+> >>>
+> >>> For the case where both are a module (which I was sure I tested) you are
+> >>> right
+> >>> I will have to do something.
+> >>>
+> >>> For now I propose to make my driver built-in only while I sort out the right
+> >>> solution for the module build.  Does this seem reasonable to everyone?
+> >>
+> >> Of-course i am missing something here. Why would anybody want to insert
+> >> acpi-cpufreq module when the system supports the pstate driver.
+> >>
+> >> In case they are mutually exclusive, then we can have something like
+> >> depends on !ACPI-DRIVER in the kconfig option of pstate driver.
+> >
+> > Yes.  Or the other way around (i.e. make acpi_cpufreq depend on
+> > !X86_INTEL_PSTATE).
+> >
 > 
-> Oops, sorry, no I missed that.
->  
-> > Sorry, this will have to wait for 3.10.
-> 
-> No problem, no bugs fixed here, though I expect we'll see
-> the same complaints posted again about the compiler warnings.
+> The issue is that acpi-cpufreq still needs to be available for Intel processors 
+> before SandyBridge and for other x86 compatible processors we can't make
+> intel_pstate and acpi-cpufreq mutually exclusive.
 
-Then why not just redo that one patch, and send it to me, and then
-rebase all of the other patches on top of it?  That way I can accept the
-"fix the complier warnings" patch now, and the rest can wait.
+Right, I forgot about that and recalled it just a minute after sending that
+message.
+ 
+> Having intel_pstate built-in solves the issue without the need to patch
+> acpi-cpufreq.  I believe that most distros build the scaling drivers in
+> so the distro/user will make the explicit decision to use intel_pstate.
 
-thanks,
+But then we need to allow the user to choose acpi_cpufreq anyway if it's
+preferred whatever the reason.
 
-greg k-h
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
