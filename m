@@ -1,100 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755814Ab3BNGoL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 01:44:11 -0500
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:59342 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753071Ab3BNGoJ convert rfc822-to-8bit (ORCPT
+	id S1755860Ab3BNGpH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 01:45:07 -0500
+Received: from mail-we0-f176.google.com ([74.125.82.176]:53247 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755352Ab3BNGpF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 01:44:09 -0500
+	Thu, 14 Feb 2013 01:45:05 -0500
 MIME-Version: 1.0
-In-Reply-To: <1360810114.1727.306.camel@jesse>
-References: <1350138661-2454-1-git-send-email-linkinjeon@gmail.com>
-	<1360810114.1727.306.camel@jesse>
-Date: Thu, 14 Feb 2013 15:44:08 +0900
-Message-ID: <CAKYAXd9qmDYivsJduT3bFD2vPOc0DQ0f8RQTxQ7MXXTCQMMQQA@mail.gmail.com>
-Subject: Re: Read support for fat_fallocate()? (was [v2] fat: editions to
- support fat_fallocate())
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Andrew Bartlett <abartlet@samba.org>
-Cc: hirofumi@mail.parknet.co.jp, linux-kernel@vger.kernel.org,
-        Ravishankar N <cyberax82@gmail.com>,
-        Amit Sahrawat <amit.sahrawat83@gmail.com>,
-        Nam-Jae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <511C3E32.9010709@gmail.com>
+References: <1360264144-20714-1-git-send-email-robherring2@gmail.com>
+	<1360264144-20714-2-git-send-email-robherring2@gmail.com>
+	<CAHTX3dKLCbfhBaHKBE=fVTcRReVL6yotA9e_8S70bH+_gajL5Q@mail.gmail.com>
+	<511BC043.4030506@gmail.com>
+	<CAHTX3d+2rGBE3ZBwiHbq7tOi+OE+5KGPh34APzp0NhRP=mBv+w@mail.gmail.com>
+	<511C3E32.9010709@gmail.com>
+Date: Thu, 14 Feb 2013 07:45:02 +0100
+Message-ID: <CAHTX3dKcnkjOTY5yyBSwcUH0Rxz+L9ZROeaemMYLexW50Z7Eng@mail.gmail.com>
+Subject: Re: [PATCH 1/4] clocksource: pass DT node pointer to init functions
+From: Michal Simek <monstr@monstr.eu>
+To: Rob Herring <robherring2@gmail.com>
+Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        John Stultz <johnstul@us.ibm.com>,
+        Josh Cartwright <josh.cartwright@ni.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/2/14, Andrew Bartlett <abartlet@samba.org>:
-> (apologies for the duplicate mail, I typo-ed the maintainers address)
+2013/2/14 Rob Herring <robherring2@gmail.com>:
+> On 02/13/2013 11:33 AM, Michal Simek wrote:
+>> 2013/2/13 Rob Herring <robherring2@gmail.com>:
+>>> On 02/13/2013 10:21 AM, Michal Simek wrote:
+>>>> 2013/2/7 Rob Herring <robherring2@gmail.com>:
+>>>>> From: Rob Herring <rob.herring@calxeda.com>
+>>>>>
+>>>>> In cases where we have multiple nodes of the same type, we may need the
+>>>>> node pointer to know which node was matched. Passing the node pointer
+>>>>> also keeps the init function from having to match the node a 2nd time.
+>>>>>
+>>>>> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+>>>>> Cc: John Stultz <johnstul@us.ibm.com>
+>>>>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>>>>> ---
+>>>>>  drivers/clocksource/clksrc-of.c |    4 ++--
+>>>>>  1 file changed, 2 insertions(+), 2 deletions(-)
+>>>>
+>>>> Tested-by: Michal Simek <michal.simek@xilinx.com>
+>>>>
+>>>> The rest is just the same as I have done. Any option to add these
+>>>> patches to v3.9?
+>>>
+>>> I would like to before we have more users to fix, but it will have to be
+>>> post rc1. If not, Arnd/Olof should be be able to provide a stable branch
+>>> for 3.10.
+>>
+>> ok
 >
-> G'day,
->
-> I've been looking into the patch "[v2] fat: editions to support
-> fat_fallocate()" and I wonder if there is a way we can split this issue
-> in two, so that we get at least some of the patch into the kernel.
->
-> https://lkml.org/lkml/2012/10/13/75
-> https://patchwork.kernel.org/patch/1589161/
->
-> What I'm wanting to discuss (and perhaps implement, with you if
-> possible) is splitting this patch into writing to existing pre-allocated
-> files, and creating a new pre-allocation.
->
-> If Windows does, as you claim, simply read preallocations as zero, and
-> writes to them normally and without error, then Linux should do the
-> same.  Here of course I'm assuming that Windows is not preallocating,
-> but instead simply trying to recover gracefully and safely from a simple
-> 'file system corruption', where the sectors are allocated but not used.
->
-> The bulk of this patch is implementing this transparent recovery, and it
-> seem relatively harmless to include this into the kernel.
->
-> Then vendors doing TV streaming, or in my case copies of large files
-> onto Samba-mounted USB FAT devices, can add only the smaller patch to
-> implement fallocate, at their own risk and fully knowing that it will be
-> regarded as corrupt on Linux.
->
-> If accepted read support will, over a period of years, trickle down to
-> other Linux users, broadening the base that can still read these
-> 'corrupt' drives, no matter the cause.
->
-> I hope you agree that this is a practical way forward, and I look
-> forward to working with you on this.
->
-> Thanks,
-Hi Andrew.
+> I now see you were trying to get zynq changes in for 3.9. You could add
+> this patch to your pull request. As is, it is not dependent on some DT
+> code changes, but the subsequent patches are. I can send the rest after
+> rc1. It's a bit of a hack with the function call prototype, but nothing
+> actually breaks. I was going to combine as Arnd suggested, but either
+> way is probably fine.
 
-First, Thanks for your interest !
-A mismatch between inode size and reserved blocks can be either due to
-pre-allocation (after our changes) or due to corruption (sudden unplug
-of media etc).
-We don’t think it is right to include only read only support (i.e.
-without fallocate support) for such files because if such files are
-encountered it only means that the file is corrupted, as there is no
-current method to check if the issue is due to pre-allocation.
-If it is to be included in the kernel, then the whole patch has to go
-in. But then again, since the FAT specifications do not accommodate
-for pre-allocation, then it is up to OGAWA to decide if this is
-acceptable.
-In any case, the patch will definitely break backward compatibility
-(on an older fat driver without fallocate support) and also in case
-for the two variants for the same kernel versions and only one has
-FALLOCATE enabled, in such cases also, the behavior will assume
-corruption in one case.
+It is not big deal with that. I just want to use this patch. No problem to keep
+it in my repo. I am not worried about. The main point for me is that
+the patch exists
+and I can use it.
 
-Thanks.
 
+>>>> Because I need these patches for zynq timer because we have two in the soc.
+>>>> Is it OK to register several clock source and clockevent devices?
+>>>
+>>> If it is 1 DT node, then that should be fine.
+>>
+>> zynq is using two triple timer counter IP . There are also described by two
+>> different DT nodes because there are separated and uses different baseaddresses.
+>>
+>> Does it mean that if there are 2 DT nodes that it won't work?
+>>
+>>
+>> One more thing. Is there any rule which should describe which timer should be
+>> used for clockevent and for clocksource?
 >
-> Andrew Bartlett
-> --
-> Andrew Bartlett                                http://samba.org/~abartlet/
-> Authentication Developer, Samba Team           http://samba.org
->
->
->
->
+> No. This is a common problem. A simple solution is a "linux,clockevent"
+> property, but I want to avoid that.
+
+Let me describe it a little bit more. I am going to change current
+mainline implementation
+for zynq timer which uses special compatible string to define
+clocksource and clockevent
+device. I don't think this is right way to go because compatible
+string shouldn't point
+to device usage. Which is exact case you wanted to avoid.
+
+> Ultimately it is some feature of the
+> h/w that makes you choose. This could be it has an interrupt or not,
+> higher frequency, has timer compare pins, gets power gated, etc. So you
+> should describe enough of the h/w properties to make this decision.
+
+For different timer type, kernel should decide which timer should be
+used. It should be easy to test
+because I can add some timers to the programmable logic (as is done
+for Microblaze) and check
+how kernel decide which clocksource/clockevent device will use. I
+believe there is any logic around.
+
+
+For solution with two instances of the same triple timer counters it
+is impossible
+to specify additional h/w property because all of 6 timers are the same.
+And also adding special parameter to IP goes against rule
+that device-tree should describe hw not Linux usage.
+Maybe enough to save information to driver that clocksource and
+clockevent device is registered
+and do not try to register another timer (and also another timer from
+another instance).
+
+Or maybe it can be done via chosen property or via aliases property where
+timer0 alias is that one who should be used for clocksource and
+clockevent device.
+(for my case alias to one instance of triple timer counter).
+
+I saw some dtses which have aliases timer.
+
+How good/bad is this option?
+
+
+> OMAP
+> is an example doing this with lots of timers with varying integration
+> level differences.
+
+Can you point me that that omap drivers you are talking about?
+
+Thanks,
+Michal
+
+
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
