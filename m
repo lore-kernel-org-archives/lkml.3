@@ -1,84 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758960Ab3BNKue (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 05:50:34 -0500
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:58255 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757350Ab3BNKuc (ORCPT
+	id S1759179Ab3BNKv1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 05:51:27 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:7949 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757358Ab3BNKvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 05:50:32 -0500
-Date: Thu, 14 Feb 2013 11:50:27 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, rostedt@goodmiss.org,
-        aquini@redhat.com, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Michel Lespinasse <walken@google.com>,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:core/locking] x86/smp: Move waiting on contended ticket
- lock out of line
-Message-ID: <20130214105027.GB25282@gmail.com>
-References: <20130206150403.006e5294@cuia.bos.redhat.com>
- <tip-4aef331850b637169ff036ed231f0d236874f310@git.kernel.org>
- <CA+55aFx6N6SaRN+w=CTXJ=ZSsOE6KeS2R9sT_uhAx9h2j+hjKg@mail.gmail.com>
- <CA+55aFwZ2wN=9qTNNmqjPfK=ZwS=kx6HAAFj_cWLnJDbK1M0_Q@mail.gmail.com>
+	Thu, 14 Feb 2013 05:51:25 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 14 Feb 2013 02:47:29 -0800
+Message-ID: <511CC194.8010206@nvidia.com>
+Date: Thu, 14 Feb 2013 16:21:00 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwZ2wN=9qTNNmqjPfK=ZwS=kx6HAAFj_cWLnJDbK1M0_Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "mturquette@linaro.org" <mturquette@linaro.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH V2] clk: tegra: initialise parent of uart clocks
+References: <1360682279-23051-1-git-send-email-ldewangan@nvidia.com> <511A7FF1.1030009@wwwdotorg.org> <511B3AA0.7020403@nvidia.com> <511BC0AC.2010101@wwwdotorg.org>
+In-Reply-To: <511BC0AC.2010101@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday 13 February 2013 10:04 PM, Stephen Warren wrote:
+> On 02/13/2013 12:02 AM, Laxman Dewangan wrote:
+>> On Tuesday 12 February 2013 11:16 PM, Stephen Warren wrote:
+>>> On 02/12/2013 08:17 AM, Laxman Dewangan wrote:
+>>>> Initialise the parent of UARTs to PLLP and disabling clock by
+>>>> default.
+>>> This patch wasn't tested, was it? Without the patch I just sent titled
+>>> "ARM: tegra: remove clock-frequency properties from serial nodes", the
+>>> UART clocks get turned off and the console breaks.
+>> I tested this in next-20130212 where "clock-frequency" is there in
+>> tegra30.dtsi file.
+> I tested on Cardhu/Tegra30 (I'd previously only tested on
+> Harmony/Tegra20), and I see the exact same problem; the clock core turns
+> off the UART clock and the system hangs.
+>
+> Are you sure you don't have any other local patches that somehow keep
+> the UART clock on (e.g. disabling clk_disable_unused, calling clk_get()
+> on the UART clock somewhere else, have the Tegra HS UART driver enabled
+> on the console port for testing which perhaps does an unconditional
+> clk_get). Are you sure you're testing with U-Boot rather than our binary
+> bootloader; who knows what kind of voodoo that does to clocks.
+>
+> Note: I tested: a merge of arm-soc/for-next and Tegra's for-next branch,
+> with my patch to remove the clock-frequency properties reverted, plus a
+> fix for the boot crash ("clockevents: fix generic broadcast for
+> FEAT_C3STOP").
+>
+>> If you remove this from dts file at all then it will not work as there
+>> is no execution path to call the clk_prepare_enable().
+>>
+>> of_serial.c file:
+>>          if (of_property_read_u32(np, "clock-frequency", &clk)) {
+> That returns 0 if the property is present (so doesn't get/enable the
+> clock), and an error code if the property is missing (so does get/enable
+> the clock).
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+Ahha..Yes, got it. I tested this in next-20130212 with the maintainer's 
+patch for broadcast, reverting one change "OF: convert devtree lock from 
+rw_lock to raw spinlock" and
+uart clock change. The system was booting but not reaching to login. I 
+was assumign that it may be the issue with other reason as I saw the 
+uart log.
 
-> On Wed, Feb 13, 2013 at 8:20 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> >
-> > Adding an external function call is *horrible*, and you 
-> > might almost as well just uninline the spinlock entirely if 
-> > you do this. It means that all the small callers now have 
-> > their registers trashed, whether the unlikely function call 
-> > is taken or not, and now leaf functions aren't leaves any 
-> > more.
-> 
-> Btw, we've had things like this before, and I wonder if we 
-> could perhaps introduce the notion of a "light-weight call" 
-> for fastpath code that calls unlikely slow-path code..
-> 
-> In particular, see the out-of-line code used by the rwlocks 
-> etc (see "arch_read_lock()" for an example in 
-> arch/x86/include/asm/spinlock.h and arch/x86/lib/rwlock.S), 
-> where we end up calling things from inline asm, with one big 
-> reason being exactly the fact that a "normal" C call has such 
-> horribly detrimental effects on the caller.
-> 
-> Sadly, gcc doesn't seem to allow specifying which registers 
-> are clobbered any easy way, which means that both the caller 
-> and the callee *both* tend to need to have some asm interface. 
-> So we bothered to do this for __read_lock_failed, but we have 
-> *not* bothered to do the same for the otherwise very similar 
-> __mutex_fastpath_lock() case, for example.
+After taking your patch for removing clock-freq and this patch, the 
+system booted to login prompt means it is working fine.
 
-At least on x86, how about saving *all* volatile registers in 
-the slow out of line code path (to stack)?
 
-That means we wouldn't have to do anything fancy with the called 
-functions, and the caller would see minimal register impact. It 
-would also be reasonably robust and straightforward assembly 
-code.
+So I was wrong when telling clock-frequency is required. Actually it 
+should not be to work properly.
 
-It blows up the slow path somewhat, but it would allow us to 
-keep the fast-path register impact even smaller - as the slow 
-path would only have memory content side effects.
-
-Am I missing something?
-
-Thanks,
-
-	Ingo
