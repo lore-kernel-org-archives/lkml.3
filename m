@@ -1,59 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934811Ab3BNSMT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 13:12:19 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:54941 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932479Ab3BNSMS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 13:12:18 -0500
-Date: Thu, 14 Feb 2013 10:10:54 -0800
-Message-Id: <201302141810.r1EIAs4u003684@tazenda.hos.anvin.org>
-From: "H. Peter Anvin" <hpa@zytor.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] One more x86 fix for 3.8
-Cc: <stable@vger.kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>,
-        Thomas Gleixner <tglx@linutronix.de>
+	id S1761542Ab3BNSOq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 13:14:46 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:53683 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758418Ab3BNSOo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 13:14:44 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+To: linux-kernel@vger.kernel.org
+Cc: Grant Likely <grant.likely@secretlab.ca>, Arnd Bergmann <arnd@arndb.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, stable@vger.kernel.org
+Subject: [PATCH] drivercore: Fix ordering between deferred_probe and exiting initcalls
+Date: Thu, 14 Feb 2013 18:14:27 +0000
+Message-Id: <1360865667-8353-1-git-send-email-grant.likely@secretlab.ca>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+One of the side effects of deferred probe is that some drivers which
+used to be probed before initcalls completed are now happening slightly
+later. This causes two problems.
+- If a console driver gets deferred, then it may not be ready when
+  userspace starts. For example, if a uart depends on pinctrl, then the
+  uart will get deferred and /dev/console will not be available
+- __init sections will be discarded before built-in drivers are probed.
+  Strictly speaking, __init functions should not be called in a drivers
+  __probe path, but there are a lot of drivers (console stuff again)
+  that do anyway. In the past it was perfectly safe to do so because all
+  built-in drivers got probed before the end of initcalls.
 
-Sigh.  One more patch in the "please don't brick my Samsung" series.
+This patch fixes the problem by forcing the first pass of the deferred
+list to complete at late_initcall time. This is late enough to catch the
+drivers that are known to have the above issues.
 
-The following changes since commit 323a72d83c9b2963bd1e46c8e6963e468d4658d7:
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Tested-by: Haojian Zhuang <haojian.zhuang@linaro.org>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: stable@vger.kernel.org
+---
 
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net (2013-02-13 12:21:07 -0800)
+Hi Greg and Linus,
 
-are available in the git repository at:
+Okay, so this is really late to be sending for v3.8, and it doesn't have
+nearly the amount of testing that I would like it to have. I haven't
+even put it into linux-next yet. However, it is a real bug that some of
+the Linaro folks have run into that is caused by deferred probe. It
+isn't very widespread, but it is there.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
+It probably should be in v3.8, but given how ridiculously late it is and
+that it isn't a widespread problem it would probably be just fine to go
+in during the v3.9 merge window and get backported to linux-stable. If I
+don't hear otherwise then that is what I'll do.
 
-The head of this tree is 1de63d60cd5b0d33a812efa455d5933bf1564a51.
+Still, here it is. If you think it really should be merged before
+tagging v3.8 then please go ahead and apply it.
 
-  efi: Clear EFI_RUNTIME_SERVICES rather than EFI_BOOT by "noefi" boot parameter (2013-02-13 17:24:11 -0800)
+For stable it needs to go into v3.4 onwards.
 
-----------------------------------------------------------------
-Satoru Takeuchi (1):
-      efi: Clear EFI_RUNTIME_SERVICES rather than EFI_BOOT by "noefi" boot parameter
+g.
 
- arch/x86/platform/efi/efi.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index 77cf009..928bf83 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -87,7 +87,7 @@ EXPORT_SYMBOL(efi_enabled);
+ drivers/base/dd.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+index e3bbed8..61d3e1b 100644
+--- a/drivers/base/dd.c
++++ b/drivers/base/dd.c
+@@ -172,6 +172,8 @@ static int deferred_probe_initcall(void)
  
- static int __init setup_noefi(char *arg)
- {
--	clear_bit(EFI_BOOT, &x86_efi_facility);
-+	clear_bit(EFI_RUNTIME_SERVICES, &x86_efi_facility);
+ 	driver_deferred_probe_enable = true;
+ 	driver_deferred_probe_trigger();
++	/* Sort as many dependencies as possible before exiting initcalls */
++	flush_workqueue(deferred_wq);
  	return 0;
  }
- early_param("noefi", setup_noefi);
+ late_initcall(deferred_probe_initcall);
+-- 
+1.7.10.4
+
