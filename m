@@ -1,109 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934741Ab3BNQ0z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 11:26:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51113 "EHLO mx1.redhat.com"
+	id S1761420Ab3BNQbK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 11:31:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18383 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758021Ab3BNQ0y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 11:26:54 -0500
-Message-ID: <511D104A.1040204@redhat.com>
-Date: Thu, 14 Feb 2013 17:26:50 +0100
-From: Denys Vlasenko <dvlasenk@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1757844Ab3BNQbF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 11:31:05 -0500
+Date: Thu, 14 Feb 2013 11:31:00 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ima: Support appraise_type=imasig_optional
+Message-ID: <20130214163100.GD16671@redhat.com>
+References: <1360613493-11969-3-git-send-email-vgoyal@redhat.com>
+ <CALLzPKZA92MxJYjC+OR-KDv4rHQRgKSBHSAY2fOZsEDxiO11yA@mail.gmail.com>
+ <1360760195.3524.355.camel@falcor1.watson.ibm.com>
+ <CALLzPKaHLSg0TromnTvpEVroBUtPJE3TwF4RmcA2dtkuB5H4hQ@mail.gmail.com>
+ <1360763044.3524.367.camel@falcor1.watson.ibm.com>
+ <20130213165922.GD6750@redhat.com>
+ <1360846636.3524.589.camel@falcor1.watson.ibm.com>
+ <20130214152339.GB16671@redhat.com>
+ <1360856159.3524.619.camel@falcor1.watson.ibm.com>
+ <20130214161719.GC16671@redhat.com>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] x86: make PTRACE_GETREGSET return 32-bit regs if 64-bit
- process entered kernel with int 80
-References: <511CE3D0.8000308@redhat.com> <20130214150046.GA30543@redhat.com>
-In-Reply-To: <20130214150046.GA30543@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130214161719.GC16671@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14/2013 04:00 PM, Oleg Nesterov wrote:
-> On 02/14, Denys Vlasenko wrote:
->> This patch makes it so that in syscall-entry-stop caused by
->> "int 80" instruction, PTRACE_GETREGSET returns 32-bit regset.
+On Thu, Feb 14, 2013 at 11:17:19AM -0500, Vivek Goyal wrote:
+> On Thu, Feb 14, 2013 at 10:35:59AM -0500, Mimi Zohar wrote:
+> > On Thu, 2013-02-14 at 10:23 -0500, Vivek Goyal wrote:
+> > > On Thu, Feb 14, 2013 at 07:57:16AM -0500, Mimi Zohar wrote:
+> > > 
+> > > [..]
+> > > > > Ok, I will cleanup the code to do above. Just wanted to clear up one
+> > > > > point. 
+> > > > > 
+> > > > > Above option will not have any effect on evm behavior? This only impacts
+> > > > > IMA appraisal behavior. For example, if security.ima is not present it
+> > > > > is fine and file access is allowed. But if EVM is enabled and initialized
+> > > > > and EVM does not find security.evm label (INTEGRITY_NOLABEL) or returns
+> > > > > INTEGRITY_NOXATTRS, file access should still be denied?
+> > > > 
+> > > > Can't happen.  evm_verifyxattr() is called from
+> > > > ima_appraise_measurement(), only if 'security.ima' exists.
+> > > 
+> > > Actually what I meant is following.
+> > > 
+> > > Currently in process_measurement(), I will allow access if
+> > > ima_appraise_measurement() returns INTEGRITY_NOLABEL.
+> > 
+> > I think you're making this more complicated than it needs to be.  Allow
+> > the execution unless the file failed signature verification.  The
+> > additional capability is given only if the signature verification
+> > succeeds.
 > 
-> Not sure...
+> I am just trying to bring it inline with module signature verification.
+> There also module loading fails if signatures are present but kernel
+> can't verify it.
 > 
-> First of all, this is incompatible change. And to me, it doesn't look
-> correct anyway. Say, why the debugger can't modify r15 if a 64bit tracee
-> does int80?
+> Following behavior is strange.
+> 
+>                 rc = integrity_digsig_verify(INTEGRITY_KEYRING_IMA,
+>                                              xattr_value->digest, rc - 1,
+>                                              iint->ima_xattr.digest,
+>                                              IMA_DIGEST_SIZE);
+>                 if (rc == -EOPNOTSUPP) {
+>                         status = INTEGRITY_UNKNOWN;
+>                 } else if (rc) {
+>                         cause = "invalid-signature";
+>                         status = INTEGRITY_FAIL;
+>                 } else {
+>                         status = INTEGRITY_PASS;
+>                 }
+> 
+> signature verification can fail for so many reasons.
+> 
+> - EINVAL
+> - keyring is not present
+> - key is not present -ENOKEY
+> - ENOTSUPP
+> - ENOMEM
+> ..
+> ..
+> 
+> And in all these cases we return INTEGRITY_FAIL. But only in case of
+> -EOPNOTSUPP we return INTEGRITY_UNKNOWN. So why this discrepancy.
+> 
+> So to me it makes sense to return INTEGRITY_FAIL if rc == -EOPNOTSUPP.
+> This will bring it inline with other error codes.  And then in
+> process_measurement() I can allow access in every case except
+> INTEGRITY_FAIL.
 
-On x86_64, PTRACE_GET/SETREGS can be used for this: they always operate
-on 64-bit registers.
+Actually even this is not sufficient. Because if security.ima is present
+and it contains digital signature but security.evm is not present (assume
+EVM is enabled), then appraise_measurement() will return NOLABEL or
+NOXATTRS and access to file will be allowed. 
 
-> Or think about PTRACE_EVENT_FORK which can be reported with
-> TS_COMPAT set.
+But what I am trying to implement is that if digital signatures are
+present, then they have to be valid. Any failure to assess the validity
+of digital signature should result in failure of exec().
 
-I don't see a problem. Yes, PTRACE_GETREGSET will return
-32-bit regset in this ptrace-stop, which is a problem... why?
+So to me it is important to come to a common understanding that
+appraise_type=optional affects only IMA behavior and not EVM behavior. And
+then there is a need to separate out IMA and EVM return codes so that
+one can enforce appraise_type=optional properly. Otherwise we are leaving
+lots of grey areas behind.
 
-> Probably is_ia32_task() should be reported "explicitely" as we already
-> discussed, and afaik you have other ideas.
+Thanks
+Vivek
 
-
-Yes, there are a few ideas. Say, new ptrace op:
-can be introduced to return a vector of longs.
-To make it easily parsable, how about (type,len,data...)
-records? This also may allow tracer to indicate which records
-it wants: for example, not everyone wants to read syscall params.
-Maybe something like
-
-ptrace(PTRACE_GETSYSCALL, pid, list_of_elements_I_want, &iov)
-
-where list_of_elements_I_want is long[], 0-terminated,
-iov points to a buffer, and on return iov.len is updated
-(a-la GETREGSET).
-
-What problems can be solved here?
-
-(1) syscall entry/exit discrimination etc. Say, a record
-can contain bit flags, such as "it's a syscall entry",
-"it's a syscall exit", "it's a group-stop" etc.
-Currently, it is impossible for tracer to distinguish
-syscall entry from syscall exit.
-
-(2) a record can supply arch-specific data, such as the x86-specific
-problem I tried to address: "was it a int 80 syscall?". Variable-length
-record format makes it easy to adapt to different archs' needs.
-Alternatively, we can set aside a few bits in "bit flags record"
-as arch dependent bits. Most arches need just a few bits.
-
-(3) on syscall entry, a record can contain (up to) 7 words: syscall_no
-and 0-6 params, making tracer's code less architecture dependent.
-Today in strace, *every* architecture needs to have arch-dependent
-regs-to-params conversion code. I would like to be able
-to code it in C with the same code for most arches.
-
-(4) We can read structs/data pointed by syscall params, such as
-struct stat returned by fstat, without needing additional
-round-trip to kernel, *and* with kernel-supplied information
-on structure's size. Currently, strace has to know the size correctly.
-There were, and will be, bugs in strace where we mishandle
-structures because we mis-detect process' bitness, and use wrong
-struct stat layouts. If kernel would be able to tell us:
-"I returned 78 byte structure in memory pointed to by arg1",
-it would help a lot. Even if it wouldn't return the result
-structure itself (I imagine it's a lot of work in kernel
-to access it in other process vm), knowing its size
-will still be a big help.
-
-(5) We can read several regsets: gps, SSE regs, etc.
-Maybe someone would find it useful? (strace doesn't need this).
-
-
-How does this look?
-
-I propose to start small, by implementing just 1; 2 in a form of arch bits
-as part of 1; and 3. It will satisfy the needs I tried to address
-in my patch.
-
--- 
-vda
-
+> 
+> Thanks
+> Vivek
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
