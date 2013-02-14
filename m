@@ -1,107 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761615Ab3BNTgX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 14:36:23 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:58367 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761602Ab3BNTgT (ORCPT
+	id S1761601Ab3BNTte (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 14:49:34 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:38358 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758666Ab3BNTtc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 14:36:19 -0500
-From: Benson Leung <bleung@chromium.org>
-To: len.brown@intel.com, colin.king@canonical.com,
-        linux-kernel@vger.kernel.org
-Cc: bleung@chromium.org, vapier@gentoo.org
-Subject: [PATCH v3 1/1] tools/power x86_energy_perf_policy: fix cpuid for i686
-Date: Thu, 14 Feb 2013 11:35:58 -0800
-Message-Id: <1360870558-11711-2-git-send-email-bleung@chromium.org>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1360870558-11711-1-git-send-email-bleung@chromium.org>
-References: <1360870558-11711-1-git-send-email-bleung@chromium.org>
+	Thu, 14 Feb 2013 14:49:32 -0500
+From: Kevin Hilman <khilman@linaro.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>
+Subject: Re: [PATCH 2/8] cputime: Librarize per nsecs resolution cputime definitions
+References: <1359399845-10568-1-git-send-email-fweisbec@gmail.com>
+	<1359399845-10568-3-git-send-email-fweisbec@gmail.com>
+Date: Thu, 14 Feb 2013 11:49:28 -0800
+In-Reply-To: <1359399845-10568-3-git-send-email-fweisbec@gmail.com> (Frederic
+	Weisbecker's message of "Mon, 28 Jan 2013 20:03:59 +0100")
+Message-ID: <87ehgid6bb.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-x86_energy_perf_policy reads cpuid using the cpuid instruction.
-On i686, when building with PIC, this clobbers ebx, the PIC register.
+Frederic Weisbecker <fweisbec@gmail.com> writes:
 
-Fixed using the same cpuid accessor function that vapier@gentoo.org
-created for i7z:
-http://code.google.com/p/i7z/issues/detail?id=31
+> The full dynticks cputime accounting that we'll soon introduce
+> will rely on sched_clock(). And its clock can have a per
+> nanosecond granularity.
+>
+> To prepare for this, we need to have a cputime_t implementation
+> that has this precision.
+>
+> ia64 virtual cputime accounting already uses that granularity
+> so all we need is to librarize its implementation in the asm
+> generic headers.
 
-Signed-off-by: Benson Leung <bleung@chromium.org>
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+...except that for it to be truly generic (i.e. usable on 32-bit arches),
+it should be using do_div() for 64-bit divides.
+
+I understand this series is targetted at 64-bit platforms currently, but
+I'm looking (again) at getting adaptive NOHZ working on ARM, and this
+was the first obvious obstacle to even compiling.
+
+I see this is already merged into tip/sched/core, so below is a patch on
+top of that to convert to using do_div().  If you're OK with the
+approach, I'll post it formally to LKML.
+
+Thanks,
+
+Kevin
+
+
+>From b1572b5ae67d4221277484e59d571b639775af70 Mon Sep 17 00:00:00 2001
+From: Kevin Hilman <khilman@linaro.org>
+Date: Thu, 14 Feb 2013 11:27:36 -0800
+Subject: [PATCH] cputime: use do_div() for nsec resolution conversion helpers
+
+For the nsec resolution conversions to be useful on non 64-bit
+architectures, do_div() needs to be used for the 64-bit divisions.
+
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Kevin Hilman <khilman@linaro.org>
 ---
-v3 : No changes.
-v2 : make cpuid static inline. Remove unused eax from validate_cpuid and
-clean up return variables from cpuid().
----
- .../x86_energy_perf_policy.c                       | 30 +++++++++++++++++-----
- 1 file changed, 23 insertions(+), 7 deletions(-)
+ include/asm-generic/cputime_nsecs.h | 51 +++++++++++++++++++++++++++----------
+ 1 file changed, 37 insertions(+), 14 deletions(-)
 
-diff --git a/tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c b/tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c
-index 40b3e54..f8f4e63 100644
---- a/tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c
-+++ b/tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c
-@@ -130,20 +130,36 @@ void cmdline(int argc, char **argv)
- 	}
+diff --git a/include/asm-generic/cputime_nsecs.h b/include/asm-generic/cputime_nsecs.h
+index b6485ca..daa6075 100644
+--- a/include/asm-generic/cputime_nsecs.h
++++ b/include/asm-generic/cputime_nsecs.h
+@@ -24,13 +24,17 @@ typedef u64 __nocast cputime64_t;
+ /*
+  * Convert cputime <-> jiffies (HZ)
+  */
+-#define cputime_to_jiffies(__ct)	\
+-	((__force u64)(__ct) / (NSEC_PER_SEC / HZ))
++static inline u64 cputime_to_jiffies(const cputime_t ct)
++{
++	cputime_t __ct = ct;
++
++	do_div(__ct, NSEC_PER_SEC / HZ);
++	return __ct;
++}
+ #define cputime_to_scaled(__ct)		(__ct)
+ #define jiffies_to_cputime(__jif)	\
+ 	(__force cputime_t)((__jif) * (NSEC_PER_SEC / HZ))
+-#define cputime64_to_jiffies64(__ct)	\
+-	((__force u64)(__ct) / (NSEC_PER_SEC / HZ))
++#define cputime64_to_jiffies64(__ct) cputime_to_jiffies(__ct)
+ #define jiffies64_to_cputime64(__jif)	\
+ 	(__force cputime64_t)((__jif) * (NSEC_PER_SEC / HZ))
+ 
+@@ -44,8 +48,13 @@ typedef u64 __nocast cputime64_t;
+ /*
+  * Convert cputime <-> microseconds
+  */
+-#define cputime_to_usecs(__ct)		\
+-	((__force u64)(__ct) / NSEC_PER_USEC)
++static inline u64 cputime_to_usecs(const cputime_t ct)
++{
++	cputime_t __ct = ct;
++
++	do_div(__ct, NSEC_PER_USEC);
++	return __ct;
++}
+ #define usecs_to_cputime(__usecs)	\
+ 	(__force cputime_t)((__usecs) * NSEC_PER_USEC)
+ #define usecs_to_cputime64(__usecs)	\
+@@ -54,8 +63,13 @@ typedef u64 __nocast cputime64_t;
+ /*
+  * Convert cputime <-> seconds
+  */
+-#define cputime_to_secs(__ct)		\
+-	((__force u64)(__ct) / NSEC_PER_SEC)
++static inline u64 cputime_to_secs(const cputime_t ct)
++{
++	cputime_t __ct = ct;
++
++	do_div(__ct, NSEC_PER_SEC);
++	return __ct;
++}
+ #define secs_to_cputime(__secs)		\
+ 	(__force cputime_t)((__secs) * NSEC_PER_SEC)
+ 
+@@ -69,8 +83,10 @@ static inline cputime_t timespec_to_cputime(const struct timespec *val)
+ }
+ static inline void cputime_to_timespec(const cputime_t ct, struct timespec *val)
+ {
+-	val->tv_sec  = (__force u64) ct / NSEC_PER_SEC;
+-	val->tv_nsec = (__force u64) ct % NSEC_PER_SEC;
++	cputime_t __ct = ct;
++
++	val->tv_nsec = do_div(__ct, NSEC_PER_SEC);
++	val->tv_sec = __ct;
  }
  
-+static inline void cpuid(unsigned int info, unsigned int *eax,
-+			 unsigned int *ebx, unsigned int *ecx,
-+			 unsigned int *edx)
-+{
-+	unsigned int _eax = info, _ebx, _ecx, _edx;
-+	asm volatile ("mov %%ebx, %%edi;" /* save ebx (for PIC) */
-+		      "cpuid;"
-+		      "mov %%ebx, %%esi;" /* pass to caller */
-+		      "mov %%edi, %%ebx;" /* restore ebx */
-+		      :"+a" (_eax), "=S" (_ebx), "=c" (_ecx), "=d" (_edx)
-+		      :      /* inputs: eax is handled above */
-+		      :"edi" /* clobbers: we hit edi directly */);
-+	if (eax) *eax = _eax;
-+	if (ebx) *ebx = _ebx;
-+	if (ecx) *ecx = _ecx;
-+	if (edx) *edx = _edx;
-+}
-+
  /*
-  * validate_cpuid()
-  * returns on success, quietly exits on failure (make verbose with -v)
-  */
- void validate_cpuid(void)
+@@ -83,15 +99,22 @@ static inline cputime_t timeval_to_cputime(struct timeval *val)
+ }
+ static inline void cputime_to_timeval(const cputime_t ct, struct timeval *val)
  {
--	unsigned int eax, ebx, ecx, edx, max_level;
-+	unsigned int ebx, ecx, edx, max_level;
- 	unsigned int fms, family, model, stepping;
+-	val->tv_sec = (__force u64) ct / NSEC_PER_SEC;
+-	val->tv_usec = ((__force u64) ct % NSEC_PER_SEC) / NSEC_PER_USEC;
++	cputime_t __ct = ct;
++
++	val->tv_usec = do_div(__ct, NSEC_PER_SEC) / NSEC_PER_USEC;
++	val->tv_sec = __ct;
+ }
  
--	eax = ebx = ecx = edx = 0;
--
--	asm("cpuid" : "=a" (max_level), "=b" (ebx), "=c" (ecx),
--		"=d" (edx) : "a" (0));
-+	ebx = ecx = edx = 0;
+ /*
+  * Convert cputime <-> clock (USER_HZ)
+  */
+-#define cputime_to_clock_t(__ct)	\
+-	((__force u64)(__ct) / (NSEC_PER_SEC / USER_HZ))
++static inline u64 cputime_to_clock_t(const cputime_t ct)
++{
++	cputime_t __ct = ct;
++
++	do_div(__ct, (NSEC_PER_SEC / USER_HZ));
++	return __ct;
++}
+ #define clock_t_to_cputime(__x)		\
+ 	(__force cputime_t)((__x) * (NSEC_PER_SEC / USER_HZ))
  
-+	cpuid(0, &max_level, &ebx, &ecx, &edx);
- 	if (ebx != 0x756e6547 || edx != 0x49656e69 || ecx != 0x6c65746e) {
- 		if (verbose)
- 			fprintf(stderr, "%.4s%.4s%.4s != GenuineIntel",
-@@ -151,7 +167,7 @@ void validate_cpuid(void)
- 		exit(1);
- 	}
- 
--	asm("cpuid" : "=a" (fms), "=c" (ecx), "=d" (edx) : "a" (1) : "ebx");
-+	cpuid(1, &fms, NULL, NULL, &edx);
- 	family = (fms >> 8) & 0xf;
- 	model = (fms >> 4) & 0xf;
- 	stepping = fms & 0xf;
-@@ -173,7 +189,7 @@ void validate_cpuid(void)
- 	 * Support for MSR_IA32_ENERGY_PERF_BIAS
- 	 * is indicated by CPUID.06H.ECX.bit3
- 	 */
--	asm("cpuid" : "=a" (eax), "=b" (ebx), "=c" (ecx), "=d" (edx) : "a" (6));
-+	cpuid(6, NULL, NULL, &ecx, NULL);
- 	if (verbose)
- 		printf("CPUID.06H.ECX: 0x%x\n", ecx);
- 	if (!(ecx & (1 << 3))) {
 -- 
-1.8.1
+1.8.1.2
+
+
 
