@@ -1,50 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935065Ab3BNWvB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 17:51:01 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:23575 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759548Ab3BNWu7 (ORCPT
+	id S935078Ab3BNWvt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 17:51:49 -0500
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:50134 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S934965Ab3BNWvs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 17:50:59 -0500
-Date: Thu, 14 Feb 2013 17:50:53 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Josh Boyer <jwboyer@gmail.com>, gregkh@linuxfoundation.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] (xen) bug-fixes for v3.8-rc7
-Message-ID: <20130214225053.GA7715@phenom.dumpdata.com>
-References: <20130213205026.GA25290@phenom.dumpdata.com>
- <CA+5PVA7fzT7+O-e8ta4rU4=vLfU+DsEzvLN8-vvMm3o=8FThsg@mail.gmail.com>
+	Thu, 14 Feb 2013 17:51:48 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX180kQLKQGHIO41eaK0nK3pz
+Date: Thu, 14 Feb 2013 14:51:43 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org, Paul Walmsley <paul@pwsan.com>,
+        Sebastien Guiriec <s-guiriec@ti.com>
+Subject: Re: [PATCH 3/9] ARM: omap2: include linux/errno.h in hwmod_reset
+Message-ID: <20130214225142.GG11362@atomide.com>
+References: <1360882071-4072668-1-git-send-email-arnd@arndb.de>
+ <1360882071-4072668-4-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+5PVA7fzT7+O-e8ta4rU4=vLfU+DsEzvLN8-vvMm3o=8FThsg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <1360882071-4072668-4-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 14, 2013 at 09:18:04AM -0500, Josh Boyer wrote:
-> On Wed, Feb 13, 2013 at 3:50 PM, Konrad Rzeszutek Wilk
-> <konrad.wilk@oracle.com> wrote:
-> >  - CVE-2013-0228/XSA-42: x86/xen: don't assume %ds is usable in xen_iret for 32-bit PVOPS.
+* Arnd Bergmann <arnd@arndb.de> [130214 14:51]:
+> The newly created omap_hwmod_reset.c is missing an
+> include of linux/errno.h in commit c02060d8 "ARM:
+> OMAP4+: AESS: enable internal auto-gating during
+> initial setup". It still works in omap2_defconfig,
+> but not in all other combinations.
 > 
-> > Jan Beulich (1):
-> >       x86/xen: don't assume %ds is usable in xen_iret for 32-bit PVOPS.
+> Without this patch, building allmodconfig results in:
 > 
-> Should that one be CC'd to stable?
-
-Duh. Yes it should be! Thanks for noticing it.
-
-Greg,
-Please put git commit 13d2b4d11d69a92574a55bfd985cfb0ca77aebdc
-"x86/xen: don't assume %ds is usable in xen_iret for 32-bit PVOPS."
-on the stable tree.
-
-Thank you!
-    
-
+> arch/arm/mach-omap2/omap_hwmod_reset.c: In function 'omap_hwmod_aess_preprogram':
+> arch/arm/mach-omap2/omap_hwmod_reset.c:47:11: error: 'EINVAL' undeclared (first use in this function)
+> arch/arm/mach-omap2/omap_hwmod_reset.c:47:11: note: each undeclared identifier is reported only once for each function it appears in
 > 
-> josh
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Paul Walmsley <paul@pwsan.com>
+> Cc: Sebastien Guiriec <s-guiriec@ti.com>
+
+Acked-by: Tony Lindgren <tony@atomide.com>
+
+> ---
+>  arch/arm/mach-omap2/omap_hwmod_reset.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/arch/arm/mach-omap2/omap_hwmod_reset.c b/arch/arm/mach-omap2/omap_hwmod_reset.c
+> index bba43fa..65e186c 100644
+> --- a/arch/arm/mach-omap2/omap_hwmod_reset.c
+> +++ b/arch/arm/mach-omap2/omap_hwmod_reset.c
+> @@ -24,6 +24,7 @@
+>   * 02110-1301 USA
+>   */
+>  #include <linux/kernel.h>
+> +#include <linux/errno.h>
+>  
+>  #include <sound/aess.h>
+>  
+> -- 
+> 1.8.1.2
+> 
