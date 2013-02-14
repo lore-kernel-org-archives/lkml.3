@@ -1,78 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759832Ab3BNL5v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 06:57:51 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46866 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759704Ab3BNL5t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 06:57:49 -0500
-Date: Thu, 14 Feb 2013 11:57:47 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] regmap: irq: do not write mask register if it is not
- supported
-Message-ID: <20130214115746.GF13249@opensource.wolfsonmicro.com>
-References: <1360761290-15976-1-git-send-email-ldewangan@nvidia.com>
- <1360761290-15976-2-git-send-email-ldewangan@nvidia.com>
- <20130213142036.GJ5062@opensource.wolfsonmicro.com>
- <511CC520.8050104@nvidia.com>
- <20130214113531.GC13249@opensource.wolfsonmicro.com>
- <511CD0A1.70606@nvidia.com>
+	id S934560Ab3BNL6N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 06:58:13 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60499 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934129Ab3BNL6J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 06:58:09 -0500
+Date: Thu, 14 Feb 2013 11:58:05 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Petr Holasek <pholasek@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 6/11] ksm: remove old stable nodes more thoroughly
+Message-ID: <20130214115805.GC7367@suse.de>
+References: <alpine.LNX.2.00.1301251747590.29196@eggly.anvils>
+ <alpine.LNX.2.00.1301251800550.29196@eggly.anvils>
+ <20130205175551.GL21389@suse.de>
+ <alpine.LNX.2.00.1302081057110.4233@eggly.anvils>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AH+kv8CCoFf6qPuz"
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <511CD0A1.70606@nvidia.com>
-X-Cookie: Your domestic life may be harmonious.
+In-Reply-To: <alpine.LNX.2.00.1302081057110.4233@eggly.anvils>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Feb 08, 2013 at 11:33:40AM -0800, Hugh Dickins wrote:
+> > > <SNIP>
+> > > 
+> > > 2. __ksm_enter() has a nice little optimization, to insert the new mm
+> > > just behind ksmd's cursor, so there's a full pass for it to stabilize
+> > > (or be removed) before ksmd addresses it.  Nice when ksmd is running,
+> > > but not so nice when we're trying to unmerge all mms: we were missing
+> > > those mms forked and inserted behind the unmerge cursor.  Easily fixed
+> > > by inserting at the end when KSM_RUN_UNMERGE.
+> > > 
+> > > 3. It is possible for a KSM page to be faulted back from swapcache into
+> > > an mm, just after unmerge_and_remove_all_rmap_items() scanned past it.
+> > > Fix this by copying on fault when KSM_RUN_UNMERGE: but that is private
+> > > to ksm.c, so dissolve the distinction between ksm_might_need_to_copy()
+> > > and ksm_does_need_to_copy(), doing it all in the one call into ksm.c.
+> 
+> What I found is that a 4th cause emerges once KSM migration
+> is properly working: that interval during page migration when the old
+> page has been fully unmapped but the new not yet mapped in its place.
+> 
 
---AH+kv8CCoFf6qPuz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+For anyone else watching -- normal page migration expects to be protected
+during that particular window with migration ptes. Any references to the
+PTE mapping a page being migrated faults on a swap-like PTE and waits
+in migration_entry_wait().
 
-On Thu, Feb 14, 2013 at 05:25:13PM +0530, Laxman Dewangan wrote:
-> On Thursday 14 February 2013 05:05 PM, Mark Brown wrote:
+> The KSM COW breaking cannot see a page there then, so it ends up with
+> a (newly migrated) KSM page left behind.  Almost certainly has to be
+> fixed in follow_page(), but I've not yet settled on its final form -
+> the fix I have works well, but a different approach might be better.
+> 
 
-> >This doesn't sound like something that should be open coded in
-> >individual interrupt controller drivers, obviously it's a bit rubbish
-> >that there's no way to enable or disable the interrupt but presumably
-> >other hardware has the same "feature" and the IRQ subsystem ought to
-> >understand it.
+follow_page() is one option. My guess is that you're thinking of adding
+a FOLL_ flag that will cause follow_page() to check is_migration_entry()
+and migration_entry_wait() if the flag is present.
 
-> To support such case, can we assume that mask is always enabled
-> (interrupt enabled) so that it can be use in irq_thread to mask the
-> interrupt status. So during initialization, if there is no mask_base
-> register then all mask_buf is such that it enabled interrupt.
+Otherwise you would need to check for migration ptes in a number of places
+under page lock and then hold the lock for long periods of time to prevent
+migration starting. I did not check this option in depth because it quickly
+looked like it would be a mess, with long page lock hold times and might
+not even be workable.
 
-...and have any attempt to mask the interrupt return an error?
+> > > +static int remove_all_stable_nodes(void)
+> > > +{
+> > > +	struct stable_node *stable_node;
+> > > +	int nid;
+> > > +	int err = 0;
+> > > +
+> > > +	for (nid = 0; nid < nr_node_ids; nid++) {
+> > > +		while (root_stable_tree[nid].rb_node) {
+> > > +			stable_node = rb_entry(root_stable_tree[nid].rb_node,
+> > > +						struct stable_node, node);
+> > > +			if (remove_stable_node(stable_node)) {
+> > > +				err = -EBUSY;
+> > > +				break;	/* proceed to next nid */
+> > > +			}
+> > 
+> > If remove_stable_node() returns an error then it's quite possible that it'll
+> > go boom when that page is encountered later but it's not guaranteed. It'd
+> > be best effort to continue removing as many of the stable nodes anyway.
+> > We're in trouble either way of course.
+> 
+> If it returns an error, then indeed something we don't yet understand
+> has occurred, and we shall want to debug it.  But unless it's due to
+> corruption somewhere, we shouldn't be in much trouble, shouldn't go boom:
+> remove_all_stable_nodes() error is ignored at the end of unmerging, it
+> will be tried again when changing merge_across_nodes, and an error
+> then will just prevent changing merge_across_nodes at that time.  So
+> the mysteriously unremovable stable nodes remain the same kind of tree.
+> 
 
---AH+kv8CCoFf6qPuz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Ok.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRHNE0AAoJELSic+t+oim9m4AQAJcFa0xQ8Z+d3LCiIcuyoUd9
-UPBqd5It30sTCSzyZLopbtGvowFwnM2C5YHLOclU+Rs+VSyMMybZPCGMC/fS0Ksm
-H8YXS3nU3w9Fig2PWB68Et4cyqKKrKoFN8VrmPWFiU2u2AK1pL82KQMEIxqkoIDN
-uXwzUnBvlb+GUlfTS+wSu0+UAkvtqmjdkNXUeSjI+wnq8Gw1AjTpedfznTWXKRvG
-sintWec2rq4WNcs79kBNBN4gW624E8E80sClWcN2jBPI7Jaw0NDzHctqeoy7xVVR
-/aOdz/ZcSMnZKwYwlQcklHHehoKu5lZPkXiJl3x0Rw8MKrs/f1GUTeMvVNbJQo5V
-p4rVsYOhnF1oG4gr+x/JEg5k4pMX8PnYItD8iZF0ij+eO2l6XN7vI14Zt8QXZN/T
-x4nyW3HBkdPdbK3Rafy/ElEyv7abjRMchdOdRP/m6U5BQ6UiZDOyb2sevHW6UKgH
-yvK0pjofHvUVMWOJxmPuoMAhp9aduZbd1ZQ/wrRl8fE85+l1JQmh1JomNw1LY7nB
-Z3IQGjIhLJOk/ZwhU3gefThFu/aGZpdZarIWBXqDIoKgAkloQj8EQv78Jy0sdyiR
-nzBPZ3e//tplx1jthKSSoiTOBcKcZJF0ACdo3jLG6bbwLWkVnNixiBZ05Uu7HO46
-kM2B+jsmNXnuPbAOIrg8
-=+N55
------END PGP SIGNATURE-----
-
---AH+kv8CCoFf6qPuz--
+-- 
+Mel Gorman
+SUSE Labs
