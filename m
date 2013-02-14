@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757796Ab3BNOIg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 09:08:36 -0500
-Received: from mga03.intel.com ([143.182.124.21]:54260 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757544Ab3BNOIf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 09:08:35 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,665,1355126400"; 
-   d="scan'208";a="256947571"
-Message-ID: <511CEFDD.9080709@intel.com>
-Date: Thu, 14 Feb 2013 22:08:29 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1760253Ab3BNOMG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 09:12:06 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:63201 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757708Ab3BNOME (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 09:12:04 -0500
 MIME-Version: 1.0
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-CC: Peter Zijlstra <peterz@infradead.org>, torvalds@linux-foundation.org,
-        mingo@redhat.com, tglx@linutronix.de, akpm@linux-foundation.org,
-        arjan@linux.intel.com, bp@alien8.de, pjt@google.com,
-        namhyung@kernel.org, efault@gmx.de, vincent.guittot@linaro.org,
-        gregkh@linuxfoundation.org, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch v4 05/18] sched: quicker balancing on fork/exec/wake
-References: <1358996820-23036-1-git-send-email-alex.shi@intel.com> <1358996820-23036-6-git-send-email-alex.shi@intel.com> <1360664565.4485.13.camel@laptop> <511C9C54.4090508@linux.vnet.ibm.com>
-In-Reply-To: <511C9C54.4090508@linux.vnet.ibm.com>
+X-Originating-IP: [178.83.130.250]
+Date: Thu, 14 Feb 2013 15:12:02 +0100
+Message-ID: <CAKMK7uEQ7xQpsBay8SKjYM0oA0=uf3AePwZ+vEjukgOiLY9drg@mail.gmail.com>
+Subject: Including drm-intel tree to linux-next
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: rostedt@goodmis.org
+Cc: Dave Airlie <airlied@gmail.com>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14/2013 04:12 PM, Preeti U Murthy wrote:
-> **************************START PATCH*************************************
-> 
-> sched:Improve balancing for fork/exec/wake tasks
+Hi Steven,
 
-Can you test the patch with hackbench and aim7 with 2000 threads? plus
-the patch in the tip:core/locking tree:
+Since about a year ago we've switched drm/i915 to buffer around 2
+weeks worth of patches so that we can do decent QA before breaking
+everyone's tree when things land in Dave's drm-next. But that also
+means we'll miss out a bit in the integration testing -next provides,
+which did hurt a bit in recent efforts. Hence can you please include
 
-  3a15e0e0cdda rwsem: Implement writer lock-stealing for better scalability
+git://people.freedesktop.org/~danvet/drm-intel drm-intel-next-queued
 
-If it works you may find some improvement.
+into linux-next? Probably best to merge it after drm-next. Note that
+drm-intel-next are the QA'ed chunks I send off to Dave. Also, any
+mailing lists I'm supposed to follow? And if possible please cc
+intel-gfx@lists.freedesktop.org besides dri-devel/lkml when conflicts
+with that tree pop up (you won't get moderation spam any more, we've
+fixed that up).
 
+Thanks, Daniel
 -- 
-Thanks
-    Alex
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
