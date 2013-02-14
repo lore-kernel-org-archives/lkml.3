@@ -1,78 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934394Ab3BNMDD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 07:03:03 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:57337 "EHLO comal.ext.ti.com"
+	id S934441Ab3BNMDy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 07:03:54 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60863 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757453Ab3BNMDA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 07:03:00 -0500
-Message-ID: <511CD26F.4080909@ti.com>
-Date: Thu, 14 Feb 2013 14:02:55 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1757502Ab3BNMDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 07:03:52 -0500
+Date: Thu, 14 Feb 2013 12:03:49 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rob van der Heij <rvdheij@gmail.com>, Hugh Dickins <hughd@google.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] mm: fadvise: Drain all pagevecs if POSIX_FADV_DONTNEED fails
+ to discard all pages
+Message-ID: <20130214120349.GD7367@suse.de>
 MIME-Version: 1.0
-To: "sameo@linux.intel.com" <sameo@linux.intel.com>
-CC: Roger Quadros <rogerq@ti.com>, "tony@atomide.com" <tony@atomide.com>,
-        "Balbi, Felipe" <balbi@ti.com>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] mfd: OMAP USB Host cleanup for 3.9
-References: <511CD215.8080005@ti.com>
-In-Reply-To: <511CD215.8080005@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel,
+Rob van der Heij reported the following (paraphrased) on private mail.
 
-This contains the MFD portion of the OMAP USB Host cleanup series for 3.9.
-It is based on 3.8-rc6 + usbhost17-common that I've sent earlier.
+	The scenario is that I want to avoid backups to fill up the page
+	cache and purge stuff that is more likely to be used again (this is
+	with s390x Linux on z/VM, so I don't give it as much memory that
+	we don't care anymore). So I have something with LD_PRELOAD that
+	intercepts the close() call (from tar, in this case) and issues
+	a posix_fadvise() just before closing the file.
 
-The first patch touches drivers/usb/ehci-omap.c and is pending ACK from Greg KH.
-The reason it needs to go through MFD tree is that it depends on the platform
-header changes as the MFD drivers.
+	This mostly works, except for small files (less than 14 pages)
+	that remains in page cache after the face.
 
-Please pull. Thanks.
+Unfortunately Rob has not had a chance to test this exact patch but the
+test program below should be reproducing the problem he described.
 
-The following changes since commit 7f07863ec60f7d3dbeec5aff881ea074db3925ed:
+The issue is the per-cpu pagevecs for LRU additions. If the pages are added
+by one CPU but fadvise() is called on another then the pages remain resident
+as the invalidate_mapping_pages() only drains the local pagevecs via its
+call to pagevec_release(). The user-visible effect is that a program that
+uses fadvise() properly is not obeyed.
 
-  ARM: OMAP: Consolidate OMAP USB-HS platform data (part 1/3) (2013-02-13 13:22:34 +0200)
+A possible fix for this is to put the necessary smarts into
+invalidate_mapping_pages() to globally drain the LRU pagevecs if a pagevec
+page could not be discarded. The downside with this is that an inode cache
+shrink would send a global IPI and memory pressure potentially causing
+global IPI storms is very undesirable.
 
-are available in the git repository at:
-  git://github.com/rogerq/linux.git usbhost17-for-mfd
+Instead, this patch adds a check during fadvise(POSIX_FADV_DONTNEED) to
+check if invalidate_mapping_pages() discarded all the requested pages. If a
+subset of pages are discarded it drains the LRU pagevecs and tries again. If
+the second attempt fails, it assumes it is due to the pages being mapped,
+locked or dirty and does not care. With this patch, an application using
+fadvise() correctly will be obeyed but there is a downside that a malicious
+application can force the kernel to send global IPIs and increase overhead.
 
-Roger Quadros (19):
-      mfd: omap-usb-host: Consolidate OMAP USB-HS platform data (part 2/3)
-      mfd: omap-usb-tll: Fix channel count detection
-      mfd: omap-usb-tll: Use devm_kzalloc/ioremap and clean up error path
-      mfd: omap-usb-tll: Clean up clock handling
-      mfd: omap-usb-tll: introduce and use mode_needs_tll()
-      mfd: omap-usb-tll: Check for missing platform data in probe
-      mfd: omap-usb-tll: Fix error message
-      mfd: omap-usb-tll: serialize access to TLL device
-      mfd: omap-usb-tll: Add OMAP5 revision and HSIC support
-      mfd: omap_usb_host: Avoid missing platform data checks in suspend/resume
-      mfd: omap-usb-host: Use devm_kzalloc() and devm_request_and_ioremap()
-      mfd: omap-usb-host: know about number of ports from revision register
-      mfd: omap-usb-host: override number of ports from platform data
-      mfd: omap-usb-host: cleanup clock management code
-      mfd: omap-usb-host: Manage HSIC clocks for HSIC mode
-      mfd: omap-usb-host: Get rid of unnecessary spinlock
-      mfd: omap-usb-host: clean up omap_usbhs_init()
-      mfd: omap-usb-host: Don't spam console on clk_set_parent failure
-      mfd: omap-usb-host: get rid of build warning
+If accepted, I would like this to be considered as a -stable candidate.
+It's not an urgent issue but it's a system call that is not working as
+advertised which is weak.
 
- drivers/mfd/omap-usb-host.c            |  558 +++++++++++++++++++-------------
- drivers/mfd/omap-usb-tll.c             |  243 ++++++++-------
- drivers/usb/host/ehci-omap.c           |    6 +-
- include/linux/platform_data/usb-omap.h |    1 +
- 4 files changed, 470 insertions(+), 338 deletions(-)
+The following test program demonstrates the problem. It should never
+report that pages are still resident but will without this patch. It
+assumes that CPU 0 and 1 exist.
 
---
-cheers,
--roger
+int main() {
+	int fd;
+	int pagesize = getpagesize();
+	ssize_t written = 0, expected;
+	char *buf;
+	unsigned char *vec;
+	int resident, i;
+	cpu_set_t set;
+
+	/* Prepare a buffer for writing */
+	expected = FILESIZE_PAGES * pagesize;
+	buf = malloc(expected + 1);
+	if (buf == NULL) {
+		printf("ENOMEM\n");
+		exit(EXIT_FAILURE);
+	}
+	buf[expected] = 0;
+	memset(buf, 'a', expected);
+
+	/* Prepare the mincore vec */
+	vec = malloc(FILESIZE_PAGES);
+	if (vec == NULL) {
+		printf("ENOMEM\n");
+		exit(EXIT_FAILURE);
+	}
+
+	/* Bind ourselves to CPU 0 */
+	CPU_ZERO(&set);
+	CPU_SET(0, &set);
+	if (sched_setaffinity(getpid(), sizeof(set), &set) == -1) {
+		perror("sched_setaffinity");
+		exit(EXIT_FAILURE);
+	}
+
+	/* open file, unlink and write buffer */
+	fd = open("fadvise-test-file", O_CREAT|O_EXCL|O_RDWR);
+	if (fd == -1) {
+		perror("open");
+		exit(EXIT_FAILURE);
+	}
+	unlink("fadvise-test-file");
+	while (written < expected) {
+		ssize_t this_write;
+		this_write = write(fd, buf + written, expected - written);
+
+		if (this_write == -1) {
+			perror("write");
+			exit(EXIT_FAILURE);
+		}
+
+		written += this_write;
+	}
+	free(buf);
+
+	/*
+	 * Force ourselves to another CPU. If fadvise only flushes the local
+	 * CPUs pagevecs then the fadvise will fail to discard all file pages
+	 */
+	CPU_ZERO(&set);
+	CPU_SET(1, &set);
+	if (sched_setaffinity(getpid(), sizeof(set), &set) == -1) {
+		perror("sched_setaffinity");
+		exit(EXIT_FAILURE);
+	}
+
+	/* sync and fadvise to discard the page cache */
+	fsync(fd);
+	if (posix_fadvise(fd, 0, expected, POSIX_FADV_DONTNEED) == -1) {
+		perror("posix_fadvise");
+		exit(EXIT_FAILURE);
+	}
+
+	/* map the file and use mincore to see which parts of it are resident */
+	buf = mmap(NULL, expected, PROT_READ, MAP_SHARED, fd, 0);
+	if (buf == NULL) {
+		perror("mmap");
+		exit(EXIT_FAILURE);
+	}
+	if (mincore(buf, expected, vec) == -1) {
+		perror("mincore");
+		exit(EXIT_FAILURE);
+	}
+
+	/* Check residency */
+	for (i = 0, resident = 0; i < FILESIZE_PAGES; i++) {
+		if (vec[i])
+			resident++;
+	}
+	if (resident != 0) {
+		printf("Nr unexpected pages resident: %d\n", resident);
+		exit(EXIT_FAILURE);
+	}
+
+	munmap(buf, expected);
+	close(fd);
+	free(vec);
+	exit(EXIT_SUCCESS);
+}
+
+Cc: stable@vger.kernel.org
+Reported-by: Rob van der Heij <rvdheij@gmail.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ mm/fadvise.c |   18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
+
+diff --git a/mm/fadvise.c b/mm/fadvise.c
+index a47f0f5..909ec55 100644
+--- a/mm/fadvise.c
++++ b/mm/fadvise.c
+@@ -17,6 +17,7 @@
+ #include <linux/fadvise.h>
+ #include <linux/writeback.h>
+ #include <linux/syscalls.h>
++#include <linux/swap.h>
+ 
+ #include <asm/unistd.h>
+ 
+@@ -120,9 +121,22 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
+ 		start_index = (offset+(PAGE_CACHE_SIZE-1)) >> PAGE_CACHE_SHIFT;
+ 		end_index = (endbyte >> PAGE_CACHE_SHIFT);
+ 
+-		if (end_index >= start_index)
+-			invalidate_mapping_pages(mapping, start_index,
++		if (end_index >= start_index) {
++			unsigned long count = invalidate_mapping_pages(mapping,
++						start_index, end_index);
++
++			/*
++			 * If fewer pages were invalidated than expected then
++			 * it is possible that some of the pages were on
++			 * a per-cpu pagevec for a remote CPU. Drain all
++			 * pagevecs and try again.
++			 */
++			if (count < (end_index - start_index + 1)) {
++				lru_add_drain_all();
++				invalidate_mapping_pages(mapping, start_index,
+ 						end_index);
++			}
++		}
+ 		break;
+ 	default:
+ 		ret = -EINVAL;
+
