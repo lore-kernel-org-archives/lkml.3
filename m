@@ -1,123 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965202Ab3BNNtm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 08:49:42 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:50016 "EHLO
+	id S965405Ab3BNNtz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 08:49:55 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:51705 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965137Ab3BNNtj (ORCPT
+	with ESMTP id S965196Ab3BNNtt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 08:49:39 -0500
+	Thu, 14 Feb 2013 08:49:49 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: arm@kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 01/11] ARM: disable virt_to_bus/virt_to_bus almost everywhere
-Date: Thu, 14 Feb 2013 14:49:17 +0100
-Message-Id: <1360849767-1463135-2-git-send-email-arnd@arndb.de>
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Subject: [PATCH 09/11] ARM: mvebu: allow selecting mvebu without Armada XP
+Date: Thu, 14 Feb 2013 14:49:25 +0100
+Message-Id: <1360849767-1463135-10-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1360849767-1463135-1-git-send-email-arnd@arndb.de>
 References: <1360849767-1463135-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:EBUtLsxuqphRi2Y5zXjq3UpcYx9Ra5oZppNL420oo4V
- KOJF8+HV3C5SEA1GiYPi1p0G0sum3dAawlxBWDpFBO54XIMmPM
- AUJ8Bbc44+ybjXrmkLnj+oFkr5hrUlrbom1C5DbkRKHCwfymeC
- hm56m2QnkrnJW+BgKFWvPohiWQE483f2KDJPqJzG0xJETGlYJN
- EAD9MaCEXZWh09YzOpgDARXWBsRj3yVZLp4LQZesM4Cr6LkuHq
- uucrSIyeoHYp6ltKsL1k/MUhDPd08xWMy1lTkp+yNeggGjiWeu
- cmuMhzPU59WgQClxQ70Q0tYXRtHivl2UAr5nysw1NQ6Qn2NR2g
- ro5ztJtWrWMgFCaqFdwPcKpALw//ZAiy/7PfStJjP
+X-Provags-ID: V02:K0:O1GxLGfVS4e12sJJg9RS9LJBECK19SRPqtTxqbuYeun
+ 1EYc+rvMJnhWec/TWSRgftgSW4kOfolHYPot3FYGIufGMCI8Wv
+ rqmE3MX5zrKSL6b1f+zzlOsGxZqWuOKk+ZZ14WWEo+qbUTmpNB
+ teZ7NEHgYM/aTRECIlzJsx+vuDAN0DoVIkkKPmiGi6DTeXd/3i
+ JJyWJ7D8BLs2/SoIue5QLw+RrrfRi8c6sUW5ZB+a9I0nrV5kL2
+ ujXhys723H4LyRPhEb10QC/gYTVPwbVEwlP41/xkAwpRQrRGNa
+ fGXqo30+Ew0kKK+DhqoOHe6gWLXgT3VjMeJYjCBNNosk36zK2X
+ flFd8Y7Fg8UR3q62etzSJJkT93aM6nKvM5Ilz5hI2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are getting a number of warnings about the use of the deprecated
-bus_to_virt function in drivers using the ARM ISA DMA API:
+Selecting only CONFIG_ARCH_MVEBU but not the respective
+options for Armada 370 or Armada XP results in these
+link errors:
 
-drivers/parport/parport_pc.c: In function 'parport_pc_fifo_write_block_dma':
-drivers/parport/parport_pc.c:622:3: warning: 'bus_to_virt' is deprecated
-(declared at arch/arm/include/asm/memory.h:253) [-Wdeprecated-declarations]
+arch/arm/mach-mvebu/built-in.o: In function `armada_xp_smp_init_cpus':
+arch/arm/mach-mvebu/platsmp.c:91: undefined reference to `coherency_get_cpu_count'
+arch/arm/mach-mvebu/platsmp.c:104: undefined reference to `armada_mpic_send_doorbell'
+arch/arm/mach-mvebu/built-in.o: In function `armada_xp_smp_prepare_cpus':
+arch/arm/mach-mvebu/platsmp.c:111: undefined reference to `set_cpu_coherent'
+arch/arm/mach-mvebu/built-in.o: In function `armada_xp_boot_secondary':
+arch/arm/mach-mvebu/platsmp.c:83: undefined reference to `armada_xp_boot_cpu'
+arch/arm/mach-mvebu/built-in.o: In function `armada_xp_secondary_init':
+arch/arm/mach-mvebu/platsmp.c:75: undefined reference to `armada_xp_mpic_smp_cpu_init'
+arch/arm/mach-mvebu/built-in.o: In function `armada_xp_secondary_startup':
+arch/arm/mach-mvebu/headsmp.S:46: undefined reference to `ll_set_cpu_coherent'
 
-This is only because that function gets used by the inline
-set_dma_addr() helper. We know that any driver for the ISA DMA API
-is correctly using the DMA addresses, so we can change this
-to use the __bus_to_virt() function instead, which does not warn.
-
-After this, there are no remaining drivers that are used on
-any defconfigs on ARM using virt_to_bus or bus_to_virt, with
-the exception of the OSS sound driver. That driver is only used
-on RiscPC, NetWinder and Shark, so we can set ARCH_NO_VIRT_TO_BUS
-on all other platforms and hide the deprecated functions, which
-is far more effective than marking them as deprecated, in order
-to avoid any new users of that code.
+We can solve this by enabling all common MVEBU files that are
+referenced by the SMP files. This means we enable code that
+is not going to be used without a machine descriptor referencing
+it, but only if the kernel is configured specifically for this
+case.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Gregory Clement <gregory.clement@free-electrons.com>
+Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
 ---
- arch/arm/Kconfig                 | 4 ++++
- arch/arm/configs/shark_defconfig | 1 -
- arch/arm/include/asm/dma.h       | 2 +-
- arch/arm/include/asm/memory.h    | 2 ++
- 4 files changed, 7 insertions(+), 2 deletions(-)
+ arch/arm/mach-mvebu/Makefile | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 67874b8..91d4aea 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1450,6 +1450,10 @@ config ISA_DMA
- 	bool
- 	select ISA_DMA_API
+diff --git a/arch/arm/mach-mvebu/Makefile b/arch/arm/mach-mvebu/Makefile
+index 99df4df..da93bcb 100644
+--- a/arch/arm/mach-mvebu/Makefile
++++ b/arch/arm/mach-mvebu/Makefile
+@@ -3,7 +3,8 @@ ccflags-$(CONFIG_ARCH_MULTIPLATFORM) := -I$(srctree)/$(src)/include \
  
-+config ARCH_NO_VIRT_TO_BUS
-+	def_bool y
-+	depends on !ARCH_RPC && !ARCH_NETWINDER && !ARCH_SHARK
-+
- # Select ISA DMA interface
- config ISA_DMA_API
- 	bool
-diff --git a/arch/arm/configs/shark_defconfig b/arch/arm/configs/shark_defconfig
-index caa07db..e319b2c 100644
---- a/arch/arm/configs/shark_defconfig
-+++ b/arch/arm/configs/shark_defconfig
-@@ -73,7 +73,6 @@ CONFIG_PARTITION_ADVANCED=y
- CONFIG_NLS_CODEPAGE_437=m
- CONFIG_NLS_CODEPAGE_850=m
- CONFIG_NLS_ISO8859_1=m
--# CONFIG_ENABLE_WARN_DEPRECATED is not set
- # CONFIG_ENABLE_MUST_CHECK is not set
- CONFIG_DEBUG_KERNEL=y
- # CONFIG_SCHED_DEBUG is not set
-diff --git a/arch/arm/include/asm/dma.h b/arch/arm/include/asm/dma.h
-index 5694a0d..58b8c6a 100644
---- a/arch/arm/include/asm/dma.h
-+++ b/arch/arm/include/asm/dma.h
-@@ -105,7 +105,7 @@ extern void set_dma_sg(unsigned int chan, struct scatterlist *sg, int nr_sg);
-  */
- extern void __set_dma_addr(unsigned int chan, void *addr);
- #define set_dma_addr(chan, addr)				\
--	__set_dma_addr(chan, bus_to_virt(addr))
-+	__set_dma_addr(chan, (void *)__bus_to_virt(addr))
+ AFLAGS_coherency_ll.o		:= -Wa,-march=armv7-a
  
- /* Set the DMA byte count for this channel
-  *
-diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
-index 1c4df27..474e2e6 100644
---- a/arch/arm/include/asm/memory.h
-+++ b/arch/arm/include/asm/memory.h
-@@ -245,6 +245,7 @@ static inline void *phys_to_virt(phys_addr_t x)
- #define __bus_to_pfn(x)	__phys_to_pfn(x)
- #endif
- 
-+#ifdef CONFIG_VIRT_TO_BUS
- static inline __deprecated unsigned long virt_to_bus(void *x)
- {
- 	return __virt_to_bus((unsigned long)x);
-@@ -254,6 +255,7 @@ static inline __deprecated void *bus_to_virt(unsigned long x)
- {
- 	return (void *)__bus_to_virt(x);
- }
-+#endif
- 
- /*
-  * Conversion between a struct page and a physical address.
+-obj-y += system-controller.o
+-obj-$(CONFIG_MACH_ARMADA_370_XP) += armada-370-xp.o irq-armada-370-xp.o addr-map.o coherency.o coherency_ll.o pmsu.o
++obj-y				 += system-controller.o
++obj-$(CONFIG_MACH_ARMADA_370_XP) += armada-370-xp.o
++obj-$(CONFIG_ARCH_MVEBU)	 += addr-map.o coherency.o coherency_ll.o pmsu.o irq-armada-370-xp.o 
+ obj-$(CONFIG_SMP)                += platsmp.o headsmp.o
+ obj-$(CONFIG_HOTPLUG_CPU)        += hotplug.o
 -- 
 1.8.1.2
 
