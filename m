@@ -1,95 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933800Ab3BNKeA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 05:34:00 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:60036 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752750Ab3BNKd6 convert rfc822-to-8bit (ORCPT
+	id S933834Ab3BNKlT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 05:41:19 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:49848 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757336Ab3BNKlS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 05:33:58 -0500
-Message-ID: <1360838032.4045.126.camel@hornet>
-Subject: Re: [RFC] perf: need to expose sched_clock to correlate user
- samples with kernel samples
-From: Pawel Moll <pawel.moll@arm.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Pekka Enberg <penberg@gmail.com>,
-        Robert Richter <robert.richter@amd.com>, tglx <tglx@linutronix.de>
-Date: Thu, 14 Feb 2013 10:33:52 +0000
-In-Reply-To: <CABPqkBR=R_xnM1j8J_+vXHniqfBzJQRr8oUZz05YVzhbSW777w@mail.gmail.com>
-References: <CABPqkBQALeD=iO9x-N0nw+shhqa1kmUaj=sCvx+MvoAPGQ-y9A@mail.gmail.com>
-	 <1350408232.2336.42.camel@laptop>	<1359728280.8360.15.camel@hornet>
-	 <CABPqkBSVeU_JP2KpVZLepKDJX=-g6A45Y5MoNphd6+DaU2PQzQ@mail.gmail.com>
-	 <51118797.9080800@linaro.org>	<1360113595.2621.30.camel@gandalf.local.home>
-	 <1360174657.4045.33.camel@hornet>
-	 <CABPqkBR=R_xnM1j8J_+vXHniqfBzJQRr8oUZz05YVzhbSW777w@mail.gmail.com>
-X-Mailer: Evolution 3.6.2-0ubuntu0.1
-Mime-Version: 1.0
-X-OriginalArrivalTime: 14 Feb 2013 10:33:53.0984 (UTC) FILETIME=[C95E6400:01CE0A9E]
-X-MC-Unique: 113021410335604801
+	Thu, 14 Feb 2013 05:41:18 -0500
+MIME-Version: 1.0
+X-Originating-IP: [188.6.195.195]
+In-Reply-To: <24327774.p6haZy6gvA@vostro.rjw.lan>
+References: <1360113112.17267.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+	<CAJfpegvV0zQ5Lftx=ELP0MAH1-7oY5HfT-CSYEaFUWJLmXoD7A@mail.gmail.com>
+	<CAJfpegsFThkzv3uF60AMXO7Y-yEzU_20HeGyPra0O8Vk5OqCGQ@mail.gmail.com>
+	<24327774.p6haZy6gvA@vostro.rjw.lan>
+Date: Thu, 14 Feb 2013 11:41:16 +0100
+Message-ID: <CAJfpegtUOCTNR-uzrFBcFY3K8to2+y3hvJx=vuBYS7emzU-SRA@mail.gmail.com>
+Subject: Re: Getting rid of freezer for suspend [was Re: [fuse-devel] [PATCH]
+ fuse: make fuse daemon frozen along with kernel threads]
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Pavel Machek <pavel@ucw.cz>, Goswin von Brederlow <goswin-v-b@web.de>,
+        Li Fei <fei.li@intel.com>, len.brown@intel.com, mingo@redhat.com,
+        peterz@infradead.org, biao.wang@intel.com, linux-pm@vger.kernel.org,
+        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        chuansheng.liu@intel.com
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-02-13 at 20:00 +0000, Stephane Eranian wrote:
-> On Wed, Feb 6, 2013 at 7:17 PM, Pawel Moll <pawel.moll@arm.com> wrote:
-> > On Wed, 2013-02-06 at 01:19 +0000, Steven Rostedt wrote:
-> >> If people are worried about adding a bunch of new perf syscalls, maybe
-> >> add a sys_perf_control() system call that works like an ioctl but
-> >> without a file descriptor. Something for things that don't require an
-> >> event attached to it, like to retrieve a time stamp counter that perf
-> >> uses, but done in a way that it could be used for other things perf
-> >> related that does not require an event.
-> >
-> >  /**
-> > + * sys_perf_control - ioctl-like interface to control system-wide
-> > + *                   perf behaviour
-> > + *
-> > + * @cmd:       one of the PERF_CONTROL_* commands
-> > + * @arg:       command-specific argument
-> > + */
-> > +SYSCALL_DEFINE2(perf_control, unsigned int, cmd, unsigned long, arg)
-> > +{
-> > +       switch (cmd) {
-> > +       case PERF_CONTROL_GET_TIME:
-> > +       {
-> > +               u64 time = perf_clock();
-> > +               if (copy_to_user((void __user *)arg, &time, sizeof(time)))
-> > +                       return -EFAULT;
-> > +               return 0;
-> > +       }
-> > +
-> > +       default:
-> > +               return -ENOTTY;
-> > +       }
-> > +}
+On Wed, Feb 13, 2013 at 10:21 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Wednesday, February 13, 2013 06:34:16 PM Miklos Szeredi wrote:
+
+>>
+>> So I think the PF_FREEZE_DAEMON idea (the patch from Li Fei that
+>> started this thread) may still be our best bet at handling this
+>> situation.  The idea being that pure "originator" processes (ones that
+>> take no part in serving filesystem syscalls) can be frozen up-front.
+>> Then the "fuse daemon" (or "server") processes are hopefully in a
+>> quiescent state and can be frozen without difficulty.
+>>
+>> Unfortunately it needs help from userspace: the kernel can't easily
+>> guess which processes are part of a "fuse daemon" and which aren't.
+>> Fortunately we have a standard library (libfuse) that can tell it to
+>> the kernel for the vast majority of cases.
 >
-> So what would be the role of this new syscall besides GET_TIME?
-> What other controls without a fd could be done? We are already passing
-> a lot of control thru the perf_event_open() some in the attr struct others
-> as arguments.
+> So basically the idea would be to introduce something like PF_FREEZE_LATE
+> for user space processes that need to be frozen after all of the other
+> (non-PF_FREEZE_LATE) user space processes have been frozen and hack fuse
+> to use that flag?
 
-I think Steven was thinking about an "extensible" fd-less interface.
-Whether we'll need any other fd-less control in the future, I don't
-know...
+Yes.
 
-> The only advantage of this "disguised" ioctl() is that it does not require
-> a fd. But it is worth adding a syscall just to avoid creating a fd?
+It is essentially the same mechanism that is used to delay the
+freezing of kernel threads after userspace tasks have been frozen.
+Except it's a lot more difficult to determine which userspace tasks
+need to be suspended late and which aren't.
 
-Frankly speaking, I have some doubts here, but I do sys_perf_open()
-anyway, so it was mainly trying to address your situation.
-
-One way or another I'd like to get the timestamp, so how about picking
-one solution and trying to make it happen? Seems that my previous
-"standard ioctl()" patch would be the best compromise?
-
-Pawel
-
-
+Thanks,
+Miklos
