@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934336Ab3BNMAh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 07:00:37 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:38084 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757462Ab3BNMAe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 07:00:34 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Andreas Mohr <andi@lisas.de>
-Cc: linux-pci@vger.kernel.org,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] PCI / ACPI: Report _OSC control mask returned on failure to get control
-Date: Thu, 14 Feb 2013 13:07:02 +0100
-Message-ID: <7634687.RmnPKEe4lz@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc7; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130214011027.GA430@rhlx01.hs-esslingen.de>
-References: <20130214011027.GA430@rhlx01.hs-esslingen.de>
+	id S934303Ab3BNMBc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 07:01:32 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:53277 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754388Ab3BNMBb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 07:01:31 -0500
+Message-ID: <511CD215.8080005@ti.com>
+Date: Thu, 14 Feb 2013 14:01:25 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: "tony@atomide.com" <tony@atomide.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>
+CC: "Balbi, Felipe" <balbi@ti.com>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Roger Quadros <rogerq@ti.com>
+Subject: [GIT PULL] common: OMAP USB Host cleanup for 3.9
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, February 14, 2013 02:10:27 AM Andreas Mohr wrote:
-> Hi,
-> 
-> to provide an example case, on Aspire One AOA110 v0.3310, 3.8-rc7 prints:
-> 
-> [    0.515599] ACPI Error: [CAPB] Namespace lookup failure,
-> AE_ALREADY_EXISTS (2
-> 0121018/dsfield-211)
-> [    0.515629] ACPI Error: Method parse/execution failed
-> [\_SB_.PCI0._OSC] (Node f5449680), AE_ALREADY_EXISTS
-> (20121018/psparse-537)
-> [    0.515672] ACPI: Marking method _OSC as Serialized because of
-> AE_ALREADY_EXISTS error
-> [    0.516081] ACPI Error: [CAPB] Namespace lookup failure,
-> AE_ALREADY_EXISTS (20121018/dsfield-211)
-> [    0.516107] ACPI Error: Method parse/execution failed
-> [\_SB_.PCI0._OSC] (Node f5449680), AE_ALREADY_EXISTS
-> (20121018/psparse-537)
-> [    0.516168] pci_root PNP0A08:00: ACPI _OSC support notification
-> failed, disabling PCIe ASPM
-> [    0.516179] pci_root PNP0A08:00: Unable to request _OSC control (_OSC
-> support mask: 0x08)
-> 
-> HTH,
+Hi Tony & Samuel,
 
-Unfortunately, it doesn't, because I've lost track of the whole thread in the
-meantime.  Care to give a pointer?
+This is the common patch for the OMAP USB Host cleanup series for 3.9.
+It makes changes to platform headers only.
+The other 2 pull requests, one for each of you will be based on this.
 
-Rafael
+This is based on 3.8-rc6.
 
+Please pull. Thanks.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+The following changes since commit 88b62b915b0b7e25870eb0604ed9a92ba4bfc9f7:
+
+  Linux 3.8-rc6 (2013-02-01 12:08:14 +1100)
+
+are available in the git repository at:
+  git://github.com/rogerq/linux.git usbhost17-common
+
+Roger Quadros (1):
+      ARM: OMAP: Consolidate OMAP USB-HS platform data (part 1/3)
+
+ include/linux/platform_data/usb-omap.h |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
+
+--
+cheers,
+-roger
