@@ -1,81 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758801Ab3BNKb6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 05:31:58 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:54270 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752750Ab3BNKb4 (ORCPT
+	id S933800Ab3BNKeA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 05:34:00 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:60036 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752750Ab3BNKd6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 05:31:56 -0500
-MIME-Version: 1.0
-X-Originating-IP: [188.6.195.195]
-In-Reply-To: <20130213201609.GA4296@amd.pavel.ucw.cz>
-References: <1360113112.17267.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
-	<2964781.rPUOipNRNb@vostro.rjw.lan>
-	<CAJfpegtNUr+AJXZcKmLEGBYqu20DVFwzg-OvOk_nS3fBS3wd=Q@mail.gmail.com>
-	<1660768.prnx6s70rD@vostro.rjw.lan>
-	<CAJfpegt2B3n-QNK_W7O2H0JVfS=4jcUOzV_+w8ELPq19RJPewQ@mail.gmail.com>
-	<20130212104608.GA24042@amd.pavel.ucw.cz>
-	<CAJfpegvdVfEFTU5haMMi94PD1iZ1XyCRjg0O9vDjDg1yyaM-yA@mail.gmail.com>
-	<CAJfpegvV0zQ5Lftx=ELP0MAH1-7oY5HfT-CSYEaFUWJLmXoD7A@mail.gmail.com>
-	<CAJfpegsFThkzv3uF60AMXO7Y-yEzU_20HeGyPra0O8Vk5OqCGQ@mail.gmail.com>
-	<20130213201609.GA4296@amd.pavel.ucw.cz>
-Date: Thu, 14 Feb 2013 11:31:53 +0100
-Message-ID: <CAJfpegvEGM9B3niQtfmH1OhLLRjaq6OiyJpKRe3g1wD_egzQLQ@mail.gmail.com>
-Subject: Re: Getting rid of freezer for suspend [was Re: [fuse-devel] [PATCH]
- fuse: make fuse daemon frozen along with kernel threads]
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Goswin von Brederlow <goswin-v-b@web.de>, Li Fei <fei.li@intel.com>,
-        len.brown@intel.com, mingo@redhat.com, peterz@infradead.org,
-        biao.wang@intel.com, linux-pm@vger.kernel.org,
-        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        chuansheng.liu@intel.com
+	Thu, 14 Feb 2013 05:33:58 -0500
+Message-ID: <1360838032.4045.126.camel@hornet>
+Subject: Re: [RFC] perf: need to expose sched_clock to correlate user
+ samples with kernel samples
+From: Pawel Moll <pawel.moll@arm.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, John Stultz <john.stultz@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Pekka Enberg <penberg@gmail.com>,
+        Robert Richter <robert.richter@amd.com>, tglx <tglx@linutronix.de>
+Date: Thu, 14 Feb 2013 10:33:52 +0000
+In-Reply-To: <CABPqkBR=R_xnM1j8J_+vXHniqfBzJQRr8oUZz05YVzhbSW777w@mail.gmail.com>
+References: <CABPqkBQALeD=iO9x-N0nw+shhqa1kmUaj=sCvx+MvoAPGQ-y9A@mail.gmail.com>
+	 <1350408232.2336.42.camel@laptop>	<1359728280.8360.15.camel@hornet>
+	 <CABPqkBSVeU_JP2KpVZLepKDJX=-g6A45Y5MoNphd6+DaU2PQzQ@mail.gmail.com>
+	 <51118797.9080800@linaro.org>	<1360113595.2621.30.camel@gandalf.local.home>
+	 <1360174657.4045.33.camel@hornet>
+	 <CABPqkBR=R_xnM1j8J_+vXHniqfBzJQRr8oUZz05YVzhbSW777w@mail.gmail.com>
+X-Mailer: Evolution 3.6.2-0ubuntu0.1
+Mime-Version: 1.0
+X-OriginalArrivalTime: 14 Feb 2013 10:33:53.0984 (UTC) FILETIME=[C95E6400:01CE0A9E]
+X-MC-Unique: 113021410335604801
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 13, 2013 at 9:16 PM, Pavel Machek <pavel@ucw.cz> wrote:
-> On Wed 2013-02-13 18:34:16, Miklos Szeredi wrote:
->> On Tue, Feb 12, 2013 at 2:17 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
->> > On Tue, Feb 12, 2013 at 2:13 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
->> >> On Tue, Feb 12, 2013 at 11:46 AM, Pavel Machek <pavel@ucw.cz> wrote:
->> >>
->> >>> (After all, with FUSE, filesystem clients are just doing IPC. In ideal
->> >>> world, that would be freezeable and killable with -9).
->>
->> Well, I thought this can be constrained to locks directly related to
->> the fuse filesystem itself, but it can't...  The reason is page
+On Wed, 2013-02-13 at 20:00 +0000, Stephane Eranian wrote:
+> On Wed, Feb 6, 2013 at 7:17 PM, Pawel Moll <pawel.moll@arm.com> wrote:
+> > On Wed, 2013-02-06 at 01:19 +0000, Steven Rostedt wrote:
+> >> If people are worried about adding a bunch of new perf syscalls, maybe
+> >> add a sys_perf_control() system call that works like an ioctl but
+> >> without a file descriptor. Something for things that don't require an
+> >> event attached to it, like to retrieve a time stamp counter that perf
+> >> uses, but done in a way that it could be used for other things perf
+> >> related that does not require an event.
+> >
+> >  /**
+> > + * sys_perf_control - ioctl-like interface to control system-wide
+> > + *                   perf behaviour
+> > + *
+> > + * @cmd:       one of the PERF_CONTROL_* commands
+> > + * @arg:       command-specific argument
+> > + */
+> > +SYSCALL_DEFINE2(perf_control, unsigned int, cmd, unsigned long, arg)
+> > +{
+> > +       switch (cmd) {
+> > +       case PERF_CONTROL_GET_TIME:
+> > +       {
+> > +               u64 time = perf_clock();
+> > +               if (copy_to_user((void __user *)arg, &time, sizeof(time)))
+> > +                       return -EFAULT;
+> > +               return 0;
+> > +       }
+> > +
+> > +       default:
+> > +               return -ENOTTY;
+> > +       }
+> > +}
 >
-> And it looked so easy and nice...
->
->> faults.  Pretty much everyone and their brother uses get_user_pages*,
->> holding various locks (mmap_sem for sure but others as well).  A fuse
->> filesystem frozen during a page read will block those.
->
-> Is it even valid for get_user_pages to be used on FUSE?
+> So what would be the role of this new syscall besides GET_TIME?
+> What other controls without a fd could be done? We are already passing
+> a lot of control thru the perf_event_open() some in the attr struct others
+> as arguments.
 
-Disabling all mmap (which is what you question) would make fuse a
-useless piece of toy.  So yes, definitely it's valid.
+I think Steven was thinking about an "extensible" fd-less interface.
+Whether we'll need any other fd-less control in the future, I don't
+know...
 
->
-> What happens if fused tries to do some operation (it is userspace, it
-> can do lot of operations) that needs one of those locks?
+> The only advantage of this "disguised" ioctl() is that it does not require
+> a fd. But it is worth adding a syscall just to avoid creating a fd?
 
-E.g. mmap_sem is taken for the process _accessing_ a vma for a fuse
-filesystem. The server process better not do this (i.e. access the
-filesystem it's serving) or deadlocking (*) is basically guaranteed.
-That's nothing new.
+Frankly speaking, I have some doubts here, but I do sys_perf_open()
+anyway, so it was mainly trying to address your situation.
 
-The thing that makes this hard for freeze is that those locks
-(mmap_sem, etc.) are only indirectly related to the fuse filesystem by
-the _actions_ of a process (accessing mmaped fuse area).
+One way or another I'd like to get the timestamp, so how about picking
+one solution and trying to make it happen? Seems that my previous
+"standard ioctl()" patch would be the best compromise?
 
-Thanks,
-Miklos
+Pawel
 
-(*) userspace induced deadlocks in fuse are not hard deadlocks, they
-can be forced open by "umount -f" or "echo >
-/sys/fs/fuse/connections/$DEV/abort".
+
