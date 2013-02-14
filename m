@@ -1,66 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753037Ab3BNFg7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 00:36:59 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:45245 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750736Ab3BNFg6 (ORCPT
+	id S1753369Ab3BNFkY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 00:40:24 -0500
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:55707 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751983Ab3BNFkW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 00:36:58 -0500
-Date: Thu, 14 Feb 2013 05:36:57 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [RFC] SIGKILL vs. SIGSEGV on late execve() failures
-Message-ID: <20130214053656.GS4503@ZenIV.linux.org.uk>
+	Thu, 14 Feb 2013 00:40:22 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130213194307.GA22031@core.coreip.homeip.net>
+References: <1360723347-28701-1-git-send-email-sjg@chromium.org>
+	<1360723347-28701-6-git-send-email-sjg@chromium.org>
+	<20130213194307.GA22031@core.coreip.homeip.net>
+Date: Wed, 13 Feb 2013 21:40:21 -0800
+X-Google-Sender-Auth: 7tn5iIkm3uJfc7kcQWgEy-pnSaA
+Message-ID: <CAPnjgZ0YQG4eW5Hd4eZtU8my=pDEZH7ACw5nE15H-yQ1ucwr_g@mail.gmail.com>
+Subject: Re: [PATCH v2 5/6] Input: matrix-keymap: Add function to read the new
+ DT binding
+From: Simon Glass <sjg@chromium.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Bill Pemberton <wfp5p@virginia.edu>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Javier Martinez Canillas <javier@dowhile0.org>,
+        Sourav Poddar <sourav.poddar@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Alban Bedel <alban.bedel@avionic-design.de>,
+        linux-input@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	If execve() fails past flush_old_exec(), we are obviously going to
-kill the process.  Right now it's implemented in $BIGNUM places in
-->load_binary() and that's obviously brittle (and in at least one case
-buggy - binfmt_flat lacks send_sig_info() on late failures).  Now, there's
-an obvious way to check that we had done successful flush_old_exec() -
-bfmt->mm becomes NULL just past the last failure exit there.  So it would
-be tempting to have these send_sig_info() moved into search_binary_handler(),
-especially since we already have
-                        if (retval != -ENOEXEC || bprm->mm == NULL)
-                                break;
-in there and turning that into
-			if (bprm->mm == NULL) {
-				/* past the point of no return */
-				suicide
-				break;
-			}
-			if (retval != -ENOEXEC)
-				break;
-would be trivial.
+Hi Dmitry,
 
-	The only problem is that some suicides do SIGKILL, some SIGSEGV.
-AFAICS, it started as SIGSEGV and had been switched to SIGKILL for a.out
-(without any comments) in 1.1.62.  By that time ELF had been there, with
-SIGSEGV in the same places.  Not replaced with SIGKILL; as the matter of
-fact, they are still there.  Additional failure exits in case of ELF had
-been added with SIGKILL; ELF-FDPIC has copied ELF and FLAT hadn't bothered
-with send_sig_info() at all.
+On Wed, Feb 13, 2013 at 11:43 AM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> Hi Simon,
+>
+> On Tue, Feb 12, 2013 at 06:42:25PM -0800, Simon Glass wrote:
+>> We now have a binding which adds two parameters to the matrix keypad DT
+>> node. This is separate from the GPIO-driven matrix keypad binding, and
+>> unfortunately incompatible, since that uses row-gpios/col-gpios for the
+>> row and column counts.
+>>
+>> So the easiest option here is to provide a function for non-GPIO drivers
+>> to use to decode the binding.
+>>
+>> Note: We could in fact create an entirely separate structure to hold
+>> these two fields, but it does not seem worth it, yet. If we have more
+>> parameters then we can add this, and then refactor each driver to hold
+>> such a structure.
+>>
+>> Signed-off-by: Simon Glass <sjg@chromium.org>
+>> ---
+>> Changes in v2:
+>> - Add new patch to decode matrix-keypad DT binding
+>>
+>>  drivers/input/keyboard/lpc32xx-keys.c   | 11 ++++++-----
+>>  drivers/input/keyboard/omap4-keypad.c   | 16 +++++-----------
+>>  drivers/input/keyboard/tca8418_keypad.c | 11 +++++++----
+>>  drivers/input/matrix-keymap.c           | 20 ++++++++++++++++++++
+>>  include/linux/input/matrix_keypad.h     | 11 +++++++++++
+>>  5 files changed, 49 insertions(+), 20 deletions(-)
+>>
+>> diff --git a/drivers/input/keyboard/lpc32xx-keys.c b/drivers/input/keyboard/lpc32xx-keys.c
+>> index 1b8add6..4218143 100644
+>> --- a/drivers/input/keyboard/lpc32xx-keys.c
+>> +++ b/drivers/input/keyboard/lpc32xx-keys.c
+>> @@ -144,12 +144,13 @@ static int lpc32xx_parse_dt(struct device *dev,
+>>  {
+>>       struct device_node *np = dev->of_node;
+>>       u32 rows = 0, columns = 0;
+>> +     int err;
+>>
+>> -     of_property_read_u32(np, "keypad,num-rows", &rows);
+>> -     of_property_read_u32(np, "keypad,num-columns", &columns);
+>> -     if (!rows || rows != columns) {
+>> -             dev_err(dev,
+>> -                     "rows and columns must be specified and be equal!\n");
+>> +     err = matrix_keypad_parse_of_params(dev, &rows, &columns);
+>> +     if (err)
+>> +             return err;
+>> +     if (rows != columns) {
+>> +             dev_err(dev, "rows and columns must be equal!\n");
+>>               return -EINVAL;
+>>       }
+>>
+>> diff --git a/drivers/input/keyboard/omap4-keypad.c b/drivers/input/keyboard/omap4-keypad.c
+>> index e25b022..1b28909 100644
+>> --- a/drivers/input/keyboard/omap4-keypad.c
+>> +++ b/drivers/input/keyboard/omap4-keypad.c
+>> @@ -215,18 +215,12 @@ static int omap4_keypad_parse_dt(struct device *dev,
+>>                                struct omap4_keypad *keypad_data)
+>>  {
+>>       struct device_node *np = dev->of_node;
+>> +     int err;
+>>
+>> -     if (!np) {
+>> -             dev_err(dev, "missing DT data");
+>> -             return -EINVAL;
+>> -     }
+>> -
+>> -     of_property_read_u32(np, "keypad,num-rows", &keypad_data->rows);
+>> -     of_property_read_u32(np, "keypad,num-columns", &keypad_data->cols);
+>> -     if (!keypad_data->rows || !keypad_data->cols) {
+>> -             dev_err(dev, "number of keypad rows/columns not specified\n");
+>> -             return -EINVAL;
+>> -     }
+>> +     err = matrix_keypad_parse_of_params(dev, &keypad_data->rows,
+>> +                                         &keypad_data->cols);
+>> +     if (err)
+>> +             return err;
+>>
+>>       if (of_get_property(np, "linux,input-no-autorepeat", NULL))
+>>               keypad_data->no_autorepeat = true;
+>> diff --git a/drivers/input/keyboard/tca8418_keypad.c b/drivers/input/keyboard/tca8418_keypad.c
+>> index a34cc67..4d5a6d5 100644
+>> --- a/drivers/input/keyboard/tca8418_keypad.c
+>> +++ b/drivers/input/keyboard/tca8418_keypad.c
+>> @@ -288,17 +288,20 @@ static int tca8418_keypad_probe(struct i2c_client *client,
+>>               irq_is_gpio = pdata->irq_is_gpio;
+>>       } else {
+>>               struct device_node *np = dev->of_node;
+>> -             of_property_read_u32(np, "keypad,num-rows", &rows);
+>> -             of_property_read_u32(np, "keypad,num-columns", &cols);
+>> +             int err;
+>> +
+>> +             err = matrix_keypad_parse_of_params(dev, &rows, &cols);
+>> +             if (err)
+>> +                     return err;
+>>               rep = of_property_read_bool(np, "keypad,autorepeat");
+>>       }
+>>
+>> -     if (!rows || rows > TCA8418_MAX_ROWS) {
+>> +     if (rows > TCA8418_MAX_ROWS) {
+>
+> Why? Your new function only checks rows != 0 for the DT case, but we
+> also need to validate platform data supplied values.
 
-	Since by that point we have an empty sighandler table, the only
-real difference is whether we attempt to produce a coredump on such late
-failures.  Is there any real reason not to try that?  After all, with that
-kind of late failure in execve(2) a coredump is obviously something the
-caller might want to take a look at...
+Thanks for reviewing.
 
-	What was the reason for switch in 1.1.62?  It's before my time
-and the only exec-related comments I see in 1.1.61->1.1.62 summary are
+OK - will fix. It seems odd that that driver calls device tree code
+even when CONFIG_OF is not defined.
 
-Don't execute files that are being written to.
-If we can't get write access to a core dump file, don't core dump.
-Remove redundant test for non-null executables. 
-No need to release the shared memory by hand, when loading different executable.
+>
+>>               dev_err(dev, "invalid rows\n");
+>>               return -EINVAL;
+>>       }
+>>
+>> -     if (!cols || cols > TCA8418_MAX_COLS) {
+>> +     if (cols > TCA8418_MAX_COLS) {
+>>               dev_err(dev, "invalid columns\n");
+>>               return -EINVAL;
+>>       }
+>> diff --git a/drivers/input/matrix-keymap.c b/drivers/input/matrix-keymap.c
+>> index 3ae496e..64bad81 100644
+>> --- a/drivers/input/matrix-keymap.c
+>> +++ b/drivers/input/matrix-keymap.c
+>> @@ -50,6 +50,25 @@ static bool matrix_keypad_map_key(struct input_dev *input_dev,
+>>  }
+>>
+>>  #ifdef CONFIG_OF
+>> +int matrix_keypad_parse_of_params(struct device *dev,
+>> +                               unsigned int *rows, unsigned int *cols)
+>> +{
+>> +     struct device_node *np = dev->of_node;
+>> +
+>> +     if (!np) {
+>> +             dev_err(dev, "missing DT data");
+>> +             return -EINVAL;
+>> +     }
+>> +     of_property_read_u32(np, "keypad,num-rows", rows);
+>> +     of_property_read_u32(np, "keypad,num-columns", cols);
+>> +     if (!*rows || !*cols) {
+>> +             dev_err(dev, "number of keypad rows/columns not specified\n");
+>> +             return -EINVAL;
+>> +     }
+>> +
+>> +     return 0;
+>> +}
+>> +
+>>  static int matrix_keypad_parse_of_keymap(const char *propname,
+>>                                        unsigned int rows, unsigned int cols,
+>>                                        struct input_dev *input_dev)
+>> @@ -112,6 +131,7 @@ static int matrix_keypad_parse_of_keymap(const char *propname,
+>>   *   tree support is enabled).
+>>   * @rows: number of rows in target keymap array
+>>   * @cols: number of cols in target keymap array
+>> + *   (if either/both is 0 then they will be read from the FDT if available)
+>
+> Huh?
 
-neither of which covers that one...
+Not sure what happened there, some sort of stuff-up, but that code
+isn't there now.
+
+>
+>>   * @keymap: expanded version of keymap that is suitable for use by
+>>   * matrix keyboard driver
+>>   * @input_dev: input devices for which we are setting up the keymap
+>> diff --git a/include/linux/input/matrix_keypad.h b/include/linux/input/matrix_keypad.h
+>> index 5f3aa6b..01a30cf 100644
+>> --- a/include/linux/input/matrix_keypad.h
+>> +++ b/include/linux/input/matrix_keypad.h
+>> @@ -81,4 +81,15 @@ int matrix_keypad_build_keymap(const struct matrix_keymap_data *keymap_data,
+>>                              unsigned short *keymap,
+>>                              struct input_dev *input_dev);
+>>
+>> +/**
+>> + * matrix_keypad_parse_of_params() - Read parameters from matrix-keypad node
+>> + *
+>> + * @dev: Device containing of_node
+>> + * @rows: Returns number of matrix rows
+>> + * @cols: Returns number of matrix columns
+>> + * @return 0 if OK, <0 on error
+>> + */
+>> +int matrix_keypad_parse_of_params(struct device *dev,
+>> +                               unsigned int *rows, unsigned int *cols);
+>> +
+>
+> The new function needs a non-CONFIG_OF stub as some drivers
+> (tca8418-keypad for example) use it in common code.
+
+OK, not sure whether I am permitted to put a static inline in the
+header, but will go with that for now.
+
+>
+> Thanks.
+>
+> --
+> Dmitry
+
+Regards,
+Simon
