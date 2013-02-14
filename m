@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934959Ab3BNT5H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 14:57:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60723 "EHLO mx1.redhat.com"
+	id S1761605Ab3BNT5F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 14:57:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44613 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934894Ab3BNTzt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S934895Ab3BNTzt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 14 Feb 2013 14:55:49 -0500
 From: Vivek Goyal <vgoyal@redhat.com>
 To: zohar@linux.vnet.ibm.com, linux-security-module@vger.kernel.org
 Cc: vgoyal@redhat.com, linux-kernel@vger.kernel.org, dmitry.kasatkin@intel.com
-Subject: [RFC PATCH 0/6][v3] ima: Support a mode to appraise signed files only
-Date: Thu, 14 Feb 2013 14:55:39 -0500
-Message-Id: <1360871745-20616-1-git-send-email-vgoyal@redhat.com>
+Subject: [PATCH 2/6] ima: Return INTEGRITY_FAIL if digital signature can't be verified
+Date: Thu, 14 Feb 2013 14:55:41 -0500
+Message-Id: <1360871745-20616-3-git-send-email-vgoyal@redhat.com>
+In-Reply-To: <1360871745-20616-1-git-send-email-vgoyal@redhat.com>
+References: <1360871745-20616-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Digital signature verification happens using integrity_digsig_verify().
+Curently we set integrity to FAIL for all error codes except -EOPNOTSUPP.
+This sounds out of line.
 
-Currently ima appraises all the files as specified by the rule. So
-if one wants to create a system where only few executables are
-signed, that system will not work with IMA.
+- If appropriate kernel code is not compiled in to verify signature of
+  a file, then prractically it is a failed signature.
 
-With secureboot, one needs to disable kexec so that unsigned kernels
-can't be booted. To avoid this problem, it was proposed that sign
-/sbin/kexec binary and if signatures are verified successfully, give
-an special capability to the /sbin/kexec process. And in secureboot
-mode processes with that special capability can invoke sys_kexec()
-system call.
+- For so many other possible errors we are setting the status to fail.
+  For example, -EINVAL, -ENOKEY, -ENOMEM, -EINVAL, -ENOTSUPP etc, it
+  beats me that why -EOPNOTSUPP is special.
 
-So there is a need for IMA to allow appraising only signed binaries.
-Unsigned binaries will pass the appraisal too, but will not get the
-special capability. (Capability patches for that are yet to be written).
+This patch should make the semantics more consistent. That is, if digital
+signature is present in security.ima, then any error happened during
+signature processing leads to status INTEGRITY_FAIL.
 
-This patch series adds new option, appraise_type=optional to allow
-appraisal to pass even if no signatures are present on the file. If
-signatures are present, then it has to be valid digital signature,
-otherwise appraisal will fail.
+AFAICS, it should not have any user visible effect on existing
+application. In some cases we will start returning INTEGRITY_FAIL
+instead of INTEGRITY_UNKNOWN. And process_measurement() will deny access
+to file both in case of INTEGRITY_UNKNOWN and INTEGRITY_FAIL.
 
-v2: Changed patches based on Mimi's feedback.
-v3: - Changed appraise_type=imasig_optional to appraise_type=optional
-    - Introduced new error codes.
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+---
+ security/integrity/ima/ima_appraise.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-Thanks
-Vivek
-
-Vivek Goyal (6):
-  ima: detect security xattrs not enabled
-  ima: Return INTEGRITY_FAIL if digital signature can't be verified
-  ima/evm: Differentiate between ima/evm nolabel return code
-  ima: Introduce new integrity error code INTEGRITY_XATTR_NOTSUPP
-  ima: Allow appraisal of digitally signed files only
-  ima: With appraise_type=optional, audit log some messages as info
-
- Documentation/ABI/testing/ima_policy  |    2 +-
- include/linux/integrity.h             |    4 +++-
- security/integrity/evm/evm_main.c     |    2 +-
- security/integrity/ima/ima_appraise.c |   26 ++++++++++++++++++--------
- security/integrity/ima/ima_main.c     |   14 ++++++++++++--
- security/integrity/ima/ima_policy.c   |    2 ++
- security/integrity/integrity.h        |    1 +
- 7 files changed, 38 insertions(+), 13 deletions(-)
-
+diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+index 3710f44..6f1eeb8 100644
+--- a/security/integrity/ima/ima_appraise.c
++++ b/security/integrity/ima/ima_appraise.c
+@@ -178,9 +178,7 @@ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
+ 					     xattr_value->digest, rc - 1,
+ 					     iint->ima_xattr.digest,
+ 					     IMA_DIGEST_SIZE);
+-		if (rc == -EOPNOTSUPP) {
+-			status = INTEGRITY_UNKNOWN;
+-		} else if (rc) {
++		if (rc) {
+ 			cause = "invalid-signature";
+ 			status = INTEGRITY_FAIL;
+ 		} else {
 -- 
 1.7.7.6
 
