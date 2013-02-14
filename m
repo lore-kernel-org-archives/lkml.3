@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761632Ab3BNUNf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 15:13:35 -0500
-Received: from mail-la0-f41.google.com ([209.85.215.41]:37640 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758688Ab3BNUNd (ORCPT
+	id S934816Ab3BNUOt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 15:14:49 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:59995 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758688Ab3BNUOs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 15:13:33 -0500
-MIME-Version: 1.0
-In-Reply-To: <511D0E77.2090907@parallels.com>
-References: <511D0E50.7090505@parallels.com> <511D0E77.2090907@parallels.com>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Thu, 14 Feb 2013 15:13:11 -0500
-Message-ID: <CA+1xoqdk5PArnjSnu=7gUq_4got09a0PxBd4Yy=inezPTGsdAA@mail.gmail.com>
-Subject: Re: [PATCH 1/3] posix timers: Allocate timer id per process
-To: Pavel Emelyanov <xemul@parallels.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, linux-api@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 14 Feb 2013 15:14:48 -0500
+Date: Thu, 14 Feb 2013 15:14:45 -0500 (EST)
+Message-Id: <20130214.151445.2165581579573329189.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Sparc
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 14, 2013 at 11:19 AM, Pavel Emelyanov <xemul@parallels.com> wrote:
-> From: Stanislav Kinsbursky <skinsbursky@parallels.com>
->
-> Patch replaces global idr with global hash table for posix timers and
-> makes timer ids unique not globally, but per process. Next free timer id is
-> type of integer and stored on signal struct (posix_timer_id). If free timer
-> id reaches negative value on timer creation, it will be dropped to zero and
-> -EAGAIN will be returned to user.
->
-> Hash table has 512 slots.
-> Key is constructed as follows:
-> key = hash_32(hash_32(current->signal) ^ posix_timer_id));
->
-> Note: with this patch, id, returned to user, is not the minimal free
-> amymore. It means, that id, returned to user space in loop, listed below, will
-> be increasing on each iteration till INT_MAX and then dropped to zero:
->
-> while(1) {
->         id = timer_create(...);
->         timer_delete(id);
-> }
->
-> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-> Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
 
-Hi Pavel,
+A couple small fixes for sparc including some THP brown-paper-bag
+material:
 
-Why not use linux/hashtable.h?
+1) During the merging of all the THP support for various architectures,
+   sparc missed adding a HAVE_ARCH_TRANSPARENT_HUGEPAGE to it's Kconfig,
+   oops.
+
+2) Sparc needs to be mindful of hugepages in get_user_pages_fast().
+
+3) Fix memory leak in SBUS probe, from Cong Ding.
+
+4) The sunvdc virtual disk client driver has a test of the bitmask of
+   vdisk server supported operations which was off by one bit.
+
+Please pull, thanks a lot!
+
+The following changes since commit 9a9284153d965a57edc7162a8e57c14c97f3a935:
+
+  Merge branch 'drm-fixes' of git://people.freedesktop.org/~airlied/linux (2013-01-20 20:55:49 -0800)
+
+are available in the git repository at:
 
 
-Thanks,
-Sasha
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc.git master
+
+for you to fetch changes up to f4d9605434c0fd4cc8639bf25cfc043418c52362:
+
+  sunvdc: Fix off-by-one in generic_request(). (2013-02-14 11:49:01 -0800)
+
+----------------------------------------------------------------
+Cong Ding (1):
+      sparc: kernel/sbus.c: fix memory leakage
+
+David S. Miller (3):
+      sparc64: Add missing HAVE_ARCH_TRANSPARENT_HUGEPAGE.
+      sparc64: Fix get_user_pages_fast() wrt. THP.
+      sunvdc: Fix off-by-one in generic_request().
+
+ arch/sparc/Kconfig                  |  1 +
+ arch/sparc/include/asm/pgtable_64.h | 14 ++++++--------
+ arch/sparc/kernel/sbus.c            |  6 +++---
+ arch/sparc/mm/gup.c                 | 59 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++--
+ drivers/block/sunvdc.c              |  2 +-
+ 5 files changed, 68 insertions(+), 14 deletions(-)
