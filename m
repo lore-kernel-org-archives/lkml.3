@@ -1,95 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934952Ab3BNWRz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 17:17:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22169 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758933Ab3BNWRw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 17:17:52 -0500
-Message-ID: <1360880270.25865.36.camel@ul30vt.home>
-Subject: Re: [PATCH] pci: Disable slot presence detection around bus reset
-From: Alex Williamson <alex.williamson@redhat.com>
-To: bhelgaas@google.com
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 14 Feb 2013 15:17:50 -0700
-In-Reply-To: <20130214183640.16220.33060.stgit@bling.home>
-References: <20130214183640.16220.33060.stgit@bling.home>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S934996Ab3BNWTU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 17:19:20 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:39034 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758933Ab3BNWTT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 17:19:19 -0500
+Date: Thu, 14 Feb 2013 14:19:26 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Mel Gorman <mgorman@suse.de>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Petr Holasek <pholasek@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 6/11] ksm: remove old stable nodes more thoroughly
+In-Reply-To: <20130214115805.GC7367@suse.de>
+Message-ID: <alpine.LNX.2.00.1302141353020.2195@eggly.anvils>
+References: <alpine.LNX.2.00.1301251747590.29196@eggly.anvils> <alpine.LNX.2.00.1301251800550.29196@eggly.anvils> <20130205175551.GL21389@suse.de> <alpine.LNX.2.00.1302081057110.4233@eggly.anvils> <20130214115805.GC7367@suse.de>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-02-14 at 11:37 -0700, Alex Williamson wrote:
-> A bus reset can trigger a presence detection change and result in a
-> suprise hotplug.  This is generally not what we want to happen when
-> trying to reset a device.  Disable the presence detection control on
-> on bridges around bus reset.
+On Thu, 14 Feb 2013, Mel Gorman wrote:
+> On Fri, Feb 08, 2013 at 11:33:40AM -0800, Hugh Dickins wrote:
+> > 
+> > What I found is that a 4th cause emerges once KSM migration
+> > is properly working: that interval during page migration when the old
+> > page has been fully unmapped but the new not yet mapped in its place.
+> > 
 > 
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> ---
->  drivers/pci/pci.c |   29 ++++++++++++++++++++++++-----
->  1 file changed, 24 insertions(+), 5 deletions(-)
-
-
-Hmm, this doesn't seem to be sufficient, still seeing it
-occasionally :-\
-
-> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-> index 5cb5820..c1f7d77 100644
-> --- a/drivers/pci/pci.c
-> +++ b/drivers/pci/pci.c
-> @@ -3229,8 +3229,8 @@ static int pci_pm_reset(struct pci_dev *dev, int probe)
->  
->  static int pci_parent_bus_reset(struct pci_dev *dev, int probe)
->  {
-> -	u16 ctrl;
-> -	struct pci_dev *pdev;
-> +	u16 ctrl, flags, sltctl = 0;
-> +	struct pci_dev *pdev, *bridge;
->  
->  	if (pci_is_root_bus(dev->bus) || dev->subordinate || !dev->bus->self)
->  		return -ENOTTY;
-> @@ -3242,15 +3242,34 @@ static int pci_parent_bus_reset(struct pci_dev *dev, int probe)
->  	if (probe)
->  		return 0;
->  
-> -	pci_read_config_word(dev->bus->self, PCI_BRIDGE_CONTROL, &ctrl);
-> +	bridge = dev->bus->self;
-> +
-> +	/*
-> +	 * If the parent device supports a slot with presence detection
-> +	 * change enabled, holding the bus in reset can trigger that and
-> +	 * cause an unwanted surprise removal.  Disable presence detection
-> +	 * around the bus reset.
-> +	 */
-> +	pcie_capability_read_word(bridge, PCI_EXP_FLAGS, &flags);
-> +	if (flags & PCI_EXP_FLAGS_SLOT) {
-> +		pcie_capability_read_word(bridge, PCI_EXP_SLTCTL, &sltctl);
-> +		if (sltctl & PCI_EXP_SLTCTL_PDCE)
-> +			pcie_capability_write_word(bridge, PCI_EXP_SLTCTL,
-> +						sltctl & ~PCI_EXP_SLTCTL_PDCE);
-> +	}
-> +
-> +	pci_read_config_word(bridge, PCI_BRIDGE_CONTROL, &ctrl);
->  	ctrl |= PCI_BRIDGE_CTL_BUS_RESET;
-> -	pci_write_config_word(dev->bus->self, PCI_BRIDGE_CONTROL, ctrl);
-> +	pci_write_config_word(bridge, PCI_BRIDGE_CONTROL, ctrl);
->  	msleep(100);
->  
->  	ctrl &= ~PCI_BRIDGE_CTL_BUS_RESET;
-> -	pci_write_config_word(dev->bus->self, PCI_BRIDGE_CONTROL, ctrl);
-> +	pci_write_config_word(bridge, PCI_BRIDGE_CONTROL, ctrl);
->  	msleep(100);
->  
-> +	if (sltctl & PCI_EXP_SLTCTL_PDCE)
-> +		pcie_capability_write_word(bridge, PCI_EXP_SLTCTL, sltctl);
-> +
->  	return 0;
->  }
->  
+> For anyone else watching -- normal page migration expects to be protected
+> during that particular window with migration ptes. Any references to the
+> PTE mapping a page being migrated faults on a swap-like PTE and waits
+> in migration_entry_wait().
 > 
+> > The KSM COW breaking cannot see a page there then, so it ends up with
+> > a (newly migrated) KSM page left behind.  Almost certainly has to be
+> > fixed in follow_page(), but I've not yet settled on its final form -
+> > the fix I have works well, but a different approach might be better.
+> > 
 
+The fix I had (following migration entry to old page) was a bit too
+PageKsm specfic, and probably wrong for when get_user_pages() needs
+to get a hold on the _new_ page.
 
+> 
+> follow_page() is one option. My guess is that you're thinking of adding
+> a FOLL_ flag that will cause follow_page() to check is_migration_entry()
+> and migration_entry_wait() if the flag is present.
 
+Maybe a FOLL_flag, but I was thinking of doing it always.  The usual
+get_user_pages() case will already wait in handle_mm_fault() and works
+okay, and I didn't identify a problem case for follow_page() apart from
+this ksm.c usage; but I did wonder if someone might have or add code
+which gets similarly caught out by the migration case.
+
+It's not a change I'd dare to make (without a FOLL_flag) if Andrea
+hadn't already added a wait_split_huge_page() into follow_page();
+and I need to convince myself that adding another cause for waiting
+is necessarily safe (perhaps adding a might_sleep would be good).
+
+Sorry, I expected to have posted follow-up patches days and days ago,
+but in fact my time has vanished elsewhere and I've not even started.
+
+> 
+> Otherwise you would need to check for migration ptes in a number of places
+> under page lock and then hold the lock for long periods of time to prevent
+> migration starting. I did not check this option in depth because it quickly
+> looked like it would be a mess, with long page lock hold times and might
+> not even be workable.
+
+Yes, I think that's more or less why I quickly decided on doing it in
+follow_page().
+
+Another option would be to move the ksm_migrate_page() callsite, and
+allow it to reject the migration attempt when "inconvenient" (I haven't
+stopped to think of the definition of inconvenient).  Though it wouldn't
+fail often enough for anyone out there to care, that option just feels
+like a shameful cop-out to me: I'm trying to improve migration, not add
+strange cases when it fails.
+
+Hugh
