@@ -1,89 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934996Ab3BNWTU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 17:19:20 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:39034 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758933Ab3BNWTT (ORCPT
+	id S935009Ab3BNWWD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 17:22:03 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39485 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759164Ab3BNWWB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 17:19:19 -0500
-Date: Thu, 14 Feb 2013 14:19:26 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Mel Gorman <mgorman@suse.de>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Petr Holasek <pholasek@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 6/11] ksm: remove old stable nodes more thoroughly
-In-Reply-To: <20130214115805.GC7367@suse.de>
-Message-ID: <alpine.LNX.2.00.1302141353020.2195@eggly.anvils>
-References: <alpine.LNX.2.00.1301251747590.29196@eggly.anvils> <alpine.LNX.2.00.1301251800550.29196@eggly.anvils> <20130205175551.GL21389@suse.de> <alpine.LNX.2.00.1302081057110.4233@eggly.anvils> <20130214115805.GC7367@suse.de>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 14 Feb 2013 17:22:01 -0500
+Date: Thu, 14 Feb 2013 14:21:59 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Julian Anastasov <ja@ssi.bg>
+Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>, davem@davemloft.net,
+        Simon Horman <horms@verge.net.au>, Linux MM <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] net: fix functions and variables related to
+ netns_ipvs->sysctl_sync_qlen_max
+Message-Id: <20130214142159.d0516a5f.akpm@linux-foundation.org>
+In-Reply-To: <alpine.LFD.2.00.1302070944480.1810@ja.ssi.bg>
+References: <51131B88.6040809@cn.fujitsu.com>
+	<51132A56.60906@cn.fujitsu.com>
+	<alpine.LFD.2.00.1302070944480.1810@ja.ssi.bg>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Feb 2013, Mel Gorman wrote:
-> On Fri, Feb 08, 2013 at 11:33:40AM -0800, Hugh Dickins wrote:
+On Thu, 7 Feb 2013 10:40:26 +0200 (EET)
+Julian Anastasov <ja@ssi.bg> wrote:
+
+> > Another question about the sysctl_sync_qlen_max:
+> > This variable is assigned as:
 > > 
-> > What I found is that a 4th cause emerges once KSM migration
-> > is properly working: that interval during page migration when the old
-> > page has been fully unmapped but the new not yet mapped in its place.
+> > ipvs->sysctl_sync_qlen_max = nr_free_buffer_pages() / 32;
 > > 
-> 
-> For anyone else watching -- normal page migration expects to be protected
-> during that particular window with migration ptes. Any references to the
-> PTE mapping a page being migrated faults on a swap-like PTE and waits
-> in migration_entry_wait().
-> 
-> > The KSM COW breaking cannot see a page there then, so it ends up with
-> > a (newly migrated) KSM page left behind.  Almost certainly has to be
-> > fixed in follow_page(), but I've not yet settled on its final form -
-> > the fix I have works well, but a different approach might be better.
+> > The function nr_free_buffer_pages actually means: counts of pages
+> > which are beyond high watermark within ZONE_DMA and ZONE_NORMAL.
 > > 
-
-The fix I had (following migration entry to old page) was a bit too
-PageKsm specfic, and probably wrong for when get_user_pages() needs
-to get a hold on the _new_ page.
-
+> > is it ok to be called here? Some people misused this function because
+> > the function name was misleading them. I am sorry I am totally not
+> > familiar with the ipvs code, so I am just asking you about
+> > this.
 > 
-> follow_page() is one option. My guess is that you're thinking of adding
-> a FOLL_ flag that will cause follow_page() to check is_migration_entry()
-> and migration_entry_wait() if the flag is present.
+> 	Using nr_free_buffer_pages should be fine here.
+> We are using it as rough estimation for the number of sync
+> buffers we can use in NORMAL zones. We are using dev->mtu
+> for such buffers, so it can take a PAGE_SIZE for a buffer.
+> We are not interested in HIGHMEM size. high watermarks
+> should have negliable effect. I'm even not sure whether
+> we need to clamp it for systems with TBs of memory.
 
-Maybe a FOLL_flag, but I was thinking of doing it always.  The usual
-get_user_pages() case will already wait in handle_mm_fault() and works
-okay, and I didn't identify a problem case for follow_page() apart from
-this ksm.c usage; but I did wonder if someone might have or add code
-which gets similarly caught out by the migration case.
+Using nr_free_buffer_pages() is good-enough-for-now.  There are
+questions around the name of this thing and its exact functionality and
+whether callers are using it appropriately.  But if anything is changed
+there, it will be as part of kernel-wide sweep.
 
-It's not a change I'd dare to make (without a FOLL_flag) if Andrea
-hadn't already added a wait_split_huge_page() into follow_page();
-and I need to convince myself that adding another cause for waiting
-is necessarily safe (perhaps adding a might_sleep would be good).
+One thing to bear in mind is memory hot[un]plug.  Anything which was
+sized using nr_free_buffer_pages() (or similar) may become
+inappropriately sized if memory is added or removed.  So any site which
+uses nr_free_buffer_pages() really should be associated with a hotplug
+handler and a great pile of code to resize the structure at runtime. 
+It's pretty ugly stuff :(  I suspect it usually Just Doesn't Matter.
 
-Sorry, I expected to have posted follow-up patches days and days ago,
-but in fact my time has vanished elsewhere and I've not even started.
+Redarding this patch:
+net-change-type-of-netns_ipvs-sysctl_sync_qlen_max.patch and
+net-fix-functions-and-variables-related-to-netns_ipvs-sysctl_sync_qlen_max.patch
+are joined at the hip and should be redone as a single patch with a
+suitable changelog, please.  And with a cc:netdev@vger.kernel.org.
 
-> 
-> Otherwise you would need to check for migration ptes in a number of places
-> under page lock and then hold the lock for long periods of time to prevent
-> migration starting. I did not check this option in depth because it quickly
-> looked like it would be a mess, with long page lock hold times and might
-> not even be workable.
-
-Yes, I think that's more or less why I quickly decided on doing it in
-follow_page().
-
-Another option would be to move the ksm_migrate_page() callsite, and
-allow it to reject the migration attempt when "inconvenient" (I haven't
-stopped to think of the definition of inconvenient).  Though it wouldn't
-fail often enough for anyone out there to care, that option just feels
-like a shameful cop-out to me: I'm trying to improve migration, not add
-strange cases when it fails.
-
-Hugh
