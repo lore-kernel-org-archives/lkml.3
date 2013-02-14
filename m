@@ -1,120 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757208Ab3BNJwZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 04:52:25 -0500
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:63171 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757085Ab3BNJwV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 04:52:21 -0500
-MIME-Version: 1.0
-In-Reply-To: <1360825669.1727.337.camel@jesse>
-References: <1350138661-2454-1-git-send-email-linkinjeon@gmail.com>
-	<1360810114.1727.306.camel@jesse>
-	<CAKYAXd9qmDYivsJduT3bFD2vPOc0DQ0f8RQTxQ7MXXTCQMMQQA@mail.gmail.com>
-	<1360825669.1727.337.camel@jesse>
-Date: Thu, 14 Feb 2013 18:52:20 +0900
-Message-ID: <CAKYAXd9tVzvP_Oa+BoUwKbpaMoVZKZgesDgrLirqoyk6AHrJ2A@mail.gmail.com>
-Subject: Re: Read support for fat_fallocate()? (was [v2] fat: editions to
- support fat_fallocate())
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Andrew Bartlett <abartlet@samba.org>
-Cc: hirofumi@mail.parknet.co.jp, linux-kernel@vger.kernel.org,
-        Ravishankar N <cyberax82@gmail.com>,
-        Amit Sahrawat <amit.sahrawat83@gmail.com>,
-        Nam-Jae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1757241Ab3BNJzv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 04:55:51 -0500
+Received: from gate.crashing.org ([63.228.1.57]:49940 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757109Ab3BNJzt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 04:55:49 -0500
+Message-ID: <1360835542.6646.5.camel@pasglop>
+Subject: Re: [RFC][CFT] what's in signal.git queue
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        David Howells <dhowells@redhat.com>, Tony Luck <tony.luck@intel.com>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Michal Simek <monstr@monstr.eu>, Jonas Bonn <jonas@southpole.se>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Richard Kuo <rkuo@codeaurora.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Lennox Wu <lennox.wu@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Paul Mundt <lethal@linux-sh.org>, Chris Zankel <chris@zankel.net>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Russell King <linux@arm.linux.org.uk>
+Date: Thu, 14 Feb 2013 20:52:22 +1100
+In-Reply-To: <20130214012539.GQ4503@ZenIV.linux.org.uk>
+References: <20130214012539.GQ4503@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[snip]
->> >
->> > Thanks,
->> Hi Andrew.
->>
->> First, Thanks for your interest !
->> A mismatch between inode size and reserved blocks can be either due to
->> pre-allocation (after our changes) or due to corruption (sudden unplug
->> of media etc).
->> We don’t think it is right to include only read only support (i.e.
->> without fallocate support) for such files because if such files are
->> encountered it only means that the file is corrupted, as there is no
->> current method to check if the issue is due to pre-allocation.
->> If it is to be included in the kernel, then the whole patch has to go
->> in.
->
-> I don't see why that is the case.
-If we consider that there is no FALLOCATE support, then the condition
-of file size and blocks not matching can be only possible in case of
-corruption, right?
+On Thu, 2013-02-14 at 01:25 +0000, Al Viro wrote:
+> Mostly it's a unification of signal-related syscalls, both native and compat
+> ones; by the end of it we shouldn't have syscalls left in normal
+> arch/*/kernel/signal*.c - there are some exceptions due to genuine weirdness
+> of arch-specific calling conventions, but that's rare.  Another (somewhat
+> related) story in there is more compat_sys_something() getting switched to
+> COMPAT_SYSCALL_DEFINE, giving us proper argument validation wrappers.  Not
+> everything got switched, of course, but a lot of those guys has been.
 
->
->> But then again, since the FAT specifications do not accommodate
->> for pre-allocation, then it is up to OGAWA to decide if this is
->> acceptable.
->> In any case, the patch will definitely break backward compatibility
->> (on an older fat driver without fallocate support) and also in case
->> for the two variants for the same kernel versions and only one has
->> FALLOCATE enabled, in such cases also, the behavior will assume
->> corruption in one case.
->
-> I agree that the sudden unplug is a concern, but why not make the
-> filesystem more robust against that inevitable occurrence?  If the
-> blocks appear to be allocated to the file, why not use them?
-We also agree that there should be pre-allocation feature on FAT, and
-we had shared the scenarios where this could be required for a TV/
-recorder.
-But there are certain drawbacks which were raised by OGAWA with
-respect to compatibility and we also tend to agree on them.
-There could possibly be an issue where we are unable to distinguish
-between pre-allocation and corruption. Perhaps we could set a status
-bit on the file to indicate whether the file has pre-allocated blocks.
-This will make it clear whether the allocation is genuine through the
-FAT Fallocate request or is a result of corruption. Depending on the
-status of the flag - the decision can be made regard to reading
-blocks.
-But, the main issue in this will be storing this bit in on-disk
-directory entry for that file. From the feature and usability point of
-view, we should have fallocate on FAT too.
+FYI. I'm going to be off to some meeting & bringup work in the US for two weeks
+so expect little responsiveness from me on this until after I'm back (March 1st).
 
-But it needs initial ACK from OGAWA to continue to work on this so
-that we can figure out the proper solution to move forward.
->
-> That is, while it is hard to predict the many different ways a
-> filesystem can be corrupted, what would go wrong if we did use these
-> clusters?  Do you fear that they might also be allocated to someone
-> else?
->
-> That would, if I understand correctly just mean that that more broken,
-> not quite valid USB thumb drives and other FAT filesystems work equally
-> well on Windows and Linux, without administrative privileges.  (Given
-> that running fsck requires root, and isn't trivially available to normal
-> users in Linux, and I presume is similarly privileged in windows).
->
-> What I'm doing is suggesting re-purposing your patch, from preallocation
-> to robustness.  In this light, do you think this worth pushing forward?
-The patch’s main aim was to reserve space. If the work that you
-propose only aims to enable reads in case of corrupt files using size
-mismatch as a criteria, then we think it would not be a good idea.
+Cheers,
+Ben.
 
-Thanks :-)
->
-> We can later address if there is any safe way to preallocate files on
-> FAT as a different question, hoping that this means it will 'just work'
-> on a broader range of other Linux hosts, just as it is claimed to 'just
-> work' on Windows.
->
-> Thanks,
->
-> Andrew Bartlett
->
-> --
-> Andrew Bartlett                                http://samba.org/~abartlet/
-> Authentication Developer, Samba Team           http://samba.org
->
->
->
+
