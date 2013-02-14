@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965174Ab3BNRjg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 12:39:36 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4302 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933798Ab3BNRjf (ORCPT
+	id S934786Ab3BNRll (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 12:41:41 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:51927 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758045Ab3BNRlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 12:39:35 -0500
-X-Authority-Analysis: v=2.0 cv=UN5f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=sdRxHD9KAAAA:8 a=-cgCmhteL8iAP9IdmqoA:9 a=PUjeQqilurYA:10 a=O0cec7rUORkA:10 a=2-my-mrWqlIbjv3T:21 a=O24ADgbSc8ydOXJy:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1360863573.23152.47.camel@gandalf.local.home>
-Subject: [ANNOUNCE] 3.0.63-rt89
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Date: Thu, 14 Feb 2013 12:39:33 -0500
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
+	Thu, 14 Feb 2013 12:41:40 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Fabio Estevam <festevam@gmail.com>
+Subject: Re: [PATCH 06/15] clk: export __clk_get_name
+Date: Thu, 14 Feb 2013 17:41:34 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-5-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org,
+        Sascha Hauer <s.hauer@pengutronix.de>, arm@kernel.org,
+        Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org
+References: <1358788568-11137-1-git-send-email-arnd@arndb.de> <CAOMZO5AON+FhTQpTbEdjwZaEaxsPoEVLeALhH2s34biWH_EeOA@mail.gmail.com> <201301221543.18859.arnd@arndb.de>
+In-Reply-To: <201301221543.18859.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201302141741.34474.arnd@arndb.de>
+X-Provags-ID: V02:K0:Z/y7yvwDcWxU0tUSTvD7g8aMyfeBGSwhPWK4LyCbIfW
+ PPRR5G15NQvcUaCpTwF2bKj/GUpjG25LUXmyEPxWAygMVSxpGK
+ kjvek+ezd7v+7x1Yuwnd3ivb6H+uSdxA0wfkjpucT8ln2k6Tru
+ v51wGmuSIelNTD5DKuYX/8/M971s5inlvAUdl1944CYv0XgLnz
+ 0yfMvsA5EAPx3GZsb9nIqrMmtz+LKOg1rn1Qh0HUaPTT6sXQY2
+ b5maMoUeBLwzXmSUembKphVODDE39KM/Jy066aY5flSnxtgbUw
+ X+wnuP3MkhkN4JUsPsn1o1Ed8Rpg078BRdsUThwCR9Uoia/WT0
+ q0BU800xrO3S4RPl1dXc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday 22 January 2013, Arnd Bergmann wrote:
+> On Tuesday 22 January 2013, Fabio Estevam wrote:
+> > > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> > > Cc: Sascha Hauer <s.hauer@pengutronix.de>
+> > > Cc: Mike Turquette <mturquette@linaro.org>
+> > 
+> > A fix from Niels de Vos has already been applied into clk-next:
+> > https://patchwork.kernel.org/patch/1871981/
+> 
+> Ok, very good. Mike, I saw that the patch is over
+> a month old. Any reason it hasn't made it into v3.8.rc yet?
+> 
 
-Dear RT Folks,
+I guess we missed this one for 3.8 then, meaning we have no
+working allmodconfig :(
 
-I'm pleased to announce the 3.0.63-rt89 stable release.
-
-
-This release is just an update to the new stable 3.0.63 version
-and no RT specific changes have been made.
-
-
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  Head SHA1: 65d2b279b50daefbece2c9b5fdd90eee9f0be503
-
-
-Or to build 3.0.63-rt89 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.63.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.63-rt89.patch.xz
-
-
-
-Enjoy,
-
--- Steve
-
-
-
+	Arnd
