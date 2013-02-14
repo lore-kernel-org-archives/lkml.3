@@ -1,59 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933967Ab3BNR2e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 12:28:34 -0500
-Received: from www.linutronix.de ([62.245.132.108]:38831 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752037Ab3BNR2d (ORCPT
+	id S964841Ab3BNR3b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 12:29:31 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:65466 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752037Ab3BNR3a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 12:28:33 -0500
-Date: Thu, 14 Feb 2013 18:28:26 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Ingo Molnar <mingo@kernel.org>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Alexander Viro <viro@ftp.linux.org.uk>,
-        "Theodore Ts'o" <tytso@mit.edu>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [-rc7 regression] Block IO/VFS/ext3/timer spinlock lockup?
-In-Reply-To: <20130214150810.GA26095@gmail.com>
-Message-ID: <alpine.LFD.2.02.1302141808320.22263@ionos>
-References: <CA+55aFz50VvnMjoDCbg01N+rMu5vscu88kr0SV3tWLjaiL0TeA@mail.gmail.com> <20130213111007.GA11367@gmail.com> <CA+55aFxrjsVkBwUdjmc4MYvEsjEyCJZ7AFpGrWvbbQFB3EVtHA@mail.gmail.com> <alpine.LFD.2.02.1302140012460.22263@ionos> <20130214144510.GC25282@gmail.com>
- <20130214145424.GA26071@gmail.com> <20130214150810.GA26095@gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 14 Feb 2013 12:29:30 -0500
+Date: Thu, 14 Feb 2013 09:29:26 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: devel@linuxdriverproject.org, rcj@linux.vnet.ibm.com,
+        sjenning@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        Konrad Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH] Various cleanups/fixes to zcache (v3).
+Message-ID: <20130214172926.GA17343@kroah.com>
+References: <1360811106-2679-1-git-send-email-konrad.wilk@oracle.com>
+ <56c69426-968a-4d0b-a254-dd03456e30d3@default>
+ <20130214165920.GA26615@kroah.com>
+ <7ad0cf40-61bd-4a1e-a4f0-e27fbc3543fd@default>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <7ad0cf40-61bd-4a1e-a4f0-e27fbc3543fd@default>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Feb 2013, Ingo Molnar wrote:
-> * Ingo Molnar <mingo@kernel.org> wrote:
+On Thu, Feb 14, 2013 at 09:02:47AM -0800, Dan Magenheimer wrote:
+> > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > Subject: Re: [PATCH] Various cleanups/fixes to zcache (v3).
+> > 
+> > On Thu, Feb 14, 2013 at 08:56:01AM -0800, Dan Magenheimer wrote:
+> > > > From: Konrad Rzeszutek Wilk [mailto:konrad.wilk@oracle.com]
+> > > > Subject: [PATCH] Various cleanups/fixes to zcache (v3).
+> > > >
+> > > > From Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> # This line is ignored.
+> > > > From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > > > Subject: [PATCH] Various cleanups/fixes to zcache (v3).
+> > > > In-Reply-To:
+> > > >
+> > > > Hey Greg,
+> > > >
+> > > > These patches do various cleanups of the zcache driver. The majority of the
+> > > > work is just to move all the different counters out to a debug file. The next
+> > > > step would be to figure out which ones are actually pertient and which can
+> > > > go under the knife. Oh, and also fix some of the compiler warnings.
+> > > >
+> > > > This is based on top of ommit 76426daf50d5df38893cc189e9ccd026093debc8
+> > > > ("staging/zcache: Fix/improve zcache writeback code, tie to a config option")
+> > > > so should apply cleanly to your tree.
+> > > >
+> > > > Please apply.
+> > >
+> > > Useful cleanups.
+> > >
+> > > Hopefully not too late for 3.9-rc0.
+> > 
+> > You all did see my "the staging tree is closed except for bugfixes for
+> > 3.9" message last week, right?
 > 
-> > > CPU0 appears to be idle:
-> > > 
-> > > [  118.510000] Call Trace:
-> > > [  118.510000]  [<7900844b>] cpu_idle+0x86/0xb4
-> > > [  118.510000]  [<792a91df>] rest_init+0x103/0x108
-> > > [  118.510000]  [<794558cc>] start_kernel+0x2c7/0x2cc
-
-Weird.
- 
-> > So, I've done a partial bisection, the breakage appears to have 
-> > gone upstream between v3.8-rc3 and v3.8-rc4.
->
-> these three:
+> Oops, sorry, no I missed that.
+>  
+> > Sorry, this will have to wait for 3.10.
 > 
-> 10d73e655cef mm: bootmem: fix free_all_bootmem_core() with odd bitmap alignment
-> c060f943d092 mm: use aligned zone start for pfn_to_bitidx calculation
-> c0232ae861df mm: memblock: fix wrong memmove size in memblock_merge_regions()
-> 
-> might have highmem=512m boot parameter sensitivity.
+> No problem, no bugs fixed here, though I expect we'll see
+> the same complaints posted again about the compiler warnings.
 
-Is highmem=512 the boot parameter which makes it come and go ?
+Then why not just redo that one patch, and send it to me, and then
+rebase all of the other patches on top of it?  That way I can accept the
+"fix the complier warnings" patch now, and the rest can wait.
 
-Thanks,
+thanks,
 
-	tglx
+greg k-h
