@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758853Ab3BNKMc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 05:12:32 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48716 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753361Ab3BNKM3 (ORCPT
+	id S934206Ab3BNKMq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 05:12:46 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:46815 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759205Ab3BNKMk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 05:12:29 -0500
+	Thu, 14 Feb 2013 05:12:40 -0500
 From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Subject: [PATCH 08/13] vmcore: remove unused helper function
+Subject: [PATCH 10/13] vmcore: round-up offset of vmcore object in page-size
+ boundary
 To: ebiederm@xmission.com, vgoyal@redhat.com, cpw@sgi.com,
         kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com
 Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Thu, 14 Feb 2013 19:12:27 +0900
-Message-ID: <20130214101227.22466.12503.stgit@localhost6.localdomain6>
+Date: Thu, 14 Feb 2013 19:12:38 +0900
+Message-ID: <20130214101238.22466.95192.stgit@localhost6.localdomain6>
 In-Reply-To: <20130214100945.22466.4172.stgit@localhost6.localdomain6>
 References: <20130214100945.22466.4172.stgit@localhost6.localdomain6>
 User-Agent: StGIT/0.14.3
@@ -24,44 +25,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove map_offset_to_paddr(), which is no longer used.
+To satisfy mmap()'s page-size bounary requirement, round-up offset of
+each vmcore objects in page-size boundary.
 
 Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
 ---
 
- fs/proc/vmcore.c |   21 ---------------------
- 1 files changed, 0 insertions(+), 21 deletions(-)
+ fs/proc/vmcore.c |    9 ++++-----
+ 1 files changed, 4 insertions(+), 5 deletions(-)
 
 diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
-index 4125a65..3aedb52 100644
+index ccf0dc5..afedb5f 100644
 --- a/fs/proc/vmcore.c
 +++ b/fs/proc/vmcore.c
-@@ -117,27 +117,6 @@ static ssize_t read_from_oldmem(char *buf, size_t count,
- 	return read;
+@@ -517,7 +517,7 @@ static int __init process_ptload_program_headers_elf32(char *elfptr,
  }
  
--/* Maps vmcore file offset to respective physical address in memroy. */
--static u64 map_offset_to_paddr(loff_t offset, struct list_head *vc_list,
--					struct vmcore **m_ptr)
--{
--	struct vmcore *m;
--	u64 paddr;
--
--	list_for_each_entry(m, vc_list, list) {
--		u64 start, end;
--		start = m->offset;
--		end = m->offset + m->size - 1;
--		if (offset >= start && offset <= end) {
--			paddr = m->paddr + offset - start;
--			*m_ptr = m;
--			return paddr;
--		}
--	}
--	*m_ptr = NULL;
--	return 0;
--}
--
- /* Read from the ELF header and then the crash dump. On error, negative value is
-  * returned otherwise number of bytes read are returned.
-  */
+ /* Sets offset fields of vmcore elements. */
+-static void __init set_vmcore_list_offsets_elf64(char *elfptr,
++static void __init set_vmcore_list_offsets_elf64(char *elfptr, size_t elfsz,
+ 						struct list_head *vc_list)
+ {
+ 	loff_t vmcore_off;
+@@ -527,12 +527,11 @@ static void __init set_vmcore_list_offsets_elf64(char *elfptr,
+ 	ehdr_ptr = (Elf64_Ehdr *)elfptr;
+ 
+ 	/* Skip Elf header and program headers. */
+-	vmcore_off = sizeof(Elf64_Ehdr) +
+-			(ehdr_ptr->e_phnum) * sizeof(Elf64_Phdr);
++	vmcore_off = elfsz;
+ 
+ 	list_for_each_entry(m, vc_list, list) {
+ 		m->offset = vmcore_off;
+-		vmcore_off += m->size;
++		vmcore_off += roundup(m->size, PAGE_SIZE);
+ 	}
+ }
+ 
+@@ -613,7 +612,7 @@ static int __init parse_crash_elf64_headers(void)
+ 			   get_order(elfcorebuf_sz_orig));
+ 		return rc;
+ 	}
+-	set_vmcore_list_offsets_elf64(elfcorebuf, &vmcore_list);
++	set_vmcore_list_offsets_elf64(elfcorebuf, elfcorebuf_sz, &vmcore_list);
+ 	return 0;
+ }
+ 
 
