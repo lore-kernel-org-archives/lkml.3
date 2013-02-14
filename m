@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760253Ab3BNOMG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 09:12:06 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:63201 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757708Ab3BNOME (ORCPT
+	id S1755499Ab3BNOOn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 09:14:43 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53991 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753199Ab3BNOOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 09:12:04 -0500
+	Thu, 14 Feb 2013 09:14:41 -0500
+Date: Thu, 14 Feb 2013 14:14:40 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Subject: Re: [PATCH v2] regmap: debugfs: Simplify calculation of `c->max_reg'
+Message-ID: <20130214141439.GL13249@opensource.wolfsonmicro.com>
+References: <1360850644-15581-1-git-send-email-dp@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-Date: Thu, 14 Feb 2013 15:12:02 +0100
-Message-ID: <CAKMK7uEQ7xQpsBay8SKjYM0oA0=uf3AePwZ+vEjukgOiLY9drg@mail.gmail.com>
-Subject: Including drm-intel tree to linux-next
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: rostedt@goodmis.org
-Cc: Dave Airlie <airlied@gmail.com>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DXIF1lRUlMsbZ3S1"
+Content-Disposition: inline
+In-Reply-To: <1360850644-15581-1-git-send-email-dp@opensource.wolfsonmicro.com>
+X-Cookie: Your domestic life may be harmonious.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steven,
 
-Since about a year ago we've switched drm/i915 to buffer around 2
-weeks worth of patches so that we can do decent QA before breaking
-everyone's tree when things land in Dave's drm-next. But that also
-means we'll miss out a bit in the integration testing -next provides,
-which did hurt a bit in recent efforts. Hence can you please include
+--DXIF1lRUlMsbZ3S1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-git://people.freedesktop.org/~danvet/drm-intel drm-intel-next-queued
+On Thu, Feb 14, 2013 at 02:04:04PM +0000, Dimitris Papastamos wrote:
 
-into linux-next? Probably best to merge it after drm-next. Note that
-drm-intel-next are the QA'ed chunks I send off to Dave. Also, any
-mailing lists I'm supposed to follow? And if possible please cc
-intel-gfx@lists.freedesktop.org besides dri-devel/lkml when conflicts
-with that tree pop up (you won't get moderation spam any more, we've
-fixed that up).
+> -	unsigned int i, ret;
+> +	unsigned int i = 0, ret;
 
-Thanks, Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Coding style and are you sure this is a good default.
+
+--DXIF1lRUlMsbZ3S1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRHPE4AAoJELSic+t+oim9D0QP/3oOIDjl6aUuYPn7YiVdqfRJ
+atgs9zOp78q6s4sW3XL6zIs0bH843JCC7ifBHvr/6fpmT4i4WpDBOI92OCRjBasa
+0e9Cm+5lkF0LRFELGHlmeA1CFnRmsmSfnE8vzfPP9/6+eCCsrHoAD2ffRH6T9eBZ
+7GzX43x8JRUyEY7Rqg9DXiH66ul9D5uj7dJZL7Blc7Rem753sphCtRDFlh0ybqWu
+vMt7Nw43/v/QusujJc4qWNuAGwPjlzphGjfJzGr6UlIl9e8v1GWJnN79/AVMtpUq
+XxhqApctctgk6eJrzKNnc4dQf7eeESEWSF6qtk+mZLpkJRniaPE3S6jgnDuoz7uw
+d9E6zm9afnt2W9l7an/OVdCHROlOqApI8DuFBnekvNYne3Wk60tzaQLYWNsKNdAN
+pleL030/4IxU5tspB1WNsKYiK2JEc/5WRccbvQY0SgysXyoH3Aojdd/L3bn+2bUL
+hra2Ofp9M8PoVMu/Axj7jwS2AIWJjPbzJhQ8VWsX64s6sHv/UkN/kcsL8e47pRqr
+fo8OmtHWN+j2J1Nn+Cfzu7FnMIkQ/pUcCtZLRbhahw+kqeZDQ46ASgtKM6Cy9uN7
+UUeKannSE6C9uqFJ4yvTL52c/pb1AE5iAl9P3u4/1z13pXf7o7k3E6HqJDdUa5Bn
+KsrtmUwmoBjeqzP96TtG
+=oDgk
+-----END PGP SIGNATURE-----
+
+--DXIF1lRUlMsbZ3S1--
