@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964876Ab3BNMQv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 07:16:51 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:12451 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755139Ab3BNMQu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 07:16:50 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 14 Feb 2013 04:12:53 -0800
-Message-ID: <511CD59A.7080504@nvidia.com>
-Date: Thu, 14 Feb 2013 17:46:26 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	id S964886Ab3BNMWl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 07:22:41 -0500
+Received: from [212.90.139.82] ([212.90.139.82]:29224 "EHLO smtp2.goneo.de"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S934463Ab3BNMWj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 07:22:39 -0500
+X-Spam-Flag: NO
+X-Spam-Score: -2.883
+From: Lars Poeschel <poeschel@lemonage.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH v2] gpio: mcp23s08: convert driver to DT
+Date: Thu, 14 Feb 2013 13:22:22 +0100
+User-Agent: KMail/1.13.7 (Linux/3.2.0-4-amd64; KDE/4.8.4; x86_64; ; )
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Lars Poeschel <larsi@wh2.tu-dresden.de>, rob.herring@calxeda.com,
+        rob@landley.net, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        spi-devel-general@lists.sourceforge.net
+References: <1360583563-10707-1-git-send-email-larsi@wh2.tu-dresden.de> <201302131213.08631.poeschel@lemonage.de> <CACRpkdbJ=KiwVoeK2TgO8kMuYQ2U-LaUOdL1d7w-q+9Ggb-JnA@mail.gmail.com>
+In-Reply-To: <CACRpkdbJ=KiwVoeK2TgO8kMuYQ2U-LaUOdL1d7w-q+9Ggb-JnA@mail.gmail.com>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] regmap: irq: do not write mask register if it is
- not supported
-References: <1360761290-15976-1-git-send-email-ldewangan@nvidia.com> <1360761290-15976-2-git-send-email-ldewangan@nvidia.com> <20130213142036.GJ5062@opensource.wolfsonmicro.com> <511CC520.8050104@nvidia.com> <20130214113531.GC13249@opensource.wolfsonmicro.com> <511CD0A1.70606@nvidia.com> <20130214115746.GF13249@opensource.wolfsonmicro.com>
-In-Reply-To: <20130214115746.GF13249@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Message-Id: <201302141322.22263.poeschel@lemonage.de>
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 14 February 2013 05:27 PM, Mark Brown wrote:
-> * PGP Signed by an unknown key
->
-> On Thu, Feb 14, 2013 at 05:25:13PM +0530, Laxman Dewangan wrote:
->> On Thursday 14 February 2013 05:05 PM, Mark Brown wrote:
->>> This doesn't sound like something that should be open coded in
->>> individual interrupt controller drivers, obviously it's a bit rubbish
->>> that there's no way to enable or disable the interrupt but presumably
->>> other hardware has the same "feature" and the IRQ subsystem ought to
->>> understand it.
->> To support such case, can we assume that mask is always enabled
->> (interrupt enabled) so that it can be use in irq_thread to mask the
->> interrupt status. So during initialization, if there is no mask_base
->> register then all mask_buf is such that it enabled interrupt.
-> ...and have any attempt to mask the interrupt return an error?
->
+On Wednesday 13 February 2013 at 13:51:12, Linus Walleij wrote:
+> On Wed, Feb 13, 2013 at 12:13 PM, Lars Poeschel <poeschel@lemonage.de> 
+wrote:
+> > On Monday 11 February 2013 at 22:25:51, Grant Likely wrote:
+> >> However, is the pullup selection per-gpio line? If so, then why not
+> >> encode it into the flags field of the gpio specifier?
+> > 
+> > Yes, the pullup is per-gpio line. I am working on that. It turns out,
+> > that this is a bit difficult for me, as there is no real documentation
+> > and no other driver is doing it or something similar yet. Exception are
+> > very few gpio soc drivers where situation is a bit different. They seem
+> > to rely an fixed global gpio numbers and they are always memory mapped.
+> > But as I said I am working on it...
+> 
+> Part of your problem is that pull-up is pin control territory.
+> 
+> We invented that subsystem for a reason, and that reason
+> was that the GPIO subsystem had a hard time accomodating
+> things like this.
+> 
+> If you look in drivers/pinctrl/pinctrl-abx500.c which is my
+> latest submitted pinctrl driver you can see that this is basically
+> a quite simple GPIO chip, we just model it as a pin controller
+> with a GPIO front-end too exactly because it can do things
+> like multiplexing, pull-up and pull-down.
+> 
+> Have you considered this approach?
 
-Yes, we can return error as -EINVAL.
+No, I haven't. And although this doesn't solve all my problems, I like the 
+idea very much! Thank you for this! But at the moment it looks to me that 
+this could be a bit overkill for setting this single register and I don't 
+think this is, what Grant meant me to do. 
+Anyway, I will have a deeper look at this.
 
-I just looked kernel/irq/chip.c, enable_irq()/disable_irq()  do not 
-check for return value but it does not matter as per regmap-irq 
-implementation.
-
-void irq_enable(struct irq_desc *desc)
-{
-         irq_state_clr_disabled(desc);
-         if (desc->irq_data.chip->irq_enable)
-desc->irq_data.chip->irq_enable(&desc->irq_data);
-         else
-desc->irq_data.chip->irq_unmask(&desc->irq_data);
-         irq_state_clr_masked(desc);
-}
-
+Thanks,
+Lars
