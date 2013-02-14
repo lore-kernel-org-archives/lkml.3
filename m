@@ -1,159 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934819Ab3BNRDr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 12:03:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18401 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758068Ab3BNRDp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 12:03:45 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>, x86@kernel.org,
-        Matt Fleming <matt.fleming@intel.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>, linux-efi@vger.kernel.org
-Subject: [RFE PATCH 2/2] rtc, add write functionality to sysfs
-Date: Thu, 14 Feb 2013 12:02:55 -0500
-Message-Id: <1360861375-24131-3-git-send-email-prarit@redhat.com>
-In-Reply-To: <1360861375-24131-1-git-send-email-prarit@redhat.com>
-References: <1360861375-24131-1-git-send-email-prarit@redhat.com>
+	id S1761121Ab3BNRHp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 12:07:45 -0500
+Received: from mail-la0-f51.google.com ([209.85.215.51]:55316 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755903Ab3BNRHo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 12:07:44 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130214120349.GD7367@suse.de>
+References: <20130214120349.GD7367@suse.de>
+Date: Thu, 14 Feb 2013 18:07:42 +0100
+Message-ID: <CAJCc=ki3gbz=TgzbgFJeJBSXyjKtaifkVL11tYz2xrY9tANLSA@mail.gmail.com>
+Subject: Re: [PATCH] mm: fadvise: Drain all pagevecs if POSIX_FADV_DONTNEED
+ fails to discard all pages
+From: Rob van der Heij <rvdheij@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-/sys/class/rtc/rtcX/date and /sys/class/rtc/rtcX/time currently have
-read-only access.  This patch introduces write functionality which will
-set the rtc time.
+On 14 February 2013 13:03, Mel Gorman <mgorman@suse.de> wrote:
+> Rob van der Heij reported the following (paraphrased) on private mail.
+>
+>         The scenario is that I want to avoid backups to fill up the page
+>         cache and purge stuff that is more likely to be used again (this is
+>         with s390x Linux on z/VM, so I don't give it as much memory that
+>         we don't care anymore). So I have something with LD_PRELOAD that
+>         intercepts the close() call (from tar, in this case) and issues
+>         a posix_fadvise() just before closing the file.
+>
+>         This mostly works, except for small files (less than 14 pages)
+>         that remains in page cache after the face.
+>
+> Unfortunately Rob has not had a chance to test this exact patch but the
+> test program below should be reproducing the problem he described.
 
-Usage: echo YYYY-MM-DD > /sys/class/rtc/rtcX/date
-       echo HH:MM:SS > /sys/class/rtc/rtcX/time
+I'm happy with the patch and couldn't find another scenario that
+breaks. This is going to help us reduce the footprint in virtualized
+environments, as long as the programs are well behaved. Thanks.
 
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: x86@kernel.org
-Cc: Matt Fleming <matt.fleming@intel.com>
-Cc: David Vrabel <david.vrabel@citrix.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: linux-efi@vger.kernel.org
----
- drivers/rtc/rtc-sysfs.c | 86 +++++++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 84 insertions(+), 2 deletions(-)
+Reported-and-tested-by: Rob van der Heij <rvdheij@gmail.com>
 
-diff --git a/drivers/rtc/rtc-sysfs.c b/drivers/rtc/rtc-sysfs.c
-index b70e2bb..87d63d7 100644
---- a/drivers/rtc/rtc-sysfs.c
-+++ b/drivers/rtc/rtc-sysfs.c
-@@ -48,6 +48,46 @@ rtc_sysfs_show_date(struct device *dev, struct device_attribute *attr,
- }
- 
- static ssize_t
-+rtc_sysfs_store_date(struct device *dev, struct device_attribute *attr,
-+		     const char *buf, size_t count)
-+{
-+	ssize_t retval;
-+	struct rtc_time tm;
-+	char tmp[11] = "\0", *tmpptr = tmp;
-+	char *cyear, *cmonth, *cday;
-+	int year, month, day;
-+
-+	if (!capable(CAP_SYS_TIME))
-+		return -EPERM;
-+
-+	/* from rtc_sysfs_show_date(): date string format is YYYY-MM-DD */
-+	if (strlen(buf) != 11)
-+		return -EINVAL;
-+
-+	strncpy(tmp, buf, 11);
-+	cyear = strsep(&tmpptr, "-");
-+	sscanf(cyear, "%i", &year);
-+	cmonth = strsep(&tmpptr, "-");
-+	sscanf(cmonth, "%i", &month);
-+	cday = strsep(&tmpptr, "-");
-+	sscanf(cday, "%i", &day);
-+
-+	retval = rtc_read_time(to_rtc_device(dev), &tm);
-+	if (retval)
-+		return -ENODEV;
-+
-+	tm.tm_year = year - 1900;
-+	tm.tm_mon = month - 1;
-+	tm.tm_mday = day;
-+
-+	retval = rtc_set_time(to_rtc_device(dev), &tm);
-+	if (retval)
-+		return retval;
-+
-+	return count;
-+}
-+
-+static ssize_t
- rtc_sysfs_show_time(struct device *dev, struct device_attribute *attr,
- 		char *buf)
- {
-@@ -64,6 +104,46 @@ rtc_sysfs_show_time(struct device *dev, struct device_attribute *attr,
- }
- 
- static ssize_t
-+rtc_sysfs_store_time(struct device *dev, struct device_attribute *attr,
-+		     const char *buf, size_t count)
-+{
-+	ssize_t retval;
-+	struct rtc_time tm;
-+	char tmp[9] = "\0", *tmpptr = tmp;
-+	char *chour, *cmin, *csec;
-+	int hour, min, sec;
-+
-+	if (!capable(CAP_SYS_TIME))
-+		return -EPERM;
-+
-+	/* from rtc_sysfs_show_time(): time string format is HH:MM:SS */
-+	if (strlen(buf) != 9)
-+		return -EINVAL;
-+
-+	strncpy(tmp, buf, 9);
-+	chour = strsep(&tmpptr, ":");
-+	sscanf(chour, "%i", &hour);
-+	cmin = strsep(&tmpptr, ":");
-+	sscanf(cmin, "%i", &min);
-+	csec = strsep(&tmpptr, ":");
-+	sscanf(csec, "%i", &sec);
-+
-+	retval = rtc_read_time(to_rtc_device(dev), &tm);
-+	if (retval)
-+		return -ENODEV;
-+
-+	tm.tm_hour = hour;
-+	tm.tm_min = min;
-+	tm.tm_sec = sec;
-+
-+	retval = rtc_set_time(to_rtc_device(dev), &tm);
-+	if (retval)
-+		return retval;
-+
-+	return count;
-+}
-+
-+static ssize_t
- rtc_sysfs_show_since_epoch(struct device *dev, struct device_attribute *attr,
- 		char *buf)
- {
-@@ -124,8 +204,10 @@ rtc_sysfs_show_hctosys(struct device *dev, struct device_attribute *attr,
- 
- static struct device_attribute rtc_attrs[] = {
- 	__ATTR(name, S_IRUGO, rtc_sysfs_show_name, NULL),
--	__ATTR(date, S_IRUGO, rtc_sysfs_show_date, NULL),
--	__ATTR(time, S_IRUGO, rtc_sysfs_show_time, NULL),
-+	__ATTR(date, S_IRUGO | S_IWUGO, rtc_sysfs_show_date,
-+	       rtc_sysfs_store_date),
-+	__ATTR(time, S_IRUGO | S_IWUGO, rtc_sysfs_show_time,
-+	       rtc_sysfs_store_time),
- 	__ATTR(since_epoch, S_IRUGO, rtc_sysfs_show_since_epoch, NULL),
- 	__ATTR(max_user_freq, S_IRUGO | S_IWUSR, rtc_sysfs_show_max_user_freq,
- 			rtc_sysfs_set_max_user_freq),
--- 
-1.8.1.2
-
+> The issue is the per-cpu pagevecs for LRU additions. If the pages are added
+> by one CPU but fadvise() is called on another then the pages remain resident
+> as the invalidate_mapping_pages() only drains the local pagevecs via its
+> call to pagevec_release(). The user-visible effect is that a program that
+> uses fadvise() properly is not obeyed.
+>
+> A possible fix for this is to put the necessary smarts into
+> invalidate_mapping_pages() to globally drain the LRU pagevecs if a pagevec
+> page could not be discarded. The downside with this is that an inode cache
+> shrink would send a global IPI and memory pressure potentially causing
+> global IPI storms is very undesirable.
+>
+> Instead, this patch adds a check during fadvise(POSIX_FADV_DONTNEED) to
+> check if invalidate_mapping_pages() discarded all the requested pages. If a
+> subset of pages are discarded it drains the LRU pagevecs and tries again. If
+> the second attempt fails, it assumes it is due to the pages being mapped,
+> locked or dirty and does not care. With this patch, an application using
+> fadvise() correctly will be obeyed but there is a downside that a malicious
+> application can force the kernel to send global IPIs and increase overhead.
+>
+> If accepted, I would like this to be considered as a -stable candidate.
+> It's not an urgent issue but it's a system call that is not working as
+> advertised which is weak.
+>
+> The following test program demonstrates the problem. It should never
+> report that pages are still resident but will without this patch. It
+> assumes that CPU 0 and 1 exist.
+>
+> int main() {
+>         int fd;
+>         int pagesize = getpagesize();
+>         ssize_t written = 0, expected;
+>         char *buf;
+>         unsigned char *vec;
+>         int resident, i;
+>         cpu_set_t set;
+>
+>         /* Prepare a buffer for writing */
+>         expected = FILESIZE_PAGES * pagesize;
+>         buf = malloc(expected + 1);
+>         if (buf == NULL) {
+>                 printf("ENOMEM\n");
+>                 exit(EXIT_FAILURE);
+>         }
+>         buf[expected] = 0;
+>         memset(buf, 'a', expected);
+>
+>         /* Prepare the mincore vec */
+>         vec = malloc(FILESIZE_PAGES);
+>         if (vec == NULL) {
+>                 printf("ENOMEM\n");
+>                 exit(EXIT_FAILURE);
+>         }
+>
+>         /* Bind ourselves to CPU 0 */
+>         CPU_ZERO(&set);
+>         CPU_SET(0, &set);
+>         if (sched_setaffinity(getpid(), sizeof(set), &set) == -1) {
+>                 perror("sched_setaffinity");
+>                 exit(EXIT_FAILURE);
+>         }
+>
+>         /* open file, unlink and write buffer */
+>         fd = open("fadvise-test-file", O_CREAT|O_EXCL|O_RDWR);
+>         if (fd == -1) {
+>                 perror("open");
+>                 exit(EXIT_FAILURE);
+>         }
+>         unlink("fadvise-test-file");
+>         while (written < expected) {
+>                 ssize_t this_write;
+>                 this_write = write(fd, buf + written, expected - written);
+>
+>                 if (this_write == -1) {
+>                         perror("write");
+>                         exit(EXIT_FAILURE);
+>                 }
+>
+>                 written += this_write;
+>         }
+>         free(buf);
+>
+>         /*
+>          * Force ourselves to another CPU. If fadvise only flushes the local
+>          * CPUs pagevecs then the fadvise will fail to discard all file pages
+>          */
+>         CPU_ZERO(&set);
+>         CPU_SET(1, &set);
+>         if (sched_setaffinity(getpid(), sizeof(set), &set) == -1) {
+>                 perror("sched_setaffinity");
+>                 exit(EXIT_FAILURE);
+>         }
+>
+>         /* sync and fadvise to discard the page cache */
+>         fsync(fd);
+>         if (posix_fadvise(fd, 0, expected, POSIX_FADV_DONTNEED) == -1) {
+>                 perror("posix_fadvise");
+>                 exit(EXIT_FAILURE);
+>         }
+>
+>         /* map the file and use mincore to see which parts of it are resident */
+>         buf = mmap(NULL, expected, PROT_READ, MAP_SHARED, fd, 0);
+>         if (buf == NULL) {
+>                 perror("mmap");
+>                 exit(EXIT_FAILURE);
+>         }
+>         if (mincore(buf, expected, vec) == -1) {
+>                 perror("mincore");
+>                 exit(EXIT_FAILURE);
+>         }
+>
+>         /* Check residency */
+>         for (i = 0, resident = 0; i < FILESIZE_PAGES; i++) {
+>                 if (vec[i])
+>                         resident++;
+>         }
+>         if (resident != 0) {
+>                 printf("Nr unexpected pages resident: %d\n", resident);
+>                 exit(EXIT_FAILURE);
+>         }
+>
+>         munmap(buf, expected);
+>         close(fd);
+>         free(vec);
+>         exit(EXIT_SUCCESS);
+> }
+>
+> Cc: stable@vger.kernel.org
+> Reported-by: Rob van der Heij <rvdheij@gmail.com>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> ---
+>  mm/fadvise.c |   18 ++++++++++++++++--
+>  1 file changed, 16 insertions(+), 2 deletions(-)
+>
+> diff --git a/mm/fadvise.c b/mm/fadvise.c
+> index a47f0f5..909ec55 100644
+> --- a/mm/fadvise.c
+> +++ b/mm/fadvise.c
+> @@ -17,6 +17,7 @@
+>  #include <linux/fadvise.h>
+>  #include <linux/writeback.h>
+>  #include <linux/syscalls.h>
+> +#include <linux/swap.h>
+>
+>  #include <asm/unistd.h>
+>
+> @@ -120,9 +121,22 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
+>                 start_index = (offset+(PAGE_CACHE_SIZE-1)) >> PAGE_CACHE_SHIFT;
+>                 end_index = (endbyte >> PAGE_CACHE_SHIFT);
+>
+> -               if (end_index >= start_index)
+> -                       invalidate_mapping_pages(mapping, start_index,
+> +               if (end_index >= start_index) {
+> +                       unsigned long count = invalidate_mapping_pages(mapping,
+> +                                               start_index, end_index);
+> +
+> +                       /*
+> +                        * If fewer pages were invalidated than expected then
+> +                        * it is possible that some of the pages were on
+> +                        * a per-cpu pagevec for a remote CPU. Drain all
+> +                        * pagevecs and try again.
+> +                        */
+> +                       if (count < (end_index - start_index + 1)) {
+> +                               lru_add_drain_all();
+> +                               invalidate_mapping_pages(mapping, start_index,
+>                                                 end_index);
+> +                       }
+> +               }
+>                 break;
+>         default:
+>                 ret = -EINVAL;
+>
