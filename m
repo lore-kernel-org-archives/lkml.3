@@ -1,43 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759819Ab3BNMJG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 07:09:06 -0500
-Received: from mga11.intel.com ([192.55.52.93]:42787 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759608Ab3BNMJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 07:09:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,665,1355126400"; 
-   d="scan'208";a="287176516"
-Message-ID: <511CD3D6.7080102@intel.com>
-Date: Thu, 14 Feb 2013 20:08:54 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S934478Ab3BNMJT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 07:09:19 -0500
+Received: from smtpfb2-g21.free.fr ([212.27.42.10]:59777 "EHLO
+	smtpfb2-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934057Ab3BNMJQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 07:09:16 -0500
+Message-ID: <511CD3C4.4030805@free.fr>
+Date: Thu, 14 Feb 2013 13:08:36 +0100
+From: Daniel Lezcano <daniel.lezcano@free.fr>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Michel Lespinasse <walken@google.com>
-CC: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        anton@samba.org, hpa@zytor.com, arjan@linux.intel.com,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
-        yuanhan.liu@linux.intel.com, dhowells@redhat.com,
-        akpm@linux-foundation.org, tglx@linutronix.de
-Subject: Re: [PATCH 0/4] rwsem: Implement writer lock-stealing
-References: <1360377937-16297-1-git-send-email-walken@google.com> <511B9B4F.3060404@intel.com> <20130213144932.GA14260@gmail.com> <CANN689FJcUZq1wcVZXO+jLOHOeCPnOf5kfYgYVykG6-YLSjj7g@mail.gmail.com>
-In-Reply-To: <CANN689FJcUZq1wcVZXO+jLOHOeCPnOf5kfYgYVykG6-YLSjj7g@mail.gmail.com>
+To: Glauber Costa <glommer@parallels.com>
+CC: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] kernel: allow reboots from user_ns
+References: <1360843000-31228-1-git-send-email-glommer@parallels.com>
+In-Reply-To: <1360843000-31228-1-git-send-email-glommer@parallels.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14/2013 09:31 AM, Michel Lespinasse wrote:
-> Alex, could you go through my patch and see if there is anything you
-> find objectionable ? (if not about the details, at least about the
-> general approach of enabling writer lock stealing on the fast path)
+On 02/14/2013 12:56 PM, Glauber Costa wrote:
+> Reboot support for pid namespaces is already implemented and it works
+> well. However, in most containers the tasks will join all namespaces,
+> including the now supported user namespace. In that situation, we will
+> fail the "capable" test and won't be able to reboot.
+>
+> The proposed solution is to allow reboots for CAP_SYS_BOOT processes
+> in the user namespace that owns the pid namespace.
+>
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> Cc: Eric W. Biederman <ebiederm@xmission.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> ---
+Acked-by: Daniel Lezcano <daniel.lezcano@free.fr>
 
-I am still in my lunar new year vacation. I may do a aim7 test for you
-after back to office.
-But as to fast path stealing, I didn't see extra benefit on fast path.
+>  kernel/sys.c | 5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+>
+> diff --git a/kernel/sys.c b/kernel/sys.c
+> index 265b376..3b0958e 100644
+> --- a/kernel/sys.c
+> +++ b/kernel/sys.c
+> @@ -435,9 +435,10 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+>  {
+>  	char buffer[256];
+>  	int ret = 0;
+> +	struct pid_namespace *curr_pidns = task_active_pid_ns(current);
+>  
+>  	/* We only trust the superuser with rebooting the system. */
+> -	if (!capable(CAP_SYS_BOOT))
+> +	if (!ns_capable(curr_pidns->user_ns, CAP_SYS_BOOT))
+>  		return -EPERM;
+>  
+>  	/* For safety, we require "magic" arguments. */
+> @@ -453,7 +454,7 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+>  	 * pid_namespace, the command is handled by reboot_pid_ns() which will
+>  	 * call do_exit().
+>  	 */
+> -	ret = reboot_pid_ns(task_active_pid_ns(current), cmd);
+> +	ret = reboot_pid_ns(curr_pidns, cmd);
+>  	if (ret)
+>  		return ret;
+>  
 
--- 
-Thanks
-    Alex
