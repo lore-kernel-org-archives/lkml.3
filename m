@@ -1,78 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759507Ab3BNLTD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 06:19:03 -0500
-Received: from mail-ia0-f172.google.com ([209.85.210.172]:42261 "EHLO
-	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757411Ab3BNLTA (ORCPT
+	id S1759547Ab3BNL2K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 06:28:10 -0500
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:58851 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759063Ab3BNL2J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 06:19:00 -0500
+	Thu, 14 Feb 2013 06:28:09 -0500
+Date: Thu, 14 Feb 2013 12:28:18 +0100
+From: Cong Ding <dinggnu@gmail.com>
+To: Haojian Zhuang <haojian.zhuang@gmail.com>
+Cc: Kyungmin Park <kmpark@infradead.org>, Wolfram Sang <w.sang@pengutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Karol Lewandowski <k.lewandowsk@samsung.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>, linux-i2c@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3] i2c: busses/i2c-pxa.c: fix potential null pointer
+ dereference error
+Message-ID: <20130214112818.GA18774@gmail.com>
+References: <1360015899-13706-1-git-send-email-dinggnu@gmail.com>
+ <CAH9JG2XSpFJeUvv7cw-JWadmi=X0-4EsN5FFKuDkwo=-mmzHSQ@mail.gmail.com>
+ <20130205000517.GB9969@gmail.com>
+ <CAN1soZwM6qNTJn3vvMdc6TR1eJHc=K+_c0WuWOBBuFYMWB_oCA@mail.gmail.com>
+ <20130205102540.GC9969@gmail.com>
+ <CAN1soZyDLtdjyOFWyVVXN-_ABrChcCR=QbifAo7cz9pYV-nHww@mail.gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <201302141022.00297.arnd@arndb.de>
-References: <20130207151831.2868.5146.stgit@patser.local>
-	<20130207151838.2868.69610.stgit@patser.local>
-	<201302141022.00297.arnd@arndb.de>
-Date: Thu, 14 Feb 2013 12:18:59 +0100
-X-Google-Sender-Auth: gnCBDntE0GKyVyFm_q3PExaxQRE
-Message-ID: <CAKMK7uG_gJ6+9vZ+MDStUgE-M-bDHM+Sk3cTDdVBxGCjhY6TLg@mail.gmail.com>
-Subject: Re: [Linaro-mm-sig] [PATCH 2/3] mutex: add support for reservation
- style locks
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linaro-mm-sig@lists.linaro.org, linux-arch@vger.kernel.org,
-        a.p.zijlstra@chello.nl, x86@kernel.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, robclark@gmail.com,
-        tglx@linutronix.de, mingo@elte.hu, linux-media@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAN1soZyDLtdjyOFWyVVXN-_ABrChcCR=QbifAo7cz9pYV-nHww@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 14, 2013 at 11:22 AM, Arnd Bergmann <arnd@arndb.de> wrote:
->
->>   These functions will return -EDEADLK instead of -EAGAIN if
->>   reservation_id is the same as the reservation_id that's attempted to
->>   lock the mutex with, since in that case you presumably attempted to
->>   lock the same lock twice.
->
-> Since the user always has to check the return value, would it be
-> possible to provide only the interruptible kind of this function
-> but not the non-interruptible one? In general, interruptible locks
-> are obviously harder to use, but they are much user friendlier when
-> something goes wrong.
+If it goes to eclk through line 1107, the variable res would be NULL. It will
+cause a null pointer dereference error if we call release_mem_region. The
+correct way should be using devm_kzalloc rather than kzalloc to allocate
+memory.
 
-At least in drm/i915 we only use _interruptible locking on the
-command-submission ioctls for all locks which could be held while
-waiting for the gpu. We need unwind paths and ioctl restarting anyway
-to bail out on catastrophic events like gpu hangs, so signal interrupt
-handling comes for free.
+Signed-off-by: Cong Ding <dinggnu@gmail.com>
+---
+ drivers/i2c/busses/i2c-pxa.c |   22 ++++++++--------------
+ 1 file changed, 8 insertions(+), 14 deletions(-)
 
-Otoh in the modeset code we generally don't bother with that, since
-unwinding a modeset sequence mid-way is something you don't want to do
-really if your sanity is dear to you. But we also never need
-mutli-object reservations in the modeset code, neither can I imagine a
-future need for it.
-
-So from my side we could drop the non-interruptible interface. But I
-have not checked whether dropping this would complicate the ttm
-conversion.
-
->> mutex_reserve_lock_slow and mutex_reserve_lock_intr_slow:
->>   Similar to mutex_reserve_lock, except it won't backoff with -EAGAIN.
->>   This is useful when mutex_reserve_lock failed with -EAGAIN, and you
->>   unreserved all buffers so no deadlock can occur.
->
-> Are these meant to be used a lot? If not, maybe prefix them with __mutex_
-> instead of mutex_.
-
-If you detect an inversion in a multi-buffer reservation you have to
-drop all locks and call these functions on the buffer which failed
-(that's the contention point, hence it's the right lock to sleep on).
-So every place using ticket locks will also call the above slowpath
-functions by necessity.
--Daniel
+diff --git a/drivers/i2c/busses/i2c-pxa.c b/drivers/i2c/busses/i2c-pxa.c
+index 1034d93..dd2d640 100644
+--- a/drivers/i2c/busses/i2c-pxa.c
++++ b/drivers/i2c/busses/i2c-pxa.c
+@@ -1094,29 +1094,23 @@ static int i2c_pxa_probe(struct platform_device *dev)
+ 	struct resource *res = NULL;
+ 	int ret, irq;
+ 
+-	i2c = kzalloc(sizeof(struct pxa_i2c), GFP_KERNEL);
+-	if (!i2c) {
+-		ret = -ENOMEM;
+-		goto emalloc;
+-	}
++	i2c = devm_kzalloc(sizeof(struct pxa_i2c), GFP_KERNEL);
++	if (!i2c)
++		return -ENOMEM;
+ 
+ 	ret = i2c_pxa_probe_dt(dev, i2c, &i2c_type);
+ 	if (ret > 0)
+ 		ret = i2c_pxa_probe_pdata(dev, i2c, &i2c_type);
+ 	if (ret < 0)
+-		goto eclk;
++		return ret;
+ 
+ 	res = platform_get_resource(dev, IORESOURCE_MEM, 0);
+ 	irq = platform_get_irq(dev, 0);
+-	if (res == NULL || irq < 0) {
+-		ret = -ENODEV;
+-		goto eclk;
+-	}
++	if (res == NULL || irq < 0)
++		return -ENODEV;
+ 
+-	if (!request_mem_region(res->start, resource_size(res), res->name)) {
+-		ret = -ENOMEM;
+-		goto eclk;
+-	}
++	if (!request_mem_region(res->start, resource_size(res), res->name))
++		return -ENOMEM;
+ 
+ 	i2c->adap.owner   = THIS_MODULE;
+ 	i2c->adap.retries = 5;
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+1.7.9.5
+
