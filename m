@@ -1,48 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934830Ab3BNSsP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 13:48:15 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27764 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758544Ab3BNSsO (ORCPT
+	id S1761575Ab3BNSyV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 13:54:21 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:42923 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758544Ab3BNSyU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 13:48:14 -0500
-X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=1ADFm0T--rEA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=mYRWiXiH8qgA:10 a=qt-cEr8D9w_SCmFrzwcA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1360867691.23152.48.camel@gandalf.local.home>
-Subject: Re: [RFC][PATCH] printk: Remove separate printk_sched buffers and
- use printk buf instead
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jan Kara <jack@suse.cz>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, jslaby@suse.cz,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "kay.sievers" <kay.sievers@vrfy.org>
-Date: Thu, 14 Feb 2013 13:48:11 -0500
-In-Reply-To: <20130212122245.GB19583@quack.suse.cz>
-References: <1360112748.2621.25.camel@gandalf.local.home>
-	 <20130206230220.GA18329@quack.suse.cz>
-	 <20130212122245.GB19583@quack.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
+	Thu, 14 Feb 2013 13:54:20 -0500
+Message-ID: <511D330A.2050407@infradead.org>
+Date: Thu, 14 Feb 2013 10:55:06 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Amit Shah <amit.shah@redhat.com>,
+        virtualization@lists.linux-foundation.org
+Subject: Re: linux-next: Tree for Feb 13 (virtio_console)
+References: <20130213193532.162080d7c0557a307ab451ac@canb.auug.org.au> <511BEC55.5090801@infradead.org> <87sj4zk3ai.fsf@rustcorp.com.au> <511D30B4.5020201@infradead.org>
+In-Reply-To: <511D30B4.5020201@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-02-12 at 13:22 +0100, Jan Kara wrote:
+On 02/14/13 10:45, Randy Dunlap wrote:
+> On 02/13/13 19:00, Rusty Russell wrote:
+>> Randy Dunlap <rdunlap@infradead.org> writes:
+>>
+>>> On 02/13/13 00:35, Stephen Rothwell wrote:
+>>>> Hi all,
+>>>>
+>>>> Changes since 20130212:
+>>>
+>>> on i386:
+>>>
+>>> drivers/built-in.o: In function `in_intr':
+>>> virtio_console.c:(.text+0x2dd31): undefined reference to `hvc_poll'
+>>> virtio_console.c:(.text+0x2dd41): undefined reference to `hvc_kick'
+>>> drivers/built-in.o: In function `resize_console':
+>>> virtio_console.c:(.text+0x2e26f): undefined reference to `__hvc_resize'
+>>> drivers/built-in.o: In function `unplug_port':
+>>> virtio_console.c:(.text+0x2e572): undefined reference to `hvc_remove'
+>>> drivers/built-in.o: In function `init_port_console':
+>>> (.text+0x2fe59): undefined reference to `hvc_alloc'
+>>> drivers/built-in.o: In function `virtio_cons_early_init':
+>>> (.init.text+0x16d1): undefined reference to `hvc_instantiate'
+>>>
+>>>
+>>> Full randconfig file is attached.
+>>
+>> This looks like an impossible config.  CONFIG_VIRTIO_CONSOLE=y, but
+>> CONFIG_HVC_DRIVER isn't set.
+>>
+>> From drivers/char/Kconfig:
+>>
+>>         config VIRTIO_CONSOLE
+>>         	tristate "Virtio console"
+>>         	depends on VIRTIO
+>>         	select HVC_DRIVER
+>>
+>> ???
+> 
+> OK.  It's probably yet another stinking problem with kvmtool and randconfig.
+> Running *config reports:
+> 
+> warning: (KVMTOOL_TEST_ENABLE && LGUEST_GUEST) selects VIRTIO_CONSOLE which has unmet direct dependencies (VIRTIO && TTY)
+> 
+> 
+> I'll look a bit more...
 
-> > Anyway, what do you guys think about this version?
->   Steven, Andrew, did you have a chance to look at my patches?
+Nope, that's not it.  Stephen's comments were much closer.
 
-Can you resend without being attachments. Patches sent as attachments
-seldom get reviewed.
-
--- Steve
+The patch below fixes the kconfig warning and the build errors.
+---
 
 
+
+From: Randy Dunlap <rdunlap@infradead.org>
+
+Fix kconfig warning for LGUEST_GUEST config by selecting TTY:
+
+warning: (KVMTOOL_TEST_ENABLE && LGUEST_GUEST) selects VIRTIO_CONSOLE which has unmet direct dependencies (VIRTIO && TTY)
+
+Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+---
+ arch/x86/lguest/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- linux-next-20130213.orig/arch/x86/lguest/Kconfig
++++ linux-next-20130213/arch/x86/lguest/Kconfig
+@@ -2,6 +2,7 @@ config LGUEST_GUEST
+ 	bool "Lguest guest support"
+ 	select PARAVIRT
+ 	depends on X86_32
++	select TTY
+ 	select VIRTUALIZATION
+ 	select VIRTIO
+ 	select VIRTIO_CONSOLE
