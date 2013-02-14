@@ -1,36 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935036Ab3BNWfH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 17:35:07 -0500
-Received: from www.linutronix.de ([62.245.132.108]:40247 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759164Ab3BNWfF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 17:35:05 -0500
-Date: Thu, 14 Feb 2013 23:35:03 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Tim Sander <tim@krieglstein.org>
-cc: "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] 3.4.28-rt40 tglx fix imx.c spinlock
-In-Reply-To: <16398840.IK9i4U2q2d@dabox>
-Message-ID: <alpine.LFD.2.02.1302142334120.22263@ionos>
-References: <6003615.pRQnIgKCSn@dabox> <3970144.HqS49ZSYWh@dabox> <alpine.LFD.2.02.1302131828050.22263@ionos> <16398840.IK9i4U2q2d@dabox>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1161028Ab3BNWf6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 17:35:58 -0500
+Received: from kanga.kvack.org ([205.233.56.17]:58208 "EHLO kanga.kvack.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759164Ab3BNWf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 17:35:57 -0500
+Date: Thu, 14 Feb 2013 17:35:56 -0500
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Kent Overstreet <koverstreet@google.com>
+Cc: linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] aio: v2: fix kioctx not being freed after cancellation at exit time
+Message-ID: <20130214223556.GA10806@kvack.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Feb 2013, Tim Sander wrote:
-> > That's true, but w/o seing the OOM output I can't tell what's
-> > exhausting the memory.
-> When fuzzing the serial port one probably should switch of sysreq. It seems 
-> as if there is a break send somehow and then it selects the OOM option.
-> So when switching of MAGIC_SYSRQ the OOMs are gone. So its a non issue.
+This v2 patch replaces both "aio: fix kioctx not being freed after
+cancellation at exit time" and "aio: only suppress events from cancelled
+kiocbs if free_ioctx() is in progress".  Kent's feedback is indeed correct.
 
-Amazing that you get the break+oom combo out of that fuzzer!
+The recent changes overhauling fs/aio.c introduced a bug that results in the
+kioctx not being freed when outstanding kiocbs are cancelled at exit_aio()
+time.  Specifically, a kiocb that is cancelled has its completion events
+discarded by batch_complete_aio(), which then fails to wake up the process
+stuck in free_ioctx().  Fix this by removing the event suppression in
+batch_complete_aio() and modify the wait_event() condition in free_ioctx()
+appropriately.
+
+This patch was tested with the cancel operation in the thread based code
+posted yesterday.
+
+Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
+---
+ fs/aio.c |   15 +++------------
+ 1 files changed, 3 insertions(+), 12 deletions(-)
+
+diff --git a/fs/aio.c b/fs/aio.c
+index dc52b0c..6ea766c 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -335,7 +335,9 @@ static void free_ioctx(struct kioctx *ctx)
+ 	kunmap_atomic(ring);
+ 
+ 	while (atomic_read(&ctx->reqs_available) < ctx->nr) {
+-		wait_event(ctx->wait, head != ctx->shadow_tail);
++		wait_event(ctx->wait,
++			   (head != ctx->shadow_tail) ||
++			   (atomic_read(&ctx->reqs_available) >= ctr->nr));
+ 
+ 		avail = (head <= ctx->shadow_tail ?
+ 			 ctx->shadow_tail : ctx->nr) - head;
+@@ -747,17 +749,6 @@ void batch_complete_aio(struct batch_complete *batch)
+ 			n = rb_parent(n);
+ 		}
+ 
+-		if (unlikely(xchg(&req->ki_cancel,
+-				  KIOCB_CANCELLED) == KIOCB_CANCELLED)) {
+-			/*
+-			 * Can't use the percpu reqs_available here - could race
+-			 * with free_ioctx()
+-			 */
+-			atomic_inc(&req->ki_ctx->reqs_available);
+-			aio_put_req(req);
+-			continue;
+-		}
+-
+ 		if (unlikely(req->ki_eventfd != eventfd)) {
+ 			if (eventfd) {
+ 				/* Make event visible */
+-- 
+1.7.4.1
+
+
+-- 
+"Thought is the essence of where you are now."
