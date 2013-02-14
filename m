@@ -1,83 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757180Ab3BNQsO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 11:48:14 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:40675 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751249Ab3BNQsM (ORCPT
+	id S934205Ab3BNQst (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 11:48:49 -0500
+Received: from mail-vb0-f45.google.com ([209.85.212.45]:33293 "EHLO
+	mail-vb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756003Ab3BNQss (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 11:48:12 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/qOUrzC5HAmPbav6EM9IVI
-Date: Thu, 14 Feb 2013 08:48:08 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Roger Quadros <rogerq@ti.com>
-Cc: "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "Balbi, Felipe" <balbi@ti.com>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] arm-soc: OMAP USB Host cleanup for 3.9
-Message-ID: <20130214164808.GZ7144@atomide.com>
-References: <511CD215.8080005@ti.com>
- <511CD2CE.2020802@ti.com>
+	Thu, 14 Feb 2013 11:48:48 -0500
+Date: Thu, 14 Feb 2013 08:48:30 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Jerry Snitselaar <jerry.snitselaar@oracle.com>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        serge.hallyn@canonical.com, aris@redhat.com,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] device_cgroup: don't grab mutex in rcu callback
+Message-ID: <20130214164830.GI9057@htj.dyndns.org>
+References: <1360860363-2879-1-git-send-email-jerry.snitselaar@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <511CD2CE.2020802@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1360860363-2879-1-git-send-email-jerry.snitselaar@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Roger Quadros <rogerq@ti.com> [130214 04:08]:
-> Hi Tony,
-> 
-> This is the ARM-soc part of the OMAP USB Host cleanup series for 3.9.
-> It is based on 3.8-rc6 + usbhost17-common that I sent earlier.
-> 
-> Please pull. Thanks.
+(cc'ing Andrew)
 
-Thanks for reworking this series! I'll pull this.
+Andrew, can you please pick up this one?
 
-Regards,
+ http://article.gmane.org/gmane.linux.kernel.cgroups/6158/raw
 
-Tony
- 
-> The following changes since commit 7f07863ec60f7d3dbeec5aff881ea074db3925ed:
+Thank you.
+
+On Thu, Feb 14, 2013 at 09:46:03AM -0700, Jerry Snitselaar wrote:
+> commit 103a197 "security/device_cgroup: lock assert fails in
+> dev_exception_clean()" grabs devcgroup_mutex to fix assert failure,
+> but mutex can't be grabbed in rcu callback. Since there shouldn't be
+> any other references when css_free is called, mutex isn't needed for
+> list cleanup in devcgroup_css_free().
 > 
->   ARM: OMAP: Consolidate OMAP USB-HS platform data (part 1/3) (2013-02-13 13:22:34 +0200)
+> Signed-off-by: Jerry Snitselaar <jerry.snitselaar@oracle.com>
+> Acked-by: Tejun Heo <tj@kernel.org>
+> Acked-by: Aristeu Rozanski <aris@redhat.com>
+> ---
+>  security/device_cgroup.c | 21 ++++++++++++---------
+>  1 file changed, 12 insertions(+), 9 deletions(-)
 > 
-> are available in the git repository at:
->   git://github.com/rogerq/linux.git usbhost17-for-arm-soc
+> diff --git a/security/device_cgroup.c b/security/device_cgroup.c
+> index d794abc..1c69e38 100644
+> --- a/security/device_cgroup.c
+> +++ b/security/device_cgroup.c
+> @@ -159,6 +159,16 @@ static void dev_exception_rm(struct dev_cgroup *dev_cgroup,
+>  	}
+>  }
+>  
+> +static void __dev_exception_clean(struct dev_cgroup *dev_cgroup)
+> +{
+> +	struct dev_exception_item *ex, *tmp;
+> +
+> +	list_for_each_entry_safe(ex, tmp, &dev_cgroup->exceptions, list) {
+> +		list_del_rcu(&ex->list);
+> +		kfree_rcu(ex, rcu);
+> +	}
+> +}
+> +
+>  /**
+>   * dev_exception_clean - frees all entries of the exception list
+>   * @dev_cgroup: dev_cgroup with the exception list to be cleaned
+> @@ -167,14 +177,9 @@ static void dev_exception_rm(struct dev_cgroup *dev_cgroup,
+>   */
+>  static void dev_exception_clean(struct dev_cgroup *dev_cgroup)
+>  {
+> -	struct dev_exception_item *ex, *tmp;
+> -
+>  	lockdep_assert_held(&devcgroup_mutex);
+>  
+> -	list_for_each_entry_safe(ex, tmp, &dev_cgroup->exceptions, list) {
+> -		list_del_rcu(&ex->list);
+> -		kfree_rcu(ex, rcu);
+> -	}
+> +	__dev_exception_clean(dev_cgroup);
+>  }
+>  
+>  /*
+> @@ -215,9 +220,7 @@ static void devcgroup_css_free(struct cgroup *cgroup)
+>  	struct dev_cgroup *dev_cgroup;
+>  
+>  	dev_cgroup = cgroup_to_devcgroup(cgroup);
+> -	mutex_lock(&devcgroup_mutex);
+> -	dev_exception_clean(dev_cgroup);
+> -	mutex_unlock(&devcgroup_mutex);
+> +	__dev_exception_clean(dev_cgroup);
+>  	kfree(dev_cgroup);
+>  }
+>  
+> -- 
+> 1.8.1.1.293.gfe73786
 > 
-> Roger Quadros (1):
->       ARM: OMAP: Consolidate OMAP USB-HS platform data (part 3/3)
-> 
->  arch/arm/mach-omap2/board-3430sdp.c        |    2 +-
->  arch/arm/mach-omap2/board-3630sdp.c        |    2 +-
->  arch/arm/mach-omap2/board-am3517crane.c    |    2 +-
->  arch/arm/mach-omap2/board-am3517evm.c      |    2 +-
->  arch/arm/mach-omap2/board-cm-t35.c         |    2 +-
->  arch/arm/mach-omap2/board-cm-t3517.c       |    2 +-
->  arch/arm/mach-omap2/board-devkit8000.c     |    2 +-
->  arch/arm/mach-omap2/board-igep0020.c       |    4 +-
->  arch/arm/mach-omap2/board-omap3beagle.c    |    2 +-
->  arch/arm/mach-omap2/board-omap3evm.c       |    2 +-
->  arch/arm/mach-omap2/board-omap3pandora.c   |    2 +-
->  arch/arm/mach-omap2/board-omap3stalker.c   |    2 +-
->  arch/arm/mach-omap2/board-omap3touchbook.c |    2 +-
->  arch/arm/mach-omap2/board-omap4panda.c     |    2 +-
->  arch/arm/mach-omap2/board-overo.c          |    2 +-
->  arch/arm/mach-omap2/board-zoom.c           |    2 +-
->  arch/arm/mach-omap2/usb-host.c             |   29 ++++-----------------------
->  arch/arm/mach-omap2/usb.h                  |   20 +------------------
->  18 files changed, 23 insertions(+), 60 deletions(-)
-> 
-> --
-> cheers,
-> -roger
+
+-- 
+tejun
