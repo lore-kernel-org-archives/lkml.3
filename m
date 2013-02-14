@@ -1,71 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934546Ab3BNMEj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 07:04:39 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:34864 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934196Ab3BNMEg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 07:04:36 -0500
-Message-ID: <511CD2CE.2020802@ti.com>
-Date: Thu, 14 Feb 2013 14:04:30 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1759840Ab3BNMFb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 07:05:31 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38972 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757502Ab3BNMFa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 07:05:30 -0500
+Message-ID: <511CD300.7080207@pengutronix.de>
+Date: Thu, 14 Feb 2013 13:05:20 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix e.K.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: "tony@atomide.com" <tony@atomide.com>
-CC: Roger Quadros <rogerq@ti.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "Balbi, Felipe" <balbi@ti.com>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] arm-soc: OMAP USB Host cleanup for 3.9
-References: <511CD215.8080005@ti.com>
-In-Reply-To: <511CD215.8080005@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+To: artem.bityutskiy@linux.intel.com
+CC: linux-mtd@lists.infradead.org, kernel@pengutronix.de,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Subodh Nijsure <snijsure@grid-net.com>
+Subject: Re: [PATCH RFC 4/5] UBIFS: Add security.* XATTR support for the UBIFS
+References: <1360750998-15191-1-git-send-email-mkl@pengutronix.de>  <1360750998-15191-5-git-send-email-mkl@pengutronix.de> <1360826890.12703.158.camel@sauron.fi.intel.com>
+In-Reply-To: <1360826890.12703.158.camel@sauron.fi.intel.com>
+X-Enigmail-Version: 1.5
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2LJJLALTOKVWQNJUWIOCB"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony,
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2LJJLALTOKVWQNJUWIOCB
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-This is the ARM-soc part of the OMAP USB Host cleanup series for 3.9.
-It is based on 3.8-rc6 + usbhost17-common that I sent earlier.
+On 02/14/2013 08:28 AM, Artem Bityutskiy wrote:
+> On Wed, 2013-02-13 at 11:23 +0100, Marc Kleine-Budde wrote:
+>> --- a/fs/ubifs/journal.c
+>> +++ b/fs/ubifs/journal.c
+>> @@ -553,7 +553,8 @@ int ubifs_jnl_update(struct ubifs_info *c, const s=
+truct inode *dir,
+>> =20
+>>         dbg_jnl("ino %lu, dent '%.*s', data len %d in dir ino %lu",
+>>                 inode->i_ino, nm->len, nm->name, ui->data_len, dir->i_=
+ino);
+>> -       ubifs_assert(dir_ui->data_len =3D=3D 0);
+>> +       if (!xent)
+>> +               ubifs_assert(dir_ui->data_len =3D=3D 0);
+>=20
+> Shouldn't this snippet be in 2/5 instead?
+will do
 
-Please pull. Thanks.
+Marc
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
-The following changes since commit 7f07863ec60f7d3dbeec5aff881ea074db3925ed:
 
-  ARM: OMAP: Consolidate OMAP USB-HS platform data (part 1/3) (2013-02-13 13:22:34 +0200)
+------enig2LJJLALTOKVWQNJUWIOCB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-are available in the git repository at:
-  git://github.com/rogerq/linux.git usbhost17-for-arm-soc
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-Roger Quadros (1):
-      ARM: OMAP: Consolidate OMAP USB-HS platform data (part 3/3)
+iEYEARECAAYFAlEc0wAACgkQjTAFq1RaXHObRACZAa7xadNENbmsVDz5dy4yUtMy
+33wAn22eKpbjiPgud+9AwduwBcpxeF9u
+=wjuM
+-----END PGP SIGNATURE-----
 
- arch/arm/mach-omap2/board-3430sdp.c        |    2 +-
- arch/arm/mach-omap2/board-3630sdp.c        |    2 +-
- arch/arm/mach-omap2/board-am3517crane.c    |    2 +-
- arch/arm/mach-omap2/board-am3517evm.c      |    2 +-
- arch/arm/mach-omap2/board-cm-t35.c         |    2 +-
- arch/arm/mach-omap2/board-cm-t3517.c       |    2 +-
- arch/arm/mach-omap2/board-devkit8000.c     |    2 +-
- arch/arm/mach-omap2/board-igep0020.c       |    4 +-
- arch/arm/mach-omap2/board-omap3beagle.c    |    2 +-
- arch/arm/mach-omap2/board-omap3evm.c       |    2 +-
- arch/arm/mach-omap2/board-omap3pandora.c   |    2 +-
- arch/arm/mach-omap2/board-omap3stalker.c   |    2 +-
- arch/arm/mach-omap2/board-omap3touchbook.c |    2 +-
- arch/arm/mach-omap2/board-omap4panda.c     |    2 +-
- arch/arm/mach-omap2/board-overo.c          |    2 +-
- arch/arm/mach-omap2/board-zoom.c           |    2 +-
- arch/arm/mach-omap2/usb-host.c             |   29 ++++-----------------------
- arch/arm/mach-omap2/usb.h                  |   20 +------------------
- 18 files changed, 23 insertions(+), 60 deletions(-)
-
---
-cheers,
--roger
+------enig2LJJLALTOKVWQNJUWIOCB--
