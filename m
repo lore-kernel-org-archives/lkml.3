@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752915Ab3BNCb0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 21:31:26 -0500
-Received: from mga01.intel.com ([192.55.52.88]:42088 "EHLO mga01.intel.com"
+	id S1752852Ab3BNCcw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 21:32:52 -0500
+Received: from mout.gmx.net ([212.227.15.18]:65373 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750712Ab3BNCbY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 21:31:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,660,1355126400"; 
-   d="scan'208";a="290877737"
-From: "Moore, Robert" <robert.moore@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, Toshi Kani <toshi.kani@hp.com>
-CC: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <liuj97@gmail.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Myron Stowe <mstowe@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: RE: [Update][PATCH] ACPI / hotplug: Fix concurrency issues and
- memory leaks
-Thread-Topic: [Update][PATCH] ACPI / hotplug: Fix concurrency issues and
- memory leaks
-Thread-Index: AQHOCkL6WO0GND/HtUaZIu27Tc3Y7ph4obWw
-Date: Thu, 14 Feb 2013 02:31:22 +0000
-Message-ID: <94F2FBAB4432B54E8AACC7DFDE6C92E368CB39A9@ORSMSX101.amr.corp.intel.com>
-References: <1837481.7dT8hTZ4MT@vostro.rjw.lan>
- <4594350.VXNmDOeCvt@vostro.rjw.lan>
- <1360796969.3869.146.camel@misato.fc.hp.com>
- <5284026.QPQbFciqVT@vostro.rjw.lan>
-In-Reply-To: <5284026.QPQbFciqVT@vostro.rjw.lan>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1750712Ab3BNCcv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 21:32:51 -0500
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX198vqMxpPN8ysnb4GlxQ4GXmG7r4CqDx0MUTownSQ
+	kvt5A2xo4HMFeU
+From: Peter Huewe <peterhuewe@gmx.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Devendra Naga <devendra.aaru@gmail.com>, Peter Huewe <peterhuewe@gmx.de>,
+        Sebastiaan de Haan <sebastiaan@sebastiaandehaan.org>,
+        "Justin P. Mattock" <justinmattock@gmail.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging/wlan-ng: Fix 'Branch condition evaluates to a garbage value' in p80211netdev.c
+Date: Thu, 14 Feb 2013 03:37:10 +0100
+Message-Id: <1360809430-22333-1-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.7.8.6
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1E2VRDF002148
 
-> > > I thought about that, but actually there's no guarantee that the
-> > > handle will be valid after _EJ0 as far as I can say.  So the race
-> > > condition is going to be there anyway and using struct acpi_device
-> > > just makes it easier to avoid it.
-> >
-> > In theory, yes, a stale handle could be a problem, if _EJ0 performs
-> > unload table and if ACPICA frees up its internal data structure
-> > pointed by the handle as a result.  But we should not see such issue
-> > now since we do not support dynamic ACPI namespace yet.
-> 
-> I'm waiting for information from Bob about that.  If we can assume ACPI
-> handles to be always valid, that will simplify things quite a bit.
+clang/scan-build complains that:
+p80211netdev.c:451:6: warning: Branch condition evaluates to a garbage
+value
+        if ((p80211_wep.data) && (p80211_wep.data != skb->data))
+	            ^~~~~~~~~~~~~~~~~
 
-If a table is unloaded, all the namespace nodes for that table are removed from the namespace, and thus any ACPI_HANDLE pointers go stale and invalid.
+This can happen in p80211knetdev_hard_start_xmit if
+- if (wlandev->state != WLAN_DEVICE_OPEN) evaluates to true.
+the execution flow then continues at the 'failed' label where
+p80211_wep.data is used without being initialized first.
 
-Bob
+-> Initialize the data field to NULL to fix this issue.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+ drivers/staging/wlan-ng/p80211netdev.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/staging/wlan-ng/p80211netdev.c b/drivers/staging/wlan-ng/p80211netdev.c
+index 750330f..0039e08 100644
+--- a/drivers/staging/wlan-ng/p80211netdev.c
++++ b/drivers/staging/wlan-ng/p80211netdev.c
+@@ -351,6 +351,8 @@ static int p80211knetdev_hard_start_xmit(struct sk_buff *skb,
+ 	union p80211_hdr p80211_hdr;
+ 	struct p80211_metawep p80211_wep;
+ 
++	p80211_wep.data = NULL;
++
+ 	if (skb == NULL)
+ 		return NETDEV_TX_OK;
+ 
+-- 
+1.7.8.6
+
