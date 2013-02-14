@@ -1,123 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757263Ab3BNKLh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 05:11:37 -0500
-Received: from sauhun.de ([89.238.76.85]:37790 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752693Ab3BNKLf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 05:11:35 -0500
-Date: Thu, 14 Feb 2013 11:11:30 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, linux-i2c@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 2/3] i2c: Add Congatec CGEB I2C driver
-Message-ID: <20130214101130.GB12290@nekote.pengutronix.de>
-References: <1360663374-30951-1-git-send-email-s.hauer@pengutronix.de>
- <1360663374-30951-3-git-send-email-s.hauer@pengutronix.de>
+	id S933760Ab3BNKLt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 05:11:49 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48678 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752693Ab3BNKLq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 05:11:46 -0500
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Subject: [PATCH 00/13] kdump, vmcore: support mmap() on /proc/vmcore
+To: ebiederm@xmission.com, vgoyal@redhat.com, cpw@sgi.com,
+        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com
+Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Thu, 14 Feb 2013 19:11:43 +0900
+Message-ID: <20130214100945.22466.4172.stgit@localhost6.localdomain6>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360663374-30951-3-git-send-email-s.hauer@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sascha,
+Currently, read to /proc/vmcore is done by read_oldmem() that uses
+ioremap/iounmap per a single page. For example, if memory is 1GB,
+ioremap/iounmap is called (1GB / 4KB)-times, that is, 262144
+times. This causes big performance degradation.
 
-> diff --git a/drivers/i2c/busses/i2c-congatec-cgeb.c b/drivers/i2c/busses/i2c-congatec-cgeb.c
-> new file mode 100644
-> index 0000000..5f48ca4
-> --- /dev/null
-> +++ b/drivers/i2c/busses/i2c-congatec-cgeb.c
-> @@ -0,0 +1,194 @@
-> +/*
-> + * CGEB i2c driver
-> + *
-> + * (c) 2011 Sascha Hauer, Pengutronix
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; version 2 of the License.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +#include <linux/module.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/slab.h>
-> +#include <linux/i2c.h>
-> +#include <asm/congatec-cgeb.h>
+To address the issue, this patch implements mmap() on /proc/vmcore to
+improve read performance. My simple benchmark shows the improvement
+from 200 [MiB/sec] to over 50.0 [GiB/sec].
 
-Is asm a good place? Maybe linux/platform_data?
+Benchmark
+=========
 
-> +
-> +#define CG_I2C_FLAG_START   0x00080	/* send START condition */
-> +#define CG_I2C_FLAG_STOP    0x00040	/* send STOP condition */
-> +#define CG_I2C_FLAG_ALL_ACK 0x08000	/* send ACK on all read bytes */
-> +#define CG_I2C_FLAG_ALL_NAK 0x04000	/* send NAK on all read bytes */
-> +
-> +struct cgeb_i2c_priv {
-> +	struct cgeb_board_data		*board;
-> +	struct i2c_adapter	adapter;
-> +	int unit;
-> +};
-> +
-> +static u32 cgeb_i2c_func(struct i2c_adapter *adapter)
-> +{
-> +	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
-> +}
+= Machine spec
+  - CPU: Intel(R) Xeon(R) CPU E7- 4820 @ 2.00GHz (4 sockets, 8 cores) (*)
+  - memory: 32GB
+  - kernel: 3.8-rc6 with this patch
+  - vmcore size: 31.7GB
 
-To make sure: Have you checked if the driver can do SMBUS_QUICK by using
-'i2cdetect'?
+  (*) only 1 cpu is used in the 2nd kernel now.
 
-...
+= Benchmark Case
 
-> +static int cgeb_i2c_probe(struct platform_device *pdev)
-> +{
-> +	struct cgeb_i2c_priv *priv;
-> +	struct cgeb_pdata *pdata = pdev->dev.platform_data;
-> +	int ret;
-> +
-> +	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
-> +	if (!priv)
-> +		return -ENOMEM;
-> +
-> +	strcpy(priv->adapter.name, pdev->name);
-> +	priv->adapter.owner		= THIS_MODULE;
-> +	priv->adapter.algo		= &cgeb_i2c_algo;
-> +	priv->adapter.dev.parent	= &pdev->dev;
-> +	priv->unit = pdata->unit;
-> +	priv->board = pdata->board;
-> +	i2c_set_adapdata(&priv->adapter, priv);
-> +
-> +	platform_set_drvdata(pdev, priv);
-> +
-> +	ret = cgeb_i2c_set_speed(priv, 400000);
+1) copy /proc/vmcore *WITHOUT* mmap() on /proc/vmcore
 
-Not all slaves handle 400kHz. So, this might be a bit demanding. Then
-again, it is probably fix which slaves are connected and they work
-currently?
+$ time dd bs=4096 if=/proc/vmcore of=/dev/null
+8307246+1 records in
+8307246+1 records out
+real    2m 31.50s
+user    0m 1.06s
+sys     2m 27.60s
 
-...
+So performance is 214.26 [MiB/sec].
 
-> +MODULE_AUTHOR("Sascha Hauer <s.hauer@pengutronix.de>");
-> +MODULE_DESCRIPTION("cgeb i2c driver");
-> +MODULE_LICENSE("GPL");
+2) copy /proc/vmcore with mmap()
 
-GPLv2 is mentioned in the header.
+  I ran the next command and recorded real time:
 
-Other than that, the driver looks fine to me. If it should go via mfd,
-here is my
+  $ for n in $(seq 1 15) ; do \
+  >   time copyvmcore2 --blocksize=$((4096 * (1 << (n - 1)))) /proc/vmcore /dev/null \
+  > done
 
-Acked-by: Wolfram Sang <wsa@the-dreams.de>
+  where copyvmcore2 is an ad-hoc test tool that read data from
+  /proc/vmcore via mmap() in given block-size unit and write them to
+  some file.
 
-Otherwise, let me know if and when I should pick it up.
+|  n | map size |  time | page table | performance |
+|    |          | (sec) |            |   [GiB/sec] |
+|----+----------+-------+------------+-------------|
+|  1 | 4 KiB    | 78.35 | 8 iB       |        0.40 |
+|  2 | 8 KiB    | 45.29 | 16 iB      |        0.70 |
+|  3 | 16 KiB   | 23.82 | 32 iB      |        1.33 |
+|  4 | 32 KiB   | 12.90 | 64 iB      |        2.46 |
+|  5 | 64 KiB   |  6.13 | 128 iB     |        5.17 |
+|  6 | 128 KiB  |  3.26 | 256 iB     |        9.72 |
+|  7 | 256 KiB  |  1.86 | 512 iB     |       17.04 |
+|  8 | 512 KiB  |  1.13 | 1 KiB      |       28.04 |
+|  9 | 1 MiB    |  0.77 | 2 KiB      |       41.16 |
+| 10 | 2 MiB    |  0.58 | 4 KiB      |       54.64 |
+| 11 | 4 MiB    |  0.50 | 8 KiB      |       63.38 |
+| 12 | 8 MiB    |  0.46 | 16 KiB     |       68.89 |
+| 13 | 16 MiB   |  0.44 | 32 KiB     |       72.02 |
+| 14 | 32 MiB   |  0.44 | 64 KiB     |       72.02 |
+| 15 | 64 MiB   |  0.45 | 128 KiB    |       70.42 |
 
-Thanks,
+3) copy /proc/vmcore with mmap() on /dev/oldmem
 
-   Wolfram
+I posted another patch series for mmap() on /dev/oldmem a few weeks ago.
+See: https://lkml.org/lkml/2013/2/3/431
 
+Next is the table shown on the post showing the benchmark.
+
+|  n | map size |  time | page table | performance |
+|    |          | (sec) |            |   [GiB/sec] |
+|----+----------+-------+------------+-------------|
+|  1 | 4 KiB    | 41.86 | 8 iB       |        0.76 |
+|  2 | 8 KiB    | 25.43 | 16 iB      |        1.25 |
+|  3 | 16 KiB   | 13.28 | 32 iB      |        2.39 |
+|  4 | 32 KiB   |  7.20 | 64 iB      |        4.40 |
+|  5 | 64 KiB   |  3.45 | 128 iB     |        9.19 |
+|  6 | 128 KiB  |  1.82 | 256 iB     |       17.42 |
+|  7 | 256 KiB  |  1.03 | 512 iB     |       30.78 |
+|  8 | 512 KiB  |  0.61 | 1K iB      |       51.97 |
+|  9 | 1 MiB    |  0.41 | 2K iB      |       77.32 |
+| 10 | 2 MiB    |  0.32 | 4K iB      |       99.06 |
+| 11 | 4 MiB    |  0.27 | 8K iB      |      117.41 |
+| 12 | 8 MiB    |  0.24 | 16 KiB     |      132.08 |
+| 13 | 16 MiB   |  0.23 | 32 KiB     |      137.83 |
+| 14 | 32 MiB   |  0.22 | 64 KiB     |      144.09 |
+| 15 | 64 MiB   |  0.22 | 128 KiB    |      144.09 |
+
+= Discussion
+
+- For small map size, we can see performance degradation on mmap()
+  case due to many page table modification and TLB flushes similarly
+  to read_oldmem() case. But for large map size we can see the
+  improved performance.
+
+  Each application need to choose appropreate map size for their
+  preferable performance.
+
+- mmap() on /dev/oldmem appears better than that on /proc/vmcore. But
+  actual processing does not only copying but also IO work. This
+  difference is not a problem.
+
+- Both mmap() case shows drastically better performance than previous
+  RFC patch set's about 2.5 [GiB/sec] that maps all dump target memory
+  in kernel direct mapping address space. This is because there's no
+  longer memcpy() from kernel-space to user-space.
+
+Design
+======
+
+= Support Range
+
+- mmap() on /proc/vmcore is supported on ELF64 interface only. ELF32
+  interface is used only if dump target size is less than 4GB. Then,
+  the existing interface is enough in performance.
+
+= Change of /proc/vmcore format
+
+For mmap()'s page-size boundary requirement, /proc/vmcore changed its
+own shape and now put its objects in page-size boundary.
+
+- Allocate buffer for ELF headers in page-size boundary.
+  => See [PATCH 01/13].
+
+- Note objects scattered on old memory are copied in a single
+  page-size aligned buffer on 2nd kernel, and it is remapped to
+  user-space.
+  => See [PATCH 09/13].
+  
+- The head and/or tail pages of memroy chunks are also copied on 2nd
+  kernel if either of their ends is not page-size aligned. See
+  => See [PATCH 12/13].
+
+= 32-bit PAE limitation
+
+- On 32-bit PAE limitation, mmap_vmcore() can handle upto 16TB memory
+  only since remap_pfn_range()'s third argument, pfn, has 32-bit
+  length only, defined as unsigned long type.
+
+TODO
+====
+
+- fix makedumpfile to use mmap() on /proc/vmcore and benchmark it to
+  confirm whether we can see enough performance improvement.
+
+Test
+====
+
+Done on x86-64, x86-32 both with 1GB and over 4GB memory environments.
+
+---
+
+HATAYAMA Daisuke (13):
+      vmcore: introduce mmap_vmcore()
+      vmcore: copy non page-size aligned head and tail pages in 2nd kernel
+      vmcore: count holes generated by round-up operation for vmcore size
+      vmcore: round-up offset of vmcore object in page-size boundary
+      vmcore: copy ELF note segments in buffer on 2nd kernel
+      vmcore: remove unused helper function
+      vmcore: modify read_vmcore() to read buffer on 2nd kernel
+      vmcore: modify vmcore clean-up function to free buffer on 2nd kernel
+      vmcore: modify ELF32 code according to new type
+      vmcore: introduce types for objects copied in 2nd kernel
+      vmcore: fill unused part of buffer for ELF headers with 0
+      vmcore: round up buffer size of ELF headers by PAGE_SIZE
+      vmcore: allocate buffer for ELF headers on page-size alignment
+
+
+ fs/proc/vmcore.c        |  408 +++++++++++++++++++++++++++++++++++------------
+ include/linux/proc_fs.h |   11 +
+ 2 files changed, 313 insertions(+), 106 deletions(-)
+
+-- 
+
+Thanks.
+HATAYAMA, Daisuke
