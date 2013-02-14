@@ -1,57 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759642Ab3BNKNV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 05:13:21 -0500
-Received: from mga14.intel.com ([143.182.124.37]:50939 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759431Ab3BNKNR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 05:13:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,664,1355126400"; 
-   d="scan'208";a="202282401"
-Date: Thu, 14 Feb 2013 12:17:09 +0200
-From: Mika Westerberg <mika.westerberg@intel.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>,
-        Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
-        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>,
-        Mika Westerberg <mika.westerberg@linux.jf.intel.com>
-Subject: Re: [PATCH] dw_dmac: adjust slave_id accordingly to request line base
-Message-ID: <20130214101709.GF20771@intel.com>
-References: <1359371060-9044-1-git-send-email-andriy.shevchenko@linux.intel.com>
- <CAOh2x==psH4fYmr_MxwO8vjYb=sWk=V7Vs8fs_-6U00gmiko_w@mail.gmail.com>
- <20130212155334.GK3789@intel.com>
- <20130212164351.GA20771@intel.com>
- <20130212173435.GA17659@intel.com>
- <20130212190236.GD20771@intel.com>
- <20130214095738.GD27887@intel.com>
+	id S1759691Ab3BNKNl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 05:13:41 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48742 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752772Ab3BNKMv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 05:12:51 -0500
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Subject: [PATCH 12/13] vmcore: copy non page-size aligned head and tail pages
+ in 2nd kernel
+To: ebiederm@xmission.com, vgoyal@redhat.com, cpw@sgi.com,
+        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com
+Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Thu, 14 Feb 2013 19:12:48 +0900
+Message-ID: <20130214101248.22466.53004.stgit@localhost6.localdomain6>
+In-Reply-To: <20130214100945.22466.4172.stgit@localhost6.localdomain6>
+References: <20130214100945.22466.4172.stgit@localhost6.localdomain6>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130214095738.GD27887@intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 14, 2013 at 03:27:38PM +0530, Vinod Koul wrote:
-> Not in the CSRT parser. Once your plaform devices are created, you can add your
-> own board handler for each platform device. This board code, using the
-> data availble from CSRT can go ahead and do the translation and present the
-> actual addresses to dmac.
-> Would this be doable with ACPI5.
+Due to mmap() requirement, we need to copy pages not starting or
+ending with page-size aligned address in 2nd kernel and to map them to
+user-space.
 
-I'm not sure what you mean by own board handler?
+For example, see the map below:
 
-AFAIK, the only platform specific code is under arch/x86/platform/* but we
-don't have such thing for Lynxpoint and it should not be needed as we can
-enumerate the devices from ACPI.
+    00000000-0001ffff : reserved
+    00010000-0009f7ff : System RAM
+    0009f800-0009ffff : reserved
 
-> Somehow I dont like the idea of DMA resource for request lines. DMA
-> resources have specific meaning, perhpas IO resource maybe better idea.
+where the System RAM ends with 0x9f800 that is not page-size
+aligned. This map is divided into two parts:
 
-Well, it's a DMA request line so we thought that IORESOURCE_DMA would suit
-fine there and the drivers that use these are well aware of their usage.
-Not sure about IORESOURCE_IO, it has also specific meaning and I don't
-think DMA request lines fit there either :-(
+    00010000-0009dfff
+    0009f000-0009f7ff
+
+and the first one is kept in old memory and the 2nd one is copied into
+buffer on 2nd kernel.
+
+This kind of non-page-size-aligned area can always occur since any
+part of System RAM can be converted into reserved area at runtime.
+
+If not doing copying like this and if remapping non page-size aligned
+pages on old memory directly, mmap() had to export memory which is not
+dump target to user-space. In the above example this is reserved
+0x9f800-0xa0000.
+
+Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+---
+
+ fs/proc/vmcore.c |   97 ++++++++++++++++++++++++++++++++++++++++++++++++------
+ 1 files changed, 87 insertions(+), 10 deletions(-)
+
+diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+index 2968e5a..99f5673 100644
+--- a/fs/proc/vmcore.c
++++ b/fs/proc/vmcore.c
+@@ -446,11 +446,10 @@ static int __init process_ptload_program_headers_elf64(char *elfptr,
+ 						size_t elfsz,
+ 						struct list_head *vc_list)
+ {
+-	int i;
++	int i, rc;
+ 	Elf64_Ehdr *ehdr_ptr;
+ 	Elf64_Phdr *phdr_ptr;
+ 	loff_t vmcore_off;
+-	struct vmcore *new;
+ 
+ 	ehdr_ptr = (Elf64_Ehdr *)elfptr;
+ 	phdr_ptr = (Elf64_Phdr*)(elfptr + sizeof(Elf64_Ehdr)); /* PT_NOTE hdr */
+@@ -460,20 +459,98 @@ static int __init process_ptload_program_headers_elf64(char *elfptr,
+ 						  PAGE_SIZE);
+ 
+ 	for (i = 0; i < ehdr_ptr->e_phnum; i++, phdr_ptr++) {
++		u64 start, end, rest;
++
+ 		if (phdr_ptr->p_type != PT_LOAD)
+ 			continue;
+ 
+-		/* Add this contiguous chunk of memory to vmcore list.*/
+-		new = get_new_element();
+-		if (!new)
+-			return -ENOMEM;
+-		new->paddr = phdr_ptr->p_offset;
+-		new->size = phdr_ptr->p_memsz;
+-		list_add_tail(&new->list, vc_list);
++		start = phdr_ptr->p_offset;
++		end = phdr_ptr->p_offset + phdr_ptr->p_memsz;
++		rest = phdr_ptr->p_memsz;
++
++		if (start & ~PAGE_MASK) {
++			u64 paddr, len;
++			char *buf;
++			struct vmcore *new;
++
++			paddr = start;
++			len = min(roundup(start,PAGE_SIZE), end) - start;
++
++			buf = (char *)get_zeroed_page(GFP_KERNEL);
++			if (!buf)
++				return -ENOMEM;
++			rc = read_from_oldmem(buf + (start & ~PAGE_MASK), len,
++					      &paddr, 0);
++			if (rc < 0) {
++				free_pages((unsigned long)buf, 0);
++				return rc;
++			}
++
++			new = get_new_element();
++			if (!new) {
++				free_pages((unsigned long)buf, 0);
++				return -ENOMEM;
++			}
++			new->type = VMCORE_2ND_KERNEL;
++			new->size = PAGE_SIZE;
++			new->buf = buf;
++			list_add_tail(&new->list, vc_list);
++
++			rest -= len;
++		}
++
++		if (rest > 0 &&
++		    roundup(start, PAGE_SIZE) < rounddown(end, PAGE_SIZE)) {
++			u64 paddr, len;
++			struct vmcore *new;
++
++			paddr = roundup(start, PAGE_SIZE);
++			len =rounddown(end,PAGE_SIZE)-roundup(start,PAGE_SIZE);
++
++			new = get_new_element();
++			if (!new)
++				return -ENOMEM;
++			new->type = VMCORE_OLD_MEMORY;
++			new->paddr = paddr;
++			new->size = len;
++			list_add_tail(&new->list, vc_list);
++
++			rest -= new->size;
++		}
++
++		if (rest > 0) {
++			u64 paddr, len;
++			char *buf;
++			struct vmcore *new;
++
++			paddr = rounddown(end, PAGE_SIZE);
++			len = end - rounddown(end, PAGE_SIZE);
++
++			buf = (char *)get_zeroed_page(GFP_KERNEL);
++			if (!buf)
++				return -ENOMEM;
++			rc = read_from_oldmem(buf, len, &paddr, 0);
++			if (rc < 0) {
++				free_pages((unsigned long)buf, 0);
++				return rc;
++			}
++
++			new = get_new_element();
++			if (!new) {
++				free_pages((unsigned long)buf, 0);
++				return -ENOMEM;
++			}
++			new->type = VMCORE_2ND_KERNEL;
++			new->size = PAGE_SIZE;
++			new->buf = buf;
++			list_add_tail(&new->list, vc_list);
++
++			rest -= len;
++		}
+ 
+ 		/* Update the program header offset. */
+ 		phdr_ptr->p_offset = vmcore_off;
+-		vmcore_off = vmcore_off + phdr_ptr->p_memsz;
++		vmcore_off +=roundup(end,PAGE_SIZE)-rounddown(start,PAGE_SIZE);
+ 	}
+ 	return 0;
+ }
+
