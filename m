@@ -1,47 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934148Ab3BNKMn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 05:12:43 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:5802 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759191Ab3BNKMj (ORCPT
+	id S933969Ab3BNKPj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 05:15:39 -0500
+Received: from smtp.eu.citrix.com ([46.33.159.39]:46896 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757216Ab3BNKPh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 05:12:39 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 14 Feb 2013 02:08:26 -0800
-Date: Thu, 14 Feb 2013 12:12:20 +0200
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/1] ARM: dt: add header to define tegra20 clocks
-Message-ID: <20130214101220.GI3073@tbergstrom-lnx.Nvidia.com>
-References: <1360791198-29462-1-git-send-email-swarren@wwwdotorg.org>
- <1360823899-17846-1-git-send-email-hdoyu@nvidia.com>
+	Thu, 14 Feb 2013 05:15:37 -0500
+X-IronPort-AV: E=Sophos;i="4.84,664,1355097600"; 
+   d="scan'208";a="1452298"
+From: Roger Pau Monne <roger.pau@citrix.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Roger Pau Monne <roger.pau@citrix.com>, <xen-devel@lists.xen.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH] xen-blkback: use balloon pages for persistent grants
+Date: Thu, 14 Feb 2013 11:12:09 +0100
+Message-ID: <1360836729-17874-1-git-send-email-roger.pau@citrix.com>
+X-Mailer: git-send-email 1.7.7.5 (Apple Git-26)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1360823899-17846-1-git-send-email-hdoyu@nvidia.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 14, 2013 at 07:38:17AM +0100, Hiroshi Doyu wrote:
-> To replace magic number in "clocks = <&tegra_car 28>;"
-> 
+With current persistent grants implementation we are not freeing the
+persistent grants after we disconnect the device. Since grant map
+operations change the mfn of the allocated page, and we can no longer
+pass it to __free_page without setting the mfn to a sane value, use
+balloon grant pages instead, as the gntdev device does.
 
-But then we should probably also remove the enum tegra20_clk and replace it
-with this header file. We should also consider removing the list of IDs from
-the documentation and refer to the header file instead. Otherwise we will have
-3 places which define the same IDs and we need to be sure they stay in sync...
+Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
+Cc: xen-devel@lists.xen.org
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/block/xen-blkback/blkback.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-Cheers,
+diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
+index c46824f..e6c2f6a 100644
+--- a/drivers/block/xen-blkback/blkback.c
++++ b/drivers/block/xen-blkback/blkback.c
+@@ -46,6 +46,7 @@
+ #include <xen/xen.h>
+ #include <asm/xen/hypervisor.h>
+ #include <asm/xen/hypercall.h>
++#include <xen/balloon.h>
+ #include "common.h"
+ 
+ /*
+@@ -239,6 +240,7 @@ static void free_persistent_gnts(struct rb_root *root, unsigned int num)
+ 			ret = gnttab_unmap_refs(unmap, NULL, pages,
+ 				segs_to_unmap);
+ 			BUG_ON(ret);
++			free_xenballooned_pages(segs_to_unmap, pages);
+ 			segs_to_unmap = 0;
+ 		}
+ 
+@@ -527,8 +529,8 @@ static int xen_blkbk_map(struct blkif_request *req,
+ 				GFP_KERNEL);
+ 			if (!persistent_gnt)
+ 				return -ENOMEM;
+-			persistent_gnt->page = alloc_page(GFP_KERNEL);
+-			if (!persistent_gnt->page) {
++			if (alloc_xenballooned_pages(1, &persistent_gnt->page,
++			    false)) {
+ 				kfree(persistent_gnt);
+ 				return -ENOMEM;
+ 			}
+-- 
+1.7.7.5 (Apple Git-26)
 
-Peter.
