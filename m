@@ -1,125 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964847Ab3BNPjX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 10:39:23 -0500
-Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:31257 "EHLO
-	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757976Ab3BNPjV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 10:39:21 -0500
-Date: Thu, 14 Feb 2013 10:39:17 -0600
-From: scameron@beardog.cce.hp.com
-To: Shuah Khan <shuah.khan@hp.com>
-Cc: JBottomley@parallels.com, iss_storagedev@hp.com,
-        linux-scsi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        shuahkhan@gmail.com, scameron@beardog.cce.hp.com
-Subject: Re: [PATCH] scsi/hpsa: fix to check dma mapping error
-Message-ID: <20130214163917.GI1523@beardog.cce.hp.com>
-References: <1360796155.2735.16.camel@lorien2>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360796155.2735.16.camel@lorien2>
-User-Agent: Mutt/1.4.2.2i
+	id S934721Ab3BNPlV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 10:41:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:65385 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934661Ab3BNPlU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 10:41:20 -0500
+From: Tom Tromey <tromey@redhat.com>
+To: Jan Kiszka <jan.kiszka@siemens.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
+        Ben Widawsky <ben@bwidawsk.net>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH v5 05/20] scripts/gdb: Add lx-symbols command
+References: <cover.1359463075.git.jan.kiszka@siemens.com>
+	<cover.1359463075.git.jan.kiszka@siemens.com>
+	<9fd8d68344bdc125a0345f04d2f7484f262459a8.1359463075.git.jan.kiszka@siemens.com>
+X-Attribution: Tom
+Date: Thu, 14 Feb 2013 08:40:50 -0700
+In-Reply-To: <9fd8d68344bdc125a0345f04d2f7484f262459a8.1359463075.git.jan.kiszka@siemens.com>
+	(Jan Kiszka's message of "Tue, 29 Jan 2013 13:37:48 +0100")
+Message-ID: <877gmakinx.fsf@fleche.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.92 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 13, 2013 at 03:55:55PM -0700, Shuah Khan wrote:
-> Add missing dma mapping error check to fix the following warning from
-> dma-debug.
-> 
-> [   16.614739] hpsa 0000:03:00.0: DMA-API: device driver failed to check map error[device address=0x00000000001c2ec0] [size=64 bytes] [mapped as single]
-> [   16.614833] Modules linked in: pata_atiixp tg3(+) ptp pps_core hpsa(+)
-> [   16.615381] Pid: 324, comm: modprobe Not tainted 3.8.0-rc7+ #6
-> [   16.615466] Call Trace:
-> [   16.615552]  [<ffffffff810581ef>] warn_slowpath_common+0x7f/0xc0
-> [   16.615639]  [<ffffffff810582e6>] warn_slowpath_fmt+0x46/0x50
-> [   16.615747]  [<ffffffff8134c129>] check_unmap+0x459/0x8a0
-> [   16.615832]  [<ffffffff81698aad>] ? schedule_timeout+0x1ed/0x250
-> [   16.615918]  [<ffffffff8134c70c>] debug_dma_unmap_page+0x5c/0x60
-> [   16.616008]  [<ffffffffa0002776>] hpsa_pci_unmap+0x86/0xd0 [hpsa]
-> [   16.616094]  [<ffffffffa00028c0>] hpsa_scsi_do_simple_cmd_with_retry+0x100/0x2a0 [hpsa]
-> [   16.616195]  [<ffffffffa0004863>] hpsa_scsi_do_inquiry+0x83/0x100 [hpsa]
-> [   16.616282]  [<ffffffffa0006ce9>] hpsa_init_one+0x1839/0x1ce0 [hpsa]
-> [   16.616369]  [<ffffffff811fc2d8>] ? sysfs_new_dirent+0x58/0x140
-> [   16.616456]  [<ffffffff8135db9b>] local_pci_probe+0x4b/0x80
-> [   16.616542]  [<ffffffff8135f471>] pci_device_probe+0x101/0x120
-> [   16.616629]  [<ffffffff814328db>] driver_probe_device+0x7b/0x240
-> [   16.616715]  [<ffffffff81432b4b>] __driver_attach+0xab/0xb0
-> [   16.616801]  [<ffffffff81432aa0>] ? driver_probe_device+0x240/0x240
-> [   16.616888]  [<ffffffff81430cf6>] bus_for_each_dev+0x56/0x90
-> [   16.617001]  [<ffffffff8143240e>] driver_attach+0x1e/0x20
-> [   16.617087]  [<ffffffff81431f80>] bus_add_driver+0x190/0x290
-> [   16.617173]  [<ffffffffa0011000>] ? 0xffffffffa0010fff
-> [   16.617259]  [<ffffffff814330aa>] driver_register+0x7a/0x160
-> [   16.617345]  [<ffffffffa0011000>] ? 0xffffffffa0010fff
-> [   16.617431]  [<ffffffff8135e42c>] __pci_register_driver+0x4c/0x50
-> [   16.617519]  [<ffffffffa001101e>] hpsa_init+0x1e/0x1000 [hpsa]
-> [   16.617605]  [<ffffffff8100206f>] do_one_initcall+0x3f/0x170
-> [   16.617692]  [<ffffffff810bef7e>] load_module+0x16ae/0x1c40
-> [   16.617777]  [<ffffffff810bbb70>] ? show_initstate+0x50/0x50
-> [   16.617863]  [<ffffffff8169f71e>] ? do_page_fault+0xe/0x10
-> [   16.617949]  [<ffffffff810bf5de>] sys_init_module+0xce/0x100
-> [   16.618035]  [<ffffffff816a3d99>] system_call_fastpath+0x16/0x1b
-> [   16.618157] ---[ end trace 260311c4be71d0dc ]---
-> [   16.618228] Mapped at:
-> [   16.618311]  [<ffffffff8134b189>] debug_dma_map_page+0xb9/0x160
-> [   16.618451]  [<ffffffffa0004132>] fill_cmd.isra.31+0x252/0x400 [hpsa]
-> [   16.618613]  [<ffffffffa0004853>] hpsa_scsi_do_inquiry+0x73/0x100 [hpsa]
-> [   16.618766]  [<ffffffffa0006ce9>] hpsa_init_one+0x1839/0x1ce0 [hpsa]
-> [   16.618919]  [<ffffffff8135db9b>] local_pci_probe+0x4b/0x80
-> [   16.619286] scsi3 : hpsa
-> 
-> 
-> Signed-off-by: Shuah Khan <shuah.khan@hp.com>
-> CC: stable@vger.kernel.org
-> ---
->  drivers/scsi/hpsa.c |    5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-> index 4f33806..3b4d195 100644
-> --- a/drivers/scsi/hpsa.c
-> +++ b/drivers/scsi/hpsa.c
-> @@ -1405,6 +1405,11 @@ static void hpsa_map_one(struct pci_dev *pdev,
->  	}
->  
->  	addr64 = (u64) pci_map_single(pdev, buf, buflen, data_direction);
-> +	if (dma_mapping_error(&pdev->dev, addr64)) {
-> +		cp->Header.SGList = 0;
-> +		cp->Header.SGTotal = 0;
-> +		return;
-> +	}
->  	cp->SG[0].Addr.lower =
->  	  (u32) (addr64 & (u64) 0x00000000FFFFFFFF);
->  	cp->SG[0].Addr.upper =
+>>>>> "Jan" == Jan Kiszka <jan.kiszka@siemens.com> writes:
 
-Probably should bubble that error up through hpsa_map_one return value
-(currently void, but I guess that needs to change) and that's called from
-one place, fill_cmd(), also currently returning void (needs to change).
-I think all the places that call fill_cmd() have failure paths that
-can be used.
+Jan> In addition, the command installs a silent breakpoint in the load_module
+Jan> function at the point where the module was loaded but not yet
+Jan> initialized. The breakpoint handler will try to load symbols from the
+Jan> module files found during lx-symbols execution. This way, breakpoints
+Jan> can be set to module initialization functions, and there is usually no
+Jan> need to explicitly call lx-symbols after (re-)loading a module.
 
-There are a couple other places in hpsa that we call pci_map_single and do
-not subsequently call dma_mapping_error().
+It is a nice approach, but I wonder whether the kernel's gdb stub could
+use the existing qXfer:libraries remote protocol packet.  And, if not,
+could we extend gdb to make it work.
 
-I don't thinking just setting SGList = 0 and SGTotal = 0 is going to 
-do something good (I expect it will end up causing the cnotroller to 
-reject the command as invalid -- and pretty much all the commands that
-go through this path are driver generated commands, so, if the driver
-is generating invalid commands, that would be a bug.
+Jan> +		def _find_breakpoint_location(self):
+Jan> +			breakpoint_match = "^[0-9]*[\t]*err = parse_args\(.*"
+Jan> +
+Jan> +			src = gdb.execute("list kernel/module.c:load_module",
+Jan> +					  to_string = True)
 
-So, I don't think this patch is quite correct as is.
+Whatever works -- but I think there are better ways.
 
-But, thanks for bringing this failure to call dma_mapping_error to my
-attention.
+The simplest is introducing a function that is called at the right spot
+with the right arguments.  It doesn't need to do anything, just be a
+name where you can put a breakpoint.
 
-So what cmdline options or config options did you enable to get this check?
+Jan> +	import symbols
 
-was it something like:
+I think it's better to put everything into its own package, e.g. 'import
+linux.symbols', to try to avoid conflicts with other python modules that
+may get loaded.
 
-dma_debug=1 dma_debug_entries=???
-
--- steve
-
+Tom
