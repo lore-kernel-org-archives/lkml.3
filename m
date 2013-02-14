@@ -1,97 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758568Ab3BNKWS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 05:22:18 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:62409 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757283Ab3BNKWQ (ORCPT
+	id S933892Ab3BNKXg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 05:23:36 -0500
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:39350 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757283Ab3BNKXc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 05:22:16 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linaro-mm-sig@lists.linaro.org
-Subject: Re: [Linaro-mm-sig] [PATCH 2/3] mutex: add support for reservation style locks
-Date: Thu, 14 Feb 2013 10:22:00 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-5-generic; KDE/4.3.2; x86_64; ; )
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        a.p.zijlstra@chello.nl, x86@kernel.org,
-        dri-devel@lists.freedesktop.org, robclark@gmail.com,
-        tglx@linutronix.de, mingo@elte.hu, linux-media@vger.kernel.org
-References: <20130207151831.2868.5146.stgit@patser.local> <20130207151838.2868.69610.stgit@patser.local>
-In-Reply-To: <20130207151838.2868.69610.stgit@patser.local>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Thu, 14 Feb 2013 05:23:32 -0500
+Date: Thu, 14 Feb 2013 11:23:06 +0100
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        David Howells <dhowells@redhat.com>, Tony Luck <tony.luck@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Michal Simek <monstr@monstr.eu>, Jonas Bonn <jonas@southpole.se>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Richard Kuo <rkuo@codeaurora.org>, Lennox Wu <lennox.wu@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Paul Mundt <lethal@linux-sh.org>, Chris Zankel <chris@zankel.net>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [RFC][CFT] what's in signal.git queue
+Message-ID: <20130214112306.30ab728c@mschwide>
+In-Reply-To: <20130214012539.GQ4503@ZenIV.linux.org.uk>
+References: <20130214012539.GQ4503@ZenIV.linux.org.uk>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201302141022.00297.arnd@arndb.de>
-X-Provags-ID: V02:K0:TjSB4ZEbkV+jzuLBP5/D+l4JCGjyUdKOBkc975END/K
- no7UMtAn7G6ueDIaWyjnZkIzNYoFPpdAbwH5XMNGMa1koWOsbU
- FswT8AWXubFQvi2u5koq45eyy2v50LcCLAPL2Z/dYBxIrEoNrz
- 6wf/d5hb1aotP0jEDS4gSBweoQVivSm+M9OGVsCSu8feTR+rkU
- Ht6nIxRunLP4gLa7KBLcxKlV810+Qkw0zm47yhf17q5sD9lxN2
- qo+UpvdAD6GN5FxPIOG5fyio+fT2wO8m/HOTuCOKpxNgDK82ei
- O0m0QgnfLr4QqpaoKuJjLy2xgjutDBQYwY+Xz1euxKT3tuWYSK
- ioppdbkxKmzFMHFVubtE=
+x-cbid: 13021410-3548-0000-0000-0000048C7858
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 07 February 2013, Maarten Lankhorst wrote:
+On Thu, 14 Feb 2013 01:25:39 +0000
+Al Viro <viro@ZenIV.linux.org.uk> wrote:
 
-Hi Maarten,
+> At that point the common stem ends; as far as I'm concerned, this part is
+> in never-rebase mode by now.  Then comes a bunch of per-architecture branches;
+> all subject to ACK by maintainers (ones who are not MIA, that is ;-/).  Once
+> maintainer(s) are OK with a branch, it's in no-rebase mode as well.  Branch
+> names are of form arch-<arch name>, same as the last time around.
 
-I cannot help a lot on this patch set, but there are a few things that
-I noticed when reading it.
+Just tested the signal.git master branch (didn't see any additional commit on
+the arch-s390 branch). Works for me and the test suite of gdb does not come up
+with any new unexpected failures. So for the s390 parts:
 
-> Functions:
-> ----------
-> 
-> mutex_reserve_lock, and mutex_reserve_lock_interruptible:
->   Lock a buffer with a reservation_id set. reservation_id must not be
->   set to 0, since this is a special value that means no reservation_id.
+Acked-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-I think the entire description should go into a file in the Documentation
-directory, to make it easier to find without looking up the git history.
+-- 
+blue skies,
+   Martin.
 
-For the purpose of documenting this, it feels a little strange to
-talk about "buffers" here. Obviously this is what you are using the
-locks for, but it sounds like that is not the only possible use
-case.
+"Reality continues to ruin my life." - Calvin.
 
->   These functions will return -EDEADLK instead of -EAGAIN if
->   reservation_id is the same as the reservation_id that's attempted to
->   lock the mutex with, since in that case you presumably attempted to
->   lock the same lock twice.
-
-Since the user always has to check the return value, would it be
-possible to provide only the interruptible kind of this function
-but not the non-interruptible one? In general, interruptible locks
-are obviously harder to use, but they are much user friendlier when
-something goes wrong.
-
-> mutex_reserve_lock_slow and mutex_reserve_lock_intr_slow:
->   Similar to mutex_reserve_lock, except it won't backoff with -EAGAIN.
->   This is useful when mutex_reserve_lock failed with -EAGAIN, and you
->   unreserved all buffers so no deadlock can occur.
-
-Are these meant to be used a lot? If not, maybe prefix them with __mutex_
-instead of mutex_.
-
-> diff --git a/include/linux/mutex.h b/include/linux/mutex.h
-> index 9121595..602c247 100644
-> --- a/include/linux/mutex.h
-> +++ b/include/linux/mutex.h
-> @@ -62,6 +62,11 @@ struct mutex {
->  #endif
->  };
->  
-> +struct ticket_mutex {
-> +	struct mutex base;
-> +	atomic_long_t reservation_id;
-> +};
-
-Have you considered changing the meaning of the "count" member
-of the mutex in the case where a ticket mutex is used? That would
-let you use an unmodified structure.
-
-	Arnd
