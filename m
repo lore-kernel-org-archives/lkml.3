@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934132Ab3BNRSM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 12:18:12 -0500
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:61311 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758097Ab3BNRSH (ORCPT
+	id S1760182Ab3BNRTE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 12:19:04 -0500
+Received: from smtprelay-b22.telenor.se ([195.54.99.213]:35721 "EHLO
+	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758269Ab3BNRTC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 12:18:07 -0500
+	Thu, 14 Feb 2013 12:19:02 -0500
+X-SENDER-IP: [85.230.168.206]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AoZDAEAcHVFV5qjOPGdsb2JhbABEhgIBhH21aRcDAQEBATg0gh8BAQU6HCMQCAMYCSUPBSUKGhOIFr1KFZEOYQOWI4YBjVs
+X-IronPort-AV: E=Sophos;i="4.84,666,1355094000"; 
+   d="scan'208";a="277175993"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Thu, 14 Feb 2013 18:19:27 +0100
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Benson Leung <bleung@chromium.org>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, khali@linux-fr.org, olofj@chromium.org,
+        djkurtz@chromium.org, dudl@cypress.com
+Subject: Re: [PATCH v2 1/1] Input: mouse: cyapa - Add support for cyapa smbus
+ protocol
+Message-ID: <20130214171927.GA538@polaris.bitmath.org>
+References: <1359673513-22328-1-git-send-email-bleung@chromium.org>
+ <1360527340-25936-1-git-send-email-bleung@chromium.org>
+ <20130214042635.GC2472@core.coreip.homeip.net>
 MIME-Version: 1.0
-In-Reply-To: <20130214143905.GC5700@pd.tnic>
-References: <20130129202848.GE25415@pd.tnic> <3066730.6MVSAfNyye@vostro.rjw.lan>
- <20130131131034.GF4926@pd.tnic> <2293454.v8QRHr8txR@vostro.rjw.lan>
- <20130203144656.GB5844@pd.tnic> <20130214143905.GC5700@pd.tnic>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 14 Feb 2013 10:17:46 -0700
-Message-ID: <CAErSpo6Mi31O1YA5PKnRjQMinB284Ag6PY8LuZpD0NwuZ6QZuw@mail.gmail.com>
-Subject: Re: Uhhuh. NMI received for unknown reason 2c on CPU 0.
-To: Borislav Petkov <bp@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Jiri Slaby <jslaby@suse.cz>, Bjorn Helgaas <bhelgaas@google.com>,
-        x86@kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130214042635.GC2472@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 14, 2013 at 7:39 AM, Borislav Petkov <bp@suse.de> wrote:
-> On Sun, Feb 03, 2013 at 03:46:56PM +0100, Borislav Petkov wrote:
->> On Sun, Feb 03, 2013 at 12:04:46AM +0100, Rafael J. Wysocki wrote:
->> > The [2/5] is at: https://patchwork.kernel.org/patch/2001211/
->> >
->> > The other two are attached.  I suppose the ordering doesn't matter.
->>
->> Ok, the eth link cable hotplugging issue seems fixed, plugging and
->> unplugging the cable works as expected.
->
-> Q: what happened to those, are they going upstream for 3.9 or are you
-> sending them now for 3.8?
->
-> They fix at least the cable hotplugging issue so at least one thing is
-> covered.
+On Wed, Feb 13, 2013 at 08:26:35PM -0800, Dmitry Torokhov wrote:
+> On Sun, Feb 10, 2013 at 12:15:40PM -0800, Benson Leung wrote:
+> > This patch adds support for the Cypress APA Smbus Trackpad type,
+> > which uses a modified register map that fits within the
+> > limitations of the smbus protocol.
+> > 
+> > Devices that use this protocol include:
+> > CYTRA-116001-00 - Samsung Series 5 550 Chromebook trackpad
+> > CYTRA-103002-00 - Acer C7 Chromebook trackpad
+> > CYTRA-101003-00 - HP Pavilion 14 Chromebook trackpad
+> > 
+> > Signed-off-by: Dudley Du <dudl@cypress.com>
+> > Signed-off-by: Benson Leung <bleung@chromium.org>
+> > Reviewed-by: Daniel Kurtz <djkurtz@chromium.org>
+> > ---
+> > v2 : Minor style cleanup. Removed unused struct device *dev declarations.
+> > ---
+> 
+> Applied, thank you Benson.
+> 
+> Henrik, I put you down as "reviewed-by".
 
-I haven't done anything with the e1000e patches; I assume the e1000e
-maintainers will take care of those.
+Perfect, thank you.
 
-I merged the following patches for v3.9:
-
-    * pci/konstantin-runtime-pm:
-      PCI/PM: Clear state_saved during suspend
-      PCI: Use atomic_inc_return() rather than atomic_add_return()
-      PCI: Catch attempts to disable already-disabled devices
-      PCI: Disable Bus Master unconditionally in pci_device_shutdown()
-
-You can see the actual patches I merged at:
-http://git.kernel.org/?p=linux/kernel/git/helgaas/pci.git;a=shortlog;h=refs/heads/next
-
-It's pretty late for v3.8, but let me know if you think they're critical.
-
-Bjorn
+Henrik
