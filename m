@@ -1,75 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934269Ab3BNOG2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 09:06:28 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54286 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757544Ab3BNOG1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 09:06:27 -0500
-From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: [PATCH v2] regmap: debugfs: Simplify calculation of `c->max_reg'
-Date: Thu, 14 Feb 2013 14:04:04 +0000
-Message-Id: <1360850644-15581-1-git-send-email-dp@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.8.1.3
+	id S1757796Ab3BNOIg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 09:08:36 -0500
+Received: from mga03.intel.com ([143.182.124.21]:54260 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757544Ab3BNOIf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 09:08:35 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,665,1355126400"; 
+   d="scan'208";a="256947571"
+Message-ID: <511CEFDD.9080709@intel.com>
+Date: Thu, 14 Feb 2013 22:08:29 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+CC: Peter Zijlstra <peterz@infradead.org>, torvalds@linux-foundation.org,
+        mingo@redhat.com, tglx@linutronix.de, akpm@linux-foundation.org,
+        arjan@linux.intel.com, bp@alien8.de, pjt@google.com,
+        namhyung@kernel.org, efault@gmx.de, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch v4 05/18] sched: quicker balancing on fork/exec/wake
+References: <1358996820-23036-1-git-send-email-alex.shi@intel.com> <1358996820-23036-6-git-send-email-alex.shi@intel.com> <1360664565.4485.13.camel@laptop> <511C9C54.4090508@linux.vnet.ibm.com>
+In-Reply-To: <511C9C54.4090508@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't need to use any of the file position information
-to calculate the base and max register of each block.  Just
-use the counter directly.
+On 02/14/2013 04:12 PM, Preeti U Murthy wrote:
+> **************************START PATCH*************************************
+> 
+> sched:Improve balancing for fork/exec/wake tasks
 
-Ensure that in the limiting case where there is a single
-register in the register file we handle that properly in
-the if (c) { ... } code after the loop without causing
-an integer wrap-around.
+Can you test the patch with hackbench and aim7 with 2000 threads? plus
+the patch in the tip:core/locking tree:
 
-Signed-off-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
----
- drivers/base/regmap/regmap-debugfs.c | 13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+  3a15e0e0cdda rwsem: Implement writer lock-stealing for better scalability
 
-diff --git a/drivers/base/regmap/regmap-debugfs.c b/drivers/base/regmap/regmap-debugfs.c
-index 78d5f20..d804b74 100644
---- a/drivers/base/regmap/regmap-debugfs.c
-+++ b/drivers/base/regmap/regmap-debugfs.c
-@@ -80,7 +80,7 @@ static unsigned int regmap_debugfs_get_dump_start(struct regmap *map,
- {
- 	struct regmap_debugfs_off_cache *c = NULL;
- 	loff_t p = 0;
--	unsigned int i, ret;
-+	unsigned int i = 0, ret;
- 	unsigned int fpos_offset;
- 	unsigned int reg_offset;
- 
-@@ -95,9 +95,7 @@ static unsigned int regmap_debugfs_get_dump_start(struct regmap *map,
- 			    regmap_precious(map, i)) {
- 				if (c) {
- 					c->max = p - 1;
--					fpos_offset = c->max - c->min;
--					reg_offset = fpos_offset / map->debugfs_tot_len;
--					c->max_reg = c->base_reg + reg_offset;
-+					c->max_reg = i - 1;
- 					list_add_tail(&c->list,
- 						      &map->debugfs_off_cache);
- 					c = NULL;
-@@ -124,9 +122,10 @@ static unsigned int regmap_debugfs_get_dump_start(struct regmap *map,
- 	/* Close the last entry off if we didn't scan beyond it */
- 	if (c) {
- 		c->max = p - 1;
--		fpos_offset = c->max - c->min;
--		reg_offset = fpos_offset / map->debugfs_tot_len;
--		c->max_reg = c->base_reg + reg_offset;
-+		if (!i)
-+			c->max_reg = 0;
-+		else
-+			c->max_reg = i - 1;
- 		list_add_tail(&c->list,
- 			      &map->debugfs_off_cache);
- 	}
+If it works you may find some improvement.
+
 -- 
-1.8.1.3
-
+Thanks
+    Alex
