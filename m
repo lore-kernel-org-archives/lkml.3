@@ -1,80 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964803Ab3BNRWE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 12:22:04 -0500
-Received: from mail-qe0-f52.google.com ([209.85.128.52]:37352 "EHLO
-	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758219Ab3BNRWC (ORCPT
+	id S1760931Ab3BNR10 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 12:27:26 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:39006 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758194Ab3BNR1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 12:22:02 -0500
+	Thu, 14 Feb 2013 12:27:24 -0500
+Message-ID: <511D1E79.8030909@ti.com>
+Date: Thu, 14 Feb 2013 19:27:21 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130213215250.GE23390@core.coreip.homeip.net>
-References: <1359707312-12986-1-git-send-email-djkurtz@chromium.org> <20130213215250.GE23390@core.coreip.homeip.net>
-From: Daniel Kurtz <djkurtz@chromium.org>
-Date: Thu, 14 Feb 2013 09:15:09 -0800
-X-Google-Sender-Auth: mQA7SgJs6V8WgdEJ-Lly-zSfC8A
-Message-ID: <CAGS+omDJi6EecXHdtYEGg0iXNqTLSnhHPE7ieHQ=ZNXkowJqKQ@mail.gmail.com>
-Subject: Re: [PATCH] Input: synaptics - disable fuzz when using mt slots
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Chung-Yih Wang <cywang@chromium.org>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        linux-fbdev <linux-fbdev@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] omapdss fixes for 3.8
+X-Enigmail-Version: 1.4.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="------------enigBE1A649C6F70936B4C3DEA1B"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 13, 2013 at 1:52 PM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> On Fri, Feb 01, 2013 at 04:28:32PM +0800, Daniel Kurtz wrote:
->> The input fuzz algorithm does a pretty good job filtering out small
->> jitter on input samples.
->>
->> However, there is a subtle problem when fuzz is used with mt drivers that
->> also use input_mt_report_pointer_emulation() to report legacy single
->> touch coordinates.  The reported single touch coordinates are taken from
->> the active MT slot with smallest tracking id.  However, since the MT data
->> is sent first, it has already had FUZZ applied.  Thus, the ST coordinates
->> actually get FUZZ applied a second time, with the just-fuzzed MT value as
->> the 'old value'.
->>
->> It appears that it is non-trivial to fix this in the mt layer/input core,
->> so, for now, just disable fuzz for the synaptics IMAGE_SENSOR path that
->> uses input_mt_report_pointer_emulation().
->>
->> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
->> ---
->>  drivers/input/mouse/synaptics.c | 3 ++-
->>  1 file changed, 2 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
->> index 12d12ca..b6c6838 100644
->> --- a/drivers/input/mouse/synaptics.c
->> +++ b/drivers/input/mouse/synaptics.c
->> @@ -1211,7 +1211,8 @@ static void set_abs_position_params(struct input_dev *dev,
->>       int x_max = priv->x_max ?: XMAX_NOMINAL;
->>       int y_min = priv->y_min ?: YMIN_NOMINAL;
->>       int y_max = priv->y_max ?: YMAX_NOMINAL;
->> -     int fuzz = SYN_CAP_REDUCED_FILTERING(priv->ext_cap_0c) ?
->> +     int fuzz = (SYN_CAP_REDUCED_FILTERING(priv->ext_cap_0c) &&
->> +                     !SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c)) ?
->>                       SYN_REDUCED_FILTER_FUZZ : 0;
->
-> Hmm, instead of disabling fuzz completely maybe we should disable it
-> only on the derived axes (ABS_X/ABS_Y) for multitouch devices?
+--------------enigBE1A649C6F70936B4C3DEA1B
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Yes, that should work...  both would end up fuzzed to the same value,
-for a not-so-obvious reason, IMHO :).
-It's a bit tricky, and I like it, but is that what you intended by the
-suggestion?
+Hi Linus,
 
--Daniel
+It'd be great if these two late fixes would still make it into 3.8. The o=
+ther
+one fixes ARM kernel compilation when using 'allyesconfig', and the other=
+ makes
+DPI displays function again on OMAP3630 boards.
 
->
-> Thanks.
->
-> --
-> Dmitry
+ Tomi
+
+The following changes since commit 836dc9e3fbbab0c30aa6e664417225f5c1fb1c=
+39:
+
+  Linux 3.8-rc7 (2013-02-09 08:20:39 +1100)
+
+are available in the git repository at:
+
+  git://gitorious.org/linux-omap-dss2/linux.git tags/omapdss-for-3.8-rc8
+
+for you to fetch changes up to 91e83ffd6d3ba4de21202b4f541777a7a8db02c8:
+
+  omapdrm: fix the dependency to omapdss (2013-02-14 13:08:29 +0200)
+
+----------------------------------------------------------------
+* Fix ARM compilation with "allyesconfig" (omapdrm: fix the dependency to=
+
+  omapdss)
+
+* fix DPI displays on OMAP3630 (OMAPDSS: add FEAT_DPI_USES_VDDS_DSI to
+  omap3630_dss_feat_list)
+
+----------------------------------------------------------------
+NeilBrown (1):
+      OMAPDSS: add FEAT_DPI_USES_VDDS_DSI to omap3630_dss_feat_list
+
+Tomi Valkeinen (1):
+      omapdrm: fix the dependency to omapdss
+
+ drivers/staging/omapdrm/Kconfig        |    2 +-
+ drivers/video/omap2/dss/dss_features.c |    1 +
+ 2 files changed, 2 insertions(+), 1 deletion(-)
+
+
+--------------enigBE1A649C6F70936B4C3DEA1B
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with undefined - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJRHR55AAoJEPo9qoy8lh71RPwQAIwCZiZ4zXzZSg55Nf+umd2f
+ZQAwTROXos0fqf/cYsiCAu+/lXnNlpToTJTUpxb57cZtS8xKugg7g/1zd/9sN9h7
+SjEOiVL/Qi6MqBI7PCPFDWcc8D2OQlkp23r0IFfnimBbub55fdbtOwk3m4JDY8p7
+Ha+AuZmucphgncemrGRBcW2W9jw4HxXYc38J/BOFdBM8m3R5plpOu1P/A3d6pmhl
+FxL9Ypu6BZI5s75qBmN0SjcaMNuz7iHruqeSkVU6pU4wb5PLMt5xHRtqI082bPXQ
+0GoseBYvQptL+XcEQXriKnEKHg2KJBNpLoia0nw6nAr61iBiCBNjTY3ApF7PeZ4Y
+TY6LD96QQVwyeMAfArFQLXTQNeBEAOxtiJgFIp319N9JwfP/1d0usIgC+CQQM3Em
+bD4raYVu6o5tzJonti0Fx6uMLuqvoBkY+599aTlCkG5ZqVHikHqzKKk2cWHcD46u
+ZK55lYyIwI7RDC3pEJ4yA1vUfBMesw3CBsx/QLsy3lhDaBUAuI87TQl0lVRhLhSd
+Q16xSIkCOI3Egr8dRrbKDv2UD5zNcawrcN+Uj9IvaWevn26O1aBznVHSuSPSC5HR
+wvqGY7y01JrVTwfhBBm8OUdczWoFBI6tHpSSOEK5xHrYJH2nk41/kcBHgLgmz8Ad
+QJkVIMrbMiu1fUGUtY+5
+=Wzsp
+-----END PGP SIGNATURE-----
+
+--------------enigBE1A649C6F70936B4C3DEA1B--
