@@ -1,63 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934726Ab3BNOoI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 09:44:08 -0500
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:54690 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934614Ab3BNOoG (ORCPT
+	id S1760672Ab3BNOpQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 09:45:16 -0500
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:51903 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757726Ab3BNOpO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 09:44:06 -0500
-Date: Thu, 14 Feb 2013 15:44:04 +0100
-From: Andreas Mohr <andi@lisas.de>
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [ASAP] thermal_sys.c NULL ptr deref patch likely incomplete
-Message-ID: <20130214144404.GA20011@rhlx01.hs-esslingen.de>
+	Thu, 14 Feb 2013 09:45:14 -0500
+Date: Thu, 14 Feb 2013 15:45:10 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Alexander Viro <viro@ftp.linux.org.uk>,
+        "Theodore Ts'o" <tytso@mit.edu>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [-rc7 regression] Block IO/VFS/ext3/timer spinlock lockup?
+Message-ID: <20130214144510.GC25282@gmail.com>
+References: <CA+55aFz50VvnMjoDCbg01N+rMu5vscu88kr0SV3tWLjaiL0TeA@mail.gmail.com>
+ <20130213111007.GA11367@gmail.com>
+ <CA+55aFxrjsVkBwUdjmc4MYvEsjEyCJZ7AFpGrWvbbQFB3EVtHA@mail.gmail.com>
+ <alpine.LFD.2.02.1302140012460.22263@ionos>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Priority: none
+In-Reply-To: <alpine.LFD.2.02.1302140012460.22263@ionos>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-I just had a
+* Thomas Gleixner <tglx@linutronix.de> wrote:
 
-# cat /sys/class/thermal/thermal_zone0/policy 
-(null)
+> On Wed, 13 Feb 2013, Linus Torvalds wrote:
+> 
+> > On Wed, Feb 13, 2013 at 3:10 AM, Ingo Molnar <mingo@kernel.org> wrote:
+> > >
+> > >
+> > > Setting up Logical Volume Management: [   13.140000] BUG: spinlock lockup suspected on CPU#1, lvm.static/139
+> > > [   13.140000] BUG: spinlock lockup suspected on CPU#1, lvm.static/139
+> > > [   13.140000]  lock: 0x97fe9fc0, .magic: dead4ead, .owner: <none>/-1, .owner_cpu: -1
+> > > [   13.140000] Pid: 139, comm: lvm.static Not tainted 3.8.0-rc7 #216702
+> > > [   13.140000] Call Trace:
+> > > [   13.140000]  [<792b5e66>] spin_dump+0x73/0x7d
+> > > [   13.140000]  [<7916a347>] do_raw_spin_lock+0xb2/0xe8
+> > > [   13.140000]  [<792b9412>] _raw_spin_lock_irqsave+0x35/0x3e
+> > > [   13.140000]  [<790391e8>] prepare_to_wait+0x18/0x57
+> > 
+> > The wait-queue spinlock? That sounds *very* unlikely to deadlock due
+> > to any bugs in block layer or filesystems. There are never any
+> > downcalls to those from within that spinlock or any other locks taken
+> > inside of it.
+> 
+> The way more interesting information is:
+> 
+> [   13.140000]  lock: 0x97fe9fc0, .magic: dead4ead, .owner: <none>/-1, .owner_cpu: -1
+> 
+> That lock is not contended, which makes no sense at all. The only
+> explanation for such a behaviour would be a tight spin_lock/unlock
+> loop on the other core which is exposed through the spinlock debugging
+> code (it uses trylocks instead of queueing in the ticket lock).
+> 
+> Ingo, can you provide the backtrace of CPU0 please?
 
+CPU0 appears to be idle:
 
-When looking at the code (on my -rc7), I saw:
+[  118.510000] Call Trace:
+[  118.510000]  [<7900844b>] cpu_idle+0x86/0xb4
+[  118.510000]  [<792a91df>] rest_init+0x103/0x108
+[  118.510000]  [<794558cc>] start_kernel+0x2c7/0x2cc
+[  118.510000]  [<7945528e>] i386_start_kernel+0x44/0x46
 
-drivers/thermal/thermal_sys.c
-
-static ssize_t
-policy_show(struct device *dev, struct device_attribute *devattr, char
-*buf)
-{
-        struct thermal_zone_device *tz = to_thermal_zone(dev);
-
-        return sprintf(buf, "%s\n", tz->governor->name);
-}
-
-
-(not sure though why I manage to get a "(null)" rather than a crash
-due to the dereferencing prior to output - possibly since I do have a
-valid governor allocated yet then only its name field is null?)
-
-
-Seems we are missing a critical (and -rc-relevant) patch here
-(and perhaps at other locations in this file, too, given that
-this one was missed last time?).
-
-Currently trying to get acerhdf operation into a working state
-(and having some trouble with it - didn't know that I probably need some
-governor setup which seems to have just been available on my last setup,
-or so)
+which suggests memory corruption - but, if then it's a special 
+type of memory corruption because AFAIR I always saw similar 
+patterns to the lockup, never other signs of memory corruption.
 
 Thanks,
 
-Andreas Mohr
+	Ingo
