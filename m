@@ -1,70 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935078Ab3BNWvt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 17:51:49 -0500
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:50134 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S934965Ab3BNWvs (ORCPT
+	id S935084Ab3BNWwT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 17:52:19 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:54992 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759164Ab3BNWwS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 17:51:48 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX180kQLKQGHIO41eaK0nK3pz
-Date: Thu, 14 Feb 2013 14:51:43 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, Paul Walmsley <paul@pwsan.com>,
-        Sebastien Guiriec <s-guiriec@ti.com>
-Subject: Re: [PATCH 3/9] ARM: omap2: include linux/errno.h in hwmod_reset
-Message-ID: <20130214225142.GG11362@atomide.com>
-References: <1360882071-4072668-1-git-send-email-arnd@arndb.de>
- <1360882071-4072668-4-git-send-email-arnd@arndb.de>
+	Thu, 14 Feb 2013 17:52:18 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Fabio Estevam <festevam@gmail.com>
+Subject: Re: [PATCH 6/9] drm/pci: move drm_pcie_get_speed_cap_mask inside #ifdef CONFIG_PCI
+Date: Thu, 14 Feb 2013 22:52:06 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-5-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, Bjorn Helgaas <bhelgaas@google.com>,
+        Dave Airlie <airlied@redhat.com>, linux-kernel@vger.kernel.org
+References: <1360880818-4071454-1-git-send-email-arnd@arndb.de> <1360880818-4071454-7-git-send-email-arnd@arndb.de> <CAOMZO5AbTC+82KKTqWXeseahsasx2q=q-4k9u14xyBYhgm2gdQ@mail.gmail.com>
+In-Reply-To: <CAOMZO5AbTC+82KKTqWXeseahsasx2q=q-4k9u14xyBYhgm2gdQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360882071-4072668-4-git-send-email-arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302142252.06878.arnd@arndb.de>
+X-Provags-ID: V02:K0:xq4zQ7i3YCviO7OAzH1ILUL0BYYfYhBShDGnlnMtGya
+ x4Z54I7FXDQzpKNTCsQxMfX524+78/+cdB/6W1CkEgmSZn75+5
+ E2KC22fWwNYo/vakBYstza5PxO9rCc/rO4y3Q6XEa5G4wy01eD
+ P7wBkp8drQ7hXovGMNVN7yI8msMhUwTMtLLojuQ7LHiYIgsFQW
+ ThINIK3YYyAbO3jzNeEL4ourOAEq+FgbEt0sHRY7t6aY8tU9EP
+ 2mUksZV8Odkk/yACZIYgiIrcGUAekyqyAA2iJl1W3TLO+f3MWn
+ zp7fvig9PeSjKUGZlTlPcTU9TQbQWYdgCJPuZPaj/YmkNn66sn
+ kbH2DsS+tpC8daeWKC8o=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Arnd Bergmann <arnd@arndb.de> [130214 14:51]:
-> The newly created omap_hwmod_reset.c is missing an
-> include of linux/errno.h in commit c02060d8 "ARM:
-> OMAP4+: AESS: enable internal auto-gating during
-> initial setup". It still works in omap2_defconfig,
-> but not in all other combinations.
-> 
-> Without this patch, building allmodconfig results in:
-> 
-> arch/arm/mach-omap2/omap_hwmod_reset.c: In function 'omap_hwmod_aess_preprogram':
-> arch/arm/mach-omap2/omap_hwmod_reset.c:47:11: error: 'EINVAL' undeclared (first use in this function)
-> arch/arm/mach-omap2/omap_hwmod_reset.c:47:11: note: each undeclared identifier is reported only once for each function it appears in
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Paul Walmsley <paul@pwsan.com>
-> Cc: Sebastien Guiriec <s-guiriec@ti.com>
+On Thursday 14 February 2013, Fabio Estevam wrote:
+> Bjorn has already sent a fix for this problem:
+> http://www.spinics.net/lists/arm-kernel/msg224425.html
 
-Acked-by: Tony Lindgren <tony@atomide.com>
+Ok, excellent.
 
-> ---
->  arch/arm/mach-omap2/omap_hwmod_reset.c | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/arch/arm/mach-omap2/omap_hwmod_reset.c b/arch/arm/mach-omap2/omap_hwmod_reset.c
-> index bba43fa..65e186c 100644
-> --- a/arch/arm/mach-omap2/omap_hwmod_reset.c
-> +++ b/arch/arm/mach-omap2/omap_hwmod_reset.c
-> @@ -24,6 +24,7 @@
->   * 02110-1301 USA
->   */
->  #include <linux/kernel.h>
-> +#include <linux/errno.h>
->  
->  #include <sound/aess.h>
->  
-> -- 
-> 1.8.1.2
-> 
+The result seems to be identical, although patch is formatted
+differently.
+
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+
+for Bjorn's patch.
