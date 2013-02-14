@@ -1,158 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757103Ab3BNDFZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 22:05:25 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:19979 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754549Ab3BNDFS (ORCPT
+	id S1754535Ab3BNDGS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 22:06:18 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3079 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753170Ab3BNDGO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 22:05:18 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        dan.magenheimer@oracle.com, gregkh@linuxfoundation.org
-Cc: sjenning@linux.vnet.ibm.com, rcj@linux.vnet.ibm.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 13/16] zcache/zbud: Add incremental accessory counters
-Date: Wed, 13 Feb 2013 22:05:03 -0500
-Message-Id: <1360811106-2679-14-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.8.0.2
-In-Reply-To: <1360811106-2679-1-git-send-email-konrad.wilk@oracle.com>
-References: <1360811106-2679-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Wed, 13 Feb 2013 22:06:14 -0500
+X-Authority-Analysis: v=2.0 cv=adbjbGUt c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=oAwKxi3ewpjKYUWrz4UA:9 a=PUjeQqilurYA:10 a=QJAaM2ItURLkErdR:21 a=An13F8KIehMGBqQJ:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1360811172.23152.27.camel@gandalf.local.home>
+Subject: [ANNOUNCE] 3.0.62-rt88
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Date: Wed, 13 Feb 2013 22:06:12 -0500
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-that are going to be used for debug fs entries.
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Dear RT Folks,
+
+I'm pleased to announce the 3.0.62-rt88 stable release.
+
+
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  Head SHA1: 3568cae0aa56660cadd607e19096ad853822b28c
+
+
+Or to build 3.0.62-rt88 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.62.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.62-rt88.patch.xz
+
+
+You can also build from 3.0.62-rt87 by applying the incremental patch:
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/incr/patch-3.0.62-rt87-rt88.patch.xz
+
+
+
+Enjoy,
+
+-- Steve
+
+
+Changes from 3.0.62-rt87:
+
 ---
- drivers/staging/zcache/zbud.c | 58 +++++++++++++++++++++++++++++--------------
- 1 file changed, 39 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/staging/zcache/zbud.c b/drivers/staging/zcache/zbud.c
-index 4654978..cff596c 100644
---- a/drivers/staging/zcache/zbud.c
-+++ b/drivers/staging/zcache/zbud.c
-@@ -301,6 +301,26 @@ static ssize_t zbud_eph_unbuddied_count;
- static ssize_t zbud_pers_unbuddied_count;
- static ssize_t zbud_eph_zombie_count;
- static ssize_t zbud_pers_zombie_count;
-+static inline void inc_zbud_eph_pageframes(void) { zbud_eph_pageframes++; };
-+static inline void inc_zbud_pers_pageframes(void) { zbud_pers_pageframes++; };
-+static inline void inc_zbud_eph_zpages(void) { zbud_eph_zpages++; };
-+static inline void inc_zbud_pers_zpages(void) { zbud_pers_zpages++; };
-+static inline void inc_zbud_eph_zbytes(ssize_t bytes) { zbud_eph_zbytes += bytes; };
-+static inline void inc_zbud_pers_zbytes(ssize_t bytes) { zbud_pers_zbytes += bytes; };
-+static inline void inc_zbud_eph_evicted_pageframes(void) { zbud_eph_evicted_pageframes++; };
-+static inline void inc_zbud_pers_evicted_pageframes(void) { zbud_pers_evicted_pageframes++; };
-+static inline void inc_zbud_eph_cumul_zpages(void) { zbud_eph_cumul_zpages++; };
-+static inline void inc_zbud_pers_cumul_zpages(void) { zbud_pers_cumul_zpages++; };
-+static inline void inc_zbud_eph_cumul_zbytes(ssize_t bytes) { zbud_eph_cumul_zbytes += bytes; };
-+static inline void inc_zbud_pers_cumul_zbytes(ssize_t bytes) { zbud_pers_cumul_zbytes += bytes; };
-+static inline void inc_zbud_eph_cumul_chunk_counts(unsigned n) { zbud_eph_cumul_chunk_counts[n]++; };
-+static inline void inc_zbud_pers_cumul_chunk_counts(unsigned n) { zbud_pers_cumul_chunk_counts[n]++; };
-+static inline void inc_zbud_eph_buddied_count(void) { zbud_eph_buddied_count++; };
-+static inline void inc_zbud_pers_buddied_count(void) { zbud_pers_buddied_count++; };
-+static inline void inc_zbud_eph_unbuddied_count(void) { zbud_eph_unbuddied_count++; };
-+static inline void inc_zbud_pers_unbuddied_count(void) { zbud_pers_unbuddied_count++; };
-+static inline void inc_zbud_eph_zombie_count(void) { zbud_eph_zombie_count++; };
-+static inline void inc_zbud_pers_zombie_count(void) { zbud_pers_zombie_count++; };
- static atomic_t zbud_eph_zombie_atomic;
- static atomic_t zbud_pers_zombie_atomic;
+Steven Rostedt (1):
+      Linux 3.0.62-rt88
+
+Thomas Gleixner (4):
+      drivers-tty-pl011-irq-disable-madness.patch
+      mmci: Remove bogus local_irq_save()
+      sched: Init idle->on_rq in init_idle()
+      mm: swap: Initialize local locks early
+
+----
+ drivers/mmc/host/mmci.c         |    5 -----
+ drivers/tty/serial/amba-pl011.c |   15 ++++++++++-----
+ kernel/sched.c                  |    1 +
+ localversion-rt                 |    2 +-
+ mm/swap.c                       |   12 +++++++++---
+ 5 files changed, 21 insertions(+), 14 deletions(-)
+---------------------------
+diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
+index 9394d0b..8d0bf36 100644
+--- a/drivers/mmc/host/mmci.c
++++ b/drivers/mmc/host/mmci.c
+@@ -741,15 +741,12 @@ static irqreturn_t mmci_pio_irq(int irq, void *dev_id)
+ 	struct sg_mapping_iter *sg_miter = &host->sg_miter;
+ 	struct variant_data *variant = host->variant;
+ 	void __iomem *base = host->base;
+-	unsigned long flags;
+ 	u32 status;
  
-@@ -379,9 +399,9 @@ static inline struct zbudpage *zbud_init_zbudpage(struct page *page, bool eph)
- 	zbudpage->zbud1_size = 0;
- 	zbudpage->unevictable = 0;
- 	if (eph)
--		zbud_eph_pageframes++;
-+		inc_zbud_eph_pageframes();
+ 	status = readl(base + MMCISTATUS);
+ 
+ 	dev_dbg(mmc_dev(host->mmc), "irq1 (pio) %08x\n", status);
+ 
+-	local_irq_save(flags);
+-
+ 	do {
+ 		unsigned int remain, len;
+ 		char *buffer;
+@@ -789,8 +786,6 @@ static irqreturn_t mmci_pio_irq(int irq, void *dev_id)
+ 
+ 	sg_miter_stop(sg_miter);
+ 
+-	local_irq_restore(flags);
+-
+ 	/*
+ 	 * If we have less than the fifo 'half-full' threshold to transfer,
+ 	 * trigger a PIO interrupt as soon as any data is available.
+diff --git a/drivers/tty/serial/amba-pl011.c b/drivers/tty/serial/amba-pl011.c
+index 7cbb367..40356ae 100644
+--- a/drivers/tty/serial/amba-pl011.c
++++ b/drivers/tty/serial/amba-pl011.c
+@@ -1754,13 +1754,19 @@ pl011_console_write(struct console *co, const char *s, unsigned int count)
+ 
+ 	clk_enable(uap->clk);
+ 
+-	local_irq_save(flags);
++	/*
++	 * local_irq_save(flags);
++	 *
++	 * This local_irq_save() is nonsense. If we come in via sysrq
++	 * handling then interrupts are already disabled. Aside of
++	 * that the port.sysrq check is racy on SMP regardless.
++	*/
+ 	if (uap->port.sysrq)
+ 		locked = 0;
+ 	else if (oops_in_progress)
+-		locked = spin_trylock(&uap->port.lock);
++		locked = spin_trylock_irqsave(&uap->port.lock, flags);
  	else
--		zbud_pers_pageframes++;
-+		inc_zbud_pers_pageframes();
- 	return zbudpage;
+-		spin_lock(&uap->port.lock);
++		spin_lock_irqsave(&uap->port.lock, flags);
+ 
+ 	/*
+ 	 *	First save the CR then disable the interrupts
+@@ -1782,8 +1788,7 @@ pl011_console_write(struct console *co, const char *s, unsigned int count)
+ 	writew(old_cr, uap->port.membase + UART011_CR);
+ 
+ 	if (locked)
+-		spin_unlock(&uap->port.lock);
+-	local_irq_restore(flags);
++		spin_unlock_irqrestore(&uap->port.lock, flags);
+ 
+ 	clk_disable(uap->clk);
  }
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 858f5df..53b78f0 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -6139,6 +6139,7 @@ void __cpuinit init_idle(struct task_struct *idle, int cpu)
+ 	rcu_read_unlock();
  
-@@ -465,17 +485,17 @@ static void zbud_init_zbud(struct zbudpage *zbudpage, struct tmem_handle *th,
- 	else
- 		zbudpage->zbud1_size = size;
- 	if (eph) {
--		zbud_eph_cumul_chunk_counts[nchunks]++;
--		zbud_eph_zpages++;
--		zbud_eph_cumul_zpages++;
--		zbud_eph_zbytes += size;
--		zbud_eph_cumul_zbytes += size;
-+		inc_zbud_eph_cumul_chunk_counts(nchunks);
-+		inc_zbud_eph_zpages();
-+		inc_zbud_eph_cumul_zpages();
-+		inc_zbud_eph_zbytes(size);
-+		inc_zbud_eph_cumul_zbytes(size);
- 	} else {
--		zbud_pers_cumul_chunk_counts[nchunks]++;
--		zbud_pers_zpages++;
--		zbud_pers_cumul_zpages++;
--		zbud_pers_zbytes += size;
--		zbud_pers_cumul_zbytes += size;
-+		inc_zbud_pers_cumul_chunk_counts(nchunks);
-+		inc_zbud_pers_zpages();
-+		inc_zbud_pers_cumul_zpages();
-+		inc_zbud_pers_zbytes(size);
-+		inc_zbud_pers_cumul_zbytes(size);
- 	}
- }
+ 	rq->curr = rq->idle = idle;
++	idle->on_rq = 1;
+ #if defined(CONFIG_SMP)
+ 	idle->on_cpu = 1;
+ #endif
+diff --git a/localversion-rt b/localversion-rt
+index bd5aee3..666227d 100644
+--- a/localversion-rt
++++ b/localversion-rt
+@@ -1 +1 @@
+--rt87
++-rt88
+diff --git a/mm/swap.c b/mm/swap.c
+index 069390f..662972f 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -772,6 +772,15 @@ unsigned pagevec_lookup(struct pagevec *pvec, struct address_space *mapping,
  
-@@ -603,9 +623,9 @@ struct page *zbud_free_and_delist(struct zbudref *zref, bool eph,
- 		}
- 		if (eph) {
- 			zbud_eph_buddied_count--;
--			zbud_eph_unbuddied_count++;
-+			inc_zbud_eph_unbuddied_count();
- 		} else {
--			zbud_pers_unbuddied_count++;
-+			inc_zbud_pers_unbuddied_count();
- 			zbud_pers_buddied_count--;
- 		}
- 		/* don't mess with lru, no need to move it */
-@@ -664,7 +684,7 @@ found_unbuddied:
- 		list_add_tail(&zbudpage->budlist, &zbud_eph_buddied_list);
- 		unbud[found_good_buddy].count--;
- 		zbud_eph_unbuddied_count--;
--		zbud_eph_buddied_count++;
-+		inc_zbud_eph_buddied_count();
- 		/* "promote" raw zbudpage to most-recently-used */
- 		list_del_init(&zbudpage->lru);
- 		list_add_tail(&zbudpage->lru, &zbud_eph_lru_list);
-@@ -672,7 +692,7 @@ found_unbuddied:
- 		list_add_tail(&zbudpage->budlist, &zbud_pers_buddied_list);
- 		unbud[found_good_buddy].count--;
- 		zbud_pers_unbuddied_count--;
--		zbud_pers_buddied_count++;
-+		inc_zbud_pers_buddied_count();
- 		/* "promote" raw zbudpage to most-recently-used */
- 		list_del_init(&zbudpage->lru);
- 		list_add_tail(&zbudpage->lru, &zbud_pers_lru_list);
-@@ -723,10 +743,10 @@ struct zbudref *zbud_create_prep(struct tmem_handle *th, bool eph,
- 	list_add_tail(&zbudpage->budlist, &unbud[nchunks].list);
- 	if (eph) {
- 		list_add_tail(&zbudpage->lru, &zbud_eph_lru_list);
--		zbud_eph_unbuddied_count++;
-+		inc_zbud_eph_unbuddied_count();
- 	} else {
- 		list_add_tail(&zbudpage->lru, &zbud_pers_lru_list);
--		zbud_pers_unbuddied_count++;
-+		inc_zbud_pers_unbuddied_count();
- 	}
- 	unbud[nchunks].count++;
- 	zbud_init_zbud(zbudpage, th, eph, cdata, budnum, size);
-@@ -951,7 +971,7 @@ evict_page:
- 		BUG();
- 	}
- 	spin_unlock(&zbud_eph_lists_lock);
--	zbud_eph_evicted_pageframes++;
-+	inc_zbud_eph_evicted_pageframes();
- 	if (*zpages == 1)
- 		zbud_eph_unbuddied_count--;
- 	else
--- 
-1.8.0.2
+ EXPORT_SYMBOL(pagevec_lookup);
+ 
++/* Early setup for the local locks */
++static int __init swap_init_locks(void)
++{
++	local_irq_lock_init(rotate_lock);
++	local_irq_lock_init(swap_lock);
++	return 1;
++}
++early_initcall(swap_init_locks);
++
+ unsigned pagevec_lookup_tag(struct pagevec *pvec, struct address_space *mapping,
+ 		pgoff_t *index, int tag, unsigned nr_pages)
+ {
+@@ -789,9 +798,6 @@ void __init swap_setup(void)
+ {
+ 	unsigned long megs = totalram_pages >> (20 - PAGE_SHIFT);
+ 
+-	local_irq_lock_init(rotate_lock);
+-	local_irq_lock_init(swap_lock);
+-
+ #ifdef CONFIG_SWAP
+ 	bdi_init(swapper_space.backing_dev_info);
+ #endif
+
 
