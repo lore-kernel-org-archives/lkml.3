@@ -1,84 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935038Ab3BNW1J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 17:27:09 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:62336 "EHLO
+	id S935060Ab3BNW3B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 17:29:01 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:54925 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932621Ab3BNW1I (ORCPT
+	with ESMTP id S932621Ab3BNW1L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 17:27:08 -0500
+	Thu, 14 Feb 2013 17:27:11 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Qing Xu <qingx@marvell.com>, Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: [PATCH 4/9] mfd: max8925: fix trivial build warning for non-dt
-Date: Thu, 14 Feb 2013 23:26:53 +0100
-Message-Id: <1360880818-4071454-5-git-send-email-arnd@arndb.de>
+        Bjorn Helgaas <bhelgaas@google.com>, Dave Airlie <airlied@redhat.com>
+Subject: [PATCH 6/9] drm/pci: move drm_pcie_get_speed_cap_mask inside #ifdef CONFIG_PCI
+Date: Thu, 14 Feb 2013 23:26:55 +0100
+Message-Id: <1360880818-4071454-7-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1360880818-4071454-1-git-send-email-arnd@arndb.de>
 References: <1360880818-4071454-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:Xsz5trwr1E0CJo3Y83RZDqL6b+1JyoBaxnC+5TlK2Jn
- t7/Xp9Px3C8ZIPsWPjqF0+FeDvF1NLMNCEXg5dWC83dqPLz0xI
- 1vfwyuv8HOtFzChbPBIJcny2xMqjY5awdQ6EbNcUG9j1tHrZi6
- mcF0nJjeHinQMqKXc2ug3/8abAazleo/1Cu9rARSBDAbWts3Kn
- JyXRagR0WYy9e8uMWhrZQW7DC0HUX9hiEM/ld4wx0r/QVorD7G
- XRzrb+STU0b4xuTTVJ/WBV1nJNQLWap9bI0Fn30UxqrewkomWN
- RWg1yxLBJv85EyDPNU0W0Dbyjw+emvtsmX6WX1N15RWq993WAT
- TFCnpyNdzNXfJ5iENVe25wJBhUVo+1gbsrSadBD3w
+X-Provags-ID: V02:K0:TnFBuvQGFahsGVBCYxjHhNc8sr7Ht9zUxInpNYiuHFa
+ uzl/t9yWan2hWHJ0GneCqDGQ51EXJJWH9lgmMnLcl8wJ0Wq//L
+ 4rY/JPpNQbZoID9sYdODLrXCO8XIPIAhslf4DvB3px1hZ5LXxm
+ hJ4lV/4Jn26INQnm2LFM0Xb8e29Fbo1yDuJnBeo8wySpgR04B+
+ 9syl4m5oHUa39JW3WwS/ti9rnwtYtpalCGdMAU1KuIusJ3glEy
+ FPPEFIo6/6248MdghXpfloCIzhU1L4AROYpfCfOouAi+jPTYVG
+ Xs7Rnu237Kjay7A7VZum6bExEOpXb4PHRmaVjPq9L4Ky9Nr5Kc
+ ZDJUezrrhpFDcmG42JcTaIV2Sqi5uFBo012RJ//Gu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch fe527ea5a "mfd: max8925: Support dt for backlight"
-added a new function for DT probing but introduced a
-build warning for the case where CONFIG_OF is disabled:
+commit dd66cc2e1  "drm/pci: Use PCI Express Capability accessors"
+introduced the use of the pcie_capability_read_dword function
+in the drm_pci code, which is only defined when PCI is enabled.
+While most of the file is already hidden away behind an #ifdef
+CONFIG_PCI, this function is not, and that now causes a link
+error in the ARM imx_v6_v7_defconfig configuration.
 
-drivers/video/backlight/max8925_bl.c: In function 'max8925_backlight_probe':
-drivers/video/backlight/max8925_bl.c:177:3: warning: statement with no effect [-Wunused-value]
-
-A much nicer fix is to use the IS_ENABLED keyword to
-have the same effect of dropping the device tree specific
-function when it's not needed.
+Moving the function into the #ifdef section makes this work
+again on IMX, which does not have PCI support, and should
+have no impact on platforms that do.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Qing Xu <qingx@marvell.com>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Dave Airlie <airlied@redhat.com>
 ---
- drivers/video/backlight/max8925_bl.c | 6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+ drivers/gpu/drm/drm_pci.c | 75 +++++++++++++++++++++++------------------------
+ 1 file changed, 37 insertions(+), 38 deletions(-)
 
-diff --git a/drivers/video/backlight/max8925_bl.c b/drivers/video/backlight/max8925_bl.c
-index 5ca11b0..9958fb1 100644
---- a/drivers/video/backlight/max8925_bl.c
-+++ b/drivers/video/backlight/max8925_bl.c
-@@ -101,14 +101,13 @@ static const struct backlight_ops max8925_backlight_ops = {
- 	.get_brightness	= max8925_backlight_get_brightness,
- };
- 
--#ifdef CONFIG_OF
- static int max8925_backlight_dt_init(struct platform_device *pdev,
- 			      struct max8925_backlight_pdata *pdata)
- {
- 	struct device_node *nproot = pdev->dev.parent->of_node, *np;
- 	int dual_string;
- 
--	if (!nproot)
-+	if (!nproot || !IS_ENABLED(CONFIG_OF))
- 		return -ENODEV;
- 	np = of_find_node_by_name(nproot, "backlight");
- 	if (!np) {
-@@ -120,9 +119,6 @@ static int max8925_backlight_dt_init(struct platform_device *pdev,
- 	pdata->dual_string = dual_string;
- 	return 0;
+diff --git a/drivers/gpu/drm/drm_pci.c b/drivers/gpu/drm/drm_pci.c
+index 86102a0..9c408e0 100644
+--- a/drivers/gpu/drm/drm_pci.c
++++ b/drivers/gpu/drm/drm_pci.c
+@@ -388,6 +388,43 @@ err_g1:
  }
--#else
--#define max8925_backlight_dt_init(x, y)	(-1)
--#endif
+ EXPORT_SYMBOL(drm_get_pci_dev);
  
- static int max8925_backlight_probe(struct platform_device *pdev)
- {
++int drm_pcie_get_speed_cap_mask(struct drm_device *dev, u32 *mask)
++{
++	struct pci_dev *root;
++	u32 lnkcap, lnkcap2;
++
++	*mask = 0;
++	if (!dev->pdev)
++		return -EINVAL;
++
++	root = dev->pdev->bus->self;
++
++	/* we've been informed via and serverworks don't make the cut */
++	if (root->vendor == PCI_VENDOR_ID_VIA ||
++	    root->vendor == PCI_VENDOR_ID_SERVERWORKS)
++		return -EINVAL;
++
++	pcie_capability_read_dword(root, PCI_EXP_LNKCAP, &lnkcap);
++	pcie_capability_read_dword(root, PCI_EXP_LNKCAP2, &lnkcap2);
++
++	if (lnkcap2) {	/* PCIe r3.0-compliant */
++		if (lnkcap2 & PCI_EXP_LNKCAP2_SLS_2_5GB)
++			*mask |= DRM_PCIE_SPEED_25;
++		if (lnkcap2 & PCI_EXP_LNKCAP2_SLS_5_0GB)
++			*mask |= DRM_PCIE_SPEED_50;
++		if (lnkcap2 & PCI_EXP_LNKCAP2_SLS_8_0GB)
++			*mask |= DRM_PCIE_SPEED_80;
++	} else {	/* pre-r3.0 */
++		if (lnkcap & PCI_EXP_LNKCAP_SLS_2_5GB)
++			*mask |= DRM_PCIE_SPEED_25;
++		if (lnkcap & PCI_EXP_LNKCAP_SLS_5_0GB)
++			*mask |= (DRM_PCIE_SPEED_25 | DRM_PCIE_SPEED_50);
++	}
++
++	DRM_INFO("probing gen 2 caps for device %x:%x = %x/%x\n", root->vendor, root->device, lnkcap, lnkcap2);
++	return 0;
++}
++EXPORT_SYMBOL(drm_pcie_get_speed_cap_mask);
+ /**
+  * PCI device initialization. Called direct from modules at load time.
+  *
+@@ -465,41 +502,3 @@ void drm_pci_exit(struct drm_driver *driver, struct pci_driver *pdriver)
+ 	DRM_INFO("Module unloaded\n");
+ }
+ EXPORT_SYMBOL(drm_pci_exit);
+-
+-int drm_pcie_get_speed_cap_mask(struct drm_device *dev, u32 *mask)
+-{
+-	struct pci_dev *root;
+-	u32 lnkcap, lnkcap2;
+-
+-	*mask = 0;
+-	if (!dev->pdev)
+-		return -EINVAL;
+-
+-	root = dev->pdev->bus->self;
+-
+-	/* we've been informed via and serverworks don't make the cut */
+-	if (root->vendor == PCI_VENDOR_ID_VIA ||
+-	    root->vendor == PCI_VENDOR_ID_SERVERWORKS)
+-		return -EINVAL;
+-
+-	pcie_capability_read_dword(root, PCI_EXP_LNKCAP, &lnkcap);
+-	pcie_capability_read_dword(root, PCI_EXP_LNKCAP2, &lnkcap2);
+-
+-	if (lnkcap2) {	/* PCIe r3.0-compliant */
+-		if (lnkcap2 & PCI_EXP_LNKCAP2_SLS_2_5GB)
+-			*mask |= DRM_PCIE_SPEED_25;
+-		if (lnkcap2 & PCI_EXP_LNKCAP2_SLS_5_0GB)
+-			*mask |= DRM_PCIE_SPEED_50;
+-		if (lnkcap2 & PCI_EXP_LNKCAP2_SLS_8_0GB)
+-			*mask |= DRM_PCIE_SPEED_80;
+-	} else {	/* pre-r3.0 */
+-		if (lnkcap & PCI_EXP_LNKCAP_SLS_2_5GB)
+-			*mask |= DRM_PCIE_SPEED_25;
+-		if (lnkcap & PCI_EXP_LNKCAP_SLS_5_0GB)
+-			*mask |= (DRM_PCIE_SPEED_25 | DRM_PCIE_SPEED_50);
+-	}
+-
+-	DRM_INFO("probing gen 2 caps for device %x:%x = %x/%x\n", root->vendor, root->device, lnkcap, lnkcap2);
+-	return 0;
+-}
+-EXPORT_SYMBOL(drm_pcie_get_speed_cap_mask);
 -- 
 1.8.1.2
 
