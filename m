@@ -1,56 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934754Ab3BNQ4L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 11:56:11 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:50878 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754328Ab3BNQ4K convert rfc822-to-8bit (ORCPT
+	id S1760741Ab3BNQ6Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 11:58:25 -0500
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:39360 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758068Ab3BNQ6Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 11:56:10 -0500
+	Thu, 14 Feb 2013 11:58:24 -0500
 MIME-Version: 1.0
-Message-ID: <56c69426-968a-4d0b-a254-dd03456e30d3@default>
-Date: Thu, 14 Feb 2013 08:56:01 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        dan.magenheimer@oracle.com, gregkh@linuxfoundation.org
-Cc: sjenning@linux.vnet.ibm.com, rcj@linux.vnet.ibm.com
-Subject: RE: [PATCH] Various cleanups/fixes to zcache (v3).
-References: <<1360811106-2679-1-git-send-email-konrad.wilk@oracle.com>>
-In-Reply-To: <<1360811106-2679-1-git-send-email-konrad.wilk@oracle.com>>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6665.5003 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <201302141650.21144.arnd@arndb.de>
+References: <1360429077-14616-1-git-send-email-haojian.zhuang@linaro.org>
+	<201302141557.18308.arnd@arndb.de>
+	<CAD6h2NS_eR7zJjwAuBJPRrCb9=-4r=y-QJt7Lvg5U+yBf-e=kw@mail.gmail.com>
+	<201302141650.21144.arnd@arndb.de>
+Date: Fri, 15 Feb 2013 00:58:23 +0800
+Message-ID: <CAD6h2NTJ1DdJ4j=UxNqgYQ5T16OAJ1saK9BEaMo_5NduG4c_ng@mail.gmail.com>
+Subject: Re: [PATCH] driver core: add wait event for deferred probe
+From: Haojian Zhuang <haojian.zhuang@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        viro@zeniv.linux.org.uk, Rusty Russell <rusty@rustcorp.com.au>,
+        hpa@linux.intel.com, Jim Cromie <jim.cromie@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        broonie@opensource.wolfsonmicro.com,
+        Patch Tracking <patches@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Konrad Rzeszutek Wilk [mailto:konrad.wilk@oracle.com]
-> Subject: [PATCH] Various cleanups/fixes to zcache (v3).
-> 
-> From Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> # This line is ignored.
-> From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Subject: [PATCH] Various cleanups/fixes to zcache (v3).
-> In-Reply-To:
-> 
-> Hey Greg,
-> 
-> These patches do various cleanups of the zcache driver. The majority of the
-> work is just to move all the different counters out to a debug file. The next
-> step would be to figure out which ones are actually pertient and which can
-> go under the knife. Oh, and also fix some of the compiler warnings.
-> 
-> This is based on top of ommit 76426daf50d5df38893cc189e9ccd026093debc8
-> ("staging/zcache: Fix/improve zcache writeback code, tie to a config option")
-> so should apply cleanly to your tree.
-> 
-> Please apply.
+On 15 February 2013 00:50, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Thursday 14 February 2013, Haojian Zhuang wrote:
+>> On 14 February 2013 23:57, Arnd Bergmann <arnd@arndb.de> wrote:
+>> > On Thursday 14 February 2013, Haojian Zhuang wrote:
+>> >> If you can change it into code in below, it could work. Otherwise, it
+>> >> always fails.
+>> >>         driver_deferred_probe_enable = true;
+>> >>         driver_deferred_probe_trigger();
+>> >> +      deferred_probe_work_func(NULL);
+>> >>         return 0;
+>> >>
+>> >> Because deferred_probe_work_func() depends on that deferred_probe is added
+>> >> into deferred_probe_active_list. If driver_deferred_probe_trigger() isn't called
+>> >> first, the deferred uart probe can't be added into active list. So even you call
+>> >> work_func at here, it doesn't help.
+>> >>
+>> >
+>> > Would that not cause two instances of the work function to run at the same time?
+>> > That sounds like a source for a lot of problems.
+>> >
+>> >         Arnd
+>>
+>> Two instances of the work function? I'm sorry that I don't
+>> understanding your meaning.
+>> Could you help explain your question?
+>
+> I mean you end up calling the work function directly, while it gets run as part
+> of the work queue on a different CPU at the same time. I just noticed that
+> there is actually locking in place in deferred_probe_work_func that prevents
+> any actual bugs, but you are still adding extra overhead here.
+>
+> Maybe just add
+>
+>         flush_workqueue(deferred_wq);
+>
+> here?
+>
+>         Arnd
 
-Useful cleanups.
+It's fine to me. Since both of them are flushing workqueue.
 
-Hopefully not too late for 3.9-rc0.
-
-Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+Tested-by: <haojian.zhuang@linaro.org>
