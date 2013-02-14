@@ -1,74 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760601Ab3BNNgK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 08:36:10 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39102 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757663Ab3BNNgI (ORCPT
+	id S964966Ab3BNNhK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 08:37:10 -0500
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:38507 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760394Ab3BNNhI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 08:36:08 -0500
-Date: Thu, 14 Feb 2013 13:35:52 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] arm64: fix invocation of restore_altstack
-Message-ID: <20130214133552.GB25537@e106331-lin.cambridge.arm.com>
+	Thu, 14 Feb 2013 08:37:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-user-agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAPM31RJw619JfYSMth4A+vAddYfC3b6VAc09SPUM_R92x+P09w@mail.gmail.com>
+References: <1360675195-4017-1-git-send-email-vincent.guittot@linaro.org>
+	<CAPM31RJw619JfYSMth4A+vAddYfC3b6VAc09SPUM_R92x+P09w@mail.gmail.com>
+Date: Thu, 14 Feb 2013 14:37:06 +0100
+Message-ID: <CAKfTPtAS_-sDiNr=putbZaX1+Fg795yrU06LgXtgfXuT3wn-+w@mail.gmail.com>
+Subject: Re: [PATCH] sched: fix env->src_cpu for active migration
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Paul Turner <pjt@google.com>
+Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        peterz@infradead.org, mingo@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 13 February 2013 21:03, Paul Turner <pjt@google.com> wrote:
+> On Tue, Feb 12, 2013 at 5:19 AM, Vincent Guittot
+> <vincent.guittot@linaro.org> wrote:
+>> need_active_balance uses env->src_cpu which is set only if there is more
+>> than 1 task on the run queue.
+>> We must set the src_cpu field unconditionnally
+>> otherwise the test "env->src_cpu > env->dst_cpu" will always fail if there is
+>> only 1 task on the run queue
+>>
+>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+>> ---
+>>  kernel/sched/fair.c |    6 ++++--
+>>  1 file changed, 4 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> index 81fa536..32938ea 100644
+>> --- a/kernel/sched/fair.c
+>> +++ b/kernel/sched/fair.c
+>> @@ -5044,6 +5044,10 @@ redo:
+>>
+>
+> Aside:  Oh dear, it looks like in all the re-factoring here
+> update_h_load() has escaped rq->lock?
+>
+> load_balance()
+> ...
+>                 update_h_load(env.src_cpu);
+> more_balance:
+>                 local_irq_save(flags);
+>                 double_rq_lock(env.dst_rq, busiest);
+>
+>
+>
+>>         ld_moved = 0;
+>>         lb_iterations = 1;
+>> +
+>> +       env.src_cpu   = busiest->cpu;
+>> +       env.src_rq    = busiest;
+>> +
+>
+> Hmm -- But shouldn't find_busiest_queue return NULL in this case?
+>
+> We're admittedly racing but we should have:
+>   busiest->nr_running == 1
+>   wl = rq->load.weight > env->imbalance since imbalance < (wl -
+> this_rq->load.weight / 2)
 
-I noticed the following issue while attempting to build an arm64 kernel from
-next-20130214, and it still seems to be present in signal/for-next and
-signal/arch-arm64.
+check_asym_packing overwrites the env->imbalance with (sds->max_load *
+sds->busiest->sgp->power / SCHED_POWER_SCALE) so fbq can return a
+queue
 
-It looks to be a trivial typo.
+>
+> This would seem specialized to the case when we either
+>   A) race (fbq is openly racy)
+>   B) have no capacity
+>
+> Admittedly when we do race current case this is probably a biased
+> coinflip depending on whatever was on the stack (src_cpu is
+> uninitialized); it's also super easy for this to later become a crash
+> if someone tries to dereference src_rq so we should do something.
+>
+> The case this seems most important for (and something we should add an
+> explicit comment regarding) is that we want this case specifically for
+> CPU_NEW_IDLE to move a single runnable-task to a lower numbered
+> idle-cpu index in the SD_ASYM case (although I suspect we need to push
+> this up to fbq also to actually find it...)
 
-Thanks,
-Mark.
+The update of imbalance should be enough
 
----->8---
-Since e6d056c7c0: "arm64: switch to generic sigaltstack", arm64 won't
-build:
+>
+> In the !SD_ASYM case we'd probably also want to  re-check busiest
+> nr_running in need_active_balance (or probably better alternative
+> re-arrange the checks) since this is going to potentially now move a
+> single large task needlessly to an already loaded rq in balance-failed
+> case.
 
-arch/arm64/kernel/signal.c: In function ‘sys_rt_sigreturn’:
-arch/arm64/kernel/signal.c:152:2: error: incompatible type for argument 1 of ‘restore_altstack’
-In file included from arch/arm64/kernel/signal.c:21:0:
-include/linux/signal.h:434:5: note: expected ‘const struct stack_t *’ but argument is of type ‘stack_t’
-make[1]: *** [arch/arm64/kernel/signal.o] Error 1
-make: *** [arch/arm64/kernel] Error 2
+yes, that could be an interesting add-on
 
-This patch fixes up the call to restore_altstack to pass the correct
-type.
-
-Signed-off-by: Mark Rutland <mark.rutland@arm.com>
----
- arch/arm64/kernel/signal.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/arm64/kernel/signal.c b/arch/arm64/kernel/signal.c
-index d60ad23..890a591 100644
---- a/arch/arm64/kernel/signal.c
-+++ b/arch/arm64/kernel/signal.c
-@@ -149,7 +149,7 @@ asmlinkage long sys_rt_sigreturn(struct pt_regs *regs)
- 	if (restore_sigframe(regs, frame))
- 		goto badframe;
- 
--	if (restore_altstack(frame->uc.uc_stack))
-+	if (restore_altstack(&frame->uc.uc_stack))
- 		goto badframe;
- 
- 	return regs->regs[0];
--- 
-1.8.1.1
-
-
+>
+>
+>>         if (busiest->nr_running > 1) {
+>>                 /*
+>>                  * Attempt to move tasks. If find_busiest_group has found
+>> @@ -5052,8 +5056,6 @@ redo:
+>>                  * correctly treated as an imbalance.
+>>                  */
+>>                 env.flags |= LBF_ALL_PINNED;
+>> -               env.src_cpu   = busiest->cpu;
+>> -               env.src_rq    = busiest;
+>>                 env.loop_max  = min(sysctl_sched_nr_migrate, busiest->nr_running);
+>>
+>>                 update_h_load(env.src_cpu);
+>> --
+>> 1.7.9.5
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
