@@ -1,141 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934707Ab3BNPiU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 10:38:20 -0500
-Received: from lvps176-28-13-145.dedicated.hosteurope.de ([176.28.13.145]:46828
-	"EHLO lvps176-28-13-145.dedicated.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760579Ab3BNPiT (ORCPT
+	id S964847Ab3BNPjX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 10:39:23 -0500
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:31257 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757976Ab3BNPjV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 10:38:19 -0500
-From: Tim Sander <tim@krieglstein.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] 3.4.28-rt40 tglx fix imx.c spinlock
-Date: Thu, 14 Feb 2013 16:38:14 +0100
-Message-ID: <16398840.IK9i4U2q2d@dabox>
-User-Agent: KMail/4.10 (Linux/3.6.0; KDE/4.10.0; x86_64; ; )
-In-Reply-To: <alpine.LFD.2.02.1302131828050.22263@ionos>
-References: <6003615.pRQnIgKCSn@dabox> <3970144.HqS49ZSYWh@dabox> <alpine.LFD.2.02.1302131828050.22263@ionos>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Thu, 14 Feb 2013 10:39:21 -0500
+Date: Thu, 14 Feb 2013 10:39:17 -0600
+From: scameron@beardog.cce.hp.com
+To: Shuah Khan <shuah.khan@hp.com>
+Cc: JBottomley@parallels.com, iss_storagedev@hp.com,
+        linux-scsi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        shuahkhan@gmail.com, scameron@beardog.cce.hp.com
+Subject: Re: [PATCH] scsi/hpsa: fix to check dma mapping error
+Message-ID: <20130214163917.GI1523@beardog.cce.hp.com>
+References: <1360796155.2735.16.camel@lorien2>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1360796155.2735.16.camel@lorien2>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas
-> > > > Just another update on this stuff. I noticed that there has been a
-> > > > patch
-> > > > added* with spinlocks to the imx.c serial driver. I reverted this
-> > > > patch
-> > > > and now my serialfuz programm "only" kills the serial port with a not
-> > > > so
-> > > > nice oom condition. But at least it does not show the runaway
-> > > > interrupt
-> > > > problem.
-> > > 
-> > > That does not make any sense, really. The runnaway interrupt issue is
-> > > completely unrelated to this commit.
-> > 
-> > One thing that puzzles me is the fact that it does! So removing the
-> > mentioned spinlock patch creates the same result as using your fixed
-> > patch.
-> > 
-> > As the other problem with the driver i posted shows the same interrupt
-> > runaway symptom as this i have a very bad gut feeling about this...
-> > Or probably its not a runnaway interrupt problem but a double
-> > spin_lock_irqsave.
+On Wed, Feb 13, 2013 at 03:55:55PM -0700, Shuah Khan wrote:
+> Add missing dma mapping error check to fix the following warning from
+> dma-debug.
 > 
-> Well, you claimed that it is a runnaway interrupt. So much for the
-> theory :)
-Well i sleept over that one. The symptoms in both cases seem to be identical:
-system locked up,interrupt pending, no output at all. 
-
-But there are some differences. Concerning the issue described in this mail:
-http://www.spinics.net/lists/linux-rt-users/msg09303.html
-After the complete lockup of the system i could get into a working system
- by switching of the interrupt source of the respective interrupt. After that the
-interrupt readings in /proc/interrupts where insanely high. So definetly a runnaway
- interrupt issue. But this issue seems to be not related to preempt rt. They where
-just so similar on the first glance that i thought they where related.
-
-I could not get the system back running in switching of the serial interrupt.
-Concerning the serial problem i consider the problem solved by the patch below. 
-Thanks!
-
-A patch for 3.6-rt will be sent in another reply. As it does not apply cleanly.
-
-> The issue with the recursive locking is not an RT issue. You can
-> observe the problem on mainline, when you enable PROVE_LOCKING and
-> issue a sysrq or oopsing in a section which holds the port.lock
-> already.
+> [   16.614739] hpsa 0000:03:00.0: DMA-API: device driver failed to check map error[device address=0x00000000001c2ec0] [size=64 bytes] [mapped as single]
+> [   16.614833] Modules linked in: pata_atiixp tg3(+) ptp pps_core hpsa(+)
+> [   16.615381] Pid: 324, comm: modprobe Not tainted 3.8.0-rc7+ #6
+> [   16.615466] Call Trace:
+> [   16.615552]  [<ffffffff810581ef>] warn_slowpath_common+0x7f/0xc0
+> [   16.615639]  [<ffffffff810582e6>] warn_slowpath_fmt+0x46/0x50
+> [   16.615747]  [<ffffffff8134c129>] check_unmap+0x459/0x8a0
+> [   16.615832]  [<ffffffff81698aad>] ? schedule_timeout+0x1ed/0x250
+> [   16.615918]  [<ffffffff8134c70c>] debug_dma_unmap_page+0x5c/0x60
+> [   16.616008]  [<ffffffffa0002776>] hpsa_pci_unmap+0x86/0xd0 [hpsa]
+> [   16.616094]  [<ffffffffa00028c0>] hpsa_scsi_do_simple_cmd_with_retry+0x100/0x2a0 [hpsa]
+> [   16.616195]  [<ffffffffa0004863>] hpsa_scsi_do_inquiry+0x83/0x100 [hpsa]
+> [   16.616282]  [<ffffffffa0006ce9>] hpsa_init_one+0x1839/0x1ce0 [hpsa]
+> [   16.616369]  [<ffffffff811fc2d8>] ? sysfs_new_dirent+0x58/0x140
+> [   16.616456]  [<ffffffff8135db9b>] local_pci_probe+0x4b/0x80
+> [   16.616542]  [<ffffffff8135f471>] pci_device_probe+0x101/0x120
+> [   16.616629]  [<ffffffff814328db>] driver_probe_device+0x7b/0x240
+> [   16.616715]  [<ffffffff81432b4b>] __driver_attach+0xab/0xb0
+> [   16.616801]  [<ffffffff81432aa0>] ? driver_probe_device+0x240/0x240
+> [   16.616888]  [<ffffffff81430cf6>] bus_for_each_dev+0x56/0x90
+> [   16.617001]  [<ffffffff8143240e>] driver_attach+0x1e/0x20
+> [   16.617087]  [<ffffffff81431f80>] bus_add_driver+0x190/0x290
+> [   16.617173]  [<ffffffffa0011000>] ? 0xffffffffa0010fff
+> [   16.617259]  [<ffffffff814330aa>] driver_register+0x7a/0x160
+> [   16.617345]  [<ffffffffa0011000>] ? 0xffffffffa0010fff
+> [   16.617431]  [<ffffffff8135e42c>] __pci_register_driver+0x4c/0x50
+> [   16.617519]  [<ffffffffa001101e>] hpsa_init+0x1e/0x1000 [hpsa]
+> [   16.617605]  [<ffffffff8100206f>] do_one_initcall+0x3f/0x170
+> [   16.617692]  [<ffffffff810bef7e>] load_module+0x16ae/0x1c40
+> [   16.617777]  [<ffffffff810bbb70>] ? show_initstate+0x50/0x50
+> [   16.617863]  [<ffffffff8169f71e>] ? do_page_fault+0xe/0x10
+> [   16.617949]  [<ffffffff810bf5de>] sys_init_module+0xce/0x100
+> [   16.618035]  [<ffffffff816a3d99>] system_call_fastpath+0x16/0x1b
+> [   16.618157] ---[ end trace 260311c4be71d0dc ]---
+> [   16.618228] Mapped at:
+> [   16.618311]  [<ffffffff8134b189>] debug_dma_map_page+0xb9/0x160
+> [   16.618451]  [<ffffffffa0004132>] fill_cmd.isra.31+0x252/0x400 [hpsa]
+> [   16.618613]  [<ffffffffa0004853>] hpsa_scsi_do_inquiry+0x73/0x100 [hpsa]
+> [   16.618766]  [<ffffffffa0006ce9>] hpsa_init_one+0x1839/0x1ce0 [hpsa]
+> [   16.618919]  [<ffffffff8135db9b>] local_pci_probe+0x4b/0x80
+> [   16.619286] scsi3 : hpsa
 > 
-> The reason why you can't observe it with PREEMPT_RT_FULL=n and
-> PROVE_LOCKING=n is, that the spinlocks on UP machines are compiled
-> away, so recursive locking does not lead to an observable dead lock.
-Ah, yes that perfectly explains why i have not seen this error in non preempt-rt
-mode.
-
-> > Also the fact that my serialfuz program i posted is able to give the
-> > system an Out Of Memory condition is strange. I mean throwing random
-> > chars at a getty should'nt exhaust memory so fast.
 > 
-> That's true, but w/o seing the OOM output I can't tell what's
-> exhausting the memory.
-When fuzzing the serial port one probably should switch of sysreq. It seems 
-as if there is a break send somehow and then it selects the OOM option.
-So when switching of MAGIC_SYSRQ the OOMs are gone. So its a non issue.
+> Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+> CC: stable@vger.kernel.org
+> ---
+>  drivers/scsi/hpsa.c |    5 +++++
+>  1 file changed, 5 insertions(+)
+> 
+> diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+> index 4f33806..3b4d195 100644
+> --- a/drivers/scsi/hpsa.c
+> +++ b/drivers/scsi/hpsa.c
+> @@ -1405,6 +1405,11 @@ static void hpsa_map_one(struct pci_dev *pdev,
+>  	}
+>  
+>  	addr64 = (u64) pci_map_single(pdev, buf, buflen, data_direction);
+> +	if (dma_mapping_error(&pdev->dev, addr64)) {
+> +		cp->Header.SGList = 0;
+> +		cp->Header.SGTotal = 0;
+> +		return;
+> +	}
+>  	cp->SG[0].Addr.lower =
+>  	  (u32) (addr64 & (u64) 0x00000000FFFFFFFF);
+>  	cp->SG[0].Addr.upper =
 
-Best regards
-Tim
+Probably should bubble that error up through hpsa_map_one return value
+(currently void, but I guess that needs to change) and that's called from
+one place, fill_cmd(), also currently returning void (needs to change).
+I think all the places that call fill_cmd() have failure paths that
+can be used.
 
+There are a couple other places in hpsa that we call pci_map_single and do
+not subsequently call dma_mapping_error().
 
-Signed-off-by: Tim Sander <tim@krieglstein.org>
+I don't thinking just setting SGList = 0 and SGTotal = 0 is going to 
+do something good (I expect it will end up causing the cnotroller to 
+reject the command as invalid -- and pretty much all the commands that
+go through this path are driver generated commands, so, if the driver
+is generating invalid commands, that would be a bug.
 
----
- drivers/tty/serial/imx.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+So, I don't think this patch is quite correct as is.
 
-diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
-index 0de7ed7..f1f5c4e 100644
---- a/drivers/tty/serial/imx.c
-+++ b/drivers/tty/serial/imx.c
-@@ -47,6 +47,7 @@
- #include <linux/slab.h>
- #include <linux/of.h>
- #include <linux/of_device.h>
-+#include <linux/kdb.h>
+But, thanks for bringing this failure to call dma_mapping_error to my
+attention.
 
- #include <asm/io.h>
- #include <asm/irq.h>
-@@ -1225,8 +1226,12 @@ imx_console_write(struct console *co, const char *s, unsigned int count)
-    struct imx_port_ucrs old_ucr;
-    unsigned int ucr1;
-    unsigned long flags;
-+   int locked = 1;
+So what cmdline options or config options did you enable to get this check?
 
--   spin_lock_irqsave(&sport->port.lock, flags);
-+   if (sport->port.sysrq || oops_in_progress || in_kdb_printk())
-+       locked = spin_trylock_irqsave(&sport->port.lock, flags);
-+   else
-+       spin_lock_irqsave(&sport->port.lock, flags);
+was it something like:
 
-    /*
-     *  First, save UCR1/2/3 and then disable interrupts
-@@ -1253,7 +1258,8 @@ imx_console_write(struct console *co, const char *s, unsigned int count)
+dma_debug=1 dma_debug_entries=???
 
-    imx_port_ucrs_restore(&sport->port, &old_ucr);
-
--   spin_unlock_irqrestore(&sport->port.lock, flags);
-+   if (locked)
-+       spin_unlock_irqrestore(&sport->port.lock, flags);
- }
-
- /*
--- 
-1.7.9.5
-
-
-
+-- steve
 
