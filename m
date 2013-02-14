@@ -1,104 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932581Ab3BNDJD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 22:09:03 -0500
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:46056 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932405Ab3BNDI7 (ORCPT
+	id S932259Ab3BNDHS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 22:07:18 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:48014 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754699Ab3BNDFS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 22:08:59 -0500
-Message-ID: <511C5503.5010103@linux.vnet.ibm.com>
-Date: Thu, 14 Feb 2013 08:37:47 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Paul Turner <pjt@google.com>
-CC: Alex Shi <alex.shi@intel.com>, Peter Zijlstra <peterz@infradead.org>,
-        torvalds@linux-foundation.org, mingo@redhat.com, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
-        namhyung@kernel.org, efault@gmx.de, vincent.guittot@linaro.org,
-        gregkh@linuxfoundation.org, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch v4 08/18] Revert "sched: Introduce temporary FAIR_GROUP_SCHED
- dependency for load-tracking"
-References: <1358996820-23036-1-git-send-email-alex.shi@intel.com> <1358996820-23036-9-git-send-email-alex.shi@intel.com> <1360664874.4485.18.camel@laptop> <511BAFDB.6050908@intel.com> <CAPM31RLi+e=2kmwxDOewe=+LHrHGiVTuo-+3WeAFEmsWmi1fnw@mail.gmail.com>
-In-Reply-To: <CAPM31RLi+e=2kmwxDOewe=+LHrHGiVTuo-+3WeAFEmsWmi1fnw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13021403-8878-0000-0000-000005E4049C
+	Wed, 13 Feb 2013 22:05:18 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        dan.magenheimer@oracle.com, gregkh@linuxfoundation.org
+Cc: sjenning@linux.vnet.ibm.com, rcj@linux.vnet.ibm.com,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 06/16] zcache: Make the debug code use pr_debug
+Date: Wed, 13 Feb 2013 22:04:56 -0500
+Message-Id: <1360811106-2679-7-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.8.0.2
+In-Reply-To: <1360811106-2679-1-git-send-email-konrad.wilk@oracle.com>
+References: <1360811106-2679-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+as if you are debugging this driver you would be using 'debug'
+on the command line anyhow - and this would dump the debug
+data on the proper loglevel.
 
-On 02/13/2013 09:15 PM, Paul Turner wrote:
-> On Wed, Feb 13, 2013 at 7:23 AM, Alex Shi <alex.shi@intel.com> wrote:
->> On 02/12/2013 06:27 PM, Peter Zijlstra wrote:
->>> On Thu, 2013-01-24 at 11:06 +0800, Alex Shi wrote:
->>>> Remove CONFIG_FAIR_GROUP_SCHED that covers the runnable info, then
->>>> we can use runnable load variables.
->>>>
->>> It would be nice if we could quantify the performance hit of doing so.
->>> Haven't yet looked at later patches to see if we remove anything to
->>> off-set this.
->>>
->>
->> In our rough testing, no much clear performance changes.
->>
-> 
-> I'd personally like this to go with a series that actually does
-> something with it.
-> 
-> There's been a few proposals floating around on _how_ to do this; but
-> the challenge is in getting it stable enough that all of the wake-up
-> balancing does not totally perforate your stability gains into the
-> noise.  select_idle_sibling really is your nemesis here.
-> 
-> It's a small enough patch that it can go at the head of any such
-> series (and indeed; it was originally structured to make such a patch
-> rather explicit.)
-> 
->> --
->> Thanks
->>     Alex
-> 
+While at it also remove the unconditional #define ZCACHE_DEBUG.
 
-Paul,what exactly do you mean by select_idle_sibling() is our nemesis
-here? What we observed through our experiments was that:
-1.With the per entity load tracking(runnable_load_avg) in load
-balancing,the load is distributed appropriately across the cpus.
-2.However when a task sleeps and wakes up,select_idle_sibling() searches
-for the idlest group top to bottom.If a suitable candidate is not
-found,it wakes up the task on the prev_cpu/waker_cpu.This would increase
-the runqueue size and load of prev_cpu/waker_cpu respectively.
-3.The load balancer would then come to the rescue and redistribute the load.
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/staging/zcache/zcache-main.c | 85 +++++++++++++++++-------------------
+ 1 file changed, 41 insertions(+), 44 deletions(-)
 
-As a consequence,
-
-*The primary observation was that there is no performance degradation
-with the integration of per entity load tracking into the load balancer
-but there was a good increase in the number of migrations*. This  as I
-see it, is due to the point2 and point3 above.Is this what you call as
-the nemesis? OR
-
-select_idle_sibling() does a top to bottom search of the chosen domain
-for an idlest group and is very likely to spread the waking task to a
-far off group,in case of underutilized systems.This would prove costly
-for the software buddies in finding each other due to the time taken for
-the search and the possible spreading of the software buddy tasks.Is
-this what you call nemesis?
-
-Another approach to remove the above two nemesis,if they are so,would be
-to use blocked_load+runnable_load for balancing.But when waking up a
-task,use select_idle_sibling() only to search the L2 cache domains for
-an idlest group.If unsuccessful,return the prev_cpu which has already
-accounted for the task in the blocked_load,hence this move would not
-increase its load.Would you recommend going in this direction?
-
-Thank you
-
-Regards
-Preeti U Murthy
+diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+index 4bd4107..d4bf4a2 100644
+--- a/drivers/staging/zcache/zcache-main.c
++++ b/drivers/staging/zcache/zcache-main.c
+@@ -355,71 +355,68 @@ static int zcache_debugfs_init(void)
+ #undef	zdfs64
+ #endif
+ 
+-#define ZCACHE_DEBUG
+-#ifdef ZCACHE_DEBUG
+ /* developers can call this in case of ooms, e.g. to find memory leaks */
+ void zcache_dump(void)
+ {
+-	pr_info("zcache: obj_count=%zd\n", zcache_obj_count);
+-	pr_info("zcache: obj_count_max=%zd\n", zcache_obj_count_max);
+-	pr_info("zcache: objnode_count=%zd\n", zcache_objnode_count);
+-	pr_info("zcache: objnode_count_max=%zd\n", zcache_objnode_count_max);
+-	pr_info("zcache: flush_total=%zd\n", zcache_flush_total);
+-	pr_info("zcache: flush_found=%zd\n", zcache_flush_found);
+-	pr_info("zcache: flobj_total=%zd\n", zcache_flobj_total);
+-	pr_info("zcache: flobj_found=%zd\n", zcache_flobj_found);
+-	pr_info("zcache: failed_eph_puts=%zd\n", zcache_failed_eph_puts);
+-	pr_info("zcache: failed_pers_puts=%zd\n", zcache_failed_pers_puts);
+-	pr_info("zcache: failed_get_free_pages=%zd\n",
++	pr_debug("zcache: obj_count=%zd\n", zcache_obj_count);
++	pr_debug("zcache: obj_count_max=%zd\n", zcache_obj_count_max);
++	pr_debug("zcache: objnode_count=%zd\n", zcache_objnode_count);
++	pr_debug("zcache: objnode_count_max=%zd\n", zcache_objnode_count_max);
++	pr_debug("zcache: flush_total=%zd\n", zcache_flush_total);
++	pr_debug("zcache: flush_found=%zd\n", zcache_flush_found);
++	pr_debug("zcache: flobj_total=%zd\n", zcache_flobj_total);
++	pr_debug("zcache: flobj_found=%zd\n", zcache_flobj_found);
++	pr_debug("zcache: failed_eph_puts=%zd\n", zcache_failed_eph_puts);
++	pr_debug("zcache: failed_pers_puts=%zd\n", zcache_failed_pers_puts);
++	pr_debug("zcache: failed_get_free_pages=%zd\n",
+ 				zcache_failed_getfreepages);
+-	pr_info("zcache: failed_alloc=%zd\n", zcache_failed_alloc);
+-	pr_info("zcache: put_to_flush=%zd\n", zcache_put_to_flush);
+-	pr_info("zcache: compress_poor=%zd\n", zcache_compress_poor);
+-	pr_info("zcache: mean_compress_poor=%zd\n",
++	pr_debug("zcache: failed_alloc=%zd\n", zcache_failed_alloc);
++	pr_debug("zcache: put_to_flush=%zd\n", zcache_put_to_flush);
++	pr_debug("zcache: compress_poor=%zd\n", zcache_compress_poor);
++	pr_debug("zcache: mean_compress_poor=%zd\n",
+ 				zcache_mean_compress_poor);
+-	pr_info("zcache: eph_ate_tail=%zd\n", zcache_eph_ate_tail);
+-	pr_info("zcache: eph_ate_tail_failed=%zd\n",
++	pr_debug("zcache: eph_ate_tail=%zd\n", zcache_eph_ate_tail);
++	pr_debug("zcache: eph_ate_tail_failed=%zd\n",
+ 				zcache_eph_ate_tail_failed);
+-	pr_info("zcache: pers_ate_eph=%zd\n", zcache_pers_ate_eph);
+-	pr_info("zcache: pers_ate_eph_failed=%zd\n",
++	pr_debug("zcache: pers_ate_eph=%zd\n", zcache_pers_ate_eph);
++	pr_debug("zcache: pers_ate_eph_failed=%zd\n",
+ 				zcache_pers_ate_eph_failed);
+-	pr_info("zcache: evicted_eph_zpages=%zd\n", zcache_evicted_eph_zpages);
+-	pr_info("zcache: evicted_eph_pageframes=%zd\n",
++	pr_debug("zcache: evicted_eph_zpages=%zd\n", zcache_evicted_eph_zpages);
++	pr_debug("zcache: evicted_eph_pageframes=%zd\n",
+ 				zcache_evicted_eph_pageframes);
+-	pr_info("zcache: eph_pageframes=%zd\n", zcache_eph_pageframes);
+-	pr_info("zcache: eph_pageframes_max=%zd\n", zcache_eph_pageframes_max);
+-	pr_info("zcache: pers_pageframes=%zd\n", zcache_pers_pageframes);
+-	pr_info("zcache: pers_pageframes_max=%zd\n",
++	pr_debug("zcache: eph_pageframes=%zd\n", zcache_eph_pageframes);
++	pr_debug("zcache: eph_pageframes_max=%zd\n", zcache_eph_pageframes_max);
++	pr_debug("zcache: pers_pageframes=%zd\n", zcache_pers_pageframes);
++	pr_debug("zcache: pers_pageframes_max=%zd\n",
+ 				zcache_pers_pageframes_max);
+-	pr_info("zcache: eph_zpages=%zd\n", zcache_eph_zpages);
+-	pr_info("zcache: eph_zpages_max=%zd\n", zcache_eph_zpages_max);
+-	pr_info("zcache: pers_zpages=%zd\n", zcache_pers_zpages);
+-	pr_info("zcache: pers_zpages_max=%zd\n", zcache_pers_zpages_max);
+-	pr_info("zcache: last_active_file_pageframes=%zd\n",
++	pr_debug("zcache: eph_zpages=%zd\n", zcache_eph_zpages);
++	pr_debug("zcache: eph_zpages_max=%zd\n", zcache_eph_zpages_max);
++	pr_debug("zcache: pers_zpages=%zd\n", zcache_pers_zpages);
++	pr_debug("zcache: pers_zpages_max=%zd\n", zcache_pers_zpages_max);
++	pr_debug("zcache: last_active_file_pageframes=%zd\n",
+ 				zcache_last_active_file_pageframes);
+-	pr_info("zcache: last_inactive_file_pageframes=%zd\n",
++	pr_debug("zcache: last_inactive_file_pageframes=%zd\n",
+ 				zcache_last_inactive_file_pageframes);
+-	pr_info("zcache: last_active_anon_pageframes=%zd\n",
++	pr_debug("zcache: last_active_anon_pageframes=%zd\n",
+ 				zcache_last_active_anon_pageframes);
+-	pr_info("zcache: last_inactive_anon_pageframes=%zd\n",
++	pr_debug("zcache: last_inactive_anon_pageframes=%zd\n",
+ 				zcache_last_inactive_anon_pageframes);
+-	pr_info("zcache: eph_nonactive_puts_ignored=%zd\n",
++	pr_debug("zcache: eph_nonactive_puts_ignored=%zd\n",
+ 				zcache_eph_nonactive_puts_ignored);
+-	pr_info("zcache: pers_nonactive_puts_ignored=%zd\n",
++	pr_debug("zcache: pers_nonactive_puts_ignored=%zd\n",
+ 				zcache_pers_nonactive_puts_ignored);
+-	pr_info("zcache: eph_zbytes=%llu\n",
++	pr_debug("zcache: eph_zbytes=%llu\n",
+ 				zcache_eph_zbytes);
+-	pr_info("zcache: eph_zbytes_max=%llu\n",
++	pr_debug("zcache: eph_zbytes_max=%llu\n",
+ 				zcache_eph_zbytes_max);
+-	pr_info("zcache: pers_zbytes=%llu\n",
++	pr_debug("zcache: pers_zbytes=%llu\n",
+ 				zcache_pers_zbytes);
+-	pr_info("zcache: pers_zbytes_max=%llu\n",
++	pr_debug("zcache: pers_zbytes_max=%llu\n",
+ 				zcache_pers_zbytes_max);
+-	pr_info("zcache: outstanding_writeback_pages=%zd\n",
++	pr_debug("zcache: outstanding_writeback_pages=%zd\n",
+ 				zcache_outstanding_writeback_pages);
+-	pr_info("zcache: writtenback_pages=%zd\n", zcache_writtenback_pages);
++	pr_debug("zcache: writtenback_pages=%zd\n", zcache_writtenback_pages);
+ }
+-#endif
+ 
+ /*
+  * zcache core code starts here
+-- 
+1.8.0.2
 
