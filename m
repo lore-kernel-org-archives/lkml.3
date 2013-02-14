@@ -1,49 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934711Ab3BNQHp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 11:07:45 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:60468 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757931Ab3BNQHo (ORCPT
+	id S1761356Ab3BNQKx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 11:10:53 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:52969 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758124Ab3BNQKw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 11:07:44 -0500
-Message-ID: <511D0BCC.9070208@canonical.com>
-Date: Thu, 14 Feb 2013 11:07:40 -0500
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
+	Thu, 14 Feb 2013 11:10:52 -0500
 MIME-Version: 1.0
-To: mc74hc00@gmail.com
-CC: wim@iguana.be, linux-watchdog@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Kernel Team <kernel-team@lists.ubuntu.com>
-Subject: [v3.8 Regression] watchdog: sp5100_tco: Add SB8x0 chipset support
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1360786482-881-1-git-send-email-dirk.brandewie@gmail.com>
+References: <20130212214949.GA1003@redhat.com>
+	<1360786482-881-1-git-send-email-dirk.brandewie@gmail.com>
+Date: Thu, 14 Feb 2013 21:40:43 +0530
+X-Google-Sender-Auth: QkMb60JFWWdjpY-NQDfXKI0im-U
+Message-ID: <CAOh2x=mhtFsEJx57GTASAq+p4Ri-fvTmnkxZJzgifJ=3yTawXw@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq/intel_pstate: Change to disallow module build
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: dirk.brandewie@gmail.com
+Cc: davej@redhat.com, rjw@sisk.pl, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Takahisa,
+On Thu, Feb 14, 2013 at 1:44 AM,  <dirk.brandewie@gmail.com> wrote:
+> From: Dirk Brandewie <dirk.brandewie@gmail.com>
+>
+> Load order is important in order for intel_pstate to take over as the
+> default scaling driver from acpi-cpufreq.
+>
+> If both are built-in acpi-cpufreq uses late_initcall() and
+> intel_pstate uses device_initcall() so it will be able to register as
+> the scaling before acpi-cpufreq for the processors supported by
+> intel_pstate.
+>
+> If acpi-cpufreq is built as a module then intel_pstate still gets
+> first option to become the scaling driver.
+>
+> Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
 
-A bug was opened against the Ubuntu kernel[0].  It was found that 
-reverting the following commit resolved this bug:
-
-commit 740fbddf5c3f9ad8b23c5d917ba1cc7e376a5104
-Author: Takahisa Tanaka <mc74hc00@gmail.com>
-Date:   Sun Dec 2 14:33:18 2012 +0900
-
-     watchdog: sp5100_tco: Add SB8x0 chipset support
-
-
-The regression was introduced as of v3.8-rc1.
-
-I see that you are the author of this patch, so I wanted to run this by 
-you.  I was thinking of requesting a revert for v3.8, but I wanted to 
-get your feedback first.
-
-
-Thanks,
-
-Joe
-
-[0] http://pad.lv/1116835
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
