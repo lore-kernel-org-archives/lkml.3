@@ -1,90 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934635Ab3BNPc5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 10:32:57 -0500
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:58381 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758038Ab3BNPc4 (ORCPT
+	id S934671Ab3BNPdp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 10:33:45 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:37103 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760579Ab3BNPdo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 10:32:56 -0500
-Date: Thu, 14 Feb 2013 16:32:55 +0100
-From: Andreas Mohr <andi@lisas.de>
-To: linux-kernel@vger.kernel.org
-Cc: Durgadoss R <durgadoss.r@intel.com>, Zhang Rui <rui.zhang@intel.com>,
-        peter@piie.net
-Subject: thermal governor: does it actually work??
-Message-ID: <20130214153255.GA5033@rhlx01.hs-esslingen.de>
+	Thu, 14 Feb 2013 10:33:44 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Priority: none
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <1360852104.23152.45.camel@gandalf.local.home>
+References: <CAKMK7uEQ7xQpsBay8SKjYM0oA0=uf3AePwZ+vEjukgOiLY9drg@mail.gmail.com>
+	<20130214141953.GA5746@pd.tnic>
+	<1360852104.23152.45.camel@gandalf.local.home>
+Date: Thu, 14 Feb 2013 16:33:42 +0100
+Message-ID: <CAKMK7uGoX9yjPE9wXVNtypbvfZoHHMQKJb=-xW35ec_-AcM_pQ@mail.gmail.com>
+Subject: Re: Including drm-intel tree to linux-next
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Borislav Petkov <bp@alien8.de>, Dave Airlie <airlied@gmail.com>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For me after having loaded acerhdf the fan never stops (with kernelmode
-active), despite staying safely below trip point
-(acerhdf_set_cur_state() actually never gets called).
-And AFAIR in a 3.2.0 kernel acerhdf fan operation seemed to just work
-(i.e., no fan for low temps, from the beginning).
-Needless to say 3.2.0 didn't even feature all the modern thermal
-governor crapyard yet ;)
-(ok, well, it's more complex but it's also a very nice environment capability)
+On Thu, Feb 14, 2013 at 3:28 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Thu, 2013-02-14 at 15:19 +0100, Borislav Petkov wrote:
+>> On Thu, Feb 14, 2013 at 03:12:02PM +0100, Daniel Vetter wrote:
+>> > Hi Steven,
+>> >
+>> > Since about a year ago we've switched drm/i915 to buffer around 2
+>> > weeks worth of patches so that we can do decent QA before breaking
+>> > everyone's tree when things land in Dave's drm-next. But that also
+>> > means we'll miss out a bit in the integration testing -next provides,
+>> > which did hurt a bit in recent efforts. Hence can you please include
+>> >
+>> > git://people.freedesktop.org/~danvet/drm-intel drm-intel-next-queued
+>> >
+>> > into linux-next? Probably best to merge it after drm-next. Note that
+>> > drm-intel-next are the QA'ed chunks I send off to Dave. Also, any
+>> > mailing lists I'm supposed to follow? And if possible please cc
+>> > intel-gfx@lists.freedesktop.org besides dri-devel/lkml when conflicts
+>> > with that tree pop up (you won't get moderation spam any more, we've
+>> > fixed that up).
+>>
+>> I think you want to send this here to Stephen Rothwell. CCed.
+>>
+>
+> This is why I tell people to call me Steve or Steven, but never Stephen,
+> otherwise people might confuse me with one of the Stephens that also do
+> kernel development.
+>
+> Note, this is not the first time I've been confused with someone else.
+> So don't feel bad ;-)
 
-3.8-rc7:
-CONFIG_ACPI_THERMAL=m
-CONFIG_THERMAL=m
-CONFIG_THERMAL_HWMON=y
-CONFIG_THERMAL_DEFAULT_GOV_STEP_WISE=y
-# CONFIG_THERMAL_DEFAULT_GOV_FAIR_SHARE is not set
-# CONFIG_THERMAL_DEFAULT_GOV_USER_SPACE is not set
-CONFIG_FAIR_SHARE=y
-CONFIG_STEP_WISE=y
-# CONFIG_USER_SPACE is not set
-# CONFIG_CPU_THERMAL is not set
-
-
-
-Terminology in this area seems to be quite a bit off, too, at several
-docs places, at least according to my understanding:
-
-e.g. drivers/thermal/step_wise.c has the following comment:
-
-/**
- * step_wise_throttle - throttles devices associated with the given zone
- * @tz - thermal_zone_device
- * @trip - the trip point
- * @trip_type - type of the trip point
- *
- * Throttling Logic: This uses the trend of the thermal zone to
- * throttle.
- * If the thermal zone is 'heating up' this throttles all the cooling
- * devices associated with the zone and its particular trip point, by
- * one
- * step. If the zone is 'cooling down' it brings back the performance of
- * the devices by one step.
-
-
-
-if ... heating up ... throttles ...
-Sorry, but at least for P4 clockmod stuff (or some such), throttle
-states (P1...P8 IIRC) meant that the CPU operation was *reduced*,
-i.e. with pause intervals.
-And the translation of throttle clearly says that it does go that way
-and not the other way...
-(yes, you managed to confuse me that much that I even had to look up
-things to verify)
-
-... cooling down ... brings back ...
-This should certainly be worded "reduces" or some such.
-
-So, any idea why I'm missing callbacks in acerhdf (if that is what I'm
-supposed to expect to happen)?
-Kernel bug, .config mistake, missing/wrong user-side setup?
-
-Needless to say if kernel bug this ought to be fixed pre-3.8 ideally.
-
-Thanks,
-
-Andreas Mohr
+Oops, indeed picked the wrong mail from my sea of "drm/i915 broke
+stuff, again" mails ;-) Sorry for the noise, Steve.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
