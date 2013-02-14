@@ -1,60 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934770Ab3BNQ7Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 11:59:24 -0500
-Received: from mail-da0-f48.google.com ([209.85.210.48]:45022 "EHLO
-	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934337Ab3BNQ7X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 11:59:23 -0500
-Date: Thu, 14 Feb 2013 08:59:20 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        sjenning@linux.vnet.ibm.com, rcj@linux.vnet.ibm.com
-Subject: Re: [PATCH] Various cleanups/fixes to zcache (v3).
-Message-ID: <20130214165920.GA26615@kroah.com>
-References: <1360811106-2679-1-git-send-email-konrad.wilk@oracle.com>
- <56c69426-968a-4d0b-a254-dd03456e30d3@default>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <56c69426-968a-4d0b-a254-dd03456e30d3@default>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S934781Ab3BNRCq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 12:02:46 -0500
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:44970 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755903Ab3BNRCo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 12:02:44 -0500
+Message-ID: <1360856928.3524.626.camel@falcor1.watson.ibm.com>
+Subject: Re: [PATCH 2/2] ima: Support appraise_type=imasig_optional
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 14 Feb 2013 10:48:48 -0500
+In-Reply-To: <20130214144033.GA13047@redhat.com>
+References: <1360613493-11969-1-git-send-email-vgoyal@redhat.com>
+	 <1360613493-11969-3-git-send-email-vgoyal@redhat.com>
+	 <CALLzPKZA92MxJYjC+OR-KDv4rHQRgKSBHSAY2fOZsEDxiO11yA@mail.gmail.com>
+	 <1360760195.3524.355.camel@falcor1.watson.ibm.com>
+	 <CALLzPKaHLSg0TromnTvpEVroBUtPJE3TwF4RmcA2dtkuB5H4hQ@mail.gmail.com>
+	 <1360763044.3524.367.camel@falcor1.watson.ibm.com>
+	 <CALLzPKbdrvsPuH9t19rvQqGZ=0+abPuWPNke4FLsadj0ORieJg@mail.gmail.com>
+	 <1360791923.3524.466.camel@falcor1.watson.ibm.com>
+	 <20130214144033.GA13047@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13021416-8974-0000-0000-000015238441
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 14, 2013 at 08:56:01AM -0800, Dan Magenheimer wrote:
-> > From: Konrad Rzeszutek Wilk [mailto:konrad.wilk@oracle.com]
-> > Subject: [PATCH] Various cleanups/fixes to zcache (v3).
-> > 
-> > From Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> # This line is ignored.
-> > From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > Subject: [PATCH] Various cleanups/fixes to zcache (v3).
-> > In-Reply-To:
-> > 
-> > Hey Greg,
-> > 
-> > These patches do various cleanups of the zcache driver. The majority of the
-> > work is just to move all the different counters out to a debug file. The next
-> > step would be to figure out which ones are actually pertient and which can
-> > go under the knife. Oh, and also fix some of the compiler warnings.
-> > 
-> > This is based on top of ommit 76426daf50d5df38893cc189e9ccd026093debc8
-> > ("staging/zcache: Fix/improve zcache writeback code, tie to a config option")
-> > so should apply cleanly to your tree.
-> > 
-> > Please apply.
+On Thu, 2013-02-14 at 09:40 -0500, Vivek Goyal wrote:
+> On Wed, Feb 13, 2013 at 04:45:23PM -0500, Mimi Zohar wrote:
 > 
-> Useful cleanups.
+[..]
+
+> > > If it would happen that it contains signature, then IMA_DIGSIG flag
+> > > would be set,
+> > > and process could get needed capability as Vivek wants.
+> > 
+> > With the 'optional' condition, both unsigned and validly signed files
+> > will succeed.  One way of making this information accessible to an LSM,
+> > would be to define a new integrity capability and set it here.  The new
+> > integrity capability would indicate the file was validly signed. 
 > 
-> Hopefully not too late for 3.9-rc0.
+> Thinking loud.
+> 
+> The problem with integrity capability is that it goes only so far. If
+> we provide capability in exec() path, then that capability means much
+> more in the sense, we know file is locked to run from memory. An integrity
+> capability just means file is validly signed.
 
-You all did see my "the staging tree is closed except for bugfixes for
-3.9" message last week, right?
+> So exec() code might have to do another capability on top which will
+> also ensure that file is executable is locked in memory and signature
+> verification is done after loading in memory so that it is not open
+> to writing to disk block attacks.
+> 
+> And based on this capability we probably need to deny write access to file
+> till file is open for exec() (I noticed that after load, we seem to be
+> allowing access to write access).
 
-Sorry, this will have to wait for 3.10.
+I think we're back to my original comment that the bprm_check hook might
+need to be moved or an additional hook added, as the existing bprm_check
+hook is located before the file is locked from modification.  :)
 
-greg k-h
+thanks,
+
+Mimi
+
+
+
