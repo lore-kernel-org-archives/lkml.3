@@ -1,253 +1,293 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761594Ab3BNTIp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 14:08:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25032 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758544Ab3BNTIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 14:08:43 -0500
-Message-ID: <1360868919.25865.26.camel@ul30vt.home>
-Subject: Re: [PATCH v4 3/3] QEMU-AER: Qemu changes to support AER for
- VFIO-PCI devices
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Vijay Mohan Pandarathil <vijaymohan.pandarathil@hp.com>
-Cc: gleb@redhat.com, bhelgaas@google.com, blauwirbel@gmail.com,
-        lance.oritz@hp.com, kvm@vger.kernel.org, qemu-devel@nongnu.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 14 Feb 2013 12:08:39 -0700
-In-Reply-To: <1360838515-17558-4-git-send-email-vijaymohan.pandarathil@hp.com>
-References: <1360838515-17558-1-git-send-email-vijaymohan.pandarathil@hp.com>
-	 <1360838515-17558-4-git-send-email-vijaymohan.pandarathil@hp.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S934838Ab3BNTMc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 14:12:32 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:40951 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758544Ab3BNTMa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 14:12:30 -0500
+Date: Thu, 14 Feb 2013 11:12:26 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
+Subject: Linux 3.7.8
+Message-ID: <20130214191226.GA23218@kroah.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="PNTmBPCT7hxwcZjr"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-02-14 at 04:41 -0600, Vijay Mohan Pandarathil wrote:
-> 	- Create eventfd per vfio device assigned to a guest and register an
->           event handler
-> 
-> 	- This fd is passed to the vfio_pci driver through the SET_IRQ ioctl
-> 
-> 	- When the device encounters an error, the eventfd is signalled
->           and the qemu eventfd handler gets invoked.
-> 
-> 	- In the handler decide what action to take. Current action taken
->           is to stop the guest.
-> 
-> Signed-off-by: Vijay Mohan Pandarathil <vijaymohan.pandarathil@hp.com>
-> ---
->  hw/vfio_pci.c              | 112 +++++++++++++++++++++++++++++++++++++++++++++
->  linux-headers/linux/vfio.h |   1 +
->  2 files changed, 113 insertions(+)
-> 
-> diff --git a/hw/vfio_pci.c b/hw/vfio_pci.c
-> index c51ae67..05da53b 100644
-> --- a/hw/vfio_pci.c
-> +++ b/hw/vfio_pci.c
-> @@ -38,6 +38,7 @@
->  #include "qemu/error-report.h"
->  #include "qemu/queue.h"
->  #include "qemu/range.h"
-> +#include "sysemu/sysemu.h"
->  
->  /* #define DEBUG_VFIO */
->  #ifdef DEBUG_VFIO
-> @@ -129,7 +130,9 @@ typedef struct VFIODevice {
->      PCIHostDeviceAddress host;
->      QLIST_ENTRY(VFIODevice) next;
->      struct VFIOGroup *group;
-> +    EventNotifier err_notifier;
->      bool reset_works;
-> +    bool pci_aer;
->  } VFIODevice;
->  
->  typedef struct VFIOGroup {
-> @@ -1802,6 +1805,7 @@ static int vfio_get_device(VFIOGroup *group, const char *name, VFIODevice *vdev)
->  {
->      struct vfio_device_info dev_info = { .argsz = sizeof(dev_info) };
->      struct vfio_region_info reg_info = { .argsz = sizeof(reg_info) };
-> +    struct vfio_irq_info irq_info = { .argsz = sizeof(irq_info) };
->      int ret, i;
->  
->      ret = ioctl(group->fd, VFIO_GROUP_GET_DEVICE_FD, name);
-> @@ -1901,6 +1905,15 @@ static int vfio_get_device(VFIOGroup *group, const char *name, VFIODevice *vdev)
->      vdev->config_size = reg_info.size;
->      vdev->config_offset = reg_info.offset;
->  
-> +    irq_info.index = VFIO_PCI_ERR_IRQ_INDEX;
-> +
-> +    ret = ioctl(vdev->fd, VFIO_DEVICE_GET_IRQ_INFO, &irq_info);
-> +    if (ret) {
-> +        error_report("vfio: Error getting IRQ info: %m\n");
 
-What if we're assigning a Legacy PCI device or running on an old kernel,
-neither of these warrant an error_report.
+--PNTmBPCT7hxwcZjr
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> +        goto error;
-> +    }
-> +    if (irq_info.count == 1)
-> +        vdev->pci_aer = true;
+I'm announcing the release of the 3.7.8 kernel.
 
-This is where I'd actually expect some kind of warning, you're getting
-something back that you don't expect (if != 1).
+All users of the 3.7 kernel series must upgrade.
 
->  error:
->      if (ret) {
->          QLIST_REMOVE(vdev, next);
-> @@ -1922,6 +1935,102 @@ static void vfio_put_device(VFIODevice *vdev)
->      }
->  }
->  
-> +static void vfio_err_notifier_handler(void *opaque)
-> +{
-> +    VFIODevice *vdev = opaque;
-> +
-> +    if (!event_notifier_test_and_clear(&vdev->err_notifier)) {
-> +        return;
-> +    }
-> +
-> +    /*
-> +     * TBD. Retrieve the error details and decide what action
-> +     * needs to be taken. One of the actions could be to pass
-> +     * the error to the guest and have the guest driver recover
-> +     * from the error. This requires that PCIe capabilities be
-> +     * exposed to the guest. For now, we just terminate the
-> +     * guest to contain the error.
-> +     */
-> +
-> +    error_report("%s (%04x:%02x:%02x.%x)"
-> +        "Unrecoverable error detected...\n"
-> +        "Please inestigate/collect any data required and then kill the quest",
+The updated 3.7.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linu=
+x-3.7.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dsu=
+mmary
 
-s/inestigate/investigate/
+thanks,
 
-This seems like a lot to ask of a user.
+greg k-h
 
-> +        __func__, vdev->host.domain, vdev->host.bus,
-> +        vdev->host.slot, vdev->host.function);
-> +
-> +    vm_stop(RUN_STATE_IO_ERROR);
+------------
 
-Gleb, were you looking for a new stop condition or is this one ok to
-re-use?
+ MAINTAINERS                                          |    6=20
+ Makefile                                             |    2=20
+ drivers/atm/iphase.h                                 |  146 +++++++++-----=
+-----
+ drivers/char/virtio_console.c                        |    3=20
+ drivers/gpu/drm/nouveau/core/core/subdev.c           |    2=20
+ drivers/gpu/drm/nouveau/core/include/core/object.h   |    7=20
+ drivers/gpu/drm/nouveau/nouveau_drm.c                |    3=20
+ drivers/infiniband/hw/qib/qib_qp.c                   |   11 -
+ drivers/isdn/gigaset/capi.c                          |    2=20
+ drivers/md/dm-thin.c                                 |   13 -
+ drivers/media/usb/pwc/pwc-if.c                       |    6=20
+ drivers/mfd/db8500-prcmu.c                           |    6=20
+ drivers/net/can/c_can/c_can.c                        |    6=20
+ drivers/net/ethernet/calxeda/xgmac.c                 |    4=20
+ drivers/net/ethernet/intel/e1000e/defines.h          |    9 +
+ drivers/net/ethernet/intel/e1000e/e1000.h            |    2=20
+ drivers/net/ethernet/intel/e1000e/ethtool.c          |    2=20
+ drivers/net/ethernet/intel/e1000e/hw.h               |    1=20
+ drivers/net/ethernet/intel/e1000e/ich8lan.c          |   11 +
+ drivers/net/ethernet/intel/e1000e/netdev.c           |   46 +++++
+ drivers/net/ethernet/mellanox/mlx4/en_tx.c           |   13 +
+ drivers/net/ethernet/mellanox/mlx4/main.c            |   11 -
+ drivers/net/ethernet/qlogic/netxen/netxen_nic_init.c |    2=20
+ drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c |    2=20
+ drivers/net/ethernet/realtek/r8169.c                 |    7=20
+ drivers/net/ethernet/via/via-rhine.c                 |    8 -
+ drivers/net/loopback.c                               |    5=20
+ drivers/net/macvlan.c                                |    5=20
+ drivers/net/wireless/ath/ath9k/ar9003_calib.c        |    2=20
+ drivers/net/wireless/ath/ath9k/ar9003_phy.c          |    2=20
+ drivers/net/wireless/ath/ath9k/hw.h                  |    1=20
+ drivers/net/wireless/iwlwifi/dvm/tx.c                |   24 ---
+ drivers/net/wireless/mwifiex/scan.c                  |    9 -
+ drivers/net/wireless/rtlwifi/base.c                  |    7=20
+ drivers/net/wireless/rtlwifi/usb.c                   |    4=20
+ drivers/net/xen-netback/common.h                     |    3=20
+ drivers/net/xen-netback/interface.c                  |   23 +-
+ drivers/net/xen-netback/netback.c                    |  115 +++++++++-----
+ drivers/regulator/max8998.c                          |    2=20
+ drivers/regulator/of_regulator.c                     |    6=20
+ drivers/regulator/s2mps11.c                          |    4=20
+ include/linux/netdevice.h                            |    3=20
+ include/net/ip.h                                     |    2=20
+ net/bluetooth/smp.c                                  |   13 +
+ net/core/dev.c                                       |    8 +
+ net/core/pktgen.c                                    |    9 -
+ net/core/request_sock.c                              |    2=20
+ net/core/skbuff.c                                    |   44 +----
+ net/ipv4/datagram.c                                  |   25 +++
+ net/ipv4/ip_gre.c                                    |    6=20
+ net/ipv4/ip_sockglue.c                               |    2=20
+ net/ipv4/ping.c                                      |    1=20
+ net/ipv4/raw.c                                       |    1=20
+ net/ipv4/route.c                                     |   54 ++++++-
+ net/ipv4/tcp.c                                       |   27 ++-
+ net/ipv4/tcp_cong.c                                  |   14 +
+ net/ipv4/tcp_input.c                                 |    8 -
+ net/ipv4/tcp_ipv4.c                                  |    9 -
+ net/ipv4/udp.c                                       |    1=20
+ net/ipv6/addrconf.c                                  |    2=20
+ net/ipv6/icmp.c                                      |   12 +
+ net/ipv6/ip6_gre.c                                   |    2=20
+ net/ipv6/ip6_output.c                                |    4=20
+ net/ipv6/route.c                                     |    2=20
+ net/packet/af_packet.c                               |   10 -
+ net/sctp/endpointola.c                               |    5=20
+ net/sctp/outqueue.c                                  |   12 +
+ net/sctp/socket.c                                    |    2=20
+ net/wireless/core.c                                  |    3=20
+ 69 files changed, 536 insertions(+), 290 deletions(-)
 
-> +}
-> +
-> +static void vfio_register_err_notifier(VFIODevice *vdev)
-> +{
-> +    int ret;
-> +    int argsz;
-> +    struct vfio_irq_set *irq_set;
-> +    int32_t *pfd;
-> +
-> +    if (!vdev->pci_aer) {
-> +        return;
-> +    }
-> +
-> +    if (event_notifier_init(&vdev->err_notifier, 0)) {
-> +        error_report("vfio: Warning: Unable to init event notifier for error detection\n");
-> +        return;
-> +    }
-> +
-> +    argsz = sizeof(*irq_set) + sizeof(*pfd);
-> +
-> +    irq_set = g_malloc0(argsz);
-> +    irq_set->argsz = argsz;
-> +    irq_set->flags = VFIO_IRQ_SET_DATA_EVENTFD |
-> +                     VFIO_IRQ_SET_ACTION_TRIGGER;
-> +    irq_set->index = VFIO_PCI_ERR_IRQ_INDEX;
-> +    irq_set->start = 0;
-> +    irq_set->count = 1;
-> +    pfd = (int32_t *)&irq_set->data;
-> +
-> +    *pfd = event_notifier_get_fd(&vdev->err_notifier);
-> +    qemu_set_fd_handler(*pfd, vfio_err_notifier_handler, NULL, vdev);
-> +
-> +    ret = ioctl(vdev->fd, VFIO_DEVICE_SET_IRQS, irq_set);
-> +    if (ret) {
-> +        error_report("vfio: Failed to set up error notification\n");
-> +        qemu_set_fd_handler(*pfd, NULL, NULL, vdev);
-> +        event_notifier_cleanup(&vdev->err_notifier);
-> +    }
-> +    g_free(irq_set);
-> +}
+Alexander Stein (1):
+      can: c_can: Set reserved bit in IFx_MASK2 to 1 on write
 
-Why does the register return void?  If it's supported and fails, isn't
-that a condition where we'd want to fail the initfn?  Also, if the above
-fails, there's nothing that prevents the below unreqister... isn't that
-a bug?
+Alim Akhtar (1):
+      regulator: s2mps11: fix incorrect register for buck10
 
-> +static void vfio_unregister_err_notifier(VFIODevice *vdev)
-> +{
-> +    int argsz;
-> +    struct vfio_irq_set *irq_set;
-> +    int32_t *pfd;
-> +    int ret;
-> +
-> +    if (!vdev->pci_aer) {
-> +        return;
-> +    }
-> +
-> +    argsz = sizeof(*irq_set) + sizeof(*pfd);
-> +
-> +    irq_set = g_malloc0(argsz);
-> +    irq_set->argsz = argsz;
-> +    irq_set->flags = VFIO_IRQ_SET_DATA_EVENTFD |
-> +                     VFIO_IRQ_SET_ACTION_TRIGGER;
-> +    irq_set->index = VFIO_PCI_ERR_IRQ_INDEX;
-> +    irq_set->start = 0;
-> +    irq_set->count = 1;
-> +    pfd = (int32_t *)&irq_set->data;
-> +    *pfd = -1;
-> +
-> +    ret = ioctl(vdev->fd, VFIO_DEVICE_SET_IRQS, irq_set);
-> +    if (ret) {
-> +        error_report("vfio: Failed to de-assign error fd: %d\n", ret);
-> +    }
-> +    g_free(irq_set);
-> +    qemu_set_fd_handler(event_notifier_get_fd(&vdev->err_notifier),
-> +                        NULL, NULL, vdev);
-> +    event_notifier_cleanup(&vdev->err_notifier);
-> +}
->  static int vfio_initfn(PCIDevice *pdev)
->  {
->      VFIODevice *pvdev, *vdev = DO_UPCAST(VFIODevice, pdev, pdev);
-> @@ -2032,6 +2141,8 @@ static int vfio_initfn(PCIDevice *pdev)
->          }
->      }
->  
-> +    vfio_register_err_notifier(vdev);
-> +
->      return 0;
->  
->  out_teardown:
-> @@ -2049,6 +2160,7 @@ static void vfio_exitfn(PCIDevice *pdev)
->      VFIODevice *vdev = DO_UPCAST(VFIODevice, pdev, pdev);
->      VFIOGroup *group = vdev->group;
->  
-> +    vfio_unregister_err_notifier(vdev);
->      pci_device_set_intx_routing_notifier(&vdev->pdev, NULL);
->      vfio_disable_interrupts(vdev);
->      if (vdev->intx.mmap_timer) {
-> diff --git a/linux-headers/linux/vfio.h b/linux-headers/linux/vfio.h
-> index f787b72..6b20849 100644
-> --- a/linux-headers/linux/vfio.h
-> +++ b/linux-headers/linux/vfio.h
-> @@ -310,6 +310,7 @@ enum {
->  	VFIO_PCI_INTX_IRQ_INDEX,
->  	VFIO_PCI_MSI_IRQ_INDEX,
->  	VFIO_PCI_MSIX_IRQ_INDEX,
-> +	VFIO_PCI_ERR_IRQ_INDEX,
->  	VFIO_PCI_NUM_IRQS
->  };
->  
+Bing Zhao (1):
+      mwifiex: fix incomplete scan in case of IE parsing error
 
-Linux headers get updated via the scripts/update-linux-headers.sh
-script.  This will need to be done in a separate patch after the kernel
-changes are upstream.  Thanks,
+Bruce Allan (1):
+      e1000e: enable ECC on I217/I218 to catch packet buffer memory errors
 
-Alex
+Cong Wang (2):
+      net: prevent setting ttl=3D0 via IP_TTL
+      pktgen: correctly handle failures when adding a device
 
+Daniel Borkmann (2):
+      net: sctp: sctp_setsockopt_auth_key: use kzfree instead of kfree
+      net: sctp: sctp_endpoint_free: zero out secret key data
+
+David S. Miller (1):
+      via-rhine: Fix bugs in NAPI support.
+
+Emmanuel Grumbach (1):
+      Revert "iwlwifi: fix the reclaimed packet tracking upon flush queue"
+
+Eric Dumazet (11):
+      tcp: fix a panic on UP machines in reqsk_fastopen_remove
+      macvlan: fix macvlan_get_size()
+      tcp: fix incorrect LOCKDROPPEDICMPS counter
+      netxen: fix off by one bug in netxen_release_tx_buffer()
+      net: loopback: fix a dst refcounting issue
+      tcp: fix an infinite loop in tcp_slow_start()
+      tcp: frto should not set snd_cwnd to 0
+      tcp: splice: fix an infinite loop in tcp_read_sock()
+      tcp: fix splice() and tcp collapsing interaction
+      net: splice: avoid high order page splitting
+      net: splice: fix __splice_segment()
+
+Felix Fietkau (1):
+      ath9k_hw: fix calibration issues on chainmask that don't include chai=
+n 0
+
+Greg Kroah-Hartman (1):
+      Linux 3.7.8
+
+Heiko Carstens (1):
+      atm/iphase: rename fregt_t -> ffreg_t
+
+Ian Campbell (3):
+      xen/netback: shutdown the ring if it contains garbage.
+      xen/netback: free already allocated memory on failure in xen_netbk_ge=
+t_requests
+      netback: correct netbk_tx_err to handle wrap around.
+
+Ilpo J=E4rvinen (1):
+      tcp: fix for zero packets_in_flight was too broad
+
+Johan Hedberg (1):
+      Bluetooth: Fix handling of unexpected SMP PDUs
+
+Larry Finger (2):
+      rtlwifi: Fix the usage of the wrong variable in usb.c
+      rtlwifi: Fix scheduling while atomic bug
+
+Linus Walleij (1):
+      mfd: db8500-prcmu: Fix irqdomain usage
+
+Marcelo Ricardo Leitner (1):
+      ipv6: do not create neighbor entries for local delivery
+
+Marcin Slusarz (1):
+      drm/nouveau: add lockdep annotations
+
+Marek Szyprowski (1):
+      regulator: max8998: fix incorrect min_uV value for ldo10
+
+Matthew Daley (1):
+      xen/netback: don't leak pages on failure in xen_netbk_tx_check_gop.
+
+Mauro Carvalho Chehab (1):
+      media: pwc-if: must check vb2_queue_init() success
+
+Mike Marciniszyn (1):
+      IB/qib: Fix for broken sparse warning fix
+
+Mike Snitzer (1):
+      dm thin: fix queue limits stacking
+
+Neil Horman (1):
+      sctp: refactor sctp_outq_teardown to insure proper re-initalization
+
+Or Gerlitz (1):
+      net/mlx4_core: Set number of msix vectors under SRIOV mode to firmwar=
+e defaults
+
+Phil Sutter (1):
+      packet: fix leakage of tx_ring memory
+
+Pravin B Shelar (1):
+      IP_GRE: Fix kernel panic in IP_GRE with GRE csum.
+
+Rob Herring (1):
+      net: calxedaxgmac: throw away overrun frames
+
+Romain KUNTZ (1):
+      ipv6: fix header length calculation in ip6_append_data()
+
+Romain Kuntz (1):
+      ipv6: fix the noflags test in addrconf_get_prefix_route
+
+Sjur Br=E6ndeland (1):
+      virtio_console: Don't access uninitialized data.
+
+Stanislaw Gruszka (1):
+      net, wireless: overwrite default_ethtool_ops
+
+Steffen Klassert (6):
+      ipv4: Remove output route check in ipv4_mtu
+      ipv4: Don't update the pmtu on mtu locked routes
+      ipv6: Add an error handler for icmp6
+      ipv4: Invalidate the socket cached route on pmtu events if possible
+      ipv4: Add a socket release callback for datagram sockets
+      ipv4: Fix route refcount on pmtu discovery
+
+Stephen Hemminger (1):
+      MAINTAINERS: Stephen Hemminger email change
+
+Stephen Warren (1):
+      regulator: clear state each invocation of of_regulator_match
+
+Tilman Schmidt (1):
+      isdn/gigaset: fix zero size border case in debug dump
+
+Timo Ter=E4s (1):
+      r8169: remove the obsolete and incorrect AMD workaround
+
+Tommi Rantala (1):
+      ipv6/ip6_gre: fix error case handling in ip6gre_tunnel_xmit()
+
+Willy Tarreau (1):
+      tcp: don't abort splice() after small transfers
+
+Yan Burman (1):
+      net/mlx4_en: Fix bridged vSwitch configuration for non SRIOV mode
+
+Yuchung Cheng (1):
+      tcp: detect SYN/data drop when F-RTO is disabled
+
+
+--PNTmBPCT7hxwcZjr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRHTcaAAoJEDjbvchgkmk+FcMP/jbVYblMTZWdVliTGTPtLdeg
+05XeamPs7/zICl+i37BVNMOVppAaBaIJNN4EOADgjaeD496ctlBxqClcX11FI33N
+aGHkzw5ioGCmVs6qPmKZUg/XGpnkH0Z5fM2VWsJXLcO9S2E4HSR7DX3Y8JT5qPfB
+X5ULB7vECciAp4uVl3Vufy7USsrs3LHvxE0CMiwHTMdiubcXguzi2bylpQfpN0lC
+t8VM2+WC6wkCZStYejE9zInPoUfQqx6nyttNQFWmfU6Wkvm2tyjAGccObGJs57Ny
+A6xptiXb8AOVzgQxsiTzwnow7J8SStmC3WFv/OOyAxozLVBmJCjrAjFmlK7ygtRj
+bc2A7rjtk1tuJxIc50DAu4JLhD03YKm9fMt0EVXn7LhWCagPXUcMzlhMpJTID11e
+8bTEx525UYYL50LSnMqqtzhxRrcg9zE75BnbdudddQ0+cbzdO/0RMV0QnJlfPSeq
+7DSoaLe+CrbQkMOltnibNibTODLoATLj7sO4NWAGGCEcm0VHqSeEEU7hww02iLTb
+pOqCZwpRLfuK7cGOEiczxQADPY8d2/8yj2m917gBF1PVqzrN6Y97afTXfvU05f+E
+OBS2PyK2VwltLbDrKW7yzDFTnfoZ66H41TsmYCPFzoR0aL2N/PiaBfJMJn1eB3tT
+T/sSPwsBFxAlWAriQA4l
+=R+Rp
+-----END PGP SIGNATURE-----
+
+--PNTmBPCT7hxwcZjr--
