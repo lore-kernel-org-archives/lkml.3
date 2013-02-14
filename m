@@ -1,432 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030206Ab3BNTBV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 14:01:21 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:19259 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932489Ab3BNTBT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 14:01:19 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 14 Feb 2013 11:01:14 -0800
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: <linux-tegra@vger.kernel.org>
-CC: Hiroshi Doyu <hdoyu@nvidia.com>, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King <linux@arm.linux.org.uk>, Simon Glass <sjg@chromium.org>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: [v2 4/4] ARM: tegra30: convert device tree files to use CLK defines
-Date: Thu, 14 Feb 2013 20:59:18 +0200
-Message-ID: <1360868369-20093-5-git-send-email-hdoyu@nvidia.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1360868369-20093-1-git-send-email-hdoyu@nvidia.com>
-References: <1360868369-20093-1-git-send-email-hdoyu@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1761594Ab3BNTIp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 14:08:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25032 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758544Ab3BNTIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 14:08:43 -0500
+Message-ID: <1360868919.25865.26.camel@ul30vt.home>
+Subject: Re: [PATCH v4 3/3] QEMU-AER: Qemu changes to support AER for
+ VFIO-PCI devices
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Vijay Mohan Pandarathil <vijaymohan.pandarathil@hp.com>
+Cc: gleb@redhat.com, bhelgaas@google.com, blauwirbel@gmail.com,
+        lance.oritz@hp.com, kvm@vger.kernel.org, qemu-devel@nongnu.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 14 Feb 2013 12:08:39 -0700
+In-Reply-To: <1360838515-17558-4-git-send-email-vijaymohan.pandarathil@hp.com>
+References: <1360838515-17558-1-git-send-email-vijaymohan.pandarathil@hp.com>
+	 <1360838515-17558-4-git-send-email-vijaymohan.pandarathil@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace magic number in tegra_car:
+On Thu, 2013-02-14 at 04:41 -0600, Vijay Mohan Pandarathil wrote:
+> 	- Create eventfd per vfio device assigned to a guest and register an
+>           event handler
+> 
+> 	- This fd is passed to the vfio_pci driver through the SET_IRQ ioctl
+> 
+> 	- When the device encounters an error, the eventfd is signalled
+>           and the qemu eventfd handler gets invoked.
+> 
+> 	- In the handler decide what action to take. Current action taken
+>           is to stop the guest.
+> 
+> Signed-off-by: Vijay Mohan Pandarathil <vijaymohan.pandarathil@hp.com>
+> ---
+>  hw/vfio_pci.c              | 112 +++++++++++++++++++++++++++++++++++++++++++++
+>  linux-headers/linux/vfio.h |   1 +
+>  2 files changed, 113 insertions(+)
+> 
+> diff --git a/hw/vfio_pci.c b/hw/vfio_pci.c
+> index c51ae67..05da53b 100644
+> --- a/hw/vfio_pci.c
+> +++ b/hw/vfio_pci.c
+> @@ -38,6 +38,7 @@
+>  #include "qemu/error-report.h"
+>  #include "qemu/queue.h"
+>  #include "qemu/range.h"
+> +#include "sysemu/sysemu.h"
+>  
+>  /* #define DEBUG_VFIO */
+>  #ifdef DEBUG_VFIO
+> @@ -129,7 +130,9 @@ typedef struct VFIODevice {
+>      PCIHostDeviceAddress host;
+>      QLIST_ENTRY(VFIODevice) next;
+>      struct VFIOGroup *group;
+> +    EventNotifier err_notifier;
+>      bool reset_works;
+> +    bool pci_aer;
+>  } VFIODevice;
+>  
+>  typedef struct VFIOGroup {
+> @@ -1802,6 +1805,7 @@ static int vfio_get_device(VFIOGroup *group, const char *name, VFIODevice *vdev)
+>  {
+>      struct vfio_device_info dev_info = { .argsz = sizeof(dev_info) };
+>      struct vfio_region_info reg_info = { .argsz = sizeof(reg_info) };
+> +    struct vfio_irq_info irq_info = { .argsz = sizeof(irq_info) };
+>      int ret, i;
+>  
+>      ret = ioctl(group->fd, VFIO_GROUP_GET_DEVICE_FD, name);
+> @@ -1901,6 +1905,15 @@ static int vfio_get_device(VFIOGroup *group, const char *name, VFIODevice *vdev)
+>      vdev->config_size = reg_info.size;
+>      vdev->config_offset = reg_info.offset;
+>  
+> +    irq_info.index = VFIO_PCI_ERR_IRQ_INDEX;
+> +
+> +    ret = ioctl(vdev->fd, VFIO_DEVICE_GET_IRQ_INFO, &irq_info);
+> +    if (ret) {
+> +        error_report("vfio: Error getting IRQ info: %m\n");
 
--               clocks = <&tegra_car 28>;
-+               clocks = <&tegra_car CLK_HOST1X>;
+What if we're assigning a Legacy PCI device or running on an old kernel,
+neither of these warrant an error_report.
 
-Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
----
- .../bindings/clock/nvidia,tegra30-car.txt          |    2 +-
- arch/arm/boot/dts/tegra30.dtsip                    |   87 ++++++++++----------
- 2 files changed, 45 insertions(+), 44 deletions(-)
+> +        goto error;
+> +    }
+> +    if (irq_info.count == 1)
+> +        vdev->pci_aer = true;
 
-diff --git a/Documentation/devicetree/bindings/clock/nvidia,tegra30-car.txt b/Documentation/devicetree/bindings/clock/nvidia,tegra30-car.txt
-index f3da3be..bc9660b 100644
---- a/Documentation/devicetree/bindings/clock/nvidia,tegra30-car.txt
-+++ b/Documentation/devicetree/bindings/clock/nvidia,tegra30-car.txt
-@@ -229,7 +229,7 @@ Example SoC include file:
- 	};
- 
- 	usb@c5004000 {
--		clocks = <&tegra_car 58>; /* usb2 */
-+		clocks = <&tegra_car CLK_USB2>; /* usb2 */
- 	};
- };
- 
-diff --git a/arch/arm/boot/dts/tegra30.dtsip b/arch/arm/boot/dts/tegra30.dtsip
-index 0148459..0483697 100644
---- a/arch/arm/boot/dts/tegra30.dtsip
-+++ b/arch/arm/boot/dts/tegra30.dtsip
-@@ -1,6 +1,7 @@
- #include "skeleton.dtsi"
- #include "tegra-gpio.h"
- #include "arm-gic.h"
-+#include "tegra30-car.h"
- 
- / {
- 	compatible = "nvidia,tegra30";
-@@ -19,7 +20,7 @@
- 		reg = <0x50000000 0x00024000>;
- 		interrupts = <GIC_SPI 65 IRQ_TYPE_LEVEL_HIGH>, /* syncpt */
- 			     <GIC_SPI 67 IRQ_TYPE_LEVEL_HIGH>; /* general */
--		clocks = <&tegra_car 28>;
-+		clocks = <&tegra_car CLK_HOST1X>;
- 
- 		#address-cells = <1>;
- 		#size-cells = <1>;
-@@ -30,35 +31,35 @@
- 			compatible = "nvidia,tegra30-mpe";
- 			reg = <0x54040000 0x00040000>;
- 			interrupts = <GIC_SPI 68 IRQ_TYPE_LEVEL_HIGH>;
--			clocks = <&tegra_car 60>;
-+			clocks = <&tegra_car CLK_MPE>;
- 		};
- 
- 		vi {
- 			compatible = "nvidia,tegra30-vi";
- 			reg = <0x54080000 0x00040000>;
- 			interrupts = <GIC_SPI 69 IRQ_TYPE_LEVEL_HIGH>;
--			clocks = <&tegra_car 164>;
-+			clocks = <&tegra_car CLK_VI>;
- 		};
- 
- 		epp {
- 			compatible = "nvidia,tegra30-epp";
- 			reg = <0x540c0000 0x00040000>;
- 			interrupts = <GIC_SPI 70 IRQ_TYPE_LEVEL_HIGH>;
--			clocks = <&tegra_car 19>;
-+			clocks = <&tegra_car CLK_EPP>;
- 		};
- 
- 		isp {
- 			compatible = "nvidia,tegra30-isp";
- 			reg = <0x54100000 0x00040000>;
- 			interrupts = <GIC_SPI 71 IRQ_TYPE_LEVEL_HIGH>;
--			clocks = <&tegra_car 23>;
-+			clocks = <&tegra_car CLK_ISP>;
- 		};
- 
- 		gr2d {
- 			compatible = "nvidia,tegra30-gr2d";
- 			reg = <0x54140000 0x00040000>;
- 			interrupts = <GIC_SPI 72 IRQ_TYPE_LEVEL_HIGH>;
--			clocks = <&tegra_car 21>;
-+			clocks = <&tegra_car CLK_GR2D>;
- 		};
- 
- 		gr3d {
-@@ -72,7 +73,7 @@
- 			compatible = "nvidia,tegra30-dc";
- 			reg = <0x54200000 0x00040000>;
- 			interrupts = <GIC_SPI 73 IRQ_TYPE_LEVEL_HIGH>;
--			clocks = <&tegra_car 27>, <&tegra_car 179>;
-+			clocks = <&tegra_car CLK_DISP1>, <&tegra_car CLK_PLL_P>;
- 			clock-names = "disp1", "parent";
- 
- 			rgb {
-@@ -84,7 +85,7 @@
- 			compatible = "nvidia,tegra30-dc";
- 			reg = <0x54240000 0x00040000>;
- 			interrupts = <GIC_SPI 74 IRQ_TYPE_LEVEL_HIGH>;
--			clocks = <&tegra_car 26>, <&tegra_car 179>;
-+			clocks = <&tegra_car CLK_DISP2>, <&tegra_car CLK_PLL_P>;
- 			clock-names = "disp2", "parent";
- 
- 			rgb {
-@@ -96,7 +97,7 @@
- 			compatible = "nvidia,tegra30-hdmi";
- 			reg = <0x54280000 0x00040000>;
- 			interrupts = <GIC_SPI 75 IRQ_TYPE_LEVEL_HIGH>;
--			clocks = <&tegra_car 51>, <&tegra_car 189>;
-+			clocks = <&tegra_car CLK_HDMI>, <&tegra_car CLK_PLL_D2_OUT0>;
- 			clock-names = "hdmi", "parent";
- 			status = "disabled";
- 		};
-@@ -105,14 +106,14 @@
- 			compatible = "nvidia,tegra30-tvo";
- 			reg = <0x542c0000 0x00040000>;
- 			interrupts = <GIC_SPI 76 IRQ_TYPE_LEVEL_HIGH>;
--			clocks = <&tegra_car 169>;
-+			clocks = <&tegra_car CLK_TVO>;
- 			status = "disabled";
- 		};
- 
- 		dsi {
- 			compatible = "nvidia,tegra30-dsi";
- 			reg = <0x54300000 0x00040000>;
--			clocks = <&tegra_car 48>;
-+			clocks = <&tegra_car CLK_DSIA>;
- 			status = "disabled";
- 		};
- 	};
-@@ -193,7 +194,7 @@
- 			     <GIC_SPI 141 IRQ_TYPE_LEVEL_HIGH>,
- 			     <GIC_SPI 142 IRQ_TYPE_LEVEL_HIGH>,
- 			     <GIC_SPI 143 IRQ_TYPE_LEVEL_HIGH>;
--		clocks = <&tegra_car 34>;
-+		clocks = <&tegra_car CLK_APBDMA>;
- 	};
- 
- 	ahb: ahb {
-@@ -239,7 +240,7 @@
- 		interrupts = <GIC_SPI 36 IRQ_TYPE_LEVEL_HIGH>;
- 		clock-frequency = <408000000>;
- 		nvidia,dma-request-selector = <&apbdma 8>;
--		clocks = <&tegra_car 6>;
-+		clocks = <&tegra_car CLK_UARTA>;
- 		status = "disabled";
- 	};
- 
-@@ -250,7 +251,7 @@
- 		clock-frequency = <408000000>;
- 		interrupts = <GIC_SPI 37 IRQ_TYPE_LEVEL_HIGH>;
- 		nvidia,dma-request-selector = <&apbdma 9>;
--		clocks = <&tegra_car 160>;
-+		clocks = <&tegra_car CLK_UARTB>;
- 		status = "disabled";
- 	};
- 
-@@ -261,7 +262,7 @@
- 		clock-frequency = <408000000>;
- 		interrupts = <GIC_SPI 46 IRQ_TYPE_LEVEL_HIGH>;
- 		nvidia,dma-request-selector = <&apbdma 10>;
--		clocks = <&tegra_car 55>;
-+		clocks = <&tegra_car CLK_UARTC>;
- 		status = "disabled";
- 	};
- 
-@@ -272,7 +273,7 @@
- 		clock-frequency = <408000000>;
- 		interrupts = <GIC_SPI 90 IRQ_TYPE_LEVEL_HIGH>;
- 		nvidia,dma-request-selector = <&apbdma 19>;
--		clocks = <&tegra_car 65>;
-+		clocks = <&tegra_car CLK_UARTD>;
- 		status = "disabled";
- 	};
- 
-@@ -283,7 +284,7 @@
- 		clock-frequency = <408000000>;
- 		interrupts = <GIC_SPI 91 IRQ_TYPE_LEVEL_HIGH>;
- 		nvidia,dma-request-selector = <&apbdma 20>;
--		clocks = <&tegra_car 66>;
-+		clocks = <&tegra_car CLK_UARTE>;
- 		status = "disabled";
- 	};
- 
-@@ -291,7 +292,7 @@
- 		compatible = "nvidia,tegra30-pwm", "nvidia,tegra20-pwm";
- 		reg = <0x7000a000 0x100>;
- 		#pwm-cells = <2>;
--		clocks = <&tegra_car 17>;
-+		clocks = <&tegra_car CLK_PWM>;
- 	};
- 
- 	rtc {
-@@ -306,7 +307,7 @@
- 		interrupts = <GIC_SPI 38 IRQ_TYPE_LEVEL_HIGH>;
- 		#address-cells = <1>;
- 		#size-cells = <0>;
--		clocks = <&tegra_car 12>, <&tegra_car 182>;
-+		clocks = <&tegra_car CLK_I2C1>, <&tegra_car CLK_PLL_P_OUT3>;
- 		clock-names = "div-clk", "fast-clk";
- 		status = "disabled";
- 	};
-@@ -317,7 +318,7 @@
- 		interrupts = <GIC_SPI 84 IRQ_TYPE_LEVEL_HIGH>;
- 		#address-cells = <1>;
- 		#size-cells = <0>;
--		clocks = <&tegra_car 54>, <&tegra_car 182>;
-+		clocks = <&tegra_car CLK_I2C2>, <&tegra_car CLK_PLL_P_OUT3>;
- 		clock-names = "div-clk", "fast-clk";
- 		status = "disabled";
- 	};
-@@ -328,7 +329,7 @@
- 		interrupts = <GIC_SPI 92 IRQ_TYPE_LEVEL_HIGH>;
- 		#address-cells = <1>;
- 		#size-cells = <0>;
--		clocks = <&tegra_car 67>, <&tegra_car 182>;
-+		clocks = <&tegra_car CLK_I2C3>, <&tegra_car CLK_PLL_P_OUT3>;
- 		clock-names = "div-clk", "fast-clk";
- 		status = "disabled";
- 	};
-@@ -339,7 +340,7 @@
- 		interrupts = <GIC_SPI 120 IRQ_TYPE_LEVEL_HIGH>;
- 		#address-cells = <1>;
- 		#size-cells = <0>;
--		clocks = <&tegra_car 103>, <&tegra_car 182>;
-+		clocks = <&tegra_car CLK_I2C4>, <&tegra_car CLK_PLL_P_OUT3>;
- 		clock-names = "div-clk", "fast-clk";
- 		status = "disabled";
- 	};
-@@ -350,7 +351,7 @@
- 		interrupts = <GIC_SPI 53 IRQ_TYPE_LEVEL_HIGH>;
- 		#address-cells = <1>;
- 		#size-cells = <0>;
--		clocks = <&tegra_car 47>, <&tegra_car 182>;
-+		clocks = <&tegra_car CLK_I2C5>, <&tegra_car CLK_PLL_P_OUT3>;
- 		clock-names = "div-clk", "fast-clk";
- 		status = "disabled";
- 	};
-@@ -362,7 +363,7 @@
- 		nvidia,dma-request-selector = <&apbdma 15>;
- 		#address-cells = <1>;
- 		#size-cells = <0>;
--		clocks = <&tegra_car 41>;
-+		clocks = <&tegra_car CLK_SBC1>;
- 		status = "disabled";
- 	};
- 
-@@ -373,7 +374,7 @@
- 		nvidia,dma-request-selector = <&apbdma 16>;
- 		#address-cells = <1>;
- 		#size-cells = <0>;
--		clocks = <&tegra_car 44>;
-+		clocks = <&tegra_car CLK_SBC2>;
- 		status = "disabled";
- 	};
- 
-@@ -384,7 +385,7 @@
- 		nvidia,dma-request-selector = <&apbdma 17>;
- 		#address-cells = <1>;
- 		#size-cells = <0>;
--		clocks = <&tegra_car 46>;
-+		clocks = <&tegra_car CLK_SBC3>;
- 		status = "disabled";
- 	};
- 
-@@ -395,7 +396,7 @@
- 		nvidia,dma-request-selector = <&apbdma 18>;
- 		#address-cells = <1>;
- 		#size-cells = <0>;
--		clocks = <&tegra_car 68>;
-+		clocks = <&tegra_car CLK_SBC4>;
- 		status = "disabled";
- 	};
- 
-@@ -406,7 +407,7 @@
- 		nvidia,dma-request-selector = <&apbdma 27>;
- 		#address-cells = <1>;
- 		#size-cells = <0>;
--		clocks = <&tegra_car 104>;
-+		clocks = <&tegra_car CLK_SBC5>;
- 		status = "disabled";
- 	};
- 
-@@ -417,7 +418,7 @@
- 		nvidia,dma-request-selector = <&apbdma 28>;
- 		#address-cells = <1>;
- 		#size-cells = <0>;
--		clocks = <&tegra_car 105>;
-+		clocks = <&tegra_car CLK_SBC6>;
- 		status = "disabled";
- 	};
- 
-@@ -425,7 +426,7 @@
- 		compatible = "nvidia,tegra30-kbc", "nvidia,tegra20-kbc";
- 		reg = <0x7000e200 0x100>;
- 		interrupts = <GIC_SPI 85 IRQ_TYPE_LEVEL_HIGH>;
--		clocks = <&tegra_car 36>;
-+		clocks = <&tegra_car CLK_KBC>;
- 		status = "disabled";
- 	};
- 
-@@ -459,10 +460,10 @@
- 		       0x70080200 0x100>;
- 		interrupts = <GIC_SPI 103 IRQ_TYPE_LEVEL_HIGH>;
- 		nvidia,dma-request-selector = <&apbdma 1>;
--		clocks = <&tegra_car 106>, <&tegra_car 107>, <&tegra_car 30>,
--			 <&tegra_car 11>, <&tegra_car 18>, <&tegra_car 101>,
--			 <&tegra_car 102>, <&tegra_car 108>, <&tegra_car 109>,
--			 <&tegra_car 110>, <&tegra_car 162>;
-+		clocks = <&tegra_car CLK_D_AUDIO>, <&tegra_car CLK_APBIF>, <&tegra_car CLK_I2S0>,
-+			 <&tegra_car CLK_I2S1>, <&tegra_car CLK_I2S2>, <&tegra_car CLK_I2S3>,
-+			 <&tegra_car CLK_I2S4>, <&tegra_car CLK_DAM0>, <&tegra_car CLK_DAM1>,
-+			 <&tegra_car CLK_DAM2>, <&tegra_car CLK_SPDIF_OUT>;
- 		clock-names = "d_audio", "apbif", "i2s0", "i2s1", "i2s2",
- 			      "i2s3", "i2s4", "dam0", "dam1", "dam2",
- 			      "spdif_in";
-@@ -474,7 +475,7 @@
- 			compatible = "nvidia,tegra30-i2s";
- 			reg = <0x70080300 0x100>;
- 			nvidia,ahub-cif-ids = <4 4>;
--			clocks = <&tegra_car 30>;
-+			clocks = <&tegra_car CLK_I2S0>;
- 			status = "disabled";
- 		};
- 
-@@ -482,7 +483,7 @@
- 			compatible = "nvidia,tegra30-i2s";
- 			reg = <0x70080400 0x100>;
- 			nvidia,ahub-cif-ids = <5 5>;
--			clocks = <&tegra_car 11>;
-+			clocks = <&tegra_car CLK_I2S1>;
- 			status = "disabled";
- 		};
- 
-@@ -490,7 +491,7 @@
- 			compatible = "nvidia,tegra30-i2s";
- 			reg = <0x70080500 0x100>;
- 			nvidia,ahub-cif-ids = <6 6>;
--			clocks = <&tegra_car 18>;
-+			clocks = <&tegra_car CLK_I2S2>;
- 			status = "disabled";
- 		};
- 
-@@ -498,7 +499,7 @@
- 			compatible = "nvidia,tegra30-i2s";
- 			reg = <0x70080600 0x100>;
- 			nvidia,ahub-cif-ids = <7 7>;
--			clocks = <&tegra_car 101>;
-+			clocks = <&tegra_car CLK_I2S3>;
- 			status = "disabled";
- 		};
- 
-@@ -506,7 +507,7 @@
- 			compatible = "nvidia,tegra30-i2s";
- 			reg = <0x70080700 0x100>;
- 			nvidia,ahub-cif-ids = <8 8>;
--			clocks = <&tegra_car 102>;
-+			clocks = <&tegra_car CLK_I2S4>;
- 			status = "disabled";
- 		};
- 	};
-@@ -515,7 +516,7 @@
- 		compatible = "nvidia,tegra30-sdhci", "nvidia,tegra20-sdhci";
- 		reg = <0x78000000 0x200>;
- 		interrupts = <GIC_SPI 14 IRQ_TYPE_LEVEL_HIGH>;
--		clocks = <&tegra_car 14>;
-+		clocks = <&tegra_car CLK_SDMMC1>;
- 		status = "disabled";
- 	};
- 
-@@ -523,7 +524,7 @@
- 		compatible = "nvidia,tegra30-sdhci", "nvidia,tegra20-sdhci";
- 		reg = <0x78000200 0x200>;
- 		interrupts = <GIC_SPI 15 IRQ_TYPE_LEVEL_HIGH>;
--		clocks = <&tegra_car 9>;
-+		clocks = <&tegra_car CLK_SDMMC2>;
- 		status = "disabled";
- 	};
- 
-@@ -531,7 +532,7 @@
- 		compatible = "nvidia,tegra30-sdhci", "nvidia,tegra20-sdhci";
- 		reg = <0x78000400 0x200>;
- 		interrupts = <GIC_SPI 19 IRQ_TYPE_LEVEL_HIGH>;
--		clocks = <&tegra_car 69>;
-+		clocks = <&tegra_car CLK_SDMMC3>;
- 		status = "disabled";
- 	};
- 
-@@ -539,7 +540,7 @@
- 		compatible = "nvidia,tegra30-sdhci", "nvidia,tegra20-sdhci";
- 		reg = <0x78000600 0x200>;
- 		interrupts = <GIC_SPI 31 IRQ_TYPE_LEVEL_HIGH>;
--		clocks = <&tegra_car 15>;
-+		clocks = <&tegra_car CLK_SDMMC4>;
- 		status = "disabled";
- 	};
- 
--- 
-1.7.9.5
+This is where I'd actually expect some kind of warning, you're getting
+something back that you don't expect (if != 1).
+
+>  error:
+>      if (ret) {
+>          QLIST_REMOVE(vdev, next);
+> @@ -1922,6 +1935,102 @@ static void vfio_put_device(VFIODevice *vdev)
+>      }
+>  }
+>  
+> +static void vfio_err_notifier_handler(void *opaque)
+> +{
+> +    VFIODevice *vdev = opaque;
+> +
+> +    if (!event_notifier_test_and_clear(&vdev->err_notifier)) {
+> +        return;
+> +    }
+> +
+> +    /*
+> +     * TBD. Retrieve the error details and decide what action
+> +     * needs to be taken. One of the actions could be to pass
+> +     * the error to the guest and have the guest driver recover
+> +     * from the error. This requires that PCIe capabilities be
+> +     * exposed to the guest. For now, we just terminate the
+> +     * guest to contain the error.
+> +     */
+> +
+> +    error_report("%s (%04x:%02x:%02x.%x)"
+> +        "Unrecoverable error detected...\n"
+> +        "Please inestigate/collect any data required and then kill the quest",
+
+s/inestigate/investigate/
+
+This seems like a lot to ask of a user.
+
+> +        __func__, vdev->host.domain, vdev->host.bus,
+> +        vdev->host.slot, vdev->host.function);
+> +
+> +    vm_stop(RUN_STATE_IO_ERROR);
+
+Gleb, were you looking for a new stop condition or is this one ok to
+re-use?
+
+> +}
+> +
+> +static void vfio_register_err_notifier(VFIODevice *vdev)
+> +{
+> +    int ret;
+> +    int argsz;
+> +    struct vfio_irq_set *irq_set;
+> +    int32_t *pfd;
+> +
+> +    if (!vdev->pci_aer) {
+> +        return;
+> +    }
+> +
+> +    if (event_notifier_init(&vdev->err_notifier, 0)) {
+> +        error_report("vfio: Warning: Unable to init event notifier for error detection\n");
+> +        return;
+> +    }
+> +
+> +    argsz = sizeof(*irq_set) + sizeof(*pfd);
+> +
+> +    irq_set = g_malloc0(argsz);
+> +    irq_set->argsz = argsz;
+> +    irq_set->flags = VFIO_IRQ_SET_DATA_EVENTFD |
+> +                     VFIO_IRQ_SET_ACTION_TRIGGER;
+> +    irq_set->index = VFIO_PCI_ERR_IRQ_INDEX;
+> +    irq_set->start = 0;
+> +    irq_set->count = 1;
+> +    pfd = (int32_t *)&irq_set->data;
+> +
+> +    *pfd = event_notifier_get_fd(&vdev->err_notifier);
+> +    qemu_set_fd_handler(*pfd, vfio_err_notifier_handler, NULL, vdev);
+> +
+> +    ret = ioctl(vdev->fd, VFIO_DEVICE_SET_IRQS, irq_set);
+> +    if (ret) {
+> +        error_report("vfio: Failed to set up error notification\n");
+> +        qemu_set_fd_handler(*pfd, NULL, NULL, vdev);
+> +        event_notifier_cleanup(&vdev->err_notifier);
+> +    }
+> +    g_free(irq_set);
+> +}
+
+Why does the register return void?  If it's supported and fails, isn't
+that a condition where we'd want to fail the initfn?  Also, if the above
+fails, there's nothing that prevents the below unreqister... isn't that
+a bug?
+
+> +static void vfio_unregister_err_notifier(VFIODevice *vdev)
+> +{
+> +    int argsz;
+> +    struct vfio_irq_set *irq_set;
+> +    int32_t *pfd;
+> +    int ret;
+> +
+> +    if (!vdev->pci_aer) {
+> +        return;
+> +    }
+> +
+> +    argsz = sizeof(*irq_set) + sizeof(*pfd);
+> +
+> +    irq_set = g_malloc0(argsz);
+> +    irq_set->argsz = argsz;
+> +    irq_set->flags = VFIO_IRQ_SET_DATA_EVENTFD |
+> +                     VFIO_IRQ_SET_ACTION_TRIGGER;
+> +    irq_set->index = VFIO_PCI_ERR_IRQ_INDEX;
+> +    irq_set->start = 0;
+> +    irq_set->count = 1;
+> +    pfd = (int32_t *)&irq_set->data;
+> +    *pfd = -1;
+> +
+> +    ret = ioctl(vdev->fd, VFIO_DEVICE_SET_IRQS, irq_set);
+> +    if (ret) {
+> +        error_report("vfio: Failed to de-assign error fd: %d\n", ret);
+> +    }
+> +    g_free(irq_set);
+> +    qemu_set_fd_handler(event_notifier_get_fd(&vdev->err_notifier),
+> +                        NULL, NULL, vdev);
+> +    event_notifier_cleanup(&vdev->err_notifier);
+> +}
+>  static int vfio_initfn(PCIDevice *pdev)
+>  {
+>      VFIODevice *pvdev, *vdev = DO_UPCAST(VFIODevice, pdev, pdev);
+> @@ -2032,6 +2141,8 @@ static int vfio_initfn(PCIDevice *pdev)
+>          }
+>      }
+>  
+> +    vfio_register_err_notifier(vdev);
+> +
+>      return 0;
+>  
+>  out_teardown:
+> @@ -2049,6 +2160,7 @@ static void vfio_exitfn(PCIDevice *pdev)
+>      VFIODevice *vdev = DO_UPCAST(VFIODevice, pdev, pdev);
+>      VFIOGroup *group = vdev->group;
+>  
+> +    vfio_unregister_err_notifier(vdev);
+>      pci_device_set_intx_routing_notifier(&vdev->pdev, NULL);
+>      vfio_disable_interrupts(vdev);
+>      if (vdev->intx.mmap_timer) {
+> diff --git a/linux-headers/linux/vfio.h b/linux-headers/linux/vfio.h
+> index f787b72..6b20849 100644
+> --- a/linux-headers/linux/vfio.h
+> +++ b/linux-headers/linux/vfio.h
+> @@ -310,6 +310,7 @@ enum {
+>  	VFIO_PCI_INTX_IRQ_INDEX,
+>  	VFIO_PCI_MSI_IRQ_INDEX,
+>  	VFIO_PCI_MSIX_IRQ_INDEX,
+> +	VFIO_PCI_ERR_IRQ_INDEX,
+>  	VFIO_PCI_NUM_IRQS
+>  };
+>  
+
+Linux headers get updated via the scripts/update-linux-headers.sh
+script.  This will need to be done in a separate patch after the kernel
+changes are upstream.  Thanks,
+
+Alex
 
