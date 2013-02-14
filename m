@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030244Ab3BNVcD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 16:32:03 -0500
-Received: from mout.gmx.net ([212.227.17.21]:61178 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932601Ab3BNVcA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 16:32:00 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1/UTDAZhYTUbGsSKofDvUlS3CwYHPAAQyvOQzpBKX
-	UI8WITLYzhqgJ3
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Ian Abbott <abbotti@mev.co.uk>
-Cc: Mori Hess <fmhess@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Bill Pemberton <wfp5p@virginia.edu>, Peter Huewe <peterhuewe@gmx.de>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging/comedi: Fix if(); by adding proper code
-Date: Thu, 14 Feb 2013 22:36:24 +0100
-Message-Id: <1360877784-12144-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.8.6
-X-Y-GMX-Trusted: 0
+	id S934991Ab3BNVoi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 16:44:38 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:57428 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932602Ab3BNVog (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 16:44:36 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Dirk Behme <dirk.behme@de.bosch.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 08/10] perf tools: Limit unwind support to x86 archs
+Date: Thu, 14 Feb 2013 18:44:21 -0300
+Message-Id: <1360878263-12694-9-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
+In-Reply-To: <1360878263-12694-1-git-send-email-acme@infradead.org>
+References: <1360878263-12694-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="utf-8"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Smatch warns about:
-staging/comedi/drivers/cb_pcidas64.c:3304 prep_ao_dma() warn: if();
+From: Jiri Olsa <jolsa@redhat.com>
 
-So the check currently does nothing and could be removed, but the better
-alternative is to activate the check again and return -1; if it
-evaluates to true.
+There's DWARF unwind support only for x86 archs, so limit the unwind.o
+object to them only.
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+Without this building for other archs (e.g. cross compiling for ARM) is
+broken.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Dirk Behme <dirk.behme@de.bosch.com>
+Link: http://lkml.kernel.org/n/tip-viqtvd6hppqgt68zz4wlqm20@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- drivers/staging/comedi/drivers/cb_pcidas64.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ tools/perf/Makefile | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/staging/comedi/drivers/cb_pcidas64.c b/drivers/staging/comedi/drivers/cb_pcidas64.c
-index d33fc32..782498f 100644
---- a/drivers/staging/comedi/drivers/cb_pcidas64.c
-+++ b/drivers/staging/comedi/drivers/cb_pcidas64.c
-@@ -3301,7 +3301,8 @@ static int prep_ao_dma(struct comedi_device *dev, const struct comedi_cmd *cmd)
- 	num_bytes = load_ao_dma_buffer(dev, cmd);
- 	if (num_bytes == 0)
- 		return -1;
--	if (num_bytes >= DMA_BUFFER_SIZE) ;
-+	if (num_bytes >= DMA_BUFFER_SIZE)
-+		return -1;
- 	load_ao_dma(dev, cmd);
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 1c8df6f..b90528d 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -581,6 +581,11 @@ else
+ endif # SOURCE_LIBELF
+ endif # NO_LIBELF
  
- 	dma_start_sync(dev, 0);
++# There's only x86 (both 32 and 64) support for CFI unwind so far
++ifneq ($(ARCH),x86)
++	NO_LIBUNWIND := 1
++endif
++
+ ifndef NO_LIBUNWIND
+ # for linking with debug library, run like:
+ # make DEBUG=1 LIBUNWIND_DIR=/opt/libunwind/
 -- 
-1.7.8.6
+1.8.1.1.361.gec3ae6e
 
