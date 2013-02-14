@@ -1,96 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934832Ab3BNSjE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 13:39:04 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:65404 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758460Ab3BNSjD (ORCPT
+	id S934835Ab3BNSo0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 13:44:26 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:41206 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758490Ab3BNSoY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 13:39:03 -0500
-From: dirk.brandewie@gmail.com
-To: rjw@sisk.pl
-Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        Dirk Brandewie <dirk.brandewie@gmail.com>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>
-Subject: [PATCH] cpufreq/intel_pstate: Add kernel command line option disable intel_pstate.
-Date: Thu, 14 Feb 2013 10:38:52 -0800
-Message-Id: <1360867132-13004-1-git-send-email-dirk.brandewie@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <6075901.uWCJMxDDFf@vostro.rjw.lan>
-References: <6075901.uWCJMxDDFf@vostro.rjw.lan>
+	Thu, 14 Feb 2013 13:44:24 -0500
+Message-ID: <511D30B4.5020201@infradead.org>
+Date: Thu, 14 Feb 2013 10:45:08 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Amit Shah <amit.shah@redhat.com>,
+        virtualization@lists.linux-foundation.org
+Subject: Re: linux-next: Tree for Feb 13 (virtio_console)
+References: <20130213193532.162080d7c0557a307ab451ac@canb.auug.org.au> <511BEC55.5090801@infradead.org> <87sj4zk3ai.fsf@rustcorp.com.au>
+In-Reply-To: <87sj4zk3ai.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dirk Brandewie <dirk.brandewie@gmail.com>
+On 02/13/13 19:00, Rusty Russell wrote:
+> Randy Dunlap <rdunlap@infradead.org> writes:
+> 
+>> On 02/13/13 00:35, Stephen Rothwell wrote:
+>>> Hi all,
+>>>
+>>> Changes since 20130212:
+>>
+>> on i386:
+>>
+>> drivers/built-in.o: In function `in_intr':
+>> virtio_console.c:(.text+0x2dd31): undefined reference to `hvc_poll'
+>> virtio_console.c:(.text+0x2dd41): undefined reference to `hvc_kick'
+>> drivers/built-in.o: In function `resize_console':
+>> virtio_console.c:(.text+0x2e26f): undefined reference to `__hvc_resize'
+>> drivers/built-in.o: In function `unplug_port':
+>> virtio_console.c:(.text+0x2e572): undefined reference to `hvc_remove'
+>> drivers/built-in.o: In function `init_port_console':
+>> (.text+0x2fe59): undefined reference to `hvc_alloc'
+>> drivers/built-in.o: In function `virtio_cons_early_init':
+>> (.init.text+0x16d1): undefined reference to `hvc_instantiate'
+>>
+>>
+>> Full randconfig file is attached.
+> 
+> This looks like an impossible config.  CONFIG_VIRTIO_CONSOLE=y, but
+> CONFIG_HVC_DRIVER isn't set.
+> 
+> From drivers/char/Kconfig:
+> 
+>         config VIRTIO_CONSOLE
+>         	tristate "Virtio console"
+>         	depends on VIRTIO
+>         	select HVC_DRIVER
+> 
+> ???
 
-When intel_pstate is configured into the kernel it will become the
-perferred scaling driver for processors that is supports.  Allow the
-user to override this by adding:
-   intel_pstate=disable
-on the kernel command line.
+OK.  It's probably yet another stinking problem with kvmtool and randconfig.
+Running *config reports:
 
-Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
----
- Documentation/kernel-parameters.txt |    5 +++++
- drivers/cpufreq/intel_pstate.c      |   16 ++++++++++++++++
- 2 files changed, 21 insertions(+), 0 deletions(-)
+warning: (KVMTOOL_TEST_ENABLE && LGUEST_GUEST) selects VIRTIO_CONSOLE which has unmet direct dependencies (VIRTIO && TTY)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 6c72381..41c5d9e 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1131,6 +1131,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			0	disables intel_idle and fall back on acpi_idle.
- 			1 to 6	specify maximum depth of C-state.
- 
-+	intel_pstate=  [X86]
-+		       disable
-+		         Do not enable intel_pstate as the default
-+		         scaling driver for the supported processors
-+
- 	intremap=	[X86-64, Intel-IOMMU]
- 			on	enable Interrupt Remapping (default)
- 			off	disable Interrupt Remapping
-diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-index e879963..9cbb733 100644
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -773,11 +773,16 @@ static void intel_pstate_exit(void)
- }
- module_exit(intel_pstate_exit);
- 
-+static int no_load;
-+
- static int __init intel_pstate_init(void)
- {
- 	int rc = 0;
- 	const struct x86_cpu_id *id;
- 
-+	if (no_load)
-+		return -ENODEV;
-+
- 	id = x86_match_cpu(intel_pstate_cpu_ids);
- 	if (!id)
- 		return -ENODEV;
-@@ -802,6 +807,17 @@ out:
- }
- device_initcall(intel_pstate_init);
- 
-+static int __init intel_pstate_setup(char *str)
-+{
-+	if (!str)
-+		return -EINVAL;
-+
-+	if (!strcmp(str, "disable"))
-+		no_load = 1;
-+	return 0;
-+}
-+early_param("intel_pstate", intel_pstate_setup);
-+
- MODULE_AUTHOR("Dirk Brandewie <dirk.j.brandewie@intel.com>");
- MODULE_DESCRIPTION("'intel_pstate' - P state driver Intel Core processors");
- MODULE_LICENSE("GPL");
+
+I'll look a bit more...
+
+thanks,
 -- 
-1.7.7.6
-
+~Randy
