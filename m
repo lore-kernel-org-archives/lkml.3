@@ -1,159 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760509Ab3BNNar (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 08:30:47 -0500
-Received: from mail-ia0-f173.google.com ([209.85.210.173]:47016 "EHLO
-	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757643Ab3BNNap (ORCPT
+	id S1760601Ab3BNNgK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 08:36:10 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39102 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757663Ab3BNNgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 08:30:45 -0500
-From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
-To: rusty@rustcorp.com.au, dhowells@redhat.com
-Cc: linux-kernel@vger.kernel.org, Chun-Yi Lee <jlee@suse.com>,
-        Josh Boyer <jwboyer@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH v2] X.509: Support parse long form of length octets in Authority Key Identifier
-Date: Thu, 14 Feb 2013 21:29:46 +0800
-Message-Id: <1360848586-2448-1-git-send-email-jlee@suse.com>
-X-Mailer: git-send-email 1.6.0.2
+	Thu, 14 Feb 2013 08:36:08 -0500
+Date: Thu, 14 Feb 2013 13:35:52 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] arm64: fix invocation of restore_altstack
+Message-ID: <20130214133552.GB25537@e106331-lin.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+user-agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chun-Yi Lee <jlee@suse.com>
+Hello,
 
-Per X.509 spec in 4.2.1.1 section, the structure of Authority Key
-Identifier Extension is:
+I noticed the following issue while attempting to build an arm64 kernel from
+next-20130214, and it still seems to be present in signal/for-next and
+signal/arch-arm64.
 
-   AuthorityKeyIdentifier ::= SEQUENCE {
-      keyIdentifier             [0] KeyIdentifier           OPTIONAL,
-      authorityCertIssuer       [1] GeneralNames            OPTIONAL,
-      authorityCertSerialNumber [2] CertificateSerialNumber OPTIONAL  }
+It looks to be a trivial typo.
 
-   KeyIdentifier ::= OCTET STRING
+Thanks,
+Mark.
 
-When a certificate also provides
-authorityCertIssuer and authorityCertSerialNumber then the length of
-AuthorityKeyIdentifier SEQUENCE is likely to long form format.
-e.g.
-   The example certificate demos/tunala/A-server.pem in openssl source:
+---->8---
+Since e6d056c7c0: "arm64: switch to generic sigaltstack", arm64 won't
+build:
 
-X509v3 Authority Key Identifier:
-    keyid:49:FB:45:72:12:C4:CC:E1:45:A1:D3:08:9E:95:C4:2C:6D:55:3F:17
-    DirName:/C=NZ/L=Wellington/O=Really Irresponsible Authorisation Authority (RIAA)/OU=Cert-stamping/CN=Jackov al-Trades/emailAddress=none@fake.domain
-    serial:00
+arch/arm64/kernel/signal.c: In function ‘sys_rt_sigreturn’:
+arch/arm64/kernel/signal.c:152:2: error: incompatible type for argument 1 of ‘restore_altstack’
+In file included from arch/arm64/kernel/signal.c:21:0:
+include/linux/signal.h:434:5: note: expected ‘const struct stack_t *’ but argument is of type ‘stack_t’
+make[1]: *** [arch/arm64/kernel/signal.o] Error 1
+make: *** [arch/arm64/kernel] Error 2
 
-Current parsing rule of OID_authorityKeyIdentifier only take care the
-short form format, it causes load certificate to modsign_keyring fail:
+This patch fixes up the call to restore_altstack to pass the correct
+type.
 
-[   12.061147] X.509: Extension: 47
-[   12.075121] MODSIGN: Problem loading in-kernel X.509 certificate (-74)
-
-So, this patch add the parsing rule for support long form format against
-Authority Key Identifier.
-
-v2:
- - Removed comma from author's name.
- - Moved 'Short Form length' comment inside the if-body.
- - Changed the type of sub to size_t.
- - Use ASN1_INDEFINITE_LENGTH rather than writing 0x80 and 127.
- - Moved the key_len's value assignment before alter v.
- - Fixed the typo of octets.
- - Add 2 to v before entering the loop for calculate the length.
- - Removed the comment of check vlen.
-
-Cc: David Howells <dhowells@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Josh Boyer <jwboyer@redhat.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: "David S. Miller" <davem@davemloft.net>
-Signed-off-by: Chun-Yi Lee <jlee@suse.com>
+Signed-off-by: Mark Rutland <mark.rutland@arm.com>
 ---
- crypto/asymmetric_keys/x509_cert_parser.c |   55 ++++++++++++++++++++++++----
- 1 files changed, 47 insertions(+), 8 deletions(-)
+ arch/arm64/kernel/signal.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
-index 7fabc4c..59ab6d2 100644
---- a/crypto/asymmetric_keys/x509_cert_parser.c
-+++ b/crypto/asymmetric_keys/x509_cert_parser.c
-@@ -373,6 +373,9 @@ int rsa_extract_mpi(void *context, size_t hdrlen,
- 	return 0;
- }
+diff --git a/arch/arm64/kernel/signal.c b/arch/arm64/kernel/signal.c
+index d60ad23..890a591 100644
+--- a/arch/arm64/kernel/signal.c
++++ b/arch/arm64/kernel/signal.c
+@@ -149,7 +149,7 @@ asmlinkage long sys_rt_sigreturn(struct pt_regs *regs)
+ 	if (restore_sigframe(regs, frame))
+ 		goto badframe;
  
-+/* The keyIdentifier in AuthorityKeyIdentifier SEQUENCE is tag(CONT,PRIM,0) */
-+#define SEQ_TAG_KEYID (ASN1_CONT << 6)
-+
- /*
-  * Process certificate extensions that are used to qualify the certificate.
-  */
-@@ -407,21 +410,57 @@ int x509_process_extension(void *context, size_t hdrlen,
- 	}
+-	if (restore_altstack(frame->uc.uc_stack))
++	if (restore_altstack(&frame->uc.uc_stack))
+ 		goto badframe;
  
- 	if (ctx->last_oid == OID_authorityKeyIdentifier) {
-+		size_t key_len;
-+
- 		/* Get hold of the CA key fingerprint */
- 		if (vlen < 5)
- 			return -EBADMSG;
--		if (v[0] != (ASN1_SEQ | (ASN1_CONS << 5)) ||
--		    v[1] != vlen - 2 ||
--		    v[2] != (ASN1_CONT << 6) ||
--		    v[3] != vlen - 4)
-+
-+		/* Authority Key Identifier must be a Constructed SEQUENCE */
-+		if (v[0] != (ASN1_SEQ | (ASN1_CONS << 5)))
- 			return -EBADMSG;
--		v += 4;
--		vlen -= 4;
- 
--		f = kmalloc(vlen * 2 + 1, GFP_KERNEL);
-+		/* Authority Key Identifier is not indefinite length */
-+		if (unlikely(vlen == ASN1_INDEFINITE_LENGTH))
-+			return -EBADMSG;
-+
-+		if (vlen < ASN1_INDEFINITE_LENGTH) {
-+			/* Short Form length */
-+			if (v[1] != vlen - 2 ||
-+			    v[2] != SEQ_TAG_KEYID ||
-+			    v[3] != vlen - 4)
-+				return -EBADMSG;
-+
-+			key_len = v[3];
-+			v += 4;
-+		} else {
-+			/* Long Form length */
-+			size_t seq_len = 0;
-+			size_t sub = v[1] - ASN1_INDEFINITE_LENGTH;
-+
-+			if (sub > 2)
-+				return -EBADMSG;
-+
-+			/* calculate the length from subsequent octets */
-+			v += 2;
-+			for (i = 0; i < sub; i++) {
-+				seq_len <<= 8;
-+				seq_len |= v[i];
-+			}
-+
-+			if (seq_len != vlen - 2 - sub ||
-+			    v[sub] != SEQ_TAG_KEYID ||
-+			    v[sub + 1] > vlen - 4 - sub)
-+				return -EBADMSG;
-+
-+			key_len = v[sub + 1];
-+			v += (sub + 2);
-+		}
-+
-+		f = kmalloc(key_len * 2 + 1, GFP_KERNEL);
- 		if (!f)
- 			return -ENOMEM;
--		for (i = 0; i < vlen; i++)
-+		for (i = 0; i < key_len; i++)
- 			sprintf(f + i * 2, "%02x", v[i]);
- 		pr_debug("authority   %s\n", f);
- 		ctx->cert->authority = f;
+ 	return regs->regs[0];
 -- 
-1.6.4.2
+1.8.1.1
+
 
