@@ -1,82 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933125Ab3BNIio (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 03:38:44 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:46670 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932238Ab3BNIin (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 03:38:43 -0500
-Date: Thu, 14 Feb 2013 00:38:39 -0800
-From: Joel Becker <jlbec@evilplan.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-fsdevel@vger.kernel.org,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>,
-        Mark Fasheh <mfasheh@suse.com>
-Subject: Re: [PATCH review 26/85] ocfs2: Enable building with user namespaces
- enabled
-Message-ID: <20130214083838.GG18408@localhost>
-Mail-Followup-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-	linux-fsdevel@vger.kernel.org,
-	Linux Containers <containers@lists.linux-foundation.org>,
-	linux-kernel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>,
-	Mark Fasheh <mfasheh@suse.com>
-References: <87621w14vs.fsf@xmission.com>
- <1360777934-5663-1-git-send-email-ebiederm@xmission.com>
- <1360777934-5663-26-git-send-email-ebiederm@xmission.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360777934-5663-26-git-send-email-ebiederm@xmission.com>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756520Ab3BNIl2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 03:41:28 -0500
+Received: from mga14.intel.com ([143.182.124.37]:5556 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756357Ab3BNIl1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 03:41:27 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,662,1355126400"; 
+   d="scan'208";a="256834107"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v2] dw_dmac: apply default dma_mask if needed
+Date: Thu, 14 Feb 2013 10:41:09 +0200
+Message-Id: <1360831270-5777-1-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 13, 2013 at 09:51:15AM -0800, Eric W. Biederman wrote:
-> From: "Eric W. Biederman" <ebiederm@xmission.com>
-> 
-> Now that ocfs2 has been converted to store uids and gids in
-> kuid_t and kgid_t and all of the conversions have been added
-> to the appropriate places it is safe to allow building and
-> using ocfs2 with user namespace support enabled.
-> 
-> Cc: Mark Fasheh <mfasheh@suse.com>
-> Cc: Joel Becker <jlbec@evilplan.org>
-> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-> ---
->  init/Kconfig |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
-> 
-> diff --git a/init/Kconfig b/init/Kconfig
-> index f516d52..9cb63c9 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -1076,7 +1076,6 @@ config UIDGID_CONVERTED
->  	depends on NCP_FS = n
->  	depends on NFSD = n
->  	depends on NFS_FS = n
-> -	depends on OCFS2_FS = n
+In some cases we got the device without dma_mask configured. We have to apply
+the default value to avoid crashes during memory mapping.
 
-Ahh, I can see how this protects the partially applied state.  Sorry
-about that.
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+Since v1:
+- rebased on top of recent next branch from Vinod
+ drivers/dma/dw_dmac.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-Joel
-
->  	depends on XFS_FS = n
->  
->  config UIDGID_STRICT_TYPE_CHECKS
-> -- 
-> 1.7.5.4
-> 
-
+diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+index 6694676..4c83f18 100644
+--- a/drivers/dma/dw_dmac.c
++++ b/drivers/dma/dw_dmac.c
+@@ -1661,6 +1661,12 @@ static int dw_probe(struct platform_device *pdev)
+ 	if (!regs)
+ 		return -EBUSY;
+ 
++	/* Apply default dma_mask if needed */
++	if (!pdev->dev.dma_mask) {
++		pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
++		pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
++	}
++
+ 	dw_params = dma_read_byaddr(regs, DW_PARAMS);
+ 	autocfg = dw_params >> DW_PARAMS_EN & 0x1;
+ 
 -- 
+1.7.10.4
 
-"People with narrow minds usually have broad tongues."
-
-			http://www.jlbec.org/
-			jlbec@evilplan.org
