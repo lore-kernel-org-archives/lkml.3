@@ -1,74 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161054Ab3BNWrx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 17:47:53 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:56005 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759177Ab3BNWrw (ORCPT
+	id S935065Ab3BNWvB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 17:51:01 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:23575 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759548Ab3BNWu7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 17:47:52 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, arm@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>
-Subject: [PATCH 4/9] ARM: omap: add include guard for soc.h
-Date: Thu, 14 Feb 2013 23:47:46 +0100
-Message-Id: <1360882071-4072668-5-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1360882071-4072668-1-git-send-email-arnd@arndb.de>
-References: <1360882071-4072668-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:GB8RVrVpMNgVdpfg0IjuBUoNLOcRFf6HA/cgt7oexdd
- KYGsAt8O1Blhw4wK5G1wrSMZ1j4VTUhCLuu4j7W8h74+DT1295
- 5s6VjiKUPD3k5br0EMRq5ueZMPg3ScVQT1+vXu5+xfkhPGa1+a
- 5WRNKLeUqlEcFpoGnBoHLbA5d7LHGp+CJZs/JBV/UCWWZHsVD7
- +ruU+j2m6tRsfrBKc95oy0ex0GEwpt3V3vfzkTlxEjl0puprkK
- vXWcmApWzGEBYD3nDaIeFoXZ1D2iVhqSf/43ejVzUQp7vhBpdQ
- irxuVvdzLWbdveneGgZpnrfIQyfqQxqKpwuGeEsplUFYo4ndWm
- Lm98yOLPuO4G41bYZxvlzElFPLU6s8bag0/Odqmrr
+	Thu, 14 Feb 2013 17:50:59 -0500
+Date: Thu, 14 Feb 2013 17:50:53 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Josh Boyer <jwboyer@gmail.com>, gregkh@linuxfoundation.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] (xen) bug-fixes for v3.8-rc7
+Message-ID: <20130214225053.GA7715@phenom.dumpdata.com>
+References: <20130213205026.GA25290@phenom.dumpdata.com>
+ <CA+5PVA7fzT7+O-e8ta4rU4=vLfU+DsEzvLN8-vvMm3o=8FThsg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+5PVA7fzT7+O-e8ta4rU4=vLfU+DsEzvLN8-vvMm3o=8FThsg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit e4c060db "ARM: OMAP: Split plat/cpu.h into local soc.h for
-mach-omap1 and mach-omap2" moved the bulk of "plat/cpu.h" into "cpu.h"
-but did not add an include guard for the new file that was present
-in the old one. There are cases where the file is indeed included
-multiple times, probably by accident, but adding the include
-guard ensures that this has no further consequences.
+On Thu, Feb 14, 2013 at 09:18:04AM -0500, Josh Boyer wrote:
+> On Wed, Feb 13, 2013 at 3:50 PM, Konrad Rzeszutek Wilk
+> <konrad.wilk@oracle.com> wrote:
+> >  - CVE-2013-0228/XSA-42: x86/xen: don't assume %ds is usable in xen_iret for 32-bit PVOPS.
+> 
+> > Jan Beulich (1):
+> >       x86/xen: don't assume %ds is usable in xen_iret for 32-bit PVOPS.
+> 
+> Should that one be CC'd to stable?
 
-Without this patch, building allmodconfig results in lots of warnings like:
+Duh. Yes it should be! Thanks for noticing it.
 
-In file included from arch/arm/mach-omap2/drm.c:31:0:
-arch/arm/mach-omap2/soc.h:206:0: warning: "cpu_is_omap24xx" redefined [enabled by default]
-In file included from arch/arm/mach-omap2/drm.c:28:0:
-arch/arm/mach-omap2/soc.h:227:0: note: this is the location of the previous definition
-In file included from arch/arm/mach-omap2/drm.c:31:0:
-arch/arm/mach-omap2/soc.h:207:0: warning: "cpu_is_omap242x" redefined [enabled by default]
+Greg,
+Please put git commit 13d2b4d11d69a92574a55bfd985cfb0ca77aebdc
+"x86/xen: don't assume %ds is usable in xen_iret for 32-bit PVOPS."
+on the stable tree.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Tony Lindgren <tony@atomide.com>
----
- arch/arm/mach-omap2/soc.h | 3 +++
- 1 file changed, 3 insertions(+)
+Thank you!
+    
 
-diff --git a/arch/arm/mach-omap2/soc.h b/arch/arm/mach-omap2/soc.h
-index c62116b..97dd373 100644
---- a/arch/arm/mach-omap2/soc.h
-+++ b/arch/arm/mach-omap2/soc.h
-@@ -24,6 +24,8 @@
-  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-  *
-  */
-+#ifndef OMAP2_SOC_H
-+#define OMAP2_SOC_H
- 
- #include "omap24xx.h"
- #include "omap34xx.h"
-@@ -497,3 +499,4 @@ level(__##fn);
- 
- #endif	/* __ASSEMBLY__ */
- 
-+#endif
--- 
-1.8.1.2
-
+> 
+> josh
