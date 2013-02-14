@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761505Ab3BNRtU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 12:49:20 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:54703 "EHLO
+	id S934788Ab3BNRt1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 12:49:27 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:54715 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759344Ab3BNRtT (ORCPT
+	with ESMTP id S1759344Ab3BNRtX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 12:49:19 -0500
-Date: Thu, 14 Feb 2013 09:46:50 -0800
+	Thu, 14 Feb 2013 12:49:23 -0500
+Date: Thu, 14 Feb 2013 09:47:59 -0800
 From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
-Message-ID: <tip-7d7e499f7333f68b7e7f67d14b9c1480913b4afb@git.kernel.org>
+Message-ID: <tip-860a0ffaa3e1a9cf0ebb5f43d6a2a2ce67463e93@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         rusty@rustcorp.com.au, pjt@google.com, peterz@infradead.org,
         srivatsa.bhat@linux.vnet.ibm.com, rw@linutronix.de,
@@ -20,11 +20,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         srivatsa.bhat@linux.vnet.ibm.com, rw@linutronix.de,
         arjan@infradead.org, paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
         magnus.damm@gmail.com
-In-Reply-To: <20130131120741.553993267@linutronix.de>
-References: <20130131120741.553993267@linutronix.de>
+In-Reply-To: <20130131120741.626690384@linutronix.de>
+References: <20130131120741.626690384@linutronix.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:smp/hotplug] smpboot: Allow selfparking per cpu threads
-Git-Commit-ID: 7d7e499f7333f68b7e7f67d14b9c1480913b4afb
+Subject: [tip:smp/hotplug] stop_machine:
+  Store task reference in a separate per cpu variable
+Git-Commit-ID: 860a0ffaa3e1a9cf0ebb5f43d6a2a2ce67463e93
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,28 +34,23 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 14 Feb 2013 09:46:56 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 14 Feb 2013 09:48:05 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7d7e499f7333f68b7e7f67d14b9c1480913b4afb
-Gitweb:     http://git.kernel.org/tip/7d7e499f7333f68b7e7f67d14b9c1480913b4afb
+Commit-ID:  860a0ffaa3e1a9cf0ebb5f43d6a2a2ce67463e93
+Gitweb:     http://git.kernel.org/tip/860a0ffaa3e1a9cf0ebb5f43d6a2a2ce67463e93
 Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Thu, 31 Jan 2013 12:11:12 +0000
+AuthorDate: Thu, 31 Jan 2013 12:11:13 +0000
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Thu, 14 Feb 2013 15:29:37 +0100
 
-smpboot: Allow selfparking per cpu threads
+stop_machine: Store task reference in a separate per cpu variable
 
-The stop machine threads are still killed when a cpu goes offline. The
-reason is that the thread is used to bring the cpu down, so it can't
-be parked along with the other per cpu threads.
-
-Allow a per cpu thread to be excluded from automatic parking, so it
-can park itself once it's done
-
-Add a create callback function as well.
+To allow the stopper thread being managed by the smpboot thread
+infrastructure separate out the task storage from the stopper data
+structure.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: Peter Zijlstra <peterz@infradead.org>
@@ -65,69 +61,125 @@ Cc: Arjan van de Veen <arjan@infradead.org>
 Cc: Paul Turner <pjt@google.com>
 Cc: Richard Weinberger <rw@linutronix.de>
 Cc: Magnus Damm <magnus.damm@gmail.com>
-Link: http://lkml.kernel.org/r/20130131120741.553993267@linutronix.de
+Link: http://lkml.kernel.org/r/20130131120741.626690384@linutronix.de
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/smpboot.h | 5 +++++
- kernel/smpboot.c        | 5 +++--
- 2 files changed, 8 insertions(+), 2 deletions(-)
+ kernel/stop_machine.c | 32 ++++++++++++++++----------------
+ 1 file changed, 16 insertions(+), 16 deletions(-)
 
-diff --git a/include/linux/smpboot.h b/include/linux/smpboot.h
-index e0106d8..c65dee0 100644
---- a/include/linux/smpboot.h
-+++ b/include/linux/smpboot.h
-@@ -14,6 +14,8 @@ struct smpboot_thread_data;
-  * @thread_should_run:	Check whether the thread should run or not. Called with
-  *			preemption disabled.
-  * @thread_fn:		The associated thread function
-+ * @create:		Optional setup function, called when the thread gets
-+ *			created (Not called from the thread context)
-  * @setup:		Optional setup function, called when the thread gets
-  *			operational the first time
-  * @cleanup:		Optional cleanup function, called when the thread
-@@ -22,6 +24,7 @@ struct smpboot_thread_data;
-  *			parked (cpu offline)
-  * @unpark:		Optional unpark function, called when the thread is
-  *			unparked (cpu online)
-+ * @selfparking:	Thread is not parked by the park function.
-  * @thread_comm:	The base name of the thread
-  */
- struct smp_hotplug_thread {
-@@ -29,10 +32,12 @@ struct smp_hotplug_thread {
- 	struct list_head		list;
- 	int				(*thread_should_run)(unsigned int cpu);
- 	void				(*thread_fn)(unsigned int cpu);
-+	void				(*create)(unsigned int cpu);
- 	void				(*setup)(unsigned int cpu);
- 	void				(*cleanup)(unsigned int cpu, bool online);
- 	void				(*park)(unsigned int cpu);
- 	void				(*unpark)(unsigned int cpu);
-+	bool				selfparking;
- 	const char			*thread_comm;
+diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
+index 2f194e9..aaac68c 100644
+--- a/kernel/stop_machine.c
++++ b/kernel/stop_machine.c
+@@ -37,10 +37,10 @@ struct cpu_stopper {
+ 	spinlock_t		lock;
+ 	bool			enabled;	/* is this stopper enabled? */
+ 	struct list_head	works;		/* list of pending works */
+-	struct task_struct	*thread;	/* stopper thread */
  };
  
-diff --git a/kernel/smpboot.c b/kernel/smpboot.c
-index d6c5fc0..d4abac2 100644
---- a/kernel/smpboot.c
-+++ b/kernel/smpboot.c
-@@ -183,9 +183,10 @@ __smpboot_create_thread(struct smp_hotplug_thread *ht, unsigned int cpu)
- 		kfree(td);
- 		return PTR_ERR(tsk);
- 	}
--
- 	get_task_struct(tsk);
- 	*per_cpu_ptr(ht->store, cpu) = tsk;
-+	if (ht->create)
-+		ht->create(cpu);
- 	return 0;
+ static DEFINE_PER_CPU(struct cpu_stopper, cpu_stopper);
++static DEFINE_PER_CPU(struct task_struct *, cpu_stopper_task);
+ static bool stop_machine_initialized = false;
+ 
+ static void cpu_stop_init_done(struct cpu_stop_done *done, unsigned int nr_todo)
+@@ -62,16 +62,18 @@ static void cpu_stop_signal_done(struct cpu_stop_done *done, bool executed)
  }
  
-@@ -225,7 +226,7 @@ static void smpboot_park_thread(struct smp_hotplug_thread *ht, unsigned int cpu)
+ /* queue @work to @stopper.  if offline, @work is completed immediately */
+-static void cpu_stop_queue_work(struct cpu_stopper *stopper,
+-				struct cpu_stop_work *work)
++static void cpu_stop_queue_work(unsigned int cpu, struct cpu_stop_work *work)
  {
- 	struct task_struct *tsk = *per_cpu_ptr(ht->store, cpu);
++	struct cpu_stopper *stopper = &per_cpu(cpu_stopper, cpu);
++	struct task_struct *p = per_cpu(cpu_stopper_task, cpu);
++
+ 	unsigned long flags;
  
--	if (tsk)
-+	if (tsk && !ht->selfparking)
- 		kthread_park(tsk);
+ 	spin_lock_irqsave(&stopper->lock, flags);
+ 
+ 	if (stopper->enabled) {
+ 		list_add_tail(&work->list, &stopper->works);
+-		wake_up_process(stopper->thread);
++		wake_up_process(p);
+ 	} else
+ 		cpu_stop_signal_done(work->done, false);
+ 
+@@ -108,7 +110,7 @@ int stop_one_cpu(unsigned int cpu, cpu_stop_fn_t fn, void *arg)
+ 	struct cpu_stop_work work = { .fn = fn, .arg = arg, .done = &done };
+ 
+ 	cpu_stop_init_done(&done, 1);
+-	cpu_stop_queue_work(&per_cpu(cpu_stopper, cpu), &work);
++	cpu_stop_queue_work(cpu, &work);
+ 	wait_for_completion(&done.completion);
+ 	return done.executed ? done.ret : -ENOENT;
+ }
+@@ -130,7 +132,7 @@ void stop_one_cpu_nowait(unsigned int cpu, cpu_stop_fn_t fn, void *arg,
+ 			struct cpu_stop_work *work_buf)
+ {
+ 	*work_buf = (struct cpu_stop_work){ .fn = fn, .arg = arg, };
+-	cpu_stop_queue_work(&per_cpu(cpu_stopper, cpu), work_buf);
++	cpu_stop_queue_work(cpu, work_buf);
  }
  
+ /* static data for stop_cpus */
+@@ -159,8 +161,7 @@ static void queue_stop_cpus_work(const struct cpumask *cpumask,
+ 	 */
+ 	preempt_disable();
+ 	for_each_cpu(cpu, cpumask)
+-		cpu_stop_queue_work(&per_cpu(cpu_stopper, cpu),
+-				    &per_cpu(stop_cpus_work, cpu));
++		cpu_stop_queue_work(cpu, &per_cpu(stop_cpus_work, cpu));
+ 	preempt_enable();
+ }
+ 
+@@ -304,12 +305,11 @@ static int __cpuinit cpu_stop_cpu_callback(struct notifier_block *nfb,
+ {
+ 	unsigned int cpu = (unsigned long)hcpu;
+ 	struct cpu_stopper *stopper = &per_cpu(cpu_stopper, cpu);
+-	struct task_struct *p;
++	struct task_struct *p = per_cpu(cpu_stopper_task, cpu);
+ 
+ 	switch (action & ~CPU_TASKS_FROZEN) {
+ 	case CPU_UP_PREPARE:
+-		BUG_ON(stopper->thread || stopper->enabled ||
+-		       !list_empty(&stopper->works));
++		BUG_ON(p || stopper->enabled || !list_empty(&stopper->works));
+ 		p = kthread_create_on_node(cpu_stopper_thread,
+ 					   stopper,
+ 					   cpu_to_node(cpu),
+@@ -319,12 +319,12 @@ static int __cpuinit cpu_stop_cpu_callback(struct notifier_block *nfb,
+ 		get_task_struct(p);
+ 		kthread_bind(p, cpu);
+ 		sched_set_stop_task(cpu, p);
+-		stopper->thread = p;
++		per_cpu(cpu_stopper_task, cpu) = p;
+ 		break;
+ 
+ 	case CPU_ONLINE:
+ 		/* strictly unnecessary, as first user will wake it */
+-		wake_up_process(stopper->thread);
++		wake_up_process(p);
+ 		/* mark enabled */
+ 		spin_lock_irq(&stopper->lock);
+ 		stopper->enabled = true;
+@@ -339,7 +339,7 @@ static int __cpuinit cpu_stop_cpu_callback(struct notifier_block *nfb,
+ 
+ 		sched_set_stop_task(cpu, NULL);
+ 		/* kill the stopper */
+-		kthread_stop(stopper->thread);
++		kthread_stop(p);
+ 		/* drain remaining works */
+ 		spin_lock_irq(&stopper->lock);
+ 		list_for_each_entry(work, &stopper->works, list)
+@@ -347,8 +347,8 @@ static int __cpuinit cpu_stop_cpu_callback(struct notifier_block *nfb,
+ 		stopper->enabled = false;
+ 		spin_unlock_irq(&stopper->lock);
+ 		/* release the stopper */
+-		put_task_struct(stopper->thread);
+-		stopper->thread = NULL;
++		put_task_struct(p);
++		per_cpu(cpu_stopper_task, cpu) = NULL;
+ 		break;
+ 	}
+ #endif
