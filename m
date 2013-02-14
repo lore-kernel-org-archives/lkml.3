@@ -1,54 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757076Ab3BNEgE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Feb 2013 23:36:04 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48829 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755089Ab3BNEgC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Feb 2013 23:36:02 -0500
-Message-ID: <511C6952.10802@zytor.com>
-Date: Wed, 13 Feb 2013 20:34:26 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1756796Ab3BNEmm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Feb 2013 23:42:42 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:59822 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753886Ab3BNEml (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Feb 2013 23:42:41 -0500
+Message-ID: <511C6B3F.3030206@wwwdotorg.org>
+Date: Wed, 13 Feb 2013 21:42:39 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        =?UTF-8?B?RGFnZmlubiBJbG1hcmkgTWFubnPDpWtlcg==?= 
-	<ilmari@ilmari.org>
-Subject: Re: linux-next: manual merge of the akpm tree with the tip tree
-References: <20130214152515.b11be705b26defa876e4973e@canb.auug.org.au>
-In-Reply-To: <20130214152515.b11be705b26defa876e4973e@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Doug Anderson <dianders@chromium.org>
+CC: Simon Glass <sjg@chromium.org>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Yuvaraj Kumar <yuvaraj.cd@gmail.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>, u.kleine-koenig@pengutronix.de,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Girish Shivananjappa <girish.shivananjappa@linaro.org>,
+        "bhushan.r" <bhushan.r@samsung.com>,
+        "sreekumar.c" <sreekumar.c@samsung.com>,
+        Prashanth G <prashanth.g@samsung.com>, Olof Johansson <olof@lixom.net>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Grant Grundler <grundler@chromium.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Wolfram Sang <wolfram@the-dreams.de>
+Subject: Re: [PATCH v1 2/4] ARM: dts: Add i2c-arbitrator bus for exynos5250-snow
+References: <1360778532-7480-1-git-send-email-dianders@chromium.org> <1360778532-7480-2-git-send-email-dianders@chromium.org> <511BFFD2.8090102@wwwdotorg.org> <CAD=FV=XLMYAyW7W3PtoUmROOgttuypHKNWtrcALw3t6jdyEDPw@mail.gmail.com>
+In-Reply-To: <CAD=FV=XLMYAyW7W3PtoUmROOgttuypHKNWtrcALw3t6jdyEDPw@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13/2013 08:25 PM, Stephen Rothwell wrote:
-> Hi Andrew,
->
-> Today's linux-next merge of the akpm tree got a conflict in
-> kernel/timeconst.pl between commit 63a3f603413f ("timeconst.pl: Eliminate
-> Perl warning") from the tip tree and commit "timeconst.pl: remove
-> deprecated defined(@array)" from the akpm tree.
->
-> These both fix the same problem, I arbitrarily chose the akpm tree version.
->
+On 02/13/2013 05:38 PM, Doug Anderson wrote:
+> Stephen,
+> 
+> 
+> On Wed, Feb 13, 2013 at 1:04 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> On 02/13/2013 11:02 AM, Doug Anderson wrote:
+>>> We need to use the i2c-arbitrator to talk to any of the devices on i2c
+>>> bus 4 on exynos5250-snow so that we don't confuse the embedded
+>>> controller (EC).  Add the i2c-arbitrator to the device tree.  As we
+>>> add future devices (keyboard, sbs, tps65090) we'll add them on top of
+>>> this.
+>>>
+>>> The arbitrated bus is numbered 104 simply as a convenience to make it
+>>> easier for people poking around to guess that it might have something
+>>> to do with the physical bus 4.
+>>>
+>>> The addition is split between the cros5250-common and the snow device
+>>> tree file since not all cros5250-class devices use arbitration.
 
-I should try to resurrect the bc version (which doesn't need the canning 
-junk, bc being the POSIX tool for arbitrary-precision arithmetic.) 
-There was an error on one of akpm's machines long ago which confused the 
-bcrap out of us, because bc hadn't changed, but recently someone pointed 
-to a bug in *make* (relating to pipes) from around that era which would 
-have explained (a) the failure, and (b) why it only hit one box even 
-though bc was the exact same version.
-	
-	-hpa
+>>> diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
+>>
+>>> +     i2c-arbitrator {
+>>> +             compatible = "i2c-arbitrator";
+>>> +             #address-cells = <1>;
+>>> +             #size-cells = <0>;
+>>
+>>> +             /* Use ID 104 as a hint that we're on physical bus 4 */
+>>> +             i2c_104: i2c@0 {
+>>
+>> Does something use that hint? It sounds a little odd.
+> 
+> The i2c bus numbering patches will end up creating "/dev/i2c-104".
 
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Oh sorry, I see this is just the alias doing it's job. I'd misread that
+as the reg value being 104 and driving the bus ID.
