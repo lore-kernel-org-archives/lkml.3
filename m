@@ -1,156 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933811Ab3BNKSp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 05:18:45 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:49916 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757180Ab3BNKSo (ORCPT
+	id S1758568Ab3BNKWS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 05:22:18 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:62409 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757283Ab3BNKWQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 05:18:44 -0500
-Message-ID: <511CB9E9.5050804@ti.com>
-Date: Thu, 14 Feb 2013 12:18:17 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Thu, 14 Feb 2013 05:22:16 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linaro-mm-sig@lists.linaro.org
+Subject: Re: [Linaro-mm-sig] [PATCH 2/3] mutex: add support for reservation style locks
+Date: Thu, 14 Feb 2013 10:22:00 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-5-generic; KDE/4.3.2; x86_64; ; )
+Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        a.p.zijlstra@chello.nl, x86@kernel.org,
+        dri-devel@lists.freedesktop.org, robclark@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu, linux-media@vger.kernel.org
+References: <20130207151831.2868.5146.stgit@patser.local> <20130207151838.2868.69610.stgit@patser.local>
+In-Reply-To: <20130207151838.2868.69610.stgit@patser.local>
 MIME-Version: 1.0
-To: <gregkh@linuxfoundation.org>
-CC: Roger Quadros <rogerq@ti.com>, <sameo@linux.intel.com>, <balbi@ti.com>,
-        <tony@atomide.com>, <kishon@ti.com>, <sshtylyov@mvista.com>,
-        <bjorn@mork.no>, <linux@arm.linux.org.uk>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH v9 02/20] mfd: omap-usb-host: Consolidate OMAP USB-HS
- platform data
-References: <1358937492-8129-1-git-send-email-rogerq@ti.com> <1358937492-8129-3-git-send-email-rogerq@ti.com>
-In-Reply-To: <1358937492-8129-3-git-send-email-rogerq@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201302141022.00297.arnd@arndb.de>
+X-Provags-ID: V02:K0:TjSB4ZEbkV+jzuLBP5/D+l4JCGjyUdKOBkc975END/K
+ no7UMtAn7G6ueDIaWyjnZkIzNYoFPpdAbwH5XMNGMa1koWOsbU
+ FswT8AWXubFQvi2u5koq45eyy2v50LcCLAPL2Z/dYBxIrEoNrz
+ 6wf/d5hb1aotP0jEDS4gSBweoQVivSm+M9OGVsCSu8feTR+rkU
+ Ht6nIxRunLP4gLa7KBLcxKlV810+Qkw0zm47yhf17q5sD9lxN2
+ qo+UpvdAD6GN5FxPIOG5fyio+fT2wO8m/HOTuCOKpxNgDK82ei
+ O0m0QgnfLr4QqpaoKuJjLy2xgjutDBQYwY+Xz1euxKT3tuWYSK
+ ioppdbkxKmzFMHFVubtE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Thursday 07 February 2013, Maarten Lankhorst wrote:
 
-On 01/23/2013 12:37 PM, Roger Quadros wrote:
-> Let's have a single platform data structure for the OMAP's High-Speed
-> USB host subsystem instead of having 3 separate ones i.e. one for
-> board data, one for USB Host (UHH) module and one for USB-TLL module.
+Hi Maarten,
+
+I cannot help a lot on this patch set, but there are a few things that
+I noticed when reading it.
+
+> Functions:
+> ----------
 > 
-> This makes the code much simpler and avoids creating multiple copies of
-> platform data.
-> 
-> CC: Alan Stern <stern@rowland.harvard.edu>
-> 
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> Reviewed-by: Felipe Balbi <balbi@ti.com>
-> For the ehci-omap.c part:
-> Acked-by: Alan Stern <stern@rowland.harvard.edu>
+> mutex_reserve_lock, and mutex_reserve_lock_interruptible:
+>   Lock a buffer with a reservation_id set. reservation_id must not be
+>   set to 0, since this is a special value that means no reservation_id.
 
-Could you please ACK the drivers/usb/host/ehci-omap.c part
-so that this can go through the MFD tree. Thanks.
+I think the entire description should go into a file in the Documentation
+directory, to make it easier to find without looking up the git history.
 
-The reason it needs to go through MFD is that it depends on
-a platform header change which Samuel and Tony have agreed to share.
+For the purpose of documenting this, it feels a little strange to
+talk about "buffers" here. Obviously this is what you are using the
+locks for, but it sounds like that is not the only possible use
+case.
 
-cheers,
--roger
+>   These functions will return -EDEADLK instead of -EAGAIN if
+>   reservation_id is the same as the reservation_id that's attempted to
+>   lock the mutex with, since in that case you presumably attempted to
+>   lock the same lock twice.
 
-> ---
->  arch/arm/mach-omap2/board-3430sdp.c        |    2 +-
->  arch/arm/mach-omap2/board-3630sdp.c        |    2 +-
->  arch/arm/mach-omap2/board-am3517crane.c    |    2 +-
->  arch/arm/mach-omap2/board-am3517evm.c      |    2 +-
->  arch/arm/mach-omap2/board-cm-t35.c         |    2 +-
->  arch/arm/mach-omap2/board-cm-t3517.c       |    2 +-
->  arch/arm/mach-omap2/board-devkit8000.c     |    2 +-
->  arch/arm/mach-omap2/board-igep0020.c       |    4 +-
->  arch/arm/mach-omap2/board-omap3beagle.c    |    2 +-
->  arch/arm/mach-omap2/board-omap3evm.c       |    2 +-
->  arch/arm/mach-omap2/board-omap3pandora.c   |    2 +-
->  arch/arm/mach-omap2/board-omap3stalker.c   |    2 +-
->  arch/arm/mach-omap2/board-omap3touchbook.c |    2 +-
->  arch/arm/mach-omap2/board-omap4panda.c     |    2 +-
->  arch/arm/mach-omap2/board-overo.c          |    2 +-
->  arch/arm/mach-omap2/board-zoom.c           |    2 +-
->  arch/arm/mach-omap2/usb-host.c             |   29 ++-----------
->  arch/arm/mach-omap2/usb.h                  |   20 +--------
->  drivers/mfd/omap-usb-host.c                |   63 +++++++++++----------------
->  drivers/mfd/omap-usb-tll.c                 |   11 ++---
->  drivers/usb/host/ehci-omap.c               |    6 +-
->  include/linux/platform_data/usb-omap.h     |   23 ++--------
->  22 files changed, 61 insertions(+), 125 deletions(-)
-> 
+Since the user always has to check the return value, would it be
+possible to provide only the interruptible kind of this function
+but not the non-interruptible one? In general, interruptible locks
+are obviously harder to use, but they are much user friendlier when
+something goes wrong.
 
-<snip>
+> mutex_reserve_lock_slow and mutex_reserve_lock_intr_slow:
+>   Similar to mutex_reserve_lock, except it won't backoff with -EAGAIN.
+>   This is useful when mutex_reserve_lock failed with -EAGAIN, and you
+>   unreserved all buffers so no deadlock can occur.
 
-> diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
-> index e9d9b09..b96a4bf 100644
-> --- a/drivers/usb/host/ehci-omap.c
-> +++ b/drivers/usb/host/ehci-omap.c
-> @@ -107,7 +107,7 @@ static int omap_ehci_init(struct usb_hcd *hcd)
->  {
->  	struct ehci_hcd		*ehci = hcd_to_ehci(hcd);
->  	int			rc;
-> -	struct ehci_hcd_omap_platform_data	*pdata;
-> +	struct usbhs_omap_platform_data	*pdata;
->  
->  	pdata = hcd->self.controller->platform_data;
->  
-> @@ -151,7 +151,7 @@ static int omap_ehci_init(struct usb_hcd *hcd)
->  }
->  
->  static void disable_put_regulator(
-> -		struct ehci_hcd_omap_platform_data *pdata)
-> +		struct usbhs_omap_platform_data *pdata)
->  {
->  	int i;
->  
-> @@ -176,7 +176,7 @@ static void disable_put_regulator(
->  static int ehci_hcd_omap_probe(struct platform_device *pdev)
->  {
->  	struct device				*dev = &pdev->dev;
-> -	struct ehci_hcd_omap_platform_data	*pdata = dev->platform_data;
-> +	struct usbhs_omap_platform_data		*pdata = dev->platform_data;
->  	struct resource				*res;
->  	struct usb_hcd				*hcd;
->  	void __iomem				*regs;
-> diff --git a/include/linux/platform_data/usb-omap.h b/include/linux/platform_data/usb-omap.h
-> index ef65b67..04c7537 100644
-> --- a/include/linux/platform_data/usb-omap.h
-> +++ b/include/linux/platform_data/usb-omap.h
-> @@ -38,30 +38,15 @@ enum usbhs_omap_port_mode {
->  	OMAP_OHCI_PORT_MODE_TLL_2PIN_DPDM
+Are these meant to be used a lot? If not, maybe prefix them with __mutex_
+instead of mutex_.
+
+> diff --git a/include/linux/mutex.h b/include/linux/mutex.h
+> index 9121595..602c247 100644
+> --- a/include/linux/mutex.h
+> +++ b/include/linux/mutex.h
+> @@ -62,6 +62,11 @@ struct mutex {
+>  #endif
 >  };
 >  
-> -struct usbtll_omap_platform_data {
-> -	enum usbhs_omap_port_mode		port_mode[OMAP3_HS_USB_PORTS];
-> -};
-> -
-> -struct ehci_hcd_omap_platform_data {
-> +struct usbhs_omap_platform_data {
->  	enum usbhs_omap_port_mode	port_mode[OMAP3_HS_USB_PORTS];
->  	int				reset_gpio_port[OMAP3_HS_USB_PORTS];
->  	struct regulator		*regulator[OMAP3_HS_USB_PORTS];
-> -	unsigned			phy_reset:1;
-> -};
-> -
-> -struct ohci_hcd_omap_platform_data {
-> -	enum usbhs_omap_port_mode	port_mode[OMAP3_HS_USB_PORTS];
-> -	unsigned			es2_compatibility:1;
-> -};
-> -
-> -struct usbhs_omap_platform_data {
-> -	enum usbhs_omap_port_mode		port_mode[OMAP3_HS_USB_PORTS];
-> -
-> -	struct ehci_hcd_omap_platform_data	*ehci_data;
-> -	struct ohci_hcd_omap_platform_data	*ohci_data;
->  
->  	/* OMAP3 <= ES2.1 have a single ulpi bypass control bit */
-> -	unsigned				single_ulpi_bypass:1;
-> +	unsigned			single_ulpi_bypass:1;
-> +	unsigned			es2_compatibility:1;
-> +	unsigned			phy_reset:1;
->  };
->  
->  /*-------------------------------------------------------------------------*/
-> 
+> +struct ticket_mutex {
+> +	struct mutex base;
+> +	atomic_long_t reservation_id;
+> +};
 
+Have you considered changing the meaning of the "count" member
+of the mutex in the case where a ticket mutex is used? That would
+let you use an unmodified structure.
+
+	Arnd
