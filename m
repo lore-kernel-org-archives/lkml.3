@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161727Ab3BOM5f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 07:57:35 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:60152 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161361Ab3BOM5c (ORCPT
+	id S1161782Ab3BOM5q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 07:57:46 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:63742 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161476Ab3BOM5m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 07:57:32 -0500
+	Fri, 15 Feb 2013 07:57:42 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         sameo@linux.intel.com
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        Marcus Cooper <marcus.xm.cooper@stericsson.com>,
         Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 05/35] mfd: ab8500-core: APE Interrupts are not cleared
-Date: Fri, 15 Feb 2013 12:56:36 +0000
-Message-Id: <1360933026-30325-6-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 10/35] mfd: ab8500-core: Rework MFD sub-device initialisation structures
+Date: Fri, 15 Feb 2013 12:56:41 +0000
+Message-Id: <1360933026-30325-11-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1360933026-30325-1-git-send-email-lee.jones@linaro.org>
 References: <1360933026-30325-1-git-send-email-lee.jones@linaro.org>
@@ -23,120 +22,371 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marcus Cooper <marcus.xm.cooper@stericsson.com>
+Here we're separating Battery Management devices into their own
+structure, removing the common device structure & redistribute them
+amongst the individual platform structs and completing the population
+of them.
 
-There are missing register descriptions from the AB8505 user manual
-and these need to be masked so that the APEINT line can toggle.
-This patch also affects the behaviour of AB9540.
-
-Signed-off-by: Marcus Cooper <marcus.xm.cooper@stericsson.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
-Reviewed-by: Maxime COQUELIN <maxime.coquelin@stericsson.com>
-Reviewed-by: Alexandre TORGUE <alexandre.torgue@stericsson.com>
-Reviewed-by: Mattias WALLIN <mattias.wallin@stericsson.com>
 ---
- drivers/mfd/ab8500-core.c         |    5 +++--
- include/linux/mfd/abx500/ab8500.h |   38 +++++++++++++++++++++++++++----------
- 2 files changed, 31 insertions(+), 12 deletions(-)
+ drivers/mfd/ab8500-core.c |  257 +++++++++++++++++++++++++++++++++------------
+ 1 file changed, 189 insertions(+), 68 deletions(-)
 
 diff --git a/drivers/mfd/ab8500-core.c b/drivers/mfd/ab8500-core.c
-index 05a7af4..7c20728 100644
+index ecf570f..8af002c 100644
 --- a/drivers/mfd/ab8500-core.c
 +++ b/drivers/mfd/ab8500-core.c
-@@ -94,6 +94,7 @@
- #define AB8500_IT_MASK22_REG		0x55
- #define AB8500_IT_MASK23_REG		0x56
- #define AB8500_IT_MASK24_REG		0x57
-+#define AB8500_IT_MASK25_REG		0x58
- 
- /*
-  * latch hierarchy registers
-@@ -129,9 +130,9 @@ static const int ab8500_irq_regoffset[AB8500_NUM_IRQ_REGS] = {
- 	0, 1, 2, 3, 4, 6, 7, 8, 9, 11, 18, 19, 20, 21,
+@@ -604,7 +604,7 @@ static struct resource ab8500_gpadc_resources[] = {
+ 	},
  };
  
--/* AB9540 support */
-+/* AB9540 / AB8505 support */
- static const int ab9540_irq_regoffset[AB9540_NUM_IRQ_REGS] = {
--	0, 1, 2, 3, 4, 6, 7, 8, 9, 11, 18, 19, 20, 21, 12, 13, 24,
-+	0, 1, 2, 3, 4, 6, 7, 8, 9, 11, 18, 19, 20, 21, 12, 13, 24, 5, 22, 23
+-static struct resource ab8540_gpadc_resources[] = {
++static struct resource ab8505_gpadc_resources[] = {
+ 	{
+ 		.name	= "SW_CONV_END",
+ 		.start	= AB8500_INT_GP_SW_ADC_CONV_END,
+@@ -941,7 +941,50 @@ static struct resource ab8500_temp_resources[] = {
+ 	},
  };
  
- static const char ab8500_version_str[][7] = {
-diff --git a/include/linux/mfd/abx500/ab8500.h b/include/linux/mfd/abx500/ab8500.h
-index fa7173d..f24df87 100644
---- a/include/linux/mfd/abx500/ab8500.h
-+++ b/include/linux/mfd/abx500/ab8500.h
-@@ -165,12 +165,12 @@ enum ab8500_version {
- #define AB8500_INT_ID_DET_R3R		94
- #define AB8500_INT_ID_DET_R4R		95
- /* ab8500_irq_regoffset[12] -> IT[Source|Latch|Mask]21 */
--#define AB8500_INT_ID_WAKEUP_F		96
--#define AB8500_INT_ID_DET_R1F		98
--#define AB8500_INT_ID_DET_R2F		99
--#define AB8500_INT_ID_DET_R3F		100
--#define AB8500_INT_ID_DET_R4F		101
--#define AB8500_INT_CHAUTORESTARTAFTSEC  102
-+#define AB8500_INT_ID_WAKEUP_F		96 /* not 8505/9540 */
-+#define AB8500_INT_ID_DET_R1F		98 /* not 8505/9540 */
-+#define AB8500_INT_ID_DET_R2F		99 /* not 8505/9540 */
-+#define AB8500_INT_ID_DET_R3F		100 /* not 8505/9540 */
-+#define AB8500_INT_ID_DET_R4F		101 /* not 8505/9540 */
-+#define AB8500_INT_CHAUTORESTARTAFTSEC	102 /* not 8505/9540 */
- #define AB8500_INT_CHSTOPBYSEC		103
- /* ab8500_irq_regoffset[13] -> IT[Source|Latch|Mask]22 */
- #define AB8500_INT_USB_CH_TH_PROT_F	104
-@@ -181,7 +181,7 @@ enum ab8500_version {
- #define AB8500_INT_CHCURLIMHSCHIRP	110
- #define AB8500_INT_XTAL32K_KO		111
+-static struct mfd_cell abx500_common_devs[] = {
++static struct mfd_cell ab8500_bm_devs[] = {
++	{
++		.name = "ab8500-charger",
++		.of_compatible = "stericsson,ab8500-charger",
++		.num_resources = ARRAY_SIZE(ab8500_charger_resources),
++		.resources = ab8500_charger_resources,
++#ifndef CONFIG_OF
++		.platform_data = &ab8500_bm_data,
++		.pdata_size = sizeof(ab8500_bm_data),
++#endif
++	},
++	{
++		.name = "ab8500-btemp",
++		.of_compatible = "stericsson,ab8500-btemp",
++		.num_resources = ARRAY_SIZE(ab8500_btemp_resources),
++		.resources = ab8500_btemp_resources,
++#ifndef CONFIG_OF
++		.platform_data = &ab8500_bm_data,
++		.pdata_size = sizeof(ab8500_bm_data),
++#endif
++	},
++	{
++		.name = "ab8500-fg",
++		.of_compatible = "stericsson,ab8500-fg",
++		.num_resources = ARRAY_SIZE(ab8500_fg_resources),
++		.resources = ab8500_fg_resources,
++#ifndef CONFIG_OF
++		.platform_data = &ab8500_bm_data,
++		.pdata_size = sizeof(ab8500_bm_data),
++#endif
++	},
++	{
++		.name = "ab8500-chargalg",
++		.of_compatible = "stericsson,ab8500-chargalg",
++		.num_resources = ARRAY_SIZE(ab8500_chargalg_resources),
++		.resources = ab8500_chargalg_resources,
++#ifndef CONFIG_OF
++		.platform_data = &ab8500_bm_data,
++		.pdata_size = sizeof(ab8500_bm_data),
++#endif
++	},
++};
++
++static struct mfd_cell ab8500_devs[] = {
+ #ifdef CONFIG_DEBUG_FS
+ 	{
+ 		.name = "ab8500-debug",
+@@ -963,6 +1006,11 @@ static struct mfd_cell abx500_common_devs[] = {
+ 		.of_compatible = "stericsson,abx500-clk",
+ 	},
+ 	{
++		.name = "ab8500-gpadc",
++		.num_resources = ARRAY_SIZE(ab8500_gpadc_resources),
++		.resources = ab8500_gpadc_resources,
++	},
++	{
+ 		.name = "ab8500-rtc",
+ 		.of_compatible = "stericsson,ab8500-rtc",
+ 		.num_resources = ARRAY_SIZE(ab8500_rtc_resources),
+@@ -975,6 +1023,7 @@ static struct mfd_cell abx500_common_devs[] = {
+ 		.resources = ab8500_av_acc_detect_resources,
+ 	},
+ 	{
++
+ 		.name = "ab8500-poweron-key",
+ 		.of_compatible = "stericsson,ab8500-poweron-key",
+ 		.num_resources = ARRAY_SIZE(ab8500_poweronkey_db_resources),
+@@ -1004,80 +1053,72 @@ static struct mfd_cell abx500_common_devs[] = {
+ 		.of_compatible = "stericsson,ab8500-denc",
+ 	},
+ 	{
++		.name = "ab8500-gpio",
++		.of_compatible = "stericsson,ab8500-gpio",
++	},
++	{
+ 		.name = "ab8500-temp",
+ 		.of_compatible = "stericsson,ab8500-temp",
+ 		.num_resources = ARRAY_SIZE(ab8500_temp_resources),
+ 		.resources = ab8500_temp_resources,
+ 	},
++	{
++		.name = "ab8500-usb",
++		.num_resources = ARRAY_SIZE(ab8500_usb_resources),
++		.resources = ab8500_usb_resources,
++	},
++	{
++		.name = "ab8500-codec",
++	},
+ };
  
--/* Definitions for AB9540 */
-+/* Definitions for AB9540 / AB8505 */
- /* ab8500_irq_regoffset[14] -> IT[Source|Latch|Mask]13 */
- #define AB9540_INT_GPIO50R		113
- #define AB9540_INT_GPIO51R		114 /* not 8505 */
-@@ -204,6 +204,24 @@ enum ab8500_version {
- #define AB8505_INT_KEYDEGLITCH		132
- #define AB8505_INT_MODPWRSTATUSF	134
- #define AB8505_INT_MODPWRSTATUSR	135
-+/* ab8500_irq_regoffset[17] -> IT[Source|Latch|Mask]6 */
-+#define AB8500_INT_HOOK_DET_NEG_F	138
-+#define AB8500_INT_HOOK_DET_NEG_R	139
-+#define AB8500_INT_HOOK_DET_POS_F	140
-+#define AB8500_INT_HOOK_DET_POS_R	141
-+#define AB8500_INT_PLUG_DET_COMP_F	142
-+#define AB8500_INT_PLUG_DET_COMP_R	143
-+/* ab8500_irq_regoffset[18] -> IT[Source|Latch|Mask]23 */
-+#define AB8505_INT_COLL			144
-+#define AB8505_INT_RESERR		145
-+#define AB8505_INT_FRAERR		146
-+#define AB8505_INT_COMERR		147
-+#define AB8505_INT_SPDSET		148
-+#define AB8505_INT_DSENT		149
-+#define AB8505_INT_DREC			150
-+#define AB8505_INT_ACC_INT		151
-+/* ab8500_irq_regoffset[19] -> IT[Source|Latch|Mask]24 */
-+#define AB8505_INT_NOPINT		152
+-static struct mfd_cell ab8500_bm_devs[] = {
++static struct mfd_cell ab9540_devs[] = {
++#ifdef CONFIG_DEBUG_FS
+ 	{
+-		.name = "ab8500-charger",
+-		.of_compatible = "stericsson,ab8500-charger",
+-		.num_resources = ARRAY_SIZE(ab8500_charger_resources),
+-		.resources = ab8500_charger_resources,
+-#ifndef CONFIG_OF
+-		.platform_data = &ab8500_bm_data,
+-		.pdata_size = sizeof(ab8500_bm_data),
++		.name = "ab8500-debug",
++		.num_resources = ARRAY_SIZE(ab8500_debug_resources),
++		.resources = ab8500_debug_resources,
++	},
+ #endif
++	{
++		.name = "ab8500-sysctrl",
+ 	},
+ 	{
+-		.name = "ab8500-btemp",
+-		.of_compatible = "stericsson,ab8500-btemp",
+-		.num_resources = ARRAY_SIZE(ab8500_btemp_resources),
+-		.resources = ab8500_btemp_resources,
+-#ifndef CONFIG_OF
+-		.platform_data = &ab8500_bm_data,
+-		.pdata_size = sizeof(ab8500_bm_data),
+-#endif
++		.name = "ab8500-regulator",
+ 	},
+ 	{
+-		.name = "ab8500-fg",
+-		.of_compatible = "stericsson,ab8500-fg",
+-		.num_resources = ARRAY_SIZE(ab8500_fg_resources),
+-		.resources = ab8500_fg_resources,
+-#ifndef CONFIG_OF
+-		.platform_data = &ab8500_bm_data,
+-		.pdata_size = sizeof(ab8500_bm_data),
+-#endif
++		.name = "ab8500-gpadc",
++		.of_compatible = "stericsson,ab8500-gpadc",
++		.num_resources = ARRAY_SIZE(ab8500_gpadc_resources),
++		.resources = ab8500_gpadc_resources,
+ 	},
+ 	{
+-		.name = "ab8500-chargalg",
+-		.of_compatible = "stericsson,ab8500-chargalg",
+-		.num_resources = ARRAY_SIZE(ab8500_chargalg_resources),
+-		.resources = ab8500_chargalg_resources,
+-#ifndef CONFIG_OF
+-		.platform_data = &ab8500_bm_data,
+-		.pdata_size = sizeof(ab8500_bm_data),
+-#endif
++		.name = "ab8500-rtc",
++		.num_resources = ARRAY_SIZE(ab8500_rtc_resources),
++		.resources = ab8500_rtc_resources,
+ 	},
+-};
+-
+-static struct mfd_cell ab8500_devs[] = {
+ 	{
+-		.name = "ab8500-gpio",
+-		.of_compatible = "stericsson,ab8500-gpio",
++		.name = "ab8500-acc-det",
++		.num_resources = ARRAY_SIZE(ab8500_av_acc_detect_resources),
++		.resources = ab8500_av_acc_detect_resources,
+ 	},
+ 	{
+-		.name = "ab8500-usb",
+-		.of_compatible = "stericsson,ab8500-usb",
+-		.num_resources = ARRAY_SIZE(ab8500_usb_resources),
+-		.resources = ab8500_usb_resources,
++		.name = "ab8500-poweron-key",
++		.num_resources = ARRAY_SIZE(ab8500_poweronkey_db_resources),
++		.resources = ab8500_poweronkey_db_resources,
+ 	},
+ 	{
+-		.name = "ab8500-codec",
+-		.of_compatible = "stericsson,ab8500-codec",
++		.name = "ab8500-pwm",
++		.id = 1,
+ 	},
+ 	{
+-		.name = "ab8500-gpadc",
+-		.of_compatible = "stericsson,ab8500-gpadc",
+-		.num_resources = ARRAY_SIZE(ab8500_gpadc_resources),
+-		.resources = ab8500_gpadc_resources,
++		.name = "ab8500-leds",
++	},
++	{
++		.name = "abx500-temp",
++		.num_resources = ARRAY_SIZE(ab8500_temp_resources),
++		.resources = ab8500_temp_resources,
+ 	},
+-};
+-
+-static struct mfd_cell ab9540_devs[] = {
+ 	{
+ 		.name = "ab8500-gpio",
+ 	},
+@@ -1090,11 +1131,6 @@ static struct mfd_cell ab9540_devs[] = {
+ 		.name = "ab9540-codec",
+ 	},
+ 	{
+-		.name = "ab8500-gpadc",
+-		.num_resources = ARRAY_SIZE(ab8500_gpadc_resources),
+-		.resources = ab8500_gpadc_resources,
+-	},
+-	{
+ 		.name = "ab-iddet",
+ 		.num_resources = ARRAY_SIZE(ab8505_iddet_resources),
+ 		.resources = ab8505_iddet_resources,
+@@ -1103,6 +1139,57 @@ static struct mfd_cell ab9540_devs[] = {
  
- /*
-  * AB8500_AB9540_NR_IRQS is used when configuring the IRQ numbers for the
-@@ -213,13 +231,13 @@ enum ab8500_version {
-  * which is larger.
-  */
- #define AB8500_NR_IRQS			112
--#define AB8505_NR_IRQS			136
--#define AB9540_NR_IRQS			136
-+#define AB8505_NR_IRQS			153
-+#define AB9540_NR_IRQS			153
- /* This is set to the roof of any AB8500 chip variant IRQ counts */
- #define AB8500_MAX_NR_IRQS		AB9540_NR_IRQS
+ /* Device list for ab8505  */
+ static struct mfd_cell ab8505_devs[] = {
++#ifdef CONFIG_DEBUG_FS
++	{
++		.name = "ab8500-debug",
++		.num_resources = ARRAY_SIZE(ab8500_debug_resources),
++		.resources = ab8500_debug_resources,
++	},
++#endif
++	{
++		.name = "ab8500-sysctrl",
++	},
++	{
++		.name = "ab8500-regulator",
++	},
++	{
++		.name = "ab8500-gpadc",
++		.num_resources = ARRAY_SIZE(ab8505_gpadc_resources),
++		.resources = ab8505_gpadc_resources,
++	},
++	{
++		.name = "ab8500-rtc",
++		.num_resources = ARRAY_SIZE(ab8500_rtc_resources),
++		.resources = ab8500_rtc_resources,
++	},
++	{
++		.name = "ab8500-acc-det",
++		.num_resources = ARRAY_SIZE(ab8500_av_acc_detect_resources),
++		.resources = ab8500_av_acc_detect_resources,
++	},
++	{
++		.name = "ab8500-poweron-key",
++		.num_resources = ARRAY_SIZE(ab8500_poweronkey_db_resources),
++		.resources = ab8500_poweronkey_db_resources,
++	},
++	{
++		.name = "ab8500-pwm",
++		.id = 1,
++	},
++	{
++		.name = "ab8500-leds",
++	},
++	{
++		.name = "ab8500-gpio",
++	},
++	{
++		.name = "ab8500-usb",
++		.num_resources = ARRAY_SIZE(ab8500_usb_resources),
++		.resources = ab8500_usb_resources,
++	},
++	{
++		.name = "ab8500-codec",
++	},
+ 	{
+ 		.name = "ab-iddet",
+ 		.num_resources = ARRAY_SIZE(ab8505_iddet_resources),
+@@ -1111,6 +1198,51 @@ static struct mfd_cell ab8505_devs[] = {
+ };
  
- #define AB8500_NUM_IRQ_REGS		14
--#define AB9540_NUM_IRQ_REGS		17
-+#define AB9540_NUM_IRQ_REGS		20
+ static struct mfd_cell ab8540_devs[] = {
++#ifdef CONFIG_DEBUG_FS
++	{
++		.name = "ab8500-debug",
++		.num_resources = ARRAY_SIZE(ab8500_debug_resources),
++		.resources = ab8500_debug_resources,
++	},
++#endif
++	{
++		.name = "ab8500-sysctrl",
++	},
++	{
++		.name = "ab8500-regulator",
++	},
++	{
++		.name = "ab8500-gpadc",
++		.num_resources = ARRAY_SIZE(ab8505_gpadc_resources),
++		.resources = ab8505_gpadc_resources,
++	},
++	{
++		.name = "ab8500-rtc",
++		.num_resources = ARRAY_SIZE(ab8500_rtc_resources),
++		.resources = ab8500_rtc_resources,
++	},
++	{
++		.name = "ab8500-acc-det",
++		.num_resources = ARRAY_SIZE(ab8500_av_acc_detect_resources),
++		.resources = ab8500_av_acc_detect_resources,
++	},
++	{
++		.name = "ab8500-poweron-key",
++		.num_resources = ARRAY_SIZE(ab8500_poweronkey_db_resources),
++		.resources = ab8500_poweronkey_db_resources,
++	},
++	{
++		.name = "ab8500-pwm",
++		.id = 1,
++	},
++	{
++		.name = "ab8500-leds",
++	},
++	{
++		.name = "abx500-temp",
++		.num_resources = ARRAY_SIZE(ab8500_temp_resources),
++		.resources = ab8500_temp_resources,
++	},
+ 	{
+ 		.name = "ab8500-gpio",
+ 	},
+@@ -1123,11 +1255,6 @@ static struct mfd_cell ab8540_devs[] = {
+ 		.name = "ab8540-codec",
+ 	},
+ 	{
+-		.name = "ab8500-gpadc",
+-		.num_resources = ARRAY_SIZE(ab8540_gpadc_resources),
+-		.resources = ab8540_gpadc_resources,
+-	},
+-	{
+ 		.name = "ab-iddet",
+ 		.num_resources = ARRAY_SIZE(ab8505_iddet_resources),
+ 		.resources = ab8505_iddet_resources,
+@@ -1449,12 +1576,6 @@ static int ab8500_probe(struct platform_device *pdev)
+ 			return ret;
+ 	}
  
- /**
-  * struct ab8500 - ab8500 internal structure
+-	ret = mfd_add_devices(ab8500->dev, 0, abx500_common_devs,
+-			ARRAY_SIZE(abx500_common_devs), NULL,
+-			ab8500->irq_base, ab8500->domain);
+-	if (ret)
+-		return ret;
+-
+ 	if (is_ab9540(ab8500))
+ 		ret = mfd_add_devices(ab8500->dev, 0, ab9540_devs,
+ 				ARRAY_SIZE(ab9540_devs), NULL,
 -- 
 1.7.10.4
 
