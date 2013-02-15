@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935755Ab3BOLrA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 06:47:00 -0500
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:41838 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932972Ab3BOLq5 (ORCPT
+	id S935771Ab3BOLvq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 06:51:46 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:49486
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932583Ab3BOLvp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 06:46:57 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130215112911.68A98E0085@blue.fi.intel.com>
-References: <20130215112911.68A98E0085@blue.fi.intel.com>
-Date: Fri, 15 Feb 2013 12:46:55 +0100
-Message-ID: <CANq1E4T1QzOUOwWPpV6_55hVTXzXF4baShxpYaM0HNAgF0ffAg@mail.gmail.com>
-Subject: Re: uhid: broken interface: 32/64-bit compatibility
-From: David Herrmann <dh.herrmann@googlemail.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: linux-api@vger.kernel.org, linux-input@vger.kernel.org,
-        Jiri Kosina <jkosina@suse.cz>,
-        RavindranathX Doddi <ravindranathx.doddi@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Marcel Holtmann <marcel@holtmann.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 15 Feb 2013 06:51:45 -0500
+Message-ID: <1360929080.27535.9.camel@laptop>
+Subject: Re: [PATCH 2/3] sched: Move idle_balance() to post_schedule
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>
+Date: Fri, 15 Feb 2013 12:51:20 +0100
+In-Reply-To: <1360782338.23152.22.camel@gandalf.local.home>
+References: <20130212225412.781044738@goodmis.org>
+	 <20130212230017.625583020@goodmis.org> <1360780981.8957.3.camel@laptop>
+	 <1360782338.23152.22.camel@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kirill
+On Wed, 2013-02-13 at 14:05 -0500, Steven Rostedt wrote:
+> That is, the CPU is about to go idle, thus a load balance is done, and
+> perhaps a task is pulled to the current queue. To do this, rq locks
+> and
+> such need to be grabbed across CPUs.
 
-On Fri, Feb 15, 2013 at 12:29 PM, Kirill A. Shutemov
-<kirill.shutemov@linux.intel.com> wrote:
-> Hi David and all,
->
-> There's claim in uhid.h that the interface is "compatible even between
-> architectures". But it obviously is not true: struct uhid_create_req
-> contains pointer which breaks everything.
->
-> The easy way to demonstrate the issue is compile uhid-example.c with -m32
-> and try to run it on 64 bit kernel. Creating of the device will fail.
+Right, grabbing the rq locks and all isn't my main worry, we do that
+either case, but my worry was the two extra switches we do for no good
+reason at all. 
 
-Indeed, we missed that. We should probably also notify the HIDP
-developers as "struct hidp_connadd_req" suffers from the same
-problems. (CC'ed)
+Now its not as if we'll actually run the idle thread, that would be very
+expensive indeed, so its just the two context_switch() calls, but still,
+I somehow remember us spending quite a lot of effort to keep
+idle_balance where it is now, if only I could remember the benchmark we
+had for it :/
 
-> I don't see an easy way to fix this. Few options:
->
-> 1. Replace the pointer with u64. It will fix the issue, but it breaks ABI
->    which is never a good idea. Not sure how many users interface already
->    has.
+Can't you do the opposite and fold post_schedule() into idle_balance()?
 
-The only users I am aware of is an HID debugging tool and experimental
-HoG Bluetooth support (bluez). Maybe Marcel or Johan can comment
-whether this is already used by bluez-5? If it is, then we shouldn't
-break ABI and go with #2+#3. Otherwise, I think changing to u64 should
-be ok.
-On the other hand, it would break any future build for older stable
-kernels so not breaking ABI is probably the best idea. Any comments? I
-can add a COMPAT fix and a comment to fix this in the next version of
-UHID_CREATE.
+/me goes stare at code to help remember what the -rt requirements were
+again..
 
-Thanks!
-David
+Ah, so that's push_rt_task() which wants to move extra rt tasks to other
+cpus. Doing that from where we have idle_balance() won't actually work I
+think since we might need to move current, which we cannot at that point
+-- I'm thinking a higher prio task (than current) waking to this cpu and
+then cascading current to another cpu, can that happen?
+
+If we never need to migrate current because we don't do the cascade by
+ensuring we wake the higher prio task to the approriate cpu we might
+just get away with it.
+
