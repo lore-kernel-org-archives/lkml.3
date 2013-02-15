@@ -1,49 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761027Ab3BOLQl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 06:16:41 -0500
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:60438 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754483Ab3BOLQk (ORCPT
+	id S935677Ab3BOLSf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 06:18:35 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:57240 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932926Ab3BOLSe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 06:16:40 -0500
-Date: Fri, 15 Feb 2013 12:16:35 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 2/5] lockdep: check that no locks held at freeze time
-Message-ID: <20130215111635.GA26955@gmail.com>
-References: <1360885096-21207-1-git-send-email-msb@chromium.org>
- <1360885096-21207-2-git-send-email-msb@chromium.org>
+	Fri, 15 Feb 2013 06:18:34 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360885096-21207-2-git-send-email-msb@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAMNxYszZNTh69-y+5RFVC9c5kgcyPaVET7784OPsTarB0fWm5w@mail.gmail.com>
+References: <CAMNxYswRsYtRF3kXKR676TZMCUsZPvk0auYTxpGVS2mRLmS8xw@mail.gmail.com>
+	<20130122163655.GA21090@kroah.com>
+	<CAMNxYswbiH-fW6YVvtWEr1W+SWRBU6ELv1bVRfNawpwcy+PZsA@mail.gmail.com>
+	<20130129133346.GA1505@kroah.com>
+	<CAMNxYszZNTh69-y+5RFVC9c5kgcyPaVET7784OPsTarB0fWm5w@mail.gmail.com>
+Date: Fri, 15 Feb 2013 16:48:33 +0530
+Message-ID: <CAMNxYszE+qQv2vVw6DqNGuow+30K-=+S8TfgyNJwFeEN=EfEsA@mail.gmail.com>
+Subject: Re: Query related to MSR(Magnetic Stripe Reader) Device Driver
+From: Priyaranjan Das <priyaranjan456789@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>, linux-iio@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, mankad.maulik@gmail.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Greg,
 
-* Mandeep Singh Baines <msb@chromium.org> wrote:
+On Thu, Jan 31, 2013 at 11:09 AM, Priyaranjan Das
+<priyaranjan456789@gmail.com> wrote:
+> Hi Greg,
+>
+> On Tue, Jan 29, 2013 at 7:03 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> On Mon, Jan 28, 2013 at 03:25:08PM +0530, Priyaranjan Das wrote:
+>>> Hi Greg,
+>>>
+>>> On Tue, Jan 22, 2013 at 10:06 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>>> > On Tue, Jan 22, 2013 at 03:02:32PM +0530, Priyaranjan Das wrote:
+>>> >> Hi All,
+>>> >>
+>>> >> I am working on MSR(Magnetic Stripe Reader) for a product . I wish to
+>>> >> know whether any MSR( Magnetic Stripe/card Reader) driver is available
+>>> >> in the current source or not. I need this for reference. Could anyone
+>>> >> please help me?
+>>> >
+>>> > Most of these types of devices that I have worked with always show up as
+>>> > a keyboard device (ps/2 pass-through or a USB hid device.)  What type of
+>>> > interface does your device present to the operating system?
+>>> >
+>>>
+>>> The MSR will be a part of a SoC. It is  a memory mapped device hence
+>>> there is no interface like USB.
+>>
+>> Ok, that's different.  But how will your driver want to communicate the
+>> reader data to userspace?  That will probably determine where you want
+>> to put it.
+>>
+>> I would recommend making it an input device and sending keystrokes that
+>> you read from the card, so you can properly integrate into userspace
+>> applications that are used to using a card reader.
+>>
+>>> MSR IP contains an ADC which the driver will read and interpret the
+>>> data. I am planning to write a Driver for the same. Will this driver
+>>> fall under drivers/mfd/* ?
+>>
+>> As per the above, I would think drivers/input/ wouldn't you?
+>>
+>> Hope this helps,
+>>
+>
+> Thanks for your help!.
+>
+> Yes, you are right, it should be under drivers/input.
+> I am trying to prepare the design right now.
+>
+>
 
-> --- a/kernel/lockdep.c
-> +++ b/kernel/lockdep.c
-> @@ -4091,10 +4091,10 @@ static void print_held_locks_bug(struct task_struct *curr)
->  		return;
->  
->  	printk("\n");
-> -	printk("=====================================\n");
-> -	printk("[ BUG: lock held at task exit time! ]\n");
-> +	printk("=======================================\n");
-> +	printk("[ BUG: lock held at exit/freeze time! ]\n");
+The MSR IP can be also be used either as a general purpose ADC or in
+Magnetic stripe card reader mode.The IP supports both the modes and
+provides FIFO for storing ADC data.
 
-Looks good, but to make it more apparent which case triggers, 
-please pass in a 'msg' string that gets printed - and the msg is 
-either "exit" or "freeze", depending on from where it's called.
+I also got to know about IIO subsystem where  ADC drivers are
+implemented. Our use-case will be to use either Magnetic Stripe reader
+mode or general purpose ADC mode in a given configuration. Can I use
+IIO subsystem for the Magnetic Stripe driver?
 
-Thanks,
-
-	Ingo
+Regards,
+Priyaranjan
