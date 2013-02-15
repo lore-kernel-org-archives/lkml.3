@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751891Ab3BOToJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 14:44:09 -0500
-Received: from mail-ia0-f177.google.com ([209.85.210.177]:43831 "EHLO
-	mail-ia0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751555Ab3BOToI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 14:44:08 -0500
+	id S1751909Ab3BOTpY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 14:45:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43369 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751633Ab3BOTpV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 14:45:21 -0500
+Date: Fri, 15 Feb 2013 20:43:56 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Pedro Alves <palves@redhat.com>
+Cc: Andrey Vagin <avagin@openvz.org>, linux-kernel@vger.kernel.org,
+        criu@openvz.org, linux-api@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] ptrace: add ability to retrieve signals without
+	removing them from a queue
+Message-ID: <20130215194356.GA12413@redhat.com>
+References: <1360768595-31943-1-git-send-email-avagin@openvz.org> <511E8223.6010506@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <201302141322.22263.poeschel@lemonage.de>
-References: <1360583563-10707-1-git-send-email-larsi@wh2.tu-dresden.de>
-	<201302131213.08631.poeschel@lemonage.de>
-	<CACRpkdbJ=KiwVoeK2TgO8kMuYQ2U-LaUOdL1d7w-q+9Ggb-JnA@mail.gmail.com>
-	<201302141322.22263.poeschel@lemonage.de>
-Date: Fri, 15 Feb 2013 20:44:07 +0100
-Message-ID: <CACRpkdZdPtDeD9GzB6Bfdko0mLCPMNq5_dqqOOzKA9a66qT-vw@mail.gmail.com>
-Subject: Re: [PATCH v2] gpio: mcp23s08: convert driver to DT
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lars Poeschel <poeschel@lemonage.de>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Lars Poeschel <larsi@wh2.tu-dresden.de>, rob.herring@calxeda.com,
-        rob@landley.net, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        spi-devel-general@lists.sourceforge.net
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <511E8223.6010506@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 14, 2013 at 1:22 PM, Lars Poeschel <poeschel@lemonage.de> wrote:
-> On Wednesday 13 February 2013 at 13:51:12, Linus Walleij wrote:
-
->> Have you considered this [pinctrl] approach?
+On 02/15, Pedro Alves wrote:
 >
-> No, I haven't. And although this doesn't solve all my problems, I like the
-> idea very much! Thank you for this! But at the moment it looks to me that
-> this could be a bit overkill for setting this single register and I don't
-> think this is, what Grant meant me to do.
+> Not sure I'm reading the patch right, but it looks like GDB would
+> be able to use this as alternative to PTRACE_GET_SIGINFO variant
 
-So there is this corner case where some GPIO driver does some
-pinctrl business, I mean, really really little of it. And then it may be
-overkill. Sometimes though, the hardware actually can do a lot of
-this biasing and muxing it just wasn't part of the driver yet or done
-in e.g. boot loaders, and then it's usually better to use pinctrl.
+No, it is different. PTRACE_GETSIGINFO reports the siginfo for the signal
+which was already dequeued (ignoring the fact ->last_siginfo != NULL doesn't
+necessarily mean we report a signal), while this patch allows to look at
+the pending signals which were not reported yet.
 
-Adding custom APIs to the GPIO drivers will however always
-cause a maintenance burden on the GPIO maintainers, so that's
-why pinctrl & GPIO is nice.
+> I wouldn't mind if this was added unconditionally
+> instead of wrapped on CONFIG_CHECKPOINT_RESTORE.
 
-I don't know which case this would be though.
+I agree. If you think gdb can use this new feature,  CONFIG_ can go away.
 
-Yours,
-Linus Walleij
+> We'd miss the poke
+> variant, but that looks like something that could be always be added
+> later.
+
+Yes. _POKE_ or _QUEUE_ or _DEQUEUE_, we can add more features if user-
+space wants them.
+
+Oleg.
+
