@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751550Ab3BOTxV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 14:53:21 -0500
-Received: from mail-yh0-f74.google.com ([209.85.213.74]:35562 "EHLO
-	mail-yh0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716Ab3BOTxU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 14:53:20 -0500
-From: Doug Anderson <dianders@chromium.org>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Simon Glass <sjg@chromium.org>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Yuvaraj Kumar <yuvaraj.cd@gmail.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>, u.kleine-koenig@pengutronix.de,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Girish Shivananjappa <girish.shivananjappa@linaro.org>,
-        bhushan.r@samsung.com, sreekumar.c@samsung.com,
-        Prashanth G <prashanth.g@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        Grant Grundler <grundler@chromium.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 3/3] ARM: dts: Add sbs-battery for exynos5250-snow
-Date: Fri, 15 Feb 2013 11:46:13 -0800
-Message-Id: <1360957573-864-3-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1360957573-864-1-git-send-email-dianders@chromium.org>
-References: <1360887677-20758-1-git-send-email-dianders@chromium.org>
- <1360957573-864-1-git-send-email-dianders@chromium.org>
+	id S1751995Ab3BOTxu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 14:53:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13374 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750716Ab3BOTxs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 14:53:48 -0500
+Message-ID: <511E923D.7050704@redhat.com>
+Date: Fri, 15 Feb 2013 19:53:33 +0000
+From: Pedro Alves <palves@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Andrey Vagin <avagin@openvz.org>, linux-kernel@vger.kernel.org,
+        criu@openvz.org, linux-api@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] ptrace: add ability to retrieve signals without removing
+ them from a queue
+References: <1360768595-31943-1-git-send-email-avagin@openvz.org> <511E8223.6010506@redhat.com> <20130215194356.GA12413@redhat.com>
+In-Reply-To: <20130215194356.GA12413@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we have i2c-arbitrator in place on bus 4 we can add the
-sbs-battery driver.  Future devices will be added onto bus 4 once
-drivers are in good shape.
+On 02/15/2013 07:43 PM, Oleg Nesterov wrote:
+> On 02/15, Pedro Alves wrote:
+>>
+>> Not sure I'm reading the patch right, but it looks like GDB would
+>> be able to use this as alternative to PTRACE_GET_SIGINFO variant
+> 
+> No, it is different. PTRACE_GETSIGINFO reports the siginfo for the signal
+> which was already dequeued (ignoring the fact ->last_siginfo != NULL doesn't
+> necessarily mean we report a signal), while this patch allows to look at
+> the pending signals which were not reported yet.
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
-Changes in v3: None
-Changes in v2: None
+Ah, I had assumed queue position 0 would be the dequeued signal.
 
- arch/arm/boot/dts/exynos5250-snow.dts | 6 ++++++
- 1 file changed, 6 insertions(+)
+>> I wouldn't mind if this was added unconditionally
+>> instead of wrapped on CONFIG_CHECKPOINT_RESTORE.
+> 
+> I agree. If you think gdb can use this new feature,  CONFIG_ can go away.
 
-diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
-index d2d4b48..2127386 100644
---- a/arch/arm/boot/dts/exynos5250-snow.dts
-+++ b/arch/arm/boot/dts/exynos5250-snow.dts
-@@ -51,6 +51,12 @@
- 			reg = <0>;
- 			#address-cells = <1>;
- 			#size-cells = <0>;
-+
-+			battery: sbs-battery@b {
-+				compatible = "sbs,sbs-battery";
-+				reg = <0xb>;
-+				sbs,poll-retry-count = <1>;
-+			};
- 		};
- 	};
- 
+I think so -- we can add a gdb command to dump the list of
+pending signals, which I think is something that'd be useful.
+
+> 
+>> We'd miss the poke
+>> variant, but that looks like something that could be always be added
+>> later.
+> 
+> Yes. _POKE_ or _QUEUE_ or _DEQUEUE_, we can add more features if user-
+> space wants them.
+
 -- 
-1.8.1
+Pedro Alves
 
