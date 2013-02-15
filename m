@@ -1,107 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161243Ab3BOOse (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 09:48:34 -0500
-Received: from mail.abilis.ch ([195.70.19.74]:21600 "EHLO mail.abilis.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758834Ab3BOOsc convert rfc822-to-8bit (ORCPT
+	id S935799Ab3BOOua (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 09:50:30 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:54151 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932866Ab3BOOu3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 09:48:32 -0500
-Date: Fri, 15 Feb 2013 15:48:17 +0100
-From: Christian Ruppert <christian.ruppert@abilis.com>
-To: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: Re: [PATCH] Prevent interrupt loop with DWMAC MMC RX IPC Counter
-Message-ID: <20130215144815.GA31098@ab42.lan>
-References: <1360934123-30476-1-git-send-email-christian.ruppert@abilis.com>
- <511E3C28.7090101@st.com>
+	Fri, 15 Feb 2013 09:50:29 -0500
+Message-ID: <511E4B32.3030003@acm.org>
+Date: Fri, 15 Feb 2013 08:50:26 -0600
+From: Corey Minyard <tcminyard@gmail.com>
+Reply-To: minyard@acm.org
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <511E3C28.7090101@st.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: =?UTF-8?B?QnJ1bm8gUHLDqW1vbnQ=?= <bonbons@linux-vserver.org>,
+        Corey Minyard <cminyard@mvista.com>,
+        containers@lists.linux-foundation.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Move console redirect to pid namespace
+References: <1360376920-30824-1-git-send-email-minyard@acm.org> <20130209191409.643c3d7f@neptune.home> <87r4kkuj4o.fsf@xmission.com> <511D9890.1040900@acm.org> <87d2w29pdo.fsf@xmission.com>
+In-Reply-To: <87d2w29pdo.fsf@xmission.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Guiseppe,
+On 02/14/2013 10:23 PM, Eric W. Biederman wrote:
+>
+>>> With recent changes this is tied to the initial user namespace.  So the
+>>> simple solution to this and so many other similiar security problems is
+>>> to run your container in a user namespace.
+>>>
+>>> The permission check currently is capable(CAP_SYS_ADMIN) which requires
+>>> the caller to have the CAP_SYS_ADMIN in the initial user namespace.
+>> I'm not sure I follow.  Are these changes in k.org, or in another
+>> repository someplace?
+> In k.org. 3.7 would work. 3.8-rcX would work even better.
+>
+> root in a user namespace does not have permission to call TIOCCONS.
 
-Thanks for the feedback. I'll send a new patch shortly which
-unconditionally masks the interrupts as you suggest. The mask register
-does not exist in DWMACs without RX IPC counters, however, and I have no
-way of testing if accessing this register nevertheless generates a bus
-error. Do you have hardware to verify if everything works fine even
-without RX IPC counters before integrating the patch?
+Ok, that's good enough for me.  I don't have a compelling reason to make 
+it work, beyond liking consistency.
 
-Greetings,
-  Christian
+Thank you,
 
-On Fri, Feb 15, 2013 at 02:46:16PM +0100, Giuseppe CAVALLARO wrote:
-> Hello Christian
-> 
-> On 2/15/2013 2:15 PM, Christian Ruppert wrote:
-> >If the DesignWare MAC is synthesised with MMC RX IPC Counter, an unmanaged
-> >and unacknowledged interrupt is generated after some time of operation. To
-> >my knowledge there is no way to autodetect this configuration.
-> >
-> >This patch adds a Kconfig option to tell the driver about the counter which
-> >in turn masks the undesired interrupts.
-> >
-> >Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
-> >---
-> >  drivers/net/ethernet/stmicro/stmmac/Kconfig    |    8 ++++++++
-> >  drivers/net/ethernet/stmicro/stmmac/mmc_core.c |    3 +++
-> >  2 files changed, 11 insertions(+), 0 deletions(-)
-> >
-> >diff --git a/drivers/net/ethernet/stmicro/stmmac/Kconfig b/drivers/net/ethernet/stmicro/stmmac/Kconfig
-> >index 1164930..60e5130 100644
-> >--- a/drivers/net/ethernet/stmicro/stmmac/Kconfig
-> >+++ b/drivers/net/ethernet/stmicro/stmmac/Kconfig
-> >@@ -71,5 +71,13 @@ config STMMAC_CHAINED
-> >
-> >  endchoice
-> >
-> >+config STMMAC_RX_IPC_CTRS
-> >+	bool "MMC Receive IPC Counters enabled"
-> >+	depends on STMMAC_ETH
-> >+	default n
-> >+	---help---
-> >+	  Select this option in case MMC Receive IPC counters were enabled at
-> >+	  synthesis time of the block. If this option is not set correctly,
-> >+	  system might hang after a certain amount of time.
-> >
-> >  endif
-> >diff --git a/drivers/net/ethernet/stmicro/stmmac/mmc_core.c b/drivers/net/ethernet/stmicro/stmmac/mmc_core.c
-> >index 0c74a70..ae877ee 100644
-> >--- a/drivers/net/ethernet/stmicro/stmmac/mmc_core.c
-> >+++ b/drivers/net/ethernet/stmicro/stmmac/mmc_core.c
-> >@@ -149,6 +149,9 @@ void dwmac_mmc_intr_all_mask(void __iomem *ioaddr)
-> >  {
-> >  	writel(MMC_DEFAULT_MASK, ioaddr + MMC_RX_INTR_MASK);
-> >  	writel(MMC_DEFAULT_MASK, ioaddr + MMC_TX_INTR_MASK);
-> >+#ifdef CONFIG_STMMAC_RX_IPC_CTRS
-> >+	writel(MMC_DEFAULT_MASK, ioaddr + MMC_RX_IPC_INTR_MASK);
-> >+#endif
-> 
-> your fix makes sense to me; I have never faced this problem because the
-> MMC RX IPC Counter is not synthesised  on the GMAC chip I used.
-> 
-> Anyway all mmc interrupts are not managed by defsign so I only ask
-> you to remove the Kconfig option and add the writel in the
-> dwmac_mmc_intr_all_mask.
-> 
-> peppe
-> 
-> >  }
-> >
-> >  /* This reads the MAC core counters (if actaully supported).
-> >
-> 
-
--- 
-  Christian Ruppert              ,          <christian.ruppert@abilis.com>
-                                /|
-  Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pré-Fleuri
-                             _// | bilis Systems   CH-1228 Plan-les-Ouates
+-corey
