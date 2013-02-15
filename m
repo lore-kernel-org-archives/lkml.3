@@ -1,93 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752782Ab3BORVy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 12:21:54 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:33023 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751035Ab3BORVx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 12:21:53 -0500
-Date: Fri, 15 Feb 2013 18:21:49 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, Shawn Guo <shawn.guo@linaro.org>,
-        Axel Lin <axel.lin@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH 2/9] ARM: imx: MACH_MX31ADS_WM1133_EV1 needs
- REGULATOR_WM8350
-Message-ID: <20130215172149.GU1906@pengutronix.de>
-References: <1360882071-4072668-1-git-send-email-arnd@arndb.de>
- <1360882071-4072668-3-git-send-email-arnd@arndb.de>
+	id S1753977Ab3BORWC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 12:22:02 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8847 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753082Ab3BORV6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 12:21:58 -0500
+Subject: [PATCH] x86: remove the x32 syscall bitmask from syscall_get_nr()
+To: x86@kernel.org, linux-kernel@vger.kernel.org
+From: Paul Moore <pmoore@redhat.com>
+Cc: coreyb@linux.vnet.ibm.com, wad@chromium.org, hpa@zytor.com
+Date: Fri, 15 Feb 2013 12:21:43 -0500
+Message-ID: <20130215172143.12549.10292.stgit@localhost>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360882071-4072668-3-git-send-email-arnd@arndb.de>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 18:21:10 up 237 days,  8:32, 73 users,  load average: 0.07, 0.22,
- 0.35
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 14, 2013 at 11:47:44PM +0100, Arnd Bergmann wrote:
-> MACH_MX31ADS_WM1133_EV1 already depends on REGULATOR_WM8350,
-> but that still allows REGULATOR_WM8350 to be a loadable
-> module. Depending on REGULATOR_WM8350 to be built-in
-> ensures we cannot create a broken configuration.
-> 
-> Without this patch, building allmodconfig results in:
-> 
-> arch/arm/mach-imx/built-in.o: In function `mx31_wm8350_init':
-> arch/arm/mach-imx/mach-mx31ads.c:461: undefined reference to `wm8350_register_regulator'
-> arch/arm/mach-imx/mach-mx31ads.c:471: undefined reference to `wm8350_dcdc_set_slot'
-> arch/arm/mach-imx/mach-mx31ads.c:473: undefined reference to `wm8350_isink_set_flash'
-> arch/arm/mach-imx/mach-mx31ads.c:480: undefined reference to `wm8350_dcdc25_set_mode'
-> arch/arm/mach-imx/mach-mx31ads.c:485: undefined reference to `wm8350_register_led'
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Shawn Guo <shawn.guo@linaro.org>
-> Cc: Sascha Hauer <s.hauer@pengutronix.de>
-> Cc: Axel Lin <axel.lin@gmail.com>
-> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Commit fca460f95e928bae373daa8295877b6905bc62b8 simplified the x32
+implementation by creating a syscall bitmask, equal to 0x40000000, that
+could be applied to x32 syscalls such that the masked syscall number
+would be the same as a x86_64 syscall.  While that patch was a nice
+way to simplify the code, it went a bit too far by adding the mask to
+syscall_get_nr(); returning the masked syscall numbers can cause
+confusion with callers that expect syscall numbers matching the x32
+ABI, e.g. unmasked syscall numbers.
 
-Hail to devicetree probing where such things don't happen.
+This patch fixes this by simply removing the mask from syscall_get_nr()
+while preserving the other changes from the original commit.  While
+there are several syscall_get_nr() callers in the kernel, most simply
+check that the syscall number is greater than zero, in this case this
+patch will have no effect.  Of those remaining callers, they appear
+to be few, seccomp and ftrace, and from my testing of seccomp without
+this patch the original commit definitely breaks things; the seccomp
+filter does not correctly filter the syscalls due to the difference in
+syscall numbers in the BPF filter and the value from syscall_get_nr().
+Applying this patch restores the seccomp BPF filter functionality on
+x32.
 
-Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
+I've tested this patch with the seccomp BPF filters as well as ftrace
+and everything looks reasonable to me; needless to say general usage
+seemed fine as well.
 
-> ---
->  arch/arm/mach-imx/Kconfig | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
-> index 7b11d33..4c9c6f9 100644
-> --- a/arch/arm/mach-imx/Kconfig
-> +++ b/arch/arm/mach-imx/Kconfig
-> @@ -480,7 +480,7 @@ config MACH_MX31ADS_WM1133_EV1
->  	bool "Support Wolfson Microelectronics 1133-EV1 module"
->  	depends on MACH_MX31ADS
->  	depends on MFD_WM8350_I2C
-> -	depends on REGULATOR_WM8350
-> +	depends on REGULATOR_WM8350 = y
->  	select MFD_WM8350_CONFIG_MODE_0
->  	select MFD_WM8352_CONFIG_MODE_0
->  	help
-> -- 
-> 1.8.1.2
-> 
-> 
+Signed-off-by: Paul Moore <pmoore@redhat.com>
+Cc: stable@vger.kernel.org
+Cc: Will Drewry <wad@chromium.org>
+Cc: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/include/asm/syscall.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+diff --git a/arch/x86/include/asm/syscall.h b/arch/x86/include/asm/syscall.h
+index 1ace47b..2e188d6 100644
+--- a/arch/x86/include/asm/syscall.h
++++ b/arch/x86/include/asm/syscall.h
+@@ -29,13 +29,13 @@ extern const unsigned long sys_call_table[];
+  */
+ static inline int syscall_get_nr(struct task_struct *task, struct pt_regs *regs)
+ {
+-	return regs->orig_ax & __SYSCALL_MASK;
++	return regs->orig_ax;
+ }
+ 
+ static inline void syscall_rollback(struct task_struct *task,
+ 				    struct pt_regs *regs)
+ {
+-	regs->ax = regs->orig_ax & __SYSCALL_MASK;
++	regs->ax = regs->orig_ax;
+ }
+ 
+ static inline long syscall_get_error(struct task_struct *task,
+
