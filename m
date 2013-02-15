@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936080Ab3BOQaB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 11:30:01 -0500
-Received: from mout.gmx.net ([212.227.15.18]:63837 "EHLO mout.gmx.net"
+	id S932921Ab3BOQa4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 11:30:56 -0500
+Received: from fieldses.org ([174.143.236.118]:58623 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755870Ab3BOQ37 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 11:29:59 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX19IjYVZnThIbV2moQbk6Mp4GVUDRbpHBAA/BQx45H
-	NZdM0gzRdo95OB
-From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Subject: Re: Clang Analyzer was Re: [PATCH 3/7 v2] staging/ozwpan: Fix NULL vs zero in ozeltbuf.c (sparse warning)
-Date: Fri, 15 Feb 2013 17:34:24 +0100
-User-Agent: KMail/1.13.7 (Linux/3.7.7; KDE/4.9.3; x86_64; ; )
-Cc: Rupesh Gujare <rupesh.gujare@atmel.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Kernel Janitors <kernel-janitors@vger.kernel.org>
-References: <20130215084517.GB6802@mwanda> <201302151657.14726.PeterHuewe@gmx.de> <20130215161102.GK6853@mwanda>
-In-Reply-To: <20130215161102.GK6853@mwanda>
+	id S1755870Ab3BOQay (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 11:30:54 -0500
+Date: Fri, 15 Feb 2013 11:30:51 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: Tim Gardner <tim.gardner@canonical.com>, linux-kernel@vger.kernel.org,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        linux-nfs@vger.kernel.org
+Subject: Re: [PATCH linux-next v2] lockd: nlmclnt_reclaim(): avoid stack
+ overflow
+Message-ID: <20130215163050.GL8343@fieldses.org>
+References: <20130212211800.GG10267@fieldses.org>
+ <1360770016-69586-1-git-send-email-tim.gardner@canonical.com>
+ <20130214102038.52b1d292@tlielax.poochiereds.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302151734.24623.PeterHuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130214102038.52b1d292@tlielax.poochiereds.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, 15. Februar 2013, 17:11:02 schrieb Dan Carpenter:
-> Are you using this version of clang?:
+On Thu, Feb 14, 2013 at 10:20:38AM -0500, Jeff Layton wrote:
+> On Wed, 13 Feb 2013 08:40:16 -0700
+> Tim Gardner <tim.gardner@canonical.com> wrote:
 > 
-> http://git.linuxfoundation.org/llvmlinux.git/
+> > Even though nlmclnt_reclaim() is only one call into the stack frame,
+> > 928 bytes on the stack seems like a lot. Recode to dynamically
+> > allocate the request structure once from within the reclaimer task,
+> > then pass this pointer into nlmclnt_reclaim() for reuse on
+> > subsequent calls.
+> > 
+> > smatch analysis:
+> > 
+> > fs/lockd/clntproc.c:620 nlmclnt_reclaim() warn: 'reqst' puts
+> >  928 bytes on stack
+> > 
+> > Also remove redundant assignment of 0 after memset.
+> > 
+> > Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
+> > Cc: "J. Bruce Fields" <bfields@fieldses.org>
+> > Cc: linux-nfs@vger.kernel.org
+> > Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+> > ---
+> > 
+> > Changes from v1 -- don't return -ENOMEM from a task thread because it is
+> > not propagated to the task creator. Instead print an error message and return.
+...
+> Oops, just noticed there was a later version of this patch. Please
+> disregard my earlier mail...
 > 
-> regards,
-> dan carpenter
+> Reviewed-by: Jeff Layton <jlayton@redhat.com>
 
-Hi,
-
-nope - plain vanilla llvm/clang, but I use some of the kernel patches from 
-there:
-http://git.linuxfoundation.org/?p=llvmlinux.git;a=tree;f=arch/x86_64/patches;hb=master
-
-The main reason for not using llvmlinux is that it builds a lot more than I 
-need (e.g. buildbot/qemu) but maybe I should give it a try some time.
-
-
-Peter
+Thanks, applying.--b.
