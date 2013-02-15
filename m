@@ -1,131 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935235Ab3BOAi7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 19:38:59 -0500
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:11568 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759729Ab3BOAi5 (ORCPT
+	id S1161078Ab3BOAto (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 19:49:44 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:55204 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935194Ab3BOAtn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 19:38:57 -0500
-Message-ID: <1360888082.3869.163.camel@misato.fc.hp.com>
-Subject: Re: [Update][PATCH] ACPI / hotplug: Fix concurrency issues and
- memory leaks
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: "Moore, Robert" <robert.moore@intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <liuj97@gmail.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Myron Stowe <mstowe@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Date: Thu, 14 Feb 2013 17:28:02 -0700
-In-Reply-To: <1463882.MtF6rq6lDy@vostro.rjw.lan>
-References: <1837481.7dT8hTZ4MT@vostro.rjw.lan>
-	 <7482249.JD6lNDApdo@vostro.rjw.lan>
-	 <94F2FBAB4432B54E8AACC7DFDE6C92E368CB5E39@ORSMSX101.amr.corp.intel.com>
-	 <1463882.MtF6rq6lDy@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 14 Feb 2013 19:49:43 -0500
+Date: Thu, 14 Feb 2013 16:47:48 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Andrew Price <anprice@redhat.com>
+Cc: Steven Whitehouse <swhiteho@redhat.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org,
+        adas@redhat.com, hch@lst.de, npiggin@gmail.com
+Subject: Re: rcu: fix hlist_bl_set_first_rcu annotation
+Message-ID: <20130215004748.GI2769@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1359572877.2719.50.camel@menhir>
+ <20130203183958.GO2632@linux.vnet.ibm.com>
+ <511D7ADA.7040104@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <511D7ADA.7040104@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13021500-7606-0000-0000-000008690B8A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-02-15 at 01:23 +0100, Rafael J. Wysocki wrote:
-> On Thursday, February 14, 2013 11:45:27 PM Moore, Robert wrote:
-> > 
-> > > -----Original Message-----
-> > > From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
-> > > Sent: Thursday, February 14, 2013 12:59 PM
-> > > To: Moore, Robert
-> > > Cc: Toshi Kani; ACPI Devel Maling List; LKML; Bjorn Helgaas; Jiang Liu;
-> > > Yinghai Lu; Yasuaki Ishimatsu; Myron Stowe; linux-pci@vger.kernel.org
-> > > Subject: Re: [Update][PATCH] ACPI / hotplug: Fix concurrency issues and
-> > > memory leaks
-> > > 
-> > > On Thursday, February 14, 2013 08:45:14 PM Moore, Robert wrote:
-> > > >
-> > > > > -----Original Message-----
-> > > > > From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
-> > > > > Sent: Thursday, February 14, 2013 4:04 AM
-> > > > > To: Moore, Robert
-> > > > > Cc: Toshi Kani; ACPI Devel Maling List; LKML; Bjorn Helgaas; Jiang
-> > > > > Liu; Yinghai Lu; Yasuaki Ishimatsu; Myron Stowe;
-> > > > > linux-pci@vger.kernel.org
-> > > > > Subject: Re: [Update][PATCH] ACPI / hotplug: Fix concurrency issues
-> > > > > and memory leaks
-> > > > >
-> > > > > On Thursday, February 14, 2013 02:31:22 AM Moore, Robert wrote:
-> > > > > > > > > I thought about that, but actually there's no guarantee that
-> > > > > > > > > the handle will be valid after _EJ0 as far as I can say.  So
-> > > > > > > > > the race condition is going to be there anyway and using
-> > > > > > > > > struct acpi_device just makes it easier to avoid it.
-> > > > > > > >
-> > > > > > > > In theory, yes, a stale handle could be a problem, if _EJ0
-> > > > > > > > performs unload table and if ACPICA frees up its internal data
-> > > > > > > > structure pointed by the handle as a result.  But we should
-> > > > > > > > not see such issue now since we do not support dynamic ACPI
-> > > > > > > > namespace
-> > > > > yet.
-> > > > > > >
-> > > > > > > I'm waiting for information from Bob about that.  If we can
-> > > > > > > assume ACPI handles to be always valid, that will simplify
-> > > > > > > things quite a
-> > > > > bit.
-> > > > > >
-> > > > > > If a table is unloaded, all the namespace nodes for that table are
-> > > > > > removed from the namespace, and thus any ACPI_HANDLE pointers go
-> > > > > > stale
-> > > > > and invalid.
-> > > > >
-> > > > > OK, thanks!
-> > > > >
-> > > > > To me this means that we cannot assume a handle to stay valid
-> > > > > between a notify handler and acpi_bus_hot_remove_device() run from a
-> > > workqueue.
-> > > > >
-> > > > > Is there a mechanism in ACPICA to ensure that a handle won't become
-> > > > > stale while a notify handler is running for it or is the OS
-> > > > > responsible for ensuring that
-> > > > > _EJ0 won't be run in parallel with notify handlers for device
-> > > > > objects being ejected?
-> > > > >
-> > > >
-> > > > It is up to the host.
-> > > 
-> > > I was afraid that that might be the case. :-)
-> > > 
-> > > So far the (Linux) host has been happily ignoring that potential problem,
-> > > so I guess it can still be ignored for a while, although we'll need to
-> > > address it eventually at one point.
-> > 
-> > I would think it should be fairly simple to setup a mechanism to either tell
-> > the driver or for the driver to figure it out -- such that the driver knows
-> > that all handles associated with the device are now invalid. Another way
-> > to look at it is that when the device is re-installed, the driver should
-> > reinitialize such that it obtains new handles for the devices and subobjects
-> > in question.
+On Fri, Feb 15, 2013 at 12:01:30AM +0000, Andrew Price wrote:
+> Hi,
 > 
-> Unfortunately, there is quite strong assumption in our code that ACPI handles
-> will not become stale before the device objects associated with them are
-> removed.  For this reason, we need to know in advance which handles will
-> become stale as a result of a table unload and remove their device objects
-> beforehand.
+> On 03/02/13 18:39, Paul E. McKenney wrote:
+> >On Wed, Jan 30, 2013 at 07:07:57PM +0000, Steven Whitehouse wrote:
+> >>
+> >>Abhi noticed that we were getting a complaint from the RCU subsystem
+> >>about access of an RCU protected list under the write side bit lock.
+> >>This patch adds additional annotation to check both the RCU read
+> >>lock and the write side bit lock before printing a message.
+> >>
+> >>Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
+> >>Reported-by: Abhijith Das <adas@redhat.com>
+> >>Tested-by: Abhijith Das <adas@redhat.com>
+> >
+> >Looks plausible to me on first glance, copying Nick Piggin and Christoph
+> >Hellwig.  If they have no objections, I will queue this.
+> >
+> >							Thanx, Paul
 > 
-> Moreover, when there's a notify handler installed for a given ACPI handle
-> and that handle becomes stale while the notify handler is running, we'll be
-> in trouble.  To avoid that we need to ensure that table unloads and notifies
-> will always be mutually exclusive.
+> Has this had any attention yet? I'm also seeing the complaint quite
+> frequently:
+> 
+> [   68.738811] ===============================
+> [   68.741380] [ INFO: suspicious RCU usage. ]
+> [   68.748785] 3.8.0-0.rc7.git1.1.fc19.x86_64 #1 Not tainted
+> [   68.750841] -------------------------------
+> [   68.752418] include/linux/rculist_bl.h:23 suspicious
+> rcu_dereference_check() usage!
+> [   68.755264]
+> [   68.755264] other info that might help us debug this:
+> [   68.755264]
+> [   68.758030]
+> [   68.758030] rcu_scheduler_active = 1, debug_locks = 0
+> [   68.760316] 1 lock held by mount/476:
+> [   68.761896]  #0:  (&type->s_umount_key#38/1){+.+.+.}, at:
+> [<ffffffff811dbbee>] sget+0x39e/0x670
+> [   68.767115]
+> [   68.767115] stack backtrace:
+> [   68.769529] Pid: 476, comm: mount Not tainted
+> 3.8.0-0.rc7.git1.1.fc19.x86_64 #1
+> [   68.772095] Call Trace:
+> [   68.772995]  [<ffffffff810d73b7>] lockdep_rcu_suspicious+0xe7/0x120
+> [   68.775184]  [<ffffffffa00e3238>] search_bucket+0x118/0x160 [gfs2]
+> [   68.777559]  [<ffffffffa00e47c3>] gfs2_glock_get+0x603/0x7b0 [gfs2]
+> [   68.780749]  [<ffffffffa00e41c5>] ? gfs2_glock_get+0x5/0x7b0 [gfs2]
+> [   68.784173]  [<ffffffffa00e6db9>] gfs2_glock_nq_num+0x29/0x90 [gfs2]
+> [   68.786551]  [<ffffffffa00f2b79>] gfs2_mount+0x869/0xf30 [gfs2]
+> [   68.788672]  [<ffffffff810ad428>] ? sched_clock_cpu+0xa8/0x100
+> [   68.790739]  [<ffffffff810d561d>] ? trace_hardirqs_off+0xd/0x10
+> [   68.793042]  [<ffffffff810ad56f>] ? local_clock+0x5f/0x70
+> [   68.794940]  [<ffffffff81702500>] ? __mutex_unlock_slowpath+0x80/0x170
+> [   68.798236]  [<ffffffff811dcb49>] mount_fs+0x39/0x1b0
+> [   68.800409]  [<ffffffff811879c0>] ? __alloc_percpu+0x10/0x20
+> [   68.803692]  [<ffffffff811fa8e3>] vfs_kern_mount+0x63/0xf0
+> [   68.806773]  [<ffffffff811fcfb5>] do_mount+0x205/0xa90
+> [   68.809669]  [<ffffffff8118c8ec>] ? might_fault+0x5c/0xb0
+> [   68.812717]  [<ffffffff811819fb>] ? strndup_user+0x4b/0xf0
+> [   68.816066]  [<ffffffff811fd8c3>] sys_mount+0x83/0xc0
+> [   68.818284]  [<ffffffff8170ead9>] system_call_fastpath+0x16/0x1b
+> 
+> It would be good to have this silenced for 3.8 but I think there's
+> not long to go.
 
-I wonder if we can make acpi_ns_validate_handle() to actually be able to
-verify if a given handle is valid.  This way, ACPICA can fail gracefully
-(AE_BAD_PARAMETER) when a stable handle is passed to the interfaces.
+I have queued this, thank you.
 
-Thanks,
--Toshi
+3.8 is getting close to the end, but there is always -stable if the 3.8
+series is of particular interest for this bug.
 
+							Thanx, Paul
 
+> Thanks,
+> Andy
+> 
+> >>diff --git a/include/linux/list_bl.h b/include/linux/list_bl.h
+> >>index 31f9d75..2eb8855 100644
+> >>--- a/include/linux/list_bl.h
+> >>+++ b/include/linux/list_bl.h
+> >>@@ -125,6 +125,11 @@ static inline void hlist_bl_unlock(struct hlist_bl_head *b)
+> >>  	__bit_spin_unlock(0, (unsigned long *)b);
+> >>  }
+> >>
+> >>+static inline bool hlist_bl_is_locked(struct hlist_bl_head *b)
+> >>+{
+> >>+	return bit_spin_is_locked(0, (unsigned long *)b);
+> >>+}
+> >>+
+> >>  /**
+> >>   * hlist_bl_for_each_entry	- iterate over list of given type
+> >>   * @tpos:	the type * to use as a loop cursor.
+> >>diff --git a/include/linux/rculist_bl.h b/include/linux/rculist_bl.h
+> >>index cf1244f..4f216c5 100644
+> >>--- a/include/linux/rculist_bl.h
+> >>+++ b/include/linux/rculist_bl.h
+> >>@@ -20,7 +20,7 @@ static inline void hlist_bl_set_first_rcu(struct hlist_bl_head *h,
+> >>  static inline struct hlist_bl_node *hlist_bl_first_rcu(struct hlist_bl_head *h)
+> >>  {
+> >>  	return (struct hlist_bl_node *)
+> >>-		((unsigned long)rcu_dereference(h->first) & ~LIST_BL_LOCKMASK);
+> >>+		((unsigned long)rcu_dereference_check(h->first, hlist_bl_is_locked(h)) & ~LIST_BL_LOCKMASK);
+> >>  }
+> >>
+> >>  /**
+> >>
+> >>
+> 
 
