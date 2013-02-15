@@ -1,95 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935398Ab3BOGEo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 01:04:44 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:9021 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751824Ab3BOGEn convert rfc822-to-8bit (ORCPT
+	id S935386Ab3BOGJD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 01:09:03 -0500
+Received: from mysmtp1.stec-inc.com ([1.9.68.9]:35595 "HELO
+	mysmtp1.stec-inc.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751824Ab3BOGJB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 01:04:43 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 14 Feb 2013 22:04:17 -0800
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: Jingoo Han <jg1.han@samsung.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "'Alessandro Zummo'" <a.zummo@towertech.it>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>
-Date: Fri, 15 Feb 2013 11:34:08 +0530
-Subject: RE: [PATCH 03/11] rtc: rtc-efi: use pr_err()/pr_warn() instead of
- printk()
-Thread-Topic: [PATCH 03/11] rtc: rtc-efi: use pr_err()/pr_warn() instead of
- printk()
-Thread-Index: Ac4LQUiQnZ5yIGDDRaO8BQe4Zm4AfgAAChJgAAAhmmA=
-Message-ID: <D958900912E20642BCBC71664EFECE3E6E1B91EC16@BGMAIL02.nvidia.com>
-References: <001201ce0b41$4900c4d0$db024e70$%han@samsung.com>
- <001401ce0b41$83d7c9a0$8b875ce0$%han@samsung.com>
-In-Reply-To: <001401ce0b41$83d7c9a0$8b875ce0$%han@samsung.com>
+	Fri, 15 Feb 2013 01:09:01 -0500
+X-ASG-Debug-ID: 1360908538-053ea90dcf2a3770001-xx1T2L
+X-Barracuda-Envelope-From: akale@stec-inc.com
+X-Barracuda-RBL-Trusted-Forwarder: 172.30.0.57
+From: Amit Kale <akale@stec-inc.com>
+X-Barracuda-BWL-IP: fe80::64e7:ed5b:e6f9:c391
+X-Barracuda-Apparent-Source-IP: fe80::64e7:ed5b:e6f9:c391
+To: OS Engineering <osengineering@stec-inc.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>
+CC: "Darrick J. Wong" <darrick.wong@oracle.com>,
+        Sanoj Unnikrishnan <sunnikrishnan@stec-inc.com>,
+        =?iso-2022-jp?B?GyRCMiY2YjE6GyhC?= <jinpuwang@gmail.com>,
+        Kent Overstreet <koverstreet@google.com>,
+        "thornber@redhat.com" <thornber@redhat.com>
+Date: Fri, 15 Feb 2013 14:07:02 +0800
+Subject: RE: [PATCH] EnhanceIO ssd caching software
+Thread-Topic: [PATCH] EnhanceIO ssd caching software
+X-ASG-Orig-Subj: RE: [PATCH] EnhanceIO ssd caching software
+Thread-Index: Ac4LQg6V0G/eqmgQTNW5yvkgRC3plwAAIPdg
+Message-ID: <C4B5704C6FEB5244B2A1BCC8CF83B86B0A624D6AB1@MYMBX.MY.STEC-INC.AD>
+References: <C4B5704C6FEB5244B2A1BCC8CF83B86B0A624D6AAF@MYMBX.MY.STEC-INC.AD>
+In-Reply-To: <C4B5704C6FEB5244B2A1BCC8CF83B86B0A624D6AAF@MYMBX.MY.STEC-INC.AD>
 Accept-Language: en-US
+Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
 acceptlanguage: en-US
-MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset="iso-2022-jp"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Barracuda-Connect: mycas01.my.stec-inc.ad[172.30.0.57]
+X-Barracuda-Start-Time: 1360908538
+X-Barracuda-URL: http://myspam1.stec-inc.com:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.01
+X-Barracuda-Spam-Status: No, SCORE=0.01 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=BSF_SC0_SA_TO_FROM_DOMAIN_MATCH, ISO2022JP_CHARSET
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.122714
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	-0.00 ISO2022JP_CHARSET      ISO-2022-JP message
+	0.01 BSF_SC0_SA_TO_FROM_DOMAIN_MATCH Sender Domain Matches Recipient
+	                           Domain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Adding Kent and Joe.
+-Amit
+
 > -----Original Message-----
-> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
-> owner@vger.kernel.org] On Behalf Of Jingoo Han
-> Sent: Friday, February 15, 2013 11:29 AM
-> To: 'Andrew Morton'
-> Cc: linux-kernel@vger.kernel.org; 'Alessandro Zummo'; rtc-
-> linux@googlegroups.com; 'Jingoo Han'
-> Subject: [PATCH 03/11] rtc: rtc-efi: use pr_err()/pr_warn() instead of printk()
+> From: OS Engineering
+> Sent: Friday, February 15, 2013 11:33 AM
+> To: Greg Kroah-Hartman; LKML; Jens Axboe
+> Cc: Darrick J. Wong; Sanoj Unnikrishnan; 王金浦; Amit Kale
+> Subject: [PATCH] EnhanceIO ssd caching software
 > 
-> Fixed the checkpatch warnings as below:
+> Hi Greg, Jens,
 > 
->   WARNING: Prefer netdev_err(netdev, ... then dev_err(dev, ... then pr_err(...
-> to printk(KERN_ERR ...
->   WARNING: please, no space before tabs
+> We are submitting EnhanceIO(TM) software driver for an inclusion in
+> linux staging tree. Present state of this driver is beta. We have been
+> posting it for a few weeks, while it was maintained at github. It is
+> still being cleaned-up and is being tested by LKML members. Inclusion
+> in linux staging tree will make testing and reviewing easier and help a
+> future integration in Linux kernel.
 > 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> ---
->  drivers/rtc/rtc-efi.c |   10 ++++++----
->  1 files changed, 6 insertions(+), 4 deletions(-)
+> Could you please include it?
 > 
->  	eft->timezone	= EFI_UNSPECIFIED_TIMEZONE;
-> @@ -142,7 +144,7 @@ static int efi_set_alarm(struct device *dev, struct
-> rtc_wkalrm *wkalrm)
->  	 */
->  	status = efi.set_wakeup_time((efi_bool_t)wkalrm->enabled, &eft);
-> 
-> -	printk(KERN_WARNING "write status is %d\n", (int)status);
-> +	pr_warn("write status is %d\n", (int)status);
-
-Why don't you use dev_warn itself? 
-
-> 
->  	return status == EFI_SUCCESS ? 0 : -EINVAL;
->  }
-> @@ -157,7 +159,7 @@ static int efi_read_time(struct device *dev, struct
-> rtc_time *tm)
-> 
->  	if (status != EFI_SUCCESS) {
->  		/* should never happen */
-> -		printk(KERN_ERR "efitime: can't read time\n");
-> +		pr_err("can't read time\n");
-
-Why don't you use dev_err itself?  
-
->  		return -EINVAL;
->  	}
-> 
+> Thanks.
 > --
-> 1.7.2.5
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Amit Kale
+
+PROPRIETARY-CONFIDENTIAL INFORMATION INCLUDED
+
+
+
+This electronic transmission, and any documents attached hereto, may contain confidential, proprietary and/or legally privileged information. The information is intended only for use by the recipient named above. If you received this electronic message in error, please notify the sender and delete the electronic message. Any disclosure, copying, distribution, or use of the contents of information received in error is strictly prohibited, and violators will be pursued legally.
