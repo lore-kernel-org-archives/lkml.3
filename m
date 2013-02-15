@@ -1,109 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752641Ab3BOXCa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 18:02:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49329 "EHLO
+	id S1752425Ab3BOW4I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 17:56:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49293 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752505Ab3BOW4V (ORCPT
+	with ESMTP id S1752346Ab3BOW4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 17:56:21 -0500
+	Fri, 15 Feb 2013 17:56:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.coM>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Ingo Molnar <mingo@kernel.org>, linux-mm@kvack.org
-Subject: [ 4/8] x86/mm: Check if PUD is large when validating a kernel address
-Date: Fri, 15 Feb 2013 14:56:11 -0800
-Message-Id: <20130215225431.385985324@linuxfoundation.org>
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [ 3/4] PCI/PM: Clean up PME state when removing a device
+Date: Fri, 15 Feb 2013 14:55:52 -0800
+Message-Id: <20130215225523.933890685@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130215225430.841634159@linuxfoundation.org>
-References: <20130215225430.841634159@linuxfoundation.org>
+In-Reply-To: <20130215225523.525656849@linuxfoundation.org>
+References: <20130215225523.525656849@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 
-commit 0ee364eb316348ddf3e0dfcd986f5f13f528f821 upstream.
+commit 249bfb83cf8ba658955f0245ac3981d941f746ee upstream.
 
-A user reported the following oops when a backup process reads
-/proc/kcore:
+Devices are added to pci_pme_list when drivers use pci_enable_wake()
+or pci_wake_from_d3(), but they aren't removed from the list unless
+the driver explicitly disables wakeup.  Many drivers never disable
+wakeup, so their devices remain on the list even after they are
+removed, e.g., via hotplug.  A subsequent PME poll will oops when
+it tries to touch the device.
 
- BUG: unable to handle kernel paging request at ffffbb00ff33b000
- IP: [<ffffffff8103157e>] kern_addr_valid+0xbe/0x110
- [...]
+This patch disables PME# on a device before removing it, which removes
+the device from pci_pme_list.  This is safe even if the device never
+had PME# enabled.
 
- Call Trace:
-  [<ffffffff811b8aaa>] read_kcore+0x17a/0x370
-  [<ffffffff811ad847>] proc_reg_read+0x77/0xc0
-  [<ffffffff81151687>] vfs_read+0xc7/0x130
-  [<ffffffff811517f3>] sys_read+0x53/0xa0
-  [<ffffffff81449692>] system_call_fastpath+0x16/0x1b
+This oops can be triggered by unplugging a Thunderbolt ethernet adapter
+on a Macbook Pro, as reported by Daniel below.
 
-Investigation determined that the bug triggered when reading
-system RAM at the 4G mark. On this system, that was the first
-address using 1G pages for the virt->phys direct mapping so the
-PUD is pointing to a physical address, not a PMD page.
-
-The problem is that the page table walker in kern_addr_valid() is
-not checking pud_large() and treats the physical address as if
-it was a PMD.  If it happens to look like pmd_none then it'll
-silently fail, probably returning zeros instead of real data. If
-the data happens to look like a present PMD though, it will be
-walked resulting in the oops above.
-
-This patch adds the necessary pud_large() check.
-
-Unfortunately the problem was not readily reproducible and now
-they are running the backup program without accessing
-/proc/kcore so the patch has not been validated but I think it
-makes sense.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.coM>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-mm@kvack.org
-Link: http://lkml.kernel.org/r/20130211145236.GX21389@suse.de
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+[bhelgaas: changelog]
+Reference: http://lkml.kernel.org/r/CAMVG2svG21yiM1wkH4_2pen2n+cr2-Zv7TbH3Gj+8MwevZjDbw@mail.gmail.com
+Reported-and-tested-by: Daniel J Blueman <daniel@quora.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/pgtable.h |    5 +++++
- arch/x86/mm/init_64.c          |    3 +++
- 2 files changed, 8 insertions(+)
+ drivers/pci/remove.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -142,6 +142,11 @@ static inline unsigned long pmd_pfn(pmd_
- 	return (pmd_val(pmd) & PTE_PFN_MASK) >> PAGE_SHIFT;
- }
+--- a/drivers/pci/remove.c
++++ b/drivers/pci/remove.c
+@@ -19,6 +19,8 @@ static void pci_free_resources(struct pc
  
-+static inline unsigned long pud_pfn(pud_t pud)
-+{
-+	return (pud_val(pud) & PTE_PFN_MASK) >> PAGE_SHIFT;
-+}
+ static void pci_stop_dev(struct pci_dev *dev)
+ {
++	pci_pme_active(dev, false);
 +
- #define pte_page(pte)	pfn_to_page(pte_pfn(pte))
- 
- static inline int pmd_large(pmd_t pte)
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -821,6 +821,9 @@ int kern_addr_valid(unsigned long addr)
- 	if (pud_none(*pud))
- 		return 0;
- 
-+	if (pud_large(*pud))
-+		return pfn_valid(pud_pfn(*pud));
-+
- 	pmd = pmd_offset(pud, addr);
- 	if (pmd_none(*pmd))
- 		return 0;
+ 	if (dev->is_added) {
+ 		pci_proc_detach_device(dev);
+ 		pci_remove_sysfs_dev_files(dev);
 
 
