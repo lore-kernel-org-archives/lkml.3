@@ -1,56 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161101Ab3BOAx1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 19:53:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7908 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932229Ab3BOAx0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 19:53:26 -0500
-Date: Fri, 15 Feb 2013 00:53:21 +0000
-From: Alasdair G Kergon <agk@redhat.com>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Guangliang Zhao <gzhao@suse.com>, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, lucienchao@gmail.com,
-        "Alasdair G. Kergon" <agk@redhat.com>
-Subject: Re: [PATCH 2/2] mirror throttling
-Message-ID: <20130215005321.GK24130@agk-dp.fab.redhat.com>
-Mail-Followup-To: Mikulas Patocka <mpatocka@redhat.com>,
-	Guangliang Zhao <gzhao@suse.com>, linux-kernel@vger.kernel.org,
-	dm-devel@redhat.com, lucienchao@gmail.com,
-	"Alasdair G. Kergon" <agk@redhat.com>
-References: <1357552933-26126-1-git-send-email-gzhao@suse.com> <Pine.LNX.4.64.1301090043270.29917@file.rdu.redhat.com> <Pine.LNX.4.64.1301090044170.29917@file.rdu.redhat.com>
+	id S935278Ab3BOBOI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 20:14:08 -0500
+Received: from mail-we0-f169.google.com ([74.125.82.169]:60216 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932201Ab3BOBOG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 20:14:06 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1301090044170.29917@file.rdu.redhat.com>
-Organization: Red Hat UK Ltd. Registered in England and Wales, number
-	03798903. Registered Office: 64 Baker Street, 4th floor, London,
-	W1U 7DF.
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <alpine.LFD.2.02.1302142334120.22263@ionos>
+References: <6003615.pRQnIgKCSn@dabox> <3970144.HqS49ZSYWh@dabox>
+ <alpine.LFD.2.02.1302131828050.22263@ionos> <16398840.IK9i4U2q2d@dabox> <alpine.LFD.2.02.1302142334120.22263@ionos>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Thu, 14 Feb 2013 20:13:34 -0500
+X-Google-Sender-Auth: EfXgEFYGpHXEaOrBFR52DI51v1g
+Message-ID: <CAP=VYLo2zxJWy3s6AmZc+Hh6wXh67HMp+mM0nEkN6M_OpKJSug@mail.gmail.com>
+Subject: Re: [PATCH] 3.4.28-rt40 tglx fix imx.c spinlock
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Tim Sander <tim@krieglstein.org>,
+        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 09, 2013 at 12:44:38AM -0500, Mikulas Patocka wrote:
-> We maintain a history of kcopyd usage in variables io_period and
-> total_period. The actual kcopyd activity is "(100 * io_period /
-> total_period)" percent of time. If we exceed user-defined percentage
-> threshold, we sleep.
- 
-Well, I'm going to take this pair of patches for now.
+[Adding dave jones to CC]
 
-Some people do need this throttling today and this seems to me to be a
-decent and simple way to give them a lever to deal with the problem.
+On Thu, Feb 14, 2013 at 5:35 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Thu, 14 Feb 2013, Tim Sander wrote:
+>> > That's true, but w/o seing the OOM output I can't tell what's
+>> > exhausting the memory.
+>> When fuzzing the serial port one probably should switch of sysreq. It seems
+>> as if there is a break send somehow and then it selects the OOM option.
+>> So when switching of MAGIC_SYSRQ the OOMs are gone. So its a non issue.
+>
+> Amazing that you get the break+oom combo out of that fuzzer!
 
-I'm not proposing we expose this through LVM or other userspace tools at
-this stage: people who need it should tune it directly through sysfs.
+Doing a basic "git whatchanged" and searching for "trinity" is rather
+impressive, regardless of the kernel version and/or where "rogue states"
+may currently be at with their "program"....   Kudos to davej for that.
 
-If need be, we can revisit this in future either by refining the
-algorithm or making it adjustable per-device rather than per-module.
-(Or by re-vamping kcopyd itself...)
-
-The current version is:
-  http://people.redhat.com/agk/patches/linux/editing/dm-kcopyd-introduce-configurable-throttling.patch
-
-Alasdair
-
+P.
+--
