@@ -1,123 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897Ab3BOW7r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 17:59:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49383 "EHLO
+	id S1752751Ab3BOW4q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 17:56:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49352 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752777Ab3BOW4s (ORCPT
+	with ESMTP id S1752329Ab3BOW4o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 17:56:48 -0500
+	Fri, 15 Feb 2013 17:56:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stoney Wang <song-bo.wang@hp.com>, Yinghai Lu <yinghai@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [ 06/10] x86/apic: Work around boot failure on HP ProLiant DL980 G7 Server systems
-Date: Fri, 15 Feb 2013 14:56:38 -0800
-Message-Id: <20130215225544.279257418@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org
+Subject: [ 00/10] 3.7.9-stable review
+Date: Fri, 15 Feb 2013 14:56:32 -0800
+Message-Id: <20130215225543.586012193@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130215225543.586012193@linuxfoundation.org>
-References: <20130215225543.586012193@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+This is the start of the stable review cycle for the 3.7.9 release.
+There are 10 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-------------------
+Responses should be made by Sun Feb 17 22:54:03 UTC 2013.
+Anything received after that time might be too late.
 
-From: Stoney Wang <song-bo.wang@hp.com>
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.7.9-rc1.gz
+and the diffstat can be found below.
 
-commit cb214ede7657db458fd0b2a25ea0b28dbf900ebc upstream.
+thanks,
 
-When a HP ProLiant DL980 G7 Server boots a regular kernel,
-there will be intermittent lost interrupts which could
-result in a hang or (in extreme cases) data loss.
+greg k-h
 
-The reason is that this system only supports x2apic physical
-mode, while the kernel boots with a logical-cluster default
-setting.
+-------------
+Pseudo-Shortlog of commits:
 
-This bug can be worked around by specifying the "x2apic_phys" or
-"nox2apic" boot option, but we want to handle this system
-without requiring manual workarounds.
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.7.9-rc1
 
-The BIOS sets ACPI_FADT_APIC_PHYSICAL in FADT table.
-As all apicids are smaller than 255, BIOS need to pass the
-control to the OS with xapic mode, according to x2apic-spec,
-chapter 2.9.
+Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
+    efi: Clear EFI_RUNTIME_SERVICES rather than EFI_BOOT by "noefi" boot parameter
 
-Current code handle x2apic when BIOS pass with xapic mode
-enabled:
+Rafael J. Wysocki <rjw@sisk.pl>
+    PCI/PM: Clean up PME state when removing a device
 
-When user specifies x2apic_phys, or FADT indicates PHYSICAL:
+Jan Beulich <JBeulich@suse.com>
+    x86/xen: don't assume %ds is usable in xen_iret for 32-bit PVOPS.
 
-1. During madt oem check, apic driver is set with xapic logical
-   or xapic phys driver at first.
+Mel Gorman <mgorman@suse.de>
+    x86/mm: Check if PUD is large when validating a kernel address
 
-2. enable_IR_x2apic() will enable x2apic_mode.
+Stoney Wang <song-bo.wang@hp.com>
+    x86/apic: Work around boot failure on HP ProLiant DL980 G7 Server systems
 
-3. if user specifies x2apic_phys on the boot line, x2apic_phys_probe()
-   will install the correct x2apic phys driver and use x2apic phys mode.
-   Otherwise it will skip the driver will let x2apic_cluster_probe to
-   take over to install x2apic cluster driver (wrong one) even though FADT
-   indicates PHYSICAL, because x2apic_phys_probe does not check
-   FADT PHYSICAL.
+Kees Cook <keescook@chromium.org>
+    x86: Do not leak kernel page mapping locations
 
-Add checking x2apic_fadt_phys in x2apic_phys_probe() to fix the
-problem.
+Heiko Carstens <heiko.carstens@de.ibm.com>
+    s390/timer: avoid overflow when programming clock comparator
 
-Signed-off-by: Stoney Wang <song-bo.wang@hp.com>
-[ updated the changelog and simplified the code ]
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/1360263182-16226-1-git-send-email-yinghai@kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Gerald Schaefer <gerald.schaefer@de.ibm.com>
+    mm: don't overwrite mm->def_flags in do_mlockall()
 
----
- arch/x86/kernel/apic/x2apic_phys.c |   21 +++++++++++----------
- 1 file changed, 11 insertions(+), 10 deletions(-)
+Linus Walleij <linus.walleij@linaro.org>
+    drivers/rtc/rtc-pl031.c: restore ST variant functionality
 
---- a/arch/x86/kernel/apic/x2apic_phys.c
-+++ b/arch/x86/kernel/apic/x2apic_phys.c
-@@ -20,18 +20,19 @@ static int set_x2apic_phys_mode(char *ar
- }
- early_param("x2apic_phys", set_x2apic_phys_mode);
- 
--static int x2apic_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
-+static bool x2apic_fadt_phys(void)
- {
--	if (x2apic_phys)
--		return x2apic_enabled();
--	else if ((acpi_gbl_FADT.header.revision >= FADT2_REVISION_ID) &&
--		(acpi_gbl_FADT.flags & ACPI_FADT_APIC_PHYSICAL) &&
--		x2apic_enabled()) {
-+	if ((acpi_gbl_FADT.header.revision >= FADT2_REVISION_ID) &&
-+		(acpi_gbl_FADT.flags & ACPI_FADT_APIC_PHYSICAL)) {
- 		printk(KERN_DEBUG "System requires x2apic physical mode\n");
--		return 1;
-+		return true;
- 	}
--	else
--		return 0;
-+	return false;
-+}
-+
-+static int x2apic_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
-+{
-+	return x2apic_enabled() && (x2apic_phys || x2apic_fadt_phys());
- }
- 
- static void
-@@ -82,7 +83,7 @@ static void init_x2apic_ldr(void)
- 
- static int x2apic_phys_probe(void)
- {
--	if (x2apic_mode && x2apic_phys)
-+	if (x2apic_mode && (x2apic_phys || x2apic_fadt_phys()))
- 		return 1;
- 
- 	return apic == &apic_x2apic_phys;
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Revert: xfs: fix _xfs_buf_find oops on blocks beyond the filesystem end
+
+
+-------------
+
+Diffstat:
+
+ Makefile                           |  4 ++--
+ arch/s390/kernel/time.c            |  3 +++
+ arch/x86/include/asm/pgtable.h     |  5 +++++
+ arch/x86/kernel/apic/x2apic_phys.c | 21 +++++++++++----------
+ arch/x86/mm/fault.c                |  8 +++++---
+ arch/x86/mm/init_64.c              |  3 +++
+ arch/x86/platform/efi/efi.c        |  2 +-
+ arch/x86/xen/xen-asm_32.S          | 14 +++++++-------
+ drivers/pci/remove.c               |  2 ++
+ drivers/rtc/rtc-pl031.c            |  4 +++-
+ fs/xfs/xfs_buf.c                   | 18 ------------------
+ mm/mlock.c                         |  6 +++---
+ 12 files changed, 45 insertions(+), 45 deletions(-)
 
 
