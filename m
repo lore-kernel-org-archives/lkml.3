@@ -1,53 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751062Ab3BOSx6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 13:53:58 -0500
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:54176 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750797Ab3BOSx5 (ORCPT
+	id S1751229Ab3BOSyM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 13:54:12 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:43536 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751135Ab3BOSyI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 13:53:57 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130214183438.16138.15416.stgit@bling.home>
-References: <20130214183438.16138.15416.stgit@bling.home>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 15 Feb 2013 11:53:36 -0700
-Message-ID: <CAErSpo7GGVSE2KmNK+e4ObDZij95ZzWDuZL3UGk3RVrDg-EkFQ@mail.gmail.com>
-Subject: Re: [PATCH] pci: Fix pcie access for PCI_EXP_FLAGS
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jiang.liu@huawei.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 15 Feb 2013 13:54:08 -0500
+Date: Fri, 15 Feb 2013 13:54:05 -0500 (EST)
+Message-Id: <20130215.135405.621356363510662497.davem@davemloft.net>
+To: kapranoff@inbox.ru
+Cc: romieu@fr.zoreil.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] NET/PHY: Eliminate the algorithm of forced ethernet
+ speed reduction
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1360925459.4709.23.camel@kkk.nita.ru>
+References: <1360925459.4709.23.camel@kkk.nita.ru>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 14, 2013 at 11:35 AM, Alex Williamson
-<alex.williamson@redhat.com> wrote:
-> PCI_EXP_FLAGS_TYPE is a mask, not an offset.  Fix it.
->
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+From: Kirill Kapranov <kapranoff@inbox.ru>
+Date: Fri, 15 Feb 2013 14:50:59 +0400
 
-I applied this to pci/misc so it will appear in v3.9 and marked it for
-stable for v3.7+.
+> NET/PHY: Eliminate the forced speed reduction algorithm.
+> In case of the fixed speed set up for NIC 
+> 	(e.g. ethtool -s eth0 autoneg off speed 100 duplex full)
+> 	with ethernet cable plugged off, mentioned algorithm 
+> 	slows down NIC speed, so the further "hooking up" gives 
+> 	no result. AFAIK, this behaviour is not RFCs' recommended.
+> Tested at 2.6.38.7, applicable up to for 3.0.4. 
+> Signed-off-by: Kirill Kapranov <kkk@nita.ru>,<kapranoff@inbox.ru>
 
-Thanks!
-
-> ---
->  drivers/pci/access.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/pci/access.c b/drivers/pci/access.c
-> index 3af0478..32046c5 100644
-> --- a/drivers/pci/access.c
-> +++ b/drivers/pci/access.c
-> @@ -515,7 +515,7 @@ static bool pcie_capability_reg_implemented(struct pci_dev *dev, int pos)
->                 return false;
->
->         switch (pos) {
-> -       case PCI_EXP_FLAGS_TYPE:
-> +       case PCI_EXP_FLAGS:
->                 return true;
->         case PCI_EXP_DEVCAP:
->         case PCI_EXP_DEVCTL:
->
+This is formatted very unpleasantly, please put some care into
+the formatting of your commit message, as if you were writing an
+important letter to someone and you wanted it to look very nice.
