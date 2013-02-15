@@ -1,71 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756051Ab3BOQl3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 11:41:29 -0500
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:40373 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755344Ab3BOQl1 (ORCPT
+	id S1752854Ab3BOQly (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 11:41:54 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:35995 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751610Ab3BOQlw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 11:41:27 -0500
+	Fri, 15 Feb 2013 11:41:52 -0500
+Date: Fri, 15 Feb 2013 08:40:26 -0800
+From: tip-bot for Daniel Baluta <dbaluta@ixiacom.com>
+Message-ID: <tip-02e176af92f3e2e9ec3a48792036566af2dcd534@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        mingo@redhat.com, dbaluta@ixiacom.com, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, fweisbec@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, dbaluta@ixiacom.com,
+        mingo@redhat.com, paulus@samba.org, linux-kernel@vger.kernel.org,
+        acme@redhat.com, fweisbec@gmail.com, a.p.zijlstra@chello.nl,
+        tglx@linutronix.de
+In-Reply-To: <1360186160-7566-1-git-send-email-dbaluta@ixiacom.com>
+References: <1360186160-7566-1-git-send-email-dbaluta@ixiacom.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf/hwbp: Fix cleanup in case of kzalloc failure
+Git-Commit-ID: 02e176af92f3e2e9ec3a48792036566af2dcd534
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <511E6329.5050903@windriver.com>
-References: <1360943688-12502-1-git-send-email-paul.gortmaker@windriver.com>
-	<CAGXu5jJxPU2Skr12u07fTeg+8im6L4JHv23+TrB+qVWMY36F_w@mail.gmail.com>
-	<511E6329.5050903@windriver.com>
-Date: Fri, 15 Feb 2013 08:41:27 -0800
-X-Google-Sender-Auth: rqvhNR0yCQBYE7WLoRT6GeAgLdE
-Message-ID: <CAGXu5jL3DQis5aETSAWJ8AC43s8tmMEXZ-bNwWLdJ6p_4fP=Yw@mail.gmail.com>
-Subject: Re: [PATCH] futex: avoid kernel taint caused by get_robust_list
-From: Kees Cook <keescook@chromium.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        Richard Weinberger <richard@nod.at>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 15 Feb 2013 08:40:32 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+Commit-ID:  02e176af92f3e2e9ec3a48792036566af2dcd534
+Gitweb:     http://git.kernel.org/tip/02e176af92f3e2e9ec3a48792036566af2dcd534
+Author:     Daniel Baluta <dbaluta@ixiacom.com>
+AuthorDate: Wed, 6 Feb 2013 23:29:20 +0200
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Thu, 14 Feb 2013 17:06:39 -0300
 
-Is this revert something you would be willing to take?
+perf/hwbp: Fix cleanup in case of kzalloc failure
 
--Kees
+Obviously this is a typo and could result in memory leaks if kzalloc
+fails on a given cpu.
 
-On Fri, Feb 15, 2013 at 8:32 AM, Paul Gortmaker
-<paul.gortmaker@windriver.com> wrote:
-> On 13-02-15 11:18 AM, Kees Cook wrote:
->> On Fri, Feb 15, 2013 at 7:54 AM, Paul Gortmaker
->> <paul.gortmaker@windriver.com> wrote:
->>> commit ec0c4274e33c0373e476b73e01995c53128f1257 ("futex: Mark
->>> get_robust_list as deprecated") added these two WARN_ONCE calls.
->>>
->>> However, WARN_ONCE taints the kernel, and we shouldn't be allowing
->>> any user who wanders by to do this.  For example, the system fuzzer
->>> "trinity" uses the tainted state as a metric for when to stop,
->>> assuming that it has caused significant wreckage (and indeed
->>> that tool is what actually led me to this change).
->>>
->>> The ability to deprecate this code has been called into question[1],
->>> but if that remains to be finalized, then making this change in the
->>> interim seems to make sense.
->>>
->>> [1] http://lkml.indiana.edu/hypermail/linux/kernel/1208.0/01081.html
->>>
->>> Cc: Dave Jones <davej@redhat.com>
->>> Cc: Richard Weinberger <richard@nod.at>
->>> Cc: Kees Cook <keescook@chromium.org>
->>> Cc: Thomas Gleixner <tglx@linutronix.de>
->>> Cc: stable@vger.kernel.org      # 3.4+
->>> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
->>
->> I Acked the original revert. I thought there was agreement that it was
->> needed for checkpointing to work?
->
-> There were several acks in the original thread, but for some unknown
-> reason (at least unknown to me and Richard), it never made it in tree...
+Signed-off-by: Daniel Baluta <dbaluta@ixiacom.com>
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1360186160-7566-1-git-send-email-dbaluta@ixiacom.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ kernel/events/hw_breakpoint.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
--- 
-Kees Cook
-Chrome OS Security
+diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
+index fe8a916..a64f8ae 100644
+--- a/kernel/events/hw_breakpoint.c
++++ b/kernel/events/hw_breakpoint.c
+@@ -676,7 +676,7 @@ int __init init_hw_breakpoint(void)
+  err_alloc:
+ 	for_each_possible_cpu(err_cpu) {
+ 		for (i = 0; i < TYPE_MAX; i++)
+-			kfree(per_cpu(nr_task_bp_pinned[i], cpu));
++			kfree(per_cpu(nr_task_bp_pinned[i], err_cpu));
+ 		if (err_cpu == cpu)
+ 			break;
+ 	}
