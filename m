@@ -1,45 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935549Ab3BOJaV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 04:30:21 -0500
-Received: from mail-ia0-f177.google.com ([209.85.210.177]:51093 "EHLO
-	mail-ia0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756915Ab3BOJaR (ORCPT
+	id S1756991Ab3BOJbV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 04:31:21 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:48970
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752550Ab3BOJbT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 04:30:17 -0500
+	Fri, 15 Feb 2013 04:31:19 -0500
+Date: Fri, 15 Feb 2013 10:29:55 +0100
+From: Jens Axboe <axboe@kernel.dk>
+To: OS Engineering <osengineering@stec-inc.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Darrick J. Wong" <darrick.wong@oracle.com>,
+        Sanoj Unnikrishnan <sunnikrishnan@stec-inc.com>,
+        =?utf-8?B?546L6YeR5rWm?= <jinpuwang@gmail.com>,
+        Amit Kale <akale@stec-inc.com>
+Subject: Re: [PATCH] EnhanceIO ssd caching software
+Message-ID: <20130215092955.GY21269@kernel.dk>
+References: <C4B5704C6FEB5244B2A1BCC8CF83B86B0A624D6AAF@MYMBX.MY.STEC-INC.AD>
 MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <20130215133714.6f55139ad1a037b7b9fa1b70@canb.auug.org.au>
-References: <20130215133714.6f55139ad1a037b7b9fa1b70@canb.auug.org.au>
-Date: Fri, 15 Feb 2013 10:30:16 +0100
-Message-ID: <CAKMK7uGG4R68ED4M1uYRUZAhxRMzao0vk9oFg_vxZ8ofhx1=yw@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the drm-intel tree
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Barnes, Jesse" <jbarnes@virtuousgeek.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C4B5704C6FEB5244B2A1BCC8CF83B86B0A624D6AAF@MYMBX.MY.STEC-INC.AD>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 15, 2013 at 3:37 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi all,
->
-> After merging the drm-intel tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
->
-> ERROR: "pm_vt_switch_unregister" [drivers/video/fb.ko] undefined!
->
-> I have dropped the tree for today.
+On Fri, Feb 15 2013, OS Engineering wrote:
+> Hi Greg, Jens,
+> 
+> We are submitting EnhanceIO(TM) software driver for an inclusion in
+> linux staging tree. Present state of this driver is beta. We have been
+> posting it for a few weeks, while it was maintained at github. It is
+> still being cleaned-up and is being tested by LKML members. Inclusion
+> in linux staging tree will make testing and reviewing easier and help
+> a future integration in Linux kernel.
 
-Meh, that fail was already reported from Wu's kernel builder a few
-days ago, but no patch yet showed up to fix things. Since the i915
-side of that work isn't ready yet either I've dropped the offending
-patches.
--Daniel
+>From a quick look, this looks clean enough to not warrant a stop in
+staging. Why don't we just queue it up for 3.10, that will give it 3-4
+months before it hits a release kernel. So plenty of time to iron out
+any kinks in this. It's a driver and completely isolated at that, so I'd
+have no problem doing that.
+
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Jens Axboe
+
