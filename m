@@ -1,59 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752163Ab3BOWqb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 17:46:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49187 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751154Ab3BOWqa (ORCPT
+	id S1752189Ab3BOWrc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 17:47:32 -0500
+Received: from mail-la0-f53.google.com ([209.85.215.53]:34476 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751815Ab3BOWrb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 17:46:30 -0500
-Date: Fri, 15 Feb 2013 14:46:29 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Glauber Costa <glommer@parallels.com>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>
-Subject: Re: [PATCH] ia64: rename cache_show to topology_cache_show
-Message-Id: <20130215144629.be18bae9.akpm@linux-foundation.org>
-In-Reply-To: <1360931904-5720-1-git-send-email-mhocko@suse.cz>
-References: <511e236a.o0ibbB2U8xMoURgd%fengguang.wu@intel.com>
-	<1360931904-5720-1-git-send-email-mhocko@suse.cz>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 15 Feb 2013 17:47:31 -0500
+MIME-Version: 1.0
+In-Reply-To: <1360771110-9490-1-git-send-email-christian.gmeiner@gmail.com>
+References: <1360771110-9490-1-git-send-email-christian.gmeiner@gmail.com>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Fri, 15 Feb 2013 14:47:08 -0800
+Message-ID: <CAK5ve-K43n=4n1GyRW+2PgMTe2bU6ROHAa-_dK_0LgzM7JCRcw@mail.gmail.com>
+Subject: Re: [PATCH] leds-ot200: Fix misbehavior caused by wrong bit masks
+To: Christian Gmeiner <christian.gmeiner@gmail.com>,
+        akpm <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Feb 2013 13:38:24 +0100
-Michal Hocko <mhocko@suse.cz> wrote:
+On Wed, Feb 13, 2013 at 7:58 AM, Christian Gmeiner
+<christian.gmeiner@gmail.com> wrote:
+> During the development of this driver an in-house register
+> documentation was used. The last weeks some integration tests
+> were done and this problem was found. It turned out that
+> the released register documentation is wrong.
+>
+> The fix is very simple: shift all masks by one.
+>
+> Our customers can control LEDs from userspace via Java,
+> C++ or what every. They have running/working applications where
+> they want to control led_3 but led_2 get's used.
+> I got a bug report in our in-house bug tracker so it would be
+> great to fix this upstream.
+>
+> Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com>
 
-> Fenguang Wu has reported the following compile time issue
-> arch/ia64/kernel/topology.c:278:16: error: conflicting types for 'cache_show'
-> include/linux/slab.h:224:5: note: previous declaration of 'cache_show' was here
-> 
-> which has been introduced by 749c5415 (memcg: aggregate memcg cache
-> values in slabinfo). Let's rename ia64 local function to prevent from
-> the name conflict.
+Thanks, Christian.
 
-Confused.  Tony fixed this ages ago?
+And Andrew, are you going to take care of this patch? Or I will merge this.
 
-: commit 4fafc8c21487f6b5259d462e9bee98661a02390d
-: Author: Tony Luck <tony.luck@intel.com>
-: Date:   Wed Nov 7 15:51:04 2012 -0800
-: 
-:     [IA64] Resolve name space collision for cache_show()
-:     
-:     We have a local static function named rather generically
-:     "cache_show()". Changes in progress in the slab code want
-:     to use this same name globally - so they are adding their
-:     declaration to <linux/slab.h> which then causes the compiler
-:     to choke with:
-:     
-:     arch/ia64/kernel/topology.c:278: error: conflicting types for 'cache_show'
-:     
-:     Fix by adding an "ia64_" prefix to our local function.
+-Bryan
 
-
+> ---
+>  drivers/leds/leds-ot200.c | 14 +++++++-------
+>  1 file changed, 7 insertions(+), 7 deletions(-)
+>
+> diff --git a/drivers/leds/leds-ot200.c b/drivers/leds/leds-ot200.c
+> index ee14662..98cae52 100644
+> --- a/drivers/leds/leds-ot200.c
+> +++ b/drivers/leds/leds-ot200.c
+> @@ -47,37 +47,37 @@ static struct ot200_led leds[] = {
+>         {
+>                 .name = "led_1",
+>                 .port = 0x49,
+> -               .mask = BIT(7),
+> +               .mask = BIT(6),
+>         },
+>         {
+>                 .name = "led_2",
+>                 .port = 0x49,
+> -               .mask = BIT(6),
+> +               .mask = BIT(5),
+>         },
+>         {
+>                 .name = "led_3",
+>                 .port = 0x49,
+> -               .mask = BIT(5),
+> +               .mask = BIT(4),
+>         },
+>         {
+>                 .name = "led_4",
+>                 .port = 0x49,
+> -               .mask = BIT(4),
+> +               .mask = BIT(3),
+>         },
+>         {
+>                 .name = "led_5",
+>                 .port = 0x49,
+> -               .mask = BIT(3),
+> +               .mask = BIT(2),
+>         },
+>         {
+>                 .name = "led_6",
+>                 .port = 0x49,
+> -               .mask = BIT(2),
+> +               .mask = BIT(1),
+>         },
+>         {
+>                 .name = "led_7",
+>                 .port = 0x49,
+> -               .mask = BIT(1),
+> +               .mask = BIT(0),
+>         }
+>  };
+>
+> --
+> 1.7.12.2.421.g261b511
+>
