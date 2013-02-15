@@ -1,91 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752505Ab3BOXNa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 18:13:30 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:39917 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752259Ab3BOXNM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 18:13:12 -0500
-Date: Fri, 15 Feb 2013 18:13:04 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, LKML <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@suse.de>,
-        Stewart Smith <stewart@flamingspork.com>, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [patch 1/2] mm: fincore()
-Message-ID: <20130215231304.GB23930@cmpxchg.org>
-References: <87a9rbh7b4.fsf@rustcorp.com.au>
- <20130211162701.GB13218@cmpxchg.org>
- <20130211141239.f4decf03.akpm@linux-foundation.org>
- <20130215063450.GA24047@cmpxchg.org>
- <20130215132738.c85c9eda.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130215132738.c85c9eda.akpm@linux-foundation.org>
+	id S1752389Ab3BOXOd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 18:14:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49466 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751896Ab3BOXOc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 18:14:32 -0500
+Date: Fri, 15 Feb 2013 15:14:30 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
+        rtc-linux@googlegroups.com
+Subject: Re: [PATCH] rtc: max77686: add missing variable initialization
+Message-Id: <20130215151430.0cf4bfb2.akpm@linux-foundation.org>
+In-Reply-To: <003601ce0b50$726cb860$57462920$%han@samsung.com>
+References: <003601ce0b50$726cb860$57462920$%han@samsung.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 15, 2013 at 01:27:38PM -0800, Andrew Morton wrote:
-> On Fri, 15 Feb 2013 01:34:50 -0500
-> Johannes Weiner <hannes@cmpxchg.org> wrote:
+On Fri, 15 Feb 2013 16:45:38 +0900
+Jingoo Han <jg1.han@samsung.com> wrote:
+
+> Fixed build warning as below:
 > 
-> > + * The status is returned in a vector of bytes.  The least significant
-> > + * bit of each byte is 1 if the referenced page is in memory, otherwise
-> > + * it is zero.
+> drivers/rtc/rtc-max77686.c: In function 'max77686_rtc_update':
+> drivers/rtc/rtc-max77686.c:147:6: warning: 'data' may be used uninitialized in this function [-Wuninitialized]
 > 
-> Also, this is going to be dreadfully inefficient for some obvious cases.
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> ---
+>  drivers/rtc/rtc-max77686.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> We could address that by returning the info in some more efficient
-> representation.  That will be run-length encoded in some fashion.
-> 
-> The obvious way would be to populate an array of
-> 
-> struct page_status {
-> 	u32 present:1;
-> 	u32 count:31;
-> };
-> 
-> or whatever.
+> diff --git a/drivers/rtc/rtc-max77686.c b/drivers/rtc/rtc-max77686.c
+> index abe27c0..2634fed 100644
+> --- a/drivers/rtc/rtc-max77686.c
+> +++ b/drivers/rtc/rtc-max77686.c
+> @@ -133,7 +133,7 @@ static int max77686_rtc_update(struct max77686_rtc_info *info,
+>  	enum MAX77686_RTC_OP op)
+>  {
+>  	int ret;
+> -	unsigned int data;
+> +	unsigned int data = 0;
+>  
+>  	switch (op) {
+>  	case MAX77686_RTC_WRITE:
 
-I'm having a hard time seeing how this could be extended to more
-status bits without stifling the optimization too much.  If we just
-add more status bits to one page_status, the likelihood of long runs
-where all bits are in agreement decreases.  But as the optimization
-becomes less and less effective, we are stuck with an interface that
-is more PITA than just using mmap and mincore again.
+spose so.  But the end result is rather awkward-looking.
 
-The user has to supply a worst-case-sized vector with one struct
-page_status per page in the range, but the per-page item will be
-bigger than with the byte vector because of the additional run length
-variable.
+As `op' must be (and is) one of MAX77686_RTC_WRITE and
+MAX77686_RTC_READ, the straightfoward implementation is
 
-> Another way would be to define the syscall so it returns "number of
-> pages present/absent starting at offset `start'".  In other words, one
-> call to fincore() will return a single `struct page_status'.  Userspace
-> can then walk through the file and generate the full picture, if needed.
-> 
-> This also gets inefficient in obvious cases, but it's not as obviously
-> bad?
 
-Any run-length encoding will have a problem with multiple status bits,
-I guess.
+static int max77686_rtc_update(struct max77686_rtc_info *info,
+	enum MAX77686_RTC_OP op)
+{
+	int ret;
+	unsigned int data;
 
-Maybe with a mask of bits the user is interested in?
+	if (op == MAX77686_RTC_WRITE)
+		data = 1 << RTC_UDR_SHIFT;
+	else
+		data = 1 << RTC_RBUDR_SHIFT;
 
-struct page_status {
-	unsigned long states;
-	unsigned long count;
-};
 
-int fincore(int fd, loff_t start, loff_t len,
-            unsigned long states_mask,
-            struct page_status *status)
-
-However, one struct page_status per run leaves you with a worst case
-of one syscall per page in the range.
-
-I dunno.  The byte vector might not be optimal but its worst cases
-seem more attractive, is just as extensible, and dead simple to use.
