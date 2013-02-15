@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751426Ab3BOVS7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 16:18:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39090 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750881Ab3BOVS6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 16:18:58 -0500
-Date: Fri, 15 Feb 2013 16:18:37 -0500
-From: Jarod Wilson <jarod@redhat.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Joe Perches <joe@perches.com>, Greg KH <gregkh@linuxfoundation.org>,
-        devel <devel@driverdev.osuosl.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH] MAINTAINERS: Remove Jarod Wilson and orphan LIRC drivers
-Message-ID: <20130215211837.GB11859@redhat.com>
-References: <1360704036.22660.5.camel@joe-AO722>
- <20130213063604.GQ4937@mwanda>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130213063604.GQ4937@mwanda>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751488Ab3BOV1l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 16:27:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48793 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750755Ab3BOV1k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 16:27:40 -0500
+Date: Fri, 15 Feb 2013 13:27:38 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, LKML <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@suse.de>,
+        Stewart Smith <stewart@flamingspork.com>, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [patch 1/2] mm: fincore()
+Message-Id: <20130215132738.c85c9eda.akpm@linux-foundation.org>
+In-Reply-To: <20130215063450.GA24047@cmpxchg.org>
+References: <87a9rbh7b4.fsf@rustcorp.com.au>
+	<20130211162701.GB13218@cmpxchg.org>
+	<20130211141239.f4decf03.akpm@linux-foundation.org>
+	<20130215063450.GA24047@cmpxchg.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 13, 2013 at 09:36:04AM +0300, Dan Carpenter wrote:
-> On Tue, Feb 12, 2013 at 01:20:36PM -0800, Joe Perches wrote:
-> > His email bounces and he hasn't done work on
-> > these sections in a couple of years.
-> > 
-> 
-> I've added him to the CC list.
-> 
-> Can we just update MAINTAINERS with the correct email address?  It's
-> been useful to CC him on stuff.
+On Fri, 15 Feb 2013 01:34:50 -0500
+Johannes Weiner <hannes@cmpxchg.org> wrote:
 
-Domain reg lapsed, never saw the notice, but its all better now. Yes, I've
-been inactive on this stuff of late, lots going on in my personal life
-that has reduced free time for upstream work to nearly nil. I hope to get
-back into it once things settle down, which should be happening relativley
-soon...
+> + * The status is returned in a vector of bytes.  The least significant
+> + * bit of each byte is 1 if the referenced page is in memory, otherwise
+> + * it is zero.
 
--- 
-Jarod Wilson
-jarod@redhat.com
+Also, this is going to be dreadfully inefficient for some obvious cases.
+
+We could address that by returning the info in some more efficient
+representation.  That will be run-length encoded in some fashion.
+
+The obvious way would be to populate an array of
+
+struct page_status {
+	u32 present:1;
+	u32 count:31;
+};
+
+or whatever.
+
+Another way would be to define the syscall so it returns "number of
+pages present/absent starting at offset `start'".  In other words, one
+call to fincore() will return a single `struct page_status'.  Userspace
+can then walk through the file and generate the full picture, if needed.
+
+
+This also gets inefficient in obvious cases, but it's not as obviously
+bad?
 
