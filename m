@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751352Ab3BOTMV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 14:12:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8503 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750797Ab3BOTMT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 14:12:19 -0500
-Subject: [PATCH] vfio: whitelist pcieport
-To: alex.williamson@redhat.com
-From: Alex Williamson <alex.williamson@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Date: Fri, 15 Feb 2013 12:12:18 -0700
-Message-ID: <20130215191203.27350.76040.stgit@bling.home>
-User-Agent: StGit/0.16
+	id S1751366Ab3BOTMd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 14:12:33 -0500
+Received: from smtp.eu.citrix.com ([46.33.159.39]:9045 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750816Ab3BOTMb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 14:12:31 -0500
+X-IronPort-AV: E=Sophos;i="4.84,675,1355097600"; 
+   d="scan'208";a="1527701"
+Message-ID: <511E88B4.7060205@citrix.com>
+Date: Fri, 15 Feb 2013 20:12:52 +0100
+From: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
+Subject: Re: [PATCH] xen-blkfront: switch from llist to list
+References: <1360951381-26313-1-git-send-email-roger.pau@citrix.com> <20130215185644.GB29539@phenom.dumpdata.com>
+In-Reply-To: <20130215185644.GB29539@phenom.dumpdata.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pcieport does nice things like manage AER and we know it doesn't do
-DMA or expose any user accessible devices on the host.  It also keeps
-the Memory, I/O, and Busmaster bits enabled, which is pretty handy
-when trying to use anyting below it.  Devices owned by pcieport cannot
-be given to users via vfio, but we can tolerate them not being owned
-by vfio-pci.
+On 15/02/13 19:56, Konrad Rzeszutek Wilk wrote:
+>> Should be backported to 3.8 stable.
+> 
+> Lets do one thing at a time.
+> 
+> The patch I have in the tree (and that I've asked Jens to pull for 3.9 - so
+> he might have already in his tree) is the old hybrid where we still use llist
+> but change the loop from 'for' to 'while'.
+> 
+> This is the stable/for-jens-3.8 tree in git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git 
+> 
+> Could you rebase your patch on top of that tree and just simplify the loop?
+> 
+> Sorry about the mess about this - but I had already pulled the trigger
+> so to say - hoping that Jens would pull the tree and do a git pull to Linus.
+> 
+> And you are absolutly sure that we don't need any extra locking when switching
+> over to list_head? Say if blkif_completion is called while we are
+> processing in blkif_queue_request and doing ?
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
- drivers/vfio/vfio.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/vfio/vfio.c b/drivers/vfio/vfio.c
-index 8e6dcec..28e2d5b 100644
---- a/drivers/vfio/vfio.c
-+++ b/drivers/vfio/vfio.c
-@@ -442,7 +442,7 @@ static struct vfio_device *vfio_group_get_device(struct vfio_group *group,
-  * a device.  It's not always practical to leave a device within a group
-  * driverless as it could get re-bound to something unsafe.
-  */
--static const char * const vfio_driver_whitelist[] = { "pci-stub" };
-+static const char * const vfio_driver_whitelist[] = { "pci-stub", "pcieport" };
- 
- static bool vfio_whitelisted_driver(struct device_driver *drv)
- {
-
+Will recheck it, but blkif_completition is called with the io_lock hold,
+as does blkif_queue_request (I've added extra assert_spin_locked before
+every list modification).
