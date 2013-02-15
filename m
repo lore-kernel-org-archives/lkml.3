@@ -1,80 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751512Ab3BOVb4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 16:31:56 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:38376 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750795Ab3BOVby (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 16:31:54 -0500
-Message-ID: <511EA944.1090900@wwwdotorg.org>
-Date: Fri, 15 Feb 2013 14:31:48 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1751530Ab3BOVfF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 16:35:05 -0500
+Received: from ja.ssi.bg ([178.16.129.10]:32845 "EHLO ja.ssi.bg"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750875Ab3BOVfD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 16:35:03 -0500
+Date: Fri, 15 Feb 2013 23:39:34 +0200 (EET)
+From: Julian Anastasov <ja@ssi.bg>
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>, davem@davemloft.net,
+        Simon Horman <horms@verge.net.au>, Linux MM <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] net: fix functions and variables related to
+ netns_ipvs->sysctl_sync_qlen_max
+In-Reply-To: <20130214142159.d0516a5f.akpm@linux-foundation.org>
+Message-ID: <alpine.LFD.2.00.1302152304010.1746@ja.ssi.bg>
+References: <51131B88.6040809@cn.fujitsu.com> <51132A56.60906@cn.fujitsu.com> <alpine.LFD.2.00.1302070944480.1810@ja.ssi.bg> <20130214142159.d0516a5f.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>
-CC: Wolfram Sang <wsa@the-dreams.de>, linux-doc@vger.kernel.org,
-        Daniel Kurtz <djkurtz@chromium.org>, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>, u.kleine-koenig@pengutronix.de,
-        Grant Grundler <grundler@chromium.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        Girish Shivananjappa <girish.shivananjappa@linaro.org>,
-        bhushan.r@samsung.com,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        sreekumar.c@samsung.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Peter Korsgaard <peter.korsgaard@barco.com>,
-        Yuvaraj Kumar <yuvaraj.cd@gmail.com>,
-        Prashanth G <prashanth.g@samsung.com>
-Subject: Re: [PATCH v3 1/3] i2c: mux: Add i2c-arbitrator-cros-ec 'mux' driver
-References: <1360887677-20758-1-git-send-email-dianders@chromium.org> <1360957573-864-1-git-send-email-dianders@chromium.org>
-In-Reply-To: <1360957573-864-1-git-send-email-dianders@chromium.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/15/2013 12:46 PM, Doug Anderson wrote:
-> The i2c-arbitrator-cros-ec driver implements the arbitration scheme
-> that the Embedded Controller (EC) on the ARM Chromebook expects to use
-> for bus multimastering.  This i2c-arbitrator-cros-ec driver could also
-> be used in other places where standard I2C bus arbitration can't be
-> used and two extra GPIOs are available for arbitration.
+
+	Hello,
+
+On Thu, 14 Feb 2013, Andrew Morton wrote:
+
+> On Thu, 7 Feb 2013 10:40:26 +0200 (EET)
+> Julian Anastasov <ja@ssi.bg> wrote:
 > 
-> This driver is based on code that Simon Glass added to the i2c-s3c2410
-> driver in the Chrome OS kernel 3.4 tree.  The current incarnation as a
-> mux driver is as suggested by Grant Likely.  See
-> <https://patchwork.kernel.org/patch/1877311/> for some history.
+> > > Another question about the sysctl_sync_qlen_max:
+> > > This variable is assigned as:
+> > > 
+> > > ipvs->sysctl_sync_qlen_max = nr_free_buffer_pages() / 32;
+> > > 
+> > > The function nr_free_buffer_pages actually means: counts of pages
+> > > which are beyond high watermark within ZONE_DMA and ZONE_NORMAL.
+> > > 
+> > > is it ok to be called here? Some people misused this function because
+> > > the function name was misleading them. I am sorry I am totally not
+> > > familiar with the ipvs code, so I am just asking you about
+> > > this.
+> > 
+> > 	Using nr_free_buffer_pages should be fine here.
+> > We are using it as rough estimation for the number of sync
+> > buffers we can use in NORMAL zones. We are using dev->mtu
+> > for such buffers, so it can take a PAGE_SIZE for a buffer.
+> > We are not interested in HIGHMEM size. high watermarks
+> > should have negliable effect. I'm even not sure whether
+> > we need to clamp it for systems with TBs of memory.
+> 
+> Using nr_free_buffer_pages() is good-enough-for-now.  There are
+> questions around the name of this thing and its exact functionality and
+> whether callers are using it appropriately.  But if anything is changed
+> there, it will be as part of kernel-wide sweep.
+> 
+> One thing to bear in mind is memory hot[un]plug.  Anything which was
+> sized using nr_free_buffer_pages() (or similar) may become
+> inappropriately sized if memory is added or removed.  So any site which
+> uses nr_free_buffer_pages() really should be associated with a hotplug
+> handler and a great pile of code to resize the structure at runtime. 
+> It's pretty ugly stuff :(  I suspect it usually Just Doesn't Matter.
 
-Reviewed-by: Stephen Warren <swarren@nvidia.com>
+	I'll try to think on this hotplug problem
+and also on the si_meminfo usage in net/netfilter/ipvs/ip_vs_ctl.c
+which is quite wrong for systems with HIGHMEM, may be
+we need there a free+reclaimable+file function for
+NORMAL zone.
 
-> diff --git a/drivers/i2c/muxes/i2c-arbitrator-cros-ec.c b/drivers/i2c/muxes/i2c-arbitrator-cros-ec.c
+> Redarding this patch:
+> net-change-type-of-netns_ipvs-sysctl_sync_qlen_max.patch and
+> net-fix-functions-and-variables-related-to-netns_ipvs-sysctl_sync_qlen_max.patch
+> are joined at the hip and should be redone as a single patch with a
+> suitable changelog, please.  And with a cc:netdev@vger.kernel.org.
 
-> +static int i2c_arbitrator_probe(struct platform_device *pdev)
+	Agreed, Zhang Yanfei and Simon? I'm just not sure,
+may be this combined patch should hit only the
+ipvs->nf->net trees? Or may be net-next, if we don't have
+time for 3.8.
 
-> +	/* Request GPIOs */
-> +	ret = of_get_named_gpio_flags(np, "ap-claim-gpio", 0, &gpio_flags);
-> +	if (ret == -EPROBE_DEFER || WARN_ON(!gpio_is_valid(ret)))
-> +		return ret;
+Regards
 
-I think by the time that doesn't return -EPROBE_DEFER ...
-
-> +	arb->ap_gpio = ret;
-> +	arb->ap_gpio_release = !!(gpio_flags & OF_GPIO_ACTIVE_LOW);
-> +	out_init = (gpio_flags & OF_GPIO_ACTIVE_LOW) ?
-> +		GPIOF_OUT_INIT_HIGH : GPIOF_OUT_INIT_LOW;
-> +	ret = devm_gpio_request_one(&pdev->dev, arb->ap_gpio, out_init,
-> +				    "ap-claim-gpio");
-> +	if (ret == -EPROBE_DEFER || WARN_ON(ret))
-> +		return ret;
-
-... that won't either, since of_get_named_gpio_flags()'s implementation
-requires the relevant GPIO driver to be active already.
-
-Still, there's no harm in the code as it stands, so no need to change.
+--
+Julian Anastasov <ja@ssi.bg>
