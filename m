@@ -1,60 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755229Ab3BOQxx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 11:53:53 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2854 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753978Ab3BOQxk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 11:53:40 -0500
-X-Authority-Analysis: v=2.0 cv=adbjbGUt c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=1ADFm0T--rEA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=mYRWiXiH8qgA:10 a=7_YT7sJRujFhQdEFiykA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1360947217.23152.112.camel@gandalf.local.home>
-Subject: Re: [RFC][PATCH] printk: Remove separate printk_sched buffers and
- use printk buf instead
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jan Kara <jack@suse.cz>
+	id S1753449Ab3BOQyp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 11:54:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35033 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750967Ab3BOQyo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 11:54:44 -0500
+Date: Fri, 15 Feb 2013 17:54:40 +0100
+From: Jan Kara <jack@suse.cz>
+To: Steven Rostedt <rostedt@goodmis.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, jslaby@suse.cz,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        jslaby@suse.cz, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         "kay.sievers" <kay.sievers@vrfy.org>
-Date: Fri, 15 Feb 2013 11:53:37 -0500
-In-Reply-To: <20130215165032.GF7458@quack.suse.cz>
+Subject: Re: [RFC][PATCH] printk: Remove separate printk_sched buffers and
+ use printk buf instead
+Message-ID: <20130215165440.GA12734@quack.suse.cz>
 References: <1360112748.2621.25.camel@gandalf.local.home>
-	 <20130206230220.GA18329@quack.suse.cz>
-	 <20130212122245.GB19583@quack.suse.cz>
-	 <1360867691.23152.48.camel@gandalf.local.home>
-	 <20130215165032.GF7458@quack.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+ <20130206230220.GA18329@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130206230220.GA18329@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-02-15 at 17:50 +0100, Jan Kara wrote:
-> On Thu 14-02-13 13:48:11, Steven Rostedt wrote:
-> > On Tue, 2013-02-12 at 13:22 +0100, Jan Kara wrote:
-> > 
-> > > > Anyway, what do you guys think about this version?
-> > >   Steven, Andrew, did you have a chance to look at my patches?
-> > 
-> > Can you resend without being attachments. Patches sent as attachments
-> > seldom get reviewed.
->   Well, for example I do review text/plain attachments but that may count
-> into 'seldom' ;) I'll send them inline.
-> 
+Here comes addition to Steven's patch from this thread...
 
-The problem is that it makes it difficult to reply with comments. I
-haven't looked at the patches yet so I may not have comments, but on my
-email client, commenting attachments means that I need to cut and paste
-the text to do the comment, which isn't the case for inline patches.
+>From bda93cfa4133c41e8f10dcd371d1f025d94b85dc Mon Sep 17 00:00:00 2001
+From: Jan Kara <jack@suse.cz>
+Date: Wed, 6 Feb 2013 19:15:30 +0100
+Subject: [PATCH 2/3] printk: Remove per-cpu printk flags
 
--- Steve
+There's no need to have printk flags percpu. Just make a single variable
+operated by atomic operations from it. It also has an advantage that any
+cpu can do the printing / wakeup work.
 
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
+ kernel/printk.c |   28 ++++++++++++----------------
+ 1 files changed, 12 insertions(+), 16 deletions(-)
+
+diff --git a/kernel/printk.c b/kernel/printk.c
+index ed630fa..2fe917d 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -1986,28 +1986,24 @@ int is_console_locked(void)
+ 	return console_locked;
+ }
+ 
+-/*
+- * Delayed printk version, for scheduler-internal messages:
+- */
+-#define PRINTK_BUF_SIZE		512
++#define PRINTK_PENDING_WAKEUP	1
++#define PRINTK_PENDING_OUTPUT	2
+ 
+-#define PRINTK_PENDING_WAKEUP	0x01
+-#define PRINTK_PENDING_OUTPUT	0x02
+-
+-static DEFINE_PER_CPU(int, printk_pending);
++static unsigned long printk_pending;
+ 
+ void printk_tick(void)
+ {
+-	if (__this_cpu_read(printk_pending)) {
+-		int pending = __this_cpu_xchg(printk_pending, 0);
+-		if (pending & PRINTK_PENDING_OUTPUT) {
++	if (printk_pending) {
++		unsigned long pending = xchg(&printk_pending, 0);
++
++		if (test_bit(PRINTK_PENDING_OUTPUT, &pending)) {
+ 			if (console_trylock())
+ 				console_unlock();
+ 			else
+ 				/* Try again later */
+-				__this_cpu_or(printk_pending, PRINTK_PENDING_OUTPUT);
++				set_bit(PRINTK_PENDING_OUTPUT, &printk_pending);
+ 		}
+-		if (pending & PRINTK_PENDING_WAKEUP)
++		if (test_bit(PRINTK_PENDING_WAKEUP, &pending))
+ 			wake_up_interruptible(&log_wait);
+ 	}
+ }
+@@ -2016,13 +2012,13 @@ int printk_needs_cpu(int cpu)
+ {
+ 	if (cpu_is_offline(cpu))
+ 		printk_tick();
+-	return __this_cpu_read(printk_pending);
++	return printk_pending;
+ }
+ 
+ void wake_up_klogd(void)
+ {
+ 	if (waitqueue_active(&log_wait))
+-		this_cpu_or(printk_pending, PRINTK_PENDING_WAKEUP);
++		set_bit(PRINTK_PENDING_WAKEUP, &printk_pending);
+ }
+ 
+ static void console_cont_flush(char *text, size_t size)
+@@ -2497,7 +2493,7 @@ int printk_sched(const char *fmt, ...)
+ 	r = vprintk_emit(0, -2, NULL, 0, fmt, args);
+ 	va_end(args);
+ 
+-	__this_cpu_or(printk_pending, PRINTK_PENDING_OUTPUT);
++	set_bit(PRINTK_PENDING_OUTPUT, &printk_pending);
+ 
+ 	return r;
+ }
+-- 
+1.7.1
 
