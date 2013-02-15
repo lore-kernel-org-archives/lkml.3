@@ -1,255 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752413Ab3BOXj2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 18:39:28 -0500
-Received: from relay2.sgi.com ([192.48.179.30]:56331 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750733Ab3BOXj0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 18:39:26 -0500
-Message-ID: <511EC73A.4050008@sgi.com>
-Date: Fri, 15 Feb 2013 17:39:38 -0600
-From: Nathan Zimmer <nzimmer@sgi.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <viro@zeniv.linux.org.uk>, <eric.dumazet@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v3 resend] procfs: Improve Scaling in proc
-References: <1360961274-24652-1-git-send-email-nzimmer@sgi.com> <20130215141239.99a3bccc.akpm@linux-foundation.org>
-In-Reply-To: <20130215141239.99a3bccc.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S1752553Ab3BOXmi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 18:42:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49774 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750733Ab3BOXmh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 18:42:37 -0500
+Date: Fri, 15 Feb 2013 15:42:35 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, LKML <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@suse.de>,
+        Stewart Smith <stewart@flamingspork.com>, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [patch 1/2] mm: fincore()
+Message-Id: <20130215154235.0fb36f53.akpm@linux-foundation.org>
+In-Reply-To: <20130215231304.GB23930@cmpxchg.org>
+References: <87a9rbh7b4.fsf@rustcorp.com.au>
+	<20130211162701.GB13218@cmpxchg.org>
+	<20130211141239.f4decf03.akpm@linux-foundation.org>
+	<20130215063450.GA24047@cmpxchg.org>
+	<20130215132738.c85c9eda.akpm@linux-foundation.org>
+	<20130215231304.GB23930@cmpxchg.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.162.233.180]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/15/2013 04:12 PM, Andrew Morton wrote:
-> On Fri, 15 Feb 2013 14:47:54 -0600
-> Nathan Zimmer <nzimmer@sgi.com> wrote:
->
->> I am currently tracking a hotlock reported by a customer on a large system,
->> 512 cores.  I am currently running 3.8-rc7 but the issue looks like it has been
->> this way for a very long time.
->> The offending lock is proc_dir_entry->pde_unload_lock.
->>
->> This patch converts the replaces the lock with the rcu. However the pde_openers
->> list still is controlled by a spin lock. I tested on a 4096 machine and the lock
->> doesn't seem hot at least according to perf.
->>
->> This is a refresh/resend of what was orignally suggested by Eric Dumazet some
->> time ago.
->>
->> Supporting numbers, lower is better, they are from the test I posted earlier.
->> cpuinfo baseline        Rcu
->> tasks   read-sec        read-sec
->> 1       0.0141          0.0141
->> 2       0.0140          0.0142
->> 4       0.0140          0.0141
->> 8       0.0145          0.0140
->> 16      0.0553          0.0168
->> 32      0.1688          0.0549
->> 64      0.5017          0.1690
->> 128     1.7005          0.5038
->> 256     5.2513          2.0804
->> 512     8.0529          3.0162
->>
->> ...
->>
->> diff --git a/fs/proc/generic.c b/fs/proc/generic.c
->> index 76ddae8..6896a70 100644
->> --- a/fs/proc/generic.c
->> +++ b/fs/proc/generic.c
->> @@ -191,13 +191,16 @@ proc_file_read(struct file *file, char __user *buf, size_t nbytes,
->>   	struct proc_dir_entry *pde = PDE(file->f_path.dentry->d_inode);
->>   	ssize_t rv = -EIO;
->>   
->> -	spin_lock(&pde->pde_unload_lock);
->> -	if (!pde->proc_fops) {
->> -		spin_unlock(&pde->pde_unload_lock);
->> +	const struct file_operations *fops;
-> There's now a stray newline in the definitions section.
-Noted and corrected, in a few places.
->> +	rcu_read_lock();
->> +	fops = rcu_dereference(pde->proc_fops);
->> +	if (!fops) {
->> +		rcu_read_unlock();
->>   		return rv;
->>   	}
->> -	pde->pde_users++;
->> -	spin_unlock(&pde->pde_unload_lock);
->> +	atomic_inc(&pde->pde_users);
->> +	rcu_read_unlock();
-> So what's up with pde_users?  Seems that it's atomic_t *and* uses a
-> form of RCU protection.  We can't make it a plain old integer because
-> it's modified under rcu_read_lock() and we can't move the atomic_inc()
-> outside rcu_read_lock() because of the synchronization games in
-> remove_proc_entry()?
-The intent of pde_users is to let us know when it is safe to clean out 
-the pde_openers.
-I probably should comment this.
->>   	rv = __proc_file_read(file, buf, nbytes, ppos);
->>   
->>
->> ...
->>
->> @@ -802,37 +809,30 @@ void remove_proc_entry(const char *name, struct proc_dir_entry *parent)
->>   		return;
->>   	}
->>   
->> -	spin_lock(&de->pde_unload_lock);
->>   	/*
->>   	 * Stop accepting new callers into module. If you're
->>   	 * dynamically allocating ->proc_fops, save a pointer somewhere.
->>   	 */
->> -	de->proc_fops = NULL;
->> -	/* Wait until all existing callers into module are done. */
->> -	if (de->pde_users > 0) {
->> -		DECLARE_COMPLETION_ONSTACK(c);
->> -
->> -		if (!de->pde_unload_completion)
->> -			de->pde_unload_completion = &c;
->>   
->> -		spin_unlock(&de->pde_unload_lock);
->> +	rcu_assign_pointer(de->proc_fops, NULL);
->> +	synchronize_rcu();
->> +	/* Wait until all existing callers into module are done. */
->>   
->> +	DECLARE_COMPLETION_ONSTACK(c);
-> This should have generated a c99-style definition warning.  Did your
-> compiler version not do this?
-A clear over site on my part.
+On Fri, 15 Feb 2013 18:13:04 -0500
+Johannes Weiner <hannes@cmpxchg.org> wrote:
 
->> +	de->pde_unload_completion = &c;
->> +	if (!atomic_dec_and_test(&de->pde_users))
->>   		wait_for_completion(de->pde_unload_completion);
->>   
->> -		spin_lock(&de->pde_unload_lock);
->> -	}
->> -
->> +	spin_lock(&de->pde_openers_lock);
->>   	while (!list_empty(&de->pde_openers)) {
->>   		struct pde_opener *pdeo;
->>   
->>   		pdeo = list_first_entry(&de->pde_openers, struct pde_opener, lh);
->>   		list_del(&pdeo->lh);
->> -		spin_unlock(&de->pde_unload_lock);
->>   		pdeo->release(pdeo->inode, pdeo->file);
->>   		kfree(pdeo);
->> -		spin_lock(&de->pde_unload_lock);
->>   	}
->> -	spin_unlock(&de->pde_unload_lock);
->> +	spin_unlock(&de->pde_openers_lock);
->>   
->>   	if (S_ISDIR(de->mode))
->>   		parent->nlink--;
->>
->> ...
->>
->>   static loff_t proc_reg_llseek(struct file *file, loff_t offset, int whence)
->>   {
->> +	const struct file_operations *fops;
->>   	struct proc_dir_entry *pde = PDE(file->f_path.dentry->d_inode);
->>   	loff_t rv = -EINVAL;
->>   	loff_t (*llseek)(struct file *, loff_t, int);
->>   
->> -	spin_lock(&pde->pde_unload_lock);
->> +	rcu_read_lock();
->> +	fops = rcu_dereference(pde->proc_fops);
->>   	/*
->>   	 * remove_proc_entry() is going to delete PDE (as part of module
->>   	 * cleanup sequence). No new callers into module allowed.
->>   	 */
->> -	if (!pde->proc_fops) {
->> -		spin_unlock(&pde->pde_unload_lock);
->> +	if (!fops) {
->> +		rcu_read_unlock();
->>   		return rv;
->>   	}
->>   	/*
->>   	 * Bump refcount so that remove_proc_entry will wail for ->llseek to
->>   	 * complete.
->>   	 */
->> -	pde->pde_users++;
->> +	atomic_inc(&pde->pde_users);
->>   	/*
->>   	 * Save function pointer under lock, to protect against ->proc_fops
->>   	 * NULL'ifying right after ->pde_unload_lock is dropped.
->>   	 */
-> This comment needs updating.
->
-> However, it doesn't appear to be true any more.  With this patch we no
-> longer set ->fops to NULL in remove_proc_entry().  (What replaced that
-> logic?)
->
-> So are all these games with local variable `llseek' still needed?
-> afaict the increment of pde_users will stabilize ->fops?
-We still are setting de->proc_fops to NULL to prevent new callers.
-Also we still have to save fops-> since we cannot use fops outside the 
-rcu_read_un/lock.
-Unless I misunderstood your question.
-But yes the comment needs to be updated.
->
->> -	llseek = pde->proc_fops->llseek;
->> -	spin_unlock(&pde->pde_unload_lock);
->> +	llseek = fops->llseek;
->> +	rcu_read_unlock();
->>   
->>   	if (!llseek)
->>   		llseek = default_llseek;
->> @@ -182,15 +176,17 @@ static ssize_t proc_reg_read(struct file *file, char __user *buf, size_t count,
->>   	struct proc_dir_entry *pde = PDE(file->f_path.dentry->d_inode);
->>   	ssize_t rv = -EIO;
->>   	ssize_t (*read)(struct file *, char __user *, size_t, loff_t *);
->> +	const struct file_operations *fops;
->>   
->> -	spin_lock(&pde->pde_unload_lock);
->> -	if (!pde->proc_fops) {
->> -		spin_unlock(&pde->pde_unload_lock);
->> +	rcu_read_lock();
->> +	fops = rcu_dereference(pde->proc_fops);
->> +	if (!fops) {
->> +		rcu_read_unlock();
->>   		return rv;
->>   	}
->> -	pde->pde_users++;
->> -	read = pde->proc_fops->read;
->> -	spin_unlock(&pde->pde_unload_lock);
->> +	atomic_inc(&pde->pde_users);
->> +	read = fops->read;
->> +	rcu_read_unlock();
-> Many dittoes.
->
->>   	if (read)
->>   		rv = read(file, buf, count, ppos);
->> @@ -204,15 +200,17 @@ static ssize_t proc_reg_write(struct file *file, const char __user *buf, size_t
->>   	struct proc_dir_entry *pde = PDE(file->f_path.dentry->d_inode);
->>   	ssize_t rv = -EIO;
->>   	ssize_t (*write)(struct file *, const char __user *, size_t, loff_t *);
->> +	const struct file_operations *fops;
->>   
->> -	spin_lock(&pde->pde_unload_lock);
->> -	if (!pde->proc_fops) {
->> -		spin_unlock(&pde->pde_unload_lock);
->> +	rcu_read_lock();
->> +	fops = rcu_dereference(pde->proc_fops);
->> +	if (!fops) {
->> +		rcu_read_unlock();
->>   		return rv;
->>   	}
->> -	pde->pde_users++;
->> -	write = pde->proc_fops->write;
->> -	spin_unlock(&pde->pde_unload_lock);
->> +	atomic_inc(&pde->pde_users);
->> +	write = fops->write;
->> +	rcu_read_unlock();
->>
->> ...
->>
+> On Fri, Feb 15, 2013 at 01:27:38PM -0800, Andrew Morton wrote:
+> > On Fri, 15 Feb 2013 01:34:50 -0500
+> > Johannes Weiner <hannes@cmpxchg.org> wrote:
+> > 
+> > > + * The status is returned in a vector of bytes.  The least significant
+> > > + * bit of each byte is 1 if the referenced page is in memory, otherwise
+> > > + * it is zero.
+> > 
+> > Also, this is going to be dreadfully inefficient for some obvious cases.
+> > 
+> > We could address that by returning the info in some more efficient
+> > representation.  That will be run-length encoded in some fashion.
+> > 
+> > The obvious way would be to populate an array of
+> > 
+> > struct page_status {
+> > 	u32 present:1;
+> > 	u32 count:31;
+> > };
+> > 
+> > or whatever.
+> 
+> I'm having a hard time seeing how this could be extended to more
+> status bits without stifling the optimization too much.
 
-Thanks,
-Nate
+See other email: add a syscall arg which specifies the boolean status
+which we're searching for.
+
+>  If we just
+> add more status bits to one page_status, the likelihood of long runs
+> where all bits are in agreement decreases.  But as the optimization
+> becomes less and less effective, we are stuck with an interface that
+> is more PITA than just using mmap and mincore again.
+> 
+> The user has to supply a worst-case-sized vector with one struct
+> page_status per page in the range, but the per-page item will be
+> bigger than with the byte vector because of the additional run length
+> variable.
+
+Yes, we'd need to tell the kernel how much storage is available for the
+structures.
+
+> However, one struct page_status per run leaves you with a worst case
+> of one syscall per page in the range.
+
+Yes.
+
+> I dunno.  The byte vector might not be optimal but its worst cases
+> seem more attractive, is just as extensible, and dead simple to use.
+
+But I think "which pages from this 4TB file are in core" will not be an
+uncommon usage, and writing a gig of memory to find three pages is just
+awful.
+
+I wonder what the most common usage would be (one should know this
+before merging the syscall :)).  I guess "is this relatively-small
+range of the file in core" and/or "which pages from this
+relatively-small range of the file will I need to read", etc.
+
+The syscall should handle the common usages very well.  But it
+shouldn't handle uncommon usages very badly!
