@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935733Ab3BOMH2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 07:07:28 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35216 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935430Ab3BOMH0 (ORCPT
+	id S1754803Ab3BOMIv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 07:08:51 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:59964 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750767Ab3BOMIu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 07:07:26 -0500
-Message-ID: <1360930024.27535.13.camel@laptop>
-Subject: Re: [RFC] sched: The removal of idle_balance()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Turner <pjt@google.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Clark Williams <clark@redhat.com>,
-        Andrew Theurer <habanero@us.ibm.com>
-Date: Fri, 15 Feb 2013 13:07:04 +0100
-In-Reply-To: <1360913172.4736.20.camel@marge.simpson.net>
-References: <1360908819.23152.97.camel@gandalf.local.home>
-	 <1360913172.4736.20.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
+	Fri, 15 Feb 2013 07:08:50 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mike Turquette <mturquette@linaro.org>
+Subject: Re: [PATCH 3/9] clk: sunxi: remove stale Makefile entry
+Date: Fri, 15 Feb 2013 12:08:41 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-5-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Maxime Ripard <maxime.ripard@anandra.org>
+References: <1360880818-4071454-1-git-send-email-arnd@arndb.de> <1360880818-4071454-4-git-send-email-arnd@arndb.de> <20130215045404.11471.91270@quantum>
+In-Reply-To: <20130215045404.11471.91270@quantum>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201302151208.41628.arnd@arndb.de>
+X-Provags-ID: V02:K0:oUICqcd7MupLOGLKbnCDDYmsrSO1ScuP4hj3uvH4ZXh
+ LznSq39WHNfaxstuQaEB4+x9eIL+fdwV5oqayIecD/xXKKZo+y
+ WDmmdLRxNgHFy51yn8+d6VDHsW+4wQyEypmTgJ9tg7CCFfcMLY
+ gnqs1frqZCWv2Cml+ydn9XHPnPioc2I7lO/pEL2upYR+74cgcN
+ +q9ix6zz506I7no8fKQbu11ZufRRJhPDhVQWn7I1L6LBB4k/R/
+ iG/9YJyS4HpjhkvMz+8EPZAAUPjvIRI3EMYyXp0kzmR0UVc5NO
+ EZermo7QenVShS+9GS4ljya87YAU5mqU4yyuim0a72P/eMvVwS
+ L8eZaLcuZ5X/dqMxXeOM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-02-15 at 08:26 +0100, Mike Galbraith wrote:
+On Friday 15 February 2013, Mike Turquette wrote:
+> Quoting Arnd Bergmann (2013-02-14 14:26:52)
+> > Patch 85a18198 "clk: sunxi: Use common of_clk_init() function"
+> > removed the clk-sunxi.c file but left the Makefile entry, which
+> > causes a build error in multi_v7_defconfig:
+> > 
+> > make[4]: *** No rule to make target `drivers/clk/clk-sunxi.o', needed by `drivers/clk/built-in.o'.
+> > 
+> > The obvious fix is to remove the extraneous line from the
+> > Makefile.
+> > 
 > 
-> (the throttle is supposed to keep idle_balance() from doing severe
-> damage, that may want a peek/tweak)
+> The fix is correct.  I can't rebase my branch since there is an existing
+> dependency with the tegra tree, so I have taken this patch as-is with
+> the addition of my SoB.
+> 
 
-Right, as it stands idle_balance() can do a lot of work and if the avg
-idle time is less than the time we spend looking for a suitable task we
-loose.
+Ok, thanks!
 
-I've wanted to make this smarter by having the cpufreq/cpuidle avg idle
-time guestimator in the scheduler core so we actually know how log we
-expect to be idle and couple that with a cache refresh cost per sched
-domain (something we used to have pre 2.6.21 or so) so we can auto-limit
-the domain traversal for idle_balance.
-
-So far that's all fantasy though..
-
-Related, I wanted to use the idle time guestimate to 'optimize' the idle
-loop, currently that stuff is stupid expensive and pokes at timer
-hardware etc.. if we know we won't be idle longer than it takes to poke
-at timer hardware, don't go into nohz mode etc.
-
-Anyway, non of that couldn't be done if it lived at post_schedule(),
-just a tangent.
-
+	Arnd
