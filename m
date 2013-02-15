@@ -1,56 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161123Ab3BODB3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 22:01:29 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:43643 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932410Ab3BODBK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 22:01:10 -0500
-X-IronPort-AV: E=Sophos;i="4.84,669,1355068800"; 
-   d="scan'208";a="6712735"
-From: liguang <lig.fnst@cn.fujitsu.com>
-To: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, x86@kernel.org
-Cc: rientjes@google.com, isimatu.yasuaki@jp.fujitsu.com,
-        liguang <lig.fnst@cn.fujitsu.com>
-Subject: [PATCH v4 3/4] acpi: add clock_domain field to acpi_srat_cpu_affinity
-Date: Fri, 15 Feb 2013 10:23:11 +0800
-Message-Id: <1360894992-14818-4-git-send-email-lig.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1360894992-14818-1-git-send-email-lig.fnst@cn.fujitsu.com>
-References: <1360894992-14818-1-git-send-email-lig.fnst@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/15 10:23:18,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/15 10:23:19,
-	Serialize complete at 2013/02/15 10:23:19
+	id S1760936Ab3BODKk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 22:10:40 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34629 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758040Ab3BODKi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 22:10:38 -0500
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Rob Herring <rob.herring@calxeda.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
+        kernel-team@lists.ubuntu.com
+Subject: [ 3.5.y.z extended stable ] Patch "net: calxedaxgmac: throw away overrun frames" has been added to staging queue
+Date: Fri, 15 Feb 2013 01:10:32 -0200
+Message-Id: <1360897832-15328-1-git-send-email-herton.krzesinski@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-according to ACPI SPEC v5.0, page 152,
-5.2.16.1 Processor Local APIC/SAPIC Affinity Structure,
-the last member of it is clock_domain.
+This is a note to let you know that I have just added a patch titled
 
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
+    net: calxedaxgmac: throw away overrun frames
+
+to the linux-3.5.y-queue branch of the 3.5.y.z extended stable tree 
+which can be found at:
+
+ http://kernel.ubuntu.com/git?p=ubuntu/linux.git;a=shortlog;h=refs/heads/linux-3.5.y-queue
+
+If you, or anyone else, feels it should not be added to this tree, please 
+reply to this email.
+
+For more information about the 3.5.y.z tree, see
+https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
+
+Thanks.
+-Herton
+
+------
+
+>From f600e21bce4bd4f5c25873bbd8b89b8cdd8dbaef Mon Sep 17 00:00:00 2001
+From: Rob Herring <rob.herring@calxeda.com>
+Date: Wed, 16 Jan 2013 13:36:37 +0000
+Subject: [PATCH] net: calxedaxgmac: throw away overrun frames
+
+commit d6fb3be544b46a7611a3373fcaa62b5b0be01888 upstream.
+
+The xgmac driver assumes 1 frame per descriptor. If a frame larger than
+the descriptor's buffer size is received, the frame will spill over into
+the next descriptor. So check for received frames that span more than one
+descriptor and discard them. This prevents a crash if we receive erroneous
+large packets.
+
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- include/acpi/actbl1.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/net/ethernet/calxeda/xgmac.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/include/acpi/actbl1.h b/include/acpi/actbl1.h
-index 0bd750e..e21d22b 100644
---- a/include/acpi/actbl1.h
-+++ b/include/acpi/actbl1.h
-@@ -922,7 +922,7 @@ struct acpi_srat_cpu_affinity {
- 	u32 flags;
- 	u8 local_sapic_eid;
- 	u8 proximity_domain_hi[3];
--	u32 reserved;		/* Reserved, must be zero */
-+	u32 clock_domain;
- };
- 
- /* Flags */
--- 
-1.7.2.5
+diff --git a/drivers/net/ethernet/calxeda/xgmac.c b/drivers/net/ethernet/calxeda/xgmac.c
+index 8b0a0e4..8a3cd87 100644
+--- a/drivers/net/ethernet/calxeda/xgmac.c
++++ b/drivers/net/ethernet/calxeda/xgmac.c
+@@ -546,6 +546,10 @@ static int desc_get_rx_status(struct xgmac_priv *priv, struct xgmac_dma_desc *p)
+ 		return -1;
+ 	}
+
++	/* All frames should fit into a single buffer */
++	if (!(status & RXDESC_FIRST_SEG) || !(status & RXDESC_LAST_SEG))
++		return -1;
++
+ 	/* Check if packet has checksum already */
+ 	if ((status & RXDESC_FRAME_TYPE) && (status & RXDESC_EXT_STATUS) &&
+ 		!(ext_status & RXDESC_IP_PAYLOAD_MASK))
+--
+1.7.9.5
 
