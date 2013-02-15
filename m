@@ -1,73 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752105Ab3BOUVc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 15:21:32 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:22292 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750781Ab3BOUVa (ORCPT
+	id S1751730Ab3BOUU6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 15:20:58 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:51198 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751156Ab3BOUUz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 15:21:30 -0500
+	Fri, 15 Feb 2013 15:20:55 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: dan.magenheimer@oracle.com, sjenning@linux.vnet.ibm.com,
         gregkh@linuxfoundation.org, akpm@linux-foundation.org,
         ngupta@vflare.org, rcj@linux.vnet.ibm.com, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
         minchan@kernel.org
-Cc: ric.masonn@gmail.com, lliubbo@gmail.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 03/11] frontswap: Remove the check for frontswap_enabled.
-Date: Fri, 15 Feb 2013 15:20:27 -0500
-Message-Id: <1360959635-18922-4-git-send-email-konrad.wilk@oracle.com>
+Cc: ric.masonn@gmail.com, lliubbo@gmail.com
+Subject: [PATCH v3] Make frontswap+cleancache and its friend be modularized. 
+Date: Fri, 15 Feb 2013 15:20:24 -0500
+Message-Id: <1360959635-18922-1-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.8.0.2
-In-Reply-To: <1360959635-18922-1-git-send-email-konrad.wilk@oracle.com>
-References: <1360959635-18922-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the support for loading of backends as modules (see for example:
-"staging: zcache: enable zcache to be built/loaded as a module"), the
-frontswap_enabled is always set to true ("mm: frontswap: lazy
-initialization to allow tmem backends to build/run as modules").
 
-The next patch "frontswap: Use static_key instead of frontswap_enabled and
-frontswap_ops" is are going to convert the frontswap_enabled to be a bit more
-selective and be on/off depending on whether the backend has registered - and
-not whether the frontswap API is enabled.
+Greg, I am CC-ing you here since there is one patch that touches
+the staging tree:
+ [PATCH 02/11] frontswap: Make frontswap_init use a pointer for the
 
-The two functions: frontswap_init and frontswap_invalidate_area
-can be called anytime - they queue up which of the swap devices are
-active and can use the frontswap API - once the backend is loaded.
+I am hoping that for #2 you are OK ACK-ing - it is a simple fix that ought
+to have been a long time ago.
 
-As such there is no need to check for 'frontswap_enabled' at all.
+I am hoping that these patches are ready for the v3.9 merge window and
+would very much appreciate feedback. If I had missed somebodies comments
+- please remind me as these last two weeks have been quite busy for me.
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- include/linux/frontswap.h | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+Back to the description:
 
-diff --git a/include/linux/frontswap.h b/include/linux/frontswap.h
-index d4f2987..140323b 100644
---- a/include/linux/frontswap.h
-+++ b/include/linux/frontswap.h
-@@ -116,14 +116,12 @@ static inline void frontswap_invalidate_page(unsigned type, pgoff_t offset)
- 
- static inline void frontswap_invalidate_area(unsigned type)
- {
--	if (frontswap_enabled)
--		__frontswap_invalidate_area(type);
-+	__frontswap_invalidate_area(type);
- }
- 
- static inline void frontswap_init(unsigned type)
- {
--	if (frontswap_enabled)
--		__frontswap_init(type);
-+	__frontswap_init(type);
- }
- 
- #endif /* _LINUX_FRONTSWAP_H */
--- 
-1.8.0.2
+Parts of this patch have been posted in the post (way back in November), but
+this patchset expanded it a bit. The goal of the patches is to make the
+different frontswap/cleancache API backends be modules - and load way way after
+the swap system (or filesystem) has been initialized. Naturally one can still
+build the frontswap+cleancache backend devices in the kernel. The next goal
+(after these patches) is to also be able to unload the backend drivers - but
+that places some interesting requirements to "reload" the swap device with
+swap pages (don't need to worry that much about cleancache as it is a "secondary"
+cache and can be dumped). Seth had posted some patches for that in the zswap
+backend - and they could be more generally repurporsed.
+
+Anyhow, I did not want to lose the authorship of some of the patches so I
+didn't squash the ones that were made by Dan and mine. I can do it for review
+if it would make it easier, but from my recollection on how Linus likes things
+run he would prefer to keep the history (even the kludge parts).
+
+The general flow prior to these patches was [I am concentrating on the
+frontswap here, but the cleancache is similar, just s/swapon/mount/]:
+
+ 1) kernel inits frontswap_init
+ 2) kernel inits zcache (or some other backend)
+ 3) user does swapon /dev/XX and the writes to the swap disk end up in
+    frontswap and then in the backend.
+
+With the module loading, the 1) is still part of the bootup, but the
+2) or 3) can be run at anytime. This means one could load the backend
+_after_ the swap disk has been initialized and running along. Or
+_before_ the swap disk has been setup - but that is similar to the
+existing case so not that exciting.
+
+To deal with that scenario the frontswap keeps an queue (actually an atomic
+bitmap of the swap disks that have been init) and when the backend registers -
+frontswap runs the backend init on the queued up swap disks.
+
+The interesting thing is that we can be to certain degree racy when the
+swap system starts steering pages to frontswap. Meaning after the backend
+has registered it is OK if the pages are still hitting the disk instead of
+the backend. Naturally this is unacceptable if one were to unload the
+backend (not yet supported) - as we need to be quite atomic at that stage
+and need to stop processing the pages the moment the backend is being
+unloaded. To support this, the frontswap is using the struct static_key
+which are incredibly light when they are in usage. They are incredibly heavy
+when the value switches (on/off), but that is OK. The next part of unloading is
+also taking the pages that are in the backend and feed them in the swap
+storage (and Seth's patches do some of this).
+
+Also attached is one patch from Minchan that fixes the condition where the
+backend was constricted in allocating memory at init - b/c we were holding
+a spin-lock. His patch fixes that and we are just holding the swapon_mutex
+instead. It has been rebased on top of my patches.
+
+This patchset is based on what is going in general for #linux-next for v3.9
+(and can be merged alongside Greg's staging tree).
+
+ drivers/staging/zcache/zcache-main.c |  19 +--
+ drivers/xen/Kconfig                  |   4 +-
+ drivers/xen/tmem.c                   |  53 +++++---
+ drivers/xen/xen-selfballoon.c        |  13 +-
+ include/linux/cleancache.h           |  27 ++--
+ include/linux/frontswap.h            |  31 ++---
+ include/xen/tmem.h                   |   8 ++
+ mm/cleancache.c                      | 241 ++++++++++++++++++++++++++++++-----
+ mm/frontswap.c                       | 126 ++++++++++++++----
+ mm/swapfile.c                        |  18 +--
+ 10 files changed, 417 insertions(+), 123 deletions(-)
+
+Dan Magenheimer (3):
+      mm: frontswap: lazy initialization to allow tmem backends to build/run as modules
+      mm: cleancache: lazy initialization to allow tmem backends to build/run as modules
+      xen: tmem: enable Xen tmem shim to be built/loaded as a module
+
+Konrad Rzeszutek Wilk (7):
+      frontswap: Make frontswap_init use a pointer for the ops.
+      frontswap: Remove the check for frontswap_enabled.
+      frontswap: Use static_key instead of frontswap_enabled and frontswap_ops
+      cleancache: Make cleancache_init use a pointer for the ops
+      cleancache: Remove the check for cleancache_enabled.
+      cleancache: Use static_key instead of cleancache_ops and cleancache_enabled.
+      zcache/tmem: Better error checking on frontswap_register_ops return     value.
+
+Minchan Kim (1):
+      frontswap: Get rid of swap_lock dependency
 
