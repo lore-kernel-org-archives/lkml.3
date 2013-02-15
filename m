@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757325Ab3BOSV5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 13:21:57 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:65045 "EHLO
+	id S1757620Ab3BOSWt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 13:22:49 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:57982 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755979Ab3BOSVy (ORCPT
+	with ESMTP id S1757000Ab3BOSWr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 13:21:54 -0500
+	Fri, 15 Feb 2013 13:22:47 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: Vinod Koul <vinod.koul@intel.com>
 Cc: Dan Williams <djbw@fb.com>, linux-arm-kernel@lists.infradead.org,
@@ -14,293 +14,246 @@ Cc: Dan Williams <djbw@fb.com>, linux-arm-kernel@lists.infradead.org,
         Viresh Kumar <viresh.kumar@linaro.org>,
         Olof Johansson <olof@lixom.net>, linux-kernel@vger.kernel.org,
         Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 1/4] Revert "ARM: SPEAr13xx: Pass DW DMAC platform data from DT"
-Date: Fri, 15 Feb 2013 19:21:49 +0100
-Message-Id: <1360952512-971558-2-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 4/4] serial: pl011: use generic DMA slave configuration if possible
+Date: Fri, 15 Feb 2013 19:21:52 +0100
+Message-Id: <1360952512-971558-5-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1360952512-971558-1-git-send-email-arnd@arndb.de>
 References: <1360952512-971558-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:JrrpUG1+FAigVat+DKpbnFRE5+qft1IGe/WENl3SFyO
- 54TTQKWOxZAJVoBAngUPOmc0rThGHAmQTuZdPYDEhQUB/xK/Yj
- btfCwi5Df7vgZ6Mmq/G23LBH4AOiOA2qe+oQ5tJrqhUtmEwrH0
- 9hSPT1JtkWfsem7ONazal/uIfX+AlIOWmqFAklCG13zIXLs1eZ
- w6kHparzai31YnIYMyQQ6zQ+vpMLDxf2bN/de7KSkG8RsZgIGM
- C6v3fsdVxaSHY4ttoSw+yQnwmFMP9bMNEONpCnta3GxK0K+amn
- elXTAriVyVaCBWMx1DYU7ueOtVJksOUbxFzkKxYTLku3J7tAkH
- 5zg0lsYdneHiBerjznODAhFsHqyFMmoK7Lbx7oA9V
+X-Provags-ID: V02:K0:+5RPUdQWi1xNJji6deJkkxxHYKIYje0kPmGERzvA2Zf
+ zW4iJEjQztHVlGfXHOVvJdm8nEMSrTWI9JVdnygCQ6a5aoinJR
+ F82UeI81TFCWs20SXjDyIPXnspHJNTfKqxpdp9fWBkMR3O/klj
+ xVKg85i+AL9wSqcI82YAUn56Ks2MIk8yCGLEikvtgRAie4Mrv9
+ Dc829g+ZaFa2mJ16uD8kD24TFR8aguBFL4rIilCE/nuV/Up6Rz
+ cLdHZdAkmxGQmb6IGZ+HEdlmOG6jXM1dX2g70dSd/qtCF+FbX+
+ 7MS84Nl9acPZk1sZZesZIGGRo5ElMdR2xDoMmhk5KtnKxYl09X
+ hAWQ/Nl9GXx018yjyzTAGUU4lk4y7PDBLRvqTBBVR
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit f9965aa20706860077cfa093d04a6351c0c1e940.
----
- arch/arm/boot/dts/spear1340.dtsi             | 19 ----------
- arch/arm/boot/dts/spear13xx.dtsi             | 38 -------------------
- arch/arm/mach-spear13xx/include/mach/spear.h |  2 +
- arch/arm/mach-spear13xx/spear1310.c          |  5 ++-
- arch/arm/mach-spear13xx/spear1340.c          | 33 ++++++++++++-----
- arch/arm/mach-spear13xx/spear13xx.c          | 55 ++++++++++++++++++++++++++--
- 6 files changed, 80 insertions(+), 72 deletions(-)
+With the new OF DMA binding, it is possible to completely avoid the
+need for platform_data for configuring a DMA channel. In cases where the
+platform has already been converted, calling dma_request_slave_channel
+should get all the necessary information from the device tree.
 
-diff --git a/arch/arm/boot/dts/spear1340.dtsi b/arch/arm/boot/dts/spear1340.dtsi
-index b2d41b7..34da11a 100644
---- a/arch/arm/boot/dts/spear1340.dtsi
-+++ b/arch/arm/boot/dts/spear1340.dtsi
-@@ -88,25 +88,6 @@
- 			status = "disabled";
+This also adds a binding document specific to the pl011 controller,
+and extends the generic primecell binding to mention "dmas" and other
+common properties.
+
+Like the patch that converts the dw_dma controller, this is completely
+untested and is looking for someone to try it out.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: devicetree-discuss@lists.ozlabs.org
+Cc: linux-arm-kernel@lists.infradead.org
+---
+ .../devicetree/bindings/arm/primecell.txt          | 19 ++++++-
+ Documentation/devicetree/bindings/serial/pl011.txt | 17 ++++++
+ drivers/tty/serial/amba-pl011.c                    | 62 +++++++++++++---------
+ 3 files changed, 72 insertions(+), 26 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/serial/pl011.txt
+
+diff --git a/Documentation/devicetree/bindings/arm/primecell.txt b/Documentation/devicetree/bindings/arm/primecell.txt
+index 64fc82b..0df6aca 100644
+--- a/Documentation/devicetree/bindings/arm/primecell.txt
++++ b/Documentation/devicetree/bindings/arm/primecell.txt
+@@ -16,14 +16,31 @@ Optional properties:
+ - clocks : From common clock binding. First clock is phandle to clock for apb
+ 	pclk. Additional clocks are optional and specific to those peripherals.
+ - clock-names : From common clock binding. Shall be "apb_pclk" for first clock.
++- dmas : From common DMA binding. If present, refers to one or more dma channels.
++- dma-names : From common DMA binding, needs to match the 'dmas' property.
++              Devices with exactly one receive and transmit channel shall name
++              these "rx" and "tx", respectively.
++- pinctrl-<n> : Pinctrl states as described in bindings/pinctrl/pinctrl-bindings.txt
++- pinctrl-names : Names corresponding to the numbered pinctrl states
++- interrupts : one or more interrupt specifiers
++- interrupt-names : names corresponding to the interrupts properties
+ 
+ Example:
+ 
+ serial@fff36000 {
+ 	compatible = "arm,pl011", "arm,primecell";
+ 	arm,primecell-periphid = <0x00341011>;
++
+ 	clocks = <&pclk>;
+ 	clock-names = "apb_pclk";
+-	
++
++	dmas = <&dma-controller 4>, <&dma-controller 5>;
++	dma-names = "rx", "tx";	
++
++	pinctrl-0 = <&uart0_default_mux>, <&uart0_default_mode>;
++	pinctrl-1 = <&uart0_sleep_mode>;
++	pinctrl-names = "default","sleep";
++
++	interrupts = <0 11 0x4>;
+ };
+ 
+diff --git a/Documentation/devicetree/bindings/serial/pl011.txt b/Documentation/devicetree/bindings/serial/pl011.txt
+new file mode 100644
+index 0000000..5d2e840
+--- /dev/null
++++ b/Documentation/devicetree/bindings/serial/pl011.txt
+@@ -0,0 +1,17 @@
++* ARM AMBA Primecell PL011 serial UART
++
++Required properties:
++- compatible: must be "arm,primecell", "arm,pl011"
++- reg: exactly one register range with length 0x1000
++- interrupts: exactly one interrupt specifier
++
++Optional properties:
++- pinctrl: When present, must have one state named "sleep"
++	   and one state named "default"
++- clocks:  When present, must refer to exactly one clock named
++	   "apb_pclk"
++- dmas:	   When present, may have one or two dma channels.
++	   The first one must be named "rx", the second one
++	   must be named "tx".
++
++See also bindings/arm/primecell.txt
+diff --git a/drivers/tty/serial/amba-pl011.c b/drivers/tty/serial/amba-pl011.c
+index 7fca402..f9af04d 100644
+--- a/drivers/tty/serial/amba-pl011.c
++++ b/drivers/tty/serial/amba-pl011.c
+@@ -245,7 +245,7 @@ static void pl011_sgbuf_free(struct dma_chan *chan, struct pl011_sgbuf *sg,
+ 	}
+ }
+ 
+-static void pl011_dma_probe_initcall(struct uart_amba_port *uap)
++static void pl011_dma_probe_initcall(struct device *dev, struct uart_amba_port *uap)
+ {
+ 	/* DMA is the sole user of the platform data right now */
+ 	struct amba_pl011_data *plat = uap->port.dev->platform_data;
+@@ -259,20 +259,25 @@ static void pl011_dma_probe_initcall(struct uart_amba_port *uap)
+ 	struct dma_chan *chan;
+ 	dma_cap_mask_t mask;
+ 
+-	/* We need platform data */
+-	if (!plat || !plat->dma_filter) {
+-		dev_info(uap->port.dev, "no DMA platform data\n");
+-		return;
+-	}
++	chan = dma_request_slave_channel(dev, "tx");
+ 
+-	/* Try to acquire a generic DMA engine slave TX channel */
+-	dma_cap_zero(mask);
+-	dma_cap_set(DMA_SLAVE, mask);
+-
+-	chan = dma_request_channel(mask, plat->dma_filter, plat->dma_tx_param);
+ 	if (!chan) {
+-		dev_err(uap->port.dev, "no TX DMA channel!\n");
+-		return;
++		/* We need platform data */
++		if (!plat || !plat->dma_filter) {
++			dev_info(uap->port.dev, "no DMA platform data\n");
++			return;
++		}
++
++		/* Try to acquire a generic DMA engine slave TX channel */
++		dma_cap_zero(mask);
++		dma_cap_set(DMA_SLAVE, mask);
++
++		chan = dma_request_channel(mask, plat->dma_filter,
++						plat->dma_tx_param);
++		if (!chan) {
++			dev_err(uap->port.dev, "no TX DMA channel!\n");
++			return;
++		}
+ 	}
+ 
+ 	dmaengine_slave_config(chan, &tx_conf);
+@@ -282,7 +287,18 @@ static void pl011_dma_probe_initcall(struct uart_amba_port *uap)
+ 		 dma_chan_name(uap->dmatx.chan));
+ 
+ 	/* Optionally make use of an RX channel as well */
+-	if (plat->dma_rx_param) {
++	chan = dma_request_slave_channel(dev, "rx");
++	
++	if (!chan && plat->dma_rx_param) {
++		chan = dma_request_channel(mask, plat->dma_filter, plat->dma_rx_param);
++
++		if (!chan) {
++			dev_err(uap->port.dev, "no RX DMA channel!\n");
++			return;
++		}
++	}
++
++	if (chan) {
+ 		struct dma_slave_config rx_conf = {
+ 			.src_addr = uap->port.mapbase + UART01x_DR,
+ 			.src_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE,
+@@ -291,12 +307,6 @@ static void pl011_dma_probe_initcall(struct uart_amba_port *uap)
+ 			.device_fc = false,
  		};
  
--		dma@ea800000 {
--			slave_info {
--				uart1_tx {
--					bus_id = "uart1_tx";
--					cfg_hi = <0x6000>;	/* 0xC << 11 */
--					cfg_lo = <0>;
--					src_master = <0>;
--					dst_master = <1>;
--				};
--				uart1_tx {
--					bus_id = "uart1_tx";
--					cfg_hi = <0x680>;	/* 0xD << 7 */
--					cfg_lo = <0>;
--					src_master = <1>;
--					dst_master = <0>;
--				};
--			};
--		};
+-		chan = dma_request_channel(mask, plat->dma_filter, plat->dma_rx_param);
+-		if (!chan) {
+-			dev_err(uap->port.dev, "no RX DMA channel!\n");
+-			return;
+-		}
 -
- 		spi1: spi@5d400000 {
- 			compatible = "arm,pl022", "arm,primecell";
- 			reg = <0x5d400000 0x1000>;
-diff --git a/arch/arm/boot/dts/spear13xx.dtsi b/arch/arm/boot/dts/spear13xx.dtsi
-index 585f641..b4ca60f 100644
---- a/arch/arm/boot/dts/spear13xx.dtsi
-+++ b/arch/arm/boot/dts/spear13xx.dtsi
-@@ -105,37 +105,6 @@
- 			reg = <0xea800000 0x1000>;
- 			interrupts = <0 19 0x4>;
- 			status = "disabled";
--
--			nr_channels = <8>;
--			chan_allocation_order = <1>;
--			chan_priority = <1>;
--			block_size = <0xfff>;
--			nr_masters = <2>;
--			data_width = <3 3 0 0>;
--
--			slave_info {
--				ssp0_tx {
--					bus_id = "ssp0_tx";
--					cfg_hi = <0x2000>;	/* 0x4 << 11 */
--					cfg_lo = <0>;
--					src_master = <0>;
--					dst_master = <0>;
--				};
--				ssp0_rx {
--					bus_id = "ssp0_rx";
--					cfg_hi = <0x280>;	/* 0x5 << 7 */
--					cfg_lo = <0>;
--					src_master = <0>;
--					dst_master = <0>;
--				};
--				cf {
--					bus_id = "cf";
--					cfg_hi = <0>;
--					cfg_lo = <0>;
--					src_master = <0>;
--					dst_master = <0>;
--				};
--			};
- 		};
+ 		dmaengine_slave_config(chan, &rx_conf);
+ 		uap->dmarx.chan = chan;
  
- 		dma@eb000000 {
-@@ -143,13 +112,6 @@
- 			reg = <0xeb000000 0x1000>;
- 			interrupts = <0 59 0x4>;
- 			status = "disabled";
--
--			nr_channels = <8>;
--			chan_allocation_order = <1>;
--			chan_priority = <1>;
--			block_size = <0xfff>;
--			nr_masters = <2>;
--			data_width = <3 3 0 0>;
- 		};
- 
- 		fsmc: flash@b0000000 {
-diff --git a/arch/arm/mach-spear13xx/include/mach/spear.h b/arch/arm/mach-spear13xx/include/mach/spear.h
-index 972a151..7cfa681 100644
---- a/arch/arm/mach-spear13xx/include/mach/spear.h
-+++ b/arch/arm/mach-spear13xx/include/mach/spear.h
-@@ -43,6 +43,8 @@
- #define VA_L2CC_BASE				IOMEM(UL(0xFB000000))
- 
- /* others */
-+#define DMAC0_BASE				UL(0xEA800000)
-+#define DMAC1_BASE				UL(0xEB000000)
- #define MCIF_CF_BASE				UL(0xB2800000)
- 
- /* Debug uart for linux, will be used for debug and uncompress messages */
-diff --git a/arch/arm/mach-spear13xx/spear1310.c b/arch/arm/mach-spear13xx/spear1310.c
-index ec72c47..02f4724 100644
---- a/arch/arm/mach-spear13xx/spear1310.c
-+++ b/arch/arm/mach-spear13xx/spear1310.c
-@@ -36,7 +36,7 @@
- static struct arasan_cf_pdata cf_pdata = {
- 	.cf_if_clk = CF_IF_CLK_166M,
- 	.quirk = CF_BROKEN_UDMA,
--	.dma_priv = "cf",
-+	.dma_priv = &cf_dma_priv,
+@@ -315,6 +325,7 @@ static void pl011_dma_probe_initcall(struct uart_amba_port *uap)
+ struct dma_uap {
+ 	struct list_head node;
+ 	struct uart_amba_port *uap;
++	struct device *dev;
  };
  
- /* ssp device registration */
-@@ -47,7 +47,10 @@ static struct pl022_ssp_controller ssp1_plat_data = {
- /* Add SPEAr1310 auxdata to pass platform data */
- static struct of_dev_auxdata spear1310_auxdata_lookup[] __initdata = {
- 	OF_DEV_AUXDATA("arasan,cf-spear1340", MCIF_CF_BASE, NULL, &cf_pdata),
-+	OF_DEV_AUXDATA("snps,dma-spear1340", DMAC0_BASE, NULL, &dmac_plat_data),
-+	OF_DEV_AUXDATA("snps,dma-spear1340", DMAC1_BASE, NULL, &dmac_plat_data),
- 	OF_DEV_AUXDATA("arm,pl022", SSP_BASE, NULL, &pl022_plat_data),
-+
- 	OF_DEV_AUXDATA("arm,pl022", SPEAR1310_SSP1_BASE, NULL, &ssp1_plat_data),
- 	{}
- };
-diff --git a/arch/arm/mach-spear13xx/spear1340.c b/arch/arm/mach-spear13xx/spear1340.c
-index 69c8f72..081014f 100644
---- a/arch/arm/mach-spear13xx/spear1340.c
-+++ b/arch/arm/mach-spear13xx/spear1340.c
-@@ -18,9 +18,9 @@
- #include <linux/delay.h>
- #include <linux/dw_dmac.h>
- #include <linux/of_platform.h>
--#include <linux/pata_arasan_cf_data.h>
- #include <asm/hardware/gic.h>
- #include <asm/mach/arch.h>
-+#include <mach/dma.h>
- #include <mach/generic.h>
- #include <mach/spear.h>
+ static LIST_HEAD(pl011_dma_uarts);
+@@ -325,7 +336,7 @@ static int __init pl011_dma_initcall(void)
  
-@@ -78,16 +78,26 @@
- 			(SPEAR1340_MIPHY_OSC_BYPASS_EXT | \
- 			SPEAR1340_MIPHY_PLL_RATIO_TOP(25))
+ 	list_for_each_safe(node, tmp, &pl011_dma_uarts) {
+ 		struct dma_uap *dmau = list_entry(node, struct dma_uap, node);
+-		pl011_dma_probe_initcall(dmau->uap);
++		pl011_dma_probe_initcall(dmau->dev, dmau->uap);
+ 		list_del(node);
+ 		kfree(dmau);
+ 	}
+@@ -334,18 +345,19 @@ static int __init pl011_dma_initcall(void)
  
--static struct amba_pl011_data uart1_data = {
--	.dma_filter = dw_dma_generic_filter,
--	.dma_tx_param = "uart1_tx",
--	.dma_rx_param = "uart1_rx",
-+static struct dw_dma_slave uart1_dma_param[] = {
-+	{
-+		/* Tx */
-+		.cfg_hi = DWC_CFGH_DST_PER(SPEAR1340_DMA_REQ_UART1_TX),
-+		.cfg_lo = 0,
-+		.src_master = DMA_MASTER_MEMORY,
-+		.dst_master = SPEAR1340_DMA_MASTER_UART1,
-+	}, {
-+		/* Rx */
-+		.cfg_hi = DWC_CFGH_SRC_PER(SPEAR1340_DMA_REQ_UART1_RX),
-+		.cfg_lo = 0,
-+		.src_master = SPEAR1340_DMA_MASTER_UART1,
-+		.dst_master = DMA_MASTER_MEMORY,
-+	}
- };
+ device_initcall(pl011_dma_initcall);
  
--static struct arasan_cf_pdata cf_pdata = {
--	.cf_if_clk = CF_IF_CLK_166M,
--	.quirk = CF_BROKEN_UDMA,
--	.dma_priv = "cf",
-+static struct amba_pl011_data uart1_data = {
-+	.dma_filter = dw_dma_filter,
-+	.dma_tx_param = &uart1_dma_param[0],
-+	.dma_rx_param = &uart1_dma_param[1],
- };
+-static void pl011_dma_probe(struct uart_amba_port *uap)
++static void pl011_dma_probe(struct device *dev, struct uart_amba_port *uap)
+ {
+ 	struct dma_uap *dmau = kzalloc(sizeof(struct dma_uap), GFP_KERNEL);
+ 	if (dmau) {
+ 		dmau->uap = uap;
++		dmau->dev = dev;
+ 		list_add_tail(&dmau->node, &pl011_dma_uarts);
+ 	}
+ }
+ #else
+-static void pl011_dma_probe(struct uart_amba_port *uap)
++static void pl011_dma_probe(struct device *dev, struct uart_amba_port *uap)
+ {
+-	pl011_dma_probe_initcall(uap);
++	pl011_dma_probe_initcall(dev, uap);
+ }
+ #endif
  
- /* SATA device registration */
-@@ -148,8 +158,11 @@ static struct ahci_platform_data sata_pdata = {
+@@ -2023,7 +2035,7 @@ static int pl011_probe(struct amba_device *dev, const struct amba_id *id)
+ 	uap->port.ops = &amba_pl011_pops;
+ 	uap->port.flags = UPF_BOOT_AUTOCONF;
+ 	uap->port.line = i;
+-	pl011_dma_probe(uap);
++	pl011_dma_probe(&dev->dev, uap);
  
- /* Add SPEAr1340 auxdata to pass platform data */
- static struct of_dev_auxdata spear1340_auxdata_lookup[] __initdata = {
--	OF_DEV_AUXDATA("arasan,cf-spear1340", MCIF_CF_BASE, NULL, &cf_pdata),
-+	OF_DEV_AUXDATA("arasan,cf-spear1340", MCIF_CF_BASE, NULL, &cf_dma_priv),
-+	OF_DEV_AUXDATA("snps,dma-spear1340", DMAC0_BASE, NULL, &dmac_plat_data),
-+	OF_DEV_AUXDATA("snps,dma-spear1340", DMAC1_BASE, NULL, &dmac_plat_data),
- 	OF_DEV_AUXDATA("arm,pl022", SSP_BASE, NULL, &pl022_plat_data),
-+
- 	OF_DEV_AUXDATA("snps,spear-ahci", SPEAR1340_SATA_BASE, NULL,
- 			&sata_pdata),
- 	OF_DEV_AUXDATA("arm,pl011", SPEAR1340_UART1_BASE, NULL, &uart1_data),
-diff --git a/arch/arm/mach-spear13xx/spear13xx.c b/arch/arm/mach-spear13xx/spear13xx.c
-index b074db8..c4af775 100644
---- a/arch/arm/mach-spear13xx/spear13xx.c
-+++ b/arch/arm/mach-spear13xx/spear13xx.c
-@@ -22,16 +22,63 @@
- #include <asm/hardware/gic.h>
- #include <asm/mach/map.h>
- #include <asm/smp_twd.h>
-+#include <mach/dma.h>
- #include <mach/generic.h>
- #include <mach/spear.h>
- 
-+/* common dw_dma filter routine to be used by peripherals */
-+bool dw_dma_filter(struct dma_chan *chan, void *slave)
-+{
-+	struct dw_dma_slave *dws = (struct dw_dma_slave *)slave;
-+
-+	if (chan->device->dev == dws->dma_dev) {
-+		chan->private = slave;
-+		return true;
-+	} else {
-+		return false;
-+	}
-+}
-+
- /* ssp device registration */
-+static struct dw_dma_slave ssp_dma_param[] = {
-+	{
-+		/* Tx */
-+		.cfg_hi = DWC_CFGH_DST_PER(DMA_REQ_SSP0_TX),
-+		.cfg_lo = 0,
-+		.src_master = DMA_MASTER_MEMORY,
-+		.dst_master = DMA_MASTER_SSP0,
-+	}, {
-+		/* Rx */
-+		.cfg_hi = DWC_CFGH_SRC_PER(DMA_REQ_SSP0_RX),
-+		.cfg_lo = 0,
-+		.src_master = DMA_MASTER_SSP0,
-+		.dst_master = DMA_MASTER_MEMORY,
-+	}
-+};
-+
- struct pl022_ssp_controller pl022_plat_data = {
- 	.enable_dma = 1,
--	.dma_filter = dw_dma_generic_filter,
--	.dma_rx_param = "ssp0_rx",
--	.dma_tx_param = "ssp0_tx",
--	.num_chipselect = 3,
-+	.dma_filter = dw_dma_filter,
-+	.dma_rx_param = &ssp_dma_param[1],
-+	.dma_tx_param = &ssp_dma_param[0],
-+};
-+
-+/* CF device registration */
-+struct dw_dma_slave cf_dma_priv = {
-+	.cfg_hi = 0,
-+	.cfg_lo = 0,
-+	.src_master = 0,
-+	.dst_master = 0,
-+};
-+
-+/* dmac device registeration */
-+struct dw_dma_platform_data dmac_plat_data = {
-+	.nr_channels = 8,
-+	.chan_allocation_order = CHAN_ALLOCATION_DESCENDING,
-+	.chan_priority = CHAN_PRIORITY_DESCENDING,
-+	.block_size = 4095U,
-+	.nr_masters = 2,
-+	.data_width = { 3, 3, 0, 0 },
- };
- 
- void __init spear13xx_l2x0_init(void)
+ 	/* Ensure interrupts from this UART are masked and cleared */
+ 	writew(0, uap->port.membase + UART011_IMSC);
 -- 
 1.8.1.2
 
