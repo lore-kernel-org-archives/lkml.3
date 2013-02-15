@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755993Ab3BORed (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 12:34:33 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:39513 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754378Ab3BOReb (ORCPT
+	id S1755403Ab3BORjT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 12:39:19 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:50920 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752006Ab3BORjS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 12:34:31 -0500
-X-Sasl-enc: xhtGV7wtuAUIesRXAEfUr7jWaP904miTTCNg9W2gCvqN 1360949670
-Date: Fri, 15 Feb 2013 09:34:29 -0800
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Stevenson <david@avoncliff.com>
-Subject: Re: linux-next: build warning after merge of the char-misc tree
-Message-ID: <20130215173429.GA27707@kroah.com>
-References: <20130215162657.6dd03d27e8cfed0c134b5dd3@canb.auug.org.au>
+	Fri, 15 Feb 2013 12:39:18 -0500
+Date: Fri, 15 Feb 2013 12:39:04 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jan Beulich <JBeulich@suse.com>, Ian Campbell <Ian.Campbell@eu.citrix.com>
+Cc: roger.pau@citrix.com, jinsong.liu@intel.com,
+        xen-devel <xen-devel@lists.xen.org>, linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] Patches for v3.9 for the Linux kernel.
+Message-ID: <20130215173904.GC10133@phenom.dumpdata.com>
+References: <20130215163451.GD13775@phenom.dumpdata.com>
+ <511E761402000078000BEDD8@nat28.tlf.novell.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130215162657.6dd03d27e8cfed0c134b5dd3@canb.auug.org.au>
+In-Reply-To: <511E761402000078000BEDD8@nat28.tlf.novell.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 15, 2013 at 04:26:57PM +1100, Stephen Rothwell wrote:
-> Hi all,
+On Fri, Feb 15, 2013 at 04:53:24PM +0000, Jan Beulich wrote:
+> >>> On 15.02.13 at 17:34, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> > I know that the PVH patches are not in the Xen tree. I am hoping that
+> > at least the hypercalls _are_ OK with everybody so we can continue on
+> > with this.
 > 
-> After merging the char-misc tree, today's linux-next build (x86_64
-> allmodconfig) produced this warning:
-> 
-> drivers/w1/slaves/w1_therm.c: In function 'w1_therm_read':
-> drivers/w1/slaves/w1_therm.c:245:15: warning: 'crc' may be used uninitialized in this function [-Wuninitialized]
-> 
-> Its a false positive, but it was introduced by commit 867ff9880d5d
-> ("w1_therm: Retries: remove old code add CRC")
+> Please don't commit to anything that isn't in the hypervisor tree
+> yet. IOW I'd like you to not push the PVH bits that use
+> uncommitted hypervisor interfaces (anything preparatory of
+> course is okay).
 
-I don't see that here with gcc 4.7.1, perhaps you need to upgrade your
-version of gcc to not show these false positives?
+Hm, I believe the only one that was of contention was the 'PHYSDEVOP_map_iomem'
+which Mukesh reverted.
 
-thanks,
+The other one is the XENMEM_add_to_physmap_range, which Ian has for ARM.
+That is the git commit b6eafa71fa87f4c831e9c2eac736e8ac20b3ea1c
+in stable/pvh.v7 tree.
 
-greg k-h
+Oh, there is one change in this git commit b8724d6bd1c09e34b6c76b57d07ea4d3fbd8ed4c
+..and that gets reverted in 68c5bb99d8b8abbf70b3380bed8eca69648193f5 (by Ian).
+
+So from a hypercall perspective - Ian, is the XENMEM_add_to_physmap_range fully
+baked ?
