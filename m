@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936083Ab3BOQZo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 11:25:44 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:37221 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936065Ab3BOQZl (ORCPT
+	id S1761739Ab3BOQ06 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 11:26:58 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:35763 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755870Ab3BOQ05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 11:25:41 -0500
-Message-ID: <511E617E.6080206@wwwdotorg.org>
-Date: Fri, 15 Feb 2013 09:25:34 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Fri, 15 Feb 2013 11:26:57 -0500
+Date: Fri, 15 Feb 2013 11:26:51 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
+Cc: gavin.bowe@oracle.com, kurt.hackel@oracle.com
+Subject: What went in Linux 3.6, 3.7 and 3.8 from Xen standpoint.
+Message-ID: <20130215162651.GB13775@phenom.dumpdata.com>
 MIME-Version: 1.0
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        Michal Marek <mmarek@suse.cz>, Stephen Warren <swarren@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>, Joseph Lo <josephl@nvidia.com>,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [RFC 1/2] Makefile: Add arch/arch/$(hdr-arch)/boot in header
- include path
-References: <1360918364-27960-1-git-send-email-hdoyu@nvidia.com>
-In-Reply-To: <1360918364-27960-1-git-send-email-hdoyu@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/15/2013 01:52 AM, Hiroshi Doyu wrote:
-> With a new feature dtc+cpp, DT can introduces some definitions in its
-> header files for their own. Some of those DT info can be used in
-> kernel source as well, instead of having the duplicate info in kernel
-> headers. This patch allows kernel source to include those DT
-> headers. For example:
-> 
-> + #include <dts/tegra20-car.h>
+Hey,
 
-Since this is devicetree-related, the DT maintainers should also be
-CC'd. I've added them on this email, hence quoting the entire patch.
+I realized I hadn't done my usual 'here is what goes in' for about half-a-year.
 
-> 
-> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
-> ---
->  Makefile |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/Makefile b/Makefile
-> index 0b4bf62..7f54cdb 100644
-> --- a/Makefile
-> +++ b/Makefile
-> @@ -364,7 +364,7 @@ LINUXINCLUDE    := \
->  		-I$(srctree)/arch/$(hdr-arch)/include \
->  		-Iarch/$(hdr-arch)/include/generated \
->  		$(if $(KBUILD_SRC), -I$(srctree)/include) \
-> -		-Iinclude \
-> +		-Iinclude -Iarch/$(hdr-arch)/boot \
->  		$(USERINCLUDE)
->  
->  KBUILD_CPPFLAGS := -D__KERNEL__
-> 
+So catching up and doing it all at once.
 
+v3.6:
+ - Fix a lot of bugs: Systems with MP BIOS failing, Systems with ACPI NUMA failing,
+   FLR in xen-pciback leaving the devices unusable, 32-bit PCI sounds cards in dom0
+   not working, fix crashes when using acpidump, fix crashes with CONFIG_MAX_DOMAIN_PAGES=512
+ - Make the P2M interaction on MMIO ranges use less memory during booting
+   (aka, Reuse existing P2M leafs).
+ - Simplification and cleanups in the code base. Coverity fixes
+ - Performance optimizations by caching TLS and GDT descriptors
+ - Performance optimizations in PTE page manipulations
+ - Xen MCE driver added (to see MCE events that Xen hypervisor gets)
+ - Xen PCPU driver added (to online/offline physical CPUs via dom0)
+
+v3.7:
+ - Initial support for ARM working under Xen as both guest and initial domain.
+ - Security fixes.
+ - Fix RCU warning, add fallback code for old hypervisors, fix memory leaks in
+   gntdev driver, fix some pvops calls failing, Fixes in
+   xen-[kbd|fb|blk|net|hvc]-backend to deal with CLOSED transition
+ - Allow xen/privcmd to use v2 of MMAPBATCH command (and fixes for it)
+ - Support Xen backends to work with paged out grants (meaning work with HVM
+   guests that have its memory paged out)
+ - Performance optimization in xen/privcmd for migrating guests.
+ - Performance improvements when doing kdump for PVonHVM guests.
+ - Xen DBGP driver added (USB EHCI debug driver)
+ - FLR support in xen-pciback.
+ - Support wildcards in xen-pciback.hide=(*) argument parsing.
+ - Xen EFI support, and keyboard shift status flag.
+ - Late usage of Xen-SWIOTLB allowing PV PCI passthrough guest to boot without
+   'iommu=soft' as an argument and late initialization of SWIOTLB.
+ - Support more than 128GB in a PV guest.
+ - Cleanups in the initial pagetable creation.
+
+v3.8:
+ - Persistent feature grant in xen-block system allowing greater performance.
+ - More fixes in the Xen-pciback for wildcard parsing
+ - Xen Processor Aggregator Device (PAD) added.
+ - Optimizations for xen/privcmd for ARM and PVH via new hypercall (add_to_physmap_range)
+ - Xen ARM can use the balloon driver
+ - Fixes for vcpu onlining/offlining, grant table initialization, parsing of cpu
+   onlining/offlining values, checks in xen-pciback, locking fixes in gtndev,
+   fix stack corruptions, fix xen_iret checks. xen-pciback DoSing dom0 with
+   messages, fix mmap batch ioctl error path.
+ - Further enh to allow PVHVM backend drivers (so moving dom0 functionality in guests)
