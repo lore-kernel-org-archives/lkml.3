@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935500Ab3BOOSU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 09:18:20 -0500
-Received: from mout.gmx.net ([212.227.15.19]:61433 "EHLO mout.gmx.net"
+	id S935813Ab3BOOSz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 09:18:55 -0500
+Received: from mout.gmx.net ([212.227.15.19]:49451 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934192Ab3BOOSS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 09:18:18 -0500
+	id S934852Ab3BOOSU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 09:18:20 -0500
 X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX18hIAlnp10hRFiOGvbbmLH1jmbveNgnRKlpkzpada
-	8tSwR73nm0By7V
+X-Provags-ID: V01U2FsdGVkX18cOc4fEdccRdIPpLfOPG3cnHGidbZQB1tJcPOpHm
+	P6Guwe1oj7nGgQ
 From: Peter Huewe <peterhuewe@gmx.de>
 To: Rupesh Gujare <rupesh.gujare@atmel.com>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Dan Carpenter <dan.carpenter@oracle.com>,
         Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH 5/7 v2] staging/ozwpan: Fix NULL vs zero in ozcdev.c (sparse warning)
-Date: Fri, 15 Feb 2013 15:22:26 +0100
-Message-Id: <1360938148-19225-5-git-send-email-peterhuewe@gmx.de>
+Subject: [PATCH 6/7] staging/ozwpan: Fix NULL vs zero in ozusbsvc.c (sparse warning)
+Date: Fri, 15 Feb 2013 15:22:27 +0100
+Message-Id: <1360938148-19225-6-git-send-email-peterhuewe@gmx.de>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1360938148-19225-1-git-send-email-peterhuewe@gmx.de>
 References: <20130215084517.GB6802@mwanda>
@@ -35,105 +35,99 @@ assignment before first use) it was removed.
 
 Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 ---
- drivers/staging/ozwpan/ozcdev.c |   24 ++++++++++++------------
- 1 files changed, 12 insertions(+), 12 deletions(-)
+ drivers/staging/ozwpan/ozusbsvc.c |   22 +++++++++++-----------
+ 1 files changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/staging/ozwpan/ozcdev.c b/drivers/staging/ozwpan/ozcdev.c
-index 64913ae..a38716f 100644
---- a/drivers/staging/ozwpan/ozcdev.c
-+++ b/drivers/staging/ozwpan/ozcdev.c
-@@ -97,7 +97,7 @@ ssize_t oz_cdev_read(struct file *filp, char __user *buf, size_t count,
- 	int ix;
- 
- 	struct oz_pd *pd;
--	struct oz_serial_ctx *ctx = 0;
-+	struct oz_serial_ctx *ctx;
- 
- 	spin_lock_bh(&g_cdev.lock);
- 	pd = g_cdev.active_pd;
-@@ -147,7 +147,7 @@ ssize_t oz_cdev_write(struct file *filp, const char __user *buf, size_t count,
- {
- 	struct oz_pd *pd;
- 	struct oz_elt_buf *eb;
--	struct oz_elt_info *ei = 0;
-+	struct oz_elt_info *ei;
- 	struct oz_elt *elt;
- 	struct oz_app_hdr *app_hdr;
- 	struct oz_serial_ctx *ctx;
-@@ -182,7 +182,7 @@ ssize_t oz_cdev_write(struct file *filp, const char __user *buf, size_t count,
- 			ctx->tx_seq_num = 1;
- 		spin_lock(&eb->lock);
- 		if (oz_queue_elt_info(eb, 0, 0, ei) == 0)
--			ei = 0;
-+			ei = NULL;
- 		spin_unlock(&eb->lock);
- 	}
- 	spin_unlock_bh(&pd->app_lock[OZ_APPID_USB-1]);
-@@ -217,7 +217,7 @@ static int oz_set_active_pd(u8 *addr)
- 		if (is_zero_ether_addr(addr)) {
- 			spin_lock_bh(&g_cdev.lock);
- 			pd = g_cdev.active_pd;
--			g_cdev.active_pd = 0;
-+			g_cdev.active_pd = NULL;
- 			memset(g_cdev.active_addr, 0,
- 				sizeof(g_cdev.active_addr));
- 			spin_unlock_bh(&g_cdev.lock);
-@@ -385,7 +385,7 @@ int oz_cdev_deregister(void)
+diff --git a/drivers/staging/ozwpan/ozusbsvc.c b/drivers/staging/ozwpan/ozusbsvc.c
+index 8fa7f25..543a941 100644
+--- a/drivers/staging/ozwpan/ozusbsvc.c
++++ b/drivers/staging/ozwpan/ozusbsvc.c
+@@ -34,7 +34,7 @@
   */
- int oz_cdev_init(void)
+ int oz_usb_init(void)
  {
--	oz_event_log(OZ_EVT_SERVICE, 1, OZ_APPID_SERIAL, 0, 0);
-+	oz_event_log(OZ_EVT_SERVICE, 1, OZ_APPID_SERIAL, NULL, 0);
- 	oz_app_enable(OZ_APPID_SERIAL, 1);
- 	return 0;
- }
-@@ -394,7 +394,7 @@ int oz_cdev_init(void)
-  */
- void oz_cdev_term(void)
- {
--	oz_event_log(OZ_EVT_SERVICE, 2, OZ_APPID_SERIAL, 0, 0);
-+	oz_event_log(OZ_EVT_SERVICE, 2, OZ_APPID_SERIAL, NULL, 0);
- 	oz_app_enable(OZ_APPID_SERIAL, 0);
+-	oz_event_log(OZ_EVT_SERVICE, 1, OZ_APPID_USB, 0, 0);
++	oz_event_log(OZ_EVT_SERVICE, 1, OZ_APPID_USB, NULL, 0);
+ 	return oz_hcd_init();
  }
  /*------------------------------------------------------------------------------
-@@ -403,8 +403,8 @@ void oz_cdev_term(void)
- int oz_cdev_start(struct oz_pd *pd, int resume)
+@@ -43,7 +43,7 @@ int oz_usb_init(void)
+  */
+ void oz_usb_term(void)
  {
- 	struct oz_serial_ctx *ctx;
--	struct oz_serial_ctx *old_ctx = 0;
--	oz_event_log(OZ_EVT_SERVICE, 3, OZ_APPID_SERIAL, 0, resume);
-+	struct oz_serial_ctx *old_ctx;
-+	oz_event_log(OZ_EVT_SERVICE, 3, OZ_APPID_SERIAL, NULL, resume);
+-	oz_event_log(OZ_EVT_SERVICE, 2, OZ_APPID_USB, 0, 0);
++	oz_event_log(OZ_EVT_SERVICE, 2, OZ_APPID_USB, NULL, 0);
+ 	oz_hcd_term();
+ }
+ /*------------------------------------------------------------------------------
+@@ -54,8 +54,8 @@ int oz_usb_start(struct oz_pd *pd, int resume)
+ {
+ 	int rc = 0;
+ 	struct oz_usb_ctx *usb_ctx;
+-	struct oz_usb_ctx *old_ctx = 0;
+-	oz_event_log(OZ_EVT_SERVICE, 3, OZ_APPID_USB, 0, resume);
++	struct oz_usb_ctx *old_ctx;
++	oz_event_log(OZ_EVT_SERVICE, 3, OZ_APPID_USB, NULL, resume);
  	if (resume) {
- 		oz_trace("Serial service resumed.\n");
+ 		oz_trace("USB service resumed.\n");
  		return 0;
-@@ -440,22 +440,22 @@ int oz_cdev_start(struct oz_pd *pd, int resume)
- void oz_cdev_stop(struct oz_pd *pd, int pause)
+@@ -65,7 +65,7 @@ int oz_usb_start(struct oz_pd *pd, int resume)
+ 	 * has a USB context then we will destroy it.
+ 	 */
+ 	usb_ctx = kzalloc(sizeof(struct oz_usb_ctx), GFP_ATOMIC);
+-	if (usb_ctx == 0)
++	if (usb_ctx == NULL)
+ 		return -ENOMEM;
+ 	atomic_set(&usb_ctx->ref_count, 1);
+ 	usb_ctx->pd = pd;
+@@ -76,7 +76,7 @@ int oz_usb_start(struct oz_pd *pd, int resume)
+ 	 */
+ 	spin_lock_bh(&pd->app_lock[OZ_APPID_USB-1]);
+ 	old_ctx = pd->app_ctx[OZ_APPID_USB-1];
+-	if (old_ctx == 0)
++	if (old_ctx == NULL)
+ 		pd->app_ctx[OZ_APPID_USB-1] = usb_ctx;
+ 	oz_usb_get(pd->app_ctx[OZ_APPID_USB-1]);
+ 	spin_unlock_bh(&pd->app_lock[OZ_APPID_USB-1]);
+@@ -98,10 +98,10 @@ int oz_usb_start(struct oz_pd *pd, int resume)
+ 		oz_hcd_pd_reset(usb_ctx, usb_ctx->hport);
+ 	} else {
+ 		usb_ctx->hport = oz_hcd_pd_arrived(usb_ctx);
+-		if (usb_ctx->hport == 0) {
++		if (usb_ctx->hport == NULL) {
+ 			oz_trace("USB hub returned null port.\n");
+ 			spin_lock_bh(&pd->app_lock[OZ_APPID_USB-1]);
+-			pd->app_ctx[OZ_APPID_USB-1] = 0;
++			pd->app_ctx[OZ_APPID_USB-1] = NULL;
+ 			spin_unlock_bh(&pd->app_lock[OZ_APPID_USB-1]);
+ 			oz_usb_put(usb_ctx);
+ 			rc = -1;
+@@ -117,14 +117,14 @@ int oz_usb_start(struct oz_pd *pd, int resume)
+ void oz_usb_stop(struct oz_pd *pd, int pause)
  {
- 	struct oz_serial_ctx *ctx;
--	oz_event_log(OZ_EVT_SERVICE, 4, OZ_APPID_SERIAL, 0, pause);
-+	oz_event_log(OZ_EVT_SERVICE, 4, OZ_APPID_SERIAL, NULL, pause);
+ 	struct oz_usb_ctx *usb_ctx;
+-	oz_event_log(OZ_EVT_SERVICE, 4, OZ_APPID_USB, 0, pause);
++	oz_event_log(OZ_EVT_SERVICE, 4, OZ_APPID_USB, NULL, pause);
  	if (pause) {
- 		oz_trace("Serial service paused.\n");
+ 		oz_trace("USB service paused.\n");
  		return;
  	}
- 	spin_lock_bh(&pd->app_lock[OZ_APPID_SERIAL-1]);
- 	ctx = (struct oz_serial_ctx *)pd->app_ctx[OZ_APPID_SERIAL-1];
--	pd->app_ctx[OZ_APPID_SERIAL-1] = 0;
-+	pd->app_ctx[OZ_APPID_SERIAL-1] = NULL;
- 	spin_unlock_bh(&pd->app_lock[OZ_APPID_SERIAL-1]);
- 	if (ctx)
- 		oz_cdev_release_ctx(ctx);
- 	spin_lock(&g_cdev.lock);
- 	if (pd == g_cdev.active_pd)
--		g_cdev.active_pd = 0;
-+		g_cdev.active_pd = NULL;
- 	else
--		pd = 0;
-+		pd = NULL;
- 	spin_unlock(&g_cdev.lock);
- 	if (pd) {
- 		oz_pd_put(pd);
+ 	spin_lock_bh(&pd->app_lock[OZ_APPID_USB-1]);
+ 	usb_ctx = (struct oz_usb_ctx *)pd->app_ctx[OZ_APPID_USB-1];
+-	pd->app_ctx[OZ_APPID_USB-1] = 0;
++	pd->app_ctx[OZ_APPID_USB-1] = NULL;
+ 	spin_unlock_bh(&pd->app_lock[OZ_APPID_USB-1]);
+ 	if (usb_ctx) {
+ 		unsigned long tout = jiffies + HZ;
+@@ -182,7 +182,7 @@ int oz_usb_heartbeat(struct oz_pd *pd)
+ 	if (usb_ctx)
+ 		oz_usb_get(usb_ctx);
+ 	spin_unlock_bh(&pd->app_lock[OZ_APPID_USB-1]);
+-	if (usb_ctx == 0)
++	if (usb_ctx == NULL)
+ 		return rc;
+ 	if (usb_ctx->stopped)
+ 		goto done;
 -- 
 1.7.8.6
 
