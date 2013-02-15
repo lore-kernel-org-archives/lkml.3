@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752139Ab3BOUWa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 15:22:30 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:51218 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751569Ab3BOUU5 (ORCPT
+	id S1751141Ab3BOUXo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 15:23:44 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:21977 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751240Ab3BOUUz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 15:20:57 -0500
+	Fri, 15 Feb 2013 15:20:55 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: dan.magenheimer@oracle.com, sjenning@linux.vnet.ibm.com,
         gregkh@linuxfoundation.org, akpm@linux-foundation.org,
@@ -14,402 +14,239 @@ To: dan.magenheimer@oracle.com, sjenning@linux.vnet.ibm.com,
         linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
         minchan@kernel.org
 Cc: ric.masonn@gmail.com, lliubbo@gmail.com,
-        Stefan Hengelein <ilendir@googlemail.com>,
-        Florian Schmaus <fschmaus@gmail.com>,
-        Andor Daam <andor.daam@googlemail.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 06/11] mm: cleancache: lazy initialization to allow tmem backends to build/run as modules
-Date: Fri, 15 Feb 2013 15:20:30 -0500
-Message-Id: <1360959635-18922-7-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 09/11] cleancache: Use static_key instead of cleancache_ops and cleancache_enabled.
+Date: Fri, 15 Feb 2013 15:20:33 -0500
+Message-Id: <1360959635-18922-10-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.8.0.2
 In-Reply-To: <1360959635-18922-1-git-send-email-konrad.wilk@oracle.com>
 References: <1360959635-18922-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
+As ways to determine whether to allow certain functions to be
+called.
 
-With the goal of allowing tmem backends (zcache, ramster, Xen tmem) to be
-built/loaded as modules rather than built-in and enabled by a boot parameter,
-this patch provides "lazy initialization", allowing backends to register to
-cleancache even after filesystems were mounted. Calls to init_fs and
-init_shared_fs are remembered as fake poolids but no real tmem_pools created.
-On backend registration the fake poolids are mapped to real poolids and
-respective tmem_pools.
+This makes it easier to understand the code - the three functions
+that can be called by the filesystem irregardless whether a backend is set or
+not cleancache_init_fs, cleancache_init_shared_fs, and cleancache_invalidate_fs.
 
-Signed-off-by: Stefan Hengelein <ilendir@googlemail.com>
-Signed-off-by: Florian Schmaus <fschmaus@gmail.com>
-Signed-off-by: Andor Daam <andor.daam@googlemail.com>
-Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-[v1: Minor fixes: used #define for some values and bools]
-[v2: Removed CLEANCACHE_HAS_LAZY_INIT]
-[v3: Added more comments, added a lock for [shared_|]fs_poolid_map]
+The rest of the cleancache functions end up being NOPs when the backend
+has not yet registered.
+
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- mm/cleancache.c | 240 +++++++++++++++++++++++++++++++++++++++++++++++++++-----
- 1 file changed, 219 insertions(+), 21 deletions(-)
+ include/linux/cleancache.h | 16 +++++++++-----
+ include/linux/frontswap.h  |  2 +-
+ mm/cleancache.c            | 53 +++++++++++++++-------------------------------
+ 3 files changed, 29 insertions(+), 42 deletions(-)
 
-diff --git a/mm/cleancache.c b/mm/cleancache.c
-index 32e6f41..e4dc314 100644
---- a/mm/cleancache.c
-+++ b/mm/cleancache.c
-@@ -45,15 +45,99 @@ static u64 cleancache_puts;
- static u64 cleancache_invalidates;
+diff --git a/include/linux/cleancache.h b/include/linux/cleancache.h
+index dfa1ccb..09df0e4 100644
+--- a/include/linux/cleancache.h
++++ b/include/linux/cleancache.h
+@@ -42,9 +42,15 @@ extern void __cleancache_put_page(struct page *);
+ extern void __cleancache_invalidate_page(struct address_space *, struct page *);
+ extern void __cleancache_invalidate_inode(struct address_space *);
+ extern void __cleancache_invalidate_fs(struct super_block *);
+-extern int cleancache_enabled;
  
- /*
-- * register operations for cleancache, returning previous thus allowing
-- * detection of multiple backends and possible nesting
-+ * When no backend is registered all calls to init_fs and init_shared_fs
-+ * are registered and fake poolids (FAKE_FS_POOLID_OFFSET or
-+ * FAKE_SHARED_FS_POOLID_OFFSET, plus offset in the respective array
-+ * [shared_|]fs_poolid_map) are given to the respective super block
-+ * (sb->cleancache_poolid) and no tmem_pools are created. When a backend
-+ * registers with cleancache the previous calls to init_fs and init_shared_fs
-+ * are executed to create tmem_pools and set the respective poolids. While no
-+ * backend is registered all "puts", "gets" and "flushes" are ignored or failed.
-+ */
-+#define MAX_INITIALIZABLE_FS 32
-+#define FAKE_FS_POOLID_OFFSET 1000
-+#define FAKE_SHARED_FS_POOLID_OFFSET 2000
+ #ifdef CONFIG_CLEANCACHE
++#include <linux/jump_label.h>
++extern struct static_key cleancache_key;
 +
-+#define FS_NO_BACKEND (-1)
-+#define FS_UNKNOWN (-2)
-+static int fs_poolid_map[MAX_INITIALIZABLE_FS];
-+static int shared_fs_poolid_map[MAX_INITIALIZABLE_FS];
-+static char *uuids[MAX_INITIALIZABLE_FS];
-+/*
-+ * Mutex for the [shared_|]fs_poolid_map to guard against multiple threads
-+ * invoking umount (and ending in __cleancache_invalidate_fs) and also multiple
-+ * threads calling mount (and ending up in __cleancache_init_[shared|]fs).
-+ */
-+static DEFINE_MUTEX(poolid_mutex);
-+/*
-+ * When set to false (default) all calls to the cleancache functions, except
-+ * the __cleancache_invalidate_fs and __cleancache_init_[shared|]fs are guarded
-+ * by the if (!backend_registered) return. This means multiple threads (from
-+ * different filesystems) will be checking backend_registered. The usage of a
-+ * bool instead of a atomic_t or a bool guarded by a spinlock is OK - we are
-+ * OK if the time between the backend's have been initialized (and
-+ * backend_registered has been set to true) and when the filesystems start
-+ * actually calling the backends. The inverse (when unloading) is obviously
-+ * not good - but this shim does not do that (yet).
-+ */
-+static bool backend_registered __read_mostly;
-+
-+/*
-+ * The backends and filesystems work all asynchronously. This is b/c the
-+ * backends can be built as modules.
-+ * The usual sequence of events is:
-+ * 	a) mount /	-> __cleancache_init_fs is called. We set the
-+ * 		[shared_|]fs_poolid_map and uuids for.
-+ *
-+ * 	b). user does I/Os -> we call the rest of __cleancache_* functions
-+ * 		which return immediately as backend_registered is false.
-+ *
-+ * 	c). modprobe zcache -> cleancache_register_ops. We init the backend
-+ * 		and set backend_registered to true, and for any fs_poolid_map
-+ * 		(which is set by __cleancache_init_fs) we initialize the poolid.
-+ *
-+ * 	d). user does I/Os -> now that backend_registered is true all the
-+ * 		__cleancache_* functions can call the backend. They all check
-+ * 		that fs_poolid_map is valid and if so invoke the backend.
-+ *
-+ * 	e). umount /	-> __cleancache_invalidate_fs, the fs_poolid_map is
-+ * 		reset (which is the second check in the __cleancache_* ops
-+ * 		to call the backend).
-+ *
-+ * The sequence of event could also be c), followed by a), and d). and e). The
-+ * c) would not happen anymore. There is also the chance of c), and one thread
-+ * doing a) + d), and another doing e). For that case we depend on the
-+ * filesystem calling __cleancache_invalidate_fs in the proper sequence (so
-+ * that it handles all I/Os before it invalidates the fs (which is last part
-+ * of unmounting process).
-+ *
-+ * Note: The acute reader will notice that there is no "rmmod zcache" case.
-+ * This is b/c the functionality for that is not yet implemented and when
-+ * done, will require some extra locking not yet devised.
-+ */
-+
-+/*
-+ * Register operations for cleancache, returning previous thus allowing
-+ * detection of multiple backends and possible nesting.
-  */
- struct cleancache_ops cleancache_register_ops(struct cleancache_ops *ops)
- {
- 	struct cleancache_ops old = cleancache_ops;
-+	int i;
- 
-+	mutex_lock(&poolid_mutex);
- 	cleancache_ops = *ops;
--	cleancache_enabled = 1;
-+
-+	backend_registered = true;
-+	for (i = 0; i < MAX_INITIALIZABLE_FS; i++) {
-+		if (fs_poolid_map[i] == FS_NO_BACKEND)
-+			fs_poolid_map[i] = (*cleancache_ops.init_fs)(PAGE_SIZE);
-+		if (shared_fs_poolid_map[i] == FS_NO_BACKEND)
-+			shared_fs_poolid_map[i] = (*cleancache_ops.init_shared_fs)
-+					(uuids[i], PAGE_SIZE);
-+	}
-+out:
-+	mutex_unlock(&poolid_mutex);
- 	return old;
- }
- EXPORT_SYMBOL(cleancache_register_ops);
-@@ -61,15 +145,42 @@ EXPORT_SYMBOL(cleancache_register_ops);
- /* Called by a cleancache-enabled filesystem at time of mount */
- void __cleancache_init_fs(struct super_block *sb)
- {
--	sb->cleancache_poolid = (*cleancache_ops.init_fs)(PAGE_SIZE);
-+	int i;
-+
-+	mutex_lock(&poolid_mutex);
-+	for (i = 0; i < MAX_INITIALIZABLE_FS; i++) {
-+		if (fs_poolid_map[i] == FS_UNKNOWN) {
-+			sb->cleancache_poolid = i + FAKE_FS_POOLID_OFFSET;
-+			if (backend_registered)
-+				fs_poolid_map[i] = (*cleancache_ops.init_fs)(PAGE_SIZE);
-+			else
-+				fs_poolid_map[i] = FS_NO_BACKEND;
-+			break;
-+		}
-+	}
-+	mutex_unlock(&poolid_mutex);
- }
- EXPORT_SYMBOL(__cleancache_init_fs);
- 
- /* Called by a cleancache-enabled clustered filesystem at time of mount */
- void __cleancache_init_shared_fs(char *uuid, struct super_block *sb)
- {
--	sb->cleancache_poolid =
--		(*cleancache_ops.init_shared_fs)(uuid, PAGE_SIZE);
-+	int i;
-+
-+	mutex_lock(&poolid_mutex);
-+	for (i = 0; i < MAX_INITIALIZABLE_FS; i++) {
-+		if (shared_fs_poolid_map[i] == FS_UNKNOWN) {
-+			sb->cleancache_poolid = i + FAKE_SHARED_FS_POOLID_OFFSET;
-+			uuids[i] = uuid;
-+			if (backend_registered)
-+				shared_fs_poolid_map[i] = (*cleancache_ops.init_shared_fs)
-+						(uuid, PAGE_SIZE);
-+			else
-+				shared_fs_poolid_map[i] = FS_NO_BACKEND;
-+			break;
-+		}
-+	}
-+	mutex_unlock(&poolid_mutex);
- }
- EXPORT_SYMBOL(__cleancache_init_shared_fs);
- 
-@@ -99,27 +210,53 @@ static int cleancache_get_key(struct inode *inode,
- }
- 
- /*
-+ * Returns a pool_id that is associated with a given fake poolid.
-+ */
-+static int get_poolid_from_fake(int fake_pool_id)
++static inline bool cleancache_enabled(void)
 +{
-+	if (fake_pool_id >= FAKE_SHARED_FS_POOLID_OFFSET)
-+		return shared_fs_poolid_map[fake_pool_id -
-+			FAKE_SHARED_FS_POOLID_OFFSET];
-+	else if (fake_pool_id >= FAKE_FS_POOLID_OFFSET)
-+		return fs_poolid_map[fake_pool_id - FAKE_FS_POOLID_OFFSET];
-+	return FS_NO_BACKEND;
++	return static_key_false(&cleancache_key);
 +}
-+
-+/*
-  * "Get" data from cleancache associated with the poolid/inode/index
-  * that were specified when the data was put to cleanache and, if
-  * successful, use it to fill the specified page with data and return 0.
-  * The pageframe is unchanged and returns -1 if the get fails.
-  * Page must be locked by caller.
-+ *
-+ * The function has two checks before any action is taken - whether
-+ * a backend is registered and whether the sb->cleancache_poolid
-+ * is correct.
-  */
- int __cleancache_get_page(struct page *page)
+ static inline bool cleancache_fs_enabled(struct page *page)
+ {
+ 	return page->mapping->host->i_sb->cleancache_poolid >= 0;
+@@ -86,14 +92,14 @@ static inline int cleancache_get_page(struct page *page)
  {
  	int ret = -1;
- 	int pool_id;
-+	int fake_pool_id;
- 	struct cleancache_filekey key = { .u.key = { 0 } };
  
-+	if (!backend_registered) {
-+		cleancache_failed_gets++;
-+		goto out;
-+	}
-+
- 	VM_BUG_ON(!PageLocked(page));
--	pool_id = page->mapping->host->i_sb->cleancache_poolid;
--	if (pool_id < 0)
-+	fake_pool_id = page->mapping->host->i_sb->cleancache_poolid;
-+	if (fake_pool_id < 0)
- 		goto out;
-+	pool_id = get_poolid_from_fake(fake_pool_id);
+-	if (cleancache_enabled && cleancache_fs_enabled(page))
++	if (cleancache_enabled() && cleancache_fs_enabled(page))
+ 		ret = __cleancache_get_page(page);
+ 	return ret;
+ }
  
- 	if (cleancache_get_key(page->mapping->host, &key) < 0)
- 		goto out;
- 
--	ret = (*cleancache_ops.get_page)(pool_id, key, page->index, page);
-+	if (pool_id >= 0)
-+		ret = (*cleancache_ops.get_page)(pool_id,
-+				key, page->index, page);
- 	if (ret == 0)
- 		cleancache_succ_gets++;
- 	else
-@@ -134,16 +271,31 @@ EXPORT_SYMBOL(__cleancache_get_page);
-  * (previously-obtained per-filesystem) poolid and the page's,
-  * inode and page index.  Page must be locked.  Note that a put_page
-  * always "succeeds", though a subsequent get_page may succeed or fail.
-+ *
-+ * The function has two checks before any action is taken - whether
-+ * a backend is registered and whether the sb->cleancache_poolid
-+ * is correct.
-  */
- void __cleancache_put_page(struct page *page)
+ static inline void cleancache_put_page(struct page *page)
  {
- 	int pool_id;
-+	int fake_pool_id;
- 	struct cleancache_filekey key = { .u.key = { 0 } };
+-	if (cleancache_enabled && cleancache_fs_enabled(page))
++	if (cleancache_enabled() && cleancache_fs_enabled(page))
+ 		__cleancache_put_page(page);
+ }
  
-+	if (!backend_registered) {
-+		cleancache_puts++;
-+		return;
-+	}
-+
- 	VM_BUG_ON(!PageLocked(page));
--	pool_id = page->mapping->host->i_sb->cleancache_poolid;
-+	fake_pool_id = page->mapping->host->i_sb->cleancache_poolid;
-+	if (fake_pool_id < 0)
-+		return;
-+
-+	pool_id = get_poolid_from_fake(fake_pool_id);
-+
- 	if (pool_id >= 0 &&
--	      cleancache_get_key(page->mapping->host, &key) >= 0) {
-+		cleancache_get_key(page->mapping->host, &key) >= 0) {
- 		(*cleancache_ops.put_page)(pool_id, key, page->index, page);
- 		cleancache_puts++;
- 	}
-@@ -153,19 +305,31 @@ EXPORT_SYMBOL(__cleancache_put_page);
- /*
-  * Invalidate any data from cleancache associated with the poolid and the
-  * page's inode and page index so that a subsequent "get" will fail.
-+ *
-+ * The function has two checks before any action is taken - whether
-+ * a backend is registered and whether the sb->cleancache_poolid
-+ * is correct.
-  */
- void __cleancache_invalidate_page(struct address_space *mapping,
+@@ -101,13 +107,13 @@ static inline void cleancache_invalidate_page(struct address_space *mapping,
  					struct page *page)
  {
  	/* careful... page->mapping is NULL sometimes when this is called */
--	int pool_id = mapping->host->i_sb->cleancache_poolid;
-+	int pool_id;
-+	int fake_pool_id = mapping->host->i_sb->cleancache_poolid;
- 	struct cleancache_filekey key = { .u.key = { 0 } };
- 
--	if (pool_id >= 0) {
-+	if (!backend_registered)
-+		return;
-+
-+	if (fake_pool_id >= 0) {
-+		pool_id = get_poolid_from_fake(fake_pool_id);
-+		if (pool_id < 0)
-+			return;
-+
- 		VM_BUG_ON(!PageLocked(page));
- 		if (cleancache_get_key(mapping->host, &key) >= 0) {
- 			(*cleancache_ops.invalidate_page)(pool_id,
--							  key, page->index);
-+					key, page->index);
- 			cleancache_invalidates++;
- 		}
- 	}
-@@ -176,12 +340,25 @@ EXPORT_SYMBOL(__cleancache_invalidate_page);
-  * Invalidate all data from cleancache associated with the poolid and the
-  * mappings's inode so that all subsequent gets to this poolid/inode
-  * will fail.
-+ *
-+ * The function has two checks before any action is taken - whether
-+ * a backend is registered and whether the sb->cleancache_poolid
-+ * is correct.
-  */
- void __cleancache_invalidate_inode(struct address_space *mapping)
- {
--	int pool_id = mapping->host->i_sb->cleancache_poolid;
-+	int pool_id;
-+	int fake_pool_id = mapping->host->i_sb->cleancache_poolid;
- 	struct cleancache_filekey key = { .u.key = { 0 } };
- 
-+	if (!backend_registered)
-+		return;
-+
-+	if (fake_pool_id < 0)
-+		return;
-+
-+	pool_id = get_poolid_from_fake(fake_pool_id);
-+
- 	if (pool_id >= 0 && cleancache_get_key(mapping->host, &key) >= 0)
- 		(*cleancache_ops.invalidate_inode)(pool_id, key);
+-	if (cleancache_enabled && cleancache_fs_enabled_mapping(mapping))
++	if (cleancache_enabled() && cleancache_fs_enabled_mapping(mapping))
+ 		__cleancache_invalidate_page(mapping, page);
  }
-@@ -189,21 +366,37 @@ EXPORT_SYMBOL(__cleancache_invalidate_inode);
+ 
+ static inline void cleancache_invalidate_inode(struct address_space *mapping)
+ {
+-	if (cleancache_enabled && cleancache_fs_enabled_mapping(mapping))
++	if (cleancache_enabled() && cleancache_fs_enabled_mapping(mapping))
+ 		__cleancache_invalidate_inode(mapping);
+ }
+ 
+diff --git a/include/linux/frontswap.h b/include/linux/frontswap.h
+index c120b90..3d72f14 100644
+--- a/include/linux/frontswap.h
++++ b/include/linux/frontswap.h
+@@ -113,7 +113,7 @@ static inline int frontswap_load(struct page *page)
+ 
+ static inline void frontswap_invalidate_page(unsigned type, pgoff_t offset)
+ {
+-	if (frontswap_enabled)
++	if (static_key_false(&frontswap_key))
+ 		__frontswap_invalidate_page(type, offset);
+ }
+ 
+diff --git a/mm/cleancache.c b/mm/cleancache.c
+index 5d8dbb9..de0b905 100644
+--- a/mm/cleancache.c
++++ b/mm/cleancache.c
+@@ -24,9 +24,17 @@
+  * is not claimed (e.g. cleancache is config'ed on but remains
+  * disabled), so is preferred to the slower alternative: a function
+  * call that checks a non-global.
++ *
++ * When set to false (default) all calls to the cleancache functions, except
++ * the __cleancache_invalidate_fs and __cleancache_init_[shared|]fs are guarded
++ * by the if (cleancache_enabled()) return. This means multiple threads (from
++ * different filesystems) will be doing a NOP - b/c by default the
++ * cleancache_enabled() is returing false. The usage of a static_key allows
++ * us to patch up the code and allow the flood-gates to open when a backend
++ * has registered. Vice versa when unloading a backend.
+  */
+-int cleancache_enabled __read_mostly;
+-EXPORT_SYMBOL(cleancache_enabled);
++struct static_key cleancache_key __read_mostly;
++EXPORT_SYMBOL(cleancache_key);
  
  /*
-  * Called by any cleancache-enabled filesystem at time of unmount;
-- * note that pool_id is surrendered and may be reutrned by a subsequent
-- * cleancache_init_fs or cleancache_init_shared_fs
-+ * note that pool_id is surrendered and may be returned by a subsequent
-+ * cleancache_init_fs or cleancache_init_shared_fs.
+  * cleancache_ops is set by cleancache_ops_register to contain the pointers
+@@ -70,18 +78,6 @@ static char *uuids[MAX_INITIALIZABLE_FS];
   */
- void __cleancache_invalidate_fs(struct super_block *sb)
- {
--	if (sb->cleancache_poolid >= 0) {
--		int old_poolid = sb->cleancache_poolid;
--		sb->cleancache_poolid = -1;
--		(*cleancache_ops.invalidate_fs)(old_poolid);
-+	int index;
-+	int fake_pool_id = sb->cleancache_poolid;
-+	int old_poolid = fake_pool_id;
-+
-+	mutex_lock(&poolid_mutex);
-+	if (fake_pool_id >= FAKE_SHARED_FS_POOLID_OFFSET) {
-+		index = fake_pool_id - FAKE_SHARED_FS_POOLID_OFFSET;
-+		old_poolid = shared_fs_poolid_map[index];
-+		shared_fs_poolid_map[index] = FS_UNKNOWN;
-+		uuids[index] = NULL;
-+	} else if (fake_pool_id >= FAKE_FS_POOLID_OFFSET) {
-+		index = fake_pool_id - FAKE_FS_POOLID_OFFSET;
-+		old_poolid = fs_poolid_map[index];
-+		fs_poolid_map[index] = FS_UNKNOWN;
- 	}
-+	sb->cleancache_poolid = -1;
-+	if (backend_registered)
-+		(*cleancache_ops.invalidate_fs)(old_poolid);
-+	mutex_unlock(&poolid_mutex);
- }
- EXPORT_SYMBOL(__cleancache_invalidate_fs);
+ static DEFINE_MUTEX(poolid_mutex);
+ /*
+- * When set to false (default) all calls to the cleancache functions, except
+- * the __cleancache_invalidate_fs and __cleancache_init_[shared|]fs are guarded
+- * by the if (!cleancache_ops) return. This means multiple threads (from
+- * different filesystems) will be checking cleancache_ops. The usage of a
+- * bool instead of a atomic_t or a bool guarded by a spinlock is OK - we are
+- * OK if the time between the backend's have been initialized (and
+- * cleancache_ops has been set to not NULL) and when the filesystems start
+- * actually calling the backends. The inverse (when unloading) is obviously
+- * not good - but this shim does not do that (yet).
+- */
+-
+-/*
+  * The backends and filesystems work all asynchronously. This is b/c the
+  * backends can be built as modules.
+  * The usual sequence of events is:
+@@ -89,13 +85,13 @@ static DEFINE_MUTEX(poolid_mutex);
+  * 		[shared_|]fs_poolid_map and uuids for.
+  *
+  * 	b). user does I/Os -> we call the rest of __cleancache_* functions
+- * 		which return immediately as cleancache_ops is NULL.
++ * 		which return immediately as cleancache_enabled() returns false.
+  *
+  * 	c). modprobe zcache -> cleancache_register_ops. We init the backend
+  * 		and set cleancache_ops to the backend, and for any fs_poolid_map
+  * 		(which is set by __cleancache_init_fs) we initialize the poolid.
+  *
+- * 	d). user does I/Os -> now that clean_ops is not NULL all the
++ * 	d). user does I/Os -> now that cleancache_enabled is turned to on, the
+  * 		__cleancache_* functions can call the backend. They all check
+  * 		that fs_poolid_map is valid and if so invoke the backend.
+  *
+@@ -111,8 +107,8 @@ static DEFINE_MUTEX(poolid_mutex);
+  * of unmounting process).
+  *
+  * Note: The acute reader will notice that there is no "rmmod zcache" case.
+- * This is b/c the functionality for that is not yet implemented and when
+- * done, will require some extra locking not yet devised.
++ * This is b/c the functionality for that is not yet implemented in the
++ * backend. In here, it will require turning the cleancache_key off.
+  */
  
- static int __init init_cleancache(void)
- {
-+	int i;
-+
- #ifdef CONFIG_DEBUG_FS
- 	struct dentry *root = debugfs_create_dir("cleancache", NULL);
- 	if (root == NULL)
-@@ -215,6 +408,11 @@ static int __init init_cleancache(void)
- 	debugfs_create_u64("invalidates", S_IRUGO,
- 				root, &cleancache_invalidates);
- #endif
-+	for (i = 0; i < MAX_INITIALIZABLE_FS; i++) {
-+		fs_poolid_map[i] = FS_UNKNOWN;
-+		shared_fs_poolid_map[i] = FS_UNKNOWN;
-+	}
-+	cleancache_enabled = 1;
+ /*
+@@ -139,6 +135,8 @@ struct cleancache_ops *cleancache_register_ops(struct cleancache_ops *ops)
+ 	 */
+ 	barrier();
+ 	cleancache_ops = ops;
++	if (!static_key_enabled(&cleancache_key))
++		static_key_slow_inc(&cleancache_key);
+ 	mutex_unlock(&poolid_mutex);
+ 	return old;
+ }
+@@ -242,11 +240,6 @@ int __cleancache_get_page(struct page *page)
+ 	int fake_pool_id;
+ 	struct cleancache_filekey key = { .u.key = { 0 } };
+ 
+-	if (!cleancache_ops) {
+-		cleancache_failed_gets++;
+-		goto out;
+-	}
+-
+ 	VM_BUG_ON(!PageLocked(page));
+ 	fake_pool_id = page->mapping->host->i_sb->cleancache_poolid;
+ 	if (fake_pool_id < 0)
+@@ -284,11 +277,6 @@ void __cleancache_put_page(struct page *page)
+ 	int fake_pool_id;
+ 	struct cleancache_filekey key = { .u.key = { 0 } };
+ 
+-	if (!cleancache_ops) {
+-		cleancache_puts++;
+-		return;
+-	}
+-
+ 	VM_BUG_ON(!PageLocked(page));
+ 	fake_pool_id = page->mapping->host->i_sb->cleancache_poolid;
+ 	if (fake_pool_id < 0)
+@@ -320,9 +308,6 @@ void __cleancache_invalidate_page(struct address_space *mapping,
+ 	int fake_pool_id = mapping->host->i_sb->cleancache_poolid;
+ 	struct cleancache_filekey key = { .u.key = { 0 } };
+ 
+-	if (!cleancache_ops)
+-		return;
+-
+ 	if (fake_pool_id >= 0) {
+ 		pool_id = get_poolid_from_fake(fake_pool_id);
+ 		if (pool_id < 0)
+@@ -353,9 +338,6 @@ void __cleancache_invalidate_inode(struct address_space *mapping)
+ 	int fake_pool_id = mapping->host->i_sb->cleancache_poolid;
+ 	struct cleancache_filekey key = { .u.key = { 0 } };
+ 
+-	if (!cleancache_ops)
+-		return;
+-
+ 	if (fake_pool_id < 0)
+ 		return;
+ 
+@@ -389,7 +371,7 @@ void __cleancache_invalidate_fs(struct super_block *sb)
+ 		fs_poolid_map[index] = FS_UNKNOWN;
+ 	}
+ 	sb->cleancache_poolid = -1;
+-	if (cleancache_ops)
++	if (cleancache_enabled())
+ 		cleancache_ops->invalidate_fs(old_poolid);
+ 	mutex_unlock(&poolid_mutex);
+ }
+@@ -414,7 +396,6 @@ static int __init init_cleancache(void)
+ 		fs_poolid_map[i] = FS_UNKNOWN;
+ 		shared_fs_poolid_map[i] = FS_UNKNOWN;
+ 	}
+-	cleancache_enabled = 1;
  	return 0;
  }
  module_init(init_cleancache)
