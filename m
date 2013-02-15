@@ -1,36 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751327Ab3BOUjV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 15:39:21 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:44453 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750832Ab3BOUjU (ORCPT
+	id S1751064Ab3BOUrC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 15:47:02 -0500
+Received: from smtprelay-h21.telenor.se ([195.54.99.196]:34380 "EHLO
+	smtprelay-h21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750755Ab3BOUrA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 15:39:20 -0500
-Date: Fri, 15 Feb 2013 15:39:13 -0500 (EST)
-Message-Id: <20130215.153913.1285091915738918107.davem@davemloft.net>
-To: hannes@cmpxchg.org
-Cc: akpm@linux-foundation.org, rusty@rustcorp.com.au,
-        linux-kernel@vger.kernel.org, npiggin@suse.de,
-        stewart@flamingspork.com, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [patch 1/2] mm: fincore()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20130215063450.GA24047@cmpxchg.org>
-References: <20130211162701.GB13218@cmpxchg.org>
-	<20130211141239.f4decf03.akpm@linux-foundation.org>
-	<20130215063450.GA24047@cmpxchg.org>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Fri, 15 Feb 2013 15:47:00 -0500
+X-SENDER-IP: [85.230.168.206]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AiNEAEGdHlFV5qjOPGdsb2JhbABEhgIBhH21B3wXAwEBAQE4NIIfAQEFOhwTAQ8QCAMYCSUPBQ0YChoTiAADE7NtDYlaFYw9glkHgl9hA5ROgVmGAYVCiBs
+X-IronPort-AV: E=Sophos;i="4.84,675,1355094000"; 
+   d="scan'208";a="281694961"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Fri, 15 Feb 2013 21:47:42 +0100
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/7] HID: Extend the interface with wait io request
+Message-ID: <20130215204742.GA25671@polaris.bitmath.org>
+References: <1360334256-22127-1-git-send-email-benjamin.tissoires@gmail.com>
+ <1360334256-22127-3-git-send-email-benjamin.tissoires@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1360334256-22127-3-git-send-email-benjamin.tissoires@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johannes Weiner <hannes@cmpxchg.org>
-Date: Fri, 15 Feb 2013 01:34:50 -0500
+On Fri, Feb 08, 2013 at 03:37:31PM +0100, Benjamin Tissoires wrote:
+> Some drivers need to wait for an io from the underlying device, creating
+> an unwanted dependency on the underlying transport layer. This patch adds
+> wait() to the interface, thereby removing usbhid from the lion share of
+> the drivers.
+> 
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+> ---
+>  drivers/hid/usbhid/hid-core.c |  1 +
+>  include/linux/hid.h           | 14 ++++++++++++++
+>  2 files changed, 15 insertions(+)
 
-> +	nr_pages = DIV_ROUND_UP(len, PAGE_CACHE_SIZE);
+    Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
 
-A small nit, maybe use PAGE_CACHE_ALIGN() here.
+Thank you, Benjamin,
+Henrik
