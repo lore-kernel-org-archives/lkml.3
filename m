@@ -1,145 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934730Ab3BODMF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 22:12:05 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:56122 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932322Ab3BODMC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 22:12:02 -0500
-X-IronPort-AV: E=Sophos;i="4.84,669,1355068800"; 
-   d="scan'208";a="6712753"
-From: liguang <lig.fnst@cn.fujitsu.com>
-To: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, x86@kernel.org
-Cc: rientjes@google.com, isimatu.yasuaki@jp.fujitsu.com,
-        liguang <lig.fnst@cn.fujitsu.com>
-Subject: [PATCH v4 2/4] numa: avoid export acpi_numa variable
-Date: Fri, 15 Feb 2013 10:23:10 +0800
-Message-Id: <1360894992-14818-3-git-send-email-lig.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1360894992-14818-1-git-send-email-lig.fnst@cn.fujitsu.com>
-References: <1360894992-14818-1-git-send-email-lig.fnst@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/15 10:23:17,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/15 10:23:19,
-	Serialize complete at 2013/02/15 10:23:19
+	id S935220Ab3BODcW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 22:32:22 -0500
+Received: from na3sys009aog133.obsmtp.com ([74.125.149.82]:33970 "EHLO
+	na3sys009aog133.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932322Ab3BODcV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 22:32:21 -0500
+Message-ID: <511DAC56.8080404@marvell.com>
+Date: Fri, 15 Feb 2013 11:32:38 +0800
+From: Qing Xu <qingx@marvell.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH 4/9] mfd: max8925: fix trivial build warning for non-dt
+References: <1360880818-4071454-1-git-send-email-arnd@arndb.de> <1360880818-4071454-5-git-send-email-arnd@arndb.de>
+In-Reply-To: <1360880818-4071454-5-git-send-email-arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 15 Feb 2013 03:32:13.0334 (UTC) FILETIME=[0B6B5360:01CE0B2D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-acpi_numa is used to prevent srat table
-being parsed, seems a little miss-named,
-if 'noacpi' was specified by cmdline and
-CONFIG_ACPI_NUMA was enabled, acpi_numa
-will be operated directly from everywhere
-it needed to disable/enable numa in acpi
-mode which was a bad thing, so, try to
-export a fuction to get srat table
-enable/disable info.
+On 02/15/2013 06:26 AM, Arnd Bergmann wrote:
+> Patch fe527ea5a "mfd: max8925: Support dt for backlight"
+> added a new function for DT probing but introduced a
+> build warning for the case where CONFIG_OF is disabled:
+>
+> drivers/video/backlight/max8925_bl.c: In function 'max8925_backlight_probe':
+> drivers/video/backlight/max8925_bl.c:177:3: warning: statement with no effect [-Wunused-value]
+>
+> A much nicer fix is to use the IS_ENABLED keyword to
+> have the same effect of dropping the device tree specific
+> function when it's not needed.
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Qing Xu <qingx@marvell.com>
+> Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> ---
+>   drivers/video/backlight/max8925_bl.c | 6 +-----
+>   1 file changed, 1 insertion(+), 5 deletions(-)
+>
+> diff --git a/drivers/video/backlight/max8925_bl.c b/drivers/video/backlight/max8925_bl.c
+> index 5ca11b0..9958fb1 100644
+> --- a/drivers/video/backlight/max8925_bl.c
+> +++ b/drivers/video/backlight/max8925_bl.c
+> @@ -101,14 +101,13 @@ static const struct backlight_ops max8925_backlight_ops = {
+>   	.get_brightness	= max8925_backlight_get_brightness,
+>   };
+>   
+> -#ifdef CONFIG_OF
+>   static int max8925_backlight_dt_init(struct platform_device *pdev,
+>   			      struct max8925_backlight_pdata *pdata)
+>   {
+>   	struct device_node *nproot = pdev->dev.parent->of_node, *np;
+>   	int dual_string;
+>   
+> -	if (!nproot)
+> +	if (!nproot || !IS_ENABLED(CONFIG_OF))
+>   		return -ENODEV;
+>   	np = of_find_node_by_name(nproot, "backlight");
+>   	if (!np) {
+> @@ -120,9 +119,6 @@ static int max8925_backlight_dt_init(struct platform_device *pdev,
+>   	pdata->dual_string = dual_string;
+>   	return 0;
+>   }
+> -#else
+> -#define max8925_backlight_dt_init(x, y)	(-1)
+> -#endif
+>   
+>   static int max8925_backlight_probe(struct platform_device *pdev)
+>   {
 
-Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
----
- arch/x86/include/asm/acpi.h |    2 +-
- arch/x86/kernel/acpi/srat.c |   21 +++++++++++++--------
- arch/x86/mm/numa.c          |    2 +-
- arch/x86/xen/enlighten.c    |    2 +-
- 4 files changed, 16 insertions(+), 11 deletions(-)
-
-diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
-index b31bf97..449e12a 100644
---- a/arch/x86/include/asm/acpi.h
-+++ b/arch/x86/include/asm/acpi.h
-@@ -177,7 +177,7 @@ static inline void disable_acpi(void) { }
- #define ARCH_HAS_POWER_INIT	1
- 
- #ifdef CONFIG_ACPI_NUMA
--extern int acpi_numa;
-+extern void disable_acpi_numa(void);
- extern int x86_acpi_numa_init(void);
- #endif /* CONFIG_ACPI_NUMA */
- 
-diff --git a/arch/x86/kernel/acpi/srat.c b/arch/x86/kernel/acpi/srat.c
-index cdd0da9..1b5b461 100644
---- a/arch/x86/kernel/acpi/srat.c
-+++ b/arch/x86/kernel/acpi/srat.c
-@@ -24,22 +24,27 @@
- #include <asm/apic.h>
- #include <asm/uv/uv.h>
- 
--int acpi_numa __initdata;
-+static bool acpi_numa __initdata;
- 
- static __init int setup_node(int pxm)
- {
- 	return acpi_map_pxm_to_node(pxm);
- }
- 
--static __init void bad_srat(void)
-+void __init disable_acpi_numa(void)
- {
--	printk(KERN_ERR "SRAT: SRAT not used.\n");
--	acpi_numa = -1;
-+	acpi_numa = false;
- }
- 
--static __init inline int srat_disabled(void)
-+static void __init bad_srat(void)
- {
--	return acpi_numa < 0;
-+	disable_acpi_numa();
-+	printk(KERN_ERR "SRAT: SRAT will not be used.\n");
-+}
-+
-+static bool __init srat_disabled(void)
-+{
-+	return acpi_numa == false;
- }
- 
- /* Callback for SLIT parsing */
-@@ -88,7 +93,7 @@ acpi_numa_x2apic_affinity_init(struct acpi_srat_x2apic_cpu_affinity *pa)
- 	}
- 	set_apicid_to_node(apic_id, node);
- 	node_set(node, numa_nodes_parsed);
--	acpi_numa = 1;
-+	acpi_numa = true;
- 	printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%04x -> Node %u\n",
- 	       pxm, apic_id, node);
- }
-@@ -130,7 +135,7 @@ acpi_numa_processor_affinity_init(struct acpi_srat_cpu_affinity *pa)
- 
- 	set_apicid_to_node(apic_id, node);
- 	node_set(node, numa_nodes_parsed);
--	acpi_numa = 1;
-+	acpi_numa = true;
- 	printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%02x -> Node %u\n",
- 	       pxm, apic_id, node);
- }
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index 245a4ba..1ebc907 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -47,7 +47,7 @@ static __init int numa_setup(char *opt)
- #endif
- #ifdef CONFIG_ACPI_NUMA
- 	if (!strncmp(opt, "noacpi", 6))
--		acpi_numa = -1;
-+		disable_acpi_numa();
- #endif
- 	return 0;
- }
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index 657eca9..3636bc6 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1447,7 +1447,7 @@ asmlinkage void __init xen_start_kernel(void)
- 	 * any NUMA information the kernel tries to get from ACPI will
- 	 * be meaningless.  Prevent it from trying.
- 	 */
--	acpi_numa = -1;
-+	disable_acpi_numa();
- #endif
- 
- 	/* Don't do the full vcpu_info placement stuff until we have a
--- 
-1.7.2.5
+thanks, I am ok with the change.
 
