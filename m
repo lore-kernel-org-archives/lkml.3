@@ -1,40 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161722Ab3BON27 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 08:28:59 -0500
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:37673 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161373Ab3BON24 (ORCPT
+	id S1161739Ab3BONb1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 08:31:27 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:39097 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161179Ab3BONb0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 08:28:56 -0500
+	Fri, 15 Feb 2013 08:31:26 -0500
+Date: Fri, 15 Feb 2013 08:31:21 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] (xen) stable/for-jens-3.8
+Message-ID: <20130215133121.GF11777@phenom.dumpdata.com>
+References: <20130214232630.GA8440@phenom.dumpdata.com>
+ <20130215093052.GZ21269@kernel.dk>
 MIME-Version: 1.0
-In-Reply-To: <2881062.pPx9cdkTcn@vostro.rjw.lan>
-References: <6075901.uWCJMxDDFf@vostro.rjw.lan>
-	<1360867132-13004-1-git-send-email-dirk.brandewie@gmail.com>
-	<CAOh2x=mH0k8ZB0Qq+q=2bxwHcMUVmj-cy-=N4dBf=6Q2xd6nMw@mail.gmail.com>
-	<2881062.pPx9cdkTcn@vostro.rjw.lan>
-Date: Fri, 15 Feb 2013 18:58:55 +0530
-Message-ID: <CAKohpomECGhRkFp8afS0DvozZFJif3MhGFG5XX2T2RWzC3Ez9w@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq/intel_pstate: Add kernel command line option
- disable intel_pstate.
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: dirk.brandewie@gmail.com, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, Dirk Brandewie <dirk.j.brandewie@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130215093052.GZ21269@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 February 2013 18:00, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Friday, February 15, 2013 09:53:24 AM Viresh Kumar wrote:
->> Parameter to this is really not required. By default intel_pstate
->> driver is enabled, so just past disable_intel_pstate from command line
->> without any args.
->
-> Well, quite frankly, I'm fine with both.  It all boils down to passing a
-> specific string on the kernel command line.
+On Fri, Feb 15, 2013 at 10:30:52AM +0100, Jens Axboe wrote:
+> On Thu, Feb 14 2013, Konrad Rzeszutek Wilk wrote:
+> > Hey Jens,
+> > 
+> > Please git pull the following branch:
+> > 
+> > git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-jens-3.8
+> > 
+> > which has fixes to the blkback that I hope you can push to Linus for 3.8.
+> > The one that is quite vicious is the "xen-blkfront: drop the use of
+> > llist_for_each_entry_safe". It is a fix to re-do an "free-ing" loop - otherwise
+> > we hit a GCC 4.1.1 bug (so RHEL5 based) that turns the loop in an unbound one.
+> 
+> Taking pulls this late better all be stable@ worty patches. Are they?
 
-Well, we are all looking to save worlds power here and my suggestion
-would definitely use less power as it has less instructions to execute.
-Just for fun!!.
+I think that is OK - considering I just sent you _another_ git pull.
+
+If it is not too much trouble, could you take it in your 3.9 tree and once Linus
+pulls them I will send an email to Greg asking them to backport the git commits?
+
+Much appreciated and sorry for these very late patches.
+
+> 
+> -- 
+> Jens Axboe
+> 
