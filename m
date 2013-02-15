@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934633Ab3BOCVh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 21:21:37 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:56381 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755302Ab3BOCVg (ORCPT
+	id S934898Ab3BOChY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 21:37:24 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:36052 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932394Ab3BOChX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 21:21:36 -0500
-Date: Fri, 15 Feb 2013 02:21:35 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Anatol Pomozov <anatol.pomozov@gmail.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Louis Huemiller <lhuemill@google.com>
-Subject: Re: [PATCH] fs: Preserve error code in get_empty_filp()
-Message-ID: <20130215022134.GA11376@ZenIV.linux.org.uk>
-References: <1347505915-27984-1-git-send-email-anatol.pomozov@gmail.com>
- <CAOMFOmWEifGsiq3t93FL6xjPDy1Y0OTJ+h+mek0Q=cn_sb+j2w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOMFOmWEifGsiq3t93FL6xjPDy1Y0OTJ+h+mek0Q=cn_sb+j2w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 14 Feb 2013 21:37:23 -0500
+Date: Fri, 15 Feb 2013 13:37:14 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>, <intel-gfx@lists.freedesktop.org>,
+        <dri-devel@lists.freedesktop.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the drm-intel tree
+Message-Id: <20130215133714.6f55139ad1a037b7b9fa1b70@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__15_Feb_2013_13_37_14_+1100_sUgGnzut2AhupKjY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 05, 2012 at 11:16:12AM -0700, Anatol Pomozov wrote:
-> Hi, AlViro
-> 
-> Is any reason why this change is ignored? For me it looks like a
-> straightforward bugfix.
-> 
-> A little bit of context for this change. We at Google work on a test
-> framework that shows how kernel behaves under memory pressure. In the
-> codepath that I am fixing the syscalls return ENFILE error, but in
-> fact the correct error would be ENOMEM. get_empty_filp() should
-> preserve the original error and not to replace all errors with ENFILE.
+--Signature=_Fri__15_Feb_2013_13_37_14_+1100_sUgGnzut2AhupKjY
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The trouble is, you are introducing previously impossible return values
-for pipe(2).  The rest of it is probably OK (even though I'd prefer to
-split get_empty_filp() part into a separate commit), but this one has
-potential for breaking previously correct userland code.  OTOH, FreeBSD has
-done that a while ago and they apparently had been able to cope with the
-fallout.
+Hi all,
 
-I'll put that thing sans the fs/pipe.c part in for-next, but IMO the
-change of pipe(2) shouldn't go in at the moment.
+After merging the drm-intel tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
+
+ERROR: "pm_vt_switch_unregister" [drivers/video/fb.ko] undefined!
+
+I have dropped the tree for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__15_Feb_2013_13_37_14_+1100_sUgGnzut2AhupKjY
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRHZ9aAAoJEECxmPOUX5FEHA8P/Rd1F9rpn4Ub6Yq6Q/Mt+XAm
+i/Uevjdd4qTwgfAY23Exw3iIeuZpdb4U2dCxHrJXKVutIjf0uNlAmmNyCRVE6A2y
+hGN+e2zZSdBdx3QHzOE1viLkrXYq2t01d9meEOaYjk7vfhUO5QHj5tzDSedx2xDL
+0pkk6s/Elf+rJDCnzR4ybN5zXsqpISaauhvlpeFF7ha4lKKKY77/wtv92IvFe7Vw
+QcX3aKkSnnOfhPMQcDP5DBpNEO/TKfjdqnnCvA6NxBZlgTdb3zxF4AIN8cHdGIdv
+XKZOQaqgGR4bIZ9TMV5CzkHKm9dx6xo5sv58Xkuviu3R+hhioFNerN6jWCwZt0mX
+4oi32P9jSuMIX6xz1GsnLVsjecqD6jLXV8wIte6GhclM9nmb6yfJMrmAGeQdrv/F
+7bZtsfcEvYWIA3Bm8CZUcvwikMrexD/srplvI1Zn3nvoHm3LsdSf60GD8Aw+1QNC
+wBG8TwKPEslPC6Y8zhiEFRARme9AWGiaIHVfVD7QCde4zVoYv5ZuN2mQ/Xm9TJO5
+BKo6CUzZ0kQDsm7Xl9ft77+nU9ZDg6ET0Aw1x4xUvJiqkusxTcMPdwQfsIAZISPB
+82nhUjJN7n/drrwRgNznn6uQF7o/Vzpzdq4eS6NwD5bGUDL8++uOEX+98uDVDfOz
+xCl7bJEQW2+gyiPlxzBz
+=1EaY
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__15_Feb_2013_13_37_14_+1100_sUgGnzut2AhupKjY--
