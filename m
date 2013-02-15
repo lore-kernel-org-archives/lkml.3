@@ -1,48 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751781Ab3BOTmP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 14:42:15 -0500
-Received: from mail-ye0-f174.google.com ([209.85.213.174]:38672 "EHLO
-	mail-ye0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751539Ab3BOTmN (ORCPT
+	id S1751906Ab3BOTm5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 14:42:57 -0500
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:40736 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751729Ab3BOTmy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 14:42:13 -0500
-Date: Fri, 15 Feb 2013 14:42:08 -0500
-From: Tom Horsley <horsley1953@gmail.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Mark Lord <kernel@start.ca>, Mark Lord <kernel@teksavvy.com>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        linux-nfs@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
-        =?utf-8?Q?Pawe=C5=82?= Sikora <pawel.sikora@agmk.net>,
-        Jason Tibbitts <tibbs@math.uh.edu>
-Subject: Re: BUG at net/sunrpc/svc_xprt.c:921 (another one)
-Message-ID: <20130215144208.56de59f3@tomh>
-In-Reply-To: <20130215192229.GC19923@fieldses.org>
-References: <50F63882.8000607@parallels.com>
-	<50F72F03.5070806@teksavvy.com>
-	<50F786AF.4070107@parallels.com>
-	<20130117130335.GD6598@fieldses.org>
-	<50F7FB7E.2020503@parallels.com>
-	<50F88C14.7030903@teksavvy.com>
-	<50F8DF7E.8080107@parallels.com>
-	<50FC74E0.20305@teksavvy.com>
-	<20130212205216.GE10267@fieldses.org>
-	<511BAAAA.9040804@start.ca>
-	<20130215192229.GC19923@fieldses.org>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.13; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 15 Feb 2013 14:42:54 -0500
+Message-ID: <511E8F3C.2010406@linux.vnet.ibm.com>
+Date: Sat, 16 Feb 2013 01:10:44 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Vincent Guittot <vincent.guittot@linaro.org>
+CC: paulmck@linux.vnet.ibm.com,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-doc@vger.kernel.org, peterz@infradead.org, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, walken@google.com, mingo@kernel.org,
+        linux-arch@vger.kernel.org, xiaoguangrong@linux.vnet.ibm.com,
+        wangyun@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        rostedt@goodmis.org, rjw@sisk.pl, namhyung@kernel.org,
+        tglx@linutronix.de, linux-arm-kernel@lists.infradead.org,
+        netdev@vger.kernel.org, oleg@redhat.com, sbw@mit.edu, tj@kernel.org,
+        akpm@linux-foundation.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v5 00/45] CPU hotplug: stop_machine()-free CPU hotplug
+References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com> <510FBC01.2030405@linux.vnet.ibm.com>	<87haloiwv0.fsf@rustcorp.com.au> <51134596.4080106@linux.vnet.ibm.com> <20130208154113.GV17833@n2100.arm.linux.org.uk> <51152B81.2050501@linux.vnet.ibm.com>	<51153F72.1060005@linux.vnet.ibm.com> <CAKfTPtCe+cD7LLkb+D6pqG1SwG2V08ws=4XO3ttHEHV2qgmqPg@mail.gmail.com> <5118E2CD.90401@linux.vnet.ibm.com> <20130211190852.GA5695@linux.vnet.ibm.com> <5119BDFD.1000909@linux.vnet.ibm.com> <CAKfTPtAo2hQTfBKTVUuLKgsGJ2ZLD0UTR3fH9UFuJwyFt4n__w@mail.gmail.com>
+In-Reply-To: <CAKfTPtAo2hQTfBKTVUuLKgsGJ2ZLD0UTR3fH9UFuJwyFt4n__w@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13021519-5564-0000-0000-0000069F6C41
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Feb 2013 14:22:29 -0500
-J. Bruce Fields wrote:
+Hi Vincent,
 
-> Any more reports positive or negative welcome.
+On 02/15/2013 06:58 PM, Vincent Guittot wrote:
+> Hi Srivatsa,
+> 
+> I have run some tests with you branch (thanks Paul for the git tree)
+> and you will find results below.
+>
 
-Well, I don't have the time or energy to try patches on my
-system at work, but these seem to be concerned with terminating
-an NFS connection. My aborts all happen at boot when it
-is trying to do the mount to begin with.
+Thank you very much for testing this patchset!
+ 
+> The tests condition are:
+> - 5 CPUs system in 2 clusters
+> - The test plugs/unplugs CPU2 and it increases the system load each 20
+> plug/unplug sequence with either more cyclictests threads
+> - The test is done with all CPUs online and with only CPU0 and CPU2
+> 
+> The main conclusion is that there is no differences with and without
+> your patches with my stress tests. I'm not sure that it was the
+> expected results but the cpu_down is already quite low : 4-5ms in
+> average
+> 
+
+Atleast my patchset doesn't perform _worse_ than mainline, with respect
+to cpu_down duration :-)
+
+So, here is the analysis:
+Stop-machine() doesn't really slow down CPU-down operation, if the rest
+of the CPUs are mostly running in userspace all the time. Because, the
+CPUs running userspace workloads cooperate very eagerly with the stop-machine
+dance - they receive the resched IPI, and allow the per-cpu cpu-stopper
+thread to monopolize the CPU, almost immediately.
+
+The scenario where stop-machine() takes longer to take effect is when
+most of the online CPUs are running in kernelspace, because, then the
+probability that they call preempt_disable() frequently (and hence inhibit
+stop-machine) is higher. That's why, in my tests, I ran genload from LTP
+which generated a lot of system-time (system-time in 'top' indicates activity
+in kernelspace). Hence my patchset showed significant improvement over
+mainline in my tests.
+
+However, your test is very useful too, if we measure a different parameter:
+the latency impact on the workloads running on the system (cyclic test).
+One other important aim of this patchset is to make hotplug as less intrusive
+as possible, for other workloads running on the system. So if you measure
+the cyclictest numbers, I would expect my patchset to show better numbers
+than mainline, when you do cpu-hotplug in parallel (same test that you did).
+Mainline would run stop-machine and hence interrupt the cyclic test tasks
+too often. My patchset wouldn't do that, and hence cyclic test should
+ideally show better numbers.
+
+I'd really appreciate if you could try that out and let me know how it
+goes.. :-) Thank you very much!
+
+Regards,
+Srivatsa S. Bhat
+
+> 
+> 
+> On 12 February 2013 04:58, Srivatsa S. Bhat
+> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>> On 02/12/2013 12:38 AM, Paul E. McKenney wrote:
+>>> On Mon, Feb 11, 2013 at 05:53:41PM +0530, Srivatsa S. Bhat wrote:
+>>>> On 02/11/2013 05:28 PM, Vincent Guittot wrote:
+>>>>> On 8 February 2013 19:09, Srivatsa S. Bhat
+>>>>> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>>>
+>>> [ . . . ]
+>>>
+>>>>>> Adding Vincent to CC, who had previously evaluated the performance and
+>>>>>> latency implications of CPU hotplug on ARM platforms, IIRC.
+>>>>>>
+>>>>>
+>>>>> Hi Srivatsa,
+>>>>>
+>>>>> I can try to run some of our stress tests on your patches.
+>>>>
+>>>> Great!
+>>>>
+>>>>> Have you
+>>>>> got a git tree that i can pull ?
+>>>>>
+>>>>
+>>>> Unfortunately, no, none at the moment..  :-(
+>>>
+>>> You do need to create an externally visible git tree.
+>>
+>> Ok, I'll do that soon.
+>>
+>>>  In the meantime,
+>>> I have added your series at rcu/bhat.2013.01.21a on -rcu:
+>>>
+>>> git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
+>>>
+>>> This should appear soon on a kernel.org mirror near you.  ;-)
+>>>
+>>
+>> Thank you very much, Paul! :-)
+>>
+>> Regards,
+>> Srivatsa S. Bhat
+>>
+
+
