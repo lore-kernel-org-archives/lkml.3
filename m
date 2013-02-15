@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751504Ab3BOTcv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 14:32:51 -0500
-Received: from mout.gmx.net ([212.227.15.18]:54267 "EHLO mout.gmx.net"
+	id S1751578Ab3BOTcx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 14:32:53 -0500
+Received: from mout.gmx.net ([212.227.15.18]:54096 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751440Ab3BOTct (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 14:32:49 -0500
+	id S1751440Ab3BOTcw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 14:32:52 -0500
 X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1/SNPp4CuDS+DUrKON5834e7hDIUyn5mOdh/eGGj5
-	NwOLVYq9eHFUhH
+X-Provags-ID: V01U2FsdGVkX19M1ilOKRZMejSOL52Cn+JLQ4pblCN6/liBgkOkRf
+	xG1ae2lJlVAjzY
 From: Peter Huewe <peterhuewe@gmx.de>
 To: Arnaud Patard <arnaud.patard@rtp-net.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Aaro Koskinen <aaro.koskinen@iki.fi>, Peter Huewe <peterhuewe@gmx.de>,
         =?UTF-8?q?Miguel=20G=C3=B3mez?= <magomez@igalia.com>,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/5] staging/xgifb: Consolidate if/else if with identical code branches
-Date: Fri, 15 Feb 2013 20:37:09 +0100
-Message-Id: <1360957033-11876-1-git-send-email-peterhuewe@gmx.de>
+Subject: [PATCH 3/5] staging/xgifb: Remove code without effect
+Date: Fri, 15 Feb 2013 20:37:11 +0100
+Message-Id: <1360957033-11876-3-git-send-email-peterhuewe@gmx.de>
 X-Mailer: git-send-email 1.7.8.6
+In-Reply-To: <1360957033-11876-1-git-send-email-peterhuewe@gmx.de>
+References: <1360957033-11876-1-git-send-email-peterhuewe@gmx.de>
 X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Both branches of this if statement execute the same code.
-Thus we can || them together and remove code duplication
+The tempal variable is assigned and then immediately overwritten.
+-> remove everything without effect.
+
+The inb is kept for possible side effects.
 
 Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 ---
- drivers/staging/xgifb/vb_setmode.c |    7 ++-----
- 1 files changed, 2 insertions(+), 5 deletions(-)
+ drivers/staging/xgifb/vb_setmode.c |    9 +--------
+ 1 files changed, 1 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/staging/xgifb/vb_setmode.c b/drivers/staging/xgifb/vb_setmode.c
-index 3d5c424..0b134af 100644
+index f5a9bb2..a602d43 100644
 --- a/drivers/staging/xgifb/vb_setmode.c
 +++ b/drivers/staging/xgifb/vb_setmode.c
-@@ -5572,13 +5572,10 @@ static void XGI_EnableBridge(struct xgifb_video_info *xgifb_info,
- 	if (pVBInfo->VBType & (VB_SIS301B | VB_SIS302B | VB_SIS301LV
- 			| VB_SIS302LV | VB_XGI301C)) {
- 		if (!(pVBInfo->SetFlag & DisableChA)) {
--			if (pVBInfo->SetFlag & EnableChA) {
-+			if ((pVBInfo->SetFlag & EnableChA) ||
-+			    (pVBInfo->VBInfo & SetCRT2ToDualEdge)) {
- 				/* Power on */
- 				xgifb_reg_set(pVBInfo->Part1Port, 0x1E, 0x20);
--			} else if (pVBInfo->VBInfo & SetCRT2ToDualEdge) {
--				/* Power on */
--				xgifb_reg_set(pVBInfo->Part1Port,
--						0x1E, 0x20);
- 			}
+@@ -1778,14 +1778,7 @@ static unsigned char XGI_GetVCLKPtr(unsigned short RefreshRateTableIndex,
  		}
+ 	} /* {End of VB} */
  
+-	tempal = inb((pVBInfo->P3ca + 0x02));
+-	tempal = tempal >> 2;
+-	tempal &= 0x03;
+-
+-	/* for Dot8 Scaling LCD */
+-	if ((pVBInfo->LCDInfo & EnableScalingLCD) && (modeflag & Charx8Dot))
+-		tempal = tempal ^ tempal; /* ; set to VCLK25MHz always */
+-
++	inb((pVBInfo->P3ca + 0x02));
+ 	tempal = XGI330_RefIndex[RefreshRateTableIndex].Ext_CRTVCLK;
+ 	return tempal;
+ }
 -- 
 1.7.8.6
 
