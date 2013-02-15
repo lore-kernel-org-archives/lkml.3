@@ -1,211 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161856Ab3BONuY (ORCPT <rfc822;w@1wt.eu>);
+	id S1161883Ab3BONu2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 08:50:28 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:55388 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161862Ab3BONuY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Feb 2013 08:50:24 -0500
-Received: from mga02.intel.com ([134.134.136.20]:25116 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161830Ab3BONuV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 08:50:21 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,673,1355126400"; 
-   d="scan'208";a="263150556"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Johan Hedberg <johan.hedberg@gmail.com>
-Cc: David Herrmann <dh.herrmann@googlemail.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        linux-api@vger.kernel.org, linux-input@vger.kernel.org,
-        Jiri Kosina <jkosina@suse.cz>,
-        RavindranathX Doddi <ravindranathx.doddi@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <20130215120022.GA23694@x220>
-References: <20130215112911.68A98E0085@blue.fi.intel.com> <CANq1E4T1QzOUOwWPpV6_55hVTXzXF4baShxpYaM0HNAgF0ffAg@mail.gmail.com> <20130215120022.GA23694@x220>
-Subject: Re: uhid: broken interface: 32/64-bit compatibility
-Content-Transfer-Encoding: 7bit
-Message-Id: <20130215135141.1EFCEE0085@blue.fi.intel.com>
-Date: Fri, 15 Feb 2013 15:51:41 +0200 (EET)
+Date: Sat, 16 Feb 2013 00:50:14 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Liu Jinsong <jinsong.liu@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: linux-next: build failure after merge of the xen-two tree
+Message-Id: <20130216005014.c8ce70e041f655d4c195c9fb@canb.auug.org.au>
+In-Reply-To: <20130215132624.GB11777@phenom.dumpdata.com>
+References: <20130215154551.d11e9d376d30d32b9673e6cc@canb.auug.org.au>
+	<20130215132624.GB11777@phenom.dumpdata.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Sat__16_Feb_2013_00_50_14_+1100_NxnTy3ajNgmNyQ=c"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Johan Hedberg wrote:
-> Hi David,
-> 
-> On Fri, Feb 15, 2013, David Herrmann wrote:
-> > On Fri, Feb 15, 2013 at 12:29 PM, Kirill A. Shutemov
-> > <kirill.shutemov@linux.intel.com> wrote:
-> > > Hi David and all,
-> > >
-> > > There's claim in uhid.h that the interface is "compatible even between
-> > > architectures". But it obviously is not true: struct uhid_create_req
-> > > contains pointer which breaks everything.
-> > >
-> > > The easy way to demonstrate the issue is compile uhid-example.c with -m32
-> > > and try to run it on 64 bit kernel. Creating of the device will fail.
-> > 
-> > Indeed, we missed that. We should probably also notify the HIDP
-> > developers as "struct hidp_connadd_req" suffers from the same
-> > problems. (CC'ed)
-> > 
-> > > I don't see an easy way to fix this. Few options:
-> > >
-> > > 1. Replace the pointer with u64. It will fix the issue, but it breaks ABI
-> > >    which is never a good idea. Not sure how many users interface already
-> > >    has.
-> > 
-> > The only users I am aware of is an HID debugging tool and experimental
-> > HoG Bluetooth support (bluez). Maybe Marcel or Johan can comment
-> > whether this is already used by bluez-5? If it is, then we shouldn't
-> > break ABI and go with #2+#3. Otherwise, I think changing to u64 should
-> > be ok.
-> > On the other hand, it would break any future build for older stable
-> > kernels so not breaking ABI is probably the best idea. Any comments? I
-> > can add a COMPAT fix and a comment to fix this in the next version of
-> > UHID_CREATE.
-> 
-> The HoG code in BlueZ 5 does indeed use this API and it's also not
-> anymore behind any kind of experimental flag (i.e. it is an officially
-> supported feature).
-> 
-> Johan
+--Signature=_Sat__16_Feb_2013_00_50_14_+1100_NxnTy3ajNgmNyQ=c
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Here's my attempt to fix the issue.
+Hi Konrad,
 
-Not sure if tricks with padding in a good idea. We can  just use __u64
-instead of pointer, but it will require update of userspace to silence
-cast warning and will cause warning if you will try to use updated
-userspace with old kernel headers.
+On Fri, 15 Feb 2013 08:26:24 -0500 Konrad Rzeszutek Wilk <konrad.wilk@oracl=
+e.com> wrote:
+>
+> Thank you. I keep on forgetting - but would it be OK for me to take this
+> patch in my tree? Or should I not since this is a new functionality that
+> Rafael is going to introduce in v3.9?
 
-Any comments?
+It is an API change in the pm tree that is not yet in Linus' tree.
 
->From 0a0989cf08952464f8cab73d066beb876ff42949 Mon Sep 17 00:00:00 2001
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Fri, 15 Feb 2013 15:33:59 +0200
-Subject: [PATCH] uhid: introduce new create event to fix 32/64-bit
- compatibility issue
+> And if so, perhaps I should tack it on in my tree, once Rafael does a git
+> pull to Linus? Or just point Linus to this git commit?
 
-Current create event has pointer in payload. It causes problem with
-32/64-bit compatibility. In particular it's not possible to use 32-bit
-userspace driver with 64-bit kernel.
+You should point Linus at this patch if the pm tree is merged first, or
+Rafael should do the same if the reverse happens.
 
-This patch deprecates old create event and introduce a new one. The new
-create event has padding for pointer on 32-bit system to extend pointer
-correctly.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Old userspace driver binaries will use old create event. It requires
-simple recompile to switch to new one.
+--Signature=_Sat__16_Feb_2013_00_50_14_+1100_NxnTy3ajNgmNyQ=c
+Content-Type: application/pgp-signature
 
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
----
- drivers/hid/uhid.c        |   31 +++++++++++++++++++++++++++++++
- include/uapi/linux/uhid.h |   24 +++++++++++++++++++++++-
- 2 files changed, 54 insertions(+), 1 deletion(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-diff --git a/drivers/hid/uhid.c b/drivers/hid/uhid.c
-index 714cd8c..2f0b0e4 100644
---- a/drivers/hid/uhid.c
-+++ b/drivers/hid/uhid.c
-@@ -343,6 +343,34 @@ err_free:
- 	return ret;
- }
- 
-+static int uhid_dev_old_create(struct uhid_device *uhid,
-+		struct uhid_event *ev)
-+{
-+	struct uhid_event *new;
-+
-+	new = kzalloc(sizeof(new), GFP_KERNEL);
-+	if (!new)
-+		return -ENOMEM;
-+
-+	new->type = UHID_CREATE;
-+	memcpy(new->u.create.name, ev->u.old_create.name, 128);
-+	memcpy(new->u.create.phys, ev->u.old_create.phys, 64);
-+	memcpy(new->u.create.uniq, ev->u.old_create.uniq, 64);
-+
-+	/* Assume kernel and userspace bitness are the same */
-+	new->u.create.rd_data = ev->u.old_create.rd_data;
-+
-+	new->u.create.rd_size = ev->u.old_create.rd_size;
-+	new->u.create.bus = ev->u.old_create.bus;
-+	new->u.create.vendor = ev->u.old_create.vendor;
-+	new->u.create.product = ev->u.old_create.product;
-+	new->u.create.version = ev->u.old_create.version;
-+	new->u.create.country = ev->u.old_create.country;
-+	memcpy(ev, new, sizeof(new));
-+	kfree(new);
-+	return uhid_dev_create(uhid, ev);
-+}
-+
- static int uhid_dev_destroy(struct uhid_device *uhid)
- {
- 	if (!uhid->running)
-@@ -507,6 +535,9 @@ static ssize_t uhid_char_write(struct file *file, const char __user *buffer,
- 	case UHID_CREATE:
- 		ret = uhid_dev_create(uhid, &uhid->input_buf);
- 		break;
-+	case UHID_OLD_CREATE:
-+		ret = uhid_dev_old_create(uhid, &uhid->input_buf);
-+		break;
- 	case UHID_DESTROY:
- 		ret = uhid_dev_destroy(uhid);
- 		break;
-diff --git a/include/uapi/linux/uhid.h b/include/uapi/linux/uhid.h
-index 9c6974f..bb18be8 100644
---- a/include/uapi/linux/uhid.h
-+++ b/include/uapi/linux/uhid.h
-@@ -23,7 +23,7 @@
- #include <linux/types.h>
- 
- enum uhid_event_type {
--	UHID_CREATE,
-+	UHID_OLD_CREATE,
- 	UHID_DESTROY,
- 	UHID_START,
- 	UHID_STOP,
-@@ -34,13 +34,34 @@ enum uhid_event_type {
- 	UHID_INPUT,
- 	UHID_FEATURE,
- 	UHID_FEATURE_ANSWER,
-+	UHID_CREATE,
- };
- 
-+struct uhid_old_create_req {
-+	__u8 name[128];
-+	__u8 phys[64];
-+	__u8 uniq[64];
-+	__u8 __user *rd_data;
-+	__u16 rd_size;
-+
-+	__u16 bus;
-+	__u32 vendor;
-+	__u32 product;
-+	__u32 version;
-+	__u32 country;
-+} __attribute__((__packed__));
-+
- struct uhid_create_req {
- 	__u8 name[128];
- 	__u8 phys[64];
- 	__u8 uniq[64];
-+#if __BITS_PER_LONG != 64 && __BYTE_ORDER == __BIG_ENDIAN
-+	__u32 __pad;
-+#endif
- 	__u8 __user *rd_data;
-+#if __BITS_PER_LONG != 64 && __BYTE_ORDER == __LITTLE_ENDIAN
-+	__u32 __pad;
-+#endif
- 	__u16 rd_size;
- 
- 	__u16 bus;
-@@ -92,6 +113,7 @@ struct uhid_event {
- 	__u32 type;
- 
- 	union {
-+		struct uhid_old_create_req old_create;
- 		struct uhid_create_req create;
- 		struct uhid_input_req input;
- 		struct uhid_output_req output;
--- 
- Kirill A. Shutemov
+iQIcBAEBCAAGBQJRHj0WAAoJEECxmPOUX5FEwtwP/jkXYyLbD7gu6iHuY2L3yaw0
+/mr/zzibC5epau7Mp/AYn8mbUU5twCQIGY7tRSkmul5DY5zwQxk9jRxwRLRZPfKc
+Pg2pG1vH37ynFjsgV2T2a8amGyO/vCFpNsGTljPABZwB17ftZLVTEm3dAMRfGNMX
+OvL+V4yMShkWhGxopfcylv/y3b18A0xLRWWUdAA0vtUGtm8aAsNaqE+xi/ZPpG/T
+hDp4k1m3C/dGNRVj4OTprpY9gKvWSI7QBXYmqTj+CB88gz7Njy3iNpqjaDILFjOQ
+zUKhZz5TmjOWzutbp2p9uYhqf9ysHB5cTIUPAOOqthN2/aTpfO0js2zw5Yg2higr
+l/V65h/T2UV0uXbVH06GLowqdztWO1XMXtuBa3/6768uVF+tLxtZRCw6PODhm5tC
+7sz3YLe78bkrpx7YFBesiCzZexiyzZ5CYZ2Yt0U51POP/WAzEMpE+wIKUYviYHHf
+sN2V/IkkS2223LrW2yQKAdZTqTFq3xnLLVMQ4wta+aJQILM0lQg1r2tk8LACiqb8
+NJJRoGcrT7TnGtJCGfHhFztqGH7aP7lOPOQraORMX6FIGSZa+5rlMF/2Wxhy/4k/
+oWgqBxxzKLTj/VZTlTSkfJ5a8WEojq670kC0cHM6LxKHVzjsfcYxlXTZzmO9xyIW
+GtsppRL7eQQWqoyAe+I6
+=COZ4
+-----END PGP SIGNATURE-----
+
+--Signature=_Sat__16_Feb_2013_00_50_14_+1100_NxnTy3ajNgmNyQ=c--
