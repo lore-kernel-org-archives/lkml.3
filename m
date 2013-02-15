@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161644Ab3BOMuL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 07:50:11 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:36328 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161511Ab3BOMqr (ORCPT
+	id S1161675Ab3BOMum (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 07:50:42 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:54859 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161286Ab3BOMqq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 07:46:47 -0500
+	Fri, 15 Feb 2013 07:46:46 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@stericsson.com, cbouatmailru@gmail.com,
         sameo@linux.intel.com,
         M BenZoubeir <mustapha.ben.zoubeir-xsig@stericsson.com>,
         Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 27/40] pm2301-charger: Adjust interrupt handler behavior
-Date: Fri, 15 Feb 2013 12:44:57 +0000
-Message-Id: <1360932310-30065-28-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 28/40] pm2301-charger: Add pm_runtime_resume & pm_runtime_suspend
+Date: Fri, 15 Feb 2013 12:44:58 +0000
+Message-Id: <1360932310-30065-29-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1360932310-30065-1-git-send-email-lee.jones@linaro.org>
 References: <1360932310-30065-1-git-send-email-lee.jones@linaro.org>
@@ -25,148 +25,145 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: M BenZoubeir <mustapha.ben.zoubeir-xsig@stericsson.com>
 
+To optimize the current consumption we use pm_runtime autosuspend
+functions which execute the pm_runtime_suspend after a delay of
+inactivity on the other hand we use pm_runtime_resume every time
+we receive an interruption to wake up the pm2301.
+
 Signed-off-by: M BenZoubeir <mustapha.ben.zoubeir-xsig@stericsson.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Reviewed-by: Philippe LANGLAIS <philippe.langlais@stericsson.com>
 ---
- drivers/power/pm2301_charger.c |   45 +++++++++++++++++++++-------------------
- include/linux/pm2301_charger.h |    2 +-
- 2 files changed, 25 insertions(+), 22 deletions(-)
+ drivers/power/pm2301_charger.c |   68 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 68 insertions(+)
 
 diff --git a/drivers/power/pm2301_charger.c b/drivers/power/pm2301_charger.c
-index 7f82431..98e27a8 100644
+index 98e27a8..2cc92ec 100644
 --- a/drivers/power/pm2301_charger.c
 +++ b/drivers/power/pm2301_charger.c
-@@ -493,14 +493,16 @@ static irqreturn_t  pm2xxx_irq_int(int irq, void *data)
+@@ -29,6 +29,7 @@
+ #include <linux/mfd/abx500/ux500_chargalg.h>
+ #include <linux/pm2301_charger.h>
+ #include <linux/gpio.h>
++#include <linux/pm_runtime.h>
+ 
+ #include "pm2301_charger.h"
+ 
+@@ -36,6 +37,7 @@
+ 		struct pm2xxx_charger, ac_chg)
+ #define SLEEP_MIN		50
+ #define SLEEP_MAX		100
++#define PM2XXX_AUTOSUSPEND_DELAY 500
+ 
+ static int pm2xxx_interrupt_registers[] = {
+ 	PM2XXX_REG_INT1,
+@@ -493,6 +495,9 @@ static irqreturn_t  pm2xxx_irq_int(int irq, void *data)
  	struct pm2xxx_interrupts *interrupt = pm2->pm2_int;
  	int i;
  
--	for (i = 0; i < PM2XXX_NUM_INT_REG; i++) {
--		 pm2xxx_reg_read(pm2,
-+	do {
-+		for (i = 0; i < PM2XXX_NUM_INT_REG; i++) {
-+			pm2xxx_reg_read(pm2,
- 				pm2xxx_interrupt_registers[i],
- 				&(interrupt->reg[i]));
++	/* wake up the device */
++	pm_runtime_get_sync(pm2->dev);
++
+ 	do {
+ 		for (i = 0; i < PM2XXX_NUM_INT_REG; i++) {
+ 			pm2xxx_reg_read(pm2,
+@@ -504,6 +509,9 @@ static irqreturn_t  pm2xxx_irq_int(int irq, void *data)
+ 		}
+ 	} while (gpio_get_value(pm2->pdata->gpio_irq_number) == 0);
  
--		if (interrupt->reg[i] > 0)
--			interrupt->handler[i](pm2, interrupt->reg[i]);
--	}
-+			if (interrupt->reg[i] > 0)
-+				interrupt->handler[i](pm2, interrupt->reg[i]);
-+		}
-+	} while (gpio_get_value(pm2->pdata->gpio_irq_number) == 0);
- 
++	pm_runtime_mark_last_busy(pm2->dev);
++	pm_runtime_put_autosuspend(pm2->dev);
++
  	return IRQ_HANDLED;
  }
-@@ -951,6 +953,7 @@ static int __devinit pm2xxx_wall_charger_probe(struct i2c_client *i2c_client,
- 	struct pm2xxx_charger *pm2;
- 	int ret = 0;
- 	u8 val;
-+	int i;
  
- 	pm2 = kzalloc(sizeof(struct pm2xxx_charger), GFP_KERNEL);
- 	if (!pm2) {
-@@ -1062,24 +1065,25 @@ static int __devinit pm2xxx_wall_charger_probe(struct i2c_client *i2c_client,
- 	}
+@@ -946,6 +954,53 @@ static int pm2xxx_wall_charger_suspend(struct i2c_client *i2c_client,
+ 	return 0;
+ }
  
- 	/* Register interrupts */
--	ret = request_threaded_irq(pm2->pdata->irq_number, NULL,
-+	ret = request_threaded_irq(gpio_to_irq(pm2->pdata->gpio_irq_number),
-+				NULL,
- 				pm2xxx_charger_irq[0].isr,
- 				pm2->pdata->irq_type,
- 				pm2xxx_charger_irq[0].name, pm2);
- 
- 	if (ret != 0) {
- 		dev_err(pm2->dev, "failed to request %s IRQ %d: %d\n",
--		pm2xxx_charger_irq[0].name, pm2->pdata->irq_number, ret);
-+		pm2xxx_charger_irq[0].name,
-+			gpio_to_irq(pm2->pdata->gpio_irq_number), ret);
++#ifdef CONFIG_PM
++static int  pm2xxx_runtime_suspend(struct device *dev)
++{
++	struct i2c_client *pm2xxx_i2c_client = to_i2c_client(dev);
++	struct pm2xxx_charger *pm2;
++	int ret = 0;
++
++	pm2 = (struct pm2xxx_charger *)i2c_get_clientdata(pm2xxx_i2c_client);
++	if (!pm2) {
++		dev_err(pm2->dev, "no pm2xxx_charger data supplied\n");
++		ret = -EINVAL;
++		return ret;
++	}
++
++	clear_lpn_pin(pm2);
++
++	return ret;
++}
++
++static int  pm2xxx_runtime_resume(struct device *dev)
++{
++	struct i2c_client *pm2xxx_i2c_client = to_i2c_client(dev);
++	struct pm2xxx_charger *pm2;
++	int ret = 0;
++
++	pm2 = (struct pm2xxx_charger *)i2c_get_clientdata(pm2xxx_i2c_client);
++	if (!pm2) {
++		dev_err(pm2->dev, "no pm2xxx_charger data supplied\n");
++		ret = -EINVAL;
++		return ret;
++	}
++
++	if (gpio_is_valid(pm2->lpn_pin) && gpio_get_value(pm2->lpn_pin) == 0)
++		set_lpn_pin(pm2);
++
++	return ret;
++}
++
++static const struct dev_pm_ops pm2xxx_pm_ops = {
++	.runtime_suspend = pm2xxx_runtime_suspend,
++	.runtime_resume = pm2xxx_runtime_resume,
++};
++#define  PM2XXX_PM_OPS (&pm2xxx_pm_ops)
++#else
++#define  PM2XXX_PM_OPS  NULL
++#endif
++
+ static int __devinit pm2xxx_wall_charger_probe(struct i2c_client *i2c_client,
+ 		const struct i2c_device_id *id)
+ {
+@@ -1077,6 +1132,16 @@ static int __devinit pm2xxx_wall_charger_probe(struct i2c_client *i2c_client,
+ 			gpio_to_irq(pm2->pdata->gpio_irq_number), ret);
  		goto unregister_pm2xxx_charger;
  	}
++
++	ret = pm_runtime_set_active(pm2->dev);
++	if (ret)
++		dev_err(pm2->dev, "set active Error\n");
++
++	pm_runtime_enable(pm2->dev);
++	pm_runtime_set_autosuspend_delay(pm2->dev, PM2XXX_AUTOSUSPEND_DELAY);
++	pm_runtime_use_autosuspend(pm2->dev);
++	pm_runtime_resume(pm2->dev);
++
  	/* pm interrupt can wake up system */
--	ret = enable_irq_wake(pm2->pdata->irq_number);
-+	ret = enable_irq_wake(gpio_to_irq(pm2->pdata->gpio_irq_number));
+ 	ret = enable_irq_wake(gpio_to_irq(pm2->pdata->gpio_irq_number));
  	if (ret) {
- 		dev_err(pm2->dev, "failed to set irq wake\n");
- 		goto unregister_pm2xxx_interrupt;
- 	}
+@@ -1148,6 +1213,8 @@ static int __devexit pm2xxx_wall_charger_remove(struct i2c_client *i2c_client)
+ {
+ 	struct pm2xxx_charger *pm2 = i2c_get_clientdata(i2c_client);
  
--	/*Initialize lock*/
- 	mutex_init(&pm2->lock);
- 
- 	/*
-@@ -1099,16 +1103,16 @@ static int __devinit pm2xxx_wall_charger_probe(struct i2c_client *i2c_client,
- 	}
- 
- 	set_lpn_pin(pm2);
-+
-+	/* read  interrupt registers */
-+	for (i = 0; i < PM2XXX_NUM_INT_REG; i++)
-+		pm2xxx_reg_read(pm2,
-+			pm2xxx_interrupt_registers[i],
-+			&val);
-+
- 	ret = pm2xxx_charger_detection(pm2, &val);
- 
- 	if ((ret == 0) && val) {
--		/*
--		 * When boot is due to AC charger plug-in,
--		 * read interrupt registers
--		 */
--		pm2xxx_reg_read(pm2, PM2XXX_REG_INT1, &val);
--		pm2xxx_reg_read(pm2, PM2XXX_REG_INT2, &val);
--		pm2xxx_reg_read(pm2, PM2XXX_REG_INT4, &val);
- 		pm2->ac.charger_connected = 1;
- 		ab8500_override_turn_on_stat(~AB8500_POW_KEY_1_ON,
- 					     AB8500_MAIN_CH_DET);
-@@ -1122,10 +1126,10 @@ static int __devinit pm2xxx_wall_charger_probe(struct i2c_client *i2c_client,
- free_gpio:
- 	gpio_free(pm2->lpn_pin);
- disable_pm2_irq_wake:
--	disable_irq_wake(pm2->pdata->irq_number);
-+	disable_irq_wake(gpio_to_irq(pm2->pdata->gpio_irq_number));
- unregister_pm2xxx_interrupt:
- 	/* disable interrupt */
--	free_irq(pm2->pdata->irq_number, pm2);
-+	free_irq(gpio_to_irq(pm2->pdata->gpio_irq_number), pm2);
- unregister_pm2xxx_charger:
- 	/* unregister power supply */
- 	power_supply_unregister(&pm2->ac_chg.psy);
-@@ -1148,10 +1152,10 @@ static int __devexit pm2xxx_wall_charger_remove(struct i2c_client *i2c_client)
++	/* Disable pm_runtime */
++	pm_runtime_disable(pm2->dev);
+ 	/* Disable AC charging */
  	pm2xxx_charger_ac_en(&pm2->ac_chg, false, 0, 0);
  
- 	/* Disable wake by pm interrupt */
--	disable_irq_wake(pm2->pdata->irq_number);
-+	disable_irq_wake(gpio_to_irq(pm2->pdata->gpio_irq_number));
- 
- 	/* Disable interrupts */
--	free_irq(pm2->pdata->irq_number, pm2);
-+	free_irq(gpio_to_irq(pm2->pdata->gpio_irq_number), pm2);
- 
- 	/* Delete the work queue */
- 	destroy_workqueue(pm2->charger_wq);
-@@ -1163,7 +1167,6 @@ static int __devexit pm2xxx_wall_charger_remove(struct i2c_client *i2c_client)
- 
- 	power_supply_unregister(&pm2->ac_chg.psy);
- 
--	/*Free GPIO60*/
- 	gpio_free(pm2->lpn_pin);
- 
- 	kfree(pm2);
-diff --git a/include/linux/pm2301_charger.h b/include/linux/pm2301_charger.h
-index fc3f026..85c16de 100644
---- a/include/linux/pm2301_charger.h
-+++ b/include/linux/pm2301_charger.h
-@@ -48,7 +48,7 @@ struct pm2xxx_charger_platform_data {
- 	size_t num_supplicants;
- 	int i2c_bus;
- 	const char *label;
--	int irq_number;
-+	int gpio_irq_number;
- 	unsigned int lpn_gpio;
- 	int irq_type;
+@@ -1189,6 +1256,7 @@ static struct i2c_driver pm2xxx_charger_driver = {
+ 	.driver = {
+ 		.name = "pm2xxx-wall_charger",
+ 		.owner = THIS_MODULE,
++		.pm = PM2XXX_PM_OPS,
+ 	},
+ 	.id_table = pm2xxx_id,
  };
 -- 
 1.7.10.4
