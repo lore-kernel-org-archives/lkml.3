@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935403Ab3BOGdx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 01:33:53 -0500
-Received: from mail-da0-f47.google.com ([209.85.210.47]:54511 "EHLO
-	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752848Ab3BOGdv (ORCPT
+	id S935432Ab3BOGd7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 01:33:59 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:43795 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935407Ab3BOGd4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 01:33:51 -0500
+	Fri, 15 Feb 2013 01:33:56 -0500
 From: Manjunath Goudar <manjunath.goudar@linaro.org>
 To: linux-usb@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, patches@linaro.org,
@@ -15,9 +15,9 @@ Cc: linux-arm-kernel@lists.infradead.org, patches@linaro.org,
         Greg KH <greg@kroah.com>, Eric Miao <eric.y.miao@gmail.com>,
         Haojian Zhuang <haojian.zhuang@gmail.com>,
         Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH] USB: EHCI: make ehci-mv a separate driver
-Date: Fri, 15 Feb 2013 12:03:30 +0530
-Message-Id: <1360910011-2666-2-git-send-email-manjunath.goudar@linaro.org>
+Subject: [PATCH] USB: EHCI: make ehci-mv as separate static driver
+Date: Fri, 15 Feb 2013 12:03:31 +0530
+Message-Id: <1360910011-2666-3-git-send-email-manjunath.goudar@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1360910011-2666-1-git-send-email-manjunath.goudar@linaro.org>
 References: <1360910011-2666-1-git-send-email-manjunath.goudar@linaro.org>
@@ -26,7 +26,7 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Separate the mv host controller driver from ehci-hcd host code
-into its own driver module.
+into its own static driver module.
 
 Signed-off-by: Manjunath Goudar <manjunath.goudar@linaro.org>
 Cc: Greg KH <greg@kroah.com>
@@ -40,8 +40,8 @@ Cc: linux-kernel@vger.kernel.org
  drivers/usb/host/Kconfig    |    2 +-
  drivers/usb/host/Makefile   |    1 +
  drivers/usb/host/ehci-hcd.c |    6 +---
- drivers/usb/host/ehci-mv.c  |   80 ++++++++++++++++++++-----------------------
- 4 files changed, 40 insertions(+), 49 deletions(-)
+ drivers/usb/host/ehci-mv.c  |   78 +++++++++++++++++++------------------------
+ 4 files changed, 38 insertions(+), 49 deletions(-)
 
 diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
 index 8ffbafa..2aa4ece 100644
@@ -93,13 +93,13 @@ index fa0e665..9cf4d73 100644
  	!defined(OF_PLATFORM_DRIVER) && \
  	!defined(XILINX_OF_PLATFORM_DRIVER)
 diff --git a/drivers/usb/host/ehci-mv.c b/drivers/usb/host/ehci-mv.c
-index 3065809..67de419 100644
+index 3065809..0d92437 100644
 --- a/drivers/usb/host/ehci-mv.c
 +++ b/drivers/usb/host/ehci-mv.c
-@@ -17,7 +17,18 @@
+@@ -16,8 +16,18 @@
+ #include <linux/err.h>
  #include <linux/usb/otg.h>
  #include <linux/platform_data/mv_usb.h>
- 
 +#include <linux/usb.h>
 +#include <linux/usb/hcd.h>
 +#include <linux/io.h>
@@ -108,14 +108,14 @@ index 3065809..67de419 100644
 +#include "ehci.h"
 +
 +#define DRIVER_DESC "EHCI mv driver"
-+
+ 
  #define CAPLENGTH_MASK         (0xff)
 +static const char hcd_name[] = "ehci-mv";
 +static struct hc_driver __read_mostly mv_ehci_hc_driver;
  
  struct ehci_hcd_mv {
  	struct usb_hcd *hcd;
-@@ -95,48 +106,6 @@ static int mv_ehci_reset(struct usb_hcd *hcd)
+@@ -95,48 +105,6 @@ static int mv_ehci_reset(struct usb_hcd *hcd)
  	return retval;
  }
  
@@ -164,7 +164,7 @@ index 3065809..67de419 100644
  static int mv_ehci_probe(struct platform_device *pdev)
  {
  	struct mv_usb_platform_data *pdata = pdev->dev.platform_data;
-@@ -350,8 +319,33 @@ static struct platform_driver ehci_mv_driver = {
+@@ -350,8 +318,32 @@ static struct platform_driver ehci_mv_driver = {
  	.remove = mv_ehci_remove,
  	.shutdown = mv_ehci_shutdown,
  	.driver = {
@@ -197,7 +197,6 @@ index 3065809..67de419 100644
 +
 +MODULE_DESCRIPTION(DRIVER_DESC);
 +MODULE_ALIAS("platform:ehci-mv");
-+MODULE_AUTHOR("Marvell");
 +MODULE_LICENSE("GPL");
 -- 
 1.7.9.5
