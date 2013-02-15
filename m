@@ -1,81 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752879Ab3BOW4v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 17:56:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49364 "EHLO
+	id S1752708Ab3BOW4c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 17:56:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49340 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752735Ab3BOW4q (ORCPT
+	with ESMTP id S1752662Ab3BOW40 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 17:56:46 -0500
+	Fri, 15 Feb 2013 17:56:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        Vivek Goyal <vgoyal@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 03/10] mm: dont overwrite mm->def_flags in do_mlockall()
-Date: Fri, 15 Feb 2013 14:56:35 -0800
-Message-Id: <20130215225543.945674212@linuxfoundation.org>
+        Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 7/8] efi: Clear EFI_RUNTIME_SERVICES rather than EFI_BOOT by "noefi" boot parameter
+Date: Fri, 15 Feb 2013 14:56:14 -0800
+Message-Id: <20130215225431.733936290@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130215225543.586012193@linuxfoundation.org>
-References: <20130215225543.586012193@linuxfoundation.org>
+In-Reply-To: <20130215225430.841634159@linuxfoundation.org>
+References: <20130215225430.841634159@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+From: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
 
-commit 9977f0f164d46613288e0b5778eae500dfe06f31 upstream.
+commit 1de63d60cd5b0d33a812efa455d5933bf1564a51 upstream.
 
-With commit 8e72033f2a48 ("thp: make MADV_HUGEPAGE check for
-mm->def_flags") the VM_NOHUGEPAGE flag may be set on s390 in
-mm->def_flags for certain processes, to prevent future thp mappings.
-This would be overwritten by do_mlockall(), which sets it back to 0 with
-an optional VM_LOCKED flag set.
+There was a serious problem in samsung-laptop that its platform driver is
+designed to run under BIOS and running under EFI can cause the machine to
+become bricked or can cause Machine Check Exceptions.
 
-To fix this, instead of overwriting mm->def_flags in do_mlockall(), only
-the VM_LOCKED flag should be set or cleared.
+    Discussion about this problem:
+    https://bugs.launchpad.net/ubuntu-cdimage/+bug/1040557
+    https://bugzilla.kernel.org/show_bug.cgi?id=47121
 
-Signed-off-by: Gerald Schaefer <gerald.schaefer@de.ibm.com>
-Reported-by: Vivek Goyal <vgoyal@redhat.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+    The patches to fix this problem:
+    efi: Make 'efi_enabled' a function to query EFI facilities
+    83e68189745ad931c2afd45d8ee3303929233e7f
+
+    samsung-laptop: Disable on EFI hardware
+    e0094244e41c4d0c7ad69920681972fc45d8ce34
+
+Unfortunately this problem comes back again if users specify "noefi" option.
+This parameter clears EFI_BOOT and that driver continues to run even if running
+under EFI. Refer to the document, this parameter should clear
+EFI_RUNTIME_SERVICES instead.
+
+Documentation/kernel-parameters.txt:
+===============================================================================
+...
+	noefi		[X86] Disable EFI runtime services support.
+...
+===============================================================================
+
+Documentation/x86/x86_64/uefi.txt:
+===============================================================================
+...
+- If some or all EFI runtime services don't work, you can try following
+  kernel command line parameters to turn off some or all EFI runtime
+  services.
+	noefi		turn off all EFI runtime services
+...
+===============================================================================
+
+Signed-off-by: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
+Link: http://lkml.kernel.org/r/511C2C04.2070108@jp.fujitsu.com
+Cc: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/mlock.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/platform/efi/efi.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/mlock.c
-+++ b/mm/mlock.c
-@@ -517,11 +517,11 @@ SYSCALL_DEFINE2(munlock, unsigned long,
- static int do_mlockall(int flags)
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -86,7 +86,7 @@ EXPORT_SYMBOL(efi_enabled);
+ 
+ static int __init setup_noefi(char *arg)
  {
- 	struct vm_area_struct * vma, * prev = NULL;
--	unsigned int def_flags = 0;
- 
- 	if (flags & MCL_FUTURE)
--		def_flags = VM_LOCKED;
--	current->mm->def_flags = def_flags;
-+		current->mm->def_flags |= VM_LOCKED;
-+	else
-+		current->mm->def_flags &= ~VM_LOCKED;
- 	if (flags == MCL_FUTURE)
- 		goto out;
- 
+-	clear_bit(EFI_BOOT, &x86_efi_facility);
++	clear_bit(EFI_RUNTIME_SERVICES, &x86_efi_facility);
+ 	return 0;
+ }
+ early_param("noefi", setup_noefi);
 
 
