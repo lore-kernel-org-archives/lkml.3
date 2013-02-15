@@ -1,234 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751380Ab3BOUFe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 15:05:34 -0500
-Received: from mail-da0-f41.google.com ([209.85.210.41]:57249 "EHLO
-	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750729Ab3BOUFb (ORCPT
+	id S1751800Ab3BOUGC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 15:06:02 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:54177 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750911Ab3BOUGA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 15:05:31 -0500
-Date: Fri, 15 Feb 2013 12:05:26 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Johan Hedberg <johan.hedberg@gmail.com>,
-        David Herrmann <dh.herrmann@googlemail.com>, linux-api@vger.kernel.org,
-        linux-input@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
-        RavindranathX Doddi <ravindranathx.doddi@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Marcel Holtmann <marcel@holtmann.org>
-Subject: Re: uhid: broken interface: 32/64-bit compatibility
-Message-ID: <20130215200526.GA15811@core.coreip.homeip.net>
-References: <20130215112911.68A98E0085@blue.fi.intel.com>
- <CANq1E4T1QzOUOwWPpV6_55hVTXzXF4baShxpYaM0HNAgF0ffAg@mail.gmail.com>
- <20130215120022.GA23694@x220>
- <20130215135141.1EFCEE0085@blue.fi.intel.com>
+	Fri, 15 Feb 2013 15:06:00 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Greg KH <greg@kroah.com>
+Subject: Re: linux-next: build warning after merge of the char-misc tree
+Date: Fri, 15 Feb 2013 20:05:51 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-6-generic; KDE/4.3.2; x86_64; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Stevenson <david@avoncliff.com>
+References: <20130215162657.6dd03d27e8cfed0c134b5dd3@canb.auug.org.au> <20130215173429.GA27707@kroah.com>
+In-Reply-To: <20130215173429.GA27707@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130215135141.1EFCEE0085@blue.fi.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302152005.51575.arnd@arndb.de>
+X-Provags-ID: V02:K0:fDNSf9Em4/XBPOZ1ErbrLb4i1UMvsUZQUp45hjsdQVq
+ bjGmovVTPaUZV1WlSzjzabC/2E7dRmnKeHMNYY+YFd4liRtn59
+ h8U4o0kY22KGV0mL5+U/4I4lvGp4b82d/4iCNDsfjGSgqp94Gi
+ CgvRVAarV49KxmXQMzkai3eojlPMyZWH4qZsBJfp8Xv8+QpaNg
+ KYUAoKh9W9PfN18tJSvt9UbrwGpmdHivtxJHg/PBZOEt95/uXs
+ 5niTihl3X7coWr5vow+pQZFW2zvywvXiEPqsnhg+TJ4/gWU1T9
+ knVEOxwyJ022XY1VB3YGAvwb2OsxwfZvdNkvBJSUXPR49/aud5
+ p9NbFXmBsSOQSJFjUt7A=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 15, 2013 at 03:51:41PM +0200, Kirill A. Shutemov wrote:
-> Johan Hedberg wrote:
-> > Hi David,
+On Friday 15 February 2013, Greg KH wrote:
+> On Fri, Feb 15, 2013 at 04:26:57PM +1100, Stephen Rothwell wrote:
 > > 
-> > On Fri, Feb 15, 2013, David Herrmann wrote:
-> > > On Fri, Feb 15, 2013 at 12:29 PM, Kirill A. Shutemov
-> > > <kirill.shutemov@linux.intel.com> wrote:
-> > > > Hi David and all,
-> > > >
-> > > > There's claim in uhid.h that the interface is "compatible even between
-> > > > architectures". But it obviously is not true: struct uhid_create_req
-> > > > contains pointer which breaks everything.
-> > > >
-> > > > The easy way to demonstrate the issue is compile uhid-example.c with -m32
-> > > > and try to run it on 64 bit kernel. Creating of the device will fail.
-> > > 
-> > > Indeed, we missed that. We should probably also notify the HIDP
-> > > developers as "struct hidp_connadd_req" suffers from the same
-> > > problems. (CC'ed)
-> > > 
-> > > > I don't see an easy way to fix this. Few options:
-> > > >
-> > > > 1. Replace the pointer with u64. It will fix the issue, but it breaks ABI
-> > > >    which is never a good idea. Not sure how many users interface already
-> > > >    has.
-> > > 
-> > > The only users I am aware of is an HID debugging tool and experimental
-> > > HoG Bluetooth support (bluez). Maybe Marcel or Johan can comment
-> > > whether this is already used by bluez-5? If it is, then we shouldn't
-> > > break ABI and go with #2+#3. Otherwise, I think changing to u64 should
-> > > be ok.
-> > > On the other hand, it would break any future build for older stable
-> > > kernels so not breaking ABI is probably the best idea. Any comments? I
-> > > can add a COMPAT fix and a comment to fix this in the next version of
-> > > UHID_CREATE.
+> > After merging the char-misc tree, today's linux-next build (x86_64
+> > allmodconfig) produced this warning:
 > > 
-> > The HoG code in BlueZ 5 does indeed use this API and it's also not
-> > anymore behind any kind of experimental flag (i.e. it is an officially
-> > supported feature).
+> > drivers/w1/slaves/w1_therm.c: In function 'w1_therm_read':
+> > drivers/w1/slaves/w1_therm.c:245:15: warning: 'crc' may be used uninitialized in this function [-Wuninitialized]
 > > 
-> > Johan
+> > Its a false positive, but it was introduced by commit 867ff9880d5d
+> > ("w1_therm: Retries: remove old code add CRC")
 > 
-> Here's my attempt to fix the issue.
-> 
-> Not sure if tricks with padding in a good idea. We can  just use __u64
-> instead of pointer, but it will require update of userspace to silence
-> cast warning and will cause warning if you will try to use updated
-> userspace with old kernel headers.
-> 
-> Any comments?
+> I don't see that here with gcc 4.7.1, perhaps you need to upgrade your
+> version of gcc to not show these false positives?
 
-This does not fix anything really, we simply have to deal with compat
-interface.
+I have finally put the pieces of the puzzle together. I already knew
+that some of these warnings only happen when building with -Os (even
+in gcc-4.8), since gcc turns off the inlining at a point after it
+determines that the variable might be used uninitialized but before
+determining that it's actually isn't.
 
-Compiled but not tested.
+I think the best way forward is to disable this particular warning
+when building with -Os (which is enabled in allyesconfig). A false
+positive seems more harmful than a false negative here, because it
+prompts people to add broken initializations. This patch indeed
+makes the majority of the allyesconfig warnings on ARM go away.
+For the regular defconfig builds, we are already mostly clean,
+and those are built with -O2.
 
-Thanks.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
--- 
-Dmitry
-
-UHID: make creating devices work on 64/32 systems
-
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-
-Unfortunately UHID interface, as it was introduced, is broken with 32 bit
-userspace running on 64 bit kernels as it uses a pointer in its userspace
-facing API.
-
-Fix it by checking if we are executing compat task and munge the request
-appropriately.
-
-Reported-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
----
- drivers/hid/uhid.c |   95 ++++++++++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 92 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/hid/uhid.c b/drivers/hid/uhid.c
-index 714cd8c..fc307e0 100644
---- a/drivers/hid/uhid.c
-+++ b/drivers/hid/uhid.c
-@@ -11,6 +11,7 @@
-  */
+diff --git a/Makefile b/Makefile
+index 0b4bf62..4d60d97 100644
+--- a/Makefile
++++ b/Makefile
+@@ -570,7 +570,7 @@ endif # $(dot-config)
+ all: vmlinux
  
- #include <linux/atomic.h>
-+#include <linux/compat.h>
- #include <linux/device.h>
- #include <linux/fs.h>
- #include <linux/hid.h>
-@@ -276,6 +277,94 @@ static struct hid_ll_driver uhid_hid_driver = {
- 	.parse = uhid_hid_parse,
- };
- 
-+#ifdef CONFIG_COMPAT
-+
-+/* Apparently we haven't stepped on these rakes enough times yet. */
-+struct uhid_create_req_compat {
-+	__u8 name[128];
-+	__u8 phys[64];
-+	__u8 uniq[64];
-+
-+	compat_uptr_t rd_data;
-+	__u16 rd_size;
-+
-+	__u16 bus;
-+	__u32 vendor;
-+	__u32 product;
-+	__u32 version;
-+	__u32 country;
-+} __attribute__((__packed__));
-+
-+static int uhid_event_from_user(const char __user *buffer, size_t len,
-+				struct uhid_event *event)
-+{
-+	if (is_compat_task()) {
-+		u32 type;
-+
-+		if (get_user(type, buffer))
-+			return -EFAULT;
-+
-+		if (type == UHID_CREATE) {
-+			/*
-+			 * This is our messed up request with compat pointer.
-+			 * It is largish (more than 256 bytes) so we better
-+			 * allocate it from the heap.
-+			 */
-+			struct uhid_create_req_compat *compat;
-+
-+			compat = kmalloc(sizeof(*compat), GFP_KERNEL);
-+			if (!compat)
-+				return -ENOMEM;
-+
-+			buffer += sizeof(type);
-+			len -= sizeof(type);
-+			if (copy_from_user(compat, buffer,
-+					   min(len, sizeof(*compat)))) {
-+				kfree(compat);
-+				return -EFAULT;
-+			}
-+
-+			/* Shuffle the data over to proper structure */
-+			event->type = type;
-+
-+			memcpy(event->u.create.name, compat->name,
-+				sizeof(compat->name));
-+			memcpy(event->u.create.phys, compat->phys,
-+				sizeof(compat->phys));
-+			memcpy(event->u.create.uniq, compat->uniq,
-+				sizeof(compat->uniq));
-+
-+			event->u.create.rd_data = compat_ptr(compat->rd_data);
-+			event->u.create.rd_size = compat->rd_size;
-+
-+			event->u.create.bus = compat->bus;
-+			event->u.create.vendor = compat->vendor;
-+			event->u.create.product = compat->product;
-+			event->u.create.version = compat->version;
-+			event->u.create.country = compat->country;
-+
-+			kfree(compat);
-+			return 0;
-+		}
-+		/* All others can be copied directly */
-+	}
-+
-+	if (copy_from_user(event, buffer, min(len, sizeof(*event))))
-+		return -EFAULT;
-+
-+	return 0;
-+}
-+#else
-+static int uhid_event_from_user(const char __user *buffer, size_t len,
-+				struct uhid_event *event)
-+{
-+	if (copy_from_user(event, buffer, min(len, sizeof(*event))))
-+		return -EFAULT;
-+
-+	return 0;
-+}
-+#endif
-+
- static int uhid_dev_create(struct uhid_device *uhid,
- 			   const struct uhid_event *ev)
- {
-@@ -498,10 +587,10 @@ static ssize_t uhid_char_write(struct file *file, const char __user *buffer,
- 
- 	memset(&uhid->input_buf, 0, sizeof(uhid->input_buf));
- 	len = min(count, sizeof(uhid->input_buf));
--	if (copy_from_user(&uhid->input_buf, buffer, len)) {
--		ret = -EFAULT;
-+
-+	ret = uhid_event_from_user(buffer, len, &uhid->input_buf);
-+	if (ret)
- 		goto unlock;
--	}
- 
- 	switch (uhid->input_buf.type) {
- 	case UHID_CREATE:
-
+ ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
+-KBUILD_CFLAGS	+= -Os
++KBUILD_CFLAGS	+= -Os $(call cc-option,-Wno-maybe-uninitialized,)
+ else
+ KBUILD_CFLAGS	+= -O2
+ endif
