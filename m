@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936068Ab3BONMQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 08:12:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3151 "EHLO mx1.redhat.com"
+	id S935934Ab3BOMpV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 07:45:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17293 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935945Ab3BOMpW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 07:45:22 -0500
+	id S935914Ab3BOMpS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 07:45:18 -0500
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: linux-acpi@vger.kernel.org, Huang Ying <ying.huang@intel.com>,
         Tony Luck <tony.luck@intel.com>,
         Mauro Carvalho Chehab <mchehab@redhat.com>,
         Linux Edac Mailing List <linux-edac@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH EDAC 03/13] ghes: add the needed hooks for EDAC error report
-Date: Fri, 15 Feb 2013 10:44:51 -0200
-Message-Id: <a6aaff7d219b878ca655fde3757ecd0170caec2c.1360931635.git.mchehab@redhat.com>
+Subject: [PATCH EDAC 01/13] edac: lock module owner to avoid error report conflicts
+Date: Fri, 15 Feb 2013 10:44:49 -0200
+Message-Id: <7bcfdab898ef7b1d24431ca01d5895f1d4659f89.1360931635.git.mchehab@redhat.com>
 In-Reply-To: <cover.1360931635.git.mchehab@redhat.com>
 References: <cover.1360931635.git.mchehab@redhat.com>
 To: unlisted-recipients:; (no To-header on input)
@@ -22,138 +22,117 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to allow reporting errors via EDAC, add hooks for:
+APEI GHES and i7core_edac/sb_edac currently can be loaded at
+the same time, but those are Highlander modules:
+	"There can be only one".
 
-1) register an EDAC driver;
-2) unregister an EDAC driver;
-3) report errors via EDAC.
+There are two reasons for that:
 
-As the EDAC driver will need to access the ghes structure, adds it
-as one of the parameters for ghes_do_proc.
+1) Each driver assumes that it is the only one registering at
+   the EDAC core, as it is driver's responsibility to number
+   the memory controllers, and all of them start from 0;
+
+2) If BIOS is handling the memory errors, the OS can't also be
+   doing it, as one will mangle with the other.
+
+So, we need to add an module owner's lock at the EDAC core,
+in order to avoid having two different modules handling memory
+errors at the same time. The best way for doing this lock seems
+to use the driver's name, as this is unique, and won't require
+changes on every driver.
 
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 ---
- drivers/acpi/apei/ghes.c | 17 ++++++++++++++---
- include/acpi/ghes.h      | 27 +++++++++++++++++++++++++++
- 2 files changed, 41 insertions(+), 3 deletions(-)
+ drivers/edac/edac_mc.c | 26 ++++++++++++++++++++++----
+ 1 file changed, 22 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
-index 6d0e146..a21d7da 100644
---- a/drivers/acpi/apei/ghes.c
-+++ b/drivers/acpi/apei/ghes.c
-@@ -409,7 +409,8 @@ static void ghes_clear_estatus(struct ghes *ghes)
- 	ghes->flags &= ~GHES_TO_CLEAR;
+diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
+index fb219bc..8e58b1c 100644
+--- a/drivers/edac/edac_mc.c
++++ b/drivers/edac/edac_mc.c
+@@ -42,6 +42,12 @@
+ static DEFINE_MUTEX(mem_ctls_mutex);
+ static LIST_HEAD(mc_devices);
+ 
++/*
++ * Used to lock EDAC MC to just one module, avoiding two drivers e. g.
++ *	apei/ghes and i7core_edac to be used at the same time.
++ */
++static void const *edac_mc_owner;
++
+ unsigned edac_dimm_info_location(struct dimm_info *dimm, char *buf,
+ 			         unsigned len)
+ {
+@@ -659,9 +665,9 @@ fail1:
+ 	return 1;
  }
  
--static void ghes_do_proc(const struct acpi_hest_generic_status *estatus)
-+static void ghes_do_proc(struct ghes *ghes,
-+			 const struct acpi_hest_generic_status *estatus)
+-static void del_mc_from_global_list(struct mem_ctl_info *mci)
++static int del_mc_from_global_list(struct mem_ctl_info *mci)
  {
- 	int sev, sec_sev;
- 	struct acpi_hest_generic_data *gdata;
-@@ -421,6 +422,8 @@ static void ghes_do_proc(const struct acpi_hest_generic_status *estatus)
- 				 CPER_SEC_PLATFORM_MEM)) {
- 			struct cper_sec_mem_err *mem_err;
- 			mem_err = (struct cper_sec_mem_err *)(gdata+1);
-+			ghes_edac_report_mem_error(ghes, sev, mem_err);
+-	atomic_dec(&edac_handlers);
++	int handlers = atomic_dec_return(&edac_handlers);
+ 	list_del_rcu(&mci->link);
+ 
+ 	/* these are for safe removal of devices from global list while
+@@ -669,6 +675,8 @@ static void del_mc_from_global_list(struct mem_ctl_info *mci)
+ 	 */
+ 	synchronize_rcu();
+ 	INIT_LIST_HEAD(&mci->link);
 +
- #ifdef CONFIG_X86_MCE
- 			apei_mce_report_mem_error(sev == GHES_SEV_CORRECTED,
- 						  mem_err);
-@@ -639,7 +642,7 @@ static int ghes_proc(struct ghes *ghes)
- 		if (ghes_print_estatus(NULL, ghes->generic, ghes->estatus))
- 			ghes_estatus_cache_add(ghes->generic, ghes->estatus);
- 	}
--	ghes_do_proc(ghes->estatus);
-+	ghes_do_proc(ghes, ghes->estatus);
- out:
- 	ghes_clear_estatus(ghes);
++	return handlers;
+ }
+ 
+ /**
+@@ -712,6 +720,7 @@ EXPORT_SYMBOL(edac_mc_find);
+ /* FIXME - should a warning be printed if no error detection? correction? */
+ int edac_mc_add_mc(struct mem_ctl_info *mci)
+ {
++	int ret = -EINVAL;
+ 	edac_dbg(0, "\n");
+ 
+ #ifdef CONFIG_EDAC_DEBUG
+@@ -742,6 +751,11 @@ int edac_mc_add_mc(struct mem_ctl_info *mci)
+ #endif
+ 	mutex_lock(&mem_ctls_mutex);
+ 
++	if (edac_mc_owner && edac_mc_owner != mci->mod_name) {
++		ret = -EPERM;
++		goto fail0;
++	}
++
+ 	if (add_mc_to_global_list(mci))
+ 		goto fail0;
+ 
+@@ -768,6 +782,8 @@ int edac_mc_add_mc(struct mem_ctl_info *mci)
+ 	edac_mc_printk(mci, KERN_INFO, "Giving out device to '%s' '%s':"
+ 		" DEV %s\n", mci->mod_name, mci->ctl_name, edac_dev_name(mci));
+ 
++	edac_mc_owner = mci->mod_name;
++
+ 	mutex_unlock(&mem_ctls_mutex);
  	return 0;
-@@ -732,7 +735,7 @@ static void ghes_proc_in_irq(struct irq_work *irq_work)
- 		estatus = GHES_ESTATUS_FROM_NODE(estatus_node);
- 		len = apei_estatus_len(estatus);
- 		node_len = GHES_ESTATUS_NODE_LEN(len);
--		ghes_do_proc(estatus);
-+		ghes_do_proc(estatus_node->ghes, estatus);
- 		if (!ghes_estatus_cached(estatus)) {
- 			generic = estatus_node->generic;
- 			if (ghes_print_estatus(NULL, generic, estatus))
-@@ -821,6 +824,7 @@ static int ghes_notify_nmi(unsigned int cmd, struct pt_regs *regs)
- 		estatus_node = (void *)gen_pool_alloc(ghes_estatus_pool,
- 						      node_len);
- 		if (estatus_node) {
-+			estatus_node->ghes = ghes;
- 			estatus_node->generic = ghes->generic;
- 			estatus = GHES_ESTATUS_FROM_NODE(estatus_node);
- 			memcpy(estatus, ghes->estatus, len);
-@@ -942,6 +946,10 @@ static int ghes_probe(struct platform_device *ghes_dev)
- 	}
- 	platform_set_drvdata(ghes_dev, ghes);
  
-+	rc = ghes_edac_register(ghes, &ghes_dev->dev);
-+	if (rc < 0)
-+		goto err;
-+
- 	return 0;
- err:
- 	if (ghes) {
-@@ -995,6 +1003,9 @@ static int ghes_remove(struct platform_device *ghes_dev)
+@@ -776,7 +792,7 @@ fail1:
+ 
+ fail0:
+ 	mutex_unlock(&mem_ctls_mutex);
+-	return 1;
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(edac_mc_add_mc);
+ 
+@@ -802,7 +818,9 @@ struct mem_ctl_info *edac_mc_del_mc(struct device *dev)
+ 		return NULL;
  	}
  
- 	ghes_fini(ghes);
-+
-+	ghes_edac_unregister(ghes);
-+
- 	kfree(ghes);
+-	del_mc_from_global_list(mci);
++	if (!del_mc_from_global_list(mci)) {
++		edac_mc_owner = NULL;
++	}
+ 	mutex_unlock(&mem_ctls_mutex);
  
- 	platform_set_drvdata(ghes_dev, NULL);
-diff --git a/include/acpi/ghes.h b/include/acpi/ghes.h
-index 3eb8dc4..c6fef72 100644
---- a/include/acpi/ghes.h
-+++ b/include/acpi/ghes.h
-@@ -22,11 +22,14 @@ struct ghes {
- 		struct timer_list timer;
- 		unsigned int irq;
- 	};
-+
-+	struct mem_ctl_info *mci;
- };
- 
- struct ghes_estatus_node {
- 	struct llist_node llnode;
- 	struct acpi_hest_generic *generic;
-+	struct ghes *ghes;
- };
- 
- struct ghes_estatus_cache {
-@@ -43,3 +46,27 @@ enum {
- 	GHES_SEV_RECOVERABLE = 0x2,
- 	GHES_SEV_PANIC = 0x3,
- };
-+
-+#ifdef CONFIG_EDAC_GHES
-+void ghes_edac_report_mem_error(struct ghes *ghes, int sev,
-+				struct cper_sec_mem_err *mem_err);
-+
-+int ghes_edac_register(struct ghes *ghes, struct device *dev);
-+
-+void ghes_edac_unregister(struct ghes *ghes);
-+
-+#else
-+static inline void ghes_edac_report_mem_error(struct ghes *ghes, int sev,
-+				       struct cper_sec_mem_err *mem_err)
-+{
-+}
-+
-+static inline int ghes_edac_register(struct ghes *ghes, struct device *dev)
-+{
-+	return 0;
-+}
-+
-+static inline void ghes_edac_unregister(struct ghes *ghes)
-+{
-+}
-+#endif
+ 	/* flush workq processes */
 -- 
 1.8.1.2
 
