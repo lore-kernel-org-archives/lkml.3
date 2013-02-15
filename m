@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161184Ab3BOGpE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 01:45:04 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:50657 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161111Ab3BOGpB (ORCPT
+	id S1161200Ab3BOGpo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 01:45:44 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:33179 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161111Ab3BOGpm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 01:45:01 -0500
-X-AuditID: cbfee690-b7f066d00000169f-f9-511dd96b0fb4
+	Fri, 15 Feb 2013 01:45:42 -0500
+X-AuditID: cbfee68f-b7f656d000000d78-26-511dd989460f
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
         rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
 References: <001e01ce0b47$8edd1480$ac973d80$%han@samsung.com>
 In-reply-to: <001e01ce0b47$8edd1480$ac973d80$%han@samsung.com>
-Subject: [PATCH V2 04/11] rtc: rtc-ds2404: use dev_err() instead of printk()
-Date: Fri, 15 Feb 2013 15:44:59 +0900
-Message-id: <002201ce0b47$f97aa0f0$ec6fe2d0$%han@samsung.com>
+Subject: [PATCH V2 05/11] rtc: rtc-rs5c372: use dev_dbg()/dev_warn() instead of
+ printk()/pr_debug()
+Date: Fri, 15 Feb 2013 15:45:29 +0900
+Message-id: <002301ce0b48$0b589a70$2209cf50$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=US-ASCII
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4LR47AXgjtu6e1Qmq7gnKtv11nagAAFNtQ
+Thread-index: Ac4LR47AXgjtu6e1Qmq7gnKtv11nagAAGeOQ
 Content-language: ko
-x-cr-hashedpuzzle: KtgU NFqx PPEw RHFj UqW4 XZmB X2W4 e3aM fbAK jFMD mTn/ nHNr
- onpB peK5 rPAp
- rkQw;5;YQAuAHoAdQBtAG0AbwBAAHQAbwB3AGUAcgB0AGUAYwBoAC4AaQB0ADsAYQBrAHAAbQBAAGwAaQBuAHUAeAAtAGYAbwB1AG4AZABhAHQAaQBvAG4ALgBvAHIAZwA7AGoAZwAxAC4AaABhAG4AQABzAGEAbQBzAHUAbgBnAC4AYwBvAG0AOwBsAGkAbgB1AHgALQBrAGUAcgBuAGUAbABAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAcgB0AGMALQBsAGkAbgB1AHgAQABnAG8AbwBnAGwAZQBnAHIAbwB1AHAAcwAuAGMAbwBtAA==;Sosha1_v1;7;{66E5EEB7-8FCA-4646-BBB1-B9DB78992062};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Fri,
- 15 Feb 2013 06:44:52
- GMT;WwBQAEEAVABDAEgAIABWADIAIAAwADQALwAxADEAXQAgAHIAdABjADoAIAByAHQAYwAtAGQAcwAyADQAMAA0ADoAIAB1AHMAZQAgAGQAZQB2AF8AZQByAHIAKAApACAAaQBuAHMAdABlAGEAZAAgAG8AZgAgAHAAcgBpAG4AdABrACgAKQA=
-x-cr-puzzleid: {66E5EEB7-8FCA-4646-BBB1-B9DB78992062}
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKIsWRmVeSWpSXmKPExsVy+t8zI93sm7KBBpummVlc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6M2R93shVM4azo+dTN3sC4hr2LkZNDQsBEovfVLzYIW0ziwr31
-	QDYXh5DAMkaJfV82ssIUzX95gB0isYhRYnXvHihnNpPE7ldfmEGq2ATUJL58OQyU4OAQEdCX
-	aGvRAKlhFuhllDjTuxssLiRgKzH1tjOIySlgJ/F+uilIp7CAj8Szs/OYQGwWAVWJvv7dzCAl
-	vEDV8y8Kg4R5BQQlfky+xwJiMwtoSWze1sQKYctLbF7zFqxcQkBd4tFfXZCwiICRRNPs91Dl
-	IhL7XrxjhPjkA6vE5GduELapxP+z61hAjpQQ2MUuceHkZVaIEwQkvk0+xAIxU1Zi0wFmiHpJ
-	iYMrbrBMYJSaheSiWUgumoXkollIVi9gZFnFKJpakFxQnJReZKJXnJhbXJqXrpecn7uJERKF
-	E3Yw3jtgfYgxGWj9RGYp0eR8YBTnlcQbGhubmJmYmphbmpqbkiasJM4rf0kmUEggPbEkNTs1
-	tSC1KL6oNCe1+BAjEwenVANjrLEHy+uI0KVq/qXWnzYlyXVxKS2/nuV3JipOhPnf+f4Jt02s
-	TC/NSuz4tdQ9IeDLv2Nrt3Ruz4v8sD8u11pxDnv5+b6G0xY1B+RzFzbq8RW/Ofq2vejfyQZm
-	90uOClef2Ki8lD/2ukviW3O+tfeyvND0nVmObxd/fGcik/753OY5O8XnJ7sosRRnJBpqMRcV
-	JwIAJ+zR/dgCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrEKsWRmVeSWpSXmKPExsVy+t9jAd3sm7KBBnf2GVhc3jWHzYHR4/Mm
-	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
-	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjNkfd7IVTOGs6PnUzd7A
-	uIa9i5GTQ0LARGL+ywNQtpjEhXvr2boYuTiEBBYxSqzu3cMO4cxmktj96gszSBWbgJrEly+H
-	gRIcHCIC+hJtLRogNcwCvYwSZ3p3g8WFBGwlpt52BjE5Bewk3k83BekUFvCReHZ2HhOIzSKg
-	KtHXv5sZpIQXqHr+RWGQMK+AoMSPyfdYQGxmAS2JzduaWCFseYnNa96ClUsIqEs8+qsLEhYR
-	MJJomv0eqlxEYt+Ld4wQn3xglZj8zA3CNpX4f3YdywRGkVlINsxCsmEWkg2zkIxawMiyilE0
-	tSC5oDgpPddIrzgxt7g0L10vOT93EyM4xp9J72Bc1WBxiFGAg1GJh1dAQjZQiDWxrLgy9xCj
-	BAezkgjvmhCgEG9KYmVValF+fFFpTmrxIcZkoP8nMkuJJucD009eSbyhsYmZkaWRmYWRibk5
-	acJK4ryMp54ECAmkJ5akZqemFqQWwWxh4uCUamB0ecmT+Efh5bv+eQ/DJ0bkntsYf/D6LHeX
-	5R+0dW2vBuxK9/CX/L1rp+Cm3ZwPNa7nLcju/PF7281kiXSWPc4F3wXVv/sWXmBZZGgcaPmV
-	qSqDa6Yck4Pi6pDFy3+yL7jz3fzGz5v/mSemWrYsbFi4ttpm74aN8Udil39mfrDY+u7cstpc
-	9uUqSizFGYmGWsxFxYkATNI6IzUDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHIsWRmVeSWpSXmKPExsVy+t8zA93Om7KBBnOPm1hc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6MR8cvMhdsEKjY9ngfSwPjGt4uRk4OCQETiWm/z7BC2GISF+6t
+	Z+ti5OIQEljGKPHxz14mmKKzF/4wQSQWMUr0LrvMCuHMZpLo7VvPCFLFJqAm8eXLYfYuRg4O
+	EQF9ibYWDZAaZoFeRokzvbvB4kICthJTbzuDmJwCdhLvp5uCdAoLpEp8e/+bHcRmEVCVOLN9
+	LjOIzQtUPXnGazYIW1Dix+R7LCA2s4CWxOZtTawQtrzE5jVvmUFGSgioSzz6qwsSFhEwkngy
+	cQ5UiYjEvhfvGEGukRBYxi7x6/wfFohdAhLfJh9igeiVldh0gBniXUmJgytusExglJiFZPMs
+	JJtnIdk8C8mKBYwsqxhFUwuSC4qT0ouM9YoTc4tL89L1kvNzNzFC4qp/B+PdA9aHGJOB1k9k
+	lhJNzgfGZV5JvKGxsYmZiamJuaWpuSlpwkrivPKXZAKFBNITS1KzU1MLUovii0pzUosPMTJx
+	cEo1MO7mzBY8IWjlGP/k8qPqSwbbUo+Zxdy8aOKfVDN7/uqVDoa3k966NXFdkFwfvdmvOKTy
+	1m7p7jSBxg13s/fHCHodzb++Z+vjjRrbzWfbnVJytRUpd0y7v2vpVvOC+6IrP8bnLIlNiK/s
+	9ztStXzXM/OsyNuTWCZGzjFK17mzaf+bF0rTLd9dilFiKc5INNRiLipOBADui+5twQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmleLIzCtJLcpLzFFi42I5/e+xgG7nTdlAg66HehaXd81hc2D0+LxJ
+	LoAxqoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwdo
+	qpJCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsI4x49Hxi8wFGwQqtj3ex9LA
+	uIa3i5GTQ0LAROLshT9MELaYxIV769m6GLk4hAQWMUr0LrvMCuHMZpLo7VvPCFLFJqAm8eXL
+	YfYuRg4OEQF9ibYWDZAaZoFeRokzvbvB4kICthJTbzuDmJwCdhLvp5uCdAoLpEp8e/+bHcRm
+	EVCVOLN9LjOIzQtUPXnGazYIW1Dix+R7LCA2s4CWxOZtTawQtrzE5jVvmUFGSgioSzz6qwsS
+	FhEwkngycQ5UiYjEvhfvGCcwCs1CMmkWkkmzkEyahaRlASPLKkbR1ILkguKk9FwjveLE3OLS
+	vHS95PzcTYzgqH0mvYNxVYPFIUYBDkYlHl4BCdlAIdbEsuLK3EOMEhzMSiK8a0KAQrwpiZVV
+	qUX58UWlOanFhxiTgR6dyCwlmpwPTCh5JfGGxiZmRpZGZhZGJubmpAkrifMynnoSICSQnliS
+	mp2aWpBaBLOFiYNTqoFR4N7NmSlymq7rLlZsXuG3TNZt6uygo+8etn9f6LT71VrhO0F2+h62
+	L++KfD/65cjDjr5zIsGr4k5eWlVvWcvruf6jp8SHbI2O5N7g3Xu/PvoQ6T/r2fUVK3Yyb5VN
+	0JI7V/L4AFtrf/XBT+XiCdLKDRXJRXF/lCR2+qalH633Wnafe1ei3SoPJZbijERDLeai4kQA
+	fXAFDh4DAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -69,31 +63,51 @@ Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
 No changes since v1:
 
- drivers/rtc/rtc-ds2404.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/rtc/rtc-rs5c372.c |   10 ++++------
+ 1 files changed, 4 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/rtc/rtc-ds2404.c b/drivers/rtc/rtc-ds2404.c
-index 4539e37..b04fc42 100644
---- a/drivers/rtc/rtc-ds2404.c
-+++ b/drivers/rtc/rtc-ds2404.c
-@@ -70,7 +70,7 @@ static int ds2404_gpio_map(struct ds2404 *chip, struct platform_device *pdev,
- 	for (i = 0; i < ARRAY_SIZE(ds2404_gpio); i++) {
- 		err = gpio_request(ds2404_gpio[i].gpio, ds2404_gpio[i].name);
- 		if (err) {
--			printk(KERN_ERR "error mapping gpio %s: %d\n",
-+			dev_err(&pdev->dev, "error mapping gpio %s: %d\n",
- 				ds2404_gpio[i].name, err);
- 			goto err_request;
- 		}
-@@ -177,7 +177,7 @@ static void ds2404_write_memory(struct device *dev, u16 offset,
+diff --git a/drivers/rtc/rtc-rs5c372.c b/drivers/rtc/rtc-rs5c372.c
+index 76f565a..581739f 100644
+--- a/drivers/rtc/rtc-rs5c372.c
++++ b/drivers/rtc/rtc-rs5c372.c
+@@ -311,8 +311,7 @@ static int rs5c_rtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
+ 		buf &= ~RS5C_CTRL1_AALE;
  
- 	for (i = 0; i < length; i++) {
- 		if (out[i] != ds2404_read_byte(dev)) {
--			printk(KERN_ERR "read invalid data\n");
-+			dev_err(dev, "read invalid data\n");
- 			return;
+ 	if (i2c_smbus_write_byte_data(client, addr, buf) < 0) {
+-		printk(KERN_WARNING "%s: can't update alarm\n",
+-			rs5c->rtc->name);
++		dev_warn(dev, "can't update alarm\n");
+ 		status = -EIO;
+ 	} else
+ 		rs5c->regs[RS5C_REG_CTRL1] = buf;
+@@ -381,7 +380,7 @@ static int rs5c_set_alarm(struct device *dev, struct rtc_wkalrm *t)
+ 		addr = RS5C_ADDR(RS5C_REG_CTRL1);
+ 		buf[0] = rs5c->regs[RS5C_REG_CTRL1] & ~RS5C_CTRL1_AALE;
+ 		if (i2c_smbus_write_byte_data(client, addr, buf[0]) < 0) {
+-			pr_debug("%s: can't disable alarm\n", rs5c->rtc->name);
++			dev_dbg(dev, "can't disable alarm\n");
+ 			return -EIO;
+ 		}
+ 		rs5c->regs[RS5C_REG_CTRL1] = buf[0];
+@@ -395,7 +394,7 @@ static int rs5c_set_alarm(struct device *dev, struct rtc_wkalrm *t)
+ 	for (i = 0; i < sizeof(buf); i++) {
+ 		addr = RS5C_ADDR(RS5C_REG_ALARM_A_MIN + i);
+ 		if (i2c_smbus_write_byte_data(client, addr, buf[i]) < 0) {
+-			pr_debug("%s: can't set alarm time\n", rs5c->rtc->name);
++			dev_dbg(dev, "can't set alarm time\n");
+ 			return -EIO;
  		}
  	}
+@@ -405,8 +404,7 @@ static int rs5c_set_alarm(struct device *dev, struct rtc_wkalrm *t)
+ 		addr = RS5C_ADDR(RS5C_REG_CTRL1);
+ 		buf[0] = rs5c->regs[RS5C_REG_CTRL1] | RS5C_CTRL1_AALE;
+ 		if (i2c_smbus_write_byte_data(client, addr, buf[0]) < 0)
+-			printk(KERN_WARNING "%s: can't enable alarm\n",
+-				rs5c->rtc->name);
++			dev_warn(dev, "can't enable alarm\n");
+ 		rs5c->regs[RS5C_REG_CTRL1] = buf[0];
+ 	}
+ 
 -- 
 1.7.2.5
 
