@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752928Ab3BOXAV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 18:00:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49354 "EHLO
+	id S1752841Ab3BOXAT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 18:00:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49357 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752346Ab3BOW4p (ORCPT
+	with ESMTP id S1752463Ab3BOW4p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Feb 2013 17:56:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Myers <bpm@sgi.com>, Dave Chinner <dchinner@redhat.com>,
-        Brian Foster <bfoster@redhat.com>, CAI Qian <caiqian@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [ 01/10] Revert: xfs: fix _xfs_buf_find oops on blocks beyond the filesystem end
-Date: Fri, 15 Feb 2013 14:56:33 -0800
-Message-Id: <20130215225543.743915307@linuxfoundation.org>
+        Linus Walleij <linus.walleij@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Mian Yousaf KAUKAB <mian.yousaf.kaukab@stericsson.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 02/10] drivers/rtc/rtc-pl031.c: restore ST variant functionality
+Date: Fri, 15 Feb 2013 14:56:34 -0800
+Message-Id: <20130215225543.846596739@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130215225543.586012193@linuxfoundation.org>
 References: <20130215225543.586012193@linuxfoundation.org>
@@ -28,56 +32,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-This reverts commit a56040731e5b00081c6d6c26b99e6e257a5d63d7 which was
-commit eb178619f930fa2ba2348de332a1ff1c66a31424 upstream.
+From: Linus Walleij <linus.walleij@linaro.org>
 
-It has been reported to cause problems:
-	http://bugzilla.redhat.com/show_bug.cgi?id=909602
+commit 3399cfb5df9594495b876d1843a7165f77366b2b upstream.
 
-Acked-by: Ben Myers <bpm@sgi.com>
-Cc: Dave Chinner <dchinner@redhat.com>
-Cc: Brian Foster <bfoster@redhat.com>
-Cc: CAI Qian <caiqian@redhat.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>
+Commit e7e034e18a0a ("drivers/rtc/rtc-pl031.c: fix the missing operation
+on enable") accidentally broke the ST variants of PL031.
+
+The bit that is being poked as "clockwatch" enable bit for the ST
+variants does the work of bit 0 on this variant.  Bit 0 is used for a
+clock divider on the ST variants, and setting it to 1 will affect
+timekeeping in a very bad way.
+
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>
+Cc: Mian Yousaf KAUKAB <mian.yousaf.kaukab@stericsson.com>
+Cc: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/xfs/xfs_buf.c |   18 ------------------
- 1 file changed, 18 deletions(-)
+ drivers/rtc/rtc-pl031.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/fs/xfs/xfs_buf.c
-+++ b/fs/xfs/xfs_buf.c
-@@ -487,7 +487,6 @@ _xfs_buf_find(
- 	struct rb_node		*parent;
- 	xfs_buf_t		*bp;
- 	xfs_daddr_t		blkno = map[0].bm_bn;
--	xfs_daddr_t		eofs;
- 	int			numblks = 0;
- 	int			i;
+--- a/drivers/rtc/rtc-pl031.c
++++ b/drivers/rtc/rtc-pl031.c
+@@ -350,7 +350,9 @@ static int pl031_probe(struct amba_devic
+ 	/* Enable the clockwatch on ST Variants */
+ 	if (vendor->clockwatch)
+ 		data |= RTC_CR_CWEN;
+-	writel(data | RTC_CR_EN, ldata->base + RTC_CR);
++	else
++		data |= RTC_CR_EN;
++	writel(data, ldata->base + RTC_CR);
  
-@@ -499,23 +498,6 @@ _xfs_buf_find(
- 	ASSERT(!(numbytes < (1 << btp->bt_sshift)));
- 	ASSERT(!(BBTOB(blkno) & (xfs_off_t)btp->bt_smask));
- 
--	/*
--	 * Corrupted block numbers can get through to here, unfortunately, so we
--	 * have to check that the buffer falls within the filesystem bounds.
--	 */
--	eofs = XFS_FSB_TO_BB(btp->bt_mount, btp->bt_mount->m_sb.sb_dblocks);
--	if (blkno >= eofs) {
--		/*
--		 * XXX (dgc): we should really be returning EFSCORRUPTED here,
--		 * but none of the higher level infrastructure supports
--		 * returning a specific error on buffer lookup failures.
--		 */
--		xfs_alert(btp->bt_mount,
--			  "%s: Block out of range: block 0x%llx, EOFS 0x%llx ",
--			  __func__, blkno, eofs);
--		return NULL;
--	}
--
- 	/* get tree root */
- 	pag = xfs_perag_get(btp->bt_mount,
- 				xfs_daddr_to_agno(btp->bt_mount, blkno));
+ 	/*
+ 	 * On ST PL031 variants, the RTC reset value does not provide correct
 
 
