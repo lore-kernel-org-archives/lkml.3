@@ -1,104 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752189Ab3BOWrc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 17:47:32 -0500
-Received: from mail-la0-f53.google.com ([209.85.215.53]:34476 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751815Ab3BOWrb (ORCPT
+	id S1752220Ab3BOWtn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 17:49:43 -0500
+Received: from usindpps03.hds.com ([207.126.252.16]:53894 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751896Ab3BOWtl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 17:47:31 -0500
+	Fri, 15 Feb 2013 17:49:41 -0500
+From: Satoru Moriya <satoru.moriya@hds.com>
+To: Seiji Aguchi <seiji.aguchi@hds.com>, dormando <dormando@rydia.net>,
+        "Rik van Riel" <riel@redhat.com>
+CC: Randy Dunlap <rdunlap@xenotime.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "lwoodman@redhat.com" <lwoodman@redhat.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "hughd@google.com" <hughd@google.com>
+Subject: RE: extra free kbytes tunable
+Thread-Topic: extra free kbytes tunable
+Thread-Index: AQHOCMXSnLL05JeCLUuI4x7LhTd+Qph7g2EwgAAIHzA=
+Date: Fri, 15 Feb 2013 22:49:32 +0000
+Message-ID: <8631DC5930FA9E468F04F3FD3A5D007214B0CCF3@USINDEM103.corp.hds.com>
+References: <alpine.DEB.2.02.1302111734090.13090@dflat>
+ <A5ED84D3BB3A384992CBB9C77DEDA4D414A98EBF@USINDEM103.corp.hds.com>
+In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D414A98EBF@USINDEM103.corp.hds.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.73.11]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <1360771110-9490-1-git-send-email-christian.gmeiner@gmail.com>
-References: <1360771110-9490-1-git-send-email-christian.gmeiner@gmail.com>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Fri, 15 Feb 2013 14:47:08 -0800
-Message-ID: <CAK5ve-K43n=4n1GyRW+2PgMTe2bU6ROHAa-_dK_0LgzM7JCRcw@mail.gmail.com>
-Subject: Re: [PATCH] leds-ot200: Fix misbehavior caused by wrong bit masks
-To: Christian Gmeiner <christian.gmeiner@gmail.com>,
-        akpm <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
+ definitions=2013-02-15_09:2013-02-15,2013-02-15,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=70 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1211240000
+ definitions=main-1302150205
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1FMniBn013703
 
-On Wed, Feb 13, 2013 at 7:58 AM, Christian Gmeiner
-<christian.gmeiner@gmail.com> wrote:
-> During the development of this driver an in-house register
-> documentation was used. The last weeks some integration tests
-> were done and this problem was found. It turned out that
-> the released register documentation is wrong.
->
-> The fix is very simple: shift all masks by one.
->
-> Our customers can control LEDs from userspace via Java,
-> C++ or what every. They have running/working applications where
-> they want to control led_3 but led_2 get's used.
-> I got a bug report in our in-house bug tracker so it would be
-> great to fix this upstream.
->
-> Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com>
+On 02/15/2013 05:21 PM, Seiji Aguchi wrote:
+> Rik, Satoru,
+> 
+> Do you have any comments?
+> 
+> Seiji
 
-Thanks, Christian.
+Hmm, this seems what we wanted to know in the previous thread.
 
-And Andrew, are you going to take care of this patch? Or I will merge this.
+Because extra_free_kbytes is quite simple and it fixes the problem,
+it should be merged into upstream.
 
--Bryan
+Regards,
+Satoru
 
-> ---
->  drivers/leds/leds-ot200.c | 14 +++++++-------
->  1 file changed, 7 insertions(+), 7 deletions(-)
->
-> diff --git a/drivers/leds/leds-ot200.c b/drivers/leds/leds-ot200.c
-> index ee14662..98cae52 100644
-> --- a/drivers/leds/leds-ot200.c
-> +++ b/drivers/leds/leds-ot200.c
-> @@ -47,37 +47,37 @@ static struct ot200_led leds[] = {
->         {
->                 .name = "led_1",
->                 .port = 0x49,
-> -               .mask = BIT(7),
-> +               .mask = BIT(6),
->         },
->         {
->                 .name = "led_2",
->                 .port = 0x49,
-> -               .mask = BIT(6),
-> +               .mask = BIT(5),
->         },
->         {
->                 .name = "led_3",
->                 .port = 0x49,
-> -               .mask = BIT(5),
-> +               .mask = BIT(4),
->         },
->         {
->                 .name = "led_4",
->                 .port = 0x49,
-> -               .mask = BIT(4),
-> +               .mask = BIT(3),
->         },
->         {
->                 .name = "led_5",
->                 .port = 0x49,
-> -               .mask = BIT(3),
-> +               .mask = BIT(2),
->         },
->         {
->                 .name = "led_6",
->                 .port = 0x49,
-> -               .mask = BIT(2),
-> +               .mask = BIT(1),
->         },
->         {
->                 .name = "led_7",
->                 .port = 0x49,
-> -               .mask = BIT(1),
-> +               .mask = BIT(0),
->         }
->  };
->
+
+>> -----Original Message-----
+>> From: linux-kernel-owner@vger.kernel.org 
+>> [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of dormando
+>> Sent: Monday, February 11, 2013 9:01 PM
+>> To: Rik van Riel
+>> Cc: Randy Dunlap; Satoru Moriya; linux-kernel@vger.kernel.org; 
+>> linux-mm@kvack.org; lwoodman@redhat.com; Seiji Aguchi; 
+>> akpm@linux-foundation.org; hughd@google.com
+>> Subject: extra free kbytes tunable
+>>
+>> Hi,
+>>
+>> As discussed in this thread:
+>> http://marc.info/?l=linux-mm&m=131490523222031&w=2
+>> (with this cleanup as well: https://lkml.org/lkml/2011/9/2/225)
+>>
+>> A tunable was proposed to allow specifying the distance between 
+>> pages_min and the low watermark before kswapd is kicked in to free up 
+>> pages. I'd like to re-open this thread since the patch did not appear to go anywhere.
+>>
+>> We have a server workload wherein machines with 100G+ of "free" 
+>> memory (used by page cache), scattered but frequent random io reads 
+>> from 12+ SSD's, and 5gbps+ of internet traffic, will frequently hit 
+>> direct reclaim in a few different ways.
+>>
+>> 1) It'll run into small amounts of reclaim randomly (a few hundred thousand).
+>>
+>> 2) A burst of reads or traffic can cause extra pressure, which kswapd 
+>> occasionally responds to by freeing up 40g+ of the pagecache all at 
+>> once
+>> (!) while pausing the system (Argh).
+>>
+>> 3) A blip in an upstream provider or failover from a peer causes the 
+>> kernel to allocate massive amounts of memory for retransmission 
+>> queues/etc, potentially along with buffered IO reads and (some, but 
+>> not often a ton) of new allocations from an application. This paired 
+>> with 2) can cause the box to stall for 15+ seconds.
+>>
+>> We're seeing this more in 3.4/3.5/3.6, saw it less in 2.6.38. Mass 
+>> reclaims are more common in newer kernels, but reclaims still happen 
+>> in all kernels without raising min_free_kbytes dramatically.
+>>
+>> I've found that setting "lowmem_reserve_ratio" to something like "1 1 32"
+>> (thus protecting the DMA32 zone) causes 2) to happen less often, and 
+>> is generally less violent with 1).
+>>
+>> Setting min_free_kbytes to 15G or more, paired with the above, has 
+>> been the best at mitigating the issue. This is simply trying to raise 
+>> the distance between the min and low watermarks. With min_free_kbytes 
+>> set to 15000000, that gives us a whopping 1.8G (!!!) of leeway before 
+>> slamming into direct reclaim.
+>>
+>> So, this patch is unfortunate but wonderful at letting us reclaim 
+>> 10G+ of otherwise lost memory. Could we please revisit it?
+>>
+>> I saw a lot of discussion on doing this automatically, or making 
+>> kswapd more efficient to it, and I'd love to do that. Beyond making 
+>> kswapd psychic I haven't seen any better options yet.
+>>
+>> The issue is more complex than simply having an application warn of 
+>> an impending allocation, since this can happen via read load on disk 
+>> or from kernel page allocations for the network, or a combination of 
+>> the two (or three, if you add the app back in).
+>>
+>> It's going to get worse as we push machines with faster SSD's and 
+>> bigger networks. I'm open to any ideas on how to make kswapd more 
+>> efficient in our case, or really anything at all that works.
+>>
+>> I have more details, but cut it down as much as I could for this mail.
+>>
+>> Thanks,
+>> -Dormando
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe 
+>> linux-kernel" in the body of a message to majordomo@vger.kernel.org 
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 > --
-> 1.7.12.2.421.g261b511
->
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in the body 
+> to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=ilto:"dont@kvack.org"> email@kvack.org </a>
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
