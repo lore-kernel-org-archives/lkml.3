@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935378Ab3BOFbD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 00:31:03 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:44773 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751592Ab3BOFbA (ORCPT
+	id S935312Ab3BOFq1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 00:46:27 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:8261 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750785Ab3BOFq0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 00:31:00 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Kees Cook <keescook@chromium.org>
-Cc: Stephen Hemminger <stephen@networkplumber.org>,
-        LKML <linux-kernel@vger.kernel.org>, Rob Landley <rob@landley.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, Eric Dumazet <edumazet@google.com>,
-        Neil Horman <nhorman@tuxdriver.com>, Yuchung Cheng <ycheng@google.com>,
-        Shan Wei <davidshan@tencent.com>,
-        "linux-doc\@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        netdev@vger.kernel.org, Willy Tarreau <w@1wt.eu>
-References: <20130207175240.GA12520@www.outflux.net>
-	<20130207103950.662698ea@nehalam.linuxnetplumber.net>
-	<CAGXu5jJiupzommJYPEYQnk-4i9FUKai0NcPnihLN-QpWV64jtQ@mail.gmail.com>
-Date: Thu, 14 Feb 2013 21:30:41 -0800
-In-Reply-To: <CAGXu5jJiupzommJYPEYQnk-4i9FUKai0NcPnihLN-QpWV64jtQ@mail.gmail.com>
-	(Kees Cook's message of "Thu, 7 Feb 2013 10:44:02 -0800")
-Message-ID: <87y5eq87pa.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Fri, 15 Feb 2013 00:46:26 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Thu, 14 Feb 2013 21:45:21 -0800
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: Linus Walleij <linus.walleij@linaro.org>, Ryan Mallon <rmallon@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <gnurou@gmail.com>,
+        Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH v2 0/4] gpiolib: some fixup patches
+Date: Fri, 15 Feb 2013 14:46:13 +0900
+Message-ID: <1360907177-6468-1-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 1.8.1.3
+X-NVConfidentiality: public
 MIME-Version: 1.0
 Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+pJ3rzDzK3npF/DJNnEFSXxTpEmpXstJ8=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0002]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.5 XM_Body_Dirty_Words Contains a dirty word
-X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Kees Cook <keescook@chromium.org>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH] tcp: sysctl to disable TCP simultaneous connect
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kees Cook <keescook@chromium.org> writes:
+This short series is a fixup to patch 6/9 of my previous series ("gpiolib: use
+descriptors internally"), which mainly addresses issues raised by Linus W. in
+this patch and a few other minor ones caught while proof-reading gpiolib.
 
-> The patch would not break it -- it defaults the sysctl to staying enabled.
->
-> If you mean the documentation should be updated, sure, that's easy to do.
->
-> David: I know you aren't a fan of this patch, but I'd like to try to
-> convince you. :) This leaves the feature enabled and add a toggle for
-> systems (like Chrome OS) that don't want to risk this DoS at all.
-> There are so very many other toggle, I don't see why this one would be
-> a problem to add.
+First patch is the most significant. It mostly avoids oopses when passing an
+invalid GPIO to some functions. Also gpio_get/set_value*() now return 0 when
+given an invalid GPIO number instead of oopsing. I tend to think that's an
+improvement, but if it's not please let me know.
 
-Chrome OS has no plans to implement webrtc?  Last I had read that
-support had been added to the release versions of Chrome, and was in the
-development builds of firefox.  I really don't belive that there are
-many systems that don't intend to run a web browser.
+Ideally these patches should be melded into the above-mentioned patch since
+they were intended to become a new revision, but I leave that decision to
+Grant's discretion.
 
-Eric
+This patchset has been tested on Tegra 2/Ventana with a GPIO backlight driver
+and the sysfs interface.
 
+Changes from v1:
+- as suggested by Ryan Mallon, add a dedicated control flow for signaling
+  invalid GPIOs to avoid meaningless error messages and ugly ternary operators
+- use pr_warn instead of pr_debug to signal invalid GPIOs
+- do descriptors validity check before acquiring any lock
+
+Alexandre Courbot (4):
+  gpiolib: check descriptors validity before use
+  gpiolib: use const parameters when possible
+  gpiolib: move comment to right function
+  gpiolib: rename local offset variables to "hwgpio"
+
+ drivers/gpio/gpiolib.c | 213 +++++++++++++++++++++++++++----------------------
+ 1 file changed, 117 insertions(+), 96 deletions(-)
+
+-- 
+1.8.1.3
 
