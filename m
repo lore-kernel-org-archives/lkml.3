@@ -1,37 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751748Ab3BOWTD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 17:19:03 -0500
-Received: from mail-la0-f49.google.com ([209.85.215.49]:41295 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751049Ab3BOWTB (ORCPT
+	id S1751915Ab3BOWWJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 17:22:09 -0500
+Received: from usindpps06.hds.com ([207.126.252.19]:53534 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167Ab3BOWWI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 17:19:01 -0500
+	Fri, 15 Feb 2013 17:22:08 -0500
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: dormando <dormando@rydia.net>, Rik van Riel <riel@redhat.com>,
+        "Satoru Moriya" <satoru.moriya@hds.com>
+CC: Randy Dunlap <rdunlap@xenotime.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "lwoodman@redhat.com" <lwoodman@redhat.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "hughd@google.com" <hughd@google.com>
+Subject: RE: extra free kbytes tunable
+Thread-Topic: extra free kbytes tunable
+Thread-Index: AQHOCMXSFvmUW9txxECsy5hso7Rddph7g2Ew
+Date: Fri, 15 Feb 2013 22:21:58 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D414A98EBF@USINDEM103.corp.hds.com>
+References: <alpine.DEB.2.02.1302111734090.13090@dflat>
+In-Reply-To: <alpine.DEB.2.02.1302111734090.13090@dflat>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.73.11]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <1360965237-14857-1-git-send-email-swarren@wwwdotorg.org>
-References: <1360965237-14857-1-git-send-email-swarren@wwwdotorg.org>
-Date: Fri, 15 Feb 2013 14:18:59 -0800
-X-Google-Sender-Auth: FqIij5eUQnvEkQkDBogiVal_2eM
-Message-ID: <CAA9_cme3e-VWFs+5o6g88dXmURsjojT08o9Cw+=r7=AfRKz5gQ@mail.gmail.com>
-Subject: Re: [PATCH] dma: tegra: assume CONFIG_OF
-From: Dan Williams <djbw@fb.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>,
-        "Koul, Vinod" <vinod.koul@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
+ definitions=2013-02-15_09:2013-02-15,2013-02-15,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=70 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1211240000
+ definitions=main-1302150198
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 15, 2013 at 1:53 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> From: Stephen Warren <swarren@nvidia.com>
->
-> Tegra only supports, and always enables, device tree. Remove all ifdefs
-> and runtime checks for DT support from the driver.
->
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Rik, Satoru,
 
-Acked-by: Dan Williams <djbw@fb.com>
+Do you have any comments?
 
-..adding Vinod.
+Seiji
+
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of dormando
+> Sent: Monday, February 11, 2013 9:01 PM
+> To: Rik van Riel
+> Cc: Randy Dunlap; Satoru Moriya; linux-kernel@vger.kernel.org; linux-mm@kvack.org; lwoodman@redhat.com; Seiji Aguchi;
+> akpm@linux-foundation.org; hughd@google.com
+> Subject: extra free kbytes tunable
+> 
+> Hi,
+> 
+> As discussed in this thread:
+> http://marc.info/?l=linux-mm&m=131490523222031&w=2
+> (with this cleanup as well: https://lkml.org/lkml/2011/9/2/225)
+> 
+> A tunable was proposed to allow specifying the distance between pages_min and the low watermark before kswapd is kicked in to
+> free up pages. I'd like to re-open this thread since the patch did not appear to go anywhere.
+> 
+> We have a server workload wherein machines with 100G+ of "free" memory (used by page cache), scattered but frequent random io
+> reads from 12+ SSD's, and 5gbps+ of internet traffic, will frequently hit direct reclaim in a few different ways.
+> 
+> 1) It'll run into small amounts of reclaim randomly (a few hundred thousand).
+> 
+> 2) A burst of reads or traffic can cause extra pressure, which kswapd occasionally responds to by freeing up 40g+ of the pagecache all
+> at once
+> (!) while pausing the system (Argh).
+> 
+> 3) A blip in an upstream provider or failover from a peer causes the kernel to allocate massive amounts of memory for retransmission
+> queues/etc, potentially along with buffered IO reads and (some, but not often a ton) of new allocations from an application. This
+> paired with 2) can cause the box to stall for 15+ seconds.
+> 
+> We're seeing this more in 3.4/3.5/3.6, saw it less in 2.6.38. Mass reclaims are more common in newer kernels, but reclaims still happen
+> in all kernels without raising min_free_kbytes dramatically.
+> 
+> I've found that setting "lowmem_reserve_ratio" to something like "1 1 32"
+> (thus protecting the DMA32 zone) causes 2) to happen less often, and is generally less violent with 1).
+> 
+> Setting min_free_kbytes to 15G or more, paired with the above, has been the best at mitigating the issue. This is simply trying to raise
+> the distance between the min and low watermarks. With min_free_kbytes set to 15000000, that gives us a whopping 1.8G (!!!) of
+> leeway before slamming into direct reclaim.
+> 
+> So, this patch is unfortunate but wonderful at letting us reclaim 10G+ of otherwise lost memory. Could we please revisit it?
+> 
+> I saw a lot of discussion on doing this automatically, or making kswapd more efficient to it, and I'd love to do that. Beyond making
+> kswapd psychic I haven't seen any better options yet.
+> 
+> The issue is more complex than simply having an application warn of an impending allocation, since this can happen via read load on
+> disk or from kernel page allocations for the network, or a combination of the two (or three, if you add the app back in).
+> 
+> It's going to get worse as we push machines with faster SSD's and bigger networks. I'm open to any ideas on how to make kswapd
+> more efficient in our case, or really anything at all that works.
+> 
+> I have more details, but cut it down as much as I could for this mail.
+> 
+> Thanks,
+> -Dormando
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in the body of a message to majordomo@vger.kernel.org More
+> majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
