@@ -1,49 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935799Ab3BOOua (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 09:50:30 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:54151 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932866Ab3BOOu3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 09:50:29 -0500
-Message-ID: <511E4B32.3030003@acm.org>
-Date: Fri, 15 Feb 2013 08:50:26 -0600
-From: Corey Minyard <tcminyard@gmail.com>
-Reply-To: minyard@acm.org
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S935823Ab3BOOu5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 09:50:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27909 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932635Ab3BOOuz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 09:50:55 -0500
+Message-ID: <511E4B43.7040202@redhat.com>
+Date: Fri, 15 Feb 2013 15:50:43 +0100
+From: Denys Vlasenko <dvlasenk@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: =?UTF-8?B?QnJ1bm8gUHLDqW1vbnQ=?= <bonbons@linux-vserver.org>,
-        Corey Minyard <cminyard@mvista.com>,
-        containers@lists.linux-foundation.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Move console redirect to pid namespace
-References: <1360376920-30824-1-git-send-email-minyard@acm.org> <20130209191409.643c3d7f@neptune.home> <87r4kkuj4o.fsf@xmission.com> <511D9890.1040900@acm.org> <87d2w29pdo.fsf@xmission.com>
-In-Reply-To: <87d2w29pdo.fsf@xmission.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Oleg Nesterov <oleg@redhat.com>,
+        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: [PATCH] x86: make PTRACE_GETREGSET return 32-bit regs if 64-bit
+ process entered kernel with int 80
+References: <511CE3D0.8000308@redhat.com> <20130214150046.GA30543@redhat.com> <511D2779.7040504@zytor.com> <20130214191842.GA11620@redhat.com> <511D3928.80402@zytor.com> <20130214205521.GA20085@moon>
+In-Reply-To: <20130214205521.GA20085@moon>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14/2013 10:23 PM, Eric W. Biederman wrote:
->
->>> With recent changes this is tied to the initial user namespace.  So the
->>> simple solution to this and so many other similiar security problems is
->>> to run your container in a user namespace.
+On 02/14/2013 09:55 PM, Cyrill Gorcunov wrote:
+> On Thu, Feb 14, 2013 at 11:21:12AM -0800, H. Peter Anvin wrote:
+>> On 02/14/2013 11:18 AM, Oleg Nesterov wrote:
+>>> On 02/14, H. Peter Anvin wrote:
+>>>>
+>>>> On 02/14/2013 07:00 AM, Oleg Nesterov wrote:
+>>>>> On 02/14, Denys Vlasenko wrote:
+>>>>>>
+>>>>>> Determining personality of a ptraced process is a murky area.
+>>>>>> On x86, for years strace was looking at segment selectors,
+>>>>>> which is conceptually wrong: see, for example,
+>>>>>> https://lkml.org/lkml/2012/1/18/320
+>>>>>>
+>>>>
+>>>> One proposal that keeps being on the table is to export a regset with
+>>>> metadatam, including process mode at launch (i386, x86-64, x32).
 >>>
->>> The permission check currently is capable(CAP_SYS_ADMIN) which requires
->>> the caller to have the CAP_SYS_ADMIN in the initial user namespace.
->> I'm not sure I follow.  Are these changes in k.org, or in another
->> repository someplace?
-> In k.org. 3.7 would work. 3.8-rcX would work even better.
->
-> root in a user namespace does not have permission to call TIOCCONS.
+>>> Yes... but if this metadata includes TS_COMPAT-is-set, then strace should
+>>> do PTRACE_GETREGSET(REGSET_META) + PTRACE_GETREGSET(REGSET_GENERAL) every
+>>> time. Or REGSET_META should include META+GENERAL.
+>>>
+>>> IOW, it is not clear to me what this "meta" should actually report.
+>>
+>> That is one of the things that needs to be nailed down.  In particular,
+>> what are the things people need.
+> 
+> Indeed, having some "official" way for compat bit retrieval would be
+> a great thing for us (c/r camp) since we've just met the same problem.
+> And at moment I sticked for the same trick as gdb does (cs/ds test).
+> 
+> But, guys, if only I'm not missing something completely obvious,
+> can't we simply provide task-compat bit to userspace in say /proc/pid/stat
+> or something? Then the strace/gdb would be able to always know if
+> the tracee is actually in compat mode. Or I miss something fundamental
+> here?
 
-Ok, that's good enough for me.  I don't have a compelling reason to make 
-it work, beyond liking consistency.
+strace needs to get that data on every syscall entry in the traced process.
+Doing open/read/close on every syscall entry is going to slow it down a lot.
 
-Thank you,
+-- 
+vda
 
--corey
+
