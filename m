@@ -1,159 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752482Ab3BOW4J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 17:56:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49288 "EHLO
+	id S1752670Ab3BOW40 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 17:56:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49320 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752344Ab3BOW4D (ORCPT
+	with ESMTP id S1752491Ab3BOW4U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 17:56:03 -0500
+	Fri, 15 Feb 2013 17:56:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Petr Matousek <pmatouse@redhat.com>,
-        Andrew Cooper <andrew.cooper3@citrix.com>,
-        Jan Beulich <jbeulich@suse.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 2/4] x86/xen: dont assume %ds is usable in xen_iret for 32-bit PVOPS.
-Date: Fri, 15 Feb 2013 14:55:51 -0800
-Message-Id: <20130215225523.808341885@linuxfoundation.org>
+        Stoney Wang <song-bo.wang@hp.com>, Yinghai Lu <yinghai@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [ 3/8] x86/apic: Work around boot failure on HP ProLiant DL980 G7 Server systems
+Date: Fri, 15 Feb 2013 14:56:10 -0800
+Message-Id: <20130215225431.245562554@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130215225523.525656849@linuxfoundation.org>
-References: <20130215225523.525656849@linuxfoundation.org>
+In-Reply-To: <20130215225430.841634159@linuxfoundation.org>
+References: <20130215225430.841634159@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jan Beulich <JBeulich@suse.com>
+From: Stoney Wang <song-bo.wang@hp.com>
 
-commit 13d2b4d11d69a92574a55bfd985cfb0ca77aebdc upstream.
+commit cb214ede7657db458fd0b2a25ea0b28dbf900ebc upstream.
 
-This fixes CVE-2013-0228 / XSA-42
+When a HP ProLiant DL980 G7 Server boots a regular kernel,
+there will be intermittent lost interrupts which could
+result in a hang or (in extreme cases) data loss.
 
-Drew Jones while working on CVE-2013-0190 found that that unprivileged guest user
-in 32bit PV guest can use to crash the > guest with the panic like this:
+The reason is that this system only supports x2apic physical
+mode, while the kernel boots with a logical-cluster default
+setting.
 
--------------
-general protection fault: 0000 [#1] SMP
-last sysfs file: /sys/devices/vbd-51712/block/xvda/dev
-Modules linked in: sunrpc ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4
-iptable_filter ip_tables ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6
-xt_state nf_conntrack ip6table_filter ip6_tables ipv6 xen_netfront ext4
-mbcache jbd2 xen_blkfront dm_mirror dm_region_hash dm_log dm_mod [last
-unloaded: scsi_wait_scan]
+This bug can be worked around by specifying the "x2apic_phys" or
+"nox2apic" boot option, but we want to handle this system
+without requiring manual workarounds.
 
-Pid: 1250, comm: r Not tainted 2.6.32-356.el6.i686 #1
-EIP: 0061:[<c0407462>] EFLAGS: 00010086 CPU: 0
-EIP is at xen_iret+0x12/0x2b
-EAX: eb8d0000 EBX: 00000001 ECX: 08049860 EDX: 00000010
-ESI: 00000000 EDI: 003d0f00 EBP: b77f8388 ESP: eb8d1fe0
- DS: 0000 ES: 007b FS: 0000 GS: 00e0 SS: 0069
-Process r (pid: 1250, ti=eb8d0000 task=c2953550 task.ti=eb8d0000)
-Stack:
- 00000000 0027f416 00000073 00000206 b77f8364 0000007b 00000000 00000000
-Call Trace:
-Code: c3 8b 44 24 18 81 4c 24 38 00 02 00 00 8d 64 24 30 e9 03 00 00 00
-8d 76 00 f7 44 24 08 00 00 02 80 75 33 50 b8 00 e0 ff ff 21 e0 <8b> 40
-10 8b 04 85 a0 f6 ab c0 8b 80 0c b0 b3 c0 f6 44 24 0d 02
-EIP: [<c0407462>] xen_iret+0x12/0x2b SS:ESP 0069:eb8d1fe0
-general protection fault: 0000 [#2]
----[ end trace ab0d29a492dcd330 ]---
-Kernel panic - not syncing: Fatal exception
-Pid: 1250, comm: r Tainted: G      D    ---------------
-2.6.32-356.el6.i686 #1
-Call Trace:
- [<c08476df>] ? panic+0x6e/0x122
- [<c084b63c>] ? oops_end+0xbc/0xd0
- [<c084b260>] ? do_general_protection+0x0/0x210
- [<c084a9b7>] ? error_code+0x73/
--------------
+The BIOS sets ACPI_FADT_APIC_PHYSICAL in FADT table.
+As all apicids are smaller than 255, BIOS need to pass the
+control to the OS with xapic mode, according to x2apic-spec,
+chapter 2.9.
 
-Petr says: "
- I've analysed the bug and I think that xen_iret() cannot cope with
- mangled DS, in this case zeroed out (null selector/descriptor) by either
- xen_failsafe_callback() or RESTORE_REGS because the corresponding LDT
- entry was invalidated by the reproducer. "
+Current code handle x2apic when BIOS pass with xapic mode
+enabled:
 
-Jan took a look at the preliminary patch and came up a fix that solves
-this problem:
+When user specifies x2apic_phys, or FADT indicates PHYSICAL:
 
-"This code gets called after all registers other than those handled by
-IRET got already restored, hence a null selector in %ds or a non-null
-one that got loaded from a code or read-only data descriptor would
-cause a kernel mode fault (with the potential of crashing the kernel
-as a whole, if panic_on_oops is set)."
+1. During madt oem check, apic driver is set with xapic logical
+   or xapic phys driver at first.
 
-The way to fix this is to realize that the we can only relay on the
-registers that IRET restores. The two that are guaranteed are the
-%cs and %ss as they are always fixed GDT selectors. Also they are
-inaccessible from user mode - so they cannot be altered. This is
-the approach taken in this patch.
+2. enable_IR_x2apic() will enable x2apic_mode.
 
-Another alternative option suggested by Jan would be to relay on
-the subtle realization that using the %ebp or %esp relative references uses
-the %ss segment.  In which case we could switch from using %eax to %ebp and
-would not need the %ss over-rides. That would also require one extra
-instruction to compensate for the one place where the register is used
-as scaled index. However Andrew pointed out that is too subtle and if
-further work was to be done in this code-path it could escape folks attention
-and lead to accidents.
+3. if user specifies x2apic_phys on the boot line, x2apic_phys_probe()
+   will install the correct x2apic phys driver and use x2apic phys mode.
+   Otherwise it will skip the driver will let x2apic_cluster_probe to
+   take over to install x2apic cluster driver (wrong one) even though FADT
+   indicates PHYSICAL, because x2apic_phys_probe does not check
+   FADT PHYSICAL.
 
-Reviewed-by: Petr Matousek <pmatouse@redhat.com>
-Reported-by: Petr Matousek <pmatouse@redhat.com>
-Reviewed-by: Andrew Cooper <andrew.cooper3@citrix.com>
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Add checking x2apic_fadt_phys in x2apic_phys_probe() to fix the
+problem.
+
+Signed-off-by: Stoney Wang <song-bo.wang@hp.com>
+[ updated the changelog and simplified the code ]
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Link: http://lkml.kernel.org/r/1360263182-16226-1-git-send-email-yinghai@kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/xen/xen-asm_32.S |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ arch/x86/kernel/apic/x2apic_phys.c |   21 +++++++++++----------
+ 1 file changed, 11 insertions(+), 10 deletions(-)
 
---- a/arch/x86/xen/xen-asm_32.S
-+++ b/arch/x86/xen/xen-asm_32.S
-@@ -88,11 +88,11 @@ ENTRY(xen_iret)
- 	 */
- #ifdef CONFIG_SMP
- 	GET_THREAD_INFO(%eax)
--	movl TI_cpu(%eax), %eax
--	movl __per_cpu_offset(,%eax,4), %eax
--	mov xen_vcpu(%eax), %eax
-+	movl %ss:TI_cpu(%eax), %eax
-+	movl %ss:__per_cpu_offset(,%eax,4), %eax
-+	mov %ss:xen_vcpu(%eax), %eax
- #else
--	movl xen_vcpu, %eax
-+	movl %ss:xen_vcpu, %eax
- #endif
+--- a/arch/x86/kernel/apic/x2apic_phys.c
++++ b/arch/x86/kernel/apic/x2apic_phys.c
+@@ -20,18 +20,19 @@ static int set_x2apic_phys_mode(char *ar
+ }
+ early_param("x2apic_phys", set_x2apic_phys_mode);
  
- 	/* check IF state we're restoring */
-@@ -105,11 +105,11 @@ ENTRY(xen_iret)
- 	 * resuming the code, so we don't have to be worried about
- 	 * being preempted to another CPU.
- 	 */
--	setz XEN_vcpu_info_mask(%eax)
-+	setz %ss:XEN_vcpu_info_mask(%eax)
- xen_iret_start_crit:
+-static int x2apic_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
++static bool x2apic_fadt_phys(void)
+ {
+-	if (x2apic_phys)
+-		return x2apic_enabled();
+-	else if ((acpi_gbl_FADT.header.revision >= FADT2_REVISION_ID) &&
+-		(acpi_gbl_FADT.flags & ACPI_FADT_APIC_PHYSICAL) &&
+-		x2apic_enabled()) {
++	if ((acpi_gbl_FADT.header.revision >= FADT2_REVISION_ID) &&
++		(acpi_gbl_FADT.flags & ACPI_FADT_APIC_PHYSICAL)) {
+ 		printk(KERN_DEBUG "System requires x2apic physical mode\n");
+-		return 1;
++		return true;
+ 	}
+-	else
+-		return 0;
++	return false;
++}
++
++static int x2apic_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
++{
++	return x2apic_enabled() && (x2apic_phys || x2apic_fadt_phys());
+ }
  
- 	/* check for unmasked and pending */
--	cmpw $0x0001, XEN_vcpu_info_pending(%eax)
-+	cmpw $0x0001, %ss:XEN_vcpu_info_pending(%eax)
+ static void
+@@ -114,7 +115,7 @@ static void init_x2apic_ldr(void)
  
- 	/*
- 	 * If there's something pending, mask events again so we can
-@@ -117,7 +117,7 @@ xen_iret_start_crit:
- 	 * touch XEN_vcpu_info_mask.
- 	 */
- 	jne 1f
--	movb $1, XEN_vcpu_info_mask(%eax)
-+	movb $1, %ss:XEN_vcpu_info_mask(%eax)
+ static int x2apic_phys_probe(void)
+ {
+-	if (x2apic_mode && x2apic_phys)
++	if (x2apic_mode && (x2apic_phys || x2apic_fadt_phys()))
+ 		return 1;
  
- 1:	popl %eax
- 
+ 	return apic == &apic_x2apic_phys;
 
 
