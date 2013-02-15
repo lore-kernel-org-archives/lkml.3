@@ -1,55 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751658Ab3BOTc5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 14:32:57 -0500
-Received: from mout.gmx.net ([212.227.15.18]:59057 "EHLO mout.gmx.net"
+	id S1751860Ab3BOTdY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 14:33:24 -0500
+Received: from mail.agmk.net ([91.192.224.71]:47626 "EHLO mail.agmk.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751588Ab3BOTcy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 14:32:54 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1/Fc1kjSEzF+yr9Z6rzNd1ASuLpkLEtOcSp2zZTMj
-	/qAnyfXfq9TGXD
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Arnaud Patard <arnaud.patard@rtp-net.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Peter Huewe <peterhuewe@gmx.de>,
-        =?UTF-8?q?Miguel=20G=C3=B3mez?= <magomez@igalia.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/5] staging/xgifb: Consolidate return paths
-Date: Fri, 15 Feb 2013 20:37:12 +0100
-Message-Id: <1360957033-11876-4-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1360957033-11876-1-git-send-email-peterhuewe@gmx.de>
-References: <1360957033-11876-1-git-send-email-peterhuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+	id S1751812Ab3BOTdV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 14:33:21 -0500
+From: =?utf-8?B?UGF3ZcWC?= Sikora <pawel.sikora@agmk.net>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Mark Lord <kernel@teksavvy.com>,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        linux-nfs@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Tom Horsley <horsley1953@gmail.com>
+Subject: Re: BUG at net/sunrpc/svc_xprt.c:921 (another one)
+Date: Fri, 15 Feb 2013 20:33:14 +0100
+Message-ID: <6911210.gbkqvnQvg4@localhost>
+User-Agent: KMail/4.10 (Linux/3.7.7-1; KDE/4.10.0; x86_64; ; )
+In-Reply-To: <20130212205216.GE10267@fieldses.org>
+References: <50F4D800.5040703@teksavvy.com> <50FC74E0.20305@teksavvy.com> <20130212205216.GE10267@fieldses.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Both branches of this if statement end in the same return statement.
--> move the return to the bottom and get rid of the else statement.
+On Tuesday 12 of February 2013 15:52:17 J. Bruce Fields wrote:
+> On Sun, Jan 20, 2013 at 05:51:12PM -0500, Mark Lord wrote:
+> > Got it again, this time on a different system
+> > running mostly the same software.
+> 
+> Mark, Paweł, Tom, could any of you confirm whether this helps?
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
- drivers/staging/xgifb/vb_setmode.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/staging/xgifb/vb_setmode.c b/drivers/staging/xgifb/vb_setmode.c
-index a602d43..edbe70b 100644
---- a/drivers/staging/xgifb/vb_setmode.c
-+++ b/drivers/staging/xgifb/vb_setmode.c
-@@ -2860,10 +2860,8 @@ static unsigned short XGI_GetOffset(unsigned short ModeNo,
- 		temp = 0x6B;
- 		if (infoflag & InterlaceMode)
- 			temp = temp << 1;
--		return temp * colordepth;
--	} else {
--		return temp * colordepth;
- 	}
-+	return temp * colordepth;
- }
- 
- static void XGI_SetCRT2Offset(unsigned short ModeNo,
--- 
-1.7.8.6
+with this patch i can confirm a 2 day uptime w/o any oopses.
 
