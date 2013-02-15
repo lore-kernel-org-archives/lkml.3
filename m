@@ -1,94 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751605Ab3BOVqa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 16:46:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17400 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751440Ab3BOVq3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 16:46:29 -0500
-Subject: [PATCH v2] vfio-pci: Manage user power state transitions
-To: alex.williamson@redhat.com
-From: Alex Williamson <alex.williamson@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Date: Fri, 15 Feb 2013 14:46:28 -0700
-Message-ID: <20130215214510.7117.97846.stgit@bling.home>
-In-Reply-To: <20130215191228.27383.1844.stgit@bling.home>
-References: <20130215191228.27383.1844.stgit@bling.home>
-User-Agent: StGit/0.16
+	id S1751789Ab3BOVqk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 16:46:40 -0500
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:48989 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751670Ab3BOVqi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 16:46:38 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/CcmIVVClzfL0nlEozMd/MjFCAmoDDMvo=
+Date: Fri, 15 Feb 2013 16:46:33 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: Dove: convert usb host controller to DT
+Message-ID: <20130215214633.GG14746@titan.lakedaemon.net>
+References: <1359388448-14370-1-git-send-email-sebastian.hesselbarth@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1359388448-14370-1-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We give the user access to change the power state of the device but
-certain transitions result in an uninitialized state which the user
-cannot resolve.  To fix this we need to mark the PowerState field of
-the PMCSR register read-only and effect the requested change on behalf
-of the user.  This has the added benefit that pdev->current_state
-remains accurate while controlled by the user.
+On Mon, Jan 28, 2013 at 04:54:08PM +0100, Sebastian Hesselbarth wrote:
+> With DT support for orion-ehci also convert Dove to it and
+> remove the legacy calls and clock aliases.
+> 
+> This patch is based on "ARM: Dove: split legacy and DT setup"
+> applied to mvebu/boards recently.
+> 
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> ---
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: Andrew Lunn <andrew@lunn.ch>
+> Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  arch/arm/boot/dts/dove.dtsi   |   16 ++++++++++++++++
+>  arch/arm/mach-dove/board-dt.c |   10 ----------
+>  2 files changed, 16 insertions(+), 10 deletions(-)
 
-The primary example of this bug is a QEMU guest doing a reboot where
-the device it put into D3 on shutdown and becomes unusable on the next
-boot because the device did a soft reset on D3->D0 (NoSoftRst-).
+Applied to mvebu/dt
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
+thx,
 
-v2: sparse found a type error when calling pci_set_power_state.  Fixed here
-
- drivers/vfio/pci/vfio_pci_config.c |   25 ++++++++++++++++++++++---
- 1 file changed, 22 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/vfio/pci/vfio_pci_config.c b/drivers/vfio/pci/vfio_pci_config.c
-index f1dde2c..1fd1895 100644
---- a/drivers/vfio/pci/vfio_pci_config.c
-+++ b/drivers/vfio/pci/vfio_pci_config.c
-@@ -587,12 +587,30 @@ static int __init init_pci_cap_basic_perm(struct perm_bits *perm)
- 	return 0;
- }
- 
-+static int vfio_pm_config_write(struct vfio_pci_device *vdev, int pos,
-+				int count, struct perm_bits *perm,
-+				int offset, __le32 val)
-+{
-+	count = vfio_default_config_write(vdev, pos, count, perm, offset, val);
-+	if (count < 0)
-+		return count;
-+
-+	if (offset == PCI_PM_CTRL) {
-+		pci_power_t state = le32_to_cpu(val) & PCI_PM_CTRL_STATE_MASK;
-+		pci_set_power_state(vdev->pdev, state);
-+	}
-+
-+	return count;
-+}
-+
- /* Permissions for the Power Management capability */
- static int __init init_pci_cap_pm_perm(struct perm_bits *perm)
- {
- 	if (alloc_perm_bits(perm, pci_cap_length[PCI_CAP_ID_PM]))
- 		return -ENOMEM;
- 
-+	perm->writefn = vfio_pm_config_write;
-+
- 	/*
- 	 * We always virtualize the next field so we can remove
- 	 * capabilities from the chain if we want to.
-@@ -600,10 +618,11 @@ static int __init init_pci_cap_pm_perm(struct perm_bits *perm)
- 	p_setb(perm, PCI_CAP_LIST_NEXT, (u8)ALL_VIRT, NO_WRITE);
- 
- 	/*
--	 * Power management is defined *per function*,
--	 * so we let the user write this
-+	 * Power management is defined *per function*, so we can let
-+	 * the user change power state, but we trap and initiate the
-+	 * change ourselves, so the state bits are read-only.
- 	 */
--	p_setd(perm, PCI_PM_CTRL, NO_VIRT, ALL_WRITE);
-+	p_setd(perm, PCI_PM_CTRL, NO_VIRT, ~PCI_PM_CTRL_STATE_MASK);
- 	return 0;
- }
- 
-
+Jason.
