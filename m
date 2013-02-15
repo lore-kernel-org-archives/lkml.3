@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841Ab3BOXAT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 18:00:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49357 "EHLO
+	id S1752979Ab3BOXAy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 18:00:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49346 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752463Ab3BOW4p (ORCPT
+	with ESMTP id S1752336Ab3BOW4a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 17:56:45 -0500
+	Fri, 15 Feb 2013 17:56:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Mian Yousaf KAUKAB <mian.yousaf.kaukab@stericsson.com>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 02/10] drivers/rtc/rtc-pl031.c: restore ST variant functionality
-Date: Fri, 15 Feb 2013 14:56:34 -0800
-Message-Id: <20130215225543.846596739@linuxfoundation.org>
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Jeff Pieper <jeffrey.e.pieper@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Vinson Lee <vlee@twitter.com>
+Subject: [ 8/8] igb: Remove artificial restriction on RQDPC stat reading
+Date: Fri, 15 Feb 2013 14:56:15 -0800
+Message-Id: <20130215225431.827647377@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130215225543.586012193@linuxfoundation.org>
-References: <20130215225543.586012193@linuxfoundation.org>
+In-Reply-To: <20130215225430.841634159@linuxfoundation.org>
+References: <20130215225430.841634159@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Linus Walleij <linus.walleij@linaro.org>
+From: Alexander Duyck <alexander.h.duyck@intel.com>
 
-commit 3399cfb5df9594495b876d1843a7165f77366b2b upstream.
+commit ae1c07a6b7ced6c0c94c99e3b53f4e7856fa8bff upstream.
 
-Commit e7e034e18a0a ("drivers/rtc/rtc-pl031.c: fix the missing operation
-on enable") accidentally broke the ST variants of PL031.
+For some reason the reading of the RQDPC register was being artificially
+limited to 4K.  Instead of limiting the value we should read the value and
+add the full amount.  Otherwise this can lead to a misleading number of
+dropped packets when the actual value is in fact much higher.
 
-The bit that is being poked as "clockwatch" enable bit for the ST
-variants does the work of bit 0 on this variant.  Bit 0 is used for a
-clock divider on the ST variants, and setting it to 1 will affect
-timekeeping in a very bad way.
-
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: Mian Yousaf KAUKAB <mian.yousaf.kaukab@stericsson.com>
-Cc: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+Tested-by: Jeff Pieper   <jeffrey.e.pieper@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: Vinson Lee <vlee@twitter.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/rtc/rtc-pl031.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/intel/igb/igb_main.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/drivers/rtc/rtc-pl031.c
-+++ b/drivers/rtc/rtc-pl031.c
-@@ -350,7 +350,9 @@ static int pl031_probe(struct amba_devic
- 	/* Enable the clockwatch on ST Variants */
- 	if (vendor->clockwatch)
- 		data |= RTC_CR_CWEN;
--	writel(data | RTC_CR_EN, ldata->base + RTC_CR);
-+	else
-+		data |= RTC_CR_EN;
-+	writel(data, ldata->base + RTC_CR);
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -4649,11 +4649,13 @@ void igb_update_stats(struct igb_adapter
+ 	bytes = 0;
+ 	packets = 0;
+ 	for (i = 0; i < adapter->num_rx_queues; i++) {
+-		u32 rqdpc_tmp = rd32(E1000_RQDPC(i)) & 0x0FFF;
++		u32 rqdpc = rd32(E1000_RQDPC(i));
+ 		struct igb_ring *ring = adapter->rx_ring[i];
  
- 	/*
- 	 * On ST PL031 variants, the RTC reset value does not provide correct
+-		ring->rx_stats.drops += rqdpc_tmp;
+-		net_stats->rx_fifo_errors += rqdpc_tmp;
++		if (rqdpc) {
++			ring->rx_stats.drops += rqdpc;
++			net_stats->rx_fifo_errors += rqdpc;
++		}
+ 
+ 		do {
+ 			start = u64_stats_fetch_begin_bh(&ring->rx_syncp);
 
 
