@@ -1,203 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935432Ab3BOGd7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 01:33:59 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:43795 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935407Ab3BOGd4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 01:33:56 -0500
-From: Manjunath Goudar <manjunath.goudar@linaro.org>
-To: linux-usb@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        stern@rowland.harvard.edu, arnd@linaro.org, gregkh@linuxfoundation.org,
-        Manjunath Goudar <manjunath.goudar@linaro.org>,
-        Greg KH <greg@kroah.com>, Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH] USB: EHCI: make ehci-mv as separate static driver
-Date: Fri, 15 Feb 2013 12:03:31 +0530
-Message-Id: <1360910011-2666-3-git-send-email-manjunath.goudar@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1360910011-2666-1-git-send-email-manjunath.goudar@linaro.org>
-References: <1360910011-2666-1-git-send-email-manjunath.goudar@linaro.org>
+	id S935440Ab3BOGfA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 01:35:00 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:39845 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751357Ab3BOGe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 01:34:57 -0500
+Date: Fri, 15 Feb 2013 01:34:50 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, LKML <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@suse.de>,
+        Stewart Smith <stewart@flamingspork.com>, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org
+Subject: [patch 1/2] mm: fincore()
+Message-ID: <20130215063450.GA24047@cmpxchg.org>
+References: <87a9rbh7b4.fsf@rustcorp.com.au>
+ <20130211162701.GB13218@cmpxchg.org>
+ <20130211141239.f4decf03.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130211141239.f4decf03.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Separate the mv host controller driver from ehci-hcd host code
-into its own static driver module.
+On Mon, Feb 11, 2013 at 02:12:39PM -0800, Andrew Morton wrote:
+> Also, having to mmap the file to be able to query pagecache state is a
+> hack.  Whatever happened to the fincore() patch?
 
-Signed-off-by: Manjunath Goudar <manjunath.goudar@linaro.org>
-Cc: Greg KH <greg@kroah.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: Eric Miao <eric.y.miao@gmail.com>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: linux-usb@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
+I don't know, but how about this one:
+
 ---
- drivers/usb/host/Kconfig    |    2 +-
- drivers/usb/host/Makefile   |    1 +
- drivers/usb/host/ehci-hcd.c |    6 +---
- drivers/usb/host/ehci-mv.c  |   78 +++++++++++++++++++------------------------
- 4 files changed, 38 insertions(+), 49 deletions(-)
+From: Johannes Weiner <hannes@cmpxchg.org>
+Subject: [patch 1/2] mm: fincore()
 
-diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index 8ffbafa..2aa4ece 100644
---- a/drivers/usb/host/Kconfig
-+++ b/drivers/usb/host/Kconfig
-@@ -221,7 +221,7 @@ config USB_EHCI_S5P
- 	 Enable support for the S5P SOC's on-chip EHCI controller.
- 
- config USB_EHCI_MV
--	bool "EHCI support for Marvell on-chip controller"
-+	tristate "EHCI support for Marvell on-chip controller"
- 	depends on USB_EHCI_HCD && (ARCH_PXA || ARCH_MMP)
- 	select USB_EHCI_ROOT_HUB_TT
- 	---help---
-diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
-index 77e0331..d593017 100644
---- a/drivers/usb/host/Makefile
-+++ b/drivers/usb/host/Makefile
-@@ -31,6 +31,7 @@ obj-$(CONFIG_USB_EHCI_HCD_SPEAR)+= ehci-spear.o
- obj-$(CONFIG_USB_OXU210HP_HCD)	+= oxu210hp-hcd.o
- obj-$(CONFIG_USB_EHCI_HCD_AT91) += ehci-atmel.o
- obj-$(CONFIG_USB_EHCI_S5P)      += ehci-s5p.o
-+obj-$(CONFIG_USB_EHCI_MV)       += ehci-mv.o
- obj-$(CONFIG_USB_ISP116X_HCD)	+= isp116x-hcd.o
- obj-$(CONFIG_USB_ISP1362_HCD)	+= isp1362-hcd.o
- obj-$(CONFIG_USB_OHCI_HCD)	+= ohci-hcd.o
-diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
-index fa0e665..9cf4d73 100644
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -1317,11 +1317,6 @@ MODULE_LICENSE ("GPL");
- #define PLATFORM_DRIVER		ehci_grlib_driver
+Provide a syscall to determine whether a given file's pages are cached
+in memory.  This is more elegant than mmapping the file for the sole
+purpose of using mincore(), and also works on NOMMU.
+
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ include/linux/syscalls.h |   2 +
+ mm/Makefile              |   2 +-
+ mm/fincore.c             | 128 +++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 131 insertions(+), 1 deletion(-)
+ create mode 100644 mm/fincore.c
+
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index 313a8e0..3ceab2a 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -897,4 +897,6 @@ asmlinkage long sys_process_vm_writev(pid_t pid,
+ asmlinkage long sys_kcmp(pid_t pid1, pid_t pid2, int type,
+ 			 unsigned long idx1, unsigned long idx2);
+ asmlinkage long sys_finit_module(int fd, const char __user *uargs, int flags);
++asmlinkage long sys_fincore(unsigned int fd, loff_t start, loff_t len,
++			    unsigned char __user * vec);
  #endif
+diff --git a/mm/Makefile b/mm/Makefile
+index 185a22b..221cdae 100644
+--- a/mm/Makefile
++++ b/mm/Makefile
+@@ -17,7 +17,7 @@ obj-y			:= filemap.o mempool.o oom_kill.o fadvise.o \
+ 			   util.o mmzone.o vmstat.o backing-dev.o \
+ 			   mm_init.o mmu_context.o percpu.o slab_common.o \
+ 			   compaction.o balloon_compaction.o \
+-			   interval_tree.o $(mmu-y)
++			   interval_tree.o fincore.o $(mmu-y)
  
--#ifdef CONFIG_USB_EHCI_MV
--#include "ehci-mv.c"
--#define        PLATFORM_DRIVER         ehci_mv_driver
--#endif
--
- #ifdef CONFIG_MIPS_SEAD3
- #include "ehci-sead3.c"
- #define	PLATFORM_DRIVER		ehci_hcd_sead3_driver
-@@ -1335,6 +1330,7 @@ MODULE_LICENSE ("GPL");
- 	!defined(PLATFORM_DRIVER) && \
- 	!IS_ENABLED(CONFIG_ARCH_AT91) && \
- 	!IS_ENABLED(CONFIG_USB_EHCI_S5P) && \
-+	!IS_ENABLED(CONFIG_USB_EHCI_MV) && \
- 	!defined(PS3_SYSTEM_BUS_DRIVER) && \
- 	!defined(OF_PLATFORM_DRIVER) && \
- 	!defined(XILINX_OF_PLATFORM_DRIVER)
-diff --git a/drivers/usb/host/ehci-mv.c b/drivers/usb/host/ehci-mv.c
-index 3065809..0d92437 100644
---- a/drivers/usb/host/ehci-mv.c
-+++ b/drivers/usb/host/ehci-mv.c
-@@ -16,8 +16,18 @@
- #include <linux/err.h>
- #include <linux/usb/otg.h>
- #include <linux/platform_data/mv_usb.h>
-+#include <linux/usb.h>
-+#include <linux/usb/hcd.h>
-+#include <linux/io.h>
-+#include <linux/dma-mapping.h>
+ obj-y += init-mm.o
+ 
+diff --git a/mm/fincore.c b/mm/fincore.c
+new file mode 100644
+index 0000000..d504611
+--- /dev/null
++++ b/mm/fincore.c
+@@ -0,0 +1,128 @@
++#include <linux/syscalls.h>
++#include <linux/pagemap.h>
++#include <linux/file.h>
++#include <linux/fs.h>
++#include <linux/mm.h>
 +
-+#include "ehci.h"
-+
-+#define DRIVER_DESC "EHCI mv driver"
- 
- #define CAPLENGTH_MASK         (0xff)
-+static const char hcd_name[] = "ehci-mv";
-+static struct hc_driver __read_mostly mv_ehci_hc_driver;
- 
- struct ehci_hcd_mv {
- 	struct usb_hcd *hcd;
-@@ -95,48 +105,6 @@ static int mv_ehci_reset(struct usb_hcd *hcd)
- 	return retval;
- }
- 
--static const struct hc_driver mv_ehci_hc_driver = {
--	.description = hcd_name,
--	.product_desc = "Marvell EHCI",
--	.hcd_priv_size = sizeof(struct ehci_hcd),
--
--	/*
--	 * generic hardware linkage
--	 */
--	.irq = ehci_irq,
--	.flags = HCD_MEMORY | HCD_USB2,
--
--	/*
--	 * basic lifecycle operations
--	 */
--	.reset = mv_ehci_reset,
--	.start = ehci_run,
--	.stop = ehci_stop,
--	.shutdown = ehci_shutdown,
--
--	/*
--	 * managing i/o requests and associated device resources
--	 */
--	.urb_enqueue = ehci_urb_enqueue,
--	.urb_dequeue = ehci_urb_dequeue,
--	.endpoint_disable = ehci_endpoint_disable,
--	.endpoint_reset = ehci_endpoint_reset,
--	.clear_tt_buffer_complete = ehci_clear_tt_buffer_complete,
--
--	/*
--	 * scheduling support
--	 */
--	.get_frame_number = ehci_get_frame,
--
--	/*
--	 * root hub support
--	 */
--	.hub_status_data = ehci_hub_status_data,
--	.hub_control = ehci_hub_control,
--	.bus_suspend = ehci_bus_suspend,
--	.bus_resume = ehci_bus_resume,
--};
--
- static int mv_ehci_probe(struct platform_device *pdev)
- {
- 	struct mv_usb_platform_data *pdata = pdev->dev.platform_data;
-@@ -350,8 +318,32 @@ static struct platform_driver ehci_mv_driver = {
- 	.remove = mv_ehci_remove,
- 	.shutdown = mv_ehci_shutdown,
- 	.driver = {
--		   .name = "mv-ehci",
-+		   .name = hcd_name,
- 		   .bus = &platform_bus_type,
- 		   },
- 	.id_table = ehci_id_table,
- };
-+static const struct ehci_driver_overrides mv_overrides __initdata = {
-+	.reset = mv_ehci_reset,
-+};
-+
-+static int __init ehci_mv_init(void)
++static long do_fincore(struct address_space *mapping, pgoff_t pgstart,
++		       unsigned long nr_pages, unsigned char *vec)
 +{
-+	if (usb_disabled())
-+		return -ENODEV;
++	pgoff_t pgend = pgstart + nr_pages;
++	struct radix_tree_iter iter;
++	void **slot;
++	long nr = 0;
 +
-+	pr_info("%s: " DRIVER_DESC "\n", hcd_name);
-+	ehci_init_driver(&mv_ehci_hc_driver, &mv_overrides);
-+	return platform_driver_register(&ehci_mv_driver);
++	rcu_read_lock();
++restart:
++	radix_tree_for_each_slot(slot, &mapping->page_tree, &iter, pgstart) {
++		unsigned char present;
++		struct page *page;
++
++		/* Handle holes */
++		if (iter.index != pgstart + nr) {
++			if (iter.index < pgend)
++				nr_pages = iter.index - pgstart;
++			break;
++		}
++repeat:
++		page = radix_tree_deref_slot(slot);
++		if (unlikely(!page))
++			continue;
++
++		if (radix_tree_exception(page)) {
++			if (radix_tree_deref_retry(page)) {
++				/*
++				 * Transient condition which can only trigger
++				 * when entry at index 0 moves out of or back
++				 * to root: none yet gotten, safe to restart.
++				 */
++				WARN_ON(iter.index);
++				goto restart;
++			}
++			present = 0;
++		} else {
++			if (!page_cache_get_speculative(page))
++				goto repeat;
++
++			/* Has the page moved? */
++			if (unlikely(page != *slot)) {
++				page_cache_release(page);
++				goto repeat;
++			}
++
++			present = PageUptodate(page);
++			page_cache_release(page);
++		}
++		vec[nr] = present;
++
++		if (++nr == nr_pages)
++			break;
++	}
++	rcu_read_unlock();
++
++	if (nr < nr_pages)
++		memset(vec + nr, 0, nr_pages - nr);
++
++	return nr_pages;
 +}
-+module_init(ehci_mv_init);
 +
-+static void __exit ehci_mv_cleanup(void)
++/*
++ * The fincore(2) system call.
++ *
++ * fincore() returns the memory residency status of the given file's
++ * pages, in the range [start, start + len].
++ * The status is returned in a vector of bytes.  The least significant
++ * bit of each byte is 1 if the referenced page is in memory, otherwise
++ * it is zero.
++ *
++ * Because the status of a page can change after fincore() checks it
++ * but before it returns to the application, the returned vector may
++ * contain stale information.
++ *
++ * return values:
++ *  zero    - success
++ *  -EBADF  - fd isn't a valid open file descriptor
++ *  -EFAULT - vec points to an illegal address
++ *  -EINVAL - start is not a multiple of PAGE_CACHE_SIZE
++ */
++SYSCALL_DEFINE4(fincore, unsigned int, fd, loff_t, start, loff_t, len,
++		unsigned char __user *, vec)
 +{
-+	platform_driver_unregister(&ehci_mv_driver);
-+}
-+module_exit(ehci_mv_cleanup);
++	unsigned long nr_pages;
++	pgoff_t pgstart;
++	struct fd f;
++	long ret;
 +
-+MODULE_DESCRIPTION(DRIVER_DESC);
-+MODULE_ALIAS("platform:ehci-mv");
-+MODULE_LICENSE("GPL");
++	if (start & ~PAGE_CACHE_MASK)
++		return -EINVAL;
++
++	f = fdget(fd);
++	if (!f.file)
++		return -EBADF;
++
++	pgstart = start >> PAGE_CACHE_SHIFT;
++	nr_pages = DIV_ROUND_UP(len, PAGE_CACHE_SIZE);
++
++	while (nr_pages) {
++		unsigned char tmp[64];
++
++		ret = do_fincore(f.file->f_mapping, pgstart,
++				 min(nr_pages, sizeof(tmp)), tmp);
++		if (ret <= 0)
++			break;
++
++		if (copy_to_user(vec, tmp, ret)) {
++			ret = -EFAULT;
++			break;
++		}
++
++		nr_pages -= ret;
++		pgstart += ret;
++		vec += ret;
++		ret = 0;
++	}
++
++	fdput(f);
++
++	return ret;
++}
 -- 
-1.7.9.5
+1.7.11.7
 
