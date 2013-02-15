@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935997Ab3BOMpc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 07:45:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20951 "EHLO mx1.redhat.com"
+	id S936035Ab3BONKu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 08:10:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29320 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935977Ab3BOMp2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 07:45:28 -0500
+	id S935983Ab3BOMpb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 07:45:31 -0500
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: linux-acpi@vger.kernel.org, Huang Ying <ying.huang@intel.com>,
         Tony Luck <tony.luck@intel.com>,
         Mauro Carvalho Chehab <mchehab@redhat.com>,
         Linux Edac Mailing List <linux-edac@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH EDAC 06/13] ghes_edac: Allow registering more than once
-Date: Fri, 15 Feb 2013 10:44:54 -0200
-Message-Id: <743f00a375a5578041459edff2c511263f710178.1360931635.git.mchehab@redhat.com>
+Subject: [PATCH EDAC 07/13] edac: add support for raw error reports
+Date: Fri, 15 Feb 2013 10:44:55 -0200
+Message-Id: <e08f797b129a50b4e1b39e8c31bff82904aea65d.1360931635.git.mchehab@redhat.com>
 In-Reply-To: <cover.1360931635.git.mchehab@redhat.com>
 References: <cover.1360931635.git.mchehab@redhat.com>
 To: unlisted-recipients:; (no To-header on input)
@@ -22,63 +22,183 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I was expecting that the GHES register call would happen only
-once, but it is registered once per-cpu. So, we need to create
-several memory controllers, one by cpu.
+That allows APEI GHES driver to report errors directly, using
+the EDAC error report API.
 
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 ---
- drivers/edac/ghes_edac.c | 17 +++++++++++++++--
- 1 file changed, 15 insertions(+), 2 deletions(-)
+ drivers/edac/edac_core.h |  17 ++++++++
+ drivers/edac/edac_mc.c   | 109 ++++++++++++++++++++++++++++++++++++-----------
+ 2 files changed, 100 insertions(+), 26 deletions(-)
 
-diff --git a/drivers/edac/ghes_edac.c b/drivers/edac/ghes_edac.c
-index 6952bdf..1badac6 100644
---- a/drivers/edac/ghes_edac.c
-+++ b/drivers/edac/ghes_edac.c
-@@ -5,6 +5,9 @@
- #define GHES_PFX   "ghes_edac: "
- #define GHES_EDAC_REVISION " Ver: 1.0.0"
- 
-+static DEFINE_MUTEX(ghes_edac_lock);
-+static int ghes_edac_mc_num;
+diff --git a/drivers/edac/edac_core.h b/drivers/edac/edac_core.h
+index 23bb99f..9c5da11 100644
+--- a/drivers/edac/edac_core.h
++++ b/drivers/edac/edac_core.h
+@@ -453,6 +453,23 @@ extern struct mem_ctl_info *find_mci_by_dev(struct device *dev);
+ extern struct mem_ctl_info *edac_mc_del_mc(struct device *dev);
+ extern int edac_mc_find_csrow_by_page(struct mem_ctl_info *mci,
+ 				      unsigned long page);
 +
- void ghes_edac_report_mem_error(struct ghes *ghes, int sev,
-                                struct cper_sec_mem_err *mem_err)
++void edac_raw_mc_handle_error(const enum hw_event_mc_err_type type,
++			  struct mem_ctl_info *mci,
++			  long grain,
++			  const u16 error_count,
++			  const int top_layer,
++			  const int mid_layer,
++			  const int low_layer,
++			  const unsigned long page_frame_number,
++			  const unsigned long offset_in_page,
++			  const unsigned long syndrome,
++			  const char *msg,
++			  const char *location,
++			  const char *label,
++			  const char *other_detail,
++			  const bool enable_per_layer_report);
++
+ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
+ 			  struct mem_ctl_info *mci,
+ 			  const u16 error_count,
+diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
+index 8e33028..8fddf65 100644
+--- a/drivers/edac/edac_mc.c
++++ b/drivers/edac/edac_mc.c
+@@ -1069,6 +1069,82 @@ static void edac_ue_error(struct mem_ctl_info *mci,
+ #define OTHER_LABEL " or "
+ 
+ /**
++ * edac_raw_mc_handle_error - reports a memory event to userspace without doing
++ *			      anything to discover the error location
++ *
++ * @type:		severity of the error (CE/UE/Fatal)
++ * @mci:		a struct mem_ctl_info pointer
++ * @grain:		error granularity
++ * @error_count:	Number of errors of the same type
++ * @top_layer:		Memory layer[0] position
++ * @mid_layer:		Memory layer[1] position
++ * @low_layer:		Memory layer[2] position
++ * @page_frame_number:	mem page where the error occurred
++ * @offset_in_page:	offset of the error inside the page
++ * @syndrome:		ECC syndrome
++ * @msg:		Message meaningful to the end users that
++ *			explains the event\
++ * @location:		location of the error, like "csrow:0 channel:1"
++ * @label:		DIMM labels for the affected memory(ies)
++ * @other_detail:	Technical details about the event that
++ *			may help hardware manufacturers and
++ *			EDAC developers to analyse the event
++ * @enable_per_layer_report: should it increment per-layer error counts?
++ *
++ * This raw function is used internally by edac_mc_handle_error(). It should
++ * only be called directly when the hardware error come directly from BIOS,
++ * like in the case of APEI GHES driver.
++ */
++void edac_raw_mc_handle_error(const enum hw_event_mc_err_type type,
++			  struct mem_ctl_info *mci,
++			  long grain,
++			  const u16 error_count,
++			  const int top_layer,
++			  const int mid_layer,
++			  const int low_layer,
++			  const unsigned long page_frame_number,
++			  const unsigned long offset_in_page,
++			  const unsigned long syndrome,
++			  const char *msg,
++			  const char *location,
++			  const char *label,
++			  const char *other_detail,
++			  const bool enable_per_layer_report)
++{
++	char detail[80];
++	u8 grain_bits;
++	int pos[EDAC_MAX_LAYERS] = { top_layer, mid_layer, low_layer };
++
++	/* Report the error via the trace interface */
++	grain_bits = fls_long(grain) + 1;
++	trace_mc_event(type, msg, label, error_count,
++		       mci->mc_idx, top_layer, mid_layer, low_layer,
++		       PAGES_TO_MiB(page_frame_number) | offset_in_page,
++		       grain_bits, syndrome, other_detail);
++
++	/* Memory type dependent details about the error */
++	if (type == HW_EVENT_ERR_CORRECTED) {
++		snprintf(detail, sizeof(detail),
++			"page:0x%lx offset:0x%lx grain:%ld syndrome:0x%lx",
++			page_frame_number, offset_in_page,
++			grain, syndrome);
++		edac_ce_error(mci, error_count, pos, msg, location, label,
++			      detail, other_detail, enable_per_layer_report,
++			      page_frame_number, offset_in_page, grain);
++	} else {
++		snprintf(detail, sizeof(detail),
++			"page:0x%lx offset:0x%lx grain:%ld",
++			page_frame_number, offset_in_page, grain);
++
++		edac_ue_error(mci, error_count, pos, msg, location, label,
++			      detail, other_detail, enable_per_layer_report);
++	}
++
++
++}
++EXPORT_SYMBOL_GPL(edac_raw_mc_handle_error);
++
++/**
+  * edac_mc_handle_error - reports a memory event to userspace
+  *
+  * @type:		severity of the error (CE/UE/Fatal)
+@@ -1099,7 +1175,7 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
+ 			  const char *other_detail)
  {
-@@ -22,9 +25,16 @@ int ghes_edac_register(struct ghes *ghes, struct device *dev)
- 	layers[0].type = EDAC_MC_LAYER_ALL_MEM;
- 	layers[0].size = 1;
- 	layers[0].is_virt_csrow = true;
--	mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers, 0);
-+
-+	/*
-+	 * We need to serialize edac_mc_alloc() and edac_mc_add_mc(),
-+	 * to avoid duplicated memory controller numbers
-+	 */
-+	mutex_lock(&ghes_edac_lock);
-+	mci = edac_mc_alloc(ghes_edac_mc_num, ARRAY_SIZE(layers), layers, 0);
- 	if (!mci) {
- 		pr_info(GHES_PFX "Can't allocate memory for EDAC data\n");
-+		mutex_unlock(&ghes_edac_lock);
- 		return -ENOMEM;
- 	}
+ 	/* FIXME: too much for stack: move it to some pre-alocated area */
+-	char detail[80], location[80];
++	char location[80];
+ 	char label[(EDAC_MC_LABEL_LEN + 1 + sizeof(OTHER_LABEL)) * mci->tot_dimms];
+ 	char *p;
+ 	int row = -1, chan = -1;
+@@ -1107,7 +1183,6 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
+ 	int i;
+ 	long grain;
+ 	bool enable_per_layer_report = false;
+-	u8 grain_bits;
  
-@@ -53,11 +63,14 @@ int ghes_edac_register(struct ghes *ghes, struct device *dev)
- 	if (rc < 0) {
- 		pr_info(GHES_PFX "Can't register at EDAC core\n");
- 		edac_mc_free(mci);
+ 	edac_dbg(3, "MC%d\n", mci->mc_idx);
+ 
+@@ -1230,29 +1305,11 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
+ 	if (p > location)
+ 		*(p - 1) = '\0';
+ 
+-	/* Report the error via the trace interface */
+-	grain_bits = fls_long(grain) + 1;
+-	trace_mc_event(type, msg, label, error_count,
+-		       mci->mc_idx, top_layer, mid_layer, low_layer,
+-		       PAGES_TO_MiB(page_frame_number) | offset_in_page,
+-		       grain_bits, syndrome, other_detail);
 -
-+		mutex_unlock(&ghes_edac_lock);
- 		return -ENODEV;
- 	}
- 
-+
- 	ghes->mci = mci;
-+	ghes_edac_mc_num++;
-+	mutex_unlock(&ghes_edac_lock);
- 	return 0;
+-	/* Memory type dependent details about the error */
+-	if (type == HW_EVENT_ERR_CORRECTED) {
+-		snprintf(detail, sizeof(detail),
+-			"page:0x%lx offset:0x%lx grain:%ld syndrome:0x%lx",
+-			page_frame_number, offset_in_page,
+-			grain, syndrome);
+-		edac_ce_error(mci, error_count, pos, msg, location, label,
+-			      detail, other_detail, enable_per_layer_report,
+-			      page_frame_number, offset_in_page, grain);
+-	} else {
+-		snprintf(detail, sizeof(detail),
+-			"page:0x%lx offset:0x%lx grain:%ld",
+-			page_frame_number, offset_in_page, grain);
+-
+-		edac_ue_error(mci, error_count, pos, msg, location, label,
+-			      detail, other_detail, enable_per_layer_report);
+-	}
++	edac_raw_mc_handle_error(type, mci, grain, error_count,
++				 top_layer, mid_layer, low_layer,
++				 page_frame_number, offset_in_page,
++				 syndrome,
++				 msg, location, label, other_detail,
++				 enable_per_layer_report);
  }
- EXPORT_SYMBOL_GPL(ghes_edac_register);
+ EXPORT_SYMBOL_GPL(edac_mc_handle_error);
 -- 
 1.8.1.2
 
