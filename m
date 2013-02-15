@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756435Ab3BOOSM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 09:18:12 -0500
-Received: from mout.gmx.net ([212.227.15.19]:56869 "EHLO mout.gmx.net"
+	id S933549Ab3BOOSQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 09:18:16 -0500
+Received: from mout.gmx.net ([212.227.15.18]:52237 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754117Ab3BOOSK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 09:18:10 -0500
+	id S1754117Ab3BOOSM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 09:18:12 -0500
 X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX18z0NQD/3czQPqMGjXz0iLLyrzAOA+Tmckxmj3k+p
-	902tuB3sZODyaC
+X-Provags-ID: V01U2FsdGVkX1+sbQRZHq6swbl/CCauW7xazEpaBTYEqyC23AhHCI
+	P8CUyiEY6ZojSm
 From: Peter Huewe <peterhuewe@gmx.de>
 To: Rupesh Gujare <rupesh.gujare@atmel.com>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Dan Carpenter <dan.carpenter@oracle.com>,
         Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH 1/7 v2] staging/ozwpan: Fix NULL vs zero in ozpd.c (sparse warning)
-Date: Fri, 15 Feb 2013 15:22:22 +0100
-Message-Id: <1360938148-19225-1-git-send-email-peterhuewe@gmx.de>
+Subject: [PATCH 2/7 v2] staging/ozwpan: Fix NULL vs zero in ozusbsvc1.c (sparse warning)
+Date: Fri, 15 Feb 2013 15:22:23 +0100
+Message-Id: <1360938148-19225-2-git-send-email-peterhuewe@gmx.de>
 X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <20130215084517.GB6802@mwanda>
+In-Reply-To: <1360938148-19225-1-git-send-email-peterhuewe@gmx.de>
 References: <20130215084517.GB6802@mwanda>
+ <1360938148-19225-1-git-send-email-peterhuewe@gmx.de>
 X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,273 +35,102 @@ assignment before first use) it was removed.
 
 Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 ---
- drivers/staging/ozwpan/ozpd.c |   68 ++++++++++++++++++++--------------------
- 1 files changed, 34 insertions(+), 34 deletions(-)
+ drivers/staging/ozwpan/ozusbsvc1.c |   20 ++++++++++----------
+ 1 files changed, 10 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/staging/ozwpan/ozpd.c b/drivers/staging/ozwpan/ozpd.c
-index 118a4db..d969ed7 100644
---- a/drivers/staging/ozwpan/ozpd.c
-+++ b/drivers/staging/ozwpan/ozpd.c
-@@ -61,8 +61,8 @@ static struct oz_app_if g_app_if[OZ_APPID_MAX] = {
- 	oz_def_app_start,
- 	oz_def_app_stop,
- 	oz_def_app_rx,
--	0,
--	0,
-+	NULL,
-+	NULL,
- 	OZ_APPID_UNUSED1},
- 
- 	{oz_def_app_init,
-@@ -70,8 +70,8 @@ static struct oz_app_if g_app_if[OZ_APPID_MAX] = {
- 	oz_def_app_start,
- 	oz_def_app_stop,
- 	oz_def_app_rx,
--	0,
--	0,
-+	NULL,
-+	NULL,
- 	OZ_APPID_UNUSED2},
- 
- 	{oz_cdev_init,
-@@ -79,8 +79,8 @@ static struct oz_app_if g_app_if[OZ_APPID_MAX] = {
- 	oz_cdev_start,
- 	oz_cdev_stop,
- 	oz_cdev_rx,
--	0,
--	0,
-+	NULL,
-+	NULL,
- 	OZ_APPID_SERIAL},
- };
- /*------------------------------------------------------------------------------
-@@ -121,7 +121,7 @@ static void oz_def_app_rx(struct oz_pd *pd, struct oz_elt *elt)
- void oz_pd_set_state(struct oz_pd *pd, unsigned state)
- {
- 	pd->state = state;
--	oz_event_log(OZ_EVT_PD_STATE, 0, 0, 0, state);
-+	oz_event_log(OZ_EVT_PD_STATE, 0, 0, NULL, state);
- #ifdef WANT_TRACE
- 	switch (state) {
- 	case OZ_PD_S_IDLE:
-@@ -171,7 +171,7 @@ struct oz_pd *oz_pd_alloc(u8 *mac_addr)
- 		memcpy(pd->mac_addr, mac_addr, ETH_ALEN);
- 		if (0 != oz_elt_buf_init(&pd->elt_buff)) {
- 			kfree(pd);
--			pd = 0;
-+			pd = NULL;
- 		}
- 		spin_lock_init(&pd->tx_frame_lock);
- 		INIT_LIST_HEAD(&pd->tx_queue);
-@@ -355,7 +355,7 @@ int oz_pd_sleep(struct oz_pd *pd)
-  */
- static struct oz_tx_frame *oz_tx_frame_alloc(struct oz_pd *pd)
- {
--	struct oz_tx_frame *f = 0;
-+	struct oz_tx_frame *f = NULL;
- 	spin_lock_bh(&pd->tx_frame_lock);
- 	if (pd->tx_pool) {
- 		f = container_of(pd->tx_pool, struct oz_tx_frame, link);
-@@ -363,7 +363,7 @@ static struct oz_tx_frame *oz_tx_frame_alloc(struct oz_pd *pd)
- 		pd->tx_pool_count--;
- 	}
- 	spin_unlock_bh(&pd->tx_frame_lock);
--	if (f == 0)
-+	if (f == NULL)
- 		f = kmalloc(sizeof(struct oz_tx_frame), GFP_ATOMIC);
- 	if (f) {
- 		f->total_size = sizeof(struct oz_hdr);
-@@ -399,7 +399,7 @@ static void oz_tx_frame_free(struct oz_pd *pd, struct oz_tx_frame *f)
- 		f->link.next = pd->tx_pool;
- 		pd->tx_pool = &f->link;
- 		pd->tx_pool_count++;
--		f = 0;
-+		f = NULL;
- 	}
- 	spin_unlock_bh(&pd->tx_frame_lock);
- 	kfree(f);
-@@ -433,7 +433,7 @@ int oz_prepare_frame(struct oz_pd *pd, int empty)
- 	if (!empty && !oz_are_elts_available(&pd->elt_buff))
+diff --git a/drivers/staging/ozwpan/ozusbsvc1.c b/drivers/staging/ozwpan/ozusbsvc1.c
+index 66bd576..ea4a238b 100644
+--- a/drivers/staging/ozwpan/ozusbsvc1.c
++++ b/drivers/staging/ozwpan/ozusbsvc1.c
+@@ -71,7 +71,7 @@ int oz_usb_get_desc_req(void *hpd, u8 req_id, u8 req_type, u8 desc_type,
+ 	oz_trace("    len = 0x%x\n", len);
+ 	if (len > 200)
+ 		len = 200;
+-	if (ei == 0)
++	if (ei == NULL)
  		return -1;
- 	f = oz_tx_frame_alloc(pd);
--	if (f == 0)
-+	if (f == NULL)
+ 	elt = (struct oz_elt *)ei->data;
+ 	elt->length = sizeof(struct oz_get_desc_req);
+@@ -97,7 +97,7 @@ static int oz_usb_set_config_req(void *hpd, u8 req_id, u8 index)
+ 	struct oz_elt_buf *eb = &pd->elt_buff;
+ 	struct oz_elt_info *ei = oz_elt_info_alloc(&pd->elt_buff);
+ 	struct oz_set_config_req *body;
+-	if (ei == 0)
++	if (ei == NULL)
  		return -1;
- 	f->skb = NULL;
- 	f->hdr.control =
-@@ -455,7 +455,7 @@ int oz_prepare_frame(struct oz_pd *pd, int empty)
-  */
- static struct sk_buff *oz_build_frame(struct oz_pd *pd, struct oz_tx_frame *f)
- {
--	struct sk_buff *skb = 0;
-+	struct sk_buff *skb;
- 	struct net_device *dev = pd->net_dev;
- 	struct oz_hdr *oz_hdr;
- 	struct oz_elt *elt;
-@@ -464,8 +464,8 @@ static struct sk_buff *oz_build_frame(struct oz_pd *pd, struct oz_tx_frame *f)
- 	 * as the space we need.
- 	 */
- 	skb = alloc_skb(f->total_size + OZ_ALLOCATED_SPACE(dev), GFP_ATOMIC);
--	if (skb == 0)
--		return 0;
-+	if (skb == NULL)
-+		return NULL;
- 	/* Reserve the head room for lower layers.
- 	 */
- 	skb_reserve(skb, LL_RESERVED_SPACE(dev));
-@@ -492,7 +492,7 @@ static struct sk_buff *oz_build_frame(struct oz_pd *pd, struct oz_tx_frame *f)
- 	return skb;
- fail:
- 	kfree_skb(skb);
--	return 0;
-+	return NULL;
- }
- /*------------------------------------------------------------------------------
-  * Context: softirq or process
-@@ -544,7 +544,7 @@ static int oz_send_next_queued_frame(struct oz_pd *pd, int more_data)
- 			if (dev_queue_xmit(skb) < 0) {
- 				oz_trace2(OZ_TRACE_TX_FRAMES,
- 						"Dropping ISOC Frame\n");
--				oz_event_log(OZ_EVT_TX_ISOC_DROP, 0, 0, 0, 0);
-+				oz_event_log(OZ_EVT_TX_ISOC_DROP, 0, 0, NULL, 0);
- 				return -1;
- 			}
- 			atomic_inc(&g_submitted_isoc);
-@@ -555,7 +555,7 @@ static int oz_send_next_queued_frame(struct oz_pd *pd, int more_data)
- 		} else {
- 			kfree_skb(skb);
- 			oz_trace2(OZ_TRACE_TX_FRAMES, "Dropping ISOC Frame>\n");
--			oz_event_log(OZ_EVT_TX_ISOC_DROP, 0, 0, 0, 0);
-+			oz_event_log(OZ_EVT_TX_ISOC_DROP, 0, 0, NULL, 0);
+ 	elt = (struct oz_elt *)ei->data;
+ 	elt->length = sizeof(struct oz_set_config_req);
+@@ -118,7 +118,7 @@ static int oz_usb_set_interface_req(void *hpd, u8 req_id, u8 index, u8 alt)
+ 	struct oz_elt_buf *eb = &pd->elt_buff;
+ 	struct oz_elt_info *ei = oz_elt_info_alloc(&pd->elt_buff);
+ 	struct oz_set_interface_req *body;
+-	if (ei == 0)
++	if (ei == NULL)
+ 		return -1;
+ 	elt = (struct oz_elt *)ei->data;
+ 	elt->length = sizeof(struct oz_set_interface_req);
+@@ -141,7 +141,7 @@ static int oz_usb_set_clear_feature_req(void *hpd, u8 req_id, u8 type,
+ 	struct oz_elt_buf *eb = &pd->elt_buff;
+ 	struct oz_elt_info *ei = oz_elt_info_alloc(&pd->elt_buff);
+ 	struct oz_feature_req *body;
+-	if (ei == 0)
++	if (ei == NULL)
+ 		return -1;
+ 	elt = (struct oz_elt *)ei->data;
+ 	elt->length = sizeof(struct oz_feature_req);
+@@ -165,7 +165,7 @@ static int oz_usb_vendor_class_req(void *hpd, u8 req_id, u8 req_type,
+ 	struct oz_elt_buf *eb = &pd->elt_buff;
+ 	struct oz_elt_info *ei = oz_elt_info_alloc(&pd->elt_buff);
+ 	struct oz_vendor_class_req *body;
+-	if (ei == 0)
++	if (ei == NULL)
+ 		return -1;
+ 	elt = (struct oz_elt *)ei->data;
+ 	elt->length = sizeof(struct oz_vendor_class_req) - 1 + data_len;
+@@ -264,7 +264,7 @@ int oz_usb_send_isoc(void *hpd, u8 ep_num, struct urb *urb)
+ 		int unit_count;
+ 		int unit_size;
+ 		int rem;
+-		if (ei == 0)
++		if (ei == NULL)
  			return -1;
+ 		rem = MAX_ISOC_FIXED_DATA;
+ 		elt = (struct oz_elt *)ei->data;
+@@ -359,7 +359,7 @@ void oz_usb_rx(struct oz_pd *pd, struct oz_elt *elt)
+ 	if (usb_ctx)
+ 		oz_usb_get(usb_ctx);
+ 	spin_unlock_bh(&pd->app_lock[OZ_APPID_USB-1]);
+-	if (usb_ctx == 0)
++	if (usb_ctx == NULL)
+ 		return; /* Context has gone so nothing to do. */
+ 	if (usb_ctx->stopped)
+ 		goto done;
+@@ -391,14 +391,14 @@ void oz_usb_rx(struct oz_pd *pd, struct oz_elt *elt)
+ 			struct oz_set_config_rsp *body =
+ 				(struct oz_set_config_rsp *)usb_hdr;
+ 			oz_hcd_control_cnf(usb_ctx->hport, body->req_id,
+-				body->rcode, 0, 0);
++				body->rcode, NULL, 0);
  		}
- 	}
-@@ -570,7 +570,7 @@ static int oz_send_next_queued_frame(struct oz_pd *pd, int more_data)
- 		oz_event_log(OZ_EVT_TX_FRAME,
- 			0,
- 			(((u16)f->hdr.control)<<8)|f->hdr.last_pkt_num,
--			0, f->hdr.pkt_num);
-+			NULL, f->hdr.pkt_num);
- 		if (dev_queue_xmit(skb) < 0)
- 			return -1;
- 
-@@ -620,7 +620,7 @@ out:	oz_prepare_frame(pd, 1);
-  */
- static int oz_send_isoc_frame(struct oz_pd *pd)
- {
--	struct sk_buff *skb = 0;
-+	struct sk_buff *skb;
- 	struct net_device *dev = pd->net_dev;
- 	struct oz_hdr *oz_hdr;
- 	struct oz_elt *elt;
-@@ -634,7 +634,7 @@ static int oz_send_isoc_frame(struct oz_pd *pd)
- 	if (list.next == &list)
- 		return 0;
- 	skb = alloc_skb(total_size + OZ_ALLOCATED_SPACE(dev), GFP_ATOMIC);
--	if (skb == 0) {
-+	if (skb == NULL) {
- 		oz_trace("Cannot alloc skb\n");
- 		oz_elt_info_free_chain(&pd->elt_buff, &list);
- 		return -1;
-@@ -659,7 +659,7 @@ static int oz_send_isoc_frame(struct oz_pd *pd)
- 		memcpy(elt, ei->data, ei->length);
- 		elt = oz_next_elt(elt);
- 	}
--	oz_event_log(OZ_EVT_TX_ISOC, 0, 0, 0, 0);
-+	oz_event_log(OZ_EVT_TX_ISOC, 0, 0, NULL, 0);
- 	dev_queue_xmit(skb);
- 	oz_elt_info_free_chain(&pd->elt_buff, &list);
- 	return 0;
-@@ -671,8 +671,8 @@ void oz_retire_tx_frames(struct oz_pd *pd, u8 lpn)
- {
- 	struct list_head *e;
- 	struct oz_tx_frame *f;
--	struct list_head *first = 0;
--	struct list_head *last = 0;
-+	struct list_head *first = NULL;
-+	struct list_head *last = NULL;
- 	u8 diff;
- 	u32 pkt_num;
- 
-@@ -686,7 +686,7 @@ void oz_retire_tx_frames(struct oz_pd *pd, u8 lpn)
- 			break;
- 		oz_trace2(OZ_TRACE_TX_FRAMES, "Releasing pkt_num= %u, nb= %d\n",
- 						 pkt_num, pd->nb_queued_frames);
--		if (first == 0)
-+		if (first == NULL)
- 			first = e;
- 		last = e;
- 		e = e->next;
-@@ -695,7 +695,7 @@ void oz_retire_tx_frames(struct oz_pd *pd, u8 lpn)
- 	if (first) {
- 		last->next->prev = &pd->tx_queue;
- 		pd->tx_queue.next = last->next;
--		last->next = 0;
-+		last->next = NULL;
- 	}
- 	pd->last_sent_frame = &pd->tx_queue;
- 	spin_unlock(&pd->tx_frame_lock);
-@@ -718,7 +718,7 @@ static struct oz_isoc_stream *pd_stream_find(struct oz_pd *pd, u8 ep_num)
- 		if (st->ep_num == ep_num)
- 			return st;
- 	}
--	return 0;
-+	return NULL;
- }
- /*------------------------------------------------------------------------------
-  * Context: softirq
-@@ -733,7 +733,7 @@ int oz_isoc_stream_create(struct oz_pd *pd, u8 ep_num)
- 	spin_lock_bh(&pd->stream_lock);
- 	if (!pd_stream_find(pd, ep_num)) {
- 		list_add(&st->link, &pd->stream_list);
--		st = 0;
-+		st = NULL;
- 	}
- 	spin_unlock_bh(&pd->stream_lock);
- 	kfree(st);
-@@ -779,14 +779,14 @@ int oz_send_isoc_unit(struct oz_pd *pd, u8 ep_num, u8 *data, int len)
- 	struct net_device *dev = pd->net_dev;
- 	struct oz_isoc_stream *st;
- 	u8 nb_units = 0;
--	struct sk_buff *skb = 0;
--	struct oz_hdr *oz_hdr = 0;
-+	struct sk_buff *skb = NULL;
-+	struct oz_hdr *oz_hdr = NULL;
- 	int size = 0;
- 	spin_lock_bh(&pd->stream_lock);
- 	st = pd_stream_find(pd, ep_num);
- 	if (st) {
- 		skb = st->skb;
--		st->skb = 0;
-+		st->skb = NULL;
- 		nb_units = st->nb_units;
- 		st->nb_units = 0;
- 		oz_hdr = st->oz_hdr;
-@@ -799,7 +799,7 @@ int oz_send_isoc_unit(struct oz_pd *pd, u8 ep_num, u8 *data, int len)
- 		/* Allocate enough space for max size frame. */
- 		skb = alloc_skb(pd->max_tx_size + OZ_ALLOCATED_SPACE(dev),
- 				GFP_ATOMIC);
--		if (skb == 0)
-+		if (skb == NULL)
- 			return 0;
- 		/* Reserve the head room for lower layers. */
- 		skb_reserve(skb, LL_RESERVED_SPACE(dev));
-@@ -874,13 +874,13 @@ int oz_send_isoc_unit(struct oz_pd *pd, u8 ep_num, u8 *data, int len)
- 			oz_event_log(OZ_EVT_TX_ISOC, nb_units, iso.frame_number,
- 					skb, atomic_read(&g_submitted_isoc));
- 			if (dev_queue_xmit(skb) < 0) {
--				oz_event_log(OZ_EVT_TX_ISOC_DROP, 0, 0, 0, 0);
-+				oz_event_log(OZ_EVT_TX_ISOC_DROP, 0, 0, NULL, 0);
- 				return -1;
- 			} else
- 				return 0;
+ 		break;
+ 	case OZ_SET_INTERFACE_RSP: {
+ 			struct oz_set_interface_rsp *body =
+ 				(struct oz_set_interface_rsp *)usb_hdr;
+ 			oz_hcd_control_cnf(usb_ctx->hport,
+-				body->req_id, body->rcode, 0, 0);
++				body->req_id, body->rcode, NULL, 0);
  		}
- 
--out:	oz_event_log(OZ_EVT_TX_ISOC_DROP, 0, 0, 0, 0);
-+out:	oz_event_log(OZ_EVT_TX_ISOC_DROP, 0, 0, NULL, 0);
- 	kfree_skb(skb);
- 	return -1;
- 
+ 		break;
+ 	case OZ_VENDOR_CLASS_RSP: {
+@@ -427,7 +427,7 @@ void oz_usb_farewell(struct oz_pd *pd, u8 ep_num, u8 *data, u8 len)
+ 	if (usb_ctx)
+ 		oz_usb_get(usb_ctx);
+ 	spin_unlock_bh(&pd->app_lock[OZ_APPID_USB-1]);
+-	if (usb_ctx == 0)
++	if (usb_ctx == NULL)
+ 		return; /* Context has gone so nothing to do. */
+ 	if (!usb_ctx->stopped) {
+ 		oz_trace("Farewell indicated ep = 0x%x\n", ep_num);
 -- 
 1.7.8.6
 
