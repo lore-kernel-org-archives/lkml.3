@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751420Ab3BOTcn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 14:32:43 -0500
-Received: from mail-ia0-f172.google.com ([209.85.210.172]:64931 "EHLO
-	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750755Ab3BOTcm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 14:32:42 -0500
-MIME-Version: 1.0
-In-Reply-To: <511A7478.8040506@wwwdotorg.org>
-References: <1360527070-18430-1-git-send-email-linus.walleij@stericsson.com>
-	<51195A63.7080706@wwwdotorg.org>
-	<CACRpkdZu0+maCE2GjuZcQPZPZbw=Fz0DUHYY8FXPdZEH0PeViQ@mail.gmail.com>
-	<511A7478.8040506@wwwdotorg.org>
-Date: Fri, 15 Feb 2013 20:32:41 +0100
-Message-ID: <CACRpkdYhwbpvfeoSiL1pfhVC+3O+8yMnA-raGimr0RpZdffRHA@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl/pinconfig: add debug interface
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Laurent Meunier <laurent.meunier@st.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Anmar Oueja <anmar.oueja@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751504Ab3BOTcv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 14:32:51 -0500
+Received: from mout.gmx.net ([212.227.15.18]:54267 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751440Ab3BOTct (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 14:32:49 -0500
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX1/SNPp4CuDS+DUrKON5834e7hDIUyn5mOdh/eGGj5
+	NwOLVYq9eHFUhH
+From: Peter Huewe <peterhuewe@gmx.de>
+To: Arnaud Patard <arnaud.patard@rtp-net.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, Peter Huewe <peterhuewe@gmx.de>,
+        =?UTF-8?q?Miguel=20G=C3=B3mez?= <magomez@igalia.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/5] staging/xgifb: Consolidate if/else if with identical code branches
+Date: Fri, 15 Feb 2013 20:37:09 +0100
+Message-Id: <1360957033-11876-1-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.7.8.6
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 12, 2013 at 5:57 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 02/12/2013 05:54 AM, Linus Walleij wrote:
+Both branches of this if statement execute the same code.
+Thus we can || them together and remove code duplication
 
->> Of course, if this unsigned long is a pointer, this is just a
->> fantastic recipe for shooting oneself in the foot, but again
->> debugfs is just one big gun aimed at ones foot anyway, that's
->> the whole point of debugfs.
->
-> But it'd be possible to handle this if the code to modify the map called
-> into the individual pinctrl driver to convert the data the user wrote
-> into the value to store in the map, just like it does for DT.
->
-> Then, it'd work in all cases.
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+ drivers/staging/xgifb/vb_setmode.c |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
 
-You are right, this is way more elegant. So Laurent, can you add
-some optional function pointer to struct pinconf_ops to translate
-the passed parameter, and if that function is not assigned we do
-not open the debugfs interface for config at all. This will be
-quite elegant.
+diff --git a/drivers/staging/xgifb/vb_setmode.c b/drivers/staging/xgifb/vb_setmode.c
+index 3d5c424..0b134af 100644
+--- a/drivers/staging/xgifb/vb_setmode.c
++++ b/drivers/staging/xgifb/vb_setmode.c
+@@ -5572,13 +5572,10 @@ static void XGI_EnableBridge(struct xgifb_video_info *xgifb_info,
+ 	if (pVBInfo->VBType & (VB_SIS301B | VB_SIS302B | VB_SIS301LV
+ 			| VB_SIS302LV | VB_XGI301C)) {
+ 		if (!(pVBInfo->SetFlag & DisableChA)) {
+-			if (pVBInfo->SetFlag & EnableChA) {
++			if ((pVBInfo->SetFlag & EnableChA) ||
++			    (pVBInfo->VBInfo & SetCRT2ToDualEdge)) {
+ 				/* Power on */
+ 				xgifb_reg_set(pVBInfo->Part1Port, 0x1E, 0x20);
+-			} else if (pVBInfo->VBInfo & SetCRT2ToDualEdge) {
+-				/* Power on */
+-				xgifb_reg_set(pVBInfo->Part1Port,
+-						0x1E, 0x20);
+ 			}
+ 		}
+ 
+-- 
+1.7.8.6
 
-Something like:
-
-int (*pin_config_group_dbg_set) (struct pinctrl_dev *pctldev,
-                                           const char *arg,
-                                           unsigned long *config);
-
-> Plus, it could convert e.g. "pull up" to 0x10001 rather than requiring
-> the user to manually encode the 0x10001 themselves; much more useful.
-
-You are right.
-
-Reconfiguring muxes from debugfs will be different, I guess
-that may be handled entirely by the core. But it's a separate thing.
-
-Yours,
-Linus Walleij
