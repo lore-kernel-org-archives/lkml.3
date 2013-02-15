@@ -1,96 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935513Ab3BOH6G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 02:58:06 -0500
-Received: from 1wt.eu ([62.212.114.60]:42834 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935434Ab3BOH6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 02:58:04 -0500
-Date: Fri, 15 Feb 2013 08:55:39 +0100
-From: Willy Tarreau <w@1wt.eu>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Kees Cook <keescook@chromium.org>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        LKML <linux-kernel@vger.kernel.org>, Rob Landley <rob@landley.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, Eric Dumazet <edumazet@google.com>,
-        Neil Horman <nhorman@tuxdriver.com>, Yuchung Cheng <ycheng@google.com>,
-        Shan Wei <davidshan@tencent.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] tcp: sysctl to disable TCP simultaneous connect
-Message-ID: <20130215075539.GB7535@1wt.eu>
-References: <20130207175240.GA12520@www.outflux.net> <20130207103950.662698ea@nehalam.linuxnetplumber.net> <CAGXu5jJiupzommJYPEYQnk-4i9FUKai0NcPnihLN-QpWV64jtQ@mail.gmail.com> <87y5eq87pa.fsf@xmission.com> <CAGXu5jJKQSDo61TD0Jgn9Gq8TL2rCUVbA=Kq4AvfeFUb2FdJMw@mail.gmail.com> <87r4ki6oi1.fsf@xmission.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87r4ki6oi1.fsf@xmission.com>
-User-Agent: Mutt/1.4.2.3i
+	id S1754022Ab3BOIDh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 03:03:37 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:43925 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751703Ab3BOIDf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 03:03:35 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <511DEBBD.1050102@jp.fujitsu.com>
+Date: Fri, 15 Feb 2013 17:03:09 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Michal Hocko <mhocko@suse.cz>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
+        Tejun Heo <htejun@gmail.com>, Glauber Costa <glommer@parallels.com>,
+        Li Zefan <lizefan@huawei.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v4 2/6] memcg: rework mem_cgroup_iter to use cgroup iterators
+References: <1360848396-16564-1-git-send-email-mhocko@suse.cz> <1360848396-16564-3-git-send-email-mhocko@suse.cz>
+In-Reply-To: <1360848396-16564-3-git-send-email-mhocko@suse.cz>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric,
-
-On Thu, Feb 14, 2013 at 11:10:46PM -0800, Eric W. Biederman wrote:
-> Kees Cook <keescook@chromium.org> writes:
+(2013/02/14 22:26), Michal Hocko wrote:
+> mem_cgroup_iter curently relies on css->id when walking down a group
+> hierarchy tree. This is really awkward because the tree walk depends on
+> the groups creation ordering. The only guarantee is that a parent node
+> is visited before its children.
+> Example
+>   1) mkdir -p a a/d a/b/c
+>   2) mkdir -a a/b/c a/d
+> Will create the same trees but the tree walks will be different:
+>   1) a, d, b, c
+>   2) a, b, c, d
 > 
-> > On Thu, Feb 14, 2013 at 9:30 PM, Eric W. Biederman
-> > <ebiederm@xmission.com> wrote:
-> >> Kees Cook <keescook@chromium.org> writes:
-> >>
-> >>> The patch would not break it -- it defaults the sysctl to staying enabled.
-> >>>
-> >>> If you mean the documentation should be updated, sure, that's easy to do.
-> >>>
-> >>> David: I know you aren't a fan of this patch, but I'd like to try to
-> >>> convince you. :) This leaves the feature enabled and add a toggle for
-> >>> systems (like Chrome OS) that don't want to risk this DoS at all.
-> >>> There are so very many other toggle, I don't see why this one would be
-> >>> a problem to add.
-> >>
-> >> Chrome OS has no plans to implement webrtc?  Last I had read that
-> >> support had been added to the release versions of Chrome, and was in the
-> >> development builds of firefox.  I really don't belive that there are
-> >> many systems that don't intend to run a web browser.
-> >
-> > I haven't looked at the internals of webrtc. Are you implying some
-> > feature in it relies on the TCP simultaneous connect?
+> 574bd9f7 (cgroup: implement generic child / descendant walk macros) has
+> introduced generic cgroup tree walkers which provide either pre-order
+> or post-order tree walk. This patch converts css->id based iteration
+> to pre-order tree walk to keep the semantic with the original iterator
+> where parent is always visited before its subtree.
 > 
-> I am saying that yes.
+> cgroup_for_each_descendant_pre suggests using post_create and
+> pre_destroy for proper synchronization with groups addidition resp.
+> removal. This implementation doesn't use those because a new memory
+> cgroup is initialized sufficiently for iteration in mem_cgroup_css_alloc
+> already and css reference counting enforces that the group is alive for
+> both the last seen cgroup and the found one resp. it signals that the
+> group is dead and it should be skipped.
 > 
-> webrtc is built on ICE (interactivity connectivity establishment).  ICE
-> support for TCP (RFC6544) uses TCP simultaneous connect.  webrtc
-> supports tcp connections.
+> If the reclaim cookie is used we need to store the last visited group
+> into the iterator so we have to be careful that it doesn't disappear in
+> the mean time. Elevated reference count on the css keeps it alive even
+> though the group have been removed (parked waiting for the last dput so
+> that it can be freed).
+> 
+> Per node-zone-prio iter_lock has been introduced to ensure that
+> css_tryget and iter->last_visited is set atomically. Otherwise two
+> racing walkers could both take a references and only one release it
+> leading to a css leak (which pins cgroup dentry).
+> 
+> V3
+> - introduce iter_lock
+> V2
+> - use css_{get,put} for iter->last_visited rather than
+>    mem_cgroup_{get,put} because it is stronger wrt. cgroup life cycle
+> - cgroup_next_descendant_pre expects NULL pos for the first iterartion
+>    otherwise it might loop endlessly for intermediate node without any
+>    children.
+> 
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> ---
+>   mm/memcontrol.c |   86 +++++++++++++++++++++++++++++++++++++++++++------------
+>   1 file changed, 68 insertions(+), 18 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index f3d1bfe..e9f5c47 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -144,10 +144,12 @@ struct mem_cgroup_stat_cpu {
+>   };
+>   
+>   struct mem_cgroup_reclaim_iter {
+> -	/* css_id of the last scanned hierarchy member */
+> -	int position;
+> +	/* last scanned hierarchy member with elevated css ref count */
+> +	struct mem_cgroup *last_visited;
+>   	/* scan generation, increased every round-trip */
+>   	unsigned int generation;
+> +	/* lock to protect the position and generation */
+> +	spinlock_t iter_lock;
+>   };
+>   
+>   /*
+> @@ -1130,7 +1132,7 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+>   				   struct mem_cgroup_reclaim_cookie *reclaim)
+>   {
+>   	struct mem_cgroup *memcg = NULL;
+> -	int id = 0;
+> +	struct mem_cgroup *last_visited = NULL;
+>   
+>   	if (mem_cgroup_disabled())
+>   		return NULL;
+> @@ -1139,7 +1141,7 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+>   		root = root_mem_cgroup;
+>   
+>   	if (prev && !reclaim)
+> -		id = css_id(&prev->css);
+> +		last_visited = prev;
+>   
+>   	if (!root->use_hierarchy && root != root_mem_cgroup) {
+>   		if (prev)
+> @@ -1147,9 +1149,10 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+>   		return root;
+>   	}
+>   
+> +	rcu_read_lock();
+>   	while (!memcg) {
+>   		struct mem_cgroup_reclaim_iter *uninitialized_var(iter);
+> -		struct cgroup_subsys_state *css;
+> +		struct cgroup_subsys_state *css = NULL;
+>   
+>   		if (reclaim) {
+>   			int nid = zone_to_nid(reclaim->zone);
+> @@ -1158,31 +1161,74 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+>   
+>   			mz = mem_cgroup_zoneinfo(root, nid, zid);
+>   			iter = &mz->reclaim_iter[reclaim->priority];
+> -			if (prev && reclaim->generation != iter->generation)
+> -				goto out_css_put;
+> -			id = iter->position;
+> +			spin_lock(&iter->iter_lock);
+> +			last_visited = iter->last_visited;
+> +			if (prev && reclaim->generation != iter->generation) {
+> +				if (last_visited) {
+> +					css_put(&last_visited->css);
+> +					iter->last_visited = NULL;
+> +				}
+> +				spin_unlock(&iter->iter_lock);
+> +				goto out_unlock;
+> +			}
+>   		}
+>   
+> -		rcu_read_lock();
+> -		css = css_get_next(&mem_cgroup_subsys, id + 1, &root->css, &id);
+> -		if (css) {
+> -			if (css == &root->css || css_tryget(css))
+> -				memcg = mem_cgroup_from_css(css);
+> -		} else
+> -			id = 0;
+> -		rcu_read_unlock();
+> +		/*
+> +		 * Root is not visited by cgroup iterators so it needs an
+> +		 * explicit visit.
+> +		 */
+> +		if (!last_visited) {
+> +			css = &root->css;
+> +		} else {
+> +			struct cgroup *prev_cgroup, *next_cgroup;
+> +
+> +			prev_cgroup = (last_visited == root) ? NULL
+> +				: last_visited->css.cgroup;
+> +			next_cgroup = cgroup_next_descendant_pre(prev_cgroup,
+> +					root->css.cgroup);
+> +			if (next_cgroup)
+> +				css = cgroup_subsys_state(next_cgroup,
+> +						mem_cgroup_subsys_id);
+> +		}
+> +
+> +		/*
+> +		 * Even if we found a group we have to make sure it is alive.
+> +		 * css && !memcg means that the groups should be skipped and
+> +		 * we should continue the tree walk.
+> +		 * last_visited css is safe to use because it is protected by
+> +		 * css_get and the tree walk is rcu safe.
+> +		 */
+> +		if (css == &root->css || (css && css_tryget(css)))
+> +			memcg = mem_cgroup_from_css(css);
+>   
+>   		if (reclaim) {
+> -			iter->position = id;
+> +			struct mem_cgroup *curr = memcg;
+> +
+> +			if (last_visited)
+> +				css_put(&last_visited->css);
+> +
+> +			if (css && !memcg)
+> +				curr = mem_cgroup_from_css(css);
+> +
+> +			/* make sure that the cached memcg is not removed */
+> +			if (curr)
+> +				css_get(&curr->css);
+I'm sorry if I miss something...
 
-Then I suspect that a large number of firewalls will need updates after
-significant rework for this proposal to succeed. I'm not saying this will
-not eventually happen, but there are significant risks associated with
-this feature.  Netfilter had this in the window tracking patches around
-2002-2003 and this had to be reverted because a client was able to establish
-complete connections by sending SYN-SYN/ACK-ACK itself. Other products will
-fall through these cracks.
+This curr is  curr == memcg = mem_cgroup_from_css(css) <= already try_get() done.
 
-And last but not least, it's the only behaviour in TCP which allows a
-random attacker to prevent a connection from establishing by guessing
-only a 16-bit port, regardless of any sequence number. Considering how
-we've been bothered by people who considered that our sequence numbers
-were not random enough, I already expect that the absolute lack of need
-of a sequence number will bring new funny articles.
+double refcounted ?
 
-Back then, I did a PoC which permanently prevented an anti-virus proxy
-from establishing any connection to its update server, and it did not
-require a lot of traffic obviously. People running such proxies probably
-don't need webrtc with its assorted lot of issues.
+Thanks,
+-Kame
 
-I'm not advocating for pushing the patch, I understand it's not desired.
-I just want to ensure that people understand what simultaneous connect
-means in terms of DoS for a feature which is rarely used and rarely
-technically possible at all.
 
-Regards,
-Willy
+> +			iter->last_visited = curr;
+> +
+>   			if (!css)
+>   				iter->generation++;
+>   			else if (!prev && memcg)
+>   				reclaim->generation = iter->generation;
+> +			spin_unlock(&iter->iter_lock);
+> +		} else if (css && !memcg) {
+> +			last_visited = mem_cgroup_from_css(css);
+>   		}
+>   
+>   		if (prev && !css)
+> -			goto out_css_put;
+> +			goto out_unlock;
+>   	}
+> +out_unlock:
+> +	rcu_read_unlock();
+>   out_css_put:
+>   	if (prev && prev != root)
+>   		css_put(&prev->css);
+> @@ -6052,8 +6098,12 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *memcg, int node)
+>   		return 1;
+>   
+>   	for (zone = 0; zone < MAX_NR_ZONES; zone++) {
+> +		int prio;
+> +
+>   		mz = &pn->zoneinfo[zone];
+>   		lruvec_init(&mz->lruvec);
+> +		for (prio = 0; prio < DEF_PRIORITY + 1; prio++)
+> +			spin_lock_init(&mz->reclaim_iter[prio].iter_lock);
+>   		mz->usage_in_excess = 0;
+>   		mz->on_tree = false;
+>   		mz->memcg = memcg;
+> 
+
 
