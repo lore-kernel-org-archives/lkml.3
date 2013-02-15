@@ -1,35 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755546Ab3BOQ4A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 11:56:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63504 "EHLO mx1.redhat.com"
+	id S1756121Ab3BOQ4m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 11:56:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33354 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754634Ab3BOQzt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 11:55:49 -0500
-Message-Id: <20130215165543.455651014@napanee.usersys.redhat.com>
+	id S1752900Ab3BOQzs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 11:55:48 -0500
+Message-Id: <20130215165543.311073984@napanee.usersys.redhat.com>
 User-Agent: quilt/0.48-1
-Date: Fri, 15 Feb 2013 11:55:45 -0500
+Date: Fri, 15 Feb 2013 11:55:44 -0500
 From: Aristeu Rozanski <aris@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: cgroups@vger.kernel.org, Tejun Heo <tj@kernel.org>,
         Serge Hallyn <serge.hallyn@canonical.com>
-Subject: [PATCH v5 2/4] devcg: prepare may_access() for hierarchy support
+Subject: [PATCH v5 1/4] devcg: expand may_access() logic
 References: <20130215165543.131282532@napanee.usersys.redhat.com>
-Content-Disposition: inline; filename=strengthen-may_access.patch
+Content-Disposition: inline; filename=split_may_access_logic.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently may_access() is only able to verify if an exception is valid for the
-current cgroup, which has the same behavior. With hierarchy, it'll be also used
-to verify if a cgroup local exception is valid towards its cgroup parent, which
-might have different behavior.
+In order to make the next patch more clear, expand may_access() logic.
 
-v2:
-- updated patch description
-- rebased on top of a new patch to expand the may_access() logic to make it
-  more clear
-- fixed argument description order in may_access()
+v2: may_access() returns bool now
 
 Acked-by: Tejun Heo <tj@kernel.org>
 Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
@@ -38,112 +31,47 @@ Cc: Serge Hallyn <serge.hallyn@canonical.com>
 Signed-off-by: Aristeu Rozanski <aris@redhat.com>
 
 ---
- security/device_cgroup.c |   49 +++++++++++++++++++++++++++++------------------
- 1 file changed, 31 insertions(+), 18 deletions(-)
+ security/device_cgroup.c |   21 ++++++++++++---------
+ 1 file changed, 12 insertions(+), 9 deletions(-)
 
---- github.orig/security/device_cgroup.c	2013-02-14 10:47:12.146177936 -0500
-+++ github/security/device_cgroup.c	2013-02-14 10:47:12.411181646 -0500
-@@ -25,6 +25,12 @@  * Copyright 2007 IBM Corp
- 
- static DEFINE_MUTEX(devcgroup_mutex);
- 
-+enum devcg_behavior {
-+	DEVCG_DEFAULT_NONE,
-+	DEVCG_DEFAULT_ALLOW,
-+	DEVCG_DEFAULT_DENY,
-+};
-+
- /*
-  * exception list locking rules:
-  * hold devcgroup_mutex for update/read.
-@@ -42,10 +48,7 @@ struct dev_exception_item {
- struct dev_cgroup {
- 	struct cgroup_subsys_state css;
- 	struct list_head exceptions;
--	enum {
--		DEVCG_DEFAULT_ALLOW,
--		DEVCG_DEFAULT_DENY,
--	} behavior;
-+	enum devcg_behavior behavior;
- };
- 
- static inline struct dev_cgroup *css_to_devcgroup(struct cgroup_subsys_state *s)
-@@ -301,9 +304,11 @@ 	return 0;
-  *		verify if a certain access is allowed.
+--- github.orig/security/device_cgroup.c	2013-02-14 10:46:45.717808064 -0500
++++ github/security/device_cgroup.c	2013-02-14 10:47:12.146177936 -0500
+@@ -302,8 +302,8 @@ 	return 0;
   * @dev_cgroup: dev cgroup to be tested against
   * @refex: new exception
-+ * @behavior: behavior of the exception
   */
- static bool may_access(struct dev_cgroup *dev_cgroup,
--		       struct dev_exception_item *refex)
-+		       struct dev_exception_item *refex,
-+		       enum devcg_behavior behavior)
+-static int may_access(struct dev_cgroup *dev_cgroup,
+-		      struct dev_exception_item *refex)
++static bool may_access(struct dev_cgroup *dev_cgroup,
++		       struct dev_exception_item *refex)
  {
  	struct dev_exception_item *ex;
  	bool match = false;
-@@ -327,19 +332,27 @@ 		if (ex->minor != ~0 && ex->minor != re
- 		break;
- 	}
+@@ -329,16 +329,19 @@ 		if (ex->minor != ~0 && ex->minor != re
  
--	/*
--	 * In two cases we'll consider this new exception valid:
--	 * - the dev cgroup has its default policy to deny + exception list:
--	 *   the new exception *should* match the exceptions
+ 	/*
+ 	 * In two cases we'll consider this new exception valid:
 -	 * - the dev cgroup has its default policy to allow + exception list:
 -	 *   the new exception should *not* match any of the exceptions
--	 */
--	if (dev_cgroup->behavior == DEVCG_DEFAULT_DENY) {
--		if (match)
-+	if (dev_cgroup->behavior == DEVCG_DEFAULT_ALLOW) {
-+		if (behavior == DEVCG_DEFAULT_ALLOW) {
-+			/* the exception will deny access to certain devices */
-+			return true;
-+		} else {
-+			/* the exception will allow access to certain devices */
-+			if (match)
-+				/*
-+				 * a new exception allowing access shouldn't
-+				 * match an parent's exception
-+				 */
-+				return false;
- 			return true;
-+		}
- 	} else {
--		if (!match)
-+		/* only behavior == DEVCG_DEFAULT_DENY allowed here */
+-	 *   (behavior == DEVCG_DEFAULT_ALLOW, !match)
+ 	 * - the dev cgroup has its default policy to deny + exception list:
+ 	 *   the new exception *should* match the exceptions
+-	 *   (behavior == DEVCG_DEFAULT_DENY, match)
++	 * - the dev cgroup has its default policy to allow + exception list:
++	 *   the new exception should *not* match any of the exceptions
+ 	 */
+-	if ((dev_cgroup->behavior == DEVCG_DEFAULT_DENY) == match)
+-		return 1;
+-	return 0;
++	if (dev_cgroup->behavior == DEVCG_DEFAULT_DENY) {
 +		if (match)
-+			/* parent has an exception that matches the proposed */
- 			return true;
-+		else
-+			return false;
- 	}
- 	return false;
- }
-@@ -358,7 +371,7 @@ static int parent_has_perm(struct dev_cg
- 	if (!pcg)
- 		return 1;
- 	parent = cgroup_to_devcgroup(pcg);
--	return may_access(parent, ex);
-+	return may_access(parent, ex, childcg->behavior);
++			return true;
++	} else {
++		if (!match)
++			return true;
++	}
++	return false;
  }
  
- /**
-@@ -392,7 +405,7 @@ static int devcgroup_update_access(struc
- {
- 	const char *b;
- 	char temp[12];		/* 11 + 1 characters needed for a u32 */
--	int count, rc;
-+	int count, rc = 0;
- 	struct dev_exception_item ex;
- 	struct cgroup *p = devcgroup->css.cgroup;
- 	struct dev_cgroup *parent = NULL;
-@@ -609,7 +622,7 @@ 	memset(&ex, 0, sizeof(ex));
- 
- 	rcu_read_lock();
- 	dev_cgroup = task_devcgroup(current);
--	rc = may_access(dev_cgroup, &ex);
-+	rc = may_access(dev_cgroup, &ex, dev_cgroup->behavior);
- 	rcu_read_unlock();
- 
- 	if (!rc)
+ /*
 
