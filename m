@@ -1,45 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751946Ab3BOTn3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 14:43:29 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:58639 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751831Ab3BOTn1 (ORCPT
+	id S1751891Ab3BOToJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 14:44:09 -0500
+Received: from mail-ia0-f177.google.com ([209.85.210.177]:43831 "EHLO
+	mail-ia0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751555Ab3BOToI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 14:43:27 -0500
+	Fri, 15 Feb 2013 14:44:08 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130215193736.GD4351@the-dreams.de>
-References: <1360953682-25066-1-git-send-email-dianders@chromium.org>
-	<20130215193736.GD4351@the-dreams.de>
-Date: Fri, 15 Feb 2013 11:43:25 -0800
-X-Google-Sender-Auth: mSdue7dCRVKzFze9BL1xPOrgmgU
-Message-ID: <CAD=FV=VTJN3bU1rpMyjDMvX1SYZJWoJCiNtHNe+nDrtwnXqTXA@mail.gmail.com>
-Subject: Re: [PATCH] i2c: mux: Remove unneeded platform_set_drvdata to NULL in remove
-From: Doug Anderson <dianders@chromium.org>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Peter Korsgaard <peter.korsgaard@barco.com>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <201302141322.22263.poeschel@lemonage.de>
+References: <1360583563-10707-1-git-send-email-larsi@wh2.tu-dresden.de>
+	<201302131213.08631.poeschel@lemonage.de>
+	<CACRpkdbJ=KiwVoeK2TgO8kMuYQ2U-LaUOdL1d7w-q+9Ggb-JnA@mail.gmail.com>
+	<201302141322.22263.poeschel@lemonage.de>
+Date: Fri, 15 Feb 2013 20:44:07 +0100
+Message-ID: <CACRpkdZdPtDeD9GzB6Bfdko0mLCPMNq5_dqqOOzKA9a66qT-vw@mail.gmail.com>
+Subject: Re: [PATCH v2] gpio: mcp23s08: convert driver to DT
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lars Poeschel <poeschel@lemonage.de>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Lars Poeschel <larsi@wh2.tu-dresden.de>, rob.herring@calxeda.com,
+        rob@landley.net, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        spi-devel-general@lists.sourceforge.net
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wolfram,
+On Thu, Feb 14, 2013 at 1:22 PM, Lars Poeschel <poeschel@lemonage.de> wrote:
+> On Wednesday 13 February 2013 at 13:51:12, Linus Walleij wrote:
 
-On Fri, Feb 15, 2013 at 11:37 AM, Wolfram Sang <wsa@the-dreams.de> wrote:
-> I think we should do this at least I2C subsystem wide (51 occasions of
-> setting some *_drvdata to NULL), even better kernel-wide. Patching
-> individual drivers won't cut the confusion around this issue, I am
-> afraid.
+>> Have you considered this [pinctrl] approach?
+>
+> No, I haven't. And although this doesn't solve all my problems, I like the
+> idea very much! Thank you for this! But at the moment it looks to me that
+> this could be a bit overkill for setting this single register and I don't
+> think this is, what Grant meant me to do.
 
-I did it "mux" directory wide and this was the only instance.  ;)
-I'll re-send with I2C subsystem wide.  I probably won't attempt the
-whole kernel wide at this point, but would be very happy if someone
-else wanted to!  :)
+So there is this corner case where some GPIO driver does some
+pinctrl business, I mean, really really little of it. And then it may be
+overkill. Sometimes though, the hardware actually can do a lot of
+this biasing and muxing it just wasn't part of the driver yet or done
+in e.g. boot loaders, and then it's usually better to use pinctrl.
 
-Thanks for the review!
+Adding custom APIs to the GPIO drivers will however always
+cause a maintenance burden on the GPIO maintainers, so that's
+why pinctrl & GPIO is nice.
 
--Doug
+I don't know which case this would be though.
+
+Yours,
+Linus Walleij
