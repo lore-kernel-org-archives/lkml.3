@@ -1,235 +1,333 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752323Ab3BOXEL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 18:04:11 -0500
-Received: from hosting.visp.net.lb ([194.146.153.11]:59697 "EHLO
-	hosting.visp.net.lb" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751471Ab3BOXEJ (ORCPT
+	id S1752368Ab3BOXNM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 18:13:12 -0500
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:54064 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752195Ab3BOXNL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 18:04:09 -0500
+	Fri, 15 Feb 2013 18:13:11 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Sat, 16 Feb 2013 01:04:06 +0200
-From: Denys Fedoryshchenko <denys@visp.net.lb>
-To: <cl@linux-foundation.org>, <penberg@kernel.org>, <mpm@selenic.com>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: kernel BUG at mm/slub.c:3409, 3.8.0-rc7
-Message-ID: <9699daeed06dc8837f792bfdf486da45@visp.net.lb>
-User-Agent: VISP Webmail/0.8.1
+In-Reply-To: <20130215215946.GX4503@ZenIV.linux.org.uk>
+References: <20130214053656.GS4503@ZenIV.linux.org.uk> <CA+55aFz1JjGSCdqXpVz3oH-PWFDE3Qdxt3EVxqC2i=nfLqf0Jw@mail.gmail.com>
+ <20130215215946.GX4503@ZenIV.linux.org.uk>
+From: Shentino <shentino@gmail.com>
+Date: Fri, 15 Feb 2013 15:12:30 -0800
+Message-ID: <CAGDaZ_pMLScoO811es3AZxzAnSiS5ixku-DeuEi4FwX8mNv3cQ@mail.gmail.com>
+Subject: Re: [RFC] SIGKILL vs. SIGSEGV on late execve() failures
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Fri, Feb 15, 2013 at 1:59 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Fri, Feb 15, 2013 at 12:02:50PM -0800, Linus Torvalds wrote:
+>> On Wed, Feb 13, 2013 at 9:36 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>> >
+>> >         The only problem is that some suicides do SIGKILL, some SIGSEGV.
+>> > AFAICS, it started as SIGSEGV and had been switched to SIGKILL for a.out
+>> > (without any comments) in 1.1.62.
+>>
+>> Ok, I really don't think it matters which one we do - either SIGSEGV
+>> or SIGKILL is fine for a execve() that fails in those rare "impossible
+>> to recover from" circumstances. And no, I have no memory what the
+>> reason for the switch was, it's much too long ago..
+>
+> How about this, then:
+>
+> handle suicide on late failure exits in execve() in search_binary_handler()
+>
+> ... rather than doing that in the guts of ->load_binary().  And send
+> SIGSEGV in all cases.
+>
+> Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+> ---
+> diff --git a/fs/binfmt_aout.c b/fs/binfmt_aout.c
+> index bbc8f88..a1c236d 100644
+> --- a/fs/binfmt_aout.c
+> +++ b/fs/binfmt_aout.c
+> @@ -260,11 +260,8 @@ static int load_aout_binary(struct linux_binprm * bprm)
+>         current->mm->cached_hole_size = 0;
+>
+>         retval = setup_arg_pages(bprm, STACK_TOP, EXSTACK_DEFAULT);
+> -       if (retval < 0) {
+> -               /* Someone check-me: is this error path enough? */
+> -               send_sig(SIGKILL, current, 0);
+> +       if (retval < 0)
+>                 return retval;
+> -       }
+>
+>         install_exec_creds(bprm);
+>
+> @@ -282,19 +279,15 @@ static int load_aout_binary(struct linux_binprm * bprm)
+>                 map_size = ex.a_text+ex.a_data;
+>  #endif
+>                 error = vm_brk(text_addr & PAGE_MASK, map_size);
+> -               if (error != (text_addr & PAGE_MASK)) {
+> -                       send_sig(SIGKILL, current, 0);
+> +               if (error != (text_addr & PAGE_MASK))
+>                         return error;
+> -               }
+>
+>                 error = bprm->file->f_op->read(bprm->file,
+>                           (char __user *)text_addr,
+>                           ex.a_text+ex.a_data, &pos);
+> -               if ((signed long)error < 0) {
+> -                       send_sig(SIGKILL, current, 0);
+> +               if ((signed long)error < 0)
+>                         return error;
+> -               }
+> -
+> +
+>                 flush_icache_range(text_addr, text_addr+ex.a_text+ex.a_data);
+>         } else {
+>                 if ((ex.a_text & 0xfff || ex.a_data & 0xfff) &&
+> @@ -327,28 +320,22 @@ static int load_aout_binary(struct linux_binprm * bprm)
+>                         MAP_FIXED | MAP_PRIVATE | MAP_DENYWRITE | MAP_EXECUTABLE,
+>                         fd_offset);
+>
+> -               if (error != N_TXTADDR(ex)) {
+> -                       send_sig(SIGKILL, current, 0);
+> +               if (error != N_TXTADDR(ex))
+>                         return error;
+> -               }
+>
+>                 error = vm_mmap(bprm->file, N_DATADDR(ex), ex.a_data,
+>                                 PROT_READ | PROT_WRITE | PROT_EXEC,
+>                                 MAP_FIXED | MAP_PRIVATE | MAP_DENYWRITE | MAP_EXECUTABLE,
+>                                 fd_offset + ex.a_text);
+> -               if (error != N_DATADDR(ex)) {
+> -                       send_sig(SIGKILL, current, 0);
+> +               if (error != N_DATADDR(ex))
+>                         return error;
+> -               }
+>         }
+>  beyond_if:
+>         set_binfmt(&aout_format);
+>
+>         retval = set_brk(current->mm->start_brk, current->mm->brk);
+> -       if (retval < 0) {
+> -               send_sig(SIGKILL, current, 0);
+> +       if (retval < 0)
+>                 return retval;
+> -       }
+>
+>         current->mm->start_stack =
+>                 (unsigned long) create_aout_tables((char __user *) bprm->p, bprm);
+> diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
+> index 11e078a..50e9194 100644
+> --- a/fs/binfmt_elf.c
+> +++ b/fs/binfmt_elf.c
+> @@ -734,10 +734,8 @@ static int load_elf_binary(struct linux_binprm *bprm)
+>         current->mm->cached_hole_size = 0;
+>         retval = setup_arg_pages(bprm, randomize_stack_top(STACK_TOP),
+>                                  executable_stack);
+> -       if (retval < 0) {
+> -               send_sig(SIGKILL, current, 0);
+> +       if (retval < 0)
+>                 goto out_free_dentry;
+> -       }
+>
+>         current->mm->start_stack = bprm->p;
+>
+> @@ -759,10 +757,8 @@ static int load_elf_binary(struct linux_binprm *bprm)
+>                            and clear the area.  */
+>                         retval = set_brk(elf_bss + load_bias,
+>                                          elf_brk + load_bias);
+> -                       if (retval) {
+> -                               send_sig(SIGKILL, current, 0);
+> +                       if (retval)
+>                                 goto out_free_dentry;
+> -                       }
+>                         nbyte = ELF_PAGEOFFSET(elf_bss);
+>                         if (nbyte) {
+>                                 nbyte = ELF_MIN_ALIGN - nbyte;
+> @@ -815,7 +811,6 @@ static int load_elf_binary(struct linux_binprm *bprm)
+>                 error = elf_map(bprm->file, load_bias + vaddr, elf_ppnt,
+>                                 elf_prot, elf_flags, 0);
+>                 if (BAD_ADDR(error)) {
+> -                       send_sig(SIGKILL, current, 0);
+>                         retval = IS_ERR((void *)error) ?
+>                                 PTR_ERR((void*)error) : -EINVAL;
+>                         goto out_free_dentry;
+> @@ -846,7 +841,6 @@ static int load_elf_binary(struct linux_binprm *bprm)
+>                     elf_ppnt->p_memsz > TASK_SIZE ||
+>                     TASK_SIZE - elf_ppnt->p_memsz < k) {
+>                         /* set_brk can never work. Avoid overflows. */
+> -                       send_sig(SIGKILL, current, 0);
+>                         retval = -EINVAL;
+>                         goto out_free_dentry;
+>                 }
+> @@ -878,12 +872,10 @@ static int load_elf_binary(struct linux_binprm *bprm)
+>          * up getting placed where the bss needs to go.
+>          */
+>         retval = set_brk(elf_bss, elf_brk);
+> -       if (retval) {
+> -               send_sig(SIGKILL, current, 0);
+> +       if (retval)
+>                 goto out_free_dentry;
+> -       }
+> +
+>         if (likely(elf_bss != elf_brk) && unlikely(padzero(elf_bss))) {
+> -               send_sig(SIGSEGV, current, 0);
+>                 retval = -EFAULT; /* Nobody gets to see this, but.. */
+>                 goto out_free_dentry;
+>         }
+> @@ -929,19 +921,15 @@ static int load_elf_binary(struct linux_binprm *bprm)
+>
+>  #ifdef ARCH_HAS_SETUP_ADDITIONAL_PAGES
+>         retval = arch_setup_additional_pages(bprm, !!elf_interpreter);
+> -       if (retval < 0) {
+> -               send_sig(SIGKILL, current, 0);
+> +       if (retval < 0)
+>                 goto out;
+> -       }
+>  #endif /* ARCH_HAS_SETUP_ADDITIONAL_PAGES */
+>
+>         install_exec_creds(bprm);
+>         retval = create_elf_tables(bprm, &loc->elf_ex,
+>                           load_addr, interp_load_addr);
+> -       if (retval < 0) {
+> -               send_sig(SIGKILL, current, 0);
+> +       if (retval < 0)
+>                 goto out;
+> -       }
+>         /* N.B. passed_fileno might not be initialized? */
+>         current->mm->end_code = end_code;
+>         current->mm->start_code = start_code;
+> diff --git a/fs/binfmt_elf_fdpic.c b/fs/binfmt_elf_fdpic.c
+> index 30de01c..5c03732 100644
+> --- a/fs/binfmt_elf_fdpic.c
+> +++ b/fs/binfmt_elf_fdpic.c
+> @@ -317,8 +317,7 @@ static int load_elf_fdpic_binary(struct linux_binprm *bprm)
+>                 goto error;
+>
+>         /* there's now no turning back... the old userspace image is dead,
+> -        * defunct, deceased, etc. after this point we have to exit via
+> -        * error_kill */
+> +        * defunct, deceased, etc. */
+>         set_personality(PER_LINUX_FDPIC);
+>         if (elf_read_implies_exec(&exec_params.hdr, executable_stack))
+>                 current->personality |= READ_IMPLIES_EXEC;
+> @@ -343,24 +342,22 @@ static int load_elf_fdpic_binary(struct linux_binprm *bprm)
+>
+>         retval = setup_arg_pages(bprm, current->mm->start_stack,
+>                                  executable_stack);
+> -       if (retval < 0) {
+> -               send_sig(SIGKILL, current, 0);
+> -               goto error_kill;
+> -       }
+> +       if (retval < 0)
+> +               goto error;
+>  #endif
+>
+>         /* load the executable and interpreter into memory */
+>         retval = elf_fdpic_map_file(&exec_params, bprm->file, current->mm,
+>                                     "executable");
+>         if (retval < 0)
+> -               goto error_kill;
+> +               goto error;
+>
+>         if (interpreter_name) {
+>                 retval = elf_fdpic_map_file(&interp_params, interpreter,
+>                                             current->mm, "interpreter");
+>                 if (retval < 0) {
+>                         printk(KERN_ERR "Unable to load interpreter\n");
+> -                       goto error_kill;
+> +                       goto error;
+>                 }
+>
+>                 allow_write_access(interpreter);
+> @@ -397,7 +394,7 @@ static int load_elf_fdpic_binary(struct linux_binprm *bprm)
+>         if (IS_ERR_VALUE(current->mm->start_brk)) {
+>                 retval = current->mm->start_brk;
+>                 current->mm->start_brk = 0;
+> -               goto error_kill;
+> +               goto error;
+>         }
+>
+>         current->mm->brk = current->mm->start_brk;
+> @@ -410,7 +407,7 @@ static int load_elf_fdpic_binary(struct linux_binprm *bprm)
+>         install_exec_creds(bprm);
+>         if (create_elf_fdpic_tables(bprm, current->mm,
+>                                     &exec_params, &interp_params) < 0)
+> -               goto error_kill;
+> +               goto error;
+>
+>         kdebug("- start_code  %lx", current->mm->start_code);
+>         kdebug("- end_code    %lx", current->mm->end_code);
+> @@ -449,12 +446,6 @@ error:
+>         kfree(interp_params.phdrs);
+>         kfree(interp_params.loadmap);
+>         return retval;
+> -
+> -       /* unrecoverable error - kill the process */
+> -error_kill:
+> -       send_sig(SIGSEGV, current, 0);
+> -       goto error;
+> -
+>  }
+>
+>  /*****************************************************************************/
+> diff --git a/fs/exec.c b/fs/exec.c
+> index 7b6f4d5..027b2de 100644
+> --- a/fs/exec.c
+> +++ b/fs/exec.c
+> @@ -1416,28 +1416,28 @@ int search_binary_handler(struct linux_binprm *bprm)
+>                         }
+>                         read_lock(&binfmt_lock);
+>                         put_binfmt(fmt);
+> -                       if (retval != -ENOEXEC || bprm->mm == NULL)
+> -                               break;
+> -                       if (!bprm->file) {
+> +                       if (bprm->mm == NULL) {
+> +                               /* we got to flush_old_exec() and failed after it */
+> +                               send_sig(SIGSEGV, current, 0);
 
-Worked for a while on 3.8.0-rc7, generally it is fine, then suddenly 
-laptop stopped responding to keyboard and mouse.
-Sure it can be memory corruption by some other module, but maybe not. 
-Worth to report i guess.
-After reboot checked logs and found this:
+This might be a stupid miscue on my part, but shouldn't it be
+force_sig instead of send_sig?
 
-Feb 16 00:40:17 localhost kernel: [23260.079253] ------------[ cut here 
-]------------
-Feb 16 00:40:17 localhost kernel: [23260.079257] kernel BUG at 
-mm/slub.c:3409!
-Feb 16 00:40:17 localhost kernel: [23260.079259] invalid opcode: 0000 
-[#1] SMP
-Feb 16 00:40:17 localhost kernel: [23260.079262] Modules linked in: 
-ipt_MASQUERADE iptable_nat nf_nat_ipv4 nf_nat nf_conntrack_ipv4 
-nf_defrag_ipv4 xt_state nf_conntrack ipt_REJECT xt_CHECKSUM 
-iptable_mangle iptable_filter ip_tables tun bridge stp llc nouveau 
-snd_hda_codec_hdmi coretemp kvm_intel snd_hda_codec_realtek uvcvideo 
-videobuf2_vmalloc snd_hda_intel videobuf2_memops videobuf2_core kvm 
-mxm_wmi wmi videodev hwmon ttm snd_hda_codec drm_kms_helper rtl8192se 
-rtlwifi nvidiafb mei lpc_ich mfd_core i2c_i801 snd_hwdep
-Feb 16 00:40:17 localhost kernel: [23260.079295] CPU 0
-Feb 16 00:40:17 localhost kernel: [23260.079298] Pid: 3811, comm: 
-kworker/0:1 Tainted: G        W    3.8.0-rc7-lap #1 TOSHIBA Satellite 
-A665/NWQAA
-Feb 16 00:40:17 localhost kernel: [23260.079300] RIP: 
-0010:[<ffffffff810d9ed1>]  [<ffffffff810d9ed1>] kfree+0x31/0xb1
-Feb 16 00:40:17 localhost kernel: [23260.079306] RSP: 
-0018:ffff88012b02fd28  EFLAGS: 00010246
-Feb 16 00:40:17 localhost kernel: [23260.079308] RAX: 8000000000000000 
-RBX: ffff8801029fcb40 RCX: 000000000079b6df
-Feb 16 00:40:17 localhost kernel: [23260.079310] RDX: 8000000000000000 
-RSI: ffff88017d79f480 RDI: ffff8801029fcb40
-Feb 16 00:40:17 localhost kernel: [23260.079312] RBP: ffff88012b02fd48 
-R08: 0000000000014b60 R09: 0000000000000001
-Feb 16 00:40:17 localhost kernel: [23260.079313] R10: ffff880100000000 
-R11: 0000000000000001 R12: ffffea00040a7f00
-Feb 16 00:40:17 localhost kernel: [23260.079315] R13: ffff8801bfc15e00 
-R14: ffff8801bfc0d380 R15: ffff88012b02fda8
-Feb 16 00:40:17 localhost kernel: [23260.079317] FS:  
-0000000000000000(0000) GS:ffff8801bfc00000(0000) knlGS:0000000000000000
-Feb 16 00:40:17 localhost kernel: [23260.079319] CS:  0010 DS: 0000 ES: 
-0000 CR0: 000000008005003b
-Feb 16 00:40:17 localhost kernel: [23260.079321] CR2: 000035ffe6f63008 
-CR3: 0000000001a0c000 CR4: 00000000000007f0
-Feb 16 00:40:17 localhost kernel: [23260.079322] DR0: 0000000000000000 
-DR1: 0000000000000000 DR2: 0000000000000000
-Feb 16 00:40:17 localhost kernel: [23260.079324] DR3: 0000000000000000 
-DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Feb 16 00:40:17 localhost kernel: [23260.079326] Process kworker/0:1 
-(pid: 3811, threadinfo ffff88012b02e000, task ffff8801b0300000)
-Feb 16 00:40:17 localhost kernel: [23260.079327] Stack:
-Feb 16 00:40:17 localhost kernel: [23260.079329]  ffff8801019fcb50 
-ffff8801029fcb40 ffff8801bfc15e00 ffff8801bfc0d380
-Feb 16 00:40:17 localhost kernel: [23260.079332]  ffff88012b02fd68 
-ffffffff8125fe88 ffff880165c0a600 ffff8801019fcb50
-Feb 16 00:40:17 localhost kernel: [23260.079336]  ffff88012b02fdf8 
-ffffffff810441f0 ffffffff81044183 ffff88012b02ffd8
-Feb 16 00:40:17 localhost kernel: [23260.079339] Call Trace:
-Feb 16 00:40:17 localhost kernel: [23260.079344]  [<ffffffff8125fe88>] 
-acpi_os_execute_deferred+0x2a/0x2f
-Feb 16 00:40:17 localhost kernel: [23260.079348]  [<ffffffff810441f0>] 
-process_one_work+0x1d8/0x2eb
-Feb 16 00:40:17 localhost kernel: [23260.079351]  [<ffffffff81044183>] 
-? process_one_work+0x16b/0x2eb
-Feb 16 00:40:17 localhost kernel: [23260.079354]  [<ffffffff8125fe5e>] 
-? acpi_os_wait_events_complete+0x1e/0x1e
-Feb 16 00:40:17 localhost kernel: [23260.079357]  [<ffffffff8104603d>] 
-worker_thread+0x13e/0x1c1
-Feb 16 00:40:17 localhost kernel: [23260.079360]  [<ffffffff81045eff>] 
-? manage_workers+0x250/0x250
-Feb 16 00:40:17 localhost kernel: [23260.079363]  [<ffffffff81049d14>] 
-kthread+0xa5/0xad
-Feb 16 00:40:17 localhost kernel: [23260.079366]  [<ffffffff81049c6f>] 
-? __init_kthread_worker+0x56/0x56
-Feb 16 00:40:17 localhost kernel: [23260.079370]  [<ffffffff8153eeec>] 
-ret_from_fork+0x7c/0xb0
-Feb 16 00:40:17 localhost kernel: [23260.079373]  [<ffffffff81049c6f>] 
-? __init_kthread_worker+0x56/0x56
-Feb 16 00:40:17 localhost kernel: [23260.079374] Code: 89 e5 41 56 41 
-55 41 54 53 48 89 fb 0f 86 90 00 00 00 e8 74 e1 ff ff 49 89 c4 48 8b 00 
-a8 80 75 20 49 f7 04 24 00 c0 00 00 75 02 <0f> 0b 4c 89 e7 e8 44 d0 ff 
-ff 4c 89 e7 89 c6 e8 7d 2d fd ff eb
-Feb 16 00:40:17 localhost kernel: [23260.079409] RIP  
-[<ffffffff810d9ed1>] kfree+0x31/0xb1
-Feb 16 00:40:17 localhost kernel: [23260.079412]  RSP 
-<ffff88012b02fd28>
-Feb 16 00:40:17 localhost kernel: [23260.079414] ---[ end trace 
-bae1313833245122 ]---
-Feb 16 00:40:17 localhost kernel: [23260.079450] BUG: unable to handle 
-kernel paging request at ffffffffffffffa8
-Feb 16 00:40:17 localhost kernel: [23260.079452] IP: 
-[<ffffffff81049f54>] kthread_data+0xb/0x11
-Feb 16 00:40:17 localhost kernel: [23260.079455] PGD 1a0e067 PUD 
-1a0f067 PMD 0
-Feb 16 00:40:17 localhost kernel: [23260.079458] Oops: 0000 [#2] SMP
-Feb 16 00:40:17 localhost kernel: [23260.079461] Modules linked in: 
-ipt_MASQUERADE iptable_nat nf_nat_ipv4 nf_nat nf_conntrack_ipv4 
-nf_defrag_ipv4 xt_state nf_conntrack ipt_REJECT xt_CHECKSUM 
-iptable_mangle iptable_filter ip_tables tun bridge stp llc nouveau 
-snd_hda_codec_hdmi coretemp kvm_intel snd_hda_codec_realtek uvcvideo 
-videobuf2_vmalloc snd_hda_intel videobuf2_memops videobuf2_core kvm 
-mxm_wmi wmi videodev hwmon ttm snd_hda_codec drm_kms_helper rtl8192se 
-rtlwifi nvidiafb mei lpc_ich mfd_core i2c_i801 snd_hwdep
-Feb 16 00:40:17 localhost kernel: [23260.079490] CPU 0
-Feb 16 00:40:17 localhost kernel: [23260.079492] Pid: 3811, comm: 
-kworker/0:1 Tainted: G      D W    3.8.0-rc7-lap #1 TOSHIBA Satellite 
-A665/NWQAA
-Feb 16 00:40:17 localhost kernel: [23260.079494] RIP: 
-0010:[<ffffffff81049f54>]  [<ffffffff81049f54>] kthread_data+0xb/0x11
-Feb 16 00:40:17 localhost kernel: [23260.079497] RSP: 
-0018:ffff88012b02f998  EFLAGS: 00010092
-Feb 16 00:40:17 localhost kernel: [23260.079499] RAX: 0000000000000000 
-RBX: ffff8801bfc11cc0 RCX: ffff8801bfc11d68
-Feb 16 00:40:17 localhost kernel: [23260.079501] RDX: 0000000000000000 
-RSI: 0000000000000000 RDI: ffff8801b0300000
-Feb 16 00:40:17 localhost kernel: [23260.079502] RBP: ffff88012b02f998 
-R08: ffffffff81b6a160 R09: 000000000000b451
-Feb 16 00:40:17 localhost kernel: [23260.079504] R10: ffffffff81a23330 
-R11: ffff8801b4989180 R12: ffff8801b03003c8
-Feb 16 00:40:17 localhost kernel: [23260.079506] R13: 0000000000000000 
-R14: 0000000000000000 R15: 0000000000000006
-Feb 16 00:40:17 localhost kernel: [23260.079508] FS:  
-0000000000000000(0000) GS:ffff8801bfc00000(0000) knlGS:0000000000000000
-Feb 16 00:40:17 localhost kernel: [23260.079510] CS:  0010 DS: 0000 ES: 
-0000 CR0: 000000008005003b
-Feb 16 00:40:17 localhost kernel: [23260.079511] CR2: ffffffffffffffa8 
-CR3: 0000000001a0c000 CR4: 00000000000007f0
-Feb 16 00:40:17 localhost kernel: [23260.079513] DR0: 0000000000000000 
-DR1: 0000000000000000 DR2: 0000000000000000
-Feb 16 00:40:17 localhost kernel: [23260.079515] DR3: 0000000000000000 
-DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Feb 16 00:40:17 localhost kernel: [23260.079517] Process kworker/0:1 
-(pid: 3811, threadinfo ffff88012b02e000, task ffff8801b0300000)
-Feb 16 00:40:17 localhost kernel: [23260.079518] Stack:
-Feb 16 00:40:17 localhost kernel: [23260.079519]  ffff88012b02f9c8 
-ffffffff810464bd ffffffff81537e7a ffff8801bfc11cc0
-Feb 16 00:40:17 localhost kernel: [23260.079523]  ffff8801b03003c8 
-ffff88012b02f7d8 ffff88012b02fa78 ffffffff81537ef6
-Feb 16 00:40:17 localhost kernel: [23260.079526]  ffff88012b02fa18 
-0000000000000246 ffffffff81a05000 0000000000011cc0
-Feb 16 00:40:17 localhost kernel: [23260.079529] Call Trace:
-Feb 16 00:40:17 localhost kernel: [23260.079533]  [<ffffffff810464bd>] 
-wq_worker_sleeping+0x15/0x78
-Feb 16 00:40:17 localhost kernel: [23260.079536]  [<ffffffff81537e7a>] 
-? __schedule+0xe5/0x58b
-Feb 16 00:40:17 localhost kernel: [23260.079539]  [<ffffffff81537ef6>] 
-__schedule+0x161/0x58b
-Feb 16 00:40:17 localhost kernel: [23260.079542]  [<ffffffff8153859c>] 
-schedule+0x5f/0x61
-Feb 16 00:40:17 localhost kernel: [23260.079546]  [<ffffffff81034b56>] 
-do_exit+0x8e8/0x8ea
-Feb 16 00:40:17 localhost kernel: [23260.079549]  [<ffffffff8103267e>] 
-? kmsg_dump+0x1f/0x112
-Feb 16 00:40:17 localhost kernel: [23260.079552]  [<ffffffff8153a5df>] 
-oops_end+0xb2/0xba
-Feb 16 00:40:17 localhost kernel: [23260.079555]  [<ffffffff810052ad>] 
-die+0x55/0x60
-Feb 16 00:40:17 localhost kernel: [23260.079558]  [<ffffffff8153a082>] 
-do_trap+0x6b/0x132
-Feb 16 00:40:17 localhost kernel: [23260.079562]  [<ffffffff81002fa6>] 
-do_invalid_op+0x93/0x9c
-Feb 16 00:40:17 localhost kernel: [23260.079565]  [<ffffffff810d9ed1>] 
-? kfree+0x31/0xb1
-Feb 16 00:40:17 localhost kernel: [23260.079569]  [<ffffffff8122cb5d>] 
-? trace_hardirqs_off_thunk+0x3a/0x3c
-Feb 16 00:40:17 localhost kernel: [23260.079572]  [<ffffffff81539a49>] 
-? restore_args+0x30/0x30
-Feb 16 00:40:17 localhost kernel: [23260.079575]  [<ffffffff81540225>] 
-invalid_op+0x15/0x20
-Feb 16 00:40:17 localhost kernel: [23260.079578]  [<ffffffff810d9ed1>] 
-? kfree+0x31/0xb1
-Feb 16 00:40:17 localhost kernel: [23260.079581]  [<ffffffff810d9ebd>] 
-? kfree+0x1d/0xb1
-Feb 16 00:40:17 localhost kernel: [23260.079584]  [<ffffffff8125fe88>] 
-acpi_os_execute_deferred+0x2a/0x2f
-Feb 16 00:40:17 localhost kernel: [23260.079586]  [<ffffffff810441f0>] 
-process_one_work+0x1d8/0x2eb
-Feb 16 00:40:17 localhost kernel: [23260.079589]  [<ffffffff81044183>] 
-? process_one_work+0x16b/0x2eb
-Feb 16 00:40:17 localhost kernel: [23260.079592]  [<ffffffff8125fe5e>] 
-? acpi_os_wait_events_complete+0x1e/0x1e
-Feb 16 00:40:17 localhost kernel: [23260.079595]  [<ffffffff8104603d>] 
-worker_thread+0x13e/0x1c1
-Feb 16 00:40:17 localhost kernel: [23260.079598]  [<ffffffff81045eff>] 
-? manage_workers+0x250/0x250
-Feb 16 00:40:17 localhost kernel: [23260.079600]  [<ffffffff81049d14>] 
-kthread+0xa5/0xad
-Feb 16 00:40:17 localhost kernel: [23260.079603]  [<ffffffff81049c6f>] 
-? __init_kthread_worker+0x56/0x56
-Feb 16 00:40:17 localhost kernel: [23260.079606]  [<ffffffff8153eeec>] 
-ret_from_fork+0x7c/0xb0
-Feb 16 00:40:17 localhost kernel: [23260.079608]  [<ffffffff81049c6f>] 
-? __init_kthread_worker+0x56/0x56
-Feb 16 00:40:17 localhost kernel: [23260.079610] Code: 48 89 e5 65 48 
-8b 04 25 80 b9 00 00 48 8b 80 70 03 00 00 48 8b 40 98 c9 48 c1 e8 02 83 
-e0 01 c3 55 48 8b 87 70 03 00 00 48 89 e5 <48> 8b 40 a8 c9 c3 55 48 89 
-e5 65 48 8b 04 25 80 b9 00 00 48 8b
-Feb 16 00:40:17 localhost kernel: [23260.079644] RIP  
-[<ffffffff81049f54>] kthread_data+0xb/0x11
-Feb 16 00:40:17 localhost kernel: [23260.079647]  RSP 
-<ffff88012b02f998>
-Feb 16 00:40:17 localhost kernel: [23260.079648] CR2: ffffffffffffffa8
-Feb 16 00:40:17 localhost kernel: [23260.079650] ---[ end trace 
-bae1313833245123 ]---
-Feb 16 00:40:17 localhost kernel: [23260.079652] Fixing recursive fault 
-but reboot is needed!
+I've got this crazy hunch that having SEGV masked might muck something up.
 
----
-Denys Fedoryshchenko, Network Engineer, Virtual ISP S.A.L.
+> +                               read_unlock(&binfmt_lock);
+> +                               return retval;
+> +                       }
+> +                       if (retval != -ENOEXEC || !bprm->file) {
+>                                 read_unlock(&binfmt_lock);
+>                                 return retval;
+>                         }
+>                 }
+>                 read_unlock(&binfmt_lock);
+>  #ifdef CONFIG_MODULES
+> -               if (retval != -ENOEXEC || bprm->mm == NULL) {
+> -                       break;
+> -               } else {
+>  #define printable(c) (((c)=='\t') || ((c)=='\n') || (0x20<=(c) && (c)<=0x7e))
+> -                       if (printable(bprm->buf[0]) &&
+> -                           printable(bprm->buf[1]) &&
+> -                           printable(bprm->buf[2]) &&
+> -                           printable(bprm->buf[3]))
+> -                               break; /* -ENOEXEC */
+> -                       if (try)
+> -                               break; /* -ENOEXEC */
+> -                       request_module("binfmt-%04x", *(unsigned short *)(&bprm->buf[2]));
+> -               }
+> +               if (printable(bprm->buf[0]) &&
+> +                   printable(bprm->buf[1]) &&
+> +                   printable(bprm->buf[2]) &&
+> +                   printable(bprm->buf[3]))
+> +                       break; /* -ENOEXEC */
+> +               if (try)
+> +                       break; /* -ENOEXEC */
+> +               request_module("binfmt-%04x", *(unsigned short *)(&bprm->buf[2]));
+>  #else
+>                 break;
+>  #endif
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
