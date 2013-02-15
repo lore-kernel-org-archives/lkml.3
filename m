@@ -1,88 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751530Ab3BOVfF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 16:35:05 -0500
-Received: from ja.ssi.bg ([178.16.129.10]:32845 "EHLO ja.ssi.bg"
+	id S1751605Ab3BOVqa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 16:46:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17400 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750875Ab3BOVfD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 16:35:03 -0500
-Date: Fri, 15 Feb 2013 23:39:34 +0200 (EET)
-From: Julian Anastasov <ja@ssi.bg>
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>, davem@davemloft.net,
-        Simon Horman <horms@verge.net.au>, Linux MM <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] net: fix functions and variables related to
- netns_ipvs->sysctl_sync_qlen_max
-In-Reply-To: <20130214142159.d0516a5f.akpm@linux-foundation.org>
-Message-ID: <alpine.LFD.2.00.1302152304010.1746@ja.ssi.bg>
-References: <51131B88.6040809@cn.fujitsu.com> <51132A56.60906@cn.fujitsu.com> <alpine.LFD.2.00.1302070944480.1810@ja.ssi.bg> <20130214142159.d0516a5f.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1751440Ab3BOVq3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 16:46:29 -0500
+Subject: [PATCH v2] vfio-pci: Manage user power state transitions
+To: alex.williamson@redhat.com
+From: Alex Williamson <alex.williamson@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Date: Fri, 15 Feb 2013 14:46:28 -0700
+Message-ID: <20130215214510.7117.97846.stgit@bling.home>
+In-Reply-To: <20130215191228.27383.1844.stgit@bling.home>
+References: <20130215191228.27383.1844.stgit@bling.home>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We give the user access to change the power state of the device but
+certain transitions result in an uninitialized state which the user
+cannot resolve.  To fix this we need to mark the PowerState field of
+the PMCSR register read-only and effect the requested change on behalf
+of the user.  This has the added benefit that pdev->current_state
+remains accurate while controlled by the user.
 
-	Hello,
+The primary example of this bug is a QEMU guest doing a reboot where
+the device it put into D3 on shutdown and becomes unusable on the next
+boot because the device did a soft reset on D3->D0 (NoSoftRst-).
 
-On Thu, 14 Feb 2013, Andrew Morton wrote:
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+---
 
-> On Thu, 7 Feb 2013 10:40:26 +0200 (EET)
-> Julian Anastasov <ja@ssi.bg> wrote:
-> 
-> > > Another question about the sysctl_sync_qlen_max:
-> > > This variable is assigned as:
-> > > 
-> > > ipvs->sysctl_sync_qlen_max = nr_free_buffer_pages() / 32;
-> > > 
-> > > The function nr_free_buffer_pages actually means: counts of pages
-> > > which are beyond high watermark within ZONE_DMA and ZONE_NORMAL.
-> > > 
-> > > is it ok to be called here? Some people misused this function because
-> > > the function name was misleading them. I am sorry I am totally not
-> > > familiar with the ipvs code, so I am just asking you about
-> > > this.
-> > 
-> > 	Using nr_free_buffer_pages should be fine here.
-> > We are using it as rough estimation for the number of sync
-> > buffers we can use in NORMAL zones. We are using dev->mtu
-> > for such buffers, so it can take a PAGE_SIZE for a buffer.
-> > We are not interested in HIGHMEM size. high watermarks
-> > should have negliable effect. I'm even not sure whether
-> > we need to clamp it for systems with TBs of memory.
-> 
-> Using nr_free_buffer_pages() is good-enough-for-now.  There are
-> questions around the name of this thing and its exact functionality and
-> whether callers are using it appropriately.  But if anything is changed
-> there, it will be as part of kernel-wide sweep.
-> 
-> One thing to bear in mind is memory hot[un]plug.  Anything which was
-> sized using nr_free_buffer_pages() (or similar) may become
-> inappropriately sized if memory is added or removed.  So any site which
-> uses nr_free_buffer_pages() really should be associated with a hotplug
-> handler and a great pile of code to resize the structure at runtime. 
-> It's pretty ugly stuff :(  I suspect it usually Just Doesn't Matter.
+v2: sparse found a type error when calling pci_set_power_state.  Fixed here
 
-	I'll try to think on this hotplug problem
-and also on the si_meminfo usage in net/netfilter/ipvs/ip_vs_ctl.c
-which is quite wrong for systems with HIGHMEM, may be
-we need there a free+reclaimable+file function for
-NORMAL zone.
+ drivers/vfio/pci/vfio_pci_config.c |   25 ++++++++++++++++++++++---
+ 1 file changed, 22 insertions(+), 3 deletions(-)
 
-> Redarding this patch:
-> net-change-type-of-netns_ipvs-sysctl_sync_qlen_max.patch and
-> net-fix-functions-and-variables-related-to-netns_ipvs-sysctl_sync_qlen_max.patch
-> are joined at the hip and should be redone as a single patch with a
-> suitable changelog, please.  And with a cc:netdev@vger.kernel.org.
+diff --git a/drivers/vfio/pci/vfio_pci_config.c b/drivers/vfio/pci/vfio_pci_config.c
+index f1dde2c..1fd1895 100644
+--- a/drivers/vfio/pci/vfio_pci_config.c
++++ b/drivers/vfio/pci/vfio_pci_config.c
+@@ -587,12 +587,30 @@ static int __init init_pci_cap_basic_perm(struct perm_bits *perm)
+ 	return 0;
+ }
+ 
++static int vfio_pm_config_write(struct vfio_pci_device *vdev, int pos,
++				int count, struct perm_bits *perm,
++				int offset, __le32 val)
++{
++	count = vfio_default_config_write(vdev, pos, count, perm, offset, val);
++	if (count < 0)
++		return count;
++
++	if (offset == PCI_PM_CTRL) {
++		pci_power_t state = le32_to_cpu(val) & PCI_PM_CTRL_STATE_MASK;
++		pci_set_power_state(vdev->pdev, state);
++	}
++
++	return count;
++}
++
+ /* Permissions for the Power Management capability */
+ static int __init init_pci_cap_pm_perm(struct perm_bits *perm)
+ {
+ 	if (alloc_perm_bits(perm, pci_cap_length[PCI_CAP_ID_PM]))
+ 		return -ENOMEM;
+ 
++	perm->writefn = vfio_pm_config_write;
++
+ 	/*
+ 	 * We always virtualize the next field so we can remove
+ 	 * capabilities from the chain if we want to.
+@@ -600,10 +618,11 @@ static int __init init_pci_cap_pm_perm(struct perm_bits *perm)
+ 	p_setb(perm, PCI_CAP_LIST_NEXT, (u8)ALL_VIRT, NO_WRITE);
+ 
+ 	/*
+-	 * Power management is defined *per function*,
+-	 * so we let the user write this
++	 * Power management is defined *per function*, so we can let
++	 * the user change power state, but we trap and initiate the
++	 * change ourselves, so the state bits are read-only.
+ 	 */
+-	p_setd(perm, PCI_PM_CTRL, NO_VIRT, ALL_WRITE);
++	p_setd(perm, PCI_PM_CTRL, NO_VIRT, ~PCI_PM_CTRL_STATE_MASK);
+ 	return 0;
+ }
+ 
 
-	Agreed, Zhang Yanfei and Simon? I'm just not sure,
-may be this combined patch should hit only the
-ipvs->nf->net trees? Or may be net-next, if we don't have
-time for 3.8.
-
-Regards
-
---
-Julian Anastasov <ja@ssi.bg>
