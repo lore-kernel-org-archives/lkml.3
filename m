@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752571Ab3BOFZj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 00:25:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42476 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751019Ab3BOFZh (ORCPT
+	id S932838Ab3BOF1Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 00:27:24 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:52712 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750923Ab3BOF1X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 00:25:37 -0500
-Date: Thu, 14 Feb 2013 21:24:11 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Martin Sustrik <sustrik@250bpm.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Sha Zhengju <handai.szj@taobao.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Eric Wong <normalperson@yhbt.net>
-Subject: Re: [PATCH v2 1/1] eventfd: implementation of EFD_MASK flag
-Message-Id: <20130214212411.55788ec1.akpm@linux-foundation.org>
-In-Reply-To: <511DAEA3.4080201@250bpm.com>
-References: <1360311077-14474-1-git-send-email-sustrik@250bpm.com>
-	<20130214145430.04f8750c.akpm@linux-foundation.org>
-	<511DAEA3.4080201@250bpm.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	Fri, 15 Feb 2013 00:27:23 -0500
+Date: Fri, 15 Feb 2013 16:26:57 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>, Arnd Bergmann <arnd@arndb.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Stevenson <david@avoncliff.com>
+Subject: linux-next: build warning after merge of the char-misc tree
+Message-Id: <20130215162657.6dd03d27e8cfed0c134b5dd3@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__15_Feb_2013_16_26_57_+1100_xPUy.XfF2RJRzw+y"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Feb 2013 04:42:27 +0100 Martin Sustrik <sustrik@250bpm.com> wrote:
+--Signature=_Fri__15_Feb_2013_16_26_57_+1100_xPUy.XfF2RJRzw+y
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > This is a non-back-compatible userspace interface change.  A procfs
-> > file which previously displayed
-> >
-> > 	eventfd-count: nnnn
-> >
-> > can now also display
-> >
-> > 	eventfd-mask: nnnn
-> >
-> > So existing userspace could misbehave.
-> >
-> > Please fully describe the proposed interface change in the changelog.
-> > That description should include the full pathname of the procfs file
-> > and example before-and-after output and a discussion of whether and why
-> > the risk to existing userspace is acceptable.
-> 
-> I am not sure what the policy is here. Is not printing out the state of 
-> the object acceptable way to maintain backward compatibility? If not so, 
-> does new type of object require new procfs file, which, AFAIU, is the 
-> only way to retain full backward compatibility?
+Hi all,
 
-Adding a new file is the only way I can think of to preserve the API. 
-But from Andy's comment is sounds like we don't have to worry a lot
-about back-compatibility.
+After merging the char-misc tree, today's linux-next build (x86_64
+allmodconfig) produced this warning:
 
+drivers/w1/slaves/w1_therm.c: In function 'w1_therm_read':
+drivers/w1/slaves/w1_therm.c:245:15: warning: 'crc' may be used uninitializ=
+ed in this function [-Wuninitialized]
+
+Its a false positive, but it was introduced by commit 867ff9880d5d
+("w1_therm: Retries: remove old code add CRC")
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__15_Feb_2013_16_26_57_+1100_xPUy.XfF2RJRzw+y
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRHcchAAoJEECxmPOUX5FEysMP/AnUIydr1FmO1inBdq9gL9U2
+YKgMmnY50HioB8C9D8tnEgu3IDcBgKD5VqcCENH5PfvrrF566+IDlayuJyUfGRND
+aEK+n6nGcDB8O0S7MYu5Cw1uiXM2JTQx+ih/dg/gfVscN4QYR/Dn4TmVPdjIYC8l
+q9f8Riys7Ad0vo3UU6CYoFV+M0C5tF0i0kDDtGKOW+rU9P1Mty8n4x+9AfCwSBff
+PP1CEjaNEBFvG2oGF/VHIZvHhEUxErg9AGNb6Hc7kOjtOYDW2fjSMD+Giv7WArPv
+leTfgogx6V22EHvYHlXNjEIFP/TEotc4/usj5wohAleFyf/L4FoZhTZeRY3DlIH3
+GlQFr7MeQVmWTCYkgj8SIeA/xjAPrSJ8+WXreAoNbe0r2UNctY1hhOZgVVUE3tUY
+thA+2HRW5uIudjUOQR6MYeynlRsjfoajbra51jBcGKUyMWZw5jxCusDhjUhP/SA7
+HBZTxJ1UQITneV0t9+WAhY189VsAsIuehP24Wa+m+ToQUTlZdJDEeOSICN37rvrC
+Wezgj8fo2sji963XPtUZZt9kxsKH5rEygQxYssFF0ZmqPfPclMRHsmLdjakpoFs9
+ur3XnRCmXVTrf19x2JsAuc9DpFGf4i+9+mqdBILC0EwOtgQQ2XTnYh4k1WmXQTCG
+FA/LChaQAx5yMvwepMyn
+=qeRR
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__15_Feb_2013_16_26_57_+1100_xPUy.XfF2RJRzw+y--
