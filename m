@@ -1,127 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161296Ab3BOGxA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 01:53:00 -0500
-Received: from gate.crashing.org ([63.228.1.57]:43184 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161118Ab3BOGw7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 01:52:59 -0500
-Message-ID: <1360910894.22260.68.camel@pasglop>
-Subject: Re: [tip:core/locking] x86/smp: Move waiting on contended ticket
- lock out of line
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, rostedt@goodmiss.org,
-        aquini@redhat.com, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Michel Lespinasse <walken@google.com>,
-        linux-tip-commits@vger.kernel.org
-Date: Fri, 15 Feb 2013 17:48:14 +1100
-In-Reply-To: <CA+55aFwZ2wN=9qTNNmqjPfK=ZwS=kx6HAAFj_cWLnJDbK1M0_Q@mail.gmail.com>
-References: <20130206150403.006e5294@cuia.bos.redhat.com>
-	 <tip-4aef331850b637169ff036ed231f0d236874f310@git.kernel.org>
-	 <CA+55aFx6N6SaRN+w=CTXJ=ZSsOE6KeS2R9sT_uhAx9h2j+hjKg@mail.gmail.com>
-	 <CA+55aFwZ2wN=9qTNNmqjPfK=ZwS=kx6HAAFj_cWLnJDbK1M0_Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+	id S1753789Ab3BOG4c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 01:56:32 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:52346 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751812Ab3BOG4a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 01:56:30 -0500
+Date: Fri, 15 Feb 2013 17:56:27 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Vlad Yasevich <vyasevic@redhat.com>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Subject: linux-next: manual merge of the akpm tree with the net-next tree
+Message-Id: <20130215175627.33aa3b62763438465e34d42f@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__15_Feb_2013_17_56_27_+1100_bfS_WqYXhP5JfWcx"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-02-13 at 10:30 -0800, Linus Torvalds wrote:
-> On Wed, Feb 13, 2013 at 8:20 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> >
-> > Adding an external function call is *horrible*, and you might almost
-> > as well just uninline the spinlock entirely if you do this. It means
-> > that all the small callers now have their registers trashed, whether
-> > the unlikely function call is taken or not, and now leaf functions
-> > aren't leaves any more.
-> 
-> Btw, we've had things like this before, and I wonder if we could
-> perhaps introduce the notion of a "light-weight call" for fastpath
-> code that calls unlikely slow-path code..
-> 
-> In particular, see the out-of-line code used by the rwlocks etc (see
-> "arch_read_lock()" for an example in arch/x86/include/asm/spinlock.h
-> and arch/x86/lib/rwlock.S), where we end up calling things from inline
-> asm, with one big reason being exactly the fact that a "normal" C call
-> has such horribly detrimental effects on the caller.
+--Signature=_Fri__15_Feb_2013_17_56_27_+1100_bfS_WqYXhP5JfWcx
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This would be nice. I've been wanting to do something like that for a
-while in fact... On archs like powerpc, we lose 11 GPRs on a function
-call, that ends up being a lot of stupid stack spills for cases that are
-often corner cases (error cases etc... in inlines).
+Hi Andrew,
 
-> Sadly, gcc doesn't seem to allow specifying which registers are
-> clobbered any easy way, which means that both the caller and the
-> callee *both* tend to need to have some asm interface. So we bothered
-> to do this for __read_lock_failed, but we have *not* bothered to do
-> the same for the otherwise very similar __mutex_fastpath_lock() case,
-> for example.
->
-> So for rwlocks, we actually get very nice code generation with small
-> leaf functions not necessarily needing stack frames, but for mutexes
-> we mark a lot of registers "unnecessarily" clobbered in the caller,
-> exactly because we do *not* do that asm interface for the callee. So
-> we have to clobber all the standard callee-clobbered registers, which
-> is really sad, and callers almost always need a stack frame, because
-> if they have any data live at all across the mutex, they have to save
-> it in some register that is callee-saved - which basically means that
-> the function has to have that stack frame in order to save its *own*
-> callee-saved registers.
-> 
-> So it means that we penalize the fastpath because the slow-path can't
-> be bothered to do the extra register saving, unless we go to the
-> lengths we went to for the rwlocks, and build a wrapper in asm to save
-> the extra registers in the cold path.
-> 
-> Maybe we could introduce some helpers to create these kinds of asm
-> wrappers to do this? Something that would allow us to say: "this
-> function only clobbers a minimal set of registers and you can call it
-> from asm and only mark %rax/rcx/rdx clobbered" and that allows leaf
-> functions to look like leaf functions for the fastpath?
+Today's linux-next merge of the akpm tree got a conflict in
+net/bridge/br_fdb.c between commit 2ba071ecb6d4 ("bridge: Add vlan to
+unicast fdb entries") from the net-next tree and commit "hlist: drop the
+node parameter from iterators" from the akpm tree.
 
-We could so something like:
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-	define_fastcall(func [.. figure out how to deal with args ... ])
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Which spits out both a trampoline for saving the nasty stuff and calling
-the real func() and a call_func() inline asm for the call site.
+diff --cc net/bridge/br_fdb.c
+index 8117900,4fb0461..0000000
+--- a/net/bridge/br_fdb.c
++++ b/net/bridge/br_fdb.c
+@@@ -263,16 -231,12 +263,15 @@@ void br_fdb_delete_by_port(struct net_b
+ =20
+  /* No locking or refcounting, assumes caller has rcu_read_lock */
+  struct net_bridge_fdb_entry *__br_fdb_get(struct net_bridge *br,
+ -					  const unsigned char *addr)
+ +					  const unsigned char *addr,
+ +					  __u16 vid)
+  {
+- 	struct hlist_node *h;
+  	struct net_bridge_fdb_entry *fdb;
+ =20
+- 	hlist_for_each_entry_rcu(fdb, h,
+ -	hlist_for_each_entry_rcu(fdb, &br->hash[br_mac_hash(addr)], hlist) {
+ -		if (ether_addr_equal(fdb->addr.addr, addr)) {
+++	hlist_for_each_entry_rcu(fdb,
+ +				&br->hash[br_mac_hash(addr, vid)], hlist) {
+ +		if (ether_addr_equal(fdb->addr.addr, addr) &&
+ +		    fdb->vlan_id =3D=3D vid) {
+  			if (unlikely(has_expired(br, fdb)))
+  				break;
+  			return fdb;
+@@@ -360,30 -323,24 +358,28 @@@ int br_fdb_fillbuf(struct net_bridge *b
+  }
+ =20
+  static struct net_bridge_fdb_entry *fdb_find(struct hlist_head *head,
+ -					     const unsigned char *addr)
+ +					     const unsigned char *addr,
+ +					     __u16 vid)
+  {
+- 	struct hlist_node *h;
+  	struct net_bridge_fdb_entry *fdb;
+ =20
+- 	hlist_for_each_entry(fdb, h, head, hlist) {
++ 	hlist_for_each_entry(fdb, head, hlist) {
+ -		if (ether_addr_equal(fdb->addr.addr, addr))
+ +		if (ether_addr_equal(fdb->addr.addr, addr) &&
+ +		    fdb->vlan_id =3D=3D vid)
+  			return fdb;
+  	}
+  	return NULL;
+  }
+ =20
+  static struct net_bridge_fdb_entry *fdb_find_rcu(struct hlist_head *head,
+ -						 const unsigned char *addr)
+ +						 const unsigned char *addr,
+ +						 __u16 vid)
+  {
+- 	struct hlist_node *h;
+  	struct net_bridge_fdb_entry *fdb;
+ =20
+- 	hlist_for_each_entry_rcu(fdb, h, head, hlist) {
++ 	hlist_for_each_entry_rcu(fdb, head, hlist) {
+ -		if (ether_addr_equal(fdb->addr.addr, addr))
+ +		if (ether_addr_equal(fdb->addr.addr, addr) &&
+ +		    fdb->vlan_id =3D=3D vid)
+  			return fdb;
+  	}
+  	return NULL;
 
-At least on archs with register-passing conventions, especially if we
-make mandatory to stick to register args only and forbid stack spills
-(ie, only a handful of args), it's fairly easy to do.
+--Signature=_Fri__15_Feb_2013_17_56_27_+1100_bfS_WqYXhP5JfWcx
+Content-Type: application/pgp-signature
 
-For stack based archs, it gets nastier as you have to dig out the args,
-save stuff, and pile them again.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-But since we also don't want to lose strong typing, we probably want to
-express the args in that macro, maybe like we do for the syscall
-defines. A bit ugly, but that would allow to have a strongly typed
-call_func() *and* allow the trampoline to know what to do about the args
-for stack based calling conventions.
+iQIcBAEBCAAGBQJRHdwbAAoJEECxmPOUX5FE4isP/Ax9eDN7klh7TAPW5AF6Y6cp
+vyrTROeduAWiUZ0jfpkzA60sD6wA55zKmNnpEdZpwXxD30p/DFgHiXpFmKGcYXCK
+Z631fCX5T6P9DVqkz7ooVxKjaHx4tHvW0WIWAta2ZhBuepXHY9q2YFy8zZPm1WiT
+e30dT7QUioNJPAGWuFwVd1qGEJfkcCRejjcURMTzOoP1tlS/Wl4DMxyrKhbXWaAP
+8OH1cECNdmRh3Q5MMaDqbn11czo+leIL/YGiYIN3ljxpGaFw98yHawib0qRdk1sX
+44eHaiP3a5TjhpjUb+HY4aExnEpDE99juPnfSB+vKzq7RJ0YXU9K3Vym1ZE5uNvb
+ao5RVeGYP1aIFOdRyLU3RNdS9WqPaSMdttIHm2EB8j6ZD56nNUqJYF5QQSbPpZRX
+D+8ISL7YjHF8UsAiImhxr61hVb91UFl8yr4fIsyk4v8ViM8clP3T6INsEAlYdEuW
+jgVYIU/QSoihZX7U87a2STbtGqLGsk6KKJHx3FTonRg/YYIBLGnSWTCn/Bci6BZ4
+dIJLiZ9ICUUFUGtnj50KUsGGT7PSAGYBGatYVMobM+hIg4yR1s7d6PN7xvt+pN+6
+VRzWXpUIvsVArkglWtMdN6gaKGfP46g/sdp5zqyG/rM90ys/CJW7ZlM+7XV9RQJv
+lzv7u/Ag1FCyok0ue+ek
+=+NGQ
+-----END PGP SIGNATURE-----
 
-About to go & travel so I don't have time to actually write something,
-at least not for a couple of weeks though...
-
-Ben.
-
-> Hmm? That would make my dislike of uninlining the slow case largely go
-> away. I still think that back-off tends to be a mistake (and is often
-> horrible for virtualization etc), but as long as the fastpath stays
-> close to optimal, I don't care *too* much.
-> 
->                      Linus
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
+--Signature=_Fri__15_Feb_2013_17_56_27_+1100_bfS_WqYXhP5JfWcx--
