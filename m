@@ -1,213 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752118Ab3BOW2P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 17:28:15 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:39909 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751666Ab3BOW2M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 17:28:12 -0500
-Date: Fri, 15 Feb 2013 17:28:03 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, LKML <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@suse.de>,
-        Stewart Smith <stewart@flamingspork.com>, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [patch 1/2] mm: fincore()
-Message-ID: <20130215222803.GA23930@cmpxchg.org>
-References: <87a9rbh7b4.fsf@rustcorp.com.au>
- <20130211162701.GB13218@cmpxchg.org>
- <20130211141239.f4decf03.akpm@linux-foundation.org>
- <20130215063450.GA24047@cmpxchg.org>
- <20130215131451.138e83ce.akpm@linux-foundation.org>
+	id S1752135Ab3BOW3E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 17:29:04 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:52131 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750742Ab3BOW3C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 17:29:02 -0500
+Date: Fri, 15 Feb 2013 23:28:58 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH] pwm: tegra: assume CONFIG_OF
+Message-ID: <20130215222858.GA14441@avionic-0098.mockup.avionic-design.de>
+References: <1360965742-19744-1-git-send-email-swarren@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="dDRMvlgZJXvWKvBx"
 Content-Disposition: inline
-In-Reply-To: <20130215131451.138e83ce.akpm@linux-foundation.org>
+In-Reply-To: <1360965742-19744-1-git-send-email-swarren@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:je4wLKxqjYqAkuhqb6dDcssR3L69OH1vY128IAHCqqx
+ FFu5UKs7zdqbVoIQHzbMFyqMHh6O72t4SNtGmMCaPOPdnG8bBS
+ kCWXSdVF1rXkg27KvrOPaVrdFptEOdGA7tNWVZvoKFMRhMWKgi
+ pfTGARao9rWLn7UFSXm0aNEc5/SCIUQS7Y8ilqYkG+Gpav3s7A
+ lLWy+ht+HRiP75QETmaue4J2+INV+xCCKOqePk2Cy5ExOMfMs3
+ EELwoO4fWkftenTxbSKQUZJ896hZwrKNqsQ4fOiM4m0MIcF5nY
+ uJr+za0noR7xeez4zLBzd2NJ+uQuDsU8Ys8lr0qOVi4Dp8LBcQ
+ w3BP5/Tt2zSGaUTJwzyuOuQjXLE1eF6VXwHNgsFeFyv1JyD1Wi
+ a+49qVzxU48G0PHiSMQSwqbKE5aFix/cK8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 15, 2013 at 01:14:51PM -0800, Andrew Morton wrote:
-> On Fri, 15 Feb 2013 01:34:50 -0500
-> Johannes Weiner <hannes@cmpxchg.org> wrote:
-> 
-> > On Mon, Feb 11, 2013 at 02:12:39PM -0800, Andrew Morton wrote:
-> > > Also, having to mmap the file to be able to query pagecache state is a
-> > > hack.  Whatever happened to the fincore() patch?
-> > 
-> > I don't know, but how about this one:
-> 
-> This appears to be remotely derived from Chris's original
-> (http://lwn.net/Articles/371540/).  The comments, at least ;) Some
-> mention in the changelog would be appropriate.
 
-It's actually copy-pasted from mm/mincore.c, but we both had the same
-idea of sorting the error codes by numeric value.  Funny.  I'll
-mention him.
+--dDRMvlgZJXvWKvBx
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > Provide a syscall to determine whether a given file's pages are cached
-> > in memory.  This is more elegant than mmapping the file for the sole
-> > purpose of using mincore(), and also works on NOMMU.
-> > 
-> 
-> Obviously we'll be needing more than this at the appropriate time so
-> Michael can write the manpage.
-> 
-> Please provide a nice tools/testing/selftests/fincore/ along with this
-> code?
+On Fri, Feb 15, 2013 at 03:02:22PM -0700, Stephen Warren wrote:
+> From: Stephen Warren <swarren@nvidia.com>
+>=20
+> Tegra only supports, and always enables, device tree. Remove all ifdefs
+> for DT support from the driver.
+>=20
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> ---
+>  drivers/pwm/pwm-tegra.c |    4 +---
+>  1 file changed, 1 insertion(+), 3 deletions(-)
 
-Will do.
+Applied, thanks.
 
-> > --- /dev/null
-> > +++ b/mm/fincore.c
-> > @@ -0,0 +1,128 @@
-> > +#include <linux/syscalls.h>
-> > +#include <linux/pagemap.h>
-> > +#include <linux/file.h>
-> > +#include <linux/fs.h>
-> > +#include <linux/mm.h>
-> > +
-> > +static long do_fincore(struct address_space *mapping, pgoff_t pgstart,
-> > +		       unsigned long nr_pages, unsigned char *vec)
-> > +{
-> > +	pgoff_t pgend = pgstart + nr_pages;
-> > +	struct radix_tree_iter iter;
-> > +	void **slot;
-> > +	long nr = 0;
-> > +
-> > +	rcu_read_lock();
-> > +restart:
-> > +	radix_tree_for_each_slot(slot, &mapping->page_tree, &iter, pgstart) {
-> > +		unsigned char present;
-> > +		struct page *page;
-> > +
-> > +		/* Handle holes */
-> > +		if (iter.index != pgstart + nr) {
-> > +			if (iter.index < pgend)
-> > +				nr_pages = iter.index - pgstart;
-> > +			break;
-> 
-> This break looks odd - it terminates the entire function.  Am too lazy
-> to work out why ;)
+Thierry
 
-"Hole" and "no more pages in that file" share the same code to zero
-out the vector.
+--dDRMvlgZJXvWKvBx
+Content-Type: application/pgp-signature
 
-> > +		}
-> > +repeat:
-> > +		page = radix_tree_deref_slot(slot);
-> > +		if (unlikely(!page))
-> > +			continue;
-> 
-> Is a bug, isn't it?  Need to zero vec[nr].
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-It works but I'll make it less awkward.  The continue will not
-increase nr, so the next page lookup will trigger the hole detection
-above and zero vec[nr].
+iQIcBAEBAgAGBQJRHraqAAoJEN0jrNd/PrOhbGwP/Rq5azRbDk0dKiZzp6Cf/Gbr
+V/qhhRsHNDmK0+ffmvqIulKmBrUNsU5u0RANnU580CfD4vEespm23mFOQx2RjriE
+lfkpE8pxCBvIDxjZWFyrV/ZCARuX5YbWkKw2hFqZi8eB7RC83GIXUYXP+dxseBcN
+yNKYBuWoNYHHjmqjdLX9+9pVGN7um821XFRb7Z8sbPH0D+O/1aG51D6j4Vkrukav
+LxFZubyqQrxj5x9Shr9PKT+r6pbUe/NJbMvy2v2qSkMiOd2FS/gDXwyhLurqn1Vh
+288lvMwpsdYpq27vMEeIez2af/cdi4ZAy7VK8uaLUYDeccOkX7SR8fqFoRyq30Zh
+NdlFCsbiyznNPS9LCRO+weNxNUkmeu/O2OFixoVqT9PEYVeE6Hi5cM06a4GcXDB4
+VkLAbCy7FYkdONj0Jv+CoB4tKtVeMKgJ+yyT1+L/EQLHBDvT6nUyp9rVF7oe6Idj
+zmHc57nEKL4aD/bvXHFNvoEz5REoIyCsG7gCNFtMwaifJbtnXH8WX6VMbOpdn0HG
+hjvaUcNkS5HOPkyIRM1d1jE6r7jAJQ5LRAvLHrFIeXUYFf0wdo3c1UKQbbEc0mVR
+ScvlucIdsoDslLe3Ui51i/3nDSy5u9fH2wAjafSaG03jGwOEG0iq7hjtW4Dx1l2B
+GhybQaoHEyHmaupTiJ9V
+=01kc
+-----END PGP SIGNATURE-----
 
-> > +		if (radix_tree_exception(page)) {
-> > +			if (radix_tree_deref_retry(page)) {
-> > +				/*
-> > +				 * Transient condition which can only trigger
-> > +				 * when entry at index 0 moves out of or back
-> > +				 * to root: none yet gotten, safe to restart.
-> > +				 */
-> > +				WARN_ON(iter.index);
-> > +				goto restart;
-> > +			}
-> > +			present = 0;
-> > +		} else {
-> > +			if (!page_cache_get_speculative(page))
-> > +				goto repeat;
-> > +
-> > +			/* Has the page moved? */
-> > +			if (unlikely(page != *slot)) {
-> > +				page_cache_release(page);
-> > +				goto repeat;
-> > +			}
-> > +
-> > +			present = PageUptodate(page);
-> 
-> hm, OK, so we assume that test_bit() returns 1 or 0 and not just
-> "true".  That's OK, iirc.
-
-Metoo.
-
-> Why does it have to be uptodate?  It could be present and under read()
-> IO.  That's "in core"?
-
-I always thought of this as data-residency, i.e. the presence of
-pages, not page frames, so I wouldn't consider pages in-core when they
-are still in-flight.  mincore has the same notion.
-
-> > +			page_cache_release(page);
-> > +		}
-> > +		vec[nr] = present;
-> > +
-> > +		if (++nr == nr_pages)
-> > +			break;
-> > +	}
-> > +	rcu_read_unlock();
-> > +
-> > +	if (nr < nr_pages)
-> > +		memset(vec + nr, 0, nr_pages - nr);
-> > +
-> > +	return nr_pages;
-> > +}
-> > +
-> > +/*
-> > + * The fincore(2) system call.
-> > + *
-> > + * fincore() returns the memory residency status of the given file's
-> > + * pages, in the range [start, start + len].
-> > + * The status is returned in a vector of bytes.  The least significant
-> > + * bit of each byte is 1 if the referenced page is in memory, otherwise
-> > + * it is zero.
-> 
-> Yes, and there will be immediate calmour to add more goodies to the
-> other seven bits.  PageDirty, referenced state, etc.  We should think
-> about this now, at the design stage rather than grafting things on
-> later.
-
-I'm interested in your "etc.".  PG_error, PG_active, PG_writeback,
-page huge?
-
-> > + * Because the status of a page can change after fincore() checks it
-> > + * but before it returns to the application, the returned vector may
-> > + * contain stale information.
-> > + *
-> > + * return values:
-> > + *  zero    - success
-> > + *  -EBADF  - fd isn't a valid open file descriptor
-> > + *  -EFAULT - vec points to an illegal address
-> > + *  -EINVAL - start is not a multiple of PAGE_CACHE_SIZE
-> > + */
-> > +SYSCALL_DEFINE4(fincore, unsigned int, fd, loff_t, start, loff_t, len,
-> > +		unsigned char __user *, vec)
-> > +{
-> > +	unsigned long nr_pages;
-> > +	pgoff_t pgstart;
-> > +	struct fd f;
-> > +	long ret;
-> > +
-> > +	if (start & ~PAGE_CACHE_MASK)
-> > +		return -EINVAL;
-> 
-> This restriction appears to be unnecessary?
-
-I thought about it too, but whether the kernel rounds or not, you need
-to know the page size and do the rounding in userspace in order to
-supply an appropriately sized vector.  And then I just copied mincore
-semantics for consistency ;-)
-
-> > +	f = fdget(fd);
-> > +	if (!f.file)
-> > +		return -EBADF;
-> 
-> I fear what happens if we run this syscall against a random fd from
-> /dev/some-gizmo.  Suggest adding tests for S_ISREG and non-null ->mapping.
-
-Good idea, I'll add this.
-
-Thanks!
+--dDRMvlgZJXvWKvBx--
