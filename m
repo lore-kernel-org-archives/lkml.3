@@ -1,78 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936050Ab3BOQUZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 11:20:25 -0500
-Received: from fieldses.org ([174.143.236.118]:40602 "EHLO fieldses.org"
+	id S936041Ab3BOQXe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 11:23:34 -0500
+Received: from mail.mev.co.uk ([62.49.15.74]:47434 "EHLO mail.mev.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935864Ab3BOQUX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 11:20:23 -0500
-Date: Fri, 15 Feb 2013 11:20:21 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Subject: Re: [PATCH v2 0/4] nfsd: make is works in a container
-Message-ID: <20130215162021.GK8343@fieldses.org>
-References: <20130201125210.3257.46454.stgit@localhost.localdomain>
+	id S1753801Ab3BOQXd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 11:23:33 -0500
+Message-ID: <511E60FE.1000109@mev.co.uk>
+Date: Fri, 15 Feb 2013 16:23:26 +0000
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130115 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130201125210.3257.46454.stgit@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Huewe <peterhuewe@gmx.de>
+CC: Ian Abbott <ian.abbott@mev.co.uk>,
+        Mori Hess <fmhess@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Bill Pemberton <wfp5p@virginia.edu>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] staging/comedi: Remove if(); statement without effect
+References: <511E05F3.2020505@mev.co.uk> <1360930466-3521-1-git-send-email-peterhuewe@gmx.de>
+In-Reply-To: <1360930466-3521-1-git-send-email-peterhuewe@gmx.de>
+Content-Type: text/plain; charset="us-ascii"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 01, 2013 at 03:56:05PM +0300, Stanislav Kinsbursky wrote:
-> This patch set finally enables NFSd in container.
-> I've tested it in container with it's own root, and also pid, net and mount
-> namespaces.
-
-Thanks, these look fine to me; applying.  They should show up in my
-for-3.9 branch sometime today.
-
---b.
-
-> 
-> There are some limitations, which are listed below:
-> 1) only nfsdclt client tracker supported for container. It's deprecated and
-> going to be removed soon. UMH tracker requires switching root. Legacy tracker
-> requires something like RB tree of opened inodes to make sure, that any
-> recovery directory will be opened only once.
-> 2) Enabled versions are controlled globally (should be fixed).
-> 3) Server should be stopped by writing "0" to
-> /proc/fs/nfsd/threads instead of sending signals to NFSd threads (they are
-> working in init_pid). Sending signals will either won't work if container wich
-> its own pid namespace, or will kill all nfsd threads for all containers in
-> init_pid namesapce.
-> 4) Currently, if container was stopped without stopping NFS server (i.e. it's
-> init was killed), NFSd kthreads will remain running. One of possible solutions
-> is to not hold network by NFSd service sockets, but register oer-net callback
-> and kill all the threads on network namespace exit.
-> 5) NFSd filesystem superblock holds network namespace. I.e. if some process
-> will hold container's NFSd supeblock, then sthe whole container's network
-> naemspace will stay alive even is container is destroyed already.
-> 
-> There may be more limitations, which are not clear to me yet.
-> 
-> v2:
-> 1) removed root swap - deprecated
-> 2) rebased on current tree
-> 
-> The following series implements...
-> 
+On 2013-02-15 12:14, Peter Huewe wrote:
+> Smatch warns about:
+> staging/comedi/drivers/cb_pcidas64.c:3304 prep_ao_dma() warn: if();
+>
+> So the check currently does nothing and can be removed, as indicated by
+> Ian.
+>
+> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 > ---
-> 
-> Stanislav Kinsbursky (4):
->       nfsd: containerize NFSd filesystem
->       nfsd: use proper net while reading "exports" file
->       nfsd: disable usermode helper client tracker in container
->       nfsd: enable NFSv4 state in containers
-> 
-> 
->  fs/nfsd/nfs4recover.c |    6 ++++
->  fs/nfsd/nfs4state.c   |   10 ------
->  fs/nfsd/nfsctl.c      |   77 +++++++++++++++++++++++++++++++++++++------------
->  fs/nfsd/nfssvc.c      |    5 +--
->  4 files changed, 66 insertions(+), 32 deletions(-)
-> 
+> v1 was staging/comedi: Fix if(); by adding proper code
+> which was unfortunately wrong.
+>
+>   drivers/staging/comedi/drivers/cb_pcidas64.c |    1 -
+>   1 files changed, 0 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/staging/comedi/drivers/cb_pcidas64.c b/drivers/staging/comedi/drivers/cb_pcidas64.c
+> index d33fc32..9f3112c 100644
+> --- a/drivers/staging/comedi/drivers/cb_pcidas64.c
+> +++ b/drivers/staging/comedi/drivers/cb_pcidas64.c
+> @@ -3301,7 +3301,6 @@ static int prep_ao_dma(struct comedi_device *dev, const struct comedi_cmd *cmd)
+>   	num_bytes = load_ao_dma_buffer(dev, cmd);
+>   	if (num_bytes == 0)
+>   		return -1;
+> -	if (num_bytes >= DMA_BUFFER_SIZE) ;
+>   	load_ao_dma(dev, cmd);
+>
+>   	dma_start_sync(dev, 0);
+>
+
+I suppose I'd better sign it off since you mentioned me. ;)
+
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
