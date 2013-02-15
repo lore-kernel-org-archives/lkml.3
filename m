@@ -1,83 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935220Ab3BODcW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 22:32:22 -0500
-Received: from na3sys009aog133.obsmtp.com ([74.125.149.82]:33970 "EHLO
-	na3sys009aog133.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932322Ab3BODcV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 22:32:21 -0500
-Message-ID: <511DAC56.8080404@marvell.com>
-Date: Fri, 15 Feb 2013 11:32:38 +0800
-From: Qing Xu <qingx@marvell.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH 4/9] mfd: max8925: fix trivial build warning for non-dt
-References: <1360880818-4071454-1-git-send-email-arnd@arndb.de> <1360880818-4071454-5-git-send-email-arnd@arndb.de>
-In-Reply-To: <1360880818-4071454-5-git-send-email-arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 15 Feb 2013 03:32:13.0334 (UTC) FILETIME=[0B6B5360:01CE0B2D]
+	id S935100Ab3BODiK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 22:38:10 -0500
+Received: from mout.gmx.net ([212.227.15.19]:60073 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932322Ab3BODiI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 22:38:08 -0500
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX18oSmsP4DMoEt6XnzdACS19e2yz0xpOl8WnQE+fQ0
+	AOvt5IIUehGUL8
+From: Peter Huewe <peterhuewe@gmx.de>
+To: Willy Tarreau <willy@meta-x.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Toshiaki Yamane <yamanetoshi@gmail.com>,
+        Adam Buchbinder <adam.buchbinder@gmail.com>,
+        Peter Huewe <peterhuewe@gmx.de>, David Howells <dhowells@redhat.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging/panel: Mark local functions as static (fix smatch warnings)
+Date: Fri, 15 Feb 2013 04:42:31 +0100
+Message-Id: <1360899751-24377-1-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.7.8.6
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/15/2013 06:26 AM, Arnd Bergmann wrote:
-> Patch fe527ea5a "mfd: max8925: Support dt for backlight"
-> added a new function for DT probing but introduced a
-> build warning for the case where CONFIG_OF is disabled:
->
-> drivers/video/backlight/max8925_bl.c: In function 'max8925_backlight_probe':
-> drivers/video/backlight/max8925_bl.c:177:3: warning: statement with no effect [-Wunused-value]
->
-> A much nicer fix is to use the IS_ENABLED keyword to
-> have the same effect of dropping the device tree specific
-> function when it's not needed.
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Qing Xu <qingx@marvell.com>
-> Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> ---
->   drivers/video/backlight/max8925_bl.c | 6 +-----
->   1 file changed, 1 insertion(+), 5 deletions(-)
->
-> diff --git a/drivers/video/backlight/max8925_bl.c b/drivers/video/backlight/max8925_bl.c
-> index 5ca11b0..9958fb1 100644
-> --- a/drivers/video/backlight/max8925_bl.c
-> +++ b/drivers/video/backlight/max8925_bl.c
-> @@ -101,14 +101,13 @@ static const struct backlight_ops max8925_backlight_ops = {
->   	.get_brightness	= max8925_backlight_get_brightness,
->   };
->   
-> -#ifdef CONFIG_OF
->   static int max8925_backlight_dt_init(struct platform_device *pdev,
->   			      struct max8925_backlight_pdata *pdata)
->   {
->   	struct device_node *nproot = pdev->dev.parent->of_node, *np;
->   	int dual_string;
->   
-> -	if (!nproot)
-> +	if (!nproot || !IS_ENABLED(CONFIG_OF))
->   		return -ENODEV;
->   	np = of_find_node_by_name(nproot, "backlight");
->   	if (!np) {
-> @@ -120,9 +119,6 @@ static int max8925_backlight_dt_init(struct platform_device *pdev,
->   	pdata->dual_string = dual_string;
->   	return 0;
->   }
-> -#else
-> -#define max8925_backlight_dt_init(x, y)	(-1)
-> -#endif
->   
->   static int max8925_backlight_probe(struct platform_device *pdev)
->   {
+smatch complains about the following functions:
+panel.c:188:1: warning: symbol 'logical_inputs' was not declared. Should it be static?
+panel.c:569:6: warning: symbol 'old_keypad_profile' was not declared. Should it be static?
+panel.c:580:6: warning: symbol 'new_keypad_profile' was not declared. Should it be static?
+panel.c:593:6: warning: symbol 'nexcom_keypad_profile' was not declared. Should it be static?
+panel.c:672:6: warning: symbol 'pin_to_bits' was not declared. Should it be static?
+panel.c:1375:6: warning: symbol 'panel_lcd_print' was not declared. Should it be static?
+panel.c:1382:6: warning: symbol 'lcd_init' was not declared. Should it be static?
+panel.c:2181:5: warning: symbol 'panel_init' was not declared. Should it be static?
 
-thanks, I am ok with the change.
+Add the static keyword to silence these warnings and make smatch happy.
+
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+ drivers/staging/panel/panel.c |   16 ++++++++--------
+ 1 files changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
+index e3113ec..3b9a110 100644
+--- a/drivers/staging/panel/panel.c
++++ b/drivers/staging/panel/panel.c
+@@ -185,7 +185,7 @@ struct logical_input {
+ 	} u;
+ };
+ 
+-LIST_HEAD(logical_inputs);	/* list of all defined logical inputs */
++static LIST_HEAD(logical_inputs);	/* list of all defined logical inputs */
+ 
+ /* physical contacts history
+  * Physical contacts are a 45 bits string of 9 groups of 5 bits each.
+@@ -566,7 +566,7 @@ static unsigned char lcd_char_conv_ks0074[256] = {
+ 	/* 0xF8 */ 0xac, 0xa6, 0xea, 0xef, 0x7e, 0xeb, 0xb2, 0x79,
+ };
+ 
+-char old_keypad_profile[][4][9] = {
++static char old_keypad_profile[][4][9] = {
+ 	{"S0", "Left\n", "Left\n", ""},
+ 	{"S1", "Down\n", "Down\n", ""},
+ 	{"S2", "Up\n", "Up\n", ""},
+@@ -577,7 +577,7 @@ char old_keypad_profile[][4][9] = {
+ };
+ 
+ /* signals, press, repeat, release */
+-char new_keypad_profile[][4][9] = {
++static char new_keypad_profile[][4][9] = {
+ 	{"S0", "Left\n", "Left\n", ""},
+ 	{"S1", "Down\n", "Down\n", ""},
+ 	{"S2", "Up\n", "Up\n", ""},
+@@ -590,7 +590,7 @@ char new_keypad_profile[][4][9] = {
+ };
+ 
+ /* signals, press, repeat, release */
+-char nexcom_keypad_profile[][4][9] = {
++static char nexcom_keypad_profile[][4][9] = {
+ 	{"a-p-e-", "Down\n", "Down\n", ""},
+ 	{"a-p-E-", "Ret\n", "Ret\n", ""},
+ 	{"a-P-E-", "Esc\n", "Esc\n", ""},
+@@ -669,7 +669,7 @@ static void panel_set_bits(void)
+  *   out(dport, in(dport) & d_val[2] | d_val[signal_state])
+  *   out(cport, in(cport) & c_val[2] | c_val[signal_state])
+  */
+-void pin_to_bits(int pin, unsigned char *d_val, unsigned char *c_val)
++static void pin_to_bits(int pin, unsigned char *d_val, unsigned char *c_val)
+ {
+ 	int d_bit, c_bit, inv;
+ 
+@@ -1372,14 +1372,14 @@ static struct miscdevice lcd_dev = {
+ };
+ 
+ /* public function usable from the kernel for any purpose */
+-void panel_lcd_print(char *s)
++static void panel_lcd_print(char *s)
+ {
+ 	if (lcd_enabled && lcd_initialized)
+ 		lcd_write(NULL, s, strlen(s), NULL);
+ }
+ 
+ /* initialize the LCD driver */
+-void lcd_init(void)
++static void lcd_init(void)
+ {
+ 	switch (lcd_type) {
+ 	case LCD_TYPE_OLD:
+@@ -2178,7 +2178,7 @@ static struct parport_driver panel_driver = {
+ };
+ 
+ /* init function */
+-int panel_init(void)
++static int panel_init(void)
+ {
+ 	/* for backwards compatibility */
+ 	if (keypad_type < 0)
+-- 
+1.7.8.6
 
