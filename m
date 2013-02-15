@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757004Ab3BOOXO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 09:23:14 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:34068 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755096Ab3BOOXM (ORCPT
+	id S933015Ab3BOOZR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 09:25:17 -0500
+Received: from mail.pripojeni.net ([178.22.112.14]:55883 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755655Ab3BOOZQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 09:23:12 -0500
-Message-ID: <1360938181.7815.1.camel@phoenix>
-Subject: [PATCH] regulator: twl: Remove VDD1_VSEL_table and VDD2_VSEL_table
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Tero Kristo <t-kristo@ti.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Fri, 15 Feb 2013 22:23:01 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 15 Feb 2013 09:25:16 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: gregkh@linuxfoundation.org
+Cc: alan@linux.intel.com, jirislaby@gmail.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] TTY: do not update atime/mtime on read/write
+Date: Fri, 15 Feb 2013 15:25:05 +0100
+Message-Id: <1360938305-16329-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit ba305e31 "regulator: twl: fix twl4030 support for smps regulators",
-VDD1_VSEL_table and VDD2_VSEL_table are not used any more. Remove them.
+On http://vladz.devzero.fr/013_ptmx-timing.php, we can see how to find
+out length of a password using timestamps of /dev/ptmx. It is
+documented in "Timing Analysis of Keystrokes and Timing Attacks on
+SSH". To avoid that problem, do not update time when reading
+from/writing to a TTY.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
+I am afraid of regressions as this is a behavior we have since 0.97
+and apps may expect the time to be current, e.g. for monitoring
+whether there was a change on the TTY. Now, there is no change. So
+this would better have a lot of testing before it goes upstream.
+
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+References: CVE-2013-0160
 ---
- drivers/regulator/twl-regulator.c |    6 ------
- 1 file changed, 6 deletions(-)
+ drivers/tty/tty_io.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/regulator/twl-regulator.c b/drivers/regulator/twl-regulator.c
-index 74508cc..683d314 100644
---- a/drivers/regulator/twl-regulator.c
-+++ b/drivers/regulator/twl-regulator.c
-@@ -441,12 +441,6 @@ static const u16 VSIM_VSEL_table[] = {
- static const u16 VDAC_VSEL_table[] = {
- 	1200, 1300, 1800, 1800,
- };
--static const u16 VDD1_VSEL_table[] = {
--	800, 1450,
--};
--static const u16 VDD2_VSEL_table[] = {
--	800, 1450, 1500,
--};
- static const u16 VIO_VSEL_table[] = {
- 	1800, 1850,
- };
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index a86219c..8801385 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -980,8 +980,7 @@ static ssize_t tty_read(struct file *file, char __user *buf, size_t count,
+ 	else
+ 		i = -EIO;
+ 	tty_ldisc_deref(ld);
+-	if (i > 0)
+-		inode->i_atime = current_fs_time(inode->i_sb);
++
+ 	return i;
+ }
+ 
+@@ -1082,11 +1081,8 @@ static inline ssize_t do_tty_write(
+ 			break;
+ 		cond_resched();
+ 	}
+-	if (written) {
+-		struct inode *inode = file->f_path.dentry->d_inode;
+-		inode->i_mtime = current_fs_time(inode->i_sb);
++	if (written)
+ 		ret = written;
+-	}
+ out:
+ 	tty_write_unlock(tty);
+ 	return ret;
 -- 
-1.7.9.5
-
+1.8.1.2
 
 
