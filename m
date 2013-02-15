@@ -1,43 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761163Ab3BOK4C (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 05:56:02 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56592 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760856Ab3BOK4A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 05:56:00 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1360899751-24377-1-git-send-email-peterhuewe@gmx.de>
-References: <1360899751-24377-1-git-send-email-peterhuewe@gmx.de>
-To: Peter Huewe <peterhuewe@gmx.de>
-Cc: dhowells@redhat.com, Willy Tarreau <willy@meta-x.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Toshiaki Yamane <yamanetoshi@gmail.com>,
-        Adam Buchbinder <adam.buchbinder@gmail.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging/panel: Mark local functions as static (fix smatch warnings)
-Date: Fri, 15 Feb 2013 10:55:45 +0000
-Message-ID: <12246.1360925745@warthog.procyon.org.uk>
+	id S1760856Ab3BOK6b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 05:58:31 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:49019 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750728Ab3BOK63 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 05:58:29 -0500
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20130215184255.5ba8a085004f4aadb9faf82c@canb.auug.org.au>
+References: <20130215184255.5ba8a085004f4aadb9faf82c@canb.auug.org.au>
+Date: Fri, 15 Feb 2013 11:58:28 +0100
+Message-ID: <CA+icZUWUnnE6=DRuAodY=DS1tK7VZLnFd503rfHgng6CQUMjcw@mail.gmail.com>
+Subject: Re: linux-next: Tree for Feb 15
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Huewe <peterhuewe@gmx.de> wrote:
+On Fri, Feb 15, 2013 at 8:42 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> News: Yesterday was the 5th anniversary of linux-next!  I can't believe I
+> am still doing this :-)
+>
 
-> +static char old_keypad_profile[][4][9] = {
->  	{"S0", "Left\n", "Left\n", ""},
->  	{"S1", "Down\n", "Down\n", ""},
->  	{"S2", "Up\n", "Up\n", ""},
+So 5-times a happy Quentin Valentino day!
 
-Things like this should likely be const also.  There are several here.
+> Changes since 20130214:
+>
+> New tree: drm-intel
+>
 
-> -void panel_lcd_print(char *s)
-> +static void panel_lcd_print(char *s)
+More black roses for integrating drm-intel (/me is pulling
+drm-intel-nightly after -1 (first "naked") linux-next kernel-build).
 
-const char *s maybe?
+- Sedat -
 
-David
+> Dropped tree: drm-intel (build failure)
+>
+> The pm tree gained a conflict against the pci tree.
+>
+> The drm-intel tree gained a build failure so I dropped it for today.
+>
+> The xen-two tree gained a build failure for which I applied a merge fix
+> patch.
+>
+> The driver-core tree gained a conflict against the wireless-next tree.
+>
+> The akpm tree gained conflicts against the workqueues and net-next trees.
+>
+> ----------------------------------------------------------------------------
+>
