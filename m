@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161093Ab3BOAvV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 19:51:21 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:50977 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935143Ab3BOAvU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 19:51:20 -0500
+	id S1161101Ab3BOAx1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 19:53:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7908 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932229Ab3BOAx0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 19:53:26 -0500
+Date: Fri, 15 Feb 2013 00:53:21 +0000
+From: Alasdair G Kergon <agk@redhat.com>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Guangliang Zhao <gzhao@suse.com>, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, lucienchao@gmail.com,
+        "Alasdair G. Kergon" <agk@redhat.com>
+Subject: Re: [PATCH 2/2] mirror throttling
+Message-ID: <20130215005321.GK24130@agk-dp.fab.redhat.com>
+Mail-Followup-To: Mikulas Patocka <mpatocka@redhat.com>,
+	Guangliang Zhao <gzhao@suse.com>, linux-kernel@vger.kernel.org,
+	dm-devel@redhat.com, lucienchao@gmail.com,
+	"Alasdair G. Kergon" <agk@redhat.com>
+References: <1357552933-26126-1-git-send-email-gzhao@suse.com> <Pine.LNX.4.64.1301090043270.29917@file.rdu.redhat.com> <Pine.LNX.4.64.1301090044170.29917@file.rdu.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20130215112313.f0952009747b754447fc45c7@canb.auug.org.au>
-References: <20130213193532.162080d7c0557a307ab451ac@canb.auug.org.au>
-	<511BEC55.5090801@infradead.org>
-	<87sj4zk3ai.fsf@rustcorp.com.au>
-	<511D30B4.5020201@infradead.org>
-	<511D330A.2050407@infradead.org>
-	<20130215105519.1d8de65d4f9195eeb9306c13@canb.auug.org.au>
-	<20130215000229.GA5164@kroah.com>
-	<20130215112313.f0952009747b754447fc45c7@canb.auug.org.au>
-Date: Thu, 14 Feb 2013 16:51:17 -0800
-Message-ID: <CADwDc1AvrGP-YPd_h6jvfiUObvS3RWrt20ujTi3_cE_TrnHv9g@mail.gmail.com>
-Subject: Re: linux-next: Tree for Feb 13 (virtio_console)
-From: Joe Millenbach <jmillenbach@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Greg KH <greg@kroah.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Amit Shah <amit.shah@redhat.com>,
-        virtualization@lists.linux-foundation.org,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Josh Triplett <josh@joshtriplett.org>, Jamey Sharp <jamey@minilop.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1301090044170.29917@file.rdu.redhat.com>
+Organization: Red Hat UK Ltd. Registered in England and Wales, number
+	03798903. Registered Office: 64 Baker Street, 4th floor, London,
+	W1U 7DF.
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 14, 2013 at 4:23 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Greg,
->
-> On Thu, 14 Feb 2013 16:02:29 -0800 Greg KH <greg@kroah.com> wrote:
->> On Fri, Feb 15, 2013 at 10:55:19AM +1100, Stephen Rothwell wrote:
->> >
->> > Also, has someone checked to see if any of the CONFIG_ symbols that had a
->> > dependency on TTY added are selected anywhere else?
->>
->> Joe did all of that I think.  Joe?
->
-> OK, good.
->
+On Wed, Jan 09, 2013 at 12:44:38AM -0500, Mikulas Patocka wrote:
+> We maintain a history of kcopyd usage in variables io_period and
+> total_period. The actual kcopyd activity is "(100 * io_period /
+> total_period)" percent of time. If we exceed user-defined percentage
+> threshold, we sleep.
+ 
+Well, I'm going to take this pair of patches for now.
 
-I tried to find all of them, but I can't guarantee they're all fixed :
-).  I tried to search out the features that used the tty driver (using
-two initialization functions), and tried enabling all features while
-disabling TTY on my x86 64 bit machine.  In addition to stubbing out
-functions that the kernel's initialization required.
+Some people do need this throttling today and this seems to me to be a
+decent and simple way to give them a lever to deal with the problem.
 
-Any other suggestions for finding problems proactively are appreciated.
+I'm not proposing we expose this through LVM or other userspace tools at
+this stage: people who need it should tune it directly through sysfs.
 
-- Joe
+If need be, we can revisit this in future either by refining the
+algorithm or making it adjustable per-device rather than per-module.
+(Or by re-vamping kcopyd itself...)
+
+The current version is:
+  http://people.redhat.com/agk/patches/linux/editing/dm-kcopyd-introduce-configurable-throttling.patch
+
+Alasdair
+
