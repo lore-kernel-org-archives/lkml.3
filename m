@@ -1,88 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754867Ab3BOONu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 09:13:50 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:45837 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752576Ab3BOONs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 09:13:48 -0500
-Date: Fri, 15 Feb 2013 15:13:30 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: linux-acpi@vger.kernel.org, Huang Ying <ying.huang@intel.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH EDAC 07/13] edac: add support for raw error reports
-Message-ID: <20130215141330.GF14387@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Mauro Carvalho Chehab <mchehab@redhat.com>,
-	linux-acpi@vger.kernel.org, Huang Ying <ying.huang@intel.com>,
-	Tony Luck <tony.luck@intel.com>,
-	Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <cover.1360931635.git.mchehab@redhat.com>
- <e08f797b129a50b4e1b39e8c31bff82904aea65d.1360931635.git.mchehab@redhat.com>
+	id S932201Ab3BOOQc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 09:16:32 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:63958 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753636Ab3BOOQb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 09:16:31 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+Subject: fb: mmp: include linux/platform_device.h
+Date: Fri, 15 Feb 2013 14:16:17 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-6-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Zhou Zhu <zzhu3@marvell.com>, Lisa Du <cldu@marvell.com>,
+        Guoqing Li <ligq@marvell.com>
+References: <1360880818-4071454-1-git-send-email-arnd@arndb.de> <1360880818-4071454-8-git-send-email-arnd@arndb.de> <20130214230501.GA30269@kroah.com>
+In-Reply-To: <20130214230501.GA30269@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <e08f797b129a50b4e1b39e8c31bff82904aea65d.1360931635.git.mchehab@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302151416.18121.arnd@arndb.de>
+X-Provags-ID: V02:K0:YA5u65o9ZhkVWjXnRoI4CwXBvad1t5Xt7p5ggswbKIi
+ BH2q93Zp4wXx/XjbDMHi0RDLU+qhoBCeQdK5fAnUgSXByRUs/K
+ cEHvhw9y+78ZjCtAXtH4c6SN0AQLng08x3qTh1A4dQi5a5ztKV
+ ZoDuRb+l2fgnT3uomwYrIs1czG5CGJOf2T/Iz4U7BJJSguW8aL
+ tWlZc5mXe95iU5OUWdvbJ7ayDWiPQQwvIaw9KvBczv18C/wLwt
+ T3gVL70iFNPzyqZdMy986bEC7qOjUpAw/j+QxNXJpzl0tpLSZB
+ dPrnjqRzhkiCQlgybkkREYsLqg8WZmJkEJTUyl7t78B8tNeiS4
+ VUBSisH511svAYzuCDRs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 15, 2013 at 10:44:55AM -0200, Mauro Carvalho Chehab wrote:
-> That allows APEI GHES driver to report errors directly, using
-> the EDAC error report API.
+Patch 16559ae "kgdb: remove #include <linux/serial_8250.h> from kgdb.h"
+changes the kgdb.h file so that drivers including it do not implicitly
+include linux/platform_device.h. The mmp framebuffer driver is new,
+so Greg did not have a chance to fix it up when introducing his change.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+---
+On Thursday 14 February 2013, Greg Kroah-Hartman wrote:
+> On Thu, Feb 14, 2013 at 11:26:56PM +0100, Arnd Bergmann wrote:
+> > Patch 16559ae "kgdb: remove #include <linux/serial_8250.h> from kgdb.h"
+> > removed an implicit inclusion of linux/platform_device.h
+> > In a number of places. This adds back explicit inclusions in a few
+> > more places I found.
+>
+> >  drivers/video/mmp/fb/mmpfb.c             | 1 +
 > 
-> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-> ---
->  drivers/edac/edac_core.h |  17 ++++++++
->  drivers/edac/edac_mc.c   | 109 ++++++++++++++++++++++++++++++++++++-----------
->  2 files changed, 100 insertions(+), 26 deletions(-)
-> 
-> diff --git a/drivers/edac/edac_core.h b/drivers/edac/edac_core.h
-> index 23bb99f..9c5da11 100644
-> --- a/drivers/edac/edac_core.h
-> +++ b/drivers/edac/edac_core.h
-> @@ -453,6 +453,23 @@ extern struct mem_ctl_info *find_mci_by_dev(struct device *dev);
->  extern struct mem_ctl_info *edac_mc_del_mc(struct device *dev);
->  extern int edac_mc_find_csrow_by_page(struct mem_ctl_info *mci,
->  				      unsigned long page);
-> +
-> +void edac_raw_mc_handle_error(const enum hw_event_mc_err_type type,
-> +			  struct mem_ctl_info *mci,
-> +			  long grain,
-> +			  const u16 error_count,
-> +			  const int top_layer,
-> +			  const int mid_layer,
-> +			  const int low_layer,
-> +			  const unsigned long page_frame_number,
-> +			  const unsigned long offset_in_page,
-> +			  const unsigned long syndrome,
-> +			  const char *msg,
-> +			  const char *location,
-> +			  const char *label,
-> +			  const char *other_detail,
-> +			  const bool enable_per_layer_report);
+> This file isn't my tty tree, so I can't apply that part of the patch,
+> but I've applied the rest of the patch, and the 2 others you sent me to
+> fix this issue.
 
-The argument count of this one looks like an overkill. Maybe it would be
-nicer, cleaner to do this:
+Right. It seems the driver is only in Andrew's tree. Andrew, can you 
+add this hunk on top?
 
-void __edac_handle_mc_error(const enum hw_event_mc_err_type type,
-			    struct mem_ctl_info *mci,
-			    struct error_desc *e);
-
-and struct error_desc collects all the remaining arguments.
-
-This way you can't get the arguments order wrong, forget one or
-whatever; and it would be much less stack pressure on the function
-calls.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+diff --git a/drivers/video/mmp/fb/mmpfb.c b/drivers/video/mmp/fb/mmpfb.c
+index f34a3a9..6d1fa96 100644
+--- a/drivers/video/mmp/fb/mmpfb.c
++++ b/drivers/video/mmp/fb/mmpfb.c
+@@ -21,6 +21,7 @@
+  */
+ #include <linux/module.h>
+ #include <linux/dma-mapping.h>
++#include <linux/platform_device.h>
+ #include "mmpfb.h"
+ 
+ static int var_to_pixfmt(struct fb_var_screeninfo *var)
