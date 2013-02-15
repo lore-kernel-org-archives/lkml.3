@@ -1,64 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751995Ab3BOTxu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 14:53:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13374 "EHLO mx1.redhat.com"
+	id S1752087Ab3BOTxy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 14:53:54 -0500
+Received: from sauhun.de ([89.238.76.85]:46872 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750716Ab3BOTxs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 14:53:48 -0500
-Message-ID: <511E923D.7050704@redhat.com>
-Date: Fri, 15 Feb 2013 19:53:33 +0000
-From: Pedro Alves <palves@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1750716Ab3BOTxw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 14:53:52 -0500
+Date: Fri, 15 Feb 2013 20:53:48 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Peter Korsgaard <peter.korsgaard@barco.com>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] i2c: mux: Remove unneeded platform_set_drvdata to NULL
+ in remove
+Message-ID: <20130215195347.GF4351@the-dreams.de>
+References: <1360953682-25066-1-git-send-email-dianders@chromium.org>
+ <20130215193736.GD4351@the-dreams.de>
+ <CAD=FV=VTJN3bU1rpMyjDMvX1SYZJWoJCiNtHNe+nDrtwnXqTXA@mail.gmail.com>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Andrey Vagin <avagin@openvz.org>, linux-kernel@vger.kernel.org,
-        criu@openvz.org, linux-api@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] ptrace: add ability to retrieve signals without removing
- them from a queue
-References: <1360768595-31943-1-git-send-email-avagin@openvz.org> <511E8223.6010506@redhat.com> <20130215194356.GA12413@redhat.com>
-In-Reply-To: <20130215194356.GA12413@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAD=FV=VTJN3bU1rpMyjDMvX1SYZJWoJCiNtHNe+nDrtwnXqTXA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/15/2013 07:43 PM, Oleg Nesterov wrote:
-> On 02/15, Pedro Alves wrote:
->>
->> Not sure I'm reading the patch right, but it looks like GDB would
->> be able to use this as alternative to PTRACE_GET_SIGINFO variant
-> 
-> No, it is different. PTRACE_GETSIGINFO reports the siginfo for the signal
-> which was already dequeued (ignoring the fact ->last_siginfo != NULL doesn't
-> necessarily mean we report a signal), while this patch allows to look at
-> the pending signals which were not reported yet.
 
-Ah, I had assumed queue position 0 would be the dequeued signal.
+> I'll re-send with I2C subsystem wide.  I probably won't attempt the
+> whole kernel wide at this point, but would be very happy if someone
+> else wanted to!  :)
 
->> I wouldn't mind if this was added unconditionally
->> instead of wrapped on CONFIG_CHECKPOINT_RESTORE.
-> 
-> I agree. If you think gdb can use this new feature,  CONFIG_ can go away.
+Thanks. Please double check that setting NULL is really unneeded for the
+non-platform-bus variants, too, or skip those if you are unsure. Please
+also update the commit message to reference a stronger indication than
+Stephen's "should not be necessary" ;) I do agree but for the commit
+history, a better reference would be nice to educate readers.
 
-I think so -- we can add a gdb command to dump the list of
-pending signals, which I think is something that'd be useful.
+Thanks,
 
-> 
->> We'd miss the poke
->> variant, but that looks like something that could be always be added
->> later.
-> 
-> Yes. _POKE_ or _QUEUE_ or _DEQUEUE_, we can add more features if user-
-> space wants them.
-
--- 
-Pedro Alves
+   Wolfram
 
