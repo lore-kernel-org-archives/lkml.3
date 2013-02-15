@@ -1,60 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751105Ab3BOSu5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 13:50:57 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:34293 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784Ab3BOSuz (ORCPT
+	id S1750938Ab3BOSxX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 13:53:23 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:41003 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750712Ab3BOSxW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 13:50:55 -0500
-Message-ID: <511E83BC.3050007@infradead.org>
-Date: Fri, 15 Feb 2013 10:51:40 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
+	Fri, 15 Feb 2013 13:53:22 -0500
+Date: Fri, 15 Feb 2013 10:53:19 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
+        sjenning@linux.vnet.ibm.com, rcj@linux.vnet.ibm.com
+Subject: Re: [PATCH] Compile bug-fixes to zcache (v4).
+Message-ID: <20130215185319.GA15593@kroah.com>
+References: <20130214172926.GA17343@kroah.com>
+ <1360950824-11032-1-git-send-email-konrad.wilk@oracle.com>
+ <20130215181706.GA11261@kroah.com>
+ <20130215184806.GA29539@phenom.dumpdata.com>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Bill E. Brown" <bill.e.brown@intel.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Seth Heasley <seth.heasley@intel.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Wolfram Sang <w.sang@pengutronix.de>, linux-i2c@vger.kernel.org
-Subject: [PATCH -next] i2c: fix i2c-ismt.c printk format warning
-References: <20130215184255.5ba8a085004f4aadb9faf82c@canb.auug.org.au>
-In-Reply-To: <20130215184255.5ba8a085004f4aadb9faf82c@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130215184806.GA29539@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@infradead.org>
+On Fri, Feb 15, 2013 at 01:48:06PM -0500, Konrad Rzeszutek Wilk wrote:
+> > All now applied, thanks.
+> 
+> Much appreciated. What would be the best time to send you the patches
+> for the 3.10 tree? About three weeks after the v3.9 merge window opens
+> (or one week after -rc1 is cut?)
 
-Fix printk format warning.  dma_addr_t can be 32-bit or 64-bit,
-so cast it to long long for printing.  This also matches the
-printk format specifier that is already used.
+Either is fine, they probably will end up being applied at the same time :)
 
-drivers/i2c/busses/i2c-ismt.c:532:3: warning: format '%llX' expects argument of type 'long long unsigned int', but argument 4 has type 'dma_addr_t' [-Wformat]
+thanks,
 
-Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-Cc:	Bill E. Brown <bill.e.brown@intel.com>
-Cc:	Jean Delvare <khali@linux-fr.org>
-Cc:	Seth Heasley <seth.heasley@intel.com>
-Cc:	Neil Horman <nhorman@tuxdriver.com>
-Cc:	Wolfram Sang <w.sang@pengutronix.de>
-Cc:	linux-i2c@vger.kernel.org
----
- drivers/i2c/busses/i2c-ismt.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- linux-next-20130215.orig/drivers/i2c/busses/i2c-ismt.c
-+++ linux-next-20130215/drivers/i2c/busses/i2c-ismt.c
-@@ -530,7 +530,7 @@ static int ismt_access(struct i2c_adapte
- 		}
- 
- 		dev_dbg(dev, " dma_addr = 0x%016llX\n",
--			dma_addr);
-+			(unsigned long long)dma_addr);
- 
- 		desc->dptr_low = lower_32_bits(dma_addr);
- 		desc->dptr_high = upper_32_bits(dma_addr);
+greg k-h
