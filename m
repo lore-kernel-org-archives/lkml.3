@@ -1,96 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754091Ab3BOHFP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 02:05:15 -0500
-Received: from lvps176-28-13-145.dedicated.hosteurope.de ([176.28.13.145]:37384
-	"EHLO lvps176-28-13-145.dedicated.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753320Ab3BOHFN (ORCPT
+	id S1754160Ab3BOHLF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 02:11:05 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:35897 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753165Ab3BOHLB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 02:05:13 -0500
-From: Tim Sander <tim@krieglstein.org>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        gregkh@linuxfoundation.org
-Subject: [PATHC] 3.6 spinlock fix
-Date: Fri, 15 Feb 2013 08:05:08 +0100
-Message-ID: <3258732.q5XBfts1EM@dabox>
-User-Agent: KMail/4.10 (Linux/3.6.0; KDE/4.10.0; x86_64; ; )
-In-Reply-To: <CAP=VYLo2zxJWy3s6AmZc+Hh6wXh67HMp+mM0nEkN6M_OpKJSug@mail.gmail.com>
-References: <6003615.pRQnIgKCSn@dabox> <alpine.LFD.2.02.1302142334120.22263@ionos> <CAP=VYLo2zxJWy3s6AmZc+Hh6wXh67HMp+mM0nEkN6M_OpKJSug@mail.gmail.com>
+	Fri, 15 Feb 2013 02:11:01 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Kees Cook <keescook@chromium.org>
+Cc: Stephen Hemminger <stephen@networkplumber.org>,
+        LKML <linux-kernel@vger.kernel.org>, Rob Landley <rob@landley.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, Eric Dumazet <edumazet@google.com>,
+        Neil Horman <nhorman@tuxdriver.com>, Yuchung Cheng <ycheng@google.com>,
+        Shan Wei <davidshan@tencent.com>,
+        "linux-doc\@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        netdev@vger.kernel.org, Willy Tarreau <w@1wt.eu>
+References: <20130207175240.GA12520@www.outflux.net>
+	<20130207103950.662698ea@nehalam.linuxnetplumber.net>
+	<CAGXu5jJiupzommJYPEYQnk-4i9FUKai0NcPnihLN-QpWV64jtQ@mail.gmail.com>
+	<87y5eq87pa.fsf@xmission.com>
+	<CAGXu5jJKQSDo61TD0Jgn9Gq8TL2rCUVbA=Kq4AvfeFUb2FdJMw@mail.gmail.com>
+Date: Thu, 14 Feb 2013 23:10:46 -0800
+In-Reply-To: <CAGXu5jJKQSDo61TD0Jgn9Gq8TL2rCUVbA=Kq4AvfeFUb2FdJMw@mail.gmail.com>
+	(Kees Cook's message of "Thu, 14 Feb 2013 22:41:39 -0800")
+Message-ID: <87r4ki6oi1.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19V7GqLWKPkF6NQzZdR5cyhQ7FIlqIt4gc=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.5 XM_Body_Dirty_Words Contains a dirty word
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Kees Cook <keescook@chromium.org>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH] tcp: sysctl to disable TCP simultaneous connect
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
-> On Thu, Feb 14, 2013 at 5:35 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > On Thu, 14 Feb 2013, Tim Sander wrote:
-> >> > That's true, but w/o seing the OOM output I can't tell what's
-> >> > exhausting the memory.
-> >> 
-> >> When fuzzing the serial port one probably should switch of sysreq. It
-> >> seems
-> >> as if there is a break send somehow and then it selects the OOM option.
-> >> So when switching of MAGIC_SYSRQ the OOMs are gone. So its a non issue.
-> > 
-> > Amazing that you get the break+oom combo out of that fuzzer!
-That fuzzer is running at 57600Hz while the serial port of the fuzzed device is
-running twice that rate. The break condition seems to be easy hit by the fuzzer
- i've sent in a previous mail. 
-> Doing a basic "git whatchanged" and searching for "trinity" is rather
-> impressive, regardless of the kernel version and/or where "rogue states"
-> may currently be at with their "program"....   Kudos to davej for that.
-Mh, but thats not trinity! Havn't tried that but well fuzzing at a different 
-serial rate than the receiver might be a good idea even if it sounds pretty stupid.
+Kees Cook <keescook@chromium.org> writes:
 
-Attached is the patch for the 3.6.9-rt kernel (but i think this should also apply 
-to the "normal" 3.6 i guess).  But as Greg already took care of this patch i guess 
-that only for convinience. Also it seems as if the patch sent to Greg is missing the
-#include <linux/kdb.h>?
+> On Thu, Feb 14, 2013 at 9:30 PM, Eric W. Biederman
+> <ebiederm@xmission.com> wrote:
+>> Kees Cook <keescook@chromium.org> writes:
+>>
+>>> The patch would not break it -- it defaults the sysctl to staying enabled.
+>>>
+>>> If you mean the documentation should be updated, sure, that's easy to do.
+>>>
+>>> David: I know you aren't a fan of this patch, but I'd like to try to
+>>> convince you. :) This leaves the feature enabled and add a toggle for
+>>> systems (like Chrome OS) that don't want to risk this DoS at all.
+>>> There are so very many other toggle, I don't see why this one would be
+>>> a problem to add.
+>>
+>> Chrome OS has no plans to implement webrtc?  Last I had read that
+>> support had been added to the release versions of Chrome, and was in the
+>> development builds of firefox.  I really don't belive that there are
+>> many systems that don't intend to run a web browser.
+>
+> I haven't looked at the internals of webrtc. Are you implying some
+> feature in it relies on the TCP simultaneous connect?
 
-Best regards
-Tim
+I am saying that yes.
 
-    tglx: fix imx.c spinlock
+webrtc is built on ICE (interactivity connectivity establishment).  ICE
+support for TCP (RFC6544) uses TCP simultaneous connect.  webrtc
+supports tcp connections.
 
-diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
-index e309e8b..39820ea 100644
---- a/drivers/tty/serial/imx.c
-+++ b/drivers/tty/serial/imx.c
-@@ -48,6 +48,7 @@
- #include <linux/of.h>
- #include <linux/of_device.h>
- #include <linux/pinctrl/consumer.h>
-+#include <linux/kdb.h>
- 
- #include <asm/io.h>
- #include <asm/irq.h>
-@@ -1213,8 +1214,12 @@ imx_console_write(struct console *co, const char *s, unsigned int count)
-        struct imx_port_ucrs old_ucr;
-        unsigned int ucr1;
-        unsigned long flags;
-+       int locked = 1;
- 
--       spin_lock_irqsave(&sport->port.lock, flags);
-+       if (sport->port.sysrq || oops_in_progress || in_kdb_printk())
-+               locked = spin_trylock_irqsave(&sport->port.lock, flags);
-+       else
-+               spin_lock_irqsave(&sport->port.lock, flags);
- 
-        /*
-         *      First, save UCR1/2/3 and then disable interrupts
-@@ -1241,7 +1246,8 @@ imx_console_write(struct console *co, const char *s, unsigned int count)
- 
-        imx_port_ucrs_restore(&sport->port, &old_ucr);
- 
--       spin_unlock_irqrestore(&sport->port.lock, flags);
-+       if (locked)
-+               spin_unlock_irqrestore(&sport->port.lock, flags);
- }
- 
- /*
+Eric
 
