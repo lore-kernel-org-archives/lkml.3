@@ -1,61 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161568Ab3BOMrH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 07:47:07 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:55739 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161556Ab3BOMrE (ORCPT
+	id S1161608Ab3BOMri (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 07:47:38 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:3830 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161570Ab3BOMrQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 07:47:04 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com, cbouatmailru@gmail.com,
-        sameo@linux.intel.com, Rupesh Kumar <rupesh.kumar@stericsson.com>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 37/40] pm2301-charger: Reference put missing after access
-Date: Fri, 15 Feb 2013 12:45:07 +0000
-Message-Id: <1360932310-30065-38-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1360932310-30065-1-git-send-email-lee.jones@linaro.org>
-References: <1360932310-30065-1-git-send-email-lee.jones@linaro.org>
+	Fri, 15 Feb 2013 07:47:16 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Fri, 15 Feb 2013 04:47:12 -0800
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: <linux-tegra@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>, Simon Glass <sjg@chromium.org>,
+        Mike Turquette <mturquette@linaro.org>, Joseph Lo <josephl@nvidia.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v7 11/12] ARM: dt: Add references to tegra_car clocks
+Date: Fri, 15 Feb 2013 14:36:41 +0200
+Message-ID: <1360931849-7090-12-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+In-Reply-To: <1360931849-7090-1-git-send-email-pdeschrijver@nvidia.com>
+References: <1360931849-7090-1-git-send-email-pdeschrijver@nvidia.com>
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rupesh Kumar <rupesh.kumar@stericsson.com>
+Add references to tegra_car clocks for the basic device nodes. Also remove
+the clock-frequency property of the serial node as the UART driver can now
+use the clock framework to obtain the frequency.
 
-Added missing pm_runtime_put_sync in read & write.
-
-Signed-off-by: Rupesh Kumar <rupesh.kumar@stericsson.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
-Reviewed-by: Sandeep TRIPATHY <sandeep.tripathy@stericsson.com>
-Reviewed-by: Philippe LANGLAIS <philippe.langlais@stericsson.com>
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
 ---
- drivers/power/pm2301_charger.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ arch/arm/boot/dts/tegra114-dalmore.dts |    1 -
+ arch/arm/boot/dts/tegra114-pluto.dts   |    1 -
+ arch/arm/boot/dts/tegra114.dtsi        |    8 +++++++-
+ 3 files changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/power/pm2301_charger.c b/drivers/power/pm2301_charger.c
-index ea9870d..af12af8 100644
---- a/drivers/power/pm2301_charger.c
-+++ b/drivers/power/pm2301_charger.c
-@@ -139,6 +139,8 @@ static int pm2xxx_reg_read(struct pm2xxx_charger *pm2, int reg, u8 *val)
- 	else
- 		ret = 0;
+diff --git a/arch/arm/boot/dts/tegra114-dalmore.dts b/arch/arm/boot/dts/tegra114-dalmore.dts
+index a30aca6..1ab48f1 100644
+--- a/arch/arm/boot/dts/tegra114-dalmore.dts
++++ b/arch/arm/boot/dts/tegra114-dalmore.dts
+@@ -12,7 +12,6 @@
  
-+	pm_runtime_put_sync(pm2->dev);
-+
- 	return ret;
- }
+ 	serial@70006300 {
+ 		status = "okay";
+-		clock-frequency = <408000000>;
+ 	};
  
-@@ -156,6 +158,8 @@ static int pm2xxx_reg_write(struct pm2xxx_charger *pm2, int reg, u8 val)
- 	else
- 		ret = 0;
+ 	pmc {
+diff --git a/arch/arm/boot/dts/tegra114-pluto.dts b/arch/arm/boot/dts/tegra114-pluto.dts
+index 41cd5e6..c167591 100644
+--- a/arch/arm/boot/dts/tegra114-pluto.dts
++++ b/arch/arm/boot/dts/tegra114-pluto.dts
+@@ -12,7 +12,6 @@
  
-+	pm_runtime_put_sync(pm2->dev);
-+
- 	return ret;
- }
+ 	serial@70006300 {
+ 		status = "okay";
+-		clock-frequency = <408000000>;
+ 	};
  
+ 	pmc {
+diff --git a/arch/arm/boot/dts/tegra114.dtsi b/arch/arm/boot/dts/tegra114.dtsi
+index 96a8235..6b0a01e 100644
+--- a/arch/arm/boot/dts/tegra114.dtsi
++++ b/arch/arm/boot/dts/tegra114.dtsi
+@@ -24,10 +24,11 @@
+ 			      0 42 0x04
+ 			      0 121 0x04
+ 			      0 122 0x04>;
++		clocks = <&tegra_car 5>;
+ 	};
+ 
+ 	tegra_car: clock {
+-		compatible = "nvidia,tegra114-car, nvidia,tegra30-car";
++		compatible = "nvidia,tegra114-car";
+ 		reg = <0x60006000 0x1000>;
+ 		#clock-cells = <1>;
+ 	};
+@@ -43,6 +44,7 @@
+ 		reg-shift = <2>;
+ 		interrupts = <0 36 0x04>;
+ 		status = "disabled";
++		clocks = <&tegra_car 6>;
+ 	};
+ 
+ 	serial@70006040 {
+@@ -51,6 +53,7 @@
+ 		reg-shift = <2>;
+ 		interrupts = <0 37 0x04>;
+ 		status = "disabled";
++		clocks = <&tegra_car 192>;
+ 	};
+ 
+ 	serial@70006200 {
+@@ -59,6 +62,7 @@
+ 		reg-shift = <2>;
+ 		interrupts = <0 46 0x04>;
+ 		status = "disabled";
++		clocks = <&tegra_car 55>;
+ 	};
+ 
+ 	serial@70006300 {
+@@ -67,12 +71,14 @@
+ 		reg-shift = <2>;
+ 		interrupts = <0 90 0x04>;
+ 		status = "disabled";
++		clocks = <&tegra_car 65>;
+ 	};
+ 
+ 	rtc {
+ 		compatible = "nvidia,tegra114-rtc", "nvidia,tegra20-rtc";
+ 		reg = <0x7000e000 0x100>;
+ 		interrupts = <0 2 0x04>;
++		clocks = <&tegra_car 4>;
+ 	};
+ 
+ 	pmc {
 -- 
-1.7.10.4
+1.7.1
 
