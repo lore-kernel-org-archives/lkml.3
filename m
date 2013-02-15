@@ -1,60 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161696Ab3BOMz4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 07:55:56 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:63976 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161416Ab3BOMzx (ORCPT
+	id S1161363Ab3BOMqA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 07:46:00 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:58143 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161342Ab3BOMp6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 07:55:53 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Simon Horman <horms@verge.net.au>
-Subject: Re: [PATCH 5/9] ARM: shmobile: mark mackerel sh_mmcif_device __maybe_unused
-Date: Fri, 15 Feb 2013 12:55:06 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-6-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Simon Horman <horms+renesas@verge.net.au>
-References: <1360880818-4071454-1-git-send-email-arnd@arndb.de> <1360880818-4071454-6-git-send-email-arnd@arndb.de> <20130214232426.GB30667@verge.net.au>
-In-Reply-To: <20130214232426.GB30667@verge.net.au>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302151255.06547.arnd@arndb.de>
-X-Provags-ID: V02:K0:NIRO2jesqm4h2oqp8PVFHM3FWe7py9Jmqy0qoQPvZEV
- TFdQrx2aEUrUVkuSN3G3prsrQnFyRTwNi1vvb0Oebq18c/2CEf
- CREOqXygrTEBkmYKAGB9m752yxb7x9ZL8pBz7etziz0zl5NZG1
- FTwSCvHc7X9xAyj5A/iQShkwdCdBE/DD939HBQWSoz2U6hmOwD
- szRYSe08ffQEqYcmf8+7kQub4T5BrhJ7XqboUteZV8kxW1YbxJ
- Th0upWSM0zxU34K2g7LcJIjfH8jQJAlmW3N495+hwnaTdEXNAd
- UqAbLqvR1b4X4biKc56kuPuT6nbh+IWaCig0NsXnSg8Jvz5nOc
- kOCfUnSuWFJ3fWOpVdmw=
+	Fri, 15 Feb 2013 07:45:58 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, linus.walleij@stericsson.com, cbouatmailru@gmail.com,
+        sameo@linux.intel.com, Yang QU <yang.qu@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 06/40] ab8500-charger: Add backup battery charge voltages on the ab8540
+Date: Fri, 15 Feb 2013 12:44:36 +0000
+Message-Id: <1360932310-30065-7-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1360932310-30065-1-git-send-email-lee.jones@linaro.org>
+References: <1360932310-30065-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 14 February 2013, Simon Horman wrote:
-> On Thu, Feb 14, 2013 at 11:26:54PM +0100, Arnd Bergmann wrote:
-> > Patch eac036ef9e "ARM: shmobile: streamline mackerel SD and MMC devices"
-> > made the use of the sh_mmcif_device variable for mackarel optional,
-> > but the definition is always provided, causing a build warning.
-> > 
-> > arch/arm/mach-shmobile/board-mackerel.c:1120:31: warning: 'sh_mmcif_device'
-> > 	defined but not used [-Wunused-variable]
-> > 
-> > Marking the variable as __maybe_unused will do the right thing here.
-> > 
-> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> > Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> > Cc: Simon Horman <horms+renesas@verge.net.au>
-> 
-> No objections here.
-> 
-> Acked-by: Simon Horman <horms+renesas@verge.net.au>
+From: Yang QU <yang.qu@stericsson.com>
 
-AFAICT, the change that caused this is in linux-next only through your
-heads/boards3 branch but not through arm-soc, so please apply my patch
-on your branch.
+Add 2.7v, 2.9v, 3.0v, 3.2v and 3.3v charging voltages for backup
+battery. Before that only 2.5v, 2.6v, 2.8v, 3.1v were available.
 
-	Arnd
+Signed-off-by: Yang QU <yang.qu@stericsson.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Reviewed-by: Maxime COQUELIN <maxime.coquelin@stericsson.com>
+Reviewed-by: Marcus COOPER <marcus.xm.cooper@stericsson.com>
+Tested-by: Xiao Mei ZHANG <xiaomei.zhang@stericsson.com>
+---
+ drivers/power/ab8500_charger.c       |   19 +++++++++++++++++--
+ include/linux/mfd/abx500/ab8500-bm.h |   24 ++++++++++++++++++++----
+ 2 files changed, 37 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/power/ab8500_charger.c b/drivers/power/ab8500_charger.c
+index 24b30b7..fd3fa2b 100644
+--- a/drivers/power/ab8500_charger.c
++++ b/drivers/power/ab8500_charger.c
+@@ -2836,6 +2836,7 @@ static int ab8500_charger_usb_get_property(struct power_supply *psy,
+ static int ab8500_charger_init_hw_registers(struct ab8500_charger *di)
+ {
+ 	int ret = 0;
++	u8 bup_vch_range = 0, vbup33_vrtcn = 0;
+ 
+ 	/* Setup maximum charger current and voltage for ABB cut2.0 */
+ 	if (!is_ab8500_1p1_or_earlier(di->parent)) {
+@@ -2945,15 +2946,29 @@ static int ab8500_charger_init_hw_registers(struct ab8500_charger *di)
+ 	}
+ 
+ 	/* Backup battery voltage and current */
++	if (di->bm->bkup_bat_v > BUP_VCH_SEL_3P1V)
++		bup_vch_range = BUP_VCH_RANGE;
++	if (di->bm->bkup_bat_v == BUP_VCH_SEL_3P3V)
++		vbup33_vrtcn = VBUP33_VRTCN;
++
+ 	ret = abx500_set_register_interruptible(di->dev,
+ 		AB8500_RTC,
+ 		AB8500_RTC_BACKUP_CHG_REG,
+-		di->bm->bkup_bat_v |
+-		di->bm->bkup_bat_i);
++		(di->bm->bkup_bat_v & 0x3) | di->bm->bkup_bat_i);
+ 	if (ret) {
+ 		dev_err(di->dev, "failed to setup backup battery charging\n");
+ 		goto out;
+ 	}
++	if (is_ab8540(di->parent)) {
++		ret = abx500_set_register_interruptible(di->dev,
++			AB8500_RTC,
++			AB8500_RTC_CTRL1_REG,
++			bup_vch_range | vbup33_vrtcn);
++		if (ret) {
++			dev_err(di->dev, "failed to setup backup battery charging\n");
++			goto out;
++		}
++	}
+ 
+ 	/* Enable backup battery charging */
+ 	abx500_mask_and_set_register_interruptible(di->dev,
+diff --git a/include/linux/mfd/abx500/ab8500-bm.h b/include/linux/mfd/abx500/ab8500-bm.h
+index ff2ac0b..95bdef7 100644
+--- a/include/linux/mfd/abx500/ab8500-bm.h
++++ b/include/linux/mfd/abx500/ab8500-bm.h
+@@ -105,6 +105,7 @@
+ #define AB8500_RTC_BACKUP_CHG_REG	0x0C
+ #define AB8500_RTC_CC_CONF_REG		0x01
+ #define AB8500_RTC_CTRL_REG		0x0B
++#define AB8500_RTC_CTRL1_REG		0x11
+ 
+ /*
+  * OTP register offsets
+@@ -179,10 +180,25 @@
+ #define BUP_ICH_SEL_300UA		0x08
+ #define BUP_ICH_SEL_700UA		0x0C
+ 
+-#define BUP_VCH_SEL_2P5V		0x00
+-#define BUP_VCH_SEL_2P6V		0x01
+-#define BUP_VCH_SEL_2P8V		0x02
+-#define BUP_VCH_SEL_3P1V		0x03
++enum bup_vch_sel {
++	BUP_VCH_SEL_2P5V,
++	BUP_VCH_SEL_2P6V,
++	BUP_VCH_SEL_2P8V,
++	BUP_VCH_SEL_3P1V,
++	/*
++	 * Note that the following 5 values 2.7v, 2.9v, 3.0v, 3.2v, 3.3v
++	 * are only available on ab8540. You can't choose these 5
++	 * voltage on ab8500/ab8505/ab9540.
++	 */
++	BUP_VCH_SEL_2P7V,
++	BUP_VCH_SEL_2P9V,
++	BUP_VCH_SEL_3P0V,
++	BUP_VCH_SEL_3P2V,
++	BUP_VCH_SEL_3P3V,
++};
++
++#define BUP_VCH_RANGE		0x02
++#define VBUP33_VRTCN		0x01
+ 
+ /* Battery OVV constants */
+ #define BATT_OVV_ENA			0x02
+-- 
+1.7.10.4
+
