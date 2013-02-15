@@ -1,51 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757153Ab3BOSdk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 13:33:40 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:54874 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756443Ab3BOSdj (ORCPT
+	id S1757241Ab3BOSeg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 13:34:36 -0500
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:55691 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756789Ab3BOSef (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 13:33:39 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mark Rutland <mark.rutland@arm.com>
-Subject: Re: [PATCH 1/9] ARM: arch_timer: include linux/errno.h
-Date: Fri, 15 Feb 2013 18:33:31 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-6-generic; KDE/4.3.2; x86_64; ; )
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>
-References: <1360882071-4072668-1-git-send-email-arnd@arndb.de> <1360882071-4072668-2-git-send-email-arnd@arndb.de> <20130215102618.GJ25537@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20130215102618.GJ25537@e106331-lin.cambridge.arm.com>
+	Fri, 15 Feb 2013 13:34:35 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302151833.31646.arnd@arndb.de>
-X-Provags-ID: V02:K0:ctP8iOxZPa9ix0RnvHemHjUh89yB2VuzLAdqhsep1yd
- gsPUl2XuvmtRjwBIe82Hlh2+rEN38IhqT6VA26J7Gt94P/tEqX
- lKJ+6naAz+2n2Fy+pse77TWsa64VFhwBe3SbUlk4DOsyppeeY9
- yAQM3CyBZ89RKZkOQYi1EWVl+fgcygKXHu/cdCQADfOZRzUlSZ
- g7rzl9KdlzC9qpV4BsGBzeYdxuVXYnPgh7RWYmqLsVJ7nOpeFE
- ieUziMH3Ukdrs3xqy41OXE+1hofGiF6HIB1HdJzALYCXERNDnG
- Q+Yew4xdFXfcfu+OvDzdqPYUpCDV2yQUC3wb5d1+62BvlIrYHX
- vj5RYhDWu5jIP+DB/+4A=
+In-Reply-To: <20130215174435.GA2792@linux.vnet.ibm.com>
+References: <20130212193901.GA18906@redhat.com> <alpine.LNX.2.00.1302121549500.890@eggly.anvils>
+ <20130213004059.GA14451@redhat.com> <alpine.LNX.2.00.1302121652240.1077@eggly.anvils>
+ <20130213041629.GA28622@redhat.com> <alpine.LNX.2.00.1302122121170.15020@eggly.anvils>
+ <20130213193411.GA15928@redhat.com> <CA+55aFzmEDriX26Z7oJZg9yssFdCAaYwu6krmrwqfj2TBsxA4w@mail.gmail.com>
+ <20130215011503.GA11914@redhat.com> <CA+55aFyVE0jyu9uw659ERw5E2DdOhwkQp3gk=gcXP0xrmMh9qA@mail.gmail.com>
+ <20130215174435.GA2792@linux.vnet.ibm.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 15 Feb 2013 10:34:13 -0800
+X-Google-Sender-Auth: 6uwhv5Op3wpvm36C5xYrqV-AerA
+Message-ID: <CA+55aFy8FeGMOnWwkfmyFYyVCw+k1LSVg7BG0tsTNZzqi5EKYg@mail.gmail.com>
+Subject: Re: Debugging Thinkpad T430s occasional suspend failure.
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: Dave Jones <davej@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Paul McKenney <paul.mckenney@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 15 February 2013, Mark Rutland wrote:
-> As with Stephen Warren's fix [1], this looks right to me. Stephen's has the
-> added benefit of keeping the includes ordered.
-> 
-> For either version:
-> 
-> Acked-By: Mark Rutland <mark.rutland@arm.com>
+On Fri, Feb 15, 2013 at 9:44 AM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+>
+> This commit was designed to increase the probability of hitting the
+> races described in http://lwn.net/Articles/453002/.  These races result
+> in deadlocks involving the runqueue lock (and perhaps also the priority
+> inheritance locks).  And yes, I most certainly should have described
+> this in the commit message.  :-(
 
-Applied to the next/virt branch now.
+Ugh. That particular race seems to be because the softirq handling is
+just crazy, and does the "wakeup_softirqd()" form interrupt context,
+BUT HAS SPECIFICALLY BROKEN THE IRQ COUNTING!
 
-	Arnd
+Because it claims to do it from softirq context, which is pure
+garbage. It's not actually in softirq context.
+
+The whole hardirq -> softirq transition seems stupid. I'm sure I made
+some serious mistake in cleaning it up, and there's probably some
+missed tracepoint (or perhaps screwed-up lockdep annotation), but I
+think the hardirq -> softirq preempt thing shoudl be done as an atomic
+preempt downgrade, so that we never have a window of "uhhuh, another
+interrupt can come in between and see us as being in neither). And the
+wakeup_softirqd should be done without playing with preempt count at
+all.
+
+Something like this ENTIRELY UNTESTED patch.
+
+Note: I doubt this patch affects Dave's issue at all, I just started
+looking at that do_softirq code when I read your bug explanation.
+
+Adding random people for kernel/softirq.c to the participants list.
+Comments about the patch? Do note that it's entirely untested, so
+consider it more a RFD than a real patch.. It looks like it adds a lot
+of lines, but most of it is for comments and simplification of the
+logic.
+
+             Linus
