@@ -1,123 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752670Ab3BOW40 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 17:56:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49320 "EHLO
+	id S1752879Ab3BOW4v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 17:56:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49364 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752491Ab3BOW4U (ORCPT
+	with ESMTP id S1752735Ab3BOW4q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 17:56:20 -0500
+	Fri, 15 Feb 2013 17:56:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stoney Wang <song-bo.wang@hp.com>, Yinghai Lu <yinghai@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [ 3/8] x86/apic: Work around boot failure on HP ProLiant DL980 G7 Server systems
-Date: Fri, 15 Feb 2013 14:56:10 -0800
-Message-Id: <20130215225431.245562554@linuxfoundation.org>
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 03/10] mm: dont overwrite mm->def_flags in do_mlockall()
+Date: Fri, 15 Feb 2013 14:56:35 -0800
+Message-Id: <20130215225543.945674212@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130215225430.841634159@linuxfoundation.org>
-References: <20130215225430.841634159@linuxfoundation.org>
+In-Reply-To: <20130215225543.586012193@linuxfoundation.org>
+References: <20130215225543.586012193@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Stoney Wang <song-bo.wang@hp.com>
+From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
 
-commit cb214ede7657db458fd0b2a25ea0b28dbf900ebc upstream.
+commit 9977f0f164d46613288e0b5778eae500dfe06f31 upstream.
 
-When a HP ProLiant DL980 G7 Server boots a regular kernel,
-there will be intermittent lost interrupts which could
-result in a hang or (in extreme cases) data loss.
+With commit 8e72033f2a48 ("thp: make MADV_HUGEPAGE check for
+mm->def_flags") the VM_NOHUGEPAGE flag may be set on s390 in
+mm->def_flags for certain processes, to prevent future thp mappings.
+This would be overwritten by do_mlockall(), which sets it back to 0 with
+an optional VM_LOCKED flag set.
 
-The reason is that this system only supports x2apic physical
-mode, while the kernel boots with a logical-cluster default
-setting.
+To fix this, instead of overwriting mm->def_flags in do_mlockall(), only
+the VM_LOCKED flag should be set or cleared.
 
-This bug can be worked around by specifying the "x2apic_phys" or
-"nox2apic" boot option, but we want to handle this system
-without requiring manual workarounds.
-
-The BIOS sets ACPI_FADT_APIC_PHYSICAL in FADT table.
-As all apicids are smaller than 255, BIOS need to pass the
-control to the OS with xapic mode, according to x2apic-spec,
-chapter 2.9.
-
-Current code handle x2apic when BIOS pass with xapic mode
-enabled:
-
-When user specifies x2apic_phys, or FADT indicates PHYSICAL:
-
-1. During madt oem check, apic driver is set with xapic logical
-   or xapic phys driver at first.
-
-2. enable_IR_x2apic() will enable x2apic_mode.
-
-3. if user specifies x2apic_phys on the boot line, x2apic_phys_probe()
-   will install the correct x2apic phys driver and use x2apic phys mode.
-   Otherwise it will skip the driver will let x2apic_cluster_probe to
-   take over to install x2apic cluster driver (wrong one) even though FADT
-   indicates PHYSICAL, because x2apic_phys_probe does not check
-   FADT PHYSICAL.
-
-Add checking x2apic_fadt_phys in x2apic_phys_probe() to fix the
-problem.
-
-Signed-off-by: Stoney Wang <song-bo.wang@hp.com>
-[ updated the changelog and simplified the code ]
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/1360263182-16226-1-git-send-email-yinghai@kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+Reported-by: Vivek Goyal <vgoyal@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/apic/x2apic_phys.c |   21 +++++++++++----------
- 1 file changed, 11 insertions(+), 10 deletions(-)
+ mm/mlock.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/arch/x86/kernel/apic/x2apic_phys.c
-+++ b/arch/x86/kernel/apic/x2apic_phys.c
-@@ -20,18 +20,19 @@ static int set_x2apic_phys_mode(char *ar
- }
- early_param("x2apic_phys", set_x2apic_phys_mode);
- 
--static int x2apic_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
-+static bool x2apic_fadt_phys(void)
+--- a/mm/mlock.c
++++ b/mm/mlock.c
+@@ -517,11 +517,11 @@ SYSCALL_DEFINE2(munlock, unsigned long,
+ static int do_mlockall(int flags)
  {
--	if (x2apic_phys)
--		return x2apic_enabled();
--	else if ((acpi_gbl_FADT.header.revision >= FADT2_REVISION_ID) &&
--		(acpi_gbl_FADT.flags & ACPI_FADT_APIC_PHYSICAL) &&
--		x2apic_enabled()) {
-+	if ((acpi_gbl_FADT.header.revision >= FADT2_REVISION_ID) &&
-+		(acpi_gbl_FADT.flags & ACPI_FADT_APIC_PHYSICAL)) {
- 		printk(KERN_DEBUG "System requires x2apic physical mode\n");
--		return 1;
-+		return true;
- 	}
--	else
--		return 0;
-+	return false;
-+}
-+
-+static int x2apic_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
-+{
-+	return x2apic_enabled() && (x2apic_phys || x2apic_fadt_phys());
- }
+ 	struct vm_area_struct * vma, * prev = NULL;
+-	unsigned int def_flags = 0;
  
- static void
-@@ -114,7 +115,7 @@ static void init_x2apic_ldr(void)
+ 	if (flags & MCL_FUTURE)
+-		def_flags = VM_LOCKED;
+-	current->mm->def_flags = def_flags;
++		current->mm->def_flags |= VM_LOCKED;
++	else
++		current->mm->def_flags &= ~VM_LOCKED;
+ 	if (flags == MCL_FUTURE)
+ 		goto out;
  
- static int x2apic_phys_probe(void)
- {
--	if (x2apic_mode && x2apic_phys)
-+	if (x2apic_mode && (x2apic_phys || x2apic_fadt_phys()))
- 		return 1;
- 
- 	return apic == &apic_x2apic_phys;
 
 
