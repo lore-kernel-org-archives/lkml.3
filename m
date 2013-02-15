@@ -1,122 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751730Ab3BOUU6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 15:20:58 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:51198 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751156Ab3BOUUz (ORCPT
+	id S1752232Ab3BOUWe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 15:22:34 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:21993 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751495Ab3BOUU5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 15:20:55 -0500
+	Fri, 15 Feb 2013 15:20:57 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: dan.magenheimer@oracle.com, sjenning@linux.vnet.ibm.com,
         gregkh@linuxfoundation.org, akpm@linux-foundation.org,
         ngupta@vflare.org, rcj@linux.vnet.ibm.com, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
         minchan@kernel.org
-Cc: ric.masonn@gmail.com, lliubbo@gmail.com
-Subject: [PATCH v3] Make frontswap+cleancache and its friend be modularized. 
-Date: Fri, 15 Feb 2013 15:20:24 -0500
-Message-Id: <1360959635-18922-1-git-send-email-konrad.wilk@oracle.com>
+Cc: ric.masonn@gmail.com, lliubbo@gmail.com,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 04/11] frontswap: Use static_key instead of frontswap_enabled and frontswap_ops
+Date: Fri, 15 Feb 2013 15:20:28 -0500
+Message-Id: <1360959635-18922-5-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.8.0.2
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <1360959635-18922-1-git-send-email-konrad.wilk@oracle.com>
+References: <1360959635-18922-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+As ways to determine whether to allow certain functions to be called.
+This makes it easier to understand the code - the two functions
+that can be called irregardless whether a backend is set or not is
+the frontswap_init and frontswap_invalidate_area. The rest of the
+frontswap functions end up being NOPs if the backend has not yet
+registered.
 
-Greg, I am CC-ing you here since there is one patch that touches
-the staging tree:
- [PATCH 02/11] frontswap: Make frontswap_init use a pointer for the
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ include/linux/frontswap.h | 17 ++++++++------
+ mm/frontswap.c            | 58 ++++++++++++++++++++---------------------------
+ 2 files changed, 34 insertions(+), 41 deletions(-)
 
-I am hoping that for #2 you are OK ACK-ing - it is a simple fix that ought
-to have been a long time ago.
-
-I am hoping that these patches are ready for the v3.9 merge window and
-would very much appreciate feedback. If I had missed somebodies comments
-- please remind me as these last two weeks have been quite busy for me.
-
-Back to the description:
-
-Parts of this patch have been posted in the post (way back in November), but
-this patchset expanded it a bit. The goal of the patches is to make the
-different frontswap/cleancache API backends be modules - and load way way after
-the swap system (or filesystem) has been initialized. Naturally one can still
-build the frontswap+cleancache backend devices in the kernel. The next goal
-(after these patches) is to also be able to unload the backend drivers - but
-that places some interesting requirements to "reload" the swap device with
-swap pages (don't need to worry that much about cleancache as it is a "secondary"
-cache and can be dumped). Seth had posted some patches for that in the zswap
-backend - and they could be more generally repurporsed.
-
-Anyhow, I did not want to lose the authorship of some of the patches so I
-didn't squash the ones that were made by Dan and mine. I can do it for review
-if it would make it easier, but from my recollection on how Linus likes things
-run he would prefer to keep the history (even the kludge parts).
-
-The general flow prior to these patches was [I am concentrating on the
-frontswap here, but the cleancache is similar, just s/swapon/mount/]:
-
- 1) kernel inits frontswap_init
- 2) kernel inits zcache (or some other backend)
- 3) user does swapon /dev/XX and the writes to the swap disk end up in
-    frontswap and then in the backend.
-
-With the module loading, the 1) is still part of the bootup, but the
-2) or 3) can be run at anytime. This means one could load the backend
-_after_ the swap disk has been initialized and running along. Or
-_before_ the swap disk has been setup - but that is similar to the
-existing case so not that exciting.
-
-To deal with that scenario the frontswap keeps an queue (actually an atomic
-bitmap of the swap disks that have been init) and when the backend registers -
-frontswap runs the backend init on the queued up swap disks.
-
-The interesting thing is that we can be to certain degree racy when the
-swap system starts steering pages to frontswap. Meaning after the backend
-has registered it is OK if the pages are still hitting the disk instead of
-the backend. Naturally this is unacceptable if one were to unload the
-backend (not yet supported) - as we need to be quite atomic at that stage
-and need to stop processing the pages the moment the backend is being
-unloaded. To support this, the frontswap is using the struct static_key
-which are incredibly light when they are in usage. They are incredibly heavy
-when the value switches (on/off), but that is OK. The next part of unloading is
-also taking the pages that are in the backend and feed them in the swap
-storage (and Seth's patches do some of this).
-
-Also attached is one patch from Minchan that fixes the condition where the
-backend was constricted in allocating memory at init - b/c we were holding
-a spin-lock. His patch fixes that and we are just holding the swapon_mutex
-instead. It has been rebased on top of my patches.
-
-This patchset is based on what is going in general for #linux-next for v3.9
-(and can be merged alongside Greg's staging tree).
-
- drivers/staging/zcache/zcache-main.c |  19 +--
- drivers/xen/Kconfig                  |   4 +-
- drivers/xen/tmem.c                   |  53 +++++---
- drivers/xen/xen-selfballoon.c        |  13 +-
- include/linux/cleancache.h           |  27 ++--
- include/linux/frontswap.h            |  31 ++---
- include/xen/tmem.h                   |   8 ++
- mm/cleancache.c                      | 241 ++++++++++++++++++++++++++++++-----
- mm/frontswap.c                       | 126 ++++++++++++++----
- mm/swapfile.c                        |  18 +--
- 10 files changed, 417 insertions(+), 123 deletions(-)
-
-Dan Magenheimer (3):
-      mm: frontswap: lazy initialization to allow tmem backends to build/run as modules
-      mm: cleancache: lazy initialization to allow tmem backends to build/run as modules
-      xen: tmem: enable Xen tmem shim to be built/loaded as a module
-
-Konrad Rzeszutek Wilk (7):
-      frontswap: Make frontswap_init use a pointer for the ops.
-      frontswap: Remove the check for frontswap_enabled.
-      frontswap: Use static_key instead of frontswap_enabled and frontswap_ops
-      cleancache: Make cleancache_init use a pointer for the ops
-      cleancache: Remove the check for cleancache_enabled.
-      cleancache: Use static_key instead of cleancache_ops and cleancache_enabled.
-      zcache/tmem: Better error checking on frontswap_register_ops return     value.
-
-Minchan Kim (1):
-      frontswap: Get rid of swap_lock dependency
+diff --git a/include/linux/frontswap.h b/include/linux/frontswap.h
+index 140323b..8d24167 100644
+--- a/include/linux/frontswap.h
++++ b/include/linux/frontswap.h
+@@ -12,8 +12,6 @@ struct frontswap_ops {
+ 	void (*invalidate_page)(unsigned, pgoff_t);
+ 	void (*invalidate_area)(unsigned);
+ };
+-
+-extern bool frontswap_enabled;
+ extern struct frontswap_ops *
+ 	frontswap_register_ops(struct frontswap_ops *ops);
+ extern void frontswap_shrink(unsigned long);
+@@ -29,25 +27,30 @@ extern void __frontswap_invalidate_page(unsigned, pgoff_t);
+ extern void __frontswap_invalidate_area(unsigned);
+ 
+ #ifdef CONFIG_FRONTSWAP
++#include <linux/jump_label.h>
++
++extern struct static_key frontswap_key;
++
++#define frontswap_enabled (1)
+ 
+ static inline bool frontswap_test(struct swap_info_struct *sis, pgoff_t offset)
+ {
+ 	bool ret = false;
+ 
+-	if (frontswap_enabled && sis->frontswap_map)
++	if (static_key_false(&frontswap_key) && sis->frontswap_map)
+ 		ret = test_bit(offset, sis->frontswap_map);
+ 	return ret;
+ }
+ 
+ static inline void frontswap_set(struct swap_info_struct *sis, pgoff_t offset)
+ {
+-	if (frontswap_enabled && sis->frontswap_map)
++	if (static_key_false(&frontswap_key) && sis->frontswap_map)
+ 		set_bit(offset, sis->frontswap_map);
+ }
+ 
+ static inline void frontswap_clear(struct swap_info_struct *sis, pgoff_t offset)
+ {
+-	if (frontswap_enabled && sis->frontswap_map)
++	if (static_key_false(&frontswap_key) && sis->frontswap_map)
+ 		clear_bit(offset, sis->frontswap_map);
+ }
+ 
+@@ -94,7 +97,7 @@ static inline int frontswap_store(struct page *page)
+ {
+ 	int ret = -1;
+ 
+-	if (frontswap_enabled)
++	if (static_key_false(&frontswap_key))
+ 		ret = __frontswap_store(page);
+ 	return ret;
+ }
+@@ -103,7 +106,7 @@ static inline int frontswap_load(struct page *page)
+ {
+ 	int ret = -1;
+ 
+-	if (frontswap_enabled)
++	if (static_key_false(&frontswap_key))
+ 		ret = __frontswap_load(page);
+ 	return ret;
+ }
+diff --git a/mm/frontswap.c b/mm/frontswap.c
+index b9b23b1..ebf4c18 100644
+--- a/mm/frontswap.c
++++ b/mm/frontswap.c
+@@ -27,13 +27,13 @@
+ static struct frontswap_ops *frontswap_ops __read_mostly;
+ 
+ /*
+- * This global enablement flag reduces overhead on systems where frontswap_ops
+- * has not been registered, so is preferred to the slower alternative: a
+- * function call that checks a non-global.
++ * The key is enabled once a backend has registered itself. The key
++ * by default is set to false which means that all (except frontswap_init
++ * and frontswap_invalidate) calls are NOPs. Once the key is turned on
++ * all functions execute the __frontswap code.
+  */
+-bool frontswap_enabled __read_mostly;
+-EXPORT_SYMBOL(frontswap_enabled);
+-
++struct static_key frontswap_key = STATIC_KEY_INIT_FALSE;
++EXPORT_SYMBOL(frontswap_key);
+ /*
+  * If enabled, frontswap_store will return failure even on success.  As
+  * a result, the swap subsystem will always write the page to swap, in
+@@ -83,8 +83,8 @@ static inline void inc_frontswap_invalidates(void) { }
+ 
+ /*
+  * Due to the asynchronous nature of the backends loading potentially
+- * _after_ the swap system has been activated, we have chokepoints
+- * on all frontswap functions to not call the backend until the backend
++ * _after_ the swap system has been activated, we have a static key
++ * on all almost frontswap functions to not call the backend until the backend
+  * has registered.
+  *
+  * Specifically when no backend is registered (nobody called
+@@ -104,21 +104,19 @@ static inline void inc_frontswap_invalidates(void) { }
+  * swapoff) is again guarded by the swap subsystem.
+  *
+  * While no backend is registered all calls to frontswap_[store|load|
+- * invalidate_area|invalidate_page] are ignored or fail.
++ * invalidate_page] are never executed as the __frontswap_*
++ * macros are based on the key which is set to false
+  *
+  * The time between the backend being registered and the swap file system
+- * calling the backend (via the frontswap_* functions) is indeterminate as
+- * frontswap_ops is not atomic_t (or a value guarded by a spinlock).
+- * That is OK as we are comfortable missing some of these calls to the newly
+- * registered backend.
++ * calling the backend (via the frontswap_* functions) is instant as the
++ * static_key patches over the code in question.
+  *
+- * Obviously the opposite (unloading the backend) must be done after all
+- * the frontswap_[store|load|invalidate_area|invalidate_page] start
+- * ignorning or failing the requests - at which point frontswap_ops
+- * would have to be made in some fashion atomic.
++ * Obviously the opposite (unloading the backend) can be done after the
++ * the frontswap_[store|load|invalidate_page] have been turned off so there
++ * are no more requests to process. The backend has to flush out all its
++ * pages back to the swap system after that.
+  */
+ static DECLARE_BITMAP(need_init, MAX_SWAPFILES);
+-
+ /*
+  * Register operations for frontswap, returning previous thus allowing
+  * detection of multiple backends and possible nesting.
+@@ -128,8 +126,6 @@ struct frontswap_ops *frontswap_register_ops(struct frontswap_ops *ops)
+ 	struct frontswap_ops *old = frontswap_ops;
+ 	int i;
+ 
+-	frontswap_enabled = true;
+-
+ 	for (i = 0; i < MAX_SWAPFILES; i++) {
+ 		if (test_and_clear_bit(i, need_init))
+ 			ops->init(i);
+@@ -141,6 +137,8 @@ struct frontswap_ops *frontswap_register_ops(struct frontswap_ops *ops)
+ 	 */
+ 	barrier();
+ 	frontswap_ops = ops;
++	if (!static_key_enabled(&frontswap_key))
++		static_key_slow_inc(&frontswap_key);
+ 	return old;
+ }
+ EXPORT_SYMBOL(frontswap_register_ops);
+@@ -165,12 +163,14 @@ EXPORT_SYMBOL(frontswap_tmem_exclusive_gets);
+ 
+ /*
+  * Called when a swap device is swapon'd.
++ *
++ * Can be called without any backend driver is registered.
+  */
+ void __frontswap_init(unsigned type)
+ {
+ 	struct swap_info_struct *sis = swap_info[type];
+ 
+-	if (frontswap_ops) {
++	if (static_key_false(&frontswap_key)) {
+ 		BUG_ON(sis == NULL);
+ 		if (sis->frontswap_map == NULL)
+ 			return;
+@@ -205,11 +205,6 @@ int __frontswap_store(struct page *page)
+ 	struct swap_info_struct *sis = swap_info[type];
+ 	pgoff_t offset = swp_offset(entry);
+ 
+-	if (!frontswap_ops) {
+-		inc_frontswap_failed_stores();
+-		return ret;
+-	}
+-
+ 	BUG_ON(!PageLocked(page));
+ 	BUG_ON(sis == NULL);
+ 	if (frontswap_test(sis, offset))
+@@ -249,9 +244,6 @@ int __frontswap_load(struct page *page)
+ 	struct swap_info_struct *sis = swap_info[type];
+ 	pgoff_t offset = swp_offset(entry);
+ 
+-	if (!frontswap_ops)
+-		return ret;
+-
+ 	BUG_ON(!PageLocked(page));
+ 	BUG_ON(sis == NULL);
+ 	if (frontswap_test(sis, offset))
+@@ -275,9 +267,6 @@ void __frontswap_invalidate_page(unsigned type, pgoff_t offset)
+ {
+ 	struct swap_info_struct *sis = swap_info[type];
+ 
+-	if (!frontswap_ops)
+-		return;
+-
+ 	BUG_ON(sis == NULL);
+ 	if (frontswap_test(sis, offset)) {
+ 		frontswap_ops->invalidate_page(type, offset);
+@@ -290,12 +279,14 @@ EXPORT_SYMBOL(__frontswap_invalidate_page);
+ /*
+  * Invalidate all data from frontswap associated with all offsets for the
+  * specified swaptype.
++ *
++ * Can be called without any backend driver registered.
+  */
+ void __frontswap_invalidate_area(unsigned type)
+ {
+ 	struct swap_info_struct *sis = swap_info[type];
+ 
+-	if (frontswap_ops) {
++	if (static_key_false(&frontswap_key)) {
+ 		BUG_ON(sis == NULL);
+ 		if (sis->frontswap_map == NULL)
+ 			return;
+@@ -436,7 +427,6 @@ static int __init init_frontswap(void)
+ 	debugfs_create_u64("invalidates", S_IRUGO,
+ 				root, &frontswap_invalidates);
+ #endif
+-	frontswap_enabled = 1;
+ 	return 0;
+ }
+ 
+-- 
+1.8.0.2
 
