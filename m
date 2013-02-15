@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935299Ab3BOCqG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 21:46:06 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:24028 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932394Ab3BOCqE (ORCPT
+	id S935294Ab3BOCsw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 21:48:52 -0500
+Received: from server.prisktech.co.nz ([115.188.14.127]:54800 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932651Ab3BOCsv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 21:46:04 -0500
-Date: Thu, 14 Feb 2013 21:45:56 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xensource.com
-Subject: [GIT PULL] (xen) stable/for-linus-3.8-rc7-tag-two
-Message-ID: <20130215024556.GA10506@phenom.dumpdata.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Thu, 14 Feb 2013 21:48:51 -0500
+From: Tony Prisk <linux@prisktech.co.nz>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, Tony Prisk <linux@prisktech.co.nz>
+Subject: [RFC PATCH] Add pin control driver for Wondermedia SoCS
+Date: Fri, 15 Feb 2013 15:48:53 +1300
+Message-Id: <1360896534-20637-1-git-send-email-linux@prisktech.co.nz>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Linus,
+Before I get all carried away and start filling in all the data for
+this driver, I was hoping someone (or a few people) could review the
+basic design in case it requires changes to the data structures.
 
-Please git pull one more tag (or if you haven't pulled the earlier one,
-then just pull this one instead).
+This driver is based on pinctrl-bcm2835.c as it seems to be similar in
+design. The pin controller on Wondermedia SoC's only allows each pin to
+either be a GPIO or to be its 'alternate' function. Functions cannot be
+remapped to any other pin.
 
+I have seperated out the data from the code as there are several SoC's
+to support and each has it's own variation of registers / pin layout.
+I borrowed this part of the design from the Tegra pinctrl driver.
 
- git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-linus-3.8-rc7-tag-two
+Regards
+Tony Prisk
 
-This has two reverts for patches added in the v3.8 time-frame. They introduced
-a regression with the older hypervisors (Xen 4.1) so lets take these patches
-out.
+Tony Prisk (1):
+  pinctrl: gpio: vt8500: Add pin control driver for Wondermedia SoCs
 
- arch/x86/xen/enlighten.c | 77 +++++++++++++++---------------------------------
- arch/x86/xen/suspend.c   |  2 +-
- arch/x86/xen/xen-ops.h   |  2 +-
- 3 files changed, 25 insertions(+), 56 deletions(-)
+ arch/arm/Kconfig                   |    4 +-
+ arch/arm/boot/dts/wm8850-w70v2.dts |   15 +
+ arch/arm/boot/dts/wm8850.dtsi      |    7 +-
+ arch/arm/mach-vt8500/Kconfig       |    1 +
+ drivers/pinctrl/Kconfig            |   10 +
+ drivers/pinctrl/Makefile           |    2 +
+ drivers/pinctrl/pinctrl-wm8850.c   |  166 +++++++++++
+ drivers/pinctrl/pinctrl-wmt.c      |  565 ++++++++++++++++++++++++++++++++++++
+ drivers/pinctrl/pinctrl-wmt.h      |   73 +++++
+ 9 files changed, 840 insertions(+), 3 deletions(-)
+ create mode 100644 drivers/pinctrl/pinctrl-wm8850.c
+ create mode 100644 drivers/pinctrl/pinctrl-wmt.c
+ create mode 100644 drivers/pinctrl/pinctrl-wmt.h
 
-Konrad Rzeszutek Wilk (2):
-      Revert "xen/PVonHVM: fix compile warning in init_hvm_pv_info"
-      Revert "xen PVonHVM: use E820_Reserved area for shared_info"
+-- 
+1.7.9.5
 
