@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752854Ab3BOQly (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 11:41:54 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35995 "EHLO
+	id S1753259Ab3BOQmG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 11:42:06 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:36004 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751610Ab3BOQlw (ORCPT
+	with ESMTP id S1751740Ab3BOQmD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 11:41:52 -0500
-Date: Fri, 15 Feb 2013 08:40:26 -0800
-From: tip-bot for Daniel Baluta <dbaluta@ixiacom.com>
-Message-ID: <tip-02e176af92f3e2e9ec3a48792036566af2dcd534@git.kernel.org>
+	Fri, 15 Feb 2013 11:42:03 -0500
+Date: Fri, 15 Feb 2013 08:39:16 -0800
+From: tip-bot for Vinson Lee <vlee@twitter.com>
+Message-ID: <tip-85df3b3769222894e9692b383c7af124b7721086@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        mingo@redhat.com, dbaluta@ixiacom.com, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, fweisbec@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, dbaluta@ixiacom.com,
-        mingo@redhat.com, paulus@samba.org, linux-kernel@vger.kernel.org,
-        acme@redhat.com, fweisbec@gmail.com, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de
-In-Reply-To: <1360186160-7566-1-git-send-email-dbaluta@ixiacom.com>
-References: <1360186160-7566-1-git-send-email-dbaluta@ixiacom.com>
+        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org, penberg@kernel.org,
+        namhyung@gmail.com, jolsa@redhat.com, tglx@linutronix.de,
+        vlee@twitter.com, lizefan@huawei.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, penberg@kernel.org,
+        namhyung@gmail.com, jolsa@redhat.com, tglx@linutronix.de,
+        lizefan@huawei.com, vlee@twitter.com
+In-Reply-To: <1360792138-29186-1-git-send-email-vlee@twitter.com>
+References: <1360792138-29186-1-git-send-email-vlee@twitter.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/hwbp: Fix cleanup in case of kzalloc failure
-Git-Commit-ID: 02e176af92f3e2e9ec3a48792036566af2dcd534
+Subject: [tip:perf/core] perf tools: Fix build with bison 2.3 and older.
+Git-Commit-ID: 85df3b3769222894e9692b383c7af124b7721086
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,45 +31,85 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 15 Feb 2013 08:40:32 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 15 Feb 2013 08:39:23 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  02e176af92f3e2e9ec3a48792036566af2dcd534
-Gitweb:     http://git.kernel.org/tip/02e176af92f3e2e9ec3a48792036566af2dcd534
-Author:     Daniel Baluta <dbaluta@ixiacom.com>
-AuthorDate: Wed, 6 Feb 2013 23:29:20 +0200
+Commit-ID:  85df3b3769222894e9692b383c7af124b7721086
+Gitweb:     http://git.kernel.org/tip/85df3b3769222894e9692b383c7af124b7721086
+Author:     Vinson Lee <vlee@twitter.com>
+AuthorDate: Wed, 13 Feb 2013 13:48:58 -0800
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 14 Feb 2013 17:06:39 -0300
+CommitDate: Thu, 14 Feb 2013 16:12:34 -0300
 
-perf/hwbp: Fix cleanup in case of kzalloc failure
+perf tools: Fix build with bison 2.3 and older.
 
-Obviously this is a typo and could result in memory leaks if kzalloc
-fails on a given cpu.
+The %name-prefix "prefix" syntax is not available on bison 2.3 and
+older. Substitute with the -p "prefix" command-line option for
+compatibility with older versions of bison.
 
-Signed-off-by: Daniel Baluta <dbaluta@ixiacom.com>
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+This patch fixes this build error with older versions of bison.
+
+    CC util/sysfs.o
+    BISON util/pmu-bison.c
+util/pmu.y:2.14-24: syntax error, unexpected string, expecting =
+make: *** [util/pmu-bison.c] Error 1
+
+Signed-off-by: Vinson Lee <vlee@twitter.com>
+Tested-by: Li Zefan <lizefan@huawei.com>
+Cc: stable@vger.kernel.org # 3.4+
 Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Li Zefan <lizefan@huawei.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1360186160-7566-1-git-send-email-dbaluta@ixiacom.com
+Cc: Pekka Enberg <penberg@kernel.org>
+Link: http://lkml.kernel.org/r/1360792138-29186-1-git-send-email-vlee@twitter.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- kernel/events/hw_breakpoint.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/Makefile            | 4 ++--
+ tools/perf/util/parse-events.y | 1 -
+ tools/perf/util/pmu.y          | 1 -
+ 3 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
-index fe8a916..a64f8ae 100644
---- a/kernel/events/hw_breakpoint.c
-+++ b/kernel/events/hw_breakpoint.c
-@@ -676,7 +676,7 @@ int __init init_hw_breakpoint(void)
-  err_alloc:
- 	for_each_possible_cpu(err_cpu) {
- 		for (i = 0; i < TYPE_MAX; i++)
--			kfree(per_cpu(nr_task_bp_pinned[i], cpu));
-+			kfree(per_cpu(nr_task_bp_pinned[i], err_cpu));
- 		if (err_cpu == cpu)
- 			break;
- 	}
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index b90528d..a2108ca 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -296,13 +296,13 @@ $(OUTPUT)util/parse-events-flex.c: util/parse-events.l $(OUTPUT)util/parse-event
+ 	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/parse-events-flex.h $(PARSER_DEBUG_FLEX) -t util/parse-events.l > $(OUTPUT)util/parse-events-flex.c
+ 
+ $(OUTPUT)util/parse-events-bison.c: util/parse-events.y
+-	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d $(PARSER_DEBUG_BISON) -o $(OUTPUT)util/parse-events-bison.c
++	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d $(PARSER_DEBUG_BISON) -o $(OUTPUT)util/parse-events-bison.c -p parse_events_
+ 
+ $(OUTPUT)util/pmu-flex.c: util/pmu.l $(OUTPUT)util/pmu-bison.c
+ 	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/pmu-flex.h -t util/pmu.l > $(OUTPUT)util/pmu-flex.c
+ 
+ $(OUTPUT)util/pmu-bison.c: util/pmu.y
+-	$(QUIET_BISON)$(BISON) -v util/pmu.y -d -o $(OUTPUT)util/pmu-bison.c
++	$(QUIET_BISON)$(BISON) -v util/pmu.y -d -o $(OUTPUT)util/pmu-bison.c -p perf_pmu_
+ 
+ $(OUTPUT)util/parse-events.o: $(OUTPUT)util/parse-events-flex.c $(OUTPUT)util/parse-events-bison.c
+ $(OUTPUT)util/pmu.o: $(OUTPUT)util/pmu-flex.c $(OUTPUT)util/pmu-bison.c
+diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
+index 4de2fdc..afc44c1 100644
+--- a/tools/perf/util/parse-events.y
++++ b/tools/perf/util/parse-events.y
+@@ -1,5 +1,4 @@
+ %pure-parser
+-%name-prefix "parse_events_"
+ %parse-param {void *_data}
+ %parse-param {void *scanner}
+ %lex-param {void* scanner}
+diff --git a/tools/perf/util/pmu.y b/tools/perf/util/pmu.y
+index ec89804..bfd7e85 100644
+--- a/tools/perf/util/pmu.y
++++ b/tools/perf/util/pmu.y
+@@ -1,5 +1,4 @@
+ 
+-%name-prefix "perf_pmu_"
+ %parse-param {struct list_head *format}
+ %parse-param {char *name}
+ 
