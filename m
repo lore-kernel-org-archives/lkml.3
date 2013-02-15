@@ -1,69 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750882Ab3BOFBh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 00:01:37 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:58791 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750718Ab3BOFBg (ORCPT
+	id S1751035Ab3BOFHQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 00:07:16 -0500
+Received: from mail-we0-f176.google.com ([74.125.82.176]:38333 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750718Ab3BOFHO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 00:01:36 -0500
-Date: Fri, 15 Feb 2013 16:01:24 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: linux-next: manual merge of the driver-core tree with the  tree
-Message-Id: <20130215160124.52d9bfb269ad1ffd390d4851@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__15_Feb_2013_16_01_24_+1100_pVqz.AwYj1hIErXB"
+	Fri, 15 Feb 2013 00:07:14 -0500
+MIME-Version: 1.0
+In-Reply-To: <1360882071-4072668-10-git-send-email-arnd@arndb.de>
+References: <1360882071-4072668-1-git-send-email-arnd@arndb.de> <1360882071-4072668-10-git-send-email-arnd@arndb.de>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Fri, 15 Feb 2013 10:36:53 +0530
+Message-ID: <CA+V-a8twXpuy3+ScdR26pwYn0LriKVqnwR5Qgyv_vtf4dgEyGQ@mail.gmail.com>
+Subject: Re: [PATCH 9/9] [media] davinci: do not include mach/hardware.h
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>, arm@kernel.org,
+        dlos <davinci-linux-open-source@linux.davincidsp.com>,
+        linux-media <linux-media@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__15_Feb_2013_16_01_24_+1100_pVqz.AwYj1hIErXB
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Arnd,
 
-Hi Greg,
+Thanks for the patch.
 
-Today's linux-next merge of the driver-core tree got a conflict in
-drivers/net/wireless/rtlwifi/Kconfig between commit 06e7cda3ce30
-("rtlwifi: Rework Kconfig") from the wireless-next tree and commit
-6cba014857f4 ("drivers/net/wireless/rtlwifi: remove depends on
-CONFIG_EXPERIMENTAL") from the driver-core tree.
+On Fri, Feb 15, 2013 at 4:17 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> It is now possible to build the davinci vpss code
+> on multiplatform kernels, which causes a problem
+> since the driver tries to incude the davinci
+> platform specific mach/hardware.h file. Fortunately
+> that file is not required at all in the driver,
+> so we can simply remove the #include statement.
+>
+> Without this patch, building allyesconfig results in:
+>
+> drivers/media/platform/davinci/vpss.c:28:27: fatal error: mach/hardware.h: No such file or directory
+> compilation terminated.
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+> Cc: "Lad, Prabhakar" <prabhakar.lad@ti.com>
+> Cc: Tony Lindgren <tony@atomide.com>
 
-I fixed it up (the former is a superset of the latter, so I used that)
-and can carry the fix as necessary (no action is required).
+Acked-by: Lad, Prabhakar <prabhakar.lad@ti.com>
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Regards,
+--Prabhakar
 
---Signature=_Fri__15_Feb_2013_16_01_24_+1100_pVqz.AwYj1hIErXB
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRHcEkAAoJEECxmPOUX5FEpzsP/Rvn8Ig+Dx9bzi5nVUmJ+xCA
-IdC8FhP1rSZvvD6Mt3JwBPCQpamPoJq+Wlbclvnx/vvPV26kQeffhcZCeDeJiMHG
-pjx0h4Sq2mZsCMsSUu3YnUXyZ1G9m5yW4pg+lnyvCYH1kuoSIDub2d/OyZykkYq/
-CU29xMCUBklgoFUZa5f2k8G/HTVbRvtURQfz5itvY5VS0Qnk3g9e3NmaLZ5HKq75
-KOPVt0NWHthFZa1YJIJFefBSN8G+tBNS2KLp5FBld31WZpg34q4CJHHvufpMHBDP
-s3rD1js+ydknOu8SLOS2Z8/URV9RAiCBBa+iljfXW/sldbT8fJoCDV8yyiZjSgVF
-Hut4ygTtw6hguaivjDCOu8ugas5q41kg9Zy1A7ktU5d32HPRisMZoOZPKZHdA6o5
-FhTswLJaYThrmt6QJ8vvqesKzQ1oG/75cdlLfE5yZN7mj7l//u2Ab3vJbB97rRRq
-KbkYN/4tf8Va/XYB22wi80F8aqbjySmh/o0Oh4toTgFyLab7R/CiXM/QeBPQOPjN
-Wiwu0xnGkkAJR4HKjGaEVlf8VkHpW9vwhmn6V6IJJS2fthp+BBnpnGgHAvVPblKM
-ybPiDxYcR9nnptOGW41m3I/zlGYm6Obhf+GvYRhySzC3nUKhQk1kocdlasD2F/qH
-cr7ZXixMd7HHgWzSt0oa
-=IXop
------END PGP SIGNATURE-----
-
---Signature=_Fri__15_Feb_2013_16_01_24_+1100_pVqz.AwYj1hIErXB--
+> ---
+>  drivers/media/platform/davinci/vpss.c | 1 -
+>  1 file changed, 1 deletion(-)
+>
+> diff --git a/drivers/media/platform/davinci/vpss.c b/drivers/media/platform/davinci/vpss.c
+> index 494d322..a19c552 100644
+> --- a/drivers/media/platform/davinci/vpss.c
+> +++ b/drivers/media/platform/davinci/vpss.c
+> @@ -25,7 +25,6 @@
+>  #include <linux/spinlock.h>
+>  #include <linux/compiler.h>
+>  #include <linux/io.h>
+> -#include <mach/hardware.h>
+>  #include <media/davinci/vpss.h>
+>
+>  MODULE_LICENSE("GPL");
+> --
+> 1.8.1.2
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
