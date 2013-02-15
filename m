@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752569Ab3BOW4W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 17:56:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49305 "EHLO
+	id S1752609Ab3BOXCL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 18:02:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49320 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752344Ab3BOW4T (ORCPT
+	with ESMTP id S1752520Ab3BOW4W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 17:56:19 -0500
+	Fri, 15 Feb 2013 17:56:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [ 1/8] s390/timer: avoid overflow when programming clock comparator
-Date: Fri, 15 Feb 2013 14:56:08 -0800
-Message-Id: <20130215225431.034663660@linuxfoundation.org>
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [ 6/8] PCI/PM: Clean up PME state when removing a device
+Date: Fri, 15 Feb 2013 14:56:13 -0800
+Message-Id: <20130215225431.623169738@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130215225430.841634159@linuxfoundation.org>
 References: <20130215225430.841634159@linuxfoundation.org>
@@ -27,47 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 
-commit d911e03d097bdc01363df5d81c43f69432eb785c upstream.
+commit 249bfb83cf8ba658955f0245ac3981d941f746ee upstream.
 
-Since ed4f209 "s390/time: fix sched_clock() overflow" a new helper function
-is used to avoid overflows when converting TOD format values to nanosecond
-values.
-The kvm interrupt code formerly however only worked by accident because of
-an overflow. It tried to program a timer that would expire in more than ~29
-years. Because of the old TOD-to-nanoseconds overflow bug the real expiry
-value however was much smaller, but now it isn't anymore.
-This however triggers yet another bug in the function that programs the clock
-comparator s390_next_ktime(): if the absolute "expires" value is after 2042
-this will result in an overflow and the programmed value is lower than the
-current TOD value which immediatly triggers a clock comparator (= timer)
-interrupt.
-Since the timer isn't expired it will be programmed immediately again and so
-on... the result is a dead system.
-To fix this simply program the maximum possible value if an overflow is
-detected.
+Devices are added to pci_pme_list when drivers use pci_enable_wake()
+or pci_wake_from_d3(), but they aren't removed from the list unless
+the driver explicitly disables wakeup.  Many drivers never disable
+wakeup, so their devices remain on the list even after they are
+removed, e.g., via hotplug.  A subsequent PME poll will oops when
+it tries to touch the device.
 
-Reported-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Tested-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+This patch disables PME# on a device before removing it, which removes
+the device from pci_pme_list.  This is safe even if the device never
+had PME# enabled.
+
+This oops can be triggered by unplugging a Thunderbolt ethernet adapter
+on a Macbook Pro, as reported by Daniel below.
+
+[bhelgaas: changelog]
+Reference: http://lkml.kernel.org/r/CAMVG2svG21yiM1wkH4_2pen2n+cr2-Zv7TbH3Gj+8MwevZjDbw@mail.gmail.com
+Reported-and-tested-by: Daniel J Blueman <daniel@quora.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/kernel/time.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/pci/remove.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/s390/kernel/time.c
-+++ b/arch/s390/kernel/time.c
-@@ -121,6 +121,9 @@ static int s390_next_ktime(ktime_t expir
- 	nsecs = ktime_to_ns(ktime_add(timespec_to_ktime(ts), expires));
- 	do_div(nsecs, 125);
- 	S390_lowcore.clock_comparator = sched_clock_base_cc + (nsecs << 9);
-+	/* Program the maximum value if we have an overflow (== year 2042) */
-+	if (unlikely(S390_lowcore.clock_comparator < sched_clock_base_cc))
-+		S390_lowcore.clock_comparator = -1ULL;
- 	set_clock_comparator(S390_lowcore.clock_comparator);
- 	return 0;
- }
+--- a/drivers/pci/remove.c
++++ b/drivers/pci/remove.c
+@@ -19,6 +19,8 @@ static void pci_free_resources(struct pc
+ 
+ static void pci_stop_dev(struct pci_dev *dev)
+ {
++	pci_pme_active(dev, false);
++
+ 	if (dev->is_added) {
+ 		pci_proc_detach_device(dev);
+ 		pci_remove_sysfs_dev_files(dev);
 
 
