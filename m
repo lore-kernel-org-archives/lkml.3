@@ -1,85 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935986Ab3BOPzg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 10:55:36 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:56529 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935835Ab3BOPze (ORCPT
+	id S1761707Ab3BOP6E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 10:58:04 -0500
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:59835 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755865Ab3BOP6C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 10:55:34 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Dave Jones <davej@redhat.com>, Richard Weinberger <richard@nod.at>,
-        Kees Cook <keescook@chromium.org>,
-        Thomas Gleixner <tglx@linutronix.de>, <stable@vger.kernel.org.#.3.4+>
-Subject: [PATCH] futex: avoid kernel taint caused by get_robust_list
-Date: Fri, 15 Feb 2013 10:54:48 -0500
-Message-ID: <1360943688-12502-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.8.1.2
+	Fri, 15 Feb 2013 10:58:02 -0500
+Date: Fri, 15 Feb 2013 16:57:57 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, rostedt@goodmiss.org,
+        aquini@redhat.com, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Michel Lespinasse <walken@google.com>,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:core/locking] x86/smp: Move waiting on contended ticket
+ lock out of line
+Message-ID: <20130215155757.GD3324@gmail.com>
+References: <20130206150403.006e5294@cuia.bos.redhat.com>
+ <tip-4aef331850b637169ff036ed231f0d236874f310@git.kernel.org>
+ <CA+55aFx6N6SaRN+w=CTXJ=ZSsOE6KeS2R9sT_uhAx9h2j+hjKg@mail.gmail.com>
+ <CA+55aFwZ2wN=9qTNNmqjPfK=ZwS=kx6HAAFj_cWLnJDbK1M0_Q@mail.gmail.com>
+ <20130214105027.GB25282@gmail.com>
+ <CA+55aFxxt4Qu=kSGCuvqh+veotL7P=14mHiFTUUNgkh3UwRiDQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxxt4Qu=kSGCuvqh+veotL7P=14mHiFTUUNgkh3UwRiDQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit ec0c4274e33c0373e476b73e01995c53128f1257 ("futex: Mark
-get_robust_list as deprecated") added these two WARN_ONCE calls.
 
-However, WARN_ONCE taints the kernel, and we shouldn't be allowing
-any user who wanders by to do this.  For example, the system fuzzer
-"trinity" uses the tainted state as a metric for when to stop,
-assuming that it has caused significant wreckage (and indeed
-that tool is what actually led me to this change).
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-The ability to deprecate this code has been called into question[1],
-but if that remains to be finalized, then making this change in the
-interim seems to make sense.
+> Btw, it may end up that almost nobody cares. Modern CPU's are 
+> really good at handling the straightforward "save/restore to 
+> stack" instructions. One of the reasons I care is not 
+> performance per se, butu the fact that I still look at asm 
+> code every time I do any performance profiling, and it's 
+> absolutely horrible to see the code when you see "ugh, that's 
+> pointless". I'm sensitive to the spinlocks in particular, 
+> because we've gone back and forth on inlining them before, so 
+> I've seen this. But right now I don't think we inline the lock 
+> under normal configs *anyway*, so I guess it doesn't much 
+> matter.
 
-[1] http://lkml.indiana.edu/hypermail/linux/kernel/1208.0/01081.html
+Yes, right now we only inline non-debug spin_unlock() and 
+spin_unlock_irq() [on !PREEMPT] - because that was an 
+unconditional win.
 
-Cc: Dave Jones <davej@redhat.com>
-Cc: Richard Weinberger <richard@nod.at>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: stable@vger.kernel.org	# 3.4+
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
+Thanks,
 
-[Alternatively, someone can simply apply Richard's original revert:
- http://permalink.gmane.org/gmane.linux.kernel.hardened.devel/506
- Either way, I think the WARN_ONCE needs to go away. ]
-
- kernel/futex.c        | 2 +-
- kernel/futex_compat.c | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 19eb089..e1aede2 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -2471,7 +2471,7 @@ SYSCALL_DEFINE3(get_robust_list, int, pid,
- 	if (!futex_cmpxchg_enabled)
- 		return -ENOSYS;
- 
--	WARN_ONCE(1, "deprecated: get_robust_list will be deleted in 2013.\n");
-+	printk_once(KERN_WARNING "deprecated: get_robust_list will be deleted in 2013.\n");
- 
- 	rcu_read_lock();
- 
-diff --git a/kernel/futex_compat.c b/kernel/futex_compat.c
-index 83e368b..618d2db 100644
---- a/kernel/futex_compat.c
-+++ b/kernel/futex_compat.c
-@@ -142,7 +142,7 @@ compat_sys_get_robust_list(int pid, compat_uptr_t __user *head_ptr,
- 	if (!futex_cmpxchg_enabled)
- 		return -ENOSYS;
- 
--	WARN_ONCE(1, "deprecated: get_robust_list will be deleted in 2013.\n");
-+	printk_once(KERN_WARNING "deprecated: get_robust_list will be deleted in 2013.\n");
- 
- 	rcu_read_lock();
- 
--- 
-1.8.1.2
-
+	Ingo
