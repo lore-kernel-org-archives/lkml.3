@@ -1,129 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932984Ab3BOQeD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 11:34:03 -0500
-Received: from mga11.intel.com ([192.55.52.93]:13512 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756229Ab3BOQeA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 11:34:00 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,674,1355126400"; 
-   d="scan'208";a="291712317"
-From: "Moore, Robert" <robert.moore@intel.com>
-To: Toshi Kani <toshi.kani@hp.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <liuj97@gmail.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Myron Stowe <mstowe@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "Zheng, Lv" <lv.zheng@intel.com>, "Brown, Len" <len.brown@intel.com>
-Subject: RE: [Update][PATCH] ACPI / hotplug: Fix concurrency issues and
- memory leaks
-Thread-Topic: [Update][PATCH] ACPI / hotplug: Fix concurrency issues and
- memory leaks
-Thread-Index: AQHOCkL6WO0GND/HtUaZIu27Tc3Y7ph4obWwgAEmnICAAAtGEIAAilaA//+njwCAAJFdgIAAAV0AgADPTACAACltAP//hXig
-Date: Fri, 15 Feb 2013 16:33:47 +0000
-Message-ID: <94F2FBAB4432B54E8AACC7DFDE6C92E368CB6125@ORSMSX101.amr.corp.intel.com>
-References: <1837481.7dT8hTZ4MT@vostro.rjw.lan>
-	 <1463882.MtF6rq6lDy@vostro.rjw.lan>
-	 <1360888082.3869.163.camel@misato.fc.hp.com>
-	 <1556413.qqfoi7QgzD@vostro.rjw.lan>
- <1360941494.9542.11.camel@misato.fc.hp.com>
-In-Reply-To: <1360941494.9542.11.camel@misato.fc.hp.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S933131Ab3BOQeM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 11:34:12 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:64174 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933037Ab3BOQeK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 11:34:10 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH RESEND 1/6 v13] gpio: Add a block GPIO API to gpiolib
+To: Roland Stigge <stigge@antcom.de>, gregkh@linuxfoundation.org,
+        linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
+        jbe@pengutronix.de, plagnioj@jcrosoft.com, highguy@gmail.com,
+        broonie@opensource.wolfsonmicro.com, daniel-gl@gmx.net,
+        rmallon@gmail.com, sr@denx.de, wg@grandegger.com,
+        tru@work-microwave.de, mark.rutland@arm.com
+Cc: Roland Stigge <stigge@antcom.de>
+In-Reply-To: <1358250716-21986-2-git-send-email-stigge@antcom.de>
+References: <1358250716-21986-1-git-send-email-stigge@antcom.de> <1358250716-21986-2-git-send-email-stigge@antcom.de>
+Date: Fri, 15 Feb 2013 16:34:04 +0000
+Message-Id: <20130215163404.642863E044B@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1FGY4s7011893
 
-
-> > > > > > > > Is there a mechanism in ACPICA to ensure that a handle
-> > > > > > > > won't become stale while a notify handler is running for
-> > > > > > > > it or is the OS responsible for ensuring that
-> > > > > > > > _EJ0 won't be run in parallel with notify handlers for
-> > > > > > > > device objects being ejected?
-> > > > > > > >
-> > > > > > >
-> > > > > > > It is up to the host.
-> > > > > >
-> > > > > > I was afraid that that might be the case. :-)
-> > > > > >
-> > > > > > So far the (Linux) host has been happily ignoring that
-> > > > > > potential problem, so I guess it can still be ignored for a
-> > > > > > while, although we'll need to address it eventually at one
-> point.
-> > > > >
-> > > > > I would think it should be fairly simple to setup a mechanism to
-> > > > > either tell the driver or for the driver to figure it out --
-> > > > > such that the driver knows that all handles associated with the
-> > > > > device are now invalid. Another way to look at it is that when
-> > > > > the device is re-installed, the driver should reinitialize such
-> > > > > that it obtains new handles for the devices and subobjects in
-> question.
-> > > >
-> > > > Unfortunately, there is quite strong assumption in our code that
-> > > > ACPI handles will not become stale before the device objects
-> > > > associated with them are removed.  For this reason, we need to
-> > > > know in advance which handles will become stale as a result of a
-> > > > table unload and remove their device objects beforehand.
-> > > >
-> > > > Moreover, when there's a notify handler installed for a given ACPI
-> > > > handle and that handle becomes stale while the notify handler is
-> > > > running, we'll be in trouble.  To avoid that we need to ensure
-> > > > that table unloads and notifies will always be mutually exclusive.
-> > >
-> > > I wonder if we can make acpi_ns_validate_handle() to actually be
-> > > able to verify if a given handle is valid.  This way, ACPICA can
-> > > fail gracefully
-> > > (AE_BAD_PARAMETER) when a stable handle is passed to the interfaces.
-> >
-> > That'd be good, but to implement it, I think, it would be necessary to
-> > introduce some reference counting of namespace objects such that the
-> > given object would only be deleted after the last reference to it had
-> been dropped.
-> > On table unload it would just be marked as invalid, but it would stay
-> > in memory as long as there were any references to it.
-> >
-> > So, for example, a notify handler would start from something like
-> > acpi_add_reference(handle), which would guarantee that the object
-> > pointed to by handle would stay in memory, and it would finish by
-> > doing
-> > acpi_drop_reference(handle) or a work item scheduled by it would do
-> that.
-> >
-> > We do that for objects based on struct device and it works well.
+On Tue, 15 Jan 2013 12:51:51 +0100, Roland Stigge <stigge@antcom.de> wrote:
+> The recurring task of providing simultaneous access to GPIO lines (especially
+> for bit banging protocols) needs an appropriate API.
 > 
-> There is other way to implement it.  Since acpi_handle is defined as an
-> opaque value, this could be changed to an index to an array of pointers,
-> instead of a direct pointer.  Then we can safely invalidate an index by
-> invalidating the pointer associated with the index.
+> This patch adds a kernel internal "Block GPIO" API that enables simultaneous
+> access to several GPIOs. This is done by abstracting GPIOs to an n-bit word:
+> Once requested, it provides access to a group of GPIOs which can range over
+> multiple GPIO chips.
+> 
+> Signed-off-by: Roland Stigge <stigge@antcom.de>
 
+Oops, I forgot to comment on the block API bits. Comments below...
 
+> --- linux-2.6.orig/drivers/gpio/gpiolib.c
+> +++ linux-2.6/drivers/gpio/gpiolib.c
+> --- linux-2.6.orig/include/asm-generic/gpio.h
+> +++ linux-2.6/include/asm-generic/gpio.h
+> @@ -44,6 +44,7 @@ static inline bool gpio_is_valid(int num
+>  
+>  struct device;
+>  struct gpio;
+> +struct gpio_block;
+>  struct seq_file;
+>  struct module;
+>  struct device_node;
+> @@ -109,6 +110,8 @@ struct gpio_chip {
+>  						unsigned offset);
+>  	int			(*get)(struct gpio_chip *chip,
+>  						unsigned offset);
+> +	unsigned long		(*get_block)(struct gpio_chip *chip,
+> +					     unsigned long mask);
+>  	int			(*direction_output)(struct gpio_chip *chip,
+>  						unsigned offset, int value);
+>  	int			(*set_debounce)(struct gpio_chip *chip,
+> @@ -116,6 +119,9 @@ struct gpio_chip {
+>  
+>  	void			(*set)(struct gpio_chip *chip,
+>  						unsigned offset, int value);
+> +	void			(*set_block)(struct gpio_chip *chip,
+> +					     unsigned long mask,
+> +					     unsigned long values);
+>  
+>  	int			(*to_irq)(struct gpio_chip *chip,
+>  						unsigned offset);
 
-We have of course thought about adding a mechanism to validate/invalidate acpica namespace handles. In fact, this is why the ACPI_HANDLE data type was introduced in the first place, so that if we ever wanted or needed to implement something like this, it would not break a lot of existing code.
+This is the core of the impact on gpio_chip drivers, so I'll restrict my
+comments to this bit.
 
-However, we have never had a real need to implement such a mechanism, nor has the ever been a request from any of the operating systems that run ACPICA.
+First to set the stage. The gpio_chip api is used by all types of GPIO
+interfaces from on-chip MMIO (fast & atomic) to off-chip I2c/SPI/USB/etc
+attached (slow and will sleep). For on-chip GPIO we want the API to get
+out of the way as much as possible. Some systems choose fast on-chip
+gpios to get as much speed as possible between bit flips. If there is
+too much overhead in gpiolib, then they have to dump gpiolib entirely
+and open-code it. There will always be a segment of uses that need to do
+this, but I don't want to completely ignore highspeed gpiolib users.
 
-The existing model is that the host has knowledge of what objects will go away when a table is unloaded, and can simply assume that all related acpi handles will go bad after the unload (and table unload is the only case where parts of the namespace go away, as far as I remember). Upon a reload of the table, the host knows to reinitialize all handles associated with the table/device.
+For the slow chips, gpiolib overhead is far dwarfed by the serial bus
+latency, so any work that can consolidate transfers has measurable
+payoff.
 
-ACPCI has a table handler mechanism, where the host handler is invoked *before* an ACPI table is actually unloaded, so the host can prepare for the unload. For example, before returning from the table handler, the host may want to synchronize by waiting for any outstanding notifies to complete, then simply ignoring any further notifies from any devices associated with the table.
+The reason I bring this up even though consolidation calculation isn't
+going to be done by the chip itself is that the format of the API is
+going to affect how much work the chip needs to do[1]. If set and
+direction are different operations, then some chips may not be able to
+consolidate them into a single transfer. On the other end, some fast
+gpio chips have separate set and clear registers that don't require
+read/modify/write cycles, but we don't get the advantage of those if the
+API is based on mask & value..... I am thinking/rambling out loud here.
+Not everything *has* to be supported, but this is the thought process
+I'm going through when looking at the API.
 
-In summary, it has always been felt that the fairly large overhead of implementing a mechanism like this is not worth the cost, as well as not really needed.
+I can think of the following operations that the block API needs to
+support for any given pin:
 
-I suggest that the implementation of eject support proceed by using the existing mechanisms such as the table handler. If additional support/interfaces are needed in ACPICA, we can discuss it. However, just about the last thing I would like to do is add a level of indirection between the ACPI_HANDLE and the ACPI_NAMESPACE_NODE -- which would require a large, global change to ACPICA that would be only applicable for a single rather rare issue, the unloading of an ACPI table. Just the fact that we are discussing this in 2013 and ACPICA has been running since 1999 should confirm the rarity of this case and/or that the existing mechanism has been sufficient for other hosts that run ACPICA.
+1) set to output and level high
+2) set to output and level low
+3) set to input (rely on open-collector for output)
 
-Bob
+Right there, a simple mask/value pair isn't going to do the trick
+because using an open-collector state for output is quite common (see
+the i2c gpio code for example). Adding a direction parameter would solve
+that problem:
 
+	void			(*set_block)(struct gpio_chip *chip,
+					     unsigned long mask,
+					     unsigned long direction,
+					     unsigned long data);
 
+Alternately, if open-collector support was moved inside gpiolib then
+that problem goes away.
 
+ugh... I've run out of time. I need to shut down for the day. Anyway,
+there are my thoughts. I think the API you have would work fine, but
+only if you also add open-collector support into the core. I'll let you
+know if I think of anything else.
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+g.
+
+---
+
+[1] However, I've just had another thought. Maybe we're approaching this
+problem from entirely the wrong way around. Instead of baking in a block
+GPIO API to all of the chip drivers we could instead allow gpio_chips to
+do lazy set/get. For fast chips this wouldn't matter, but a driver could
+do multiple lazy set operations, and then one flush that pushes all the
+updates out. Similarly, a driver could do an "update" on all the input
+gpios that it has followed by lazy gets which just use the last cached
+value. I kind of like the elegance of it and it doesn't have the
+inherent (unsigned long) limitation of 32 or 64 bits that the block gpio
+api imposes.
+
+In this scenario, lazy get/set would just by the real get/set for
+existing gpio_chip drivers, but enhanced drivers could replace the
+immediate versions with lazy variants and the gpiolib core could take
+care of setting and flushing when the non-lazy API gets called.
+
+g.
+
