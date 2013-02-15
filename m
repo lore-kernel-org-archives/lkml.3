@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761705Ab3BOPws (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 10:52:48 -0500
-Received: from vsp-authed02.binero.net ([195.74.38.226]:35255 "HELO
-	vsp-authed-03-02.binero.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755948Ab3BOPwp (ORCPT
+	id S936010Ab3BOPwv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 10:52:51 -0500
+Received: from vsp-authed02.binero.net ([195.74.38.226]:22473 "HELO
+	vsp-authed-02-02.binero.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1761707Ab3BOPwt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 10:52:45 -0500
+	Fri, 15 Feb 2013 10:52:49 -0500
 From: Andreas Larsson <andreas@gaisler.com>
 To: Grant Likely <grant.likely@secretlab.ca>
 Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
@@ -17,94 +17,103 @@ Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Kumar Gala <galak@kernel.crashing.org>,
         Peter Korsgaard <jacmet@sunsite.dk>, linux-kernel@vger.kernel.org,
         software@gaisler.com
-Subject: [PATCH v3 0/7] spi: spi-fsl-spi: Make spi-fsl-spi usable in cpu mode outside of FSL SOC environments and add a grlib variant normally running on sparc
-Date: Fri, 15 Feb 2013 16:52:20 +0100
-Message-Id: <1360943547-2186-1-git-send-email-andreas@gaisler.com>
+Subject: [PATCH v3 4/7] spi: spi-fsl-spi: Introduce a type for the driver
+Date: Fri, 15 Feb 2013 16:52:24 +0100
+Message-Id: <1360943547-2186-5-git-send-email-andreas@gaisler.com>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1360943547-2186-1-git-send-email-andreas@gaisler.com>
+References: <1360943547-2186-1-git-send-email-andreas@gaisler.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes since v3:
-- Patches 1-7: Added Acked-by: Anton Vorontsov <anton@enomsg.org>
-- Patch 1: Small style tweak lining up function arguments properly
-- Patch 7: Changed a style issue with two variables declared on same line
-- Patch 7: Removed usage of cs_gpio_flags variable to apply cleanly to spi/next
-- Patch 7: Changed get_named_gpio "hole value" to -ENOENT => Requries
-  the "spi: Initialize cs_gpio and cs_gpios with ENOENT" patch for
-  TYPE_GRLIB support
+For being able to distinguishing between the regular type of cores and others
+with different entries in of_fsl_spi_match.
 
-Patch 1-6 are ready to be applied
-Patch 7 waits for depencency as described above
-
-This makes the cpu mode of the driver available outside of an FSL SOC
-and even powerpc environment. Furthermore, this adds support for the
-mostly register-compatible SPICTRL core from the GRLIB VHDL IP core
-library normally running on SPARC.
-
-This effort is split up in several patches for clarity of what is being
-changed. Patches 3-5 prepares for the introduction of the GRLIB SPICTRL
-functionality in patch 6. 
-
-To use what is introduced right away they could eventually be merged:
-  Patch A: patch 1
-  Patch B: patch 2
-  Patch C: patches 3-6 merged
-  Patch D: patch 7
-
-Patch 1 makes the driver compileable and presumably useable outside of
-FSL SOC and powerpc environments (SPARC in particular)
-
-Patch 2 fixes a bug that can happen when a device uses SPI_CS_HIGH
-
-Patches 3-6 makes the driver working for GRLIB SPICTRL cores that has
-the built in slave select register and that uses that exclusively for
-chipselects.
-
-Patch 7 introduces gpio support for GRLIB SPICTRL cores. For TYPE_GRLIB
-support to work properly, patch 7 (and patch 7 only) relies upon the
-"spi: Initialize cs_gpio and cs_gpios with -ENOENT" patch. This issue
-does not affect TYPE_FSL at all.
-
-The GRLIB type has been tested under sparc. The FSL type has been
-compile tested in powerpc, arm and x86 environments. It would be great
-if someone with an FSL board could test this out.
-
-One could argue that it would be better to add the GRLIB variant as a
-mode flag in of_mpc8xxx_spi_probe instead of using a new type field, but
-that would require to add a flag for this core in
-include/linux/fsl_devices.h which does not feel right given that this
-core is not part of an FSL device.
-
+Acked-by: Anton Vorontsov <anton@enomsg.org>
 Signed-off-by: Andreas Larsson <andreas@gaisler.com>
+---
+ drivers/spi/spi-fsl-lib.h |    2 ++
+ drivers/spi/spi-fsl-spi.c |   39 ++++++++++++++++++++++++++++++++-------
+ 2 files changed, 34 insertions(+), 7 deletions(-)
 
-Andreas Larsson (7):
-  spi: spi-fsl-spi: Make driver usable in CPU mode outside of an
-    FSL_SOC environment
-  spi: spi-fsl-spi: Make sure in spi_fsl_setup that chipselect becomes
-    inactive
-  spi: spi-fsl-spi: Move setting non-zero tx and rx shifts to a
-    function accessed by a function pointer
-  spi: spi-fsl-spi: Introduce a type for the driver
-  spi: spi-fsl-spi: Add support for setting a maximum number of bits
-    per word
-  spi: spi-fsl-spi: Add support for Aeroflex Gaisler GRLIB cores
-    normally running on SPARC
-  spi: spi-fsl-spi: Add support for gpio chipselects for GRLIB type
-    cores
-
- Documentation/devicetree/bindings/spi/fsl-spi.txt  |    3 +-
- .../devicetree/bindings/vendor-prefixes.txt        |    1 +
- drivers/spi/Kconfig                                |   11 +-
- drivers/spi/Makefile                               |    1 +
- drivers/spi/spi-fsl-cpm.c                          |  387 +++++++++++++
- drivers/spi/spi-fsl-cpm.h                          |   43 ++
- drivers/spi/spi-fsl-lib.c                          |    8 +
- drivers/spi/spi-fsl-lib.h                          |   15 +-
- drivers/spi/spi-fsl-spi.c                          |  605 ++++++--------------
- drivers/spi/spi-fsl-spi.h                          |   72 +++
- 10 files changed, 722 insertions(+), 424 deletions(-)
- create mode 100644 drivers/spi/spi-fsl-cpm.c
- create mode 100644 drivers/spi/spi-fsl-cpm.h
- create mode 100644 drivers/spi/spi-fsl-spi.h
+diff --git a/drivers/spi/spi-fsl-lib.h b/drivers/spi/spi-fsl-lib.h
+index eae54b6..5a9c36c 100644
+--- a/drivers/spi/spi-fsl-lib.h
++++ b/drivers/spi/spi-fsl-lib.h
+@@ -70,6 +70,8 @@ struct mpc8xxx_spi {
+ 	unsigned int flags;
+ 
+ #ifdef CONFIG_SPI_FSL_SPI
++	int type;
++
+ 	void (*set_shifts)(u32 *rx_shift, u32 *tx_shift,
+ 			   int bits_per_word, int msb_first);
+ #endif
+diff --git a/drivers/spi/spi-fsl-spi.c b/drivers/spi/spi-fsl-spi.c
+index aff8bdd..9ae3c44 100644
+--- a/drivers/spi/spi-fsl-spi.c
++++ b/drivers/spi/spi-fsl-spi.c
+@@ -39,6 +39,37 @@
+ #include "spi-fsl-cpm.h"
+ #include "spi-fsl-spi.h"
+ 
++#define TYPE_FSL	0
++
++struct fsl_spi_match_data {
++	int type;
++};
++
++static struct fsl_spi_match_data of_fsl_spi_fsl_config = {
++	.type = TYPE_FSL,
++};
++
++static struct of_device_id of_fsl_spi_match[] = {
++	{
++		.compatible = "fsl,spi",
++		.data = &of_fsl_spi_fsl_config,
++	},
++	{}
++};
++MODULE_DEVICE_TABLE(of, of_fsl_spi_match);
++
++static int fsl_spi_get_type(struct device *dev)
++{
++	const struct of_device_id *match;
++
++	if (dev->of_node) {
++		match = of_match_node(of_fsl_spi_match, dev->of_node);
++		if (match && match->data)
++			return ((struct fsl_spi_match_data *)match->data)->type;
++	}
++	return TYPE_FSL;
++}
++
+ static void fsl_spi_change_mode(struct spi_device *spi)
+ {
+ 	struct mpc8xxx_spi *mspi = spi_master_get_devdata(spi->master);
+@@ -489,7 +520,7 @@ static struct spi_master * fsl_spi_probe(struct device *dev,
+ 	mpc8xxx_spi = spi_master_get_devdata(master);
+ 	mpc8xxx_spi->spi_do_one_msg = fsl_spi_do_one_msg;
+ 	mpc8xxx_spi->spi_remove = fsl_spi_remove;
+-
++	mpc8xxx_spi->type = fsl_spi_get_type(dev);
+ 
+ 	ret = fsl_spi_cpm_init(mpc8xxx_spi);
+ 	if (ret)
+@@ -714,12 +745,6 @@ static int of_fsl_spi_remove(struct platform_device *ofdev)
+ 	return 0;
+ }
+ 
+-static const struct of_device_id of_fsl_spi_match[] = {
+-	{ .compatible = "fsl,spi" },
+-	{}
+-};
+-MODULE_DEVICE_TABLE(of, of_fsl_spi_match);
+-
+ static struct platform_driver of_fsl_spi_driver = {
+ 	.driver = {
+ 		.name = "fsl_spi",
+-- 
+1.7.0.4
 
