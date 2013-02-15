@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753135Ab3BOW7H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 17:59:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49387 "EHLO
+	id S1753057Ab3BOW7F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 17:59:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49364 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752805Ab3BOW4t (ORCPT
+	with ESMTP id S1752763Ab3BOW4t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Feb 2013 17:56:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Petr Matousek <pmatouse@redhat.com>,
-        Andrew Cooper <andrew.cooper3@citrix.com>,
-        Jan Beulich <jbeulich@suse.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 08/10] x86/xen: dont assume %ds is usable in xen_iret for 32-bit PVOPS.
-Date: Fri, 15 Feb 2013 14:56:40 -0800
-Message-Id: <20130215225544.505288437@linuxfoundation.org>
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.coM>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Ingo Molnar <mingo@kernel.org>, linux-mm@kvack.org
+Subject: [ 07/10] x86/mm: Check if PUD is large when validating a kernel address
+Date: Fri, 15 Feb 2013 14:56:39 -0800
+Message-Id: <20130215225544.400906224@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130215225543.586012193@linuxfoundation.org>
 References: <20130215225543.586012193@linuxfoundation.org>
@@ -29,131 +28,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Beulich <JBeulich@suse.com>
+From: Mel Gorman <mgorman@suse.de>
 
-commit 13d2b4d11d69a92574a55bfd985cfb0ca77aebdc upstream.
+commit 0ee364eb316348ddf3e0dfcd986f5f13f528f821 upstream.
 
-This fixes CVE-2013-0228 / XSA-42
+A user reported the following oops when a backup process reads
+/proc/kcore:
 
-Drew Jones while working on CVE-2013-0190 found that that unprivileged guest user
-in 32bit PV guest can use to crash the > guest with the panic like this:
+ BUG: unable to handle kernel paging request at ffffbb00ff33b000
+ IP: [<ffffffff8103157e>] kern_addr_valid+0xbe/0x110
+ [...]
 
--------------
-general protection fault: 0000 [#1] SMP
-last sysfs file: /sys/devices/vbd-51712/block/xvda/dev
-Modules linked in: sunrpc ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4
-iptable_filter ip_tables ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6
-xt_state nf_conntrack ip6table_filter ip6_tables ipv6 xen_netfront ext4
-mbcache jbd2 xen_blkfront dm_mirror dm_region_hash dm_log dm_mod [last
-unloaded: scsi_wait_scan]
+ Call Trace:
+  [<ffffffff811b8aaa>] read_kcore+0x17a/0x370
+  [<ffffffff811ad847>] proc_reg_read+0x77/0xc0
+  [<ffffffff81151687>] vfs_read+0xc7/0x130
+  [<ffffffff811517f3>] sys_read+0x53/0xa0
+  [<ffffffff81449692>] system_call_fastpath+0x16/0x1b
 
-Pid: 1250, comm: r Not tainted 2.6.32-356.el6.i686 #1
-EIP: 0061:[<c0407462>] EFLAGS: 00010086 CPU: 0
-EIP is at xen_iret+0x12/0x2b
-EAX: eb8d0000 EBX: 00000001 ECX: 08049860 EDX: 00000010
-ESI: 00000000 EDI: 003d0f00 EBP: b77f8388 ESP: eb8d1fe0
- DS: 0000 ES: 007b FS: 0000 GS: 00e0 SS: 0069
-Process r (pid: 1250, ti=eb8d0000 task=c2953550 task.ti=eb8d0000)
-Stack:
- 00000000 0027f416 00000073 00000206 b77f8364 0000007b 00000000 00000000
-Call Trace:
-Code: c3 8b 44 24 18 81 4c 24 38 00 02 00 00 8d 64 24 30 e9 03 00 00 00
-8d 76 00 f7 44 24 08 00 00 02 80 75 33 50 b8 00 e0 ff ff 21 e0 <8b> 40
-10 8b 04 85 a0 f6 ab c0 8b 80 0c b0 b3 c0 f6 44 24 0d 02
-EIP: [<c0407462>] xen_iret+0x12/0x2b SS:ESP 0069:eb8d1fe0
-general protection fault: 0000 [#2]
----[ end trace ab0d29a492dcd330 ]---
-Kernel panic - not syncing: Fatal exception
-Pid: 1250, comm: r Tainted: G      D    ---------------
-2.6.32-356.el6.i686 #1
-Call Trace:
- [<c08476df>] ? panic+0x6e/0x122
- [<c084b63c>] ? oops_end+0xbc/0xd0
- [<c084b260>] ? do_general_protection+0x0/0x210
- [<c084a9b7>] ? error_code+0x73/
--------------
+Investigation determined that the bug triggered when reading
+system RAM at the 4G mark. On this system, that was the first
+address using 1G pages for the virt->phys direct mapping so the
+PUD is pointing to a physical address, not a PMD page.
 
-Petr says: "
- I've analysed the bug and I think that xen_iret() cannot cope with
- mangled DS, in this case zeroed out (null selector/descriptor) by either
- xen_failsafe_callback() or RESTORE_REGS because the corresponding LDT
- entry was invalidated by the reproducer. "
+The problem is that the page table walker in kern_addr_valid() is
+not checking pud_large() and treats the physical address as if
+it was a PMD.  If it happens to look like pmd_none then it'll
+silently fail, probably returning zeros instead of real data. If
+the data happens to look like a present PMD though, it will be
+walked resulting in the oops above.
 
-Jan took a look at the preliminary patch and came up a fix that solves
-this problem:
+This patch adds the necessary pud_large() check.
 
-"This code gets called after all registers other than those handled by
-IRET got already restored, hence a null selector in %ds or a non-null
-one that got loaded from a code or read-only data descriptor would
-cause a kernel mode fault (with the potential of crashing the kernel
-as a whole, if panic_on_oops is set)."
+Unfortunately the problem was not readily reproducible and now
+they are running the backup program without accessing
+/proc/kcore so the patch has not been validated but I think it
+makes sense.
 
-The way to fix this is to realize that the we can only relay on the
-registers that IRET restores. The two that are guaranteed are the
-%cs and %ss as they are always fixed GDT selectors. Also they are
-inaccessible from user mode - so they cannot be altered. This is
-the approach taken in this patch.
-
-Another alternative option suggested by Jan would be to relay on
-the subtle realization that using the %ebp or %esp relative references uses
-the %ss segment.  In which case we could switch from using %eax to %ebp and
-would not need the %ss over-rides. That would also require one extra
-instruction to compensate for the one place where the register is used
-as scaled index. However Andrew pointed out that is too subtle and if
-further work was to be done in this code-path it could escape folks attention
-and lead to accidents.
-
-Reviewed-by: Petr Matousek <pmatouse@redhat.com>
-Reported-by: Petr Matousek <pmatouse@redhat.com>
-Reviewed-by: Andrew Cooper <andrew.cooper3@citrix.com>
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.coM>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Cc: linux-mm@kvack.org
+Link: http://lkml.kernel.org/r/20130211145236.GX21389@suse.de
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/xen/xen-asm_32.S |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ arch/x86/include/asm/pgtable.h |    5 +++++
+ arch/x86/mm/init_64.c          |    3 +++
+ 2 files changed, 8 insertions(+)
 
---- a/arch/x86/xen/xen-asm_32.S
-+++ b/arch/x86/xen/xen-asm_32.S
-@@ -89,11 +89,11 @@ ENTRY(xen_iret)
- 	 */
- #ifdef CONFIG_SMP
- 	GET_THREAD_INFO(%eax)
--	movl TI_cpu(%eax), %eax
--	movl __per_cpu_offset(,%eax,4), %eax
--	mov xen_vcpu(%eax), %eax
-+	movl %ss:TI_cpu(%eax), %eax
-+	movl %ss:__per_cpu_offset(,%eax,4), %eax
-+	mov %ss:xen_vcpu(%eax), %eax
- #else
--	movl xen_vcpu, %eax
-+	movl %ss:xen_vcpu, %eax
- #endif
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -142,6 +142,11 @@ static inline unsigned long pmd_pfn(pmd_
+ 	return (pmd_val(pmd) & PTE_PFN_MASK) >> PAGE_SHIFT;
+ }
  
- 	/* check IF state we're restoring */
-@@ -106,11 +106,11 @@ ENTRY(xen_iret)
- 	 * resuming the code, so we don't have to be worried about
- 	 * being preempted to another CPU.
- 	 */
--	setz XEN_vcpu_info_mask(%eax)
-+	setz %ss:XEN_vcpu_info_mask(%eax)
- xen_iret_start_crit:
++static inline unsigned long pud_pfn(pud_t pud)
++{
++	return (pud_val(pud) & PTE_PFN_MASK) >> PAGE_SHIFT;
++}
++
+ #define pte_page(pte)	pfn_to_page(pte_pfn(pte))
  
- 	/* check for unmasked and pending */
--	cmpw $0x0001, XEN_vcpu_info_pending(%eax)
-+	cmpw $0x0001, %ss:XEN_vcpu_info_pending(%eax)
+ static inline int pmd_large(pmd_t pte)
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -829,6 +829,9 @@ int kern_addr_valid(unsigned long addr)
+ 	if (pud_none(*pud))
+ 		return 0;
  
- 	/*
- 	 * If there's something pending, mask events again so we can
-@@ -118,7 +118,7 @@ xen_iret_start_crit:
- 	 * touch XEN_vcpu_info_mask.
- 	 */
- 	jne 1f
--	movb $1, XEN_vcpu_info_mask(%eax)
-+	movb $1, %ss:XEN_vcpu_info_mask(%eax)
- 
- 1:	popl %eax
- 
++	if (pud_large(*pud))
++		return pfn_valid(pud_pfn(*pud));
++
+ 	pmd = pmd_offset(pud, addr);
+ 	if (pmd_none(*pmd))
+ 		return 0;
 
 
