@@ -1,119 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935348Ab3BOEXm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 23:23:42 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:48638 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932735Ab3BOEXk convert rfc822-to-8bit (ORCPT
+	id S932846Ab3BOEqE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 23:46:04 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:43131 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932766Ab3BOEqD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 23:23:40 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: minyard@acm.org
-Cc: Bruno =?utf-8?Q?Pr=C3=A9mont?= <bonbons@linux-vserver.org>,
-        Corey Minyard <cminyard@mvista.com>,
-        containers@lists.linux-foundation.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-References: <1360376920-30824-1-git-send-email-minyard@acm.org>
-	<20130209191409.643c3d7f@neptune.home> <87r4kkuj4o.fsf@xmission.com>
-	<511D9890.1040900@acm.org>
-Date: Thu, 14 Feb 2013 20:23:31 -0800
-In-Reply-To: <511D9890.1040900@acm.org> (Corey Minyard's message of "Thu, 14
-	Feb 2013 20:08:16 -0600")
-Message-ID: <87d2w29pdo.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-XM-AID: U2FsdGVkX19x4GFt8AMPTTKXzffSCHsTixq0hfl19hQ=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.4 FVGT_m_MULTI_ODD Contains multiple odd letter combinations
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;minyard@acm.org
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH] Move console redirect to pid namespace
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Thu, 14 Feb 2013 23:46:03 -0500
+Date: Fri, 15 Feb 2013 15:45:51 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Liu Jinsong <jinsong.liu@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: linux-next: build failure after merge of the xen-two tree
+Message-Id: <20130215154551.d11e9d376d30d32b9673e6cc@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__15_Feb_2013_15_45_51_+1100_0y09pfsRKLtK7dNw"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Corey Minyard <tcminyard@gmail.com> writes:
+--Signature=_Fri__15_Feb_2013_15_45_51_+1100_0y09pfsRKLtK7dNw
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On 02/13/2013 01:08 PM, Eric W. Biederman wrote:
->> Bruno Prémont <bonbons@linux-vserver.org> writes:
->>
->>> CCing containers list
->>>
->>> On Fri, 08 February 2013 minyard@acm.org wrote:
->>>> From: Corey Minyard <cminyard@mvista.com>
->>>>
->>>> The console redirect - ioctl(fd, TIOCCONS) - is not in a namespace,
->>>> thus a container can do a redirect and grab all the I/O on the host
->>>> and all container consoles.
->>>>
->>>> This change puts the redirect in the pid namespace.
->>>>
->>>> Signed-off-by: Corey Minyard <cminyard@mvista.com>
->>>> ---
->>>>
->>>> I'm pretty sure this patch is not correct, but I'm not quite sure the
->>>> best way to fix this.  I'm not 100% sure that the pid namespace is the
->>>> right place, but it seemed the most reasonable of all the choices.  The
->>>> other obvious choice is the mount namespace, but it didn't seem as good
->>>> a fit.
->>> With recent changes, tying it to init user namespace might even be
->>> better.
->> With recent changes this is tied to the initial user namespace.  So the
->> simple solution to this and so many other similiar security problems is
->> to run your container in a user namespace.
->>
->> The permission check currently is capable(CAP_SYS_ADMIN) which requires
->> the caller to have the CAP_SYS_ADMIN in the initial user namespace.
->
-> I'm not sure I follow.  Are these changes in k.org, or in another
-> repository someplace?
+Hi Konrad,
 
-In k.org. 3.7 would work. 3.8-rcX would work even better.
+After merging the xen-two tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-root in a user namespace does not have permission to call TIOCCONS.
+drivers/xen/xen-acpi-memhotplug.c: In function 'acpi_memory_get_device':
+drivers/xen/xen-acpi-memhotplug.c:191:2: error: implicit declaration of fun=
+ction 'acpi_bus_add' [-Werror=3Dimplicit-function-declaration]
+drivers/xen/xen-acpi-memhotplug.c: At top level:
+drivers/xen/xen-acpi-memhotplug.c:417:3: warning: initialization from incom=
+patible pointer type [enabled by default]
+drivers/xen/xen-acpi-memhotplug.c:417:3: warning: (near initialization for =
+'xen_acpi_memory_device_driver.ops.remove') [enabled by default]
 
->> Is there a desire to have TIOCCONS not just fail in a container but to
->> have TIOCCONS work in a container specific way?
->
-> Well, my desire is for the host console to work properly if a
-> container uses TIOCCONS :-).  It seems to me that the most consistent
-> way to handle this is to have TIOCCONS in a container redirect the
-> container's console.
+Caused by commit 259f201cb7ea ("xen/acpi: ACPI memory hotplug").
 
-Last I looked people were creating a regulary pty and using that in
-/dev/ for their containers.  So the emperical evidence is that TIOCCONS
-is not needed.  What case are you looking at that needs TIOCCONS?
+drivers/xen/xen-acpi-cpuhotplug.c: In function 'acpi_processor_device_add':
+drivers/xen/xen-acpi-cpuhotplug.c:254:2: error: implicit declaration of fun=
+ction 'acpi_bus_add' [-Werror=3Dimplicit-function-declaration]
+drivers/xen/xen-acpi-cpuhotplug.c: At top level:
+drivers/xen/xen-acpi-cpuhotplug.c:425:3: warning: initialization from incom=
+patible pointer type [enabled by default]
+drivers/xen/xen-acpi-cpuhotplug.c:425:3: warning: (near initialization for =
+'xen_acpi_processor_driver.ops.remove') [enabled by default]
 
-If there is good cause we can make TIOCCONS work but we need a
-compelling case beyond root in a container can do bad things.
+Caused by commit 181232c249f0 ("xen/acpi: ACPI cpu hotplug").
 
->>>> The other problem is that I don't think you can call fput() from
->>>> destroy_pid_namespace().  That can be called from interrupt context,
->>>> and I don't think fput() is safe there.  I know it's not safe in 3.4
->>>> with the RT patch applied.  However, the only way I've come up with to
->>>> fix it is to add a workqueue, and that seems a bit heavy for this.
->> Actually getting destroy_pid_namespace out of interrupt context wouldn't
->> be the worst thing in the world.
->
-> I would agree, but it would still require something like a workqueue.
-> Is there a better mechanism?
+These commits interacted with commits 636458de36f1 ("ACPI: Remove the
+arguments of acpi_bus_add() that are not used"), 0cd6ac52b333 ("ACPI:
+Make acpi_bus_scan() and acpi_bus_add() take only one argument") and
+b8bd759acd05 ("ACPI / scan: Drop acpi_bus_add() and use acpi_bus_scan()
+instead") from the pm tree.
 
-It might be as simple as finding all of the put_pids and moving them out
-of spin_lock critical sections.  I don't know that we drop pids in
-actual interrupt context.
+I have added this merge fix patch and can carry it as necessary (I did
+*not* fix the warnings above):
 
-Eric
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Fri, 15 Feb 2013 15:37:27 +1100
+Subject: [PATCH] xen/acpi: fix up for apci_bus_add api change
 
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/xen/xen-acpi-cpuhotplug.c | 2 +-
+ drivers/xen/xen-acpi-memhotplug.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/xen/xen-acpi-cpuhotplug.c b/drivers/xen/xen-acpi-cpuho=
+tplug.c
+index 9eefbb0..0db4722 100644
+--- a/drivers/xen/xen-acpi-cpuhotplug.c
++++ b/drivers/xen/xen-acpi-cpuhotplug.c
+@@ -251,7 +251,7 @@ int acpi_processor_device_add(acpi_handle handle, struc=
+t acpi_device **device)
+ 	if (acpi_bus_get_device(phandle, &pdev))
+ 		return -ENODEV;
+=20
+-	if (acpi_bus_add(device, pdev, handle, ACPI_BUS_TYPE_PROCESSOR))
++	if (acpi_bus_scan(handle))
+ 		return -ENODEV;
+=20
+ 	return 0;
+diff --git a/drivers/xen/xen-acpi-memhotplug.c b/drivers/xen/xen-acpi-memho=
+tplug.c
+index 678680c..164287b 100644
+--- a/drivers/xen/xen-acpi-memhotplug.c
++++ b/drivers/xen/xen-acpi-memhotplug.c
+@@ -188,7 +188,7 @@ acpi_memory_get_device(acpi_handle handle,
+ 	 * Now add the notified device.  This creates the acpi_device
+ 	 * and invokes .add function
+ 	 */
+-	result =3D acpi_bus_add(&device, pdevice, handle, ACPI_BUS_TYPE_DEVICE);
++	result =3D acpi_bus_scan(handle);
+ 	if (result) {
+ 		pr_warn(PREFIX "Cannot add acpi bus\n");
+ 		return -EINVAL;
+--=20
+1.8.1
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__15_Feb_2013_15_45_51_+1100_0y09pfsRKLtK7dNw
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRHb1/AAoJEECxmPOUX5FEiesP/0yV+u+ydQ1Eq0nLa9WE+jo3
+3SPy/zsyF2KrYX1Hj7xLyoknVc8Ciy+wbCPOGHLXhb994C9iEzlbLaMkh/+ovg/5
+s5AKOO5WFgJ90flOo6qGDGoT1pz5z7lMtpMoT3pyXyPZRdl1QRNipFEtsrl8jDEy
+LEACPswsxODexoi7ucK1kuoHpc+wW1zPQLGgynOqc7aOZyVrAOOkXis3AadBWKw+
+daOOHl8YaCfY4BRLzMfvTB0vJoWK1O02qwhx/OltlVGGFKw2ApgA7aZX5rGEgX6x
+4TsTTxJQkWNCcgCKC6d3RTwQxtJ/t6SMMP9PHRB2PP+rfy6Tz/1uw5XDG9f081Su
+qKSxb9XCTVSZn+yn2RDdXdq1Q3dN7IY2/eVZ312rUNsH/R0+TTAkQ5HKi/oBzgfT
+qsex90flE1oChV9ZuNptaiTxmYKcHzS6FOuOijAfRU2zq8JV0inCt/9GAcQw+pw3
+T5/iohi2XQr/ceKxzMos1CYgWxC5K0nc8n7oVUPSL/TeYFPD7APRh0JJLmaSCvzw
+g9a7bOgtE0Ll5YhJ9cZphmrWEvci/c5VB1MFPYTIjwzOF1+bMo9ctME/w9QfBycb
+voYepaf5Mq//sZs/dZ4k0cOPSCMjFxcJMKwyCtB/1C3hhrspaWJ6vRjuH5LwGs5A
+JH7he6Y7zk3OUU9u9mHQ
+=GdNC
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__15_Feb_2013_15_45_51_+1100_0y09pfsRKLtK7dNw--
