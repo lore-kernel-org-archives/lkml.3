@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935785Ab3BOMdL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 07:33:11 -0500
-Received: from mout.gmx.net ([212.227.17.21]:57496 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935752Ab3BOMdK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 07:33:10 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/jkb5As4HjKdsSzB97z4aEzEpGY4p8TQRcU/OTGV
-	DKtClAAdS2SxNj
-Message-ID: <1360931579.4736.29.camel@marge.simpson.net>
-Subject: Re: [RFC] sched: The removal of idle_balance()
-From: Mike Galbraith <efault@gmx.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Turner <pjt@google.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Clark Williams <clark@redhat.com>,
-        Andrew Theurer <habanero@us.ibm.com>
-Date: Fri, 15 Feb 2013 13:32:59 +0100
-In-Reply-To: <1360930908.2739.1.camel@laptop>
-References: <1360908819.23152.97.camel@gandalf.local.home>
-	 <1360913172.4736.20.camel@marge.simpson.net>
-	 <1360930908.2739.1.camel@laptop>
+	id S1761004Ab3BOMgS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 07:36:18 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:35094 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753636Ab3BOMgR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 07:36:17 -0500
+Message-ID: <1360931766.3453.1.camel@phoenix>
+Subject: [PATCH] regulator: max8925: Remove unused parameter from
+ max8925_regulator_dt_init
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Date: Fri, 15 Feb 2013 20:36:06 +0800
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-02-15 at 13:21 +0100, Peter Zijlstra wrote: 
-> On Fri, 2013-02-15 at 08:26 +0100, Mike Galbraith wrote:
-> > 
-> > (the throttle is supposed to keep idle_balance() from doing severe
-> > damage, that may want a peek/tweak)
-> 
-> Right, as it stands idle_balance() can do a lot of work and if the avg
-> idle time is less than the time we spend looking for a suitable task we
-> loose.
-> 
-> I've wanted to make this smarter by having the cpufreq/cpuidle avg idle
-> time guestimator in the scheduler core so we actually know how log we
-> expect to be idle and couple that with a cache refresh cost per sched
-> domain (something we used to have pre 2.6.21 or so) so we can auto-limit
-> the domain traversal for idle_balance.
-> 
-> So far that's all fantasy though..
-> 
-> Related, I wanted to use the idle time guestimate to 'optimize' the idle
-> loop, currently that stuff is stupid expensive and pokes at timer
-> hardware etc.. if we know we won't be idle longer than it takes to poke
-> at timer hardware, don't go into nohz mode etc.
+The info parameter is not used at all, remove it.
 
-Yup.  My trees have nohz throttled too, it's too expensive for fast
-switchers scheduling cross core.
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/max8925-regulator.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
--Mike
+diff --git a/drivers/regulator/max8925-regulator.c b/drivers/regulator/max8925-regulator.c
+index 0d5f64a..3597da8 100644
+--- a/drivers/regulator/max8925-regulator.c
++++ b/drivers/regulator/max8925-regulator.c
+@@ -246,7 +246,6 @@ static struct max8925_regulator_info max8925_regulator_info[] = {
+ 
+ #ifdef CONFIG_OF
+ static int max8925_regulator_dt_init(struct platform_device *pdev,
+-				    struct max8925_regulator_info *info,
+ 				    struct regulator_config *config,
+ 				    int ridx)
+ {
+@@ -272,7 +271,7 @@ static int max8925_regulator_dt_init(struct platform_device *pdev,
+ 	return 0;
+ }
+ #else
+-#define max8925_regulator_dt_init(w, x, y, z)	(-1)
++#define max8925_regulator_dt_init(x, y, z)	(-1)
+ #endif
+ 
+ static int max8925_regulator_probe(struct platform_device *pdev)
+@@ -309,7 +308,7 @@ static int max8925_regulator_probe(struct platform_device *pdev)
+ 	config.dev = &pdev->dev;
+ 	config.driver_data = ri;
+ 
+-	if (max8925_regulator_dt_init(pdev, ri, &config, regulator_idx))
++	if (max8925_regulator_dt_init(pdev, &config, regulator_idx))
+ 		if (pdata)
+ 			config.init_data = pdata;
+ 
+-- 
+1.7.9.5
+
+
 
