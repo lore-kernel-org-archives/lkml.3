@@ -1,72 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935980Ab3BOMp2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 07:45:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24961 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935912Ab3BOMpY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S935963Ab3BOMpY (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 15 Feb 2013 07:45:24 -0500
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: linux-acpi@vger.kernel.org, Huang Ying <ying.huang@intel.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH EDAC 04/13] edac: add a new memory layer type
-Date: Fri, 15 Feb 2013 10:44:52 -0200
-Message-Id: <3602d1069551396b3d5db19f0ee171594090ef7f.1360931635.git.mchehab@redhat.com>
-In-Reply-To: <cover.1360931635.git.mchehab@redhat.com>
-References: <cover.1360931635.git.mchehab@redhat.com>
-To: unlisted-recipients:; (no To-header on input)
+Received: from hydra.sisk.pl ([212.160.235.94]:38272 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935912Ab3BOMpQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 07:45:16 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Jiang Liu <jiang.liu@huawei.com>
+Subject: Re: linux-next: manual merge of the pm tree with the pci tree
+Date: Fri, 15 Feb 2013 13:51:46 +0100
+Message-ID: <1673630.BcVjZeif4m@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc7; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130215122313.19a651c33ef3bb60c0f3d827@canb.auug.org.au>
+References: <20130215122313.19a651c33ef3bb60c0f3d827@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are some cases where the memory controller layout is
-completely hidden. This is the case of firmware-driven error
-code, like the one provided by GHES. Add a new layer to be
-used on such memory error report mechanisms.
+On Friday, February 15, 2013 12:23:13 PM Stephen Rothwell wrote:
+> Hi Rafael,
+> 
+> Today's linux-next merge of the pm tree got conflicts in
+> drivers/acpi/scan.c and drivers/pci/hotplug/acpiphp_glue.c between
+> commits 668192b67820 ("PCI: acpiphp: Move host bridge hotplug to
+> pci_root.c") and be6d2867b4f6 ("PCI: acpiphp: Remove dead code for PCI
+> host bridge hotplug") from the pci tree and commit 3757b94802fb ("ACPI /
+> hotplug: Fix concurrency issues and memory leaks") from the pm tree.
+> 
+> I fixed it up (thanks to Yinghai Lu for the resolution - see below) and
+> can carry the fix as necessary (no action is required).
 
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
----
- drivers/edac/edac_mc.c | 1 +
- include/linux/edac.h   | 4 ++++
- 2 files changed, 5 insertions(+)
+Thanks Stephen!
 
-diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
-index 8e58b1c..8e33028 100644
---- a/drivers/edac/edac_mc.c
-+++ b/drivers/edac/edac_mc.c
-@@ -918,6 +918,7 @@ const char *edac_layer_name[] = {
- 	[EDAC_MC_LAYER_CHANNEL] = "channel",
- 	[EDAC_MC_LAYER_SLOT] = "slot",
- 	[EDAC_MC_LAYER_CHIP_SELECT] = "csrow",
-+	[EDAC_MC_LAYER_ALL_MEM] = "memory",
- };
- EXPORT_SYMBOL_GPL(edac_layer_name);
- 
-diff --git a/include/linux/edac.h b/include/linux/edac.h
-index 4784213..1b7744c 100644
---- a/include/linux/edac.h
-+++ b/include/linux/edac.h
-@@ -375,6 +375,9 @@ enum scrub_type {
-  * @EDAC_MC_LAYER_CHANNEL:	memory layer is named "channel"
-  * @EDAC_MC_LAYER_SLOT:		memory layer is named "slot"
-  * @EDAC_MC_LAYER_CHIP_SELECT:	memory layer is named "chip select"
-+ * @EDAC_MC_LAYER_ALL_MEM:	memory layout is unknown. All memory is mapped
-+ *				as a single memory area. This is used when
-+ *				retrieving errors from a firmware driven driver.
-  *
-  * This enum is used by the drivers to tell edac_mc_sysfs what name should
-  * be used when describing a memory stick location.
-@@ -384,6 +387,7 @@ enum edac_mc_layer_type {
- 	EDAC_MC_LAYER_CHANNEL,
- 	EDAC_MC_LAYER_SLOT,
- 	EDAC_MC_LAYER_CHIP_SELECT,
-+	EDAC_MC_LAYER_ALL_MEM,
- };
- 
- /**
+
 -- 
-1.8.1.2
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
