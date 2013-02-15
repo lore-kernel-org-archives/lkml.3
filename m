@@ -1,119 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935925Ab3BONYv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 08:24:51 -0500
-Received: from smtp-out-045.synserver.de ([212.40.185.45]:1067 "EHLO
-	smtp-out-045.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756390Ab3BONYt (ORCPT
+	id S1761744Ab3BON0i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 08:26:38 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:29522 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752893Ab3BON0g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 08:24:49 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 4817
-Message-ID: <511E3772.7000605@metafoo.de>
-Date: Fri, 15 Feb 2013 14:26:10 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	Fri, 15 Feb 2013 08:26:36 -0500
+Date: Fri, 15 Feb 2013 08:26:24 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Liu Jinsong <jinsong.liu@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: linux-next: build failure after merge of the xen-two tree
+Message-ID: <20130215132624.GB11777@phenom.dumpdata.com>
+References: <20130215154551.d11e9d376d30d32b9673e6cc@canb.auug.org.au>
 MIME-Version: 1.0
-To: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-CC: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        dianders@chromium.org, gregkh@linuxfoundation.org
-Subject: Re: [PATCH v7] iio: adc: add exynos adc driver under iio framwork
-References: <1360843890-28466-1-git-send-email-ch.naveen@samsung.com> <1360911394-19873-1-git-send-email-ch.naveen@samsung.com> <511E346C.3060701@metafoo.de> <CAHfPSqAQd7TJqX2FVmkvy_aX0yXm25qLu3A9kPoteUGaBLZPQQ@mail.gmail.com>
-In-Reply-To: <CAHfPSqAQd7TJqX2FVmkvy_aX0yXm25qLu3A9kPoteUGaBLZPQQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130215154551.d11e9d376d30d32b9673e6cc@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/15/2013 02:17 PM, Naveen Krishna Ch wrote:
-> On 15 February 2013 18:43, Lars-Peter Clausen <lars@metafoo.de> wrote:
->> On 02/15/2013 07:56 AM, Naveen Krishna Chatradhi wrote:
->>> This patch adds New driver to support:
->>> 1. Supports ADC IF found on EXYNOS4412/EXYNOS5250
->>>    and future SoCs from Samsung
->>> 2. Add ADC driver under iio/adc framework
->>> 3. Also adds the Documentation for device tree bindings
->>>
->>> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
->>
->> Looks good.
->>
->> Reviewed-by: Lars-Peter Clausen <lars@metafoo.de>
->>
->> One minor thing though, there are a couple of places where you break a line
->> into multiple lines, even though the line fits easily inside the 80 chars
->> per line limit. In my opinion this doesn't help the legibility of the code.
->> E.g.:
->>
->> +       info->value = readl(ADC_V1_DATX(info->regs)) &
->> +                                               ADC_DATX_MASK;
->>
->> There is no need to respin the patch just for this, but if you happen to
->> make another version of the patch, that's something to consider.
->>
->>> ---
->>> Changes since v1:
->>>
->>> 1. Fixed comments from Lars
->>> 2. Added support for ADC on EXYNOS5410
->>>
->>> Changes since v2:
->>>
->>> 1. Changed the instance name for (struct iio_dev *) to indio_dev
->>> 2. Changed devm_request_irq to request_irq
->>>
->>> Few doubts regarding the mappings and child device handling.
->>> Kindly, suggest me better methods.
->>>
->>> Changes since v3:
->>>
->>> 1. Added clk_prepare_disable and regulator_disable calls in _remove()
->>> 2. Moved init_completion before irq_request
->>> 3. Added NULL pointer check for devm_request_and_ioremap() return value.
->>> 4. Use number of channels as per the ADC version
->>> 5. Change the define ADC_V1_CHANNEL to ADC_CHANNEL
->>> 6. Update the Documentation to include EXYNOS5410 compatible
->>>
->>> Changes since v4:
->>>
->>> 1. if devm_request_and_ioremap() failes, free iio_device before returning
->>>
->>> Changes since v5:
->>>
->>> 1. Fixed comments from Olof (ADC hardware version handling)
->>> 2. Rebased on top of comming OF framework for IIO by "Guenter Roeck".
->>>
->>> Changes since v6:
->>>
->>> 1. Addressed comments from Lars-Peter Clausen
->>
->>
->> btw. these kind of change logs are not really helpful, it would be better to
->> list the actual changes made.
-> Hello Lars,
+On Fri, Feb 15, 2013 at 03:45:51PM +1100, Stephen Rothwell wrote:
+> Hi Konrad,
 > 
-> No other changes from my side. But, I can send another version.
-> Do you want me to list the latest change alone instead of the whole
-> change list ?
+> After merging the xen-two tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
 
-Hi,
+Good morning!
+> 
+> drivers/xen/xen-acpi-memhotplug.c: In function 'acpi_memory_get_device':
+> drivers/xen/xen-acpi-memhotplug.c:191:2: error: implicit declaration of function 'acpi_bus_add' [-Werror=implicit-function-declaration]
+> drivers/xen/xen-acpi-memhotplug.c: At top level:
+> drivers/xen/xen-acpi-memhotplug.c:417:3: warning: initialization from incompatible pointer type [enabled by default]
+> drivers/xen/xen-acpi-memhotplug.c:417:3: warning: (near initialization for 'xen_acpi_memory_device_driver.ops.remove') [enabled by default]
+> 
+> Caused by commit 259f201cb7ea ("xen/acpi: ACPI memory hotplug").
+> 
+> drivers/xen/xen-acpi-cpuhotplug.c: In function 'acpi_processor_device_add':
+> drivers/xen/xen-acpi-cpuhotplug.c:254:2: error: implicit declaration of function 'acpi_bus_add' [-Werror=implicit-function-declaration]
+> drivers/xen/xen-acpi-cpuhotplug.c: At top level:
+> drivers/xen/xen-acpi-cpuhotplug.c:425:3: warning: initialization from incompatible pointer type [enabled by default]
+> drivers/xen/xen-acpi-cpuhotplug.c:425:3: warning: (near initialization for 'xen_acpi_processor_driver.ops.remove') [enabled by default]
+> 
+> Caused by commit 181232c249f0 ("xen/acpi: ACPI cpu hotplug").
 
-No need to resend the patch, this is just something to consider for the
-future. A changelog entry which reads like "Addressed Jon Does comments" is
-not really useful since most people will probably not know or not longer
-remember all the details of those comments, instead a nice list of all the
-changes which have been made is much better. E.g.:
+Grrrreat! Jinsong, can you please fix that ? A patch on top of the #linux-next
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
 
-Changes since v6:
-	* Fixed debugfs_read_reg
-	* Introduced timeout when waiting for the data ready IRQ
-	* Slightly reformatted exynos_read_raw for better legibility
+> 
+> These commits interacted with commits 636458de36f1 ("ACPI: Remove the
+> arguments of acpi_bus_add() that are not used"), 0cd6ac52b333 ("ACPI:
+> Make acpi_bus_scan() and acpi_bus_add() take only one argument") and
+> b8bd759acd05 ("ACPI / scan: Drop acpi_bus_add() and use acpi_bus_scan()
+> instead") from the pm tree.
+> 
+> I have added this merge fix patch and can carry it as necessary (I did
+> *not* fix the warnings above):
 
-- Lars
+<nods>
+> 
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Fri, 15 Feb 2013 15:37:27 +1100
+> Subject: [PATCH] xen/acpi: fix up for apci_bus_add api change
+
+Thank you. I keep on forgetting - but would it be OK for me to take this
+patch in my tree? Or should I not since this is a new functionality that
+Rafael is going to introduce in v3.9?
+
+And if so, perhaps I should tack it on in my tree, once Rafael does a git
+pull to Linus? Or just point Linus to this git commit?
+
+BTW, I really appreciate the work you are doing to keep sync of different
+trees and bubbling this up before the merge window opens.
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  drivers/xen/xen-acpi-cpuhotplug.c | 2 +-
+>  drivers/xen/xen-acpi-memhotplug.c | 2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/xen/xen-acpi-cpuhotplug.c b/drivers/xen/xen-acpi-cpuhotplug.c
+> index 9eefbb0..0db4722 100644
+> --- a/drivers/xen/xen-acpi-cpuhotplug.c
+> +++ b/drivers/xen/xen-acpi-cpuhotplug.c
+> @@ -251,7 +251,7 @@ int acpi_processor_device_add(acpi_handle handle, struct acpi_device **device)
+>  	if (acpi_bus_get_device(phandle, &pdev))
+>  		return -ENODEV;
+>  
+> -	if (acpi_bus_add(device, pdev, handle, ACPI_BUS_TYPE_PROCESSOR))
+> +	if (acpi_bus_scan(handle))
+>  		return -ENODEV;
+>  
+>  	return 0;
+> diff --git a/drivers/xen/xen-acpi-memhotplug.c b/drivers/xen/xen-acpi-memhotplug.c
+> index 678680c..164287b 100644
+> --- a/drivers/xen/xen-acpi-memhotplug.c
+> +++ b/drivers/xen/xen-acpi-memhotplug.c
+> @@ -188,7 +188,7 @@ acpi_memory_get_device(acpi_handle handle,
+>  	 * Now add the notified device.  This creates the acpi_device
+>  	 * and invokes .add function
+>  	 */
+> -	result = acpi_bus_add(&device, pdevice, handle, ACPI_BUS_TYPE_DEVICE);
+> +	result = acpi_bus_scan(handle);
+>  	if (result) {
+>  		pr_warn(PREFIX "Cannot add acpi bus\n");
+>  		return -EINVAL;
+> -- 
+> 1.8.1
+> 
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
 
 
