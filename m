@@ -1,141 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935795Ab3BOOrX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 09:47:23 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:53258 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935488Ab3BOOrG (ORCPT
+	id S1161243Ab3BOOse (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 09:48:34 -0500
+Received: from mail.abilis.ch ([195.70.19.74]:21600 "EHLO mail.abilis.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758834Ab3BOOsc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 09:47:06 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH RESEND 1/6 v13] gpio: Add a block GPIO API to gpiolib
-To: Roland Stigge <stigge@antcom.de>, gregkh@linuxfoundation.org,
-        linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
-        jbe@pengutronix.de, plagnioj@jcrosoft.com, highguy@gmail.com,
-        broonie@opensource.wolfsonmicro.com, daniel-gl@gmx.net,
-        rmallon@gmail.com, sr@denx.de, wg@grandegger.com,
-        tru@work-microwave.de, mark.rutland@arm.com
-Cc: Roland Stigge <stigge@antcom.de>
-In-Reply-To: <1358250716-21986-2-git-send-email-stigge@antcom.de>
-References: <1358250716-21986-1-git-send-email-stigge@antcom.de> <1358250716-21986-2-git-send-email-stigge@antcom.de>
-Date: Fri, 15 Feb 2013 14:47:00 +0000
-Message-Id: <20130215144700.35A1F3E044B@localhost>
+	Fri, 15 Feb 2013 09:48:32 -0500
+Date: Fri, 15 Feb 2013 15:48:17 +0100
+From: Christian Ruppert <christian.ruppert@abilis.com>
+To: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Subject: Re: [PATCH] Prevent interrupt loop with DWMAC MMC RX IPC Counter
+Message-ID: <20130215144815.GA31098@ab42.lan>
+References: <1360934123-30476-1-git-send-email-christian.ruppert@abilis.com>
+ <511E3C28.7090101@st.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <511E3C28.7090101@st.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Jan 2013 12:51:51 +0100, Roland Stigge <stigge@antcom.de> wrote:
-> The recurring task of providing simultaneous access to GPIO lines (especially
-> for bit banging protocols) needs an appropriate API.
+Hello Guiseppe,
+
+Thanks for the feedback. I'll send a new patch shortly which
+unconditionally masks the interrupts as you suggest. The mask register
+does not exist in DWMACs without RX IPC counters, however, and I have no
+way of testing if accessing this register nevertheless generates a bus
+error. Do you have hardware to verify if everything works fine even
+without RX IPC counters before integrating the patch?
+
+Greetings,
+  Christian
+
+On Fri, Feb 15, 2013 at 02:46:16PM +0100, Giuseppe CAVALLARO wrote:
+> Hello Christian
 > 
-> This patch adds a kernel internal "Block GPIO" API that enables simultaneous
-> access to several GPIOs. This is done by abstracting GPIOs to an n-bit word:
-> Once requested, it provides access to a group of GPIOs which can range over
-> multiple GPIO chips.
+> On 2/15/2013 2:15 PM, Christian Ruppert wrote:
+> >If the DesignWare MAC is synthesised with MMC RX IPC Counter, an unmanaged
+> >and unacknowledged interrupt is generated after some time of operation. To
+> >my knowledge there is no way to autodetect this configuration.
+> >
+> >This patch adds a Kconfig option to tell the driver about the counter which
+> >in turn masks the undesired interrupts.
+> >
+> >Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
+> >---
+> >  drivers/net/ethernet/stmicro/stmmac/Kconfig    |    8 ++++++++
+> >  drivers/net/ethernet/stmicro/stmmac/mmc_core.c |    3 +++
+> >  2 files changed, 11 insertions(+), 0 deletions(-)
+> >
+> >diff --git a/drivers/net/ethernet/stmicro/stmmac/Kconfig b/drivers/net/ethernet/stmicro/stmmac/Kconfig
+> >index 1164930..60e5130 100644
+> >--- a/drivers/net/ethernet/stmicro/stmmac/Kconfig
+> >+++ b/drivers/net/ethernet/stmicro/stmmac/Kconfig
+> >@@ -71,5 +71,13 @@ config STMMAC_CHAINED
+> >
+> >  endchoice
+> >
+> >+config STMMAC_RX_IPC_CTRS
+> >+	bool "MMC Receive IPC Counters enabled"
+> >+	depends on STMMAC_ETH
+> >+	default n
+> >+	---help---
+> >+	  Select this option in case MMC Receive IPC counters were enabled at
+> >+	  synthesis time of the block. If this option is not set correctly,
+> >+	  system might hang after a certain amount of time.
+> >
+> >  endif
+> >diff --git a/drivers/net/ethernet/stmicro/stmmac/mmc_core.c b/drivers/net/ethernet/stmicro/stmmac/mmc_core.c
+> >index 0c74a70..ae877ee 100644
+> >--- a/drivers/net/ethernet/stmicro/stmmac/mmc_core.c
+> >+++ b/drivers/net/ethernet/stmicro/stmmac/mmc_core.c
+> >@@ -149,6 +149,9 @@ void dwmac_mmc_intr_all_mask(void __iomem *ioaddr)
+> >  {
+> >  	writel(MMC_DEFAULT_MASK, ioaddr + MMC_RX_INTR_MASK);
+> >  	writel(MMC_DEFAULT_MASK, ioaddr + MMC_TX_INTR_MASK);
+> >+#ifdef CONFIG_STMMAC_RX_IPC_CTRS
+> >+	writel(MMC_DEFAULT_MASK, ioaddr + MMC_RX_IPC_INTR_MASK);
+> >+#endif
 > 
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
-> ---
+> your fix makes sense to me; I have never faced this problem because the
+> MMC RX IPC Counter is not synthesised  on the GMAC chip I used.
 > 
->  Documentation/gpio.txt     |   58 +++++++++++
->  drivers/gpio/gpiolib.c     |  227 +++++++++++++++++++++++++++++++++++++++++++++
->  include/asm-generic/gpio.h |   17 +++
->  include/linux/gpio.h       |   97 +++++++++++++++++++
->  4 files changed, 399 insertions(+)
+> Anyway all mmc interrupts are not managed by defsign so I only ask
+> you to remove the Kconfig option and add the writel in the
+> dwmac_mmc_intr_all_mask.
 > 
-> --- linux-2.6.orig/Documentation/gpio.txt
-> +++ linux-2.6/Documentation/gpio.txt
-> @@ -481,6 +481,64 @@ exact name string of pinctrl device has
->  argument to this routine.
+> peppe
+> 
+> >  }
+> >
+> >  /* This reads the MAC core counters (if actaully supported).
+> >
+> 
 
-Hi Roland,
-
-The first thing that jumps out at me on this is that it really is two
-separate concepts implemented in one patch.
-1) allow individual chips to expose a block API for that single controller.
-2) creating a global block gpio interface for multiple arbitrary
-groupings of chips
-
-The first is relatively noncontroversial. It is easy to implement and
-there are there are real performance issues that it addresses. If you
-split that out as a separate patch it is something I think I can merge.
-I do have some minor comments on this feature, but I'll put the details
-below.
-
-The second I'm not that thrilled with, or at least I think the
-implementation is more complex than it needs to be. The big problem is
-that it tries to abstract the fact that GPIOs may or may not be on the
-same controller, and in doing so it has to do a bunch of housekeeping to
-map 'virtual' gpio numbers to real gpios. I recognized that the feature
-is needed to take advantage of gpiochip block access, but I'd like to
-suggest a different implementation.
-
-Instead of keeping track of separate block_gpio chip references, how
-about an API that consolidates GPIO operations. For example (rough
-sketch, and using the new gpiodesc infrastructure):
-
-struct gpiocmd {
-	struct gpio_desc *gpio;
-	int data;
-}
-
-int gpio_set_sequence(struct gpiocmd *gpiocmd, int count)
-{
-	struct gpio_chip *gc = GPIO_DESC_TO_GPIOCHIP(gpiocmd->gpio);
-	int bit = GPIO_DESC_TO_BIT(gpiocmd->gpio);
-	unsigned long data, mask;
-
-	/*
-	 * Consolidate and execute the gpio commands. A little naive,
-	 * but you get the idea.
-	 *
-	 * GPIO_DESC_TO_GPIOCHIP() and GPIO_DESC_TO_BIT() are fictions
-	 * at the moment; something will need to be implemented here.
-	 */
-	mask = 1 << bit;
-	data = gpiocmd->data << bit;
-	for (i = 1; i < count; i++, gpiocmd++) {
-		struct gpio_chip *nextgc = GPIO_DESC_TO_GPIOCHIP(gpiocmd->gpio):
-		bit = GPIO_DESC_TO_BIT(gpiocmd->gpio);
-
-		/* Consolidate if same gpio_chip and go to next iteration */
-		if (gc == nextgc) {
-			mask &= 1 << bit
-			data &= gpiocmd->data << bit
-			continue;
-		}
-
-		gc->set_block(gc, mask, data);
-
-		gc = nextgc;
-		mask = 1 << bit;
-		data = gpiocmd->data << bit;
-	}
-
-	/* Last one because the loop alwasy exits with at least one more
-	 * thing to do */
-	gc->set_block(gc, mask, data);
-}
-
-And that's it. It maintains the abstraction that GPIOs are separate and
-that assumptions cannot be made about how there are wired together, but
-still allows any driver to take advantage of speedups with consolidating
-operations. Drivers also get to use the same handles they are currently
-using instead of a separate gpio_block namespace which means it
-interworks nicely with the existing API.
-
-It also should be lighter weight when it comes to speed of processing.
-Normally I'm not too worried about that, but when it comes to GPIOs and
-bitbanging it can end up having a really big cost.
-
-Naturally the thing I hacked together above is just a draft. It can
-certainly be refined. It might make sense for it to be a bitbang
-statemachine that can handle both set, get and barrier/delay operations.
-That might actually be simpler and better than having separate set & get
-sequences with callers handing the bitbanging.
-
-For performance, it might make sense to separate the consolidation pass
-from the execution pass.
-
-g.
-
+-- 
+  Christian Ruppert              ,          <christian.ruppert@abilis.com>
+                                /|
+  Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pré-Fleuri
+                             _// | bilis Systems   CH-1228 Plan-les-Ouates
