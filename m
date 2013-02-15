@@ -1,87 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422686Ab3BOQSW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 11:18:22 -0500
-Received: from kanga.kvack.org ([205.233.56.17]:34455 "EHLO kanga.kvack.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932625Ab3BOQSU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 11:18:20 -0500
-Date: Fri, 15 Feb 2013 11:18:19 -0500
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Kent Overstreet <koverstreet@google.com>
-Cc: linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] aio: v3: fix kioctx not being freed after cancellation at exit time
-Message-ID: <20130215161819.GA25858@kvack.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+	id S936055Ab3BOQSc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 11:18:32 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:35877 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932625Ab3BOQSa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 11:18:30 -0500
+MIME-Version: 1.0
+In-Reply-To: <1360943688-12502-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1360943688-12502-1-git-send-email-paul.gortmaker@windriver.com>
+Date: Fri, 15 Feb 2013 08:18:29 -0800
+X-Google-Sender-Auth: AHujPFl7vfGsjDPt0_FfAQx4KdE
+Message-ID: <CAGXu5jJxPU2Skr12u07fTeg+8im6L4JHv23+TrB+qVWMY36F_w@mail.gmail.com>
+Subject: Re: [PATCH] futex: avoid kernel taint caused by get_robust_list
+From: Kees Cook <keescook@chromium.org>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        Richard Weinberger <richard@nod.at>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v3 corrects a typo in v2 of this patch.  The wrong version of the patch was
-copied over and misspelled ctx in the first hunk.  A known good tree with
-this patch is at git://git.kvack.org/~bcrl/linux-next-20130213.git-v3 .
+On Fri, Feb 15, 2013 at 7:54 AM, Paul Gortmaker
+<paul.gortmaker@windriver.com> wrote:
+> commit ec0c4274e33c0373e476b73e01995c53128f1257 ("futex: Mark
+> get_robust_list as deprecated") added these two WARN_ONCE calls.
+>
+> However, WARN_ONCE taints the kernel, and we shouldn't be allowing
+> any user who wanders by to do this.  For example, the system fuzzer
+> "trinity" uses the tainted state as a metric for when to stop,
+> assuming that it has caused significant wreckage (and indeed
+> that tool is what actually led me to this change).
+>
+> The ability to deprecate this code has been called into question[1],
+> but if that remains to be finalized, then making this change in the
+> interim seems to make sense.
+>
+> [1] http://lkml.indiana.edu/hypermail/linux/kernel/1208.0/01081.html
+>
+> Cc: Dave Jones <davej@redhat.com>
+> Cc: Richard Weinberger <richard@nod.at>
+> Cc: Kees Cook <keescook@chromium.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: stable@vger.kernel.org      # 3.4+
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-This v2 patch replaces both "aio: fix kioctx not being freed after
-cancellation at exit time" and "aio: only suppress events from cancelled
-kiocbs if free_ioctx() is in progress".  Kent's feedback is indeed correct.
+I Acked the original revert. I thought there was agreement that it was
+needed for checkpointing to work?
 
-The recent changes overhauling fs/aio.c introduced a bug that results in the
-kioctx not being freed when outstanding kiocbs are cancelled at exit_aio()
-time.  Specifically, a kiocb that is cancelled has its completion events
-discarded by batch_complete_aio(), which then fails to wake up the process
-stuck in free_ioctx().  Fix this by removing the event suppression in
-batch_complete_aio() and modify the wait_event() condition in free_ioctx()
-appropriately.
-
-This patch was tested with the cancel operation in the thread based code
-posted yesterday.
-
-Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
----
- fs/aio.c |   15 +++------------
- 1 files changed, 3 insertions(+), 12 deletions(-)
-
-diff --git a/fs/aio.c b/fs/aio.c
-index dc52b0c..2512232 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -335,7 +335,9 @@ static void free_ioctx(struct kioctx *ctx)
- 	kunmap_atomic(ring);
- 
- 	while (atomic_read(&ctx->reqs_available) < ctx->nr) {
--		wait_event(ctx->wait, head != ctx->shadow_tail);
-+		wait_event(ctx->wait,
-+			   (head != ctx->shadow_tail) ||
-+			   (atomic_read(&ctx->reqs_available) >= ctx->nr));
- 
- 		avail = (head <= ctx->shadow_tail ?
- 			 ctx->shadow_tail : ctx->nr) - head;
-@@ -747,17 +749,6 @@ void batch_complete_aio(struct batch_complete *batch)
- 			n = rb_parent(n);
- 		}
- 
--		if (unlikely(xchg(&req->ki_cancel,
--				  KIOCB_CANCELLED) == KIOCB_CANCELLED)) {
--			/*
--			 * Can't use the percpu reqs_available here - could race
--			 * with free_ioctx()
--			 */
--			atomic_inc(&req->ki_ctx->reqs_available);
--			aio_put_req(req);
--			continue;
--		}
--
- 		if (unlikely(req->ki_eventfd != eventfd)) {
- 			if (eventfd) {
- 				/* Make event visible */
--- 
-1.7.4.1
-
+-Kees
 
 -- 
-"Thought is the essence of where you are now."
+Kees Cook
+Chrome OS Security
