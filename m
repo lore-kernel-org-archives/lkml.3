@@ -1,280 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935718Ab3BOKgg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 05:36:36 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:56404 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935700Ab3BOKgf (ORCPT
+	id S935722Ab3BOKid (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 05:38:33 -0500
+Received: from mysmtp1.stec-inc.com ([1.9.68.9]:37968 "HELO
+	mysmtp1.stec-inc.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1760476Ab3BOKib convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 05:36:35 -0500
-Date: Fri, 15 Feb 2013 11:36:29 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: linux-kernel@vger.kernel.org
-cc: Magnus Damm <magnus.damm@gmail.com>, Simon Horman <horms@verge.net.au>,
-        devicetree-discuss@lists.ozlabs.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-fbdev@vger.kernel.org
-Subject: [RFC] ARM: shmobile: add framebuffer and backlight support to
- kzm9g-reference
-In-Reply-To: <Pine.LNX.4.64.1302151101140.7446@axis700.grange>
-Message-ID: <Pine.LNX.4.64.1302151127010.7446@axis700.grange>
-References: <Pine.LNX.4.64.1302151101140.7446@axis700.grange>
+	Fri, 15 Feb 2013 05:38:31 -0500
+X-ASG-Debug-ID: 1360924708-053ea90dcf2a5390001-xx1T2L
+X-Barracuda-Envelope-From: akale@stec-inc.com
+X-Barracuda-RBL-Trusted-Forwarder: 172.30.0.57
+From: Amit Kale <akale@stec-inc.com>
+X-Barracuda-BWL-IP: fe80::64e7:ed5b:e6f9:c391
+X-Barracuda-Apparent-Source-IP: fe80::64e7:ed5b:e6f9:c391
+To: Jens Axboe <axboe@kernel.dk>, OS Engineering <osengineering@stec-inc.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Darrick J. Wong" <darrick.wong@oracle.com>,
+        Sanoj Unnikrishnan <sunnikrishnan@stec-inc.com>,
+        =?iso-2022-jp?B?GyRCMiY2YjE6GyhC?= <jinpuwang@gmail.com>
+Date: Fri, 15 Feb 2013 18:36:31 +0800
+Subject: RE: [PATCH] EnhanceIO ssd caching software
+Thread-Topic: [PATCH] EnhanceIO ssd caching software
+X-ASG-Orig-Subj: RE: [PATCH] EnhanceIO ssd caching software
+Thread-Index: Ac4LXxNOC4F30gYeR0upzZqq43p0pgACQ1GA
+Message-ID: <C4B5704C6FEB5244B2A1BCC8CF83B86B0A624D6ADE@MYMBX.MY.STEC-INC.AD>
+References: <C4B5704C6FEB5244B2A1BCC8CF83B86B0A624D6AAF@MYMBX.MY.STEC-INC.AD>
+ <20130215092955.GY21269@kernel.dk>
+In-Reply-To: <20130215092955.GY21269@kernel.dk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:87jZHzQhsp+HhLn7HEFApgP+ZisGQYKJ5xNUkNCP6Db
- Q921rJ6sjwp6qaxZdlAJKcSlYrj+700GdydRFkNb8C1iDV+UAW
- hgaB+DXyoOY99x17zT7F0mKvUCJ2AlqHSURjDofdAKpre5YVSA
- KsYFG9bMt9pE2IsYnMU/YeBwHDwU7cnP90p4y1fG40CaZGQQgP
- 9ZjsQRI+Jqk2ayVoMUoez+EOv3bBO9sS1lWAx7qRXtPLYDcYng
- gw7s/0SOU6ZtPh5egJ+pE641IJszmisjblJzzFtnxpidmTFJxX
- Y0a8uvgJiBR0UJQvPwaavRm5DyBh8aiFWTT2tMXtGYR44Sid6o
- zHuSsHmYRpGP7QvrujxRQ2P7QLKu9l7NKXWAd3J+9ET7dVZkyU
- n0XSTsvu+7hHg==
+X-Barracuda-Connect: mycas01.my.stec-inc.ad[172.30.0.57]
+X-Barracuda-Start-Time: 1360924708
+X-Barracuda-URL: http://myspam1.stec-inc.com:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: -0.00
+X-Barracuda-Spam-Status: No, SCORE=-0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=ISO2022JP_CHARSET
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.122731
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	-0.00 ISO2022JP_CHARSET      ISO-2022-JP message
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds support for the framebuffer and an AS3711 PMIC, used for supplying
-power to the CPU, some peripherals and the backlight.
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+> owner@vger.kernel.org] On Behalf Of Jens Axboe
+> Sent: Friday, February 15, 2013 3:00 PM
+> To: OS Engineering
+> Cc: Greg Kroah-Hartman; LKML; Darrick J. Wong; Sanoj Unnikrishnan;
+> 王金浦; Amit Kale
+> Subject: Re: [PATCH] EnhanceIO ssd caching software
+> 
+> On Fri, Feb 15 2013, OS Engineering wrote:
+> > Hi Greg, Jens,
+> >
+> > We are submitting EnhanceIO(TM) software driver for an inclusion in
+> > linux staging tree. Present state of this driver is beta. We have
+> been
+> > posting it for a few weeks, while it was maintained at github. It is
+> > still being cleaned-up and is being tested by LKML members. Inclusion
+> > in linux staging tree will make testing and reviewing easier and help
+> > a future integration in Linux kernel.
+> 
+> From a quick look, this looks clean enough to not warrant a stop in
+> staging. Why don't we just queue it up for 3.10, that will give it 3-4
+> months before it hits a release kernel. So plenty of time to iron out
+> any kinks in this. It's a driver and completely isolated at that, so
+> I'd have no problem doing that.
 
-not-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
----
+That'll be great. A few more clean-ups are remaining. It's undergone extensive in-house testing in last few months, so I am hoping that we'll not see any bug reports.
 
-As is clear from the not-Sob line and the RFC in the subject, this is not 
-for mainline. This is just an illustration how the recently submitted 
-"mfd: as3711: add OF support" patch can be used with the kzm9g board. I 
-had to add the framebuffer support to kzm9g, because without it the 
-backlight would just be turned on with no image on the LCD, which doesn't 
-look pretty. In the future, if needed, we could first only apply the 
-regulator part of the .dts, leaving the backlight disabled.
+Let's queue it for 3.10.
 
- arch/arm/boot/dts/sh73a0-kzm9g-reference.dts   |   90 ++++++++++++++++++++++++
- arch/arm/mach-shmobile/board-kzm9g-reference.c |   73 +++++++++++++++++++-
- 2 files changed, 162 insertions(+), 1 deletions(-)
+Thanks a lot.
+-Amit
 
-diff --git a/arch/arm/boot/dts/sh73a0-kzm9g-reference.dts b/arch/arm/boot/dts/sh73a0-kzm9g-reference.dts
-index b93b16a..a5810fc 100644
---- a/arch/arm/boot/dts/sh73a0-kzm9g-reference.dts
-+++ b/arch/arm/boot/dts/sh73a0-kzm9g-reference.dts
-@@ -99,6 +99,12 @@
- 		toshiba,mmc-wrprotect-disable;
- 		toshiba,mmc-has-idle-wait;
- 	};
-+
-+	/* A dummy LCDC DT node for now */
-+	lcdc: lcdc@0xfe940000 {
-+		compatible = "renesas,sh-mobile-lcdc";
-+		reg = <0xfe940000 0x4000>;
-+	};
- };
- 
- &i2c3 {
-@@ -106,6 +112,90 @@
- 	pinctrl-0 = <&i2c3_pins>;
- };
- 
-+&i2c0 {
-+	as3711@40 {
-+		compatible = "ams,as3711";
-+		reg = <0x40>;
-+
-+		regulators {
-+			sd1 {
-+				regulator-name = "1.315V CPU";
-+				regulator-min-microvolt = <1315000>;
-+				regulator-max-microvolt = <1335000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+			sd2 {
-+				regulator-name = "1.8V";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+			sd4 {
-+				regulator-name = "1.215V";
-+				regulator-min-microvolt = <1215000>;
-+				regulator-max-microvolt = <1235000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+			ldo2 {
-+				regulator-name = "2.8V CPU";
-+				regulator-min-microvolt = <2800000>;
-+				regulator-max-microvolt = <2800000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+			ldo3 {
-+				regulator-name = "3.0V CPU";
-+				regulator-min-microvolt = <3000000>;
-+				regulator-max-microvolt = <3000000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+			ldo4 {
-+				regulator-name = "2.8V";
-+				regulator-min-microvolt = <2800000>;
-+				regulator-max-microvolt = <2800000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+			ldo5 {
-+				regulator-name = "2.8V #2";
-+				regulator-min-microvolt = <2800000>;
-+				regulator-max-microvolt = <2800000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+			ldo7 {
-+				regulator-name = "1.15V CPU";
-+				regulator-min-microvolt = <1150000>;
-+				regulator-max-microvolt = <1150000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+			ldo8 {
-+				regulator-name = "1.15V CPU #2";
-+				regulator-min-microvolt = <1150000>;
-+				regulator-max-microvolt = <1150000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+		};
-+
-+		backlight {
-+			compatible = "ams,as3711-bl";
-+			su2-dev = <&lcdc>;
-+			su2-max-uA = <36000>;
-+			su2-feedback-curr-auto;
-+			su2-fbprot-gpio4;
-+			su2-auto-curr1;
-+			su2-auto-curr2;
-+			su2-auto-curr3;
-+		};
-+	};
-+};
-+
- &gpio {
- 	sdhi0_pins: pfc_sdhi0_pins {
- 		renesas,pins = "sdhi0_data4", "sdhi0_ctrl", "sdhi0_wp", "sdhi0_cd";
-diff --git a/arch/arm/mach-shmobile/board-kzm9g-reference.c b/arch/arm/mach-shmobile/board-kzm9g-reference.c
-index 1490246..9d520ca 100644
---- a/arch/arm/mach-shmobile/board-kzm9g-reference.c
-+++ b/arch/arm/mach-shmobile/board-kzm9g-reference.c
-@@ -31,6 +31,7 @@
- #include <linux/regulator/fixed.h>
- #include <linux/regulator/machine.h>
- #include <linux/smsc911x.h>
-+#include <linux/videodev2.h>
- 
- #include <mach/irqs.h>
- #include <mach/sh73a0.h>
-@@ -39,6 +40,62 @@
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
- 
-+#include <video/sh_mobile_lcdc.h>
-+
-+/* LCDC */
-+static struct fb_videomode kzm_lcdc_mode = {
-+	.name		= "WVGA Panel",
-+	.xres		= 800,
-+	.yres		= 480,
-+	.left_margin	= 220,
-+	.right_margin	= 110,
-+	.hsync_len	= 70,
-+	.upper_margin	= 20,
-+	.lower_margin	= 5,
-+	.vsync_len	= 5,
-+	.sync		= 0,
-+};
-+
-+static struct sh_mobile_lcdc_info lcdc_info = {
-+	.clock_source = LCDC_CLK_BUS,
-+	.ch[0] = {
-+		.chan		= LCDC_CHAN_MAINLCD,
-+		.fourcc		= V4L2_PIX_FMT_RGB565,
-+		.interface_type	= RGB24,
-+		.lcd_modes	= &kzm_lcdc_mode,
-+		.num_modes	= 1,
-+		.clock_divider	= 5,
-+		.flags		= 0,
-+		.panel_cfg = {
-+			.width	= 152,
-+			.height	= 91,
-+		},
-+	}
-+};
-+
-+static struct resource lcdc_resources[] = {
-+	[0] = {
-+		.name	= "LCDC",
-+		.start	= 0xfe940000,
-+		.end	= 0xfe943fff,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+	[1] = {
-+		.start	= intcs_evt2irq(0x580),
-+		.flags	= IORESOURCE_IRQ,
-+	},
-+};
-+
-+static struct platform_device lcdc_device = {
-+	.name		= "sh_mobile_lcdc_fb",
-+	.num_resources	= ARRAY_SIZE(lcdc_resources),
-+	.resource	= lcdc_resources,
-+	.dev	= {
-+		.platform_data	= &lcdc_info,
-+		.coherent_dma_mask = ~0,
-+	},
-+};
-+
- /* Dummy supplies, where voltage doesn't matter */
- static struct regulator_consumer_supply dummy_supplies[] = {
- 	REGULATOR_SUPPLY("vddvario", "smsc911x"),
-@@ -79,6 +136,15 @@ static const struct pinctrl_map kzm_pinctrl_map[] = {
- 				  "scifa4_data", "scifa4"),
- 	PIN_MAP_MUX_GROUP_DEFAULT("sh-sci.4", "e6050000.pfc",
- 				  "scifa4_ctrl", "scifa4"),
-+	PIN_MAP_MUX_GROUP_DEFAULT("sh_mobile_lcdc_fb.0", "e6050000.pfc",
-+				  "lcd_data24", "lcd"),
-+	PIN_MAP_MUX_GROUP_DEFAULT("sh_mobile_lcdc_fb.0", "e6050000.pfc",
-+				  "lcd_sync", "lcd"),
-+};
-+
-+static struct platform_device *kzm_devices[] __initdata = {
-+	&smsc_device,
-+	&lcdc_device,
- };
- 
- static void __init kzm_init(void)
-@@ -88,7 +154,10 @@ static void __init kzm_init(void)
- 	pinctrl_register_mappings(kzm_pinctrl_map, ARRAY_SIZE(kzm_pinctrl_map));
- 
- 	regulator_register_fixed(2, dummy_supplies, ARRAY_SIZE(dummy_supplies));
--	platform_device_register(&smsc_device);
-+
-+	/* LCDC */
-+	gpio_request_one(222, GPIOF_OUT_INIT_HIGH, NULL); /* LCDCDON */
-+	gpio_request_one(226, GPIOF_OUT_INIT_HIGH, NULL); /* SC */
- 
- 	/*
- 	 * Enable SD: this is a pseudo-GPIO, it actually only sets bit 28 in
-@@ -101,6 +170,8 @@ static void __init kzm_init(void)
- 	/* Early BRESP enable, Shared attribute override enable, 64K*8way */
- 	l2x0_init(IOMEM(0xf0100000), 0x40460000, 0x82000fff);
- #endif
-+
-+	platform_add_devices(kzm_devices, ARRAY_SIZE(kzm_devices));
- }
- 
- static void kzm9g_restart(char mode, const char *cmd)
--- 
-1.7.2.5
 
+> 
+> --
+> Jens Axboe
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+> in the body of a message to majordomo@vger.kernel.org More majordomo
+> info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+PROPRIETARY-CONFIDENTIAL INFORMATION INCLUDED
+
+
+
+This electronic transmission, and any documents attached hereto, may contain confidential, proprietary and/or legally privileged information. The information is intended only for use by the recipient named above. If you received this electronic message in error, please notify the sender and delete the electronic message. Any disclosure, copying, distribution, or use of the contents of information received in error is strictly prohibited, and violators will be pursued legally.
