@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935820Ab3BOMi7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 07:38:59 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:58424 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933028Ab3BOMi4 (ORCPT
+	id S935830Ab3BOMjg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 07:39:36 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:3023 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933028Ab3BOMje (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 07:38:56 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH 3/9] ARM: omap2: include linux/errno.h in hwmod_reset
-Date: Fri, 15 Feb 2013 12:38:32 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-5-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, Paul Walmsley <paul@pwsan.com>,
-        Sebastien Guiriec <s-guiriec@ti.com>
-References: <1360882071-4072668-1-git-send-email-arnd@arndb.de> <1360882071-4072668-4-git-send-email-arnd@arndb.de> <20130214225142.GG11362@atomide.com>
-In-Reply-To: <20130214225142.GG11362@atomide.com>
+	Fri, 15 Feb 2013 07:39:34 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 15 Feb 2013 04:35:27 -0800
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: <linux-tegra@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>, Simon Glass <sjg@chromium.org>,
+        Mike Turquette <mturquette@linaro.org>, Joseph Lo <josephl@nvidia.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v7 01/12] clk: tegra: provide dummy cpu car ops
+Date: Fri, 15 Feb 2013 14:36:31 +0200
+Message-ID: <1360931849-7090-2-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+In-Reply-To: <1360931849-7090-1-git-send-email-pdeschrijver@nvidia.com>
+References: <1360931849-7090-1-git-send-email-pdeschrijver@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302151238.32316.arnd@arndb.de>
-X-Provags-ID: V02:K0:r8z8svnx0c7n3BbHRHFwuEY2SVMOogCoPkZfdcZa2QI
- Ygmt8VqxDByVcf0XgqSArbgfUjtgQm5pQ3jbfMc6Zwirt7utAr
- oZnO117noyeq/lw5HeO2Ro7W5gIryi8VckE8oNIwhDCa316fnF
- qO+dVS3av19b7a63xflf6NmM+5YqLreBpgWof7D4frD6gjjaMw
- 8/GltPLRMl9c8L0mSY4YambexSfJyjlDFw/tqAAvRf76uF0/fd
- 2aHiPbocKN2uTYvtIXn/NFwhUfHr5rmapnRSXPh9r27tY7YsfD
- RhooriRpwWXNOlCauZqYXD/3+BNlwq0IyvKRXK4IUhZD+pkudC
- dIT6hCVGRbND9EV7Ymbc=
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 14 February 2013, Tony Lindgren wrote:
-> * Arnd Bergmann <arnd@arndb.de> [130214 14:51]:
-> > The newly created omap_hwmod_reset.c is missing an
-> > include of linux/errno.h in commit c02060d8 "ARM:
-> > OMAP4+: AESS: enable internal auto-gating during
-> > initial setup". It still works in omap2_defconfig,
-> > but not in all other combinations.
-> > 
-> > Without this patch, building allmodconfig results in:
-> > 
-> > arch/arm/mach-omap2/omap_hwmod_reset.c: In function 'omap_hwmod_aess_preprogram':
-> > arch/arm/mach-omap2/omap_hwmod_reset.c:47:11: error: 'EINVAL' undeclared (first use in this function)
-> > arch/arm/mach-omap2/omap_hwmod_reset.c:47:11: note: each undeclared identifier is reported only once for each function it appears in
-> > 
-> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> > Cc: Paul Walmsley <paul@pwsan.com>
-> > Cc: Sebastien Guiriec <s-guiriec@ti.com>
-> 
-> Acked-by: Tony Lindgren <tony@atomide.com>
+tegra_boot_secondary() relies on some of the car ops. This means having an
+uninitialized tegra_cpu_car_ops will lead to an early boot panic.
+Providing a dummy struct avoids this and makes adding Tegra114 clock support
+in a bisectable way a lot easier.
 
-Ok, applied on top of late/omap
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+---
+ drivers/clk/tegra/clk.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-	Arnd
+diff --git a/drivers/clk/tegra/clk.c b/drivers/clk/tegra/clk.c
+index a603b9a..f6c141f 100644
+--- a/drivers/clk/tegra/clk.c
++++ b/drivers/clk/tegra/clk.c
+@@ -22,7 +22,8 @@
+ #include "clk.h"
+ 
+ /* Global data of Tegra CPU CAR ops */
+-struct tegra_cpu_car_ops *tegra_cpu_car_ops;
++static struct tegra_cpu_car_ops *dummy_car_ops;
++struct tegra_cpu_car_ops *tegra_cpu_car_ops = &dummy_car_ops;
+ 
+ void __init tegra_init_dup_clks(struct tegra_clk_duplicate *dup_list,
+ 				struct clk *clks[], int clk_max)
+-- 
+1.7.1
+
