@@ -1,42 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754314Ab3BOQlS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 11:41:18 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:42678 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751569Ab3BOQlR (ORCPT
+	id S1756051Ab3BOQl3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 11:41:29 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:40373 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755344Ab3BOQl1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 11:41:17 -0500
-Message-ID: <511E6528.1060007@wwwdotorg.org>
-Date: Fri, 15 Feb 2013 09:41:12 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Fri, 15 Feb 2013 11:41:27 -0500
 MIME-Version: 1.0
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-CC: linux-tegra@vger.kernel.org, pdeschrijver@nvidia.com, pgaikwad@nvidia.com,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>, Simon Glass <sjg@chromium.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [v3 2/6] ARM: tegra20: convert device tree files to use CLK defines
-References: <1360917814-27236-1-git-send-email-hdoyu@nvidia.com> <1360917814-27236-3-git-send-email-hdoyu@nvidia.com>
-In-Reply-To: <1360917814-27236-3-git-send-email-hdoyu@nvidia.com>
-X-Enigmail-Version: 1.4.6
+In-Reply-To: <511E6329.5050903@windriver.com>
+References: <1360943688-12502-1-git-send-email-paul.gortmaker@windriver.com>
+	<CAGXu5jJxPU2Skr12u07fTeg+8im6L4JHv23+TrB+qVWMY36F_w@mail.gmail.com>
+	<511E6329.5050903@windriver.com>
+Date: Fri, 15 Feb 2013 08:41:27 -0800
+X-Google-Sender-Auth: rqvhNR0yCQBYE7WLoRT6GeAgLdE
+Message-ID: <CAGXu5jL3DQis5aETSAWJ8AC43s8tmMEXZ-bNwWLdJ6p_4fP=Yw@mail.gmail.com>
+Subject: Re: [PATCH] futex: avoid kernel taint caused by get_robust_list
+From: Kees Cook <keescook@chromium.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        Richard Weinberger <richard@nod.at>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/15/2013 01:43 AM, Hiroshi Doyu wrote:
-> Replace magic number in tegra_car:
-> 
-> -               clocks = <&tegra_car 28>;
-> +               clocks = <&tegra_car CLK_HOST1X>;
-> 
-> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
-> ---
->  .../bindings/clock/nvidia,tegra20-car.txt          |  150 +-------------------
+Hi Andrew,
 
-The edits to the binding are logically part of patch 1.
+Is this revert something you would be willing to take?
+
+-Kees
+
+On Fri, Feb 15, 2013 at 8:32 AM, Paul Gortmaker
+<paul.gortmaker@windriver.com> wrote:
+> On 13-02-15 11:18 AM, Kees Cook wrote:
+>> On Fri, Feb 15, 2013 at 7:54 AM, Paul Gortmaker
+>> <paul.gortmaker@windriver.com> wrote:
+>>> commit ec0c4274e33c0373e476b73e01995c53128f1257 ("futex: Mark
+>>> get_robust_list as deprecated") added these two WARN_ONCE calls.
+>>>
+>>> However, WARN_ONCE taints the kernel, and we shouldn't be allowing
+>>> any user who wanders by to do this.  For example, the system fuzzer
+>>> "trinity" uses the tainted state as a metric for when to stop,
+>>> assuming that it has caused significant wreckage (and indeed
+>>> that tool is what actually led me to this change).
+>>>
+>>> The ability to deprecate this code has been called into question[1],
+>>> but if that remains to be finalized, then making this change in the
+>>> interim seems to make sense.
+>>>
+>>> [1] http://lkml.indiana.edu/hypermail/linux/kernel/1208.0/01081.html
+>>>
+>>> Cc: Dave Jones <davej@redhat.com>
+>>> Cc: Richard Weinberger <richard@nod.at>
+>>> Cc: Kees Cook <keescook@chromium.org>
+>>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>>> Cc: stable@vger.kernel.org      # 3.4+
+>>> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+>>
+>> I Acked the original revert. I thought there was agreement that it was
+>> needed for checkpointing to work?
+>
+> There were several acks in the original thread, but for some unknown
+> reason (at least unknown to me and Richard), it never made it in tree...
+
+-- 
+Kees Cook
+Chrome OS Security
