@@ -1,102 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935596Ab3BOJVl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 04:21:41 -0500
-Received: from mail-da0-f50.google.com ([209.85.210.50]:34866 "EHLO
-	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932952Ab3BOJVj (ORCPT
+	id S1755673Ab3BOJY1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 04:24:27 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:12531 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753081Ab3BOJYY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 04:21:39 -0500
-Message-ID: <1360920094.23894.4.camel@phoenix>
-Subject: [RFC/RFT][PATCH 3/3] regulator: max8649: Use enable_pulldown flag
- with regulator_enable_regmap and friends APIs
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
-        "Jett.Zhou" <jtzhou@marvell.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org
-Date: Fri, 15 Feb 2013 17:21:34 +0800
-In-Reply-To: <1360919961.23894.2.camel@phoenix>
-References: <1360919961.23894.2.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 15 Feb 2013 04:24:24 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Fri, 15 Feb 2013 01:24:10 -0800
+Date: Fri, 15 Feb 2013 11:24:07 +0200
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Hiroshi Doyu <hdoyu@nvidia.com>, Russell King <linux@arm.linux.org.uk>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [v2 1/4] ARM: tegra20: create a DT header defining CLK IDs
+Message-ID: <20130215092407.GO3073@tbergstrom-lnx.Nvidia.com>
+References: <1360868369-20093-1-git-send-email-hdoyu@nvidia.com>
+ <1360868369-20093-2-git-send-email-hdoyu@nvidia.com>
+ <511D45E0.1080105@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <511D45E0.1080105@wwwdotorg.org>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/max8649.c |   39 ++++++---------------------------------
- 1 file changed, 6 insertions(+), 33 deletions(-)
+On Thu, Feb 14, 2013 at 09:15:28PM +0100, Stephen Warren wrote:
+> On 02/14/2013 11:59 AM, Hiroshi Doyu wrote:
+> > To replace magic number in tegra_car:
+> > 
+> > -               clocks = <&tegra_car 28>;
+> > +               clocks = <&tegra_car CLK_HOST1X>;
+> 
+> > diff --git a/arch/arm/boot/dts/tegra20-car.h b/arch/arm/boot/dts/tegra20-car.h
+> 
+> Sorry, forgot a couple small comments the last time around.
+> 
+> This file should probably have some header indicating which binding it
+> describes, rather like the GPIO header in my patch series.
+> 
+> > +#define CLK_CPU 0
+> 
+> I'd suggest naming that TEGRA20_CLK_CPU, so that the various different
+> clock headers don't conflict. It's not too likely that more than one of
+> the /Tegra/ clock headers will be included at once, but it doesn't seem
+> that unlikely that a board file could end up having a Tegra clock header
+> included plus various other clock headers for some other chip that has
+> some clock outputs.
+> 
 
-diff --git a/drivers/regulator/max8649.c b/drivers/regulator/max8649.c
-index 3ca1438..55556dab 100644
---- a/drivers/regulator/max8649.c
-+++ b/drivers/regulator/max8649.c
-@@ -60,36 +60,6 @@ struct max8649_regulator_info {
- 	unsigned	ramp_down:1;
- };
- 
--/* EN_PD means pulldown on EN input */
--static int max8649_enable(struct regulator_dev *rdev)
--{
--	struct max8649_regulator_info *info = rdev_get_drvdata(rdev);
--	return regmap_update_bits(info->regmap, MAX8649_CONTROL, MAX8649_EN_PD, 0);
--}
--
--/*
-- * Applied internal pulldown resistor on EN input pin.
-- * If pulldown EN pin outside, it would be better.
-- */
--static int max8649_disable(struct regulator_dev *rdev)
--{
--	struct max8649_regulator_info *info = rdev_get_drvdata(rdev);
--	return regmap_update_bits(info->regmap, MAX8649_CONTROL, MAX8649_EN_PD,
--				MAX8649_EN_PD);
--}
--
--static int max8649_is_enabled(struct regulator_dev *rdev)
--{
--	struct max8649_regulator_info *info = rdev_get_drvdata(rdev);
--	unsigned int val;
--	int ret;
--
--	ret = regmap_read(info->regmap, MAX8649_CONTROL, &val);
--	if (ret != 0)
--		return ret;
--	return !((unsigned char)val & MAX8649_EN_PD);
--}
--
- static int max8649_enable_time(struct regulator_dev *rdev)
- {
- 	struct max8649_regulator_info *info = rdev_get_drvdata(rdev);
-@@ -151,9 +121,9 @@ static struct regulator_ops max8649_dcdc_ops = {
- 	.get_voltage_sel = regulator_get_voltage_sel_regmap,
- 	.list_voltage	= regulator_list_voltage_linear,
- 	.map_voltage	= regulator_map_voltage_linear,
--	.enable		= max8649_enable,
--	.disable	= max8649_disable,
--	.is_enabled	= max8649_is_enabled,
-+	.enable		= regulator_enable_regmap,
-+	.disable	= regulator_disable_regmap,
-+	.is_enabled	= regulator_is_enabled_regmap,
- 	.enable_time	= max8649_enable_time,
- 	.set_mode	= max8649_set_mode,
- 	.get_mode	= max8649_get_mode,
-@@ -169,6 +139,9 @@ static struct regulator_desc dcdc_desc = {
- 	.vsel_mask	= MAX8649_VOL_MASK,
- 	.min_uV		= MAX8649_DCDC_VMIN,
- 	.uV_step	= MAX8649_DCDC_STEP,
-+	.enable_reg	= MAX8649_CONTROL,
-+	.enable_mask	= MAX8649_EN_PD,
-+	.enable_pulldown = true,
- };
- 
- static struct regmap_config max8649_regmap_config = {
--- 
-1.7.9.5
+I would suggest removing this clock. It's not actually implemented in the CCF
+and rather useless. If you would gate the CPU clock from the CPU by writing to
+this register, how would you ungate it? :) Note that this would gate the clock
+to all CPUs.
 
+Cheers,
 
+Peter.
 
