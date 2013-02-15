@@ -1,61 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751488Ab3BOV1l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 16:27:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48793 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750755Ab3BOV1k (ORCPT
+	id S1751512Ab3BOVb4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 16:31:56 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:38376 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750795Ab3BOVby (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 16:27:40 -0500
-Date: Fri, 15 Feb 2013 13:27:38 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, LKML <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@suse.de>,
-        Stewart Smith <stewart@flamingspork.com>, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [patch 1/2] mm: fincore()
-Message-Id: <20130215132738.c85c9eda.akpm@linux-foundation.org>
-In-Reply-To: <20130215063450.GA24047@cmpxchg.org>
-References: <87a9rbh7b4.fsf@rustcorp.com.au>
-	<20130211162701.GB13218@cmpxchg.org>
-	<20130211141239.f4decf03.akpm@linux-foundation.org>
-	<20130215063450.GA24047@cmpxchg.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 15 Feb 2013 16:31:54 -0500
+Message-ID: <511EA944.1090900@wwwdotorg.org>
+Date: Fri, 15 Feb 2013 14:31:48 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Doug Anderson <dianders@chromium.org>
+CC: Wolfram Sang <wsa@the-dreams.de>, linux-doc@vger.kernel.org,
+        Daniel Kurtz <djkurtz@chromium.org>, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>, u.kleine-koenig@pengutronix.de,
+        Grant Grundler <grundler@chromium.org>,
+        devicetree-discuss@lists.ozlabs.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        Girish Shivananjappa <girish.shivananjappa@linaro.org>,
+        bhushan.r@samsung.com,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        sreekumar.c@samsung.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Peter Korsgaard <peter.korsgaard@barco.com>,
+        Yuvaraj Kumar <yuvaraj.cd@gmail.com>,
+        Prashanth G <prashanth.g@samsung.com>
+Subject: Re: [PATCH v3 1/3] i2c: mux: Add i2c-arbitrator-cros-ec 'mux' driver
+References: <1360887677-20758-1-git-send-email-dianders@chromium.org> <1360957573-864-1-git-send-email-dianders@chromium.org>
+In-Reply-To: <1360957573-864-1-git-send-email-dianders@chromium.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Feb 2013 01:34:50 -0500
-Johannes Weiner <hannes@cmpxchg.org> wrote:
+On 02/15/2013 12:46 PM, Doug Anderson wrote:
+> The i2c-arbitrator-cros-ec driver implements the arbitration scheme
+> that the Embedded Controller (EC) on the ARM Chromebook expects to use
+> for bus multimastering.  This i2c-arbitrator-cros-ec driver could also
+> be used in other places where standard I2C bus arbitration can't be
+> used and two extra GPIOs are available for arbitration.
+> 
+> This driver is based on code that Simon Glass added to the i2c-s3c2410
+> driver in the Chrome OS kernel 3.4 tree.  The current incarnation as a
+> mux driver is as suggested by Grant Likely.  See
+> <https://patchwork.kernel.org/patch/1877311/> for some history.
 
-> + * The status is returned in a vector of bytes.  The least significant
-> + * bit of each byte is 1 if the referenced page is in memory, otherwise
-> + * it is zero.
+Reviewed-by: Stephen Warren <swarren@nvidia.com>
 
-Also, this is going to be dreadfully inefficient for some obvious cases.
+> diff --git a/drivers/i2c/muxes/i2c-arbitrator-cros-ec.c b/drivers/i2c/muxes/i2c-arbitrator-cros-ec.c
 
-We could address that by returning the info in some more efficient
-representation.  That will be run-length encoded in some fashion.
+> +static int i2c_arbitrator_probe(struct platform_device *pdev)
 
-The obvious way would be to populate an array of
+> +	/* Request GPIOs */
+> +	ret = of_get_named_gpio_flags(np, "ap-claim-gpio", 0, &gpio_flags);
+> +	if (ret == -EPROBE_DEFER || WARN_ON(!gpio_is_valid(ret)))
+> +		return ret;
 
-struct page_status {
-	u32 present:1;
-	u32 count:31;
-};
+I think by the time that doesn't return -EPROBE_DEFER ...
 
-or whatever.
+> +	arb->ap_gpio = ret;
+> +	arb->ap_gpio_release = !!(gpio_flags & OF_GPIO_ACTIVE_LOW);
+> +	out_init = (gpio_flags & OF_GPIO_ACTIVE_LOW) ?
+> +		GPIOF_OUT_INIT_HIGH : GPIOF_OUT_INIT_LOW;
+> +	ret = devm_gpio_request_one(&pdev->dev, arb->ap_gpio, out_init,
+> +				    "ap-claim-gpio");
+> +	if (ret == -EPROBE_DEFER || WARN_ON(ret))
+> +		return ret;
 
-Another way would be to define the syscall so it returns "number of
-pages present/absent starting at offset `start'".  In other words, one
-call to fincore() will return a single `struct page_status'.  Userspace
-can then walk through the file and generate the full picture, if needed.
+... that won't either, since of_get_named_gpio_flags()'s implementation
+requires the relevant GPIO driver to be active already.
 
-
-This also gets inefficient in obvious cases, but it's not as obviously
-bad?
-
+Still, there's no harm in the code as it stands, so no need to change.
