@@ -1,115 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935638Ab3BOJ4X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 04:56:23 -0500
-Received: from mga09.intel.com ([134.134.136.24]:37145 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757339Ab3BOJ4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 04:56:21 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,672,1355126400"; 
-   d="scan'208";a="263068393"
-From: "Zhang, Rui" <rui.zhang@intel.com>
-To: Andreas Mohr <andi@lisas.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [ASAP] thermal_sys.c NULL ptr deref patch likely incomplete
-Thread-Topic: [ASAP] thermal_sys.c NULL ptr deref patch likely incomplete
-Thread-Index: AQHOCsHF9Z6vRnNAfUas0eTwR3aiyph6r6ww
-Date: Fri, 15 Feb 2013 09:56:18 +0000
-Message-ID: <744357E9AAD1214791ACBA4B0B90926329ED84@SHSMSX101.ccr.corp.intel.com>
-References: <20130214144404.GA20011@rhlx01.hs-esslingen.de>
-In-Reply-To: <20130214144404.GA20011@rhlx01.hs-esslingen.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: multipart/mixed;
-	boundary="_002_744357E9AAD1214791ACBA4B0B90926329ED84SHSMSX101ccrcorpi_"
+	id S1760148Ab3BOKEJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 05:04:09 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:51787 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756901Ab3BOKEH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 05:04:07 -0500
+Message-ID: <511E0807.8000200@ti.com>
+Date: Fri, 15 Feb 2013 11:03:51 +0100
+From: "Cousson, Benoit" <b-cousson@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
+To: Matthias Brugger <matthias.bgg@gmail.com>
+CC: Javier Martinez Canillas <martinez.javier@gmail.com>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "eballetbo@gmail.com" <eballetbo@gmail.com>,
+        "elezegarcia@gmail.com" <elezegarcia@gmail.com>,
+        "ebutera@gmail.com" <ebutera@gmail.com>,
+        "javier.martinez@collabora.co.uk" <javier.martinez@collabora.co.uk>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arm: dts: Add uart1 and uart2 to igep boards.
+References: <1355326422-12357-1-git-send-email-matthias.bgg@gmail.com> <50C8AC3C.9020908@ti.com> <CABuKBeJsHCq98Pe-BwPajbQ+2OLQpwrbtVTJe=j9thPDQCCBrg@mail.gmail.com> <CAAwP0s01Jxh0f-T0sd5D980dZPcEV0J1KzjPbNHkrXLaKA3YUg@mail.gmail.com> <CABuKBeJsg_P=aDr0s9iVOD+7YTNoVUFQJCJymJyJ7NqXHUBzKQ@mail.gmail.com>
+In-Reply-To: <CABuKBeJsg_P=aDr0s9iVOD+7YTNoVUFQJCJymJyJ7NqXHUBzKQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_002_744357E9AAD1214791ACBA4B0B90926329ED84SHSMSX101ccrcorpi_
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
+Hi Matthias,
 
+On 2/15/2013 10:35 AM, Matthias Brugger wrote:
+> 2013/1/26 Javier Martinez Canillas <martinez.javier@gmail.com>:
+>> On Sat, Jan 26, 2013 at 4:16 PM, Matthias Brugger <matthias.bgg@gmail.com>
+>> wrote:
+>>> Hi Benoit,
+>>>
+>>> 2012/12/12 Benoit Cousson <b-cousson@ti.com>:
+>>>> Hi Matthias,
+>>>>
+>>>> On 12/12/2012 04:33 PM, Matthias Brugger wrote:
+>>>>> This patch is a follow-up patch for Javier Martinez effort adding
+>>>>> initial
+>>>>> device tree support to IGEP technology devices. [1]
+>>>>>
+>>>>> It adds uart1 and uart2 bindings to the generic dtsi for the IGEP
+>>>>> boards.
+>>>>>
+>>>>> [1] http://www.spinics.net/lists/linux-omap/msg83409.html
+>>>>>
+>>>>> Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
+>>>>> ---
+>>>>>   arch/arm/boot/dts/omap3-igep.dtsi |   24 ++++++++++++++++++++++++
+>>>>>   1 file changed, 24 insertions(+)
+>>>>>
+>>>>> diff --git a/arch/arm/boot/dts/omap3-igep.dtsi
+>>>>> b/arch/arm/boot/dts/omap3-igep.dtsi
+>>>>> index 125fe00..c02e3c0 100644
+>>>>> --- a/arch/arm/boot/dts/omap3-igep.dtsi
+>>>>> +++ b/arch/arm/boot/dts/omap3-igep.dtsi
+>>>>> @@ -27,6 +27,20 @@
+>>>>>   };
+>>>>>
+>>>>>   &omap3_pmx_core {
+>>>>> +     uart1_pins: pinmux_uart1_pins {
+>>>>> +             pinctrl-single,pins = <
+>>>>> +                     0x152 0x100     /* uart1_rx.uart1_rx INPUT | MODE0
+>>>>> */
+>>>>> +                     0x14c 0         /* uart1_tx.uart1_tx OUTPUT |
+>>>>> MODE0 */
+>>>>> +             >;
+>>>>> +     };
+>>>>> +
+>>>>> +     uart2_pins: pinmux_uart2_pins {
+>>>>> +             pinctrl-single,pins = <
+>>>>> +                     0x14a 0x100     /* uart2_rx.uart2_rx INPUT | MODE0
+>>>>> */
+>>>>> +                     0x148 0         /* uart2_tx.uart2_tx OUTPUT |
+>>>>> MODE0 */
+>>>>> +             >;
+>>>>> +     };
+>>>>> +
+>>>>>        uart3_pins: pinmux_uart3_pins {
+>>>>>                pinctrl-single,pins = <
+>>>>>                        0x16e 0x100     /* uart3_rx.uart3_rx INPUT | MODE0
+>>>>> */
+>>>>> @@ -77,6 +91,16 @@
+>>>>>        status = "disabled";
+>>>>>   };
+>>>>>
+>>>>> +&uart1 {
+>>>>> +       pinctrl-names = "default";
+>>>>> +       pinctrl-0 = <&uart1_pins>;
+>>>>> +};
+>>>>> +
+>>>>> +&uart2 {
+>>>>> +       pinctrl-names = "default";
+>>>>> +       pinctrl-0 = <&uart2_pins>;
+>>>>> +};
+>>>>> +
+>>>>>   &uart3 {
+>>>>>          pinctrl-names = "default";
+>>>>>          pinctrl-0 = <&uart3_pins>;
+>>>>>
+>>>>
+>>>> That looks good to me. I'll apply it on top of javier's series for 3.9.
+>>>
+>>> Can you pin-point me to the repository where this patches are in right
+>>> now? I tried to figure it out these days, but didn't found where to
+>>> clone the repository from.
+>>>
+>>> Thanks,
+>>> Matthias
+>>>
+>>
+>> Hi Matthias,
+>>
+>> OMAP DT tree is:
+>> git://git.kernel.org/pub/scm/linux/kernel/git/bcousson/linux-omap-dt.git
+>
+> Hi all,
+>
+> unfortunately I can't find the patch in this tree.
 
+Sorry about that. I've never pushed the latest branch, and was busy the 
+past month. I'll refresh the branch with all the pending patches.
 
-> -----Original Message-----
-> From: Andreas Mohr [mailto:andi@lisas.de]
-> Sent: Thursday, February 14, 2013 10:44 PM
-> To: Zhang, Rui
-> Cc: linux-kernel@vger.kernel.org
-> Subject: [ASAP] thermal_sys.c NULL ptr deref patch likely incomplete
-> Importance: High
->=20
-> Hi,
->=20
-> I just had a
->=20
-> # cat /sys/class/thermal/thermal_zone0/policy
-> (null)
->=20
->=20
-> When looking at the code (on my -rc7), I saw:
->=20
-> drivers/thermal/thermal_sys.c
->=20
-> static ssize_t
-> policy_show(struct device *dev, struct device_attribute *devattr, char
-> *buf)
-> {
->         struct thermal_zone_device *tz =3D to_thermal_zone(dev);
->=20
->         return sprintf(buf, "%s\n", tz->governor->name);
-> }
->=20
->=20
-> (not sure though why I manage to get a "(null)" rather than a crash
-> due to the dereferencing prior to output - possibly since I do have a
-> valid governor allocated yet then only its name field is null?)
->=20
-Hmm,
+Regards,
+Benoit
 
-Please apply the debug patch and see what you can get here.
-
-Thanks,
-rui
->=20
-> Seems we are missing a critical (and -rc-relevant) patch here
-> (and perhaps at other locations in this file, too, given that
-> this one was missed last time?).
->=20
-> Currently trying to get acerhdf operation into a working state
-> (and having some trouble with it - didn't know that I probably need
-> some
-> governor setup which seems to have just been available on my last setup,
-> or so)
->=20
-> Thanks,
->=20
-> Andreas Mohr
-
---_002_744357E9AAD1214791ACBA4B0B90926329ED84SHSMSX101ccrcorpi_
-Content-Type: application/octet-stream; name="acerhdf-debug-2.patch"
-Content-Description: acerhdf-debug-2.patch
-Content-Disposition: attachment; filename="acerhdf-debug-2.patch"; size=618;
-	creation-date="Fri, 15 Feb 2013 09:54:58 GMT";
-	modification-date="Fri, 15 Feb 2013 09:54:58 GMT"
-Content-Transfer-Encoding: base64
-
-ZGlmZiAtLWdpdCBhL2RyaXZlcnMvdGhlcm1hbC90aGVybWFsX3N5cy5jIGIvZHJpdmVycy90aGVy
-bWFsL3RoZXJtYWxfc3lzLmMKaW5kZXggOGM4Y2U4MC4uNTdjODNhYSAxMDA2NDQKLS0tIGEvZHJp
-dmVycy90aGVybWFsL3RoZXJtYWxfc3lzLmMKKysrIGIvZHJpdmVycy90aGVybWFsL3RoZXJtYWxf
-c3lzLmMKQEAgLTY5Nyw3ICs2OTcsOSBAQCBwb2xpY3lfc2hvdyhzdHJ1Y3QgZGV2aWNlICpkZXYs
-IHN0cnVjdCBkZXZpY2VfYXR0cmlidXRlICpkZXZhdHRyLCBjaGFyICpidWYpCiB7CiAJc3RydWN0
-IHRoZXJtYWxfem9uZV9kZXZpY2UgKnR6ID0gdG9fdGhlcm1hbF96b25lKGRldik7CiAKLQlyZXR1
-cm4gc3ByaW50ZihidWYsICIlc1xuIiwgdHotPmdvdmVybm9yLT5uYW1lKTsKKwlyZXR1cm4gc3By
-aW50ZihidWYsICIlc1xuIiwgdHotPmdvdmVybm9yID8gKHR6LT5nb3Zlcm5vci0+bmFtZSA/IHR6
-LT5nb3Zlcm5vci0+bmFtZSA6ICJOVUxMIG5hbWUiKSA6ICJOVUxMIGdvdmVybm9yIik7CisKKy8v
-CXJldHVybiBzcHJpbnRmKGJ1ZiwgIiVzXG4iLCB0ei0+Z292ZXJub3ItPm5hbWUpOwogfQogCiBz
-dGF0aWMgREVWSUNFX0FUVFIodHlwZSwgMDQ0NCwgdHlwZV9zaG93LCBOVUxMKTsK
-
---_002_744357E9AAD1214791ACBA4B0B90926329ED84SHSMSX101ccrcorpi_--
