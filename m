@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935747Ab3BOOSW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 09:18:22 -0500
-Received: from mout.gmx.net ([212.227.17.21]:51928 "EHLO mout.gmx.net"
+	id S935500Ab3BOOSU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 09:18:20 -0500
+Received: from mout.gmx.net ([212.227.15.19]:61433 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932905Ab3BOOSQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 09:18:16 -0500
+	id S934192Ab3BOOSS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 09:18:18 -0500
 X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX18lDzQuPeQlQ0KuhG9EzJK6d0lv8BaScvxx4POqRN
-	rcbv8xdOaVqeYB
+X-Provags-ID: V01U2FsdGVkX18hIAlnp10hRFiOGvbbmLH1jmbveNgnRKlpkzpada
+	8tSwR73nm0By7V
 From: Peter Huewe <peterhuewe@gmx.de>
 To: Rupesh Gujare <rupesh.gujare@atmel.com>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Dan Carpenter <dan.carpenter@oracle.com>,
         Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH 4/7 v2] staging/ozwpan: Fix NULL vs zero in ozproto.c (sparse warning)
-Date: Fri, 15 Feb 2013 15:22:25 +0100
-Message-Id: <1360938148-19225-4-git-send-email-peterhuewe@gmx.de>
+Subject: [PATCH 5/7 v2] staging/ozwpan: Fix NULL vs zero in ozcdev.c (sparse warning)
+Date: Fri, 15 Feb 2013 15:22:26 +0100
+Message-Id: <1360938148-19225-5-git-send-email-peterhuewe@gmx.de>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1360938148-19225-1-git-send-email-peterhuewe@gmx.de>
 References: <20130215084517.GB6802@mwanda>
@@ -35,291 +35,105 @@ assignment before first use) it was removed.
 
 Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 ---
- drivers/staging/ozwpan/ozproto.c |   78 +++++++++++++++++++-------------------
- 1 files changed, 39 insertions(+), 39 deletions(-)
+ drivers/staging/ozwpan/ozcdev.c |   24 ++++++++++++------------
+ 1 files changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/staging/ozwpan/ozproto.c b/drivers/staging/ozwpan/ozproto.c
-index e00a539..40c283c 100644
---- a/drivers/staging/ozwpan/ozproto.c
-+++ b/drivers/staging/ozwpan/ozproto.c
-@@ -98,7 +98,7 @@ static void oz_send_conn_rsp(struct oz_pd *pd, u8 status)
- 	int sz = sizeof(struct oz_hdr) + sizeof(struct oz_elt) +
- 			sizeof(struct oz_elt_connect_rsp);
- 	skb = alloc_skb(sz + OZ_ALLOCATED_SPACE(dev), GFP_ATOMIC);
--	if (skb == 0)
-+	if (skb == NULL)
- 		return;
- 	skb_reserve(skb, LL_RESERVED_SPACE(dev));
- 	skb_reset_network_header(skb);
-@@ -116,7 +116,7 @@ static void oz_send_conn_rsp(struct oz_pd *pd, u8 status)
- 	oz_hdr->control = (OZ_PROTOCOL_VERSION<<OZ_VERSION_SHIFT);
- 	oz_hdr->last_pkt_num = 0;
- 	put_unaligned(0, &oz_hdr->pkt_num);
--	oz_event_log(OZ_EVT_CONNECT_RSP, 0, 0, 0, 0);
-+	oz_event_log(OZ_EVT_CONNECT_RSP, 0, 0, NULL, 0);
- 	elt->type = OZ_ELT_CONNECT_RSP;
- 	elt->length = sizeof(struct oz_elt_connect_rsp);
- 	memset(body, 0, sizeof(struct oz_elt_connect_rsp));
-@@ -179,17 +179,17 @@ static struct oz_pd *oz_connect_req(struct oz_pd *cur_pd, struct oz_elt *elt,
- 	u8 rsp_status = OZ_STATUS_SUCCESS;
- 	u8 stop_needed = 0;
- 	u16 new_apps = g_apps;
--	struct net_device *old_net_dev = 0;
--	struct oz_pd *free_pd = 0;
-+	struct net_device *old_net_dev = NULL;
-+	struct oz_pd *free_pd = NULL;
- 	if (cur_pd) {
- 		pd = cur_pd;
- 		spin_lock_bh(&g_polling_lock);
- 	} else {
--		struct oz_pd *pd2 = 0;
-+		struct oz_pd *pd2 = NULL;
- 		struct list_head *e;
- 		pd = oz_pd_alloc(pd_addr);
--		if (pd == 0)
--			return 0;
-+		if (pd == NULL)
-+			return NULL;
- 		pd->last_rx_time_j = jiffies;
- 		spin_lock_bh(&g_polling_lock);
- 		list_for_each(e, &g_pd_list) {
-@@ -203,9 +203,9 @@ static struct oz_pd *oz_connect_req(struct oz_pd *cur_pd, struct oz_elt *elt,
- 		if (pd != pd2)
- 			list_add_tail(&pd->link, &g_pd_list);
- 	}
--	if (pd == 0) {
-+	if (pd == NULL) {
- 		spin_unlock_bh(&g_polling_lock);
--		return 0;
-+		return NULL;
- 	}
- 	if (pd->net_dev != net_dev) {
- 		old_net_dev = pd->net_dev;
-@@ -294,7 +294,7 @@ done:
- 		if (stop_needed)
- 			oz_pd_stop(pd);
- 		oz_pd_put(pd);
--		pd = 0;
-+		pd = NULL;
- 	}
- 	if (old_net_dev)
- 		dev_put(old_net_dev);
-@@ -340,14 +340,14 @@ static void oz_rx_frame(struct sk_buff *skb)
- 	u8 *src_addr;
- 	struct oz_elt *elt;
- 	int length;
--	struct oz_pd *pd = 0;
-+	struct oz_pd *pd = NULL;
- 	struct oz_hdr *oz_hdr = (struct oz_hdr *)skb_network_header(skb);
- 	int dup = 0;
- 	u32 pkt_num;
+diff --git a/drivers/staging/ozwpan/ozcdev.c b/drivers/staging/ozwpan/ozcdev.c
+index 64913ae..a38716f 100644
+--- a/drivers/staging/ozwpan/ozcdev.c
++++ b/drivers/staging/ozwpan/ozcdev.c
+@@ -97,7 +97,7 @@ ssize_t oz_cdev_read(struct file *filp, char __user *buf, size_t count,
+ 	int ix;
  
- 	oz_event_log(OZ_EVT_RX_PROCESS, 0,
- 		(((u16)oz_hdr->control)<<8)|oz_hdr->last_pkt_num,
--		0, oz_hdr->pkt_num);
-+		NULL, oz_hdr->pkt_num);
- 	oz_trace2(OZ_TRACE_RX_FRAMES,
- 		"RX frame PN=0x%x LPN=0x%x control=0x%x\n",
- 		oz_hdr->pkt_num, oz_hdr->last_pkt_num, oz_hdr->control);
-@@ -402,7 +402,7 @@ static void oz_rx_frame(struct sk_buff *skb)
- 			break;
- 		switch (elt->type) {
- 		case OZ_ELT_CONNECT_REQ:
--			oz_event_log(OZ_EVT_CONNECT_REQ, 0, 0, 0, 0);
-+			oz_event_log(OZ_EVT_CONNECT_REQ, 0, 0, NULL, 0);
- 			oz_trace("RX: OZ_ELT_CONNECT_REQ\n");
- 			pd = oz_connect_req(pd, elt, src_addr, skb->dev);
- 			break;
-@@ -456,7 +456,7 @@ done:
+ 	struct oz_pd *pd;
+-	struct oz_serial_ctx *ctx = 0;
++	struct oz_serial_ctx *ctx;
+ 
+ 	spin_lock_bh(&g_cdev.lock);
+ 	pd = g_cdev.active_pd;
+@@ -147,7 +147,7 @@ ssize_t oz_cdev_write(struct file *filp, const char __user *buf, size_t count,
+ {
+ 	struct oz_pd *pd;
+ 	struct oz_elt_buf *eb;
+-	struct oz_elt_info *ei = 0;
++	struct oz_elt_info *ei;
+ 	struct oz_elt *elt;
+ 	struct oz_app_hdr *app_hdr;
+ 	struct oz_serial_ctx *ctx;
+@@ -182,7 +182,7 @@ ssize_t oz_cdev_write(struct file *filp, const char __user *buf, size_t count,
+ 			ctx->tx_seq_num = 1;
+ 		spin_lock(&eb->lock);
+ 		if (oz_queue_elt_info(eb, 0, 0, ei) == 0)
+-			ei = 0;
++			ei = NULL;
+ 		spin_unlock(&eb->lock);
+ 	}
+ 	spin_unlock_bh(&pd->app_lock[OZ_APPID_USB-1]);
+@@ -217,7 +217,7 @@ static int oz_set_active_pd(u8 *addr)
+ 		if (is_zero_ether_addr(addr)) {
+ 			spin_lock_bh(&g_cdev.lock);
+ 			pd = g_cdev.active_pd;
+-			g_cdev.active_pd = 0;
++			g_cdev.active_pd = NULL;
+ 			memset(g_cdev.active_addr, 0,
+ 				sizeof(g_cdev.active_addr));
+ 			spin_unlock_bh(&g_cdev.lock);
+@@ -385,7 +385,7 @@ int oz_cdev_deregister(void)
   */
- void oz_protocol_term(void)
+ int oz_cdev_init(void)
  {
--	struct list_head *chain = 0;
-+	struct list_head *chain;
- 	del_timer_sync(&g_timer);
- 	/* Walk the list of bindings and remove each one.
- 	 */
-@@ -487,7 +487,7 @@ void oz_protocol_term(void)
- 		spin_lock_bh(&g_polling_lock);
- 	}
- 	chain = g_timer_pool;
--	g_timer_pool = 0;
-+	g_timer_pool = NULL;
- 	spin_unlock_bh(&g_polling_lock);
- 	while (chain) {
- 		struct oz_timer *t = container_of(chain, struct oz_timer, link);
-@@ -534,25 +534,25 @@ static void oz_protocol_timer(unsigned long arg)
- 		/* This happens if we remove the current timer but can't stop
- 		 * the timer from firing. In this case just get out.
- 		 */
--		oz_event_log(OZ_EVT_TIMER, 0, 0, 0, 0);
-+		oz_event_log(OZ_EVT_TIMER, 0, 0, NULL, 0);
- 		spin_unlock_bh(&g_polling_lock);
- 		return;
- 	}
- 	g_timer_state = OZ_TIMER_IN_HANDLER;
- 	t = g_cur_timer;
--	g_cur_timer = 0;
-+	g_cur_timer = NULL;
- 	list_del(&t->link);
- 	spin_unlock_bh(&g_polling_lock);
- 	do {
- 		pd = t->pd;
--		oz_event_log(OZ_EVT_TIMER, 0, t->type, 0, 0);
-+		oz_event_log(OZ_EVT_TIMER, 0, t->type, NULL, 0);
- 		oz_pd_handle_timer(pd, t->type);
- 		spin_lock_bh(&g_polling_lock);
- 		if (g_timer_pool_count < OZ_MAX_TIMER_POOL_SIZE) {
- 			t->link.next = g_timer_pool;
- 			g_timer_pool = &t->link;
- 			g_timer_pool_count++;
--			t = 0;
-+			t = NULL;
- 		}
- 		if (!list_empty(&g_timer_list)) {
- 			t2 =  container_of(g_timer_list.next,
-@@ -560,9 +560,9 @@ static void oz_protocol_timer(unsigned long arg)
- 			if (time_before_eq(t2->due_time, jiffies))
- 				list_del(&t2->link);
- 			else
--				t2 = 0;
-+				t2 = NULL;
- 		} else {
--			t2 = 0;
-+			t2 = NULL;
- 		}
- 		spin_unlock_bh(&g_polling_lock);
- 		oz_pd_put(pd);
-@@ -583,12 +583,12 @@ static void oz_protocol_timer_start(void)
- 			container_of(g_timer_list.next, struct oz_timer, link);
- 		if (g_timer_state == OZ_TIMER_SET) {
- 			oz_event_log(OZ_EVT_TIMER_CTRL, 3,
--				(u16)g_cur_timer->type, 0,
-+				(u16)g_cur_timer->type, NULL,
- 				(unsigned)g_cur_timer->due_time);
- 			mod_timer(&g_timer, g_cur_timer->due_time);
- 		} else {
- 			oz_event_log(OZ_EVT_TIMER_CTRL, 4,
--				(u16)g_cur_timer->type, 0,
-+				(u16)g_cur_timer->type, NULL,
- 				(unsigned)g_cur_timer->due_time);
- 			g_timer.expires = g_cur_timer->due_time;
- 			g_timer.function = oz_protocol_timer;
-@@ -608,9 +608,9 @@ void oz_timer_add(struct oz_pd *pd, int type, unsigned long due_time,
- 		int remove)
- {
- 	struct list_head *e;
--	struct oz_timer *t = 0;
-+	struct oz_timer *t = NULL;
- 	int restart_needed = 0;
--	oz_event_log(OZ_EVT_TIMER_CTRL, 1, (u16)type, 0, (unsigned)due_time);
-+	oz_event_log(OZ_EVT_TIMER_CTRL, 1, (u16)type, NULL, (unsigned)due_time);
- 	spin_lock(&g_polling_lock);
- 	if (remove) {
- 		list_for_each(e, &g_timer_list) {
-@@ -618,12 +618,12 @@ void oz_timer_add(struct oz_pd *pd, int type, unsigned long due_time,
- 			if ((t->pd == pd) && (t->type == type)) {
- 				if (g_cur_timer == t) {
- 					restart_needed = 1;
--					g_cur_timer = 0;
-+					g_cur_timer = NULL;
- 				}
- 				list_del(e);
- 				break;
- 			}
--			t = 0;
-+			t = NULL;
- 		}
- 	}
- 	if (!t) {
-@@ -647,7 +647,7 @@ void oz_timer_add(struct oz_pd *pd, int type, unsigned long due_time,
- 			t2 = container_of(e, struct oz_timer, link);
- 			if (time_before(due_time, t2->due_time)) {
- 				if (t2 == g_cur_timer) {
--					g_cur_timer = 0;
-+					g_cur_timer = NULL;
- 					restart_needed = 1;
- 				}
- 				break;
-@@ -668,18 +668,18 @@ void oz_timer_add(struct oz_pd *pd, int type, unsigned long due_time,
+-	oz_event_log(OZ_EVT_SERVICE, 1, OZ_APPID_SERIAL, 0, 0);
++	oz_event_log(OZ_EVT_SERVICE, 1, OZ_APPID_SERIAL, NULL, 0);
+ 	oz_app_enable(OZ_APPID_SERIAL, 1);
+ 	return 0;
+ }
+@@ -394,7 +394,7 @@ int oz_cdev_init(void)
   */
- void oz_timer_delete(struct oz_pd *pd, int type)
+ void oz_cdev_term(void)
  {
--	struct list_head *chain = 0;
-+	struct list_head *chain = NULL;
- 	struct oz_timer *t;
- 	struct oz_timer *n;
- 	int restart_needed = 0;
- 	int release = 0;
--	oz_event_log(OZ_EVT_TIMER_CTRL, 2, (u16)type, 0, 0);
-+	oz_event_log(OZ_EVT_TIMER_CTRL, 2, (u16)type, NULL, 0);
- 	spin_lock(&g_polling_lock);
- 	list_for_each_entry_safe(t, n, &g_timer_list, link) {
- 		if ((t->pd == pd) && ((type == 0) || (t->type == type))) {
- 			if (g_cur_timer == t) {
- 				restart_needed = 1;
--				g_cur_timer = 0;
-+				g_cur_timer = NULL;
- 				del_timer(&g_timer);
- 			}
- 			list_del(&t->link);
-@@ -748,7 +748,7 @@ struct oz_pd *oz_pd_find(u8 *mac_addr)
- 		}
- 	}
- 	spin_unlock_bh(&g_polling_lock);
--	return 0;
-+	return NULL;
+-	oz_event_log(OZ_EVT_SERVICE, 2, OZ_APPID_SERIAL, 0, 0);
++	oz_event_log(OZ_EVT_SERVICE, 2, OZ_APPID_SERIAL, NULL, 0);
+ 	oz_app_enable(OZ_APPID_SERIAL, 0);
  }
  /*------------------------------------------------------------------------------
-  * Context: process
-@@ -770,9 +770,9 @@ void oz_app_enable(int app_id, int enable)
- static int oz_pkt_recv(struct sk_buff *skb, struct net_device *dev,
- 		struct packet_type *pt, struct net_device *orig_dev)
+@@ -403,8 +403,8 @@ void oz_cdev_term(void)
+ int oz_cdev_start(struct oz_pd *pd, int resume)
  {
--	oz_event_log(OZ_EVT_RX_FRAME, 0, 0, 0, 0);
-+	oz_event_log(OZ_EVT_RX_FRAME, 0, 0, NULL, 0);
- 	skb = skb_share_check(skb, GFP_ATOMIC);
--	if (skb == 0)
-+	if (skb == NULL)
+ 	struct oz_serial_ctx *ctx;
+-	struct oz_serial_ctx *old_ctx = 0;
+-	oz_event_log(OZ_EVT_SERVICE, 3, OZ_APPID_SERIAL, 0, resume);
++	struct oz_serial_ctx *old_ctx;
++	oz_event_log(OZ_EVT_SERVICE, 3, OZ_APPID_SERIAL, NULL, resume);
+ 	if (resume) {
+ 		oz_trace("Serial service resumed.\n");
  		return 0;
- 	spin_lock_bh(&g_rx_queue.lock);
- 	if (g_processing_rx) {
-@@ -815,14 +815,14 @@ void oz_binding_add(char *net_dev)
- 			oz_trace("Adding binding: %s\n", net_dev);
- 			binding->ptype.dev =
- 				dev_get_by_name(&init_net, net_dev);
--			if (binding->ptype.dev == 0) {
-+			if (binding->ptype.dev == NULL) {
- 				oz_trace("Netdev %s not found\n", net_dev);
- 				kfree(binding);
--				binding = 0;
-+				binding = NULL;
- 			}
- 		} else {
- 			oz_trace("Binding to all netcards\n");
--			binding->ptype.dev = 0;
-+			binding->ptype.dev = NULL;
- 		}
- 		if (binding) {
- 			dev_add_pack(&binding->ptype);
-@@ -876,7 +876,7 @@ static void pd_stop_all_for_device(struct net_device *net_dev)
-  */
- void oz_binding_remove(char *net_dev)
+@@ -440,22 +440,22 @@ int oz_cdev_start(struct oz_pd *pd, int resume)
+ void oz_cdev_stop(struct oz_pd *pd, int pause)
  {
--	struct oz_binding *binding = 0;
-+	struct oz_binding *binding;
- 	struct oz_binding **link;
- 	oz_trace("Removing binding: %s\n", net_dev);
- 	spin_lock_bh(&g_binding_lock);
-@@ -923,7 +923,7 @@ int oz_protocol_init(char *devs)
- {
- 	skb_queue_head_init(&g_rx_queue);
- 	if (devs && (devs[0] == '*')) {
--		oz_binding_add(0);
-+		oz_binding_add(NULL);
- 	} else {
- 		char d[32];
- 		while (*devs) {
+ 	struct oz_serial_ctx *ctx;
+-	oz_event_log(OZ_EVT_SERVICE, 4, OZ_APPID_SERIAL, 0, pause);
++	oz_event_log(OZ_EVT_SERVICE, 4, OZ_APPID_SERIAL, NULL, pause);
+ 	if (pause) {
+ 		oz_trace("Serial service paused.\n");
+ 		return;
+ 	}
+ 	spin_lock_bh(&pd->app_lock[OZ_APPID_SERIAL-1]);
+ 	ctx = (struct oz_serial_ctx *)pd->app_ctx[OZ_APPID_SERIAL-1];
+-	pd->app_ctx[OZ_APPID_SERIAL-1] = 0;
++	pd->app_ctx[OZ_APPID_SERIAL-1] = NULL;
+ 	spin_unlock_bh(&pd->app_lock[OZ_APPID_SERIAL-1]);
+ 	if (ctx)
+ 		oz_cdev_release_ctx(ctx);
+ 	spin_lock(&g_cdev.lock);
+ 	if (pd == g_cdev.active_pd)
+-		g_cdev.active_pd = 0;
++		g_cdev.active_pd = NULL;
+ 	else
+-		pd = 0;
++		pd = NULL;
+ 	spin_unlock(&g_cdev.lock);
+ 	if (pd) {
+ 		oz_pd_put(pd);
 -- 
 1.7.8.6
 
