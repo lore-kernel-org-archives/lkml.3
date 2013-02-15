@@ -1,100 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161812Ab3BONHs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 08:07:48 -0500
-Received: from mail-we0-f175.google.com ([74.125.82.175]:61504 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161302Ab3BOM5Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 07:57:25 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        sameo@linux.intel.com
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        Jonas Aaberg <jonas.aberg@stericsson.com>
-Subject: [PATCH 02/35] mfd: ab8500-gpadc: Allow tvout regulator to be missing
-Date: Fri, 15 Feb 2013 12:56:33 +0000
-Message-Id: <1360933026-30325-3-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1360933026-30325-1-git-send-email-lee.jones@linaro.org>
-References: <1360933026-30325-1-git-send-email-lee.jones@linaro.org>
+	id S1161291Ab3BOMpo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 07:45:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32867 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935977Ab3BOMph (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 07:45:37 -0500
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: linux-acpi@vger.kernel.org, Huang Ying <ying.huang@intel.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH EDAC 10/13] edac: better report error conditions in debug mode
+Date: Fri, 15 Feb 2013 10:44:58 -0200
+Message-Id: <eabec3c83459107b7cba0b5f6e5ae425a2edad81.1360931635.git.mchehab@redhat.com>
+In-Reply-To: <cover.1360931635.git.mchehab@redhat.com>
+References: <cover.1360931635.git.mchehab@redhat.com>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jonas Aaberg <jonas.aberg@stericsson.com>
+It is hard to find what's wrong without a proper error
+report. Improve it, in debug mode.
 
-Signed-off-by: Jonas Aaberg <jonas.aberg@stericsson.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 ---
- drivers/mfd/ab8500-gpadc.c |   19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
+ drivers/edac/edac_mc_sysfs.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/mfd/ab8500-gpadc.c b/drivers/mfd/ab8500-gpadc.c
-index 9ed3afc..34c1d04 100644
---- a/drivers/mfd/ab8500-gpadc.c
-+++ b/drivers/mfd/ab8500-gpadc.c
-@@ -140,6 +140,9 @@ struct ab8500_gpadc *ab8500_gpadc_get(char *name)
- {
- 	struct ab8500_gpadc *gpadc;
- 
-+	if (list_empty(&ab8500_gpadc_list))
-+		return NULL;
-+
- 	list_for_each_entry(gpadc, &ab8500_gpadc_list, node) {
- 		if (!strcmp(name, dev_name(gpadc->dev)))
- 		    return gpadc;
-@@ -587,7 +590,8 @@ static int ab8500_gpadc_runtime_suspend(struct device *dev)
- {
- 	struct ab8500_gpadc *gpadc = dev_get_drvdata(dev);
- 
--	regulator_disable(gpadc->regu);
-+	if (gpadc->regu)
-+		regulator_disable(gpadc->regu);
- 	return 0;
- }
- 
-@@ -595,7 +599,8 @@ static int ab8500_gpadc_runtime_resume(struct device *dev)
- {
- 	struct ab8500_gpadc *gpadc = dev_get_drvdata(dev);
- 
--	regulator_enable(gpadc->regu);
-+	if (gpadc->regu)
-+		regulator_enable(gpadc->regu);
- 	return 0;
- }
- 
-@@ -670,9 +675,8 @@ static int ab8500_gpadc_probe(struct platform_device *pdev)
- 	/* VTVout LDO used to power up ab8500-GPADC */
- 	gpadc->regu = regulator_get(&pdev->dev, "vddadc");
- 	if (IS_ERR(gpadc->regu)) {
--		ret = PTR_ERR(gpadc->regu);
--		dev_err(gpadc->dev, "failed to get vtvout LDO\n");
--		goto fail_irq;
-+		dev_warn(gpadc->dev, "failed to get vtvout LDO\n");
-+		gpadc->regu = NULL;
+diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
+index 0ca1ca7..9c58da6 100644
+--- a/drivers/edac/edac_mc_sysfs.c
++++ b/drivers/edac/edac_mc_sysfs.c
+@@ -429,8 +429,12 @@ static int edac_create_csrow_objects(struct mem_ctl_info *mci)
+ 		if (!nr_pages_per_csrow(csrow))
+ 			continue;
+ 		err = edac_create_csrow_object(mci, mci->csrows[i], i);
+-		if (err < 0)
++		if (err < 0) {
++			edac_dbg(1,
++				 "failure: create csrow objects for csrow %d\n",
++				 i);
+ 			goto error;
++		}
  	}
- 
- 	platform_set_drvdata(pdev, gpadc);
-@@ -688,8 +692,6 @@ static int ab8500_gpadc_probe(struct platform_device *pdev)
- 	list_add_tail(&gpadc->node, &ab8500_gpadc_list);
- 	dev_dbg(gpadc->dev, "probe success\n");
  	return 0;
--fail_irq:
--	free_irq(gpadc->irq, gpadc);
- fail:
- 	kfree(gpadc);
- 	gpadc = NULL;
-@@ -708,7 +710,8 @@ static int ab8500_gpadc_remove(struct platform_device *pdev)
- 	pm_runtime_get_sync(gpadc->dev);
- 	pm_runtime_disable(gpadc->dev);
  
--	regulator_disable(gpadc->regu);
-+	if (gpadc->regu)
-+		regulator_disable(gpadc->regu);
- 
- 	pm_runtime_set_suspended(gpadc->dev);
- 
+@@ -1007,6 +1011,7 @@ int edac_create_sysfs_mci_device(struct mem_ctl_info *mci)
+ 	edac_dbg(0, "creating device %s\n", dev_name(&mci->dev));
+ 	err = device_add(&mci->dev);
+ 	if (err < 0) {
++		edac_dbg(1, "failure: create device %s\n", dev_name(&mci->dev));
+ 		bus_unregister(&mci->bus);
+ 		kfree(mci->bus.name);
+ 		return err;
 -- 
-1.7.10.4
+1.8.1.2
 
