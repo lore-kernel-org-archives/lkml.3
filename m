@@ -1,44 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751284Ab3BOTSb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 14:18:31 -0500
-Received: from sauhun.de ([89.238.76.85]:55648 "EHLO pokefinder.org"
+	id S1751359Ab3BOTWf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 14:22:35 -0500
+Received: from fieldses.org ([174.143.236.118]:37594 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750755Ab3BOTS3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 14:18:29 -0500
-Date: Fri, 15 Feb 2013 20:18:26 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: swarren@nvidia.com, khali@linux-fr.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH] i2c: tegra: remove warning dump if timeout happen in
- transfer
-Message-ID: <20130215191826.GC4351@the-dreams.de>
-References: <1360845813-11334-1-git-send-email-ldewangan@nvidia.com>
+	id S1750755Ab3BOTWe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 14:22:34 -0500
+Date: Fri, 15 Feb 2013 14:22:29 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Mark Lord <kernel@start.ca>
+Cc: Mark Lord <kernel@teksavvy.com>,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        linux-nfs@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
+        =?utf-8?B?UGF3ZcWC?= Sikora <pawel.sikora@agmk.net>,
+        Tom Horsley <horsley1953@gmail.com>,
+        Jason Tibbitts <tibbs@math.uh.edu>
+Subject: Re: BUG at net/sunrpc/svc_xprt.c:921 (another one)
+Message-ID: <20130215192229.GC19923@fieldses.org>
+References: <50F63882.8000607@parallels.com>
+ <50F72F03.5070806@teksavvy.com>
+ <50F786AF.4070107@parallels.com>
+ <20130117130335.GD6598@fieldses.org>
+ <50F7FB7E.2020503@parallels.com>
+ <50F88C14.7030903@teksavvy.com>
+ <50F8DF7E.8080107@parallels.com>
+ <50FC74E0.20305@teksavvy.com>
+ <20130212205216.GE10267@fieldses.org>
+ <511BAAAA.9040804@start.ca>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1360845813-11334-1-git-send-email-ldewangan@nvidia.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <511BAAAA.9040804@start.ca>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 14, 2013 at 06:13:33PM +0530, Laxman Dewangan wrote:
-> If timeout error occurs in the i2c transfer then it was dumping warning
-> of call stack.
+On Wed, Feb 13, 2013 at 10:00:58AM -0500, Mark Lord wrote:
+> On 13-02-12 03:52 PM, J. Bruce Fields wrote:
+> > On Sun, Jan 20, 2013 at 05:51:12PM -0500, Mark Lord wrote:
+> >> Got it again, this time on a different system
+> >> running mostly the same software.
+> > 
+> > Mark, Paweł, Tom, could any of you confirm whether this helps?
+> ..
 > 
-> Remove the warning dump as there is may be possibility that some slave
-> devices are busy and not responding the i2c communication.
-> 
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+> No, I cannot confirm one way or the other,
+> because I haven't noticed it again since the most recent
+> couple of occurrences I posted earlier here.
 
-I'd like to have the patch extended. Currently, i2c-tegra is the only
-I2C user of BUG and BUG_ON. Could you maybe extend the patch to handle
-those situations more gracefully while we are at it? From a glimpse,
-these situations don't need a complete halt of the kernel?
+OK, I do have at least one report of someone who saw the bug before
+running for a day without seeing it:
 
-Thanks,
+	https://bugzilla.redhat.com/show_bug.cgi?id=910457
 
-   Wolfram
+Any more reports positive or negative welcome.
 
+This looks like it should solve the problem, so for now I intend to
+commit the following.
+
+--b.
