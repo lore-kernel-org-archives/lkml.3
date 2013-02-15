@@ -1,94 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933012Ab3BOQcE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 11:32:04 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35796 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756229Ab3BOQcC (ORCPT
+	id S933064Ab3BOQcu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 11:32:50 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:57614 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758340Ab3BOQcs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 11:32:02 -0500
-Date: Fri, 15 Feb 2013 08:30:18 -0800
-From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-e3a34029c635b7dee06e51d99441578b96c7d463@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, andi@firstfloor.org,
-        a.p.zijlstra@chello.nl, penberg@kernel.org, namhyung.kim@lge.com,
-        bp@alien8.de, namhyung@kernel.org, jolsa@redhat.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, andi@firstfloor.org,
-        a.p.zijlstra@chello.nl, penberg@kernel.org, namhyung.kim@lge.com,
-        namhyung@kernel.org, bp@alien8.de, jolsa@redhat.com,
-        tglx@linutronix.de
-In-Reply-To: <1360227734-375-6-git-send-email-namhyung@kernel.org>
-References: <1360227734-375-6-git-send-email-namhyung@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf annotate:
-  Fix warning message on a missing vmlinux
-Git-Commit-ID: e3a34029c635b7dee06e51d99441578b96c7d463
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 15 Feb 2013 11:32:48 -0500
+Message-ID: <511E6329.5050903@windriver.com>
+Date: Fri, 15 Feb 2013 11:32:41 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 15 Feb 2013 08:30:24 -0800 (PST)
+To: Kees Cook <keescook@chromium.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        Richard Weinberger <richard@nod.at>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] futex: avoid kernel taint caused by get_robust_list
+References: <1360943688-12502-1-git-send-email-paul.gortmaker@windriver.com> <CAGXu5jJxPU2Skr12u07fTeg+8im6L4JHv23+TrB+qVWMY36F_w@mail.gmail.com>
+In-Reply-To: <CAGXu5jJxPU2Skr12u07fTeg+8im6L4JHv23+TrB+qVWMY36F_w@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e3a34029c635b7dee06e51d99441578b96c7d463
-Gitweb:     http://git.kernel.org/tip/e3a34029c635b7dee06e51d99441578b96c7d463
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Thu, 7 Feb 2013 18:02:12 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 14 Feb 2013 14:59:27 -0300
+On 13-02-15 11:18 AM, Kees Cook wrote:
+> On Fri, Feb 15, 2013 at 7:54 AM, Paul Gortmaker
+> <paul.gortmaker@windriver.com> wrote:
+>> commit ec0c4274e33c0373e476b73e01995c53128f1257 ("futex: Mark
+>> get_robust_list as deprecated") added these two WARN_ONCE calls.
+>>
+>> However, WARN_ONCE taints the kernel, and we shouldn't be allowing
+>> any user who wanders by to do this.  For example, the system fuzzer
+>> "trinity" uses the tainted state as a metric for when to stop,
+>> assuming that it has caused significant wreckage (and indeed
+>> that tool is what actually led me to this change).
+>>
+>> The ability to deprecate this code has been called into question[1],
+>> but if that remains to be finalized, then making this change in the
+>> interim seems to make sense.
+>>
+>> [1] http://lkml.indiana.edu/hypermail/linux/kernel/1208.0/01081.html
+>>
+>> Cc: Dave Jones <davej@redhat.com>
+>> Cc: Richard Weinberger <richard@nod.at>
+>> Cc: Kees Cook <keescook@chromium.org>
+>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>> Cc: stable@vger.kernel.org      # 3.4+
+>> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+> 
+> I Acked the original revert. I thought there was agreement that it was
+> needed for checkpointing to work?
 
-perf annotate: Fix warning message on a missing vmlinux
+There were several acks in the original thread, but for some unknown
+reason (at least unknown to me and Richard), it never made it in tree...
 
-When perf annotate runs with no vmlinux file it cannot annotate kernel
-symbols because the kallsyms only provides symbol addresses.  So it
-recommends to run perf buildid-cache to install proper vmlinux image.
+P.
+--
 
-But running perf buildid-cache -av vmlinux as the message gives me a
-following error:
-
-  $ perf buildid-cache -av /home/namhyung/build/kernel/vmlinux
-  Couldn't add v: No such file or directory
-
-Since the -a option receives a parameter, 'v' should not be after the
-option.
-
-In addition -a option is not work for this case since the build-id cache
-already has a kallsyms with same build-id so it'll fail with EEXIST.
-Use recently added -u (--update) option for it.
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1360227734-375-6-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/annotate.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 07aaeea..d33fe93 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -809,7 +809,7 @@ fallback:
- 		pr_err("Can't annotate %s:\n\n"
- 		       "No vmlinux file%s\nwas found in the path.\n\n"
- 		       "Please use:\n\n"
--		       "  perf buildid-cache -av vmlinux\n\n"
-+		       "  perf buildid-cache -vu vmlinux\n\n"
- 		       "or:\n\n"
- 		       "  --vmlinux vmlinux\n",
- 		       sym->name, build_id_msg ?: "");
+> 
+> -Kees
+> 
