@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935888Ab3BOPCJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 10:02:09 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59094 "EHLO mx2.suse.de"
+	id S1759717Ab3BOPCf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 10:02:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:21096 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934192Ab3BOPCI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 10:02:08 -0500
-Date: Fri, 15 Feb 2013 16:02:05 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Huang Shijie <b32955@freescale.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: introduce __linear_page_index()
-Message-ID: <20130215150205.GC31037@dhcp22.suse.cz>
-References: <1360047819-6669-1-git-send-email-b32955@freescale.com>
- <20130205132741.1e1a4e04.akpm@linux-foundation.org>
+	id S1752609Ab3BOPCe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 10:02:34 -0500
+Date: Fri, 15 Feb 2013 16:01:17 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Ben Chan <benchan@chromium.org>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH 5/5] coredump: abort core dump piping only due to a
+	fatal signal
+Message-ID: <20130215150117.GB30829@redhat.com>
+References: <1360885096-21207-1-git-send-email-msb@chromium.org> <1360885096-21207-5-git-send-email-msb@chromium.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130205132741.1e1a4e04.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1360885096-21207-5-git-send-email-msb@chromium.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 05-02-13 13:27:41, Andrew Morton wrote:
-[...]
-> > +static inline pgoff_t linear_page_index(struct vm_area_struct *vma,
-> > +					unsigned long address)
-> > +{
-> >  	if (unlikely(is_vm_hugetlb_page(vma)))
-> >  		return linear_hugepage_index(vma, address);
-> > -	pgoff = (address - vma->vm_start) >> PAGE_SHIFT;
-> > -	pgoff += vma->vm_pgoff;
-> > -	return pgoff >> (PAGE_CACHE_SHIFT - PAGE_SHIFT);
-> > +	return __linear_page_index(vma, address) >>
-> > +				(PAGE_CACHE_SHIFT - PAGE_SHIFT);
-> >  }
-> 
-> I don't think we need bother creating both linear_page_index() and
-> __linear_page_index().  Realistically, we won't be supporting
-> PAGE_SHIFT!=PAGE_CACHE_SHIFT.  And most (or all?) of the sites which
-> you changed should have been using PAGE_CACHE_SHIFT anyway!
+On 02/14, Mandeep Singh Baines wrote:
+>
+> This patch makes wait_for_dump_helpers() not to abort piping the core
+> dump data when the crashing process has received any but a fatal signal
+> (SIGKILL). The rationale is that a crashing process may still receive
+> uninteresting signals such as SIGCHLD when its core dump data is being
+> redirected to a helper application.
 
-Except for hugetlb (huge_pmd_share, unmap_ref_private) which uses
-PAGE_SHIFT to get an index into mapping. History proves there was
-some confusion about those in the past (36e4f20a fixing 0c176d52). So
-__linear_page_index makes some sense here.
+You already sent this change in the past ;) and I already reviewed it.
 
--- 
-Michal Hocko
-SUSE Labs
+It is not enough and imho not good. Damn, I'll try very much to make the
+patches on weekend...
+
+> -	while ((pipe->readers > 1) && (!signal_pending(current))) {
+> +	while ((pipe->readers > 1) && (!fatal_signal_pending(current))) {
+
+This turns pipe_wait() belowe into the busy-wait loop if signal_pending().
+Not good. And not enough, there are other reasons why coredump can fail
+if the signal is pending.
+
+>  		wake_up_interruptible_sync(&pipe->wait);
+>  		kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
+>  		pipe_wait(pipe);
+> +		pipe_unlock(pipe);
+> +		try_to_freeze();
+
+Oh, yes. One of the problems with coredump/signals is freezer. Not sure
+what should we do...
+
+But if we add try_to_freeze() here, we need to add more try_to_freeze's,
+think about dumping the huge core on the slow media.
+
+Oleg.
+
