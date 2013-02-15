@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935929Ab3BOPpt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 10:45:49 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:50418
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752206Ab3BOPps (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 10:45:48 -0500
-Date: Fri, 15 Feb 2013 16:44:21 +0100
-From: Jens Axboe <axboe@kernel.dk>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        devel@openvz.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] block: account iowait time when waiting for
- completion of IO request
-Message-ID: <20130215154421.GA6131@kernel.dk>
-References: <d5e5c32b045e448072b3a4b77cd6557408b77103.1360851174.git.vdavydov@parallels.com>
- <d1fdb105fe23f979871b92c4b4d3dd374146e337.1360851174.git.vdavydov@parallels.com>
+	id S935960Ab3BOPqI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 10:46:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44735 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935938Ab3BOPqG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 10:46:06 -0500
+Date: Fri, 15 Feb 2013 16:44:49 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH 2/5] lockdep: check that no locks held at freeze time
+Message-ID: <20130215154449.GD30829@redhat.com>
+References: <1360885096-21207-1-git-send-email-msb@chromium.org> <1360885096-21207-2-git-send-email-msb@chromium.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <d1fdb105fe23f979871b92c4b4d3dd374146e337.1360851174.git.vdavydov@parallels.com>
+In-Reply-To: <1360885096-21207-2-git-send-email-msb@chromium.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 14 2013, Vladimir Davydov wrote:
-> Using wait_for_completion() for waiting for a IO request to be executed
-> results in wrong iowait time accounting. For example, a system having
-> the only task doing write() and fdatasync() on a block device can be
-> reported being idle instead of iowaiting as it should because
-> blkdev_issue_flush() calls wait_for_completion() which in turn calls
-> schedule() that does not increment the iowait proc counter and thus does
-> not turn on iowait time accounting.
-> 
-> The patch makes block layer use wait_for_completion_io() instead of
-> wait_for_completion() where appropriate to account iowait time
-> correctly.
+On 02/14, Mandeep Singh Baines wrote:
+>
+> We shouldn't try_to_freeze if locks are held. Verified that
+> I get no lockdep warnings after applying this patch and
+> "vfork: don't freezer_count() for in-kernel users of CLONE_VFORK".
 
-Thanks, applied both for 3.9 (with Ingos ack).
+Ah. Now I understand why you did 1/5. Beacuse you call
+debug_check_no_locks_held() right at the start of try_to_freeze(),
+even if the caller can't be frozen.
 
--- 
-Jens Axboe
+>  static inline bool try_to_freeze(void)
+>  {
+> +	debug_check_no_locks_held(current);
+>  	might_sleep();
+>  	if (likely(!freezing(current)))
+>  		return false;
+
+Up to maintainers, but perhaps you should check !PF_NOFREEZE at least?
+
+Oleg.
 
