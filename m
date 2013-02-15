@@ -1,93 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935657Ab3BOKQp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 05:16:45 -0500
-Received: from mga14.intel.com ([143.182.124.37]:12576 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755057Ab3BOKQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 05:16:44 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,672,1355126400"; 
-   d="scan'208";a="257391421"
-Date: Fri, 15 Feb 2013 11:16:40 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Anatol Pomozov <anatol.pomozov@gmail.com>
-Cc: Aaron Sierra <asierra@xes-inc.com>,
-        =?iso-8859-1?B?QWfzY3MgUOFs?= <agocs.pal.86@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] lpc_ich: fix gpio base and control offsets
-Message-ID: <20130215101640.GN20996@sortiz-mobl>
-References: <b9fec05c-d383-4282-b2af-c95855ff6abb@zimbra>
- <3ffa5032-0565-48f0-a4ae-473452f4c902@zimbra>
- <20130203170213.GQ8476@sortiz-mobl>
- <CAOMFOmW3XdSCJrQJk57-dKNcsyh-B7xcBRKLqpniEd+ROSRvBw@mail.gmail.com>
+	id S935648Ab3BOKSb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 05:18:31 -0500
+Received: from www.linutronix.de ([62.245.132.108]:42093 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755057Ab3BOKSa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 05:18:30 -0500
+Date: Fri, 15 Feb 2013 11:18:25 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Tim Sander <tim@krieglstein.org>
+cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        gregkh@linuxfoundation.org
+Subject: Re: [PATHC] 3.6 spinlock fix
+In-Reply-To: <3258732.q5XBfts1EM@dabox>
+Message-ID: <alpine.LFD.2.02.1302151117170.22263@ionos>
+References: <6003615.pRQnIgKCSn@dabox> <alpine.LFD.2.02.1302142334120.22263@ionos> <CAP=VYLo2zxJWy3s6AmZc+Hh6wXh67HMp+mM0nEkN6M_OpKJSug@mail.gmail.com> <3258732.q5XBfts1EM@dabox>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAOMFOmW3XdSCJrQJk57-dKNcsyh-B7xcBRKLqpniEd+ROSRvBw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Anatol,
-
-On Thu, Feb 14, 2013 at 02:48:05PM -0800, Anatol Pomozov wrote:
-> Hi, Aaron
+On Fri, 15 Feb 2013, Tim Sander wrote:
+> > On Thu, Feb 14, 2013 at 5:35 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > > On Thu, 14 Feb 2013, Tim Sander wrote:
+> > >> > That's true, but w/o seing the OOM output I can't tell what's
+> > >> > exhausting the memory.
+> > >> 
+> > >> When fuzzing the serial port one probably should switch of sysreq. It
+> > >> seems
+> > >> as if there is a break send somehow and then it selects the OOM option.
+> > >> So when switching of MAGIC_SYSRQ the OOMs are gone. So its a non issue.
+> > > 
+> > > Amazing that you get the break+oom combo out of that fuzzer!
+> That fuzzer is running at 57600Hz while the serial port of the fuzzed device is
+> running twice that rate. The break condition seems to be easy hit by the fuzzer
+>  i've sent in a previous mail. 
+> > Doing a basic "git whatchanged" and searching for "trinity" is rather
+> > impressive, regardless of the kernel version and/or where "rogue states"
+> > may currently be at with their "program"....   Kudos to davej for that.
+> Mh, but thats not trinity! Havn't tried that but well fuzzing at a different 
+> serial rate than the receiver might be a good idea even if it sounds pretty stupid.
 > 
-> On Sun, Feb 3, 2013 at 9:02 AM, Samuel Ortiz <sameo@linux.intel.com> wrote:
-> > Hi Arron,
-> >
-> > On Thu, Jan 24, 2013 at 02:52:39PM -0600, Aaron Sierra wrote:
-> >> In ICH5 and earlier the GPIOBASE and GPIOCTRL registers are found at
-> >> offsets 0x58 and 0x5C, respectively. This patch allows GPIO access to
-> >> properly be enabled (and disabled) for these chipsets.
-> >>
-> >> Signed-off-by: Agócs Pál <agocs.pal.86@gmail.com>
-> >> Signed-off-by: Aaron Sierra <asierra@xes-inc.com>
-> >> ---
-> >>  drivers/mfd/lpc_ich.c |  109 ++++++++++++++++++++++++++++++++++---------------
-> >>  1 file changed, 76 insertions(+), 33 deletions(-)
-> > I applied this one to my for-next branch, but:
-> >
-> >
-> >> @@ -858,14 +874,35 @@ wdt_done:
-> >>  static int lpc_ich_probe(struct pci_dev *dev,
-> >>                               const struct pci_device_id *id)
-> >>  {
-> >> +     struct lpc_ich_priv *priv;
-> >>       int ret;
-> >>       bool cell_added = false;
-> >>
-> >> -     ret = lpc_ich_init_wdt(dev, id);
-> >> +     priv = kmalloc(GFP_KERNEL, sizeof(struct lpc_ich_priv));
-> >> +     if (!priv)
-> >> +             return -ENOMEM;
-> > Could you please come back to me with a follow up patch that would convert
-> > this to the devm_kzalloc() API ?
-> 
-> I compiled linux-next (sha == 019f4bc86a462), tried to boot it on my
-> machine and it fails at the very early stage with following oops:
-Would you mind trying the following fix:
+> Attached is the patch for the 3.6.9-rt kernel (but i think this should also apply 
+> to the "normal" 3.6 i guess).  But as Greg already took care of this patch i guess 
+> that only for convinience. Also it seems as if the patch sent to Greg is missing the
+> #include <linux/kdb.h>?
 
-diff --git a/drivers/mfd/lpc_ich.c b/drivers/mfd/lpc_ich.c
-index 5c2ef41..fddc8e2 100644
---- a/drivers/mfd/lpc_ich.c
-+++ b/drivers/mfd/lpc_ich.c
-@@ -916,7 +916,7 @@ static int lpc_ich_probe(struct pci_dev *dev,
-        int ret;
-        bool cell_added = false;
- 
--       priv = kmalloc(GFP_KERNEL, sizeof(struct lpc_ich_priv));
-+       priv = kzalloc(sizeof(struct lpc_ich_priv), GFP_KERNEL);
-        if (!priv)
-                return -ENOMEM;
+Errm, no. The in_kdb_printk() is an RT specific issue, so I left it
+out for the mainline fix.
 
-Cheers,
-Samuel.
+Thanks,
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+	tglx
