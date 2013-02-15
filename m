@@ -1,89 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751319Ab3BOTN0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 14:13:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13671 "EHLO mx1.redhat.com"
+	id S1751284Ab3BOTSb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 14:18:31 -0500
+Received: from sauhun.de ([89.238.76.85]:55648 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750797Ab3BOTNZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 14:13:25 -0500
-Subject: [PATCH] vfio-pci: Manage user power state transitions
-To: alex.williamson@redhat.com
-From: Alex Williamson <alex.williamson@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Date: Fri, 15 Feb 2013 12:13:24 -0700
-Message-ID: <20130215191228.27383.1844.stgit@bling.home>
-User-Agent: StGit/0.16
+	id S1750755Ab3BOTS3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 14:18:29 -0500
+Date: Fri, 15 Feb 2013 20:18:26 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: swarren@nvidia.com, khali@linux-fr.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
+Subject: Re: [PATCH] i2c: tegra: remove warning dump if timeout happen in
+ transfer
+Message-ID: <20130215191826.GC4351@the-dreams.de>
+References: <1360845813-11334-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1360845813-11334-1-git-send-email-ldewangan@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We give the user access to change the power state of the device but
-certain transitions result in an uninitialized state which the user
-cannot resolve.  To fix this we need to mark the PowerState field of
-the PMCSR register read-only and effect the requested change on behalf
-of the user.  This has the added benefit that pdev->current_state
-remains accurate while controlled by the user.
+On Thu, Feb 14, 2013 at 06:13:33PM +0530, Laxman Dewangan wrote:
+> If timeout error occurs in the i2c transfer then it was dumping warning
+> of call stack.
+> 
+> Remove the warning dump as there is may be possibility that some slave
+> devices are busy and not responding the i2c communication.
+> 
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 
-The primary example of this bug is a QEMU guest doing a reboot where
-the device it put into D3 on shutdown and becomes unusable on the next
-boot because the device did a soft reset on D3->D0 (NoSoftRst-).
+I'd like to have the patch extended. Currently, i2c-tegra is the only
+I2C user of BUG and BUG_ON. Could you maybe extend the patch to handle
+those situations more gracefully while we are at it? From a glimpse,
+these situations don't need a complete halt of the kernel?
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
- drivers/vfio/pci/vfio_pci_config.c |   25 ++++++++++++++++++++++---
- 1 file changed, 22 insertions(+), 3 deletions(-)
+Thanks,
 
-diff --git a/drivers/vfio/pci/vfio_pci_config.c b/drivers/vfio/pci/vfio_pci_config.c
-index f1dde2c..81567f8 100644
---- a/drivers/vfio/pci/vfio_pci_config.c
-+++ b/drivers/vfio/pci/vfio_pci_config.c
-@@ -587,12 +587,30 @@ static int __init init_pci_cap_basic_perm(struct perm_bits *perm)
- 	return 0;
- }
- 
-+static int vfio_pm_config_write(struct vfio_pci_device *vdev, int pos,
-+				int count, struct perm_bits *perm,
-+				int offset, __le32 val)
-+{
-+	count = vfio_default_config_write(vdev, pos, count, perm, offset, val);
-+	if (count < 0)
-+		return count;
-+
-+	if (offset == PCI_PM_CTRL) {
-+		uint8_t state = le32_to_cpu(val) & PCI_PM_CTRL_STATE_MASK;
-+		pci_set_power_state(vdev->pdev, state);
-+	}
-+
-+	return count;
-+}
-+
- /* Permissions for the Power Management capability */
- static int __init init_pci_cap_pm_perm(struct perm_bits *perm)
- {
- 	if (alloc_perm_bits(perm, pci_cap_length[PCI_CAP_ID_PM]))
- 		return -ENOMEM;
- 
-+	perm->writefn = vfio_pm_config_write;
-+
- 	/*
- 	 * We always virtualize the next field so we can remove
- 	 * capabilities from the chain if we want to.
-@@ -600,10 +618,11 @@ static int __init init_pci_cap_pm_perm(struct perm_bits *perm)
- 	p_setb(perm, PCI_CAP_LIST_NEXT, (u8)ALL_VIRT, NO_WRITE);
- 
- 	/*
--	 * Power management is defined *per function*,
--	 * so we let the user write this
-+	 * Power management is defined *per function*, so we can let
-+	 * the user change power state, but we trap and initiate the
-+	 * change ourselves, so the state bits are read-only.
- 	 */
--	p_setd(perm, PCI_PM_CTRL, NO_VIRT, ALL_WRITE);
-+	p_setd(perm, PCI_PM_CTRL, NO_VIRT, ~PCI_PM_CTRL_STATE_MASK);
- 	return 0;
- }
- 
+   Wolfram
 
