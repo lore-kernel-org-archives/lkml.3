@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935188Ab3BOAIJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 19:08:09 -0500
-Received: from mail-gh0-f202.google.com ([209.85.160.202]:40619 "EHLO
-	mail-gh0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759753Ab3BOAIH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 19:08:07 -0500
-From: Mandeep Singh Baines <msb@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ben Chan <benchan@chromium.org>, Mandeep Singh Baines <msb@chromium.org>,
-        Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@redhat.com>
-Subject: [PATCH 5/5] coredump: abort core dump piping only due to a fatal signal
-Date: Thu, 14 Feb 2013 15:38:16 -0800
-Message-Id: <1360885096-21207-5-git-send-email-msb@chromium.org>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1360885096-21207-1-git-send-email-msb@chromium.org>
-References: <1360885096-21207-1-git-send-email-msb@chromium.org>
+	id S935222Ab3BOAIW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 19:08:22 -0500
+Received: from gate.crashing.org ([63.228.1.57]:55910 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935201Ab3BOAIU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 19:08:20 -0500
+Message-ID: <1360886876.22260.9.camel@pasglop>
+Subject: Re: [RFC PATCH] virt_mmio: fix signature checking for BE guests
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Marc Zyngier <marc.zyngier@arm.com>
+Cc: Pawel Moll <Pawel.Moll@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>
+Date: Fri, 15 Feb 2013 11:07:56 +1100
+In-Reply-To: <511BB134.30003@arm.com>
+References: <1360765538-18097-1-git-send-email-marc.zyngier@arm.com>
+	 <1360768102.4045.107.camel@hornet> <511BB134.30003@arm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Chan <benchan@chromium.org>
+On Wed, 2013-02-13 at 15:28 +0000, Marc Zyngier wrote:
 
-This patch makes wait_for_dump_helpers() not to abort piping the core
-dump data when the crashing process has received any but a fatal signal
-(SIGKILL). The rationale is that a crashing process may still receive
-uninteresting signals such as SIGCHLD when its core dump data is being
-redirected to a helper application. While it's necessary to allow
-terminating the core dump piping via SIGKILL, it's practically more
-useful for the purpose of debugging and crash reporting if the core dump
-piping is not aborted due to other non-fatal signals.
+> Well, the spec clearly says that the registers reflect the endianess of
+> the guest, and it makes sense: when performing the MMIO access, KVM
+> needs to convert between host and guest endianess.
 
-Signed-off-by: Ben Chan <benchan@chromium.org>
-Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-CC: Oleg Nesterov <oleg@redhat.com>
-CC: Tejun Heo <tj@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Rafael J. Wysocki <rjw@sisk.pl>
-CC: Ingo Molnar <mingo@redhat.com>
----
- fs/coredump.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+It's actually a horrible idea :-)
 
-diff --git a/fs/coredump.c b/fs/coredump.c
-index 1774932..54e31a3 100644
---- a/fs/coredump.c
-+++ b/fs/coredump.c
-@@ -32,6 +32,7 @@
- #include <linux/pipe_fs_i.h>
- #include <linux/oom.h>
- #include <linux/compat.h>
-+#include <linux/freezer.h>
- 
- #include <asm/uaccess.h>
- #include <asm/mmu_context.h>
-@@ -417,10 +418,13 @@ static void wait_for_dump_helpers(struct file *file)
- 	pipe->readers++;
- 	pipe->writers--;
- 
--	while ((pipe->readers > 1) && (!signal_pending(current))) {
-+	while ((pipe->readers > 1) && (!fatal_signal_pending(current))) {
- 		wake_up_interruptible_sync(&pipe->wait);
- 		kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
- 		pipe_wait(pipe);
-+		pipe_unlock(pipe);
-+		try_to_freeze();
-+		pipe_lock(pipe);
- 	}
- 
- 	pipe->readers--;
--- 
-1.8.1
+What does "guest endianness" means from a qemu perspective if your
+emulated CPU can operate in either mode ?
+
+It's actually been causing endless problems, besides linux doesn't have
+"Sane" MMIO accessors that say "current endianness". ioreadN/writeN are
+LE, realN/writeN are LE, ioreadNbe/iowriteNbe are BE always, the only
+"whatever my endianness is" are the __raw ones which also don't have
+barriers etc...  
+
+> > Having said that, does the change make everything else work with a BE
+> > guest? (I assume we're talking about the guest being BE, right? ;-) If
+> > so it means that the host is not following the current spec and it
+> > treats all the registers as LE.
+> 
+> Yes, I only care about a BE guest. And no, not much is actually working
+> (kvmtool is not happy about the guest addresses it finds in the
+> virtio-ring). Need to dive into it and understand what needs to be fixed...
+> 
+> >> - Reading the MAGIC register byte by byte. Is that allowed? The spec
+> >>   only says it is 32bit wide.
+> > 
+> > And the spirit of the spec was: _exactly 32bit wide_. It's just simpler
+> > to implement one access width on the host side.
+> 
+> I guessed as much...
+
+Cheers,
+Ben.
+
 
