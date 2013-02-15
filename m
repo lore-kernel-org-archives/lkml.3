@@ -1,51 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751366Ab3BOTMd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 14:12:33 -0500
-Received: from smtp.eu.citrix.com ([46.33.159.39]:9045 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750816Ab3BOTMb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 14:12:31 -0500
-X-IronPort-AV: E=Sophos;i="4.84,675,1355097600"; 
-   d="scan'208";a="1527701"
-Message-ID: <511E88B4.7060205@citrix.com>
-Date: Fri, 15 Feb 2013 20:12:52 +0100
-From: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	id S1751319Ab3BOTN0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 14:13:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13671 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750797Ab3BOTNZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 14:13:25 -0500
+Subject: [PATCH] vfio-pci: Manage user power state transitions
+To: alex.williamson@redhat.com
+From: Alex Williamson <alex.williamson@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Date: Fri, 15 Feb 2013 12:13:24 -0700
+Message-ID: <20130215191228.27383.1844.stgit@bling.home>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
-Subject: Re: [PATCH] xen-blkfront: switch from llist to list
-References: <1360951381-26313-1-git-send-email-roger.pau@citrix.com> <20130215185644.GB29539@phenom.dumpdata.com>
-In-Reply-To: <20130215185644.GB29539@phenom.dumpdata.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/02/13 19:56, Konrad Rzeszutek Wilk wrote:
->> Should be backported to 3.8 stable.
-> 
-> Lets do one thing at a time.
-> 
-> The patch I have in the tree (and that I've asked Jens to pull for 3.9 - so
-> he might have already in his tree) is the old hybrid where we still use llist
-> but change the loop from 'for' to 'while'.
-> 
-> This is the stable/for-jens-3.8 tree in git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git 
-> 
-> Could you rebase your patch on top of that tree and just simplify the loop?
-> 
-> Sorry about the mess about this - but I had already pulled the trigger
-> so to say - hoping that Jens would pull the tree and do a git pull to Linus.
-> 
-> And you are absolutly sure that we don't need any extra locking when switching
-> over to list_head? Say if blkif_completion is called while we are
-> processing in blkif_queue_request and doing ?
+We give the user access to change the power state of the device but
+certain transitions result in an uninitialized state which the user
+cannot resolve.  To fix this we need to mark the PowerState field of
+the PMCSR register read-only and effect the requested change on behalf
+of the user.  This has the added benefit that pdev->current_state
+remains accurate while controlled by the user.
 
-Will recheck it, but blkif_completition is called with the io_lock hold,
-as does blkif_queue_request (I've added extra assert_spin_locked before
-every list modification).
+The primary example of this bug is a QEMU guest doing a reboot where
+the device it put into D3 on shutdown and becomes unusable on the next
+boot because the device did a soft reset on D3->D0 (NoSoftRst-).
+
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+---
+ drivers/vfio/pci/vfio_pci_config.c |   25 ++++++++++++++++++++++---
+ 1 file changed, 22 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/vfio/pci/vfio_pci_config.c b/drivers/vfio/pci/vfio_pci_config.c
+index f1dde2c..81567f8 100644
+--- a/drivers/vfio/pci/vfio_pci_config.c
++++ b/drivers/vfio/pci/vfio_pci_config.c
+@@ -587,12 +587,30 @@ static int __init init_pci_cap_basic_perm(struct perm_bits *perm)
+ 	return 0;
+ }
+ 
++static int vfio_pm_config_write(struct vfio_pci_device *vdev, int pos,
++				int count, struct perm_bits *perm,
++				int offset, __le32 val)
++{
++	count = vfio_default_config_write(vdev, pos, count, perm, offset, val);
++	if (count < 0)
++		return count;
++
++	if (offset == PCI_PM_CTRL) {
++		uint8_t state = le32_to_cpu(val) & PCI_PM_CTRL_STATE_MASK;
++		pci_set_power_state(vdev->pdev, state);
++	}
++
++	return count;
++}
++
+ /* Permissions for the Power Management capability */
+ static int __init init_pci_cap_pm_perm(struct perm_bits *perm)
+ {
+ 	if (alloc_perm_bits(perm, pci_cap_length[PCI_CAP_ID_PM]))
+ 		return -ENOMEM;
+ 
++	perm->writefn = vfio_pm_config_write;
++
+ 	/*
+ 	 * We always virtualize the next field so we can remove
+ 	 * capabilities from the chain if we want to.
+@@ -600,10 +618,11 @@ static int __init init_pci_cap_pm_perm(struct perm_bits *perm)
+ 	p_setb(perm, PCI_CAP_LIST_NEXT, (u8)ALL_VIRT, NO_WRITE);
+ 
+ 	/*
+-	 * Power management is defined *per function*,
+-	 * so we let the user write this
++	 * Power management is defined *per function*, so we can let
++	 * the user change power state, but we trap and initiate the
++	 * change ourselves, so the state bits are read-only.
+ 	 */
+-	p_setd(perm, PCI_PM_CTRL, NO_VIRT, ALL_WRITE);
++	p_setd(perm, PCI_PM_CTRL, NO_VIRT, ~PCI_PM_CTRL_STATE_MASK);
+ 	return 0;
+ }
+ 
+
