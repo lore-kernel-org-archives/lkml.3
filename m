@@ -1,76 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751649Ab3BPDou (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 22:44:50 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:3648 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750909Ab3BPDos (ORCPT
+	id S1751808Ab3BPDxY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 22:53:24 -0500
+Received: from ozlabs.org ([203.10.76.45]:51990 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750797Ab3BPDxW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 22:44:48 -0500
-Message-ID: <511EFFA5.6000306@huawei.com>
-Date: Sat, 16 Feb 2013 11:40:21 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Fri, 15 Feb 2013 22:53:22 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Sjur =?utf-8?Q?Br=C3=A6ndeland?= <sjurbren@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Ohad Ben-Cohen <ohad@wizery.com>,
+        Vikram ARV <vikram.arv@stericsson.com>,
+        Dmitry TARNYAGIN <dmitry.tarnyagin@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Erwan YVIN <erwan.yvin@stericsson.com>,
+        "virtualization\@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "netdev\@vger.kernel.org" <netdev@vger.kernel.org>,
+        Ido Yariv <ido@wizery.com>
+Subject: Re: [PATCH vringh 2/2] caif_virtio: Introduce caif over virtio
+In-Reply-To: <CAJK669YQ+x5zXSZA1FQHkRrcCt+SgZP-M_ea-Ey8ziGLhq9cqQ@mail.gmail.com>
+References: <1360494273-27889-1-git-send-email-sjur.brandeland@stericsson.com> <1360494273-27889-3-git-send-email-sjur.brandeland@stericsson.com> <87vc9zfic8.fsf@rustcorp.com.au> <81C3A93C17462B4BBD7E272753C105792458EDD161@EXDCVYMBSTM005.EQ1STM.local> <87ehgklds9.fsf@rustcorp.com.au> <CAJK669YQ+x5zXSZA1FQHkRrcCt+SgZP-M_ea-Ey8ziGLhq9cqQ@mail.gmail.com>
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Fri, 15 Feb 2013 15:05:42 +1030
+Message-ID: <87bobmjish.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Namhyung Kim <namhyung@kernel.org>, Clark Williams <williams@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] scheduler include file reorganization
-References: <20130207094650.76302f47@riff.lan> <20130207185608.GA25223@gmail.com> <20130207191345.GA28960@gmail.com> <20130207195257.GA29985@gmail.com> <20130207150838.02226207@riff.lan> <20130208141841.GB30334@gmail.com> <20130208085828.02e61518@riff.lan> <20130211095457.GF23932@gmail.com> <87d2w5ovc0.fsf@sejong.aot.lge.com> <20130213091512.GC7630@gmail.com>
-In-Reply-To: <20130213091512.GC7630@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/2/13 17:15, Ingo Molnar wrote:
-> 
-> * Namhyung Kim <namhyung@kernel.org> wrote:
-> 
->> Hi,
->>
->> On Mon, 11 Feb 2013 10:54:58 +0100, Ingo Molnar wrote:
->>> * Clark Williams <williams@redhat.com> wrote:
->>>
->>>> I figured that was coming. :)
->>>
->>> ;-)
->>>
->>>> I'll look at it again and see about pulling the 
->>>> autogroup/cgroup stuff into it's own header. After that it's 
->>>> probably going to require some serious changes.
->>>>
->>>> Any suggestions?
->>>
->>> I'd suggest doing it as finegrained as possible - potentially 
->>> one concept at a time. I wouldn't mind a dozen small files in 
->>> include/linux/sched/ - possibly more.
->>
->> What about the .c files?  AFAICS the sched/core.c and 
->> sched/fair.c are rather huge and contain various concepts 
->> which might be separated to their own files.  It'd be better 
->> reorganizing them too IMHO.
-> 
-> I'd be more careful about those, because there's various 
-> scheduler patch-sets floating modifying them.
-> 
-> sched.h is much more static and it is the one that actually gets 
-> included in like 60% of all *other* .c files, adding a few 
-> thousand lines to every .o compilation and causing measurable 
-> compile time overhead ...
-> 
-> So sched.h splitting is something we should really do, if 
-> there's people interested in and capable of pulling it off.
-> 
+Sjur Brændeland <sjurbren@gmail.com> writes:
+> How about supporting struct vringh_kiov and struct kvec as well?
+> I currently get the following complaints with my V2 patch-set:
+>
+> drivers/net/caif/caif_virtio.c:486:2: warning: passing argument 1 of
+> ‘vringh_iov_init’ from incompatible pointer type [enabled by default]
 
-While previously working on a cgroup patchset that also touched sched.h,
-I noticed some lines can be moved to kernel/sched/sched.h. I've cooked
-up a patchset to do that, and it results in reduction of 200+ lines in
-sched.h. I'll do some compile testing before sending it out.
+vringh_kiov_init()?  Did I miss something else?
 
+Cheers,
+Rusty.
