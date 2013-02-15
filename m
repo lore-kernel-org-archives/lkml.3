@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751983Ab3BOTpj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 14:45:39 -0500
-Received: from smtprelay-h21.telenor.se ([195.54.99.196]:58416 "EHLO
-	smtprelay-h21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751035Ab3BOTph (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 14:45:37 -0500
-X-SENDER-IP: [85.230.168.206]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AiNEAOqPHlFV5qjOPGdsb2JhbABEhgIBhH20d3wXAwEBAQE4NIIfAQEFOhwTAQ8QCAMYCSUPBQ0YChoTiAADE7NfDYlaFYw9glkHgl9hA5ROgVmGAYVCiBs
-X-IronPort-AV: E=Sophos;i="4.84,675,1355094000"; 
-   d="scan'208";a="204074411"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Fri, 15 Feb 2013 20:46:23 +0100
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/7] HID: Extend the interface with report requests
-Message-ID: <20130215194623.GA8867@polaris.bitmath.org>
-References: <1360334256-22127-1-git-send-email-benjamin.tissoires@gmail.com>
- <1360334256-22127-2-git-send-email-benjamin.tissoires@gmail.com>
+	id S1752000Ab3BOTqd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 14:46:33 -0500
+Received: from fieldses.org ([174.143.236.118]:56210 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751035Ab3BOTqb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 14:46:31 -0500
+Date: Fri, 15 Feb 2013 14:46:28 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Tom Horsley <horsley1953@gmail.com>
+Cc: Mark Lord <kernel@start.ca>, Mark Lord <kernel@teksavvy.com>,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        linux-nfs@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
+        =?utf-8?B?UGF3ZcWC?= Sikora <pawel.sikora@agmk.net>,
+        Jason Tibbitts <tibbs@math.uh.edu>
+Subject: Re: BUG at net/sunrpc/svc_xprt.c:921 (another one)
+Message-ID: <20130215194628.GF19923@fieldses.org>
+References: <50F786AF.4070107@parallels.com>
+ <20130117130335.GD6598@fieldses.org>
+ <50F7FB7E.2020503@parallels.com>
+ <50F88C14.7030903@teksavvy.com>
+ <50F8DF7E.8080107@parallels.com>
+ <50FC74E0.20305@teksavvy.com>
+ <20130212205216.GE10267@fieldses.org>
+ <511BAAAA.9040804@start.ca>
+ <20130215192229.GC19923@fieldses.org>
+ <20130215144208.56de59f3@tomh>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1360334256-22127-2-git-send-email-benjamin.tissoires@gmail.com>
+In-Reply-To: <20130215144208.56de59f3@tomh>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 08, 2013 at 03:37:30PM +0100, Benjamin Tissoires wrote:
-> Some drivers send reports directly to underlying device, creating an
-> unwanted dependency on the underlying transport layer. This patch adds
-> hid_hw_request() to the interface, thereby removing usbhid from the
-> lion share of the drivers.
+On Fri, Feb 15, 2013 at 02:42:08PM -0500, Tom Horsley wrote:
+> On Fri, 15 Feb 2013 14:22:29 -0500
+> J. Bruce Fields wrote:
 > 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-> ---
->  drivers/hid/usbhid/hid-core.c | 13 +++++++++++++
->  include/linux/hid.h           | 20 ++++++++++++++++++++
->  2 files changed, 33 insertions(+)
+> > Any more reports positive or negative welcome.
+> 
+> Well, I don't have the time or energy to try patches on my
+> system at work, but these seem to be concerned with terminating
+> an NFS connection. My aborts all happen at boot when it
+> is trying to do the mount to begin with.
 
-    Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+The rpc server it's tearing down is a callback server that runs on the
+nfs client.
 
-Thanks, Benjamin.
-Henrik
+--b.
