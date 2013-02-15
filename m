@@ -1,223 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161274Ab3BOK0S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 05:26:18 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:51961 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935684Ab3BOKZH (ORCPT
+	id S1161294Ab3BOK0b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 05:26:31 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59350 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932938Ab3BOK03 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 05:25:07 -0500
-From: Manjunath Goudar <manjunath.goudar@linaro.org>
-To: linux-usb@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        stern@rowland.harvard.edu, arnd@linaro.org, gregkh@linuxfoundation.org,
-        Manjunath Goudar <manjunath.goudar@linaro.org>,
-        Greg KH <greg@kroah.com>, Wan ZongShun <mcuos.com@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: [V2 7/8] USB: EHCI: make ehci-w90X900 a separate driver
-Date: Fri, 15 Feb 2013 15:54:12 +0530
-Message-Id: <1360923853-7875-8-git-send-email-manjunath.goudar@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1360923853-7875-1-git-send-email-manjunath.goudar@linaro.org>
-References: <1360923853-7875-1-git-send-email-manjunath.goudar@linaro.org>
+	Fri, 15 Feb 2013 05:26:29 -0500
+Date: Fri, 15 Feb 2013 10:26:18 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [PATCH 1/9] ARM: arch_timer: include linux/errno.h
+Message-ID: <20130215102618.GJ25537@e106331-lin.cambridge.arm.com>
+References: <1360882071-4072668-1-git-send-email-arnd@arndb.de>
+ <1360882071-4072668-2-git-send-email-arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1360882071-4072668-2-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Separate the Nuvoton On-Chip host controller driver
-from ehci-hcd host code into its own static driver module.
+Hi,
 
-In V2:
-No changes.
+As with Stephen Warren's fix [1], this looks right to me. Stephen's has the
+added benefit of keeping the includes ordered.
 
-Signed-off-by: Manjunath Goudar <manjunath.goudar@linaro.org>
-Cc: Greg KH <greg@kroah.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: Wan ZongShun <mcuos.com@gmail.com>
-Cc: linux-usb@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/usb/host/Kconfig        |    2 +-
- drivers/usb/host/Makefile       |    1 +
- drivers/usb/host/ehci-hcd.c     |    6 +--
- drivers/usb/host/ehci-w90x900.c |   91 +++++++++++++++++----------------------
- 4 files changed, 43 insertions(+), 57 deletions(-)
+For either version:
 
-diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index d5ae838..1cae9d3 100644
---- a/drivers/usb/host/Kconfig
-+++ b/drivers/usb/host/Kconfig
-@@ -238,7 +238,7 @@ config USB_EHCI_MV
- 	  only be EHCI host. OTG is controller that can switch to host mode.
- 
- config USB_W90X900_EHCI
--	bool "W90X900(W90P910) EHCI support"
-+	 tristate "W90X900(W90P910) EHCI support"
- 	depends on USB_EHCI_HCD && ARCH_W90X900
- 	---help---
- 		Enables support for the W90X900 USB controller
-diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
-index 75d98b9..e169ba1 100644
---- a/drivers/usb/host/Makefile
-+++ b/drivers/usb/host/Makefile
-@@ -34,6 +34,7 @@ obj-$(CONFIG_USB_EHCI_S5P)      += ehci-s5p.o
- obj-$(CONFIG_USB_EHCI_MV)       += ehci-mv.o
- obj-$(CONFIG_USB_EHCI_HCD_VT8500)+= ehci-vt8500.o
- obj-$(CONFIG_USB_EHCI_MSM)      += ehci-msm.o
-+obj-$(CONFIG_USB_W90X900_EHCI)  += ehci-w90x900.o
- obj-$(CONFIG_USB_ISP116X_HCD)	+= isp116x-hcd.o
- obj-$(CONFIG_USB_ISP1362_HCD)	+= isp1362-hcd.o
- obj-$(CONFIG_USB_OHCI_HCD)	+= ohci-hcd.o
-diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
-index d802b95..a8e8a50 100644
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -1277,11 +1277,6 @@ MODULE_LICENSE ("GPL");
- #define	PLATFORM_DRIVER		ehci_orion_driver
- #endif
- 
--#ifdef CONFIG_USB_W90X900_EHCI
--#include "ehci-w90x900.c"
--#define	PLATFORM_DRIVER		ehci_hcd_w90x900_driver
--#endif
--
- #ifdef CONFIG_USB_OCTEON_EHCI
- #include "ehci-octeon.c"
- #define PLATFORM_DRIVER		ehci_octeon_driver
-@@ -1323,6 +1318,7 @@ MODULE_LICENSE ("GPL");
- 	!IS_ENABLED(CONFIG_USB_EHCI_MV) && \
- 	!IS_ENABLED(CONFIG_ARCH_VT8500) && \
- 	!IS_ENABLED(CONFIG_USB_EHCI_MSM) && \
-+	!IS_ENABLED(CONFIG_USB_W90X900_EHCI) && \
- 	!defined(PS3_SYSTEM_BUS_DRIVER) && \
- 	!defined(OF_PLATFORM_DRIVER) && \
- 	!defined(XILINX_OF_PLATFORM_DRIVER)
-diff --git a/drivers/usb/host/ehci-w90x900.c b/drivers/usb/host/ehci-w90x900.c
-index 59e0e24..d7eeee7 100644
---- a/drivers/usb/host/ehci-w90x900.c
-+++ b/drivers/usb/host/ehci-w90x900.c
-@@ -11,13 +11,32 @@
-  *
-  */
- 
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/usb.h>
-+#include <linux/usb/hcd.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/of.h>
- #include <linux/platform_device.h>
-+#include <linux/io.h>
-+
-+#include "ehci.h"
- 
- /* enable phy0 and phy1 for w90p910 */
- #define	ENPHY		(0x01<<8)
- #define PHY0_CTR	(0xA4)
- #define PHY1_CTR	(0xA8)
- 
-+#define DRIVER_DESC "Nuvoton w90x900 On-Chip EHCI Host driver"
-+
-+static const char hcd_name[] = "ehci-w90x900";
-+
-+static struct hc_driver __read_mostly ehci_w90x900_hc_driver;
-+
-+static const struct ehci_driver_overrides ehci_w90X900_overrides __initdata = {
-+	.reset = ehci_setup,
-+};
-+
- static int usb_w90x900_probe(const struct hc_driver *driver,
- 		      struct platform_device *pdev)
- {
-@@ -99,54 +118,6 @@ void usb_w90x900_remove(struct usb_hcd *hcd, struct platform_device *pdev)
- 	usb_put_hcd(hcd);
- }
- 
--static const struct hc_driver ehci_w90x900_hc_driver = {
--	.description = hcd_name,
--	.product_desc = "Nuvoton w90x900 EHCI Host Controller",
--	.hcd_priv_size = sizeof(struct ehci_hcd),
--
--	/*
--	 * generic hardware linkage
--	 */
--	.irq = ehci_irq,
--	.flags = HCD_USB2|HCD_MEMORY,
--
--	/*
--	 * basic lifecycle operations
--	 */
--	.reset = ehci_setup,
--	.start = ehci_run,
--
--	.stop = ehci_stop,
--	.shutdown = ehci_shutdown,
--
--	/*
--	 * managing i/o requests and associated device resources
--	 */
--	.urb_enqueue = ehci_urb_enqueue,
--	.urb_dequeue = ehci_urb_dequeue,
--	.endpoint_disable = ehci_endpoint_disable,
--	.endpoint_reset = ehci_endpoint_reset,
--
--	/*
--	 * scheduling support
--	 */
--	.get_frame_number = ehci_get_frame,
--
--	/*
--	 * root hub support
--	 */
--	.hub_status_data = ehci_hub_status_data,
--	.hub_control = ehci_hub_control,
--#ifdef	CONFIG_PM
--	.bus_suspend = ehci_bus_suspend,
--	.bus_resume = ehci_bus_resume,
--#endif
--	.relinquish_port	= ehci_relinquish_port,
--	.port_handed_over	= ehci_port_handed_over,
--
--	.clear_tt_buffer_complete = ehci_clear_tt_buffer_complete,
--};
--
- static int ehci_w90x900_probe(struct platform_device *pdev)
- {
- 	if (usb_disabled())
-@@ -168,12 +139,30 @@ static struct platform_driver ehci_hcd_w90x900_driver = {
- 	.probe  = ehci_w90x900_probe,
- 	.remove = ehci_w90x900_remove,
- 	.driver = {
--		.name = "w90x900-ehci",
-+		.name = hcd_name,
- 		.owner = THIS_MODULE,
- 	},
- };
- 
-+static int __init ehci_w90X900_init(void)
-+{
-+	if (usb_disabled())
-+		return -ENODEV;
-+
-+	pr_info("%s: " DRIVER_DESC "\n", hcd_name);
-+
-+	ehci_init_driver(&ehci_w90x900_hc_driver, &ehci_w90X900_overrides);
-+	return platform_driver_register(&ehci_hcd_w90x900_driver);
-+}
-+module_init(ehci_w90X900_init);
-+
-+static void __exit ehci_w90X900_cleanup(void)
-+{
-+	platform_driver_unregister(&ehci_hcd_w90x900_driver);
-+}
-+module_exit(ehci_w90X900_cleanup);
-+
-+MODULE_DESCRIPTION(DRIVER_DESC);
-+MODULE_ALIAS("platform:w90p910-ehci");
- MODULE_AUTHOR("Wan ZongShun <mcuos.com@gmail.com>");
--MODULE_DESCRIPTION("w90p910 usb ehci driver!");
- MODULE_LICENSE("GPL");
--MODULE_ALIAS("platform:w90p910-ehci");
--- 
-1.7.9.5
+Acked-By: Mark Rutland <mark.rutland@arm.com>
 
+Thanks,
+Mark.
+
+[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2013-February/149579.html
+
+On Thu, Feb 14, 2013 at 10:47:43PM +0000, Arnd Bergmann wrote:
+> Patch 8a4da6e "arm: arch_timer: move core to drivers/clocksource"
+> moved a lot of code out of arch_timer.c, but ended up deleting
+> too much, which broke some configurations.
+> 
+> Obviously, include linux/errno.h is required to return error
+> values.
+> 
+> Without this patch, building allmodconfig results in:
+> 
+> arch/arm/kernel/arch_timer.c: In function 'arch_timer_sched_clock_init':
+> arch/arm/kernel/arch_timer.c:55:11: error: 'ENXIO' undeclared (first use in this function)
+> arch/arm/kernel/arch_timer.c:55:11: note: each undeclared identifier is reported only once for each function it appears in
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Mark Rutland <mark.rutland@arm.com>
+> Cc: Catalin Marinas <catalin.marinas@arm.com>
+> Cc: Marc Zyngier <marc.zyngier@arm.com>
+> ---
+>  arch/arm/kernel/arch_timer.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/arch/arm/kernel/arch_timer.c b/arch/arm/kernel/arch_timer.c
+> index 36ebcf4..d957a51 100644
+> --- a/arch/arm/kernel/arch_timer.c
+> +++ b/arch/arm/kernel/arch_timer.c
+> @@ -10,6 +10,7 @@
+>   */
+>  #include <linux/init.h>
+>  #include <linux/types.h>
+> +#include <linux/errno.h>
+>  
+>  #include <asm/delay.h>
+>  #include <asm/sched_clock.h>
+> -- 
+> 1.8.1.2
+> 
+> 
