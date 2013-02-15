@@ -1,63 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751359Ab3BOTWf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 14:22:35 -0500
-Received: from fieldses.org ([174.143.236.118]:37594 "EHLO fieldses.org"
+	id S1751463Ab3BOTW7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 14:22:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16989 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750755Ab3BOTWe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 14:22:34 -0500
-Date: Fri, 15 Feb 2013 14:22:29 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Mark Lord <kernel@start.ca>
-Cc: Mark Lord <kernel@teksavvy.com>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        linux-nfs@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
-        =?utf-8?B?UGF3ZcWC?= Sikora <pawel.sikora@agmk.net>,
-        Tom Horsley <horsley1953@gmail.com>,
-        Jason Tibbitts <tibbs@math.uh.edu>
-Subject: Re: BUG at net/sunrpc/svc_xprt.c:921 (another one)
-Message-ID: <20130215192229.GC19923@fieldses.org>
-References: <50F63882.8000607@parallels.com>
- <50F72F03.5070806@teksavvy.com>
- <50F786AF.4070107@parallels.com>
- <20130117130335.GD6598@fieldses.org>
- <50F7FB7E.2020503@parallels.com>
- <50F88C14.7030903@teksavvy.com>
- <50F8DF7E.8080107@parallels.com>
- <50FC74E0.20305@teksavvy.com>
- <20130212205216.GE10267@fieldses.org>
- <511BAAAA.9040804@start.ca>
+	id S1751139Ab3BOTW5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 14:22:57 -0500
+Subject: [PATCH v2] pci: Disable slot presence detection around bus reset
+To: bhelgaas@google.com, linux-pci@vger.kernel.org
+From: Alex Williamson <alex.williamson@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Fri, 15 Feb 2013 12:22:56 -0700
+Message-ID: <20130215191944.27692.8935.stgit@bling.home>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <511BAAAA.9040804@start.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 13, 2013 at 10:00:58AM -0500, Mark Lord wrote:
-> On 13-02-12 03:52 PM, J. Bruce Fields wrote:
-> > On Sun, Jan 20, 2013 at 05:51:12PM -0500, Mark Lord wrote:
-> >> Got it again, this time on a different system
-> >> running mostly the same software.
-> > 
-> > Mark, Paweł, Tom, could any of you confirm whether this helps?
-> ..
-> 
-> No, I cannot confirm one way or the other,
-> because I haven't noticed it again since the most recent
-> couple of occurrences I posted earlier here.
+A bus reset can trigger a presence detection change and result in a
+suprise hotplug.  This is generally not what we want to happen when
+trying to reset a device.  Disable the presence detection control on
+on bridges around bus reset.
 
-OK, I do have at least one report of someone who saw the bug before
-running for a day without seeing it:
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+---
+v2: Still hasn't resolved any controversy of this patch, but writing the
+    presence detect changed bit to the slot status to clear it resolves
+    the stray remove/add I was still seeing occasionally on v1.
 
-	https://bugzilla.redhat.com/show_bug.cgi?id=910457
+ drivers/pci/pci.c |   32 +++++++++++++++++++++++++++-----
+ 1 file changed, 27 insertions(+), 5 deletions(-)
 
-Any more reports positive or negative welcome.
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index 5cb5820..efccc97 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -3229,8 +3229,8 @@ static int pci_pm_reset(struct pci_dev *dev, int probe)
+ 
+ static int pci_parent_bus_reset(struct pci_dev *dev, int probe)
+ {
+-	u16 ctrl;
+-	struct pci_dev *pdev;
++	u16 ctrl, flags, sltctl = 0;
++	struct pci_dev *pdev, *bridge;
+ 
+ 	if (pci_is_root_bus(dev->bus) || dev->subordinate || !dev->bus->self)
+ 		return -ENOTTY;
+@@ -3242,15 +3242,37 @@ static int pci_parent_bus_reset(struct pci_dev *dev, int probe)
+ 	if (probe)
+ 		return 0;
+ 
+-	pci_read_config_word(dev->bus->self, PCI_BRIDGE_CONTROL, &ctrl);
++	bridge = dev->bus->self;
++
++	/*
++	 * If the parent device supports a slot with presence detection
++	 * change enabled, holding the bus in reset can trigger that and
++	 * cause an unwanted surprise removal.  Disable presence detection
++	 * around the bus reset.
++	 */
++	pcie_capability_read_word(bridge, PCI_EXP_FLAGS, &flags);
++	if (flags & PCI_EXP_FLAGS_SLOT) {
++		pcie_capability_read_word(bridge, PCI_EXP_SLTCTL, &sltctl);
++		if (sltctl & PCI_EXP_SLTCTL_PDCE)
++			pcie_capability_write_word(bridge, PCI_EXP_SLTCTL,
++						sltctl & ~PCI_EXP_SLTCTL_PDCE);
++	}
++
++	pci_read_config_word(bridge, PCI_BRIDGE_CONTROL, &ctrl);
+ 	ctrl |= PCI_BRIDGE_CTL_BUS_RESET;
+-	pci_write_config_word(dev->bus->self, PCI_BRIDGE_CONTROL, ctrl);
++	pci_write_config_word(bridge, PCI_BRIDGE_CONTROL, ctrl);
+ 	msleep(100);
+ 
+ 	ctrl &= ~PCI_BRIDGE_CTL_BUS_RESET;
+-	pci_write_config_word(dev->bus->self, PCI_BRIDGE_CONTROL, ctrl);
++	pci_write_config_word(bridge, PCI_BRIDGE_CONTROL, ctrl);
+ 	msleep(100);
+ 
++	if (sltctl & PCI_EXP_SLTCTL_PDCE) {
++		pcie_capability_write_word(bridge,
++					   PCI_EXP_SLTSTA, PCI_EXP_SLTSTA_PDC);
++		pcie_capability_write_word(bridge, PCI_EXP_SLTCTL, sltctl);
++	}
++
+ 	return 0;
+ }
+ 
 
-This looks like it should solve the problem, so for now I intend to
-commit the following.
-
---b.
