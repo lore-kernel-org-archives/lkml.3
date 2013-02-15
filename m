@@ -1,88 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756229Ab3BORp4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 12:45:56 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:52443 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756143Ab3BORpy (ORCPT
+	id S1756101Ab3BORqy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 12:46:54 -0500
+Received: from mga02.intel.com ([134.134.136.20]:15737 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752714Ab3BORqw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 12:45:54 -0500
-Date: Fri, 15 Feb 2013 09:44:35 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Jones <davej@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Paul McKenney <paul.mckenney@linaro.org>
-Subject: Re: Debugging Thinkpad T430s occasional suspend failure.
-Message-ID: <20130215174435.GA2792@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130212193901.GA18906@redhat.com>
- <alpine.LNX.2.00.1302121549500.890@eggly.anvils>
- <20130213004059.GA14451@redhat.com>
- <alpine.LNX.2.00.1302121652240.1077@eggly.anvils>
- <20130213041629.GA28622@redhat.com>
- <alpine.LNX.2.00.1302122121170.15020@eggly.anvils>
- <20130213193411.GA15928@redhat.com>
- <CA+55aFzmEDriX26Z7oJZg9yssFdCAaYwu6krmrwqfj2TBsxA4w@mail.gmail.com>
- <20130215011503.GA11914@redhat.com>
- <CA+55aFyVE0jyu9uw659ERw5E2DdOhwkQp3gk=gcXP0xrmMh9qA@mail.gmail.com>
+	Fri, 15 Feb 2013 12:46:52 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,674,1355126400"; 
+   d="scan'208";a="286331259"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "Wu, Fengguang" <fengguang.wu@intel.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: RE: linux-next: build failure after merge of the xen-two tree
+Thread-Topic: linux-next: build failure after merge of the xen-two tree
+Thread-Index: AQHOC4wOTyBHFMmDoE2LH83uWllZQ5h7KthA
+Date: Fri, 15 Feb 2013 17:46:48 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC82923353FC036@SHSMSX101.ccr.corp.intel.com>
+References: <20130215154551.d11e9d376d30d32b9673e6cc@canb.auug.org.au>
+	<20130215132624.GB11777@phenom.dumpdata.com>
+	<20130216005014.c8ce70e041f655d4c195c9fb@canb.auug.org.au>
+	<2185970.g9YrD945My@vostro.rjw.lan>
+ <20130216015200.1e58bec1aff05592ac2ae98f@canb.auug.org.au>
+In-Reply-To: <20130216015200.1e58bec1aff05592ac2ae98f@canb.auug.org.au>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyVE0jyu9uw659ERw5E2DdOhwkQp3gk=gcXP0xrmMh9qA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13021517-5518-0000-0000-00000BA1016E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 14, 2013 at 06:09:44PM -0800, Linus Torvalds wrote:
-> On Thu, Feb 14, 2013 at 5:15 PM, Dave Jones <davej@redhat.com> wrote:
-> >
-> > Given I never saw this on a Fedora kernel, just my self-built ones, I eventually
-> > gave up on bisecting code, and switched to bisecting config options.
-> > I should have started this way, as I figured it out within an hour.
-> >
-> > 3.7 merge window is when I started seeing this, and here's what got introduced
-> > during that time..
-> >
-> > commit e3ebfb96f396731ca2d0b108785d5da31b53ab00
-> > Author: Paul E. McKenney <paul.mckenney@linaro.org>
-> > Date:   Mon Jul 2 14:42:01 2012 -0700
-> >
-> >     rcu: Add PROVE_RCU_DELAY to provoke difficult races
-> >
-> > 'difficult' is an understatement.  This explains why some of those 'good'
-> > bisects survived 100 suspends on one day, and failed the next.
-> >
-> > Unfortunatly, I don't think there's any sane way to retrieve whatever debug
-> > info might be getting spewed.
+Stephen Rothwell wrote:
+> Hi Rafael,
 > 
-> Hmm. I have to say, that's a particularly unhelpful config option. It
-> may make races much easier to hit, but when you do hit them, what's
-> the symptoms of said race?
+> On Fri, 15 Feb 2013 15:53:34 +0100 "Rafael J. Wysocki" <rjw@sisk.pl>
+> wrote: 
+>> 
+>> On Saturday, February 16, 2013 12:50:14 AM Stephen Rothwell wrote:
+>>> 
+>>> On Fri, 15 Feb 2013 08:26:24 -0500 Konrad Rzeszutek Wilk
+>>> <konrad.wilk@oracle.com> wrote: 
+>>>> 
+>>>> Thank you. I keep on forgetting - but would it be OK for me to
+>>>> take this patch in my tree? Or should I not since this is a new
+>>>> functionality that Rafael is going to introduce in v3.9?
+>>> 
+>>> It is an API change in the pm tree that is not yet in Linus' tree.
+>>> 
+>>>> And if so, perhaps I should tack it on in my tree, once Rafael
+>>>> does a git pull to Linus? Or just point Linus to this git commit?
+>>> 
+>>> You should point Linus at this patch if the pm tree is merged
+>>> first, or 
+>>> Rafael should do the same if the reverse happens.
+>> 
+>> Alternatively, Konrad can pull the acpi-scan branch containing the
+>> changes in question from my tree into his tree and rebase the new
+>> material on top of that.
 > 
-> Paul? Apparently you end up with a dead machine at least during resume
-> and no oops. Which isn't very helpful. Maybe there is possibly some
-> BUG_ON() in the RCU code somewhere?
-> 
-> So Paul, if you know what the common symptoms of the bug that that
-> debug option helps trigger are, is there some way to make them less
-> lethal and still print out useful information?
+> Or pull the acpi-scan branch into his tree and use my conflict
+> resolution in the resulting merge thus requiring no rebasing. 
+> However, Linus likes to see such interactions, so it can be left up
+> to when the latter of the two tress is merged by Linus.
 
-This commit was designed to increase the probability of hitting the
-races described in http://lwn.net/Articles/453002/.  These races result
-in deadlocks involving the runqueue lock (and perhaps also the priority
-inheritance locks).  And yes, I most certainly should have described
-this in the commit message.  :-(
+Per my understanding, currently in git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git, it has included
+1). 636458de36f1, 0cd6ac52b333, b8bd759acd05: 	from pm tree (Rafael), drop acpi_bus_add, update argument of acpi_bus_scan
+2). 259f201cb7ea, 181232c249f0:			from xen tree (Jinsong), use acpi_bus_add
+3). 36bd3c64bfe2					Stephen fix confliction of 1) and 2)
+Currently these are only some compiling warning left, so the only thing need to do is to add my patch to fix compile warning (just sent out minutes ago) to the top of git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git ?
 
-So it looks like Dave is hitting some other race/bug than the one that
-this commit was designed to expose.
 
-I must confess that I don't know how to proceed without any meaningful
-debug information here.  Feel free to revert the above commit if you would
-like -- I can of course always maintain it locally for my own testing.
-
-							Thanx, Paul
-
+Thanks,
+Jinsong
