@@ -1,73 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161870Ab3BONE1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 08:04:27 -0500
-Received: from sauhun.de ([89.238.76.85]:51724 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755342Ab3BONEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 08:04:24 -0500
-Date: Fri, 15 Feb 2013 14:04:17 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, swarren@nvidia.com,
-        khali@linux-fr.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH] i2c: tegra: remove warning dump if timeout happen in
- transfer
-Message-ID: <20130215130417.GC21335@the-dreams.de>
-References: <1360845813-11334-1-git-send-email-ldewangan@nvidia.com>
- <CAM=Q2csZyX5PvOPiSJ22u0SCXvh19y1qoC3+qJmmPfTQziM-tg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAM=Q2csZyX5PvOPiSJ22u0SCXvh19y1qoC3+qJmmPfTQziM-tg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1161771Ab3BOM5m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 07:57:42 -0500
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:56646 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161750Ab3BOM5j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 07:57:39 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        sameo@linux.intel.com
+Cc: arnd@arndb.de, linus.walleij@stericsson.com,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 09/35] mfd: ab8500-core: Add ADC support for ab8540
+Date: Fri, 15 Feb 2013 12:56:40 +0000
+Message-Id: <1360933026-30325-10-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1360933026-30325-1-git-send-email-lee.jones@linaro.org>
+References: <1360933026-30325-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 15, 2013 at 06:31:07PM +0530, Shubhrajyoti Datta wrote:
-> On Thu, Feb 14, 2013 at 6:13 PM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
-> > If timeout error occurs in the i2c transfer then it was dumping warning
-> > of call stack.
-> >
-> > Remove the warning dump as there is may be possibility that some slave
-> > devices are busy and not responding the i2c communication.
-> >
-> > Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-> > ---
-> > The patch is generated based on discussion happen between Stephena and
-> > Wolfram on the patch:
-> >  i2c: add bcm2835 driver
-> >
-> > resending patch as Wolfram's email id has been changed.
-> >
-> >  drivers/i2c/busses/i2c-tegra.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> >
-> > diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
-> > index ae2e027..36704e3 100644
-> > --- a/drivers/i2c/busses/i2c-tegra.c
-> > +++ b/drivers/i2c/busses/i2c-tegra.c
-> > @@ -587,7 +587,7 @@ static int tegra_i2c_xfer_msg(struct tegra_i2c_dev *i2c_dev,
-> >         ret = wait_for_completion_timeout(&i2c_dev->msg_complete, TEGRA_I2C_TIMEOUT);
-> >         tegra_i2c_mask_irq(i2c_dev, int_mask);
-> >
-> > -       if (WARN_ON(ret == 0)) {
-> > +       if (ret == 0) {
-> 
-> I think WARN_ON has a unlikely.
-> 
-> If you could do a profiling and have the unlikely.
-> 
-> BTW thats not an objection to the patch though.
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/mfd/ab8500-core.c  |   74 +++++++++++++++++++++++++++++++++++---------
+ drivers/mfd/ab8500-gpadc.c |   67 ++++++++++++++++++++++-----------------
+ 2 files changed, 98 insertions(+), 43 deletions(-)
 
-The thing is: Timeouts can be expected on an I2C bus. Devices can be
-busy, that's fine. So, no need for a WARN. I'm even thinking of asking
-to remove the dev_err here, or at least change it into dev_warn, but
-haven't made up my mind yet.
-
-Regards,
-
-   Wolfram
+diff --git a/drivers/mfd/ab8500-core.c b/drivers/mfd/ab8500-core.c
+index 678afd0..ecf570f 100644
+--- a/drivers/mfd/ab8500-core.c
++++ b/drivers/mfd/ab8500-core.c
+@@ -604,6 +604,15 @@ static struct resource ab8500_gpadc_resources[] = {
+ 	},
+ };
+ 
++static struct resource ab8540_gpadc_resources[] = {
++	{
++		.name	= "SW_CONV_END",
++		.start	= AB8500_INT_GP_SW_ADC_CONV_END,
++		.end	= AB8500_INT_GP_SW_ADC_CONV_END,
++		.flags	= IORESOURCE_IRQ,
++	},
++};
++
+ static struct resource ab8500_rtc_resources[] = {
+ 	{
+ 		.name	= "60S",
+@@ -954,12 +963,6 @@ static struct mfd_cell abx500_common_devs[] = {
+ 		.of_compatible = "stericsson,abx500-clk",
+ 	},
+ 	{
+-		.name = "ab8500-gpadc",
+-		.of_compatible = "stericsson,ab8500-gpadc",
+-		.num_resources = ARRAY_SIZE(ab8500_gpadc_resources),
+-		.resources = ab8500_gpadc_resources,
+-	},
+-	{
+ 		.name = "ab8500-rtc",
+ 		.of_compatible = "stericsson,ab8500-rtc",
+ 		.num_resources = ARRAY_SIZE(ab8500_rtc_resources),
+@@ -1066,6 +1069,12 @@ static struct mfd_cell ab8500_devs[] = {
+ 		.name = "ab8500-codec",
+ 		.of_compatible = "stericsson,ab8500-codec",
+ 	},
++	{
++		.name = "ab8500-gpadc",
++		.of_compatible = "stericsson,ab8500-gpadc",
++		.num_resources = ARRAY_SIZE(ab8500_gpadc_resources),
++		.resources = ab8500_gpadc_resources,
++	},
+ };
+ 
+ static struct mfd_cell ab9540_devs[] = {
+@@ -1080,10 +1089,44 @@ static struct mfd_cell ab9540_devs[] = {
+ 	{
+ 		.name = "ab9540-codec",
+ 	},
++	{
++		.name = "ab8500-gpadc",
++		.num_resources = ARRAY_SIZE(ab8500_gpadc_resources),
++		.resources = ab8500_gpadc_resources,
++	},
++	{
++		.name = "ab-iddet",
++		.num_resources = ARRAY_SIZE(ab8505_iddet_resources),
++		.resources = ab8505_iddet_resources,
++	},
+ };
+ 
+-/* Device list common to ab9540 and ab8505 */
+-static struct mfd_cell ab9540_ab8505_devs[] = {
++/* Device list for ab8505  */
++static struct mfd_cell ab8505_devs[] = {
++	{
++		.name = "ab-iddet",
++		.num_resources = ARRAY_SIZE(ab8505_iddet_resources),
++		.resources = ab8505_iddet_resources,
++	},
++};
++
++static struct mfd_cell ab8540_devs[] = {
++	{
++		.name = "ab8500-gpio",
++	},
++	{
++		.name = "ab8540-usb",
++		.num_resources = ARRAY_SIZE(ab8500_usb_resources),
++		.resources = ab8500_usb_resources,
++	},
++	{
++		.name = "ab8540-codec",
++	},
++	{
++		.name = "ab8500-gpadc",
++		.num_resources = ARRAY_SIZE(ab8540_gpadc_resources),
++		.resources = ab8540_gpadc_resources,
++	},
+ 	{
+ 		.name = "ab-iddet",
+ 		.num_resources = ARRAY_SIZE(ab8505_iddet_resources),
+@@ -1416,6 +1459,14 @@ static int ab8500_probe(struct platform_device *pdev)
+ 		ret = mfd_add_devices(ab8500->dev, 0, ab9540_devs,
+ 				ARRAY_SIZE(ab9540_devs), NULL,
+ 				ab8500->irq_base, ab8500->domain);
++	else if (is_ab8540(ab8500))
++		ret = mfd_add_devices(ab8500->dev, 0, ab8540_devs,
++			      ARRAY_SIZE(ab8540_devs), NULL,
++			      ab8500->irq_base, ab8500->domain);
++	else if (is_ab8505(ab8500))
++		ret = mfd_add_devices(ab8500->dev, 0, ab8505_devs,
++			      ARRAY_SIZE(ab8505_devs), NULL,
++			      ab8500->irq_base, ab8500->domain);
+ 	else
+ 		ret = mfd_add_devices(ab8500->dev, 0, ab8500_devs,
+ 				ARRAY_SIZE(ab8500_devs), NULL,
+@@ -1423,13 +1474,6 @@ static int ab8500_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		return ret;
+ 
+-	if (is_ab9540(ab8500) || is_ab8505(ab8500))
+-		ret = mfd_add_devices(ab8500->dev, 0, ab9540_ab8505_devs,
+-				ARRAY_SIZE(ab9540_ab8505_devs), NULL,
+-				ab8500->irq_base, ab8500->domain);
+-	if (ret)
+-		return ret;
+-
+ 	if (!no_bm) {
+ 		/* Add battery management devices */
+ 		ret = mfd_add_devices(ab8500->dev, 0, ab8500_bm_devs,
+diff --git a/drivers/mfd/ab8500-gpadc.c b/drivers/mfd/ab8500-gpadc.c
+index 5942f2f..6b18975 100644
+--- a/drivers/mfd/ab8500-gpadc.c
++++ b/drivers/mfd/ab8500-gpadc.c
+@@ -314,6 +314,12 @@ int ab8500_gpadc_read_raw(struct ab8500_gpadc *gpadc, u8 channel,
+ 	if (!gpadc)
+ 		return -ENODEV;
+ 
++	/* check if convertion is supported */
++	if ((gpadc->irq_sw < 0) && (conv_type == ADC_SW))
++		return -ENOTSUPP;
++	if ((gpadc->irq_hw < 0) && (conv_type == ADC_HW))
++		return -ENOTSUPP;
++
+ 	mutex_lock(&gpadc->ab8500_gpadc_lock);
+ 	/* Enable VTVout LDO this is required for GPADC */
+ 	pm_runtime_get_sync(gpadc->dev);
+@@ -766,20 +772,12 @@ static int ab8500_gpadc_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	gpadc->irq_sw = platform_get_irq_byname(pdev, "SW_CONV_END");
+-	if (gpadc->irq_sw < 0) {
+-		dev_err(gpadc->dev, "failed to get platform irq-%d\n",
+-			gpadc->irq_sw);
+-		ret = gpadc->irq_sw;
+-		goto fail;
+-	}
++	if (gpadc->irq_sw < 0)
++		dev_err(gpadc->dev, "failed to get platform sw_conv_end irq\n");
+ 
+ 	gpadc->irq_hw = platform_get_irq_byname(pdev, "HW_CONV_END");
+-	if (gpadc->irq_hw < 0) {
+-		dev_err(gpadc->dev, "failed to get platform irq-%d\n",
+-			gpadc->irq_hw);
+-		ret = gpadc->irq_hw;
+-		goto fail;
+-	}
++	if (gpadc->irq_hw < 0)
++		dev_err(gpadc->dev, "failed to get platform hw_conv_end irq\n");
+ 
+ 	gpadc->dev = &pdev->dev;
+ 	gpadc->parent = dev_get_drvdata(pdev->dev.parent);
+@@ -789,21 +787,30 @@ static int ab8500_gpadc_probe(struct platform_device *pdev)
+ 	init_completion(&gpadc->ab8500_gpadc_complete);
+ 
+ 	/* Register interrupts */
+-	ret = request_threaded_irq(gpadc->irq_sw, NULL,
+-		ab8500_bm_gpadcconvend_handler,
+-		IRQF_NO_SUSPEND | IRQF_SHARED, "ab8500-gpadc-sw", gpadc);
+-	if (ret < 0) {
+-		dev_err(gpadc->dev, "Failed to register interrupt, irq: %d\n",
+-			gpadc->irq_sw);
+-		goto fail;
++	if (gpadc->irq_sw >= 0) {
++		ret = request_threaded_irq(gpadc->irq_sw, NULL,
++			ab8500_bm_gpadcconvend_handler,
++			IRQF_NO_SUSPEND | IRQF_SHARED, "ab8500-gpadc-sw",
++			gpadc);
++		if (ret < 0) {
++			dev_err(gpadc->dev,
++				"Failed to register interrupt irq: %d\n",
++				gpadc->irq_sw);
++			goto fail;
++		}
+ 	}
+-	ret = request_threaded_irq(gpadc->irq_hw, NULL,
+-		ab8500_bm_gpadcconvend_handler,
+-		IRQF_NO_SUSPEND | IRQF_SHARED, "ab8500-gpadc-hw", gpadc);
+-	if (ret < 0) {
+-		dev_err(gpadc->dev, "Failed to register interrupt, irq: %d\n",
+-			gpadc->irq_hw);
+-		goto fail;
++
++	if (gpadc->irq_hw >= 0) {
++		ret = request_threaded_irq(gpadc->irq_hw, NULL,
++			ab8500_bm_gpadcconvend_handler,
++			IRQF_NO_SUSPEND | IRQF_SHARED, "ab8500-gpadc-hw",
++			gpadc);
++		if (ret < 0) {
++			dev_err(gpadc->dev,
++				"Failed to register interrupt irq: %d\n",
++				gpadc->irq_hw);
++			goto fail_irq;
++		}
+ 	}
+ 
+ 	/* VTVout LDO used to power up ab8500-GPADC */
+@@ -825,7 +832,9 @@ static int ab8500_gpadc_probe(struct platform_device *pdev)
+ 	ab8500_gpadc_read_calibration_data(gpadc);
+ 	list_add_tail(&gpadc->node, &ab8500_gpadc_list);
+ 	dev_dbg(gpadc->dev, "probe success\n");
++
+ 	return 0;
++
+ fail_irq:
+ 	free_irq(gpadc->irq_sw, gpadc);
+ 	free_irq(gpadc->irq_hw, gpadc);
+@@ -842,8 +851,10 @@ static int ab8500_gpadc_remove(struct platform_device *pdev)
+ 	/* remove this gpadc entry from the list */
+ 	list_del(&gpadc->node);
+ 	/* remove interrupt  - completion of Sw ADC conversion */
+-	free_irq(gpadc->irq_sw, gpadc);
+-	free_irq(gpadc->irq_hw, gpadc);
++	if (gpadc->irq_sw >= 0)
++		free_irq(gpadc->irq_sw, gpadc);
++	if (gpadc->irq_hw >= 0)
++		free_irq(gpadc->irq_hw, gpadc);
+ 
+ 	pm_runtime_get_sync(gpadc->dev);
+ 	pm_runtime_disable(gpadc->dev);
+-- 
+1.7.10.4
 
