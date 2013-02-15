@@ -1,144 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935297Ab3BOBrf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 20:47:35 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:3772 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935219Ab3BOBrd (ORCPT
+	id S935310Ab3BOBzt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 20:55:49 -0500
+Received: from mail-da0-f50.google.com ([209.85.210.50]:33560 "EHLO
+	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932410Ab3BOBzs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 20:47:33 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AsEbADGTHVF5LO+j/2dsb2JhbABFhWC0doUNAQJ8F3OCHwEBBAE6HCMFCwgDGAklDwUlAwoXExSHeAW9OhWOJQ+DOwOWI4lXhn2DGw
-Date: Fri, 15 Feb 2013 12:47:29 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Ben Myers <bpm@sgi.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Dave Chinner <dchinner@redhat.com>, Brian Foster <bfoster@redhat.com>,
-        CAI Qian <caiqian@redhat.com>, xfs@oss.sgi.com
-Subject: Re: [ 68/89] xfs: fix _xfs_buf_find oops on blocks beyond the
- filesystem end
-Message-ID: <20130215014729.GR26694@dastard>
-References: <20130201130207.444989281@linuxfoundation.org>
- <20130201130212.381996681@linuxfoundation.org>
- <511BB198.1080609@redhat.com>
- <20130213161845.GA20916@kroah.com>
- <20130214000730.GI26694@dastard>
- <20130214192614.GA6945@kroah.com>
- <20130214195512.GQ30652@sgi.com>
- <20130214200501.GA23036@kroah.com>
+	Thu, 14 Feb 2013 20:55:48 -0500
+From: Kevin Hilman <khilman@linaro.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Sedat Dilek <sedat.dilek@gmail.com>, Gleb Natapov <gleb@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>
+Subject: Re: [GIT PULL] cputime: Full dynticks task/cputime accounting v7
+References: <1359399845-10568-1-git-send-email-fweisbec@gmail.com>
+Date: Thu, 14 Feb 2013 17:55:44 -0800
+In-Reply-To: <1359399845-10568-1-git-send-email-fweisbec@gmail.com> (Frederic
+	Weisbecker's message of "Mon, 28 Jan 2013 20:03:57 +0100")
+Message-ID: <87k3qa7333.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130214200501.GA23036@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 14, 2013 at 12:05:01PM -0800, Greg Kroah-Hartman wrote:
-> On Thu, Feb 14, 2013 at 01:55:12PM -0600, Ben Myers wrote:
-> > > Ok, how about I never apply any xfs stable kernel patch, unless you send
-> > > it to stable@vger.kernel.org?
-> > 
-> > Dave has made it clear that he doesn't want to be involved in maintaining
-> > -stable kernels.
+Frederic Weisbecker <fweisbec@gmail.com> writes:
 
-I don't think you quite understand, Ben. It is obvious from the fact
-that this discussion is taking place that I'm extremely concerned
-about the quality of -stable kernels and what goes into them. What I
-think you are missing is that there is a difference between not
-having the time to do the grunt work of backporting and testing
--stable kernels versus wanting to ensure the quality of the
-maintenance work that does take place remains high.
+> Ingo,
+>
+> Please pull the new full dynticks cputime accounting code that
+> can be found at:
+>
+> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+> 	tags/full-dynticks-cputime-for-mingo
+>
+> My last concern is the dependency on CONFIG_64BIT. We rely on cputime_t
+> being u64 for reasonable nanosec granularity implementation. And therefore
+> we need a single instruction fetch to read kernel cpustat for atomicity
+> requirement against concurrent incrementation, which only 64 bit archs
+> can provide.
 
-Why do I say this? Because the responsiblity of maintaining XFS
-development is not SGI's. It is a community effort, and I am as much
-responsible as anyone else. Someone else doing a half-arsed job
-maintaining XFS in -stable kernels reflects badly on *me* as being a
-senior member of a community that allows it's members to do a
-half-arsed job on something.
+Actually, moderately recent 32-bit ARMs can do atomic 64-bit load/stores
+too.   
 
-> > However, my team at SGI is interested in maintaining -stable
-> > kernels.
+Also, is it just kernel_cpustat increments that need protection? or do
+the various reads of the task_struct's cputime fields also need
+protection (hmm, thinking twice, maybe those are already sufficiently
+protected by the vtime_seqlock?)
 
-Then do the job properly. Being "interested" isn't enough - you need
-the *commitment* to ensure things are done properly.  If you
-*personally* don't have the the time to ensure that the -stable
-kernel maintenance is done properly, then don't do it at all.
+> It's probably no big deal to solve this issue. What we need is simply some
+> atomic accessors.
 
-> > We're not going to use the fact that there is a risk of regression as
-> > an excuse to starve -stable of relevant fixes, just as we do not use it as an
-> > excuse to starve the upstream branch of feature content.
+What about using the atomic64_* accessors?  Those would just use the
+native loads/stores on arches that have them, otherwise
+CONFIG_GENERIC_ATOMIC64 provides some fallbacks.
 
-I'm not complaining because there is a risk of regression in
--stable backports, I'm pointing out that our long-standing process
-used to minimise that risk was not followed.
+To give it a try, below is a quick patch to convert kernel_cpustat to
+atomic64.  I only got as far as compile testing and basic boot testing
+on a 32-bit ARM platform, but let me know if this is the right
+direction.
 
-Besides, -stable backports are all about risk management.  The
-primary consideration for a backport is whether the risk of
-regressions is higher than the risk of leaving the bug unfixed.
-We've NACKed lots of proposed patches for -stable simply because the
-risk of regression outweighes the benefit to users of -stable
-inclusion.
+> There is just no emergency though as this new option depends on the context
+> tracking subsystem that only x86-64 (and soon ppc64) implements yet. And
+> this set is complex enough already. I think we can deal with that later.
 
-Yes, there is always a risk of unintended regressions, but you have
-to do *due diligence* on the backports to -stable trees to minimise
-the risk factor. Even the most basic "apply the patch, run xfstests"
-check would have found this regression. So, even if we ignore the
-risk factors here, a *preventable regression* occurred because due
-diligence was not performed correctly on the requested patch.
+I've started working on the ARM version of the context_tracker, so
+"later" is coming quickly and I will do what I can to help this along.
 
-BTW, Ben, I should point out that 6 months ago you said exactly the
-opposite to this statement - you tried to use "risk of regressions"
-as an excuse to starve the dev tree of new feature content. i.e. you
-wanted to apply -stable tree criteria to the -dev tree. Now you are
-saying that risk of regression is not a reason for rejection for the
--stable tree. (i.e. applying -dev tree criteria to the -stable
-tree).  IMO, you are as wrong about the -stable tree now as you were
-about the -dev tree 6 months ago....
+Kevin
 
-> > > I have that rule in place for some other subsystems that don't want me
-> > > applying stuff that they aren't aware of, and have no problem doing the same
-> > > thing here.
-> > > 
-> > > Just let me know.
 
-Sounds like a fine idea, Greg.
 
-> > Here are the usual suspects:
-> > 
-> > Ben Myers <bpm@sgi.com>
-> > Mark Tinguely <tinguely@sgi.com>
-> > Dave Chinner <dchinner@redhat.com>
-> > Eric Sandeen <sandeen@redhat.com>
+>From 9881fc4b86a63244018a4bdb5a383f3b862a0b8b Mon Sep 17 00:00:00 2001
+From: Kevin Hilman <khilman@linaro.org>
+Date: Thu, 14 Feb 2013 17:46:08 -0800
+Subject: [PATCH] kernel_cpustat: convert to atomic 64-bit accessors
 
-I don't think it should be restricted to individuals.  The private
-thread used to request this backport is exactly why I didn't see
-the request in a timely fashion, and also the reason why we didn't
-end up with notifications for review going to xfs@oss.sgi.com.
+WIP: only compile tested and basic boot tested on 32-bit ARM platform
+---
+ fs/proc/stat.c              | 36 ++++++++++++++++++------------------
+ fs/proc/uptime.c            |  2 +-
+ include/linux/kernel_stat.h |  2 +-
+ kernel/sched/cputime.c      | 22 +++++++++++-----------
+ 4 files changed, 31 insertions(+), 31 deletions(-)
 
-Hence I'd suggest the only thing that matters is that there is a cc
-to xfs@oss.sgi.com, because that means all of the above people (and
-more) are on that list and hence have the best chance to see and
-review the backport request.
-
-> Ok, but for this specific patch, did I do something wrong in taking it?
-
-No, you didn't do anything wrong, Greg. Stuff went wrong on the XFS
-side of the fence.
-
-> I guess I'll just let you send me xfs patches, is that ok with everyone
-> else? 
-
-Sure, that would work, but only after the patches have been sent to
-xfs@oss.sgi.com for review and testing and been acked. And, of
-course, the stable submission woul dalso need to have a
-xfs@oss.sgi.com cc on it. ;)
-
-Cheers,
-
-Dave.
+diff --git a/fs/proc/stat.c b/fs/proc/stat.c
+index e296572..2a4c723 100644
+--- a/fs/proc/stat.c
++++ b/fs/proc/stat.c
+@@ -52,7 +52,7 @@ static u64 get_idle_time(int cpu)
+ 
+ 	if (idle_time == -1ULL)
+ 		/* !NO_HZ or cpu offline so we can rely on cpustat.idle */
+-		idle = kcpustat_cpu(cpu).cpustat[CPUTIME_IDLE];
++		idle = atomic64_read(&kcpustat_cpu(cpu).cpustat[CPUTIME_IDLE]);
+ 	else
+ 		idle = usecs_to_cputime64(idle_time);
+ 
+@@ -68,7 +68,7 @@ static u64 get_iowait_time(int cpu)
+ 
+ 	if (iowait_time == -1ULL)
+ 		/* !NO_HZ or cpu offline so we can rely on cpustat.iowait */
+-		iowait = kcpustat_cpu(cpu).cpustat[CPUTIME_IOWAIT];
++		iowait = atomic64_read(&kcpustat_cpu(cpu).cpustat[CPUTIME_IOWAIT]);
+ 	else
+ 		iowait = usecs_to_cputime64(iowait_time);
+ 
+@@ -95,16 +95,16 @@ static int show_stat(struct seq_file *p, void *v)
+ 	jif = boottime.tv_sec;
+ 
+ 	for_each_possible_cpu(i) {
+-		user += kcpustat_cpu(i).cpustat[CPUTIME_USER];
+-		nice += kcpustat_cpu(i).cpustat[CPUTIME_NICE];
+-		system += kcpustat_cpu(i).cpustat[CPUTIME_SYSTEM];
++		user += atomic64_read(&kcpustat_cpu(i).cpustat[CPUTIME_USER]);
++		nice += atomic64_read(&kcpustat_cpu(i).cpustat[CPUTIME_NICE]);
++		system += atomic64_read(&kcpustat_cpu(i).cpustat[CPUTIME_SYSTEM]);
+ 		idle += get_idle_time(i);
+ 		iowait += get_iowait_time(i);
+-		irq += kcpustat_cpu(i).cpustat[CPUTIME_IRQ];
+-		softirq += kcpustat_cpu(i).cpustat[CPUTIME_SOFTIRQ];
+-		steal += kcpustat_cpu(i).cpustat[CPUTIME_STEAL];
+-		guest += kcpustat_cpu(i).cpustat[CPUTIME_GUEST];
+-		guest_nice += kcpustat_cpu(i).cpustat[CPUTIME_GUEST_NICE];
++		irq += atomic64_read(&kcpustat_cpu(i).cpustat[CPUTIME_IRQ]);
++		softirq += atomic64_read(&kcpustat_cpu(i).cpustat[CPUTIME_SOFTIRQ]);
++		steal += atomic64_read(&kcpustat_cpu(i).cpustat[CPUTIME_STEAL]);
++		guest += atomic64_read(&kcpustat_cpu(i).cpustat[CPUTIME_GUEST]);
++		guest_nice += atomic64_read(&kcpustat_cpu(i).cpustat[CPUTIME_GUEST_NICE]);
+ 		sum += kstat_cpu_irqs_sum(i);
+ 		sum += arch_irq_stat_cpu(i);
+ 
+@@ -132,16 +132,16 @@ static int show_stat(struct seq_file *p, void *v)
+ 
+ 	for_each_online_cpu(i) {
+ 		/* Copy values here to work around gcc-2.95.3, gcc-2.96 */
+-		user = kcpustat_cpu(i).cpustat[CPUTIME_USER];
+-		nice = kcpustat_cpu(i).cpustat[CPUTIME_NICE];
+-		system = kcpustat_cpu(i).cpustat[CPUTIME_SYSTEM];
++		user = atomic64_read(&kcpustat_cpu(i).cpustat[CPUTIME_USER]);
++		nice = atomic64_read(&kcpustat_cpu(i).cpustat[CPUTIME_NICE]);
++		system = atomic64_read(&kcpustat_cpu(i).cpustat[CPUTIME_SYSTEM]);
+ 		idle = get_idle_time(i);
+ 		iowait = get_iowait_time(i);
+-		irq = kcpustat_cpu(i).cpustat[CPUTIME_IRQ];
+-		softirq = kcpustat_cpu(i).cpustat[CPUTIME_SOFTIRQ];
+-		steal = kcpustat_cpu(i).cpustat[CPUTIME_STEAL];
+-		guest = kcpustat_cpu(i).cpustat[CPUTIME_GUEST];
+-		guest_nice = kcpustat_cpu(i).cpustat[CPUTIME_GUEST_NICE];
++		irq = atomic64_read(&kcpustat_cpu(i).cpustat[CPUTIME_IRQ]);
++		softirq = atomic64_read(&kcpustat_cpu(i).cpustat[CPUTIME_SOFTIRQ]);
++		steal = atomic64_read(&kcpustat_cpu(i).cpustat[CPUTIME_STEAL]);
++		guest = atomic64_read(&kcpustat_cpu(i).cpustat[CPUTIME_GUEST]);
++		guest_nice = atomic64_read(&kcpustat_cpu(i).cpustat[CPUTIME_GUEST_NICE]);
+ 		seq_printf(p, "cpu%d", i);
+ 		seq_put_decimal_ull(p, ' ', cputime64_to_clock_t(user));
+ 		seq_put_decimal_ull(p, ' ', cputime64_to_clock_t(nice));
+diff --git a/fs/proc/uptime.c b/fs/proc/uptime.c
+index 9610ac7..10c0f6e 100644
+--- a/fs/proc/uptime.c
++++ b/fs/proc/uptime.c
+@@ -18,7 +18,7 @@ static int uptime_proc_show(struct seq_file *m, void *v)
+ 
+ 	idletime = 0;
+ 	for_each_possible_cpu(i)
+-		idletime += (__force u64) kcpustat_cpu(i).cpustat[CPUTIME_IDLE];
++		idletime += atomic64_read(&kcpustat_cpu(i).cpustat[CPUTIME_IDLE]);
+ 
+ 	do_posix_clock_monotonic_gettime(&uptime);
+ 	monotonic_to_bootbased(&uptime);
+diff --git a/include/linux/kernel_stat.h b/include/linux/kernel_stat.h
+index ed5f6ed..45b9f71 100644
+--- a/include/linux/kernel_stat.h
++++ b/include/linux/kernel_stat.h
+@@ -32,7 +32,7 @@ enum cpu_usage_stat {
+ };
+ 
+ struct kernel_cpustat {
+-	u64 cpustat[NR_STATS];
++	atomic64_t cpustat[NR_STATS];
+ };
+ 
+ struct kernel_stat {
+diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+index ccff275..c1ac2b2 100644
+--- a/kernel/sched/cputime.c
++++ b/kernel/sched/cputime.c
+@@ -125,7 +125,7 @@ static inline void task_group_account_field(struct task_struct *p, int index,
+ 	 * is the only cgroup, then nothing else should be necessary.
+ 	 *
+ 	 */
+-	__get_cpu_var(kernel_cpustat).cpustat[index] += tmp;
++	atomic64_add(tmp, &__get_cpu_var(kernel_cpustat).cpustat[index]);
+ 
+ #ifdef CONFIG_CGROUP_CPUACCT
+ 	if (unlikely(!cpuacct_subsys.active))
+@@ -176,7 +176,7 @@ void account_user_time(struct task_struct *p, cputime_t cputime,
+ static void account_guest_time(struct task_struct *p, cputime_t cputime,
+ 			       cputime_t cputime_scaled)
+ {
+-	u64 *cpustat = kcpustat_this_cpu->cpustat;
++	atomic64_t *cpustat = kcpustat_this_cpu->cpustat;
+ 
+ 	/* Add guest time to process. */
+ 	p->utime += cputime;
+@@ -186,11 +186,11 @@ static void account_guest_time(struct task_struct *p, cputime_t cputime,
+ 
+ 	/* Add guest time to cpustat. */
+ 	if (TASK_NICE(p) > 0) {
+-		cpustat[CPUTIME_NICE] += (__force u64) cputime;
+-		cpustat[CPUTIME_GUEST_NICE] += (__force u64) cputime;
++		atomic64_add((__force u64) cputime, &cpustat[CPUTIME_NICE]);
++		atomic64_add((__force u64) cputime, &cpustat[CPUTIME_GUEST_NICE]);
+ 	} else {
+-		cpustat[CPUTIME_USER] += (__force u64) cputime;
+-		cpustat[CPUTIME_GUEST] += (__force u64) cputime;
++		atomic64_add((__force u64) cputime, &cpustat[CPUTIME_USER]);
++		atomic64_add((__force u64) cputime, &cpustat[CPUTIME_GUEST]);
+ 	}
+ }
+ 
+@@ -250,9 +250,9 @@ void account_system_time(struct task_struct *p, int hardirq_offset,
+  */
+ void account_steal_time(cputime_t cputime)
+ {
+-	u64 *cpustat = kcpustat_this_cpu->cpustat;
++	atomic64_t *cpustat = kcpustat_this_cpu->cpustat;
+ 
+-	cpustat[CPUTIME_STEAL] += (__force u64) cputime;
++	atomic64_add((__force u64) cputime, &cpustat[CPUTIME_STEAL]);
+ }
+ 
+ /*
+@@ -261,13 +261,13 @@ void account_steal_time(cputime_t cputime)
+  */
+ void account_idle_time(cputime_t cputime)
+ {
+-	u64 *cpustat = kcpustat_this_cpu->cpustat;
++	atomic64_t *cpustat = kcpustat_this_cpu->cpustat;
+ 	struct rq *rq = this_rq();
+ 
+ 	if (atomic_read(&rq->nr_iowait) > 0)
+-		cpustat[CPUTIME_IOWAIT] += (__force u64) cputime;
++		atomic64_add((__force u64) cputime, &cpustat[CPUTIME_IOWAIT]);
+ 	else
+-		cpustat[CPUTIME_IDLE] += (__force u64) cputime;
++		atomic64_add((__force u64) cputime, &cpustat[CPUTIME_IDLE]);
+ }
+ 
+ static __always_inline bool steal_account_process_tick(void)
 -- 
-Dave Chinner
-david@fromorbit.com
+1.8.1.2
+
