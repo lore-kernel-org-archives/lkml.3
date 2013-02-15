@@ -1,49 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422671Ab3BOPte (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 10:49:34 -0500
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:33372 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755948Ab3BOPtd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 10:49:33 -0500
-Date: Fri, 15 Feb 2013 16:49:31 +0100
-From: Andreas Mohr <andi@lisas.de>
-To: "Zhang, Rui" <rui.zhang@intel.com>
-Cc: Andreas Mohr <andi@lisas.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "R, Durgadoss" <durgadoss.r@intel.com>,
-        "peter@piie.net" <peter@piie.net>, "lenb@kernel.org" <lenb@kernel.org>
-Subject: Re: thermal governor: does it actually work??
-Message-ID: <20130215154931.GA26213@rhlx01.hs-esslingen.de>
-References: <20130214153255.GA5033@rhlx01.hs-esslingen.de>
- <744357E9AAD1214791ACBA4B0B90926329ED72@SHSMSX101.ccr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <744357E9AAD1214791ACBA4B0B90926329ED72@SHSMSX101.ccr.corp.intel.com>
-X-Priority: none
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1422704Ab3BOPts (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 10:49:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26371 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1422678Ab3BOPtq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 10:49:46 -0500
+Date: Fri, 15 Feb 2013 13:49:29 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-acpi@vger.kernel.org, Huang Ying <ying.huang@intel.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH EDAC 07/13] edac: add support for raw error reports
+Message-ID: <20130215134929.3909cfa2@redhat.com>
+In-Reply-To: <20130215154123.GH14387@pd.tnic>
+References: <cover.1360931635.git.mchehab@redhat.com>
+	<e08f797b129a50b4e1b39e8c31bff82904aea65d.1360931635.git.mchehab@redhat.com>
+	<20130215141330.GF14387@pd.tnic>
+	<20130215132530.4f3b7dab@redhat.com>
+	<20130215154123.GH14387@pd.tnic>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Em Fri, 15 Feb 2013 16:41:23 +0100
+Borislav Petkov <bp@alien8.de> escreveu:
 
-On Fri, Feb 15, 2013 at 09:47:07AM +0000, Zhang, Rui wrote:
-> Please attach the output of
-> "grep . /sys/class/thermal/thermal_zone*/cdev*/*"?
+> On Fri, Feb 15, 2013 at 01:25:30PM -0200, Mauro Carvalho Chehab wrote:
+> > Well, for sure using an structure will help to avoid missing a
+> > parameter or exchanging its order. The stack usage won't reduce,
+> > though, because the structure will keep using the stack.
+> 
+> If you allocate it on the stack of the caller, yes. If you kmalloc it,
+> no.
 
-# grep . /sys/class/thermal/thermal_zone*/cdev*/*
-/sys/class/thermal/thermal_zone0/cdev0/cur_state:1
-/sys/class/thermal/thermal_zone0/cdev0/max_state:1
-grep: /sys/class/thermal/thermal_zone0/cdev0/power: Is a directory
-grep: /sys/class/thermal/thermal_zone0/cdev0/subsystem: Is a directory
-/sys/class/thermal/thermal_zone0/cdev0/type:acerhdf-fan
+Sure, but calling kmalloc while handling a memory error doesn't seem
+a very good idea, IMHO. So, better to either use an already allocated
+space (or the stack).
+> 
+> In any case, passing a pointer to struct edac_raw_error_desc only will
+> allow on x86_64 (and i386 AFAICT) to use only registers to pass callee
+> function arguments. Which is always a win. You probably need to stare at
+> compiler output to see what gcc actually does with -O2 optimizations.
 
-> The question is that if we can also call it "throttle" when reducing the device performance to generate less heat.
+Yes, I know, but, on the other hand, there's the additional cost of
+copying almost all data into the structure.
 
-I won't continue to elaborate on this separate issue now, given that my time
-currently is very limited ;)
+> > As I can't foresee the usage of this function call outside the core
+> > and by the GHES driver, I'm not sure what would be the better.
+> 
+> Having an error descriptor is always better, even if it were only for
+> clarity's and simplicity's sake.
 
-Andreas Mohr
+Yes, the code is now clearer.
+
+Ok, I'll keep this patch on my git. I'll likely fold it with the previous 
+one on the final patchset.
+
+-- 
+
+Cheers,
+Mauro
