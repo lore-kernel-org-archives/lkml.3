@@ -1,55 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752061Ab3BOTrh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 14:47:37 -0500
-Received: from mail-qe0-f48.google.com ([209.85.128.48]:38178 "EHLO
-	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751633Ab3BOTrg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 14:47:36 -0500
+	id S1752035Ab3BOTs4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 14:48:56 -0500
+Received: from sauhun.de ([89.238.76.85]:57914 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751917Ab3BOTsy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 14:48:54 -0500
+Date: Fri, 15 Feb 2013 20:48:44 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Bill E. Brown" <bill.e.brown@intel.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Seth Heasley <seth.heasley@intel.com>,
+        Neil Horman <nhorman@tuxdriver.com>, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH -next] i2c: fix i2c-ismt.c printk format warning
+Message-ID: <20130215194844.GE4351@the-dreams.de>
+References: <20130215184255.5ba8a085004f4aadb9faf82c@canb.auug.org.au>
+ <511E83BC.3050007@infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <1360956981-1112-1-git-send-email-rydberg@euromail.se>
-References: <1360956981-1112-1-git-send-email-rydberg@euromail.se>
-From: Daniel Kurtz <djkurtz@chromium.org>
-Date: Fri, 15 Feb 2013 11:47:14 -0800
-X-Google-Sender-Auth: ZtzkDFp7RNTLH11c8C-lzOyhUBk
-Message-ID: <CAGS+omCbbD2-gi+9oN74QFh+kskTOYPqwbOcPORRCCyhVdPiTw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] Input: MT - do not apply filtering on emulated events
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <511E83BC.3050007@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 15, 2013 at 11:36 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
-> The pointer emulation events are derived from contact values that
-> have already been filtered, so send the emulated events as is.
->
-> Reported-by: Daniel Kurtz <djkurtz@chromium.org>
-> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+On Fri, Feb 15, 2013 at 10:51:40AM -0800, Randy Dunlap wrote:
+> From: Randy Dunlap <rdunlap@infradead.org>
+> 
+> Fix printk format warning.  dma_addr_t can be 32-bit or 64-bit,
+> so cast it to long long for printing.  This also matches the
+> printk format specifier that is already used.
+> 
+> drivers/i2c/busses/i2c-ismt.c:532:3: warning: format '%llX' expects argument of type 'long long unsigned int', but argument 4 has type 'dma_addr_t' [-Wformat]
+> 
+> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
 
-Hi Henrik,
-Brilliant!  Glad there is now such an easy fix for this.
+Thanks, applied to next.
 
-Reviewed-by: Daniel Kurtz <djkurtz@chromium.org>
-
-> ---
->  drivers/input/input-mt.c | 1 +
->  1 file changed, 1 insertion(+)
->
-> diff --git a/drivers/input/input-mt.c b/drivers/input/input-mt.c
-> index 1abbc17..1b7f4d4 100644
-> --- a/drivers/input/input-mt.c
-> +++ b/drivers/input/input-mt.c
-> @@ -18,6 +18,7 @@ static void copy_abs(struct input_dev *dev, unsigned int dst, unsigned int src)
->  {
->         if (dev->absinfo && test_bit(src, dev->absbit)) {
->                 dev->absinfo[dst] = dev->absinfo[src];
-> +               dev->absinfo[dst].fuzz = 0;
->                 dev->absbit[BIT_WORD(dst)] |= BIT_MASK(dst);
->         }
->  }
-> --
-> 1.8.1.2
