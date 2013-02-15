@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422667Ab3BOOyp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 09:54:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60427 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934192Ab3BOOyp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 09:54:45 -0500
-Date: Fri, 15 Feb 2013 15:53:23 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 3/5] coredump: cleanup the waiting for coredump_finish
-	code
-Message-ID: <20130215145323.GA30829@redhat.com>
-References: <1360885096-21207-1-git-send-email-msb@chromium.org> <1360885096-21207-3-git-send-email-msb@chromium.org>
+	id S1422680Ab3BOOzK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 09:55:10 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36971 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161288Ab3BOOzI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 09:55:08 -0500
+Message-ID: <511E4C43.7080403@canonical.com>
+Date: Fri, 15 Feb 2013 09:54:59 -0500
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360885096-21207-3-git-send-email-msb@chromium.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Wim Van Sebroeck <wim@iguana.be>
+CC: mc74hc00@gmail.com, linux-watchdog@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Kernel Team <kernel-team@lists.ubuntu.com>
+Subject: Re: [v3.8 Regression] watchdog: sp5100_tco: Add SB8x0 chipset support
+References: <511D0BCC.9070208@canonical.com> <20130215073210.GM7867@spo001.leaseweb.com>
+In-Reply-To: <20130215073210.GM7867@spo001.leaseweb.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14, Mandeep Singh Baines wrote:
+On 02/15/2013 02:32 AM, Wim Van Sebroeck wrote:
+> Hi Joseph,
 >
-> Replace the for loop with a simple if.
+>> A bug was opened against the Ubuntu kernel[0].  It was found that
+>> reverting the following commit resolved this bug:
+>>
+>> commit 740fbddf5c3f9ad8b23c5d917ba1cc7e376a5104
+>> Author: Takahisa Tanaka <mc74hc00@gmail.com>
+>> Date:   Sun Dec 2 14:33:18 2012 +0900
+>>
+>>      watchdog: sp5100_tco: Add SB8x0 chipset support
+>>
+>>
+>> The regression was introduced as of v3.8-rc1.
+>>
+>> I see that you are the author of this patch, so I wanted to run this by
+>> you.  I was thinking of requesting a revert for v3.8, but I wanted to
+>> get your feedback first.
+> Please check out the attached patches first (They are allready in linux-next).
+Thanks for the feedback, Wim.  I'll let you know if the patches resolve 
+this bug.
 
-Why?
-
-> --- a/kernel/exit.c
-> +++ b/kernel/exit.c
-> @@ -479,12 +479,9 @@ static void exit_mm(struct task_struct * tsk)
->  		if (atomic_dec_and_test(&core_state->nr_threads))
->  			complete(&core_state->startup);
 >
-> -		for (;;) {
-> -			set_task_state(tsk, TASK_UNINTERRUPTIBLE);
-> -			if (!self.task) /* see coredump_finish() */
-> -				break;
-> +		set_task_state(tsk, TASK_UNINTERRUPTIBLE);
-> +		if (self.task) /* see coredump_finish() */
->  			schedule();
-> -		}
-
-If you think we should not worry about spurious wakeups you can simplify
-this code even more, you do not need mb() to set TASK_UNINTERRUPTIBLE
-(just move it before dec_and_test), you do not need "if (self.task)",
-you do not need __set_task_state(tsk, TASK_RUNNING).
-
-But I think we should always worry, so why?
-
-Oleg.
+> Other references:
+> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=43176
+> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=43176
+>
+> Kind regards,
+> Wim.
+>
 
