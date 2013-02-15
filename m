@@ -1,22 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752979Ab3BOXAy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 18:00:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49346 "EHLO
+	id S1752630Ab3BOW4Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 17:56:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49312 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752336Ab3BOW4a (ORCPT
+	with ESMTP id S1752356Ab3BOW4U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 17:56:30 -0500
+	Fri, 15 Feb 2013 17:56:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        Jeff Pieper <jeffrey.e.pieper@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Vinson Lee <vlee@twitter.com>
-Subject: [ 8/8] igb: Remove artificial restriction on RQDPC stat reading
-Date: Fri, 15 Feb 2013 14:56:15 -0800
-Message-Id: <20130215225431.827647377@linuxfoundation.org>
+        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
+        Brad Spengler <spender@grsecurity.net>,
+        Kees Cook <keescook@chromium.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [ 2/8] x86: Do not leak kernel page mapping locations
+Date: Fri, 15 Feb 2013 14:56:09 -0800
+Message-Id: <20130215225431.135530132@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130215225430.841634159@linuxfoundation.org>
 References: <20130215225430.841634159@linuxfoundation.org>
@@ -29,43 +35,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Duyck <alexander.h.duyck@intel.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit ae1c07a6b7ced6c0c94c99e3b53f4e7856fa8bff upstream.
+commit e575a86fdc50d013bf3ad3aa81d9100e8e6cc60d upstream.
 
-For some reason the reading of the RQDPC register was being artificially
-limited to 4K.  Instead of limiting the value we should read the value and
-add the full amount.  Otherwise this can lead to a misleading number of
-dropped packets when the actual value is in fact much higher.
+Without this patch, it is trivial to determine kernel page
+mappings by examining the error code reported to dmesg[1].
+Instead, declare the entire kernel memory space as a violation
+of a present page.
 
-Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
-Tested-by: Jeff Pieper   <jeffrey.e.pieper@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: Vinson Lee <vlee@twitter.com>
+Additionally, since show_unhandled_signals is enabled by
+default, switch branch hinting to the more realistic
+expectation, and unobfuscate the setting of the PF_PROT bit to
+improve readability.
+
+[1] http://vulnfactory.org/blog/2013/02/06/a-linux-memory-trick/
+
+Reported-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
+Suggested-by: Brad Spengler <spender@grsecurity.net>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Acked-by: H. Peter Anvin <hpa@zytor.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/20130207174413.GA12485@www.outflux.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/intel/igb/igb_main.c |    8 +++++---
+ arch/x86/mm/fault.c |    8 +++++---
  1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/drivers/net/ethernet/intel/igb/igb_main.c
-+++ b/drivers/net/ethernet/intel/igb/igb_main.c
-@@ -4649,11 +4649,13 @@ void igb_update_stats(struct igb_adapter
- 	bytes = 0;
- 	packets = 0;
- 	for (i = 0; i < adapter->num_rx_queues; i++) {
--		u32 rqdpc_tmp = rd32(E1000_RQDPC(i)) & 0x0FFF;
-+		u32 rqdpc = rd32(E1000_RQDPC(i));
- 		struct igb_ring *ring = adapter->rx_ring[i];
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -747,13 +747,15 @@ __bad_area_nosemaphore(struct pt_regs *r
+ 				return;
+ 		}
+ #endif
++		/* Kernel addresses are always protection faults: */
++		if (address >= TASK_SIZE)
++			error_code |= PF_PROT;
  
--		ring->rx_stats.drops += rqdpc_tmp;
--		net_stats->rx_fifo_errors += rqdpc_tmp;
-+		if (rqdpc) {
-+			ring->rx_stats.drops += rqdpc;
-+			net_stats->rx_fifo_errors += rqdpc;
-+		}
+-		if (unlikely(show_unhandled_signals))
++		if (likely(show_unhandled_signals))
+ 			show_signal_msg(regs, error_code, address, tsk);
  
- 		do {
- 			start = u64_stats_fetch_begin_bh(&ring->rx_syncp);
+-		/* Kernel addresses are always protection faults: */
+ 		tsk->thread.cr2		= address;
+-		tsk->thread.error_code	= error_code | (address >= TASK_SIZE);
++		tsk->thread.error_code	= error_code;
+ 		tsk->thread.trap_nr	= X86_TRAP_PF;
+ 
+ 		force_sig_info_fault(SIGSEGV, si_code, address, tsk, 0);
 
 
