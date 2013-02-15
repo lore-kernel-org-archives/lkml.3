@@ -1,76 +1,330 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161883Ab3BONu2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 08:50:28 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:55388 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161862Ab3BONuY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 08:50:24 -0500
-Date: Sat, 16 Feb 2013 00:50:14 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Liu Jinsong <jinsong.liu@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: linux-next: build failure after merge of the xen-two tree
-Message-Id: <20130216005014.c8ce70e041f655d4c195c9fb@canb.auug.org.au>
-In-Reply-To: <20130215132624.GB11777@phenom.dumpdata.com>
-References: <20130215154551.d11e9d376d30d32b9673e6cc@canb.auug.org.au>
-	<20130215132624.GB11777@phenom.dumpdata.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Sat__16_Feb_2013_00_50_14_+1100_NxnTy3ajNgmNyQ=c"
+	id S1754445Ab3BOOEm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 09:04:42 -0500
+Received: from sestofw01.enea.se ([192.36.1.252]:18819 "HELO mx-3.enea.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1750766Ab3BOOEk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 09:04:40 -0500
+Date: Fri, 15 Feb 2013 15:04:29 +0100
+From: Mats Liljegren <mats.liljegren@enea.com>
+To: Kevin Hilman <khilman@linaro.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Sedat Dilek <sedat.dilek@gmail.com>, Gleb Natapov <gleb@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>
+Subject: Re: [GIT PULL] cputime: Full dynticks task/cputime accounting v7
+Message-ID: <20130215140429.GA4322@enea.se>
+References: <1359399845-10568-1-git-send-email-fweisbec@gmail.com>
+ <87k3qa7333.fsf@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <87k3qa7333.fsf@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sat__16_Feb_2013_00_50_14_+1100_NxnTy3ajNgmNyQ=c
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Kevin Hilman wrote:
+> Frederic Weisbecker <fweisbec@gmail.com> writes:
+> 
+> > Ingo,
+> >
+> > Please pull the new full dynticks cputime accounting code that
+> > can be found at:
+> >
+> > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+> > 	tags/full-dynticks-cputime-for-mingo
+> >
+> > My last concern is the dependency on CONFIG_64BIT. We rely on cputime_t
+> > being u64 for reasonable nanosec granularity implementation. And therefore
+> > we need a single instruction fetch to read kernel cpustat for atomicity
+> > requirement against concurrent incrementation, which only 64 bit archs
+> > can provide.
+> 
+> Actually, moderately recent 32-bit ARMs can do atomic 64-bit load/stores
+> too.   
+> 
+> Also, is it just kernel_cpustat increments that need protection? or do
+> the various reads of the task_struct's cputime fields also need
+> protection (hmm, thinking twice, maybe those are already sufficiently
+> protected by the vtime_seqlock?)
+> 
+> > It's probably no big deal to solve this issue. What we need is simply some
+> > atomic accessors.
+> 
+> What about using the atomic64_* accessors?  Those would just use the
+> native loads/stores on arches that have them, otherwise
+> CONFIG_GENERIC_ATOMIC64 provides some fallbacks.
+> 
+> To give it a try, below is a quick patch to convert kernel_cpustat to
+> atomic64.  I only got as far as compile testing and basic boot testing
+> on a 32-bit ARM platform, but let me know if this is the right
+> direction.
+> 
+> > There is just no emergency though as this new option depends on the context
+> > tracking subsystem that only x86-64 (and soon ppc64) implements yet. And
+> > this set is complex enough already. I think we can deal with that later.
+> 
+> I've started working on the ARM version of the context_tracker, so
+> "later" is coming quickly and I will do what I can to help this along.
+> 
+> Kevin
+> 
+> 
+> 
+> >From 9881fc4b86a63244018a4bdb5a383f3b862a0b8b Mon Sep 17 00:00:00 2001
+> From: Kevin Hilman <khilman@linaro.org>
+> Date: Thu, 14 Feb 2013 17:46:08 -0800
+> Subject: [PATCH] kernel_cpustat: convert to atomic 64-bit accessors
+> 
+> WIP: only compile tested and basic boot tested on 32-bit ARM platform
+> ---
+>  fs/proc/stat.c              | 36 ++++++++++++++++++------------------
+>  fs/proc/uptime.c            |  2 +-
+>  include/linux/kernel_stat.h |  2 +-
+>  kernel/sched/cputime.c      | 22 +++++++++++-----------
+>  4 files changed, 31 insertions(+), 31 deletions(-)
+> 
+> diff --git a/fs/proc/stat.c b/fs/proc/stat.c
+> index e296572..2a4c723 100644
+> --- a/fs/proc/stat.c
+> +++ b/fs/proc/stat.c
+> @@ -52,7 +52,7 @@ static u64 get_idle_time(int cpu)
+>  
+>  	if (idle_time == -1ULL)
+>  		/* !NO_HZ or cpu offline so we can rely on cpustat.idle */
+> -		idle = kcpustat_cpu(cpu).cpustat[CPUTIME_IDLE];
+> +		idle = atomic64_read(&kcpustat_cpu(cpu).cpustat[CPUTIME_IDLE]);
+>  	else
+>  		idle = usecs_to_cputime64(idle_time);
+>  
+> @@ -68,7 +68,7 @@ static u64 get_iowait_time(int cpu)
+>  
+>  	if (iowait_time == -1ULL)
+>  		/* !NO_HZ or cpu offline so we can rely on cpustat.iowait */
+> -		iowait = kcpustat_cpu(cpu).cpustat[CPUTIME_IOWAIT];
+> +		iowait = atomic64_read(&kcpustat_cpu(cpu).cpustat[CPUTIME_IOWAIT]);
+>  	else
+>  		iowait = usecs_to_cputime64(iowait_time);
+>  
+> @@ -95,16 +95,16 @@ static int show_stat(struct seq_file *p, void *v)
+>  	jif = boottime.tv_sec;
+>  
+>  	for_each_possible_cpu(i) {
+> -		user += kcpustat_cpu(i).cpustat[CPUTIME_USER];
+> -		nice += kcpustat_cpu(i).cpustat[CPUTIME_NICE];
+> -		system += kcpustat_cpu(i).cpustat[CPUTIME_SYSTEM];
+> +		user += atomic64_read(&kcpustat_cpu(i).cpustat[CPUTIME_USER]);
+> +		nice += atomic64_read(&kcpustat_cpu(i).cpustat[CPUTIME_NICE]);
+> +		system += atomic64_read(&kcpustat_cpu(i).cpustat[CPUTIME_SYSTEM]);
+>  		idle += get_idle_time(i);
+>  		iowait += get_iowait_time(i);
+> -		irq += kcpustat_cpu(i).cpustat[CPUTIME_IRQ];
+> -		softirq += kcpustat_cpu(i).cpustat[CPUTIME_SOFTIRQ];
+> -		steal += kcpustat_cpu(i).cpustat[CPUTIME_STEAL];
+> -		guest += kcpustat_cpu(i).cpustat[CPUTIME_GUEST];
+> -		guest_nice += kcpustat_cpu(i).cpustat[CPUTIME_GUEST_NICE];
+> +		irq += atomic64_read(&kcpustat_cpu(i).cpustat[CPUTIME_IRQ]);
+> +		softirq += atomic64_read(&kcpustat_cpu(i).cpustat[CPUTIME_SOFTIRQ]);
+> +		steal += atomic64_read(&kcpustat_cpu(i).cpustat[CPUTIME_STEAL]);
+> +		guest += atomic64_read(&kcpustat_cpu(i).cpustat[CPUTIME_GUEST]);
+> +		guest_nice += atomic64_read(&kcpustat_cpu(i).cpustat[CPUTIME_GUEST_NICE]);
+>  		sum += kstat_cpu_irqs_sum(i);
+>  		sum += arch_irq_stat_cpu(i);
+>  
+> @@ -132,16 +132,16 @@ static int show_stat(struct seq_file *p, void *v)
+>  
+>  	for_each_online_cpu(i) {
+>  		/* Copy values here to work around gcc-2.95.3, gcc-2.96 */
+> -		user = kcpustat_cpu(i).cpustat[CPUTIME_USER];
+> -		nice = kcpustat_cpu(i).cpustat[CPUTIME_NICE];
+> -		system = kcpustat_cpu(i).cpustat[CPUTIME_SYSTEM];
+> +		user = atomic64_read(&kcpustat_cpu(i).cpustat[CPUTIME_USER]);
+> +		nice = atomic64_read(&kcpustat_cpu(i).cpustat[CPUTIME_NICE]);
+> +		system = atomic64_read(&kcpustat_cpu(i).cpustat[CPUTIME_SYSTEM]);
+>  		idle = get_idle_time(i);
+>  		iowait = get_iowait_time(i);
+> -		irq = kcpustat_cpu(i).cpustat[CPUTIME_IRQ];
+> -		softirq = kcpustat_cpu(i).cpustat[CPUTIME_SOFTIRQ];
+> -		steal = kcpustat_cpu(i).cpustat[CPUTIME_STEAL];
+> -		guest = kcpustat_cpu(i).cpustat[CPUTIME_GUEST];
+> -		guest_nice = kcpustat_cpu(i).cpustat[CPUTIME_GUEST_NICE];
+> +		irq = atomic64_read(&kcpustat_cpu(i).cpustat[CPUTIME_IRQ]);
+> +		softirq = atomic64_read(&kcpustat_cpu(i).cpustat[CPUTIME_SOFTIRQ]);
+> +		steal = atomic64_read(&kcpustat_cpu(i).cpustat[CPUTIME_STEAL]);
+> +		guest = atomic64_read(&kcpustat_cpu(i).cpustat[CPUTIME_GUEST]);
+> +		guest_nice = atomic64_read(&kcpustat_cpu(i).cpustat[CPUTIME_GUEST_NICE]);
+>  		seq_printf(p, "cpu%d", i);
+>  		seq_put_decimal_ull(p, ' ', cputime64_to_clock_t(user));
+>  		seq_put_decimal_ull(p, ' ', cputime64_to_clock_t(nice));
+> diff --git a/fs/proc/uptime.c b/fs/proc/uptime.c
+> index 9610ac7..10c0f6e 100644
+> --- a/fs/proc/uptime.c
+> +++ b/fs/proc/uptime.c
+> @@ -18,7 +18,7 @@ static int uptime_proc_show(struct seq_file *m, void *v)
+>  
+>  	idletime = 0;
+>  	for_each_possible_cpu(i)
+> -		idletime += (__force u64) kcpustat_cpu(i).cpustat[CPUTIME_IDLE];
+> +		idletime += atomic64_read(&kcpustat_cpu(i).cpustat[CPUTIME_IDLE]);
+>  
+>  	do_posix_clock_monotonic_gettime(&uptime);
+>  	monotonic_to_bootbased(&uptime);
+> diff --git a/include/linux/kernel_stat.h b/include/linux/kernel_stat.h
+> index ed5f6ed..45b9f71 100644
+> --- a/include/linux/kernel_stat.h
+> +++ b/include/linux/kernel_stat.h
+> @@ -32,7 +32,7 @@ enum cpu_usage_stat {
+>  };
+>  
+>  struct kernel_cpustat {
+> -	u64 cpustat[NR_STATS];
+> +	atomic64_t cpustat[NR_STATS];
+>  };
+>  
+>  struct kernel_stat {
+> diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+> index ccff275..c1ac2b2 100644
+> --- a/kernel/sched/cputime.c
+> +++ b/kernel/sched/cputime.c
+> @@ -125,7 +125,7 @@ static inline void task_group_account_field(struct task_struct *p, int index,
+>  	 * is the only cgroup, then nothing else should be necessary.
+>  	 *
+>  	 */
+> -	__get_cpu_var(kernel_cpustat).cpustat[index] += tmp;
+> +	atomic64_add(tmp, &__get_cpu_var(kernel_cpustat).cpustat[index]);
+>  
+>  #ifdef CONFIG_CGROUP_CPUACCT
+>  	if (unlikely(!cpuacct_subsys.active))
+> @@ -176,7 +176,7 @@ void account_user_time(struct task_struct *p, cputime_t cputime,
+>  static void account_guest_time(struct task_struct *p, cputime_t cputime,
+>  			       cputime_t cputime_scaled)
+>  {
+> -	u64 *cpustat = kcpustat_this_cpu->cpustat;
+> +	atomic64_t *cpustat = kcpustat_this_cpu->cpustat;
+>  
+>  	/* Add guest time to process. */
+>  	p->utime += cputime;
+> @@ -186,11 +186,11 @@ static void account_guest_time(struct task_struct *p, cputime_t cputime,
+>  
+>  	/* Add guest time to cpustat. */
+>  	if (TASK_NICE(p) > 0) {
+> -		cpustat[CPUTIME_NICE] += (__force u64) cputime;
+> -		cpustat[CPUTIME_GUEST_NICE] += (__force u64) cputime;
+> +		atomic64_add((__force u64) cputime, &cpustat[CPUTIME_NICE]);
+> +		atomic64_add((__force u64) cputime, &cpustat[CPUTIME_GUEST_NICE]);
+>  	} else {
+> -		cpustat[CPUTIME_USER] += (__force u64) cputime;
+> -		cpustat[CPUTIME_GUEST] += (__force u64) cputime;
+> +		atomic64_add((__force u64) cputime, &cpustat[CPUTIME_USER]);
+> +		atomic64_add((__force u64) cputime, &cpustat[CPUTIME_GUEST]);
+>  	}
+>  }
+>  
+> @@ -250,9 +250,9 @@ void account_system_time(struct task_struct *p, int hardirq_offset,
+>   */
+>  void account_steal_time(cputime_t cputime)
+>  {
+> -	u64 *cpustat = kcpustat_this_cpu->cpustat;
+> +	atomic64_t *cpustat = kcpustat_this_cpu->cpustat;
+>  
+> -	cpustat[CPUTIME_STEAL] += (__force u64) cputime;
+> +	atomic64_add((__force u64) cputime, &cpustat[CPUTIME_STEAL]);
+>  }
+>  
+>  /*
+> @@ -261,13 +261,13 @@ void account_steal_time(cputime_t cputime)
+>   */
+>  void account_idle_time(cputime_t cputime)
+>  {
+> -	u64 *cpustat = kcpustat_this_cpu->cpustat;
+> +	atomic64_t *cpustat = kcpustat_this_cpu->cpustat;
+>  	struct rq *rq = this_rq();
+>  
+>  	if (atomic_read(&rq->nr_iowait) > 0)
+> -		cpustat[CPUTIME_IOWAIT] += (__force u64) cputime;
+> +		atomic64_add((__force u64) cputime, &cpustat[CPUTIME_IOWAIT]);
+>  	else
+> -		cpustat[CPUTIME_IDLE] += (__force u64) cputime;
+> +		atomic64_add((__force u64) cputime, &cpustat[CPUTIME_IDLE]);
+>  }
+>  
+>  static __always_inline bool steal_account_process_tick(void)
+> -- 
+> 1.8.1.2
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Hi Konrad,
+I had to do some changes to get it to compile. You can check my patch below
+and see whether I got it all wrong...
 
-On Fri, 15 Feb 2013 08:26:24 -0500 Konrad Rzeszutek Wilk <konrad.wilk@oracl=
-e.com> wrote:
->
-> Thank you. I keep on forgetting - but would it be OK for me to take this
-> patch in my tree? Or should I not since this is a new functionality that
-> Rafael is going to introduce in v3.9?
+/Mats
 
-It is an API change in the pm tree that is not yet in Linus' tree.
+>From e3da56bdb36a3efb5a9869ded20f346039f381f2 Mon Sep 17 00:00:00 2001
+From: Mats Liljegren <mats.liljegren@enea.com>
+Date: Fri, 15 Feb 2013 13:46:29 +0100
+Subject: [PATCH] Added atomic operators to make it compile
 
-> And if so, perhaps I should tack it on in my tree, once Rafael does a git
-> pull to Linus? Or just point Linus to this git commit?
+---
+ kernel/sched/core.c    |   10 +++++-----
+ kernel/sched/cputime.c |    2 +-
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-You should point Linus at this patch if the pm tree is merged first, or
-Rafael should do the same if the reverse happens.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Sat__16_Feb_2013_00_50_14_+1100_NxnTy3ajNgmNyQ=c
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRHj0WAAoJEECxmPOUX5FEwtwP/jkXYyLbD7gu6iHuY2L3yaw0
-/mr/zzibC5epau7Mp/AYn8mbUU5twCQIGY7tRSkmul5DY5zwQxk9jRxwRLRZPfKc
-Pg2pG1vH37ynFjsgV2T2a8amGyO/vCFpNsGTljPABZwB17ftZLVTEm3dAMRfGNMX
-OvL+V4yMShkWhGxopfcylv/y3b18A0xLRWWUdAA0vtUGtm8aAsNaqE+xi/ZPpG/T
-hDp4k1m3C/dGNRVj4OTprpY9gKvWSI7QBXYmqTj+CB88gz7Njy3iNpqjaDILFjOQ
-zUKhZz5TmjOWzutbp2p9uYhqf9ysHB5cTIUPAOOqthN2/aTpfO0js2zw5Yg2higr
-l/V65h/T2UV0uXbVH06GLowqdztWO1XMXtuBa3/6768uVF+tLxtZRCw6PODhm5tC
-7sz3YLe78bkrpx7YFBesiCzZexiyzZ5CYZ2Yt0U51POP/WAzEMpE+wIKUYviYHHf
-sN2V/IkkS2223LrW2yQKAdZTqTFq3xnLLVMQ4wta+aJQILM0lQg1r2tk8LACiqb8
-NJJRoGcrT7TnGtJCGfHhFztqGH7aP7lOPOQraORMX6FIGSZa+5rlMF/2Wxhy/4k/
-oWgqBxxzKLTj/VZTlTSkfJ5a8WEojq670kC0cHM6LxKHVzjsfcYxlXTZzmO9xyIW
-GtsppRL7eQQWqoyAe+I6
-=COZ4
------END PGP SIGNATURE-----
-
---Signature=_Sat__16_Feb_2013_00_50_14_+1100_NxnTy3ajNgmNyQ=c--
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 2fad439..5415e85 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -8168,8 +8168,8 @@ static int cpuacct_stats_show(struct cgroup *cgrp, struct cftype *cft,
+ 
+        for_each_online_cpu(cpu) {
+                struct kernel_cpustat *kcpustat = per_cpu_ptr(ca->cpustat, cpu);
+-               val += kcpustat->cpustat[CPUTIME_USER];
+-               val += kcpustat->cpustat[CPUTIME_NICE];
++               val += atomic64_read(&kcpustat->cpustat[CPUTIME_USER]);
++               val += atomic64_read(&kcpustat->cpustat[CPUTIME_NICE]);
+        }
+        val = cputime64_to_clock_t(val);
+        cb->fill(cb, cpuacct_stat_desc[CPUACCT_STAT_USER], val);
+@@ -8177,9 +8177,9 @@ static int cpuacct_stats_show(struct cgroup *cgrp, struct cftype *cft,
+        val = 0;
+        for_each_online_cpu(cpu) {
+                struct kernel_cpustat *kcpustat = per_cpu_ptr(ca->cpustat, cpu);
+-               val += kcpustat->cpustat[CPUTIME_SYSTEM];
+-               val += kcpustat->cpustat[CPUTIME_IRQ];
+-               val += kcpustat->cpustat[CPUTIME_SOFTIRQ];
++               val += atomic64_read(&kcpustat->cpustat[CPUTIME_SYSTEM]);
++               val += atomic64_read(&kcpustat->cpustat[CPUTIME_IRQ]);
++               val += atomic64_read(&kcpustat->cpustat[CPUTIME_SOFTIRQ]);
+        }
+ 
+        val = cputime64_to_clock_t(val);
+diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+index 50de5bf..2bb998b 100644
+--- a/kernel/sched/cputime.c
++++ b/kernel/sched/cputime.c
+@@ -135,7 +135,7 @@ static inline void task_group_account_field(struct task_struct *p, int index,
+        ca = task_ca(p);
+        while (ca && (ca != &root_cpuacct)) {
+                kcpustat = this_cpu_ptr(ca->cpustat);
+-               kcpustat->cpustat[index] += tmp;
++               atomic64_add(tmp, &kcpustat->cpustat[index]);
+                ca = parent_ca(ca);
+        }
+        rcu_read_unlock();
+-- 
+1.7.5.4
