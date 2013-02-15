@@ -1,182 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759740Ab3BOKOp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 05:14:45 -0500
-Received: from TYO202.gate.nec.co.jp ([210.143.35.52]:54520 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751804Ab3BOKOo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 05:14:44 -0500
-Date: Fri, 15 Feb 2013 18:35:46 +0900
-From: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
-To: mitsuhiro.tanino.gm@hitachi.com
-Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org, vgoyal@redhat.com,
-        ebiederm@xmission.com
-Subject: Re: [PATCH 2/2 v2] kexec: Export PG_hwpoison flag into vmcoreinfo
-Message-Id: <20130215183546.d182c03e15e6285c9c898ca9@mxc.nes.nec.co.jp>
-In-Reply-To: <511DF658.9080005@hitachi.com>
-References: <508FDEF3.8030601@hitachi.com>
-	<20121030143750.GF2290@redhat.com>
-	<50913011.2030900@hitachi.com>
-	<20130208174944.96a3b50952e45e1219a94819@mxc.nes.nec.co.jp>
-	<511DF658.9080005@hitachi.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S935657Ab3BOKQp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 05:16:45 -0500
+Received: from mga14.intel.com ([143.182.124.37]:12576 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755057Ab3BOKQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 05:16:44 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,672,1355126400"; 
+   d="scan'208";a="257391421"
+Date: Fri, 15 Feb 2013 11:16:40 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Anatol Pomozov <anatol.pomozov@gmail.com>
+Cc: Aaron Sierra <asierra@xes-inc.com>,
+        =?iso-8859-1?B?QWfzY3MgUOFs?= <agocs.pal.86@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] lpc_ich: fix gpio base and control offsets
+Message-ID: <20130215101640.GN20996@sortiz-mobl>
+References: <b9fec05c-d383-4282-b2af-c95855ff6abb@zimbra>
+ <3ffa5032-0565-48f0-a4ae-473452f4c902@zimbra>
+ <20130203170213.GQ8476@sortiz-mobl>
+ <CAOMFOmW3XdSCJrQJk57-dKNcsyh-B7xcBRKLqpniEd+ROSRvBw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAOMFOmW3XdSCJrQJk57-dKNcsyh-B7xcBRKLqpniEd+ROSRvBw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Tanino-san,
+Hi Anatol,
 
-On Fri, 15 Feb 2013 17:48:24 +0900
-Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com> wrote:
-
-> Hello Kumagai-san,
+On Thu, Feb 14, 2013 at 02:48:05PM -0800, Anatol Pomozov wrote:
+> Hi, Aaron
 > 
-> > I'm curious to know the status of this patch because I'll release
-> > makedumpfile-1.5.2 with the feature to exclude hwpoison page soon.
-> 
-> I requested Andrew to merge the kernel side patch, and the patch
-> has been added the -mm tree.
-> 
-> Please push the makedumpfile side patch into makedumpfile-1.5.2.
-
-Thanks, I've released makedumpfile-1.5.2 with your patch:
-
-http://lists.infradead.org/pipermail/kexec/2013-February/007954.html
-
-
-Thanks
-Atsushi Kumagai
-
-> Regards,
-> Mitsuhiro Tanino
-> 
-> > TO: mm-commits@vger.kernel.org; 
-> > CC: mitsuhiro.tanino.gm@hitachi.com; ebiederm@xmission.com; vgoyal@redhat.com; 
-> > Sender: akpm@linux-foundation.org
-> > Sugject: + kexec-export-pg_hwpoison-flag-into-vmcoreinfo.patch added to -mm tree
-> > Date: 2013/02/13 07:50
-> > 
-> > 
-> > The patch titled
-> >      Subject: kexec: export PG_hwpoison flag into vmcoreinfo
-> > has been added to the -mm tree.  Its filename is
-> >      kexec-export-pg_hwpoison-flag-into-vmcoreinfo.patch
-> > 
-> > Before you just go and hit "reply", please:
-> >    a) Consider who else should be cc'ed
-> >    b) Prefer to cc a suitable mailing list as well
-> >    c) Ideally: find the original patch on the mailing list and do a
-> >       reply-to-all to that, adding suitable additional cc's
-> > 
-> > *** Remember to use Documentation/SubmitChecklist when testing your code ***
-> > 
-> > The -mm tree is included into linux-next and is updated
-> > there every 3-4 working days
-> > 
-> > ------------------------------------------------------
-> > From: Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com>
-> > Subject: kexec: export PG_hwpoison flag into vmcoreinfo
-> > 
-> > This patch exports a PG_hwpoison into vmcoreinfo when
-> > CONFIG_MEMORY_FAILURE is defined.  "makedumpfile" needs to read
-> > information of memory, such as 'mem_section', 'zone', 'pageflags' from
-> > vmcore.
-> > 
-> > We introduce a function into "makedumpfile" to exclude hwpoison page from
-> > vmcore dump.  In order to introduce this function, PG_hwpoison flag have
-> > to export into vmcoreinfo.
-> > 
-> > Signed-off-by: Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com>
-> > Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
-> > Cc: Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com>
-> > Cc: Vivek Goyal <vgoyal@redhat.com>
-> > Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> > ---
-> > 
-> >  kernel/kexec.c |    3 +++
-> >  1 file changed, 3 insertions(+)
-> > 
-> > diff -puN kernel/kexec.c~kexec-export-pg_hwpoison-flag-into-vmcoreinfo kernel/kexec.c
-> > --- a/kernel/kexec.c~kexec-export-pg_hwpoison-flag-into-vmcoreinfo
-> > +++ a/kernel/kexec.c
-> > @@ -1537,6 +1537,9 @@ static int __init crash_save_vmcoreinfo_
-> >  	VMCOREINFO_NUMBER(PG_private);
-> >  	VMCOREINFO_NUMBER(PG_swapcache);
-> >  	VMCOREINFO_NUMBER(PG_slab);
-> > +#ifdef CONFIG_MEMORY_FAILURE
-> > +	VMCOREINFO_NUMBER(PG_hwpoison);
-> > +#endif
-> >  	VMCOREINFO_NUMBER(PAGE_BUDDY_MAPCOUNT_VALUE);
-> >  
-> >  	arch_crash_save_vmcoreinfo();
-> > _
-> > 
-> > Patches currently in -mm which might be from mitsuhiro.tanino.gm@hitachi.com are
-> > 
-> > kexec-export-pg_hwpoison-flag-into-vmcoreinfo.patch
-> 
-> 
-> 
-> 
-> (2013/02/08 17:49), Atsushi Kumagai wrote:
-> > Hello,
-> > 
-> > On Wed, 31 Oct 2012 23:05:05 +0900
-> > Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com> wrote:
-> > 
-> >> This patch exports a PG_hwpoison into vmcoreinfo when
-> >> CONFIG_MEMORY_FAILURE is defined.
-> >> "makedumpfile" needs to read information of memory, such as
-> >> 'mem_section', 'zone', 'pageflags' from vmcore.
+> On Sun, Feb 3, 2013 at 9:02 AM, Samuel Ortiz <sameo@linux.intel.com> wrote:
+> > Hi Arron,
+> >
+> > On Thu, Jan 24, 2013 at 02:52:39PM -0600, Aaron Sierra wrote:
+> >> In ICH5 and earlier the GPIOBASE and GPIOCTRL registers are found at
+> >> offsets 0x58 and 0x5C, respectively. This patch allows GPIO access to
+> >> properly be enabled (and disabled) for these chipsets.
 > >>
-> >> We introduce a function into "makedumpfile" to exclude
-> >> hwpoison page from vmcore dump.
-> >> In order to introduce this function, PG_hwpoison flag have
-> >> to export into vmcoreinfo.
-> >>
-> >> Signed-off-by: Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com>
-> > 
-> > I'm curious to know the status of this patch because I'll release
-> > makedumpfile-1.5.2 with the feature to exclude hwpoison page soon.
-> > 
-> > 
-> > Thanks
-> > Atsushi Kumagai
-> > 
+> >> Signed-off-by: Agócs Pál <agocs.pal.86@gmail.com>
+> >> Signed-off-by: Aaron Sierra <asierra@xes-inc.com>
 > >> ---
-> >>  kernel/kexec.c |    3 +++
-> >>  1 file changed, 3 insertions(+)
+> >>  drivers/mfd/lpc_ich.c |  109 ++++++++++++++++++++++++++++++++++---------------
+> >>  1 file changed, 76 insertions(+), 33 deletions(-)
+> > I applied this one to my for-next branch, but:
+> >
+> >
+> >> @@ -858,14 +874,35 @@ wdt_done:
+> >>  static int lpc_ich_probe(struct pci_dev *dev,
+> >>                               const struct pci_device_id *id)
+> >>  {
+> >> +     struct lpc_ich_priv *priv;
+> >>       int ret;
+> >>       bool cell_added = false;
 > >>
-> >> diff --git a/kernel/kexec.c b/kernel/kexec.c
-> >> index 0668d58..0d5d6bc 100644
-> >> --- a/kernel/kexec.c
-> >> +++ b/kernel/kexec.c
-> >> @@ -1513,6 +1513,9 @@ static int __init crash_save_vmcoreinfo_init(void)
-> >>         VMCOREINFO_NUMBER(PG_lru);
-> >>         VMCOREINFO_NUMBER(PG_private);
-> >>         VMCOREINFO_NUMBER(PG_swapcache);
-> >> +#ifdef CONFIG_MEMORY_FAILURE
-> >> +       VMCOREINFO_NUMBER(PG_hwpoison);
-> >> +#endif
-> >>
-> >>         arch_crash_save_vmcoreinfo();
-> >>         update_vmcoreinfo_note();
-> >> --
-> >> 1.7.10.1
-> >>
-> >> _______________________________________________
-> >> kexec mailing list
-> >> kexec@lists.infradead.org
-> >> http://lists.infradead.org/mailman/listinfo/kexec
-> > 
-> > _______________________________________________
-> > kexec mailing list
-> > kexec@lists.infradead.org
-> > http://lists.infradead.org/mailman/listinfo/kexec
-> > .
-> > 
+> >> -     ret = lpc_ich_init_wdt(dev, id);
+> >> +     priv = kmalloc(GFP_KERNEL, sizeof(struct lpc_ich_priv));
+> >> +     if (!priv)
+> >> +             return -ENOMEM;
+> > Could you please come back to me with a follow up patch that would convert
+> > this to the devm_kzalloc() API ?
 > 
+> I compiled linux-next (sha == 019f4bc86a462), tried to boot it on my
+> machine and it fails at the very early stage with following oops:
+Would you mind trying the following fix:
+
+diff --git a/drivers/mfd/lpc_ich.c b/drivers/mfd/lpc_ich.c
+index 5c2ef41..fddc8e2 100644
+--- a/drivers/mfd/lpc_ich.c
++++ b/drivers/mfd/lpc_ich.c
+@@ -916,7 +916,7 @@ static int lpc_ich_probe(struct pci_dev *dev,
+        int ret;
+        bool cell_added = false;
+ 
+-       priv = kmalloc(GFP_KERNEL, sizeof(struct lpc_ich_priv));
++       priv = kzalloc(sizeof(struct lpc_ich_priv), GFP_KERNEL);
+        if (!priv)
+                return -ENOMEM;
+
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
