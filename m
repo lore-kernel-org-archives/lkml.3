@@ -1,58 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936055Ab3BOQSc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 11:18:32 -0500
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:35877 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932625Ab3BOQSa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 11:18:30 -0500
+	id S936050Ab3BOQUZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 11:20:25 -0500
+Received: from fieldses.org ([174.143.236.118]:40602 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935864Ab3BOQUX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 11:20:23 -0500
+Date: Fri, 15 Feb 2013 11:20:21 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
+        linux-kernel@vger.kernel.org, devel@openvz.org
+Subject: Re: [PATCH v2 0/4] nfsd: make is works in a container
+Message-ID: <20130215162021.GK8343@fieldses.org>
+References: <20130201125210.3257.46454.stgit@localhost.localdomain>
 MIME-Version: 1.0
-In-Reply-To: <1360943688-12502-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1360943688-12502-1-git-send-email-paul.gortmaker@windriver.com>
-Date: Fri, 15 Feb 2013 08:18:29 -0800
-X-Google-Sender-Auth: AHujPFl7vfGsjDPt0_FfAQx4KdE
-Message-ID: <CAGXu5jJxPU2Skr12u07fTeg+8im6L4JHv23+TrB+qVWMY36F_w@mail.gmail.com>
-Subject: Re: [PATCH] futex: avoid kernel taint caused by get_robust_list
-From: Kees Cook <keescook@chromium.org>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        Richard Weinberger <richard@nod.at>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130201125210.3257.46454.stgit@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 15, 2013 at 7:54 AM, Paul Gortmaker
-<paul.gortmaker@windriver.com> wrote:
-> commit ec0c4274e33c0373e476b73e01995c53128f1257 ("futex: Mark
-> get_robust_list as deprecated") added these two WARN_ONCE calls.
->
-> However, WARN_ONCE taints the kernel, and we shouldn't be allowing
-> any user who wanders by to do this.  For example, the system fuzzer
-> "trinity" uses the tainted state as a metric for when to stop,
-> assuming that it has caused significant wreckage (and indeed
-> that tool is what actually led me to this change).
->
-> The ability to deprecate this code has been called into question[1],
-> but if that remains to be finalized, then making this change in the
-> interim seems to make sense.
->
-> [1] http://lkml.indiana.edu/hypermail/linux/kernel/1208.0/01081.html
->
-> Cc: Dave Jones <davej@redhat.com>
-> Cc: Richard Weinberger <richard@nod.at>
-> Cc: Kees Cook <keescook@chromium.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: stable@vger.kernel.org      # 3.4+
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+On Fri, Feb 01, 2013 at 03:56:05PM +0300, Stanislav Kinsbursky wrote:
+> This patch set finally enables NFSd in container.
+> I've tested it in container with it's own root, and also pid, net and mount
+> namespaces.
 
-I Acked the original revert. I thought there was agreement that it was
-needed for checkpointing to work?
+Thanks, these look fine to me; applying.  They should show up in my
+for-3.9 branch sometime today.
 
--Kees
+--b.
 
--- 
-Kees Cook
-Chrome OS Security
+> 
+> There are some limitations, which are listed below:
+> 1) only nfsdclt client tracker supported for container. It's deprecated and
+> going to be removed soon. UMH tracker requires switching root. Legacy tracker
+> requires something like RB tree of opened inodes to make sure, that any
+> recovery directory will be opened only once.
+> 2) Enabled versions are controlled globally (should be fixed).
+> 3) Server should be stopped by writing "0" to
+> /proc/fs/nfsd/threads instead of sending signals to NFSd threads (they are
+> working in init_pid). Sending signals will either won't work if container wich
+> its own pid namespace, or will kill all nfsd threads for all containers in
+> init_pid namesapce.
+> 4) Currently, if container was stopped without stopping NFS server (i.e. it's
+> init was killed), NFSd kthreads will remain running. One of possible solutions
+> is to not hold network by NFSd service sockets, but register oer-net callback
+> and kill all the threads on network namespace exit.
+> 5) NFSd filesystem superblock holds network namespace. I.e. if some process
+> will hold container's NFSd supeblock, then sthe whole container's network
+> naemspace will stay alive even is container is destroyed already.
+> 
+> There may be more limitations, which are not clear to me yet.
+> 
+> v2:
+> 1) removed root swap - deprecated
+> 2) rebased on current tree
+> 
+> The following series implements...
+> 
+> ---
+> 
+> Stanislav Kinsbursky (4):
+>       nfsd: containerize NFSd filesystem
+>       nfsd: use proper net while reading "exports" file
+>       nfsd: disable usermode helper client tracker in container
+>       nfsd: enable NFSv4 state in containers
+> 
+> 
+>  fs/nfsd/nfs4recover.c |    6 ++++
+>  fs/nfsd/nfs4state.c   |   10 ------
+>  fs/nfsd/nfsctl.c      |   77 +++++++++++++++++++++++++++++++++++++------------
+>  fs/nfsd/nfssvc.c      |    5 +--
+>  4 files changed, 66 insertions(+), 32 deletions(-)
+> 
