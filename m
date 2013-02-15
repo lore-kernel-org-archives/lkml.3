@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935960Ab3BOPqI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 10:46:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44735 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935938Ab3BOPqG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 10:46:06 -0500
-Date: Fri, 15 Feb 2013 16:44:49 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 2/5] lockdep: check that no locks held at freeze time
-Message-ID: <20130215154449.GD30829@redhat.com>
-References: <1360885096-21207-1-git-send-email-msb@chromium.org> <1360885096-21207-2-git-send-email-msb@chromium.org>
+	id S1422671Ab3BOPte (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 10:49:34 -0500
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:33372 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755948Ab3BOPtd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 10:49:33 -0500
+Date: Fri, 15 Feb 2013 16:49:31 +0100
+From: Andreas Mohr <andi@lisas.de>
+To: "Zhang, Rui" <rui.zhang@intel.com>
+Cc: Andreas Mohr <andi@lisas.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "R, Durgadoss" <durgadoss.r@intel.com>,
+        "peter@piie.net" <peter@piie.net>, "lenb@kernel.org" <lenb@kernel.org>
+Subject: Re: thermal governor: does it actually work??
+Message-ID: <20130215154931.GA26213@rhlx01.hs-esslingen.de>
+References: <20130214153255.GA5033@rhlx01.hs-esslingen.de>
+ <744357E9AAD1214791ACBA4B0B90926329ED72@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1360885096-21207-2-git-send-email-msb@chromium.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <744357E9AAD1214791ACBA4B0B90926329ED72@SHSMSX101.ccr.corp.intel.com>
+X-Priority: none
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14, Mandeep Singh Baines wrote:
->
-> We shouldn't try_to_freeze if locks are held. Verified that
-> I get no lockdep warnings after applying this patch and
-> "vfork: don't freezer_count() for in-kernel users of CLONE_VFORK".
+Hi,
 
-Ah. Now I understand why you did 1/5. Beacuse you call
-debug_check_no_locks_held() right at the start of try_to_freeze(),
-even if the caller can't be frozen.
+On Fri, Feb 15, 2013 at 09:47:07AM +0000, Zhang, Rui wrote:
+> Please attach the output of
+> "grep . /sys/class/thermal/thermal_zone*/cdev*/*"?
 
->  static inline bool try_to_freeze(void)
->  {
-> +	debug_check_no_locks_held(current);
->  	might_sleep();
->  	if (likely(!freezing(current)))
->  		return false;
+# grep . /sys/class/thermal/thermal_zone*/cdev*/*
+/sys/class/thermal/thermal_zone0/cdev0/cur_state:1
+/sys/class/thermal/thermal_zone0/cdev0/max_state:1
+grep: /sys/class/thermal/thermal_zone0/cdev0/power: Is a directory
+grep: /sys/class/thermal/thermal_zone0/cdev0/subsystem: Is a directory
+/sys/class/thermal/thermal_zone0/cdev0/type:acerhdf-fan
 
-Up to maintainers, but perhaps you should check !PF_NOFREEZE at least?
+> The question is that if we can also call it "throttle" when reducing the device performance to generate less heat.
 
-Oleg.
+I won't continue to elaborate on this separate issue now, given that my time
+currently is very limited ;)
 
+Andreas Mohr
