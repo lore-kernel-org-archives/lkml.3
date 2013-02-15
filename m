@@ -1,63 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753905Ab3BOQkb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 11:40:31 -0500
-Received: from mail-la0-f53.google.com ([209.85.215.53]:57134 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751569Ab3BOQk3 (ORCPT
+	id S1754314Ab3BOQlS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 11:41:18 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:42678 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751569Ab3BOQlR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 11:40:29 -0500
+	Fri, 15 Feb 2013 11:41:17 -0500
+Message-ID: <511E6528.1060007@wwwdotorg.org>
+Date: Fri, 15 Feb 2013 09:41:12 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130215135141.1EFCEE0085@blue.fi.intel.com>
-References: <20130215112911.68A98E0085@blue.fi.intel.com>
-	<CANq1E4T1QzOUOwWPpV6_55hVTXzXF4baShxpYaM0HNAgF0ffAg@mail.gmail.com>
-	<20130215120022.GA23694@x220>
-	<20130215135141.1EFCEE0085@blue.fi.intel.com>
-Date: Fri, 15 Feb 2013 18:40:27 +0200
-Message-ID: <CAHp75VdC7JnoYwnKRsyr7v3or167OdX8mrv00VK-0YuPhpSFaw@mail.gmail.com>
-Subject: Re: uhid: broken interface: 32/64-bit compatibility
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Johan Hedberg <johan.hedberg@gmail.com>,
-        David Herrmann <dh.herrmann@googlemail.com>, linux-api@vger.kernel.org,
-        linux-input@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
-        RavindranathX Doddi <ravindranathx.doddi@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Marcel Holtmann <marcel@holtmann.org>
-Content-Type: text/plain; charset=UTF-8
+To: Hiroshi Doyu <hdoyu@nvidia.com>
+CC: linux-tegra@vger.kernel.org, pdeschrijver@nvidia.com, pgaikwad@nvidia.com,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>, Simon Glass <sjg@chromium.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [v3 2/6] ARM: tegra20: convert device tree files to use CLK defines
+References: <1360917814-27236-1-git-send-email-hdoyu@nvidia.com> <1360917814-27236-3-git-send-email-hdoyu@nvidia.com>
+In-Reply-To: <1360917814-27236-3-git-send-email-hdoyu@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Any comments?
+On 02/15/2013 01:43 AM, Hiroshi Doyu wrote:
+> Replace magic number in tegra_car:
+> 
+> -               clocks = <&tegra_car 28>;
+> +               clocks = <&tegra_car CLK_HOST1X>;
+> 
+> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+> ---
+>  .../bindings/clock/nvidia,tegra20-car.txt          |  150 +-------------------
 
-Generic comments.  Could you use *_compat instead of  *_old_*?
-Another idea is do not touch current interface, just append new
-function and associated structure to make a smooth transition of the
-userspace stuff.
-
-What about documentation (Documentation/hid/uhid.txt)? Could you
-update it acordingly?
-
-> Subject: [PATCH] uhid: introduce new create event to fix 32/64-bit
->  compatibility issue
->
-> Current create event has pointer in payload. It causes problem with
-> 32/64-bit compatibility. In particular it's not possible to use 32-bit
-> userspace driver with 64-bit kernel.
-
-
-> This patch deprecates old create event and introduce a new one. The new
-> create event has padding for pointer on 32-bit system to extend pointer
-> correctly.
->
-> Old userspace driver binaries will use old create event. It requires
-> simple recompile to switch to new one.
-
-That's what I afraid of. Better to try to avoid any excessive
-requirement to the existing userspace.
-
--- 
-With Best Regards,
-Andy Shevchenko
+The edits to the binding are logically part of patch 1.
