@@ -1,62 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422665Ab3BOPdB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 10:33:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26224 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754605Ab3BOPdA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 10:33:00 -0500
-Date: Fri, 15 Feb 2013 10:32:53 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: ebiederm@xmission.com, cpw@sgi.com, kumagai-atsushi@mxc.nes.nec.co.jp,
-        lisa.mitchell@hp.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 06/13] vmcore: modify vmcore clean-up function to free
- buffer on 2nd kernel
-Message-ID: <20130215153253.GE27784@redhat.com>
-References: <20130214100945.22466.4172.stgit@localhost6.localdomain6>
- <20130214101216.22466.52389.stgit@localhost6.localdomain6>
+	id S935899Ab3BOPjQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 10:39:16 -0500
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:58443 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932605Ab3BOPjP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 10:39:15 -0500
+Date: Fri, 15 Feb 2013 16:39:07 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@alien8.de>,
+        Daniel Baluta <dbaluta@ixiacom.com>,
+        Dirk Behme <dirk.behme@de.bosch.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Li Zefan <lizefan@huawei.com>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Vinson Lee <vlee@twitter.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL 00/10] perf/core improvements and fixes
+Message-ID: <20130215153907.GA3324@gmail.com>
+References: <1360878263-12694-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130214101216.22466.52389.stgit@localhost6.localdomain6>
+In-Reply-To: <1360878263-12694-1-git-send-email-acme@infradead.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 14, 2013 at 07:12:16PM +0900, HATAYAMA Daisuke wrote:
-> Vmcore object has buffer on 2nd kernel if it has VMCORE_2ND_KERNEL
-> type, which needs to be freed.
-> 
-> Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-> ---
-> 
->  fs/proc/vmcore.c |    9 +++++++++
->  1 files changed, 9 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
-> index 7e3f922..77e0a0e 100644
-> --- a/fs/proc/vmcore.c
-> +++ b/fs/proc/vmcore.c
-> @@ -735,6 +735,15 @@ void vmcore_cleanup(void)
->  		struct vmcore *m;
->  
->  		m = list_entry(pos, struct vmcore, list);
-> +
-> +		switch (m->type) {
-> +		case VMCORE_OLD_MEMORY:
-> +			break;
-> +		case VMCORE_2ND_KERNEL:
-> +			free_pages((unsigned long)m->buf, get_order(m->size));
-> +			break;
 
-I think order of patches is little wrong. None of the patches so far has
-done any memory allocation for VMCORE_2ND_KERNEL, and we are already
-freeing the memory which will be allocated in future patches. May be just
-merge this patch with the patch which does memory allocation. No need
-to separate it out.
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-Thanks
-Vivek
+> From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> 
+> Hi Ingo,
+> 
+> 	Please consider pulling,
+> 
+> - Arnaldo
+> 
+> The following changes since commit a3d4fd7a2d81604fedfa270d29c824b8d3380c2e:
+> 
+>   Merge branch 'uprobes/core' of git://git.kernel.org/pub/scm/linux/kernel/git/oleg/misc into perf/core (2013-02-11 10:41:53 +0100)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
+> 
+> for you to fetch changes up to 02e176af92f3e2e9ec3a48792036566af2dcd534:
+> 
+>   perf/hwbp: Fix cleanup in case of kzalloc failure (2013-02-14 17:06:39 -0300)
+> 
+> ----------------------------------------------------------------
+> perf/core improvements and fixes:
+> 
+> . Fix cleanup in case of kzalloc failure, from Daniel Baluta.
+> 
+> . Limit unwind support to x86 archs, fix from Jiri Olsa.
+> 
+> . Initial GTK+ annotate browser, from Namhyung Kim.
+> 
+> . Fix build with bison 2.3 and older, from Vinson Lee.
+> 
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> ----------------------------------------------------------------
+> Daniel Baluta (1):
+>       perf/hwbp: Fix cleanup in case of kzalloc failure
+> 
+> Jiri Olsa (1):
+>       perf tools: Limit unwind support to x86 archs
+> 
+> Namhyung Kim (7):
+>       perf buildid-cache: Add --update option
+>       perf annotate: Fix warning message on a missing vmlinux
+>       perf ui/gtk: Implement basic GTK2 annotation browser
+>       perf gtk/annotate: Support multiple event annotation
+>       perf gtk/annotate: Show source lines with gray color
+>       perf gtk/annotate: Fail early if it can't annotate
+>       perf annotate: Make it to be able to skip unannotatable symbols
+> 
+> Vinson Lee (1):
+>       perf tools: Fix build with bison 2.3 and older.
+> 
+>  kernel/events/hw_breakpoint.c                   |   2 +-
+>  tools/perf/Documentation/perf-annotate.txt      |   7 +-
+>  tools/perf/Documentation/perf-buildid-cache.txt |   4 +
+>  tools/perf/Makefile                             |  10 +-
+>  tools/perf/builtin-annotate.c                   |  27 ++-
+>  tools/perf/builtin-buildid-cache.c              |  50 +++++-
+>  tools/perf/ui/gtk/annotate.c                    | 229 ++++++++++++++++++++++++
+>  tools/perf/ui/gtk/gtk.h                         |   1 +
+>  tools/perf/ui/setup.c                           |   2 +-
+>  tools/perf/util/annotate.c                      |   2 +-
+>  tools/perf/util/annotate.h                      |  24 +++
+>  tools/perf/util/parse-events.y                  |   1 -
+>  tools/perf/util/pmu.y                           |   1 -
+>  13 files changed, 349 insertions(+), 11 deletions(-)
+>  create mode 100644 tools/perf/ui/gtk/annotate.c
+
+Pulled, thanks a lot Arnaldo!
+
+	Ingo
