@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750838Ab3BOSmH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 13:42:07 -0500
-Received: from mail-qc0-f201.google.com ([209.85.216.201]:54250 "EHLO
-	mail-qc0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750712Ab3BOSmF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 13:42:05 -0500
-From: Doug Anderson <dianders@chromium.org>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Peter Korsgaard <peter.korsgaard@barco.com>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] i2c: mux: Remove unneeded platform_set_drvdata to NULL in remove
-Date: Fri, 15 Feb 2013 10:41:22 -0800
-Message-Id: <1360953682-25066-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.8.1
+	id S1750864Ab3BOSpM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 13:45:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62442 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750712Ab3BOSpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 13:45:10 -0500
+Message-ID: <511E8223.6010506@redhat.com>
+Date: Fri, 15 Feb 2013 18:44:51 +0000
+From: Pedro Alves <palves@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Andrey Vagin <avagin@openvz.org>
+CC: linux-kernel@vger.kernel.org, criu@openvz.org, linux-api@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] ptrace: add ability to retrieve signals without removing
+ them from a queue
+References: <1360768595-31943-1-git-send-email-avagin@openvz.org>
+In-Reply-To: <1360768595-31943-1-git-send-email-avagin@openvz.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Warren pointed out as part of a code review of another mux
-driver that there should be no need to have
-"platform_set_drvdata(pdev, NULL)" in the remove function.  Get rid of
-it in the i2c-mux-gpio driver.
+On 02/13/2013 03:16 PM, Andrey Vagin wrote:
+> This patch adds a new ptrace request PTRACE_PEEKSIGINFO.
+> 
+> This request is used to retrieve information about a signal with the
+> specified sequence number. A siginfo_t structure is copied from the child
+> to location data in the parent.
+> 
+> The low 16 bits of addr contains a sequence number of signal in a queue.
+> All other bits of addr is used for flags. Currently here is only one
+> flag PTRACE_PEEK_SHARED for dumping signals from process-wide shared
+> queue. If this flag is not set, a signal is read from a per-thread
+> queue.  A result siginfo contains a kernel part of si_code which usually
+> striped, but it's required for queuing the same siginfo back during
+> restore of pending signals.
+> 
+> If a signal with the specified sequence number doesn't exist, ptrace
+> returns ENOENT.
+> 
+> This functionality is required for checkpointing pending signals.
+> 
+> The prototype of this code was developed by Oleg Nesterov.
 
-See Stephen's comment at:
-  http://www.gossamer-threads.com/lists/linux/kernel/1678627?do=post_view_threaded#1678627
+Not sure I'm reading the patch right, but it looks like GDB would
+be able to use this as alternative to PTRACE_GET_SIGINFO variant
+that returns the siginfo_t object in the architecture/bitness of
+the tracee, rather than the architecture of the kernel, right?
+So it no longer would need to try and replicate the kernel's
+siginfo conversions.  I wouldn't mind if this was added unconditionally
+instead of wrapped on CONFIG_CHECKPOINT_RESTORE.  We'd miss the poke
+variant, but that looks like something that could be always be added
+later.
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
- drivers/i2c/muxes/i2c-mux-gpio.c | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/drivers/i2c/muxes/i2c-mux-gpio.c b/drivers/i2c/muxes/i2c-mux-gpio.c
-index 9f50ef0..abc2e55a 100644
---- a/drivers/i2c/muxes/i2c-mux-gpio.c
-+++ b/drivers/i2c/muxes/i2c-mux-gpio.c
-@@ -250,7 +250,6 @@ static int i2c_mux_gpio_remove(struct platform_device *pdev)
- 	for (i = 0; i < mux->data.n_gpios; i++)
- 		gpio_free(mux->gpio_base + mux->data.gpios[i]);
- 
--	platform_set_drvdata(pdev, NULL);
- 	i2c_put_adapter(mux->parent);
- 
- 	return 0;
 -- 
-1.8.1
+Pedro Alves
 
