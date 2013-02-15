@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752448Ab3BOXeq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 18:34:46 -0500
-Received: from plane.gmane.org ([80.91.229.3]:54070 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751013Ab3BOXep (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 18:34:45 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Michael Grosshaeuser <michael.grosshaeuser@t-online.de>
-Subject: Re: regression in linux 3.7 - fan speed at 100% after suspend/resume at 100%
-Date: Fri, 15 Feb 2013 23:30:04 +0000 (UTC)
-Message-ID: <loom.20130216T002002-269@post.gmane.org>
-References: <50BDF345.60804@gmail.com> <1354630272.2480.4.camel@rzhang1-mobl4>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 93.220.160.7 (Mozilla/5.0 (X11; Linux x86_64; rv:18.0) Gecko/20100101 Firefox/18.0)
+	id S1752657Ab3BOXge (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 18:36:34 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:13338 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751727Ab3BOXgc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 18:36:32 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 15 Feb 2013 15:32:22 -0800
+From: Rhyland Klein <rklein@nvidia.com>
+To: Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>
+CC: <devicetree-discuss@lists.ozlabs.org>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Rhyland Klein <rklein@nvidia.com>
+Subject: [RFC 1/3] power_supply: Define Binding for supplied-nodes
+Date: Fri, 15 Feb 2013 18:36:54 -0500
+Message-ID: <1360971416-30717-2-git-send-email-rklein@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1360971416-30717-1-git-send-email-rklein@nvidia.com>
+References: <1360971416-30717-1-git-send-email-rklein@nvidia.com>
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Zhang Rui <rui.zhang <at> intel.com> writes:
+This property is meant to be used in device nodes which represent
+power_supply devices that wish to provide a list of supplies to
+which they provide power. A common case is a AC Charger with
+the batteries it powers.
 
-> 
-> Hi, Roberto,
-> 
-> please attach the acpidump output.
-> 
-> On Tue, 2012-12-04 at 13:57 +0100, Roberto Oppedisano wrote:
-> > Hello,
-> >      with recent kernels after a suspend/resume cycle on my laptop (HP 
-> > 6730b) the fans stays at full speed.
-> does the fan keep running at full speed after resume?
-> 
-> please attach the output of "grep . /sys/class/thermal/*/*" before
-> suspend and when the fan is running at full speed.
-> please attach the same stuff in a good kernel.
-> 
-> thanks,
-> rui
-> 
+Signed-off-by: Rhyland Klein <rklein@nvidia.com>
+---
+ .../bindings/power_supply/power_supply.txt         |   17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/power_supply/power_supply.txt
 
-Hi,
-
-any update for this bug? This also breaks on my HP 2510p.
-
-Best regards,
-Michael
-
+diff --git a/Documentation/devicetree/bindings/power_supply/power_supply.txt b/Documentation/devicetree/bindings/power_supply/power_supply.txt
+new file mode 100644
+index 0000000..1c58d4ff
+--- /dev/null
++++ b/Documentation/devicetree/bindings/power_supply/power_supply.txt
+@@ -0,0 +1,17 @@
++Power Supply Core Support
++
++Optional Properties:
++ - power-supply,supplied-nodes : This property is added to a supply
++   in order to specify the list of supplicant devices directly by their
++   phandles.
++
++Example:
++
++	charger@e {
++		compatible = "some,charger";
++		...
++
++		power-supply,supplied-nodes = <&some_battery>,
++					      <&another_battery>;
++		...
++	};
+-- 
+1.7.9.5
 
