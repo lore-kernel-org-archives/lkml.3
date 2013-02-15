@@ -1,45 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935278Ab3BOBOI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 20:14:08 -0500
-Received: from mail-we0-f169.google.com ([74.125.82.169]:60216 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932201Ab3BOBOG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 20:14:06 -0500
+	id S935291Ab3BOBPN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 20:15:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58713 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932201Ab3BOBPL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Feb 2013 20:15:11 -0500
+Date: Thu, 14 Feb 2013 20:15:03 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        paul.mckenney@linaro.org
+Subject: Re: Debugging Thinkpad T430s occasional suspend failure.
+Message-ID: <20130215011503.GA11914@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Hugh Dickins <hughd@google.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	paul.mckenney@linaro.org
+References: <20130212193901.GA18906@redhat.com>
+ <alpine.LNX.2.00.1302121549500.890@eggly.anvils>
+ <20130213004059.GA14451@redhat.com>
+ <alpine.LNX.2.00.1302121652240.1077@eggly.anvils>
+ <20130213041629.GA28622@redhat.com>
+ <alpine.LNX.2.00.1302122121170.15020@eggly.anvils>
+ <20130213193411.GA15928@redhat.com>
+ <CA+55aFzmEDriX26Z7oJZg9yssFdCAaYwu6krmrwqfj2TBsxA4w@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1302142334120.22263@ionos>
-References: <6003615.pRQnIgKCSn@dabox> <3970144.HqS49ZSYWh@dabox>
- <alpine.LFD.2.02.1302131828050.22263@ionos> <16398840.IK9i4U2q2d@dabox> <alpine.LFD.2.02.1302142334120.22263@ionos>
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-Date: Thu, 14 Feb 2013 20:13:34 -0500
-X-Google-Sender-Auth: EfXgEFYGpHXEaOrBFR52DI51v1g
-Message-ID: <CAP=VYLo2zxJWy3s6AmZc+Hh6wXh67HMp+mM0nEkN6M_OpKJSug@mail.gmail.com>
-Subject: Re: [PATCH] 3.4.28-rt40 tglx fix imx.c spinlock
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Tim Sander <tim@krieglstein.org>,
-        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzmEDriX26Z7oJZg9yssFdCAaYwu6krmrwqfj2TBsxA4w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Adding dave jones to CC]
+On Wed, Feb 13, 2013 at 11:56:25AM -0800, Linus Torvalds wrote:
+ > On Wed, Feb 13, 2013 at 11:34 AM, Dave Jones <davej@redhat.com> wrote:
+ > >
+ > > My test was a loop of 100 suspend/resume cycles before calling something
+ > > 'good'. The 'bad' cases all failed within 10 cycles (usually 2-3).
+ > 
+ > Considering that you apparently already found one case where the BIOS
+ > crapped out due to effectively unrelated timing details (ie timing
+ > triggered a temperature issue that then triggered behavioral changes),
+ > I wonder if your more occasional problem might not be a sign of
+ > something similar.
+ > 
+ > But since you seem to be able to automate it well, maybe one thing to
+ > try is to change the timing a bit while testing. Maybe some failures
+ > were hidden by the timing just happening to work out.
 
-On Thu, Feb 14, 2013 at 5:35 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Thu, 14 Feb 2013, Tim Sander wrote:
->> > That's true, but w/o seing the OOM output I can't tell what's
->> > exhausting the memory.
->> When fuzzing the serial port one probably should switch of sysreq. It seems
->> as if there is a break send somehow and then it selects the OOM option.
->> So when switching of MAGIC_SYSRQ the OOMs are gone. So its a non issue.
->
-> Amazing that you get the break+oom combo out of that fuzzer!
+Given I never saw this on a Fedora kernel, just my self-built ones, I eventually
+gave up on bisecting code, and switched to bisecting config options.
+I should have started this way, as I figured it out within an hour.
 
-Doing a basic "git whatchanged" and searching for "trinity" is rather
-impressive, regardless of the kernel version and/or where "rogue states"
-may currently be at with their "program"....   Kudos to davej for that.
+3.7 merge window is when I started seeing this, and here's what got introduced
+during that time..
 
-P.
---
+commit e3ebfb96f396731ca2d0b108785d5da31b53ab00
+Author: Paul E. McKenney <paul.mckenney@linaro.org>
+Date:   Mon Jul 2 14:42:01 2012 -0700
+
+    rcu: Add PROVE_RCU_DELAY to provoke difficult races
+
+'difficult' is an understatement.  This explains why some of those 'good'
+bisects survived 100 suspends on one day, and failed the next.
+
+Unfortunatly, I don't think there's any sane way to retrieve whatever debug
+info might be getting spewed.  Perhaps when I reinstall, and switch to booting EFI
+I'll be able to use pstore, but on a bios-based boot, all hope seems lost.
+No netconsole, no usb-serial, even crippling i915's suspend routine doesn't help.
+
+I'll just disable this option for now.
+
+	Dave
+
