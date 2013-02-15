@@ -1,93 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751463Ab3BOTW7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 14:22:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:16989 "EHLO mx1.redhat.com"
+	id S1751509Ab3BOTXK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 14:23:10 -0500
+Received: from fieldses.org ([174.143.236.118]:37601 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751139Ab3BOTW5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 14:22:57 -0500
-Subject: [PATCH v2] pci: Disable slot presence detection around bus reset
-To: bhelgaas@google.com, linux-pci@vger.kernel.org
-From: Alex Williamson <alex.williamson@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Fri, 15 Feb 2013 12:22:56 -0700
-Message-ID: <20130215191944.27692.8935.stgit@bling.home>
-User-Agent: StGit/0.16
+	id S1751139Ab3BOTXH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 14:23:07 -0500
+Date: Fri, 15 Feb 2013 14:23:03 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Mark Lord <kernel@start.ca>
+Cc: Mark Lord <kernel@teksavvy.com>,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        linux-nfs@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
+        =?utf-8?B?UGF3ZcWC?= Sikora <pawel.sikora@agmk.net>,
+        Tom Horsley <horsley1953@gmail.com>,
+        Jason Tibbitts <tibbs@math.uh.edu>
+Subject: [PATCH 1/2] svcrpc: make svc_age_temp_xprts enqueue under sv_lock
+Message-ID: <20130215192303.GD19923@fieldses.org>
+References: <50F63882.8000607@parallels.com>
+ <50F72F03.5070806@teksavvy.com>
+ <50F786AF.4070107@parallels.com>
+ <20130117130335.GD6598@fieldses.org>
+ <50F7FB7E.2020503@parallels.com>
+ <50F88C14.7030903@teksavvy.com>
+ <50F8DF7E.8080107@parallels.com>
+ <50FC74E0.20305@teksavvy.com>
+ <20130212205216.GE10267@fieldses.org>
+ <511BAAAA.9040804@start.ca>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <511BAAAA.9040804@start.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A bus reset can trigger a presence detection change and result in a
-suprise hotplug.  This is generally not what we want to happen when
-trying to reset a device.  Disable the presence detection control on
-on bridges around bus reset.
+svc_age_temp_xprts expires xprts in a two-step process: first it takes
+the sv_lock and moves the xprts to expire off their server-wide list
+(sv_tempsocks or sv_permsocks) to a local list.  Then it drops the
+sv_lock and enqueues and puts each one.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+I see no reason for this: svc_xprt_enqueue() will take sp_lock, but the
+sv_lock and sp_lock are not otherwise nested anywhere (and documentation
+at the top of this file claims it's correct to nest these with sp_lock
+inside.)
+
+Cc: stable@kernel.org
+Tested-by: Jason Tibbitts <tibbs@math.uh.edu>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 ---
-v2: Still hasn't resolved any controversy of this patch, but writing the
-    presence detect changed bit to the slot status to clear it resolves
-    the stray remove/add I was still seeing occasionally on v1.
+ net/sunrpc/svc_xprt.c |   15 ++-------------
+ 1 file changed, 2 insertions(+), 13 deletions(-)
 
- drivers/pci/pci.c |   32 +++++++++++++++++++++++++++-----
- 1 file changed, 27 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 5cb5820..efccc97 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -3229,8 +3229,8 @@ static int pci_pm_reset(struct pci_dev *dev, int probe)
+diff --git a/net/sunrpc/svc_xprt.c b/net/sunrpc/svc_xprt.c
+index 5a9d40c..11a33c8 100644
+--- a/net/sunrpc/svc_xprt.c
++++ b/net/sunrpc/svc_xprt.c
+@@ -863,7 +863,6 @@ static void svc_age_temp_xprts(unsigned long closure)
+ 	struct svc_serv *serv = (struct svc_serv *)closure;
+ 	struct svc_xprt *xprt;
+ 	struct list_head *le, *next;
+-	LIST_HEAD(to_be_aged);
  
- static int pci_parent_bus_reset(struct pci_dev *dev, int probe)
- {
--	u16 ctrl;
--	struct pci_dev *pdev;
-+	u16 ctrl, flags, sltctl = 0;
-+	struct pci_dev *pdev, *bridge;
+ 	dprintk("svc_age_temp_xprts\n");
  
- 	if (pci_is_root_bus(dev->bus) || dev->subordinate || !dev->bus->self)
- 		return -ENOTTY;
-@@ -3242,15 +3242,37 @@ static int pci_parent_bus_reset(struct pci_dev *dev, int probe)
- 	if (probe)
- 		return 0;
+@@ -884,25 +883,15 @@ static void svc_age_temp_xprts(unsigned long closure)
+ 		if (atomic_read(&xprt->xpt_ref.refcount) > 1 ||
+ 		    test_bit(XPT_BUSY, &xprt->xpt_flags))
+ 			continue;
+-		svc_xprt_get(xprt);
+-		list_move(le, &to_be_aged);
++		list_del_init(le);
+ 		set_bit(XPT_CLOSE, &xprt->xpt_flags);
+ 		set_bit(XPT_DETACHED, &xprt->xpt_flags);
+-	}
+-	spin_unlock_bh(&serv->sv_lock);
+-
+-	while (!list_empty(&to_be_aged)) {
+-		le = to_be_aged.next;
+-		/* fiddling the xpt_list node is safe 'cos we're XPT_DETACHED */
+-		list_del_init(le);
+-		xprt = list_entry(le, struct svc_xprt, xpt_list);
+-
+ 		dprintk("queuing xprt %p for closing\n", xprt);
  
--	pci_read_config_word(dev->bus->self, PCI_BRIDGE_CONTROL, &ctrl);
-+	bridge = dev->bus->self;
-+
-+	/*
-+	 * If the parent device supports a slot with presence detection
-+	 * change enabled, holding the bus in reset can trigger that and
-+	 * cause an unwanted surprise removal.  Disable presence detection
-+	 * around the bus reset.
-+	 */
-+	pcie_capability_read_word(bridge, PCI_EXP_FLAGS, &flags);
-+	if (flags & PCI_EXP_FLAGS_SLOT) {
-+		pcie_capability_read_word(bridge, PCI_EXP_SLTCTL, &sltctl);
-+		if (sltctl & PCI_EXP_SLTCTL_PDCE)
-+			pcie_capability_write_word(bridge, PCI_EXP_SLTCTL,
-+						sltctl & ~PCI_EXP_SLTCTL_PDCE);
-+	}
-+
-+	pci_read_config_word(bridge, PCI_BRIDGE_CONTROL, &ctrl);
- 	ctrl |= PCI_BRIDGE_CTL_BUS_RESET;
--	pci_write_config_word(dev->bus->self, PCI_BRIDGE_CONTROL, ctrl);
-+	pci_write_config_word(bridge, PCI_BRIDGE_CONTROL, ctrl);
- 	msleep(100);
+ 		/* a thread will dequeue and close it soon */
+ 		svc_xprt_enqueue(xprt);
+-		svc_xprt_put(xprt);
+ 	}
++	spin_unlock_bh(&serv->sv_lock);
  
- 	ctrl &= ~PCI_BRIDGE_CTL_BUS_RESET;
--	pci_write_config_word(dev->bus->self, PCI_BRIDGE_CONTROL, ctrl);
-+	pci_write_config_word(bridge, PCI_BRIDGE_CONTROL, ctrl);
- 	msleep(100);
- 
-+	if (sltctl & PCI_EXP_SLTCTL_PDCE) {
-+		pcie_capability_write_word(bridge,
-+					   PCI_EXP_SLTSTA, PCI_EXP_SLTSTA_PDC);
-+		pcie_capability_write_word(bridge, PCI_EXP_SLTCTL, sltctl);
-+	}
-+
- 	return 0;
+ 	mod_timer(&serv->sv_temptimer, jiffies + svc_conn_age_period * HZ);
  }
- 
+-- 
+1.7.9.5
 
