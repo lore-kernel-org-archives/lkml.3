@@ -1,94 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630Ab3BOW4Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 17:56:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49312 "EHLO
+	id S1752588Ab3BOW4X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 17:56:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49302 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752356Ab3BOW4U (ORCPT
+	with ESMTP id S1751892Ab3BOW4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 17:56:20 -0500
+	Fri, 15 Feb 2013 17:56:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
-        Brad Spengler <spender@grsecurity.net>,
-        Kees Cook <keescook@chromium.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [ 2/8] x86: Do not leak kernel page mapping locations
-Date: Fri, 15 Feb 2013 14:56:09 -0800
-Message-Id: <20130215225431.135530132@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org
+Subject: [ 0/8] 3.4.32-stable review
+Date: Fri, 15 Feb 2013 14:56:07 -0800
+Message-Id: <20130215225430.841634159@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130215225430.841634159@linuxfoundation.org>
-References: <20130215225430.841634159@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+This is the start of the stable review cycle for the 3.4.32 release.
+There are 8 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-------------------
+Responses should be made by Sun Feb 17 22:53:47 UTC 2013.
+Anything received after that time might be too late.
 
-From: Kees Cook <keescook@chromium.org>
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.32-rc1.gz
+and the diffstat can be found below.
 
-commit e575a86fdc50d013bf3ad3aa81d9100e8e6cc60d upstream.
+thanks,
 
-Without this patch, it is trivial to determine kernel page
-mappings by examining the error code reported to dmesg[1].
-Instead, declare the entire kernel memory space as a violation
-of a present page.
+greg k-h
 
-Additionally, since show_unhandled_signals is enabled by
-default, switch branch hinting to the more realistic
-expectation, and unobfuscate the setting of the PF_PROT bit to
-improve readability.
+-------------
+Pseudo-Shortlog of commits:
 
-[1] http://vulnfactory.org/blog/2013/02/06/a-linux-memory-trick/
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.4.32-rc1
 
-Reported-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
-Suggested-by: Brad Spengler <spender@grsecurity.net>
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Acked-by: H. Peter Anvin <hpa@zytor.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20130207174413.GA12485@www.outflux.net
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Alexander Duyck <alexander.h.duyck@intel.com>
+    igb: Remove artificial restriction on RQDPC stat reading
 
----
- arch/x86/mm/fault.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
+    efi: Clear EFI_RUNTIME_SERVICES rather than EFI_BOOT by "noefi" boot parameter
 
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -747,13 +747,15 @@ __bad_area_nosemaphore(struct pt_regs *r
- 				return;
- 		}
- #endif
-+		/* Kernel addresses are always protection faults: */
-+		if (address >= TASK_SIZE)
-+			error_code |= PF_PROT;
- 
--		if (unlikely(show_unhandled_signals))
-+		if (likely(show_unhandled_signals))
- 			show_signal_msg(regs, error_code, address, tsk);
- 
--		/* Kernel addresses are always protection faults: */
- 		tsk->thread.cr2		= address;
--		tsk->thread.error_code	= error_code | (address >= TASK_SIZE);
-+		tsk->thread.error_code	= error_code;
- 		tsk->thread.trap_nr	= X86_TRAP_PF;
- 
- 		force_sig_info_fault(SIGSEGV, si_code, address, tsk, 0);
+Rafael J. Wysocki <rjw@sisk.pl>
+    PCI/PM: Clean up PME state when removing a device
+
+Jan Beulich <JBeulich@suse.com>
+    x86/xen: don't assume %ds is usable in xen_iret for 32-bit PVOPS.
+
+Mel Gorman <mgorman@suse.de>
+    x86/mm: Check if PUD is large when validating a kernel address
+
+Stoney Wang <song-bo.wang@hp.com>
+    x86/apic: Work around boot failure on HP ProLiant DL980 G7 Server systems
+
+Kees Cook <keescook@chromium.org>
+    x86: Do not leak kernel page mapping locations
+
+Heiko Carstens <heiko.carstens@de.ibm.com>
+    s390/timer: avoid overflow when programming clock comparator
+
+
+-------------
+
+Diffstat:
+
+ Makefile                                  |  4 ++--
+ arch/s390/kernel/time.c                   |  3 +++
+ arch/x86/include/asm/pgtable.h            |  5 +++++
+ arch/x86/kernel/apic/x2apic_phys.c        | 21 +++++++++++----------
+ arch/x86/mm/fault.c                       |  8 +++++---
+ arch/x86/mm/init_64.c                     |  3 +++
+ arch/x86/platform/efi/efi.c               |  2 +-
+ arch/x86/xen/xen-asm_32.S                 | 14 +++++++-------
+ drivers/net/ethernet/intel/igb/igb_main.c |  8 +++++---
+ drivers/pci/remove.c                      |  2 ++
+ 10 files changed, 44 insertions(+), 26 deletions(-)
 
 
