@@ -1,140 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422741Ab3BOPyo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 10:54:44 -0500
-Received: from vsp-authed02.binero.net ([195.74.38.226]:22451 "HELO
-	vsp-authed-02-02.binero.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1761247Ab3BOPwp (ORCPT
+	id S935986Ab3BOPzg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 10:55:36 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:56529 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935835Ab3BOPze (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 10:52:45 -0500
-From: Andreas Larsson <andreas@gaisler.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        spi-devel-general@lists.sourceforge.net,
-        Mingkai Hu <Mingkai.hu@freescale.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Joakim Tjernlund <Joakim.Tjernlund@transmode.se>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Peter Korsgaard <jacmet@sunsite.dk>, linux-kernel@vger.kernel.org,
-        software@gaisler.com
-Subject: [PATCH v3 3/7] spi: spi-fsl-spi: Move setting non-zero tx and rx shifts to a function accessed by a function pointer
-Date: Fri, 15 Feb 2013 16:52:23 +0100
-Message-Id: <1360943547-2186-4-git-send-email-andreas@gaisler.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1360943547-2186-1-git-send-email-andreas@gaisler.com>
-References: <1360943547-2186-1-git-send-email-andreas@gaisler.com>
+	Fri, 15 Feb 2013 10:55:34 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Dave Jones <davej@redhat.com>, Richard Weinberger <richard@nod.at>,
+        Kees Cook <keescook@chromium.org>,
+        Thomas Gleixner <tglx@linutronix.de>, <stable@vger.kernel.org.#.3.4+>
+Subject: [PATCH] futex: avoid kernel taint caused by get_robust_list
+Date: Fri, 15 Feb 2013 10:54:48 -0500
+Message-ID: <1360943688-12502-1-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.8.1.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Anton Vorontsov <anton@enomsg.org>
-Signed-off-by: Andreas Larsson <andreas@gaisler.com>
----
- drivers/spi/spi-fsl-lib.h |    5 ++++
- drivers/spi/spi-fsl-spi.c |   51 +++++++++++++++++++++++++++-----------------
- 2 files changed, 36 insertions(+), 20 deletions(-)
+commit ec0c4274e33c0373e476b73e01995c53128f1257 ("futex: Mark
+get_robust_list as deprecated") added these two WARN_ONCE calls.
 
-diff --git a/drivers/spi/spi-fsl-lib.h b/drivers/spi/spi-fsl-lib.h
-index d785595..eae54b6 100644
---- a/drivers/spi/spi-fsl-lib.h
-+++ b/drivers/spi/spi-fsl-lib.h
-@@ -69,6 +69,11 @@ struct mpc8xxx_spi {
+However, WARN_ONCE taints the kernel, and we shouldn't be allowing
+any user who wanders by to do this.  For example, the system fuzzer
+"trinity" uses the tainted state as a metric for when to stop,
+assuming that it has caused significant wreckage (and indeed
+that tool is what actually led me to this change).
+
+The ability to deprecate this code has been called into question[1],
+but if that remains to be finalized, then making this change in the
+interim seems to make sense.
+
+[1] http://lkml.indiana.edu/hypermail/linux/kernel/1208.0/01081.html
+
+Cc: Dave Jones <davej@redhat.com>
+Cc: Richard Weinberger <richard@nod.at>
+Cc: Kees Cook <keescook@chromium.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: stable@vger.kernel.org	# 3.4+
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+
+[Alternatively, someone can simply apply Richard's original revert:
+ http://permalink.gmane.org/gmane.linux.kernel.hardened.devel/506
+ Either way, I think the WARN_ONCE needs to go away. ]
+
+ kernel/futex.c        | 2 +-
+ kernel/futex_compat.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 19eb089..e1aede2 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -2471,7 +2471,7 @@ SYSCALL_DEFINE3(get_robust_list, int, pid,
+ 	if (!futex_cmpxchg_enabled)
+ 		return -ENOSYS;
  
- 	unsigned int flags;
+-	WARN_ONCE(1, "deprecated: get_robust_list will be deleted in 2013.\n");
++	printk_once(KERN_WARNING "deprecated: get_robust_list will be deleted in 2013.\n");
  
-+#ifdef CONFIG_SPI_FSL_SPI
-+	void (*set_shifts)(u32 *rx_shift, u32 *tx_shift,
-+			   int bits_per_word, int msb_first);
-+#endif
-+
- 	struct workqueue_struct *workqueue;
- 	struct work_struct work;
+ 	rcu_read_lock();
  
-diff --git a/drivers/spi/spi-fsl-spi.c b/drivers/spi/spi-fsl-spi.c
-index 527ac35..aff8bdd 100644
---- a/drivers/spi/spi-fsl-spi.c
-+++ b/drivers/spi/spi-fsl-spi.c
-@@ -91,6 +91,25 @@ static void fsl_spi_chipselect(struct spi_device *spi, int value)
- 	}
- }
+diff --git a/kernel/futex_compat.c b/kernel/futex_compat.c
+index 83e368b..618d2db 100644
+--- a/kernel/futex_compat.c
++++ b/kernel/futex_compat.c
+@@ -142,7 +142,7 @@ compat_sys_get_robust_list(int pid, compat_uptr_t __user *head_ptr,
+ 	if (!futex_cmpxchg_enabled)
+ 		return -ENOSYS;
  
-+static void fsl_spi_qe_cpu_set_shifts(u32 *rx_shift, u32 *tx_shift,
-+				      int bits_per_word, int msb_first)
-+{
-+	*rx_shift = 0;
-+	*tx_shift = 0;
-+	if (msb_first) {
-+		if (bits_per_word <= 8) {
-+			*rx_shift = 16;
-+			*tx_shift = 24;
-+		} else if (bits_per_word <= 16) {
-+			*rx_shift = 16;
-+			*tx_shift = 16;
-+		}
-+	} else {
-+		if (bits_per_word <= 8)
-+			*rx_shift = 8;
-+	}
-+}
-+
- static int mspi_apply_cpu_mode_quirks(struct spi_mpc8xxx_cs *cs,
- 				struct spi_device *spi,
- 				struct mpc8xxx_spi *mpc8xxx_spi,
-@@ -101,31 +120,20 @@ static int mspi_apply_cpu_mode_quirks(struct spi_mpc8xxx_cs *cs,
- 	if (bits_per_word <= 8) {
- 		cs->get_rx = mpc8xxx_spi_rx_buf_u8;
- 		cs->get_tx = mpc8xxx_spi_tx_buf_u8;
--		if (mpc8xxx_spi->flags & SPI_QE_CPU_MODE) {
--			cs->rx_shift = 16;
--			cs->tx_shift = 24;
--		}
- 	} else if (bits_per_word <= 16) {
- 		cs->get_rx = mpc8xxx_spi_rx_buf_u16;
- 		cs->get_tx = mpc8xxx_spi_tx_buf_u16;
--		if (mpc8xxx_spi->flags & SPI_QE_CPU_MODE) {
--			cs->rx_shift = 16;
--			cs->tx_shift = 16;
--		}
- 	} else if (bits_per_word <= 32) {
- 		cs->get_rx = mpc8xxx_spi_rx_buf_u32;
- 		cs->get_tx = mpc8xxx_spi_tx_buf_u32;
- 	} else
- 		return -EINVAL;
+-	WARN_ONCE(1, "deprecated: get_robust_list will be deleted in 2013.\n");
++	printk_once(KERN_WARNING "deprecated: get_robust_list will be deleted in 2013.\n");
  
--	if (mpc8xxx_spi->flags & SPI_QE_CPU_MODE &&
--	    spi->mode & SPI_LSB_FIRST) {
--		cs->tx_shift = 0;
--		if (bits_per_word <= 8)
--			cs->rx_shift = 8;
--		else
--			cs->rx_shift = 0;
--	}
-+	if (mpc8xxx_spi->set_shifts)
-+		mpc8xxx_spi->set_shifts(&cs->rx_shift, &cs->tx_shift,
-+					bits_per_word,
-+					!(spi->mode & SPI_LSB_FIRST));
-+
- 	mpc8xxx_spi->rx_shift = cs->rx_shift;
- 	mpc8xxx_spi->tx_shift = cs->tx_shift;
- 	mpc8xxx_spi->get_rx = cs->get_rx;
-@@ -487,10 +495,13 @@ static struct spi_master * fsl_spi_probe(struct device *dev,
- 	if (ret)
- 		goto err_cpm_init;
+ 	rcu_read_lock();
  
--	if (mpc8xxx_spi->flags & SPI_QE_CPU_MODE) {
--		mpc8xxx_spi->rx_shift = 16;
--		mpc8xxx_spi->tx_shift = 24;
--	}
-+	if (mpc8xxx_spi->flags & SPI_QE_CPU_MODE)
-+		mpc8xxx_spi->set_shifts = fsl_spi_qe_cpu_set_shifts;
-+
-+	if (mpc8xxx_spi->set_shifts)
-+		/* 8 bits per word and MSB first */
-+		mpc8xxx_spi->set_shifts(&mpc8xxx_spi->rx_shift,
-+					&mpc8xxx_spi->tx_shift, 8, 1);
- 
- 	mpc8xxx_spi->reg_base = ioremap(mem->start, resource_size(mem));
- 	if (mpc8xxx_spi->reg_base == NULL) {
 -- 
-1.7.0.4
+1.8.1.2
 
