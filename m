@@ -1,142 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161248Ab3BOMnb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 07:43:31 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:38264 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935893Ab3BOMn3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 07:43:29 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: "Moore, Robert" <robert.moore@intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <liuj97@gmail.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Myron Stowe <mstowe@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [Update][PATCH] ACPI / hotplug: Fix concurrency issues and memory leaks
-Date: Fri, 15 Feb 2013 13:49:58 +0100
-Message-ID: <1556413.qqfoi7QgzD@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc7; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1360888082.3869.163.camel@misato.fc.hp.com>
-References: <1837481.7dT8hTZ4MT@vostro.rjw.lan> <1463882.MtF6rq6lDy@vostro.rjw.lan> <1360888082.3869.163.camel@misato.fc.hp.com>
+	id S935905Ab3BOMoM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 07:44:12 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:9493 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935797Ab3BOMoK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 07:44:10 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 15 Feb 2013 04:40:04 -0800
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: <linux-tegra@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>, Simon Glass <sjg@chromium.org>,
+        Mike Turquette <mturquette@linaro.org>, Joseph Lo <josephl@nvidia.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v7 07/12] clk: tegra: Workaround for Tegra114 MSENC problem
+Date: Fri, 15 Feb 2013 14:36:37 +0200
+Message-ID: <1360931849-7090-8-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+In-Reply-To: <1360931849-7090-1-git-send-email-pdeschrijver@nvidia.com>
+References: <1360931849-7090-1-git-send-email-pdeschrijver@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, February 14, 2013 05:28:02 PM Toshi Kani wrote:
-> On Fri, 2013-02-15 at 01:23 +0100, Rafael J. Wysocki wrote:
-> > On Thursday, February 14, 2013 11:45:27 PM Moore, Robert wrote:
-> > > 
-> > > > -----Original Message-----
-> > > > From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
-> > > > Sent: Thursday, February 14, 2013 12:59 PM
-> > > > To: Moore, Robert
-> > > > Cc: Toshi Kani; ACPI Devel Maling List; LKML; Bjorn Helgaas; Jiang Liu;
-> > > > Yinghai Lu; Yasuaki Ishimatsu; Myron Stowe; linux-pci@vger.kernel.org
-> > > > Subject: Re: [Update][PATCH] ACPI / hotplug: Fix concurrency issues and
-> > > > memory leaks
-> > > > 
-> > > > On Thursday, February 14, 2013 08:45:14 PM Moore, Robert wrote:
-> > > > >
-> > > > > > -----Original Message-----
-> > > > > > From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
-> > > > > > Sent: Thursday, February 14, 2013 4:04 AM
-> > > > > > To: Moore, Robert
-> > > > > > Cc: Toshi Kani; ACPI Devel Maling List; LKML; Bjorn Helgaas; Jiang
-> > > > > > Liu; Yinghai Lu; Yasuaki Ishimatsu; Myron Stowe;
-> > > > > > linux-pci@vger.kernel.org
-> > > > > > Subject: Re: [Update][PATCH] ACPI / hotplug: Fix concurrency issues
-> > > > > > and memory leaks
-> > > > > >
-> > > > > > On Thursday, February 14, 2013 02:31:22 AM Moore, Robert wrote:
-> > > > > > > > > > I thought about that, but actually there's no guarantee that
-> > > > > > > > > > the handle will be valid after _EJ0 as far as I can say.  So
-> > > > > > > > > > the race condition is going to be there anyway and using
-> > > > > > > > > > struct acpi_device just makes it easier to avoid it.
-> > > > > > > > >
-> > > > > > > > > In theory, yes, a stale handle could be a problem, if _EJ0
-> > > > > > > > > performs unload table and if ACPICA frees up its internal data
-> > > > > > > > > structure pointed by the handle as a result.  But we should
-> > > > > > > > > not see such issue now since we do not support dynamic ACPI
-> > > > > > > > > namespace
-> > > > > > yet.
-> > > > > > > >
-> > > > > > > > I'm waiting for information from Bob about that.  If we can
-> > > > > > > > assume ACPI handles to be always valid, that will simplify
-> > > > > > > > things quite a
-> > > > > > bit.
-> > > > > > >
-> > > > > > > If a table is unloaded, all the namespace nodes for that table are
-> > > > > > > removed from the namespace, and thus any ACPI_HANDLE pointers go
-> > > > > > > stale
-> > > > > > and invalid.
-> > > > > >
-> > > > > > OK, thanks!
-> > > > > >
-> > > > > > To me this means that we cannot assume a handle to stay valid
-> > > > > > between a notify handler and acpi_bus_hot_remove_device() run from a
-> > > > workqueue.
-> > > > > >
-> > > > > > Is there a mechanism in ACPICA to ensure that a handle won't become
-> > > > > > stale while a notify handler is running for it or is the OS
-> > > > > > responsible for ensuring that
-> > > > > > _EJ0 won't be run in parallel with notify handlers for device
-> > > > > > objects being ejected?
-> > > > > >
-> > > > >
-> > > > > It is up to the host.
-> > > > 
-> > > > I was afraid that that might be the case. :-)
-> > > > 
-> > > > So far the (Linux) host has been happily ignoring that potential problem,
-> > > > so I guess it can still be ignored for a while, although we'll need to
-> > > > address it eventually at one point.
-> > > 
-> > > I would think it should be fairly simple to setup a mechanism to either tell
-> > > the driver or for the driver to figure it out -- such that the driver knows
-> > > that all handles associated with the device are now invalid. Another way
-> > > to look at it is that when the device is re-installed, the driver should
-> > > reinitialize such that it obtains new handles for the devices and subobjects
-> > > in question.
-> > 
-> > Unfortunately, there is quite strong assumption in our code that ACPI handles
-> > will not become stale before the device objects associated with them are
-> > removed.  For this reason, we need to know in advance which handles will
-> > become stale as a result of a table unload and remove their device objects
-> > beforehand.
-> > 
-> > Moreover, when there's a notify handler installed for a given ACPI handle
-> > and that handle becomes stale while the notify handler is running, we'll be
-> > in trouble.  To avoid that we need to ensure that table unloads and notifies
-> > will always be mutually exclusive.
-> 
-> I wonder if we can make acpi_ns_validate_handle() to actually be able to
-> verify if a given handle is valid.  This way, ACPICA can fail gracefully
-> (AE_BAD_PARAMETER) when a stable handle is passed to the interfaces.
+Workaround a hardware bug in MSENC during clock enable.
 
-That'd be good, but to implement it, I think, it would be necessary to
-introduce some reference counting of namespace objects such that the given
-object would only be deleted after the last reference to it had been dropped.
-On table unload it would just be marked as invalid, but it would stay in
-memory as long as there were any references to it.
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+---
+ drivers/clk/tegra/clk-periph-gate.c |    9 +++++++++
+ drivers/clk/tegra/clk.h             |    2 ++
+ 2 files changed, 11 insertions(+), 0 deletions(-)
 
-So, for example, a notify handler would start from something like
-acpi_add_reference(handle), which would guarantee that the object pointed to by
-handle would stay in memory, and it would finish by doing
-acpi_drop_reference(handle) or a work item scheduled by it would do that.
-
-We do that for objects based on struct device and it works well.
-
-Thanks,
-Rafael
-
-
+diff --git a/drivers/clk/tegra/clk-periph-gate.c b/drivers/clk/tegra/clk-periph-gate.c
+index 6dd5332..c9083fb 100644
+--- a/drivers/clk/tegra/clk-periph-gate.c
++++ b/drivers/clk/tegra/clk-periph-gate.c
+@@ -43,6 +43,8 @@ static DEFINE_SPINLOCK(periph_ref_lock);
+ 
+ #define periph_clk_to_bit(periph) (1 << (gate->clk_num % 32))
+ 
++#define LVL2_CLK_GATE_OVRE 0x554
++
+ /* Peripheral gate clock ops */
+ static int clk_periph_is_enabled(struct clk_hw *hw)
+ {
+@@ -83,6 +85,13 @@ static int clk_periph_enable(struct clk_hw *hw)
+ 		}
+ 	}
+ 
++	if (gate->flags & TEGRA_PERIPH_WAR_1005168) {
++		writel_relaxed(0, gate->clk_base + LVL2_CLK_GATE_OVRE);
++		writel_relaxed(BIT(22), gate->clk_base + LVL2_CLK_GATE_OVRE);
++		udelay(1);
++		writel_relaxed(0, gate->clk_base + LVL2_CLK_GATE_OVRE);
++	}
++
+ 	spin_unlock_irqrestore(&periph_ref_lock, flags);
+ 
+ 	return 0;
+diff --git a/drivers/clk/tegra/clk.h b/drivers/clk/tegra/clk.h
+index 4c4bf9a..fa21c88 100644
+--- a/drivers/clk/tegra/clk.h
++++ b/drivers/clk/tegra/clk.h
+@@ -356,6 +356,7 @@ struct tegra_clk_periph_regs {
+  * TEGRA_PERIPH_ON_APB - If peripheral is in the APB bus then read the
+  *     bus to flush the write operation in apb bus. This flag indicates
+  *     that this peripheral is in apb bus.
++ * TEGRA_PERIPH_WAR_1005168 - Apply workaround for Tegra114 MSENC bug
+  */
+ struct tegra_clk_periph_gate {
+ 	u32			magic;
+@@ -375,6 +376,7 @@ struct tegra_clk_periph_gate {
+ #define TEGRA_PERIPH_NO_RESET BIT(0)
+ #define TEGRA_PERIPH_MANUAL_RESET BIT(1)
+ #define TEGRA_PERIPH_ON_APB BIT(2)
++#define TEGRA_PERIPH_WAR_1005168 BIT(3)
+ 
+ void tegra_periph_reset(struct tegra_clk_periph_gate *gate, bool assert);
+ extern const struct clk_ops tegra_clk_periph_gate_ops;
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.1
+
