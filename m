@@ -1,132 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755499Ab3BORdZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 12:33:25 -0500
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:12657 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754486Ab3BORdV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 12:33:21 -0500
-Message-ID: <1360948952.9542.43.camel@misato.fc.hp.com>
-Subject: Re: [Update][PATCH] ACPI / hotplug: Fix concurrency issues and
- memory leaks
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Moore, Robert" <robert.moore@intel.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <liuj97@gmail.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Myron Stowe <mstowe@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "Zheng, Lv" <lv.zheng@intel.com>, "Brown, Len" <len.brown@intel.com>
-Date: Fri, 15 Feb 2013 10:22:32 -0700
-In-Reply-To: <94F2FBAB4432B54E8AACC7DFDE6C92E368CB6125@ORSMSX101.amr.corp.intel.com>
-References: <1837481.7dT8hTZ4MT@vostro.rjw.lan>
-	 <1463882.MtF6rq6lDy@vostro.rjw.lan>
-	 <1360888082.3869.163.camel@misato.fc.hp.com>
-	 <1556413.qqfoi7QgzD@vostro.rjw.lan>
-	 <1360941494.9542.11.camel@misato.fc.hp.com>
-	 <94F2FBAB4432B54E8AACC7DFDE6C92E368CB6125@ORSMSX101.amr.corp.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+	id S1755684Ab3BOReF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 12:34:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47937 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751203Ab3BOReC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 12:34:02 -0500
+Date: Fri, 15 Feb 2013 15:33:54 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Joe Perches <joe@perches.com>
+Cc: linux-acpi@vger.kernel.org, Huang Ying <ying.huang@intel.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH EDAC 13/13] ghes_edac: Improve driver's printk messages
+Message-ID: <20130215153354.2779cf4b@redhat.com>
+In-Reply-To: <1360946297.2089.6.camel@joe-AO722>
+References: <cover.1360931635.git.mchehab@redhat.com>
+	<30bb26a76d98f876648020517cd38a4884626f44.1360931635.git.mchehab@redhat.com>
+	<1360946297.2089.6.camel@joe-AO722>
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-02-15 at 16:33 +0000, Moore, Robert wrote:
-> > > > > > > > > Is there a mechanism in ACPICA to ensure that a handle
-> > > > > > > > > won't become stale while a notify handler is running for
-> > > > > > > > > it or is the OS responsible for ensuring that
-> > > > > > > > > _EJ0 won't be run in parallel with notify handlers for
-> > > > > > > > > device objects being ejected?
-> > > > > > > > >
-> > > > > > > >
-> > > > > > > > It is up to the host.
-> > > > > > >
-> > > > > > > I was afraid that that might be the case. :-)
-> > > > > > >
-> > > > > > > So far the (Linux) host has been happily ignoring that
-> > > > > > > potential problem, so I guess it can still be ignored for a
-> > > > > > > while, although we'll need to address it eventually at one
-> > point.
-> > > > > >
-> > > > > > I would think it should be fairly simple to setup a mechanism to
-> > > > > > either tell the driver or for the driver to figure it out --
-> > > > > > such that the driver knows that all handles associated with the
-> > > > > > device are now invalid. Another way to look at it is that when
-> > > > > > the device is re-installed, the driver should reinitialize such
-> > > > > > that it obtains new handles for the devices and subobjects in
-> > question.
-> > > > >
-> > > > > Unfortunately, there is quite strong assumption in our code that
-> > > > > ACPI handles will not become stale before the device objects
-> > > > > associated with them are removed.  For this reason, we need to
-> > > > > know in advance which handles will become stale as a result of a
-> > > > > table unload and remove their device objects beforehand.
-> > > > >
-> > > > > Moreover, when there's a notify handler installed for a given ACPI
-> > > > > handle and that handle becomes stale while the notify handler is
-> > > > > running, we'll be in trouble.  To avoid that we need to ensure
-> > > > > that table unloads and notifies will always be mutually exclusive.
-> > > >
-> > > > I wonder if we can make acpi_ns_validate_handle() to actually be
-> > > > able to verify if a given handle is valid.  This way, ACPICA can
-> > > > fail gracefully
-> > > > (AE_BAD_PARAMETER) when a stable handle is passed to the interfaces.
-> > >
-> > > That'd be good, but to implement it, I think, it would be necessary to
-> > > introduce some reference counting of namespace objects such that the
-> > > given object would only be deleted after the last reference to it had
-> > been dropped.
-> > > On table unload it would just be marked as invalid, but it would stay
-> > > in memory as long as there were any references to it.
-> > >
-> > > So, for example, a notify handler would start from something like
-> > > acpi_add_reference(handle), which would guarantee that the object
-> > > pointed to by handle would stay in memory, and it would finish by
-> > > doing
-> > > acpi_drop_reference(handle) or a work item scheduled by it would do
-> > that.
-> > >
-> > > We do that for objects based on struct device and it works well.
-> > 
-> > There is other way to implement it.  Since acpi_handle is defined as an
-> > opaque value, this could be changed to an index to an array of pointers,
-> > instead of a direct pointer.  Then we can safely invalidate an index by
-> > invalidating the pointer associated with the index.
-> 
-> 
-> 
-> We have of course thought about adding a mechanism to validate/invalidate acpica namespace handles. In fact, this is why the ACPI_HANDLE data type was introduced in the first place, so that if we ever wanted or needed to implement something like this, it would not break a lot of existing code.
-> 
-> However, we have never had a real need to implement such a mechanism, nor has the ever been a request from any of the operating systems that run ACPICA.
-> 
-> The existing model is that the host has knowledge of what objects will go away when a table is unloaded, and can simply assume that all related acpi handles will go bad after the unload (and table unload is the only case where parts of the namespace go away, as far as I remember). Upon a reload of the table, the host knows to reinitialize all handles associated with the table/device.
-> 
-> ACPCI has a table handler mechanism, where the host handler is invoked *before* an ACPI table is actually unloaded, so the host can prepare for the unload. For example, before returning from the table handler, the host may want to synchronize by waiting for any outstanding notifies to complete, then simply ignoring any further notifies from any devices associated with the table.
-> 
-> In summary, it has always been felt that the fairly large overhead of implementing a mechanism like this is not worth the cost, as well as not really needed.
-> 
-> I suggest that the implementation of eject support proceed by using the existing mechanisms such as the table handler. If additional support/interfaces are needed in ACPICA, we can discuss it. However, just about the last thing I would like to do is add a level of indirection between the ACPI_HANDLE and the ACPI_NAMESPACE_NODE -- which would require a large, global change to ACPICA that would be only applicable for a single rather rare issue, the unloading of an ACPI table. Just the fact that we are discussing this in 2013 and ACPICA has been running since 1999 should confirm the rarity of this case and/or that the existing mechanism has been sufficient for other hosts that run ACPICA.
-> 
+Em Fri, 15 Feb 2013 08:38:17 -0800
+Joe Perches <joe@perches.com> escreveu:
 
-Thanks for the info.  I understand that making such changes requires a
-lot of effort.  This is just a brainstorming, and as you said, I do not
-think there is any platform that can cause this issue on Linux today.
-We are still in the process of handling load/unload table properly in
-the kernel.  Given your input, Rafael's approach of using reference
-counting on struct device seems to be the best choice for us. 
+> On Fri, 2013-02-15 at 10:45 -0200, Mauro Carvalho Chehab wrote:
+> > Provide a better infrastructure for printk's inside the driver:
+> > 	- use edac_dbg() for debug messages;
+> > 	- standardize the usage of pr_info();
+> > 	- provide warning about the risk of relying on this
+> > 	  driver.
+> []
+> > diff --git a/drivers/edac/ghes_edac.c b/drivers/edac/ghes_edac.c
+> []
+> > @@ -80,7 +80,8 @@ static void ghes_edac_dmidecode(const struct dmi_header *dh, void *arg)
+> >  						       dimm_fill->count, 0, 0);
+> >  
+> >  		if (entry->size == 0xffff) {
+> > -			pr_info(GHES_PFX "Can't get dimm size\n");
+> > +			pr_info(GHES_PFX "Can't get DIMM%i size\n",
+> > +				dimm_fill->count);
+> 
+> Perhaps these should use
+> #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> and remove GHEX_PFX from all the pr_<level>()'s?
 
-BTW, I did work on other OS that supports load/unload table (which might
-be the first OS that supported this feature.)  It protects from this
-race condition with serialization between the OS and FW with _OST.
-However, we cannot expect all platforms to do the same for Linux.
+Yeah, sure.
 
-Thanks,
--Toshi
+Regards,
+Mauro
 
+-
+
+[PATCH] ghes_edac: remove GHES_PFX macro
+
+As suggested by Joe:
+
+On Fri, 15 Feb 2013 08:38:17 -0800
+Joe Perches <joe@perches.com> wrote:
+
+	Perhaps these should use
+	#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+	and remove GHES_PFX from all the pr_<level>()'s?
+
+Suggested-by: Joe Perches <joe@perches.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+
+diff --git a/drivers/edac/ghes_edac.c b/drivers/edac/ghes_edac.c
+index 782ed74..9fe787b 100644
+--- a/drivers/edac/ghes_edac.c
++++ b/drivers/edac/ghes_edac.c
+@@ -1,14 +1,16 @@
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <acpi/ghes.h>
+ #include <linux/edac.h>
+ #include <linux/dmi.h>
+ #include "edac_core.h"
+ 
+-#define GHES_PFX   "ghes_edac: "
+ #define GHES_EDAC_REVISION " Ver: 1.0.0"
+ 
+ static DEFINE_MUTEX(ghes_edac_lock);
+ static int ghes_edac_mc_num;
+ 
++
+ /* Memory Device - Type 17 of SMBIOS spec */
+ struct memdev_dmi_entry {
+ 	u8 type;
+@@ -80,7 +82,7 @@ static void ghes_edac_dmidecode(const struct dmi_header *dh, void *arg)
+ 						       dimm_fill->count, 0, 0);
+ 
+ 		if (entry->size == 0xffff) {
+-			pr_info(GHES_PFX "Can't get DIMM%i size\n",
++			pr_info("Can't get DIMM%i size\n",
+ 				dimm_fill->count);
+ 			dimm->nr_pages = MiB_TO_PAGES(32);/* Unknown */
+ 		} else if (entry->size == 0x7fff) {
+@@ -232,7 +234,7 @@ int ghes_edac_register(struct ghes *ghes, struct device *dev)
+ 	mutex_lock(&ghes_edac_lock);
+ 	mci = edac_mc_alloc(ghes_edac_mc_num, ARRAY_SIZE(layers), layers, 0);
+ 	if (!mci) {
+-		pr_info(GHES_PFX "Can't allocate memory for EDAC data\n");
++		pr_info("Can't allocate memory for EDAC data\n");
+ 		mutex_unlock(&ghes_edac_lock);
+ 		return -ENOMEM;
+ 	}
+@@ -250,17 +252,17 @@ int ghes_edac_register(struct ghes *ghes, struct device *dev)
+ 
+ 	if (!ghes_edac_mc_num) {
+ 		if (!fake) {
+-			pr_info(GHES_PFX "This EDAC driver relies on BIOS to enumerate memory and get error reports.\n");
+-			pr_info(GHES_PFX "Unfortunately, not all BIOSes reflect the memory layout correctly.\n");
+-			pr_info(GHES_PFX "So, the end result of using this driver varies from vendor to vendor.\n");
+-			pr_info(GHES_PFX "If you find incorrect reports, please contact your hardware vendor\n");
+-			pr_info(GHES_PFX "to correct its BIOS.\n");
+-			pr_info(GHES_PFX "This system has %d DIMM sockets.\n",
++			pr_info("This EDAC driver relies on BIOS to enumerate memory and get error reports.\n");
++			pr_info("Unfortunately, not all BIOSes reflect the memory layout correctly.\n");
++			pr_info("So, the end result of using this driver varies from vendor to vendor.\n");
++			pr_info("If you find incorrect reports, please contact your hardware vendor\n");
++			pr_info("to correct its BIOS.\n");
++			pr_info("This system has %d DIMM sockets.\n",
+ 				num_dimm);
+ 		} else {
+-			pr_info(GHES_PFX "This system has a very crappy BIOS: It doesn't even list the DIMMS.\n");
+-			pr_info(GHES_PFX "Its SMBIOS info is wrong. It is doubtful that the error report would\n");
+-			pr_info(GHES_PFX "work on such system. Use this driver with caution\n");
++			pr_info("This system has a very crappy BIOS: It doesn't even list the DIMMS.\n");
++			pr_info("Its SMBIOS info is wrong. It is doubtful that the error report would\n");
++			pr_info("work on such system. Use this driver with caution\n");
+ 		}
+ 	}
+ 
+@@ -291,7 +293,7 @@ int ghes_edac_register(struct ghes *ghes, struct device *dev)
+ 
+ 	rc = edac_mc_add_mc(mci);
+ 	if (rc < 0) {
+-		pr_info(GHES_PFX "Can't register at EDAC core\n");
++		pr_info("Can't register at EDAC core\n");
+ 		edac_mc_free(mci);
+ 		mutex_unlock(&ghes_edac_lock);
+ 		return -ENODEV;
 
