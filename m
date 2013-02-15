@@ -1,79 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751800Ab3BOUGC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 15:06:02 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:54177 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750911Ab3BOUGA (ORCPT
+	id S1751218Ab3BOUKQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 15:10:16 -0500
+Received: from smtprelay-h31.telenor.se ([213.150.131.4]:44894 "EHLO
+	smtprelay-h31.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779Ab3BOUKP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 15:06:00 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Greg KH <greg@kroah.com>
-Subject: Re: linux-next: build warning after merge of the char-misc tree
-Date: Fri, 15 Feb 2013 20:05:51 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-6-generic; KDE/4.3.2; x86_64; ; )
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Stevenson <david@avoncliff.com>
-References: <20130215162657.6dd03d27e8cfed0c134b5dd3@canb.auug.org.au> <20130215173429.GA27707@kroah.com>
-In-Reply-To: <20130215173429.GA27707@kroah.com>
+	Fri, 15 Feb 2013 15:10:15 -0500
+X-SENDER-IP: [85.230.168.206]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvxBALSVHlFV5qjOPGdsb2JhbABEiwCyIYJYfBcDAQEBATg0giABBScTHA8UEAgDDhMlDwUlChqIKb1LFY8WB4JfYQOWJ4YBjV0
+X-IronPort-AV: E=Sophos;i="4.84,675,1355094000"; 
+   d="scan'208";a="204079202"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Fri, 15 Feb 2013 21:11:01 +0100
+To: Daniel Kurtz <djkurtz@chromium.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] Input: synaptics - initialize pointer emulation usage
+Message-ID: <20130215201101.GA24602@polaris.bitmath.org>
+References: <1360956981-1112-1-git-send-email-rydberg@euromail.se>
+ <1360956981-1112-2-git-send-email-rydberg@euromail.se>
+ <CAGS+omC2Yemvo-kE9tYOmE4rou4fi2iNOXw3v3c+A91_kiUzfQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302152005.51575.arnd@arndb.de>
-X-Provags-ID: V02:K0:fDNSf9Em4/XBPOZ1ErbrLb4i1UMvsUZQUp45hjsdQVq
- bjGmovVTPaUZV1WlSzjzabC/2E7dRmnKeHMNYY+YFd4liRtn59
- h8U4o0kY22KGV0mL5+U/4I4lvGp4b82d/4iCNDsfjGSgqp94Gi
- CgvRVAarV49KxmXQMzkai3eojlPMyZWH4qZsBJfp8Xv8+QpaNg
- KYUAoKh9W9PfN18tJSvt9UbrwGpmdHivtxJHg/PBZOEt95/uXs
- 5niTihl3X7coWr5vow+pQZFW2zvywvXiEPqsnhg+TJ4/gWU1T9
- knVEOxwyJ022XY1VB3YGAvwb2OsxwfZvdNkvBJSUXPR49/aud5
- p9NbFXmBsSOQSJFjUt7A=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGS+omC2Yemvo-kE9tYOmE4rou4fi2iNOXw3v3c+A91_kiUzfQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 15 February 2013, Greg KH wrote:
-> On Fri, Feb 15, 2013 at 04:26:57PM +1100, Stephen Rothwell wrote:
-> > 
-> > After merging the char-misc tree, today's linux-next build (x86_64
-> > allmodconfig) produced this warning:
-> > 
-> > drivers/w1/slaves/w1_therm.c: In function 'w1_therm_read':
-> > drivers/w1/slaves/w1_therm.c:245:15: warning: 'crc' may be used uninitialized in this function [-Wuninitialized]
-> > 
-> > Its a false positive, but it was introduced by commit 867ff9880d5d
-> > ("w1_therm: Retries: remove old code add CRC")
+> > @@ -1247,11 +1247,11 @@ static void set_input_params(struct input_dev *dev, struct synaptics_data *priv)
+> >         input_set_abs_params(dev, ABS_PRESSURE, 0, 255, 0, 0);
+> >
+> >         if (SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c)) {
+> > -               input_mt_init_slots(dev, 2, 0);
+> >                 set_abs_position_params(dev, priv, ABS_MT_POSITION_X,
+> >                                         ABS_MT_POSITION_Y);
+> >                 /* Image sensors can report per-contact pressure */
+> >                 input_set_abs_params(dev, ABS_MT_PRESSURE, 0, 255, 0, 0);
+> > +               input_mt_init_slots(dev, 2, INPUT_MT_POINTER);
 > 
-> I don't see that here with gcc 4.7.1, perhaps you need to upgrade your
-> version of gcc to not show these false positives?
+> ABS_X/Y/PRESSURE are already init'ed in the common code a few lines
+> above the if ().
+> Perhaps you could refactor things a bit to only define them once?
 
-I have finally put the pieces of the puzzle together. I already knew
-that some of these warnings only happen when building with -Os (even
-in gcc-4.8), since gcc turns off the inlining at a point after it
-determines that the variable might be used uninitialized but before
-determining that it's actually isn't.
+I looked into it, of course, but there are many other values (event
+bits, event properties) that also get duplicated. Treating them the
+same way leads to a fairly large patch, for a small change in
+truth. The present patch is the balanced optimum, IMHO. It is also
+easy to prove.
 
-I think the best way forward is to disable this particular warning
-when building with -Os (which is enabled in allyesconfig). A false
-positive seems more harmful than a false negative here, because it
-prompts people to add broken initializations. This patch indeed
-makes the majority of the allyesconfig warnings on ARM go away.
-For the regular defconfig builds, we are already mostly clean,
-and those are built with -O2.
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-
-diff --git a/Makefile b/Makefile
-index 0b4bf62..4d60d97 100644
---- a/Makefile
-+++ b/Makefile
-@@ -570,7 +570,7 @@ endif # $(dot-config)
- all: vmlinux
- 
- ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
--KBUILD_CFLAGS	+= -Os
-+KBUILD_CFLAGS	+= -Os $(call cc-option,-Wno-maybe-uninitialized,)
- else
- KBUILD_CFLAGS	+= -O2
- endif
+Henrik
