@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161897Ab3BONBN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 08:01:13 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:38564 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161780Ab3BONBI (ORCPT
+	id S1161934Ab3BONBW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 08:01:22 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:45101 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161780Ab3BONBR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 08:01:08 -0500
-MIME-Version: 1.0
-In-Reply-To: <1360845813-11334-1-git-send-email-ldewangan@nvidia.com>
-References: <1360845813-11334-1-git-send-email-ldewangan@nvidia.com>
-Date: Fri, 15 Feb 2013 18:31:07 +0530
-Message-ID: <CAM=Q2csZyX5PvOPiSJ22u0SCXvh19y1qoC3+qJmmPfTQziM-tg@mail.gmail.com>
-Subject: Re: [PATCH] i2c: tegra: remove warning dump if timeout happen in transfer
-From: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: wsa@the-dreams.de, swarren@nvidia.com, khali@linux-fr.org,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 15 Feb 2013 08:01:17 -0500
+Message-ID: <1360933253.2739.15.camel@laptop>
+Subject: Re: [patch v4 05/18] sched: quicker balancing on fork/exec/wake
+From: Peter Zijlstra <peterz@infradead.org>
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: Alex Shi <alex.shi@intel.com>, torvalds@linux-foundation.org,
+        mingo@redhat.com, tglx@linutronix.de, akpm@linux-foundation.org,
+        arjan@linux.intel.com, bp@alien8.de, pjt@google.com,
+        namhyung@kernel.org, efault@gmx.de, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 15 Feb 2013 14:00:53 +0100
+In-Reply-To: <511C9C54.4090508@linux.vnet.ibm.com>
+References: <1358996820-23036-1-git-send-email-alex.shi@intel.com>
+	 <1358996820-23036-6-git-send-email-alex.shi@intel.com>
+	 <1360664565.4485.13.camel@laptop> <511C9C54.4090508@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 14, 2013 at 6:13 PM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
-> If timeout error occurs in the i2c transfer then it was dumping warning
-> of call stack.
->
-> Remove the warning dump as there is may be possibility that some slave
-> devices are busy and not responding the i2c communication.
->
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-> ---
-> The patch is generated based on discussion happen between Stephena and
-> Wolfram on the patch:
->  i2c: add bcm2835 driver
->
-> resending patch as Wolfram's email id has been changed.
->
->  drivers/i2c/busses/i2c-tegra.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
-> index ae2e027..36704e3 100644
-> --- a/drivers/i2c/busses/i2c-tegra.c
-> +++ b/drivers/i2c/busses/i2c-tegra.c
-> @@ -587,7 +587,7 @@ static int tegra_i2c_xfer_msg(struct tegra_i2c_dev *i2c_dev,
->         ret = wait_for_completion_timeout(&i2c_dev->msg_complete, TEGRA_I2C_TIMEOUT);
->         tegra_i2c_mask_irq(i2c_dev, int_mask);
->
-> -       if (WARN_ON(ret == 0)) {
-> +       if (ret == 0) {
+On Thu, 2013-02-14 at 13:42 +0530, Preeti U Murthy wrote:
+> Hi Peter,Alex,
+> If the eligible cpus happen to be all the cpus,then iterating over all
+> the 
+> cpus for idlest would be much worse than iterating over sched domains
+> right?
 
-I think WARN_ON has a unlikely.
+Depends, doing a domain walk generally gets you 2n cpus visited --
+geometric series and such. A simple scan of the top-most domain mask
+that's eligible will limit that to n. 
 
-If you could do a profiling and have the unlikely.
+> I am also wondering how important it is to bias the balancing of
+> forked/woken up
+> task onto an idlest cpu at every iteration.
 
-BTW thats not an objection to the patch though.
+Yeah, I don't know, it seems overkill to me, that code is from before my
+time, so far it has survived.
 
->                 dev_err(i2c_dev->dev, "i2c transfer timed out\n");
->
->                 tegra_i2c_init(i2c_dev);
-> --
-> 1.7.1.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-i2c" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> If biasing towards the idlest_cpu at every iteration is not really the
+> criteria,
+> then we could cut down on the iterations in fork/exec/wake balancing.
+> Then the problem boils down to,is the option between biasing our
+> search towards
+> the idlest_cpu or the idlest_group.If we are not really concerned
+> about balancing
+> load across  groups,but ensuring we find the idlest cpu to run the
+> task on,then
+> Alex's patch seems to have covered the criteria.
+> 
+> However if the concern is to distribute the load uniformly across
+> groups,then
+> I have the following patch which might reduce the overhead of the
+> search of an
+> eligible cpu for a forked/exec/woken up task.
+
+Nah, so I think the whole bias thing was mostly done to avoid
+over-balancing and possibly to compensate for some approximations on the
+whole weight/load measurement stuff.
+
