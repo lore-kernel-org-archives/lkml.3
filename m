@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752392Ab3BOW4H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 17:56:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49297 "EHLO
+	id S1752175Ab3BOWz5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 17:55:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49282 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752044Ab3BOW4F (ORCPT
+	with ESMTP id S1751154Ab3BOWzz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 17:56:05 -0500
+	Fri, 15 Feb 2013 17:55:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        Jeff Pieper <jeffrey.e.pieper@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Vinson Lee <vlee@twitter.com>
-Subject: [ 4/4] igb: Remove artificial restriction on RQDPC stat reading
-Date: Fri, 15 Feb 2013 14:55:53 -0800
-Message-Id: <20130215225524.066467303@linuxfoundation.org>
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.coM>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Ingo Molnar <mingo@kernel.org>, linux-mm@kvack.org
+Subject: [ 1/4] x86/mm: Check if PUD is large when validating a kernel address
+Date: Fri, 15 Feb 2013 14:55:50 -0800
+Message-Id: <20130215225523.686282468@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130215225523.525656849@linuxfoundation.org>
 References: <20130215225523.525656849@linuxfoundation.org>
@@ -29,43 +28,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Duyck <alexander.h.duyck@intel.com>
+From: Mel Gorman <mgorman@suse.de>
 
-commit ae1c07a6b7ced6c0c94c99e3b53f4e7856fa8bff upstream.
+commit 0ee364eb316348ddf3e0dfcd986f5f13f528f821 upstream.
 
-For some reason the reading of the RQDPC register was being artificially
-limited to 4K.  Instead of limiting the value we should read the value and
-add the full amount.  Otherwise this can lead to a misleading number of
-dropped packets when the actual value is in fact much higher.
+A user reported the following oops when a backup process reads
+/proc/kcore:
 
-Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
-Tested-by: Jeff Pieper   <jeffrey.e.pieper@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: Vinson Lee <vlee@twitter.com>
+ BUG: unable to handle kernel paging request at ffffbb00ff33b000
+ IP: [<ffffffff8103157e>] kern_addr_valid+0xbe/0x110
+ [...]
+
+ Call Trace:
+  [<ffffffff811b8aaa>] read_kcore+0x17a/0x370
+  [<ffffffff811ad847>] proc_reg_read+0x77/0xc0
+  [<ffffffff81151687>] vfs_read+0xc7/0x130
+  [<ffffffff811517f3>] sys_read+0x53/0xa0
+  [<ffffffff81449692>] system_call_fastpath+0x16/0x1b
+
+Investigation determined that the bug triggered when reading
+system RAM at the 4G mark. On this system, that was the first
+address using 1G pages for the virt->phys direct mapping so the
+PUD is pointing to a physical address, not a PMD page.
+
+The problem is that the page table walker in kern_addr_valid() is
+not checking pud_large() and treats the physical address as if
+it was a PMD.  If it happens to look like pmd_none then it'll
+silently fail, probably returning zeros instead of real data. If
+the data happens to look like a present PMD though, it will be
+walked resulting in the oops above.
+
+This patch adds the necessary pud_large() check.
+
+Unfortunately the problem was not readily reproducible and now
+they are running the backup program without accessing
+/proc/kcore so the patch has not been validated but I think it
+makes sense.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.coM>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Cc: linux-mm@kvack.org
+Link: http://lkml.kernel.org/r/20130211145236.GX21389@suse.de
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/igb/igb_main.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/pgtable.h |    5 +++++
+ arch/x86/mm/init_64.c          |    3 +++
+ 2 files changed, 8 insertions(+)
 
---- a/drivers/net/igb/igb_main.c
-+++ b/drivers/net/igb/igb_main.c
-@@ -4521,11 +4521,13 @@ void igb_update_stats(struct igb_adapter
- 	bytes = 0;
- 	packets = 0;
- 	for (i = 0; i < adapter->num_rx_queues; i++) {
--		u32 rqdpc_tmp = rd32(E1000_RQDPC(i)) & 0x0FFF;
-+		u32 rqdpc = rd32(E1000_RQDPC(i));
- 		struct igb_ring *ring = adapter->rx_ring[i];
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -142,6 +142,11 @@ static inline unsigned long pmd_pfn(pmd_
+ 	return (pmd_val(pmd) & PTE_PFN_MASK) >> PAGE_SHIFT;
+ }
  
--		ring->rx_stats.drops += rqdpc_tmp;
--		net_stats->rx_fifo_errors += rqdpc_tmp;
-+		if (rqdpc) {
-+			ring->rx_stats.drops += rqdpc;
-+			net_stats->rx_fifo_errors += rqdpc;
-+		}
++static inline unsigned long pud_pfn(pud_t pud)
++{
++	return (pud_val(pud) & PTE_PFN_MASK) >> PAGE_SHIFT;
++}
++
+ #define pte_page(pte)	pfn_to_page(pte_pfn(pte))
  
- 		do {
- 			start = u64_stats_fetch_begin_bh(&ring->rx_syncp);
+ static inline int pmd_large(pmd_t pte)
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -831,6 +831,9 @@ int kern_addr_valid(unsigned long addr)
+ 	if (pud_none(*pud))
+ 		return 0;
+ 
++	if (pud_large(*pud))
++		return pfn_valid(pud_pfn(*pud));
++
+ 	pmd = pmd_offset(pud, addr);
+ 	if (pmd_none(*pmd))
+ 		return 0;
 
 
