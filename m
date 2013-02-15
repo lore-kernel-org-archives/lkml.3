@@ -1,86 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935682Ab3BOKIU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 05:08:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10832 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754911Ab3BOKIR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 05:08:17 -0500
-Date: Fri, 15 Feb 2013 11:08:11 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>, Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Tommi Rantala <tt.rantala@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH v2 repost] posix-cpu-timers: fix nanosleep task_struct leak
-Message-ID: <20130215100810.GF4392@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1759740Ab3BOKOp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 05:14:45 -0500
+Received: from TYO202.gate.nec.co.jp ([210.143.35.52]:54520 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751804Ab3BOKOo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 05:14:44 -0500
+Date: Fri, 15 Feb 2013 18:35:46 +0900
+From: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
+To: mitsuhiro.tanino.gm@hitachi.com
+Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org, vgoyal@redhat.com,
+        ebiederm@xmission.com
+Subject: Re: [PATCH 2/2 v2] kexec: Export PG_hwpoison flag into vmcoreinfo
+Message-Id: <20130215183546.d182c03e15e6285c9c898ca9@mxc.nes.nec.co.jp>
+In-Reply-To: <511DF658.9080005@hitachi.com>
+References: <508FDEF3.8030601@hitachi.com>
+	<20121030143750.GF2290@redhat.com>
+	<50913011.2030900@hitachi.com>
+	<20130208174944.96a3b50952e45e1219a94819@mxc.nes.nec.co.jp>
+	<511DF658.9080005@hitachi.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In do_cpu_nanosleep() we do posic_cpu_timer_create(), but forgot
-corresponding posix_cpu_timer_del() what lead to task_struct leak.
+Hello Tanino-san,
 
-Reported-and-tested-by: Tommi Rantala <tt.rantala@gmail.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: stable@vger.kernel.org
----
-v1 -> v2: add comments
+On Fri, 15 Feb 2013 17:48:24 +0900
+Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com> wrote:
 
-This looks like DoS problem fix, since it's possible to eat kernel
-memory (very slowly though) by normal user, hence Cc stable.
+> Hello Kumagai-san,
+> 
+> > I'm curious to know the status of this patch because I'll release
+> > makedumpfile-1.5.2 with the feature to exclude hwpoison page soon.
+> 
+> I requested Andrew to merge the kernel side patch, and the patch
+> has been added the -mm tree.
+> 
+> Please push the makedumpfile side patch into makedumpfile-1.5.2.
 
- kernel/posix-cpu-timers.c | 23 +++++++++++++++++++++--
- 1 file changed, 21 insertions(+), 2 deletions(-)
+Thanks, I've released makedumpfile-1.5.2 with your patch:
 
-diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-index a278cad..942ca27 100644
---- a/kernel/posix-cpu-timers.c
-+++ b/kernel/posix-cpu-timers.c
-@@ -1401,8 +1401,10 @@ static int do_cpu_nanosleep(const clockid_t which_clock, int flags,
- 		while (!signal_pending(current)) {
- 			if (timer.it.cpu.expires.sched == 0) {
- 				/*
--				 * Our timer fired and was reset.
-+				 * Our timer fired and was reset, below
-+				 * deletion can not fail.
- 				 */
-+				posix_cpu_timer_del(&timer);
- 				spin_unlock_irq(&timer.it_lock);
- 				return 0;
- 			}
-@@ -1420,9 +1422,26 @@ static int do_cpu_nanosleep(const clockid_t which_clock, int flags,
- 		 * We were interrupted by a signal.
- 		 */
- 		sample_to_timespec(which_clock, timer.it.cpu.expires, rqtp);
--		posix_cpu_timer_set(&timer, 0, &zero_it, it);
-+		error = posix_cpu_timer_set(&timer, 0, &zero_it, it);
-+		if (!error) {
-+			/*
-+			 * Timer is now unarmed, deletion can not fail.
-+			 */
-+			posix_cpu_timer_del(&timer);
-+		}
- 		spin_unlock_irq(&timer.it_lock);
- 
-+		while (error == TIMER_RETRY) {
-+			/*
-+			 * We need to handle case when timer was or is in the
-+			 * middle of firing. In other cases we already freed
-+			 * resources.
-+			 */
-+			spin_lock_irq(&timer.it_lock);
-+			error = posix_cpu_timer_del(&timer);
-+			spin_unlock_irq(&timer.it_lock);
-+		}
-+
- 		if ((it->it_value.tv_sec | it->it_value.tv_nsec) == 0) {
- 			/*
- 			 * It actually did fire already.
--- 
-1.7.11.7
+http://lists.infradead.org/pipermail/kexec/2013-February/007954.html
+
+
+Thanks
+Atsushi Kumagai
+
+> Regards,
+> Mitsuhiro Tanino
+> 
+> > TO: mm-commits@vger.kernel.org; 
+> > CC: mitsuhiro.tanino.gm@hitachi.com; ebiederm@xmission.com; vgoyal@redhat.com; 
+> > Sender: akpm@linux-foundation.org
+> > Sugject: + kexec-export-pg_hwpoison-flag-into-vmcoreinfo.patch added to -mm tree
+> > Date: 2013/02/13 07:50
+> > 
+> > 
+> > The patch titled
+> >      Subject: kexec: export PG_hwpoison flag into vmcoreinfo
+> > has been added to the -mm tree.  Its filename is
+> >      kexec-export-pg_hwpoison-flag-into-vmcoreinfo.patch
+> > 
+> > Before you just go and hit "reply", please:
+> >    a) Consider who else should be cc'ed
+> >    b) Prefer to cc a suitable mailing list as well
+> >    c) Ideally: find the original patch on the mailing list and do a
+> >       reply-to-all to that, adding suitable additional cc's
+> > 
+> > *** Remember to use Documentation/SubmitChecklist when testing your code ***
+> > 
+> > The -mm tree is included into linux-next and is updated
+> > there every 3-4 working days
+> > 
+> > ------------------------------------------------------
+> > From: Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com>
+> > Subject: kexec: export PG_hwpoison flag into vmcoreinfo
+> > 
+> > This patch exports a PG_hwpoison into vmcoreinfo when
+> > CONFIG_MEMORY_FAILURE is defined.  "makedumpfile" needs to read
+> > information of memory, such as 'mem_section', 'zone', 'pageflags' from
+> > vmcore.
+> > 
+> > We introduce a function into "makedumpfile" to exclude hwpoison page from
+> > vmcore dump.  In order to introduce this function, PG_hwpoison flag have
+> > to export into vmcoreinfo.
+> > 
+> > Signed-off-by: Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com>
+> > Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
+> > Cc: Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com>
+> > Cc: Vivek Goyal <vgoyal@redhat.com>
+> > Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> > ---
+> > 
+> >  kernel/kexec.c |    3 +++
+> >  1 file changed, 3 insertions(+)
+> > 
+> > diff -puN kernel/kexec.c~kexec-export-pg_hwpoison-flag-into-vmcoreinfo kernel/kexec.c
+> > --- a/kernel/kexec.c~kexec-export-pg_hwpoison-flag-into-vmcoreinfo
+> > +++ a/kernel/kexec.c
+> > @@ -1537,6 +1537,9 @@ static int __init crash_save_vmcoreinfo_
+> >  	VMCOREINFO_NUMBER(PG_private);
+> >  	VMCOREINFO_NUMBER(PG_swapcache);
+> >  	VMCOREINFO_NUMBER(PG_slab);
+> > +#ifdef CONFIG_MEMORY_FAILURE
+> > +	VMCOREINFO_NUMBER(PG_hwpoison);
+> > +#endif
+> >  	VMCOREINFO_NUMBER(PAGE_BUDDY_MAPCOUNT_VALUE);
+> >  
+> >  	arch_crash_save_vmcoreinfo();
+> > _
+> > 
+> > Patches currently in -mm which might be from mitsuhiro.tanino.gm@hitachi.com are
+> > 
+> > kexec-export-pg_hwpoison-flag-into-vmcoreinfo.patch
+> 
+> 
+> 
+> 
+> (2013/02/08 17:49), Atsushi Kumagai wrote:
+> > Hello,
+> > 
+> > On Wed, 31 Oct 2012 23:05:05 +0900
+> > Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com> wrote:
+> > 
+> >> This patch exports a PG_hwpoison into vmcoreinfo when
+> >> CONFIG_MEMORY_FAILURE is defined.
+> >> "makedumpfile" needs to read information of memory, such as
+> >> 'mem_section', 'zone', 'pageflags' from vmcore.
+> >>
+> >> We introduce a function into "makedumpfile" to exclude
+> >> hwpoison page from vmcore dump.
+> >> In order to introduce this function, PG_hwpoison flag have
+> >> to export into vmcoreinfo.
+> >>
+> >> Signed-off-by: Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com>
+> > 
+> > I'm curious to know the status of this patch because I'll release
+> > makedumpfile-1.5.2 with the feature to exclude hwpoison page soon.
+> > 
+> > 
+> > Thanks
+> > Atsushi Kumagai
+> > 
+> >> ---
+> >>  kernel/kexec.c |    3 +++
+> >>  1 file changed, 3 insertions(+)
+> >>
+> >> diff --git a/kernel/kexec.c b/kernel/kexec.c
+> >> index 0668d58..0d5d6bc 100644
+> >> --- a/kernel/kexec.c
+> >> +++ b/kernel/kexec.c
+> >> @@ -1513,6 +1513,9 @@ static int __init crash_save_vmcoreinfo_init(void)
+> >>         VMCOREINFO_NUMBER(PG_lru);
+> >>         VMCOREINFO_NUMBER(PG_private);
+> >>         VMCOREINFO_NUMBER(PG_swapcache);
+> >> +#ifdef CONFIG_MEMORY_FAILURE
+> >> +       VMCOREINFO_NUMBER(PG_hwpoison);
+> >> +#endif
+> >>
+> >>         arch_crash_save_vmcoreinfo();
+> >>         update_vmcoreinfo_note();
+> >> --
+> >> 1.7.10.1
+> >>
+> >> _______________________________________________
+> >> kexec mailing list
+> >> kexec@lists.infradead.org
+> >> http://lists.infradead.org/mailman/listinfo/kexec
+> > 
+> > _______________________________________________
+> > kexec mailing list
+> > kexec@lists.infradead.org
+> > http://lists.infradead.org/mailman/listinfo/kexec
+> > .
+> > 
+> 
