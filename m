@@ -1,69 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936005Ab3BOQOO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 11:14:14 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:61922 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932675Ab3BOQON (ORCPT
+	id S936008Ab3BOQPY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 11:15:24 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:57460 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932625Ab3BOQPX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 11:14:13 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130215110401.GA31037@dhcp22.suse.cz>
-References: <20130214120349.GD7367@suse.de>
-	<20130214123926.599fcef8.akpm@linux-foundation.org>
-	<20130215110401.GA31037@dhcp22.suse.cz>
-Date: Fri, 15 Feb 2013 17:14:10 +0100
-Message-ID: <CAJCc=ki+_PVT8fH43PoDVN2-5Wq0a1vQfFihJ_6F7==+RSAzYQ@mail.gmail.com>
-Subject: Re: [PATCH] mm: fadvise: Drain all pagevecs if POSIX_FADV_DONTNEED
- fails to discard all pages
-From: Rob van der Heij <rvdheij@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 15 Feb 2013 11:15:23 -0500
+From: dirk.brandewie@gmail.com
+To: rjw@sisk.pl
+Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        Dirk Brandewie <dirk.brandewie@gmail.com>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>
+Subject: [PATCH] cpufreq/intel_pstate: Add kernel command line option disable intel_pstate.
+Date: Fri, 15 Feb 2013 08:15:08 -0800
+Message-Id: <1360944908-26109-1-git-send-email-dirk.brandewie@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <6075901.uWCJMxDDFf@vostro.rjw.lan>
+References: <6075901.uWCJMxDDFf@vostro.rjw.lan>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 February 2013 12:04, Michal Hocko <mhocko@suse.cz> wrote:
-> On Thu 14-02-13 12:39:26, Andrew Morton wrote:
->> On Thu, 14 Feb 2013 12:03:49 +0000
->> Mel Gorman <mgorman@suse.de> wrote:
->>
->> > Rob van der Heij reported the following (paraphrased) on private mail.
->> >
->> >     The scenario is that I want to avoid backups to fill up the page
->> >     cache and purge stuff that is more likely to be used again (this is
->> >     with s390x Linux on z/VM, so I don't give it as much memory that
->> >     we don't care anymore). So I have something with LD_PRELOAD that
->> >     intercepts the close() call (from tar, in this case) and issues
->> >     a posix_fadvise() just before closing the file.
->> >
->> >     This mostly works, except for small files (less than 14 pages)
->> >     that remains in page cache after the face.
->>
->> Sigh.  We've had the "my backups swamp pagecache" thing for 15 years
->> and it's still happening.
->>
->> It should be possible nowadays to toss your backup application into a
->> container to constrain its pagecache usage.  So we can type
->>
->>       run-in-a-memcg -m 200MB /my/backup/program
->>
->> and voila.  Does such a script exist and work?
->
-> The script would be as simple as:
-> cgcreate -g memory:backups/`whoami`
-> cgset -r memory.limit_in_bytes=200MB backups/`whoami`
-> cgexec -g memory:backups/`whoami` /my/backup/program
->
-> It just expects that admin sets up backups group which allows the user
-> to create a subgroup (w permission on the directory) and probably set up
-> some reasonable cap for all backups
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
 
-Cool. This is promising enough to bridge my skills gap. It appears to
-work as promised, but I would have to understand why it takes
-significantly more CPU than my ugly posix_fadvise() call on close...
+When intel_pstate is configured into the kernel it will become the
+preferred scaling driver for processors that it supports.  Allow the
+user to override this by adding:
+   intel_pstate=disable
+on the kernel command line.
 
-Rob
+Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+---
+ Documentation/kernel-parameters.txt |    5 +++++
+ drivers/cpufreq/intel_pstate.c      |   16 ++++++++++++++++
+ 2 files changed, 21 insertions(+), 0 deletions(-)
+
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 6c72381..41c5d9e 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1131,6 +1131,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			0	disables intel_idle and fall back on acpi_idle.
+ 			1 to 6	specify maximum depth of C-state.
+ 
++	intel_pstate=  [X86]
++		       disable
++		         Do not enable intel_pstate as the default
++		         scaling driver for the supported processors
++
+ 	intremap=	[X86-64, Intel-IOMMU]
+ 			on	enable Interrupt Remapping (default)
+ 			off	disable Interrupt Remapping
+diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+index e879963..096fde0 100644
+--- a/drivers/cpufreq/intel_pstate.c
++++ b/drivers/cpufreq/intel_pstate.c
+@@ -773,11 +773,16 @@ static void intel_pstate_exit(void)
+ }
+ module_exit(intel_pstate_exit);
+ 
++static int __initdata no_load;
++
+ static int __init intel_pstate_init(void)
+ {
+ 	int rc = 0;
+ 	const struct x86_cpu_id *id;
+ 
++	if (no_load)
++		return -ENODEV;
++
+ 	id = x86_match_cpu(intel_pstate_cpu_ids);
+ 	if (!id)
+ 		return -ENODEV;
+@@ -802,6 +807,17 @@ out:
+ }
+ device_initcall(intel_pstate_init);
+ 
++static int __init intel_pstate_setup(char *str)
++{
++	if (!str)
++		return -EINVAL;
++
++	if (!strcmp(str, "disable"))
++		no_load = 1;
++	return 0;
++}
++early_param("intel_pstate", intel_pstate_setup);
++
+ MODULE_AUTHOR("Dirk Brandewie <dirk.j.brandewie@intel.com>");
+ MODULE_DESCRIPTION("'intel_pstate' - P state driver Intel Core processors");
+ MODULE_LICENSE("GPL");
+-- 
+1.7.7.6
+
