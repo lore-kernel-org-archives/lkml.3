@@ -1,54 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756403Ab3BOIZY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 03:25:24 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:39494 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754135Ab3BOIZX (ORCPT
+	id S1756969Ab3BOIeM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 03:34:12 -0500
+Received: from mga03.intel.com ([143.182.124.21]:40555 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752463Ab3BOIeL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 03:25:23 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
-Message-ID: <511DF0DA.7020906@jp.fujitsu.com>
-Date: Fri, 15 Feb 2013 17:24:58 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Fri, 15 Feb 2013 03:34:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,671,1355126400"; 
+   d="scan'208";a="202705134"
+From: "Zhang, Rui" <rui.zhang@intel.com>
+To: Andreas Mohr <andi@lisas.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [ASAP] thermal_sys.c NULL ptr deref patch likely incomplete
+Thread-Topic: [ASAP] thermal_sys.c NULL ptr deref patch likely incomplete
+Thread-Index: AQHOCsHF9Z6vRnNAfUas0eTwR3aiyph6mNAQ
+Date: Fri, 15 Feb 2013 08:34:07 +0000
+Message-ID: <744357E9AAD1214791ACBA4B0B90926329ED25@SHSMSX101.ccr.corp.intel.com>
+References: <20130214144404.GA20011@rhlx01.hs-esslingen.de>
+In-Reply-To: <20130214144404.GA20011@rhlx01.hs-esslingen.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
-        Tejun Heo <htejun@gmail.com>, Glauber Costa <glommer@parallels.com>,
-        Li Zefan <lizefan@huawei.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v4 4/6] memcg: simplify mem_cgroup_iter
-References: <1360848396-16564-1-git-send-email-mhocko@suse.cz> <1360848396-16564-5-git-send-email-mhocko@suse.cz>
-In-Reply-To: <1360848396-16564-5-git-send-email-mhocko@suse.cz>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/02/14 22:26), Michal Hocko wrote:
-> Current implementation of mem_cgroup_iter has to consider both css and
-> memcg to find out whether no group has been found (css==NULL - aka the
-> loop is completed) and that no memcg is associated with the found node
-> (!memcg - aka css_tryget failed because the group is no longer alive).
-> This leads to awkward tweaks like tests for css && !memcg to skip the
-> current node.
+Can you please attach your config file?
+
+Thanks,
+rui
+
+> -----Original Message-----
+> From: Andreas Mohr [mailto:andi@lisas.de]
+> Sent: Thursday, February 14, 2013 10:44 PM
+> To: Zhang, Rui
+> Cc: linux-kernel@vger.kernel.org
+> Subject: [ASAP] thermal_sys.c NULL ptr deref patch likely incomplete
+> Importance: High
 > 
-> It will be much easier if we got rid off css variable altogether and
-> only rely on memcg. In order to do that the iteration part has to skip
-> dead nodes. This sounds natural to me and as a nice side effect we will
-> get a simple invariant that memcg is always alive when non-NULL and all
-> nodes have been visited otherwise.
+> Hi,
 > 
-> We could get rid of the surrounding while loop but keep it in for now to
-> make review easier. It will go away in the following patch.
+> I just had a
 > 
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
-nice.
-
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-
-
-
+> # cat /sys/class/thermal/thermal_zone0/policy
+> (null)
+> 
+> 
+> When looking at the code (on my -rc7), I saw:
+> 
+> drivers/thermal/thermal_sys.c
+> 
+> static ssize_t
+> policy_show(struct device *dev, struct device_attribute *devattr, char
+> *buf)
+> {
+>         struct thermal_zone_device *tz = to_thermal_zone(dev);
+> 
+>         return sprintf(buf, "%s\n", tz->governor->name);
+> }
+> 
+> 
+> (not sure though why I manage to get a "(null)" rather than a crash
+> due to the dereferencing prior to output - possibly since I do have a
+> valid governor allocated yet then only its name field is null?)
+> 
+> 
+> Seems we are missing a critical (and -rc-relevant) patch here
+> (and perhaps at other locations in this file, too, given that
+> this one was missed last time?).
+> 
+> Currently trying to get acerhdf operation into a working state
+> (and having some trouble with it - didn't know that I probably need
+> some
+> governor setup which seems to have just been available on my last setup,
+> or so)
+> 
+> Thanks,
+> 
+> Andreas Mohr
