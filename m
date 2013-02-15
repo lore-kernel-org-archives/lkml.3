@@ -1,62 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935648Ab3BOKSb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 05:18:31 -0500
-Received: from www.linutronix.de ([62.245.132.108]:42093 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755057Ab3BOKSa (ORCPT
+	id S1760540Ab3BOKYp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 05:24:45 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:37019 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760026Ab3BOKYn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 05:18:30 -0500
-Date: Fri, 15 Feb 2013 11:18:25 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Tim Sander <tim@krieglstein.org>
-cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        gregkh@linuxfoundation.org
-Subject: Re: [PATHC] 3.6 spinlock fix
-In-Reply-To: <3258732.q5XBfts1EM@dabox>
-Message-ID: <alpine.LFD.2.02.1302151117170.22263@ionos>
-References: <6003615.pRQnIgKCSn@dabox> <alpine.LFD.2.02.1302142334120.22263@ionos> <CAP=VYLo2zxJWy3s6AmZc+Hh6wXh67HMp+mM0nEkN6M_OpKJSug@mail.gmail.com> <3258732.q5XBfts1EM@dabox>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Fri, 15 Feb 2013 05:24:43 -0500
+From: Manjunath Goudar <manjunath.goudar@linaro.org>
+To: linux-usb@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        stern@rowland.harvard.edu, arnd@linaro.org, gregkh@linuxfoundation.org,
+        Manjunath Goudar <manjunath.goudar@linaro.org>,
+        Greg KH <greg@kroah.com>, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-kernel@vger.kernel.org
+Subject: [V2 2/8] USB: EHCI: make ehci-atmel a separate driver
+Date: Fri, 15 Feb 2013 15:54:07 +0530
+Message-Id: <1360923853-7875-3-git-send-email-manjunath.goudar@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1360923853-7875-1-git-send-email-manjunath.goudar@linaro.org>
+References: <1360923853-7875-1-git-send-email-manjunath.goudar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Feb 2013, Tim Sander wrote:
-> > On Thu, Feb 14, 2013 at 5:35 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > > On Thu, 14 Feb 2013, Tim Sander wrote:
-> > >> > That's true, but w/o seing the OOM output I can't tell what's
-> > >> > exhausting the memory.
-> > >> 
-> > >> When fuzzing the serial port one probably should switch of sysreq. It
-> > >> seems
-> > >> as if there is a break send somehow and then it selects the OOM option.
-> > >> So when switching of MAGIC_SYSRQ the OOMs are gone. So its a non issue.
-> > > 
-> > > Amazing that you get the break+oom combo out of that fuzzer!
-> That fuzzer is running at 57600Hz while the serial port of the fuzzed device is
-> running twice that rate. The break condition seems to be easy hit by the fuzzer
->  i've sent in a previous mail. 
-> > Doing a basic "git whatchanged" and searching for "trinity" is rather
-> > impressive, regardless of the kernel version and/or where "rogue states"
-> > may currently be at with their "program"....   Kudos to davej for that.
-> Mh, but thats not trinity! Havn't tried that but well fuzzing at a different 
-> serial rate than the receiver might be a good idea even if it sounds pretty stupid.
-> 
-> Attached is the patch for the 3.6.9-rt kernel (but i think this should also apply 
-> to the "normal" 3.6 i guess).  But as Greg already took care of this patch i guess 
-> that only for convinience. Also it seems as if the patch sent to Greg is missing the
-> #include <linux/kdb.h>?
+Separate the Atmel host controller driver from ehci-hcd host code
+into its own driver module.
 
-Errm, no. The in_kdb_printk() is an RT specific issue, so I left it
-out for the mainline fix.
+In V2:
+Resolved below compiler error.
+drivers/usb/host/ehci-atmel.c: In function 'ehci_atmel_drv_remove':
+drivers/usb/host/ehci-atmel.c:167: error: implicit declaration of function 'ehci_shutdown'
 
-Thanks,
+Signed-off-by: Manjunath Goudar <manjunath.goudar@linaro.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg KH <greg@kroah.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Andrew Victor <linux@maxim.org.za>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Cc: linux-usb@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/usb/host/Kconfig      |    8 +++++
+ drivers/usb/host/Makefile     |    1 +
+ drivers/usb/host/ehci-atmel.c |   76 ++++++++++++++++++++++-------------------
+ drivers/usb/host/ehci-hcd.c   |   10 ++----
+ drivers/usb/host/ehci.h       |    2 +-
+ 5 files changed, 53 insertions(+), 44 deletions(-)
 
-	tglx
+diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+index 15e8032..1ef37d7 100644
+--- a/drivers/usb/host/Kconfig
++++ b/drivers/usb/host/Kconfig
+@@ -170,6 +170,14 @@ config USB_EHCI_HCD_SPEAR
+           Enables support for the on-chip EHCI controller on
+           ST SPEAr chips.
+ 
++config USB_EHCI_HCD_AT91
++        tristate  "Support for Atmel on-chip EHCI USB controller"
++        depends on USB_EHCI_HCD && ARCH_AT91
++        default y
++        ---help---
++          Enables support for the on-chip EHCI controller on
++          Atmel chips.
++
+ config USB_EHCI_MSM
+ 	bool "Support for MSM on-chip EHCI USB controller"
+ 	depends on USB_EHCI_HCD && ARCH_MSM
+diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
+index c8fcde9..b301243 100644
+--- a/drivers/usb/host/Makefile
++++ b/drivers/usb/host/Makefile
+@@ -29,6 +29,7 @@ obj-$(CONFIG_USB_EHCI_HCD_PLATFORM)	+= ehci-platform.o
+ obj-$(CONFIG_USB_EHCI_MXC)	+= ehci-mxc.o
+ obj-$(CONFIG_USB_EHCI_HCD_SPEAR)+= ehci-spear.o
+ obj-$(CONFIG_USB_OXU210HP_HCD)	+= oxu210hp-hcd.o
++obj-$(CONFIG_USB_EHCI_HCD_AT91) += ehci-atmel.o
+ obj-$(CONFIG_USB_ISP116X_HCD)	+= isp116x-hcd.o
+ obj-$(CONFIG_USB_ISP1362_HCD)	+= isp1362-hcd.o
+ obj-$(CONFIG_USB_OHCI_HCD)	+= ohci-hcd.o
+diff --git a/drivers/usb/host/ehci-atmel.c b/drivers/usb/host/ehci-atmel.c
+index 27639487..3cd0dd4 100644
+--- a/drivers/usb/host/ehci-atmel.c
++++ b/drivers/usb/host/ehci-atmel.c
+@@ -15,6 +15,19 @@
+ #include <linux/platform_device.h>
+ #include <linux/of.h>
+ #include <linux/of_platform.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/usb.h>
++#include <linux/usb/hcd.h>
++#include <linux/io.h>
++#include <linux/dma-mapping.h>
++
++#include "ehci.h"
++
++#define DRIVER_DESC "EHCI atmel driver"
++
++static const char hcd_name[] = "ehci-atmel";
++static struct hc_driver __read_mostly ehci_atmel_hc_driver;
+ 
+ /* interface and function clocks */
+ static struct clk *iclk, *fclk;
+@@ -60,41 +73,6 @@ static int ehci_atmel_setup(struct usb_hcd *hcd)
+ 	return ehci_setup(hcd);
+ }
+ 
+-static const struct hc_driver ehci_atmel_hc_driver = {
+-	.description		= hcd_name,
+-	.product_desc		= "Atmel EHCI UHP HS",
+-	.hcd_priv_size		= sizeof(struct ehci_hcd),
+-
+-	/* generic hardware linkage */
+-	.irq			= ehci_irq,
+-	.flags			= HCD_MEMORY | HCD_USB2,
+-
+-	/* basic lifecycle operations */
+-	.reset			= ehci_atmel_setup,
+-	.start			= ehci_run,
+-	.stop			= ehci_stop,
+-	.shutdown		= ehci_shutdown,
+-
+-	/* managing i/o requests and associated device resources */
+-	.urb_enqueue		= ehci_urb_enqueue,
+-	.urb_dequeue		= ehci_urb_dequeue,
+-	.endpoint_disable	= ehci_endpoint_disable,
+-	.endpoint_reset		= ehci_endpoint_reset,
+-
+-	/* scheduling support */
+-	.get_frame_number	= ehci_get_frame,
+-
+-	/* root hub support */
+-	.hub_status_data	= ehci_hub_status_data,
+-	.hub_control		= ehci_hub_control,
+-	.bus_suspend		= ehci_bus_suspend,
+-	.bus_resume		= ehci_bus_resume,
+-	.relinquish_port	= ehci_relinquish_port,
+-	.port_handed_over	= ehci_port_handed_over,
+-
+-	.clear_tt_buffer_complete	= ehci_clear_tt_buffer_complete,
+-};
+-
+ static u64 at91_ehci_dma_mask = DMA_BIT_MASK(32);
+ 
+ static int ehci_atmel_drv_probe(struct platform_device *pdev)
+@@ -210,7 +188,33 @@ static struct platform_driver ehci_atmel_driver = {
+ 	.remove		= ehci_atmel_drv_remove,
+ 	.shutdown	= usb_hcd_platform_shutdown,
+ 	.driver		= {
+-		.name	= "atmel-ehci",
++		.name	= hcd_name,
+ 		.of_match_table	= of_match_ptr(atmel_ehci_dt_ids),
+ 	},
+ };
++
++static const struct ehci_driver_overrides atmel_overrides __initdata = {
++	.reset = ehci_atmel_setup,
++};
++
++static int __init ehci_atmel_init(void)
++{
++	if (usb_disabled())
++		return -ENODEV;
++
++	pr_info("%s: " DRIVER_DESC "\n", hcd_name);
++	ehci_init_driver(&ehci_atmel_hc_driver, &atmel_overrides);
++	return platform_driver_register(&ehci_atmel_driver);
++}
++module_init(ehci_atmel_init);
++
++static void __exit ehci_atmel_cleanup(void)
++{
++	platform_driver_unregister(&ehci_atmel_driver);
++}
++module_exit(ehci_atmel_cleanup);
++
++MODULE_DESCRIPTION(DRIVER_DESC);
++MODULE_ALIAS("platform:ehci-atmel");
++MODULE_AUTHOR("Nicolas Ferre");
++MODULE_LICENSE("GPL");
+diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
+index c4afd86..dda3d1b 100644
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -352,7 +352,7 @@ static void ehci_silence_controller(struct ehci_hcd *ehci)
+  * This forcibly disables dma and IRQs, helping kexec and other cases
+  * where the next system software may expect clean state.
+  */
+-static void ehci_shutdown(struct usb_hcd *hcd)
++void ehci_shutdown(struct usb_hcd *hcd)
+ {
+ 	struct ehci_hcd	*ehci = hcd_to_ehci(hcd);
+ 
+@@ -366,7 +366,7 @@ static void ehci_shutdown(struct usb_hcd *hcd)
+ 
+ 	hrtimer_cancel(&ehci->hrtimer);
+ }
+-
++EXPORT_SYMBOL_GPL(ehci_shutdown);
+ /*-------------------------------------------------------------------------*/
+ 
+ /*
+@@ -1282,11 +1282,6 @@ MODULE_LICENSE ("GPL");
+ #define	PLATFORM_DRIVER		ehci_hcd_w90x900_driver
+ #endif
+ 
+-#ifdef CONFIG_ARCH_AT91
+-#include "ehci-atmel.c"
+-#define	PLATFORM_DRIVER		ehci_atmel_driver
+-#endif
+-
+ #ifdef CONFIG_USB_OCTEON_EHCI
+ #include "ehci-octeon.c"
+ #define PLATFORM_DRIVER		ehci_octeon_driver
+@@ -1343,6 +1338,7 @@ MODULE_LICENSE ("GPL");
+ 	!IS_ENABLED(CONFIG_USB_EHCI_MXC) && \
+ 	!IS_ENABLED(CONFIG_PLAT_SPEAR) && \
+ 	!defined(PLATFORM_DRIVER) && \
++	!IS_ENABLED(CONFIG_ARCH_AT91) && \
+ 	!defined(PS3_SYSTEM_BUS_DRIVER) && \
+ 	!defined(OF_PLATFORM_DRIVER) && \
+ 	!defined(XILINX_OF_PLATFORM_DRIVER)
+diff --git a/drivers/usb/host/ehci.h b/drivers/usb/host/ehci.h
+index 36c3a82..593d3bb 100644
+--- a/drivers/usb/host/ehci.h
++++ b/drivers/usb/host/ehci.h
+@@ -798,7 +798,7 @@ struct ehci_driver_overrides {
+ extern void	ehci_init_driver(struct hc_driver *drv,
+ 				const struct ehci_driver_overrides *over);
+ extern int	ehci_setup(struct usb_hcd *hcd);
+-
++extern void ehci_shutdown(struct usb_hcd *hcd);
+ #ifdef CONFIG_PM
+ extern int	ehci_suspend(struct usb_hcd *hcd, bool do_wakeup);
+ extern int	ehci_resume(struct usb_hcd *hcd, bool hibernated);
+-- 
+1.7.9.5
+
