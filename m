@@ -1,73 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934946Ab3BOOhE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 09:37:04 -0500
-Received: from mail-gh0-f169.google.com ([209.85.160.169]:38781 "EHLO
-	mail-gh0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756139Ab3BOOhC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 09:37:02 -0500
-X-Greylist: delayed 409 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Feb 2013 09:37:02 EST
+	id S935763Ab3BOOrH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 09:47:07 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:38288 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932237Ab3BOOrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 09:47:05 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Liu Jinsong <jinsong.liu@intel.com>
+Subject: Re: linux-next: build failure after merge of the xen-two tree
+Date: Fri, 15 Feb 2013 15:53:34 +0100
+Message-ID: <2185970.g9YrD945My@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc7; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130216005014.c8ce70e041f655d4c195c9fb@canb.auug.org.au>
+References: <20130215154551.d11e9d376d30d32b9673e6cc@canb.auug.org.au> <20130215132624.GB11777@phenom.dumpdata.com> <20130216005014.c8ce70e041f655d4c195c9fb@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <1356570106-2263-1-git-send-email-djkurtz@chromium.org>
-References: <1356570106-2263-1-git-send-email-djkurtz@chromium.org>
-From: Daniel Kurtz <djkurtz@chromium.org>
-Date: Fri, 15 Feb 2013 06:29:51 -0800
-X-Google-Sender-Auth: m4k_IOX5MVxBg5rpci_fQeY96ow
-Message-ID: <CAGS+omBTK7bCYGXSXQuj5dJh-uq0R5TxpMoh78nLugmkdpbAwQ@mail.gmail.com>
-Subject: Re: [PATCH] drm: make frame duration time calculation more precise
-To: David Airlie <airlied@linux.ie>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        marcheu@chromium.org, Daniel Kurtz <djkurtz@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 26, 2012 at 5:01 PM, Daniel Kurtz <djkurtz@chromium.org> wrote:
->
-> It is a bit more precise to compute the total number of pixels first and
-> then divide, rather than multiplying the line pixel count by the
-> already-rounded line duration.
->
-> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+On Saturday, February 16, 2013 12:50:14 AM Stephen Rothwell wrote:
+> Hi Konrad,
+> 
+> On Fri, 15 Feb 2013 08:26:24 -0500 Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> >
+> > Thank you. I keep on forgetting - but would it be OK for me to take this
+> > patch in my tree? Or should I not since this is a new functionality that
+> > Rafael is going to introduce in v3.9?
+> 
+> It is an API change in the pm tree that is not yet in Linus' tree.
+> 
+> > And if so, perhaps I should tack it on in my tree, once Rafael does a git
+> > pull to Linus? Or just point Linus to this git commit?
+> 
+> You should point Linus at this patch if the pm tree is merged first, or
+> Rafael should do the same if the reverse happens.
 
-Ping?
+Alternatively, Konrad can pull the acpi-scan branch containing the changes
+in question from my tree into his tree and rebase the new material on top
+of that.
 
-> ---
->  drivers/gpu/drm/drm_irq.c |    6 +++++-
->  1 files changed, 5 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/gpu/drm/drm_irq.c b/drivers/gpu/drm/drm_irq.c
-> index 19c01ca..05c91e0 100644
-> --- a/drivers/gpu/drm/drm_irq.c
-> +++ b/drivers/gpu/drm/drm_irq.c
-> @@ -505,6 +505,7 @@ void drm_calc_timestamping_constants(struct drm_crtc
-> *crtc)
->
->         /* Valid dotclock? */
->         if (dotclock > 0) {
-> +               int frame_size;
->                 /* Convert scanline length in pixels and video dot clock
-> to
->                  * line duration, frame duration and pixel duration in
->                  * nanoseconds:
-> @@ -512,7 +513,10 @@ void drm_calc_timestamping_constants(struct drm_crtc
-> *crtc)
->                 pixeldur_ns = (s64) div64_u64(1000000000, dotclock);
->                 linedur_ns  = (s64) div64_u64(((u64)
-> crtc->hwmode.crtc_htotal *
->                                               1000000000), dotclock);
-> -               framedur_ns = (s64) crtc->hwmode.crtc_vtotal * linedur_ns;
-> +               frame_size = crtc->hwmode.crtc_htotal *
-> +                               crtc->hwmode.crtc_vtotal;
-> +               framedur_ns = (s64) div64_u64((u64) frame_size *
-> 1000000000,
-> +                                             dotclock);
->         } else
->                 DRM_ERROR("crtc %d: Can't calculate constants, dotclock =
-> 0!\n",
->                           crtc->base.id);
-> --
-> 1.7.7.3
->
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
