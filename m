@@ -1,117 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753449Ab3BOQyp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 11:54:45 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35033 "EHLO mx2.suse.de"
+	id S1754433Ab3BOQzN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 11:55:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2829 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750967Ab3BOQyo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 11:54:44 -0500
-Date: Fri, 15 Feb 2013 17:54:40 +0100
-From: Jan Kara <jack@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        jslaby@suse.cz, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "kay.sievers" <kay.sievers@vrfy.org>
-Subject: Re: [RFC][PATCH] printk: Remove separate printk_sched buffers and
- use printk buf instead
-Message-ID: <20130215165440.GA12734@quack.suse.cz>
-References: <1360112748.2621.25.camel@gandalf.local.home>
- <20130206230220.GA18329@quack.suse.cz>
+	id S1752336Ab3BOQzL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 11:55:11 -0500
+Date: Fri, 15 Feb 2013 11:29:59 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: anish singh <anish198519851985@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, akpm@linux-foundation.org,
+        tglx@linutronix.de, chuansheng.liu@intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [Watchdog][Trivial] Added comments to explain
+ watchdog_disabled variable
+Message-ID: <20130215162959.GF98867@redhat.com>
+References: <1359907275-15410-1-git-send-email-anish198519851985@gmail.com>
+ <CAK7N6vpT_X7s7Vid0-EYenb0w7k=nL8d-ov=fExFMuSYcV47Wg@mail.gmail.com>
+ <20130213092101.GD7630@gmail.com>
+ <CAK7N6vqh_c31bWiHgVgJLLckya7mykshMKYiqLTdkScMCoXcsg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130206230220.GA18329@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAK7N6vqh_c31bWiHgVgJLLckya7mykshMKYiqLTdkScMCoXcsg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here comes addition to Steven's patch from this thread...
+On Wed, Feb 13, 2013 at 03:28:00PM +0530, anish singh wrote:
+> On Wed, Feb 13, 2013 at 2:51 PM, Ingo Molnar <mingo@kernel.org> wrote:
+> >
+> > * anish singh <anish198519851985@gmail.com> wrote:
+> >
+> >> Is the below patch picked up?
+> >>
+> >> On Sun, Feb 3, 2013 at 9:31 PM, anish kumar <anish198519851985@gmail.com> wrote:
+> >> > From: anish kumar <anish198519851985@gmail.com>
+> >> >
+> >> > This watchdog_disabled flag is bit of cryptic.Howerver it's usefullnes is multifold.
+> >> > Uses are:
+> >> > 1. Check if smpboot_register_percpu_thread function passed.
+> >> > 2. Makes sure that user enables and disables the watchdog in sequence
+> >> >    i.e. enable watchdog->disable watchdog->enable watchdog
+> >> >    Unlike enable watchdog->enable watchdog which is wrong.
+> >> >
+> >> > Signed-off-by: anish kumar <anish198519851985@gmail.com>
+> >> > ---
+> >> >  kernel/watchdog.c |    5 +++++
+> >> >  1 files changed, 5 insertions(+), 0 deletions(-)
+> >> >
+> >> > diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+> >> > index 75a2ab3..87a19aa 100644
+> >> > --- a/kernel/watchdog.c
+> >> > +++ b/kernel/watchdog.c
+> >> > @@ -518,6 +518,11 @@ int proc_dowatchdog(struct ctl_table *table, int write,
+> >> >                 return ret;
+> >> >
+> >> >         set_sample_period();
+> >> > +       /*
+> >> > +        * We shouldn't enable watchdog threads if it is
+> >> > +        * disabled.This is done by watchdog_disabled
+> >> > +        * variable check in watchdog_*_all_cpus function.
+> >
+> > It has two grammatic and a stylistic error in it, plus misses
+> Would you mind pointing it out to me the grammatical mistakes
+> as I am not that good with grammar.
 
->From bda93cfa4133c41e8f10dcd371d1f025d94b85dc Mon Sep 17 00:00:00 2001
-From: Jan Kara <jack@suse.cz>
-Date: Wed, 6 Feb 2013 19:15:30 +0100
-Subject: [PATCH 2/3] printk: Remove per-cpu printk flags
+I am not entirely sure which ones Ingo is referring to, but what I see are
 
-There's no need to have printk flags percpu. Just make a single variable
-operated by atomic operations from it. It also has an advantage that any
-cpu can do the printing / wakeup work.
+'disabled.This' needs a space after period
+'This is done by watchdog_disabled' needs a 'the' after 'by'
+'variable check in watchdog..' needs a 'the' after 'in'.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- kernel/printk.c |   28 ++++++++++++----------------
- 1 files changed, 12 insertions(+), 16 deletions(-)
+in addition to the missing ()'s after 'watchdog_*_all_cpus.
 
-diff --git a/kernel/printk.c b/kernel/printk.c
-index ed630fa..2fe917d 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -1986,28 +1986,24 @@ int is_console_locked(void)
- 	return console_locked;
- }
- 
--/*
-- * Delayed printk version, for scheduler-internal messages:
-- */
--#define PRINTK_BUF_SIZE		512
-+#define PRINTK_PENDING_WAKEUP	1
-+#define PRINTK_PENDING_OUTPUT	2
- 
--#define PRINTK_PENDING_WAKEUP	0x01
--#define PRINTK_PENDING_OUTPUT	0x02
--
--static DEFINE_PER_CPU(int, printk_pending);
-+static unsigned long printk_pending;
- 
- void printk_tick(void)
- {
--	if (__this_cpu_read(printk_pending)) {
--		int pending = __this_cpu_xchg(printk_pending, 0);
--		if (pending & PRINTK_PENDING_OUTPUT) {
-+	if (printk_pending) {
-+		unsigned long pending = xchg(&printk_pending, 0);
-+
-+		if (test_bit(PRINTK_PENDING_OUTPUT, &pending)) {
- 			if (console_trylock())
- 				console_unlock();
- 			else
- 				/* Try again later */
--				__this_cpu_or(printk_pending, PRINTK_PENDING_OUTPUT);
-+				set_bit(PRINTK_PENDING_OUTPUT, &printk_pending);
- 		}
--		if (pending & PRINTK_PENDING_WAKEUP)
-+		if (test_bit(PRINTK_PENDING_WAKEUP, &pending))
- 			wake_up_interruptible(&log_wait);
- 	}
- }
-@@ -2016,13 +2012,13 @@ int printk_needs_cpu(int cpu)
- {
- 	if (cpu_is_offline(cpu))
- 		printk_tick();
--	return __this_cpu_read(printk_pending);
-+	return printk_pending;
- }
- 
- void wake_up_klogd(void)
- {
- 	if (waitqueue_active(&log_wait))
--		this_cpu_or(printk_pending, PRINTK_PENDING_WAKEUP);
-+		set_bit(PRINTK_PENDING_WAKEUP, &printk_pending);
- }
- 
- static void console_cont_flush(char *text, size_t size)
-@@ -2497,7 +2493,7 @@ int printk_sched(const char *fmt, ...)
- 	r = vprintk_emit(0, -2, NULL, 0, fmt, args);
- 	va_end(args);
- 
--	__this_cpu_or(printk_pending, PRINTK_PENDING_OUTPUT);
-+	set_bit(PRINTK_PENDING_OUTPUT, &printk_pending);
- 
- 	return r;
- }
--- 
-1.7.1
+Unless I am missing something else, I think that is it.
 
+Cheers,
+Don
+
+> I thought I followed the conventions as below:
+> /*
+>  *
+>  *
+>  */
+> > the convention that function names are mentioned with a '()'.
+> >
+> > Thanks,
+> >
+> >         Ingo
