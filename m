@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754709Ab3BOQxl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 11:53:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37829 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753811Ab3BOQxj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 11:53:39 -0500
-Date: Fri, 15 Feb 2013 11:53:27 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: ebiederm@xmission.com, cpw@sgi.com, kumagai-atsushi@mxc.nes.nec.co.jp,
-        lisa.mitchell@hp.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/13] vmcore: copy ELF note segments in buffer on 2nd
- kernel
-Message-ID: <20130215165327.GH27784@redhat.com>
-References: <20130214100945.22466.4172.stgit@localhost6.localdomain6>
- <20130214101232.22466.44026.stgit@localhost6.localdomain6>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130214101232.22466.44026.stgit@localhost6.localdomain6>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755229Ab3BOQxx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 11:53:53 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2854 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753978Ab3BOQxk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 11:53:40 -0500
+X-Authority-Analysis: v=2.0 cv=adbjbGUt c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=1ADFm0T--rEA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=mYRWiXiH8qgA:10 a=7_YT7sJRujFhQdEFiykA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1360947217.23152.112.camel@gandalf.local.home>
+Subject: Re: [RFC][PATCH] printk: Remove separate printk_sched buffers and
+ use printk buf instead
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jan Kara <jack@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, jslaby@suse.cz,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "kay.sievers" <kay.sievers@vrfy.org>
+Date: Fri, 15 Feb 2013 11:53:37 -0500
+In-Reply-To: <20130215165032.GF7458@quack.suse.cz>
+References: <1360112748.2621.25.camel@gandalf.local.home>
+	 <20130206230220.GA18329@quack.suse.cz>
+	 <20130212122245.GB19583@quack.suse.cz>
+	 <1360867691.23152.48.camel@gandalf.local.home>
+	 <20130215165032.GF7458@quack.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 14, 2013 at 07:12:32PM +0900, HATAYAMA Daisuke wrote:
-> Objects exported from ELF note segments are in fact located apart from
-> each other on old memory. But on /proc/vmcore they are exported as a
-> single ELF note segment. To satisfy mmap()'s page-size boundary
-> requirement, copy them in a page-size aligned buffer allocated by
-> __get_free_pages() on 2nd kernel and remap the buffer to user-space.
+On Fri, 2013-02-15 at 17:50 +0100, Jan Kara wrote:
+> On Thu 14-02-13 13:48:11, Steven Rostedt wrote:
+> > On Tue, 2013-02-12 at 13:22 +0100, Jan Kara wrote:
+> > 
+> > > > Anyway, what do you guys think about this version?
+> > >   Steven, Andrew, did you have a chance to look at my patches?
+> > 
+> > Can you resend without being attachments. Patches sent as attachments
+> > seldom get reviewed.
+>   Well, for example I do review text/plain attachments but that may count
+> into 'seldom' ;) I'll send them inline.
 > 
-> The buffer for ELF note segments is added to vmcore_list as the object
-> of VMCORE_2ND_KERNEL type.
-> 
-> Copy of ELF note segments is done in two pass: first pass tries to
-> calculate real total size of ELF note segments, and then 2nd pass
-> copies the segment data into the buffer of the real total size.
 
-Ok, this is the part I am not very happy with. I don't like the idea
-of copying notes into second kernel. It has potential to bloat our
-memory usage requirements in second kernel.
+The problem is that it makes it difficult to reply with comments. I
+haven't looked at the patches yet so I may not have comments, but on my
+email client, commenting attachments means that I need to cut and paste
+the text to do the comment, which isn't the case for inline patches.
 
-For example, we allocate a 4K page for each cpu and a huge machine
-say 4096 cpu, 16MB of more memory is required. Not that it is big
-concern for a 4K cpu machine, still if we can avoid copying notes from
-previous kernel, it will be good.
+-- Steve
 
-So the problem is that note size from previous kernel might not be
-page aligned. And in /proc/vmcore view all the notes are supposed
-to be contiguous. 
 
-Thinking loud.
-
-- Can we introduce multiple PT_NOTE program headers. One for each note
-  data. I am not sure if this will break existing user space tools like
-  gdb, crash etc.
-
-- Or can we pad the notes with a new note type say "VMCORE_PAD". This is
-  similar to "VMCOREINFO" just that it is used for padding to make sure
-  notes can be page aligned. User space tools should simple ignore
-  the VMCORE_PAD notes and move on to next note.
-
-I think I like second idea better and given the fact that gdb did not
-break with introduction of "VMCOREINFO" note type, it should not break
-when we introduce another note type.
-
-If this works, you don't have to copy notes in second kernel?
-
-Eric, do you have any thoughts on this. What makes more sense.
-
-Thanks
-Vivek
