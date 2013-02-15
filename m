@@ -1,85 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932518Ab3BOCIR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Feb 2013 21:08:17 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:57615 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755302Ab3BOCIQ (ORCPT
+	id S1759880Ab3BOCKI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Feb 2013 21:10:08 -0500
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:47534 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755302Ab3BOCKG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Feb 2013 21:08:16 -0500
-Message-ID: <511D9890.1040900@acm.org>
-Date: Thu, 14 Feb 2013 20:08:16 -0600
-From: Corey Minyard <tcminyard@gmail.com>
-Reply-To: minyard@acm.org
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Thu, 14 Feb 2013 21:10:06 -0500
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: =?UTF-8?B?QnJ1bm8gUHLDqW1vbnQ=?= <bonbons@linux-vserver.org>,
-        Corey Minyard <cminyard@mvista.com>,
-        containers@lists.linux-foundation.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Move console redirect to pid namespace
-References: <1360376920-30824-1-git-send-email-minyard@acm.org> <20130209191409.643c3d7f@neptune.home> <87r4kkuj4o.fsf@xmission.com>
-In-Reply-To: <87r4kkuj4o.fsf@xmission.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130215011503.GA11914@redhat.com>
+References: <20130212193901.GA18906@redhat.com> <alpine.LNX.2.00.1302121549500.890@eggly.anvils>
+ <20130213004059.GA14451@redhat.com> <alpine.LNX.2.00.1302121652240.1077@eggly.anvils>
+ <20130213041629.GA28622@redhat.com> <alpine.LNX.2.00.1302122121170.15020@eggly.anvils>
+ <20130213193411.GA15928@redhat.com> <CA+55aFzmEDriX26Z7oJZg9yssFdCAaYwu6krmrwqfj2TBsxA4w@mail.gmail.com>
+ <20130215011503.GA11914@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 14 Feb 2013 18:09:44 -0800
+X-Google-Sender-Auth: hOoxFOxieW0PX7Os943fhIUdmTc
+Message-ID: <CA+55aFyVE0jyu9uw659ERw5E2DdOhwkQp3gk=gcXP0xrmMh9qA@mail.gmail.com>
+Subject: Re: Debugging Thinkpad T430s occasional suspend failure.
+To: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Paul McKenney <paul.mckenney@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13/2013 01:08 PM, Eric W. Biederman wrote:
-> Bruno Prémont <bonbons@linux-vserver.org> writes:
+On Thu, Feb 14, 2013 at 5:15 PM, Dave Jones <davej@redhat.com> wrote:
 >
->> CCing containers list
->>
->> On Fri, 08 February 2013 minyard@acm.org wrote:
->>> From: Corey Minyard <cminyard@mvista.com>
->>>
->>> The console redirect - ioctl(fd, TIOCCONS) - is not in a namespace,
->>> thus a container can do a redirect and grab all the I/O on the host
->>> and all container consoles.
->>>
->>> This change puts the redirect in the pid namespace.
->>>
->>> Signed-off-by: Corey Minyard <cminyard@mvista.com>
->>> ---
->>>
->>> I'm pretty sure this patch is not correct, but I'm not quite sure the
->>> best way to fix this.  I'm not 100% sure that the pid namespace is the
->>> right place, but it seemed the most reasonable of all the choices.  The
->>> other obvious choice is the mount namespace, but it didn't seem as good
->>> a fit.
->> With recent changes, tying it to init user namespace might even be
->> better.
-> With recent changes this is tied to the initial user namespace.  So the
-> simple solution to this and so many other similiar security problems is
-> to run your container in a user namespace.
+> Given I never saw this on a Fedora kernel, just my self-built ones, I eventually
+> gave up on bisecting code, and switched to bisecting config options.
+> I should have started this way, as I figured it out within an hour.
 >
-> The permission check currently is capable(CAP_SYS_ADMIN) which requires
-> the caller to have the CAP_SYS_ADMIN in the initial user namespace.
-
-I'm not sure I follow.  Are these changes in k.org, or in another 
-repository someplace?
-
+> 3.7 merge window is when I started seeing this, and here's what got introduced
+> during that time..
 >
-> Is there a desire to have TIOCCONS not just fail in a container but to
-> have TIOCCONS work in a container specific way?
-
-Well, my desire is for the host console to work properly if a container 
-uses TIOCCONS :-).  It seems to me that the most consistent way to 
-handle this is to have TIOCCONS in a container redirect the container's 
-console.
-
+> commit e3ebfb96f396731ca2d0b108785d5da31b53ab00
+> Author: Paul E. McKenney <paul.mckenney@linaro.org>
+> Date:   Mon Jul 2 14:42:01 2012 -0700
 >
->>> The other problem is that I don't think you can call fput() from
->>> destroy_pid_namespace().  That can be called from interrupt context,
->>> and I don't think fput() is safe there.  I know it's not safe in 3.4
->>> with the RT patch applied.  However, the only way I've come up with to
->>> fix it is to add a workqueue, and that seems a bit heavy for this.
-> Actually getting destroy_pid_namespace out of interrupt context wouldn't
-> be the worst thing in the world.
+>     rcu: Add PROVE_RCU_DELAY to provoke difficult races
+>
+> 'difficult' is an understatement.  This explains why some of those 'good'
+> bisects survived 100 suspends on one day, and failed the next.
+>
+> Unfortunatly, I don't think there's any sane way to retrieve whatever debug
+> info might be getting spewed.
 
-I would agree, but it would still require something like a workqueue.  
-Is there a better mechanism?
+Hmm. I have to say, that's a particularly unhelpful config option. It
+may make races much easier to hit, but when you do hit them, what's
+the symptoms of said race?
 
--corey
+Paul? Apparently you end up with a dead machine at least during resume
+and no oops. Which isn't very helpful. Maybe there is possibly some
+BUG_ON() in the RCU code somewhere?
+
+So Paul, if you know what the common symptoms of the bug that that
+debug option helps trigger are, is there some way to make them less
+lethal and still print out useful information?
+
+                   Linus
