@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935455Ab3BOGmK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 01:42:10 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:32673 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935353Ab3BOGmI (ORCPT
+	id S965341Ab3BOGnT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 01:43:19 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:33437 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964931Ab3BOGnR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 01:42:08 -0500
-X-AuditID: cbfee68f-b7f656d000000d78-71-511dd8b8456d
+	Fri, 15 Feb 2013 01:43:17 -0500
+X-AuditID: cbfee690-b7f066d00000169f-e2-511dd904ad31
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
         rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH V2 01/11] rtc: use dev_warn()/dev_dbg()/pr_err() instead of
- printk()
-Date: Fri, 15 Feb 2013 15:42:00 +0900
-Message-id: <001e01ce0b47$8edd1480$ac973d80$%han@samsung.com>
+References: <001e01ce0b47$8edd1480$ac973d80$%han@samsung.com>
+In-reply-to: <001e01ce0b47$8edd1480$ac973d80$%han@samsung.com>
+Subject: [PATCH V2 02/11] rtc: max77686: use dev_info() instead of printk()
+Date: Fri, 15 Feb 2013 15:43:15 +0900
+Message-id: <001f01ce0b47$bbac2e10$33048a30$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=US-ASCII
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4LR47AXgjtu6e1Qmq7gnKtv11nag==
+Thread-index: Ac4LR47AXgjtu6e1Qmq7gnKtv11nagAABfVQ
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOIsWRmVeSWpSXmKPExsVy+t8zfd2dN2QDDf5dZLS4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZn3fPYSrYL1yx+s1+lgbGD/xdjJwcEgImEqu7/7NC2GISF+6t
-	Z+ti5OIQEljGKLFowzRmmKJJm/6ygdhCAosYJZ7csYcoms0k0XCpiREkwSagJvHly2H2LkYO
-	DhEBfYm2Fg2QGmaBXkaJM7272UFqhAXCJBY+7gAbxCKgKnFizlQwm1fAVmJf6wVGCFtQ4sfk
-	eywgNrOAlsTmbU2sELa8xOY1b5lB5ksIqEs8+qsLEhYR0JM4cOcYG0SJiMS+F+8YQfZKCHSz
-	S7ybexxql4DEt8mHWCB6ZSU2HYD6S1Li4IobLBMYxWYh2TwLyeZZSDbPQrJiASPLKkbR1ILk
-	guKk9CJjveLE3OLSvHS95PzcTYyQSOnfwXj3gPUhxmSg9ROZpUST84GRllcSb2hsbGJmYmpi
-	bmlqbkqasJI4r/wlmUAhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjHPef6izK30pzhzze3n7
-	7Qun0171sKcFRzzgVV/j9vnjzqsrbp3d/2xbVZBtshzj5v3+vTsmXlvkffwbS8E0LctS771q
-	BzV5EqSFfS6XiXgebf317fAPyT9/Fp02eZTlyjmt8LmH3s13a6QPnzfubpe//3efWpqCim/S
-	G+fMHHelEyEH/qT++qfEUpyRaKjFXFScCAAboiCbqgIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCIsWRmVeSWpSXmKPExsVy+t9jAd0dN2QDDd6ssbK4vGsOmwOjx+dN
-	cgGMUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlA
-	U5UUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhHWMGZ93z2Eq2C9csfrNfpYG
-	xg/8XYycHBICJhKTNv1lg7DFJC7cWw9mCwksYpR4cse+i5ELyJ7NJNFwqYkRJMEmoCbx5cth
-	9i5GDg4RAX2JthYNkBpmgV5GiTO9u9lBaoQFwiQWPu4AG8QioCpxYs5UMJtXwFZiX+sFRghb
-	UOLH5HssIDazgJbE5m1NrBC2vMTmNW+ZQeZLCKhLPPqrCxIWEdCTOHDnGBtEiYjEvhfvGCcw
-	CsxCMmkWkkmzkEyahaRlASPLKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzgOHwmtYNxZYPF
-	IUYBDkYlHl4BCdlAIdbEsuLK3EOMEhzMSiK8a0KAQrwpiZVVqUX58UWlOanFhxiTgR6dyCwl
-	mpwPTBF5JfGGxiZmRpZGZhZGJubmpAkrifMynnoSICSQnliSmp2aWpBaBLOFiYNTqoGR2SRp
-	zqOzQm48HtlxZ/TkFI/EHhJW9vr5zzm7Q+19/PxMzpBa5ubX9mfD8t+f0p2RpnyzS/5DHtOd
-	bpmYlOdxEakfVE+4evor/lj5mC9wE5fmN9bJlzyPPte1Mzo696X/hd18yuvklQV2ZQgW2jrz
-	vev52Ont4m/m5WFtafPr9EO1m2uLLimxFGckGmoxFxUnAgCmDlZEBwMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHIsWRmVeSWpSXmKPExsVy+t8zQ12Wm7KBBjM3c1tc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6MSz/nMhf0cFY8XNrC2MB4jL2LkZNDQsBEYsPZOSwQtpjEhXvr
+	2boYuTiEBJYxSmzcfZgJpuhV91tWiMR0RonJ984zQjizmSTuP7nIBlLFJqAm8eXLYaCxHBwi
+	AvoSbS0aIDXMAr2MEmd6d4PFhQRsJabedgYxOQXsJN5PNwXpFBbwlrh8/C3YLhYBVYkN12+x
+	gti8QNWfrn5jhLAFJX5Mvgd2KLOAlsTmbU2sELa8xOY1b5lBRkoIqEs8+qsLEhYRMJK4/+kI
+	VLmIxL4X78AulhBYxC4x4f5/qF0CEt8mH2KB6JWV2HSAGeJdSYmDK26wTGCUmIVk8ywkm2ch
+	2TwLyYoFjCyrGEVTC5ILipPSi0z0ihNzi0vz0vWS83M3MULiasIOxnsHrA8xJgOtn8gsJZqc
+	D4zLvJJ4Q2NjEzMTUxNzS1NzU9KElcR55S/JBAoJpCeWpGanphakFsUXleakFh9iZOLglGpg
+	5I3cGzVT+LOF4U2Tc/933fuTeZ8jbb7q+h+6x/1zXaoORHVYxJs5fbYoedt0Z9N74RLd1YVc
+	b46Lqp/71RA/8W7jfQPWb0r9DyaEK+cfnHptzux2kV71pZY8nh8tot4/1BbtDvpxaecXxyAB
+	PS/lR8oLXkof4bTexrKxSO77g2D99wYb3t0RUWIpzkg01GIuKk4EAKfa/sfBAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmleLIzCtJLcpLzFFi42I5/e+xoC7LTdlAg9VvWS0u75rD5sDo8XmT
+	XABjVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7Q
+	VCWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1jxqWfc5kLejgrHi5tYWxg
+	PMbexcjJISFgIvGq+y0rhC0mceHeerYuRi4OIYHpjBKT751nhHBmM0ncf3KRDaSKTUBN4suX
+	w0DdHBwiAvoSbS0aIDXMAr2MEmd6d4PFhQRsJabedgYxOQXsJN5PNwXpFBbwlrh8/C0TiM0i
+	oCqx4fotsL28QNWfrn5jhLAFJX5MvscCYjMLaEls3tbECmHLS2xe85YZZKSEgLrEo7+6IGER
+	ASOJ+5+OQJWLSOx78Y5xAqPQLCSTZiGZNAvJpFlIWhYwsqxiFE0tSC4oTkrPNdIrTswtLs1L
+	10vOz93ECI7aZ9I7GFc1WBxiFOBgVOLhFZCQDRRiTSwrrsw9xCjBwawkwrsmBCjEm5JYWZVa
+	lB9fVJqTWnyIMRno0YnMUqLJ+cCEklcSb2hsYmZkaWRmYWRibk6asJI4L+OpJwFCAumJJanZ
+	qakFqUUwW5g4OKUaGEVuHfjVwmy3rO/ynUlTk+Nd1TeZRu+umXS4Na+oQcFihZaexzOv19op
+	0x1P7cypvsP/SXBhR9Qmixvfl7XsqW18ov3hQbHeCY6jdfev75WzOH/f8Mea69GdmzxExCJL
+	55dP7vMz0qu6yecqLJYdeJCZl8XOaoFzzPpXDHsveD9YOunKl/plO5VYijMSDbWYi4oTAdSI
+	BsYeAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -58,80 +60,33 @@ Fixed the checkpatch warning as below:
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
-Changes since v1:
-- Repalce pr_warn(), pr_debug() with dev_warn(), dev_dbg()
+No changes since v1:
 
- drivers/rtc/class.c   |    4 +++-
- drivers/rtc/rtc-dev.c |   11 ++++++-----
- 2 files changed, 9 insertions(+), 6 deletions(-)
+ drivers/rtc/rtc-max77686.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/rtc/class.c b/drivers/rtc/class.c
-index 26388f1..9b742d3 100644
---- a/drivers/rtc/class.c
-+++ b/drivers/rtc/class.c
-@@ -11,6 +11,8 @@
-  * published by the Free Software Foundation.
- */
+diff --git a/drivers/rtc/rtc-max77686.c b/drivers/rtc/rtc-max77686.c
+index 2da0855..abe27c0 100644
+--- a/drivers/rtc/rtc-max77686.c
++++ b/drivers/rtc/rtc-max77686.c
+@@ -507,7 +507,7 @@ static int max77686_rtc_probe(struct platform_device *pdev)
+ 	struct max77686_rtc_info *info;
+ 	int ret, virq;
  
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/module.h>
- #include <linux/rtc.h>
- #include <linux/kdev_t.h>
-@@ -261,7 +263,7 @@ static int __init rtc_init(void)
- {
- 	rtc_class = class_create(THIS_MODULE, "rtc");
- 	if (IS_ERR(rtc_class)) {
--		printk(KERN_ERR "%s: couldn't create class\n", __FILE__);
-+		pr_err("couldn't create class\n");
- 		return PTR_ERR(rtc_class);
- 	}
- 	rtc_class->suspend = rtc_suspend;
-diff --git a/drivers/rtc/rtc-dev.c b/drivers/rtc/rtc-dev.c
-index 9a86b4b..d049393 100644
---- a/drivers/rtc/rtc-dev.c
-+++ b/drivers/rtc/rtc-dev.c
-@@ -11,6 +11,8 @@
-  * published by the Free Software Foundation.
- */
+-	printk(KERN_INFO "%s\n", __func__);
++	dev_info(&pdev->dev, "%s\n", __func__);
  
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/module.h>
- #include <linux/rtc.h>
- #include <linux/sched.h>
-@@ -462,7 +464,7 @@ void rtc_dev_prepare(struct rtc_device *rtc)
- 		return;
+ 	info = kzalloc(sizeof(struct max77686_rtc_info), GFP_KERNEL);
+ 	if (!info)
+@@ -546,7 +546,7 @@ static int max77686_rtc_probe(struct platform_device *pdev)
+ 			&max77686_rtc_ops, THIS_MODULE);
  
- 	if (rtc->id >= RTC_DEV_MAX) {
--		pr_debug("%s: too many RTC devices\n", rtc->name);
-+		dev_dbg(&rtc->dev, "%s: too many RTC devices\n", rtc->name);
- 		return;
- 	}
+ 	if (IS_ERR(info->rtc_dev)) {
+-		printk(KERN_INFO "%s: fail\n", __func__);
++		dev_info(&pdev->dev, "%s: fail\n", __func__);
  
-@@ -480,10 +482,10 @@ void rtc_dev_prepare(struct rtc_device *rtc)
- void rtc_dev_add_device(struct rtc_device *rtc)
- {
- 	if (cdev_add(&rtc->char_dev, rtc->dev.devt, 1))
--		printk(KERN_WARNING "%s: failed to add char device %d:%d\n",
-+		dev_warn(&rtc->dev, "%s: failed to add char device %d:%d\n",
- 			rtc->name, MAJOR(rtc_devt), rtc->id);
- 	else
--		pr_debug("%s: dev (%d:%d)\n", rtc->name,
-+		dev_dbg(&rtc->dev, "%s: dev (%d:%d)\n", rtc->name,
- 			MAJOR(rtc_devt), rtc->id);
- }
- 
-@@ -499,8 +501,7 @@ void __init rtc_dev_init(void)
- 
- 	err = alloc_chrdev_region(&rtc_devt, 0, RTC_DEV_MAX, "rtc");
- 	if (err < 0)
--		printk(KERN_ERR "%s: failed to allocate char dev region\n",
--			__FILE__);
-+		pr_err("failed to allocate char dev region\n");
- }
- 
- void __exit rtc_dev_exit(void)
+ 		ret = PTR_ERR(info->rtc_dev);
+ 		dev_err(&pdev->dev, "Failed to register RTC device: %d\n", ret);
 -- 
 1.7.2.5
 
