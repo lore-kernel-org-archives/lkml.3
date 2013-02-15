@@ -1,101 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935722Ab3BOKid (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 05:38:33 -0500
-Received: from mysmtp1.stec-inc.com ([1.9.68.9]:37968 "HELO
-	mysmtp1.stec-inc.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1760476Ab3BOKib convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 05:38:31 -0500
-X-ASG-Debug-ID: 1360924708-053ea90dcf2a5390001-xx1T2L
-X-Barracuda-Envelope-From: akale@stec-inc.com
-X-Barracuda-RBL-Trusted-Forwarder: 172.30.0.57
-From: Amit Kale <akale@stec-inc.com>
-X-Barracuda-BWL-IP: fe80::64e7:ed5b:e6f9:c391
-X-Barracuda-Apparent-Source-IP: fe80::64e7:ed5b:e6f9:c391
-To: Jens Axboe <axboe@kernel.dk>, OS Engineering <osengineering@stec-inc.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Darrick J. Wong" <darrick.wong@oracle.com>,
-        Sanoj Unnikrishnan <sunnikrishnan@stec-inc.com>,
-        =?iso-2022-jp?B?GyRCMiY2YjE6GyhC?= <jinpuwang@gmail.com>
-Date: Fri, 15 Feb 2013 18:36:31 +0800
-Subject: RE: [PATCH] EnhanceIO ssd caching software
-Thread-Topic: [PATCH] EnhanceIO ssd caching software
-X-ASG-Orig-Subj: RE: [PATCH] EnhanceIO ssd caching software
-Thread-Index: Ac4LXxNOC4F30gYeR0upzZqq43p0pgACQ1GA
-Message-ID: <C4B5704C6FEB5244B2A1BCC8CF83B86B0A624D6ADE@MYMBX.MY.STEC-INC.AD>
-References: <C4B5704C6FEB5244B2A1BCC8CF83B86B0A624D6AAF@MYMBX.MY.STEC-INC.AD>
- <20130215092955.GY21269@kernel.dk>
-In-Reply-To: <20130215092955.GY21269@kernel.dk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	id S1760948Ab3BOKlw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 05:41:52 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:34295 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751815Ab3BOKlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 05:41:51 -0500
+From: James Hogan <james.hogan@imgtec.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Arnd Bergmann <arnd@arndb.de>, James Hogan <james.hogan@imgtec.com>
+Subject: [PATCH 0/6] metag: metag_ksyms.c cleanup
+Date: Fri, 15 Feb 2013 10:41:35 +0000
+Message-ID: <1360924901-21404-1-git-send-email-james.hogan@imgtec.com>
+X-Mailer: git-send-email 1.7.7.6
 MIME-Version: 1.0
-X-Barracuda-Connect: mycas01.my.stec-inc.ad[172.30.0.57]
-X-Barracuda-Start-Time: 1360924708
-X-Barracuda-URL: http://myspam1.stec-inc.com:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: -0.00
-X-Barracuda-Spam-Status: No, SCORE=-0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=ISO2022JP_CHARSET
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.122731
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	-0.00 ISO2022JP_CHARSET      ISO-2022-JP message
+Content-Type: text/plain
+X-SEF-Processed: 7_3_0_01181__2013_02_15_10_41_50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
-> owner@vger.kernel.org] On Behalf Of Jens Axboe
-> Sent: Friday, February 15, 2013 3:00 PM
-> To: OS Engineering
-> Cc: Greg Kroah-Hartman; LKML; Darrick J. Wong; Sanoj Unnikrishnan;
-> 王金浦; Amit Kale
-> Subject: Re: [PATCH] EnhanceIO ssd caching software
-> 
-> On Fri, Feb 15 2013, OS Engineering wrote:
-> > Hi Greg, Jens,
-> >
-> > We are submitting EnhanceIO(TM) software driver for an inclusion in
-> > linux staging tree. Present state of this driver is beta. We have
-> been
-> > posting it for a few weeks, while it was maintained at github. It is
-> > still being cleaned-up and is being tested by LKML members. Inclusion
-> > in linux staging tree will make testing and reviewing easier and help
-> > a future integration in Linux kernel.
-> 
-> From a quick look, this looks clean enough to not warrant a stop in
-> staging. Why don't we just queue it up for 3.10, that will give it 3-4
-> months before it hits a release kernel. So plenty of time to iron out
-> any kinks in this. It's a driver and completely isolated at that, so
-> I'd have no problem doing that.
+Here are some fairly trivial metag_ksyms.c/EXPORT_SYMBOL cleanups which
+I'll add to the arch/metag tree for v3.9-rc1.
 
-That'll be great. A few more clean-ups are remaining. It's undergone extensive in-house testing in last few months, so I am hoping that we'll not see any bug reports.
+Basically they move EXPORT_SYMBOLs to after the actual definitions for
+those symbols defined in C files, and clean up the includes in
+metag_ksyms.c.
 
-Let's queue it for 3.10.
+James Hogan (6):
+  metag: move traps.c exports out of metag_ksyms.c
+  metag: move kick.c exports out of metag_ksyms.c
+  metag: move setup.c exports out of metag_ksyms.c
+  metag: move usercopy.c exports out of metag_ksyms.c
+  metag: move mm/init.c exports out of metag_ksyms.c
+  metag: cleanup metag_ksyms.c includes
 
-Thanks a lot.
--Amit
+ arch/metag/kernel/kick.c        |    3 +++
+ arch/metag/kernel/metag_ksyms.c |   39 +++------------------------------------
+ arch/metag/kernel/setup.c       |    3 +++
+ arch/metag/kernel/traps.c       |    3 +++
+ arch/metag/lib/usercopy.c       |   13 +++++++++++++
+ arch/metag/mm/init.c            |    3 +++
+ 6 files changed, 28 insertions(+), 36 deletions(-)
+
+-- 
+1.7.7.6
 
 
-> 
-> --
-> Jens Axboe
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
-> in the body of a message to majordomo@vger.kernel.org More majordomo
-> info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-PROPRIETARY-CONFIDENTIAL INFORMATION INCLUDED
-
-
-
-This electronic transmission, and any documents attached hereto, may contain confidential, proprietary and/or legally privileged information. The information is intended only for use by the recipient named above. If you received this electronic message in error, please notify the sender and delete the electronic message. Any disclosure, copying, distribution, or use of the contents of information received in error is strictly prohibited, and violators will be pursued legally.
