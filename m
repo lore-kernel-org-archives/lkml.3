@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757241Ab3BOSeg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 13:34:36 -0500
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:55691 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756789Ab3BOSef (ORCPT
+	id S1757295Ab3BOSfd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 13:35:33 -0500
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:47839 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756789Ab3BOSfb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 13:34:35 -0500
+	Fri, 15 Feb 2013 13:35:31 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130215174435.GA2792@linux.vnet.ibm.com>
+In-Reply-To: <CA+55aFy8FeGMOnWwkfmyFYyVCw+k1LSVg7BG0tsTNZzqi5EKYg@mail.gmail.com>
 References: <20130212193901.GA18906@redhat.com> <alpine.LNX.2.00.1302121549500.890@eggly.anvils>
  <20130213004059.GA14451@redhat.com> <alpine.LNX.2.00.1302121652240.1077@eggly.anvils>
  <20130213041629.GA28622@redhat.com> <alpine.LNX.2.00.1302122121170.15020@eggly.anvils>
  <20130213193411.GA15928@redhat.com> <CA+55aFzmEDriX26Z7oJZg9yssFdCAaYwu6krmrwqfj2TBsxA4w@mail.gmail.com>
  <20130215011503.GA11914@redhat.com> <CA+55aFyVE0jyu9uw659ERw5E2DdOhwkQp3gk=gcXP0xrmMh9qA@mail.gmail.com>
- <20130215174435.GA2792@linux.vnet.ibm.com>
+ <20130215174435.GA2792@linux.vnet.ibm.com> <CA+55aFy8FeGMOnWwkfmyFYyVCw+k1LSVg7BG0tsTNZzqi5EKYg@mail.gmail.com>
 From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 15 Feb 2013 10:34:13 -0800
-X-Google-Sender-Auth: 6uwhv5Op3wpvm36C5xYrqV-AerA
-Message-ID: <CA+55aFy8FeGMOnWwkfmyFYyVCw+k1LSVg7BG0tsTNZzqi5EKYg@mail.gmail.com>
+Date: Fri, 15 Feb 2013 10:35:10 -0800
+X-Google-Sender-Auth: nusdQqmlI4lDnOb3AowZaB6iAls
+Message-ID: <CA+55aFwHtFeN97E-zW2QKQWH8vu=g29cxevvEnpEnHc8dx7oWA@mail.gmail.com>
 Subject: Re: Debugging Thinkpad T430s occasional suspend failure.
 To: Paul McKenney <paulmck@linux.vnet.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
@@ -32,40 +32,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 15, 2013 at 9:44 AM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
+On Fri, Feb 15, 2013 at 10:34 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 >
-> This commit was designed to increase the probability of hitting the
-> races described in http://lwn.net/Articles/453002/.  These races result
-> in deadlocks involving the runqueue lock (and perhaps also the priority
-> inheritance locks).  And yes, I most certainly should have described
-> this in the commit message.  :-(
+> Something like this ENTIRELY UNTESTED patch.
 
-Ugh. That particular race seems to be because the softirq handling is
-just crazy, and does the "wakeup_softirqd()" form interrupt context,
-BUT HAS SPECIFICALLY BROKEN THE IRQ COUNTING!
+.. and let's actually attach the patch this time.
 
-Because it claims to do it from softirq context, which is pure
-garbage. It's not actually in softirq context.
-
-The whole hardirq -> softirq transition seems stupid. I'm sure I made
-some serious mistake in cleaning it up, and there's probably some
-missed tracepoint (or perhaps screwed-up lockdep annotation), but I
-think the hardirq -> softirq preempt thing shoudl be done as an atomic
-preempt downgrade, so that we never have a window of "uhhuh, another
-interrupt can come in between and see us as being in neither). And the
-wakeup_softirqd should be done without playing with preempt count at
-all.
-
-Something like this ENTIRELY UNTESTED patch.
-
-Note: I doubt this patch affects Dave's issue at all, I just started
-looking at that do_softirq code when I read your bug explanation.
-
-Adding random people for kernel/softirq.c to the participants list.
-Comments about the patch? Do note that it's entirely untested, so
-consider it more a RFD than a real patch.. It looks like it adds a lot
-of lines, but most of it is for comments and simplification of the
-logic.
-
-             Linus
+                      Linus
