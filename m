@@ -1,51 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755403Ab3BORjT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 12:39:19 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:50920 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752006Ab3BORjS (ORCPT
+	id S1756022Ab3BORjl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 12:39:41 -0500
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:64972 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755662Ab3BORjk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 12:39:18 -0500
-Date: Fri, 15 Feb 2013 12:39:04 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jan Beulich <JBeulich@suse.com>, Ian Campbell <Ian.Campbell@eu.citrix.com>
-Cc: roger.pau@citrix.com, jinsong.liu@intel.com,
-        xen-devel <xen-devel@lists.xen.org>, linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] Patches for v3.9 for the Linux kernel.
-Message-ID: <20130215173904.GC10133@phenom.dumpdata.com>
-References: <20130215163451.GD13775@phenom.dumpdata.com>
- <511E761402000078000BEDD8@nat28.tlf.novell.com>
+	Fri, 15 Feb 2013 12:39:40 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <511E761402000078000BEDD8@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <20130214212411.55788ec1.akpm@linux-foundation.org>
+References: <1360311077-14474-1-git-send-email-sustrik@250bpm.com>
+ <20130214145430.04f8750c.akpm@linux-foundation.org> <511DAEA3.4080201@250bpm.com>
+ <20130214212411.55788ec1.akpm@linux-foundation.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 15 Feb 2013 09:32:37 -0800
+Message-ID: <CALCETrWxLiesdRc6v11uaSVnQYXJQwP+gR7reG3x-iU44wV2HA@mail.gmail.com>
+Subject: Re: [PATCH v2 1/1] eventfd: implementation of EFD_MASK flag
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Martin Sustrik <sustrik@250bpm.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Sha Zhengju <handai.szj@taobao.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        Eric Wong <normalperson@yhbt.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 15, 2013 at 04:53:24PM +0000, Jan Beulich wrote:
-> >>> On 15.02.13 at 17:34, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> > I know that the PVH patches are not in the Xen tree. I am hoping that
-> > at least the hypercalls _are_ OK with everybody so we can continue on
-> > with this.
-> 
-> Please don't commit to anything that isn't in the hypervisor tree
-> yet. IOW I'd like you to not push the PVH bits that use
-> uncommitted hypervisor interfaces (anything preparatory of
-> course is okay).
+On Thu, Feb 14, 2013 at 9:24 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Fri, 15 Feb 2013 04:42:27 +0100 Martin Sustrik <sustrik@250bpm.com> wrote:
+>
+>> > This is a non-back-compatible userspace interface change.  A procfs
+>> > file which previously displayed
+>> >
+>> >     eventfd-count: nnnn
+>> >
+>> > can now also display
+>> >
+>> >     eventfd-mask: nnnn
+>> >
+>> > So existing userspace could misbehave.
+>> >
+>> > Please fully describe the proposed interface change in the changelog.
+>> > That description should include the full pathname of the procfs file
+>> > and example before-and-after output and a discussion of whether and why
+>> > the risk to existing userspace is acceptable.
+>>
+>> I am not sure what the policy is here. Is not printing out the state of
+>> the object acceptable way to maintain backward compatibility? If not so,
+>> does new type of object require new procfs file, which, AFAIU, is the
+>> only way to retain full backward compatibility?
+>
+> Adding a new file is the only way I can think of to preserve the API.
+> But from Andy's comment is sounds like we don't have to worry a lot
+> about back-compatibility.
+>
 
-Hm, I believe the only one that was of contention was the 'PHYSDEVOP_map_iomem'
-which Mukesh reverted.
+I'm not even convinced there's an issue in the first place (other than
+the fact that use of this feature will break old criu, regardless of
+/proc changes).  The fdinfo files already vary by descriptor type.
+Anything that screws up if unexpected fields are present is already
+screwed.
 
-The other one is the XENMEM_add_to_physmap_range, which Ian has for ARM.
-That is the git commit b6eafa71fa87f4c831e9c2eac736e8ac20b3ea1c
-in stable/pvh.v7 tree.
-
-Oh, there is one change in this git commit b8724d6bd1c09e34b6c76b57d07ea4d3fbd8ed4c
-..and that gets reverted in 68c5bb99d8b8abbf70b3380bed8eca69648193f5 (by Ian).
-
-So from a hypercall perspective - Ian, is the XENMEM_add_to_physmap_range fully
-baked ?
+--Andy
