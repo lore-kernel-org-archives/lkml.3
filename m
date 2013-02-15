@@ -1,87 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756969Ab3BOIeM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 03:34:12 -0500
-Received: from mga03.intel.com ([143.182.124.21]:40555 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752463Ab3BOIeL convert rfc822-to-8bit (ORCPT
+	id S935504Ab3BOIn6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 03:43:58 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:10187 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932895Ab3BOIn5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 03:34:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,671,1355126400"; 
-   d="scan'208";a="202705134"
-From: "Zhang, Rui" <rui.zhang@intel.com>
-To: Andreas Mohr <andi@lisas.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [ASAP] thermal_sys.c NULL ptr deref patch likely incomplete
-Thread-Topic: [ASAP] thermal_sys.c NULL ptr deref patch likely incomplete
-Thread-Index: AQHOCsHF9Z6vRnNAfUas0eTwR3aiyph6mNAQ
-Date: Fri, 15 Feb 2013 08:34:07 +0000
-Message-ID: <744357E9AAD1214791ACBA4B0B90926329ED25@SHSMSX101.ccr.corp.intel.com>
-References: <20130214144404.GA20011@rhlx01.hs-esslingen.de>
-In-Reply-To: <20130214144404.GA20011@rhlx01.hs-esslingen.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 15 Feb 2013 03:43:57 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 15 Feb 2013 00:43:18 -0800
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: <linux-tegra@vger.kernel.org>
+CC: <pdeschrijver@nvidia.com>, <pgaikwad@nvidia.com>,
+        Hiroshi Doyu <hdoyu@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Russell King <linux@arm.linux.org.uk>, Simon Glass <sjg@chromium.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: [v3 0/6] ARM: tegra: convert device tree files to use CLK defines
+Date: Fri, 15 Feb 2013 10:43:11 +0200
+Message-ID: <1360917814-27236-1-git-send-email-hdoyu@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Can you please attach your config file?
+Hi,
 
-Thanks,
-rui
+With new dtc+cpp feature, we could get rid of magic numbers in dts*
+files. This patch replaces CLK IDs.
 
-> -----Original Message-----
-> From: Andreas Mohr [mailto:andi@lisas.de]
-> Sent: Thursday, February 14, 2013 10:44 PM
-> To: Zhang, Rui
-> Cc: linux-kernel@vger.kernel.org
-> Subject: [ASAP] thermal_sys.c NULL ptr deref patch likely incomplete
-> Importance: High
-> 
-> Hi,
-> 
-> I just had a
-> 
-> # cat /sys/class/thermal/thermal_zone0/policy
-> (null)
-> 
-> 
-> When looking at the code (on my -rc7), I saw:
-> 
-> drivers/thermal/thermal_sys.c
-> 
-> static ssize_t
-> policy_show(struct device *dev, struct device_attribute *devattr, char
-> *buf)
-> {
->         struct thermal_zone_device *tz = to_thermal_zone(dev);
-> 
->         return sprintf(buf, "%s\n", tz->governor->name);
-> }
-> 
-> 
-> (not sure though why I manage to get a "(null)" rather than a crash
-> due to the dereferencing prior to output - possibly since I do have a
-> valid governor allocated yet then only its name field is null?)
-> 
-> 
-> Seems we are missing a critical (and -rc-relevant) patch here
-> (and perhaps at other locations in this file, too, given that
-> this one was missed last time?).
-> 
-> Currently trying to get acerhdf operation into a working state
-> (and having some trouble with it - didn't know that I probably need
-> some
-> governor setup which seems to have just been available on my last setup,
-> or so)
-> 
-> Thanks,
-> 
-> Andreas Mohr
+We also plan to share those DT header files with kernel source
+later[1].
+
+This series depends on:
+  [PATCH 0/9] ARM: tegra: use new dtc+cpp feature
+  http://lists.infradead.org/pipermail/linux-arm-kernel/2013-February/149613.html
+
+[5/6] and [6/6] depend on:
+  [PATCH v6 00/10] Tegra114 clockframework
+  http://lists.infradead.org/pipermail/linux-arm-kernel/2013-February/148895.html
+
+v2:
+http://lists.infradead.org/pipermail/linux-arm-kernel/2013-February/149816.html
+
+v1:
+http://lists.infradead.org/pipermail/linux-arm-kernel/2013-February/149672.html
+
+[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2013-February/149804.html
+
+
+Hiroshi Doyu (6):
+  ARM: tegra20: create a DT header defining CLK IDs
+  ARM: tegra20: convert device tree files to use CLK defines
+  ARM: tegra30: create a DT header defining CLK IDs
+  ARM: tegra30: convert device tree files to use CLK defines
+  ARM: tegra114: create a DT header defining CLK IDs
+  ARM: tegra114: convert device tree files to use CLK defines
+
+ .../bindings/clock/nvidia,tegra114-car.txt         |  261 +------------------
+ .../bindings/clock/nvidia,tegra20-car.txt          |  150 +----------
+ .../bindings/clock/nvidia,tegra30-car.txt          |  207 +--------------
+ arch/arm/boot/dts/tegra114-car.h                   |  272 ++++++++++++++++++++
+ arch/arm/boot/dts/tegra114.dtsip                   |   13 +-
+ arch/arm/boot/dts/tegra20-car.h                    |  158 ++++++++++++
+ arch/arm/boot/dts/tegra20-paz00.dtsp               |    2 +-
+ arch/arm/boot/dts/tegra20.dtsip                    |   85 +++---
+ arch/arm/boot/dts/tegra30-car.h                    |  218 ++++++++++++++++
+ arch/arm/boot/dts/tegra30.dtsip                    |   87 +++----
+ 10 files changed, 746 insertions(+), 707 deletions(-)
+ create mode 100644 arch/arm/boot/dts/tegra114-car.h
+ create mode 100644 arch/arm/boot/dts/tegra20-car.h
+ create mode 100644 arch/arm/boot/dts/tegra30-car.h
+
+-- 
+1.7.9.5
+
