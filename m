@@ -1,97 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219Ab3BPMk3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 07:40:29 -0500
-Received: from mail-ia0-f177.google.com ([209.85.210.177]:35963 "EHLO
-	mail-ia0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753161Ab3BPMk2 (ORCPT
+	id S1753225Ab3BPMt1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 07:49:27 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:54651 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752949Ab3BPMt0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 07:40:28 -0500
+	Sat, 16 Feb 2013 07:49:26 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v6 3/3] ARM: mm: use static_vm for managing static mapped areas
+Date: Sat, 16 Feb 2013 12:49:08 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-6-generic; KDE/4.3.2; x86_64; ; )
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Russell King <linux@arm.linux.org.uk>, js1304@gmail.com,
+        Nicolas Pitre <nico@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>
+References: <1360142010-10598-1-git-send-email-iamjoonsoo.kim@lge.com> <1360142010-10598-4-git-send-email-iamjoonsoo.kim@lge.com>
+In-Reply-To: <1360142010-10598-4-git-send-email-iamjoonsoo.kim@lge.com>
 MIME-Version: 1.0
-In-Reply-To: <20130216122403.GA2445@localhost>
-References: <1361014708-1659-1-git-send-email-anilk4.v@gmail.com>
-	<1361014708-1659-2-git-send-email-anilk4.v@gmail.com>
-	<20130216122403.GA2445@localhost>
-Date: Sat, 16 Feb 2013 18:10:25 +0530
-Message-ID: <CABYxbz5nSY3TyTkH-_i0avv2v8nCWB_Vyn7uRNLkBmpk4W04DA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] ARM: dts: omap3: Add gpmc node
-From: Anil Kumar <anilk4.v@gmail.com>
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux@arm.linux.org.uk, b-cousson@ti.com,
-        Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@secretlab.ca>, zonque@gmail.com,
-        thomas@tomweber.eu
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302161249.08597.arnd@arndb.de>
+X-Provags-ID: V02:K0:pvR3q79JJIE6Dg/SBl7pcbnS1XgGaUgWt3eyGz5wUNy
+ mf83NK4OlGh9YOeA5+m0wllBqvJDZ3RPvddLVW/PMMM4x4ruhv
+ I+Q74gLhkGHz4j9BG7qaicIiZ+Fdq/eFlkN9/jOLqMzq1d5UH4
+ ef0+MDfdXLX1uPFMvxitBYOSnGpuB+t7S6/wIQKuD2Gh4dci3U
+ ktxjlTUV2sxC1m2ksYny+OBpXcu77+cr0CQD1RNiw8tI6BXY56
+ P09Bx15usM6o09qA9HJLCh2WV2Hy/Bfi/usdfmWJM/2K6mCRNp
+ GQRf3srYJowyR5ln1pxH9iZsZf+fezBcuHz+rqLhhzYUfdDBCA
+ nwkgxS4t3UuRbGRJE63U=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wednesday 06 February 2013, Joonsoo Kim wrote:
+> @@ -859,17 +864,12 @@ static void __init pci_reserve_io(void)
+>  {
+>  	struct vm_struct *vm;
+>  	unsigned long addr;
+> +	struct static_vm *svm;
+>  
+> -	/* we're still single threaded hence no lock needed here */
+> -	for (vm = vmlist; vm; vm = vm->next) {
+> -		if (!(vm->flags & VM_ARM_STATIC_MAPPING))
+> -			continue;
+> -		addr = (unsigned long)vm->addr;
+> -		addr &= ~(SZ_2M - 1);
+> -		if (addr == PCI_IO_VIRT_BASE)
+> -			return;
+> +	svm = find_static_vm_vaddr((void *)PCI_IO_VIRT_BASE);
+> +	if (svm)
+> +		return;
+>  
+> -	}
 
-On Sat, Feb 16, 2013 at 5:54 PM, Ezequiel Garcia
-<ezequiel.garcia@free-electrons.com> wrote:
-> Hi Anil,
->
-> On Sat, Feb 16, 2013 at 05:08:27PM +0530, Anil Kumar wrote:
->> Add gpmc DT node.
->>
->> Signed-off-by: Anil Kumar <anilk4.v@gmail.com>
->> ---
->> :100644 100644 1acc261... 9f36531... M        arch/arm/boot/dts/omap3.dtsi
->>  arch/arm/boot/dts/omap3.dtsi |   11 +++++++++++
->>  1 files changed, 11 insertions(+), 0 deletions(-)
->>
->> diff --git a/arch/arm/boot/dts/omap3.dtsi b/arch/arm/boot/dts/omap3.dtsi
->> index 1acc261..9f36531 100644
->> --- a/arch/arm/boot/dts/omap3.dtsi
->> +++ b/arch/arm/boot/dts/omap3.dtsi
->> @@ -397,5 +397,16 @@
->>                       ti,timer-alwon;
->>                       ti,timer-secure;
->>               };
->> +
->> +             gpmc: gpmc@6e000000 {
->> +                     compatible = "ti,omap3430-gpmc";
->> +                     ti,hwmods = "gpmc";
->> +                     reg = <0x6e000000 0x1000000>;
->> +                     interrupts = <20>;
->> +                     gpmc,num-cs = <8>;
->> +                     gpmc,num-waitpins = <4>;
->> +                     #address-cells = <2>;
->> +                     #size-cells = <1>;
->> +             };
->>       };
->>  };
->> --
->> 1.7.0.4
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-> This patch has been already sent twice to the mailing list.
-> Perhaps it would be more polite if you could base your work on
-> one of those instead of sending it yourself again.
->
-> Florian Vaussard sent one on January 28th:
-> [PATCH 1/2] ARM: dts: OMAP3: Add GPMC controller
+This is causing build warnings in a bunch of configurations now,
+see patch below.
 
-ok, I missed this patch. I will re base my changes on of this patch.
+	Arnd
 
->
-> Javier Martinez Canillas sent another one on February 09th:
-> [PATCH RFC 6/7] ARM: dts: OMAP: Add an GPMC node for OMAP3
->
-> Moreover, you could help to get patches merged faster by sending
-> your Acked-by or Tested-by.
->
+8<-----
+ARM: mm: remove unused variables in pci_reserve_io
 
-Sure i do that.
+Patch "ARM: 7646/1: mm: use static_vm for managing static mapped areas"
+removed code from pci_reserve_io but left variable declarations
+in place that are now unused, as gcc correctly warns.
 
-Thanks,
-Anil
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+
+diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+index c6fe15a..c6d45c8 100644
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@ -901,8 +901,6 @@ static void __init fill_pmd_gaps(void)
+ #if defined(CONFIG_PCI) && !defined(CONFIG_NEED_MACH_IO_H)
+ static void __init pci_reserve_io(void)
+ {
+-	struct vm_struct *vm;
+-	unsigned long addr;
+ 	struct static_vm *svm;
+ 
+ 	svm = find_static_vm_vaddr((void *)PCI_IO_VIRT_BASE);
