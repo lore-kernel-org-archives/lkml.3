@@ -1,103 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751293Ab3BPAKa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 19:10:30 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:65305 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751034Ab3BPAK3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 19:10:29 -0500
-From: Mandeep Singh Baines <mandeep.baines@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Ben Chan <benchan@chromium.org>, Mandeep Singh Baines <msb@chromium.org>,
-        Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@redhat.com>
-Subject: [PATCH v3] coredump: ignore non-fatal signals when core dumping to a pipe
-Date: Fri, 15 Feb 2013 16:09:58 -0800
-Message-Id: <1360973398-23823-1-git-send-email-msb@chromium.org>
-X-Mailer: git-send-email 1.7.12.4
-In-Reply-To: <1360885096-21207-5-git-send-email-msb@chromium.org>
-References: <1360885096-21207-5-git-send-email-msb@chromium.org>
+	id S1751400Ab3BPALx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 19:11:53 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:39090 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751035Ab3BPALw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 19:11:52 -0500
+Message-ID: <511ECE53.8040801@zytor.com>
+Date: Fri, 15 Feb 2013 16:09:55 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+CC: Steven Rostedt <rostedt@goodmis.org>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
+        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>,
+        "Borislav Petkov (bp@alien8.de)" <bp@alien8.de>,
+        Satoru Moriya <satoru.moriya@hds.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>
+Subject: Re: [PATCH v9 2/3] trace,x86: add x86 irq vector tracepoints
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D414A64C4B@USINDEM103.corp.hds.com>
+In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D414A64C4B@USINDEM103.corp.hds.com>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Chan <benchan@chromium.org>
+On 02/04/2013 02:49 PM, Seiji Aguchi wrote:
+> +
+> +static void switch_to_trace_idt(void *arg)
+> +{
+> +	store_idt(this_cpu_ptr(&orig_idt_descr));
+> +	load_idt(&trace_idt_descr);
+> +
+> +	return;
+> +}
+> +
+> +static void restore_original_idt(void *arg)
+> +{
+> +	if (this_cpu_read(orig_idt_descr.address)) {
+> +		load_idt(this_cpu_ptr(&orig_idt_descr));
+> +		this_cpu_write(orig_idt_descr.address, 0);
+> +	}
+> +
+> +	return;
+> +}
+> +
 
-Make wait_for_dump_helpers() not abort piping the core dump data when the
-crashing process has received a non-fatal signal.  The abort still occurs
-in the case of SIGKILL.
+The base address of the IDT doesn't generally change... the one
+exception is when we do the funny NMI workaround.
 
-Addresses http://crosbug.com/21559
+For that reason, I would be happier if we just restored the standard
+value instead of saving/restoring stuff.
 
-Changes since v1:
-* Mandeep Singh Baines
-  * To prevent blocking suspend, add try_to_freeze().
-Changes since v2:
-* LKML: <20130215150117.GB30829@redhat.com> Oleg Nestorov
-  * Block non-fatal signals to avoid poll_wait busy waiting.
-* LKML: <20130215152538.9a61a44e.akpm@linux-foundation.org> Andrew Morton
-  * Added comment re: try_to_freeze and clarified commit message.
+The above code is probably broken if either side is in the funny NMI
+zone... unless you can guarantee it is *always* in the funny NMI zone
+(in which case you can just load nmi_idt_descr instead.
 
-Signed-off-by: Ben Chan <benchan@chromium.org>
-Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-CC: Oleg Nesterov <oleg@redhat.com>
-CC: Tejun Heo <tj@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Rafael J. Wysocki <rjw@sisk.pl>
-CC: Ingo Molnar <mingo@redhat.com>
----
- fs/coredump.c | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+Steve R., do you know what the constraints are with respect to that?
 
-diff --git a/fs/coredump.c b/fs/coredump.c
-index 1774932..976f6cc 100644
---- a/fs/coredump.c
-+++ b/fs/coredump.c
-@@ -32,6 +32,7 @@
- #include <linux/pipe_fs_i.h>
- #include <linux/oom.h>
- #include <linux/compat.h>
-+#include <linux/freezer.h>
- 
- #include <asm/uaccess.h>
- #include <asm/mmu_context.h>
-@@ -410,6 +411,11 @@ static void coredump_finish(struct mm_struct *mm)
- static void wait_for_dump_helpers(struct file *file)
- {
- 	struct pipe_inode_info *pipe;
-+	sigset_t blocked, previous;
-+
-+	/* Block all but fatal signals. */
-+	siginitsetinv(&blocked, sigmask(SIGKILL));
-+	sigprocmask(SIG_BLOCK, &blocked, &previous);
- 
- 	pipe = file->f_path.dentry->d_inode->i_pipe;
- 
-@@ -421,12 +427,22 @@ static void wait_for_dump_helpers(struct file *file)
- 		wake_up_interruptible_sync(&pipe->wait);
- 		kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
- 		pipe_wait(pipe);
-+
-+		/*
-+		 * Non-fatal signals are blocked. So we need to try
-+		 * to freeze in order to not block suspend.
-+		 */
-+		pipe_unlock(pipe);
-+		try_to_freeze();
-+		pipe_lock(pipe);
- 	}
- 
- 	pipe->readers--;
- 	pipe->writers++;
- 	pipe_unlock(pipe);
- 
-+	/* Restore signals. */
-+	sigprocmask(SIG_SETMASK, &previous, NULL);
- }
- 
- /*
--- 
-1.7.12.4
+	-hpa
+
 
