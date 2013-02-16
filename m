@@ -1,98 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754953Ab3BPWzA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 17:55:00 -0500
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:39869 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754858Ab3BPWy7 (ORCPT
+	id S1754889Ab3BPXCd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 18:02:33 -0500
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:45485 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754652Ab3BPXCc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 17:54:59 -0500
+	Sat, 16 Feb 2013 18:02:32 -0500
 MIME-Version: 1.0
-In-Reply-To: <201302162221.32799.arnd@arndb.de>
-References: <1360952512-971558-1-git-send-email-arnd@arndb.de>
-	<201302161400.29064.arnd@arndb.de>
-	<CAHp75VfL0cQJenHB7A_A1d2eam2dj3k+4yWRE8pC+_gP2j_k2Q@mail.gmail.com>
-	<201302162221.32799.arnd@arndb.de>
-Date: Sun, 17 Feb 2013 00:54:57 +0200
-Message-ID: <CAHp75VeCic+5_zyzFdtpw5dLxRaajD9zv6ZvSoDcHAD1EF=GSw@mail.gmail.com>
-Subject: Re: [PATCHv3 2/4] dmaengine: dw_dmac: move to generic DMA binding
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Olof Johansson <olof@lixom.net>, linux-kernel@vger.kernel.org,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Vinod Koul <vinod.koul@linux.intel.com>
+In-Reply-To: <alpine.LNX.2.00.1302161302290.21380@eggly.anvils>
+References: <20130212193901.GA18906@redhat.com> <alpine.LNX.2.00.1302121549500.890@eggly.anvils>
+ <20130213004059.GA14451@redhat.com> <alpine.LNX.2.00.1302121652240.1077@eggly.anvils>
+ <20130213041629.GA28622@redhat.com> <alpine.LNX.2.00.1302122121170.15020@eggly.anvils>
+ <20130213193411.GA15928@redhat.com> <CA+55aFzmEDriX26Z7oJZg9yssFdCAaYwu6krmrwqfj2TBsxA4w@mail.gmail.com>
+ <20130215011503.GA11914@redhat.com> <alpine.LNX.2.00.1302141804400.3330@eggly.anvils>
+ <CA+55aFyLDnmwy16V8TQRwJV2O51K-dmqBhuWi2ytRd4sYi8J+g@mail.gmail.com> <alpine.LNX.2.00.1302161302290.21380@eggly.anvils>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 16 Feb 2013 15:02:11 -0800
+X-Google-Sender-Auth: ixa6eNXwbtiMTqYwHR9U1TBCZMU
+Message-ID: <CA+55aFwF1qZmPaL5LPA+0ys68s=TF7wfXpb5y9GWi0q5RJDJ-Q@mail.gmail.com>
+Subject: Re: Debugging Thinkpad T430s occasional suspend failure.
+To: Hugh Dickins <hughd@google.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Airlie <airlied@linux.ie>
+Cc: Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Paul McKenney <paul.mckenney@linaro.org>,
+        DRI <dri-devel@lists.freedesktop.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 17, 2013 at 12:21 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> The original device tree binding for this driver, from Viresh Kumar
-> unfortunately conflicted with the generic DMA binding, and did not allow
-> to completely seperate slave device configuration from the controller.
+On Sat, Feb 16, 2013 at 1:45 PM, Hugh Dickins <hughd@google.com> wrote:
 >
-> This is an attempt to replace it with an implementation of the generic
-> binding, but it is currently completely untested, because I do not have
-> any hardware with this particular controller.
+> I hacked around on your PM_TRACE set_magic_time() / read_magic_time()
+> yesterday, to save an oopsing core kernel ip there, instead of hashed
+> pm trace info (it makes sense in this case to invert your sequence,
+> putting the high order into years and the low order into minutes).
+
+That sounds like a good idea in general. The PM_TRACE() thing was done
+to figure out things that locked up the PCI bus etc, but encoding the
+oopses during suspend sounds like a really good idea too.
+
+Is your patch clean enough to just be made part of the standard
+PM_TRACE infrastructure, or was it something really hacky and one-off?
+
+> Rewarded last night by reboot to Feb 21 14:45:53 2006.  Which is
+> ffffffff812d60ed intel_choose_pipe_bpp_dither.isra.13+0x216/0x2d6
 >
-> The patch applies on top of the slave-dma tree, which contains both the base
-> support for the generic DMA binding, as well as the earlier attempt from
-> Viresh. Both of these are currently not merged upstream however.
+> /home/hugh/3087X/drivers/gpu/drm/i915/intel_display.c:4159
+>          * enable dithering as needed, but that costs bandwidth.  So choose
+>          * the minimum value that expresses the full color range of the fb but
+>          * also stays within the max display bpc discovered above.
+>          */
 >
-> This version incorporates feedback from Viresh Kumar, Andy Shevchenko
-> and Russell King.
-
-Sorry, few comments below.
-After addressing them take my Acked-by: Andy Shevchenko
-<andriy.shevchenko@linux.intel.com>
-
-> --- a/drivers/dma/dw_dmac.c
-> +++ b/drivers/dma/dw_dmac.c
-
-
-> @@ -1836,6 +1825,12 @@ static int dw_probe(struct platform_device *pdev)
+>         switch (fb->depth) {
+> ffffffff812d60e9:       48 8b 55 c0             mov    -0x40(%rbp),%rdx
+> ffffffff812d60ed:       8b 02                   mov    (%rdx),%eax
 >
->         dma_async_device_register(&dw->dma);
+> (gcc chose to pass a pointer to fb->depth down to the function,
+> instead of fb itself, since that is the only use of it there.)
 >
-> +       if (pdev->dev.of_node)
-> +               err = of_dma_controller_register(pdev->dev.of_node,
-> +                                                dw_dma_xlate, dw);
-> +       if (err && err != -ENODEV)
-> +               dev_err(&pdev->dev, "could not register of_dma_controller\n");
-
-I believe we may make it as
- if (...of_node) {
-  err = ...register();
-  if (err...)
-    dev_err();
- }
-
-> --- a/drivers/dma/dw_dmac_regs.h
-> +++ b/drivers/dma/dw_dmac_regs.h
-
-> @@ -211,9 +212,15 @@ struct dw_dma_chan {
->         /* hardware configuration */
->         unsigned int            block_size;
->         bool                    nollp;
-> +       unsigned int            request_line;
-> +       struct dw_dma_slave     slave;
-> +
-
-Do we really need an extra empty line here?
-
+> I expect that fb is NULL; but with an average of one failure to resume
+> per day, and ~26 bits of info per crash, this is not a fast procedure!
 >
->         /* configuration passed via DMA_SLAVE_CONFIG */
->         struct dma_slave_config dma_sconfig;
-> +
-> +       /* backlink to dw_dma */
-> +       struct dw_dma           *dw;
+> I notice that intel_pipe_set_base() allows for NULL fb,
+> so I'm currently running with the oops-in-rtc hackery, plus
+> -       switch (fb->depth) {
+> +       if (WARN_ON(!fb))
+> +               bpc = 8;
+> +       else switch (fb->depth) {
+>
+> There's been a fair bit of change to intel_display.c since 3.7 (if
+> my 3.7 was indeed good), mainly splitting intel_ into haswell_ versus
+> ironlake_, but I've not yet spotted anything obvious; nor yet looked
+> to see where fb would originate from anyway.
+>
+> Once I've got just a little more info out of it, I'll start another
+> thread addressed principally to the drm/gpu/i915 guys.
 
-Seems it's not needed and came from rebase?
+I think it's worth it to give them a heads-up already. So I've cc'd
+the main suspects here..
 
--- 
-With Best Regards,
-Andy Shevchenko
+Daniel, Dave - any comments about a NULL fb in
+intel_choose_pipe_bpp_dither() during either suspend or resume? Some
+googling shows this:
+
+    https://bugzilla.redhat.com/show_bug.cgi?id=895123
+
+which sounds remarkably similar, and is also during a suspend attempt
+(but apparently Satish got a full oops out).. Some timing race with a
+worker entry?
+
+                        Linus
