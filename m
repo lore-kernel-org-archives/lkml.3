@@ -1,92 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751429Ab3BPAPJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 19:15:09 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:39127 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751080Ab3BPAPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 19:15:06 -0500
-Message-ID: <511ECF2B.8090202@zytor.com>
-Date: Fri, 15 Feb 2013 16:13:31 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-CC: Steven Rostedt <rostedt@goodmis.org>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
-        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>,
-        "Borislav Petkov (bp@alien8.de)" <bp@alien8.de>,
-        Satoru Moriya <satoru.moriya@hds.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>
-Subject: Re: [PATCH v9 3/3] trace,x86: code-sharing between non-trace and
- trace irq handlers
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D414A64C5B@USINDEM103.corp.hds.com>
-In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D414A64C5B@USINDEM103.corp.hds.com>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751268Ab3BPAfb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 19:35:31 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:33528 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750762Ab3BPAfa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 19:35:30 -0500
+Date: Fri, 15 Feb 2013 16:35:23 -0800
+From: Mukesh Rathor <mukesh.rathor@oracle.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH]: PVH linux: don't print warning in case of failed mapping
+Message-ID: <20130215163523.28d00600@mantra.us.oracle.com>
+Organization: Oracle Corporation
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/04/2013 02:50 PM, Seiji Aguchi wrote:
-> [Issue]
-> 
-> Currently, irq vector handlers for tracing are just
-> copied non-trace handlers by simply inserting tracepoints.
-> 
-> It is difficult to manage the codes.
-> 
-> [Solution]
-> 
-> This patch shares common codes between non-trace and trace handlers
-> as follows to make them manageable and readable.
-> 
-> Non-trace irq handler:
-> smp_irq_handler()
-> {
-> 	entering_irq(); /* pre-processing of this handler */
-> 	__smp_irq_handler(); /*
->                           * common logic between non-trace and trace handlers
->                           * in a vector.
->                           */
-> 	exiting_irq(); /* post-processing of this handler */
-> 
-> }
-> 
-> Trace irq_handler:
-> smp_trace_irq_handler()
-> {
-> 	entering_irq(); /* pre-processing of this handler */
-> 	trace_irq_entry(); /* tracepoint for irq entry */
-> 	__smp_irq_handler(); /*
->                           * common logic between non-trace and trace handlers
->                           * in a vector.
->                           */
-> 	trace_irq_exit(); /* tracepoint for irq exit */
-> 	exiting_irq(); /* post-processing of this handler */
-> 
-> }
-> 
+Remove the printing of warning in case of failed mappings. Sometimes
+they are expected as in case of Qemu mapping pages during HVM guest
+creation.
 
-How important is it that the tracepoint is *inside* the enter/exit
-handling?  If not, it would be simpler to just do:
+Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
 
-smp_trace_irq_handler()
-{
-	trace_irq_entry();
-	smp_irq_handler();
-	trace_irq_exit();
-}
+---
+ arch/x86/xen/mmu.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-... which seems a bit cleaner.  If this isn't possible, then this patch
-is fine, but please add to the patch description why the simple wrapper
-isn't doable.
-
-	-hpa
-
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index fbf6a63..afa6af6 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -2499,9 +2499,6 @@ static int pvh_add_to_xen_p2m(unsigned long lpfn, unsigned long fgmfn,
+ 	set_xen_guest_handle(xatpr.gpfns, &gpfn);
+ 
+ 	rc = HYPERVISOR_memory_op(XENMEM_add_to_physmap_range, &xatpr);
+-	if (rc)
+-		pr_warn("d0: Failed to map pfn to mfn rc:%d pfn:%lx mfn:%lx\n",
+-			rc, lpfn, fgmfn);
+ 	return rc;
+ }
+ 
+-- 
+1.7.2.3
 
