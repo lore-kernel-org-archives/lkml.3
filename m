@@ -1,65 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752033Ab3BPBzo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 20:55:44 -0500
-Received: from dkim1.fusionio.com ([66.114.96.53]:41576 "EHLO
-	dkim1.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751416Ab3BPBzm (ORCPT
+	id S1752119Ab3BPB5T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 20:57:19 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:59461 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751316Ab3BPB5R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 20:55:42 -0500
-X-ASG-Debug-ID: 1360979740-0421b51e71204a0001-xx1T2L
-X-Barracuda-Envelope-From: clmason@fusionio.com
-Date: Fri, 15 Feb 2013 20:55:36 -0500
-From: Chris Mason <chris.mason@fusionio.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-Subject: [GIT PULL] Btrfs updates
-Message-ID: <20130216015536.GG28851@shiny.masoncoding.com>
-X-ASG-Orig-Subj: [GIT PULL] Btrfs updates
-Mail-Followup-To: Chris Mason <chris.mason@fusionio.com>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	"linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
+	Fri, 15 Feb 2013 20:57:17 -0500
+Message-ID: <511EE720.6060907@huawei.com>
+Date: Sat, 16 Feb 2013 09:55:44 +0800
+From: Xishi Qiu <qiuxishi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1360979740
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=BSF_SC0_MISMATCH_TO
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.122791
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	0.00 BSF_SC0_MISMATCH_TO    Envelope rcpt doesn't match header
+To: Matt Fleming <matt.fleming@intel.com>, "Luck, Tony" <tony.luck@intel.com>,
+        <fenghua.yu@intel.com>, Liujiang <jiang.liu@huawei.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: <linux-ia64@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-efi@vger.kernel.org>, <linux-mm@kvack.org>,
+        Hanjun Guo <guohanjun@huawei.com>, WuJianguo <wujianguo@huawei.com>
+Subject: Re: [PATCH V3] ia64/mm: fix a bad_page bug when crash kernel booting
+References: <51074786.5030007@huawei.com>  <1359995565.7515.178.camel@mfleming-mobl1.ger.corp.intel.com>  <51131248.3080203@huawei.com> <5113450C.1080109@huawei.com> <1360750028.24917.28.camel@mfleming-mobl1.ger.corp.intel.com>
+In-Reply-To: <1360750028.24917.28.camel@mfleming-mobl1.ger.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.196]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 2013/2/13 18:07, Matt Fleming wrote:
 
-If you're doing another RC, please grab these two.  Otherwise I'll send
-them off to -stable.
+>> In efi_init() memory aligns in IA64_GRANULE_SIZE(16M). If set "crashkernel=1024M-:600M"
+>> and use sparse memory model, when crash kernel booting it changes [128M-728M] to [128M-720M].
+>> But initrd memory is in [709M-727M], and virt_addr_valid() *can not* check the invalid pages
+>> when freeing initrd memory. There are some pages missed at the end of the seciton.
+>>
+>> ChangeLog V3:
+>> 	fixed vaddr mistake
+>> ChangeLog V2:
+>> 	add invalid pages check when freeing initrd memory
+>>
+>> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+>> ---
+>>  arch/ia64/mm/init.c |    4 ++++
+>>  1 files changed, 4 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/ia64/mm/init.c b/arch/ia64/mm/init.c
+>> index 082e383..8a269f8 100644
+>> --- a/arch/ia64/mm/init.c
+>> +++ b/arch/ia64/mm/init.c
+>> @@ -173,6 +173,7 @@ void __init
+>>  free_initrd_mem (unsigned long start, unsigned long end)
+>>  {
+>>  	struct page *page;
+>> +	unsigned long pfn;
+>>  	/*
+>>  	 * EFI uses 4KB pages while the kernel can use 4KB or bigger.
+>>  	 * Thus EFI and the kernel may have different page sizes. It is
+>> @@ -213,6 +214,9 @@ free_initrd_mem (unsigned long start, unsigned long end)
+>>  	for (; start < end; start += PAGE_SIZE) {
+>>  		if (!virt_addr_valid(start))
+>>  			continue;
+>> +		pfn = __pa(start) >> PAGE_SHIFT;
+>> +		if (pfn >= max_low_pfn)
+>> +			continue;
+>>  		page = virt_to_page(start);
+>>  		ClearPageReserved(page);
+>>  		init_page_count(page);
+> 
+> I would have presumed that fixing this bug would involve modifying the
+> ia64-specific kexec code?
+> 
+> Tony, Fenghua? Any thoughts?
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
 
-This fixes a long standing problem where the btrfs scan ioctl was racing
-with mkfs.btrfs and dropping dirty pages created by mkfs.  It also fixes
-a crash during tree log replay with quota enabled.
+Hi, I had the Spring Festival a few days ago. Please ignore the earlier
+patch and consider the V3 one above.
 
-David Sterba (1) commits (+64/-6):
-    btrfs: access superblock via pagecache in scan_one_device
+Thanks,
+Xishi Qiu
 
-Arne Jansen (1) commits (+1/-1):
-    Btrfs: fix crash in log replay with qgroups enabled
-
-Total: (2) commits (+65/-7)
-
- fs/btrfs/ctree.c   |  2 +-
- fs/btrfs/volumes.c | 70 +++++++++++++++++++++++++++++++++++++++++++++++++-----
- 2 files changed, 65 insertions(+), 7 deletions(-)
 
