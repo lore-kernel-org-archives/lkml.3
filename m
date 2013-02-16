@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753150Ab3BPLii (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 06:38:38 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:63657 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753066Ab3BPLih (ORCPT
+	id S1753185Ab3BPLiq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 06:38:46 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:33024 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753161Ab3BPLim (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 06:38:37 -0500
+	Sat, 16 Feb 2013 06:38:42 -0500
 From: Anil Kumar <anilk4.v@gmail.com>
 To: devicetree-discuss@lists.ozlabs.org, linux-omap@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: linux@arm.linux.org.uk, b-cousson@ti.com, tony@atomide.com,
         grant.likely@secretlab.ca, zonque@gmail.com, thomas@tomweber.eu,
         anilk4.v@gmail.com
-Subject: [PATCH 0/2] arm/dts: OMAP3: Add gpmc DT node support
-Date: Sat, 16 Feb 2013 17:08:26 +0530
-Message-Id: <1361014708-1659-1-git-send-email-anilk4.v@gmail.com>
+Subject: [PATCH 1/2] ARM: dts: omap3: Add gpmc node
+Date: Sat, 16 Feb 2013 17:08:27 +0530
+Message-Id: <1361014708-1659-2-git-send-email-anilk4.v@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1361014708-1659-1-git-send-email-anilk4.v@gmail.com>
+References: <1361014708-1659-1-git-send-email-anilk4.v@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add gpmc DT node in dtsi file.
-Add nand DT node and partitions information for devkit8000.
+Add gpmc DT node.
 
-This series is based on top of branch “omap-for-v3.9/gpmc” git tree 
-http://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap.git
-and patches.
+Signed-off-by: Anil Kumar <anilk4.v@gmail.com>
+---
+:100644 100644 1acc261... 9f36531... M	arch/arm/boot/dts/omap3.dtsi
+ arch/arm/boot/dts/omap3.dtsi |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
 
-Anil Kumar:-
-ARM: dts: add minimal DT support for DevKit8000
-
-Jon Hunter:- 
-  ARM: OMAP2+: Fix-up gpmc merge error
-
-Done basic testing:-
- - #cat /proc/mtd     (shows nand partitions) 
- - Nand partitions by command line.
-
-Anil Kumar (2):
-  ARM: dts: omap3: Add gpmc node
-  ARM: dts: omap3-devkit8000: add nand dt node
-
- arch/arm/boot/dts/omap3-devkit8000.dts |   52 ++++++++++++++++++++++++++++++++
- arch/arm/boot/dts/omap3.dtsi           |   11 +++++++
- 2 files changed, 63 insertions(+), 0 deletions(-)
+diff --git a/arch/arm/boot/dts/omap3.dtsi b/arch/arm/boot/dts/omap3.dtsi
+index 1acc261..9f36531 100644
+--- a/arch/arm/boot/dts/omap3.dtsi
++++ b/arch/arm/boot/dts/omap3.dtsi
+@@ -397,5 +397,16 @@
+ 			ti,timer-alwon;
+ 			ti,timer-secure;
+ 		};
++
++		gpmc: gpmc@6e000000 {
++			compatible = "ti,omap3430-gpmc";
++			ti,hwmods = "gpmc";
++			reg = <0x6e000000 0x1000000>;
++			interrupts = <20>;
++			gpmc,num-cs = <8>;
++			gpmc,num-waitpins = <4>;
++			#address-cells = <2>;
++			#size-cells = <1>;
++		};
+ 	};
+ };
+-- 
+1.7.0.4
 
