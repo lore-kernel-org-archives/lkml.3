@@ -1,190 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751790Ab3BPHT4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 02:19:56 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:55180 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750812Ab3BPHTy (ORCPT
+	id S1751937Ab3BPHVA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 02:21:00 -0500
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:42295 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809Ab3BPHU7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 02:19:54 -0500
-From: Anil Kumar <anilk4.v@gmail.com>
-To: devicetree-discuss@lists.ozlabs.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: linux@arm.linux.org.uk, b-cousson@ti.com, tony@atomide.com,
-        grant.likely@secretlab.ca, thomas@tomweber.eu, anilk4.v@gmail.com
-Subject: [PATCH V3] ARM: dts: add minimal DT support for DevKit8000
-Date: Sat, 16 Feb 2013 12:49:27 +0530
-Message-Id: <1360999167-17606-1-git-send-email-anilk4.v@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	Sat, 16 Feb 2013 02:20:59 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130216022006.GB4503@ZenIV.linux.org.uk>
+References: <20130214053656.GS4503@ZenIV.linux.org.uk> <CA+55aFz1JjGSCdqXpVz3oH-PWFDE3Qdxt3EVxqC2i=nfLqf0Jw@mail.gmail.com>
+ <20130215215946.GX4503@ZenIV.linux.org.uk> <CAGDaZ_pMLScoO811es3AZxzAnSiS5ixku-DeuEi4FwX8mNv3cQ@mail.gmail.com>
+ <20130216000435.GY4503@ZenIV.linux.org.uk> <CAGDaZ_rqKR7Ea6SZ9JXmeVOvEBEk3gHaQEa1LAkzWxRHfJsHWw@mail.gmail.com>
+ <CAGDaZ_p8Dm+Tco_famKmEzGpV6G+zo1xHLkA7LQCkzQJD_pxMA@mail.gmail.com>
+ <20130216015024.GA4503@ZenIV.linux.org.uk> <20130216022006.GB4503@ZenIV.linux.org.uk>
+From: Raymond Jennings <shentino@gmail.com>
+Date: Fri, 15 Feb 2013 23:20:18 -0800
+Message-ID: <CAGDaZ_oSzQOLsoeWQFNQ8R5-NBKPAUygvjvzvef9q40WBu1sWw@mail.gmail.com>
+Subject: Re: [RFC] SIGKILL vs. SIGSEGV on late execve() failures
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DevKit8000 is a beagle board clone from Timll, sold by
-armkits.com. The DevKit8000 has RS232 serial port, LCD, DVI-D,
-S-Video, Ethernet, SD/MMC, keyboard, camera, SPI, I2C, USB and
-JTAG interface.
+On Fri, Feb 15, 2013 at 6:20 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> Arrgh...  OK, I'm a blind idiot.  These places in binfmt_elf.c currently use
+> force_sig(), not send_sig_info().  Currently == since 2006 when somebody
+> noticed the problem.  Their counterparts in binfmt_elf_fdpic.c were *not*
+> noticed.  Anyway, that definitely means we want to do it in a single commit;
+> the only remaining question is whether we have any problems with somebody
+> ptracing such execve() and then poking the sucker with ptrace();
 
-This patch adds the basic DT support for devkit8000. At this time, Information
-of twl4030 (PMIC), MMC1, I2C1 and leds are added.
+Personally if I was ptracing another process, I'd be flummoxed if I
+saw it get nailed with a fatal segfault that I somehow wasn't allowed
+to intercept.
 
-Signed-off-by: Anil Kumar <anilk4.v@gmail.com>
-Tested-by: Thomas Weber <thomas@tomweber.eu>
----
- -This patch is based on top of kernel 3.8-rc5.
+An even bigger question might be why an execve is allowed to get into
+an unrecoverable state to begin with.  Assuming that one builds the
+new mm_struct and whatnot BEFORE discarding old state, why would
+execve be in a position for a fatal error in the first place?
 
- -Tested on Devkit8000.
-
-For V3:
- - Remove pin mux as done at device boot time by default.
-
-For V2:
- - Change model name as "TimLL OMAP3 Devkit8000"
- - Change compatible as "timll,omap3-devkit8000"
- - Doing i2c1 pinmux default with pinctrl-single driver instead of i2c1
-   driver probe time.
-
-:100644 100644 5ebb44f... 22ebc76... M	arch/arm/boot/dts/Makefile
-:000000 100644 0000000... 6338993... A	arch/arm/boot/dts/omap3-devkit8000.dts
-:100644 100644 53cb380b.. ccecb76... M	arch/arm/mach-omap2/board-generic.c
- arch/arm/boot/dts/Makefile             |    1 +
- arch/arm/boot/dts/omap3-devkit8000.dts |  103 ++++++++++++++++++++++++++++++++
- arch/arm/mach-omap2/board-generic.c    |    1 +
- 3 files changed, 105 insertions(+), 0 deletions(-)
-
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index 5ebb44f..22ebc76 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -102,6 +102,7 @@ dtb-$(CONFIG_ARCH_MXS) += imx23-evk.dtb \
- 	imx28-tx28.dtb
- dtb-$(CONFIG_ARCH_OMAP2PLUS) += omap2420-h4.dtb \
- 	omap3-beagle.dtb \
-+	omap3-devkit8000.dtb \
- 	omap3-beagle-xm.dtb \
- 	omap3-evm.dtb \
- 	omap3-tobi.dtb \
-diff --git a/arch/arm/boot/dts/omap3-devkit8000.dts b/arch/arm/boot/dts/omap3-devkit8000.dts
-new file mode 100644
-index 0000000..6338993
---- /dev/null
-+++ b/arch/arm/boot/dts/omap3-devkit8000.dts
-@@ -0,0 +1,103 @@
-+/*
-+ * Author: Anil Kumar <anilk4.v@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+/dts-v1/;
-+
-+/include/ "omap3.dtsi"
-+/ {
-+	model = "TimLL OMAP3 Devkit8000";
-+	compatible = "timll,omap3-devkit8000", "ti,omap3";
-+
-+	memory {
-+		device_type = "memory";
-+		reg = <0x80000000 0x10000000>;	/* 256 MB */
-+	};
-+
-+	leds {
-+		compatible = "gpio-leds";
-+
-+		heartbeat {
-+			label = "devkit8000::led1";
-+			gpios = <&gpio6 26 0>;	/* 186 -> LED1 */
-+			default-state = "on";
-+			linux,default-trigger = "heartbeat";
-+		};
-+
-+		mmc {
-+			label = "devkit8000::led2";
-+			gpios = <&gpio6 3 0>;	/* 163 -> LED2 */
-+			default-state = "on";
-+			linux,default-trigger = "none";
-+		};
-+
-+		usr {
-+			label = "devkit8000::led3";
-+			gpios = <&gpio6 4 0>;	/* 164 -> LED3 */
-+			default-state = "on";
-+			linux,default-trigger = "usr";
-+                };
-+
-+	};
-+};
-+
-+&i2c1 {
-+	clock-frequency = <2600000>;
-+
-+	twl: twl@48 {
-+		reg = <0x48>;
-+		interrupts = <7>;	/* SYS_NIRQ cascaded to intc */
-+		interrupt-parent = <&intc>;
-+	};
-+};
-+
-+&i2c2 {
-+	status = "disabled";
-+};
-+
-+&i2c3 {
-+	status = "disabled";
-+};
-+
-+/include/ "twl4030.dtsi"
-+
-+&mmc1 {
-+	vmmc-supply = <&vmmc1>;
-+	vmmc_aux-supply = <&vsim>;
-+	bus-width = <8>;
-+};
-+
-+&mmc2 {
-+	status = "disabled";
-+};
-+
-+&mmc3 {
-+	status = "disabled";
-+};
-+
-+&wdt2 {
-+	status = "disabled";
-+};
-+
-+&mcbsp1 {
-+	status = "disabled";
-+};
-+
-+&mcbsp2 {
-+	status = "disabled";
-+};
-+
-+&mcbsp3 {
-+	status = "disabled";
-+};
-+
-+&mcbsp4 {
-+	status = "disabled";
-+};
-+
-+&mcbsp5 {
-+	status = "disabled";
-+};
-diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
-index 53cb380..ccecb76 100644
---- a/arch/arm/mach-omap2/board-generic.c
-+++ b/arch/arm/mach-omap2/board-generic.c
-@@ -110,6 +110,7 @@ MACHINE_END
- 
- static const char *omap3_gp_boards_compat[] __initdata = {
- 	"ti,omap3-beagle",
-+	"timll,omap3-devkit8000",
- 	NULL,
- };
- 
--- 
-1.7.0.4
-
+> that _can_
+> happen with the current mainline for ELF binaries, so this is not something
+> new.  I'm low on coffee and about to crash, so I might be missing some
+> horrible problem with it, but in this case I'm fairly sure that such a problem
+> would be present in current mainline.
