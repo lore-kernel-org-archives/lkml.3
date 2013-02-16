@@ -1,79 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754377Ab3BPUVV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 15:21:21 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:62522 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754346Ab3BPUVU (ORCPT
+	id S1754483Ab3BPUuB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 15:50:01 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:38801 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754379Ab3BPUt6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 15:21:20 -0500
-Date: Sat, 16 Feb 2013 21:21:14 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Johannes Thumshirn <morbidrsa@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pwm: twl: Use to_twl() instead of container_of()
-Message-ID: <20130216202114.GA18727@avionic-0098.mockup.avionic-design.de>
-References: <1361038851-4994-1-git-send-email-morbidrsa@gmail.com>
- <1361044472-6439-1-git-send-email-morbidrsa@gmail.com>
+	Sat, 16 Feb 2013 15:49:58 -0500
+Date: Sat, 16 Feb 2013 12:49:54 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Simon Glass <sjg@chromium.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Luigi Semenzato <semenzato@chromium.org>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Felipe Balbi <balbi@ti.com>, Sourav Poddar <sourav.poddar@ti.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Mike A. Chan" <mikechan@google.com>,
+        Jun Nakajima <jun.nakajima@intel.com>,
+        Tom Keel <thomas.keel@intel.com>, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [PATCH v4 6/6] Input: Add ChromeOS EC keyboard driver
+Message-ID: <20130216204954.GA22044@core.coreip.homeip.net>
+References: <1360988172-15380-1-git-send-email-sjg@chromium.org>
+ <1360988172-15380-7-git-send-email-sjg@chromium.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WIyZ46R2i8wDzkSu"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1361044472-6439-1-git-send-email-morbidrsa@gmail.com>
+In-Reply-To: <1360988172-15380-7-git-send-email-sjg@chromium.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:esmYEU4feSQf+Mn1BZyskQzt6x178R0rVyM34l1akkc
- A3+flLGiXHiXy0D9EWc4BjwQbZwoOLiG2wv47F3S05Svbiy97z
- zrgR4E1CJb0KQoprRWCZ5TG3lCejhvkwMHEMsnuT7e1H1s89XT
- FLK8oCwMJh/RZANEkJiQ4DyIGtXyrgLOv0D4QO4prLF4yx/K3j
- yi/Fywvpfuufr7xZV2JovAQPRoRouEC3yRdeTJYcdWmQZrqstT
- cC7dhVoBYMoKURSmBcop2lAoYh01pi5jpiCL5TNDfc47SyWW0V
- nzRH2ziHRqu950VFKJcN30lzIEAHTRjR5QQLr41HDVNVdHj/UV
- lWNZX6lqDluOdl31pZ6hiC1FJOgP7hgHvrxjegUag3Gy5ei3D4
- TCLv1aYIUaNXicqnE31cffyRaDoq9DrKI//Cc/2CwXTMvsK6OR
- es4se
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Simon,
 
---WIyZ46R2i8wDzkSu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Feb 15, 2013 at 08:16:12PM -0800, Simon Glass wrote:
+> +	for (row = 0; row < ckdev->rows; row++) {
+> +		if (cros_ec_keyb_row_has_ghosting(ckdev, buf, row))
+> +			return true;
+> +	}
 
-On Sat, Feb 16, 2013 at 08:54:32PM +0100, Johannes Thumshirn wrote:
-> Always use to_twl() for converting into private data instead of container=
-_of()
->=20
-> Signed-off-by: Johannes Thumshirn <morbidrsa@gmail.com>
-> ---
->  drivers/pwm/pwm-twl.c | 6 ++----
->  1 file changed, 2 insertions(+), 4 deletions(-)
+No need for curly braces here. I would not care if not for below.
 
-I've squashed this patch into the previous one and applied to the
-for-next branch. Thanks,
+> +
+> +	return 0;
+> +
+> +fail_register:
+> +	kfree(idev->keycode);
 
-Thierry
+Sorry I did not notice this before, but idev->keycode is devm-managed,
+so you either need to use devm_kfree() or just remove call to kfree()
+and let it clean up automatically (which will happen if binding fails or
+upon removal).
 
---WIyZ46R2i8wDzkSu
-Content-Type: application/pgp-signature
+BTW, maybe you should move the whole driver to devm_*? We have
+devm_kzalloc() for ckdev and you can use devm_input_allocate_device().
+Then you can get rid of entire erro handling path and completely remove
+the remove() method as well.
+ 
+> +fail_matrix:
+> +	input_free_device(idev);
+> +fail_alloc_dev:
+> +	kfree(ckdev);
+> +	return err;
+> +}
+> +
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+Thanks.
 
-iQIcBAEBAgAGBQJRH+o6AAoJEN0jrNd/PrOh6f0QAJeTr2UibGh9PA7hOBhiblwo
-JRYiHt1wgoMV0ngyJz75WSU/yYE/egqJT+CzLllI7EntIGPD+uvcOzGYyNCq58pp
-nlhY1VHKPNfMN9evN7hQyg/r05zdu6u9A817fGJqNxRBpVpItEIhBmJ+kawLdrjb
-cLN68VWJsMSRyjUmN7xKt/senm0ug9F5OQIJ27R35CVrsYXuuTrB/CiDnDZbCljc
-fZrHOihehqTjXqhK5kDI4hb3eBf655xzfn2EhXtQOMJfAuoTg+Yf1TofjrG4PkVJ
-/bLAGG7PhHkj2NIBDXEMYLt13xd/MMECkcIvtX/s4Bg28VY8M9VWcoypHmQh54eD
-UG5zRRjyllkhE7qM3q+G8eWE037CBwB9JdDV0MO4Zmz4/SJ0kKuMl/Dgz7Q0UHUw
-Xsxd4560Iw17NTlvBMyTosw1mE11kYWSCgIOTpi8h6GHMUrXZAx9AkEP7KwW+ffP
-PAH8kiY7CM6untxqj4jCrm8zeHfQvIi1WtsD1TFuEIqsObdFDR+c0Y7SYvJVXbYI
-2IhChCAptIDpgm5KOcfwaFTFo7YSVpkpHWk5zna0mzkvYUTEsQZWIRNp68TmxwFV
-upO7lLEq3m84i/sVLfUStcDze1kJBbtL1hfjybjzsV8yd9eS8CIu5/hmv8f1AChr
-QuWfFqZO1fc3pMm0dFLQ
-=NnUE
------END PGP SIGNATURE-----
-
---WIyZ46R2i8wDzkSu--
+-- 
+Dmitry
