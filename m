@@ -1,154 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752845Ab3BPJIP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 04:08:15 -0500
-Received: from intranet.asianux.com ([58.214.24.6]:53211 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752795Ab3BPJIE (ORCPT
+	id S1752903Ab3BPJlb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 04:41:31 -0500
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:37491 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752027Ab3BPJl3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 04:08:04 -0500
-X-Spam-Score: -100.8
-Message-ID: <511F4C6B.4030805@asianux.com>
-Date: Sat, 16 Feb 2013 17:07:55 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>, sameo@linux.intel.com
-CC: Tony Lindgren <tony@atomide.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [Suggestion] drivers/mfd/twl*: about power_count in twl6040_remove
-Content-Type: text/plain; charset=GB2312
+	Sat, 16 Feb 2013 04:41:29 -0500
+Message-ID: <1361007679.2580.10.camel@ThinkPad-T5421.cn.ibm.com>
+Subject: Re: [RFC PATCH 2/5] powerpc: Exception hooks for context tracking
+ subsystem
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        paulmck@linux.vnet.ibm.com, benh@kernel.crashing.org, paulus@samba.org
+Date: Sat, 16 Feb 2013 17:41:19 +0800
+In-Reply-To: <CAFTL4hzfXfCGDjwjW=Frcs5+jS_i3U_JHytNOEhEF5X7_Fw6Sg@mail.gmail.com>
+References: <1359714465-6297-1-git-send-email-zhong@linux.vnet.ibm.com>
+	 <1359714465-6297-3-git-send-email-zhong@linux.vnet.ibm.com>
+	 <CAFTL4hzfXfCGDjwjW=Frcs5+jS_i3U_JHytNOEhEF5X7_Fw6Sg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13021609-1618-0000-0000-00000359487C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 2013-02-10 at 15:10 +0100, Frederic Weisbecker wrote:
+> 2013/2/1 Li Zhong <zhong@linux.vnet.ibm.com>:
+> > This is the exception hooks for context tracking subsystem, including
+> > data access, program check, single step, instruction breakpoint, machine check,
+> > alignment, fp unavailable, altivec assist, unknown exception, whose handlers
+> > might use RCU.
+> >
+> > This patch corresponds to
+> > [PATCH] x86: Exception hooks for userspace RCU extended QS
+> >   commit 6ba3c97a38803883c2eee489505796cb0a727122
+> >
+> > Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+> 
+> Looks good!
+> 
+> I guess we should move exception_enter/exit definition to the generic
+> code. They should be the same for all archs after all. 
 
-  if necessary to treat 'power_count' as a counter
-    when power_count is more than 1, we do not really power off it.
-    this may cause issue:
-      after finish calling twl6040_remove, another modules still use it.
-    suggest to give additional check, or synchronisation for other modules.
+Indeed.
 
-  else (not necessary to treat it as a counter)
-    better to use it as a boolean value.
-    it seems 'power_count' may still have chance to be more than 1:
-      if it is true, we still may can not power off it in twl6040_remove.
+> Also we are
+> relying on user_mode(regs) but this may be buggy with some corner
+> cases. For example if an exception happen after a call to user_exit()
 
-  another question:
-    may 'power_count' be a large number (which may cause value overflow) ?
+I guess you mean user_enter() here, or am I confused?
 
+> (on syscall exit) but before we actually resume in userspace, the
+> exception will exit in kernel mode from the context tracking POV.
+> 
+> So instead on relying on the regs, which are not sync with the context
+> tracking state, we should use something like:
+> 
+> prev_state = exception_enter();
+> ...
+> exception_exit(prev_state);
+> 
+> Also preempt_schedule_irq() is concerned as well by this problem. So I
+> should convert it to that scheme as well. I'm going to prepare some
+> patches.
+> 
+> Feel free to merge this patch in the powerpc tree, I'll do the
+> conversion along the way.
 
-  thanks.
+Or if your patches gets merged earlier than these, I can update my code
+according to yours.
 
-gchen.
+Thanks, Zhong
 
-
-------------------------------------------------------------------------------
-
-relative calls:
-
-  drivers/mfd/twl6040.c:212:		twl6040_power(twl6040, 0);
-  drivers/mfd/twl6040.c:215:		twl6040_power(twl6040, 1);
-  drivers/mfd/twl6040.c:707:		twl6040_power(twl6040, 0);
-  drivers/input/misc/twl6040-vibra.c:100:	twl6040_power(info->twl6040, 1);
-  drivers/input/misc/twl6040-vibra.c:128:	twl6040_power(info->twl6040, 0);
-  sound/soc/codecs/twl6040.c:911:		ret = twl6040_power(twl6040, 1);
-  sound/soc/codecs/twl6040.c:926:		twl6040_power(twl6040, 0);
-  drivers/clk/clk-twl6040.c:51:	ret = twl6040_power(twl6040_clk->twl6040, 1);
-  drivers/clk/clk-twl6040.c:64:	ret = twl6040_power(twl6040_clk->twl6040, 0);
-
-
-
-drivers/mfd/twl6040.c:
-
-244 int twl6040_power(struct twl6040 *twl6040, int on)
-245 {
-246         int ret = 0;
-247 
-248         mutex_lock(&twl6040->mutex);
-249 
-250         if (on) {
-251                 /* already powered-up */
-252                 if (twl6040->power_count++)
-253                         goto out;
-254 
-255                 if (gpio_is_valid(twl6040->audpwron)) {
-256                         /* use automatic power-up sequence */
-257                         ret = twl6040_power_up_automatic(twl6040);
-258                         if (ret) {
-259                                 twl6040->power_count = 0;
-260                                 goto out;
-261                         }
-262                 } else {
-263                         /* use manual power-up sequence */
-264                         ret = twl6040_power_up_manual(twl6040);
-265                         if (ret) {
-266                                 twl6040->power_count = 0;
-267                                 goto out;
-268                         }
-269                 }
-270                 /* Default PLL configuration after power up */
-271                 twl6040->pll = TWL6040_SYSCLK_SEL_LPPLL;
-272                 twl6040->sysclk = 19200000;
-273                 twl6040->mclk = 32768;
-274         } else {
-275                 /* already powered-down */
-276                 if (!twl6040->power_count) {
-277                         dev_err(twl6040->dev,
-278                                 "device is already powered-off\n");
-279                         ret = -EPERM;
-280                         goto out;
-281                 }
-282 
-283                 if (--twl6040->power_count)
-284                         goto out;
-285 
-286                 if (gpio_is_valid(twl6040->audpwron)) {
-287                         /* use AUDPWRON line */
-288                         gpio_set_value(twl6040->audpwron, 0);
-289 
-290                         /* power-down sequence latency */
-291                         usleep_range(500, 700);
-292                 } else {
-293                         /* use manual power-down sequence */
-294                         twl6040_power_down_manual(twl6040);
-295                 }
-296                 twl6040->sysclk = 0;
-297                 twl6040->mclk = 0;
-298         }
-299 
-300 out:
-301         mutex_unlock(&twl6040->mutex);
-302         return ret;
-303 }
-304 EXPORT_SYMBOL(twl6040_power);
-...
-
-702 static int twl6040_remove(struct i2c_client *client)
-703 {
-704         struct twl6040 *twl6040 = i2c_get_clientdata(client);
-705 
-706         if (twl6040->power_count)
-707                 twl6040_power(twl6040, 0);
-708 
-709         if (gpio_is_valid(twl6040->audpwron))
-710                 gpio_free(twl6040->audpwron);
-711 
-712         free_irq(twl6040->irq_ready, twl6040);
-713         free_irq(twl6040->irq_th, twl6040);
-714         regmap_del_irq_chip(twl6040->irq, twl6040->irq_data);
-715 
-716         mfd_remove_devices(&client->dev);
-717         i2c_set_clientdata(client, NULL);
-718 
-719         regulator_bulk_disable(TWL6040_NUM_SUPPLIES, twl6040->supplies);
-720         regulator_bulk_free(TWL6040_NUM_SUPPLIES, twl6040->supplies);
-721 
-722         return 0;
-723 }
-
------------------------------------------------------------------------------------
-
+> 
+> Thanks.
+> 
 
 
