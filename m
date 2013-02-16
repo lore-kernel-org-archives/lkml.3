@@ -1,162 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753517Ab3BPPzz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 10:55:55 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:29535 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753406Ab3BPPzx convert rfc822-to-8bit (ORCPT
+	id S1753533Ab3BPQMe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 11:12:34 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21366 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753484Ab3BPQMd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 10:55:53 -0500
-MIME-Version: 1.0
-Message-ID: <32913552-e848-4416-a747-5fa47e1a93de@default>
-Date: Sat, 16 Feb 2013 07:55:36 -0800 (PST)
-From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-To: <ben@decadent.org.uk>
-Cc: <tmhikaru@gmail.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: Re: 3.2.38 most of the time has 100% cpu use reported
-X-Mailer: Zimbra on Oracle Beehive
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Sat, 16 Feb 2013 11:12:33 -0500
+X-Authority-Analysis: v=2.0 cv=UN5f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=MPEKn9ueenIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=zGjexpQmzOwA:10 a=pFGuKcPpq-rcvapjx70A:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1361031150.23152.133.camel@gandalf.local.home>
+Subject: Re: [RFC] sched: The removal of idle_balance()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mike Galbraith <efault@gmx.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Clark Williams <clark@redhat.com>,
+        Andrew Theurer <habanero@us.ibm.com>
+Date: Sat, 16 Feb 2013 11:12:30 -0500
+In-Reply-To: <1360913172.4736.20.camel@marge.simpson.net>
+References: <1360908819.23152.97.camel@gandalf.local.home>
+	 <1360913172.4736.20.camel@marge.simpson.net>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2013-02-15 at 08:26 +0100, Mike Galbraith wrote:
+> On Fri, 2013-02-15 at 01:13 -0500, Steven Rostedt wrote:
+> 
+> > Think about it some more, just because we go idle isn't enough reason to
+> > pull a runable task over. CPUs go idle all the time, and tasks are woken
+> > up all the time. There's no reason that we can't just wait for the sched
+> > tick to decide its time to do a bit of balancing. Sure, it would be nice
+> > if the idle CPU did the work. But I think that frame of mind was an
+> > incorrect notion from back in the early 2000s and does not apply to
+> > today's hardware, or perhaps it doesn't apply to the (relatively) new
+> > CFS scheduler. If you want aggressive scheduling, make the task rt, and
+> > it will do aggressive scheduling.
+> 
+> (the throttle is supposed to keep idle_balance() from doing severe
+> damage, that may want a peek/tweak)
+> 
+> Hackbench spreads itself with FORK/EXEC balancing, how does say a kbuild
+> do with no idle_balance()?
+> 
 
-On Sat, Feb 16, 2013 at 05:18:10AM +0000, Ben Hutchings wrote：
-> On Fri, 2013-02-15 at 22:23 -0500, tmhikaru@gmail.com wrote:
-> > On Thu, Feb 14, 2013 at 05:04:07AM +0000, Ben Hutchings wrote:
-> > > On Tue, 2013-02-12 at 00:01 -0500, tmhikaru@gmail.com wrote:
-> > > > 	Okay, I finally have located the patch causing this bizzare
-> problem
-> > > > for me. Before I discuss it, I'm going to drag out the kernel
-> bug reporting
-> > > > guidelines and try to make a proper bug report out of this.
-> > > > 
-> > > > [1.] One line summary of the problem:
-> > > > 3.2.38 most of the time has 100% cpu use reported
-> > > > 
-> > > > [2.] Full description of the problem/report:
-> > > > Reverse applying the patch for
-> > > > 
-> > > > [9a1f08a1a192f9177d7063d903773aed800b840f]
-> drivers/firmware/dmi_scan.c: fetch dmi version from SMBIOS if it
-> exists
-> > > > 
-> > > > on top of a clean 3.2.38 tree makes the problem go away.
-> > > [...]
-> > > > I have to admit I have no idea what the patch I'm reversing
-> actually does,
-> > > 
-> > > It changes how we look for the version of a BIOS interface (DMI
-> or
-> > > SMBIOS).  All the code that it touches, and the version number
-> variable,
-> > > are discarded after boot and therefore can have very limited
-> effect on
-> > > what happens later!
-> > 
-> > Actually upon poking about, I noticed something VERY different about
-> what
-> > the patch does to my computer during the boot process.  Let me show
-> you
-> > dmesg output from a good kernel without the patch, then a bad one
-> with the
-> > patch, then I'll point out the important differences I noticed:
-> [...]
-> > Important bits I noticed: The 'bad' kernel initially boots with
-> acpi
-> > disabled, then later turns it back on, whereas the 'good' one boots
-> with
-> > acpi completely enabled with no problems.
-> >
-> > Also, very early on just after yelling about the NX bit not existing
-> in my
-> > cpu, it says this: (-good/+bad)
-> > 
-> > -[    0.000000] DMI 2.3 present.
-> > -[    0.000000] DMI: ECS M848A/M848A, BIOS 07.00T 04/02/01
-> > +[    0.000000] Legacy DMI 0.0 present.
-> > +[    0.000000] DMI:  , BIOS  
-> 
-> Oh wow, this has really gone very wrong.
-> 
-> > The 'good' kernel without the patch finds something for DMI (That is
-> in fact
-> > my motherboard model number, so I know it's doing *something* right)
-> whereas
-> > the bad one with the patch...  Does not.
-> >
-> > Anyway, I suppose I could try using acpi=force as the kernel
-> suggests for a
-> > workaround for now, but I'm still convinced something went wrong
-> with that
-> > patch now more than ever.  Due to the fact that ACPI gets reenabled
-> I didn't
-> > catch on that something was going wrong so early in the boot process
-> with it
-> > until now.
-> >
-> > One thing I want to emphasize is that the only difference between
-> the two
-> > kernels is that lone patch.
-> >
-> > As for perf top, I tried running it as you suggested, but I honestly
-> can't
-> > figure out how to get this thing to dump output to a file. Every
-> time I
-> > redirect stdio/stderr I get a empty file, I don't know what I'm
-> doing wrong.
-> > Any tips?
-> [...]
-> 
-> Don't worry about it - I think the log messages are a pretty good
-> clue.
-> 
-> Does this patch fix the log messages and/or the other issues?
-> 
-> --- a/drivers/firmware/dmi_scan.c
-> +++ b/drivers/firmware/dmi_scan.c
-> @@ -416,6 +416,9 @@ static int __init dmi_present(const char __iomem
-> *p)
->  
->  	memcpy_fromio(buf, p, 15);
->  	if (dmi_checksum(buf, 15)) {
-> +		print_hex_dump(KERN_INFO, "DMI entry: ", DUMP_PREFIX_NONE,
-> +			       16, 1, buf, 15, false);
-> +
->  		dmi_num = (buf[13] << 8) | buf[12];
->  		dmi_len = (buf[7] << 8) | buf[6];
->  		dmi_base = (buf[11] << 24) | (buf[10] << 16) |
-> @@ -442,10 +445,12 @@ static int __init dmi_present(const char __iomem
-> *p)
->  static int __init smbios_present(const char __iomem *p)
->  {
->  	u8 buf[32];
-> -	int offset = 0;
->  
->  	memcpy_fromio(buf, p, 32);
->  	if ((buf[5] < 32) && dmi_checksum(buf, buf[5])) {
-> +		print_hex_dump(KERN_INFO, "SMBIOS entry: ", DUMP_PREFIX_NONE,
-> +			       16, 1, buf, 16, false);
-> +
->  		dmi_ver = (buf[6] << 8) + buf[7];
->  
->  		/* Some BIOS report weird SMBIOS version, fix that up */
-> @@ -461,9 +466,9 @@ static int __init smbios_present(const char
-> __iomem *p)
->  			dmi_ver = 0x0206;
->  			break;
->  		}
-> -		offset = 16;
-> +		return dmi_present(p + 16);
->  	}
-> -	return dmi_present(buf + offset);
-> +	return 1;
->  }
->  
->  void __init dmi_scan_machine(void)
-> --- END ---
-Thanks Ben fix it.
-Acked-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+Interesting, I added this patch and it brought down my hackbench to the
+same level as removing idle_balance(). Although, on initial tests, it
+doesn't seem to help much else (compiles and such), but it doesn't seem
+to hurt things either.
+
+As idea of this patch is that we do not want to run the idle_balance if
+a task will wake up soon. It adds the heuristic, that if the previous
+task is set to TASK_UNINTERRUPTIBLE it will probably wake up in the near
+future, because it is blocked on IO or even a mutex. Especially if it is
+blocked on a mutex it will likely wake up soon, thus the CPU technically
+isn't quite idle. Avoiding the idle balance in this case brings
+hackbench back down (50%) on my box.
+
+Ideally, I would have liked to use rq->nr_uninterruptible, but that
+counter is only meaningful for the sum of all CPUs, as it may be
+incremented on one CPU but then decremented on another CPU. Thus my
+algorithm can only use the heuristic of the task immediately going to
+sleep.
+
+-- Steve
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 1dff78a..886a9af 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2928,7 +2928,7 @@ need_resched:
+ 	pre_schedule(rq, prev);
+ 
+ 	if (unlikely(!rq->nr_running))
+-		idle_balance(cpu, rq);
++		idle_balance(cpu, rq, prev);
+ 
+ 	put_prev_task(rq, prev);
+ 	next = pick_next_task(rq);
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index ed18c74..a29ea5e 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5208,7 +5208,7 @@ out:
+  * idle_balance is called by schedule() if this_cpu is about to become
+  * idle. Attempts to pull tasks from other CPUs.
+  */
+-void idle_balance(int this_cpu, struct rq *this_rq)
++void idle_balance(int this_cpu, struct rq *this_rq, struct task_struct *prev)
+ {
+ 	struct sched_domain *sd;
+ 	int pulled_task = 0;
+@@ -5216,6 +5216,9 @@ void idle_balance(int this_cpu, struct rq *this_rq)
+ 
+ 	this_rq->idle_stamp = this_rq->clock;
+ 
++	if (!(prev->state & TASK_UNINTERRUPTIBLE))
++		return;
++
+ 	if (this_rq->avg_idle < sysctl_sched_migration_cost)
+ 		return;
+ 
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index fc88644..f259070 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -876,11 +876,11 @@ extern const struct sched_class idle_sched_class;
+ #ifdef CONFIG_SMP
+ 
+ extern void trigger_load_balance(struct rq *rq, int cpu);
+-extern void idle_balance(int this_cpu, struct rq *this_rq);
++extern void idle_balance(int this_cpu, struct rq *this_rq, struct task_struct *prev);
+ 
+ #else	/* CONFIG_SMP */
+ 
+-static inline void idle_balance(int cpu, struct rq *rq)
++static inline void idle_balance(int cpu, struct rq *rq, struct task_struct *prev)
+ {
+ }
+ 
+
+
