@@ -1,38 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753121Ab3BPL1M (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 06:27:12 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:45336 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752949Ab3BPL1K (ORCPT
+	id S1753150Ab3BPLii (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 06:38:38 -0500
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:63657 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753066Ab3BPLih (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 06:27:10 -0500
-Date: Sat, 16 Feb 2013 12:27:14 +0100
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
-To: Denys Fedoryshchenko <denys@visp.net.lb>
-Cc: airlied@linux.ie, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: 3.8.0-rc7, nouveau, possible recursive locking,
- nouveau_instobj_create_ and nv50_disp_data_ctor
-Message-ID: <20130216112714.GA3071@joi.lan>
-References: <d4a52379a6aaf48bb47a6927e9a0de75@visp.net.lb>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <d4a52379a6aaf48bb47a6927e9a0de75@visp.net.lb>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 16 Feb 2013 06:38:37 -0500
+From: Anil Kumar <anilk4.v@gmail.com>
+To: devicetree-discuss@lists.ozlabs.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: linux@arm.linux.org.uk, b-cousson@ti.com, tony@atomide.com,
+        grant.likely@secretlab.ca, zonque@gmail.com, thomas@tomweber.eu,
+        anilk4.v@gmail.com
+Subject: [PATCH 0/2] arm/dts: OMAP3: Add gpmc DT node support
+Date: Sat, 16 Feb 2013 17:08:26 +0530
+Message-Id: <1361014708-1659-1-git-send-email-anilk4.v@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 16, 2013 at 12:57:07AM +0200, Denys Fedoryshchenko wrote:
-> Hi
-> 
-> Booted on Toshiba laptop, x86_64, NVIDIA Corporation GT218 [GeForce 
-> 310M], latest rc, and got this.
-> Please let me know if you need additional information.
+Add gpmc DT node in dtsi file.
+Add nand DT node and partitions information for devkit8000.
 
-It's harmless and already quieted down in Linus' tree (post 3.8-rc7).
-(Commit 5f97ab913cf0fbc378ea8ffc3ee66f4890d11c55)
+This series is based on top of branch “omap-for-v3.9/gpmc” git tree 
+http://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap.git
+and patches.
 
-Marcin
+Anil Kumar:-
+ARM: dts: add minimal DT support for DevKit8000
+
+Jon Hunter:- 
+  ARM: OMAP2+: Fix-up gpmc merge error
+
+Done basic testing:-
+ - #cat /proc/mtd     (shows nand partitions) 
+ - Nand partitions by command line.
+
+Anil Kumar (2):
+  ARM: dts: omap3: Add gpmc node
+  ARM: dts: omap3-devkit8000: add nand dt node
+
+ arch/arm/boot/dts/omap3-devkit8000.dts |   52 ++++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/omap3.dtsi           |   11 +++++++
+ 2 files changed, 63 insertions(+), 0 deletions(-)
+
