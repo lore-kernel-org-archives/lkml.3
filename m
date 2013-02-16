@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751560Ab3BPGNQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 01:13:16 -0500
-Received: from kirsty.vergenet.net ([202.4.237.240]:37551 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750788Ab3BPGNP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 01:13:15 -0500
-Date: Sat, 16 Feb 2013 15:13:13 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
-        devicetree-discuss@lists.ozlabs.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH/RFC] mfd: as3711: add OF support
-Message-ID: <20130216061312.GA19142@verge.net.au>
-References: <Pine.LNX.4.64.1302151101140.7446@axis700.grange>
- <20130216022630.GA11628@verge.net.au>
+	id S1751652Ab3BPGS6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 01:18:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8303 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750788Ab3BPGS5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Feb 2013 01:18:57 -0500
+Date: Sat, 16 Feb 2013 14:19:19 +0800
+From: dyoung@redhat.com
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: [PATCH]net: ehea module param description fix
+Message-ID: <511f24e7.iqc1+9PTu6xF8JTF%dyoung@redhat.com>
+User-Agent: Heirloom mailx 12.5 7/5/10
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130216022630.GA11628@verge.net.au>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 16, 2013 at 11:26:30AM +0900, Simon Horman wrote:
-> On Fri, Feb 15, 2013 at 11:07:16AM +0100, Guennadi Liakhovetski wrote:
-> > Add device-tree bindings to the AS3711 regulator and backlight drivers.
-> 
-> Hi,
-> 
-> at this stage I do not expect this code to go through the renesas tree.
-> However, in order to provide a basis for work on renesas SoCs I have added
-> this patch to the topic/backlight topic branch in the reneas tree on
-> kernel.org and merged it into topic/all+next.
-> 
-> In other words, I am not picking this patch up to merge it or add it to
-> linux-next, rather I am storing it for reference.
+In ehea.h the minimal entries is 2^7 - 1:
+#define EHEA_MIN_ENTRIES_QP  127
 
-I have dropped this patch due to the of_device_is_available build error
-reported by kbuild and reported in another sub-thread.
+Thus change the module param description accordinglly
+
+Signed-off-by: Dave Young <dyoung@redhat.com>
+---
+ drivers/net/ethernet/ibm/ehea/ehea_main.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+--- linux-2.6.orig/drivers/net/ethernet/ibm/ehea/ehea_main.c
++++ linux-2.6/drivers/net/ethernet/ibm/ehea/ehea_main.c
+@@ -76,16 +76,16 @@ MODULE_PARM_DESC(msg_level, "msg_level")
+ MODULE_PARM_DESC(prop_carrier_state, "Propagate carrier state of physical "
+ 		 "port to stack. 1:yes, 0:no.  Default = 0 ");
+ MODULE_PARM_DESC(rq3_entries, "Number of entries for Receive Queue 3 "
+-		 "[2^x - 1], x = [6..14]. Default = "
++		 "[2^x - 1], x = [7..14]. Default = "
+ 		 __MODULE_STRING(EHEA_DEF_ENTRIES_RQ3) ")");
+ MODULE_PARM_DESC(rq2_entries, "Number of entries for Receive Queue 2 "
+-		 "[2^x - 1], x = [6..14]. Default = "
++		 "[2^x - 1], x = [7..14]. Default = "
+ 		 __MODULE_STRING(EHEA_DEF_ENTRIES_RQ2) ")");
+ MODULE_PARM_DESC(rq1_entries, "Number of entries for Receive Queue 1 "
+-		 "[2^x - 1], x = [6..14]. Default = "
++		 "[2^x - 1], x = [7..14]. Default = "
+ 		 __MODULE_STRING(EHEA_DEF_ENTRIES_RQ1) ")");
+ MODULE_PARM_DESC(sq_entries, " Number of entries for the Send Queue  "
+-		 "[2^x - 1], x = [6..14]. Default = "
++		 "[2^x - 1], x = [7..14]. Default = "
+ 		 __MODULE_STRING(EHEA_DEF_ENTRIES_SQ) ")");
+ MODULE_PARM_DESC(use_mcs, " Multiple receive queues, 1: enable, 0: disable, "
+ 		 "Default = 1");
