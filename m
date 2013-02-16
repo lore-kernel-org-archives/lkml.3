@@ -1,18 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752754Ab3BPEQh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 23:16:37 -0500
-Received: from mail-gh0-f202.google.com ([209.85.160.202]:40694 "EHLO
+	id S1752697Ab3BPEQg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 23:16:36 -0500
+Received: from mail-gh0-f202.google.com ([209.85.160.202]:58017 "EHLO
 	mail-gh0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752006Ab3BPEQR (ORCPT
+	with ESMTP id S1752223Ab3BPEQR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Feb 2013 23:16:17 -0500
 From: Simon Glass <sjg@chromium.org>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Simon Glass <sjg@chromium.org>
-Subject: [PATCH v4 4/6] mfd: Add ChromeOS EC SPI driver
-Date: Fri, 15 Feb 2013 20:16:10 -0800
-Message-Id: <1360988172-15380-5-git-send-email-sjg@chromium.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Simon Glass <sjg@chromium.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bill Pemberton <wfp5p@virginia.edu>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Javier Martinez Canillas <javier@dowhile0.org>,
+        Sourav Poddar <sourav.poddar@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Alban Bedel <alban.bedel@avionic-design.de>,
+        linux-input@vger.kernel.org
+Subject: [PATCH v4 5/6] Input: matrix-keymap: Add function to read the new DT binding
+Date: Fri, 15 Feb 2013 20:16:11 -0800
+Message-Id: <1360988172-15380-6-git-send-email-sjg@chromium.org>
 X-Mailer: git-send-email 1.8.1.3
 In-Reply-To: <1360988172-15380-1-git-send-email-sjg@chromium.org>
 References: <1360988172-15380-1-git-send-email-sjg@chromium.org>
@@ -20,475 +27,164 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This uses a SPI bus to talk to the ChromeOS EC. The protocol
-is defined by the EC and is fairly simple, with a length byte,
-checksum, command byte and version byte (to permit easy creation
-of new commands).
+We now have a binding which adds two parameters to the matrix keypad DT
+node. This is separate from the GPIO-driven matrix keypad binding, and
+unfortunately incompatible, since that uses row-gpios/col-gpios for the
+row and column counts.
+
+So the easiest option here is to provide a function for non-GPIO drivers
+to use to decode the binding.
+
+Note: We could in fact create an entirely separate structure to hold
+these two fields, but it does not seem worth it, yet. If we have more
+parameters then we can add this, and then refactor each driver to hold
+such a structure.
 
 Signed-off-by: Simon Glass <sjg@chromium.org>
+Tested-by: Sourav Poddar <sourav.poddar@ti.com> (v2)
 ---
 Changes in v4: None
-Changes in v3: None
+Changes in v3:
+- Add stub for matrix_keypad_parse_of_params() when no CONFIG_OF
+- Put back full DT range checking in tca8418 driver
+
 Changes in v2:
-- Remove use of __devinit/__devexit
+- Add new patch to decode matrix-keypad DT binding
 
- drivers/mfd/Kconfig       |  10 ++
- drivers/mfd/Makefile      |   1 +
- drivers/mfd/cros_ec_spi.c | 412 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 423 insertions(+)
- create mode 100644 drivers/mfd/cros_ec_spi.c
+ drivers/input/keyboard/lpc32xx-keys.c   | 11 ++++++-----
+ drivers/input/keyboard/omap4-keypad.c   | 16 +++++-----------
+ drivers/input/keyboard/tca8418_keypad.c |  7 +++++--
+ drivers/input/matrix-keymap.c           | 19 +++++++++++++++++++
+ include/linux/input/matrix_keypad.h     | 19 +++++++++++++++++++
+ 5 files changed, 54 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index e1cd15e..e30b801 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -39,6 +39,16 @@ config MFD_CROS_EC_I2C
- 	  a checksum. Failing accesses will be retried three times to
- 	  improve reliability.
+diff --git a/drivers/input/keyboard/lpc32xx-keys.c b/drivers/input/keyboard/lpc32xx-keys.c
+index 1b8add6..4218143 100644
+--- a/drivers/input/keyboard/lpc32xx-keys.c
++++ b/drivers/input/keyboard/lpc32xx-keys.c
+@@ -144,12 +144,13 @@ static int lpc32xx_parse_dt(struct device *dev,
+ {
+ 	struct device_node *np = dev->of_node;
+ 	u32 rows = 0, columns = 0;
++	int err;
  
-+config MFD_CROS_EC_SPI
-+	tristate "ChromeOS Embedded Controller (SPI)"
-+	depends on MFD_CROS_EC && SPI
-+
-+	---help---
-+	  If you say Y here, you get support for talking to the ChromeOS EC
-+	  through a SPI bus, using a byte-level protocol. Since the EC's
-+	  response time cannot be guaranteed, we support ignoring
-+	  'pre-amble' bytes before the response actually starts.
-+
- config MFD_88PM800
- 	tristate "Support Marvell 88PM800"
- 	depends on I2C=y && GENERIC_HARDIRQS
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 895257b..f62a583 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -10,6 +10,7 @@ obj-$(CONFIG_MFD_SM501)		+= sm501.o
- obj-$(CONFIG_MFD_ASIC3)		+= asic3.o tmio_core.o
- obj-$(CONFIG_MFD_CROS_EC)	+= cros_ec.o
- obj-$(CONFIG_MFD_CROS_EC_I2C)	+= cros_ec_i2c.o
-+obj-$(CONFIG_MFD_CROS_EC_SPI)	+= cros_ec_spi.o
+-	of_property_read_u32(np, "keypad,num-rows", &rows);
+-	of_property_read_u32(np, "keypad,num-columns", &columns);
+-	if (!rows || rows != columns) {
+-		dev_err(dev,
+-			"rows and columns must be specified and be equal!\n");
++	err = matrix_keypad_parse_of_params(dev, &rows, &columns);
++	if (err)
++		return err;
++	if (rows != columns) {
++		dev_err(dev, "rows and columns must be equal!\n");
+ 		return -EINVAL;
+ 	}
  
- rtsx_pci-objs			:= rtsx_pcr.o rts5209.o rts5229.o rtl8411.o rts5227.o
- obj-$(CONFIG_MFD_RTSX_PCI)	+= rtsx_pci.o
-diff --git a/drivers/mfd/cros_ec_spi.c b/drivers/mfd/cros_ec_spi.c
-new file mode 100644
-index 0000000..3a97653
---- /dev/null
-+++ b/drivers/mfd/cros_ec_spi.c
-@@ -0,0 +1,412 @@
-+/*
-+ * ChromeOS EC multi-function device (SPI)
-+ *
-+ * Copyright (C) 2012 Google, Inc
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
+diff --git a/drivers/input/keyboard/omap4-keypad.c b/drivers/input/keyboard/omap4-keypad.c
+index e25b022..1b28909 100644
+--- a/drivers/input/keyboard/omap4-keypad.c
++++ b/drivers/input/keyboard/omap4-keypad.c
+@@ -215,18 +215,12 @@ static int omap4_keypad_parse_dt(struct device *dev,
+ 				 struct omap4_keypad *keypad_data)
+ {
+ 	struct device_node *np = dev->of_node;
++	int err;
+ 
+-	if (!np) {
+-		dev_err(dev, "missing DT data");
+-		return -EINVAL;
+-	}
+-
+-	of_property_read_u32(np, "keypad,num-rows", &keypad_data->rows);
+-	of_property_read_u32(np, "keypad,num-columns", &keypad_data->cols);
+-	if (!keypad_data->rows || !keypad_data->cols) {
+-		dev_err(dev, "number of keypad rows/columns not specified\n");
+-		return -EINVAL;
+-	}
++	err = matrix_keypad_parse_of_params(dev, &keypad_data->rows,
++					    &keypad_data->cols);
++	if (err)
++		return err;
+ 
+ 	if (of_get_property(np, "linux,input-no-autorepeat", NULL))
+ 		keypad_data->no_autorepeat = true;
+diff --git a/drivers/input/keyboard/tca8418_keypad.c b/drivers/input/keyboard/tca8418_keypad.c
+index a34cc67..55c1530 100644
+--- a/drivers/input/keyboard/tca8418_keypad.c
++++ b/drivers/input/keyboard/tca8418_keypad.c
+@@ -288,8 +288,11 @@ static int tca8418_keypad_probe(struct i2c_client *client,
+ 		irq_is_gpio = pdata->irq_is_gpio;
+ 	} else {
+ 		struct device_node *np = dev->of_node;
+-		of_property_read_u32(np, "keypad,num-rows", &rows);
+-		of_property_read_u32(np, "keypad,num-columns", &cols);
++		int err;
 +
-+#include <linux/delay.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/mfd/cros_ec.h>
-+#include <linux/mfd/cros_ec_commands.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+#include <linux/spi/spi.h>
-+
-+
-+/* The header byte, which follows the preamble */
-+#define EC_MSG_HEADER			0xec
-+
-+/*
-+ * Number of EC preamble bytes we read at a time. Since it takes
-+ * about 400-500us for the EC to respond there is not a lot of
-+ * point in tuning this. If the EC could respond faster then
-+ * we could increase this so that might expect the preamble and
-+ * message to occur in a single transaction. However, the maximum
-+ * SPI transfer size is 256 bytes, so at 5MHz we need a response
-+ * time of perhaps <320us (200 bytes / 1600 bits).
-+ */
-+#define EC_MSG_PREAMBLE_COUNT		32
-+
-+/*
-+  * We must get a response from the EC in 5ms. This is a very long
-+  * time, but the flash write command can take 2-3ms. The EC command
-+  * processing is currently not very fast (about 500us). We could
-+  * look at speeding this up and making the flash write command a
-+  * 'slow' command, requiring a GET_STATUS wait loop, like flash
-+  * erase.
-+  */
-+#define EC_MSG_DEADLINE_MS		5
-+
-+/*
-+  * Time between raising the SPI chip select (for the end of a
-+  * transaction) and dropping it again (for the next transaction).
-+  * If we go too fast, the EC will miss the transaction. It seems
-+  * that 50us is enough with the 16MHz STM32 EC.
-+  */
-+#define EC_SPI_RECOVERY_TIME_NS	(50 * 1000)
-+
-+/**
-+ * struct cros_ec_spi - information about a SPI-connected EC
-+ *
-+ * @spi: SPI device we are connected to
-+ * @last_transfer_ns: time that we last finished a transfer, or 0 if there
-+ *	if no record
-+ */
-+struct cros_ec_spi {
-+	struct spi_device *spi;
-+	s64 last_transfer_ns;
-+};
-+
-+static void debug_packet(struct device *dev, const char *name, u8 *ptr,
-+			  int len)
++		err = matrix_keypad_parse_of_params(dev, &rows, &cols);
++		if (err)
++			return err;
+ 		rep = of_property_read_bool(np, "keypad,autorepeat");
+ 	}
+ 
+diff --git a/drivers/input/matrix-keymap.c b/drivers/input/matrix-keymap.c
+index 3ae496e..619b382 100644
+--- a/drivers/input/matrix-keymap.c
++++ b/drivers/input/matrix-keymap.c
+@@ -50,6 +50,25 @@ static bool matrix_keypad_map_key(struct input_dev *input_dev,
+ }
+ 
+ #ifdef CONFIG_OF
++int matrix_keypad_parse_of_params(struct device *dev,
++				  unsigned int *rows, unsigned int *cols)
 +{
-+#ifdef DEBUG
-+	int i;
++	struct device_node *np = dev->of_node;
 +
-+	dev_dbg(dev, "%s: ", name);
-+	for (i = 0; i < len; i++)
-+		dev_cont(dev, " %02x", ptr[i]);
-+#endif
-+}
-+
-+/**
-+ * cros_ec_spi_receive_response - Receive a response from the EC.
-+ *
-+ * This function has two phases: reading the preamble bytes (since if we read
-+ * data from the EC before it is ready to send, we just get preamble) and
-+ * reading the actual message.
-+ *
-+ * The received data is placed into ec_dev->din.
-+ *
-+ * @ec_dev: ChromeOS EC device
-+ * @need_len: Number of message bytes we need to read
-+ */
-+static int cros_ec_spi_receive_response(struct cros_ec_device *ec_dev,
-+					int need_len)
-+{
-+	struct cros_ec_spi *ec_spi = ec_dev->priv;
-+	struct spi_transfer trans;
-+	struct spi_message msg;
-+	u8 *ptr, *end;
-+	int ret;
-+	unsigned long deadline;
-+	int todo;
-+
-+	/* Receive data until we see the header byte */
-+	deadline = jiffies + msecs_to_jiffies(EC_MSG_DEADLINE_MS);
-+	do {
-+		memset(&trans, '\0', sizeof(trans));
-+		trans.cs_change = 1;
-+		trans.rx_buf = ptr = ec_dev->din;
-+		trans.len = EC_MSG_PREAMBLE_COUNT;
-+
-+		spi_message_init(&msg);
-+		spi_message_add_tail(&trans, &msg);
-+		ret = spi_sync(ec_spi->spi, &msg);
-+		if (ret < 0) {
-+			dev_err(ec_dev->dev, "spi transfer failed: %d\n", ret);
-+			return ret;
-+		}
-+
-+		for (end = ptr + EC_MSG_PREAMBLE_COUNT; ptr != end; ptr++) {
-+			if (*ptr == EC_MSG_HEADER) {
-+				dev_dbg(ec_dev->dev, "msg found at %d\n",
-+					ptr - ec_dev->din);
-+				break;
-+			}
-+		}
-+
-+		if (time_after(jiffies, deadline)) {
-+			dev_warn(ec_dev->dev, "EC failed to respond in time\n");
-+			return -ETIMEDOUT;
-+		}
-+	} while (ptr == end);
-+
-+	/*
-+	 * ptr now points to the header byte. Copy any valid data to the
-+	 * start of our buffer
-+	 */
-+	todo = end - ++ptr;
-+	BUG_ON(todo < 0 || todo > ec_dev->din_size);
-+	todo = min(todo, need_len);
-+	memmove(ec_dev->din, ptr, todo);
-+	ptr = ec_dev->din + todo;
-+	dev_dbg(ec_dev->dev, "need %d, got %d bytes from preamble\n",
-+		 need_len, todo);
-+	need_len -= todo;
-+
-+	/* Receive data until we have it all */
-+	while (need_len > 0) {
-+		/*
-+		 * We can't support transfers larger than the SPI FIFO size
-+		 * unless we have DMA. We don't have DMA on the ISP SPI ports
-+		 * for Exynos. We need a way of asking SPI driver for
-+		 * maximum-supported transfer size.
-+		 */
-+		todo = min(need_len, 256);
-+		dev_dbg(ec_dev->dev, "loop, todo=%d, need_len=%d, ptr=%d\n",
-+			todo, need_len, ptr - ec_dev->din);
-+
-+		memset(&trans, '\0', sizeof(trans));
-+		trans.cs_change = 1;
-+		trans.rx_buf = ptr;
-+		trans.len = todo;
-+		spi_message_init(&msg);
-+		spi_message_add_tail(&trans, &msg);
-+
-+		/* send command to EC and read answer */
-+		BUG_ON((u8 *)trans.rx_buf - ec_dev->din + todo >
-+				ec_dev->din_size);
-+		ret = spi_sync(ec_spi->spi, &msg);
-+		if (ret < 0) {
-+			dev_err(ec_dev->dev, "spi transfer failed: %d\n", ret);
-+			return ret;
-+		}
-+
-+		debug_packet(ec_dev->dev, "interim", ptr, todo);
-+		ptr += todo;
-+		need_len -= todo;
-+	}
-+
-+	dev_dbg(ec_dev->dev, "loop done, ptr=%d\n", ptr - ec_dev->din);
-+
-+	return 0;
-+}
-+
-+/**
-+ * cros_ec_command_spi_xfer - Transfer a message over SPI and receive the reply
-+ *
-+ * @ec_dev: ChromeOS EC device
-+ * @ec_msg: Message to transfer
-+ */
-+static int cros_ec_command_spi_xfer(struct cros_ec_device *ec_dev,
-+				    struct cros_ec_msg *ec_msg)
-+{
-+	struct cros_ec_spi *ec_spi = ec_dev->priv;
-+	struct spi_transfer trans;
-+	struct spi_message msg;
-+	int i, len;
-+	u8 *ptr;
-+	int sum;
-+	int ret = 0, final_ret;
-+	struct timespec ts;
-+
-+	len = cros_ec_prepare_tx(ec_dev, ec_msg);
-+	dev_dbg(ec_dev->dev, "prepared, len=%d\n", len);
-+
-+	/* If it's too soon to do another transaction, wait */
-+	if (ec_spi->last_transfer_ns) {
-+		struct timespec ts;
-+		unsigned long delay;	/* The delay completed so far */
-+
-+		ktime_get_ts(&ts);
-+		delay = timespec_to_ns(&ts) - ec_spi->last_transfer_ns;
-+		if (delay < EC_SPI_RECOVERY_TIME_NS)
-+			ndelay(delay);
-+	}
-+
-+	/* Transmit phase - send our message */
-+	debug_packet(ec_dev->dev, "out", ec_dev->dout, len);
-+	memset(&trans, '\0', sizeof(trans));
-+	trans.tx_buf = ec_dev->dout;
-+	trans.len = len;
-+	trans.cs_change = 1;
-+	spi_message_init(&msg);
-+	spi_message_add_tail(&trans, &msg);
-+	ret = spi_sync(ec_spi->spi, &msg);
-+
-+	/* Get the response */
-+	if (!ret) {
-+		ret = cros_ec_spi_receive_response(ec_dev,
-+				ec_msg->in_len + EC_MSG_TX_PROTO_BYTES);
-+	} else {
-+		dev_err(ec_dev->dev, "spi transfer failed: %d\n", ret);
-+	}
-+
-+	/* turn off CS */
-+	spi_message_init(&msg);
-+	final_ret = spi_sync(ec_spi->spi, &msg);
-+	ktime_get_ts(&ts);
-+	ec_spi->last_transfer_ns = timespec_to_ns(&ts);
-+	if (!ret)
-+		ret = final_ret;
-+	if (ret < 0) {
-+		dev_err(ec_dev->dev, "spi transfer failed: %d\n", ret);
-+		return ret;
-+	}
-+
-+	/* check response error code */
-+	ptr = ec_dev->din;
-+	if (ptr[0]) {
-+		dev_warn(ec_dev->dev, "command 0x%02x returned an error %d\n",
-+			 ec_msg->cmd, ptr[0]);
-+		debug_packet(ec_dev->dev, "in_err", ptr, len);
++	if (!np) {
++		dev_err(dev, "missing DT data");
 +		return -EINVAL;
 +	}
-+	len = ptr[1];
-+	sum = ptr[0] + ptr[1];
-+	if (len > ec_msg->in_len) {
-+		dev_err(ec_dev->dev, "packet too long (%d bytes, expected %d)",
-+			len, ec_msg->in_len);
-+		return -ENOSPC;
-+	}
-+
-+	/* copy response packet payload and compute checksum */
-+	for (i = 0; i < len; i++) {
-+		sum += ptr[i + 2];
-+		if (ec_msg->in_len)
-+			ec_msg->in_buf[i] = ptr[i + 2];
-+	}
-+	sum &= 0xff;
-+
-+	debug_packet(ec_dev->dev, "in", ptr, len + 3);
-+
-+	if (sum != ptr[len + 2]) {
-+		dev_err(ec_dev->dev,
-+			"bad packet checksum, expected %02x, got %02x\n",
-+			sum, ptr[len + 2]);
-+		return -EBADMSG;
++	of_property_read_u32(np, "keypad,num-rows", rows);
++	of_property_read_u32(np, "keypad,num-columns", cols);
++	if (!*rows || !*cols) {
++		dev_err(dev, "number of keypad rows/columns not specified\n");
++		return -EINVAL;
 +	}
 +
 +	return 0;
 +}
 +
-+static const char *cros_ec_get_name(struct cros_ec_device *ec_dev)
+ static int matrix_keypad_parse_of_keymap(const char *propname,
+ 					 unsigned int rows, unsigned int cols,
+ 					 struct input_dev *input_dev)
+diff --git a/include/linux/input/matrix_keypad.h b/include/linux/input/matrix_keypad.h
+index 5f3aa6b..27e06ac 100644
+--- a/include/linux/input/matrix_keypad.h
++++ b/include/linux/input/matrix_keypad.h
+@@ -81,4 +81,23 @@ int matrix_keypad_build_keymap(const struct matrix_keymap_data *keymap_data,
+ 			       unsigned short *keymap,
+ 			       struct input_dev *input_dev);
+ 
++#ifdef CONFIG_OF
++/**
++ * matrix_keypad_parse_of_params() - Read parameters from matrix-keypad node
++ *
++ * @dev: Device containing of_node
++ * @rows: Returns number of matrix rows
++ * @cols: Returns number of matrix columns
++ * @return 0 if OK, <0 on error
++ */
++int matrix_keypad_parse_of_params(struct device *dev,
++				  unsigned int *rows, unsigned int *cols);
++#else
++static inline int matrix_keypad_parse_of_params(struct device *dev,
++				  unsigned int *rows, unsigned int *cols)
 +{
-+	struct cros_ec_spi *ec_spi = ec_dev->priv;
-+
-+	return ec_spi->spi->modalias;
++	return -ENOSYS;
 +}
++#endif /* CONFIG_OF */
 +
-+static const char *cros_ec_get_phys_name(struct cros_ec_device *ec_dev)
-+{
-+	struct cros_ec_spi *ec_spi = ec_dev->priv;
-+
-+	return dev_name(&ec_spi->spi->dev);
-+}
-+
-+static struct device *cros_ec_get_parent(struct cros_ec_device *ec_dev)
-+{
-+	struct cros_ec_spi *ec_spi = ec_dev->priv;
-+
-+	return &ec_spi->spi->dev;
-+}
-+
-+static int cros_ec_probe_spi(struct spi_device *spi)
-+{
-+	struct device *dev = &spi->dev;
-+	struct cros_ec_device *ec_dev;
-+	struct cros_ec_spi *ec_spi;
-+	int err;
-+
-+	spi->bits_per_word = 8;
-+	spi->mode = SPI_MODE_0;
-+	err = spi_setup(spi);
-+	if (err < 0)
-+		return err;
-+
-+	ec_spi = kzalloc(sizeof(*ec_spi), GFP_KERNEL);
-+	if (ec_spi == NULL) {
-+		err = -ENOMEM;
-+		dev_err(dev, "cannot allocate ec_spi\n");
-+		goto fail_alloc;
-+	}
-+	ec_spi->spi = spi;
-+	ec_dev = cros_ec_alloc("SPI");
-+	if (!ec_dev) {
-+		err = -ENOMEM;
-+		dev_err(dev, "cannot create cros_ec\n");
-+		goto fail_ec_alloc;
-+	}
-+	spi_set_drvdata(spi, ec_dev);
-+	ec_dev->dev = dev;
-+	ec_dev->priv = ec_spi;
-+	ec_dev->irq = spi->irq;
-+	ec_dev->command_xfer = cros_ec_command_spi_xfer;
-+	ec_dev->get_name = cros_ec_get_name;
-+	ec_dev->get_phys_name = cros_ec_get_phys_name;
-+	ec_dev->get_parent = cros_ec_get_parent;
-+	ec_dev->din_size = EC_MSG_BYTES + EC_MSG_PREAMBLE_COUNT;
-+	ec_dev->dout_size = EC_MSG_BYTES;
-+
-+	err = cros_ec_register(ec_dev);
-+	if (err) {
-+		dev_err(dev, "cannot register EC\n");
-+		goto fail_register;
-+	}
-+
-+	return 0;
-+
-+fail_register:
-+	cros_ec_free(ec_dev);
-+fail_ec_alloc:
-+	kfree(ec_spi);
-+fail_alloc:
-+	return err;
-+}
-+
-+static int cros_ec_remove_spi(struct spi_device *spi)
-+{
-+	struct cros_ec_device *ec_dev;
-+	struct cros_ec_spi *ec_spi;
-+
-+	ec_dev = spi_get_drvdata(spi);
-+	ec_spi = ec_dev->priv;
-+
-+	cros_ec_remove(ec_dev);
-+	cros_ec_free(ec_dev);
-+	kfree(ec_spi);
-+
-+	return 0;
-+}
-+
-+#ifdef CONFIG_PM_SLEEP
-+static int cros_ec_spi_suspend(struct device *dev)
-+{
-+	struct cros_ec_device *ec_dev = dev_get_drvdata(dev);
-+
-+	return cros_ec_suspend(ec_dev);
-+}
-+
-+static int cros_ec_spi_resume(struct device *dev)
-+{
-+	struct cros_ec_device *ec_dev = dev_get_drvdata(dev);
-+
-+	return cros_ec_resume(ec_dev);
-+}
-+#endif
-+
-+static SIMPLE_DEV_PM_OPS(cros_ec_spi_pm_ops, cros_ec_spi_suspend,
-+			 cros_ec_spi_resume);
-+
-+static const struct spi_device_id cros_ec_spi_id[] = {
-+	{ "cros-ec-spi", 0 },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(spi, cros_ec_spi_id);
-+
-+static struct spi_driver cros_ec_driver_spi = {
-+	.driver	= {
-+		.name	= "cros-ec-spi",
-+		.owner	= THIS_MODULE,
-+		.pm	= &cros_ec_spi_pm_ops,
-+	},
-+	.probe		= cros_ec_probe_spi,
-+	.remove		= cros_ec_remove_spi,
-+	.id_table	= cros_ec_spi_id,
-+};
-+
-+module_spi_driver(cros_ec_driver_spi);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("ChromeOS EC multi function device (SPI)");
+ #endif /* _MATRIX_KEYPAD_H */
 -- 
 1.8.1.3
 
