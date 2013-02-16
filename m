@@ -1,141 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750947Ab3BPFOz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 00:14:55 -0500
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:51025 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750741Ab3BPFOx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 00:14:53 -0500
-Date: Sat, 16 Feb 2013 00:14:49 -0500 (EST)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>, Pavel Machek <pavel@denx.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
-        arm@kernel.org, Simon Horman <horms+renesas@verge.net.au>,
-        Shawn Guo <shawn.guo@linaro.org>, Dinh Nguyen <dinguyen@altera.com>
-Subject: Re: [PATCH 8/9] [HACK] ARM: imx: work around v7_cpu_resume link
- error
-In-Reply-To: <20130215110720.GL17833@n2100.arm.linux.org.uk>
-Message-ID: <alpine.LFD.2.03.1302152336520.6419@syhkavp.arg>
-References: <1360882071-4072668-1-git-send-email-arnd@arndb.de> <1360882071-4072668-9-git-send-email-arnd@arndb.de> <20130215110720.GL17833@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+	id S1751067Ab3BPFQq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 00:16:46 -0500
+Received: from mga09.intel.com ([134.134.136.24]:30350 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750741Ab3BPFQp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Feb 2013 00:16:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,676,1355126400"; 
+   d="scan'208";a="263458739"
+Message-ID: <511F1637.5000308@intel.com>
+Date: Sat, 16 Feb 2013 13:16:39 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Peter Zijlstra <peterz@infradead.org>
+CC: torvalds@linux-foundation.org, mingo@redhat.com, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch v4 01/18] sched: set SD_PREFER_SIBLING on MC domain to
+ reduce a domain level
+References: <1358996820-23036-1-git-send-email-alex.shi@intel.com>   <1358996820-23036-2-git-send-email-alex.shi@intel.com>  <1360663879.4485.2.camel@laptop> <511B9392.1080003@intel.com> <1360931899.2739.8.camel@laptop>
+In-Reply-To: <1360931899.2739.8.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Feb 2013, Russell King - ARM Linux wrote:
-
-> On Thu, Feb 14, 2013 at 11:47:50PM +0100, Arnd Bergmann wrote:
-> > Patch c08e20d24 "arm: Add v7_invalidate_l1 to cache-v7.S"
-> > moves the v7_invalidate_l1 symbol out of imx/headsmp.S,
-> > which seems to cause a link error because it is now
-> > too far away from v7_cpu_resume when building an
-> > allyesconfig kernel.
-> > 
-> > If we move the v7_cpu_resume function from the .data
-> > section to .text, that creates another link error
-> > for the reference to phys_l2x0_saved_regs, but we
-> > can move all of the above to .text.
-> > 
-> > I believe that this is not a correct bug fix but just
-> > a bad workaround, so I'm open to ideas from people
-> > who understand the bigger picture.
+On 02/15/2013 08:38 PM, Peter Zijlstra wrote:
+> On Wed, 2013-02-13 at 21:22 +0800, Alex Shi wrote:
+>> No, the flags set on MC/CPU domain, but is checked in their parents
+>> balancing, like in NUMA domain.
+>> Without the flag, will cause NUMA domain imbalance. like on my 2
+>> sockets
+>> NHM EP: 3 of 4 tasks were assigned on socket 0(lcpu, 10, 12, 14)
+>>
+>> In this case, update_sd_pick_busiest() need a reduced group_capacity
+>> to
+>> return true:
+>>         if (sgs->sum_nr_running > sgs->group_capacity)
+>>                 return true;
+>> then numa domain balancing get chance to start.
 > 
-> Unfortunately, this ends up with writable data in the .text section, which
-> is supposed to be read-only.  We should try to preserve that status, even
-> though we don't enforce it.
+> Ah, indeed. Its always better to include such 'obvious' problems in the
+> changelog :-)
 > 
-> I guess the problem is that we end up with the .data segment soo far away
-> from the .text segment that these branches no longer work (and remember
-> that this code executes with the MMU off.)
-> 
-> The only solution I can think is that we need to do quite a bit of magic
-> here to jump to an absolute address, but taking account of the V:P offset.
-> That's not going to be particularly nice, and it's going to then also have
-> to jump back the other way - to the cpu_resume code which is also in the
-> .data section.
 
-Something like this should work:
+got it. :)
+how about the following commit log and patch:
 
-diff --git a/arch/arm/mach-imx/headsmp.S b/arch/arm/mach-imx/headsmp.S
-index 7e49deb128..9de26f3edb 100644
---- a/arch/arm/mach-imx/headsmp.S
-+++ b/arch/arm/mach-imx/headsmp.S
-@@ -99,8 +99,11 @@ phys_l2x0_saved_regs:
- #endif
- 
- ENTRY(v7_cpu_resume)
--	bl	v7_invalidate_l1
-+	ldr	ip, 2f
-+	mov	lr, pc
-+1:	add	pc, pc, ip
- 	pl310_resume
- 	b	cpu_resume
-+2:	.word v7_invalidate_l1 - 1b - 8
- ENDPROC(v7_cpu_resume)
- #endif
+---
 
+>From c97fceceaf9d68e73eaf015d5915474a9a94a2d1 Mon Sep 17 00:00:00 2001
+From: Alex Shi <alex.shi@intel.com>
+Date: Fri, 28 Dec 2012 13:53:00 +0800
+Subject: [PATCH] sched: set SD_PREFER_SIBLING on MC domain to reduce a domain
+ level
 
-However it is probably best to move all the code to the .text section 
-where it belongs and fixup the data access instead.  I must plead guilty 
-for introducing this idea of putting code in the .data section with the 
-SA1100resume code over 10 years ago that everyone copied since.
+The domain flag SD_PREFER_SIBLING was set both on MC and CPU domain at
+frist commit b5d978e0c7e79a, and was removed in-carefully when clear up
+obsolete power scheduler. Then commit 6956dc568 recover the flag on CPU
+domain only. It works, but it introduces a extra domain level since this
+cause MC/CPU different.
 
-So here's how I think it should look instead, and how I should have done 
-the SA1100 code back then:
+So, recover the the flag in MC domain too to remove a domain level in
+x86 platform.
 
-diff --git a/arch/arm/mach-imx/headsmp.S b/arch/arm/mach-imx/headsmp.S
-index 7e49deb128..38a544a037 100644
---- a/arch/arm/mach-imx/headsmp.S
-+++ b/arch/arm/mach-imx/headsmp.S
-@@ -73,16 +73,16 @@ ENDPROC(v7_secondary_startup)
- 
- #ifdef CONFIG_PM
- /*
-- * The following code is located into the .data section.  This is to
-- * allow phys_l2x0_saved_regs to be accessed with a relative load
-- * as we are running on physical address here.
-+ * The following code must assume it is running from physical address
-+ * where absolute virtual addresses to the data section have to be
-+ * turned into relative ones.
-  */
--	.data
--	.align
- 
- #ifdef CONFIG_CACHE_L2X0
- 	.macro	pl310_resume
--	ldr	r2, phys_l2x0_saved_regs
-+	adr	r0, phys_l2x0_saved_ptr_offset
-+	ldr	r2, [r0]
-+	add	r2, r2, r0
- 	ldr	r0, [r2, #L2X0_R_PHY_BASE]	@ get physical base of l2x0
- 	ldr	r1, [r2, #L2X0_R_AUX_CTRL]	@ get aux_ctrl value
- 	str	r1, [r0, #L2X0_AUX_CTRL]	@ restore aux_ctrl
-@@ -90,9 +90,13 @@ ENDPROC(v7_secondary_startup)
- 	str	r1, [r0, #L2X0_CTRL]		@ re-enable L2
- 	.endm
- 
-+	.bss
- 	.globl	phys_l2x0_saved_regs
- phys_l2x0_saved_regs:
--        .long   0
-+        .space   4
-+	.previous
-+phys_l2x0_saved_ptr_offset:
-+	.word	phys_l2x0_saved_regs - .
- #else
- 	.macro	pl310_resume
- 	.endm
+This flag can not be removed since it is used to keep parent domain
+balancing, like in NUMA domain, update_sd_pick_busiest() need a reduced
+group_capacity to return 'true' then re-balance tasks from groups.
 
-And yet we could dispense with phys_l2x0_saved_regs 
-altogether and use l2x0_saved_regs directly here instead.
+Reported-by: Mike Galbraith <efault@gmx.de>
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+---
+ include/linux/topology.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-That doesn't solve the issue of the kernel becoming too large for branch 
-displacement fixup though.
+diff --git a/include/linux/topology.h b/include/linux/topology.h
+index d3cf0d6..386bcf4 100644
+--- a/include/linux/topology.h
++++ b/include/linux/topology.h
+@@ -132,6 +132,7 @@ int arch_update_cpu_topology(void);
+ 				| 0*SD_SHARE_CPUPOWER			\
+ 				| 1*SD_SHARE_PKG_RESOURCES		\
+ 				| 0*SD_SERIALIZE			\
++				| 1*SD_PREFER_SIBLING			\
+ 				,					\
+ 	.last_balance		= jiffies,				\
+ 	.balance_interval	= 1,					\
+-- 
+1.7.5.4
 
 
-Nicolas
