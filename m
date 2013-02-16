@@ -1,241 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753319Ab3BPOq4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 09:46:56 -0500
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:58213 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753204Ab3BPOqy (ORCPT
+	id S1753330Ab3BPOuy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 09:50:54 -0500
+Received: from jonshouse.co.uk ([91.84.151.33]:53026 "EHLO
+	mail.jonshouse.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753263Ab3BPOux (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 09:46:54 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130216090637.GB19639@arwen.pp.htv.fi>
-References: <1360988172-15380-1-git-send-email-sjg@chromium.org>
-	<1360988172-15380-4-git-send-email-sjg@chromium.org>
-	<20130216090637.GB19639@arwen.pp.htv.fi>
-Date: Sat, 16 Feb 2013 06:46:53 -0800
-X-Google-Sender-Auth: rZWAfoL274Jr9WxBDvpvTVvv8kY
-Message-ID: <CAPnjgZ201Pcq3EshTkEU8YgLNVby=d6xjjss_Rh5Kfrwnc0Mrg@mail.gmail.com>
-Subject: Re: [PATCH v4 3/6] mfd: Add ChromeOS EC I2C driver
-From: Simon Glass <sjg@chromium.org>
-To: balbi@ti.com
-Cc: LKML <linux-kernel@vger.kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Che-Liang Chiou <clchiou@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 16 Feb 2013 09:50:53 -0500
+X-Greylist: delayed 785 seconds by postgrey-1.27 at vger.kernel.org; Sat, 16 Feb 2013 09:50:52 EST
+Subject: Stupid user with user-space questions, matrix LED driving with
+ user space code only.
+From: Jonathan Andrews <jon@jonshouse.co.uk>
+Reply-To: jon@jonshouse.co.uk
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 16 Feb 2013 14:37:56 +0000
+Message-ID: <1361025476.4271.36.camel@jonspc>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+I hope this is the correct place, I expect to get abused.
 
-On Sat, Feb 16, 2013 at 1:06 AM, Felipe Balbi <balbi@ti.com> wrote:
-> On Fri, Feb 15, 2013 at 08:16:09PM -0800, Simon Glass wrote:
->> This uses an I2C bus to talk to the ChromeOS EC. The protocol
->> is defined by the EC and is fairly simple, with a length byte,
->> checksum, command byte and version byte (to permit easy creation
->> of new commands).
->>
->> Signed-off-by: Simon Glass <sjg@chromium.org>
->> Signed-off-by: Che-Liang Chiou <clchiou@chromium.org>
->
-> the driver you're adding here is no where near being an MFD device. MFD
-> children shouldn't be under drivers/mfd/. Please find a proper location
-> for this driver.
+I'm trying to do a mostly soft real-time task with a very small hard
+real time element.
 
-I think you might be misunderstanding the intent here. This driver is
-actually not an MFD child, but a real MFD device. The children are
-things like the cros_ec_keyb which use this device to access to the EC
-and provide a function to the kernel (such as keyboard, EC flash
-access and so on). They are indeed somewhere else in the tree.
+I've written some code to drive matrix LED signs using a Raspberry Pi.
 
-This driver sits in MFD for that reason, and provides a way to talk to
-the EC over I2C. Rather than duplicate the code in each bus driver
-(I2C, SPI, LPC) we have chosen to put that core code in a common file,
-cros_ec, So one way to think of it is that we have several transports
-which each provides an abstracted interface to an EC.
+Source here:
+http://www.jonshouse.co.uk/download/128x32_red_green_led_sign.tar.gz
 
-There are several examples in drivers/mfd where this is done. For example:
 
-da9052_i2c.c and da9052_spi.c each provide an MFD driver, which calls
-da9052_device_init() in da50542-core.c.
+Since I last used linux you kernel people have fiddled with it yet
+again:
 
-and there are many others in MFD which use this approach, for example:
+Linux raspberrypi 3.6.11+ #375 PREEMPT Tue Feb 12 01:41:07 GMT 2013 armv6l GNU/Linux
 
-drivers/mfd/wm831x-core.c
-drivers/mfd/wm831x-i2c.c
-drivers/mfd/wm831x-spi.c
+I'm scanning an LED display to produce a 2 bits per pixel image.  The
+code simply alters the amount of time any one LED is on, for higher
+intensity pixels the true amount of "on" time is non critical.
 
-and
+I've marked my process as realtime.
 
-drivers/mfd/tps65912-core.c
-drivers/mfd/tps65912-i2c.c
-drivers/mfd/tps65912-spi.c
+My problem is that for very dim pixels the amount of "on" time for the
+LED  is very critical, this is only a fraction of a percent of the total
+processes timeslice.
+It scans 100 frames of brightest, 100 frames of brighter and 1 frame of
+dim pixels for example, so 200:1 ratio of don't care much /vs care a lot
+timing !
 
-The intent is to keep the communications separate from the function
-provided by the device.
+To this end I'm using a hard coded small delay instead of usleep for the
+tight timing section:
 
->
->> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
->> index 837a16b..e1cd15e 100644
->> --- a/drivers/mfd/Kconfig
->> +++ b/drivers/mfd/Kconfig
->> @@ -29,6 +29,16 @@ config MFD_CROS_EC
->>         You also ned to enable the driver for the bus you are using. The
->>         protocol for talking to the EC is defined by the bus driver.
->>
->> +config MFD_CROS_EC_I2C
->> +     tristate "ChromeOS Embedded Controller (I2C)"
->> +     depends on MFD_CROS_EC && I2C
->> +
->> +     help
->> +       If you say here, you get support for talking to the ChromeOS EC
->
-> if you say what here ?
+// Delay for ARM without yeilding to schedular, roughly calibrated but better than usleep for short delays
+inline usleep_arm_hard(int usecs)
+{
+        long int outer,inner;
 
-Will fix.
+        for (outer=0;outer<usecs;outer++)
+        {
+                for (inner=0;inner<300;inner++)
+                        asm("andeq r0, r0, r0");		// NOP
+        }
+}
 
->
->> diff --git a/drivers/mfd/cros_ec_i2c.c b/drivers/mfd/cros_ec_i2c.c
->> new file mode 100644
->> index 0000000..fe3f2bf
->> --- /dev/null
->> +++ b/drivers/mfd/cros_ec_i2c.c
->> @@ -0,0 +1,262 @@
->> +/*
->> + * ChromeOS EC multi-function device (I2C)
->> + *
->> + * Copyright (C) 2012 Google, Inc
->> + *
->> + * This software is licensed under the terms of the GNU General Public
->> + * License version 2, as published by the Free Software Foundation, and
->> + * may be copied, distributed, and modified under those terms.
->> + *
->> + * This program is distributed in the hope that it will be useful,
->> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
->> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->> + * GNU General Public License for more details.
->> + */
->> +
->> +#include <linux/kernel.h>
->> +#include <linux/module.h>
->> +#include <linux/i2c.h>
->> +#include <linux/interrupt.h>
->> +#include <linux/mfd/cros_ec.h>
->> +#include <linux/mfd/cros_ec_commands.h>
->> +#include <linux/platform_device.h>
->> +#include <linux/slab.h>
->> +
->> +
->
-> one blank line only.
->
->> +/* Since I2C can be unreliable, we retry commands */
->> +#define COMMAND_MAX_TRIES 3
->
-> unreliable in what way ? Are you sure you haven't found a bug on your
-> embedded controller or your i2c controller driver ?
+The dim pixel code is timing critical (but as I said only a tiny
+fraction of the total CPU usage). What I need to do is grab the CPU and
+prevent any context switch (IRQ or PREEMPT) for this period.
 
-Well those bugs were fixed. I think this is here for safety just in
-case is this bad?
+I cant find a user space mechanism other than changing the kernel to
+disable preemtion ? No simple /proc switch to turn it on/off ? If not
+why - I cant be the only one who wants to toggle preemption off without
+swapping kernels ?
 
->
->> +static const char *cros_ec_get_name(struct cros_ec_device *ec_dev)
->> +{
->> +     struct i2c_client *client = ec_dev->priv;
->> +
->> +     return client->name;
->> +}
->
-> why ? What do you need get_name() for ? Why don't you just pass a
-> pointer to client->name directly ?
+The other issue is that of IRQs, my dim pixels on the display seem to
+flash brighter from time to time, this I assume is partly preemption
+(maybe possibly) and partly IRQ handling (more likely) allowing context
+switches or just taking a while on slow hardware.
 
-This is used by MFD children to report the bus they are connected on -
-the keyboard driver passes this information to the input layer so that
-it conforms with what other input drivers do. I'm not sure how the
-information is used internally by the input layer other than just for
-logging/errors/debugging. I think I can just put the name in the
-structure.
+I need only a tiny fraction of the runtime to be hard real time, on
+intel in the past i've simply disabled IRQs briefly with some inline
+assembler.  
+The Raspberry Pi board would also probably survive this as the only
+active peripheral is ethenet, I suspect couple of missed IRQs would not
+matter as once IRQs are re-enabled the USB/ethernet hardware will likely
+have the data or it can be re-tried.  Does anyone have an example of a
+dirty hack along these lines they can share with me :-) 
 
->
->> +static const char *cros_ec_get_phys_name(struct cros_ec_device *ec_dev)
->> +{
->> +     struct i2c_client *client = ec_dev->priv;
->> +
->> +     return client->adapter->name;
->> +}
->> +
->> +static struct device *cros_ec_get_parent(struct cros_ec_device *ec_dev)
->> +{
->> +     struct i2c_client *client = ec_dev->priv;
->> +
->> +     return &client->dev;
->> +}
->
-> not sure you should allow other layers to fiddle with these. Specially
-> the parent device ointer.
+Do I have any simple mechanism available to disable (or defer) kernel
+IRQ handling briefly from user space code, I suspect not but no harm in
+asking ?
 
-This is the parent device for any children. Some MFD children will
-want to know their parent. I can just add it to the structure I think.
+Thanks,
+Jon
 
->
->> +static int cros_ec_probe_i2c(struct i2c_client *client,
->> +                          const struct i2c_device_id *dev_id)
->> +{
->> +     struct device *dev = &client->dev;
->> +     struct cros_ec_device *ec_dev = NULL;
->> +     int err;
->> +
->> +     if (dev->of_node && !of_device_is_available(dev->of_node)) {
->> +             dev_warn(dev, "Device disabled by device tree\n");
->> +             return -ENODEV;
->> +     }
->> +
->> +     ec_dev = cros_ec_alloc("I2C");
->
-> please don't use any indirection to allocators
+PS I'm not a kernel hacker - yes I know I could write a proper driver
+for the task but I lack any real skill and the required time !
 
-OK will change this.
 
->
->> +     if (!ec_dev) {
->> +             err = -ENOMEM;
->> +             dev_err(dev, "cannot create cros_ec\n");
->
-> OOM messages are printed for you, no need to add another one here.
 
-OK thanks.
-
->
->> +     i2c_set_clientdata(client, ec_dev);
->> +     ec_dev->dev = dev;
->> +     ec_dev->priv = client;
->> +     ec_dev->irq = client->irq;
->> +     ec_dev->command_xfer = cros_ec_command_xfer;
->> +     ec_dev->get_name = cros_ec_get_name;
->> +     ec_dev->get_phys_name = cros_ec_get_phys_name;
->> +     ec_dev->get_parent = cros_ec_get_parent;
->> +
->> +     err = cros_ec_register(ec_dev);
->> +     if (err) {
->> +             dev_err(dev, "cannot register EC\n");
->> +             goto fail_register;
->> +     }
->
-> What is this doing ?
-
-This is registering a new cros_ec - that is what is used by children
-of this MFD to access the EC. When these children call
-cros_ec->command_xfer(), the request comes back into this driver for
-processing. The common code of the three bus options is in there,
-whereas this driver contains only the I2C transport.
-
-If you look at something like tps65912_spi_probe() and
-tps65912_i2c_probe() you will see something very similar. They set up
-some methods for their particular comms interface and then call
-tps65912_device_init().
-
-Regards,
-Simon
-
->
-> --
-> balbi
