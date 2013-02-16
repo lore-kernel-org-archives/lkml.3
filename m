@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754099Ab3BQWNY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 17:13:24 -0500
-Received: from mail-ye0-f171.google.com ([209.85.213.171]:52432 "EHLO
-	mail-ye0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753533Ab3BQWNX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 17:13:23 -0500
-X-Greylist: delayed 692 seconds by postgrey-1.27 at vger.kernel.org; Sun, 17 Feb 2013 17:13:23 EST
-Date: Sun, 17 Feb 2013 16:05:17 -0600
-From: Rob Landley <rob@landley.net>
-Subject: Re: [v3 0/6] ARM: tegra: convert device tree files to use CLK
- defines
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-Cc: linux-tegra@vger.kernel.org, pdeschrijver@nvidia.com, pgaikwad@nvidia.com,
-        Hiroshi Doyu <hdoyu@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King <linux@arm.linux.org.uk>, Simon Glass <sjg@chromium.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-References: <1360917814-27236-1-git-send-email-hdoyu@nvidia.com>
-In-Reply-To: <1360917814-27236-1-git-send-email-hdoyu@nvidia.com> (from
-	hdoyu@nvidia.com on Fri Feb 15 02:43:11 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1361138717.29465.2@driftwood>
+	id S1753991Ab3BQWPH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 17:15:07 -0500
+Received: from ozlabs.org ([203.10.76.45]:45019 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753289Ab3BQWPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Feb 2013 17:15:06 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Nick Piggin <npiggin@suse.de>,
+        Stewart Smith <stewart@flamingspork.com>, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [patch 1/2] mm: fincore()
+In-Reply-To: <20130215154235.0fb36f53.akpm@linux-foundation.org>
+References: <87a9rbh7b4.fsf@rustcorp.com.au> <20130211162701.GB13218@cmpxchg.org> <20130211141239.f4decf03.akpm@linux-foundation.org> <20130215063450.GA24047@cmpxchg.org> <20130215132738.c85c9eda.akpm@linux-foundation.org> <20130215231304.GB23930@cmpxchg.org> <20130215154235.0fb36f53.akpm@linux-foundation.org>
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Sat, 16 Feb 2013 14:53:43 +1030
+Message-ID: <87621skhtc.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/15/2013 02:43:11 AM, Hiroshi Doyu wrote:
-> Hi,
-> 
-> With new dtc+cpp feature, we could get rid of magic numbers in dts*
-> files. This patch replaces CLK IDs.
-> 
-> We also plan to share those DT header files with kernel source
-> later[1].
-...
-> [1]  
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2013-February/149804.html
+Andrew Morton <akpm@linux-foundation.org> writes:
+> On Fri, 15 Feb 2013 18:13:04 -0500
+> Johannes Weiner <hannes@cmpxchg.org> wrote:
+>> I dunno.  The byte vector might not be optimal but its worst cases
+>> seem more attractive, is just as extensible, and dead simple to use.
+>
+> But I think "which pages from this 4TB file are in core" will not be an
+> uncommon usage, and writing a gig of memory to find three pages is just
+> awful.
 
-This really smells like documentation should be updated, probably  
-booting-without-of.txt or similar. Alas, I'm not capable of writing  
-such an update...
+Actually, I don't know of any usage for this call.
 
-Rob
+I'd really like to use it for backup programs, so they stop pulling
+random crap into memory (but leave things already resident).  But that
+needs to madvise(MADV_DONTNEED) on the page, so need mmap.
+
+So why not just use mincore?
+
+Cheers,
+Rusty.
