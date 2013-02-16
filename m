@@ -1,60 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751534Ab3BPG7u (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 01:59:50 -0500
-Received: from plane.gmane.org ([80.91.229.3]:38545 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750828Ab3BPG7u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 01:59:50 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: auxsvr@gmail.com
-Subject: Re: regression in linux 3.7 - fan speed at 100% after suspend/resume at 100%
-Date: Sat, 16 Feb 2013 08:55:10 +0200
-Message-ID: <kfnagc$6tu$1@ger.gmane.org>
-References: <50BDF345.60804@gmail.com> <1354630272.2480.4.camel@rzhang1-mobl4> <loom.20130216T002002-269@post.gmane.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7Bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: cust-27-63.on5.ontelecoms.gr
-User-Agent: KNode/4.9.5
+	id S1751709Ab3BPHCp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 02:02:45 -0500
+Received: from mail-la0-f48.google.com ([209.85.215.48]:47197 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751102Ab3BPHCo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Feb 2013 02:02:44 -0500
+Date: Sat, 16 Feb 2013 11:02:40 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Richard Weinberger <richard@nod.at>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        paul.gortmaker@windriver.com, davej@redhat.com, keescook@chromium.org,
+        stable@vger.kernel.org, tglx@linutronix.de, ebiederm@xmission.com
+Subject: Re: + futex-avoid-kernel-taint-caused-by-get_robust_list.patch added
+ to -mm tree
+Message-ID: <20130216070240.GA20312@moon>
+References: <20130215222653.B8B115A41F0@corp2gmr1-2.hot.corp.google.com>
+ <20130215234444.29345fc3@spider.haslach.nod.at>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130215234444.29345fc3@spider.haslach.nod.at>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael Grosshaeuser wrote:
-
-> Zhang Rui <rui.zhang <at> intel.com> writes:
+On Fri, Feb 15, 2013 at 11:44:44PM +0100, Richard Weinberger wrote:
+> > The ability to deprecate this code has been called into question[1],
+> > but if that remains to be finalized, then making this change in the
+> > interim seems to make sense.
 > 
->> 
->> Hi, Roberto,
->> 
->> please attach the acpidump output.
->> 
->> On Tue, 2012-12-04 at 13:57 +0100, Roberto Oppedisano wrote:
->> > Hello,
->> >      with recent kernels after a suspend/resume cycle on my laptop (HP
->> > 6730b) the fans stays at full speed.
->> does the fan keep running at full speed after resume?
->> 
->> please attach the output of "grep . /sys/class/thermal/*/*" before
->> suspend and when the fan is running at full speed.
->> please attach the same stuff in a good kernel.
->> 
->> thanks,
->> rui
->> 
+> Do we really want to remove this system call in 2013?
+> Note, Documentation/feature-removal-schedule.txt is gone...
 > 
-> Hi,
-> 
-> any update for this bug? This also breaks on my HP 2510p.
+> CRIU folks, I guess you still need the call?
+> Or have you found an alternative way to get the robost list?
 
-Also on HP Mini 5102.
+Yes, we need this call and we use it.
 
-> Best regards,
-> Michael
+> As stated in [0], I'd simply revert commit ec0c4274 ("futex: Mark
+> get_robust_list as deprecated")
 
-Best regards,
-Peter
-
+Thanks!
