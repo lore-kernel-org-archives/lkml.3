@@ -1,190 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753304Ab3BPOOj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 09:14:39 -0500
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:33253 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753235Ab3BPOOh (ORCPT
+	id S1753319Ab3BPOq4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 09:46:56 -0500
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:58213 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753204Ab3BPOqy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 09:14:37 -0500
+	Sat, 16 Feb 2013 09:46:54 -0500
 MIME-Version: 1.0
-In-Reply-To: <1360982707.22260.79.camel@pasglop>
-References: <1359040242-8269-1-git-send-email-eranian@google.com>
-	<1359040242-8269-8-git-send-email-eranian@google.com>
-	<20130125090158.GB31478@gmail.com>
-	<20130215194622.GA6396@us.ibm.com>
-	<1360982707.22260.79.camel@pasglop>
-Date: Sat, 16 Feb 2013 15:14:35 +0100
-Message-ID: <CABPqkBRwdYANGm8kL+nTzjNdkV_vqdxv_oUXszjx4J=fg=-b7A@mail.gmail.com>
-Subject: Re: [PATCH v7 07/18] perf: add generic memory sampling interface
-From: Stephane Eranian <eranian@google.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Paul Mackerras <paulus@samba.org>, Maynard Johnson <mpjohn@us.ibm.com>,
-        Anton Blanchard <anton@samba.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20130216090637.GB19639@arwen.pp.htv.fi>
+References: <1360988172-15380-1-git-send-email-sjg@chromium.org>
+	<1360988172-15380-4-git-send-email-sjg@chromium.org>
+	<20130216090637.GB19639@arwen.pp.htv.fi>
+Date: Sat, 16 Feb 2013 06:46:53 -0800
+X-Google-Sender-Auth: rZWAfoL274Jr9WxBDvpvTVvv8kY
+Message-ID: <CAPnjgZ201Pcq3EshTkEU8YgLNVby=d6xjjss_Rh5Kfrwnc0Mrg@mail.gmail.com>
+Subject: Re: [PATCH v4 3/6] mfd: Add ChromeOS EC I2C driver
+From: Simon Glass <sjg@chromium.org>
+To: balbi@ti.com
+Cc: LKML <linux-kernel@vger.kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Che-Liang Chiou <clchiou@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 16, 2013 at 3:45 AM, Benjamin Herrenschmidt
-<benh@kernel.crashing.org> wrote:
-> On Fri, 2013-02-15 at 11:46 -0800, Sukadev Bhattiprolu wrote:
->>
->> POWER could use an additional field:
->>
->>                         mem_deratmiss:1
->
-> If you want to make that field more "generic" make it "lvl1_tlb_miss",
-> ie, a miss in the internal "level 1" TLB which is the smallest/fastest
-> TLB level in the load/store unit.
->
-If you want to express a L1 TLB miss, you already can do that:
+Hi,
 
-PERF_MEM_S(TLB, MISS) | PERF_MEM_S(TLB, L1)
-
-If this is a feature you do not support, then use the NA macro.
-
-For instance:
-PERF_MEM_S(LOCK, NA)
-
-Need to be able to differentiate not supported from did not happen.
-
-
->> AFAICT, POWER does not currently save the mem_op, snoop or lock info
->> for the sampled instruction.  I guess we can leave them set to 0.
+On Sat, Feb 16, 2013 at 1:06 AM, Felipe Balbi <balbi@ti.com> wrote:
+> On Fri, Feb 15, 2013 at 08:16:09PM -0800, Simon Glass wrote:
+>> This uses an I2C bus to talk to the ChromeOS EC. The protocol
+>> is defined by the EC and is fairly simple, with a length byte,
+>> checksum, command byte and version byte (to permit easy creation
+>> of new commands).
+>>
+>> Signed-off-by: Simon Glass <sjg@chromium.org>
+>> Signed-off-by: Che-Liang Chiou <clchiou@chromium.org>
 >
-> Well, we don't have lock instructions to begin with :-) If we can read
-> the IP then we can deduce the memop tho.
+> the driver you're adding here is no where near being an MFD device. MFD
+> children shouldn't be under drivers/mfd/. Please find a proper location
+> for this driver.
+
+I think you might be misunderstanding the intent here. This driver is
+actually not an MFD child, but a real MFD device. The children are
+things like the cros_ec_keyb which use this device to access to the EC
+and provide a function to the kernel (such as keyboard, EC flash
+access and so on). They are indeed somewhere else in the tree.
+
+This driver sits in MFD for that reason, and provides a way to talk to
+the EC over I2C. Rather than duplicate the code in each bus driver
+(I2C, SPI, LPC) we have chosen to put that core code in a common file,
+cros_ec, So one way to think of it is that we have several transports
+which each provides an abstracted interface to an EC.
+
+There are several examples in drivers/mfd where this is done. For example:
+
+da9052_i2c.c and da9052_spi.c each provide an MFD driver, which calls
+da9052_device_init() in da50542-core.c.
+
+and there are many others in MFD which use this approach, for example:
+
+drivers/mfd/wm831x-core.c
+drivers/mfd/wm831x-i2c.c
+drivers/mfd/wm831x-spi.c
+
+and
+
+drivers/mfd/tps65912-core.c
+drivers/mfd/tps65912-i2c.c
+drivers/mfd/tps65912-spi.c
+
+The intent is to keep the communications separate from the function
+provided by the device.
+
 >
->> > > +};
->> > > +
->> > > +/* type of opcode (load/store/prefetch,code) */
->> > > +#define PERF_MEM_OP_NA             0x01 /* not available */
->> > > +#define PERF_MEM_OP_LOAD   0x02 /* load instruction */
->> > > +#define PERF_MEM_OP_STORE  0x04 /* store instruction */
->> > > +#define PERF_MEM_OP_PFETCH 0x08 /* prefetch */
->> > > +#define PERF_MEM_OP_EXEC   0x10 /* code (execution) */
->> > > +#define PERF_MEM_OP_SHIFT  0
->> > > +
->> > > +/* memory hierarchy (memory level, hit or miss) */
->> > > +#define PERF_MEM_LVL_NA            0x01  /* not available */
->> > > +#define PERF_MEM_LVL_HIT   0x02  /* hit level */
->> > > +#define PERF_MEM_LVL_MISS  0x04  /* miss level  */
->> > > +#define PERF_MEM_LVL_L1            0x08  /* L1 */
->> > > +#define PERF_MEM_LVL_LFB   0x10  /* Line Fill Buffer */
->> > > +#define PERF_MEM_LVL_L2            0x20  /* L2 hit */
->> > > +#define PERF_MEM_LVL_L3            0x40  /* L3 hit */
->> > > +#define PERF_MEM_LVL_LOC_RAM       0x80  /* Local DRAM */
->> > > +#define PERF_MEM_LVL_REM_RAM1      0x100 /* Remote DRAM (1 hop)
->> */
->> > > +#define PERF_MEM_LVL_REM_RAM2      0x200 /* Remote DRAM (2 hops)
->> */
->> > > +#define PERF_MEM_LVL_REM_CCE1      0x400 /* Remote Cache (1 hop)
->> */
->> > > +#define PERF_MEM_LVL_REM_CCE2      0x800 /* Remote Cache (2 hops)
->> */
->> > > +#define PERF_MEM_LVL_IO            0x1000 /* I/O memory */
->> > > +#define PERF_MEM_LVL_UNC   0x2000 /* Uncached memory */
->> > > +#define PERF_MEM_LVL_SHIFT 5
+>> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+>> index 837a16b..e1cd15e 100644
+>> --- a/drivers/mfd/Kconfig
+>> +++ b/drivers/mfd/Kconfig
+>> @@ -29,6 +29,16 @@ config MFD_CROS_EC
+>>         You also ned to enable the driver for the bus you are using. The
+>>         protocol for talking to the EC is defined by the bus driver.
 >>
->> POWER saves following information to describe where the data was
->> loaded from after a Dcache or DTLB miss.
->>
->>         FROM_L2
->>         FROM_L3
->>
->>         FROM_L2.1_SHR   From another L2 or L3 on same chip,
->> shared
->>         FROM_L2.1_MOD   From another L2 or L3 on same chip, modified
->>
->>         FROM_L3.1_SHR   From remote L2 or L3, shared
->>         FROM_L3.1_MOD   From remote L2 or L3, modified
->>
->>         FROM_RL2L3_SHR  From remote L2 or L3, shared
->>         FROM_RL2L3_MOD  From remote L2 or L3, modified
->>
->>         FROM_DL2L3_SHR  From distant L2 or L3, shared
->>         FROM_DL2L3_MOD  From distant L2 or L3, modified
->>
->> POWER uses 4 bits and a running count for its (currently) 13 possible
->> values.
->>
->> The macros in the patch use a separate bit for each level - is that to
->> allow
->> selecting more than one level at the same time ? If so, we will need
->> to reserve
->> a few more bits to allow for Power's memory levels that don't map to
->> the above.
->>
->> > > +
->> > > +/* snoop mode */
->> > > +#define PERF_MEM_SNOOP_NA  0x01 /* not available */
->> > > +#define PERF_MEM_SNOOP_NONE        0x02 /* no snoop */
->> > > +#define PERF_MEM_SNOOP_HIT 0x04 /* snoop hit */
->> > > +#define PERF_MEM_SNOOP_MISS        0x08 /* snoop miss */
->> > > +#define PERF_MEM_SNOOP_HITM        0x10 /* snoop hit modified */
->> > > +#define PERF_MEM_SNOOP_SHIFT       19
->> > > +
->> > > +/* locked instruction */
->> > > +#define PERF_MEM_LOCK_NA   0x01 /* not available */
->> > > +#define PERF_MEM_LOCK_LOCKED       0x02 /* locked transaction */
->> > > +#define PERF_MEM_LOCK_SHIFT        24
->> > > +
->> > > +/* TLB access */
->> > > +#define PERF_MEM_TLB_NA            0x01 /* not available */
->> > > +#define PERF_MEM_TLB_HIT   0x02 /* hit level */
->> > > +#define PERF_MEM_TLB_MISS  0x04 /* miss level */
->> > > +#define PERF_MEM_TLB_L1            0x08 /* L1 */
->> > > +#define PERF_MEM_TLB_L2            0x10 /* L2 */
->> > > +#define PERF_MEM_TLB_WK            0x20 /* Hardware Walker*/
->> > > +#define PERF_MEM_TLB_OS            0x40 /* OS fault handler */
->> > > +#define PERF_MEM_TLB_SHIFT 26
->>
->> On POWER, like with the Dcache source above, we have 4 bits to
->> describe where
->> the DTLB was loaded from after a dTLB miss.
->>
->> We would probably need to allow more bits to for the memory level of
->> the dTLB
->> load source.
->>
->> > > +
->> > > +#define PERF_MEM_S(a, s) \
->> > > +   (((u64)PERF_MEM_##a##_##s) << PERF_MEM_##a##_SHIFT)
->> > > +
->> >
->> > Would be nice to get feedback from PowerPC folks to see how well
->> > this matches their memory profiling hw capabilities?
->> >
->> > I suspect there's a lot of differences, but one can always hope
->> > ...
->> >
->> > If there's some hope for unification we could at least shape it
->> > in a way that they could pick up and extend.
->>
->> Thanks for Ccing.
->>
->> While on the topic of sampled instructions, POWER saves following
->> information
->> (in addition to the above memory info) for sampled instructions.
->>
->>         - whether the sampled instruction encountered a stall
->>         - the reasons for the stall.
->>         - whether the instruction was from hypervisor
->>         - there was a branch mis-predict,
->>         - thresholding information
->>
->> These are clubbed into an "event vector" that is saved for sampled
->> instructions. We have been meaning to find ways to present that to
->> to user space. Are there plans to retreive and present these too.
+>> +config MFD_CROS_EC_I2C
+>> +     tristate "ChromeOS Embedded Controller (I2C)"
+>> +     depends on MFD_CROS_EC && I2C
+>> +
+>> +     help
+>> +       If you say here, you get support for talking to the ChromeOS EC
 >
-> Ben.
+> if you say what here ?
+
+Will fix.
+
 >
+>> diff --git a/drivers/mfd/cros_ec_i2c.c b/drivers/mfd/cros_ec_i2c.c
+>> new file mode 100644
+>> index 0000000..fe3f2bf
+>> --- /dev/null
+>> +++ b/drivers/mfd/cros_ec_i2c.c
+>> @@ -0,0 +1,262 @@
+>> +/*
+>> + * ChromeOS EC multi-function device (I2C)
+>> + *
+>> + * Copyright (C) 2012 Google, Inc
+>> + *
+>> + * This software is licensed under the terms of the GNU General Public
+>> + * License version 2, as published by the Free Software Foundation, and
+>> + * may be copied, distributed, and modified under those terms.
+>> + *
+>> + * This program is distributed in the hope that it will be useful,
+>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>> + * GNU General Public License for more details.
+>> + */
+>> +
+>> +#include <linux/kernel.h>
+>> +#include <linux/module.h>
+>> +#include <linux/i2c.h>
+>> +#include <linux/interrupt.h>
+>> +#include <linux/mfd/cros_ec.h>
+>> +#include <linux/mfd/cros_ec_commands.h>
+>> +#include <linux/platform_device.h>
+>> +#include <linux/slab.h>
+>> +
+>> +
 >
+> one blank line only.
+>
+>> +/* Since I2C can be unreliable, we retry commands */
+>> +#define COMMAND_MAX_TRIES 3
+>
+> unreliable in what way ? Are you sure you haven't found a bug on your
+> embedded controller or your i2c controller driver ?
+
+Well those bugs were fixed. I think this is here for safety just in
+case is this bad?
+
+>
+>> +static const char *cros_ec_get_name(struct cros_ec_device *ec_dev)
+>> +{
+>> +     struct i2c_client *client = ec_dev->priv;
+>> +
+>> +     return client->name;
+>> +}
+>
+> why ? What do you need get_name() for ? Why don't you just pass a
+> pointer to client->name directly ?
+
+This is used by MFD children to report the bus they are connected on -
+the keyboard driver passes this information to the input layer so that
+it conforms with what other input drivers do. I'm not sure how the
+information is used internally by the input layer other than just for
+logging/errors/debugging. I think I can just put the name in the
+structure.
+
+>
+>> +static const char *cros_ec_get_phys_name(struct cros_ec_device *ec_dev)
+>> +{
+>> +     struct i2c_client *client = ec_dev->priv;
+>> +
+>> +     return client->adapter->name;
+>> +}
+>> +
+>> +static struct device *cros_ec_get_parent(struct cros_ec_device *ec_dev)
+>> +{
+>> +     struct i2c_client *client = ec_dev->priv;
+>> +
+>> +     return &client->dev;
+>> +}
+>
+> not sure you should allow other layers to fiddle with these. Specially
+> the parent device ointer.
+
+This is the parent device for any children. Some MFD children will
+want to know their parent. I can just add it to the structure I think.
+
+>
+>> +static int cros_ec_probe_i2c(struct i2c_client *client,
+>> +                          const struct i2c_device_id *dev_id)
+>> +{
+>> +     struct device *dev = &client->dev;
+>> +     struct cros_ec_device *ec_dev = NULL;
+>> +     int err;
+>> +
+>> +     if (dev->of_node && !of_device_is_available(dev->of_node)) {
+>> +             dev_warn(dev, "Device disabled by device tree\n");
+>> +             return -ENODEV;
+>> +     }
+>> +
+>> +     ec_dev = cros_ec_alloc("I2C");
+>
+> please don't use any indirection to allocators
+
+OK will change this.
+
+>
+>> +     if (!ec_dev) {
+>> +             err = -ENOMEM;
+>> +             dev_err(dev, "cannot create cros_ec\n");
+>
+> OOM messages are printed for you, no need to add another one here.
+
+OK thanks.
+
+>
+>> +     i2c_set_clientdata(client, ec_dev);
+>> +     ec_dev->dev = dev;
+>> +     ec_dev->priv = client;
+>> +     ec_dev->irq = client->irq;
+>> +     ec_dev->command_xfer = cros_ec_command_xfer;
+>> +     ec_dev->get_name = cros_ec_get_name;
+>> +     ec_dev->get_phys_name = cros_ec_get_phys_name;
+>> +     ec_dev->get_parent = cros_ec_get_parent;
+>> +
+>> +     err = cros_ec_register(ec_dev);
+>> +     if (err) {
+>> +             dev_err(dev, "cannot register EC\n");
+>> +             goto fail_register;
+>> +     }
+>
+> What is this doing ?
+
+This is registering a new cros_ec - that is what is used by children
+of this MFD to access the EC. When these children call
+cros_ec->command_xfer(), the request comes back into this driver for
+processing. The common code of the three bus options is in there,
+whereas this driver contains only the I2C transport.
+
+If you look at something like tps65912_spi_probe() and
+tps65912_i2c_probe() you will see something very similar. They set up
+some methods for their particular comms interface and then call
+tps65912_device_init().
+
+Regards,
+Simon
+
+>
+> --
+> balbi
