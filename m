@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752181Ab3BPIBN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 03:01:13 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:24513 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750812Ab3BPIBM (ORCPT
+	id S1752260Ab3BPIGK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 03:06:10 -0500
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:15108 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750812Ab3BPIGH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 03:01:12 -0500
-Message-ID: <511F3C6B.30604@huawei.com>
-Date: Sat, 16 Feb 2013 15:59:39 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Sat, 16 Feb 2013 03:06:07 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmUJAN88H1F5LO+j/2dsb2JhbABEhWC1KYURexdzgh8BAQU6HCMQCAMYCSUPBSUDIROIEQ28eBWOSA8/B4NAA5YngR6IO4Z9gVKBSQ
+Date: Sat, 16 Feb 2013 19:06:04 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Ben Myers <bpm@sgi.com>, Dave Chinner <dchinner@redhat.com>,
+        Brian Foster <bfoster@redhat.com>, CAI Qian <caiqian@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: Re: [ 01/10] Revert: xfs: fix _xfs_buf_find oops on blocks beyond
+ the filesystem end
+Message-ID: <20130216080604.GX26694@dastard>
+References: <20130215225543.586012193@linuxfoundation.org>
+ <20130215225543.743915307@linuxfoundation.org>
 MIME-Version: 1.0
-To: Sasha Levin <levinsasha928@gmail.com>
-CC: Tejun Heo <tj@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Subject: Re: [PATCH] cgroup: fix cgroup_path() vs rename() race
-References: <51022FC7.5020607@huawei.com> <511547EA.4090902@gmail.com>
-In-Reply-To: <511547EA.4090902@gmail.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130215225543.743915307@linuxfoundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(sorry for the late reply, just came back from holiday)
-
-On 2013/2/9 2:46, Sasha Levin wrote:
-> On 01/25/2013 02:09 AM, Li Zefan wrote:
->> rename() will change dentry->d_name. The result of this race can
->> be worse than seeing partially rewritten name, but we might access
->> a stale pointer because rename() will re-allocate memory to hold
->> a longer name.
->>
->> Use dentry_path_raw(), and this vfs API will take care of lockings.
->>
->> Signed-off-by: Li Zefan <lizefan@huawei.com>
+On Fri, Feb 15, 2013 at 02:56:33PM -0800, Greg Kroah-Hartman wrote:
+> 3.7-stable review patch.  If anyone has any objections, please let me know.
 > 
-> Hi Li,
+> ------------------
 > 
-> I was fuzzing with trinity inside a KVM tools guest, and stumbled on
-> a lockdep spew related to this patch.
+> This reverts commit a56040731e5b00081c6d6c26b99e6e257a5d63d7 which was
+> commit eb178619f930fa2ba2348de332a1ff1c66a31424 upstream.
 > 
-> Here's the spew (brace yourself):
+> It has been reported to cause problems:
+> 	http://bugzilla.redhat.com/show_bug.cgi?id=909602
 > 
+> Acked-by: Ben Myers <bpm@sgi.com>
+> Cc: Dave Chinner <dchinner@redhat.com>
+> Cc: Brian Foster <bfoster@redhat.com>
+> Cc: CAI Qian <caiqian@redhat.com>
+> Cc: Paolo Bonzini <pbonzini@redhat.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-dentry_path_raw() will grab rename_lock and dentry->d_lock without disabling
-irq, which means cgroup_path() can't be called if the caller has already held
-a spinlock with irq disabled.
+Acked-by: Dave Chinner <dchinner@redhat.com>
 
-Both blkio cgroup and cpu cgroup have this lock issue...The only fix is to
-make a copy of dentry->d_name and save it in cgrp->name.
-
-Patch will be followed.
-
-> [  313.262599] ======================================================
-> [  313.271340] [ INFO: HARDIRQ-safe -> HARDIRQ-unsafe lock order detected ]
-> [  313.277542] 3.8.0-rc6-next-20130208-sasha-00028-ge4e162d #278 Tainted: G        W
-> [  313.277542] ------------------------------------------------------
-> [  313.277542] kworker/u:3/4490 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
-> [  313.277542]  (rename_lock){+.+...}, at: [<ffffffff812a11f9>] dentry_path_raw+0x29/0x70
-> [  313.277542]
-> [  313.277542] and this task is already holding:
-> [  313.277542]  (&(&q->__queue_lock)->rlock){-.-...}, at: [<ffffffff819e78f3>] put_io_context_active+0x63/0x100
-> [  313.277542] which would create a new lock dependency:
-> [  313.277542]  (&(&q->__queue_lock)->rlock){-.-...} -> (rename_lock){+.+...}
-> [  313.277542]
-> [  313.277542] but this new dependency connects a HARDIRQ-irq-safe lock:
-> [  313.277542]  (&(&q->__queue_lock)->rlock){-.-...}
-> ... which became HARDIRQ-irq-safe at:
-> 
-...
+-- 
+Dave Chinner
+david@fromorbit.com
