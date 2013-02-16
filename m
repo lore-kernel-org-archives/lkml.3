@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044Ab3BPCKH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 21:10:07 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:48568 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751416Ab3BPCKF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 21:10:05 -0500
-Message-ID: <1360980594.6332.1.camel@phoenix>
-Subject: [PATCH] regulator: twl: Convert twl4030ldo_ops to get_voltage_sel
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Tero Kristo <t-kristo@ti.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Sat, 16 Feb 2013 10:09:54 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1752173Ab3BPCNg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 21:13:36 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:39797 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751749Ab3BPCNf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Feb 2013 21:13:35 -0500
+Message-ID: <511EEAE1.1040106@zytor.com>
+Date: Fri, 15 Feb 2013 18:11:45 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Seiji Aguchi <seiji.aguchi@hds.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
+        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>,
+        "Borislav Petkov (bp@alien8.de)" <bp@alien8.de>,
+        Satoru Moriya <satoru.moriya@hds.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>
+Subject: Re: [PATCH v9 2/3] trace,x86: add x86 irq vector tracepoints
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D414A64C4B@USINDEM103.corp.hds.com>  <511ECE53.8040801@zytor.com> <1360979993.23152.122.camel@gandalf.local.home>
+In-Reply-To: <1360979993.23152.122.camel@gandalf.local.home>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes an inconsistent behavior between list_voltage() and get_voltage()
-because current implementation of get_voltage() does not check the case
-IS_UNSUP() is true.
+>
+> This switch should always be outside the funny NMI and debug zone.
+> I think you missed a patch that I sent you to deal with exactly this:
+>
+> https://lkml.org/lkml/2013/2/1/532
+>
+> I sent it directly to you, maybe it got buried in your INBOX.
+>
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/twl-regulator.c |    9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+I saw it.  It had a:
 
-diff --git a/drivers/regulator/twl-regulator.c b/drivers/regulator/twl-regulator.c
-index 683d314..d62604c0 100644
---- a/drivers/regulator/twl-regulator.c
-+++ b/drivers/regulator/twl-regulator.c
-@@ -465,24 +465,23 @@ twl4030ldo_set_voltage_sel(struct regulator_dev *rdev, unsigned selector)
- 			    selector);
- }
- 
--static int twl4030ldo_get_voltage(struct regulator_dev *rdev)
-+static int twl4030ldo_get_voltage_sel(struct regulator_dev *rdev)
- {
- 	struct twlreg_info	*info = rdev_get_drvdata(rdev);
--	int		vsel = twlreg_read(info, TWL_MODULE_PM_RECEIVER,
--								VREG_VOLTAGE);
-+	int vsel = twlreg_read(info, TWL_MODULE_PM_RECEIVER, VREG_VOLTAGE);
- 
- 	if (vsel < 0)
- 		return vsel;
- 
- 	vsel &= info->table_len - 1;
--	return LDO_MV(info->table[vsel]) * 1000;
-+	return vsel;
- }
- 
- static struct regulator_ops twl4030ldo_ops = {
- 	.list_voltage	= twl4030ldo_list_voltage,
- 
- 	.set_voltage_sel = twl4030ldo_set_voltage_sel,
--	.get_voltage	= twl4030ldo_get_voltage,
-+	.get_voltage_sel = twl4030ldo_get_voltage_sel,
- 
- 	.enable		= twl4030reg_enable,
- 	.disable	= twl4030reg_disable,
+Not-yet-signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+... so I was holding off on doing anything with it.
+
+	-hpa
+
+
 -- 
-1.7.9.5
-
-
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
