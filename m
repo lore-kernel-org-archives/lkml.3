@@ -1,89 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755176Ab3BPX2j (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 18:28:39 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:63767 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754739Ab3BPX2i (ORCPT
+	id S1754973Ab3BPXqg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 18:46:36 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:50037 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754700Ab3BPXqf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 18:28:38 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Subject: Re: [PATCHv3 2/4] dmaengine: dw_dmac: move to generic DMA binding
-Date: Sat, 16 Feb 2013 23:28:34 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-6-generic; KDE/4.3.2; x86_64; ; )
-Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Olof Johansson <olof@lixom.net>, linux-kernel@vger.kernel.org,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Vinod Koul <vinod.koul@linux.intel.com>
-References: <1360952512-971558-1-git-send-email-arnd@arndb.de> <201302162221.32799.arnd@arndb.de> <CAHp75VeCic+5_zyzFdtpw5dLxRaajD9zv6ZvSoDcHAD1EF=GSw@mail.gmail.com>
-In-Reply-To: <CAHp75VeCic+5_zyzFdtpw5dLxRaajD9zv6ZvSoDcHAD1EF=GSw@mail.gmail.com>
+	Sat, 16 Feb 2013 18:46:35 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Driver lis3lv02d_i2c not working on Nokia RX-51
+Date: Sun, 17 Feb 2013 00:46:25 +0100
+User-Agent: KMail/1.13.7 (Linux/3.5.0-24-generic; KDE/4.10.0; x86_64; ; )
+Cc: Eric Piel <eric.piel@tremplin-utc.net>,
+        Ilkka Koskinen <ilkka.koskinen@nokia.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+Content-Type: multipart/signed;
+  boundary="nextPart8212395.zaG7tlBeNB";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201302162328.35068.arnd@arndb.de>
-X-Provags-ID: V02:K0:qCU5/ldBo/nJS9Ocr5oi2rD/z7AAh95q5iLSdfdai8Y
- vQVd4fHnIESTbBGGWpSwMRZa5j+w5Xjf29/3xFL4XbxyMeSncn
- Zwa66t5ZIIO2C5gujf46JCbJKsjb1/ryPlM4bUXoZMHSwQGqs9
- p6NXTyn08pHubrXny3Rq5044Kdy7RRMUKzX+5KjxZ3TgXq2n8c
- nql7OU6IsZhyts+WPPRUSqvERbZg0vlkvuQMSJNLwD8EKZiupL
- z1x3jexrrIH2vSBT0g20TyoeFiq2s9iGpBN9KHFI4h1RMBBrJH
- 5MYdKRHA3p77md/Z6dmLcw9UQHBUpJ3UGJvjuEc7U9wDAUR5Ld
- oJwjsMWks+vRQyb9phmA=
+Message-Id: <201302170046.26569@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 16 February 2013, Andy Shevchenko wrote:
+--nextPart8212395.zaG7tlBeNB
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-> > @@ -1836,6 +1825,12 @@ static int dw_probe(struct platform_device *pdev)
-> >
-> >         dma_async_device_register(&dw->dma);
-> >
-> > +       if (pdev->dev.of_node)
-> > +               err = of_dma_controller_register(pdev->dev.of_node,
-> > +                                                dw_dma_xlate, dw);
-> > +       if (err && err != -ENODEV)
-> > +               dev_err(&pdev->dev, "could not register of_dma_controller\n");
-> 
-> I believe we may make it as
->  if (...of_node) {
->   err = ...register();
->   if (err...)
->     dev_err();
->  }
+Hello,
 
-I thing the two are equivalent because we only get to the first if()
-when err is 0. However, I agree that your version is a bit clearer,
-so I'll change it.
+Accelerometer driver lis3lv02d_i2c not working on Nokia RX-51=20
+with linux kernel 3.8-rc3. Probing for i2c device failing.
 
-> > --- a/drivers/dma/dw_dmac_regs.h
-> > +++ b/drivers/dma/dw_dmac_regs.h
-> 
-> > @@ -211,9 +212,15 @@ struct dw_dma_chan {
-> >         /* hardware configuration */
-> >         unsigned int            block_size;
-> >         bool                    nollp;
-> > +       unsigned int            request_line;
-> > +       struct dw_dma_slave     slave;
-> > +
-> 
-> Do we really need an extra empty line here?
+I tried to compile older version and it working without problem.=20
+Then I bisected commit which broke support for RX-51.
 
-No, that was an accident.
+That commit is ec400c9fab99d16a491cea17d27d0c6a5780b97c
+"lis3lv02d: make regulator API usage unconditional"
 
-> >         /* configuration passed via DMA_SLAVE_CONFIG */
-> >         struct dma_slave_config dma_sconfig;
-> > +
-> > +       /* backlink to dw_dma */
-> > +       struct dw_dma           *dw;
-> 
-> Seems it's not needed and came from rebase?
+CCing everybody who signed off that commit. When I reverted that=20
+commit on top of 3.8-rc3, lis3lv02d working without problem.
 
-Probably. It certainly was not intentional.
+It looks like driver is trying to use some regulator, but there=20
+is nothing defined for RX-51.
 
-	Arnd
+Any idea what to do?
+
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart8212395.zaG7tlBeNB
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlEgGlIACgkQi/DJPQPkQ1KI2QCePuT8OLiiDBQekkY9vxdtDfdx
+z3UAn2PfapssV1pS4h4gDmxkpMieu2S+
+=v/vj
+-----END PGP SIGNATURE-----
+
+--nextPart8212395.zaG7tlBeNB--
