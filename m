@@ -1,25 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697Ab3BPEQg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 23:16:36 -0500
-Received: from mail-gh0-f202.google.com ([209.85.160.202]:58017 "EHLO
-	mail-gh0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752223Ab3BPEQR (ORCPT
+	id S1752656Ab3BPEQe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 23:16:34 -0500
+Received: from mail-ve0-f202.google.com ([209.85.128.202]:50807 "EHLO
+	mail-ve0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752213Ab3BPEQR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Feb 2013 23:16:17 -0500
 From: Simon Glass <sjg@chromium.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Samuel Ortiz <sameo@linux.intel.com>, Simon Glass <sjg@chromium.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bill Pemberton <wfp5p@virginia.edu>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Javier Martinez Canillas <javier@dowhile0.org>,
-        Sourav Poddar <sourav.poddar@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Alban Bedel <alban.bedel@avionic-design.de>,
-        linux-input@vger.kernel.org
-Subject: [PATCH v4 5/6] Input: matrix-keymap: Add function to read the new DT binding
-Date: Fri, 15 Feb 2013 20:16:11 -0800
-Message-Id: <1360988172-15380-6-git-send-email-sjg@chromium.org>
+        Che-Liang Chiou <clchiou@chromium.org>
+Subject: [PATCH v4 3/6] mfd: Add ChromeOS EC I2C driver
+Date: Fri, 15 Feb 2013 20:16:09 -0800
+Message-Id: <1360988172-15380-4-git-send-email-sjg@chromium.org>
 X-Mailer: git-send-email 1.8.1.3
 In-Reply-To: <1360988172-15380-1-git-send-email-sjg@chromium.org>
 References: <1360988172-15380-1-git-send-email-sjg@chromium.org>
@@ -27,164 +21,326 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We now have a binding which adds two parameters to the matrix keypad DT
-node. This is separate from the GPIO-driven matrix keypad binding, and
-unfortunately incompatible, since that uses row-gpios/col-gpios for the
-row and column counts.
-
-So the easiest option here is to provide a function for non-GPIO drivers
-to use to decode the binding.
-
-Note: We could in fact create an entirely separate structure to hold
-these two fields, but it does not seem worth it, yet. If we have more
-parameters then we can add this, and then refactor each driver to hold
-such a structure.
+This uses an I2C bus to talk to the ChromeOS EC. The protocol
+is defined by the EC and is fairly simple, with a length byte,
+checksum, command byte and version byte (to permit easy creation
+of new commands).
 
 Signed-off-by: Simon Glass <sjg@chromium.org>
-Tested-by: Sourav Poddar <sourav.poddar@ti.com> (v2)
+Signed-off-by: Che-Liang Chiou <clchiou@chromium.org>
 ---
 Changes in v4: None
-Changes in v3:
-- Add stub for matrix_keypad_parse_of_params() when no CONFIG_OF
-- Put back full DT range checking in tca8418 driver
-
+Changes in v3: None
 Changes in v2:
-- Add new patch to decode matrix-keypad DT binding
+- Remove use of __devinit/__devexit
 
- drivers/input/keyboard/lpc32xx-keys.c   | 11 ++++++-----
- drivers/input/keyboard/omap4-keypad.c   | 16 +++++-----------
- drivers/input/keyboard/tca8418_keypad.c |  7 +++++--
- drivers/input/matrix-keymap.c           | 19 +++++++++++++++++++
- include/linux/input/matrix_keypad.h     | 19 +++++++++++++++++++
- 5 files changed, 54 insertions(+), 18 deletions(-)
+ drivers/mfd/Kconfig       |  10 ++
+ drivers/mfd/Makefile      |   1 +
+ drivers/mfd/cros_ec_i2c.c | 262 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 273 insertions(+)
+ create mode 100644 drivers/mfd/cros_ec_i2c.c
 
-diff --git a/drivers/input/keyboard/lpc32xx-keys.c b/drivers/input/keyboard/lpc32xx-keys.c
-index 1b8add6..4218143 100644
---- a/drivers/input/keyboard/lpc32xx-keys.c
-+++ b/drivers/input/keyboard/lpc32xx-keys.c
-@@ -144,12 +144,13 @@ static int lpc32xx_parse_dt(struct device *dev,
- {
- 	struct device_node *np = dev->of_node;
- 	u32 rows = 0, columns = 0;
-+	int err;
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 837a16b..e1cd15e 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -29,6 +29,16 @@ config MFD_CROS_EC
+ 	  You also ned to enable the driver for the bus you are using. The
+ 	  protocol for talking to the EC is defined by the bus driver.
  
--	of_property_read_u32(np, "keypad,num-rows", &rows);
--	of_property_read_u32(np, "keypad,num-columns", &columns);
--	if (!rows || rows != columns) {
--		dev_err(dev,
--			"rows and columns must be specified and be equal!\n");
-+	err = matrix_keypad_parse_of_params(dev, &rows, &columns);
-+	if (err)
-+		return err;
-+	if (rows != columns) {
-+		dev_err(dev, "rows and columns must be equal!\n");
- 		return -EINVAL;
- 	}
- 
-diff --git a/drivers/input/keyboard/omap4-keypad.c b/drivers/input/keyboard/omap4-keypad.c
-index e25b022..1b28909 100644
---- a/drivers/input/keyboard/omap4-keypad.c
-+++ b/drivers/input/keyboard/omap4-keypad.c
-@@ -215,18 +215,12 @@ static int omap4_keypad_parse_dt(struct device *dev,
- 				 struct omap4_keypad *keypad_data)
- {
- 	struct device_node *np = dev->of_node;
-+	int err;
- 
--	if (!np) {
--		dev_err(dev, "missing DT data");
--		return -EINVAL;
--	}
--
--	of_property_read_u32(np, "keypad,num-rows", &keypad_data->rows);
--	of_property_read_u32(np, "keypad,num-columns", &keypad_data->cols);
--	if (!keypad_data->rows || !keypad_data->cols) {
--		dev_err(dev, "number of keypad rows/columns not specified\n");
--		return -EINVAL;
--	}
-+	err = matrix_keypad_parse_of_params(dev, &keypad_data->rows,
-+					    &keypad_data->cols);
-+	if (err)
-+		return err;
- 
- 	if (of_get_property(np, "linux,input-no-autorepeat", NULL))
- 		keypad_data->no_autorepeat = true;
-diff --git a/drivers/input/keyboard/tca8418_keypad.c b/drivers/input/keyboard/tca8418_keypad.c
-index a34cc67..55c1530 100644
---- a/drivers/input/keyboard/tca8418_keypad.c
-+++ b/drivers/input/keyboard/tca8418_keypad.c
-@@ -288,8 +288,11 @@ static int tca8418_keypad_probe(struct i2c_client *client,
- 		irq_is_gpio = pdata->irq_is_gpio;
- 	} else {
- 		struct device_node *np = dev->of_node;
--		of_property_read_u32(np, "keypad,num-rows", &rows);
--		of_property_read_u32(np, "keypad,num-columns", &cols);
-+		int err;
++config MFD_CROS_EC_I2C
++	tristate "ChromeOS Embedded Controller (I2C)"
++	depends on MFD_CROS_EC && I2C
 +
-+		err = matrix_keypad_parse_of_params(dev, &rows, &cols);
-+		if (err)
-+			return err;
- 		rep = of_property_read_bool(np, "keypad,autorepeat");
- 	}
++	help
++	  If you say here, you get support for talking to the ChromeOS EC
++	  through an I2C bus. This uses a simple byte-level protocol with
++	  a checksum. Failing accesses will be retried three times to
++	  improve reliability.
++
+ config MFD_88PM800
+ 	tristate "Support Marvell 88PM800"
+ 	depends on I2C=y && GENERIC_HARDIRQS
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index 967767d..895257b 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -9,6 +9,7 @@ obj-$(CONFIG_MFD_88PM805)	+= 88pm805.o 88pm80x.o
+ obj-$(CONFIG_MFD_SM501)		+= sm501.o
+ obj-$(CONFIG_MFD_ASIC3)		+= asic3.o tmio_core.o
+ obj-$(CONFIG_MFD_CROS_EC)	+= cros_ec.o
++obj-$(CONFIG_MFD_CROS_EC_I2C)	+= cros_ec_i2c.o
  
-diff --git a/drivers/input/matrix-keymap.c b/drivers/input/matrix-keymap.c
-index 3ae496e..619b382 100644
---- a/drivers/input/matrix-keymap.c
-+++ b/drivers/input/matrix-keymap.c
-@@ -50,6 +50,25 @@ static bool matrix_keypad_map_key(struct input_dev *input_dev,
- }
- 
- #ifdef CONFIG_OF
-+int matrix_keypad_parse_of_params(struct device *dev,
-+				  unsigned int *rows, unsigned int *cols)
+ rtsx_pci-objs			:= rtsx_pcr.o rts5209.o rts5229.o rtl8411.o rts5227.o
+ obj-$(CONFIG_MFD_RTSX_PCI)	+= rtsx_pci.o
+diff --git a/drivers/mfd/cros_ec_i2c.c b/drivers/mfd/cros_ec_i2c.c
+new file mode 100644
+index 0000000..fe3f2bf
+--- /dev/null
++++ b/drivers/mfd/cros_ec_i2c.c
+@@ -0,0 +1,262 @@
++/*
++ * ChromeOS EC multi-function device (I2C)
++ *
++ * Copyright (C) 2012 Google, Inc
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/i2c.h>
++#include <linux/interrupt.h>
++#include <linux/mfd/cros_ec.h>
++#include <linux/mfd/cros_ec_commands.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
++
++
++/* Since I2C can be unreliable, we retry commands */
++#define COMMAND_MAX_TRIES 3
++
++static inline struct cros_ec_device *to_ec_dev(struct device *dev)
 +{
-+	struct device_node *np = dev->of_node;
++	struct i2c_client *client = to_i2c_client(dev);
 +
-+	if (!np) {
-+		dev_err(dev, "missing DT data");
-+		return -EINVAL;
++	return i2c_get_clientdata(client);
++}
++
++static int cros_ec_command_xfer_noretry(struct cros_ec_device *ec_dev,
++					struct cros_ec_msg *msg)
++{
++	struct i2c_client *client = ec_dev->priv;
++	int ret = -ENOMEM;
++	int i;
++	int packet_len;
++	u8 *out_buf = NULL;
++	u8 *in_buf = NULL;
++	u8 sum;
++	struct i2c_msg i2c_msg[2];
++
++	i2c_msg[0].addr = client->addr;
++	i2c_msg[0].flags = 0;
++	i2c_msg[1].addr = client->addr;
++	i2c_msg[1].flags = I2C_M_RD;
++
++	/*
++	 * allocate larger packet (one byte for checksum, one byte for
++	 * length, and one for result code)
++	 */
++	packet_len = msg->in_len + 3;
++	in_buf = kzalloc(packet_len, GFP_KERNEL);
++	if (!in_buf)
++		goto done;
++	i2c_msg[1].len = packet_len;
++	i2c_msg[1].buf = (char *)in_buf;
++
++	/*
++	 * allocate larger packet (one byte for checksum, one for
++	 * command code, one for length, and one for command version)
++	 */
++	packet_len = msg->out_len + 4;
++	out_buf = kzalloc(packet_len, GFP_KERNEL);
++	if (!out_buf)
++		goto done;
++	i2c_msg[0].len = packet_len;
++	i2c_msg[0].buf = (char *)out_buf;
++
++	out_buf[0] = EC_CMD_VERSION0 + msg->version;
++	out_buf[1] = msg->cmd;
++	out_buf[2] = msg->out_len;
++
++	/* copy message payload and compute checksum */
++	sum = out_buf[0] + out_buf[1] + out_buf[2];
++	for (i = 0; i < msg->out_len; i++) {
++		out_buf[3 + i] = msg->out_buf[i];
++		sum += out_buf[3 + i];
 +	}
-+	of_property_read_u32(np, "keypad,num-rows", rows);
-+	of_property_read_u32(np, "keypad,num-columns", cols);
-+	if (!*rows || !*cols) {
-+		dev_err(dev, "number of keypad rows/columns not specified\n");
-+		return -EINVAL;
++	out_buf[3 + msg->out_len] = sum;
++
++	/* send command to EC and read answer */
++	ret = i2c_transfer(client->adapter, i2c_msg, 2);
++	if (ret < 0) {
++		dev_err(ec_dev->dev, "i2c transfer failed: %d\n", ret);
++		goto done;
++	} else if (ret != 2) {
++		dev_err(ec_dev->dev, "failed to get response: %d\n", ret);
++		ret = -EIO;
++		goto done;
 +	}
++
++	/* check response error code */
++	if (i2c_msg[1].buf[0]) {
++		dev_warn(ec_dev->dev, "command 0x%02x returned an error %d\n",
++			 msg->cmd, i2c_msg[1].buf[0]);
++		ret = -EINVAL;
++		goto done;
++	}
++
++	/* copy response packet payload and compute checksum */
++	sum = in_buf[0] + in_buf[1];
++	for (i = 0; i < msg->in_len; i++) {
++		msg->in_buf[i] = in_buf[2 + i];
++		sum += in_buf[2 + i];
++	}
++#ifdef DEBUG
++	dev_dbg(ec_dev->dev, "packet: ");
++	for (i = 0; i < i2c_msg[1].len; i++)
++		dev_cont(ec_dev->dev, " %02x", in_buf[i]);
++	dev_cont(ec_dev->dev, ", sum = %02x\n", sum);
++#endif
++	if (sum != in_buf[2 + msg->in_len]) {
++		dev_err(ec_dev->dev, "bad packet checksum\n");
++		ret = -EBADMSG;
++		goto done;
++	}
++
++	ret = 0;
++ done:
++	kfree(in_buf);
++	kfree(out_buf);
++	return ret;
++}
++
++static int cros_ec_command_xfer(struct cros_ec_device *ec_dev,
++				 struct cros_ec_msg *msg)
++{
++	int tries;
++	int ret;
++	/*
++	 * Try the command a few times in case there are transmission errors.
++	 * It is possible that this is overkill, but we don't completely trust
++	 * i2c.
++	 */
++	for (tries = 0; tries < COMMAND_MAX_TRIES; tries++) {
++		ret = cros_ec_command_xfer_noretry(ec_dev, msg);
++		if (ret >= 0)
++			return ret;
++	}
++	dev_err(ec_dev->dev, "ec_command failed with %d (%d tries)\n",
++		ret, tries);
++	return ret;
++}
++
++static const char *cros_ec_get_name(struct cros_ec_device *ec_dev)
++{
++	struct i2c_client *client = ec_dev->priv;
++
++	return client->name;
++}
++
++static const char *cros_ec_get_phys_name(struct cros_ec_device *ec_dev)
++{
++	struct i2c_client *client = ec_dev->priv;
++
++	return client->adapter->name;
++}
++
++static struct device *cros_ec_get_parent(struct cros_ec_device *ec_dev)
++{
++	struct i2c_client *client = ec_dev->priv;
++
++	return &client->dev;
++}
++
++static int cros_ec_probe_i2c(struct i2c_client *client,
++			     const struct i2c_device_id *dev_id)
++{
++	struct device *dev = &client->dev;
++	struct cros_ec_device *ec_dev = NULL;
++	int err;
++
++	if (dev->of_node && !of_device_is_available(dev->of_node)) {
++		dev_warn(dev, "Device disabled by device tree\n");
++		return -ENODEV;
++	}
++
++	ec_dev = cros_ec_alloc("I2C");
++	if (!ec_dev) {
++		err = -ENOMEM;
++		dev_err(dev, "cannot create cros_ec\n");
++		goto fail;
++	}
++
++	i2c_set_clientdata(client, ec_dev);
++	ec_dev->dev = dev;
++	ec_dev->priv = client;
++	ec_dev->irq = client->irq;
++	ec_dev->command_xfer = cros_ec_command_xfer;
++	ec_dev->get_name = cros_ec_get_name;
++	ec_dev->get_phys_name = cros_ec_get_phys_name;
++	ec_dev->get_parent = cros_ec_get_parent;
++
++	err = cros_ec_register(ec_dev);
++	if (err) {
++		dev_err(dev, "cannot register EC\n");
++		goto fail_register;
++	}
++
++	return 0;
++fail_register:
++	cros_ec_free(ec_dev);
++fail:
++	return err;
++}
++
++static int cros_ec_remove_i2c(struct i2c_client *client)
++{
++	struct cros_ec_device *ec_dev = i2c_get_clientdata(client);
++
++	cros_ec_remove(ec_dev);
++	cros_ec_free(ec_dev);
 +
 +	return 0;
 +}
 +
- static int matrix_keypad_parse_of_keymap(const char *propname,
- 					 unsigned int rows, unsigned int cols,
- 					 struct input_dev *input_dev)
-diff --git a/include/linux/input/matrix_keypad.h b/include/linux/input/matrix_keypad.h
-index 5f3aa6b..27e06ac 100644
---- a/include/linux/input/matrix_keypad.h
-+++ b/include/linux/input/matrix_keypad.h
-@@ -81,4 +81,23 @@ int matrix_keypad_build_keymap(const struct matrix_keymap_data *keymap_data,
- 			       unsigned short *keymap,
- 			       struct input_dev *input_dev);
- 
-+#ifdef CONFIG_OF
-+/**
-+ * matrix_keypad_parse_of_params() - Read parameters from matrix-keypad node
-+ *
-+ * @dev: Device containing of_node
-+ * @rows: Returns number of matrix rows
-+ * @cols: Returns number of matrix columns
-+ * @return 0 if OK, <0 on error
-+ */
-+int matrix_keypad_parse_of_params(struct device *dev,
-+				  unsigned int *rows, unsigned int *cols);
-+#else
-+static inline int matrix_keypad_parse_of_params(struct device *dev,
-+				  unsigned int *rows, unsigned int *cols)
++#ifdef CONFIG_PM_SLEEP
++static int cros_ec_i2c_suspend(struct device *dev)
 +{
-+	return -ENOSYS;
-+}
-+#endif /* CONFIG_OF */
++	struct cros_ec_device *ec_dev = to_ec_dev(dev);
 +
- #endif /* _MATRIX_KEYPAD_H */
++	return cros_ec_suspend(ec_dev);
++}
++
++static int cros_ec_i2c_resume(struct device *dev)
++{
++	struct cros_ec_device *ec_dev = to_ec_dev(dev);
++
++	return cros_ec_resume(ec_dev);
++}
++#endif
++
++static SIMPLE_DEV_PM_OPS(cros_ec_i2c_pm_ops, cros_ec_i2c_suspend,
++			  cros_ec_i2c_resume);
++
++static const struct i2c_device_id cros_ec_i2c_id[] = {
++	{ "cros-ec-i2c", 0 },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, cros_ec_i2c_id);
++
++static struct i2c_driver cros_ec_driver = {
++	.driver	= {
++		.name	= "cros-ec-i2c",
++		.owner	= THIS_MODULE,
++		.pm	= &cros_ec_i2c_pm_ops,
++	},
++	.probe		= cros_ec_probe_i2c,
++	.remove		= cros_ec_remove_i2c,
++	.id_table	= cros_ec_i2c_id,
++};
++
++module_i2c_driver(cros_ec_driver);
++
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("ChromeOS EC multi function device");
 -- 
 1.8.1.3
 
