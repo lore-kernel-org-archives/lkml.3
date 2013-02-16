@@ -1,30 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752571Ab3BPEQc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 23:16:32 -0500
-Received: from mail-vc0-f202.google.com ([209.85.220.202]:59276 "EHLO
-	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752190Ab3BPEQS (ORCPT
+	id S1752784Ab3BPERn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 23:17:43 -0500
+Received: from mail-yh0-f74.google.com ([209.85.213.74]:59600 "EHLO
+	mail-yh0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425Ab3BPEQR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 23:16:18 -0500
+	Fri, 15 Feb 2013 23:16:17 -0500
 From: Simon Glass <sjg@chromium.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Samuel Ortiz <sameo@linux.intel.com>, Simon Glass <sjg@chromium.org>,
-        Luigi Semenzato <semenzato@chromium.org>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Felipe Balbi <balbi@ti.com>, Sourav Poddar <sourav.poddar@ti.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Mike A. Chan" <mikechan@google.com>,
-        Jun Nakajima <jun.nakajima@intel.com>,
-        Tom Keel <thomas.keel@intel.com>, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-input@vger.kernel.org
-Subject: [PATCH v4 6/6] Input: Add ChromeOS EC keyboard driver
-Date: Fri, 15 Feb 2013 20:16:12 -0800
-Message-Id: <1360988172-15380-7-git-send-email-sjg@chromium.org>
+        Che-Liang Chiou <clchiou@chromium.org>,
+        Vincent Palatin <vpalatin@chromium.org>
+Subject: [PATCH v4 1/6] mfd: Add ChromeOS EC messages header
+Date: Fri, 15 Feb 2013 20:16:07 -0800
+Message-Id: <1360988172-15380-2-git-send-email-sjg@chromium.org>
 X-Mailer: git-send-email 1.8.1.3
 In-Reply-To: <1360988172-15380-1-git-send-email-sjg@chromium.org>
 References: <1360988172-15380-1-git-send-email-sjg@chromium.org>
@@ -32,165 +22,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the key-matrix layer to interpret key scan information from the EC
-and inject input based on the FDT-supplied key map. This driver registers
-itself with the ChromeOS EC driver to perform communications.
-
-The matrix-keypad FDT binding is used with a small addition to control
-ghosting.
+This file is included verbatim from the ChromeOS EC respository.
+Ideally we would prefer to avoid changing it, to make it easier
+to track this rapidly-changing file.
 
 Signed-off-by: Simon Glass <sjg@chromium.org>
-Signed-off-by: Luigi Semenzato <semenzato@chromium.org>
+Signed-off-by: Che-Liang Chiou <clchiou@chromium.org>
 Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
 ---
-Changes in v4:
-- Add 'depends on MFD_CROS_EC' to Kconfig
-- Remove use of wake_notifier
-- Remove manual code to locate device tree node
-- Add resume handler to clear keyboard scan buffer if required
+Changes in v4: None
+Changes in v3: None
+Changes in v2: None
 
-Changes in v3:
-- Remove 'select MFD_CROS_EC' from Kconfig as it isn't necessary
-- Remove old_state by using input layer's idev->key
-- Move inner loop of cros_ec_keyb_has_ghosting() into its own function and simplify
-- Add check for not finding the device tree node
-- Remove comment about leaking matrix_keypad_build_keymap()
-- Use platform_get_drvdata() where possible
-- Remove call to input_free_device() after input_unregister_device()
+ include/linux/mfd/cros_ec_commands.h | 1369 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 1369 insertions(+)
+ create mode 100644 include/linux/mfd/cros_ec_commands.h
 
-Changes in v2:
-- Remove use of __devinit/__devexit
-- Use function to read matrix-keypad parameters from DT
-- Remove key autorepeat parameters from DT binding and driver
-- Use unsigned int for rows/cols
-
- .../devicetree/bindings/input/cros-ec-keyb.txt     |  72 +++++
- drivers/input/keyboard/Kconfig                     |  12 +
- drivers/input/keyboard/Makefile                    |   1 +
- drivers/input/keyboard/cros_ec_keyb.c              | 356 +++++++++++++++++++++
- 4 files changed, 441 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/input/cros-ec-keyb.txt
- create mode 100644 drivers/input/keyboard/cros_ec_keyb.c
-
-diff --git a/Documentation/devicetree/bindings/input/cros-ec-keyb.txt b/Documentation/devicetree/bindings/input/cros-ec-keyb.txt
+diff --git a/include/linux/mfd/cros_ec_commands.h b/include/linux/mfd/cros_ec_commands.h
 new file mode 100644
-index 0000000..0f6355c
+index 0000000..86fd069
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/input/cros-ec-keyb.txt
-@@ -0,0 +1,72 @@
-+ChromeOS EC Keyboard
-+
-+Google's ChromeOS EC Keyboard is a simple matrix keyboard implemented on
-+a separate EC (Embedded Controller) device. It provides a message for reading
-+key scans from the EC. These are then converted into keycodes for processing
-+by the kernel.
-+
-+This binding is based on matrix-keymap.txt and extends/modifies it as follows:
-+
-+Required properties:
-+- compatible: "google,cros-ec-keyb"
-+
-+Optional properties:
-+- google,needs-ghost-filter: True to enable a ghost filter for the matrix
-+keyboard. This is recommended if the EC does not have its own logic or
-+hardware for this.
-+
-+
-+Example:
-+
-+cros-ec-keyb {
-+	compatible = "google,cros-ec-keyb";
-+	keypad,num-rows = <8>;
-+	keypad,num-columns = <13>;
-+	google,needs-ghost-filter;
-+	/*
-+	 * Keymap entries take the form of 0xRRCCKKKK where
-+	 * RR=Row CC=Column KKKK=Key Code
-+	 * The values below are for a US keyboard layout and
-+	 * are taken from the Linux driver. Note that the
-+	 * 102ND key is not used for US keyboards.
-+	 */
-+	linux,keymap = <
-+		/* CAPSLCK F1         B          F10     */
-+		0x0001003a 0x0002003b 0x00030030 0x00040044
-+		/* N       =          R_ALT      ESC     */
-+		0x00060031 0x0008000d 0x000a0064 0x01010001
-+		/* F4      G          F7         H       */
-+		0x0102003e 0x01030022 0x01040041 0x01060023
-+		/* '       F9         BKSPACE    L_CTRL  */
-+		0x01080028 0x01090043 0x010b000e 0x0200001d
-+		/* TAB     F3         T          F6      */
-+		0x0201000f 0x0202003d 0x02030014 0x02040040
-+		/* ]       Y          102ND      [       */
-+		0x0205001b 0x02060015 0x02070056 0x0208001a
-+		/* F8      GRAVE      F2         5       */
-+		0x02090042 0x03010029 0x0302003c 0x03030006
-+		/* F5      6          -          \       */
-+		0x0304003f 0x03060007 0x0308000c 0x030b002b
-+		/* R_CTRL  A          D          F       */
-+		0x04000061 0x0401001e 0x04020020 0x04030021
-+		/* S       K          J          ;       */
-+		0x0404001f 0x04050025 0x04060024 0x04080027
-+		/* L       ENTER      Z          C       */
-+		0x04090026 0x040b001c 0x0501002c 0x0502002e
-+		/* V       X          ,          M       */
-+		0x0503002f 0x0504002d 0x05050033 0x05060032
-+		/* L_SHIFT /          .          SPACE   */
-+		0x0507002a 0x05080035 0x05090034 0x050B0039
-+		/* 1       3          4          2       */
-+		0x06010002 0x06020004 0x06030005 0x06040003
-+		/* 8       7          0          9       */
-+		0x06050009 0x06060008 0x0608000b 0x0609000a
-+		/* L_ALT   DOWN       RIGHT      Q       */
-+		0x060a0038 0x060b006c 0x060c006a 0x07010010
-+		/* E       R          W          I       */
-+		0x07020012 0x07030013 0x07040011 0x07050017
-+		/* U       R_SHIFT    P          O       */
-+		0x07060016 0x07070036 0x07080019 0x07090018
-+		/* UP      LEFT    */
-+		0x070b0067 0x070c0069>;
-+};
-diff --git a/drivers/input/keyboard/Kconfig b/drivers/input/keyboard/Kconfig
-index 078305e..094868f 100644
---- a/drivers/input/keyboard/Kconfig
-+++ b/drivers/input/keyboard/Kconfig
-@@ -628,4 +628,16 @@ config KEYBOARD_W90P910
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called w90p910_keypad.
- 
-+config KEYBOARD_CROS_EC
-+	tristate "ChromeOS EC keyboard"
-+	select INPUT_MATRIXKMAP
-+	depends on MFD_CROS_EC
-+	help
-+	  Say Y here to enable the matrix keyboard used by ChromeOS devices
-+	  and implemented on the ChromeOS EC. You must enable one bus option
-+	  (MFD_CROS_EC_I2C or MFD_CROS_EC_SPI) to use this.
-+
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called cros_ec_keyb.
-+
- endif
-diff --git a/drivers/input/keyboard/Makefile b/drivers/input/keyboard/Makefile
-index 49b1645..0c43e8c 100644
---- a/drivers/input/keyboard/Makefile
-+++ b/drivers/input/keyboard/Makefile
-@@ -11,6 +11,7 @@ obj-$(CONFIG_KEYBOARD_AMIGA)		+= amikbd.o
- obj-$(CONFIG_KEYBOARD_ATARI)		+= atakbd.o
- obj-$(CONFIG_KEYBOARD_ATKBD)		+= atkbd.o
- obj-$(CONFIG_KEYBOARD_BFIN)		+= bf54x-keys.o
-+obj-$(CONFIG_KEYBOARD_CROS_EC)		+= cros_ec_keyb.o
- obj-$(CONFIG_KEYBOARD_DAVINCI)		+= davinci_keyscan.o
- obj-$(CONFIG_KEYBOARD_EP93XX)		+= ep93xx_keypad.o
- obj-$(CONFIG_KEYBOARD_GOLDFISH_EVENTS)	+= goldfish_events.o
-diff --git a/drivers/input/keyboard/cros_ec_keyb.c b/drivers/input/keyboard/cros_ec_keyb.c
-new file mode 100644
-index 0000000..7c32e06
---- /dev/null
-+++ b/drivers/input/keyboard/cros_ec_keyb.c
-@@ -0,0 +1,356 @@
++++ b/include/linux/mfd/cros_ec_commands.h
+@@ -0,0 +1,1369 @@
 +/*
-+ * ChromeOS EC keyboard driver
++ * Host communication command constants for ChromeOS EC
 + *
 + * Copyright (C) 2012 Google, Inc
 + *
@@ -203,348 +58,1361 @@ index 0000000..7c32e06
 + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 + * GNU General Public License for more details.
 + *
-+ * This driver uses the Chrome OS EC byte-level message-based protocol for
-+ * communicating the keyboard state (which keys are pressed) from a keyboard EC
-+ * to the AP over some bus (such as i2c, lpc, spi).  The EC does debouncing,
-+ * but everything else (including deghosting) is done here.  The main
-+ * motivation for this is to keep the EC firmware as simple as possible, since
-+ * it cannot be easily upgraded and EC flash/IRAM space is relatively
-+ * expensive.
++ * The ChromeOS EC multi function device is used to mux all the requests
++ * to the EC device for its multiple features: keyboard controller,
++ * battery charging and regulator control, firmware update.
++ *
++ * NOTE: This file is copied verbatim from the ChromeOS EC Open Source
++ * project in an attempt to make future updates easy to make.
 + */
 +
-+#include <linux/module.h>
-+#include <linux/i2c.h>
-+#include <linux/input.h>
-+#include <linux/kernel.h>
-+#include <linux/notifier.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+#include <linux/input/matrix_keypad.h>
-+#include <linux/mfd/cros_ec.h>
-+#include <linux/mfd/cros_ec_commands.h>
++#ifndef __CROS_EC_COMMANDS_H
++#define __CROS_EC_COMMANDS_H
 +
 +/*
-+ * @rows: Number of rows in the keypad
-+ * @cols: Number of columns in the keypad
-+ * @row_shift: log2 or number of rows, rounded up
-+ * @keymap_data: Matrix keymap data used to convert to keyscan values
-+ * @ghost_filter: true to enable the matrix key-ghosting filter
-+ * @dev: Device pointer
-+ * @idev: Input device
-+ * @ec: Top level ChromeOS device to use to talk to EC
-+ * @event_notifier: interrupt event notifier for transport devices
++ * Protocol overview
++ *
++ * request:  CMD [ P0 P1 P2 ... Pn S ]
++ * response: ERR [ P0 P1 P2 ... Pn S ]
++ *
++ * where the bytes are defined as follow :
++ *      - CMD is the command code. (defined by EC_CMD_ constants)
++ *      - ERR is the error code. (defined by EC_RES_ constants)
++ *      - Px is the optional payload.
++ *        it is not sent if the error code is not success.
++ *        (defined by ec_params_ and ec_response_ structures)
++ *      - S is the checksum which is the sum of all payload bytes.
++ *
++ * On LPC, CMD and ERR are sent/received at EC_LPC_ADDR_KERNEL|USER_CMD
++ * and the payloads are sent/received at EC_LPC_ADDR_KERNEL|USER_PARAM.
++ * On I2C, all bytes are sent serially in the same message.
 + */
-+struct cros_ec_keyb {
-+	unsigned int rows;
-+	unsigned int cols;
-+	int row_shift;
-+	const struct matrix_keymap_data *keymap_data;
-+	bool ghost_filter;
 +
-+	struct device *dev;
-+	struct input_dev *idev;
-+	struct cros_ec_device *ec;
-+	struct notifier_block notifier;
++/* Current version of this protocol */
++#define EC_PROTO_VERSION          0x00000002
++
++/* Command version mask */
++#define EC_VER_MASK(version) (1UL << (version))
++
++/* I/O addresses for ACPI commands */
++#define EC_LPC_ADDR_ACPI_DATA  0x62
++#define EC_LPC_ADDR_ACPI_CMD   0x66
++
++/* I/O addresses for host command */
++#define EC_LPC_ADDR_HOST_DATA  0x200
++#define EC_LPC_ADDR_HOST_CMD   0x204
++
++/* I/O addresses for host command args and params */
++#define EC_LPC_ADDR_HOST_ARGS  0x800
++#define EC_LPC_ADDR_HOST_PARAM 0x804
++#define EC_HOST_PARAM_SIZE     0x0fc  /* Size of param area in bytes */
++
++/* I/O addresses for host command params, old interface */
++#define EC_LPC_ADDR_OLD_PARAM  0x880
++#define EC_OLD_PARAM_SIZE      0x080  /* Size of param area in bytes */
++
++/* EC command register bit functions */
++#define EC_LPC_CMDR_DATA	(1 << 0)  /* Data ready for host to read */
++#define EC_LPC_CMDR_PENDING	(1 << 1)  /* Write pending to EC */
++#define EC_LPC_CMDR_BUSY	(1 << 2)  /* EC is busy processing a command */
++#define EC_LPC_CMDR_CMD		(1 << 3)  /* Last host write was a command */
++#define EC_LPC_CMDR_ACPI_BRST	(1 << 4)  /* Burst mode (not used) */
++#define EC_LPC_CMDR_SCI		(1 << 5)  /* SCI event is pending */
++#define EC_LPC_CMDR_SMI		(1 << 6)  /* SMI event is pending */
++
++#define EC_LPC_ADDR_MEMMAP       0x900
++#define EC_MEMMAP_SIZE         255 /* ACPI IO buffer max is 255 bytes */
++#define EC_MEMMAP_TEXT_MAX     8   /* Size of a string in the memory map */
++
++/* The offset address of each type of data in mapped memory. */
++#define EC_MEMMAP_TEMP_SENSOR      0x00 /* Temp sensors */
++#define EC_MEMMAP_FAN              0x10 /* Fan speeds */
++#define EC_MEMMAP_TEMP_SENSOR_B    0x18 /* Temp sensors (second set) */
++#define EC_MEMMAP_ID               0x20 /* 'E' 'C' */
++#define EC_MEMMAP_ID_VERSION       0x22 /* Version of data in 0x20 - 0x2f */
++#define EC_MEMMAP_THERMAL_VERSION  0x23 /* Version of data in 0x00 - 0x1f */
++#define EC_MEMMAP_BATTERY_VERSION  0x24 /* Version of data in 0x40 - 0x7f */
++#define EC_MEMMAP_SWITCHES_VERSION 0x25 /* Version of data in 0x30 - 0x33 */
++#define EC_MEMMAP_EVENTS_VERSION   0x26 /* Version of data in 0x34 - 0x3f */
++#define EC_MEMMAP_HOST_CMD_FLAGS   0x27 /* Host command interface flags */
++#define EC_MEMMAP_SWITCHES         0x30
++#define EC_MEMMAP_HOST_EVENTS      0x34
++#define EC_MEMMAP_BATT_VOLT        0x40 /* Battery Present Voltage */
++#define EC_MEMMAP_BATT_RATE        0x44 /* Battery Present Rate */
++#define EC_MEMMAP_BATT_CAP         0x48 /* Battery Remaining Capacity */
++#define EC_MEMMAP_BATT_FLAG        0x4c /* Battery State, defined below */
++#define EC_MEMMAP_BATT_DCAP        0x50 /* Battery Design Capacity */
++#define EC_MEMMAP_BATT_DVLT        0x54 /* Battery Design Voltage */
++#define EC_MEMMAP_BATT_LFCC        0x58 /* Battery Last Full Charge Capacity */
++#define EC_MEMMAP_BATT_CCNT        0x5c /* Battery Cycle Count */
++#define EC_MEMMAP_BATT_MFGR        0x60 /* Battery Manufacturer String */
++#define EC_MEMMAP_BATT_MODEL       0x68 /* Battery Model Number String */
++#define EC_MEMMAP_BATT_SERIAL      0x70 /* Battery Serial Number String */
++#define EC_MEMMAP_BATT_TYPE        0x78 /* Battery Type String */
++
++/* Number of temp sensors at EC_MEMMAP_TEMP_SENSOR */
++#define EC_TEMP_SENSOR_ENTRIES     16
++/*
++ * Number of temp sensors at EC_MEMMAP_TEMP_SENSOR_B.
++ *
++ * Valid only if EC_MEMMAP_THERMAL_VERSION returns >= 2.
++ */
++#define EC_TEMP_SENSOR_B_ENTRIES      8
++#define EC_TEMP_SENSOR_NOT_PRESENT    0xff
++#define EC_TEMP_SENSOR_ERROR          0xfe
++#define EC_TEMP_SENSOR_NOT_POWERED    0xfd
++#define EC_TEMP_SENSOR_NOT_CALIBRATED 0xfc
++/*
++ * The offset of temperature value stored in mapped memory.  This allows
++ * reporting a temperature range of 200K to 454K = -73C to 181C.
++ */
++#define EC_TEMP_SENSOR_OFFSET      200
++
++#define EC_FAN_SPEED_ENTRIES       4       /* Number of fans at EC_MEMMAP_FAN */
++#define EC_FAN_SPEED_NOT_PRESENT   0xffff  /* Entry not present */
++#define EC_FAN_SPEED_STALLED       0xfffe  /* Fan stalled */
++
++/* Battery bit flags at EC_MEMMAP_BATT_FLAG. */
++#define EC_BATT_FLAG_AC_PRESENT   0x01
++#define EC_BATT_FLAG_BATT_PRESENT 0x02
++#define EC_BATT_FLAG_DISCHARGING  0x04
++#define EC_BATT_FLAG_CHARGING     0x08
++#define EC_BATT_FLAG_LEVEL_CRITICAL 0x10
++
++/* Switch flags at EC_MEMMAP_SWITCHES */
++#define EC_SWITCH_LID_OPEN               0x01
++#define EC_SWITCH_POWER_BUTTON_PRESSED   0x02
++#define EC_SWITCH_WRITE_PROTECT_DISABLED 0x04
++/* Recovery requested via keyboard */
++#define EC_SWITCH_KEYBOARD_RECOVERY      0x08
++/* Recovery requested via dedicated signal (from servo board) */
++#define EC_SWITCH_DEDICATED_RECOVERY     0x10
++/* Was fake developer mode switch; now unused.  Remove in next refactor. */
++#define EC_SWITCH_IGNORE0                0x20
++
++/* Host command interface flags */
++/* Host command interface supports LPC args (LPC interface only) */
++#define EC_HOST_CMD_FLAG_LPC_ARGS_SUPPORTED  0x01
++
++/* Wireless switch flags */
++#define EC_WIRELESS_SWITCH_WLAN      0x01
++#define EC_WIRELESS_SWITCH_BLUETOOTH 0x02
++
++/*
++ * This header file is used in coreboot both in C and ACPI code.  The ACPI code
++ * is pre-processed to handle constants but the ASL compiler is unable to
++ * handle actual C code so keep it separate.
++ */
++#ifndef __ACPI__
++
++/* LPC command status byte masks */
++/* EC has written a byte in the data register and host hasn't read it yet */
++#define EC_LPC_STATUS_TO_HOST     0x01
++/* Host has written a command/data byte and the EC hasn't read it yet */
++#define EC_LPC_STATUS_FROM_HOST   0x02
++/* EC is processing a command */
++#define EC_LPC_STATUS_PROCESSING  0x04
++/* Last write to EC was a command, not data */
++#define EC_LPC_STATUS_LAST_CMD    0x08
++/* EC is in burst mode.  Unsupported by Chrome EC, so this bit is never set */
++#define EC_LPC_STATUS_BURST_MODE  0x10
++/* SCI event is pending (requesting SCI query) */
++#define EC_LPC_STATUS_SCI_PENDING 0x20
++/* SMI event is pending (requesting SMI query) */
++#define EC_LPC_STATUS_SMI_PENDING 0x40
++/* (reserved) */
++#define EC_LPC_STATUS_RESERVED    0x80
++
++/*
++ * EC is busy.  This covers both the EC processing a command, and the host has
++ * written a new command but the EC hasn't picked it up yet.
++ */
++#define EC_LPC_STATUS_BUSY_MASK \
++	(EC_LPC_STATUS_FROM_HOST | EC_LPC_STATUS_PROCESSING)
++
++/* Host command response codes */
++enum ec_status {
++	EC_RES_SUCCESS = 0,
++	EC_RES_INVALID_COMMAND = 1,
++	EC_RES_ERROR = 2,
++	EC_RES_INVALID_PARAM = 3,
++	EC_RES_ACCESS_DENIED = 4,
++	EC_RES_INVALID_RESPONSE = 5,
++	EC_RES_INVALID_VERSION = 6,
++	EC_RES_INVALID_CHECKSUM = 7,
++	EC_RES_IN_PROGRESS = 8,		/* Accepted, command in progress */
++	EC_RES_UNAVAILABLE = 9,		/* No response available */
++	EC_RES_TIMEOUT = 10,		/* We got a timeout */
++	EC_RES_OVERFLOW = 11,		/* Table / data overflow */
 +};
 +
++/*
++ * Host event codes.  Note these are 1-based, not 0-based, because ACPI query
++ * EC command uses code 0 to mean "no event pending".  We explicitly specify
++ * each value in the enum listing so they won't change if we delete/insert an
++ * item or rearrange the list (it needs to be stable across platforms, not
++ * just within a single compiled instance).
++ */
++enum host_event_code {
++	EC_HOST_EVENT_LID_CLOSED = 1,
++	EC_HOST_EVENT_LID_OPEN = 2,
++	EC_HOST_EVENT_POWER_BUTTON = 3,
++	EC_HOST_EVENT_AC_CONNECTED = 4,
++	EC_HOST_EVENT_AC_DISCONNECTED = 5,
++	EC_HOST_EVENT_BATTERY_LOW = 6,
++	EC_HOST_EVENT_BATTERY_CRITICAL = 7,
++	EC_HOST_EVENT_BATTERY = 8,
++	EC_HOST_EVENT_THERMAL_THRESHOLD = 9,
++	EC_HOST_EVENT_THERMAL_OVERLOAD = 10,
++	EC_HOST_EVENT_THERMAL = 11,
++	EC_HOST_EVENT_USB_CHARGER = 12,
++	EC_HOST_EVENT_KEY_PRESSED = 13,
++	/*
++	 * EC has finished initializing the host interface.  The host can check
++	 * for this event following sending a EC_CMD_REBOOT_EC command to
++	 * determine when the EC is ready to accept subsequent commands.
++	 */
++	EC_HOST_EVENT_INTERFACE_READY = 14,
++	/* Keyboard recovery combo has been pressed */
++	EC_HOST_EVENT_KEYBOARD_RECOVERY = 15,
 +
-+static bool cros_ec_keyb_row_has_ghosting(struct cros_ec_keyb *ckdev,
-+					  uint8_t *buf, int row)
-+{
-+	int pressed_in_row = 0;
-+	int row_has_teeth = 0;
-+	int col, mask;
++	/* Shutdown due to thermal overload */
++	EC_HOST_EVENT_THERMAL_SHUTDOWN = 16,
++	/* Shutdown due to battery level too low */
++	EC_HOST_EVENT_BATTERY_SHUTDOWN = 17,
 +
-+	mask = 1 << row;
-+	for (col = 0; col < ckdev->cols; col++) {
-+		if (buf[col] & mask) {
-+			pressed_in_row++;
-+			row_has_teeth |= buf[col] & ~mask;
-+			if (pressed_in_row > 1 && row_has_teeth) {
-+				/* ghosting */
-+				dev_dbg(ckdev->dev,
-+					"ghost found at: r%d c%d, pressed %d, teeth 0x%x\n",
-+					row, col, pressed_in_row,
-+					row_has_teeth);
-+				return true;
-+			}
-+		}
-+	}
++	/*
++	 * The high bit of the event mask is not used as a host event code.  If
++	 * it reads back as set, then the entire event mask should be
++	 * considered invalid by the host.  This can happen when reading the
++	 * raw event status via EC_MEMMAP_HOST_EVENTS but the LPC interface is
++	 * not initialized on the EC, or improperly configured on the host.
++	 */
++	EC_HOST_EVENT_INVALID = 32
++};
++/* Host event mask */
++#define EC_HOST_EVENT_MASK(event_code) (1UL << ((event_code) - 1))
 +
-+	return false;
-+}
++/* Arguments at EC_LPC_ADDR_HOST_ARGS */
++struct ec_lpc_host_args {
++	uint8_t flags;
++	uint8_t command_version;
++	uint8_t data_size;
++	/*
++	 * Checksum; sum of command + flags + command_version + data_size +
++	 * all params/response data bytes.
++	 */
++	uint8_t checksum;
++} __packed;
++
++/* Flags for ec_lpc_host_args.flags */
++/*
++ * Args are from host.  Data area at EC_LPC_ADDR_HOST_PARAM contains command
++ * params.
++ *
++ * If EC gets a command and this flag is not set, this is an old-style command.
++ * Command version is 0 and params from host are at EC_LPC_ADDR_OLD_PARAM with
++ * unknown length.  EC must respond with an old-style response (that is,
++ * withouth setting EC_HOST_ARGS_FLAG_TO_HOST).
++ */
++#define EC_HOST_ARGS_FLAG_FROM_HOST 0x01
++/*
++ * Args are from EC.  Data area at EC_LPC_ADDR_HOST_PARAM contains response.
++ *
++ * If EC responds to a command and this flag is not set, this is an old-style
++ * response.  Command version is 0 and response data from EC is at
++ * EC_LPC_ADDR_OLD_PARAM with unknown length.
++ */
++#define EC_HOST_ARGS_FLAG_TO_HOST   0x02
 +
 +/*
-+ * Returns true when there is at least one combination of pressed keys that
-+ * results in ghosting.
++ * Notes on commands:
++ *
++ * Each command is an 8-byte command value.  Commands which take params or
++ * return response data specify structs for that data.  If no struct is
++ * specified, the command does not input or output data, respectively.
++ * Parameter/response length is implicit in the structs.  Some underlying
++ * communication protocols (I2C, SPI) may add length or checksum headers, but
++ * those are implementation-dependent and not defined here.
 + */
-+static bool cros_ec_keyb_has_ghosting(struct cros_ec_keyb *ckdev, uint8_t *buf)
-+{
-+	int row;
 +
-+	/*
-+	 * Ghosting happens if for any pressed key X there are other keys
-+	 * pressed both in the same row and column of X as, for instance,
-+	 * in the following diagram:
-+	 *
-+	 * . . Y . g .
-+	 * . . . . . .
-+	 * . . . . . .
-+	 * . . X . Z .
-+	 *
-+	 * In this case only X, Y, and Z are pressed, but g appears to be
-+	 * pressed too (see Wikipedia).
-+	 *
-+	 * We can detect ghosting in a single pass (*) over the keyboard state
-+	 * by maintaining two arrays.  pressed_in_row counts how many pressed
-+	 * keys we have found in a row.  row_has_teeth is true if any of the
-+	 * pressed keys for this row has other pressed keys in its column.  If
-+	 * at any point of the scan we find that a row has multiple pressed
-+	 * keys, and at least one of them is at the intersection with a column
-+	 * with multiple pressed keys, we're sure there is ghosting.
-+	 * Conversely, if there is ghosting, we will detect such situation for
-+	 * at least one key during the pass.
-+	 *
-+	 * (*) This looks linear in the number of keys, but it's not.  We can
-+	 * cheat because the number of rows is small.
-+	 */
-+	for (row = 0; row < ckdev->rows; row++) {
-+		if (cros_ec_keyb_row_has_ghosting(ckdev, buf, row))
-+			return true;
-+	}
-+
-+	return false;
-+}
++/*****************************************************************************/
++/* General / test commands */
 +
 +/*
-+ * Compares the new keyboard state to the old one and produces key
-+ * press/release events accordingly.  The keyboard state is 13 bytes (one byte
-+ * per column)
++ * Get protocol version, used to deal with non-backward compatible protocol
++ * changes.
 + */
-+static void cros_ec_keyb_process(struct cros_ec_keyb *ckdev,
-+			 uint8_t *kb_state, int len)
-+{
-+	int col, row;
-+	int new_state;
-+	int num_cols;
++#define EC_CMD_PROTO_VERSION 0x00
 +
-+	num_cols = len;
++struct ec_response_proto_version {
++	uint32_t version;
++} __packed;
 +
-+	if (ckdev->ghost_filter && cros_ec_keyb_has_ghosting(ckdev, kb_state)) {
-+		/*
-+		 * Simple-minded solution: ignore this state. The obvious
-+		 * improvement is to only ignore changes to keys involved in
-+		 * the ghosting, but process the other changes.
-+		 */
-+		dev_dbg(ckdev->dev, "ghosting found\n");
-+		return;
-+	}
++/*
++ * Hello.  This is a simple command to test the EC is responsive to
++ * commands.
++ */
++#define EC_CMD_HELLO 0x01
 +
-+	for (col = 0; col < ckdev->cols; col++) {
-+		for (row = 0; row < ckdev->rows; row++) {
-+			int code = MATRIX_SCAN_CODE(row, col, ckdev->row_shift);
++struct ec_params_hello {
++	uint32_t in_data;  /* Pass anything here */
++} __packed;
 +
-+			new_state = kb_state[col] & (1 << row);
-+			if (!!new_state != test_bit(code, ckdev->idev->key)) {
-+				dev_dbg(ckdev->dev,
-+					"changed: [r%d c%d]: byte %02x\n",
-+					row, col, new_state);
++struct ec_response_hello {
++	uint32_t out_data;  /* Output will be in_data + 0x01020304 */
++} __packed;
 +
-+				input_report_key(ckdev->idev, code, new_state);
-+			}
-+		}
-+	}
-+	input_sync(ckdev->idev);
-+}
++/* Get version number */
++#define EC_CMD_GET_VERSION 0x02
 +
-+static int cros_ec_keyb_open(struct input_dev *dev)
-+{
-+	struct cros_ec_keyb *ckdev = input_get_drvdata(dev);
-+
-+	return blocking_notifier_chain_register(&ckdev->ec->event_notifier,
-+						&ckdev->notifier);
-+}
-+
-+static void cros_ec_keyb_close(struct input_dev *dev)
-+{
-+	struct cros_ec_keyb *ckdev = input_get_drvdata(dev);
-+
-+	blocking_notifier_chain_unregister(&ckdev->ec->event_notifier,
-+					   &ckdev->notifier);
-+}
-+
-+static int cros_ec_keyb_get_state(struct cros_ec_keyb *ckdev, uint8_t *kb_state)
-+{
-+	return ckdev->ec->command_recv(ckdev->ec, EC_CMD_MKBP_STATE,
-+					  kb_state, ckdev->cols);
-+}
-+
-+static int cros_ec_keyb_work(struct notifier_block *nb,
-+		     unsigned long state, void *_notify)
-+{
-+	int ret;
-+	struct cros_ec_keyb *ckdev = container_of(nb, struct cros_ec_keyb,
-+						    notifier);
-+	uint8_t kb_state[ckdev->cols];
-+
-+	ret = cros_ec_keyb_get_state(ckdev, kb_state);
-+	if (ret >= 0)
-+		cros_ec_keyb_process(ckdev, kb_state, ret);
-+
-+	return NOTIFY_DONE;
-+}
-+
-+/* Clear any keys in the buffer */
-+static void cros_ec_keyb_clear_keyboard(struct cros_ec_keyb *ckdev)
-+{
-+	uint8_t old_state[ckdev->cols];
-+	uint8_t new_state[ckdev->cols];
-+	unsigned long duration;
-+	int i, ret;
-+
-+	/*
-+	 * Keep reading until we see that the scan state does not change.
-+	 * That indicates that we are done.
-+	 *
-+	 * Assume that the EC keyscan buffer is at most 32 deep.
-+	 */
-+	duration = jiffies;
-+	ret = cros_ec_keyb_get_state(ckdev, new_state);
-+	for (i = 1; !ret && i < 32; i++) {
-+		memcpy(old_state, new_state, sizeof(old_state));
-+		ret = cros_ec_keyb_get_state(ckdev, new_state);
-+		if (0 == memcmp(old_state, new_state, sizeof(old_state)))
-+			break;
-+	}
-+	duration = jiffies - duration;
-+	dev_info(ckdev->dev, "Discarded %d keyscan(s) in %dus\n", i,
-+		jiffies_to_usecs(duration));
-+}
-+
-+static int cros_ec_keyb_probe(struct platform_device *pdev)
-+{
-+	struct cros_ec_device *ec = dev_get_drvdata(pdev->dev.parent);
-+	struct device *dev = ec->dev;
-+	struct cros_ec_keyb *ckdev = NULL;
-+	struct input_dev *idev = NULL;
-+	struct device_node *np;
-+	int err;
-+
-+	np = pdev->dev.of_node;
-+	if (!np)
-+		return -ENODEV;
-+
-+	ckdev = kzalloc(sizeof(*ckdev), GFP_KERNEL);
-+	if (!ckdev) {
-+		dev_err(dev, "cannot allocate memory for ckdev\n");
-+		return -ENOMEM;
-+	}
-+	err = matrix_keypad_parse_of_params(&pdev->dev, &ckdev->rows,
-+					    &ckdev->cols);
-+	if (err)
-+		goto fail_alloc_dev;
-+
-+	idev = input_allocate_device();
-+	if (!idev) {
-+		err = -ENOMEM;
-+		dev_err(dev, "cannot allocate memory for input device\n");
-+		goto fail_alloc_dev;
-+	}
-+
-+	ckdev->ec = ec;
-+	ckdev->notifier.notifier_call = cros_ec_keyb_work;
-+	ckdev->dev = dev;
-+	dev_set_drvdata(&pdev->dev, ckdev);
-+
-+	idev->name = ec->get_name(ec);
-+	idev->phys = ec->get_phys_name(ec);
-+	__set_bit(EV_REP, idev->evbit);
-+
-+	idev->id.bustype = BUS_VIRTUAL;
-+	idev->id.version = 1;
-+	idev->id.product = 0;
-+	idev->dev.parent = &pdev->dev;
-+	idev->open = cros_ec_keyb_open;
-+	idev->close = cros_ec_keyb_close;
-+
-+	ckdev->ghost_filter = of_property_read_bool(np,
-+					"google,needs-ghost-filter");
-+
-+	err = matrix_keypad_build_keymap(NULL, NULL, ckdev->rows, ckdev->cols,
-+					 NULL, idev);
-+	if (err) {
-+		dev_err(dev, "cannot build key matrix\n");
-+		goto fail_matrix;
-+	}
-+
-+	ckdev->row_shift = get_count_order(ckdev->cols);
-+
-+	input_set_capability(idev, EV_MSC, MSC_SCAN);
-+	input_set_drvdata(idev, ckdev);
-+	ckdev->idev = idev;
-+	err = input_register_device(ckdev->idev);
-+	if (err) {
-+		dev_err(dev, "cannot register input device\n");
-+		goto fail_register;
-+	}
-+
-+	return 0;
-+
-+fail_register:
-+	kfree(idev->keycode);
-+fail_matrix:
-+	input_free_device(idev);
-+fail_alloc_dev:
-+	kfree(ckdev);
-+	return err;
-+}
-+
-+static int cros_ec_keyb_remove(struct platform_device *pdev)
-+{
-+	struct cros_ec_keyb *ckdev = platform_get_drvdata(pdev);
-+	struct input_dev *idev = ckdev->idev;
-+
-+	input_unregister_device(idev);
-+	kfree(ckdev);
-+
-+	return 0;
-+}
-+
-+#ifdef CONFIG_PM_SLEEP
-+static int cros_ec_keyb_resume(struct device *dev)
-+{
-+	struct cros_ec_keyb *ckdev = dev_get_drvdata(dev);
-+
-+	/*
-+	 * When the EC is not a wake source, then it could not have caused the
-+	 * resume, so we clear the EC's key scan buffer. If the EC was a
-+	 * wake source (e.g. the lid is open and the user might press a key to
-+	 * wake) then the key scan buffer should be preserved.
-+	 */
-+	if (ckdev->ec->was_wake_device)
-+		cros_ec_keyb_clear_keyboard(ckdev);
-+
-+	return 0;
-+}
-+
-+#endif
-+
-+static SIMPLE_DEV_PM_OPS(cros_ec_keyb_pm_ops, NULL, cros_ec_keyb_resume);
-+
-+static struct platform_driver cros_ec_keyb_driver = {
-+	.probe = cros_ec_keyb_probe,
-+	.remove = cros_ec_keyb_remove,
-+	.driver = {
-+		.name = "cros-ec-keyb",
-+		.pm	= &cros_ec_keyb_pm_ops,
-+	},
++enum ec_current_image {
++	EC_IMAGE_UNKNOWN = 0,
++	EC_IMAGE_RO,
++	EC_IMAGE_RW
 +};
 +
-+module_platform_driver(cros_ec_keyb_driver);
++struct ec_response_get_version {
++	/* Null-terminated version strings for RO, RW */
++	char version_string_ro[32];
++	char version_string_rw[32];
++	char reserved[32];       /* Was previously RW-B string */
++	uint32_t current_image;  /* One of ec_current_image */
++} __packed;
 +
-+MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("ChromeOS EC keyboard driver");
-+MODULE_ALIAS("platform:cros-ec-keyb");
++/* Read test */
++#define EC_CMD_READ_TEST 0x03
++
++struct ec_params_read_test {
++	uint32_t offset;   /* Starting value for read buffer */
++	uint32_t size;     /* Size to read in bytes */
++} __packed;
++
++struct ec_response_read_test {
++	uint32_t data[32];
++} __packed;
++
++/*
++ * Get build information
++ *
++ * Response is null-terminated string.
++ */
++#define EC_CMD_GET_BUILD_INFO 0x04
++
++/* Get chip info */
++#define EC_CMD_GET_CHIP_INFO 0x05
++
++struct ec_response_get_chip_info {
++	/* Null-terminated strings */
++	char vendor[32];
++	char name[32];
++	char revision[32];  /* Mask version */
++} __packed;
++
++/* Get board HW version */
++#define EC_CMD_GET_BOARD_VERSION 0x06
++
++struct ec_response_board_version {
++	uint16_t board_version;  /* A monotonously incrementing number. */
++} __packed;
++
++/*
++ * Read memory-mapped data.
++ *
++ * This is an alternate interface to memory-mapped data for bus protocols
++ * which don't support direct-mapped memory - I2C, SPI, etc.
++ *
++ * Response is params.size bytes of data.
++ */
++#define EC_CMD_READ_MEMMAP 0x07
++
++struct ec_params_read_memmap {
++	uint8_t offset;   /* Offset in memmap (EC_MEMMAP_*) */
++	uint8_t size;     /* Size to read in bytes */
++} __packed;
++
++/* Read versions supported for a command */
++#define EC_CMD_GET_CMD_VERSIONS 0x08
++
++struct ec_params_get_cmd_versions {
++	uint8_t cmd;      /* Command to check */
++} __packed;
++
++struct ec_response_get_cmd_versions {
++	/*
++	 * Mask of supported versions; use EC_VER_MASK() to compare with a
++	 * desired version.
++	 */
++	uint32_t version_mask;
++} __packed;
++
++/*
++ * Check EC communcations status (busy). This is needed on i2c/spi but not
++ * on lpc since it has its own out-of-band busy indicator.
++ *
++ * lpc must read the status from the command register. Attempting this on
++ * lpc will overwrite the args/parameter space and corrupt its data.
++ */
++#define EC_CMD_GET_COMMS_STATUS		0x09
++
++/* Avoid using ec_status which is for return values */
++enum ec_comms_status {
++	EC_COMMS_STATUS_PROCESSING	= 1 << 0,	/* Processing cmd */
++};
++
++struct ec_response_get_comms_status {
++	uint32_t flags;		/* Mask of enum ec_comms_status */
++} __packed;
++
++
++/*****************************************************************************/
++/* Flash commands */
++
++/* Get flash info */
++#define EC_CMD_FLASH_INFO 0x10
++
++struct ec_response_flash_info {
++	/* Usable flash size, in bytes */
++	uint32_t flash_size;
++	/*
++	 * Write block size.  Write offset and size must be a multiple
++	 * of this.
++	 */
++	uint32_t write_block_size;
++	/*
++	 * Erase block size.  Erase offset and size must be a multiple
++	 * of this.
++	 */
++	uint32_t erase_block_size;
++	/*
++	 * Protection block size.  Protection offset and size must be a
++	 * multiple of this.
++	 */
++	uint32_t protect_block_size;
++} __packed;
++
++/*
++ * Read flash
++ *
++ * Response is params.size bytes of data.
++ */
++#define EC_CMD_FLASH_READ 0x11
++
++struct ec_params_flash_read {
++	uint32_t offset;   /* Byte offset to read */
++	uint32_t size;     /* Size to read in bytes */
++} __packed;
++
++/* Write flash */
++#define EC_CMD_FLASH_WRITE 0x12
++
++struct ec_params_flash_write {
++	uint32_t offset;   /* Byte offset to write */
++	uint32_t size;     /* Size to write in bytes */
++	/*
++	 * Data to write.  Could really use EC_PARAM_SIZE - 8, but tidiest to
++	 * use a power of 2 so writes stay aligned.
++	 */
++	uint8_t data[64];
++} __packed;
++
++/* Erase flash */
++#define EC_CMD_FLASH_ERASE 0x13
++
++struct ec_params_flash_erase {
++	uint32_t offset;   /* Byte offset to erase */
++	uint32_t size;     /* Size to erase in bytes */
++} __packed;
++
++/*
++ * Get/set flash protection.
++ *
++ * If mask!=0, sets/clear the requested bits of flags.  Depending on the
++ * firmware write protect GPIO, not all flags will take effect immediately;
++ * some flags require a subsequent hard reset to take effect.  Check the
++ * returned flags bits to see what actually happened.
++ *
++ * If mask=0, simply returns the current flags state.
++ */
++#define EC_CMD_FLASH_PROTECT 0x15
++#define EC_VER_FLASH_PROTECT 1  /* Command version 1 */
++
++/* Flags for flash protection */
++/* RO flash code protected when the EC boots */
++#define EC_FLASH_PROTECT_RO_AT_BOOT         (1 << 0)
++/*
++ * RO flash code protected now.  If this bit is set, at-boot status cannot
++ * be changed.
++ */
++#define EC_FLASH_PROTECT_RO_NOW             (1 << 1)
++/* Entire flash code protected now, until reboot. */
++#define EC_FLASH_PROTECT_ALL_NOW            (1 << 2)
++/* Flash write protect GPIO is asserted now */
++#define EC_FLASH_PROTECT_GPIO_ASSERTED      (1 << 3)
++/* Error - at least one bank of flash is stuck locked, and cannot be unlocked */
++#define EC_FLASH_PROTECT_ERROR_STUCK        (1 << 4)
++/*
++ * Error - flash protection is in inconsistent state.  At least one bank of
++ * flash which should be protected is not protected.  Usually fixed by
++ * re-requesting the desired flags, or by a hard reset if that fails.
++ */
++#define EC_FLASH_PROTECT_ERROR_INCONSISTENT (1 << 5)
++/* Entile flash code protected when the EC boots */
++#define EC_FLASH_PROTECT_ALL_AT_BOOT        (1 << 6)
++
++struct ec_params_flash_protect {
++	uint32_t mask;   /* Bits in flags to apply */
++	uint32_t flags;  /* New flags to apply */
++} __packed;
++
++struct ec_response_flash_protect {
++	/* Current value of flash protect flags */
++	uint32_t flags;
++	/*
++	 * Flags which are valid on this platform.  This allows the caller
++	 * to distinguish between flags which aren't set vs. flags which can't
++	 * be set on this platform.
++	 */
++	uint32_t valid_flags;
++	/* Flags which can be changed given the current protection state */
++	uint32_t writable_flags;
++} __packed;
++
++/*
++ * Note: commands 0x14 - 0x19 version 0 were old commands to get/set flash
++ * write protect.  These commands may be reused with version > 0.
++ */
++
++/* Get the region offset/size */
++#define EC_CMD_FLASH_REGION_INFO 0x16
++#define EC_VER_FLASH_REGION_INFO 1
++
++enum ec_flash_region {
++	/* Region which holds read-only EC image */
++	EC_FLASH_REGION_RO,
++	/* Region which holds rewritable EC image */
++	EC_FLASH_REGION_RW,
++	/*
++	 * Region which should be write-protected in the factory (a superset of
++	 * EC_FLASH_REGION_RO)
++	 */
++	EC_FLASH_REGION_WP_RO,
++};
++
++struct ec_params_flash_region_info {
++	uint32_t region;  /* enum ec_flash_region */
++} __packed;
++
++struct ec_response_flash_region_info {
++	uint32_t offset;
++	uint32_t size;
++} __packed;
++
++/* Read/write VbNvContext */
++#define EC_CMD_VBNV_CONTEXT 0x17
++#define EC_VER_VBNV_CONTEXT 1
++#define EC_VBNV_BLOCK_SIZE 16
++
++enum ec_vbnvcontext_op {
++	EC_VBNV_CONTEXT_OP_READ,
++	EC_VBNV_CONTEXT_OP_WRITE,
++};
++
++struct ec_params_vbnvcontext {
++	uint32_t op;
++	uint8_t block[EC_VBNV_BLOCK_SIZE];
++} __packed;
++
++struct ec_response_vbnvcontext {
++	uint8_t block[EC_VBNV_BLOCK_SIZE];
++} __packed;
++
++/*****************************************************************************/
++/* PWM commands */
++
++/* Get fan target RPM */
++#define EC_CMD_PWM_GET_FAN_TARGET_RPM 0x20
++
++struct ec_response_pwm_get_fan_rpm {
++	uint32_t rpm;
++} __packed;
++
++/* Set target fan RPM */
++#define EC_CMD_PWM_SET_FAN_TARGET_RPM 0x21
++
++struct ec_params_pwm_set_fan_target_rpm {
++	uint32_t rpm;
++} __packed;
++
++/* Get keyboard backlight */
++#define EC_CMD_PWM_GET_KEYBOARD_BACKLIGHT 0x22
++
++struct ec_response_pwm_get_keyboard_backlight {
++	uint8_t percent;
++	uint8_t enabled;
++} __packed;
++
++/* Set keyboard backlight */
++#define EC_CMD_PWM_SET_KEYBOARD_BACKLIGHT 0x23
++
++struct ec_params_pwm_set_keyboard_backlight {
++	uint8_t percent;
++} __packed;
++
++/* Set target fan PWM duty cycle */
++#define EC_CMD_PWM_SET_FAN_DUTY 0x24
++
++struct ec_params_pwm_set_fan_duty {
++	uint32_t percent;
++} __packed;
++
++/*****************************************************************************/
++/*
++ * Lightbar commands. This looks worse than it is. Since we only use one HOST
++ * command to say "talk to the lightbar", we put the "and tell it to do X" part
++ * into a subcommand. We'll make separate structs for subcommands with
++ * different input args, so that we know how much to expect.
++ */
++#define EC_CMD_LIGHTBAR_CMD 0x28
++
++struct rgb_s {
++	uint8_t r, g, b;
++};
++
++#define LB_BATTERY_LEVELS 4
++/* List of tweakable parameters. NOTE: It's __packed so it can be sent in a
++ * host command, but the alignment is the same regardless. Keep it that way.
++ */
++struct lightbar_params {
++	/* Timing */
++	int google_ramp_up;
++	int google_ramp_down;
++	int s3s0_ramp_up;
++	int s0_tick_delay[2];			/* AC=0/1 */
++	int s0a_tick_delay[2];			/* AC=0/1 */
++	int s0s3_ramp_down;
++	int s3_sleep_for;
++	int s3_ramp_up;
++	int s3_ramp_down;
++
++	/* Oscillation */
++	uint8_t new_s0;
++	uint8_t osc_min[2];			/* AC=0/1 */
++	uint8_t osc_max[2];			/* AC=0/1 */
++	uint8_t w_ofs[2];			/* AC=0/1 */
++
++	/* Brightness limits based on the backlight and AC. */
++	uint8_t bright_bl_off_fixed[2];		/* AC=0/1 */
++	uint8_t bright_bl_on_min[2];		/* AC=0/1 */
++	uint8_t bright_bl_on_max[2];		/* AC=0/1 */
++
++	/* Battery level thresholds */
++	uint8_t battery_threshold[LB_BATTERY_LEVELS - 1];
++
++	/* Map [AC][battery_level] to color index */
++	uint8_t s0_idx[2][LB_BATTERY_LEVELS];	/* AP is running */
++	uint8_t s3_idx[2][LB_BATTERY_LEVELS];	/* AP is sleeping */
++
++	/* Color palette */
++	struct rgb_s color[8];			/* 0-3 are Google colors */
++} __packed;
++
++struct ec_params_lightbar {
++	uint8_t cmd;		      /* Command (see enum lightbar_command) */
++	union {
++		struct {
++			/* no args */
++		} dump, off, on, init, get_seq, get_params;
++
++		struct num {
++			uint8_t num;
++		} brightness, seq, demo;
++
++		struct reg {
++			uint8_t ctrl, reg, value;
++		} reg;
++
++		struct rgb {
++			uint8_t led, red, green, blue;
++		} rgb;
++
++		struct lightbar_params set_params;
++	};
++} __packed;
++
++struct ec_response_lightbar {
++	union {
++		struct dump {
++			struct {
++				uint8_t reg;
++				uint8_t ic0;
++				uint8_t ic1;
++			} vals[23];
++		} dump;
++
++		struct get_seq {
++			uint8_t num;
++		} get_seq;
++
++		struct lightbar_params get_params;
++
++		struct {
++			/* no return params */
++		} off, on, init, brightness, seq, reg, rgb, demo, set_params;
++	};
++} __packed;
++
++/* Lightbar commands */
++enum lightbar_command {
++	LIGHTBAR_CMD_DUMP = 0,
++	LIGHTBAR_CMD_OFF = 1,
++	LIGHTBAR_CMD_ON = 2,
++	LIGHTBAR_CMD_INIT = 3,
++	LIGHTBAR_CMD_BRIGHTNESS = 4,
++	LIGHTBAR_CMD_SEQ = 5,
++	LIGHTBAR_CMD_REG = 6,
++	LIGHTBAR_CMD_RGB = 7,
++	LIGHTBAR_CMD_GET_SEQ = 8,
++	LIGHTBAR_CMD_DEMO = 9,
++	LIGHTBAR_CMD_GET_PARAMS = 10,
++	LIGHTBAR_CMD_SET_PARAMS = 11,
++	LIGHTBAR_NUM_CMDS
++};
++
++/*****************************************************************************/
++/* Verified boot commands */
++
++/*
++ * Note: command code 0x29 version 0 was VBOOT_CMD in Link EVT; it may be
++ * reused for other purposes with version > 0.
++ */
++
++/* Verified boot hash command */
++#define EC_CMD_VBOOT_HASH 0x2A
++
++struct ec_params_vboot_hash {
++	uint8_t cmd;             /* enum ec_vboot_hash_cmd */
++	uint8_t hash_type;       /* enum ec_vboot_hash_type */
++	uint8_t nonce_size;      /* Nonce size; may be 0 */
++	uint8_t reserved0;       /* Reserved; set 0 */
++	uint32_t offset;         /* Offset in flash to hash */
++	uint32_t size;           /* Number of bytes to hash */
++	uint8_t nonce_data[64];  /* Nonce data; ignored if nonce_size=0 */
++} __packed;
++
++struct ec_response_vboot_hash {
++	uint8_t status;          /* enum ec_vboot_hash_status */
++	uint8_t hash_type;       /* enum ec_vboot_hash_type */
++	uint8_t digest_size;     /* Size of hash digest in bytes */
++	uint8_t reserved0;       /* Ignore; will be 0 */
++	uint32_t offset;         /* Offset in flash which was hashed */
++	uint32_t size;           /* Number of bytes hashed */
++	uint8_t hash_digest[64]; /* Hash digest data */
++} __packed;
++
++enum ec_vboot_hash_cmd {
++	EC_VBOOT_HASH_GET = 0,       /* Get current hash status */
++	EC_VBOOT_HASH_ABORT = 1,     /* Abort calculating current hash */
++	EC_VBOOT_HASH_START = 2,     /* Start computing a new hash */
++	EC_VBOOT_HASH_RECALC = 3,    /* Synchronously compute a new hash */
++};
++
++enum ec_vboot_hash_type {
++	EC_VBOOT_HASH_TYPE_SHA256 = 0, /* SHA-256 */
++};
++
++enum ec_vboot_hash_status {
++	EC_VBOOT_HASH_STATUS_NONE = 0, /* No hash (not started, or aborted) */
++	EC_VBOOT_HASH_STATUS_DONE = 1, /* Finished computing a hash */
++	EC_VBOOT_HASH_STATUS_BUSY = 2, /* Busy computing a hash */
++};
++
++/*
++ * Special values for offset for EC_VBOOT_HASH_START and EC_VBOOT_HASH_RECALC.
++ * If one of these is specified, the EC will automatically update offset and
++ * size to the correct values for the specified image (RO or RW).
++ */
++#define EC_VBOOT_HASH_OFFSET_RO 0xfffffffe
++#define EC_VBOOT_HASH_OFFSET_RW 0xfffffffd
++
++/*****************************************************************************/
++/* USB charging control commands */
++
++/* Set USB port charging mode */
++#define EC_CMD_USB_CHARGE_SET_MODE 0x30
++
++struct ec_params_usb_charge_set_mode {
++	uint8_t usb_port_id;
++	uint8_t mode;
++} __packed;
++
++/*****************************************************************************/
++/* Persistent storage for host */
++
++/* Maximum bytes that can be read/written in a single command */
++#define EC_PSTORE_SIZE_MAX 64
++
++/* Get persistent storage info */
++#define EC_CMD_PSTORE_INFO 0x40
++
++struct ec_response_pstore_info {
++	/* Persistent storage size, in bytes */
++	uint32_t pstore_size;
++	/* Access size; read/write offset and size must be a multiple of this */
++	uint32_t access_size;
++} __packed;
++
++/*
++ * Read persistent storage
++ *
++ * Response is params.size bytes of data.
++ */
++#define EC_CMD_PSTORE_READ 0x41
++
++struct ec_params_pstore_read {
++	uint32_t offset;   /* Byte offset to read */
++	uint32_t size;     /* Size to read in bytes */
++} __packed;
++
++/* Write persistent storage */
++#define EC_CMD_PSTORE_WRITE 0x42
++
++struct ec_params_pstore_write {
++	uint32_t offset;   /* Byte offset to write */
++	uint32_t size;     /* Size to write in bytes */
++	uint8_t data[EC_PSTORE_SIZE_MAX];
++} __packed;
++
++/*****************************************************************************/
++/* Real-time clock */
++
++/* RTC params and response structures */
++struct ec_params_rtc {
++	uint32_t time;
++} __packed;
++
++struct ec_response_rtc {
++	uint32_t time;
++} __packed;
++
++/* These use ec_response_rtc */
++#define EC_CMD_RTC_GET_VALUE 0x44
++#define EC_CMD_RTC_GET_ALARM 0x45
++
++/* These all use ec_params_rtc */
++#define EC_CMD_RTC_SET_VALUE 0x46
++#define EC_CMD_RTC_SET_ALARM 0x47
++
++/*****************************************************************************/
++/* Port80 log access */
++
++/* Get last port80 code from previous boot */
++#define EC_CMD_PORT80_LAST_BOOT 0x48
++
++struct ec_response_port80_last_boot {
++	uint16_t code;
++} __packed;
++
++/*****************************************************************************/
++/* Thermal engine commands */
++
++/* Set thershold value */
++#define EC_CMD_THERMAL_SET_THRESHOLD 0x50
++
++struct ec_params_thermal_set_threshold {
++	uint8_t sensor_type;
++	uint8_t threshold_id;
++	uint16_t value;
++} __packed;
++
++/* Get threshold value */
++#define EC_CMD_THERMAL_GET_THRESHOLD 0x51
++
++struct ec_params_thermal_get_threshold {
++	uint8_t sensor_type;
++	uint8_t threshold_id;
++} __packed;
++
++struct ec_response_thermal_get_threshold {
++	uint16_t value;
++} __packed;
++
++/* Toggle automatic fan control */
++#define EC_CMD_THERMAL_AUTO_FAN_CTRL 0x52
++
++/* Get TMP006 calibration data */
++#define EC_CMD_TMP006_GET_CALIBRATION 0x53
++
++struct ec_params_tmp006_get_calibration {
++	uint8_t index;
++} __packed;
++
++struct ec_response_tmp006_get_calibration {
++	float s0;
++	float b0;
++	float b1;
++	float b2;
++} __packed;
++
++/* Set TMP006 calibration data */
++#define EC_CMD_TMP006_SET_CALIBRATION 0x54
++
++struct ec_params_tmp006_set_calibration {
++	uint8_t index;
++	uint8_t reserved[3];  /* Reserved; set 0 */
++	float s0;
++	float b0;
++	float b1;
++	float b2;
++} __packed;
++
++/*****************************************************************************/
++/* MKBP - Matrix KeyBoard Protocol */
++
++/*
++ * Read key state
++ *
++ * Returns raw data for keyboard cols; see ec_response_mkbp_info.cols for
++ * expected response size.
++ */
++#define EC_CMD_MKBP_STATE 0x60
++
++/* Provide information about the matrix : number of rows and columns */
++#define EC_CMD_MKBP_INFO 0x61
++
++struct ec_response_mkbp_info {
++	uint32_t rows;
++	uint32_t cols;
++	uint8_t switches;
++} __packed;
++
++/* Simulate key press */
++#define EC_CMD_MKBP_SIMULATE_KEY 0x62
++
++struct ec_params_mkbp_simulate_key {
++	uint8_t col;
++	uint8_t row;
++	uint8_t pressed;
++} __packed;
++
++/* Configure keyboard scanning */
++#define EC_CMD_MKBP_SET_CONFIG 0x64
++#define EC_CMD_MKBP_GET_CONFIG 0x65
++
++/* flags */
++enum mkbp_config_flags {
++	EC_MKBP_FLAGS_ENABLE = 1,	/* Enable keyboard scanning */
++};
++
++enum mkbp_config_valid {
++	EC_MKBP_VALID_SCAN_PERIOD		= 1 << 0,
++	EC_MKBP_VALID_POLL_TIMEOUT		= 1 << 1,
++	EC_MKBP_VALID_MIN_POST_SCAN_DELAY	= 1 << 3,
++	EC_MKBP_VALID_OUTPUT_SETTLE		= 1 << 4,
++	EC_MKBP_VALID_DEBOUNCE_DOWN		= 1 << 5,
++	EC_MKBP_VALID_DEBOUNCE_UP		= 1 << 6,
++	EC_MKBP_VALID_FIFO_MAX_DEPTH		= 1 << 7,
++};
++
++/* Configuration for our key scanning algorithm */
++struct ec_mkbp_config {
++	uint32_t valid_mask;		/* valid fields */
++	uint8_t flags;		/* some flags (enum mkbp_config_flags) */
++	uint8_t valid_flags;		/* which flags are valid */
++	uint16_t scan_period_us;	/* period between start of scans */
++	/* revert to interrupt mode after no activity for this long */
++	uint32_t poll_timeout_us;
++	/*
++	 * minimum post-scan relax time. Once we finish a scan we check
++	 * the time until we are due to start the next one. If this time is
++	 * shorter this field, we use this instead.
++	 */
++	uint16_t min_post_scan_delay_us;
++	/* delay between setting up output and waiting for it to settle */
++	uint16_t output_settle_us;
++	uint16_t debounce_down_us;	/* time for debounce on key down */
++	uint16_t debounce_up_us;	/* time for debounce on key up */
++	/* maximum depth to allow for fifo (0 = no keyscan output) */
++	uint8_t fifo_max_depth;
++} __packed;
++
++struct ec_params_mkbp_set_config {
++	struct ec_mkbp_config config;
++} __packed;
++
++struct ec_response_mkbp_get_config {
++	struct ec_mkbp_config config;
++} __packed;
++
++/* Run the key scan emulation */
++#define EC_CMD_KEYSCAN_SEQ_CTRL 0x66
++
++enum ec_keyscan_seq_cmd {
++	EC_KEYSCAN_SEQ_STATUS = 0,	/* Get status information */
++	EC_KEYSCAN_SEQ_CLEAR = 1,	/* Clear sequence */
++	EC_KEYSCAN_SEQ_ADD = 2,		/* Add item to sequence */
++	EC_KEYSCAN_SEQ_START = 3,	/* Start running sequence */
++	EC_KEYSCAN_SEQ_COLLECT = 4,	/* Collect sequence summary data */
++};
++
++enum ec_collect_flags {
++	/*
++	 * Indicates this scan was processed by the EC. Due to timing, some
++	 * scans may be skipped.
++	 */
++	EC_KEYSCAN_SEQ_FLAG_DONE	= 1 << 0,
++};
++
++struct ec_collect_item {
++	uint8_t flags;		/* some flags (enum ec_collect_flags) */
++};
++
++struct ec_params_keyscan_seq_ctrl {
++	uint8_t cmd;	/* Command to send (enum ec_keyscan_seq_cmd) */
++	union {
++		struct {
++			uint8_t active;		/* still active */
++			uint8_t num_items;	/* number of items */
++			/* Current item being presented */
++			uint8_t cur_item;
++		} status;
++		struct {
++			/*
++			 * Absolute time for this scan, measured from the
++			 * start of the sequence.
++			 */
++			uint32_t time_us;
++			uint8_t scan[0];	/* keyscan data */
++		} add;
++		struct {
++			uint8_t start_item;	/* First item to return */
++			uint8_t num_items;	/* Number of items to return */
++		} collect;
++	};
++} __packed;
++
++struct ec_result_keyscan_seq_ctrl {
++	union {
++		struct {
++			uint8_t num_items;	/* Number of items */
++			/* Data for each item */
++			struct ec_collect_item item[0];
++		} collect;
++	};
++} __packed;
++
++/*****************************************************************************/
++/* Temperature sensor commands */
++
++/* Read temperature sensor info */
++#define EC_CMD_TEMP_SENSOR_GET_INFO 0x70
++
++struct ec_params_temp_sensor_get_info {
++	uint8_t id;
++} __packed;
++
++struct ec_response_temp_sensor_get_info {
++	char sensor_name[32];
++	uint8_t sensor_type;
++} __packed;
++
++/*****************************************************************************/
++
++/*
++ * Note: host commands 0x80 - 0x87 are reserved to avoid conflict with ACPI
++ * commands accidentally sent to the wrong interface.  See the ACPI section
++ * below.
++ */
++
++/*****************************************************************************/
++/* Host event commands */
++
++/*
++ * Host event mask params and response structures, shared by all of the host
++ * event commands below.
++ */
++struct ec_params_host_event_mask {
++	uint32_t mask;
++} __packed;
++
++struct ec_response_host_event_mask {
++	uint32_t mask;
++} __packed;
++
++/* These all use ec_response_host_event_mask */
++#define EC_CMD_HOST_EVENT_GET_B         0x87
++#define EC_CMD_HOST_EVENT_GET_SMI_MASK  0x88
++#define EC_CMD_HOST_EVENT_GET_SCI_MASK  0x89
++#define EC_CMD_HOST_EVENT_GET_WAKE_MASK 0x8d
++
++/* These all use ec_params_host_event_mask */
++#define EC_CMD_HOST_EVENT_SET_SMI_MASK  0x8a
++#define EC_CMD_HOST_EVENT_SET_SCI_MASK  0x8b
++#define EC_CMD_HOST_EVENT_CLEAR         0x8c
++#define EC_CMD_HOST_EVENT_SET_WAKE_MASK 0x8e
++#define EC_CMD_HOST_EVENT_CLEAR_B       0x8f
++
++/*****************************************************************************/
++/* Switch commands */
++
++/* Enable/disable LCD backlight */
++#define EC_CMD_SWITCH_ENABLE_BKLIGHT 0x90
++
++struct ec_params_switch_enable_backlight {
++	uint8_t enabled;
++} __packed;
++
++/* Enable/disable WLAN/Bluetooth */
++#define EC_CMD_SWITCH_ENABLE_WIRELESS 0x91
++
++struct ec_params_switch_enable_wireless {
++	uint8_t enabled;
++} __packed;
++
++/*****************************************************************************/
++/* GPIO commands. Only available on EC if write protect has been disabled. */
++
++/* Set GPIO output value */
++#define EC_CMD_GPIO_SET 0x92
++
++struct ec_params_gpio_set {
++	char name[32];
++	uint8_t val;
++} __packed;
++
++/* Get GPIO value */
++#define EC_CMD_GPIO_GET 0x93
++
++struct ec_params_gpio_get {
++	char name[32];
++} __packed;
++struct ec_response_gpio_get {
++	uint8_t val;
++} __packed;
++
++/*****************************************************************************/
++/* I2C commands. Only available when flash write protect is unlocked. */
++
++/* Read I2C bus */
++#define EC_CMD_I2C_READ 0x94
++
++struct ec_params_i2c_read {
++	uint16_t addr;
++	uint8_t read_size; /* Either 8 or 16. */
++	uint8_t port;
++	uint8_t offset;
++} __packed;
++struct ec_response_i2c_read {
++	uint16_t data;
++} __packed;
++
++/* Write I2C bus */
++#define EC_CMD_I2C_WRITE 0x95
++
++struct ec_params_i2c_write {
++	uint16_t data;
++	uint16_t addr;
++	uint8_t write_size; /* Either 8 or 16. */
++	uint8_t port;
++	uint8_t offset;
++} __packed;
++
++/*****************************************************************************/
++/* Charge state commands. Only available when flash write protect unlocked. */
++
++/* Force charge state machine to stop in idle mode */
++#define EC_CMD_CHARGE_FORCE_IDLE 0x96
++
++struct ec_params_force_idle {
++	uint8_t enabled;
++} __packed;
++
++/*****************************************************************************/
++/* Console commands. Only available when flash write protect is unlocked. */
++
++/* Snapshot console output buffer for use by EC_CMD_CONSOLE_READ. */
++#define EC_CMD_CONSOLE_SNAPSHOT 0x97
++
++/*
++ * Read next chunk of data from saved snapshot.
++ *
++ * Response is null-terminated string.  Empty string, if there is no more
++ * remaining output.
++ */
++#define EC_CMD_CONSOLE_READ 0x98
++
++/*****************************************************************************/
++
++/*
++ * Cut off battery power output if the battery supports.
++ *
++ * For unsupported battery, just don't implement this command and lets EC
++ * return EC_RES_INVALID_COMMAND.
++ */
++#define EC_CMD_BATTERY_CUT_OFF 0x99
++
++/*****************************************************************************/
++/* Temporary debug commands. TODO: remove this crosbug.com/p/13849 */
++
++/*
++ * Dump charge state machine context.
++ *
++ * Response is a binary dump of charge state machine context.
++ */
++#define EC_CMD_CHARGE_DUMP 0xa0
++
++/*
++ * Set maximum battery charging current.
++ */
++#define EC_CMD_CHARGE_CURRENT_LIMIT 0xa1
++
++struct ec_params_current_limit {
++	uint32_t limit;
++} __packed;
++
++/*****************************************************************************/
++/* System commands */
++
++/*
++ * TODO: this is a confusing name, since it doesn't necessarily reboot the EC.
++ * Rename to "set image" or something similar.
++ */
++#define EC_CMD_REBOOT_EC 0xd2
++
++/* Command */
++enum ec_reboot_cmd {
++	EC_REBOOT_CANCEL = 0,        /* Cancel a pending reboot */
++	EC_REBOOT_JUMP_RO = 1,       /* Jump to RO without rebooting */
++	EC_REBOOT_JUMP_RW = 2,       /* Jump to RW without rebooting */
++	/* (command 3 was jump to RW-B) */
++	EC_REBOOT_COLD = 4,          /* Cold-reboot */
++	EC_REBOOT_DISABLE_JUMP = 5,  /* Disable jump until next reboot */
++	EC_REBOOT_HIBERNATE = 6      /* Hibernate EC */
++};
++
++/* Flags for ec_params_reboot_ec.reboot_flags */
++#define EC_REBOOT_FLAG_RESERVED0      (1 << 0)  /* Was recovery request */
++#define EC_REBOOT_FLAG_ON_AP_SHUTDOWN (1 << 1)  /* Reboot after AP shutdown */
++
++struct ec_params_reboot_ec {
++	uint8_t cmd;           /* enum ec_reboot_cmd */
++	uint8_t flags;         /* See EC_REBOOT_FLAG_* */
++} __packed;
++
++/*
++ * Get information on last EC panic.
++ *
++ * Returns variable-length platform-dependent panic information.  See panic.h
++ * for details.
++ */
++#define EC_CMD_GET_PANIC_INFO 0xd3
++
++/*****************************************************************************/
++/*
++ * ACPI commands
++ *
++ * These are valid ONLY on the ACPI command/data port.
++ */
++
++/*
++ * ACPI Read Embedded Controller
++ *
++ * This reads from ACPI memory space on the EC (EC_ACPI_MEM_*).
++ *
++ * Use the following sequence:
++ *
++ *    - Write EC_CMD_ACPI_READ to EC_LPC_ADDR_ACPI_CMD
++ *    - Wait for EC_LPC_CMDR_PENDING bit to clear
++ *    - Write address to EC_LPC_ADDR_ACPI_DATA
++ *    - Wait for EC_LPC_CMDR_DATA bit to set
++ *    - Read value from EC_LPC_ADDR_ACPI_DATA
++ */
++#define EC_CMD_ACPI_READ 0x80
++
++/*
++ * ACPI Write Embedded Controller
++ *
++ * This reads from ACPI memory space on the EC (EC_ACPI_MEM_*).
++ *
++ * Use the following sequence:
++ *
++ *    - Write EC_CMD_ACPI_WRITE to EC_LPC_ADDR_ACPI_CMD
++ *    - Wait for EC_LPC_CMDR_PENDING bit to clear
++ *    - Write address to EC_LPC_ADDR_ACPI_DATA
++ *    - Wait for EC_LPC_CMDR_PENDING bit to clear
++ *    - Write value to EC_LPC_ADDR_ACPI_DATA
++ */
++#define EC_CMD_ACPI_WRITE 0x81
++
++/*
++ * ACPI Query Embedded Controller
++ *
++ * This clears the lowest-order bit in the currently pending host events, and
++ * sets the result code to the 1-based index of the bit (event 0x00000001 = 1,
++ * event 0x80000000 = 32), or 0 if no event was pending.
++ */
++#define EC_CMD_ACPI_QUERY_EVENT 0x84
++
++/* Valid addresses in ACPI memory space, for read/write commands */
++/* Memory space version; set to EC_ACPI_MEM_VERSION_CURRENT */
++#define EC_ACPI_MEM_VERSION            0x00
++/*
++ * Test location; writing value here updates test compliment byte to (0xff -
++ * value).
++ */
++#define EC_ACPI_MEM_TEST               0x01
++/* Test compliment; writes here are ignored. */
++#define EC_ACPI_MEM_TEST_COMPLIMENT    0x02
++/* Keyboard backlight brightness percent (0 - 100) */
++#define EC_ACPI_MEM_KEYBOARD_BACKLIGHT 0x03
++
++/* Current version of ACPI memory address space */
++#define EC_ACPI_MEM_VERSION_CURRENT 1
++
++
++/*****************************************************************************/
++/*
++ * Special commands
++ *
++ * These do not follow the normal rules for commands.  See each command for
++ * details.
++ */
++
++/*
++ * Reboot NOW
++ *
++ * This command will work even when the EC LPC interface is busy, because the
++ * reboot command is processed at interrupt level.  Note that when the EC
++ * reboots, the host will reboot too, so there is no response to this command.
++ *
++ * Use EC_CMD_REBOOT_EC to reboot the EC more politely.
++ */
++#define EC_CMD_REBOOT 0xd1  /* Think "die" */
++
++/*
++ * Resend last response (not supported on LPC).
++ *
++ * Returns EC_RES_UNAVAILABLE if there is no response available - for example,
++ * there was no previous command, or the previous command's response was too
++ * big to save.
++ */
++#define EC_CMD_RESEND_RESPONSE 0xdb
++
++/*
++ * This header byte on a command indicate version 0. Any header byte less
++ * than this means that we are talking to an old EC which doesn't support
++ * versioning. In that case, we assume version 0.
++ *
++ * Header bytes greater than this indicate a later version. For example,
++ * EC_CMD_VERSION0 + 1 means we are using version 1.
++ *
++ * The old EC interface must not use commands 0dc or higher.
++ */
++#define EC_CMD_VERSION0 0xdc
++
++#endif  /* !__ACPI__ */
++
++#endif  /* __CROS_EC_COMMANDS_H */
 -- 
 1.8.1.3
 
