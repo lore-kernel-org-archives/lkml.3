@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751389Ab3BPCx0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 21:53:26 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:44981 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780Ab3BPCxZ (ORCPT
+	id S1751929Ab3BPCx5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 21:53:57 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:64931 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751579Ab3BPCx4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 21:53:25 -0500
-MIME-Version: 1.0
-In-Reply-To: <1360931766.3453.1.camel@phoenix>
-References: <1360931766.3453.1.camel@phoenix>
-Date: Sat, 16 Feb 2013 10:53:25 +0800
-Message-ID: <CAN1soZzxoZsfcrPrW5yjEvrH+cCLgCKL4JpatrSz9t+=JpyqDg@mail.gmail.com>
-Subject: Re: [PATCH] regulator: max8925: Remove unused parameter from max8925_regulator_dt_init
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 15 Feb 2013 21:53:56 -0500
+Message-ID: <1360983229.6332.5.camel@phoenix>
+Subject: [PATCH] regulator: twl: Remove TWL6030_FIXED_RESOURCE
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Tero Kristo <t-kristo@ti.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Date: Sat, 16 Feb 2013 10:53:49 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 15, 2013 at 8:36 PM, Axel Lin <axel.lin@ingics.com> wrote:
-> The info parameter is not used at all, remove it.
->
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> ---
->  drivers/regulator/max8925-regulator.c |    5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/regulator/max8925-regulator.c b/drivers/regulator/max8925-regulator.c
-> index 0d5f64a..3597da8 100644
-> --- a/drivers/regulator/max8925-regulator.c
-> +++ b/drivers/regulator/max8925-regulator.c
-> @@ -246,7 +246,6 @@ static struct max8925_regulator_info max8925_regulator_info[] = {
->
->  #ifdef CONFIG_OF
->  static int max8925_regulator_dt_init(struct platform_device *pdev,
-> -                                   struct max8925_regulator_info *info,
->                                     struct regulator_config *config,
->                                     int ridx)
->  {
-> @@ -272,7 +271,7 @@ static int max8925_regulator_dt_init(struct platform_device *pdev,
->         return 0;
->  }
->  #else
-> -#define max8925_regulator_dt_init(w, x, y, z)  (-1)
-> +#define max8925_regulator_dt_init(x, y, z)     (-1)
->  #endif
->
->  static int max8925_regulator_probe(struct platform_device *pdev)
-> @@ -309,7 +308,7 @@ static int max8925_regulator_probe(struct platform_device *pdev)
->         config.dev = &pdev->dev;
->         config.driver_data = ri;
->
-> -       if (max8925_regulator_dt_init(pdev, ri, &config, regulator_idx))
-> +       if (max8925_regulator_dt_init(pdev, &config, regulator_idx))
->                 if (pdata)
->                         config.init_data = pdata;
->
-> --
-> 1.7.9.5
->
->
->
+TWL6030_FIXED_RESOURCE is not used now, remove it.
 
-Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>
+TWL6030_FIXED_RESOURCE is not used since commit e76ab829cc
+"regulator: twl: Remove references to the twl4030 regulator"
+
+twl6030_fixed_resource is removed by commit 029dd3cef
+"regulator: twl: Remove another unused variable warning".
+
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/twl-regulator.c |   13 -------------
+ 1 file changed, 13 deletions(-)
+
+diff --git a/drivers/regulator/twl-regulator.c b/drivers/regulator/twl-regulator.c
+index 2b3dc5b..611e73e 100644
+--- a/drivers/regulator/twl-regulator.c
++++ b/drivers/regulator/twl-regulator.c
+@@ -936,19 +936,6 @@ static const struct twlreg_info TWLFIXED_INFO_##label = { \
+ 		}, \
+ 	}
+ 
+-#define TWL6030_FIXED_RESOURCE(label, offset, turnon_delay) \
+-static struct twlreg_info TWLRES_INFO_##label = { \
+-	.base = offset, \
+-	.desc = { \
+-		.name = #label, \
+-		.id = TWL6030_REG_##label, \
+-		.ops = &twl6030_fixed_resource, \
+-		.type = REGULATOR_VOLTAGE, \
+-		.owner = THIS_MODULE, \
+-		.enable_time = turnon_delay, \
+-		}, \
+-	}
+-
+ #define TWL6025_ADJUSTABLE_SMPS(label, offset) \
+ static const struct twlreg_info TWLSMPS_INFO_##label = { \
+ 	.base = offset, \
+-- 
+1.7.9.5
+
+
+
