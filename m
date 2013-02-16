@@ -1,54 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751652Ab3BPGS6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 01:18:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8303 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750788Ab3BPGS5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 01:18:57 -0500
-Date: Sat, 16 Feb 2013 14:19:19 +0800
-From: dyoung@redhat.com
-To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: [PATCH]net: ehea module param description fix
-Message-ID: <511f24e7.iqc1+9PTu6xF8JTF%dyoung@redhat.com>
-User-Agent: Heirloom mailx 12.5 7/5/10
+	id S1751741Ab3BPGVN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 01:21:13 -0500
+Received: from mail-da0-f42.google.com ([209.85.210.42]:63769 "EHLO
+	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750788Ab3BPGVL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Feb 2013 01:21:11 -0500
+Message-ID: <511F254D.2010909@gmail.com>
+Date: Sat, 16 Feb 2013 14:21:01 +0800
+From: Ric Mason <ric.masonn@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Joe Perches <joe@perches.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: Re: [PATCHv5 2/8] zsmalloc: add documentation
+References: <1360780731-11708-1-git-send-email-sjenning@linux.vnet.ibm.com> <1360780731-11708-3-git-send-email-sjenning@linux.vnet.ibm.com>
+In-Reply-To: <1360780731-11708-3-git-send-email-sjenning@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In ehea.h the minimal entries is 2^7 - 1:
-#define EHEA_MIN_ENTRIES_QP  127
+On 02/14/2013 02:38 AM, Seth Jennings wrote:
+> This patch adds a documentation file for zsmalloc at
+> Documentation/vm/zsmalloc.txt
+>
+> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> ---
+>   Documentation/vm/zsmalloc.txt |   68 +++++++++++++++++++++++++++++++++++++++++
+>   1 file changed, 68 insertions(+)
+>   create mode 100644 Documentation/vm/zsmalloc.txt
+>
+> diff --git a/Documentation/vm/zsmalloc.txt b/Documentation/vm/zsmalloc.txt
+> new file mode 100644
+> index 0000000..85aa617
+> --- /dev/null
+> +++ b/Documentation/vm/zsmalloc.txt
+> @@ -0,0 +1,68 @@
+> +zsmalloc Memory Allocator
+> +
+> +Overview
+> +
+> +zmalloc a new slab-based memory allocator,
+> +zsmalloc, for storing compressed pages.  It is designed for
+> +low fragmentation and high allocation success rate on
+> +large object, but <= PAGE_SIZE allocations.
+> +
+> +zsmalloc differs from the kernel slab allocator in two primary
+> +ways to achieve these design goals.
+> +
+> +zsmalloc never requires high order page allocations to back
+> +slabs, or "size classes" in zsmalloc terms. Instead it allows
+> +multiple single-order pages to be stitched together into a
+> +"zspage" which backs the slab.  This allows for higher allocation
+> +success rate under memory pressure.
+> +
+> +Also, zsmalloc allows objects to span page boundaries within the
+> +zspage.  This allows for lower fragmentation than could be had
+> +with the kernel slab allocator for objects between PAGE_SIZE/2
+> +and PAGE_SIZE.  With the kernel slab allocator, if a page compresses
+> +to 60% of it original size, the memory savings gained through
+> +compression is lost in fragmentation because another object of
+> +the same size can't be stored in the leftover space.
+> +
+> +This ability to span pages results in zsmalloc allocations not being
+> +directly addressable by the user.  The user is given an
+> +non-dereferencable handle in response to an allocation request.
+> +That handle must be mapped, using zs_map_object(), which returns
+> +a pointer to the mapped region that can be used.  The mapping is
+> +necessary since the object data may reside in two different
+> +noncontigious pages.
 
-Thus change the module param description accordinglly
+Do you mean the reason of  to use a zsmalloc object must map after 
+malloc is object data maybe reside in two different nocontiguous pages?
 
-Signed-off-by: Dave Young <dyoung@redhat.com>
----
- drivers/net/ethernet/ibm/ehea/ehea_main.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+> +
+> +For 32-bit systems, zsmalloc has the added benefit of being
+> +able to back slabs with HIGHMEM pages, something not possible
 
---- linux-2.6.orig/drivers/net/ethernet/ibm/ehea/ehea_main.c
-+++ linux-2.6/drivers/net/ethernet/ibm/ehea/ehea_main.c
-@@ -76,16 +76,16 @@ MODULE_PARM_DESC(msg_level, "msg_level")
- MODULE_PARM_DESC(prop_carrier_state, "Propagate carrier state of physical "
- 		 "port to stack. 1:yes, 0:no.  Default = 0 ");
- MODULE_PARM_DESC(rq3_entries, "Number of entries for Receive Queue 3 "
--		 "[2^x - 1], x = [6..14]. Default = "
-+		 "[2^x - 1], x = [7..14]. Default = "
- 		 __MODULE_STRING(EHEA_DEF_ENTRIES_RQ3) ")");
- MODULE_PARM_DESC(rq2_entries, "Number of entries for Receive Queue 2 "
--		 "[2^x - 1], x = [6..14]. Default = "
-+		 "[2^x - 1], x = [7..14]. Default = "
- 		 __MODULE_STRING(EHEA_DEF_ENTRIES_RQ2) ")");
- MODULE_PARM_DESC(rq1_entries, "Number of entries for Receive Queue 1 "
--		 "[2^x - 1], x = [6..14]. Default = "
-+		 "[2^x - 1], x = [7..14]. Default = "
- 		 __MODULE_STRING(EHEA_DEF_ENTRIES_RQ1) ")");
- MODULE_PARM_DESC(sq_entries, " Number of entries for the Send Queue  "
--		 "[2^x - 1], x = [6..14]. Default = "
-+		 "[2^x - 1], x = [7..14]. Default = "
- 		 __MODULE_STRING(EHEA_DEF_ENTRIES_SQ) ")");
- MODULE_PARM_DESC(use_mcs, " Multiple receive queues, 1: enable, 0: disable, "
- 		 "Default = 1");
+What's the meaning of "back slabs with HIGHMEM pages"?
+
+> +with the kernel slab allocators (SLAB or SLUB).
+> +
+> +Usage:
+> +
+> +#include <linux/zsmalloc.h>
+> +
+> +/* create a new pool */
+> +struct zs_pool *pool = zs_create_pool("mypool", GFP_KERNEL);
+> +
+> +/* allocate a 256 byte object */
+> +unsigned long handle = zs_malloc(pool, 256);
+> +
+> +/*
+> + * Map the object to get a dereferenceable pointer in "read-write mode"
+> + * (see zsmalloc.h for additional modes)
+> + */
+> +void *ptr = zs_map_object(pool, handle, ZS_MM_RW);
+> +
+> +/* do something with ptr */
+> +
+> +/*
+> + * Unmap the object when done dealing with it. You should try to
+> + * minimize the time for which the object is mapped since preemption
+> + * is disabled during the mapped period.
+> + */
+> +zs_unmap_object(pool, handle);
+> +
+> +/* free the object */
+> +zs_free(pool, handle);
+> +
+> +/* destroy the pool */
+> +zs_destroy_pool(pool);
+
