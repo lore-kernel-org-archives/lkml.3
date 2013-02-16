@@ -1,50 +1,432 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751174Ab3BPAjd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 19:39:33 -0500
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:37039 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750762Ab3BPAjc (ORCPT
+	id S1751589Ab3BPAj6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 19:39:58 -0500
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:41299 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751445Ab3BPAjz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 19:39:32 -0500
+	Fri, 15 Feb 2013 19:39:55 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130216000435.GY4503@ZenIV.linux.org.uk>
-References: <20130214053656.GS4503@ZenIV.linux.org.uk> <CA+55aFz1JjGSCdqXpVz3oH-PWFDE3Qdxt3EVxqC2i=nfLqf0Jw@mail.gmail.com>
- <20130215215946.GX4503@ZenIV.linux.org.uk> <CAGDaZ_pMLScoO811es3AZxzAnSiS5ixku-DeuEi4FwX8mNv3cQ@mail.gmail.com>
- <20130216000435.GY4503@ZenIV.linux.org.uk>
-From: Shentino <shentino@gmail.com>
-Date: Fri, 15 Feb 2013 16:38:51 -0800
-Message-ID: <CAGDaZ_rqKR7Ea6SZ9JXmeVOvEBEk3gHaQEa1LAkzWxRHfJsHWw@mail.gmail.com>
-Subject: Re: [RFC] SIGKILL vs. SIGSEGV on late execve() failures
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CAE9FiQX=yLyBV3AbP43N91Tx5-ic-f5f+=_r_RBLxq1Ct32Z_Q@mail.gmail.com>
+References: <CAE9FiQUkmnV_On5+ZpH2pF4Li1HxLpkO8bp4TnYB46=pc9Safg@mail.gmail.com>
+ <1360696283-20313-1-git-send-email-yinghai@kernel.org> <5988763.6WpnEvTV2f@vostro.rjw.lan>
+ <CAE9FiQX=yLyBV3AbP43N91Tx5-ic-f5f+=_r_RBLxq1Ct32Z_Q@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 15 Feb 2013 17:39:34 -0700
+Message-ID: <CAErSpo6x2WXdbO-_qeheQKwqqJ9zze8Z9pnj-wtU0yTJEh-NJg@mail.gmail.com>
+Subject: Re: [PATCH] ACPI, PCI: Get PRT entry during acpi_pci_enable_irq()
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 15, 2013 at 4:04 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> How would you manage to have it masked at that point?  setup_new_exec()
-> is inevitable after success of flush_old_exec() and it will do
-> flush_signal_handlers() for us.
+On Thu, Feb 14, 2013 at 5:50 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Tue, Feb 12, 2013 at 12:22 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> On Tuesday, February 12, 2013 11:11:23 AM Yinghai Lu wrote:
+>>> Peter Hurley found "irq 18 nobody cared" with pci-next, and dmesg has
+>>>
+>>> [    8.983246] pci 0000:00:1e.0: can't derive routing for PCI INT A
+>>> [    8.983600] snd_ctxfi 0000:09:02.0: PCI INT A: no GSI - using ISA IRQ 5
+>>>
+>>> bisect to
+>>> | commit 4f535093cf8f6da8cfda7c36c2c1ecd2e9586ee4
+>>> |     PCI: Put pci_dev in device tree as early as possible
+>>>
+>>> It turns out we need to call acpi_pci_irq_add_prt() after the pci bridges
+>>> are scanned.
+>>>
+>>> Bjorn said:
+>>>  The bus number binding means acpi_pci_irq_add_prt() has to happen
+>>>  after enumerating everything below a bridge, and it will prevent us
+>>>  from doing any bus number reassignment for hotplug.
+>>>
+>>>  I think we should remove the bus numbers from the cached _PRT (or
+>>>  maybe even remove the _PRT caching completely).  When we enable a PCI
+>>>  device's IRQ, we should search up the PCI device tree looking for a
+>>>  _PRT associated with each node, and applying normal PCI bridge
+>>>  swizzling when we don't find a _PRT.  I think this can be done without
+>>>  using PCI bus numbers at all.
+>>>
+>>> So here we try to remove _PRT caching completely.
+>>>
+>>> -v2: check !handle early.
+>>>
+>>> Reported-and-tested-by: Peter Hurley <peter@hurleysoftware.com>
+>>> Suggested-by: Bjorn Helgaas <bhelgaas@google.com>
+>>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>>
+>> Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>>
+>>> ---
+>>>  drivers/acpi/pci_irq.c      |   95 +++++++++++++++++---------------------------
+>>>  drivers/acpi/pci_root.c     |   18 --------
+>>>  drivers/pci/pci-acpi.c      |   24 -----------
+>>>  include/acpi/acpi_drivers.h |    5 --
+>>>  4 files changed, 38 insertions(+), 104 deletions(-)
+>
+> Bjorn,
+>
+> Can you put this one into pci/next?
 
-I wouldn't know for sure but I read somewhere that even if execve
-resets handled signals, it didn't also say that ignored signals were
-also reset.  (Source: execve man page.)
+I'm not sure what this patch is based on or what the best way to merge
+it is.  It doesn't apply cleanly to my next or
+pci/yinghai-root-bus-hotplug branches.
 
-Plus I've always seen "force_sig" instead of "send_sig" for errors
-that can't just be ignored.
+I did apply it manually on top of pci/yinghai-root-bus-hotplug to try
+it out, but we need to tweak the messages a little bit.
 
-Then again I'm a complete n00b at linux hacking so I could very well
-be mistaken.  It just looked funny considering what I'm used to seeing
-in the source.
+Previously we printed "ACPI: PCI Interrupt Routing Table [%s._PRT]"
+once when loading it, which was fine.  Now we print it every time we
+look at a _PRT, which is too much because it isn't really adding any
+information.
 
-I'm hoping this is just me being an idiot and that there's nothing to
-worry about.
+We also print "ACPI Exception: AE_NOT_FOUND, Evaluating _PRT
+[AE_NOT_FOUND] (20121018/pci_irq-259)" if we find ACPI nodes without
+_PRTs, which we shouldn't do, because that's a common and normal
+situation.
 
-> And yes, flush_old_exec() and setup_new_exec() ought to be merged; the
-> problem with that is the stuff done between those two - setting personality,
-> plus playing with thread flags if needed.  Unfortunately, there are non-obvious
-> differences between architectures, so that would have to be hashed out on
-> linux-arch.  Doesn't affect the point above, though...
+Bjorn
+
+>>> Index: linux-2.6/drivers/acpi/pci_irq.c
+>>> ===================================================================
+>>> --- linux-2.6.orig/drivers/acpi/pci_irq.c
+>>> +++ linux-2.6/drivers/acpi/pci_irq.c
+>>> @@ -53,9 +53,6 @@ struct acpi_prt_entry {
+>>>       u32                     index;          /* GSI, or link _CRS index */
+>>>  };
+>>>
+>>> -static LIST_HEAD(acpi_prt_list);
+>>> -static DEFINE_SPINLOCK(acpi_prt_lock);
+>>> -
+>>>  static inline char pin_name(int pin)
+>>>  {
+>>>       return 'A' + pin - 1;
+>>> @@ -65,28 +62,6 @@ static inline char pin_name(int pin)
+>>>                           PCI IRQ Routing Table (PRT) Support
+>>>     -------------------------------------------------------------------------- */
+>>>
+>>> -static struct acpi_prt_entry *acpi_pci_irq_find_prt_entry(struct pci_dev *dev,
+>>> -                                                       int pin)
+>>> -{
+>>> -     struct acpi_prt_entry *entry;
+>>> -     int segment = pci_domain_nr(dev->bus);
+>>> -     int bus = dev->bus->number;
+>>> -     int device = PCI_SLOT(dev->devfn);
+>>> -
+>>> -     spin_lock(&acpi_prt_lock);
+>>> -     list_for_each_entry(entry, &acpi_prt_list, list) {
+>>> -             if ((segment == entry->id.segment)
+>>> -                 && (bus == entry->id.bus)
+>>> -                 && (device == entry->id.device)
+>>> -                 && (pin == entry->pin)) {
+>>> -                     spin_unlock(&acpi_prt_lock);
+>>> -                     return entry;
+>>> -             }
+>>> -     }
+>>> -     spin_unlock(&acpi_prt_lock);
+>>> -     return NULL;
+>>> -}
+>>> -
+>>>  /* http://bugzilla.kernel.org/show_bug.cgi?id=4773 */
+>>>  static const struct dmi_system_id medion_md9580[] = {
+>>>       {
+>>> @@ -184,11 +159,19 @@ static void do_prt_fixups(struct acpi_pr
+>>>       }
+>>>  }
+>>>
+>>> -static int acpi_pci_irq_add_entry(acpi_handle handle, int segment, int bus,
+>>> -                               struct acpi_pci_routing_table *prt)
+>>> +static int acpi_pci_irq_check_entry(acpi_handle handle, struct pci_dev *dev,
+>>> +                               int pin, struct acpi_pci_routing_table *prt,
+>>> +                               struct acpi_prt_entry **entry_ptr)
+>>>  {
+>>> +     int segment = pci_domain_nr(dev->bus);
+>>> +     int bus = dev->bus->number;
+>>> +     int device = PCI_SLOT(dev->devfn);
+>>>       struct acpi_prt_entry *entry;
+>>>
+>>> +     if (((prt->address >> 16) & 0xffff) != device ||
+>>> +         prt->pin + 1 != pin)
+>>> +             return -ENODEV;
+>>> +
+>>>       entry = kzalloc(sizeof(struct acpi_prt_entry), GFP_KERNEL);
+>>>       if (!entry)
+>>>               return -ENOMEM;
+>>> @@ -237,26 +220,33 @@ static int acpi_pci_irq_add_entry(acpi_h
+>>>                             entry->id.device, pin_name(entry->pin),
+>>>                             prt->source, entry->index));
+>>>
+>>> -     spin_lock(&acpi_prt_lock);
+>>> -     list_add_tail(&entry->list, &acpi_prt_list);
+>>> -     spin_unlock(&acpi_prt_lock);
+>>> +     *entry_ptr = entry;
+>>>
+>>>       return 0;
+>>>  }
+>>>
+>>> -int acpi_pci_irq_add_prt(acpi_handle handle, int segment, int bus)
+>>> +static int acpi_pci_irq_find_prt_entry(struct pci_dev *dev,
+>>> +                       int pin, struct acpi_prt_entry **entry_ptr)
+>>>  {
+>>>       acpi_status status;
+>>>       struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
+>>>       struct acpi_pci_routing_table *entry;
+>>> +     acpi_handle handle = NULL;
+>>> +
+>>> +     if (dev->bus->bridge)
+>>> +             handle = ACPI_HANDLE(dev->bus->bridge);
+>>> +
+>>> +     if (!handle)
+>>> +             return -ENODEV;
+>>>
+>>>       /* 'handle' is the _PRT's parent (root bridge or PCI-PCI bridge) */
+>>>       status = acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
+>>>       if (ACPI_FAILURE(status))
+>>>               return -ENODEV;
+>>>
+>>> -     printk(KERN_DEBUG "ACPI: PCI Interrupt Routing Table [%s._PRT]\n",
+>>> -            (char *) buffer.pointer);
+>>> +     dev_printk(KERN_DEBUG, &dev->dev,
+>>> +                     "ACPI: PCI Interrupt Routing Table [%s._PRT]\n",
+>>> +                    (char *) buffer.pointer);
+>>>
+>>>       kfree(buffer.pointer);
+>>>
+>>> @@ -273,7 +263,9 @@ int acpi_pci_irq_add_prt(acpi_handle han
+>>>
+>>>       entry = buffer.pointer;
+>>>       while (entry && (entry->length > 0)) {
+>>> -             acpi_pci_irq_add_entry(handle, segment, bus, entry);
+>>> +             if (!acpi_pci_irq_check_entry(handle, dev, pin,
+>>> +                                              entry, entry_ptr))
+>>> +                     break;
+>>>               entry = (struct acpi_pci_routing_table *)
+>>>                   ((unsigned long)entry + entry->length);
+>>>       }
+>>> @@ -282,23 +274,6 @@ int acpi_pci_irq_add_prt(acpi_handle han
+>>>       return 0;
+>>>  }
+>>>
+>>> -void acpi_pci_irq_del_prt(int segment, int bus)
+>>> -{
+>>> -     struct acpi_prt_entry *entry, *tmp;
+>>> -
+>>> -     printk(KERN_DEBUG
+>>> -            "ACPI: Delete PCI Interrupt Routing Table for %04x:%02x\n",
+>>> -            segment, bus);
+>>> -     spin_lock(&acpi_prt_lock);
+>>> -     list_for_each_entry_safe(entry, tmp, &acpi_prt_list, list) {
+>>> -             if (segment == entry->id.segment && bus == entry->id.bus) {
+>>> -                     list_del(&entry->list);
+>>> -                     kfree(entry);
+>>> -             }
+>>> -     }
+>>> -     spin_unlock(&acpi_prt_lock);
+>>> -}
+>>> -
+>>>  /* --------------------------------------------------------------------------
+>>>                            PCI Interrupt Routing Support
+>>>     -------------------------------------------------------------------------- */
+>>> @@ -359,12 +334,13 @@ static int acpi_reroute_boot_interrupt(s
+>>>
+>>>  static struct acpi_prt_entry *acpi_pci_irq_lookup(struct pci_dev *dev, int pin)
+>>>  {
+>>> -     struct acpi_prt_entry *entry;
+>>> +     struct acpi_prt_entry *entry = NULL;
+>>>       struct pci_dev *bridge;
+>>>       u8 bridge_pin, orig_pin = pin;
+>>> +     int ret;
+>>>
+>>> -     entry = acpi_pci_irq_find_prt_entry(dev, pin);
+>>> -     if (entry) {
+>>> +     ret = acpi_pci_irq_find_prt_entry(dev, pin, &entry);
+>>> +     if (!ret && entry) {
+>>>  #ifdef CONFIG_X86_IO_APIC
+>>>               acpi_reroute_boot_interrupt(dev, entry);
+>>>  #endif /* CONFIG_X86_IO_APIC */
+>>> @@ -373,7 +349,7 @@ static struct acpi_prt_entry *acpi_pci_i
+>>>               return entry;
+>>>       }
+>>>
+>>> -     /*
+>>> +     /*
+>>>        * Attempt to derive an IRQ for this device from a parent bridge's
+>>>        * PCI interrupt routing entry (eg. yenta bridge and add-in card bridge).
+>>>        */
+>>> @@ -393,8 +369,8 @@ static struct acpi_prt_entry *acpi_pci_i
+>>>                       pin = bridge_pin;
+>>>               }
+>>>
+>>> -             entry = acpi_pci_irq_find_prt_entry(bridge, pin);
+>>> -             if (entry) {
+>>> +             ret = acpi_pci_irq_find_prt_entry(bridge, pin, &entry);
+>>> +             if (!ret && entry) {
+>>>                       ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+>>>                                        "Derived GSI for %s INT %c from %s\n",
+>>>                                        pci_name(dev), pin_name(orig_pin),
+>>> @@ -470,6 +446,7 @@ int acpi_pci_irq_enable(struct pci_dev *
+>>>                       dev_warn(&dev->dev, "PCI INT %c: no GSI\n",
+>>>                                pin_name(pin));
+>>>               }
+>>> +
+>>>               return 0;
+>>>       }
+>>>
+>>> @@ -477,6 +454,7 @@ int acpi_pci_irq_enable(struct pci_dev *
+>>>       if (rc < 0) {
+>>>               dev_warn(&dev->dev, "PCI INT %c: failed to register GSI\n",
+>>>                        pin_name(pin));
+>>> +             kfree(entry);
+>>>               return rc;
+>>>       }
+>>>       dev->irq = rc;
+>>> @@ -491,6 +469,7 @@ int acpi_pci_irq_enable(struct pci_dev *
+>>>               (triggering == ACPI_LEVEL_SENSITIVE) ? "level" : "edge",
+>>>               (polarity == ACPI_ACTIVE_LOW) ? "low" : "high", dev->irq);
+>>>
+>>> +     kfree(entry);
+>>>       return 0;
+>>>  }
+>>>
+>>> @@ -513,6 +492,8 @@ void acpi_pci_irq_disable(struct pci_dev
+>>>       else
+>>>               gsi = entry->index;
+>>>
+>>> +     kfree(entry);
+>>> +
+>>>       /*
+>>>        * TBD: It might be worth clearing dev->irq by magic constant
+>>>        * (e.g. PCI_UNDEFINED_IRQ).
+>>> Index: linux-2.6/drivers/acpi/pci_root.c
+>>> ===================================================================
+>>> --- linux-2.6.orig/drivers/acpi/pci_root.c
+>>> +++ linux-2.6/drivers/acpi/pci_root.c
+>>> @@ -413,7 +413,6 @@ static int acpi_pci_root_add(struct acpi
+>>>       acpi_status status;
+>>>       int result;
+>>>       struct acpi_pci_root *root;
+>>> -     acpi_handle handle;
+>>>       struct acpi_pci_driver *driver;
+>>>       u32 flags, base_flags;
+>>>       bool is_osc_granted = false;
+>>> @@ -468,16 +467,6 @@ static int acpi_pci_root_add(struct acpi
+>>>              acpi_device_name(device), acpi_device_bid(device),
+>>>              root->segment, &root->secondary);
+>>>
+>>> -     /*
+>>> -      * PCI Routing Table
+>>> -      * -----------------
+>>> -      * Evaluate and parse _PRT, if exists.
+>>> -      */
+>>> -     status = acpi_get_handle(device->handle, METHOD_NAME__PRT, &handle);
+>>> -     if (ACPI_SUCCESS(status))
+>>> -             result = acpi_pci_irq_add_prt(device->handle, root->segment,
+>>> -                                           root->secondary.start);
+>>> -
+>>>       root->mcfg_addr = acpi_pci_root_get_mcfg_addr(device->handle);
+>>>
+>>>       /*
+>>> @@ -602,7 +591,6 @@ out_del_root:
+>>>       list_del(&root->node);
+>>>       mutex_unlock(&acpi_pci_root_lock);
+>>>
+>>> -     acpi_pci_irq_del_prt(root->segment, root->secondary.start);
+>>>  end:
+>>>       kfree(root);
+>>>       return result;
+>>> @@ -610,8 +598,6 @@ end:
+>>>
+>>>  static void acpi_pci_root_remove(struct acpi_device *device)
+>>>  {
+>>> -     acpi_status status;
+>>> -     acpi_handle handle;
+>>>       struct acpi_pci_root *root = acpi_driver_data(device);
+>>>       struct acpi_pci_driver *driver;
+>>>
+>>> @@ -626,10 +612,6 @@ static void acpi_pci_root_remove(struct
+>>>       device_set_run_wake(root->bus->bridge, false);
+>>>       pci_acpi_remove_bus_pm_notifier(device);
+>>>
+>>> -     status = acpi_get_handle(device->handle, METHOD_NAME__PRT, &handle);
+>>> -     if (ACPI_SUCCESS(status))
+>>> -             acpi_pci_irq_del_prt(root->segment, root->secondary.start);
+>>> -
+>>>       pci_remove_root_bus(root->bus);
+>>>
+>>>       mutex_lock(&acpi_pci_root_lock);
+>>> Index: linux-2.6/drivers/pci/pci-acpi.c
+>>> ===================================================================
+>>> --- linux-2.6.orig/drivers/pci/pci-acpi.c
+>>> +++ linux-2.6/drivers/pci/pci-acpi.c
+>>> @@ -307,25 +307,6 @@ static void pci_acpi_setup(struct device
+>>>       struct pci_dev *pci_dev = to_pci_dev(dev);
+>>>       acpi_handle handle = ACPI_HANDLE(dev);
+>>>       struct acpi_device *adev;
+>>> -     acpi_status status;
+>>> -     acpi_handle dummy;
+>>> -
+>>> -     /*
+>>> -      * Evaluate and parse _PRT, if exists.  This code allows parsing of
+>>> -      * _PRT objects within the scope of non-bridge devices.  Note that
+>>> -      * _PRTs within the scope of a PCI bridge assume the bridge's
+>>> -      * subordinate bus number.
+>>> -      *
+>>> -      * TBD: Can _PRTs exist within the scope of non-bridge PCI devices?
+>>> -      */
+>>> -     status = acpi_get_handle(handle, METHOD_NAME__PRT, &dummy);
+>>> -     if (ACPI_SUCCESS(status)) {
+>>> -             unsigned char bus;
+>>> -
+>>> -             bus = pci_dev->subordinate ?
+>>> -                     pci_dev->subordinate->number : pci_dev->bus->number;
+>>> -             acpi_pci_irq_add_prt(handle, pci_domain_nr(pci_dev->bus), bus);
+>>> -     }
+>>>
+>>>       if (acpi_bus_get_device(handle, &adev) || !adev->wakeup.flags.valid)
+>>>               return;
+>>> @@ -340,7 +321,6 @@ static void pci_acpi_setup(struct device
+>>>
+>>>  static void pci_acpi_cleanup(struct device *dev)
+>>>  {
+>>> -     struct pci_dev *pci_dev = to_pci_dev(dev);
+>>>       acpi_handle handle = ACPI_HANDLE(dev);
+>>>       struct acpi_device *adev;
+>>>
+>>> @@ -349,10 +329,6 @@ static void pci_acpi_cleanup(struct devi
+>>>               device_set_run_wake(dev, false);
+>>>               pci_acpi_remove_pm_notifier(adev);
+>>>       }
+>>> -
+>>> -     if (pci_dev->subordinate)
+>>> -             acpi_pci_irq_del_prt(pci_domain_nr(pci_dev->bus),
+>>> -                                  pci_dev->subordinate->number);
+>>>  }
+>>>
+>>>  static struct acpi_bus_type acpi_pci_bus = {
+>>> Index: linux-2.6/include/acpi/acpi_drivers.h
+>>> ===================================================================
+>>> --- linux-2.6.orig/include/acpi/acpi_drivers.h
+>>> +++ linux-2.6/include/acpi/acpi_drivers.h
+>>> @@ -90,11 +90,6 @@ int acpi_pci_link_allocate_irq(acpi_hand
+>>>                              int *polarity, char **name);
+>>>  int acpi_pci_link_free_irq(acpi_handle handle);
+>>>
+>>> -/* ACPI PCI Interrupt Routing (pci_irq.c) */
+>>> -
+>>> -int acpi_pci_irq_add_prt(acpi_handle handle, int segment, int bus);
+>>> -void acpi_pci_irq_del_prt(int segment, int bus);
+>>> -
+>>>  /* ACPI PCI Device Binding (pci_bind.c) */
+>>>
+>>>  struct pci_bus;
+>> --
+>> I speak only for myself.
+>> Rafael J. Wysocki, Intel Open Source Technology Center.
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
