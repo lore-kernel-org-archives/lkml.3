@@ -1,95 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754889Ab3BPXCd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 18:02:33 -0500
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:45485 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754652Ab3BPXCc (ORCPT
+	id S1754923Ab3BPXD5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 18:03:57 -0500
+Received: from mail-ye0-f179.google.com ([209.85.213.179]:51261 "EHLO
+	mail-ye0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754402Ab3BPXD4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 18:02:32 -0500
+	Sat, 16 Feb 2013 18:03:56 -0500
+X-Greylist: delayed 876 seconds by postgrey-1.27 at vger.kernel.org; Sat, 16 Feb 2013 18:03:56 EST
+Date: Sat, 16 Feb 2013 15:00:10 -0800
+From: Anton Vorontsov <anton@enomsg.org>
+To: Andrea Adami <andrea.adami@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] ARM: sa1100: collie-battery.c: include platform_device.h
+ directly
+Message-ID: <20130216230010.GG1741@lizard.sbx05280.losalca.wayport.net>
+References: <1361038560-3690-1-git-send-email-andrea.adami@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1302161302290.21380@eggly.anvils>
-References: <20130212193901.GA18906@redhat.com> <alpine.LNX.2.00.1302121549500.890@eggly.anvils>
- <20130213004059.GA14451@redhat.com> <alpine.LNX.2.00.1302121652240.1077@eggly.anvils>
- <20130213041629.GA28622@redhat.com> <alpine.LNX.2.00.1302122121170.15020@eggly.anvils>
- <20130213193411.GA15928@redhat.com> <CA+55aFzmEDriX26Z7oJZg9yssFdCAaYwu6krmrwqfj2TBsxA4w@mail.gmail.com>
- <20130215011503.GA11914@redhat.com> <alpine.LNX.2.00.1302141804400.3330@eggly.anvils>
- <CA+55aFyLDnmwy16V8TQRwJV2O51K-dmqBhuWi2ytRd4sYi8J+g@mail.gmail.com> <alpine.LNX.2.00.1302161302290.21380@eggly.anvils>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 16 Feb 2013 15:02:11 -0800
-X-Google-Sender-Auth: ixa6eNXwbtiMTqYwHR9U1TBCZMU
-Message-ID: <CA+55aFwF1qZmPaL5LPA+0ys68s=TF7wfXpb5y9GWi0q5RJDJ-Q@mail.gmail.com>
-Subject: Re: Debugging Thinkpad T430s occasional suspend failure.
-To: Hugh Dickins <hughd@google.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Airlie <airlied@linux.ie>
-Cc: Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Paul McKenney <paul.mckenney@linaro.org>,
-        DRI <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1361038560-3690-1-git-send-email-andrea.adami@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 16, 2013 at 1:45 PM, Hugh Dickins <hughd@google.com> wrote:
->
-> I hacked around on your PM_TRACE set_magic_time() / read_magic_time()
-> yesterday, to save an oopsing core kernel ip there, instead of hashed
-> pm trace info (it makes sense in this case to invert your sequence,
-> putting the high order into years and the low order into minutes).
+Hi Andrea,
 
-That sounds like a good idea in general. The PM_TRACE() thing was done
-to figure out things that locked up the PCI bus etc, but encoding the
-oopses during suspend sounds like a really good idea too.
+On Sat, Feb 16, 2013 at 07:16:00PM +0100, Andrea Adami wrote:
+> Initial try to fix compilation error
 
-Is your patch clean enough to just be made part of the standard
-PM_TRACE infrastructure, or was it something really hacky and one-off?
+Things are a bit more complex...
 
-> Rewarded last night by reboot to Feb 21 14:45:53 2006.  Which is
-> ffffffff812d60ed intel_choose_pipe_bpp_dither.isra.13+0x216/0x2d6
->
-> /home/hugh/3087X/drivers/gpu/drm/i915/intel_display.c:4159
->          * enable dithering as needed, but that costs bandwidth.  So choose
->          * the minimum value that expresses the full color range of the fb but
->          * also stays within the max display bpc discovered above.
->          */
->
->         switch (fb->depth) {
-> ffffffff812d60e9:       48 8b 55 c0             mov    -0x40(%rbp),%rdx
-> ffffffff812d60ed:       8b 02                   mov    (%rdx),%eax
->
-> (gcc chose to pass a pointer to fb->depth down to the function,
-> instead of fb itself, since that is the only use of it there.)
->
-> I expect that fb is NULL; but with an average of one failure to resume
-> per day, and ~26 bits of info per crash, this is not a fast procedure!
->
-> I notice that intel_pipe_set_base() allows for NULL fb,
-> so I'm currently running with the oops-in-rtc hackery, plus
-> -       switch (fb->depth) {
-> +       if (WARN_ON(!fb))
-> +               bpc = 8;
-> +       else switch (fb->depth) {
->
-> There's been a fair bit of change to intel_display.c since 3.7 (if
-> my 3.7 was indeed good), mainly splitting intel_ into haswell_ versus
-> ironlake_, but I've not yet spotted anything obvious; nor yet looked
-> to see where fb would originate from anyway.
->
-> Once I've got just a little more info out of it, I'll start another
-> thread addressed principally to the drm/gpu/i915 guys.
+> linux/include/linux/mfd/mcp.h:22:16: error: field 'attached_device' has incomplete type
 
-I think it's worth it to give them a heads-up already. So I've cc'd
-the main suspects here..
+You have to add #include <linux/device.h> into mfd/mcp.h. This will add
+struct device and...
 
-Daniel, Dave - any comments about a NULL fb in
-intel_choose_pipe_bpp_dither() during either suspend or resume? Some
-googling shows this:
+> linux/include/linux/mfd/mcp.h:48:23: error: field 'drv' has incomplete type
 
-    https://bugzilla.redhat.com/show_bug.cgi?id=895123
+struct device_driver.
 
-which sounds remarkably similar, and is also during a suspend attempt
-(but apparently Satish got a full oops out).. Some timing race with a
-worker entry?
+> linux/include/linux/mfd/ucb1x00.h:137:17: error: field 'dev' has incomplete type
 
-                        Linus
+Same here, the file ucb1x00.h needs #include <linux/device.h>.
+
+> linux/drivers/power/collie_battery.c:290:56: error: unknown type name 'pm_message_t'
+
+#include <linux/pm.h> into collie_battery.c
+
+Thanks,
+
+Anton
+
+> linux/drivers/power/collie_battery.c:371:13: error: 'collie_bat_suspend' undeclared here (not in a function)
+> | make[4]: *** [drivers/power/collie_battery.o] Error 1
+> | make[3]: *** [drivers/power] Error 2
+> 
+> As seen in Arnd Bergmann patches on LAKML
+> [PATCH 7/9] ARM defconfigs: add missing inclusions of linux/platform_device.h
+> [PATCH 1/9] ARM: sa1100/assabet: include platform_device.h directly
+> 
+> Compilation is still not clean, two warnings:
+> linux/drivers/power/collie_battery.c:372:2: warning: initialization from incompatible pointer type [enabled by default]
+> linux/drivers/power/collie_battery.c:372:2: warning: (near initialization for 'collie_bat_driver.suspend') [enabled by default]
+> 
+> Signed-off-by: Andrea Adami <andrea.adami@gmail.com>
+> ---
+>  drivers/power/collie_battery.c            |      1 +
+>  drivers/video/logo/logo_linux_clut224.ppm | 232006 ++++++++++++++++++++++++++-
+>  2 files changed, 230404 insertions(+), 1603 deletions(-)
+> 
+> diff --git a/drivers/power/collie_battery.c b/drivers/power/collie_battery.c
+> index c58d0e3..52cbab3 100644
+> --- a/drivers/power/collie_battery.c
+> +++ b/drivers/power/collie_battery.c
+> @@ -14,6 +14,7 @@
+>  #include <linux/module.h>
+>  #include <linux/power_supply.h>
+>  #include <linux/delay.h>
+> +#include <linux/platform_device.h>
+
+I don't see anywhere in the driver which would need platform_device.h...
+But pm.h, yes.
+
+>  #include <linux/spinlock.h>
+>  #include <linux/interrupt.h>
+>  #include <linux/gpio.h>
+> -- 
+> 1.7.12.4
