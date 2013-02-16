@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752792Ab3BPIhS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 03:37:18 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:58285 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751399Ab3BPIhO (ORCPT
+	id S1752832Ab3BPIh0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 03:37:26 -0500
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:61111 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751399Ab3BPIhT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 03:37:14 -0500
+	Sat, 16 Feb 2013 03:37:19 -0500
 From: Robert Berger <git.rber@gmail.com>
 To: devel@driverdev.osuosl.org, konrad.wilk@oracle.com
 Cc: gregkh@linuxfoundation.org, sjenning@linux.vnet.ibm.com,
         xiaoguangrong@linux.vnet.ibm.com, minchan@kernel.org,
         linux-kernel@vger.kernel.org, joe@perches.com, git.rber@gmail.com,
         Robert Berger <rber.git@ReliableEmbeddedSystems.com>
-Subject: [PATCH 2/4] staging/zache BUILD_MODNAME and checkpatch fixes
-Date: Sat, 16 Feb 2013 10:35:52 +0200
-Message-Id: <1361003754-22512-3-git-send-email-rber.git@ReliableEmbeddedSystems.com>
+Subject: [PATCH 4/4] staging/zcache KBUILD_MODNAME instead of "ramster: "
+Date: Sat, 16 Feb 2013 10:35:54 +0200
+Message-Id: <1361003754-22512-5-git-send-email-rber.git@ReliableEmbeddedSystems.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1361003754-22512-1-git-send-email-rber.git@ReliableEmbeddedSystems.com>
 References: <git.rber@gmail.com>
@@ -24,306 +24,177 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As per Joe's suggestion:
-"Perhaps it'd be better to use KBUILD_MODNAME all the time
-instead of adding the prefix. Also, to me mixing "ramster: "
-and "zcache: " for the prefixes is odd. Just using zcache
-all the time would be simpler, so remove namestr too."
-
-checkpatch fixes:
-zcache-main.c:1987: WARNING: quoted string split across lines
-zcache-main.c:2002: WARNING: quoted string split across lines
 
 Signed-off-by: Robert Berger <rber.git@ReliableEmbeddedSystems.com>
 ---
- drivers/staging/zcache/zcache-main.c |  137 ++++++++++++++++------------------
- 1 file changed, 65 insertions(+), 72 deletions(-)
+ drivers/staging/zcache/ramster/tcp.c |   36 ++++++++++++++++++----------------
+ 1 file changed, 19 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-index 4456ab4..5cf9322 100644
---- a/drivers/staging/zcache/zcache-main.c
-+++ b/drivers/staging/zcache/zcache-main.c
-@@ -12,6 +12,8 @@
-  * be "reclaimed" efficiently.
+diff --git a/drivers/staging/zcache/ramster/tcp.c b/drivers/staging/zcache/ramster/tcp.c
+index aa2a1a7..9ba279a 100644
+--- a/drivers/staging/zcache/ramster/tcp.c
++++ b/drivers/staging/zcache/ramster/tcp.c
+@@ -53,6 +53,8 @@
+  * and only accepts the connection if the higher numbered node is heartbeating.
   */
  
 +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 +
- #include <linux/module.h>
- #include <linux/cpu.h>
- #include <linux/highmem.h>
-@@ -67,7 +69,6 @@ static int disable_cleancache __read_mostly;
- static int disable_frontswap __read_mostly;
- static int disable_frontswap_ignore_nonactive __read_mostly;
- static int disable_cleancache_ignore_nonactive __read_mostly;
--static char *namestr __read_mostly = "zcache";
+ #include <linux/kernel.h>
+ #include <linux/jiffies.h>
+ #include <linux/slab.h>
+@@ -541,7 +543,7 @@ static void r2net_set_nn_state(struct r2net_node *nn,
+ 	}
  
- #define ZCACHE_GFP_MASK \
- 	(__GFP_FS | __GFP_NORETRY | __GFP_NOWARN | __GFP_NOMEMALLOC)
-@@ -262,64 +263,64 @@ static int zcache_debugfs_init(void)
- /* developers can call this in case of ooms, e.g. to find memory leaks */
- void zcache_dump(void)
- {
--	pr_info("zcache: obj_count=%lu\n", zcache_obj_count);
--	pr_info("zcache: obj_count_max=%lu\n", zcache_obj_count_max);
--	pr_info("zcache: objnode_count=%lu\n", zcache_objnode_count);
--	pr_info("zcache: objnode_count_max=%lu\n", zcache_objnode_count_max);
--	pr_info("zcache: flush_total=%lu\n", zcache_flush_total);
--	pr_info("zcache: flush_found=%lu\n", zcache_flush_found);
--	pr_info("zcache: flobj_total=%lu\n", zcache_flobj_total);
--	pr_info("zcache: flobj_found=%lu\n", zcache_flobj_found);
--	pr_info("zcache: failed_eph_puts=%lu\n", zcache_failed_eph_puts);
--	pr_info("zcache: failed_pers_puts=%lu\n", zcache_failed_pers_puts);
--	pr_info("zcache: failed_get_free_pages=%lu\n",
-+	pr_info("obj_count=%lu\n", zcache_obj_count);
-+	pr_info("obj_count_max=%lu\n", zcache_obj_count_max);
-+	pr_info("objnode_count=%lu\n", zcache_objnode_count);
-+	pr_info("objnode_count_max=%lu\n", zcache_objnode_count_max);
-+	pr_info("flush_total=%lu\n", zcache_flush_total);
-+	pr_info("flush_found=%lu\n", zcache_flush_found);
-+	pr_info("flobj_total=%lu\n", zcache_flobj_total);
-+	pr_info("flobj_found=%lu\n", zcache_flobj_found);
-+	pr_info("failed_eph_puts=%lu\n", zcache_failed_eph_puts);
-+	pr_info("failed_pers_puts=%lu\n", zcache_failed_pers_puts);
-+	pr_info("failed_get_free_pages=%lu\n",
- 				zcache_failed_getfreepages);
--	pr_info("zcache: failed_alloc=%lu\n", zcache_failed_alloc);
--	pr_info("zcache: put_to_flush=%lu\n", zcache_put_to_flush);
--	pr_info("zcache: compress_poor=%lu\n", zcache_compress_poor);
--	pr_info("zcache: mean_compress_poor=%lu\n",
-+	pr_info("failed_alloc=%lu\n", zcache_failed_alloc);
-+	pr_info("put_to_flush=%lu\n", zcache_put_to_flush);
-+	pr_info("compress_poor=%lu\n", zcache_compress_poor);
-+	pr_info("mean_compress_poor=%lu\n",
- 				zcache_mean_compress_poor);
--	pr_info("zcache: eph_ate_tail=%lu\n", zcache_eph_ate_tail);
--	pr_info("zcache: eph_ate_tail_failed=%lu\n",
-+	pr_info("eph_ate_tail=%lu\n", zcache_eph_ate_tail);
-+	pr_info("eph_ate_tail_failed=%lu\n",
- 				zcache_eph_ate_tail_failed);
--	pr_info("zcache: pers_ate_eph=%lu\n", zcache_pers_ate_eph);
--	pr_info("zcache: pers_ate_eph_failed=%lu\n",
-+	pr_info("pers_ate_eph=%lu\n", zcache_pers_ate_eph);
-+	pr_info("pers_ate_eph_failed=%lu\n",
- 				zcache_pers_ate_eph_failed);
--	pr_info("zcache: evicted_eph_zpages=%lu\n", zcache_evicted_eph_zpages);
--	pr_info("zcache: evicted_eph_pageframes=%lu\n",
-+	pr_info("evicted_eph_zpages=%lu\n", zcache_evicted_eph_zpages);
-+	pr_info("evicted_eph_pageframes=%lu\n",
- 				zcache_evicted_eph_pageframes);
--	pr_info("zcache: eph_pageframes=%lu\n", zcache_eph_pageframes);
--	pr_info("zcache: eph_pageframes_max=%lu\n", zcache_eph_pageframes_max);
--	pr_info("zcache: pers_pageframes=%lu\n", zcache_pers_pageframes);
--	pr_info("zcache: pers_pageframes_max=%lu\n",
-+	pr_info("eph_pageframes=%lu\n", zcache_eph_pageframes);
-+	pr_info("eph_pageframes_max=%lu\n", zcache_eph_pageframes_max);
-+	pr_info("pers_pageframes=%lu\n", zcache_pers_pageframes);
-+	pr_info("pers_pageframes_max=%lu\n",
- 				zcache_pers_pageframes_max);
--	pr_info("zcache: eph_zpages=%lu\n", zcache_eph_zpages);
--	pr_info("zcache: eph_zpages_max=%lu\n", zcache_eph_zpages_max);
--	pr_info("zcache: pers_zpages=%lu\n", zcache_pers_zpages);
--	pr_info("zcache: pers_zpages_max=%lu\n", zcache_pers_zpages_max);
--	pr_info("zcache: last_active_file_pageframes=%lu\n",
-+	pr_info("eph_zpages=%lu\n", zcache_eph_zpages);
-+	pr_info("eph_zpages_max=%lu\n", zcache_eph_zpages_max);
-+	pr_info("pers_zpages=%lu\n", zcache_pers_zpages);
-+	pr_info("pers_zpages_max=%lu\n", zcache_pers_zpages_max);
-+	pr_info("last_active_file_pageframes=%lu\n",
- 				zcache_last_active_file_pageframes);
--	pr_info("zcache: last_inactive_file_pageframes=%lu\n",
-+	pr_info("last_inactive_file_pageframes=%lu\n",
- 				zcache_last_inactive_file_pageframes);
--	pr_info("zcache: last_active_anon_pageframes=%lu\n",
-+	pr_info("last_active_anon_pageframes=%lu\n",
- 				zcache_last_active_anon_pageframes);
--	pr_info("zcache: last_inactive_anon_pageframes=%lu\n",
-+	pr_info("last_inactive_anon_pageframes=%lu\n",
- 				zcache_last_inactive_anon_pageframes);
--	pr_info("zcache: eph_nonactive_puts_ignored=%lu\n",
-+	pr_info("eph_nonactive_puts_ignored=%lu\n",
- 				zcache_eph_nonactive_puts_ignored);
--	pr_info("zcache: pers_nonactive_puts_ignored=%lu\n",
-+	pr_info("pers_nonactive_puts_ignored=%lu\n",
- 				zcache_pers_nonactive_puts_ignored);
--	pr_info("zcache: eph_zbytes=%llu\n",
-+	pr_info("eph_zbytes=%llu\n",
- 				(unsigned long long)zcache_eph_zbytes);
--	pr_info("zcache: eph_zbytes_max=%llu\n",
-+	pr_info("eph_zbytes_max=%llu\n",
- 				(unsigned long long)zcache_eph_zbytes_max);
--	pr_info("zcache: pers_zbytes=%llu\n",
-+	pr_info("pers_zbytes=%llu\n",
- 				(unsigned long long)zcache_pers_zbytes);
--	pr_info("zcache: pers_zbytes_max=%llu\n",
-+	pr_info("pers_zbytes_max=%llu\n",
- 				(unsigned long long)zcache_pers_zbytes_max);
--	pr_info("zcache: outstanding_writeback_pages=%lu\n",
-+	pr_info("outstanding_writeback_pages=%lu\n",
- 				zcache_outstanding_writeback_pages);
--	pr_info("zcache: writtenback_pages=%lu\n", zcache_writtenback_pages);
-+	pr_info("writtenback_pages=%lu\n", zcache_writtenback_pages);
- }
+ 	if (was_valid && !valid) {
+-		pr_notice("ramster: No longer connected to " SC_NODEF_FMT "\n",
++		pr_notice("No longer connected to " SC_NODEF_FMT "\n",
+ 			old_sc->sc_node->nd_name, old_sc->sc_node->nd_num,
+ 			&old_sc->sc_node->nd_ipv4_address,
+ 			ntohs(old_sc->sc_node->nd_ipv4_port));
+@@ -550,7 +552,7 @@ static void r2net_set_nn_state(struct r2net_node *nn,
+ 
+ 	if (!was_valid && valid) {
+ 		cancel_delayed_work(&nn->nn_connect_expired);
+-		pr_notice("ramster: %s " SC_NODEF_FMT "\n",
++		pr_notice("%s " SC_NODEF_FMT "\n",
+ 		       r2nm_this_node() > sc->sc_node->nd_num ?
+ 		       "Connected to" : "Accepted connection from",
+ 		       sc->sc_node->nd_name, sc->sc_node->nd_num,
+@@ -643,7 +645,7 @@ static void r2net_state_change(struct sock *sk)
+ 		r2net_sc_queue_work(sc, &sc->sc_connect_work);
+ 		break;
+ 	default:
+-		pr_info("ramster: Connection to "
++		pr_info("Connection to "
+ 			SC_NODEF_FMT " shutdown, state %d\n",
+ 			sc->sc_node->nd_name, sc->sc_node->nd_num,
+ 			&sc->sc_node->nd_ipv4_address,
+@@ -1395,7 +1397,7 @@ static int r2net_check_handshake(struct r2net_sock_container *sc)
+ 	struct r2net_node *nn = r2net_nn_from_num(sc->sc_node->nd_num);
+ 
+ 	if (hand->protocol_version != cpu_to_be64(R2NET_PROTOCOL_VERSION)) {
+-		pr_notice("ramster: " SC_NODEF_FMT " Advertised net "
++		pr_notice(" " SC_NODEF_FMT " Advertised net "
+ 		       "protocol version %llu but %llu is required. "
+ 		       "Disconnecting.\n", sc->sc_node->nd_name,
+ 			sc->sc_node->nd_num, &sc->sc_node->nd_ipv4_address,
+@@ -1415,7 +1417,7 @@ static int r2net_check_handshake(struct r2net_sock_container *sc)
+ 	 */
+ 	if (be32_to_cpu(hand->r2net_idle_timeout_ms) !=
+ 				r2net_idle_timeout()) {
+-		pr_notice("ramster: " SC_NODEF_FMT " uses a network "
++		pr_notice(" " SC_NODEF_FMT " uses a network "
+ 		       "idle timeout of %u ms, but we use %u ms locally. "
+ 		       "Disconnecting.\n", sc->sc_node->nd_name,
+ 			sc->sc_node->nd_num, &sc->sc_node->nd_ipv4_address,
+@@ -1428,7 +1430,7 @@ static int r2net_check_handshake(struct r2net_sock_container *sc)
+ 
+ 	if (be32_to_cpu(hand->r2net_keepalive_delay_ms) !=
+ 			r2net_keepalive_delay()) {
+-		pr_notice("ramster: " SC_NODEF_FMT " uses a keepalive "
++		pr_notice(" " SC_NODEF_FMT " uses a keepalive "
+ 		       "delay of %u ms, but we use %u ms locally. "
+ 		       "Disconnecting.\n", sc->sc_node->nd_name,
+ 			sc->sc_node->nd_num, &sc->sc_node->nd_ipv4_address,
+@@ -1441,7 +1443,7 @@ static int r2net_check_handshake(struct r2net_sock_container *sc)
+ 
+ 	if (be32_to_cpu(hand->r2hb_heartbeat_timeout_ms) !=
+ 			R2HB_MAX_WRITE_TIMEOUT_MS) {
+-		pr_notice("ramster: " SC_NODEF_FMT " uses a heartbeat "
++		pr_notice(" " SC_NODEF_FMT " uses a heartbeat "
+ 		       "timeout of %u ms, but we use %u ms locally. "
+ 		       "Disconnecting.\n", sc->sc_node->nd_name,
+ 			sc->sc_node->nd_num, &sc->sc_node->nd_ipv4_address,
+@@ -1669,7 +1671,7 @@ static void r2net_idle_timer(unsigned long data)
+ 	unsigned long msecs = r2net_idle_timeout();
  #endif
  
-@@ -923,8 +924,7 @@ static int zcache_cpu_notifier(struct notifier_block *nb,
- 	case CPU_UP_PREPARE:
- 		ret = zcache_comp_cpu_up(cpu);
- 		if (ret != NOTIFY_OK) {
--			pr_err("%s: can't allocate compressor xform\n",
--				namestr);
-+			pr_err("can't allocate compressor xform\n");
- 			return ret;
- 		}
- 		per_cpu(zcache_dstmem, cpu) = (void *)__get_free_pages(
-@@ -1401,8 +1401,7 @@ int zcache_get_page(int cli_id, int pool_id, struct tmem_oid *oidp,
- 		zcache_put_pool(pool);
- 	}
- 	WARN_ONCE((!is_ephemeral(pool) && (ret != 0)),
--			"zcache_get fails on persistent pool, "
--			"bad things are very likely to happen soon\n");
-+	"zcache_get fails on persistent pool, bad things are very likely to happen soon\n");
- #ifdef RAMSTER_TESTING
- 	if (ret != 0 && ret != -1 && !(ret == -EINVAL && is_ephemeral(pool)))
- 		pr_err("TESTING zcache_get tmem_get returns ret=%d\n", ret);
-@@ -1484,10 +1483,9 @@ static int zcache_client_destroy_pool(int cli_id, int pool_id)
- 	local_bh_enable();
- 	kfree(pool);
- 	if (cli_id == LOCAL_CLIENT)
--		pr_info("%s: destroyed local pool id=%d\n", namestr, pool_id);
-+		pr_info("destroyed local pool id=%d\n", pool_id);
- 	else
--		pr_info("%s: destroyed pool id=%d, client=%d\n",
--				namestr, pool_id, cli_id);
-+		pr_info("destroyed pool id=%d, client=%d\n", pool_id, cli_id);
- out:
- 	return ret;
- }
-@@ -1513,7 +1511,7 @@ int zcache_new_pool(uint16_t cli_id, uint32_t flags)
- 		if (cli->tmem_pools[poolid] == NULL)
- 			break;
- 	if (poolid >= MAX_POOLS_PER_CLIENT) {
--		pr_info("%s: pool creation failed: max exceeded\n", namestr);
-+		pr_info("pool creation failed: max exceeded\n");
- 		kfree(pool);
- 		poolid = -1;
- 		goto out;
-@@ -1524,11 +1522,11 @@ int zcache_new_pool(uint16_t cli_id, uint32_t flags)
- 	tmem_new_pool(pool, flags);
- 	cli->tmem_pools[poolid] = pool;
- 	if (cli_id == LOCAL_CLIENT)
--		pr_info("%s: created %s local tmem pool, id=%d\n", namestr,
-+		pr_info("created %s local tmem pool, id=%d\n",
- 			flags & TMEM_POOL_PERSIST ? "persistent" : "ephemeral",
- 			poolid);
- 	else
--		pr_info("%s: created %s tmem pool, id=%d, client=%d\n", namestr,
-+		pr_info("created %s tmem pool, id=%d, client=%d\n",
- 			flags & TMEM_POOL_PERSIST ? "persistent" : "ephemeral",
- 			poolid, cli_id);
- out:
-@@ -1588,8 +1586,8 @@ int zcache_autocreate_pool(unsigned int cli_id, unsigned int pool_id, bool eph)
- 	pool->pool_id = pool_id;
- 	tmem_new_pool(pool, flags);
- 	cli->tmem_pools[pool_id] = pool;
--	pr_info("%s: AUTOcreated %s tmem poolid=%d, for remote client=%d\n",
--		namestr, flags & TMEM_POOL_PERSIST ? "persistent" : "ephemeral",
-+	pr_info("AUTOcreated %s tmem poolid=%d, for remote client=%d\n",
-+		flags & TMEM_POOL_PERSIST ? "persistent" : "ephemeral",
- 		pool_id, cli_id);
- 	ret = 0;
- out:
-@@ -1914,8 +1912,7 @@ static int __init zcache_comp_init(void)
- 	if (*zcache_comp_name != '\0') {
- 		ret = crypto_has_comp(zcache_comp_name, 0, 0);
- 		if (!ret)
--			pr_info("zcache: %s not supported\n",
--					zcache_comp_name);
-+			pr_info("%s not supported\n", zcache_comp_name);
- 	}
- 	if (!ret)
- 		strcpy(zcache_comp_name, "lzo");
-@@ -1924,7 +1921,7 @@ static int __init zcache_comp_init(void)
- 		ret = 1;
- 		goto out;
- 	}
--	pr_info("zcache: using %s compressor\n", zcache_comp_name);
-+	pr_info("using %s compressor\n", zcache_comp_name);
+-	pr_notice("ramster: Connection to " SC_NODEF_FMT " has been "
++	pr_notice("Connection to " SC_NODEF_FMT " has been "
+ 	       "idle for %lu.%lu secs, shutting it down.\n",
+ 		sc->sc_node->nd_name, sc->sc_node->nd_num,
+ 		&sc->sc_node->nd_ipv4_address, ntohs(sc->sc_node->nd_ipv4_port),
+@@ -1805,7 +1807,7 @@ static void r2net_start_connect(struct work_struct *work)
  
- 	/* alloc percpu transforms */
- 	ret = 0;
-@@ -1940,7 +1937,6 @@ static int __init zcache_init(void)
- 	int ret = 0;
- 
- 	if (ramster_enabled) {
--		namestr = "ramster";
- 		ramster_register_pamops(&zcache_pamops);
- 	}
- #ifdef CONFIG_DEBUG_FS
-@@ -1953,13 +1949,12 @@ static int __init zcache_init(void)
- 		tmem_register_pamops(&zcache_pamops);
- 		ret = register_cpu_notifier(&zcache_cpu_notifier_block);
- 		if (ret) {
--			pr_err("%s: can't register cpu notifier\n", namestr);
-+			pr_err("can't register cpu notifier\n");
- 			goto out;
- 		}
- 		ret = zcache_comp_init();
- 		if (ret) {
--			pr_err("%s: compressor initialization failed\n",
--				namestr);
-+			pr_err("compressor initialization failed\n");
- 			goto out;
- 		}
- 		for_each_online_cpu(cpu) {
-@@ -1974,7 +1969,7 @@ static int __init zcache_init(void)
- 				sizeof(struct tmem_obj), 0, 0, NULL);
- 	ret = zcache_new_client(LOCAL_CLIENT);
+ out:
  	if (ret) {
--		pr_err("%s: can't create client\n", namestr);
-+		pr_err("can't create client\n");
+-		pr_notice("ramster: Connect attempt to " SC_NODEF_FMT
++		pr_notice("Connect attempt to " SC_NODEF_FMT
+ 		       " failed with errno %d\n", sc->sc_node->nd_name,
+ 			sc->sc_node->nd_num, &sc->sc_node->nd_ipv4_address,
+ 			ntohs(sc->sc_node->nd_ipv4_port), ret);
+@@ -1831,7 +1833,7 @@ static void r2net_connect_expired(struct work_struct *work)
+ 
+ 	spin_lock(&nn->nn_lock);
+ 	if (!nn->nn_sc_valid) {
+-		pr_notice("ramster: No connection established with "
++		pr_notice("No connection established with "
+ 		       "node %u after %u.%u seconds, giving up.\n",
+ 		     r2net_num_from_nn(nn),
+ 		     r2net_idle_timeout() / 1000,
+@@ -1967,7 +1969,7 @@ static int r2net_accept_one(struct socket *sock)
+ 
+ 	node = r2nm_get_node_by_ip(sin.sin_addr.s_addr);
+ 	if (node == NULL) {
+-		pr_notice("ramster: Attempt to connect from unknown "
++		pr_notice("Attempt to connect from unknown "
+ 		       "node at %pI4:%d\n", &sin.sin_addr.s_addr,
+ 		       ntohs(sin.sin_port));
+ 		ret = -EINVAL;
+@@ -1976,7 +1978,7 @@ static int r2net_accept_one(struct socket *sock)
+ 
+ 	if (r2nm_this_node() >= node->nd_num) {
+ 		local_node = r2nm_get_node_by_num(r2nm_this_node());
+-		pr_notice("ramster: Unexpected connect attempt seen "
++		pr_notice("Unexpected connect attempt seen "
+ 		       "at node '%s' (%u, %pI4:%d) from node '%s' (%u, "
+ 		       "%pI4:%d)\n", local_node->nd_name, local_node->nd_num,
+ 		       &(local_node->nd_ipv4_address),
+@@ -2006,7 +2008,7 @@ static int r2net_accept_one(struct socket *sock)
+ 		ret = 0;
+ 	spin_unlock(&nn->nn_lock);
+ 	if (ret) {
+-		pr_notice("ramster: Attempt to connect from node '%s' "
++		pr_notice("Attempt to connect from node '%s' "
+ 		       "at %pI4:%d but it already has an open connection\n",
+ 		       node->nd_name, &sin.sin_addr.s_addr,
+ 		       ntohs(sin.sin_port));
+@@ -2089,7 +2091,7 @@ static int r2net_open_listening_sock(__be32 addr, __be16 port)
+ 
+ 	ret = sock_create(PF_INET, SOCK_STREAM, IPPROTO_TCP, &sock);
+ 	if (ret < 0) {
+-		pr_err("ramster: Error %d while creating socket\n", ret);
++		pr_err("Error %d while creating socket\n", ret);
  		goto out;
  	}
- 	zbud_init();
-@@ -1983,14 +1978,13 @@ static int __init zcache_init(void)
  
- 		register_shrinker(&zcache_shrinker);
- 		old_ops = zcache_cleancache_register_ops();
--		pr_info("%s: cleancache enabled using kernel transcendent "
--			"memory and compression buddies\n", namestr);
-+		pr_info("cleancache enabled using kernel transcendent memory and compression buddies\n");
- #ifdef ZCACHE_DEBUG
--		pr_info("%s: cleancache: ignorenonactive = %d\n",
--			namestr, !disable_cleancache_ignore_nonactive);
-+		pr_info("cleancache: ignorenonactive = %d\n",
-+			!disable_cleancache_ignore_nonactive);
- #endif
- 		if (old_ops.init_fs != NULL)
--			pr_warn("%s: cleancache_ops overridden\n", namestr);
-+			pr_warn("cleancache_ops overridden\n");
+@@ -2106,14 +2108,14 @@ static int r2net_open_listening_sock(__be32 addr, __be16 port)
+ 	sock->sk->sk_reuse = /* SK_CAN_REUSE FIXME FOR 3.4 */ 1;
+ 	ret = sock->ops->bind(sock, (struct sockaddr *)&sin, sizeof(sin));
+ 	if (ret < 0) {
+-		pr_err("ramster: Error %d while binding socket at %pI4:%u\n",
++		pr_err("Error %d while binding socket at %pI4:%u\n",
+ 			ret, &addr, ntohs(port));
+ 		goto out;
  	}
- 	if (zcache_enabled && !disable_frontswap) {
- 		struct frontswap_ops old_ops;
-@@ -1998,15 +1992,14 @@ static int __init zcache_init(void)
- 		old_ops = zcache_frontswap_register_ops();
- 		if (frontswap_has_exclusive_gets)
- 			frontswap_tmem_exclusive_gets(true);
--		pr_info("%s: frontswap enabled using kernel transcendent "
--			"memory and compression buddies\n", namestr);
-+		pr_info("frontswap enabled using kernel transcendent memory and compression buddies\n");
- #ifdef ZCACHE_DEBUG
--		pr_info("%s: frontswap: excl gets = %d active only = %d\n",
--			namestr, frontswap_has_exclusive_gets,
-+		pr_info("frontswap: excl gets = %d active only = %d\n",
-+			frontswap_has_exclusive_gets,
- 			!disable_frontswap_ignore_nonactive);
- #endif
- 		if (old_ops.init != NULL)
--			pr_warn("%s: frontswap_ops overridden\n", namestr);
-+			pr_warn("frontswap_ops overridden\n");
- 	}
- 	if (ramster_enabled)
- 		ramster_init(!disable_cleancache, !disable_frontswap,
+ 
+ 	ret = sock->ops->listen(sock, 64);
+ 	if (ret < 0)
+-		pr_err("ramster: Error %d while listening on %pI4:%u\n",
++		pr_err("Error %d while listening on %pI4:%u\n",
+ 		       ret, &addr, ntohs(port));
+ 
+ out:
+@@ -2193,7 +2195,7 @@ void r2net_hb_node_up_manual(int node_num)
+ {
+ 	struct r2nm_node dummy;
+ 	if (r2nm_single_cluster == NULL)
+-		pr_err("ramster: cluster not alive, node_up_manual ignored\n");
++		pr_err("cluster not alive, node_up_manual ignored\n");
+ 	else {
+ 		r2hb_manual_set_node_heartbeating(node_num);
+ 		r2net_hb_node_up_cb(&dummy, node_num, NULL);
 -- 
 1.7.9.5
 
