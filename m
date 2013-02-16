@@ -1,146 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab3BPWYy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 17:24:54 -0500
-Received: from mail.ispras.ru ([83.149.199.43]:42129 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754617Ab3BPWYx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 17:24:53 -0500
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
-Subject: [PATCH] tty: mxser: improve error handling in mxser_probe() and mxser_module_init()
-Date: Sun, 17 Feb 2013 02:24:37 +0400
-Message-Id: <1361053477-17102-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.7.9.5
+	id S1754953Ab3BPWzA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 17:55:00 -0500
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:39869 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754858Ab3BPWy7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Feb 2013 17:54:59 -0500
+MIME-Version: 1.0
+In-Reply-To: <201302162221.32799.arnd@arndb.de>
+References: <1360952512-971558-1-git-send-email-arnd@arndb.de>
+	<201302161400.29064.arnd@arndb.de>
+	<CAHp75VfL0cQJenHB7A_A1d2eam2dj3k+4yWRE8pC+_gP2j_k2Q@mail.gmail.com>
+	<201302162221.32799.arnd@arndb.de>
+Date: Sun, 17 Feb 2013 00:54:57 +0200
+Message-ID: <CAHp75VeCic+5_zyzFdtpw5dLxRaajD9zv6ZvSoDcHAD1EF=GSw@mail.gmail.com>
+Subject: Re: [PATCHv3 2/4] dmaengine: dw_dmac: move to generic DMA binding
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Olof Johansson <olof@lixom.net>, linux-kernel@vger.kernel.org,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Vinod Koul <vinod.koul@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. Currently mxser_probe() and mxser_module_init() ignore errors
-that can happen in tty_port_register_device().
-2. mxser_module_init() does not deallocate resources allocated in mxser_get_ISA_conf()
-if mxser_initbrd() failed.
+On Sun, Feb 17, 2013 at 12:21 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> The original device tree binding for this driver, from Viresh Kumar
+> unfortunately conflicted with the generic DMA binding, and did not allow
+> to completely seperate slave device configuration from the controller.
+>
+> This is an attempt to replace it with an implementation of the generic
+> binding, but it is currently completely untested, because I do not have
+> any hardware with this particular controller.
+>
+> The patch applies on top of the slave-dma tree, which contains both the base
+> support for the generic DMA binding, as well as the earlier attempt from
+> Viresh. Both of these are currently not merged upstream however.
+>
+> This version incorporates feedback from Viresh Kumar, Andy Shevchenko
+> and Russell King.
 
-The patch adds proper error handling in all the cases.
-Also it moves free_irq() from mxser_release_ISA_res() to mxser_board_remove(),
-since it makes mxser_release_ISA_res() a counterpart for mxser_get_ISA_conf(),
-while free_irq() is relevant to both ISA and PCI boards.
+Sorry, few comments below.
+After addressing them take my Acked-by: Andy Shevchenko
+<andriy.shevchenko@linux.intel.com>
 
-Found by Linux Driver Verification project (linuxtesting.org).
+> --- a/drivers/dma/dw_dmac.c
+> +++ b/drivers/dma/dw_dmac.c
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- drivers/tty/mxser.c |   42 +++++++++++++++++++++++++++++++++++-------
- 1 file changed, 35 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/tty/mxser.c b/drivers/tty/mxser.c
-index 4011386..d82294c 100644
---- a/drivers/tty/mxser.c
-+++ b/drivers/tty/mxser.c
-@@ -2364,7 +2364,6 @@ static void mxser_release_vector(struct mxser_board *brd)
- 
- static void mxser_release_ISA_res(struct mxser_board *brd)
- {
--	free_irq(brd->irq, brd);
- 	release_region(brd->ports[0].ioaddr, 8 * brd->info->nports);
- 	mxser_release_vector(brd);
+> @@ -1836,6 +1825,12 @@ static int dw_probe(struct platform_device *pdev)
+>
+>         dma_async_device_register(&dw->dma);
+>
+> +       if (pdev->dev.of_node)
+> +               err = of_dma_controller_register(pdev->dev.of_node,
+> +                                                dw_dma_xlate, dw);
+> +       if (err && err != -ENODEV)
+> +               dev_err(&pdev->dev, "could not register of_dma_controller\n");
+
+I believe we may make it as
+ if (...of_node) {
+  err = ...register();
+  if (err...)
+    dev_err();
  }
-@@ -2430,6 +2429,7 @@ static void mxser_board_remove(struct mxser_board *brd)
- 		tty_unregister_device(mxvar_sdriver, brd->idx + i);
- 		tty_port_destroy(&brd->ports[i].port);
- 	}
-+	free_irq(brd->irq, brd);
- }
- 
- static int __init mxser_get_ISA_conf(int cap, struct mxser_board *brd)
-@@ -2554,6 +2554,7 @@ static int mxser_probe(struct pci_dev *pdev,
- 	struct mxser_board *brd;
- 	unsigned int i, j;
- 	unsigned long ioaddress;
-+	struct device *tty_dev;
- 	int retval = -EINVAL;
- 
- 	for (i = 0; i < MXSER_BOARDS; i++)
-@@ -2637,13 +2638,25 @@ static int mxser_probe(struct pci_dev *pdev,
- 	if (retval)
- 		goto err_rel3;
- 
--	for (i = 0; i < brd->info->nports; i++)
--		tty_port_register_device(&brd->ports[i].port, mxvar_sdriver,
--				brd->idx + i, &pdev->dev);
-+	for (i = 0; i < brd->info->nports; i++) {
-+		tty_dev = tty_port_register_device(&brd->ports[i].port,
-+				mxvar_sdriver, brd->idx + i, &pdev->dev);
-+		if (IS_ERR(tty_dev)) {
-+			retval = PTR_ERR(tty_dev);
-+			for (i--; i >= 0; i--)
-+				tty_unregister_device(mxvar_sdriver,
-+					brd->idx + i);
-+			goto err_relbrd;
-+		}
-+	}
- 
- 	pci_set_drvdata(pdev, brd);
- 
- 	return 0;
-+err_relbrd:
-+	for (i = 0; i < brd->info->nports; i++)
-+		tty_port_destroy(&brd->ports[i].port);
-+	free_irq(brd->irq, brd);
- err_rel3:
- 	pci_release_region(pdev, 3);
- err_zero:
-@@ -2665,7 +2678,6 @@ static void mxser_remove(struct pci_dev *pdev)
- 
- 	mxser_board_remove(brd);
- 
--	free_irq(pdev->irq, brd);
- 	pci_release_region(pdev, 2);
- 	pci_release_region(pdev, 3);
- 	pci_disable_device(pdev);
-@@ -2683,6 +2695,7 @@ static struct pci_driver mxser_driver = {
- static int __init mxser_module_init(void)
- {
- 	struct mxser_board *brd;
-+	struct device *tty_dev;
- 	unsigned int b, i, m;
- 	int retval;
- 
-@@ -2728,14 +2741,29 @@ static int __init mxser_module_init(void)
- 
- 		/* mxser_initbrd will hook ISR. */
- 		if (mxser_initbrd(brd, NULL) < 0) {
-+			mxser_release_ISA_res(brd);
- 			brd->info = NULL;
- 			continue;
- 		}
- 
- 		brd->idx = m * MXSER_PORTS_PER_BOARD;
--		for (i = 0; i < brd->info->nports; i++)
--			tty_port_register_device(&brd->ports[i].port,
-+		for (i = 0; i < brd->info->nports; i++) {
-+			tty_dev = tty_port_register_device(&brd->ports[i].port,
- 					mxvar_sdriver, brd->idx + i, NULL);
-+			if (IS_ERR(tty_dev)) {
-+				for (i--; i >= 0; i--)
-+					tty_unregister_device(mxvar_sdriver,
-+						brd->idx + i);
-+				for (i = 0; i < brd->info->nports; i++)
-+					tty_port_destroy(&brd->ports[i].port);
-+				free_irq(brd->irq, brd);
-+				mxser_release_ISA_res(brd);
-+				brd->info = NULL;
-+				break;
-+			}
-+		}
-+		if (brd->info == NULL)
-+			continue;
- 
- 		m++;
- 	}
+
+> --- a/drivers/dma/dw_dmac_regs.h
+> +++ b/drivers/dma/dw_dmac_regs.h
+
+> @@ -211,9 +212,15 @@ struct dw_dma_chan {
+>         /* hardware configuration */
+>         unsigned int            block_size;
+>         bool                    nollp;
+> +       unsigned int            request_line;
+> +       struct dw_dma_slave     slave;
+> +
+
+Do we really need an extra empty line here?
+
+>
+>         /* configuration passed via DMA_SLAVE_CONFIG */
+>         struct dma_slave_config dma_sconfig;
+> +
+> +       /* backlink to dw_dma */
+> +       struct dw_dma           *dw;
+
+Seems it's not needed and came from rebase?
+
 -- 
-1.7.9.5
-
+With Best Regards,
+Andy Shevchenko
