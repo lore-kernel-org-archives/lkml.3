@@ -1,176 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753289Ab3BPOA6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 09:00:58 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:64476 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753204Ab3BPOA5 (ORCPT
+	id S1753304Ab3BPOOj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 09:14:39 -0500
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:33253 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753235Ab3BPOOh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 09:00:57 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Subject: Re: [PATCH 2/4] dmaengine: dw_dmac: move to generic DMA binding
-Date: Sat, 16 Feb 2013 14:00:28 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-6-generic; KDE/4.3.2; x86_64; ; )
-Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Olof Johansson <olof@lixom.net>, linux-kernel@vger.kernel.org,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Vinod Koul <vinod.koul@linux.intel.com>
-References: <1360952512-971558-1-git-send-email-arnd@arndb.de> <1360952512-971558-3-git-send-email-arnd@arndb.de> <CAHp75VfyO5wep-shvZ_mkwLmL2_Fa2jgq63AvE2t8=TPLZn6yg@mail.gmail.com>
-In-Reply-To: <CAHp75VfyO5wep-shvZ_mkwLmL2_Fa2jgq63AvE2t8=TPLZn6yg@mail.gmail.com>
+	Sat, 16 Feb 2013 09:14:37 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302161400.29064.arnd@arndb.de>
-X-Provags-ID: V02:K0:iLiislTTUFY+FslKJ61Oly8ozfdWc2MwuZXGs/Alvmq
- cazUCuUcwfv/8F9ozpA7fuevudmnEorFwpgNXRg+pJuuj5OEAZ
- iYnUCE17tQLPh0jSFTkkKD4+nZMTzE0JWmLPu1p1tdVOUq/u9z
- f44gxw+riVFwRz2TzqIFrZLH9Pcf+Mc/pxSSwaE0WAsMsN1Ea6
- nrKAKs6ctzjb1ZOI9769gOx0aLbx8Vhy5hQ+WXW0RipTCDpBdw
- IllEJqDErLrBUCECAFkmlITl4lKER+H4pr+xKXonoQVlWrPbmN
- 1x3wMhRkTN7IvLNAdPFLr/hQO6JCvLYR21Hb//iWOdkQQpdPei
- /GnscLgbSt4w0fBDq3i0=
+In-Reply-To: <1360982707.22260.79.camel@pasglop>
+References: <1359040242-8269-1-git-send-email-eranian@google.com>
+	<1359040242-8269-8-git-send-email-eranian@google.com>
+	<20130125090158.GB31478@gmail.com>
+	<20130215194622.GA6396@us.ibm.com>
+	<1360982707.22260.79.camel@pasglop>
+Date: Sat, 16 Feb 2013 15:14:35 +0100
+Message-ID: <CABPqkBRwdYANGm8kL+nTzjNdkV_vqdxv_oUXszjx4J=fg=-b7A@mail.gmail.com>
+Subject: Re: [PATCH v7 07/18] perf: add generic memory sampling interface
+From: Stephane Eranian <eranian@google.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Paul Mackerras <paulus@samba.org>, Maynard Johnson <mpjohn@us.ibm.com>,
+        Anton Blanchard <anton@samba.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 16 February 2013, Andy Shevchenko wrote:
-> On Fri, Feb 15, 2013 at 8:21 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+On Sat, Feb 16, 2013 at 3:45 AM, Benjamin Herrenschmidt
+<benh@kernel.crashing.org> wrote:
+> On Fri, 2013-02-15 at 11:46 -0800, Sukadev Bhattiprolu wrote:
+>>
+>> POWER could use an additional field:
+>>
+>>                         mem_deratmiss:1
 >
-> > @@ -168,7 +169,13 @@ static void dwc_initialize(struct dw_dma_chan *dwc)
-> >         if (dwc->initialized == true)
-> >                 return;
-> >
-> > -       if (dws) {
-> > +       if (dws && dws->cfg_hi == 0xffffffff && dws->cfg_lo == 0xffffffff) {
-> > +               /* autoconfigure based on request line from DT */
-> > +               if (dwc->dma_sconfig.direction == DMA_MEM_TO_DEV)
-> > +                       cfghi = DWC_CFGH_DST_PER(dwc->req);
-> > +               else if (dwc->dma_sconfig.direction == DMA_DEV_TO_MEM)
-> > +                       cfghi = DWC_CFGH_SRC_PER(dwc->req);
-> 
-> Please, use dwc->direction instead of field in the slave_config. If I
-> remember correctly it's marked like obsoleted/deprecated.
+> If you want to make that field more "generic" make it "lvl1_tlb_miss",
+> ie, a miss in the internal "level 1" TLB which is the smallest/fastest
+> TLB level in the load/store unit.
+>
+If you want to express a L1 TLB miss, you already can do that:
 
-Ok, that's easy to change. I was copying from the code you added
-a few lines below, but was using an older version than the one where
-you had made the change to use dwc->direction.
+PERF_MEM_S(TLB, MISS) | PERF_MEM_S(TLB, L1)
 
-> > @@ -1179,49 +1186,61 @@ static void dwc_free_chan_resources(struct dma_chan *chan)
-> >         dev_vdbg(chan2dev(chan), "%s: done\n", __func__);
-> >  }
-> >
-> > -bool dw_dma_generic_filter(struct dma_chan *chan, void *param)
-> > +struct dw_dma_filter_args {
-> > +       struct dw_dma *dw;
-> > +       u32 req;
-> 
-> Why this is u32 and not unsigned int?
-> 
-> > +       u32 src;
-> > +       u32 dst;
-> 
-> And this could be also just unsigned int.
+If this is a feature you do not support, then use the NA macro.
 
-I was using u32 since I copied the values from a 32 bit
-DT property value. I'll change it to unsigned int.
+For instance:
+PERF_MEM_S(LOCK, NA)
 
-> > +static bool dw_dma_generic_filter(struct dma_chan *chan, void *param)
-> >  {
-> 
-> > +       dws->cfg_hi     = 0xffffffff;
-> > +       dws->cfg_lo     = 0xffffffff;
-> 
-> Agree with Russell about ~0.
+Need to be able to differentiate not supported from did not happen.
 
-ok.
 
-> > +static struct dma_chan *dw_dma_xlate(struct of_phandle_args *dma_spec,
-> > +                                        struct of_dma *ofdma)
-> > +{
-> > +       struct dw_dma *dw = ofdma->of_dma_data;
-> > +       struct dw_dma_filter_args fargs = {
-> > +               .dw = dw,
-> > +       };
-> > +       dma_cap_mask_t cap;
-> > +
-> > +       if (dma_spec->args_count != 3)
-> > +               return NULL;
-> > +
-> > +       fargs.req = be32_to_cpup(dma_spec->args+0);
-> > +       fargs.src = be32_to_cpup(dma_spec->args+1);
-> > +       fargs.dst = be32_to_cpup(dma_spec->args+2);
-> 
-> You could cast them to usual C types like unsigned int. I see u32 in
-> rare cases in the driver like for reading/writting from/to hw and when
-> API contains it. Here I doubt we have to leave them as u32.
-
-Right. 
-
-> > +       if (WARN_ON(fargs.req >= 16 || fargs.src >= 2 || fargs.dst >= 2))
-> > +               return NULL;
-> 
-> 16 here is a magic number for me. I would like to see something like
-> #define DW_MAX_REQUEST_LINES 16 in the dw_dmac_regs.h.
-
-Ok.
-
-> Besides of that, what 2 does come from?
-
-I thought that Viresh had commented that there could only be two masters.
-It's probably best to compare against dw->nr_masters here.
-
-> > @@ -1765,6 +1751,10 @@ static int dw_probe(struct platform_device *pdev)
-> >
-> >         dma_async_device_register(&dw->dma);
-> >
-> > +       err = of_dma_controller_register(pdev->dev.of_node, dw_dma_xlate, dw);
-> > +       if (err)
-> > +               dev_err(&pdev->dev, "could not register of_dma_controller\n");
-> 
-> It's not an error, dev_dbg. Consider case when !CONFIG_OF.
-
-Ah right. I expected of_dma_controller_register to return 0 in that case, but
-it returns -ENODEV. How about I change this to this?
-
-	if (pdev->dev.of_node)
-		err = of_dma_controller_register(pdev->dev.of_node, dw_dma_xlate, dw);
-	if (err && err != -ENODEV)
-		dev_err(&pdev->dev, "could not register of_dma_controller\n");
-
-That would warn only when we have a dw_dmac device that was registered from
-device tree but does not follow the binding or gets an -ENOMEM.
-
-> > --- a/drivers/dma/dw_dmac_regs.h
-> > +++ b/drivers/dma/dw_dmac_regs.h
-> > @@ -213,6 +213,10 @@ struct dw_dma_chan {
-> >         /* configuration passed via DMA_SLAVE_CONFIG */
-> >         struct dma_slave_config dma_sconfig;
-> >
-> > +       /* slave configuration from DT */
-> > +       unsigned int            req;
-> 
-> Could you use here full name like "request_line"? And I think the
-> better place for it in subsection "hardware configuration" (consider
-> non-DT cases of use).
-
-Ok
-
-> 
-> >         /* backlink to dw_dma */
-> >         struct dw_dma           *dw;
-> >  };
-> 
-> We should not have this in linux-next. Are you sure you rebased it on
-> top of recent one?
-
-I was basing on the earliest commit that had Viresh's changes in it.
-I'll rebase on top of Vinod's branch now.
-
-Thanks for your review!
-
-	Arnd
+>> AFAICT, POWER does not currently save the mem_op, snoop or lock info
+>> for the sampled instruction.  I guess we can leave them set to 0.
+>
+> Well, we don't have lock instructions to begin with :-) If we can read
+> the IP then we can deduce the memop tho.
+>
+>> > > +};
+>> > > +
+>> > > +/* type of opcode (load/store/prefetch,code) */
+>> > > +#define PERF_MEM_OP_NA             0x01 /* not available */
+>> > > +#define PERF_MEM_OP_LOAD   0x02 /* load instruction */
+>> > > +#define PERF_MEM_OP_STORE  0x04 /* store instruction */
+>> > > +#define PERF_MEM_OP_PFETCH 0x08 /* prefetch */
+>> > > +#define PERF_MEM_OP_EXEC   0x10 /* code (execution) */
+>> > > +#define PERF_MEM_OP_SHIFT  0
+>> > > +
+>> > > +/* memory hierarchy (memory level, hit or miss) */
+>> > > +#define PERF_MEM_LVL_NA            0x01  /* not available */
+>> > > +#define PERF_MEM_LVL_HIT   0x02  /* hit level */
+>> > > +#define PERF_MEM_LVL_MISS  0x04  /* miss level  */
+>> > > +#define PERF_MEM_LVL_L1            0x08  /* L1 */
+>> > > +#define PERF_MEM_LVL_LFB   0x10  /* Line Fill Buffer */
+>> > > +#define PERF_MEM_LVL_L2            0x20  /* L2 hit */
+>> > > +#define PERF_MEM_LVL_L3            0x40  /* L3 hit */
+>> > > +#define PERF_MEM_LVL_LOC_RAM       0x80  /* Local DRAM */
+>> > > +#define PERF_MEM_LVL_REM_RAM1      0x100 /* Remote DRAM (1 hop)
+>> */
+>> > > +#define PERF_MEM_LVL_REM_RAM2      0x200 /* Remote DRAM (2 hops)
+>> */
+>> > > +#define PERF_MEM_LVL_REM_CCE1      0x400 /* Remote Cache (1 hop)
+>> */
+>> > > +#define PERF_MEM_LVL_REM_CCE2      0x800 /* Remote Cache (2 hops)
+>> */
+>> > > +#define PERF_MEM_LVL_IO            0x1000 /* I/O memory */
+>> > > +#define PERF_MEM_LVL_UNC   0x2000 /* Uncached memory */
+>> > > +#define PERF_MEM_LVL_SHIFT 5
+>>
+>> POWER saves following information to describe where the data was
+>> loaded from after a Dcache or DTLB miss.
+>>
+>>         FROM_L2
+>>         FROM_L3
+>>
+>>         FROM_L2.1_SHR   From another L2 or L3 on same chip,
+>> shared
+>>         FROM_L2.1_MOD   From another L2 or L3 on same chip, modified
+>>
+>>         FROM_L3.1_SHR   From remote L2 or L3, shared
+>>         FROM_L3.1_MOD   From remote L2 or L3, modified
+>>
+>>         FROM_RL2L3_SHR  From remote L2 or L3, shared
+>>         FROM_RL2L3_MOD  From remote L2 or L3, modified
+>>
+>>         FROM_DL2L3_SHR  From distant L2 or L3, shared
+>>         FROM_DL2L3_MOD  From distant L2 or L3, modified
+>>
+>> POWER uses 4 bits and a running count for its (currently) 13 possible
+>> values.
+>>
+>> The macros in the patch use a separate bit for each level - is that to
+>> allow
+>> selecting more than one level at the same time ? If so, we will need
+>> to reserve
+>> a few more bits to allow for Power's memory levels that don't map to
+>> the above.
+>>
+>> > > +
+>> > > +/* snoop mode */
+>> > > +#define PERF_MEM_SNOOP_NA  0x01 /* not available */
+>> > > +#define PERF_MEM_SNOOP_NONE        0x02 /* no snoop */
+>> > > +#define PERF_MEM_SNOOP_HIT 0x04 /* snoop hit */
+>> > > +#define PERF_MEM_SNOOP_MISS        0x08 /* snoop miss */
+>> > > +#define PERF_MEM_SNOOP_HITM        0x10 /* snoop hit modified */
+>> > > +#define PERF_MEM_SNOOP_SHIFT       19
+>> > > +
+>> > > +/* locked instruction */
+>> > > +#define PERF_MEM_LOCK_NA   0x01 /* not available */
+>> > > +#define PERF_MEM_LOCK_LOCKED       0x02 /* locked transaction */
+>> > > +#define PERF_MEM_LOCK_SHIFT        24
+>> > > +
+>> > > +/* TLB access */
+>> > > +#define PERF_MEM_TLB_NA            0x01 /* not available */
+>> > > +#define PERF_MEM_TLB_HIT   0x02 /* hit level */
+>> > > +#define PERF_MEM_TLB_MISS  0x04 /* miss level */
+>> > > +#define PERF_MEM_TLB_L1            0x08 /* L1 */
+>> > > +#define PERF_MEM_TLB_L2            0x10 /* L2 */
+>> > > +#define PERF_MEM_TLB_WK            0x20 /* Hardware Walker*/
+>> > > +#define PERF_MEM_TLB_OS            0x40 /* OS fault handler */
+>> > > +#define PERF_MEM_TLB_SHIFT 26
+>>
+>> On POWER, like with the Dcache source above, we have 4 bits to
+>> describe where
+>> the DTLB was loaded from after a dTLB miss.
+>>
+>> We would probably need to allow more bits to for the memory level of
+>> the dTLB
+>> load source.
+>>
+>> > > +
+>> > > +#define PERF_MEM_S(a, s) \
+>> > > +   (((u64)PERF_MEM_##a##_##s) << PERF_MEM_##a##_SHIFT)
+>> > > +
+>> >
+>> > Would be nice to get feedback from PowerPC folks to see how well
+>> > this matches their memory profiling hw capabilities?
+>> >
+>> > I suspect there's a lot of differences, but one can always hope
+>> > ...
+>> >
+>> > If there's some hope for unification we could at least shape it
+>> > in a way that they could pick up and extend.
+>>
+>> Thanks for Ccing.
+>>
+>> While on the topic of sampled instructions, POWER saves following
+>> information
+>> (in addition to the above memory info) for sampled instructions.
+>>
+>>         - whether the sampled instruction encountered a stall
+>>         - the reasons for the stall.
+>>         - whether the instruction was from hypervisor
+>>         - there was a branch mis-predict,
+>>         - thresholding information
+>>
+>> These are clubbed into an "event vector" that is saved for sampled
+>> instructions. We have been meaning to find ways to present that to
+>> to user space. Are there plans to retreive and present these too.
+>
+> Ben.
+>
+>
