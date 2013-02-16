@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752726Ab3BPIld (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 03:41:33 -0500
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:44777 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752476Ab3BPIlc (ORCPT
+	id S1752772Ab3BPImv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 03:42:51 -0500
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:44951 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752476Ab3BPImt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 03:41:32 -0500
-Date: Sat, 16 Feb 2013 09:41:28 +0100
+	Sat, 16 Feb 2013 03:42:49 -0500
+Date: Sat, 16 Feb 2013 09:42:45 +0100
 From: Ingo Molnar <mingo@kernel.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Stephane Eranian <eranian@google.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Paul Mackerras <paulus@samba.org>, Maynard Johnson <mpjohn@us.ibm.com>,
-        Anton Blanchard <anton@samba.org>, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com,
-        acme@redhat.com, jolsa@redhat.com, namhyung.kim@lge.com
-Subject: Re: [PATCH v7 07/18] perf: add generic memory sampling interface
-Message-ID: <20130216084127.GC18953@gmail.com>
-References: <1359040242-8269-1-git-send-email-eranian@google.com>
- <1359040242-8269-8-git-send-email-eranian@google.com>
- <20130125090158.GB31478@gmail.com>
- <20130215194622.GA6396@us.ibm.com>
- <1360982707.22260.79.camel@pasglop>
+To: Don Zickus <dzickus@redhat.com>
+Cc: anish singh <anish198519851985@gmail.com>, akpm@linux-foundation.org,
+        tglx@linutronix.de, chuansheng.liu@intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [Watchdog][Trivial] Added comments to explain
+ watchdog_disabled variable
+Message-ID: <20130216084245.GD18953@gmail.com>
+References: <1359907275-15410-1-git-send-email-anish198519851985@gmail.com>
+ <CAK7N6vpT_X7s7Vid0-EYenb0w7k=nL8d-ov=fExFMuSYcV47Wg@mail.gmail.com>
+ <20130213092101.GD7630@gmail.com>
+ <CAK7N6vqh_c31bWiHgVgJLLckya7mykshMKYiqLTdkScMCoXcsg@mail.gmail.com>
+ <20130215162959.GF98867@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1360982707.22260.79.camel@pasglop>
+In-Reply-To: <20130215162959.GF98867@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
+* Don Zickus <dzickus@redhat.com> wrote:
 
-> On Fri, 2013-02-15 at 11:46 -0800, Sukadev Bhattiprolu wrote:
-> > 
-> > POWER could use an additional field:
-> > 
-> >                         mem_deratmiss:1
+> > >> > +       /*
+> > >> > +        * We shouldn't enable watchdog threads if it is
+> > >> > +        * disabled.This is done by watchdog_disabled
+> > >> > +        * variable check in watchdog_*_all_cpus function.
+> > >
+> > > It has two grammatic and a stylistic error in it, plus misses
+> > Would you mind pointing it out to me the grammatical mistakes
+> > as I am not that good with grammar.
 > 
-> If you want to make that field more "generic" make it 
-> "lvl1_tlb_miss", ie, a miss in the internal "level 1" TLB 
-> which is the smallest/fastest TLB level in the load/store 
-> unit.
+> I am not entirely sure which ones Ingo is referring to, but what I see are
+> 
+> 'disabled.This' needs a space after period
+> 'This is done by watchdog_disabled' needs a 'the' after 'by'
+> 'variable check in watchdog..' needs a 'the' after 'in'.
+> 
+> in addition to the missing ()'s after 'watchdog_*_all_cpus.
 
-I'd also suggest adding spare bits generously, if this is a 
-fixed width ABI component - or a size field.
+There's also a plural/singular mismatch between 'watchdog 
+threads' and 'if it is disabled'.
 
 Thanks,
 
