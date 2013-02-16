@@ -1,92 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754923Ab3BPXD5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 18:03:57 -0500
-Received: from mail-ye0-f179.google.com ([209.85.213.179]:51261 "EHLO
-	mail-ye0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754402Ab3BPXD4 (ORCPT
+	id S1754960Ab3BPXMo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 18:12:44 -0500
+Received: from mail-yh0-f41.google.com ([209.85.213.41]:61148 "EHLO
+	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754752Ab3BPXMn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 18:03:56 -0500
-X-Greylist: delayed 876 seconds by postgrey-1.27 at vger.kernel.org; Sat, 16 Feb 2013 18:03:56 EST
-Date: Sat, 16 Feb 2013 15:00:10 -0800
+	Sat, 16 Feb 2013 18:12:43 -0500
+Date: Sat, 16 Feb 2013 14:38:05 -0800
 From: Anton Vorontsov <anton@enomsg.org>
-To: Andrea Adami <andrea.adami@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] ARM: sa1100: collie-battery.c: include platform_device.h
- directly
-Message-ID: <20130216230010.GG1741@lizard.sbx05280.losalca.wayport.net>
-References: <1361038560-3690-1-git-send-email-andrea.adami@gmail.com>
+To: Rhyland Klein <rklein@nvidia.com>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Rajanikanth H.V" <rajanikanth.hv@stericsson.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [RFC 1/3] power_supply: Define Binding for supplied-nodes
+Message-ID: <20130216223804.GF1741@lizard.sbx05280.losalca.wayport.net>
+References: <1360971416-30717-1-git-send-email-rklein@nvidia.com>
+ <1360971416-30717-2-git-send-email-rklein@nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1361038560-3690-1-git-send-email-andrea.adami@gmail.com>
+In-Reply-To: <1360971416-30717-2-git-send-email-rklein@nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrea,
+On Fri, Feb 15, 2013 at 06:36:54PM -0500, Rhyland Klein wrote:
+> This property is meant to be used in device nodes which represent
+> power_supply devices that wish to provide a list of supplies to
+> which they provide power. A common case is a AC Charger with
+> the batteries it powers.
+> 
+> Signed-off-by: Rhyland Klein <rklein@nvidia.com>
+> ---
+>  .../bindings/power_supply/power_supply.txt         |   17 +++++++++++++++++
+>  1 file changed, 17 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/power_supply/power_supply.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/power_supply/power_supply.txt b/Documentation/devicetree/bindings/power_supply/power_supply.txt
+> new file mode 100644
+> index 0000000..1c58d4ff
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/power_supply/power_supply.txt
+> @@ -0,0 +1,17 @@
+> +Power Supply Core Support
+> +
+> +Optional Properties:
+> + - power-supply,supplied-nodes : This property is added to a supply
+> +   in order to specify the list of supplicant devices directly by their
+> +   phandles.
 
-On Sat, Feb 16, 2013 at 07:16:00PM +0100, Andrea Adami wrote:
-> Initial try to fix compilation error
+"supplied nodes" sounds confusing (doesn't reflect direction), IMO. I'd
+rather call it power-supply,supplied-to = <&some_battery>;
 
-Things are a bit more complex...
+But... I'm recalling there was a similar discussion not that long ago, and
+Arnd came up with the idea that supplied-to is not fully in spirit of DT,
+and proposed his view of proper bindings. Please find the discussion here:
 
-> linux/include/linux/mfd/mcp.h:22:16: error: field 'attached_device' has incomplete type
-
-You have to add #include <linux/device.h> into mfd/mcp.h. This will add
-struct device and...
-
-> linux/include/linux/mfd/mcp.h:48:23: error: field 'drv' has incomplete type
-
-struct device_driver.
-
-> linux/include/linux/mfd/ucb1x00.h:137:17: error: field 'dev' has incomplete type
-
-Same here, the file ucb1x00.h needs #include <linux/device.h>.
-
-> linux/drivers/power/collie_battery.c:290:56: error: unknown type name 'pm_message_t'
-
-#include <linux/pm.h> into collie_battery.c
+  http://lkml.org/lkml/2012/9/14/104
 
 Thanks,
 
 Anton
 
-> linux/drivers/power/collie_battery.c:371:13: error: 'collie_bat_suspend' undeclared here (not in a function)
-> | make[4]: *** [drivers/power/collie_battery.o] Error 1
-> | make[3]: *** [drivers/power] Error 2
-> 
-> As seen in Arnd Bergmann patches on LAKML
-> [PATCH 7/9] ARM defconfigs: add missing inclusions of linux/platform_device.h
-> [PATCH 1/9] ARM: sa1100/assabet: include platform_device.h directly
-> 
-> Compilation is still not clean, two warnings:
-> linux/drivers/power/collie_battery.c:372:2: warning: initialization from incompatible pointer type [enabled by default]
-> linux/drivers/power/collie_battery.c:372:2: warning: (near initialization for 'collie_bat_driver.suspend') [enabled by default]
-> 
-> Signed-off-by: Andrea Adami <andrea.adami@gmail.com>
-> ---
->  drivers/power/collie_battery.c            |      1 +
->  drivers/video/logo/logo_linux_clut224.ppm | 232006 ++++++++++++++++++++++++++-
->  2 files changed, 230404 insertions(+), 1603 deletions(-)
-> 
-> diff --git a/drivers/power/collie_battery.c b/drivers/power/collie_battery.c
-> index c58d0e3..52cbab3 100644
-> --- a/drivers/power/collie_battery.c
-> +++ b/drivers/power/collie_battery.c
-> @@ -14,6 +14,7 @@
->  #include <linux/module.h>
->  #include <linux/power_supply.h>
->  #include <linux/delay.h>
-> +#include <linux/platform_device.h>
-
-I don't see anywhere in the driver which would need platform_device.h...
-But pm.h, yes.
-
->  #include <linux/spinlock.h>
->  #include <linux/interrupt.h>
->  #include <linux/gpio.h>
+> +
+> +Example:
+> +
+> +	charger@e {
+> +		compatible = "some,charger";
+> +		...
+> +
+> +		power-supply,supplied-nodes = <&some_battery>,
+> +					      <&another_battery>;
+> +		...
+> +	};
 > -- 
-> 1.7.12.4
+> 1.7.9.5
