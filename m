@@ -1,62 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751613Ab3BPH1J (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 02:27:09 -0500
-Received: from intranet.asianux.com ([58.214.24.6]:14560 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750809Ab3BPH1H (ORCPT
+	id S1751994Ab3BPHff (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 02:35:35 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:48004 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809Ab3BPHfd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 02:27:07 -0500
-X-Spam-Score: -100.8
-Message-ID: <511F34C3.6020406@asianux.com>
-Date: Sat, 16 Feb 2013 15:26:59 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Tony Lindgren <tony@atomide.com>
-Subject: [PATCH] drivers/gpio/*twl* need call irq_free_descs when leaving
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+	Sat, 16 Feb 2013 02:35:33 -0500
+From: Anil Kumar <anilk4.v@gmail.com>
+To: devicetree-discuss@lists.ozlabs.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        alsa-devel@alsa-project.org
+Cc: linux@arm.linux.org.uk, b-cousson@ti.com, tony@atomide.com,
+        grant.likely@secretlab.ca, peter.ujfalusi@ti.com, thomas@tomweber.eu,
+        anilk4.v@gmail.com
+Subject: [PATCH V2] ARM: dts: omap3-devkit8000: Enable audio support
+Date: Sat, 16 Feb 2013 13:03:56 +0530
+Message-Id: <1361000036-18121-1-git-send-email-anilk4.v@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add the needed sections to enable audio support on
+Devkit8000 when booted with DT blob.
 
-  since already call irq_alloc_descs before,
-    we need call irq_free_descs when quiting, or resource leak.
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
+Signed-off-by: Anil Kumar <anilk4.v@gmail.com>
 ---
- drivers/gpio/gpio-twl4030.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+This patch is based on top of kernel 3.8-rc5 and
+the following patches.
 
-diff --git a/drivers/gpio/gpio-twl4030.c b/drivers/gpio/gpio-twl4030.c
-index 4d330e3..26aef72 100644
---- a/drivers/gpio/gpio-twl4030.c
-+++ b/drivers/gpio/gpio-twl4030.c
-@@ -486,8 +486,10 @@ static int gpio_twl4030_probe(struct platform_device *pdev)
- 			      &irq_domain_simple_ops, NULL);
+Peter Ujfalusi:-
+ASoC: twl4030: Correct the support for Voice port
+ASoC: twl4030: Convert MICBIAS to SUPPLY widget
+ASoC: omap-twl4030: Add support for routing, voice port and jack detect
+
+Anil Kumar:-
+ARM: dts: add minimal DT support for DevKit8000
+https://patchwork.kernel.org/patch/2122461/
+
+-Tested for playback and capture on Devkit8000.
+
+ Test process:-
+
+ #amixer set 'PredriveR Mixer AudioR2' on
+ #amixer set 'PredriveL Mixer AudioL2' on
+ #amixer set PreDriv 100 unmute
+ #amixer set 'DAC2 Digital Fine' 100
+ #amixer cset numid=27 1
+ #arecord | aplay
+
+For V2:
+ - Remove pin mux as done at device boot time by default.
+
+:100644 100644 6338993... c70116f... M	arch/arm/boot/dts/omap3-devkit8000.dts
+ arch/arm/boot/dts/omap3-devkit8000.dts |   23 +++++++++++++++++++----
+ 1 files changed, 19 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/boot/dts/omap3-devkit8000.dts b/arch/arm/boot/dts/omap3-devkit8000.dts
+index 6338993..c70116f 100644
+--- a/arch/arm/boot/dts/omap3-devkit8000.dts
++++ b/arch/arm/boot/dts/omap3-devkit8000.dts
+@@ -42,6 +42,19 @@
+                 };
  
- 	ret = twl4030_sih_setup(&pdev->dev, TWL4030_MODULE_GPIO, irq_base);
--	if (ret < 0)
-+	if (ret < 0) {
-+		irq_free_descs(irq_base, TWL4030_GPIO_MAX);
- 		return ret;
-+	}
+ 	};
++
++	sound {
++		compatible = "ti,omap-twl4030";
++		ti,model = "devkit8000";
++
++		ti,mcbsp = <&mcbsp2>;
++		ti,codec = <&twl_audio>;
++		ti,audio-routing =
++			"Ext Spk", "PREDRIVEL",
++			"Ext Spk", "PREDRIVER",
++			"MAINMIC", "Main Mic",
++			"Main Mic", "Mic Bias 1";
++	};
+ };
  
- 	priv->irq_base = irq_base;
+ &i2c1 {
+@@ -51,6 +64,12 @@
+ 		reg = <0x48>;
+ 		interrupts = <7>;	/* SYS_NIRQ cascaded to intc */
+ 		interrupt-parent = <&intc>;
++
++		twl_audio: audio {
++			compatible = "ti,twl4030-audio";
++			codec {
++			};
++		};
+ 	};
+ };
  
-@@ -578,6 +580,7 @@ static int gpio_twl4030_remove(struct platform_device *pdev)
+@@ -86,10 +105,6 @@
+ 	status = "disabled";
+ };
  
- 	/* REVISIT no support yet for deregistering all the IRQs */
- 	WARN_ON(1);
-+	irq_free_descs(priv->irq_base, TWL4030_GPIO_MAX);
- 	return -EIO;
- }
- 
+-&mcbsp2 {
+-	status = "disabled";
+-};
+-
+ &mcbsp3 {
+ 	status = "disabled";
+ };
 -- 
-1.7.7.6
+1.7.0.4
 
