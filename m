@@ -1,69 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754487Ab3BPVIe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 16:08:34 -0500
-Received: from SMTP.ANDREW.CMU.EDU ([128.2.11.96]:58175 "EHLO
-	smtp.andrew.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753638Ab3BPVId (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 16:08:33 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130215154931.GA26213@rhlx01.hs-esslingen.de>
-References: <20130214153255.GA5033@rhlx01.hs-esslingen.de> <744357E9AAD1214791ACBA4B0B90926329ED72@SHSMSX101.ccr.corp.intel.com>
- <20130215154931.GA26213@rhlx01.hs-esslingen.de>
-From: Alexander Lam <azl@andrew.cmu.edu>
-Date: Sat, 16 Feb 2013 16:08:11 -0500
-Message-ID: <CACWwPiuk0GynEwe3RuKndWnsYwTuPhO0ob6sJ6ve34u1_RtkYw@mail.gmail.com>
-Subject: Re: thermal governor: does it actually work??
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-X-PMX-Version: 5.5.9.388399, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2010.4.9.4220
-X-SMTP-Spam-Clean: 8% (
- BODY_SIZE_1300_1399 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, MISSING_HEADERS 0, TO_MALFORMED 0, WEBMAIL_SOURCE 0, __BOUNCE_CHALLENGE_SUBJ 0, __BOUNCE_NDR_SUBJ_EXEMPT 0, __CP_URI_IN_BODY 0, __CT 0, __CT_TEXT_PLAIN 0, __HAS_MSGID 0, __HELO_GMAIL 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __PHISH_SPEAR_HTTP_RECEIVED 0, __PHISH_SPEAR_STRUCTURE_1 0, __PHISH_SPEAR_STRUCTURE_2 0, __RDNS_GMAIL 0, __SANE_MSGID 0)
-X-SMTP-Spam-Score: 8%
-To: unlisted-recipients:; (no To-header on input)
+	id S1754565Ab3BPVUK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 16:20:10 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:34261 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754503Ab3BPVUI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Feb 2013 16:20:08 -0500
+From: Joe Perches <joe@perches.com>
+To: Michael Chan <mchan@broadcom.com>
+Cc: Matt Carlson <mcarlson@broadcom.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] tg3: Remove define and single use of GET_CHIP_REV_ID
+Date: Sat, 16 Feb 2013 13:20:03 -0800
+Message-Id: <dea1c655b2c1380821aae6cd8438ad742ddf6e12.1361049158.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I wrote a patch to fix this:
+It's the same value as tp->pci_chip_rev_id so use that
+instead.  This makes all CHIPREV_ID_<foo> tests the same.
 
-http://lkml.org/lkml/2012/12/30/47
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/net/ethernet/broadcom/tg3.c | 10 ++++------
+ drivers/net/ethernet/broadcom/tg3.h |  4 +---
+ 2 files changed, 5 insertions(+), 9 deletions(-)
 
-But nobody picked it up and since then I have been too busy to respin
-the patch for new -rc kernels.
+diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
+index 1b59876..f511e8b 100644
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -15761,12 +15761,10 @@ static int tg3_get_invariants(struct tg3 *tp, const struct pci_device_id *ent)
+ 			      &pci_state_reg);
+ 	if ((pci_state_reg & PCISTATE_CONV_PCI_MODE) == 0 &&
+ 	    !tg3_flag(tp, PCIX_TARGET_HWBUG)) {
+-		u32 chiprevid = GET_CHIP_REV_ID(tp->misc_host_ctrl);
+-
+-		if (chiprevid == CHIPREV_ID_5701_A0 ||
+-		    chiprevid == CHIPREV_ID_5701_B0 ||
+-		    chiprevid == CHIPREV_ID_5701_B2 ||
+-		    chiprevid == CHIPREV_ID_5701_B5) {
++		if (tp->pci_chip_rev_id == CHIPREV_ID_5701_A0 ||
++		    tp->pci_chip_rev_id == CHIPREV_ID_5701_B0 ||
++		    tp->pci_chip_rev_id == CHIPREV_ID_5701_B2 ||
++		    tp->pci_chip_rev_id == CHIPREV_ID_5701_B5) {
+ 			void __iomem *sram_base;
+ 
+ 			/* Write some dummy words into the SRAM status block
+diff --git a/drivers/net/ethernet/broadcom/tg3.h b/drivers/net/ethernet/broadcom/tg3.h
+index b676728..3e27f2e 100644
+--- a/drivers/net/ethernet/broadcom/tg3.h
++++ b/drivers/net/ethernet/broadcom/tg3.h
+@@ -120,9 +120,7 @@
+ #define  MISC_HOST_CTRL_TAGGED_STATUS	 0x00000200
+ #define  MISC_HOST_CTRL_CHIPREV		 0xffff0000
+ #define  MISC_HOST_CTRL_CHIPREV_SHIFT	 16
+-#define  GET_CHIP_REV_ID(MISC_HOST_CTRL) \
+-	 (((MISC_HOST_CTRL) & MISC_HOST_CTRL_CHIPREV) >> \
+-	  MISC_HOST_CTRL_CHIPREV_SHIFT)
++
+ #define  CHIPREV_ID_5700_A0		 0x7000
+ #define  CHIPREV_ID_5700_A1		 0x7001
+ #define  CHIPREV_ID_5700_B0		 0x7100
+-- 
+1.8.1.2.459.gbcd45b4.dirty
 
-On Fri, Feb 15, 2013 at 10:49 AM, Andreas Mohr <andi@lisas.de> wrote:
->
-> Hi,
->
-> On Fri, Feb 15, 2013 at 09:47:07AM +0000, Zhang, Rui wrote:
-> > Please attach the output of
-> > "grep . /sys/class/thermal/thermal_zone*/cdev*/*"?
->
-> # grep . /sys/class/thermal/thermal_zone*/cdev*/*
-> /sys/class/thermal/thermal_zone0/cdev0/cur_state:1
-> /sys/class/thermal/thermal_zone0/cdev0/max_state:1
-> grep: /sys/class/thermal/thermal_zone0/cdev0/power: Is a directory
-> grep: /sys/class/thermal/thermal_zone0/cdev0/subsystem: Is a directory
-> /sys/class/thermal/thermal_zone0/cdev0/type:acerhdf-fan
->
-> > The question is that if we can also call it "throttle" when reducing the
-> > device performance to generate less heat.
->
-> I won't continue to elaborate on this separate issue now, given that my
-> time
-> currently is very limited ;)
->
-> Andreas Mohr
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
-
-
---
-Alexander Lam
