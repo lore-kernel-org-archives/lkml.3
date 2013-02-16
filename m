@@ -1,99 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753221Ab3BPLit (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 06:38:49 -0500
-Received: from mail-da0-f49.google.com ([209.85.210.49]:34948 "EHLO
+	id S1753245Ab3BPLjA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 06:39:00 -0500
+Received: from mail-da0-f49.google.com ([209.85.210.49]:48690 "EHLO
 	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753188Ab3BPLir (ORCPT
+	with ESMTP id S1753188Ab3BPLi5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 06:38:47 -0500
-From: Anil Kumar <anilk4.v@gmail.com>
-To: devicetree-discuss@lists.ozlabs.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: linux@arm.linux.org.uk, b-cousson@ti.com, tony@atomide.com,
-        grant.likely@secretlab.ca, zonque@gmail.com, thomas@tomweber.eu,
-        anilk4.v@gmail.com
-Subject: [PATCH 2/2] ARM: dts: omap3-devkit8000: add nand dt node
-Date: Sat, 16 Feb 2013 17:08:28 +0530
-Message-Id: <1361014708-1659-3-git-send-email-anilk4.v@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1361014708-1659-1-git-send-email-anilk4.v@gmail.com>
-References: <1361014708-1659-1-git-send-email-anilk4.v@gmail.com>
+	Sat, 16 Feb 2013 06:38:57 -0500
+Subject: Re: [PATCH] [Watchdog][Trivial] Added comments to explain
+ watchdog_disabled variable
+From: anish kumar <anish198519851985@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Don Zickus <dzickus@redhat.com>, akpm@linux-foundation.org,
+        tglx@linutronix.de, chuansheng.liu@intel.com,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20130216084245.GD18953@gmail.com>
+References: <1359907275-15410-1-git-send-email-anish198519851985@gmail.com>
+	 <CAK7N6vpT_X7s7Vid0-EYenb0w7k=nL8d-ov=fExFMuSYcV47Wg@mail.gmail.com>
+	 <20130213092101.GD7630@gmail.com>
+	 <CAK7N6vqh_c31bWiHgVgJLLckya7mykshMKYiqLTdkScMCoXcsg@mail.gmail.com>
+	 <20130215162959.GF98867@redhat.com>  <20130216084245.GD18953@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 16 Feb 2013 17:08:45 +0530
+Message-ID: <1361014725.1672.0.camel@anish-Inspiron-N5050>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the needed sections to enable nand support on
-Devkit8000.
+On Sat, 2013-02-16 at 09:42 +0100, Ingo Molnar wrote:
+> * Don Zickus <dzickus@redhat.com> wrote:
+> 
+> > > >> > +       /*
+> > > >> > +        * We shouldn't enable watchdog threads if it is
+> > > >> > +        * disabled.This is done by watchdog_disabled
+> > > >> > +        * variable check in watchdog_*_all_cpus function.
+> > > >
+> > > > It has two grammatic and a stylistic error in it, plus misses
+> > > Would you mind pointing it out to me the grammatical mistakes
+> > > as I am not that good with grammar.
+> > 
+> > I am not entirely sure which ones Ingo is referring to, but what I see are
+> > 
+> > 'disabled.This' needs a space after period
+> > 'This is done by watchdog_disabled' needs a 'the' after 'by'
+> > 'variable check in watchdog..' needs a 'the' after 'in'.
+> > 
+> > in addition to the missing ()'s after 'watchdog_*_all_cpus.
+> 
+> There's also a plural/singular mismatch between 'watchdog 
+> threads' and 'if it is disabled'.
+Thanks, I will update the same in the next patch.
+> 
+> Thanks,
+> 
+> 	Ingo
 
-Add nand partitions information.
-
-Signed-off-by: Anil Kumar <anilk4.v@gmail.com>
----
-:100644 100644 6338993... 6c6decf... M	arch/arm/boot/dts/omap3-devkit8000.dts
- arch/arm/boot/dts/omap3-devkit8000.dts |   52 ++++++++++++++++++++++++++++++++
- 1 files changed, 52 insertions(+), 0 deletions(-)
-
-diff --git a/arch/arm/boot/dts/omap3-devkit8000.dts b/arch/arm/boot/dts/omap3-devkit8000.dts
-index 6338993..6c6decf 100644
---- a/arch/arm/boot/dts/omap3-devkit8000.dts
-+++ b/arch/arm/boot/dts/omap3-devkit8000.dts
-@@ -101,3 +101,55 @@
- &mcbsp5 {
- 	status = "disabled";
- };
-+
-+&gpmc {
-+	ranges = <0 0 0x30000000 0x04>;       /* CS0: NAND */
-+
-+	nand@0,0 {
-+		reg = <0 0 0>; /* CS0, offset 0 */
-+		nand-bus-width = <16>;
-+
-+		gpmc,sync-clk = <0>;
-+		gpmc,cs-on = <0>;
-+		gpmc,cs-rd-off = <44>;
-+		gpmc,cs-wr-off = <44>;
-+		gpmc,adv-on = <6>;
-+		gpmc,adv-rd-off = <34>;
-+		gpmc,adv-wr-off = <44>;
-+		gpmc,we-off = <40>;
-+		gpmc,oe-off = <54>;
-+		gpmc,access = <64>;
-+		gpmc,rd-cycle = <82>;
-+		gpmc,wr-cycle = <82>;
-+		gpmc,wr-access = <40>;
-+		gpmc,wr-data-mux-bus = <0>;
-+
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+
-+		x-loader@0 {
-+			label = "X-Loader";
-+			reg = <0 0x80000>;
-+		};
-+
-+		bootloaders@80000 {
-+			label = "U-Boot";
-+			reg = <0x80000 0x1e0000>;
-+		};
-+
-+		bootloaders_env@260000 {
-+			label = "U-Boot Env";
-+			reg = <0x260000 0x20000>;
-+		};
-+
-+		kernel@280000 {
-+			label = "Kernel";
-+			reg = <0x280000 0x400000>;
-+		};
-+
-+		filesystem@680000 {
-+			label = "File System";
-+			reg = <0x680000 0xf980000>;
-+		};
-+	};
-+};
--- 
-1.7.0.4
 
