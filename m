@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753039Ab3BPK1h (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 05:27:37 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:18054 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752892Ab3BPK1f (ORCPT
+	id S1752984Ab3BPKwk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 05:52:40 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:44349 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752660Ab3BPKwj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 05:27:35 -0500
-Message-ID: <511F5F04.9000009@oracle.com>
-Date: Sat, 16 Feb 2013 18:27:16 +0800
-From: Jeff Liu <jeff.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Sat, 16 Feb 2013 05:52:39 -0500
+Date: Sat, 16 Feb 2013 10:51:59 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        Vinod Koul <vinod.koul@linux.intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, Dan Williams <djbw@fb.com>,
+        Olof Johansson <olof@lixom.net>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/4] dmaengine: dw_dmac: move to generic DMA binding
+Message-ID: <20130216105159.GN17833@n2100.arm.linux.org.uk>
+References: <1360952512-971558-1-git-send-email-arnd@arndb.de> <1360952512-971558-3-git-send-email-arnd@arndb.de> <CAKohpo=u_b9u1=78+tm-rhVR14P0=2XbLrZEDJrQBY5W8LXiCw@mail.gmail.com> <201302161007.39657.arnd@arndb.de>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>, David Rientjes <rientjes@google.com>
-Subject: Re: [RESEND] [PATCH] kernel/res_counter.c: remove useless return
- statement at res_counter_member()
-References: <510C9E74.3070402@oracle.com> <20130214152122.920f4936.akpm@linux-foundation.org>
-In-Reply-To: <20130214152122.920f4936.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201302161007.39657.arnd@arndb.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew and David,
-
-On 02/15/2013 07:21 AM, Andrew Morton wrote:
-> On Sat, 02 Feb 2013 13:04:52 +0800
-> Jeff Liu <jeff.liu@oracle.com> wrote:
+On Sat, Feb 16, 2013 at 10:07:39AM +0000, Arnd Bergmann wrote:
+> On Saturday 16 February 2013, Viresh Kumar wrote:
+> > On 15 February 2013 23:51, Arnd Bergmann <arnd@arndb.de> wrote:
+> > > +static bool dw_dma_generic_filter(struct dma_chan *chan, void *param)
+> > >  {
+> > 
+> > > +       dws->cfg_hi     = 0xffffffff;
+> > > +       dws->cfg_lo     = 0xffffffff;
+> > 
+> > s/0xffffffff/-1 ?
 > 
->> The return statement after BUG() is invalid, move BUG() to the default choice of the switch.
->>
->> Signed-off-by: Jie Liu <jeff.liu@oracle.com>
->> ---
->>  kernel/res_counter.c |    5 ++---
->>  1 file changed, 2 insertions(+), 3 deletions(-)
->>
->> diff --git a/kernel/res_counter.c b/kernel/res_counter.c
->> index ff55247..748a3bc 100644
->> --- a/kernel/res_counter.c
->> +++ b/kernel/res_counter.c
->> @@ -135,10 +135,9 @@ res_counter_member(struct res_counter *counter, int member)
->>  		return &counter->failcnt;
->>  	case RES_SOFT_LIMIT:
->>  		return &counter->soft_limit;
->> +	default:
->> +		BUG();
->>  	};
->> -
->> -	BUG();
->> -	return NULL;
->>  }
->>  
->>  ssize_t res_counter_read(struct res_counter *counter, int member,
-> 
-> I expect it was done that way to avoid a hey-theres-no-return-statement
-> warning when CONFIG_BUG=n.
-> 
-Sorry for my late response, I just got back from vacation.  So it's better to
-keep it as it is.
+> It's an 'unsigned int'. While -1 would work here, I always find it a little
+> odd to rely on that feature of the C language.
 
-Thanks,
--Jeff
-
+However, relying on an 'int' being 32-bits is also rather odd, and
+probably much more dubious too.  If you want to set all bits in an
+int, the portable way to do that is ~0.
