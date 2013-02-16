@@ -1,105 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753778Ab3BPRGr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 12:06:47 -0500
-Received: from mail-da0-f47.google.com ([209.85.210.47]:51646 "EHLO
-	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753700Ab3BPRGq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 12:06:46 -0500
-Message-ID: <511FBCA0.9020205@gmail.com>
-Date: Sun, 17 Feb 2013 01:06:40 +0800
-From: Lai Jiangshan <eag0628@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1753817Ab3BPRGv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 12:06:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48813 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753786Ab3BPRGt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Feb 2013 12:06:49 -0500
+Date: Sat, 16 Feb 2013 18:05:13 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Ben Chan <benchan@chromium.org>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH 5/5] coredump: abort core dump piping only due to a
+	fatal signal
+Message-ID: <20130216170513.GA4910@redhat.com>
+References: <1360885096-21207-1-git-send-email-msb@chromium.org> <1360885096-21207-5-git-send-email-msb@chromium.org> <20130215150117.GB30829@redhat.com> <CACBanvrdpJ=MZGgF1-562pJ4_7ZLFY5w83ZnY-NaS6E+AgyVPg@mail.gmail.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: Re: [PATCH 2/2 wq/for-3.9] workqueue: reimplement is_chained_work()
- using current_wq_worker()
-References: <20130214032633.GF9057@htj.dyndns.org> <20130214032705.GG9057@htj.dyndns.org>
-In-Reply-To: <20130214032705.GG9057@htj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACBanvrdpJ=MZGgF1-562pJ4_7ZLFY5w83ZnY-NaS6E+AgyVPg@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, tj
+On 02/15, Mandeep Singh Baines wrote:
+>
+> On Fri, Feb 15, 2013 at 7:01 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >
+> > It is not enough and imho not good. Damn, I'll try very much to make the
+> > patches on weekend...
+> >
+> >> -     while ((pipe->readers > 1) && (!signal_pending(current))) {
+> >> +     while ((pipe->readers > 1) && (!fatal_signal_pending(current))) {
+> >
+> > This turns pipe_wait() belowe into the busy-wait loop if signal_pending().
+>
+> D'oh. Thanks for catching that.
+>
+> Fixed in v3 by blocking non-fatal signals.
 
-Thank you for adding this one.
+Doesn't look correct...
 
-Would you deffer "workqueue: rename cpu_workqueue to pool_workqueue" a 
-little? I don't want to rebase my almost-ready work again(not a good 
-reason... but please...)
+> > Not good. And not enough, there are other reasons why coredump can fail
+> > if the signal is pending.
+>
+> What other reasons did you have in mind?
 
-I will answer your other emails soon and sent the patches.
+Say, pipe_write() can fail if signal_pending() == T.
 
-Thanks,
-Lai
+> Since applying an earlier version of this patch, truncated/missing
+> coredumps are no longer any issue for us.
 
-On 14/02/13 11:27, Tejun Heo wrote:
-> is_chained_work() was added before current_wq_worker() and implemented
-> its own ham-fisted way of finding out whether %current is a workqueue
-> worker - it iterates through all possible workers.
+Sure, this "almost works". But this is doesn't really work.
+
+And more importantly, we should fix another problem, SIGKILL should
+really stop the coredumping, and I do not see a simple solution, the
+main problem is the races with the exiting threads...
+
+> Could the other reasons be addressed in another patch?
+
+Well. Personally I believe we should fix the problems with signals
+first, then add the freezer changes...
+
+> >>               wake_up_interruptible_sync(&pipe->wait);
+> >>               kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
+> >>               pipe_wait(pipe);
+> >> +             pipe_unlock(pipe);
+> >> +             try_to_freeze();
+> >
+> > Oh, yes. One of the problems with coredump/signals is freezer. Not sure
+> > what should we do...
+> >
+> > But if we add try_to_freeze() here, we need to add more try_to_freeze's,
+> > think about dumping the huge core on the slow media.
+> >
 >
-> Drop the custom implementation and reimplement using
-> current_wq_worker().
->
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> ---
->   kernel/workqueue.c |   33 ++++++++-------------------------
->   1 file changed, 8 insertions(+), 25 deletions(-)
->
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -1159,35 +1159,18 @@ static void insert_work(struct cpu_workq
->
->   /*
->    * Test whether @work is being queued from another work executing on the
-> - * same workqueue.  This is rather expensive and should only be used from
-> - * cold paths.
-> + * same workqueue.
->    */
->   static bool is_chained_work(struct workqueue_struct *wq)
->   {
-> -	unsigned long flags;
-> -	unsigned int cpu;
-> +	struct worker *worker;
->
-> -	for_each_cwq_cpu(cpu, wq) {
-> -		struct cpu_workqueue_struct *cwq = get_cwq(cpu, wq);
-> -		struct worker_pool *pool = cwq->pool;
-> -		struct worker *worker;
-> -		struct hlist_node *pos;
-> -		int i;
-> -
-> -		spin_lock_irqsave(&pool->lock, flags);
-> -		for_each_busy_worker(worker, i, pos, pool) {
-> -			if (worker->task != current)
-> -				continue;
-> -			spin_unlock_irqrestore(&pool->lock, flags);
-> -			/*
-> -			 * I'm @worker, no locking necessary.  See if @work
-> -			 * is headed to the same workqueue.
-> -			 */
-> -			return worker->current_cwq->wq == wq;
-> -		}
-> -		spin_unlock_irqrestore(&pool->lock, flags);
-> -	}
-> -	return false;
-> +	worker = current_wq_worker();
-> +	/*
-> +	 * Return %true iff I'm a worker execuing a work item on @wq.  If
-> +	 * I'm @worker, it's safe to dereference it without locking.
-> +	 */
-> +	return worker && worker->current_cwq->wq == wq;
->   }
->
->   static void __queue_work(unsigned int cpu, struct workqueue_struct *wq,
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+> We could add more try_to_freeze()s in the dump_write paths to work
+> even better with freezer. Do you see any issues with just adding it
+> here for a start. It fixes the non-slow media case.
+
+The only issue is that, again, this change pretends to work but it doesn't ;)
+IOW, imho you fix the symptom only.
+
+Lets forget about the slow media, consider the piped coredump (the case
+you are trying to fix). Suppose that try_to_freeze_tasks() is in progress,
+the user-space coredump handler is already frozen, and the dumping thread
+does pipe_write()->pipe_wait().
+
+If only we could change pipe_wait() to do freezable_schedule()...
+
+Oleg.
 
