@@ -1,150 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754679Ab3BPVw2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 16:52:28 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:37524 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754541Ab3BPVw0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 16:52:26 -0500
-Date: Sat, 16 Feb 2013 13:52:23 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Wolfram Sang <wolfram@the-dreams.de>, Ben Dooks <ben-linux@fluff.org>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] I2C: add i2c_master_send_exact() and friends
-Message-ID: <20130216215223.GC22044@core.coreip.homeip.net>
-References: <20130216024235.GA25913@core.coreip.homeip.net>
- <20130216222524.0980b297@endymion.delvare>
+	id S1754722Ab3BPVzB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 16:55:01 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:46985 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754530Ab3BPVzB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Feb 2013 16:55:01 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CA+55aFy821kt0cz=nNB45e0K-hGUfairbTEgNP6E65jkA6bWaA@mail.gmail.com>
+References: <20130213041629.GA28622@redhat.com> <alpine.LNX.2.00.1302122121170.15020@eggly.anvils> <20130213193411.GA15928@redhat.com> <CA+55aFzmEDriX26Z7oJZg9yssFdCAaYwu6krmrwqfj2TBsxA4w@mail.gmail.com> <20130215011503.GA11914@redhat.com> <CA+55aFyVE0jyu9uw659ERw5E2DdOhwkQp3gk=gcXP0xrmMh9qA@mail.gmail.com> <20130215174435.GA2792@linux.vnet.ibm.com> <CA+55aFy8FeGMOnWwkfmyFYyVCw+k1LSVg7BG0tsTNZzqi5EKYg@mail.gmail.com> <CA+55aFwHtFeN97E-zW2QKQWH8vu=g29cxevvEnpEnHc8dx7oWA@mail.gmail.com> <CA+55aFyXo89LQ0mboxVYB5SJ08D8=Kv0=cqYHAd6-H7nmp=S-w@mail.gmail.com> <20130216192554.GB7035@linux.vnet.ibm.com> <CA+55aFy821kt0cz=nNB45e0K-hGUfairbTEgNP6E65jkA6bWaA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130216222524.0980b297@endymion.delvare>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: Debugging Thinkpad T430s occasional suspend failure.
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Sat, 16 Feb 2013 13:53:22 -0800
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+CC: Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Dave Jones <davej@redhat.com>,
+        Hugh Dickins <hughd@google.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Paul McKenney <paul.mckenney@linaro.org>
+Message-ID: <e752ea3f-b236-4c34-9e8a-a5ff7df4f93c@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 16, 2013 at 10:25:24PM +0100, Jean Delvare wrote:
-> Hi Dmitry,
-> 
-> On Fri, 15 Feb 2013 18:42:35 -0800, Dmitry Torokhov wrote:
-> > Many i2c users consider short transfers to be an error and would prefer
-> > getting -EIO instead of a positive return value and having to convert
-> > it to error code by themselves. So let's add the following new helpers:
-> > 
-> > 	i2c_master_send_exact()
-> > 	i2c_master_recv_exact()
-> > 	i2c_transfer_exact()
-> 
-> This is interesting, so far people had been complaining that
-> i2c_transfer() wasn't telling enough to the caller on error. You're the
-> first one asking for less detail. But in a way this is the same
-> request: the current API can't report both errors and number of
-> transferred messages/bytes, so the interface ends up being too complex
-> for what it can actually do.
-> 
-> There was a proposal to improve that but it required touching struct
-> i2c_msg in a way that would break binary compatibility on some
-> architectures, so it was rejected.
-> 
-> At this point I can only think of two ways to address the issue
-> properly: either introduce a new i2c_msg-like structure, or add an
-> optional u16* parameter to i2c_transfer(), pointing to an array with
-> the same size as msgs, where the number of transferred bytes for each
-> message would be recorded. The latter doesn't look as nice but would be
-> better performance-wise (no need to convert between old and new i2c_msg
-> structures in compatibility paths.) In both cases, this would have to
-> be implemented optionally on a per-driver basis, and user-space
-> wouldn't benefit of it unless someone explicitly adds new ioctls to the
-> i2c-dev interface.
-> 
-> If this ever happens then your proposal makes sense. Otherwise it might
-> actually make more sense to just simplify the current API by only
-> returning success (0) or a negative error code, and adding some
-> compatibility code into i2c-dev.c so that user-space doesn't see the
-> change.
+The syscall generation *should* make files with different names only, but I'll look.
 
-I'd be OK with this as well. What I want to avoid is the checks below
-repeated in every input driver for I2C devices. If you look at them they
-all care about getting (or transmitting) the whole structure and neither
-of them is happy with partial transfers.
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-I am pretty sure if I look into other subsystems I will find more
-examples of that.
-
-> 
-> > Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> > ---
-> > 
-> > Resending to Wolfram's new address...
-> > 
-> >  drivers/i2c/i2c-core.c |   69 ++++++++++++++++++++++++++++++++++++++++++++++++
-> >  include/linux/i2c.h    |   11 ++++++++
-> >  2 files changed, 80 insertions(+)
-> > 
-> > diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-> > index e388590..6cddb5d 100644
-> > --- a/drivers/i2c/i2c-core.c
-> > +++ b/drivers/i2c/i2c-core.c
-> > @@ -1430,6 +1430,33 @@ int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
-> >  EXPORT_SYMBOL(i2c_transfer);
-> >  
-> >  /**
-> > + * i2c_transfer_exact - transfer given number of I2C messages
-> > + * @adap: Handle to I2C bus
-> > + * @msgs: One or more messages to execute before STOP is issued to
-> > + *	terminate the operation; each message begins with a START.
-> > + * @num: Number of messages to be executed.
-> > + *
-> > + * Returns negative errno (including -EIO on short transfer),
-> > + * or 0 if all messages have been tranferred successfully.
-> > + *
-> > + * Note that there is no requirement that each message be sent to
-> > + * the same slave address, although that is the most common model.
-> > + */
-> > +int i2c_transfer_exact(struct i2c_adapter *adap,
-> > +		       struct i2c_msg *msgs, int num)
-> > +{
-> > +	int ret;
-> > +
-> > +	ret = i2c_transfer(adap, msgs, num);
-> > +	if (ret == num)
-> > +		return 0;
-> > +
-> > +	return ret < 0 ? ret : -EIO;
-> > +
-> > +}
-> > +EXPORT_SYMBOL(i2c_transfer_exact);
-> 
-> Two questions here which apply to other functions as well:
-> * Why don't you use EXPORT_SYMBOL_GPL()?
-
-2 reasons:
-
-1. I am following the rest of the file which uses standard
-EXPORT_SYMBOL()
-
-2. I find EXPORT_SYMBOL_GPL() is stupid idea as it does not really add
-anything over standard EXPORT_SYMBOL(). The entire kernel is GPL and a
-particular code is either derivative work or it is not. If it is and it
-is not GPL then it is in violation of the license and can not use any of
-the symbols. And if it is not a derivative work, then again GPL vs
-non-GPL symbols make no real difference.
-
-However if you prefer EXPORT_SYMBOL_GPL() I can change it.
-
-> * Did you check if an inline function wouldn't be cheaper in practice?
->   i2c_transfer() is already a wrapper around __i2c_transfer(), and
->   i2c_master_send/recv() are wrappers around i2c_transfer(). Adding one
->   more wrapper level is going to do no good to performance and stack
->   usage.
-
-I'll check, but I do not expect a wrapper adding any performance
-penalties. We'd also pass most of the parameters in registers so I do
-not think the stack usage is an issue either.
-
-Thanks.
+>On Sat, Feb 16, 2013 at 11:25 AM, Paul E. McKenney
+><paulmck@linux.vnet.ibm.com> wrote:
+>>
+>> Sorry for the delay in testing this, but there was a need to upgrade
+>> my laptop, and bozo here figured "why not go to 64 bits while I am at
+>> it?" -- and then proceeded to learn the hard way that it is necessary
+>> to do "make mrproper" before doing a build in 64-bit mode.  :-/
+>
+>Hmm. Our object file dependency check includes checking that the
+>compiler options are the same, but that's only true for normal C
+>files. Some of the other rules do *not* test the full range of config
+>options, so in general, if you change architecture etc models, you do
+>indeed want to make sure that you do a "make distclean" (aka "make
+>mrproper") or something like "git clean -dqfx".
+>
+>For a number of other files, we just depend on the normal make
+>timestamp logic, which means that "if the object file is newer than
+>the sources", we'll trust it. Which obviously doesn't work for cases
+>where the object file may have been generated under totally different
+>architecture rules..
+>
+>(That said, what kind of old environment did you do this in?
+>stub32_sigaltstack was removed during the merge window, so I'm
+>assuming you applied my patch on top of plain 3.7 or something?)
+>
+>> The kernel build system's way of telling you this at the moment is:
+>>
+>> arch/x86/built-in.o:(.rodata+0x4990): undefined reference to
+>`stub32_sigaltstack'
+>
+>Adding Peter Anvin to the people, just in case he sees what's wrong
+>with the system call stub generation that keeps excessively old object
+>files around. If it's easy to fix, it might be worth trying to make it
+>ok to switch from i386 to x86-64 and back in the same tree.
+>
+>Peter? Not a big deal, but if you see something obvious, let's just
+>try to fix it, ok?
+>
+>> Anyway, with this patch, I see CPU stall warnings when running
+>rcutorture
+>> as shown below.  This is not a hard failure:
+>
+>Yeah, there's something wrong with the patch, I didn't bother trying
+>to figure it out for now. It also causes a hard failure with lockdep
+>(or lock proving/debugging, I'm not sure which one triggered it) - and
+>it happens too early to even see anything on the screen.
+>
+>So I'd like to make that "downgrade from hardirq to softirq" atomic,
+>and I think it would clean up the crazy code too (currently it does a
+>*lot* of back-and-forth on the preempt flags), but I clearly missed
+>some case where we used a wrapper or two to add some tracepoint or a
+>RCU scheduling point. And I'm not going to worry about it right now,
+>since I'm preparing to make v3.8 soon.
+>
+>But if somebody spots the bug, holler.
+>
+>                     Linus
 
 -- 
-Dmitry
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
