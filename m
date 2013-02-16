@@ -1,239 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752759Ab3BPJHz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 04:07:55 -0500
-Received: from mga09.intel.com ([134.134.136.24]:19890 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752642Ab3BPJHs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 04:07:48 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,678,1355126400"; 
-   d="scan'208";a="286545891"
-Date: Sat, 16 Feb 2013 17:08:10 +0800
-From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-To: mingo@kernel.org
-Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        Michel Lespinasse <walken@google.com>
-Subject: Re: [PATCH v2] rwsem-spinlock: let rwsem write lock stealable
-Message-ID: <20130216090810.GA2904@yliu-dev.sh.intel.com>
-References: <1359716356-23865-1-git-send-email-yuanhan.liu@linux.intel.com>
+	id S1752845Ab3BPJIP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 04:08:15 -0500
+Received: from intranet.asianux.com ([58.214.24.6]:53211 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752795Ab3BPJIE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Feb 2013 04:08:04 -0500
+X-Spam-Score: -100.8
+Message-ID: <511F4C6B.4030805@asianux.com>
+Date: Sat, 16 Feb 2013 17:07:55 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1359716356-23865-1-git-send-email-yuanhan.liu@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>, sameo@linux.intel.com
+CC: Tony Lindgren <tony@atomide.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [Suggestion] drivers/mfd/twl*: about power_count in twl6040_remove
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo, 
 
-Ping...
+  if necessary to treat 'power_count' as a counter
+    when power_count is more than 1, we do not really power off it.
+    this may cause issue:
+      after finish calling twl6040_remove, another modules still use it.
+    suggest to give additional check, or synchronisation for other modules.
 
-On Fri, Feb 01, 2013 at 06:59:16PM +0800, Yuanhan Liu wrote:
-> We(Linux Kernel Performance project) found a regression introduced by
-> commit 5a50508, which just convert all mutex lock to rwsem write lock.
-> The semantics is same, but the results is quite huge in some cases.
-> After investigation, we found the root cause: mutex support lock
-> stealing. Here is the link for the detailed regression report:
->     https://lkml.org/lkml/2013/1/29/84
-> 
-> Ingo suggests to add write lock stealing to rwsem as well:
->     "I think we should allow lock-steal between rwsem writers - that
->      will not hurt fairness as most rwsem fairness concerns relate to
->      reader vs. writer fairness"
-> 
-> And here is the rwsem-spinlock version.
-> 
-> With this patch, we got a double performance increase in one test box
-> with following aim7 workfile:
->     FILESIZE: 1M
->     POOLSIZE: 10M
->     10 fork_test
-> 
-> some /usr/bin/time output w/o patch      some /usr/bin/time_output with patch
-> ----------------------------------------------------------------------------
-> Percent of CPU this job got: 369%        Percent of CPU this job got: 537%
-> Voluntary context switches: 640595016    Voluntary context switches: 157915561
-> ----------------------------------------------------------------------------
-> You will see we got a 45% increase of CPU usage and saves about 3/4
-> voluntary context switches.
-> 
-> Here is the .nr_running filed for all CPUs from /proc/sched_debug.
-> 
-> output w/o this patch:
-> ----------------------
-> cpu 00:   0   0   ...   0   0   0   0   0   0   0   1   0   1 .... 0   0
-> cpu 01:   0   0   ...   1   0   0   0   0   0   1   1   0   1 .... 0   0
-> cpu 02:   0   0   ...   1   1   0   0   0   1   0   0   1   0 .... 1   1
-> cpu 03:   0   0   ...   0   1   0   0   0   1   1   0   1   1 .... 0   0
-> cpu 04:   0   1   ...   0   0   2   1   1   2   1   0   1   0 .... 1   0
-> cpu 05:   0   1   ...   0   0   2   1   1   2   1   1   1   1 .... 0   0
-> cpu 06:   0   0   ...   2   0   0   1   0   0   1   0   0   0 .... 0   0
-> cpu 07:   0   0   ...   2   0   0   0   1   0   1   1   0   0 .... 1   0
-> cpu 08:   0   0   ...   1   0   0   0   1   0   0   1   0   0 .... 0   1
-> cpu 09:   0   0   ...   1   0   0   0   1   0   0   1   0   0 .... 0   1
-> cpu 10:   0   0   ...   0   0   0   2   0   0   1   0   1   1 .... 1   2
-> cpu 11:   0   0   ...   0   0   0   2   2   0   1   0   1   0 .... 1   2
-> cpu 12:   0   0   ...   2   0   0   0   1   1   3   1   1   1 .... 1   0
-> cpu 13:   0   0   ...   2   0   0   0   1   1   3   1   1   0 .... 1   1
-> cpu 14:   0   0   ...   0   0   0   2   0   0   1   1   0   0 .... 1   0
-> cpu 15:   0   0   ...   1   0   0   2   0   0   1   1   0   0 .... 0   0
-> 
-> output with this patch:
-> -----------------------
-> cpu 00:   0   0   ...   1   1   2   1   1   1   2   1   1   1 .... 1   3
-> cpu 01:   0   0   ...   1   1   1   1   1   1   2   1   1   1 .... 1   3
-> cpu 02:   0   0   ...   2   2   3   2   0   2   1   2   1   1 .... 1   1
-> cpu 03:   0   0   ...   2   2   3   2   1   2   1   2   1   1 .... 1   1
-> cpu 04:   0   1   ...   2   0   0   1   0   1   3   1   1   1 .... 1   1
-> cpu 05:   0   1   ...   2   0   1   1   0   1   2   1   1   1 .... 1   1
-> cpu 06:   0   0   ...   2   1   1   2   0   1   2   1   1   1 .... 2   1
-> cpu 07:   0   0   ...   2   1   1   2   0   1   2   1   1   1 .... 2   1
-> cpu 08:   0   0   ...   1   1   1   1   1   1   1   1   1   1 .... 0   0
-> cpu 09:   0   0   ...   1   1   1   1   1   1   1   1   1   1 .... 0   0
-> cpu 10:   0   0   ...   1   1   1   0   0   1   1   1   1   1 .... 0   0
-> cpu 11:   0   0   ...   1   1   1   0   0   1   1   1   1   2 .... 1   0
-> cpu 12:   0   0   ...   1   1   1   0   1   1   0   0   0   1 .... 2   1
-> cpu 13:   0   0   ...   1   1   1   0   1   1   1   0   1   2 .... 2   0
-> cpu 14:   0   0   ...   2   0   0   0   0   1   1   1   1   1 .... 2   2
-> cpu 15:   0   0   ...   2   0   0   1   0   1   1   1   1   1 .... 2   2
-> ------------------------------------------------------------------------
-> Where you can see that CPU is much busier with this patch.
-> 
-> v2: make it stealable at __down_write_trylock as well, pointed by Michel
-> 
-> Reported-by: LKP project <lkp@linux.intel.com>
-> Suggested-by: Ingo Molnar <mingo@kernel.org>
-> Cc: David Howells <dhowells@redhat.com>
-> Cc: Michel Lespinasse <walken@google.com>
-> Signed-off-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-> ---
->  lib/rwsem-spinlock.c |   69 +++++++++++++++++--------------------------------
->  1 files changed, 24 insertions(+), 45 deletions(-)
-> 
-> diff --git a/lib/rwsem-spinlock.c b/lib/rwsem-spinlock.c
-> index 7e0d6a5..7542afb 100644
-> --- a/lib/rwsem-spinlock.c
-> +++ b/lib/rwsem-spinlock.c
-> @@ -73,20 +73,13 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wakewrite)
->  		goto dont_wake_writers;
->  	}
->  
-> -	/* if we are allowed to wake writers try to grant a single write lock
-> -	 * if there's a writer at the front of the queue
-> -	 * - we leave the 'waiting count' incremented to signify potential
-> -	 *   contention
-> +	/*
-> +	 * as we support write lock stealing, we can't set sem->activity
-> +	 * to -1 here to indicate we get the lock. Instead, we wake it up
-> +	 * to let it go get it again.
->  	 */
->  	if (waiter->flags & RWSEM_WAITING_FOR_WRITE) {
-> -		sem->activity = -1;
-> -		list_del(&waiter->list);
-> -		tsk = waiter->task;
-> -		/* Don't touch waiter after ->task has been NULLed */
-> -		smp_mb();
-> -		waiter->task = NULL;
-> -		wake_up_process(tsk);
-> -		put_task_struct(tsk);
-> +		wake_up_process(waiter->task);
->  		goto out;
->  	}
->  
-> @@ -121,18 +114,10 @@ static inline struct rw_semaphore *
->  __rwsem_wake_one_writer(struct rw_semaphore *sem)
->  {
->  	struct rwsem_waiter *waiter;
-> -	struct task_struct *tsk;
-> -
-> -	sem->activity = -1;
->  
->  	waiter = list_entry(sem->wait_list.next, struct rwsem_waiter, list);
-> -	list_del(&waiter->list);
-> +	wake_up_process(waiter->task);
->  
-> -	tsk = waiter->task;
-> -	smp_mb();
-> -	waiter->task = NULL;
-> -	wake_up_process(tsk);
-> -	put_task_struct(tsk);
->  	return sem;
->  }
->  
-> @@ -204,7 +189,6 @@ int __down_read_trylock(struct rw_semaphore *sem)
->  
->  /*
->   * get a write lock on the semaphore
-> - * - we increment the waiting count anyway to indicate an exclusive lock
->   */
->  void __sched __down_write_nested(struct rw_semaphore *sem, int subclass)
->  {
-> @@ -214,37 +198,32 @@ void __sched __down_write_nested(struct rw_semaphore *sem, int subclass)
->  
->  	raw_spin_lock_irqsave(&sem->wait_lock, flags);
->  
-> -	if (sem->activity == 0 && list_empty(&sem->wait_list)) {
-> -		/* granted */
-> -		sem->activity = -1;
-> -		raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
-> -		goto out;
-> -	}
-> -
-> -	tsk = current;
-> -	set_task_state(tsk, TASK_UNINTERRUPTIBLE);
-> -
->  	/* set up my own style of waitqueue */
-> +	tsk = current;
->  	waiter.task = tsk;
->  	waiter.flags = RWSEM_WAITING_FOR_WRITE;
-> -	get_task_struct(tsk);
-> -
->  	list_add_tail(&waiter.list, &sem->wait_list);
->  
-> -	/* we don't need to touch the semaphore struct anymore */
-> -	raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
-> -
-> -	/* wait to be given the lock */
-> +	/* wait for someone to release the lock */
->  	for (;;) {
-> -		if (!waiter.task)
-> +		/*
-> +		 * That is the key to support write lock stealing: allows the
-> +		 * task already on CPU to get the lock soon rather than put
-> +		 * itself into sleep and waiting for system woke it or someone
-> +		 * else in the head of the wait list up.
-> +		 */
-> +		if (sem->activity == 0)
->  			break;
-> -		schedule();
->  		set_task_state(tsk, TASK_UNINTERRUPTIBLE);
-> +		raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
-> +		schedule();
-> +		raw_spin_lock_irqsave(&sem->wait_lock, flags);
->  	}
-> +	/* got the lock */
-> +	sem->activity = -1;
-> +	list_del(&waiter.list);
->  
-> -	tsk->state = TASK_RUNNING;
-> - out:
-> -	;
-> +	raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
->  }
->  
->  void __sched __down_write(struct rw_semaphore *sem)
-> @@ -262,8 +241,8 @@ int __down_write_trylock(struct rw_semaphore *sem)
->  
->  	raw_spin_lock_irqsave(&sem->wait_lock, flags);
->  
-> -	if (sem->activity == 0 && list_empty(&sem->wait_list)) {
-> -		/* granted */
-> +	if (sem->activity == 0) {
-> +		/* got the lock */
->  		sem->activity = -1;
->  		ret = 1;
->  	}
-> -- 
-> 1.7.7.6
+  else (not necessary to treat it as a counter)
+    better to use it as a boolean value.
+    it seems 'power_count' may still have chance to be more than 1:
+      if it is true, we still may can not power off it in twl6040_remove.
+
+  another question:
+    may 'power_count' be a large number (which may cause value overflow) ?
+
+
+  thanks.
+
+gchen.
+
+
+------------------------------------------------------------------------------
+
+relative calls:
+
+  drivers/mfd/twl6040.c:212:		twl6040_power(twl6040, 0);
+  drivers/mfd/twl6040.c:215:		twl6040_power(twl6040, 1);
+  drivers/mfd/twl6040.c:707:		twl6040_power(twl6040, 0);
+  drivers/input/misc/twl6040-vibra.c:100:	twl6040_power(info->twl6040, 1);
+  drivers/input/misc/twl6040-vibra.c:128:	twl6040_power(info->twl6040, 0);
+  sound/soc/codecs/twl6040.c:911:		ret = twl6040_power(twl6040, 1);
+  sound/soc/codecs/twl6040.c:926:		twl6040_power(twl6040, 0);
+  drivers/clk/clk-twl6040.c:51:	ret = twl6040_power(twl6040_clk->twl6040, 1);
+  drivers/clk/clk-twl6040.c:64:	ret = twl6040_power(twl6040_clk->twl6040, 0);
+
+
+
+drivers/mfd/twl6040.c:
+
+244 int twl6040_power(struct twl6040 *twl6040, int on)
+245 {
+246         int ret = 0;
+247 
+248         mutex_lock(&twl6040->mutex);
+249 
+250         if (on) {
+251                 /* already powered-up */
+252                 if (twl6040->power_count++)
+253                         goto out;
+254 
+255                 if (gpio_is_valid(twl6040->audpwron)) {
+256                         /* use automatic power-up sequence */
+257                         ret = twl6040_power_up_automatic(twl6040);
+258                         if (ret) {
+259                                 twl6040->power_count = 0;
+260                                 goto out;
+261                         }
+262                 } else {
+263                         /* use manual power-up sequence */
+264                         ret = twl6040_power_up_manual(twl6040);
+265                         if (ret) {
+266                                 twl6040->power_count = 0;
+267                                 goto out;
+268                         }
+269                 }
+270                 /* Default PLL configuration after power up */
+271                 twl6040->pll = TWL6040_SYSCLK_SEL_LPPLL;
+272                 twl6040->sysclk = 19200000;
+273                 twl6040->mclk = 32768;
+274         } else {
+275                 /* already powered-down */
+276                 if (!twl6040->power_count) {
+277                         dev_err(twl6040->dev,
+278                                 "device is already powered-off\n");
+279                         ret = -EPERM;
+280                         goto out;
+281                 }
+282 
+283                 if (--twl6040->power_count)
+284                         goto out;
+285 
+286                 if (gpio_is_valid(twl6040->audpwron)) {
+287                         /* use AUDPWRON line */
+288                         gpio_set_value(twl6040->audpwron, 0);
+289 
+290                         /* power-down sequence latency */
+291                         usleep_range(500, 700);
+292                 } else {
+293                         /* use manual power-down sequence */
+294                         twl6040_power_down_manual(twl6040);
+295                 }
+296                 twl6040->sysclk = 0;
+297                 twl6040->mclk = 0;
+298         }
+299 
+300 out:
+301         mutex_unlock(&twl6040->mutex);
+302         return ret;
+303 }
+304 EXPORT_SYMBOL(twl6040_power);
+...
+
+702 static int twl6040_remove(struct i2c_client *client)
+703 {
+704         struct twl6040 *twl6040 = i2c_get_clientdata(client);
+705 
+706         if (twl6040->power_count)
+707                 twl6040_power(twl6040, 0);
+708 
+709         if (gpio_is_valid(twl6040->audpwron))
+710                 gpio_free(twl6040->audpwron);
+711 
+712         free_irq(twl6040->irq_ready, twl6040);
+713         free_irq(twl6040->irq_th, twl6040);
+714         regmap_del_irq_chip(twl6040->irq, twl6040->irq_data);
+715 
+716         mfd_remove_devices(&client->dev);
+717         i2c_set_clientdata(client, NULL);
+718 
+719         regulator_bulk_disable(TWL6040_NUM_SUPPLIES, twl6040->supplies);
+720         regulator_bulk_free(TWL6040_NUM_SUPPLIES, twl6040->supplies);
+721 
+722         return 0;
+723 }
+
+-----------------------------------------------------------------------------------
+
+
+
