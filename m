@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754763Ab3BPWIl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 17:08:41 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:34169 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754729Ab3BPWIk (ORCPT
+	id S1754800Ab3BPWJL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 17:09:11 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:45788 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754596Ab3BPWJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 17:08:40 -0500
+	Sat, 16 Feb 2013 17:09:08 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130215225523.525656849@linuxfoundation.org>
-References: <20130215225523.525656849@linuxfoundation.org>
-Date: Sat, 16 Feb 2013 15:08:38 -0700
-Message-ID: <CAKocOONp22yNGkt1YNVL2r4fWMJiDaQOkrxpQoQXa4b4Gz=1Qg@mail.gmail.com>
-Subject: Re: [ 0/4] 3.0.65-stable review
+In-Reply-To: <20130215225543.586012193@linuxfoundation.org>
+References: <20130215225543.586012193@linuxfoundation.org>
+Date: Sat, 16 Feb 2013 15:09:06 -0700
+Message-ID: <CAKocOOMwaVAxegxeWoqCSB4fOsPwmUE5cyxNFo7EqGpMhvpJCw@mail.gmail.com>
+Subject: Re: [ 00/10] 3.7.9-stable review
 From: Shuah Khan <shuahkhan@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
@@ -22,25 +22,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 15, 2013 at 3:55 PM, Greg Kroah-Hartman
+On Fri, Feb 15, 2013 at 3:56 PM, Greg Kroah-Hartman
 <gregkh@linuxfoundation.org> wrote:
-> This is the start of the stable review cycle for the 3.0.65 release.
-> There are 4 patches in this series, all will be posted as a response
+> This is the start of the stable review cycle for the 3.7.9 release.
+> There are 10 patches in this series, all will be posted as a response
 > to this one.  If anyone has any issues with these being applied, please
 > let me know.
 >
-> Responses should be made by Sun Feb 17 22:53:56 UTC 2013.
+> Responses should be made by Sun Feb 17 22:54:03 UTC 2013.
 > Anything received after that time might be too late.
 >
 > The whole patch series can be found in one patch at:
->         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.65-rc1.gz
+>         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.7.9-rc1.gz
 > and the diffstat can be found below.
 >
 > thanks,
 >
 > greg k-h
 >
-> -------------
 
 Patches applied cleanly to 3.0.64, 3.4.31, and 3.7.8.
 Compiled and booted on the following systems:
