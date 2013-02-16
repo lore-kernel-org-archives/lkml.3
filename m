@@ -1,79 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751783Ab3BPBWq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 20:22:46 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:33875 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751156Ab3BPBWp (ORCPT
+	id S1751812Ab3BPBZI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 20:25:08 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3644 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074Ab3BPBZF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 20:22:45 -0500
-Date: Sat, 16 Feb 2013 01:22:42 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Shentino <shentino@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] SIGKILL vs. SIGSEGV on late execve() failures
-Message-ID: <20130216012242.GZ4503@ZenIV.linux.org.uk>
-References: <20130214053656.GS4503@ZenIV.linux.org.uk>
- <CA+55aFz1JjGSCdqXpVz3oH-PWFDE3Qdxt3EVxqC2i=nfLqf0Jw@mail.gmail.com>
- <20130215215946.GX4503@ZenIV.linux.org.uk>
- <CAGDaZ_pMLScoO811es3AZxzAnSiS5ixku-DeuEi4FwX8mNv3cQ@mail.gmail.com>
- <20130216000435.GY4503@ZenIV.linux.org.uk>
- <CA+55aFyzGenPNnKxf_PnAWVa1tZP294XUrhAVXgi0EuKm1x=vA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyzGenPNnKxf_PnAWVa1tZP294XUrhAVXgi0EuKm1x=vA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 15 Feb 2013 20:25:05 -0500
+X-Authority-Analysis: v=2.0 cv=adbjbGUt c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=psnlgLDug10A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=PU5ldj0W8K0A:10 a=6DF5gkPlXpPtHeY18fQA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1360977902.23152.119.camel@gandalf.local.home>
+Subject: Re: [PATCH v9 3/3] trace,x86: code-sharing between non-trace and
+ trace irq handlers
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
+        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>,
+        "Borislav Petkov (bp@alien8.de)" <bp@alien8.de>,
+        Satoru Moriya <satoru.moriya@hds.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>
+Date: Fri, 15 Feb 2013 20:25:02 -0500
+In-Reply-To: <511ECF2B.8090202@zytor.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D414A64C5B@USINDEM103.corp.hds.com>
+	 <511ECF2B.8090202@zytor.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 15, 2013 at 04:40:18PM -0800, Linus Torvalds wrote:
-> On Fri, Feb 15, 2013 at 4:04 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> > On Fri, Feb 15, 2013 at 03:12:30PM -0800, Shentino wrote:
-> >> > +                               send_sig(SIGSEGV, current, 0);
-> >>
-> >> This might be a stupid miscue on my part, but shouldn't it be
-> >> force_sig instead of send_sig?
-> >>
-> >> I've got this crazy hunch that having SEGV masked might muck something up.
-> >
-> > How would you manage to have it masked at that point?  setup_new_exec()
-> > is inevitable after success of flush_old_exec() and it will do
-> > flush_signal_handlers() for us.
+On Fri, 2013-02-15 at 16:13 -0800, H. Peter Anvin wrote:
+
+> How important is it that the tracepoint is *inside* the enter/exit
+> handling?  If not, it would be simpler to just do:
 > 
-> I have to agree with Shentino on this one: it's entirely possible that
-> send_sig() is always equivalent to force_sig() in this circumstance,
-> but rather than depend on that kind of non-local subtlety, we should
-> just make it obvious. This is what "force_sig()" exists for - making
-> it clear that we punch through any signal handlers. Whether such a
-> signal handler can exist or not is kind of immaterial.
+> smp_trace_irq_handler()
+> {
+> 	trace_irq_entry();
+> 	smp_irq_handler();
+> 	trace_irq_exit();
+> }
+> 
+> ... which seems a bit cleaner.  If this isn't possible, then this patch
+> is fine, but please add to the patch description why the simple wrapper
+> isn't doable.
 
-*shrug*
+The problem is with irq_enter/exit() being called. They must be called
+before trace_irq_enter/exit(), because of the rcu_irq_enter() must be
+called before any tracepoints are used, as tracepoints use rcu to
+synchronize.
 
-Fine by me - the variant I'd posted simply moved these calls in one
-place; I've no problem with replacing them with force_sig() (or
-force_sigsegv(SIGSEGV, current), for paranoia sake).  OTOH, I'd probably
-prefer to make it a separate commit.
+Now perhaps we could do this and have trace_irq_entry().
 
-FWIW, now that I've looked into what's involved in merging flush_old_exec()
-and setup_new_exec()...  Here's something that looks like a bug:
-#include <sys/personality.h>
-#include <unistd.h>
-main()
+Not only that, the tracepoint callbacks expect irq_enter() to already be
+called.
+
+Hmm, if irq_enter() can nest, which I think it can, perhaps we can call
+irq_enter() first. I'm not sure if that will screw up the second
+irq_entry() inside smp_irq_handler().
+
+smp_trace_irq_hander()
 {
-	char *argv[] = {"uname", "-m", "-r", NULL};
-	char *envp[] = {NULL};
-	personality(0x0020000);	/* UNAME26 */
-	execve("/bin/uname", argv, envp);
+	irq_entry();
+	trace_irq_entry();
+	smp_irq_handler();
+	trace_irq_exit();
+	irq_exit();
 }
 
-On amd64 testbox (3.0.60-based kernel):
-2.6.40+ x86_64
-On alpha:
-3.3.6+ alpha
+-- Steve
 
-Cause: SET_PERSONALITY() on alpha doesn't care to preserve the upper bits
-of current->personality and just does either set_personality(PER_LINUX) or
-set_personality(PER_LINUX_32BIT).
+
