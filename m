@@ -1,341 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751892Ab3BPBhq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 20:37:46 -0500
-Received: from mail-ia0-f173.google.com ([209.85.210.173]:44504 "EHLO
-	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751074Ab3BPBho (ORCPT
+	id S1751898Ab3BPBoz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 20:44:55 -0500
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:55655 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750858Ab3BPBoy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 20:37:44 -0500
+	Fri, 15 Feb 2013 20:44:54 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQXan3J7-m2Wgd0pVybed_BgRAiqMGofh7t+vX_6e8zh7g@mail.gmail.com>
-References: <CAE9FiQUkmnV_On5+ZpH2pF4Li1HxLpkO8bp4TnYB46=pc9Safg@mail.gmail.com>
-	<1360696283-20313-1-git-send-email-yinghai@kernel.org>
-	<5988763.6WpnEvTV2f@vostro.rjw.lan>
-	<CAE9FiQX=yLyBV3AbP43N91Tx5-ic-f5f+=_r_RBLxq1Ct32Z_Q@mail.gmail.com>
-	<CAErSpo6x2WXdbO-_qeheQKwqqJ9zze8Z9pnj-wtU0yTJEh-NJg@mail.gmail.com>
-	<CAE9FiQXan3J7-m2Wgd0pVybed_BgRAiqMGofh7t+vX_6e8zh7g@mail.gmail.com>
-Date: Fri, 15 Feb 2013 17:37:43 -0800
-X-Google-Sender-Auth: R87C9xGP7gaVCbLdaVErpsbc88g
-Message-ID: <CAE9FiQWwKkGTyf-5r2T7PkFSNoqS_7-BKphCXsFSFEFrDPQAZg@mail.gmail.com>
-Subject: Re: [PATCH] ACPI, PCI: Get PRT entry during acpi_pci_enable_irq()
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=14dae9340de7cd634604d5cd89c1
+In-Reply-To: <20130216012242.GZ4503@ZenIV.linux.org.uk>
+References: <20130214053656.GS4503@ZenIV.linux.org.uk> <CA+55aFz1JjGSCdqXpVz3oH-PWFDE3Qdxt3EVxqC2i=nfLqf0Jw@mail.gmail.com>
+ <20130215215946.GX4503@ZenIV.linux.org.uk> <CAGDaZ_pMLScoO811es3AZxzAnSiS5ixku-DeuEi4FwX8mNv3cQ@mail.gmail.com>
+ <20130216000435.GY4503@ZenIV.linux.org.uk> <CA+55aFyzGenPNnKxf_PnAWVa1tZP294XUrhAVXgi0EuKm1x=vA@mail.gmail.com>
+ <20130216012242.GZ4503@ZenIV.linux.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 15 Feb 2013 17:44:33 -0800
+X-Google-Sender-Auth: rLnO0cZHh_MjiG3O11CQNCIkHtc
+Message-ID: <CA+55aFyZFf_9ZMFSOs9y-n3EsQ7n2V0qEnCrqAGFWgDGmPBmtg@mail.gmail.com>
+Subject: Re: [RFC] SIGKILL vs. SIGSEGV on late execve() failures
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Shentino <shentino@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---14dae9340de7cd634604d5cd89c1
-Content-Type: text/plain; charset=ISO-8859-1
-
-On Fri, Feb 15, 2013 at 5:26 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Fri, Feb 15, 2013 at 4:39 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> On Thu, Feb 14, 2013 at 5:50 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->>> On Tue, Feb 12, 2013 at 12:22 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->>>> On Tuesday, February 12, 2013 11:11:23 AM Yinghai Lu wrote:
->>>>> Peter Hurley found "irq 18 nobody cared" with pci-next, and dmesg has
->>>>>
->>>>> [    8.983246] pci 0000:00:1e.0: can't derive routing for PCI INT A
->>>>> [    8.983600] snd_ctxfi 0000:09:02.0: PCI INT A: no GSI - using ISA IRQ 5
->>>>>
->>>>> bisect to
->>>>> | commit 4f535093cf8f6da8cfda7c36c2c1ecd2e9586ee4
->>>>> |     PCI: Put pci_dev in device tree as early as possible
->>>>>
->>>>> It turns out we need to call acpi_pci_irq_add_prt() after the pci bridges
->>>>> are scanned.
->>>>>
->>>>> Bjorn said:
->>>>>  The bus number binding means acpi_pci_irq_add_prt() has to happen
->>>>>  after enumerating everything below a bridge, and it will prevent us
->>>>>  from doing any bus number reassignment for hotplug.
->>>>>
->>>>>  I think we should remove the bus numbers from the cached _PRT (or
->>>>>  maybe even remove the _PRT caching completely).  When we enable a PCI
->>>>>  device's IRQ, we should search up the PCI device tree looking for a
->>>>>  _PRT associated with each node, and applying normal PCI bridge
->>>>>  swizzling when we don't find a _PRT.  I think this can be done without
->>>>>  using PCI bus numbers at all.
->>>>>
->>>>> So here we try to remove _PRT caching completely.
->>>>>
->>>>> -v2: check !handle early.
->>>>>
->>>>> Reported-and-tested-by: Peter Hurley <peter@hurleysoftware.com>
->>>>> Suggested-by: Bjorn Helgaas <bhelgaas@google.com>
->>>>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->>>>
->>>> Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->>>>
->>>>> ---
->>>>>  drivers/acpi/pci_irq.c      |   95 +++++++++++++++++---------------------------
->>>>>  drivers/acpi/pci_root.c     |   18 --------
->>>>>  drivers/pci/pci-acpi.c      |   24 -----------
->>>>>  include/acpi/acpi_drivers.h |    5 --
->>>>>  4 files changed, 38 insertions(+), 104 deletions(-)
->>>
->>> Bjorn,
->>>
->>> Can you put this one into pci/next?
->>
->> I'm not sure what this patch is based on or what the best way to merge
->> it is.  It doesn't apply cleanly to my next or
->> pci/yinghai-root-bus-hotplug branches.
+On Fri, Feb 15, 2013 at 5:22 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
 >
-> My fault, that is based on pci/next + pm/linux-next
->
-> linux-next removed
-> acpi_power_resource_(un)register_device ...
->
->>
->> I did apply it manually on top of pci/yinghai-root-bus-hotplug to try
->> it out, but we need to tweak the messages a little bit.
->>
->> Previously we printed "ACPI: PCI Interrupt Routing Table [%s._PRT]"
->> once when loading it, which was fine.  Now we print it every time we
->> look at a _PRT, which is too much because it isn't really adding any
->> information.
->>
->> We also print "ACPI Exception: AE_NOT_FOUND, Evaluating _PRT
->> [AE_NOT_FOUND] (20121018/pci_irq-259)" if we find ACPI nodes without
->> _PRTs, which we shouldn't do, because that's a common and normal
->> situation.
->
-> Sure. Can you have separated patch to do that ?
->
-> Or want me to resend the patch.
+> Fine by me - the variant I'd posted simply moved these calls in one
+> place; I've no problem with replacing them with force_sig() (or
+> force_sigsegv(SIGSEGV, current), for paranoia sake).  OTOH, I'd probably
+> prefer to make it a separate commit.
 
-Please check attached updated version that remove print out ...
+I'd argue that it actually makes sense in the same commit - since
+you're changing SIGKILL to SIGSEGV, and what makes SIGKILL special
+really is that it can never be blocked. So even conceptually, it's
+actually *that* change that it should couple with.
 
-and it could be applied cleanly on top of pci/yinghai-root-bus-hotplug
+But I don't care enough, so if you already just have the one commit
+and want to add on top of it with a second one, that's fine.
 
-Thanks
+> Cause: SET_PERSONALITY() on alpha doesn't care to preserve the upper bits
+> of current->personality and just does either set_personality(PER_LINUX) or
+> set_personality(PER_LINUX_32BIT).
 
-Yinghai
+Christ, we should just try to get rid of the personality bits
+entirely, they are completely insane. We don't even use most of the
+numbers, yet we have these odd personality numbers for emulating
+legacy Unixes that we don't even care about. Some of it *may* have
+made sense back when we actually thought things like iBCS2 would
+matter. I cannot believe it possibly matters any more.
 
---14dae9340de7cd634604d5cd89c1
-Content-Type: application/octet-stream; 
-	name="move_setup_prt_down_for_pci.patch"
-Content-Disposition: attachment; 
-	filename="move_setup_prt_down_for_pci.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hd83jcou0
+But nobody seems to care enough, and the numbers have slipped into
+user space. I do wonder if we could make things clearer, get rid of
+the insane internal "personality number", and instead have explicit
+bits for the few things that actually do matter (like the whole
+zero-page mapping, the address randomization etc). And then leave the
+insane "set_personality()" system call as a legacy interface that just
+looks at the number and moves the bits around appropriately.
 
-RnJvbTogWWluZ2hhaSBMdSA8eWluZ2hhaUBrZXJuZWwub3JnPgpTdWJqZWN0OiBbUEFUQ0hdIEFD
-UEksIFBDSTogR2V0IFBSVCBlbnRyeSBkdXJpbmcgYWNwaV9wY2lfZW5hYmxlX2lycSgpCgpQZXRl
-ciBIdXJsZXkgZm91bmQgImlycSAxOCBub2JvZHkgY2FyZWQiIHdpdGggcGNpLW5leHQsIGFuZCBk
-bWVzZyBoYXMKClsgICAgOC45ODMyNDZdIHBjaSAwMDAwOjAwOjFlLjA6IGNhbid0IGRlcml2ZSBy
-b3V0aW5nIGZvciBQQ0kgSU5UIEEKWyAgICA4Ljk4MzYwMF0gc25kX2N0eGZpIDAwMDA6MDk6MDIu
-MDogUENJIElOVCBBOiBubyBHU0kgLSB1c2luZyBJU0EgSVJRIDUKCmJpc2VjdCB0bwp8IGNvbW1p
-dCA0ZjUzNTA5M2NmOGY2ZGE4Y2ZkYTdjMzZjMmMxZWNkMmU5NTg2ZWU0CnwgICAgIFBDSTogUHV0
-IHBjaV9kZXYgaW4gZGV2aWNlIHRyZWUgYXMgZWFybHkgYXMgcG9zc2libGUKCkl0IHR1cm5zIG91
-dCB3ZSBuZWVkIHRvIGNhbGwgYWNwaV9wY2lfaXJxX2FkZF9wcnQoKSBhZnRlciB0aGUgcGNpIGJy
-aWRnZXMKYXJlIHNjYW5uZWQuCgpCam9ybiBzYWlkOgogVGhlIGJ1cyBudW1iZXIgYmluZGluZyBt
-ZWFucyBhY3BpX3BjaV9pcnFfYWRkX3BydCgpIGhhcyB0byBoYXBwZW4KIGFmdGVyIGVudW1lcmF0
-aW5nIGV2ZXJ5dGhpbmcgYmVsb3cgYSBicmlkZ2UsIGFuZCBpdCB3aWxsIHByZXZlbnQgdXMKIGZy
-b20gZG9pbmcgYW55IGJ1cyBudW1iZXIgcmVhc3NpZ25tZW50IGZvciBob3RwbHVnLgoKIEkgdGhp
-bmsgd2Ugc2hvdWxkIHJlbW92ZSB0aGUgYnVzIG51bWJlcnMgZnJvbSB0aGUgY2FjaGVkIF9QUlQg
-KG9yCiBtYXliZSBldmVuIHJlbW92ZSB0aGUgX1BSVCBjYWNoaW5nIGNvbXBsZXRlbHkpLiAgV2hl
-biB3ZSBlbmFibGUgYSBQQ0kKIGRldmljZSdzIElSUSwgd2Ugc2hvdWxkIHNlYXJjaCB1cCB0aGUg
-UENJIGRldmljZSB0cmVlIGxvb2tpbmcgZm9yIGEKIF9QUlQgYXNzb2NpYXRlZCB3aXRoIGVhY2gg
-bm9kZSwgYW5kIGFwcGx5aW5nIG5vcm1hbCBQQ0kgYnJpZGdlCiBzd2l6emxpbmcgd2hlbiB3ZSBk
-b24ndCBmaW5kIGEgX1BSVC4gIEkgdGhpbmsgdGhpcyBjYW4gYmUgZG9uZSB3aXRob3V0CiB1c2lu
-ZyBQQ0kgYnVzIG51bWJlcnMgYXQgYWxsLgoKU28gaGVyZSB3ZSB0cnkgdG8gcmVtb3ZlIF9QUlQg
-Y2FjaGluZyBjb21wbGV0ZWx5LgoKLXYyOiBjaGVjayAhaGFuZGxlIGVhcmx5LgotdjM6IHJlbW92
-ZSBub3QgbmVlZGVkIHByaW50IG91dCBhY2NvcmRpbmcgdG8gQmpvcm4uCgpSZXBvcnRlZC1hbmQt
-dGVzdGVkLWJ5OiBQZXRlciBIdXJsZXkgPHBldGVyQGh1cmxleXNvZnR3YXJlLmNvbT4KU3VnZ2Vz
-dGVkLWJ5OiBCam9ybiBIZWxnYWFzIDxiaGVsZ2Fhc0Bnb29nbGUuY29tPgpTaWduZWQtb2ZmLWJ5
-OiBZaW5naGFpIEx1IDx5aW5naGFpQGtlcm5lbC5vcmc+CgotLS0KIGRyaXZlcnMvYWNwaS9wY2lf
-aXJxLmMgICAgICB8ICAxMDIgKysrKysrKysrKysrKystLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0KIGRyaXZlcnMvYWNwaS9wY2lfcm9vdC5jICAgICB8ICAgMTggLS0tLS0tLQogZHJpdmVy
-cy9wY2kvcGNpLWFjcGkuYyAgICAgIHwgICAyNCAtLS0tLS0tLS0tCiBpbmNsdWRlL2FjcGkvYWNw
-aV9kcml2ZXJzLmggfCAgICA1IC0tCiA0IGZpbGVzIGNoYW5nZWQsIDM0IGluc2VydGlvbnMoKyks
-IDExNSBkZWxldGlvbnMoLSkKCkluZGV4OiBsaW51eC0yLjYvZHJpdmVycy9hY3BpL3BjaV9pcnEu
-Ywo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9kcml2ZXJzL2FjcGkvcGNpX2lycS5jCisr
-KyBsaW51eC0yLjYvZHJpdmVycy9hY3BpL3BjaV9pcnEuYwpAQCAtNTMsOSArNTMsNiBAQCBzdHJ1
-Y3QgYWNwaV9wcnRfZW50cnkgewogCXUzMgkJCWluZGV4OwkJLyogR1NJLCBvciBsaW5rIF9DUlMg
-aW5kZXggKi8KIH07CiAKLXN0YXRpYyBMSVNUX0hFQUQoYWNwaV9wcnRfbGlzdCk7Ci1zdGF0aWMg
-REVGSU5FX1NQSU5MT0NLKGFjcGlfcHJ0X2xvY2spOwotCiBzdGF0aWMgaW5saW5lIGNoYXIgcGlu
-X25hbWUoaW50IHBpbikKIHsKIAlyZXR1cm4gJ0EnICsgcGluIC0gMTsKQEAgLTY1LDI4ICs2Miw2
-IEBAIHN0YXRpYyBpbmxpbmUgY2hhciBwaW5fbmFtZShpbnQgcGluKQogICAgICAgICAgICAgICAg
-ICAgICAgICAgIFBDSSBJUlEgUm91dGluZyBUYWJsZSAoUFJUKSBTdXBwb3J0CiAgICAtLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLSAqLwogCi1zdGF0aWMgc3RydWN0IGFjcGlfcHJ0X2VudHJ5ICphY3BpX3BjaV9p
-cnFfZmluZF9wcnRfZW50cnkoc3RydWN0IHBjaV9kZXYgKmRldiwKLQkJCQkJCQkgIGludCBwaW4p
-Ci17Ci0Jc3RydWN0IGFjcGlfcHJ0X2VudHJ5ICplbnRyeTsKLQlpbnQgc2VnbWVudCA9IHBjaV9k
-b21haW5fbnIoZGV2LT5idXMpOwotCWludCBidXMgPSBkZXYtPmJ1cy0+bnVtYmVyOwotCWludCBk
-ZXZpY2UgPSBQQ0lfU0xPVChkZXYtPmRldmZuKTsKLQotCXNwaW5fbG9jaygmYWNwaV9wcnRfbG9j
-ayk7Ci0JbGlzdF9mb3JfZWFjaF9lbnRyeShlbnRyeSwgJmFjcGlfcHJ0X2xpc3QsIGxpc3QpIHsK
-LQkJaWYgKChzZWdtZW50ID09IGVudHJ5LT5pZC5zZWdtZW50KQotCQkgICAgJiYgKGJ1cyA9PSBl
-bnRyeS0+aWQuYnVzKQotCQkgICAgJiYgKGRldmljZSA9PSBlbnRyeS0+aWQuZGV2aWNlKQotCQkg
-ICAgJiYgKHBpbiA9PSBlbnRyeS0+cGluKSkgewotCQkJc3Bpbl91bmxvY2soJmFjcGlfcHJ0X2xv
-Y2spOwotCQkJcmV0dXJuIGVudHJ5OwotCQl9Ci0JfQotCXNwaW5fdW5sb2NrKCZhY3BpX3BydF9s
-b2NrKTsKLQlyZXR1cm4gTlVMTDsKLX0KLQogLyogaHR0cDovL2J1Z3ppbGxhLmtlcm5lbC5vcmcv
-c2hvd19idWcuY2dpP2lkPTQ3NzMgKi8KIHN0YXRpYyBjb25zdCBzdHJ1Y3QgZG1pX3N5c3RlbV9p
-ZCBtZWRpb25fbWQ5NTgwW10gPSB7CiAJewpAQCAtMTg0LDExICsxNTksMTkgQEAgc3RhdGljIHZv
-aWQgZG9fcHJ0X2ZpeHVwcyhzdHJ1Y3QgYWNwaV9wcgogCX0KIH0KIAotc3RhdGljIGludCBhY3Bp
-X3BjaV9pcnFfYWRkX2VudHJ5KGFjcGlfaGFuZGxlIGhhbmRsZSwgaW50IHNlZ21lbnQsIGludCBi
-dXMsCi0JCQkJICBzdHJ1Y3QgYWNwaV9wY2lfcm91dGluZ190YWJsZSAqcHJ0KQorc3RhdGljIGlu
-dCBhY3BpX3BjaV9pcnFfY2hlY2tfZW50cnkoYWNwaV9oYW5kbGUgaGFuZGxlLCBzdHJ1Y3QgcGNp
-X2RldiAqZGV2LAorCQkJCSAgaW50IHBpbiwgc3RydWN0IGFjcGlfcGNpX3JvdXRpbmdfdGFibGUg
-KnBydCwKKwkJCQkgIHN0cnVjdCBhY3BpX3BydF9lbnRyeSAqKmVudHJ5X3B0cikKIHsKKwlpbnQg
-c2VnbWVudCA9IHBjaV9kb21haW5fbnIoZGV2LT5idXMpOworCWludCBidXMgPSBkZXYtPmJ1cy0+
-bnVtYmVyOworCWludCBkZXZpY2UgPSBQQ0lfU0xPVChkZXYtPmRldmZuKTsKIAlzdHJ1Y3QgYWNw
-aV9wcnRfZW50cnkgKmVudHJ5OwogCisJaWYgKCgocHJ0LT5hZGRyZXNzID4+IDE2KSAmIDB4ZmZm
-ZikgIT0gZGV2aWNlIHx8CisJICAgIHBydC0+cGluICsgMSAhPSBwaW4pCisJCXJldHVybiAtRU5P
-REVWOworCiAJZW50cnkgPSBremFsbG9jKHNpemVvZihzdHJ1Y3QgYWNwaV9wcnRfZW50cnkpLCBH
-RlBfS0VSTkVMKTsKIAlpZiAoIWVudHJ5KQogCQlyZXR1cm4gLUVOT01FTTsKQEAgLTIzNyw0MyAr
-MjIwLDM3IEBAIHN0YXRpYyBpbnQgYWNwaV9wY2lfaXJxX2FkZF9lbnRyeShhY3BpX2gKIAkJCSAg
-ICAgIGVudHJ5LT5pZC5kZXZpY2UsIHBpbl9uYW1lKGVudHJ5LT5waW4pLAogCQkJICAgICAgcHJ0
-LT5zb3VyY2UsIGVudHJ5LT5pbmRleCkpOwogCi0Jc3Bpbl9sb2NrKCZhY3BpX3BydF9sb2NrKTsK
-LQlsaXN0X2FkZF90YWlsKCZlbnRyeS0+bGlzdCwgJmFjcGlfcHJ0X2xpc3QpOwotCXNwaW5fdW5s
-b2NrKCZhY3BpX3BydF9sb2NrKTsKKwkqZW50cnlfcHRyID0gZW50cnk7CiAKIAlyZXR1cm4gMDsK
-IH0KIAotaW50IGFjcGlfcGNpX2lycV9hZGRfcHJ0KGFjcGlfaGFuZGxlIGhhbmRsZSwgaW50IHNl
-Z21lbnQsIGludCBidXMpCitzdGF0aWMgaW50IGFjcGlfcGNpX2lycV9maW5kX3BydF9lbnRyeShz
-dHJ1Y3QgcGNpX2RldiAqZGV2LAorCQkJICBpbnQgcGluLCBzdHJ1Y3QgYWNwaV9wcnRfZW50cnkg
-KiplbnRyeV9wdHIpCiB7CiAJYWNwaV9zdGF0dXMgc3RhdHVzOwogCXN0cnVjdCBhY3BpX2J1ZmZl
-ciBidWZmZXIgPSB7IEFDUElfQUxMT0NBVEVfQlVGRkVSLCBOVUxMIH07CiAJc3RydWN0IGFjcGlf
-cGNpX3JvdXRpbmdfdGFibGUgKmVudHJ5OworCWFjcGlfaGFuZGxlIGhhbmRsZSA9IE5VTEw7CiAK
-LQkvKiAnaGFuZGxlJyBpcyB0aGUgX1BSVCdzIHBhcmVudCAocm9vdCBicmlkZ2Ugb3IgUENJLVBD
-SSBicmlkZ2UpICovCi0Jc3RhdHVzID0gYWNwaV9nZXRfbmFtZShoYW5kbGUsIEFDUElfRlVMTF9Q
-QVRITkFNRSwgJmJ1ZmZlcik7Ci0JaWYgKEFDUElfRkFJTFVSRShzdGF0dXMpKQotCQlyZXR1cm4g
-LUVOT0RFVjsKLQotCXByaW50ayhLRVJOX0RFQlVHICJBQ1BJOiBQQ0kgSW50ZXJydXB0IFJvdXRp
-bmcgVGFibGUgWyVzLl9QUlRdXG4iLAotCSAgICAgICAoY2hhciAqKSBidWZmZXIucG9pbnRlcik7
-Ci0KLQlrZnJlZShidWZmZXIucG9pbnRlcik7CisJaWYgKGRldi0+YnVzLT5icmlkZ2UpCisJCWhh
-bmRsZSA9IEFDUElfSEFORExFKGRldi0+YnVzLT5icmlkZ2UpOwogCi0JYnVmZmVyLmxlbmd0aCA9
-IEFDUElfQUxMT0NBVEVfQlVGRkVSOwotCWJ1ZmZlci5wb2ludGVyID0gTlVMTDsKKwlpZiAoIWhh
-bmRsZSkKKwkJcmV0dXJuIC1FTk9ERVY7CiAKKwkvKiAnaGFuZGxlJyBpcyB0aGUgX1BSVCdzIHBh
-cmVudCAocm9vdCBicmlkZ2Ugb3IgUENJLVBDSSBicmlkZ2UpICovCiAJc3RhdHVzID0gYWNwaV9n
-ZXRfaXJxX3JvdXRpbmdfdGFibGUoaGFuZGxlLCAmYnVmZmVyKTsKIAlpZiAoQUNQSV9GQUlMVVJF
-KHN0YXR1cykpIHsKLQkJQUNQSV9FWENFUFRJT04oKEFFX0lORk8sIHN0YXR1cywgIkV2YWx1YXRp
-bmcgX1BSVCBbJXNdIiwKLQkJCQlhY3BpX2Zvcm1hdF9leGNlcHRpb24oc3RhdHVzKSkpOwogCQlr
-ZnJlZShidWZmZXIucG9pbnRlcik7CiAJCXJldHVybiAtRU5PREVWOwogCX0KIAogCWVudHJ5ID0g
-YnVmZmVyLnBvaW50ZXI7CiAJd2hpbGUgKGVudHJ5ICYmIChlbnRyeS0+bGVuZ3RoID4gMCkpIHsK
-LQkJYWNwaV9wY2lfaXJxX2FkZF9lbnRyeShoYW5kbGUsIHNlZ21lbnQsIGJ1cywgZW50cnkpOwor
-CQlpZiAoIWFjcGlfcGNpX2lycV9jaGVja19lbnRyeShoYW5kbGUsIGRldiwgcGluLAorCQkJCQkJ
-IGVudHJ5LCBlbnRyeV9wdHIpKQorCQkJYnJlYWs7CiAJCWVudHJ5ID0gKHN0cnVjdCBhY3BpX3Bj
-aV9yb3V0aW5nX3RhYmxlICopCiAJCSAgICAoKHVuc2lnbmVkIGxvbmcpZW50cnkgKyBlbnRyeS0+
-bGVuZ3RoKTsKIAl9CkBAIC0yODIsMjMgKzI1OSw2IEBAIGludCBhY3BpX3BjaV9pcnFfYWRkX3By
-dChhY3BpX2hhbmRsZSBoYW4KIAlyZXR1cm4gMDsKIH0KIAotdm9pZCBhY3BpX3BjaV9pcnFfZGVs
-X3BydChpbnQgc2VnbWVudCwgaW50IGJ1cykKLXsKLQlzdHJ1Y3QgYWNwaV9wcnRfZW50cnkgKmVu
-dHJ5LCAqdG1wOwotCi0JcHJpbnRrKEtFUk5fREVCVUcKLQkgICAgICAgIkFDUEk6IERlbGV0ZSBQ
-Q0kgSW50ZXJydXB0IFJvdXRpbmcgVGFibGUgZm9yICUwNHg6JTAyeFxuIiwKLQkgICAgICAgc2Vn
-bWVudCwgYnVzKTsKLQlzcGluX2xvY2soJmFjcGlfcHJ0X2xvY2spOwotCWxpc3RfZm9yX2VhY2hf
-ZW50cnlfc2FmZShlbnRyeSwgdG1wLCAmYWNwaV9wcnRfbGlzdCwgbGlzdCkgewotCQlpZiAoc2Vn
-bWVudCA9PSBlbnRyeS0+aWQuc2VnbWVudCAmJiBidXMgPT0gZW50cnktPmlkLmJ1cykgewotCQkJ
-bGlzdF9kZWwoJmVudHJ5LT5saXN0KTsKLQkJCWtmcmVlKGVudHJ5KTsKLQkJfQotCX0KLQlzcGlu
-X3VubG9jaygmYWNwaV9wcnRfbG9jayk7Ci19Ci0KIC8qIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCiAgICAg
-ICAgICAgICAgICAgICAgICAgICAgIFBDSSBJbnRlcnJ1cHQgUm91dGluZyBTdXBwb3J0CiAgICAt
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLSAqLwpAQCAtMzU5LDEyICszMTksMTMgQEAgc3RhdGljIGludCBhY3Bp
-X3Jlcm91dGVfYm9vdF9pbnRlcnJ1cHQocwogCiBzdGF0aWMgc3RydWN0IGFjcGlfcHJ0X2VudHJ5
-ICphY3BpX3BjaV9pcnFfbG9va3VwKHN0cnVjdCBwY2lfZGV2ICpkZXYsIGludCBwaW4pCiB7Ci0J
-c3RydWN0IGFjcGlfcHJ0X2VudHJ5ICplbnRyeTsKKwlzdHJ1Y3QgYWNwaV9wcnRfZW50cnkgKmVu
-dHJ5ID0gTlVMTDsKIAlzdHJ1Y3QgcGNpX2RldiAqYnJpZGdlOwogCXU4IGJyaWRnZV9waW4sIG9y
-aWdfcGluID0gcGluOworCWludCByZXQ7CiAKLQllbnRyeSA9IGFjcGlfcGNpX2lycV9maW5kX3By
-dF9lbnRyeShkZXYsIHBpbik7Ci0JaWYgKGVudHJ5KSB7CisJcmV0ID0gYWNwaV9wY2lfaXJxX2Zp
-bmRfcHJ0X2VudHJ5KGRldiwgcGluLCAmZW50cnkpOworCWlmICghcmV0ICYmIGVudHJ5KSB7CiAj
-aWZkZWYgQ09ORklHX1g4Nl9JT19BUElDCiAJCWFjcGlfcmVyb3V0ZV9ib290X2ludGVycnVwdChk
-ZXYsIGVudHJ5KTsKICNlbmRpZiAvKiBDT05GSUdfWDg2X0lPX0FQSUMgKi8KQEAgLTM3Myw3ICsz
-MzQsNyBAQCBzdGF0aWMgc3RydWN0IGFjcGlfcHJ0X2VudHJ5ICphY3BpX3BjaV9pCiAJCXJldHVy
-biBlbnRyeTsKIAl9CiAKLQkvKiAKKwkvKgogCSAqIEF0dGVtcHQgdG8gZGVyaXZlIGFuIElSUSBm
-b3IgdGhpcyBkZXZpY2UgZnJvbSBhIHBhcmVudCBicmlkZ2UncwogCSAqIFBDSSBpbnRlcnJ1cHQg
-cm91dGluZyBlbnRyeSAoZWcuIHllbnRhIGJyaWRnZSBhbmQgYWRkLWluIGNhcmQgYnJpZGdlKS4K
-IAkgKi8KQEAgLTM5Myw4ICszNTQsOCBAQCBzdGF0aWMgc3RydWN0IGFjcGlfcHJ0X2VudHJ5ICph
-Y3BpX3BjaV9pCiAJCQlwaW4gPSBicmlkZ2VfcGluOwogCQl9CiAKLQkJZW50cnkgPSBhY3BpX3Bj
-aV9pcnFfZmluZF9wcnRfZW50cnkoYnJpZGdlLCBwaW4pOwotCQlpZiAoZW50cnkpIHsKKwkJcmV0
-ID0gYWNwaV9wY2lfaXJxX2ZpbmRfcHJ0X2VudHJ5KGJyaWRnZSwgcGluLCAmZW50cnkpOworCQlp
-ZiAoIXJldCAmJiBlbnRyeSkgewogCQkJQUNQSV9ERUJVR19QUklOVCgoQUNQSV9EQl9JTkZPLAog
-CQkJCQkgIkRlcml2ZWQgR1NJIGZvciAlcyBJTlQgJWMgZnJvbSAlc1xuIiwKIAkJCQkJIHBjaV9u
-YW1lKGRldiksIHBpbl9uYW1lKG9yaWdfcGluKSwKQEAgLTQ3MCw2ICs0MzEsNyBAQCBpbnQgYWNw
-aV9wY2lfaXJxX2VuYWJsZShzdHJ1Y3QgcGNpX2RldiAqCiAJCQlkZXZfd2FybigmZGV2LT5kZXYs
-ICJQQ0kgSU5UICVjOiBubyBHU0lcbiIsCiAJCQkJIHBpbl9uYW1lKHBpbikpOwogCQl9CisKIAkJ
-cmV0dXJuIDA7CiAJfQogCkBAIC00NzcsNiArNDM5LDcgQEAgaW50IGFjcGlfcGNpX2lycV9lbmFi
-bGUoc3RydWN0IHBjaV9kZXYgKgogCWlmIChyYyA8IDApIHsKIAkJZGV2X3dhcm4oJmRldi0+ZGV2
-LCAiUENJIElOVCAlYzogZmFpbGVkIHRvIHJlZ2lzdGVyIEdTSVxuIiwKIAkJCSBwaW5fbmFtZShw
-aW4pKTsKKwkJa2ZyZWUoZW50cnkpOwogCQlyZXR1cm4gcmM7CiAJfQogCWRldi0+aXJxID0gcmM7
-CkBAIC00OTEsNiArNDU0LDcgQEAgaW50IGFjcGlfcGNpX2lycV9lbmFibGUoc3RydWN0IHBjaV9k
-ZXYgKgogCQkodHJpZ2dlcmluZyA9PSBBQ1BJX0xFVkVMX1NFTlNJVElWRSkgPyAibGV2ZWwiIDog
-ImVkZ2UiLAogCQkocG9sYXJpdHkgPT0gQUNQSV9BQ1RJVkVfTE9XKSA/ICJsb3ciIDogImhpZ2gi
-LCBkZXYtPmlycSk7CiAKKwlrZnJlZShlbnRyeSk7CiAJcmV0dXJuIDA7CiB9CiAKQEAgLTUxMyw2
-ICs0NzcsOCBAQCB2b2lkIGFjcGlfcGNpX2lycV9kaXNhYmxlKHN0cnVjdCBwY2lfZGV2CiAJZWxz
-ZQogCQlnc2kgPSBlbnRyeS0+aW5kZXg7CiAKKwlrZnJlZShlbnRyeSk7CisKIAkvKgogCSAqIFRC
-RDogSXQgbWlnaHQgYmUgd29ydGggY2xlYXJpbmcgZGV2LT5pcnEgYnkgbWFnaWMgY29uc3RhbnQK
-IAkgKiAoZS5nLiBQQ0lfVU5ERUZJTkVEX0lSUSkuCkluZGV4OiBsaW51eC0yLjYvZHJpdmVycy9h
-Y3BpL3BjaV9yb290LmMKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvZHJpdmVycy9hY3Bp
-L3BjaV9yb290LmMKKysrIGxpbnV4LTIuNi9kcml2ZXJzL2FjcGkvcGNpX3Jvb3QuYwpAQCAtNDM0
-LDcgKzQzNCw2IEBAIHN0YXRpYyBpbnQgYWNwaV9wY2lfcm9vdF9hZGQoc3RydWN0IGFjcGkKIAlh
-Y3BpX3N0YXR1cyBzdGF0dXM7CiAJaW50IHJlc3VsdDsKIAlzdHJ1Y3QgYWNwaV9wY2lfcm9vdCAq
-cm9vdDsKLQlhY3BpX2hhbmRsZSBoYW5kbGU7CiAJc3RydWN0IGFjcGlfcGNpX2RyaXZlciAqZHJp
-dmVyOwogCXUzMiBmbGFncywgYmFzZV9mbGFnczsKIAlib29sIGlzX29zY19ncmFudGVkID0gZmFs
-c2U7CkBAIC00ODksMTYgKzQ4OCw2IEBAIHN0YXRpYyBpbnQgYWNwaV9wY2lfcm9vdF9hZGQoc3Ry
-dWN0IGFjcGkKIAkgICAgICAgYWNwaV9kZXZpY2VfbmFtZShkZXZpY2UpLCBhY3BpX2RldmljZV9i
-aWQoZGV2aWNlKSwKIAkgICAgICAgcm9vdC0+c2VnbWVudCwgJnJvb3QtPnNlY29uZGFyeSk7CiAK
-LQkvKgotCSAqIFBDSSBSb3V0aW5nIFRhYmxlCi0JICogLS0tLS0tLS0tLS0tLS0tLS0KLQkgKiBF
-dmFsdWF0ZSBhbmQgcGFyc2UgX1BSVCwgaWYgZXhpc3RzLgotCSAqLwotCXN0YXR1cyA9IGFjcGlf
-Z2V0X2hhbmRsZShkZXZpY2UtPmhhbmRsZSwgTUVUSE9EX05BTUVfX1BSVCwgJmhhbmRsZSk7Ci0J
-aWYgKEFDUElfU1VDQ0VTUyhzdGF0dXMpKQotCQlyZXN1bHQgPSBhY3BpX3BjaV9pcnFfYWRkX3By
-dChkZXZpY2UtPmhhbmRsZSwgcm9vdC0+c2VnbWVudCwKLQkJCQkJICAgICAgcm9vdC0+c2Vjb25k
-YXJ5LnN0YXJ0KTsKLQogCXJvb3QtPm1jZmdfYWRkciA9IGFjcGlfcGNpX3Jvb3RfZ2V0X21jZmdf
-YWRkcihkZXZpY2UtPmhhbmRsZSk7CiAKIAkvKgpAQCAtNjIzLDcgKzYxMiw2IEBAIG91dF9kZWxf
-cm9vdDoKIAlsaXN0X2RlbCgmcm9vdC0+bm9kZSk7CiAJbXV0ZXhfdW5sb2NrKCZhY3BpX3BjaV9y
-b290X2xvY2spOwogCi0JYWNwaV9wY2lfaXJxX2RlbF9wcnQocm9vdC0+c2VnbWVudCwgcm9vdC0+
-c2Vjb25kYXJ5LnN0YXJ0KTsKIGVuZDoKIAlrZnJlZShyb290KTsKIAlyZXR1cm4gcmVzdWx0OwpA
-QCAtNjMxLDggKzYxOSw2IEBAIGVuZDoKIAogc3RhdGljIGludCBhY3BpX3BjaV9yb290X3JlbW92
-ZShzdHJ1Y3QgYWNwaV9kZXZpY2UgKmRldmljZSwgaW50IHR5cGUpCiB7Ci0JYWNwaV9zdGF0dXMg
-c3RhdHVzOwotCWFjcGlfaGFuZGxlIGhhbmRsZTsKIAlzdHJ1Y3QgYWNwaV9wY2lfcm9vdCAqcm9v
-dCA9IGFjcGlfZHJpdmVyX2RhdGEoZGV2aWNlKTsKIAlzdHJ1Y3QgYWNwaV9wY2lfZHJpdmVyICpk
-cml2ZXI7CiAKQEAgLTY0NywxMCArNjMzLDYgQEAgc3RhdGljIGludCBhY3BpX3BjaV9yb290X3Jl
-bW92ZShzdHJ1Y3QgYQogCWRldmljZV9zZXRfcnVuX3dha2Uocm9vdC0+YnVzLT5icmlkZ2UsIGZh
-bHNlKTsKIAlwY2lfYWNwaV9yZW1vdmVfYnVzX3BtX25vdGlmaWVyKGRldmljZSk7CiAKLQlzdGF0
-dXMgPSBhY3BpX2dldF9oYW5kbGUoZGV2aWNlLT5oYW5kbGUsIE1FVEhPRF9OQU1FX19QUlQsICZo
-YW5kbGUpOwotCWlmIChBQ1BJX1NVQ0NFU1Moc3RhdHVzKSkKLQkJYWNwaV9wY2lfaXJxX2RlbF9w
-cnQocm9vdC0+c2VnbWVudCwgcm9vdC0+c2Vjb25kYXJ5LnN0YXJ0KTsKLQogCXBjaV9yZW1vdmVf
-cm9vdF9idXMocm9vdC0+YnVzKTsKIAogCW11dGV4X2xvY2soJmFjcGlfcGNpX3Jvb3RfbG9jayk7
-CkluZGV4OiBsaW51eC0yLjYvZHJpdmVycy9wY2kvcGNpLWFjcGkuYwo9PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBs
-aW51eC0yLjYub3JpZy9kcml2ZXJzL3BjaS9wY2ktYWNwaS5jCisrKyBsaW51eC0yLjYvZHJpdmVy
-cy9wY2kvcGNpLWFjcGkuYwpAQCAtMzI1LDI1ICszMjUsNiBAQCBzdGF0aWMgdm9pZCBwY2lfYWNw
-aV9zZXR1cChzdHJ1Y3QgZGV2aWNlCiAJc3RydWN0IHBjaV9kZXYgKnBjaV9kZXYgPSB0b19wY2lf
-ZGV2KGRldik7CiAJYWNwaV9oYW5kbGUgaGFuZGxlID0gQUNQSV9IQU5ETEUoZGV2KTsKIAlzdHJ1
-Y3QgYWNwaV9kZXZpY2UgKmFkZXY7Ci0JYWNwaV9zdGF0dXMgc3RhdHVzOwotCWFjcGlfaGFuZGxl
-IGR1bW15OwotCi0JLyoKLQkgKiBFdmFsdWF0ZSBhbmQgcGFyc2UgX1BSVCwgaWYgZXhpc3RzLiAg
-VGhpcyBjb2RlIGFsbG93cyBwYXJzaW5nIG9mCi0JICogX1BSVCBvYmplY3RzIHdpdGhpbiB0aGUg
-c2NvcGUgb2Ygbm9uLWJyaWRnZSBkZXZpY2VzLiAgTm90ZSB0aGF0Ci0JICogX1BSVHMgd2l0aGlu
-IHRoZSBzY29wZSBvZiBhIFBDSSBicmlkZ2UgYXNzdW1lIHRoZSBicmlkZ2UncwotCSAqIHN1Ym9y
-ZGluYXRlIGJ1cyBudW1iZXIuCi0JICoKLQkgKiBUQkQ6IENhbiBfUFJUcyBleGlzdCB3aXRoaW4g
-dGhlIHNjb3BlIG9mIG5vbi1icmlkZ2UgUENJIGRldmljZXM/Ci0JICovCi0Jc3RhdHVzID0gYWNw
-aV9nZXRfaGFuZGxlKGhhbmRsZSwgTUVUSE9EX05BTUVfX1BSVCwgJmR1bW15KTsKLQlpZiAoQUNQ
-SV9TVUNDRVNTKHN0YXR1cykpIHsKLQkJdW5zaWduZWQgY2hhciBidXM7Ci0KLQkJYnVzID0gcGNp
-X2Rldi0+c3Vib3JkaW5hdGUgPwotCQkJcGNpX2Rldi0+c3Vib3JkaW5hdGUtPm51bWJlciA6IHBj
-aV9kZXYtPmJ1cy0+bnVtYmVyOwotCQlhY3BpX3BjaV9pcnFfYWRkX3BydChoYW5kbGUsIHBjaV9k
-b21haW5fbnIocGNpX2Rldi0+YnVzKSwgYnVzKTsKLQl9CiAKIAlhY3BpX3Bvd2VyX3Jlc291cmNl
-X3JlZ2lzdGVyX2RldmljZShkZXYsIGhhbmRsZSk7CiAJaWYgKGFjcGlfYnVzX2dldF9kZXZpY2Uo
-aGFuZGxlLCAmYWRldikgfHwgIWFkZXYtPndha2V1cC5mbGFncy52YWxpZCkKQEAgLTM1OSw3ICsz
-NDAsNiBAQCBzdGF0aWMgdm9pZCBwY2lfYWNwaV9zZXR1cChzdHJ1Y3QgZGV2aWNlCiAKIHN0YXRp
-YyB2b2lkIHBjaV9hY3BpX2NsZWFudXAoc3RydWN0IGRldmljZSAqZGV2KQogewotCXN0cnVjdCBw
-Y2lfZGV2ICpwY2lfZGV2ID0gdG9fcGNpX2RldihkZXYpOwogCWFjcGlfaGFuZGxlIGhhbmRsZSA9
-IEFDUElfSEFORExFKGRldik7CiAJc3RydWN0IGFjcGlfZGV2aWNlICphZGV2OwogCkBAIC0zNjks
-MTAgKzM0OSw2IEBAIHN0YXRpYyB2b2lkIHBjaV9hY3BpX2NsZWFudXAoc3RydWN0IGRldmkKIAkJ
-cGNpX2FjcGlfcmVtb3ZlX3BtX25vdGlmaWVyKGFkZXYpOwogCX0KIAlhY3BpX3Bvd2VyX3Jlc291
-cmNlX3VucmVnaXN0ZXJfZGV2aWNlKGRldiwgaGFuZGxlKTsKLQotCWlmIChwY2lfZGV2LT5zdWJv
-cmRpbmF0ZSkKLQkJYWNwaV9wY2lfaXJxX2RlbF9wcnQocGNpX2RvbWFpbl9ucihwY2lfZGV2LT5i
-dXMpLAotCQkJCSAgICAgcGNpX2Rldi0+c3Vib3JkaW5hdGUtPm51bWJlcik7CiB9CiAKIHN0YXRp
-YyBzdHJ1Y3QgYWNwaV9idXNfdHlwZSBhY3BpX3BjaV9idXMgPSB7CkluZGV4OiBsaW51eC0yLjYv
-aW5jbHVkZS9hY3BpL2FjcGlfZHJpdmVycy5oCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmln
-L2luY2x1ZGUvYWNwaS9hY3BpX2RyaXZlcnMuaAorKysgbGludXgtMi42L2luY2x1ZGUvYWNwaS9h
-Y3BpX2RyaXZlcnMuaApAQCAtOTAsMTEgKzkwLDYgQEAgaW50IGFjcGlfcGNpX2xpbmtfYWxsb2Nh
-dGVfaXJxKGFjcGlfaGFuZAogCQkJICAgICAgIGludCAqcG9sYXJpdHksIGNoYXIgKipuYW1lKTsK
-IGludCBhY3BpX3BjaV9saW5rX2ZyZWVfaXJxKGFjcGlfaGFuZGxlIGhhbmRsZSk7CiAKLS8qIEFD
-UEkgUENJIEludGVycnVwdCBSb3V0aW5nIChwY2lfaXJxLmMpICovCi0KLWludCBhY3BpX3BjaV9p
-cnFfYWRkX3BydChhY3BpX2hhbmRsZSBoYW5kbGUsIGludCBzZWdtZW50LCBpbnQgYnVzKTsKLXZv
-aWQgYWNwaV9wY2lfaXJxX2RlbF9wcnQoaW50IHNlZ21lbnQsIGludCBidXMpOwotCiAvKiBBQ1BJ
-IFBDSSBEZXZpY2UgQmluZGluZyAocGNpX2JpbmQuYykgKi8KIAogc3RydWN0IHBjaV9idXM7Cg==
---14dae9340de7cd634604d5cd89c1--
+The fact that we actually carry this insane meaningless number along,
+and then have crazy things like that "upper bits of the crazy number
+doesn't get set by alpha SET_PERSONALITY" is just crazy.
+
+But don't worry, I sympathize 100% with all sane people who go "I
+don't want to touch that mess".
+
+              Linus
