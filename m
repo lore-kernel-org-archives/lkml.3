@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878Ab3BPWJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 17:09:58 -0500
-Received: from mms2.broadcom.com ([216.31.210.18]:3116 "EHLO mms2.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754596Ab3BPWJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 17:09:57 -0500
-X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
-Subject: Re: [PATCH 2/2] tg3: Use different macros for pci_chip_rev_id
- accesses
-From: "Michael Chan" <mchan@broadcom.com>
-To: "Joe Perches" <joe@perches.com>
-cc: "Matt Carlson" <mcarlson@broadcom.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1d3ed7a644e8de210614f51375e8e913da2f5cb3.1361049158.git.joe@perches.com>
-References: <dea1c655b2c1380821aae6cd8438ad742ddf6e12.1361049158.git.joe@perches.com>
- <1d3ed7a644e8de210614f51375e8e913da2f5cb3.1361049158.git.joe@perches.com>
-Date: Sat, 16 Feb 2013 14:09:45 -0800
-Message-ID: <1361052585.2240.4.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+	id S1754883Ab3BPWSL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 17:18:11 -0500
+Received: from blu0-omc1-s5.blu0.hotmail.com ([65.55.116.16]:31327 "EHLO
+	blu0-omc1-s5.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754617Ab3BPWSJ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Feb 2013 17:18:09 -0500
+X-EIP: [qmloAyHN8sszu1mISJpWboF6QNdebjyxpBSq4T8Jfsc=]
+X-Originating-Email: [emilio@elopez.com.ar]
+Message-ID: <BLU0-SMTP3204E8218EA90D50AB340558A0D0@phx.gbl>
+Date: Sat, 16 Feb 2013 19:18:04 -0300
+From: =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130112 Icedove/17.0.2
 MIME-Version: 1.0
-X-WSS-ID: 7D3EDD6A3QG3926509-01-01
-Content-Type: text/plain;
- charset=cp1252
-Content-Transfer-Encoding: 7bit
+To: Arnd Bergmann <arnd@arndb.de>
+CC: arm@kernel.org, Russell King <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 01/11] ARM: disable virt_to_bus/virt_to_bus almost everywhere
+References: <1360849767-1463135-1-git-send-email-arnd@arndb.de> <1360849767-1463135-2-git-send-email-arnd@arndb.de>
+In-Reply-To: <1360849767-1463135-2-git-send-email-arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8BIT
+X-OriginalArrivalTime: 16 Feb 2013 22:18:08.0282 (UTC) FILETIME=[7FB817A0:01CE0C93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-02-16 at 13:20 -0800, Joe Perches wrote:
-> Upper case macros for various chip attributes are slightly
-> difficult to read and are a bit out of characterto the other
-> tg3_<foo> attribute functions.
-> 
-> Convert:
-> 
-> GET_ASIC_REV(tp->pci_chip_rev_id)       -> tg3_asic_rev(tp)
-> GET_CHIP_REV(tp->pci_chip_rev_id)       -> tg3_chip_rev(tp)
-> 
-> Remove:
-> GET_METAL_REV(tp->pci_chip_rev_id)      -> tg3_metal_rev(tp) (unused)
-> 
-> Add:
-> tg3_chip_rev_id(tp) for tp->pci_chip_rev_id so access styles
-> are similar to tg3_asic_rev and tg3_chip_rev.
-> 
-> These macros are not converted to static inline functions
-> because gcc (tested with 4.7.2) is currently unable to
-> optimize the object code it produces the same way and code
-> is otherwise larger.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com> 
+Hello Arnd,
 
-Acked-by: Michael Chan <mchan@broadcom.com>
+El 14/02/13 10:49, Arnd Bergmann escribió:
+> We are getting a number of warnings about the use of the deprecated
+> bus_to_virt function in drivers using the ARM ISA DMA API:
+> 
+> drivers/parport/parport_pc.c: In function 'parport_pc_fifo_write_block_dma':
+> drivers/parport/parport_pc.c:622:3: warning: 'bus_to_virt' is deprecated
+> (declared at arch/arm/include/asm/memory.h:253) [-Wdeprecated-declarations]
+> 
+> This is only because that function gets used by the inline
+> set_dma_addr() helper. We know that any driver for the ISA DMA API
+> is correctly using the DMA addresses, so we can change this
+> to use the __bus_to_virt() function instead, which does not warn.
+> 
+> After this, there are no remaining drivers that are used on
+> any defconfigs on ARM using virt_to_bus or bus_to_virt, with
+> the exception of the OSS sound driver. That driver is only used
+> on RiscPC, NetWinder and Shark, so we can set ARCH_NO_VIRT_TO_BUS
+> on all other platforms and hide the deprecated functions, which
+> is far more effective than marking them as deprecated, in order
+> to avoid any new users of that code.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Russell King <linux@arm.linux.org.uk>
 
+Small nitpick: Please have a look at the patch subject, I suppose you
+meant something like "virt_to_bus/bus_to_virt" instead of
+"virt_to_bus/virt_to_bus".
 
+Thanks,
+
+Emilio
