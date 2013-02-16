@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752428Ab3BPCiq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Feb 2013 21:38:46 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49619 "EHLO
+	id S1752317Ab3BPCmj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Feb 2013 21:42:39 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40741 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752242Ab3BPCin (ORCPT
+	with ESMTP id S1751815Ab3BPCmi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Feb 2013 21:38:43 -0500
-Date: Fri, 15 Feb 2013 18:38:41 -0800
+	Fri, 15 Feb 2013 21:42:38 -0500
+Date: Fri, 15 Feb 2013 18:42:35 -0800
 From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Wolfram Sang <w.sang@pengutronix.de>
+To: Wolfram Sang <wolfram@the-dreams.de>
 Cc: Ben Dooks <ben-linux@fluff.org>, Jean Delvare <khali@linux-fr.org>,
         linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
 Subject: [PATCH] I2C: add i2c_master_send_exact() and friends
-Message-ID: <20130216023840.GA16084@core.coreip.homeip.net>
+Message-ID: <20130216024235.GA25913@core.coreip.homeip.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -32,6 +32,9 @@ it to error code by themselves. So let's add the following new helpers:
 
 Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 ---
+
+Resending to Wolfram's new address...
+
  drivers/i2c/i2c-core.c |   69 ++++++++++++++++++++++++++++++++++++++++++++++++
  include/linux/i2c.h    |   11 ++++++++
  2 files changed, 80 insertions(+)
