@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757070Ab3BQXGs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 18:06:48 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45713 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755329Ab3BQWzZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755365Ab3BQWzZ (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 17 Feb 2013 17:55:25 -0500
-Message-Id: <20130217225007.567352657@decadent.org.uk>
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45683 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755182Ab3BQWzW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Feb 2013 17:55:22 -0500
+Message-Id: <20130217225009.299083206@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 17 Feb 2013 22:50:52 +0000
+Date: Sun, 17 Feb 2013 22:51:07 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Phil Sutter <phil.sutter@viprinet.com>,
-        Johann Baudy <johann.baudy@gnu-log.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 51/66] packet: fix leakage of tx_ring memory
+Cc: akpm@linux-foundation.org, Jan Beulich <JBeulich@suse.com>,
+        Petr Matousek <pmatouse@redhat.com>,
+        Andrew Cooper <andrew.cooper3@citrix.com>,
+        Jan Beulich <jbeulich@suse.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 66/66] x86/xen: dont assume %ds is usable in xen_iret for 32-bit PVOPS.
 In-Reply-To: <20130217225001.621306883@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,57 +30,132 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Phil Sutter <phil.sutter@viprinet.com>
+From: Jan Beulich <JBeulich@suse.com>
 
-[ Upstream commit 9665d5d62487e8e7b1f546c00e11107155384b9a ]
+commit 13d2b4d11d69a92574a55bfd985cfb0ca77aebdc upstream.
 
-When releasing a packet socket, the routine packet_set_ring() is reused
-to free rings instead of allocating them. But when calling it for the
-first time, it fills req->tp_block_nr with the value of rb->pg_vec_len
-which in the second invocation makes it bail out since req->tp_block_nr
-is greater zero but req->tp_block_size is zero.
+This fixes CVE-2013-0228 / XSA-42
 
-This patch solves the problem by passing a zeroed auto-variable to
-packet_set_ring() upon each invocation from packet_release().
+Drew Jones while working on CVE-2013-0190 found that that unprivileged guest user
+in 32bit PV guest can use to crash the > guest with the panic like this:
 
-As far as I can tell, this issue exists even since 69e3c75 (net: TX_RING
-and packet mmap), i.e. the original inclusion of TX ring support into
-af_packet, but applies only to sockets with both RX and TX ring
-allocated, which is probably why this was unnoticed all the time.
+-------------
+general protection fault: 0000 [#1] SMP
+last sysfs file: /sys/devices/vbd-51712/block/xvda/dev
+Modules linked in: sunrpc ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4
+iptable_filter ip_tables ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6
+xt_state nf_conntrack ip6table_filter ip6_tables ipv6 xen_netfront ext4
+mbcache jbd2 xen_blkfront dm_mirror dm_region_hash dm_log dm_mod [last
+unloaded: scsi_wait_scan]
 
-Signed-off-by: Phil Sutter <phil.sutter@viprinet.com>
-Cc: Johann Baudy <johann.baudy@gnu-log.net>
-Cc: Daniel Borkmann <dborkman@redhat.com>
-Acked-by: Daniel Borkmann <dborkman@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Pid: 1250, comm: r Not tainted 2.6.32-356.el6.i686 #1
+EIP: 0061:[<c0407462>] EFLAGS: 00010086 CPU: 0
+EIP is at xen_iret+0x12/0x2b
+EAX: eb8d0000 EBX: 00000001 ECX: 08049860 EDX: 00000010
+ESI: 00000000 EDI: 003d0f00 EBP: b77f8388 ESP: eb8d1fe0
+ DS: 0000 ES: 007b FS: 0000 GS: 00e0 SS: 0069
+Process r (pid: 1250, ti=eb8d0000 task=c2953550 task.ti=eb8d0000)
+Stack:
+ 00000000 0027f416 00000073 00000206 b77f8364 0000007b 00000000 00000000
+Call Trace:
+Code: c3 8b 44 24 18 81 4c 24 38 00 02 00 00 8d 64 24 30 e9 03 00 00 00
+8d 76 00 f7 44 24 08 00 00 02 80 75 33 50 b8 00 e0 ff ff 21 e0 <8b> 40
+10 8b 04 85 a0 f6 ab c0 8b 80 0c b0 b3 c0 f6 44 24 0d 02
+EIP: [<c0407462>] xen_iret+0x12/0x2b SS:ESP 0069:eb8d1fe0
+general protection fault: 0000 [#2]
+---[ end trace ab0d29a492dcd330 ]---
+Kernel panic - not syncing: Fatal exception
+Pid: 1250, comm: r Tainted: G      D    ---------------
+2.6.32-356.el6.i686 #1
+Call Trace:
+ [<c08476df>] ? panic+0x6e/0x122
+ [<c084b63c>] ? oops_end+0xbc/0xd0
+ [<c084b260>] ? do_general_protection+0x0/0x210
+ [<c084a9b7>] ? error_code+0x73/
+-------------
+
+Petr says: "
+ I've analysed the bug and I think that xen_iret() cannot cope with
+ mangled DS, in this case zeroed out (null selector/descriptor) by either
+ xen_failsafe_callback() or RESTORE_REGS because the corresponding LDT
+ entry was invalidated by the reproducer. "
+
+Jan took a look at the preliminary patch and came up a fix that solves
+this problem:
+
+"This code gets called after all registers other than those handled by
+IRET got already restored, hence a null selector in %ds or a non-null
+one that got loaded from a code or read-only data descriptor would
+cause a kernel mode fault (with the potential of crashing the kernel
+as a whole, if panic_on_oops is set)."
+
+The way to fix this is to realize that the we can only relay on the
+registers that IRET restores. The two that are guaranteed are the
+%cs and %ss as they are always fixed GDT selectors. Also they are
+inaccessible from user mode - so they cannot be altered. This is
+the approach taken in this patch.
+
+Another alternative option suggested by Jan would be to relay on
+the subtle realization that using the %ebp or %esp relative references uses
+the %ss segment.  In which case we could switch from using %eax to %ebp and
+would not need the %ss over-rides. That would also require one extra
+instruction to compensate for the one place where the register is used
+as scaled index. However Andrew pointed out that is too subtle and if
+further work was to be done in this code-path it could escape folks attention
+and lead to accidents.
+
+Reviewed-by: Petr Matousek <pmatouse@redhat.com>
+Reported-by: Petr Matousek <pmatouse@redhat.com>
+Reviewed-by: Andrew Cooper <andrew.cooper3@citrix.com>
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/packet/af_packet.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ arch/x86/xen/xen-asm_32.S |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
-index 85afc13..835fcea 100644
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -2422,13 +2422,15 @@ static int packet_release(struct socket *sock)
+diff --git a/arch/x86/xen/xen-asm_32.S b/arch/x86/xen/xen-asm_32.S
+index f9643fc..33ca6e4 100644
+--- a/arch/x86/xen/xen-asm_32.S
++++ b/arch/x86/xen/xen-asm_32.S
+@@ -89,11 +89,11 @@ ENTRY(xen_iret)
+ 	 */
+ #ifdef CONFIG_SMP
+ 	GET_THREAD_INFO(%eax)
+-	movl TI_cpu(%eax), %eax
+-	movl __per_cpu_offset(,%eax,4), %eax
+-	mov xen_vcpu(%eax), %eax
++	movl %ss:TI_cpu(%eax), %eax
++	movl %ss:__per_cpu_offset(,%eax,4), %eax
++	mov %ss:xen_vcpu(%eax), %eax
+ #else
+-	movl xen_vcpu, %eax
++	movl %ss:xen_vcpu, %eax
+ #endif
  
- 	packet_flush_mclist(sk);
+ 	/* check IF state we're restoring */
+@@ -106,11 +106,11 @@ ENTRY(xen_iret)
+ 	 * resuming the code, so we don't have to be worried about
+ 	 * being preempted to another CPU.
+ 	 */
+-	setz XEN_vcpu_info_mask(%eax)
++	setz %ss:XEN_vcpu_info_mask(%eax)
+ xen_iret_start_crit:
  
--	memset(&req_u, 0, sizeof(req_u));
--
--	if (po->rx_ring.pg_vec)
-+	if (po->rx_ring.pg_vec) {
-+		memset(&req_u, 0, sizeof(req_u));
- 		packet_set_ring(sk, &req_u, 1, 0);
-+	}
+ 	/* check for unmasked and pending */
+-	cmpw $0x0001, XEN_vcpu_info_pending(%eax)
++	cmpw $0x0001, %ss:XEN_vcpu_info_pending(%eax)
  
--	if (po->tx_ring.pg_vec)
-+	if (po->tx_ring.pg_vec) {
-+		memset(&req_u, 0, sizeof(req_u));
- 		packet_set_ring(sk, &req_u, 1, 1);
-+	}
+ 	/*
+ 	 * If there's something pending, mask events again so we can
+@@ -118,7 +118,7 @@ xen_iret_start_crit:
+ 	 * touch XEN_vcpu_info_mask.
+ 	 */
+ 	jne 1f
+-	movb $1, XEN_vcpu_info_mask(%eax)
++	movb $1, %ss:XEN_vcpu_info_mask(%eax)
  
- 	fanout_release(sk);
+ 1:	popl %eax
  
 
 
