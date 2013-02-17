@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756848Ab3BQXBJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 18:01:09 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45781 "EHLO
+	id S1756706Ab3BQXBy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 18:01:54 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45770 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756306Ab3BQWzl (ORCPT
+	by vger.kernel.org with ESMTP id S1756266Ab3BQWzl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 17 Feb 2013 17:55:41 -0500
-Message-Id: <20130217225006.630501393@decadent.org.uk>
+Message-Id: <20130217225006.871315239@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 17 Feb 2013 22:50:44 +0000
+Date: Sun, 17 Feb 2013 22:50:46 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org,
-        Stephen Hemminger <stephen.hemminger@vyatta.com>,
-        Stephen Hemminger <stephen@networkplumber.org>,
+Cc: akpm@linux-foundation.org, Tilman Schmidt <tilman@imap.cc>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 43/66] MAINTAINERS: Stephen Hemminger email change
+Subject: [ 45/66] isdn/gigaset: fix zero size border case in debug dump
 In-Reply-To: <20130217225001.621306883@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,51 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Hemminger <stephen.hemminger@vyatta.com>
+From: Tilman Schmidt <tilman@imap.cc>
 
-[ Upstream commit adbbf69d1a54abf424e91875746a610dcc80017d ]
+[ Upstream commit d721a1752ba544df8d7d36959038b26bc92bdf80 ]
 
-I changed my email because the vyatta.com mail server is now
-redirected to brocade.com; and the Brocade mail system
-is not friendly to Linux desktop users.
+If subtracting 12 from l leaves zero we'd do a zero size allocation,
+leading to an oops later when we try to set the NUL terminator.
 
-Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Tilman Schmidt <tilman@imap.cc>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- MAINTAINERS | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/isdn/gigaset/capi.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 82d7fa6..83f156e 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -2584,7 +2584,7 @@ S:	Maintained
- F:	drivers/net/ethernet/i825xx/eexpress.*
- 
- ETHERNET BRIDGE
--M:	Stephen Hemminger <shemminger@vyatta.com>
-+M:	Stephen Hemminger <stephen@networkplumber.org>
- L:	bridge@lists.linux-foundation.org
- L:	netdev@vger.kernel.org
- W:	http://www.linuxfoundation.org/en/Net:Bridge
-@@ -4475,7 +4475,7 @@ S:	Supported
- F:	drivers/infiniband/hw/nes/
- 
- NETEM NETWORK EMULATOR
--M:	Stephen Hemminger <shemminger@vyatta.com>
-+M:	Stephen Hemminger <stephen@networkplumber.org>
- L:	netem@lists.linux-foundation.org
- S:	Maintained
- F:	net/sched/sch_netem.c
-@@ -5993,7 +5993,7 @@ S:	Maintained
- F:	drivers/usb/misc/sisusbvga/
- 
- SKGE, SKY2 10/100/1000 GIGABIT ETHERNET DRIVERS
--M:	Stephen Hemminger <shemminger@vyatta.com>
-+M:	Stephen Hemminger <stephen@networkplumber.org>
- L:	netdev@vger.kernel.org
- S:	Maintained
- F:	drivers/net/ethernet/marvell/sk*
+diff --git a/drivers/isdn/gigaset/capi.c b/drivers/isdn/gigaset/capi.c
+index fd17bb3..08c2329 100644
+--- a/drivers/isdn/gigaset/capi.c
++++ b/drivers/isdn/gigaset/capi.c
+@@ -264,6 +264,8 @@ static inline void dump_rawmsg(enum debuglevel level, const char *tag,
+ 		CAPIMSG_APPID(data), CAPIMSG_MSGID(data), l,
+ 		CAPIMSG_CONTROL(data));
+ 	l -= 12;
++	if (l <= 0)
++		return;
+ 	dbgline = kmalloc(3*l, GFP_ATOMIC);
+ 	if (!dbgline)
+ 		return;
 
 
