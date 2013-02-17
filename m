@@ -1,170 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752043Ab3BQSCJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 13:02:09 -0500
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:41485 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751705Ab3BQR7x (ORCPT
+	id S1751776Ab3BQSOP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 13:14:15 -0500
+Received: from na01-bl2-obe.ptr.protection.outlook.com ([65.55.169.31]:15541
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751352Ab3BQSOM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 12:59:53 -0500
-From: David Herrmann <dh.herrmann@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org,
-        David Herrmann <dh.herrmann@googlemail.com>
-Subject: [PATCH 2/9] video: sysfb: new vbefb device type
-Date: Sun, 17 Feb 2013 18:59:04 +0100
-Message-Id: <1361123951-587-3-git-send-email-dh.herrmann@gmail.com>
-X-Mailer: git-send-email 1.8.1.3
-In-Reply-To: <1361123951-587-1-git-send-email-dh.herrmann@gmail.com>
-References: <1361123951-587-1-git-send-email-dh.herrmann@gmail.com>
+	Sun, 17 Feb 2013 13:14:12 -0500
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT003.namprd03.prod.outlook.com;R:internal;EFV:INT
+X-SpamScore: -3
+X-BigFish: PS-3(zzbb2dI98dI9371I542I1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzzz31h2a8h668h839h944hd24hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh9a9j1155h)
+X-Forefront-Antispam-Report-Untrusted: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:SN2PR03MB061;H:SN2PR03MB061.namprd03.prod.outlook.com;LANG:en;
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <gregkh@linuxfoundation.org>, "H. Peter Anvin" <hpa@zytor.com>
+CC: "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "JBeulich@suse.com" <JBeulich@suse.com>, "bp@alien8.de" <bp@alien8.de>
+Subject: RE: [PATCH 1/1] Drivers: hv: vmbus: Use the new infrastructure for
+ delivering VMBUS interrupts
+Thread-Topic: [PATCH 1/1] Drivers: hv: vmbus: Use the new infrastructure for
+ delivering VMBUS interrupts
+Thread-Index: AQHOBHqGdmZWmCfA3EOMQRE9yVbBN5htMw+AgAnGt4CAADNcoIAA1naAgAAC4FCAAB3VgIAAAUaAgAADhwCAAASIgIAGPgNA
+Date: Sun, 17 Feb 2013 18:13:49 +0000
+Message-ID: <bc26219c6d0e4a498912a8411c11f81c@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <1360164359-12273-1-git-send-email-kys@microsoft.com>
+ <20130206191313.GA1470@kroah.com> <511ADEB7.6080909@zytor.com>
+ <ae14ef66af2d4206baf4ccb382fc4205@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130213162211.GA21253@kroah.com>
+ <c31482583b394bfcaa16b76a63c413fe@SN2PR03MB061.namprd03.prod.outlook.com>
+ <511BD923.7000500@zytor.com> <20130213182349.GA4959@kroah.com>
+ <511BDD2A.8020002@zytor.com> <20130213185239.GB16645@kroah.com>
+In-Reply-To: <20130213185239.GB16645@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [98.110.61.163]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OrganizationHeadersPreserved: SN2PR03MB061.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUTRONIX.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%ALIEN8.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%SUSE.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%ZYTOR.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14HUBC106.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14HUBC106.redmond.corp.microsoft.com
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(479174001)(377454001)(13464002)(189002)(199002)(51704002)(24454001)(76482001)(65816001)(74662001)(74502001)(31966008)(46406002)(47446002)(23726001)(44976002)(6806001)(33646001)(16676001)(79102001)(46102001)(63696002)(56776001)(56816002)(80022001)(66066001)(47776003)(20776003)(59766001)(54356001)(77982001)(53806001)(47976001)(54316002)(51856001)(50466001)(47736001)(4396001)(50986001)(49866001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2FFO11HUB011;H:TK5EX14HUBC106.redmond.corp.microsoft.com;RD:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-OriginatorOrg: microsoft.onmicrosoft.com
+X-Forefront-PRVS: 07607ED19A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Herrmann <dh.herrmann@googlemail.com>
 
-This adds the VESA BIOS Extension (VBE) device type. Platform code needs
-to provide the "vbefb" platform-device with a screen_info structure as
-platform code.
 
-All drivers that depend on VBE can now register as bus drivers and bind
-to SYSFB_VBE devices. There is no distinction between graphics
-framebuffers or plain text VGA. Drivers ought to inspect the screen_info
-and return -ENODEV during probe() is they cannot make use of the device.
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> Sent: Wednesday, February 13, 2013 1:53 PM
+> To: H. Peter Anvin
+> Cc: KY Srinivasan; x86@kernel.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+> jasowang@redhat.com; tglx@linutronix.de; JBeulich@suse.com; bp@alien8.de
+> Subject: Re: [PATCH 1/1] Drivers: hv: vmbus: Use the new infrastructure for
+> delivering VMBUS interrupts
+> 
+> On Wed, Feb 13, 2013 at 10:36:26AM -0800, H. Peter Anvin wrote:
+> > On 02/13/2013 10:23 AM, Greg KH wrote:
+> > > On Wed, Feb 13, 2013 at 10:19:15AM -0800, H. Peter Anvin wrote:
+> > >> Sounds like we have the joy of a cross-tree dependency...
+> > >
+> > > Yeah, a mess.
+> > >
+> > > KY, how about I just wait until all of this gets merged with Linus for
+> > > 3.9-rc1, and then you resend me the patches you have to take advantage
+> > > of these new bits?  That makes it easy for everyone involved.
+> > >
+> >
+> > The other option is you can pull tip:x86/hyperv from me... it has *only*
+> > these changes.  I can then let you push them to Linus or I can push them
+> > to Linus before you push your tree.
+> 
+> Nah, I'll just wait, it's not that big of a deal here, it will all make
+> it into 3.9-final eventually.
 
-Only one framebuffer of type SYSFB_VBE is available on a system at a time.
+Peter's check-ins are now in Linux-next. Should I send you the vmbus patch that uses this infrastructure.
 
-Signed-off-by: David Herrmann <dh.herrmann@googlemail.com>
----
- drivers/video/sysfb.c | 77 +++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/sysfb.h |  5 +++-
- 2 files changed, 81 insertions(+), 1 deletion(-)
+Regards,
 
-diff --git a/drivers/video/sysfb.c b/drivers/video/sysfb.c
-index 8249006..5b47a9a 100644
---- a/drivers/video/sysfb.c
-+++ b/drivers/video/sysfb.c
-@@ -205,6 +205,72 @@ void sysfb_taint(struct sysfb_device *sdev, bool set)
- }
- EXPORT_SYMBOL(sysfb_taint);
- 
-+static void sysfb_dev_release(struct device *dev)
-+{
-+	struct sysfb_device *sdev = to_sysfb_device(dev);
-+
-+	kfree(sdev);
-+}
-+
-+static struct sysfb_device *sysfb_dev_new(struct device *parent)
-+{
-+	struct sysfb_device *sdev;
-+
-+	sdev = kzalloc(sizeof(*sdev), GFP_KERNEL);
-+	if (!sdev)
-+		return NULL;
-+
-+	device_initialize(&sdev->dev);
-+	sdev->dev.release = sysfb_dev_release;
-+	sdev->dev.bus = &sysfb_bus_type;
-+	sdev->dev.parent = parent;
-+
-+	return sdev;
-+}
-+
-+static int sysfb_vbe_probe(struct platform_device *pdev)
-+{
-+	int ret;
-+	struct sysfb_device *sdev;
-+
-+	sdev = sysfb_dev_new(&pdev->dev);
-+	if (!sdev)
-+		return -ENOMEM;
-+
-+	dev_set_name(&sdev->dev, "vbefb");
-+	sdev->type = SYSFB_VBE;
-+	sdev->screen = pdev->dev.platform_data;
-+
-+	ret = device_add(&sdev->dev);
-+	if (ret)
-+		goto err_free;
-+
-+	platform_set_drvdata(pdev, sdev);
-+	return 0;
-+
-+err_free:
-+	put_device(&sdev->dev);
-+	return ret;
-+}
-+
-+static int sysfb_vbe_remove(struct platform_device *pdev)
-+{
-+	struct sysfb_device *sdev = platform_get_drvdata(pdev);
-+
-+	device_del(&sdev->dev);
-+	put_device(&sdev->dev);
-+	return 0;
-+}
-+
-+static struct platform_driver sysfb_vbe_driver = {
-+	.driver = {
-+		.name = "vbefb",
-+		.owner = THIS_MODULE,
-+	},
-+	.probe = sysfb_vbe_probe,
-+	.remove = sysfb_vbe_remove,
-+};
-+
- static int __init sysfb_init(void)
- {
- 	int ret;
-@@ -215,11 +281,22 @@ static int __init sysfb_init(void)
- 		return ret;
- 	}
- 
-+	ret = platform_driver_register(&sysfb_vbe_driver);
-+	if (ret) {
-+		pr_err("cannot register VBE framebuffer driver\n");
-+		goto err_bus;
-+	}
-+
- 	return 0;
-+
-+err_bus:
-+	bus_unregister(&sysfb_bus_type);
-+	return ret;
- }
- 
- static void __exit sysfb_exit(void)
- {
-+	platform_driver_unregister(&sysfb_vbe_driver);
- 	bus_unregister(&sysfb_bus_type);
- }
- 
-diff --git a/include/linux/sysfb.h b/include/linux/sysfb.h
-index 6cd3c24..1796c1e 100644
---- a/include/linux/sysfb.h
-+++ b/include/linux/sysfb.h
-@@ -20,6 +20,7 @@
- 
- /**
-  * sysfb_type
-+ * @SYSFB_VBE: VESA BIOS Extension compatible device (includes VGA devices)
-  *
-  * Different types of available framebuffer devices. Only one device of each
-  * type can be available at a time. In most systems there even is only one
-@@ -29,7 +30,9 @@
-  * devices.
-  */
- enum sysfb_type {
--	SYSFB_TYPES = 0,
-+	SYSFB_VBE = 0x01,
-+
-+	SYSFB_TYPES = SYSFB_VBE,
- };
- 
- /**
--- 
-1.8.1.3
+K. Y
+
 
