@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752259Ab3BQTQT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 14:16:19 -0500
-Received: from na01-by1-obe.ptr.o365filtering.com ([64.4.22.91]:10284 "EHLO
-	na01-by1-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751789Ab3BQTQS convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 14:16:18 -0500
-X-Greylist: delayed 322 seconds by postgrey-1.27 at vger.kernel.org; Sun, 17 Feb 2013 14:16:17 EST
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: Olaf Hering <olaf@aepfle.de>
-CC: "FlorianSchandinat@gmx.de" <FlorianSchandinat@gmx.de>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        KY Srinivasan <kys@microsoft.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Subject: RE: [PATCH RFC] video: Add Hyper-V Synthetic Video Frame Buffer
- Driver
-Thread-Topic: [PATCH RFC] video: Add Hyper-V Synthetic Video Frame Buffer
- Driver
-Thread-Index: AQHOC6xQKsSDc1Q1WkuxN29CXfjd55h+pfaA///G/Yw=
-Date: Sun, 17 Feb 2013 19:10:28 +0000
-Message-ID: <a9aa48c6abf3441e9f3a4481d154319f@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-References: <1360955396-14183-1-git-send-email-haiyangz@microsoft.com>,<20130217143223.GA11543@aepfle.de>
-In-Reply-To: <20130217143223.GA11543@aepfle.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.13]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752290Ab3BQTRi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 14:17:38 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:54214 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751925Ab3BQTRh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Feb 2013 14:17:37 -0500
+Message-ID: <51212C68.1090900@zytor.com>
+Date: Sun, 17 Feb 2013 11:15:52 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-X-Forefront-Antispam-Report: CIP:131.107.1.27;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(189002)(199002)(164054002)(24454001)(377454001)(53806001)(54356001)(51856001)(4396001)(49866001)(80022001)(66066001)(65816001)(876001)(77982001)(59766001)(20776003)(76482001)(56776001)(5343655001)(46406002)(63696002)(47776003)(56816002)(54316002)(79102001)(44976002)(23726001)(31966008)(46102001)(74662001)(33646001)(16406001)(50466001)(47976001)(74502001)(47446002)(47736001)(50986001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BL2SR01MB604;H:hybrid.exchange.microsoft.com;RD:mail7.exchange.microsoft.com;MX:1;A:1;LANG:en;
-X-Forefront-PRVS: 07607ED19A
-X-OriginatorOrg: DuplicateDomain-7923a859-03c9-4312-a77c-440aa45aaf52.microsoft.com
+To: KY Srinivasan <kys@microsoft.com>
+CC: Greg KH <gregkh@linuxfoundation.org>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "JBeulich@suse.com" <JBeulich@suse.com>, "bp@alien8.de" <bp@alien8.de>
+Subject: Re: [PATCH 1/1] Drivers: hv: vmbus: Use the new infrastructure for
+ delivering VMBUS interrupts
+References: <20130206191313.GA1470@kroah.com> <511ADEB7.6080909@zytor.com> <ae14ef66af2d4206baf4ccb382fc4205@SN2PR03MB061.namprd03.prod.outlook.com> <20130213162211.GA21253@kroah.com> <c31482583b394bfcaa16b76a63c413fe@SN2PR03MB061.namprd03.prod.outlook.com> <511BD923.7000500@zytor.com> <20130213182349.GA4959@kroah.com> <511BDD2A.8020002@zytor.com> <20130213185239.GB16645@kroah.com> <bc26219c6d0e4a498912a8411c11f81c@SN2PR03MB061.namprd03.prod.outlook.com> <20130217182519.GB8687@kroah.com> <663c5ef1750e4aa3922c38e897c4903a@SN2PR03MB061.namprd03.prod.outlook.com>
+In-Reply-To: <663c5ef1750e4aa3922c38e897c4903a@SN2PR03MB061.namprd03.prod.outlook.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Olaf Hering
-> Sent: Sunday, February 17, 2013 9:32 AM
-> To: Haiyang Zhang
-> Cc: FlorianSchandinat@gmx.de; linux-fbdev@vger.kernel.org; KY Srinivasan; jasowang@redhat.com; linux-kernel@vger.kernel.org; devel@linuxdriverproject.org
-> Subject: Re: [PATCH RFC] video: Add Hyper-V Synthetic Video Frame Buffer Driver
+On 02/17/2013 10:51 AM, KY Srinivasan wrote:
+>>
+>> No one can base their tree on linux-next, so no.  Please wait for them
+>> to get into Linus's tree.
+>>
+>> Or send them to me now, with the instructions to apply them after
+>> 3.9-rc1, and I will save them for that point in time.
+>
+> Thanks Greg. Will do.
+>
 
-> On Fri, Feb 15, Haiyang Zhang wrote:
+As I said, I'm also perfectly happy to have you take over the 
+tip:x86/hyperv branch for this cycle...
 
-> +config HYPERV_FB
+	-hpa
 
-> This should probably be FB_HYPERB to follow the naming of all other
-> drivers.
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-Will do.
-
-Thanks,
-- Haiyang
